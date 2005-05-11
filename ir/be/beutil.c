@@ -14,27 +14,37 @@
 #include "beutil.h"
 #include "besched_t.h"
 #include "bera_t.h"
+#include "bearch.h"
 
-static void dump_allocated_block(ir_node *block, void *env)
+struct dump_env {
+  FILE *f;
+  arch_env_t *env;
+};
+
+static void dump_allocated_block(ir_node *block, void *data)
 {
 	int i, n;
 	const ir_node *irn;
-	FILE *f = env;
+  struct dump_env *dump_env = data;
+	FILE *f = dump_env->f;
+  arch_env_t *env = dump_env->env;
 
 	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"%n\n", block, block);
 	sched_foreach(block, irn) {
 		const char *prefix = "";
+    const arch_register_t *reg = arch_get_irn_register(env, irn, 0);
 
 		ir_fprintf(f, "\n");
-		if(is_color(get_irn_color(irn)))
-			ir_fprintf(f, "r%d = ", get_irn_color(irn));
+    if(reg)
+      ir_fprintf(f, "%s = ", arch_register_get_name(reg));
 		ir_fprintf(f, "%n(", irn);
 
 		if(block != get_irg_start_block(get_irn_irg(block))) {
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 				if(is_allocatable_irn(op)) {
-					ir_fprintf(f, "%sr%d", prefix, get_irn_color(op));
+					ir_fprintf(f, "%s%s", prefix,
+              arch_register_get_name(arch_get_irn_register(env, op, 0)));
 					prefix = ", ";
 				}
 			}
@@ -52,18 +62,20 @@ static void dump_allocated_block(ir_node *block, void *env)
 	}
 }
 
-void dump_allocated_irg(ir_graph *irg, char *suffix)
+void dump_allocated_irg(arch_env_t *arch_env, ir_graph *irg, char *suffix)
 {
 	char buf[1024];
-	FILE *f;
+  struct dump_env env;
 
-	snprintf(buf, sizeof(buf), "%s-alloc%s.vcg", get_entity_name(get_irg_entity(irg)), suffix);
+  env.env = arch_env;
 
-	if((f = fopen(buf, "wt")) != NULL) {
-		fprintf(f, "graph:{title:\"prg\"\n");
-		irg_block_walk_graph(irg, dump_allocated_block, NULL, f);
-		fprintf(f, "}\n");
-		fclose(f);
+	ir_snprintf(buf, sizeof(buf), "%F-alloc%s.vcg", irg, suffix);
+
+	if((env.f = fopen(buf, "wt")) != NULL) {
+		fprintf(env.f, "graph:{title:\"prg\"\n");
+		irg_block_walk_graph(irg, dump_allocated_block, NULL, &env);
+		fprintf(env.f, "}\n");
+		fclose(env.f);
 	}
 }
 

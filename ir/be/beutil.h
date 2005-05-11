@@ -7,6 +7,8 @@
 #include "irnode.h"
 #include "config.h"
 
+#include "bearch.h"
+
 /** Undefine this to disable debugging mode. */
 #define BE_DEBUG 1
 
@@ -51,7 +53,7 @@ void localize_consts(ir_graph *irg);
  * @param irg The irg. Note that scheduling, register allocation must
  * have been performed.
  */
-void dump_allocated_irg(ir_graph *irg, char *suffix);
+void dump_allocated_irg(arch_env_t *env, ir_graph *irg, char *suffix);
 
 
 

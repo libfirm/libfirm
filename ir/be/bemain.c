@@ -28,6 +28,7 @@
 #include "bearch.h"
 #include "becopyoptmain.h"
 #include "becopystat.h"
+#include "bearch_firm.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
@@ -37,68 +38,9 @@
 
 #define N_PHASES 256
 
-typedef struct _be_graph_info_t {
-	bitset_t *applied_phases;
-} be_graph_info_t;
-
-static size_t be_info_offset = 0;
-
-#define get_irg_be_info(irg) get_irg_data(irg, be_graph_info_t, be_info_offset)
-
-static int phase_ids = 1;
-static struct obstack obst;
-
-int phase_register(phase_t *phase)
-{
-	phase->id = phase_ids;
-	return phase_ids++;
-}
-
-void phase_applied(const ir_graph *irg, const phase_t *phase)
-{
-	be_graph_info_t *info = get_irg_be_info(irg);
-
-	if(!info->applied_phases)
-		info->applied_phases = bitset_obstack_alloc(&obst, N_PHASES);
-
-	bitset_set(info->applied_phases, phase->id);
-}
-
-int phase_depends_on(const ir_graph *irg, const phase_t *phase, int n, ...)
-{
-	int errors = 0;
-	int i;
-	va_list args;
-
-	if(n > 0) {
-		const be_graph_info_t *info = get_irg_be_info(irg);
-		const bitset_t *applied_phases = info->applied_phases;
-
-		va_start(args, n);
-
-		for(i = 0; i < n; ++i) {
-			const phase_t *dep_phase = va_arg(args, const phase_t *);
-
-			if(!applied_phases || !bitset_is_set(applied_phases, dep_phase->id)) {
-				errors++;
-				fprintf(stderr, "phase dependency unfulfilled: \"%s\" depends on \"%s\"\n",
-						phase->name, dep_phase->name);
-			}
-		}
-
-		va_end(args);
-
-		assert(errors > 0 && "There were phase dependency errors");
-	}
-
-	return errors;
-}
 
 void be_init(void)
 {
-	obstack_init(&obst);
-	be_info_offset = register_additional_graph_data(sizeof(be_graph_info_t));
-
 	be_sched_init();
 	be_liveness_init();
 	be_numbering_init();
@@ -110,13 +52,23 @@ void be_init(void)
 #endif
 }
 
-/* The preliminary Firm backend isa. */
-extern arch_isa_if_t arch_isa_if_firm;
+static void be_init_arch_env(arch_env_t *env)
+{
+  arch_env_init(env, &firm_isa);
+  arch_env_add_irn_handler(env, &firm_irn_handler);
+
+  env->isa->init();
+}
 
 static void be_main_loop(void)
 {
 	int i, n;
-	const arch_isa_if_t *isa = &arch_isa_if_firm;
+  arch_env_t env;
+  const arch_isa_if_t *isa;
+
+  be_init_arch_env(&env);
+
+  isa = arch_env_get_isa(&env);
 
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		int j, m;
@@ -142,10 +94,10 @@ static void be_main_loop(void)
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-			be_ra_chordal(irg, isa, cls);
+			be_ra_chordal(irg, &env, cls);
 
 #ifdef DUMP_ALLOCATED
-			dump_allocated_irg(irg, "");
+			dump_allocated_irg(&env, irg, "");
 #endif
 #ifdef DO_STAT
 			stat_collect_irg(irg);

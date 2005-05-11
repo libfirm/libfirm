@@ -19,7 +19,7 @@ typedef struct _border_t {
 #endif
 	struct list_head list;				/**< list head for queuing. */
 	struct _border_t *other_end;	/**< The other end of the border. */
-	const ir_node *irn;						/**< The node. */
+	ir_node *irn;						      /**< The node. */
 	unsigned step;								/**< The number equal to the interval border. */
 	unsigned pressure;						/**< The pressure at this interval border.
 																	(The border itself is counting). */

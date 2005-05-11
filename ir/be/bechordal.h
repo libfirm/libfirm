@@ -19,7 +19,7 @@
  * @return Some internal data to be freed with be_ra_chordal_done().
  */
 void be_ra_chordal(ir_graph *irg,
-    const arch_isa_if_t *isa,
+    const arch_env_t *arch_env,
     const arch_register_class_t *cls);
 
 /**

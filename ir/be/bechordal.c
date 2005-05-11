@@ -2,7 +2,11 @@
  * Chordal register allocation.
  * @author Sebastian Hack
  * @date 8.12.2004
+ *
+ * Copyright (C) Universitaet Karlsruhe
+ * Released under the GPL
  */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -69,7 +73,7 @@ typedef struct _env_t {
 	bitset_t *colors;			/**< The color mask. */
 	bitset_t *in_colors;	/**< Colors used by live in values. */
 	int colors_n;					/**< The number of colors. */
-  const arch_isa_if_t *isa;           /**< The isa interface. */
+  const arch_env_t *arch_env;         /**< The arch interface environment. */
   const arch_register_class_t *cls;   /**< The current register class. */
   void *data;           /**< Some pointer, to which different
                           phases can attach data to. */
@@ -423,6 +427,7 @@ static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
 
 #endif /* BUILD_GRAPH */
 
+
 /**
  * Add an interval border to the list of a block's list
  * of interval border.
@@ -516,7 +521,6 @@ static void pressure(ir_node *block, void *env_ptr)
 	pset *live_in = get_live_in(block);
 	pset *live_end = get_live_end(block);
   const arch_register_class_t *cls = env->cls;
-  const arch_isa_if_t *isa = env->isa;
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %n\n", block));
 	bitset_clear_all(live);
@@ -532,7 +536,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
 		DBG((dbg, LEVEL_3, "\tMaking live: %n/%d\n", irn, get_irn_graph_nr(irn)));
 		bitset_set(live, get_irn_graph_nr(irn));
-    if(arch_isa_irn_has_reg_class(isa, irn, cls))
+    if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls))
       border_use(irn, step, 0);
 	}
 
@@ -553,7 +557,7 @@ static void pressure(ir_node *block, void *env_ptr)
      * If the node defines some value, which can put into a
      * register of the current class, make a border for it.
      */
-		if(arch_isa_irn_has_reg_class(isa, irn, cls)) {
+		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls)) {
       bitset_pos_t elm;
 			int nr = get_irn_graph_nr(irn);
 
@@ -573,7 +577,7 @@ static void pressure(ir_node *block, void *env_ptr)
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 
-				if(arch_isa_irn_has_reg_class(isa, op, cls)) {
+				if(arch_irn_has_reg_class(env->arch_env, op, 0, cls)) {
 					int nr = get_irn_graph_nr(op);
 
 					DBG((dbg, LEVEL_4, "\t\tpos: %d, use: %n\n", i, op));
@@ -593,7 +597,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * Add initial defs for all values live in.
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-		if(arch_isa_irn_has_reg_class(isa, irn, cls)) {
+		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls)) {
 
 			/* Mark the value live in. */
 			bitset_set(live, get_irn_graph_nr(irn));
@@ -611,11 +615,7 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
 	bitset_t *in_colors = env->in_colors;
-  const arch_isa_if_t *isa = env->isa;
   const arch_register_class_t *cls = env->cls;
-
-	/* The used colors will remain on the obstack. */
-	bitset_t *used_colors = bitset_obstack_alloc(obst, env->colors_n);
 
 	/* Mark the obstack level and allocate the temporary tmp_colors */
 	void *obstack_level = obstack_base(obst);
@@ -643,14 +643,16 @@ static void assign(ir_node *block, void *env_ptr)
 	 * allocated before), we have to mark their colors as used also.
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-		if(arch_isa_irn_has_reg_class(isa, irn, cls)) {
-			int col = get_irn_color(irn);
+		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls)) {
+      const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
+      int col;
+
+      assert(reg && "Nodfe must have been assigned a register");
+			col = arch_register_get_index(reg);
 
 			/* Mark the color of the live in value as used. */
-			assert(is_color(col) && "Node must have been assigned a color.");
 			bitset_set(colors, col);
 			bitset_set(in_colors, col);
-			bitset_set(used_colors, col);
 
 			/* Mark the value live in. */
 			bitset_set(live, get_irn_graph_nr(irn));
@@ -663,7 +665,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * will work.
 	 */
 	list_for_each_entry_reverse(border_t, b, head, list) {
-		const ir_node *irn = b->irn;
+		ir_node *irn = b->irn;
 		int nr = get_irn_graph_nr(irn);
 
 		/*
@@ -671,82 +673,40 @@ static void assign(ir_node *block, void *env_ptr)
 		 * color.
 		 */
 		if(b->is_def && !is_live_in(block, irn)) {
-			ra_node_info_t *ri = get_ra_node_info(irn);
+      const arch_register_t *reg;
 			int col = NO_COLOR;
 
 			DBG((dbg, LEVEL_4, "\tcolors in use: %b\n", colors));
 
-			/*
-			 * Try to assign live out values colors which are not used by live
-			 * in values.
-			 */
-#if 0
-			if(is_live_out(block, irn)) {
-				int next_clear;
+      col = bitset_next_clear(colors, 0);
+      reg = arch_register_for_index(env->cls, col);
 
-				bitset_copy(tmp_colors, colors);
-				bitset_or(tmp_colors, in_colors);
-				next_clear = bitset_next_clear(tmp_colors, 0);
-				col = next_clear != -1 ? next_clear : NO_COLOR;
-
-				DBG((dbg, LEVEL_5, "next clear in only outs %b: %d\n", tmp_colors, col));
-			}
-#endif
-
-			/* If a color is not yet assigned, do it now. */
-			if(!is_color(col))
-				col = bitset_next_clear(colors, 0);
-
-			assert(!is_color(get_irn_color(irn)) && "Color must not have assigned");
-			assert(!bitset_is_set(live, nr) && "Value def must not have been encountered");
+      assert(arch_get_irn_register(env->arch_env, irn, 0) == NULL
+          && "This node must not have been assigned a register yet");
+			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 
 			bitset_set(colors, col);
-			bitset_set(used_colors, col);
 			bitset_set(live, nr);
 
-			ri->color = col;
-
-			DBG((dbg, LEVEL_1, "\tassigning color %d to %n\n", col, irn));
+			arch_set_irn_register(env->arch_env, irn, 0, reg);
+			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %n\n",
+            arch_register_get_name(reg), col, irn));
 		}
 
 		/* Clear the color upon a use. */
 		else if(!b->is_def) {
-			int col = get_irn_color(irn);
+      const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
+			int col;
 
+      assert(reg && "Register must have been assigned");
+
+      col = arch_register_get_index(reg);
 			assert(bitset_is_set(live, nr) && "Cannot have a non live use");
-			assert(is_color(col) && "A color must have been assigned");
 
 			bitset_clear(colors, col);
 			bitset_clear(live, nr);
 		}
 	}
-
-#ifdef DUMP_PRESSURE
-	{
-		char buf[128];
-		FILE *f;
-
-		ir_snprintf(buf, sizeof(buf), "pres_%s_bl_%N.txt",
-				get_entity_name(get_irg_entity(irg)), block);
-
-		if((f = fopen(buf, "wt")) != NULL) {
-			sched_foreach_reverse(block, irn) {
-				if(arch_isa_irn_has_reg_class(isa, irn, cls))
-					ir_fprintf(f, "\"%n\" %d %d\n", irn, sched_get_time_step(irn),
-							get_ra_node_info(irn)->pressure);
-
-			}
-			fclose(f);
-		}
-	}
-#endif
-
-
-	/*
-	 * Allocate the used colors array in the blocks ra info structure and
-	 * fill it.
-	 */
-	get_ra_block_info(block)->used_colors = used_colors;
 
 	/* Free the auxillary data on the obstack. */
 	obstack_free(obst, obstack_level);
@@ -759,7 +719,7 @@ void be_ra_chordal_init(void)
 }
 
 void be_ra_chordal(ir_graph *irg,
-    const arch_isa_if_t *isa,
+    const arch_env_t *arch_env,
     const arch_register_class_t *cls)
 {
 	int node_count = get_graph_node_count(irg);
@@ -781,7 +741,7 @@ void be_ra_chordal(ir_graph *irg,
 	env->in_colors = bitset_obstack_alloc(&env->obst, colors_n);
 	env->colors_n = colors_n;
   env->cls = cls;
-  env->isa = isa;
+  env->arch_env = arch_env;
   env->irg = irg;
 
 	/* First, determine the pressure */

@@ -6,21 +6,20 @@
 #include "bitset.h"
 #include "bearch.h"
 
+#include "irreflect.h"
+
 #define N_REGS 64
 
-static arch_register_t gp_regs[N_REGS];
-static arch_register_t fp_regs[N_REGS];
+static arch_register_t datab_regs[N_REGS];
 
 static arch_register_class_t reg_classes[] = {
-  { "gp", NULL, N_REGS, gp_regs },
-  { "fp", NULL, N_REGS, fp_regs }
+  { "datab", N_REGS, datab_regs },
 };
 
 #define N_CLASSES \
   (sizeof(reg_classes) / sizeof(reg_classes[0]))
 
-#define CLS_GP 0
-#define CLS_FP 1
+#define CLS_DATAB 0
 
 static void firm_init(void)
 {
@@ -66,60 +65,99 @@ static const arch_register_class_t *firm_get_reg_class(int i)
   return &reg_classes[i];
 }
 
-static const arch_register_class_t *firm_get_irn_reg_class(const ir_node *irn)
+static const arch_register_req_t firm_std_reg_req = {
+  arch_register_req_type_normal,
+  &reg_classes[CLS_DATAB],
+  { NULL }
+};
+
+static const rflct_arg_t *get_arg(const ir_node *irn, int pos)
 {
-  ir_mode *mode = get_irn_mode(irn);
-
-  if(mode_is_float(mode))
-    return &reg_classes[CLS_FP];
-  else if(mode_is_datab(mode))
-    return &reg_classes[CLS_GP];
-
-  return NULL;
+  int sig = rflct_get_signature(irn);
+  const rflct_arg_t *args =
+    rflct_get_args(get_irn_opcode(irn), sig, arch_pos_is_in(pos));
+  return &args[arch_pos_get_index(pos)];
 }
 
-static int firm_get_allocatable_regs(const ir_node *irn,
-    const arch_register_class_t *cls, bitset_t *bs)
+static const arch_register_req_t *
+firm_get_irn_reg_req(const ir_node *irn, int pos)
 {
-  int res = 0;
-
-  if(firm_get_irn_reg_class(irn) != cls) {
-    if(bs)
-      bitset_clear_all(bs);
-  }
-
-  else {
-    int i;
-
-    res = cls->n_regs;
-    if(bs) {
-      for(i = 0; i < cls->n_regs; ++i)
-        bitset_set(bs, i);
-    }
-  }
-
-  return res;
+  return mode_is_datab(get_irn_mode(irn)) ? &firm_std_reg_req : NULL;
 }
 
-static int firm_is_reg_allocatable(const ir_node *irn, const arch_register_t *reg)
+static int firm_get_n_operands(const ir_node *irn, int in_out)
 {
-	const arch_register_class_t *cls = reg->reg_class;
-	ir_mode *irm = get_irn_mode(irn);
-
-	if(mode_is_float(irm))
-		return cls == &reg_classes[CLS_FP];
-	else if(mode_is_datab(irm))
-		return cls == &reg_classes[CLS_GP];
-
-	return 0;
+  int sig = rflct_get_signature(irn);
+  return rflct_get_args_count(get_irn_opcode(irn), sig, in_out >= 0);
 }
 
-const arch_isa_if_t arch_isa_if_firm = {
+struct irn_reg_assoc {
+  const ir_node *irn;
+  int pos;
+  const arch_register_t *reg;
+};
+
+static int cmp_irn_reg_assoc(const void *a, const void *b, size_t len)
+{
+  const struct irn_reg_assoc *x = a;
+  const struct irn_reg_assoc *y = b;
+
+  return !(x->irn == y->irn && x->pos == y->pos);
+}
+
+static struct irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, int pos)
+{
+  static set *reg_set = NULL;
+  struct irn_reg_assoc templ;
+  unsigned int hash;
+
+  if(!reg_set)
+    reg_set = new_set(cmp_irn_reg_assoc, 1024);
+
+  templ.irn = irn;
+  templ.pos = pos;
+  templ.reg = NULL;
+  hash = HASH_PTR(irn) + 7 * pos;
+
+  return set_insert(reg_set, &templ, sizeof(templ), hash);
+}
+
+static void firm_set_irn_reg(ir_node *irn, int pos, const arch_register_t *reg)
+{
+  struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, pos);
+  assoc->reg = reg;
+}
+
+static const arch_register_t *firm_get_irn_reg(const ir_node *irn, int pos)
+{
+  struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, pos);
+  return assoc->reg;
+}
+
+static arch_irn_class_t firm_classify(const ir_node *irn)
+{
+  return arch_irn_class_normal;
+}
+
+static const arch_irn_ops_t irn_ops = {
+  firm_get_irn_reg_req,
+  firm_get_n_operands,
+  firm_set_irn_reg,
+  firm_get_irn_reg,
+  firm_classify
+};
+
+const arch_isa_if_t firm_isa = {
   firm_init,
   firm_get_n_reg_class,
-  firm_get_reg_class,
-  firm_get_allocatable_regs,
-  firm_is_reg_allocatable,
-  firm_get_irn_reg_class,
-  NULL
+  firm_get_reg_class
+};
+
+static const arch_irn_ops_t *firm_get_irn_ops(const ir_node *irn)
+{
+  return &irn_ops;
+}
+
+const arch_irn_handler_t firm_irn_handler = {
+  firm_get_irn_ops,
 };

@@ -25,13 +25,6 @@ FIRM_IMPL1(get_block_node_count, int, const ir_node *)
 FIRM_IMPL1(get_graph_block_count, int, const ir_graph *)
 FIRM_IMPL2(get_irn_for_graph_nr, ir_node *, const ir_graph *, int)
 
-static phase_t phase_numbering_info = {
-	"Numbering", 0
-};
-
-const phase_t *phase_numbering = &phase_numbering_info;
-
-
 static void numbering_walker(ir_node *irn, void *env)
 {
 	irg_numbering_t *graph_nr = get_irg_numbering(get_irn_irg(irn));
@@ -73,7 +66,6 @@ void be_numbering_done(ir_graph *irg)
 
 void be_numbering_init(void)
 {
-	phase_register(&phase_numbering_info);
 	numbering_irn_data_offset = register_additional_node_data(sizeof(numbering_t));
 	numbering_irg_data_offset = register_additional_graph_data(sizeof(irg_numbering_t));
 }
