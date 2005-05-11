@@ -92,7 +92,10 @@ static INLINE void assure_opcode_capacity(int opcode)
 }
 
 
+#if 0
 #define OPCODES_COUNT (sizeof(opcodes) / sizeof(opcodes[0]))
+#endif
+#define OPCODES_COUNT opcodes_size
 
 
 rflct_mode_class_t rflct_get_mode_class(const ir_mode *mode) {
@@ -171,7 +174,7 @@ const rflct_arg_t *rflct_get_out_args(opcode opc, int sig) {
 	return GET_ARGS(opc, sig);
 }
 
-int rflct_signature_match(ir_node *irn, int sig) {
+int rflct_signature_match(const ir_node *irn, int sig) {
 	opcode op = get_irn_opcode(irn);
 	const rflct_arg_t *args = rflct_get_in_args(op, sig);
 	int dst = 0;
@@ -196,7 +199,7 @@ int rflct_signature_match(ir_node *irn, int sig) {
 	return dst;
 }
 
-int rflct_get_signature(ir_node *irn) {
+int rflct_get_signature(const ir_node *irn) {
 	const rflct_opcode_t *opc = GET_OPCODE(get_irn_opcode(irn));
 	int min_dist = INT_MAX;
 	int min_sig = INT_MAX;

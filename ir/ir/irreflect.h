@@ -93,7 +93,7 @@ int rflct_get_signature_count(opcode opc);
  * @param irn The node.
  * @return The first matching signature or -1, if no signature matches.
  */
-int rflct_get_signature(ir_node *irn);
+int rflct_get_signature(const ir_node *irn);
 
 /**
  * Get the number of in arguments.
@@ -112,6 +112,9 @@ int rflct_get_in_args_count(opcode opc, int sig);
  * @return The number of arguments.
  */
 int rflct_get_out_args_count(opcode opc, int sig);
+
+#define rflct_get_args_count(opc, sig, use) \
+  ((use) ? rflct_get_in_args_count(opc, sig) : rflct_get_out_args_count(opc, sig))
 
 /**
  * Get the array of use args.
@@ -134,6 +137,9 @@ const rflct_arg_t *rflct_get_in_args(opcode opc, int sig);
  * @return The array.
  */
 const rflct_arg_t *rflct_get_out_args(opcode opc, int sig);
+
+#define rflct_get_args(opc, sig, use) \
+  ((use) ? rflct_get_in_args(opc, sig) : rflct_get_out_args(opc, sig))
 
 /**
  * Make a string representation of a signature of an opcode.
