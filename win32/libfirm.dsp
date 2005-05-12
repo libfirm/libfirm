@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /c
 # ADD BASE RSC /l 0x407 /d "NDEBUG"
 # ADD RSC /l 0x407 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /D /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /D /GZ /c
 # ADD BASE RSC /l 0x407 /d "_DEBUG"
 # ADD RSC /l 0x407 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -471,6 +471,14 @@ SOURCE=..\ir\ana2\typalise.h
 # Begin Group "arch"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\arch\archop.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\arch\archop.h
+# End Source File
 # End Group
 # Begin Group "be"
 
@@ -482,6 +490,14 @@ SOURCE=..\ir\be\be.h
 # Begin Source File
 
 SOURCE=..\ir\be\be_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bearch.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bearch_firm.c
 # End Source File
 # Begin Source File
 
@@ -514,6 +530,42 @@ SOURCE=..\ir\be\bechordal.h
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bechordalspill.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyheur.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyilp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyopt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyopt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyoptmain.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyoptmain.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopystat.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopystat.h
 # End Source File
 # Begin Source File
 
@@ -553,22 +605,6 @@ SOURCE=..\ir\be\benumb_t.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bephicoal.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\bephicoal_t.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\bephiopt.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\bephiopt.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\be\bera.c
 # End Source File
 # Begin Source File
@@ -593,19 +629,19 @@ SOURCE=..\ir\be\besched_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\beutil.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\beutil.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\Makefile.in
+SOURCE=..\ir\be\sp_matrix.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\phistat.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\phistat.h
+SOURCE=..\ir\be\sp_matrix.h
 # End Source File
 # End Group
 # Begin Group "common"
