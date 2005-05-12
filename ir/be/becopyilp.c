@@ -32,6 +32,9 @@
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -299,11 +302,13 @@ static void pi_find_simplicials(problem_instance_t *pi) {
  * Generate the initial problem matrices and vectors.
  */
 static problem_instance_t *new_pi(const copy_opt_t *co) {
+  problem_instance_t *pi;
+
 	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
-	problem_instance_t *pi = xcalloc(1, sizeof(*pi));
-	pi->co = co;
+	pi          = xcalloc(1, sizeof(*pi));
+	pi->co      = co;
 	pi->num2pos = new_set(set_cmp_num2pos, SLOTS_NUM2POS);
-	pi->bigM = 1;
+	pi->bigM    = 1;
 	pi->removed = pset_new_ptr_default();
 	INIT_LIST_HEAD(&pi->simplicials);
 
