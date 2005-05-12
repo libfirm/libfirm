@@ -13,16 +13,15 @@ dnl
 
 AC_REVISION($Id$)
 
-
-
 AC_INIT(libfirm,0.3.0)
 AC_PREREQ(2.50)
+
 dnl if other files should be generated just add them to ac_output_files
 ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile \
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
 		ir/ana/Makefile ir/tr/Makefile ir/ana2/Makefile ir/stat/Makefile \
 		ir/opt/Makefile ir/external/Makefile ir/config/Makefile \
-		ir/arch/Makefile ir/be/Makefile \
+		ir/arch/Makefile \
 		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
 		libfirm.doxygen"
 
@@ -36,21 +35,45 @@ AC_SUBST(libfirm_conf_env)
 dnl where is the configure file
 CONF_DIR_NAME=`dirname $0`
 
+dnl Package options
+dnl ===============
+
+dnl enabled external libFirm plugins
+dnl -------------
+AC_MSG_CHECKING([for external libfirm plugins])
+AC_ARG_WITH(plugins,
+[  --with-plugins=list     include external libfirm plugins list (space separated)],
+[
+  plugin_subdirs=$withval
+  plugin_files=
+  for i in $withval ; do
+    plugin_files="$i/Makefile $plugin_files"
+  done
+  ac_output_file="$ac_output_file $plugin_files"
+],
+[
+ plugin_files=
+ plugin_subdirs=
+])
+AC_SUBST(plugin_subdirs)
+if test "$plugin_subdirs" == ""; then
+  AC_MSG_RESULT([disabled])
+else
+  AC_MSG_RESULT([$plugin_subdirs])
+fi
+
 dnl check for additional include dirs
-AC_ARG_WITH(includedir, [  --with-includedir=add colon seperated list of directories to include search path],
+AC_ARG_WITH(includedir, [  --with-includedir=add   colon seperated list of directories to include search path],
     CPPFLAGS=$CPPFLAGS" -I"`echo $withval|sed 's;\:; -I;g'`)
 
 dnl check for additional library dirs
-AC_ARG_WITH(libdir, [  --with-libdir=add colon seperated list of directories to linker search path],
+AC_ARG_WITH(libdir, [  --with-libdir=add       colon seperated list of directories to linker search path],
     LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`)
 
 dnl check for libxml2 library installation dir
-AC_ARG_WITH(libxml2, [  --with-libxml2=installation prefix of libxml2 (IPD: --with-libxml2=/usr/public/libxml2)],
+AC_ARG_WITH(libxml2, [  --with-libxml2=prefix   installation prefix of libxml2 (IPD: --with-libxml2=/usr/public/libxml2)],
     LDFLAGS=$LDFLAGS" -L"$withval"/lib";
 	CPPFLAGS=$CPPFLAGS" -I"$withval"/include/libxml2")
-
-dnl Package options
-dnl ===============
 
 dnl set debugging
 dnl -------------
@@ -116,14 +139,6 @@ else
   AC_MSG_RESULT([enabled])
 fi
 AC_SUBST(enable_heapanalysis)
-
-dnl set backend support
-dnl -------------------------
-AC_ARG_ENABLE(backend, [  --enable-backend        Compile with backend facility.],
-[if test "$enableval" = "yes"; then
-  AC_DEFINE(FIRM_BACKEND)
-fi], [enable_backend="yes"])
-AC_SUBST(enable_backend)
 
 dnl disable linking of libiberty parts (xmalloc, xprintf, obstack, ...)
 dnl ----------------------
