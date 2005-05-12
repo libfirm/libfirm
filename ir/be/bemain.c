@@ -102,7 +102,7 @@ static void be_main_loop(void)
 #ifdef DO_STAT
 			stat_collect_irg(irg);
 #endif
-			be_copy_opt(irg, isa, cls);
+			be_copy_opt(irg, &env, cls);
 			be_ra_chordal_done(irg);
 		}
 #ifdef DO_STAT

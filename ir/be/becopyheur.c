@@ -1,12 +1,15 @@
 /**
+ * Author:      Daniel Grund
+ * Date:		12.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+
  * Heuristic for minimizing copies using a queue which holds 'qnodes' not yet
  * examined. A qnode has a 'target color', nodes out of the opt unit and
  * a 'conflict graph'. A 'max indep set' is determined form these. We try to
  * color this mis using a color-exchanging mechanism. Occuring conflicts are
  * modeled with 'conflict edges' and the qnode is reinserted in the queue. The
  * first qnode colored without conflicts is the best one.
- * @author Daniel Grund
- * @date 12.04.2005
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -30,7 +33,7 @@ static firm_dbg_module_t *dbg = NULL;
 #define SLOTS_CONFLICTS 8
 #define SLOTS_CHANGED_NODES 32
 
-#define MIN(a,b) ((a<b)?a:b)
+#define MIN(a,b) ((a<b)?(a):(b))
 #define list_entry_queue(lh) list_entry(lh, qnode_t, queue)
 #define HASH_CONFLICT(c) (HASH_PTR(c.n1) ^ HASH_PTR(c.n2))
 
@@ -46,7 +49,7 @@ typedef struct _conflict_t {
  * to allow undo of changes (=drop new data) in case of conflicts.
  */
 typedef struct _node_stat_t {
-	const ir_node *irn;
+	ir_node *irn;
 	int new_color;
 	int pinned_local :1;
 } node_stat_t;
@@ -60,7 +63,7 @@ typedef struct _qnode_t {
 	int color;					/**< target color */
 	set *conflicts;				/**< contains conflict_t's. All internal conflicts */
 	int mis_size;				/**< number of nodes in the mis. */
-	const ir_node **mis;		/**< the nodes of unit_t->nodes[] being part of the max independent set */
+	ir_node **mis;				/**< the nodes of unit_t->nodes[] being part of the max independent set */
 	set *changed_nodes;			/**< contains node_stat_t's. */
 } qnode_t;
 
@@ -116,7 +119,7 @@ static int set_cmp_node_stat_t(const void *x, const void *y, size_t size) {
 /**
  * Finds a node status entry of a node if existent. Otherwise return NULL
  */
-static INLINE node_stat_t *qnode_find_node(const qnode_t *qn, const ir_node *irn) {
+static INLINE node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn) {
 	node_stat_t find;
 	find.irn = irn;
 	return set_find(qn->changed_nodes, &find, sizeof(find), HASH_PTR(irn));
@@ -126,7 +129,7 @@ static INLINE node_stat_t *qnode_find_node(const qnode_t *qn, const ir_node *irn
  * Finds a node status entry of a node if existent. Otherwise it will return
  * an initialized new entry for this node.
  */
-static INLINE node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, const ir_node *irn) {
+static INLINE node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node *irn) {
 	node_stat_t find;
 	find.irn = irn;
 	find.new_color = NO_COLOR;
@@ -137,18 +140,18 @@ static INLINE node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, const ir
 /**
  * Returns the virtual color of a node if set before, else returns the real color.
  */
-static INLINE int qnode_get_new_color(const qnode_t *qn, const ir_node *irn) {
+static INLINE int qnode_get_new_color(const qnode_t *qn, ir_node *irn) {
 	node_stat_t *found = qnode_find_node(qn, irn);
 	if (found)
 		return found->new_color;
 	else
-		return get_irn_color(irn);
+		return get_irn_col(qn->ou->co, irn);
 }
 
 /**
  * Sets the virtual color of a node.
  */
-static INLINE void qnode_set_new_color(const qnode_t *qn, const ir_node *irn, int color) {
+static INLINE void qnode_set_new_color(const qnode_t *qn, ir_node *irn, int color) {
 	node_stat_t *found = qnode_find_or_insert_node(qn, irn);
 	found->new_color = color;
 }
@@ -158,7 +161,7 @@ static INLINE void qnode_set_new_color(const qnode_t *qn, const ir_node *irn, in
  * to the same optimization unit and has been optimized before the current
  * processed node.
  */
-static INLINE int qnode_is_pinned_local(const qnode_t *qn, const ir_node *irn) {
+static INLINE int qnode_is_pinned_local(const qnode_t *qn, ir_node *irn) {
 	node_stat_t *found = qnode_find_node(qn, irn);
 	if (found)
 		return found->pinned_local;
@@ -170,7 +173,7 @@ static INLINE int qnode_is_pinned_local(const qnode_t *qn, const ir_node *irn) {
  * Local-pins a node, so optimizations of further nodes of the same opt unit
  * can handle situations in which a color change would undo prior optimizations.
  */
-static INLINE void qnode_pin_local(const qnode_t *qn, const ir_node *irn) {
+static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
 	node_stat_t *found = qnode_find_or_insert_node(qn, irn);
 	found->pinned_local = 1;
 }
@@ -197,8 +200,8 @@ static INLINE void qnode_pin_local(const qnode_t *qn, const ir_node *irn) {
  * 			   several smaller intervals where other values can live in between.
  *             This should be true in SSA.
  */
-static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int col, const ir_node *trigger) {
-	const ir_node *res;
+static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const ir_node *trigger) {
+	ir_node *res;
 	struct obstack confl_ob;
 	ir_node **confl, *cn;
 	int i, irn_col;
@@ -213,7 +216,10 @@ static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int
 		res = irn;
 		goto ret_confl;
 	}
-	if (!qn->ou->co->isa->is_reg_allocatable(irn, arch_register_for_index(qn->ou->co->cls, col)))
+	if (!arch_reg_is_allocatable(qn->ou->co->env,
+								 irn,
+								 arch_pos_make_out(0),
+								 arch_register_for_index(qn->ou->co->cls, col)))
 		goto ret_imposs;
 
 	/* get all nodes which would conflict with this change */
@@ -279,7 +285,7 @@ static const ir_node *qnode_color_irn(const qnode_t *qn, const ir_node *irn, int
 
 	/* process all nodes which would conflict with this change */
 	for (i = 0, cn = confl[0]; cn; cn = confl[++i]) {
-		const ir_node *sub_res;
+		ir_node *sub_res;
 
 		/* try to color the conflicting node cn with the color of the irn itself */
 		sub_res = qnode_color_irn(qn, cn, irn_col, irn);
@@ -316,7 +322,7 @@ ret_confl:
 static int qnode_try_color(const qnode_t *qn) {
 	int i;
 	for (i=0; i<qn->mis_size; ++i) {
-		const ir_node *test_node, *confl_node;
+		ir_node *test_node, *confl_node;
 
 		test_node = qn->mis[i];
 		DBG((dbg, LEVEL_3, "\t    Testing %n\n", test_node));
@@ -354,7 +360,7 @@ static int qnode_try_color(const qnode_t *qn) {
 static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	int all_size, curr_size, i, o;
 	int *which;
-	const ir_node **curr, **all = alloca(ou->node_count * sizeof(*all));
+	ir_node **curr, **all = alloca(ou->node_count * sizeof(*all));
 
 	/* all contains all nodes not removed in this qn */
 	all_size = 0;
@@ -487,7 +493,7 @@ static void ou_optimize(unit_t *ou) {
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	ou->co->isa->get_allocatable_regs(ou->nodes[0], ou->co->cls, pos_regs);
+	arch_get_allocatable_regs(ou->co->env, ou->nodes[0], arch_pos_make_out(0), ou->co->cls, pos_regs);
 	bitset_foreach(pos_regs, i)
 		ou_insert_qnode(ou, new_qnode(ou, i));
 
@@ -515,7 +521,7 @@ static void ou_optimize(unit_t *ou) {
 		/* globally pin root and eventually others */
 		pset_insert_ptr(pinned_global, ou->nodes[0]);
 		for (i=1; i<ou->node_count; ++i) {
-			const ir_node *irn = ou->nodes[i];
+			ir_node *irn = ou->nodes[i];
 			int nc = qnode_get_new_color(curr, irn);
 			if (nc != NO_COLOR && nc == qnode_get_new_color(curr, ou->nodes[0]))
 				pset_insert_ptr(pinned_global, irn);
@@ -526,7 +532,7 @@ static void ou_optimize(unit_t *ou) {
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
 				DBG((dbg, LEVEL_2, "\t    color(%n) := %d\n", ns->irn, ns->new_color));
-				set_irn_color(ns->irn, ns->new_color);
+				set_irn_col(ou->co, ns->irn, ns->new_color);
 			}
 		}
 	}

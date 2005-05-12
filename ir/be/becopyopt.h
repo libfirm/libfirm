@@ -1,7 +1,10 @@
 /**
+ * Author:      Daniel Grund
+ * Date:		12.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ *
  * Header for copy optimization problem. Analysis and set up of the problem.
- * @author Daniel Grund
- * @date 12.04.2005
  */
 
 #ifndef _BECOPYOPT_H
@@ -30,7 +33,7 @@
 
 /* TODO is_Copy */
 #define is_Copy(irn) 0
-#define DEBUG_IRG "scanner.c__init_td__gp"
+#define DEBUG_IRG "-scanner.c__init_td__gp"
 
 /**
  * Data representing the problem of copy minimization.
@@ -38,9 +41,9 @@
 typedef struct _copy_opt_t {
 	ir_graph *irg;						/**< the irg to process */
 	char *name;							/**< ProgName__IrgName__RegClass */
-	const arch_isa_if_t *isa;
+	const arch_env_t *env;				/**< Environment (isa + handlers) */
 	const arch_register_class_t *cls;	/**< the registerclass all nodes belong to (in this pass) */
-	struct list_head units;				/**< all units to optimize in right oreder */
+	struct list_head units;				/**< all units to optimize in right order */
 	pset *roots;						/**< used only temporary for detecting multiple appends */
 	struct obstack ob;
 } copy_opt_t;
@@ -53,22 +56,37 @@ typedef struct _unit_t {
 	copy_opt_t *co;				/**< the copy_opt this unit belongs to */
 	int interf;					/**< number of nodes dropped due to interference */
 	int node_count;				/**< size of the nodes array */
-	const ir_node **nodes;		/**< [0] is the root-node, others are non interfering args of it. */
+	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
 
 	/* for heuristic */
 	int mis_size;				/**< size of a mis considering only ifg (not coloring conflicts) */
 	struct list_head queue;		/**< list of (mis/color) sorted by size of mis */
 } unit_t;
 
+/* Helpers */
+#define set_irn_col(co, irn, col) \
+	arch_set_irn_register(co->env, irn, 0, arch_register_for_index(co->cls, col))
+
+#define get_irn_col(co, irn) \
+	arch_register_get_index(arch_get_irn_register(co->env, irn, 0))
+
+
 /**
  * Generate the problem. Collect all infos and optimizable nodes.
  */
-copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_register_class_t *cls);
+copy_opt_t *new_copy_opt(ir_graph *irg, const arch_env_t *env, const arch_register_class_t *cls);
 
 /**
  * Free the space...
  */
 void free_copy_opt(copy_opt_t *co);
+
+#define is_optimizable(irn) (is_Phi(irn) || is_Copy(irn))
+
+/**
+ * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'
+ */
+int is_optimizable_arg(ir_node *irn);
 
 /**
  * Returns the current number of copies needed

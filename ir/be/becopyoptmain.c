@@ -1,10 +1,12 @@
 /**
+ * Author:      Daniel Grund
+ * Date:		11.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+
  * Main file for the optimization reducing the copies needed for:
  * - phi coalescing
  * - register-constrained nodes
- *
- * @author Daniel Grund
- * @date 11.04.2005
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -25,10 +27,10 @@ void be_copy_opt_init(void) {
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 }
 
-void be_copy_opt(ir_graph* irg, const arch_isa_if_t *isa, const arch_register_class_t *cls) {
+void be_copy_opt(ir_graph* irg, const arch_env_t *env, const arch_register_class_t *cls) {
 	copy_opt_t *co;
 	int lb, copies;
-	co = new_copy_opt(irg, isa, cls);
+	co = new_copy_opt(irg, env, cls);
 	DBG((dbg, LEVEL_1, "\n\n    ===>  %s  <===\n\n", co->name));
 	co_check_allocation(co);
 
@@ -46,6 +48,7 @@ void be_copy_opt(ir_graph* irg, const arch_isa_if_t *isa, const arch_register_cl
 	curr_vals[I_COPIES_HEUR] += copies;
 	DBG((dbg, 1, "Heur copies: %3d\n", copies));
 #endif
+	DBG((dbg, 1, "Heur copies: %3d\n", co_get_copy_count(co)));
 #endif
 
 #ifdef DO_ILP
@@ -67,6 +70,7 @@ void be_copy_opt(ir_graph* irg, const arch_isa_if_t *isa, const arch_register_cl
 	curr_vals[I_COPIES_HEUR] += copies;
 	DBG((dbg, 1, "Opt  copies: %3d\n", copies));
 #endif
+	DBG((dbg, 1, "Opt  copies: %3d\n", co_get_copy_count(co)));
 #endif
 
 	free_copy_opt(co);

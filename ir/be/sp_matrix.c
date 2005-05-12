@@ -1,8 +1,11 @@
 /**
+ * Author:      Daniel Grund
+ * Date:		07.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+
  * Sparse matrix storage with linked lists for rows and cols.
  * I did not need floats, so this is all integer.
- * @author Daniel Grund
- * @date 07.04.2005
  */
 
 #ifdef HAVE_CONFIG_H

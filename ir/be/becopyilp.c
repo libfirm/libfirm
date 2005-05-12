@@ -1,4 +1,9 @@
 /**
+ * Author:      Daniel Grund
+ * Date:		12.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+
  * Minimizing copies with an exact algorithm using mixed integer programming (MIP).
  * Problem statement as a 'quadratic 0-1 program with linear constraints' with
  * n binary variables. Constraints are knapsack (enforce color for each node) and
@@ -8,9 +13,14 @@
  * objective function and 'complementary conditions' for two var classes.
  * @author Daniel Grund
  *
- * NOTE: Unfortunately no good solver is available locally (or even for linking)
- *       We use CPLEX 9.0 which runs on a machine residing at the Rechenzentrum.
- * @date 12.04.2005
+ * NOTE:
+ * MPS means NOT the old-style, fixed-column format. Some white spaces are
+ * important. In general spaces are separators, MARKER-lines are used in COLUMN
+ * section to define binaries. BETTER use last 2 fields in COLUMNS section.
+ * See MPS docu for details
+ *
+ * Unfortunately no good solver is available locally (or even for linking)
+ * We use CPLEX 9.0 which runs on a machine residing at the Rechenzentrum.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -23,21 +33,25 @@
 #include <malloc.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "xmalloc.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 
 #undef DUMP_MATRICES		/**< dumps all matrices completely. only recommended for small problems */
-#define DUMP_MILP			/**< dumps the problem as Mixed Integer Linear Programming in "CPLEX"-MPS format. NOT fixed-column-MPS. */
-#undef DO_SOLVE 			/**< solve the MPS output with CPLEX */
+#undef DUMP_Q2ILP			/**< see function pi_dump_q2ilp */
+#define DUMP_DILP			/**< see function pi_dump_dilp */
+#define DO_SOLVE 			/**< solve the MPS output with CPLEX */
 #undef DELETE_FILES		/**< deletes all dumped files after use */
 
 /* CPLEX-account related stuff */
 #define SSH_USER_HOST "kb61@sp-smp.rz.uni-karlsruhe.de"
 #define SSH_PASSWD_FILE "/ben/daniel/.smppw"
-#define EXPECT_FILENAME "runme" /** name of the expect-script */
+#define EXPECT_FILENAME "runme" /* name of the expect-script */
 
-#define DEBUG_LVL 0 //SET_LEVEL_1
+#define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_NUM2POS 256
@@ -62,6 +76,11 @@ typedef struct _num2pos_t {
 	int num, pos;
 } num2pos_t;
 
+typedef struct _simpl_t {
+	struct list_head chain;
+	if_node_t *ifn;
+} simpl_t;
+
 /**
  * A type storing the unmodified '0-1 quadratic program' of the form
  * min f = xQx
@@ -73,12 +92,16 @@ typedef struct _num2pos_t {
  */
 typedef struct _problem_instance_t {
 	const copy_opt_t *co;			/** the original copy_opt problem */
-	int x_dim, A_dim, B_dim;		/**< number of: x variables (equals Q_dim), rows in A, rows in B */
+	int x_dim, A_dim, B_dim, E_dim, c_dim;		/**< number of: x variables (equals Q_dim), rows in A, rows in B */
+	sp_matrix_t *Q, *A, *B, *E, *c;		/**< the (sparse) matrices of this problem */
 	x_name_t *x;					/**< stores the names of the x variables. all possible colors for a node are ordered and occupy consecutive entries. lives in obstack ob. */
 	set *num2pos;					/**< maps node numbers to positions in x. */
-	sp_matrix_t *Q, *A, *B;			/**< the (sparse) matrices of this problem */
 
-	/* needed only for linearizations */
+	/* problem size reduction removing simple nodes */
+	struct list_head simplicials;	/**< holds all simpl_t's in right order to color*/
+	pset *removed;					/**< holds all removed simplicial irns */
+
+	/* needed for linearization */
 	int bigM, maxQij, minQij;
 
 	/* overhead needed to build this */
@@ -86,6 +109,8 @@ typedef struct _problem_instance_t {
 	int curr_color;
 	int curr_row;
 } problem_instance_t;
+
+#define is_removed(irn) pset_find_ptr(pi->removed, irn)
 
 /* Nodes have consecutive numbers so this hash shoud be fine */
 #define HASH_NUM(num) num
@@ -142,6 +167,270 @@ static INLINE int pi_get_pos(problem_instance_t *pi, int num, int col) {
 		return -1;
 }
 
+/**
+ * Collects all irns in currently processed register class
+ */
+static void pi_collect_x_names(ir_node *block, void *env) {
+	problem_instance_t *pi = env;
+	struct list_head *head = &get_ra_block_info(block)->border_head;
+	border_t *curr;
+	bitset_t *pos_regs = bitset_alloca(pi->co->cls->n_regs);
+
+	list_for_each_entry_reverse(border_t, curr, head, list)
+		if (curr->is_def && curr->is_real && !is_removed(curr->irn)) {
+			x_name_t xx;
+			pi->A_dim++;			/* one knapsack constraint for each node */
+
+			xx.n = get_irn_graph_nr(curr->irn);
+			pi_set_first_pos(pi, xx.n, pi->x_dim);
+
+			// iterate over all possible colors in order
+			bitset_clear_all(pos_regs);
+			arch_get_allocatable_regs(pi->co->env, curr->irn, arch_pos_make_out(0), pi->co->cls, pos_regs);
+			bitset_foreach(pos_regs, xx.c) {
+				DBG((dbg, LEVEL_2, "Adding %n %d\n", curr->irn, xx.c));
+				obstack_grow(&pi->ob, &xx, sizeof(xx));
+				pi->x_dim++;		/* one x variable for each node and color */
+			}
+		}
+}
+
+/**
+ * Checks if all nodes in living are live_out in block block.
+ */
+static INLINE int all_live_in(ir_node *block, pset *living) {
+	ir_node *n;
+	for (n = pset_first(living); n; n = pset_next(living))
+		if (!is_live_in(block, n)) {
+			pset_break(living);
+			return 0;
+		}
+	return 1;
+}
+
+/**
+ * Finds cliques in the interference graph, considering only nodes
+ * for which the color pi->curr_color is possible. Finds only 'maximal-cliques',
+ * viz cliques which are not conatained in another one.
+ * This is used for the matrix B.
+ */
+static void pi_clique_finder(ir_node *block, void *env) {
+	problem_instance_t *pi = env;
+	enum phase_t {growing, shrinking} phase = growing;
+	struct list_head *head = &get_ra_block_info(block)->border_head;
+	border_t *b;
+	pset *living = pset_new_ptr(SLOTS_LIVING);
+
+	list_for_each_entry_reverse(border_t, b, head, list) {
+		const ir_node *irn = b->irn;
+		if (is_removed(irn))
+			continue;
+
+		if (b->is_def) {
+			DBG((dbg, LEVEL_2, "Def %n\n", irn));
+			pset_insert_ptr(living, irn);
+			phase = growing;
+		} else { /* is_use */
+			DBG((dbg, LEVEL_2, "Use %n\n", irn));
+
+			/* before shrinking the set, store the current 'maximum' clique;
+			 * do NOT if clique is a single node
+			 * do NOT if all values are live_in (in this case they were contained in a live-out clique elsewhere) */
+			if (phase == growing && pset_count(living) >= 2 && !all_live_in(block, living)) {
+				ir_node *n;
+				for (n = pset_first(living); n; n = pset_next(living)) {
+					int pos = pi_get_pos(pi, get_irn_graph_nr(n), pi->curr_color);
+					matrix_set(pi->B, pi->curr_row, pos, 1);
+					DBG((dbg, LEVEL_2, "B[%d, %d] := %d\n", pi->curr_row, pos, 1));
+				}
+				pi->curr_row++;
+			}
+			pset_remove_ptr(living, irn);
+			phase = shrinking;
+		}
+	}
+
+	del_pset(living);
+}
+
+static INLINE int pi_is_simplicial(problem_instance_t *pi, const if_node_t *ifn) {
+	int i, o, size = 0;
+	if_node_t **all, *curr;
+	all = alloca(ifn_get_degree(ifn) * sizeof(*all));
+
+	/* get all non-removed neighbors */
+	foreach_neighb(ifn, curr)
+		if (!is_removed(curr))
+			all[size++] = curr;
+
+	/* check if these form a clique */
+	for (i=0; i<size; ++i)
+		for (o=i+1; o<size; ++o)
+			if (!ifg_has_edge(pi->co->irg, all[i], all[o]))
+				return 0;
+
+	/* all edges exist so this is a clique */
+	return 1;
+}
+
+static void pi_find_simplicials(problem_instance_t *pi) {
+	set *if_nodes;
+	if_node_t *ifn;
+	int redo = 1;
+
+	if_nodes = be_ra_get_ifg_nodes(pi->co->irg);
+	while (redo) {
+		redo = 0;
+		for (ifn = set_first(if_nodes); ifn; ifn = set_next(if_nodes)) {
+			ir_node *irn = get_irn_for_graph_nr(pi->co->irg, ifn->nnr);
+			if (!is_removed(irn) && !is_optimizable(irn) && !is_optimizable_arg(irn) && pi_is_simplicial(pi, ifn)) {
+				simpl_t *s = xmalloc(sizeof(*s));
+				s->ifn = ifn;
+				list_add(&s->chain, &pi->simplicials);
+				pset_insert_ptr(pi->removed, irn);
+				redo = 1;
+				DBG((dbg, LEVEL_1, " Removed %n\n", irn));
+			}
+		}
+	}
+}
+
+/**
+ * Generate the initial problem matrices and vectors.
+ */
+static problem_instance_t *new_pi(const copy_opt_t *co) {
+	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
+	problem_instance_t *pi = xcalloc(1, sizeof(*pi));
+	pi->co = co;
+	pi->num2pos = new_set(set_cmp_num2pos, SLOTS_NUM2POS);
+	pi->bigM = 1;
+	pi->removed = pset_new_ptr_default();
+	INIT_LIST_HEAD(&pi->simplicials);
+
+	/* problem size reduction */
+	pi_find_simplicials(pi);
+
+	//TODO dump_ifg_wo_removed
+
+	/* Vector x
+	 * one entry per node and possible color */
+	obstack_init(&pi->ob);
+	dom_tree_walk_irg(co->irg, pi_collect_x_names, NULL, pi);
+	pi->x = obstack_finish(&pi->ob);
+
+	/* Matrix Q and E
+	 * weights for the 'same-color-optimization' target */
+	{
+		unit_t *curr;
+		pi->Q = new_matrix(pi->x_dim, pi->x_dim);
+		pi->E = new_matrix(pi->x_dim, pi->x_dim);
+		pi->c = new_matrix(1, pi->x_dim);
+
+		list_for_each_entry(unit_t, curr, &co->units, units) {
+			const ir_node *root, *arg;
+			int rootnr, argnr;
+			unsigned save_rootpos, rootpos, argpos;
+			int i;
+
+			root = curr->nodes[0];
+			rootnr = get_irn_graph_nr(root);
+			save_rootpos = pi_get_first_pos(pi, rootnr);
+			for (i = 1; i < curr->node_count; ++i) {
+				int weight;
+				rootpos = save_rootpos;
+				arg = curr->nodes[i];
+				argnr = get_irn_graph_nr(arg);
+				argpos = pi_get_first_pos(pi, argnr);
+				weight = -get_weight(root, arg);
+
+				DBG((dbg, LEVEL_2, "Q[%n, %n] := %d\n", root, arg, weight));
+				/* for all colors root and arg have in common, set the weight for
+				 * this pair in the objective function matrix Q */
+				while (rootpos < pi->x_dim && argpos < pi->x_dim &&
+						pi->x[rootpos].n == rootnr && pi->x[argpos].n == argnr) {
+					if (pi->x[rootpos].c < pi->x[argpos].c)
+						++rootpos;
+					else if (pi->x[rootpos].c > pi->x[argpos].c)
+						++argpos;
+					else {
+						/* E */
+						matrix_set(pi->E, pi->E_dim, rootpos, +1);
+						matrix_set(pi->E, pi->E_dim, argpos,  -1);
+						matrix_set(pi->E, pi->E_dim, pi->x_dim + pi->c_dim, 1);
+						pi->E_dim++;
+						matrix_set(pi->E, pi->E_dim, rootpos, -1);
+						matrix_set(pi->E, pi->E_dim, argpos,  +1);
+						matrix_set(pi->E, pi->E_dim, pi->x_dim + pi->c_dim, 1);
+						pi->E_dim++;
+
+						/* Q */
+						matrix_set(pi->Q, rootpos, argpos, weight + matrix_get(pi->Q, rootpos, argpos));
+						rootpos++;
+						argpos++;
+						if (weight < pi->minQij) {
+							DBG((dbg, LEVEL_2, "minQij = %d\n", weight));
+							pi->minQij = weight;
+						}
+						if (weight > pi->maxQij) {
+							DBG((dbg, LEVEL_2, "maxQij = %d\n", weight));
+							pi->maxQij = weight;
+						}
+					}
+				}
+
+				/* E */
+				matrix_set(pi->c, 1, pi->c_dim++, -weight);
+			}
+		}
+	}
+
+	/* Matrix A
+	 * knapsack constraint for each node */
+	{
+		int row = 0, col = 0;
+		pi->A = new_matrix(pi->A_dim, pi->x_dim);
+		while (col < pi->x_dim) {
+			int curr_n = pi->x[col].n;
+			while (col < pi->x_dim && pi->x[col].n == curr_n) {
+				DBG((dbg, LEVEL_2, "A[%d, %d] := %d\n", row, col, 1));
+				matrix_set(pi->A, row, col++, 1);
+			}
+			++row;
+		}
+		assert(row == pi->A_dim);
+	}
+
+	/* Matrix B
+	 * interference constraints using exactly those cliques not contained in others. */
+	{
+		int color, expected_clipques = pi->A_dim/4 * pi->co->cls->n_regs;
+		pi->B = new_matrix(expected_clipques, pi->x_dim);
+		for (color = 0; color < pi->co->cls->n_regs; ++color) {
+			pi->curr_color = color;
+			dom_tree_walk_irg(pi->co->irg, pi_clique_finder, NULL, pi);
+		}
+		pi->B_dim = matrix_get_rowcount(pi->B);
+	}
+
+	return pi;
+}
+
+/**
+ * clean the problem instance
+ */
+static void free_pi(problem_instance_t *pi) {
+	DBG((dbg, LEVEL_1, "Free instance...\n"));
+	del_matrix(pi->Q);
+	del_matrix(pi->A);
+	del_matrix(pi->B);
+	del_matrix(pi->E);
+	del_matrix(pi->c);
+	del_set(pi->num2pos);
+	del_pset(pi->removed);
+	obstack_free(&pi->ob, NULL);
+	free(pi);
+}
+
 #ifdef DUMP_MATRICES
 /**
  * Dump the raw matrices of the problem to a file for debugging.
@@ -168,20 +457,18 @@ static void pi_dump_matrices(problem_instance_t *pi) {
 }
 #endif
 
-#ifdef DUMP_MILP
+#ifdef DUMP_Q2ILP
 /**
- * Dumps an mps file representing the problem. This is NOT the old-style,
- * fixed-column format. Some white spaces are important, in general spaces
- * are separators, MARKER-lines are used in COLUMN section to define binaries.
+ * Dumps an mps file representing the problem using a linearization of the
+ * quadratic programming problem.
  */
-//BETTER use last 2 fields in COLUMNS section. See MPS docu for details
-static void pi_dump_milp(problem_instance_t *pi) {
+static void pi_dump_q2ilp(problem_instance_t *pi) {
 	int i, max_abs_Qij;
 	const matrix_elem_t *e;
+	FILE *out;
 	bitset_t *good_row;
-	FILE *out = ffopen(pi->co->name, "milp", "wt");
+	DBG((dbg, LEVEL_1, "Dumping q2ilp...\n"));
 
-	DBG((dbg, LEVEL_1, "Dumping milp...\n"));
 	max_abs_Qij = pi->maxQij;
 	if (-pi->minQij > max_abs_Qij)
 		max_abs_Qij = -pi->minQij;
@@ -194,6 +481,7 @@ static void pi_dump_milp(problem_instance_t *pi) {
 		if (matrix_row_first(pi->Q, i))
 			bitset_set(good_row, i);
 
+    out = ffopen(pi->co->name, "q2ilp", "wt");
 	fprintf(out, "NAME %s\n", pi->co->name);
 
 	fprintf(out, "ROWS\n");
@@ -268,6 +556,68 @@ static void pi_dump_milp(problem_instance_t *pi) {
 }
 #endif
 
+#ifdef DUMP_DILP
+/**
+ * Dumps an mps file representing the problem using directly a formalization as ILP.
+ */
+static void pi_dump_dilp(problem_instance_t *pi) {
+	int i;
+	const matrix_elem_t *e;
+	FILE *out;
+	DBG((dbg, LEVEL_1, "Dumping dilp...\n"));
+
+	out = ffopen(pi->co->name, "dilp", "wt");
+	fprintf(out, "NAME %s\n", pi->co->name);
+	fprintf(out, "OBJSENSE\n   MAX\n");
+
+	fprintf(out, "ROWS\n");
+	fprintf(out, " N obj\n");
+	for (i=0; i<pi->A_dim; ++i)
+		fprintf(out, " E cA%d\n", i);
+	for (i=0; i<pi->B_dim; ++i)
+		fprintf(out, " L cB%d\n", i);
+	for (i=0; i<pi->E_dim; ++i)
+		fprintf(out, " L cE%d\n", i);
+
+	fprintf(out, "COLUMNS\n");
+	/* the x vars come first */
+	/* mark them as binaries */
+	fprintf(out, "    MARKI0\t'MARKER'\t'INTORG'\n");
+	for (i=0; i<pi->x_dim; ++i) {
+		/* in A */
+		matrix_foreach_in_col(pi->A, i, e)
+			fprintf(out, "    x%d_%d\tcA%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
+		/* in B */
+		matrix_foreach_in_col(pi->B, i, e)
+			fprintf(out, "    x%d_%d\tcB%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
+		/* in E */
+		matrix_foreach_in_col(pi->E, i, e)
+			fprintf(out, "    x%d_%d\tcE%d\t%d\n", pi->x[i].n, pi->x[i].c, e->row, e->val);
+	}
+	fprintf(out, "    MARKI1\t'MARKER'\t'INTEND'\n"); /* end of marking */
+
+	/* next the y vars */
+	for (i=0; i<pi->c_dim; ++i) {
+		/* in Objective */
+		fprintf(out, "    y%d\tobj\t%d\n", i, matrix_get(pi->c, 1, i));
+		/* in E */
+		matrix_foreach_in_col(pi->E, pi->x_dim+i, e)
+			fprintf(out, "    y%d\tcE%d\t%d\n", i, e->row, e->val);
+	}
+
+	fprintf(out, "RHS\n");
+	for (i=0; i<pi->A_dim; ++i)
+		fprintf(out, "    rhs\tcA%d\t%d\n", i, 1);
+	for (i=0; i<pi->B_dim; ++i)
+		fprintf(out, "    rhs\tcB%d\t%d\n", i, 1);
+	for (i=0; i<pi->E_dim; ++i)
+		fprintf(out, "    rhs\tcE%d\t%d\n", i, 1);
+
+	fprintf(out, "ENDATA\n");
+	fclose(out);
+}
+#endif
+
 #ifdef DO_SOLVE
 /**
  * Dumps the known solution to a file to make use of it
@@ -281,7 +631,7 @@ static void pi_dump_start_sol(problem_instance_t *pi) {
 		int val, n, c;
 		n = pi->x[i].n;
 		c = pi->x[i].c;
-		if (get_irn_color(get_irn_for_graph_nr(pi->co->irg, n)) == c)
+		if (get_irn_col(pi->co, get_irn_for_graph_nr(pi->co->irg, n)) == c)
 			val = 1;
 		else
 			val = 0;
@@ -302,18 +652,17 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	/* write command file for CPLEX */
 	out = ffopen(pi->co->name, "cmd", "wt");
 	fprintf(out, "set logfile %s.sol\n", pi->co->name);
-#ifdef DUMP_MILP
-	fprintf(out, "read %s.milp mps\n", pi->co->name);
+#ifdef DUMP_Q2ILP
+	fprintf(out, "read %s.q2ilp mps\n", pi->co->name);
 #endif
-#ifdef DUMP_MIQP
-	fprintf(out, "read %s.miqp mps\n", pi->co->name);
+#ifdef DUMP_DILP
+	fprintf(out, "read %s.dilp mps\n", pi->co->name);
 #endif
 	fprintf(out, "read %s.mst\n", pi->co->name);
 	fprintf(out, "set mip strategy mipstart 1\n");
-	fprintf(out, "set mip emphasis 3\n");
+	//fprintf(out, "set mip emphasis 3\n");
 	fprintf(out, "optimize\n");
 	fprintf(out, "display solution variables 1-%d\n", pi->x_dim);
-	fprintf(out, "set logfile cplex.log\n");
 	fprintf(out, "quit\n");
 	fclose(out);
 
@@ -324,7 +673,7 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 
 	out = ffopen(EXPECT_FILENAME, "exp", "wt");
 	fprintf(out, "#! /usr/bin/expect\n");
-	fprintf(out, "spawn scp %s.miqp %s.milp %s.mst %s.cmd %s:\n", pi->co->name, pi->co->name, pi->co->name, pi->co->name, SSH_USER_HOST); /* copy problem files */
+	fprintf(out, "spawn scp %s.dilp %s.q2ilp %s.mst %s.cmd %s:\n", pi->co->name, pi->co->name, pi->co->name, pi->co->name, SSH_USER_HOST); /* copy problem files */
 	fprintf(out, "expect \"word:\"\nsend \"%s\\n\"\ninteract\n", passwd);
 
 	fprintf(out, "spawn ssh %s \"./cplex90 < %s.cmd\"\n", SSH_USER_HOST, pi->co->name); /* solve */
@@ -335,6 +684,7 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 
 	fprintf(out, "spawn ssh %s ./dell\n", SSH_USER_HOST); /* clean files on server */
 	fprintf(out, "expect \"word:\"\nsend \"%s\\n\"\ninteract\n", passwd);
+
 	fclose(out);
 
 	/* call the expect script */
@@ -342,14 +692,43 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	system(EXPECT_FILENAME ".exp");
 }
 
+static void pi_set_simplicials(problem_instance_t *pi) {
+	simpl_t *simpl, *tmp;
+	bitset_t *used_cols = bitset_alloca(arch_register_class_n_regs(pi->co->cls));
+
+	/* color the simplicial nodes in right order */
+	list_for_each_entry_safe(simpl_t, simpl, tmp, &pi->simplicials, chain) {
+		int free_col;
+		ir_node *other_irn, *irn;
+		if_node_t *other, *ifn;
+
+		/* get free color by inspecting all neighbors */
+		ifn = simpl->ifn;
+		irn = get_irn_for_graph_nr(pi->co->irg, ifn->nnr);
+		bitset_clear_all(used_cols);
+		foreach_neighb(ifn, other) {
+			other_irn = get_irn_for_graph_nr(pi->co->irg, other->nnr);
+			if (!is_removed(other_irn)) /* only inspect nodes which are in graph right now */
+				bitset_set(used_cols, get_irn_col(pi->co, other_irn));
+		}
+
+		/* now all bits not set are possible colors */
+		free_col = bitset_next_clear(used_cols, 0);
+		assert(free_col != -1 && "No free color found. This can not be.");
+		set_irn_col(pi->co, irn, free_col);
+		pset_remove_ptr(pi->removed, irn); /* irn is back in graph again */
+		free(simpl);
+	}
+}
+
 /**
  * Sets the colors of irns according to the values of variables found in the
  * output file of the solver.
  */
 static void pi_apply_solution(problem_instance_t *pi) {
-	FILE *in = ffopen(pi->co->name, "sol", "rt");
+	FILE *in ;
 
-	if (!in)
+	if (!(in = ffopen(pi->co->name, "sol", "rt")))
 		return;
 	DBG((dbg, LEVEL_1, "Applying solution...\n"));
 	while (!feof(in)) {
@@ -380,10 +759,11 @@ static void pi_apply_solution(problem_instance_t *pi) {
 		/* variable value */
 		if (sscanf(buf, "x%d_%d %d", &num, &col, &val) == 3 && val == 1) {
 			DBG((dbg, LEVEL_2, " x%d_%d = %d\n", num, col, val));
-			set_irn_color(get_irn_for_graph_nr(pi->co->irg, num), col);
+			set_irn_col(pi->co, get_irn_for_graph_nr(pi->co->irg, num), col);
 		}
 	}
 	fclose(in);
+	pi_set_simplicials(pi);
 }
 #endif /* DO_SOLVE */
 
@@ -396,214 +776,25 @@ static void pi_delete_files(problem_instance_t *pi) {
 	snprintf(buf+end, sizeof(buf)-end, ".matrix");
 	remove(buf);
 #endif
-#ifdef DUMP_MILP
-	snprintf(buf+end, sizeof(buf)-end, ".mps");
+#ifdef DUMP_Q2ILP
+	snprintf(buf+end, sizeof(buf)-end, ".q2ilp");
+	remove(buf);
+#endif
+#ifdef DUMP_DILP
+	snprintf(buf+end, sizeof(buf)-end, ".dilp");
+	remove(buf);
+#endif
+#ifdef DO_SOLVE
+	snprintf(buf+end, sizeof(buf)-end, ".cmd");
 	remove(buf);
 	snprintf(buf+end, sizeof(buf)-end, ".mst");
 	remove(buf);
-	snprintf(buf+end, sizeof(buf)-end, ".cmd");
+	snprintf(buf+end, sizeof(buf)-end, ".sol");
 	remove(buf);
 	remove(EXPECT_FILENAME ".exp");
 #endif
-#ifdef DO_SOLVE
-	snprintf(buf+end, sizeof(buf)-end, ".sol");
-	remove(buf);
-#endif
 }
 #endif
-
-/**
- * Collects all irns in currently processed register class
- */
-static void pi_collect_x_names(ir_node *block, void *env) {
-	problem_instance_t *pi = env;
-	struct list_head *head = &get_ra_block_info(block)->border_head;
-	border_t *curr;
-	bitset_t *pos_regs = bitset_alloca(pi->co->cls->n_regs);
-
-	list_for_each_entry_reverse(border_t, curr, head, list)
-		if (curr->is_def && curr->is_real) {
-			x_name_t xx;
-			pi->A_dim++;			/* one knapsack constraint for each node */
-
-			xx.n = get_irn_graph_nr(curr->irn);
-			pi_set_first_pos(pi, xx.n, pi->x_dim);
-
-			// iterate over all possible colors in order
-			bitset_clear_all(pos_regs);
-			pi->co->isa->get_allocatable_regs(curr->irn, pi->co->cls, pos_regs);
-			bitset_foreach(pos_regs, xx.c) {
-				DBG((dbg, LEVEL_2, "Adding %n %d\n", curr->irn, xx.c));
-				obstack_grow(&pi->ob, &xx, sizeof(xx));
-				pi->x_dim++;		/* one x variable for each node and color */
-			}
-		}
-}
-
-/**
- * Checks if all nodes in living are live_out in block block.
- */
-static INLINE int all_live_in(ir_node *block, pset *living) {
-	ir_node *n;
-	for (n = pset_first(living); n; n = pset_next(living))
-		if (!is_live_in(block, n)) {
-			pset_break(living);
-			return 0;
-		}
-	return 1;
-}
-
-/**
- * Finds cliques in the interference graph, considering only nodes
- * for which the color pi->curr_color is possible. Finds only 'maximal-cliques',
- * viz cliques which are not conatained in another one.
- * This is used for the matrix B.
- */
-static void pi_clique_finder(ir_node *block, void *env) {
-	problem_instance_t *pi = env;
-	enum phase_t {growing, shrinking} phase = growing;
-	struct list_head *head = &get_ra_block_info(block)->border_head;
-	border_t *b;
-	pset *living = pset_new_ptr(SLOTS_LIVING);
-
-	list_for_each_entry_reverse(border_t, b, head, list) {
-		const ir_node *irn = b->irn;
-
-		if (b->is_def) {
-			DBG((dbg, LEVEL_2, "Def %n\n", irn));
-			pset_insert_ptr(living, irn);
-			phase = growing;
-		} else { /* is_use */
-			DBG((dbg, LEVEL_2, "Use %n\n", irn));
-
-			/* before shrinking the set, store the current 'maximum' clique;
-			 * do NOT if clique is a single node
-			 * do NOT if all values are live_in (in this case they were contained in a live-out clique elsewhere) */
-			if (phase == growing && pset_count(living) >= 2 && !all_live_in(block, living)) {
-				ir_node *n;
-				for (n = pset_first(living); n; n = pset_next(living)) {
-					int pos = pi_get_pos(pi, get_irn_graph_nr(n), pi->curr_color);
-					matrix_set(pi->B, pi->curr_row, pos, 1);
-					DBG((dbg, LEVEL_2, "B[%d, %d] := %d\n", pi->curr_row, pos, 1));
-				}
-				pi->curr_row++;
-			}
-			pset_remove_ptr(living, irn);
-			phase = shrinking;
-		}
-	}
-
-	del_pset(living);
-}
-
-/**
- * Generate the initial problem matrices and vectors.
- */
-static problem_instance_t *new_pi(const copy_opt_t *co) {
-	problem_instance_t *pi;
-
-	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
-	pi = xcalloc(1, sizeof(*pi));
-	pi->co = co;
-	pi->num2pos = new_set(set_cmp_num2pos, SLOTS_NUM2POS);
-	pi->bigM = 1;
-
-	/* Vector x
-	 * one entry per node and possible color */
-	obstack_init(&pi->ob);
-	dom_tree_walk_irg(co->irg, pi_collect_x_names, NULL, pi);
-	pi->x = obstack_finish(&pi->ob);
-
-	/* Matrix Q
-	 * weights for the 'same-color-optimization' target */
-	{
-		unit_t *curr;
-		pi->Q = new_matrix(pi->x_dim, pi->x_dim);
-
-		list_for_each_entry(unit_t, curr, &co->units, units) {
-			const ir_node *root, *arg;
-			int rootnr, argnr;
-			unsigned rootpos, argpos;
-			int i;
-
-			root = curr->nodes[0];
-			rootnr = get_irn_graph_nr(root);
-			rootpos = pi_get_first_pos(pi, rootnr);
-			for (i = 1; i < curr->node_count; ++i) {
-				int weight = -get_weight(root, arg);
-				arg = curr->nodes[i];
-				argnr = get_irn_graph_nr(arg);
-				argpos = pi_get_first_pos(pi, argnr);
-
-				DBG((dbg, LEVEL_2, "Q[%n, %n] := %d\n", root, arg, weight));
-				/* for all colors root and arg have in common, set the weight for
-				 * this pair in the objective function matrix Q */
-				while (rootpos < pi->x_dim && argpos < pi->x_dim &&
-						pi->x[rootpos].n == rootnr && pi->x[argpos].n == argnr) {
-					if (pi->x[rootpos].c < pi->x[argpos].c)
-						++rootpos;
-					else if (pi->x[rootpos].c > pi->x[argpos].c)
-						++argpos;
-					else {
-						matrix_set(pi->Q, rootpos++, argpos++, weight);
-
-						if (weight < pi->minQij) {
-							DBG((dbg, LEVEL_2, "minQij = %d\n", weight));
-							pi->minQij = weight;
-						}
-						if (weight > pi->maxQij) {
-							DBG((dbg, LEVEL_2, "maxQij = %d\n", weight));
-							pi->maxQij = weight;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	/* Matrix A
-	 * knapsack constraint for each node */
-	{
-		int row = 0, col = 0;
-		pi->A = new_matrix(pi->A_dim, pi->x_dim);
-		while (col < pi->x_dim) {
-			int curr_n = pi->x[col].n;
-			while (col < pi->x_dim && pi->x[col].n == curr_n) {
-				DBG((dbg, LEVEL_2, "A[%d, %d] := %d\n", row, col, 1));
-				matrix_set(pi->A, row, col++, 1);
-			}
-			++row;
-		}
-		assert(row == pi->A_dim);
-	}
-
-	/* Matrix B
-	 * interference constraints using exactly those cliques not contained in others. */
-	{
-		int color, expected_clipques = pi->A_dim/4 * pi->co->cls->n_regs;
-		pi->B = new_matrix(expected_clipques, pi->x_dim);
-		for (color = 0; color < pi->co->cls->n_regs; ++color) {
-			pi->curr_color = color;
-			dom_tree_walk_irg(pi->co->irg, pi_clique_finder, NULL, pi);
-		}
-		pi->B_dim = matrix_get_rowcount(pi->B);
-	}
-
-	return pi;
-}
-
-/**
- * clean the problem instance
- */
-static void free_pi(problem_instance_t *pi) {
-	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
-	del_matrix(pi->Q);
-	del_matrix(pi->A);
-	del_matrix(pi->B);
-	del_set(pi->num2pos);
-	obstack_free(&pi->ob, NULL);
-	xfree(pi);
-}
 
 void co_ilp_opt(copy_opt_t *co) {
 	problem_instance_t *pi;
@@ -621,8 +812,12 @@ void co_ilp_opt(copy_opt_t *co) {
 	pi_dump_matrices(pi);
 #endif
 
-#ifdef DUMP_MILP
-	pi_dump_milp(pi);
+#ifdef DUMP_Q2ILP
+	pi_dump_q2ilp(pi);
+#endif
+
+#ifdef DUMP_DILP
+	pi_dump_dilp(pi);
 #endif
 
 #ifdef DO_SOLVE

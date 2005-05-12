@@ -1,6 +1,8 @@
 /**
- * @author Daniel Grund
- * @date 19.04.2005
+ * Author:      Daniel Grund
+ * Date:		19.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

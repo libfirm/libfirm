@@ -1,6 +1,8 @@
 /**
- * @author Daniel Grund
- * @date 11.04.2005
+ * Author:      Daniel Grund
+ * Date:		11.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #undef DO_STAT
 

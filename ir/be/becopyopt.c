@@ -1,6 +1,8 @@
 /**
- * @author Daniel Grund
- * @date 12.04.2005
+ * Author:      Daniel Grund
+ * Date:		12.04.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -13,8 +15,7 @@
 #define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
-#define is_curr_reg_class(irn) (co->isa->get_irn_reg_class(irn)==co->cls)
-#define is_optimizable(irn) (is_Phi(irn) || is_Copy(irn))
+#define is_curr_reg_class(irn) (arch_get_irn_reg_class(co->env, irn, arch_pos_make_out(0)) == co->cls)
 
 /**
  * Builds an optimization unit for a given optimizable irn (root).
@@ -23,7 +24,7 @@ static firm_dbg_module_t *dbg = NULL;
  * recursive call. For handling this situation and loops co->root is used
  * to remember all roots.
  */
-static void co_append_unit(copy_opt_t *co, const ir_node *root) {
+static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	int i, arity;
 	unit_t *unit;
 	DBG((dbg, LEVEL_1, "\t  Root: %n\n", root));
@@ -86,7 +87,7 @@ static void co_collect_units(copy_opt_t *co) {
 	del_pset(co->roots);
 }
 
-copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_register_class_t *cls) {
+copy_opt_t *new_copy_opt(ir_graph *irg, const arch_env_t *env, const arch_register_class_t *cls) {
 	const char *s1, *s2, *s3;
 	int len;
         copy_opt_t *co;
@@ -96,7 +97,8 @@ copy_opt_t *new_copy_opt(ir_graph *irg, const arch_isa_if_t *isa, const arch_reg
 
 	co = xcalloc(1, sizeof(*co));
 	co->irg = irg;
-	co->isa = isa;
+	co->env = env;
+//	co->isa = env->isa;
 	co->cls = cls;
 
 	s1 = get_irp_prog_name();
@@ -122,14 +124,25 @@ void free_copy_opt(copy_opt_t *co) {
 	}
 }
 
+int is_optimizable_arg(ir_node *irn) {
+	int i, max;
+	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
+		ir_node *n = get_irn_out(irn, i);
+		if (is_optimizable(n) && (irn == n || !values_interfere(irn, n)))
+			return 1;
+	}
+	return 0;
+}
+
+
 int co_get_copy_count(copy_opt_t *co) {
 	int i, res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units) {
-		int root_col = get_irn_color(curr->nodes[0]);
+		int root_col = get_irn_col(co, curr->nodes[0]);
 		res += curr->interf;
 		for (i=1; i<curr->node_count; ++i)
-			if (root_col != get_irn_color(curr->nodes[i]))
+			if (root_col != get_irn_col(co, curr->nodes[i]))
 				res++;
 	}
 	return res;
@@ -177,9 +190,9 @@ void co_check_allocation(copy_opt_t *co) {
 
 	nodes = (ir_node **) obstack_finish(&co->ob);
 	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
-		assert(! (is_allocatable_irn(n1) && get_irn_color(n1) == NO_COLOR));
+		assert(! (is_allocatable_irn(n1) && get_irn_col(co, n1) == NO_COLOR));
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
-			if (phi_ops_interfere(n1, n2) && get_irn_color(n1) == get_irn_color(n2)) {
+			if (phi_ops_interfere(n1, n2) && get_irn_col(co, n1) == get_irn_col(co, n2)) {
 				DBG((dbg, 0, "Error: %n in %n  and  %n in %n have the same color.\n", n1, get_nodes_block(n1), n2, get_nodes_block(n2)));
 				assert(0 && "Interfering values have the same color!");
 			}
