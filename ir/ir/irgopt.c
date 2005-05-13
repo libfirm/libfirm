@@ -57,7 +57,7 @@ static void init_link (ir_node *n, void *env) {
 }
 
 #if 0   /* Old version. Avoids Ids.
-           This is not necessary:  we do a postwalk, and get_irn_n
+           This is not necessary:  we do a post walk, and get_irn_n
            removes ids anyways.  So it's much cheaper to call the
            optimization less often and use the exchange() algorithm. */
 static void
@@ -100,7 +100,7 @@ static INLINE void do_local_optimize(ir_node *n) {
   set_irg_loopinfo_inconsistent(current_ir_graph);
 
 
-  /* Clean the value_table in irg for the cse. */
+  /* Clean the value_table in irg for the CSE. */
   del_identities(current_ir_graph->value_table);
   current_ir_graph->value_table = new_identities();
 
@@ -333,7 +333,7 @@ copy_preds (ir_node *n, void *env) {
     for (i = -1; i < irn_arity; i++)
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
   }
-  /* Now the new node is complete.  We can add it to the hash table for cse.
+  /* Now the new node is complete.  We can add it to the hash table for CSE.
      @@@ inlinening aborts if we identify End. Why? */
   if(get_irn_op(nn) != op_End)
     add_identities (current_ir_graph->value_table, nn);
@@ -500,8 +500,8 @@ copy_graph_env (int copy_node_nr) {
  * from block nodes and the corresponding inputs from Phi nodes.
  * Merges single exit blocks with single entry blocks and removes
  * 1-input Phis.
- * Adds all new nodes to a new hash table for cse.  Does not
- * perform cse, so the hash table might contain common subexpressions.
+ * Adds all new nodes to a new hash table for CSE.  Does not
+ * perform CSE, so the hash table might contain common subexpressions.
  */
 void
 dead_node_elimination(ir_graph *irg) {
@@ -559,7 +559,7 @@ dead_node_elimination(ir_graph *irg) {
 }
 
 /**
- * Relink bad predeseccors of a block and store the old in array to the
+ * Relink bad predecessors of a block and store the old in array to the
  * link field. This function is called by relink_bad_predecessors().
  * The array of link field starts with the block operand at position 0.
  * If block has bad predecessors, create a new in array without bad preds.
@@ -570,7 +570,7 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
   int i, new_irn_n, old_irn_arity, new_irn_arity = 0;
 
   /* if link field of block is NULL, look for bad predecessors otherwise
-     this is allready done */
+     this is already done */
   if (get_irn_op(n) == op_Block &&
       get_irn_link(n) == NULL) {
 
@@ -588,7 +588,7 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
 	 keep the old one to update Phis. */
       new_in = NEW_ARR_D (ir_node *, current_ir_graph->obst, (new_irn_arity+1));
 
-      /* set new predeseccors in array */
+      /* set new predecessors in array */
       new_in[0] = NULL;
       new_irn_n = 1;
       for (i = 0; i < old_irn_arity; i++) {
@@ -608,25 +608,25 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
   } /* Block is not relinked */
 }
 
-/*
- * Relinks Bad predecesors from Bocks and Phis called by walker
+/**
+ * Relinks Bad predecessors from Blocks and Phis called by walker
  * remove_bad_predecesors(). If n is a Block, call
- * relink_bad_block_redecessors(). If n is a Phinode, call also the relinking
+ * relink_bad_block_redecessors(). If n is a Phi-node, call also the relinking
  * function of Phi's Block. If this block has bad predecessors, relink preds
- * of the Phinode.
+ * of the Phi-node.
  */
 static void relink_bad_predecessors(ir_node *n, void *env) {
   ir_node *block, **old_in;
   int i, old_irn_arity, new_irn_arity;
 
-  /* relink bad predeseccors of a block */
+  /* relink bad predecessors of a block */
   if (get_irn_op(n) == op_Block)
     relink_bad_block_predecessors(n, env);
 
   /* If Phi node relink its block and its predecessors */
   if (get_irn_op(n) == op_Phi) {
 
-    /* Relink predeseccors of phi's block */
+    /* Relink predecessors of phi's block */
     block = get_nodes_block(n);
     if (get_irn_link(block) == NULL)
       relink_bad_block_predecessors(block, env);
@@ -634,9 +634,9 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
     old_in = (ir_node **)get_irn_link(block); /* Of Phi's Block */
     old_irn_arity = ARR_LEN(old_in);
 
-    /* Relink Phi predeseccors if count of predeseccors changed */
+    /* Relink Phi predecessors if count of predecessors changed */
     if (old_irn_arity != ARR_LEN(get_irn_in(block))) {
-      /* set new predeseccors in array
+      /* set new predecessors in array
 	 n->in[0] remains the same block */
       new_irn_arity = 1;
       for(i = 1; i < old_irn_arity; i++)
@@ -654,7 +654,7 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
 }
 
 /*
- * Removes Bad Bad predecesors from Blocks and the corresponding
+ * Removes Bad Bad predecessors from Blocks and the corresponding
  * inputs to Phi nodes as in dead_node_elimination but without
  * copying the graph.
  * On walking up set the link field to NULL, on walking down call
@@ -1104,7 +1104,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   }
 #endif
 
-  /* --  Turn cse back on. -- */
+  /* --  Turn CSE back on. -- */
   set_optimize(rem_opt);
 
   return 1;
@@ -1220,29 +1220,39 @@ typedef struct {
   int n_callers_orig; /**< for statistics */
 } inline_irg_env;
 
+/**
+ * Allocate a new nvironment for inlining.
+ */
 static inline_irg_env *new_inline_irg_env(void) {
-  inline_irg_env *env = xmalloc(sizeof(*env));
-  env->n_nodes = -2; /* uncount Start, End */
-  env->n_nodes_orig = -2; /* uncount Start, End */
-  env->call_nodes = eset_create();
-  env->n_call_nodes = 0;
+  inline_irg_env *env    = xmalloc(sizeof(*env));
+  env->n_nodes           = -2; /* do not count count Start, End */
+  env->n_nodes_orig      = -2; /* do not count Start, End */
+  env->call_nodes        = eset_create();
+  env->n_call_nodes      = 0;
   env->n_call_nodes_orig = 0;
-  env->n_callers = 0;
-  env->n_callers_orig = 0;
+  env->n_callers         = 0;
+  env->n_callers_orig    = 0;
   return env;
 }
 
+/**
+ * destroy an environment for inlining.
+ */
 static void free_inline_irg_env(inline_irg_env *env) {
   eset_destroy(env->call_nodes);
   free(env);
 }
 
+/**
+ * post-walker: collect all calls in the inline-environment
+ * of a graph and sum some statistics.
+ */
 static void collect_calls2(ir_node *call, void *env) {
   inline_irg_env *x = (inline_irg_env *)env;
   ir_op *op = get_irn_op(call);
   ir_graph *callee;
 
-  /* count nodes in irg */
+  /* count meaningful nodes in irg */
   if (op != op_Proj && op != op_Tuple && op != op_Sync) {
     x->n_nodes++;
     x->n_nodes_orig++;
@@ -1258,15 +1268,23 @@ static void collect_calls2(ir_node *call, void *env) {
   /* count all static callers */
   callee = get_call_called_irg(call);
   if (callee) {
-    ((inline_irg_env *)get_irg_link(callee))->n_callers++;
-    ((inline_irg_env *)get_irg_link(callee))->n_callers_orig++;
+    inline_irg_env *callee_env = get_irg_link(callee);
+    callee_env->n_callers++;
+    callee_env->n_callers_orig++;
   }
 }
 
+/**
+ * Returns TRUE if the number of callers in 0 in the irg's environment,
+ * hence this irg is a leave.
+ */
 INLINE static int is_leave(ir_graph *irg) {
   return (((inline_irg_env *)get_irg_link(irg))->n_call_nodes == 0);
 }
 
+/**
+ * Returns TRUE if the number of callers is smaller size in the irg's environment.
+ */
 INLINE static int is_smaller(ir_graph *callee, int size) {
   return (((inline_irg_env *)get_irg_link(callee))->n_nodes < size);
 }
@@ -1318,7 +1336,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
       for (call = eset_first(env->call_nodes); call; call = eset_next(env->call_nodes)) {
         ir_graph *callee;
 
-        if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
+        if (get_irn_op(call) == op_Tuple) continue;   /* We already have inlined this call. */
         callee = get_call_called_irg(call);
 
         if (env->n_nodes > maxsize) continue; // break;
@@ -1556,6 +1574,8 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
   return calc_dca(dca, block);
 }
 
+/* FIXME: the name clashes here with the function from ana/field_temperature.c
+ * please rename. */
 static INLINE int get_irn_loop_depth(ir_node *n) {
   return get_loop_depth(get_irn_loop(n));
 }
@@ -1599,7 +1619,7 @@ move_out_of_loops (ir_node *n, ir_node *early)
  * `optimal' Block between the latest and earliest legal block.
  * The `optimal' block is the dominance-deepest block of those
  * with the least loop-nesting-depth.  This places N out of as many
- * loops as possible and then makes it as control dependant as
+ * loops as possible and then makes it as control dependent as
  * possible.
  */
 static void
@@ -1666,7 +1686,7 @@ place_floats_late(ir_node *n, pdeq *worklist)
   }
 
   /* Add predecessors of all non-floating nodes on list. (Those of floating
-     nodes are placeded already and therefore are marked.)  */
+     nodes are placeed already and therefore are marked.)  */
   for (i = 0; i < get_irn_n_outs(n); i++) {
     ir_node *succ = get_irn_out(n, i);
     if (irn_not_visited(get_irn_out(n, i))) {
