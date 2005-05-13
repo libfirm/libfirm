@@ -67,7 +67,7 @@ static void cough_and_die (ir_node *node)
 */
 static type *java_lang_Throwable_tp = NULL;
 
-static type *get_java_lang_Throwable ()
+static type *get_java_lang_Throwable (void)
 {
   assert (NULL != java_lang_Throwable_tp);
 
@@ -526,13 +526,11 @@ static typalise_t *typalise_call (ir_node *call)
 
       fprintf (stdout, "%s: cannot handle Call[%li] (symconst_addr_name=\"%s\")\n",
                __FUNCTION__, get_irn_node_nr (call),
-               get_op_name (get_irn_op (call_ptr)),
                name);
       cough_and_die (call_ptr);
     } else if (get_SymConst_kind (call_ptr) == symconst_type_tag) {
       fprintf (stdout, "%s: cannot handle Call[%li] (symconst_type_tag)\n",
-               __FUNCTION__, get_irn_node_nr (call),
-               get_op_name (get_irn_op (call_ptr)));
+               __FUNCTION__, get_irn_node_nr (call));
       cough_and_die (call_ptr);
     } else {
       fprintf (stdout, "%s: cannot handle Call[%li] (%i)\n",
@@ -861,7 +859,7 @@ typalise_t *typalise (ir_node *node)
 /*
   Initialise the Typalise module
 */
-void typalise_init ()
+void typalise_init (void)
 {
   if (NULL == java_lang_Throwable_tp) {
     class_walk_super2sub (find_java_lang_Throwable, NULL, NULL);
@@ -876,6 +874,10 @@ void typalise_init ()
 
 /*
   $Log$
+  Revision 1.11  2005/05/13 16:35:14  beck
+  made (void) prototypes
+  removed unused fprintf arguments
+
   Revision 1.10  2005/05/06 12:02:34  beck
   added missing includes
   removed C99 features
