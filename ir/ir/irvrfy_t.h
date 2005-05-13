@@ -13,6 +13,7 @@
 #define _IRVRFY_T_H_
 
 #include "irvrfy.h"
+#include "irdump.h"
 
 extern node_verification_t opt_do_node_verification;
 extern const char *firm_vrfy_failure_msg;
