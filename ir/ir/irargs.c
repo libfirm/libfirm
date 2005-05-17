@@ -6,7 +6,7 @@
  * Modified by:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+ * Copyright:   (c) 1998-2005 Universitï¿½t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -44,45 +44,51 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
 
   void *X = arg->v_ptr;
   firm_kind *obj = X;
-
   int i, n;
   ir_node *block;
+	char add[64];
   char buf[256];
   char tv[256];
 
   buf[0] = '\0';
+  add[0] = '\0';
 
   if (! X)
     strncpy(buf, "(null)", sizeof(buf));
   else {
     switch (*obj) {
     case k_BAD:
-      snprintf(buf, sizeof(buf), "BAD[%p]", X);
+      snprintf(buf, sizeof(buf), "BAD");
+      snprintf(add, sizeof(add), "[%p]", X);
       break;
     case k_entity:
-      snprintf(buf, sizeof(buf), "%s%s[%ld]", A("ent"),
-          isupper(occ->conversion) ? get_entity_ld_name(X): get_entity_name(X),
-          get_entity_nr(X));
+      snprintf(buf, sizeof(buf), "%s%s", A("ent"),
+          isupper(occ->conversion) ? get_entity_ld_name(X): get_entity_name(X));
+      snprintf(add, sizeof(add), "[%ld]", get_entity_nr(X));
       break;
     case k_type:
-      snprintf(buf, sizeof(buf), "%s%s:%s[%ld]", A("type"), get_type_tpop_name(X), get_type_name(X), get_type_nr(X));
+      snprintf(buf, sizeof(buf), "%s%s:%s", A("type"), get_type_tpop_name(X), get_type_name(X));
+      snprintf(add, sizeof(add), "[%ld]", get_type_nr(X));
       break;
     case k_ir_graph:
-      snprintf(buf, sizeof(buf), "%s%s[%ld]", A("irg"), get_entity_name(get_irg_entity(X)), get_irg_graph_nr(X));
+      snprintf(buf, sizeof(buf), "%s%s", A("irg"), get_entity_name(get_irg_entity(X)));
+      snprintf(add, sizeof(add), "[%ld]", get_irg_graph_nr(X));
       break;
     case k_ir_node:
       switch (occ->conversion) {
       case 'B':
         block = is_no_Block(X) ? get_nodes_block(X) : X;
-        snprintf(buf, sizeof(buf), "%s%s%s[%ld]", A("irn"), get_irn_opname(block),
-            get_mode_name(get_irn_mode(block)), get_irn_node_nr(block));
+        snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(block),
+            get_mode_name(get_irn_mode(block)));
+        snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(block));
         break;
       case 'N':
         snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(X));
         break;
       default:
-        snprintf(buf, sizeof(buf), "%s%s%s[%ld]", A("irn"), get_irn_opname(X),
-            get_mode_name(get_irn_mode(X)), get_irn_node_nr(X));
+        snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
+            get_mode_name(get_irn_mode(X)));
+        snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(X));
       }
       break;
     case k_ir_mode:
@@ -110,9 +116,14 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
       }
       break;
     default:
-      snprintf(buf, sizeof(buf), "UNKWN[%p]", X);
+      snprintf(buf, sizeof(buf), "UNKWN");
+      snprintf(add, sizeof(add), "[%p]", X);
     }
   }
+
+  if(occ->flag_plus)
+  	strncat(buf, add, sizeof(buf));
+
   return arg_append(app, occ, buf, strlen(buf));
 
 #undef A
