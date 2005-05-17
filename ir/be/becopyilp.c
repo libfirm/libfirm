@@ -32,9 +32,6 @@
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
-#ifdef HAVE_IO_H
-#include <io.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,8 +43,9 @@
 #undef DUMP_MATRICES		/**< dumps all matrices completely. only recommended for small problems */
 #undef DUMP_Q2ILP			/**< see function pi_dump_q2ilp */
 #define DUMP_DILP			/**< see function pi_dump_dilp */
+#define DUMP_MST			/**< see function pi_dump_start_sol */
 #define DO_SOLVE 			/**< solve the MPS output with CPLEX */
-#undef DELETE_FILES		/**< deletes all dumped files after use */
+#undef DELETE_FILES		/**< deletes all dumped files after use. Files on server are always deleted. */
 
 /* CPLEX-account related stuff */
 #define SSH_USER_HOST "kb61@sp-smp.rz.uni-karlsruhe.de"
@@ -302,19 +300,16 @@ static void pi_find_simplicials(problem_instance_t *pi) {
  * Generate the initial problem matrices and vectors.
  */
 static problem_instance_t *new_pi(const copy_opt_t *co) {
-  problem_instance_t *pi;
-
 	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
-	pi          = xcalloc(1, sizeof(*pi));
-	pi->co      = co;
+	problem_instance_t *pi = xcalloc(1, sizeof(*pi));
+	pi->co = co;
 	pi->num2pos = new_set(set_cmp_num2pos, SLOTS_NUM2POS);
-	pi->bigM    = 1;
+	pi->bigM = 1;
 	pi->removed = pset_new_ptr_default();
 	INIT_LIST_HEAD(&pi->simplicials);
 
 	/* problem size reduction */
 	pi_find_simplicials(pi);
-
 	//TODO dump_ifg_wo_removed
 
 	/* Vector x
@@ -457,6 +452,12 @@ static void pi_dump_matrices(problem_instance_t *pi) {
 
 	fprintf(out, "\n\nB =\n");
 	matrix_dump(pi->B, out, 1);
+
+	fprintf(out, "\n\nE =\n");
+	matrix_dump(pi->E, out, 1);
+
+	fprintf(out, "\n\nc =\n");
+	matrix_dump(pi->c, out, 1);
 
 	fclose(out);
 }
@@ -623,7 +624,7 @@ static void pi_dump_dilp(problem_instance_t *pi) {
 }
 #endif
 
-#ifdef DO_SOLVE
+#ifdef DUMP_MST
 /**
  * Dumps the known solution to a file to make use of it
  * as a starting solution respectively as a bound
@@ -645,7 +646,9 @@ static void pi_dump_start_sol(problem_instance_t *pi) {
 	fprintf(out, "ENDATA\n");
 	fclose(out);
 }
+#endif
 
+#ifdef DO_SOLVE
 /**
  * Invoke an external solver
  */
@@ -657,6 +660,10 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	/* write command file for CPLEX */
 	out = ffopen(pi->co->name, "cmd", "wt");
 	fprintf(out, "set logfile %s.sol\n", pi->co->name);
+	fprintf(out, "set mip strategy mipstart 1\n");
+	fprintf(out, "set mip emphasis 3\n"); /* moving best bound */
+	fprintf(out, "set mip strategy variableselect 3\n"); /* strong branching */
+//	fprintf(out, "set mip strategy branch 1\n"); /* branch up first */
 #ifdef DUMP_Q2ILP
 	fprintf(out, "read %s.q2ilp mps\n", pi->co->name);
 #endif
@@ -664,8 +671,6 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	fprintf(out, "read %s.dilp mps\n", pi->co->name);
 #endif
 	fprintf(out, "read %s.mst\n", pi->co->name);
-	fprintf(out, "set mip strategy mipstart 1\n");
-	//fprintf(out, "set mip emphasis 3\n");
 	fprintf(out, "optimize\n");
 	fprintf(out, "display solution variables 1-%d\n", pi->x_dim);
 	fprintf(out, "quit\n");
@@ -825,8 +830,10 @@ void co_ilp_opt(copy_opt_t *co) {
 	pi_dump_dilp(pi);
 #endif
 
-#ifdef DO_SOLVE
+#ifdef DUMP_MST
 	pi_dump_start_sol(pi);
+#endif
+#ifdef DO_SOLVE
 	pi_solve_ilp(pi);
 	pi_apply_solution(pi);
 #endif
