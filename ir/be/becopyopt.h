@@ -27,7 +27,6 @@
 #include "beutil.h"
 #include "benumb_t.h"
 #include "belive_t.h"
-#include "bera_t.h"
 #include "bechordal_t.h"
 #include "bearch.h"
 
@@ -39,6 +38,7 @@
  * Data representing the problem of copy minimization.
  */
 typedef struct _copy_opt_t {
+  be_chordal_env_t *chordal_env;
 	ir_graph *irg;						/**< the irg to process */
 	char *name;							/**< ProgName__IrgName__RegClass */
 	const arch_env_t *env;				/**< Environment (isa + handlers) */
@@ -74,7 +74,8 @@ typedef struct _unit_t {
 /**
  * Generate the problem. Collect all infos and optimizable nodes.
  */
-copy_opt_t *new_copy_opt(ir_graph *irg, const arch_env_t *env, const arch_register_class_t *cls);
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env,
+    const arch_env_t *env, const arch_register_class_t *cls);
 
 /**
  * Free the space...
@@ -86,25 +87,25 @@ void free_copy_opt(copy_opt_t *co);
 /**
  * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'
  */
-int is_optimizable_arg(ir_node *irn);
+int is_optimizable_arg(const copy_opt_t *co, ir_node *irn);
 
 /**
  * Returns the current number of copies needed
  */
-int co_get_copy_count(copy_opt_t *co);
+int co_get_copy_count(const copy_opt_t *co);
 
 /**
  * IMPORTANT: Available only iff heuristic has run!
  * Returns a lower bound for the number of copies needed based on interfering
  * arguments and the size of a max indep. set (only ifg-edges) of the other args.
  */
-int co_get_lower_bound(copy_opt_t *co);
+int co_get_lower_bound(const copy_opt_t *co);
 
 /**
  * Returns the number of arguments interfering with their root node. This also
  * is a (worse) lower bound for the number of copies needed.
  */
-int co_get_interferer_count(copy_opt_t *co);
+int co_get_interferer_count(const copy_opt_t *co);
 
 /**
  * Solves the problem using a heuristic approach

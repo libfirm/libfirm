@@ -29,20 +29,22 @@
 
 #include "beutil.h"
 #include "besched.h"
-#include "bera_t.h"
 #include "benumb_t.h"
 #include "besched_t.h"
 #include "belive_t.h"
-#include "bechordal_t.h"
 #include "bearch.h"
 
-#define BUILD_GRAPH
-#undef DUMP_INTERVALS
+#include "bechordal_t.h"
+#include "bechordal_draw.h"
+
+#define NO_COLOR (-1)
+
+#define DUMP_INTERVALS
 #undef DUMP_PRESSURE
 #undef DUMP_IFG
 
 #if defined(DUMP_IFG) && !defined(BUILD_GRAPH)
-#define BUILD_GRAPH
+#error Must define BUILD_GRAPH to be able to dump it.
 #endif
 
 
@@ -54,185 +56,7 @@
 
 #endif /* DEBUG_libfirm */
 
-#define TEST_COLORS 2048
-
 static firm_dbg_module_t *dbg;
-
-/**
- * Environment for each of the chordal register allocator phases
- */
-typedef struct _env_t {
-	struct obstack obst;	/**< An obstack for temporary storage. */
-  ir_graph *irg;        /**< The graph the reg alloc is running on. */
-#ifdef BUILD_GRAPH
-	set *nodes;						/**< The interference graph nodes. */
-	set *edges;						/**< The interference graph edges. */
-#endif
-
-	bitset_t *live;				/**< A liveness bitset. */
-	bitset_t *colors;			/**< The color mask. */
-	bitset_t *in_colors;	/**< Colors used by live in values. */
-	int colors_n;					/**< The number of colors. */
-  const arch_env_t *arch_env;         /**< The arch interface environment. */
-  const arch_register_class_t *cls;   /**< The current register class. */
-  void *data;           /**< Some pointer, to which different
-                          phases can attach data to. */
-} env_t;
-
-
-typedef struct _be_chordal_dump_params_t {
-	int x_dist;
-	int y_dist;
-	double font_scale;
-} be_chordal_dump_params_t;
-
-static const be_chordal_dump_params_t dump_params = {
-	10,
-	10,
-	4
-};
-
-#ifdef DUMP_INTERVALS
-
-static INLINE void intv_filename(char *s, size_t n,
-    const env_t *env, ir_node *block)
-{
-	ir_snprintf(s, n, "intv_%F_%s_bl%N.eps",
-      env->irg, env->cls->name, block);
-}
-
-static void draw_interval_graph(const env_t *env,
-    ir_node *block, const be_chordal_dump_params_t *params)
-{
-	int i;
-	int x_dist = params->x_dist;
-	int y_dist = params->y_dist;
-	ir_graph *irg = env->irg;
-  struct list_head *border_head = get_block_border_head(block);
-
-	FILE *f;
-	char buf[1024];
-
-  intv_filename(buf, sizeof(buf), env, block);
-
-	if((f = fopen(buf, "wt")) != NULL) {
-		border_t *b;
-		int *seen = xcalloc(get_graph_node_count(irg), sizeof(seen[0]));
-		int last_pos = list_empty(border_head) ? 0 : list_entry(border_head->prev, border_t, list)->step;
-		int max_col = 0;
-
-		list_for_each_entry_reverse(border_t, b, border_head, list) {
-			const ir_node *irn = b->irn;
-			int col = get_irn_color(irn);
-			max_col = max_col > col ? max_col : col;
-		}
-
-		fprintf(f, "%%!PS-Adobe-2.0\n");
-		fprintf(f, "%%%%BoundingBox: -10 -10 %d %d\n",
-				x_dist * last_pos + x_dist, y_dist * max_col + y_dist);
-		fprintf(f, "/mainfont /Courier findfont %f scalefont def\n", params->font_scale);
-		fprintf(f, "mainfont setfont\n");
-		fprintf(f, "0.2 setlinewidth\n");
-
-		for(i = 0; i <= last_pos; ++i) {
-			fprintf(f, "0 0 0 setrgbcolor\n");
-			fprintf(f, "%d %d moveto\n", i * x_dist, -2);
-			fprintf(f, "%d %d lineto\n", i * x_dist, max_col * y_dist + 2);
-			fprintf(f, "stroke\n");
-		}
-		fprintf(f, "0.5 setlinewidth\n");
-
-		list_for_each_entry_reverse(border_t, b, border_head, list) {
-			const ir_node *irn = b->irn;
-			int nr = get_irn_graph_nr(irn);
-
-			if(b->is_def)
-				seen[nr] = b->step;
-			else {
-				int col = get_irn_color(irn);
-
-				int pos = last_pos - seen[nr];
-				int end_pos = last_pos - b->step;
-				int live_in = is_live_in(block, irn);
-				int live_end = is_live_end(block, irn);
-				int y_val = y_dist * col;
-
-				int red = 0;
-				int green = live_end;
-				int blue = live_in;
-
-				fprintf(f, "0 0 0 setrgbcolor\n");
-				fprintf(f, "%d %d moveto\n", x_dist * pos + 2, y_val + 2);
-				ir_fprintf(f, "(%n/%d%s) show\n", irn, nr, is_phi_operand(irn) ? "*" : "");
-				fprintf(f, "%d %d %d setrgbcolor\n", red, green, blue);
-				fprintf(f, "%d %d moveto\n", x_dist * pos, y_val);
-				fprintf(f, "%d %d lineto\n", (x_dist * end_pos) - 5, y_val);
-				fprintf(f, "stroke\n");
-			}
-		}
-
-		free(seen);
-		fclose(f);
-	}
-}
-
-static void dump_block(ir_node *bl, void *data)
-{
-  const env_t *env = data;
-  FILE *f = env->data;
-  char buf[128];
-
-  draw_interval_graph(env, bl, &dump_params);
-
-  intv_filename(buf, sizeof(buf), env, bl);
-  ir_fprintf(f, "\tb%N [shape=\"epsf\" shapefile=\"%s\"];\n", bl, buf);
-}
-
-static void dump_edges(ir_node *bl, void *data)
-{
-  const env_t *env = data;
-  FILE *f = env->data;
-  int i, n;
-  ir_node *dom;
-
-#if 0
-  for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
-    ir_node *pred = get_irn_n(bl, i);
-    ir_fprintf(f, "\tb%N -> b%N;\n", get_nodes_block(pred), bl);
-  }
-#endif
-
-  for(dom = get_Block_dominated_first(bl); dom;
-      dom = get_Block_dominated_next(dom)) {
-
-    ir_fprintf(f, "\tb%N -> b%N;\n", dom, bl);
-  }
-}
-
-static void dump_intv_cfg(env_t *env)
-{
-  FILE *f;
-  char buf[128];
-
-  ir_snprintf(buf, sizeof(buf), "intv_cfg_%s_%F.dot",
-      env->cls->name, env->irg);
-
-  if((f = fopen(buf, "wt")) != NULL) {
-    void *old_data = env->data;
-
-    env->data = f;
-    ir_fprintf(f, "digraph G {\n");
-    ir_fprintf(f, "\tgraph [rankdir=\"LR\", ordering=\"out\"];\n");
-    dom_tree_walk_irg(env->irg, dump_block, dump_edges, env);
-    // irg_block_walk_graph(env->irg, dump_block, dump_edges, env);
-    ir_fprintf(f, "}\n");
-    fclose(f);
-
-    env->data = old_data;
-  }
-}
-
-#endif
 
 #ifdef BUILD_GRAPH
 
@@ -269,7 +93,7 @@ static INLINE if_edge_t *edge_init(if_edge_t *edge, int src, int tgt)
 	return edge;
 }
 
-static INLINE void add_if(const env_t *env, int src, int tgt)
+static INLINE void add_if(const be_chordal_env_t *env, int src, int tgt)
 {
 	if_edge_t edge;
 	if_node_t node, *src_node, *tgt_node;
@@ -290,18 +114,20 @@ static INLINE void add_if(const env_t *env, int src, int tgt)
 	pset_insert_ptr(tgt_node->neighb, src_node);
 }
 
-static INLINE int are_connected(const env_t *env, int src, int tgt)
+static INLINE int are_connected(const be_chordal_env_t *env, int src, int tgt)
 {
 	if_edge_t edge;
 	edge_init(&edge, src, tgt);
 	return set_find(env->edges, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
 }
 
-int ifg_has_edge(const ir_graph *irg, if_node_t *n1, if_node_t* n2) {
-	return are_connected(get_irg_ra_link(irg), n1->nnr, n2->nnr);
+int ifg_has_edge(const be_chordal_env_t *env, const if_node_t *n1, const if_node_t* n2) {
+	return are_connected(env, n1->nnr, n2->nnr);
 }
 
-static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
+#ifdef DUMP_IFG
+
+static void dump_ifg(const be_chordal_env_t *env)
 {
 	static const char *colors[] = {
 		"coral",
@@ -386,6 +212,11 @@ static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
 	static const int n_colors = sizeof(colors) / sizeof(colors[0]);
 
 	FILE *f;
+  set *edges = env->edges;
+  ir_graph *irg = env->irg;
+  char filename[128];
+
+  ir_snprintf(filename, sizeof(filename), "ifg_%s_%F.dot", env->cls->name, irg);
 
 	if((f = fopen(filename, "wt")) != NULL) {
 		bitset_pos_t pos;
@@ -425,6 +256,8 @@ static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
 
 }
 
+#endif /* DUMP_IFG */
+
 #endif /* BUILD_GRAPH */
 
 
@@ -440,7 +273,7 @@ static void dump_ifg(ir_graph *irg, set *edges, const char *filename)
  * @param is_def Is the border a use or a def.
  * @return The created border.
  */
-static INLINE border_t *border_add(env_t *env, struct list_head *head,
+static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head,
 			ir_node *irn, unsigned step, unsigned pressure,
 			unsigned is_def, unsigned is_real)
 {
@@ -510,7 +343,7 @@ static void pressure(ir_node *block, void *env_ptr)
 #define border_use(irn, step, real) \
 	border_add(env, head, irn, step, ++pressure, 0, real)
 
-	env_t *env = env_ptr;
+	be_chordal_env_t *env = env_ptr;
 	bitset_t *live = env->live;
 	ir_node *irn;
 
@@ -526,8 +359,9 @@ static void pressure(ir_node *block, void *env_ptr)
 	bitset_clear_all(live);
 
 	/* Set up the border list in the block info */
-	head = &get_ra_block_info(block)->border_head;
+  head = obstack_alloc(&env->obst, sizeof(*head));
 	INIT_LIST_HEAD(head);
+  pmap_insert(env->border_heads, block, head);
 
 	/*
 	 * Make final uses of all values live out of the block.
@@ -549,9 +383,6 @@ static void pressure(ir_node *block, void *env_ptr)
 	sched_foreach_reverse(block, irn) {
 		DBG((dbg, LEVEL_1, "\tinsn: %n, pressure: %d\n", irn, pressure));
 		DBG((dbg, LEVEL_2, "\tlive: %b\n", live));
-
-		/* Erase the color of each node encountered. */
-		set_irn_color(irn, NO_COLOR);
 
     /*
      * If the node defines some value, which can put into a
@@ -610,7 +441,7 @@ static void pressure(ir_node *block, void *env_ptr)
 
 static void assign(ir_node *block, void *env_ptr)
 {
-	env_t *env = env_ptr;
+	be_chordal_env_t *env = env_ptr;
 	struct obstack *obst = &env->obst;
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
@@ -623,7 +454,7 @@ static void assign(ir_node *block, void *env_ptr)
 
 	const ir_node *irn;
 	border_t *b;
-	struct list_head *head = &get_ra_block_info(block)->border_head;
+	struct list_head *head = get_block_border_head(env, block);
 	pset *live_in = get_live_in(block);
 
 	bitset_clear_all(live);
@@ -714,17 +545,17 @@ static void assign(ir_node *block, void *env_ptr)
 
 void be_ra_chordal_init(void)
 {
-	dbg = firm_dbg_register(DBG_BERA);
+	dbg = firm_dbg_register(DBG_CHORDAL);
 	firm_dbg_set_mask(dbg, 0);
 }
 
-void be_ra_chordal(ir_graph *irg,
+be_chordal_env_t *be_ra_chordal(ir_graph *irg,
     const arch_env_t *arch_env,
     const arch_register_class_t *cls)
 {
 	int node_count = get_graph_node_count(irg);
   int colors_n = arch_register_class_n_regs(cls);
-	env_t *env = malloc(sizeof(*env));
+	be_chordal_env_t *env = malloc(sizeof(*env));
 
 	if(get_irg_dom_state(irg) != dom_consistent)
 		compute_doms(irg);
@@ -743,36 +574,39 @@ void be_ra_chordal(ir_graph *irg,
   env->cls = cls;
   env->arch_env = arch_env;
   env->irg = irg;
+  env->border_heads = pmap_create();
 
 	/* First, determine the pressure */
 	dom_tree_walk_irg(irg, pressure, NULL, env);
 
 	/* Insert probable spills */
-	be_ra_chordal_spill(irg);
+	be_ra_chordal_spill(env);
 
 	/* Assign the colors */
 	dom_tree_walk_irg(irg, assign, NULL, env);
 
 #ifdef DUMP_IFG
-	{
-		char buf[128];
-
-		ir_snprintf(buf, sizeof(buf), "ifg_%F.dot", irg);
-		dump_ifg(irg, env->edges, buf);
-	}
+  dump_ifg(env);
 #endif
 
 #ifdef DUMP_INTERVALS
-  dump_intv_cfg(env);
+	{
+		char buf[128];
+    plotter_t *plotter;
+
+		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", cls->name, irg);
+    plotter = new_plotter_ps(buf);
+
+    draw_interval_tree(&draw_chordal_def_opts, env, plotter, arch_env, cls);
+    plotter_free(plotter);
+	}
 #endif
 
-	set_irg_ra_link(irg, env);
+  return env;
 }
 
-void be_ra_chordal_done(ir_graph *irg)
+void be_ra_chordal_done(be_chordal_env_t *env)
 {
-	env_t *env = get_irg_ra_link(irg);
-
 #ifdef BUILD_GRAPH
 	{
 		if_node_t *ifn;
@@ -783,18 +617,14 @@ void be_ra_chordal_done(ir_graph *irg)
 	}
 #endif
 
+  pmap_destroy(env->border_heads);
 	obstack_free(&env->obst, NULL);
 	free(env);
 }
 
-int phi_ops_interfere(const ir_node *a, const ir_node *b)
+int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {
 #ifdef BUILD_GRAPH
-	ir_graph *irg = get_irn_irg(a);
-	env_t *env = get_irg_ra_link(irg);
-
-	assert(irg == get_irn_irg(b) && "Both nodes must be in the same graph");
-
 	return are_connected(env, get_irn_graph_nr(a), get_irn_graph_nr(b));
 #else
 	return values_interfere(a, b);
@@ -802,19 +632,13 @@ int phi_ops_interfere(const ir_node *a, const ir_node *b)
 }
 
 #ifdef BUILD_GRAPH
-/** TODO remove this
- * Deprecated. Use be_ra_get_ifg_edges instead.
- */
-set *be_ra_get_ifg(ir_graph *irg) {
-	return ((env_t *)get_irg_ra_link(irg))->edges;
+
+set *be_ra_get_ifg_edges(const be_chordal_env_t *env) {
+	return env->edges;
 }
 
-set *be_ra_get_ifg_edges(ir_graph *irg) {
-	return ((env_t *)get_irg_ra_link(irg))->edges;
-}
-
-set *be_ra_get_ifg_nodes(ir_graph *irg) {
-	return ((env_t *)get_irg_ra_link(irg))->nodes;
+set *be_ra_get_ifg_nodes(const be_chordal_env_t *env) {
+	return env->nodes;
 }
 
 #endif

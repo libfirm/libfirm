@@ -173,7 +173,7 @@ static INLINE int pi_get_pos(problem_instance_t *pi, int num, int col) {
  */
 static void pi_collect_x_names(ir_node *block, void *env) {
 	problem_instance_t *pi = env;
-	struct list_head *head = &get_ra_block_info(block)->border_head;
+	struct list_head *head = get_block_border_head(pi->co->chordal_env, block);
 	border_t *curr;
 	bitset_t *pos_regs = bitset_alloca(pi->co->cls->n_regs);
 
@@ -218,7 +218,7 @@ static INLINE int all_live_in(ir_node *block, pset *living) {
 static void pi_clique_finder(ir_node *block, void *env) {
 	problem_instance_t *pi = env;
 	enum phase_t {growing, shrinking} phase = growing;
-	struct list_head *head = &get_ra_block_info(block)->border_head;
+	struct list_head *head = get_block_border_head(pi->co->chordal_env, block);
 	border_t *b;
 	pset *living = pset_new_ptr(SLOTS_LIVING);
 
@@ -267,7 +267,7 @@ static INLINE int pi_is_simplicial(problem_instance_t *pi, const if_node_t *ifn)
 	/* check if these form a clique */
 	for (i=0; i<size; ++i)
 		for (o=i+1; o<size; ++o)
-			if (!ifg_has_edge(pi->co->irg, all[i], all[o]))
+			if (!ifg_has_edge(pi->co->chordal_env, all[i], all[o]))
 				return 0;
 
 	/* all edges exist so this is a clique */
@@ -279,12 +279,13 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 	if_node_t *ifn;
 	int redo = 1;
 
-	if_nodes = be_ra_get_ifg_nodes(pi->co->irg);
+	if_nodes = be_ra_get_ifg_nodes(pi->co->chordal_env);
 	while (redo) {
 		redo = 0;
 		for (ifn = set_first(if_nodes); ifn; ifn = set_next(if_nodes)) {
 			ir_node *irn = get_irn_for_graph_nr(pi->co->irg, ifn->nnr);
-			if (!is_removed(irn) && !is_optimizable(irn) && !is_optimizable_arg(irn) && pi_is_simplicial(pi, ifn)) {
+			if (!is_removed(irn) && !is_optimizable(irn) &&
+          !is_optimizable_arg(pi->co, irn) && pi_is_simplicial(pi, ifn)) {
 				simpl_t *s = xmalloc(sizeof(*s));
 				s->ifn = ifn;
 				list_add(&s->chain, &pi->simplicials);

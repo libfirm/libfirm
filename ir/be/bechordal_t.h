@@ -8,7 +8,24 @@
 #ifndef _BECHORDAL_T_H
 #define _BECHORDAL_T_H
 
+#include <stdlib.h>
+
+#include "bitset.h"
+#include "list.h"
+#include "pset.h"
+#include "pmap.h"
+#include "set.h"
+
+#include "irnode.h"
+#include "irgraph.h"
+#include "bechordal.h"
+
+/** Defines an invalid register index. */
+#define NO_COLOR (-1)
+
 #define BUILD_GRAPH
+
+#define DBG_CHORDAL "firm.be.ra.chordal"
 
 /**
  * A liveness interval border.
@@ -29,6 +46,39 @@ typedef struct _border_t {
 																	a block, each value has one begin and one end. */
 } border_t;
 
+/**
+ * Environment for each of the chordal register allocator phases
+ */
+struct _be_chordal_env_t {
+	struct obstack obst;	/**< An obstack for temporary storage. */
+  pmap *border_heads;   /**< Maps blocks to border heads. */
+  ir_graph *irg;        /**< The graph the reg alloc is running on. */
+
+#ifdef BUILD_GRAPH
+	set *nodes;						/**< The interference graph nodes. */
+	set *edges;						/**< The interference graph edges. */
+#endif
+
+	bitset_t *live;				/**< A liveness bitset. */
+	bitset_t *colors;			/**< The color mask. */
+	bitset_t *in_colors;	/**< Colors used by live in values. */
+	int colors_n;					/**< The number of colors. */
+  const arch_env_t *arch_env;         /**< The arch interface environment. */
+  const arch_register_class_t *cls;   /**< The current register class. */
+  void *data;           /**< Some pointer, to which different
+                          phases can attach data to. */
+};
+
+static INLINE struct list_head *
+_get_block_border_head(const be_chordal_env_t *inf, ir_node *bl)
+{
+  return pmap_get(inf->border_heads, bl);
+}
+
+#define get_block_border_head(info, bl)     _get_block_border_head(info, bl)
+
+int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b);
+
 #ifdef BUILD_GRAPH
 typedef struct _if_node_t {
 	int nnr;
@@ -39,15 +89,15 @@ typedef struct _if_edge_t {
 	int src, tgt;
 } if_edge_t;
 
-set *be_ra_get_ifg(ir_graph *irg); /**< Deprecated. Use be_ra_get_ifg_edges. */
-set *be_ra_get_ifg_edges(ir_graph *irg);
-set *be_ra_get_ifg_nodes(ir_graph *irg);
-int ifg_has_edge(const ir_graph *irg, if_node_t *n1, if_node_t* n2);
+set *be_ra_get_ifg_edges(const be_chordal_env_t *env);
+set *be_ra_get_ifg_nodes(const be_chordal_env_t *env);
+int ifg_has_edge(const be_chordal_env_t *env, const if_node_t *n1, const if_node_t* n2);
+
 #define ifn_get_degree(ifnode) pset_count(ifnode->neighb)
 #define foreach_neighb(ifnode, curr) \
 			for(curr=pset_first(ifnode->neighb); curr; curr=pset_next(ifnode->neighb))
 #endif
 
-extern void be_ra_chordal_spill(ir_graph *irg);
+extern void be_ra_chordal_spill(be_chordal_env_t *env);
 
 #endif /* _BECHORDAL_T_H */

@@ -99,7 +99,7 @@ static INLINE void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, const ir_node *n2) {
 	conflict_t c;
 	/* search for live range interference */
-	if (n1!=n2 && values_interfere(n1, n2))
+	if (n1!=n2 && nodes_interfere(qn->ou->co->chordal_env, n1, n2))
 		return 1;
 	/* search for recoloring conflicts */
 	if ((int)n1 < (int)n2) {
@@ -205,6 +205,8 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	struct obstack confl_ob;
 	ir_node **confl, *cn;
 	int i, irn_col;
+  const arch_env_t *arch_env = qn->ou->co->env;
+  const be_chordal_env_t *chordal_env = qn->ou->co->chordal_env;
 
 	DBG((dbg, LEVEL_3, "\t      %n \tcaused col(%n) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
 	obstack_init(&confl_ob);
@@ -216,7 +218,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		res = irn;
 		goto ret_confl;
 	}
-	if (!arch_reg_is_allocatable(qn->ou->co->env,
+	if (!arch_reg_is_allocatable(arch_env,
 								 irn,
 								 arch_pos_make_out(0),
 								 arch_register_for_index(qn->ou->co->cls, col)))
@@ -235,7 +237,10 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 			ir_node *n;
 			pset *live_ins = get_live_in(irn_bl);
 			for (n = pset_first(live_ins); n; n = pset_next(live_ins))
-				if (is_allocatable_irn(n) && n != trigger && qnode_get_new_color(qn, n) == col && values_interfere(irn, n)) {
+				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), qn->ou->co->cls)
+            && n != trigger && qnode_get_new_color(qn, n) == col
+            && nodes_interfere(chordal_env, irn, n)) {
+
 					DBG((dbg, LEVEL_4, "\t        %n\ttroubles\n", n));
 					obstack_ptr_grow(&confl_ob, n);
 					pset_break(live_ins);
@@ -262,7 +267,10 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 			 * the target color and interfere with the irn */
 			for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
 				ir_node *n = get_irn_out(curr_bl, i);
-				if (is_allocatable_irn(n) && n != trigger && qnode_get_new_color(qn, n) == col && values_interfere(irn, n)) {
+				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), qn->ou->co->cls)
+            && n != trigger && qnode_get_new_color(qn, n) == col
+            && nodes_interfere(chordal_env, irn, n)) {
+
 					DBG((dbg, LEVEL_4, "\t        %n\ttroubles\n", n));
 					obstack_ptr_grow(&confl_ob, n);
 				}

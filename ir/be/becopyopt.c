@@ -9,6 +9,7 @@
 #endif
 
 #include "xmalloc.h"
+#include "bechordal_t.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 
@@ -50,7 +51,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 		ir_node *arg = get_irn_n(root, i);
 		assert(is_curr_reg_class(arg) && "Argument not in same register class.");
 		if (arg != root) {
-			if (!values_interfere(root, arg)) {
+			if (!nodes_interfere(co->chordal_env, root, arg)) {
 				DBG((dbg, LEVEL_1, "\t  Member: %n\n", arg));
 				if (is_optimizable(arg))
 					co_append_unit(co, arg);
@@ -72,7 +73,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 
 static void co_collect_in_block(ir_node *block, void *env) {
 	copy_opt_t *co = env;
-	struct list_head *head = &get_ra_block_info(block)->border_head;
+	struct list_head *head = get_block_border_head(co->chordal_env, block);
 	border_t *curr;
 
 	list_for_each_entry_reverse(border_t, curr, head, list)
@@ -87,7 +88,8 @@ static void co_collect_units(copy_opt_t *co) {
 	del_pset(co->roots);
 }
 
-copy_opt_t *new_copy_opt(ir_graph *irg, const arch_env_t *env, const arch_register_class_t *cls) {
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env,
+    const arch_env_t *env, const arch_register_class_t *cls) {
 	const char *s1, *s2, *s3;
 	int len;
         copy_opt_t *co;
@@ -96,7 +98,8 @@ copy_opt_t *new_copy_opt(ir_graph *irg, const arch_env_t *env, const arch_regist
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	co = xcalloc(1, sizeof(*co));
-	co->irg = irg;
+  co->chordal_env = chordal_env;
+	co->irg = chordal_env->irg;
 	co->env = env;
 //	co->isa = env->isa;
 	co->cls = cls;
@@ -124,18 +127,18 @@ void free_copy_opt(copy_opt_t *co) {
 	}
 }
 
-int is_optimizable_arg(ir_node *irn) {
+int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	int i, max;
 	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
 		ir_node *n = get_irn_out(irn, i);
-		if (is_optimizable(n) && (irn == n || !values_interfere(irn, n)))
+		if (is_optimizable(n) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
 			return 1;
 	}
 	return 0;
 }
 
 
-int co_get_copy_count(copy_opt_t *co) {
+int co_get_copy_count(const copy_opt_t *co) {
 	int i, res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units) {
@@ -148,7 +151,7 @@ int co_get_copy_count(copy_opt_t *co) {
 	return res;
 }
 
-int co_get_lower_bound(copy_opt_t *co) {
+int co_get_lower_bound(const copy_opt_t *co) {
 	int res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units)
@@ -156,7 +159,7 @@ int co_get_lower_bound(copy_opt_t *co) {
 	return res;
 }
 
-int co_get_interferer_count(copy_opt_t *co) {
+int co_get_interferer_count(const copy_opt_t *co) {
 	int res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units)
@@ -169,7 +172,7 @@ int co_get_interferer_count(copy_opt_t *co) {
  */
 static void co_collect_for_checker(ir_node *block, void *env) {
 	copy_opt_t *co = env;
-	struct list_head *head = &get_ra_block_info(block)->border_head;
+	struct list_head *head = get_block_border_head(co->chordal_env, block);
 	border_t *curr;
 
 	list_for_each_entry_reverse(border_t, curr, head, list)
@@ -190,9 +193,10 @@ void co_check_allocation(copy_opt_t *co) {
 
 	nodes = (ir_node **) obstack_finish(&co->ob);
 	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
-		assert(! (is_allocatable_irn(n1) && get_irn_col(co, n1) == NO_COLOR));
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
-			if (phi_ops_interfere(n1, n2) && get_irn_col(co, n1) == get_irn_col(co, n2)) {
+			if (nodes_interfere(co->chordal_env, n1, n2)
+          && get_irn_col(co, n1) == get_irn_col(co, n2)) {
+
 				DBG((dbg, 0, "Error: %n in %n  and  %n in %n have the same color.\n", n1, get_nodes_block(n1), n2, get_nodes_block(n2)));
 				assert(0 && "Interfering values have the same color!");
 			}

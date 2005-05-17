@@ -18,7 +18,7 @@
 #include "phiclass.h"
 
 #include "be_t.h"
-#include "bera_t.h"
+#include "bechordal_t.h"
 #include "benumb_t.h"
 #include "besched_t.h"
 #include "belistsched.h"
@@ -44,7 +44,6 @@ void be_init(void)
 	be_sched_init();
 	be_liveness_init();
 	be_numbering_init();
-	be_ra_init();
 	be_ra_chordal_init();
 	be_copy_opt_init();
 #ifdef DO_STAT
@@ -92,9 +91,10 @@ static void be_main_loop(void)
 #endif
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
+      be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-			be_ra_chordal(irg, &env, cls);
+			chordal_env = be_ra_chordal(irg, &env, cls);
 
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(&env, irg, "");
@@ -102,8 +102,8 @@ static void be_main_loop(void)
 #ifdef DO_STAT
 			stat_collect_irg(irg);
 #endif
-			be_copy_opt(irg, &env, cls);
-			be_ra_chordal_done(irg);
+			be_copy_opt(chordal_env, &env, cls);
+			be_ra_chordal_done(chordal_env);
 		}
 #ifdef DO_STAT
 		stat_dump(irg);

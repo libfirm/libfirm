@@ -13,7 +13,6 @@
 
 #include "beutil.h"
 #include "besched_t.h"
-#include "bera_t.h"
 #include "bearch.h"
 
 struct dump_env {
@@ -42,7 +41,7 @@ static void dump_allocated_block(ir_node *block, void *data)
 		if(block != get_irg_start_block(get_irn_irg(block))) {
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
-				if(is_allocatable_irn(op)) {
+        if(arch_is_register_operand(dump_env->env, op, arch_pos_make_out(0))) {
 					ir_fprintf(f, "%s%s", prefix,
               arch_register_get_name(arch_get_irn_register(env, op, 0)));
 					prefix = ", ";

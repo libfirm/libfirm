@@ -22,12 +22,11 @@
 
 #include "beutil.h"
 #include "besched.h"
-#include "bera_t.h"
 #include "benumb_t.h"
 #include "besched_t.h"
 #include "belive_t.h"
 #include "bechordal_t.h"
 
-void be_ra_chordal_spill(ir_graph *irg)
+void be_ra_chordal_spill(be_chordal_env_t *env)
 {
 }

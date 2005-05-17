@@ -27,10 +27,12 @@ void be_copy_opt_init(void) {
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 }
 
-void be_copy_opt(ir_graph* irg, const arch_env_t *env, const arch_register_class_t *cls) {
+void be_copy_opt(be_chordal_env_t *chordal_env,
+    const arch_env_t *env, const arch_register_class_t *cls) {
+
 	copy_opt_t *co;
 	int lb, copies;
-	co = new_copy_opt(irg, env, cls);
+	co = new_copy_opt(chordal_env, env, cls);
 	DBG((dbg, LEVEL_1, "\n\n    ===>  %s  <===\n\n", co->name));
 	co_check_allocation(co);
 

@@ -24,7 +24,8 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	benumb_t.h benumb.c bechordal.c bera.c beutil.c \
 	bera.h bechordalspill.c beasm_dump_globals.c beasm_asm_gnu.c \
 	sp_matrix.c becopyoptmain.c becopyopt.c becopyheur.c \
-	becopyilp.c becopystat.c bearch_firm.c bearch.c
+	becopyilp.c becopystat.c bearch_firm.c bearch.c bechordal_draw.c \
+	bechordal_draw.h
 
 include $(topdir)/MakeRules
 
