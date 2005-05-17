@@ -268,16 +268,27 @@ static void set_y(const draw_chordal_env_t *env, ir_node *bl, int up)
 }
 
 static color_t *reg_to_color(const draw_chordal_env_t *env,
-    ir_node *irn, color_t *color)
+    ir_node *rel_bl, ir_node *irn, color_t *color)
 {
   int i, n, phi_arg = 0;
 
   for(i = 0, n = get_irn_n_outs(irn); i < n && !phi_arg; ++i)
     phi_arg |= is_Phi(get_irn_out(irn, i));
 
+#if 1
   color->r = is_Phi(irn) ? 0.5 : 0.0;
   color->g = phi_arg ? 0.5 : 0.0;
   color->b = 0.0;
+#else
+  {
+    int live_in = is_live_in(rel_bl, irn);
+    int live_out = is_live_out(rel_bl, irn);
+
+    color->r = live_in;
+    color->g = live_out;
+    color->b = 0.0;
+  }
+#endif
 
   return color;
 
@@ -310,13 +321,15 @@ static void draw_block(ir_node *bl, void *data)
     if(b->is_def) {
       const arch_register_t *reg = arch_get_irn_register(env->arch_env, b->irn, 0);
       int col = arch_register_get_index(reg);
+      int live_in = is_live_in(bl, b->irn);
+      int live_out = is_live_out(bl, b->irn);
       int x = (col + 1) * opts->h_inter_gap;
-      int ystart = (b->step + dims->min_step) * opts->v_inter_gap;
-      int ystop = (b->other_end->step - dims->min_step)
-        * opts->v_inter_gap + opts->v_inter_gap / 2;
+      int ystart = (b->step) * opts->v_inter_gap;
+      int ystop = (b->other_end->step)
+        * opts->v_inter_gap + (live_out ? 0 : opts->v_inter_gap / 2);
 
       color_t color;
-      reg_to_color(env, b->irn, &color);
+      reg_to_color(env, bl, b->irn, &color);
 
       x += dims->box.x;
       ystart += dims->box.y;
@@ -324,6 +337,9 @@ static void draw_block(ir_node *bl, void *data)
 
       env->plotter->vtab->set_color(env->plotter, &color);
       env->plotter->vtab->line(env->plotter, x, ystart, x, ystop);
+
+      env->plotter->vtab->line(env->plotter, x - 2, ystart, x + 2, ystart);
+      env->plotter->vtab->line(env->plotter, x - 2, ystop, x + 2, ystop);
     }
   }
 
@@ -337,7 +353,7 @@ static void draw_block(ir_node *bl, void *data)
         int x = (col + 1) * opts->h_inter_gap;
 
         color_t color;
-        reg_to_color(env, irn, &color);
+        reg_to_color(env, bl, irn, &color);
 
         env->plotter->vtab->set_color(env->plotter, &color);
         env->plotter->vtab->line(env->plotter,
