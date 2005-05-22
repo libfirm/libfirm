@@ -381,7 +381,8 @@ static int optimize_load(ir_node *load)
         }
       }
     }
-    else if (get_irn_op(ptr) == op_Alloc) {
+    else if ((get_irn_op(skip_Proj(ptr)) == op_Alloc) ||
+	     ((get_irn_op(ptr) == op_Cast) && (get_irn_op(skip_Proj(get_Cast_op(ptr))) == op_Alloc))) {
       /* simple case: a direct load after an Alloc. Firm Alloc throw
        * an exception in case of out-of-memory. So, there is no way for an
        * exception in this load.
