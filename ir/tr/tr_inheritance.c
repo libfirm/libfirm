@@ -260,11 +260,11 @@ static void compute_down_closure(type *tp) {
     int j, n_overwrittenby = get_entity_n_overwrittenby(mem);
 
     myset = get_entity_map(mem, d_down);
-    for (j = 0; j > n_overwrittenby; ++j) {
+    for (j = 0; j < n_overwrittenby; ++j) {
       entity *ov = get_entity_overwrittenby(mem, j);
       subset = get_entity_map(ov, d_down);
-      pset_insert_pset_ptr(myset, subset);
       pset_insert_ptr(myset, ov);
+      pset_insert_pset_ptr(myset, subset);
     }
   }
 
@@ -314,7 +314,7 @@ static void compute_up_closure(type *tp) {
     int j, n_overwrites = get_entity_n_overwrites(mem);
 
     myset = get_entity_map(mem, d_up);
-    for (j = 0; j > n_overwrites; ++j) {
+    for (j = 0; j < n_overwrites; ++j) {
       entity *ov = get_entity_overwrites(mem, j);
       subset = get_entity_map(ov, d_up);
       pset_insert_pset_ptr(myset, subset);
@@ -354,13 +354,13 @@ void compute_inh_transitive_closure(void) {
 
       assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_subtypes && !has_unmarked_subtype; ++j) {
-	      type *stp = get_class_subtype(tp, j);
-	      if (type_not_visited(stp)) has_unmarked_subtype = true;
+	type *stp = get_class_subtype(tp, j);
+	if (type_not_visited(stp)) has_unmarked_subtype = true;
       }
 
       /* This is a good starting point. */
       if (!has_unmarked_subtype)
-	      compute_down_closure(tp);
+	compute_down_closure(tp);
     }
   }
 
@@ -381,7 +381,7 @@ void compute_inh_transitive_closure(void) {
 
       /* This is a good starting point. */
       if (!has_unmarked_supertype)
-	      compute_up_closure(tp);
+	compute_up_closure(tp);
     }
   }
 

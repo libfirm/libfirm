@@ -473,24 +473,42 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
     if (is_Class_type(get_entity_owner(ent))) {
       if (get_entity_n_overwrites(ent) > 0) {
-	    fprintf(F, "%s  overwrites:\n", prefix);
-	    for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
-	      entity *ov = get_entity_overwrites(ent, i);
-	      fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
-		      get_type_name(get_entity_owner(ov)));
-	    }
-      } else {
-	    fprintf(F, "%s  Does not overwrite other entities. \n", prefix);
-      }
-      if (get_entity_n_overwrittenby(ent) > 0) {
-	    fprintf(F, "%s  overwritten by:\n", prefix);
-	    for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
-	      entity *ov = get_entity_overwrittenby(ent, i);
-	      fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
-		      get_type_name(get_entity_owner(ov)));
+	fprintf(F, "%s  overwrites:\n", prefix);
+	for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
+	  entity *ov = get_entity_overwrites(ent, i);
+	  fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
+		  get_type_name(get_entity_owner(ov)));
 	}
       } else {
-	    fprintf(F, "%s  Is not overwritten by other entities. \n", prefix);
+	fprintf(F, "%s  Does not overwrite other entities. \n", prefix);
+      }
+      if (get_entity_n_overwrittenby(ent) > 0) {
+	fprintf(F, "%s  overwritten by:\n", prefix);
+	for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
+	  entity *ov = get_entity_overwrittenby(ent, i);
+	  fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
+		  get_type_name(get_entity_owner(ov)));
+	}
+      } else {
+	fprintf(F, "%s  Is not overwritten by other entities. \n", prefix);
+      }
+
+      if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
+	entity *ov;
+	fprintf(F, "%s  transitive overwrites:\n", prefix);
+	for (ov = get_entity_trans_overwrites_first(ent);
+	     ov;
+	     ov = get_entity_trans_overwrites_next(ent)) {
+	  fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
+		  get_type_name(get_entity_owner(ov)));
+	}
+	fprintf(F, "%s  transitive overwritten by:\n", prefix);
+	for (ov = get_entity_trans_overwrittenby_first(ent);
+	     ov;
+	     ov = get_entity_trans_overwrittenby_next(ent)) {
+	  fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
+		  get_type_name(get_entity_owner(ov)));
+	}
       }
     }
 
@@ -583,7 +601,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
   }
 
   if (get_trouts_state()) {
-    fprintf(F, "%sEntity outs:\n", prefix);
+    fprintf(F, "%s  Entity outs:\n", prefix);
     dump_node_list(F, (firm_kind *)ent, prefix, (int(*)(firm_kind *))get_entity_n_accesses,
 		   (ir_node *(*)(firm_kind *, int))get_entity_access, "Accesses");
     dump_node_list(F, (firm_kind *)ent, prefix, (int(*)(firm_kind *))get_entity_n_references,
@@ -944,7 +962,24 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
         fprintf(F, "\n    %s", get_type_name(stp));
       }
 
+      if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
+	type *stp;
+	fprintf(F, "\n  transitive supertypes: ");
+	for (stp = get_class_trans_supertype_first(tp);
+	     stp;
+	     stp = get_class_trans_supertype_next(tp)) {
+	  fprintf(F, "\n    %s", get_type_name(stp));
+	}
+	fprintf(F, "\n  transitive subtypes: ");
+	for (stp = get_class_trans_subtype_first(tp);
+	     stp;
+	     stp = get_class_trans_subtype_next(tp)) {
+	  fprintf(F, "\n    %s", get_type_name(stp));
+	}
+      }
+
       fprintf(F, "\n  peculiarity: %s\n", get_peculiarity_string(get_class_peculiarity(tp)));
+
     }
     break;
 
