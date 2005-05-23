@@ -94,6 +94,7 @@ typedef struct hook_entry {
     void (*_hook_arch_dep_replace_div_by_const)(void *context, ir_node *irn);
     void (*_hook_arch_dep_replace_mod_by_const)(void *context, ir_node *irn);
     void (*_hook_arch_dep_replace_DivMod_by_const)(void *context, ir_node *irn);
+    void (*_hook_new_mode)(void *context, const ir_mode *tmpl, ir_mode *mode);
   } hook;
 
   /** the context for every hook */
@@ -132,6 +133,7 @@ typedef enum {
   hook_arch_dep_replace_div_by_const,
   hook_arch_dep_replace_mod_by_const,
   hook_arch_dep_replace_DivMod_by_const,
+  hook_new_mode,
   hook_last,
 } hook_type_t;
 
@@ -201,6 +203,7 @@ extern hook_entry_t *hooks[hook_last];
   hook_exec(hook_arch_dep_replace_mod_by_const, (ctx, irn))
 #define hook_arch_dep_replace_DivMod_by_const(irn) \
   hook_exec(hook_arch_dep_replace_DivMod_by_const, (ctx, irn))
+#define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (ctx, tmpl, mode))
 
 /* the initializer, move to hooks_t.h some day */
 int init_hooks(void);
