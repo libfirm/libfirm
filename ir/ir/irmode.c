@@ -26,6 +26,7 @@
 # include "ident.h"
 # include "tv.h"
 # include "obst.h"
+# include "irhooks.h"
 
 #if 0
 static long long count = 0;
@@ -266,7 +267,7 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign,
 		     mode_arithmetic arithmetic, unsigned int modulo_shift )
 {
   ir_mode mode_tmpl;
-  ir_mode *mode;
+  ir_mode *mode = NULL;
 
   mode_tmpl.name         = new_id_from_str(name);
   mode_tmpl.sort         = sort;
@@ -279,8 +280,8 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign,
   mode_tmpl.tv_priv      = NULL;
 
   mode = find_mode(&mode_tmpl);
-  if (mode)
-  {
+  if (mode) {
+    hook_new_mode(&mode_tmpl, mode);
     return mode;
   }
 
@@ -292,15 +293,16 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign,
     case irms_memory:
     case irms_internal_boolean:
       assert(0 && "internal modes cannot be user defined");
-      return NULL;
+      break;
 
     case irms_float_number:
     case irms_int_number:
     case irms_reference:
     case irms_character:
-      return register_mode(&mode_tmpl);
+      mode = register_mode(&mode_tmpl);
   }
-  return NULL; /* to shut up gcc */
+  hook_new_mode(&mode_tmpl, mode);
+  return mode;
 }
 
 /*
@@ -310,7 +312,7 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
 		     mode_arithmetic arithmetic, unsigned int modulo_shift )
 {
   ir_mode mode_tmpl;
-  ir_mode *mode;
+  ir_mode *mode = NULL;
 
   mode_tmpl.name         = new_id_from_str(name);
   mode_tmpl.sort         = sort;
@@ -323,12 +325,15 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
   mode_tmpl.tv_priv      = NULL;
 
   mode = find_mode(&mode_tmpl);
-  if (mode)
+  if (mode) {
+    hook_new_mode(&mode_tmpl, mode);
     return mode;
+  }
 
   if (num_of_elem <= 1) {
     assert(0 && "vector modes should have at least 2 elements");
-    return NULL;
+    hook_new_mode(&mode_tmpl, mode);
+    return mode;
   }
 
   /* sanity checks */
@@ -339,21 +344,22 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
     case irms_memory:
     case irms_internal_boolean:
       assert(0 && "internal modes cannot be user defined");
-      return NULL;
+      break;
 
     case irms_reference:
     case irms_character:
       assert(0 && "only integer and floating point modes can be vectorized");
-      return NULL;
+      break;
 
     case irms_float_number:
       assert(0 && "not yet implemented");
-      return NULL;
+      break;
 
     case irms_int_number:
-      return register_mode(&mode_tmpl);
+      mode = register_mode(&mode_tmpl);
   }
-  return NULL; /* to shut up gcc */
+  hook_new_mode(&mode_tmpl, mode);
+  return mode;
 }
 
 /* Functions for the direct access to all attributes od a ir_mode */
