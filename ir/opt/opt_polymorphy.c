@@ -5,7 +5,7 @@
  * Author:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 2005 UniversitÅ‰t Karlsruhe
+ * Copyright:   (c) 2005 Universit‰t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -55,7 +55,7 @@ ir_node *transform_node_Sel(ir_node *node)
 
   /* If the entity is a leave in the inheritance tree,
      we can replace the Sel by a constant. */
-  if ((get_irp_phase_state() != phase_building) && (get_entity_n_overwrittenby(ent) == 0)) {
+  if (get_entity_n_overwrittenby(ent) == 0) {
     /* In dead code, we might call a leave entity that is a description.
        Do not turn the Sel to a SymConst. */
     if (get_entity_peculiarity(ent) == peculiarity_description) {
@@ -103,7 +103,7 @@ ir_node *transform_node_Sel(ir_node *node)
  *  This function returns a node replacing the Proj(Load)[Value].
  *  If this is actually called in transform_node, we must build
  *  a tuple, or replace the Projs of the load.
- *  Therefore we call this optimization in ldstopt.
+ *  Therefore we call this optimization in ldstopt().
  */
 ir_node *transform_node_Load(ir_node *n)
 {
