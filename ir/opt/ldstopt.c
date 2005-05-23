@@ -339,7 +339,6 @@ static compound_graph_path *get_accessed_path(ir_node *ptr) {
   return rec_get_accessed_path(ptr, 0);
 }
 
-
 /**
  * optimize a Load
  */
@@ -366,7 +365,7 @@ static int optimize_load(ir_node *load)
     if (get_irn_op(ptr) == op_Sel) {
       ir_node *mem = get_Sel_mem(ptr);
 
-      if (get_irn_op(mem) == op_Alloc) {
+      if (get_irn_op(skip_Proj(mem)) == op_Alloc) {
         /* ok, check the types */
         entity *ent  = get_Sel_entity(ptr);
         type *s_type = get_entity_type(ent);
