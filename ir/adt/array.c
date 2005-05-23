@@ -142,9 +142,9 @@ _arr_setlen (void *elts, int nelts, size_t elts_size)
  * Resize a flexible array, allocate more data if needed but do NOT
  * reduce.
  *
- * @param elts       The flexible array (pointer to the first element).
- * @param nelts      The new number of elements.
- * @param elts_size  The size of the array elements.
+ * @param elts     The flexible array (pointer to the first element).
+ * @param nelts    The new number of elements.
+ * @param eltsize  The size of the array elements.
  *
  * @return A resized flexible array, possibly other address than
  *         elts.
