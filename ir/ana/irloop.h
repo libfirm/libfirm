@@ -72,7 +72,7 @@ void clear_backedges (ir_node *n);
 /* ------------------------------------------------------------------- */
 typedef struct ir_loop ir_loop;
 
-/* Loop elements are loop nodes and ir nodes */
+/** Loop elements: loop nodes and ir nodes */
 typedef union {
     firm_kind *kind;    /**< is either k_ir_node or k_ir_loop */
     ir_node *node;      /**< Pointer to an ir_node element */
@@ -83,6 +83,8 @@ int      is_ir_loop(const void *thing);
 
 /** Set the outermost loop in ir graph as basic access to loop tree. */
 void     set_irg_loop(ir_graph *irg, ir_loop *l);
+
+/* Returns the root loop info (if exists) for an irg. */
 ir_loop *get_irg_loop(ir_graph *irg);
 
 /** Returns the loop n is contained in.  NULL if node is in no loop. */
@@ -96,9 +98,16 @@ int      get_loop_depth (ir_loop *loop);
 /* Sons are the inner loops contained in this loop. */
 /** Returns the number of inner loops */
 int      get_loop_n_sons (ir_loop *loop);
+
+/** Returns the pos`th son loop (inner loop) of a loop.
+    Returns NULL if there is not a pos`th loop_node. */
 ir_loop *get_loop_son (ir_loop *loop, int pos);
+
 /** Returns the number of nodes contained in loop.  */
 int      get_loop_n_nodes (ir_loop *loop);
+
+/** Returns the pos`th ir_node of a loop.
+    Returns NULL if there is not a pos`th ir_node. */
 ir_node *get_loop_node (ir_loop *loop, int pos);
 
 /** Returns the number of elements contained in loop.  */
