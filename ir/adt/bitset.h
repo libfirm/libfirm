@@ -245,6 +245,7 @@ static INLINE bitset_pos_t bitset_max(const bitset_t *bs)
  * @note Note that if pos is set, pos is returned.
  * @param bs The bitset.
  * @param pos The bit from which to search for the next set bit.
+ * @param set if 1, serach for set bits, else for unset bits
  * @return The next set bit from pos on, or -1, if no set bit was found
  * after pos.
  */
