@@ -713,13 +713,13 @@ static void loop_walk(ir_node *node, env_t *env, set *repairs)
  *
  * @param load    A store node.
  * @param env     Contains information about scalars number and mode.
- * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ * @parm  repairs A set, that contains all blocks, that have a link, and all Phis, that
  *                have copies to repair.
  */
 static void store_handling(ir_node *store, env_t *env, set *repairs)
 {
   repairs_t key, *value;
-  ir_node *nods_block, *store_mem, *store_ptr, *store_value, **link, *phi;
+  ir_node *nods_block, *store_mem, *store_ptr, *store_value, *phi;
   ir_loop *store_l;
 
   store_ptr = get_Store_ptr(store);
@@ -768,9 +768,6 @@ static void store_handling(ir_node *store, env_t *env, set *repairs)
     turn_into_tuple(store, pn_Store_max);
     set_Tuple_pred(store, pn_Store_M, store_mem);
     set_Tuple_pred(store, pn_Store_X_except, new_Bad());
-
-    /* FIXME: link is uninitialized here */
-    set_irn_link(nods_block, link);
   }
 }
 
