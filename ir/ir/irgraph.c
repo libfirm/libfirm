@@ -92,13 +92,20 @@ void init_irgraph(void) {
  * allocated (new_r_ir_graph, new_const_code_irg).
  * @return Memory for a new graph.
  */
-static ir_graph *alloc_graph(void)
-{
-	size_t size = sizeof(ir_graph) + additional_graph_data_size;
-	char *ptr = xmalloc(size);
-	memset(ptr, 0, size);
+static ir_graph *alloc_graph(void) {
+  size_t size = sizeof(ir_graph) + additional_graph_data_size;
+  char *ptr = xmalloc(size);
+  memset(ptr, 0, size);
 
-	return (ir_graph *) (ptr + additional_graph_data_size);
+  return (ir_graph *) (ptr + additional_graph_data_size);
+}
+
+/**
+ * Frees an allocated IR graph
+ */
+static void free_graph(ir_graph *irg) {
+  char *ptr = (char *)irg;
+  free(ptr - additional_graph_data_size);
 }
 
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -310,6 +317,7 @@ void  del_identities (pset *value_table);
    Does not free types, entities or modes that are used only by this
    graph, nor the entity standing for this graph. */
 void free_ir_graph (ir_graph *irg) {
+  assert(is_ir_graph(irg));
 
   hook_free_graph(irg);
   if (irg->outs_state != outs_none) free_outs(irg);
@@ -331,7 +339,7 @@ void free_ir_graph (ir_graph *irg) {
   if (irg->loc_descriptions)
     free(irg->loc_descriptions);
   irg->kind = k_BAD;
-  free(irg);
+  free_graph(irg);
 }
 
 /* access routines for all ir_graph attributes:
