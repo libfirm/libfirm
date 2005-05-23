@@ -369,7 +369,7 @@ int      get_loop_n_sons (ir_loop *loop) {
 
 /* Returns the pos`th loop_node-child              *
  * TODO: This method isn`t very efficient !        *
- * Returns NULL if there isnt`t a pos`th loop_node */
+ * Returns NULL if there isn`t a pos`th loop_node */
 ir_loop *get_loop_son (ir_loop *loop, int pos) {
   int child_nr = 0, loop_nr = -1;
 
@@ -407,7 +407,7 @@ int      get_loop_n_nodes (ir_loop *loop) {
 
 /* Returns the pos`th ir_node-child                *
  * TODO: This method isn`t very efficient !        *
- * Returns NULL if there isnt`t a pos`th ir_node   */
+ * Returns NULL if there isn`t a pos`th ir_node   */
 ir_node *get_loop_node (ir_loop *loop, int pos) {
   int child_nr, node_nr = -1;
 
@@ -449,7 +449,7 @@ int get_loop_n_elements (ir_loop *loop) {
  Returns the pos`th loop element.
  This may be a loop_node or a ir_node. The caller of this function has
  to check the *(loop_element.kind) field for "k_ir_node" or "k_ir_loop"
- and then select the apropriate "loop_element.node" or "loop_element.son".
+ and then select the appropriate "loop_element.node" or "loop_element.son".
 */
 
 loop_element get_loop_element (ir_loop *loop, int pos) {
@@ -494,18 +494,18 @@ void *get_loop_link (const ir_loop *loop) {
 #endif
 }
 
-int is_ir_loop(const void *thing) {
-  return (get_kind(thing) == k_ir_loop);
+int (is_ir_loop)(const void *thing) {
+  return _is_ir_loop(thing);
 }
 
 /* The outermost loop is remarked in the surrounding graph. */
-void     set_irg_loop(ir_graph *irg, ir_loop *loop) {
-  assert(irg);
-  irg->loop = loop;
+void (set_irg_loop)(ir_graph *irg, ir_loop *loop) {
+  _set_irg_loop(irg, loop);
 }
-ir_loop *get_irg_loop(ir_graph *irg) {
-  assert(irg);
-  return irg->loop;
+
+/* Returns the root loop info (if exists) for an irg. */
+ir_loop *(get_irg_loop)(ir_graph *irg) {
+  return _get_irg_loop(irg);
 }
 
 
@@ -720,8 +720,8 @@ smallest_dfn_pred (ir_node *n, int limit)
       assert(pred);
       if (is_backedge(n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
-	index = i;
-	min = get_irn_dfn(pred);
+	      index = i;
+	      min = get_irn_dfn(pred);
       }
     }
   }
@@ -740,8 +740,8 @@ largest_dfn_pred (ir_node *n)
       ir_node *pred = get_irn_n(n, i);
       if (is_backedge (n, i) || !irn_is_in_stack(pred)) continue;
       if (get_irn_dfn(pred) > max) {
-	index = i;
-	max = get_irn_dfn(pred);
+	      index = i;
+	      max = get_irn_dfn(pred);
       }
     }
   }
@@ -777,21 +777,21 @@ find_tail (ir_node *n) {
       m = stack[i];
 
       if (is_head (m, n)) {
-	res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
-	if (res_index == -2)  /* no smallest dfn pred found. */
-	  res_index = largest_dfn_pred (m);
+	      res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
+	      if (res_index == -2)  /* no smallest dfn pred found. */
+	        res_index = largest_dfn_pred (m);
 
-	if ((m == n) && (res_index == -2)) {  /* dont walk past loop head. */
-	  i = -1;
-	}
-	break;
+	      if ((m == n) && (res_index == -2)) {  /* dont walk past loop head. */
+	        i = -1;
+	      }
+	      break;
       }
 
       /* We should not walk past our selves on the stack:  The upcoming nodes
-	 are not in this loop. We assume a loop not reachable from Start. */
-      if (m == n) {
-	i = -1;
-	break;
+	       are not in this loop. We assume a loop not reachable from Start. */
+            if (m == n) {
+	      i = -1;
+	      break;
       }
 
     }
@@ -799,14 +799,14 @@ find_tail (ir_node *n) {
     if (i < 0) {
       /* A dead loop not reachable from Start. */
       for (i = tos-2; i >= 0; --i) {
-	m = stack[i];
-	if (is_endless_head (m, n)) {
-	  res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
-	  if (res_index == -2)  /* no smallest dfn pred found. */
-	    res_index = largest_dfn_pred (m);
-	  break;
-	}
-	if (m == n) { break; }  /* It's not an unreachable loop, either. */
+	      m = stack[i];
+	      if (is_endless_head (m, n)) {
+	        res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
+	        if (res_index == -2)  /* no smallest dfn pred found. */
+	          res_index = largest_dfn_pred (m);
+	        break;
+	      }
+	      if (m == n) { break; }  /* It's not an unreachable loop, either. */
       }
       //assert(0 && "no head found on stack");
     }
@@ -832,7 +832,7 @@ find_tail (ir_node *n) {
 #if EXPERIMENTAL_LOOP_TREE
 
 /*  ----------------------------------------------------------------
-    AS:  This is experimantal code to build loop trees suitable for
+    AS:  This is experimental code to build loop trees suitable for
     the heap analysis. Does not work correctly right now... :-(
 
 
@@ -849,28 +849,28 @@ int search_endproj_in_stack(ir_node *start_block)
   int i, j;
   assert(is_Block(start_block));
   for(i = tos - 1; i >= 0; --i)
-    {
-      DDMN(stack[i]);
-      if(get_irn_op(stack[i]) == op_Proj && get_irn_mode(stack[i]) == mode_X &&
-	 get_irn_op(get_irn_n(stack[i], 0)) == op_EndReg)
-	{
-	  printf("FOUND PROJ!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-	  ir_node *end_projx = stack[i];
+  {
+    DDMN(stack[i]);
+    if(get_irn_op(stack[i]) == op_Proj && get_irn_mode(stack[i]) == mode_X &&
+	     get_irn_op(get_irn_n(stack[i], 0)) == op_EndReg)
+	  {
+	    printf("FOUND PROJ!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	    ir_node *end_projx = stack[i];
 
-	  int arity = get_irn_arity(start_block);
-	  for(j = 0; j < arity; j++)
+	    int arity = get_irn_arity(start_block);
+	    for(j = 0; j < arity; j++)
 	    {
 	      ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
 						       get_Proj_proj(end_projx));
 	      DDMN(begin_projx);
 	      if(get_irn_n(start_block, j) == begin_projx)
-		{
-		  printf("FOUND IT!!!!!!!!!!!!!!!!!!\n");
-		  return(j);
-		}
+		    {
+		      printf("FOUND IT!!!!!!!!!!!!!!!!!!\n");
+		      return(j);
+		    }
 	    }
-	}
-    }
+	  }
+  }
   return(-1);
 }
 
@@ -942,10 +942,10 @@ static void scc (ir_node *n) {
       /* if ((!m) || (get_irn_op(m) == op_Unknown)) continue; */
       scc (m);
       if (irn_is_in_stack(m)) {
-	/* Uplink of m is smaller if n->m is a backedge.
-	   Propagate the uplink to mark the loop. */
-	if (get_irn_uplink(m) < get_irn_uplink(n))
-	  set_irn_uplink(n, get_irn_uplink(m));
+	      /* Uplink of m is smaller if n->m is a backedge.
+	         Propagate the uplink to mark the loop. */
+	      if (get_irn_uplink(m) < get_irn_uplink(n))
+	        set_irn_uplink(n, get_irn_uplink(m));
       }
     }
   }
@@ -983,11 +983,11 @@ static void scc (ir_node *n) {
       ir_loop *l;
       int close;
       if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
-	l = new_loop();
-	close = 1;
+	      l = new_loop();
+	      close = 1;
       } else {
-	l = current_loop;
-	close = 0;
+	      l = current_loop;
+	      close = 0;
       }
 #else
       ir_loop *l = new_loop();
@@ -1043,10 +1043,10 @@ static void my_scc (ir_node *n) {
       /* if ((!m) || (get_irn_op(m) == op_Unknown)) continue; */
       my_scc (m);
       if (irn_is_in_stack(m)) {
-	/* Uplink of m is smaller if n->m is a backedge.
-	   Propagate the uplink to mark the loop. */
-	if (get_irn_uplink(m) < get_irn_uplink(n))
-	  set_irn_uplink(n, get_irn_uplink(m));
+	      /* Uplink of m is smaller if n->m is a backedge.
+	         Propagate the uplink to mark the loop. */
+	      if (get_irn_uplink(m) < get_irn_uplink(n))
+	        set_irn_uplink(n, get_irn_uplink(m));
       }
     }
   }
@@ -1081,11 +1081,11 @@ static void my_scc (ir_node *n) {
       ir_loop *l;
       int close;
       if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
-	l = new_loop();
-	close = 1;
+	      l = new_loop();
+	      close = 1;
       } else {
-	l = current_loop;
-	close = 0;
+	      l = current_loop;
+	      close = 0;
       }
 #else
       ir_loop *l = new_loop();
