@@ -2042,13 +2042,25 @@ skip_Tuple (ir_node *node) {
   return node;
 }
 
-/** returns operand of node if node is a Cast */
+/* returns operand of node if node is a Cast */
 ir_node *skip_Cast  (ir_node *node) {
   if (node && get_irn_op(node) == op_Cast) {
-    return skip_Id(get_irn_n(node, 0));
-  } else {
-    return node;
-  }
+    return get_Cast_op(node);
+  return node;
+}
+
+/* returns operand of node if node is a Confirm */
+ir_node *skip_Confirm  (ir_node *node) {
+  if (node && get_irn_op(node) == op_Confirm) {
+    return get_Confirm_value(node);
+  return node;
+}
+
+/* skip all high-level ops */
+ir_node *skip_HighLevel(ir_node *node) {
+  if (node && is_op_highlevel(get_irn_op(node)))
+    return get_irn_n(node, 0);
+  return node;
 }
 
 #if 0
