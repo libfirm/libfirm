@@ -165,7 +165,7 @@ static INLINE int all_live_in(ir_node *block, pset *living) {
 /**
  * Finds cliques in the interference graph, considering only nodes
  * for which the color pi->curr_color is possible. Finds only 'maximal-cliques',
- * viz cliques which are not conatained in another one.
+ * viz cliques which are not contained in another one.
  * This is used for the matrix B.
  * TODO check color
  */
@@ -272,9 +272,10 @@ static void pi_add_constr_E(problem_instance_t *pi) {
  * Generate the initial problem matrices and vectors.
  */
 static problem_instance_t *new_pi(const copy_opt_t *co) {
+	problem_instance_t *pi;
 
 	DBG((dbg, LEVEL_1, "Generating new instance...\n"));
-	problem_instance_t *pi = xcalloc(1, sizeof(*pi));
+	pi = xcalloc(1, sizeof(*pi));
 	pi->co = co;
 	pi->removed = pset_new_ptr_default();
 	INIT_LIST_HEAD(&pi->simplicials);
@@ -316,7 +317,7 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 	for (i=1; i<=pi->last_x_var; ++i) {
 		int nnr, col;
 		double val;
-		/* get varibale name */
+		/* get variable name */
 		const char *var_name = lpp_get_var_name(pi->curr_lp, i);
 		/* split into components */
 		if (split_var(var_name, &nnr, &col) == 2) {
@@ -324,7 +325,7 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 			val = (get_irn_col(pi->co, get_irn_for_graph_nr(pi->co->irg, nnr)) == col) ? 1 : 0;
 			lpp_set_start_value(pi->curr_lp, i, val);
 		} else
-			assert(0 && "x vars always look like this \"x123_45\"");
+			assert(0 && "x vars always look like this 'x123_45'");
 	}
 }
 
