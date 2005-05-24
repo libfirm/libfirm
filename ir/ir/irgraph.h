@@ -352,8 +352,9 @@ irg_dom_state get_irg_dom_state(const ir_graph *irg);
 void set_irg_dom_inconsistent(ir_graph *irg);
 
 /** state: loopinfo_state
-   Loop information describes the loops within the control and
-   data flow of the procedure.  */
+ *  Loop information describes the loops within the control and
+ *  data flow of the procedure.
+ */
 typedef enum {
   loopinfo_none             = 0,       /**< No loop information is constructed. Default. */
   loopinfo_constructed      = 1,       /**< Some kind of loop information is constructed. */
@@ -365,7 +366,7 @@ typedef enum {
                       are used in a switch. */
 
   /** IntRAprocedural loop information constructed and valid. */
-  loopinfo_consistent         = loopinfo_constructed | loopinfo_valid,
+  loopinfo_consistent         = loopinfo_constructed | loopinfo_for_firmjni | loopinfo_valid,
   /** IntRAprocedural loop information constructed and invalid. */
   loopinfo_inconsistent       = loopinfo_constructed | loopinfo_for_firmjni,
 
@@ -385,9 +386,13 @@ typedef enum {
   loopinfo_cf_ip_inconsistent = loopinfo_constructed | loopinfo_cf | loopinfo_inter
 } irg_loopinfo_state;
 
+/** Return the current loop information state. */
 irg_loopinfo_state get_irg_loopinfo_state(const ir_graph *irg);
+
+/** Sets the current loop information state. */
 void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
-/** Sets the loopinformation state to the appropriate inconsistent state.
+
+/** Sets the loop information state to the appropriate inconsistent state.
    If state is 'none' does not change. */
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
 
