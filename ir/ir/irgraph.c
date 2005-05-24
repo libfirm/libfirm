@@ -641,18 +641,8 @@ void
 }
 
 void
-set_irg_loopinfo_inconsistent(ir_graph *irg) {
-  if (irg->loopinfo_state == loopinfo_ip_consistent)
-    irg->loopinfo_state = loopinfo_ip_inconsistent;
-
-  else if (irg->loopinfo_state == loopinfo_consistent)
-    irg->loopinfo_state = loopinfo_inconsistent;
-
-  else if (irg->loopinfo_state == loopinfo_cf_ip_consistent)
-    irg->loopinfo_state = loopinfo_cf_ip_inconsistent;
-
-  else if (irg->loopinfo_state == loopinfo_cf_consistent)
-    irg->loopinfo_state = loopinfo_cf_inconsistent;
+(set_irg_loopinfo_inconsistent)(ir_graph *irg) {
+  _set_irg_loopinfo_inconsistent(irg);
 }
 
 void
