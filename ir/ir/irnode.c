@@ -2036,7 +2036,7 @@ skip_Tuple (ir_node *node) {
     pred = skip_Id(get_Proj_pred(node));
     if (get_irn_op(pred) == op_Proj) /* nested Tuple ? */
       pred = skip_Id(skip_Tuple(pred));
-    if (get_irn_op(pred) == op_Tuple)
+    else if (get_irn_op(pred) == op_Tuple)
       return get_Tuple_pred(pred, get_Proj_proj(node));
   }
   return node;
@@ -2044,14 +2044,14 @@ skip_Tuple (ir_node *node) {
 
 /* returns operand of node if node is a Cast */
 ir_node *skip_Cast  (ir_node *node) {
-  if (node && get_irn_op(node) == op_Cast) {
+  if (node && get_irn_op(node) == op_Cast)
     return get_Cast_op(node);
   return node;
 }
 
 /* returns operand of node if node is a Confirm */
 ir_node *skip_Confirm  (ir_node *node) {
-  if (node && get_irn_op(node) == op_Confirm) {
+  if (node && get_irn_op(node) == op_Confirm)
     return get_Confirm_value(node);
   return node;
 }
