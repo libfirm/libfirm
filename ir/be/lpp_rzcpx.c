@@ -4,6 +4,13 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -92,10 +99,12 @@ static int cmp_name_t(const void *x, const void *y, size_t size) {
 #define INITIAL_SIZE 64
 
 lpp_t *new_lpp(const char *name, opt_t opt_type) {
+	lpp_t *lpp;
+
 	dbg = firm_dbg_register("ir.be.copyoptilp");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
-	lpp_t *lpp = xcalloc(1, sizeof(*lpp));
+	lpp = xcalloc(1, sizeof(*lpp));
 	lpp->name = xstrdup(name);
 	lpp->opt_type = opt_type;
 	lpp->cst2nr = new_set(cmp_name_t, INITIAL_SIZE);
