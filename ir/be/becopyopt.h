@@ -38,7 +38,7 @@
  * Data representing the problem of copy minimization.
  */
 typedef struct _copy_opt_t {
-  be_chordal_env_t *chordal_env;
+	be_chordal_env_t *chordal_env;
 	ir_graph *irg;						/**< the irg to process */
 	char *name;							/**< ProgName__IrgName__RegClass */
 	const arch_env_t *env;				/**< Environment (isa + handlers) */
