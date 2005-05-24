@@ -403,6 +403,11 @@ _set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s) {
 }
 
 static INLINE void
+_set_irg_loopinfo_inconsistent(ir_graph *irg) {
+  irg->loopinfo_state &= ~loopinfo_valid;
+}
+
+static INLINE void
 _set_irg_pinned(ir_graph *irg, op_pin_state p) {
   irg->op_pin_state_pinned = p;
 }
@@ -506,6 +511,7 @@ _inc_irg_block_visited(ir_graph *irg) {
 #define set_irg_dom_inconsistent(irg)      _set_irg_dom_inconsistent(irg)
 #define get_irg_loopinfo_state(irg)        _get_irg_loopinfo_state(irg)
 #define set_irg_loopinfo_state(irg, s)     _set_irg_loopinfo_state(irg, s)
+#define set_irg_loopinfo_inconsistent(irg) _set_irg_loopinfo_inconsistent(irg)
 #define set_irg_pinned(irg, p)             _set_irg_pinned(irg, p)
 #define get_irg_callee_info_state(irg)     _get_irg_callee_info_state(irg)
 #define set_irg_callee_info_state(irg, s)  _set_irg_callee_info_state(irg, s)
