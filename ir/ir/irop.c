@@ -170,6 +170,7 @@ init_op(void)
 #define I   irop_flag_ip_cfopcode
 #define F   irop_flag_fragile
 #define Y   irop_flag_forking
+#define H   irop_flag_highlevel
 
   op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr));
 
@@ -206,7 +207,7 @@ init_op(void)
   op_Shrs      = new_ir_op(iro_Shrs,      "Shrs",      op_pin_state_floats, L,       oparity_binary,    0, 0);
   op_Rot       = new_ir_op(iro_Rot,       "Rot",       op_pin_state_floats, L,       oparity_binary,    0, 0);
   op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, 0);
-  op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, N,       oparity_unary,     0, sizeof(cast_attr));
+  op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, N|H,     oparity_unary,     0, sizeof(cast_attr));
 
   op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, L,       oparity_variable, -1, sizeof(int));
 
@@ -220,7 +221,7 @@ init_op(void)
   op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,       oparity_variable, -1, 0);
   op_Id        = new_ir_op(iro_Id,        "Id",        op_pin_state_floats, N,       oparity_any,      -1, 0);
   op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F,     oparity_zero,     -1, 0);
-  op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_floats, L,       oparity_any,      -1, sizeof(confirm_attr));
+  op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_floats, L|H,     oparity_any,      -1, sizeof(confirm_attr));
 
   op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_pinned, X|F,     oparity_zero,     -1, 0);
   op_Filter    = new_ir_op(iro_Filter,    "Filter",    op_pin_state_pinned, L,       oparity_variable, -1, sizeof(filter_attr));
@@ -232,6 +233,7 @@ init_op(void)
   op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N,       oparity_zero,     -1, 0);
   op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0);
 
+#undef H
 #undef Y
 #undef F
 #undef I
@@ -341,6 +343,7 @@ void      set_op_pinned(ir_op *op, op_pin_state op_pin_state_pinned) {
   op->op_pin_state_pinned = op_pin_state_pinned;
 }
 
+/* retrieve the next free opcode */
 unsigned get_next_ir_opcode(void) {
   return next_iro++;
 }
