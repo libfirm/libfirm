@@ -36,14 +36,16 @@ typedef enum {
 
 /** The irop flags */
 typedef enum {
-  irop_flag_none        = 0x00000000,   /**< nothing */
+  irop_flag_none        = 0x00000000, /**< nothing */
   irop_flag_labeled     = 0x00000001,	/**< if set, Output edge labels on in-edges in vcg graph */
   irop_flag_commutative = 0x00000002,	/**< operation is commutative */
-  irop_flag_cfopcode    = 0x00000004,   /**< is a control flow operation */
+  irop_flag_cfopcode    = 0x00000004, /**< is a control flow operation */
   irop_flag_ip_cfopcode = 0x00000008,	/**< operation manipulates interprocedural control flow */
   irop_flag_fragile     = 0x00000010,	/**< set if the operation can change the control flow because
                                              of an exception */
-  irop_flag_forking     = 0x00000020,   /**< the operation is a forking control flow */
+  irop_flag_forking     = 0x00000020, /**< the operation is a forking control flow */
+  irop_flag_highlevel   = 0x00000040, /**< the operation is a pure high-level one and can be
+                                           skipped in low-level optimizations */
 } irop_flags;
 
 
@@ -206,6 +208,11 @@ static INLINE int is_op_fragile(const ir_op *op) {
 /* Returns non-zero if operation is forking control flow */
 static INLINE int is_op_forking(const ir_op *op) {
   return op->flags & irop_flag_forking;
+}
+
+/* Returns non-zero if operation is a high-level op */
+static INLINE int is_op_highlevel(const ir_op *op) {
+  return op->flags & irop_flag_highlevel;
 }
 
 static INLINE opcode __get_op_code(const ir_op *op) {
