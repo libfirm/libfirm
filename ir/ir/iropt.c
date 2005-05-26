@@ -1648,7 +1648,7 @@ static ir_node *transform_node_Not(ir_node *n)
 static ir_node *transform_node_Cast(ir_node *n) {
   ir_node *oldn = n;
   ir_node *pred = get_Cast_op(n);
-  type *tp = get_irn_type(pred);
+  type *tp = get_irn_type(n);
 
   if (get_irn_op(pred) == op_Const && get_Const_type(pred) != tp) {
     n = new_rd_Const_type(NULL, current_ir_graph, get_nodes_block(pred), get_irn_mode(pred),
@@ -1659,6 +1659,7 @@ static ir_node *transform_node_Cast(ir_node *n) {
                  get_SymConst_kind(pred), tp);
     DBG_OPT_CSTEVAL(oldn, n);
   }
+
   return n;
 }
 
