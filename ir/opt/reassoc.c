@@ -25,6 +25,7 @@
 # include "irgwalk.h"
 # include "reassoc_t.h"
 # include "irhooks.h"
+# include "irloop.h"
 # include "debug.h"
 
 static firm_dbg_module_t *dbg;
@@ -41,16 +42,21 @@ typedef enum {
 } const_class_t;
 
 /**
- * returns whether a node is constant, ie is a constant or
+ * returns whether a node is constant ie is a constant or
  * is loop invariant
+ *
+ * @param n     the node to be checked for constant
+ * @param block a block that might be in a loop
  */
-static const_class_t get_const_class(ir_node *n)
+static const_class_t get_const_class(ir_node *n, ir_node *block)
 {
   ir_op *op = get_irn_op(n);
 
   if (op == op_Const)
     return REAL_CONSTANT;
   if (op == op_SymConst)
+    return CONST_EXPR;
+  if (is_loop_invariant(n, block))
     return CONST_EXPR;
 
   return NO_CONSTANT;
@@ -67,8 +73,9 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 {
   ir_node *op_a = get_binop_left(binop);
   ir_node *op_b = get_binop_right(binop);
-  int class_a = get_const_class(op_a);
-  int class_b = get_const_class(op_b);
+  ir_node *block = get_nodes_block(binop);
+  int class_a = get_const_class(op_a, block);
+  int class_b = get_const_class(op_b, block);
 
   assert(is_op_commutative(get_irn_op(binop)));
 
@@ -92,7 +99,8 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
  */
 static int reassoc_Sub(ir_node **in)
 {
-	ir_node *n = *in;
+  ir_node *n = *in;
+  ir_node *block = get_nodes_block(n);
   ir_node *right = get_Sub_right(n);
 
   /* FIXME: Do not apply this rule for unsigned Sub's because our code
@@ -107,14 +115,14 @@ static int reassoc_Sub(ir_node **in)
    * As there is NO real Minus in Firm it makes no sense to do this
    * for non-real constants yet.
    * */
-  if (get_const_class(right) == REAL_CONSTANT) {
+  if (get_const_class(right, block) == REAL_CONSTANT) {
     ir_node *left  = get_Sub_left(n);
     ir_node *block = get_nodes_block(n);
     ir_mode *mode  = get_irn_mode(n);
     dbg_info *dbi  = get_irn_dbg_info(n);
     ir_node *irn, *c;
 
-    switch (get_const_class(left)) {
+    switch (get_const_class(left, block)) {
       case REAL_CONSTANT:
         irn = optimize_in_place(n);
         if (irn != n) {
@@ -146,7 +154,7 @@ static int reassoc_Sub(ir_node **in)
   return 0;
 }
 
-/** Retrieve a mode form the operands. We need this, because
+/** Retrieve a mode from the operands. We need this, because
  * Add and Sub are allowed to operate on (P, Is)
  */
 static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
@@ -170,12 +178,12 @@ static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
  * reassociate a commutative Binop
  *
  * BEWARE: this rule leads to a potential loop, if
- * all two operands are are constant expressions and the third is a
+ * two operands are are constant expressions and the third is a
  * constant, so avoid this situation.
  */
 static int reassoc_commutative(ir_node **node)
 {
-	ir_node *n     = *node;
+  ir_node *n     = *node;
   ir_op *op      = get_irn_op(n);
   ir_node *block = get_nodes_block(n);
   ir_node *t1, *c1;
@@ -192,16 +200,16 @@ static int reassoc_commutative(ir_node **node)
     if (is_Bad(t2))
       return 0;
 
-    c_c1 = get_const_class(c1);
-    c_c2 = get_const_class(c2);
-    c_t2 = get_const_class(t2);
+    c_c1 = get_const_class(c1, block);
+    c_c2 = get_const_class(c2, block);
+    c_t2 = get_const_class(t2, block);
 
     if ( ((c_c1 > NO_CONSTANT) & (c_t2 > NO_CONSTANT)) &&
          ((((c_c1 ^ c_c2 ^ c_t2) & CONST_EXPR) == 0) || ((c_c1 & c_c2 & c_t2) == CONST_EXPR)) ) {
-      /* all three are constant and either all are constant expressions or two of them are:
-       * then, applying this rule would lead into a cycle
+      /* All three are constant and either all are constant expressions or two of them are:
+       * then applying this rule would lead into a cycle
        *
-       * Note that if t2 is a constant so is c2, so we save one test.
+       * Note that if t2 is a constant so is c2 hence we save one test.
        */
       return 0;
     }
@@ -247,10 +255,10 @@ static int reassoc_commutative(ir_node **node)
           c1, get_irn_opname(n), c2, get_irn_opname(n),
 					t2, c1, get_irn_opname(n), c2, get_irn_opname(n), t2));
       /*
-       * in some rare cases it can really happen that we get the same node back.
+       * In some rare cases it can really happen that we get the same node back.
        * This might be happen in dead loops, were the Phi nodes are already gone away.
        * So check this.
-      */
+       */
       if (n != irn) {
         exchange(n, irn);
 				*node = irn;
@@ -271,7 +279,7 @@ static int reassoc_commutative(ir_node **node)
  */
 static int reassoc_Mul(ir_node **node)
 {
-	ir_node *n = *node;
+  ir_node *n = *node;
   ir_node *add_sub, *c;
   ir_op *op;
 
@@ -307,7 +315,7 @@ static int reassoc_Mul(ir_node **node)
 }
 
 /**
- * The walker for the reassociation
+ * The walker for the reassociation.
  */
 static void do_reassociation(ir_node *n, void *env)
 {
@@ -316,7 +324,7 @@ static void do_reassociation(ir_node *n, void *env)
 
   hook_reassociate(1);
 
-  /* reassociation must run until fixpoint */
+  /* Reassociation must run until a fixpoint is reached. */
   do {
     ir_op   *op    = get_irn_op(n);
     ir_mode *mode  = get_irn_mode(n);
@@ -340,6 +348,7 @@ static void do_reassociation(ir_node *n, void *env)
 void optimize_reassociation(ir_graph *irg)
 {
   walker_t env;
+  irg_loopinfo_state state;
 
   assert(get_irg_phase_state(irg) != phase_building);
 
@@ -347,17 +356,27 @@ void optimize_reassociation(ir_graph *irg)
   if (!get_opt_reassociation() || !get_opt_constant_folding())
     return;
 
-  env.changes = 0;
+  /*
+   * Calculate loop info, so we could identify loop-invariant
+   * code and threat it like a constant.
+   * We only need control flow loops here but can handle generic
+   * INTRA info as well.
+   */
+  state = get_irg_loopinfo_state(irg);
+  if ((state & loopinfo_inter) ||
+      (state & (loopinfo_constructed | loopinfo_valid)) != (loopinfo_constructed | loopinfo_valid))
+    construct_cf_backedges(irg);
 
-  irg_walk_graph(irg, NULL, do_reassociation, &env);
+  env.changes = 0;
 
   /* now we have collected enough information, optimize */
   irg_walk_graph(irg, NULL, do_reassociation, &env);
 
   /* Handle graph state */
   if (env.changes) {
-    if (get_irg_outs_state(current_ir_graph) == outs_consistent)
-      set_irg_outs_inconsistent(current_ir_graph);
+    if (get_irg_outs_state(irg) == outs_consistent)
+      set_irg_outs_inconsistent(irg);
+    set_irg_loopinfo_inconsistent(irg);
   }
 }
 
