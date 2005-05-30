@@ -57,7 +57,7 @@ graph: { title: "n409"  label: "Block 409" status:clustered color:yellow
 edge: {sourcename: "n409" targetname: "n461" label: "0" class:13 priority:60 color:red}
 node: {title: "n410" label: "End 410"  info1: "End 410
   mode:    X
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -73,7 +73,7 @@ graph: { title: "n458"  label: "Block 458" status:clustered color:yellow
 edge: {sourcename: "n458" targetname: "n433" label: "0" class:13 priority:60 color:red}
 node: {title: "n461" label: "Return 461"  info1: "Return 461
   mode:    X
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -88,7 +88,7 @@ node: {title: "n461" label: "Return 461"  info1: "Return 461
 }
 node: {title: "n461n438" label: "0x4Is 438"  info1: "0x4 438
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -107,7 +107,7 @@ edge: {sourcename: "n425" targetname: "n424" label: "0" class:13 priority:60 col
 backedge: {sourcename: "n425" targetname: "n452" label: "1" linestyle:dashed class:13 priority:60 color:red}
 node: {title: "n465" label: "PhiM 465"  info1: "Phi 465
   mode:    M
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -123,7 +123,7 @@ edge: {sourcename: "n465" targetname: "n418" label: "0" class:17 priority:10 col
 edge: {sourcename: "n465" targetname: "n451" label: "1" class:17 priority:10 color:blue}
 node: {title: "n433" label: "ProjX 0 433"  info1: "Proj 433
   mode:    X
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -136,7 +136,7 @@ color: yellow}
 edge: {sourcename: "n433" targetname: "n432" label: "0" class:13 priority:60 color:red}
 node: {title: "n434" label: "ProjX 1 434"  info1: "Proj 434
   mode:    X
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -149,7 +149,7 @@ color: yellow}
 edge: {sourcename: "n434" targetname: "n432" label: "0" class:13 priority:60 color:red}
 node: {title: "n432" label: "Cond 432"  info1: "Cond 432
   mode:    T
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -164,7 +164,7 @@ node: {title: "n432" label: "Cond 432"  info1: "Cond 432
 edge: {sourcename: "n432" targetname: "n429" label: "0" class:1  priority:50}
 node: {title: "n429" label: "Projb Le 429"  info1: "Proj 429
   mode:    b
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -177,7 +177,7 @@ color: yellow}
 edge: {sourcename: "n429" targetname: "n431" label: "0" class:1  priority:50}
 node: {title: "n431" label: "Cmp 431"  info1: "Cmp 431
   mode:    T
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -190,7 +190,7 @@ node: {title: "n431" label: "Cmp 431"  info1: "Cmp 431
 }
 node: {title: "n431n694" label: "0x24Is 694"  info1: "0x24 694
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -203,7 +203,7 @@ edge: {sourcename: "n431" targetname: "n466" label: "0" class:1  priority:50}
 edge: {sourcename: "n431" targetname: "n431n694" label: "1" class:16 priority:10}
 node: {title: "n466" label: "PhiIs 466"  info1: "Phi 466
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -217,7 +217,7 @@ node: {title: "n466" label: "PhiIs 466"  info1: "Phi 466
 color: green}
 node: {title: "n466n422" label: "0x0Is 422"  info1: "0x0 422
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -235,7 +235,7 @@ graph: { title: "n421"  label: "Block 421" status:clustered color:yellow
 edge: {sourcename: "n421" targetname: "n415" label: "0" class:13 priority:60 color:red}
 node: {title: "n424" label: "Jmp 424"  info1: "Jmp 424
   mode:    X
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -250,7 +250,7 @@ graph: { title: "n435"  label: "Block 435" status:clustered color:yellow
 edge: {sourcename: "n435" targetname: "n434" label: "0" class:13 priority:60 color:red}
 node: {title: "n451" label: "ProjM 0 451"  info1: "Proj 451
   mode:    M
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -263,7 +263,7 @@ color: yellow}
 edge: {sourcename: "n451" targetname: "n449" label: "0" class:17 priority:10 color:blue}
 node: {title: "n449" label: "Store 449"  info1: "Store 449
   mode:    T
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   3
   pred nodes:
@@ -279,7 +279,7 @@ node: {title: "n449" label: "Store 449"  info1: "Store 449
 }
 node: {title: "n449n447" label: "0x13Is 447"  info1: "0x13 447
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -294,7 +294,7 @@ edge: {sourcename: "n449" targetname: "n688" label: "1" class:1  priority:50}
 edge: {sourcename: "n449" targetname: "n449n447" label: "2" class:16 priority:10}
 node: {title: "n688" label: "AddP 688"  info1: "Add 688
   mode:    P
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -306,7 +306,7 @@ node: {title: "n688" label: "AddP 688"  info1: "Add 688
 }
 node: {title: "n688n687" label: "0x8Is 687"  info1: "0x8 687
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -319,7 +319,7 @@ edge: {sourcename: "n688" targetname: "n444" label: "0" class:1  priority:50}
 edge: {sourcename: "n688" targetname: "n688n687" label: "1" class:16 priority:10}
 node: {title: "n444" label: "SubP 444"  info1: "Sub 444
   mode:    P
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -332,7 +332,7 @@ node: {title: "n444" label: "SubP 444"  info1: "Sub 444
 }
 node: {title: "n444n437" label: "0x5Is 437"  info1: "0x5 437
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -346,7 +346,7 @@ edge: {sourcename: "n444" targetname: "n444n437" label: "0" class:16 priority:10
 edge: {sourcename: "n444" targetname: "n685" label: "1" class:1  priority:50}
 node: {title: "n685" label: "AddP 685"  info1: "Add 685
   mode:    P
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -360,7 +360,7 @@ edge: {sourcename: "n685" targetname: "n466" label: "0" class:16 priority:10}
 edge: {sourcename: "n685" targetname: "n684" label: "1" class:1  priority:50}
 node: {title: "n684" label: "AddP 684"  info1: "Add 684
   mode:    P
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -372,7 +372,7 @@ node: {title: "n684" label: "AddP 684"  info1: "Add 684
 }
 node: {title: "n684n423" label: "SymC &a 423"  info1: "SymC &a 423
   mode:    P
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -387,7 +387,7 @@ node: {title: "n684n423" label: "SymC &a 423"  info1: "SymC &a 423
 }
 node: {title: "n684n682" label: "0xFFFFFFFCIs 682"  info1: "0xFFFFFFFC 682
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -400,7 +400,7 @@ edge: {sourcename: "n684" targetname: "n684n423" label: "0" class:16 priority:10
 edge: {sourcename: "n684" targetname: "n684n682" label: "1" class:16 priority:10}
 node: {title: "n452" label: "Jmp 452"  info1: "Jmp 452
   mode:    X
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -411,7 +411,7 @@ node: {title: "n452" label: "Jmp 452"  info1: "Jmp 452
 }
 node: {title: "n679" label: "AddIs 679"  info1: "Add 679
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   2
   pred nodes:
@@ -423,7 +423,7 @@ node: {title: "n679" label: "AddIs 679"  info1: "Add 679
 }
 node: {title: "n679n682" label: "0xFFFFFFFCIs 682"  info1: "0xFFFFFFFC 682
   mode:    Is
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
@@ -440,7 +440,7 @@ graph: { title: "n411"  label: "Block 411" status:clustered color:yellow
 edge: {sourcename: "n411" targetname: "n415" label: "0" class:13 priority:60 color:red}
 node: {title: "n418" label: "ProjM 1 418"  info1: "Proj 418
   mode:    M
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -453,7 +453,7 @@ color: yellow}
 edge: {sourcename: "n418" targetname: "n412" label: "0" class:17 priority:10 color:blue}
 node: {title: "n415" label: "ProjX 0 415"  info1: "Proj 415
   mode:    X
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   1
   pred nodes:
@@ -466,7 +466,7 @@ color: yellow}
 edge: {sourcename: "n415" targetname: "n412" label: "0" class:13 priority:60 color:red}
 node: {title: "n412" label: "Start 412"  info1: "Start 412
   mode:    T
-  visited: 27
+  visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m6
   arity:   0
   pred nodes:
