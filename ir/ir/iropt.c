@@ -1878,7 +1878,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
               }
             }
 
-            if (tv != tarval_bad) {
+            if ((tv != tarval_bad) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)) {
               ir_op *op = get_irn_op(left);
 
               /* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
