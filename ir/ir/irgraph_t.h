@@ -67,19 +67,19 @@ struct ir_graph {
   struct ir_node *cstore;        /**< constant store -- no more needed!! */
   struct ir_node *frame;         /**< method's frame */
   struct ir_node *globals;       /**< pointer to the data segment containing all
-                    globals as well as global procedures. */
+                                      globals as well as global procedures. */
   struct ir_node *initial_mem;   /**< initial memory of this graph */
   struct ir_node *args;          /**< methods arguments */
   struct ir_node **proj_args;    /**< projs of the methods arguments */
   struct ir_node *bad;           /**< bad node of this ir_graph, the one and
                     only in this graph */
   struct ir_node *no_mem;        /**< NoMem node of this ir_graph, the one and
-                    only in this graph */
+                                      only in this graph */
   /* GL removed: we need unknown with mode for analyses. */
   /*   struct ir_node *unknown;*/           /**< unknown node of this ir_graph */
   struct obstack *obst;          /**< obstack where all of the ir_nodes live */
-  struct ir_node *current_block;     /**< block for newly gen_*()-erated
-                    ir_nodes */
+  struct ir_node *current_block; /**< block for newly gen_*()-erated ir_nodes */
+  struct obstack *extbb_obst;    /**< obstack for extended basic block info */
 
   /* -- Fields indicating different states of irgraph -- */
   irg_phase_state phase_state;       /**< compiler phase */
@@ -90,8 +90,9 @@ struct ir_graph {
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
   irg_inline_property inline_property;     /**< How to handle inlineing. */
   irg_loopinfo_state loopinfo_state;       /**< state of loop information */
-  exec_freq_state   execfreq_state;        /**< state of execution freqency information */
+  exec_freq_state   execfreq_state;        /**< state of execution frequency information */
   ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
+  irg_extblk_info_state extblk_state;      /**< state of extended basic block info */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
