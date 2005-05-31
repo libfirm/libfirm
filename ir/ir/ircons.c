@@ -85,6 +85,7 @@ new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
   res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
   res->attr.block.in_cg       = NULL;
   res->attr.block.cg_backedge = NULL;
+  res->attr.block.extblk      = NULL;
 
   IRN_VRFY_IRG(res, irg);
   return res;
