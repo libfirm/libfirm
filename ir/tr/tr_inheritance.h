@@ -201,7 +201,7 @@ entity *get_entity_trans_overwrites_next (entity *ent);
 
 /** Flags for class cast state.
  *
- * The state in irp is allways smaller or equal to the state of any
+ * The state in irp is always smaller or equal to the state of any
  * irg.
  *
  * We rely on the ordering of the enum. */
