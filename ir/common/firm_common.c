@@ -47,6 +47,7 @@ const char* print_firm_kind(void *firm_thing) {
   case k_tarval                 : return "k_tarval";
   case k_ir_loop                : return "k_ir_loop";
   case k_ir_compound_graph_path : return "k_ir_compound_graph_path";
+  case k_ir_extblk              : return "k_ir_extblk";
   default: return "";
   }
 }
@@ -80,7 +81,10 @@ void firm_identify_thing(void *X)
     printf("irnode: %s%s %ld (%p)\n", get_irn_opname(X), get_mode_name(get_irn_mode(X)), get_irn_node_nr(X), X);
     break;
   case k_ir_mode:
-    printf("mode %s: (%p)\n", get_mode_name(X),X);
+    printf("mode %s: (%p)\n", get_mode_name(X), X);
+    break;
+  case k_ir_op:
+    printf("op %s: (%p)\n", get_op_name(X), X);
     break;
   case k_tarval:
     printf("tarval : "); tarval_printf(X); printf(" (%p)\n", X);
@@ -88,8 +92,12 @@ void firm_identify_thing(void *X)
   case k_ir_loop:
     printf("loop: with depth %d: (%p)\n", get_loop_depth(X), X);
     break;
-  case k_ir_op:
   case k_ir_compound_graph_path:
+    printf("compound_graph_path: (%p)\n", X);
+    break;
+  case k_ir_extblk:
+    printf("extended block: (%p)\n", X);
+    break;
   default:
     printf("Cannot identify thing at (%p).\n", X);
   }
