@@ -39,6 +39,7 @@
 #include "irdom.h"
 #include "irloop.h"
 #include "callgraph.h"
+#include "irextbb_t.h"
 
 #include "irvrfy.h"
 
@@ -287,7 +288,7 @@ static void ird_set_irg_link(ir_graph *irg, void *x) {
 }
 
 /**
- * Walker, clears tzhe private link field
+ * Walker, clears the private link field.
  */
 static void clear_link(ir_node * node, void * env) {
   ird_set_irn_link(node, NULL);
@@ -357,7 +358,7 @@ static void collect_node(ir_node * node, void *env) {
  * graphs not visited.
  * Free the list with DEL_ARR_F().
  */
-static ir_node ** construct_block_lists(ir_graph *irg) {
+static ir_node **construct_block_lists(ir_graph *irg) {
   int i, rem_view = get_interprocedural_view();
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
@@ -379,6 +380,46 @@ static ir_node ** construct_block_lists(ir_graph *irg) {
 
   current_ir_graph = rem;
   return ird_get_irg_link(irg);
+}
+
+typedef struct _list_tuple {
+  ir_node **blk_list;
+  ir_extblk **extbb_list;
+} list_tuple;
+
+/** Construct lists to walk ir extended block-wise.
+ * Free the lists in the tuple with DEL_ARR_F().
+ */
+static list_tuple *construct_extblock_lists(ir_graph *irg) {
+  ir_node **blk_list = construct_block_lists(irg);
+  int i;
+  ir_graph *rem = current_ir_graph;
+  list_tuple *lists = xmalloc(sizeof(*lists));
+
+  current_ir_graph = irg;
+
+  lists->blk_list   = NEW_ARR_F(ir_node *, 0);
+  lists->extbb_list = NEW_ARR_F(ir_extblk *, 0);
+
+  for (i = ARR_LEN(blk_list) - 1; i >= 0; --i) {
+    ir_extblk *ext;
+
+    if (is_Block(blk_list[i])) {
+      ext = get_Block_extbb(blk_list[i]);
+
+      if (extbb_not_visited(ext)) {
+        ARR_APP1(ir_extblk *, lists->extbb_list, ext);
+        mark_extbb_visited(ext);
+      }
+    }
+    else
+      ARR_APP1(ir_node *, lists->blk_list, blk_list[i]);
+  }
+
+  current_ir_graph = rem;
+  DEL_ARR_F(blk_list);
+  ird_set_irg_link(irg, lists);
+  return lists;
 }
 
 /*******************************************************************/
@@ -406,8 +447,7 @@ static const char *overrule_nodecolor = NULL;
 static DUMP_NODE_VCGATTR_FUNC dump_node_vcgattr_hook = NULL;
 
 /* set the hook */
-void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook)
-{
+void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook) {
   dump_node_vcgattr_hook = hook;
 }
 
@@ -570,8 +610,8 @@ dump_node_opcode(FILE *F, ir_node *n)
     fprintf (F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Load_mode(n), &bad));
     break;
 
-default_case:
   default: {
+default_case:
     fprintf (F, "%s", get_irn_opname(n));
   }
 
@@ -612,7 +652,7 @@ dump_node_mode(FILE *F, ir_node *n)
 }
 
 /**
- * Dump the tpe of a node n to a file F if it's known.
+ * Dump the type of a node n to a file F if it's known.
  */
 static int dump_node_typeinfo(FILE *F, ir_node *n) {
   int bad = 0;
@@ -631,7 +671,7 @@ static int dump_node_typeinfo(FILE *F, ir_node *n) {
 }
 
 /**
- * Dump addinional node attributes of some nodes to a file F.
+ * Dump additional node attributes of some nodes to a file F.
  */
 static INLINE int
 dump_node_nodeattr(FILE *F, ir_node *n)
@@ -678,11 +718,11 @@ dump_node_nodeattr(FILE *F, ir_node *n)
 void dump_node_ana_vals(FILE *F, ir_node *n) {
   return;
   fprintf(F, " %lf*(%2.0lf + %2.0lf) = %2.0lf ",
-	  get_irn_exec_freq(n),
-	  get_irg_method_execution_frequency(get_irn_irg(n)),
-	  pow(5, get_irg_recursion_depth(get_irn_irg(n))),
-	  get_irn_exec_freq(n) * (get_irg_method_execution_frequency(get_irn_irg(n)) + pow(5, get_irg_recursion_depth(get_irn_irg(n))))
-	  );
+          get_irn_exec_freq(n),
+          get_irg_method_execution_frequency(get_irn_irg(n)),
+          pow(5, get_irg_recursion_depth(get_irn_irg(n))),
+          get_irn_exec_freq(n) * (get_irg_method_execution_frequency(get_irn_irg(n)) + pow(5, get_irg_recursion_depth(get_irn_irg(n))))
+          );
 }
 
 
@@ -764,7 +804,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
 }
 
 /**
- * checks wheater a node is "constant-like", ie can be treated "block-less"
+ * checks whether a node is "constant-like" ie can be treated "block-less"
  */
 static INLINE
 bool is_constlike_node(ir_node *n) {
@@ -1106,7 +1146,7 @@ static void dump_const_expression(FILE *F, ir_node *value) {
   current_ir_graph = get_const_code_irg();
   irg_walk(value, dump_const_node, NULL, F);
   /* Decrease visited flag so that we walk with the same flag for the next
-     expresssion.  This guarantees that we don't dump the same node twice,
+     expression.  This guarantees that we don't dump the same node twice,
      as for const expressions cse is performed to save memory. */
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph) -1);
   current_ir_graph = rem;
@@ -1183,7 +1223,7 @@ dump_block_graph(FILE *F, ir_graph *irg) {
   current_ir_graph = rem;
 }
 
-/** Dumps an irg as a graph.
+/** Dumps an irg as a graph clustered by block nodes.
  *  If interprocedural view edges can point to nodes out of this graph.
  */
 static void dump_graph_from_list(FILE *F, ir_graph *irg) {
@@ -1198,6 +1238,52 @@ static void dump_graph_from_list(FILE *F, ir_graph *irg) {
   /* Close the vcg information for the irg */
   fprintf(F, "}\n\n");
 }
+
+/** dumps a graph extended block-wise. Expects all blockless nodes in arr in irgs link.
+ *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
+static void
+dump_extblock_graph(FILE *F, ir_graph *irg) {
+  int i;
+  ir_graph *rem = current_ir_graph;
+  ir_extblk **arr = ird_get_irg_link(irg);
+  current_ir_graph = irg;
+
+  compute_extbb(irg);
+  for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
+    ir_extblk *extbb = arr[i];
+    ir_node *leader = extbb->blks[0];
+    int j;
+
+    fprintf(F, "graph: { title: \"");
+    PRINT_EXTBBID(leader);
+    fprintf(F, "\"  label: \"ExtBB %ld\" status:clustered color:lightgreen\n",
+            get_irn_node_nr(leader));
+
+    for (j = ARR_LEN(extbb->blks) - 1; j >= 0; --j) {
+      ir_node * node = extbb->blks[j];
+      if (is_Block(node)) {
+        /* Dumps the block and all the nodes in the block, which are to
+           be found in Block->link. */
+        dump_whole_block(F, node);
+      } else {
+        /* Nodes that are not in a Block. */
+        dump_node(F, node);
+        if (is_Bad(get_nodes_block(node)) && !node_floats(node)) {
+          dump_const_block_local(F, node);
+        }
+        dump_ir_data_edges(F, node);
+      }
+    }
+    fprintf(F, "}\n");
+  }
+
+  if (dump_loop_information_flag && (get_irg_loopinfo_state(irg) & loopinfo_valid))
+    dump_loop_nodes_into_graph(F, irg);
+
+  current_ir_graph = rem;
+  free_extbb(irg);
+}
+
 
 /*******************************************************************/
 /* Basic type and entity nodes and edges.                          */
@@ -1886,9 +1972,8 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
   current_ir_graph = rem;
 }
 
-
-void
-dump_ir_block_graph (ir_graph *irg, const char *suffix)
+/* Dump a firm graph without explicit block nodes. */
+void dump_ir_block_graph (ir_graph *irg, const char *suffix)
 {
   FILE *f;
   int i;
@@ -1904,6 +1989,11 @@ dump_ir_block_graph (ir_graph *irg, const char *suffix)
 
   construct_block_lists(irg);
 
+  /*
+   * If we are in the interprocedural view, we dump not
+   * only the requested irg but also all irgs that can be reached
+   * from irg.
+   */
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_node **arr = ird_get_irg_link(get_irp_irg(i));
     if (arr) {
@@ -1915,7 +2005,61 @@ dump_ir_block_graph (ir_graph *irg, const char *suffix)
   vcg_close(f);
 }
 
-/** dumps a graph with type information */
+/* Dump a firm graph without explicit block nodes but grouped in extended blocks. */
+void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
+{
+  FILE *F;
+  int i;
+  char *suffix1;
+
+  if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
+    return;
+
+  compute_extbb(irg);
+
+  if (get_interprocedural_view()) suffix1 = "-ip";
+  else                            suffix1 = "";
+  F = vcg_open(irg, suffix, suffix1);
+  dump_vcg_header(F, get_irg_dump_name(irg), NULL);
+
+  construct_extblock_lists(irg);
+
+  fprintf(F, "graph: { title: \"");
+  PRINT_IRGID(irg);
+  fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
+    get_ent_dump_name(get_irg_entity(irg)));
+
+  for (i = 0; i < get_irp_n_irgs(); i++) {
+    ir_graph *irg     = get_irp_irg(i);
+    list_tuple *lists = ird_get_irg_link(irg);
+
+    if (lists) {
+      /* dump the extended blocks first */
+      if (ARR_LEN(lists->extbb_list)) {
+        ird_set_irg_link(irg, lists->extbb_list);
+        dump_extblock_graph(F, irg);
+      }
+
+      /* we may have blocks without extended blocks, bad for instance */
+      if (ARR_LEN(lists->blk_list)) {
+        ird_set_irg_link(irg, lists->blk_list);
+        dump_block_graph(F, irg);
+      }
+
+      DEL_ARR_F(lists->extbb_list);
+      DEL_ARR_F(lists->blk_list);
+      xfree(lists);
+    }
+  }
+
+  /* Close the vcg information for the irg */
+  fprintf(F, "}\n\n");
+
+  vcg_close(F);
+  free_extbb(irg);
+}
+
+/* dumps a graph with type information */
 void
 dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
 {
@@ -2022,10 +2166,10 @@ dump_block_to_cfg(ir_node *block, void *env) {
     for (fl = i = 0; i < get_Block_n_cfgpreds(block); ++i) {
       ir_node *pred = get_Block_cfgpred(block, i);
       if (is_Bad(pred)) {
-	if (! fl)
-	  fprintf(F, "Bad pred at pos: ");
-	fprintf(F, "%d ", i);
-	fl = 1;
+        if (! fl)
+          fprintf(F, "Bad pred at pos: ");
+        fprintf(F, "%d ", i);
+        fl = 1;
       }
     }
     if (fl)
@@ -2037,7 +2181,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
     /* Check whether we have bad predecessors to color the block. */
     for (i = 0; i < get_Block_n_cfgpreds(block); ++i)
       if ((fl = is_Bad(get_Block_cfgpred(block, i))))
-	break;
+        break;
 #endif
 
     fprintf (F, "\"");  /* closing quote of info */

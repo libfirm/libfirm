@@ -88,6 +88,24 @@ void dump_ir_graph (ir_graph *irg, const char *suffix);
  */
 void dump_ir_block_graph (ir_graph *irg, const char *suffix);
 
+/** Dump a firm graph without explicit block nodes but grouped in extended blocks.
+ *
+ *  @param irg   The firm graph to be dumped.
+ *
+ *  @return
+ *     A file containing the firm graph in vcg format.
+ *
+ *  Dumps all Firm nodes of a single graph for a single procedure in
+ *  extended xvcg format.
+ *  Dumps the graph to a file.  The file name is constructed from the
+ *  name of the entity describing the procedure (irg->entity) and the
+ *  ending <-ip>.vcg.  Eventually overwrites existing files.  Dumps several
+ *  procedures in boxes if interprocedural_view.
+ *
+ * @see turn_off_edge_labels()
+ */
+void dump_ir_extblock_graph (ir_graph *irg, const char *suffix);
+
 /** Dumps all graphs in interprocedural view to a file named All_graphs.vcg.
  */
 void dump_all_cg_block_graph(const char *suffix);

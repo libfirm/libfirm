@@ -55,6 +55,7 @@
 #define PRINT_CONSTBLKID(X,Y) fprintf(F, "n%ldb%ld", get_irn_node_nr(X),get_irn_node_nr(Y))
 #define PRINT_LOOPID(X)       fprintf(F, "l%d", get_loop_loop_nr(X))
 #define PRINT_ITEMID(X,Y)     fprintf(F, "i%ldT%d", get_type_nr(X), (Y))
+#define PRINT_EXTBBID(X)      fprintf(F, "x%ld", get_irn_node_nr(X))
 
 extern int dump_dominator_information_flag;
 extern bool opt_dump_pointer_values_to_info;
@@ -79,7 +80,7 @@ dump_node_opcode(FILE *F, ir_node *n);
 int dump_node_label(FILE *F, ir_node *n);
 
 
-/** Writes vcg representation with titel "PRINT_TYPEID(tp)" to file F. */
+/** Writes vcg representation with title "PRINT_TYPEID(tp)" to file F. */
 int dump_type_node(FILE *F, type *tp);
 
 #endif /* __IRDUMPT_T_H__ */
