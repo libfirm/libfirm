@@ -29,6 +29,9 @@
  * and for address expression.
  * Works only if Constant folding is activated.
  *
+ * Uses loop information to detect loop-invariant (ie contant
+ * inside the loop) values.
+ *
  * See Muchnik 12.3.1 Algebraic Simplification and Reassociation of
  * Addressing Expressions.
  *
