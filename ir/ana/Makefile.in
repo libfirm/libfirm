@@ -17,7 +17,7 @@ subdir := ir/ana
 
 INSTALL_HEADERS = irouts.h trouts.h irdom.h cgana.h irloop.h irtypeinfo.h irsimpletype.h  \
 		callgraph.h rta.h interval_analysis.h					\
-		field_temperature.h execution_frequency.h
+		field_temperature.h execution_frequency.h irextbb.h
 
 SOURCES = $(INSTALL_HEADERS)
 
@@ -25,7 +25,8 @@ SOURCES += Makefile.in \
 		irouts.c trouts.c irdom_t.h irdom.c cgana.c	rta.c  \
 		irloop_t.h irbackedge.c irbackedge_t.h irscc.c ircfscc.c 	\
 		irtypeinfo.c irsimpletype.c interval_analysis.c			\
-		callgraph.c field_temperature.c execution_frequency.c phiclass.c
+		callgraph.c field_temperature.c execution_frequency.c phiclass.c \
+		irextbb.c irextbb_t.h
 
 include $(topdir)/MakeRules
 
