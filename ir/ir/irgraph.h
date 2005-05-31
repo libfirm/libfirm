@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 #include "irop.h"
+#include "irextbb.h"
 
 # ifndef _IRGRAPH_H_
 # define _IRGRAPH_H_
