@@ -37,6 +37,7 @@
 #include "entity_t.h"
 #include "type_t.h"
 #include "tv_t.h"
+#include "irextbb_t.h"
 
 
 /** ir node attributes **/
@@ -65,6 +66,8 @@ typedef struct {
                      @@@ @todo Ev. replace by bitfield! */
   int *cg_backedge;           /**< Field n set to true if pred n is interprocedural backedge.
                      @@@ @todo Ev. replace by bitfield! */
+  ir_extblk *extblk;          /**< the extended basic block this block belongs to */
+
 } block_attr;
 
 /** Start attributes */
@@ -375,10 +378,10 @@ _get_irn_inter_n (const ir_node *node, int n) {
   assert(node); assert(-1 <= n && n < _get_irn_inter_arity(node));
 
   /* handle Filter and Block specially */
-  if (_get_irn_opcode(node) == iro_Filter) {
+  if (_get_irn_op(node) == op_Filter) {
     assert(node->attr.filter.in_cg);
     return (node->attr.filter.in_cg[n + 1] = skip_Id(node->attr.filter.in_cg[n + 1]));
-  } else if (_get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+  } else if (_get_irn_op(node) == op_Block && node->attr.block.in_cg) {
     return (node->attr.block.in_cg[n + 1] = skip_Id(node->attr.block.in_cg[n + 1]));
   }
 
