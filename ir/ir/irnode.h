@@ -20,6 +20,7 @@
 # include "irop.h"
 # include "irmode.h"
 # include "type.h"
+# include "irextbb.h"
 # include "dbginfo.h"
 
 /**
@@ -272,6 +273,11 @@ int       get_Block_cg_n_cfgpreds(ir_node * node);
 ir_node  *get_Block_cg_cfgpred(ir_node * node, int pos);
 /* frees the memory. */
 void      remove_Block_cg_cfgpred_arr(ir_node * node);
+
+/** returns the extended basic block a block belongs to */
+ir_extblk *get_Block_extbb(const ir_node *block);
+/** sets the extended basic block a block belongs to */
+void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 
 /** Return the number of Keep alive node. */
 int  get_End_n_keepalives(ir_node *end);

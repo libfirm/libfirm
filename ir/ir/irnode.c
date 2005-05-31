@@ -614,7 +614,6 @@ get_Block_cfgpred_arr (ir_node *node)
   return (ir_node **)&(get_irn_in(node)[1]);
 }
 
-
 int
 get_Block_n_cfgpreds (ir_node *node) {
   assert ((node->op == op_Block));
@@ -730,6 +729,16 @@ ir_node *(set_Block_dead)(ir_node *block) {
 
 int (is_Block_dead)(const ir_node *block) {
   return _is_Block_dead(block);
+}
+
+ir_extblk *get_Block_extbb(const ir_node *block) {
+  assert(is_Block(block));
+  return block->attr.block.extblk;
+}
+
+void set_Block_extbb(ir_node *block, ir_extblk *extblk) {
+  assert(is_Block(block));
+  block->attr.block.extblk = extblk;
 }
 
 void
