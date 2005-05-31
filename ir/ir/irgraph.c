@@ -168,20 +168,23 @@ new_r_ir_graph (entity *ent, int n_loc)
 #endif
   res->kind = k_ir_graph;
   res->obst = xmalloc (sizeof(*res->obst));
-  obstack_init (res->obst);
+  obstack_init(res->obst);
+  res->extbb_obst = NULL;
+
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
                        iropt.c */
   res->outs = NULL;
 
-  res->phase_state    = phase_building;
+  res->phase_state      = phase_building;
   res->op_pin_state_pinned = op_pin_state_pinned;
-  res->outs_state     = outs_none;
-  res->dom_state      = dom_none;
-  res->typeinfo_state = ir_typeinfo_none;
+  res->outs_state       = outs_none;
+  res->dom_state        = dom_none;
+  res->typeinfo_state   = ir_typeinfo_none;
   set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
-  res->loopinfo_state = loopinfo_none;
+  res->loopinfo_state   = loopinfo_none;
   res->class_cast_state = ir_class_casts_transitive;
+  res->extblk_state     = ir_extblk_info_none;
 
   /*-- Type information for the procedure of the graph --*/
   res->ent = ent;
@@ -264,8 +267,12 @@ ir_graph *new_const_code_irg(void) {
   res->kind = k_ir_graph;
   res->obst      = xmalloc (sizeof(*res->obst));
   obstack_init (res->obst);
+  res->extbb_obst = NULL;
+
   res->phase_state = phase_building;
   res->op_pin_state_pinned = op_pin_state_pinned;
+  res->extblk_state = ir_extblk_info_none;
+
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
                        iropt.c */
