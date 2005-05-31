@@ -59,7 +59,7 @@ typedef void irg_walk_func(ir_node *node, void *env);
  * @param node - the start node
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  */
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
@@ -70,7 +70,7 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
  * @param irg  - the irg graph
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * Like irg_walk(), but walks over all reachable nodes in the ir
  * graph, starting at the end operation. During the walk current_ir_graph
@@ -84,7 +84,7 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void
  *
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * This function executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
  * Sets current_ir_graph properly for each walk.  Conserves current
@@ -98,7 +98,7 @@ void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  *
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * This function walks all irgs in interprocedural view.
  * Visits each node only once.  Sets current_ir_graph properly. Does not use the link field.
@@ -110,12 +110,12 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  * @param node - the start node
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * This function Walks only over Block nodes in the graph. Has it's own visited
  * flag, so that it can be interleaved with the other walker.
  * If a none block is passed, starts at the block this node belongs to.
- * If end is passed also visites kept alive blocks. Does not use the link field.
+ * If end is passed also visits kept alive blocks. Does not use the link field.
  */
 void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
 
@@ -125,7 +125,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
  * @param irg  - the irg graph
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * Like irg_block_walk(), but walks over all reachable blocks in the
  * ir graph, starting at the end block. Does not use the link field.
@@ -137,7 +137,7 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post
  *
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * This function walks over all code in const_code_irg.
  * Uses visited flag in const_code_irg.  Does not use the link field.
@@ -158,7 +158,7 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env);
  *
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * This function works like irg_walk, except that it enters and leaves blocks only once.
  * So, the post walker see a 'valid schedule' of the code, the pre-walker a 'reversed schedule'
@@ -171,7 +171,7 @@ void irg_walk_blkwise(ir_node *node, irg_walk_func *pre, irg_walk_func *post, vo
  * @param irg  - the irg graph
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
- * @param env  - environment, passend to pre and post
+ * @param env  - environment, passed to pre and post
  *
  * Like irg_walk_blkwise(), but walks over all reachable nodes in the ir
  * graph, starting at the end operation. During the walk current_ir_graph
