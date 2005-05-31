@@ -34,6 +34,7 @@ typedef enum {
   k_tarval,     /**< a tarval */
   k_ir_loop,    /**< a loop */
   k_ir_compound_graph_path, /**< a compound graph path, see entity.h */
+  k_ir_extblk,  /**< an extended block */
   k_ir_max      /**< maximum value -- illegal for firm nodes. */
 } firm_kind;
 
