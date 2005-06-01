@@ -45,8 +45,6 @@ typedef struct pset pset;
 #define pset_find_ptr(set,key)    pset_find(set, key, HASH_PTR(key))
 #define pset_new_ptr(slots)       new_pset(pset_default_ptr_cmp, slots)
 #define pset_new_ptr_default()    pset_new_ptr(64)
-void    pset_insert_pset_ptr(pset *target, pset *src); /* Inserts all elements of src in target. */
-
 
 /** The entry of a pset, representing an element pointer in the set and it's meta-information */
 typedef struct {
@@ -183,6 +181,15 @@ void *pset_next (pset *pset);
  * @param pset  the pset
  */
 void pset_break (pset *pset);
+
+/**
+ * Inserts all elements of the pointer set src into
+ * the set target (union).
+ *
+ * @param target  the target set, will contain the union
+ * @param src     a set, will not be changed
+ */
+void pset_insert_pset_ptr(pset *target, pset *src);
 
 #define new_pset(cmp, slots) (PSET_TRACE (new_pset) ((cmp), (slots)))
 #define pset_find(pset, key, hash) \
