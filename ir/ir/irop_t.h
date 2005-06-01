@@ -9,14 +9,13 @@
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifndef _IROP_T_H_
+#define _IROP_T_H_
 
-
-# ifndef _IROP_T_H_
-# define _IROP_T_H_
-
-# include "irop.h"
-# include "tv.h"
-# include "irnode.h"
+#include "firm_config.h"
+#include "irop.h"
+#include "tv.h"
+#include "irnode.h"
 
 /** The allowed parities */
 typedef enum {
@@ -215,22 +214,22 @@ static INLINE int is_op_highlevel(const ir_op *op) {
   return op->flags & irop_flag_highlevel;
 }
 
-static INLINE opcode __get_op_code(const ir_op *op) {
+static INLINE opcode _get_op_code(const ir_op *op) {
   return op->code;
 }
 
-static INLINE ident *__get_op_ident(const ir_op *op){
+static INLINE ident *_get_op_ident(const ir_op *op){
   return op->name;
 }
 
-static INLINE op_pin_state __get_op_pinned(const ir_op *op) {
+static INLINE op_pin_state _get_op_pinned(const ir_op *op) {
   return op->op_pin_state_pinned;
 }
 
 
-#define get_op_code(op)         __get_op_code(op)
-#define get_op_ident(op)        __get_op_ident(op)
-#define get_op_pinned(op)       __get_op_pinned(op)
+#define get_op_code(op)         _get_op_code(op)
+#define get_op_ident(op)        _get_op_ident(op)
+#define get_op_pinned(op)       _get_op_pinned(op)
 
 
 #endif /* _IROP_T_H_ */
