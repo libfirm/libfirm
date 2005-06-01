@@ -22,13 +22,16 @@
 
 #include "irgraph.h"
 
+#ifndef _IR_EXTBB_TYPEDEF_
+#define _IR_EXTBB_TYPEDEF_
 typedef struct _ir_extblk ir_extblk;
+#endif
 
 /** Flags for extended basic block state. */
 typedef enum {
   ir_extblk_info_none    = 0,  /**< No extended basic block information is constructed. Default. */
   ir_extblk_info_valid   = 1,  /**< Extended basic block information is valid. */
-  ir_extblk_info_invalid = 2,  /**< Extended basic block information is constructed but invalid. */
+  ir_extblk_info_invalid = 2   /**< Extended basic block information is constructed but invalid. */
 } irg_extblk_info_state;
 
 /**
