@@ -313,11 +313,11 @@ const char *get_op_name (const ir_op *op) {
 }
 
 opcode (get_op_code)(const ir_op *op){
-  return __get_op_code(op);
+  return _get_op_code(op);
 }
 
 ident *(get_op_ident)(const ir_op *op){
-  return __get_op_ident(op);
+  return _get_op_ident(op);
 }
 
 const char *get_op_pin_state_name(op_pin_state s) {
@@ -332,8 +332,8 @@ const char *get_op_pin_state_name(op_pin_state s) {
 	return "<none>";
 }
 
-op_pin_state (get_op_pinned)(const ir_op *op){
-  return __get_op_pinned(op);
+op_pin_state (get_op_pinned)(const ir_op *op) {
+  return _get_op_pinned(op);
 }
 
 /* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
