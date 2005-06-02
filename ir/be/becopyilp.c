@@ -15,6 +15,8 @@
 #include <malloc.h>
 #endif
 
+#include "irprog.h"
+
 #include "lpp.h"
 #include "xmalloc.h"
 #include "becopyopt.h"

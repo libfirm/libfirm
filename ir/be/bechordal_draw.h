@@ -56,6 +56,8 @@ struct _draw_chordal_opts_t {
   int h_inter_gap;
   int v_gap;
   int v_inter_gap;
+  int x_margin;
+  int y_margin;
 };
 
 extern const draw_chordal_opts_t draw_chordal_def_opts;

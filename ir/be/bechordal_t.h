@@ -12,6 +12,7 @@
 
 #include "bitset.h"
 #include "list.h"
+#include "obst.h"
 #include "pset.h"
 #include "pmap.h"
 #include "set.h"

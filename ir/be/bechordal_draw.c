@@ -151,7 +151,7 @@ extern void plotter_free(plotter_t *self)
 }
 
 const draw_chordal_opts_t draw_chordal_def_opts = {
-  10, 10, 30, 8
+  10, 10, 30, 8, 10, 10
 };
 
 typedef struct _draw_chordal_env_t {
@@ -225,7 +225,7 @@ static void layout(const draw_chordal_env_t *env, ir_node *bl, int x)
   struct block_dims *dims = pmap_get(env->block_dims, bl);
   ir_node *sub;
   rect_t *rect = &dims->subtree_box;
-  int h_space = 0;
+  int h_space = 0, v_space = 0;
 
   memset(rect, 0, sizeof(*rect));
   rect->x = x;
@@ -239,14 +239,15 @@ static void layout(const draw_chordal_env_t *env, ir_node *bl, int x)
     rect->h = max(rect->h, bl_dim->subtree_box.h);
 
     h_space = opts->h_gap;
+    v_space = opts->v_gap;
   }
 
   rect->w = max(rect->w, dims->box.w + opts->h_gap);
 
   dims->box.x = x + doz(rect->w, dims->box.w) / 2;
-  dims->box.y = rect->h + opts->v_gap;
+  dims->box.y = rect->h + v_space;
 
-  rect->h += dims->box.h + opts->v_gap;
+  rect->h += dims->box.h + v_space;
 }
 
 static void set_y(const draw_chordal_env_t *env, ir_node *bl, int up)
@@ -357,8 +358,10 @@ static void draw_block(ir_node *bl, void *data)
 
         env->plotter->vtab->set_color(env->plotter, &color);
         env->plotter->vtab->line(env->plotter,
-            dims->box.x + x, dims->box.y + dims->box.h,
-            dom_dims->box.x + x, dom_dims->box.y);
+            dims->box.x + x,
+            dims->box.y + dims->box.h,
+            dom_dims->box.x + x,
+            dom_dims->box.y);
       }
     }
   }
@@ -378,11 +381,16 @@ static void draw_block(ir_node *bl, void *data)
 #endif
 }
 
-static void draw(draw_chordal_env_t *env, const rect_t *bbox)
+static void draw(draw_chordal_env_t *env, const rect_t *start_box)
 {
   plotter_t *p = env->plotter;
+  rect_t bbox;
 
-  p->vtab->begin(p, bbox);
+  bbox.x = bbox.y = 0;
+  bbox.w = start_box->w + 2 * env->opts->x_margin;
+  bbox.h = start_box->h + 2 * env->opts->y_margin;
+
+  p->vtab->begin(p, &bbox);
   irg_block_walk_graph(env->chordal_env->irg, draw_block, NULL, env);
   p->vtab->finish(p);
 }
@@ -407,8 +415,8 @@ void draw_interval_tree(const draw_chordal_opts_t *opts,
   obstack_init(&env.obst);
 
   irg_block_walk_graph(chordal_env->irg, block_dims_walker, NULL, &env);
-  layout(&env, start_block, 0);
-  set_y(&env, start_block, 0);
+  layout(&env, start_block, opts->x_margin);
+  set_y(&env, start_block, opts->y_margin);
   start_dims = pmap_get(env.block_dims, start_block);
   draw(&env, &start_dims->subtree_box);
 

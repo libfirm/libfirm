@@ -8,6 +8,8 @@
 #include "config.h"
 #endif
 
+#include "irprog.h"
+
 #include "xmalloc.h"
 #include "bechordal_t.h"
 #include "becopyopt.h"

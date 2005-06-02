@@ -13,6 +13,7 @@
 #include "bitset.h"
 
 #include "irprog.h"
+#include "irgopt.h"
 #include "irgraph.h"
 #include "irdump.h"
 #include "phiclass.h"
@@ -29,6 +30,7 @@
 #include "becopyoptmain.h"
 #include "becopystat.h"
 #include "bearch_firm.h"
+#include "benode_t.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
@@ -53,10 +55,16 @@ void be_init(void)
 
 static void be_init_arch_env(arch_env_t *env)
 {
-  arch_env_init(env, &firm_isa);
-  arch_env_add_irn_handler(env, &firm_irn_handler);
+  const arch_isa_if_t *isa = &firm_isa;
+  be_node_factory_t *nf;
 
+  nf = be_new_node_factory(isa);
+
+  arch_env_init(env, isa);
   env->isa->init();
+
+  arch_env_add_irn_handler(env, &firm_irn_handler);
+  arch_env_add_irn_handler(env, be_node_get_irn_handler(nf));
 }
 
 static void be_main_loop(void)
@@ -72,6 +80,8 @@ static void be_main_loop(void)
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		int j, m;
 		ir_graph *irg = get_irp_irg(i);
+
+    remove_critical_cf_edges(irg);
 
 		localize_consts(irg);
 #ifdef DUMP_LOCALIZED

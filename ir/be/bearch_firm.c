@@ -7,6 +7,8 @@
 #endif
 
 #include "bitset.h"
+#include "obst.h"
+
 #include "bearch.h"
 
 #include "irreflect.h"
@@ -83,12 +85,18 @@ static const rflct_arg_t *get_arg(const ir_node *irn, int pos)
 }
 
 static const arch_register_req_t *
-firm_get_irn_reg_req(const ir_node *irn, int pos)
+firm_get_irn_reg_req(const arch_irn_ops_t *self,
+    arch_register_req_t *req, const ir_node *irn, int pos)
 {
-  return mode_is_datab(get_irn_mode(irn)) ? &firm_std_reg_req : NULL;
+  if(mode_is_datab(get_irn_mode(irn)))
+    memcpy(req, &firm_std_reg_req, sizeof(*req));
+  else
+    req = NULL;
+
+  return req;
 }
 
-static int firm_get_n_operands(const ir_node *irn, int in_out)
+static int firm_get_n_operands(const arch_irn_ops_t *self, const ir_node *irn, int in_out)
 {
   int sig = rflct_get_signature(irn);
   return rflct_get_args_count(get_irn_opcode(irn), sig, in_out >= 0);
@@ -125,19 +133,21 @@ static struct irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, int pos)
   return set_insert(reg_set, &templ, sizeof(templ), hash);
 }
 
-static void firm_set_irn_reg(ir_node *irn, int pos, const arch_register_t *reg)
+static void firm_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn,
+    int pos, const arch_register_t *reg)
 {
   struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, pos);
   assoc->reg = reg;
 }
 
-static const arch_register_t *firm_get_irn_reg(const ir_node *irn, int pos)
+static const arch_register_t *firm_get_irn_reg(const arch_irn_ops_t *self,
+    const ir_node *irn, int pos)
 {
   struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, pos);
   return assoc->reg;
 }
 
-static arch_irn_class_t firm_classify(const ir_node *irn)
+static arch_irn_class_t firm_classify(const arch_irn_ops_t *self, const ir_node *irn)
 {
   return arch_irn_class_normal;
 }
@@ -156,7 +166,8 @@ const arch_isa_if_t firm_isa = {
   firm_get_reg_class
 };
 
-static const arch_irn_ops_t *firm_get_irn_ops(const ir_node *irn)
+static const arch_irn_ops_t *firm_get_irn_ops(const arch_irn_handler_t *self,
+    const ir_node *irn)
 {
   return &irn_ops;
 }

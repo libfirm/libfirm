@@ -2,17 +2,21 @@
 #ifndef _BESCHED_T_H
 #define _BESCHED_T_H
 
+#define SCHED_INITIAL_GRANULARITY (1 << 14)
+
 #include "list.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 
 #include "besched.h"
 
+typedef unsigned int sched_timestep_t;
+
 extern size_t sched_irn_data_offset;
 
 typedef struct _sched_info_t {
 	struct list_head list;
-	int time_step;
+	sched_timestep_t time_step;
 } sched_info_t;
 
 #define _sched_entry(list_head) (list_entry(list_head, sched_info_t, list))
@@ -110,26 +114,84 @@ static INLINE ir_node *_sched_last(const ir_node *block)
 }
 
 /**
+ * Reassign the time steps in the schedule.
+ * @param block The schedule to update.
+ */
+void sched_renumber(const ir_node *block);
+
+static INLINE void _sched_set_time_stamp(ir_node *irn)
+{
+  sched_info_t *inf = get_irn_sched_info(irn);
+  sched_timestep_t before_ts = _sched_entry(inf->list.prev)->time_step;
+  sched_timestep_t after_ts = _sched_entry(inf->list.next)->time_step;
+
+  /*
+   * If we are the last, we can give us a big time step,
+   * else we have to compute our time step from our
+   * neighbours.
+   */
+  if(after_ts == 0)
+    inf->time_step = before_ts + SCHED_INITIAL_GRANULARITY;
+  else {
+    sched_timestep_t ts = (before_ts + after_ts) / 2;
+
+    /*
+     * If the resolution went out, we have to renumber
+     * this block.
+     */
+    if(ts == before_ts || ts == after_ts)
+      sched_renumber(get_nodes_block(irn));
+  }
+}
+
+/**
  * Add a node to a block schedule.
  * @param block The block to whose schedule the node shall be added to.
  * @param irn The node to add.
  * @return The given node.
  */
-static INLINE ir_node *_sched_add(ir_node *block, ir_node *irn)
+static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
 {
-	assert(is_Block(block) && "Need a block here");
-	list_add_tail(&get_irn_sched_info(irn)->list, &get_irn_sched_info(block)->list);
+	list_add_tail(&get_irn_sched_info(irn)->list, &get_irn_sched_info(before)->list);
+  _sched_set_time_stamp(irn);
 	return irn;
 }
 
-#define sched_get_time_step(irn)	  _sched_get_time_step(irn)
-#define sched_has_succ(irn) 				_sched_has_succ(irn)
-#define sched_has_prev(irn) 				_sched_has_prev(irn)
-#define sched_succ(irn) 						_sched_succ(irn)
-#define sched_prev(irn) 						_sched_prev(irn)
-#define sched_first(irn) 						_sched_first(irn)
-#define sched_last(irn) 						_sched_last(irn)
-#define sched_add(block,irn) 				_sched_add(block,irn)
+/**
+ * Add a node to a block schedule.
+ * @param block The block to whose schedule the node shall be added to.
+ * @param irn The node to add.
+ * @return The given node.
+ */
+static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
+{
+	list_add(&get_irn_sched_info(irn)->list, &get_irn_sched_info(after)->list);
+  _sched_set_time_stamp(irn);
+	return irn;
+}
 
+/**
+ * Verify a schedule.
+ * @param block The block whose schedule to verify.
+ * @return      1, if the schedule is proper, 0 if not.
+ */
+extern int sched_verify(const ir_node *block);
+
+/**
+ * Verify the schedules in all blocks of the irg.
+ * @param irg The program graph.
+ * @return    1, if all schedules were right, 0 if not.
+ */
+extern int sched_verify_irg(ir_graph *irg);
+
+#define sched_get_time_step(irn)	    _sched_get_time_step(irn)
+#define sched_has_succ(irn) 				  _sched_has_succ(irn)
+#define sched_has_prev(irn) 				  _sched_has_prev(irn)
+#define sched_succ(irn) 						  _sched_succ(irn)
+#define sched_prev(irn) 						  _sched_prev(irn)
+#define sched_first(irn) 						  _sched_first(irn)
+#define sched_last(irn) 						  _sched_last(irn)
+#define sched_add_before(before, irn)	_sched_add_before(before, irn)
+#define sched_add_after(after, irn) 	_sched_add_after(after, irn)
 
 #endif

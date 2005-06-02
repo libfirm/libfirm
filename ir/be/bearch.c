@@ -66,7 +66,9 @@ get_irn_ops(const arch_env_t *env, const ir_node *irn)
   int i;
 
   for(i = env->handlers_tos - 1; i >= 0; --i) {
-    const arch_irn_ops_t *ops = env->handlers[i]->get_irn_ops(irn);
+    const arch_irn_handler_t *handler = env->handlers[i];
+    const arch_irn_ops_t *ops = handler->get_irn_ops(handler, irn);
+
     if(ops)
       return ops;
   }
@@ -74,11 +76,19 @@ get_irn_ops(const arch_env_t *env, const ir_node *irn)
   return fallback_irn_ops;
 }
 
+const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
+    arch_register_req_t *req, const ir_node *irn, int pos)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  return ops->get_irn_reg_req(ops, req, irn, pos);
+}
+
 int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
     int pos, const arch_register_class_t *cls, bitset_t *bs)
 {
+  arch_register_req_t local_req;
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+  const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
 
   switch(req->type) {
     case arch_register_req_type_normal:
@@ -98,8 +108,9 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
 int arch_is_register_operand(const arch_env_t *env,
     const ir_node *irn, int pos)
 {
+  arch_register_req_t local_req;
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+  const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
   return req != NULL;
 }
 
@@ -117,8 +128,9 @@ int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
 const arch_register_class_t *
 arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos)
 {
+  arch_register_req_t local_req;
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+  const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
   return req ? req->cls : NULL;
 }
 
@@ -127,7 +139,7 @@ arch_get_irn_register(const arch_env_t *env, const ir_node *irn, int idx)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
   assert(idx >= 0);
-  return ops->get_irn_reg(irn, idx);
+  return ops->get_irn_reg(ops, irn, idx);
 }
 
 extern void arch_set_irn_register(const arch_env_t *env,
@@ -135,5 +147,5 @@ extern void arch_set_irn_register(const arch_env_t *env,
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
   assert(idx >= 0);
-  ops->set_irn_reg(irn, idx, reg);
+  ops->set_irn_reg(ops, irn, idx, reg);
 }

@@ -4,17 +4,14 @@
 
 #include "firm_config.h"
 
-#include "irop_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
+#include "irnode.h"
+#include "irmode.h"
 
 #include "hashptr.h"
 #include "fourcc.h"
 #include "set.h"
 #include "list.h"
 #include "ident.h"
-
-#include "bearch.h"
 
 struct _bitset_t;
 
@@ -24,6 +21,8 @@ typedef struct _arch_enum_t             arch_enum_t;
 typedef struct _arch_enum_member_t      arch_enum_member_t;
 typedef struct _arch_isa_if_t           arch_isa_if_t;
 typedef struct _arch_env_t              arch_env_t;
+typedef struct _arch_irn_ops_t          arch_irn_ops_t;
+typedef struct _arch_irn_handler_t      arch_irn_handler_t;
 
 typedef enum _arch_register_type_t {
 	arch_register_type_none = 0,
@@ -140,21 +139,26 @@ typedef enum _arch_operand_type_t {
  * Different types of register allocation requirements.
  */
 typedef enum _arch_register_req_type_t {
-  arch_register_req_type_normal,          /** All registers in the class
+  arch_register_req_type_none = 0,        /** No register requirement. */
+
+  arch_register_req_type_normal = 1,      /** All registers in the class
                                             are allowed. */
 
-  arch_register_req_type_limited,         /** Only a real subset of
+  arch_register_req_type_limited = 2,     /** Only a real subset of
                                             the class is allowed. */
 
-  arch_register_req_type_equal,           /** The register must equal
+  arch_register_req_type_equal = 4,       /** The register must equal
                                             another one at the node. */
 
-  arch_register_req_type_unequal,         /** The register must be unequal
+  arch_register_req_type_unequal = 8,     /** The register must be unequal
                                             to some other at the node. */
 
-  arch_register_req_type_pair             /** The register is part of a
+  arch_register_req_type_pair = 16        /** The register is part of a
                                             register pair. */
 } arch_register_req_type_t;
+
+#define arch_register_req_is_constr(x) \
+  ((x)->type & (arch_register_req_type_pair + arch_register_req_type_limited - 1) != 0)
 
 /**
  * Expresses requirements to register allocation for an operand.
@@ -187,7 +191,8 @@ typedef enum _arch_irn_class_t {
   arch_irn_class_normal,
   arch_irn_class_spill,
   arch_irn_class_reload,
-  arch_irn_class_copy
+  arch_irn_class_copy,
+  arch_irn_class_perm
 } arch_irn_class_t;
 
 /*
@@ -208,19 +213,21 @@ typedef enum _arch_irn_class_t {
  * instruction has n input and m output operands.
  */
 
+#define _BEARCH_TRANSFORM_INDEX(cmp, index) ((index) cmp 0 ? -((index) + 1) : (index))
+
 /**
  * Make an in position from an index.
  * @param index The index.
  * @return The position representing the index as an in operand.
  */
-#define arch_pos_make_in(index)   (index)
+#define arch_pos_make_in(index)   _BEARCH_TRANSFORM_INDEX(<, index)
 
 /**
  * Make an out position from an index.
  * @param index The index.
  * @return The position representing the index as an out operand.
  */
-#define arch_pos_make_out(index)  (-((index) + 1))
+#define arch_pos_make_out(index)  _BEARCH_TRANSFORM_INDEX(>=, index)
 
 /**
  * Check, if a position denotes an input operand.
@@ -241,18 +248,21 @@ typedef enum _arch_irn_class_t {
  * @param pos The position.
  * @return The index of the position.
  */
-#define arch_pos_get_index(pos)   ((pos) < 0 ? -(pos) - 1 : (pos))
+#define arch_pos_get_index(pos)   _BEARCH_TRANSFORM_INDEX(<, pos)
 
-typedef struct _arch_irn_ops_t {
+struct _arch_irn_ops_t {
 
   /**
    * Get the register requirements for a given operand.
+   * @param self The self pointer.
    * @param irn The node.
    * @param pos The operand's position.
-   * @return    The register requirements for the selected operand,
-   *            or NULL, if the operand is no register.
+   * @return    The register requirements for the selected operand.
+   *            The pointer returned is never NULL.
    */
-  const arch_register_req_t *(*get_irn_reg_req)(const ir_node *irn, int pos);
+  const arch_register_req_t *(*get_irn_reg_req)(const arch_irn_ops_t *self,
+      arch_register_req_t *req,
+      const ir_node *irn, int pos);
 
   /**
    * Get the number of operands of a node.
@@ -261,7 +271,7 @@ typedef struct _arch_irn_ops_t {
    *                output (a number < 0).
    * @return        The number of operands for either in, or output.
    */
-  int (*get_n_operands)(const ir_node *irn, int in_out);
+  int (*get_n_operands)(const arch_irn_ops_t *self, const ir_node *irn, int in_out);
 
   /**
    * Set the register for an output operand.
@@ -271,7 +281,8 @@ typedef struct _arch_irn_ops_t {
    * @note      If the operand is not a register operand,
    *            the call is ignored.
    */
-  void (*set_irn_reg)(ir_node *irn, int idx, const arch_register_t *reg);
+  void (*set_irn_reg)(const arch_irn_ops_t *self, ir_node *irn,
+      int idx, const arch_register_t *reg);
 
   /**
    * Get the register allocated for an output operand.
@@ -282,16 +293,32 @@ typedef struct _arch_irn_ops_t {
    *            @c arch_register_invalid, if no register has yet been
    *            allocated for this node.
    */
-  const arch_register_t *(*get_irn_reg)(const ir_node *irn, int idx);
+  const arch_register_t *(*get_irn_reg)(const arch_irn_ops_t *self,
+      const ir_node *irn, int idx);
 
   /**
    * Classify the node.
    * @param irn The node.
    * @return A classification.
    */
-  arch_irn_class_t (*classify)(const ir_node *irn);
+  arch_irn_class_t (*classify)(const arch_irn_ops_t *self, const ir_node *irn);
 
-} arch_irn_ops_t;
+};
+
+/**
+ * Get the register requirements for a node.
+ * @param env The architecture environment.
+ * @param req A pointer to a requirements structure, where the data can
+ *            be put into.
+ * @param irn The node.
+ * @param pos The position of the operand you're interested in.
+ * @return    A pointer to the register requirements which may <b>not</b>
+ *            neccessarily be equal to @p req. If NULL is returned, the
+ *            operand was no register operand.
+ */
+extern const arch_register_req_t *
+arch_get_register_req(const arch_env_t *env, arch_register_req_t *req,
+    const ir_node *irn, int pos);
 
 /**
  * Check if an operand is a register operand.
@@ -368,16 +395,18 @@ extern void arch_set_irn_register(const arch_env_t *env,
 /**
  * Somebody who can be asked about nodes.
  */
-typedef struct _arch_irn_handler_t {
+struct _arch_irn_handler_t {
 
   /**
     * Get the operations of an irn.
+    * @param self The handler from which the method is invoked.
     * @param irn Some node.
     * @return Operations for that irn.
     */
-  const arch_irn_ops_t *(*get_irn_ops)(const ir_node *irn);
+  const arch_irn_ops_t *(*get_irn_ops)(const arch_irn_handler_t *handler,
+      const ir_node *irn);
 
-} arch_irn_handler_t;
+};
 
 /**
  * Architecture interface.
