@@ -861,10 +861,10 @@ void      set_Sync_pred (ir_node *node, int pos, ir_node *pred);
 type     *get_Proj_type (ir_node *node);
 
 /** Return the predecessor of a Proj node. */
-ir_node  *get_Proj_pred (ir_node *node);
+ir_node  *get_Proj_pred (const ir_node *node);
 void      set_Proj_pred (ir_node *node, ir_node *pred);
 /** Return the projection number of a Proj node. */
-long      get_Proj_proj (ir_node *node);
+long      get_Proj_proj (const ir_node *node);
 void      set_Proj_proj (ir_node *node, long proj);
 
 ir_node **get_Tuple_preds_arr (ir_node *node);

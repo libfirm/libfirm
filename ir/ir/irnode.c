@@ -1831,7 +1831,7 @@ type *get_Proj_type(ir_node *n)
 }
 
 ir_node *
-get_Proj_pred (ir_node *node) {
+get_Proj_pred (const ir_node *node) {
   assert (is_Proj(node));
   return get_irn_n(node, 0);
 }
@@ -1843,7 +1843,7 @@ set_Proj_pred (ir_node *node, ir_node *pred) {
 }
 
 long
-get_Proj_proj (ir_node *node) {
+get_Proj_proj (const ir_node *node) {
   assert (is_Proj(node));
   if (get_irn_opcode(node) == iro_Proj) {
     return node->attr.proj;
