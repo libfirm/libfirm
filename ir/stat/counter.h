@@ -64,34 +64,25 @@ static INLINE void cnt_add(counter_t *dst, const counter_t *src)
   int i, carry = 0;
 
   for (i = 0; i < STAT_CNT_NUM; ++i) {
-    unsigned a = dst->cnt[i] + src->cnt[i] + carry;
+    unsigned x = dst->cnt[i];
+    unsigned y = src->cnt[i];
+    unsigned a = x + y + carry;
 
-    if (carry)
-      carry = a <= dst->cnt[i];
-    else
-      carry = a < dst->cnt[i];
+    carry = (int)((x & y) | ((x | y) & ~a)) < 0 ? 1 : 0;
 
     dst->cnt[i] = a;
-
-    if (! carry)
-      break;
   }
 }
 
 /**
- * add an integer to an counter
+ * add an (positive) integer to an counter
  */
 static INLINE void cnt_add_i(counter_t *dst, int src)
 {
   int i;
-  unsigned a = dst->cnt[0] + src;
-  unsigned carry = a < dst->cnt[0];
+  unsigned carry = src;
 
-  dst->cnt[0] = a;
-  if (! carry)
-    return;
-
-  for (i = 1; i < STAT_CNT_NUM; ++i) {
+  for (i = 0; i < STAT_CNT_NUM; ++i) {
     unsigned a = dst->cnt[i] + carry;
 
     carry = a < dst->cnt[i];
