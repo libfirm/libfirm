@@ -613,6 +613,36 @@ tarval *get_tarval_one(ir_mode *mode)
   return tarval_bad;
 }
 
+tarval *get_tarval_minus_one(ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+
+  if (get_mode_n_vector_elems(mode) > 1) {
+    /* vector arithmetic not implemented yet */
+    return tarval_bad;
+  }
+
+  switch(get_mode_sort(mode))
+  {
+    case irms_control_flow:
+    case irms_memory:
+    case irms_auxiliary:
+    case irms_internal_boolean:
+    case irms_reference:
+      assert(0);
+      break;
+
+    case irms_float_number:
+      return mode_is_signed(mode) ? new_tarval_from_double(-1.0, mode) : tarval_bad;
+
+    case irms_int_number:
+    case irms_character:
+      return mode_is_signed(mode) ? new_tarval_from_long(-1l, mode) : tarval_bad;
+  }
+  return tarval_bad;
+}
+
 tarval *get_tarval_nan(ir_mode *mode)
 {
   ANNOUNCE();
@@ -1581,7 +1611,7 @@ int  set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modein
 /*
  * Returns the output options of one mode.
  *
- * This functions returns the modinfo of a given mode.
+ * This functions returns the mode info of a given mode.
  */
 const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode)
 {

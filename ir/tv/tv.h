@@ -311,6 +311,10 @@ tarval *get_tarval_null(ir_mode *mode);
 /** Returns the 1 value (multiplicative neutral) of a given mode. */
 tarval *get_tarval_one(ir_mode *mode);
 
+/** Returns the -1 value (multiplicative neutral) of a given mode.
+ *  Returns tarval bad for unsigned modes */
+tarval *get_tarval_minus_one(ir_mode *mode);
+
 /** Return quite nan for float_number modes. */
 tarval *get_tarval_nan(ir_mode *mode);
 
@@ -342,8 +346,8 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
  * Compares two tarvals
  *
  * Compare a with b and return a pn_Cmp describing the relation
- * between a and b.  This is either Uo, Lt, Eq, Gt, or False if a or b
- * are symbolic pointers which can not be compared at all.
+ * between a and b.  This is either pn_Cmp_Uo, pn_Cmp_ Lt, pn_Cmp_ Eq, pn_Cmp_Gt,
+ * or pn_Cmp_False if a or b are symbolic pointers which can not be compared at all.
  *
  * @param a   A tarval to be compared
  * @param b   A tarval to be compared
