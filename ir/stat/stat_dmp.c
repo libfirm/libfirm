@@ -221,6 +221,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 {
   int i;
+  counter_t sum;
+
+  cnt_clr(&sum);
 
   fprintf(dmp->f, "\nConstant Information:\n");
   fprintf(dmp->f, "---------------------\n");
@@ -228,9 +231,14 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
   fprintf(dmp->f, "\nBit usage for integer constants\n");
   fprintf(dmp->f, "-------------------------------\n");
 
-  for (i = 0; i < ARR_SIZE(tbl->bits_count); ++i)
-    fprintf(dmp->f, "%3d %12u\n", i + 1, tbl->bits_count[i].cnt[0]);
+  for (i = 0; i < ARR_SIZE(tbl->bits_count); ++i) {
+    fprintf(dmp->f, "%5d %12u\n", i + 1, tbl->bits_count[i].cnt[0]);
+    cnt_add(&sum, &tbl->bits_count[i]);
+  }
+  fprintf(dmp->f, "other %12u\n", tbl->others.cnt[0]);
+  cnt_add(&sum, &tbl->others);
   fprintf(dmp->f, "-------------------------------\n");
+  fprintf(dmp->f, "sum   %12u\n", sum.cnt[0]);
 }
 
 /**
