@@ -13,6 +13,7 @@
 #endif
 
 #include "stat_dmp.h"
+#include "irhooks.h"
 
 /**
  * names of the optimizations
@@ -39,12 +40,13 @@ static const char *opt_names[] = {
   "Lowered",
 };
 
-static const char *if_conv_names[] = {
+static const char *if_conv_names[IF_RESULT_LAST] = {
   "if conv done             ",
   "if conv side effect      ",
   "if conv Phi node found   ",
   "if conv to deep DAG's    ",
   "if conv bad control flow ",
+  "if conv denied by arch   ",
 };
 
 /**
@@ -214,6 +216,24 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 }
 
 /**
+ * dumps the IRG
+ */
+static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
+{
+  int i;
+
+  fprintf(dmp->f, "\nConstant Information:\n");
+  fprintf(dmp->f, "---------------------\n");
+
+  fprintf(dmp->f, "\nBit usage for integer constants\n");
+  fprintf(dmp->f, "-------------------------------\n");
+
+  for (i = 0; i < ARR_SIZE(tbl->bits_count); ++i)
+    fprintf(dmp->f, "%3d %12u\n", i + 1, tbl->bits_count[i].cnt[0]);
+  fprintf(dmp->f, "-------------------------------\n");
+}
+
+/**
  * initialize the simple dumper
  */
 static void simple_init(dumper_t *dmp, const char *name)
@@ -238,6 +258,7 @@ static void simple_finish(dumper_t *dmp)
  */
 const dumper_t simple_dumper = {
   simple_dump_graph,
+  simple_dump_const_tbl,
   simple_init,
   simple_finish,
   NULL,
@@ -320,6 +341,14 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 }
 
 /**
+ * dumps the IRG
+ */
+static void csv_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
+{
+  /* FIXME: NYI */
+}
+
+/**
  * initialize the simple dumper
  */
 static void csv_init(dumper_t *dmp, const char *name)
@@ -344,6 +373,7 @@ static void csv_finish(dumper_t *dmp)
  */
 const dumper_t csv_dumper = {
   csv_dump_graph,
+  csv_dump_const_tbl,
   csv_init,
   csv_finish,
   NULL,
