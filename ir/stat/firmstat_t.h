@@ -26,6 +26,9 @@
 #include "counter.h"
 #include "irhooks.h"
 
+/* some useful macro. */
+#define ARR_SIZE(a)   (sizeof(a)/sizeof((a)[0]))
+
 /*
  * just be make some things clear :-), the
  * poor man "generics"
@@ -106,21 +109,29 @@ typedef struct _graph_entry_t {
  * An entry for optimized ir_nodes
  */
 typedef struct _opt_entry_t {
-  counter_t   count;			/**< optimization counter */
-  const ir_op *op;			/**< the op for this entry */
+  counter_t   count;    /**< optimization counter */
+  const ir_op *op;      /**< the op for this entry */
 } opt_entry_t;
 
 /**
  * An entry for a block in a ir-graph
  */
 typedef struct _block_entry_t {
-  counter_t  cnt_nodes;			/**< the counter of nodes in this block */
-  counter_t  cnt_edges;			/**< the counter of edges in this block */
-  counter_t  cnt_in_edges;		/**< the counter of edges incoming from other blocks to this block */
-  counter_t  cnt_out_edges;		/**< the counter of edges outgoing from this block to other blocks */
-  counter_t  cnt_phi_data;              /**< the counter of data Phi nodes in this block */
-  long       block_nr;			/**< block nr */
+  counter_t  cnt_nodes;     /**< the counter of nodes in this block */
+  counter_t  cnt_edges;     /**< the counter of edges in this block */
+  counter_t  cnt_in_edges;  /**< the counter of edges incoming from other blocks to this block */
+  counter_t  cnt_out_edges; /**< the counter of edges outgoing from this block to other blocks */
+  counter_t  cnt_phi_data;  /**< the counter of data Phi nodes in this block */
+  long       block_nr;      /**< block nr */
 } block_entry_t;
+
+/**
+ * constant info
+ */
+typedef struct _constant_info_t {
+  counter_t  bits_count[32];   /**< distribution of bit sizes of constants */
+  counter_t  others;           /**< number of other constants */
+} constant_info_t;
 
 /** forward */
 typedef struct _dumper_t dumper_t;
@@ -142,47 +153,55 @@ typedef void (*dump_graph_FUNC)(dumper_t *dmp, graph_entry_t *entry);
 typedef void (*dump_init_FUNC)(dumper_t *dmp, const char *name);
 
 /**
+ * handler for dumper a constant info table
+ *
+ * @param dmp   the dumper
+ */
+typedef void (*dump_const_table_FUNC)(dumper_t *dmp, const constant_info_t *tbl);
+
+/**
  * handler for dumper finish
  *
  * @param dmp   the dumper
  */
 typedef void (*dump_finish_FUNC)(dumper_t *dmp);
 
-
 /**
  * statistics info
  */
 typedef struct _statistic_info_t {
-  struct obstack          cnts;			/**< obstack containing the counters */
-  HASH_MAP(graph_entry_t) *irg_hash;		/**< hash map containing the counter for irgs */
-  HASH_MAP(ir_op)         *ir_op_hash;		/**< hash map containing all ir_ops (accessible by op_codes) */
-  pdeq                    *wait_q;              /**< wait queue for leaf call decision */
-  int                     recursive;		/**< flag for detecting recursive hook calls */
+  int                     stat_options;	  /**< statistic options: must be first */
+  struct obstack          cnts;           /**< obstack containing the counters */
+  HASH_MAP(graph_entry_t) *irg_hash;      /**< hash map containing the counter for irgs */
+  HASH_MAP(ir_op)         *ir_op_hash;    /**< hash map containing all ir_ops (accessible by op_codes) */
+  pdeq                    *wait_q;        /**< wait queue for leaf call decision */
+  int                     recursive;      /**< flag for detecting recursive hook calls */
   int                     in_dead_node_elim;	/**< set, if dead node elimination runs */
-  ir_op                   *op_Phi0;		/**< pseudo op for Phi0 */
-  ir_op                   *op_PhiM;		/**< pseudo op for memory Phi */
-  ir_op                   *op_ProjM;		/**< pseudo op for memory Proj */
-  ir_op                   *op_MulC;		/**< pseudo op for multiplication by const */
-  ir_op                   *op_DivC;		/**< pseudo op for division by const */
-  ir_op                   *op_ModC;		/**< pseudo op for modulo by const */
-  ir_op                   *op_DivModC;		/**< pseudo op for DivMod by const */
-  ir_op                   *op_SelSel;		/**< pseudo op for Sel(Sel) */
-  ir_op                   *op_SelSelSel;	/**< pseudo op for Sel(Sel(Sel)) */
-  dumper_t                *dumper;		/**< list of dumper */
-  int                     reassoc_run;          /**< if set, reassociation is running */
-  int                     stat_options;	        /**< statistic options */
+  ir_op                   *op_Phi0;       /**< pseudo op for Phi0 */
+  ir_op                   *op_PhiM;       /**< pseudo op for memory Phi */
+  ir_op                   *op_ProjM;      /**< pseudo op for memory Proj */
+  ir_op                   *op_MulC;       /**< pseudo op for multiplication by const */
+  ir_op                   *op_DivC;       /**< pseudo op for division by const */
+  ir_op                   *op_ModC;       /**< pseudo op for modulo by const */
+  ir_op                   *op_DivModC;    /**< pseudo op for DivMod by const */
+  ir_op                   *op_SelSel;     /**< pseudo op for Sel(Sel) */
+  ir_op                   *op_SelSelSel;  /**< pseudo op for Sel(Sel(Sel)) */
+  dumper_t                *dumper;        /**< list of dumper */
+  int                     reassoc_run;    /**< if set, reassociation is running */
+  constant_info_t         const_info;     /**< statistic info for constants */
 } stat_info_t;
 
 /**
  * a dumper description
  */
 struct _dumper_t {
-  dump_graph_FUNC         dump_graph;		/**< handler for dumping an irg */
-  dump_init_FUNC          init;			/**< handler for init */
-  dump_finish_FUNC        finish;		/**< handler for finish */
-  FILE                    *f;			/**< the file to dump to */
-  stat_info_t             *status;              /**< access to the global status */
-  dumper_t                *next;		/**< link to the next dumper */
+  dump_graph_FUNC         dump_graph;     /**< handler for dumping an irg */
+  dump_const_table_FUNC   dump_const_tbl; /**< handler for dumping a const table */
+  dump_init_FUNC          init;           /**< handler for init */
+  dump_finish_FUNC        finish;         /**< handler for finish */
+  FILE                    *f;             /**< the file to dump to */
+  stat_info_t             *status;        /**< access to the global status */
+  dumper_t                *next;          /**< link to the next dumper */
 };
 
 /**
@@ -207,14 +226,14 @@ typedef unsigned (*distrib_hash_fun)(const void *object);
 typedef struct _distrib_tbl_t {
   struct obstack          	cnts;		/**< obstack containing the distrib_entry_t entries */
   HASH_MAP(distrib_entry_t)	*hash_map;	/**< the hash map containing the distribution */
-  distrib_hash_fun              hash_func;	/**< the hash function for object in this distribution */
+  distrib_hash_fun          hash_func;	/**< the hash function for object in this distribution */
   unsigned			int_dist;	/**< non-zero, if it's a integer distribution */
 } distrib_tbl_t;
 
 /* API for distribution tables */
 
 /**
- * creates a new distribution table
+ * creates a new distribution table.
  *
  * @param cmp_func   Compare function for objects in the distribution
  * @param hash_func  Hash function for objects in the distribution
@@ -222,36 +241,54 @@ typedef struct _distrib_tbl_t {
 distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash_func);
 
 /**
- * creates a new distribution table for an integer distribution
+ * creates a new distribution table for an integer distribution.
  */
 distrib_tbl_t *stat_new_int_distrib_tbl(void);
 
 /**
- * destroys a distribution table
+ * destroys a distribution table.
  */
 void stat_delete_distrib_tbl(distrib_tbl_t *tbl);
 
 /**
- * adds a new object count into the distribution table
+ * adds a new object count into the distribution table.
  */
 void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_t *cnt);
 
 /**
- * adds a new key count into the integer distribution table
+ * adds a new key count into the integer distribution table.
  */
 void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt);
 
 /**
- * calculates the mean value of a distribution
+ * calculates the mean value of a distribution.
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl);
 
-/** evaluates each entry of a distribution table */
+/** evaluates each entry of a distribution table. */
 typedef void (*eval_distrib_entry_fun)(const distrib_entry_t *entry);
 
 /**
  * iterates over all entries in a distribution table
  */
 void stat_iterate_distrib_tbl(distrib_tbl_t *tbl, eval_distrib_entry_fun eval);
+
+/**
+ * update info on Consts.
+ *
+ * @param node   The Const node
+ * @param graph  The graph entry containing the call
+ */
+void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph);
+
+/**
+ * clears the const statistics for a new snapshot.
+ */
+void stat_const_clear(stat_info_t *status);
+
+/**
+ * initialize the Const statistic.
+ */
+void stat_init_const_cnt(stat_info_t *status);
 
 #endif /* _FIRMSTAT_T_H_ */
