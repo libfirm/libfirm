@@ -28,18 +28,17 @@ enum firmstat_options_t {
   FIRMSTAT_COUNT_DAG       = 0x00000008,    /**< if set, count DAG statistics */
   FIRMSTAT_COUNT_DELETED   = 0x00000010,    /**< if set, count deleted graphs */
   FIRMSTAT_COUNT_SELS      = 0x00000020,    /**< if set, count Sel(Sel(..)) differently */
+  FIRMSTAT_COUNT_CONSTS    = 0x00000040,    /**< if set, count Const statistics */
   FIRMSTAT_CSV_OUTPUT      = 0x10000000     /**< CSV output of some mini-statistic */
 };
 
 /**
- * Finish the statistics.
+ * Dump a snapshot of the statistic values.
  * Never called from libFirm should be called from user.
  *
  * @param name   basename of the statistic output file
  */
-void stat_finish(const char *name);
-
-#ifdef FIRM_STATISTICS
+void stat_dump_snapshot(const char *name);
 
 /**
  * initialize the statistics module.
@@ -48,10 +47,9 @@ void stat_finish(const char *name);
  */
 void init_stat(unsigned enable_options);
 
-#else
-
-#define init_stat(enable_options)
-
-#endif /* FIRM_STATISTICS */
+/**
+ * terminates the statustics module, frees all memory
+ */
+void stat_term(void);
 
 #endif /* _FIRMSTAT_H_ */
