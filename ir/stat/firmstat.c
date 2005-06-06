@@ -82,7 +82,8 @@ static ir_op _op_SelSelSel;
 /**
  * global status
  */
-static stat_info_t _status, *status = &_status;
+static const int status_disable = 0;
+static stat_info_t *status = (stat_info_t *)&status_disable;
 
 /**
  * compare two elements of the opcode hash
@@ -472,7 +473,7 @@ static int cnt_const_args(ir_node *call)
  * @param call   The call
  * @param graph  The graph entry containing the call
  */
-static void update_call_stat(ir_node *call, graph_entry_t *graph)
+static void stat_update_call(ir_node *call, graph_entry_t *graph)
 {
   ir_node  *block = get_nodes_block(call);
   ir_node  *ptr = get_Call_ptr(call);
@@ -549,7 +550,7 @@ static void update_call_stat(ir_node *call, graph_entry_t *graph)
 /**
  * update info on calls for graphs on the wait queue
  */
-static void update_call_stat_2(ir_node *call, graph_entry_t *graph)
+static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 {
   ir_node  *block = get_nodes_block(call);
   ir_node  *ptr = get_Call_ptr(call);
@@ -604,9 +605,18 @@ static void update_node_stat(ir_node *node, void *env)
   /* count block edges */
   undate_block_info(node, graph);
 
-  /* check for properties that depends on calls like recursion/leaf/indirect call */
-  if (op == op_Call)
-    update_call_stat(node, graph);
+  /* handle statistics for special node types */
+
+  if (op == op_Const) {
+    if (status->stat_options & FIRMSTAT_COUNT_CONSTS) {
+      /* check properties of constants */
+      stat_update_const(status, node, graph);
+    }
+  }
+  else if (op == op_Call) {
+    /* check for properties that depends on calls like recursion/leaf/indirect call */
+    stat_update_call(node, graph);
+  }
 }
 
 /**
@@ -618,7 +628,7 @@ static void update_node_stat_2(ir_node *node, void *env)
 
   /* check for properties that depends on calls like recursion/leaf/indirect call */
   if (get_irn_op(node) == op_Call)
-    update_call_stat_2(node, graph);
+    stat_update_call_2(node, graph);
 }
 
 /**
@@ -710,7 +720,7 @@ static void mark_address_calc(ir_node *node, void *env)
 }
 
 /**
- * Called for every graph when the graph is either deleted or stat_finish()
+ * Called for every graph when the graph is either deleted or stat_dump_snapshot()
  * is called, must recalculate all statistic info.
  *
  * @param global    The global entry
@@ -801,7 +811,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 }
 
 /**
- * Called for every graph that was on the wait_q in stat_finish()
+ * Called for every graph that was on the wait_q in stat_dump_snapshot()
  *  must finish all statistic info calculations.
  *
  * @param global    The global entry
@@ -851,6 +861,19 @@ static void stat_dump_graph(graph_entry_t *entry)
   for (dumper = status->dumper; dumper; dumper = dumper->next) {
     if (dumper->dump_graph)
       dumper->dump_graph(dumper, entry);
+  }
+}
+
+/**
+ * dumps a constant table
+ */
+static void stat_dump_consts(const constant_info_t *tbl)
+{
+  dumper_t *dumper;
+
+  for (dumper = status->dumper; dumper; dumper = dumper->next) {
+    if (dumper->dump_const_tbl)
+      dumper->dump_const_tbl(dumper, tbl);
   }
 }
 
@@ -1401,8 +1424,8 @@ static void stat_arch_dep_replace_DivMod_by_const(void *ctx, ir_node *divmod)
   STAT_LEAVE;
 }
 
-/* Finish the statistics */
-void stat_finish(const char *name)
+/* Dumps a statistics snapshot */
+void stat_dump_snapshot(const char *name)
 {
   if (! status->stat_options)
     return;
@@ -1411,6 +1434,14 @@ void stat_finish(const char *name)
   {
     graph_entry_t *entry;
     graph_entry_t *global = graph_get_entry(NULL, status->irg_hash);
+
+    /*
+     * The constant counter is only global, so we clear it here.
+     * Note that it does NOT contain teh constants in DELETED
+     * graphs due to this.
+     */
+    if (status->stat_options & FIRMSTAT_COUNT_CONSTS)
+      stat_const_clear(status);
 
     stat_dump_init(name);
 
@@ -1455,6 +1486,11 @@ void stat_finish(const char *name)
 
     /* dump global */
     stat_dump_graph(global);
+
+    /* dump the const info */
+    if (status->stat_options & FIRMSTAT_COUNT_CONSTS)
+      stat_dump_consts(&status->const_info);
+
     stat_dump_finish();
 
     stat_finish_pattern_history();
@@ -1469,9 +1505,6 @@ void stat_finish(const char *name)
       /* clear all global counter */
       graph_clear_entry(global, 1);
     }
-
-    /* finished */
-//    status->stat_options = 0;
   }
   STAT_LEAVE;
 }
@@ -1486,11 +1519,14 @@ void init_stat(unsigned enable_options)
 #define HOOK(h, fkt) \
   stat_hooks[h].hook._##h = fkt; register_hook(h, &stat_hooks[h])
 
+  if (! (enable_options & FIRMSTAT_ENABLED))
+    return;
+
+  status = xmalloc(sizeof(*status));
+  memset(status, 0, sizeof(*status));
+
   /* enable statistics */
   status->stat_options = enable_options & FIRMSTAT_ENABLED ? enable_options : 0;
-
-  if (! status->stat_options)
-    return;
 
   /* register all hooks */
   HOOK(hook_new_ir_op,                        stat_new_ir_op);
@@ -1590,13 +1626,32 @@ void init_stat(unsigned enable_options)
 
   /* initialize the pattern hash */
   stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
+
+  /* initialize the Const options */
+  if (enable_options & FIRMSTAT_COUNT_CONSTS)
+    stat_init_const_cnt(status);
+
 #undef HOOK
 #undef X
 }
 
+/* terminates the statistics module, frees all memory */
+void stat_term(void) {
+  if (status != (stat_info_t *)&status_disable) {
+    xfree(status);
+    status = (stat_info_t *)&status_disable;
+  }
+}
+
 #else
 
-/* Finish the statistics */
-void stat_finish(const char *name) {}
+/* initialize the statistics module. */
+void init_stat(unsigned enable_options) {}
+
+/* Dumps a statistics snapshot */
+void stat_dump_snapshot(const char *name) {}
+
+/* terminates the statustics module, frees all memory */
+void stat_term(void);
 
 #endif /* FIRM_STATISTICS */
