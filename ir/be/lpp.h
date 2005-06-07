@@ -3,15 +3,58 @@
  * Date:		16.05.2005
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ *
+ * Interface for specifying an milp. Does not define a solution method.
  */
+#ifndef _LPP_H
+#define _LPP_H
 
 #include <stdio.h>
+#include "set.h"
+#include "sp_matrix.h"
 
 typedef enum _opt_t {minimize, maximize} opt_t;
 typedef enum _cst_t {objective=0, equal=1, less=2, greater=3} cst_t;
-typedef enum _var_t {invalid=0, rhs=1, real=2, binary=3} var_t;
-typedef enum _sol_state_t {unknown=0, no_solution_file=1, infeasible=2, unbounded=3, feasible=4, optimal=5} sol_state_t;
-typedef struct _lpp_t lpp_t;
+typedef enum _var_t {invalid=0, rhs=1, continous=2, binary=3} var_t;
+typedef enum _sol_state_t {unknown=0, infeasible=1, inforunb=2, unbounded=3, feasible=4, optimal=5} sol_state_t;
+typedef enum _value_kind_t {none=0, value_start, value_solution} value_kind_t;
+
+typedef struct _name_t name_t;
+struct _name_t {
+	char *name;					/**< the name of the var/constraint supplied by user */
+	int nr;						/**< the col/row number in the matrix */
+	value_kind_t value_kind;
+	double value;
+	union _type {
+		var_t var_type;
+		cst_t cst_type;
+	} type;
+};
+
+typedef struct _lpp_t {
+	/* The problem data */
+	char *name;						/**< A textual name for this problem */
+	opt_t opt_type;					/**< Optimization direction */
+	sp_matrix_t *m;					/**< The matrix holding objective, constraints and rhs */
+
+	/* Cst/Var to Nr mapping */
+	set *cst2nr;					/**< Holds name_t's for constraints */
+	set *var2nr;					/**< Holds name_t's for variables */
+
+	/* Nr to Cst/Var mapping */
+	int cst_size, var_size;			/**< Size of the csts/vars-arrays below */
+	int cst_next, var_next;			/**< Next free position in arrays below */
+	name_t **csts;					/**< Pointers to the elements in the cst2nr set */
+	name_t **vars;					/**< Pointers to the elements in the var2nr set */
+
+	/* Solution stuff */
+	sol_state_t sol_state;
+	double sol_time;					/**< Time in seconds */
+	unsigned iterations;
+
+	char *error;
+	unsigned next_name_number;
+} lpp_t;
 
 #define ERR_NAME_NOT_ALLOWED -2
 
@@ -32,7 +75,7 @@ void free_lpp(lpp_t *lpp);
  * @param rhs The right hand side value to set for this constraint.
  * @return The (new or existing) index of the constraint
  */
-int lpp_add_cst(lpp_t *lpp, const char *cst_name, cst_t cst_type, double rhs);
+int lpp_add_cst(lpp_t *lpp, char *cst_name, cst_t cst_type, double rhs);
 
 /**
  * Returns the internal index of a constraint.
@@ -44,8 +87,10 @@ int lpp_get_cst_idx(lpp_t *lpp, char *cst_name);
 /**
  * Returns the name of a constraint.
  * @param index The internal index of a constraint.
+ * @param buf A buffer to hold the name of the constraint
+ * @param buf_size Size of the buffer
  */
-const char *lpp_get_cst_name(lpp_t *lpp, int index);
+void lpp_get_cst_name(lpp_t *lpp, int index, char *buf, size_t buf_size);
 
 /**
  * Adds a variable to a problem. If a variable with the same name already
@@ -57,7 +102,7 @@ const char *lpp_get_cst_name(lpp_t *lpp, int index);
  *
  * NOTE: common integer or semi-continous vars are not (yet) implemented
  */
-int lpp_add_var(lpp_t *lpp, const char *var_name, var_t var_type, double obj);
+int lpp_add_var(lpp_t *lpp, char *var_name, var_t var_type, double obj);
 
 /**
  * Returns the internal index of a variable.
@@ -69,13 +114,13 @@ int lpp_get_var_idx(lpp_t *lpp, char *var_name);
 /**
  * Returns the name of a variable.
  * @param index The internal index of a variable.
+ * @param buf A buffer to hold the name of the variable
+ * @param buf_size Size of the buffer
  */
-const char *lpp_get_var_name(lpp_t *lpp, int index);
+void lpp_get_var_name(lpp_t *lpp, int index, char *buf, size_t buf_size);
 
 /**
  * Sets the factor of the variable @p var_name in constraint @p cst_name to @p value.
- * Use "obj" as constraint name to set factors in the objective function.
- * Use "rhs" as variable name to set the right hand side values.
  * @return -1 if constraint or variable name does not exist.
  * 			0 otherwise
  */
@@ -83,7 +128,6 @@ int lpp_set_factor(lpp_t *lpp, char *cst_name, char *var_name, double value);
 
 /**
  * Same as lpp_set_factor but uses the internal indices instead of names.
- * "obj" and "rhs" both have index 0.
  * @return -1 if an index was invalid
  * 			0 otherwise
  */
@@ -97,12 +141,16 @@ int lpp_set_factor_fast(lpp_t *lpp, int cst_idx, int var_idx, double value);
 void lpp_set_start_value(lpp_t *lpp, int var_idx, double value);
 
 /**
- * Solve the problem.
- * @return -1 if an error ocurred, 0 otherwise
- */
-int lpp_solve(lpp_t *lpp, int use_start_values);
-
-/**
  * @return The solution values of the variables from index begin to index end.
  */
 sol_state_t lpp_get_solution(lpp_t *lpp, double *values, int begin, int end);
+
+/**
+ * Dumps the lpp into a file with name @p filename in MPS-format
+ */
+void lpp_dump(lpp_t *lpp, const char *filename);
+
+#define lpp_get_iter_cnt(lpp) lpp->iterations
+#define lpp_get_sol_time(lpp) lpp->sol_time
+
+#endif
