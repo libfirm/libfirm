@@ -17,8 +17,9 @@
 #include "sp_matrix.h"
 #include "ilcplex/cplex.h"
 
-
+#undef HAVE_CPLEX
 #define LOGFILE stdout
+
 
 static char cpx_cst_encoding[4] = {'?', 'E', 'L', 'G'};
 static char cpx_var_encoding[4] = {'?', '?', 'C', 'B'};
@@ -184,9 +185,15 @@ void cpx_solve(cpx_t *cpx) {
 	lpp->iterations = CPXgetmipitcnt(cpx->env, cpx->prob);
 }
 
+#ifdef HAVE_CPLEX
 void lpp_solve_local(lpp_t *lpp) {
 	cpx_t *cpx = new_cpx(lpp);
 	cpx_construct(cpx);
 	cpx_solve(cpx);
 	free_cpx(cpx);
 }
+#else
+void lpp_solve_local(lpp_t *lpp) {
+	fprintf(stderr, "CPLEX not available!\n");
+}
+#endif
