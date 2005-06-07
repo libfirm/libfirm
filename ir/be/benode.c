@@ -14,25 +14,13 @@
 #include "obst.h"
 #include "set.h"
 #include "pmap.h"
-#include "offset.h"
+#include "util.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
 
 #include "benode_t.h"
-
-struct _be_node_factory_t {
-  const arch_isa_if_t *isa;
-
-  struct obstack      obst;
-  set                 *ops;
-  pmap                *irn_op_map;
-  pmap                *reg_req_map;
-
-  arch_irn_handler_t  handler;
-  arch_irn_ops_t      irn_ops;
-};
 
 typedef enum _node_kind_t {
   node_kind_spill,
@@ -259,13 +247,12 @@ int is_Spill(const be_node_factory_t *f, const ir_node *irn)
   return bo->kind == node_kind_spill;
 }
 
-be_node_factory_t *be_new_node_factory(const arch_isa_if_t *isa)
+be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
+    const arch_isa_if_t *isa)
 {
-  be_node_factory_t *factory;
   char buf[256];
   int i, j, n;
 
-  factory = malloc(sizeof(*factory));
   factory->ops = new_set(cmp_op_map, 64);
   factory->irn_op_map = pmap_create();
   obstack_init(&factory->obst);

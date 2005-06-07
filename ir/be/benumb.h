@@ -19,7 +19,9 @@ int (get_graph_block_count)(const ir_graph *irn);
 
 ir_node *(get_irn_for_graph_nr)(const ir_graph *irg, int nr);
 
+#if 0
 extern const phase_t *phase_numbering;
+#endif
 
 void be_numbering(ir_graph *irg);
 void be_numbering_done(ir_graph *irg);

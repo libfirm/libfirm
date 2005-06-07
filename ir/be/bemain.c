@@ -54,32 +54,51 @@ void be_init(void)
 #endif
 }
 
-static void be_init_arch_env(arch_env_t *env)
+static be_main_env_t *be_init_env(be_main_env_t *env)
 {
   const arch_isa_if_t *isa = &firm_isa;
-  be_node_factory_t *nf;
 
-  nf = be_new_node_factory(isa);
+  obstack_init(&env->obst);
 
-  arch_env_init(env, isa);
-  env->isa->init();
+  env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
+  arch_env_init(env->arch_env, isa);
+  env->arch_env->isa->init();
 
-  arch_env_add_irn_handler(env, &firm_irn_handler);
-  arch_env_add_irn_handler(env, be_node_get_irn_handler(nf));
+  env->node_factory = obstack_alloc(&env->obst, sizeof(*env->node_factory));
+  be_node_factory_init(env->node_factory, isa);
+
+  arch_env_add_irn_handler(env->arch_env, &firm_irn_handler);
+  arch_env_add_irn_handler(env->arch_env,
+      be_node_get_irn_handler(env->node_factory));
+
+  return env;
+}
+
+be_main_session_env_t *be_init_session_env(be_main_session_env_t *env,
+    be_main_env_t *main_env, ir_graph *irg)
+{
+  env->main_env = main_env;
+  env->irg = irg;
+
+  return env;
 }
 
 static void be_main_loop(void)
 {
 	int i, n;
-	arch_env_t arch_env;
-	const arch_isa_if_t *isa;
+  be_main_env_t env;
+  const arch_isa_if_t *isa;
 
-	be_init_arch_env(&arch_env);
-	isa = arch_env_get_isa(&arch_env);
+  be_init_env(&env);
+
+  isa = arch_env_get_isa(env.arch_env);
 
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		int j, m;
 		ir_graph *irg = get_irp_irg(i);
+    be_main_session_env_t session;
+
+    be_init_session_env(&session, &env, irg);
 
     remove_critical_cf_edges(irg);
 
@@ -104,7 +123,7 @@ static void be_main_loop(void)
 			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-			chordal_env = be_ra_chordal(irg, &arch_env, cls);
+			chordal_env = be_ra_chordal(irg, env.arch_env, cls);
 
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(&arch_env, irg, "");
@@ -112,8 +131,8 @@ static void be_main_loop(void)
 #ifdef DO_STAT
 			stat_collect_irg(irg);
 #endif
+
 			be_copy_opt(chordal_env);
-//TODO			be_ssa_destruction(chordal_env);
 			be_ra_chordal_done(chordal_env);
 		}
 #ifdef DO_STAT

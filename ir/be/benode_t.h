@@ -12,14 +12,29 @@
 #ifndef _BENODE_T_H
 #define _BENODE_T_H
 
+#include "pmap.h"
+
 #include "irmode.h"
 #include "irnode.h"
 
 #include "bearch.h"
 
+struct _be_node_factory_t {
+  const arch_isa_if_t *isa;
+
+  struct obstack      obst;
+  set                 *ops;
+  pmap                *irn_op_map;
+  pmap                *reg_req_map;
+
+  arch_irn_handler_t  handler;
+  arch_irn_ops_t      irn_ops;
+};
+
 typedef struct _be_node_factory_t 			be_node_factory_t;
 
-be_node_factory_t *be_new_node_factory(const arch_isa_if_t *isa);
+be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
+    const arch_isa_if_t *isa);
 
 const arch_irn_handler_t *be_node_get_irn_handler(const be_node_factory_t *f);
 

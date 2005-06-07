@@ -24,6 +24,8 @@ typedef struct _arch_env_t              arch_env_t;
 typedef struct _arch_irn_ops_t          arch_irn_ops_t;
 typedef struct _arch_irn_handler_t      arch_irn_handler_t;
 
+struct _be_node_factory_t;
+
 typedef enum _arch_register_type_t {
 	arch_register_type_none = 0,
   arch_register_type_write_invariant,
@@ -440,12 +442,13 @@ struct _arch_isa_if_t {
  * Keep this everywhere you're going.
  */
 struct _arch_env_t {
-  const arch_isa_if_t *isa;          /** The isa about which everything is. */
+  const struct _be_node_factory_t *node_factory;  /**< The node factory for be nodes. */
+  const arch_isa_if_t *isa;               /**< The isa about which everything is. */
 
-  arch_irn_handler_t const *handlers[ARCH_MAX_HANDLERS];   /** The handlers are organized as
-                                                        a stack. */
+  arch_irn_handler_t const *handlers[ARCH_MAX_HANDLERS]; /**< The handlers are organized as
+                                                           a stack. */
 
-  int handlers_tos;                                   /** The stack pointer of the handler
+  int handlers_tos;                                   /**< The stack pointer of the handler
                                                         stack. */
 };
 

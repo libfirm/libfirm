@@ -27,7 +27,6 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	becopyilp.c becopystat.c bearch_firm.c bearch.c bechordal_draw.c \
 	bechordal_draw.h beirgmod.c beirgmod.h benode.c benode_t.h \
 	mps.c lpp.c lpp_local.c lpp_remote.c
-#bessadestr.c
 
 include $(topdir)/MakeRules
 

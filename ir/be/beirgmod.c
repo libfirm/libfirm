@@ -5,6 +5,7 @@
 #include "pdeq.h"
 #include "pset.h"
 #include "pmap.h"
+#include "util.h"
 
 #include "irflag_t.h"
 #include "ircons_t.h"
@@ -13,7 +14,12 @@
 #include "irdom_t.h"
 #include "iredges_t.h"
 
+#include "be_t.h"
+#include "bearch.h"
 #include "besched_t.h"
+#include "belive_t.h"
+#include "benode_t.h"
+
 #include "beirgmod.h"
 
 struct _dom_front_info_t {
@@ -277,7 +283,6 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
   return NULL;
 }
 
-
 static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
 {
   int i;
@@ -343,4 +348,60 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
 
   del_pset(copies);
   del_pset(copy_blocks);
+}
+
+void insert_Perm_after(const be_main_session_env_t *env,
+    const arch_register_class_t *cls, ir_node *pos)
+{
+  const arch_env_t *arch_env = env->main_env->arch_env;
+  ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
+  ir_graph *irg = get_irn_irg(bl);
+  pset *live_end = get_live_end(bl);
+  pset *live = pset_new_ptr_default();
+  ir_node *curr, *irn, *perm, **nodes;
+  int i, n;
+
+  /* put all live ends in the live set. */
+  for(irn = pset_first(live_end); irn; irn = pset_next(live_end))
+    pset_insert_ptr(live, irn);
+
+  sched_foreach_reverse(bl, irn) {
+
+    if(arch_irn_has_reg_class(arch_env, irn, arch_pos_make_out(0), cls))
+      pset_remove_ptr(live, irn);
+
+    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+      ir_node *op = get_irn_n(irn, i);
+
+      if(arch_irn_has_reg_class(arch_env, op, arch_pos_make_out(0), cls))
+        pset_insert_ptr(live, op);
+    }
+
+    if(sched_prev(irn) == pos)
+      break;
+  }
+
+  n = pset_count(live);
+  nodes = malloc(n * sizeof(nodes[0]));
+
+  for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++)
+    nodes[i] = irn;
+
+  curr = perm = new_Perm(env->main_env->node_factory, cls, irg, bl, n, nodes);
+  sched_add_after(pos, perm);
+  free(nodes);
+
+  for(i = 0; i < n; ++i) {
+    ir_node *copies[1];
+    ir_node *perm_op = get_irn_n(perm, i);
+
+    ir_mode *mode = get_irn_mode(perm_op);
+    ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
+    sched_add_after(curr, proj);
+    curr = proj;
+
+    copies[0] = proj;
+    be_introduce_copies(env->dom_front, perm_op, array_size(copies), copies);
+  }
+
 }
