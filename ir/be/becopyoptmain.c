@@ -23,16 +23,16 @@
 static firm_dbg_module_t *dbg = NULL;
 
 void be_copy_opt_init(void) {
-	dbg = firm_dbg_register("ir.be.copyopt");
-	firm_dbg_set_mask(dbg, DEBUG_LVL);
 }
 
-void be_copy_opt(be_chordal_env_t *chordal_env,
-    const arch_env_t *env, const arch_register_class_t *cls) {
-
+void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
 	int lb, copies;
-	co = new_copy_opt(chordal_env, env, cls);
+
+	dbg = firm_dbg_register("ir.be.copyopt");
+	firm_dbg_set_mask(dbg, DEBUG_LVL);
+
+	co = new_copy_opt(chordal_env);
 	DBG((dbg, LEVEL_1, "\n\n    ===>  %s  <===\n\n", co->name));
 	co_check_allocation(co);
 

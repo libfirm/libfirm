@@ -21,7 +21,6 @@
 #include "bechordal.h"
 
 void be_copy_opt_init(void);
-void be_copy_opt(be_chordal_env_t *chordal_env,
-    const arch_env_t *env, const arch_register_class_t *cls);
+void be_copy_opt(be_chordal_env_t *chordal_env);
 
 #endif

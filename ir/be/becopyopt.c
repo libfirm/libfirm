@@ -7,6 +7,9 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 
 #include "irprog.h"
 
@@ -18,7 +21,77 @@
 #define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
-#define is_curr_reg_class(irn) (arch_get_irn_reg_class(co->env, irn, arch_pos_make_out(0)) == co->cls)
+#define is_curr_reg_class(irn) (arch_get_irn_reg_class(co->chordal_env->arch_env, irn, arch_pos_make_out(0)) == co->chordal_env->cls)
+
+#define MIN(a,b) ((a<b)?(a):(b))
+
+/**
+ * Computes a 'max independent set' wrt. ifg-edges only (no coloring conflicts, no register constraints)
+ * @return The size of such a mis
+ * NOTE: Code adapted from becopyheur
+ * BETTER: Here we can be sure having a chordal graph to work on, so for 'larger' opt-units we
+ *         could use a special algorithm.
+ */
+static int get_ifg_mis_size(unit_t *ou) {
+	int all_size, curr_size, i, o;
+	int *which;
+	ir_node **curr, **all = alloca(ou->node_count * sizeof(*all));
+
+	/* all contains all nodes */
+	all_size = 0;
+	for (i=0; i<ou->node_count; ++i)
+		all[all_size++] = ou->nodes[i];
+
+	/* which[i] says which element to take out of all[] and put into curr[i] */
+	which = alloca(all_size*sizeof(*which));
+	for (curr_size=0; curr_size<all_size; ++curr_size)
+		which[curr_size] = curr_size;
+
+	/* stores the currently examined set */
+	curr = alloca(all_size*sizeof(*curr));
+
+	while (1) { /* this loop will terminate because at least a single node will be a max indep. set */
+		/* build current set */
+		for (i=0; i<curr_size; ++i)
+			curr[i] = all[which[all_size-curr_size+i]];
+
+		/* check current set */
+		for (i=0; i<curr_size; ++i)
+			for (o=i+1; o<curr_size; ++o)
+				if (nodes_interfere(ou->co->chordal_env, curr[i], curr[o]))
+					goto conflict_found;
+
+		/* We had no conflict. This is the (one) max indep. set */
+		return curr_size;
+
+conflict_found:
+		/* We had a conflict. Generate next set */
+		if (which[all_size-curr_size+1] == all_size-curr_size+1) {
+			curr_size--;
+			for (i=0; i<curr_size; ++i)
+				which[all_size-curr_size+i] = i;
+		} else {
+			int redo = 1;
+			while (redo) {
+				int pos = all_size;
+				do {
+					pos--;
+				} while (!(which[pos] = (which[pos]+1) % all_size));
+
+				for (i=pos+1; i<all_size; ++i)
+					which[i] = MIN(which[i-1]+1, all_size-1);
+
+				redo = 0;
+				for (i=all_size-curr_size; i<all_size-1; ++i)
+					if (which[i]>=which[i+1]) {
+						redo = 1;
+						break;
+					}
+			}
+		}
+	}
+	assert(0 && "How did you get here?");
+}
 
 /**
  * Builds an optimization unit for a given optimizable irn (root).
@@ -64,13 +137,8 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	}
 	unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
 	list_add_tail(&unit->units, &co->units);
-	/* Init mis_size to node_count. So get_lower_bound returns correct results.
-	 * - Now it can be called even before the heuristic has run.
-	 * - And it will return correct results for units with nodecount 1 which are
-	 * not optimized during the heuristic and have therefor delivered wrong results for get_lower_bound
-	 */
-	unit->mis_size = unit->node_count;
-
+	/* Init ifg_mis_size to node_count. So get_lower_bound returns correct results. */
+	unit->ifg_mis_size = get_ifg_mis_size(unit);
 }
 
 static void co_collect_in_block(ir_node *block, void *env) {
@@ -86,12 +154,11 @@ static void co_collect_in_block(ir_node *block, void *env) {
 static void co_collect_units(copy_opt_t *co) {
 	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	co->roots = pset_new_ptr(64);
-	dom_tree_walk_irg(co->irg, co_collect_in_block, NULL, co);
+	dom_tree_walk_irg(co->chordal_env->irg, co_collect_in_block, NULL, co);
 	del_pset(co->roots);
 }
 
-copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env,
-    const arch_env_t *env, const arch_register_class_t *cls) {
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env) {
 	const char *s1, *s2, *s3;
 	int len;
         copy_opt_t *co;
@@ -100,15 +167,11 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env,
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	co = xcalloc(1, sizeof(*co));
-  co->chordal_env = chordal_env;
-	co->irg = chordal_env->irg;
-	co->env = env;
-//	co->isa = env->isa;
-	co->cls = cls;
+	co->chordal_env = chordal_env;
 
 	s1 = get_irp_prog_name();
-	s2 = get_entity_name(get_irg_entity(co->irg));
-	s3 = cls->name;
+	s2 = get_entity_name(get_irg_entity(co->chordal_env->irg));
+	s3 = chordal_env->cls->name;
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
 	co->name = xmalloc(len);
 	if (!strcmp(co->name, DEBUG_IRG))
@@ -157,7 +220,7 @@ int co_get_lower_bound(const copy_opt_t *co) {
 	int res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units)
-		res += curr->interf + curr->node_count - curr->mis_size;
+		res += curr->interf + curr->node_count - curr->ifg_mis_size;
 	return res;
 }
 
@@ -183,23 +246,26 @@ static void co_collect_for_checker(ir_node *block, void *env) {
 }
 
 /**
- * This O(n^2) checker checks, if two ifg-connected nodes have the same color.
+ * This O(n^2) checker checks if
+ * 	two ifg-connected nodes have the same color
+ * 	register constraint are satisfied
  */
 void co_check_allocation(copy_opt_t *co) {
 	ir_node **nodes, *n1, *n2;
 	int i, o;
 
 	obstack_init(&co->ob);
-	dom_tree_walk_irg(co->irg, co_collect_for_checker, NULL, co);
+	dom_tree_walk_irg(co->chordal_env->irg, co_collect_for_checker, NULL, co);
 	obstack_ptr_grow(&co->ob, NULL);
 
 	nodes = (ir_node **) obstack_finish(&co->ob);
 	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
+		assert(arch_reg_is_allocatable(co->chordal_env->arch_env, n1, arch_pos_make_out(0),
+			arch_get_irn_register(co->chordal_env->arch_env, n1, 0)) && "Constraint does not hold");
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
 			if (nodes_interfere(co->chordal_env, n1, n2)
           && get_irn_col(co, n1) == get_irn_col(co, n2)) {
-
-				DBG((dbg, 0, "Error: %n in %n  and  %n in %n have the same color.\n", n1, get_nodes_block(n1), n2, get_nodes_block(n2)));
+				DBG((dbg, 0, "Error: %n %d  and  %n %d have the same color %d.\n", n1, get_irn_graph_nr(n1), n2, get_irn_graph_nr(n2), get_irn_col(co, n1)));
 				assert(0 && "Interfering values have the same color!");
 			}
 	}

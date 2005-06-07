@@ -6,10 +6,11 @@
 
  * Heuristic for minimizing copies using a queue which holds 'qnodes' not yet
  * examined. A qnode has a 'target color', nodes out of the opt unit and
- * a 'conflict graph'. A 'max indep set' is determined form these. We try to
- * color this mis using a color-exchanging mechanism. Occuring conflicts are
- * modeled with 'conflict edges' and the qnode is reinserted in the queue. The
- * first qnode colored without conflicts is the best one.
+ * a 'conflict graph'. 'Conflict graph' = "Interference graph' + 'conflict edges'
+ * A 'max indep set' is determined form these. We try to color this mis using a
+ * color-exchanging mechanism. Occuring conflicts are modeled with 'conflict edges'
+ * and the qnode is reinserted in the queue. The first qnode colored without
+ * conflicts is the best one.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -205,8 +206,9 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	struct obstack confl_ob;
 	ir_node **confl, *cn;
 	int i, irn_col;
-  const arch_env_t *arch_env = qn->ou->co->env;
-  const be_chordal_env_t *chordal_env = qn->ou->co->chordal_env;
+	const be_chordal_env_t *chordal_env = qn->ou->co->chordal_env;
+	const arch_env_t *arch_env = chordal_env->arch_env;
+	const arch_register_class_t *cls = chordal_env->cls;
 
 	DBG((dbg, LEVEL_3, "\t      %n \tcaused col(%n) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
 	obstack_init(&confl_ob);
@@ -221,7 +223,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	if (!arch_reg_is_allocatable(arch_env,
 								 irn,
 								 arch_pos_make_out(0),
-								 arch_register_for_index(qn->ou->co->cls, col)))
+								 arch_register_for_index(cls, col)))
 		goto ret_imposs;
 
 	/* get all nodes which would conflict with this change */
@@ -237,7 +239,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 			ir_node *n;
 			pset *live_ins = get_live_in(irn_bl);
 			for (n = pset_first(live_ins); n; n = pset_next(live_ins))
-				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), qn->ou->co->cls)
+				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), cls)
             && n != trigger && qnode_get_new_color(qn, n) == col
             && nodes_interfere(chordal_env, irn, n)) {
 
@@ -267,7 +269,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 			 * the target color and interfere with the irn */
 			for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
 				ir_node *n = get_irn_out(curr_bl, i);
-				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), qn->ou->co->cls)
+				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), cls)
             && n != trigger && qnode_get_new_color(qn, n) == col
             && nodes_interfere(chordal_env, irn, n)) {
 
@@ -466,11 +468,6 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 	}
 
 	qnode_max_ind_set(qn, ou);
-
-	/* set ou->mis_size for lower bound compution */
-	if (ou->mis_size < qn->mis_size)
-		ou->mis_size = qn->mis_size;
-
 	/* do the insertion */
 	DBG((dbg, LEVEL_4, "\t  Insert qnode color %d with size %d\n", qn->color, qn->mis_size));
 	lh = &ou->queue;
@@ -493,7 +490,7 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 static void ou_optimize(unit_t *ou) {
 	int i;
 	qnode_t *curr, *tmp;
-	bitset_t *pos_regs = bitset_alloca(ou->co->cls->n_regs);
+	bitset_t *pos_regs = bitset_alloca(ou->co->chordal_env->cls->n_regs);
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
 	for (i=0; i<ou->node_count; ++i)
@@ -501,7 +498,7 @@ static void ou_optimize(unit_t *ou) {
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	arch_get_allocatable_regs(ou->co->env, ou->nodes[0], arch_pos_make_out(0), ou->co->cls, pos_regs);
+	arch_get_allocatable_regs(ou->co->chordal_env->arch_env, ou->nodes[0], arch_pos_make_out(0), ou->co->chordal_env->cls, pos_regs);
 	bitset_foreach(pos_regs, i)
 		ou_insert_qnode(ou, new_qnode(ou, i));
 

@@ -29,6 +29,7 @@
 #include "bearch.h"
 #include "becopyoptmain.h"
 #include "becopystat.h"
+//#include "bessadestr.h"
 #include "bearch_firm.h"
 #include "benode_t.h"
 
@@ -70,12 +71,11 @@ static void be_init_arch_env(arch_env_t *env)
 static void be_main_loop(void)
 {
 	int i, n;
-  arch_env_t env;
-  const arch_isa_if_t *isa;
+	arch_env_t arch_env;
+	const arch_isa_if_t *isa;
 
-  be_init_arch_env(&env);
-
-  isa = arch_env_get_isa(&env);
+	be_init_arch_env(&arch_env);
+	isa = arch_env_get_isa(&arch_env);
 
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		int j, m;
@@ -101,18 +101,19 @@ static void be_main_loop(void)
 #endif
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
-      be_chordal_env_t *chordal_env;
+			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-			chordal_env = be_ra_chordal(irg, &env, cls);
+			chordal_env = be_ra_chordal(irg, &arch_env, cls);
 
 #ifdef DUMP_ALLOCATED
-			dump_allocated_irg(&env, irg, "");
+			dump_allocated_irg(&arch_env, irg, "");
 #endif
 #ifdef DO_STAT
 			stat_collect_irg(irg);
 #endif
-			be_copy_opt(chordal_env, &env, cls);
+			be_copy_opt(chordal_env);
+//TODO			be_ssa_destruction(chordal_env);
 			be_ra_chordal_done(chordal_env);
 		}
 #ifdef DO_STAT

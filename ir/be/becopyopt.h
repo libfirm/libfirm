@@ -39,10 +39,7 @@
  */
 typedef struct _copy_opt_t {
 	be_chordal_env_t *chordal_env;
-	ir_graph *irg;						/**< the irg to process */
 	char *name;							/**< ProgName__IrgName__RegClass */
-	const arch_env_t *env;				/**< Environment (isa + handlers) */
-	const arch_register_class_t *cls;	/**< the registerclass all nodes belong to (in this pass) */
 	struct list_head units;				/**< all units to optimize in right order */
 	pset *roots;						/**< used only temporary for detecting multiple appends */
 	struct obstack ob;
@@ -57,25 +54,24 @@ typedef struct _unit_t {
 	int interf;					/**< number of nodes dropped due to interference */
 	int node_count;				/**< size of the nodes array */
 	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
+	int ifg_mis_size;			/**< size of a mis considering only ifg (not coloring conflicts) */
 
 	/* for heuristic */
-	int mis_size;				/**< size of a mis considering only ifg (not coloring conflicts) */
 	struct list_head queue;		/**< list of (mis/color) sorted by size of mis */
 } unit_t;
 
 /* Helpers */
 #define set_irn_col(co, irn, col) \
-	arch_set_irn_register(co->env, irn, 0, arch_register_for_index(co->cls, col))
+	arch_set_irn_register(co->chordal_env->arch_env, irn, 0, arch_register_for_index(co->chordal_env->cls, col))
 
 #define get_irn_col(co, irn) \
-	arch_register_get_index(arch_get_irn_register(co->env, irn, 0))
+	arch_register_get_index(arch_get_irn_register(co->chordal_env->arch_env, irn, 0))
 
 
 /**
  * Generate the problem. Collect all infos and optimizable nodes.
  */
-copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env,
-    const arch_env_t *env, const arch_register_class_t *cls);
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env);
 
 /**
  * Free the space...
