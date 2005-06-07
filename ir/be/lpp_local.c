@@ -6,14 +6,16 @@
  */
 #undef HAVE_CPLEX
 
-#ifdef HAVE_CPLEX
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "lpp_local.h"
+#include <stdio.h>
+
+#ifdef HAVE_CPLEX
 #include <alloca.h>
 #include <sys/time.h>
 
-#include "lpp_local.h"
 #include "xmalloc.h"
 #include "assert.h"
 #include "sp_matrix.h"
@@ -192,7 +194,9 @@ void lpp_solve_local(lpp_t *lpp) {
 	cpx_solve(cpx);
 	free_cpx(cpx);
 }
+
 #else
+
 void lpp_solve_local(lpp_t *lpp) {
 	fprintf(stderr, "CPLEX not available!\n");
 }
