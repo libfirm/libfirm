@@ -4,7 +4,9 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#undef HAVE_CPLEX
 
+#ifdef HAVE_CPLEX
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -17,7 +19,6 @@
 #include "sp_matrix.h"
 #include "ilcplex/cplex.h"
 
-#undef HAVE_CPLEX
 #define LOGFILE stdout
 
 
@@ -62,7 +63,7 @@ static void free_cpx(cpx_t *cpx) {
 	free(cpx);
 }
 
-void cpx_construct(cpx_t *cpx) {
+static void cpx_construct(cpx_t *cpx) {
 	const matrix_elem_t *elem;
 	int i, o, sv_cnt, numcols, numrows, numentries, objsen, *matbeg, *matcnt, *matind, *indices;
 	double *obj, *rhs, *matval, *lb, *ub, *startv;
@@ -131,7 +132,7 @@ void cpx_construct(cpx_t *cpx) {
 	chk_cpx_err(cpx);
 }
 
-void cpx_solve(cpx_t *cpx) {
+static void cpx_solve(cpx_t *cpx) {
 	int i, CPX_state, numcols;
 	double *values;
 	struct timeval tvb, tva;
@@ -185,7 +186,6 @@ void cpx_solve(cpx_t *cpx) {
 	lpp->iterations = CPXgetmipitcnt(cpx->env, cpx->prob);
 }
 
-#ifdef HAVE_CPLEX
 void lpp_solve_local(lpp_t *lpp) {
 	cpx_t *cpx = new_cpx(lpp);
 	cpx_construct(cpx);
