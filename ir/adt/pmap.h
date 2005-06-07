@@ -7,7 +7,7 @@
  * Modified by:
  * Created:     09.06.2002
  * CVS-ID:      $Id$
- * Copyright:   (c) 2002 Universität Karlsruhe
+ * Copyright:   (c) 2002 Universitï¿½t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -15,7 +15,7 @@
 #define _PMAP_H_
 
 /* Map die Adressen auf Adressen abbildet. Der Vergleich und das
- * Hashen findet über die Adresse statt. */
+ * Hashen findet ï¿½ber die Adresse statt. */
 
 typedef struct pmap pmap;
 
@@ -28,29 +28,32 @@ typedef struct pmap_entry {
 /* Erzeugt eine neue leere Map. */
 pmap * pmap_create(void);
 
-/* Löscht eine Map. */
+/* Lï¿½scht eine Map. */
 void pmap_destroy(pmap *);
 
-/* Fügt ein Paar (key,value) in die Map ein. Gibt es bereits einen
+/* Fï¿½gt ein Paar (key,value) in die Map ein. Gibt es bereits einen
  * Eintrag mit "key" in er Map, so wird der entsprechende "value"
- * überschrieben. */
+ * ï¿½berschrieben. */
 void pmap_insert(pmap *, void * key, void * value);
 
-/* Prüft ob ein Eintrag zu "key" exisitiert. */
+/* Prï¿½ft ob ein Eintrag zu "key" exisitiert. */
 int pmap_contains(pmap *, void * key);
 
-/* Gibt den Eintrag zu "key" zurück. */
+/* Gibt den Eintrag zu "key" zurï¿½ck. */
 pmap_entry * pmap_find(pmap *, void * key);
 
-/* Gibt für den Eintrag zu "key" den "value" zurück. */
+/* Gibt fï¿½r den Eintrag zu "key" den "value" zurï¿½ck. */
 void * pmap_get(pmap *, void * key);
 
 /* Mit den Funktionen "pmap_first" und "pmap_next" kann man durch die
  * Map iterieren. Die Funktionen geben einen Zeiger auf einen Eintrag
- * zurück (key,value). Die Funktionen geben "NULL" zurück, wenn kein
+ * zurï¿½ck (key,value). Die Funktionen geben "NULL" zurï¿½ck, wenn kein
  * weiterer Eintrag existiert. */
 pmap_entry * pmap_first(pmap *);
 pmap_entry * pmap_next(pmap *);
+
+#define pmap_foreach(pmap, curr) \
+	for(curr=pmap_first(pmap); curr; curr=pmap_next(pmap))
 
 void pmap_break(pmap *map);
 
