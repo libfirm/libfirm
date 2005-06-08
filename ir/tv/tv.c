@@ -408,21 +408,11 @@ long double get_tarval_double(tarval *tv)
 /*
  * Access routines for tarval fields ========================================
  */
-ir_mode *get_tarval_mode (tarval *tv)       /* get the mode of the tarval */
-{
-  ANNOUNCE();
-  assert(tv);
-  return tv->mode;
-}
 
-/*
-void *get_tarval_link (tarval *tv)
-{
-  ANNOUNCE ();
-  assert (tv);
-  return (tv->link);
+/* get the mode of the tarval */
+ir_mode *(get_tarval_mode)(const tarval *tv) {
+  return _get_tarval_mode(tv);
 }
-*/
 
 /*
  * Special value query functions ============================================
@@ -434,30 +424,24 @@ void *get_tarval_link (tarval *tv)
  * therefore the irmode functions should be prefered to the functions below.
  */
 
-tarval *get_tarval_bad(void)
-{
-  ANNOUNCE();
-  return tarval_bad;
+tarval *(get_tarval_bad)(void) {
+  return _get_tarval_bad();
 }
-tarval *get_tarval_undefined(void)
-{
-  ANNOUNCE();
-  return tarval_undefined;
+
+tarval *(get_tarval_undefined)(void) {
+  return _get_tarval_undefined();
 }
-tarval *get_tarval_b_false(void)
-{
-  ANNOUNCE();
-  return tarval_b_false;
+
+tarval *(get_tarval_b_false)(void) {
+  return _get_tarval_b_false();
 }
-tarval *get_tarval_b_true(void)
-{
-  ANNOUNCE();
-  return tarval_b_true;
+
+tarval *(get_tarval_b_true)(void) {
+  return _get_tarval_b_true();
 }
-tarval *get_tarval_P_void(void)
-{
-  ANNOUNCE();
-  return tarval_P_void;
+
+tarval *(get_tarval_P_void)(void) {
+  return _get_tarval_P_void();
 }
 
 tarval *get_tarval_max(ir_mode *mode)
