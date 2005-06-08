@@ -9,12 +9,6 @@
 
 #include "obst.h"
 
-
-#include <beirgmod.h>
-#include <bearch.h>
-
-#include "benode_t.h"
-
 #if 0
 typedef struct _phase_t {
 	const char *name;
@@ -29,14 +23,14 @@ int phase_invalidates(const ir_graph *irg, const phase_t *phase, int n, ...);
 
 typedef struct _be_main_env_t {
   struct obstack obst;
-  be_node_factory_t *node_factory;
-  arch_env_t *arch_env;
+  struct _be_node_factory_t *node_factory;
+  struct _arch_env_t *arch_env;
 } be_main_env_t;
 
 typedef struct _be_main_session_env_t {
   const be_main_env_t *main_env;
   ir_graph *irg;
-  dom_front_info_t *dom_front;
+  struct _dom_front_info_t *dom_front;
 } be_main_session_env_t;
 
 #endif

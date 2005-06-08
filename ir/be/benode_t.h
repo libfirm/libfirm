@@ -17,6 +17,7 @@
 #include "irmode.h"
 #include "irnode.h"
 
+#include "be_t.h"
 #include "bearch.h"
 
 struct _be_node_factory_t {
@@ -59,10 +60,7 @@ ir_node *be_reload(const be_node_factory_t *factory, const arch_env_t *env, ir_n
 
 int is_Spill(const be_node_factory_t *f, const ir_node *irn);
 
-ir_node *get_Reload_Spill(ir_node *reload);
-
-void insert_perm(const be_node_factory_t *factory,
-    const arch_register_class_t *reg_class,
-    ir_node *in_front_of);
+void insert_Perm_after(const be_main_session_env_t *env,
+    const arch_register_class_t *cls, ir_node *pos);
 
 #endif /* _BENODE_T_H */
