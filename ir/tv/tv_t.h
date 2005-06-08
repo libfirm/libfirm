@@ -10,16 +10,13 @@
  * Copyright:   (c) 2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-
-
 #ifndef _TV_T_H_
 #define _TV_T_H_
 
+#include "firm_config.h"
 #include "entity.h"
 #include "irmode.h"
 #include "tv.h"
-
 
 /**
  * Initialization of the tarval module.
@@ -54,13 +51,54 @@ void finish_tarval(void);
  *   irmode.h for predefined modes
  */
 struct tarval {
-    ir_mode *mode;      /**< the mode of the stored value */
-    const void *value;      /**< the value stored in an internal way... */
-    unsigned int length;    /**< the length of the stored value */
-  /* void *link; */                   /**< some opaque information */
+  ir_mode *mode;          /**< the mode of the stored value */
+  const void *value;      /**< the value stored in an internal way... */
+  unsigned int length;    /**< the length of the stored value */
 };
 
 /** remove tarval representing an entity that is about to be destroyed */
 void free_tarval_entity(entity *ent);
+
+/* inline functions */
+/*
+ * Access routines for tarval fields ========================================
+ */
+static INLINE ir_mode *
+_get_tarval_mode(const tarval *tv) {
+  assert(tv);
+  return tv->mode;
+}
+
+static INLINE tarval *
+_get_tarval_bad(void) {
+  return tarval_bad;
+}
+
+static INLINE tarval *
+_get_tarval_undefined(void) {
+  return tarval_undefined;
+}
+
+static INLINE tarval *
+_get_tarval_b_false(void) {
+  return tarval_b_false;
+}
+
+static INLINE tarval *
+_get_tarval_b_true(void) {
+  return tarval_b_true;
+}
+
+static INLINE tarval *
+_get_tarval_P_void(void) {
+  return tarval_P_void;
+}
+
+#define get_tarval_mode(tv)     _get_tarval_mode(tv)
+#define get_tarval_bad()        _get_tarval_bad()
+#define get_tarval_undefined()  _get_tarval_undefined()
+#define get_tarval_b_false()    _get_tarval_b_false()
+#define get_tarval_b_true()     _get_tarval_b_true()
+#define get_tarval_P_void()     _get_tarval_P_void()
 
 #endif /* _TV_T_H_ */
