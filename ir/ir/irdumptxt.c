@@ -31,7 +31,7 @@
 #include "entity_t.h"
 #include "trouts.h"
 #include "irgwalk.h"
-#include "tv.h"
+#include "tv_t.h"
 
 #include "irdom.h"
 #include "field_temperature.h"
