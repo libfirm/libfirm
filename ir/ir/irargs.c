@@ -18,10 +18,10 @@
 #include <libcore/xprintf.h>
 
 #include "firm_common.h"
-#include "irnode.h"
-#include "entity.h"
-#include "irloop.h"
-#include "tv.h"
+#include "irnode_t.h"
+#include "entity_t.h"
+#include "irloop_t.h"
+#include "tv_t.h"
 
 /**
  * identify a firm object type
