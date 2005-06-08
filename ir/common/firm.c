@@ -80,7 +80,7 @@ init_firm(const firm_parameter_t *param)
   init_irgraph();
   /* kind of obstack initialization */
   firm_init_mangle();
-  /* initalize all op codes an irnode can consist of */
+  /* initialize all op codes an irnode can consist of */
   init_op();
   /* called once for each run of this library */
   init_cons(def_params.initialize_local_func);
