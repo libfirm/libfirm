@@ -105,7 +105,7 @@ static tarval *computed_value_Sub(ir_node *n)
 
   /* a - a */
   if (a == b && !is_Bad(a))
-    return get_tarval_null(get_irn_mode(n));
+    return get_mode_null(get_irn_mode(n));
 
   ta = value_of(a);
   tb = value_of(b);
@@ -303,7 +303,7 @@ static tarval *computed_value_Eor(ir_node *n)
   tarval *ta, *tb;
 
   if (a == b)
-    return get_tarval_null(get_irn_mode(n));
+    return get_mode_null(get_irn_mode(n));
 
   ta = value_of(a);
   tb = value_of(b);
@@ -411,81 +411,131 @@ static tarval *computed_value_Conv(ir_node *n)
 }
 
 /**
+ * return the value of a Proj(Cmp)
+ *
+ * This performs a first step of unreachable code elimination.
+ * Proj can not be computed, but folding a Cmp above the Proj here is
+ * not as wasteful as folding a Cmp into a Tuple of 16 Consts of which
+ * only 1 is used.
+ * There are several case where we can evaluate a Cmp node, see later.
+ */
+static tarval *computed_value_Proj_Cmp(ir_node *n)
+{
+  ir_node *a   = get_Proj_pred(n);
+  ir_node *aa  = get_Cmp_left(a);
+  ir_node *ab  = get_Cmp_right(a);
+  long proj_nr = get_Proj_proj(n);
+
+  /*
+   * BEWARE: a == a is NOT always True for floating Point values, as
+   * NaN != NaN is defined, so we must check this here.
+   */
+  if (aa == ab && (
+      !mode_is_float(get_irn_mode(aa)) || proj_nr == pn_Cmp_Lt ||  proj_nr == pn_Cmp_Gt)
+      ) { /* 1.: */
+
+    /* This is a trick with the bits used for encoding the Cmp
+       Proj numbers, the following statement is not the same:
+    return new_tarval_from_long (proj_nr == pn_Cmp_Eq, mode_b) */
+    return new_tarval_from_long (proj_nr & pn_Cmp_Eq, mode_b);
+  }
+  else {
+    tarval *taa = value_of(aa);
+    tarval *tab = value_of(ab);
+    ir_mode *mode = get_irn_mode(aa);
+
+    /*
+     * The predecessors of Cmp are target values.  We can evaluate
+     * the Cmp.
+     */
+    if ((taa != tarval_bad) && (tab != tarval_bad)) {
+      /* strange checks... */
+      pn_Cmp flags = tarval_cmp(taa, tab);
+      if (flags != pn_Cmp_False) {
+        return new_tarval_from_long (proj_nr & flags, mode_b);
+      }
+    }
+    /* for integer values, we can check against MIN/MAX */
+    else if (mode_is_int(mode)) {
+      /* MIN <=/> x.  This results in true/false. */
+      if (taa == get_mode_min(mode)) {
+        /* a compare with the MIN value */
+        if (proj_nr == pn_Cmp_Le)
+          return get_tarval_b_true();
+        else if (proj_nr == pn_Cmp_Gt)
+          return get_tarval_b_false();
+      }
+      /* x >=/< MIN.  This results in true/false. */
+      else
+      if (tab == get_mode_min(mode)) {
+        /* a compare with the MIN value */
+        if (proj_nr == pn_Cmp_Ge)
+          return get_tarval_b_true();
+        else if (proj_nr == pn_Cmp_Lt)
+          return get_tarval_b_false();
+      }
+      /* MAX >=/< x.  This results in true/false. */
+      else if (taa == get_mode_max(mode)) {
+        if (proj_nr == pn_Cmp_Ge)
+          return get_tarval_b_true();
+        else if (proj_nr == pn_Cmp_Lt)
+          return get_tarval_b_false();
+      }
+      /* x <=/> MAX.  This results in true/false. */
+      else if (tab == get_mode_max(mode)) {
+        if (proj_nr == pn_Cmp_Le)
+          return get_tarval_b_true();
+        else if (proj_nr == pn_Cmp_Gt)
+          return get_tarval_b_false();
+      }
+    }
+    /*
+     * The predecessors are Allocs or (void*)(0) constants.  Allocs never
+     * return NULL, they raise an exception.   Therefore we can predict
+     * the Cmp result.
+     */
+    else {
+      ir_node *aaa = skip_Id(skip_Proj(aa));
+      ir_node *aba = skip_Id(skip_Proj(ab));
+
+      if (   (   (/* aa is ProjP and aaa is Alloc */
+                     (get_irn_op(aa) == op_Proj)
+                  && (mode_is_reference(get_irn_mode(aa)))
+                  && (get_irn_op(aaa) == op_Alloc))
+              && (   (/* ab is NULL */
+                         (get_irn_op(ab) == op_Const)
+                      && (mode_is_reference(get_irn_mode(ab)))
+                      && (get_Const_tarval(ab) == get_mode_null(get_irn_mode(ab))))
+                  || (/* ab is other Alloc */
+                         (get_irn_op(ab) == op_Proj)
+                      && (mode_is_reference(get_irn_mode(ab)))
+                      && (get_irn_op(aba) == op_Alloc)
+                      && (aaa != aba))))
+          || (/* aa is NULL and aba is Alloc */
+                 (get_irn_op(aa) == op_Const)
+              && (mode_is_reference(get_irn_mode(aa)))
+              && (get_Const_tarval(aa) == get_mode_null(get_irn_mode(aa)))
+              && (get_irn_op(ab) == op_Proj)
+              && (mode_is_reference(get_irn_mode(ab)))
+              && (get_irn_op(aba) == op_Alloc)))
+        /* 3.: */
+        return new_tarval_from_long(proj_nr & pn_Cmp_Ne, mode_b);
+    }
+  }
+  return tarval_bad;
+}
+
+/**
  * return the value of a Proj, handle Proj(Cmp), Proj(Div), Proj(Mod), Proj(DivMod)
  */
 static tarval *computed_value_Proj(ir_node *n)
 {
   ir_node *a = get_Proj_pred(n);
-  ir_node *aa, *ab;
   long proj_nr;
 
-  /* Optimize Cmp nodes.
-     This performs a first step of unreachable code elimination.
-     Proj can not be computed, but folding a Cmp above the Proj here is
-     not as wasteful as folding a Cmp into a Tuple of 16 Consts of which
-     only 1 is used.
-     There are several case where we can evaluate a Cmp node:
-     1. The nodes compared are both the same.  If we compare for
-        equal, greater equal, ... this will return true, else it
-        will return false.  This step relies on cse.
-     2. The predecessors of Cmp are target values.  We can evaluate
-        the Cmp.
-     3. The predecessors are Allocs or void* constants.  Allocs never
-        return NULL, they raise an exception.   Therefore we can predict
-        the Cmp result. */
   switch (get_irn_opcode(a)) {
   case iro_Cmp:
-    aa = get_Cmp_left(a);
-    ab = get_Cmp_right(a);
-    proj_nr = get_Proj_proj(n);
-
-    if (aa == ab && (
-        !mode_is_float(get_irn_mode(aa)) || proj_nr == pn_Cmp_Lt ||  proj_nr == pn_Cmp_Gt)
-        ) { /* 1.: */
-      /* BEWARE: a == a is NOT always True for floating Point!!! */
-      /* This is a trick with the bits used for encoding the Cmp
-         Proj numbers, the following statement is not the same:
-      return new_tarval_from_long (proj_nr == pn_Cmp_Eq, mode_b) */
-      return new_tarval_from_long (proj_nr & pn_Cmp_Eq, mode_b);
-    } else {
-      tarval *taa = value_of(aa);
-      tarval *tab = value_of(ab);
-
-      if ((taa != tarval_bad) && (tab != tarval_bad)) { /* 2.: */
-        /* strange checks... */
-        pn_Cmp flags = tarval_cmp (taa, tab);
-        if (flags != pn_Cmp_False) {
-          return new_tarval_from_long (proj_nr & flags, mode_b);
-        }
-      } else {  /* check for 3.: */
-        ir_node *aaa = skip_Id(skip_Proj(aa));
-        ir_node *aba = skip_Id(skip_Proj(ab));
-
-        if (   (   (/* aa is ProjP and aaa is Alloc */
-                       (get_irn_op(aa) == op_Proj)
-                    && (mode_is_reference(get_irn_mode(aa)))
-                    && (get_irn_op(aaa) == op_Alloc))
-                && (   (/* ab is constant void */
-                           (get_irn_op(ab) == op_Const)
-                        && (mode_is_reference(get_irn_mode(ab)))
-                        && (get_Const_tarval(ab) == get_mode_null(get_irn_mode(ab))))
-                    || (/* ab is other Alloc */
-                           (get_irn_op(ab) == op_Proj)
-                        && (mode_is_reference(get_irn_mode(ab)))
-                        && (get_irn_op(aba) == op_Alloc)
-                        && (aaa != aba))))
-            || (/* aa is void and aba is Alloc */
-                   (get_irn_op(aa) == op_Const)
-                && (mode_is_reference(get_irn_mode(aa)))
-                && (get_Const_tarval(aa) == get_mode_null(get_irn_mode(aa)))
-                && (get_irn_op(ab) == op_Proj)
-                && (mode_is_reference(get_irn_mode(ab)))
-                && (get_irn_op(aba) == op_Alloc)))
-          /* 3.: */
-          return new_tarval_from_long (proj_nr & pn_Cmp_Ne, mode_b);
-      }
-    }
-    break;
+    return computed_value_Proj_Cmp(n);
 
   case iro_DivMod:
     /* compute either the Div or the Mod part */
@@ -805,7 +855,7 @@ static ir_node *equivalent_node_symmetric_unop(ir_node *n)
   return n;
 }
 
-/* NotNot x == x */
+/* Not(Not(x)) == x */
 #define equivalent_node_Not    equivalent_node_symmetric_unop
 
 /* --x == x */  /* ??? Is this possible or can --x raise an
@@ -946,12 +996,12 @@ static ir_node *equivalent_node_Conv(ir_node *n)
     if (n_mode == b_mode) {
       if (n_mode == mode_b) {
         n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+        DBG_OPT_ALGSIM1(oldn, a, b, n);
       }
       else if (mode_is_int(n_mode) || mode_is_character(n_mode)) {
         if (smaller_mode(b_mode, a_mode)){
           n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
-      DBG_OPT_ALGSIM1(oldn, a, b, n);
+          DBG_OPT_ALGSIM1(oldn, a, b, n);
         }
       }
     }
@@ -1354,6 +1404,7 @@ static ir_node *transform_node_AddSub(ir_node *n)
 /**
  * Do the AddSub optimization, then Transform Add(a,a) into Mul(a, 2)
  * if the mode is integer or float.
+ * Transform Add(a,-b) into Sub(a,b).
  * Reassociation might fold this further.
  */
 static ir_node *transform_node_Add(ir_node *n)
@@ -1378,6 +1429,30 @@ static ir_node *transform_node_Add(ir_node *n)
             new_r_Const_long(current_ir_graph, block, mode, 2),
             mode);
       DBG_OPT_ALGSIM0(oldn, n);
+    }
+    else {
+      ir_node *b = get_Add_right(n);
+
+      if (get_irn_op(a) == op_Minus) {
+        n = new_rd_Sub(
+            get_irn_dbg_info(n),
+            current_ir_graph,
+            get_nodes_block(n),
+            b,
+            get_Minus_op(a),
+            mode);
+        DBG_OPT_ALGSIM0(oldn, n);
+      }
+      else if (get_irn_op(b) == op_Minus) {
+        n = new_rd_Sub(
+            get_irn_dbg_info(n),
+            current_ir_graph,
+            get_nodes_block(n),
+            a,
+            get_Minus_op(b),
+            mode);
+        DBG_OPT_ALGSIM0(oldn, n);
+      }
     }
   }
   return n;
@@ -1407,8 +1482,29 @@ static ir_node *transform_node_Sub(ir_node *n)
   return n;
 }
 
-/** Do architecture dependend optimizations on Mul nodes */
+/**
+  Transform Mul(a,-1) into -a.
+ * Do architecture dependend optimizations on Mul nodes
+ */
 static ir_node *transform_node_Mul(ir_node *n) {
+  ir_node *oldn = n;
+  ir_mode *mode = get_irn_mode(n);
+
+  if (mode_is_signed(mode)) {
+    ir_node *r = NULL;
+    ir_node *a = get_Mul_left(n);
+    ir_node *b = get_Mul_right(n);
+
+    if (value_of(a) == get_mode_minus_one(mode))
+      r = b;
+    else if (value_of(b) == get_mode_minus_one(mode))
+      r = a;
+    if (r) {
+      n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), r, mode);
+      DBG_OPT_ALGSIM1(oldn, a, b, n);
+      return n;
+    }
+  }
   return arch_dep_replace_mul_with_shifts(n);
 }
 
@@ -1597,8 +1693,15 @@ static ir_node *transform_node_Eor(ir_node *n)
   ir_node *oldn = n;
   ir_node *a = get_Eor_left(n);
   ir_node *b = get_Eor_right(n);
+  ir_mode *mode = get_irn_mode(n);
 
-  if ((get_irn_mode(n) == mode_b)
+  if (a == b) {
+    /* a ^ a = 0 */
+    n = new_rd_Const(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n),
+                     mode, get_mode_null(mode));
+    DBG_OPT_ALGSIM0(oldn, n);
+  }
+  else if ((mode == mode_b)
       && (get_irn_op(a) == op_Proj)
       && (get_irn_mode(a) == mode_b)
       && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)
@@ -1609,7 +1712,7 @@ static ir_node *transform_node_Eor(ir_node *n)
 
     DBG_OPT_ALGSIM0(oldn, n);
   }
-  else if ((get_irn_mode(n) == mode_b)
+  else if ((mode == mode_b)
         && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)) {
     /* The Eor is a Not. Replace it by a Not. */
     /*   ????!!!Extend to bitfield 1111111. */
@@ -1664,221 +1767,251 @@ static ir_node *transform_node_Cast(ir_node *n) {
 }
 
 /**
- * Does all optimizations on nodes that must be done on it's Proj's
- * because of creating new nodes.
- *
- * Transform a Div/Mod/DivMod with a non-zero constant.
+ * Transform a Proj(Div) with a non-zero constant.
  * Removes the exceptions and routes the memory to the NoMem node.
- *
- * Optimizes jump tables by removing all impossible cases.
- *
- * Normalizes and optimizes Cmp nodes.
  */
-static ir_node *transform_node_Proj(ir_node *proj)
+static ir_node *transform_node_Proj_Div(ir_node *proj)
 {
   ir_node *n = get_Proj_pred(proj);
   ir_node *b;
   tarval *tb;
   long proj_nr;
 
-  switch (get_irn_opcode(n)) {
-  case iro_Div:
-    b  = get_Div_right(n);
-    tb = value_of(b);
+  b  = get_Div_right(n);
+  tb = value_of(b);
 
-    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* div(x, c) && c != 0 */
-      proj_nr = get_Proj_proj(proj);
+  if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) {
+    /* div(x, c) && c != 0 */
+    proj_nr = get_Proj_proj(proj);
 
-      /* this node may float */
-      set_irn_pinned(n, op_pin_state_floats);
+    /* this node may float */
+    set_irn_pinned(n, op_pin_state_floats);
 
-      if (proj_nr == pn_Div_X_except) {
-        /* we found an exception handler, remove it */
-        return new_Bad();
-      } else {
-        /* the memory Proj can be removed */
-        ir_node *res = get_Div_mem(n);
-        set_Div_mem(n, get_irg_no_mem(current_ir_graph));
-        if (proj_nr == pn_Div_M)
-          return res;
-      }
+    if (proj_nr == pn_Div_X_except) {
+      /* we found an exception handler, remove it */
+      return new_Bad();
+    } else {
+      /* the memory Proj can be removed */
+      ir_node *res = get_Div_mem(n);
+      set_Div_mem(n, get_irg_no_mem(current_ir_graph));
+      if (proj_nr == pn_Div_M)
+        return res;
     }
-    break;
-  case iro_Mod:
-    b  = get_Mod_right(n);
-    tb = value_of(b);
+  }
+  return proj;
+}
 
-    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* mod(x, c) && c != 0 */
-      proj_nr = get_Proj_proj(proj);
+/**
+ * Transform a Proj(Mod) with a non-zero constant.
+ * Removes the exceptions and routes the memory to the NoMem node.
+ */
+static ir_node *transform_node_Proj_Mod(ir_node *proj)
+{
+  ir_node *n = get_Proj_pred(proj);
+  ir_node *b;
+  tarval *tb;
+  long proj_nr;
 
-      /* this node may float */
-      set_irn_pinned(n, op_pin_state_floats);
+  b  = get_Mod_right(n);
+  tb = value_of(b);
 
-      if (proj_nr == pn_Mod_X_except) {
-        /* we found an exception handler, remove it */
-        return new_Bad();
-      } else {
-        /* the memory Proj can be removed */
-        ir_node *res = get_Mod_mem(n);
-        set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
-        if (proj_nr == pn_Mod_M)
-          return res;
-      }
+  if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) {
+    /* mod(x, c) && c != 0 */
+    proj_nr = get_Proj_proj(proj);
+
+    /* this node may float */
+    set_irn_pinned(n, op_pin_state_floats);
+
+    if (proj_nr == pn_Mod_X_except) {
+      /* we found an exception handler, remove it */
+      return new_Bad();
+    } else {
+      /* the memory Proj can be removed */
+      ir_node *res = get_Mod_mem(n);
+      set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
+      if (proj_nr == pn_Mod_M)
+        return res;
     }
-    break;
-  case iro_DivMod:
-    b  = get_DivMod_right(n);
-    tb = value_of(b);
+  }
+  return proj;
+}
 
-    if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) { /* DivMod(x, c) && c != 0 */
-      proj_nr = get_Proj_proj(proj);
+/**
+ * Transform a Proj(DivMod) with a non-zero constant.
+ * Removes the exceptions and routes the memory to the NoMem node.
+ */
+static ir_node *transform_node_Proj_DivMod(ir_node *proj)
+{
+  ir_node *n = get_Proj_pred(proj);
+  ir_node *b;
+  tarval *tb;
+  long proj_nr;
 
-      /* this node may float */
-      set_irn_pinned(n, op_pin_state_floats);
+  b  = get_DivMod_right(n);
+  tb = value_of(b);
 
-      if (proj_nr == pn_DivMod_X_except) {
-        /* we found an exception handler, remove it */
-        return new_Bad();
-      }
-      else {
-        /* the memory Proj can be removed */
-        ir_node *res = get_DivMod_mem(n);
-        set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
-        if (proj_nr == pn_DivMod_M)
-          return res;
-      }
+  if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) {
+    /* DivMod(x, c) && c != 0 */
+    proj_nr = get_Proj_proj(proj);
+
+    /* this node may float */
+    set_irn_pinned(n, op_pin_state_floats);
+
+    if (proj_nr == pn_DivMod_X_except) {
+      /* we found an exception handler, remove it */
+      return new_Bad();
     }
-    break;
+    else {
+      /* the memory Proj can be removed */
+      ir_node *res = get_DivMod_mem(n);
+      set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
+      if (proj_nr == pn_DivMod_M)
+        return res;
+    }
+  }
+  return proj;
+}
 
-  case iro_Cond:
-    if (get_opt_unreachable_code()) {
-      b = get_Cond_selector(n);
-      tb = value_of(b);
+/**
+ * Optimizes jump tables (CondIs or CondIu) by removing all impossible cases.
+ */
+static ir_node *transform_node_Proj_Cond(ir_node *proj)
+{
+  if (get_opt_unreachable_code()) {
+    ir_node *n = get_Proj_pred(proj);
+    ir_node *b = get_Cond_selector(n);
+    tarval *tb = value_of(b);
 
-      if (tb != tarval_bad && mode_is_int(get_tarval_mode(tb))) {
-        /* we have a constant switch */
-        long num = get_Proj_proj(proj);
+    if (tb != tarval_bad && mode_is_int(get_tarval_mode(tb))) {
+      /* we have a constant switch */
+      long num = get_Proj_proj(proj);
 
-        if (num != get_Cond_defaultProj(n)) { /* we cannot optimize default Proj's yet */
-          if (get_tarval_long(tb) == num) {
-            /* Do NOT create a jump here, or we will have 2 control flow ops
-             * in a block. This case is optimized away in optimize_cf(). */
-            return proj;
-          }
-          else
-            return new_Bad();
+      if (num != get_Cond_defaultProj(n)) { /* we cannot optimize default Proj's yet */
+        if (get_tarval_long(tb) == num) {
+          /* Do NOT create a jump here, or we will have 2 control flow ops
+           * in a block. This case is optimized away in optimize_cf(). */
+          return proj;
+        }
+        else {
+          /* this case will NEVER be taken, kill it */
+          return new_Bad();
         }
       }
     }
-    return proj;
+  }
+  return proj;
+}
 
-  case iro_Cmp:
-    if (get_opt_reassociation()) {
-      ir_node *left  = get_Cmp_left(n);
-      ir_node *right = get_Cmp_right(n);
-      ir_node *c     = NULL;
-      tarval *tv     = NULL;
-      int changed    = 0;
-      ir_mode *mode  = NULL;
+/**
+ * Normalizes and optimizes Cmp nodes.
+ */
+static ir_node *transform_node_Proj_Cmp(ir_node *proj)
+{
+  if (get_opt_reassociation()) {
+    ir_node *n     = get_Proj_pred(proj);
+    ir_node *left  = get_Cmp_left(n);
+    ir_node *right = get_Cmp_right(n);
+    ir_node *c     = NULL;
+    tarval *tv     = NULL;
+    int changed    = 0;
+    ir_mode *mode  = NULL;
+    long proj_nr   = get_Proj_proj(proj);
 
-      proj_nr = get_Proj_proj(proj);
+    /*
+     * First step: normalize the compare op
+     * by placing the constant on the right site
+     * or moving the lower address node to the left.
+     * We ignore the case that both are constants
+     * this case should be optimized away.
+     */
+    if (get_irn_op(right) == op_Const)
+      c = right;
+    else if (get_irn_op(left) == op_Const) {
+      c     = left;
+      left  = right;
+      right = c;
 
-      /*
-       * First step: normalize the compare op
-       * by placing the constant on the right site
-       * or moving the lower address node to the left.
-       * We ignore the case that both are constants, then
-       * this compare should be optimized away.
-       */
-      if (get_irn_op(right) == op_Const)
-        c = right;
-      else if (get_irn_op(left) == op_Const) {
-        c     = left;
-        left  = right;
-        right = c;
+      proj_nr = get_swapped_pnc(proj_nr);
+      changed |= 1;
+    }
+    else if (left > right) {
+      ir_node *t = left;
 
-        proj_nr = get_swapped_pnc(proj_nr);
-        changed |= 1;
-      }
-      else if (left > right) {
-        ir_node *t = left;
+      left  = right;
+      right = t;
 
-        left  = right;
-        right = t;
+      proj_nr = get_swapped_pnc(proj_nr);
+      changed |= 1;
+    }
 
-        proj_nr = get_swapped_pnc(proj_nr);
-        changed |= 1;
-      }
+    /*
+     * Second step: Try to reduce the magnitude
+     * of a constant. This may help to generate better code
+     * later and may help to normalize more compares.
+     * Of course this is only possible for integer values.
+     */
+    if (c) {
+      mode = get_irn_mode(c);
+      tv = get_Const_tarval(c);
 
-      /*
-       * Second step: Try to reduce the magnitude
-       * of a constant. This may help to generate better code
-       * later and may help to normalize more compares.
-       * Of course this is only possible for integer values.
-       */
-      if (c) {
-        mode = get_irn_mode(c);
-        tv = get_Const_tarval(c);
+      if (tv != tarval_bad) {
+        /* the following optimization is possible on modes without Overflow
+         * on Unary Minus or on == and !=:
+         * -a CMP c  ==>  a swap(CMP) -c
+         *
+         * Beware: for two-complement Overflow may occur, so only == and != can
+         * be optimized, see this:
+         * -MININT < 0 =/=> MININT > 0 !!!
+         */
+        if (get_opt_constant_folding() && get_irn_op(left) == op_Minus &&
+            (!mode_overflow_on_unary_Minus(mode) ||
+             (mode_is_int(mode) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)))) {
+          left = get_Minus_op(left);
+          tv = tarval_sub(get_mode_null(mode), tv);
 
-        if (tv != tarval_bad) {
-          /* the following optimization is possibe on modes without Overflow
-           * on Unary Minus or on == and !=:
-           * -a CMP c  ==>  a swap(CMP) -c
-           *
-           * Beware: for two-complement Overflow may occur, so only == and != can
-           * be optimized, see this:
-           * -MININT < 0 =/=> MININT > 0 !!!
-           */
-          if (get_opt_constant_folding() && get_irn_op(left) == op_Minus &&
-              (!mode_overflow_on_unary_Minus(mode) ||
-               (mode_is_int(mode) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)))) {
-            left = get_Minus_op(left);
-            tv = tarval_sub(get_tarval_null(mode), tv);
+          proj_nr = get_swapped_pnc(proj_nr);
+          changed |= 2;
+        }
 
-            proj_nr = get_swapped_pnc(proj_nr);
+        /* for integer modes, we have more */
+        if (mode_is_int(mode)) {
+          /* Ne includes Unordered which is not possible on integers.
+           * However, frontends often use this wrong, so fix it here */
+          if (proj_nr == pn_Cmp_Ne) {
+            proj_nr = pn_Cmp_Lg;
+            set_Proj_proj(proj, proj_nr);
+          }
+
+          /* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
+          if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Ge) &&
+              tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Gt) {
+            tv = tarval_sub(tv, get_mode_one(mode));
+
+            proj_nr ^= pn_Cmp_Eq;
+            changed |= 2;
+          }
+          /* c < 0 : a > c  ==>  a >= (c+1)    a <= c  ==>  a < (c+1) */
+          else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Le) &&
+              tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Lt) {
+            tv = tarval_add(tv, get_mode_one(mode));
+
+            proj_nr ^= pn_Cmp_Eq;
             changed |= 2;
           }
 
-          /* for integer modes, we have more */
-          if (mode_is_int(mode)) {
-            /* Ne includes Unordered which is not possible on integers.
-             * However, frontends often use this wrong, so fix it here */
-            if (proj_nr == pn_Cmp_Ne) {
-              proj_nr = pn_Cmp_Lg;
-              set_Proj_proj(proj, proj_nr);
-            }
-
-            /* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
-            if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Ge) &&
-                tarval_cmp(tv, get_tarval_null(mode)) == pn_Cmp_Gt) {
-              tv = tarval_sub(tv, get_tarval_one(mode));
-
-              proj_nr ^= pn_Cmp_Eq;
-              changed |= 2;
-            }
-            /* c < 0 : a > c  ==>  a >= (c+1)    a <= c  ==>  a < (c+1) */
-            else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Le) &&
-                tarval_cmp(tv, get_tarval_null(mode)) == pn_Cmp_Lt) {
-              tv = tarval_add(tv, get_tarval_one(mode));
-
-              proj_nr ^= pn_Cmp_Eq;
-              changed |= 2;
-            }
-
-            /* the following reassociations work only for == and != */
+          /* the following reassociations work only for == and != */
+          if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
 
             /* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
             if (classify_tarval(tv) == TV_CLASSIFY_NULL && get_irn_op(left) == op_Sub) {
-              if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
-                right = get_Sub_right(left);
-                left  = get_Sub_left(left);
+              right = get_Sub_right(left);
+              left  = get_Sub_left(left);
 
-                tv = value_of(right);
-                changed = 1;
-              }
+              tv = value_of(right);
+              changed = 1;
             }
 
-            if ((tv != tarval_bad) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)) {
+            if (tv != tarval_bad) {
               ir_op *op = get_irn_op(left);
 
               /* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
@@ -1892,7 +2025,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
                   if (tv2 != tarval_bad) {
                     left    = get_Sub_left(left);
                     tv      = tv2;
-                    changed = 2;
+                    changed |= 2;
                   }
                 }
               }
@@ -1918,42 +2051,85 @@ static ir_node *transform_node_Proj(ir_node *proj)
                   if (tv2 != tarval_bad) {
                     left    = a;
                     tv      = tv2;
-                    changed = 2;
+                    changed |= 2;
                   }
                 }
               }
+              /* -a == c ==> a == -c, -a != c ==> a != -c */
+              else if (op == op_Minus) {
+                tarval *tv2 = tarval_sub(get_mode_null(mode), tv);
+
+                if (tv2 != tarval_bad) {
+                  left    = get_Minus_op(left);
+                  tv      = tv2;
+                  changed |= 2;
+                }
+              }
+            }
+          } /* == or != */
+          /* the following reassociations work only for <= */
+          else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
+            if (tv != tarval_bad) {
+              ir_op *op = get_irn_op(left);
+
+              /* c >= 0 : Abs(a) <= c  ==>  (unsigned)(a + c) <= 2*c */
+              if (op == op_Abs) {
+              }
             }
           }
-        }
-      }
-
-      if (changed) {
-        ir_node *block = get_nodes_block(n);
-
-        if (changed & 2)      /* need a new Const */
-          right = new_Const(mode, tv);
-
-        /* create a new compare */
-        n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block,
-              left, right);
-
-        set_Proj_pred(proj, n);
-        set_Proj_proj(proj, proj_nr);
+        } /* mode_is_int */
       }
     }
-    return proj;
+
+    if (changed) {
+      ir_node *block = get_nodes_block(n);
+
+      if (changed & 2)      /* need a new Const */
+        right = new_Const(mode, tv);
+
+      /* create a new compare */
+      n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block,
+            left, right);
+
+      set_Proj_pred(proj, n);
+      set_Proj_proj(proj, proj_nr);
+    }
+  }
+  return proj;
+}
+
+/**
+ * Does all optimizations on nodes that must be done on it's Proj's
+ * because of creating new nodes.
+ */
+static ir_node *transform_node_Proj(ir_node *proj)
+{
+  ir_node *n = get_Proj_pred(proj);
+
+  switch (get_irn_opcode(n)) {
+  case iro_Div:
+    return transform_node_Proj_Div(proj);
+
+  case iro_Mod:
+    return transform_node_Proj_Mod(proj);
+
+  case iro_DivMod:
+    return transform_node_Proj_DivMod(proj);
+
+  case iro_Cond:
+    return transform_node_Proj_Cond(proj);
+
+  case iro_Cmp:
+    return transform_node_Proj_Cmp(proj);
 
   case iro_Tuple:
     /* should not happen, but if it does will be optimized away */
-    break;
+    return equivalent_node_Proj(proj);
 
   default:
     /* do nothing */
     return proj;
   }
-
-  /* we have added a Tuple, optimize it for the current Proj away */
-  return equivalent_node_Proj(proj);
 }
 
 /**
