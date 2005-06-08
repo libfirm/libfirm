@@ -45,6 +45,7 @@ struct ir_mode {
   tarval            *max;       /**< the maximum value that can be expressed */
   tarval            *null;      /**< the value 0 */
   tarval            *one;       /**< the value 1 */
+  tarval            *minus_one; /**< the value -1 */
   void              *link;      /**< To store some intermediate information */
   const void        *tv_priv;   /**< tarval module will save private data here */
 };

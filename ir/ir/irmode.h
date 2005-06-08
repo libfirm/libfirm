@@ -274,9 +274,17 @@ tarval *get_mode_null(ir_mode *mode);
  *
  * One, being the multiplicative neutral element,
  * is defined only for modes allowing multiplication,
- * i.e. ints and op_pin_state_floats.
+ * i.e. ints and floats.
  */
 tarval *get_mode_one(ir_mode *mode);
+
+/**
+ * Returns the value Minus One, represented in this mode.
+ *
+ * Minus One is defined only for modes allowing
+ * multiplication with signed values, i.e. signed ints and floats.
+ */
+tarval *get_mode_minus_one(ir_mode *mode);
 
 /**
  * Returns the positive infinite value of a mode.

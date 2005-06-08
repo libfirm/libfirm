@@ -24,7 +24,7 @@
 
 # include "irmode_t.h"
 # include "ident.h"
-# include "tv.h"
+# include "tv_t.h"
 # include "obst.h"
 # include "irhooks.h"
 
@@ -131,33 +131,37 @@ static void set_mode_values(ir_mode* mode)
     case irms_character:
     case irms_int_number:
     case irms_float_number:
-      mode->min = get_tarval_min(mode);
-      mode->max = get_tarval_max(mode);
+      mode->min  = get_tarval_min(mode);
+      mode->max  = get_tarval_max(mode);
       mode->null = get_tarval_null(mode);
-      mode->one = get_tarval_one(mode);
+      mode->one  = get_tarval_one(mode);
+      mode->minus_one = get_tarval_minus_one(mode);
       break;
 
     case irms_internal_boolean:
-      mode->min = tarval_b_false;
-      mode->max = tarval_b_true;
+      mode->min  = tarval_b_false;
+      mode->max  = tarval_b_true;
       mode->null = tarval_b_false;
-      mode->one = tarval_b_true;
+      mode->one  = tarval_b_true;
+      mode->minus_one = tarval_bad;
       break;
 
     case irms_reference:
-      mode->min = tarval_bad;
-      mode->max = tarval_bad;
-      mode->null = (get_mode_modecode(mode) == irm_P) ? tarval_P_void : tarval_bad;
-      mode->one = tarval_bad;
+      mode->min  = tarval_bad;
+      mode->max  = tarval_bad;
+      mode->null = get_tarval_null(mode);
+      mode->one  = tarval_bad;
+      mode->minus_one = tarval_bad;
       break;
 
     case irms_auxiliary:
     case irms_memory:
     case irms_control_flow:
-      mode->min = tarval_bad;
-      mode->max = tarval_bad;
+      mode->min  = tarval_bad;
+      mode->max  = tarval_bad;
       mode->null = tarval_bad;
-      mode->one = tarval_bad;
+      mode->one  = tarval_bad;
+      mode->minus_one = tarval_bad;
       break;
   }
 }
@@ -488,6 +492,17 @@ get_mode_one (ir_mode *mode)
   assert(mode_is_data(mode));
 
   return mode->one;
+}
+
+tarval *
+get_mode_minus_one (ir_mode *mode)
+{
+  ANNOUNCE();
+  assert(mode);
+  assert(get_mode_modecode(mode) < num_modes);
+  assert(mode_is_data(mode));
+
+  return mode->minus_one;
 }
 
 tarval *
@@ -887,7 +902,7 @@ init_mode (void)
 
   mode_P = register_mode(&newmode);
 
-  /* set the machine specific modes to the predifined ones */
+  /* set the machine specific modes to the predefined ones */
   mode_P_mach = mode_P;
 }
 
