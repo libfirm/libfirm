@@ -29,7 +29,7 @@
 #include "bearch.h"
 #include "becopyoptmain.h"
 #include "becopystat.h"
-//#include "bessadestr.h"
+#include "bessadestr.h"
 #include "bearch_firm.h"
 #include "benode_t.h"
 
@@ -86,21 +86,21 @@ be_main_session_env_t *be_init_session_env(be_main_session_env_t *env,
 static void be_main_loop(void)
 {
 	int i, n;
-  be_main_env_t env;
-  const arch_isa_if_t *isa;
+	be_main_env_t env;
+	const arch_isa_if_t *isa;
 
-  be_init_env(&env);
+	be_init_env(&env);
+	isa = arch_env_get_isa(env.arch_env);
 
-  isa = arch_env_get_isa(env.arch_env);
-
+	/* For all graphs */
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		int j, m;
 		ir_graph *irg = get_irp_irg(i);
-    be_main_session_env_t session;
+		be_main_session_env_t session;
 
-    be_init_session_env(&session, &env, irg);
+		be_init_session_env(&session, &env, irg);
 
-    remove_critical_cf_edges(irg);
+		remove_critical_cf_edges(irg);
 
 		localize_consts(irg);
 #ifdef DUMP_LOCALIZED
@@ -133,6 +133,7 @@ static void be_main_loop(void)
 #endif
 
 			be_copy_opt(chordal_env);
+			be_ssa_destruction(&session, chordal_env);
 			be_ra_chordal_done(chordal_env);
 		}
 #ifdef DO_STAT

@@ -12,11 +12,14 @@
 #include "pmap.h"
 #include "irnode.h"
 #include "iredges_t.h"
+#include "be_t.h"
 #include "bechordal_t.h"
 #include "bearch.h"
+#include "benode_t.h"
+#include "besched_t.h"
 
-#define get_reg(irn) arch_get_irn_register(chordal_env->arch_env, irn, arch_pos_make_out(0))
-#define set_reg(irn, reg) arch_set_irn_register(chordal_env->arch_env, irn, arch_pos_make_out(0), reg)
+#define get_reg(irn) arch_get_irn_register(chordal_env->arch_env, irn, 0)
+#define set_reg(irn, reg) arch_set_irn_register(chordal_env->arch_env, irn, 0, reg)
 
 /**
  * Maps blocks to perm nodes inserted during phi destruction.
@@ -36,7 +39,7 @@ static int set_cmp_b2p(const void *x, const void *y, size_t size) {
  * by inserting perm nodes, if necessary.
  * @param phi The phi node to adjust operands for
  */
-static void adjust_arguments(be_chordal_env_t *chordal_env, const ir_node *phi) {
+static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *chordal_env, const ir_node *phi) {
 	int i, max;
 	ir_node *arg, *perm, *proj;
 	const arch_register_t *phi_reg, *arg_reg, *proj_reg;
@@ -59,7 +62,7 @@ static void adjust_arguments(be_chordal_env_t *chordal_env, const ir_node *phi) 
 			find.perm = NULL;
 			found = set_insert(b2p, &find, sizeof(find), HASH_PTR(find.block));
 			if (!found->perm)
-				found->perm = insert_perm(TODO);
+				found->perm = insert_Perm_after(session, chordal_env->cls, sched_last(find.block));
 
 			/* now we have the perm in the predecessor block */
 			perm = found->perm;
@@ -91,7 +94,7 @@ static void checker(be_chordal_env_t *chordal_env) {
 				const arch_register_t *phi_reg, *arg_reg;
 				phi_reg = get_reg(curr->irn);
 				/* iterate over all args of phi */
-				for(i=0, max=get_irn_arity(phi); i<max; ++i) {
+				for(i=0, max=get_irn_arity(curr->irn); i<max; ++i) {
 					arg_reg = get_reg(get_irn_n(curr->irn, i));
 					assert(phi_reg == arg_reg && "WTF? You can do it better!?");
 				}
@@ -99,7 +102,7 @@ static void checker(be_chordal_env_t *chordal_env) {
 	}
 }
 
-void be_ssa_destruction(be_chordal_env_t *chordal_env) {
+void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chordal_env) {
 	pmap_entry *pme;
 	set *b2p;
 
@@ -114,7 +117,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 		 * BETTER: phis are the first ops, so stop iteration on first non-phi-op */
 		list_for_each_entry_reverse(border_t, curr, head, list)
 			if (curr->is_def && curr->is_real && is_Phi(curr->irn))
-				adjust_arguments(chordal_env, curr->irn);
+				adjust_arguments(session, chordal_env, curr->irn);
 	}
 	del_set(b2p);
 	checker(chordal_env);

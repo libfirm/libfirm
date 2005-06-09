@@ -50,7 +50,7 @@ typedef struct _problem_instance_t {
 	lpp_t *dilp;					/**< problem formulation directly as milp */
 	/* overhead stuff */
 	lpp_t *curr_lp;					/**< points to the problem currently used */
-	int curr_color, cst_counter, last_x_var;
+	int cst_counter, last_x_var;
 	char buf[32];
 	int all_simplicial;
 } problem_instance_t;
@@ -126,36 +126,44 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 			}
 		}
 	}
+	if (set_count(be_ra_get_ifg_nodes(pi->co->chordal_env)) == pset_count(pi->removed))
+		pi->all_simplicial = 1;
 }
 
 /**
  * Add coloring-force conditions
+ * Matrix A: knapsack constraint for each node
  */
-static void pi_add_constr_A(ir_node *block, void *env) {
-	problem_instance_t *pi = env;
-	struct list_head *head = get_block_border_head(pi->co->chordal_env, block);
-	border_t *curr;
-	bitset_t *pos_regs = bitset_alloca(pi->co->chordal_env->cls->n_regs);
+static void pi_add_constr_A(problem_instance_t *pi) {
+	pmap_entry *pme;
 
-	list_for_each_entry_reverse(border_t, curr, head, list)
-		if (curr->is_def && curr->is_real && !is_removed(curr->irn)) {
-			int cst_idx, nnr, col;
+	DBG((dbg, LEVEL_2, "Add A constraints...\n"));
+	/* iterate over all blocks */
+	pmap_foreach(pi->co->chordal_env->border_heads, pme) {
+		struct list_head *head = pme->value;
+		border_t *curr;
+		bitset_t *pos_regs = bitset_alloca(pi->co->chordal_env->cls->n_regs);
 
-			nnr = get_irn_graph_nr(curr->irn);
-			mangle_cst(pi->buf, 'A', nnr);
-			cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, equal, 1);
+		list_for_each_entry_reverse(border_t, curr, head, list)
+			if (curr->is_def && curr->is_real && !is_removed(curr->irn)) {
+				int cst_idx, nnr, col;
 
-			// iterate over all possible colors in order
-			bitset_clear_all(pos_regs);
-			arch_get_allocatable_regs(pi->co->chordal_env->arch_env, curr->irn, arch_pos_make_out(0), pi->co->chordal_env->cls, pos_regs);
-			bitset_foreach(pos_regs, col) {
-				int var_idx;
-				mangle_var(pi->buf, 'x', nnr, col);
-				var_idx = lpp_add_var(pi->curr_lp, pi->buf, binary, 0);
-				pi->last_x_var = var_idx;
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
+				nnr = get_irn_graph_nr(curr->irn);
+				mangle_cst(pi->buf, 'A', nnr);
+				cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, equal, 1);
+
+				// iterate over all possible colors in order
+				bitset_clear_all(pos_regs);
+				arch_get_allocatable_regs(pi->co->chordal_env->arch_env, curr->irn, arch_pos_make_out(0), pi->co->chordal_env->cls, pos_regs);
+				bitset_foreach(pos_regs, col) {
+					int var_idx;
+					mangle_var(pi->buf, 'x', nnr, col);
+					var_idx = lpp_add_var(pi->curr_lp, pi->buf, binary, 0);
+					pi->last_x_var = var_idx;
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
+				}
 			}
-		}
+	}
 }
 
 /**
@@ -175,53 +183,64 @@ static INLINE int all_live_in(ir_node *block, pset *living) {
 
 /**
  * Finds cliques in the interference graph, considering only nodes
- * for which the color pi->curr_color is possible. Finds only 'maximal-cliques',
+ * for which the color @p color is possible. Finds only 'maximal-cliques',
  * viz cliques which are not contained in another one.
- * This is used for the matrix B.
+ * Matrix B: interference constraints using cliques
  */
-static void pi_add_constr_B(ir_node *block, void *env) {
-	problem_instance_t *pi = env;
+static void pi_add_constr_B(problem_instance_t *pi, int color) {
 	enum phase_t {growing, shrinking} phase = growing;
-	struct list_head *head = get_block_border_head(pi->co->chordal_env, block);
 	border_t *b;
+	pmap_entry *pme;
 	pset *living = pset_new_ptr(SLOTS_LIVING);
 
-	list_for_each_entry_reverse(border_t, b, head, list) {
-		const ir_node *irn = b->irn;
-		if (is_removed(irn) || !is_color_possible(irn, pi->curr_color))
-			continue;
+	DBG((dbg, LEVEL_2, "Add B constraints (col = %d)...\n", color));
+	/* iterate over all blocks */
+	pmap_foreach(pi->co->chordal_env->border_heads, pme) {
+		ir_node *block = pme->key;
+		struct list_head *head = pme->value;
 
-		if (b->is_def) {
-			DBG((dbg, LEVEL_2, "Def %n\n", irn));
-			pset_insert_ptr(living, irn);
-			phase = growing;
-		} else { /* is_use */
-			DBG((dbg, LEVEL_2, "Use %n\n", irn));
+		list_for_each_entry_reverse(border_t, b, head, list) {
+			const ir_node *irn = b->irn;
+			if (is_removed(irn) || !is_color_possible(irn, color))
+				continue;
 
-			/* before shrinking the set, store the current 'maximum' clique;
-			 * do NOT if clique is a single node
-			 * do NOT if all values are live_in (in this case they were contained in a live-out clique elsewhere) */
-			if (phase == growing && pset_count(living) >= 2 && !all_live_in(block, living)) {
-				int cst_idx;
-				ir_node *n;
-				mangle_cst(pi->buf, 'B', pi->cst_counter);
-				cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, less, 1);
-				for (n = pset_first(living); n; n = pset_next(living)) {
-					int var_idx;
-					mangle_var_irn(pi->buf, 'x', n, pi->curr_color);
-					var_idx = lpp_get_var_idx(pi->curr_lp, pi->buf);
-					lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
+			if (b->is_def) {
+				DBG((dbg, LEVEL_2, "Def %n\n", irn));
+				pset_insert_ptr(living, irn);
+				phase = growing;
+			} else { /* is_use */
+				DBG((dbg, LEVEL_2, "Use %n\n", irn));
+
+				/* before shrinking the set, store the current 'maximum' clique;
+				 * do NOT if clique is a single node
+				 * do NOT if all values are live_in (in this case they were contained in a live-out clique elsewhere) */
+				if (phase == growing && pset_count(living) >= 2 && !all_live_in(block, living)) {
+					int cst_idx;
+					ir_node *n;
+					mangle_cst(pi->buf, 'B', pi->cst_counter);
+					cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, less, 1);
+					for (n = pset_first(living); n; n = pset_next(living)) {
+						int var_idx;
+						mangle_var_irn(pi->buf, 'x', n, color);
+						var_idx = lpp_get_var_idx(pi->curr_lp, pi->buf);
+						lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
+					}
+					pi->cst_counter++;
 				}
-				pi->cst_counter++;
+				pset_remove_ptr(living, irn);
+				phase = shrinking;
 			}
-			pset_remove_ptr(living, irn);
-			phase = shrinking;
 		}
 	}
-
+	assert(0 == pset_count(living));
 	del_pset(living);
 }
 
+/**
+ * Generates constraints which interrelate x with y variables.
+ * y=1 ==> x1 and x2 must have the same color.
+ *     <== is achieved automatically by minimization.
+ */
 static void pi_add_constr_E(problem_instance_t *pi) {
 	unit_t *curr;
 	bitset_t *root_regs, *arg_regs;
@@ -230,6 +249,7 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 	root_regs = bitset_alloca(nregs);
 	arg_regs = bitset_alloca(nregs);
 
+	DBG((dbg, LEVEL_2, "Add E constraints...\n"));
 	/* for all roots of optimization units */
 	list_for_each_entry(unit_t, curr, &pi->co->units, units) {
 		const ir_node *root, *arg;
@@ -283,11 +303,14 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 }
 
 /**
- * Sum(y_root_arg, arg \in Args) <= max_indep_set_size - 1
+ * Matrix M: maximum independent set constraints
+ * Generates lower bound-cuts for optimization units with inner interferences.
+ * Sum(y_{root, arg}, arg \in Args) <= max_indep_set_size - 1
  */
 static void pi_add_constr_M(problem_instance_t *pi) {
 	unit_t *curr;
 	int cst_counter = 0;
+	DBG((dbg, LEVEL_2, "Add M constraints...\n"));
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &pi->co->units, units) {
@@ -320,6 +343,7 @@ static void pi_add_constr_M(problem_instance_t *pi) {
  */
 static problem_instance_t *new_pi(const copy_opt_t *co) {
 	problem_instance_t *pi;
+	int col;
 
 	DBG((dbg, LEVEL_2, "Generating new instance...\n"));
 	pi = xcalloc(1, sizeof(*pi));
@@ -332,24 +356,16 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	/* problem size reduction */
 	pi_find_simplicials(pi);
 	//TODO dump_ifg_w/o_removed
-	if (set_count(be_ra_get_ifg_nodes(pi->co->chordal_env)) == pset_count(pi->removed))
-		pi->all_simplicial = 1;
+	if (pi->all_simplicial)
+		return pi;
 
+	/* built objective abd constraints */
 	pi->curr_lp = pi->dilp;
-
-	/* Matrix A: knapsack constraint for each node */
-	DBG((dbg, LEVEL_2, "Add A constraints...\n"));
-	dom_tree_walk_irg(co->chordal_env->irg, pi_add_constr_A, NULL, pi);
-	/* Matrix B: interference constraints using cliques */
-	DBG((dbg, LEVEL_2, "Add B constraints...\n"));
-	for (pi->curr_color = 0; pi->curr_color < pi->co->chordal_env->cls->n_regs; ++pi->curr_color)
-		dom_tree_walk_irg(co->chordal_env->irg, pi_add_constr_B, NULL, pi);
-	/* Matrix E: interrelate x with y variables */
-	DBG((dbg, LEVEL_2, "Add E constraints...\n"));
+	pi_add_constr_A(pi);
+	for (col = 0; col < pi->co->chordal_env->cls->n_regs; ++col)
+		pi_add_constr_B(pi, col);
 	pi_add_constr_E(pi);
-	/* Matrix M: maximum independent set constraints */
-	DBG((dbg, LEVEL_2, "Add M constraints...\n"));
-	//pi_add_constr_M(pi);
+	pi_add_constr_M(pi);
 
 	return pi;
 }
@@ -358,9 +374,12 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
  * Clean the problem instance
  */
 static void free_pi(problem_instance_t *pi) {
+	simpl_t *simpl, *tmp;
+
 	DBG((dbg, LEVEL_2, "Free instance...\n"));
-	/* pi->simplicials get freed during apply_solution */
 	free_lpp(pi->dilp);
+	list_for_each_entry_safe(simpl_t, simpl, tmp, &pi->simplicials, chain)
+		free(simpl);
 	del_pset(pi->removed);
 	free(pi);
 }
@@ -429,7 +448,6 @@ static void pi_set_simplicials(problem_instance_t *pi) {
 		assert(free_col != -1 && "No free color found. This can not be.");
 		set_irn_col(pi->co, irn, free_col);
 		pset_remove_ptr(pi->removed, irn); /* irn is back in graph again */
-		free(simpl);
 	}
 }
 
@@ -485,7 +503,7 @@ void co_ilp_opt(copy_opt_t *co) {
 #endif
 		pi_solve_ilp(pi, lpp_solve_local);
 		pi_apply_solution(pi);
+		pi_set_simplicials(pi);
 	}
-	pi_set_simplicials(pi);
 	free_pi(pi);
 }

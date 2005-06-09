@@ -60,7 +60,7 @@ ir_node *be_reload(const be_node_factory_t *factory, const arch_env_t *env, ir_n
 
 int is_Spill(const be_node_factory_t *f, const ir_node *irn);
 
-void insert_Perm_after(const be_main_session_env_t *env,
+ir_node *insert_Perm_after(const be_main_session_env_t *env,
     const arch_register_class_t *cls, ir_node *pos);
 
 #endif /* _BENODE_T_H */

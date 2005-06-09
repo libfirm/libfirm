@@ -316,7 +316,7 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
   return factory;
 }
 
-void insert_Perm_after(const be_main_session_env_t *env,
+ir_node *insert_Perm_after(const be_main_session_env_t *env,
     const arch_register_class_t *cls, ir_node *pos)
 {
   const arch_env_t *arch_env = env->main_env->arch_env;
@@ -369,4 +369,5 @@ void insert_Perm_after(const be_main_session_env_t *env,
     copies[0] = proj;
     be_introduce_copies(env->dom_front, perm_op, array_size(copies), copies);
   }
+  return perm;
 }

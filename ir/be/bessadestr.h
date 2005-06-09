@@ -13,4 +13,4 @@
  * Performs SSA-Destruction. Arguments get adjusted, phi nodes just stay.
  * PRECONDITION: No block has a 'perm' for the current registerclass as last operation.
  */
-void be_ssa_destruction(be_chordal_env_t *chordal_env);
+void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chordal_env);
