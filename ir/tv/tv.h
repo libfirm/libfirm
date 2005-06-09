@@ -239,7 +239,7 @@ int tarval_is_double(tarval *tv);
  */
 
 /** Returns the mode of the tarval. */
-ir_mode *get_tarval_mode (tarval *tv);
+ir_mode *get_tarval_mode (const tarval *tv);
 
 /** Returns the contents of the 'link' field of the tarval */
 /* void *get_tarval_link (tarval*); */
