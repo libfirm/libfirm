@@ -27,6 +27,36 @@
 
 # include "ident.h"
 
+/** The allowed parities */
+typedef enum {
+  oparity_invalid = 0,
+  oparity_unary,              /**< an unary operator -- considering 'numeric' arguments. */
+  oparity_binary,             /**< an binary operator  -- considering 'numeric' arguments.*/
+  oparity_trinary,            /**< an trinary operator  -- considering 'numeric' arguments.*/
+  oparity_zero,               /**< no operators, as e.g. Const. */
+  oparity_variable,           /**< arity not fixed by opcode, but statically
+				 known.  E.g., number of arguments to call. */
+  oparity_dynamic,            /**< arity depends on state of firm representation.
+				 Can change by optimizations...
+				 We must allocate a dynamic in array for the node! */
+  oparity_any,                /**< other arity */
+} op_arity;
+
+
+/** The irop flags */
+typedef enum {
+  irop_flag_none        = 0x00000000, /**< nothing */
+  irop_flag_labeled     = 0x00000001,	/**< if set, Output edge labels on in-edges in vcg graph */
+  irop_flag_commutative = 0x00000002,	/**< operation is commutative */
+  irop_flag_cfopcode    = 0x00000004, /**< is a control flow operation */
+  irop_flag_ip_cfopcode = 0x00000008,	/**< operation manipulates interprocedural control flow */
+  irop_flag_fragile     = 0x00000010,	/**< set if the operation can change the control flow because
+                                             of an exception */
+  irop_flag_forking     = 0x00000020, /**< the operation is a forking control flow */
+  irop_flag_highlevel   = 0x00000040, /**< the operation is a pure high-level one and can be
+                                           skipped in low-level optimizations */
+} irop_flags;
+
 /** The opcodes of the libFirm predefined operations. */
 typedef enum {
   iro_Block,
@@ -137,5 +167,22 @@ void set_op_pinned(ir_op *op, op_pin_state pinned);
 
 /** Returns the next free IR opcode number, allows to register user ops */
 unsigned get_next_ir_opcode(void);
+
+/**
+ * Creates a new ir operation.
+ *
+ * @param code      the opcode, one of type \c opcode
+ * @param name      the printable name of this opcode
+ * @param p         whether operations of this opcode are op_pin_state_pinned or floating
+ * @param flags     a bitmask of irop_flags describing the behavior of the ir operation
+ * @param opar      the parity of this ir operation
+ * @param op_index  if the parity is oparity_unary, oparity_binary or oparity_trinary the index
+ *                  of the left operand
+ * @param attr_size attribute size for this ir operation
+ *
+ * @return The generated ir operation.
+ */
+ir_op * new_ir_op(opcode code, const char *name, op_pin_state p,
+		   unsigned flags, op_arity opar, int op_index, size_t attr_size);
 
 # endif /* _IROP_H_ */
