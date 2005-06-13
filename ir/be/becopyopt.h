@@ -30,9 +30,9 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-/* TODO is_Copy */
-#define is_Copy(irn) 0
 #define DEBUG_IRG "-scanner.c__init_td__gp"
+//TODO is_Perm
+#define is_Perm(irn) 0
 
 /**
  * Data representing the problem of copy minimization.
@@ -78,6 +78,19 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env);
  */
 void free_copy_opt(copy_opt_t *co);
 
+/**
+ * A copy is a proj haning out of perm node
+ */
+#define is_Copy(irn) (is_Proj(irn) && is_Perm(get_Proj_pred(irn)))
+
+/**
+ * returns the corresponding argument of the perm node for a copy
+ */
+#define get_Copy_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
+
+/**
+ * Checks if a node is optimizable, viz. is a target of a 'copy-op'
+ */
 #define is_optimizable(irn) (is_Phi(irn) || is_Copy(irn))
 
 /**
@@ -85,13 +98,13 @@ void free_copy_opt(copy_opt_t *co);
  */
 int is_optimizable_arg(const copy_opt_t *co, ir_node *irn);
 
+
 /**
  * Returns the current number of copies needed
  */
 int co_get_copy_count(const copy_opt_t *co);
 
 /**
- * IMPORTANT: Available only iff heuristic has run!
  * Returns a lower bound for the number of copies needed based on interfering
  * arguments and the size of a max indep. set (only ifg-edges) of the other args.
  */

@@ -49,9 +49,7 @@ void be_init(void)
 	be_numbering_init();
 	be_ra_chordal_init();
 	be_copy_opt_init();
-#ifdef DO_STAT
-	stat_init();
-#endif
+	copystat_init();
 }
 
 static be_main_env_t *be_init_env(be_main_env_t *env)
@@ -115,9 +113,8 @@ static void be_main_loop(void)
 		/* Liveness analysis */
 		be_liveness(irg);
 
-#ifdef DO_STAT
-		stat_reset();
-#endif
+		copystat_reset();
+		copystat_collect_irg(irg);
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
@@ -126,19 +123,15 @@ static void be_main_loop(void)
 			chordal_env = be_ra_chordal(irg, env.arch_env, cls);
 
 #ifdef DUMP_ALLOCATED
-			dump_allocated_irg(&arch_env, irg, "");
+			dump_allocated_irg(env.arch_env, irg, "");
 #endif
-#ifdef DO_STAT
-			stat_collect_irg(irg);
-#endif
+			copystat_collect_cls(chordal_env);
 
 			be_copy_opt(chordal_env);
-			be_ssa_destruction(&session, chordal_env);
+			//TODO be_ssa_destruction(&session, chordal_env);
 			be_ra_chordal_done(chordal_env);
 		}
-#ifdef DO_STAT
-		stat_dump(irg);
-#endif
+		copystat_dump(irg);
 	    be_numbering_done(irg);
 	}
 }

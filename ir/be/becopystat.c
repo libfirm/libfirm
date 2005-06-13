@@ -21,14 +21,15 @@ static pset *all_phi_nodes;
 static pset *all_phi_classes;
 static pset *all_copy_nodes;
 
-void stat_init(void) {
+void copystat_init(void) {
 	all_phi_nodes = pset_new_ptr_default();
 	all_phi_classes = pset_new_ptr_default();
 	all_copy_nodes = pset_new_ptr_default();
 	phi_class_init();
+
 }
 
-void stat_reset(void) {
+void copystat_reset(void) {
 	int i;
 	for (i = 0; i < ASIZE; ++i)
 		curr_vals[i] = 0;
@@ -53,8 +54,9 @@ static void stat_walker(ir_node *node, void *env) {
 /**
  * Collect phi node data
  */
-static void stat_phi_node(ir_node *phi) {
+static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
  	int arity, i;
+	assert(is_Phi(phi));
 
 	/* count all phi phis */
 	curr_vals[I_PHI_CNT]++;
@@ -72,15 +74,16 @@ static void stat_phi_node(ir_node *phi) {
         ir_node *block_of_arg, *block_ith_pred;
 		ir_node *arg = get_irn_n(phi, i);
 
+		if (phi != arg)	{
+			curr_vals[I_COPIES_MAX]++; /* if arg!=phi this is a possible copy */
+			if (nodes_interfere(chordal_env, phi, arg))
+				curr_vals[I_COPIES_IF]++;
+		}
+
 		if (arg == phi) {
 			curr_vals[I_PHI_ARG_SELF]++;
 			continue;
 		}
-
-		curr_vals[I_COPIES_MAX]++; /* if arg!=phi this is a possible copy */
-
-		if (values_interfere(phi, arg))
-			curr_vals[I_COPIES_IF]++;
 
 		if (iro_Const == get_irn_opcode(arg)) {
 			curr_vals[I_PHI_ARG_CONST]++;
@@ -101,17 +104,19 @@ static void stat_phi_node(ir_node *phi) {
 /**
  * Collect register-constrained node data
  */
-//TODO stat_copy_node
-static void stat_copy_node(ir_node *root) {
+static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
 	curr_vals[I_CPY_CNT]++;
-//	if (values_interfere(root, arg))
-//		curr_vals[I_COPIES_IF]++;
+	curr_vals[I_COPIES_MAX]++;
+	if (nodes_interfere(chordal_env, root, get_Copy_src(root))) {
+		curr_vals[I_COPIES_IF]++;
+		assert(0 && "A Perm pair (in/out) should never interfere!");
+	}
 }
 
 /**
  * Collect phi class data
  */
-static void stat_phi_class(pset *pc) {
+static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 	int i, o, size, if_free;
 	ir_node **members, *p;
 
@@ -136,7 +141,7 @@ static void stat_phi_class(pset *pc) {
 	if_free = 1;
 	for (i = 0; i < size-1; ++i)
 		for (o = i+1; o < size; ++o)
-			if (values_interfere(members[i], members[o])) {
+			if (nodes_interfere(chordal_env, members[i], members[o])) {
 				if_free = 0;
 				curr_vals[I_CLS_IF_CNT]++;
 			}
@@ -147,27 +152,35 @@ static void stat_phi_class(pset *pc) {
 	xfree(members);
 }
 
-void stat_collect_irg(ir_graph *irg) {
+void copystat_collect_irg(ir_graph *irg) {
+	irg_walk_graph(irg, stat_walker, NULL, NULL);
+	curr_vals[I_BLOCKS] -= 2; /* substract 2 for start and end block */
+	all_phi_classes = phi_class_compute_by_phis(all_phi_nodes);
+}
+
+#define is_curr_reg_class(irn) (arch_get_irn_reg_class(chordal_env->arch_env, irn, arch_pos_make_out(0)) == chordal_env->cls)
+
+void copystat_collect_cls(be_chordal_env_t *chordal_env) {
 	ir_node *n;
 	pset *pc;
 
-	irg_walk_graph(irg, stat_walker, NULL, NULL);
-	curr_vals[I_BLOCKS] -= 2; /* substract 2 for start and end block */
-
-	all_phi_classes = phi_class_compute_by_phis(all_phi_nodes);
-
 	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
-		stat_phi_node(n);
+		if (is_curr_reg_class(n))
+			stat_phi_node(chordal_env, n);
 
 	for (n = pset_first(all_copy_nodes); n; n = pset_next(all_copy_nodes))
-		stat_copy_node(n);
+		if (is_curr_reg_class(n))
+			stat_copy_node(chordal_env, n);
 
-	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes))
-		stat_phi_class(pc);
-
+	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes)) {
+		ir_node *member = pset_first(pc);
+		pset_break(pc);
+		if (is_curr_reg_class(member))
+			stat_phi_class(chordal_env, pc);
+	}
 }
 
-void stat_dump(ir_graph *irg) {
+void copystat_dump(ir_graph *irg) {
 	int i;
 	char buf[1024];
 
@@ -187,8 +200,8 @@ void stat_dump(ir_graph *irg) {
     fclose(out);
 }
 
-//TODO stat_dump_pretty
-void stat_dump_pretty(ir_graph *irg) {
+//TODO copystat_dump_pretty
+void copystat_dump_pretty(ir_graph *irg) {
 	int i;
 	FILE *out = ffopen(get_entity_name(get_irg_entity(irg)), "pretty", "wt");
 

@@ -122,20 +122,28 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	INIT_LIST_HEAD(&unit->queue);
 
 	/* check all args */
-	for (i=0; i<arity; ++i) {
-		ir_node *arg = get_irn_n(root, i);
-		assert(is_curr_reg_class(arg) && "Argument not in same register class.");
-		if (arg != root) {
-			if (!nodes_interfere(co->chordal_env, root, arg)) {
-				DBG((dbg, LEVEL_1, "\t  Member: %n\n", arg));
-				if (is_optimizable(arg))
-					co_append_unit(co, arg);
-				unit->nodes[unit->node_count++] = arg;
-			} else
-				unit->interf++;
+	if (is_Phi(root)) {
+		for (i=0; i<arity; ++i) {
+			ir_node *arg = get_irn_n(root, i);
+			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
+			if (arg != root) {
+				if (!nodes_interfere(co->chordal_env, root, arg)) {
+					DBG((dbg, LEVEL_1, "\t  Member: %n\n", arg));
+					if (is_optimizable(arg))
+						co_append_unit(co, arg);
+					unit->nodes[unit->node_count++] = arg;
+				} else
+					unit->interf++;
+			}
 		}
-	}
-	unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
+		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
+	} else if (is_Copy(root)) {
+		assert(!nodes_interfere(co->chordal_env, root, get_Copy_src(root)));
+		unit->nodes[unit->node_count++] = get_Copy_src(root);
+		unit->nodes = xrealloc(unit->nodes, 2 * sizeof(*unit->nodes));
+	} else
+		assert(0 && "This is not an optimizable node!");
+
 	list_add_tail(&unit->units, &co->units);
 	/* Init ifg_mis_size to node_count. So get_lower_bound returns correct results. */
 	unit->ifg_mis_size = get_ifg_mis_size(unit);
@@ -196,12 +204,11 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	int i, max;
 	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
 		ir_node *n = get_irn_out(irn, i);
-		if (is_optimizable(n) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
+		if ((is_Phi(n) || is_Perm(n)) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
 			return 1;
 	}
 	return 0;
 }
-
 
 int co_get_copy_count(const copy_opt_t *co) {
 	int i, res = 0;
@@ -265,7 +272,7 @@ void co_check_allocation(copy_opt_t *co) {
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
 			if (nodes_interfere(co->chordal_env, n1, n2)
           && get_irn_col(co, n1) == get_irn_col(co, n2)) {
-				DBG((dbg, 0, "Error: %n %d  and  %n %d have the same color %d.\n", n1, get_irn_graph_nr(n1), n2, get_irn_graph_nr(n2), get_irn_col(co, n1)));
+				DBG((dbg, 0, "Error in graph %s: %n %d  and  %n %d have the same color %d.\n", co->name, n1, get_irn_graph_nr(n1), n2, get_irn_graph_nr(n2), get_irn_col(co, n1)));
 				assert(0 && "Interfering values have the same color!");
 			}
 	}

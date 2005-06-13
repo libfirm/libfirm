@@ -24,10 +24,11 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 
-#define DUMP_MPS
+#undef DUMP_MPS
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
+#define EPSILON 0.00001
 #define SLOTS_LIVING 32
 
 /**
@@ -122,7 +123,7 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 				list_add(&s->chain, &pi->simplicials);
 				pset_insert_ptr(pi->removed, irn);
 				redo = 1;
-				DBG((dbg, LEVEL_2, " Removed %n\n", irn));
+				DBG((dbg, LEVEL_2, " Removed %n %d\n", irn, get_irn_graph_nr(irn)));
 			}
 		}
 	}
@@ -415,7 +416,6 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 static void pi_solve_ilp(problem_instance_t *pi, void (*lpp_solve)(lpp_t *)) {
 	pi_set_start_sol(pi);
 	lpp_solve(pi->curr_lp);
-	DBG((dbg, LEVEL_1, "Solution time: %f\n", lpp_get_sol_time(pi->curr_lp)));
 }
 
 /**
@@ -462,27 +462,30 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	DBG((dbg, LEVEL_2, "Applying solution...\n"));
 
 #ifdef DO_STAT
-	//TODO stat
+	curr_vals[I_ILP_ITER] += lpp_get_iter_cnt(pi->curr_lp);
+	curr_vals[I_ILP_TIME] += lpp_get_sol_time(pi->curr_lp);
 #endif
 
 	sol = xmalloc((pi->last_x_var+1) * sizeof(*sol));
 	state = lpp_get_solution(pi->curr_lp, sol, 1, pi->last_x_var);
 	if (state != optimal) {
 		printf("Solution state is not 'optimal': %d\n", state);
-		if (state < feasible)
-			assert(0);
+		assert(state >= feasible && "The solution should at least be feasible!");
 	}
-	for (i=0; i<pi->last_x_var; ++i)
-		if (sol[i] == 1.0) { /* split varibale name into components */
-			int nnr, col;
-			char var_name[64];
+	for (i=0; i<pi->last_x_var; ++i) {
+		int nnr, col;
+		char var_name[64];
+
+		if (sol[i] > 1-EPSILON) { /* split varibale name into components */
 			lpp_get_var_name(pi->curr_lp, 1+i, var_name, sizeof(var_name));
 			if (split_var(var_name, &nnr, &col) == 2) {
-				DBG((dbg, LEVEL_2, " x%d = %d\n", nnr, col));
+				DBG((dbg, LEVEL_2, "Irn %n  Idx %d  Var %s  Val %f\n", get_irn_for_graph_nr(pi->co->chordal_env->irg, nnr), i, var_name, sol[i]));
+				DBG((dbg, LEVEL_2, "x%d = %d\n", nnr, col));
 				set_irn_col(pi->co, get_irn_for_graph_nr(pi->co->chordal_env->irg, nnr), col);
 			} else
 				assert(0 && "This should be a x-var");
 		}
+	}
 }
 
 void co_ilp_opt(copy_opt_t *co) {

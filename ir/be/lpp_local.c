@@ -22,7 +22,7 @@
 #include "ilcplex/cplex.h"
 
 #define LOGFILE stdout
-
+#define TIME_LIMIT 30 /* in sec. 0 for none */
 
 static char cpx_cst_encoding[4] = {'?', 'E', 'L', 'G'};
 static char cpx_var_encoding[4] = {'?', '?', 'C', 'B'};
@@ -147,6 +147,8 @@ static void cpx_solve(cpx_t *cpx) {
 	CPXsetintparam(cpx->env, CPX_PARAM_MIPSTART, CPX_ON);
 	CPXsetintparam(cpx->env, CPX_PARAM_MIPEMPHASIS, CPX_MIPEMPHASIS_BESTBOUND);
 	CPXsetintparam(cpx->env, CPX_PARAM_VARSEL, CPX_VARSEL_STRONG);
+	if (TIME_LIMIT)
+		CPXsetdblparam(cpx->env, CPX_PARAM_TILIM, TIME_LIMIT);
 
 	/* solve */
 	gettimeofday(&tvb, NULL);
@@ -172,7 +174,7 @@ static void cpx_solve(cpx_t *cpx) {
 		case CPX_STAT_OPTIMAL:		lpp->sol_state = optimal; break;
 		default:					lpp->sol_state = unknown;
 	}
-	assert(lpp->sol_state == optimal);
+	assert(lpp->sol_state == optimal || lpp->sol_state == feasible);
 
 	/* get variable solution values */
 	values = alloca(numcols * sizeof(*values));
