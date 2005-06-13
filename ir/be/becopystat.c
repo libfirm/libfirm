@@ -200,30 +200,45 @@ void copystat_dump(ir_graph *irg) {
     fclose(out);
 }
 
-//TODO copystat_dump_pretty
 void copystat_dump_pretty(ir_graph *irg) {
 	int i;
-	FILE *out = ffopen(get_entity_name(get_irg_entity(irg)), "pretty", "wt");
+	char buf[1024];
 
-	fprintf(out, "\nPhi argument types\n");
-	fprintf(out, "Total     %4d\n", curr_vals[I_PHI_ARG_CNT]);
-	fprintf(out, "Constants %4d\n", curr_vals[I_PHI_ARG_CONST]);
-	fprintf(out, "CF-Pred   %4d\n", curr_vals[I_PHI_ARG_PRED]);
-	fprintf(out, "Others    %4d\n", curr_vals[I_PHI_ARG_GLOB]);
+	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
+	FILE *out = ffopen(buf, "pstat", "wt");
 
-	fprintf(out, "\nPhi class interference\n");
-	fprintf(out, "Blocks         %4d\n", curr_vals[I_BLOCKS]);
-	fprintf(out, "Phis           %4d\n", curr_vals[I_PHI_CNT]);
+	fprintf(out, "Nodes     %4d\n", curr_vals[I_ALL_NODES]);
+	fprintf(out, "Blocks    %4d\n", curr_vals[I_BLOCKS]);
+	fprintf(out, "CopyIrn   %4d\n", curr_vals[I_CPY_CNT]);
 
-	fprintf(out, "\nPhi arity\n");
+	fprintf(out, "\nPhis      %4d\n", curr_vals[I_PHI_CNT]);
+	fprintf(out, "... argument types\n");
+	fprintf(out, " Total      %4d\n", curr_vals[I_PHI_ARG_CNT]);
+	fprintf(out, " Self       %4d\n", curr_vals[I_PHI_ARG_SELF]);
+	fprintf(out, " Constants  %4d\n", curr_vals[I_PHI_ARG_CONST]);
+	fprintf(out, " CF-Pred    %4d\n", curr_vals[I_PHI_ARG_PRED]);
+	fprintf(out, " Others     %4d\n", curr_vals[I_PHI_ARG_GLOB]);
+	fprintf(out, "... arities\n");
 	for (i = I_PHI_ARITY_S; i<=I_PHI_ARITY_E; i++)
-		fprintf(out, "%2i %4d\n", i-I_PHI_ARITY_S, curr_vals[i]);
+		fprintf(out, " %2i %4d\n", i-I_PHI_ARITY_S, curr_vals[i]);
 
-	fprintf(out, "\nPhi class sizes\n");
+	fprintf(out, "\nPhi classes   %4d\n", curr_vals[I_CLS_CNT]);
+	fprintf(out, " compl. free  %4d\n", curr_vals[I_CLS_IF_FREE]);
+	fprintf(out, " inner intf.  %4d / %4d\n", curr_vals[I_CLS_IF_CNT], curr_vals[I_CLS_IF_MAX]);
+	fprintf(out, "... sizes\n");
 	for (i = I_CLS_SIZE_S; i<=I_CLS_SIZE_E; i++)
-		fprintf(out, "%2i %4d\n", i-I_CLS_SIZE_S, curr_vals[i]);
+		fprintf(out, " %2i %4d\n", i-I_CLS_SIZE_S, curr_vals[i]);
 
-	fprintf(out, "\n\nTotal nodes:    %4d\n", curr_vals[I_ALL_NODES]);
+	fprintf(out, "\nILP stat\n");
+	fprintf(out, " Time %8d\n", curr_vals[I_ILP_TIME]);
+	fprintf(out, " Iter %8d\n", curr_vals[I_ILP_ITER]);
+
+	fprintf(out, "\nCopy stat\n");
+	fprintf(out, " Max  %4d\n", curr_vals[I_COPIES_MAX]);
+	fprintf(out, " Init %4d\n", curr_vals[I_COPIES_INIT]);
+	fprintf(out, " Heur %4d\n", curr_vals[I_COPIES_HEUR]);
+	fprintf(out, " Opt  %4d\n", curr_vals[I_COPIES_OPT]);
+	fprintf(out, " Intf %4d\n", curr_vals[I_COPIES_IF]);
 
 	fclose(out);
 }
