@@ -149,7 +149,18 @@ static const arch_register_t *firm_get_irn_reg(const arch_irn_ops_t *self,
 
 static arch_irn_class_t firm_classify(const arch_irn_ops_t *self, const ir_node *irn)
 {
-  return arch_irn_class_normal;
+    arch_irn_class_t res;
+
+    switch(get_irn_opcode(irn)) {
+        case iro_Cond:
+        case iro_Jmp:
+            res = arch_irn_class_branch;
+            break;
+        default:
+            res = arch_irn_class_normal;
+    }
+
+	return res;
 }
 
 static const arch_irn_ops_t irn_ops = {

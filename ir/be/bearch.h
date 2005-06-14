@@ -194,7 +194,8 @@ typedef enum _arch_irn_class_t {
   arch_irn_class_spill,
   arch_irn_class_reload,
   arch_irn_class_copy,
-  arch_irn_class_perm
+  arch_irn_class_perm,
+  arch_irn_class_branch
 } arch_irn_class_t;
 
 /*
