@@ -21,7 +21,7 @@
 #include "sp_matrix.h"
 #include "ilcplex/cplex.h"
 
-#define LOGFILE stdout
+#undef LOGFILE //stdout
 #define TIME_LIMIT 30 /* in sec. 0 for none */
 
 static char cpx_cst_encoding[4] = {'?', 'E', 'L', 'G'};
@@ -54,8 +54,10 @@ static cpx_t *new_cpx(lpp_t *lpp) {
 	chk_cpx_err(cpx);
 	CPXchgobjsen(cpx->env, cpx->prob, (lpp->opt_type == minimize)?1:-1);
 	chk_cpx_err(cpx);
+#ifdef LOGFILE
 	if (CPXsetlogfile(cpx->env, LOGFILE))
 		assert(0 && "Could not set logfile");
+#endif
 	return cpx;
 }
 

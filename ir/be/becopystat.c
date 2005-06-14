@@ -9,30 +9,42 @@
 #endif
 
 #include <string.h>
-#include "phiclass_t.h"
+#include "irgraph.h"
 #include "irprog.h"
+#include "phiclass_t.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "xmalloc.h"
 
 #ifdef DO_STAT
 
+#define DEBUG_LVL 0 //SET_LEVEL_1
+static firm_dbg_module_t *dbg = NULL;
+
 static pset *all_phi_nodes;
 static pset *all_phi_classes;
 static pset *all_copy_nodes;
 
 void copystat_init(void) {
+	dbg = firm_dbg_register("ir.be.copystat");
+	firm_dbg_set_mask(dbg, DEBUG_LVL);
+
 	all_phi_nodes = pset_new_ptr_default();
 	all_phi_classes = pset_new_ptr_default();
 	all_copy_nodes = pset_new_ptr_default();
 	phi_class_init();
-
 }
 
 void copystat_reset(void) {
 	int i;
 	for (i = 0; i < ASIZE; ++i)
 		curr_vals[i] = 0;
+	del_pset(all_phi_nodes);
+	del_pset(all_phi_classes);
+	del_pset(all_copy_nodes);
+	all_phi_nodes = pset_new_ptr_default();
+	all_phi_classes = pset_new_ptr_default();
+	all_copy_nodes = pset_new_ptr_default();
 }
 
 /**
@@ -76,8 +88,10 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 
 		if (phi != arg)	{
 			curr_vals[I_COPIES_MAX]++; /* if arg!=phi this is a possible copy */
-			if (nodes_interfere(chordal_env, phi, arg))
+			if (nodes_interfere(chordal_env, phi, arg)) {
+				DBG((dbg, LEVEL_1, "%e -- In Block %N: %n %N %n %N\n", get_irg_entity(chordal_env->irg), get_nodes_block(phi), phi, phi, arg, arg));
 				curr_vals[I_COPIES_IF]++;
+			}
 		}
 
 		if (arg == phi) {

@@ -493,7 +493,7 @@ void co_ilp_opt(copy_opt_t *co) {
 
 	dbg = firm_dbg_register("ir.be.copyoptilp");
 	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, -1);
+		firm_dbg_set_mask(dbg, DEBUG_LVL_ILP);
 	else
 		firm_dbg_set_mask(dbg, DEBUG_LVL);
 

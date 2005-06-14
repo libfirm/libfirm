@@ -103,7 +103,7 @@ conflict_found:
 static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	int i, arity;
 	unit_t *unit;
-	DBG((dbg, LEVEL_1, "\t  Root: %n\n", root));
+	DBG((dbg, LEVEL_1, "\t  Root: %n %N\n", root, root));
 	/* check if we encountered this root earlier */
 	if (pset_find_ptr(co->roots, root))
 		return;
@@ -128,7 +128,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
 			if (arg != root) {
 				if (!nodes_interfere(co->chordal_env, root, arg)) {
-					DBG((dbg, LEVEL_1, "\t  Member: %n\n", arg));
+					DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
 					if (is_optimizable(arg))
 						co_append_unit(co, arg);
 					unit->nodes[unit->node_count++] = arg;
@@ -182,9 +182,11 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env) {
 	s3 = chordal_env->cls->name;
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
 	co->name = xmalloc(len);
-	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, -1);
 	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
+	if (!strcmp(co->name, DEBUG_IRG))
+		firm_dbg_set_mask(dbg, DEBUG_LVL_CO);
+	else
+		firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	INIT_LIST_HEAD(&co->units);
 	co_collect_units(co);
@@ -216,9 +218,12 @@ int co_get_copy_count(const copy_opt_t *co) {
 	list_for_each_entry(unit_t, curr, &co->units, units) {
 		int root_col = get_irn_col(co, curr->nodes[0]);
 		res += curr->interf;
+		DBG((dbg, LEVEL_1, "%n %N has %d intf\n", curr->nodes[0], curr->nodes[0], curr->interf));
 		for (i=1; i<curr->node_count; ++i)
-			if (root_col != get_irn_col(co, curr->nodes[i]))
+			if (root_col != get_irn_col(co, curr->nodes[i])) {
+				DBG((dbg, LEVEL_1, "  %n %N\n", curr->nodes[i], curr->nodes[i]));
 				res++;
+			}
 	}
 	return res;
 }

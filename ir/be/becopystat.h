@@ -17,7 +17,7 @@
 #define MAX_PHASE 2
 
 /**
- * For an explanation of these values see phi_copystat_dump_pretty
+ * For an explanation of these values see the code of copystat_dump_pretty
  */
 enum vals_t {
 	I_ALL_NODES = 0,
@@ -50,10 +50,10 @@ enum vals_t {
 
 	/* copy instructions */
 	I_COPIES_MAX,		/* max number of copies possible */
-	I_COPIES_IF,		/* number of copies inevitable due to root-arg-interf */
 	I_COPIES_INIT,		/* !external set! number of copies in initial allocation */
 	I_COPIES_HEUR,		/* !external set! number of copies after heuristic */
 	I_COPIES_OPT,		/* !external set! number of copies after ilp */
+	I_COPIES_IF,		/* number of copies inevitable due to root-arg-interf */
 
 	ASIZE
 };

@@ -30,7 +30,11 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-#define DEBUG_IRG "-scanner.c__init_td__gp"
+#define DEBUG_IRG "NONE spec.c__main__datab"
+#define DEBUG_LVL_CO   LEVEL_1
+#define DEBUG_LVL_HEUR LEVEL_1
+#define DEBUG_LVL_ILP  LEVEL_1
+
 //TODO is_Perm
 #define is_Perm(irn) 0
 

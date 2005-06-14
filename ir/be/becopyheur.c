@@ -553,7 +553,9 @@ void co_heur_opt(copy_opt_t *co) {
 	dbg = firm_dbg_register("ir.be.copyoptheur");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, -1);
+		firm_dbg_set_mask(dbg, DEBUG_LVL_HEUR);
+	else
+		firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
 	list_for_each_entry(unit_t, curr, &co->units, units)

@@ -8,8 +8,6 @@
  * - phi coalescing
  * - register-constrained nodes
  *
- * Checker included.
- * By request some statistics are collected too.
  */
 
 #ifndef _BECOPYOPTMAIN_H

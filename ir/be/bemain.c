@@ -131,7 +131,7 @@ static void be_main_loop(void)
 			//TODO be_ssa_destruction(&session, chordal_env);
 			be_ra_chordal_done(chordal_env);
 		}
-		copystat_dump(irg);
+		copystat_dump_pretty(irg);
 	    be_numbering_done(irg);
 	}
 }

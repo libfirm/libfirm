@@ -24,7 +24,7 @@
 static firm_dbg_module_t *dbg = NULL;
 
 void be_copy_opt_init(void) {
-	dbg = firm_dbg_register("ir.be.copyopt");
+	dbg = firm_dbg_register("ir.be.copyoptmain");
 	firm_dbg_set_mask(dbg, LEVEL_1);
 }
 

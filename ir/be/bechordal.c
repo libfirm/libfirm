@@ -39,7 +39,7 @@
 
 #define NO_COLOR (-1)
 
-#define DUMP_INTERVALS
+#undef DUMP_INTERVALS
 #undef DUMP_PRESSURE
 #undef DUMP_IFG
 
