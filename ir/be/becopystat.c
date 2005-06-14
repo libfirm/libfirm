@@ -197,9 +197,10 @@ void copystat_collect_cls(be_chordal_env_t *chordal_env) {
 void copystat_dump(ir_graph *irg) {
 	int i;
 	char buf[1024];
+	FILE *out;
 
 	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
-	FILE *out = ffopen(buf, "stat", "wt");
+	out = ffopen(buf, "stat", "wt");
 
 	fprintf(out, "%s\n", get_irp_prog_name());
 	for (i = 0; i < ASIZE; i++) {
@@ -217,9 +218,10 @@ void copystat_dump(ir_graph *irg) {
 void copystat_dump_pretty(ir_graph *irg) {
 	int i;
 	char buf[1024];
+	FILE *out;
 
 	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
-	FILE *out = ffopen(buf, "pstat", "wt");
+	out = ffopen(buf, "pstat", "wt");
 
 	fprintf(out, "Nodes     %4d\n", curr_vals[I_ALL_NODES]);
 	fprintf(out, "Blocks    %4d\n", curr_vals[I_BLOCKS]);
