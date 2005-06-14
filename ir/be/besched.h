@@ -7,13 +7,14 @@
 void be_sched_dump(FILE *f, const ir_graph *irg);
 
 int (sched_get_time_step)(const ir_node *irn);
-int (sched_has_succ)(const ir_node *irn);
+int (sched_has_next)(const ir_node *irn);
 int (sched_has_prev)(const ir_node *irn);
-ir_node *(sched_succ)(const ir_node *irn);
+ir_node *(sched_next)(const ir_node *irn);
 ir_node *(sched_prev)(const ir_node *irn);
 ir_node *(sched_first)(const ir_node *block);
 ir_node *(sched_last)(const ir_node *block);
-ir_node *(sched_add)(ir_node *block, const ir_node *irn);
+ir_node *(sched_add_before)(ir_node *before, ir_node *irn);
+ir_node *(sched_add_before)(ir_node *before, ir_node *irn);
 
 /**
  * A shorthand macro for iterating over a schedule.
@@ -21,7 +22,7 @@ ir_node *(sched_add)(ir_node *block, const ir_node *irn);
  * @param irn A ir node pointer used as an iterator.
  */
 #define sched_foreach(block,irn) \
-	for(irn = sched_first(block); irn; irn = sched_succ(irn))
+	for(irn = sched_first(block); sched_has_next(irn); irn = sched_next(irn))
 
 /**
  * A shorthand macro for reversely iterating over a schedule.
@@ -29,6 +30,6 @@ ir_node *(sched_add)(ir_node *block, const ir_node *irn);
  * @param irn A ir node pointer used as an iterator.
  */
 #define sched_foreach_reverse(block,irn) \
-	for(irn = sched_last(block); irn; irn = sched_prev(irn))
+	for(irn = sched_last(block); sched_has_prev(irn); irn = sched_prev(irn))
 
 #endif
