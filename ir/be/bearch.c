@@ -149,3 +149,9 @@ extern void arch_set_irn_register(const arch_env_t *env,
   assert(idx >= 0);
   ops->set_irn_reg(ops, irn, idx, reg);
 }
+
+extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  return ops->classify(ops, irn);
+}

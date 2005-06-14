@@ -392,6 +392,14 @@ arch_get_irn_register(const arch_env_t *env, const ir_node *irn, int idx);
 extern void arch_set_irn_register(const arch_env_t *env,
     ir_node *irn, int idx, const arch_register_t *reg);
 
+/**
+ * Classify a node.
+ * @param env The architecture environment.
+ * @param irn The node.
+ * @return A classification of the node.
+ */
+extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn);
+
 #define arch_irn_has_reg_class(env, irn, pos, cls) \
   ((cls) == arch_get_irn_reg_class(env, irn, pos))
 
