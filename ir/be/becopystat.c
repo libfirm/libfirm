@@ -50,7 +50,8 @@ void copystat_reset(void) {
 /**
  * Collect general data
  */
-static void stat_walker(ir_node *node, void *env) {
+static void irg_stat_walker(ir_node *node, void *env) {
+	arch_env_t *arch_env = env;
 	curr_vals[I_ALL_NODES]++; /* count all nodes */
 
  	if (is_Block(node)) /* count all blocks */
@@ -59,8 +60,14 @@ static void stat_walker(ir_node *node, void *env) {
  	if (is_Phi(node)) /* collect phis */
  		pset_insert_ptr(all_phi_nodes, node);
 
- 	if (is_Copy(node))
+ 	if (is_Copy(arch_env, node))
  		pset_insert_ptr(all_copy_nodes, node);
+}
+
+void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env) {
+	irg_walk_graph(irg, irg_stat_walker, NULL, arch_env);
+	curr_vals[I_BLOCKS] -= 2; /* substract 2 for start and end block */
+	all_phi_classes = phi_class_compute_by_phis(all_phi_nodes);
 }
 
 /**
@@ -164,12 +171,6 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 	curr_vals[I_CLS_IF_FREE] += if_free;
 
 	xfree(members);
-}
-
-void copystat_collect_irg(ir_graph *irg) {
-	irg_walk_graph(irg, stat_walker, NULL, NULL);
-	curr_vals[I_BLOCKS] -= 2; /* substract 2 for start and end block */
-	all_phi_classes = phi_class_compute_by_phis(all_phi_nodes);
 }
 
 #define is_curr_reg_class(irn) (arch_get_irn_reg_class(chordal_env->arch_env, irn, arch_pos_make_out(0)) == chordal_env->cls)

@@ -35,9 +35,6 @@
 #define DEBUG_LVL_HEUR LEVEL_1
 #define DEBUG_LVL_ILP  LEVEL_1
 
-//TODO is_Perm
-#define is_Perm(irn) 0
-
 /**
  * Data representing the problem of copy minimization.
  */
@@ -82,10 +79,13 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env);
  */
 void free_copy_opt(copy_opt_t *co);
 
+
+#define is_Perm(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
+
 /**
  * A copy is a proj haning out of perm node
  */
-#define is_Copy(irn) (is_Proj(irn) && is_Perm(get_Proj_pred(irn)))
+#define is_Copy(arch_env, irn) (is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
 
 /**
  * returns the corresponding argument of the perm node for a copy
@@ -95,7 +95,7 @@ void free_copy_opt(copy_opt_t *co);
 /**
  * Checks if a node is optimizable, viz. is a target of a 'copy-op'
  */
-#define is_optimizable(irn) (is_Phi(irn) || is_Copy(irn))
+#define is_optimizable(arch_env, irn) (is_Phi(irn) || is_Copy(arch_env, irn))
 
 /**
  * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'

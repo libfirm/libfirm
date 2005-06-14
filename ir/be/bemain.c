@@ -114,7 +114,7 @@ static void be_main_loop(void)
 		be_liveness(irg);
 
 		copystat_reset();
-		copystat_collect_irg(irg);
+		copystat_collect_irg(irg, env.arch_env);
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
@@ -128,7 +128,7 @@ static void be_main_loop(void)
 			copystat_collect_cls(chordal_env);
 
 			be_copy_opt(chordal_env);
-			//TODO be_ssa_destruction(&session, chordal_env);
+			be_ssa_destruction(&session, chordal_env);
 			be_ra_chordal_done(chordal_env);
 		}
 		copystat_dump_pretty(irg);

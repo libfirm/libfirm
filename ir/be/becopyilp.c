@@ -116,7 +116,7 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 		redo = 0;
 		for (ifn = set_first(if_nodes); ifn; ifn = set_next(if_nodes)) {
 			ir_node *irn = get_irn_for_graph_nr(pi->co->chordal_env->irg, ifn->nnr);
-			if (!is_removed(irn) && !is_optimizable(irn) &&
+			if (!is_removed(irn) && !is_optimizable(pi->co->chordal_env->arch_env, irn) &&
           !is_optimizable_arg(pi->co, irn) && pi_is_simplicial(pi, ifn)) {
 				simpl_t *s = xmalloc(sizeof(*s));
 				s->ifn = ifn;

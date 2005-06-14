@@ -22,7 +22,7 @@
 #include "ilcplex/cplex.h"
 
 #undef LOGFILE //stdout
-#define TIME_LIMIT 30 /* in sec. 0 for none */
+#define TIME_LIMIT 5*60 /* in sec. 0 for none */
 
 static char cpx_cst_encoding[4] = {'?', 'E', 'L', 'G'};
 static char cpx_var_encoding[4] = {'?', '?', 'C', 'B'};

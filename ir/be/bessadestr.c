@@ -34,6 +34,40 @@ static int set_cmp_b2p(const void *x, const void *y, size_t size) {
 	return b1->block != b2->block;
 }
 
+#define is_Branch(irn)          (arch_irn_classify(arch_env, irn) == arch_irn_class_branch)
+#define is_Perm(irn)            (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
+#define get_reg_cls(irn)        (arch_get_irn_reg_class(arch_env, irn, arch_pos_make_out(0)))
+#define is_curr_reg_class(irn)  (get_reg_cls(p) == chordal_env->cls)
+
+static ir_node *get_perm(be_main_session_env_t *session, be_chordal_env_t *chordal_env, ir_node *block) {
+	block2perm_t find, *found;
+	ir_node *p;
+	set *b2p = chordal_env->data;
+	const arch_env_t *arch_env = chordal_env->arch_env;
+
+	/* iff needed insert perm node */
+
+	/* .if the perm is in the pset return it */
+	find.block = block;
+	find.perm = NULL;
+	found = set_insert(b2p, &find, sizeof(find), HASH_PTR(find.block));
+	if (found->perm)
+		return found->perm;
+
+	/* .else look for a perm of right register class in the schedule */
+	p = sched_last(find.block);
+	while (!is_Block(p) && (is_Branch(p) || (is_Perm(p) && !is_curr_reg_class(p))))
+		p = sched_prev(p);
+
+	/* if we haven't found a perm of the right register class create a new one */
+	if (! (is_Perm(p) && is_curr_reg_class(p)))
+		p = insert_Perm_after(session, chordal_env->cls, p);
+
+	/* insert perm into pset */
+	found->perm = p;
+	return p;
+}
+
 /**
  * Adjusts the register allocation for the phi-operands
  * by inserting perm nodes, if necessary.
@@ -44,12 +78,9 @@ static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *c
 	ir_node *arg, *perm, *proj;
 	const arch_register_t *phi_reg, *arg_reg, *proj_reg;
 	const ir_edge_t *edge;
-	set *b2p;
-	block2perm_t find, *found;
 
 	assert(is_Phi(phi) && "Can only handle phi-destruction :)");
 
-	b2p = chordal_env->data;
 	phi_reg = get_reg(phi);
 	/* all arguments of the phi */
 	for(i=0, max=get_irn_arity(phi); i<max; ++i) {
@@ -57,15 +88,7 @@ static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *c
 		arg_reg = get_reg(arg);
 		/* if registers don't match ...*/
 		if (phi_reg != arg_reg) {
-			/* iff needed insert perm node */
-			find.block = get_nodes_block(arg);
-			find.perm = NULL;
-			found = set_insert(b2p, &find, sizeof(find), HASH_PTR(find.block));
-			if (!found->perm)
-				found->perm = insert_Perm_after(session, chordal_env->cls, sched_last(find.block));
-
-			/* now we have the perm in the predecessor block */
-			perm = found->perm;
+			perm = get_perm(session, chordal_env, get_nodes_block(arg));
 			/* adjust assigned registers for the projs */
 			foreach_out_edge(perm, edge) {
 				proj = get_edge_src_irn(edge);
@@ -88,10 +111,13 @@ static void checker(be_chordal_env_t *chordal_env) {
 		border_t *curr;
 		struct list_head *head = pme->value;
 
-		/* iterate over all ops in the block */
+		/* iterate over the first ops in the block */
 		list_for_each_entry_reverse(border_t, curr, head, list)
 			if (curr->is_def && curr->is_real && is_Phi(curr->irn)) {
 				const arch_register_t *phi_reg, *arg_reg;
+				if (!is_Phi(curr->irn))
+					break;
+
 				phi_reg = get_reg(curr->irn);
 				/* iterate over all args of phi */
 				for(i=0, max=get_irn_arity(curr->irn); i<max; ++i) {
@@ -113,11 +139,13 @@ void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chorda
 		border_t *curr;
 		struct list_head *head = pme->value;
 
-		/* iterate over all ops in the block
-		 * BETTER: phis are the first ops, so stop iteration on first non-phi-op */
+		/* iterate over the first ops in the block until a non-phi is reached */
 		list_for_each_entry_reverse(border_t, curr, head, list)
-			if (curr->is_def && curr->is_real && is_Phi(curr->irn))
+			if (curr->is_def && curr->is_real) {
+				if (!is_Phi(curr->irn))
+					break;
 				adjust_arguments(session, chordal_env, curr->irn);
+			}
 	}
 	del_set(b2p);
 	checker(chordal_env);

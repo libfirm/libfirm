@@ -65,7 +65,7 @@ int curr_vals[ASIZE];
 
 void copystat_init(void);
 void copystat_reset(void);
-void copystat_collect_irg(ir_graph *irg);
+void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env);
 void copystat_collect_cls(be_chordal_env_t *chordal_env);
 void copystat_dump(ir_graph *irg);
 void copystat_dump_pretty(ir_graph *irg);
@@ -74,7 +74,7 @@ void copystat_dump_pretty(ir_graph *irg);
 
 #define copy_copystat_init();
 #define	copystat_reset();
-#define copystat_collect_irg(irg);
+#define copystat_collect_irg(irg, arch_env);
 #define copystat_collect_cls(env);
 #define copystat_dump(irg);
 #define copystat_dump(irg);

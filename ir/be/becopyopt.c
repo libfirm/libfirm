@@ -132,7 +132,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			if (arg != root) {
 				if (!nodes_interfere(co->chordal_env, root, arg)) {
 					DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
-					if (is_optimizable(arg))
+					if (is_optimizable(co->chordal_env->arch_env, arg))
 						co_append_unit(co, arg);
 					unit->nodes[unit->node_count++] = arg;
 				} else
@@ -140,7 +140,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			}
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
-	} else if (is_Copy(root)) {
+	} else if (is_Copy(co->chordal_env->arch_env, root)) {
 		assert(!nodes_interfere(co->chordal_env, root, get_Copy_src(root)));
 		unit->nodes[unit->node_count++] = get_Copy_src(root);
 		unit->nodes = xrealloc(unit->nodes, 2 * sizeof(*unit->nodes));
@@ -158,7 +158,7 @@ static void co_collect_in_block(ir_node *block, void *env) {
 	border_t *curr;
 
 	list_for_each_entry_reverse(border_t, curr, head, list)
-		if (curr->is_def && curr->is_real && is_optimizable(curr->irn))
+		if (curr->is_def && curr->is_real && is_optimizable(co->chordal_env->arch_env, curr->irn))
 			co_append_unit(co, curr->irn);
 }
 
@@ -209,7 +209,7 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	int i, max;
 	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
 		ir_node *n = get_irn_out(irn, i);
-		if ((is_Phi(n) || is_Perm(n)) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
+		if ((is_Phi(n) || is_Perm(co->chordal_env->arch_env, n)) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
 			return 1;
 	}
 	return 0;

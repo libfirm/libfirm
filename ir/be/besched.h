@@ -3,6 +3,8 @@
 #define _BESCHED_H
 
 #include <stdio.h>
+#include "irgraph.h"
+#include "irnode.h"
 
 void be_sched_dump(FILE *f, const ir_graph *irg);
 
