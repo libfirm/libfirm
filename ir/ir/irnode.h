@@ -468,6 +468,7 @@ void    set_InstOf_obj (ir_node *node, ir_node *obj);
  */
 typedef enum {
   pn_Call_M_regular = 0,  /**< The memory result. */
+  pn_Call_M         = 0,  /**< The memory result. */
   pn_Call_T_result  = 2,  /**< The tuple containing all (0, 1, 2, ...) results */
   pn_Call_P_value_res_base = 4,/**< A pointer to the memory region containing copied results
                  passed by value (for compound result types). */
