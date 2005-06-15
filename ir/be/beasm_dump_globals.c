@@ -212,7 +212,7 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
   int align, /*is_constant,*/ h;
   int i, /*j,*/ size = 0;
   ent_variability variability;
-  ent_visibility  visibility;
+  visibility  visibility;
 
   asm_segment_t target_segment = ASM_SEGMENT_DATA_INIT;
 

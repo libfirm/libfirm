@@ -139,7 +139,7 @@ static void gnuasm_dump_string(void *data, asm_segment_t segment, entity *ent)
 }
 
 
-static void gnuasm_dump_declare_initialized_symbol(void *data, asm_segment_t segment, const char* ld_name, int bytes, int align, ent_visibility visibility)
+static void gnuasm_dump_declare_initialized_symbol(void *data, asm_segment_t segment, const char* ld_name, int bytes, int align, visibility visibility)
 {
   gnuasm_privdata_t* priv_data = data;
 
@@ -156,7 +156,7 @@ static void gnuasm_dump_declare_initialized_symbol(void *data, asm_segment_t seg
   obstack_printf(obst, "\t%s:\n", ld_name);
 }
 
-static void gnuasm_dump_declare_uninitialized_symbol(void *data, asm_segment_t segment, const char* ld_name, int bytes, int align, ent_visibility visibility)
+static void gnuasm_dump_declare_uninitialized_symbol(void *data, asm_segment_t segment, const char* ld_name, int bytes, int align, visibility visibility)
 {
   gnuasm_privdata_t *priv_data = data;
 
