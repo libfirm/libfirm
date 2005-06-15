@@ -928,6 +928,10 @@ ir_node *new_r_Const_long(ir_graph *irg, ir_node *block,
   return new_rd_Const_long(NULL, irg, block, mode, value);
 }
 
+ir_node *new_r_Const_type(ir_graph *irg, ir_node *block,
+               ir_mode *mode, tarval *con, type *tp) {
+  return new_rd_Const_type(NULL, irg, block, mode, con, tp);
+}
 
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
                        symconst_symbol value, symconst_kind symkind) {
@@ -1999,7 +2003,7 @@ new_d_Const_long(dbg_info* db, ir_mode *mode, long value)
   return new_rd_Const_long(db, current_ir_graph, current_ir_graph->start_block, mode, value);
 }
 
-    ir_node *
+ir_node *
 new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp)
 {
   return new_rd_Const_type(db, current_ir_graph, current_ir_graph->start_block,

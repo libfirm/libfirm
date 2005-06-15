@@ -1891,6 +1891,20 @@ ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
 ir_node *new_r_Const_long(ir_graph *irg, ir_node *block,
 		       ir_mode *mode, long value);
 
+/** Constructor for a Const_type node.
+ *
+ * The constant represents a target value.  This constructor sets high
+ * level type information for the constant value.
+ *
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param *mode  The mode of the operands and results.
+ * @param *con   Points to an entry in the constant table.
+ * @param *tp    The type of the constant.
+ */
+ir_node *new_r_Const_type(ir_graph *irg, ir_node *block,
+           ir_mode *mode, tarval *con, type *tp);
+
 /** Constructor for a SymConst node.
  *
  *  This is the constructor for a symbolic constant.
