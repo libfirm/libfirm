@@ -72,7 +72,7 @@ struct ir_prog {
 					    to looptree over callgraph. */
   int max_callgraph_loop_depth;        /**< needed in callgraph. */
   int max_callgraph_recursion_depth;   /**< needed in callgraph. */
-  int max_method_execution_frequency;  /**< needed in callgraph. */
+  double max_method_execution_frequency;  /**< needed in callgraph. */
   irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
   exec_freq_state execfreq_state;        /**< State of execution freqency information */
   loop_nesting_depth_state lnd_state;  /**< State of loop nesting depth information. */
