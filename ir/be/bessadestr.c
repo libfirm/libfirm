@@ -6,6 +6,9 @@
  *
  * Performs SSA-Destruction.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "debug.h"
 #include "set.h"
