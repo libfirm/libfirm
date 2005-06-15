@@ -9,6 +9,9 @@
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <limits.h>
 
@@ -174,11 +177,13 @@ struct block_dims {
   rect_t subtree_box;
 };
 
+#undef min
 static INLINE int min(int a, int b)
 {
   return a < b ? a : b;
 }
 
+#undef max
 static INLINE int max(int a, int b)
 {
   return a > b ? a : b;
