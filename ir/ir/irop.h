@@ -39,7 +39,7 @@ typedef enum {
   oparity_dynamic,            /**< arity depends on state of firm representation.
 				 Can change by optimizations...
 				 We must allocate a dynamic in array for the node! */
-  oparity_any,                /**< other arity */
+  oparity_any                 /**< other arity */
 } op_arity;
 
 
@@ -53,7 +53,7 @@ typedef enum {
   irop_flag_fragile     = 0x00000010,	/**< set if the operation can change the control flow because
                                              of an exception */
   irop_flag_forking     = 0x00000020, /**< the operation is a forking control flow */
-  irop_flag_highlevel   = 0x00000040, /**< the operation is a pure high-level one and can be
+  irop_flag_highlevel   = 0x00000040  /**< the operation is a pure high-level one and can be
                                            skipped in low-level optimizations */
 } irop_flags;
 
