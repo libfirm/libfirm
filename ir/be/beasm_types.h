@@ -40,8 +40,8 @@ typedef	void (*dump_string_proc)(void* priv_data, asm_segment_t segment, entity 
 typedef	void (*dump_external_declaration_proc)(void* priv_data, asm_segment_t segment, const char* ld_name);
 typedef	void (*dump_local_declaration_proc)(void* priv_data, asm_segment_t segment, const char* ld_name );
 // declares an uninitialized symbol.
-typedef	void (*dump_declare_uninitialized_symbol_proc)(void* priv_data, asm_segment_t segment, const char* ldname, int bytes, int align, ent_visibility visibility);
-typedef void (*dump_declare_initialized_symbol_proc)(void* priv_data, asm_segment_t segment, const char* ldname, int bytes, int align, ent_visibility visibility);
+typedef	void (*dump_declare_uninitialized_symbol_proc)(void* priv_data, asm_segment_t segment, const char* ldname, int bytes, int align, visibility visibility);
+typedef void (*dump_declare_initialized_symbol_proc)(void* priv_data, asm_segment_t segment, const char* ldname, int bytes, int align, visibility visibility);
 //typedef	void (*dump_declare_object_symbol_proc)(void* priv_data, asm_segment_t segment, const char* ld_name, int bytes);
 //typedef	void (*dump_declare_function_symbol_proc)(void* priv_data, asm_segment_t segment, const char* ld_name);
 //typedef	void (*dump_object_symbol_init_decl_proc)(void* priv_data, asm_segment_t segment, const char* ld_name);
