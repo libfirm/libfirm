@@ -274,7 +274,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
   /* count them */
   irg_walk_graph(graph->irg, connect_dags, NULL, &root_env);
 
-  printf("Graph %p %s --- %d\n", graph->irg, get_entity_name(get_irg_entity(graph->irg)),
+  printf("Graph %p %s --- %d\n", (void *)graph->irg, get_entity_name(get_irg_entity(graph->irg)),
       root_env.num_of_dags);
 
   for (id = 0, entry = root_env.list_of_dags; entry; entry = entry->next) {
