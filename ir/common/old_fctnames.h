@@ -107,6 +107,9 @@
 
 #define get_method_n_res(X) get_method_n_ress(X)
 
+/* entity.h */
+#define ent_visibility visibility
+
 /* tv.h */
 #define tarval_from_long(X, Y) new_tarval_from_long(Y, X)
 #define tarval_P_from_entity(X) new_tarval_from_entity(X, mode_P_mach)

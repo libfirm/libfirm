@@ -81,6 +81,7 @@ extern "C" {
 
 /* Analyses */
 #include "irouts.h"         /* Graph reversal / out edges. */
+#include "trouts.h"         /* Graph reversal / out edges for types. */
 #include "irdom.h"          /* Dominator analysis */
 #include "cgana.h"          /* Analysis to construct interprocedural graph */
                             /* including some optimizations */
