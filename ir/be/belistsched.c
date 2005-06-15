@@ -97,25 +97,6 @@ typedef struct _block_sched_env_t {
 
 
 
-/**
- * Checks, if a node is to appear in a schedule. Such nodes either
- * consume real data (mode datab) or produce such.
- * @param irn The node to check for.
- * @return 1, if the node consumes/produces data, false if not.
- */
-static INLINE int to_appear_in_schedule(ir_node *irn)
-{
-    int i, n;
-
-    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-        ir_node *op = get_irn_n(irn, i);
-        if(mode_is_datab(get_irn_mode(op)))
-            return 1;
-    }
-
-    return mode_is_datab(get_irn_mode(irn));
-}
-
 
 /**
  * Try to put a node in the ready set.
@@ -147,7 +128,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
             return 0;
     }
 
-    DBG((env->dbg, LEVEL_2, "\tmaking ready: %n\n", irn));
+    DBG((env->dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
     pset_insert_ptr(env->ready_set, irn);
 
     return 1;
@@ -213,10 +194,10 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
     if(to_appear_in_schedule(irn)) {
         sched_info_t *info = get_irn_sched_info(irn);
         INIT_LIST_HEAD(&info->list);
-				info->time_step = env->curr_time;
+        info->scheduled = 1;
         sched_add_before(env->block, irn);
 
-        DBG((env->dbg, LEVEL_2, "\tadding %n\n", irn));
+        DBG((env->dbg, LEVEL_2, "\tadding %+F\n", irn));
     }
 
     /* Insert the node in the set of all already scheduled nodes. */
@@ -300,10 +281,12 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.ready_set = new_pset(node_cmp_func, get_irn_n_outs(block));
 	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_outs(block));
 
+  firm_dbg_set_mask(be.dbg, 0);
+
 	if(selector->init_block)
 		block_env = selector->init_block(env->selector_env, block);
 
-	DBG((be.dbg, LEVEL_1, "scheduling %n\n", block));
+	DBG((be.dbg, LEVEL_1, "scheduling %+F\n", block));
 
 	/* Then one can add all nodes are ready to the set. */
 	for(i = 0, n = get_irn_n_outs(block); i < n; ++i) {
@@ -338,7 +321,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 			/* Make the node ready, if all operands live in a foreign block */
 			if(ready) {
-				DBG((be.dbg, LEVEL_2, "\timmediately ready: %n\n", irn));
+				DBG((be.dbg, LEVEL_2, "\timmediately ready: %+F\n", irn));
 				make_ready(&be, irn);
 			}
 		}
@@ -348,12 +331,12 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.curr_time += phi_seen;
 
 	while(pset_count(be.ready_set) > 0) {
-		DBG((be.dbg, LEVEL_2, "\tready set: %*n\n", pset_iterator, be.ready_set));
+		// DBG((be.dbg, LEVEL_2, "\tready set: %*n\n", pset_iterator, be.ready_set));
 
 		/* select a node to be scheduled and check if it was ready */
 		irn = selector->select(env->selector_env, block_env, &info->list, be.curr_time, be.ready_set);
 
-		DBG((be.dbg, LEVEL_3, "\tpicked node %n\n", irn));
+		DBG((be.dbg, LEVEL_3, "\tpicked node %+F\n", irn));
 
 		/* Add the node to the schedule. */
 		add_to_sched(&be, irn);

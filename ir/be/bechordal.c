@@ -14,6 +14,7 @@
 #include <ctype.h>
 
 #include "obst.h"
+#include "pset.h"
 #include "list.h"
 #include "bitset.h"
 #include "iterator.h"
@@ -240,7 +241,7 @@ static void dump_ifg(const be_chordal_env_t *env)
 			ir_node *irn = get_irn_for_graph_nr(irg, nr);
 			int color = get_irn_color(irn);
 
-			ir_fprintf(f, "\tn%d [label=\"%n\",color=\"%s\"]\n", nr, irn,
+			ir_fprintf(f, "\tn%d [label=\"%+F\",color=\"%s\"]\n", nr, irn,
 					color >= 0 && color < n_colors ? colors[color] : "black");
 		}
 
@@ -321,7 +322,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	b->irn = irn;
 	b->step = step;
 	list_add_tail(&b->list, head);
-	DBG((dbg, LEVEL_5, "\t\t%s adding %n, step: %d\n",
+	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n",
 				is_def ? "def" : "use", irn, step));
 
 	return b;
@@ -351,11 +352,11 @@ static void pressure(ir_node *block, void *env_ptr)
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
-	pset *live_in = get_live_in(block);
-	pset *live_end = get_live_end(block);
+	pset *live_in = put_live_in(block, pset_new_ptr_default());
+	pset *live_end = put_live_end(block, pset_new_ptr_default());
   const arch_register_class_t *cls = env->cls;
 
-	DBG((dbg, LEVEL_1, "Computing pressure in block %n\n", block));
+	DBG((dbg, LEVEL_1, "Computing pressure in block %+F\n", block));
 	bitset_clear_all(live);
 
 	/* Set up the border list in the block info */
@@ -368,7 +369,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * They are neccessary to build up real intervals.
 	 */
 	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
-		DBG((dbg, LEVEL_3, "\tMaking live: %n/%d\n", irn, get_irn_graph_nr(irn)));
+		DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
 		bitset_set(live, get_irn_graph_nr(irn));
     if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls))
       border_use(irn, step, 0);
@@ -381,7 +382,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * relevant for the interval borders.
 	 */
 	sched_foreach_reverse(block, irn) {
-		DBG((dbg, LEVEL_1, "\tinsn: %n, pressure: %d\n", irn, pressure));
+		DBG((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
 		DBG((dbg, LEVEL_2, "\tlive: %b\n", live));
 
     /*
@@ -411,7 +412,7 @@ static void pressure(ir_node *block, void *env_ptr)
 				if(arch_irn_has_reg_class(env->arch_env, op, 0, cls)) {
 					int nr = get_irn_graph_nr(op);
 
-					DBG((dbg, LEVEL_4, "\t\tpos: %d, use: %n\n", i, op));
+					DBG((dbg, LEVEL_4, "\t\tpos: %d, use: %+F\n", i, op));
 
 					if(!bitset_is_set(live, nr)) {
 						border_use(op, step, 1);
@@ -437,6 +438,9 @@ static void pressure(ir_node *block, void *env_ptr)
 			border_def(irn, step, 0);
 		}
 	}
+
+    del_pset(live_in);
+    del_pset(live_end);
 }
 
 static void assign(ir_node *block, void *env_ptr)
@@ -446,7 +450,7 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
 	bitset_t *in_colors = env->in_colors;
-  const arch_register_class_t *cls = env->cls;
+	const arch_register_class_t *cls = env->cls;
 
 	/* Mark the obstack level and allocate the temporary tmp_colors */
 	void *obstack_level = obstack_base(obst);
@@ -455,16 +459,16 @@ static void assign(ir_node *block, void *env_ptr)
 	const ir_node *irn;
 	border_t *b;
 	struct list_head *head = get_block_border_head(env, block);
-	pset *live_in = get_live_in(block);
+	pset *live_in = put_live_in(block, pset_new_ptr_default());
 
 	bitset_clear_all(live);
 	bitset_clear_all(colors);
 	bitset_clear_all(in_colors);
 
-	DBG((dbg, LEVEL_4, "Assigning colors for block %n\n", block));
+	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
 	list_for_each_entry(border_t, b, head, list) {
-		DBG((dbg, LEVEL_4, "\t%s %n/%d\n", b->is_def ? "def" : "use",
+		DBG((dbg, LEVEL_4, "\t%s %+F/%d\n", b->is_def ? "def" : "use",
 					b->irn, get_irn_graph_nr(b->irn)));
 	}
 
@@ -478,7 +482,7 @@ static void assign(ir_node *block, void *env_ptr)
       const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
       int col;
 
-      assert(reg && "Nodfe must have been assigned a register");
+      assert(reg && "Node must have been assigned a register");
 			col = arch_register_get_index(reg);
 
 			/* Mark the color of the live in value as used. */
@@ -520,7 +524,7 @@ static void assign(ir_node *block, void *env_ptr)
 			bitset_set(live, nr);
 
 			arch_set_irn_register(env->arch_env, irn, 0, reg);
-			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %n\n",
+			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n",
             arch_register_get_name(reg), col, irn));
 		}
 
@@ -541,6 +545,8 @@ static void assign(ir_node *block, void *env_ptr)
 
 	/* Free the auxillary data on the obstack. */
 	obstack_free(obst, obstack_level);
+
+  del_pset(live_in);
 }
 
 void be_ra_chordal_init(void)

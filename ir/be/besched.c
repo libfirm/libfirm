@@ -4,7 +4,8 @@
 #include "impl.h"
 #include "irprintf.h"
 #include "irgwalk.h"
-#include "irnode.h"
+#include "irnode_t.h"
+#include "iredges_t.h"
 #include "debug.h"
 
 #include "besched_t.h"
@@ -28,9 +29,10 @@ static void block_sched_dumper(ir_node *block, void *env)
 	FILE *f = env;
 	const ir_node *curr;
 
-	ir_fprintf(f, "%n:\n", block);
+	ir_fprintf(f, "%+F:\n", block);
 	sched_foreach(block, curr) {
-		ir_fprintf(f, "\t%n\n", curr);
+    sched_info_t *info = get_irn_sched_info(curr);
+		ir_fprintf(f, "\t%6d: %+F\n", info->time_step, curr);
 	}
 }
 
@@ -83,6 +85,10 @@ int sched_verify(const ir_node *block)
   const ir_node *irn;
   int i, n;
   int *save_time_step;
+  const ir_edge_t *edge;
+  pset *scheduled_nodes = pset_new_ptr_default();
+
+  firm_dbg_set_mask(dbg_sched, -1);
 
   /* Count the number of nodes in the schedule. */
   n = 0;
@@ -96,6 +102,7 @@ int sched_verify(const ir_node *block)
     sched_info_t *info = get_irn_sched_info(irn);
     save_time_step[i] = info->time_step;
     info->time_step = i;
+    pset_insert_ptr(scheduled_nodes, irn);
 
     i += 1;
   }
@@ -111,7 +118,7 @@ int sched_verify(const ir_node *block)
     for(i = 0, n = get_irn_arity(irn); i < n; i++) {
       ir_node *op = get_irn_n(irn, i);
 
-      if(mode_is_datab(get_irn_mode(op))
+      if(to_appear_in_schedule(op)
           && get_nodes_block(op) == block
           && sched_get_time_step(op) > step) {
 
@@ -139,6 +146,14 @@ int sched_verify(const ir_node *block)
     info->time_step = save_time_step[i++];
   }
 
+  /* Check for all nodes in the block if they are scheduled. */
+  foreach_out_edge(block, edge) {
+    ir_node *irn = get_edge_src_irn(edge);
+    if(to_appear_in_schedule(irn) && !pset_find_ptr(scheduled_nodes, irn))
+      DBG((dbg_sched, LEVEL_DEFAULT, "%+F is in block but not scheduled\n", irn));
+  }
+
+  del_pset(scheduled_nodes);
   free(save_time_step);
   return res;
 }

@@ -47,13 +47,32 @@ static INLINE int _sched_get_time_step(const ir_node *irn)
 }
 
 /**
+ * Checks, if a node is to appear in a schedule. Such nodes either
+ * consume real data (mode datab) or produce such.
+ * @param irn The node to check for.
+ * @return 1, if the node consumes/produces data, false if not.
+ */
+static INLINE int to_appear_in_schedule(ir_node *irn)
+{
+  int i, n;
+
+  for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+    ir_node *op = get_irn_n(irn, i);
+    if(mode_is_datab(get_irn_mode(op)))
+      return 1;
+  }
+
+  return mode_is_datab(get_irn_mode(irn));
+}
+
+/**
  * Check, if an ir_node has a scheduling successor.
  * @param irn The ir node.
  * @return 1, if the node has a scheduling successor, 0 if not.
  */
 static INLINE int _sched_has_next(const ir_node *irn)
 {
-    const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
+  const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
 	const sched_info_t *info = get_irn_sched_info(irn);
 	const sched_info_t *block_info = get_irn_sched_info(block);
 	return info->list.next != &block_info->list;
@@ -66,7 +85,7 @@ static INLINE int _sched_has_next(const ir_node *irn)
  */
 static INLINE int _sched_has_prev(const ir_node *irn)
 {
-    const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
+  const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
 	const sched_info_t *info = get_irn_sched_info(irn);
 	const sched_info_t *block_info = get_irn_sched_info(block);
 	return info->list.prev != &block_info->list;
@@ -182,7 +201,7 @@ static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
  */
 static INLINE int _sched_is_scheduled(ir_node *irn)
 {
-    return get_irn_sched_info(irn)->scheduled;
+  return get_irn_sched_info(irn)->scheduled;
 }
 
 /**
