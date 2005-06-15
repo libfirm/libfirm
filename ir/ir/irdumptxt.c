@@ -1080,12 +1080,13 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     }
   }
 
-  fprintf(F, "  state:     %s,\n", get_type_state_name(get_type_state(tp)));
-  fprintf(F, "  size:      %2d Bits,\n",  get_type_size_bits(tp));
-  fprintf(F, "  alignment: %2d Bits,\n",  get_type_alignment_bits(tp));
+  fprintf(F, "  visibility: %s,\n", get_visibility_name(get_type_visibility(tp)));
+  fprintf(F, "  state:      %s,\n", get_type_state_name(get_type_state(tp)));
+  fprintf(F, "  size:       %2d Bits,\n",  get_type_size_bits(tp));
+  fprintf(F, "  alignment:  %2d Bits,\n",  get_type_alignment_bits(tp));
   if (is_atomic_type(tp) || is_Method_type(tp))
-    fprintf(F, "  mode:      %s,\n",  get_mode_name(get_type_mode(tp)));
-  fprintf(F, "  dbg info:  %p,\n",  (void *)get_type_dbg_info(tp));
+    fprintf(F, "  mode:       %s,\n",  get_mode_name(get_type_mode(tp)));
+  fprintf(F, "  dbg info:   %p,\n",  (void *)get_type_dbg_info(tp));
 
   if (get_trouts_state()) {
     fprintf(F, "\n  Type outs:\n");
@@ -1137,7 +1138,7 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
 #endif
     if (get_trouts_state() != outs_none) {
       fprintf(F, "  Estimated #Instances: %lf\n", get_type_estimated_n_instances(tp));
-      if (is_Class_type(tp)) {
+      if (is_Class_type(tp) && (get_irp_typeinfo_state() != ir_typeinfo_none)) {
 	fprintf(F, "  Estimated #dyn Calls: %lf\n", get_class_estimated_n_dyncalls(tp));
 	fprintf(F, "  Estimated #Upcasts:   %lf (#CastOps: %d)\n", get_class_estimated_n_upcasts(tp), get_class_n_upcasts(tp));
 	fprintf(F, "  Estimated #Downcasts: %lf (#CastOps: %d)\n", get_class_estimated_n_downcasts(tp), get_class_n_downcasts(tp));

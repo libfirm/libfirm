@@ -413,6 +413,11 @@ void dump_types_as_text(unsigned verbosity, const char *suffix);
 
 /** Dumps all global variables as text.
  *
+ *  Dumps a text representation of the entities in the global type.
+ *
+ *  The file name is the program name (get_irp_name()), or 'TextTypes'
+ *  if the program name is not set, appended by <suffix>-globals.txt.
+ *  For verbosity see the documentation of the verbosity flags above.
  */
 void dump_globals_as_text(unsigned verbosity, const char *suffix);
 
