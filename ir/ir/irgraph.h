@@ -364,7 +364,7 @@ typedef enum {
   loopinfo_inter            = 8,       /**< Loop information for interprocedural view. */
 
   loopinfo_for_firmjni      = 16,      /**< A hack for firmjni:  all enums must differ as they
-                      are used in a switch. */
+					  are used in a switch. */
 
   /** IntRAprocedural loop information constructed and valid. */
   loopinfo_consistent         = loopinfo_constructed | loopinfo_for_firmjni | loopinfo_valid,
@@ -394,8 +394,12 @@ irg_loopinfo_state get_irg_loopinfo_state(const ir_graph *irg);
 void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
 
 /** Sets the loop information state to the appropriate inconsistent state.
-   If state is 'none' does not change. */
+ *  If state is 'none' does not change. */
 void set_irg_loopinfo_inconsistent(ir_graph *irg);
+/** Sets the loop information state to the appropriate inconsistent state.
+ *  If state is 'none' does not change.
+ *  Does this for all irgs. */
+void set_irp_loopinfo_inconsistent(void);
 
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be

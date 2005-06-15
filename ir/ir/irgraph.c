@@ -652,6 +652,15 @@ void
   _set_irg_loopinfo_inconsistent(irg);
 }
 
+void set_irp_loopinfo_inconsistent(void) {
+  int i, n_irgs = get_irp_n_irgs();
+  for (i = 0; i < n_irgs; ++i) {
+    set_irg_loopinfo_inconsistent(get_irp_irg(i));
+  }
+}
+
+
+
 void
 (set_irg_pinned)(ir_graph *irg, op_pin_state p) {
   _set_irg_pinned(irg, p);
