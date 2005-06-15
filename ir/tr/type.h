@@ -149,6 +149,73 @@ ident*      get_type_ident(const type *tp);
 void        set_type_ident(type *tp, ident* id);
 const char* get_type_name(const type *tp);
 
+/** This enumeration flags the visibility of entities and types.
+ *
+ * This is necessary for partial compilation.
+ * We rely on the ordering of the flags.
+ */
+typedef enum {
+  visibility_local,              /**< The entity is only visible locally.  This is the default for
+				      entities.
+				      The type is only visible locally.  All instances are allocated
+				      locally, and no pointer to entities of this type are passed
+				      out of this compilation unit. */
+  visibility_external_visible,   /**< The entity is visible to other external program parts, but
+				      it is defined here.  It may not be optimized away.  The entity must
+				      be static_allocated.
+				      For types:  entities of this type can be accessed externaly.  No
+				      instances of this type are allocated externally.  */
+  visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
+  				      must not allocate memory for this entity. The entity must
+				      be static_allocated.  This can also be an external defined
+				      method.
+				      For types:  entities of this type are allocated and accessed from
+				      external code.  Default for types.  */
+} visibility;
+
+/** The visibility of a type.
+ *
+ *  The visibility of a type indicates, whether entities of this type
+ *  are accessed or allocated in external code.
+ *
+ *  An entity of a type is allocated in external code, if the external
+ *  code declares a variable of this type, or dynamically allocates
+ *  an entity of this type.  If the external code declares a (compound)
+ *  type, that contains entities of this type, the visibility also
+ *  must be external_allocated.
+ *
+ *  The visibility must be higher than that of all entities, if the
+ *  type is a compound.  Here it is questionable, what happens with
+ *  static entities.  If these are accessed external by direct reference,
+ *  (a static call to a method, that is also in the dispatch table)
+ *  it should not affect the visibility of the type.
+ *
+ *
+ * @@@ Do we need a visibility for types?
+ * I change the layout of types radically when doing type splitting.
+ * I need to know, which fields of classes are accessed in the rts,
+ * e.g., [_length.  I may not move [_length to the split part.
+ * The layout though, is a property of the type.
+ *
+ * One could also think of changing the mode of a type ...
+ *
+ * But, we could also output macros to access the fields, e.g.,
+ *  ACCESS_[_length (X)   X->length              // conventional
+ *  ACCESS_[_length (X)   X->_split_ref->length  // with type splitting
+ *
+ * For now I implement this function, that returns the visibility
+ * based on the visibility of the entities of a compound ...
+ *
+ * This function returns visibility_external_visible if one or more
+ * entities of a compound type have visibility_external_visible.
+ * Entities of types are never visibility_external_allocated (right?).
+ * Else returns visibility_local.
+ */
+visibility get_type_visibility (const type *tp);
+void       set_type_visibility (type *tp, visibility v);
+
+
+
 /** The state of the type layout. */
 typedef enum {
   layout_undefined,    /**< The layout of this type is not defined.

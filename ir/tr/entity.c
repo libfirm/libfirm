@@ -348,13 +348,13 @@ const char *get_allocation_name(ent_allocation all)
 }
 
 
-ent_visibility
+visibility
 (get_entity_visibility)(const entity *ent) {
   return _get_entity_visibility(ent);
 }
 
 void
-set_entity_visibility (entity *ent, ent_visibility vis) {
+set_entity_visibility (entity *ent, visibility vis) {
   assert(ent && ent->kind == k_entity);
   if (vis != visibility_local)
     assert((ent->allocation == allocation_static) ||
@@ -365,7 +365,7 @@ set_entity_visibility (entity *ent, ent_visibility vis) {
 }
 
 /* return the name of the visibility */
-const char *get_visibility_name(ent_visibility vis)
+const char *get_visibility_name(visibility vis)
 {
 #define X(a)    case a: return #a
   switch (vis) {

@@ -116,17 +116,18 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   memset(res, 0, node_size);
   add_irp_type(res);   /* Remember the new type global. */
 
-  res->kind    = k_type;
-  res->type_op = type_op;
-  res->mode    = mode;
-  res->name    = name;
-  res->state   = layout_undefined;
-  res->size    = -1;
-  res->align   = -1;
-  res->visit   = 0;
-  res -> link  = NULL;
+  res->kind       = k_type;
+  res->type_op    = type_op;
+  res->mode       = mode;
+  res->name       = name;
+  res->visibility = visibility_external_allocated;
+  res->state      = layout_undefined;
+  res->size       = -1;
+  res->align      = -1;
+  res->visit      = 0;
+  res -> link     = NULL;
 #ifdef DEBUG_libfirm
-  res->nr      = get_irp_new_node_nr();
+  res->nr         = get_irp_new_node_nr();
 #endif /* defined DEBUG_libfirm */
 
   return res;
@@ -272,6 +273,57 @@ int (get_type_size_bytes)(const type *tp) {
 
 int (get_type_size_bits)(const type *tp) {
   return _get_type_size_bits(tp);
+}
+
+
+visibility get_type_visibility (const type *tp) {
+#if 0
+  visibility res =  visibility_local;
+  if (is_compound_type(tp)) {
+
+    if (is_Array_type(tp)) {
+      entity *mem = get_array_element_entity(tp);
+      if (get_entity_visibility(mem) != visibility_local)
+	res = visibility_external_visible;
+    } else {
+      int i, n_mems = get_compound_n_members(tp);
+      for (i = 0; i < n_mems; ++i) {
+	entity *mem = get_compound_member(tp, i);
+	if (get_entity_visibility(mem) != visibility_local)
+	  res = visibility_external_visible;
+      }
+    }
+  }
+  return res;
+#endif
+  assert(is_type(tp));
+  return tp->visibility;
+}
+
+void       set_type_visibility (type *tp, visibility v) {
+  assert(is_type(tp));
+#if 0
+  /* check for correctness */
+  if (v != visibility_external_allocated) {
+    visibility res =  visibility_local;
+    if (is_compound_type(tp)) {
+      if (is_Array_type(tp)) {
+	entity *mem = get_array_element_entity(tp);
+	if (get_entity_visibility(mem) >  res)
+	  res = get_entity_visibility(mem);
+      } else {
+	int i, n_mems = get_compound_n_members(tp);
+	for (i = 0; i < n_mems; ++i) {
+	  entity *mem = get_compound_member(tp, i);
+	  if (get_entity_visibility(mem) > res)
+	    res = get_entity_visibility(mem);
+	}
+      }
+    }
+    assert(res < v);
+  }
+#endif
+  tp->visibility = v;
 }
 
 void

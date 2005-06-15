@@ -73,7 +73,7 @@ struct entity {
   type *owner;          /**< The compound type (e.g. class type) this entity belongs to. */
   ent_allocation allocation;  /**< Distinguishes static and dynamically allocated
                  entities and some further cases. */
-  ent_visibility visibility;  /**< Specifies visibility to external program
+  visibility visibility;  /**< Specifies visibility to external program
                  fragments */
   ent_variability variability;  /**< Specifies variability of entities content */
   ent_volatility volatility;    /**< Specifies volatility of entities content */
@@ -189,7 +189,7 @@ _set_entity_allocation(entity *ent, ent_allocation al) {
   ent->allocation = al;
 }
 
-static INLINE ent_visibility
+static INLINE visibility
 _get_entity_visibility(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->visibility;

@@ -154,6 +154,11 @@ entity     *new_d_entity (type *owner, ident *name, type *tp, dbg_info *db);
  *
  * Automatically inserts the new entity as a member of owner.
  * Resets the overwrites/overwritten_by fields.
+ * Keeps the old atomic value.
+ *   @@@ Maybe we should change this.  If peculiarity of a method
+ *       is existent, we should add a new SymConst that points to
+ *       itself and not to the origin.  Right now we have to change
+ *       the peculiarity and then set a new atomic value by hand.
  */
 entity     *copy_entity_own (entity *old, type *new_owner);
 
@@ -163,6 +168,7 @@ entity     *copy_entity_own (entity *old, type *new_owner);
  *
  * Automatically inserts the new entity as a member of owner.
  * The mangled name ld_name is set to NULL.
+ * Overwrites relation is copied from old.
  */
 entity     *copy_entity_name (entity *old, ident *new_name);
 
@@ -233,6 +239,7 @@ void           set_entity_allocation (entity *ent, ent_allocation al);
 /** Return the name of the allocation type. */
 const char *get_allocation_name(ent_allocation vis);
 
+#if 0   // moved to type.h
 /**
  * This enumeration flags the visibility of entities.  This is necessary
  * for partial compilation.
@@ -246,16 +253,17 @@ typedef enum {
                           must not allocate memory for this entity. The entity must
                               be static_allocated.  This can also be an external defined
                           method. */
-} ent_visibility;
+} visibility;
+#endif
 
 /** Returns the visibility of an entity. */
-ent_visibility get_entity_visibility (const entity *ent);
+visibility get_entity_visibility (const entity *ent);
 
 /** Sets the visibility of an entity. */
-void           set_entity_visibility (entity *ent, ent_visibility vis);
+void       set_entity_visibility (entity *ent, visibility vis);
 
 /** Return the name of the visibility */
-const char *get_visibility_name(ent_visibility vis);
+const char *get_visibility_name(visibility vis);
 
 /** This enumeration flags the variability of entities. */
 typedef enum {
