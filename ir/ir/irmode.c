@@ -232,12 +232,12 @@ INLINE ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
 
 ir_mode *(get_modeP_mach)(void) {
   ANNOUNCE();
-  return __get_modeP_mach();
+  return _get_modeP_mach();
 }
 
 void (set_modeP_mach)(ir_mode *p) {
   ANNOUNCE();
-  __set_modeP_mach(p);
+  _set_modeP_mach(p);
 }
 
 /**
@@ -245,7 +245,7 @@ void (set_modeP_mach)(ir_mode *p) {
  *
  * @param new_mode  The new mode template.
  */
-static ir_mode *register_mode(const ir_mode* new_mode)
+static ir_mode *register_mode(const ir_mode *new_mode)
 {
   ir_mode *mode = NULL;
 
@@ -253,7 +253,7 @@ static ir_mode *register_mode(const ir_mode* new_mode)
   assert(new_mode);
 
   /* copy mode struct to modes array */
-  mode = (ir_mode*)obstack_copy(&modes, new_mode, sizeof(ir_mode));
+  mode = (ir_mode *)obstack_copy(&modes, new_mode, sizeof(*mode));
 
   mode->kind = k_ir_mode;
   if (num_modes >= irm_max) mode->code = num_modes;
@@ -371,14 +371,14 @@ modecode
 (get_mode_modecode)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return __get_mode_modecode(mode);
+  return _get_mode_modecode(mode);
 }
 
 ident *
 (get_mode_ident)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return __get_mode_ident(mode);
+  return _get_mode_ident(mode);
 }
 
 const char *
@@ -392,27 +392,27 @@ mode_sort
 (get_mode_sort)(const ir_mode* mode)
 {
   ANNOUNCE();
-  return __get_mode_sort(mode);
+  return _get_mode_sort(mode);
 }
 
 int
 (get_mode_size_bits)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return __get_mode_size_bits(mode);
+  return _get_mode_size_bits(mode);
 }
 
 int
 (get_mode_size_bytes)(const ir_mode *mode) {
   ANNOUNCE();
-  return __get_mode_size_bytes(mode);
+  return _get_mode_size_bytes(mode);
 }
 
 int
 (get_mode_sign)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return __get_mode_sign(mode);
+  return _get_mode_sign(mode);
 }
 
 int
@@ -429,25 +429,25 @@ int
  */
 unsigned int
 (get_mode_modulo_shift)(const ir_mode *mode) {
-  return __get_mode_modulo_shift(mode);
+  return _get_mode_modulo_shift(mode);
 }
 
 unsigned int
 (get_mode_n_vector_elems)(const ir_mode *mode) {
-  return __get_mode_vector_elems(mode);
+  return _get_mode_vector_elems(mode);
 }
 
 void *
 (get_mode_link)(const ir_mode *mode)
 {
   ANNOUNCE();
-  return __get_mode_link(mode);
+  return _get_mode_link(mode);
 }
 
 void
 (set_mode_link)(ir_mode *mode, void *l)
 {
-  __set_mode_link(mode, l);
+  _set_mode_link(mode, l);
 }
 
 tarval *
@@ -538,73 +538,73 @@ is_mode (void *thing) {
 int
 (mode_is_signed)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_signed(mode);
+  return _mode_is_signed(mode);
 }
 
 int
 (mode_is_float)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_float(mode);
+  return _mode_is_float(mode);
 }
 
 int
 (mode_is_int)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_int(mode);
+  return _mode_is_int(mode);
 }
 
 int
 (mode_is_character)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_character(mode);
+  return _mode_is_character(mode);
 }
 
 int
 (mode_is_reference)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_reference(mode);
+  return _mode_is_reference(mode);
 }
 
 int
 (mode_is_num)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_num(mode);
+  return _mode_is_num(mode);
 }
 
 int
 (mode_is_numP)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_numP(mode);
+  return _mode_is_numP(mode);
 }
 
 int
 (mode_is_data)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_data(mode);
+  return _mode_is_data(mode);
 }
 
 int
 (mode_is_datab)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_datab(mode);
+  return _mode_is_datab(mode);
 }
 
 int
 (mode_is_dataM)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_dataM(mode);
+  return _mode_is_dataM(mode);
 }
 
 int
 (mode_is_float_vector)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_float_vector(mode);
+  return _mode_is_float_vector(mode);
 }
 
 int
 (mode_is_int_vector)(const ir_mode *mode) {
   ANNOUNCE();
-  return __mode_is_int_vector(mode);
+  return _mode_is_int_vector(mode);
 }
 
 /* Returns true if sm can be converted to lm without loss. */
