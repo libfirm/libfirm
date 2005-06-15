@@ -366,7 +366,7 @@ static void pressure(ir_node *block, void *env_ptr)
 
 	/*
 	 * Make final uses of all values live out of the block.
-	 * They are neccessary to build up real intervals.
+	 * They are necessary to build up real intervals.
 	 */
 	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
 		DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
