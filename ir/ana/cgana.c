@@ -71,7 +71,7 @@ static eset *entities = NULL;
 /*--------------------------------------------------------------------------*/
 
 /** Returns the entity that contains the implementation of the inherited
-    entity if available, else returns the entity passed. */
+ *  entity if available, else returns the entity passed. */
 static entity *get_inherited_methods_implementation(entity *inh_meth) {
   assert(get_atomic_ent_value(inh_meth) && "constant entity without value");
   assert((get_irn_op(get_atomic_ent_value(inh_meth)) == op_SymConst) &&

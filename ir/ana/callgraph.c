@@ -145,7 +145,7 @@ int get_irg_callee_loop_depth(ir_graph *irg, int pos) {
 
 
 
-double get_irg_callee_execution_freqency(ir_graph *irg, int pos) {
+double get_irg_callee_execution_frequency(ir_graph *irg, int pos) {
   ir_node **arr = ((ana_entry *)irg->callees[pos])->call_list;
   int i, n_Calls = ARR_LEN(arr);
   double freq = 0;
@@ -156,18 +156,18 @@ double get_irg_callee_execution_freqency(ir_graph *irg, int pos) {
   return freq;
 }
 
-double get_irg_callee_method_execution_freqency(ir_graph *irg, int pos) {
-  double call_freq = get_irg_callee_execution_freqency(irg, pos);
+double get_irg_callee_method_execution_frequency(ir_graph *irg, int pos) {
+  double call_freq = get_irg_callee_execution_frequency(irg, pos);
   double meth_freq = get_irg_method_execution_frequency(irg);
   return call_freq * meth_freq;
 }
 
 
-double get_irg_caller_method_execution_freqency(ir_graph *irg, int pos) {
+double get_irg_caller_method_execution_frequency(ir_graph *irg, int pos) {
   ir_graph *caller     = get_irg_caller(irg, pos);
   int       pos_callee = reverse_pos(irg, pos);
 
-  return get_irg_callee_method_execution_freqency(caller, pos_callee);
+  return get_irg_callee_method_execution_frequency(caller, pos_callee);
 }
 
 
@@ -1118,8 +1118,8 @@ static void compute_rec_depth (ir_graph *irg, void *env) {
 
 
 /* ----------------------------------------------------------------------------------- */
-/* Another algorithm to compute the execution freqency of methods ignoring recursions. */
-/* Walk the callgraph.  Ignore backedges.  Use sum of execution freqencies of Call     */
+/* Another algorithm to compute the execution frequency of methods ignoring recursions. */
+/* Walk the callgraph.  Ignore backedges.  Use sum of execution frequencies of Call     */
 /* nodes to evaluate a callgraph edge.                                                 */
 /* ----------------------------------------------------------------------------------- */
 
@@ -1155,12 +1155,12 @@ static void compute_method_execution_frequency (ir_graph *irg, void *env) {
   }
   mark_cg_irg_visited(irg);
 
-  /* Compute the new freqency. */
+  /* Compute the new frequency. */
   freq = 0;
   found_edge = 0;
   for (i = 0; i < n_callers; i++) {
     if (! is_irg_caller_backedge(irg, i)) {
-      double edge_freq = get_irg_caller_method_execution_freqency(irg, i);
+      double edge_freq = get_irg_caller_method_execution_frequency(irg, i);
       assert(edge_freq >= 0);
       freq += edge_freq;
       found_edge = 1;

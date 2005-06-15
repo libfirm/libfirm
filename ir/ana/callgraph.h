@@ -100,8 +100,8 @@ void find_callgraph_recursions(void);
  *     path from main().
  *   - The recursion depth.  The maximal number of recursions passed
  *     on all paths reaching this method.
- *   - The execution freqency.  As loop depth, but the edge weight is the sum
- *     of the execution freqencies of all Calls along the edge.
+ *   - The execution frequency.  As loop depth, but the edge weight is the sum
+ *     of the execution frequencies of all Calls along the edge.
  **/
 void compute_performance_estimates(void);
 

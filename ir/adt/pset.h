@@ -149,6 +149,7 @@ pset_entry *pset_hinsert (pset *pset, const void *key, unsigned hash);
  *
  * @remark
  *    The current implementation did not allow to remove non-existing elements.
+ *    @@@ so, does it do now?
  *    Further, it is allowed to remove elements during an iteration
  *    including the current one.
  */

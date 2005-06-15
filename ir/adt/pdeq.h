@@ -121,7 +121,7 @@ void **pdeq_copyl(pdeq *qp, const void **dst);
 void **pdeq_copyr(pdeq *qp, const void **dst);
 
 /**
- * Add a pointer to the left site of a double ended pointer list.
+ * Add a pointer to the left side of a double ended pointer list.
  *
  * @param dq  The list to add a pointer to.
  * @param x   The pointer element to be added
@@ -131,7 +131,7 @@ void **pdeq_copyr(pdeq *qp, const void **dst);
 pdeq *pdeq_putl(pdeq *dq, const void *x);
 
 /**
- * Add a pointer to the right site of a double ended pointer list.
+ * Add a pointer to the right side of a double ended pointer list.
  *
  * @param dq  The list to add a pointer to.
  * @param x   The pointer element to be added
