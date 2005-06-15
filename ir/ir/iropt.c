@@ -768,7 +768,7 @@ static ir_node *equivalent_node_Jmp(ir_node *n)
 static ir_node *equivalent_node_Cond(ir_node *n)
 {
   /* We do not evaluate Cond here as we replace it by a new node, a Jmp.
-     See cases for iro_Cond and iro_Proj in transform_node. */
+     See cases for iro_Cond and iro_Proj in transform_node(). */
   return n;
 }
 
@@ -836,13 +836,13 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
 #define equivalent_node_Rot   equivalent_node_left_zero
 
 /**
- * Er, a "symmetic unop", ie op(op(n)) = n.
+ * Optimize an "idempotent unary op", ie op(op(n)) = n.
  *
  * @fixme -(-a) == a, but might overflow two times.
  * We handle it anyway here but the better way would be a
  * flag. This would be needed for Pascal for instance.
  */
-static ir_node *equivalent_node_symmetric_unop(ir_node *n)
+static ir_node *equivalent_node_idempotent_unop(ir_node *n)
 {
   ir_node *oldn = n;
   ir_node *pred = get_unop_op(n);
@@ -856,11 +856,11 @@ static ir_node *equivalent_node_symmetric_unop(ir_node *n)
 }
 
 /* Not(Not(x)) == x */
-#define equivalent_node_Not    equivalent_node_symmetric_unop
+#define equivalent_node_Not    equivalent_node_idempotent_unop
 
 /* --x == x */  /* ??? Is this possible or can --x raise an
                        out of bounds exception if min =! max? */
-#define equivalent_node_Minus  equivalent_node_symmetric_unop
+#define equivalent_node_Minus  equivalent_node_idempotent_unop
 
 /**
  * Optimize a * 1 = 1 * a = a.
@@ -972,7 +972,7 @@ static ir_node *equivalent_node_And(ir_node *n)
 }
 
 /**
- * Try to remove useless conv's:
+ * Try to remove useless Conv's:
  */
 static ir_node *equivalent_node_Conv(ir_node *n)
 {
@@ -1523,7 +1523,7 @@ static ir_node *transform_node_Div(ir_node *n)
 
     DBG_OPT_CSTEVAL(n, value);
   }
-  else /* Try architecture dependand optimization */
+  else /* Try architecture dependend optimization */
     value = arch_dep_replace_div_by_const(n);
 
   if (value != n) {
@@ -1553,7 +1553,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 
     DBG_OPT_CSTEVAL(n, value);
   }
-  else /* Try architecture dependand optimization */
+  else /* Try architecture dependend optimization */
     value = arch_dep_replace_mod_by_const(n);
 
   if (value != n) {
@@ -1607,7 +1607,7 @@ static ir_node *transform_node_DivMod(ir_node *n)
       DBG_OPT_CSTEVAL(n, a);
       DBG_OPT_CSTEVAL(n, b);
     }
-    else { /* Try architecture dependand optimization */
+    else { /* Try architecture dependend optimization */
       arch_dep_replace_divmod_by_const(&a, &b, n);
       evaluated = a != NULL;
     }
@@ -1625,6 +1625,119 @@ static ir_node *transform_node_DivMod(ir_node *n)
     set_Tuple_pred(n, pn_DivMod_res_div,  a);
     set_Tuple_pred(n, pn_DivMod_res_mod,  b);
     assert(get_nodes_block(n));
+  }
+
+  return n;
+}
+
+
+/**
+ * Optimize Abs(x) => x if x is Confirmed >= 0
+ * Optimize Abs(x) => -x if x is Confirmed <= 0
+ */
+static ir_node *transform_node_Abs(ir_node *n)
+{
+  ir_node *oldn = n;
+  ir_node *a = get_Abs_op(n);
+  tarval *tv, *c;
+  ir_mode *mode;
+  pn_Cmp cmp, ncmp;
+  int do_minus = 0;
+
+  if (get_irn_op(a) != op_Confirm)
+    return n;
+
+  tv  = value_of(get_Confirm_bound(n));
+  if (tv == tarval_bad)
+    return n;
+
+  mode = get_irn_mode(n);
+
+  /*
+   * We can handle only >=, >, <, <= cases.
+   * We could handle == too, but this should not happen.
+   *
+   * Note that for integer modes we have a slightly better
+   * optimization possibilities, so we handle this
+   * different.
+   */
+  cmp = get_Confirm_cmp(n);
+
+  switch (cmp) {
+  case pn_Cmp_Lt:
+    /*
+     * must be x < c <= 1 to be useful if integer mode and -0 = 0
+     *         x < c <= 0 to be useful else
+     */
+  case pn_Cmp_Le:
+    /*
+     * must be x <= c < 1 to be useful if integer mode and -0 = 0
+     *         x <= c < 0 to be useful else
+     */
+    c = mode_is_int(mode) && mode_honor_signed_zeros(mode) ?
+      get_mode_one(mode) : get_mode_null(mode);
+
+    ncmp = tarval_cmp(tv, c) ^ pn_Cmp_Eq;
+    if (cmp != ncmp)
+      return n;
+
+    /* yep, we can replace by -x */
+    do_minus = 1;
+    break;
+
+  case pn_Cmp_Ge:
+    /*
+     * must be x >= c > -1 to be useful if integer mode
+     *         x >= c >= 0 to be useful else
+     */
+  case pn_Cmp_Gt:
+    /*
+     * must be x > c >= -1 to be useful if integer mode
+     *         x > c >= 0 to be useful else
+     */
+    if (mode_is_int(mode)) {
+      c = get_mode_minus_one(mode);
+
+      ncmp = tarval_cmp(tv, c) ^ pn_Cmp_Eq;
+      if (cmp != ncmp)
+        return n;
+    }
+    else {
+      c = get_mode_minus_one(mode);
+
+      ncmp = tarval_cmp(tv, c);
+
+      if (ncmp != pn_Cmp_Eq && ncmp != pn_Cmp_Gt)
+        return n;
+    }
+
+    /* yep, we can replace by x */
+    do_minus = 0;
+    break;
+
+  default:
+    return n;
+  }
+
+  /*
+   * Ok, when we get here, we can replace the Abs
+   * by either x or -x. In the second case we eve could
+   * add a new Confirm.
+   *
+   * Note that -x would create a new node, so we could
+   * not run it in the equivalent_node() context.
+   */
+  if (do_minus) {
+    ir_node *c;
+
+    n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
+                     get_nodes_block(n), a, mode);
+
+    c  = new_Const(mode, tarval_neg(tv));
+    n = new_r_Confirm(current_ir_graph, get_nodes_block(n), n, c, get_inversed_pnc(cmp));
+  }
+  else {
+    n = a;
   }
 
   return n;
@@ -1931,7 +2044,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
       left  = right;
       right = c;
 
-      proj_nr = get_swapped_pnc(proj_nr);
+      proj_nr = get_inversed_pnc(proj_nr);
       changed |= 1;
     }
     else if (left > right) {
@@ -1940,7 +2053,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
       left  = right;
       right = t;
 
-      proj_nr = get_swapped_pnc(proj_nr);
+      proj_nr = get_inversed_pnc(proj_nr);
       changed |= 1;
     }
 
@@ -1969,7 +2082,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
           left = get_Minus_op(left);
           tv = tarval_sub(get_mode_null(mode), tv);
 
-          proj_nr = get_swapped_pnc(proj_nr);
+          proj_nr = get_inversed_pnc(proj_nr);
           changed |= 2;
         }
 
@@ -2598,6 +2711,7 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(Div);
   CASE(Mod);
   CASE(DivMod);
+  CASE(Abs);
   CASE(Cond);
   CASE(Eor);
   CASE(Not);
@@ -3055,7 +3169,7 @@ optimize_node (ir_node *n)
 	/** common subexpression elimination **/
 	/* Checks whether n is already available. */
 	/* The block input is used to distinguish different subexpressions. Right
-		 now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
+		 now all nodes are op_pin_state_pinned to blocks, i.e., the CSE only finds common
 		 subexpressions within a block. */
 	if (get_opt_cse())
 		n = identify_cons (current_ir_graph->value_table, n);
