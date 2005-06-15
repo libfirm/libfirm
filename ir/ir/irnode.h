@@ -681,11 +681,11 @@ typedef enum {
 /** returns the pnc name from an pnc constant */
 const char *get_pnc_string(int pnc);
 
-/** Calculates the negated pnc condition. */
+/** Calculates the negated (Complement(R)) pnc condition. */
 int         get_negated_pnc(int pnc);
 
-/** Calculates the swapped pnc condition, i.e., "<" --> ">" */
-int         get_swapped_pnc(int pnc);
+/** Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
+int         get_inversed_pnc(int pnc);
 
 ir_node *get_Cmp_left (ir_node *node);
 void     set_Cmp_left (ir_node *node, ir_node *left);

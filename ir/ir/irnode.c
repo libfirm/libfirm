@@ -54,7 +54,7 @@ const char *get_pnc_string(int pnc) {
 }
 
 /*
- * Calculates the negated pnc condition.
+ * Calculates the negated (Complement(R)) pnc condition.
  */
 int
 get_negated_pnc(int pnc) {
@@ -79,9 +79,9 @@ get_negated_pnc(int pnc) {
   return 99; /* to shut up gcc */
 }
 
-/* Calculates the swapped pnc condition, i.e., "<" --> ">" */
+/* Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
 int
-get_swapped_pnc(int pnc) {
+get_inversed_pnc(int pnc) {
   int code    = pnc & ~(pn_Cmp_Lt|pn_Cmp_Gt);
   int lesser  = pnc & pn_Cmp_Lt;
   int greater = pnc & pn_Cmp_Gt;
