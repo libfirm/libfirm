@@ -160,6 +160,16 @@ fi],
 AC_DEFINE(FIRM_ENABLE_HOOKS)
 )
 
+dnl enable Firm inplace edges
+dnl -------------
+AC_ARG_ENABLE(inplace_edges,
+[  --disable-inplace-edges disable Firm inplace edges],
+[if test "$enableval" = yes; then
+  AC_DEFINE(FIRM_EDGES_INPLACE)
+fi],
+AC_DEFINE(FIRM_EDGES_INPLACE)
+)
+
 dnl enable Firm statistics
 dnl -------------
 AC_ARG_ENABLE(statistics,

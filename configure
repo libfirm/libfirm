@@ -850,6 +850,7 @@ Optional Features:
   --enable-heapanalysis   Compile with heap analysis.
   --disable-libiberty     disable own libiberty parts
   --disable-hooks         disable Firm hooks
+  --disable-inplace-edges disable Firm inplace edges
   --enable-statistics     enable Firm statistics
   --enable-libcore        enable libcore debugging
   --disable-external-effects  disable descriptions of external effects in XML
@@ -1502,6 +1503,23 @@ fi
 else
   cat >>confdefs.h <<\_ACEOF
 #define FIRM_ENABLE_HOOKS 1
+_ACEOF
+
+
+fi;
+
+# Check whether --enable-inplace_edges or --disable-inplace_edges was given.
+if test "${enable_inplace_edges+set}" = set; then
+  enableval="$enable_inplace_edges"
+  if test "$enableval" = yes; then
+  cat >>confdefs.h <<\_ACEOF
+#define FIRM_EDGES_INPLACE 1
+_ACEOF
+
+fi
+else
+  cat >>confdefs.h <<\_ACEOF
+#define FIRM_EDGES_INPLACE 1
 _ACEOF
 
 
