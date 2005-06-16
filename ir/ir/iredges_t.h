@@ -36,7 +36,7 @@
 /**
  * An edge.
  */
-typedef struct _ir_edge_t {
+struct _ir_edge_t {
 #ifdef DEBUG_libfirm
   long src_nr;            /**< The node number of the source node. */
 #endif
@@ -45,7 +45,7 @@ typedef struct _ir_edge_t {
   struct list_head list;  /**< The list head to queue all out edges at a node. */
   unsigned invalid : 1;   /**< edges that are removed are marked invalid. */
   unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
-} ir_edge_t;
+};
 
 /** Accessor for private irn info. */
 #define _get_irn_edge_info(irn) ((irn_edge_info_t *) &(irn)->edge_info)
@@ -83,15 +83,6 @@ static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const 
   struct list_head *next = last->list.next;
   return next == _get_irn_outs_head(irn) ? NULL : list_entry(next, ir_edge_t, list);
 }
-
-/**
- * A convenience iteration macro over all out edges of a node.
- * @param irn The node.
- * @param edge An @c ir_edge_t pointer which shall be set to the current
- * edge.
- */
-#define foreach_out_edge(irn,edge) \
-  for(edge = get_irn_out_edge_first(irn); edge; edge = get_irn_out_edge_next(irn, edge))
 
 /**
  * Get the source node of an edge.

@@ -10,6 +10,11 @@
 
 #include "irnode.h"
 
+#ifndef _IR_EDGE_TYPEDEF_
+#define _IR_EDGE_TYPEDEF_
+typedef struct _ir_edge_t ir_edge_t;
+#endif
+
 /**
  * Get the first edge pointing to some node.
  * @note There is no order on out edges. First in this context only
@@ -17,7 +22,7 @@
  * @param irn The node.
  * @return The first out edge that points to this node.
  */
-const struct _ir_edge_t *(get_irn_out_edge_first)(const ir_node *irn);
+const ir_edge_t *get_irn_out_edge_first(const ir_node *irn);
 
 /**
  * Get the next edge in the out list of some node.
@@ -25,8 +30,8 @@ const struct _ir_edge_t *(get_irn_out_edge_first)(const ir_node *irn);
  * @param last The last out edge you have seen.
  * @return The next out edge in @p irn 's out list after @p last.
  */
-const struct _ir_edge_t *(get_irn_out_edge_next)(const ir_node *irn,
-		const struct _ir_edge_t *last);
+const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
+		const ir_edge_t *last);
 
 /**
  * A convenience iteration macro over all out edges of a node.
@@ -42,20 +47,20 @@ const struct _ir_edge_t *(get_irn_out_edge_next)(const ir_node *irn,
  * @param edge The edge.
  * @return The source node of that edge.
  */
-ir_node *(get_edge_src_irn)(const struct _ir_edge_t *edge);
+ir_node *get_edge_src_irn(const ir_edge_t *edge);
 
 /**
  * Get the position of an edge.
  * @param edge.
  * @return The position in the in array of that edges source.
  */
-extern int (get_edge_src_pos)(const struct _ir_edge_t *edge);
+extern int get_edge_src_pos(const ir_edge_t *edge);
 
-extern int (edges_activated)(const ir_graph *irg);
+extern int edges_activated(const ir_graph *irg);
 
-extern void (edges_activate)(ir_graph *irg);
+extern void edges_activate(ir_graph *irg);
 
-extern void (edges_deactivate)(ir_graph *irg);
+extern void edges_deactivate(ir_graph *irg);
 
 
 #endif /* _FIRM_EDGES_H */
