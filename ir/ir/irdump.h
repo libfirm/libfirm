@@ -52,6 +52,20 @@ typedef int (*DUMP_NODE_VCGATTR_FUNC)(FILE *F, ir_node *node, ir_node *local);
 /** Set the node_vcgattr hook. */
 void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook);
 
+typedef int (*DUMP_NODE_EDGE_FUNC)(FILE *f, ir_node *node);
+
+/**
+ * Set the hook to be called to dump additional edges to a node.
+ * @param func The hook to be called.
+ */
+void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func);
+
+/**
+ * Get the additional edge dump hook.
+ * @return The current additional edge dump hook.]
+ */
+DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void);
+
 /** Dump a firm graph.
  *
  *  @param irg  The firm graph to be dumped.

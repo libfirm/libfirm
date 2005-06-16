@@ -5,7 +5,7 @@
  * Author:      Sebastian Hack
  * Created:     15.01.2005
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+ * Copyright:   (c) 1998-2005 Universitï¿½t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -118,6 +118,16 @@ static INLINE int _edges_activated(const ir_graph *irg)
   return _get_irg_edge_info(irg)->activated;
 }
 
+/**
+ * Assure, that the edges information is present for a certain graph.
+ * @param irg The graph.
+ */
+static INLINE void _edges_assure(ir_graph *irg)
+{
+	if(!_edges_activated(irg))
+		edges_activate(irg);
+}
+
 void edges_reroute(ir_node *old, ir_node *nw, ir_graph *irg);
 
 void edges_init_graph(ir_graph *irg);
@@ -139,6 +149,7 @@ extern void init_edges(void);
 #define get_edge_src_irn(edge)           _get_edge_src_irn(edge)
 #define get_edge_src_pos(edge)           _get_edge_src_pos(edge)
 #define edges_activated(irg)             _edges_activated(irg)
+#define edges_assure(irg)                _edges_assure(irg)
 
 #else
 /* new edges are disabled */
@@ -154,6 +165,7 @@ extern void init_edges(void);
 #define get_edge_src_irn(edge)            NULL
 #define get_edge_src_pos(edge)            -1
 #define edges_activated(irg)              0
+#define edges_assure(irg)
 
 #endif /* FIRM_EDGES_INPLACE */
 

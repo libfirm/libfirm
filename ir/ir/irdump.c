@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Hubert Schmidt
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2003 Universitï¿½t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
@@ -442,6 +442,20 @@ bool opt_dump_analysed_type_info = 1;
 bool opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
 
 static const char *overrule_nodecolor = NULL;
+
+/** An additional edge hook. */
+static DUMP_NODE_EDGE_FUNC dump_node_edge_hook = NULL;
+
+void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func)
+{
+    dump_node_edge_hook = func;
+}
+
+DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void)
+{
+    return dump_node_edge_hook;
+}
+
 
 /** The vcg attribute hook. */
 static DUMP_NODE_VCGATTR_FUNC dump_node_vcgattr_hook = NULL;
@@ -909,6 +923,9 @@ static void dump_node(FILE *F, ir_node *n)
   dump_node_vcgattr(F, n, NULL, bad);
   fprintf(F, "}\n");
   dump_const_node_local(F, n);
+
+  if(dump_node_edge_hook)
+    dump_node_edge_hook(F, n);
 #if DO_HEAPANALYSIS
   dump_irn_chi_term(F, n);
   dump_irn_state(F, n);
