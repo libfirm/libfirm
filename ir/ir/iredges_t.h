@@ -18,7 +18,7 @@
 #ifndef _FIRM_EDGES_T_H
 #define _FIRM_EDGES_T_H
 
-#include "config.h"
+#include "firm_config.h"
 #include "debug.h"
 
 #include "set.h"
