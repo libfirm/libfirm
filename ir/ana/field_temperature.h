@@ -42,7 +42,12 @@ entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
 */
 
 int get_irn_loop_call_depth(ir_node *n);
-int get_irn_loop_depth(ir_node *n);
+/** Return loop depth of node.
+ *
+ *  Returns the loop depth of n in the control flow.  I.e., we
+ *  go from the node to the block to the loop the block is in,
+ *  and return its depth.  */
+int get_irn_cfloop_depth(ir_node *n);
 int get_irn_recursion_depth(ir_node *n);
 
 /** Get the weighted interprocedural loop depth of the node.

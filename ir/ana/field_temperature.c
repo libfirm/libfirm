@@ -51,7 +51,7 @@ int get_irn_loop_call_depth(ir_node *n) {
   return get_irg_loop_depth(irg);
 }
 
-int get_irn_loop_depth(ir_node *n) {
+int get_irn_cfloop_depth(ir_node *n) {
   ir_loop *l = get_irn_loop(get_nodes_block(n));
   if (l)
     return get_loop_depth(l);
@@ -68,7 +68,7 @@ int get_irn_recursion_depth(ir_node *n) {
 /**   @@@ the second version of the heuristic. */
 int get_weighted_loop_depth(ir_node *n) {
   int loop_call_depth = get_irn_loop_call_depth(n);
-  int loop_depth      = get_irn_loop_depth(n);
+  int loop_depth      = get_irn_cfloop_depth(n);
   int recursion_depth = get_irn_recursion_depth(n);
 
   return loop_call_depth + loop_depth + recursion_depth;
