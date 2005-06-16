@@ -17,6 +17,8 @@
 #include "irgraph.h"
 #include "irdump.h"
 #include "phiclass.h"
+#include "irdom_t.h"
+#include "iredges_t.h"
 
 #include "be_t.h"
 #include "bechordal_t.h"
@@ -32,6 +34,7 @@
 #include "bessadestr.h"
 #include "bearch_firm.h"
 #include "benode_t.h"
+#include "beirgmod.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
@@ -72,13 +75,40 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
   return env;
 }
 
-be_main_session_env_t *be_init_session_env(be_main_session_env_t *env,
+static be_main_session_env_t *
+be_init_session_env(be_main_session_env_t *env,
     be_main_env_t *main_env, ir_graph *irg)
 {
   env->main_env = main_env;
   env->irg = irg;
 
   return env;
+}
+
+static void prepare_graph(be_main_session_env_t *s)
+{
+	/*
+	 * Duplicate consts in each block
+	 * (This is just for the firm dummy backend)
+	 */
+	// localize_consts(s->irg);
+
+	/* Remove critical edges */
+	remove_critical_cf_edges(s->irg);
+
+	/* Compute the dominance information. */
+	free_dom_and_peace(s->irg);
+	compute_doms(s->irg);
+
+	/* Compute the dominance frontiers */
+	s->dom_front = be_compute_dominance_frontiers(s->irg);
+
+	/* Ensure, that the ir_edges are computed. */
+	edges_assure(s->irg);
+
+	dump_dominator_information(true);
+	dump_ir_block_graph(s->irg, "-prepared");
+	dump_dominator_information(false);
 }
 
 static void be_main_loop(void)
@@ -96,11 +126,12 @@ static void be_main_loop(void)
 		ir_graph *irg = get_irp_irg(i);
 		be_main_session_env_t session;
 
+		/* Init the session. */
 		be_init_session_env(&session, &env, irg);
 
-		remove_critical_cf_edges(irg);
+		/* Compute some analyses and prepare the graph for backend use. */
+		prepare_graph(&session);
 
-		localize_consts(irg);
 #ifdef DUMP_LOCALIZED
 		dump_consts_local(0);
 		dump_ir_block_graph(irg, "-local-const");
@@ -110,17 +141,22 @@ static void be_main_loop(void)
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
 
+    /* Verify the schedule */
+    sched_verify_irg(irg);
+
 		/* Liveness analysis */
 		be_liveness(irg);
 
+		dump_ir_block_graph_sched(irg, "-sched");
 		copystat_reset();
 		copystat_collect_irg(irg, env.arch_env);
+
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-			chordal_env = be_ra_chordal(irg, env.arch_env, cls);
+      chordal_env = be_ra_chordal(irg, env.arch_env, cls);
 
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(env.arch_env, irg, "");

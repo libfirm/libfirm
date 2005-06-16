@@ -6,6 +6,7 @@
 
 #include "irgraph.h"
 #include "irgwalk.h"
+#include "irdump_t.h"
 #include "ircons.h"
 #include "iropt.h"
 #include "irgopt.h"
@@ -110,4 +111,25 @@ void localize_consts(ir_graph *irg)
 {
 	irg_walk_graph(irg, localize_const_walker, NULL, NULL);
 	dead_node_elimination(irg);
+}
+
+static int sched_edge_hook(FILE *F, ir_node *irn)
+{
+    if(sched_is_scheduled(irn) && sched_has_prev(irn)) {
+        ir_node *prev = sched_prev(irn);
+        fprintf(F, "edge:{sourcename:\"");
+        PRINT_NODEID(irn);
+        fprintf(F, "\" targetname:\"");
+        PRINT_NODEID(prev);
+        fprintf(F, "\" color:magenta}\n");
+    }
+    return 1;
+}
+
+void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix) {
+    DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
+
+    set_dump_node_edge_hook(sched_edge_hook);
+    dump_ir_block_graph(irg, suffix);
+    set_dump_node_edge_hook(old);
 }

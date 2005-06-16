@@ -9,6 +9,7 @@
 #include "pset.h"
 #include "pmap.h"
 #include "util.h"
+#include "debug.h"
 
 #include "irflag_t.h"
 #include "ircons_t.h"
@@ -25,6 +26,8 @@
 
 #include "beirgmod.h"
 
+#define DBG_MODULE firm_dbg_register("firm.be.irgmod")
+
 struct _dom_front_info_t {
   pmap *df_map;
 };
@@ -33,7 +36,15 @@ static void compute_df_local(ir_node *bl, void *data)
 {
   pmap *df_map = ((dom_front_info_t *) data)->df_map;
   ir_node *idom = get_Block_idom(bl);
+  pset *df = pmap_get(df_map, bl);
   int i, n;
+
+  /*
+   * Create a new dom frot set for this node,
+   * if none exists.
+   */
+  if(!df)
+  	pmap_insert(df_map, bl, pset_new_ptr(16));
 
   for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
 
@@ -42,16 +53,12 @@ static void compute_df_local(ir_node *bl, void *data)
 
     /* The dominance frontier set of the predecessor. */
     pset *df = pmap_get(df_map, pred);
+	  if(!df) {
+	  	df = pset_new_ptr(16);
+	  	pmap_insert(df_map, pred, df);
+	  }
 
-    /*
-     * Create the dominance frontier set of the predecessor
-     * if it didn't exist.
-     */
-    if(!df) {
-      df = pset_new_ptr(16);
-      pmap_insert(df_map, pred, df);
-    }
-
+    assert(df && "dom front set must have been created for this node");
 
     if(pred != idom && bl)
       pset_insert_ptr(df, bl);
@@ -67,7 +74,7 @@ static void compute_df_up(ir_node *bl, void *data)
     ir_node *w;
     pset *df = pmap_get(df_map, y);
 
-    for(w = pset_first(df); df; w = pset_next(df))
+    for(w = pset_first(df); w; w = pset_next(df))
       if(!block_dominates(bl, w) || bl == w)
         pset_insert_ptr(df, w);
   }
@@ -79,8 +86,11 @@ dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 
   info->df_map = pmap_create();
 
-  /* Perhaps both can we interwined */
-  dom_tree_walk_irg(irg, compute_df_local, NULL, info);
+  /*
+   * This must be called as a post walker, since the dom front sets
+   * of all predecessors must be created when a block is reached.
+   */
+  dom_tree_walk_irg(irg, NULL, compute_df_local, info);
   dom_tree_walk_irg(irg, NULL, compute_df_up, info);
   return info;
 }
@@ -132,6 +142,7 @@ static void place_phi_functions(ir_node *orig, pset *copies,
   pset *phi_blocks = pset_new_ptr(8);
   ir_node **ins = NULL;
   void *it;
+  firm_dbg_module_t *dbg = DBG_MODULE;
 
   /*
    * Allocate an array for all blocks where the copies and the original
@@ -151,8 +162,10 @@ static void place_phi_functions(ir_node *orig, pset *copies,
   for(it = pset_first(copies), i = 1; it; it = pset_next(copies)) {
     ir_node *copy_block = get_nodes_block(it);
 
-    assert(block_dominates(orig_block, copy_block)
-        && "The block of the copy must be dominated by the block of the value");
+    if(!block_dominates(orig_block, copy_block)) {
+    	assert(block_dominates(orig_block, copy_block)
+        	&& "The block of the copy must be dominated by the block of the value");
+    }
 
     pdeq_putr(worklist, it);
     orig_blocks[i++] = copy_block;
@@ -177,10 +190,11 @@ static void place_phi_functions(ir_node *orig, pset *copies,
          */
         ins = realloc(ins, n_preds * sizeof(ins[0]));
         for(i = 0; i < n_preds; ++i)
-          ins[0] = orig;
+          ins[0] = new_Unknown(mode);
 
         /* Insert phi node */
         phi = new_r_Phi(irg, bl, n_preds, ins, mode);
+        DBG((dbg, LEVEL_2, "    inserting phi in block %+F\n", bl));
 
         /*
          * The phi node itself is also a copy of the original
@@ -245,6 +259,7 @@ static void place_phi_functions(ir_node *orig, pset *copies,
 static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blocks)
 {
   ir_node *curr_bl;
+  ir_node *start_irn;
 
   curr_bl = get_nodes_block(usage);
 
@@ -259,6 +274,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
    * Traverse the dominance tree upwards from the
    * predecessor block of the usage.
    */
+  start_irn = usage;
   while(curr_bl != NULL) {
 
     /*
@@ -269,18 +285,18 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
       ir_node *irn;
 
       /* Look at each instruction from last to first. */
-      sched_foreach_reverse(curr_bl, irn) {
+      for(irn = start_irn; !is_Block(irn); irn = sched_prev(irn)) {
 
         /* Take the first copy we find. */
         if(pset_find_ptr(copies, irn))
           return irn;
       }
-
-      assert(0 && "We must have encountered a copy");
     }
 
     /* If were not done yet, look in the immediate dominator */
     curr_bl = get_Block_idom(curr_bl);
+    if(curr_bl)
+      start_irn = sched_last(curr_bl);
   }
 
   return NULL;
@@ -288,10 +304,15 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 
 static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
 {
-  int i;
+  int i = 0;
   int n_outs = 0;
   const ir_edge_t *edge;
-  const ir_edge_t **outs;
+  firm_dbg_module_t *dbg = DBG_MODULE;
+
+  struct {
+    ir_node *irn;
+    int pos;
+  } *outs;
 
   /* Count the number of outs. */
   foreach_out_edge(orig, edge)
@@ -302,20 +323,26 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
    * This is neccessary, since the outs would be modified while
    * interating on them what could bring the outs module in trouble.
    */
+  DBG((dbg, LEVEL_2, "  Users of %+F\n", orig));
   outs = malloc(n_outs * sizeof(outs[0]));
-  foreach_out_edge(orig, edge)
-    outs[i++] = edge;
+  foreach_out_edge(orig, edge) {
+    outs[i].irn = get_edge_src_irn(edge);
+    outs[i].pos = get_edge_src_pos(edge);
+    DBG((dbg, LEVEL_2, "    %+F(%d)\n", outs[i].irn, outs[i].pos));
+    i += 1;
+  }
 
   /*
    * Search the valid def for each out and set it.
    */
   for(i = 0; i < n_outs; ++i) {
     ir_node *def;
-    ir_node *irn = get_edge_src_irn(outs[i]);
-    int pos = get_edge_src_pos(outs[i]);
+    ir_node *irn = outs[i].irn;
+    int pos = outs[i].pos;
 
     def = search_def(irn, pos, copies, copy_blocks);
-    set_irn_n(irn, pos, def);
+    if(def != NULL)
+      set_irn_n(irn, pos, def);
   }
 
   free(outs);
@@ -327,9 +354,14 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
   pset *copy_blocks = pset_new_ptr(2 * n);
   int save_optimize = get_optimize();
   int i;
+  firm_dbg_module_t *dbg = DBG_MODULE;
 
+  firm_dbg_set_mask(dbg, -1);
+  DBG((dbg, LEVEL_1, "Introducing following copies of %+F\n", orig));
   /* Fill the sets. */
   for(i = 0; i < n; ++i) {
+    DBG((dbg, LEVEL_1,
+          "  %+F in block %+F\n", copy_nodes[i], get_nodes_block(copy_nodes[i])));
     pset_insert_ptr(copies, copy_nodes[i]);
     pset_insert_ptr(copy_blocks, get_nodes_block(copy_nodes[i]));
   }

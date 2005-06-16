@@ -9,90 +9,118 @@
 
 #include "config.h"
 
+#include "irgraph_t.h"
+
 #include "belive.h"
 #include "pset.h"
+#include "set.h"
+#include "list.h"
+#include "hashptr.h"
 
-typedef struct _block_live_info_t {
-	pset *in; 				/**< The set of all values live in at that block. */
-	pset *out;				/**< The set of all values live out. */
-	pset *end;				/**< The set of all values live at the end
-											of the block (contains all live out). */
-} block_live_info_t;
+typedef enum _live_state_t {
+    live_state_in = 1,
+    live_state_end = 2,
+    live_state_out = 6,
+    live_state_block = 8,
+} live_state_t;
 
-typedef struct _node_live_info_t {
-	int is_phi_op; 		/**< Marks the node as a phi operand. */
-} node_live_info_t;
+typedef struct _irn_live_t {
+    const ir_node *block;
+    const ir_node *irn;
+    unsigned state;
+    struct _irn_live_t *next;
+} irn_live_t;
 
-typedef struct _live_info_t {
-	union {
-		block_live_info_t block;
-		node_live_info_t node;
-	} v;
-} live_info_t;
+typedef struct _irg_live_info_t {
+    set *live;
+} irg_live_info_t;
 
-extern size_t live_irn_data_offset;
+extern size_t live_irg_data_offset;
 
-#define get_irn_live_info(irn) get_irn_data(irn, live_info_t, live_irn_data_offset)
-#define get_live_info_irn(inf) get_irn_data_base(inf, live_irn_data_offset)
+#define get_irg_live_info(irg) (get_irg_data(irg, irg_live_info_t, live_irg_data_offset))
 
-#define get_block_live_info(irn) (&(get_irn_live_info(irn)->v.block))
-#define get_node_live_info(irn) (&(get_irn_live_info(irn)->v.node))
+#define HASH_PTR_PAIR(x,y) (HASH_PTR(x) + 37 * HASH_PTR(y))
 
-static INLINE int _is_phi_operand(const ir_node *irn)
+static INLINE irn_live_t *_get_or_set_live(const ir_node *block, const ir_node *irn, int state)
 {
-	assert(!is_Block(irn) && "No block node allowed here");
-	return get_node_live_info(irn)->is_phi_op;
+  irg_live_info_t *live_info = get_irg_live_info(get_irn_irg(block));
+  irn_live_t *live, templ;
+
+  templ.block = block;
+  templ.irn = irn;
+  templ.state = -1;
+  templ.next = NULL;
+
+  live = set_insert(live_info->live, &templ, sizeof(templ), HASH_PTR_PAIR(block, irn));
+  if(live->state == -1) {
+
+    if(!is_Block(irn)) {
+      irn_live_t *bl_live = _get_or_set_live(block, block, live_state_block);
+      live->next = bl_live->next;
+      bl_live->next = live;
+    }
+
+    live->state = state;
+  }
+
+  live->state |= state;
+
+  return live;
 }
 
 static INLINE int _is_live_in(const ir_node *block, const ir_node *irn)
 {
-	block_live_info_t *info = get_block_live_info(block);
-
-	assert(is_Block(block) && "Need a block here");
-	return pset_find_ptr(info->in, irn) != NULL;
+    return (_get_or_set_live(block, irn, 0)->state & live_state_in) != 0;
 }
 
 static INLINE int _is_live_out(const ir_node *block, const ir_node *irn)
 {
-	block_live_info_t *info = get_block_live_info(block);
-
-	assert(is_Block(block) && "Need a block here");
-	return pset_find_ptr(info->out, irn) != NULL;
+    return (_get_or_set_live(block, irn, 0)->state & live_state_out) != 0;
 }
 
 static INLINE int _is_live_end(const ir_node *block, const ir_node *irn)
 {
-	block_live_info_t *info = get_block_live_info(block);
-
-	assert(is_Block(block) && "Need a block here");
-	return pset_find_ptr(info->end, irn) != NULL;
+    return (_get_or_set_live(block, irn, 0)->state & live_state_end) != 0;
 }
 
-static INLINE pset *_get_live_in(const ir_node *block)
+#define live_foreach(block, live_info) \
+	for(live_info = _get_or_set_live(block, block, 0)->next; live_info; live_info = live_info->next)
+
+static INLINE void _put_live(const ir_node *block, int state, pset *s)
 {
-	assert(is_Block(block) && "Need a block here");
-	return get_block_live_info(block)->in;
+    irn_live_t *live;
+
+    live_foreach(block, live) {
+        if(live->state & state)
+            pset_insert_ptr(s, live->irn);
+    }
 }
 
-static INLINE pset *_get_live_out(const ir_node *block)
+static INLINE pset *_put_live_in(const ir_node *block, pset *s)
 {
-	assert(is_Block(block) && "Need a block here");
-	return get_block_live_info(block)->out;
+    _put_live(block, live_state_in, s);
+    return s;
 }
 
-static INLINE pset *_get_live_end(const ir_node *block)
+static INLINE pset *_put_live_out(const ir_node *block, pset *s)
 {
-	assert(is_Block(block) && "Need a block here");
-	return get_block_live_info(block)->end;
+    _put_live(block, live_state_out, s);
+    return s;
 }
 
-#define is_phi_operand(irn)			_is_phi_operand(irn)
+static INLINE pset *_put_live_end(const ir_node *block, pset *s)
+{
+    _put_live(block, live_state_end, s);
+    return s;
+}
+
+
 #define is_live_in(bl,irn) 			_is_live_in(bl, irn)
 #define is_live_out(bl,irn) 		_is_live_out(bl, irn)
 #define is_live_end(bl,irn) 		_is_live_end(bl, irn)
-#define get_live_in(bl)					_get_live_in(bl)
-#define get_live_out(bl)				_get_live_out(bl)
-#define get_live_end(bl)				_get_live_end(bl)
+#define put_live_in(bl,s)			_put_live_in(bl, s)
+#define put_live_out(bl,s)			_put_live_out(bl, s)
+#define put_live_end(bl,s)			_put_live_end(bl, s)
 
 /**
  * Initialize the liveness module.

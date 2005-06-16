@@ -325,14 +325,11 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   const arch_env_t *arch_env = env->main_env->arch_env;
   ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
   ir_graph *irg = get_irn_irg(bl);
-  pset *live_end = get_live_end(bl);
-  pset *live = pset_new_ptr_default();
+  pset *live = put_live_end(bl, pset_new_ptr_default());
   ir_node *curr, *irn, *perm, **nodes;
   int i, n;
 
-  /* put all live ends in the live set. */
-  for(irn = pset_first(live_end); irn; irn = pset_next(live_end))
-    pset_insert_ptr(live, irn);
+  ir_printf("Insert Perm after: %+F\n", pos);
 
   sched_foreach_reverse(bl, irn) {
 
@@ -356,10 +353,11 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++)
     nodes[i] = irn;
 
-  curr = perm = new_Perm(env->main_env->node_factory, cls, irg, bl, n, nodes);
+  perm = new_Perm(env->main_env->node_factory, cls, irg, bl, n, nodes);
   sched_add_after(pos, perm);
   free(nodes);
 
+  curr = perm;
   for(i = 0; i < n; ++i) {
     ir_node *copies[1];
     ir_node *perm_op = get_irn_n(perm, i);

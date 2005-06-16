@@ -237,7 +237,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		/* first check for a conflicting node which is 'living in' the irns block */
 		{
 			ir_node *n;
-			pset *live_ins = get_live_in(irn_bl);
+			pset *live_ins = put_live_in(irn_bl, pset_new_ptr_default());
 			for (n = pset_first(live_ins); n; n = pset_next(live_ins))
 				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), cls)
             && n != trigger && qnode_get_new_color(qn, n) == col
@@ -247,7 +247,8 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 					obstack_ptr_grow(&confl_ob, n);
 					pset_break(live_ins);
 					break;
-				}
+			}
+            del_pset(live_ins);
 		}
 
 		/* setup the queue of blocks. */

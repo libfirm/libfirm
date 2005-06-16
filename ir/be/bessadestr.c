@@ -15,7 +15,9 @@
 #include "pmap.h"
 #include "irnode.h"
 #include "iredges_t.h"
+#include "irdump.h"
 #include "be_t.h"
+#include "beutil.h"
 #include "bechordal_t.h"
 #include "bearch.h"
 #include "benode_t.h"
@@ -81,6 +83,7 @@ static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *c
 	ir_node *arg, *perm, *proj;
 	const arch_register_t *phi_reg, *arg_reg, *proj_reg;
 	const ir_edge_t *edge;
+  ir_node *phi_block = get_nodes_block(phi);
 
 	assert(is_Phi(phi) && "Can only handle phi-destruction :)");
 
@@ -91,7 +94,7 @@ static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *c
 		arg_reg = get_reg(arg);
 		/* if registers don't match ...*/
 		if (phi_reg != arg_reg) {
-			perm = get_perm(session, chordal_env, get_nodes_block(arg));
+			perm = get_perm(session, chordal_env, get_nodes_block(get_irn_n(phi_block, i)));
 			/* adjust assigned registers for the projs */
 			foreach_out_edge(perm, edge) {
 				proj = get_edge_src_irn(edge);
@@ -150,6 +153,7 @@ void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chorda
 				adjust_arguments(session, chordal_env, curr->irn);
 			}
 	}
+    dump_ir_block_graph_sched(session->irg, "-ssa-destr");
 	del_set(b2p);
 	checker(chordal_env);
 }

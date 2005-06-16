@@ -16,6 +16,7 @@
 #include <limits.h>
 
 #include "pmap.h"
+#include "pset.h"
 
 #include "irgwalk.h"
 #include "irprintf.h"
@@ -305,7 +306,7 @@ static void draw_block(ir_node *bl, void *data)
   static const color_t black = { 0, 0, 0 };
 
   const draw_chordal_env_t *env = data;
-  pset *live_in = get_live_in(bl);
+  pset *live_in = put_live_in(bl, pset_new_ptr_default());
   ir_node *irn;
   border_t *b;
 	struct list_head *head = get_block_border_head(env->chordal_env, bl);
@@ -371,19 +372,7 @@ static void draw_block(ir_node *bl, void *data)
     }
   }
 
-#if 0
-  if(dom) {
-  struct block_dims *dom_dims = pmap_get(env->block_dims, dom);
-    rect_t line;
-
-    line.x = dims->box.x;
-    line.y = dims->box.y;
-    line.w = dom_dims->box.x;
-    line.h = dom_dims->box.y;
-
-    env->plotter->vtab->line(env->plotter, &line);
-  }
-#endif
+  del_pset(live_in);
 }
 
 static void draw(draw_chordal_env_t *env, const rect_t *start_box)

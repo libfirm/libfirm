@@ -69,4 +69,11 @@ static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) 
 	return out;
 }
 
+/**
+ * Dump a graph with schedule edges.
+ * @param irg The graph.
+ * @param suffix A suffix to its file name.
+ */
+void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix);
+
 #endif
