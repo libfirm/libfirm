@@ -460,7 +460,7 @@ int is_filtered_dump_name(ident *name);
 /**  Sets the vcg flag "display_edge_labels" to no.
  *
  *   This is necessary as xvcg and aisee both fail to display graphs
- *   with self-edges if these edges have lables.
+ *   with self-edges if these edges have labels.
  */
 void turn_off_edge_labels(void);
 
@@ -494,7 +494,7 @@ bool get_opt_dump_keepalive_edges(void);
 /** Turns on dumping the out edges starting from the Start block in
  *  dump_ir_graph.
  *
- *  To test the consistency of the out datastructure.
+ *  To test the consistency of the out data structure.
  */
 void dump_out_edges(bool b);
 
