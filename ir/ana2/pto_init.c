@@ -62,7 +62,7 @@ static struct obstack *pto_obst = NULL; /* all pto_t's go onto this one */
 /* ===================================================
    Local Implementation:
    =================================================== */
-/* Allocate a new pto */
+/** Allocate a new pto */
 static pto_t *new_pto (ir_node *node)
 {
   pto_t *pto = obstack_alloc (pto_obst, sizeof (pto_t));
@@ -71,7 +71,7 @@ static pto_t *new_pto (ir_node *node)
   return (pto);
 }
 
-/* Allocate a new alloc_pto */
+/** Allocate a new alloc_pto */
 static alloc_pto_t *new_alloc_pto (ir_node *alloc, int n_ctxs)
 {
   int i;
@@ -93,7 +93,7 @@ static alloc_pto_t *new_alloc_pto (ir_node *alloc, int n_ctxs)
   return (alloc_pto);
 }
 
-/* Allocate a new pto for a symconst */
+/** Allocate a new pto for a symconst */
 static pto_t* new_symconst_pto (ir_node *symconst)
 {
   pto_t *pto;
@@ -158,19 +158,19 @@ static void clear_type_link (type_or_ent *thing, void *_unused)
   }
 }
 
-/* Helper to pto_init_graph --- clear the links of the given node */
+/** Helper to pto_init_graph --- clear the links of the given node */
 static void clear_node_link (ir_node *node, void *_unused)
 {
   set_irn_link (node, NULL);
 }
 
-/* Helper to pto_init_graph --- clear the links of all nodes */
+/** Helper to pto_init_graph --- clear the links of all nodes */
 static void clear_graph_links (ir_graph *graph)
 {
   irg_walk_graph (graph, clear_node_link, NULL, NULL);
 }
 
-/* Reset ALL the pto values for a new pass */
+/** Reset ALL the pto values for a new pass */
 static void reset_node_pto (ir_node *node, void *env)
 {
   reset_env_t *reset_env = (reset_env_t*) env;
@@ -220,7 +220,7 @@ static void reset_node_pto (ir_node *node, void *env)
   /* HERE ("end"); */
 }
 
-/* Initialise primary name sources */
+/** Initialise primary name sources */
 static void init_pto (ir_node *node, void *env)
 {
   init_env_t *init_env = (init_env_t*) env;
@@ -285,7 +285,7 @@ static void init_pto (ir_node *node, void *env)
 }
 
 
-/* Initialise the given graph for a new pass run */
+/** Initialise the given graph for a new pass run */
 static void pto_init_graph_allocs (ir_graph *graph)
 {
   graph_info_t *ginfo = ecg_get_info (graph);
@@ -356,7 +356,7 @@ void fake_main_args (ir_graph *graph)
 }
 
 /* Initialise the Init module */
-void pto_init_init ()
+void pto_init_init (void)
 {
   pto_obst = (struct obstack*) xmalloc (sizeof (struct obstack));
 
@@ -364,7 +364,7 @@ void pto_init_init ()
 }
 
 /* Cleanup the Init module */
-void pto_init_cleanup ()
+void pto_init_cleanup (void)
 {
   obstack_free (pto_obst, NULL);
   memset (pto_obst, 0x00, sizeof (struct obstack));
@@ -374,7 +374,7 @@ void pto_init_cleanup ()
 
 
 /* Initialise the Names of the Types/Entities */
-void pto_init_type_names ()
+void pto_init_type_names (void)
 {
   /* HERE ("start"); */
   type_walk (clear_type_link, NULL, NULL);
@@ -430,6 +430,10 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.19  2005/06/17 17:42:32  beck
+  added doxygen docu
+  fixed (void) function headers
+
   Revision 1.18  2005/02/16 13:27:52  beck
   added needed tv.h include
 
