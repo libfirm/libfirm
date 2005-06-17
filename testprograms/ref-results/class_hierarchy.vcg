@@ -97,10 +97,11 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
   supertypes:
   subtypes:
   peculiarity: peculiarity_existent
-  state:     layout_undefined,
-  size:      -1 Bits,
-  alignment: 32 Bits,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_undefined,
+  size:       -1 Bits,
+  alignment:  32 Bits,
+  dbg info:   (nil),
 
 
 " color: green}

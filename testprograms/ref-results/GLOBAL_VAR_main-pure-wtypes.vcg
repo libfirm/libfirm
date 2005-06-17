@@ -280,10 +280,11 @@ node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
   supertypes:
   subtypes:
   peculiarity: peculiarity_existent
-  state:     layout_undefined,
-  size:      -1 Bits,
-  alignment: 32 Bits,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_undefined,
+  size:       -1 Bits,
+  alignment:  32 Bits,
+  dbg info:   (nil),
 
 
 " color: green}
@@ -326,20 +327,22 @@ node: {title: "t15" label: "method GLOBAL_VAR_main" info1: "method type GLOBAL_V
   variadicity: variadicity_non_variadic
   return types: 0
   parameter types: 0
-  state:     layout_fixed,
-  size:      32 Bits,
-  alignment: 32 Bits,
-  mode:      P,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_fixed,
+  size:       32 Bits,
+  alignment:  32 Bits,
+  mode:       P,
+  dbg info:   (nil),
 
 
 "}
 node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
-  state:     layout_fixed,
-  size:      32 Bits,
-  alignment: 32 Bits,
-  mode:      Is,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_fixed,
+  size:       32 Bits,
+  alignment:  32 Bits,
+  mode:       Is,
+  dbg info:   (nil),
 
 
 "}
@@ -348,10 +351,11 @@ node: {title: "t19" label: "class GLOBAL_VAR_mainframe_tp" info1: "class type GL
   supertypes:
   subtypes:
   peculiarity: peculiarity_existent
-  state:     layout_undefined,
-  size:      -1 Bits,
-  alignment:  0 Bits,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_undefined,
+  size:       -1 Bits,
+  alignment:   0 Bits,
+  dbg info:   (nil),
 
 
 " color: green}

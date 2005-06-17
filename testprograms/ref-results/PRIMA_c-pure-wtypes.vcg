@@ -340,10 +340,11 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
   supertypes:
   subtypes:
   peculiarity: peculiarity_existent
-  state:     layout_undefined,
-  size:      -1 Bits,
-  alignment: 32 Bits,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_undefined,
+  size:       -1 Bits,
+  alignment:  32 Bits,
+  dbg info:   (nil),
 
 
 " color: green}
@@ -389,11 +390,12 @@ node: {title: "t18" label: "method set_a" info1: "method type set_a (18)
   parameter types: 2
     class_prima_ptr
     int
-  state:     layout_fixed,
-  size:      32 Bits,
-  alignment: 32 Bits,
-  mode:      P,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_fixed,
+  size:       32 Bits,
+  alignment:  32 Bits,
+  mode:       P,
+  dbg info:   (nil),
 
 
 "}
@@ -401,21 +403,23 @@ edge: { sourcename: "t18" targetname: "t16"class: 5 label: "param 0" color: gree
 edge: { sourcename: "t18" targetname: "t14"class: 5 label: "param 1" color: green}
 node: {title: "t16" label: "pointer class_prima_ptr" info1: "pointer type class_prima_ptr (16)
   points to PRIMA (15)
-  state:     layout_fixed,
-  size:      32 Bits,
-  alignment: 32 Bits,
-  mode:      P,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_fixed,
+  size:       32 Bits,
+  alignment:  32 Bits,
+  mode:       P,
+  dbg info:   (nil),
 
 
 "}
 edge: { sourcename: "t16" targetname: "t15"class: 9 label: "points to" color:green}
 node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
-  state:     layout_fixed,
-  size:      32 Bits,
-  alignment: 32 Bits,
-  mode:      Is,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_fixed,
+  size:       32 Bits,
+  alignment:  32 Bits,
+  mode:       Is,
+  dbg info:   (nil),
 
 
 "}
@@ -459,11 +463,12 @@ node: {title: "t21" label: "method c" info1: "method type c (21)
   parameter types: 2
     class_prima_ptr
     int
-  state:     layout_fixed,
-  size:      32 Bits,
-  alignment: 32 Bits,
-  mode:      P,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_fixed,
+  size:       32 Bits,
+  alignment:  32 Bits,
+  mode:       P,
+  dbg info:   (nil),
 
 
 "}
@@ -475,10 +480,11 @@ node: {title: "t84" label: "class cframe_tp" info1: "class type cframe_tp (84)
   supertypes:
   subtypes:
   peculiarity: peculiarity_existent
-  state:     layout_undefined,
-  size:      -1 Bits,
-  alignment:  0 Bits,
-  dbg info:  (nil),
+  visibility: visibility_external_allocated,
+  state:      layout_undefined,
+  size:       -1 Bits,
+  alignment:   0 Bits,
+  dbg info:   (nil),
 
 
 " color: green}
