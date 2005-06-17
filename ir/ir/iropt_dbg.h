@@ -227,4 +227,9 @@
     __dbg_info_merge_pair(n, oldn, dbg_rem_poly_call);          \
   } while(0)
 
+#define DBG_OPT_CONFIRM(oldn, n)                                \
+  do {                                                          \
+    hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONFIRM);        \
+  } while(0)
+
 #endif /* _IROPT_DBG_H_ */
