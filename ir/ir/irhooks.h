@@ -47,6 +47,7 @@ typedef enum {
   HOOK_OPT_POLY_CALL,   /**< polymorphic call optimization */
   HOOK_OPT_IF_CONV,     /**< an if conversion was tried */
   HOOK_OPT_FUNC_CALL,   /**< a real function call was removed */
+  HOOK_OPT_CONFIRM,     /**< a value was substituted by a const due to a Confirm */
   HOOK_LOWERED,         /**< lowered */
   HOOK_OPT_LAST
 } hook_opt_kind;
