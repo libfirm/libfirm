@@ -36,7 +36,7 @@ enum firmstat_options_t {
  * Dump a snapshot of the statistic values.
  * Never called from libFirm should be called from user.
  *
- * @param name   basename of the statistic output file
+ * @param name   base name of the statistic output file
  */
 void stat_dump_snapshot(const char *name);
 
@@ -48,7 +48,7 @@ void stat_dump_snapshot(const char *name);
 void init_stat(unsigned enable_options);
 
 /**
- * terminates the statustics module, frees all memory
+ * terminates the statistics module, frees all memory
  */
 void stat_term(void);
 

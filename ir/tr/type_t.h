@@ -36,7 +36,7 @@ typedef struct {
   int dfn;             /**< number used for 'instanceof' operator */
 } cls_attr;
 
-/** struct attributs */
+/** struct attributes */
 typedef struct {
   entity **members;    /**< fields of this struct. No method entities
               allowed. */
@@ -54,7 +54,7 @@ typedef struct {
   int first_variadic_param;  /**< index of the first variadic param or -1 if non-variadic .*/
 } mtd_attr;
 
-/** union attributs */
+/** union attributes */
 typedef struct {
   int     n_types;
   /* type  **unioned_type; * a list of unioned types. */
@@ -64,7 +64,7 @@ typedef struct {
 
 } uni_attr;
 
-/** array attributs */
+/** array attributes */
 typedef struct {
   int   n_dimensions;  /**< Number of array dimensions.  */
   ir_node **lower_bound;   /**< Lower bounds of dimensions.  Usually all 0. */
@@ -75,7 +75,7 @@ typedef struct {
               element selection with Sel. */
 } arr_attr;
 
-/** enum attributs */
+/** enum attributes */
 typedef struct {
   int      n_enums;    /**< Number of enumerators. */
   tarval **enumer;     /**< Contains all constants that represent a member
@@ -84,9 +84,9 @@ typedef struct {
                           the source program */
 } enm_attr;
 
-/** pointer attributs */
+/** pointer attributes */
 typedef struct {
-  type *points_to;     /**< The type of the enitity the pointer points to. */
+  type *points_to;     /**< The type of the entity the pointer points to. */
 } ptr_attr;
 
 /*
@@ -99,7 +99,7 @@ typedef struct {        * No private attr, must be smaller than others! *
 } id_attr;
 */
 
-/** General type attributs. */
+/** General type attributes. */
 typedef union {
   cls_attr ca;      /**< attributes of a class type */
   stc_attr sa;      /**< attributes of a struct type */
