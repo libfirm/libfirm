@@ -34,7 +34,7 @@
 # include "irnode.h"
 
 
-/** Accessing the dominator datastructure.
+/** Accessing the dominator data structure.
  *
  * These routines only work properly if the ir_graph is in state
  * dom_consistent or dom_inconsistent.
@@ -51,8 +51,9 @@ int get_Block_pre_num(const ir_node *bl);
 void set_Block_pre_num(ir_node *bl, int num);
 
 /**
- * Get the pre-order number of a block resulting from a dfs walk
- * over the dominator tree.
+ * Get the pre-order number of a block resulting from a
+ * Depth-First-Search walkover the dominator tree.
+ *
  * @param bl The block.
  * @return The pre-order number.
  */
@@ -91,7 +92,7 @@ ir_node *get_Block_dominated_next(const ir_node *dom);
 /**
  * Iterate over all nodes which are immediately dominated by a given
  * node.
- * @param bl The block whose dominated blocks shall be iterated on.
+ * @param bl   The block whose dominated blocks shall be iterated on.
  * @param curr An iterator variable of type ir_node*
  */
 #define dominates_for_each(bl,curr) \
@@ -129,7 +130,7 @@ void dom_tree_walk(ir_node *n, irg_walk_func *pre,
 void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 		irg_walk_func *post, void *env);
 
-/* ------------ Building and Removing the dominator datasturcture ----------- */
+/* ------------ Building and Removing the dominator data structure ----------- */
 
 /** Computes the dominator trees.
  *
@@ -138,15 +139,17 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  * "dom_inconsistent".
  * Does not compute dominator information for control dead code.  Blocks
  * not reachable from Start contain the following information:
+ * @code
  *   idom = NULL;
  *   dom_depth = -1;
  *   pre_num = -1;
+ * @endcode
  * Also constructs outs information.  As this information is correct after
  * the run does not free the outs information.
  */
 void compute_doms(ir_graph *irg);
 
-/** Frees the dominator datastructures.  Sets the flag in irg to "dom_none". */
+/** Frees the dominator data structures.  Sets the flag in irg to "dom_none". */
 void free_dom_and_peace(ir_graph *irg);
 
 #endif /* _IRDOM_H_ */
