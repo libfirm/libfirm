@@ -138,8 +138,11 @@ value_classify classify_value_sign(ir_node *n)
     c = mode_is_int(mode) && mode_honor_signed_zeros(mode) ?
       get_mode_one(mode) : get_mode_null(mode);
 
-    ncmp = tarval_cmp(tv, c) ^ pn_Cmp_Eq;
-    if (cmp != ncmp)
+    ncmp = tarval_cmp(tv, c);
+    if (ncmp == pn_Cmp_Eq)
+      ncmp = pn_Cmp_Le;
+
+    if (cmp != (ncmp ^ pn_Cmp_Eq))
       return VALUE_UNKNOWN;
 
     /* yep, negative */
@@ -158,8 +161,11 @@ value_classify classify_value_sign(ir_node *n)
     if (mode_is_int(mode)) {
       c = get_mode_minus_one(mode);
 
-      ncmp = tarval_cmp(tv, c) ^ pn_Cmp_Eq;
-      if (cmp != ncmp)
+      ncmp = tarval_cmp(tv, c);
+      if (ncmp == pn_Cmp_Eq)
+        ncmp = pn_Cmp_Ge;
+
+      if (cmp != (ncmp ^ pn_Cmp_Eq))
         return VALUE_UNKNOWN;
     }
     else {
