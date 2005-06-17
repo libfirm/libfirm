@@ -3,7 +3,7 @@
  * File name:   ir/ir/iropt.c
  * Purpose:     iropt --- optimizations intertwined with IR construction.
  * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2005 Universität Karlsruhe
@@ -41,20 +41,10 @@
 # include "hashptr.h"
 # include "archop.h"
 # include "opt_polymorphy.h"
+# include "opt_confirms.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
-
-/**
- * Trivial INLINEable routine for copy propagation.
- * Does follow Ids, needed to optimize INLINEd code.
- */
-static INLINE ir_node *
-follow_Id (ir_node *n)
-{
-  while (get_irn_op (n) == op_Id) n = get_Id_pred (n);
-  return n;
-}
 
 /**
  * return the value of a Constant
@@ -522,7 +512,8 @@ static tarval *computed_value_Proj_Cmp(ir_node *n)
         return new_tarval_from_long(proj_nr & pn_Cmp_Ne, mode_b);
     }
   }
-  return tarval_bad;
+
+  return computed_value_Cmp_Confirm(aa, ab, proj_nr);
 }
 
 /**
@@ -583,6 +574,16 @@ static tarval *computed_value_Mux(ir_node *n)
 }
 
 /**
+ * calculate the value of a Confirm: can be evaluated,
+ * if it has the form Confirm(x, '=', Const).
+ */
+static tarval *computed_value_Confirm(ir_node *n)
+{
+  return get_Confirm_cmp(n) == pn_Cmp_Eq ?
+    value_of(get_Confirm_bound(n)) : tarval_bad;
+}
+
+/**
  * If the parameter n can be computed, return its value, else tarval_bad.
  * Performs constant folding.
  *
@@ -627,6 +628,7 @@ static ir_op *firm_set_default_computed_value(ir_op *op)
   CASE(Conv);
   CASE(Proj);
   CASE(Mux);
+  CASE(Confirm);
   default:
     op->computed_value  = NULL;
   }
@@ -1058,8 +1060,8 @@ static ir_node *equivalent_node_Phi(ir_node *n)
     ir_node *b = get_Phi_pred(n, 1);
     if (   (get_irn_op(a) == op_Confirm)
         && (get_irn_op(b) == op_Confirm)
-        && follow_Id (get_irn_n(a, 0) == get_irn_n(b, 0))
-        && (get_irn_n(a, 1) == get_irn_n (b, 1))
+        && (get_irn_n(a, 0) == get_irn_n(b, 0))
+        && (get_irn_n(a, 1) == get_irn_n(b, 1))
         && (a->data.num == (~b->data.num & irpn_True) )) {
       return get_irn_n(a, 0);
     }
@@ -1147,7 +1149,10 @@ static ir_node *equivalent_node_Id(ir_node *n)
 {
   ir_node *oldn = n;
 
-  n = follow_Id(n);
+  do {
+    n = get_Id_pred(n);
+  } while (get_irn_op(n) == op_Id);
+
   DBG_OPT_ID(oldn, n);
   return n;
 }
@@ -1248,6 +1253,25 @@ static ir_node *equivalent_node_Cmp(ir_node *n)
 }
 
 /**
+ * Remove Confirm nodes if setting is on.
+ */
+static ir_node *equivalent_node_Confirm(ir_node *n)
+{
+  if (get_Confirm_cmp(n) == pn_Cmp_Eq) {
+    ir_node *bound = get_Confirm_bound(n);
+    ir_op *op      = get_irn_op(bound);
+
+    /*
+     * Optimize a rare case:
+     * Confirm(x, '=', Const) ==> Const
+     */
+    if (op == op_Const || op == op_SymConst)
+      return bound;
+  }
+  return get_opt_remove_Confirm() ? get_Confirm_value(n) : n;
+}
+
+/**
  * equivalent_node() returns a node equivalent to input n. It skips all nodes that
  * perform no actual computation, as, e.g., the Id nodes.  It does not create
  * new nodes.  It is therefore safe to free n if the node returned is not n.
@@ -1297,6 +1321,7 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(Id);
   CASE(Mux);
   CASE(Cmp);
+  CASE(Confirm);
   default:
     op->equivalent_node  = NULL;
   }
@@ -1484,7 +1509,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 /**
   Transform Mul(a,-1) into -a.
- * Do architecture dependend optimizations on Mul nodes
+ * Do architecture dependent optimizations on Mul nodes
  */
 static ir_node *transform_node_Mul(ir_node *n) {
   ir_node *oldn = n;
@@ -1523,7 +1548,7 @@ static ir_node *transform_node_Div(ir_node *n)
 
     DBG_OPT_CSTEVAL(n, value);
   }
-  else /* Try architecture dependend optimization */
+  else /* Try architecture dependent optimization */
     value = arch_dep_replace_div_by_const(n);
 
   if (value != n) {
@@ -1553,7 +1578,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 
     DBG_OPT_CSTEVAL(n, value);
   }
-  else /* Try architecture dependend optimization */
+  else /* Try architecture dependent optimization */
     value = arch_dep_replace_mod_by_const(n);
 
   if (value != n) {
@@ -1607,7 +1632,7 @@ static ir_node *transform_node_DivMod(ir_node *n)
       DBG_OPT_CSTEVAL(n, a);
       DBG_OPT_CSTEVAL(n, b);
     }
-    else { /* Try architecture dependend optimization */
+    else { /* Try architecture dependent optimization */
       arch_dep_replace_divmod_by_const(&a, &b, n);
       evaluated = a != NULL;
     }
@@ -1630,114 +1655,36 @@ static ir_node *transform_node_DivMod(ir_node *n)
   return n;
 }
 
-
 /**
- * Optimize Abs(x) => x if x is Confirmed >= 0
- * Optimize Abs(x) => -x if x is Confirmed <= 0
+ * Optimize Abs(x) into  x if x is Confirmed >= 0
+ * Optimize Abs(x) into -x if x is Confirmed <= 0
  */
 static ir_node *transform_node_Abs(ir_node *n)
 {
-  ir_node *oldn = n;
-  ir_node *a = get_Abs_op(n);
-  tarval *tv, *c;
-  ir_mode *mode;
-  pn_Cmp cmp, ncmp;
-  int do_minus = 0;
+  ir_node        *oldn = n;
+  ir_node        *a = get_Abs_op(n);
+  value_classify sign = classify_value_sign(a);
 
-  if (get_irn_op(a) != op_Confirm)
-    return n;
+  if (sign == VALUE_NEGATIVE) {
+    ir_mode *mode = get_irn_mode(n);
 
-  tv  = value_of(get_Confirm_bound(n));
-  if (tv == tarval_bad)
-    return n;
-
-  mode = get_irn_mode(n);
-
-  /*
-   * We can handle only >=, >, <, <= cases.
-   * We could handle == too, but this should not happen.
-   *
-   * Note that for integer modes we have a slightly better
-   * optimization possibilities, so we handle this
-   * different.
-   */
-  cmp = get_Confirm_cmp(n);
-
-  switch (cmp) {
-  case pn_Cmp_Lt:
     /*
-     * must be x < c <= 1 to be useful if integer mode and -0 = 0
-     *         x < c <= 0 to be useful else
+     * We can replace the Abs by -x here.
+     * We even could add a new Confirm here.
+     *
+     * Note that -x would create a new node, so we could
+     * not run it in the equivalent_node() context.
      */
-  case pn_Cmp_Le:
-    /*
-     * must be x <= c < 1 to be useful if integer mode and -0 = 0
-     *         x <= c < 0 to be useful else
-     */
-    c = mode_is_int(mode) && mode_honor_signed_zeros(mode) ?
-      get_mode_one(mode) : get_mode_null(mode);
-
-    ncmp = tarval_cmp(tv, c) ^ pn_Cmp_Eq;
-    if (cmp != ncmp)
-      return n;
-
-    /* yep, we can replace by -x */
-    do_minus = 1;
-    break;
-
-  case pn_Cmp_Ge:
-    /*
-     * must be x >= c > -1 to be useful if integer mode
-     *         x >= c >= 0 to be useful else
-     */
-  case pn_Cmp_Gt:
-    /*
-     * must be x > c >= -1 to be useful if integer mode
-     *         x > c >= 0 to be useful else
-     */
-    if (mode_is_int(mode)) {
-      c = get_mode_minus_one(mode);
-
-      ncmp = tarval_cmp(tv, c) ^ pn_Cmp_Eq;
-      if (cmp != ncmp)
-        return n;
-    }
-    else {
-      c = get_mode_minus_one(mode);
-
-      ncmp = tarval_cmp(tv, c);
-
-      if (ncmp != pn_Cmp_Eq && ncmp != pn_Cmp_Gt)
-        return n;
-    }
-
-    /* yep, we can replace by x */
-    do_minus = 0;
-    break;
-
-  default:
-    return n;
-  }
-
-  /*
-   * Ok, when we get here, we can replace the Abs
-   * by either x or -x. In the second case we eve could
-   * add a new Confirm.
-   *
-   * Note that -x would create a new node, so we could
-   * not run it in the equivalent_node() context.
-   */
-  if (do_minus) {
-    ir_node *c;
-
     n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
                      get_nodes_block(n), a, mode);
 
-    c  = new_Const(mode, tarval_neg(tv));
-    n = new_r_Confirm(current_ir_graph, get_nodes_block(n), n, c, get_inversed_pnc(cmp));
+    DBG_OPT_CONFIRM(oldn, n);
   }
-  else {
+  else if (sign == VALUE_POSITIVE) {
+    /* n is positive, Abs is not needed */
     n = a;
+
+    DBG_OPT_CONFIRM(oldn, n);
   }
 
   return n;
@@ -1859,7 +1806,7 @@ static ir_node *transform_node_Not(ir_node *n)
 }
 
 /**
- * Transform a Cast of a Const into a new Const
+ * Transform a Cast_type(Const) into a new Const_type
  */
 static ir_node *transform_node_Cast(ir_node *n) {
   ir_node *oldn = n;
@@ -1880,21 +1827,17 @@ static ir_node *transform_node_Cast(ir_node *n) {
 }
 
 /**
- * Transform a Proj(Div) with a non-zero constant.
+ * Transform a Proj(Div) with a non-zero value.
  * Removes the exceptions and routes the memory to the NoMem node.
  */
 static ir_node *transform_node_Proj_Div(ir_node *proj)
 {
   ir_node *n = get_Proj_pred(proj);
-  ir_node *b;
-  tarval *tb;
+  ir_node *b = get_Div_right(n);
   long proj_nr;
 
-  b  = get_Div_right(n);
-  tb = value_of(b);
-
-  if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) {
-    /* div(x, c) && c != 0 */
+  if (value_not_zero(b)) {
+    /* div(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
 
     /* this node may float */
@@ -1915,21 +1858,17 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 }
 
 /**
- * Transform a Proj(Mod) with a non-zero constant.
+ * Transform a Proj(Mod) with a non-zero value.
  * Removes the exceptions and routes the memory to the NoMem node.
  */
 static ir_node *transform_node_Proj_Mod(ir_node *proj)
 {
   ir_node *n = get_Proj_pred(proj);
-  ir_node *b;
-  tarval *tb;
+  ir_node *b = get_Mod_right(n);
   long proj_nr;
 
-  b  = get_Mod_right(n);
-  tb = value_of(b);
-
-  if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) {
-    /* mod(x, c) && c != 0 */
+  if (value_not_zero(b)) {
+    /* mod(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
 
     /* this node may float */
@@ -1950,21 +1889,17 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 }
 
 /**
- * Transform a Proj(DivMod) with a non-zero constant.
+ * Transform a Proj(DivMod) with a non-zero value.
  * Removes the exceptions and routes the memory to the NoMem node.
  */
 static ir_node *transform_node_Proj_DivMod(ir_node *proj)
 {
   ir_node *n = get_Proj_pred(proj);
-  ir_node *b;
-  tarval *tb;
+  ir_node *b = get_DivMod_right(n);
   long proj_nr;
 
-  b  = get_DivMod_right(n);
-  tb = value_of(b);
-
-  if (tb != tarval_bad && classify_tarval(tb) != TV_CLASSIFY_NULL) {
-    /* DivMod(x, c) && c != 0 */
+  if (value_not_zero(b)) {
+    /* DivMod(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
 
     /* this node may float */
@@ -2534,7 +2469,7 @@ static ir_node *transform_node_shift(ir_node *n)
 #define transform_node_Shl  transform_node_shift
 
 /**
- * Remove dead blocks in keepalive list.  We do not generate a new End node.
+ * Remove dead blocks in keep alive list.  We do not generate a new End node.
  */
 static ir_node *transform_node_End(ir_node *n) {
   int i, n_keepalives = get_End_n_keepalives(n);
@@ -2548,7 +2483,7 @@ static ir_node *transform_node_End(ir_node *n) {
 }
 
 /**
- * Optimize a Mux into some simplier cases.
+ * Optimize a Mux into some simpler cases.
  */
 static ir_node *transform_node_Mux(ir_node *n)
 {
@@ -2749,33 +2684,33 @@ static int node_cmp_attr_Const(ir_node *a, ir_node *b)
 /** Compares the attributes of two Proj nodes. */
 static int node_cmp_attr_Proj(ir_node *a, ir_node *b)
 {
-    return get_irn_proj_attr (a) != get_irn_proj_attr (b);
+  return get_irn_proj_attr (a) != get_irn_proj_attr (b);
 }
 
 /** Compares the attributes of two Filter nodes. */
 static int node_cmp_attr_Filter(ir_node *a, ir_node *b)
 {
-    return get_Filter_proj(a) != get_Filter_proj(b);
+  return get_Filter_proj(a) != get_Filter_proj(b);
 }
 
 /** Compares the attributes of two Alloc nodes. */
 static int node_cmp_attr_Alloc(ir_node *a, ir_node *b)
 {
-    return (get_irn_alloc_attr(a).where != get_irn_alloc_attr(b).where)
-        || (get_irn_alloc_attr(a).type != get_irn_alloc_attr(b).type);
+  return (get_irn_alloc_attr(a).where != get_irn_alloc_attr(b).where)
+      || (get_irn_alloc_attr(a).type != get_irn_alloc_attr(b).type);
 }
 
 /** Compares the attributes of two Free nodes. */
 static int node_cmp_attr_Free(ir_node *a, ir_node *b)
 {
-    return (get_irn_free_attr(a).where != get_irn_free_attr(b).where)
-        || (get_irn_free_attr(a).type != get_irn_free_attr(b).type);
+  return (get_irn_free_attr(a).where != get_irn_free_attr(b).where)
+      || (get_irn_free_attr(a).type != get_irn_free_attr(b).type);
 }
 
 /** Compares the attributes of two SymConst nodes. */
 static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 {
-    return (get_irn_symconst_attr(a).num != get_irn_symconst_attr(b).num)
+  return (get_irn_symconst_attr(a).num != get_irn_symconst_attr(b).num)
       || (get_irn_symconst_attr(a).sym.type_p != get_irn_symconst_attr(b).sym.type_p)
       || (get_irn_symconst_attr(a).tp != get_irn_symconst_attr(b).tp);
 }
@@ -2783,13 +2718,13 @@ static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 /** Compares the attributes of two Call nodes. */
 static int node_cmp_attr_Call(ir_node *a, ir_node *b)
 {
-    return (get_irn_call_attr(a) != get_irn_call_attr(b));
+  return (get_irn_call_attr(a) != get_irn_call_attr(b));
 }
 
 /** Compares the attributes of two Sel nodes. */
 static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
 {
-    return (get_irn_sel_attr(a).ent->kind  != get_irn_sel_attr(b).ent->kind)
+  return (get_irn_sel_attr(a).ent->kind  != get_irn_sel_attr(b).ent->kind)
       || (get_irn_sel_attr(a).ent->name    != get_irn_sel_attr(b).ent->name)
       || (get_irn_sel_attr(a).ent->owner   != get_irn_sel_attr(b).ent->owner)
       || (get_irn_sel_attr(a).ent->ld_name != get_irn_sel_attr(b).ent->ld_name)
@@ -2799,13 +2734,13 @@ static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
 /** Compares the attributes of two Phi nodes. */
 static int node_cmp_attr_Phi(ir_node *a, ir_node *b)
 {
-    return get_irn_phi_attr (a) != get_irn_phi_attr (b);
+  return get_irn_phi_attr (a) != get_irn_phi_attr (b);
 }
 
 /** Compares the attributes of two Cast nodes. */
 static int node_cmp_attr_Cast(ir_node *a, ir_node *b)
 {
-    return get_Cast_type(a) != get_Cast_type(b);
+  return get_Cast_type(a) != get_Cast_type(b);
 }
 
 /** Compares the attributes of two Load nodes. */
@@ -2824,7 +2759,13 @@ static int node_cmp_attr_Store(ir_node *a, ir_node *b)
 {
   /* NEVER do CSE on volatile Stores */
   return (get_Store_volatility(a) == volatility_is_volatile ||
-      get_Store_volatility(b) == volatility_is_volatile);
+          get_Store_volatility(b) == volatility_is_volatile);
+}
+
+/** Compares the attributes of two Confirm nodes. */
+static int node_cmp_attr_Confirm(ir_node *a, ir_node *b)
+{
+  return (get_Confirm_cmp(a) != get_Confirm_cmp(b));
 }
 
 /**
@@ -2850,6 +2791,7 @@ static ir_op *firm_set_default_node_cmp_attr(ir_op *op)
   CASE(Cast);
   CASE(Load);
   CASE(Store);
+  CASE(Confirm);
   default:
     op->node_cmp_attr  = NULL;
   }
@@ -3103,105 +3045,109 @@ gigo (ir_node *node)
  * reference this one, i.e., right after construction of a node.
  */
 ir_node *
-optimize_node (ir_node *n)
+optimize_node(ir_node *n)
 {
-	tarval *tv;
-	ir_node *oldn = n;
-	opcode iro = get_irn_opcode(n);
+  tarval *tv;
+  ir_node *oldn = n;
+  opcode iro = get_irn_opcode(n);
 
-	type *old_tp = get_irn_type(n);
-	{
-		int i, arity = get_irn_arity(n);
-		for (i = 0; i < arity && !old_tp; ++i)
-			old_tp = get_irn_type(get_irn_n(n, i));
-	}
+  /* Always optimize Phi nodes: part of the construction. */
+  if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
 
-	/* Always optimize Phi nodes: part of the construction. */
-	if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
+  /* constant expression evaluation / constant folding */
+  if (get_opt_constant_folding()) {
+    /* neither constants nor Tuple values can be evaluated */
+    if (iro != iro_Const && (get_irn_mode(n) != mode_T)) {
+      /* try to evaluate */
+      tv = computed_value(n);
+      if (tv != tarval_bad) {
+        ir_node *nw;
+        type *old_tp = get_irn_type(n);
+        int i, arity = get_irn_arity(n);
+        int node_size;
 
-	/* constant expression evaluation / constant folding */
-	if (get_opt_constant_folding()) {
-		/* constants can not be evaluated */
-		if (iro != iro_Const) {
-			/* try to evaluate */
-			tv = computed_value(n);
-			if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
-				ir_node *nw;
+        /*
+         * Try to recover the type of the new expression.
+         */
+        for (i = 0; i < arity && !old_tp; ++i)
+          old_tp = get_irn_type(get_irn_n(n, i));
 
-				/*
-				 * we MUST copy the node here temporary, because it's still needed
-				 * for DBG_OPT_CSTEVAL
-				 */
-				int node_size = offsetof(ir_node, attr) +  n->op->attr_size;
-				oldn = alloca(node_size);
+        /*
+         * we MUST copy the node here temporary, because it's still needed
+         * for DBG_OPT_CSTEVAL
+         */
+        node_size = offsetof(ir_node, attr) +  n->op->attr_size;
+        oldn = alloca(node_size);
 
-				memcpy(oldn, n, node_size);
-				CLONE_ARR_A(ir_node *, oldn->in, n->in);
+        memcpy(oldn, n, node_size);
+        CLONE_ARR_A(ir_node *, oldn->in, n->in);
 
-				/* ARG, copy the in array, we need it for statistics */
-				memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
+        /* ARG, copy the in array, we need it for statistics */
+        memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
 
+        /* note the inplace edges module */
+        edges_node_deleted(n, current_ir_graph);
 
-				edges_node_deleted(n, current_ir_graph);
+        /* evaluation was successful -- replace the node. */
+        obstack_free(current_ir_graph->obst, n);
+        nw = new_Const(get_tarval_mode (tv), tv);
 
-				/* evaluation was successful -- replace the node. */
-				obstack_free (current_ir_graph->obst, n);
-				nw = new_Const (get_tarval_mode (tv), tv);
+        if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
+          set_Const_type(nw, old_tp);
+        DBG_OPT_CSTEVAL(oldn, nw);
+        return nw;
+      }
+    }
+  }
 
-				if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
-					set_Const_type(nw, old_tp);
-				DBG_OPT_CSTEVAL(oldn, nw);
-				return nw;
-			}
-		}
-	}
+  /* remove unnecessary nodes */
+  if (get_opt_constant_folding() ||
+    (iro == iro_Phi)  ||   /* always optimize these nodes. */
+    (iro == iro_Id)   ||
+    (iro == iro_Proj) ||
+    (iro == iro_Block)  )  /* Flags tested local. */
+    n = equivalent_node (n);
 
-	/* remove unnecessary nodes */
-	if (get_opt_constant_folding() ||
-			(iro == iro_Phi)  ||   /* always optimize these nodes. */
-			(iro == iro_Id)   ||
-			(iro == iro_Proj) ||
-			(iro == iro_Block)  )  /* Flags tested local. */
-		n = equivalent_node (n);
+  optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
 
-	optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
+  /* Common Subexpression Elimination.
+   *
+   * Checks whether n is already available.
+   * The block input is used to distinguish different subexpressions. Right
+   * now all nodes are op_pin_state_pinned to blocks, i.e., the CSE only finds common
+   * subexpressions within a block.
+   */
+  if (get_opt_cse())
+    n = identify_cons (current_ir_graph->value_table, n);
 
-	/** common subexpression elimination **/
-	/* Checks whether n is already available. */
-	/* The block input is used to distinguish different subexpressions. Right
-		 now all nodes are op_pin_state_pinned to blocks, i.e., the CSE only finds common
-		 subexpressions within a block. */
-	if (get_opt_cse())
-		n = identify_cons (current_ir_graph->value_table, n);
+  if (n != oldn) {
+    edges_node_deleted(oldn, current_ir_graph);
 
-	if (n != oldn) {
-		edges_node_deleted(oldn, current_ir_graph);
+    /* We found an existing, better node, so we can deallocate the old node. */
+    obstack_free (current_ir_graph->obst, oldn);
 
-		/* We found an existing, better node, so we can deallocate the old node. */
-		obstack_free (current_ir_graph->obst, oldn);
+    return n;
+  }
 
-		return n;
-	}
+  /* Some more constant expression evaluation that does not allow to
+     free the node. */
+  iro = get_irn_opcode(n);
+  if (get_opt_constant_folding() ||
+    (iro == iro_Cond) ||
+    (iro == iro_Proj) ||
+    (iro == iro_Sel))     /* Flags tested local. */
+    n = transform_node (n);
 
-	/* Some more constant expression evaluation that does not allow to
-		 free the node. */
-	iro = get_irn_opcode(n);
-	if (get_opt_constant_folding() ||
-	    (iro == iro_Cond) ||
-	    (iro == iro_Proj) ||
-	    (iro == iro_Sel))     /* Flags tested local. */
-	  n = transform_node (n);
+  /* Remove nodes with dead (Bad) input.
+     Run always for transformation induced Bads. */
+  n = gigo (n);
 
-	/* Remove nodes with dead (Bad) input.
-	   Run always for transformation induced Bads. */
-	n = gigo (n);
+  /* Now we have a legal, useful node. Enter it in hash table for cse */
+  if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
+    n = identify_remember (current_ir_graph->value_table, n);
+  }
 
-	/* Now we have a legal, useful node. Enter it in hash table for cse */
-	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
-	  n = identify_remember (current_ir_graph->value_table, n);
-	}
-
-	return n;
+  return n;
 }
 
 
@@ -3217,34 +3163,29 @@ optimize_in_place_2 (ir_node *n)
   ir_node *oldn = n;
   opcode iro = get_irn_opcode(n);
 
-  type *old_tp = get_irn_type(n);
-  {
-    int i, arity = get_irn_arity(n);
-    for (i = 0; i < arity && !old_tp; ++i)
-      old_tp = get_irn_type(get_irn_n(n, i));
-  }
-
   if (!get_opt_optimize() && (get_irn_op(n) != op_Phi)) return n;
-
-  /* if not optimize return n */
-  if (n == NULL) {
-    assert(0);
-    /* Here this is possible.  Why? */
-    return n;
-  }
 
   /* constant expression evaluation / constant folding */
   if (get_opt_constant_folding()) {
-    /* constants can not be evaluated */
-    if (iro != iro_Const) {
+    /* neither constants nor Tuple values can be evaluated */
+    if (iro != iro_Const && get_irn_mode(n) != mode_T) {
       /* try to evaluate */
       tv = computed_value(n);
-      if ((get_irn_mode(n) != mode_T) && (tv != tarval_bad)) {
+      if (tv != tarval_bad) {
         /* evaluation was successful -- replace the node. */
-        n = new_Const (get_tarval_mode (tv), tv);
+        type *old_tp = get_irn_type(n);
+        int i, arity = get_irn_arity(n);
 
-    if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
-      set_Const_type(n, old_tp);
+        /*
+         * Try to recover the type of the new expression.
+         */
+        for (i = 0; i < arity && !old_tp; ++i)
+          old_tp = get_irn_type(get_irn_n(n, i));
+
+        n = new_Const(get_tarval_mode(tv), tv);
+
+        if (old_tp && get_type_mode(old_tp) == get_tarval_mode(tv))
+          set_Const_type(n, old_tp);
 
         DBG_OPT_CSTEVAL(oldn, n);
         return n;
@@ -3258,7 +3199,7 @@ optimize_in_place_2 (ir_node *n)
       (iro == iro_Id)   ||   /* ... */
       (iro == iro_Proj) ||   /* ... */
       (iro == iro_Block)  )  /* Flags tested local. */
-    n = equivalent_node (n);
+    n = equivalent_node(n);
 
   optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
 
@@ -3268,7 +3209,7 @@ optimize_in_place_2 (ir_node *n)
      now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
      subexpressions within a block. */
   if (get_opt_cse()) {
-    n = identify (current_ir_graph->value_table, n);
+    n = identify(current_ir_graph->value_table, n);
   }
 
   /* Some more constant expression evaluation. */
@@ -3277,11 +3218,11 @@ optimize_in_place_2 (ir_node *n)
       (iro == iro_Cond) ||
       (iro == iro_Proj) ||
       (iro == iro_Sel))     /* Flags tested local. */
-    n = transform_node (n);
+    n = transform_node(n);
 
   /* Remove nodes with dead (Bad) input.
      Run always for transformation induced Bads.  */
-  n = gigo (n);
+  n = gigo(n);
 
   /* Now we can verify the node, as it has no dead inputs any more. */
   irn_vrfy(n);
@@ -3290,7 +3231,7 @@ optimize_in_place_2 (ir_node *n)
      Blocks should be unique anyways.  (Except the successor of start:
      is cse with the start block!) */
   if (get_opt_cse() && (get_irn_opcode(n) != iro_Block))
-    n = identify_remember (current_ir_graph->value_table, n);
+    n = identify_remember(current_ir_graph->value_table, n);
 
   return n;
 }
