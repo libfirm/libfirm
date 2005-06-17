@@ -30,12 +30,16 @@
 /* ===================================================
    Global Prototypes:
    =================================================== */
-/* Get the entity of a ptr */
-entity *get_ptr_ent (ir_node*);
+/** Get the entity of a ptr. */
+entity *get_ptr_ent (ir_node *ptr);
 
-/* Find the arguments of a graph. For a method that has n args, the
-  result array has 'n+1' entries, the last of which is written NULL. */
-ir_node **find_irg_args (ir_graph*);
+/**
+ * Find the arguments of a graph. For a method that has n args, the
+ * result array has 'n+1' entries, the last of which is written NULL.
+ *
+ * @param irg  The IR graph
+ */
+ir_node **find_irg_args (ir_graph *irg);
 
 /* Check whether the load of the given ptr is a dummy */
 int is_dummy_load_ptr (ir_node*);
@@ -51,6 +55,9 @@ int is_dummy_load_ptr (ir_node*);
 
 /*
   $Log$
+  Revision 1.7  2005/06/17 17:43:52  beck
+  added doxygen docu
+
   Revision 1.6  2004/11/26 15:59:14  liekweg
   recognize dummy loads
 
