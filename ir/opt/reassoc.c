@@ -56,7 +56,11 @@ static const_class_t get_const_class(ir_node *n, ir_node *block)
     return REAL_CONSTANT;
   if (op == op_SymConst)
     return CONST_EXPR;
-  if (is_loop_invariant(n, block))
+  /*
+   * Beware: Bad nodes are always loop-invariant, but
+   * cannot handles in later code, so filter them here
+   */
+  if (! is_Bad(n) && is_loop_invariant(n, block))
     return CONST_EXPR;
 
   return NO_CONSTANT;
