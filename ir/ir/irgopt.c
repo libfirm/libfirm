@@ -278,12 +278,12 @@ copy_preds (ir_node *n, void *env) {
      printf(" new node: "); DDMSG2(nn);
      printf(" arities: old: %d, new: %d\n", get_irn_arity(n), get_irn_arity(nn)); */
 
-  if (get_irn_opcode(n) == iro_Block) {
+  if (is_Block(n)) {
     /* Don't copy Bad nodes. */
     j = 0;
     irn_arity = get_irn_arity(n);
     for (i = 0; i < irn_arity; i++)
-      if (get_irn_opcode(get_irn_n(n, i)) != iro_Bad) {
+      if (! is_Bad(get_irn_n(n, i))) {
         set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
         /*if (is_backedge(n, i)) set_backedge(nn, j);*/
         j++;
@@ -308,7 +308,7 @@ copy_preds (ir_node *n, void *env) {
         exchange(nn, old);
       }
     }
-  } else if (get_irn_opcode(n) == iro_Phi) {
+  } else if (get_irn_op(n) == op_Phi) {
     /* Don't copy node if corresponding predecessor in block is Bad.
        The Block itself should not be Bad. */
     block = get_nodes_block(n);
@@ -316,7 +316,7 @@ copy_preds (ir_node *n, void *env) {
     j = 0;
     irn_arity = get_irn_arity(n);
     for (i = 0; i < irn_arity; i++)
-      if (get_irn_opcode(get_irn_n(block, i)) != iro_Bad) {
+      if (! is_Bad(get_irn_n(block, i))) {
         set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
         /*if (is_backedge(n, i)) set_backedge(nn, j);*/
         j++;
@@ -335,7 +335,7 @@ copy_preds (ir_node *n, void *env) {
   }
   /* Now the new node is complete.  We can add it to the hash table for CSE.
      @@@ inlinening aborts if we identify End. Why? */
-  if(get_irn_op(nn) != op_End)
+  if (get_irn_op(nn) != op_End)
     add_identities (current_ir_graph->value_table, nn);
 }
 
