@@ -24,7 +24,7 @@ SOURCES = $(INSTALL_HEADERS)
 SOURCES += 	Makefile.in \
 		cfopt.c tailrec.c strength_red.c ldstopt.c reassoc.c \
 		loop_unrolling.c ifconv.c scalar_replace.c funccall.c \
-		opt_polymorphy.c return.c tropt.c
+		opt_polymorphy.c return.c tropt.c opt_confirms.c opt_confirms.h
 
 include $(topdir)/MakeRules
 
