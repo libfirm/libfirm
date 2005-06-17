@@ -110,7 +110,7 @@ induct_var_info *is_induction_variable (induct_var_info *info) {
     ir_node *pred = get_Phi_pred(info->itervar_phi, i);
     ir_op *op = get_irn_op(pred);
 
-    /* Compute if the induction variable is added or substracted wiht a constant . */
+    /* Compute if the induction variable is added or substracted with a constant . */
     if (op == op_Add || op == op_Sub) {
       ir_node *n_l = get_binop_left(pred);
       ir_node *n_r = get_binop_right(pred);
