@@ -126,11 +126,25 @@ typedef struct _block_entry_t {
 } block_entry_t;
 
 /**
+ * Some potential interesting float values
+ */
+typedef enum _float_classify_t {
+  STAT_FC_0,                /**< the float value 0.0 */
+  STAT_FC_1,                /**< the float value 1.0 */
+  STAT_FC_2,                /**< the float value 2.0 */
+  STAT_FC_0_5,              /**< the float value 0.5 */
+  STAT_FC_EXACT,            /**< an exact value */
+  STAT_FC_OTHER,            /**< all other values */
+  STAT_FC_MAX               /**< last value */
+} float_classify_t;
+
+/**
  * constant info
  */
 typedef struct _constant_info_t {
-  counter_t  bits_count[32];   /**< distribution of bit sizes of constants */
-  counter_t  others;           /**< number of other constants */
+  counter_t  int_bits_count[32];  /**< distribution of bit sizes of integer constants */
+  counter_t  floats[STAT_FC_MAX]; /**< floating point constants */
+  counter_t  others;              /**< all other constants */
 } constant_info_t;
 
 /** forward */
@@ -290,5 +304,10 @@ void stat_const_clear(stat_info_t *status);
  * initialize the Const statistic.
  */
 void stat_init_const_cnt(stat_info_t *status);
+
+/**
+ * return a human readable name for an float classification
+ */
+const char *stat_fc_name(float_classify_t classification);
 
 #endif /* _FIRMSTAT_T_H_ */
