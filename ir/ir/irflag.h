@@ -13,7 +13,7 @@
 /**
  * @file irflag.h
  *
- * Flags to customize the behaviour of libfirm.
+ * Flags to customize the behavior of libfirm.
  *
  * @author Christian Schaefer
  *
@@ -204,7 +204,7 @@ int  get_opt_optimize_class_casts (void);
 void set_opt_optimize_class_casts_verbose (int value);
 int  get_opt_optimize_class_casts_verbose (void);
 
-/** Restricts the behaviour of cast optimization.
+/** Restricts the behavior of cast optimization.
  *
  *  If set, downcast are not optimized if they might be
  *  illegal as in (Super)(Sub) (new Super()).  Default:
@@ -242,9 +242,14 @@ void set_opt_if_conversion(int value);
  * Enable/Disable real function call optimization.
  *
  * Real function call optimization detects "real functions" and
- * allows the floationg of Call nodes.
+ * allows the floating of Call nodes.
  */
 void set_opt_real_function_call(int value);
+
+/**
+ * Enable/Disable Confirm node removal during local optimization.
+ */
+void set_opt_remove_Confirm(int value);
 
 /** Enable/Disable normalizations of the firm representation.
  *
@@ -274,4 +279,4 @@ void save_optimization_state(optimization_state_t *state);
  */
 void restore_optimization_state(const optimization_state_t *state);
 
-#endif
+#endif /* _IRFLAG_H_ */

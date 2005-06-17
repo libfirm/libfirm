@@ -102,6 +102,9 @@ typedef enum {
   OPT_CLASS_CASTS                        = 0x00400000,
   OPT_SUPPRESS_DOWNCAST_OPT              = 0x00800000,
 
+  /** Not really an optimization, removes Confirm nodes */
+  OPT_REMOVE_CONFIRM                     = 0x01000000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 
@@ -285,6 +288,12 @@ static INLINE int get_opt_if_conversion(void)
 static INLINE int get_opt_real_func_call(void)
 {
   return libFIRM_opt & OPT_REAL_FUNC_CALL;
+}
+
+/** Returns Confirm removal setting. */
+static INLINE int get_opt_remove_Confirm(void)
+{
+  return libFIRM_opt & OPT_REMOVE_CONFIRM;
 }
 
 #define get_opt_cse()                            _get_opt_cse()

@@ -23,31 +23,32 @@
 #define DISABLE(a)  0
 
 optimization_state_t libFIRM_opt =
-  ENABLE(OPT_OPTIMIZED)                          |
-  ENABLE(OPT_CSE)                                |
-  DISABLE(OPT_GLOBAL_CSE)                        |
-  ENABLE(OPT_LOOP_UNROLLING)                     |
-  ENABLE(OPT_STRENGTH_RED)                       |
-  ENABLE(OPT_CONSTANT_FOLDING)                   |
-  ENABLE(OPT_REDUNDANT_LOADSTORE)                |
-  ENABLE(OPT_UNREACHABLE_CODE)                   |
-  ENABLE(OPT_CONTROL_FLOW_STRAIGHTENING)         |
-  ENABLE(OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION)   |
-  ENABLE(OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION) |
-  ENABLE(OPT_CRITICAL_EDGES)                     |
-  ENABLE(OPT_DEAD_NODE_ELIMINATION)              |
-  ENABLE(OPT_DEAD_METHOD_ELIMINATION)            |
-  ENABLE(OPT_REASSOCIATION)                      |
-  ENABLE(OPT_INLINE)                             |
-  ENABLE(OPT_DYN_METH_DISPATCH)                  |
-  ENABLE(OPT_CLASS_CASTS)                        |
-  DISABLE(OPT_SUPPRESS_DOWNCAST_OPT)             |
-  ENABLE(OPT_NORMALIZE)                          |
-  ENABLE(OPT_TAIL_RECURSION)                     |
-  ENABLE(OPT_PRECISE_EXC_CONTEXT)                |
-  DISABLE(OPT_FRAGILE_OPS)                       |
-  ENABLE(OPT_IF_CONVERSION)                      |
-  ENABLE(OPT_REAL_FUNC_CALL)                     |
+  ENABLE(OPT_OPTIMIZED)                           |
+  ENABLE(OPT_CSE)                                 |
+  DISABLE(OPT_GLOBAL_CSE)                         |
+  ENABLE(OPT_LOOP_UNROLLING)                      |
+  ENABLE(OPT_STRENGTH_RED)                        |
+  ENABLE(OPT_CONSTANT_FOLDING)                    |
+  ENABLE(OPT_REDUNDANT_LOADSTORE)                 |
+  ENABLE(OPT_UNREACHABLE_CODE)                    |
+  ENABLE(OPT_CONTROL_FLOW_STRAIGHTENING)          |
+  ENABLE(OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION)    |
+  ENABLE(OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION)  |
+  ENABLE(OPT_CRITICAL_EDGES)                      |
+  ENABLE(OPT_DEAD_NODE_ELIMINATION)               |
+  ENABLE(OPT_DEAD_METHOD_ELIMINATION)             |
+  ENABLE(OPT_REASSOCIATION)                       |
+  ENABLE(OPT_INLINE)                              |
+  ENABLE(OPT_DYN_METH_DISPATCH)                   |
+  ENABLE(OPT_CLASS_CASTS)                         |
+  DISABLE(OPT_SUPPRESS_DOWNCAST_OPT)              |
+  ENABLE(OPT_NORMALIZE)                           |
+  ENABLE(OPT_TAIL_RECURSION)                      |
+  ENABLE(OPT_PRECISE_EXC_CONTEXT)                 |
+  DISABLE(OPT_FRAGILE_OPS)                        |
+  ENABLE(OPT_IF_CONVERSION)                       |
+  ENABLE(OPT_REAL_FUNC_CALL)                      |
+  DISABLE(OPT_REMOVE_CONFIRM)                     |
   0;
 
 optimization_state_t libFIRM_verb =
@@ -75,6 +76,7 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_FRAGILE_OPS)                        |
   DISABLE(OPT_IF_CONVERSION)                      |
   DISABLE(OPT_REAL_FUNC_CALL)                     |
+  DISABLE(OPT_REMOVE_CONFIRM)                     |
   0;
 
 /** The Firm verbosity level */
@@ -372,6 +374,15 @@ void set_opt_real_function_call(int value)
     libFIRM_opt |= OPT_REAL_FUNC_CALL;
   else
     libFIRM_opt &= ~OPT_REAL_FUNC_CALL;
+}
+
+/* Enable/Disable Confirm node removal. */
+void set_opt_remove_Confirm(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_REMOVE_CONFIRM;
+  else
+    libFIRM_opt &= ~OPT_REMOVE_CONFIRM;
 }
 
 /* Save the current optimization state. */
