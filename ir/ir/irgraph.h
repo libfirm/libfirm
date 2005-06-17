@@ -68,9 +68,9 @@ typedef struct ir_graph ir_graph;
  *      *frame           The ir_node producing the pointer to the stack frame of
  *                       the procedure as output.  This is the Proj node on the
  *                       third output of the start node.  This output of the start
- *                      node is tagged as pns_frame_base.  In FIRM most lokal
+ *                      node is tagged as pns_frame_base.  In FIRM most local
  *                       variables are modeled as data flow edges.  Static
- *                       allocated arrays can not be represented as dataflow
+ *                       allocated arrays can not be represented as data flow
  *                       edges. Therefore FIRM has to represent them in the stack
  *                       frame.
  *
@@ -91,7 +91,7 @@ typedef struct ir_graph ir_graph;
  *      *no_mem          The NoMem node is an auxiliary node. It is needed only once,
  *                       so there is this globally reachable node.
  *
- *      Datastructures that are private to a graph:
+ *      Data structures that are private to a graph:
  *
  *      *obst            An obstack that contains all nodes.
  *
@@ -101,7 +101,7 @@ typedef struct ir_graph ir_graph;
  *                       Only needed for ir construction.
  *
  *      params/n_loc     An int giving the number of local variables in this
- *               procedure.  This is neede for ir construction. Name will
+ *               procedure.  This is needed for ir construction. Name will
  *               be changed.
  *
  *      *value_table     This hash table (pset) is used for global value numbering
@@ -126,7 +126,7 @@ extern ir_graph *current_ir_graph;
 ir_graph *get_current_ir_graph(void);
 void      set_current_ir_graph(ir_graph *graph);
 
-/** This flag indicate the current view. The behaviour of some methods
+/** This flag indicate the current view. The behavior of some methods
  * (get_irn_*, set_irn_*) is influenced by this flag. */
 int get_interprocedural_view(void);
 void set_interprocedural_view(int state);
@@ -151,13 +151,13 @@ void set_interprocedural_view(int state);
  * - The start block containing a start node and Proj nodes for it's
  *   five results (X, M, P, P, T).
  * - The end block containing an end node. This block is not matured
- *   after executing new_ir_graph as predecessors need to be added to it.
+ *   after executing new_ir_graph() as predecessors need to be added to it.
  *   (Maturing a block means fixing it's number of predecessors.)
  * - The current block, which is empty and also not matured.
  *
- * Further it enters the global store into the datastructure of the start
- * block that contanis all valid values in this block (set_store()).  This
- * datastructure is used to build the Phi nodes and removed after
+ * Further it enters the global store into the data structure of the start
+ * block that contains all valid values in this block (set_store()).  This
+ * data structure is used to build the Phi nodes and removed after
  * completion of the graph.  There is no path from end to start in the
  * graph after calling ir_graph.
  *
@@ -217,7 +217,7 @@ void     set_irg_end (ir_graph *irg, ir_node *node);
 
 /* The fields end_reg and end_except contain the end nodes of the
    interprocedural view.  If the view is not constructed they contain
-   the nomal end node. */
+   the normal end node. */
 ir_node *get_irg_end_reg (const ir_graph *irg);
 void     set_irg_end_reg (ir_graph *irg, ir_node *node);
 
@@ -294,7 +294,7 @@ long     get_irg_graph_nr(ir_graph *irg);
  *
  * To get the irgraph into phase_low all Sel nodes must be removed and
  * replaced by explicit address computations.  SymConst size and
- * typetag nodes must be removed (@@@ really?).  Initialization of
+ * type tag nodes must be removed (@@@ really?).  Initialization of
  * memory allocated by Alloc must be explicit.  @@@ More conditions?
  *
  */
@@ -332,18 +332,12 @@ irg_outs_state get_irg_outs_state(const ir_graph *irg);
 void           set_irg_outs_inconsistent(ir_graph *irg);
 
 /** state: dom_state
-   Signals the state of the dominator infomation.
-   Values:  dom_none, dom_consistent, dom_inconsistent
-   dom_none: doms are not computed, no memory is allocated.  The access routines
-   may not be used.
-   dom_consistent:  dominator information is computed and correct,
-   dom_inconsistent: dominator information is computed, memory is still allocated,
-   but the graph has been changed since. Using the access routines is possible,
-   obtained information may be incorrect. */
+ * Signals the state of the dominator information.
+ */
 typedef enum {
-  dom_none,             /**< doms are not computed, no memory is allocated */
+  dom_none,             /**< dominator are not computed, no memory is allocated */
   dom_consistent,       /**< dominator information is computed and correct */
-  dom_inconsistent      /**<  dominator information is computed but the graph has been changed since */
+  dom_inconsistent      /**< dominator information is computed but the graph has been changed since */
 } irg_dom_state;
 
 /** returns the dom_state of an IR graph. */
@@ -489,7 +483,7 @@ void *get_irg_loc_description(ir_graph *irg, int n);
 /**
  * Request additional data to be allocated with an ir graph.
  * @param size The size of the additional data required.
- * @return A positive number, if the opration was successful, which
+ * @return A positive number, if the operation was successful, which
  * must be passed to the access macro get_irg_data(), 0 if the
  * registration failed.
  */
