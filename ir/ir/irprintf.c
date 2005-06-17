@@ -40,7 +40,7 @@
 #include "irnode_t.h"
 #include "entity_t.h"
 #include "type_t.h"
-#include "tv.h"
+#include "tv_t.h"
 #include "irprintf.h"
 #include "obst.h"
 #include "pset.h"
