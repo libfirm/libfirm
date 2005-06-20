@@ -346,7 +346,7 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
  * Compares two tarvals
  *
  * Compare a with b and return a pn_Cmp describing the relation
- * between a and b.  This is either pn_Cmp_Uo, pn_Cmp_ Lt, pn_Cmp_ Eq, pn_Cmp_Gt,
+ * between a and b.  This is either pn_Cmp_Uo, pn_Cmp_Lt, pn_Cmp_Eq, pn_Cmp_Gt,
  * or pn_Cmp_False if a or b are symbolic pointers which can not be compared at all.
  *
  * @param a   A tarval to be compared
@@ -366,7 +366,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b);
 /**
  * Converts a tarval to another mode.
  *
- * Convert tarval 'src' to mode 'mode', this will suceed if and only if mode
+ * Convert tarval 'src' to mode 'mode', this will succeed if and only if mode
  * 'mode' is wider than the mode of src, as defined in the firm documentation
  * and as returned by the function mode_is_smaller defined in irmode.h.
  *
@@ -396,12 +396,12 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m);
  *    traval_abs:
  *      a - the tarval to operate on
  *
- *    all oters:
+ *    all others:
  *      a - the first operand tarval
  *      b - the second operand tarval
  *
  * RESULT
- *    If neccessary a new tarval is constructed for the resulting value,
+ *    If necessary a new tarval is constructed for the resulting value,
  *   or the one already carrying the computation result is retrieved and
  *   returned as result.
  *
@@ -471,16 +471,16 @@ int tarval_carry(void);
  * Some modes allow more that one representation, for instance integers
  * can be represented hex or decimal. Of course it would be enough to have
  * one and let every backend convert it into the 'right' one.
- * However, we can do this in the tarval much simplier...
+ * However, we can do this in the tarval much simpler...
  */
 typedef enum {
-  TVO_NATIVE,           /**< the default output mode, depends on the mode */
+  TVO_NATIVE,       /**< the default output mode, depends on the mode */
   TVO_HEX,          /**< use hex representation, always possible */
-  TVO_DECIMAL,          /**< use decimal representation */
-  TVO_OCTAL,            /**< use octal representation */
-  TVO_BINARY,           /**< use binary representation */
-  TVO_FLOAT,            /**< use floating point representation (i.e 1.342e-2)*/
-  TVO_HEXFLOAT                  /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
+  TVO_DECIMAL,      /**< use decimal representation */
+  TVO_OCTAL,        /**< use octal representation */
+  TVO_BINARY,       /**< use binary representation */
+  TVO_FLOAT,        /**< use floating point representation (i.e 1.342e-2)*/
+  TVO_HEXFLOAT      /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
 } tv_output_mode;
 
 /**
@@ -488,17 +488,17 @@ typedef enum {
  * of a tarval of a mode.
  */
 typedef struct tarval_mode_info {
-    tv_output_mode mode_output;         /**< if != TVO_NATIVE select a special mode */
-    const char *mode_prefix;        /**< if set, this prefix will be printed
-                         before a value of this mode */
-    const char *mode_suffix;        /**< if set, this suffix will be printed
-                         after a value of this mode */
+  tv_output_mode mode_output;  /**< if != TVO_NATIVE select a special mode */
+  const char *mode_prefix;     /**< if set, this prefix will be printed
+                                    before a value of this mode */
+  const char *mode_suffix;     /**< if set, this suffix will be printed
+                                    after a value of this mode */
 } tarval_mode_info;
 
 /**
  * Specify the output options of one mode.
  *
- * This functions stores the modinfo, so DO NOT DESTROY it.
+ * This functions stores the mode info, so DO NOT DESTROY it.
  *
  * @param mode      a ir_mode that should be associated
  * @param modeinfo  the output format info
@@ -510,7 +510,7 @@ int  set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modein
 /**
  * Returns the output options of one mode.
  *
- * This functions returns the modinfo of a given mode.
+ * This functions returns the mode info of a given mode.
  *
  * @param mode      a ir_mode that should be associated
  *
@@ -534,7 +534,7 @@ const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode);
  * @note
  *   The string is allocated using malloc() and is free()ed on the next call
  *   of this function.
- *   The string consists of the ascii characters '0' and '1' and is
+ *   The string consists of the ASCII characters '0' and '1' and is
  *   null terminated
  *
  * @sa
@@ -559,14 +559,14 @@ char *get_tarval_bitpattern(tarval *tv);
  * Because this is the bit representation of the target machine, only the following
  * operations are legal on the result:
  *
- * - concatenation (endian dependance MUST be handled by the CALLER)
+ * - concatenation (endian dependence MUST be handled by the CALLER)
  * - bitwise logical operations to select/mask bits
  *
  * @param tv        the tarval
  * @param byte_ofs  the byte offset
  *
  * @note
- *   The result of this funcion is undefined if the mode is neither integer nor float.
+ *   The result of this function is undefined if the mode is neither integer nor float.
  */
 unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
 
