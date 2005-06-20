@@ -783,10 +783,16 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b)
   assert(a);
   assert(b);
 
-  if (a == tarval_bad || b == tarval_bad) assert(0 && "Comparison with tarval_bad");
-  if (a == tarval_undefined || b == tarval_undefined) return pn_Cmp_False;
-  if (a == b) return pn_Cmp_Eq;
-  if (a->mode != b->mode) return pn_Cmp_False;
+  if (a == tarval_bad || b == tarval_bad) {
+    assert(0 && "Comparison with tarval_bad");
+    return pn_Cmp_False;
+  }
+
+  if (a == tarval_undefined || b == tarval_undefined)
+    return pn_Cmp_False;
+
+  if (a->mode != b->mode)
+    return pn_Cmp_False;
 
   if (get_mode_n_vector_elems(a->mode) > 1) {
     /* vector arithmetic not implemented yet */
@@ -800,9 +806,15 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b)
     case irms_memory:
     case irms_auxiliary:
     case irms_reference:
+      if (a == b)
+        return pn_Cmp_Eq;
       return pn_Cmp_False;
 
     case irms_float_number:
+      /*
+       * BEWARE: we cannot compare a == b here, because
+       * a NaN is always Unordered to any other value, even to itself!
+       */
       switch (fc_comp(a->value, b->value)) {
         case -1: return pn_Cmp_Lt;
         case  0: assert(0 && "different tarvals compare equal"); return pn_Cmp_Eq;
@@ -812,9 +824,13 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b)
       }
     case irms_int_number:
     case irms_character:
+      if (a == b)
+        return pn_Cmp_Eq;
       return sc_comp(a->value, b->value) == 1 ? pn_Cmp_Gt : pn_Cmp_Lt;
 
     case irms_internal_boolean:
+      if (a == b)
+        return pn_Cmp_Eq;
       return a == tarval_b_true ? pn_Cmp_Gt : pn_Cmp_Lt;
   }
   return pn_Cmp_False;
