@@ -1,5 +1,4 @@
 /**
- *
  * @file type.h
  *
  * Project:     libFIRM                                                   <br>
@@ -163,7 +162,7 @@ typedef enum {
   visibility_external_visible,   /**< The entity is visible to other external program parts, but
 				      it is defined here.  It may not be optimized away.  The entity must
 				      be static_allocated.
-				      For types:  entities of this type can be accessed externaly.  No
+				      For types:  entities of this type can be accessed externally.  No
 				      instances of this type are allocated externally.  */
   visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
   				      must not allocate memory for this entity. The entity must
@@ -193,7 +192,7 @@ typedef enum {
  *
  * @@@ Do we need a visibility for types?
  * I change the layout of types radically when doing type splitting.
- * I need to know, which fields of classes are accessed in the rts,
+ * I need to know, which fields of classes are accessed in the RTS,
  * e.g., [_length.  I may not move [_length to the split part.
  * The layout though, is a property of the type.
  *
@@ -256,7 +255,7 @@ ir_mode*    get_type_mode(const type *tp);
 void        set_type_mode(type *tp, ir_mode* m);
 
 /** Returns the size of a type in bytes, returns -1 if the size is NOT
- *  a byte size, ie not dividable by 8. */
+ *  a byte size, i.e. not dividable by 8. */
 int         get_type_size_bytes(const type *tp);
 
 /** Returns the size of a type in bits. */
@@ -372,7 +371,7 @@ int is_type            (const void *thing);
  *    - they are enumeration types and have the same enumerator names
  *    - they are pointer types and have the identical points_to type
  *      (i.e., the same C-struct to represent the type, type_id is skipped.
- *       This is to avoid endless recursions; with pointer types circlic
+ *       This is to avoid endless recursions; with pointer types cyclic
  *       type graphs are possible.)
  */
 int equal_type(type *tpy1, type *typ2);
@@ -422,7 +421,7 @@ int smaller_type (type *st, type *lt);
  *  Further a class can inherit from and bequest to other classes.
  *  @@@ value class???
  *  The following attributes are private to this type kind:
- *  - member:     All entities belonging to this class.  This are methode entities
+ *  - member:     All entities belonging to this class.  This are method entities
  *                which have type_method or fields that can have any of the
  *                following type kinds: type_class, type_struct, type_union,
  *                type_array, type_enumeration, type_pointer, type_primitive.
@@ -833,28 +832,28 @@ int   get_array_n_dimensions (const type *array);
 
 /**
  * Allocates Const nodes of mode_I for one array dimension.
- * Upper bound in Firm is the element next to the last, ie [lower,upper[
+ * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
 void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
                                                           int upper_bound);
 /**
  * Sets the bounds for one array dimension.
- * Upper bound in Firm is the element next to the last, ie [lower,upper[
+ * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
 void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
                                                           ir_node *upper_bound);
-/** Sets the lower bound for one array dimension, ie [lower,upper[ */
+/** Sets the lower bound for one array dimension, i.e. [lower,upper[ */
 void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
 
 /** Allocates Const nodes of mode_I for the lower bound of an array
-    dimension, ie [lower,upper[ */
+    dimension, i.e. [lower,upper[ */
 void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
 
-/** Sets the upper bound for one array dimension, ie [lower,upper[ */
+/** Sets the upper bound for one array dimension, i.e. [lower,upper[ */
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
 
 /** Allocates Const nodes of mode_I for the upper bound of an array
-    dimension, ie [lower,upper[ */
+    dimension, i.e. [lower,upper[ */
 void  set_array_upper_bound_int (type *array, int dimension, int upper_bound);
 
 /** returns true if lower bound != Unknown */
@@ -1059,7 +1058,7 @@ int get_compound_n_members(const type *tp);
  *
  * @return The member entity at position pos.
  *
- * @see get_compound_n_members() for justifaction of existence.
+ * @see get_compound_n_members() for justification of existence.
  */
 entity *get_compound_member(const type *tp, int pos);
 
