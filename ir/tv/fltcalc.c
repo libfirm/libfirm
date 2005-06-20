@@ -117,7 +117,7 @@ typedef struct {
 #define _sign(a) (((char*)a)[SIGN_POS])
 #define _exp(a) (&((char*)a)[EXPONENT_POS])
 #define _mant(a) (&((char*)a)[MANTISSA_POS])
-#define _desc(a) (*(descriptor_t *)&((char*)a)[DESCRIPTOR_POS])
+#define _desc(a) (*(descriptor_t *)&((char *)a)[DESCRIPTOR_POS])
 
 #define _save_result(x) memcpy((x), sc_get_buffer(), value_size)
 #define _shift_right(x, y, b) sc_shr((x), (y), value_size*4, 0, (b))
@@ -356,7 +356,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
   }
   else if ((_desc(out_val).class == SUBNORMAL) && (hsb == -1))
   {
-    /* overflow caused the matissa to be normal again,
+    /* overflow caused the mantissa to be normal again,
      * so adapt the exponent accordingly */
     sc_val_from_ulong(1, temp);
     sc_add(_exp(out_val), temp, _exp(out_val));
@@ -446,7 +446,7 @@ static char* _add(const char* a, const char* b, char* result)
   /* determine if this is an addition or subtraction */
   sign = _sign(a) ^ _sign(b);
 
-  /* produce nan on inf - inf */
+  /* produce NaN on inf - inf */
   if (sign && (_desc(a).class == INF) && (_desc(b).class == INF))
     return fc_get_qnan(_desc(a).exponent_size, _desc(b).mantissa_size, result);
 
@@ -568,7 +568,7 @@ static char* _mul(const char* a, const char* b, char* result)
 
   _sign(result) = _sign(a) ^ _sign(b);
 
-  /* produce nan on 0 * inf */
+  /* produce NaN on 0 * inf */
   if (_desc(a).class == ZERO) {
     if (_desc(b).class == INF)
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
@@ -741,7 +741,7 @@ void _power_of_ten(int exp, descriptor_t *desc, char *result)
     }
     _save_result(build);
 
-    /* temp is amount of leftshift needed to put the value left of the radix point */
+    /* temp is amount of left shift needed to put the value left of the radix point */
     sc_val_from_ulong(_desc(result).mantissa_size + 2, temp);
 
     _shift_left(build, temp, _mant(result));
@@ -754,7 +754,7 @@ static char* _trunc(const char *a, char *result)
 {
   /* when exponent == 0 all bits left of the radix point
    * are the integral part of the value. For 15bit exp_size
-   * this would require a leftshift of max. 16383 bits which
+   * this would require a left shift of max. 16383 bits which
    * is too much.
    * But it is enough to ensure that no bit right of the radix
    * point remains set. This restricts the interesting
@@ -806,7 +806,8 @@ static char* _trunc(const char *a, char *result)
 /*
  * This does value sanity checking(or should do it), sets up any prerequisites,
  * calls the proper internal functions, clears up and returns
- * the result */
+ * the result
+ */
 char* _calc(const char *a, const char *b, int opcode, char *result)
 {
   char *temp;
@@ -1333,7 +1334,7 @@ char* fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, char *
 
   sc_val_from_ulong((1<<exponent_size)-1, _exp(result));
 
-  /* signalling nan has non-zero mantissa with msb not set */
+  /* signaling NaN has non-zero mantissa with msb not set */
   sc_val_from_ulong(1, _mant(result));
 
   return result;
@@ -1351,7 +1352,7 @@ char* fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, char *
 
   sc_val_from_ulong((1<<exponent_size)-1, _exp(result));
 
-  /* quiet nan has the msb of the mantissa set, so shift one there */
+  /* quiet NaN has the msb of the mantissa set, so shift one there */
   sc_val_from_ulong(1, _mant(result));
   /* mantissa_size >+< 1 because of two extra rounding bits */
   sc_val_from_ulong(mantissa_size + 1, NULL);
@@ -1393,17 +1394,28 @@ int fc_comp(const void *a, const void *b)
   const char *val_b = (const char*)b;
 
   /* unordered */
-  if (_desc(val_a).class == NAN || _desc(val_b).class == NAN) return 2;
-  /* zero is equal independent of sign */
-  if ((_desc(val_a).class == ZERO) && (_desc(val_b).class == ZERO)) return 0;
-  /* different signs make compare easy */
-  if (_sign(val_a) != _sign(val_b)) return (_sign(val_a)==0)?(1):(-1);
-  /* both infinity means equality */
-  if ((_desc(val_a).class == INF) && (_desc(val_b).class == INF)) return 0;
-  /* infinity is bigger than the rest */
-  if (_desc(val_a).class == INF) return _sign(val_a)?(-1):(1);
-  if (_desc(val_b).class == INF) return _sign(val_b)?(1):(-1);
+  if (_desc(val_a).class == NAN || _desc(val_b).class == NAN)
+    return 2;
 
+  /* zero is equal independent of sign */
+  if ((_desc(val_a).class == ZERO) && (_desc(val_b).class == ZERO))
+    return 0;
+
+  /* different signs make compare easy */
+  if (_sign(val_a) != _sign(val_b))
+    return (_sign(val_a)==0)?(1):(-1);
+
+  /* both infinity means equality */
+  if ((_desc(val_a).class == INF) && (_desc(val_b).class == INF))
+    return 0;
+
+  /* infinity is bigger than the rest */
+  if (_desc(val_a).class == INF)
+    return _sign(val_a)?(-1):(1);
+  if (_desc(val_b).class == INF)
+    return _sign(val_b)?(1):(-1);
+
+  /* check first exponent, that mantissa if equal */
   switch (sc_comp(_exp(val_a), _exp(val_b))) {
     case -1:
       return -1;
@@ -1418,12 +1430,12 @@ int fc_comp(const void *a, const void *b)
 
 int fc_is_zero(const void *a)
 {
-  return _desc((const char*)a).class == ZERO;
+  return _desc(a).class == ZERO;
 }
 
 int fc_is_negative(const void *a)
 {
-  return _sign((const char*)a);
+  return _sign(a);
 }
 
 int fc_is_inf(const void *a)
