@@ -73,7 +73,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
 
       pos = get_edge_src_pos(edge);
       set_irn_n(succ, pos, c);
-      DBG_OPT_CONFIRM(irn, c);
+      DBG_OPT_CONFIRM_C(irn, c);
 
       env->num_consts += 1;
     }
@@ -155,7 +155,6 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 
         pos = get_edge_src_pos(edge);
         set_irn_n(succ, pos, c);
-        DBG_OPT_CONFIRM(left, c);
 
         env->num_confirms += 1;
       }
