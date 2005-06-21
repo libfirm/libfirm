@@ -18,27 +18,33 @@
 /**
  * names of the optimizations
  */
-static const char *opt_names[] = {
-  "straightening optimization",
-  "if simplification",
-  "constant evaluation",
-  "algebraic simplification",
-  "Phi optmization",
-  "Write-After-Write optimization",
-  "Write-After-Read optimization",
-  "Read-After-Write optimization",
-  "Read-After-Read optimization",
-  "Read-a-Const optimization",
-  "Tuple optimization",
-  "ID optimization",
-  "Common subexpression elimination",
-  "Strength reduction",
-  "Architecture dependant optimization",
-  "Reassociation optimization",
-  "Polymorphic call optimization",
-  "an if conversion was tried",
-  "a value was substituted due to a Confirm",
-  "Lowered",
+static const struct {
+  hook_opt_kind kind;
+  const char    *name;
+} opt_names[] = {
+  { HOOK_OPT_STG,          "straightening optimization" },
+  { HOOK_OPT_IFSIM,        "if simplification" },
+  { HOOK_OPT_CONST_EVAL,   "constant evaluation" },
+  { HOOK_OPT_ALGSIM,       "algebraic simplification" },
+  { HOOK_OPT_PHI,          "Phi optmization" },
+  { HOOK_OPT_WAW,          "Write-After-Write optimization" },
+  { HOOK_OPT_WAR,          "Write-After-Read optimization" },
+  { HOOK_OPT_RAW,          "Read-After-Write optimization" },
+  { HOOK_OPT_RAR,          "Read-After-Read optimization" },
+  { HOOK_OPT_RC,           "Read-a-Const optimization" },
+  { HOOK_OPT_TUPLE,        "Tuple optimization" },
+  { HOOK_OPT_ID,           "ID optimization" },
+  { HOOK_OPT_CSE,          "Common subexpression elimination" },
+  { HOOK_OPT_STRENGTH_RED, "Strength reduction" },
+  { HOOK_OPT_ARCH_DEP,     "Architecture dependant optimization" },
+  { HOOK_OPT_REASSOC,      "Reassociation optimization" },
+  { HOOK_OPT_POLY_CALL,    "Polymorphic call optimization" },
+  { HOOK_OPT_IF_CONV,      "an if conversion was tried" },
+  { HOOK_OPT_FUNC_CALL,    "Real function call optimization" },
+  { HOOK_OPT_CONFIRM,      "Confirm-based optimization: replacement" },
+  { HOOK_OPT_CONFIRM_C,    "Confirm-based optimization: replaced by const" },
+  { HOOK_OPT_CONFIRM_E,    "Confirm-based optimization: evaluated" },
+  { HOOK_LOWERED,          "Lowered" },
 };
 
 static const char *if_conv_names[IF_RESULT_LAST] = {
@@ -87,8 +93,10 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 {
   opt_entry_t *entry = pset_first(set);
 
+  assert(index < ARR_SIZE(opt_names) && "index out of range");
+  assert(opt_names[index].kind == index && "opt_names broken");
   if (entry) {
-    fprintf(dmp->f, "\n%s:\n", opt_names[index]);
+    fprintf(dmp->f, "\n%s:\n", opt_names[index].name);
     fprintf(dmp->f, "%-16s %-8s\n", "Opcode", "deref");
 
     for (; entry; entry = pset_next(set)) {
