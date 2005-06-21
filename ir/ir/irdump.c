@@ -240,12 +240,19 @@ static INLINE void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg);
  */
 static pmap *irdump_link_map = NULL;
 
-/** Creates the link attribut map. */
+/** NOT A STANDARD LIBFIRM INIT METHOD
+ *
+ * We do not want to integrate dumping into libfirm, i.e., if the dumpers
+ * are off, we want to have as few interferences as possible.  Therefore the
+ * initialization is perfomed lazily and not called from within init_firm.
+ *
+ * Creates the link attribut map. */
 static void init_irdump(void) {
   /* We need a new, empty map. */
   if (irdump_link_map) pmap_destroy(irdump_link_map);
   irdump_link_map = pmap_create();
-  dump_file_filter_id = new_id_from_str("");
+  if (!dump_file_filter_id)
+    dump_file_filter_id = new_id_from_str("");
 }
 /**
  * Returns the private link field.
