@@ -119,6 +119,7 @@ typedef enum {
                                      a constant optimization. */
   dbg_rem_poly_call,            /**< Remove polymorphic call. */
   dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
+  dbg_opt_confirm,              /**< A Firm ubgraph was replace because of a Confirmation */
   dbg_max                       /**< Maximum value. */
 
 } dbg_action;
@@ -148,6 +149,7 @@ static const char* dbg_action_2_str(dbg_action a) {
   case dbg_read_after_read: return "dbg_read_after_read"; break;
   case dbg_read_a_const: return "dbg_read_a_const"; break;
   case dbg_rem_poly_call: return "dbg_rem_poly_call"; break;
+  case dbg_opt_confirm: return "dbg_opt_confirm"; break;
   default:
     if (a <= dbg_max)
       return "string conversion not implemented";
