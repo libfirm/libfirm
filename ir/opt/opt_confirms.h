@@ -56,9 +56,11 @@ value_classify classify_value_sign(ir_node *n);
  * Return the value of a Cmp if one or both predecessors
  * are Confirm nodes.
  *
+ * @param cmp    the compare node that will be evaluated
  * @param left   the left operand of the Cmp
  * @param right  the right operand of the Cmp
+ * @param pnc    the compare relation
  */
-tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right, pn_Cmp pnc);
+tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc);
 
 #endif /* _OPT_CONFIRMS_H_ */

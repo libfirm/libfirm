@@ -16,6 +16,7 @@
 
 #include "tv_t.h"
 #include "iropt_t.h"
+#include "iropt_dbg.h"
 #include "opt_confirms.h"
 
 enum range_tags {
@@ -50,7 +51,7 @@ int value_not_zero(ir_node *n)
 #define RET_ON(x)  if (x) return 1; break
 
   tarval *tv;
-  ir_mode *mode;
+  ir_mode *mode = get_irn_mode(n);
   pn_Cmp pnc;
 
   while (get_irn_op(n) == op_Confirm) {
@@ -63,12 +64,19 @@ int value_not_zero(ir_node *n)
     if (tv == tarval_bad)
       return 0;
 
-    mode = get_tarval_mode(tv);
     pnc  = tarval_cmp(tv, get_mode_null(mode));
 
+    /*
+     * Beware: C might by a NaN. It is not clear, what we should do
+     * than. Of course a NaN is != 0, but we might use this function
+     * to remove up Exceptions, and NaN's might generate Exception.
+     * So, we do NOT handle NaNs here for safety.
+     *
+     * Note that only the C != 0 case need additional checking.
+     */
     switch (get_Confirm_cmp(n)) {
-    case pn_Cmp_Eq: /* n == C /\ C != 0 ==> n != 0, should never happen, but simple */
-      RET_ON(pnc != pn_Cmp_Eq);
+    case pn_Cmp_Eq: /* n == C /\ C != 0 ==> n != 0 */
+      RET_ON(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Uo);
     case pn_Cmp_Lg: /* n != C /\ C == 0 ==> n != 0 */
       RET_ON(pnc == pn_Cmp_Eq);
     case pn_Cmp_Lt: /* n <  C /\ C <= 0 ==> n != 0 */
@@ -81,14 +89,20 @@ int value_not_zero(ir_node *n)
       RET_ON(pnc == pn_Cmp_Gt || pnc == pn_Cmp_Eq);
     default:
       break;
-	}
+    }
 
     /* there might be several Confirms one after other that form an interval */
     n = get_Confirm_value(n);
   }
   tv = value_of(n);
 
-  return (tv != tarval_bad) && (classify_tarval(tv) != TV_CLASSIFY_NULL);
+  if (tv == tarval_bad)
+    return 0;
+
+  pnc = tarval_cmp(tv, get_mode_null(mode));
+
+  /* again, need check for NaN */
+  return (pnc != pn_Cmp_Eq) && (pnc != pn_Cmp_Uo);
 
 #undef RET_ON
 }
@@ -187,18 +201,39 @@ value_classify classify_value_sign(ir_node *n)
 
 /**
  * construct an interval from a value
+ *
+ * @return the filled interval or NULL if no interval
+ *         can be created (happens only on floating point
  */
 static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv)
 {
   ir_mode *mode = get_tarval_mode(tv);
 
   if (tv == tarval_bad) {
-    /* [-oo, +oo] */
-    iv->min   = get_mode_min(mode);
-    iv->max   = get_mode_max(mode);
-    iv->flags = MIN_INCLUDED | MAX_INCLUDED;
+    if (mode_is_float(mode)) {
+      /* NaN could be included which we cannot handle */
+      iv->min   = tarval_bad;
+      iv->max   = tarval_bad;
+      iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+      return NULL;
+    }
+    else {
+      /* [-oo, +oo] */
+      iv->min   = get_mode_min(mode);
+      iv->max   = get_mode_max(mode);
+      iv->flags = MIN_INCLUDED | MAX_INCLUDED;
+      return iv;
+    }
+  }
 
-    return iv;
+  if (mode_is_float(mode)) {
+    if (tv == get_mode_NAN(mode)) {
+      /* arg, we cannot handle NaN's. */
+      iv->min   = tarval_bad;
+      iv->max   = tarval_bad;
+      iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+      return NULL;
+    }
   }
 
   /* [tv, tv] */
@@ -211,6 +246,13 @@ static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv)
 
 /**
  * construct an interval from a Confirm
+ *
+ * @param iv     an empty interval, will be filled
+ * @param bound  the bound value
+ * @param pnc    the Confirm pnc relation
+ *
+ * @return the filled interval or NULL if no interval
+ *         can be created (happens only on floating point
  */
 static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
 {
@@ -218,12 +260,31 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
   tarval  *tv   = value_of(bound);
 
   if (tv == tarval_bad) {
-    /* [-oo, +oo] */
-    iv->min   = get_mode_min(mode);
-    iv->max   = get_mode_max(mode);
-    iv->flags = MIN_INCLUDED | MAX_INCLUDED;
+    if (mode_is_float(mode)) {
+      /* NaN could be included which we cannot handle */
+      iv->min   = tarval_bad;
+      iv->max   = tarval_bad;
+      iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+      return NULL;
+    }
+    else {
+      /* [-oo, +oo] */
+      iv->min   = get_mode_min(mode);
+      iv->max   = get_mode_max(mode);
+      iv->flags = MIN_INCLUDED | MAX_INCLUDED;
+      return iv;
+    }
+  }
 
-    return iv;
+  if (mode_is_float(mode)) {
+    if (tv == get_mode_NAN(mode)) {
+      /* arg, we cannot handle NaN's. */
+      iv->min   = tarval_bad;
+      iv->max   = tarval_bad;
+      iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+
+      return NULL;
+    }
   }
 
   /* check which side is known */
@@ -263,17 +324,26 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
     iv->flags = MIN_INCLUDED | MAX_INCLUDED;
     return iv;
 
-  default:
+  case pn_Cmp_Leg:
     /*
-     * We did not handle UNORDERED yet. It is not
-     * clear, if this could give any gain.
+     * Ordered means, that at least neither
+     * our bound nor our value ara NaN's
      */
-
     /* [-oo, +oo] */
     iv->min   = get_mode_min(mode);
     iv->max   = get_mode_max(mode);
     iv->flags = MIN_INCLUDED | MAX_INCLUDED;
     return iv;
+
+  default:
+    /*
+     * We do not handle UNORDERED, as a NaN
+     * could be included in the interval.
+     */
+    iv->min   = tarval_bad;
+    iv->max   = tarval_bad;
+    iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+    return NULL;
   }
 }
 
@@ -294,50 +364,70 @@ static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp
   unsigned flags;
   tarval *tv_true = tarval_b_true, *tv_false = tarval_b_false;
 
-  /*
-   * save some cases: we invert all cases with a >
-   * Note that this turn Lg into Eq also (which is desired).
-   */
-  if (pnc & pn_Cmp_Gt) {
-    pnc = get_inversed_pnc(pnc);
+  /* if one interval contains NaNs, we cannot evaluate anything */
+  if (! l_iv || ! r_iv)
+    return tarval_bad;
 
-    tv_true  = tarval_b_false;
-    tv_false = tarval_b_true;
+  /* we can only check ordered relations */
+  if (pnc & pn_Cmp_Uo) {
+    tarval *t;
+
+    pnc      = get_negated_pnc(pnc);
+    t        = tv_true;
+    tv_true  = tv_false;
+    tv_false = t;
   }
 
+  /* if we have > or >=, we do the inverse to save some cases */
+  if (pnc == pn_Cmp_Ge || pnc == pn_Cmp_Gt) {
+    const interval_t *t;
+
+    pnc  = get_inversed_pnc(pnc);
+    t    = l_iv;
+    l_iv = r_iv;
+    r_iv = t;
+  }
+
+  /* now, only the following cases remains */
   switch (pnc) {
   case pn_Cmp_Eq:
     /* two intervals can be compared for equality only if they are a single value */
     if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
-      return l_iv->min == r_iv->min ? tv_true : tv_false;
+      return tarval_cmp(l_iv->min, r_iv->min) == pn_Cmp_Eq ? tv_true : tv_false;
+    break;
+
+  case pn_Cmp_Lg:
+    /* two intervals can be compared for not equality only if they are a single value */
+    if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
+      return tarval_cmp(l_iv->min, r_iv->min) != pn_Cmp_Eq ? tv_true : tv_false;
     break;
 
   case pn_Cmp_Lt:
     res = tarval_cmp(l_iv->max, r_iv->min);
 
-    /* [a, b] < [c, d] */
+    /* [a, b] < [c, d]  <==> b < c */
     if (res == pn_Cmp_Lt)
       return tv_true;
-    /* if one border is excluded, <= is ok */
+
+    /* if one border is excluded, b <= c is enough */
     if ((l_iv->flags & MAX_EXCLUDED || r_iv->flags & MIN_EXCLUDED) &&
         res == pn_Cmp_Eq)
       return tv_true;
 
-    /* [a, b) >= [c, d] or [a, b] >= (c, d] */
-    flags = (l_iv->flags & MAX_EXCLUDED) | (r_iv->flags & MIN_EXCLUDED);
+    /* [a, b] >= [c, d] <==> a > d */
+    res = tarval_cmp(l_iv->min, r_iv->max);
+    if (res == pn_Cmp_Gt)
+      return tv_false;
 
-    if (flags) {
-      res = tarval_cmp(l_iv->max, r_iv->min);
-
-      if (res == pn_Cmp_Gt || res == pn_Cmp_Eq)
-        return tv_false;
-    }
+    /* if one border is excluded, a >= d is enough */
+    if ((l_iv->flags & MIN_EXCLUDED || r_iv->flags & MAX_EXCLUDED) &&
+      res == pn_Cmp_Eq)
+      return tv_false;
     break;
 
   case pn_Cmp_Le:
-    /* [a, b) <= [c, d] or [a, b] <= (c, d] */
+    /* [a, b) <= [c, d] or [a, b] <= (c, d]  <==> b <= c */
     flags = (l_iv->flags & MAX_EXCLUDED) | (r_iv->flags & MIN_EXCLUDED);
-
     if (flags) {
       res = tarval_cmp(l_iv->max, r_iv->min);
 
@@ -345,16 +435,21 @@ static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp
         return tv_true;
     }
 
-    res = tarval_cmp(l_iv->max, r_iv->min);
+    res = tarval_cmp(l_iv->min, r_iv->max);
 
-    /* [a, b] > [c, d] */
+    /* [a, b] > [c, d] <==> a > d */
     if (res == pn_Cmp_Gt)
       return tv_false;
-    /* if one border is excluded, >= is ok */
-    if ((l_iv->flags & MAX_EXCLUDED || r_iv->flags & MIN_EXCLUDED) &&
+
+    /* if one border is excluded, a >= d is enough */
+    if ((l_iv->flags & MIN_EXCLUDED || r_iv->flags & MAX_EXCLUDED) &&
         res == pn_Cmp_Eq)
       return tv_false;
     break;
+
+  case pn_Cmp_Leg:
+    /* Hmm. if both are intervals, we can find an order */
+    return tv_true;
 
   default:
     return tarval_bad;
@@ -369,7 +464,7 @@ static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp
  * @param left   the left operand of the Cmp
  * @param right  the right operand of the Cmp
  */
-tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right, pn_Cmp pnc)
+tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
 {
   ir_node    *l_bound;
   pn_Cmp     l_pnc;
@@ -402,10 +497,15 @@ tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right, pn_Cmp pnc)
     ir_node *r_bound = get_Confirm_bound(right);
     pn_Cmp  r_pnc = get_Confirm_cmp(right);
 
-    /* check for == or != can sometime be made WITHOUT constant bounds */
-    if (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) {
+    /*
+     * check for == or != can sometime be made WITHOUT constant bounds
+     * Beware of NaN's.
+     */
+    if (! mode_is_float(get_irn_mode(left)) &&
+        (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg)) {
       /* l == r if bound(l) == bound(r) AND pnc(l) == pnc(r) == '=' */
       if (r_bound == l_bound && r_pnc == l_pnc && r_pnc == pn_Cmp_Eq) {
+        DBG_EVAL_CONFIRM(cmp);
         return pnc == pn_Cmp_Eq ? tarval_b_true : tarval_b_false;
       }
 
@@ -416,36 +516,49 @@ tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right, pn_Cmp pnc)
 
       if (left == r_bound && (r_pnc == pn_Cmp_Eq || r_pnc == pn_Cmp_Lg)) {
         /* l == bound(r) AND pnc(r) == pnc */
-        if (r_pnc == pnc)
+        if (r_pnc == pnc) {
+          DBG_EVAL_CONFIRM(cmp);
           return tarval_b_true;
-
+        }
         /* l == bound(r) AND pnc(r) != pnc */
-        else
+        else {
+          DBG_EVAL_CONFIRM(cmp);
           return tarval_b_false;
+        }
       }
     }
 
     /* now, try interval magic */
-    get_interval(&r_iv, r_bound, r_pnc);
-    get_interval(&l_iv, l_bound, l_pnc);
+    tv = compare_iv(
+      get_interval(&l_iv, l_bound, l_pnc),
+      get_interval(&r_iv, r_bound, r_pnc),
+      pnc);
 
-    tv = compare_iv(&l_iv, &r_iv, pnc);
-    if (tv != tarval_bad)
+    if (tv != tarval_bad) {
+      DBG_EVAL_CONFIRM(cmp);
       return tv;
+    }
   }
 
   /* from Here, check only left Confirm */
 
-  /* check for == or != can sometime be made WITHOUT constant bounds */
-  if (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) {
+  /*
+   * checks for == or != can sometime be made WITHOUT constant bounds
+   * Beware of NaN's.
+   */
+  if (! mode_is_float(get_irn_mode(left)) &&
+    (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg)) {
     if (right == l_bound && (l_pnc == pn_Cmp_Eq || l_pnc == pn_Cmp_Lg)) {
       /* r == bound(l) AND pnc(l) == pnc */
-      if (l_pnc == pnc)
+      if (l_pnc == pnc) {
+        DBG_EVAL_CONFIRM(cmp);
         return tarval_b_true;
-
+      }
       /* r == bound(l) AND pnc(l) != pnc */
-      else
+      else {
+        DBG_EVAL_CONFIRM(cmp);
         return tarval_b_false;
+      }
     }
   }
 
@@ -453,11 +566,14 @@ tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right, pn_Cmp pnc)
   tv = value_of(right);
 
   if (tv != tarval_bad) {
-    get_interval_from_tv(&r_iv, tv);
-    get_interval(&l_iv, l_bound, l_pnc);
-
-    return compare_iv(&l_iv, &r_iv, pnc);
+    tv = compare_iv(
+      get_interval(&l_iv, l_bound, l_pnc),
+      get_interval_from_tv(&r_iv, tv),
+      pnc);
   }
 
-  return tarval_bad;
+  if (tv != tarval_bad)
+    DBG_EVAL_CONFIRM(cmp);
+
+  return tv;
 }
