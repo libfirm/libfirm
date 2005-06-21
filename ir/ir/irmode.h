@@ -452,4 +452,12 @@ int mode_honor_signed_zeros(const ir_mode *mode);
  */
 int mode_overflow_on_unary_Minus(const ir_mode *mode);
 
+/**
+ * Returns non-zero if the mode has a reversed wrap-aound
+ * logic, especially (a + x) - x == a.
+ * This is normally true for integer modes, not for floating
+ * point modes.
+ */
+int mode_wrap_around(const ir_mode *mode);
+
 #endif /* _IRMODE_H_ */

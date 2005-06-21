@@ -960,6 +960,18 @@ int mode_overflow_on_unary_Minus(const ir_mode *mode)
   return 1;
 }
 
+/*
+ * Returns non-zero if the mode has a reversed wrap-aound
+ * logic, especially (a + x) - x == a.
+ *
+ * This is normally true for integer modes, not for floating
+ * point modes.
+ */
+int mode_wrap_around(const ir_mode *mode) {
+  /* FIXME: better would be an extra mode property */
+  return mode_is_int(mode);
+}
+
 void finish_mode(void) {
   obstack_free(&modes, 0);
 
