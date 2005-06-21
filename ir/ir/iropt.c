@@ -513,7 +513,7 @@ static tarval *computed_value_Proj_Cmp(ir_node *n)
     }
   }
 
-  return computed_value_Cmp_Confirm(aa, ab, proj_nr);
+  return computed_value_Cmp_Confirm(a, aa, ab, proj_nr);
 }
 
 /**
@@ -831,11 +831,52 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
   return n;
 }
 
-#define equivalent_node_Sub   equivalent_node_left_zero
 #define equivalent_node_Shl   equivalent_node_left_zero
 #define equivalent_node_Shr   equivalent_node_left_zero
 #define equivalent_node_Shrs  equivalent_node_left_zero
 #define equivalent_node_Rot   equivalent_node_left_zero
+
+/**
+ * Optimize a - 0 and (a + x) - x (for modes with wrap-around).
+ *
+ * The second one looks strange, but this construct
+ * is used heavily in the LCC sources :-).
+ */
+static ir_node *equivalent_node_Sub(ir_node *n)
+{
+  ir_node *oldn = n;
+
+  ir_node *a = get_Sub_left(n);
+  ir_node *b = get_Sub_right(n);
+
+  if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
+    n = a;
+
+    DBG_OPT_ALGSIM1(oldn, a, b, n);
+  }
+  else if (get_irn_op(a) == op_Add) {
+    ir_mode *mode = get_irn_mode(n);
+
+    if (mode_wrap_around(mode)) {
+      ir_node *left  = get_Add_left(a);
+      ir_node *right = get_Add_right(a);
+
+      if (left == b) {
+        n = right;
+
+        DBG_OPT_ALGSIM1(oldn, a, b, n);
+      }
+      else if (right == b) {
+        n = left;
+
+        DBG_OPT_ALGSIM1(oldn, a, b, n);
+      }
+    }
+  }
+
+  return n;
+}
+
 
 /**
  * Optimize an "idempotent unary op", ie op(op(n)) = n.
