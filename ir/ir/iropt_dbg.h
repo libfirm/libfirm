@@ -227,9 +227,30 @@
     __dbg_info_merge_pair(n, oldn, dbg_rem_poly_call);          \
   } while(0)
 
+/**
+ * a node was replaced by another node due to a Confirm
+ */
 #define DBG_OPT_CONFIRM(oldn, n)                                \
   do {                                                          \
     hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONFIRM);        \
+    __dbg_info_merge_pair(n, oldn, dbg_opt_confirm);            \
+  } while(0)
+
+/**
+ * a node was replaced by a constant due to a Confim
+ */
+#define DBG_OPT_CONFIRM_C(oldn, c)                              \
+  do {                                                          \
+    hook_merge_nodes(&c, 1, &oldn, 1, HOOK_OPT_CONFIRM_C);      \
+    __dbg_info_merge_pair(c, oldn, dbg_opt_confirm);            \
+  } while(0)
+
+/**
+ * a node could be evalueted due to a Confirm
+ */
+#define DBG_EVAL_CONFIRM(oldn)                                  \
+  do {                                                          \
+    hook_merge_nodes(NULL, 0, &oldn, 1, HOOK_OPT_CONFIRM_E);    \
   } while(0)
 
 #endif /* _IROPT_DBG_H_ */
