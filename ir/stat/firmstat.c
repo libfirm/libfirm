@@ -1179,7 +1179,17 @@ static void stat_merge_nodes(
 
       /* nodes might be in new and old, these are NOT removed */
       if (j >= new_num_entries) {
-        removed_due_opt(old_node_array[i], graph->opt_hash[opt]);
+        int xopt = opt;
+
+        /* sometimes we did not detect, that it is replaced by a Const */
+        if (opt == HOOK_OPT_CONFIRM && new_num_entries == 1) {
+          ir_op *op = get_irn_op(new_node_array[0]);
+
+          if (op == op_Const || op == op_SymConst)
+            xopt = HOOK_OPT_CONFIRM_C;
+        }
+
+        removed_due_opt(old_node_array[i], graph->opt_hash[xopt]);
       }
     }
   }
