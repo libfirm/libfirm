@@ -85,12 +85,12 @@ void *get_extbb_link(const ir_extblk *blk);
 void set_extbb_link(ir_extblk *blk, void *link);
 
 /**
- * Return the number of basis blocks of an extended block
+ * Return the number of basic blocks of an extended block
  */
 int get_extbb_n_blocks(const ir_extblk *blk);
 
 /**
- * Return the i'th basis block of an extended block
+ * Return the i'th basic block of an extended block
  */
 ir_node *get_extbb_block(ir_extblk *blk, int pos);
 

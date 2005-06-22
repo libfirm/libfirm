@@ -62,8 +62,6 @@ static void addto_extblk(ir_extblk *extblk, ir_node *block)
 
 /**
  * Pre block-walker. Calculates the extended block info.
- * Currently, we use the (free) block input of all basis blocks
- * to point to the leader block.
  */
 static void pre_walk_calc_extbb(ir_node *block, void *ctx)
 {
@@ -89,7 +87,7 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
     }
     else {
       /*
-       * Only on control flow predecessor. This block belongs
+       * Only one control flow predecessor. This block belongs
        * to the same extended basic block as its predecessor.
        */
       set_Block_extbb(block, NULL);
@@ -219,12 +217,12 @@ void (set_extbb_link)(ir_extblk *blk, void *link) {
   _set_extbb_link(blk, link);
 }
 
-/* Return the number of basis blocks of an extended block */
+/* Return the number of basic blocks of an extended block */
 int (get_extbb_n_blocks)(const ir_extblk *blk) {
   return _get_extbb_n_blocks(blk);
 }
 
-/* Return the i'th basis block of an extended block */
+/* Return the i'th basic block of an extended block */
 ir_node *(get_extbb_block)(ir_extblk *blk, int pos) {
   return _get_extbb_block(blk, pos);
 }
