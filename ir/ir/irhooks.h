@@ -28,6 +28,7 @@
  * options for the hook_merge_nodes hook
  */
 typedef enum {
+  HOOK_OPT_DEAD_BLOCK,  /**< a block was removed because it's dead */
   HOOK_OPT_STG,         /**< straightening optimization */
   HOOK_OPT_IFSIM,       /**< if simplification */
   HOOK_OPT_CONST_EVAL,  /**< constant evaluation */
