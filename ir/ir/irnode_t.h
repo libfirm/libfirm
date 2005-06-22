@@ -552,6 +552,19 @@ _is_Block(const ir_node *node) {
   return (_get_irn_op(node) == op_Block);
 }
 
+static INLINE int
+_get_Block_n_cfgpreds (ir_node *node) {
+  assert(_is_Block(node));
+  return _get_irn_arity(node);
+}
+
+static INLINE ir_node *
+_get_Block_cfgpred (ir_node *node, int pos) {
+  assert(0 <= pos && pos < get_irn_arity(node));
+  assert(_is_Block(node));
+  return _get_irn_n(node, pos);
+}
+
 static INLINE unsigned long
 _get_Block_block_visited (ir_node *node) {
   assert (node->op == op_Block);
@@ -645,6 +658,8 @@ static INLINE type *_get_irn_type(ir_node *node) {
 #define is_Bad(node)                          _is_Bad(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)
+#define get_Block_n_cfgpreds(node)            _get_Block_n_cfgpreds(node)
+#define get_Block_cfgpred(node, pos)          _get_Block_cfgpred(node, pos)
 #define get_Block_block_visited(node)         _get_Block_block_visited(node)
 #define set_Block_block_visited(node, visit)  _set_Block_block_visited(node, visit)
 #define mark_Block_block_visited(node)        _mark_Block_block_visited(node)

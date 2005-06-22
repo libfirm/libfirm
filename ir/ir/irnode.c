@@ -56,27 +56,14 @@ const char *get_pnc_string(int pnc) {
 /*
  * Calculates the negated (Complement(R)) pnc condition.
  */
-int
-get_negated_pnc(int pnc) {
-  switch (pnc) {
-  case pn_Cmp_False: return pn_Cmp_True;
-  case pn_Cmp_Eq:    return pn_Cmp_Ne;
-  case pn_Cmp_Lt:    return pn_Cmp_Uge;
-  case pn_Cmp_Le:    return pn_Cmp_Ug;
-  case pn_Cmp_Gt:    return pn_Cmp_Ule;
-  case pn_Cmp_Ge:    return pn_Cmp_Ul;
-  case pn_Cmp_Lg:    return pn_Cmp_Ue;
-  case pn_Cmp_Leg:   return pn_Cmp_Uo;
-  case pn_Cmp_Uo:    return pn_Cmp_Leg;
-  case pn_Cmp_Ue:    return pn_Cmp_Lg;
-  case pn_Cmp_Ul:    return pn_Cmp_Ge;
-  case pn_Cmp_Ule:   return pn_Cmp_Gt;
-  case pn_Cmp_Ug:    return pn_Cmp_Le;
-  case pn_Cmp_Uge:   return pn_Cmp_Lt;
-  case pn_Cmp_Ne:    return pn_Cmp_Eq;
-  case pn_Cmp_True:  return pn_Cmp_False;
-  }
-  return 99; /* to shut up gcc */
+int get_negated_pnc(int pnc, ir_mode *mode) {
+  pnc ^= pn_Cmp_True;
+
+  /* do NOT add the Uo bit for non-floating point values */
+  if (! mode_is_float(mode))
+    pnc &= ~pn_Cmp_Uo;
+
+  return pnc;
 }
 
 /* Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
@@ -615,16 +602,13 @@ get_Block_cfgpred_arr (ir_node *node)
 }
 
 int
-get_Block_n_cfgpreds (ir_node *node) {
-  assert ((node->op == op_Block));
-  return get_irn_arity(node);
+(get_Block_n_cfgpreds)(ir_node *node) {
+  return get_Block_n_cfgpreds(node);
 }
 
 ir_node *
-get_Block_cfgpred (ir_node *node, int pos) {
-  assert(-1 <= pos && pos < get_irn_arity(node));
-  assert(node->op == op_Block);
-  return get_irn_n(node, pos);
+(get_Block_cfgpred)(ir_node *node, int pos) {
+  return get_Block_cfgpred(node, pos);
 }
 
 void

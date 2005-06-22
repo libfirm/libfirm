@@ -252,6 +252,11 @@ void      set_Block_matured (ir_node *node, bool matured);
  *  @see also: get_irn_visited() inc_irg_visited() inc_irg_block_visited()*/
 unsigned long get_Block_block_visited (ir_node *node);
 void      set_Block_block_visited (ir_node *node, unsigned long visit);
+
+/**
+ * Marks a block as dead but do not replace it with a Bad node.
+ * Dead blocks are removed in the con
+ */
 ir_node  *set_Block_dead(ir_node *block);
 int       is_Block_dead(const ir_node *block);
 
@@ -682,7 +687,7 @@ typedef enum {
 const char *get_pnc_string(int pnc);
 
 /** Calculates the negated (Complement(R)) pnc condition. */
-int         get_negated_pnc(int pnc);
+int         get_negated_pnc(int pnc, ir_mode *mode);
 
 /** Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
 int         get_inversed_pnc(int pnc);
