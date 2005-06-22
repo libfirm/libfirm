@@ -22,6 +22,7 @@ static const struct {
   hook_opt_kind kind;
   const char    *name;
 } opt_names[] = {
+  { HOOK_OPT_DEAD_BLOCK,   "dead block elimination" },
   { HOOK_OPT_STG,          "straightening optimization" },
   { HOOK_OPT_IFSIM,        "if simplification" },
   { HOOK_OPT_CONST_EVAL,   "constant evaluation" },
@@ -45,6 +46,31 @@ static const struct {
   { HOOK_OPT_CONFIRM_C,    "Confirm-based optimization: replaced by const" },
   { HOOK_OPT_CONFIRM_E,    "Confirm-based optimization: evaluated" },
   { HOOK_LOWERED,          "Lowered" },
+  { FS_OPT_NEUTRAL_0,      "algebraic simplification: a op 0 = 0 op a = a" },
+  { FS_OPT_NEUTRAL_1,      "algebraic simplification: a op 1 = 1 op a = a" },
+  { FS_OPT_ADD_A_A,        "algebraic simplification: a + a = a * 2" },
+  { FS_OPT_ADD_A_MINUS_B,  "algebraic simplification: a + -b = a - b" },
+  { FS_OPT_ADD_SUB,        "algebraic simplification: (a + x) - x = (a - x) + x" },
+  { FS_OPT_SUB_0_A,        "algebraic simplification:  0 - a = -a" },
+  { FS_OPT_MUL_MINUS_1,    "algebraic simplification: a * -1 = -a" },
+  { FS_OPT_OR,             "algebraic simplification: a | a = a | 0 = 0 | a = a" },
+  { FS_OPT_AND,            "algebraic simplification: a & 0b1...1 = 0b1...1 & a =  a & a = a" },
+  { FS_OPT_EOR_A_A,        "algebraic simplification: a ^ a = 0" },
+  { FS_OPT_EOR_TO_NOT_BOOL,"algebraic simplification: bool ^ 1 = !bool" },
+  { FS_OPT_EOR_TO_NOT,     "algebraic simplification: x ^ 0b1..1 = ~x" },
+  { FS_OPT_NOT_CMP,        "algebraic simplification: !(a cmp b) = a !cmp b" },
+  { FS_OPT_OR_SHFT_TO_ROT, "algebraic simplification: (x << c) | (x >> (bits - c)) == Rot(x, c)" },
+  { FS_OPT_REASSOC_SHIFT,  "algebraic simplification: (x SHF c1) SHF c2 = x SHF (c1+c2)" },
+  { FS_OPT_CONV,           "algebraic simplification: Conv could be removed" },
+  { FS_OPT_CAST,           "algebraic simplification: a Cast could be removed" },
+  { FS_OPT_MIN_MAX_EQ,     "algebraic simplification: Min(a,a) = Max(a,a) = a" },
+  { FS_OPT_MUX_C,          "algebraic simplification: Mux(C, f, t) = C ? t : f" },
+  { FS_OPT_MUX_EQ,         "algebraic simplification: Mux(v, x, x) = x" },
+  { FS_OPT_MUX_TRANSFORM,  "algebraic simplification: Mux(a, b, c) = b OR Mux(a,b, c) = c" },
+  { FS_OPT_MUX_TO_MIN,     "algebraic simplification: Mux(a < b, a, b) = Min(a,b)" },
+  { FS_OPT_MUX_TO_MAX,     "algebraic simplification: Mux(a > b, a, b) = Max(a,b)" },
+  { FS_OPT_MUX_TO_ABS,     "algebraic simplification: Mux(a > b, a, b) = Abs(a,b)" },
+  { FS_OPT_MUX_TO_SHR,     "algebraic simplification: Mux(a > b, a, b) = a >> b" },
 };
 
 static const char *if_conv_names[IF_RESULT_LAST] = {
