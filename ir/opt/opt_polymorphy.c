@@ -36,8 +36,7 @@ static type *get_dynamic_type(ir_node *ptr) {
 }
 
 /*
- * Transform  Sel(Alloc)[method]
- * to SymC[method]
+ * Transform Sel[method] to SymC[method] if possible.
  */
 ir_node *transform_node_Sel(ir_node *node)
 {
@@ -66,7 +65,7 @@ ir_node *transform_node_Sel(ir_node *node)
       set_cur_block(get_nodes_block(node));
       new_node = copy_const_value(get_atomic_ent_value(ent));
       set_cur_block(rem_block);
-      DBG_OPT_POLY_ALLOC(node, new_node);
+      DBG_OPT_POLY(node, new_node);
     }
 
     return new_node;
@@ -89,7 +88,7 @@ ir_node *transform_node_Sel(ir_node *node)
     set_cur_block(get_nodes_block(node));
     new_node = copy_const_value(get_atomic_ent_value(called_ent));
     set_cur_block(rem_block);
-    DBG_OPT_POLY_ALLOC(node, new_node);
+    DBG_OPT_POLY(node, new_node);
 
     return new_node;
   }
@@ -127,7 +126,7 @@ ir_node *transform_node_Load(ir_node *n)
      we can replace the Sel by a constant. */
   if ((get_irp_phase_state() != phase_building) && (get_entity_n_overwrittenby(ent) == 0)) {
     new_node = copy_const_value(get_atomic_ent_value(ent));
-    DBG_OPT_POLY_ALLOC(field_ptr, new_node);
+    DBG_OPT_POLY(field_ptr, new_node);
 
     return new_node;
   }
@@ -145,7 +144,7 @@ ir_node *transform_node_Load(ir_node *n)
     assert(get_entity_peculiarity(loaded_ent) != peculiarity_description);
 
     new_node = copy_const_value(get_atomic_ent_value(loaded_ent));
-    DBG_OPT_POLY_ALLOC(field_ptr, new_node);
+    DBG_OPT_POLY(field_ptr, new_node);
 
     return new_node;
   }
