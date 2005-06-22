@@ -199,7 +199,7 @@ static ir_node *equivalent_node_MinMax(ir_node *n)
   b = get_binop_right(n);
 
   if (a == b) {
-    DBG_OPT_ALGSIM0(n, a);
+    DBG_OPT_ALGSIM0(n, a, FS_OPT_MIN_MAX_EQ);
     return a;
   }
 
@@ -239,7 +239,7 @@ ir_node *arch_transform_node_Mux(ir_node *n)
                 a, b,
                 get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MIN);
           return n;
         }
         else if (a == f && b == t) {
@@ -250,7 +250,7 @@ ir_node *arch_transform_node_Mux(ir_node *n)
                 a, b,
                 get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MAX);
           return n;
         }
       }
@@ -263,7 +263,7 @@ ir_node *arch_transform_node_Mux(ir_node *n)
                 a, b,
                 get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MAX);
           return n;
         }
         else if (a == f && b == t) {
@@ -274,7 +274,7 @@ ir_node *arch_transform_node_Mux(ir_node *n)
                 a, b,
                 get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MIN);
           return n;
         }
       }
