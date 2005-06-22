@@ -93,7 +93,7 @@ typedef struct _graph_entry_t {
   counter_t               cnt_if_conv[IF_RESULT_LAST];  /**< number of if conversions */
   counter_t               cnt_real_func_call;           /**< number real function call optimization */
   unsigned                num_tail_recursion;           /**< number of tail recursion optimizations */
-  HASH_MAP(opt_entry_t)   *opt_hash[HOOK_OPT_LAST];     /**< hash maps containing opcode counter for optimizations */
+  HASH_MAP(opt_entry_t)   *opt_hash[FS_OPT_MAX];        /**< hash maps containing opcode counter for optimizations */
   ir_graph                *irg;                         /**< the graph of this object */
   entity                  *ent;                         /**< the entity of this graph if one exists */
   set                     *address_mark;                /**< a set containing the address marks of the nodes */
