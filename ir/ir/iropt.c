@@ -692,7 +692,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
        n = set_Block_dead(n);
-       DBG_OPT_DEAD(oldn, n);
+       DBG_OPT_DEAD_BLOCK(oldn, n);
      } else if (get_opt_control_flow_straightening()) {
        n = predblock;
        DBG_OPT_STG(oldn, n);
@@ -704,13 +704,15 @@ static ir_node *equivalent_node_Block(ir_node *n)
      if (predblock == oldn) {
        /* Jmp jumps into the block it is in -- deal self cycle. */
        n = set_Block_dead(n);
-       DBG_OPT_DEAD(oldn, n);
+       DBG_OPT_DEAD_BLOCK(oldn, n);
      }
    }
    else if ((n_preds == 2) &&
             (get_opt_control_flow_weak_simplification())) {
     /* Test whether Cond jumps twice to this block
-       @@@ we could do this also with two loops finding two preds from several ones. */
+     * The more general case which more than 2 predecessors is handles
+     * in optimize_cf(), we handle only this special case for speed here.
+     */
     ir_node *a = get_Block_cfgpred(n, 0);
     ir_node *b = get_Block_cfgpred(n, 1);
 
@@ -722,11 +724,12 @@ static ir_node *equivalent_node_Block(ir_node *n)
       /* Also a single entry Block following a single exit Block.  Phis have
          twice the same operand and will be optimized away. */
       n = get_nodes_block(a);
-      DBG_OPT_IFSIM(oldn, a, b, n);
+      DBG_OPT_IFSIM1(oldn, a, b, n);
     }
-  } else if (get_opt_unreachable_code() &&
-             (n != current_ir_graph->start_block) &&
-             (n != current_ir_graph->end_block)     ) {
+  }
+  else if (get_opt_unreachable_code() &&
+           (n != current_ir_graph->start_block) &&
+           (n != current_ir_graph->end_block)     ) {
     int i, n_cfg = get_Block_n_cfgpreds(n);
 
     /* If all inputs are dead, this block is dead too, except if it is
@@ -767,12 +770,8 @@ static ir_node *equivalent_node_Jmp(ir_node *n)
   return n;
 }
 
-static ir_node *equivalent_node_Cond(ir_node *n)
-{
-  /* We do not evaluate Cond here as we replace it by a new node, a Jmp.
-     See cases for iro_Cond and iro_Proj in transform_node(). */
-  return n;
-}
+/* We do not evaluate Cond here as we replace it by a new node, a Jmp.
+   See transform_node_Proj_Cond(). */
 
 /**
  * optimize operations that are commutative and have neutral 0,
@@ -802,14 +801,54 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
   if (classify_tarval (tv) == TV_CLASSIFY_NULL) {
     n = on;
 
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
   }
 
   return n;
 }
 
-#define equivalent_node_Add  equivalent_node_neutral_zero
 #define equivalent_node_Eor  equivalent_node_neutral_zero
+
+/*
+ * Optimize a - 0 and (a - x) + x (for modes with wrap-around).
+ *
+ * The second one looks strange, but this construct
+ * is used heavily in the LCC sources :-).
+ */
+static ir_node *equivalent_node_Add(ir_node *n)
+{
+  ir_node *oldn = n;
+  ir_node *left, *right;
+
+  n = equivalent_node_neutral_zero(n);
+  if (n != oldn)
+    return n;
+
+  left  = get_Add_left(n);
+  right = get_Add_right(n);
+
+  if (get_irn_op(left) == op_Sub) {
+    if (get_Sub_right(left) == right) {
+      /* (a - x) + x */
+
+      n = get_Sub_left(left);
+      DBG_OPT_ALGSIM1(oldn, left, right, n, FS_OPT_ADD_SUB);
+
+      return n;
+    }
+  }
+  if (get_irn_op(right) == op_Sub) {
+    if (get_Sub_right(right) == left) {
+      /* x + (a - x) */
+
+      n = get_Sub_left(left);
+      DBG_OPT_ALGSIM1(oldn, left, right, n, FS_OPT_ADD_SUB);
+
+      return n;
+    }
+  }
+  return n;
+}
 
 /**
  * optimize operations that are not commutative but have neutral 0 on left,
@@ -825,7 +864,7 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
   if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
     n = a;
 
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
   }
 
   return n;
@@ -852,7 +891,7 @@ static ir_node *equivalent_node_Sub(ir_node *n)
   if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
     n = a;
 
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
   }
   else if (get_irn_op(a) == op_Add) {
     ir_mode *mode = get_irn_mode(n);
@@ -864,12 +903,12 @@ static ir_node *equivalent_node_Sub(ir_node *n)
       if (left == b) {
         n = right;
 
-        DBG_OPT_ALGSIM1(oldn, a, b, n);
+        DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
       }
       else if (right == b) {
         n = left;
 
-        DBG_OPT_ALGSIM1(oldn, a, b, n);
+        DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
       }
     }
   }
@@ -918,10 +957,10 @@ static ir_node *equivalent_node_Mul(ir_node *n)
   /* Mul is commutative and has again an other neutral element. */
   if (classify_tarval(value_of(a)) == TV_CLASSIFY_ONE) {
     n = b;
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
   } else if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) {
     n = a;
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
   }
   return n;
 }
@@ -981,12 +1020,13 @@ static ir_node *equivalent_node_Or(ir_node *n)
 
   if (a == b) {
     n = a;    /* Or has it's own neutral element */
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_OR);
   } else if (classify_tarval(value_of(a)) == TV_CLASSIFY_NULL) {
     n = b;
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
   } else if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
     n = a;
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
   }
 
   return n;
@@ -1004,12 +1044,13 @@ static ir_node *equivalent_node_And(ir_node *n)
 
   if (a == b) {
     n = a;    /* And has it's own neutral element */
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_AND);
   } else if (classify_tarval(value_of(a)) == TV_CLASSIFY_ALL_ONE) {
     n = b;
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
   } else if (classify_tarval(value_of(b)) == TV_CLASSIFY_ALL_ONE) {
     n = a;
-    DBG_OPT_ALGSIM1(oldn, a, b, n);
+    DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
   }
   return n;
 }
@@ -1028,7 +1069,7 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 
   if (n_mode == a_mode) { /* No Conv necessary */
     n = a;
-    DBG_OPT_ALGSIM3(oldn, a, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
   } else if (get_irn_op(a) == op_Conv) { /* Conv(Conv(b)) */
     ir_mode *b_mode;
 
@@ -1039,12 +1080,12 @@ static ir_node *equivalent_node_Conv(ir_node *n)
     if (n_mode == b_mode) {
       if (n_mode == mode_b) {
         n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
-        DBG_OPT_ALGSIM1(oldn, a, b, n);
+        DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
       }
       else if (mode_is_int(n_mode) || mode_is_character(n_mode)) {
         if (smaller_mode(b_mode, a_mode)){
           n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
-          DBG_OPT_ALGSIM1(oldn, a, b, n);
+          DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
         }
       }
     }
@@ -1057,9 +1098,13 @@ static ir_node *equivalent_node_Conv(ir_node *n)
  * is already the type of the Cast.
  */
 static ir_node *equivalent_node_Cast(ir_node *n) {
+  ir_node *oldn = n;
   ir_node *pred = get_Cast_op(n);
-  if (get_irn_type(pred) == get_Cast_type(n))
+
+  if (get_irn_type(pred) == get_Cast_type(n)) {
     n = pred;
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CAST);
+  }
   return n;
 }
 
@@ -1091,43 +1136,27 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 
   if (n_preds == 0) return n;           /* Phi of dead Region without predecessors. */
 
-#if 0
-  /* first we test for a special case: */
-  /* Confirm is a special node fixing additional information for a
-     value that is known at a certain point.  This is useful for
-     dataflow analysis. */
-  if (n_preds == 2) {
-    ir_node *a = get_Phi_pred(n, 0);
-    ir_node *b = get_Phi_pred(n, 1);
-    if (   (get_irn_op(a) == op_Confirm)
-        && (get_irn_op(b) == op_Confirm)
-        && (get_irn_n(a, 0) == get_irn_n(b, 0))
-        && (get_irn_n(a, 1) == get_irn_n(b, 1))
-        && (a->data.num == (~b->data.num & irpn_True) )) {
-      return get_irn_n(a, 0);
-    }
-  }
-#endif
-
   /* If the Block has a Bad pred, we also have one. */
   for (i = 0;  i < n_preds;  ++i)
-    if (is_Bad (get_Block_cfgpred(block, i)))
+    if (is_Bad(get_Block_cfgpred(block, i)))
       set_Phi_pred(n, i, new_Bad());
 
   /* Find first non-self-referencing input */
-  for (i = 0;  i < n_preds;  ++i) {
+  for (i = 0; i < n_preds; ++i) {
     first_val = get_Phi_pred(n, i);
     if (   (first_val != n)                            /* not self pointer */
 #if 1
-        && (get_irn_op(first_val) != op_Bad)
+        && (! is_Bad(first_val))
 #endif
            ) {        /* value not dead */
       break;          /* then found first value. */
     }
   }
 
-  /* A totally Bad or self-referencing Phi (we didn't break the above loop) */
-  if (i >= n_preds) { return new_Bad(); }
+  if (i >= n_preds) {
+    /* A totally Bad or self-referencing Phi (we didn't break the above loop) */
+    return new_Bad();
+  }
 
   scnd_val = NULL;
 
@@ -1138,17 +1167,17 @@ static ir_node *equivalent_node_Phi(ir_node *n)
     if (   (scnd_val != n)
         && (scnd_val != first_val)
 #if 1
-        && (get_irn_op(scnd_val) != op_Bad)
+        && (! is_Bad(first_val))
 #endif
            ) {
       break;
     }
   }
 
-  /* Fold, if no multiple distinct non-self-referencing inputs */
   if (i >= n_preds) {
+    /* Fold, if no multiple distinct non-self-referencing inputs */
     n = first_val;
-    DBG_OPT_PHI(oldn, first_val, n);
+    DBG_OPT_PHI(oldn, n);
   } else {
     /* skip the remaining Ids (done in get_Phi_pred). */
     /* superfluous, since we walk all to propagate Block's Bads.
@@ -1158,7 +1187,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 }
 
 /**
- * optimize Proj(Tuple) and gigo for ProjX in Bad block
+ * optimize Proj(Tuple) and gigo() for ProjX in Bad block
  */
 static ir_node *equivalent_node_Proj(ir_node *n)
 {
@@ -1177,7 +1206,7 @@ static ir_node *equivalent_node_Proj(ir_node *n)
     }
   } else if (get_irn_mode(n) == mode_X &&
              is_Block_dead(get_nodes_block(n))) {
-    /* Remove dead control flow -- early gigo. */
+    /* Remove dead control flow -- early gigo(). */
     n = new_Bad();
   }
   return n;
@@ -1207,19 +1236,19 @@ static ir_node *equivalent_node_Mux(ir_node *n)
   tarval *ts = value_of(sel);
 
   /* Mux(true, f, t) == t */
-  if (ts == get_tarval_b_true()) {
+  if (ts == tarval_b_true) {
     n = get_Mux_true(n);
-    DBG_OPT_ALGSIM0(oldn, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_C);
   }
   /* Mux(false, f, t) == f */
-  else if (ts == get_tarval_b_false()) {
+  else if (ts == tarval_b_false) {
     n = get_Mux_false(n);
-    DBG_OPT_ALGSIM0(oldn, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_C);
   }
   /* Mux(v, x, x) == x */
   else if (get_Mux_false(n) == get_Mux_true(n)) {
     n = get_Mux_true(n);
-    DBG_OPT_ALGSIM0(oldn, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_EQ);
   }
   else if (get_irn_op(sel) == op_Proj && !mode_honor_signed_zeros(get_irn_mode(n))) {
     ir_node *cmp = get_Proj_pred(sel);
@@ -1243,12 +1272,12 @@ static ir_node *equivalent_node_Mux(ir_node *n)
           if (proj_nr == pn_Cmp_Eq) {
             /* Mux(a == 0, -a, a)  ==>  -a */
             n = b;
-            DBG_OPT_ALGSIM0(oldn, n);
+            DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
           }
           else if (proj_nr == pn_Cmp_Lg || proj_nr == pn_Cmp_Ne) {
             /* Mux(a != 0, -a, a)  ==> a */
             n = a;
-            DBG_OPT_ALGSIM0(oldn, n);
+            DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
           }
         }
         else if (classify_Const(b) == CNST_NULL) {
@@ -1256,12 +1285,12 @@ static ir_node *equivalent_node_Mux(ir_node *n)
           if (proj_nr == pn_Cmp_Lg || proj_nr == pn_Cmp_Ne) {
             /* Mux(a != 0, 0, a) ==> a */
             n = a;
-            DBG_OPT_ALGSIM0(oldn, n);
+            DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
           }
           else if (proj_nr == pn_Cmp_Eq) {
             /* Mux(a == 0, 0, a) ==> 0 */
             n = b;
-            DBG_OPT_ALGSIM0(oldn, n);
+            DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
           }
         }
       }
@@ -1340,7 +1369,6 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   switch (op->code) {
   CASE(Block);
   CASE(Jmp);
-  CASE(Cond);
   CASE(Or);
   CASE(Add);
   CASE(Eor);
@@ -1494,7 +1522,7 @@ static ir_node *transform_node_Add(ir_node *n)
             a,
             new_r_Const_long(current_ir_graph, block, mode, 2),
             mode);
-      DBG_OPT_ALGSIM0(oldn, n);
+      DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
     }
     else {
       ir_node *b = get_Add_right(n);
@@ -1507,7 +1535,7 @@ static ir_node *transform_node_Add(ir_node *n)
             b,
             get_Minus_op(a),
             mode);
-        DBG_OPT_ALGSIM0(oldn, n);
+        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
       }
       else if (get_irn_op(b) == op_Minus) {
         n = new_rd_Sub(
@@ -1517,7 +1545,7 @@ static ir_node *transform_node_Add(ir_node *n)
             a,
             get_Minus_op(b),
             mode);
-        DBG_OPT_ALGSIM0(oldn, n);
+        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
       }
     }
   }
@@ -1542,14 +1570,14 @@ static ir_node *transform_node_Sub(ir_node *n)
           get_nodes_block(n),
           get_Sub_right(n),
           mode);
-    DBG_OPT_ALGSIM0(oldn, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_0_A);
   }
 
   return n;
 }
 
 /**
-  Transform Mul(a,-1) into -a.
+ * Transform Mul(a,-1) into -a.
  * Do architecture dependent optimizations on Mul nodes
  */
 static ir_node *transform_node_Mul(ir_node *n) {
@@ -1567,7 +1595,7 @@ static ir_node *transform_node_Mul(ir_node *n) {
       r = a;
     if (r) {
       n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), r, mode);
-      DBG_OPT_ALGSIM1(oldn, a, b, n);
+      DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
       return n;
     }
   }
@@ -1800,7 +1828,7 @@ static ir_node *transform_node_Eor(ir_node *n)
     /* a ^ a = 0 */
     n = new_rd_Const(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n),
                      mode, get_mode_null(mode));
-    DBG_OPT_ALGSIM0(oldn, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_A_A);
   }
   else if ((mode == mode_b)
       && (get_irn_op(a) == op_Proj)
@@ -1809,9 +1837,9 @@ static ir_node *transform_node_Eor(ir_node *n)
       && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
     /* The Eor negates a Cmp. The Cmp has the negated result anyways! */
     n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
-                   mode_b, get_negated_pnc(get_Proj_proj(a)));
+                   mode_b, get_negated_pnc(get_Proj_proj(a), mode));
 
-    DBG_OPT_ALGSIM0(oldn, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT_BOOL);
   }
   else if ((mode == mode_b)
         && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)) {
@@ -1819,7 +1847,7 @@ static ir_node *transform_node_Eor(ir_node *n)
     /*   ????!!!Extend to bitfield 1111111. */
     n = new_r_Not(current_ir_graph, get_nodes_block(n), a, mode_b);
 
-    DBG_OPT_ALGSIM0(oldn, n);
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
   }
 
   return n;
@@ -1839,8 +1867,8 @@ static ir_node *transform_node_Not(ir_node *n)
       && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
     /* We negate a Cmp. The Cmp has the negated result anyways! */
     n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
-                   mode_b, get_negated_pnc(get_Proj_proj(a)));
-    DBG_OPT_ALGSIM0(oldn, n);
+                   mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
+    DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
   }
 
   return n;
@@ -2375,7 +2403,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
 
     n = new_r_Rot(current_ir_graph, block, x, c1, mode);
 
-    DBG_OPT_ALGSIM1(or, shl, shr, n);
+    DBG_OPT_ALGSIM1(or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROT);
     return n;
   }
   else if (get_irn_op(c1) == op_Sub) {
@@ -2402,7 +2430,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
     /* a Rot right is not supported, so use a rot left */
     n =  new_r_Rot(current_ir_graph, block, x, sub, mode);
 
-    DBG_OPT_ALGSIM0(or, n);
+    DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROT);
     return n;
   }
   else if (get_irn_op(c2) == op_Sub) {
@@ -2426,7 +2454,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
     /* a Rot Left */
     n = new_r_Rot(current_ir_graph, block, x, v, mode);
 
-    DBG_OPT_ALGSIM0(or, n);
+    DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROT);
     return n;
   }
 
@@ -2448,7 +2476,9 @@ static ir_node *transform_node_Or(ir_node *or)
 static ir_node *transform_node(ir_node *n);
 
 /**
- * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl
+ * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl.
+ *
+ * Should be moved to reassociation?
  */
 static ir_node *transform_node_shift(ir_node *n)
 {
@@ -2498,7 +2528,7 @@ static ir_node *transform_node_shift(ir_node *n)
 
     irn = new_ir_node(NULL, current_ir_graph, block, get_irn_op(n), mode, 2, in);
 
-    DBG_OPT_ALGSIM0(n, irn);
+    DBG_OPT_ALGSIM0(n, irn, FS_OPT_REASSOC_SHIFT);
 
     return transform_node(irn);
   }
@@ -2558,7 +2588,7 @@ static ir_node *transform_node_Mux(ir_node *n)
                 current_ir_graph,
                 block,
                 t, mode);
-          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
           return n;
         }
         else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
@@ -2572,7 +2602,7 @@ static ir_node *transform_node_Mux(ir_node *n)
                 block,
                 n, mode);
 
-          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
           return n;
         }
       }
@@ -2586,7 +2616,7 @@ static ir_node *transform_node_Mux(ir_node *n)
                 current_ir_graph,
                 block,
                 f, mode);
-          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
           return n;
         }
         else if (proj_nr == pn_Cmp_Ge || proj_nr == pn_Cmp_Gt) {
@@ -2600,7 +2630,7 @@ static ir_node *transform_node_Mux(ir_node *n)
                 block,
                 n, mode);
 
-          DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+          DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
           return n;
         }
       }
@@ -2630,7 +2660,7 @@ static ir_node *transform_node_Mux(ir_node *n)
                   new_r_Const_long(current_ir_graph, block, mode_Iu,
                     get_mode_size_bits(mode) - 1),
                   mode);
-            DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+            DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
             return n;
           }
           else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) &&
@@ -2647,7 +2677,7 @@ static ir_node *transform_node_Mux(ir_node *n)
                   new_r_Const_long(current_ir_graph, block, mode_Iu,
                     get_mode_size_bits(mode) - 1),
                   mode);
-            DBG_OPT_ALGSIM1(oldn, cmp, sel, n);
+            DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
             return n;
           }
         }
