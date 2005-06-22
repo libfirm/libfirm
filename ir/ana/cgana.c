@@ -75,8 +75,8 @@ static eset *entities = NULL;
 static entity *get_inherited_methods_implementation(entity *inh_meth) {
   assert(get_atomic_ent_value(inh_meth) && "constant entity without value");
   assert((get_irn_op(get_atomic_ent_value(inh_meth)) == op_SymConst) &&
-	 (get_SymConst_kind(get_atomic_ent_value(inh_meth)) == symconst_addr_ent) &&
-	 "Complex constant values not supported -- address of method should be straight constant!");
+         (get_SymConst_kind(get_atomic_ent_value(inh_meth)) == symconst_addr_ent) &&
+         "Complex constant values not supported -- address of method should be straight constant!");
 
   return get_SymConst_entity(get_atomic_ent_value(inh_meth));
 }
@@ -101,7 +101,7 @@ static void collect_impls(entity *method, eset *set, int *size, bool *open) {
   /* Only the assertions: */
   if (get_entity_peculiarity(method) == peculiarity_existent) {
     if ((get_entity_visibility(method) == visibility_external_allocated)
-	&& (NULL == get_entity_irg(method))) {
+         && (NULL == get_entity_irg(method))) {
     } else {
       assert(get_entity_irg(method) != NULL);
     }
@@ -195,7 +195,7 @@ static entity ** get_impl_methods(entity * method) {
  *  - If the node is a Sel:
  *     If we found only a single method that can be called, replace the Sel
  *     by a SymConst.  This is more powerful than the analysis in opt_polymorphy,
- *     as here we walk the typegraph.  In opt_polymorphy we only apply a local
+ *     as here we walk the type graph.  In opt_polymorphy we only apply a local
  *     pattern.
  *
  *  @param node The node to analyze
@@ -214,29 +214,32 @@ static void sel_methods_walker(ir_node * node, void *env) {
     if (get_SymConst_kind(node) == symconst_addr_name) {
       pmap_entry * entry = pmap_find(ldname_map, (void *) get_SymConst_name(node));
       if (entry != NULL) { /* Method is declared in the compiled code */
-	assert(0 && "There should not be a SymConst[addr_name] addressing a method with an implementation"
-	       "in this compilation unit.  Use a SymConst[addr_ent].");
+        assert(0 && "There should not be a SymConst[addr_name] addressing a method with an implementation"
+                    "in this compilation unit.  Use a SymConst[addr_ent].");
 #if 0
-	entity * ent = entry->value;
-	if (get_opt_normalize() &&
-	    (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
+        /* the following code would handle that case, but it should not
+         * happen anymore, so we add the above assertion
+         */
+        entity * ent = entry->value;
+        if (get_opt_normalize() &&
+            (get_entity_visibility(ent) != visibility_external_allocated)) { /* Meth. is defined */
           ir_node *new_node;
 
-	  set_irg_current_block(current_ir_graph, get_nodes_block(node));
-	  new_node = copy_const_value(get_atomic_ent_value(ent));
+          set_irg_current_block(current_ir_graph, get_nodes_block(node));
+          new_node = copy_const_value(get_atomic_ent_value(ent));
 
-	  DBG_OPT_CSTEVAL(node, new_node);
+          DBG_OPT_CSTEVAL(node, new_node);
 
-	  assert(get_entity_irg(ent));
-	  DDMN(new_node);
-	  exchange(node, new_node);
-	}
+          assert(get_entity_irg(ent));
+          DDMN(new_node);
+          exchange(node, new_node);
+        }
 #endif
       }
     }
   }
   else if (get_irn_op(node) == op_Sel &&
-	   is_Method_type(get_entity_type(get_Sel_entity(node)))) {
+           is_Method_type(get_entity_type(get_Sel_entity(node)))) {
     entity * ent = get_Sel_entity(node);
     assert(get_entity_peculiarity(ent) != peculiarity_inherited);
 
@@ -255,29 +258,29 @@ static void sel_methods_walker(ir_node * node, void *env) {
        * Methode zurückgeben. Damit ist sie insbesondere nicht
        * ausführbar und nicht erreichbar. */
       /* Gib eine Warnung aus wenn die Entitaet eine Beschreibung ist
-	 fuer die es keine Implementierung gibt. */
+         fuer die es keine Implementierung gibt. */
       if (get_entity_peculiarity(ent) == peculiarity_description) {
-	/* This is possible:  We call a method in a dead part of the program. */
+        /* This is possible:  We call a method in a dead part of the program. */
       } else {
-	DDMN(node);
-	assert(0);  /* Why should this happen ??? */
-	//exchange(node, new_Bad());
+        DDMN(node);
+        assert(0);  /* Why should this happen ??? */
+        //exchange(node, new_Bad());
       }
     } else {
       entity ** arr = get_entity_link(ent);
       if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-	  (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
-	ir_node *new_node;
-	/* Die Sel-Operation kann immer nur _einen_ Wert auf eine
-	 * interne Methode zurückgeben. Wir können daher die
-	 * Sel-Operation durch eine Const- bzw. SymConst-Operation
-	 * ersetzen. */
-	set_irg_current_block(current_ir_graph, get_nodes_block(node));
-	assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
-	       peculiarity_existent);
-	new_node = copy_const_value(get_atomic_ent_value(arr[0]));
-	DBG_OPT_POLY(node, new_node);
-	exchange (node, new_node);
+          (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
+        ir_node *new_node;
+        /* Die Sel-Operation kann immer nur _einen_ Wert auf eine
+         * interne Methode zurückgeben. Wir können daher die
+         * Sel-Operation durch eine Const- bzw. SymConst-Operation
+         * ersetzen. */
+        set_irg_current_block(current_ir_graph, get_nodes_block(node));
+        assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
+               peculiarity_existent);
+        new_node = copy_const_value(get_atomic_ent_value(arr[0]));
+        DBG_OPT_POLY(node, new_node);
+        exchange (node, new_node);
       }
     }
   }
@@ -289,7 +292,7 @@ static void sel_methods_walker(ir_node * node, void *env) {
 static void sel_methods_init(void) {
   int i;
   pmap * ldname_map = pmap_create();   /* Map entity names to entities: to replace
-					  SymConst(name) by SymConst(ent). */
+                                          SymConst(name) by SymConst(ent). */
   assert(entities == NULL);
   entities = eset_create();
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
@@ -669,11 +672,11 @@ static void callee_walker(ir_node * call, void * env) {
     }
     for (ent = eset_first(methods); ent; ent = eset_next(methods)) {
       if (ent != MARK) {
-	ARR_APP1(entity *, arr, ent);
+        ARR_APP1(entity *, arr, ent);
       }
     }
 #if 0  /* This generates Bad nodes when we don't want it.
-	  Call it with a check for valid cgana information in local_optimize. */
+          Call it with a check for valid cgana information in local_optimize. */
     if (ARR_LEN(arr) == 0 && get_opt_optimize() && get_opt_dyn_meth_dispatch()) {
       /* Kann vorkommen, wenn der Vorgänger beispielsweise eine
        * Sel-Operation war, die keine Methoden zurückgeben
@@ -694,7 +697,7 @@ static void callee_walker(ir_node * call, void * env) {
       /* remove, what we repaired. */
       int i;
       for (i = 0; i < ARR_LEN(arr); ++i) {
-	assert(arr[i]);
+        assert(arr[i]);
       }
 
       set_Call_callee_arr(call, ARR_LEN(arr), arr);
