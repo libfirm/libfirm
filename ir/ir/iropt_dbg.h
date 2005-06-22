@@ -15,6 +15,7 @@
 
 #include "dbginfo_t.h"
 #include "irhooks.h"
+#include "firmstat.h"
 
 /* This file contains makros that generate the calls to
    update the debug information after a transformation. */
@@ -23,23 +24,30 @@
 
 
 /**
- * Merge the debug info due to dead code elimination
+ * Merge the debug info due to dead block elimination.
+ *
+ * @param oldn  the block that it is eliminated
+ * @param n     the new node for this block, may be equal to oldn
  */
-#define DBG_OPT_DEAD(oldn, n)                                      \
-  do {                                                             \
-	  ir_node *ons[2];                                         \
-	  ons[0] = oldn;                                           \
-	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_STG);	   \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_dead_code); \
+#define DBG_OPT_DEAD_BLOCK(oldn, n)                              \
+  do {                                                           \
+    ir_node *ons[2];                                             \
+    ons[0] = oldn;                                               \
+    ons[1] = get_Block_cfgpred(oldn, 0);                         \
+    hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_DEAD_BLOCK); \
+    __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_dead_code);  \
 	} while(0)
 
 
 /**
- * Merge the debug info due to a straightening optimization
+ * Merge the debug info due to a straightening optimization.
+ * Block oldn is merged with n.
+ *
+ * @param oldn  the old block
+ * @param n     the new block the merges with oldn
  */
-#define DBG_OPT_STG(oldn, n)                                       \
-  do {                                                             \
+#define DBG_OPT_STG(oldn, n)                                 \
+  do {                                                       \
 	  ir_node *ons[2];                                         \
 	  ons[0] = oldn;                                           \
 	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
@@ -48,46 +56,85 @@
 	} while(0)
 
 /**
- * Merge the debug info due to an if simplification
+ * Merge the debug info due to an if simplification.
+ *
+ * @param oldn   the old Block
+ * @param proj1  the first ProjX predecessor
+ * @param proj2  the second ProjX predecessor
+ * @param n      the new Block
  */
-#define DBG_OPT_IFSIM(oldn, a, b, n)                                  \
-  do {                                                                \
+#define DBG_OPT_IFSIM1(oldn, proj1, proj2, n)                   \
+  do {                                                          \
 	  ir_node *ons[4];                                            \
 	  ons[0] = oldn;                                              \
-	  ons[1] = a;                                                 \
-	  ons[2] = b;                                                 \
-	  ons[3] = get_Proj_pred(a);                                  \
+	  ons[1] = proj1;                                             \
+	  ons[2] = proj2;                                             \
+	  ons[3] = get_Proj_pred(proj1);                              \
 	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_IFSIM);     \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_if_simplification); \
 	} while(0)
 
 /**
- * Merge the debug info due to an algebraic_simplification
+ * Merge the debug info due to an if simplification.
+ * @param oldn   the old Cond
+ * @param n      the new Jmp
+ */
+#define DBG_OPT_IFSIM2(oldn, n)                            \
+  do {                                                     \
+	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_IFSIM);     \
+	  __dbg_info_merge_pair(n, oldn, dbg_if_simplification); \
+	} while(0)
+
+/**
+ * Merge the debug info due to an algebraic_simplification.
+ * A node could be avaluated into a Constant.
+ *
+ * @param oldn  the node
+ * @param n     the new constant holding the value
  */
 #define DBG_OPT_CSTEVAL(oldn, n)                                  \
   do {                                                          	\
 	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONST_EVAL);    	  \
-          __dbg_info_merge_pair(n, oldn, dbg_const_eval);	        \
+    __dbg_info_merge_pair(n, oldn, dbg_const_eval);	             \
   } while(0)
 
-#define DBG_OPT_ALGSIM0(oldn, n)                                  \
+/**
+ * Merge the debug info due to an algebraic_simplification.
+ *
+ * @param oldn  the old node
+ * @param n     the new node replacing oldn
+ * @param flag  firm statistics option
+ */
+#define DBG_OPT_ALGSIM0(oldn, n, flag)                            \
   do {                                                            \
-    hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_ALGSIM);    	      \
+    hook_merge_nodes(&n, 1, &oldn, 1, flag);    	                \
     __dbg_info_merge_pair(n, oldn, dbg_algebraic_simplification); \
   } while(0)
 
-#define DBG_OPT_ALGSIM1(oldn, a, b, n)                          \
+/**
+ * Merge the debug info due to an algebraic_simplification.
+ *
+ * @param oldn  the old node
+ * @param a     a predecessor of oldn
+ * @param b     a predecessor of oldn
+ * @param n     the new node replacing oldn
+ * @param flag  firm statistics option
+ */
+#define DBG_OPT_ALGSIM1(oldn, a, b, n, flag)                    \
   do {                                                          \
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ALGSIM);    \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), flag);               \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
   } while(0)
 
-#define DBG_OPT_ALGSIM2(oldn, pred, n)                                \
-  do {                                                                \
+/**
+ * Merge the debug info due to an algebraic_simplification.
+ */
+#define DBG_OPT_ALGSIM2(oldn, pred, n)                          \
+  do {                                                          \
 	  ir_node *ons[3];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = pred;                                              \
@@ -96,8 +143,11 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
   } while(0)
 
-#define DBG_OPT_ALGSIM3(oldn, a, n)                                   \
-  do {                                                                \
+/**
+ * Merge the debug info due to an algebraic_simplification.
+ */
+#define DBG_OPT_ALGSIM3(oldn, a, n)                             \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
@@ -105,22 +155,29 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
   } while(0)
 
-#define DBG_OPT_PHI(oldn, first_val, n)                               \
-  do {                                                                \
-	  ir_node *ons[2];                                            \
-	  ons[0] = oldn;                                              \
-	  ons[1] = first_val;                                         \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_PHI);	      \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_ssa);   \
+/**
+ * Merge the debuig info due to a Phi optimization.
+ * A Phi node was replaced by one of its input (the only meaningful)
+ *
+ * @param phi  the Phi node that will be replaced
+ * @param n    in Phi Input that will replace Phi
+ */
+#define DBG_OPT_PHI(phi, n)                                     \
+  do {                                                          \
+	  hook_merge_nodes(&n, 1, &phi, 1, HOOK_OPT_PHI);	            \
+	  __dbg_info_merge_sets(&n, 1, &phi, 1, dbg_opt_ssa);         \
   } while(0)
 
 
 /**
  * Merge the debug info due to Write-after-Write optimization:
- * Store oldst will be replace by a reference to Store st
+ * Store oldst will be removed, because Store st overwrites it.
+ *
+ * @param oldst  the old store that will be removed
+ * @param st     the other store that overwrites oldst
  */
-#define DBG_OPT_WAW(oldst, st)                                        \
-  do {                                                                \
+#define DBG_OPT_WAW(oldst, st)                                  \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldst;                                             \
 	  ons[1] = st;                                                \
@@ -130,10 +187,13 @@
 
 /**
  * Merge the debug info due to Write-after-Read optimization:
- * store will be replace by a reference to load
+ * A store will be removed because it rite a value just read back.
+ *
+ * @param store  the store that will be removed
+ * @param load   the load that produces the value that store will write back
  */
-#define DBG_OPT_WAR(store, load)                                      \
-  do {                                                                \
+#define DBG_OPT_WAR(store, load)                                \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
 	  ons[0] = store;                                             \
 	  ons[1] = load;                                              \
@@ -143,23 +203,29 @@
 
 /**
  * Merge the debug info due to Read-after-Write optimization:
- * load will be replace by a reference to store
+ * A load will be replaced by a value that was just stored.
+ *
+ * @param load   the load that will be replaced
+ * @param value  the value that will replace the load
  */
-#define DBG_OPT_RAW(store, load)                                      \
-  do {                                                                \
+#define DBG_OPT_RAW(load, value)                                \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
-	  ons[0] = store;                                             \
-	  ons[1] = load;                                              \
-	  hook_merge_nodes(&store, 1, ons, SIZ(ons), HOOK_OPT_RAW);   \
-	  __dbg_info_merge_sets(&store, 1, ons, SIZ(ons), dbg_read_after_write); \
+	  ons[0] = load;                                              \
+	  ons[1] = value;                                             \
+	  hook_merge_nodes(&value, 1, ons, SIZ(ons), HOOK_OPT_RAW);   \
+	  __dbg_info_merge_sets(&value, 1, ons, SIZ(ons), dbg_read_after_write); \
   } while(0)
 
 /**
  * Merge the debug info due to Read-after-Read optimization:
- * Load oldld will be replace by a reference to Load ld
+ * Load oldld will be replace by a reference to Load ld.
+ *
+ * @param oldld  the old load that can be replaced
+ * @param ld     the load that produces the same values
  */
-#define DBG_OPT_RAR(oldld, ld)                                        \
-  do {                                                                \
+#define DBG_OPT_RAR(oldld, ld)                                  \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldld;                                             \
 	  ons[1] = ld;                                                \
@@ -169,10 +235,14 @@
 
 /**
  * Merge the debug info due to Read-a-Const optimization:
- * Load ld will be replace by a Constant
+ * Load ld will be replace by a Constant if the value that
+ * will be loaded is known and immutable.
+ *
+ * @param ld  the load
+ * @param c   the constant value that will replace the load's result
  */
-#define DBG_OPT_RC(ld, c)                                             \
-  do {                                                                \
+#define DBG_OPT_RC(ld, c)                                       \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
 	  ons[0] = ld;                                                \
 	  ons[1] = c;                                                 \
@@ -180,30 +250,48 @@
 	  __dbg_info_merge_sets(&ld, 1, ons, SIZ(ons), dbg_read_a_const); \
 	} while(0)
 
-#define DBG_OPT_TUPLE(oldn, a, n)                                     \
-  do {                                                                \
+/**
+ * Merge the debug info after a tuple optimization.
+ * a Proj(Tuple) is replaced by the associated tuple value.
+ *
+ * @param oldn   the Proj node
+ * @param tuple  the Tuple node
+ * @param n      the Proj(Tuple) value
+ */
+#define DBG_OPT_TUPLE(proj, tuple, n)                           \
+  do {                                                          \
 	  ir_node *ons[3];                                            \
-	  ons[0] = oldn;                                              \
-	  ons[1] = a;                                                 \
+	  ons[0] = proj;                                              \
+	  ons[1] = tuple;                                             \
 	  ons[2] = n;                                                 \
 	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_TUPLE);     \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
   } while(0)
 
-#define DBG_OPT_ID(oldn, n)                                           \
-  do {                                                                \
+/**
+ * Merge the debug info after an Id optimization.
+ * An Id node was replaced by its non-Id predecessor.
+ *
+ * @param id  the Id node
+ * @param n   the predecessor
+ */
+#define DBG_OPT_ID(id, n)                                       \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
-	  ons[0] = oldn;                                              \
+	  ons[0] = id;                                                \
 	  ons[1] = n;                                                 \
 	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ID);	      \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
   } while(0)
 
 /**
- * Merge the debug info due to ommon-subexpression elimination
+ * Merge the debug info due to common-subexpression elimination.
+ *
+ * @param oldn  the old node
+ * @param n     the node that replaces oldn
  */
-#define DBG_OPT_CSE(oldn, n)                                          \
-  do {                                                                \
+#define DBG_OPT_CSE(oldn, n)                                    \
+  do {                                                          \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = n;                                                 \
@@ -211,24 +299,28 @@
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_cse);   \
   } while(0)
 
-#define DBG_OPT_POLY_ALLOC(oldn, n)                                 \
+/**
+ * Merge the debug info due to polymorphic call optimization.
+ * A Sel node was replaced by a constant.
+ *
+ * @param sel   the Sel node that will be replaced.
+ * @param c     the constant node that replaces sel
+ */
+#define DBG_OPT_POLY(sel, c)                                        \
   do {                                                              \
     ir_node *ons[3];                                                \
-    ons[0] = oldn;                                                  \
-    ons[1] = skip_Proj(get_Sel_ptr(oldn));                          \
-    ons[2] = n;                                                     \
-    hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_POLY_CALL);	    \
-    __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_rem_poly_call); \
-  } while(0)
-
-#define DBG_OPT_POLY(oldn, n)                                   \
-  do {                                                          \
-    hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_POLY_CALL);    	\
-    __dbg_info_merge_pair(n, oldn, dbg_rem_poly_call);          \
+    ons[0] = sel;                                                   \
+    ons[1] = skip_Proj(get_Sel_ptr(sel));                           \
+    ons[2] = c;                                                     \
+    hook_merge_nodes(&c, 1, ons, SIZ(ons), HOOK_OPT_POLY_CALL);	    \
+    __dbg_info_merge_sets(&c, 1, ons, SIZ(ons), dbg_rem_poly_call); \
   } while(0)
 
 /**
- * a node was replaced by another node due to a Confirm
+ * A node was replaced by another node due to a Confirmation.
+ *
+ * @param oldn  the old node
+ * @param n     the new node
  */
 #define DBG_OPT_CONFIRM(oldn, n)                                \
   do {                                                          \
@@ -237,7 +329,10 @@
   } while(0)
 
 /**
- * a node was replaced by a constant due to a Confim
+ * A node was replaced by a constant due to a Confimation.
+ *
+ * @param oldn  the old node
+ * @param c     the new constnt node
  */
 #define DBG_OPT_CONFIRM_C(oldn, c)                              \
   do {                                                          \
@@ -246,11 +341,14 @@
   } while(0)
 
 /**
- * a node could be evalueted due to a Confirm
+ * A node could be evaluated to a value due to a Confirm.
+ * This will lead to a constant evaluation.
+ *
+ * @param n  the node that could be evaluated
  */
-#define DBG_EVAL_CONFIRM(oldn)                                  \
-  do {                                                          \
-    hook_merge_nodes(NULL, 0, &oldn, 1, HOOK_OPT_CONFIRM_E);    \
+#define DBG_EVAL_CONFIRM(n)                                  \
+  do {                                                       \
+    hook_merge_nodes(NULL, 0, &n, 1, HOOK_OPT_CONFIRM_E);    \
   } while(0)
 
 #endif /* _IROPT_DBG_H_ */
