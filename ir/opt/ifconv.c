@@ -93,7 +93,7 @@ static ir_node *optimize_mux_chain(ir_node *mux)
     return mux;
 
   res = mux;
-  null = get_tarval_null(mode);
+  null = get_mode_null(mode);
   minus_one = tarval_sub(null, get_tarval_one(mode));
 
   ops[0] = get_Mux_false(mux);
@@ -289,7 +289,7 @@ static int _can_move_to(ir_node *expr, ir_node *dest_block, int depth, const opt
   }
 
 end:
-  DBG((dbg, LEVEL_3, "\t\t\t%Dcan move to %n: %d\n", depth, expr, res));
+  DBG((dbg, LEVEL_3, "\t\t\tcan move to %n: %d\n", expr, res));
 
   return res;
 }
@@ -552,9 +552,9 @@ static void _find_conds(ir_node *irn, unsigned long visited_nr,
           list_del_init(&masked_by->list);
         }
 
-        DBG((dbg, LEVEL_2, "%D%n (%s branch) "
+        DBG((dbg, LEVEL_2, "%n (%s branch) "
               "for pos %d in block %n reached by %n\n",
-              depth, cond, proj ? "true" : "false", pos,
+              cond, proj ? "true" : "false", pos,
               block, masked_by ? masked_by->cond : NULL));
       }
     }
@@ -955,7 +955,7 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
   /* Init the debug stuff. */
   dbg = firm_dbg_register("firm.opt.ifconv");
 #if 0
-  firm_dbg_set_mask(dbg, LEVEL_1);
+  firm_dbg_set_mask(dbg, LEVEL_1|LEVEL_2|LEVEL_3);
 #endif
 
   /* if-conversion works better with normalized returns */
