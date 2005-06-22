@@ -36,6 +36,7 @@
 #include "firmstat.h"
 
 #include "cfopt.h"
+#include "iropt_dbg.h"
 
 /*------------------------------------------------------------------*/
 /* Control flow optimization.                                       */
