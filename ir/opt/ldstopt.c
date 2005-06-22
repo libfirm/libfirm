@@ -549,8 +549,10 @@ static int optimize_load(ir_node *load)
        */
       if ((!pred_info->projs[pn_Store_X_except] && !info->projs[pn_Load_X_except]) ||
           get_nodes_block(load) == get_nodes_block(pred)) {
-        DBG_OPT_RAW(load, pred);
-        exchange( info->projs[pn_Load_res], get_Store_value(pred) );
+        ir_node *value = get_Store_value(pred);
+
+        DBG_OPT_RAW(load, value);
+        exchange(info->projs[pn_Load_res], value);
 
         if (info->projs[pn_Load_M])
           exchange(info->projs[pn_Load_M], mem);
