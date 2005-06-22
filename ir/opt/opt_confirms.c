@@ -260,20 +260,15 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
   tarval  *tv   = value_of(bound);
 
   if (tv == tarval_bad) {
-    if (mode_is_float(mode)) {
-      /* NaN could be included which we cannot handle */
-      iv->min   = tarval_bad;
-      iv->max   = tarval_bad;
-      iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
-      return NULL;
-    }
-    else {
-      /* [-oo, +oo] */
-      iv->min   = get_mode_min(mode);
-      iv->max   = get_mode_max(mode);
-      iv->flags = MIN_INCLUDED | MAX_INCLUDED;
-      return iv;
-    }
+    /* There is nothing we could do here. For integer
+     * modes we could return [-oo, +oo], but there is
+     * nothing we could deduct from such an interval.
+     * So, speed things up and return unknown.
+     */
+    iv->min   = tarval_bad;
+    iv->max   = tarval_bad;
+    iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+    return NULL;
   }
 
   if (mode_is_float(mode)) {
@@ -294,35 +289,35 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
     iv->min   =
     iv->max   = tv;
     iv->flags = MIN_INCLUDED | MAX_INCLUDED;
-    return iv;
+    break;
 
   case pn_Cmp_Le:
     /* [-oo, tv] */
     iv->min   = get_mode_min(mode);
     iv->max   = tv;
     iv->flags = MIN_INCLUDED | MAX_INCLUDED;
-    return iv;
+    break;
 
   case pn_Cmp_Lt:
     /* [-oo, tv) */
     iv->min   = get_mode_min(mode);
     iv->max   = tv;
     iv->flags = MIN_INCLUDED | MAX_EXCLUDED;
-    return iv;
+    break;
 
   case pn_Cmp_Gt:
     /* (tv, +oo] */
     iv->min   = tv;
     iv->max   = get_mode_max(mode);
     iv->flags = MIN_EXCLUDED | MAX_INCLUDED;
-    return iv;
+    break;
 
   case pn_Cmp_Ge:
     /* [tv, +oo] */
     iv->min   = tv;
     iv->max   = get_mode_max(mode);
     iv->flags = MIN_INCLUDED | MAX_INCLUDED;
-    return iv;
+    break;
 
   case pn_Cmp_Leg:
     /*
@@ -333,7 +328,7 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
     iv->min   = get_mode_min(mode);
     iv->max   = get_mode_max(mode);
     iv->flags = MIN_INCLUDED | MAX_INCLUDED;
-    return iv;
+    break;
 
   default:
     /*
@@ -345,6 +340,10 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
     iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
     return NULL;
   }
+
+  if (iv->min != tarval_bad && iv->max != tarval_bad)
+    return iv;
+  return NULL;
 }
 
 /**
@@ -372,7 +371,7 @@ static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp
   if (pnc & pn_Cmp_Uo) {
     tarval *t;
 
-    pnc      = get_negated_pnc(pnc);
+    pnc      = get_negated_pnc(pnc, get_tarval_mode(l_iv->min));
     t        = tv_true;
     tv_true  = tv_false;
     tv_false = t;
@@ -576,4 +575,18 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
     DBG_EVAL_CONFIRM(cmp);
 
   return tv;
+}
+
+/** For debugging. Prints an interval */
+static void print_iv(const interval_t *iv) {
+  char smin[64], smax[64];
+
+  tarval_snprintf(smin, sizeof(smin), iv->min);
+  tarval_snprintf(smax, sizeof(smax), iv->max);
+
+  printf("%c%s, %s%c\n",
+    iv->flags & MIN_EXCLUDED ? '(' : '[',
+    smin, smax,
+    iv->flags & MAX_EXCLUDED ? ')' : ']'
+  );
 }
