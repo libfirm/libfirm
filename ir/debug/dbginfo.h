@@ -58,15 +58,15 @@ typedef struct type type;
  * An abstract data type containing information for
  * debugging support.
  *
- * This datatype is not defined anywere in the firm library, but pointers
- * to this type can be stored in firm nodes.
+ * This opaque data type is not defined anywhere in the firm library,
+ * but pointers to this type can be stored in firm nodes.
  */
 typedef struct dbg_info dbg_info;
 
 /**
  * Sets the debug information of a node.
  */
-void set_irn_dbg_info(ir_node *n, dbg_info* db);
+void set_irn_dbg_info(ir_node *n, dbg_info *db);
 
 /**
  * Returns the debug information of an node.
@@ -76,7 +76,7 @@ dbg_info *get_irn_dbg_info(ir_node *n);
 /**
  * Sets the debug information of an entity.
  */
-void set_entity_dbg_info(entity *ent, dbg_info* db);
+void set_entity_dbg_info(entity *ent, dbg_info *db);
 
 /**
  * Returns the debug information of an entity.
@@ -86,7 +86,7 @@ dbg_info *get_entity_dbg_info(entity *ent);
 /**
  * Sets the debug information of a type.
  */
-void set_type_dbg_info(type *tp, dbg_info* db);
+void set_type_dbg_info(type *tp, dbg_info *db);
 
 /**
  * Returns the debug information of a type.
@@ -99,7 +99,7 @@ dbg_info *get_type_dbg_info(type *tp);
 typedef enum {
   dbg_error = 0,
   dbg_opt_ssa,           /**< Optimization of the SSA representation, e.g., removal of superfluent phi nodes. */
-  dbg_opt_auxnode,       /**< Removal of unnecessary auxilliary nodes. */
+  dbg_opt_auxnode,       /**< Removal of unnecessary auxiliary nodes. */
   dbg_const_eval,        /**< A Firm subgraph was evaluated to a single constant. */
   dbg_opt_cse,           /**< A Firm node was replaced due to common subexpression elimination. */
   dbg_straightening,     /**< A Firm subgraph was replaced by a single, existing block. */
@@ -119,7 +119,7 @@ typedef enum {
                                      a constant optimization. */
   dbg_rem_poly_call,            /**< Remove polymorphic call. */
   dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
-  dbg_opt_confirm,              /**< A Firm ubgraph was replace because of a Confirmation */
+  dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation */
   dbg_max                       /**< Maximum value. */
 
 } dbg_action;
@@ -201,7 +201,7 @@ typedef void merge_sets_func(ir_node **new_node_array, int new_num_entries, ir_n
  *     semantics.
  *   - dbg_info_merge_sets() is called in the following situation:
  *     The optimization replaced a subgraph by another subgraph.  There is no
- *     obviouse mapping between single nodes in both subgraphs.  The optimization
+ *     obviously mapping between single nodes in both subgraphs.  The optimization
  *     simply passes two lists to the debug module, one containing the nodes in
  *     the old subgraph, the other containing the nodes in the new subgraph.
  *     The same node can be in both lists.
