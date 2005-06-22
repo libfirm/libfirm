@@ -1167,7 +1167,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
     if (   (scnd_val != n)
         && (scnd_val != first_val)
 #if 1
-        && (! is_Bad(first_val))
+        && (! is_Bad(scnd_val))
 #endif
            ) {
       break;
