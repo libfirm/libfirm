@@ -204,7 +204,7 @@ static void insert_Confirm(ir_node *block, void *env)
 
     if (get_Proj_proj(proj) != pn_Cond_true) {
       /* it's the false branch */
-      pnc = get_negated_pnc(pnc);
+      pnc = get_negated_pnc(pnc, mode);
     }
     handle_if(block, cmp, pnc, env);
   }
@@ -252,9 +252,11 @@ void construct_confirms(ir_graph *irg)
     set_irg_loopinfo_inconsistent(irg);
   }
 
-  printf("No Confirms inserted : %u\n", env.num_confirms);
-  printf("No Const replacements: %u\n", env.num_consts);
-  printf("No node equalities   : %u\n", env.num_eq);
+#if 0
+  printf("# Confirms inserted : %u\n", env.num_confirms);
+  printf("# Const replacements: %u\n", env.num_consts);
+  printf("# node equalities   : %u\n", env.num_eq);
+#endif
 
   /* deactivate edges if they where off */
   if (! edges_active)
