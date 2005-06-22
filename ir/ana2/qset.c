@@ -514,7 +514,7 @@ void qset_delete (qset_t *qset)
 }
 
 /*
-  Test wether the given qset contains the given value.
+  Test whether the given qset contains the given value.
 */
 int qset_contains (qset_t *qset, sortable_t val)
 {
@@ -730,6 +730,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.11  2005/06/22 09:34:11  beck
+  typo fixed
+
   Revision 1.10  2004/12/21 15:37:31  beck
   added config.h include
   removed unused sys/times.h
