@@ -161,11 +161,25 @@ ir_graph     *get_irn_irg      (const ir_node *node);
    of node cast to long. */
 long          get_irn_node_nr  (const ir_node *node);
 
-/** Returns the pinned state of a node. */
+/** Returns the pinned state of a node.
+ *
+ *  Returns whether the node _always_ must be pinned.
+ *  I.e., the node is not floating after global cse.
+ *
+ * @returns Either state op_pin_state_pinned or op_pin_state_floats.
+ */
 op_pin_state get_irn_pinned    (const ir_node *node);
 
 /** Set pin state for nodes with op pin state op_pin_state_exc_pinned */
 void set_irn_pinned(ir_node *node, op_pin_state state);
+
+/** Returns whether the node is currently pinned.
+ *
+ * If get_irn_pinned returns op_pin_state_floats and the graph the
+ * node belongs to is in state op_poin_state_floats then this function
+ * returns 'floats', else 'pinned'.
+ */
+op_pin_state is_irn_pinned_in_irg (const ir_node *node);
 
 /**
  * irnode constructor.

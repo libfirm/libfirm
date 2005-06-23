@@ -407,6 +407,11 @@ op_pin_state
   return _get_irn_pinned(node);
 }
 
+op_pin_state
+(is_irn_pinned_in_irg) (const ir_node *node) {
+  return _is_irn_pinned_in_irg(node);
+}
+
 void set_irn_pinned(ir_node *node, op_pin_state state) {
   /* due to optimization an opt may be turned into a Tuple */
   if (get_irn_op(node) == op_Tuple)

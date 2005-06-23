@@ -497,17 +497,29 @@ _get_irn_link(const ir_node *node) {
 }
 
 /**
- * Returns the pinned state of a node.
+ * Returns whether the node _always_ must be pinned.
+ * I.e., the node is not floating after global cse.
+ *
  * Intern version of libFirm.
  */
 static INLINE op_pin_state
 _get_irn_pinned(const ir_node *node) {
   op_pin_state state;
   assert(node && _is_ir_node(node));
+  /* Check opcode */
   state = _get_op_pinned(_get_irn_op(node));
+
   if (state >= op_pin_state_exc_pinned)
     return get_opt_fragile_ops() ? node->attr.except.pin_state : op_pin_state_pinned;
   return state;
+}
+
+static INLINE op_pin_state
+_is_irn_pinned_in_irg(const ir_node *node) {
+  if (get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats) {
+    return get_irn_pinned(node)
+  }
+  return op_pin_state_pinned;
 }
 
 static INLINE int
@@ -651,6 +663,8 @@ static INLINE type *_get_irn_type(ir_node *node) {
 #define irn_not_visited(node)                 _irn_not_visited(node)
 #define set_irn_link(node, link)              _set_irn_link(node, link)
 #define get_irn_link(node)                    _get_irn_link(node)
+#define get_irn_pinned(node)                  _get_irn_pinned(node)
+#define is_irn_pinned_in_irg(node)            _is_irn_pinned_in_irg(node)
 #define is_unop(node)                         _is_unop(node)
 #define is_binop(node)                        _is_binop(node)
 #define is_Const(node)                        _is_Const(node)
