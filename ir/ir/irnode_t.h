@@ -516,9 +516,8 @@ _get_irn_pinned(const ir_node *node) {
 
 static INLINE op_pin_state
 _is_irn_pinned_in_irg(const ir_node *node) {
-  if (get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats) {
-    return get_irn_pinned(node)
-  }
+  if (get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats)
+    return get_irn_pinned(node);
   return op_pin_state_pinned;
 }
 
