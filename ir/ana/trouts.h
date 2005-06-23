@@ -81,6 +81,15 @@ int   get_type_n_pointertypes_to(type *tp);
 type *get_type_pointertype_to(type *tp, int pos);
 void  add_type_pointertype_to(type *tp, type *ptp);
 
+/* Access all array types that contain elements of type tp.
+ * Does not find subarrays, e.g., int[] being element of int[][]
+ * for multi dimensional arrays. */
+int   get_type_n_arraytypes_of(type *tp);
+type *get_type_arraytype_of(type *tp, int pos);
+void  add_type_arraytype_of(type *tp, type *atp);
+
+
+
 /* @@@ TODO: compute all entities that use a type. */
 
 /*------------------------------------------------------------------*/

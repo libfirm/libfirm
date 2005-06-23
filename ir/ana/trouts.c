@@ -28,6 +28,7 @@ static pmap *entity_reference_map = NULL;
 static pmap *type_alloc_map = NULL;
 static pmap *type_cast_map = NULL;
 static pmap *type_pointertype_map = NULL;
+static pmap *type_arraytype_map = NULL;
 
 static ir_node **get_entity_access_array(entity *ent) {
   ir_node **res;
@@ -122,6 +123,26 @@ void set_type_pointertype_array(type *tp, type **pts) {
   type **old = pmap_get(type_pointertype_map, (void *)tp);
   if (old != pts)
     pmap_insert(type_pointertype_map, (void *)tp, (void *)pts);
+}
+
+static type **get_type_arraytype_array(type *tp) {
+  type **res;
+  if (!type_arraytype_map) type_arraytype_map = pmap_create();
+
+  if (pmap_contains(type_arraytype_map, (void *)tp)) {
+    res = (type **) pmap_get(type_arraytype_map, (void *)tp);
+  } else {
+    res = NEW_ARR_F(type *, 0);
+    pmap_insert(type_arraytype_map, (void *)tp, (void *)res);
+  }
+
+  return res;
+}
+
+void set_type_arraytype_array(type *tp, type **pts) {
+  type **old = pmap_get(type_arraytype_map, (void *)tp);
+  if (old != pts)
+    pmap_insert(type_arraytype_map, (void *)tp, (void *)pts);
 }
 
 /*------------------------------------------------------------------*/
@@ -362,6 +383,48 @@ void set_type_pointertype_to(type *tp, int pos, type *ptp) {
   pts[pos] = ptp;
 }
 
+
+/**------------------------------------------------------------------*/
+
+int   get_type_n_arraytypes_of(type *tp) {
+  type ** pts;
+
+  assert(tp && is_type(tp));
+
+  pts = get_type_arraytype_array(tp);
+  return ARR_LEN(pts);
+}
+
+type *get_type_arraytype_of(type *tp, int pos) {
+  type ** pts;
+
+  assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
+
+  pts = get_type_arraytype_array(tp);
+  return pts[pos];
+}
+
+void  add_type_arraytype_of(type *tp, type *atp) {
+  type ** pts;
+
+  assert(tp && is_type(tp));
+  assert(atp && is_Array_type(atp));
+
+  pts = get_type_arraytype_array(tp);
+  ARR_APP1(ir_node *, pts, atp);
+  set_type_arraytype_array(tp, pts);
+}
+
+void  set_type_arraytype_of(type *tp, int pos, type *atp) {
+  type ** pts;
+
+  assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
+  assert(atp && is_Array_type(atp));
+
+  pts = get_type_arraytype_array(tp);
+  pts[pos] = atp;
+}
+
 /*------------------------------------------------------------------*/
 /* Building and Removing the out datastructure                      */
 /*------------------------------------------------------------------*/
@@ -472,6 +535,8 @@ static void chain_accesses(ir_node *n, void *env) {
 static void chain_types(type *tp) {
   if (is_Pointer_type(tp)) {
     add_type_pointertype_to(get_pointer_points_to_type(tp), tp);
+  } else if (is_Array_type(tp)) {
+    add_type_arraytype_of(get_array_element_type(tp), tp);
   }
 }
 
@@ -560,5 +625,16 @@ void free_trouts(void) {
     pmap_destroy(type_pointertype_map);
     type_pointertype_map = NULL;
   }
+
+  if (type_arraytype_map) {
+    ir_node **pts;
+    for (pts = (ir_node **)pmap_first(type_arraytype_map);
+	 pts;
+	 pts = (ir_node **)pmap_next(type_arraytype_map))
+      ; //DEL_ARR_F(pts);
+    pmap_destroy(type_arraytype_map);
+    type_arraytype_map = NULL;
+  }
+
   irp->trouts_state = outs_none;
 }
