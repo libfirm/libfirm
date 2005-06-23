@@ -841,7 +841,7 @@ static ir_node *equivalent_node_Add(ir_node *n)
     if (get_Sub_right(right) == left) {
       /* x + (a - x) */
 
-      n = get_Sub_left(left);
+      n = get_Sub_left(right);
       DBG_OPT_ALGSIM1(oldn, left, right, n, FS_OPT_ADD_SUB);
 
       return n;
