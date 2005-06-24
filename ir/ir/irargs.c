@@ -14,6 +14,8 @@
 # include "config.h"
 #endif
 
+#include "bitset.h"
+
 #include <ctype.h>
 #include <libcore/xprintf.h>
 
@@ -33,6 +35,33 @@ static int firm_get_arg_type(const arg_occ_t *occ) {
 
 static int firm_get_arg_type_int(const arg_occ_t *occ) {
   return arg_type_int;
+}
+
+
+static int bitset_get_arg_type(const arg_occ_t *occ) {
+  return arg_type_ptr;
+}
+
+static int bitset_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+{
+  int res = 2;
+  bitset_t *b = arg->v_ptr;
+  bitset_pos_t p;
+  char buf[32];
+  const char *prefix = "";
+
+  arg_append(app, occ, "[", 1);
+  for(p = bitset_next_set(b, 0); p != -1; p = bitset_next_set(b, p)) {
+    int n;
+
+    n = snprintf(buf, sizeof(buf), "%s%d", prefix, (int) p);
+    arg_append(app, occ, buf, n);
+    prefix = ", ";
+    res += n;
+  }
+  arg_append(app, occ, "]", 1);
+
+  return res;
 }
 
 /**
@@ -165,6 +194,7 @@ arg_env_t *firm_get_arg_env(void)
   static arg_handler_t firm_handler   = { firm_get_arg_type, firm_emit };
   static arg_handler_t ident_handler  = { firm_get_arg_type, firm_emit_ident };
   static arg_handler_t indent_handler = { firm_get_arg_type_int, firm_emit_indent };
+  static arg_handler_t bitset_handler = { bitset_get_arg_type, bitset_emit };
 
   static struct {
     const char *name;
@@ -193,6 +223,7 @@ arg_env_t *firm_get_arg_env(void)
 
     arg_register(env, "firm:ident", 'I', &ident_handler);
 		arg_register(env, "firm:indent", 'D', &indent_handler);
+		/* arg_register(env, "firm:bitset", 'b', &bitset_handler); */
   }
 
   return env;

@@ -68,6 +68,8 @@ typedef struct {
                      @@@ @todo Ev. replace by bitfield! */
   ir_extblk *extblk;          /**< the extended basic block this block belongs to */
 
+  struct list_head succ_head; /**< A list head for all successor edges of a block. */
+
 } block_attr;
 
 /** Start attributes */

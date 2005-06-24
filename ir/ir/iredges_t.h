@@ -42,9 +42,22 @@ struct _ir_edge_t {
 #endif
   ir_node *src;           /**< The source node of the edge. */
   int pos;                /**< The position of the edge at @p src. */
-  struct list_head list;  /**< The list head to queue all out edges at a node. */
   unsigned invalid : 1;   /**< edges that are removed are marked invalid. */
   unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
+  struct list_head list;  /**< The list head to queue all out edges at a node. */
+};
+
+/**
+ * A block edge inherits from a normal edge.
+ * They represent edges leading from a block to a control flow node
+ * and are used to quickly find all control flow successors of
+ * a block.
+ */
+struct _ir_block_edge_t {
+  struct _ir_edge_t edge;      /**< The inherited data. */
+  struct list_head succ_list;  /**< List element listing all
+                                 control flow edges to the
+                                 successors of a block. */
 };
 
 /** Accessor for private irn info. */
@@ -58,6 +71,12 @@ struct _ir_edge_t {
  * struct.
  */
 #define _get_irn_outs_head(irn) (&_get_irn_edge_info(irn)->outs_head)
+
+/**
+ * Convenience macro to get the succ_head from a block_attr
+ * struct.
+ */
+#define _get_block_succ_head(bl) (&((bl)->attr.block.succ_head))
 
 /**
  * Get the first edge pointing to some node.
@@ -85,6 +104,43 @@ static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const 
 }
 
 /**
+ * Get the first successor edge of a block.
+ * A successor edge is an edge originated from another block, pointing
+ * to a mode_X node in the given block and is thus a control flow
+ * successor edge.
+ * @param irn The block.
+ * @return The first successor edge of the block.
+ */
+static INLINE const ir_edge_t *_get_block_succ_first(const ir_node *irn)
+{
+  const struct list_head *head;
+
+  assert(is_Block(irn) && "Node must be a block here");
+  head = _get_block_succ_head(irn);
+  return (ir_edge_t *) (list_empty(head) ? NULL :
+      list_entry(head->next, ir_block_edge_t, succ_list));
+}
+
+/**
+ * Get the next block successor edge.
+ * @see See _get_block_succ_first() for details.
+ * @param irn The block.
+ * @param last The last edge.
+ * @return The next edge, or NULL if there is no further.
+ */
+static INLINE const ir_edge_t *_get_block_succ_next(const ir_node *irn, const ir_edge_t *last)
+{
+  const ir_block_edge_t *block_edge;
+  struct list_head *next;
+
+  assert(is_Block(irn) && "Node must be a block here");
+  block_edge = (const ir_block_edge_t *) last;
+  next = block_edge->succ_list.next;
+  return (ir_edge_t *) (next == _get_block_succ_head(irn) ? NULL :
+      list_entry(next, ir_block_edge_t, succ_list));
+}
+
+/**
  * Get the source node of an edge.
  * @param edge The edge.
  * @return The source node of that edge.
@@ -102,6 +158,16 @@ static INLINE  ir_node *_get_edge_src_irn(const ir_edge_t *edge)
 static INLINE int _get_edge_src_pos(const ir_edge_t *edge)
 {
   return edge ? edge->pos : -1;
+}
+
+/**
+ * Get the number of edges pointing to a node.
+ * @param irn The node.
+ * @return The number of edges pointing to this node.
+ */
+static INLINE int _get_irn_n_edges(const ir_node *irn)
+{
+  return _get_irn_edge_info(irn)->out_count;
 }
 
 static INLINE int _edges_activated(const ir_graph *irg)
@@ -137,6 +203,8 @@ extern void init_edges(void);
 
 #define get_irn_out_edge_first(irn)      _get_irn_out_edge_first(irn)
 #define get_irn_out_edge_next(irn,last)  _get_irn_out_edge_next(irn, last)
+#define get_block_succ_first(irn)        _get_block_succ_first(irn)
+#define get_block_succ_next(irn,last)    _get_block_succ_next(irn, last)
 #define get_edge_src_irn(edge)           _get_edge_src_irn(edge)
 #define get_edge_src_pos(edge)           _get_edge_src_pos(edge)
 #define edges_activated(irg)             _edges_activated(irg)

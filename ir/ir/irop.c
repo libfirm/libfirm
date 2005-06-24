@@ -119,12 +119,21 @@ call_copy_attr(const ir_node *old_node, ir_node *new_node) {
   remove_Call_callee_arr(new_node);
 }
 
+static void
+block_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
+  default_copy_attr(old_node, new_node);
+  INIT_LIST_HEAD(&new_node->attr.block.succ_head);
+}
+
 /**
  * Sets the copy_attr operation for an ir_op
  */
 static ir_op *firm_set_default_copy_attr(ir_op *op) {
   if (op->code == iro_Call)
     op->copy_attr = call_copy_attr;
+  else if (op->code == iro_Block)
+    op->copy_attr = block_copy_attr;
   else
     op->copy_attr = default_copy_attr;
 

@@ -3,6 +3,7 @@
  * @author Sebastian Hack
  * @date 14.1.2005
  */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -71,34 +72,55 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 	 * Only do something, if the old and new target differ.
 	 */
 	if(tgt != old_tgt) {
+    int is_block_edge = is_Block(src);
 		set *edges = _get_irg_edge_info(irg)->edges;
-		ir_edge_t templ;
+		ir_block_edge_t space;
+    ir_edge_t *templ = (ir_edge_t *) &space;
 		ir_edge_t *edge;
+    size_t size;
+
+    /*
+     * This is scray, but:
+     * If two entries in a set do not have the same size, they are
+     * treated as unequal, ignoring the comparison function.
+     * So, edges from blocks have extra storage (they are
+     * ir_block_edge_t's).
+     */
+    size = is_block_edge ? sizeof(ir_block_edge_t) : sizeof(ir_edge_t);
 
 		/* Initialize the edge template to search in the set. */
+    memset(templ, 0, size);
 #ifdef DEBUG_libfirm
-		templ.src_nr = get_irn_node_nr(src);
+		templ->src_nr = get_irn_node_nr(src);
 #endif
-		templ.src = src;
-		templ.pos = pos;
-		templ.invalid = 0;
-		templ.present = 0;
-		INIT_LIST_HEAD(&templ.list);
+		templ->src = src;
+		templ->pos = pos;
+		templ->invalid = 0;
+		templ->present = 0;
 
 		/*
 		 * If the target is NULL, the edge shall be deleted.
 		 */
 		if(tgt == NULL) {
 			/* search the edge in the set. */
-			edge = set_find(edges, &templ, sizeof(templ), edge_hash(&templ));
+			edge = set_find(edges, templ, size, edge_hash(templ));
 
 			/* mark the edge invalid if it was found */
 			if(edge) {
+        ir_block_edge_t *block_edge = (ir_block_edge_t *) edge;
+
 				msg = "deleting";
 				list_del(&edge->list);
 				edge->invalid = 1;
 				edge->pos = -2;
 				edge->src = NULL;
+
+        /*
+         * If the edge is a cf edge, we delete it also
+         * from the list of all block successor edges.
+         */
+        if(is_block_edge)
+          list_del(&block_edge->succ_list);
 			}
 
 			/* If the edge was not found issue a warning on the debug stream */
@@ -116,6 +138,16 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 		else {
 			struct list_head *head = _get_irn_outs_head(tgt);
 
+      /*
+       * The list head in the block of the edges target.
+       * Therein all control flow edges directed at that block
+       * are recorded.
+       */
+      struct list_head *succ_head =
+        is_block_edge ? _get_block_succ_head(get_nodes_block(tgt)) : NULL;
+
+      ir_block_edge_t *block_edge;
+
 			if(!node_is_in_irgs_storage(irg, tgt))
 				return;
 
@@ -126,7 +158,8 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 			 * insert the edge, if it is not yet in the set or return
 			 * the instance in the set.
 			 */
-			edge = set_insert(edges, &templ, sizeof(templ), edge_hash(&templ));
+			edge = set_insert(edges, templ, size, edge_hash(templ));
+      block_edge = (ir_block_edge_t *) edge;
 
 #ifdef DEBUG_libfirm
 			assert(!edge->invalid && "Invalid edge encountered");
@@ -136,6 +169,11 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 			if(old_tgt) {
 				msg = "redirecting";
 				list_move(&edge->list, head);
+
+        /* If the edge is a cf edge, move it from the successor list. */
+        if(is_block_edge)
+          list_move(&block_edge->succ_list, succ_head);
+
 				_get_irn_edge_info(old_tgt)->out_count -= 1;
 			}
 
@@ -143,6 +181,13 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 			else {
 				msg = "adding";
 				list_add(&edge->list, head);
+
+        /*
+         * If the edge is cf edge, enter it into the successor list
+         * of the target node's block.
+         */
+        if(is_block_edge)
+          list_add(&block_edge->succ_list, succ_head);
 			}
 
 			_get_irn_edge_info(tgt)->out_count += 1;
@@ -178,7 +223,6 @@ void edges_invalidate(ir_node *irn, ir_graph *irg)
 {
 	edges_node_deleted(irn, irg);
 }
-
 
 static void build_edges_walker(ir_node *irn, void *data)
 {
@@ -245,17 +289,19 @@ static void verify_set_presence(ir_node *irn, void *data)
 	int i, n;
 
 	for(i = 0, n = get_irn_arity(irn) + not_a_block; i < n; ++i) {
-		ir_edge_t templ;
+    ir_block_edge_t space;
+		ir_edge_t *templ = (ir_edge_t *) &space;
 		ir_edge_t *e;
+    size_t size = not_a_block ? sizeof(ir_edge_t) : sizeof(ir_block_edge_t);
 
-		templ.src = irn;
-		templ.pos = i - not_a_block;
+		templ->src = irn;
+		templ->pos = i - not_a_block;
 
-		e = set_find(edges, &templ, sizeof(templ), edge_hash(&templ));
+		e = set_find(edges, templ, size, edge_hash(templ));
 		if(e != NULL)
 			e->present = 1;
 		else
-			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is missing\n", irn, templ.pos));
+			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is missing\n", irn, templ->pos));
 	}
 }
 
@@ -320,5 +366,11 @@ int (get_edge_src_pos)(const ir_edge_t *edge)
 {
 	return _get_edge_src_pos(edge);
 }
+
+int (get_irn_n_edges)(const ir_node *irn)
+{
+  return _get_irn_n_edges(irn);
+}
+
 
 #endif /* FIRM_EDGES_INPLACE */
