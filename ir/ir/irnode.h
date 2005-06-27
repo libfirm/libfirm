@@ -259,6 +259,18 @@ ir_node **get_Block_cfgpred_arr (ir_node *node);
 int       get_Block_n_cfgpreds (ir_node *node);
 ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
+/** Get the predecessor block.
+ *
+ *  Returns the block corresonding to the predecessor pos of block.
+ *
+ *  There are several ambiguities we resolve with this function:
+ *  - The direct predecessor can be a Proj, which is not pinned.
+ *    We walk from the predecessor to the next pinned node
+ *    (skip_Proj) and return the block that node is in.
+ *  - If we encounter the Bad node, this function does not return
+ *    Start, but the Bad node.
+ */
+ir_node  *get_Block_cfgpred_block(ir_node *node, int pos);
 bool      get_Block_matured (ir_node *node);
 void      set_Block_matured (ir_node *node, bool matured);
 

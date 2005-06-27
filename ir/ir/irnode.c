@@ -625,6 +625,11 @@ set_Block_cfgpred (ir_node *node, int pos, ir_node *pred) {
   set_irn_n(node, pos, pred);
 }
 
+ir_node  *
+(get_Block_cfgpred_block)(ir_node *node, int pos) {
+  return _get_Block_cfgpred_block(node, pos);
+}
+
 bool
 get_Block_matured (ir_node *node) {
   assert (node->op == op_Block);

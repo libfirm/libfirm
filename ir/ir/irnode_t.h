@@ -578,6 +578,25 @@ _get_Block_cfgpred (ir_node *node, int pos) {
   return _get_irn_n(node, pos);
 }
 
+/* Get the predecessor block.
+ *
+ *  Returns the block corresonding to the predecessor pos.
+ *
+ *  There are several ambiguities we resolve with this function:
+ *  - The direct predecessor can be a Proj, which is not pinned.
+ *    We walk from the predecessor to the next pinned node
+ *    (skip_Proj) and return the block that node is in.
+ *  - If we encounter the Bad node, this function does not return
+ *    Start, but the Bad node.
+ */
+static INLINE ir_node  *
+_get_Block_cfgpred_block(ir_node *node, int pos) {
+  ir_node *res = skip_Proj(get_Block_cfgpred(node, pos));
+  if (!is_Bad(res))
+    res = get_nodes_block(res);
+  return res;
+}
+
 static INLINE unsigned long
 _get_Block_block_visited (ir_node *node) {
   assert (node->op == op_Block);
@@ -675,6 +694,7 @@ static INLINE type *_get_irn_type(ir_node *node) {
 #define is_Block(node)                        _is_Block(node)
 #define get_Block_n_cfgpreds(node)            _get_Block_n_cfgpreds(node)
 #define get_Block_cfgpred(node, pos)          _get_Block_cfgpred(node, pos)
+#define get_Block_cfgpred_block(node, pos)    _get_Block_cfgpred_block(node, pos)
 #define get_Block_block_visited(node)         _get_Block_block_visited(node)
 #define set_Block_block_visited(node, visit)  _set_Block_block_visited(node, visit)
 #define mark_Block_block_visited(node)        _mark_Block_block_visited(node)
