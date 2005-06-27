@@ -326,8 +326,8 @@ copy_preds (ir_node *n, void *env) {
     set_Block_block_visited(get_nodes_block(n), 0);
     /* Compacting the Phi's ins might generate Phis with only one
        predecessor. */
-    if (get_irn_arity(n) == 1)
-      exchange(n, get_irn_n(n, 0));
+    if (get_irn_arity(nn) == 1)
+      exchange(nn, get_irn_n(nn, 0));
   } else {
     irn_arity = get_irn_arity(n);
     for (i = -1; i < irn_arity; i++)
@@ -1426,6 +1426,9 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 /**
  * Find the earliest correct block for N.  --- Place N into the
  * same Block as its dominance-deepest Input.
+ *
+ * We have to avoid calls to get_nodes_block() here
+ * because the graph is floating.
  */
 static void
 place_floats_early(ir_node *n, pdeq *worklist)
@@ -1440,7 +1443,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
   if (get_irn_pinned(n) == op_pin_state_floats) {
     int depth         = 0;
     ir_node *b        = new_Bad();   /* The block to place this node in */
-    int bad_recursion = is_Bad(get_nodes_block(n));
+    int bad_recursion = is_Bad(get_irn_n(n, -1));
 
     assert(get_irn_op(n) != op_Block);
 
@@ -1474,14 +1477,14 @@ place_floats_early(ir_node *n, pdeq *worklist)
       /* Because all loops contain at least one op_pin_state_pinned node, now all
          our inputs are either op_pin_state_pinned or place_early has already
          been finished on them.  We do not have any unfinished inputs!  */
-      dep_block = get_nodes_block(dep);
+      dep_block = get_irn_n(dep, -1);
       if ((!is_Bad(dep_block)) &&
           (get_Block_dom_depth(dep_block) > depth)) {
         b = dep_block;
         depth = get_Block_dom_depth(dep_block);
       }
       /* Avoid that the node is placed in the Start block */
-      if ((depth == 1) && (get_Block_dom_depth(get_nodes_block(n)) > 1)) {
+      if ((depth == 1) && (get_Block_dom_depth(get_irn_n(n, -1)) > 1)) {
         b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
         assert(b != get_irg_start_block(current_ir_graph));
         depth = 2;
@@ -1686,7 +1689,7 @@ place_floats_late(ir_node *n, pdeq *worklist)
   }
 
   /* Add predecessors of all non-floating nodes on list. (Those of floating
-     nodes are placeed already and therefore are marked.)  */
+     nodes are placed already and therefore are marked.)  */
   for (i = 0; i < get_irn_n_outs(n); i++) {
     ir_node *succ = get_irn_out(n, i);
     if (irn_not_visited(get_irn_out(n, i))) {
