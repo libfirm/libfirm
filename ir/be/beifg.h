@@ -74,6 +74,13 @@ int be_ifg_has_edge(const be_if_graph_t* graph, const be_if_node_t* n1, const be
 	pset_count(ifnode->neighb)
 
 #define be_ifn_foreach_neighbour(ifnode, curr) \
-	for (curr = pset_first(ifnode->neighb); curr; curr = pset_next(ifnode->neighb))
+	for (curr = pset_first(ifnode->neighbourNodes); curr; curr = pset_next(ifnode->neighbourNodes))
+
+#define be_ifg_foreach_node(ifgraph, curr) \
+	for (curr = set_first(ifgraph->nodes); curr; curr = set_next(ifgraph->nodes))
+
+#define be_ifg_foreach_edge(ifgraph, curr) \
+	for (curr = set_first(ifgraph->edges); curr; curr = set_next(ifgraph->edges))
+
 
 #endif /*_BEIFG_H_*/
