@@ -130,94 +130,12 @@ int ifg_has_edge(const be_chordal_env_t *env, const if_node_t *n1, const if_node
 
 static void dump_ifg(const be_chordal_env_t *env)
 {
-	static const char *colors[] = {
-		"coral",
-		"azure",
-		"bisque",
-		"aliceblue",
-		"blanchedalmond",
-		"deeppink",
-		"cornsilk",
-		"blueviolet",
-		"floralwhite",
-		"hotpink",
-		"gainsboro",
-		"indianred",
-		"cornflowerblue",
-		"ghostwhite",
-		"lightpink",
-		"palegoldenrod",
-		"darkslateblue",
-		"honeydew",
-		"ivory",
-		"lavender",
-		"mediumvioletred",
-		"indigo",
-		"lavenderblush",
-		"lemonchiffon",
-		"linen",
-		"pink",
-		"mintcream",
-		"red",
-		"mediumblue",
-		"mistyrose",
-		"mediumslateblue",
-		"moccasin",
-		"tomato",
-		"forestgreen",
-		"midnightblue",
-		"navajowhite",
-		"navy",
-		"oldlace",
-		"greenyellow",
-		"navyblue",
-		"papayawhip",
-		"lawngreen",
-		"powderblue",
-		"peachpuff",
-		"seashell",
-		"snow",
-		"thistle",
-		"wheat",
-		"darkkhaki",
-		"mintcream",
-		"khaki",
-		"Magentas",
-		"whitesmoke",
-		"peru",
-		"palegreen",
-		"blueviolet",
-		"rosybrown",
-		"saddlebrown",
-		"springgreen",
-		"darkviolet",
-		"darkslategray",
-		"dimgray",
-		"sienna",
-		"gray",
-		"tan",
-		"gray",
-		"mediumvioletred",
-		"lightgray",
-		"Oranges",
-		"cyan",
-		"lightslategray",
-		"darkorange",
-		"slategray",
-		"orangered",
-		"mediumturquoise",
-		"violet",
-		"paleturquoise"
-	};
-
-	static const int n_colors = sizeof(colors) / sizeof(colors[0]);
-
 	FILE *f;
-  set *edges = env->edges;
-  ir_graph *irg = env->irg;
-  char filename[128];
+	set *edges = env->edges;
+	ir_graph *irg = env->irg;
+	char filename[128];
 
-  ir_snprintf(filename, sizeof(filename), "ifg_%s_%F.dot", env->cls->name, irg);
+	ir_snprintf(filename, sizeof(filename), "ifg_%s_%F.dot", env->cls->name, irg);
 
 	if((f = fopen(filename, "wt")) != NULL) {
 		bitset_pos_t pos;
@@ -239,10 +157,8 @@ static void dump_ifg(const be_chordal_env_t *env)
 		bitset_foreach(bs, pos) {
 			int nr = (int) pos;
 			ir_node *irn = get_irn_for_graph_nr(irg, nr);
-			int color = get_irn_color(irn);
 
-			ir_fprintf(f, "\tn%d [label=\"%+F\",color=\"%s\"]\n", nr, irn,
-					color >= 0 && color < n_colors ? colors[color] : "black");
+			ir_fprintf(f, "\tn%d [label=\"%+F\"]\n", nr, irn);
 		}
 
 		for(edge = set_first(edges); edge; edge = set_next(edges)) {
