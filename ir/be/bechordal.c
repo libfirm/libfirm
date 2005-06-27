@@ -354,15 +354,15 @@ static void pressure(ir_node *block, void *env_ptr)
 	struct list_head *head;
 	pset *live_in = put_live_in(block, pset_new_ptr_default());
 	pset *live_end = put_live_end(block, pset_new_ptr_default());
-  const arch_register_class_t *cls = env->cls;
+	const arch_register_class_t *cls = env->cls;
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %+F\n", block));
 	bitset_clear_all(live);
 
 	/* Set up the border list in the block info */
-  head = obstack_alloc(&env->obst, sizeof(*head));
+	head = obstack_alloc(&env->obst, sizeof(*head));
 	INIT_LIST_HEAD(head);
-  pmap_insert(env->border_heads, block, head);
+	pmap_insert(env->border_heads, block, head);
 
 	/*
 	 * Make final uses of all values live out of the block.
@@ -371,10 +371,9 @@ static void pressure(ir_node *block, void *env_ptr)
 	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
 		DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
 		bitset_set(live, get_irn_graph_nr(irn));
-    if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls))
-      border_use(irn, step, 0);
+		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls))
+			border_use(irn, step, 0);
 	}
-
 	++step;
 
 	/*
@@ -385,20 +384,20 @@ static void pressure(ir_node *block, void *env_ptr)
 		DBG((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
 		DBG((dbg, LEVEL_2, "\tlive: %b\n", live));
 
-    /*
-     * If the node defines some value, which can put into a
-     * register of the current class, make a border for it.
-     */
+	    /*
+	     * If the node defines some value, which can put into a
+	     * register of the current class, make a border for it.
+	     */
 		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls)) {
-      bitset_pos_t elm;
+			bitset_pos_t elm;
 			int nr = get_irn_graph_nr(irn);
 
 			bitset_clear(live, nr);
 			border_def(irn, step, 1);
 
 #ifdef BUILD_GRAPH
-      bitset_foreach(live, elm)
-        add_if(env, nr, (int) elm);
+			bitset_foreach(live, elm)
+			add_if(env, nr, (int) elm);
 #endif
 		}
 
@@ -421,7 +420,6 @@ static void pressure(ir_node *block, void *env_ptr)
 				}
 			}
 		}
-
 		++step;
 	}
 
@@ -560,7 +558,7 @@ be_chordal_env_t *be_ra_chordal(ir_graph *irg,
     const arch_register_class_t *cls)
 {
 	int node_count = get_graph_node_count(irg);
-  int colors_n = arch_register_class_n_regs(cls);
+	int colors_n = arch_register_class_n_regs(cls);
 	be_chordal_env_t *env = malloc(sizeof(*env));
 
 	if(get_irg_dom_state(irg) != dom_consistent)
@@ -577,10 +575,10 @@ be_chordal_env_t *be_ra_chordal(ir_graph *irg,
 	env->colors = bitset_obstack_alloc(&env->obst, colors_n);
 	env->in_colors = bitset_obstack_alloc(&env->obst, colors_n);
 	env->colors_n = colors_n;
-  env->cls = cls;
-  env->arch_env = arch_env;
-  env->irg = irg;
-  env->border_heads = pmap_create();
+	env->cls = cls;
+	env->arch_env = arch_env;
+	env->irg = irg;
+	env->border_heads = pmap_create();
 
 	/* First, determine the pressure */
 	dom_tree_walk_irg(irg, pressure, NULL, env);
@@ -592,23 +590,22 @@ be_chordal_env_t *be_ra_chordal(ir_graph *irg,
 	dom_tree_walk_irg(irg, assign, NULL, env);
 
 #ifdef DUMP_IFG
-  dump_ifg(env);
+	dump_ifg(env);
 #endif
 
 #ifdef DUMP_INTERVALS
 	{
 		char buf[128];
-    plotter_t *plotter;
+    	plotter_t *plotter;
 
 		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", cls->name, irg);
-    plotter = new_plotter_ps(buf);
+    	plotter = new_plotter_ps(buf);
 
-    draw_interval_tree(&draw_chordal_def_opts, env, plotter, arch_env, cls);
-    plotter_free(plotter);
+    	draw_interval_tree(&draw_chordal_def_opts, env, plotter, arch_env, cls);
+    	plotter_free(plotter);
 	}
 #endif
-
-  return env;
+	return env;
 }
 
 void be_ra_chordal_done(be_chordal_env_t *env)

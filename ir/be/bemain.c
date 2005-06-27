@@ -141,8 +141,8 @@ static void be_main_loop(void)
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
 
-    /* Verify the schedule */
-    sched_verify_irg(irg);
+		/* Verify the schedule */
+		sched_verify_irg(irg);
 
 		/* Liveness analysis */
 		be_liveness(irg);
@@ -164,7 +164,7 @@ static void be_main_loop(void)
 			copystat_collect_cls(chordal_env);
 
 			be_copy_opt(chordal_env);
-			be_ssa_destruction(&session, chordal_env);
+			// be_ssa_destruction(&session, chordal_env);
 			be_ra_chordal_done(chordal_env);
 		}
 		copystat_dump_pretty(irg);
