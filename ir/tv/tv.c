@@ -817,7 +817,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b)
        */
       switch (fc_comp(a->value, b->value)) {
         case -1: return pn_Cmp_Lt;
-        case  0: assert(0 && "different tarvals compare equal"); return pn_Cmp_Eq;
+        case  0: return pn_Cmp_Eq;
         case  1: return pn_Cmp_Gt;
         case  2: return pn_Cmp_Uo;
         default: return pn_Cmp_False;

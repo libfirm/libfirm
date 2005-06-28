@@ -1393,7 +1393,14 @@ int fc_comp(const void *a, const void *b)
   const char *val_a = (const char*)a;
   const char *val_b = (const char*)b;
 
-  /* unordered */
+  /*
+   * shortcut: if both values are identical, they are either
+   * Unordered if NaN or equal
+   */
+  if (a == b)
+    return _desc(val_a).class == NAN ? 2 : 0;
+
+  /* unordered if one is a NaN */
   if (_desc(val_a).class == NAN || _desc(val_b).class == NAN)
     return 2;
 
