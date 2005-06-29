@@ -1392,6 +1392,7 @@ int fc_comp(const void *a, const void *b)
 {
   const char *val_a = (const char*)a;
   const char *val_b = (const char*)b;
+  int mul = 1;
 
   /*
    * shortcut: if both values are identical, they are either
@@ -1412,24 +1413,26 @@ int fc_comp(const void *a, const void *b)
   if (_sign(val_a) != _sign(val_b))
     return (_sign(val_a)==0)?(1):(-1);
 
+  mul = _sign(a) ? -1 : 1;
+
   /* both infinity means equality */
   if ((_desc(val_a).class == INF) && (_desc(val_b).class == INF))
     return 0;
 
   /* infinity is bigger than the rest */
   if (_desc(val_a).class == INF)
-    return _sign(val_a)?(-1):(1);
+    return  1 * mul;
   if (_desc(val_b).class == INF)
-    return _sign(val_b)?(1):(-1);
+    return -1 * mul;
 
   /* check first exponent, that mantissa if equal */
   switch (sc_comp(_exp(val_a), _exp(val_b))) {
     case -1:
-      return -1;
+      return -1 * mul;
     case  1:
-      return  1;
+      return  1 * mul;
     case  0:
-      return sc_comp(_mant(val_a), _mant(val_b));
+      return sc_comp(_mant(val_a), _mant(val_b)) * mul;
     default:
       return 2;
   }
