@@ -50,25 +50,31 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
 
 /**
  * A string formatting routine for ir objects.
- * This function rudimentarily implements a kind of printf(3) for ir
+ * This function rudimentary implements a kind of printf(3) for ir
  * nodes. Following conversion specifiers. No length, special or field
  * width specifiers are accepted.
+ * - @%% Print a '%' character.
  * - @%> Print as many white spaces as given in the parameter.
- * - @%p A pointer.
+ * - @%c Print a character
  * - @%s A string.
+ * - @%p A pointer.
+ * - @%d A decimal integer.
+ * - @%x A hexadecimal integer.
+ * - @%o An octal integer.
  * - @%I An ident.
  * - @%t A type name.
  * - @%e An entity name.
  * - @%E An entity ld name.
+ * - @%T A tarval.
  * - @%n A full description of a node.
  * - @%O The opcode name of an ir node.
- * - @%m The mode name of an ir mode.
  * - @%N The node number of an ir node.
+ * - @%m The mode name of an ir mode.
  * - @%B The block node number of the nodes block.
  * - @%b A bitset.
- * - @%T A tarval.
+ * - @%= A pnc value
  *
- * Each of these can be prepended by a '+' which means, that the given
+ * Each of these can be prepend by a '+' which means, that the given
  * pointer is a collection of items specified by the format. In this
  * case you also have to pass an iterator interface to ir_printf()
  * suitable for the instance of the collection. So, imagine you have a
@@ -85,7 +91,7 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  * callback function which will be invoked on each element in the
  * collection. It gets the appender (the thing where the textual
  * representation of the element is written to) and its parameters
- * passed by the dumping function. Suppose you have your own datatype
+ * passed by the dumping function. Suppose you have your own data type
  * @c xyz_t and want to dump a pset of it, you have:
  * @code
  *   void xyz_dump(const appender_t *app, void *object, size_t limit,
