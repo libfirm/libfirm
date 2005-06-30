@@ -23,6 +23,7 @@
 #include "irgmod.h"
 #include "iropt_dbg.h"
 #include "iredges_t.h"
+#include "irprintf.h"
 
 /**
  * Walker environment.
@@ -50,6 +51,9 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
   const ir_edge_t *edge, *next;
   ir_node *c = NULL;
 
+  if (is_Bad(irn))
+    return;
+
   for (edge = get_irn_out_edge_first(irn); edge; edge = next) {
     ir_node *succ = get_edge_src_irn(edge);
     ir_node *blk = get_nodes_block(succ);
@@ -74,6 +78,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
       pos = get_edge_src_pos(edge);
       set_irn_n(succ, pos, c);
       DBG_OPT_CONFIRM_C(irn, c);
+//      ir_printf("1 Replacing input %d of node %n with %n\n", pos, succ, c);
 
       env->num_consts += 1;
     }
@@ -92,14 +97,17 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 {
   ir_node *left  = get_Cmp_left(cmp);
   ir_node *right = get_Cmp_right(cmp);
+	ir_op *op;
   const ir_edge_t *edge, *next;
 
-  /* remove unordered if it's an integer compare */
-  if (mode_is_int(get_irn_mode(left)))
-    pnc &= ~pn_Cmp_Uo;
+  /* Beware of Bads */
+  if (is_Bad(left) ||is_Bad(right))
+    return;
 
-  /* try to place the constant on the right side */
-  if (get_irn_op(left) == op_Const) {
+  op = get_irn_op(left);
+
+  /* try to place the constant on the right side for a Confirm */
+  if (op == op_Const || op == op_SymConst) {
     ir_node *t = left;
 
     left  = right;
@@ -110,7 +118,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 
   /*
    * First case: both values are identical.
-   * replace the left one by the right one.
+   * replace the right one by the left one.
    */
   if (pnc == pn_Cmp_Eq) {
     int pos;
@@ -122,13 +130,15 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
       next = get_irn_out_edge_next(left, edge);
       if (block_dominates(block, blk)) {
         /*
-         * Ok, we found a user of left that is placed
+         * Ok, we found a user of right that is placed
          * in a block dominated by the branch block.
          * We can replace the input with right.
          */
         pos = get_edge_src_pos(edge);
         set_irn_n(succ, pos, right);
         DBG_OPT_CONFIRM(left, right);
+
+//        ir_printf("2 Replacing input %d of node %n with %n\n", pos, succ, right);
 
         env->num_eq += 1;
       }
@@ -145,16 +155,16 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
       next = get_irn_out_edge_next(left, edge);
       if (block_dominates(block, blk)) {
         /*
-         * Ok, we found a user of left that is placed
+         * Ok, we found a user of right that is placed
          * in a block dominated by the branch block.
          * We can replace the input with a Confirm(left, pnc, right).
          */
-
         if (! c)
           c = new_r_Confirm(current_ir_graph, block, left, right, pnc);
 
         pos = get_edge_src_pos(edge);
         set_irn_n(succ, pos, c);
+//        ir_printf("3 Replacing input %d of node %n with %n\n", pos, succ, c);
 
         env->num_confirms += 1;
       }
@@ -206,6 +216,8 @@ static void insert_Confirm(ir_node *block, void *env)
       /* it's the false branch */
       pnc = get_negated_pnc(pnc, mode);
     }
+//    ir_printf("At %n using %n Confirm %=\n", block, cmp, pnc);
+
     handle_if(block, cmp, pnc, env);
   }
   else if (mode_is_int(mode)) {
@@ -231,6 +243,9 @@ void construct_confirms(ir_graph *irg)
     /* we need dominance info */
     compute_doms(irg);
   }
+
+  assert(get_irg_pinned(irg) == op_pin_state_pinned &&
+    "Nodes must be placed to insert Confirms");
 
   if (! edges_active) {
     /* We need edges */
@@ -264,11 +279,20 @@ void construct_confirms(ir_graph *irg)
 }
 
 /**
- * Post-walker: Remove COnfirm nodes
+ * Post-walker: Remove Confirm nodes
  */
 static void rem_Confirm(ir_node *n, void *env) {
   if (get_irn_op(n) == op_Confirm) {
-    exchange(n, get_Confirm_value(n));
+    ir_node *value = get_Confirm_value(n);
+    if (value != n)
+      exchange(n, value);
+    else {
+      /*
+       * Strange: a Confirm is it's own bound. This can happen
+       * in dead blocks when Phi nodes are already removed.
+       */
+      exchange(n, new_Bad());
+    }
   }
 }
 
