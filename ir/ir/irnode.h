@@ -203,13 +203,17 @@ new_ir_node (dbg_info *db,
          int arity,
          ir_node *in[]);
 
-/** Return the block the node belongs to.
+/**
+ * Return the block the node belongs to.  This is only
+ * possible for pinned nodes or if the graph is in pinned state.
+ * Otherwise the block may be incorrect.  This condition is
+ * now checked by an assertion.
  *
  * This works for all except Block.  It can return Blocks or the Bad node.
  *
  * To express the difference to access routines that work for all
  * nodes we use infix "nodes" and do not name this function
- * get_irn_block. */
+ * get_irn_block(). */
 ir_node  *get_nodes_block (const ir_node *node);
 
 /** Sets the Block of a node. */
@@ -219,6 +223,7 @@ void      set_nodes_block (ir_node *node, ir_node *block);
  * @function get_irn_block()
  * @see get_nodes_block()
  */
+
 /**
  * Projection numbers for result of Start node: use for Proj nodes!
  */
@@ -336,10 +341,10 @@ void free_End (ir_node *end);
    is recognized by the boolean selector.
    The switch Cond has as selector an unsigned integer.  It produces as result
    an n+1 Tuple (cf0, ... , cfn) of control flows.
-   We differ two flavours of this Cond.  The first, the dense Cond, passes
+   We differ two flavors of this Cond.  The first, the dense Cond, passes
    control along output i if the selector value is i, 0 <= i <= n.  If the
    selector value is >n it passes control along output n.
-   The second Cond flavor diffirences in the treatment of cases not specified in
+   The second Cond flavor differences in the treatment of cases not specified in
    the source program.  It magically knows about the existence of Proj nodes.
    It only passes control along output i, 0 <= i <= n, if a node Proj(Cond, i)
    exists.  Else it passes control along output n (even if this Proj does not
@@ -394,7 +399,7 @@ typedef enum {
   CNST_NULL     =  0, /**< The node is a const(0). */
   CNST_ONE      = +1, /**< The node is a const(1). */
   CNST_ALL_ONE  = -1, /**< The node is a const(11111...). */
-  CNST_OTHER    =  2, /**< The tarvel of the const has another value. */
+  CNST_OTHER    =  2, /**< The tarval of the const has another value. */
   CNST_SYMCONST =  3, /**< The node is symconst. */
   CNST_NO_CONST =  4  /**< The node is no const at all. */
 } cnst_classify_t;
@@ -705,7 +710,7 @@ typedef enum {
   pn_Cmp_Uge   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Gt, /**< unordered, greater or equal */
   pn_Cmp_Ne    = pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt, /**< unordered, less or greater = not equal */
   pn_Cmp_True  = 15                             /**< true */
-  /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for jni interface */
+  /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for JNI interface */
 } pn_Cmp;   /* Projection numbers for Cmp */
 /* #define not_mask pn_Cmp_Leg */
 
@@ -848,7 +853,7 @@ void           set_Store_volatility (ir_node *node, ent_volatility volatility);
  * Projection numbers for Alloc: use for Proj nodes!
  */
 typedef enum {
-  pn_Alloc_M,          /**< Memory result. */
+  pn_Alloc_M,         /**< Memory result. */
   pn_Alloc_X_except,  /**< Execution result if exception occurred. */
   pn_Alloc_res,       /**< Result of allocation. */
   pn_Alloc_max        /**< number of projections from an Alloc */
@@ -937,7 +942,7 @@ void     set_Mux_true  (ir_node *node, ir_node *ir_true);
 ir_node *skip_Proj (ir_node *node);
 /** returns operand of node if node is a Id */
 ir_node *skip_Id  (ir_node *node);   /* Same as skip_nop. */
-/* returns corresponding operand of Tuple if node is a Proj from
+/** returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
 ir_node *skip_Tuple (ir_node *node);
 /** returns operand of node if node is a Cast */
