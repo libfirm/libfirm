@@ -14,10 +14,13 @@
 # include "config.h"
 #endif
 
+#undef DEBUG_CONFIRM
+
 #include "tv_t.h"
 #include "iropt_t.h"
 #include "iropt_dbg.h"
 #include "opt_confirms.h"
+#include "irprintf.h"
 
 enum range_tags {
   MIN_INCLUDED = 0x00,  /**< [min, ... */
@@ -39,6 +42,39 @@ typedef struct _interval_t {
   tarval        *max;   /**< highest border */
   unsigned char flags;  /**< border flags */
 } interval_t;
+
+#ifdef DEBUG_CONFIRM
+
+#define compare_iv(l_iv, r_iv, pnc)		compare_iv_dbg(l_iv, r_iv, pnc)
+
+/* forward */
+static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc);
+
+/* triangle */
+#define DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, v) \
+  ir_printf("In %e:\na %= %n && b %= %n  ==>  a %= b == %s\n", \
+    get_irg_entity(current_ir_graph), \
+    l_pnc, l_bound, r_pnc, r_bound, pnc, v);
+
+/* right side */
+#define DBG_OUT_R(r_pnc, r_bound, left, pnc, right, v) \
+  ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
+    get_irg_entity(current_ir_graph), \
+    r_pnc, r_bound, left, pnc, right, v);
+
+/* left side */
+#define DBG_OUT_L(l_pnc, l_bound, left, pnc, right, v) \
+  ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
+    get_irg_entity(current_ir_graph), \
+    l_pnc, l_bound, left, pnc, right, v);
+
+#else
+
+#define DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, v)
+#define DBG_OUT_R(r_pnc, r_bound, left, pnc, right, v)
+#define DBG_OUT_L(l_pnc, l_bound, left, pnc, right, v)
+
+#endif
 
 /**
  * Check, if the value of a node is != 0.
@@ -357,7 +393,7 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
  *   tarval_b_true or tarval_b_false it it can be evaluated,
  *   tarval_bad else
  */
-static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
 {
   pn_Cmp res;
   unsigned flags;
@@ -393,6 +429,29 @@ static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp
     /* two intervals can be compared for equality only if they are a single value */
     if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
       return tarval_cmp(l_iv->min, r_iv->min) == pn_Cmp_Eq ? tv_true : tv_false;
+
+    /* if both interval do not intersect, it is never equal */
+    res = tarval_cmp(l_iv->max, r_iv->min);
+
+    /* b < c ==> [a,b] != [c,d] */
+    if (res == pn_Cmp_Lt)
+            return tv_false;
+
+    /* b <= c ==> [a,b) != [c,d]  AND [a,b] != (c,d] */
+    if ((l_iv->flags & MAX_EXCLUDED || r_iv->flags & MIN_EXCLUDED)
+              && (res == pn_Cmp_Eq))
+            return tv_false;
+
+    res = tarval_cmp(r_iv->max, l_iv->min);
+
+    /* d < a ==> [c,d] != [a,b] */
+    if (res == pn_Cmp_Lt)
+            return tv_false;
+
+    /* d <= a ==> [c,d) != [a,b]  AND [c,d] != (a,b] */
+    if ((r_iv->flags & MAX_EXCLUDED || l_iv->flags & MIN_EXCLUDED)
+            && (res == pn_Cmp_Eq))
+            return tv_false;
     break;
 
   case pn_Cmp_Lg:
@@ -457,6 +516,14 @@ static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp
 }
 
 /**
+ * Returns non-zero, if a given relation is transitive.
+ */
+static int is_transitive(pn_Cmp pnc) {
+  return (pn_Cmp_False < pnc && pnc < pn_Cmp_Lg);
+}
+
+
+/**
  * Return the value of a Cmp if one or both predecessors
  * are Confirm nodes.
  *
@@ -466,9 +533,10 @@ static tarval *compare_iv(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp
 tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
 {
   ir_node    *l_bound;
-  pn_Cmp     l_pnc;
+  pn_Cmp     l_pnc, res_pnc, neg_pnc;
   interval_t l_iv, r_iv;
   tarval     *tv;
+  ir_mode    *mode;
 
   if (get_irn_op(right) == op_Confirm) {
     ir_node *t;
@@ -497,30 +565,67 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
     pn_Cmp  r_pnc = get_Confirm_cmp(right);
 
     /*
-     * check for == or != can sometime be made WITHOUT constant bounds
-     * Beware of NaN's.
+     * some check can be made WITHOUT constant bounds
      */
-    if (! mode_is_float(get_irn_mode(left)) &&
-        (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg)) {
-      /* l == r if bound(l) == bound(r) AND pnc(l) == pnc(r) == '=' */
-      if (r_bound == l_bound && r_pnc == l_pnc && r_pnc == pn_Cmp_Eq) {
-        DBG_EVAL_CONFIRM(cmp);
-        return pnc == pn_Cmp_Eq ? tarval_b_true : tarval_b_false;
-      }
+    if (r_bound == l_bound) {
+      if (is_transitive(l_pnc)) {
+        pn_Cmp r_inc_pnc = get_inversed_pnc(r_pnc);
 
-      /*
-       * Here, we check only the right Confirm, as the left Confirms are
-       * checked later anyway.
-       */
+        /*
+         * triangle inequality:
+         *
+         * a CMP B && B CMP b => a CMP b, !(a ~CMP b)
+         *
+         * We handle correctly cases with some <=/>= here
+         */
+        if ((l_pnc & ~pn_Cmp_Eq) == (r_inc_pnc & ~pn_Cmp_Eq)) {
+          res_pnc = (l_pnc & ~pn_Cmp_Eq) | (l_pnc & r_inc_pnc & pn_Cmp_Eq);
 
-      if (left == r_bound && (r_pnc == pn_Cmp_Eq || r_pnc == pn_Cmp_Lg)) {
-        /* l == bound(r) AND pnc(r) == pnc */
-        if (r_pnc == pnc) {
-          DBG_EVAL_CONFIRM(cmp);
-          return tarval_b_true;
+          if ((pnc == res_pnc) || ((pnc & ~pn_Cmp_Eq) == res_pnc)) {
+            DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, "true");
+            DBG_EVAL_CONFIRM(cmp);
+            return tarval_b_true;
+          }
+          else {
+            pn_Cmp neg_pnc = get_negated_pnc(pnc, get_irn_mode(left));
+
+            if ((neg_pnc == res_pnc) || ((neg_pnc & ~pn_Cmp_Eq) == res_pnc)) {
+              DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, "false");
+              DBG_EVAL_CONFIRM(cmp);
+              return tarval_b_false;
+            }
+          }
         }
-        /* l == bound(r) AND pnc(r) != pnc */
-        else {
+      }
+    }
+
+    /*
+     * Here, we check only the right Confirm, as the left Confirms are
+     * checked later anyway.
+     */
+
+    if (left == r_bound) {
+      /*
+       * l == bound(r) AND pnc(r) == pnc:
+       *
+       * We know that a CMP b and check for that
+       */
+      if ((r_pnc == pnc) || (r_pnc == (pnc & ~pn_Cmp_Eq))) {
+        DBG_OUT_R(r_pnc, r_bound, left, pnc, right, "true");
+        DBG_EVAL_CONFIRM(cmp);
+        return tarval_b_true;
+      }
+      /*
+       * l == bound(r) AND pnc(r) != pnc:
+       *
+       * We know that a CMP b and check for a ~CMP b
+       */
+      else {
+        mode    = get_irn_mode(left);
+        neg_pnc = get_negated_pnc(pnc, mode);
+
+        if ((r_pnc == neg_pnc) || (r_pnc == (neg_pnc & ~pn_Cmp_Eq))) {
+          DBG_OUT_R(r_pnc, r_bound, left, pnc, right, "false");
           DBG_EVAL_CONFIRM(cmp);
           return tarval_b_false;
         }
@@ -542,19 +647,30 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
   /* from Here, check only left Confirm */
 
   /*
-   * checks for == or != can sometime be made WITHOUT constant bounds
-   * Beware of NaN's.
+   * some checks can be made WITHOUT constant bounds
    */
-  if (! mode_is_float(get_irn_mode(left)) &&
-    (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg)) {
-    if (right == l_bound && (l_pnc == pn_Cmp_Eq || l_pnc == pn_Cmp_Lg)) {
-      /* r == bound(l) AND pnc(l) == pnc */
-      if (l_pnc == pnc) {
-        DBG_EVAL_CONFIRM(cmp);
-        return tarval_b_true;
-      }
-      /* r == bound(l) AND pnc(l) != pnc */
-      else {
+  if (right == l_bound) {
+    /*
+     * r == bound(l) AND pnc(l) == pnc:
+     *
+     * We know that a CMP b and check for that
+     */
+    if ((l_pnc == pnc) || (l_pnc == (pnc & ~pn_Cmp_Eq))) {
+      DBG_OUT_L(l_pnc, l_bound, left, pnc, right, "true");
+      DBG_EVAL_CONFIRM(cmp);
+      return tarval_b_true;
+    }
+    /*
+     * r == bound(l) AND pnc(l) is Not(pnc):
+     *
+     * We know that a CMP b and check for a ~CMP b
+     */
+    else {
+      mode = get_irn_mode(left);
+      neg_pnc = get_negated_pnc(pnc, mode);
+
+      if ((l_pnc == neg_pnc) || (l_pnc == (neg_pnc & ~pn_Cmp_Eq))) {
+        DBG_OUT_L(l_pnc, l_bound, left, pnc, right, "false");
         DBG_EVAL_CONFIRM(cmp);
         return tarval_b_false;
       }
@@ -577,16 +693,58 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
   return tv;
 }
 
-/** For debugging. Prints an interval */
-static void print_iv(const interval_t *iv) {
+/**
+ * For debugging. Prints an interval into a string.
+ */
+static int iv_snprintf(char *buf, size_t len, const interval_t *iv) {
   char smin[64], smax[64];
 
-  tarval_snprintf(smin, sizeof(smin), iv->min);
-  tarval_snprintf(smax, sizeof(smax), iv->max);
+  if (iv) {
+    tarval_snprintf(smin, sizeof(smin), iv->min);
 
-  printf("%c%s, %s%c\n",
-    iv->flags & MIN_EXCLUDED ? '(' : '[',
-    smin, smax,
-    iv->flags & MAX_EXCLUDED ? ')' : ']'
-  );
+    if (iv->min != iv->max || (iv->flags & (MIN_EXCLUDED|MAX_EXCLUDED))) {
+      tarval_snprintf(smax, sizeof(smax), iv->max);
+
+      return snprintf(buf, len, "%c%s, %s%c",
+              iv->flags & MIN_EXCLUDED ? '(' : '[',
+              smin, smax,
+              iv->flags & MAX_EXCLUDED ? ')' : ']'
+      );
+    }
+    else
+      return snprintf(buf, len, "%s", smin);
+  }
+  return snprintf(buf, len, "<UNKNOWN>");
 }
+
+#ifdef DEBUG_CONFIRM
+/**
+ * For debugging. Prints an interval compare
+ */
+static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+{
+  char sl[128], sr[128];
+
+  iv_snprintf(sl, sizeof(sl), l_iv);
+  iv_snprintf(sr, sizeof(sr), r_iv);
+
+  ir_printf("%s %= %s", sl, pnc, sr);
+}
+
+/**
+ * For debugging. call *compare_iv() and prints inputs and result
+ */
+static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+{
+  tarval *tv = (compare_iv)(l_iv, r_iv, pnc);
+
+  if (tv == tarval_bad)
+    return tv;
+
+  ir_printf("In %e:\n", get_irg_entity(current_ir_graph));
+  print_iv_cmp(l_iv, r_iv, pnc);
+  ir_printf(" = %T\n", tv);
+	return tv;
+}
+
+#endif /* DEBUG_CONFIRM */
