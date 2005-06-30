@@ -1435,8 +1435,12 @@ static void stat_arch_dep_replace_DivMod_by_const(void *ctx, ir_node *divmod)
 }
 
 /* Dumps a statistics snapshot */
-void stat_dump_snapshot(const char *name)
+void stat_dump_snapshot(const char *name, const char *phase)
 {
+  char fname[2048];
+  const char *p;
+  int l;
+
   if (! status->stat_options)
     return;
 
@@ -1447,13 +1451,45 @@ void stat_dump_snapshot(const char *name)
 
     /*
      * The constant counter is only global, so we clear it here.
-     * Note that it does NOT contain teh constants in DELETED
+     * Note that it does NOT contain the constants in DELETED
      * graphs due to this.
      */
     if (status->stat_options & FIRMSTAT_COUNT_CONSTS)
       stat_const_clear(status);
 
-    stat_dump_init(name);
+    /* build the name */
+    p = strrchr(name, '/');
+#ifdef _WIN32
+    {
+      const char *q;
+
+      q = strrchr(name, '\\');
+
+      /* NULL might be not the smallest pointer */
+      if (q && (!p || q > p))
+        p = q;
+    }
+#endif
+    if (p) {
+      ++p;
+      l = p - name;
+
+      if (l > sizeof(fname) - 1)
+        l = sizeof(fname) - 1;
+
+      memcpy(fname, name, l);
+      fname[l] = '\0';
+    }
+    else {
+      fname[0] = '\0';
+      p = name;
+    }
+    strncat(fname, "firmstat-", sizeof(fname));
+    strncat(fname, phase, sizeof(fname));
+    strncat(fname, "-", sizeof(fname));
+    strncat(fname, p, sizeof(fname));
+
+    stat_dump_init(fname);
 
     /* calculate the graph statistics */
     for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
@@ -1659,9 +1695,9 @@ void stat_term(void) {
 void init_stat(unsigned enable_options) {}
 
 /* Dumps a statistics snapshot */
-void stat_dump_snapshot(const char *name) {}
+void stat_dump_snapshot(const char *name, const char *phase) {}
 
-/* terminates the statustics module, frees all memory */
+/* terminates the statistics module, frees all memory */
 void stat_term(void);
 
 #endif /* FIRM_STATISTICS */

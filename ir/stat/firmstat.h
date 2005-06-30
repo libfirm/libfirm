@@ -70,8 +70,9 @@ enum firmstat_optimizations_t {
  * Never called from libFirm should be called from user.
  *
  * @param name   base name of the statistic output file
+ * @param phase  a phase name. Prefix will be firmstat-<phase>-
  */
-void stat_dump_snapshot(const char *name);
+void stat_dump_snapshot(const char *name, const char *phase);
 
 /**
  * initialize the statistics module.
