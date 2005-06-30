@@ -35,6 +35,7 @@ ir_op *op_Block;       ir_op *get_op_Block     (void) { return op_Block;     }
 ir_op *op_Start;       ir_op *get_op_Start     (void) { return op_Start;     }
 ir_op *op_End;         ir_op *get_op_End       (void) { return op_End;       }
 ir_op *op_Jmp;         ir_op *get_op_Jmp       (void) { return op_Jmp;       }
+ir_op *op_IJmp;        ir_op *get_op_IJmp      (void) { return op_IJmp;      }
 ir_op *op_Cond;        ir_op *get_op_Cond      (void) { return op_Cond;      }
 ir_op *op_Return;      ir_op *get_op_Return    (void) { return op_Return;    }
 ir_op *op_Raise;       ir_op *get_op_Raise     (void) { return op_Raise;     }
@@ -186,6 +187,7 @@ init_op(void)
   op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, sizeof(start_attr));
   op_End       = new_ir_op(iro_End,       "End",       op_pin_state_pinned, X,       oparity_dynamic,  -1, 0);
   op_Jmp       = new_ir_op(iro_Jmp,       "Jmp",       op_pin_state_pinned, X,       oparity_zero,     -1, 0);
+  op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X,       oparity_unary,    -1, 0);
   op_Cond      = new_ir_op(iro_Cond,      "Cond",      op_pin_state_pinned, L|X|Y,   oparity_any,      -1, sizeof(cond_attr));
   op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, L|X,     oparity_zero,     -1, 0);
   op_Raise     = new_ir_op(iro_Raise,     "Raise",     op_pin_state_pinned, L|X,     oparity_any,      -1, 0);

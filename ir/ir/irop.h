@@ -60,7 +60,7 @@ typedef enum {
 /** The opcodes of the libFirm predefined operations. */
 typedef enum {
   iro_Block,
-  iro_Start, iro_End, iro_Jmp, iro_Cond, iro_Return, iro_Raise,
+  iro_Start, iro_End, iro_Jmp, iro_IJmp, iro_Cond, iro_Return, iro_Raise,
   iro_Const, iro_SymConst,
   iro_Sel,  iro_InstOf,
   iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Quot, iro_DivMod,
@@ -81,6 +81,7 @@ extern ir_op *op_Block;           ir_op *get_op_Block     (void);
 extern ir_op *op_Start;           ir_op *get_op_Start     (void);
 extern ir_op *op_End;             ir_op *get_op_End       (void);
 extern ir_op *op_Jmp;             ir_op *get_op_Jmp       (void);
+extern ir_op *op_IJmp;            ir_op *get_op_IJmp      (void);
 extern ir_op *op_Cond;            ir_op *get_op_Cond      (void);
 extern ir_op *op_Return;          ir_op *get_op_Return    (void);
 extern ir_op *op_Raise;           ir_op *get_op_Raise     (void);
