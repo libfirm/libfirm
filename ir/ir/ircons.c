@@ -58,13 +58,13 @@ typedef struct Phi_in_stack Phi_in_stack;
 #endif
 
 /*
- * language dependant initialization variable
+ * language dependent initialization variable
  */
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
-/* -------------------------------------------- */
-/* privat interfaces, for professional use only */
-/* -------------------------------------------- */
+/* --------------------------------------------- */
+/* private interfaces, for professional use only */
+/* --------------------------------------------- */
 
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
@@ -531,6 +531,20 @@ new_rd_Jmp (dbg_info* db, ir_graph *irg, ir_node *block)
 }
 
 ir_node *
+new_rd_IJmp (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *tgt)
+{
+  ir_node *res;
+
+  res = new_ir_node (db, irg, block, op_IJmp, mode_X, 1, &tgt);
+  res = optimize_node (res);
+  IRN_VRFY_IRG (res, irg);
+
+  if (get_irn_op(res) == op_IJmp) /* still an IJmp */
+    keep_alive(res);
+  return res;
+}
+
+ir_node *
 new_rd_Cond (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *c)
 {
   ir_node *res;
@@ -906,6 +920,9 @@ ir_node *new_r_End    (ir_graph *irg, ir_node *block) {
 }
 ir_node *new_r_Jmp    (ir_graph *irg, ir_node *block) {
   return new_rd_Jmp(NULL, irg, block);
+}
+ir_node *new_r_IJmp   (ir_graph *irg, ir_node *block, ir_node *tgt) {
+  return new_rd_IJmp(NULL, irg, block, tgt);
 }
 ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c) {
   return new_rd_Cond(NULL, irg, block, c);
@@ -2232,6 +2249,12 @@ new_d_Jmp (dbg_info* db)
 }
 
 ir_node *
+new_d_IJmp (dbg_info* db, ir_node *tgt)
+{
+  return new_rd_IJmp (db, current_ir_graph, current_ir_graph->current_block, tgt);
+}
+
+ir_node *
 new_d_Cond (dbg_info* db, ir_node *c)
 {
   return new_rd_Cond (db, current_ir_graph, current_ir_graph->current_block, c);
@@ -2467,7 +2490,7 @@ new_immBlock (void) {
   return new_d_immBlock(NULL);
 }
 
-/* add an adge to a jmp/control flow node */
+/* add an edge to a jmp/control flow node */
 void
 add_immBlock_pred (ir_node *block, ir_node *jmp)
 {
@@ -2535,8 +2558,7 @@ set_store (ir_node *store)
 }
 
 void
-keep_alive (ir_node *ka)
-{
+keep_alive (ir_node *ka) {
   add_End_keepalive(current_ir_graph->end, ka);
 }
 
@@ -2592,6 +2614,9 @@ ir_node *new_End    (void) {
 }
 ir_node *new_Jmp    (void) {
   return new_d_Jmp(NULL);
+}
+ir_node *new_IJmp   (ir_node *tgt) {
+  return new_d_IJmp(NULL, tgt);
 }
 ir_node *new_Cond   (ir_node *c) {
   return new_d_Cond(NULL, c);
