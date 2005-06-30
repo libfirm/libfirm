@@ -56,9 +56,10 @@ static const_class_t get_const_class(ir_node *n, ir_node *block)
     return REAL_CONSTANT;
   if (op == op_SymConst)
     return CONST_EXPR;
+
   /*
    * Beware: Bad nodes are always loop-invariant, but
-   * cannot handles in later code, so filter them here
+   * cannot handled in later code, so filter them here
    */
   if (! is_Bad(n) && is_loop_invariant(n, block))
     return CONST_EXPR;
@@ -328,7 +329,7 @@ static void do_reassociation(ir_node *n, void *env)
 
   hook_reassociate(1);
 
-  /* Reassociation must run until a fixpoint is reached. */
+  /* reassociation must run until a fixpoint is reached. */
   do {
     ir_op   *op    = get_irn_op(n);
     ir_mode *mode  = get_irn_mode(n);
@@ -355,6 +356,8 @@ void optimize_reassociation(ir_graph *irg)
   irg_loopinfo_state state;
 
   assert(get_irg_phase_state(irg) != phase_building);
+  assert(get_irg_pinned(irg) != op_pin_state_floats &&
+    "Reassociation needs pinned graph to work properly");
 
   /* reassociation needs constant folding */
   if (!get_opt_reassociation() || !get_opt_constant_folding())
