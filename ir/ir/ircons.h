@@ -243,13 +243,14 @@
  *    constructors and at the paragraph COPING WITH DATA OBJECTS at the
  *    end of this documentation.
  *
-  *    The comfortable interface contains the following routines further explained
+ *    The comfortable interface contains the following routines further explained
  *    below:
  *
  *    ir_node *new_immBlock (void);
  *    ir_node *new_Start    (void);
  *    ir_node *new_End      (void);
  *    ir_node *new_Jmp      (void);
+ *    ir_node *new_IJmp     (ir_node *tgt);
  *    ir_node *new_Cond     (ir_node *c);
  *    ir_node *new_Return   (ir_node *store, int arity, ir_node **in);
  *    ir_node *new_Raise    (ir_node *store, ir_node *obj);
@@ -447,6 +448,17 @@
  *      The block the node belongs to
  *    Output:
  *      Control flow to the next block.
+ *
+ *    ir_node *new_IJmp (ir_node *tgt)
+ *    -----------------------
+ *
+ *    Creates an IJmp node.
+ *
+ *    Inputs:
+ *      The node that represents the target jump address
+ *    Output:
+ *      Control flow to an unknown target, must be pinned by
+ *      the End node.
  *
  *    ir_node *new_Cond (ir_node *c)
  *    ------------------------------
@@ -1083,6 +1095,18 @@ ir_node *new_rd_End    (dbg_info *db, ir_graph *irg, ir_node *block);
  * @param *block  The ir block the node belongs to.
  */
 ir_node *new_rd_Jmp    (dbg_info *db, ir_graph *irg, ir_node *block);
+
+/** Constructor for an IJmp node.
+ *
+ * IJmp represents control flow to a single control successor not
+ * statically known i.e. an indirect Jmp.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The ir graph the node belongs to.
+ * @param *block  The ir block the node belongs to.
+ * @param *tgt    The ir node representing the target address.
+ */
+ir_node *new_rd_IJmp   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *tgt);
 
 /** Constructor for a Break node.
  *
@@ -1824,6 +1848,17 @@ ir_node *new_r_End    (ir_graph *irg, ir_node *block);
  */
 ir_node *new_r_Jmp    (ir_graph *irg, ir_node *block);
 
+/** Constructor for an IJmp node.
+ *
+ * IJmp represents control flow to a single control successor not
+ * statically known i.e. an indirect Jmp.
+ *
+ * @param *irg    The ir graph the node belongs to.
+ * @param *block  The ir block the node belongs to.
+ * @param *tgt    The ir node representing the target address.
+ */
+ir_node *new_r_IJmp   (ir_graph *irg, ir_node *block, ir_node *tgt);
+
 /** Constructor for a Cond node.
  *
  * If c is mode_b represents a conditional branch (if/else). If c is
@@ -2513,8 +2548,17 @@ ir_node *new_d_End    (dbg_info* db);
  *
  * @param *db     A pointer for debug information.
  */
-
 ir_node *new_d_Jmp    (dbg_info* db);
+
+/** Constructor for an IJmp node.
+ *
+ * IJmp represents control flow to a single control successor not
+ * statically known i.e. an indirect Jmp.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *tgt    The ir node representing the target address.
+ */
+ir_node *new_d_IJmp   (dbg_info *db, ir_node *tgt);
 
 /** Constructor for a Cond node.
  *
@@ -3205,6 +3249,15 @@ ir_node *new_EndExcept(void);
  * Jmp represents control flow to a single control successor.
  */
 ir_node *new_Jmp    (void);
+
+/** Constructor for an IJmp node.
+ *
+ * IJmp represents control flow to a single control successor not
+ * statically known i.e. an indirect Jmp.
+ *
+ * @param *tgt    The ir node representing the target address.
+ */
+ir_node *new_IJmp   (ir_node *tgt);
 
 /** Constructor for a Break node.
  * Break represents control flow to a single control successor just as Jmp.
