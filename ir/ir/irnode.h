@@ -332,6 +332,11 @@ void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
    free_End() frees these data structures. */
 void free_End (ir_node *end);
 
+/** Return the target address of an IJmp */
+ir_node *get_IJmp_target(ir_node *ijmp);
+
+/** Sets the target address of an IJmp */
+void set_IJmp_target(ir_node *ijmp, ir_node *tgt);
 
 /* We distinguish three kinds of Cond nodes.  These can be distinguished
    by the mode of the selector operand and an internal flag of type cond_kind.

@@ -779,6 +779,17 @@ free_End (ir_node *end) {
                in array afterwards ... */
 }
 
+/* Return the target address of an IJmp */
+ir_node *get_IJmp_target(ir_node *ijmp) {
+  assert(ijmp->op == op_IJmp);
+  return get_irn_n(ijmp, 0);
+}
+
+/** Sets the target address of an IJmp */
+void set_IJmp_target(ir_node *ijmp, ir_node *tgt) {
+  assert(ijmp->op == op_IJmp);
+  set_irn_n(ijmp, 0, tgt);
+}
 
 /*
 > Implementing the case construct (which is where the constant Proj node is
