@@ -60,7 +60,7 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
   fname = malloc (strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for excapes. */
 
   j = 0;
-  for (i = 0; i < len; ++i) {  /* replase '/' in the name: escape by @. */
+  for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */
     if (basename[i] == '/') {
       fname[j] = '@'; j++; fname[j] = '1'; j++;
     } else if (basename[i] == '@') {
@@ -102,8 +102,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   if (get_irn_pinned(n) == op_pin_state_floats &&
       get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats) {
     fprintf(F, "  node was pinned in ");
-    dump_node_opcode(F, get_nodes_block(n));
-    fprintf(F, " %ld\n", get_irn_node_nr(get_nodes_block(n)));
+    dump_node_opcode(F, get_irn_n(n, -1));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
   }
 
   fprintf(F, "  arity:   %d\n", get_irn_intra_arity(n));
@@ -111,8 +111,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   fprintf(F, "  pred nodes: \n");
   if (!is_Block(n)) {
     fprintf(F, "    -1:    ");
-    dump_node_opcode(F, get_nodes_block(n));
-    fprintf(F, " %ld\n", get_irn_node_nr(get_nodes_block(n)));
+    dump_node_opcode(F, get_irn_n(n, -1));
+    fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
   }
   for ( i = 0; i < get_irn_intra_arity(n); ++i) {
     fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
