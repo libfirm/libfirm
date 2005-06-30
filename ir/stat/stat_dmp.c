@@ -137,6 +137,9 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
  */
 static void simple_dump_real_func_calls(dumper_t *dmp, counter_t *cnt)
 {
+  if (! dmp->f)
+    return;
+
   if (! cnt_eq(cnt, 0)) {
     fprintf(dmp->f, "\nReal Function Calls optimized:\n");
     fprintf(dmp->f, "%-16s %8u\n",
@@ -149,6 +152,9 @@ static void simple_dump_real_func_calls(dumper_t *dmp, counter_t *cnt)
  */
 static void simple_dump_tail_recursion(dumper_t *dmp, unsigned num_tail_recursion)
 {
+  if (! dmp->f)
+    return;
+
   if (num_tail_recursion > 0) {
     fprintf(dmp->f, "\nTail recursion optimized:\n");
     fprintf(dmp->f, "%-16s %8u\n", "Call", num_tail_recursion);
@@ -160,6 +166,9 @@ static void simple_dump_tail_recursion(dumper_t *dmp, unsigned num_tail_recursio
  */
 static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
 {
+  if (! dmp->f)
+    return;
+
   fprintf(dmp->f, "%-16s %8d\n", "Edges", cnt->cnt[0]);
 }
 
@@ -170,6 +179,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
   int i, dump_opts = 1;
   block_entry_t *b_entry;
+
+  if (! dmp->f)
+    return;
 
   if (entry->irg) {
     ir_graph *const_irg = get_const_code_irg();
@@ -258,6 +270,9 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
   int i;
   counter_t sum;
 
+  if (! dmp->f)
+    return;
+
   cnt_clr(&sum);
 
   fprintf(dmp->f, "\nConstant Information:\n");
@@ -296,6 +311,9 @@ static void simple_init(dumper_t *dmp, const char *name)
 
   snprintf(fname, sizeof(fname), "%s.txt", name);
   dmp->f = fopen(fname, "w");
+  if (! dmp->f) {
+    perror(fname);
+  }
 }
 
 /**
@@ -303,7 +321,8 @@ static void simple_init(dumper_t *dmp, const char *name)
  */
 static void simple_finish(dumper_t *dmp)
 {
-  fclose(dmp->f);
+  if (dmp->f)
+    fclose(dmp->f);
   dmp->f = NULL;
 }
 
@@ -364,8 +383,10 @@ static void csv_count_nodes(dumper_t *dmp, graph_entry_t *graph, counter_t cnt[]
 static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
   const char *name;
-
   counter_t cnt[4];
+
+  if (! dmp->f)
+    return;
 
   if (entry->irg && !entry->is_deleted) {
     ir_graph *const_irg = get_const_code_irg();
@@ -411,6 +432,9 @@ static void csv_init(dumper_t *dmp, const char *name)
 
   snprintf(fname, sizeof(fname), "%s.csv", name);
   dmp->f = fopen(fname, "a");
+  if (! dmp->f) {
+    perror(fname);
+  }
 }
 
 /**
@@ -418,7 +442,8 @@ static void csv_init(dumper_t *dmp, const char *name)
  */
 static void csv_finish(dumper_t *dmp)
 {
-  fclose(dmp->f);
+  if (dmp->f)
+    fclose(dmp->f);
   dmp->f = NULL;
 }
 
