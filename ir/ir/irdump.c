@@ -961,7 +961,11 @@ dump_ir_block_edge(FILE *F, ir_node *n)  {
 
 static void
 print_data_edge_vcgattr(FILE *F, ir_node *from, int to) {
-  if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
+	/*
+	 * do not use get_nodes_block() here, will fail
+	 * if the irg is not pinned.
+	 */
+  if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
     fprintf (F, INTRA_DATA_EDGE_ATTR);
   else
     fprintf (F, INTER_DATA_EDGE_ATTR);
@@ -969,7 +973,11 @@ print_data_edge_vcgattr(FILE *F, ir_node *from, int to) {
 
 static void
 print_mem_edge_vcgattr(FILE *F, ir_node *from, int to) {
-  if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
+	/*
+	 * do not use get_nodes_block() here, will fail
+	 * if the irg is not pinned.
+	 */
+  if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
     fprintf (F, INTRA_MEM_EDGE_ATTR);
   else
     fprintf (F, INTER_MEM_EDGE_ATTR);
@@ -1234,7 +1242,7 @@ dump_block_graph(FILE *F, ir_graph *irg) {
     } else {
       /* Nodes that are not in a Block. */
       dump_node(F, node);
-      if (is_Bad(get_nodes_block(node)) && !node_floats(node)) {
+      if (!node_floats(node) && is_Bad(get_nodes_block(node))) {
         dump_const_block_local(F, node);
       }
       dump_ir_data_edges(F, node);
