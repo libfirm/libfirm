@@ -87,7 +87,7 @@ void arch_dep_set_opts(arch_dep_opts_t the_opts) {
   opts = the_opts;
 }
 
-/* check, wheater a mode allows a Mulh instruction */
+/* check, whether a mode allows a Mulh instruction */
 static int allow_Mulh(ir_mode *mode)
 {
   if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
@@ -102,18 +102,18 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 
   /* If the architecture dependent optimizations were not initialized
      or this optimization was not enabled. */
-  if(params == NULL || (opts & arch_dep_mul_to_shift) == 0)
+  if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
     return irn;
 
-  if(get_irn_opcode(irn) == iro_Mul && mode_is_int(mode)) {
-    ir_node *block   = get_nodes_block(irn);
+  if (get_irn_op(irn) == op_Mul && mode_is_int(mode)) {
+    ir_node *block   = get_irn_n(irn, -1);
     ir_node *left    = get_binop_left(irn);
     ir_node *right   = get_binop_right(irn);
     tarval *tv       = NULL;
     ir_node *operand = NULL;
 
     /* Look, if one operand is a constant. */
-    if(get_irn_opcode(left) == iro_Const) {
+    if (get_irn_opcode(left) == iro_Const) {
       tv = get_Const_tarval(left);
       operand = right;
     } else if(get_irn_opcode(right) == iro_Const) {
@@ -121,7 +121,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
       operand = left;
     }
 
-    if(tv != NULL) {
+    if (tv != NULL) {
       int maximum_shifts = params->maximum_shifts;
       int also_use_subs = params->also_use_subs;
       int highest_shift_amount = params->highest_shift_amount;
@@ -296,13 +296,13 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 
               assert(amount >= 0 && "What is a negative shift??");
 
-              if(amount != 0) {
+              if (amount != 0) {
                 ir_node *cnst = new_r_Const_long(current_ir_graph, block, mode_Iu, amount);
                 aux = new_r_Shl(current_ir_graph, block, operand, cnst, mode);
               }
 
-              if(curr) {
-                if(sub)
+              if (curr) {
+                if (sub)
                   curr = new_r_Sub(current_ir_graph, block, curr, aux, mode);
                 else
                   curr = new_r_Add(current_ir_graph, block, curr, aux, mode);
@@ -318,7 +318,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 #ifdef DEB
         {
           const char *prefix = "";
-          for(i = 0; i < n; i++) {
+          for (i = 0; i < n; ++i) {
             fprintf(stderr, "%s%d", prefix, shifts[i]);
             prefix = ", ";
           }
@@ -546,13 +546,13 @@ static struct mu magicu(tarval *d)
 /**
  * build the Mulh replacement code for n / tv
  *
- * Note thet 'div' might be a mod or DivMod operation as well
+ * Note that 'div' might be a mod or DivMod operation as well
  */
 static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
 {
   dbg_info *dbg  = get_irn_dbg_info(div);
   ir_node *n     = get_binop_left(div);
-  ir_node *block = get_nodes_block(div);
+  ir_node *block = get_irn_n(div, -1);
   ir_mode *mode  = get_irn_mode(n);
   int bits       = get_mode_size_bits(mode);
   ir_node *q, *t, *c;
@@ -643,7 +643,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 
     left  = get_Div_left(irn);
     mode  = get_irn_mode(left);
-    block = get_nodes_block(irn);
+    block = get_irn_n(irn, -1);
     dbg   = get_irn_dbg_info(irn);
     tv    = get_Const_tarval(c);
 
@@ -731,7 +731,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 
     left  = get_Mod_left(irn);
     mode  = get_irn_mode(left);
-    block = get_nodes_block(irn);
+    block = get_irn_n(irn, -1);
     dbg   = get_irn_dbg_info(irn);
     tv    = get_Const_tarval(c);
 
@@ -823,7 +823,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 
     left  = get_DivMod_left(irn);
     mode  = get_irn_mode(left);
-    block = get_nodes_block(irn);
+    block = get_irn_n(irn, -1);
     dbg   = get_irn_dbg_info(irn);
     tv    = get_Const_tarval(c);
 
