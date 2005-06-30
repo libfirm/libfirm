@@ -321,12 +321,10 @@ void compute_doms(ir_graph *irg) {
     /* Step 2 */
     irn_arity = get_irn_arity(w->block);
     for (j = 0;  j < irn_arity;  j++) {
-      ir_node *cf_op = get_Block_cfgpred(w->block, j);
-      ir_node *pred  = get_nodes_block(cf_op);
+      ir_node *pred = get_Block_cfgpred_block(w->block, j);
       tmp_dom_info *u;
 
-      if ((is_Bad(cf_op)) || (is_Bad(pred)) ||
-	  (get_Block_pre_num (pred) == -1))
+      if (is_Bad(pred) || (get_Block_pre_num (pred) == -1))
 	continue;	/* control-dead */
 
       u = dom_eval (&tdi_list[get_Block_pre_num(pred)]);
