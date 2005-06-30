@@ -66,32 +66,32 @@
  */
 static void remove_senseless_conds(ir_node *bl, void *data)
 {
-	int i, j;
-	int n = get_Block_n_cfgpreds(bl);
+  int i, j;
+  int n = get_Block_n_cfgpreds(bl);
 
-	assert(is_Block(bl));
+  assert(is_Block(bl));
 
-	for (i = 0; i < n; ++i) {
-		ir_node *pred_i = get_Block_cfgpred(bl, i);
-		ir_node *cond_i = skip_Proj(pred_i);
+  for (i = 0; i < n; ++i) {
+    ir_node *pred_i = get_Block_cfgpred(bl, i);
+    ir_node *cond_i = skip_Proj(pred_i);
 
-		for (j = i + 1; j < n; ++j) {
-			ir_node *pred_j = get_Block_cfgpred(bl, j);
-			ir_node *cond_j = skip_Proj(pred_j);
+    for (j = i + 1; j < n; ++j) {
+      ir_node *pred_j = get_Block_cfgpred(bl, j);
+      ir_node *cond_j = skip_Proj(pred_j);
 
-			if (cond_j == cond_i
-					&& get_irn_op(cond_i) == op_Cond
-					&& get_irn_mode(get_Cond_selector(cond_i)) == mode_b) {
+      if (cond_j == cond_i
+          && get_irn_op(cond_i) == op_Cond
+          && get_irn_mode(get_Cond_selector(cond_i)) == mode_b) {
 
-				ir_node *jmp = new_r_Jmp(current_ir_graph, get_nodes_block(cond_i));
-				set_irn_n(bl, i, jmp);
-				set_irn_n(bl, j, new_Bad());
+        ir_node *jmp = new_r_Jmp(current_ir_graph, get_nodes_block(cond_i));
+        set_irn_n(bl, i, jmp);
+        set_irn_n(bl, j, new_Bad());
 
         DBG_OPT_IFSIM2(cond_i, jmp);
-				break;
-			}
-		}
-	}
+        break;
+      }
+    }
+  }
 }
 
 
@@ -120,17 +120,17 @@ static void merge_blocks(ir_node *n, void *env) {
 
     /* see below */
     new_block = equivalent_node(n);
-    if (new_block != n && ! is_Bad(new_block))
+    if (new_block != n && ! is_Block_dead(new_block))
       exchange (n, new_block);
 
   } else if (get_opt_optimize() && (get_irn_mode(n) == mode_X)) {
     /* We will soon visit a block.  Optimize it before visiting! */
     ir_node *b = get_nodes_block(skip_Proj(n));
 
-    if (!is_Bad(b)) {
+    if (!is_Block_dead(b)) {
       new_block = equivalent_node(b);
 
-      while (irn_not_visited(b) && (!is_Bad(new_block)) && (new_block != b)) {
+      while (irn_not_visited(b) && (!is_Block_dead(new_block)) && (new_block != b)) {
         /* We would have to run gigo() if new is bad, so we
            promote it directly below. Nevertheless, we sometimes reach a block
            the first time through a dataflow node.  In this case we optimized the
@@ -146,7 +146,7 @@ static void merge_blocks(ir_node *n, void *env) {
       /* normally, we would create a Bad block here, but this must be
        * prevented, so just set it's cf to Bad.
        */
-      if (is_Bad(new_block))
+      if (is_Block_dead(new_block))
         exchange(n, new_Bad());
     }
   }
@@ -171,7 +171,7 @@ static void remove_dead_block_cf(ir_node *block, void *env)
     if (! is_Bad(pred_X)) {
       ir_node *pred_bl = get_nodes_block(skip_Proj(pred_X));
 
-      if (is_Bad(pred_bl) || (get_Block_dom_depth(pred_bl) == -1))
+      if (is_Block_dead(pred_bl) || (get_Block_dom_depth(pred_bl) < 0))
         exchange (pred_X, new_Bad());
     }
   }
@@ -570,6 +570,10 @@ void optimize_cf(ir_graph *irg) {
   irg_dom_state dom_state = get_irg_dom_state(current_ir_graph);
   current_ir_graph = irg;
 
+  /* if the graph is not pinned, we cannot determine empty blocks */
+  assert(get_irg_pinned(irg) != op_pin_state_floats &&
+         "Control flow optimization need a pinned graph");
+
   /* Handle graph state */
   assert(get_irg_phase_state(irg) != phase_building);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
@@ -587,9 +591,11 @@ void optimize_cf(ir_graph *irg) {
     for (i = 0, n = get_End_n_keepalives(end); i < n; ++i) {
       ir_node *ka = get_End_keepalive(end, i);
 
-      if (is_Block(ka) && (get_Block_dom_depth(ka) == -1))
-        set_End_keepalive(end, i, new_Bad());
-      if (is_Phi(ka) && (get_Block_dom_depth(get_nodes_block(ka)) == -1))
+      if (is_Block(ka)) {
+        if (get_Block_dom_depth(ka) == -1)
+          set_End_keepalive(end, i, new_Bad());
+      }
+      else if (get_Block_dom_depth(get_nodes_block(ka)) == -1)
         set_End_keepalive(end, i, new_Bad());
     }
   }
@@ -620,6 +626,9 @@ void optimize_cf(ir_graph *irg) {
         mark_irn_visited(ka);
         ARR_APP1 (ir_node *, in, ka);
       } else if (get_irn_op(ka) == op_Phi) {
+        mark_irn_visited(ka);
+        ARR_APP1 (ir_node *, in, ka);
+      } else if (get_irn_op(ka) == op_IJmp) {
         mark_irn_visited(ka);
         ARR_APP1 (ir_node *, in, ka);
       }
