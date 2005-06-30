@@ -88,6 +88,11 @@ void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
 
   if (mode_is_int(mode)) {
     tv   = get_Const_tarval(node);
+
+    /* FIXME: */
+    if (! tarval_is_long(tv))
+      return;
+
     bits = log2(get_tarval_long(tv));
 
     if (bits > ARR_SIZE(status->const_info.int_bits_count))
