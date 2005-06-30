@@ -553,6 +553,7 @@ get_irn_except_attr (ir_node *node)
 ir_node *
 get_nodes_block (const ir_node *node) {
   assert (!(node->op == op_Block));
+	assert (is_irn_pinned_in_irg(node) && "block info may be incorrect");
   return get_irn_n(node, -1);
 }
 
@@ -2005,13 +2006,18 @@ void     set_Mux_true  (ir_node *node, ir_node *ir_true) {
   node->in[3] = ir_true;
 }
 
-
 ir_graph *
 get_irn_irg(const ir_node *node) {
+	/*
+	 * Do not use get_nodes_Block() here, because this
+	 * will check the pinned state.
+	 * However even a 'wrong' block is always in the proper
+	 * irg.
+	 */
   if (! is_Block(node))
-    node = get_nodes_block(node);
+    node = get_irn_n(node, -1);
   if (is_Bad(node))  /* sometimes bad is predecessor of nodes instead of block: in case of optimization */
-    node = get_nodes_block(node);
+    node = get_irn_n(node, -1);
   assert(get_irn_op(node) == op_Block);
   return node->attr.block.irg;
 }
