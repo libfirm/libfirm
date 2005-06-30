@@ -6,7 +6,7 @@
  * Modified by:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universit�t Karlsruhe
+ * Copyright:   (c) 1998-2005 Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -115,7 +115,14 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
         snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(X));
         break;
       default:
-        snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
+        if (is_Const(irn)) {
+          char tbuf[128];
+          tarval_snprintf(tv, sizeof(tv), X);
+          snprintf(buf, sizeof(buf), "%s%s%s<%s>", A("irn"), get_irn_opname(X),
+            get_mode_name(get_irn_mode(X)), tbuf);
+        }
+        else
+          snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
             get_mode_name(get_irn_mode(X)));
         snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(X));
       }
@@ -169,8 +176,6 @@ static int firm_emit_ident(appendable_t *app, const arg_occ_t *occ, const arg_va
   return arg_append(app, occ, p, strlen(p));
 }
 
-
-
 /**
  * Emit indent.
  */
@@ -185,6 +190,18 @@ static int firm_emit_indent(appendable_t *app, const arg_occ_t *occ, const arg_v
 	return amount;
 }
 
+/**
+ * Emit pnc.
+ */
+static int firm_emit_pnc(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+{
+  int i;
+  int value = arg->v_int;
+  const char *p = get_pnc_string(value);
+
+  return arg_append(app, occ, p, strlen(p));
+}
+
 arg_env_t *firm_get_arg_env(void)
 {
 #define X(name, letter) {"firm:" name, letter}
@@ -194,6 +211,7 @@ arg_env_t *firm_get_arg_env(void)
   static arg_handler_t firm_handler   = { firm_get_arg_type, firm_emit };
   static arg_handler_t ident_handler  = { firm_get_arg_type, firm_emit_ident };
   static arg_handler_t indent_handler = { firm_get_arg_type_int, firm_emit_indent };
+  static arg_handler_t pnc_handler    = { firm_get_arg_type_int, firm_emit_pnc };
   static arg_handler_t bitset_handler = { bitset_get_arg_type, bitset_emit };
 
   static struct {
@@ -209,6 +227,7 @@ arg_env_t *firm_get_arg_env(void)
     X("irn_nr",    'N'),
     X("mode",      'm'),
     X("block",     'B'),
+    X("pnc",       '='),
   };
 
   int i;

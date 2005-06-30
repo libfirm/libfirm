@@ -447,8 +447,15 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 				case 'n':
 					{
 						ir_node *irn = va_arg(args, ir_node *);
-						if(irn)
-							snprintf(buf, sizeof(buf), "%s%s:%ld",
+						if (irn)
+							if (is_Const(irn)) {
+								char tbuf[128];
+								tarval_snprintf(tbuf, sizeof(tbuf), get_Const_tarval(irn));
+								snprintf(buf, sizeof(buf), "%s%s<%s>:%ld",
+									get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), tbuf, get_irn_node_nr(irn));
+                                                        }
+                                                        else
+								snprintf(buf, sizeof(buf), "%s%s:%ld",
 									get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), get_irn_node_nr(irn));
 						else
 							strncpy(buf, STRNIL, sizeof(buf));
@@ -522,6 +529,10 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					/* clean the buffer again */
 					buf[0] = '\0';
 					break;
+
+				case '=':
+					str = get_pnc_string(va_arg(args, int));
+					break;
 			}
 
 			dump_with_settings(app, object, limit, &settings, str);
@@ -536,7 +547,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 }
 
 /**
- * Convencience for stdout dumping.
+ * Convenience for stdout dumping.
  */
 void ir_printf(const char *fmt, ...)
 {
@@ -547,7 +558,7 @@ void ir_printf(const char *fmt, ...)
 }
 
 /**
- * Convencience for file dumping.
+ * Convenience for file dumping.
  */
 void ir_fprintf(FILE *f, const char *fmt, ...)
 {
@@ -558,7 +569,7 @@ void ir_fprintf(FILE *f, const char *fmt, ...)
 }
 
 /**
- * Convencience for string dumping.
+ * Convenience for string dumping.
  */
 void ir_snprintf(char *buf, size_t len, const char *fmt, ...)
 {
@@ -569,7 +580,7 @@ void ir_snprintf(char *buf, size_t len, const char *fmt, ...)
 }
 
 /**
- * Convencience for string dumping.
+ * Convenience for string dumping.
  */
 void ir_obst_printf(struct obstack *obst, const char *fmt, ...)
 {
@@ -599,7 +610,7 @@ void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args)
 	ir_common_vprintf(&obst_appender, obst, 0, fmt, args);
 }
 
-#else
+#else /* WITH_LIBCORE */
 
 #include "irargs_t.h"
 
