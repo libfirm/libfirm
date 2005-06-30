@@ -3,7 +3,7 @@
  * File name:   ir/ir/irvrfy.c
  * Purpose:     Check irnodes for correctness.
  * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier. Till Riedel
+ * Modified by: Goetz Lindenmaier. Till Riedel. Michael Beck.
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
@@ -24,9 +24,6 @@
 
 /** if this flag is set, verify entity types in Load & Store nodes */
 static int vrfy_entities = 0;
-
-/* @@@ replace use of array "in" by access functions. */
-ir_node **get_irn_in(ir_node *node);
 
 node_verification_t opt_do_node_verification = NODE_VERIFICATION_ON;
 const char *firm_vrfy_failure_msg;
@@ -782,6 +779,20 @@ static int verify_node_Jmp(ir_node *n, ir_graph *irg) {
   ASSERT_AND_RET(
     /* Jmp: BB --> X */
     mymode == mode_X, "Jmp node", 0
+  );
+  return 1;
+}
+
+/**
+ * verify an IJmp node
+ */
+static int verify_node_IJmp(ir_node *n, ir_graph *irg) {
+  ir_mode *mymode  = get_irn_mode(n);
+  ir_mode *op1mode = get_irn_mode(get_IJmp_target(n));
+
+  ASSERT_AND_RET(
+    /* IJmp: BB x ref --> X */
+    mymode == mode_X && mode_is_reference(op1mode), "IJmp node", 0
   );
   return 1;
 }
@@ -1775,6 +1786,7 @@ void firm_set_default_verifyer(ir_op *op)
    CASE(Block);
    CASE(Start);
    CASE(Jmp);
+   CASE(IJmp);
    CASE(Break);
    CASE(Cond);
    CASE(Return);
