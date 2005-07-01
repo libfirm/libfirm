@@ -151,6 +151,9 @@ main(void)
 
   printf("Optimizing ...\n");
   local_optimize_graph(irg);
+  place_code(irg);
+  set_opt_global_cse(0);
+
   dead_node_elimination(irg);
 
   /* output the vcg file */
