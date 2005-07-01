@@ -189,6 +189,7 @@ op_pin_state is_irn_pinned_in_irg (const ir_node *node);
  *
  * @param db    Debug info.
  * @param irg   IR-graph on with this new node should be constructed.
+ * @param block The block the new node belongs to
  * @param op    The opcode of the new node.
  * @param mode  The mode of the new node.
  * @param arity The arity of the new node, may be <0 if yet.
