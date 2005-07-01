@@ -145,7 +145,7 @@ typedef enum {
  * register the hook entry.
  *
  * @param hook   the hook type
- * @rapam entry  the hook entry
+ * @param entry  the hook entry
  */
 void register_hook(hook_type_t hook, hook_entry_t *entry);
 
