@@ -385,7 +385,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b);
  *    FIRM documentation for conversion rules
  *    mode_is_smaller defined in irmode.h
  */
-tarval *tarval_convert_to(tarval *src, ir_mode *m);
+tarval *tarval_convert_to(tarval *src, ir_mode *mode);
 
 /*
  * These function implement basic computations representable as opcodes

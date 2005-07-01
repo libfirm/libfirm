@@ -76,7 +76,7 @@ int pdeq_empty(pdeq *dq);
  * Returns non-zero if a double ended pointer list
  * contains a pointer x.
  *
- * @param dp  The list.
+ * @param dq  The list.
  * @param x   The pointer to be searched for.
  */
 int pdeq_contains(pdeq *dq, const void *x);
@@ -100,7 +100,7 @@ void *pdeq_search(pdeq *qp, cmp_fun cmp, const void *key);
  * Convert the double ended pointer list into a linear array beginning from
  * left, the first element in the linear array will be the left one.
  *
- * @param dq   The list.
+ * @param qp   The list.
  * @param dst  A pointer to a pointer array with must be at least
  *             pdeq_len(dq) * sizeof(void *)
  *
@@ -112,7 +112,7 @@ void **pdeq_copyl(pdeq *qp, const void **dst);
  * Convert the double ended pointer list into a linear array beginning from
  * right, the first element in the linear array will be the right one.
  *
- * @param dq   The list.
+ * @param qp   The list.
  * @param dst  A pointer to a pointer array with must be at least
  *             pdeq_len(dq) * sizeof(void *)
  *
