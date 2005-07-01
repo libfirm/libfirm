@@ -55,9 +55,9 @@ colorentry 125:  255 250  250
 graph: { title: "g30" label: "GLOBAL_CSE_EXAMPLE_main" status:clustered color:white
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
 edge: {sourcename: "n19" targetname: "n64" label: "0" class:13 priority:60 color:red}
-node: {title: "n65" label: "End 65"  info1: "End 65
+node: {title: "n20" label: "End 20"  info1: "End 20
   mode:    X
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   arity:   0
   pred nodes:
@@ -69,7 +69,7 @@ color: blue}
 
 node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
   mode:    M
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 21
   arity:   1
@@ -82,7 +82,7 @@ color: yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
 node: {title: "n50" label: "AddIs 50"  info1: "Add 50
   mode:    Is
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 45
   arity:   2
@@ -97,7 +97,7 @@ edge: {sourcename: "n50" targetname: "n42" label: "0" class:16 priority:10}
 edge: {sourcename: "n50" targetname: "n49" label: "1" class:16 priority:10}
 node: {title: "n49" label: "0x5Is 49"  info1: "0x5 49
   mode:    Is
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 21
   arity:   0
@@ -109,7 +109,7 @@ node: {title: "n49" label: "0x5Is 49"  info1: "0x5 49
 color: yellow}
 node: {title: "n42" label: "SubIs 42"  info1: "Sub 42
   mode:    Is
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 39
   arity:   2
@@ -124,7 +124,7 @@ edge: {sourcename: "n42" targetname: "n32" label: "0" class:16 priority:10}
 edge: {sourcename: "n42" targetname: "n40" label: "1" class:16 priority:10}
 node: {title: "n40" label: "0x3Is 40"  info1: "0x3 40
   mode:    Is
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 21
   arity:   0
@@ -139,7 +139,7 @@ edge: {sourcename: "n53" targetname: "n52" label: "0" class:13 priority:60 color
 edge: {sourcename: "n53" targetname: "n44" label: "1" class:13 priority:60 color:red}
 node: {title: "n64" label: "Return 64"  info1: "Return 64
   mode:    X
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   arity:   2
   pred nodes:
@@ -155,7 +155,7 @@ edge: {sourcename: "n64" targetname: "n28" label: "0" class:17 priority:10 color
 edge: {sourcename: "n64" targetname: "n55" label: "1" class:1  priority:50}
 node: {title: "n55" label: "PhiIs 55"  info1: "Phi 55
   mode:    Is
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   arity:   2
   pred nodes:
@@ -174,7 +174,7 @@ graph: { title: "n45"  label: "Block 45" status:clustered color:yellow
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:13 priority:60 color:red}
 node: {title: "n52" label: "Jmp 52"  info1: "Jmp 52
   mode:    X
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   arity:   0
   pred nodes:
@@ -186,7 +186,7 @@ node: {title: "n52" label: "Jmp 52"  info1: "Jmp 52
 
 node: {title: "n37" label: "ProjX 0 37"  info1: "Proj 37
   mode:    X
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 31
   arity:   1
@@ -201,7 +201,7 @@ graph: { title: "n39"  label: "Block 39" status:clustered color:yellow
 edge: {sourcename: "n39" targetname: "n38" label: "0" class:13 priority:60 color:red}
 node: {title: "n44" label: "Jmp 44"  info1: "Jmp 44
   mode:    X
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   arity:   0
   pred nodes:
@@ -213,7 +213,7 @@ node: {title: "n44" label: "Jmp 44"  info1: "Jmp 44
 
 node: {title: "n38" label: "ProjX 1 38"  info1: "Proj 38
   mode:    X
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 31
   arity:   1
@@ -226,7 +226,7 @@ color: yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:13 priority:60 color:red}
 node: {title: "n35" label: "Projb Eq 35"  info1: "Proj 35
   mode:    b
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 31
   arity:   1
@@ -239,7 +239,7 @@ color: yellow}
 edge: {sourcename: "n35" targetname: "n34" label: "0" class:1  priority:50}
 node: {title: "n34" label: "Cmp 34"  info1: "Cmp 34
   mode:    T
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 31
   arity:   2
@@ -254,7 +254,7 @@ edge: {sourcename: "n34" targetname: "n32" label: "0" class:1  priority:50}
 edge: {sourcename: "n34" targetname: "n33" label: "1" class:16 priority:10}
 node: {title: "n32" label: "ProjIs 0 32"  info1: "Proj 32
   mode:    Is
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 31
   arity:   1
@@ -267,7 +267,7 @@ color: yellow}
 edge: {sourcename: "n32" targetname: "n29" label: "0" class:16 priority:10}
 node: {title: "n29" label: "ProjT 4 29"  info1: "Proj 29
   mode:    T
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 21
   arity:   1
@@ -280,7 +280,7 @@ color: yellow}
 edge: {sourcename: "n29" targetname: "n22" label: "0" class:1  priority:50}
 node: {title: "n33" label: "0x2Is 33"  info1: "0x2 33
   mode:    Is
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 21
   arity:   0
@@ -294,7 +294,7 @@ graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
 edge: {sourcename: "n31" targetname: "n25" label: "0" class:13 priority:60 color:red}
 node: {title: "n36" label: "Cond 36"  info1: "Cond 36
   mode:    T
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   arity:   1
   pred nodes:
@@ -310,7 +310,7 @@ edge: {sourcename: "n36" targetname: "n35" label: "0" class:1  priority:50}
 
 node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
   mode:    X
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   node was pinned in Block 21
   arity:   1
@@ -325,7 +325,7 @@ graph: { title: "n21"  label: "Block 21" status:clustered color:yellow
 edge: {sourcename: "n21" targetname: "n25" label: "0" class:13 priority:60 color:red}
 node: {title: "n22" label: "Start 22"  info1: "Start 22
   mode:    T
-  visited: 15
+  visited: 11
   irg:     GLOBAL_CSE_EXAMPLE_main
   arity:   0
   pred nodes:
