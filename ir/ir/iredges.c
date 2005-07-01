@@ -248,8 +248,10 @@ void edges_deactivate(ir_graph *irg)
 	irg_edge_info_t *info = _get_irg_edge_info(irg);
 
 	info->activated = 0;
-	if(info->edges)
+	if(info->edges) {
 		del_set(info->edges);
+    info->edges = NULL;
+  }
 }
 
 int (edges_activated)(const ir_graph *irg)
