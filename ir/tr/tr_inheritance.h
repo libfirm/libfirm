@@ -52,6 +52,14 @@ typedef struct ir_graph ir_graph;
  *  subclasses of high.  */
 int is_subclass_of(type *low, type *high);
 
+/** Subclass check for pointers to classes.
+ *
+ *  Dereferences at both types the same amount of pointer types (as
+ *  many as possible).  If the remaining types are both class types
+ *  and subclasses, returns true, else false.  Can also be called with
+ *  two class types.  */
+int is_subclass_ptr_of(type *low, type *high);
+
 /** Returns true if high is superclass of low.
  *
  *  Low is a subclass of high if low == high or if low is a subclass of
@@ -59,6 +67,14 @@ int is_subclass_of(type *low, type *high);
  *  @@@ this can be implemented more efficient if we know the set of all
  *  subclasses of high.  */
 int is_superclass_of(type *high, type *low);
+
+/** Superclass check for pointers to classes.
+ *
+ *  Dereferences at both types the same amount of pointer types (as
+ *  many as possible).  If the remaining types are both class types
+ *  and superclasses, returns true, else false.  Can also be called with
+ *  two class types.  */
+int is_subclass_ptr_of(type *low, type *high);
 
 /** Returns true if high is (transitive) overwritten by low.
  *
@@ -121,6 +137,8 @@ void resolve_inheritance(mangle_inherited_name_func *mfunc);
 /*                                                                         */
 /* The transitive edges are held in a set, not in an array as the          */
 /* underlying relation.                                                    */
+/*                                                                         */
+/* Do the sets contain the node itself?  I assume NOT!                     */
 /* ----------------------------------------------------------------------- */
 
 /** The state of the transitive closure.

@@ -488,8 +488,30 @@ int is_subclass_of(type *low, type *high) {
   return 0;
 }
 
+
+/* Subclass check for pointers to classes.
+ *
+ *  Dereferences at both types the same amount of pointer types (as
+ *  many as possible).  If the remaining types are both class types
+ *  and subclasses, returns true, else false.  Can also be called with
+ *  two class types.  */
+int is_subclass_ptr_of(type *low, type *high) {
+  while (is_Pointer_type(low) && is_Pointer_type(high)) {
+    low  = get_pointer_points_to_type(low);
+    high = get_pointer_points_to_type(high);
+  }
+
+  if (is_Class_type(low) && is_Class_type(high))
+    return is_subclass_of(low, high);
+  return 0;
+}
+
 int is_superclass_of(type *high, type *low) {
   return is_subclass_of(low, high);
+}
+
+int is_superclass_ptr_of(type *high, type *low) {
+  return is_subclass_ptr_of(low, high);
 }
 
 int is_overwritten_by(entity *high, entity *low) {
@@ -595,6 +617,8 @@ typedef struct ccs_env {
 void verify_irn_class_cast_state(ir_node *n, void *env) {
   ccs_env *ccs = (ccs_env *)env;
   ir_class_cast_state this_state = ir_class_casts_any;
+
+  if (get_irn_op(n) != op_Cast) return;
 
   type *fromtype = get_irn_typeinfo_type(get_Cast_op(n));
   type *totype   = get_Cast_type(n);
