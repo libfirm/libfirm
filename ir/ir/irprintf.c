@@ -389,7 +389,9 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					snprintf(buf, sizeof(buf), "%p", va_arg(args, void *));
 					break;
 
+				case 'i':
 				case 'd':
+				case 'u':
 				case 'x':
 				case 'X':
 				case 'o':
