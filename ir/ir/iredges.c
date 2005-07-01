@@ -72,12 +72,12 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 	 * Only do something, if the old and new target differ.
 	 */
 	if(tgt != old_tgt) {
-    int is_block_edge = is_Block(src);
+		int is_block_edge = is_Block(src);
 		set *edges = _get_irg_edge_info(irg)->edges;
 		ir_block_edge_t space;
-    ir_edge_t *templ = (ir_edge_t *) &space;
+		ir_edge_t *templ = (ir_edge_t *) &space;
 		ir_edge_t *edge;
-    size_t size;
+		size_t size;
 
     /*
      * This is scray, but:
@@ -234,13 +234,20 @@ static void build_edges_walker(ir_node *irn, void *data)
 		edges_notify_edge(irn, i, get_irn_n(irn, i), NULL, irg);
 }
 
+static void init_lh_walker(ir_node *irn, void *data)
+{
+        INIT_LIST_HEAD(_get_irn_outs_head(irn));
+        if(is_Block(irn))
+                INIT_LIST_HEAD(_get_block_succ_head(irn));
+}
+
 void edges_activate(ir_graph *irg)
 {
 	irg_edge_info_t *info = _get_irg_edge_info(irg);
 
 	info->activated = 1;
 	edges_init_graph(irg);
-	irg_walk_graph(irg, NULL, build_edges_walker, irg);
+	irg_walk_graph(irg, init_lh_walker, build_edges_walker, irg);
 }
 
 void edges_deactivate(ir_graph *irg)
