@@ -37,9 +37,10 @@
 #include "type_or_entity.h"
 #include "irouts.h"
 #include "irdom.h"
-#include "irloop.h"
+#include "irloop_t.h"
 #include "callgraph.h"
 #include "irextbb_t.h"
+#include "dbginfo_t.h"
 
 #include "irvrfy.h"
 
@@ -244,9 +245,9 @@ static pmap *irdump_link_map = NULL;
  *
  * We do not want to integrate dumping into libfirm, i.e., if the dumpers
  * are off, we want to have as few interferences as possible.  Therefore the
- * initialization is perfomed lazily and not called from within init_firm.
+ * initialization is performed lazily and not called from within init_firm.
  *
- * Creates the link attribut map. */
+ * Creates the link attribute map. */
 static void init_irdump(void) {
   /* We need a new, empty map. */
   if (irdump_link_map) pmap_destroy(irdump_link_map);
@@ -599,10 +600,6 @@ dump_node_opcode(FILE *F, ir_node *n)
         && get_Proj_proj(n) == get_Cond_defaultProj(pred)
         && get_irn_mode(get_Cond_selector(pred)) != mode_b)
       fprintf (F, "defProj");
-/*
- *   else if (get_irn_opcode(pred) == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
- *     fprintf (F, "Arg");
- */
     else
       goto default_case;
   } break;
@@ -698,6 +695,7 @@ static INLINE int
 dump_node_nodeattr(FILE *F, ir_node *n)
 {
   int bad = 0;
+  ir_node *pred;
 
   switch (get_irn_opcode(n)) {
   case iro_Start:
@@ -706,11 +704,26 @@ dump_node_nodeattr(FILE *F, ir_node *n)
     }
     break;
   case iro_Proj:
-    if (get_irn_opcode(get_Proj_pred(n)) == iro_Cmp) {
+    pred = get_Proj_pred(n);
+
+    if (get_irn_opcode(pred) == iro_Cmp)
       fprintf (F, "%s ", get_pnc_string(get_Proj_proj(n)));
-    } else {
-      fprintf (F, "%ld ", get_Proj_proj(n));
+    else if (get_irn_opcode(pred) == iro_Start) {
+      switch (get_Proj_proj(n)) {
+      case pn_Start_P_frame_base:
+        fprintf (F, "FrameBase "); break;
+      case pn_Start_P_globals:
+        fprintf (F, "GlobalBase "); break;
+      case pn_Start_P_value_arg_base:
+        fprintf (F, "ValueBase "); break;
+      default:
+        fprintf (F, "%ld ", get_Proj_proj(n));
+      }
     }
+    else if (get_irn_opcode(pred) == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
+      fprintf (F, "Arg %ld ", get_Proj_proj(n));
+    else
+      fprintf (F, "%ld ", get_Proj_proj(n));
     break;
   case iro_Filter:
     fprintf (F, "%ld ", get_Filter_proj(n));
@@ -907,6 +920,20 @@ static void INLINE print_node_error(FILE *F, const char *err_msg)
 }
 
 /**
+ * prints debug messages of a node to file F as info3.
+ */
+static void print_node_dbg_info(FILE *F, dbg_info *dbg)
+{
+  char buf[1024];
+
+  if (__dbg_info_snprint) {
+    buf[0] = '\0';
+    if (__dbg_info_snprint(buf, sizeof(buf), dbg) > 0)
+      fprintf (F, " info3: \"%s\"", buf);
+  }
+}
+
+/**
  * Dump a node
  */
 static void dump_node(FILE *F, ir_node *n)
@@ -927,6 +954,7 @@ static void dump_node(FILE *F, ir_node *n)
   fprintf(F, "\" ");
   bad |= dump_node_info(F, n);
   print_node_error(F, p);
+  print_node_dbg_info(F, get_irn_dbg_info(n));
   dump_node_vcgattr(F, n, NULL, bad);
   fprintf(F, "}\n");
   dump_const_node_local(F, n);
@@ -1820,7 +1848,8 @@ INLINE void dump_vcg_header(FILE *F, const char *name, const char *orientation) 
        "classname 11: \"Overwrites\"\n"
        "classname 12: \"Member\"\n"
        "infoname 1: \"Attribute\"\n"
-       "infoname 2: \"Verification errors\"\n",
+       "infoname 2: \"Verification errors\"\n"
+       "infoname 3: \"Debug info\"\n",
        name, label, orientation);
 
   /* don't use all, the range is too whith/black. */
