@@ -1317,7 +1317,6 @@ static ir_node *equivalent_node_Mux(ir_node *n)
       }
     }
   }
-
   return n;
 }
 
@@ -1939,12 +1938,12 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
     if (proj_nr == pn_Div_X_except) {
       /* we found an exception handler, remove it */
       return new_Bad();
-    } else {
+    } else if (proj_nr == pn_Div_M) {
       /* the memory Proj can be removed */
       ir_node *res = get_Div_mem(n);
       set_Div_mem(n, get_irg_no_mem(current_ir_graph));
-      if (proj_nr == pn_Div_M)
-        return res;
+
+      return res;
     }
   }
   return proj;
@@ -1970,12 +1969,20 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
     if (proj_nr == pn_Mod_X_except) {
       /* we found an exception handler, remove it */
       return new_Bad();
-    } else {
+    } else if (proj_nr == pn_Mod_M) {
       /* the memory Proj can be removed */
       ir_node *res = get_Mod_mem(n);
       set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
-      if (proj_nr == pn_Mod_M)
-        return res;
+
+      return res;
+    }
+    else if (proj_nr == pn_Mod_res && get_Mod_left(n) == b) {
+      /* a % a = 0 if a != 0 */
+      ir_mode *mode = get_irn_mode(proj);
+      ir_node *res  = new_Const(mode, get_mode_null(mode));
+
+      DBG_OPT_CSTEVAL(n, res);
+      return res;
     }
   }
   return proj;
@@ -2002,12 +2009,20 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
       /* we found an exception handler, remove it */
       return new_Bad();
     }
-    else {
+    else if (proj_nr == pn_DivMod_M) {
       /* the memory Proj can be removed */
       ir_node *res = get_DivMod_mem(n);
       set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
-      if (proj_nr == pn_DivMod_M)
-        return res;
+
+      return res;
+    }
+    else if (proj_nr == pn_DivMod_res_mod && get_DivMod_left(n) == b) {
+      /* a % a = 0 if a != 0 */
+      ir_mode *mode = get_irn_mode(proj);
+      ir_node *res  = new_Const(mode, get_mode_null(mode));
+
+      DBG_OPT_CSTEVAL(n, res);
+      return res;
     }
   }
   return proj;
@@ -2118,8 +2133,8 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
         if (mode_is_int(mode)) {
           /* Ne includes Unordered which is not possible on integers.
            * However, frontends often use this wrong, so fix it here */
-          if (proj_nr == pn_Cmp_Ne) {
-            proj_nr = pn_Cmp_Lg;
+          if (proj_nr & pn_Cmp_Uo) {
+            proj_nr &= ~pn_Cmp_Uo;
             set_Proj_proj(proj, proj_nr);
           }
 
