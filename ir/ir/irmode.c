@@ -261,6 +261,7 @@ static ir_mode *register_mode(const ir_mode *new_mode)
 
   set_mode_values(mode);
 
+  hook_new_mode(new_mode, mode);
   return mode;
 }
 
@@ -305,7 +306,6 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign,
     case irms_character:
       mode = register_mode(&mode_tmpl);
   }
-  hook_new_mode(&mode_tmpl, mode);
   return mode;
 }
 
@@ -336,8 +336,7 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
 
   if (num_of_elem <= 1) {
     assert(0 && "vector modes should have at least 2 elements");
-    hook_new_mode(&mode_tmpl, mode);
-    return mode;
+    return NULL;
   }
 
   /* sanity checks */
@@ -362,7 +361,6 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
     case irms_int_number:
       mode = register_mode(&mode_tmpl);
   }
-  hook_new_mode(&mode_tmpl, mode);
   return mode;
 }
 
