@@ -10,7 +10,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -21,30 +20,27 @@
 #include "entity_t.h"
 
 void
-dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
+default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
   set_irn_dbg_info(nw, get_irn_dbg_info(old));
 }
 
 void
-dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
+default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
             ir_node **old_nodes, int n_old_nodes,
             dbg_action info) {
 }
 
+merge_pair_func *__dbg_info_merge_pair = default_dbg_info_merge_pair;
 
-void (*__dbg_info_merge_pair)(ir_node *nw, ir_node *old, dbg_action info)
-     = &dbg_info_merge_pair;
+merge_sets_func *__dbg_info_merge_sets = default_dbg_info_merge_sets;
 
-void (*__dbg_info_merge_sets)(ir_node **new_nodes, int n_new_nodes,
-                  ir_node **old_nodes, int n_old_nodes,
-                  dbg_action info)
-     = &dbg_info_merge_sets;
+snprint_dbg_func *__dbg_info_snprint   = (snprint_dbg_func *)0;
 
-
-void dbg_init( merge_pair_func *mpf, merge_sets_func *msf )
+void dbg_init( merge_pair_func *mpf, merge_sets_func *msf, snprint_dbg_func *snprint_dbg )
 {
-  __dbg_info_merge_pair = mpf;
-  __dbg_info_merge_sets = msf;
+  __dbg_info_merge_pair = mpf ? mpf : default_dbg_info_merge_pair;
+  __dbg_info_merge_sets = msf ? msf : default_dbg_info_merge_sets;
+  __dbg_info_snprint    = snprint_dbg;
 }
 
 
