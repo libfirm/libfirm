@@ -50,7 +50,7 @@ extern "C" {
  *  by this firm walker to collect walking data.
  *
  *  @param thing Pointer to a firm structure
- *  @retrun Link pointer
+ *  @return Link pointer
  *
  *  @note After calling firm_walk_finalize() the stored link
  *        information may be invalid. */
