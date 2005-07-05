@@ -115,7 +115,7 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
         snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(X));
         break;
       default:
-        if (is_Const(irn)) {
+        if (is_Const(X)) {
           char tbuf[128];
           tarval_snprintf(tv, sizeof(tv), X);
           snprintf(buf, sizeof(buf), "%s%s%s<%s>", A("irn"), get_irn_opname(X),
