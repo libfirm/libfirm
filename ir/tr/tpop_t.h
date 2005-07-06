@@ -9,8 +9,6 @@
  * Copyright:   (c) 2001-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-
 # ifndef _TPOP_T_H_
 # define _TPOP_T_H_
 
@@ -21,7 +19,7 @@
  *
  * This file contains the datatypes hidden in tpop.h.
  *
- * @autor Goetz Lindenmaier
+ * @author Goetz Lindenmaier
  * @see  tpop.h
  */
 

@@ -1,6 +1,5 @@
 /**
- *
- * @file tp_inheritance.h
+ * @file tr_inheritance.h
  *
  * Project:     libFIRM                                                   <br>
  * File name:   ir/tr/tp_inheritance.h                                    <br>

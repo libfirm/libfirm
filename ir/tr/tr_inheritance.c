@@ -1,9 +1,9 @@
 /**
  *
- * @file tp_inheritance.c
+ * @file tr_inheritance.c
  *
  * Project:     libFIRM                                                   <br>
- * File name:   ir/tr/tp_inheritance.c                                    <br>
+ * File name:   ir/tr/tr_inheritance.c                                    <br>
  * Purpose:     Utility routines for inheritance representation           <br>
  * Author:      Goetz Lindenmaier                                         <br>
  * Modified by:                                                           <br>
@@ -354,13 +354,13 @@ void compute_inh_transitive_closure(void) {
 
       assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_subtypes && !has_unmarked_subtype; ++j) {
-	type *stp = get_class_subtype(tp, j);
-	if (type_not_visited(stp)) has_unmarked_subtype = true;
+        type *stp = get_class_subtype(tp, j);
+	      if (type_not_visited(stp)) has_unmarked_subtype = true;
       }
 
       /* This is a good starting point. */
       if (!has_unmarked_subtype)
-	compute_down_closure(tp);
+        compute_down_closure(tp);
     }
   }
 
@@ -381,7 +381,7 @@ void compute_inh_transitive_closure(void) {
 
       /* This is a good starting point. */
       if (!has_unmarked_supertype)
-	compute_up_closure(tp);
+        compute_up_closure(tp);
     }
   }
 
@@ -615,14 +615,15 @@ typedef struct ccs_env {
 } ccs_env;
 
 void verify_irn_class_cast_state(ir_node *n, void *env) {
-  ccs_env *ccs = (ccs_env *)env;
+  ccs_env             *ccs = (ccs_env *)env;
   ir_class_cast_state this_state = ir_class_casts_any;
+  type                *fromtype, *totype;
+  int                 ref_depth = 0;
 
   if (get_irn_op(n) != op_Cast) return;
 
-  type *fromtype = get_irn_typeinfo_type(get_Cast_op(n));
-  type *totype   = get_Cast_type(n);
-  int ref_depth = 0;
+  fromtype = get_irn_typeinfo_type(get_Cast_op(n));
+  totype   = get_Cast_type(n);
 
   while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
     totype   = get_pointer_points_to_type(totype);
@@ -636,7 +637,7 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
       is_subclass_of(fromtype, totype)   ) {
     this_state = ir_class_casts_transitive;
     if ((get_class_supertype_index(totype, fromtype) == -1) &&
-	(get_class_supertype_index(fromtype, totype) == -1) ) {
+        (get_class_supertype_index(fromtype, totype) == -1) ) {
       this_state = ir_class_casts_normalized;
     }
   }
@@ -649,7 +650,7 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
 }
 
 
-/** Verify that the graph meets reqirements of state set. */
+/** Verify that the graph meets requirements of state set. */
 void verify_irg_class_cast_state(ir_graph *irg) {
   ccs_env env;
 
