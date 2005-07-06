@@ -15,7 +15,7 @@
 #include <stddef.h>
 
 /**
- * @file host.h
+ * @file align.h
  */
 
 /** A size handled efficiently by malloc(), at least 1K.  */
