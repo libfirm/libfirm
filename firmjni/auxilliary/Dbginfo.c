@@ -57,7 +57,7 @@ void Java_firmjni_Dbginfo_dbgInit (JNIEnv *env_jni_, jclass cls_jni_) {
   my_env_jni_ = env_jni_;
   my_cls_jni_ = cls_jni_;
 
-  dbg_init(&my_dbg_info_merge_pair, &my_dbg_info_merge_sets);
+  dbg_init(&my_dbg_info_merge_pair, &my_dbg_info_merge_sets, NULL);
 }
 
 /** Return the dbg object index of the given node. A new dbg object is created, if needed. */
