@@ -165,10 +165,10 @@ void *set_next (set *set);
 
 /**
  * Breaks the iteration of a set. Must be called before
- * the next pset_first() call if the iteration was NOT
+ * the next set_first() call if the iteration was NOT
  * finished.
  *
- * @param pset  the pset
+ * @param set  the set
  */
 void set_break (set *set);
 

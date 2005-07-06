@@ -52,6 +52,7 @@ static int n_made_new_phis;
 /** Detect basic iteration variables.
  *
  * The variable ir represented by a subgraph as this:
+ * @verbatim
  *
  *       init
  *       /|\
@@ -61,19 +62,23 @@ static int n_made_new_phis;
  *   |    |
  *   |-->op
  *
+ * @endverbatim
  * Where op is a Add or Sub, and init is loop invariant.
- * @@@ So far we only accept Phi nodes with two predecessors.
+ *
+ * @todo
+ * So far we only accept Phi nodes with two predecessors.
  * We could expand this to Phi nodes where all preds are either
  * op or loop invariant.
  *
- * @param n     A phi node.
  * @param info  After call contains the induction variable information.
  */
-
 induct_var_info *is_induction_variable (induct_var_info *info) {
 
   int i;
-  int op_pred, Store_in_op, Store_in_phi, cmp_in_phi;
+  int op_pred, Store_in_op, Store_in_phi;
+  ir_node *cmp_pred_bl, *cond_succ_true, *cond_succ_false, *cmp_const;
+  ir_node *loop_head;
+  ir_node *cmp_const_block;
 
   info->c                = NULL;
   info->cmp              = NULL;
@@ -154,13 +159,6 @@ induct_var_info *is_induction_variable (induct_var_info *info) {
   op_pred      = get_irn_n_outs(info->op);
   Store_in_op  = 0;
   Store_in_phi = 0;
-  cmp_in_phi   = 0;
-  for (i = 0; i < op_pred; ++i){
-    ir_node *out  = get_irn_out(info->op, i);
-    ir_op *out_op = get_irn_op(out);
-    if (out_op == op_Store)
-      Store_in_op++;
-  }
 
   /* Information about loop of itervar_phi. */
   info->l_itervar_phi = get_irn_loop(get_nodes_block(info->itervar_phi));
@@ -169,10 +167,11 @@ induct_var_info *is_induction_variable (induct_var_info *info) {
      iter_var to reduce and marks if the iter_var have a Store
      successor or a successor out of loop.*/
   info->phi_pred = get_irn_n_outs(info->itervar_phi);
-  for (i = 0; i < info->phi_pred; ++i) {
+  loop_head = get_nodes_block(info->itervar_phi);
+
+  for (i = 0; i < info->phi_pred; i++) {
     ir_node *out = get_irn_out(info->itervar_phi, i);
     ir_op   *out_op = get_irn_op(out);
-
     if ((get_irn_loop(get_nodes_block(out)) != info->l_itervar_phi) &&
         ( get_Block_dom_depth(get_nodes_block(out))  >
           get_Block_dom_depth(get_nodes_block(info->itervar_phi))))
@@ -180,34 +179,79 @@ induct_var_info *is_induction_variable (induct_var_info *info) {
 
     if (out_op == op_Store)
       Store_in_phi++;
-    else if (out_op == op_Cmp){
-      info->cmp = out;
-      cmp_in_phi++;
+    else {
+      if (out_op == op_Cmp && !is_loop_invariant(out, loop_head)){
+	      cmp_pred_bl = get_irn_out(out, 0);
+	      cmp_pred_bl = get_irn_out(cmp_pred_bl, 0);
+	      cond_succ_true = get_irn_out(cmp_pred_bl, 1);
+	      cond_succ_false = get_irn_out(cmp_pred_bl, 0);
+	      if(is_loop_invariant(get_irn_out(cond_succ_false, 0), loop_head) ||
+	         is_loop_invariant(get_irn_out(cond_succ_true, 0), loop_head)){
+	        if (get_Cmp_left(out) == info->itervar_phi)
+	          cmp_const = get_Cmp_right(out);
+	        else
+	          cmp_const = get_Cmp_left(out);
+        } else
+	        continue;
+	      if (info->cmp == NULL) {
+	        info->cmp = out;
+	        info->cmp_const = cmp_const;
+        } else {
+	        info->cmp = NULL;
+	        return NULL;
+	      }
+      }
     }
   }
 
-  if((info->phi_pred == 3 && op_pred == 1 && Store_in_phi == 0 && cmp_in_phi == 1)  ||
+  for (i = 0; i < op_pred; ++i){
+    ir_node *out    = get_irn_out(info->op, i);
+    ir_op   *out_op = get_irn_op(out);
+
+    if (out_op == op_Store)
+      Store_in_op++;
+    else {
+      if (out_op == op_Cmp && !is_loop_invariant(out, loop_head)){
+	      cmp_pred_bl = get_irn_out(out, 0);
+	      cmp_pred_bl = get_irn_out(cmp_pred_bl, 0);
+	      cond_succ_true = get_irn_out(cmp_pred_bl, 1);
+	      cond_succ_false = get_irn_out(cmp_pred_bl, 0);
+	      if(is_loop_invariant(get_irn_out(cond_succ_false, 0), loop_head) ||
+	         is_loop_invariant(get_irn_out(cond_succ_true, 0), loop_head)){
+	        if (get_Cmp_left(out) == info->op)
+	          cmp_const = get_Cmp_right(out);
+	        else
+	          cmp_const = get_Cmp_left(out);
+        } else
+	        continue;
+	      if (info->cmp == NULL) {
+	        info->cmp = out;
+	        info->cmp_const = cmp_const;
+	        set_irn_link(info->cmp_const, (void *) 1);
+        } else {
+	        info->cmp = NULL;
+	        return NULL;
+	      }
+      }
+    }
+  }
+
+
+  if((info->phi_pred == 3 && op_pred == 1 && Store_in_phi == 0 && info->cmp != NULL)  ||
      (info->phi_pred == 2 && op_pred == 2 && Store_in_op == 0 && info->cmp != NULL )  ||
      (info->phi_pred == 1 && Store_in_op == 0))
     info->reducible = 1;
 
   // Search for loop invariant of Cmp.
-  if (info->cmp != NULL) {
-    ir_node *cmp_const_block;
-
-    if (get_Cmp_left(info->cmp) == info->itervar_phi)
-      info->cmp_const = get_Cmp_right(info->cmp);
-    else
-      info->cmp_const = get_Cmp_left(info->cmp);
-
-    cmp_const_block = get_nodes_block(info->cmp_const);
-    if (get_Block_dom_depth(get_nodes_block(info->init)) >=
-        get_Block_dom_depth(cmp_const_block))
-      info->cmp_init_block = get_nodes_block(info->init);
-    else
-      info->cmp_init_block = cmp_const_block;
-  }
-  return info;
+    if(info->cmp != NULL){
+      cmp_const_block = get_nodes_block(info->cmp_const);
+      if (get_Block_dom_depth(get_nodes_block(info->init)) >=
+	        get_Block_dom_depth(cmp_const_block))
+	      info->cmp_init_block = get_nodes_block(info->init);
+            else
+	      info->cmp_init_block = cmp_const_block;
+    }
+    return info;
 }
 
 /**
@@ -245,7 +289,7 @@ my_new_r_Sub (ir_graph *irg, ir_node *b, ir_node *op1, ir_node *op2) {
  */
 static int reduce(ir_node *reduce_var, induct_var_info *ivi)
 {
-  // Essential conditions for a reducable node.
+  /* Essential conditions for a reducible node. */
   if (get_irn_loop(get_nodes_block(reduce_var)) != ivi->l_itervar_phi)
     return 0;
 
@@ -253,7 +297,7 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
     ir_node *mul_init  = NULL;
     ir_node *mul_const = NULL;
 
-    // Search for constant and init of strong.
+    /* Search for constant and init of strong. */
     ir_node  *mul_right = get_Mul_right(reduce_var);
     ir_node  *mul_left  = get_Mul_left(reduce_var);
     ir_op *mul_right_op = get_irn_op(mul_right);
@@ -297,7 +341,7 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
     if (! ivi->reducible){
       int reduce_var_pred;
 
-      // Essential condition for the constant of strong.
+      /* Essential condition for the constant of strong. */
       if (get_Block_dom_depth(get_nodes_block(mul_const))  >=
           get_Block_dom_depth(get_nodes_block(ivi->itervar_phi)))
         return 0;
@@ -367,7 +411,7 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
                                       ivi->cmp_const, mul_const, get_irn_mode(mul_const));
         ivi->increment = new_r_Mul (current_ir_graph, block_init,
                                     ivi->increment, mul_const, get_irn_mode(mul_const));
-      }else {
+      } else {
         ivi->new_init = new_r_Mul (current_ir_graph, get_nodes_block(ivi->init),
                                    mul_const, ivi->new_init,
                                    get_irn_mode(mul_const));
@@ -382,7 +426,7 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
       return 1;
     }
 
-  }else if (get_irn_op (reduce_var) == op_Add){
+  } else if (get_irn_op (reduce_var) == op_Add) {
     ir_node *add_init  = NULL;
     ir_node *add_const = NULL;
 
