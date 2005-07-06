@@ -59,7 +59,7 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct);
 /**  Insert Casts so that class type casts conform exactly with the type hierarchy
  *   in given graph.
  *
- *   For more details see @normalize_irp_class_casts().
+ *   For more details see normalize_irp_class_casts().
  *
  *  This transformation requires that type information is computed. @see irtypeinfo.h.
  */
