@@ -1,9 +1,8 @@
 /**
- *
- * @file irsimpeltype.h
+ * @file tropt.c
  *
  * Project:     libFIRM
- * File name:   ir/opt/tropt.h
+ * File name:   ir/opt/tropt.c
  * Purpose:     Optimize the type representation.
  * Author:      Goetz Lindenmaier
  * Modified by:
@@ -13,8 +12,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
  * Perform optimizations of the type representation.
- *
- *
  */
 
 #include <alloca.h>
