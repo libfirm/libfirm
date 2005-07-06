@@ -688,6 +688,129 @@ static int dump_node_typeinfo(FILE *F, ir_node *n) {
   return bad;
 }
 
+typedef struct _pns_lookup {
+  long       nr;      /**< the proj number */
+  const char *name;   /**< the name of the Proj */
+} pns_lookup_t;
+
+typedef struct _proj_lookup {
+  opcode             code;      /**< the opcode of the Proj predecessor */
+  unsigned           num_data;  /**< number of data entries */
+  const pns_lookup_t *data;     /**< the data */
+} proj_lookup_t;
+
+#define ARR_SIZE(a)       (sizeof(a)/sizeof(a[0]))
+
+/** the lookup table for Proj(Start) names */
+static const pns_lookup_t start_lut[] = {
+#define X(a)    { pn_Start_##a, #a }
+  X(X_initial_exec),
+  X(P_frame_base),
+  X(P_globals),
+  X(T_args),
+  X(P_value_arg_base)
+#undef X
+};
+
+/** the lookup table for Proj(Cond) names */
+static const pns_lookup_t cond_lut[] = {
+#define X(a)    { pn_Cond_##a, #a }
+  X(false),
+  X(true)
+#undef X
+};
+
+/** the lookup table for Proj(Call) names */
+static const pns_lookup_t call_lut[] = {
+#define X(a)    { pn_Call_##a, #a }
+  X(M_regular),
+  X(T_result),
+  X(P_value_res_base),
+  X(X_except),
+  X(M_except)
+#undef X
+};
+
+/** the lookup table for Proj(Quot) names */
+static const pns_lookup_t quot_lut[] = {
+#define X(a)    { pn_Quot_##a, #a }
+  X(M),
+  X(X_except),
+  X(res)
+#undef X
+};
+
+/** the lookup table for Proj(DivMod) names */
+static const pns_lookup_t divmod_lut[] = {
+#define X(a)    { pn_DivMod_##a, #a }
+  X(M),
+  X(X_except),
+  X(res_div),
+  X(res_mod)
+#undef X
+};
+
+/** the lookup table for Proj(Div) names */
+static const pns_lookup_t div_lut[] = {
+#define X(a)    { pn_Div_##a, #a }
+  X(M),
+  X(X_except),
+  X(res)
+#undef X
+};
+
+/** the lookup table for Proj(Mod) names */
+static const pns_lookup_t mod_lut[] = {
+#define X(a)    { pn_Mod_##a, #a }
+  X(M),
+  X(X_except),
+  X(res)
+#undef X
+};
+
+/** the lookup table for Proj(Load) names */
+static const pns_lookup_t load_lut[] = {
+#define X(a)    { pn_Load_##a, #a }
+  X(M),
+  X(X_except),
+  X(res)
+#undef X
+};
+
+/** the lookup table for Proj(Store) names */
+static const pns_lookup_t store_lut[] = {
+#define X(a)    { pn_Store_##a, #a }
+  X(M),
+  X(X_except)
+#undef X
+};
+
+/** the lookup table for Proj(Alloc) names */
+static const pns_lookup_t alloc_lut[] = {
+#define X(a)    { pn_Alloc_##a, #a }
+  X(M),
+  X(X_except),
+  X(res)
+#undef X
+};
+
+
+/** the Proj lookup table */
+static const proj_lookup_t proj_lut[] = {
+#define E(a)  ARR_SIZE(a), a
+  { iro_Start,   E(start_lut) },
+  { iro_Cond,    E(cond_lut) },
+  { iro_Call,    E(call_lut) },
+  { iro_Quot,    E(quot_lut) },
+  { iro_DivMod,  E(divmod_lut) },
+  { iro_Div,     E(div_lut) },
+  { iro_Mod,     E(mod_lut) },
+  { iro_Load,    E(load_lut) },
+  { iro_Store,   E(store_lut) },
+  { iro_Alloc,   E(alloc_lut) }
+#undef E
+};
+
 /**
  * Dump additional node attributes of some nodes to a file F.
  */
@@ -696,6 +819,8 @@ dump_node_nodeattr(FILE *F, ir_node *n)
 {
   int bad = 0;
   ir_node *pred;
+  opcode code;
+  long proj_nr;
 
   switch (get_irn_opcode(n)) {
   case iro_Start:
@@ -703,30 +828,45 @@ dump_node_nodeattr(FILE *F, ir_node *n)
       fprintf (F, "%s ", get_ent_dump_name(get_irg_entity(current_ir_graph)));
     }
     break;
-  case iro_Proj:
-    pred = get_Proj_pred(n);
 
-    if (get_irn_opcode(pred) == iro_Cmp)
+  case iro_Proj:
+    pred    = get_Proj_pred(n);
+    proj_nr = get_Proj_proj(n);
+handle_lut:
+    code    = get_irn_opcode(pred);
+
+    if (code == iro_Cmp)
       fprintf (F, "%s ", get_pnc_string(get_Proj_proj(n)));
-    else if (get_irn_opcode(pred) == iro_Start) {
-      switch (get_Proj_proj(n)) {
-      case pn_Start_P_frame_base:
-        fprintf (F, "FrameBase "); break;
-      case pn_Start_P_globals:
-        fprintf (F, "GlobalBase "); break;
-      case pn_Start_P_value_arg_base:
-        fprintf (F, "ValueBase "); break;
-      default:
-        fprintf (F, "%ld ", get_Proj_proj(n));
+    else if (code == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
+      fprintf (F, "Arg %ld ", proj_nr);
+    else {
+      unsigned i, j, f = 0;
+
+      for (i = 0; i < ARR_SIZE(proj_lut); ++i) {
+        if (code == proj_lut[i].code) {
+          for (j = 0; j < proj_lut[i].num_data; ++j) {
+            if (proj_nr == proj_lut[i].data[j].nr) {
+              fprintf (F, "%s ", proj_lut[i].data[j].name);
+              f = 1;
+              break;
+            }
+          }
+          break;
+        }
       }
+      if (! f)
+        fprintf (F, "%ld ", proj_nr);
     }
-    else if (get_irn_opcode(pred) == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
-      fprintf (F, "Arg %ld ", get_Proj_proj(n));
-    else
-      fprintf (F, "%ld ", get_Proj_proj(n));
     break;
   case iro_Filter:
-    fprintf (F, "%ld ", get_Filter_proj(n));
+    if (! get_interprocedural_view()) {
+      /* it's a Proj' */
+      pred    = get_Filter_pred(n);
+      proj_nr = get_Filter_proj(n);
+      goto handle_lut;
+    }
+    else
+      fprintf (F, "%ld ", proj_nr);
     break;
   case iro_Sel:
     fprintf (F, "%s ", get_ent_dump_name(get_Sel_entity(n)));
