@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -78,7 +79,7 @@ node: {title: "n31" label: "Start 31"  info1: "Start 31
 "
 color: blue}
 edge: { sourcename: "n31" targetname: "n30" class:2  priority:50 linestyle:dotted}
-node: {title: "n34" label: "ProjX 0 34"  info1: "Proj 34
+node: {title: "n34" label: "ProjX X_initial_exec 34"  info1: "Proj 34
   mode:    X
   visited: 18
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -87,6 +88,7 @@ node: {title: "n34" label: "ProjX 0 34"  info1: "Proj 34
     -1:    Block 30
      0:    Start 31
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
@@ -114,6 +116,7 @@ node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
     -1:    Block 30
      0:    Start 31
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
@@ -149,7 +152,7 @@ node: {title: "n45n43" label: "SymC PRIMA size 43"  info1: "SymC PRIMA size 43
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n45" targetname: "n45n43" label: "1" class:16 priority:10}
 edge: { sourcename: "n45" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n48" label: "ProjP 2 48"  info1: "Proj 48
+node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   mode:    P
   visited: 18
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -158,11 +161,12 @@ node: {title: "n48" label: "ProjP 2 48"  info1: "Proj 48
     -1:    Block 40
      0:    Alloc 45
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
 edge: { sourcename: "n48" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n47" label: "ProjM 0 47"  info1: "Proj 47
+node: {title: "n47" label: "ProjM M 47"  info1: "Proj 47
   mode:    M
   visited: 18
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -171,6 +175,7 @@ node: {title: "n47" label: "ProjM 0 47"  info1: "Proj 47
     -1:    Block 40
      0:    Alloc 45
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n47" targetname: "n45" label: "0" class:17 priority:10 color:blue}
@@ -227,7 +232,7 @@ edge: {sourcename: "n50" targetname: "n49" label: "1" class:1  priority:50}
 edge: {sourcename: "n50" targetname: "n48" label: "2" class:1  priority:50}
 edge: {sourcename: "n50" targetname: "n50n41" label: "3" class:16 priority:10}
 edge: { sourcename: "n50" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n52" label: "ProjM 0 52"  info1: "Proj 52
+node: {title: "n52" label: "ProjM M_regular 52"  info1: "Proj 52
   mode:    M
   visited: 18
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -236,6 +241,7 @@ node: {title: "n52" label: "ProjM 0 52"  info1: "Proj 52
     -1:    Block 40
      0:    Call 50
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color:blue}
@@ -293,7 +299,7 @@ edge: {sourcename: "n54" targetname: "n53" label: "1" class:1  priority:50}
 edge: {sourcename: "n54" targetname: "n48" label: "2" class:1  priority:50}
 edge: {sourcename: "n54" targetname: "n54n42" label: "3" class:16 priority:10}
 edge: { sourcename: "n54" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n57" label: "ProjT 2 57"  info1: "Proj 57
+node: {title: "n57" label: "ProjT T_result 57"  info1: "Proj 57
   mode:    T
   visited: 18
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -302,6 +308,7 @@ node: {title: "n57" label: "ProjT 2 57"  info1: "Proj 57
     -1:    Block 40
      0:    Call 54
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n57" targetname: "n54" label: "0" class:1  priority:50}
@@ -315,11 +322,12 @@ node: {title: "n58" label: "ProjIs 0 58"  info1: "Proj 58
     -1:    Block 40
      0:    Proj 57
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n58" targetname: "n57" label: "0" class:1  priority:50}
 edge: { sourcename: "n58" targetname: "n40" class:2  priority:50 linestyle:dotted}
-node: {title: "n56" label: "ProjM 0 56"  info1: "Proj 56
+node: {title: "n56" label: "ProjM M_regular 56"  info1: "Proj 56
   mode:    M
   visited: 18
   irg:     OO_PROGRAM_EXAMPLE_main
@@ -328,6 +336,7 @@ node: {title: "n56" label: "ProjM 0 56"  info1: "Proj 56
     -1:    Block 40
      0:    Call 54
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}

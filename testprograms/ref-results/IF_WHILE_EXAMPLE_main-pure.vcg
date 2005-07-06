@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -64,7 +65,7 @@ node: {title: "n23" label: "Start 23"  info1: "Start 23
 "
 color: blue}
 edge: { sourcename: "n23" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
+node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -73,6 +74,7 @@ node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
@@ -127,6 +129,7 @@ node: {title: "n42" label: "Projb Eq 42"  info1: "Proj 42
     -1:    Block 38
      0:    Cmp 41
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n42" targetname: "n41" label: "0" class:1  priority:50}
@@ -146,7 +149,7 @@ node: {title: "n43" label: "Cond 43"  info1: "Cond 43
 }
 edge: {sourcename: "n43" targetname: "n42" label: "0" class:1  priority:50}
 edge: { sourcename: "n43" targetname: "n38" class:2  priority:50 linestyle:dotted}
-node: {title: "n45" label: "ProjX 1 45"  info1: "Proj 45
+node: {title: "n45" label: "ProjX true 45"  info1: "Proj 45
   mode:    X
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -155,6 +158,7 @@ node: {title: "n45" label: "ProjX 1 45"  info1: "Proj 45
     -1:    Block 38
      0:    Cond 43
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n45" targetname: "n43" label: "0" class:13 priority:60 color:red}
@@ -225,7 +229,7 @@ node: {title: "n38" label: "Block 38"  info1: "Block 38
 color: lightyellow}
 edge: {sourcename: "n38" targetname: "n35" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n38" targetname: "n47" label: "1" class:13 priority:60 color:red}
-node: {title: "n44" label: "ProjX 0 44"  info1: "Proj 44
+node: {title: "n44" label: "ProjX false 44"  info1: "Proj 44
   mode:    X
   visited: 17
   irg:     IF_WHILE_EXAMPLE_main
@@ -234,6 +238,7 @@ node: {title: "n44" label: "ProjX 0 44"  info1: "Proj 44
     -1:    Block 38
      0:    Cond 43
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n44" targetname: "n43" label: "0" class:13 priority:60 color:red}
@@ -332,6 +337,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}

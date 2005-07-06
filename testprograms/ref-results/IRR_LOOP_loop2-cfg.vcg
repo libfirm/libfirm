@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0

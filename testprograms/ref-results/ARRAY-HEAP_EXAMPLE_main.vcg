@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -85,7 +86,7 @@ node: {title: "n50" label: "Return 50"  info1: "Return 50
 }
 edge: {sourcename: "n50" targetname: "n48" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n50" targetname: "n49" label: "1" class:1  priority:50}
-node: {title: "n48" label: "ProjM 0 48"  info1: "Proj 48
+node: {title: "n48" label: "ProjM M 48"  info1: "Proj 48
   mode:    M
   visited: 11
   irg:     ARRAY-HEAP_EXAMPLE_main
@@ -94,10 +95,11 @@ node: {title: "n48" label: "ProjM 0 48"  info1: "Proj 48
     -1:    Block 37
      0:    Load[Is] 46
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n48" targetname: "n46" label: "0" class:17 priority:10 color:blue}
-node: {title: "n49" label: "ProjIs 2 49"  info1: "Proj 49
+node: {title: "n49" label: "ProjIs res 49"  info1: "Proj 49
   mode:    Is
   visited: 11
   irg:     ARRAY-HEAP_EXAMPLE_main
@@ -106,6 +108,7 @@ node: {title: "n49" label: "ProjIs 2 49"  info1: "Proj 49
     -1:    Block 37
      0:    Load[Is] 46
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n49" targetname: "n46" label: "0" class:1  priority:50}
@@ -145,7 +148,7 @@ node: {title: "n45" label: "Sel a_elem_ent 45"  info1: "Sel 45
 edge: {sourcename: "n45" targetname: "n42" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n45" targetname: "n43" label: "1" class:1  priority:50}
 edge: {sourcename: "n45" targetname: "n44" label: "2" class:16 priority:10}
-node: {title: "n42" label: "ProjM 0 42"  info1: "Proj 42
+node: {title: "n42" label: "ProjM M 42"  info1: "Proj 42
   mode:    M
   visited: 11
   irg:     ARRAY-HEAP_EXAMPLE_main
@@ -154,10 +157,11 @@ node: {title: "n42" label: "ProjM 0 42"  info1: "Proj 42
     -1:    Block 37
      0:    Alloc 40
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n42" targetname: "n40" label: "0" class:17 priority:10 color:blue}
-node: {title: "n43" label: "ProjP 2 43"  info1: "Proj 43
+node: {title: "n43" label: "ProjP res 43"  info1: "Proj 43
   mode:    P
   visited: 11
   irg:     ARRAY-HEAP_EXAMPLE_main
@@ -166,6 +170,7 @@ node: {title: "n43" label: "ProjP 2 43"  info1: "Proj 43
     -1:    Block 37
      0:    Alloc 40
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n43" targetname: "n40" label: "0" class:1  priority:50}
@@ -199,6 +204,7 @@ node: {title: "n34" label: "ProjM 1 34"  info1: "Proj 34
     -1:    Block 27
      0:    Start 28
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n34" targetname: "n28" label: "0" class:17 priority:10 color:blue}
@@ -224,7 +230,7 @@ node: {title: "n44" label: "0x3Iu 44"  info1: "0x3 44
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n31" label: "ProjX 0 31"  info1: "Proj 31
+node: {title: "n31" label: "ProjX X_initial_exec 31"  info1: "Proj 31
   mode:    X
   visited: 11
   irg:     ARRAY-HEAP_EXAMPLE_main
@@ -233,6 +239,7 @@ node: {title: "n31" label: "ProjX 0 31"  info1: "Proj 31
     -1:    Block 27
      0:    Start 28
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n31" targetname: "n28" label: "0" class:13 priority:60 color:red}

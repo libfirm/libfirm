@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -78,7 +79,7 @@ node: {title: "n23" label: "Start 23"  info1: "Start 23
 "
 color: blue}
 edge: { sourcename: "n23" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
+node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
   visited: 11
   irg:     GLOBAL_VAR_main
@@ -87,6 +88,7 @@ node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
@@ -117,7 +119,7 @@ node: {title: "n35" label: "0x2Is 35"  info1: "0x2 35
 "
 color: yellow}
 edge: { sourcename: "n35" targetname: "n22" class:2  priority:50 linestyle:dotted}
-node: {title: "n28" label: "ProjP 3 28"  info1: "Proj 28
+node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   mode:    P
   visited: 11
   irg:     GLOBAL_VAR_main
@@ -126,6 +128,7 @@ node: {title: "n28" label: "ProjP 3 28"  info1: "Proj 28
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 3
 "
 color: yellow}
 edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
@@ -139,6 +142,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
@@ -180,7 +184,7 @@ edge: {sourcename: "n36" targetname: "n29" label: "0" class:17 priority:10 color
 edge: {sourcename: "n36" targetname: "n34" label: "1" class:1  priority:50}
 edge: {sourcename: "n36" targetname: "n35" label: "2" class:16 priority:10}
 edge: { sourcename: "n36" targetname: "n32" class:2  priority:50 linestyle:dotted}
-node: {title: "n38" label: "ProjM 0 38"  info1: "Proj 38
+node: {title: "n38" label: "ProjM M 38"  info1: "Proj 38
   mode:    M
   visited: 11
   irg:     GLOBAL_VAR_main
@@ -189,6 +193,7 @@ node: {title: "n38" label: "ProjM 0 38"  info1: "Proj 38
     -1:    Block 32
      0:    Store 36
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:17 priority:10 color:blue}

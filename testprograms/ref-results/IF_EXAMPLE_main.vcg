@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -133,7 +134,7 @@ node: {title: "n44" label: "Jmp 44"  info1: "Jmp 44
 
 graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
 edge: {sourcename: "n31" targetname: "n25" label: "0" class:13 priority:60 color:red}
-node: {title: "n37" label: "ProjX 0 37"  info1: "Proj 37
+node: {title: "n37" label: "ProjX false 37"  info1: "Proj 37
   mode:    X
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -142,10 +143,11 @@ node: {title: "n37" label: "ProjX 0 37"  info1: "Proj 37
     -1:    Block 31
      0:    Cond 36
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n37" targetname: "n36" label: "0" class:13 priority:60 color:red}
-node: {title: "n38" label: "ProjX 1 38"  info1: "Proj 38
+node: {title: "n38" label: "ProjX true 38"  info1: "Proj 38
   mode:    X
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -154,6 +156,7 @@ node: {title: "n38" label: "ProjX 1 38"  info1: "Proj 38
     -1:    Block 31
      0:    Cond 36
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:13 priority:60 color:red}
@@ -180,6 +183,7 @@ node: {title: "n35" label: "Projb Eq 35"  info1: "Proj 35
     -1:    Block 31
      0:    Cmp 34
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n35" targetname: "n34" label: "0" class:1  priority:50}
@@ -197,7 +201,7 @@ node: {title: "n34" label: "Cmp 34"  info1: "Cmp 34
 }
 edge: {sourcename: "n34" targetname: "n32" label: "0" class:1  priority:50}
 edge: {sourcename: "n34" targetname: "n33" label: "1" class:16 priority:10}
-node: {title: "n32" label: "ProjIs 0 32"  info1: "Proj 32
+node: {title: "n32" label: "ProjIs Arg 0 32"  info1: "Proj 32
   mode:    Is
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -206,6 +210,7 @@ node: {title: "n32" label: "ProjIs 0 32"  info1: "Proj 32
     -1:    Block 31
      0:    Proj 29
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n32" targetname: "n29" label: "0" class:16 priority:10}
@@ -222,6 +227,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
     -1:    Block 21
      0:    Start 22
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
@@ -236,7 +242,7 @@ node: {title: "n40" label: "0x3Is 40"  info1: "0x3 40
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n29" label: "ProjT 4 29"  info1: "Proj 29
+node: {title: "n29" label: "ProjT T_args 29"  info1: "Proj 29
   mode:    T
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -245,6 +251,7 @@ node: {title: "n29" label: "ProjT 4 29"  info1: "Proj 29
     -1:    Block 21
      0:    Start 22
   Private Attributes:
+  proj nr: 4
 "
 color: yellow}
 edge: {sourcename: "n29" targetname: "n22" label: "0" class:1  priority:50}
@@ -259,7 +266,7 @@ node: {title: "n33" label: "0x2Is 33"  info1: "0x2 33
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
+node: {title: "n25" label: "ProjX X_initial_exec 25"  info1: "Proj 25
   mode:    X
   visited: 8
   irg:     IF_EXAMPLE_main
@@ -268,6 +275,7 @@ node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
     -1:    Block 21
      0:    Start 22
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}

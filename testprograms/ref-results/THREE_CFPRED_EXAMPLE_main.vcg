@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -150,7 +151,7 @@ node: {title: "n58" label: "Jmp 58"  info1: "Jmp 58
 
 graph: { title: "n45"  label: "Block 45" status:clustered color:yellow
 edge: {sourcename: "n45" targetname: "n39" label: "0" class:13 priority:60 color:red}
-node: {title: "n53" label: "ProjX 0 53"  info1: "Proj 53
+node: {title: "n53" label: "ProjX false 53"  info1: "Proj 53
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -159,10 +160,11 @@ node: {title: "n53" label: "ProjX 0 53"  info1: "Proj 53
     -1:    Block 45
      0:    Cond 52
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n53" targetname: "n52" label: "0" class:13 priority:60 color:red}
-node: {title: "n54" label: "ProjX 1 54"  info1: "Proj 54
+node: {title: "n54" label: "ProjX true 54"  info1: "Proj 54
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -171,6 +173,7 @@ node: {title: "n54" label: "ProjX 1 54"  info1: "Proj 54
     -1:    Block 45
      0:    Cond 52
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n54" targetname: "n52" label: "0" class:13 priority:60 color:red}
@@ -197,6 +200,7 @@ node: {title: "n50" label: "Projb Eq 50"  info1: "Proj 50
     -1:    Block 45
      0:    Cmp 51
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n50" targetname: "n51" label: "0" class:1  priority:50}
@@ -218,7 +222,7 @@ edge: {sourcename: "n51" targetname: "n46" label: "1" class:16 priority:10}
 
 graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
 edge: {sourcename: "n31" targetname: "n25" label: "0" class:13 priority:60 color:red}
-node: {title: "n40" label: "ProjX 1 40"  info1: "Proj 40
+node: {title: "n40" label: "ProjX true 40"  info1: "Proj 40
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -227,10 +231,11 @@ node: {title: "n40" label: "ProjX 1 40"  info1: "Proj 40
     -1:    Block 31
      0:    Cond 37
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n40" targetname: "n37" label: "0" class:13 priority:60 color:red}
-node: {title: "n39" label: "ProjX 0 39"  info1: "Proj 39
+node: {title: "n39" label: "ProjX false 39"  info1: "Proj 39
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -239,6 +244,7 @@ node: {title: "n39" label: "ProjX 0 39"  info1: "Proj 39
     -1:    Block 31
      0:    Cond 37
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n39" targetname: "n37" label: "0" class:13 priority:60 color:red}
@@ -265,6 +271,7 @@ node: {title: "n35" label: "Projb Eq 35"  info1: "Proj 35
     -1:    Block 31
      0:    Cmp 36
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n35" targetname: "n36" label: "0" class:1  priority:50}
@@ -282,7 +289,7 @@ node: {title: "n36" label: "Cmp 36"  info1: "Cmp 36
 }
 edge: {sourcename: "n36" targetname: "n33" label: "0" class:1  priority:50}
 edge: {sourcename: "n36" targetname: "n32" label: "1" class:16 priority:10}
-node: {title: "n33" label: "ProjIs 0 33"  info1: "Proj 33
+node: {title: "n33" label: "ProjIs Arg 0 33"  info1: "Proj 33
   mode:    Is
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -291,6 +298,7 @@ node: {title: "n33" label: "ProjIs 0 33"  info1: "Proj 33
     -1:    Block 31
      0:    Proj 29
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n33" targetname: "n29" label: "0" class:16 priority:10}
@@ -307,6 +315,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
     -1:    Block 21
      0:    Start 22
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
@@ -343,7 +352,7 @@ node: {title: "n46" label: "0x3Is 46"  info1: "0x3 46
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n29" label: "ProjT 4 29"  info1: "Proj 29
+node: {title: "n29" label: "ProjT T_args 29"  info1: "Proj 29
   mode:    T
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -352,6 +361,7 @@ node: {title: "n29" label: "ProjT 4 29"  info1: "Proj 29
     -1:    Block 21
      0:    Start 22
   Private Attributes:
+  proj nr: 4
 "
 color: yellow}
 edge: {sourcename: "n29" targetname: "n22" label: "0" class:1  priority:50}
@@ -366,7 +376,7 @@ node: {title: "n32" label: "0x1Is 32"  info1: "0x1 32
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
+node: {title: "n25" label: "ProjX X_initial_exec 25"  info1: "Proj 25
   mode:    X
   visited: 11
   irg:     THREE_CFPRED_EXAMPLE_main
@@ -375,6 +385,7 @@ node: {title: "n25" label: "ProjX 0 25"  info1: "Proj 25
     -1:    Block 21
      0:    Start 22
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}

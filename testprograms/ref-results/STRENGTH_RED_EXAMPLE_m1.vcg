@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -120,7 +121,7 @@ node: {title: "n93" label: "PhiM 93"  info1: "Phi 93
 color: green}
 edge: {sourcename: "n93" targetname: "n43" label: "0" class:17 priority:10 color:blue}
 backedge: {sourcename: "n93" targetname: "n85" label: "1" linestyle:dashed class:17 priority:10 color:blue}
-node: {title: "n57" label: "ProjX 0 57"  info1: "Proj 57
+node: {title: "n57" label: "ProjX false 57"  info1: "Proj 57
   mode:    X
   visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m1
@@ -129,11 +130,12 @@ node: {title: "n57" label: "ProjX 0 57"  info1: "Proj 57
     -1:    Block 49
      0:    Cond 56
   Private Attributes:
+  proj nr: 0
   in loop 534 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n57" targetname: "n56" label: "0" class:13 priority:60 color:red}
-node: {title: "n58" label: "ProjX 1 58"  info1: "Proj 58
+node: {title: "n58" label: "ProjX true 58"  info1: "Proj 58
   mode:    X
   visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m1
@@ -142,6 +144,7 @@ node: {title: "n58" label: "ProjX 1 58"  info1: "Proj 58
     -1:    Block 49
      0:    Cond 56
   Private Attributes:
+  proj nr: 1
   in loop 536 with depth 2
 "
 color: yellow}
@@ -170,6 +173,7 @@ node: {title: "n53" label: "Projb Le 53"  info1: "Proj 53
     -1:    Block 49
      0:    Cmp 55
   Private Attributes:
+  proj nr: 3
   in loop 536 with depth 2
 "
 color: yellow}
@@ -248,7 +252,7 @@ node: {title: "n48" label: "Jmp 48"  info1: "Jmp 48
 
 graph: { title: "n59"  label: "Block 59" status:clustered color:yellow
 edge: {sourcename: "n59" targetname: "n58" label: "0" class:13 priority:60 color:red}
-node: {title: "n85" label: "ProjM 0 85"  info1: "Proj 85
+node: {title: "n85" label: "ProjM M 85"  info1: "Proj 85
   mode:    M
   visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m1
@@ -257,6 +261,7 @@ node: {title: "n85" label: "ProjM 0 85"  info1: "Proj 85
     -1:    Block 59
      0:    Store 83
   Private Attributes:
+  proj nr: 0
   in loop 537 with depth 1
 "
 color: yellow}
@@ -292,7 +297,7 @@ color: yellow}
 edge: {sourcename: "n83" targetname: "n78" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n83" targetname: "n67" label: "1" class:1  priority:50}
 edge: {sourcename: "n83" targetname: "n83n82" label: "2" class:16 priority:10}
-node: {title: "n78" label: "ProjM 0 78"  info1: "Proj 78
+node: {title: "n78" label: "ProjM M 78"  info1: "Proj 78
   mode:    M
   visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m1
@@ -301,6 +306,7 @@ node: {title: "n78" label: "ProjM 0 78"  info1: "Proj 78
     -1:    Block 59
      0:    Store 76
   Private Attributes:
+  proj nr: 0
   in loop 537 with depth 1
 "
 color: yellow}
@@ -336,7 +342,7 @@ color: yellow}
 edge: {sourcename: "n76" targetname: "n74" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n76" targetname: "n69" label: "1" class:1  priority:50}
 edge: {sourcename: "n76" targetname: "n76n75" label: "2" class:16 priority:10}
-node: {title: "n74" label: "ProjM 0 74"  info1: "Proj 74
+node: {title: "n74" label: "ProjM M 74"  info1: "Proj 74
   mode:    M
   visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m1
@@ -345,6 +351,7 @@ node: {title: "n74" label: "ProjM 0 74"  info1: "Proj 74
     -1:    Block 59
      0:    Store 72
   Private Attributes:
+  proj nr: 0
   in loop 537 with depth 1
 "
 color: yellow}
@@ -536,7 +543,7 @@ edge: {sourcename: "n86" targetname: "n94" label: "1" class:16 priority:10}
 
 graph: { title: "n105"  label: "Block 105" status:clustered color:yellow
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:13 priority:60 color:red}
-node: {title: "n114" label: "ProjM 0 114"  info1: "Proj 114
+node: {title: "n114" label: "ProjM M 114"  info1: "Proj 114
   mode:    M
   visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m1
@@ -545,6 +552,7 @@ node: {title: "n114" label: "ProjM 0 114"  info1: "Proj 114
     -1:    Block 105
      0:    Store 112
   Private Attributes:
+  proj nr: 0
   in loop 540 with depth 1
 "
 color: yellow}
@@ -718,11 +726,12 @@ node: {title: "n43" label: "ProjM 1 43"  info1: "Proj 43
     -1:    Block 36
      0:    Start 37
   Private Attributes:
+  proj nr: 1
   in loop 534 with depth 0
 "
 color: yellow}
 edge: {sourcename: "n43" targetname: "n37" label: "0" class:17 priority:10 color:blue}
-node: {title: "n40" label: "ProjX 0 40"  info1: "Proj 40
+node: {title: "n40" label: "ProjX X_initial_exec 40"  info1: "Proj 40
   mode:    X
   visited: 26
   irg:     STRENGTH_RED_EXAMPLE_m1
@@ -731,6 +740,7 @@ node: {title: "n40" label: "ProjX 0 40"  info1: "Proj 40
     -1:    Block 36
      0:    Start 37
   Private Attributes:
+  proj nr: 0
   in loop 534 with depth 0
 "
 color: yellow}

@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -86,7 +87,7 @@ node: {title: "n78" label: "Return 78"  info1: "Return 78
 }
 edge: {sourcename: "n78" targetname: "n77" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n78" targetname: "n76" label: "1" class:1  priority:50}
-node: {title: "n77" label: "ProjM 0 77"  info1: "Proj 77
+node: {title: "n77" label: "ProjM M 77"  info1: "Proj 77
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -95,10 +96,11 @@ node: {title: "n77" label: "ProjM 0 77"  info1: "Proj 77
     -1:    Block 72
      0:    Load[Iu] 74
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n77" targetname: "n74" label: "0" class:17 priority:10 color:blue}
-node: {title: "n76" label: "ProjIu 2 76"  info1: "Proj 76
+node: {title: "n76" label: "ProjIu res 76"  info1: "Proj 76
   mode:    Iu
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -107,6 +109,7 @@ node: {title: "n76" label: "ProjIu 2 76"  info1: "Proj 76
     -1:    Block 72
      0:    Load[Iu] 74
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n76" targetname: "n74" label: "0" class:1  priority:50}
@@ -132,7 +135,7 @@ edge: {sourcename: "n74" targetname: "n35" label: "1" class:16 priority:10}
 graph: { title: "n48"  label: "Block 48" status:clustered color:yellow
 edge: {sourcename: "n48" targetname: "n46" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n48" targetname: "n69" label: "1" class:13 priority:60 color:red}
-node: {title: "n70" label: "ProjX 1 70"  info1: "Proj 70
+node: {title: "n70" label: "ProjX true 70"  info1: "Proj 70
   mode:    X
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -141,10 +144,11 @@ node: {title: "n70" label: "ProjX 1 70"  info1: "Proj 70
     -1:    Block 48
      0:    Cond 68
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n70" targetname: "n68" label: "0" class:13 priority:60 color:red}
-node: {title: "n69" label: "ProjX 0 69"  info1: "Proj 69
+node: {title: "n69" label: "ProjX false 69"  info1: "Proj 69
   mode:    X
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -153,6 +157,7 @@ node: {title: "n69" label: "ProjX 0 69"  info1: "Proj 69
     -1:    Block 48
      0:    Cond 68
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n69" targetname: "n68" label: "0" class:13 priority:60 color:red}
@@ -179,6 +184,7 @@ node: {title: "n66" label: "Projb Lt 66"  info1: "Proj 66
     -1:    Block 48
      0:    Cmp 67
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n66" targetname: "n67" label: "0" class:1  priority:50}
@@ -196,7 +202,7 @@ node: {title: "n67" label: "Cmp 67"  info1: "Cmp 67
 }
 edge: {sourcename: "n67" targetname: "n53" label: "0" class:1  priority:50}
 edge: {sourcename: "n67" targetname: "n38" label: "1" class:16 priority:10}
-node: {title: "n53" label: "ProjIu 2 53"  info1: "Proj 53
+node: {title: "n53" label: "ProjIu res 53"  info1: "Proj 53
   mode:    Iu
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -205,6 +211,7 @@ node: {title: "n53" label: "ProjIu 2 53"  info1: "Proj 53
     -1:    Block 48
      0:    Load[Iu] 50
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n53" targetname: "n50" label: "0" class:1  priority:50}
@@ -240,7 +247,7 @@ node: {title: "n71" label: "PhiM 71"  info1: "Phi 71
 color: green}
 edge: {sourcename: "n71" targetname: "n45" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n71" targetname: "n63" label: "1" class:17 priority:10 color:blue}
-node: {title: "n63" label: "ProjM 0 63"  info1: "Proj 63
+node: {title: "n63" label: "ProjM M 63"  info1: "Proj 63
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -249,6 +256,7 @@ node: {title: "n63" label: "ProjM 0 63"  info1: "Proj 63
     -1:    Block 48
      0:    Store 61
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n63" targetname: "n61" label: "0" class:17 priority:10 color:blue}
@@ -270,7 +278,7 @@ node: {title: "n61" label: "Store 61"  info1: "Store 61
 edge: {sourcename: "n61" targetname: "n60" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n61" targetname: "n37" label: "1" class:16 priority:10}
 edge: {sourcename: "n61" targetname: "n53" label: "2" class:1  priority:50}
-node: {title: "n60" label: "ProjM 0 60"  info1: "Proj 60
+node: {title: "n60" label: "ProjM M 60"  info1: "Proj 60
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -279,6 +287,7 @@ node: {title: "n60" label: "ProjM 0 60"  info1: "Proj 60
     -1:    Block 48
      0:    Store 58
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n60" targetname: "n58" label: "0" class:17 priority:10 color:blue}
@@ -300,7 +309,7 @@ node: {title: "n58" label: "Store 58"  info1: "Store 58
 edge: {sourcename: "n58" targetname: "n56" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n58" targetname: "n35" label: "1" class:16 priority:10}
 edge: {sourcename: "n58" targetname: "n57" label: "2" class:1  priority:50}
-node: {title: "n56" label: "ProjM 0 56"  info1: "Proj 56
+node: {title: "n56" label: "ProjM M 56"  info1: "Proj 56
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -309,10 +318,11 @@ node: {title: "n56" label: "ProjM 0 56"  info1: "Proj 56
     -1:    Block 48
      0:    Load[Iu] 54
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}
-node: {title: "n57" label: "ProjIu 2 57"  info1: "Proj 57
+node: {title: "n57" label: "ProjIu res 57"  info1: "Proj 57
   mode:    Iu
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -321,6 +331,7 @@ node: {title: "n57" label: "ProjIu 2 57"  info1: "Proj 57
     -1:    Block 48
      0:    Load[Iu] 54
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n57" targetname: "n54" label: "0" class:1  priority:50}
@@ -341,7 +352,7 @@ node: {title: "n54" label: "Load[Iu] 54"  info1: "Load[Iu] 54
 }
 edge: {sourcename: "n54" targetname: "n52" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n54" targetname: "n37" label: "1" class:16 priority:10}
-node: {title: "n52" label: "ProjM 0 52"  info1: "Proj 52
+node: {title: "n52" label: "ProjM M 52"  info1: "Proj 52
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -350,6 +361,7 @@ node: {title: "n52" label: "ProjM 0 52"  info1: "Proj 52
     -1:    Block 48
      0:    Load[Iu] 50
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color:blue}
@@ -367,7 +379,7 @@ node: {title: "n46" label: "Jmp 46"  info1: "Jmp 46
   Private Attributes:
 "
 }
-node: {title: "n45" label: "ProjM 0 45"  info1: "Proj 45
+node: {title: "n45" label: "ProjM M 45"  info1: "Proj 45
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -376,6 +388,7 @@ node: {title: "n45" label: "ProjM 0 45"  info1: "Proj 45
     -1:    Block 32
      0:    Store 43
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n45" targetname: "n43" label: "0" class:17 priority:10 color:blue}
@@ -397,7 +410,7 @@ node: {title: "n43" label: "Store 43"  info1: "Store 43
 edge: {sourcename: "n43" targetname: "n41" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n43" targetname: "n37" label: "1" class:1  priority:50}
 edge: {sourcename: "n43" targetname: "n42" label: "2" class:16 priority:10}
-node: {title: "n41" label: "ProjM 0 41"  info1: "Proj 41
+node: {title: "n41" label: "ProjM M 41"  info1: "Proj 41
   mode:    M
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -406,6 +419,7 @@ node: {title: "n41" label: "ProjM 0 41"  info1: "Proj 41
     -1:    Block 32
      0:    Store 39
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n41" targetname: "n39" label: "0" class:17 priority:10 color:blue}
@@ -485,10 +499,11 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
-node: {title: "n28" label: "ProjP 3 28"  info1: "Proj 28
+node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   mode:    P
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -497,6 +512,7 @@ node: {title: "n28" label: "ProjP 3 28"  info1: "Proj 28
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 3
 "
 color: yellow}
 edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
@@ -511,7 +527,7 @@ node: {title: "n38" label: "0x0Iu 38"  info1: "0x0 38
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
+node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
   visited: 18
   irg:     MEMORY_EXAMPLE_main
@@ -520,6 +536,7 @@ node: {title: "n26" label: "ProjX 0 26"  info1: "Proj 26
     -1:    Block 22
      0:    Start 23
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}

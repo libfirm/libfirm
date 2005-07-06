@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -80,7 +81,7 @@ node: {title: "n88" label: "Start 88"  info1: "Start 88
 "
 color: blue}
 edge: { sourcename: "n88" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n91" label: "ProjX 0 91"  info1: "Proj 91
+node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   mode:    X
   visited: 11
   irg:     PRIMA_c
@@ -89,6 +90,7 @@ node: {title: "n91" label: "ProjX 0 91"  info1: "Proj 91
     -1:    Block 87
      0:    Start 88
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
@@ -107,7 +109,7 @@ node: {title: "n97" label: "Block 97"  info1: "Block 97
 "
 color: lightyellow}
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
-node: {title: "n95" label: "ProjT 4 95"  info1: "Proj 95
+node: {title: "n95" label: "ProjT T_args 95"  info1: "Proj 95
   mode:    T
   visited: 11
   irg:     PRIMA_c
@@ -116,11 +118,12 @@ node: {title: "n95" label: "ProjT 4 95"  info1: "Proj 95
     -1:    Block 87
      0:    Start 88
   Private Attributes:
+  proj nr: 4
 "
 color: yellow}
 edge: {sourcename: "n95" targetname: "n88" label: "0" class:1  priority:50}
 edge: { sourcename: "n95" targetname: "n87" class:2  priority:50 linestyle:dotted}
-node: {title: "n99" label: "ProjIs 1 99"  info1: "Proj 99
+node: {title: "n99" label: "ProjIs Arg 1 99"  info1: "Proj 99
   mode:    Is
   visited: 11
   irg:     PRIMA_c
@@ -129,11 +132,12 @@ node: {title: "n99" label: "ProjIs 1 99"  info1: "Proj 99
     -1:    Block 97
      0:    Proj 95
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n99" targetname: "n95" label: "0" class:16 priority:10}
 edge: { sourcename: "n99" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n98" label: "ProjP 0 98"  info1: "Proj 98
+node: {title: "n98" label: "ProjP Arg 0 98"  info1: "Proj 98
   mode:    P
   visited: 11
   irg:     PRIMA_c
@@ -142,6 +146,7 @@ node: {title: "n98" label: "ProjP 0 98"  info1: "Proj 98
     -1:    Block 97
      0:    Proj 95
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n98" targetname: "n95" label: "0" class:16 priority:10}
@@ -155,6 +160,7 @@ node: {title: "n94" label: "ProjM 1 94"  info1: "Proj 94
     -1:    Block 87
      0:    Start 88
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n94" targetname: "n88" label: "0" class:17 priority:10 color:blue}
@@ -195,7 +201,7 @@ node: {title: "n102" label: "Load[Is] 102"  info1: "Load[Is] 102
 edge: {sourcename: "n102" targetname: "n94" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n102" targetname: "n101" label: "1" class:1  priority:50}
 edge: { sourcename: "n102" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n105" label: "ProjIs 2 105"  info1: "Proj 105
+node: {title: "n105" label: "ProjIs res 105"  info1: "Proj 105
   mode:    Is
   visited: 11
   irg:     PRIMA_c
@@ -204,6 +210,7 @@ node: {title: "n105" label: "ProjIs 2 105"  info1: "Proj 105
     -1:    Block 97
      0:    Load[Is] 102
   Private Attributes:
+  proj nr: 2
 "
 color: yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
@@ -223,7 +230,7 @@ node: {title: "n106" label: "AddIs 106"  info1: "Add 106
 edge: {sourcename: "n106" targetname: "n105" label: "0" class:1  priority:50}
 edge: {sourcename: "n106" targetname: "n99" label: "1" class:1  priority:50}
 edge: { sourcename: "n106" targetname: "n97" class:2  priority:50 linestyle:dotted}
-node: {title: "n104" label: "ProjM 0 104"  info1: "Proj 104
+node: {title: "n104" label: "ProjM M 104"  info1: "Proj 104
   mode:    M
   visited: 11
   irg:     PRIMA_c
@@ -232,6 +239,7 @@ node: {title: "n104" label: "ProjM 0 104"  info1: "Proj 104
     -1:    Block 97
      0:    Load[Is] 102
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}

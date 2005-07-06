@@ -24,6 +24,7 @@ classname 11: "Overwrites"
 classname 12: "Member"
 infoname 1: "Attribute"
 infoname 2: "Verification errors"
+infoname 3: "Debug info"
 colorentry 100:    0   0    0
 colorentry 101:   20   0    0
 colorentry 102:   40   0    0
@@ -82,7 +83,7 @@ node: {title: "n82" label: "Return 82"  info1: "Return 82
 "
 }
 edge: {sourcename: "n82" targetname: "n81" label: "0" class:14 priority:50 color:blue}
-node: {title: "n81" label: "ProjM 0 81"  info1: "Proj 81
+node: {title: "n81" label: "ProjM M 81"  info1: "Proj 81
   mode:    M
   visited: 12
   irg:     PRIMA_set_a
@@ -91,6 +92,7 @@ node: {title: "n81" label: "ProjM 0 81"  info1: "Proj 81
     -1:    Block 74
      0:    Store 79
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n81" targetname: "n79" label: "0" class:17 priority:10 color:blue}
@@ -129,7 +131,7 @@ node: {title: "n78" label: "Sel a 78"  info1: "Sel 78
 }
 edge: {sourcename: "n78" targetname: "n71" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n78" targetname: "n75" label: "1" class:1  priority:50}
-node: {title: "n75" label: "ProjP 0 75"  info1: "Proj 75
+node: {title: "n75" label: "ProjP Arg 0 75"  info1: "Proj 75
   mode:    P
   visited: 12
   irg:     PRIMA_set_a
@@ -138,10 +140,11 @@ node: {title: "n75" label: "ProjP 0 75"  info1: "Proj 75
     -1:    Block 74
      0:    Proj 72
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n75" targetname: "n72" label: "0" class:16 priority:10}
-node: {title: "n76" label: "ProjIs 1 76"  info1: "Proj 76
+node: {title: "n76" label: "ProjIs Arg 1 76"  info1: "Proj 76
   mode:    Is
   visited: 12
   irg:     PRIMA_set_a
@@ -150,6 +153,7 @@ node: {title: "n76" label: "ProjIs 1 76"  info1: "Proj 76
     -1:    Block 74
      0:    Proj 72
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n76" targetname: "n72" label: "0" class:16 priority:10}
@@ -166,10 +170,11 @@ node: {title: "n71" label: "ProjM 1 71"  info1: "Proj 71
     -1:    Block 64
      0:    Start 65
   Private Attributes:
+  proj nr: 1
 "
 color: yellow}
 edge: {sourcename: "n71" targetname: "n65" label: "0" class:17 priority:10 color:blue}
-node: {title: "n72" label: "ProjT 4 72"  info1: "Proj 72
+node: {title: "n72" label: "ProjT T_args 72"  info1: "Proj 72
   mode:    T
   visited: 12
   irg:     PRIMA_set_a
@@ -178,10 +183,11 @@ node: {title: "n72" label: "ProjT 4 72"  info1: "Proj 72
     -1:    Block 64
      0:    Start 65
   Private Attributes:
+  proj nr: 4
 "
 color: yellow}
 edge: {sourcename: "n72" targetname: "n65" label: "0" class:1  priority:50}
-node: {title: "n68" label: "ProjX 0 68"  info1: "Proj 68
+node: {title: "n68" label: "ProjX X_initial_exec 68"  info1: "Proj 68
   mode:    X
   visited: 12
   irg:     PRIMA_set_a
@@ -190,6 +196,7 @@ node: {title: "n68" label: "ProjX 0 68"  info1: "Proj 68
     -1:    Block 64
      0:    Start 65
   Private Attributes:
+  proj nr: 0
 "
 color: yellow}
 edge: {sourcename: "n68" targetname: "n65" label: "0" class:13 priority:60 color:red}
