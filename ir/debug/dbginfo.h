@@ -223,11 +223,12 @@ typedef unsigned snprint_dbg_func(char *buf, unsigned len, const dbg_info *dbg);
  *   Further both functions pass an enumeration indicating the action
  *   performed by the transformation, e.g. the kind of optimization performed.
  *
- * print_dbg is called to convert a debug info into a human readable string.
- * This string is the dumped in the duper functions.
+ * The third argument snprint_dbg is called to convert a debug info into a human readable string.
+ * This string is the dumped in the dumper functions.
  *
  * Note that if NULL is passed for dbg_info_merge_pair or dbg_info_merge_sets, the default
  * implementations default_dbg_info_merge_pair() and default_dbg_info_merge_sets() are used.
+ * NULL passed for snprint_dbg means no output.
  */
 void dbg_init(merge_pair_func *dbg_info_merge_pair, merge_sets_func *dbg_info_merge_sets, snprint_dbg_func *snprint_dbg);
 
