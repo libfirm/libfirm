@@ -361,13 +361,12 @@ static void *PRED_SEARCH = &q;
  *
  * @param node     A Load or Phi node. The predecessor of this node muss be faund.
  * @param value    A struct pointer, that contains the block of node and their link.
- * @parm  repairs  A set, that contains all blocks, that have a array as link, and all Phis, that
+ * @param  repairs  A set, that contains all blocks, that have a array as link, and all Phis, that
  *                 have copies to repair.
  * @param pos      The position, that muss contain the  predecessor of node, in the array, that have got the bloks
  *                 from the repairs set.
  * @param phi_pred If node is a Phi, phi_pred is the predecessor number of this Phi, that muss be repair.
  */
-
 static void pred_search(ir_node *node, repairs_t *value, set *repairs, int pos, int phi_pred)
 {
   ir_node *nodes_block;
@@ -426,8 +425,8 @@ static void pred_search(ir_node *node, repairs_t *value, set *repairs, int pos, 
  *
  * @param node    A Phi, Load or Store node, that block muss get a  link.
  * @param env     Contains information about scalars number and mode.
- * @parm  repairs A set, that contains all blocks, that have a link, and all Phis, that
- *                 have copies to repair.
+ * @param repairs A set, that contains all blocks, that have a link, and all Phis, that
+ *                have copies to repair.
  */
 static void block_link(ir_node *node, env_t *env, set *repairs)
 {
@@ -456,8 +455,8 @@ static void block_link(ir_node *node, env_t *env, set *repairs)
  *
  * @param phi     A Phi node, that muss have mode_M.
  * @param env     Contains information about scalars number and mode.
- * @parm  repairs A set that contains all blocks having a link and all Phis that
- *                 have copies to repair.
+ * @param repairs A set that contains all blocks having a link and all Phis that
+ *                have copies to repair.
  */
 static void phi_handling(ir_node *phi, env_t *env, set *repairs)
 {
@@ -534,8 +533,8 @@ static void phi_handling(ir_node *phi, env_t *env, set *repairs)
  *
  * @param load    A load node.
  * @param env     Contains information about scalars number and mode.
- * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
- *                 have copies to repair.
+ * @param repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ *                have copies to repair.
  */
 static void load_handling(ir_node *load, env_t *env, set *repairs)
 {
@@ -589,7 +588,7 @@ static void load_handling(ir_node *load, env_t *env, set *repairs)
  *
  * @param node    A node from the graph.
  * @param env     Contains information about scalars number and mode.
- * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ * @param repairs A set, that contains all blocks, that have a  link, and all Phis, that
  *                have copies to repair.
 */
 static void memory_edge_walk2(ir_node *node, env_t *env, set *repairs)
@@ -649,7 +648,7 @@ static void memory_edge_walk2(ir_node *node, env_t *env, set *repairs)
  *
  * @param *node    A node from the graph.
  * @param *env     Contains information about scalars number and mode.
- * @parm  *repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ * @param *repairs A set, that contains all blocks, that have a  link, and all Phis, that
  *                 have copies to repair.
 */
 static void loop_walk(ir_node *node, env_t *env, set *repairs)
@@ -713,7 +712,7 @@ static void loop_walk(ir_node *node, env_t *env, set *repairs)
  *
  * @param load    A store node.
  * @param env     Contains information about scalars number and mode.
- * @parm  repairs A set, that contains all blocks, that have a link, and all Phis, that
+ * @param repairs A set, that contains all blocks, that have a link, and all Phis, that
  *                have copies to repair.
  */
 static void store_handling(ir_node *store, env_t *env, set *repairs)
@@ -776,7 +775,7 @@ static void store_handling(ir_node *store, env_t *env, set *repairs)
  *
  * @param node    A node from the graph.
  * @param env     Contains information about scalars number and mode.
- * @parm  repairs A set, that contains all blocks, that have a link, and all Phis, that
+ * @param repairs A set, that contains all blocks, that have a link, and all Phis, that
  *                have copies to repair.
 */
 static void memory_edge_walk(ir_node *node, env_t *env, set *repairs)
@@ -827,7 +826,7 @@ static void memory_edge_walk(ir_node *node, env_t *env, set *repairs)
  *  Make scalar replacement.
  *
  * @param envals  The number of scalars.
- * @parm  repairs A set, that contains all blocks, that have a  link, and all Phis, that
+ * @param repairs A set, that contains all blocks, that have a  link, and all Phis, that
  *                have copies to repair.
  * @param modes   A flexible array, containing all the modes of
  *                the value numbers.
@@ -876,6 +875,7 @@ void find_scalar_replacements(ir_graph *irg)
 
   /* Call algorithm that computes the out edges */
   compute_outs(irg);
+
   /* Call algorithm that computes the loop information */
   construct_backedges(irg);
 
@@ -920,7 +920,7 @@ void find_scalar_replacements(ir_graph *irg)
       else if(is_atomic_type(ent_type))
         printf("<<<<<<<found atomic value %s\n", get_entity_name(ent));
       else {
-        assert(0 && "\nDon't a array, struct or atomic value");
+        assert(0 && "Neither an array nor a struct or atomic value");
       }
 
       nvals = allocate_value_numbers(ent, nvals, &modes);
