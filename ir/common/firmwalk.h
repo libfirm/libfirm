@@ -128,7 +128,7 @@ typedef struct
   /* @{ */
   /** Interface to dump all collected types.
    *
-   *  @node To dump all (not only used types by default) a special walk
+   *  @note To dump all (not only used types by default) a special walk
    *        flag must be set for the walker initializer */
   firm_walk_init_func *do_type_init;
   firm_walk_type_func *do_type;
