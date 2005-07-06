@@ -1,7 +1,4 @@
-/**
- *
- * @file irsimpeltype.h
- *
+/*
  * Project:     libFIRM
  * File name:   ir/ana/irsimpletype.h
  * Purpose:     Run most simple type analyses.
@@ -11,16 +8,18 @@
  * CVS-ID:      $Id$
  * Copyright:   (c) 2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
+ */
+
+/**
+ * @file irsimpletype.h
  *
  * We compute type information for each node.  It is derived from the
  * types of the origines of values, e.g. parameter types can be derived
  * from the method type.
  * The type information so far is saved in the link field.
  *
+ * @author Goetz Lindenmaier
  */
-
-
 # ifndef _IRSIMPLETYPE_H_
 # define _IRSIMPLETYPE_H_
 
