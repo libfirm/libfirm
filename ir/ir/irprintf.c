@@ -10,7 +10,7 @@
  */
 
 /**
- * @file irprinf.c
+ * @file irprintf.c
  *
  * A little printf helper unterstanding firm types.
  * @author Sebastian Hack

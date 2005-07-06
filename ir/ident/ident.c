@@ -33,6 +33,7 @@ static ident_if_t impl;
  *
  * @param handle   the handle for the set
  * @param str      the string which shall be stored
+ * @param len      lenght of str in bytes
  *
  * @return id - a handle for the generated ident
  *
@@ -52,7 +53,6 @@ static ident *set_new_id_from_chars(void *handle, const char *str, int len)
  *
  * @param handle   the handle for the set
  * @param str      the string (or whatever) which shall be stored
- * @param len      the length of the data in bytes
  *
  * Default implementation using libfirm sets.
  */
