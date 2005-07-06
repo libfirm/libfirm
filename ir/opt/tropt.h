@@ -1,6 +1,5 @@
 /**
- *
- * @file irsimpeltype.h
+ * @file tropt.h
  *
  * Project:     libFIRM
  * File name:   ir/opt/tropt.h
