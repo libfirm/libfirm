@@ -859,10 +859,10 @@ handle_lut:
     }
     break;
   case iro_Filter:
+    proj_nr = get_Filter_proj(n);
     if (! get_interprocedural_view()) {
       /* it's a Proj' */
       pred    = get_Filter_pred(n);
-      proj_nr = get_Filter_proj(n);
       goto handle_lut;
     }
     else
