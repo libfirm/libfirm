@@ -1319,8 +1319,8 @@ ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1331,8 +1331,8 @@ ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1354,8 +1354,8 @@ ir_node *new_rd_Minus  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1367,8 +1367,8 @@ ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
@@ -1379,8 +1379,8 @@ ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
@@ -1391,8 +1391,8 @@ ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
@@ -1403,8 +1403,8 @@ ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_rd_Mod    (dbg_info *db, ir_graph *irg, ir_node *block,
 			ir_node *memop, ir_node *op1, ir_node *op2);
@@ -1425,8 +1425,8 @@ ir_node *new_rd_Abs    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_And    (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1437,8 +1437,8 @@ ir_node *new_rd_And    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Or     (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1449,8 +1449,8 @@ ir_node *new_rd_Or     (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
 ir_node *new_rd_Eor    (dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1472,8 +1472,8 @@ ir_node *new_rd_Not    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *db    A pointer for debug information.
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_rd_Cmp    (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2);
@@ -2010,7 +2010,7 @@ ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *x, ir_node *y, ty
  *
  * @param   *irg    The ir graph the node  belongs to.
  * @param   *block  The ir block the node belongs to.
- * @param   * store The actual store.
+ * @param   *store  The actual store.
  * @param   *callee A pointer to the called procedure.
  * @param   arity   The number of procedure parameters.
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
@@ -2024,8 +2024,8 @@ ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
@@ -2036,8 +2036,8 @@ ir_node *new_r_Add    (ir_graph *irg, ir_node *block,
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
 ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
@@ -2056,8 +2056,8 @@ ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
@@ -2068,8 +2068,8 @@ ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
@@ -2079,8 +2079,8 @@ ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
@@ -2090,8 +2090,8 @@ ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
@@ -2101,8 +2101,8 @@ ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_r_Mod    (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2);
@@ -2121,8 +2121,8 @@ ir_node *new_r_Abs    (ir_graph *irg, ir_node *block,
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_r_And    (ir_graph *irg, ir_node *block,
@@ -2132,8 +2132,8 @@ ir_node *new_r_And    (ir_graph *irg, ir_node *block,
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_r_Or     (ir_graph *irg, ir_node *block,
@@ -2143,8 +2143,8 @@ ir_node *new_r_Or     (ir_graph *irg, ir_node *block,
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
 ir_node *new_r_Eor    (ir_graph *irg, ir_node *block,
@@ -2164,8 +2164,8 @@ ir_node *new_r_Not    (ir_graph *irg, ir_node *block,
  *
  * @param   *irg   The ir graph the node  belongs to.
  * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_r_Cmp    (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2);
@@ -2335,7 +2335,7 @@ ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
  * @param *irg      The ir graph the node  belongs to.
  * @param *block    The ir block the node belongs to.
  * @param arg       A node producing a tuple.
- * @param max_ proj The end  position of the value in the tuple.
+ * @param max_proj  The end  position of the value in the tuple.
  */
 ir_node *new_r_defaultProj (ir_graph *irg, ir_node *block, ir_node *arg, long max_proj);
 
@@ -2386,7 +2386,6 @@ ir_node *new_r_Bad    (ir_graph *irg);
  *
  * @param *irg    The ir graph the node belong to.
  * @param *block  The ir block the node belong to.
- * @param *db     A pointer for debug information.
  * @param *val    The value we express a constraint for
  * @param *bound  The value to compare against. Must be a firm node, typically a constant.
  * @param cmp     The compare operation.
@@ -2657,10 +2656,9 @@ ir_node *new_d_Const  (dbg_info* db, ir_mode *mode, tarval *con);
  *
  * @param *db     A pointer for debug information.
  * @param value   A type, entity or ident depending on the SymConst kind.
- * @param symkind The kind of the symbolic constant: symconst_type_tag, symconst_size
+ * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_size
  *                or symconst_addr_name.
  * @param tp      The source type of the constant.
- *
  */
 ir_node *new_d_SymConst_type (dbg_info* db, union symconst_symbol value, symconst_kind kind, type* tp);
 
@@ -2698,8 +2696,8 @@ ir_node *new_d_simpleSel(dbg_info* db, ir_node *store, ir_node *objptr, entity *
  *                     from is allocated.
  * @param   *objptr    A pointer to a compound entity the Sel operation selects a
  *                     single attribute from.
- * @param   *n_index   The number of array indices needed to select an array element entity.
- * @param   *index[]   If the compound entity is an array the indices of the selected
+ * @param   arity      The number of array indices needed to select an array element entity.
+ * @param   *in[]      If the compound entity is an array the indices of the selected
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
@@ -2740,8 +2738,8 @@ ir_node *new_d_Call   (dbg_info* db, ir_node *store, ir_node *callee, int arity,
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -2751,8 +2749,8 @@ ir_node *new_d_Add    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 
@@ -2773,8 +2771,8 @@ ir_node *new_d_Minus  (dbg_info* db, ir_node *op,  ir_mode *mode);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_d_Mul    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -2785,8 +2783,8 @@ ir_node *new_d_Mul    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_d_Quot   (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -2796,8 +2794,8 @@ ir_node *new_d_Quot   (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -2807,8 +2805,8 @@ ir_node *new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_d_Div    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -2818,8 +2816,8 @@ ir_node *new_d_Div    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
  *
  * @param   *db    A pointer for debug information.
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_d_Mod    (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -2838,10 +2836,8 @@ ir_node *new_d_Abs    (dbg_info* db, ir_node *op,                ir_mode *mode);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_d_And    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -2851,8 +2847,8 @@ ir_node *new_d_And    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_d_Or     (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -2862,8 +2858,8 @@ ir_node *new_d_Or     (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
 ir_node *new_d_Eor    (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -2927,8 +2923,8 @@ ir_node *new_d_Rot    (dbg_info* db, ir_node *op,  ir_node *k,   ir_mode *mode);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *db    A pointer for debug information.
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_d_Cmp    (dbg_info* db, ir_node *op1, ir_node *op2);
 
@@ -2970,7 +2966,7 @@ ir_node *new_d_Phi    (dbg_info* db, int arity, ir_node *in[], ir_mode *mode);
  *
  * @param *db    A pointer for debug information.
  * @param *store The current memory
- * @param *adr   A pointer to the variable to be read in this memory.
+ * @param *addr  A pointer to the variable to be read in this memory.
  * @param *mode  The mode of the value to be loaded.
  */
 ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr, ir_mode *mode);
@@ -2981,7 +2977,7 @@ ir_node *new_d_Load   (dbg_info* db, ir_node *store, ir_node *addr, ir_mode *mod
  *
  * @param *db    A pointer for debug information.
  * @param *store The current memory
- * @param *adr   A pointer to the variable to be read in this memory.
+ * @param *addr  A pointer to the variable to be read in this memory.
  * @param *val   The value to write to this variable.
  */
 ir_node *new_d_Store  (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val);
@@ -3052,7 +3048,7 @@ ir_node *new_d_Proj   (dbg_info* db, ir_node *arg, ir_mode *mode, long proj);
  *
  * @param *db       A pointer for debug information.
  * @param arg       A node producing a tuple.
- * @param max_ proj The end  position of the value in the tuple.
+ * @param max_proj  The end  position of the value in the tuple.
  */
 ir_node *new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj);
 
@@ -3336,19 +3332,19 @@ ir_node *new_Const_type(tarval *con, type *tp);
 /** Constructor for a SymConst node.
  *
  * Adds the node to the block in current_ir_block.
- *  This is the constructor for a symbolic constant.
- *    There are four kinds of symbolic constants:
- *    - type_tag  The symbolic constant represents a type tag.  The type the
- *                tag stands for is given explicitly.
- *    - size      The symbolic constant represents the size of a type.  The
- *                type of which the constant represents the size is given
- *                explicitly.
- *    - addr_name The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is indicated by a name
- *                that is valid for linking.
- *    - addr_ent   The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is given explicitly by
- *                a firm entity.
+ * This is the constructor for a symbolic constant.
+ * There are four kinds of symbolic constants:
+ *    -# type_tag  The symbolic constant represents a type tag.  The type the
+ *                 tag stands for is given explicitly.
+ *    -# size      The symbolic constant represents the size of a type.  The
+ *                 type of which the constant represents the size is given
+ *                 explicitly.
+ *    -# addr_name The symbolic constant represents the address of an entity
+ *                 (variable or method).  The variable is indicated by a name
+ *                 that is valid for linking.
+ *    -# addr_ent  The symbolic constant represents the address of an entity
+ *                 (variable or method).  The variable is given explicitly by
+ *                 a firm entity.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
@@ -3356,7 +3352,7 @@ ir_node *new_Const_type(tarval *con, type *tp);
  *      An unsigned integer (I_u) or a pointer (P).
  *
  * @param value   A type or a ident depending on the SymConst kind.
- * @param symkind The kind of the symbolic constant: symconst_type_tag, symconst_size or symconst_addr_name.
+ * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_size or symconst_addr_name.
  */
 ir_node *new_SymConst (union symconst_symbol value, symconst_kind kind);
 
@@ -3385,8 +3381,8 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
  *                     from is allocated.
  * @param   *objptr    A pointer to a compound entity the Sel operation selects a
  *                     single attribute from.
- * @param   *n_index   The number of array indices needed to select an array element entity.
- * @param   *index[]   If the compound entity is an array the indices of the selected
+ * @param   arity      The number of array indices needed to select an array element entity.
+ * @param   *in[]      If the compound entity is an array the indices of the selected
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
@@ -3398,8 +3394,8 @@ ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
  * Adds the node to the block in current_ir_block.
  * For translating Java.  Not supported as standard firm node.
  *
- * @param   *store
- * @param   *objptr
+ * @param   *store  The actual store.
+ * @param   *obj
  * @param   *ent
  */
 ir_node *new_InstOf (ir_node *store, ir_node *obj,  type *ent);
@@ -3433,8 +3429,8 @@ ir_node *new_CallBegin(ir_node *callee);
  * constructor copies the method pointer input from the passed Call
  * node.Adds the node to the block in current_ir_block.
  *
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -3443,8 +3439,8 @@ ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *
  * Adds the node to the block in current_ir_block.
  *
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -3461,8 +3457,8 @@ ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
 /**
  * Constructor for a Mul node. Adds the node to the block in current_ir_block.
  *
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -3472,8 +3468,8 @@ ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -3482,8 +3478,8 @@ ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -3492,8 +3488,8 @@ ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -3502,8 +3498,8 @@ ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
  * Adds the node to the block in current_ir_block.
  *
  * @param   *memop The store needed to model exceptions
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
 
@@ -3520,8 +3516,8 @@ ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
  *
  * Adds the node to the block in current_ir_block.
  *
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -3529,8 +3525,8 @@ ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
 /**
  * Constructor for a Or node. Adds the node to the block in current_ir_block.
  *
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -3538,8 +3534,8 @@ ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
 /**
  * Constructor for a Eor node. Adds the node to the block in current_ir_block.
  *
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
 ir_node *new_Eor    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -3596,8 +3592,8 @@ ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
  *
  * Adds the node to the block in current_ir_block.
  *
- * @param   *op1   The operand 1.
- * @param   *op2   The operand 2.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
  */
 ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
 
@@ -3723,7 +3719,7 @@ ir_node *new_Filter (ir_node *arg, ir_mode *mode, long proj);
  * Adds the node to the block in current_ir_block.
  *
  * @param arg       A node producing a tuple.
- * @param max_ proj The end  position of the value in the tuple.
+ * @param max_proj  The end  position of the value in the tuple.
  */
 ir_node *new_defaultProj (ir_node *arg, long max_proj);
 
