@@ -156,6 +156,7 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env);
  * pre and post functions.  Does not use the link fields.
  * Do NOT leave the graph in interprocedural view.
  *
+ * @param node - the root node where the walk will start
  * @param pre  - walker function, executed before the predecessor of a node are visited
  * @param post - walker function, executed after the predecessor of a node are visited
  * @param env  - environment, passed to pre and post
