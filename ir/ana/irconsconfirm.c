@@ -39,7 +39,7 @@ typedef struct _env_t {
  *
  * @param block   the block which is entered by the branch
  * @param irn     the node expressing the switch value
- * @param pnc     the branch label
+ * @param nr      the branch label
  * @param env     statistical environment
  *
  * Branch labels are a simple case. We can replace the value
