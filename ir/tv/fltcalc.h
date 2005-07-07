@@ -136,7 +136,7 @@ char* fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, char* 
 char* fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, char* result);
 char* fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
 char* fc_get_minusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-/*}@*/
+/*@}*/
 
 int fc_is_zero(const void *a);
 int fc_is_negative(const void *a);
