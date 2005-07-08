@@ -61,7 +61,7 @@ static INLINE void set_region_exec_freq(void *reg, double freq) {
   set_insert(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
 }
 
-INLINE double get_region_exec_freq(void *reg) {
+double get_region_exec_freq(void *reg) {
   reg_exec_freq ef, *found;
   ef.reg  = reg;
   assert(exec_freq_set);
