@@ -1950,7 +1950,7 @@ void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg) {
 /**
  * dumps the VCG header
  */
-INLINE void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
+void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
   char *label;
 
   if (edge_label) {
@@ -2078,7 +2078,7 @@ FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
 /**
  * open a vcg file
  *
- * @param irg     The graph to be dumped
+ * @param name
  * @param suffix  filename suffix
  */
 FILE *vcg_open_name (const char *name, const char *suffix) {
@@ -2089,7 +2089,7 @@ FILE *vcg_open_name (const char *name, const char *suffix) {
   if (!suffix) suffix = "";
 
   /** open file for vcg graph */
-  fname = malloc (len * 2 + 5 + strlen(suffix));
+  fname = xmalloc(len * 2 + 5 + strlen(suffix));
   /* strcpy (fname, name);*/    /* copy the filename */
   j = 0;
   for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */
