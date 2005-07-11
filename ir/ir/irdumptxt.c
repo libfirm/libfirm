@@ -1088,7 +1088,6 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   fprintf(F, "  alignment:  %2d Bits,\n",  get_type_alignment_bits(tp));
   if (is_atomic_type(tp) || is_Method_type(tp))
     fprintf(F, "  mode:       %s,\n",  get_mode_name(get_type_mode(tp)));
-  fprintf(F, "  dbg info:   %p,\n",  (void *)get_type_dbg_info(tp));
 
   if (get_trouts_state()) {
     fprintf(F, "\n  Type outs:\n");
