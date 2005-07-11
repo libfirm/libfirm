@@ -12,8 +12,11 @@
 
 /**
  *
- *   file type.c - implementation of the datastructure to hold
- *   type information.
+ *  @file type.c
+ *
+ *  Implementation of the datastructure to hold
+ *  type information.
+ *
  *  (C) 2001 by Universitaet Karlsruhe
  *  Goetz Lindenmaier
  *
@@ -64,16 +67,16 @@
 
 # include "array.h"
 
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 /** TYPE                                                          **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 
 type *firm_none_type;    type *get_none_type(void)    { return firm_none_type;    }
 type *firm_unknown_type; type *get_unknown_type(void) { return firm_unknown_type; }
 
 
 #ifdef DEBUG_libfirm
-/** Returns a new, unique number to number nodes or the like. */
+/* Returns a new, unique number to number nodes or the like. */
 int get_irp_new_node_nr(void);
 #endif
 
