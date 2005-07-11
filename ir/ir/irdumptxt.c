@@ -216,11 +216,10 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   } break;
   case iro_Sel: {
     entity *ent = get_Sel_entity(n);
-
     if (ent) {
-      fprintf(F, "  Selecting entity of type %s\n", get_type_name_ex(get_entity_type(ent), &bad));
-      fprintf(F, "    from entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
-      fprintf(F, "    of type %s\n", get_type_name_ex(get_entity_owner(ent), &bad));
+      fprintf(F, "  Selecting entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
+      fprintf(F, "    of type    %s\n",  get_type_name_ex(get_entity_type(ent),  &bad));
+      fprintf(F, "    with owner %s.\n", get_type_name_ex(get_entity_owner(ent), &bad));
     }
     else {
       fprintf(F, "  <NULL entity>\n");
@@ -588,7 +587,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
     fprintf(F, "\n%s  peculiarity: %s", prefix, get_peculiarity_string(get_entity_peculiarity(ent)));
     fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-    fprintf(F, "\n%s  offset:  %d", prefix, get_entity_offset_bits(ent));
+    fprintf(F, "\n%s  offset:  %d bits, %d bytes", prefix, get_entity_offset_bits(ent), get_entity_offset_bytes(ent));
     if (is_Method_type(get_entity_type(ent))) {
       if (get_entity_irg(ent))   /* can be null */ {
         fprintf(F, "\n%s  irg = %ld", prefix, get_irg_graph_nr(get_entity_irg(ent)));
