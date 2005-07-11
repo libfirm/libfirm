@@ -113,9 +113,9 @@ node: {title: "n52" label: "Sel VAR_A 52"  info1: "Sel 52
      0:    Phi 66
      1:    Proj 28
   Private Attributes:
-  Selecting entity of type int
-    from entity VAR_A (50)
-    of type GlobalType
+  Selecting entity VAR_A (50)
+    of type    int
+    with owner GlobalType.
 "
 }
 edge: {sourcename: "n52" targetname: "n66" label: "0" class:14 priority:50 color:blue}

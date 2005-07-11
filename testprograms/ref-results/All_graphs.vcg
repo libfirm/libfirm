@@ -398,9 +398,9 @@ node: {title: "n78" label: "Sel a 78"  info1: "Sel 78
      0:    Filter 184
      1:    Filter 185
   Private Attributes:
-  Selecting entity of type int
-    from entity a (17)
-    of type PRIMA
+  Selecting entity a (17)
+    of type    int
+    with owner PRIMA.
 "
 }
 edge: {sourcename: "n78" targetname: "n184" label: "0" class:17 priority:10 color:blue}
@@ -605,9 +605,9 @@ node: {title: "n101" label: "Sel a 101"  info1: "Sel 101
      0:    Filter 176
      1:    Filter 177
   Private Attributes:
-  Selecting entity of type int
-    from entity a (17)
-    of type PRIMA
+  Selecting entity a (17)
+    of type    int
+    with owner PRIMA.
 "
 }
 edge: {sourcename: "n101" targetname: "n176" label: "0" class:17 priority:10 color:blue}

@@ -65,10 +65,10 @@ node: {title: "t21" label: "method c" info1: "method type c (21)
   size:       32 Bits,
   alignment:  32 Bits,
   mode:       P,
-  dbg info:   (nil),
 
 
-"}
+"
+}
 edge: { sourcename: "t21" targetname: "t16"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t21" targetname: "t14"class: 5 label: "param 1" color: green}
 edge: { sourcename: "t21" targetname: "t14"class: 6 label: "res 0" color: green}
@@ -79,10 +79,10 @@ node: {title: "t16" label: "pointer class_prima_ptr" info1: "pointer type class_
   size:       32 Bits,
   alignment:  32 Bits,
   mode:       P,
-  dbg info:   (nil),
 
 
-"}
+"
+}
 edge: { sourcename: "t16" targetname: "t15"class: 9 label: "points to" color:green}
 node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
   members:
@@ -97,7 +97,7 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
       ld_name: no yet set
-      offset:  -1
+      offset:  -1 bits, -1 bytes
     entity set_a (20)
       type:  set_a (18)
       owner: PRIMA (15)
@@ -110,7 +110,7 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
       ld_name: PRIMA_set_a
-      offset:  -1
+      offset:  -1 bits, -1 bytes
       irg = 73
     entity c (23)
       type:  c (21)
@@ -124,7 +124,7 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
       ld_name: PRIMA_c
-      offset:  -1
+      offset:  -1 bits, -1 bytes
       irg = 96
   supertypes:
   subtypes:
@@ -133,10 +133,10 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
   state:      layout_undefined,
   size:       -1 Bits,
   alignment:  32 Bits,
-  dbg info:   (nil),
 
 
-" color: green}
+"
+ color: green}
 edge: { sourcename: "t15" targetname: "e17"class: 12 label: "member" color:blue}
 edge: { sourcename: "t15" targetname: "e20"class: 12 label: "member" color:blue}
 edge: { sourcename: "t15" targetname: "e23"class: 12 label: "member" color:blue}
@@ -152,7 +152,7 @@ node: {title: "e17" label: "ent a" color: yellow
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
   ld_name: no yet set
-  offset:  -1
+  offset:  -1 bits, -1 bytes
 
 "
 }
@@ -163,10 +163,10 @@ node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
   size:       32 Bits,
   alignment:  32 Bits,
   mode:       Is,
-  dbg info:   (nil),
 
 
-"}
+"
+}
 node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
  info1: "entity set_a (20)
   type:  set_a (18)
@@ -180,7 +180,7 @@ node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
   ld_name: PRIMA_set_a
-  offset:  -1
+  offset:  -1 bits, -1 bytes
   irg = 73
 
 "
@@ -211,10 +211,10 @@ node: {title: "t18" label: "method set_a" info1: "method type set_a (18)
   size:       32 Bits,
   alignment:  32 Bits,
   mode:       P,
-  dbg info:   (nil),
 
 
-"}
+"
+}
 edge: { sourcename: "t18" targetname: "t16"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t18" targetname: "t14"class: 5 label: "param 1" color: green}
 node: {title: "e23" label: "ent PRIMA_c" color: yellow
@@ -230,7 +230,7 @@ node: {title: "e23" label: "ent PRIMA_c" color: yellow
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
   ld_name: PRIMA_c
-  offset:  -1
+  offset:  -1 bits, -1 bytes
   irg = 96
 
 "
@@ -263,7 +263,7 @@ node: {title: "e26" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
   ld_name: no yet set
-  offset:  -1
+  offset:  -1 bits, -1 bytes
   irg = 39
 
 "
@@ -297,7 +297,7 @@ node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
       ld_name: no yet set
-      offset:  -1
+      offset:  -1 bits, -1 bytes
       irg = 39
   supertypes:
   subtypes:
@@ -306,10 +306,10 @@ node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
   state:      layout_undefined,
   size:       -1 Bits,
   alignment:  32 Bits,
-  dbg info:   (nil),
 
 
-" color: green}
+"
+ color: green}
 edge: { sourcename: "t0" targetname: "e26"class: 12 label: "member" color:blue}
 node: {title: "t24" label: "method OO_PROGRAM_EXAMPLE_main" info1: "method type OO_PROGRAM_EXAMPLE_main (24)
   variadicity: variadicity_non_variadic
@@ -321,10 +321,10 @@ node: {title: "t24" label: "method OO_PROGRAM_EXAMPLE_main" info1: "method type 
   size:       32 Bits,
   alignment:  32 Bits,
   mode:       P,
-  dbg info:   (nil),
 
 
-"}
+"
+}
 edge: { sourcename: "t24" targetname: "t14"class: 6 label: "res 0" color: green}
 node: {title: "t27" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "class type OO_PROGRAM_EXAMPLE_mainframe_tp (27)
   members:
@@ -335,8 +335,8 @@ node: {title: "t27" label: "class OO_PROGRAM_EXAMPLE_mainframe_tp" info1: "class
   state:      layout_undefined,
   size:       -1 Bits,
   alignment:   0 Bits,
-  dbg info:   (nil),
 
 
-" color: green}
+"
+ color: green}
 }

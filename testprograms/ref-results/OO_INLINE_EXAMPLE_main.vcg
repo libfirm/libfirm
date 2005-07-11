@@ -113,9 +113,9 @@ node: {title: "n191" label: "Sel a 191"  info1: "Sel 191
      0:    Phi 180
      1:    Proj 48
   Private Attributes:
-  Selecting entity of type int
-    from entity a (17)
-    of type PRIMA_INLINE
+  Selecting entity a (17)
+    of type    int
+    with owner PRIMA_INLINE.
 "
 }
 edge: {sourcename: "n191" targetname: "n180" label: "0" class:14 priority:50 color:blue}
@@ -205,9 +205,9 @@ node: {title: "n156" label: "Sel a 156"  info1: "Sel 156
      0:    Proj 47
      1:    Proj 48
   Private Attributes:
-  Selecting entity of type int
-    from entity a (17)
-    of type PRIMA_INLINE
+  Selecting entity a (17)
+    of type    int
+    with owner PRIMA_INLINE.
 "
 }
 edge: {sourcename: "n156" targetname: "n47" label: "0" class:14 priority:50 color:blue}

@@ -59,10 +59,10 @@ node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
   size:       32 Bits,
   alignment:  32 Bits,
   mode:       Is,
-  dbg info:   (nil),
 
 
-"}
+"
+}
 node: {title: "t15" label: "method main_tp" info1: "method type main_tp (15)
   variadicity: variadicity_non_variadic
   return types: 1
@@ -74,10 +74,10 @@ node: {title: "t15" label: "method main_tp" info1: "method type main_tp (15)
   size:       32 Bits,
   alignment:  32 Bits,
   mode:       P,
-  dbg info:   (nil),
 
 
-"}
+"
+}
 edge: { sourcename: "t15" targetname: "t14"class: 5 label: "param 0" color: green}
 edge: { sourcename: "t15" targetname: "t14"class: 6 label: "res 0" color: green}
 node: {title: "t16" label: "class WHILE_EXAMPLE" info1: "class type WHILE_EXAMPLE (16)
@@ -94,7 +94,7 @@ node: {title: "t16" label: "class WHILE_EXAMPLE" info1: "class type WHILE_EXAMPL
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
       ld_name: WHILE_EXAMPLE_main
-      offset:  -1
+      offset:  -1 bits, -1 bytes
       irg = 31
   supertypes:
   subtypes:
@@ -103,10 +103,10 @@ node: {title: "t16" label: "class WHILE_EXAMPLE" info1: "class type WHILE_EXAMPL
   state:      layout_undefined,
   size:       -1 Bits,
   alignment:  32 Bits,
-  dbg info:   (nil),
 
 
-" color: green}
+"
+ color: green}
 edge: { sourcename: "t16" targetname: "e18"class: 12 label: "member" color:blue}
 node: {title: "e18" label: "ent WHILE_EXAMPLE_main" color: yellow
  info1: "entity main (18)
@@ -121,7 +121,7 @@ node: {title: "e18" label: "ent WHILE_EXAMPLE_main" color: yellow
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
   ld_name: WHILE_EXAMPLE_main
-  offset:  -1
+  offset:  -1 bits, -1 bytes
   irg = 31
 
 "
@@ -150,8 +150,8 @@ node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
   state:      layout_undefined,
   size:       -1 Bits,
   alignment:   0 Bits,
-  dbg info:   (nil),
 
 
-" color: green}
+"
+ color: green}
 }

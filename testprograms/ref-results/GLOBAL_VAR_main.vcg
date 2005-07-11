@@ -124,9 +124,9 @@ node: {title: "n34" label: "Sel i 34"  info1: "Sel 34
      0:    Proj 29
      1:    Proj 28
   Private Attributes:
-  Selecting entity of type int
-    from entity i (18)
-    of type GlobalType
+  Selecting entity i (18)
+    of type    int
+    with owner GlobalType.
 "
 }
 edge: {sourcename: "n34" targetname: "n29" label: "0" class:17 priority:10 color:blue}

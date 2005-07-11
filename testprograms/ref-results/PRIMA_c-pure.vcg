@@ -175,9 +175,9 @@ node: {title: "n101" label: "Sel a 101"  info1: "Sel 101
      0:    Proj 94
      1:    Proj 98
   Private Attributes:
-  Selecting entity of type int
-    from entity a (17)
-    of type PRIMA
+  Selecting entity a (17)
+    of type    int
+    with owner PRIMA.
 "
 }
 edge: {sourcename: "n101" targetname: "n94" label: "0" class:17 priority:10 color:blue}

@@ -190,9 +190,9 @@ node: {title: "n49" label: "Sel PRIMA_set_a 49"  info1: "Sel 49
      0:    Proj 47
      1:    Proj 48
   Private Attributes:
-  Selecting entity of type set_a
-    from entity set_a (20)
-    of type PRIMA
+  Selecting entity set_a (20)
+    of type    set_a
+    with owner PRIMA.
 "
 }
 edge: {sourcename: "n49" targetname: "n47" label: "0" class:14 priority:50 color:blue}
@@ -256,9 +256,9 @@ node: {title: "n53" label: "Sel PRIMA_c 53"  info1: "Sel 53
      0:    Proj 52
      1:    Proj 48
   Private Attributes:
-  Selecting entity of type c
-    from entity c (23)
-    of type PRIMA
+  Selecting entity c (23)
+    of type    c
+    with owner PRIMA.
 "
 }
 edge: {sourcename: "n53" targetname: "n52" label: "0" class:14 priority:50 color:blue}

@@ -140,9 +140,9 @@ node: {title: "n45" label: "Sel a_elem_ent 45"  info1: "Sel 45
      1:    Proj 43
      2:    0x3 44
   Private Attributes:
-  Selecting entity of type int
-    from entity a_elem_ent (21)
-    of type a
+  Selecting entity a_elem_ent (21)
+    of type    int
+    with owner a.
 "
 }
 edge: {sourcename: "n45" targetname: "n42" label: "0" class:14 priority:50 color:blue}

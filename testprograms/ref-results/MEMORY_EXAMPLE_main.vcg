@@ -451,9 +451,9 @@ node: {title: "n37" label: "Sel VAR_B 37"  info1: "Sel 37
      0:    Proj 29
      1:    Proj 28
   Private Attributes:
-  Selecting entity of type int
-    from entity VAR_B (36)
-    of type GlobalType
+  Selecting entity VAR_B (36)
+    of type    int
+    with owner GlobalType.
 "
 }
 edge: {sourcename: "n37" targetname: "n29" label: "0" class:17 priority:10 color:blue}
@@ -468,9 +468,9 @@ node: {title: "n35" label: "Sel VAR_A 35"  info1: "Sel 35
      0:    Proj 29
      1:    Proj 28
   Private Attributes:
-  Selecting entity of type int
-    from entity VAR_A (33)
-    of type GlobalType
+  Selecting entity VAR_A (33)
+    of type    int
+    with owner GlobalType.
 "
 }
 edge: {sourcename: "n35" targetname: "n29" label: "0" class:17 priority:10 color:blue}
