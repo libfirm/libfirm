@@ -530,5 +530,10 @@ void set_opt_dump_analysed_type_info(bool b);
  */
 void dump_pointer_values_to_info(bool b);
 
+/** Dumps ld_names of entities instead of there names.
+ *
+ * This option is on per default.
+ */
+void dump_ld_names(bool b);
 
 # endif /* _IRDUMP_H_ */

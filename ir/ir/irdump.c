@@ -67,6 +67,129 @@ static ident *dump_file_filter_id = NULL;
 
 #define ERROR_TXT       "<ERROR>"
 
+/*******************************************************************/
+/* flags to steer output                                           */
+/*******************************************************************/
+
+/** An option to turn off edge labels */
+static int edge_label = 1;
+/** An option to turn off dumping values of constant entities */
+static int const_entities = 1;
+/** An option to dump the keep alive edges */
+static int dump_keepalive = 0;
+/** An option to dump ld_names instead of names. */
+static int dump_ld_name = 1;
+/** Compiler options to dump analysis information in dump_ir_graph */
+int dump_out_edge_flag = 0;
+int dump_dominator_information_flag = 0;
+int dump_loop_information_flag = 0;
+int dump_backedge_information_flag = 1;
+int dump_const_local = 0;
+bool opt_dump_analysed_type_info = 1;
+bool opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
+
+static const char *overrule_nodecolor = NULL;
+
+/** An additional edge hook. */
+static DUMP_NODE_EDGE_FUNC dump_node_edge_hook = NULL;
+
+void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func)
+{
+    dump_node_edge_hook = func;
+}
+
+DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void)
+{
+    return dump_node_edge_hook;
+}
+
+
+/** The vcg attribute hook. */
+static DUMP_NODE_VCGATTR_FUNC dump_node_vcgattr_hook = NULL;
+
+/* set the hook */
+void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook) {
+  dump_node_vcgattr_hook = hook;
+}
+
+INLINE bool get_opt_dump_const_local(void) {
+  if (!dump_out_edge_flag && !dump_loop_information_flag)
+    return dump_const_local;
+  else
+    return false;
+}
+
+void only_dump_method_with_name(ident *name) {
+  dump_file_filter_id = name;
+}
+
+ident *get_dump_file_filter_ident(void) {
+  return dump_file_filter_id;
+}
+
+/** Returns true if dump file filter is not set, or if it is a
+ *  prefix of name. */
+int is_filtered_dump_name(ident *name) {
+  if (!dump_file_filter_id) return 1;
+  return id_is_prefix(dump_file_filter_id, name);
+}
+
+/* To turn off display of edge labels.  Edge labels offen cause xvcg to
+   abort with a segmentation fault. */
+void turn_off_edge_labels(void) {
+  edge_label = 0;
+}
+
+void dump_consts_local(bool b) {
+  dump_const_local = b;
+}
+
+void dump_constant_entity_values(bool b) {
+  const_entities = b;
+}
+
+void dump_keepalive_edges(bool b) {
+  dump_keepalive = b;
+}
+
+bool get_opt_dump_keepalive_edges(void) {
+  return dump_keepalive;
+}
+
+void dump_out_edges(bool b) {
+  dump_out_edge_flag = b;
+}
+
+void dump_dominator_information(bool b) {
+  dump_dominator_information_flag = b;
+}
+
+void dump_loop_information(bool b) {
+  dump_loop_information_flag = b;
+}
+
+void dump_backedge_information(bool b) {
+  dump_backedge_information_flag = b;
+}
+
+/* Dump the information of type field specified in ana/irtypeinfo.h.
+ * If the flag is set, the type name is output in [] in the node label,
+ * else it is output as info.
+ */
+void set_opt_dump_analysed_type_info(bool b) {
+  opt_dump_analysed_type_info = b;
+}
+
+void dump_pointer_values_to_info(bool b) {
+  opt_dump_pointer_values_to_info = b;
+}
+
+void dump_ld_names(bool b) {
+  dump_ld_name = b;
+}
+
+/* -------------- some extended helper functions ----------------- */
+
 /**
  * returns the name of a mode or <ERROR> if mode is NOT a mode object.
  * in the later case, sets bad
@@ -303,13 +426,16 @@ static void clear_link(ir_node * node, void * env) {
 }
 
 /**
- * If the entity has a ld_name, returns it, else returns the name of the entity.
+ * If the entity has a ld_name, returns it if the option dump_ld_name is set,
+ * else returns the name of the entity.
  */
 const char *get_ent_dump_name(entity *ent) {
   if (!ent)
     return "<NULL entity>";
-  /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
-  if (ent->ld_name) return get_id_str(ent->ld_name);
+  if (dump_ld_name) {
+    /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
+    if (ent->ld_name) return get_id_str(ent->ld_name);
+  }
   return get_id_str(ent->name);
 }
 
@@ -428,121 +554,6 @@ static list_tuple *construct_extblock_lists(ir_graph *irg) {
   DEL_ARR_F(blk_list);
   ird_set_irg_link(irg, lists);
   return lists;
-}
-
-/*******************************************************************/
-/* flags to steer output                                           */
-/*******************************************************************/
-
-/** A compiler option to turn off edge labels */
-static int edge_label = 1;
-/** A compiler option to turn off dumping values of constant entities */
-static int const_entities = 1;
-/** A compiler option to dump the keep alive edges */
-static int dump_keepalive = 0;
-/** Compiler options to dump analysis information in dump_ir_graph */
-int dump_out_edge_flag = 0;
-int dump_dominator_information_flag = 0;
-int dump_loop_information_flag = 0;
-int dump_backedge_information_flag = 1;
-int dump_const_local = 0;
-bool opt_dump_analysed_type_info = 1;
-bool opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
-
-static const char *overrule_nodecolor = NULL;
-
-/** An additional edge hook. */
-static DUMP_NODE_EDGE_FUNC dump_node_edge_hook = NULL;
-
-void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func)
-{
-    dump_node_edge_hook = func;
-}
-
-DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void)
-{
-    return dump_node_edge_hook;
-}
-
-
-/** The vcg attribute hook. */
-static DUMP_NODE_VCGATTR_FUNC dump_node_vcgattr_hook = NULL;
-
-/* set the hook */
-void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook) {
-  dump_node_vcgattr_hook = hook;
-}
-
-INLINE bool get_opt_dump_const_local(void) {
-  if (!dump_out_edge_flag && !dump_loop_information_flag)
-    return dump_const_local;
-  else
-    return false;
-}
-
-void only_dump_method_with_name(ident *name) {
-  dump_file_filter_id = name;
-}
-
-ident *get_dump_file_filter_ident(void) {
-  return dump_file_filter_id;
-}
-
-/** Returns true if dump file filter is not set, or if it is a
- *  prefix of name. */
-int is_filtered_dump_name(ident *name) {
-  if (!dump_file_filter_id) return 1;
-  return id_is_prefix(dump_file_filter_id, name);
-}
-
-/* To turn off display of edge labels.  Edge labels offen cause xvcg to
-   abort with a segmentation fault. */
-void turn_off_edge_labels(void) {
-  edge_label = 0;
-}
-
-void dump_consts_local(bool b) {
-  dump_const_local = b;
-}
-
-void dump_constant_entity_values(bool b) {
-  const_entities = b;
-}
-
-void dump_keepalive_edges(bool b) {
-  dump_keepalive = b;
-}
-
-bool get_opt_dump_keepalive_edges(void) {
-  return dump_keepalive;
-}
-
-void dump_out_edges(bool b) {
-  dump_out_edge_flag = b;
-}
-
-void dump_dominator_information(bool b) {
-  dump_dominator_information_flag = b;
-}
-
-void dump_loop_information(bool b) {
-  dump_loop_information_flag = b;
-}
-
-void dump_backedge_information(bool b) {
-  dump_backedge_information_flag = b;
-}
-
-/* Dump the information of type field specified in ana/irtypeinfo.h.
- * If the flag is set, the type name is output in [] in the node label,
- * else it is output as info.
- */
-void set_opt_dump_analysed_type_info(bool b) {
-  opt_dump_analysed_type_info = b;
-}
-
-void dump_pointer_values_to_info(bool b) {
-  opt_dump_pointer_values_to_info = b;
 }
 
 /*-----------------------------------------------------------------*/
@@ -1069,7 +1080,7 @@ static void print_node_dbg_info(FILE *F, dbg_info *dbg)
   if (__dbg_info_snprint) {
     buf[0] = '\0';
     if (__dbg_info_snprint(buf, sizeof(buf), dbg) > 0)
-      fprintf (F, " info3: \"%s\"", buf);
+      fprintf (F, " info3: \"%s\"\n", buf);
   }
 }
 
@@ -1613,8 +1624,7 @@ static void print_typespecific_vcgattr(FILE *F, type *tp) {
 }
 
 
-/* Why not dump_type_node as the others? */
-static int print_type_node(FILE *F, type *tp)
+int dump_type_node(FILE *F, type *tp)
 {
   int bad = 0;
 
@@ -1628,15 +1638,12 @@ static int print_type_node(FILE *F, type *tp)
 #else
   dump_type_to_file(F, tp, dump_verbosity_max);
 #endif
-  fprintf (F, "\"");
+  fprintf (F, "\"\n");
+  print_node_dbg_info(F, get_type_dbg_info(tp));
   print_typespecific_vcgattr(F, tp);
   fprintf (F, "}\n");
 
   return bad;
-}
-
-int dump_type_node(FILE *F, type *tp) {
-  return print_type_node(F, tp);
 }
 
 
@@ -1656,7 +1663,9 @@ void dump_entity_node(FILE *F, entity *ent, int color)
 
   dump_entity_to_file(F, ent, dump_verbosity_entattrs | dump_verbosity_entconsts);
 
-  fprintf(F, "\"\n}\n");
+  fprintf(F, "\"\n");
+  print_node_dbg_info(F, get_entity_dbg_info(ent));
+  fprintf(F, "}\n");
 }
 #undef X
 
@@ -1729,7 +1738,7 @@ dump_type_info(type_or_ent *tore, void *env) {
   case k_type:
     {
       type *tp = (type *)tore;
-      print_type_node(F, tp);
+      dump_type_node(F, tp);
       /* and now the edges */
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
@@ -1831,7 +1840,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *ctx) {
       if (tp == get_glob_type()) break;
       switch (get_type_tpop_code(tp)) {
         case tpo_class: {
-          print_type_node(F, tp);
+          dump_type_node(F, tp);
           /* and now the edges */
           for (i=0; i < get_class_n_supertypes(tp); i++)
           {
@@ -2078,7 +2087,7 @@ FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
 /**
  * open a vcg file
  *
- * @param name
+ * @param name    prefix file name
  * @param suffix  filename suffix
  */
 FILE *vcg_open_name (const char *name, const char *suffix) {
