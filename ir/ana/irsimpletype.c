@@ -61,6 +61,8 @@ static type* compute_irn_type(ir_node *n);
 
 static type *find_type_for_Proj(ir_node *n) {
   type *tp;
+
+  /* Avoid nested Tuples. */
   ir_node *pred = skip_Tuple(get_Proj_pred(n));
   ir_mode *m = get_irn_mode(n);
 
@@ -83,6 +85,8 @@ static type *find_type_for_Proj(ir_node *n) {
     } else if (get_irn_op(pred_pred) == op_Call) {
       type *mtp = get_Call_type(pred_pred);
       tp = get_method_res_type(mtp, get_Proj_proj(n));
+    } else if (get_irn_op(pred_pred) == op_Tuple) {
+      assert(0 && "Encountered nested Tuple");
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld from Proj from ??: unknown type\n", get_irn_node_nr(n)));
       tp = firm_unknown_type;
@@ -111,6 +115,9 @@ static type *find_type_for_Proj(ir_node *n) {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld %ld from Call: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
       tp = firm_unknown_type;
     }
+  } break;
+  case iro_Tuple: {
+    tp = compute_irn_type(get_Tuple_pred(pred, get_Proj_proj(n)));
   } break;
   default:
     tp = compute_irn_type(pred);
@@ -226,7 +233,7 @@ static type *find_type_for_node(ir_node *n) {
 
     if (tp1 == tp2) { tp = tp1; break; }
 
-    if (get_firm_verbosity() > 1) {
+    if (get_firm_verbosity() > 55) {  // Do not commit 55! should be 1.
       VERBOSE_UNKNOWN_TYPE(("Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
 			    get_type_name(tp1), get_type_name(tp2)));
     }
@@ -313,7 +320,7 @@ static type *find_type_for_node(ir_node *n) {
 	      tp = phi_cycle_type;
 	      break;
       }
-      if (get_firm_verbosity() > 1) {
+      if (get_firm_verbosity() > 55) {
 	VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
 			      get_type_name(tp1), get_type_name(tp2)));
       }
