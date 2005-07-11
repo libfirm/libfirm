@@ -285,11 +285,11 @@ int         get_type_alignment_bytes(type *tp);
  *
  *  If the alignment of a type is
  *  not set, it is calculated here according to the following rules:
- *  1.) if a type has a mode, the alignment is the mode size.
- *  2.) compound types have the alignment of it's biggest member.
- *  3.) array types have the alignment of its element type.
- *  4.) method types return 0 here.
- *  5.) all other types return 8 here (i.e. aligned at byte).
+ *  -#.) if a type has a mode, the alignment is the mode size.
+ *  -#.) compound types have the alignment of there biggest member.
+ *  -#.) array types have the alignment of there element type.
+ *  -#.) method types return 0 here.
+ *  -#.) all other types return 8 here (i.e. aligned at byte).
  */
 int         get_type_alignment_bits(type *tp);
 
@@ -310,7 +310,9 @@ void          mark_type_visited(type *tp);
 /* @@@ name clash!! int           type_visited(const type *tp); */
 int           type_not_visited(const type *tp);
 
+/** Returns the associated link field of a type. */
 void*         get_type_link(const type *tp);
+/** Sets the associated link field of a type. */
 void          set_type_link(type *tp, void *l);
 
 /**
@@ -352,7 +354,7 @@ int is_type            (const void *thing);
  *    - they have the same name
  *    - they have the same mode (if applicable)
  *    - they have the same type_state and, ev., the same size
- *    - they are class types and have
+ *    - they are class types and have:
  *      - the same members (see same_entity in entity.h)
  *      - the same supertypes -- the C-pointers are compared --> no recursive call.
  *      - the same number of subtypes.  Subtypes are not compared,
@@ -513,6 +515,13 @@ void    set_class_subtype   (type *clss, type *subtype, int pos);
 /** Finds subtype in the list of subtypes and removes it  */
 void    remove_class_subtype(type *clss, type *subtype);
 
+/* Convenience macros */
+#define add_class_derived_type(clss, drvtype)       add_class_subtype(clss, drvtype)
+#define get_class_n_derived_types(clss)             get_class_n_subtypes(clss)
+#define get_class_derived_type(clss, pos)           get_class_subtype(clss, pos)
+#define get_class_derived_type_index(clss, drvtype) get_class_subtype_index(clss, drvtype)
+#define set_class_derived_type(clss, drvtype, pos)  set_class_subtype(clss, drvtype, pos)
+#define remove_class_derived_type(clss, drvtype)    remove_class_subtype(clss, drvtype)
 
 /** Adds supertype as supertype to class.
  *
@@ -541,6 +550,14 @@ void    set_class_supertype   (type *clss, type *supertype, int pos);
 /** Finds supertype in the list of supertypes and removes it */
 void    remove_class_supertype(type *clss, type *supertype);
 
+/** Convenience macro */
+#define add_class_base_type(clss, basetype)        add_class_supertype(clss, basetype)
+#define get_class_n_base_types(clss)               get_class_n_supertypes(clss)
+#define get_class_base_type_index(clss, base_clss) get_class_supertype_index(clss, base_clss)
+#define get_class_base_type(clss, pos)             get_class_supertype(clss, pos)
+#define set_class_base_type(clss, basetype, pos)   set_class_supertype(clss, basetype, pos)
+#define remove_class_base_type(clss, basetype)     remove_class_supertype(clss, basetype)
+
 /** This enumeration flags the peculiarity of entities and types. */
 typedef enum peculiarity {
   peculiarity_description,     /**< Represents only a description.  The entity/type is never
@@ -559,9 +576,9 @@ typedef enum peculiarity {
 } peculiarity;
 const char *get_peculiarity_string(peculiarity p);
 
-/* The peculiarity of the class.  The enumeration peculiarity is defined
-   in entity.h */
+/** Returns the peculiarity of the class. */
 peculiarity get_class_peculiarity (const type *clss);
+/** Sets the peculiarity of the class. */
 void        set_class_peculiarity (type *clss, peculiarity pec);
 
 /* Set and get a class' dfn --
@@ -697,7 +714,9 @@ entity *get_method_value_param_ent(type *method, int pos);
  */
 type *get_method_value_param_type(const type *method);
 
+/** Returns the number of results of a method type. */
 int   get_method_n_ress   (const type *method);
+/** Returns the return type of a method type at position pos. */
 type *get_method_res_type(type *method, int pos);
 /** Sets the type of the result at position pos of a method.
     Also changes the type in the pass-by-value representation by just
@@ -713,7 +732,7 @@ entity *get_method_value_res_ent(type *method, int pos);
 type *get_method_value_res_type(const type *method);
 
 /**
- * this enum flags the variadicity of methods (methods with a
+ * This enum flags the variadicity of methods (methods with a
  * variable amount of arguments (e.g. C's printf). Default is
  * non_variadic.
  */
@@ -853,16 +872,18 @@ void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
 void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
 
 /** Allocates Const nodes of mode_I for the upper bound of an array
-    dimension, i.e. [lower,upper[ */
+    dimension, i.e. [lower,upper[. */
 void  set_array_upper_bound_int (type *array, int dimension, int upper_bound);
 
-/** returns true if lower bound != Unknown */
+/** Returns true if lower bound != Unknown. */
 int       has_array_lower_bound     (const type *array, int dimension);
+/** Returns the lower bound of an array. */
 ir_node * get_array_lower_bound     (const type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
 long      get_array_lower_bound_int (const type *array, int dimension);
 /** returns true if lower bound != Unknown */
 int       has_array_upper_bound     (const type *array, int dimension);
+/** Returns the upper bound of an array. */
 ir_node * get_array_upper_bound     (const type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
 long      get_array_upper_bound_int (const type *array, int dimension);
@@ -995,14 +1016,14 @@ int  is_Primitive_type  (const type *primitive);
  *  allocated when initializing the type module.
  *
  *  The following values are set:
- *    mode:  mode_BAD
- *    name:  "type_none"
- *    state: layout_fixed
- *    size:  0
+ *    - mode:  mode_BAD
+ *    - name:  "type_none"
+ *    - state: layout_fixed
+ *    - size:  0
  */
-/* A variable that contains the only none type. */
+/** A variable that contains the only none type. */
 extern type *firm_none_type;
-/* Returns the none type */
+/** Returns the none type */
 type *get_none_type(void);
 
 /**
@@ -1017,20 +1038,20 @@ type *get_none_type(void);
  *  allocated when initializing the type module.
  *
  *  The following values are set:
- *    mode:  mode_ANY
- *    name:  "type_unknown"
- *    state: layout_fixed
- *    size:  0
+ *    - mode:  mode_ANY
+ *    - name:  "type_unknown"
+ *    - state: layout_fixed
+ *    - size:  0
  */
-/* A variable that contains the only unknown type. */
+/** A variable that contains the only unknown type. */
 extern type *firm_unknown_type;
-/* Returns the unknown type */
+/** Returns the unknown type */
 type *get_unknown_type(void);
 
 
 /**
  *  Checks whether a type is atomic.
- *  @param tp - any type
+ *  @param tp   any type
  *  @return true if type is primitive, pointer or enumeration
  */
 int is_atomic_type(const type *tp);
@@ -1071,6 +1092,9 @@ entity *get_compound_member(const type *tp, int pos);
  */
 int is_compound_type(const type *tp);
 
+/*-----------------------------------------------------------------*/
+/** Debug aides                                                   **/
+/*-----------------------------------------------------------------*/
 
 /**
  *  Outputs a unique number for this type if libfirm is compiled for
@@ -1078,12 +1102,6 @@ int is_compound_type(const type *tp);
  *  of the type cast to long.
  */
 long get_type_nr(const type *tp);
-
-/*******************************************************************/
-/** Debug aides                                                   **/
-/*******************************************************************/
-
-
 
 
 # endif /* _TYPE_H_ */
