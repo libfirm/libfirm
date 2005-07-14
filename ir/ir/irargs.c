@@ -24,6 +24,7 @@
 #include "entity_t.h"
 #include "irloop_t.h"
 #include "tv_t.h"
+#include "dbginfo_t.h"
 
 /**
  * identify a firm object type
@@ -65,6 +66,23 @@ static int bitset_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_
 }
 
 /**
+ * emit an opaque Firm dbg_info object
+ */
+static int firm_emit_dbg(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+{
+  char buf[1024];
+  ir_node *irn = arg->v_ptr;
+  dbg_info *dbg = get_irn_dbg_info(irn);
+
+  buf[0] = '\0';
+  if (dbg && __dbg_info_snprint) {
+    if (__dbg_info_snprint(buf, sizeof(buf), dbg) <= 0)
+      buf[0] = '\0';
+  }
+  return arg_append(app, occ, buf, strlen(buf));
+}
+
+/**
  * emit a Firm object
  */
 static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
@@ -75,7 +93,7 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
   firm_kind *obj = X;
   int i, n;
   ir_node *block;
-	char add[64];
+  char add[64];
   char buf[256];
   char tv[256];
 
@@ -195,7 +213,6 @@ static int firm_emit_indent(appendable_t *app, const arg_occ_t *occ, const arg_v
  */
 static int firm_emit_pnc(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
 {
-  int i;
   int value = arg->v_int;
   const char *p = get_pnc_string(value);
 
@@ -213,6 +230,7 @@ arg_env_t *firm_get_arg_env(void)
   static arg_handler_t indent_handler = { firm_get_arg_type_int, firm_emit_indent };
   static arg_handler_t pnc_handler    = { firm_get_arg_type_int, firm_emit_pnc };
   static arg_handler_t bitset_handler = { bitset_get_arg_type, bitset_emit };
+  static arg_handler_t debug_handler  = { firm_get_arg_type, firm_emit_dbg };
 
   static struct {
     const char *name;
@@ -236,13 +254,15 @@ arg_env_t *firm_get_arg_env(void)
     env = arg_new_env();
     arg_add_std(env);
 
-		arg_register(env, "firm", 'F', &firm_handler);
+    arg_register(env, "firm", 'F', &firm_handler);
     for (i = 0; i < sizeof(args)/sizeof(args[0]); ++i)
       arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
     arg_register(env, "firm:ident", 'I', &ident_handler);
-		arg_register(env, "firm:indent", 'D', &indent_handler);
-		/* arg_register(env, "firm:bitset", 'b', &bitset_handler); */
+    arg_register(env, "firm:indent", 'D', &indent_handler);
+    arg_register(env, "firm:pnc",      '=', &pnc_handler);
+    arg_register(env, "firm:dbg_info", 'g', &debug_handler);
+    /* arg_register(env, "firm:bitset", 'b', &bitset_handler); */
   }
 
   return env;

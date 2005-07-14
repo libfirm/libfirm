@@ -46,6 +46,7 @@
 #include "pset.h"
 #include "iterator.h"
 #include "bitset.h"
+#include "dbginfo_t.h"
 
 #define STRNIL "(nil)"
 
@@ -449,16 +450,17 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 				case 'n':
 					{
 						ir_node *irn = va_arg(args, ir_node *);
-						if (irn)
+						if (irn) {
 							if (is_Const(irn)) {
 								char tbuf[128];
 								tarval_snprintf(tbuf, sizeof(tbuf), get_Const_tarval(irn));
 								snprintf(buf, sizeof(buf), "%s%s<%s>:%ld",
 									get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), tbuf, get_irn_node_nr(irn));
-                                                        }
-                                                        else
+							}
+							else
 								snprintf(buf, sizeof(buf), "%s%s:%ld",
 									get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), get_irn_node_nr(irn));
+						}
 						else
 							strncpy(buf, STRNIL, sizeof(buf));
 					}
@@ -535,11 +537,21 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 				case '=':
 					str = get_pnc_string(va_arg(args, int));
 					break;
+				case 'g':
+					{
+						ir_node *irn = va_arg(args, ir_node *);
+						dbg_info *dbg = get_irn_dbg_info(irn);
+						buf[0] = '\0';
+						if (dbg && __dbg_info_snprint) {
+							if (__dbg_info_snprint(buf, sizeof(buf), dbg) <= 0)
+								buf[0] = '\0';
+						}
+						break;
+					}
 			}
 
 			dump_with_settings(app, object, limit, &settings, str);
 		}
-
 		else
 			DUMP_CH(ch);
 	}

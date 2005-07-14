@@ -50,6 +50,9 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
 
 /**
  * A string formatting routine for ir objects.
+ *
+ * @param fmt  The format string.
+ *
  * This function rudimentary implements a kind of printf(3) for ir
  * nodes. Following conversion specifiers. No length, special or field
  * width specifiers are accepted.
@@ -73,6 +76,7 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  * - @%B The block node number of the nodes block.
  * - @%b A bitset.
  * - @%= A pnc value
+ * - @%g A debug info (if available)
  *
  * Each of these can be prepend by a '+' which means, that the given
  * pointer is a collection of items specified by the format. In this
@@ -105,8 +109,6 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  *
  *   ir_printf("A set of xyz\'s: %*C\n", it_pset, xyzs, xyz_dump);
  * @endcode
- *
- * @param fmt The format string.
  */
 void ir_printf(const char *fmt, ...);
 
