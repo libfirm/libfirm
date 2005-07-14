@@ -109,6 +109,8 @@ extern "C" {
 
 #include "irreflect.h"     /* reflection */
 
+#include "seqnumbers.h"    /* debug support */
+
 
 /* @@@ temporarily for jni builder until preprocessor works.
    Then it should be sufficient to include <file.h> instead
@@ -179,7 +181,7 @@ typedef struct _firm_parameter_t firm_parameter_t;
  * Initializes the firm library.  Allocates default data structures.
  * Initializes configurable behavior of the library.
  *
- * @param param    A structure containing the parameters of the libFirm.
+ * @param params   A structure containing the parameters of the libFirm.
  *
  * The parameter struct may be NULL. In that case, the original FIRM behavior
  * is conserved.
