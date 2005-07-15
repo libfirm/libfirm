@@ -150,7 +150,7 @@ sol_state_t lpp_get_solution(lpp_t *lpp, double *values, int begin, int end);
  */
 void lpp_dump(lpp_t *lpp, const char *filename);
 
-#define lpp_get_iter_cnt(lpp) lpp->iterations
-#define lpp_get_sol_time(lpp) lpp->sol_time
+#define lpp_get_iter_cnt(lpp) ((lpp)->iterations)
+#define lpp_get_sol_time(lpp) ((lpp)->sol_time)
 
 #endif
