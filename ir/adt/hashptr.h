@@ -17,13 +17,17 @@
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U
 #define _FIRM_FNV_FNV_PRIME 16777619U
 
+/* Computing x * _FIRM_FNV_FNV_PRIME */
+#define _FIRM_FNV_TIMES_PRIME(x) \
+  (((x) << 24) + ((x) << 8) + ((x) << 7) + ((x) << 4) + ((x) << 1) + 1)
+
 static INLINE unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
 {
 	unsigned i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
 
 	for(i = 0; i < bytes; ++i) {
-		hash *= _FIRM_FNV_FNV_PRIME;
+		hash = _FIRM_FNV_TIMES_PRIME(hash);
 		hash ^= data[i];
 	}
 
@@ -43,5 +47,22 @@ static INLINE unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
  * @return A hash value for the string.
  */
 #define HASH_STR(str,len) firm_fnv_hash((const unsigned char *) (str), (len))
+
+static INLINE unsigned _hash_combine(unsigned x, unsigned y)
+{
+  unsigned hash = _FIRM_FNV_TIMES_PRIME(_FIRM_FNV_OFFSET_BASIS);
+  hash ^= x;
+  hash  = _FIRM_FNV_TIMES_PRIME(hash);
+  hash ^= y;
+  return hash;
+}
+
+/**
+ * Make one hash value out of two others.
+ * @param a One hash value.
+ * @param b Another hash value.
+ * @return A hash value computed from the both.
+ */
+#define HASH_COMBINE(a,b) _hash_combine(a, b)
 
 #endif /* __HASHPTR_H__ */
