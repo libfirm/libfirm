@@ -28,7 +28,7 @@ struct PListElement {
  */
 struct PList {
 	/**
-	 * The obastack used for all allocations.
+	 * The obstack used for all allocations.
 	 */
 	struct obstack obst;
 	/**
@@ -40,7 +40,7 @@ struct PList {
 	 */
 	PListElement* lastElement;
 	/**
-	 * Current numner of elements in the list.
+	 * Current number of elements in the list.
 	 */
 	int elementCount;
 	/**
@@ -56,7 +56,7 @@ struct PList {
  * fetching one from the free-list or allocating a new one on the lists
  * obstack.
  * @param list the list for which to allocate the element.
- * @return the newlyallocated, uninitialized element.
+ * @return the newly allocated, uninitialized element.
  */
 static PListElement* allocate_element(PList* list) {
 	PListElement* newElement;
@@ -116,10 +116,12 @@ void plist_insert_front(PList* list, void* value) {
 }
 
 void plist_insert_before(PList* list, PListElement* element, void* value) {
+  PListElement* prevElement;
 	PListElement* newElement = allocate_element(list);
+
 	newElement->data = value;
 	newElement->next = element;
-	PListElement* prevElement = element->prev;
+	prevElement = element->prev;
 	newElement->prev = prevElement;
 	if (prevElement != NULL) {
 		prevElement->next = newElement;
@@ -131,10 +133,12 @@ void plist_insert_before(PList* list, PListElement* element, void* value) {
 }
 
 void plist_insert_after(PList* list, PListElement* element, void* value) {
+  PListElement* nextElement;
 	PListElement* newElement = allocate_element(list);
+
 	newElement->data = value;
 	newElement->prev = element;
-	PListElement* nextElement = element->next;
+	nextElement = element->next;
 	newElement->next = nextElement;
 	if (nextElement != NULL) {
 		nextElement->prev = newElement;
@@ -160,7 +164,7 @@ void plist_erase(PList* list, PListElement* element) {
 	}
 	--list->elementCount;
 	/* Clean the element and prepend it to the free list */
-	element->prev = NULL; /* The allocation code exprects prev to be NULL */
+	element->prev = NULL; /* The allocation code expects prev to be NULL */
 	element->next = list->firstFreeElement;
 	list->firstFreeElement = element;
 }
