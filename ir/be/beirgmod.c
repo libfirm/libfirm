@@ -200,8 +200,12 @@ static void place_phi_functions(ir_node *orig, pset *copies,
         pset_insert_ptr(copies, phi);
         pset_insert_ptr(copy_blocks, y);
 
-        /* Insert the phi node into the schedule */
-        sched_add_before(sched_first(y), phi);
+        /*
+         * Insert the phi node into the schedule if it
+         * can occur there (PhiM's are not to put into a schedule.
+         */
+        if(to_appear_in_schedule(phi))
+          sched_add_before(sched_first(y), phi);
 
         /* Insert the phi node in the phi blocks set. */
         pset_insert_ptr(phi_blocks, y);
