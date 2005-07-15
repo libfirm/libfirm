@@ -5,51 +5,13 @@
  * This list uses an obstack and a free-list to efficiently manage its
  * elements.
  * @author Kimon Hoffmann
- * @date 17.07.2005
+ * @date 14.07.2005
  * @note Until now the code is entirely untested so it probably contains
  * 		plenty of errors.
  */
 #include <stdlib.h>
-#include "obst.h"
 
 #include "plist.h"
-
-/**
- * Structure for one entry of the double linked pointer list.
- */
-struct PListElement {
-	PListElement* next;
-	PListElement* prev;
-	void* data;
-};
-
-/**
- * The list data type.
- */
-struct PList {
-	/**
-	 * The obstack used for all allocations.
-	 */
-	struct obstack obst;
-	/**
-	 * First element in the list.
-	 */
-	PListElement* firstElement;
-	/**
-	 * Last element in the list.
-	 */
-	PListElement* lastElement;
-	/**
-	 * Current number of elements in the list.
-	 */
-	int elementCount;
-	/**
-	 * First element in the free list.
-	 * Please note that the free list is a single linked list and all back
-	 * references are invalid.
-	 */
-	PListElement* firstFreeElement;
-};
 
 /**
  * Helper macro that returns a new uninitialized list element by either
@@ -116,7 +78,7 @@ void plist_insert_front(PList* list, void* value) {
 }
 
 void plist_insert_before(PList* list, PListElement* element, void* value) {
-  PListElement* prevElement;
+	PListElement* prevElement;
 	PListElement* newElement = allocate_element(list);
 
 	newElement->data = value;
@@ -133,7 +95,7 @@ void plist_insert_before(PList* list, PListElement* element, void* value) {
 }
 
 void plist_insert_after(PList* list, PListElement* element, void* value) {
-  PListElement* nextElement;
+	PListElement* nextElement;
 	PListElement* newElement = allocate_element(list);
 
 	newElement->data = value;

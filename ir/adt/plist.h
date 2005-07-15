@@ -5,7 +5,7 @@
  * This list uses an obstack and a free-list to efficiently manage its
  * elements.
  * @author Kimon Hoffmann
- * @date 17.07.2005
+ * @date 14.07.2005
  * @note Until now the code is entirely untested so it probably contains
  * 		plenty of errors.
  */
@@ -13,19 +13,50 @@
 #define _PLIST_H_
 
 #include <stddef.h>
+#include "obst.h"
+
+typedef struct PListElement PListElement;
+typedef struct PList PList;
 
 /**
  * The Plist data type.
  */
-typedef struct PList PList;
+struct PList {
+	/**
+	 * The obstack used for all allocations.
+	 */
+	struct obstack obst;
+	/**
+	 * First element in the list.
+	 */
+	PListElement* firstElement;
+	/**
+	 * Last element in the list.
+	 */
+	PListElement* lastElement;
+	/**
+	 * Current number of elements in the list.
+	 */
+	int elementCount;
+	/**
+	 * First element in the free list.
+	 * Please note that the free list is a single linked list and all back
+	 * references are invalid.
+	 */
+	PListElement* firstFreeElement;
+};
 
 /**
  * An element in the pointer list.
  */
-typedef struct PListElement PListElement;
+struct PListElement {
+	PListElement* next;
+	PListElement* prev;
+	void* data;
+};
 
 /**
- * Creates a new pointer list.
+ * Creates a new pointer list and initializes it.
  * @return The newly created pointer list.
  */
 PList* plist_new(void);
