@@ -44,8 +44,8 @@ ir_node *new_Spill(const be_node_factory_t *factory,
     ir_graph *irg, ir_node *bl, ir_node *node_to_spill);
 
 ir_node *new_Reload(const be_node_factory_t *factory,
-    const arch_register_class_t *cls,
-    ir_graph *irg, ir_node *bl, ir_node *spill_node);
+    const arch_register_class_t *cls, ir_graph *irg,
+    ir_node *bl, ir_mode *mode, ir_node *spill_node);
 
 ir_node *new_Perm(const be_node_factory_t *factory,
     const arch_register_class_t *cls,

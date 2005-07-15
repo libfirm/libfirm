@@ -13,6 +13,18 @@
 #define BE_DEBUG 1
 
 /**
+ * Convenient block getter.
+ * Works also, if the given node is a block.
+ * @param  irn The node.
+ * @return The block of the node, or the node itself, if the node is a
+ *         block.
+ */
+static INLINE const ir_node *get_block(const ir_node *irn)
+{
+  return is_Block(irn) ? irn : get_nodes_block(irn);
+}
+
+/**
  * Check, if a node produces or consumes a data value.
  * If it does, it is significant for scheduling and register allocation.
  * A node produces/consumes a data value, if one of its operands is of

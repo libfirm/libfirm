@@ -18,13 +18,22 @@ ir_node *(sched_last)(const ir_node *block);
 ir_node *(sched_add_before)(ir_node *before, ir_node *irn);
 ir_node *(sched_add_after)(ir_node *before, ir_node *irn);
 
+#define sched_is_end(irn) is_Block(irn)
+#define sched_is_begin(irn) is_Block(irn)
+
+#define sched_foreach_from(from, irn) \
+  for(irn = from; !sched_is_end(irn); irn = sched_next(irn))
+
+#define sched_foreach_reverse_from(from, irn) \
+  for(irn = from; !sched_is_begin(irn); irn = sched_prev(irn))
+
 /**
  * A shorthand macro for iterating over a schedule.
  * @param block The block.
  * @param irn A ir node pointer used as an iterator.
  */
 #define sched_foreach(block,irn) \
-	for(irn = sched_first(block); !is_Block(irn); irn = sched_next(irn))
+	sched_foreach_from(sched_first(block), irn)
 
 /**
  * A shorthand macro for reversely iterating over a schedule.
@@ -32,6 +41,6 @@ ir_node *(sched_add_after)(ir_node *before, ir_node *irn);
  * @param irn A ir node pointer used as an iterator.
  */
 #define sched_foreach_reverse(block,irn) \
-	for(irn = sched_last(block); !is_Block(irn); irn = sched_prev(irn))
+  sched_foreach_reverse_from(sched_last(block), irn)
 
 #endif

@@ -22,7 +22,7 @@ typedef struct _sched_info_t {
 	sched_timestep_t time_step;    /**< If a is after b in a schedule, its time step is
                                         larger than b's. */
 
-    int scheduled : 1;             /**< 1, if the node is in the schedule of the block, 0 else. */
+  int scheduled : 1;             /**< 1, if the node is in the schedule of the block, 0 else. */
 } sched_info_t;
 
 #define _sched_entry(list_head) (list_entry(list_head, sched_info_t, list))
@@ -127,9 +127,9 @@ static INLINE ir_node *_sched_first(const ir_node *block)
 
 /**
  * Get the last node in a schedule.
- * @param block The block to get the schedule for.
- * @return The last ir node in a schedule, or the block itself, if there is node in the schedule.
- * or it is empty.
+ * @param  block The block to get the schedule for.
+ * @return The last ir node in a schedule, or the block itself
+ *         if there is node in the schedule.
  */
 static INLINE ir_node *_sched_last(const ir_node *block)
 {
@@ -154,7 +154,7 @@ static INLINE void _sched_set_time_stamp(ir_node *irn)
    * else we have to compute our time step from our
    * neighbours.
    */
-  if(after_ts == 0)
+  if(before_ts >= after_ts)
     inf->time_step = before_ts + SCHED_INITIAL_GRANULARITY;
   else {
     sched_timestep_t ts = (before_ts + after_ts) / 2;
@@ -165,6 +165,8 @@ static INLINE void _sched_set_time_stamp(ir_node *irn)
      */
     if(ts == before_ts || ts == after_ts)
       sched_renumber(get_nodes_block(irn));
+    else
+      inf->time_step = ts;
   }
 }
 
@@ -203,9 +205,24 @@ static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
  * @param irn The node.
  * @return 1, if the node is scheduled, 0 if not.
  */
-static INLINE int _sched_is_scheduled(ir_node *irn)
+static INLINE int _sched_is_scheduled(const ir_node *irn)
 {
   return get_irn_sched_info(irn)->scheduled;
+}
+
+/**
+ * Compare two nodes according to their position in the schedule.
+ * @param a The first node.
+ * @param b The second node.
+ * @return A number smaller, equals to or larger than 0, if a is
+ *         before, the same, or after b in the schedule.
+ */
+static INLINE int _sched_cmp(const ir_node *a, const ir_node *b)
+{
+  assert(_sched_is_scheduled(a) && _sched_is_scheduled(b));
+  assert(get_nodes_block(a) == get_nodes_block(b));
+
+  return get_irn_sched_info(a)->time_step - get_irn_sched_info(b)->time_step;
 }
 
 /**
@@ -232,6 +249,7 @@ extern int sched_verify_irg(ir_graph *irg);
 #define sched_last(irn) 						  _sched_last(irn)
 #define sched_add_before(before, irn)	_sched_add_before(before, irn)
 #define sched_add_after(after, irn) 	_sched_add_after(after, irn)
-#define sched_is_scheduled(irn)         _sched_is_scheduled(irn)
+#define sched_is_scheduled(irn)       _sched_is_scheduled(irn)
+#define sched_cmp(a, b)               _sched_cmp(a, b)
 
 #endif

@@ -18,6 +18,7 @@
 #include "set.h"
 #include "pmap.h"
 #include "util.h"
+#include "debug.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"
@@ -96,17 +97,15 @@ ir_node *new_Spill(const be_node_factory_t *factory,
 }
 
 ir_node *new_Reload(const be_node_factory_t *factory,
-    const arch_register_class_t *cls,
-    ir_graph *irg, ir_node *bl, ir_node *spill_node)
+    const arch_register_class_t *cls, ir_graph *irg,
+    ir_node *bl, ir_mode *mode, ir_node *spill_node)
 {
-  ir_mode *mode;
   ir_node *in[1];
   ir_op *op = get_op(factory, cls, node_kind_reload)->op;
 
   assert(op && "Reload opcode must be present for this register class");
-  assert(is_Spill(factory, spill_node) && "Operand of Reload must be a Spill");
+  // assert(is_Spill(factory, spill_node) && "Operand of Reload must be a Spill");
   in[0] = spill_node;
-  mode = get_irn_mode(get_irn_n(spill_node, 0));
 
   return new_ir_node(NULL, irg, bl, op, mode, 1, in);
 }
@@ -327,14 +326,28 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   ir_graph *irg = get_irn_irg(bl);
   pset *live = put_live_end(bl, pset_new_ptr_default());
   ir_node *curr, *irn, *perm, **nodes;
+  firm_dbg_module_t *dbg = firm_dbg_register("firm.be.node");
   int i, n;
 
-  ir_printf("Insert Perm after: %+F\n", pos);
+  DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
   sched_foreach_reverse(bl, irn) {
+    ir_node *x;
+
+    DBG((dbg, LEVEL_1, "%+F\n", irn));
+    for(x = pset_first(live); x; x = pset_next(live))
+      DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
 
     if(arch_irn_has_reg_class(arch_env, irn, arch_pos_make_out(0), cls))
       pset_remove_ptr(live, irn);
+
+    /*
+     * Consider the definition of the node, but not the uses, since
+     * newly created liveranges by the node after which the perm is
+     * located are not of interest for the perm.
+     */
+    if(irn == pos)
+      break;
 
     for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
       ir_node *op = get_irn_n(irn, i);
@@ -342,9 +355,6 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
       if(arch_irn_has_reg_class(arch_env, op, arch_pos_make_out(0), cls))
         pset_insert_ptr(live, op);
     }
-
-    if(sched_prev(irn) == pos)
-      break;
   }
 
   n = pset_count(live);

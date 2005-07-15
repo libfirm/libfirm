@@ -88,6 +88,7 @@ int sched_verify(const ir_node *block)
   const ir_node *irn;
   int i, n;
   int *save_time_step;
+  const ir_node **save_nodes;
   const ir_edge_t *edge;
   pset *scheduled_nodes = pset_new_ptr_default();
 
@@ -99,11 +100,13 @@ int sched_verify(const ir_node *block)
     n++;
 
   save_time_step = malloc(n * sizeof(save_time_step[0]));
+  save_nodes = malloc(n * sizeof(save_nodes[0]));
 
   i = 0;
   sched_foreach(block, irn) {
     sched_info_t *info = get_irn_sched_info(irn);
     save_time_step[i] = info->time_step;
+    save_nodes[i] = irn;
     info->time_step = i;
     pset_insert_ptr(scheduled_nodes, irn);
 
@@ -122,11 +125,12 @@ int sched_verify(const ir_node *block)
       ir_node *op = get_irn_n(irn, i);
 
       if(to_appear_in_schedule(op)
+          && !is_Phi(irn)
           && get_nodes_block(op) == block
           && sched_get_time_step(op) > step) {
 
           DBG((dbg_sched, LEVEL_DEFAULT,
-                "%n is operand of %n but scheduled after", op, irn));
+                "%+F: %+F is operand of %+F but scheduled after\n", block, op, irn));
           res = 0;
       }
     }
@@ -136,8 +140,9 @@ int sched_verify(const ir_node *block)
   for(i = 1; i < n; ++i) {
     if(save_time_step[i] - save_time_step[i - 1] <= 0) {
       DBG((dbg_sched, LEVEL_DEFAULT,
-            "position %d: time step shrinks (from %d to %d)\n",
-            i, save_time_step[i - 1], save_time_step[i]));
+            "%+F from %+F(%d) -> %+F(%d) step shrinks from %d -> %d\n",
+            block, save_nodes[i - 1], i - 1, save_nodes[i], i,
+            save_time_step[i - 1], save_time_step[i]));
       res = 0;
     }
   }
@@ -153,11 +158,13 @@ int sched_verify(const ir_node *block)
   foreach_out_edge(block, edge) {
     ir_node *irn = get_edge_src_irn(edge);
     if(to_appear_in_schedule(irn) && !pset_find_ptr(scheduled_nodes, irn))
-      DBG((dbg_sched, LEVEL_DEFAULT, "%+F is in block but not scheduled\n", irn));
+      DBG((dbg_sched, LEVEL_DEFAULT,
+            "%+F: %+F is in block but not scheduled\n", block, irn));
   }
 
   del_pset(scheduled_nodes);
   free(save_time_step);
+  free(save_nodes);
   return res;
 }
 
