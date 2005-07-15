@@ -17,101 +17,82 @@
 #include "besched_t.h"
 #include "belive_t.h"
 
-static INLINE int values_interfere_dom(const ir_node *a, const ir_node *b)
+int value_dominates(const ir_node *a, const ir_node *b)
 {
-	const ir_node *b1 = get_nodes_block(a);
-	const ir_node *b2 = get_nodes_block(b);
-	int lo_a, lo_b;
+  int res = 0;
+	const ir_node *ba = get_nodes_block(a);
+	const ir_node *bb = get_nodes_block(a);
 
-	assert(block_dominates(b1, b2));
+  /*
+   * a and b are not in the same block,
+   * so dominance is determined by the dominance of the blocks.
+   */
+  if(ba != bb)
+    res = block_dominates(ba, bb);
 
-	/*
-	 * if the two blocks are not equal, a and b can only interfere if a is
-	 * live in at b2.
-	 */
-	if(b1 != b2 && !is_live_in(b2, a))
-		return 0;
+  /*
+   * Dominance is determined by the time steps of the schedule.
+   */
+  else {
+    sched_timestep_t as = sched_get_time_step(a);
+    sched_timestep_t bs = sched_get_time_step(b);
+    res = as <= bs;
+  }
 
-	lo_a = is_live_end(b2, a);
-	lo_b = is_live_end(b2, b);
-
-	/*
-	 * If the two blocks are the same and one value is live out and the
-	 * definition of the other is after the definition ov the live out
-	 * value, they interfere.
-	 */
-	if(b1 == b2) {
-		int pos_a = sched_get_time_step(a);
-		int pos_b = sched_get_time_step(b);
-
-		if((pos_a < pos_b && lo_a) || (pos_b < pos_a && lo_b))
-			return 1;
-	}
-
-	/*
-	 * Now it is left to check, if the sequence from the last use of 'b'
-	 * (or the end of the block b2, if b is live out)
-	 * to the def of 'b' contains a use and NOT the def of 'a'. Then they
-	 * also interfere
-	 */
-	{
-		const ir_node *irn;
-
-		/* Initialize the liveness. */
-		int a_live = lo_a;
-		int b_live = lo_b;
-
-		/* Go from the end of block b2 and try to detect the liveness. */
-		sched_foreach_reverse(b2, irn) {
-			int i, n;
-
-			/*
-			 * If the definition of 'a' was found 'a' and 'b' interfere, if
-			 * 'b' is live here.
-			 */
-			if(irn == a)
-				return b_live;
-
-			/* Same goes for 'b'. */
-			if(irn == b)
-				return a_live;
-
-			/* If 'a' is not yet live, search for a use. */
-			if(!a_live) {
-				for(i = 0, n = get_irn_arity(irn); i < n; ++i)
-					if(get_irn_n(irn, i) == a) {
-						a_live = 1;
-						break;
-				}
-			}
-
-			/* Same for 'b' */
-			if(!b_live) {
-				for(i = 0, n = get_irn_arity(irn); i < n; ++i)
-					if(get_irn_n(irn, i) == b) {
-						b_live = 1;
-						break;
-					}
-			}
-
-		}
-	}
-
-	assert(0 && "You may never reach this place");
-
-	/* This is never reached */
-	return 0;
+  return res;
 }
 
+/**
+ * Check, if two values interfere.
+ * @param a The first value.
+ * @param b The second value.
+ * @return 1, if a and b interfere, 0 if not.
+ */
 int values_interfere(const ir_node *a, const ir_node *b)
 {
-	const ir_node *b1 = get_nodes_block(a);
-	const ir_node *b2 = get_nodes_block(b);
+  int a2b = value_dominates(a, b);
+  int b2a = value_dominates(b, a);
 
-	if(block_dominates(b1, b2))
-		return values_interfere_dom(a, b);
-	else if(block_dominates(b2, b1))
-		return values_interfere_dom(b, a);
-	else
-		return 0;
+  /*
+   * Adjust a and b so, that a dominates b if
+   * a dominates b or vice versa.
+   */
+  if(b2a) {
+    const ir_node *t = a;
+    a = b;
+    b = t;
+  }
+
+  /*
+   * If either a dmoninates b or vice versa
+   * check if there is usage which is dominated by b.
+   *
+   * remind, that if a and b are in a dom relation, a always dominates b
+   * here due to the if above.
+   */
+  if(a2b + b2a) {
+    const ir_edge_t *edge;
+
+    /* Look at all usages of a */
+    foreach_out_edge(a, edge) {
+      const ir_node *user = edge->src;
+
+      /*
+       * If the user is a phi we must check the last instruction in the
+       * corresponding phi predecessor block since the phi is not a
+       * proper user.
+       */
+      if(is_Phi(user)) {
+        ir_node *phi_block = get_nodes_block(user);
+        user = sched_last(get_Block_cfgpred_block(phi_block, edge->pos));
+      }
+
+      /* If b dominates a user of a, we can safely return 1 here. */
+      if(value_dominates(b, user))
+        return 1;
+    }
+
+  }
+
+  return 0;
 }
