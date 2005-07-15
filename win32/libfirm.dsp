@@ -37,11 +37,12 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "Release"
-# PROP Intermediate_Dir "Release"
+# PROP Output_Dir "D:\work\libfirm\Release"
+# PROP Intermediate_Dir "D:\work\libfirm\Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /c
+# SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x407 /d "NDEBUG"
 # ADD RSC /l 0x407 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -49,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"w:\ipd\lib\libfirm.lib"
+# ADD LIB32 /nologo /out:"S:\local\ipd\lib\libfirm.lib"
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
@@ -60,11 +61,12 @@ LIB32=link.exe -lib
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "Debug"
-# PROP Intermediate_Dir "Debug"
+# PROP Output_Dir "D:\work\libfirm\Debug"
+# PROP Intermediate_Dir "D:\work\libfirm\Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /YX /FD /D /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /D /GZ /c
+# SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x407 /d "_DEBUG"
 # ADD RSC /l 0x407 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -72,7 +74,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"w:\ipd\lib\libfirm_g.lib"
+# ADD LIB32 /nologo /out:"S:\local\ipd\lib\libfirm_g.lib"
 
 !ENDIF 
 
@@ -90,6 +92,10 @@ SOURCE=.\config.h
 # Begin Source File
 
 SOURCE=.\firm_config.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ieee754.h
 # End Source File
 # Begin Source File
 
@@ -173,6 +179,14 @@ SOURCE=..\ir\adt\pdeq.c
 # Begin Source File
 
 SOURCE=..\ir\adt\pdeq.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\plist.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\plist.h
 # End Source File
 # Begin Source File
 
@@ -265,6 +279,14 @@ SOURCE=..\ir\ana\ircfscc.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ana\irconsconfirm.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\irconsconfirm.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ana\irdom.c
 # End Source File
 # Begin Source File
@@ -274,6 +296,18 @@ SOURCE=..\ir\ana\irdom.h
 # Begin Source File
 
 SOURCE=..\ir\ana\irdom_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\irextbb.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\irextbb.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\irextbb_t.h
 # End Source File
 # Begin Source File
 
@@ -493,11 +527,19 @@ SOURCE=..\ir\be\be_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\bearch.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\bearch.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bearch_firm.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bearch_firm.h
 # End Source File
 # Begin Source File
 
@@ -526,6 +568,14 @@ SOURCE=..\ir\be\bechordal.c
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bechordal_draw.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bechordal_draw.h
 # End Source File
 # Begin Source File
 
@@ -569,6 +619,14 @@ SOURCE=..\ir\be\becopystat.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\beirgmod.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beirgmod.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\belistsched.c
 # End Source File
 # Begin Source File
@@ -590,6 +648,14 @@ SOURCE=..\ir\be\belive_t.h
 # Begin Source File
 
 SOURCE=..\ir\be\bemain.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\benode.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\benode_t.h
 # End Source File
 # Begin Source File
 
@@ -629,11 +695,51 @@ SOURCE=..\ir\be\besched_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\bessadestr.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bessadestr.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\beutil.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beutil.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\lpp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\lpp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\lpp_local.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\lpp_local.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\lpp_remote.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\lpp_remote.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mps.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mps.h
 # End Source File
 # Begin Source File
 
@@ -722,6 +828,14 @@ SOURCE=..\ir\debug\dbginfo_t.h
 # Begin Source File
 
 SOURCE=..\ir\debug\Makefile.in
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\debug\seqnumbers.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\debug\seqnumbers.h
 # End Source File
 # End Group
 # Begin Group "external"
@@ -1058,6 +1172,22 @@ SOURCE=..\ir\opt\Makefile.in
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\opt\opt_branches.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_branches.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_confirms.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_confirms.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\opt\opt_polymorphy.c
 # End Source File
 # Begin Source File
@@ -1136,6 +1266,10 @@ SOURCE=..\ir\st\st.h
 # Begin Group "stat"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\stat\const_stat.c
+# End Source File
 # Begin Source File
 
 SOURCE=..\ir\stat\counter.h
