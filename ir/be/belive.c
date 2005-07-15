@@ -8,7 +8,7 @@
 #endif
 
 #include "impl.h"
-#include "irouts.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf_t.h"
 
@@ -34,7 +34,7 @@ static INLINE void mark_live_in(ir_node *block, const ir_node *irn)
 
 static INLINE void mark_live_out(ir_node *block, const ir_node *irn)
 {
-  _get_or_set_live(block, irn, live_state_out);
+  _get_or_set_live(block, irn, live_state_out | live_state_end);
 }
 
 static INLINE void mark_live_end(ir_node *block, const ir_node *irn)
@@ -88,7 +88,7 @@ static void live_end_at_block(ir_node *def, ir_node *block,
  */
 static void liveness_for_node(ir_node *irn, void *env)
 {
-  int i, n;
+  const ir_edge_t *edge;
   ir_node *def_block;
   pset *visited;
 
@@ -100,8 +100,8 @@ static void liveness_for_node(ir_node *irn, void *env)
   def_block = get_nodes_block(irn);
 
   /* Go over all uses of the value */
-  for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
-    ir_node *use = get_irn_out(irn, i);
+  foreach_out_edge(irn, edge) {
+    ir_node *use = edge->src;
     ir_node *use_block;
 
     /*
@@ -163,6 +163,9 @@ static int cmp_irn_live(const void *a, const void *b, size_t size)
 void be_liveness(ir_graph *irg)
 {
   irg_live_info_t *live_info = get_irg_live_info(irg);
+  if(live_info->live)
+    del_set(live_info->live);
+
   live_info->live = new_set(cmp_irn_live, 8192);
   irg_walk_graph(irg, liveness_for_node, NULL, NULL);
 }
