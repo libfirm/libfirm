@@ -4,7 +4,7 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-#define HAVE_CPLEX
+#undef HAVE_CPLEX
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
