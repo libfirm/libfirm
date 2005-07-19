@@ -390,8 +390,9 @@ static INLINE int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
  */
 static INLINE void bitset_minus1(bitset_t *bs)
 {
-	int i;
 #define _SH (sizeof(bitset_unit_t) * 8 - 1)
+
+  bitset_pos_t i;
 
   for(i = 0; i < bs->units; ++i) {
     bitset_unit_t unit = bs->data[i];
