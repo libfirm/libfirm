@@ -371,9 +371,12 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   for(i = 0; i < n; ++i) {
     ir_node *copies[1];
     ir_node *perm_op = get_irn_n(perm, i);
+	const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op, arch_pos_make_out(0));
 
     ir_mode *mode = get_irn_mode(perm_op);
     ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
+    arch_set_irn_register(arch_env, proj, arch_pos_make_out(0), reg);
+
     sched_add_after(curr, proj);
     curr = proj;
 
