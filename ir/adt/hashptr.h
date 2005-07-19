@@ -48,6 +48,10 @@ static INLINE unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
  */
 #define HASH_STR(str,len) firm_fnv_hash((const unsigned char *) (str), (len))
 
+#ifdef _MSC_VER
+#pragma warning(disable:4307)
+#endif _MSC_VER
+
 static INLINE unsigned _hash_combine(unsigned x, unsigned y)
 {
   unsigned hash = _FIRM_FNV_TIMES_PRIME(_FIRM_FNV_OFFSET_BASIS);
@@ -56,6 +60,10 @@ static INLINE unsigned _hash_combine(unsigned x, unsigned y)
   hash ^= y;
   return hash;
 }
+
+#ifdef _MSC_VER
+#pragma warning(default:4307)
+#endif _MSC_VER
 
 /**
  * Make one hash value out of two others.
