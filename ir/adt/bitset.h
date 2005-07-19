@@ -245,7 +245,6 @@ static INLINE bitset_pos_t bitset_max(const bitset_t *bs)
  * @note Note that if pos is set, pos is returned.
  * @param bs The bitset.
  * @param pos The bit from which to search for the next set bit.
- * @param set if 1, serach for set bits, else for unset bits
  * @return The next set bit from pos on, or -1, if no set bit was found
  * after pos.
  */
@@ -382,6 +381,27 @@ static INLINE int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
 	}
 
 	return 1;
+}
+
+/**
+ * Treat the bitset as a number and subtract 1.
+ * @param bs The bitset.
+ * @return The same bitset.
+ */
+static INLINE void bitset_minus1(bitset_t *bs)
+{
+#define _SH (sizeof(bitset_unit_t) * 8 - 1)
+
+  for(i = 0; i < bs->units; ++i) {
+    bitset_unit_t unit = bs->data[i];
+    bitset_unit_t um1  = unit - 1;
+
+    bs->data[i] = um1;
+
+    if(((unit >> _SH) ^ (um1 >> _SH)) == 0)
+      break;
+  }
+#undef _SH
 }
 
 /**
