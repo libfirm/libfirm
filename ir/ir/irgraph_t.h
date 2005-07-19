@@ -29,6 +29,7 @@
 #include "irprog.h"
 #include "pseudo_irg.h"
 #include "type_t.h"
+#include "typegmod.h"
 #include "tr_inheritance.h"
 
 #include "irloop.h"
@@ -340,9 +341,9 @@ _set_irg_entity(ir_graph *irg, entity *ent) {
 }
 
 static INLINE type *
-_get_irg_frame_type(const ir_graph *irg) {
+_get_irg_frame_type(ir_graph *irg) {
   assert(irg && irg->frame_type);
-  return irg->frame_type;
+  return irg->frame_type = skip_tid(irg->frame_type);
 }
 
 static INLINE void

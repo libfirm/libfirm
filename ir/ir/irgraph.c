@@ -532,7 +532,7 @@ void
 }
 
 type *
-(get_irg_frame_type)(const ir_graph *irg) {
+(get_irg_frame_type)(ir_graph *irg) {
   return _get_irg_frame_type(irg);
 }
 
