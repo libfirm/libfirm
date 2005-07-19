@@ -77,7 +77,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 }
 
 /**
- * collect nodes
+ * Post-walker: collect nodes and put them on the right list
  */
 static void collect_nodes(ir_node *node, void *env)
 {
@@ -87,17 +87,43 @@ static void collect_nodes(ir_node *node, void *env)
 
    if (is_Block(node))  {
      /* it's a block, put it into the block list */
-     pdeq_putr(ctx->blk_list, node);
+     pdeq_putl(ctx->blk_list, node);
      return;
    }
 
    block = get_nodes_block(node);
    entry = block_find_entry(block, ctx);
 
-   if (get_irn_mode(node) == mode_X)
-     pdeq_putl(entry->list, node);
-   else
+   if (get_irn_mode(node) == mode_X) {
+     /*
+      * put all mode_X nodes to the start, later we can
+      * move them to the end.
+      */
      pdeq_putr(entry->list, node);
+   }
+   else
+     pdeq_putl(entry->list, node);
+}
+
+/**
+ * move mode_X nodes to the end of the schedule
+ */
+static void move_X_nodes_to_end(pdeq *list)
+{
+  int j;
+
+  /* move mode_X nodes to the end */
+  for (j = pdeq_len(list); j > 0; --j) {
+    ir_node *node = pdeq_getr(list);
+
+    if (get_irn_mode(node) == mode_X) {
+      pdeq_putl(list, node);
+    }
+    else {
+      pdeq_putr(list, node);
+      break;
+    }
+  }
 }
 
 /**
@@ -110,6 +136,9 @@ static void traverse_pre(blk_collect_data_t* blks, irg_walk_func *pre, void *env
   for (i = pdeq_len(blks->blk_list); i > 0; --i) {
     ir_node       *block = pdeq_getl(blks->blk_list);
     block_entry_t *entry = block_find_entry(block, blks);
+
+    /* move mode_X nodes to the end */
+    move_X_nodes_to_end(entry->list);
 
     for (j = pdeq_len(entry->list); j > 0; --j) {
       ir_node *node = pdeq_getl(entry->list);
@@ -131,6 +160,10 @@ static void traverse_post(blk_collect_data_t* blks, irg_walk_func *post, void *e
     block_entry_t *entry = block_find_entry(block, blks);
 
     post(block, env);
+
+    /* move mode_X nodes to the end */
+    move_X_nodes_to_end(entry->list);
+
     for (j = pdeq_len(entry->list); j > 0; --j) {
       ir_node *node = pdeq_getr(entry->list);
       post(node, env);
@@ -152,6 +185,9 @@ static void traverse_both(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk
 
     pdeq_putr(blks->blk_list, block);
 
+    /* move mode_X nodes to the end */
+    move_X_nodes_to_end(entry->list);
+
     for (j = pdeq_len(entry->list); j > 0; --j) {
       ir_node *node = pdeq_getl(entry->list);
 
@@ -162,7 +198,17 @@ static void traverse_both(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk
   }
 
   /* second step */
-  traverse_post(blks, post, env);
+  for (i = pdeq_len(blks->blk_list); i > 0; --i) {
+    ir_node       *block = pdeq_getr(blks->blk_list);
+    block_entry_t *entry = block_find_entry(block, blks);
+
+    post(block, env);
+
+    for (j = pdeq_len(entry->list); j > 0; --j) {
+      ir_node *node = pdeq_getr(entry->list);
+      post(node, env);
+    }
+  }
 }
 
 
@@ -194,7 +240,7 @@ do_irg_walk_blk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *en
 
   if (node->visited < current_ir_graph->visited) {
     /* first step: traverse the graph and fill the lists */
-    irg_walk(node, collect_nodes, NULL, &blks);
+    irg_walk(node, NULL, collect_nodes, &blks);
 
     /* second step: traverse the list */
     traverse(&blks, pre, post, env);
