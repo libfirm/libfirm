@@ -5,7 +5,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 
  * Sparse matrix storage with linked lists for rows and cols.
- * I did not need floats, so this is all integer.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -172,7 +171,7 @@ void del_matrix(sp_matrix_t *m) {
 	free(m);
 }
 
-void matrix_set(sp_matrix_t *m, int row, int col, int val) {
+void matrix_set(sp_matrix_t *m, int row, int col, matrix_type val) {
 	matrix_elem_t *me = NULL;
 	entry_t *entr;
 	struct list_head *leftof, *above;
@@ -230,7 +229,7 @@ void matrix_set(sp_matrix_t *m, int row, int col, int val) {
 	m->entries++;
 }
 
-int matrix_get(const sp_matrix_t *m, int row, int col) {
+matrix_type matrix_get(const sp_matrix_t *m, int row, int col) {
 	struct list_head *dummy;
 	matrix_elem_t *me;
 
@@ -395,7 +394,7 @@ void matrix_dump(sp_matrix_t *m, FILE *out, int factor) {
 		matrix_foreach_in_row(m, i, e) {
 			for (o=last_idx+1; o<e->col; ++o)
 				fprintf(out, "0");
-			fprintf(out, "%d", factor*e->val);
+			fprintf(out, "%f", factor*e->val);
 			last_idx = e->col;
 		}
 		for (o=last_idx+1; o<=m->maxcol; ++o)

@@ -5,7 +5,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 
  * Sparse matrix storage with linked lists for rows and cols.
- * I did not need floats, so this is all integer.
  */
 
 #ifndef _SP_MATRIX_H
@@ -13,8 +12,11 @@
 
 #include <stdio.h>
 
+typedef double matrix_type;
+
 typedef struct _matrix_elem_t {
-	int row, col, val;
+	int row, col;
+	matrix_type val;
 } matrix_elem_t;
 
 typedef struct _sp_matrix_t sp_matrix_t;
@@ -34,12 +36,12 @@ void del_matrix(sp_matrix_t *m);
 /**
  * Sets m[row, col] to val
  */
-void matrix_set(sp_matrix_t *m, int row, int col, int val);
+void matrix_set(sp_matrix_t *m, int row, int col, matrix_type val);
 
 /**
  * Returns the value stored in m[row, col].
  */
-int matrix_get(const sp_matrix_t *m, int row, int col);
+matrix_type matrix_get(const sp_matrix_t *m, int row, int col);
 
 /**
  * Returns the number of (not-0-)entries.
