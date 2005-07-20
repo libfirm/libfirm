@@ -84,22 +84,22 @@ typedef union {
 #endif
 #endif
 
-
-/********
- * globals
- ********/
+/**
+ * possible float states
+ */
 typedef enum {
-  NORMAL,
-  ZERO,
-  SUBNORMAL,
-  INF,
-  NAN,
+  NORMAL,       /**< normal representation, implicit 1 */
+  ZERO,         /**< +/-0 */
+  SUBNORMAL,    /**< denormals, implicit 0 */
+  INF,          /**< +/-oo */
+  NAN,          /**< Not A Number */
 } value_class_t;
 
+/** A descriptor for an IEEE float value. */
 typedef struct {
-  char  exponent_size;
-  char  mantissa_size;
-  value_class_t  class;
+  unsigned char exponent_size;    /**< size of exponent in bits */
+  unsigned char mantissa_size;    /**< size of mantissa in bits */
+  value_class_t clss;             /**< state of this float */
 } descriptor_t;
 
 #define CLEAR_BUFFER(buffer) memset(buffer, 0, calc_buffer_size)
@@ -123,15 +123,15 @@ typedef struct {
 #define _shift_right(x, y, b) sc_shr((x), (y), value_size*4, 0, (b))
 #define _shift_left(x, y, b) sc_shl((x), (y), value_size*4, 0, (b))
 
-#define FC_DEFINE1(code) char* fc_##code(const void *a, void *result)                          \
-                   {                                                                           \
-                     return _calc((const char*)a, NULL, FC_##code, (char*)result);             \
-                   }
+#define FC_DEFINE1(code) \
+char *fc_##code(const void *a, void *result)  {                        \
+  return _calc((const char*)a, NULL, FC_##code, (char*)result);        \
+}
 
-#define FC_DEFINE2(code) char* fc_##code(const void *a, const void *b, void *result)           \
-                   {                                                                           \
-                     return _calc((const char*)a, (const char*)b, FC_##code, (char*)result);   \
-                   }
+#define FC_DEFINE2(code) \
+char *fc_##code(const void *a, const void *b, void *result) {             \
+  return _calc((const char*)a, (const char*)b, FC_##code, (char*)result); \
+}
 
 #define FUNC_PTR(code) fc_##code
 
@@ -176,7 +176,7 @@ static void _fail_char(const char *str, unsigned int len, int pos)
 }
 #endif
 
-/* pack machine-like */
+/** pack machine-like */
 static char* _pack(const char *int_float, char *packed)
 {
   char *shift_val;
@@ -186,7 +186,7 @@ static char* _pack(const char *int_float, char *packed)
   temp = alloca(value_size);
   shift_val = alloca(value_size);
 
-  switch (_desc(int_float).class) {
+  switch (_desc(int_float).clss) {
     case NAN:
       val_buffer = alloca(calc_buffer_size);
       fc_get_qnan(_desc(int_float).exponent_size, _desc(int_float).mantissa_size, val_buffer);
@@ -248,7 +248,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
     memcpy(&_desc(out_val), &_desc(in_val), sizeof(descriptor_t));
   }
 
-  _desc(out_val).class = NORMAL;
+  _desc(out_val).clss = NORMAL;
 
   /* mantissa all zeros, so zero exponent (because of explicit one)*/
   if (hsb == 2 + _desc(in_val).mantissa_size)
@@ -293,7 +293,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
     /* denormalized means exponent of zero */
     sc_val_from_ulong(0, _exp(out_val));
 
-    _desc(out_val).class = SUBNORMAL;
+    _desc(out_val).clss = SUBNORMAL;
   }
 
   /* perform rounding by adding a value that clears the guard bit and the round bit
@@ -342,26 +342,26 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
   }
 
   /* could have rounded down to zero */
-  if (sc_is_zero(_mant(out_val)) && (_desc(out_val).class == SUBNORMAL))
-    _desc(out_val).class = ZERO;
+  if (sc_is_zero(_mant(out_val)) && (_desc(out_val).clss == SUBNORMAL))
+    _desc(out_val).clss = ZERO;
 
   /* check for rounding overflow */
   hsb = 2 + _desc(out_val).mantissa_size - sc_get_highest_set_bit(_mant(out_val)) - 1;
-  if ((_desc(out_val).class != SUBNORMAL) && (hsb < -1))
+  if ((_desc(out_val).clss != SUBNORMAL) && (hsb < -1))
   {
     sc_val_from_ulong(1, temp);
     _shift_right(_mant(out_val), temp, _mant(out_val));
 
     sc_add(_exp(out_val), temp, _exp(out_val));
   }
-  else if ((_desc(out_val).class == SUBNORMAL) && (hsb == -1))
+  else if ((_desc(out_val).clss == SUBNORMAL) && (hsb == -1))
   {
     /* overflow caused the mantissa to be normal again,
      * so adapt the exponent accordingly */
     sc_val_from_ulong(1, temp);
     sc_add(_exp(out_val), temp, _exp(out_val));
 
-    _desc(out_val).class = NORMAL;
+    _desc(out_val).clss = NORMAL;
   }
   /* no further rounding is needed, because rounding overflow means
    * the carry of the original rounding was propagated all the way
@@ -394,7 +394,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
       switch (rounding_mode) {
         case FC_TONEAREST:
         case FC_TOPOSITIVE:
-          _desc(out_val).class = INF;
+          _desc(out_val).clss = INF;
           break;
 
         case FC_TONEGATIVE:
@@ -406,7 +406,7 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
       switch (rounding_mode) {
         case FC_TONEAREST:
         case FC_TONEGATIVE:
-          _desc(out_val).class = INF;
+          _desc(out_val).clss = INF;
           break;
 
         case FC_TOPOSITIVE:
@@ -419,10 +419,26 @@ char* _normalize(const char *in_val, char *out_val, int sticky)
   return out_val;
 }
 
-/*
+/**
+ * Operations involving NaN's must return NaN
+ */
+#define handle_NAN(a, b, result) \
+do {                                                      \
+  if (_desc(a).clss == NAN) {                             \
+    if (a != result) memcpy(result, a, calc_buffer_size); \
+    return result;                                        \
+  }                                                       \
+  if (_desc(b).clss == NAN) {                             \
+    if (b != result) memcpy(result, b, calc_buffer_size); \
+    return result;                                        \
+  }                                                       \
+}while (0)
+
+
+/**
  * calculate a + b, where a is the value with the bigger exponent
  */
-static char* _add(const char* a, const char* b, char* result)
+static char* _fadd(const char* a, const char* b, char* result)
 {
   char *temp;
   char *exp_diff;
@@ -430,14 +446,7 @@ static char* _add(const char* a, const char* b, char* result)
   char sign;
   char sticky;
 
-  if (_desc(a).class == NAN) {
-    if (a != result) memcpy(result, a, calc_buffer_size);
-    return result;
-  }
-  if (_desc(b).class == NAN) {
-    if (b != result) memcpy(result, b, calc_buffer_size);
-    return result;
-  }
+  handle_NAN(a, b, result);
 
   /* make sure result has a descriptor */
   if (result != a && result != b)
@@ -447,10 +456,10 @@ static char* _add(const char* a, const char* b, char* result)
   sign = _sign(a) ^ _sign(b);
 
   /* produce NaN on inf - inf */
-  if (sign && (_desc(a).class == INF) && (_desc(b).class == INF))
+  if (sign && (_desc(a).clss == INF) && (_desc(b).clss == INF))
     return fc_get_qnan(_desc(a).exponent_size, _desc(b).mantissa_size, result);
 
-  temp = alloca(value_size);
+  temp     = alloca(value_size);
   exp_diff = alloca(value_size);
 
   /* get exponent difference */
@@ -463,42 +472,37 @@ static char* _add(const char* a, const char* b, char* result)
   if (sign && sc_val_to_long(exp_diff) == 0) {
     switch (sc_comp(_mant(a), _mant(b))) {
       case 1:  /* a > b */
-        if (_sign(a)) _sign(result) = 1;  /* abs(a) is bigger and a is negative */
-        else _sign(result) = 0;
+        _sign(result) = _sign(a);  /* abs(a) is bigger and a is negative */
         break;
       case 0:  /* a == b */
-        if (rounding_mode == FC_TONEGATIVE)
-          _sign(result) = 1;
-        else
-          _sign(result) = 0;
+        _sign(result) = (rounding_mode == FC_TONEGATIVE);
         break;
       case -1: /* a < b */
-        if (_sign(b)) _sign(result) = 1; /* abs(b) is bigger and b is negative */
-        else _sign(result) = 0;
+        _sign(result) = _sign(b); /* abs(b) is bigger and b is negative */
         break;
       default:
         /* can't be reached */
         break;
     }
-  } else {
-    _sign(result) = _sign(a);
   }
+  else
+    _sign(result) = _sign(a);
 
   /* sign has been taken care of, check for special cases */
-  if (_desc(a).class == ZERO) {
+  if (_desc(a).clss == ZERO) {
     if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
-  if (_desc(b).class == ZERO) {
+  if (_desc(b).clss == ZERO) {
     if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
 
-  if (_desc(a).class == INF) {
+  if (_desc(a).clss == INF) {
     if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
-  if (_desc(b).class == INF) {
+  if (_desc(b).clss == INF) {
     if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-SIGN_POS-1);
     return result;
   }
@@ -506,7 +510,7 @@ static char* _add(const char* a, const char* b, char* result)
   /* shift the smaller value to the right to align the radix point */
   /* subnormals have their radix point shifted to the right,
    * take care of this first */
-  if ((_desc(b).class == SUBNORMAL) && (_desc(a).class != SUBNORMAL))
+  if ((_desc(b).clss == SUBNORMAL) && (_desc(a).clss != SUBNORMAL))
   {
     sc_val_from_ulong(1, temp);
     sc_sub(exp_diff, temp, exp_diff);
@@ -536,7 +540,7 @@ static char* _add(const char* a, const char* b, char* result)
 
   /* _normalize expects a 'normal' radix point, adding two subnormals
    * results in a subnormal radix point -> shifting before normalizing */
-  if ((_desc(a).class == SUBNORMAL) && (_desc(b).class == SUBNORMAL))
+  if ((_desc(a).clss == SUBNORMAL) && (_desc(b).clss == SUBNORMAL))
   {
     sc_val_from_ulong(1, NULL);
     _shift_left(_mant(result), sc_get_buffer(), _mant(result));
@@ -548,18 +552,14 @@ static char* _add(const char* a, const char* b, char* result)
   return _normalize(result, result, sticky);
 }
 
-static char* _mul(const char* a, const char* b, char* result)
+/**
+ * calculate a * b
+ */
+static char* _fmul(const char* a, const char* b, char* result)
 {
   char *temp;
 
-  if (_desc(a).class == NAN) {
-    if (a != result) memcpy(result, a, calc_buffer_size);
-    return result;
-  }
-  if (_desc(b).class == NAN) {
-    if (b != result) memcpy(result, b, calc_buffer_size);
-    return result;
-  }
+  handle_NAN(a, b, result);
 
   temp = alloca(value_size);
 
@@ -569,26 +569,26 @@ static char* _mul(const char* a, const char* b, char* result)
   _sign(result) = _sign(a) ^ _sign(b);
 
   /* produce NaN on 0 * inf */
-  if (_desc(a).class == ZERO) {
-    if (_desc(b).class == INF)
+  if (_desc(a).clss == ZERO) {
+    if (_desc(b).clss == INF)
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
     else
       if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
-  if (_desc(b).class == ZERO) {
-    if (_desc(a).class == INF)
+  if (_desc(b).clss == ZERO) {
+    if (_desc(a).clss == INF)
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
     else
       if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
 
-  if (_desc(a).class == INF) {
+  if (_desc(a).clss == INF) {
     if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
-  if (_desc(b).class == INF) {
+  if (_desc(b).clss == INF) {
     if (b != result) memcpy(result+SIGN_POS+1, b+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
@@ -600,7 +600,7 @@ static char* _mul(const char* a, const char* b, char* result)
   sc_sub(_exp(result), temp, _exp(result));
 
   /* mixed normal, subnormal values introduce an error of 1, correct it */
-  if ((_desc(a).class == SUBNORMAL) ^ (_desc(b).class == SUBNORMAL))
+  if ((_desc(a).clss == SUBNORMAL) ^ (_desc(b).clss == SUBNORMAL))
   {
     sc_val_from_ulong(1, temp);
     sc_add(_exp(result), temp, _exp(result));
@@ -620,18 +620,14 @@ static char* _mul(const char* a, const char* b, char* result)
   return _normalize(result, result, sc_had_carry());
 }
 
-static char* _div(const char* a, const char* b, char* result)
+/**
+ * calculate a / b
+ */
+static char* _fdiv(const char* a, const char* b, char* result)
 {
   char *temp, *dividend;
 
-  if (_desc(a).class == NAN) {
-    if (a != result) memcpy(result, a, calc_buffer_size);
-    return result;
-  }
-  if (_desc(b).class == NAN) {
-    if (b != result) memcpy(result, b, calc_buffer_size);
-    return result;
-  }
+  handle_NAN(a, b, result);
 
   temp = alloca(value_size);
   dividend = alloca(value_size);
@@ -642,8 +638,8 @@ static char* _div(const char* a, const char* b, char* result)
   _sign(result) = _sign(a) ^ _sign(b);
 
   /* produce nan on 0/0 and inf/inf */
-  if (_desc(a).class == ZERO) {
-    if (_desc(b).class == ZERO)
+  if (_desc(a).clss == ZERO) {
+    if (_desc(b).clss == ZERO)
       /* 0/0 -> nan */
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
     else
@@ -652,8 +648,8 @@ static char* _div(const char* a, const char* b, char* result)
     return result;
   }
 
-  if (_desc(b).class == INF) {
-    if (_desc(a).class == INF)
+  if (_desc(b).clss == INF) {
+    if (_desc(a).clss == INF)
       /* inf/inf -> nan */
       fc_get_qnan(_desc(a).exponent_size, _desc(a).mantissa_size, result);
     else {
@@ -661,17 +657,17 @@ static char* _div(const char* a, const char* b, char* result)
       sc_val_from_ulong(0, NULL);
       _save_result(_exp(result));
       _save_result(_mant(result));
-      _desc(result).class = ZERO;
+      _desc(result).clss = ZERO;
     }
     return result;
   }
 
-  if (_desc(a).class == INF) {
+  if (_desc(a).clss == INF) {
     /* inf/x -> inf */
     if (a != result) memcpy(result+SIGN_POS+1, a+SIGN_POS+1, calc_buffer_size-1);
     return result;
   }
-  if (_desc(b).class == ZERO) {
+  if (_desc(b).clss == ZERO) {
     /* division by zero */
     if (_sign(result))
       fc_get_minusinf(_desc(a).exponent_size, _desc(a).mantissa_size, result);
@@ -686,7 +682,7 @@ static char* _div(const char* a, const char* b, char* result)
   sc_add(_exp(result), temp, _exp(result));
 
   /* mixed normal, subnormal values introduce an error of 1, correct it */
-  if ((_desc(a).class == SUBNORMAL) ^ (_desc(b).class == SUBNORMAL))
+  if ((_desc(a).clss == SUBNORMAL) ^ (_desc(b).clss == SUBNORMAL))
   {
     sc_val_from_ulong(1, temp);
     sc_add(_exp(result), temp, _exp(result));
@@ -712,7 +708,7 @@ static char* _div(const char* a, const char* b, char* result)
   return _normalize(result, result, sc_had_carry());
 }
 
-void _power_of_ten(int exp, descriptor_t *desc, char *result)
+static void _power_of_ten(int exp, descriptor_t *desc, char *result)
 {
   char *build;
   char *temp;
@@ -750,9 +746,15 @@ void _power_of_ten(int exp, descriptor_t *desc, char *result)
   }
 }
 
+/**
+ * Truncate the fractional part away.
+ *
+ * This does not clip to any integer rang.
+ */
 static char* _trunc(const char *a, char *result)
 {
-  /* when exponent == 0 all bits left of the radix point
+  /*
+   * When exponent == 0 all bits left of the radix point
    * are the integral part of the value. For 15bit exp_size
    * this would require a left shift of max. 16383 bits which
    * is too much.
@@ -760,7 +762,8 @@ static char* _trunc(const char *a, char *result)
    * point remains set. This restricts the interesting
    * exponents to the interval [0, mant_size-1].
    * Outside this interval the truncated value is either 0 or
-   * it is are already truncated */
+   * it does not have fractional parts.
+   */
 
   int exp_bias, exp_val;
   char *temp;
@@ -771,13 +774,13 @@ static char* _trunc(const char *a, char *result)
     memcpy(&_desc(result), &_desc(a), sizeof(descriptor_t));
 
   exp_bias = (1<<_desc(a).exponent_size)/2-1;
-  exp_val = sc_val_to_long(_exp(a)) - exp_bias;
+  exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
 
   if (exp_val < 0) {
     sc_val_from_ulong(0, NULL);
     _save_result(_exp(result));
     _save_result(_mant(result));
-    _desc(result).class = ZERO;
+    _desc(result).clss = ZERO;
 
     return result;
   }
@@ -826,9 +829,9 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
       /* make the value with the bigger exponent the first one */
       TRACEPRINTF(("+ %s ", fc_print(b, buffer, 100, FC_PACKED)));
       if (sc_comp(_exp(a), _exp(b)) == -1)
-        _add(b, a, result);
+        _fadd(b, a, result);
       else
-        _add(a, b, result);
+        _fadd(a, b, result);
       break;
     case FC_sub:
       TRACEPRINTF(("- %s ", fc_print(b, buffer, 100, FC_PACKED)));
@@ -836,17 +839,17 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
       memcpy(temp, b, calc_buffer_size);
       _sign(temp) = !_sign(b);
       if (sc_comp(_exp(a), _exp(temp)) == -1)
-        _add(temp, a, result);
+        _fadd(temp, a, result);
       else
-        _add(a, temp, result);
+        _fadd(a, temp, result);
       break;
     case FC_mul:
       TRACEPRINTF(("* %s ", fc_print(b, buffer, 100, FC_PACKED)));
-      _mul(a, b, result);
+      _fmul(a, b, result);
       break;
     case FC_div:
       TRACEPRINTF(("/ %s ", fc_print(b, buffer, 100, FC_PACKED)));
-      _div(a, b, result);
+      _fdiv(a, b, result);
       break;
     case FC_neg:
       TRACEPRINTF(("negated "));
@@ -854,9 +857,12 @@ char* _calc(const char *a, const char *b, int opcode, char *result)
       _sign(result) = !_sign(a);
       break;
     case FC_int:
+      TRACEPRINTF(("truncated to integer "));
       _trunc(a, result);
       break;
     case FC_rnd:
+      TRACEPRINTF(("rounded to integer "));
+      assert(0);
       break;
   }
 
@@ -905,7 +911,7 @@ char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 
   _desc(result).exponent_size = exp_size;
   _desc(result).mantissa_size = mant_size;
-  _desc(result).class = NORMAL;
+  _desc(result).clss = NORMAL;
 
   old_str = str;
   pos = 0;
@@ -1054,7 +1060,7 @@ done:
 
   _power_of_ten(exp_int, &_desc(result), power_val);
 
-  _div(result, power_val, result);
+  _fdiv(result, power_val, result);
 
   return result;
 #else
@@ -1118,12 +1124,12 @@ char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char* result)
   /* sign and flag suffice to identify nan or inf, no exponent/mantissa
    * encoding is needed. the function can return immediately in these cases */
   if (isnan(l)) {
-    _desc(result).class = NAN;
+    _desc(result).clss = NAN;
     TRACEPRINTF(("val_from_float resulted in NAN\n"));
     return result;
   }
   else if (isinf(l)) {
-    _desc(result).class = INF;
+    _desc(result).clss = INF;
     TRACEPRINTF(("val_from_float resulted in %sINF\n", (_sign(result)==1)?"-":""));
     return result;
   }
@@ -1264,7 +1270,7 @@ char* fc_cast(const void *val, char exp_size, char mant_size, char *result)
   /* set the descriptor of the new value */
   _desc(result).exponent_size = exp_size;
   _desc(result).mantissa_size = mant_size;
-  _desc(result).class = _desc(value).class;
+  _desc(result).clss = _desc(value).clss;
 
   _sign(result) = _sign(value);
 
@@ -1279,7 +1285,7 @@ char* fc_cast(const void *val, char exp_size, char mant_size, char *result)
   sc_add(_exp(value), temp, _exp(result));
 
   /* _normalize expects normalized radix point */
-  if (_desc(val).class == SUBNORMAL) {
+  if (_desc(val).clss == SUBNORMAL) {
     sc_val_from_ulong(1, NULL);
     _shift_left(_mant(val), sc_get_buffer(), _mant(result));
   } else if (value != result) {
@@ -1299,7 +1305,7 @@ char* fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, char* r
 
   _desc(result).exponent_size = exponent_size;
   _desc(result).mantissa_size = mantissa_size;
-  _desc(result).class = NORMAL;
+  _desc(result).clss = NORMAL;
 
   _sign(result) = 0;
 
@@ -1328,7 +1334,7 @@ char* fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, char *
 
   _desc(result).exponent_size = exponent_size;
   _desc(result).mantissa_size = mantissa_size;
-  _desc(result).class = NAN;
+  _desc(result).clss = NAN;
 
   _sign(result) = 0;
 
@@ -1346,7 +1352,7 @@ char* fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, char *
 
   _desc(result).exponent_size = exponent_size;
   _desc(result).mantissa_size = mantissa_size;
-  _desc(result).class = NAN;
+  _desc(result).clss = NAN;
 
   _sign(result) = 0;
 
@@ -1367,7 +1373,7 @@ char* fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, cha
 
   _desc(result).exponent_size = exponent_size;
   _desc(result).mantissa_size = mantissa_size;
-  _desc(result).class = NORMAL;
+  _desc(result).clss = NORMAL;
 
   _sign(result) = 0;
 
@@ -1399,14 +1405,14 @@ int fc_comp(const void *a, const void *b)
    * Unordered if NaN or equal
    */
   if (a == b)
-    return _desc(val_a).class == NAN ? 2 : 0;
+    return _desc(val_a).clss == NAN ? 2 : 0;
 
   /* unordered if one is a NaN */
-  if (_desc(val_a).class == NAN || _desc(val_b).class == NAN)
+  if (_desc(val_a).clss == NAN || _desc(val_b).clss == NAN)
     return 2;
 
   /* zero is equal independent of sign */
-  if ((_desc(val_a).class == ZERO) && (_desc(val_b).class == ZERO))
+  if ((_desc(val_a).clss == ZERO) && (_desc(val_b).clss == ZERO))
     return 0;
 
   /* different signs make compare easy */
@@ -1416,13 +1422,13 @@ int fc_comp(const void *a, const void *b)
   mul = _sign(a) ? -1 : 1;
 
   /* both infinity means equality */
-  if ((_desc(val_a).class == INF) && (_desc(val_b).class == INF))
+  if ((_desc(val_a).clss == INF) && (_desc(val_b).clss == INF))
     return 0;
 
   /* infinity is bigger than the rest */
-  if (_desc(val_a).class == INF)
+  if (_desc(val_a).clss == INF)
     return  1 * mul;
-  if (_desc(val_b).class == INF)
+  if (_desc(val_b).clss == INF)
     return -1 * mul;
 
   /* check first exponent, that mantissa if equal */
@@ -1440,7 +1446,7 @@ int fc_comp(const void *a, const void *b)
 
 int fc_is_zero(const void *a)
 {
-  return _desc(a).class == ZERO;
+  return _desc(a).clss == ZERO;
 }
 
 int fc_is_negative(const void *a)
@@ -1450,17 +1456,17 @@ int fc_is_negative(const void *a)
 
 int fc_is_inf(const void *a)
 {
-  return _desc(a).class == INF;
+  return _desc(a).clss == INF;
 }
 
 int fc_is_nan(const void *a)
 {
-  return _desc(a).class == NAN;
+  return _desc(a).clss == NAN;
 }
 
 int fc_is_subnormal(const void *a)
 {
-  return _desc(a).class == SUBNORMAL;
+  return _desc(a).clss == SUBNORMAL;
 }
 
 char *fc_print(const void *a, char *buf, int buflen, unsigned base)
@@ -1474,7 +1480,7 @@ char *fc_print(const void *a, char *buf, int buflen, unsigned base)
 
   switch (base) {
     case FC_DEC:
-      switch (_desc(val).class) {
+      switch (_desc(val).clss) {
         case INF:
           if (buflen >= 8+_sign(val)) sprintf(buf, "%sINFINITY", _sign(val)?"-":"");
           else snprintf(buf, buflen, "%sINF", _sign(val)?"-":NULL);
@@ -1497,7 +1503,7 @@ char *fc_print(const void *a, char *buf, int buflen, unsigned base)
       break;
 
     case FC_HEX:
-      switch (_desc(val).class) {
+      switch (_desc(val).clss) {
         case INF:
           if (buflen >= 8+_sign(val)) sprintf(buf, "%sINFINITY", _sign(val)?"-":"");
           else snprintf(buf, buflen, "%sINF", _sign(val)?"-":NULL);
@@ -1565,12 +1571,12 @@ void init_fltcalc(int precision)
     if (max_precision < precision)
       printf("WARING: not enough precision available, using %d\n", max_precision);
 
-    rounding_mode = FC_TONEAREST;
-    value_size = sc_get_buffer_length();
-    SIGN_POS = 0;
-    EXPONENT_POS = SIGN_POS + sizeof(char);
-    MANTISSA_POS = EXPONENT_POS + value_size;
-    DESCRIPTOR_POS = MANTISSA_POS + value_size;
+    rounding_mode    = FC_TONEAREST;
+    value_size       = sc_get_buffer_length();
+    SIGN_POS         = 0;
+    EXPONENT_POS     = SIGN_POS + sizeof(char);
+    MANTISSA_POS     = EXPONENT_POS + value_size;
+    DESCRIPTOR_POS   = MANTISSA_POS + value_size;
     calc_buffer_size = DESCRIPTOR_POS + sizeof(descriptor_t);
 
     calc_buffer = xmalloc(calc_buffer_size);
