@@ -73,7 +73,7 @@ static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t size)
  */
 static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
 {
-  bs->data[bs->units - 1] &= (bs->size & BS_UNIT_MASK) - 1;
+  bs->data[bs->units - 1] &= (1 << (bs->size & BS_UNIT_MASK)) - 1;
   return bs;
 }
 
@@ -345,8 +345,8 @@ static INLINE bitset_t *bitset_clear_all(bitset_t *bs)
  */
 static INLINE bitset_t *bitset_set_all(bitset_t *bs)
 {
-	memset(bs->data, -1, BS_UNIT_SIZE * bs->units);
-  return bs;
+	memset(bs->data, -1, bs->units * BS_UNIT_SIZE);
+  return _bitset_mask_highest(bs);
 }
 
 /**
