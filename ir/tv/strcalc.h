@@ -67,7 +67,7 @@ enum {
  * Possible operations on integer values.
  */
 typedef enum {
-  SC_ADD = 0,       /**< Addition */
+  SC_ADD = 0,   /**< Addition */
   SC_SUB,       /**< Substraction */
   SC_NEG,       /**< Unary Minus */
   SC_MUL,       /**< Multiplication */
@@ -84,7 +84,7 @@ typedef enum {
 } sc_op_t;
 
 /**
- * The output mode for ntger values.
+ * The output mode for integer values.
  */
 enum base_t {
   SC_hex,   /**< hexadecimal output with small letters */
@@ -99,18 +99,18 @@ enum base_t {
  */
 #define sc_add(a, b, c) sc_calc((a), (b), SC_ADD, (c))
 #define sc_sub(a, b, c) sc_calc((a), (b), SC_SUB, (c))
-#define sc_neg(a, c) sc_calc((a), NULL, SC_NEG, (c))
+#define sc_neg(a, c)    sc_calc((a), NULL, SC_NEG, (c))
 #define sc_and(a, b, c) sc_calc((a), (b), SC_AND, (c))
-#define sc_or(a, b, c) sc_calc((a), (b), SC_OR, (c))
+#define sc_or(a, b, c)  sc_calc((a), (b), SC_OR, (c))
 #define sc_xor(a, b, c) sc_calc((a), (b), SC_XOR, (c))
-#define sc_not(a, c) sc_calc((a), NULL, SC_NOT, (c))
+#define sc_not(a, c)    sc_calc((a), NULL, SC_NOT, (c))
 #define sc_mul(a, b, c) sc_calc((a), (b), SC_MUL, (c))
 #define sc_div(a, b, c) sc_calc((a), (b), SC_DIV, (c))
 #define sc_mod(a, b, c) sc_calc((a), (b), SC_MOD, (c))
-#define sc_shl(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_SHL, (e))
-#define sc_shr(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_SHR, (e))
+#define sc_shl(a, b, c, d, e)  sc_bitcalc((a), (b), (c), (d), SC_SHL, (e))
+#define sc_shr(a, b, c, d, e)  sc_bitcalc((a), (b), (c), (d), SC_SHR, (e))
 #define sc_shrs(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_SHRS, (e))
-#define sc_rot(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_ROT, (e))
+#define sc_rot(a, b, c, d, e)  sc_bitcalc((a), (b), (c), (d), SC_ROT, (e))
 
 /*
  * function declarations
@@ -145,7 +145,7 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
  */
 const char *sc_print(const void *val1, unsigned bits, enum base_t base);
 
-/** Init strcalc module
+/** Initialize the strcalc module.
  * Sets up internal data structures and constants
  * After the first call subsequent calls have no effect
  *
