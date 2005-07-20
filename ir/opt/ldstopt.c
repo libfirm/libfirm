@@ -255,12 +255,12 @@ static entity *find_constant_entity(ir_node *ptr)
 
       /* Do not fiddle about polymorphy. */
       if (is_Class_type(get_entity_owner(ent)) &&
-	  ((get_entity_n_overwrites(ent)    != 0) ||
-	   (get_entity_n_overwrittenby(ent) != 0)   ) )
-	return NULL;
+          ((get_entity_n_overwrites(ent)    != 0) ||
+           (get_entity_n_overwrittenby(ent) != 0)   ) )
+        return NULL;
 
       if (variability_constant == get_entity_variability(ent))
-	return ent;
+        return ent;
 
       if (is_Array_type(tp)) {
         /* check bounds */
@@ -301,29 +301,48 @@ static entity *find_constant_entity(ir_node *ptr)
   }
 }
 
+/**
+ * Return the Selection index of a Sel node from dimension n
+ */
 static long get_Sel_array_index_long(ir_node *n, int dim) {
   ir_node *index = get_Sel_index(n, dim);
   assert(get_irn_op(index) == op_Const);
   return get_tarval_long(get_Const_tarval(index));
 }
 
+/**
+ * Returns the accessed component graph path for an
+ * node computing an address.
+ *
+ * @param ptr    the node computing the address
+ * @param depth  current depth in steps upward from the root
+ *               of the address
+ */
 static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
   compound_graph_path *res = NULL;
   entity              *root, *field;
   int                 path_len, pos;
 
   if (get_irn_op(ptr) == op_SymConst) {
+    /* a SymConst. If the depth is 0, this is an access to a global
+     * entity and we don't need a component path, else we know
+     * at least it's length.
+     */
     assert(get_SymConst_kind(ptr) == symconst_addr_ent);
     root = get_SymConst_entity(ptr);
     res = (depth == 0) ? NULL : new_compound_graph_path(get_entity_type(root), depth);
   }
   else {
     assert(get_irn_op(ptr) == op_Sel);
+    /* it's a Sel, go up until we find the root */
     res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
-    field = get_Sel_entity(ptr);
+
+    /* fill up the step in the path at the current position */
+    field    = get_Sel_entity(ptr);
     path_len = get_compound_graph_path_length(res);
-    pos = path_len - depth - 1;
+    pos      = path_len - depth - 1;
     set_compound_graph_path_node(res, pos, field);
+
     if (is_Array_type(get_entity_owner(field))) {
       assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
       set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
@@ -332,9 +351,9 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
   return res;
 }
 
-
 /** Returns an access path or NULL.  The access path is only
- *  valid, if the graph is in phase_high and _no_ address computation is used. */
+ *  valid, if the graph is in phase_high and _no_ address computation is used.
+ */
 static compound_graph_path *get_accessed_path(ir_node *ptr) {
   return rec_get_accessed_path(ptr, 0);
 }
@@ -350,13 +369,17 @@ static int optimize_load(ir_node *load)
   entity *ent;
   int res = 0;
 
+  /* do NOT touch volatile loads for now */
+  if (get_Load_volatility(load) == volatility_is_volatile)
+    return 0;
+
   /* the address of the load to be optimized */
   ptr = get_Load_ptr(load);
 
   /*
-   * Check if we can remove the exception form a Load:
-   * this can be done, if the address is from an Sel(Alloc) and
-   * the Sel type is a subtype of the alloc type.
+   * Check if we can remove the exception from a Load:
+   * This can be done, if the address is from an Sel(Alloc) and
+   * the Sel type is a subtype of the allocated type.
    *
    * This optimizes some often used OO constructs,
    * like x = new O; x->t;
@@ -373,10 +396,11 @@ static int optimize_load(ir_node *load)
 
         if (is_subclass_of(s_type, a_type)) {
           /* ok, condition met: there can't be an exception because
-           * alloc guarantees that enough memory was allocated */
+           * Alloc guarantees that enough memory was allocated */
 
           exchange(info->projs[pn_Load_X_except], new_Bad());
           info->projs[pn_Load_X_except] = NULL;
+          res = 1;
         }
       }
     }
@@ -389,23 +413,19 @@ static int optimize_load(ir_node *load)
        */
        exchange(info->projs[pn_Load_X_except], new_Bad());
        info->projs[pn_Load_X_except] = NULL;
+       res = 1;
     }
-  }
-
-  /* do NOT touch volatile loads for now */
-  if (get_Load_volatility(load) == volatility_is_volatile)
-    return 0;
-
-  if (! info->projs[pn_Load_res] && ! info->projs[pn_Load_X_except]) {
-    /* a Load which value is neither used nor exception checked, remove it */
-    mem  = get_Load_mem(load);
-    exchange(info->projs[pn_Load_M], mem);
-
-    return 1;
   }
 
   /* the mem of the Load. Must still be returned after optimization */
   mem  = get_Load_mem(load);
+
+  if (! info->projs[pn_Load_res] && ! info->projs[pn_Load_X_except]) {
+    /* a Load which value is neither used nor exception checked, remove it */
+    exchange(info->projs[pn_Load_M], mem);
+
+    return 1;
+  }
 
   /* Load from a constant polymorphic field, where we can resolve
      polymorphy. */
@@ -436,6 +456,7 @@ static int optimize_load(ir_node *load)
       if (info->projs[pn_Load_X_except]) {
         exchange(info->projs[pn_Load_X_except], new_Bad());
         info->projs[pn_Load_X_except] = NULL;
+        res = 1;
       }
 
       if (variability_constant == get_entity_variability(ent)
@@ -449,8 +470,10 @@ static int optimize_load(ir_node *load)
          */
 
         /* no memory */
-        if (info->projs[pn_Load_M])
+        if (info->projs[pn_Load_M]) {
           exchange(info->projs[pn_Load_M], mem);
+          res = 1;
+        }
 
         /* no result :-) */
         if (info->projs[pn_Load_res]) {
@@ -459,32 +482,17 @@ static int optimize_load(ir_node *load)
 
             DBG_OPT_RC(load, c);
             exchange(info->projs[pn_Load_res], c);
-
             return 1;
           }
         }
       }
       else if (variability_constant == get_entity_variability(ent)) {
-        compound_graph_path *path;
-	/*
-        printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
-        get_entity_name(get_irg_entity(current_ir_graph)));
-        printf("  load: "); DDMN(load);
-        printf("  ptr:  "); DDMN(ptr);
-	*/
-        path = get_accessed_path(ptr);
+        compound_graph_path *path = get_accessed_path(ptr);
+
         if (path) {
           ir_node *c;
 
           assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-          c = get_compound_ent_value_by_path(ent, path);
-
-          /* printf("  cons: "); DDMN(c); */
-
-          if (info->projs[pn_Load_M])
-            exchange(info->projs[pn_Load_M], mem);
-          if (info->projs[pn_Load_res])
-            exchange(info->projs[pn_Load_res], copy_const_value(c));
           /*
           {
             int j;
@@ -496,39 +504,49 @@ static int optimize_load(ir_node *load)
             }
             printf("\n");
           }
-	  */
-        } else {
-	  /*  We can not determine a correct access path.  E.g., in jack, we load
-	      a byte from an object to generate an exception.   Happens in test program
-	      Reflectiontest.
-	  printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
-		 get_entity_name(get_irg_entity(current_ir_graph)));
-	  printf("  load: "); DDMN(load);
-	  printf("  ptr:  "); DDMN(ptr);
-	  if (get_irn_op(ptr) == op_SymConst &&
-		get_SymConst_kind(ptr) == symconst_addr_ent) { printf("        "); DDMEO(get_SymConst_entity(ptr)); }
-          printf("cannot optimize.\n");
-	  */
-	}
-      }
+          */
 
-      /* we changed the irg, but try further */
-      res = 1;
+          c = get_compound_ent_value_by_path(ent, path);
+          free_compound_graph_path(path);
+
+          /* printf("  cons: "); DDMN(c); */
+
+          if (info->projs[pn_Load_M]) {
+            exchange(info->projs[pn_Load_M], mem);
+            res = 1;
+          }
+          if (info->projs[pn_Load_res]) {
+            exchange(info->projs[pn_Load_res], copy_const_value(c));
+            return 1;
+          }
+        }
+        else {
+          /*  We can not determine a correct access path.  E.g., in jack, we load
+	            a byte from an object to generate an exception.   Happens in test program
+	            Reflectiontest.
+          printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
+           get_entity_name(get_irg_entity(current_ir_graph)));
+          printf("  load: "); DDMN(load);
+          printf("  ptr:  "); DDMN(ptr);
+          */
+        }
+      }
     }
   }
 
   /* Check, if the address of this load is used more than once.
    * If not, this load cannot be removed in any case. */
   if (get_irn_out_n(ptr) <= 1)
-    return 0;
+    return res;
 
-  /* follow the memory chain as long as there are only Loads */
+  /* follow the memory chain as long as there are only Loads
+   * and try to replace current Load or Store by a previous one
+   */
   for (pred = skip_Proj(mem); ; pred = skip_Proj(get_Load_mem(pred))) {
-
     /*
      * BEWARE: one might think that checking the modes is useless, because
      * if the pointers are identical, they refer to the same object.
-     * This is only true in strong typed languages, not is C were the following
+     * This is only true in strong typed languages, not in C were the following
      * is possible a = *(type1 *)p; b = *(type2 *)p ...
      */
 
@@ -542,8 +560,9 @@ static int optimize_load(ir_node *load)
        * OR they are in the same block. In the latter case the Load cannot
        * throw an exception when the previous Store was quiet.
        *
-       * Why we need to check for Store Exc? If the Store cannot be executed (ROM)
-       * the exception handler might simply jump into the load block :-(
+       * Why we need to check for Store Exception? If the Store cannot
+       * be executed (ROM) the exception handler might simply jump into
+       * the load block :-(
        * We could make it a little bit better if we would know that the exception
        * handler of the Store jumps directly to the end...
        */
@@ -552,14 +571,16 @@ static int optimize_load(ir_node *load)
         ir_node *value = get_Store_value(pred);
 
         DBG_OPT_RAW(load, value);
-        exchange(info->projs[pn_Load_res], value);
-
         if (info->projs[pn_Load_M])
           exchange(info->projs[pn_Load_M], mem);
 
         /* no exception */
         if (info->projs[pn_Load_X_except])
           exchange( info->projs[pn_Load_X_except], new_Bad());
+
+        if (info->projs[pn_Load_res])
+          exchange(info->projs[pn_Load_res], value);
+
         return 1;
       }
     }
@@ -571,8 +592,8 @@ static int optimize_load(ir_node *load)
        * OR they are in the same block. In the later case the Load cannot
        * throw an exception when the previous Load was quiet.
        *
-       * Here, there is no need to check if the previos Load has an exception hander because
-       * they would have exact the same exception...
+       * Here, there is no need to check if the previous Load has an exception
+       * hander because they would have exact the same exception...
        */
       if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
         ldst_info_t *pred_info = get_irn_link(pred);
@@ -581,7 +602,9 @@ static int optimize_load(ir_node *load)
 
         if (pred_info->projs[pn_Load_res]) {
           /* we need a data proj from the previous load for this optimization */
-          exchange( info->projs[pn_Load_res], pred_info->projs[pn_Load_res] );
+          if (info->projs[pn_Load_res])
+            exchange(info->projs[pn_Load_res], pred_info->projs[pn_Load_res]);
+
           if (info->projs[pn_Load_M])
             exchange(info->projs[pn_Load_M], mem);
         }
@@ -589,6 +612,7 @@ static int optimize_load(ir_node *load)
           if (info->projs[pn_Load_res]) {
             set_Proj_pred(info->projs[pn_Load_res], pred);
             set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
+            pred_info->projs[pn_Load_res] = info->projs[pn_Load_res];
           }
           if (info->projs[pn_Load_M]) {
             /* Actually, this if should not be necessary.  Construct the Loads
