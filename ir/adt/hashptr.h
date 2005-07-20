@@ -50,7 +50,7 @@ static INLINE unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
 
 #ifdef _MSC_VER
 #pragma warning(disable:4307)
-#endif _MSC_VER
+#endif /* _MSC_VER */
 
 static INLINE unsigned _hash_combine(unsigned x, unsigned y)
 {
@@ -63,7 +63,7 @@ static INLINE unsigned _hash_combine(unsigned x, unsigned y)
 
 #ifdef _MSC_VER
 #pragma warning(default:4307)
-#endif _MSC_VER
+#endif /* _MSC_VER */
 
 /**
  * Make one hash value out of two others.
