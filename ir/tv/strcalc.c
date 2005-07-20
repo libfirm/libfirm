@@ -415,7 +415,7 @@ static char const shrs_table[16][4][2] = {
                        { {SC_F, SC_0}, {SC_7, SC_8}, {SC_3, SC_C}, {SC_1, SC_E} }
                                    };
 
-/* for converting to binary string */
+/** converting a digit to a binary string */
 static const char *binary_table[16] = {
   "0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
   "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"
@@ -821,7 +821,7 @@ static void _shl(const char *val1, char *buffer, long offset, int radius, unsign
   }
   else if (is_signed && !_bitisset(buffer[offset], bitoffset))
   {
-    /* this unsets the upper bits of the leftmost digit */
+    /* this clears the upper bits of the leftmost digit */
     buffer[offset] = and_table[_val(buffer[offset])][_val(max_digit[bitoffset])];
     for (counter = offset+1; counter < calc_buffer_size; counter++)
     {
@@ -932,7 +932,7 @@ static void _rot(const char *val1, char *buffer, long offset, int radius, unsign
 
   offset = offset % radius;
 
-  /* rotation by multiples of the typelength is identity */
+  /* rotation by multiples of the type length is identity */
   if (offset == 0) {
     memmove(buffer, val1, calc_buffer_size);
     return;
@@ -957,7 +957,7 @@ const int sc_get_buffer_length(void)
   return calc_buffer_size;
 }
 
-/* XXX doesn't check for overflows */
+/* FIXME doesn't check for overflows */
 void sc_val_from_str(const char *str, unsigned int len, void *buffer)
 {
   const char *orig_str = str;
@@ -1420,7 +1420,7 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 
 /*
  * convert to a string
- * XXX Doesn't check buffer bounds
+ * FIXME: Doesn't check buffer bounds
  */
 const char *sc_print(const void *value, unsigned bits, enum base_t base)
 {
@@ -1520,13 +1520,13 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
     if (base == SC_DEC) {
       /* check for negative values */
       if (_bit(val, bits - 1)) {
-	_negate(val, div2_res);
-	sign = 1;
-	p = div2_res;
+        _negate(val, div2_res);
+        sign = 1;
+        p = div2_res;
       }
     }
 
-    /* transfer data into oscilating buffers */
+    /* transfer data into oscillating buffers */
     memset(div1_res, SC_0, calc_buffer_size);
     for (counter = 0; counter < nibbles; ++counter)
       div1_res[counter] = p[counter];
