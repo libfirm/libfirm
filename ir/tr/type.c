@@ -803,6 +803,7 @@ void free_class_attrs(type *clss) {
 /* manipulate private fields of class type  */
 void    add_class_member   (type *clss, entity *member) {
   assert(clss && (clss->type_op == type_class));
+  assert(clss != get_entity_type(member) && "recursive type");
   ARR_APP1 (entity *, clss->attr.ca.members, member);
 }
 
@@ -1025,6 +1026,7 @@ void    add_struct_member   (type *strct, entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(get_type_tpop(get_entity_type(member)) != type_method);
     /*    @@@ lowerfirm geht nicht durch */
+  assert(strct != get_entity_type(member) && "recursive type");
   ARR_APP1 (entity *, strct->attr.sa.members, member);
 }
 
@@ -1365,6 +1367,7 @@ int    get_union_n_members      (const type *uni) {
 }
 void    add_union_member   (type *uni, entity *member) {
   assert(uni && (uni->type_op == type_union));
+  assert(uni != get_entity_type(member) && "recursive type");
   ARR_APP1 (entity *, uni->attr.ua.members, member);
 }
 entity  *get_union_member (const type *uni, int pos) {
