@@ -354,6 +354,50 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
   free(outs);
 }
 
+struct phi_collect_info {
+  const ir_node *orig;
+  pset *copies;
+  pset *copy_blocks;
+};
+
+static void add_all_phis_walker(ir_node *irn, void *data)
+{
+  if(is_Phi(irn)) {
+    int i, n;
+    struct phi_collect_info *info = data;
+
+    /*
+     * Look at all operands of the phi. If one of them is the original
+     * node, insert the phi into the copies and copy_blocks set.
+     */
+    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+      if(get_irn_n(irn, i) == info->orig) {
+        pset_insert_ptr(info->copies, irn);
+        pset_insert_ptr(info->copy_blocks, get_nodes_block(irn));
+        break;
+      }
+    }
+
+
+  }
+}
+
+/**
+ * Add all phis using a node to a set.
+ * @param orig        The node the phis shall use.
+ * @param copies      The set where the phis shall be put into.
+ * @param copy_blocks The set the blocks of the phis shall be put into.
+ */
+static void add_all_phis_using(const ir_node *orig, pset *copies, pset *copy_blocks)
+{
+  struct phi_collect_info info;
+
+  info.copies      = copies;
+  info.copy_blocks = copy_blocks;
+  info.orig        = orig;
+  irg_walk_graph(get_irn_irg(orig), add_all_phis_walker, NULL, &info);
+}
+
 void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
 {
   pset *copies = pset_new_ptr(2 * n);
@@ -369,6 +413,12 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
   /* Fill the sets. */
   pset_insert_ptr(copies, orig);
   pset_insert_ptr(copy_blocks, get_nodes_block(orig));
+
+  /*
+   * All phis using the original value are also copies of it
+   * and must be present in the copies set.
+   */
+  add_all_phis_using(orig, copies, copy_blocks);
 
   for(i = 0; i < n; ++i) {
     DBG((dbg, LEVEL_1,
