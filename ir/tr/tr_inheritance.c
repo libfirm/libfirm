@@ -636,14 +636,26 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
   if (is_subclass_of(totype, fromtype) ||
       is_subclass_of(fromtype, totype)   ) {
     this_state = ir_class_casts_transitive;
-    if ((get_class_supertype_index(totype, fromtype) == -1) &&
-        (get_class_supertype_index(fromtype, totype) == -1) ) {
+    if ((get_class_supertype_index(totype, fromtype) != -1) ||
+	(get_class_supertype_index(fromtype, totype) != -1) ||
+	fromtype == totype) {
+      /*   Das ist doch alt?  Aus dem cvs aufgetaucht ...
+	   if ((get_class_supertype_index(totype, fromtype) == -1) &&
+	   (get_class_supertype_index(fromtype, totype) == -1) ) {  */
       this_state = ir_class_casts_normalized;
     }
   }
 
-  assert(this_state >= ccs->expected_state &&
-	 "invalid state class cast state setting in graph");
+  if (!(this_state >= ccs->expected_state)) {
+    printf("  Node is "); DDMN(n);
+    printf("    totype   "); DDMT(totype);
+    printf("    fromtype "); DDMT(fromtype);
+    printf("    this_state: %s, exp. state: %s\n",
+	   get_class_cast_state_string(this_state),
+	   get_class_cast_state_string(ccs->expected_state));
+    assert(this_state >= ccs->expected_state &&
+	   "invalid state class cast state setting in graph");
+  }
 
   if (this_state < ccs->worst_situation)
     ccs->worst_situation = this_state;
