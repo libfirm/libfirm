@@ -134,10 +134,9 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
         break;
       default:
         if (is_Const(X)) {
-          char tbuf[128];
-          tarval_snprintf(tv, sizeof(tv), X);
+          tarval_snprintf(tv, sizeof(tv), get_Const_tarval(X));
           snprintf(buf, sizeof(buf), "%s%s%s<%s>", A("irn"), get_irn_opname(X),
-            get_mode_name(get_irn_mode(X)), tbuf);
+            get_mode_name(get_irn_mode(X)), tv);
         }
         else
           snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
