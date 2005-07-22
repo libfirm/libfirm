@@ -41,6 +41,15 @@ static void compute_df_local(ir_node *bl, void *data)
   int i, n;
 
   /*
+   * In the case that the immediate dominator is NULL, the
+   * block is the start block and its immediate dominator
+   * must be itself, else it is inserted into its own
+   * dominance frontier.
+   */
+  if(idom == NULL)
+  	idom = bl;
+
+  /*
    * Create a new dom frot set for this node,
    * if none exists.
    */
@@ -158,10 +167,15 @@ static void place_phi_functions(ir_node *orig, pset *copies,
   for(it = pset_first(copies), i = 0; it; it = pset_next(copies)) {
     ir_node *copy_block = get_nodes_block(it);
 
+	/* FIXED_DANIEL
+	 * Not true anymore, since phis can be copies of a value.
+	 * Not all Phis are dominated by their args
+	 *
     if(!block_dominates(orig_block, copy_block)) {
     	assert(block_dominates(orig_block, copy_block)
         	&& "The block of the copy must be dominated by the block of the value");
     }
+    */
 
     pdeq_putr(worklist, copy_block);
     orig_blocks[i++] = copy_block;
@@ -171,6 +185,10 @@ static void place_phi_functions(ir_node *orig, pset *copies,
     ir_node *bl = pdeq_getl(worklist);
     ir_node *y;
     pset *df = be_get_dominance_frontier(df_info, bl);
+
+    DBG((dbg, LEVEL_3, "dom front of %+F\n", bl));
+    for(y = pset_first(df); y; y = pset_next(df))
+	    DBG((dbg, LEVEL_3, "\t%+F\n", y));
 
     for(y = pset_first(df); y; y = pset_next(df)) {
       int n_preds = get_irn_arity(y);
@@ -190,7 +208,7 @@ static void place_phi_functions(ir_node *orig, pset *copies,
         /* Insert phi node */
         phi = new_r_Phi(irg, y, n_preds, ins, mode);
         DBG((dbg, LEVEL_2, "    inserting phi %+F with %d args in block %+F\n",
-              phi, n_preds, bl));
+              phi, n_preds, y));
 
         /*
          * The phi node itself is also a copy of the original
@@ -260,19 +278,21 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 {
   ir_node *curr_bl;
   ir_node *start_irn;
+  firm_dbg_module_t *dbg = DBG_MODULE;
+  firm_dbg_set_mask(dbg, -1);
 
   curr_bl = get_nodes_block(usage);
 
+
+  DBG((dbg, LEVEL_1, "Searching valid def for use %+F at pos %d\n", usage, pos));
   /*
    * If the usage is in a phi node, search the copy in the
    * predecessor denoted by pos.
    */
   if(is_Phi(usage)) {
-    curr_bl = get_nodes_block(get_irn_n(curr_bl, pos));
+    curr_bl = get_Block_cfgpred_block(curr_bl, pos);
     start_irn = sched_last(curr_bl);
-  }
-
-  else {
+  } else {
     start_irn = sched_prev(usage);
   }
 
@@ -293,6 +313,8 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
       for(irn = start_irn; !is_Block(irn); irn = sched_prev(irn)) {
 
         /* Take the first copy we find. */
+
+        DBG((dbg, LEVEL_1, "Is %F a copy?\n", irn));
         if(pset_find_ptr(copies, irn))
           return irn;
       }
@@ -304,6 +326,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
       start_irn = sched_last(curr_bl);
   }
 
+  assert(0 && "Did not find a valid def");
   return NULL;
 }
 
@@ -344,6 +367,7 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
     ir_node *irn = outs[i].irn;
     int pos = outs[i].pos;
 
+    DBG((dbg, LEVEL_2, "    %+F(%d) -> ???\n", irn, pos));
     def = search_def(irn, pos, copies, copy_blocks);
     DBG((dbg, LEVEL_2, "    %+F(%d) -> %+F\n", irn, pos, def));
 
@@ -363,7 +387,7 @@ struct phi_collect_info {
 static void add_all_phis_walker(ir_node *irn, void *data)
 {
   if(is_Phi(irn)) {
-    int i, n;
+    int i, o, n;
     struct phi_collect_info *info = data;
 
     /*
@@ -374,6 +398,16 @@ static void add_all_phis_walker(ir_node *irn, void *data)
       if(get_irn_n(irn, i) == info->orig) {
         pset_insert_ptr(info->copies, irn);
         pset_insert_ptr(info->copy_blocks, get_nodes_block(irn));
+
+		/* FIXED_DANIEL
+		 * If a phi is a copy insert all its args as copies too.
+		 * Else setting the phi-args will fail in serach_def */
+        for(o=0; o<n; ++o) {
+        	const ir_node *arg = get_irn_n(irn, o);
+	        pset_insert_ptr(info->copies, arg);
+	        pset_insert_ptr(info->copy_blocks, get_nodes_block(arg));
+        }
+
         break;
       }
     }
