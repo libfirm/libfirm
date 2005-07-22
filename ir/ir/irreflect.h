@@ -1,5 +1,5 @@
 /**
- * @file reflect.h
+ * @file irreflect.h
  * @date 9.9.2004
  * @author Sebastian Hack
  * @brief Reflection for Firm operations.
