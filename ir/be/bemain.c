@@ -19,6 +19,7 @@
 #include "phiclass.h"
 #include "irdom_t.h"
 #include "iredges_t.h"
+#include "irloop_t.h"
 
 #include "be_t.h"
 #include "bechordal_t.h"
@@ -35,12 +36,12 @@
 #include "bearch_firm.h"
 #include "benode_t.h"
 #include "beirgmod.h"
+#include "bedupl.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
 
 #undef DUMP_ALLOCATED
-#undef DUMP_LOCALIZED
 
 #define N_PHASES 256
 
@@ -106,6 +107,10 @@ static void prepare_graph(be_main_session_env_t *s)
 	/* Ensure, that the ir_edges are computed. */
 	edges_assure(s->irg);
 
+	/* Compute loop nesting information (for weighting copies) */
+	if (get_irg_loopinfo_state(s->irg) != (loopinfo_valid & loopinfo_cf_consistent))
+		construct_cf_backedges(s->irg);
+
 	dump_dominator_information(true);
 	dump_ir_block_graph(s->irg, "-prepared");
 	dump_dominator_information(false);
@@ -132,17 +137,17 @@ static void be_main_loop(void)
 		/* Compute some analyses and prepare the graph for backend use. */
 		prepare_graph(&session);
 
-#ifdef DUMP_LOCALIZED
-		dump_consts_local(0);
-		dump_ir_block_graph(irg, "-local-const");
-#endif
-		be_numbering(irg);
-
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
+
+		/* Remove all cases where a phi and one of its arguments interfere */
+		be_eliminate_phi_interferences(&session);
+		dump_ir_block_graph(session.irg, "-prephase");
+
+		be_numbering(irg);
 
 		/* Liveness analysis */
 		be_liveness(irg);
@@ -156,7 +161,7 @@ static void be_main_loop(void)
 			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-      chordal_env = be_ra_chordal(irg, env.arch_env, cls);
+			chordal_env = be_ra_chordal(irg, env.arch_env, cls);
 
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(env.arch_env, irg, "");
@@ -164,7 +169,11 @@ static void be_main_loop(void)
 			copystat_collect_cls(chordal_env);
 
 			be_copy_opt(chordal_env);
-			// be_ssa_destruction(&session, chordal_env);
+
+			be_ssa_destruction(&session, chordal_env);
+			be_ssa_destruction_check(&session, chordal_env);
+			be_ra_chordal_check(chordal_env);
+
 			be_ra_chordal_done(chordal_env);
 		}
 		copystat_dump_pretty(irg);
