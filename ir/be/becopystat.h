@@ -14,6 +14,7 @@
 
 #define MAX_ARITY 10
 #define MAX_CLS_SIZE 10
+#define MAX_CLS_PHIS 10
 #define MAX_PHASE 2
 
 /**
@@ -43,6 +44,8 @@ enum vals_t {
 	I_CLS_IF_CNT,		/* number of actual interferences in all classes */
 	I_CLS_SIZE_S,
 	I_CLS_SIZE_E = I_CLS_SIZE_S+MAX_CLS_SIZE,
+	I_CLS_PHIS_S,
+	I_CLS_PHIS_E = I_CLS_PHIS_S+MAX_CLS_PHIS,
 
 	/* ilp values */
 	I_ILP_TIME,			/* !external set! solving time in seconds */

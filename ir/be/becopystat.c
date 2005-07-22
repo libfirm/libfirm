@@ -111,7 +111,7 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 			continue;
 		}
 
-		block_of_arg = get_nodes_block(arg);
+		block_of_arg = get_Block_cfgpred_block(get_nodes_block(phi), i);
 		block_ith_pred = get_nodes_block(get_irn_n(get_nodes_block(phi), i));
 		if (block_of_arg == block_ith_pred) {
 			curr_vals[I_PHI_ARG_PRED]++;
@@ -138,7 +138,7 @@ static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
  * Collect phi class data
  */
 static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
-	int i, o, size, if_free;
+	int i, o, size, if_free, phis;
 	ir_node **members, *p;
 
 	/* phi class count */
@@ -156,6 +156,16 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 	for (i = 0, p = pset_first(pc); p; p = pset_next(pc))
 		members[i++] = p;
 	assert(i == size);
+
+	/* determine number of phis on this class */
+	phis = 0;
+	for (i = 0; i < size-1; ++i)
+		if (is_Phi(members[i]))
+			phis++;
+	if (phis > MAX_CLS_PHIS)
+		curr_vals[I_CLS_PHIS_E]++;
+	else
+		curr_vals[I_CLS_PHIS_S + phis]++;
 
 	/* determine interference of phi class members */
 	curr_vals[I_CLS_IF_MAX] += size*(size-1)/2;
@@ -245,6 +255,9 @@ void copystat_dump_pretty(ir_graph *irg) {
 	fprintf(out, "... sizes\n");
 	for (i = I_CLS_SIZE_S; i<=I_CLS_SIZE_E; i++)
 		fprintf(out, " %2i %4d\n", i-I_CLS_SIZE_S, curr_vals[i]);
+	fprintf(out, "... contained phis\n");
+	for (i = I_CLS_PHIS_S; i<=I_CLS_PHIS_E; i++)
+		fprintf(out, " %2i %4d\n", i-I_CLS_PHIS_S, curr_vals[i]);
 
 	fprintf(out, "\nILP stat\n");
 	fprintf(out, " Time %8d\n", curr_vals[I_ILP_TIME]);
