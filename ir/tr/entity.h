@@ -141,8 +141,8 @@ entity     *new_entity (type *owner, ident *name, type *tp);
  * Creates a new entity.
  *
  * Automatically inserts the entity as a member of owner.
- * Entity is automatic_allocated and uninitialize except if the type
- * is type_method, then it is static_allocated and constant.  The constant
+ * The entity is automatic allocated and uninitialized except if the type
+ * is type_method, then it is static allocated and constant.  The constant
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
@@ -251,7 +251,7 @@ const char *get_visibility_name(visibility vis);
 /** This enumeration flags the variability of entities. */
 typedef enum {
   variability_uninitialized,    /**< The content of the entity is completely unknown. */
-  variability_initialized,      /**< After allocation the entity is initalized with the
+  variability_initialized,      /**< After allocation the entity is initialized with the
                              value given somewhere in the entity. */
   variability_part_constant,    /**< For entities of compound types.
 				     The members of the entity are mixed constant,
@@ -265,7 +265,7 @@ ent_variability get_entity_variability (const entity *ent);
 /** Sets the variability of an entity. */
 void            set_entity_variability (entity *ent, ent_variability var);
 
-/** Return the name of the variablity. */
+/** Return the name of the variability. */
 const char *get_variability_name(ent_variability var);
 
 /** This enumeration flags the volatility of entities. */
@@ -333,7 +333,7 @@ void        set_entity_peculiarity (entity *ent, peculiarity pec);
 /** Return the name of the peculiarity. */
 const char *get_peculiarity_name(peculiarity var);
 
-/* -- Representation of constant values of entites -- */
+/* -- Representation of constant values of entities -- */
 /** Returns true if the the node is representable as code on
  *  const_code_irg. */
 int      is_irn_const_expression(ir_node *n);
@@ -350,18 +350,29 @@ ir_node *copy_const_value(ir_node *n);
 ir_node *get_atomic_ent_value(entity *ent);
 void     set_atomic_ent_value(entity *ent, ir_node *val);
 
-/* The following type describes a path to a leave in the compound graph.
-   Node 0 in the path must be an entity of type tp given in the constructor.  If
-   the type of this element is compound, the path node 1 is an element of the type
-   of node 0 an so forth, until an entity of atomic type is reached. */
+/**
+ * The following type describes a path to a leave in the compound graph.
+ * Node 0 in the path must be an entity of type tp given in the constructor.  If
+ * the type of this element is compound, the path node 1 is an element of the type
+ * of node 0 an so forth, until an entity of atomic type is reached.
+ */
 #ifndef _COMPOUND_GRAPH_PATH_TYPEDEF_
 #define _COMPOUND_GRAPH_PATH_TYPEDEF_
 typedef struct compound_graph_path compound_graph_path;
 #endif /* _COMPOUND_GRAPH_PATH_TYPEDEF_ */
+
+/** Creates a new compound graph path. */
 compound_graph_path *new_compound_graph_path(type *tp, int length);
+
+/** Returns non-zero if an object is a compound graph path */
 int     is_compound_graph_path(void *thing);
+
+/** Frees a graph path object */
 void    free_compound_graph_path (compound_graph_path *gr);
+
+/** Returns the length of a graph path */
 int     get_compound_graph_path_length(compound_graph_path *gr);
+
 entity *get_compound_graph_path_node(compound_graph_path *gr, int pos);
 void    set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node);
 int     get_compound_graph_path_array_index(compound_graph_path *gr, int pos);
