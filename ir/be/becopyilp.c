@@ -31,12 +31,6 @@ static firm_dbg_module_t *dbg = NULL;
 #define EPSILON 0.00001
 #define SLOTS_LIVING 32
 
-/**
- * Represents the _costs_ if node n and m have different colors.
- * Must be >=0.
- **/
-#define get_weight(n,m) 1
-
 typedef struct _simpl_t {
 	struct list_head chain;
 	if_node_t *ifn;
@@ -253,7 +247,7 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 	DBG((dbg, LEVEL_2, "Add E constraints...\n"));
 	/* for all roots of optimization units */
 	list_for_each_entry(unit_t, curr, &pi->co->units, units) {
-		const ir_node *root, *arg;
+		ir_node *root, *arg;
 		int rootnr, argnr, color;
 		int y_idx, i;
 		char buf[32];
@@ -272,7 +266,8 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 
 			/* Introduce new variable and set factor in objective function */
 			mangle_var(buf, 'y', rootnr, argnr);
-			y_idx = lpp_add_var(pi->curr_lp, buf, continous, get_weight(root, arg));
+			y_idx = lpp_add_var(pi->curr_lp, buf, continous, curr->costs[i]);
+
 			/* set starting value */
 			//lpp_set_start_value(pi->curr_lp, y_idx, (get_irn_col(pi->co, root) != get_irn_col(pi->co, arg)));
 
@@ -320,13 +315,13 @@ static void pi_add_constr_M(problem_instance_t *pi) {
 		int cst_idx, y_idx, i;
 		char buf[32];
 
-		if (curr->ifg_mis_size == curr->node_count)
+		if (curr->minimal_costs == 0)
 			continue;
 
 		root = curr->nodes[0];
 		rootnr = get_irn_graph_nr(root);
 		mangle_cst(buf, 'M', cst_counter++);
-		cst_idx = lpp_add_cst(pi->curr_lp, buf, greater, curr->node_count - curr->ifg_mis_size);
+		cst_idx = lpp_add_cst(pi->curr_lp, buf, greater, curr->minimal_costs);
 
 		/* for all arguments */
 		for (i = 1; i < curr->node_count; ++i) {
@@ -356,7 +351,7 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 
 	/* problem size reduction */
 	pi_find_simplicials(pi);
-	//TODO dump_ifg_w/o_removed
+	//TODO If you wish to see it: dump_ifg_w/o_removed
 	if (pi->all_simplicial)
 		return pi;
 

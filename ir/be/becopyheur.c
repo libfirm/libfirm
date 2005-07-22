@@ -26,6 +26,7 @@
 #include "xmalloc.h"
 #include "becopyopt.h"
 #include "becopystat.h"
+#include "bitset.h"
 
 #define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
@@ -63,7 +64,8 @@ typedef struct _qnode_t {
 	const unit_t *ou;			/**< the opt unit this qnode belongs to */
 	int color;					/**< target color */
 	set *conflicts;				/**< contains conflict_t's. All internal conflicts */
-	int mis_size;				/**< number of nodes in the mis. */
+	int mis_costs;				/**< costs of nodes/copies in the mis. */
+	int mis_size;				/**< size of the array below */
 	ir_node **mis;				/**< the nodes of unit_t->nodes[] being part of the max independent set */
 	set *changed_nodes;			/**< contains node_stat_t's. */
 } qnode_t;
@@ -365,71 +367,54 @@ static int qnode_try_color(const qnode_t *qn) {
 }
 
 /**
- * Determines a maximum independent set with respect to the interference and
- * conflict edges of all nodes in a qnode.
+ * Determines a maximum weighted independent set with respect to
+ * the interference and conflict edges of all nodes in a qnode.
  */
 static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
-	int all_size, curr_size, i, o;
-	int *which;
-	ir_node **curr, **all = alloca(ou->node_count * sizeof(*all));
+	ir_node **irns;
+	int max, next, pos, curr_weight, best_weight = 0;
+	bitset_t *best, *curr;
 
-	/* all contains all nodes not removed in this qn */
-	all_size = 0;
-	for (i=0; i<ou->node_count; ++i)
-		if (!qnode_are_conflicting(qn, ou->nodes[i], ou->nodes[i]))
-			all[all_size++] = ou->nodes[i];
+	irns = alloca((ou->node_count-1) * sizeof(*irns));
+	best = bitset_alloca(ou->node_count-1);
+	curr = bitset_alloca(ou->node_count-1);
 
-	/* which[i] says which element to take out of all[] and put into curr[i] */
-	which = alloca(all_size*sizeof(*which));
-	for (curr_size=0; curr_size<all_size; ++curr_size)
-		which[curr_size] = curr_size;
+	/* brute force the best set */
+	bitset_set_all(curr);
+	while ((max = bitset_popcnt(curr)) != 0) {
+		/* check if curr is a stable set */
+		int i, o, is_stable_set = 1;
+		bitset_foreach(curr, pos)
+			irns[pos] = ou->nodes[1+pos];
+		for(i=0; i<max; ++i)
+			for(o=i; o<max; ++o) /* !!!!! difference to ou_max_ind_set_costs(): NOT o=i+1 */
+				if (qnode_are_conflicting(qn, irns[i], irns[o])) {
+					is_stable_set = 0;
+					break;
+				}
 
-	/* stores the currently examined set */
-	curr = alloca(all_size*sizeof(*curr));
+		if (is_stable_set) {
+			/* calc current weigth */
+			curr_weight = 0;
+			bitset_foreach(curr, pos)
+				curr_weight += ou->costs[1+pos];
 
-	while (1) { /* this loop will terminate because at least a single node will be a max indep. set */
-		/* build current set */
-		for (i=0; i<curr_size; ++i)
-			curr[i] = all[which[all_size-curr_size+i]];
-
-		/* check current set */
-		for (i=0; i<curr_size; ++i)
-			for (o=i+1; o<curr_size; ++o)
-				if (qnode_are_conflicting(qn, curr[i], curr[o]))
-					goto conflict_found;
-
-		/* We had no conflict. This is the max indep. set */
-		qn->mis_size = curr_size;
-		for (i=0; i<curr_size; ++i)
-			qn->mis[i] = curr[i];
-		return;
-
-conflict_found:
-		/* We had a conflict. Generate next set */
-		if (which[all_size-curr_size+1] == all_size-curr_size+1) {
-			curr_size--;
-			for (i=0; i<curr_size; ++i)
-				which[all_size-curr_size+i] = i;
-		} else {
-			int redo = 1;
-			while (redo) {
-				int pos = all_size;
-				do {
-					pos--;
-				} while (!(which[pos] = (which[pos]+1) % all_size));
-
-				for (i=pos+1; i<all_size; ++i)
-					which[i] = MIN(which[i-1]+1, all_size-1);
-
-				redo = 0;
-				for (i=all_size-curr_size; i<all_size-1; ++i)
-					if (which[i]>=which[i+1]) {
-						redo = 1;
-						break;
-					}
+			/* any better ? */
+			if (curr_weight > best_weight) {
+				best_weight = curr_weight;
+				bitset_copy(best, curr);
 			}
 		}
+
+		bitset_minus1(curr);
 	}
+
+	/* transfer the best set into the qn */
+	qn->mis_size = bitset_popcnt(best);
+	qn->mis_costs = best_weight;
+	next = 0;
+	bitset_foreach(best, pos)
+		qn->mis[next++] = ou->nodes[1+pos];
 }
 
 /**
@@ -470,11 +455,11 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 
 	qnode_max_ind_set(qn, ou);
 	/* do the insertion */
-	DBG((dbg, LEVEL_4, "\t  Insert qnode color %d with size %d\n", qn->color, qn->mis_size));
+	DBG((dbg, LEVEL_4, "\t  Insert qnode color %d with cost %d\n", qn->color, qn->mis_costs));
 	lh = &ou->queue;
 	while (lh->next != &ou->queue) {
 		qnode_t *curr = list_entry_queue(lh->next);
-		if (curr->mis_size <= qn->mis_size)
+		if (curr->mis_costs <= qn->mis_costs)
 			break;
 		lh = lh->next;
 	}
@@ -482,10 +467,10 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 }
 
 /**
- * Tries to re-allocate colors of nodes in this opt unit, to achieve a lower
- * number of copy instructions placed during SSA-destruction and lowering.
+ * Tries to re-allocate colors of nodes in this opt unit, to achieve lower
+ * costs of copy instructions placed during SSA-destruction and lowering.
  * Works only for opt units with exactly 1 root node, which is the
- * case for approximately 80% of all phi classes and all register constrained
+ * case for approximately 80% of all phi classes and 100% of register constrained
  * nodes. (All other phi classes are reduced to this case.)
  */
 static void ou_optimize(unit_t *ou) {
@@ -508,7 +493,7 @@ static void ou_optimize(unit_t *ou) {
 		/* get head of queue */
 		curr = list_entry_queue(ou->queue.next);
 		list_del(&curr->queue);
-		DBG((dbg, LEVEL_2, "\t  Examine qnode color %d with size %d\n", curr->color, curr->mis_size));
+		DBG((dbg, LEVEL_2, "\t  Examine qnode color %d with cost %d\n", curr->color, curr->mis_costs));
 
 		/* try */
 		if (qnode_try_color(curr))
@@ -523,7 +508,7 @@ static void ou_optimize(unit_t *ou) {
 	if (curr->mis_size >= 2) {
 		node_stat_t *ns;
 
-		DBG((dbg, LEVEL_1, "\t  Best color: %d  Copies: %d/%d\n", curr->color, ou->interf+ou->node_count-curr->mis_size, ou->interf+ou->node_count-1));
+		DBG((dbg, LEVEL_1, "\t  Best color: %d  Costs: %d/%d\n", curr->color, ou->complete_costs - curr->mis_costs, ou->complete_costs));
 		/* globally pin root and eventually others */
 		pset_insert_ptr(pinned_global, ou->nodes[0]);
 		for (i=1; i<ou->node_count; ++i) {

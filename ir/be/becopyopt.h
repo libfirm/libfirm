@@ -7,6 +7,10 @@
  * Header for copy optimization problem. Analysis and set up of the problem.
  */
 
+/*
+ * TODO: get_nodes_block(get_irn_n(get_nodes_block(phi), i)); --> get_ifgblock_nodeblock
+ */
+
 #ifndef _BECOPYOPT_H
 #define _BECOPYOPT_H
 
@@ -35,14 +39,17 @@
 #define DEBUG_LVL_HEUR LEVEL_1
 #define DEBUG_LVL_ILP  LEVEL_1
 
+typedef int(*cost_fct_t)(ir_node*, ir_node*, int);
+
 /**
  * Data representing the problem of copy minimization.
  */
 typedef struct _copy_opt_t {
 	be_chordal_env_t *chordal_env;
-	char *name;							/**< ProgName__IrgName__RegClass */
-	struct list_head units;				/**< all units to optimize in right order */
-	pset *roots;						/**< used only temporary for detecting multiple appends */
+	char *name;						/**< ProgName__IrgName__RegClass */
+	struct list_head units;			/**< all units to optimize in right order */
+	pset *roots;					/**< used only temporary for detecting multiple appends */
+	cost_fct_t get_costs;			/**< function ptr used to get costs for copies */
 	struct obstack ob;
 } copy_opt_t;
 
@@ -52,10 +59,14 @@ typedef struct _copy_opt_t {
 typedef struct _unit_t {
 	struct list_head units;		/**< chain for all units */
 	copy_opt_t *co;				/**< the copy_opt this unit belongs to */
-	int interf;					/**< number of nodes dropped due to interference */
 	int node_count;				/**< size of the nodes array */
 	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
-	int ifg_mis_size;			/**< size of a mis considering only ifg (not coloring conflicts) */
+	int *costs;					/**< costs[i] are arising, if nodes[i] has a different color */
+	int complete_costs;			/**< sum of all costs[i] */
+	int minimal_costs;			/**< a lower bound for this ou, considering only ifg (not coloring conflicts) */
+
+	//TODO Think of the ordering.
+	int avg_costs;				/**< average costs. controls the order of ou's. */
 
 	/* for heuristic */
 	struct list_head queue;		/**< list of (mis/color) sorted by size of mis */
@@ -68,11 +79,13 @@ typedef struct _unit_t {
 #define get_irn_col(co, irn) \
 	arch_register_get_index(arch_get_irn_register(co->chordal_env->arch_env, irn, 0))
 
+#define list_entry_units(lh) list_entry(lh, unit_t, units)
+
 
 /**
  * Generate the problem. Collect all infos and optimizable nodes.
  */
-copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env);
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node*, ir_node*, int));
 
 /**
  * Free the space...
@@ -102,23 +115,31 @@ void free_copy_opt(copy_opt_t *co);
  */
 int is_optimizable_arg(const copy_opt_t *co, ir_node *irn);
 
-
 /**
- * Returns the current number of copies needed
+ * Computes the costs of a copy according to loop depth
+ * @param root, arg: clear.
+ * @param pos:	-1 for perm-copies.
+ * 				Else the argument position of arg in the phi node root.
+ * @return Must be >= 0 in all cases.
  */
-int co_get_copy_count(const copy_opt_t *co);
+int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos);
 
 /**
- * Returns a lower bound for the number of copies needed based on interfering
+ * All costs equal 1. Using this will reduce the number of copies.
+ * @return Must be >= 0 in all cases.
+ */
+int get_costs_all_one(ir_node *root, ir_node* arg, int pos);
+
+/**
+ * Returns the current costs the copies are causing
+ */
+int co_get_copy_costs(const copy_opt_t *co);
+
+/**
+ * Returns a lower bound for the costs of copies based on interfering
  * arguments and the size of a max indep. set (only ifg-edges) of the other args.
  */
 int co_get_lower_bound(const copy_opt_t *co);
-
-/**
- * Returns the number of arguments interfering with their root node. This also
- * is a (worse) lower bound for the number of copies needed.
- */
-int co_get_interferer_count(const copy_opt_t *co);
 
 /**
  * Solves the problem using a heuristic approach
@@ -129,10 +150,5 @@ void co_heur_opt(copy_opt_t *co);
  * Solves the problem using mixed integer programming
  */
 void co_ilp_opt(copy_opt_t *co);
-
-/**
- * Checks the register allocation for correctness
- */
-void co_check_allocation(copy_opt_t *co);
 
 #endif

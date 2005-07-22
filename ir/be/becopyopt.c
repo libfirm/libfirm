@@ -15,6 +15,7 @@
 #endif
 
 #include "irprog.h"
+#include "irloop_t.h"
 
 #include "xmalloc.h"
 #include "bechordal_t.h"
@@ -29,71 +30,49 @@ static firm_dbg_module_t *dbg = NULL;
 #define MIN(a,b) ((a<b)?(a):(b))
 
 /**
- * Computes a 'max independent set' wrt. ifg-edges only (no coloring conflicts, no register constraints)
- * @return The size of such a mis
+ * Computes the weight of a 'max independent set' wrt. ifg-edges only
+ * (no coloring conflicts, no register constraints)
+ * @return The costs of such a mis
  * NOTE: Code adapted from becopyheur
- * BETTER: Here we can be sure having a chordal graph to work on, so for 'larger' opt-units we
- *         could use a special algorithm.
+ * BETTER: Here we can be sure having a chordal graph to work on,
+ * 		   so, for 'larger' opt-units we could use a special algorithm.
  */
-static int get_ifg_mis_size(unit_t *ou) {
-	int all_size, curr_size, i, o;
-	int *which;
-	ir_node **curr, **all = alloca(ou->node_count * sizeof(*all));
+static int ou_max_ind_set_costs(unit_t *ou) {
+	ir_node **irns;
+	int max, pos, curr_weight, best_weight = 0;
+	bitset_t *curr;
 
-	/* all contains all nodes */
-	all_size = 0;
-	for (i=0; i<ou->node_count; ++i)
-		all[all_size++] = ou->nodes[i];
+	irns = alloca((ou->node_count-1) * sizeof(*irns));
+	curr = bitset_alloca(ou->node_count-1);
 
-	/* which[i] says which element to take out of all[] and put into curr[i] */
-	which = alloca(all_size*sizeof(*which));
-	for (curr_size=0; curr_size<all_size; ++curr_size)
-		which[curr_size] = curr_size;
+	/* brute force the best set */
+	bitset_set_all(curr);
+	while ((max = bitset_popcnt(curr)) != 0) {
+		/* check if curr is a stable set */
+		int i, o, is_stable_set = 1;
+		bitset_foreach(curr, pos)
+			irns[pos] = ou->nodes[1+pos];
+		for(i=0; i<max; ++i)
+			for(o=i+1; o<max; ++o) /* !!!!! difference to qnode_max_ind_set(): NOT o=i */
+				if (nodes_interfere(ou->co->chordal_env, irns[i], irns[o])) {
+					is_stable_set = 0;
+					break;
+				}
 
-	/* stores the currently examined set */
-	curr = alloca(all_size*sizeof(*curr));
+		if (is_stable_set) {
+			/* calc current weigth */
+			curr_weight = 0;
+			bitset_foreach(curr, pos)
+				curr_weight += ou->costs[1+pos];
 
-	while (1) { /* this loop will terminate because at least a single node will be a max indep. set */
-		/* build current set */
-		for (i=0; i<curr_size; ++i)
-			curr[i] = all[which[all_size-curr_size+i]];
-
-		/* check current set */
-		for (i=0; i<curr_size; ++i)
-			for (o=i+1; o<curr_size; ++o)
-				if (nodes_interfere(ou->co->chordal_env, curr[i], curr[o]))
-					goto conflict_found;
-
-		/* We had no conflict. This is the (one) max indep. set */
-		return curr_size;
-
-conflict_found:
-		/* We had a conflict. Generate next set */
-		if (which[all_size-curr_size+1] == all_size-curr_size+1) {
-			curr_size--;
-			for (i=0; i<curr_size; ++i)
-				which[all_size-curr_size+i] = i;
-		} else {
-			int redo = 1;
-			while (redo) {
-				int pos = all_size;
-				do {
-					pos--;
-				} while (!(which[pos] = (which[pos]+1) % all_size));
-
-				for (i=pos+1; i<all_size; ++i)
-					which[i] = MIN(which[i-1]+1, all_size-1);
-
-				redo = 0;
-				for (i=all_size-curr_size; i<all_size-1; ++i)
-					if (which[i]>=which[i+1]) {
-						redo = 1;
-						break;
-					}
-			}
+			/* any better ? */
+			if (curr_weight > best_weight)
+				best_weight = curr_weight;
 		}
+
+		bitset_minus1(curr);
 	}
-	assert(0 && "How did you get here?");
+	return best_weight;
 }
 
 /**
@@ -106,6 +85,8 @@ conflict_found:
 static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	int i, arity;
 	unit_t *unit;
+	struct list_head *tmp;
+
 	DBG((dbg, LEVEL_1, "\t  Root: %n %N\n", root, root));
 	/* check if we encountered this root earlier */
 	if (pset_find_ptr(co->roots, root))
@@ -118,10 +99,12 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	arity = get_irn_arity(root);
 	unit = xcalloc(1, sizeof(*unit));
 	unit->co = co;
-	unit->interf = 0;
 	unit->node_count = 1;
 	unit->nodes = xmalloc((arity+1) * sizeof(*unit->nodes));
+	unit->costs = xmalloc((arity+1) * sizeof(*unit->costs));
 	unit->nodes[0] = root;
+	unit->complete_costs = 0;
+	unit->avg_costs = 0;
 	INIT_LIST_HEAD(&unit->queue);
 
 	/* check all args */
@@ -130,26 +113,61 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			ir_node *arg = get_irn_n(root, i);
 			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
 			if (arg != root) {
-				if (!nodes_interfere(co->chordal_env, root, arg)) {
-					DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
+				int o, arg_pos = 0;
+				if (nodes_interfere(co->chordal_env, root, arg))
+					assert(0 && "root and arg interfere");
+				//TODO do not insert duplicate args
+				DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
+
+				/* check if arg has occurred at a prior position in the arg/list */
+				for (o=0; o<unit->node_count; ++o)
+					if (unit->nodes[o] == arg) {
+						arg_pos = o;
+						break;
+					}
+
+				if (!arg_pos) { /* a new argument */
+					/* TODO Think about the next 2 lines. (inserting in arg-order) */
 					if (is_optimizable(co->chordal_env->arch_env, arg))
 						co_append_unit(co, arg);
-					unit->nodes[unit->node_count++] = arg;
-				} else
-					unit->interf++;
+					/* insert node, set costs */
+					unit->nodes[unit->node_count] = arg;
+					unit->costs[unit->node_count] = co->get_costs(root, arg, i);
+					unit->node_count++;
+				} else { /* arg has occured before in same phi */
+					/* increase costs for existing arg */
+					unit->costs[arg_pos] = co->get_costs(root, arg, i);
+				}
 			}
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
+		unit->costs = xrealloc(unit->costs, unit->node_count * sizeof(*unit->costs));
 	} else if (is_Copy(co->chordal_env->arch_env, root)) {
 		assert(!nodes_interfere(co->chordal_env, root, get_Copy_src(root)));
-		unit->nodes[unit->node_count++] = get_Copy_src(root);
+		unit->nodes[1] = get_Copy_src(root);
+		unit->costs[1] = co->get_costs(root, unit->nodes[1], -1);
+		unit->node_count = 2;
 		unit->nodes = xrealloc(unit->nodes, 2 * sizeof(*unit->nodes));
+		unit->costs = xrealloc(unit->costs, 2 * sizeof(*unit->costs));
 	} else
 		assert(0 && "This is not an optimizable node!");
+	/* TODO add ou's for 2-addr-code instructions */
 
-	list_add_tail(&unit->units, &co->units);
+
+	for(i=1; i<unit->node_count; ++i)
+		unit->complete_costs += unit->costs[i];
+
+	assert(unit->node_count > 1);
+	unit->avg_costs = (100 * unit->complete_costs) / (unit->node_count-1);
+
+	/* insert according to average costs */
+	tmp = &co->units;
+	while (tmp->next != &co->units && list_entry_units(tmp->next)->avg_costs > unit->avg_costs)
+		tmp = tmp->next;
+	list_add(&unit->units, tmp);
+
 	/* Init ifg_mis_size to node_count. So get_lower_bound returns correct results. */
-	unit->ifg_mis_size = get_ifg_mis_size(unit);
+	unit->minimal_costs = unit->complete_costs - ou_max_ind_set_costs(unit);
 }
 
 static void co_collect_in_block(ir_node *block, void *env) {
@@ -169,16 +187,17 @@ static void co_collect_units(copy_opt_t *co) {
 	del_pset(co->roots);
 }
 
-copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env) {
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node*, ir_node*, int)) {
 	const char *s1, *s2, *s3;
 	int len;
-        copy_opt_t *co;
+	copy_opt_t *co;
 
 	dbg = firm_dbg_register("ir.be.copyopt");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	co = xcalloc(1, sizeof(*co));
 	co->chordal_env = chordal_env;
+	co->get_costs = get_costs;
 
 	s1 = get_irp_prog_name();
 	s2 = get_entity_name(get_irg_entity(co->chordal_env->irg));
@@ -215,17 +234,37 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	return 0;
 }
 
-int co_get_copy_count(const copy_opt_t *co) {
+int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
+	int cost = 0;
+	ir_loop *loop;
+	ir_node *root_block = get_nodes_block(root);
+
+	assert(pos==-1 || is_Phi(root));
+	if (pos == -1) {
+		/* a perm places the copy in the same block as it resides */
+		loop = get_irn_loop(root_block);
+	} else {
+		/* for phis the copies are placed in the corresponding pred-block */
+		loop = get_irn_loop(get_Block_cfgpred_block(root_block, pos));
+	}
+	if (loop)
+		cost = 2*get_loop_depth(loop);
+	return cost+1;
+}
+
+int get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
+	return 1;
+}
+
+int co_get_copy_costs(const copy_opt_t *co) {
 	int i, res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units) {
 		int root_col = get_irn_col(co, curr->nodes[0]);
-		res += curr->interf;
-		DBG((dbg, LEVEL_1, "%n %N has %d intf\n", curr->nodes[0], curr->nodes[0], curr->interf));
 		for (i=1; i<curr->node_count; ++i)
 			if (root_col != get_irn_col(co, curr->nodes[i])) {
 				DBG((dbg, LEVEL_1, "  %n %N\n", curr->nodes[i], curr->nodes[i]));
-				res++;
+				res += curr->costs[i];
 			}
 	}
 	return res;
@@ -235,55 +274,6 @@ int co_get_lower_bound(const copy_opt_t *co) {
 	int res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units)
-		res += curr->interf + curr->node_count - curr->ifg_mis_size;
+		res += curr->minimal_costs;
 	return res;
-}
-
-int co_get_interferer_count(const copy_opt_t *co) {
-	int res = 0;
-	unit_t *curr;
-	list_for_each_entry(unit_t, curr, &co->units, units)
-		res += curr->interf;
-	return res;
-}
-
-/**
- * Needed for result checking
- */
-static void co_collect_for_checker(ir_node *block, void *env) {
-	copy_opt_t *co = env;
-	struct list_head *head = get_block_border_head(co->chordal_env, block);
-	border_t *curr;
-
-	list_for_each_entry_reverse(border_t, curr, head, list)
-		if (curr->is_def && curr->is_real && is_curr_reg_class(curr->irn))
-			obstack_ptr_grow(&co->ob, curr->irn);
-}
-
-/**
- * This O(n^2) checker checks if
- * 	two ifg-connected nodes have the same color
- * 	register constraint are satisfied
- */
-void co_check_allocation(copy_opt_t *co) {
-	ir_node **nodes, *n1, *n2;
-	int i, o;
-
-	obstack_init(&co->ob);
-	dom_tree_walk_irg(co->chordal_env->irg, co_collect_for_checker, NULL, co);
-	obstack_ptr_grow(&co->ob, NULL);
-
-	nodes = (ir_node **) obstack_finish(&co->ob);
-	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
-		assert(arch_reg_is_allocatable(co->chordal_env->arch_env, n1, arch_pos_make_out(0),
-			arch_get_irn_register(co->chordal_env->arch_env, n1, 0)) && "Constraint does not hold");
-		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o])
-			if (nodes_interfere(co->chordal_env, n1, n2)
-          && get_irn_col(co, n1) == get_irn_col(co, n2)) {
-				DBG((dbg, 0, "Error in graph %s: %n %d  and  %n %d have the same color %d.\n", co->name, n1, get_irn_graph_nr(n1), n2, get_irn_graph_nr(n2), get_irn_col(co, n1)));
-				assert(0 && "Interfering values have the same color!");
-			}
-	}
-	obstack_free(&co->ob, NULL);
-	DBG((dbg, 2, "The checker seems to be happy!\n"));
 }
