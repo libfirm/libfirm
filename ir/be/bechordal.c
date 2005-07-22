@@ -524,6 +524,45 @@ be_chordal_env_t *be_ra_chordal(ir_graph *irg,
 	return env;
 }
 
+void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
+	const arch_env_t *arch_env;
+	struct obstack ob;
+	pmap_entry *pme;
+	ir_node **nodes, *n1, *n2;
+	int i, o;
+
+	arch_env = chordal_env->arch_env;
+
+	/* Collect all irns */
+	obstack_init(&ob);
+	pmap_foreach(chordal_env->border_heads, pme) {
+		border_t *curr;
+		struct list_head *head = pme->value;
+		list_for_each_entry(border_t, curr, head, list)
+			if (curr->is_def && curr->is_real)
+				if (arch_get_irn_reg_class(arch_env, curr->irn, arch_pos_make_out(0)) == chordal_env->cls)
+					obstack_ptr_grow(&ob, curr->irn);
+	}
+	obstack_ptr_grow(&ob, NULL);
+	nodes = (ir_node **) obstack_finish(&ob);
+
+	/* Check them */
+	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
+		const arch_register_t *n1_reg, *n2_reg;
+
+		n1_reg = arch_get_irn_register(arch_env, n1, 0);
+		assert(arch_reg_is_allocatable(arch_env, n1, arch_pos_make_out(0), n1_reg) && "Register constraint does not hold");
+
+		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
+			n2_reg = arch_get_irn_register(arch_env, n2, 0);
+			assert(!(nodes_interfere(chordal_env, n1, n2) && n1_reg == n2_reg) && "Interfering values have the same color!");
+		}
+	}
+	obstack_free(&ob, NULL);
+}
+
+/* TODO #ifdef BUILD_GRAPH --> faster version of checker with edges */
+
 void be_ra_chordal_done(be_chordal_env_t *env)
 {
 #ifdef BUILD_GRAPH

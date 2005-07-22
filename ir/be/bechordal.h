@@ -25,6 +25,14 @@ be_chordal_env_t *be_ra_chordal(ir_graph *irg,
     const arch_register_class_t *cls);
 
 /**
+ * Check current register allocation for correctness.
+ * Interfering nodes have different colors
+ * Register constraints
+ * O(n^2)
+ */
+void be_ra_chordal_check(be_chordal_env_t *chordal_env);
+
+/**
  * Free data from the chordal register allocation.
  * @param irg The graph.
  */
