@@ -29,7 +29,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irflag_t.h"
-
+#include "irtools.h"
 
 /* Return the current state of the interprocedural view. */
 ip_view_state get_irp_ip_view_state(void) {
@@ -99,11 +99,6 @@ static void caller_init(int arr_length, entity ** free_methods) {
   }
 }
 
-
-static INLINE void clear_link(ir_node * node, void * env) {
-  set_irn_link(node, NULL);
-}
-
 /*
 static INLINE ir_node * tail(ir_node * node) {
   ir_node * link;
@@ -167,7 +162,7 @@ static void collect_phicallproj(void) {
     link(start, get_irg_frame(irg));
     link(start, get_irg_globals(irg));
     /* walk */
-    irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_phicallproj_walker, &end);
+    irg_walk_graph(irg, firm_clear_link, (irg_walk_func *) collect_phicallproj_walker, &end);
   }
 }
 
@@ -888,7 +883,7 @@ void cg_destruct(void) {
   if (get_irp_ip_view_state() != ip_view_no) {
     for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
       ir_graph * irg = get_irp_irg(i);
-      irg_walk_graph(irg, destruct_walker, clear_link, NULL);
+      irg_walk_graph(irg, destruct_walker, firm_clear_link, NULL);
 
       set_irg_frame      (irg, skip_Id(get_irg_frame(irg)));
       set_irg_globals    (irg, skip_Id(get_irg_globals(irg)));

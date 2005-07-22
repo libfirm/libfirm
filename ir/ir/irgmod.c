@@ -14,16 +14,17 @@
 # include "config.h"
 #endif
 
-# include "irvrfy.h"
-# include "irflag_t.h"
-# include "irgwalk.h"
-# include "irnode_t.h"
-# include "irgraph_t.h"
-# include "irgmod.h"
-# include "array.h"
-# include "ircons.h"
-# include "irhooks.h"
-# include "iredges_t.h"
+#include "irvrfy.h"
+#include "irflag_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
+#include "irgmod.h"
+#include "array.h"
+#include "ircons.h"
+#include "irhooks.h"
+#include "iredges_t.h"
+#include "irtools.h"
 
 /* Turns a node into a "useless" Tuple.  The Tuple just forms a tuple
    from several inputs.
@@ -93,11 +94,6 @@ exchange (ir_node *old, ir_node *nw)
 /*--------------------------------------------------------------------*/
 
 static void
-clear_link (ir_node *n, void *env) {
-  set_irn_link(n, NULL);
-}
-
-static void
 collect (ir_node *n, void *env) {
   ir_node *pred;
   if (get_irn_op(n) == op_Phi) {
@@ -120,7 +116,7 @@ void collect_phiprojs(ir_graph *irg) {
   rem = current_ir_graph;
   current_ir_graph = irg;
 
-  irg_walk(get_irg_end(current_ir_graph), clear_link, collect, NULL);
+  irg_walk(get_irg_end(current_ir_graph), firm_clear_link, collect, NULL);
 
   current_ir_graph = rem;
 }

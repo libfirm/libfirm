@@ -18,6 +18,7 @@
 #include "irprintf.h"
 #include "irdump.h"
 #include "dags.h"
+#include "irtools.h"
 
 enum dag_counting_options_t {
   FIRMSTAT_COPY_CONSTANTS = 0x00000001,		/**< if set, constants will be treated as they are in
@@ -26,14 +27,6 @@ enum dag_counting_options_t {
   FIRMSTAT_CALL_IS_LEAVE  = 0x00000004,         /**< Call nodes are always leaves */
   FIRMSTAT_ARGS_ARE_ROOTS = 0x00000008,         /**< arguments (Proj(Proj(Start)) are roots */
 };
-
-/**
- * walker for clearing node links
- */
-static void clear_links(ir_node *node, void *env)
-{
-  set_irn_link(node, NULL);
-}
 
 typedef struct _dag_entry_t dag_entry_t;
 
@@ -264,7 +257,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
     return;
 
   /* first step, clear the links */
-  irg_walk_graph(graph->irg, clear_links, NULL, NULL);
+  irg_walk_graph(graph->irg, firm_clear_link, NULL, NULL);
 
   obstack_init(&root_env.obst);
   root_env.num_of_dags  = 0;

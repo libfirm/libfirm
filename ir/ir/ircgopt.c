@@ -28,11 +28,7 @@
 #include "irflag_t.h"
 #include "ircons.h"
 #include "typewalk.h"
-
-static void clear_link(ir_node * node, void * env) {
-  set_irn_link(node, NULL);
-}
-
+#include "irtools.h"
 
 /* Call-Operationen an die "link"-Liste von "call_head" anhängen. */
 static void collect_call(ir_node * node, ir_node * head) {
@@ -82,7 +78,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
         ir_graph * irg = get_entity_irg(marked[i]);
         ir_node * node = get_irg_end(irg);
         /* collect calls */
-        irg_walk_graph(irg, clear_link, (irg_walk_func *) collect_call, node);
+        irg_walk_graph(irg, firm_clear_link, (irg_walk_func *) collect_call, node);
         /* iterate calls */
         for (node = get_irn_link(node); node; node = get_irn_link(node)) {
           int i;
@@ -92,10 +88,10 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
             if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
               set_entity_link(ent, MARK);
               ARR_APP1(entity *, marked, ent);
-	      if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {
-		printf("dead method elimination: method %s can be called from Call %ld: kept alive.\n",
-		       get_entity_ld_name(ent), get_irn_node_nr(node));
-	      }
+              if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {
+                printf("dead method elimination: method %s can be called from Call %ld: kept alive.\n",
+	               get_entity_ld_name(ent), get_irn_node_nr(node));
+              }
             }
           }
         }

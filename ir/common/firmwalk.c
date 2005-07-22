@@ -24,6 +24,7 @@
 #include "irnode_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
+#include "irtools.h"
 
 #include "array.h"
 #include "obst.h"
@@ -205,17 +206,10 @@ void *get_firm_walk_link(void *thing)
   }
 }
 
-/** Set link field of a ir node to NULL */
-static
-void fw_clear_link(ir_node * node, void * env)
-{
-  set_irn_link(node, NULL);
-}
-
 /** Fill maps of type and entity.
  *  This function will be called by the firm walk initializer
  *  to collect all types and entities of program's firm ir.
- *  All types will be colleced in the hash table type_map
+ *  All types will be collected in the hash table type_map
  *  and all entity are stored in entity_map. The mode of an
  *  type will be collected as well.
  *
@@ -362,7 +356,7 @@ void firm_walk_init(firm_walk_flags flags)
 
     type_walk_irg(irg, fw_collect_tore, NULL, NULL);
 
-    irg_walk_graph(irg, fw_clear_link, fw_collect_irn, NULL);
+    irg_walk_graph(irg, firm_clear_link, fw_collect_irn, NULL);
   }
 }
 
