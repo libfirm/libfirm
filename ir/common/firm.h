@@ -93,6 +93,7 @@ extern "C" {
 #include "execution_frequency.h"
 
 /* Support */
+#include "irtools.h"        /* often needed tools */
 #include "irgmod.h"         /* Support to modify ir */
 #include "irgwalk.h"        /* Support to walk ir */
 #include "typewalk.h"       /* Support to walk type information */
