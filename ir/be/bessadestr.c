@@ -203,8 +203,10 @@ void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chorda
 
 				/* insert perms */
 				for(i=0, max=get_irn_arity(phi); i<max; ++i) {
+					ir_node *perm;
+
 					ir_printf("Placing perm for %+F \n", phi);
-					ir_node *perm = get_or_insert_perm(session, chordal_env, get_Block_cfgpred_block(get_nodes_block(phi), i));
+					perm = get_or_insert_perm(session, chordal_env, get_Block_cfgpred_block(get_nodes_block(phi), i));
 					perm->link = NULL;
 				}
 			}
