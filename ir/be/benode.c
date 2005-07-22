@@ -329,10 +329,18 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   firm_dbg_module_t *dbg = firm_dbg_register("firm.be.node");
   int i, n;
 
+  firm_dbg_set_mask(dbg, -1);
   DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
   sched_foreach_reverse(bl, irn) {
     ir_node *x;
+
+	/*
+	 * If we encounter the node we want to insert the Perm after,
+	 * exit immediately, so that this node is still live
+	 */
+    if(irn == pos)
+      break;
 
     DBG((dbg, LEVEL_1, "%+F\n", irn));
     for(x = pset_first(live); x; x = pset_next(live))
@@ -340,14 +348,6 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
 
     if(arch_irn_has_reg_class(arch_env, irn, arch_pos_make_out(0), cls))
       pset_remove_ptr(live, irn);
-
-    /*
-     * Consider the definition of the node, but not the uses, since
-     * newly created liveranges by the node after which the perm is
-     * located are not of interest for the perm.
-     */
-    if(irn == pos)
-      break;
 
     for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
       ir_node *op = get_irn_n(irn, i);
@@ -360,8 +360,11 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   n = pset_count(live);
   nodes = malloc(n * sizeof(nodes[0]));
 
-  for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++)
+  DBG((dbg, LEVEL_1, "live:\n"));
+  for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++) {
+  	DBG((dbg, LEVEL_1, "\t%+F\n", irn));
     nodes[i] = irn;
+  }
 
   perm = new_Perm(env->main_env->node_factory, cls, irg, bl, n, nodes);
   sched_add_after(pos, perm);
@@ -371,11 +374,11 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   for(i = 0; i < n; ++i) {
     ir_node *copies[1];
     ir_node *perm_op = get_irn_n(perm, i);
-	const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op, arch_pos_make_out(0));
+	const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op, 0);
 
     ir_mode *mode = get_irn_mode(perm_op);
     ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
-    arch_set_irn_register(arch_env, proj, arch_pos_make_out(0), reg);
+    arch_set_irn_register(arch_env, proj, 0, reg);
 
     sched_add_after(curr, proj);
     curr = proj;
