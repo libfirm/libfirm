@@ -5,3 +5,7 @@ Makefile
 MakeRules
 changelog.html
 changelog.xml
+.depend
+autom4te.cache
+libfirm.doxygen
+stamp-h
