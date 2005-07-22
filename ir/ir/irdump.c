@@ -426,10 +426,10 @@ static void clear_link(ir_node * node, void * env) {
 }
 
 /**
- * If the entity has a ld_name, returns it if the option dump_ld_name is set,
+ * If the entity has a ld_name, returns it if the dump_ld_name is set,
  * else returns the name of the entity.
  */
-const char *get_ent_dump_name(entity *ent) {
+static const char *_get_ent_dump_name(entity *ent, int dump_ld_name) {
   if (!ent)
     return "<NULL entity>";
   if (dump_ld_name) {
@@ -439,11 +439,18 @@ const char *get_ent_dump_name(entity *ent) {
   return get_id_str(ent->name);
 }
 
+/**
+ * If the entity has a ld_name, returns it if the option dump_ld_name is set,
+ * else returns the name of the entity.
+ */
+const char *get_ent_dump_name(entity *ent) {
+  return _get_ent_dump_name(ent, dump_ld_name);
+}
+
 /* Returns the name of an IRG. */
 const char *get_irg_dump_name(ir_graph *irg) {
   /* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
-  entity *ent = get_irg_entity(irg);
-  return get_ent_dump_name(ent);
+  return _get_ent_dump_name(get_irg_entity(irg), 1);
 }
 
 /**
@@ -2347,7 +2354,7 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
 static void
 dump_block_to_cfg(ir_node *block, void *env) {
   FILE *F = env;
-  int i, fl;
+  int i, fl = 0;
   ir_node *pred;
 
   if (is_Block(block)) {
