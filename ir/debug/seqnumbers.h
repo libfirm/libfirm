@@ -18,12 +18,17 @@
  * A sequence number is an unique number representing a filename
  * and a line number. The number 0 represents empty information.
  * This module is an optional "snap-in" for the Firm debug info.
+ * In simple cases it should be possible to use sequence numbers
+ * as dbg_info.
  */
 #ifndef _SEQNUMBERS_H_
 #define _SEQNUMBERS_H_
 
 #include "ident.h"
 
+/**
+ * An opaque type for a sequence number.
+ */
 #ifndef _SEQNO_T_TYPEDEF_
 #define _SEQNO_T_TYPEDEF_
 typedef struct sn_entry *seqno_t;
@@ -50,7 +55,7 @@ seqno_t firm_seqno_enter(const char *filename, unsigned lineno);
 const char *firm_seqno_retrieve(seqno_t seqno, unsigned *lineno);
 
 /**
- * Creates the seqno pool.
+ * Creates the sequence number pool.
  * Is not called by init_firm(), because the sequence number
  * support is optional. Call firm_seqno_init() after init_firm()
  * if sequence numbers should be used.
@@ -58,9 +63,9 @@ const char *firm_seqno_retrieve(seqno_t seqno, unsigned *lineno);
 void firm_seqno_init(void);
 
 /**
- * Terminates the seqno pool.
+ * Terminates the sequence number pool.
  * Sequence numbers cannot be resolved anymore.
- * Call this fucntion to terminate the sequence
+ * Call this function to terminate the sequence
  * pool.
  */
 void firm_seqno_term(void);
