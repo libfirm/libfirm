@@ -51,13 +51,13 @@
  * Replace binary Conds that jumps twice into the same block
  * by a simple Jmp.
  * E.g.
- * @code
+ * @verbatim
  *               Cond                     Jmp  Bad
  *             /       \                   |   /
  *       ProjX True   ProjX False  ==>     |  /
  *             \       /                   | /
  *               Block                    Block
- * @endcode
+ * @endverbatim
  *
  * Such pattern are the result of if-conversion.
  *
@@ -221,21 +221,22 @@ static int is_pred_of(ir_node *pred, ir_node *b) {
  *  The test is rather tricky.
  *
  *  The situation is something like the following:
- *
+ *  @verbatim
  *                 if-block
  *                  /   \
  *              then-b  else-b
  *                  \   /
  *                    b
+ *  @endverbatim
  *
- *     b merges the control flow of an if-then-else.  We may not remove
- *     the 'then' _and_ the 'else' block of an 'if' if there is a Phi
- *     node in b, even if both are empty.  The destruction of this Phi
- *     requires that a copy is added before the merge.  We have to
- *     keep one of the case blocks to place the copies in.
+ *  b merges the control flow of an if-then-else.  We may not remove
+ *  the 'then' _and_ the 'else' block of an 'if' if there is a Phi
+ *  node in b, even if both are empty.  The destruction of this Phi
+ *  requires that a copy is added before the merge.  We have to
+ *  keep one of the case blocks to place the copies in.
  *
- *     To perform the test for pos, we must regard predecessors before pos
- *     as already removed.
+ *  To perform the test for pos, we must regard predecessors before pos
+ *  as already removed.
  **/
 static int test_whether_dispensable(ir_node *b, int pos) {
   int i, j, n_preds = 1;
@@ -302,22 +303,23 @@ static int test_whether_dispensable(ir_node *b, int pos) {
  * for all nodes, not regarding whether there is a possibility for optimization.
  *
  * For each predecessor p of a Block b there are three cases:
- *  1. The predecessor p is a Bad node:  just skip it.  The in array of b shrinks by one.
- *  2. The predecessor p is empty.  Remove p.  All predecessors of p are now
- *     predecessors of b.
- *  3. The predecessor p is a block containing useful code.  Just keep p as is.
+ *  -#. The predecessor p is a Bad node:  just skip it.  The in array of b shrinks by one.
+ *  -#. The predecessor p is empty.  Remove p.  All predecessors of p are now
+ *      predecessors of b.
+ *  -#. The predecessor p is a block containing useful code.  Just keep p as is.
  *
  * For Phi nodes f we have to check the conditions at the Block of f.
  * For cases 1 and 3 we proceed as for Blocks.  For case 2 we can have two
  * cases:
- *  2a: The old predecessor of the Phi f is a Phi pred_f IN THE BLOCK REMOVED.  In this
+ *  -2a: The old predecessor of the Phi f is a Phi pred_f IN THE BLOCK REMOVED.  In this
  *      case we proceed as for blocks. We remove pred_f.  All
  *      predecessors of pred_f now are predecessors of f.
- *  2b: The old predecessor of f is NOT in the block removed. It might be a Phi, too.
+ *  -2b: The old predecessor of f is NOT in the block removed. It might be a Phi, too.
  *      We have to replicate f for each predecessor of the removed block. Or, with
  *      other words, the removed predecessor block has exactly one predecessor.
  *
  * Further there is a special case for self referencing blocks:
+ * @verbatim
  *
  *    then_b     else_b                              then_b  else_b
  *       \      /                                      \      /
@@ -330,6 +332,7 @@ static int test_whether_dispensable(ir_node *b, int pos) {
  *         |  |    |                                      |  |    |
  *         |  |____|                                      |  |____|
  *         |                                              |
+ * @endverbatim
  *
  * If there is a Phi in pred_b, but we remove pred_b, we have to generate a
  * Phi in loop_b, that has the ins of the Phi in pred_b and a self referencing
