@@ -233,8 +233,7 @@ static void pi_add_constr_B(problem_instance_t *pi, int color) {
 
 /**
  * Generates constraints which interrelate x with y variables.
- * y=1 ==> x1 and x2 must have the same color.
- *     <== is achieved automatically by minimization.
+ * x1 and x2 have the different colors ==> y_12 = 1
  */
 static void pi_add_constr_E(problem_instance_t *pi) {
 	unit_t *curr;
@@ -305,11 +304,11 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 }
 
 /**
- * Matrix M: maximum independent set constraints
+ * Matrix S: maximum independent set constraints
  * Generates lower bound-cuts for optimization units with inner interferences.
  * Sum(y_{root, arg}, arg \in Args) <= max_indep_set_size - 1
  */
-static void pi_add_constr_M(problem_instance_t *pi) {
+static void pi_add_constr_S(problem_instance_t *pi) {
 	unit_t *curr;
 	int cst_counter = 0;
 	DBG((dbg, LEVEL_2, "Add M constraints...\n"));
@@ -335,10 +334,18 @@ static void pi_add_constr_M(problem_instance_t *pi) {
 			argnr = get_irn_graph_nr(arg);
 			mangle_var(buf, 'y', rootnr, argnr);
 			y_idx = lpp_get_var_idx(pi->curr_lp, buf);
-			lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, 1);
+			lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, curr->costs[i]);
 		}
 	}
 }
+
+/**
+ * TODO Matrix M: Multi-Arg-Use. Interrelates different \phi-functions
+ * in the same block, iff they use the same arg at the same pos.
+ * Only one can get the arg.
+ */
+
+//static void pi_add_constr_M(problem_instance_t *pi) {
 
 /**
  * Generate the initial problem matrices and vectors.
@@ -367,7 +374,8 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	for (col = 0; col < pi->co->chordal_env->cls->n_regs; ++col)
 		pi_add_constr_B(pi, col);
 	pi_add_constr_E(pi);
-	pi_add_constr_M(pi);
+	pi_add_constr_S(pi);
+	//TODO pi_add_constr_M(pi);
 
 	return pi;
 }
