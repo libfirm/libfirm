@@ -143,7 +143,7 @@ void ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
 void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args);
 
 #ifdef WITH_LIBCORE
-#include <libcore/xprintf.h>
+#include <libcore/lc_printf.h>
 #endif /* WITH_LIBCORE */
 
 #endif /* _IRPRINTF_H */

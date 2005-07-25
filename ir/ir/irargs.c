@@ -17,7 +17,7 @@
 #include "bitset.h"
 
 #include <ctype.h>
-#include <libcore/xprintf.h>
+#include <libcore/lc_printf.h>
 
 #include "firm_common.h"
 #include "irnode_t.h"
@@ -29,21 +29,22 @@
 /**
  * identify a firm object type
  */
-static int firm_get_arg_type(const arg_occ_t *occ) {
+static int firm_get_lc_arg_type(const lc_arg_occ_t *occ) {
   /* Firm objects are always pointer */
-  return arg_type_ptr;
+  return lc_arg_type_ptr;
 }
 
-static int firm_get_arg_type_int(const arg_occ_t *occ) {
-  return arg_type_int;
+static int firm_get_lc_arg_type_int(const lc_arg_occ_t *occ) {
+  return lc_arg_type_int;
 }
 
 
-static int bitset_get_arg_type(const arg_occ_t *occ) {
-  return arg_type_ptr;
+static int bitset_get_lc_arg_type(const lc_arg_occ_t *occ) {
+  return lc_arg_type_ptr;
 }
 
-static int bitset_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+static int bitset_emit(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
   int res = 2;
   bitset_t *b = arg->v_ptr;
@@ -51,16 +52,16 @@ static int bitset_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_
   char buf[32];
   const char *prefix = "";
 
-  arg_append(app, occ, "[", 1);
+  lc_arg_append(app, occ, "[", 1);
   for(p = bitset_next_set(b, 0); p != -1; p = bitset_next_set(b, p)) {
     int n;
 
     n = snprintf(buf, sizeof(buf), "%s%d", prefix, (int) p);
-    arg_append(app, occ, buf, n);
+    lc_arg_append(app, occ, buf, n);
     prefix = ", ";
     res += n;
   }
-  arg_append(app, occ, "]", 1);
+  lc_arg_append(app, occ, "]", 1);
 
   return res;
 }
@@ -68,7 +69,8 @@ static int bitset_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_
 /**
  * emit an opaque Firm dbg_info object
  */
-static int firm_emit_dbg(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+static int firm_emit_dbg(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
   char buf[1024];
   ir_node *irn = arg->v_ptr;
@@ -79,13 +81,14 @@ static int firm_emit_dbg(appendable_t *app, const arg_occ_t *occ, const arg_valu
     if (__dbg_info_snprint(buf, sizeof(buf), dbg) <= 0)
       buf[0] = '\0';
   }
-  return arg_append(app, occ, buf, strlen(buf));
+  return lc_arg_append(app, occ, buf, strlen(buf));
 }
 
 /**
  * emit a Firm object
  */
-static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+static int firm_emit(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 #define A(s)    occ->flag_hash ? s " ": ""
 
@@ -177,7 +180,7 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
   if(occ->flag_plus)
   	strncat(buf, add, sizeof(buf));
 
-  return arg_append(app, occ, buf, strlen(buf));
+  return lc_arg_append(app, occ, buf, strlen(buf));
 
 #undef A
 }
@@ -185,24 +188,26 @@ static int firm_emit(appendable_t *app, const arg_occ_t *occ, const arg_value_t 
 /**
  * emit an ident
  */
-static int firm_emit_ident(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+static int firm_emit_ident(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
   ident *id = (ident *)arg->v_ptr;
   const char *p = id ? get_id_str(id) : "(null)";
 
-  return arg_append(app, occ, p, strlen(p));
+  return lc_arg_append(app, occ, p, strlen(p));
 }
 
 /**
  * Emit indent.
  */
-static int firm_emit_indent(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+static int firm_emit_indent(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	int i;
 	int amount = arg->v_int;
 
 	for(i = 0; i < amount; ++i)
-		appendable_chadd(app, ' ');
+		lc_appendable_chadd(app, ' ');
 
 	return amount;
 }
@@ -210,26 +215,27 @@ static int firm_emit_indent(appendable_t *app, const arg_occ_t *occ, const arg_v
 /**
  * Emit pnc.
  */
-static int firm_emit_pnc(appendable_t *app, const arg_occ_t *occ, const arg_value_t *arg)
+static int firm_emit_pnc(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
   int value = arg->v_int;
   const char *p = get_pnc_string(value);
 
-  return arg_append(app, occ, p, strlen(p));
+  return lc_arg_append(app, occ, p, strlen(p));
 }
 
-arg_env_t *firm_get_arg_env(void)
+lc_arg_env_t *firm_get_lc_arg_env(void)
 {
 #define X(name, letter) {"firm:" name, letter}
 
-  static arg_env_t *env = NULL;
+  static lc_arg_env_t *env = NULL;
 
-  static arg_handler_t firm_handler   = { firm_get_arg_type, firm_emit };
-  static arg_handler_t ident_handler  = { firm_get_arg_type, firm_emit_ident };
-  static arg_handler_t indent_handler = { firm_get_arg_type_int, firm_emit_indent };
-  static arg_handler_t pnc_handler    = { firm_get_arg_type_int, firm_emit_pnc };
-  static arg_handler_t bitset_handler = { bitset_get_arg_type, bitset_emit };
-  static arg_handler_t debug_handler  = { firm_get_arg_type, firm_emit_dbg };
+  static lc_arg_handler_t firm_handler   = { firm_get_lc_arg_type, firm_emit };
+  static lc_arg_handler_t ident_handler  = { firm_get_lc_arg_type, firm_emit_ident };
+  static lc_arg_handler_t indent_handler = { firm_get_lc_arg_type_int, firm_emit_indent };
+  static lc_arg_handler_t pnc_handler    = { firm_get_lc_arg_type_int, firm_emit_pnc };
+  static lc_arg_handler_t bitset_handler = { bitset_get_lc_arg_type, bitset_emit };
+  static lc_arg_handler_t debug_handler  = { firm_get_lc_arg_type, firm_emit_dbg };
 
   static struct {
     const char *name;
@@ -250,18 +256,18 @@ arg_env_t *firm_get_arg_env(void)
   int i;
 
   if(env == NULL) {
-    env = arg_new_env();
-    arg_add_std(env);
+    env = lc_arg_new_env();
+    lc_arg_add_std(env);
 
-    arg_register(env, "firm", 'F', &firm_handler);
+    lc_arg_register(env, "firm", 'F', &firm_handler);
     for (i = 0; i < sizeof(args)/sizeof(args[0]); ++i)
-      arg_register(env, args[i].name, args[i].letter, &firm_handler);
+      lc_arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
-    arg_register(env, "firm:ident", 'I', &ident_handler);
-    arg_register(env, "firm:indent", 'D', &indent_handler);
-    arg_register(env, "firm:pnc",      '=', &pnc_handler);
-    arg_register(env, "firm:dbg_info", 'g', &debug_handler);
-    /* arg_register(env, "firm:bitset", 'b', &bitset_handler); */
+    lc_arg_register(env, "firm:ident", 'I', &ident_handler);
+    lc_arg_register(env, "firm:indent", 'D', &indent_handler);
+    lc_arg_register(env, "firm:pnc",      '=', &pnc_handler);
+    lc_arg_register(env, "firm:dbg_info", 'g', &debug_handler);
+    /* lc_arg_register(env, "firm:bitset", 'b', &bitset_handler); */
   }
 
   return env;
