@@ -294,6 +294,12 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, arg_idx, 1);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, -1);
 			}
+			/* TODO:
+			 * \forall c \in p(v_i) \ p(v_j)
+			 * 		y_ij >= x_ic
+			 * \forall c \in p(v_j) \ p(v_i)
+			 * 		y_ij >= x_jc
+			 */
 		}
 	}
 }
