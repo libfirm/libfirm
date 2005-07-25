@@ -81,28 +81,35 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
  */
 static void collect_nodes(ir_node *node, void *env)
 {
-   blk_collect_data_t *ctx = env;
-   ir_node            *block;
-   block_entry_t      *entry;
+  blk_collect_data_t *ctx = env;
+  ir_node            *block;
+  block_entry_t      *entry;
 
-   if (is_Block(node))  {
-     /* it's a block, put it into the block list */
-     pdeq_putl(ctx->blk_list, node);
-     return;
-   }
+  if (is_Block(node))  {
+    /* it's a block, put it into the block list */
+    if (node == get_irg_end_block(current_ir_graph)) {
+      /* Put the end block always last. If we don't do it here,
+       * it might be placed elsewhere if the graph contains
+       * endless loops.
+       */
+    }
+    else
+      pdeq_putl(ctx->blk_list, node);
+    return;
+  }
 
-   block = get_nodes_block(node);
-   entry = block_find_entry(block, ctx);
+  block = get_nodes_block(node);
+  entry = block_find_entry(block, ctx);
 
-   if (get_irn_mode(node) == mode_X) {
-     /*
-      * put all mode_X nodes to the start, later we can
-      * move them to the end.
-      */
-     pdeq_putr(entry->list, node);
-   }
-   else
-     pdeq_putl(entry->list, node);
+  if (get_irn_mode(node) == mode_X) {
+    /*
+     * put all mode_X nodes to the start, later we can
+     * move them to the end.
+     */
+    pdeq_putr(entry->list, node);
+  }
+  else
+    pdeq_putl(entry->list, node);
 }
 
 /**
@@ -241,6 +248,8 @@ do_irg_walk_blk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *en
   if (node->visited < current_ir_graph->visited) {
     /* first step: traverse the graph and fill the lists */
     irg_walk(node, NULL, collect_nodes, &blks);
+    /* add the end block */
+    pdeq_putl(blks.blk_list, get_irg_end_block(current_ir_graph));
 
     /* second step: traverse the list */
     traverse(&blks, pre, post, env);
