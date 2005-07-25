@@ -11,16 +11,30 @@
 
 #ifdef WITH_LIBCORE
 
-#include <libcore/debug.h>
+#define DBG(x) _LC_DBG(x)
+#include <libcore/lc_debug.h>
 
 /* use the newer debug implementation in libcore */
-typedef dbg_module_t firm_dbg_module_t;
+typedef lc_dbg_module_t firm_dbg_module_t;
 
 extern firm_dbg_module_t *firm_dbg_register(const char *name);
 
-#define firm_dbg_set_mask(module, mask) dbg_set_mask(module, mask)
-#define firm_dbg_get_mask(module)       dbg_get_mask(module)
-#define firm_dbg_set_file(module, file) dbg_set_file(module, file)
+#define firm_dbg_set_mask(module, mask) lc_dbg_set_mask(module, mask)
+#define firm_dbg_get_mask(module)       lc_dbg_get_mask(module)
+#define firm_dbg_set_file(module, file) lc_dbg_set_file(module, file)
+
+#define LEVEL_DEFAULT    LC_LEVEL_DEFAULT
+#define LEVEL_1          LC_LEVEL_1
+#define LEVEL_2          LC_LEVEL_2
+#define LEVEL_3          LC_LEVEL_3
+#define LEVEL_4          LC_LEVEL_4
+#define LEVEL_5          LC_LEVEL_5
+#define SET_LEVEL_1      LC_SET_LEVEL_1
+#define SET_LEVEL_2      LC_SET_LEVEL_2
+#define SET_LEVEL_3      LC_SET_LEVEL_3
+#define SET_LEVEL_4      LC_SET_LEVEL_4
+#define SET_LEVEL_5      LC_SET_LEVEL_5
+#define SET_LEVEL_ALL    LC_SET_LEVEL_ALL
 
 #else
 /* use the builtin debug implementation */
@@ -39,7 +53,8 @@ enum firm_dbg_level_t {
 	SET_LEVEL_2 = 3,
 	SET_LEVEL_3 = 7,
 	SET_LEVEL_4 = 15,
-	SET_LEVEL_5 = 31
+	SET_LEVEL_5 = 31,
+  SET_LEVEL_ALL = SET_LEVEL_5
 };
 
 typedef struct _firm_dbg_module_t firm_dbg_module_t;

@@ -24,7 +24,7 @@
 
 static void firm_dbg_default_printer(struct obstack *obst, const char *fmt, va_list args)
 {
-  static arg_env_t *env = NULL;
+  static lc_arg_env_t *env = NULL;
 
   if(!env)
     env = firm_get_arg_env();
@@ -35,7 +35,7 @@ static void firm_dbg_default_printer(struct obstack *obst, const char *fmt, va_l
 
 firm_dbg_module_t *firm_dbg_register(const char *name)
 {
-  return dbg_register_with_printer(name, firm_dbg_default_printer);
+  return lc_dbg_register_with_printer(name, firm_dbg_default_printer);
 }
 
 #else
