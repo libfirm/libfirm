@@ -33,6 +33,20 @@ struct _dom_front_info_t {
   pmap *df_map;
 };
 
+/**
+ * A wrapper for get_Block_idom.
+ * This function returns the block itself, if the block is the start
+ * block. Returning NULL would make any != comparison true which
+ * suggests, that the start block is dominated by some other node.
+ * @param bl The block.
+ * @return The immediate dominator of the block.
+ */
+static INLINE ir_node *get_idom(ir_node *bl)
+{
+  ir_node *idom = get_Block_idom(bl);
+  return idom == NULL ? bl : idom;
+}
+
 static void compute_df_local(ir_node *bl, void *data)
 {
   pmap *df_map = ((dom_front_info_t *) data)->df_map;
@@ -90,18 +104,58 @@ static void compute_df_up(ir_node *bl, void *data)
   }
 }
 
+static void compute_df(ir_node *n, pmap *df_map)
+{
+  ir_node *y, *c;
+  const ir_edge_t *edge;
+  pset *df = pset_new_ptr_default();
+
+  /* Add local dominance frontiers */
+  foreach_block_succ(n, edge) {
+    ir_node *y = edge->src;
+
+    if(get_idom(y) != n)
+      pset_insert_ptr(df, y);
+  }
+
+  /*
+   * Go recursively down the dominance tree and add all blocks
+   * int the dominance frontiers of the children, which are not
+   * dominated by the given block.
+   */
+  for(c = get_Block_dominated_first(n); c; c = get_Block_dominated_next(c)) {
+    pset *df_c;
+    ir_node *w;
+
+    compute_df(c, df_map);
+    df_c = pmap_get(df_map, c);
+
+    for(w = pset_first(df_c); w; w = pset_next(df_c)) {
+      if(!block_dominates(n, w))
+        pset_insert_ptr(df, w);
+    }
+  }
+
+  pmap_insert(df_map, n, df);
+
+}
+
 dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 {
   dom_front_info_t *info = malloc(sizeof(*info));
 
+  edges_assure(irg);
   info->df_map = pmap_create();
+  compute_df(get_irg_start_block(irg), info->df_map);
 
+#if 0
   /*
    * This must be called as a post walker, since the dom front sets
    * of all predecessors must be created when a block is reached.
    */
   dom_tree_walk_irg(irg, NULL, compute_df_local, info);
   dom_tree_walk_irg(irg, NULL, compute_df_up, info);
+#endif
   return info;
 }
 
@@ -167,15 +221,10 @@ static void place_phi_functions(ir_node *orig, pset *copies,
   for(it = pset_first(copies), i = 0; it; it = pset_next(copies)) {
     ir_node *copy_block = get_nodes_block(it);
 
-	/* FIXED_DANIEL
-	 * Not true anymore, since phis can be copies of a value.
-	 * Not all Phis are dominated by their args
-	 *
     if(!block_dominates(orig_block, copy_block)) {
     	assert(block_dominates(orig_block, copy_block)
         	&& "The block of the copy must be dominated by the block of the value");
     }
-    */
 
     pdeq_putr(worklist, copy_block);
     orig_blocks[i++] = copy_block;
@@ -399,15 +448,6 @@ static void add_all_phis_walker(ir_node *irn, void *data)
         pset_insert_ptr(info->copies, irn);
         pset_insert_ptr(info->copy_blocks, get_nodes_block(irn));
 
-		/* FIXED_DANIEL
-		 * If a phi is a copy insert all its args as copies too.
-		 * Else setting the phi-args will fail in serach_def */
-        for(o=0; o<n; ++o) {
-        	const ir_node *arg = get_irn_n(irn, o);
-	        pset_insert_ptr(info->copies, arg);
-	        pset_insert_ptr(info->copy_blocks, get_nodes_block(arg));
-        }
-
         break;
       }
     }
@@ -452,7 +492,7 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
    * All phis using the original value are also copies of it
    * and must be present in the copies set.
    */
-  add_all_phis_using(orig, copies, copy_blocks);
+  /* add_all_phis_using(orig, copies, copy_blocks);*/
 
   for(i = 0; i < n; ++i) {
     DBG((dbg, LEVEL_1,
