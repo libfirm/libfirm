@@ -874,7 +874,7 @@ void find_scalar_replacements(ir_graph *irg)
   type *ent_type;
 
   /* Call algorithm that computes the out edges */
-  compute_outs(irg);
+  compute_irg_outs(irg);
 
   /* Call algorithm that computes the loop information */
   construct_backedges(irg);

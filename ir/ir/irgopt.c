@@ -523,7 +523,7 @@ dead_node_elimination(ir_graph *irg) {
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
   free_callee_info(current_ir_graph);
-  free_outs(current_ir_graph);
+  free_irg_outs(current_ir_graph);
   free_trouts();
   /* @@@ so far we loose loops when copying */
   free_loop_information(current_ir_graph);
@@ -1768,7 +1768,7 @@ void place_code(ir_graph *irg) {
   place_early(worklist);
 
   /* place_early invalidates the outs, place_late needs them. */
-  compute_outs(irg);
+  compute_irg_outs(irg);
   /* Now move the nodes down in the dominator tree. This reduces the
      unnecessary executions of the node. */
   place_late(worklist);

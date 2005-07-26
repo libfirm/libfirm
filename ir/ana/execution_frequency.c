@@ -222,7 +222,7 @@ static void walk_post(ir_node *n, void *env) {
 void precompute_cond_evaluation(void) {
   ir_node *c;
 
-  compute_outs(current_ir_graph);
+  compute_irg_outs(current_ir_graph);
 
   just_passed_a_Raise = 0;
   Cond_list = NULL;

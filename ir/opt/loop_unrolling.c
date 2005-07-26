@@ -952,7 +952,7 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
   compute_doms(irg);
 
   /* Call algorithm that computes the out edges */
-  compute_outs(irg);
+  compute_irg_outs(irg);
 
   collect_phiprojs(irg);
 

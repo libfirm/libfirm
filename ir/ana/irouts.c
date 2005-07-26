@@ -350,7 +350,7 @@ static INLINE void fix_start_proj(ir_graph *irg) {
 }
 
 /* compute the outs for a given graph */
-void compute_outs(ir_graph *irg) {
+void compute_irg_outs(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   int n_out_edges = 0;
   ir_node **end = NULL;         /* Only for debugging */
@@ -361,7 +361,7 @@ void compute_outs(ir_graph *irg) {
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
 
   if (current_ir_graph->outs_state != outs_none)
-    free_outs(current_ir_graph);
+    free_irg_outs(current_ir_graph);
   current_ir_graph->outs_state = outs_consistent;
 
   /* This first iteration counts the overall number of out edges and the
@@ -389,7 +389,16 @@ void compute_outs(ir_graph *irg) {
   current_ir_graph = rem;
 }
 
-
+void compute_irp_outs(void) {
+  int i, n_irgs = get_irp_n_irgs();
+  for (i = 0; i < n_irgs; ++i)
+    compute_irg_outs(get_irp_irg(i));
+}
+void free_irp_outs(void) {
+  int i, n_irgs = get_irp_n_irgs();
+  for (i = 0; i < n_irgs; ++i)
+    free_irg_outs(get_irp_irg(i));
+}
 
 
 /*------------------------------------------------------------*
@@ -533,7 +542,7 @@ void free_ip_outs(void)
 }
 
 
-void free_outs(ir_graph *irg) {
+void free_irg_outs(ir_graph *irg) {
 
   /*   current_ir_graph->outs_state = outs_none; */
   irg->outs_state = outs_none;

@@ -126,10 +126,12 @@
 #define get_tarval_entity(X) ((entity *)NULL)
 
 /* ident.h */
-#define id_to_strlen(X) get_id_strlen(X)
-#define id_to_str(X)    get_id_str(X)
-#define id_from_str(X, Y)  new_id_from_chars(X, Y)
+#define id_to_strlen(X)   get_id_strlen(X)
+#define id_to_str(X)      get_id_str(X)
+#define id_from_str(X, Y) new_id_from_chars(X, Y)
 
+/* irouts.h */
+#define compute_outs(X)   compute_irg_outs(X)
 
 
 #endif

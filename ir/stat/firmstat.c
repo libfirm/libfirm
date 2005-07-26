@@ -777,7 +777,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
     ir_graph *rem = current_ir_graph;
 
     if (get_irg_outs_state(graph->irg) != outs_consistent)
-      compute_outs(graph->irg);
+      compute_irg_outs(graph->irg);
 
     /* Must be done an the outs graph */
     current_ir_graph = graph->irg;

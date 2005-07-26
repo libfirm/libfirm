@@ -300,7 +300,7 @@ void compute_doms(ir_graph *irg) {
 
   /* We need the out datastructure. */
   if (current_ir_graph->outs_state != outs_consistent)
-    compute_outs(current_ir_graph);
+    compute_irg_outs(current_ir_graph);
 
   /* this with a standard walker as passing the parent to the sons isn't
      simple. */

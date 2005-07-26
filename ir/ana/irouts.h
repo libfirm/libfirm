@@ -78,11 +78,14 @@ void irg_out_block_walk(ir_node *node,
    graph is changed this flag must be set to "outs_inconsistent".  Computes
    out edges from block to floating nodes even if graph is in state
    "op_pin_state_floats".   Optimizes Tuple nodes. */
-void compute_outs(ir_graph *irg);
+void compute_irg_outs(ir_graph *irg);
+#define compute_outs(X)   compute_irg_outs(X)
+void compute_irp_outs(void);
 /** Computes the out edges in interprocedural view */
 void compute_ip_outs(void);
 /** Frees the out datastructures.  Sets the flag in irg to "outs_none". */
 void free_ip_outs(void);
-void free_outs(ir_graph *irg);
+void free_irg_outs(ir_graph *irg);
+void free_irp_outs(void);
 
 #endif /* _IROUTS_H_ */

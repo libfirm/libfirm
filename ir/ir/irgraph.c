@@ -327,7 +327,7 @@ void free_ir_graph (ir_graph *irg) {
   assert(is_ir_graph(irg));
 
   hook_free_graph(irg);
-  if (irg->outs_state != outs_none) free_outs(irg);
+  if (irg->outs_state != outs_none) free_irg_outs(irg);
   if (irg->frame_type)  free_type(irg->frame_type);
   if (irg->value_table) del_identities(irg->value_table);
   if (irg->ent) {
