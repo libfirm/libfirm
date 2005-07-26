@@ -76,6 +76,7 @@ void cgana(int *len, entity ***free_methods);
  *  pointers to other than firm arrays.
  */
 void free_callee_info(ir_graph *irg);
+void free_irp_callee_info(void);
 
 /* Optimize the address expressions passed to call nodes.
  * Performs only the optimizations done by cgana. */
