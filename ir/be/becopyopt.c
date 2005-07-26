@@ -28,6 +28,7 @@ static firm_dbg_module_t *dbg = NULL;
 #define is_curr_reg_class(irn) (arch_get_irn_reg_class(co->chordal_env->arch_env, irn, arch_pos_make_out(0)) == co->chordal_env->cls)
 
 #define MIN(a,b) ((a<b)?(a):(b))
+#define MAX(a,b) ((a<b)?(b):(a))
 
 /**
  * Computes the weight of a 'max independent set' wrt. ifg-edges only
@@ -104,7 +105,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	unit->costs = xmalloc((arity+1) * sizeof(*unit->costs));
 	unit->nodes[0] = root;
 	unit->complete_costs = 0;
-	unit->avg_costs = 0;
+	unit->sort_key = 0;
 	INIT_LIST_HEAD(&unit->queue);
 
 	/* check all args */
@@ -116,7 +117,6 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 				int o, arg_pos = 0;
 				if (nodes_interfere(co->chordal_env, root, arg))
 					assert(0 && "root and arg interfere");
-				//TODO do not insert duplicate args
 				DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
 
 				/* check if arg has occurred at a prior position in the arg/list */
@@ -127,9 +127,6 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 					}
 
 				if (!arg_pos) { /* a new argument */
-					/* TODO Think about the next 2 lines. (inserting in arg-order) */
-					if (is_optimizable(co->chordal_env->arch_env, arg))
-						co_append_unit(co, arg);
 					/* insert node, set costs */
 					unit->nodes[unit->node_count] = arg;
 					unit->costs[unit->node_count] = co->get_costs(root, arg, i);
@@ -154,15 +151,14 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	/* TODO add ou's for 2-addr-code instructions */
 
 
-	for(i=1; i<unit->node_count; ++i)
+	for(i=1; i<unit->node_count; ++i) {
+		unit->sort_key = MAX(unit->sort_key, unit->costs[i]);
 		unit->complete_costs += unit->costs[i];
-
-	assert(unit->node_count > 1);
-	unit->avg_costs = (100 * unit->complete_costs) / (unit->node_count-1);
+	}
 
 	/* insert according to average costs */
 	tmp = &co->units;
-	while (tmp->next != &co->units && list_entry_units(tmp->next)->avg_costs > unit->avg_costs)
+	while (tmp->next != &co->units && list_entry_units(tmp->next)->sort_key > unit->sort_key)
 		tmp = tmp->next;
 	list_add(&unit->units, tmp);
 

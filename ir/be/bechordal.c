@@ -561,7 +561,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 	obstack_free(&ob, NULL);
 }
 
-/* TODO #ifdef BUILD_GRAPH --> faster version of checker with edges */
+/* BETTER #ifdef BUILD_GRAPH --> faster version of checker with edges */
 
 void be_ra_chordal_done(be_chordal_env_t *env)
 {

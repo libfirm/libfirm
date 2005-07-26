@@ -7,10 +7,6 @@
  * Header for copy optimization problem. Analysis and set up of the problem.
  */
 
-/*
- * TODO: get_nodes_block(get_irn_n(get_nodes_block(phi), i)); --> get_ifgblock_nodeblock
- */
-
 #ifndef _BECOPYOPT_H
 #define _BECOPYOPT_H
 
@@ -65,8 +61,7 @@ typedef struct _unit_t {
 	int complete_costs;			/**< sum of all costs[i] */
 	int minimal_costs;			/**< a lower bound for this ou, considering only ifg (not coloring conflicts) */
 
-	//TODO Think of the ordering.
-	int avg_costs;				/**< average costs. controls the order of ou's. */
+	int sort_key;				/**< maximum costs. controls the order of ou's. */
 
 	/* for heuristic */
 	struct list_head queue;		/**< list of (mis/color) sorted by size of mis */

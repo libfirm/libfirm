@@ -237,11 +237,12 @@ static void pi_add_constr_B(problem_instance_t *pi, int color) {
  */
 static void pi_add_constr_E(problem_instance_t *pi) {
 	unit_t *curr;
-	bitset_t *root_regs, *arg_regs;
+	bitset_t *root_regs, *arg_regs, *work_regs;
 	int cst_counter = 0;
 	unsigned nregs = pi->co->chordal_env->cls->n_regs;
 	root_regs = bitset_alloca(nregs);
 	arg_regs = bitset_alloca(nregs);
+	work_regs = bitset_alloca(nregs);
 
 	DBG((dbg, LEVEL_2, "Add E constraints...\n"));
 	/* for all roots of optimization units */
@@ -267,12 +268,14 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 			mangle_var(buf, 'y', rootnr, argnr);
 			y_idx = lpp_add_var(pi->curr_lp, buf, continous, curr->costs[i]);
 
+			//BETTER: y vars as binary or continous	vars ??
 			/* set starting value */
 			//lpp_set_start_value(pi->curr_lp, y_idx, (get_irn_col(pi->co, root) != get_irn_col(pi->co, arg)));
 
 			/* For all colors root and arg have in common, add 2 constraints to E */
-			bitset_and(arg_regs, root_regs);
-			bitset_foreach(arg_regs, color) {
+			bitset_copy(work_regs, root_regs);
+			bitset_and(work_regs, arg_regs);
+			bitset_foreach(work_regs, color) {
 				int root_idx, arg_idx, cst_idx;
 				mangle_var(buf, 'x', rootnr, color);
 				root_idx = lpp_get_var_idx(pi->curr_lp, buf);
@@ -293,12 +296,33 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, arg_idx, 1);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, -1);
 			}
-			/* TODO:
-			 * \forall c \in p(v_i) \ p(v_j)
-			 * 		y_ij >= x_ic
-			 * \forall c \in p(v_j) \ p(v_i)
-			 * 		y_ij >= x_jc
+			/* For all colors root and arg have "disjunct", add 1 constraints to E.
+			 * If root gets a color the arg is not possible to get then they will
+			 * definetly get different colors. So y has to be 1.
+			 * Vice versa for arg.
 			 */
+			bitset_copy(work_regs, root_regs);
+			bitset_xor(work_regs, arg_regs);
+			bitset_foreach(work_regs, color) {
+				int root_idx, arg_idx, cst_idx;
+				mangle_var(buf, 'x', rootnr, color);
+				root_idx = lpp_get_var_idx(pi->curr_lp, buf);
+				mangle_var(buf, 'x', argnr, color);
+				arg_idx = lpp_get_var_idx(pi->curr_lp, buf);
+
+				mangle_cst(buf, 'E', cst_counter++);
+				cst_idx = lpp_add_cst(pi->curr_lp, buf, less, 0);
+				if (bitset_is_set(root_regs, color)) {
+					/* add root-y <= 0 */
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, root_idx, 1);
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, -1);
+				} else {
+					assert(bitset_is_set(arg_regs, color) && "bitset_xor is buggy");
+					/* add arg-y <= 0 */
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, arg_idx, 1);
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, -1);
+				}
+			}
 		}
 	}
 }
@@ -340,12 +364,13 @@ static void pi_add_constr_S(problem_instance_t *pi) {
 }
 
 /**
- * TODO Matrix M: Multi-Arg-Use. Interrelates different \phi-functions
+ * Matrix M: Multi-Arg-Use. Interrelates different \phi-functions
  * in the same block, iff they use the same arg at the same pos.
- * Only one can get the arg.
+ * Only one of the phis can get the arg.
  */
-
-//static void pi_add_constr_M(problem_instance_t *pi) {
+static void pi_add_constr_M(problem_instance_t *pi) {
+	//TODO pi_add_constr_M
+}
 
 /**
  * Generate the initial problem matrices and vectors.
@@ -364,7 +389,7 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 
 	/* problem size reduction */
 	pi_find_simplicials(pi);
-	//TODO If you wish to see it: dump_ifg_w/o_removed
+	//BETTER If you wish to see it: dump_ifg_w/o_removed
 	if (pi->all_simplicial)
 		return pi;
 
@@ -375,7 +400,7 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 		pi_add_constr_B(pi, col);
 	pi_add_constr_E(pi);
 	pi_add_constr_S(pi);
-	//TODO pi_add_constr_M(pi);
+	pi_add_constr_M(pi);
 
 	return pi;
 }
