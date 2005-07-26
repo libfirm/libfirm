@@ -71,15 +71,13 @@ static type *pointerize_type(type *tp, int depth) {
   return tp;
 }
 
-static void normalize_irn_class_cast(ir_node *n, void *env) {
-  if (get_irn_op(n) != op_Cast) return;
 
-
-  type *fromtype = get_irn_typeinfo_type(get_Cast_op(n));
-  type *totype   = get_Cast_type(n);
+static ir_node *normalize_values_type(type *totype, ir_node *pred) {
+  type *fromtype = get_irn_typeinfo_type(pred);
+  ir_node *new_cast = pred;
   int ref_depth = 0;
 
-  if (totype == fromtype) return;   /* Case for optimization! */
+  if (totype == fromtype) return pred;   /* Case for optimization! */
 
   while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
     totype   = get_pointer_points_to_type(totype);
@@ -87,16 +85,16 @@ static void normalize_irn_class_cast(ir_node *n, void *env) {
     ref_depth++;
   }
 
-  if (!is_Class_type(totype))   return;
-  if (!is_Class_type(fromtype)) return;
+  if (!is_Class_type(totype))   return pred;
+  if (!is_Class_type(fromtype)) return pred;
 
   if ((get_class_supertype_index(totype, fromtype) != -1) ||
       (get_class_supertype_index(fromtype, totype) != -1) ) {
     /* It's just what we want ... */
-    return;
+    return pred;
   }
 
-  set_cur_block(get_nodes_block(n));
+  set_cur_block(get_nodes_block(pred));
 
   if (is_subclass_of(totype, fromtype)) {
     /* downcast */
@@ -113,10 +111,10 @@ static void normalize_irn_class_cast(ir_node *n, void *env) {
       assert(new_type);
       fromtype = new_type;
       new_type = pointerize_type(new_type, ref_depth);
-      new_cast = new_Cast(get_Cast_op(n), new_type);
+      new_cast = new_Cast(pred, new_type);
+      pred = new_cast;
       n_casts_normalized ++;
       set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
-      set_Cast_op(n, new_cast);
       if (get_trouts_state() != outs_none) add_type_cast(new_type, new_cast);
     }
   }
@@ -126,7 +124,6 @@ static void normalize_irn_class_cast(ir_node *n, void *env) {
     while (get_class_supertype_index(fromtype, totype) == -1) {
       /* Insert a cast to a supertype of fromtype. */
       type *new_type = NULL;
-      ir_node *new_cast;
       int i, n_supertypes = get_class_n_supertypes(fromtype);
       for (i = 0; i < n_supertypes && !new_type; ++i) {
 	type *new_super = get_class_supertype(fromtype, i);
@@ -136,11 +133,30 @@ static void normalize_irn_class_cast(ir_node *n, void *env) {
       assert(new_type);
       fromtype = new_type;
       new_type = pointerize_type(new_type, ref_depth);
-      new_cast = new_Cast(get_Cast_op(n), new_type);
+      new_cast = new_Cast(pred, new_type);
+      pred = new_cast;
       n_casts_normalized ++;
       set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
       if (get_trouts_state() != outs_none) add_type_cast(new_type, new_cast);
-      set_Cast_op(n, new_cast);
+    }
+  }
+  return new_cast;
+}
+
+
+static void normalize_irn_class_cast(ir_node *n, void *env) {
+  ir_node *res;
+  if (get_irn_op(n) == op_Cast) {
+    ir_node *pred  = get_Cast_op(n);
+    type *totype   = get_Cast_type(n);
+    res = normalize_values_type(totype, pred);
+    set_Cast_op(n, res);
+  } else if (get_irn_op(n) == op_Call) {
+    int i, n_params = get_Call_n_params(n);
+    type *tp = get_Call_type(n);
+    for (i = 0; i < n_params; ++i) {
+      res = normalize_values_type(get_method_param_type(tp, i), get_Call_param(n, i));
+      set_Call_param(n, i, res);
     }
   }
 }
