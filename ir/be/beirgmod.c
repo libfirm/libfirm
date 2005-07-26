@@ -218,13 +218,11 @@ static void place_phi_functions(ir_node *orig, pset *copies,
   /*
    * Fill the worklist queue and the rest of the orig blocks array.
    */
-  for(it = pset_first(copies), i = 0; it; it = pset_next(copies)) {
-    ir_node *copy_block = get_nodes_block(it);
+  for(it = pset_first(copy_blocks), i = 0; it; it = pset_next(copy_blocks)) {
+    ir_node *copy_block = it;
 
-    if(!block_dominates(orig_block, copy_block)) {
-    	assert(block_dominates(orig_block, copy_block)
-        	&& "The block of the copy must be dominated by the block of the value");
-    }
+   	assert(block_dominates(orig_block, copy_block)
+       	&& "The block of the copy must be dominated by the block of the value");
 
     pdeq_putr(worklist, copy_block);
     orig_blocks[i++] = copy_block;
@@ -375,7 +373,6 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
       start_irn = sched_last(curr_bl);
   }
 
-  assert(0 && "Did not find a valid def");
   return NULL;
 }
 
