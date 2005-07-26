@@ -29,17 +29,17 @@
 /**
  * identify a firm object type
  */
-static int firm_get_lc_arg_type(const lc_arg_occ_t *occ) {
+static int firm_get_arg_type(const lc_arg_occ_t *occ) {
   /* Firm objects are always pointer */
   return lc_arg_type_ptr;
 }
 
-static int firm_get_lc_arg_type_int(const lc_arg_occ_t *occ) {
+static int firm_get_arg_type_int(const lc_arg_occ_t *occ) {
   return lc_arg_type_int;
 }
 
 
-static int bitset_get_lc_arg_type(const lc_arg_occ_t *occ) {
+static int bitset_get_arg_type(const lc_arg_occ_t *occ) {
   return lc_arg_type_ptr;
 }
 
@@ -224,18 +224,18 @@ static int firm_emit_pnc(lc_appendable_t *app,
   return lc_arg_append(app, occ, p, strlen(p));
 }
 
-lc_arg_env_t *firm_get_lc_arg_env(void)
+lc_arg_env_t *firm_get_arg_env(void)
 {
 #define X(name, letter) {"firm:" name, letter}
 
   static lc_arg_env_t *env = NULL;
 
-  static lc_arg_handler_t firm_handler   = { firm_get_lc_arg_type, firm_emit };
-  static lc_arg_handler_t ident_handler  = { firm_get_lc_arg_type, firm_emit_ident };
-  static lc_arg_handler_t indent_handler = { firm_get_lc_arg_type_int, firm_emit_indent };
-  static lc_arg_handler_t pnc_handler    = { firm_get_lc_arg_type_int, firm_emit_pnc };
-  static lc_arg_handler_t bitset_handler = { bitset_get_lc_arg_type, bitset_emit };
-  static lc_arg_handler_t debug_handler  = { firm_get_lc_arg_type, firm_emit_dbg };
+  static lc_arg_handler_t firm_handler   = { firm_get_arg_type, firm_emit };
+  static lc_arg_handler_t ident_handler  = { firm_get_arg_type, firm_emit_ident };
+  static lc_arg_handler_t indent_handler = { firm_get_arg_type_int, firm_emit_indent };
+  static lc_arg_handler_t pnc_handler    = { firm_get_arg_type_int, firm_emit_pnc };
+  static lc_arg_handler_t bitset_handler = { bitset_get_arg_type, bitset_emit };
+  static lc_arg_handler_t debug_handler  = { firm_get_arg_type, firm_emit_dbg };
 
   static struct {
     const char *name;
