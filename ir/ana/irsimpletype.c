@@ -29,6 +29,7 @@
 # include "irprog_t.h"
 # include "irgwalk.h"
 # include "ident.h"
+# include "trouts.h"
 
 #define VERBOSE_UNKNOWN_TYPE(s) printf s
 
@@ -38,8 +39,9 @@ static type *phi_cycle_type = NULL;
 /* ------------ Building and Removing the type information  ----------- */
 
 
-/* init type link field so that types point to their pointers. */
+/* Init type link field so that types point to their pointers. */
 void precompute_pointer_types(void) {
+#if 0
   int i;
   set_type_link(firm_unknown_type, firm_unknown_type);
   set_type_link(firm_none_type,    firm_unknown_type);
@@ -50,11 +52,21 @@ void precompute_pointer_types(void) {
     if (is_Pointer_type(tp))
       set_type_link(get_pointer_points_to_type(tp), (void *)tp);
   }
+#else
+  compute_trouts();
+#endif
 }
 
 /* Store pointer in link to speed up search of pointer type. */
 static type *find_pointer_type_to (type *tp) {
+#if 0
   return (type *)get_type_link(tp);
+#else
+  if (get_type_n_pointertypes_to(tp) > 0)
+    return get_type_pointertype_to(tp, 0);
+  else
+    return firm_unknown_type;
+#endif
 }
 
 static type* compute_irn_type(ir_node *n);
