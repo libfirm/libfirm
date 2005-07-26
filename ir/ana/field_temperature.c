@@ -84,12 +84,24 @@ static int default_recursion_weight = 5;
 /* The final evaluation of a node.  In this function we can
    adapt the heuristic.  Combine execution frequency with
    recursion depth.
-   @@@ the second version of the heuristic. */
+   @@@ the second version of the heuristic.
+
+   Return 0 if the node is neither in a loop nor in a recursion.  */
 double get_irn_final_cost(ir_node *n) {
   double cost_loop   = get_irn_exec_freq(n);
   double cost_method = get_irg_method_execution_frequency(get_irn_irg(n));
   int    rec_depth   = get_irn_recursion_depth(n);
   double cost_rec    = 0;
+
+#if 0
+  if (get_irn_recursion_depth(n) == 0 &&
+      get_irn_loop_depth(n) == 0 &&
+      get_irg_method_loop_depth(get_irn_irg(n)) == 0)
+    return 0;
+#else
+  if (get_weighted_loop_depth(n) == 0) return 0;
+#endif
+
   if (rec_depth) cost_rec = pow(default_recursion_weight, rec_depth);
   return cost_loop*(cost_method + cost_rec);
 }
@@ -332,7 +344,12 @@ double get_entity_estimated_n_dyncalls(entity *ent) {
 /* ------------------------------------------------------------------------- */
 
 int is_jack_rts_name(ident *name) {
+  if (id_is_suffix(new_id_from_str("Exception"), name)) return 1;
+  if (id_is_suffix(new_id_from_str("Throwable"), name)) return 1;
+  if (id_is_suffix(new_id_from_str("Error"),     name)) return 1;
+
   return  0;
+
   if (id_is_prefix(new_id_from_str("java/"), name)) return 1;
   if (id_is_prefix(new_id_from_str("["),     name)) return 1;
   if (id_is_prefix(new_id_from_str("gnu/"),  name)) return 1;
