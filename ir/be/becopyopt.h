@@ -16,7 +16,6 @@
 #include "set.h"
 #include "pset.h"
 #include "bitset.h"
-#include "sp_matrix.h"
 
 #include "irgraph.h"
 #include "irgwalk.h"

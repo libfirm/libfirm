@@ -17,12 +17,15 @@
 
 #include "irprog.h"
 
-#include "lpp.h"
-#include "lpp_local.h"
-#include "lpp_remote.h"
+#include <lpp/lpp.h>
+#include <lpp/lpp_net.h>
 #include "xmalloc.h"
 #include "becopyopt.h"
 #include "becopystat.h"
+#include "besched_t.h"
+
+#define LPP_HOST "i44pc52"
+#define LPP_SOLVER "cplex"
 
 #undef DUMP_MPS
 #define DEBUG_LVL SET_LEVEL_1
@@ -145,7 +148,7 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 
 				nnr = get_irn_graph_nr(curr->irn);
 				mangle_cst(pi->buf, 'A', nnr);
-				cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, equal, 1);
+				cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, lpp_equal, 1);
 
 				// iterate over all possible colors in order
 				bitset_clear_all(pos_regs);
@@ -153,7 +156,7 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 				bitset_foreach(pos_regs, col) {
 					int var_idx;
 					mangle_var(pi->buf, 'x', nnr, col);
-					var_idx = lpp_add_var(pi->curr_lp, pi->buf, binary, 0);
+					var_idx = lpp_add_var(pi->curr_lp, pi->buf, lpp_binary, 0);
 					pi->last_x_var = var_idx;
 					lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
 				}
@@ -213,7 +216,7 @@ static void pi_add_constr_B(problem_instance_t *pi, int color) {
 					int cst_idx;
 					ir_node *n;
 					mangle_cst(pi->buf, 'B', pi->cst_counter);
-					cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, less, 1);
+					cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, lpp_less, 1);
 					for (n = pset_first(living); n; n = pset_next(living)) {
 						int var_idx;
 						mangle_var_irn(pi->buf, 'x', n, color);
@@ -266,7 +269,7 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 
 			/* Introduce new variable and set factor in objective function */
 			mangle_var(buf, 'y', rootnr, argnr);
-			y_idx = lpp_add_var(pi->curr_lp, buf, continous, curr->costs[i]);
+			y_idx = lpp_add_var(pi->curr_lp, buf, lpp_continous, curr->costs[i]);
 
 			//BETTER: y vars as binary or continous	vars ??
 			/* set starting value */
@@ -284,14 +287,14 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 
 				/* add root-arg-y <= 0 */
 				mangle_cst(buf, 'E', cst_counter++);
-				cst_idx = lpp_add_cst(pi->curr_lp, buf, less, 0);
+				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_less, 0);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, root_idx, 1);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, arg_idx, -1);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, -1);
 
 				/* add arg-root-y <= 0 */
 				mangle_cst(buf, 'E', cst_counter++);
-				cst_idx = lpp_add_cst(pi->curr_lp, buf, less, 0);
+				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_less, 0);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, root_idx, -1);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, arg_idx, 1);
 				lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, -1);
@@ -311,7 +314,7 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 				arg_idx = lpp_get_var_idx(pi->curr_lp, buf);
 
 				mangle_cst(buf, 'E', cst_counter++);
-				cst_idx = lpp_add_cst(pi->curr_lp, buf, less, 0);
+				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_less, 0);
 				if (bitset_is_set(root_regs, color)) {
 					/* add root-y <= 0 */
 					lpp_set_factor_fast(pi->curr_lp, cst_idx, root_idx, 1);
@@ -350,7 +353,7 @@ static void pi_add_constr_S(problem_instance_t *pi) {
 		root = curr->nodes[0];
 		rootnr = get_irn_graph_nr(root);
 		mangle_cst(buf, 'M', cst_counter++);
-		cst_idx = lpp_add_cst(pi->curr_lp, buf, greater, curr->minimal_costs);
+		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, curr->minimal_costs);
 
 		/* for all arguments */
 		for (i = 1; i < curr->node_count; ++i) {
@@ -363,13 +366,81 @@ static void pi_add_constr_S(problem_instance_t *pi) {
 	}
 }
 
+static void M_constr_walker(ir_node *block, void *env) {
+	problem_instance_t *pi = env;
+	int pos, count, arity, row, col, other_row;
+	ir_node **phis, *phi, *irn, **phi_matrix;
+	pset *done;
+	bitset_t *candidates;
+
+	//TODO
+	return;
+
+	/* Count all phi nodes of this block */
+	for (count=0, irn = sched_first(block); is_Phi(irn); irn = sched_next(irn))
+		count++;
+
+	/* We at least 2 phi nodes for this class of inequalities */
+	if (count < 2)
+		return;
+
+	/* Build the \Phi-Matrix */
+	arity = get_irn_arity(sched_first(block));
+	phis = alloca(count * sizeof(*phis));
+	phi_matrix = alloca(count*arity * sizeof(*phi_matrix));
+	candidates = bitset_alloca(count);
+
+	phi = sched_first(block);
+	for (row=0; row<count; ++row) {
+		phis[row] = phi;
+		for (col=0; col<arity; ++col)
+			phi_matrix[row*arity + col] = get_irn_n(phi, col);
+		phi = sched_next(phi);
+	}
+
+	/* Now find the interesting patterns in the matrix:
+	 * All nodes which are used at least twice in a column. */
+	/* columnwise ... */
+	for (col=0; col<arity; ++col) {
+		done = pset_new_ptr_default();
+		for (row=0; row<count; ++row) {
+			irn = phi_matrix[row*arity + col];
+			/* has the irn already been processed in this col? */
+			if (pset_find_ptr(done, irn))
+				continue;
+			else
+				pset_insert_ptr(done, irn);
+
+			/* insert irn in candidates */
+			bitset_clear_all(candidates);
+			bitset_set(candidates, row);
+			/* search the irn in the rows below */
+			for (other_row = row+1; other_row<count; ++other_row)
+				if (irn == phi_matrix[other_row*arity + col]) {
+					/* found the irn in the same col in another row */
+					bitset_set(candidates, other_row);
+				}
+
+			/* now we know all occurences of irn in this col */
+			if (bitset_popcnt(candidates) < 2)
+				continue;
+
+			/* generate an unequation finally */
+			//TODO
+
+		}
+		del_pset(done); /* clear set for next row */
+	}
+
+}
+
 /**
  * Matrix M: Multi-Arg-Use. Interrelates different \phi-functions
  * in the same block, iff they use the same arg at the same pos.
  * Only one of the phis can get the arg.
  */
 static void pi_add_constr_M(problem_instance_t *pi) {
-	//TODO pi_add_constr_M
+	dom_tree_walk_irg(pi->co->chordal_env->irg, M_constr_walker, NULL, pi);
 }
 
 /**
@@ -384,7 +455,7 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	pi->co = co;
 	pi->removed = pset_new_ptr_default();
 	INIT_LIST_HEAD(&pi->simplicials);
-	pi->dilp = new_lpp(co->name, minimize);
+	pi->dilp = new_lpp(co->name, lpp_minimize);
 	pi->last_x_var = -1;
 
 	/* problem size reduction */
@@ -447,9 +518,9 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 /**
  * Invoke a solver
  */
-static void pi_solve_ilp(problem_instance_t *pi, void (*lpp_solve)(lpp_t *)) {
+static void pi_solve_ilp(problem_instance_t *pi) {
 	pi_set_start_sol(pi);
-	lpp_solve(pi->curr_lp);
+	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
 }
 
 /**
@@ -492,7 +563,7 @@ static void pi_set_simplicials(problem_instance_t *pi) {
 static void pi_apply_solution(problem_instance_t *pi) {
 	int i;
 	double *sol;
-	sol_state_t state;
+	lpp_sol_state_t state;
 	DBG((dbg, LEVEL_2, "Applying solution...\n"));
 
 #ifdef DO_STAT
@@ -502,9 +573,9 @@ static void pi_apply_solution(problem_instance_t *pi) {
 
 	sol = xmalloc((pi->last_x_var+1) * sizeof(*sol));
 	state = lpp_get_solution(pi->curr_lp, sol, 1, pi->last_x_var);
-	if (state != optimal) {
+	if (state != lpp_optimal) {
 		printf("Solution state is not 'optimal': %d\n", state);
-		assert(state >= feasible && "The solution should at least be feasible!");
+		assert(state >= lpp_feasible && "The solution should at least be feasible!");
 	}
 	for (i=0; i<pi->last_x_var; ++i) {
 		int nnr, col;
@@ -538,7 +609,7 @@ void co_ilp_opt(copy_opt_t *co) {
 		snprintf(buf, sizeof(buf), "%s.mps", co->name);
 		lpp_dump(pi->curr_lp, buf);
 #endif
-		pi_solve_ilp(pi, lpp_solve_local);
+		pi_solve_ilp(pi);
 		pi_apply_solution(pi);
 		pi_set_simplicials(pi);
 	}
