@@ -7,13 +7,12 @@
 #include "irnode.h"
 #include "irmode.h"
 
+#include "bitset.h"
 #include "hashptr.h"
 #include "fourcc.h"
 #include "set.h"
 #include "list.h"
 #include "ident.h"
-
-struct _bitset_t;
 
 typedef struct _arch_register_class_t   arch_register_class_t;
 typedef struct _arch_register_t         arch_register_t;
@@ -81,8 +80,7 @@ struct _arch_register_class_t {
  * @param bs The bitset. May be NULL.
  * @return The number of registers in the class.
  */
-extern int arch_register_class_put(const arch_register_class_t *cls,
-    struct _bitset_t *bs);
+extern int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs);
 
 static INLINE const arch_register_t *
 _arch_register_for_index(const arch_register_class_t *cls, int idx)
@@ -170,7 +168,7 @@ typedef struct _arch_register_req_t {
   const arch_register_class_t *cls;       /** The register class this
                                             constraint belongs to. */
   union {
-    int (*limited)(const ir_node *irn, int pos, struct _bitset_t *bs);
+    int (*limited)(const ir_node *irn, int pos, bitset_t *bs);
                                           /** In case of the 'limited'
                                             constraint, this function
                                             must put all allowable
@@ -348,7 +346,7 @@ extern int arch_is_register_operand(const arch_env_t *env,
  * @return    The amount of registers allocatable for that operand.
  */
 extern int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
-    int pos, const arch_register_class_t *cls, struct _bitset_t *bs);
+    int pos, const arch_register_class_t *cls, bitset_t *bs);
 
 /**
  * Check, if a register is assignable to an operand of a node.

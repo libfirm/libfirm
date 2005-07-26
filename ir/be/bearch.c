@@ -43,7 +43,7 @@ arch_env_t *arch_env_add_irn_handler(arch_env_t *env,
 
 static const arch_irn_ops_t *fallback_irn_ops = NULL;
 
-int arch_register_class_put(const arch_register_class_t *cls, struct _bitset_t *bs)
+int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)
 {
   if(bs) {
     int i, n;

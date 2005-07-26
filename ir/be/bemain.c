@@ -153,8 +153,20 @@ static void be_main_loop(void)
 		be_liveness(irg);
 
 		dump_ir_block_graph_sched(irg, "-sched");
+
 		copystat_reset();
 		copystat_collect_irg(irg, env.arch_env);
+
+    /*
+     * Spilling changed the liveness information.
+     * Recompute it now.
+     */
+    be_liveness(irg);
+
+    /*
+     * Verifying the schedule once again cannot hurt.
+     */
+    sched_verify_irg(irg);
 
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
@@ -176,8 +188,9 @@ static void be_main_loop(void)
 
 			be_ra_chordal_done(chordal_env);
 		}
+
 		copystat_dump_pretty(irg);
-	    be_numbering_done(irg);
+    be_numbering_done(irg);
 	}
 }
 
