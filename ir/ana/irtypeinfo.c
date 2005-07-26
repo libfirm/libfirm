@@ -79,14 +79,14 @@ void free_irtypeinfo(void) {
   if (initial_type) {
     free_type(initial_type);
     initial_type = NULL;
-  } else
-    assert(0 && "call init_type_info before freeing");
+  }
+  //else assert(0 && "call init_type_info before freeing");
 
   if (type_node_map) {
     pmap_destroy(type_node_map);
     type_node_map = NULL;
-  } else
-    assert(0 && "call init_type_info before freeing");
+  }
+  //else assert(0 && "call init_type_info before freeing");
 
   for (i = 0; i < get_irp_n_irgs(); ++i)
     set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
@@ -137,8 +137,8 @@ void set_irp_typeinfo_inconsistent(void) {
  */
 type *get_irn_typeinfo_type(ir_node *n) {
   type *res = initial_type;
-  assert(get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
-	 get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent  );
+  assert(get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
+	 get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  );
 
   if (pmap_contains(type_node_map, (void *)n))
     res = (type *) pmap_get(type_node_map, (void *)n);
