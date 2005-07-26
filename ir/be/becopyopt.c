@@ -51,8 +51,13 @@ static int ou_max_ind_set_costs(unit_t *ou) {
 	while ((max = bitset_popcnt(curr)) != 0) {
 		/* check if curr is a stable set */
 		int i, o, is_stable_set = 1;
+
+		/* copy the irns */
+		i = 0;
 		bitset_foreach(curr, pos)
-			irns[pos] = ou->nodes[1+pos];
+			irns[i++] = ou->nodes[1+pos];
+		assert(i==max);
+
 		for(i=0; i<max; ++i)
 			for(o=i+1; o<max; ++o) /* !!!!! difference to qnode_max_ind_set(): NOT o=i */
 				if (nodes_interfere(ou->co->chordal_env, irns[i], irns[o])) {

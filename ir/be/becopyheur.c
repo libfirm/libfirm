@@ -350,8 +350,16 @@ static int qnode_try_color(const qnode_t *qn) {
 		} else {
 			if (qnode_is_pinned_local(qn, confl_node)) {
 				/* changing test_node would change back a node of current ou */
-				DBG((dbg, LEVEL_3, "\t    Conflicting local --> add conflict\n"));
-				qnode_add_conflict(qn, confl_node, test_node);
+				if (confl_node == qn->ou->nodes[0]) {
+					/* Adding a conflict edge between testnode and conflnode
+					 * would introduce a root -- arg interference.
+					 * So remove the arg of the qn */
+					DBG((dbg, LEVEL_3, "\t    Conflicting local with phi --> remove from qnode\n"));
+					qnode_add_conflict(qn, test_node, test_node);
+				} else {
+					DBG((dbg, LEVEL_3, "\t    Conflicting local --> add conflict\n"));
+					qnode_add_conflict(qn, confl_node, test_node);
+				}
 			}
 			if (pset_find_ptr(pinned_global, confl_node)) {
 				/* changing test_node would change back a node of a prior ou */
@@ -384,8 +392,13 @@ static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	while ((max = bitset_popcnt(curr)) != 0) {
 		/* check if curr is a stable set */
 		int i, o, is_stable_set = 1;
+
+		/* copy the irns */
+		i = 0;
 		bitset_foreach(curr, pos)
-			irns[pos] = ou->nodes[1+pos];
+			irns[i++] = ou->nodes[1+pos];
+		assert(i==max);
+
 		for(i=0; i<max; ++i)
 			for(o=i; o<max; ++o) /* !!!!! difference to ou_max_ind_set_costs(): NOT o=i+1 */
 				if (qnode_are_conflicting(qn, irns[i], irns[o])) {
