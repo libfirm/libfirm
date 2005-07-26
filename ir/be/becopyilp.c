@@ -31,6 +31,7 @@
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
+#define MAX(a,b) ((a<b)?(b):(a))
 #define EPSILON 0.00001
 #define SLOTS_LIVING 32
 
@@ -338,7 +339,7 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 static void pi_add_constr_S(problem_instance_t *pi) {
 	unit_t *curr;
 	int cst_counter = 0;
-	DBG((dbg, LEVEL_2, "Add M constraints...\n"));
+	DBG((dbg, LEVEL_2, "Add S constraints...\n"));
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &pi->co->units, units) {
@@ -352,7 +353,7 @@ static void pi_add_constr_S(problem_instance_t *pi) {
 
 		root = curr->nodes[0];
 		rootnr = get_irn_graph_nr(root);
-		mangle_cst(buf, 'M', cst_counter++);
+		mangle_cst(buf, 'S', cst_counter++);
 		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, curr->minimal_costs);
 
 		/* for all arguments */
@@ -366,15 +367,27 @@ static void pi_add_constr_S(problem_instance_t *pi) {
 	}
 }
 
+static INLINE int get_costs(problem_instance_t *pi, ir_node *phi, ir_node *irn) {
+	int i;
+	unit_t *curr;
+	/* search optimization unit for phi */
+	list_for_each_entry(unit_t, curr, &pi->co->units, units)
+		if (curr->nodes[0] == phi) {
+			for (i=1; i<curr->node_count; ++i)
+				if (curr->nodes[i] == irn)
+					return curr->costs[i];
+			assert(0 && "irn must occur in this ou");
+		}
+	assert(0 && "phi must be found in a ou");
+	return 0;
+}
+
 static void M_constr_walker(ir_node *block, void *env) {
 	problem_instance_t *pi = env;
-	int pos, count, arity, row, col, other_row;
+	int count, arity, row, col, other_row, *costs;
 	ir_node **phis, *phi, *irn, **phi_matrix;
 	pset *done;
 	bitset_t *candidates;
-
-	//TODO
-	return;
 
 	/* Count all phi nodes of this block */
 	for (count=0, irn = sched_first(block); is_Phi(irn); irn = sched_next(irn))
@@ -387,6 +400,7 @@ static void M_constr_walker(ir_node *block, void *env) {
 	/* Build the \Phi-Matrix */
 	arity = get_irn_arity(sched_first(block));
 	phis = alloca(count * sizeof(*phis));
+	costs = alloca(count * sizeof(costs));
 	phi_matrix = alloca(count*arity * sizeof(*phi_matrix));
 	candidates = bitset_alloca(count);
 
@@ -425,13 +439,40 @@ static void M_constr_walker(ir_node *block, void *env) {
 			if (bitset_popcnt(candidates) < 2)
 				continue;
 
-			/* generate an unequation finally */
-			//TODO
+			/* compute the minimal costs (rhs) */
+			int phi_nr, sum=0, max=-1, minimal_costs;
+			bitset_foreach(candidates, phi_nr) {
+				costs[phi_nr] = get_costs(pi, phis[phi_nr], irn);
+				sum += costs[phi_nr];
+				max = MAX(max, costs[phi_nr]);
+			}
+			minimal_costs = sum - max;
 
+			/* generate an unequation finally.
+			 * phis are indexed in the bitset,
+			 * shared argument is irn
+			 * rhs is minimal_costs */
+			{
+				char buf[32];
+				ir_node *root;
+				int pos, irnnr, rootnr, cst_idx, y_idx, cst_counter = 0;
+
+				irnnr = get_irn_graph_nr(irn);
+				mangle_cst(buf, 'M', cst_counter++);
+				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, minimal_costs);
+
+				/* for all phis */
+				bitset_foreach(candidates, pos) {
+					root = phis[pos];
+					rootnr = get_irn_graph_nr(root);
+					mangle_var(buf, 'y', rootnr, irnnr);
+					y_idx = lpp_get_var_idx(pi->curr_lp, buf);
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, costs[pos]);
+				}
+			}
 		}
 		del_pset(done); /* clear set for next row */
-	}
-
+	} /*next col*/
 }
 
 /**
