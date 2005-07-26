@@ -577,6 +577,7 @@ ir_node *copy_const_value(ir_node *n) {
   return nn;
 }
 
+/* Creates a new compound graph path. */
 compound_graph_path *
 new_compound_graph_path(type *tp, int length) {
   compound_graph_path *res;
@@ -594,40 +595,43 @@ new_compound_graph_path(type *tp, int length) {
   return res;
 }
 
-void
-free_compound_graph_path (compound_graph_path *gr) {
+/* Frees an graph path object */
+void free_compound_graph_path (compound_graph_path *gr) {
   assert(gr && is_compound_graph_path(gr));
   gr->kind = k_BAD;
   free(gr ->arr_indicees);
   free(gr);
 }
 
-int
-is_compound_graph_path(void *thing) {
+/* Returns non-zero if an object is a compound graph path */
+int is_compound_graph_path(void *thing) {
   return (get_kind(thing) == k_ir_compound_graph_path);
 }
 
-/* checks whether nodes 0..pos are correct (all lie on a path.) */
-/* @@@ not implemented */
+/* Checks whether the path up to pos is correct. If the path contains a NULL,
+ *  assumes the path is not complete and returns 'true'. */
 int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
   int i;
   entity *node;
   type *owner = gr->tp;
+
   for (i = 0; i <= pos; i++) {
     node = get_compound_graph_path_node(gr, i);
     if (node == NULL)
       /* Path not yet complete. */
       return true;
-    if (get_entity_owner(node) != owner) return false;
+    if (get_entity_owner(node) != owner)
+      return false;
     owner = get_entity_type(node);
   }
   if (pos == get_compound_graph_path_length(gr))
-    if (!is_atomic_type(owner)) return false;
+    if (!is_atomic_type(owner))
+      return false;
   return true;
 }
 
-int
-get_compound_graph_path_length(compound_graph_path *gr) {
+/* Returns the length of a graph path */
+int get_compound_graph_path_length(compound_graph_path *gr) {
   assert(gr && is_compound_graph_path(gr));
   return gr->len;
 }
@@ -1277,27 +1281,23 @@ bool equal_entity(entity *ent1, entity *ent2) {
 }
 
 
-unsigned long get_entity_visited(entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return ent->visit;
+unsigned long (get_entity_visited)(entity *ent) {
+  return _get_entity_visited(ent->visit);
 }
-void        set_entity_visited(entity *ent, unsigned long num) {
-  assert(ent && ent->kind == k_entity);
-  ent->visit = num;
+
+void (set_entity_visited)(entity *ent, unsigned long num) {
+  _set_entity_visited(ent, num);
 }
+
 /* Sets visited field in entity to entity_visited. */
-void        mark_entity_visited(entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  ent->visit = type_visited;
+void (mark_entity_visited)(entity *ent) {
+  _mark_entity_visited(ent);
 }
 
-
-bool entity_visited(entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return get_entity_visited(ent) >= type_visited;
+int (entity_visited)(entity *ent) {
+  return _entity_visited(ent);
 }
 
-bool entity_not_visited(entity *ent) {
-  assert(ent && ent->kind == k_entity);
-  return get_entity_visited(ent) < type_visited;
+int (entity_not_visited)(entity *ent) {
+  return _entity_not_visited(ent);
 }

@@ -130,7 +130,7 @@ typedef struct entity entity;
  * Creates a new entity.
  *
  * Automatically inserts the entity as a member of owner.
- * Entity is automatic_allocated and uninitialize except if the type
+ * Entity is automatic_allocated and uninitialized except if the type
  * is type_method, then it is static_allocated and constant.  The constant
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
@@ -421,7 +421,7 @@ entity  *get_compound_ent_value_member(entity *ent, int pos);
 /** Sets the path at pos 0 */
 void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
 
-/** Inits the entity ent witch must be of a one dimensional
+/** Initializes the entity ent which must be of a one dimensional
    array type with the values given in the values array.
    The array must have a lower and an upper bound.  Keeps the
    order of values. Does not test whether the number of values
@@ -474,7 +474,7 @@ void sort_compound_ent_values(entity *ent);
 /* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
    entity in the supertype must use this entity.  It's a list as with
-   multiple inheritance several enitites can be overwritten.  This field
+   multiple inheritance several entities can be overwritten.  This field
    is mostly useful for method entities.
    If a Sel node selects an entity that is overwritten by other entities it
    must return a pointer to the entity of the dynamic type of the pointer
@@ -523,20 +523,20 @@ bool equal_entity(entity *ent1, entity *ent2);
    debugging, (configure with --enable-debug) else returns 0. */
 long get_entity_nr(entity *ent);
 
-/** Returns the entitys visited count. */
+/** Returns the entities visited count. */
 unsigned long get_entity_visited(entity *ent);
 
-/** Sets the entitys visited count. */
+/** Sets the entities visited count. */
 void        set_entity_visited(entity *ent, unsigned long num);
 
 /** Sets visited field in entity to entity_visited. */
 void        mark_entity_visited(entity *ent);
 
 /** Returns true if this entity was visited. */
-bool        entity_visited(entity *ent);
+int        entity_visited(entity *ent);
 
 /** Returns true if this entity was not visited. */
-bool        entity_not_visited(entity *ent);
+int        entity_not_visited(entity *ent);
 
 /**
  * @page unknown_entity

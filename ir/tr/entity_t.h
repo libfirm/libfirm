@@ -41,11 +41,11 @@
 #include "firm_common_t.h"
 #include "firm_config.h"
 
-# include "entity.h"
-# include "typegmod.h"
-# include "mangle.h"
-# include "pseudo_irg.h"
-
+#include "type_t.h"
+#include "entity.h"
+#include "typegmod.h"
+#include "mangle.h"
+#include "pseudo_irg.h"
 
 /** A path in a compund graph. */
 struct compound_graph_path {
@@ -92,10 +92,10 @@ struct entity {
   /* ------------- fields for compound entities ---------------*/
 
   ir_node **values;     /**< constant values of compound entities. Only available if
-               variablility not uninitialized.  Must be set for variability constant
+               variability not uninitialized.  Must be set for variability constant
                            */
   compound_graph_path **val_paths; /**< paths corresponding to constant values. Only available if
-                      variablility not uninitialized.  Must be set for variability constant */
+                      variability not uninitialized.  Must be set for variability constant */
 
   /* ------------- fields for entities owned by a class type ---------------*/
 
@@ -294,6 +294,34 @@ _get_entity_irg(const entity *ent) {
   return ent->irg;
 }
 
+static INLINE unsigned long
+_get_entity_visited(entity *ent) {
+  assert(ent && ent->kind == k_entity);
+  return ent->visit;
+}
+
+static INLINE void
+_set_entity_visited(entity *ent, unsigned long num) {
+  assert(ent && ent->kind == k_entity);
+  ent->visit = num;
+}
+
+static INLINE void
+_mark_entity_visited(entity *ent) {
+  assert(ent && ent->kind == k_entity);
+  ent->visit = type_visited;
+}
+
+static INLINE int
+_entity_visited(entity *ent) {
+  return _get_entity_visited(ent) >= type_visited;
+}
+
+static INLINE int
+_entity_not_visited(entity *ent) {
+  return _get_entity_visited(ent) < type_visited;
+}
+
 #define is_entity(thing)                        _is_entity(thing)
 #define get_entity_name(ent)                    _get_entity_name(ent)
 #define get_entity_ident(ent)                   _get_entity_ident(ent)
@@ -320,5 +348,10 @@ _get_entity_irg(const entity *ent) {
 #define get_entity_link(ent)                    _get_entity_link(ent)
 #define set_entity_link(ent, l)                 _set_entity_link(ent, l)
 #define get_entity_irg(ent)                     _get_entity_irg(ent)
+#define get_entity_visited(ent)                 _get_entity_visited(ent)
+#define set_entity_visited(ent, num)            _set_entity_visited(ent, num)
+#define mark_entity_visited(ent)                _mark_entity_visited(ent)
+#define entity_visited(ent)                     _entity_visited(ent)
+#define entity_not_visited(ent)                 _entity_not_visited(ent)
 
 # endif /* _ENTITY_T_H_ */
