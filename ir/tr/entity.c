@@ -1282,7 +1282,7 @@ bool equal_entity(entity *ent1, entity *ent2) {
 
 
 unsigned long (get_entity_visited)(entity *ent) {
-  return _get_entity_visited(ent->visit);
+  return _get_entity_visited(ent);
 }
 
 void (set_entity_visited)(entity *ent, unsigned long num) {
