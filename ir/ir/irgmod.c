@@ -52,41 +52,41 @@ turn_into_tuple (ir_node *node, int arity)
 void
 exchange (ir_node *old, ir_node *nw)
 {
-	/*
-	 * If new outs are on, we can skip the id node creation and reroute
-	 * the edges from the old node to the new directly.
-	 */
-	if (edges_activated(current_ir_graph)) {
-		edges_reroute(old, nw, current_ir_graph);
-	}
+  /*
+   * If new outs are on, we can skip the id node creation and reroute
+   * the edges from the old node to the new directly.
+   */
+  if (edges_activated(current_ir_graph)) {
+    edges_reroute(old, nw, current_ir_graph);
+  }
   else {
     /* Else, do it the old-fashioned way. */
 
-		ir_graph *irg = get_irn_irg (old);
-		ir_node *block;
+    ir_graph *irg = get_irn_irg (old);
+    ir_node *block;
 
-		assert(old != nw);
-		assert (irg);
-		assert(get_irn_op(old)->opar != oparity_dynamic);
+    assert(old != nw);
+    assert (irg);
+    assert(get_irn_op(old)->opar != oparity_dynamic);
 
-		hook_turn_into_id(old);
+    hook_turn_into_id(old);
 
-		block = old->in[0];
-		if (!block) {
-			block = is_Block(nw) ? nw : get_nodes_block(nw);
+    block = old->in[0];
+    if (!block) {
+      block = is_Block(nw) ? nw : get_nodes_block(nw);
 
-			if (!block) {
-				DDMN(old);
-				DDMN(nw);
-				assert(0 && "cannot find legal block for id");
-			}
-		}
+      if (!block) {
+	DDMN(old);
+	DDMN(nw);
+	assert(0 && "cannot find legal block for id");
+      }
+    }
 
-		old->op = op_Id;
-		old->in = NEW_ARR_D (ir_node *, irg->obst, 2);
-		old->in[0] = block;
-		old->in[1] = nw;
-	}
+    old->op = op_Id;
+    old->in = NEW_ARR_D (ir_node *, irg->obst, 2);
+    old->in[0] = block;
+    old->in[1] = nw;
+  }
 }
 
 /*--------------------------------------------------------------------*/

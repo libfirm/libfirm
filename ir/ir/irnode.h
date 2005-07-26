@@ -445,8 +445,9 @@ typedef enum {
 			   Type_or_id_p is entity *. */
 } symconst_kind;
 
-/** SymConst attributes
-    This union contains the symbolic information represented by the node  */
+/** SymConst attribute.
+ *
+ *  This union contains the symbolic information represented by the node.  */
 union symconst_symbol {
   type   *type_p;
   ident  *ident_p;
