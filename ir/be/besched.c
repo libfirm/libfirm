@@ -99,6 +99,9 @@ int sched_verify(const ir_node *block)
   sched_foreach(block, irn)
     n++;
 
+  if(n <= 0)
+    return 1;
+
   save_time_step = malloc(n * sizeof(save_time_step[0]));
   save_nodes = malloc(n * sizeof(save_nodes[0]));
 

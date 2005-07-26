@@ -124,7 +124,7 @@ ir_node *new_Copy(const be_node_factory_t *factory,
     ir_graph *irg, ir_node *bl, ir_node *in)
 {
   ir_node *ins[1];
-  ir_op *op = get_op(factory, cls, node_kind_perm)->op;
+  ir_op *op = get_op(factory, cls, node_kind_copy)->op;
 
   ins[0] = in;
 

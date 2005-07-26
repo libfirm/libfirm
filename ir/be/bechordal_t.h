@@ -32,9 +32,7 @@
  * A liveness interval border.
  */
 typedef struct _border_t {
-#ifdef DEBUG_libfirm
 	unsigned magic;								/**< A magic number for checking. */
-#endif
 	struct list_head list;				/**< list head for queuing. */
 	struct _border_t *other_end;	/**< The other end of the border. */
 	ir_node *irn;						      /**< The node. */

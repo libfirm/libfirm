@@ -17,6 +17,7 @@
 #include "bearch.h"
 #include "bera.h"
 #include "benode_t.h"
+#include "besched_t.h"
 
 static void eliminate_phi_int_walker(ir_node *irn, void *data)
 {
@@ -35,6 +36,7 @@ static void eliminate_phi_int_walker(ir_node *irn, void *data)
       if(values_interfere(irn, operand)) {
         ir_node *copy = new_Copy(env->main_env->node_factory, cls, env->irg, bl, operand);
         set_irn_n(irn, i, copy);
+        sched_add_after(sched_last(bl), copy);
       }
     }
   }

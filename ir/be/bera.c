@@ -14,14 +14,15 @@
 #include "irmode.h"
 #include "irdom.h"
 
+#include "beutil.h"
 #include "besched_t.h"
 #include "belive_t.h"
 
 int value_dominates(const ir_node *a, const ir_node *b)
 {
   int res = 0;
-	const ir_node *ba = get_nodes_block(a);
-	const ir_node *bb = get_nodes_block(a);
+	const ir_node *ba = get_block(a);
+	const ir_node *bb = get_block(b);
 
   /*
    * a and b are not in the same block,

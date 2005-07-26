@@ -117,7 +117,8 @@ static INLINE ir_node *_sched_prev(const ir_node *irn)
 /**
  * Get the first node in a block schedule.
  * @param block The block of which to get the schedule.
- * @return The first node in the schedule or the block itself if there is node in the schedule.
+ * @return The first node in the schedule or the block itself
+ *         if there is no node in the schedule.
  */
 static INLINE ir_node *_sched_first(const ir_node *block)
 {
@@ -129,7 +130,7 @@ static INLINE ir_node *_sched_first(const ir_node *block)
  * Get the last node in a schedule.
  * @param  block The block to get the schedule for.
  * @return The last ir node in a schedule, or the block itself
- *         if there is node in the schedule.
+ *         if there is no node in the schedule.
  */
 static INLINE ir_node *_sched_last(const ir_node *block)
 {

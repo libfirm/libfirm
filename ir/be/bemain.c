@@ -147,8 +147,6 @@ static void be_main_loop(void)
 		be_eliminate_phi_interferences(&session);
 		dump_ir_block_graph(session.irg, "-prephase");
 
-		be_numbering(irg);
-
 		/* Liveness analysis */
 		be_liveness(irg);
 
@@ -156,12 +154,6 @@ static void be_main_loop(void)
 
 		copystat_reset();
 		copystat_collect_irg(irg, env.arch_env);
-
-    /*
-     * Spilling changed the liveness information.
-     * Recompute it now.
-     */
-    be_liveness(irg);
 
     /*
      * Verifying the schedule once again cannot hurt.
@@ -172,6 +164,9 @@ static void be_main_loop(void)
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
+
+      be_numbering(irg);
+      be_liveness(irg);
 
 			chordal_env = be_ra_chordal(irg, env.arch_env, cls);
 
@@ -186,11 +181,11 @@ static void be_main_loop(void)
 			be_ssa_destruction_check(&session, chordal_env);
 			be_ra_chordal_check(chordal_env);
 
-			be_ra_chordal_done(chordal_env);
+      be_ra_chordal_done(chordal_env);
+      be_numbering_done(irg);
 		}
 
 		copystat_dump_pretty(irg);
-    be_numbering_done(irg);
 	}
 }
 

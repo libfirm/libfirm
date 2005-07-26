@@ -49,13 +49,10 @@
 #endif
 
 
-#ifdef DEBUG_libfirm
 #include "fourcc.h"
 
 /* Make a fourcc for border checking. */
 #define BORDER_FOURCC				FOURCC('B', 'O', 'R', 'D')
-
-#endif /* DEBUG_libfirm */
 
 static firm_dbg_module_t *dbg;
 
@@ -177,6 +174,23 @@ static void dump_ifg(const be_chordal_env_t *env)
 
 #endif /* BUILD_GRAPH */
 
+static void check_border_list(struct list_head *head)
+{
+  border_t *x;
+  list_for_each_entry(border_t, x, head, list) {
+    assert(x->magic == BORDER_FOURCC);
+  }
+}
+
+static void check_heads(be_chordal_env_t *env)
+{
+  pmap_entry *ent;
+  for(ent = pmap_first(env->border_heads); ent; ent = pmap_next(env->border_heads)) {
+    /* ir_printf("checking border list of block %+F\n", ent->key); */
+    check_border_list(ent->value);
+  }
+}
+
 
 /**
  * Add an interval border to the list of a block's list
@@ -203,6 +217,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 
 		/* also allocate the def and tie it to the use. */
 		def = obstack_alloc(&env->obst, sizeof(*def));
+    memset(def, 0, sizeof(*def));
 		b->other_end = def;
 		def->other_end = b;
 
@@ -213,10 +228,8 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 		 */
 		set_irn_link(irn, def);
 
-#ifdef DEBUG_libfirm
 		b->magic = BORDER_FOURCC;
 		def->magic = BORDER_FOURCC;
-#endif
 	}
 
 	/*
@@ -227,9 +240,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	else {
 		b = get_irn_link(irn);
 
-#ifdef DEBUG_libfirm
 		assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered");
-#endif
 	}
 
 	b->pressure = pressure;
@@ -237,11 +248,19 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	b->is_real = is_real;
 	b->irn = irn;
 	b->step = step;
+  check_heads(env);
 	list_add_tail(&b->list, head);
+  check_heads(env);
 	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n",
 				is_def ? "def" : "use", irn, step));
 
+
 	return b;
+}
+
+static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
+{
+  return arch_irn_has_reg_class(env->arch_env, irn, arch_pos_make_out(0), env->cls);
 }
 
 /**
@@ -278,6 +297,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	/* Set up the border list in the block info */
 	head = obstack_alloc(&env->obst, sizeof(*head));
 	INIT_LIST_HEAD(head);
+  assert(pmap_get(env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);
 
 	/*
@@ -287,7 +307,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
 		DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
 		bitset_set(live, get_irn_graph_nr(irn));
-		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls))
+		if(has_reg_class(env, irn))
 			border_use(irn, step, 0);
 	}
 	++step;
@@ -304,7 +324,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	     * If the node defines some value, which can put into a
 	     * register of the current class, make a border for it.
 	     */
-		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls)) {
+		if(has_reg_class(env, irn)) {
 			bitset_pos_t elm;
 			int nr = get_irn_graph_nr(irn);
 
@@ -324,7 +344,7 @@ static void pressure(ir_node *block, void *env_ptr)
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 
-				if(arch_irn_has_reg_class(env->arch_env, op, 0, cls)) {
+				if(has_reg_class(env, op)) {
 					int nr = get_irn_graph_nr(op);
 
 					DBG((dbg, LEVEL_4, "\t\tpos: %d, use: %+F\n", i, op));
@@ -343,7 +363,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * Add initial defs for all values live in.
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls)) {
+		if(has_reg_class(env, irn)) {
 
 			/* Mark the value live in. */
 			bitset_set(live, get_irn_graph_nr(irn));
@@ -353,8 +373,10 @@ static void pressure(ir_node *block, void *env_ptr)
 		}
 	}
 
-    del_pset(live_in);
-    del_pset(live_end);
+  check_heads(env);
+
+  del_pset(live_in);
+  del_pset(live_end);
 }
 
 static void assign(ir_node *block, void *env_ptr)
@@ -375,6 +397,9 @@ static void assign(ir_node *block, void *env_ptr)
 	struct list_head *head = get_block_border_head(env, block);
 	pset *live_in = put_live_in(block, pset_new_ptr_default());
 
+  check_heads(env);
+
+
 	bitset_clear_all(live);
 	bitset_clear_all(colors);
 	bitset_clear_all(in_colors);
@@ -392,7 +417,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * allocated before), we have to mark their colors as used also.
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-		if(arch_irn_has_reg_class(env->arch_env, irn, 0, cls)) {
+		if(has_reg_class(env, irn)) {
       const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
       int col;
 
@@ -466,7 +491,7 @@ static void assign(ir_node *block, void *env_ptr)
 void be_ra_chordal_init(void)
 {
 	dbg = firm_dbg_register(DBG_CHORDAL);
-	firm_dbg_set_mask(dbg, 0);
+	firm_dbg_set_mask(dbg, -1);
 }
 
 be_chordal_env_t *be_ra_chordal(ir_graph *irg,
