@@ -38,6 +38,7 @@
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
 
+#define DBG_LEVEL 0
 #define NO_COLOR (-1)
 
 #undef DUMP_INTERVALS
@@ -491,7 +492,7 @@ static void assign(ir_node *block, void *env_ptr)
 void be_ra_chordal_init(void)
 {
 	dbg = firm_dbg_register(DBG_CHORDAL);
-	firm_dbg_set_mask(dbg, -1);
+	firm_dbg_set_mask(dbg, DBG_LEVEL);
 }
 
 be_chordal_env_t *be_ra_chordal(ir_graph *irg,
@@ -576,11 +577,16 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 		const arch_register_t *n1_reg, *n2_reg;
 
 		n1_reg = arch_get_irn_register(arch_env, n1, 0);
-		assert(arch_reg_is_allocatable(arch_env, n1, arch_pos_make_out(0), n1_reg) && "Register constraint does not hold");
-
+		if (!arch_reg_is_allocatable(arch_env, n1, arch_pos_make_out(0), n1_reg)) {
+			DBG((dbg, 0, "Register assigned to %+F is not allowed\n", n1));
+			assert(0 && "Register constraint does not hold");
+		}
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
 			n2_reg = arch_get_irn_register(arch_env, n2, 0);
-			assert(!(nodes_interfere(chordal_env, n1, n2) && n1_reg == n2_reg) && "Interfering values have the same color!");
+			if (nodes_interfere(chordal_env, n1, n2) && n1_reg == n2_reg) {
+				DBG((dbg, 0, "Values %+F and %+F interfere and have the same regiseter assigned\n", n1, n2));
+				assert(0 && "Interfering values have the same color!");
+			}
 		}
 	}
 	obstack_free(&ob, NULL);

@@ -28,7 +28,6 @@
 #define LPP_SOLVER "cplex"
 
 #undef DUMP_MPS
-#define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define MAX(a,b) ((a<b)?(b):(a))
@@ -639,9 +638,9 @@ void co_ilp_opt(copy_opt_t *co) {
 
 	dbg = firm_dbg_register("ir.be.copyoptilp");
 	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, DEBUG_LVL_ILP);
+		firm_dbg_set_mask(dbg, DEBUG_IRG_LVL_ILP);
 	else
-		firm_dbg_set_mask(dbg, DEBUG_LVL);
+		firm_dbg_set_mask(dbg, DEBUG_LVL_ILP);
 
 	pi = new_pi(co);
 	if (!pi->all_simplicial) {

@@ -132,7 +132,7 @@ static void be_main_loop(void)
 		ir_graph *irg = get_irp_irg(i);
 		be_main_session_env_t session;
 
-    DBG((env.dbg, LEVEL_1, "be irg: %F\n", irg));
+		DBG((env.dbg, LEVEL_1, "be irg: %F\n", irg));
 
 		/* Init the session. */
 		be_init_session_env(&session, &env, irg);
@@ -147,8 +147,8 @@ static void be_main_loop(void)
 		/* Verify the schedule */
 		sched_verify_irg(irg);
 
-    /* Build liveness information */
-    be_liveness(irg);
+		/* Build liveness information */
+		be_liveness(irg);
 
 		/* Remove all cases where a phi and one of its arguments interfere */
 		be_eliminate_phi_interferences(&session);
@@ -160,20 +160,20 @@ static void be_main_loop(void)
 		copystat_reset();
 		copystat_collect_irg(irg, env.arch_env);
 
-    /*
-     * Verifying the schedule once again cannot hurt.
-     */
-    sched_verify_irg(irg);
+		/*
+		 * Verifying the schedule once again cannot hurt.
+		 */
+		sched_verify_irg(irg);
 
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-      DBG((env.dbg, LEVEL_1, "\treg class: %s\n", cls->name));
+			DBG((env.dbg, LEVEL_1, "\treg class: %s\n", cls->name));
 
-      be_numbering(irg);
-      be_liveness(irg);
+			be_numbering(irg);
+			be_liveness(irg);
 
 			chordal_env = be_ra_chordal(irg, env.arch_env, cls);
 
@@ -188,8 +188,8 @@ static void be_main_loop(void)
 			be_ssa_destruction_check(&session, chordal_env);
 			be_ra_chordal_check(chordal_env);
 
-      be_ra_chordal_done(chordal_env);
-      be_numbering_done(irg);
+			be_ra_chordal_done(chordal_env);
+			be_numbering_done(irg);
 		}
 
 		copystat_dump_pretty(irg);

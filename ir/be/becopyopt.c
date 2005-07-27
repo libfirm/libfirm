@@ -22,7 +22,6 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 
-#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define is_curr_reg_class(irn) (arch_get_irn_reg_class(co->chordal_env->arch_env, irn, arch_pos_make_out(0)) == co->chordal_env->cls)
@@ -194,7 +193,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	copy_opt_t *co;
 
 	dbg = firm_dbg_register("ir.be.copyopt");
-	firm_dbg_set_mask(dbg, DEBUG_LVL);
+	firm_dbg_set_mask(dbg, DEBUG_LVL_CO);
 
 	co = xcalloc(1, sizeof(*co));
 	co->chordal_env = chordal_env;
@@ -207,9 +206,9 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	co->name = xmalloc(len);
 	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
 	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, DEBUG_LVL_CO);
+		firm_dbg_set_mask(dbg, DEBUG_IRG_LVL_CO);
 	else
-		firm_dbg_set_mask(dbg, DEBUG_LVL);
+		firm_dbg_set_mask(dbg, DEBUG_LVL_CO);
 
 	INIT_LIST_HEAD(&co->units);
 	co_collect_units(co);
@@ -262,11 +261,14 @@ int co_get_copy_costs(const copy_opt_t *co) {
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units) {
 		int root_col = get_irn_col(co, curr->nodes[0]);
-		for (i=1; i<curr->node_count; ++i)
-			if (root_col != get_irn_col(co, curr->nodes[i])) {
-				DBG((dbg, LEVEL_1, "  %n %N\n", curr->nodes[i], curr->nodes[i]));
+		DBG((dbg, LEVEL_1, "  Adding costs for root %+F color %d\n", curr->nodes[0], root_col));
+		for (i=1; i<curr->node_count; ++i) {
+			int arg_col = get_irn_col(co, curr->nodes[i]);
+			if (root_col != arg_col) {
+				DBG((dbg, LEVEL_1, "  Arg %+F color %d costs %d\n", curr->nodes[i], arg_col, curr->costs[i]));
 				res += curr->costs[i];
 			}
+		}
 	}
 	return res;
 }

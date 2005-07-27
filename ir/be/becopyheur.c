@@ -28,7 +28,6 @@
 #include "becopystat.h"
 #include "bitset.h"
 
-#define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define SLOTS_PINNED_GLOBAL 256
@@ -84,7 +83,7 @@ static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
  */
 static INLINE void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, const ir_node *n2) {
 	conflict_t c;
-	DBG((dbg, LEVEL_4, "\t      %n -- %n\n", n1, n2));
+	DBG((dbg, LEVEL_4, "\t      %+F -- %+F\n", n1, n2));
 
 	if ((int)n1 < (int)n2) {
 		c.n1 = n1;
@@ -212,12 +211,14 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	const arch_env_t *arch_env = chordal_env->arch_env;
 	const arch_register_class_t *cls = chordal_env->cls;
 
-	DBG((dbg, LEVEL_3, "\t      %n \tcaused col(%n) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
+	DBG((dbg, LEVEL_3, "\t      %+F \tcaused col(%+F) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
 	obstack_init(&confl_ob);
 	irn_col = qnode_get_new_color(qn, irn);
 
-	if (irn_col == col)
+	if (irn_col == col) {
+		DBG((dbg, LEVEL_4, "\t      Already same color.\n"));
 		goto ret_save;
+	}
 	if (pset_find_ptr(pinned_global, irn) || qnode_is_pinned_local(qn, irn)) {
 		res = irn;
 		goto ret_confl;
@@ -240,15 +241,17 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		{
 			ir_node *n;
 			pset *live_ins = put_live_in(irn_bl, pset_new_ptr_default());
-			for (n = pset_first(live_ins); n; n = pset_next(live_ins))
+			for (n = pset_first(live_ins); n; n = pset_next(live_ins)) {
+				DBG((dbg, LEVEL_4, "Checking %+F which is live-in at the block\n", n));
 				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), cls)
-            && n != trigger && qnode_get_new_color(qn, n) == col
-            && nodes_interfere(chordal_env, irn, n)) {
+					&& n != trigger && qnode_get_new_color(qn, n) == col
+					&& nodes_interfere(chordal_env, irn, n)) {
 
-					DBG((dbg, LEVEL_4, "\t        %n\ttroubles\n", n));
+					DBG((dbg, LEVEL_4, "\t        %+F\ttroubles\n", n));
 					obstack_ptr_grow(&confl_ob, n);
 					pset_break(live_ins);
 					break;
+				}
 			}
             del_pset(live_ins);
 		}
@@ -272,12 +275,12 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 			 * the target color and interfere with the irn */
 			for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
 				ir_node *n = get_irn_out(curr_bl, i);
+				DBG((dbg, LEVEL_4, "Checking %+F defined in same block\n", n));
 				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), cls)
-            && n != trigger && qnode_get_new_color(qn, n) == col
-            && nodes_interfere(chordal_env, irn, n)) {
-
-					DBG((dbg, LEVEL_4, "\t        %n\ttroubles\n", n));
-					obstack_ptr_grow(&confl_ob, n);
+					&& n != trigger && qnode_get_new_color(qn, n) == col
+					&& nodes_interfere(chordal_env, irn, n)) {
+						DBG((dbg, LEVEL_4, "\t        %+F\ttroubles\n", n));
+						obstack_ptr_grow(&confl_ob, n);
 				}
 			}
 
@@ -310,18 +313,18 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	/* if we arrive here all sub changes can be applied, so it's save to change this irn */
 
 ret_save:
-	DBG((dbg, LEVEL_3, "\t      %n save\n", irn));
+	DBG((dbg, LEVEL_3, "\t      %+F save\n", irn));
 	obstack_free(&confl_ob, NULL);
 	qnode_set_new_color(qn, irn, col);
 	return CHANGE_SAVE;
 
 ret_imposs:
-	DBG((dbg, LEVEL_3, "\t      %n impossible\n", irn));
+	DBG((dbg, LEVEL_3, "\t      %+F impossible\n", irn));
 	obstack_free(&confl_ob, NULL);
 	return CHANGE_IMPOSSIBLE;
 
 ret_confl:
-	DBG((dbg, LEVEL_3, "\t      %n conflicting\n", irn));
+	DBG((dbg, LEVEL_3, "\t      %+F conflicting\n", irn));
 	obstack_free(&confl_ob, NULL);
 	return res;
 }
@@ -338,7 +341,7 @@ static int qnode_try_color(const qnode_t *qn) {
 		ir_node *test_node, *confl_node;
 
 		test_node = qn->mis[i];
-		DBG((dbg, LEVEL_3, "\t    Testing %n\n", test_node));
+		DBG((dbg, LEVEL_3, "\t    Testing %+F\n", test_node));
 		confl_node = qnode_color_irn(qn, test_node, qn->color, test_node);
 
 		if (confl_node == CHANGE_SAVE) {
@@ -423,9 +426,10 @@ static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	}
 
 	/* transfer the best set into the qn */
-	qn->mis_size = bitset_popcnt(best);
+	qn->mis_size = bitset_popcnt(best)+1;
 	qn->mis_costs = best_weight;
 	next = 0;
+	qn->mis[next++] = ou->nodes[0]; /* the root is alwazs in a max stable set */
 	bitset_foreach(best, pos)
 		qn->mis[next++] = ou->nodes[1+pos];
 }
@@ -493,7 +497,7 @@ static void ou_optimize(unit_t *ou) {
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
 	for (i=0; i<ou->node_count; ++i)
-		DBG((dbg, LEVEL_1, "\t %n\n", ou->nodes[i]));
+		DBG((dbg, LEVEL_1, "\t %+F\n", ou->nodes[i]));
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
@@ -520,9 +524,8 @@ static void ou_optimize(unit_t *ou) {
 	/* apply the best found qnode */
 	if (curr->mis_size >= 2) {
 		node_stat_t *ns;
-
 		DBG((dbg, LEVEL_1, "\t  Best color: %d  Costs: %d/%d\n", curr->color, ou->complete_costs - curr->mis_costs, ou->complete_costs));
-		/* globally pin root and eventually others */
+		/* globally pin root and all args which have the same color */
 		pset_insert_ptr(pinned_global, ou->nodes[0]);
 		for (i=1; i<ou->node_count; ++i) {
 			ir_node *irn = ou->nodes[i];
@@ -535,10 +538,14 @@ static void ou_optimize(unit_t *ou) {
 		for (ns = set_first(curr->changed_nodes); ns; ns = set_next(curr->changed_nodes)) {
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
-				DBG((dbg, LEVEL_2, "\t    color(%n) := %d\n", ns->irn, ns->new_color));
+				DBG((dbg, LEVEL_1, "\t    color(%+F) := %d\n", ns->irn, ns->new_color));
 				set_irn_col(ou->co, ns->irn, ns->new_color);
 			}
 		}
+		/*
+		 * Enable for checking register allocation after each ou
+		 * be_ra_chordal_check(ou->co->chordal_env);
+		 */
 	}
 
 	/* free best qnode (curr) and queue */
@@ -550,11 +557,10 @@ static void ou_optimize(unit_t *ou) {
 void co_heur_opt(copy_opt_t *co) {
 	unit_t *curr;
 	dbg = firm_dbg_register("ir.be.copyoptheur");
-	firm_dbg_set_mask(dbg, DEBUG_LVL);
 	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, DEBUG_LVL_HEUR);
+		firm_dbg_set_mask(dbg, DEBUG_IRG_LVL_HEUR);
 	else
-		firm_dbg_set_mask(dbg, DEBUG_LVL);
+		firm_dbg_set_mask(dbg, DEBUG_LVL_HEUR);
 
 	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
 	list_for_each_entry(unit_t, curr, &co->units, units)

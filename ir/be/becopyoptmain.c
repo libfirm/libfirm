@@ -13,6 +13,7 @@
 #endif
 
 #include "debug.h"
+#include "irouts.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "becopyoptmain.h"
@@ -31,6 +32,9 @@ void be_copy_opt_init(void) {
 void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
 	int lb, copy_costs;
+
+	/* BETTER: You can remove this if you replace all `grep get_irn_out *.c`*/
+	compute_outs(chordal_env->irg);
 
 	co = new_copy_opt(chordal_env, get_costs_loop_depth);
 	DBG((dbg, LEVEL_1, "===>  %s  <===\n", co->name));

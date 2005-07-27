@@ -92,9 +92,7 @@ int values_interfere(const ir_node *a, const ir_node *b)
           && !is_Phi(user)
           && value_dominates(b, user))
         return 1;
-      }
     }
   }
-
   return 0;
 }

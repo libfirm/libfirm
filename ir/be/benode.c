@@ -32,6 +32,8 @@
 
 #include "beirgmod.h"
 
+#define DBG_LEVEL 0
+
 typedef enum _node_kind_t {
   node_kind_spill,
   node_kind_reload,
@@ -329,7 +331,7 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   firm_dbg_module_t *dbg = firm_dbg_register("firm.be.node");
   int i, n;
 
-  firm_dbg_set_mask(dbg, -1);
+  firm_dbg_set_mask(dbg, DBG_LEVEL);
   DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
   sched_foreach_reverse(bl, irn) {

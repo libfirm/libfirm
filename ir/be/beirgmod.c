@@ -28,6 +28,7 @@
 #include "beirgmod.h"
 
 #define DBG_MODULE firm_dbg_register("firm.be.irgmod")
+#define DBG_LEVEL 0
 
 struct _dom_front_info_t {
   pmap *df_map;
@@ -326,7 +327,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
   ir_node *curr_bl;
   ir_node *start_irn;
   firm_dbg_module_t *dbg = DBG_MODULE;
-  firm_dbg_set_mask(dbg, -1);
+  firm_dbg_set_mask(dbg, DBG_LEVEL);
 
   curr_bl = get_nodes_block(usage);
 
@@ -458,7 +459,7 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
   firm_dbg_module_t *dbg = DBG_MODULE;
   int i;
 
-  firm_dbg_set_mask(dbg, -1);
+  firm_dbg_set_mask(dbg, DBG_LEVEL);
   DBG((dbg, LEVEL_1, "Introducing following copies of %+F\n", orig));
 
   /* Fill the sets. */

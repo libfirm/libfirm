@@ -29,10 +29,13 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-#define DEBUG_IRG "NONE spec.c__main__datab"
-#define DEBUG_LVL_CO   LEVEL_1
-#define DEBUG_LVL_HEUR LEVEL_1
-#define DEBUG_LVL_ILP  LEVEL_1
+#define DEBUG_IRG "MergeSort.c__merge__datab"
+#define DEBUG_IRG_LVL_CO   SET_LEVEL_1
+#define DEBUG_IRG_LVL_HEUR SET_LEVEL_1
+#define DEBUG_IRG_LVL_ILP  SET_LEVEL_1
+#define DEBUG_LVL_CO   SET_LEVEL_0
+#define DEBUG_LVL_HEUR SET_LEVEL_0
+#define DEBUG_LVL_ILP  SET_LEVEL_0
 
 typedef int(*cost_fct_t)(ir_node*, ir_node*, int);
 
