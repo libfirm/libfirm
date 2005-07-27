@@ -61,6 +61,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
   const arch_isa_if_t *isa = &firm_isa;
 
   obstack_init(&env->obst);
+  env->dbg = firm_dbg_register("be.main");
 
   env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
   arch_env_init(env->arch_env, isa);
@@ -131,6 +132,8 @@ static void be_main_loop(void)
 		ir_graph *irg = get_irp_irg(i);
 		be_main_session_env_t session;
 
+    DBG((env.dbg, LEVEL_1, "be irg: %F\n", irg));
+
 		/* Init the session. */
 		be_init_session_env(&session, &env, irg);
 
@@ -139,6 +142,7 @@ static void be_main_loop(void)
 
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
+		dump_ir_block_graph_sched(irg, "-sched");
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
@@ -149,8 +153,6 @@ static void be_main_loop(void)
 
 		/* Liveness analysis */
 		be_liveness(irg);
-
-		dump_ir_block_graph_sched(irg, "-sched");
 
 		copystat_reset();
 		copystat_collect_irg(irg, env.arch_env);
@@ -164,6 +166,8 @@ static void be_main_loop(void)
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
+
+      DBG((env.dbg, LEVEL_1, "\treg class: %s\n", cls->name));
 
       be_numbering(irg);
       be_liveness(irg);

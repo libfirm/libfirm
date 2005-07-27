@@ -360,8 +360,6 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
       for(irn = start_irn; !is_Block(irn); irn = sched_prev(irn)) {
 
         /* Take the first copy we find. */
-
-        DBG((dbg, LEVEL_1, "Is %F a copy?\n", irn));
         if(pset_find_ptr(copies, irn))
           return irn;
       }
@@ -397,7 +395,6 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
    * This is neccessary, since the outs would be modified while
    * interating on them what could bring the outs module in trouble.
    */
-  DBG((dbg, LEVEL_2, "  Users of %+F\n", orig));
   outs = malloc(n_outs * sizeof(outs[0]));
   foreach_out_edge(orig, edge) {
     outs[i].irn = get_edge_src_irn(edge);
@@ -413,9 +410,8 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
     ir_node *irn = outs[i].irn;
     int pos = outs[i].pos;
 
-    DBG((dbg, LEVEL_2, "    %+F(%d) -> ???\n", irn, pos));
     def = search_def(irn, pos, copies, copy_blocks);
-    DBG((dbg, LEVEL_2, "    %+F(%d) -> %+F\n", irn, pos, def));
+    DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", irn, pos, def));
 
     if(def != NULL)
       set_irn_n(irn, pos, def);
@@ -424,49 +420,33 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
   free(outs);
 }
 
-struct phi_collect_info {
-  const ir_node *orig;
-  pset *copies;
-  pset *copy_blocks;
-};
-
-static void add_all_phis_walker(ir_node *irn, void *data)
-{
-  if(is_Phi(irn)) {
-    int i, o, n;
-    struct phi_collect_info *info = data;
-
-    /*
-     * Look at all operands of the phi. If one of them is the original
-     * node, insert the phi into the copies and copy_blocks set.
-     */
-    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-      if(get_irn_n(irn, i) == info->orig) {
-        pset_insert_ptr(info->copies, irn);
-        pset_insert_ptr(info->copy_blocks, get_nodes_block(irn));
-
-        break;
-      }
-    }
-
-
-  }
-}
-
 /**
- * Add all phis using a node to a set.
- * @param orig        The node the phis shall use.
- * @param copies      The set where the phis shall be put into.
- * @param copy_blocks The set the blocks of the phis shall be put into.
+ * Remove phis which are not neccesary.
+ * During place_phi_functions() phi functions are put on the dominance
+ * frontiers blindly. However some of them will never be used (these
+ * have at least one predecessor which is NULL, see search_def() for
+ * this case). Since place_phi_functions() enters them into the
+ * schedule, we have to remove them from there.
+ *
+ * @param copies The set of all copies made (including the phi functions).
  */
-static void add_all_phis_using(const ir_node *orig, pset *copies, pset *copy_blocks)
+static void remove_odd_phis(pset *copies)
 {
-  struct phi_collect_info info;
+  ir_node *irn;
 
-  info.copies      = copies;
-  info.copy_blocks = copy_blocks;
-  info.orig        = orig;
-  irg_walk_graph(get_irn_irg(orig), add_all_phis_walker, NULL, &info);
+  for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
+    if(is_Phi(irn)) {
+      int i, n;
+      int illegal = 0;
+
+      assert(sched_is_scheduled(irn) && "phi must be scheduled");
+      for(i = 0, n = get_irn_arity(irn); i < n && !illegal; ++i)
+        illegal = is_Bad(get_irn_n(irn, i));
+
+      if(illegal)
+        sched_remove(irn);
+    }
+  }
 }
 
 void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
@@ -489,8 +469,6 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
    * All phis using the original value are also copies of it
    * and must be present in the copies set.
    */
-  /* add_all_phis_using(orig, copies, copy_blocks);*/
-
   for(i = 0; i < n; ++i) {
     DBG((dbg, LEVEL_1,
           "  %+F in block %+F\n", copy_nodes[i], get_nodes_block(copy_nodes[i])));
@@ -510,6 +488,7 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
    */
   place_phi_functions(orig, copies, copy_blocks, info);
   fix_usages(orig, copies, copy_blocks);
+  remove_odd_phis(copies);
 
   /* reset the optimizations */
   set_optimize(save_optimize);

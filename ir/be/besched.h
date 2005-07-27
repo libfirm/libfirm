@@ -17,6 +17,7 @@ ir_node *(sched_first)(const ir_node *block);
 ir_node *(sched_last)(const ir_node *block);
 ir_node *(sched_add_before)(ir_node *before, ir_node *irn);
 ir_node *(sched_add_after)(ir_node *before, ir_node *irn);
+void (sched_remove)(ir_node *irn);
 
 #define sched_is_end(irn) is_Block(irn)
 #define sched_is_begin(irn) is_Block(irn)

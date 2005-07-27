@@ -8,23 +8,13 @@
 #define _BE_T_H
 
 #include "obst.h"
-
-#if 0
-typedef struct _phase_t {
-	const char *name;
-	int id;
-} phase_t;
-
-int phase_register(phase_t *phase);
-void phase_applied(const ir_graph *irg, const phase_t *phase);
-int phase_depends_on(const ir_graph *irg, const phase_t *phase, int n, ...);
-int phase_invalidates(const ir_graph *irg, const phase_t *phase, int n, ...);
-#endif
+#include "debug.h"
 
 typedef struct _be_main_env_t {
   struct obstack obst;
   struct _be_node_factory_t *node_factory;
   struct _arch_env_t *arch_env;
+  firm_dbg_module_t *dbg;
 } be_main_env_t;
 
 typedef struct _be_main_session_env_t {

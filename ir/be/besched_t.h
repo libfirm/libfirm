@@ -202,6 +202,17 @@ static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
 }
 
 /**
+ * Remove a node from the scheduled.
+ * @param irn The node.
+ */
+static INLINE void _sched_remove(ir_node *irn)
+{
+  sched_info_t *info = get_irn_sched_info(irn);
+  list_del(&info->list);
+  info->scheduled = 0;
+}
+
+/**
  * Check, if thenode is scheduled.
  * @param irn The node.
  * @return 1, if the node is scheduled, 0 if not.
@@ -250,6 +261,7 @@ extern int sched_verify_irg(ir_graph *irg);
 #define sched_last(irn) 						  _sched_last(irn)
 #define sched_add_before(before, irn)	_sched_add_before(before, irn)
 #define sched_add_after(after, irn) 	_sched_add_after(after, irn)
+#define sched_remove(irn)            	_sched_remove(irn)
 #define sched_is_scheduled(irn)       _sched_is_scheduled(irn)
 #define sched_cmp(a, b)               _sched_cmp(a, b)
 
