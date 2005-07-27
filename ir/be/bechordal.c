@@ -333,7 +333,7 @@ static void pressure(ir_node *block, void *env_ptr)
 
 #ifdef BUILD_GRAPH
 			bitset_foreach(live, elm)
-			add_if(env, nr, (int) elm);
+				add_if(env, nr, (int) elm);
 #endif
 		}
 

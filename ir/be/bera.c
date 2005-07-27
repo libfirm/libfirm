@@ -89,8 +89,9 @@ int values_interfere(const ir_node *a, const ir_node *b)
       }
 
       /* If b dominates a user of a, we can safely return 1 here. */
-      if(value_dominates(b, user))
-        return 1;
+      if(value_dominates(b, user)) {
+      	return 1;
+      }
     }
 
   }
