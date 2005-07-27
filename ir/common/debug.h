@@ -29,6 +29,7 @@ extern firm_dbg_module_t *firm_dbg_register(const char *name);
 #define LEVEL_3          LC_LEVEL_3
 #define LEVEL_4          LC_LEVEL_4
 #define LEVEL_5          LC_LEVEL_5
+#define SET_LEVEL_0      LC_SET_LEVEL_0
 #define SET_LEVEL_1      LC_SET_LEVEL_1
 #define SET_LEVEL_2      LC_SET_LEVEL_2
 #define SET_LEVEL_3      LC_SET_LEVEL_3
