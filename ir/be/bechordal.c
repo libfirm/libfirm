@@ -605,6 +605,8 @@ void be_ra_chordal_done(be_chordal_env_t *env)
 	free(env);
 }
 
+
+
 int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {
 #ifdef BUILD_GRAPH

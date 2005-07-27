@@ -147,6 +147,9 @@ static void be_main_loop(void)
 		/* Verify the schedule */
 		sched_verify_irg(irg);
 
+    /* Build liveness information */
+    be_liveness(irg);
+
 		/* Remove all cases where a phi and one of its arguments interfere */
 		be_eliminate_phi_interferences(&session);
 		dump_ir_block_graph(session.irg, "-prephase");

@@ -54,46 +54,46 @@ int values_interfere(const ir_node *a, const ir_node *b)
   int a2b = value_dominates(a, b);
   int b2a = value_dominates(b, a);
 
-  /*
-   * Adjust a and b so, that a dominates b if
-   * a dominates b or vice versa.
-   */
-  if(b2a) {
-    const ir_node *t = a;
-    a = b;
-    b = t;
-  }
-
-  /*
-   * If either a dmoninates b or vice versa
-   * check if there is usage which is dominated by b.
-   *
-   * remind, that if a and b are in a dom relation, a always dominates b
-   * here due to the if above.
-   */
-  if(a2b + b2a) {
+  /* If there is no dominance relation, they do not interfere. */
+  if(a2b + b2a > 0) {
     const ir_edge_t *edge;
+    ir_node *ba = get_nodes_block(a);
+    ir_node *bb = get_nodes_block(b);
 
-    /* Look at all usages of a */
-    foreach_out_edge(a, edge) {
-      const ir_node *user = edge->src;
-
-      /*
-       * If the user is a phi we must check the last instruction in the
-       * corresponding phi predecessor block since the phi is not a
-       * proper user.
-       */
-      if(is_Phi(user)) {
-        ir_node *phi_block = get_nodes_block(user);
-        user = sched_last(get_Block_cfgpred_block(phi_block, edge->pos));
-      }
-
-      /* If b dominates a user of a, we can safely return 1 here. */
-      if(value_dominates(b, user)) {
-      	return 1;
-      }
+    /*
+     * Adjust a and b so, that a dominates b if
+     * a dominates b or vice versa.
+     */
+    if(b2a) {
+      const ir_node *t = a;
+      a = b;
+      b = t;
     }
 
+    /*
+     * If a is live end in b's block it is
+     * live at b's definition (a dominates b)
+     */
+    if(is_live_end(bb, a))
+      return 1;
+
+    /*
+     * Look at all usages of a.
+     * If there's one usage of a in the block of b, then
+     * we check, if this use is dominated by b, if that's true
+     * a and b interfere.
+     * Uses of a not in b's block can be disobeyed, because the
+     * check for a being live at the end of b's block is already
+     * performed.
+     */
+    foreach_out_edge(a, edge) {
+      const ir_node *user = edge->src;
+      if(get_nodes_block(user) == bb
+          && !is_Phi(user)
+          && value_dominates(b, user))
+        return 1;
+      }
+    }
   }
 
   return 0;
