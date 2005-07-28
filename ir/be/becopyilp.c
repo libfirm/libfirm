@@ -347,13 +347,13 @@ static void pi_add_constr_S(problem_instance_t *pi) {
 		int cst_idx, y_idx, i;
 		char buf[32];
 
-		if (curr->minimal_costs == 0)
+		if (curr->min_nodes_costs == 0)
 			continue;
 
 		root = curr->nodes[0];
 		rootnr = get_irn_graph_nr(root);
 		mangle_cst(buf, 'S', cst_counter++);
-		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, curr->minimal_costs);
+		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, curr->min_nodes_costs);
 
 		/* for all arguments */
 		for (i = 1; i < curr->node_count; ++i) {
@@ -381,6 +381,10 @@ static INLINE int get_costs(problem_instance_t *pi, ir_node *phi, ir_node *irn) 
 	return 0;
 }
 
+/*
+ * TODO: Because this here uses a phi-walker and not the ou's,
+ * it is possible, that the interfering args of a phi will cause a bug ??!!
+ */
 static void M_constr_walker(ir_node *block, void *env) {
 	problem_instance_t *pi = env;
 	int count, arity, row, col, other_row, *costs;

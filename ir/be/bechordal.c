@@ -38,7 +38,7 @@
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
 
-#define DBG_LEVEL 0
+#define DBG_LEVEL 0 //SET_LEVEL_4
 #define NO_COLOR (-1)
 
 #undef DUMP_INTERVALS
@@ -484,7 +484,7 @@ static void assign(ir_node *block, void *env_ptr)
 	}
 
 	/* Free the auxillary data on the obstack. */
-	obstack_free(obst, obstack_level);
+	//obstack_free(obst, obstack_level);
 
   del_pset(live_in);
 }

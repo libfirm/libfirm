@@ -524,7 +524,7 @@ static void ou_optimize(unit_t *ou) {
 	/* apply the best found qnode */
 	if (curr->mis_size >= 2) {
 		node_stat_t *ns;
-		DBG((dbg, LEVEL_1, "\t  Best color: %d  Costs: %d/%d\n", curr->color, ou->complete_costs - curr->mis_costs, ou->complete_costs));
+		DBG((dbg, LEVEL_1, "\t  Best color: %d  Costs: %d << %d << %d\n", curr->color, ou->min_nodes_costs, ou->all_nodes_costs - curr->mis_costs, ou->all_nodes_costs));
 		/* globally pin root and all args which have the same color */
 		pset_insert_ptr(pinned_global, ou->nodes[0]);
 		for (i=1; i<ou->node_count; ++i) {

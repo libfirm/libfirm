@@ -60,13 +60,12 @@ typedef struct _unit_t {
 	int node_count;				/**< size of the nodes array */
 	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
 	int *costs;					/**< costs[i] are arising, if nodes[i] has a different color */
-	int complete_costs;			/**< sum of all costs[i] */
-	int minimal_costs;			/**< a lower bound for this ou, considering only ifg (not coloring conflicts) */
-
-	int sort_key;				/**< maximum costs. controls the order of ou's. */
+	int all_nodes_costs;		/**< sum of all costs[i] */
+	int min_nodes_costs;		/**< a lower bound for this ou, considering only ifg (not coloring conflicts) */
+	int sort_key;				/**< maximum costs. controls the order of ou's in the struct list_head units. */
 
 	/* for heuristic */
-	struct list_head queue;		/**< list of (mis/color) sorted by size of mis */
+	struct list_head queue;		/**< list of qn's sorted by weight of qn-mis */
 } unit_t;
 
 /* Helpers */

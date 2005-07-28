@@ -28,7 +28,7 @@
 #include "beirgmod.h"
 
 #define DBG_MODULE firm_dbg_register("firm.be.irgmod")
-#define DBG_LEVEL 0
+#define DBG_LEVEL 0 //SET_LEVEL_4
 
 struct _dom_front_info_t {
   pmap *df_map;

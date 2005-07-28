@@ -150,10 +150,6 @@ static void be_main_loop(void)
 		/* Build liveness information */
 		be_liveness(irg);
 
-		/* Remove all cases where a phi and one of its arguments interfere */
-		be_eliminate_phi_interferences(&session);
-		dump_ir_block_graph(session.irg, "-prephase");
-
 		/* Liveness analysis */
 		be_liveness(irg);
 

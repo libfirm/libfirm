@@ -88,7 +88,7 @@ static int ou_max_ind_set_costs(unit_t *ou) {
  * to remember all roots.
  */
 static void co_append_unit(copy_opt_t *co, ir_node *root) {
-	int i, arity;
+	int i, arity, inevitable_costs = 0;
 	unit_t *unit;
 	struct list_head *tmp;
 
@@ -104,41 +104,44 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	arity = get_irn_arity(root);
 	unit = xcalloc(1, sizeof(*unit));
 	unit->co = co;
-	unit->node_count = 1;
 	unit->nodes = xmalloc((arity+1) * sizeof(*unit->nodes));
 	unit->costs = xmalloc((arity+1) * sizeof(*unit->costs));
+	unit->node_count = 1;
 	unit->nodes[0] = root;
-	unit->complete_costs = 0;
-	unit->sort_key = 0;
 	INIT_LIST_HEAD(&unit->queue);
 
 	/* check all args */
 	if (is_Phi(root)) {
 		for (i=0; i<arity; ++i) {
+			int o, arg_pos = 0;
 			ir_node *arg = get_irn_n(root, i);
+
 			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
-			if (arg != root) {
-				int o, arg_pos = 0;
-				if (nodes_interfere(co->chordal_env, root, arg))
-					assert(0 && "root and arg interfere");
-				DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
+			if (arg == root)
+				continue;
+			if (nodes_interfere(co->chordal_env, root, arg)) {
+				inevitable_costs += co->get_costs(root, arg, i);
+				continue;
+			}
 
-				/* check if arg has occurred at a prior position in the arg/list */
-				for (o=0; o<unit->node_count; ++o)
-					if (unit->nodes[o] == arg) {
-						arg_pos = o;
-						break;
-					}
+			/* Else insert the argument of the phi to the members of this ou */
+			DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
 
-				if (!arg_pos) { /* a new argument */
-					/* insert node, set costs */
-					unit->nodes[unit->node_count] = arg;
-					unit->costs[unit->node_count] = co->get_costs(root, arg, i);
-					unit->node_count++;
-				} else { /* arg has occured before in same phi */
-					/* increase costs for existing arg */
-					unit->costs[arg_pos] = co->get_costs(root, arg, i);
+			/* Check if arg has occurred at a prior position in the arg/list */
+			for (o=0; o<unit->node_count; ++o)
+				if (unit->nodes[o] == arg) {
+					arg_pos = o;
+					break;
 				}
+
+			if (!arg_pos) { /* a new argument */
+				/* insert node, set costs */
+				unit->nodes[unit->node_count] = arg;
+				unit->costs[unit->node_count] = co->get_costs(root, arg, i);
+				unit->node_count++;
+			} else { /* arg has occured before in same phi */
+				/* increase costs for existing arg */
+				unit->costs[arg_pos] += co->get_costs(root, arg, i);
 			}
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
@@ -155,19 +158,24 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	/* TODO add ou's for 2-addr-code instructions */
 
 
+	/* Init costs with inevitable_costs */
+	unit->all_nodes_costs = inevitable_costs;
+	unit->min_nodes_costs = inevitable_costs;
+
+	/* Determine the maximum costs this unit can cause: all_nodes_cost */
 	for(i=1; i<unit->node_count; ++i) {
 		unit->sort_key = MAX(unit->sort_key, unit->costs[i]);
-		unit->complete_costs += unit->costs[i];
+		unit->all_nodes_costs += unit->costs[i];
 	}
 
-	/* insert according to average costs */
+	/* Determine the minimal costs this unit will cause: min_nodes_costs */
+	unit->min_nodes_costs += unit->all_nodes_costs - ou_max_ind_set_costs(unit);
+
+	/* Insert the new ou according to its sort_key */
 	tmp = &co->units;
 	while (tmp->next != &co->units && list_entry_units(tmp->next)->sort_key > unit->sort_key)
 		tmp = tmp->next;
 	list_add(&unit->units, tmp);
-
-	/* Init ifg_mis_size to node_count. So get_lower_bound returns correct results. */
-	unit->minimal_costs = unit->complete_costs - ou_max_ind_set_costs(unit);
 }
 
 static void co_collect_in_block(ir_node *block, void *env) {
@@ -277,6 +285,6 @@ int co_get_lower_bound(const copy_opt_t *co) {
 	int res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units)
-		res += curr->minimal_costs;
+		res += curr->min_nodes_costs;
 	return res;
 }
