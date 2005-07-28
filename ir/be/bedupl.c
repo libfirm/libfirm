@@ -33,7 +33,7 @@ static void eliminate_phi_int_walker(ir_node *irn, void *data)
       ir_node *operand   = get_irn_n(irn, i);
       ir_node *bl        = get_Block_cfgpred_block(phi_bl, i);
 
-      if(values_interfere(irn, operand)) {
+      if(is_live_in(phi_bl, irn)) { // values_interfere(irn, operand)) {
         ir_node *copy = new_Copy(env->main_env->node_factory, cls, env->irg, bl, operand);
         set_irn_n(irn, i, copy);
         sched_add_after(sched_last(bl), copy);
