@@ -75,9 +75,9 @@ static ir_node *get_or_insert_perm(be_main_session_env_t *session, be_chordal_en
   return p;
 }
 
-#define is_pinned(irn) ((irn)->link)
-#define get_pinning_block(irn) ((ir_node *)(irn)->link)
-#define pin_irn(irn, lock) ((irn)->link = lock)
+#define is_pinned(irn) (get_irn_link(irn))
+#define get_pinning_block(irn) ((ir_node *)get_irn_link(irn))
+#define pin_irn(irn, lock) (set_irn_link(irn, lock))
 
 /**
  * Adjusts the register allocation for the phi-operands
@@ -111,7 +111,7 @@ static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *c
 			 * having arg at the same pos in its arg-list */
 			if (!is_pinned(arg)) {
 				ir_node *other_phi = phi;
-				while ((other_phi = other_phi->link) != phi) {
+				while ((other_phi = get_irn_link(other_phi)) != phi) {
 					assert(is_Phi(other_phi) && "link fields are screwed up");
 					if (get_irn_n(other_phi, i) == arg && get_reg(other_phi) == arg_reg)
 						pin_irn(arg, phi_block);
@@ -135,10 +135,10 @@ static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *c
 
 				/* Add dupl to chained list of duplicates. Ptrs starting at the Perm */
 				tmp = perm;
-				while (tmp->link)
-					tmp = tmp->link;
-				tmp->link = dupl;
-				dupl->link = NULL;
+				while (get_irn_link(tmp))
+					tmp = get_irn_link(tmp);
+				set_irn_link(tmp, dupl);
+				set_irn_link(dupl, NULL);
 
 				/* now the arg is the dupl */
 				arg = dupl;
@@ -159,14 +159,7 @@ static void adjust_arguments(be_main_session_env_t *session, be_chordal_env_t *c
 	}
 }
 
-//static void collect_phis(ir_node *node, void *env) {
-//	pset *phis = env;
-// 	if (is_Phi(node))
-// 		pset_insert_ptr(phis, node);
-//}
-
 void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chordal_env) {
-	pset *all_phis;
 	pmap_entry *pme;
 	set *b2p;
 	int i, max;
@@ -174,11 +167,6 @@ void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chorda
 
 	b2p = new_set(set_cmp_b2p, 32);
 	chordal_env->data = b2p;
-
-	/* get all phis */
-//	all_phis = pset_new_ptr_default();
-//	irg_walk_graph(session->irg, collect_phis, NULL, all_phis);
-
 
 	/* place perms in cf-preds of phis */
 	pmap_foreach(chordal_env->border_heads, pme) {
@@ -193,12 +181,12 @@ void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chorda
 				if (!is_Phi(phi))
 					break;
 
-				phi->link = NULL;
+				set_irn_link(phi, NULL);
 				/* chain of phis in a block */
 				if (first_phi == NULL)
 					first_phi = phi;
 				else
-					recent_phi->link = phi;
+					set_irn_link(recent_phi, phi);
 				recent_phi = phi;
 
 				/* insert perms */
@@ -207,15 +195,15 @@ void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chorda
 
 					ir_printf("Placing perm for %+F \n", phi);
 					perm = get_or_insert_perm(session, chordal_env, get_Block_cfgpred_block(get_nodes_block(phi), i));
-					perm->link = NULL;
+					set_irn_link(perm, NULL);
 				}
 			}
 		}
 		if (first_phi)
-			recent_phi->link = first_phi;
+			set_irn_link(recent_phi, first_phi);
 	}
 
-	dump_ir_block_graph(session->irg, "-prems");
+	dump_ir_block_graph(session->irg, "-ssa_destr_perms_placed");
 
 	/* iterate over all blocks and correct color of arguments*/
 	pmap_foreach(chordal_env->border_heads, pme) {
@@ -231,8 +219,7 @@ void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chorda
 			}
 	}
 
-
-    dump_ir_block_graph_sched(session->irg, "-ssa-destr");
+	dump_ir_block_graph(session->irg, "-ssa_destr_colors_set");
 	del_set(b2p);
 }
 
@@ -249,16 +236,19 @@ void be_ssa_destruction_check(be_main_session_env_t *session, be_chordal_env_t *
 		list_for_each_entry(border_t, curr, head, list)
 		if (curr->is_def && curr->is_real && is_Phi(curr->irn)) {
 			const arch_register_t *phi_reg, *arg_reg;
-			if (!is_Phi(curr->irn))
+			ir_node *phi = curr->irn;
+			if (!is_Phi(phi))
 				break;
 
-			phi_reg = get_reg(curr->irn);
+			phi_reg = get_reg(phi);
 			/* iterate over all args of phi */
-			for(i=0, max=get_irn_arity(curr->irn); i<max; ++i) {
-				ir_node *arg = get_irn_n(curr->irn, i);
+			for(i=0, max=get_irn_arity(phi); i<max; ++i) {
+				ir_node *arg = get_irn_n(phi, i);
 				arg_reg = get_reg(arg);
-				if(phi_reg != arg_reg)
-					ir_printf("register differ: %s %s\n", phi_reg->name, arg_reg->name);
+				if(phi_reg != arg_reg) {
+					ir_printf("Registers of %+F and %+F differ: %s %s\n", phi, arg, phi_reg->name, arg_reg->name);
+					assert(0 && "Registers of phi and arg differ\n");
+				}
 				if(!is_pinned(arg))
 					ir_printf("Warning: Arg not pinned %n %N\n", arg, arg);
 			}
