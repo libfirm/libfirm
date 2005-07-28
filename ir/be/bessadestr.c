@@ -97,6 +97,7 @@ static ir_node *get_or_insert_perm(be_main_session_env_t *session, be_chordal_en
 static void adjust_phi_arguments(be_main_session_env_t *session, be_chordal_env_t *chordal_env, ir_node *phi) {
 	int i, max;
 	ir_node *arg, *phi_block, *arg_block;
+	arch_env_t *arch_env = session->main_env->arch_env;
 	const arch_register_t *phi_reg, *arg_reg;
 	const arch_register_class_t *cls;
 
@@ -115,6 +116,7 @@ static void adjust_phi_arguments(be_main_session_env_t *session, be_chordal_env_
 		arg_block = get_nodes_block(arg);
 		arg_reg = get_reg(arg);
 		perm = get_Proj_pred(arg);
+		assert(is_Perm(perm));
 
 		DBG((dbg, LEVEL_1, "    arg %+F has perm %+F\n", arg, perm));
 		/* if registers don't match ...*/

@@ -19,7 +19,7 @@
 #include "becopyoptmain.h"
 
 #define DO_HEUR
-#undef DO_ILP
+#define DO_ILP
 
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
@@ -40,26 +40,24 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "===>  %s  <===\n", co->name));
 
 #ifdef DO_STAT
+	lb = co_get_lower_bound(co);
 	copy_costs = co_get_copy_costs(co);
 	curr_vals[I_COPIES_INIT] += copy_costs;
-	DBG((dbg, LEVEL_1, "Init costs: %3d\n", copy_costs));
+	DBG((dbg, LEVEL_1, "Init costs: %3d / %3d\n", lb, copy_costs));
 #endif
 
 #ifdef DO_HEUR
 	co_heur_opt(co);
-	be_ra_chordal_check(chordal_env);
 #ifdef DO_STAT
 	copy_costs = co_get_copy_costs(co);
 	curr_vals[I_COPIES_HEUR] += copy_costs;
-	DBG((dbg, LEVEL_1, "Heur costs: %3d\n", copy_costs));
+	DBG((dbg, LEVEL_1, "Heur costs: %3d / %3d\n", lb, copy_costs));
 #endif
 #endif
 
 #ifdef DO_ILP
-	lb = co_get_lower_bound(co);
 	copy_costs = co_get_copy_costs(co);
 	assert(copy_costs>=lb && "At least one computation of these two is boooogy");
-
 	if (copy_costs > lb) {
 		co_ilp_opt(co);
 		be_ra_chordal_check(chordal_env);
@@ -67,9 +65,9 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 
 #ifdef DO_STAT
 	copy_costs = co_get_copy_costs(co);
-	curr_vals[I_COPIES_OPT] += copy_costs;
-	DBG((dbg, LEVEL_1, "Opt  costs: %3d\n", copy_costs));
 	assert(copy_costs>=lb && "At least one computation of these two is boooogy");
+	curr_vals[I_COPIES_OPT] += copy_costs;
+	DBG((dbg, LEVEL_1, "Opt  costs: %3d / %3d\n", copy_costs));
 #endif
 #endif
 

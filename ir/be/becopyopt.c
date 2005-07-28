@@ -88,7 +88,7 @@ static int ou_max_ind_set_costs(unit_t *ou) {
  * to remember all roots.
  */
 static void co_append_unit(copy_opt_t *co, ir_node *root) {
-	int i, arity, inevitable_costs = 0;
+	int i, arity;
 	unit_t *unit;
 	struct list_head *tmp;
 
@@ -120,7 +120,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			if (arg == root)
 				continue;
 			if (nodes_interfere(co->chordal_env, root, arg)) {
-				inevitable_costs += co->get_costs(root, arg, i);
+				unit->inevitable_costs += co->get_costs(root, arg, i);
 				continue;
 			}
 
@@ -157,10 +157,6 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 		assert(0 && "This is not an optimizable node!");
 	/* TODO add ou's for 2-addr-code instructions */
 
-
-	/* Init costs with inevitable_costs */
-	unit->all_nodes_costs = inevitable_costs;
-	unit->min_nodes_costs = inevitable_costs;
 
 	/* Determine the maximum costs this unit can cause: all_nodes_cost */
 	for(i=1; i<unit->node_count; ++i) {
@@ -267,8 +263,10 @@ int get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
 int co_get_copy_costs(const copy_opt_t *co) {
 	int i, res = 0;
 	unit_t *curr;
+
 	list_for_each_entry(unit_t, curr, &co->units, units) {
 		int root_col = get_irn_col(co, curr->nodes[0]);
+		res += curr->inevitable_costs;
 		DBG((dbg, LEVEL_1, "  Adding costs for root %+F color %d\n", curr->nodes[0], root_col));
 		for (i=1; i<curr->node_count; ++i) {
 			int arg_col = get_irn_col(co, curr->nodes[i]);
@@ -285,6 +283,6 @@ int co_get_lower_bound(const copy_opt_t *co) {
 	int res = 0;
 	unit_t *curr;
 	list_for_each_entry(unit_t, curr, &co->units, units)
-		res += curr->min_nodes_costs;
+		res += curr->inevitable_costs + curr->min_nodes_costs;
 	return res;
 }

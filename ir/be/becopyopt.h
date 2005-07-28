@@ -60,8 +60,9 @@ typedef struct _unit_t {
 	int node_count;				/**< size of the nodes array */
 	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
 	int *costs;					/**< costs[i] are arising, if nodes[i] has a different color */
+	int inevitable_costs;		/**< sum of costs of all args interfering with root */
 	int all_nodes_costs;		/**< sum of all costs[i] */
-	int min_nodes_costs;		/**< a lower bound for this ou, considering only ifg (not coloring conflicts) */
+	int min_nodes_costs;		/**< a lower bound for the costs in costs[], determined by a max indep. set */
 	int sort_key;				/**< maximum costs. controls the order of ou's in the struct list_head units. */
 
 	/* for heuristic */
@@ -127,13 +128,16 @@ int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos);
 int get_costs_all_one(ir_node *root, ir_node* arg, int pos);
 
 /**
- * Returns the current costs the copies are causing
+ * Returns the current costs the copies are causing.
+ * The result includes inevitable costs and the costs
+ * of the copies regarding the current register allocation
  */
 int co_get_copy_costs(const copy_opt_t *co);
 
 /**
- * Returns a lower bound for the costs of copies based on interfering
- * arguments and the size of a max indep. set (only ifg-edges) of the other args.
+ * Returns a lower bound for the costs of copies in this ou.
+ * The result includes inevitable costs and the costs of a
+ * minimal costs caused by the nodes of the ou.
  */
 int co_get_lower_bound(const copy_opt_t *co);
 
