@@ -244,6 +244,7 @@ arch_irn_class_t be_node_classify(const arch_irn_ops_t *_self, const ir_node *ir
   idx = redir_proj(&irn, 0);
   bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
+  /* TODO Implement */
   return 0;
 }
 
@@ -406,6 +407,7 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   return perm;
 }
 
+#if 0
 typedef struct _phi_perm_info_t {
   const be_main_session_env_t *env;
   const arch_register_class_t *cls;
@@ -488,3 +490,4 @@ void be_insert_phi_perms(const be_main_session_env_t *env,
   irg_block_walk_graph(env->irg, insert_phi_perms, NULL, &pi);
   pmap_destroy(pi.perm_map);
 }
+#endif

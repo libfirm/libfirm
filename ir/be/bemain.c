@@ -36,6 +36,7 @@
 #include "bearch_firm.h"
 #include "benode_t.h"
 #include "beirgmod.h"
+#include "bespillilp.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
@@ -131,7 +132,7 @@ static void be_main_loop(void)
 		ir_graph *irg = get_irp_irg(i);
 		be_main_session_env_t session;
 
-		DBG((env.dbg, LEVEL_1, "be irg: %F\n", irg));
+    DBG((env.dbg, LEVEL_1, "be irg: %F\n", irg));
 
 		/* Init the session. */
 		be_init_session_env(&session, &env, irg);
@@ -146,31 +147,30 @@ static void be_main_loop(void)
 		/* Verify the schedule */
 		sched_verify_irg(irg);
 
-		/* Build liveness information */
-		be_liveness(irg);
-
-		/* Liveness analysis */
-		be_liveness(irg);
+    /* Build liveness information */
+    be_liveness(irg);
 
 		copystat_reset();
 		copystat_collect_irg(irg, env.arch_env);
 
-		/*
-		 * Verifying the schedule once again cannot hurt.
-		 */
-		sched_verify_irg(irg);
+    /*
+     * Verifying the schedule once again cannot hurt.
+     */
+    sched_verify_irg(irg);
 
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 
-			DBG((env.dbg, LEVEL_1, "\treg class: %s\n", cls->name));
+      DBG((env.dbg, LEVEL_1, "\treg class: %s\n", cls->name));
 
-			be_numbering(irg);
-			be_liveness(irg);
+      be_numbering(irg);
+      be_liveness(irg);
 
-			chordal_env = be_ra_chordal(irg, env.arch_env, cls);
+      // be_spill_ilp(&session, cls);
+
+			chordal_env = be_ra_chordal(&session, cls);
 
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(env.arch_env, irg, "");
@@ -179,13 +179,14 @@ static void be_main_loop(void)
 
 			be_copy_opt(chordal_env);
 
-			be_ssa_destruction(&session, chordal_env);
-			be_ssa_destruction_check(&session, chordal_env);
-			be_ra_chordal_check(chordal_env);
+			be_ssa_destruction(chordal_env);
+			be_ssa_destruction_check(chordal_env);
 
-			be_ra_chordal_done(chordal_env);
-			be_numbering_done(irg);
+			be_ra_chordal_check(chordal_env);
+      be_ra_chordal_done(chordal_env);
+      be_numbering_done(irg);
 		}
+		dump_ir_block_graph(session.irg, "-post");
 
 		copystat_dump_pretty(irg);
 	}

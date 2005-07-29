@@ -12,5 +12,5 @@
 /**
  * Performs SSA-Destruction. Arguments get adjusted, phi nodes just stay.
  */
-void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chordal_env);
-void be_ssa_destruction_check(be_main_session_env_t *session, be_chordal_env_t *chordal_env);
+void be_ssa_destruction(be_chordal_env_t *chordal_env);
+void be_ssa_destruction_check(be_chordal_env_t *chordal_env);

@@ -19,7 +19,9 @@
 
 #include "irnode.h"
 #include "irgraph.h"
-#include "bechordal.h"
+
+#include "be_t.h"
+#include "bearch.h"
 
 /** Defines an invalid register index. */
 #define NO_COLOR (-1)
@@ -50,8 +52,8 @@ typedef struct _border_t {
  */
 struct _be_chordal_env_t {
 	struct obstack obst;	/**< An obstack for temporary storage. */
+  const be_main_session_env_t *session_env; /**< The current session. */
   pmap *border_heads;   /**< Maps blocks to border heads. */
-  ir_graph *irg;        /**< The graph the reg alloc is running on. */
 
 #ifdef BUILD_GRAPH
 	set *nodes;						/**< The interference graph nodes. */
@@ -62,11 +64,12 @@ struct _be_chordal_env_t {
 	bitset_t *colors;			/**< The color mask. */
 	bitset_t *in_colors;	/**< Colors used by live in values. */
 	int colors_n;					/**< The number of colors. */
-  const arch_env_t *arch_env;         /**< The arch interface environment. */
   const arch_register_class_t *cls;   /**< The current register class. */
   void *data;           /**< Some pointer, to which different
                           phases can attach data to. */
 };
+
+typedef struct _be_chordal_env_t be_chordal_env_t;
 
 static INLINE struct list_head *
 _get_block_border_head(const be_chordal_env_t *inf, ir_node *bl)
@@ -98,5 +101,34 @@ int ifg_has_edge(const be_chordal_env_t *env, const if_node_t *n1, const if_node
 #endif
 
 extern void be_ra_chordal_spill(be_chordal_env_t *env);
+
+/**
+ * Allocate registers for an ir graph.
+ * @param irg The graph.
+ * @return Some internal data to be freed with be_ra_chordal_done().
+ */
+be_chordal_env_t *be_ra_chordal(
+    const be_main_session_env_t *env,
+    const arch_register_class_t *cls);
+
+/**
+ * Check current register allocation for correctness.
+ * Interfering nodes have different colors
+ * Register constraints
+ * O(n^2)
+ */
+void be_ra_chordal_check(be_chordal_env_t *chordal_env);
+
+/**
+ * Free data from the chordal register allocation.
+ * @param irg The graph.
+ */
+void be_ra_chordal_done(be_chordal_env_t *info);
+
+/**
+ * Init some things for the chordal register allocator.
+ * This must be called before Firm is inited.
+ */
+void be_ra_chordal_init(void);
 
 #endif /* _BECHORDAL_T_H */

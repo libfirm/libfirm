@@ -55,7 +55,7 @@ typedef struct _problem_instance_t {
 
 #define is_removed(irn) pset_find_ptr(pi->removed, irn)
 
-#define is_color_possible(irn,color) arch_reg_is_allocatable(pi->co->chordal_env->arch_env, irn, arch_pos_make_out(0), arch_register_for_index(pi->co->chordal_env->cls, color))
+#define is_color_possible(irn,color) arch_reg_is_allocatable(get_arch_env(pi->co), irn, arch_pos_make_out(0), arch_register_for_index(pi->co->chordal_env->cls, color))
 
 /*
  * Some stuff for variable name handling.
@@ -112,8 +112,8 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 	while (redo) {
 		redo = 0;
 		for (ifn = set_first(if_nodes); ifn; ifn = set_next(if_nodes)) {
-			ir_node *irn = get_irn_for_graph_nr(pi->co->chordal_env->irg, ifn->nnr);
-			if (!is_removed(irn) && !is_optimizable(pi->co->chordal_env->arch_env, irn) &&
+			ir_node *irn = get_irn_for_graph_nr(get_irg(pi->co), ifn->nnr);
+			if (!is_removed(irn) && !is_optimizable(get_arch_env(pi->co), irn) &&
           !is_optimizable_arg(pi->co, irn) && pi_is_simplicial(pi, ifn)) {
 				simpl_t *s = xmalloc(sizeof(*s));
 				s->ifn = ifn;
@@ -152,7 +152,7 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 
 				// iterate over all possible colors in order
 				bitset_clear_all(pos_regs);
-				arch_get_allocatable_regs(pi->co->chordal_env->arch_env, curr->irn, arch_pos_make_out(0), pi->co->chordal_env->cls, pos_regs);
+				arch_get_allocatable_regs(get_arch_env(pi->co), curr->irn, arch_pos_make_out(0), pi->co->chordal_env->cls, pos_regs);
 				bitset_foreach(pos_regs, col) {
 					int var_idx;
 					mangle_var(pi->buf, 'x', nnr, col);
@@ -258,14 +258,14 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 		root = curr->nodes[0];
 		rootnr = get_irn_graph_nr(root);
 		bitset_clear_all(root_regs);
-		arch_get_allocatable_regs(pi->co->chordal_env->arch_env, root, arch_pos_make_out(0), pi->co->chordal_env->cls, root_regs);
+		arch_get_allocatable_regs(get_arch_env(pi->co), root, arch_pos_make_out(0), pi->co->chordal_env->cls, root_regs);
 
 		/* for all arguments of root */
 		for (i = 1; i < curr->node_count; ++i) {
 			arg = curr->nodes[i];
 			argnr = get_irn_graph_nr(arg);
 			bitset_clear_all(arg_regs);
-			arch_get_allocatable_regs(pi->co->chordal_env->arch_env, arg, arch_pos_make_out(0), pi->co->chordal_env->cls, arg_regs);
+			arch_get_allocatable_regs(get_arch_env(pi->co), arg, arch_pos_make_out(0), pi->co->chordal_env->cls, arg_regs);
 
 			/* Introduce new variable and set factor in objective function */
 			mangle_var(buf, 'y', rootnr, argnr);
@@ -484,7 +484,7 @@ static void M_constr_walker(ir_node *block, void *env) {
  * Only one of the phis can get the arg.
  */
 static void pi_add_constr_M(problem_instance_t *pi) {
-	dom_tree_walk_irg(pi->co->chordal_env->irg, M_constr_walker, NULL, pi);
+	dom_tree_walk_irg(get_irg(pi->co), M_constr_walker, NULL, pi);
 }
 
 /**
@@ -549,8 +549,8 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 		lpp_get_var_name(pi->curr_lp, i, var_name, sizeof(var_name));
 		/* split into components */
 		if (split_var(var_name, &nnr, &col) == 2) {
-			assert(get_irn_col(pi->co, get_irn_for_graph_nr(pi->co->chordal_env->irg, nnr)) != -1);
-			val = (get_irn_col(pi->co, get_irn_for_graph_nr(pi->co->chordal_env->irg, nnr)) == col) ? 1 : 0;
+			assert(get_irn_col(pi->co, get_irn_for_graph_nr(get_irg(pi->co), nnr)) != -1);
+			val = (get_irn_col(pi->co, get_irn_for_graph_nr(get_irg(pi->co), nnr)) == col) ? 1 : 0;
 			lpp_set_start_value(pi->curr_lp, i, val);
 		} else {
 			fprintf(stderr, "Variable name is: %s\n", var_name);
@@ -584,10 +584,10 @@ static void pi_set_simplicials(problem_instance_t *pi) {
 
 		/* get free color by inspecting all neighbors */
 		ifn = simpl->ifn;
-		irn = get_irn_for_graph_nr(pi->co->chordal_env->irg, ifn->nnr);
+		irn = get_irn_for_graph_nr(get_irg(pi->co), ifn->nnr);
 		bitset_clear_all(used_cols);
 		foreach_neighb(ifn, other) {
-			other_irn = get_irn_for_graph_nr(pi->co->chordal_env->irg, other->nnr);
+			other_irn = get_irn_for_graph_nr(get_irg(pi->co), other->nnr);
 			if (!is_removed(other_irn)) /* only inspect nodes which are in graph right now */
 				bitset_set(used_cols, get_irn_col(pi->co, other_irn));
 		}
@@ -628,9 +628,9 @@ static void pi_apply_solution(problem_instance_t *pi) {
 		if (sol[i] > 1-EPSILON) { /* split varibale name into components */
 			lpp_get_var_name(pi->curr_lp, 1+i, var_name, sizeof(var_name));
 			if (split_var(var_name, &nnr, &col) == 2) {
-				DBG((dbg, LEVEL_2, "Irn %n  Idx %d  Var %s  Val %f\n", get_irn_for_graph_nr(pi->co->chordal_env->irg, nnr), i, var_name, sol[i]));
+				DBG((dbg, LEVEL_2, "Irn %n  Idx %d  Var %s  Val %f\n", get_irn_for_graph_nr(get_irg(pi->co), nnr), i, var_name, sol[i]));
 				DBG((dbg, LEVEL_2, "x%d = %d\n", nnr, col));
-				set_irn_col(pi->co, get_irn_for_graph_nr(pi->co->chordal_env->irg, nnr), col);
+				set_irn_col(pi->co, get_irn_for_graph_nr(get_irg(pi->co), nnr), col);
 			} else
 				assert(0 && "This should be a x-var");
 		}

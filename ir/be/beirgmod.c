@@ -14,6 +14,7 @@
 #include "irflag_t.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
+#include "ircons_t.h"
 #include "irmode_t.h"
 #include "irdom_t.h"
 #include "iredges_t.h"

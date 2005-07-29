@@ -261,7 +261,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-  return arch_irn_has_reg_class(env->arch_env, irn, arch_pos_make_out(0), env->cls);
+  return arch_irn_has_reg_class(env->session_env->main_env->arch_env, irn, arch_pos_make_out(0), env->cls);
 }
 
 /**
@@ -290,7 +290,6 @@ static void pressure(ir_node *block, void *env_ptr)
 	struct list_head *head;
 	pset *live_in = put_live_in(block, pset_new_ptr_default());
 	pset *live_end = put_live_end(block, pset_new_ptr_default());
-	const arch_register_class_t *cls = env->cls;
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %+F\n", block));
 	bitset_clear_all(live);
@@ -383,15 +382,10 @@ static void pressure(ir_node *block, void *env_ptr)
 static void assign(ir_node *block, void *env_ptr)
 {
 	be_chordal_env_t *env = env_ptr;
-	struct obstack *obst = &env->obst;
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
 	bitset_t *in_colors = env->in_colors;
-	const arch_register_class_t *cls = env->cls;
-
-	/* Mark the obstack level and allocate the temporary tmp_colors */
-	void *obstack_level = obstack_base(obst);
-	/*bitset_t *tmp_colors = bitset_obstack_alloc(obst, env->colors_n);*/
+  const arch_env_t *arch_env = env->session_env->main_env->arch_env;
 
 	const ir_node *irn;
 	border_t *b;
@@ -419,7 +413,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
 		if(has_reg_class(env, irn)) {
-      const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
+      const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
       int col;
 
       assert(reg && "Node must have been assigned a register");
@@ -456,21 +450,21 @@ static void assign(ir_node *block, void *env_ptr)
       col = bitset_next_clear(colors, 0);
       reg = arch_register_for_index(env->cls, col);
 
-      assert(arch_get_irn_register(env->arch_env, irn, 0) == NULL
+      assert(arch_get_irn_register(arch_env, irn, 0) == NULL
           && "This node must not have been assigned a register yet");
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 
 			bitset_set(colors, col);
 			bitset_set(live, nr);
 
-			arch_set_irn_register(env->arch_env, irn, 0, reg);
+			arch_set_irn_register(arch_env, irn, 0, reg);
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n",
             arch_register_get_name(reg), col, irn));
 		}
 
 		/* Clear the color upon a use. */
 		else if(!b->is_def) {
-      const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
+      const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
 			int col;
 
       assert(reg && "Register must have been assigned");
@@ -483,9 +477,6 @@ static void assign(ir_node *block, void *env_ptr)
 		}
 	}
 
-	/* Free the auxillary data on the obstack. */
-	//obstack_free(obst, obstack_level);
-
   del_pset(live_in);
 }
 
@@ -495,10 +486,11 @@ void be_ra_chordal_init(void)
 	firm_dbg_set_mask(dbg, DBG_LEVEL);
 }
 
-be_chordal_env_t *be_ra_chordal(ir_graph *irg,
-    const arch_env_t *arch_env,
+be_chordal_env_t *be_ra_chordal(
+    const be_main_session_env_t *session,
     const arch_register_class_t *cls)
 {
+  ir_graph *irg = session->irg;
 	int node_count = get_graph_node_count(irg);
 	int colors_n = arch_register_class_n_regs(cls);
 	be_chordal_env_t *env = malloc(sizeof(*env));
@@ -513,13 +505,12 @@ be_chordal_env_t *be_ra_chordal(ir_graph *irg,
 	env->nodes = new_set(if_node_cmp, node_count);
 #endif
 
+  env->session_env = session;
 	env->live = bitset_obstack_alloc(&env->obst, node_count);
 	env->colors = bitset_obstack_alloc(&env->obst, colors_n);
 	env->in_colors = bitset_obstack_alloc(&env->obst, colors_n);
 	env->colors_n = colors_n;
 	env->cls = cls;
-	env->arch_env = arch_env;
-	env->irg = irg;
 	env->border_heads = pmap_create();
 
 	/* First, determine the pressure */
@@ -551,13 +542,11 @@ be_chordal_env_t *be_ra_chordal(ir_graph *irg,
 }
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
-	const arch_env_t *arch_env;
+	const arch_env_t *arch_env = chordal_env->session_env->main_env->arch_env;
 	struct obstack ob;
 	pmap_entry *pme;
 	ir_node **nodes, *n1, *n2;
 	int i, o;
-
-	arch_env = chordal_env->arch_env;
 
 	/* Collect all irns */
 	obstack_init(&ob);

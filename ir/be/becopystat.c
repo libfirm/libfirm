@@ -96,7 +96,8 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 		if (phi != arg)	{
 			curr_vals[I_COPIES_MAX]++; /* if arg!=phi this is a possible copy */
 			if (nodes_interfere(chordal_env, phi, arg)) {
-				DBG((dbg, LEVEL_1, "%e -- In Block %N: %n %N %n %N\n", get_irg_entity(chordal_env->irg), get_nodes_block(phi), phi, phi, arg, arg));
+				DBG((dbg, LEVEL_1, "%e -- In Block %N: %n %N %n %N\n",
+              get_irg_entity(chordal_env->session_env->irg), get_nodes_block(phi), phi, phi, arg, arg));
 				curr_vals[I_COPIES_IF]++;
 			}
 		}
@@ -183,7 +184,9 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 	xfree(members);
 }
 
-#define is_curr_reg_class(irn) (arch_get_irn_reg_class(chordal_env->arch_env, irn, arch_pos_make_out(0)) == chordal_env->cls)
+#define is_curr_reg_class(irn) \
+  (arch_get_irn_reg_class(chordal_env->session_env->main_env->arch_env, irn, \
+                          arch_pos_make_out(0)) == chordal_env->cls)
 
 void copystat_collect_cls(be_chordal_env_t *chordal_env) {
 	ir_node *n;

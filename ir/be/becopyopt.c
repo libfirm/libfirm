@@ -24,7 +24,9 @@
 
 static firm_dbg_module_t *dbg = NULL;
 
-#define is_curr_reg_class(irn) (arch_get_irn_reg_class(co->chordal_env->arch_env, irn, arch_pos_make_out(0)) == co->chordal_env->cls)
+#define is_curr_reg_class(irn) \
+  (arch_get_irn_reg_class(get_arch_env(co), \
+                          irn, arch_pos_make_out(0)) == co->chordal_env->cls)
 
 #define MIN(a,b) ((a<b)?(a):(b))
 #define MAX(a,b) ((a<b)?(b):(a))
@@ -146,7 +148,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
 		unit->costs = xrealloc(unit->costs, unit->node_count * sizeof(*unit->costs));
-	} else if (is_Copy(co->chordal_env->arch_env, root)) {
+	} else if (is_Copy(get_arch_env(co), root)) {
 		assert(!nodes_interfere(co->chordal_env, root, get_Copy_src(root)));
 		unit->nodes[1] = get_Copy_src(root);
 		unit->costs[1] = co->get_costs(root, unit->nodes[1], -1);
@@ -180,14 +182,14 @@ static void co_collect_in_block(ir_node *block, void *env) {
 	border_t *curr;
 
 	list_for_each_entry_reverse(border_t, curr, head, list)
-		if (curr->is_def && curr->is_real && is_optimizable(co->chordal_env->arch_env, curr->irn))
+		if (curr->is_def && curr->is_real && is_optimizable(get_arch_env(co), curr->irn))
 			co_append_unit(co, curr->irn);
 }
 
 static void co_collect_units(copy_opt_t *co) {
 	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	co->roots = pset_new_ptr(64);
-	dom_tree_walk_irg(co->chordal_env->irg, co_collect_in_block, NULL, co);
+	dom_tree_walk_irg(get_irg(co), co_collect_in_block, NULL, co);
 	del_pset(co->roots);
 }
 
@@ -204,7 +206,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	co->get_costs = get_costs;
 
 	s1 = get_irp_prog_name();
-	s2 = get_entity_name(get_irg_entity(co->chordal_env->irg));
+	s2 = get_entity_name(get_irg_entity(get_irg(co)));
 	s3 = chordal_env->cls->name;
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
 	co->name = xmalloc(len);
@@ -232,7 +234,7 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	int i, max;
 	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
 		ir_node *n = get_irn_out(irn, i);
-		if ((is_Phi(n) || is_Perm(co->chordal_env->arch_env, n)) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
+		if ((is_Phi(n) || is_Perm(get_arch_env(co), n)) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
 			return 1;
 	}
 	return 0;

@@ -57,7 +57,6 @@ int values_interfere(const ir_node *a, const ir_node *b)
   /* If there is no dominance relation, they do not interfere. */
   if(a2b + b2a > 0) {
     const ir_edge_t *edge;
-    ir_node *ba = get_nodes_block(a);
     ir_node *bb = get_nodes_block(b);
 
     /*

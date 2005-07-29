@@ -13,8 +13,10 @@
 #include "debug.h"
 #include "set.h"
 #include "pmap.h"
-#include "irnode.h"
+#include "irnode_t.h"
+#include "ircons_t.h"
 #include "iredges_t.h"
+#include "irgmod.h"
 #include "irdump.h"
 #include "irprintf.h"
 
@@ -29,60 +31,49 @@ static firm_dbg_module_t *dbg = NULL;
 #define DEBUG_LVL SET_LEVEL_2
 
 
-#define get_reg(irn) arch_get_irn_register(chordal_env->arch_env, irn, 0)
-#define set_reg(irn, reg) arch_set_irn_register(chordal_env->arch_env, irn, 0, reg)
-
-/**
- * Maps blocks to perm nodes inserted during phi destruction.
- */
-typedef struct _block2perm_t {
-  ir_node *block, *perm;
-} block2perm_t;
-
-static int set_cmp_b2p(const void *x, const void *y, size_t size) {
-  const block2perm_t *b1 = x;
-  const block2perm_t *b2 = y;
-  return b1->block != b2->block;
-}
+#define get_chordal_arch(ce) ((ce)->session_env->main_env->arch_env)
+#define get_reg(irn) arch_get_irn_register(get_chordal_arch(chordal_env), irn, 0)
+#define set_reg(irn, reg) arch_set_irn_register(get_chordal_arch(chordal_env), irn, 0, reg)
 
 #define is_Branch(irn)          (arch_irn_classify(arch_env, irn) == arch_irn_class_branch)
 #define is_Perm(irn)            (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
 #define get_reg_cls(irn)        (arch_get_irn_reg_class(arch_env, irn, arch_pos_make_out(0)))
 #define is_curr_reg_class(irn)  (get_reg_cls(p) == chordal_env->cls)
 
-static ir_node *get_or_insert_perm(be_main_session_env_t *session, be_chordal_env_t *chordal_env, ir_node *block) {
-	block2perm_t find, *found;
-	ir_node *p;
-	set *b2p = chordal_env->data;
-	const arch_env_t *arch_env = chordal_env->arch_env;
+static void clear_link(ir_node *irn, void *data)
+{
+  set_irn_link(irn, NULL);
+}
 
+/**
+ * Build a list of phis of a block.
+ */
+static void collect_phis(ir_node *irn, void *data)
+{
+  be_chordal_env_t *env = data;
+  if(is_Phi(irn) &&
+      arch_irn_has_reg_class(env->session_env->main_env->arch_env,
+        irn, arch_pos_make_out(0), env->cls)) {
 
-	/* iff needed insert perm node */
-	DBG((dbg, LEVEL_1, "    Getting perm in %+F\n", block));
+    ir_node *bl = get_nodes_block(irn);
+    set_irn_link(irn, get_irn_link(bl));
+    set_irn_link(bl, irn);
+  }
+}
 
-	/* .if the perm is in the pset return it */
-	find.block = block;
-	find.perm = NULL;
-	found = set_insert(b2p, &find, sizeof(find), HASH_PTR(find.block));
-	if (found->perm) {
-		DBG((dbg, LEVEL_1, "      found it %+F in map\n", found->perm));
-		return found->perm;
-	}
+/**
+ * Build a ring of phis for each block in the link field.
+ * @param env The chordal env.
+ */
+static INLINE void build_phi_rings(be_chordal_env_t *env)
+{
+  irg_walk_graph(env->session_env->irg, clear_link, collect_phis, env);
+}
 
-	/* .else look for a perm of right register class in the schedule */
-	p = sched_last(find.block);
-	while (!is_Block(p) && (is_Branch(p) || (is_Perm(p) && !is_curr_reg_class(p))))
-		p = sched_prev(p);
-
-	/* if we haven't found a perm of the right register class create a new one */
-	if (! (is_Perm(p) && is_curr_reg_class(p))) {
-		DBG((dbg, LEVEL_1, "      insert it after %+F\n", p));
-		p = insert_Perm_after(session, chordal_env->cls, p);
-	}
-
-	/* insert perm into pset and return it*/
-	found->perm = p;
-	return p;
+static int skip_cf_predicator(const ir_node *irn, void *data) {
+  be_chordal_env_t *ce = data;
+  arch_env_t *ae = ce->session_env->main_env->arch_env;
+  return arch_irn_classify(ae, irn) == arch_irn_class_branch;
 }
 
 #define is_pinned(irn) (get_irn_link(irn))
@@ -94,17 +85,18 @@ static ir_node *get_or_insert_perm(be_main_session_env_t *session, be_chordal_en
  * by inserting perm nodes, if necessary.
  * @param phi The phi node to adjust operands for
  */
-static void adjust_phi_arguments(be_main_session_env_t *session, be_chordal_env_t *chordal_env, ir_node *phi) {
+static void adjust_phi_arguments(be_chordal_env_t *chordal_env, ir_node *phi) {
 	int i, max;
 	ir_node *arg, *phi_block, *arg_block;
-	arch_env_t *arch_env = session->main_env->arch_env;
+	arch_env_t *arch_env = get_chordal_arch(chordal_env);
+  const be_main_session_env_t *session = chordal_env->session_env;
 	const arch_register_t *phi_reg, *arg_reg;
 	const arch_register_class_t *cls;
 
 	assert(is_Phi(phi) && "Can only handle phi-destruction :)");
 	DBG((dbg, LEVEL_1, "  for %+F\n", phi));
 
-	cls = arch_get_irn_reg_class(session->main_env->arch_env, phi, arch_pos_make_out(0));
+	cls = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, arch_pos_make_out(0));
 	phi_block = get_nodes_block(phi);
 	phi_reg = get_reg(phi);
 
@@ -116,7 +108,7 @@ static void adjust_phi_arguments(be_main_session_env_t *session, be_chordal_env_
 		arg_block = get_nodes_block(arg);
 		arg_reg = get_reg(arg);
 		perm = get_Proj_pred(arg);
-		assert(is_Perm(perm));
+		// assert(is_Perm(perm));
 
 		DBG((dbg, LEVEL_1, "    arg %+F has perm %+F\n", arg, perm));
 		/* if registers don't match ...*/
@@ -128,7 +120,9 @@ static void adjust_phi_arguments(be_main_session_env_t *session, be_chordal_env_
 			if (!is_pinned(arg)) {
 				DBG((dbg, LEVEL_1, "      arg is not pinned\n"));
 				ir_node *other_phi = phi;
-				while ((other_phi = get_irn_link(other_phi)) != phi) {
+        for(other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
+          if(other_phi == phi)
+            continue;
 					assert(is_Phi(other_phi) && get_nodes_block(phi) == get_nodes_block(other_phi) && "link fields are screwed up");
 					if (get_irn_n(other_phi, i) == arg && get_reg(other_phi) == arg_reg) {
 						DBG((dbg, LEVEL_1, "      other phi pinned the argument\n"));
@@ -186,112 +180,135 @@ static void adjust_phi_arguments(be_main_session_env_t *session, be_chordal_env_
 	}
 }
 
+static void insert_all_perms_walker(ir_node *bl, void *data)
+{
+  be_chordal_env_t *ce = data;
+  pmap *perm_map = ce->data;
+  ir_graph *irg = ce->session_env->irg;
+  const be_node_factory_t *fact = ce->session_env->main_env->node_factory;
 
-static void insert_all_perms(be_main_session_env_t *session, be_chordal_env_t *chordal_env) {
-	pmap_entry *pme;
-	int i, max;
-	ir_node *first_phi, *recent_phi;
+  /* Dummy targets for the projs */
+  ir_node *dummy = new_rd_Unknown(irg, mode_T);
 
-	DBG((dbg, LEVEL_1, "Placing perms...\n"));
+  assert(is_Block(bl));
 
-	/* place perms in cf-preds of phis */
-	pmap_foreach(chordal_env->border_heads, pme) {
-		border_t *curr;
-		struct list_head *head = pme->value;
+  /* If the link flag is NULL, this block has no phis. */
+  if(get_irn_link(bl)) {
+    int i, n;
 
-		first_phi = NULL;
-		/* iterate over the first ops in the block until a non-phi is reached */
-		list_for_each_entry(border_t, curr, head, list) {
-			ir_node *phi = curr->irn;
+    /* Look at all predecessors of the phi block */
+    for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
+      ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
+      ir_node *phi, *perm, *insert_after;
+      ir_node **in;
+      int j, n_projs = 0;
+      pmap_entry *ent;
+      pmap *arg_map = pmap_create();
 
-			if (curr->is_def && curr->is_real && is_Phi(phi)) {
-				set_irn_link(phi, NULL);
-				/* chain of phis in a block */
-				if (first_phi == NULL)
-					first_phi = phi;
-				else
-					set_irn_link(recent_phi, phi);
-				recent_phi = phi;
+      assert(!pmap_contains(perm_map, pred_bl) && "Already permed that block");
 
-				/* insert perms */
-				DBG((dbg, LEVEL_1, "  for %+F\n", phi));
-				for(i=0, max=get_irn_arity(phi); i<max; ++i) {
-					ir_node *perm;
+      /*
+       * Note that all phis in the ring are in the same register class
+       * by construction.
+       */
+      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+        ir_node *arg = get_irn_n(phi, i);
+        ir_node *proj = pmap_get(arg_map, arg);
 
-					perm = get_or_insert_perm(session, chordal_env, get_Block_cfgpred_block(get_nodes_block(phi), i));
-					DBG((dbg, LEVEL_1, "    %+F in block %N\n", perm, get_Block_cfgpred_block(get_nodes_block(phi), i)));
-					set_irn_link(perm, NULL);
-				}
-			}
-		}
-		if (first_phi)
-			set_irn_link(recent_phi, first_phi);
-	}
+        if(!proj) {
+          proj = new_r_Proj(irg, pred_bl, dummy, get_irn_mode(arg), n_projs++);
+          pmap_insert(arg_map, arg, proj);
+        }
+
+        set_irn_n(phi, i, proj);
+      }
+
+      j = 0;
+      in = malloc(n_projs * sizeof(in[0]));
+      pmap_foreach(arg_map, ent)
+        in[j++] = ent->key;
+
+      perm = new_Perm(fact, ce->cls, irg, pred_bl, n_projs, in);
+      insert_after = sched_skip(sched_last(pred_bl), 0, skip_cf_predicator, ce);
+      sched_add_after(insert_after, perm);
+      exchange(dummy, perm);
+
+      free(in);
+      pmap_destroy(arg_map);
+
+      /* register in perm map */
+      pmap_insert(perm_map, pred_bl, perm);
+    }
+  }
 }
 
-static void	set_regs_or_place_dupls(be_main_session_env_t *session, be_chordal_env_t *chordal_env) {
-	pmap_entry *pme;
+static void insert_all_perms(be_chordal_env_t *chordal_env) {
+	DBG((dbg, LEVEL_1, "Placing perms...\n"));
+  irg_block_walk_graph(chordal_env->session_env->irg, insert_all_perms_walker, NULL, chordal_env);
+}
+
+static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
+  be_chordal_env_t *chordal_env = data;
+  ir_node *phi;
 
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
-
-	/* iterate over all blocks and correct color of arguments*/
-	pmap_foreach(chordal_env->border_heads, pme) {
-		border_t *curr;
-		struct list_head *head = pme->value;
-
-		/* iterate over the first ops in the block until a non-phi is reached */
-		list_for_each_entry(border_t, curr, head, list)
-			if (curr->is_def && curr->is_real && is_Phi(curr->irn))
-				adjust_phi_arguments(session, chordal_env, curr->irn);
-	}
+  for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi))
+    adjust_phi_arguments(chordal_env, phi);
 }
 
-void be_ssa_destruction(be_main_session_env_t *session, be_chordal_env_t *chordal_env) {
-	set *b2p;
+static void	set_regs_or_place_dupls(be_chordal_env_t *chordal_env)
+{
+  irg_block_walk_graph(chordal_env->session_env->irg,
+      set_regs_or_place_dupls_walker, NULL, chordal_env);
+}
+
+
+void be_ssa_destruction(be_chordal_env_t *chordal_env) {
+	pmap *perm_map = pmap_create();
+  ir_graph *irg = chordal_env->session_env->irg;
 
 	dbg = firm_dbg_register("ir.be.ssadestr");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	/* create a map for fast lookup of perms: block --> perm */
-	b2p = new_set(set_cmp_b2p, 32);
-	chordal_env->data = b2p;
+	chordal_env->data = perm_map;
 
-	insert_all_perms(session, chordal_env);
-	dump_ir_block_graph(session->irg, "-ssa_destr_perms_placed");
+  build_phi_rings(chordal_env);
+	insert_all_perms(chordal_env);
+	dump_ir_block_graph(irg, "-ssa_destr_perms_placed");
 
-	set_regs_or_place_dupls(session, chordal_env);
-	dump_ir_block_graph(session->irg, "-ssa_destr_regs_set");
+	set_regs_or_place_dupls(chordal_env);
+	dump_ir_block_graph(irg, "-ssa_destr_regs_set");
 
-	del_set(b2p);
+	pmap_destroy(perm_map);
 }
 
-void be_ssa_destruction_check(be_main_session_env_t *session, be_chordal_env_t *chordal_env) {
-	pmap_entry *pme;
+static void ssa_destruction_check_walker(ir_node *bl, void *data)
+{
+  be_chordal_env_t *chordal_env = data;
+  ir_node *phi;
 	int i, max;
 
-	/* iterate over all blocks */
-	pmap_foreach(chordal_env->border_heads, pme) {
-		border_t *curr;
-		struct list_head *head = pme->value;
+  for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+    const arch_register_t *phi_reg, *arg_reg;
 
-		/* iterate over the first ops in the block */
-		list_for_each_entry(border_t, curr, head, list)
-			if (curr->is_def && curr->is_real && is_Phi(curr->irn)) {
-				const arch_register_t *phi_reg, *arg_reg;
-				ir_node *phi = curr->irn;
+    phi_reg = get_reg(phi);
+    /* iterate over all args of phi */
+    for(i=0, max=get_irn_arity(phi); i<max; ++i) {
+      ir_node *arg = get_irn_n(phi, i);
+      arg_reg = get_reg(arg);
+      if(phi_reg != arg_reg) {
+        ir_printf("Registers of %+F and %+F differ: %s %s\n",
+            phi, arg, phi_reg->name, arg_reg->name);
+        assert(0 && "Registers of phi and arg differ\n");
+      }
+      if(!is_pinned(arg))
+        ir_printf("Warning: Arg %+F not pinned\n", arg);
+    }
+  }
+}
 
-				phi_reg = get_reg(phi);
-				/* iterate over all args of phi */
-				for(i=0, max=get_irn_arity(phi); i<max; ++i) {
-					ir_node *arg = get_irn_n(phi, i);
-					arg_reg = get_reg(arg);
-					if(phi_reg != arg_reg) {
-						ir_printf("Registers of %+F and %+F differ: %s %s\n", phi, arg, phi_reg->name, arg_reg->name);
-						assert(0 && "Registers of phi and arg differ\n");
-					}
-					if(!is_pinned(arg))
-						ir_printf("Warning: Arg %+F not pinned\n", arg);
-				}
-			}
-	}
+void be_ssa_destruction_check(be_chordal_env_t *chordal_env) {
+  irg_block_walk_graph(chordal_env->session_env->irg,
+      ssa_destruction_check_walker, NULL, chordal_env);
 }

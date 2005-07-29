@@ -208,7 +208,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	ir_node **confl, *cn;
 	int i, irn_col;
 	const be_chordal_env_t *chordal_env = qn->ou->co->chordal_env;
-	const arch_env_t *arch_env = chordal_env->arch_env;
+	const arch_env_t *arch_env = get_arch_env(qn->ou->co);
 	const arch_register_class_t *cls = chordal_env->cls;
 
 	DBG((dbg, LEVEL_3, "\t      %+F \tcaused col(%+F) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
@@ -501,7 +501,7 @@ static void ou_optimize(unit_t *ou) {
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	arch_get_allocatable_regs(ou->co->chordal_env->arch_env, ou->nodes[0], arch_pos_make_out(0), ou->co->chordal_env->cls, pos_regs);
+	arch_get_allocatable_regs(get_arch_env(ou->co), ou->nodes[0], arch_pos_make_out(0), ou->co->chordal_env->cls, pos_regs);
 	bitset_foreach(pos_regs, i)
 		ou_insert_qnode(ou, new_qnode(ou, i));
 

@@ -34,7 +34,7 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	int lb, copy_costs;
 
 	/* BETTER: You can remove this if you replace all `grep get_irn_out *.c`*/
-	compute_outs(chordal_env->irg);
+	compute_outs(chordal_env->session_env->irg);
 
 	co = new_copy_opt(chordal_env, get_costs_loop_depth);
 	DBG((dbg, LEVEL_1, "===>  %s  <===\n", co->name));

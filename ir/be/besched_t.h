@@ -251,6 +251,25 @@ extern int sched_verify(const ir_node *block);
  */
 extern int sched_verify_irg(ir_graph *irg);
 
+/**
+ * A predicate for a node.
+ * @param irn The node.
+ * @param data The custom data.
+ * @return 1 or 0, depending on your criteria.
+ */
+typedef int (sched_predicator_t)(const ir_node *irn, void *data);
+
+/**
+ * Skip nodes in a schedule.
+ * @param from The node to start from.
+ * @param forward The direction (1 for forward, 0 for backward).
+ * @param predicator The one who decides what is skipped.
+ * @param data Food for the predicator.
+ * @return The first node rejected by the predicator or the block
+ * itself if none was rejected.
+ */
+extern ir_node *sched_skip(ir_node *from, int forward,
+    sched_predicator_t *predicator, void *data);
 
 #define sched_get_time_step(irn)	    _sched_get_time_step(irn)
 #define sched_has_succ(irn) 				  _sched_has_succ(irn)

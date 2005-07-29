@@ -12,7 +12,7 @@
 #include "debug.h"
 
 #include "besched_t.h"
-#include "besched.h"
+#include "beutil.h"
 #include "belistsched.h"
 
 FIRM_IMPL1(sched_get_time_step, int, const ir_node *)
@@ -184,4 +184,15 @@ int sched_verify_irg(ir_graph *irg)
   irg_block_walk_graph(irg, sched_verify_walker, NULL, &res);
 
   return res;
+}
+
+extern ir_node *sched_skip(ir_node *from, int forward,
+    sched_predicator_t *predicator, void *data)
+{
+  const ir_node *bl = get_block(from);
+  ir_node *curr;
+
+  for(curr = from; curr != bl && predicator(curr, data);
+      curr = forward ? sched_next(curr) : sched_prev(curr));
+  return curr;
 }
