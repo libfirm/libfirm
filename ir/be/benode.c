@@ -133,6 +133,21 @@ ir_node *new_Copy(const be_node_factory_t *factory,
   return new_ir_node(NULL, irg, bl, op, get_irn_mode(in), 1, ins);
 }
 
+#if 0
+ir_node *be_spill(const be_node_factory_t *factory, ir_node *irn)
+{
+  ir_node *bl = get_nodes_block(irn);
+  ir_graph *irg = get_irn_irg(bl);
+  ir_node *spill =
+    new_Spill(factory, arch_get_irn_reg_class(irn), irg, bl, irn);
+  sched_add_after(irn, spill);
+  return spill;
+}
+#endif
+
+
+
+
 /**
  * If the node is a proj, reset the node to the proj's target and return
  * the proj number.
@@ -389,4 +404,87 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
     be_introduce_copies(env->dom_front, perm_op, array_size(copies), copies);
   }
   return perm;
+}
+
+typedef struct _phi_perm_info_t {
+  const be_main_session_env_t *env;
+  const arch_register_class_t *cls;
+  pmap *perm_map;
+} phi_perm_info_t;
+
+static void clear_link(ir_node *irn, void *data)
+{
+  set_irn_link(irn, NULL);
+}
+
+static void collect_phis(ir_node *irn, void *data)
+{
+  phi_perm_info_t *pi = data;
+  if(is_Phi(irn) && arch_irn_has_reg_class(pi->env->main_env->arch_env,
+        irn, arch_pos_make_out(0), pi->cls)) {
+
+    ir_node *bl = get_nodes_block(irn);
+    set_irn_link(irn, get_irn_link(bl));
+    set_irn_link(bl, irn);
+  }
+}
+
+/* This is only semi-ugly :-) */
+#define INT_TO_PTR(i) ((void *) ((char *) 0 + (i)))
+#define PTR_TO_INT(p) ((int) ((char *) (p) - (char *) 0))
+
+static void insert_phi_perms(ir_node *bl, void *data)
+{
+  phi_perm_info_t *pi = data;
+  ir_graph *irg = pi->env->irg;
+
+  assert(is_Block(bl));
+
+  /* If the link flag is NULL, this block has no phis. */
+  if(get_irn_link(bl)) {
+    int i, n;
+
+    /* Look at all predecessors of the phi block */
+    for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
+      ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
+      ir_node *phi, *perm;
+      ir_node **in;
+      int n_phis = 0;
+      int j;
+
+      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi))
+        n_phis++;
+
+      in = malloc(n_phis * sizeof(in[0]));
+
+      /* Look at all phis in this block */
+      j = 0;
+      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi))
+        in[j++] = get_irn_n(phi, i);
+
+      perm = new_Perm(pi->env->main_env->node_factory, pi->cls, irg, pred_bl, n_phis, in);
+
+      j = 0;
+      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+        ir_node *proj = new_r_Proj(irg, pred_bl, perm, get_irn_mode(phi), j++);
+        set_irn_n(phi, i, proj);
+      }
+
+      free(in);
+    }
+  }
+}
+
+void be_insert_phi_perms(const be_main_session_env_t *env,
+    const arch_register_class_t *cls)
+{
+  phi_perm_info_t pi;
+
+  pi.env = env;
+  pi.cls = cls;
+  pi.perm_map = pmap_create();
+
+  irg_walk_graph(env->irg, clear_link, collect_phis, &pi);
+  irg_block_walk_graph(env->irg, insert_phi_perms, NULL, &pi);
+  pmap_destroy(pi.perm_map);
 }
