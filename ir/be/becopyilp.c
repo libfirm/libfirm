@@ -381,10 +381,6 @@ static INLINE int get_costs(problem_instance_t *pi, ir_node *phi, ir_node *irn) 
 	return 0;
 }
 
-/*
- * TODO: Because this here uses a phi-walker and not the ou's,
- * it is possible, that the interfering args of a phi will cause a bug ??!!
- */
 static void M_constr_walker(ir_node *block, void *env) {
 	problem_instance_t *pi = env;
 	int count, arity, row, col, other_row, *costs;
@@ -410,8 +406,16 @@ static void M_constr_walker(ir_node *block, void *env) {
 	phi = sched_first(block);
 	for (row=0; row<count; ++row) {
 		phis[row] = phi;
-		for (col=0; col<arity; ++col)
-			phi_matrix[row*arity + col] = get_irn_n(phi, col);
+		for (col=0; col<arity; ++col) {
+			ir_node *arg = get_irn_n(phi, col);
+			/* Sort out all arguments interfering with its phi */
+			if (nodes_interfere(pi->co->chordal_env, phi, arg)) {
+				//TODO remove next line
+				printf("\n\n\n Sorted out an entry. Report this to Daniel.\n\n\n");
+				phi_matrix[row*arity + col] =  NULL;
+			} else
+				phi_matrix[row*arity + col] =  arg;
+		}
 		phi = sched_next(phi);
 	}
 
@@ -422,8 +426,11 @@ static void M_constr_walker(ir_node *block, void *env) {
 		done = pset_new_ptr_default();
 		for (row=0; row<count; ++row) {
 			irn = phi_matrix[row*arity + col];
-			/* has the irn already been processed in this col? */
-			if (pset_find_ptr(done, irn))
+			/*
+			 * is this an interfering arg (NULL)
+			 * or has the irn already been processed in this col?
+			 */
+			if (!irn || pset_find_ptr(done, irn))
 				continue;
 			else
 				pset_insert_ptr(done, irn);
@@ -445,7 +452,7 @@ static void M_constr_walker(ir_node *block, void *env) {
 			/* compute the minimal costs (rhs) */
 			int phi_nr, sum=0, max=-1, minimal_costs;
 			bitset_foreach(candidates, phi_nr) {
-				costs[phi_nr] = get_costs(pi, phis[phi_nr], irn); //TODO this failes for nodes not in the ou. the interfering ones.
+				costs[phi_nr] = get_costs(pi, phis[phi_nr], irn);
 				sum += costs[phi_nr];
 				max = MAX(max, costs[phi_nr]);
 			}
