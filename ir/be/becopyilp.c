@@ -445,7 +445,7 @@ static void M_constr_walker(ir_node *block, void *env) {
 			/* compute the minimal costs (rhs) */
 			int phi_nr, sum=0, max=-1, minimal_costs;
 			bitset_foreach(candidates, phi_nr) {
-				costs[phi_nr] = get_costs(pi, phis[phi_nr], irn);
+				costs[phi_nr] = get_costs(pi, phis[phi_nr], irn); //TODO this failes for nodes not in the ou. the interfering ones.
 				sum += costs[phi_nr];
 				max = MAX(max, costs[phi_nr]);
 			}
