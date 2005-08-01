@@ -116,11 +116,12 @@ struct type {
   const tp_op *type_op;    /**< the type operation of the type */
   ident *name;             /**< The name of the type */
   visibility visibility;   /**< Visibility of entities of this type. */
+  char frame_type;         /**< True if this is a frame type, false else */
   type_state state;        /**< Represents the types state: layout undefined or
-			      fixed. */
+                                fixed. */
   int size;                /**< Size of an entity of this type. This is determined
-			      when fixing the layout of this class.  Size must be
-			      given in bits. */
+                                when fixing the layout of this class.  Size must be
+                                given in bits. */
   int align;               /**< Alignment of an entity of this type. This should be
                                 set according to the source language needs. If not set it's
                                 calculated automatically by get_type_alignment().
