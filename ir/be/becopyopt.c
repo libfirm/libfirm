@@ -121,7 +121,6 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
 			if (arg == root)
 				continue;
-			/* TODO or arg live at root.*/
 			if (nodes_interfere(co->chordal_env, root, arg)) {
 				unit->inevitable_costs += co->get_costs(root, arg, i);
 				continue;

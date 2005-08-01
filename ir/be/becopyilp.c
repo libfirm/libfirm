@@ -410,8 +410,6 @@ static void M_constr_walker(ir_node *block, void *env) {
 			ir_node *arg = get_irn_n(phi, col);
 			/* Sort out all arguments interfering with its phi */
 			if (nodes_interfere(pi->co->chordal_env, phi, arg)) {
-				//TODO remove next line
-				printf("\n\n\n Sorted out an entry. Report this to Daniel.\n\n\n");
 				phi_matrix[row*arity + col] =  NULL;
 			} else
 				phi_matrix[row*arity + col] =  arg;

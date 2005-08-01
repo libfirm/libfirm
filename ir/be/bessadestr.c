@@ -28,7 +28,7 @@
 #include "besched_t.h"
 
 static firm_dbg_module_t *dbg = NULL;
-#define DEBUG_LVL SET_LEVEL_3
+#define DEBUG_LVL SET_LEVEL_0
 
 
 #define get_chordal_arch(ce) ((ce)->session_env->main_env->arch_env)
@@ -120,19 +120,19 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 
       j = 0;
       in = malloc(n_projs * sizeof(in[0]));
-      pmap_foreach(arg_map, ent) {
+      pmap_foreach(arg_map, ent)
         in[j++] = ent->key;
-        /* register allocation is copied form former arguments
-         * to the projs (new arguments)
-         */
-        DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", get_reg(ent->key)->name, ent->key, ent->value));
-        set_reg(ent->value, get_reg(ent->key));
-      }
 
       perm = new_Perm(fact, chordal_env->cls, irg, pred_bl, n_projs, in);
       insert_after = sched_skip(sched_last(pred_bl), 0, skip_cf_predicator, chordal_env);
       sched_add_after(insert_after, perm);
       exchange(dummy, perm);
+
+      /* register allocation is copied form former arguments to the projs (new arguments) */
+      pmap_foreach(arg_map, ent) {
+        DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", get_reg(ent->key)->name, ent->key, ent->value));
+        set_reg(ent->value, get_reg(ent->key));
+      }
 
       free(in);
       pmap_destroy(arg_map);

@@ -249,9 +249,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	b->is_real = is_real;
 	b->irn = irn;
 	b->step = step;
-  check_heads(env);
 	list_add_tail(&b->list, head);
-  check_heads(env);
 	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n",
 				is_def ? "def" : "use", irn, step));
 
@@ -373,7 +371,6 @@ static void pressure(ir_node *block, void *env_ptr)
 		}
 	}
 
-  check_heads(env);
 
   del_pset(live_in);
   del_pset(live_end);
@@ -392,7 +389,6 @@ static void assign(ir_node *block, void *env_ptr)
 	struct list_head *head = get_block_border_head(env, block);
 	pset *live_in = put_live_in(block, pset_new_ptr_default());
 
-  check_heads(env);
 
 
 	bitset_clear_all(live);
