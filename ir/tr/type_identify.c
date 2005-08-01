@@ -1,6 +1,6 @@
 /*
  * Project:     libFIRM
- * File name:   ir/tr/type.c
+ * File name:   ir/tr/type_identify.c
  * Purpose:     Representation of types.
  * Author:      Goetz Lindenmaier
  * Modified by:
@@ -11,8 +11,8 @@
  */
 
 /**
- *  file type.c - implementation of the datastructure to hold
- *  type information.
+ *  @file type_identify.c
+ *
  *  (C) 2004 by Universitaet Karlsruhe
  *  Goetz Lindenmaier
  *
