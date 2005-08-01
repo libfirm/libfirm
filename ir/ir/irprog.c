@@ -37,24 +37,6 @@ void init_irprog(void) {
   new_ir_prog ();
 }
 
-void remove_irp_type_from_list (type *typ) {
-  int i;
-  assert(typ);
-#if 0
-  for (i = 0; i < (ARR_LEN (irp->types)); i++) {
-#else
-  for (i = ARR_LEN (irp->types) -1; i >= 0; i--) {
-#endif
-    if (irp->types[i] == typ) {
-      for(; i < (ARR_LEN (irp->types)) - 1; i++) {
-        irp->types[i] = irp->types[i+1];
-      }
-      ARR_SETLEN(type*, irp->types, (ARR_LEN(irp->types)) - 1);
-      break;
-    }
-  }
-}
-
 /* Create a new ir prog. Automatically called by init_firm through
    init_irprog. */
 ir_prog *new_ir_prog (void) {
@@ -76,7 +58,7 @@ ir_prog *new_ir_prog (void) {
   res->glob_type = new_type_class(new_id_from_str (GLOBAL_TYPE_NAME));
   /* Remove type from type list.  Must be treated differently than
      other types. */
-  remove_irp_type_from_list(res->glob_type);
+  remove_irp_type(res->glob_type);
 
   res->const_code_irg = new_const_code_irg();
 
@@ -191,7 +173,6 @@ ir_graph *get_irp_allirg(int pos) {
   }
 }
 
-
 /* Adds type to the list of types in irp. */
 void add_irp_type(type *typ) {
   assert (typ != NULL);
@@ -199,8 +180,20 @@ void add_irp_type(type *typ) {
   ARR_APP1 (type *, irp->types, typ);
 }
 
+/* Remove type form the list of types in irp. */
 void remove_irp_type(type *typ) {
-  remove_irp_type_from_list (typ);
+  int i;
+  assert(typ);
+
+  for (i = ARR_LEN(irp->types) -1; i >= 0; i--) {
+    if (irp->types[i] == typ) {
+      for(; i < (ARR_LEN(irp->types)) - 1; i++) {
+        irp->types[i] = irp->types[i+1];
+      }
+      ARR_SETLEN(type *, irp->types, (ARR_LEN(irp->types)) - 1);
+      break;
+    }
+  }
 }
 
 int (get_irp_n_types) (void) {
