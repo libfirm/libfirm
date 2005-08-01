@@ -191,10 +191,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   set_entity_irg(ent, res);
 
   /*--  a class type so that it can contain "inner" methods as in Pascal. --*/
-  res->frame_type = new_type_class(mangle(get_entity_ident(ent), frame_type_suffix));
-
-  /* Remove type from type list.  Must be treated differently than other types. */
-  remove_irp_type_from_list(res->frame_type);
+  res->frame_type = new_type_frame(mangle(get_entity_ident(ent), frame_type_suffix));
 
   /*-- Nodes needed in every graph --*/
   res->end_block  = new_immBlock();
@@ -539,20 +536,6 @@ type *
 void
 (set_irg_frame_type)(ir_graph *irg, type *ftp) {
   _set_irg_frame_type(irg, ftp);
-}
-
-
-/* To test for a frame type */
-int
-is_frame_type(const type *ftp) {
-  int i;
-  if (is_Class_type(ftp)) {
-    for (i = 0; i < get_irp_n_irgs(); i++) {
-      const type *frame_tp = get_irg_frame_type(get_irp_irg(i));
-      if (ftp == frame_tp) return true;
-    }
-  }
-  return false;
 }
 
 int
