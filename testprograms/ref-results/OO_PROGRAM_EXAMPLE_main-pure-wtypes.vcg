@@ -107,6 +107,32 @@ node: {title: "n40" label: "Block 40"  info1: "Block 40
 "
 color: lightyellow}
 edge: {sourcename: "n40" targetname: "n34" label: "0" class:13 priority:60 color:red}
+node: {title: "n42" label: "0x5Is 42"  info1: "0x5 42
+  mode:    Is
+  visited: 20
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+edge: { sourcename: "n42" targetname: "n30" class:2  priority:50 linestyle:dotted}
+node: {title: "n43" label: "SymC PRIMA size 43"  info1: "SymC PRIMA size 43
+  mode:    Iu
+  visited: 20
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  kind: size
+  type: class type PRIMA (15)
+  type of value: type_unknown
+"
+}
+edge: { sourcename: "n43" targetname: "n30" class:2  priority:50 linestyle:dotted}
 node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
   mode:    M
   visited: 20
@@ -136,21 +162,8 @@ node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   allocating on: the heap
 "
 }
-node: {title: "n45n43" label: "SymC PRIMA size 43"  info1: "SymC PRIMA size 43
-  mode:    Iu
-  visited: 20
-  irg:     OO_PROGRAM_EXAMPLE_main
-  arity:   0
-  pred nodes:
-    -1:    Block 30
-  Private Attributes:
-  kind: size
-  type: class type PRIMA (15)
-  type of value: type_unknown
-"
-}
 edge: {sourcename: "n45" targetname: "n37" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n45" targetname: "n45n43" label: "1" class:16 priority:10}
+edge: {sourcename: "n45" targetname: "n43" label: "1" class:16 priority:10}
 edge: { sourcename: "n45" targetname: "n40" class:2  priority:50 linestyle:dotted}
 node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   mode:    P
@@ -166,6 +179,18 @@ node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
 color: yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
 edge: { sourcename: "n48" targetname: "n40" class:2  priority:50 linestyle:dotted}
+node: {title: "n41" label: "0x2Is 41"  info1: "0x2 41
+  mode:    Is
+  visited: 20
+  irg:     OO_PROGRAM_EXAMPLE_main
+  arity:   0
+  pred nodes:
+    -1:    Block 30
+  Private Attributes:
+  Const of type type_unknown
+"
+color: yellow}
+edge: { sourcename: "n41" targetname: "n30" class:2  priority:50 linestyle:dotted}
 node: {title: "n47" label: "ProjM M 47"  info1: "Proj 47
   mode:    M
   visited: 20
@@ -216,21 +241,10 @@ node: {title: "n50" label: "Call 50"  info1: "Call 50
     param 1 type: int
 "
 }
-node: {title: "n50n41" label: "0x2Is 41"  info1: "0x2 41
-  mode:    Is
-  visited: 20
-  irg:     OO_PROGRAM_EXAMPLE_main
-  arity:   0
-  pred nodes:
-    -1:    Block 30
-  Private Attributes:
-  Const of type type_unknown
-"
-color: yellow}
 edge: {sourcename: "n50" targetname: "n47" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n50" targetname: "n49" label: "1" class:1  priority:50}
 edge: {sourcename: "n50" targetname: "n48" label: "2" class:1  priority:50}
-edge: {sourcename: "n50" targetname: "n50n41" label: "3" class:16 priority:10}
+edge: {sourcename: "n50" targetname: "n41" label: "3" class:16 priority:10}
 edge: { sourcename: "n50" targetname: "n40" class:2  priority:50 linestyle:dotted}
 node: {title: "n52" label: "ProjM M_regular 52"  info1: "Proj 52
   mode:    M
@@ -283,21 +297,10 @@ node: {title: "n54" label: "Call 54"  info1: "Call 54
     resul 0 type: int
 "
 }
-node: {title: "n54n42" label: "0x5Is 42"  info1: "0x5 42
-  mode:    Is
-  visited: 20
-  irg:     OO_PROGRAM_EXAMPLE_main
-  arity:   0
-  pred nodes:
-    -1:    Block 30
-  Private Attributes:
-  Const of type type_unknown
-"
-color: yellow}
 edge: {sourcename: "n54" targetname: "n52" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n54" targetname: "n53" label: "1" class:1  priority:50}
 edge: {sourcename: "n54" targetname: "n48" label: "2" class:1  priority:50}
-edge: {sourcename: "n54" targetname: "n54n42" label: "3" class:16 priority:10}
+edge: {sourcename: "n54" targetname: "n42" label: "3" class:16 priority:10}
 edge: { sourcename: "n54" targetname: "n40" class:2  priority:50 linestyle:dotted}
 node: {title: "n57" label: "ProjT T_result 57"  info1: "Proj 57
   mode:    T
