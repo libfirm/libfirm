@@ -109,29 +109,31 @@ void (inc_master_type_visited)(void)              { _inc_master_type_visited(); 
 type *
 new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   type *res;
-  int node_size ;
+  int node_size;
 
   assert(type_op != type_id);
   assert(!id_contains_char(name, ' ') && "type name should not contain spaces");
 
   node_size = offsetof(type, attr) +  type_op->attr_size;
-  res = xmalloc (node_size);
+  res = xmalloc(node_size);
   memset(res, 0, node_size);
-  add_irp_type(res);   /* Remember the new type global. */
 
   res->kind       = k_type;
   res->type_op    = type_op;
   res->mode       = mode;
   res->name       = name;
   res->visibility = visibility_external_allocated;
+  res->frame_type = 0;
   res->state      = layout_undefined;
   res->size       = -1;
   res->align      = -1;
   res->visit      = 0;
-  res -> link     = NULL;
+  res->link       = NULL;
 #ifdef DEBUG_libfirm
   res->nr         = get_irp_new_node_nr();
 #endif /* defined DEBUG_libfirm */
+
+  add_irp_type(res);   /* Remember the new type global. */
 
   return res;
 }
@@ -1086,7 +1088,7 @@ build_value_type(ident *name, int len, type **tps) {
   int i;
   type *res = new_type_struct(name);
   /* Remove type from type list.  Must be treated differently than other types. */
-  remove_irp_type_from_list(res);
+  remove_irp_type(res);
   for (i = 0; i < len; i++) {
     type *elt_type = res;   /* use res as default if corresponding type is not yet set. */
     if (tps[i]) elt_type = tps[i];
@@ -1777,8 +1779,25 @@ entity *get_compound_member(const type *tp, int pos)
   return res;
 }
 
-
 int is_compound_type(const type *tp) {
   assert(tp && tp->kind == k_type);
   return tp->type_op->flags & TP_OP_FLAG_COMPOUND;
+}
+
+/* Checks, whether a type is a frame type */
+int is_frame_type(const type *tp) {
+  return tp->frame_type;
+}
+
+/* Makes a new frame type. */
+type *new_type_frame(ident *name)
+{
+  type *res = new_type_class(name);
+
+  res->frame_type = 1;
+
+  /* Remove type from type list.  Must be treated differently than other types. */
+  remove_irp_type(res);
+
+  return res;
 }

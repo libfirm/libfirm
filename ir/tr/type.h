@@ -1084,13 +1084,25 @@ int get_compound_n_members(const type *tp);
 entity *get_compound_member(const type *tp, int pos);
 
 /**
- *  Checks whether a type is compound.
+ * Checks whether a type is compound.
  *
- *  @param tp - any type
+ * @param tp - any type
  *
- *  @return true if the type is class, structure, union or array type.
+ * @return true if the type is class, structure, union or array type.
  */
 int is_compound_type(const type *tp);
+
+/**
+ * Checks, whether a type is a frame type
+ */
+int is_frame_type(const type *tp);
+
+/**
+ * Makes a new frame type. Frame types are class types,
+ * so all class access functions work.
+ * Frame types are not in the global list of types.
+ */
+type   *new_type_frame(ident *name);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
