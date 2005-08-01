@@ -33,7 +33,8 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
 	int lb, copy_costs;
 
-	/* BETTER: You can remove this if you replace all `grep get_irn_out *.c`*/
+	/* BETTER: You can remove this if you replace all
+	 * `grep get_irn_out *.c` by the irouts.h module.*/
 	compute_outs(chordal_env->session_env->irg);
 
 	co = new_copy_opt(chordal_env, get_costs_loop_depth);
@@ -42,7 +43,9 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 #ifdef DO_STAT
 	lb = co_get_lower_bound(co);
 	copy_costs = co_get_copy_costs(co);
-	curr_vals[I_COPIES_INIT] += copy_costs;
+	copystat_add_max_costs(co_get_max_copy_costs(co));
+	copystat_add_inevit_costs(co_get_inevit_copy_costs(co));
+	copystat_add_init_costs(copy_costs);
 	DBG((dbg, LEVEL_1, "Init costs: %3d <= %3d\n", lb, copy_costs));
 #endif
 
@@ -50,7 +53,7 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	co_heur_opt(co);
 #ifdef DO_STAT
 	copy_costs = co_get_copy_costs(co);
-	curr_vals[I_COPIES_HEUR] += copy_costs;
+	copystat_add_heur_costs(copy_costs);
 	DBG((dbg, LEVEL_1, "Heur costs: %3d <= %3d\n", lb, copy_costs));
 #endif
 #endif
@@ -60,13 +63,12 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	assert(copy_costs>=lb && "At least one computation of these two is boooogy");
 	if (copy_costs > lb) {
 		co_ilp_opt(co);
-		be_ra_chordal_check(chordal_env);
 	}
 
 #ifdef DO_STAT
 	copy_costs = co_get_copy_costs(co);
 	assert(copy_costs>=lb && "At least one computation of these two is boooogy");
-	curr_vals[I_COPIES_OPT] += copy_costs;
+	copystat_add_opt_costs(copy_costs);
 	DBG((dbg, LEVEL_1, "Opt  costs: %3d <= %3d\n", lb, copy_costs));
 #endif
 #endif

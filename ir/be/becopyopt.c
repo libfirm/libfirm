@@ -121,6 +121,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
 			if (arg == root)
 				continue;
+			/* TODO or arg live at root.*/
 			if (nodes_interfere(co->chordal_env, root, arg)) {
 				unit->inevitable_costs += co->get_costs(root, arg, i);
 				continue;
@@ -260,6 +261,27 @@ int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
 
 int get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
 	return 1;
+}
+
+int co_get_max_copy_costs(const copy_opt_t *co) {
+	int i, res = 0;
+	unit_t *curr;
+
+	list_for_each_entry(unit_t, curr, &co->units, units) {
+		res += curr->inevitable_costs;
+		for (i=1; i<curr->node_count; ++i)
+			res += curr->costs[i];
+	}
+	return res;
+}
+
+int co_get_inevit_copy_costs(const copy_opt_t *co) {
+	int res = 0;
+	unit_t *curr;
+
+	list_for_each_entry(unit_t, curr, &co->units, units)
+		res += curr->inevitable_costs;
+	return res;
 }
 
 int co_get_copy_costs(const copy_opt_t *co) {

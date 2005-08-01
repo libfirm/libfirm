@@ -21,6 +21,60 @@
 #define DEBUG_LVL 0 //SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
+#define MAX_ARITY 10
+#define MAX_CLS_SIZE 10
+#define MAX_CLS_PHIS 10
+#define MAX_PHASE 2
+
+/**
+ * For an explanation of these values see the code of copystat_dump_pretty
+ */
+enum vals_t {
+	I_ALL_NODES = 0,
+	I_BLOCKS,
+
+	/* phi nodes */
+	I_PHI_CNT,			/* number of phi nodes */
+	I_PHI_ARG_CNT,		/* number of arguments of phis */
+	I_PHI_ARG_SELF,		/* number of arguments of phis being the phi itself */
+	I_PHI_ARG_CONST,	/* number of arguments of phis being consts */
+	I_PHI_ARG_PRED,		/* ... being defined in a cf-pred */
+	I_PHI_ARG_GLOB,		/* ... being defined elsewhere */
+	I_PHI_ARITY_S,
+	I_PHI_ARITY_E    = I_PHI_ARITY_S+MAX_ARITY,
+
+	/* copy nodes */
+	I_CPY_CNT,			/* number of copynodes */
+
+	/* phi classes */
+	I_CLS_CNT,			/* number of phi classes */
+	I_CLS_IF_FREE,		/* number of pc having no interference */
+	I_CLS_IF_MAX,		/* number of possible interferences in all classes */
+	I_CLS_IF_CNT,		/* number of actual interferences in all classes */
+	I_CLS_SIZE_S,
+	I_CLS_SIZE_E = I_CLS_SIZE_S+MAX_CLS_SIZE,
+	I_CLS_PHIS_S,
+	I_CLS_PHIS_E = I_CLS_PHIS_S+MAX_CLS_PHIS,
+
+	/* ilp values */
+	I_ILP_TIME,			/* !external set! solving time in seconds */
+	I_ILP_ITER,			/* !external set! number of simplex iterations */
+
+	/* copy instructions */
+	I_COPIES_MAX,		/* !external set! max possible costs of copies*/
+	I_COPIES_INIT,		/* !external set! number of copies in initial allocation */
+	I_COPIES_HEUR,		/* !external set! number of copies after heuristic */
+	I_COPIES_OPT,		/* !external set! number of copies after ilp */
+	I_COPIES_IF,		/* number of copies inevitable due to root-arg-interf */
+
+	ASIZE
+};
+
+/**
+ * Holds current values. Values are added till next copystat_reset
+ */
+int curr_vals[ASIZE];
+
 static pset *all_phi_nodes;
 static pset *all_phi_classes;
 static pset *all_copy_nodes;
@@ -91,16 +145,7 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 	/* type of argument {self, const, pred, glob} */
 	for (i = 0; i < arity; i++) {
         ir_node *block_of_arg, *block_ith_pred;
-		ir_node *arg = get_irn_n(phi, i);
-
-		if (phi != arg)	{
-			curr_vals[I_COPIES_MAX]++; /* if arg!=phi this is a possible copy */
-			if (nodes_interfere(chordal_env, phi, arg)) {
-				DBG((dbg, LEVEL_1, "%e -- In Block %N: %n %N %n %N\n",
-              get_irg_entity(chordal_env->session_env->irg), get_nodes_block(phi), phi, phi, arg, arg));
-				curr_vals[I_COPIES_IF]++;
-			}
-		}
+		ir_node *cfg_node, *arg = get_irn_n(phi, i);
 
 		if (arg == phi) {
 			curr_vals[I_PHI_ARG_SELF]++;
@@ -112,8 +157,17 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 			continue;
 		}
 
-		block_of_arg = get_Block_cfgpred_block(get_nodes_block(phi), i);
-		block_ith_pred = get_nodes_block(get_irn_n(get_nodes_block(phi), i));
+		block_of_arg = get_nodes_block(arg);
+
+		/* get the pred block skipping blocks on critical edges */
+		cfg_node = get_irn_n(get_nodes_block(phi), i);
+		block_ith_pred = get_nodes_block(cfg_node);
+		if (get_irn_opcode(cfg_node) == iro_Jmp && get_irn_arity(block_ith_pred) == 1) {
+			/* Then cfg_node_block has exactly 1 pred and 1 succ block,
+			 * thus it must have been inserted during remove_critical_edges */
+			block_ith_pred = get_Block_cfgpred_block(block_ith_pred, 0);
+		}
+
 		if (block_of_arg == block_ith_pred) {
 			curr_vals[I_PHI_ARG_PRED]++;
 			continue;
@@ -206,6 +260,28 @@ void copystat_collect_cls(be_chordal_env_t *chordal_env) {
 		if (is_curr_reg_class(member))
 			stat_phi_class(chordal_env, pc);
 	}
+}
+
+void copystat_add_max_costs(int costs) {
+	curr_vals[I_COPIES_MAX] += costs;
+}
+void copystat_add_inevit_costs(int costs) {
+	curr_vals[I_COPIES_IF] += costs;
+}
+void copystat_add_init_costs(int costs) {
+	curr_vals[I_COPIES_INIT] += costs;
+}
+void copystat_add_heur_costs(int costs) {
+	curr_vals[I_COPIES_HEUR] += costs;
+}
+void copystat_add_opt_costs(int costs) {
+	curr_vals[I_COPIES_OPT] += costs;
+}
+void copystat_add_ilp_time(int time) {
+	curr_vals[I_ILP_TIME] += time;
+}
+void copystat_add_ilp_iter(int iters) {
+	curr_vals[I_ILP_ITER] += iters;
 }
 
 void copystat_dump(ir_graph *irg) {

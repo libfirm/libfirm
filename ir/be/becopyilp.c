@@ -618,8 +618,8 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	DBG((dbg, LEVEL_2, "Applying solution...\n"));
 
 #ifdef DO_STAT
-	curr_vals[I_ILP_ITER] += lpp_get_iter_cnt(pi->curr_lp);
-	curr_vals[I_ILP_TIME] += lpp_get_sol_time(pi->curr_lp);
+	copystat_add_ilp_time(lpp_get_sol_time(pi->curr_lp));
+	copystat_add_ilp_iter(lpp_get_iter_cnt(pi->curr_lp));
 #endif
 
 	sol = xmalloc((pi->last_x_var+1) * sizeof(*sol));

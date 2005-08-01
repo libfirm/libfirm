@@ -130,6 +130,18 @@ int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos);
 int get_costs_all_one(ir_node *root, ir_node* arg, int pos);
 
 /**
+ * Returns the maximal costs possible, i.e. the costs if all
+ * pairs would be assigned different registers.
+ */
+int co_get_max_copy_costs(const copy_opt_t *co);
+
+/**
+ * Returns the inevitable costs, i.e. the costs of
+ * all copy pairs which interfere.
+ */
+int co_get_inevit_copy_costs(const copy_opt_t *co);
+
+/**
  * Returns the current costs the copies are causing.
  * The result includes inevitable costs and the costs
  * of the copies regarding the current register allocation
