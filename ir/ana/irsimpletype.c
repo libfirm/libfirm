@@ -39,15 +39,19 @@ static type *phi_cycle_type = NULL;
 /* ------------ Building and Removing the type information  ----------- */
 
 
-/* Init type link field so that types point to their pointers. */
-void precompute_pointer_types(void) {
+/**
+ * init type link field so that types point to their pointers.
+ */
+static void precompute_pointer_types(void) {
 #if 0
   int i;
   set_type_link(firm_unknown_type, firm_unknown_type);
   set_type_link(firm_none_type,    firm_unknown_type);
-  for (i = 0; i < get_irp_n_types(); ++i)
+
+  for (i = get_irp_n_types() - 1; i >= 0; --i)
     set_type_link(get_irp_type(i), (void *)firm_unknown_type);
-  for (i = get_irp_n_types()-1; i>=0; --i) {
+
+  for (i = get_irp_n_types() - 1; i >= 0; --i) {
     type *tp = get_irp_type(i);
     if (is_Pointer_type(tp))
       set_type_link(get_pointer_points_to_type(tp), (void *)tp);
@@ -57,7 +61,10 @@ void precompute_pointer_types(void) {
 #endif
 }
 
-/* Store pointer in link to speed up search of pointer type. */
+/**
+ * Returns a pointer to type which was stored in the link field
+ * to speed up search.
+ */
 static type *find_pointer_type_to (type *tp) {
 #if 0
   return (type *)get_type_link(tp);
@@ -69,7 +76,7 @@ static type *find_pointer_type_to (type *tp) {
 #endif
 }
 
-static type* compute_irn_type(ir_node *n);
+static type *compute_irn_type(ir_node *n);
 
 static type *find_type_for_Proj(ir_node *n) {
   type *tp;
@@ -138,6 +145,10 @@ static type *find_type_for_Proj(ir_node *n) {
   return tp;
 }
 
+/**
+ * Try to determine the type of a node.
+ * If a type cannot be determined, return @p firm_none_type.
+ */
 static type *find_type_for_node(ir_node *n) {
   type *tp = NULL;
   type *tp1 = NULL, *tp2 = NULL;
@@ -277,21 +288,21 @@ static type *find_type_for_node(ir_node *n) {
   /* catch special cases with fallthrough to binop/unop cases in default. */
   case iro_Sub: {
     if (mode_is_int(get_irn_mode(n))       &&
-	mode_is_reference(get_irn_mode(a)) &&
-	mode_is_reference(get_irn_mode(b))   ) {
+      mode_is_reference(get_irn_mode(a)) &&
+      mode_is_reference(get_irn_mode(b))   ) {
       VERBOSE_UNKNOWN_TYPE(("Sub %ld ptr - ptr = int: unknown type\n", get_irn_node_nr(n)));
       tp =  firm_unknown_type; break;
     }
   } /* fall through to Add. */
   case iro_Add: {
     if (mode_is_reference(get_irn_mode(n)) &&
-	mode_is_reference(get_irn_mode(a)) &&
-	mode_is_int(get_irn_mode(b))         ) {
+        mode_is_reference(get_irn_mode(a)) &&
+        mode_is_int(get_irn_mode(b))         ) {
       tp = tp1; break;
     }
     if (mode_is_reference(get_irn_mode(n)) &&
-	mode_is_int(get_irn_mode(a))       &&
-	mode_is_reference(get_irn_mode(b))    ) {
+        mode_is_int(get_irn_mode(a))       &&
+        mode_is_reference(get_irn_mode(b))    ) {
       tp = tp2; break;
     }
     goto default_code;
@@ -315,7 +326,7 @@ static type *find_type_for_node(ir_node *n) {
   } break;
 
   default:
-  default_code: {
+default_code: {
 
     if (is_unop(n)) {
       /* Is is proper to walk past a Conv??? */
@@ -333,7 +344,7 @@ static type *find_type_for_node(ir_node *n) {
 	      break;
       }
       if (get_firm_verbosity() > 55) {
-	VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
+        VERBOSE_UNKNOWN_TYPE(("Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
 			      get_type_name(tp1), get_type_name(tp2)));
       }
       tp = firm_unknown_type;
@@ -350,7 +361,7 @@ static type *find_type_for_node(ir_node *n) {
 }
 
 
-static type* compute_irn_type(ir_node *n) {
+static type *compute_irn_type(ir_node *n) {
   type *tp = get_irn_typeinfo_type(n);
 
   if (tp == initial_type) {
