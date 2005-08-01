@@ -2283,12 +2283,16 @@ dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
   FILE *f;
   ir_graph *rem = current_ir_graph;
   char *suffix1;
+  int rem_dump_const_local;
 
   /* if a filter is set, dump only the irg's that match the filter */
   if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
 
   current_ir_graph = irg;
+  rem_dump_const_local = dump_const_local;
+  /* dumping types does not work with local nodes */
+  dump_const_local = 0;
 
   if (get_interprocedural_view()) suffix1 = "-pure-wtypes-ip";
   else                            suffix1 = "-pure-wtypes";
@@ -2304,6 +2308,7 @@ dump_ir_graph_w_types (ir_graph *irg, const char *suffix)
   irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, f);
 
   vcg_close(f);
+  dump_const_local = rem_dump_const_local;
   current_ir_graph = rem;
 }
 
@@ -2314,10 +2319,15 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   int i;
   char *suffix1;
   ir_graph *rem = current_ir_graph;
+  int rem_dump_const_local;
 
   /* if a filter is set, dump only the irg's that match the filter */
   if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
+
+  rem_dump_const_local = dump_const_local;
+  /* dumping types does not work with local nodes */
+  dump_const_local = 0;
 
   if (get_interprocedural_view()) suffix1 = "-wtypes-ip";
   else                            suffix1 = "-wtypes";
@@ -2343,8 +2353,9 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   /* dump edges from graph to type info */
   irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, f);
 
-  current_ir_graph = rem;
   vcg_close(f);
+  dump_const_local = rem_dump_const_local;
+  current_ir_graph = rem;
 }
 
 /*---------------------------------------------------------------------*/
