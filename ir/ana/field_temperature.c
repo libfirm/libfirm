@@ -172,7 +172,7 @@ int get_type_estimated_size_bytes(type *tp) {
     break;
 
   case tpo_class:
-    s = get_mode_size_bytes(mode_P_mach); /* dispatch pointer */
+    s = get_mode_size_bytes(mode_P_data); /* dispatch pointer */
     /* fall through */
   case tpo_struct: {
     int i, n_mem = get_compound_n_members(tp);
