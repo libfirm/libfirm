@@ -1149,7 +1149,7 @@ void sc_val_from_ulong(unsigned long value, void *buffer)
   if (buffer == NULL) buffer = calc_buffer;
   pos = buffer;
 
-  while (pos < (char*)buffer + calc_buffer_size)
+  while (pos < (unsigned char *)buffer + calc_buffer_size)
   {
     *pos++ = (unsigned char)_digit(value & 0xf);
     value >>= 4;
