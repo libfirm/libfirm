@@ -1102,10 +1102,10 @@ build_value_type(ident *name, int len, type **tps) {
 type *new_type_method (ident *name, int n_param, int n_res) {
   type *res;
 
-  assert((get_mode_size_bytes(mode_P_mach) != -1) && "unorthodox modes not implemented");
-  res = new_type(type_method, mode_P_mach, name);
+  assert((get_mode_size_bytes(mode_P_code) != -1) && "unorthodox modes not implemented");
+  res = new_type(type_method, mode_P_code, name);
   res->state                        = layout_fixed;
-  res->size                         = get_mode_size_bits(mode_P_mach);
+  res->size                         = get_mode_size_bits(mode_P_code);
   res->attr.ma.n_params             = n_param;
   res->attr.ma.param_type           = xcalloc(n_param, sizeof(res->attr.ma.param_type[0]));
   res->attr.ma.value_params         = NULL;
