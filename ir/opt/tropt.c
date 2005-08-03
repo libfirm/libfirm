@@ -13,8 +13,17 @@
  *
  * Perform optimizations of the type representation.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
+
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 #include "tropt.h"
 
