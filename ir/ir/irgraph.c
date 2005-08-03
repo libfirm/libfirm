@@ -206,8 +206,8 @@ new_r_ir_graph (entity *ent, int n_loc)
 
   /* Proj results of start node */
   projX            = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
-  res->frame       = new_Proj (res->start, mode_P_mach, pn_Start_P_frame_base);
-  res->globals     = new_Proj (res->start, mode_P_mach, pn_Start_P_globals);
+  res->frame       = new_Proj (res->start, mode_P_data, pn_Start_P_frame_base);
+  res->globals     = new_Proj (res->start, mode_P_data, pn_Start_P_globals);
   res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
   res->args        = new_Proj (res->start, mode_T, pn_Start_T_args);
 #ifdef DEBUG_libfirm

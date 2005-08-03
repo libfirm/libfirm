@@ -701,7 +701,10 @@ new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
   r_in[0] = store;
   r_in[1] = objptr;
   memcpy(&r_in[2], in, sizeof(ir_node *) * arity);
-  res = new_ir_node(db, irg, block, op_Sel, mode_P_mach, r_arity, r_in);
+  /*
+   * FIXM: Sel's can select functions which should be of mode mode_P_code.
+   */
+  res = new_ir_node(db, irg, block, op_Sel, mode_P_data, r_arity, r_in);
   res->attr.s.ent = ent;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
@@ -736,7 +739,7 @@ new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symb
   ir_mode *mode;
 
   if ((symkind == symconst_addr_name) || (symkind == symconst_addr_ent))
-    mode = mode_P_mach;
+    mode = mode_P_data;   /* FIXME: can be mode_P_code */
   else
     mode = mode_Iu;
 
