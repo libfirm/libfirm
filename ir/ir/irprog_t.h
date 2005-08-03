@@ -148,8 +148,11 @@ _get_const_code_irg(void) {
 void           set_irp_ip_outedges(ir_node ** ip_outedges);
 ir_node**      get_irp_ip_outedges(void);
 
-/** initializes ir_prog. Calls the constructor for an ir_prog. */
-void init_irprog(void);
+/** initializes ir_prog. Constructs only the basic lists */
+void init_irprog_1(void);
+
+/** Completes ir_prog. */
+void init_irprog_2(void);
 
 #define get_irp_n_irgs()       _get_irp_n_irgs()
 #define get_irp_irg(pos)       _get_irp_irg(pos)

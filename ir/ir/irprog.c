@@ -32,14 +32,10 @@
 ir_prog *irp;
 ir_prog *get_irp(void) { return irp; }
 
-/* initializes ir_prog. Calles the constructor for an ir_prog. */
-void init_irprog(void) {
-  new_ir_prog ();
-}
-
-/* Create a new ir prog. Automatically called by init_firm through
-   init_irprog. */
-ir_prog *new_ir_prog (void) {
+/**
+ *  Create a new incomplete ir_prog.
+ */
+static ir_prog *new_incomplete_ir_prog (void) {
   ir_prog *res;
 
   res = xmalloc (sizeof(*res));
@@ -51,31 +47,56 @@ ir_prog *new_ir_prog (void) {
   res->pseudo_graphs = NEW_ARR_F(ir_graph *, 0);
   res->types         = NEW_ARR_F(type *, 0);
   res->modes         = NEW_ARR_F(ir_mode *, 0);
-  res->name          = new_id_from_str(INITAL_PROG_NAME);
 
 #ifdef DEBUG_libfirm
   res->max_node_nr = 0;
 #endif
 
-  res->glob_type = new_type_class(new_id_from_str (GLOBAL_TYPE_NAME));
+  return res;
+}
+
+/** Completes an incomplete irprog. */
+static ir_prog *complete_ir_prog(ir_prog *irp) {
+
+  irp->name      = new_id_from_str(INITAL_PROG_NAME);
+
+  irp->glob_type = new_type_class(new_id_from_str (GLOBAL_TYPE_NAME));
   /* Remove type from type list.  Must be treated differently than
      other types. */
-  remove_irp_type(res->glob_type);
+  remove_irp_type(irp->glob_type);
 
-  res->const_code_irg = new_const_code_irg();
+  irp->const_code_irg   = new_const_code_irg();
 
-  res->outs_state   = outs_none;
-  res->ip_outedges  = NULL;
-  res->trouts_state = outs_none;
-  res->class_cast_state = ir_class_casts_transitive;
+  irp->outs_state       = outs_none;
+  irp->ip_outedges      = NULL;
+  irp->trouts_state     = outs_none;
+  irp->class_cast_state = ir_class_casts_transitive;
 
-  return res;
+  return irp;
+}
+
+/* initializes ir_prog. Constructs only the basic lists */
+void init_irprog_1(void) {
+  new_incomplete_ir_prog();
+}
+
+/* Completes ir_prog. */
+void init_irprog_2(void) {
+  complete_ir_prog(irp);
+}
+
+/* Create a new ir prog. Automatically called by init_firm through
+   init_irprog. */
+ir_prog *new_ir_prog (void) {
+  return complete_ir_prog(new_incomplete_ir_prog());
 }
 
 /* frees all memory used by irp.  Types in type list, irgs in irg
     list and entities in global type must be freed by hand before. */
 void     free_ir_prog(void) {
-  free_type(irp->glob_type);
+  if (irp->glob_type)
+    free_type(irp->glob_type);
+
   /* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
   DEL_ARR_F(irp->graphs);
   DEL_ARR_F(irp->pseudo_graphs);
