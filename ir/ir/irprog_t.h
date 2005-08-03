@@ -38,19 +38,20 @@
 
 /** ir_prog */
 struct ir_prog {
-  firm_kind kind;
+  firm_kind kind;                 /**< must be k_ir_prog */
   ident     *name;                /**< A file name or the like. */
   ir_graph  *main_irg;            /**< entry point to the compiled program
 				       @@@ or a list, in case we compile a library or the like? */
   ir_graph **graphs;              /**< all graphs in the ir */
   ir_graph **pseudo_graphs;       /**< all pseudo graphs in the ir. See pseudo_irg.c */
   ir_graph  *const_code_irg;      /**< This ir graph gives the proper environment
-				       to allocate nodes the represent values
-				       of constant entities. It is not meant as
-				       a procedure.  */
+                                       to allocate nodes the represent values
+                                       of constant entities. It is not meant as
+                                       a procedure.  */
   type      *glob_type;           /**< global type.  Must be a class as it can
-			  	       have fields and procedures.  */
+                                       have fields and procedures.  */
   type     **types;               /**< all types in the ir */
+  ir_mode  **modes;               /**< all modes in the ir */
 
   /* -- states of and access to generated information -- */
   irg_phase_state phase_state;    /**< State of construction. */
@@ -59,7 +60,7 @@ struct ir_prog {
 
   irg_outs_state outs_state;      /**< State of out edges of ir nodes. */
   ir_node **ip_outedges;          /**< Huge Array that contains all out edges
-				       in interprocedural view. */
+                                       in interprocedural view. */
   irg_outs_state trouts_state;    /**< State of out edges of type information. */
 
   irg_callee_info_state callee_info_state; /**< Validity of callee information.
@@ -83,23 +84,26 @@ struct ir_prog {
 #endif
 };
 
-void remove_irp_type_from_list (type *typ);
+/** Adds mode to the list of modes in irp. */
+void  add_irp_mode(ir_mode *mode);
+
+/* INLINE functions */
 
 static INLINE type *
-__get_glob_type(void) {
+_get_glob_type(void) {
   assert(irp);
   return irp->glob_type = skip_tid(irp->glob_type);
 }
 
 static INLINE int
-__get_irp_n_irgs(void) {
+_get_irp_n_irgs(void) {
   assert (irp && irp->graphs);
   if (get_visit_pseudo_irgs()) return get_irp_n_allirgs();
-  return (ARR_LEN((irp)->graphs));
+  return ARR_LEN(irp->graphs);
 }
 
 static INLINE ir_graph *
-__get_irp_irg(int pos){
+_get_irp_irg(int pos){
   if (get_visit_pseudo_irgs()) return get_irp_allirg(pos);
   assert(0 <= pos && pos <= get_irp_n_irgs());
   return irp->graphs[pos];
@@ -107,16 +111,28 @@ __get_irp_irg(int pos){
 
 
 static INLINE int
-__get_irp_n_types (void) {
+_get_irp_n_types (void) {
   assert (irp && irp->types);
-  return (ARR_LEN((irp)->types));
+  return ARR_LEN(irp->types);
 }
 
 static INLINE type *
-__get_irp_type(int pos) {
+_get_irp_type(int pos) {
   assert (irp && irp->types);
   /* Don't set the skip_tid result so that no double entries are generated. */
   return skip_tid(irp->types[pos]);
+}
+
+static INLINE int
+_get_irp_n_modes(void) {
+  assert (irp && irp->modes);
+  return ARR_LEN(irp->modes);
+}
+
+static INLINE ir_mode *
+_get_irp_mode(int pos) {
+  assert (irp && irp->modes);
+  return irp->modes[pos];
 }
 
 #ifdef DEBUG_libfirm
@@ -125,8 +141,7 @@ int get_irp_new_node_nr(void);
 #endif
 
 static INLINE ir_graph *
-__get_const_code_irg(void)
-{
+_get_const_code_irg(void) {
   return irp->const_code_irg;
 }
 
@@ -136,11 +151,13 @@ ir_node**      get_irp_ip_outedges(void);
 /** initializes ir_prog. Calls the constructor for an ir_prog. */
 void init_irprog(void);
 
-#define get_irp_n_irgs()       __get_irp_n_irgs()
-#define get_irp_irg(pos)       __get_irp_irg(pos)
-#define get_irp_n_types()      __get_irp_n_types()
-#define get_irp_type(pos)      __get_irp_type(pos)
-#define get_const_code_irg()   __get_const_code_irg()
-#define get_glob_type()        __get_glob_type()
+#define get_irp_n_irgs()       _get_irp_n_irgs()
+#define get_irp_irg(pos)       _get_irp_irg(pos)
+#define get_irp_n_types()      _get_irp_n_types()
+#define get_irp_type(pos)      _get_irp_type(pos)
+#define get_irp_n_modes()      _get_irp_n_modes()
+#define get_irp_mode(pos)      _get_irp_mode(pos)
+#define get_const_code_irg()   _get_const_code_irg()
+#define get_glob_type()        _get_glob_type()
 
 #endif /* ifndef _IRPROG_T_H_ */

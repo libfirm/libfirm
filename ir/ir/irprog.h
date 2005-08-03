@@ -150,6 +150,12 @@ type *get_irp_type(int pos);
 /** Overwrites the type at position pos with another type. */
 void  set_irp_type(int pos, type *typ);
 
+/** Returns the number of all modes in the irp. */
+int   get_irp_n_modes(void);
+
+/** Returns the mode at position pos in the irp. */
+ir_mode *get_irp_mode(int pos);
+
 /**  Return the graph for global constants.
  *
  *   Returns an irgraph that only contains constant expressions for

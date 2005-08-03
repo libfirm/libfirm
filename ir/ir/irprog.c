@@ -45,11 +45,13 @@ ir_prog *new_ir_prog (void) {
   res = xmalloc (sizeof(*res));
   memset(res, 0, sizeof(*res));
   irp = res;
-  /* res->obst      = xmalloc (sizeof(*res->obst)); */
-  res->graphs        = NEW_ARR_F (ir_graph *, 0);
-  res->pseudo_graphs = NEW_ARR_F (ir_graph *, 0);
-  res->types  = NEW_ARR_F (type *, 0);
-  res->name   = new_id_from_str(INITAL_PROG_NAME);
+
+  res->kind          = k_ir_prog;
+  res->graphs        = NEW_ARR_F(ir_graph *, 0);
+  res->pseudo_graphs = NEW_ARR_F(ir_graph *, 0);
+  res->types         = NEW_ARR_F(type *, 0);
+  res->modes         = NEW_ARR_F(ir_mode *, 0);
+  res->name          = new_id_from_str(INITAL_PROG_NAME);
 
 #ifdef DEBUG_libfirm
   res->max_node_nr = 0;
@@ -76,10 +78,13 @@ void     free_ir_prog(void) {
   free_type(irp->glob_type);
   /* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
   DEL_ARR_F(irp->graphs);
+  DEL_ARR_F(irp->pseudo_graphs);
   DEL_ARR_F(irp->types);
+  DEL_ARR_F(irp->modes);
 
-  irp->kind = k_BAD;
+  irp->name           = NULL;
   irp->const_code_irg = NULL;
+  irp->kind           = k_BAD;
 }
 
 /*- Functions to access the fields of ir_prog -*/
@@ -97,7 +102,7 @@ void set_irp_main_irg(ir_graph *main_irg) {
 }
 
 type *(get_glob_type)(void) {
-  return __get_glob_type();
+  return _get_glob_type();
 }
 
 /* Adds irg to the list of ir graphs in irp. */
@@ -142,11 +147,11 @@ void remove_irp_irg(ir_graph *irg){
 }
 
 int (get_irp_n_irgs)(void) {
-  return __get_irp_n_irgs();
+  return _get_irp_n_irgs();
 }
 
 ir_graph *(get_irp_irg)(int pos){
-  return __get_irp_irg(pos);
+  return _get_irp_irg(pos);
 }
 
 void set_irp_irg(int pos, ir_graph *irg) {
@@ -197,17 +202,34 @@ void remove_irp_type(type *typ) {
 }
 
 int (get_irp_n_types) (void) {
-  return __get_irp_n_types();
+  return _get_irp_n_types();
 }
 
 type *(get_irp_type) (int pos) {
-  return __get_irp_type(pos);
+  return _get_irp_type(pos);
 }
 
 void  set_irp_type(int pos, type *typ) {
   assert (irp && typ);
   assert (pos < (ARR_LEN((irp)->types)));
   irp->types[pos] = typ;
+}
+
+/* Returns the number of all modes in the irp. */
+int (get_irp_n_modes)(void) {
+  return _get_irp_n_modes();
+}
+
+/* Returns the mode at position pos in the irp. */
+ir_mode *(get_irp_mode)(int pos) {
+  return _get_irp_mode(pos);
+}
+
+/* Adds mode to the list of modes in irp. */
+void add_irp_mode(ir_mode *mode) {
+  assert(mode != NULL);
+  assert(irp);
+  ARR_APP1(ir_mode *, irp->modes, mode);
 }
 
 #ifdef DEBUG_libfirm
@@ -233,9 +255,8 @@ const char  *get_irp_prog_name(void) {
 }
 
 
-ir_graph *(get_const_code_irg)(void)
-{
-  return __get_const_code_irg();
+ir_graph *(get_const_code_irg)(void) {
+  return _get_const_code_irg();
 }
 
 irg_phase_state get_irp_phase_state(void) {
