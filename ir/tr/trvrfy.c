@@ -122,7 +122,7 @@ static void on_irg_storage(ir_node *n, void *env) {
 }
 
 /**
- * checks wheater a given constant IR node is NOT on the
+ * checks whether a given constant IR node is NOT on the
  * constant IR graph.
  */
 static int constant_on_wrong_irg(ir_node *n) {
@@ -145,7 +145,7 @@ static int constants_on_wrong_irg(entity *ent) {
     int i;
     for (i = 0; i < get_compound_ent_n_values(ent); i++) {
       if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
-    return 1;
+        return 1;
     }
   } else {
     /* Might not be set if entity belongs to a description or is external allocated. */
@@ -210,7 +210,7 @@ static int check_entity(entity *ent) {
     if (is_atomic_type(tp)) {
       ir_node *val = get_atomic_ent_value(ent);
       if (val)
-	assert(get_irn_mode(val) == get_type_mode(tp) &&
+        assert(get_irn_mode(val) == get_type_mode(tp) &&
 	       "Mode of constant in entity must match type.");
     }
   }
