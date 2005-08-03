@@ -963,7 +963,7 @@ int     is_Enumeration_type     (const type *enumeration);
  */
 
 /** Creates a new type pointer with mode mode_p. */
-#define new_type_pointer(N, P) new_type_pointer_mode(N, P, mode_P_mach)
+#define new_type_pointer(N, P) new_type_pointer_mode(N, P, mode_P_data)
 
 /** Creates a new type pointer with given pointer mode. */
 type *new_type_pointer_mode      (ident *name, type *points_to, ir_mode *ptr_mode);
