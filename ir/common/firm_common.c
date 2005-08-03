@@ -48,6 +48,7 @@ const char* print_firm_kind(void *firm_thing) {
   case k_ir_loop                : return "k_ir_loop";
   case k_ir_compound_graph_path : return "k_ir_compound_graph_path";
   case k_ir_extblk              : return "k_ir_extblk";
+  case k_ir_prog                : return "k_ir_prog";
   default: return "";
   }
 }
@@ -97,6 +98,9 @@ void firm_identify_thing(void *X)
     break;
   case k_ir_extblk:
     printf("extended block: (%p)\n", X);
+    break;
+  case k_ir_prog:
+    printf("irp: (%p)\n", X);
     break;
   default:
     printf("Cannot identify thing at (%p).\n", X);
