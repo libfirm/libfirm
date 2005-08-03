@@ -72,6 +72,8 @@ init_firm(const firm_parameter_t *param)
   init_tpop();
   /* create an obstack and put all tarvals in a pdeq */
   init_tarval_1();
+  /* Builds a basic program representation, so modes can be added. */
+  init_irprog_1();
   /* initialize all modes an ir node can consist of */
   init_mode();
   /* initialize tarvals, and floating point arithmetic */
@@ -88,7 +90,7 @@ init_firm(const firm_parameter_t *param)
   firm_init_reassociation();
   /* Builds a construct allowing to access all information to be constructed
      later. */
-  init_irprog();
+  init_irprog_2();
   /* Constructs some idents needed. */
   init_type();
   init_entity();
