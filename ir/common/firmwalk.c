@@ -34,8 +34,6 @@
 static struct obstack fw_obst;
 
 /** This map stores all types of firm */
-static pmap *mode_map = NULL;
-/** This map stores all types of firm */
 static pmap *type_map = NULL;
 /** This map stores all entities of firm */
 static pmap *entity_map = NULL;
@@ -219,7 +217,6 @@ void *get_firm_walk_link(void *thing)
 static
 void fw_collect_tore(type_or_ent *tore, void *env)
 {
-  ir_mode *mode;
   type *tp;
   entity *ent;
 
@@ -233,17 +230,11 @@ void fw_collect_tore(type_or_ent *tore, void *env)
     break;
   case k_type:
     tp = (type *)tore;
-    mode = get_type_mode(tp);
+
     /*  append type to list */
     set_type_link(tp, NULL);
     if (!pmap_contains(type_map, tp))
       pmap_insert(type_map, tp, env);
-
-    /* insert only modes (non atomic types, i.e. class, array or struct
-       have no mode. The link field will be cleared in the walk_do_mode()
-       callback function. */
-    if ((NULL != mode) && (!pmap_contains(mode_map, mode)))
-      pmap_insert(mode_map, mode, env);
     break;
   default: break;
   }
@@ -261,23 +252,15 @@ static
 void fw_collect_irn(ir_node *irn, void *env)
 {
   fw_data *data;
-  ir_mode *mode = get_irn_mode(irn);
-
-  /* The link field will be cleared in the walk_do_mode()
-    callback function. */
-  if ((NULL != mode) && (!pmap_contains(mode_map, mode)))
-    pmap_insert(mode_map, mode, env);
 
   /* block nodes. */
-  if (is_Block(irn))
-  {
+  if (is_Block(irn)) {
     /* add this block to ir graph's block list */
     data = fw_get_data(get_current_ir_graph());
     ARR_APP1(ir_node *, FW_GET_DATA_LIST(data), irn);
   }
   /* non block nodes */
-  else
-  {
+  else {
     /* add this node to block's node list */
     ir_node *block = get_nodes_block(irn);
     data = fw_get_data(block);
@@ -308,49 +291,22 @@ void firm_walk_init(firm_walk_flags flags)
   /* init obstack */
   obstack_init(&fw_obst);
 
-  /*  Init map of modes and lists of type and entity. If map or list
-      allready exists, free it. */
-  if (mode_map)
-  {
-    pmap_destroy(mode_map);
-  }
-  mode_map = pmap_create();
-
+  /*  Init map of type and entity. If map or list
+      already exists, free it. */
   if (type_map)
-  {
     pmap_destroy(type_map);
-  }
   type_map = pmap_create();
 
   if (entity_map)
-  {
     pmap_destroy(entity_map);
-  }
   entity_map = pmap_create();
-
-  /* insert internal modes to mode hash. The link field will be cleared
-     in the walk_do_mode() callback function.
-     Other used modes are added by collecting types */
-
-  /*
-     ### RG: should be done by inspection the mode of all irn
-
-     pmap_insert(mode_map, mode_BB, NULL);
-     pmap_insert(mode_map, mode_T, NULL);
-     pmap_insert(mode_map, mode_ANY, NULL);
-     pmap_insert(mode_map, mode_BAD, NULL);
-     pmap_insert(mode_map, mode_X, NULL);
-     pmap_insert(mode_map, mode_M, NULL);
-     pmap_insert(mode_map, mode_b, NULL);
-  */
 
   /*  Collect all types (also unused types) if flag is set */
   if (FW_WITH_ALL_TYPES & flags)
     type_walk(fw_collect_tore, NULL, NULL);
 
   /*  for each ir graph */
-  for (i = 0; i < get_irp_n_irgs(); i++)
-  {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph *irg = get_irp_irg(i);
     set_irg_link(irg, NULL);
 
@@ -367,8 +323,6 @@ void firm_walk_finalize(void)
   int i;
 
   /* free all used maps and lists */
-  pmap_destroy(mode_map);
-  mode_map = NULL;
   pmap_destroy(type_map);
   type_map = NULL;
   pmap_destroy(entity_map);
@@ -389,8 +343,8 @@ void firm_walk_finalize(void)
 /** Dumps the firm ir.
  *
  *  After initializing the firm walker by calling firm_walk_init()
- *  the firm structure could be accessed by definign the firm walk interface
- *  wif. This function could be called serveral times to customize the
+ *  the firm structure could be accessed by defining the firm walk interface
+ *  wif. This function could be called several times to customize the
  *  walk order or definitions.
  *
  *  @param wif Walk interface which contains the callback function
@@ -398,7 +352,7 @@ void firm_walk_finalize(void)
  *  @see firm_walk_interface */
 void firm_walk(firm_walk_interface *wif)
 {
-  int irg_i, block_i, block_list_len, irn_i, irn_list_len;
+  int mode_i, irg_i, block_i, block_list_len, irn_i, irn_list_len;
   pmap_entry *entry;
   fw_data *data;
   ir_node *block, **block_list, **irn_list;
@@ -410,11 +364,8 @@ void firm_walk(firm_walk_interface *wif)
   if (wif->do_mode_init) wif->do_mode_init(wif->env);
   if (wif->do_mode)
   {
-    for (entry = pmap_first(mode_map); entry; entry = pmap_next(mode_map))
-    {
-      set_mode_link((ir_mode*)entry->key, NULL);
-      wif->do_mode(entry->key, wif->env);
-    }
+    for (mode_i = get_irp_n_modes() - 1; mode_i >= 0; --mode_i)
+      wif->do_mode(get_irp_mode(mode_i), wif->env);
   }
   if (wif->do_mode_finalize) wif->do_mode_finalize(wif->env);
 
