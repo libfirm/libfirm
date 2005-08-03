@@ -50,14 +50,18 @@ static type *default_gen_pointer_type_to(type *tp) {
     if (get_type_n_pointertypes_to(tp) > 0) {
       res = get_type_pointertype_to(tp, 0);
     } else {
-      res = new_type_pointer(mangle_u(get_type_ident(tp), ptr_type_suffix), tp);
+      ir_mode *mode = mode_P_data;
+
+      if (is_Method_type(tp))
+        mode = mode_P_code;
+      res = new_type_pointer_mode(mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode);
       /* Update trout for pointertypes, so we can use it in next call. */
       add_type_pointertype_to(tp, res);
     }
   } else {
     res = find_pointer_type_to_type(tp);
     if (res == firm_unknown_type)
-      res = new_type_pointer(mangle_u(get_type_ident(tp), ptr_type_suffix), tp);
+      res = new_type_pointer_mode(mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode_P_data);
   }
 
   return res;
