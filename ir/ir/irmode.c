@@ -22,6 +22,7 @@
 
 # include <stddef.h>
 
+# include "irprog_t.h"
 # include "irmode_t.h"
 # include "ident.h"
 # include "tv_t.h"
@@ -200,7 +201,8 @@ ir_mode *mode_b;
 ir_mode *mode_P;
 
 /* machine specific modes */
-ir_mode *mode_P_mach;	/* machine specific pointer mode */
+ir_mode *mode_P_code;	/**< machine specific pointer mode for code addresses */
+ir_mode *mode_P_data;	/**< machine specific pointer mode for data addresses */
 
 /* * *
  * functions defined in irmode.h
@@ -230,14 +232,26 @@ INLINE ir_mode *get_modeANY(void) { ANNOUNCE(); return mode_ANY; }
 INLINE ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
 
 
-ir_mode *(get_modeP_mach)(void) {
+ir_mode *(get_modeP_code)(void) {
   ANNOUNCE();
-  return _get_modeP_mach();
+  return _get_modeP_code();
 }
 
-void (set_modeP_mach)(ir_mode *p) {
+ir_mode *(get_modeP_data)(void) {
   ANNOUNCE();
-  _set_modeP_mach(p);
+  return _get_modeP_data();
+}
+
+void set_modeP_code(ir_mode *p) {
+  assert(mode_is_reference(p));
+
+  mode_P_code = p;
+}
+
+void set_modeP_data(ir_mode *p) {
+  assert(mode_is_reference(p));
+
+  mode_P_data = p;
 }
 
 /**
@@ -258,6 +272,9 @@ static ir_mode *register_mode(const ir_mode *new_mode)
   mode->kind = k_ir_mode;
   if (num_modes >= irm_max) mode->code = num_modes;
   num_modes++;
+
+  /* add the new mode to the irp list of modes */
+  add_irp_mode(mode);
 
   set_mode_values(mode);
 
@@ -364,7 +381,7 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
   return mode;
 }
 
-/* Functions for the direct access to all attributes od a ir_mode */
+/* Functions for the direct access to all attributes of an ir_mode */
 modecode
 (get_mode_modecode)(const ir_mode *mode)
 {
@@ -901,7 +918,8 @@ init_mode (void)
   mode_P = register_mode(&newmode);
 
   /* set the machine specific modes to the predefined ones */
-  mode_P_mach = mode_P;
+  mode_P_code = mode_P;
+  mode_P_data = mode_P;
 }
 
 /* find a signed mode for an unsigned integer mode */
@@ -998,5 +1016,6 @@ void finish_mode(void) {
   mode_b   = NULL;
   mode_P   = NULL;
 
-  mode_P_mach = NULL;
+  mode_P_code = NULL;
+  mode_P_data = NULL;
 }

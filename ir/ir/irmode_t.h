@@ -54,16 +54,13 @@ struct ir_mode {
 /* ------------------------------- *
  * inline functions                *
  * ------------------------------- */
-extern ir_mode *mode_P_mach;
+extern ir_mode *mode_P_code, *mode_P_data;
 
 static INLINE ir_mode *
-_get_modeP_mach(void) { return mode_P_mach; }
+_get_modeP_code(void) { return mode_P_code; }
 
-static INLINE void
-_set_modeP_mach(ir_mode *p) {
-  assert(mode_is_reference(p));
-  mode_P_mach = p;
-}
+static INLINE ir_mode *
+_get_modeP_data(void) { return mode_P_data; }
 
 static INLINE modecode
 _get_mode_modecode(const ir_mode *mode) { return mode->code; }
@@ -217,8 +214,8 @@ void init_mode(void);
 /** mode module finalization. frees all memory.  */
 void finish_mode(void);
 
-#define get_modeP_mach()               _get_modeP_mach()
-#define set_modeP_mach(p)              _set_modeP_mach(p)
+#define get_modeP_code()               _get_modeP_code()
+#define get_modeP_data()               _get_modeP_data()
 #define get_mode_modecode(mode)        _get_mode_modecode(mode)
 #define get_mode_ident(mode)           _get_mode_ident(mode)
 #define get_mode_sort(mode)            _get_mode_sort(mode)

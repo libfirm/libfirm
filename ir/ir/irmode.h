@@ -321,8 +321,11 @@ extern ir_mode *mode_C;  /**< 8 bit char */
 extern ir_mode *mode_U;  /**< 16 bit unicode char */
 
 extern ir_mode *mode_P;  /**< pointer */
-extern ir_mode *mode_P_mach; /**< A pointer mode that is set by the client of libfirm.  This mode
-			       represents the pointer size of the target machine. Is initialized
+extern ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
+			       represents the pointer size of the target machine code addresses. Is initialized
+			       to mode_P. */
+extern ir_mode *mode_P_data; /**< A pointer mode that is set by the client of libfirm.  This mode
+			       represents the pointer size of the target machine data addresses. Is initialized
 			       to mode_P. */
 
 /* -- Auxiliary modes necessary for the Firm representation -- */
@@ -359,14 +362,23 @@ ir_mode *get_modeT(void);
 ir_mode *get_modeANY(void);
 ir_mode *get_modeBAD(void);
 
-/** Returns the machine specific pointer mode. */
-ir_mode *get_modeP_mach(void);
+/** Returns the machine specific pointer mode for code addresses. */
+ir_mode *get_modeP_code(void);
+
+/** Returns the machine specific pointer mode for data addresses. */
+ir_mode *get_modeP_data(void);
 
 /**
- * Sets the machine specific pointer mode.
+ * Sets the machine specific pointer mode for code addresses.
  * If not set, the predefined mode mode_P will be used.
  */
-void set_modeP_mach(ir_mode *p);
+void set_modeP_code(ir_mode *p);
+
+/**
+ * Sets the machine specific pointer mode for data addresses.
+ * If not set, the predefined mode mode_P will be used.
+ */
+void set_modeP_data(ir_mode *p);
 
 /**
    Functions to check, whether a modecode is signed, float, int, character,
