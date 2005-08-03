@@ -1144,14 +1144,14 @@ void sc_val_from_long(long value, void *buffer)
 
 void sc_val_from_ulong(unsigned long value, void *buffer)
 {
-  char *pos;
+  unsigned char *pos;
 
   if (buffer == NULL) buffer = calc_buffer;
   pos = buffer;
 
   while (pos < (char*)buffer + calc_buffer_size)
   {
-    *pos++ = _digit(value & 0xf);
+    *pos++ = (unsigned char)_digit(value & 0xf);
     value >>= 4;
   }
 }
@@ -1403,8 +1403,8 @@ int sc_had_carry(void)
 
 unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 {
-  const char *val     = (const char *)value;
-  unsigned nibble_ofs = 2 * byte_ofs;
+  const char *val = (const char *)value;
+  int nibble_ofs  = 2 * byte_ofs;
   unsigned char res;
 
   /* the current scheme uses one byte to store a nibble */
