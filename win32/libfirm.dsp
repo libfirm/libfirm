@@ -520,234 +520,297 @@ SOURCE=..\ir\arch\archop.h
 # Begin Source File
 
 SOURCE=..\ir\be\be.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\be_t.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bearch.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bearch.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bearch_firm.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bearch_firm.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_asm_gnu.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_asm_gnu.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_dump_globals.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_dump_globals.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_types.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal_draw.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal_draw.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal_t.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordalspill.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyheur.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyilp.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyopt.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyopt.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyoptmain.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyoptmain.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopystat.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopystat.h
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bedupl.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beirgmod.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beirgmod.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belistsched.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belistsched.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belive.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belive.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belive_t.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bemain.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benode.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benode_t.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benumb.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benumb.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benumb_t.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bera.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bera.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bera_t.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\besched.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\besched.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\besched_t.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bessadestr.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bessadestr.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beutil.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beutil.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\lpp.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\lpp.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\lpp_local.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\lpp_local.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\lpp_remote.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\lpp_remote.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\mps.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\mps.h
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\sp_matrix.c
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\sp_matrix.h
+# PROP Exclude_From_Build 1
 # End Source File
 # End Group
 # Begin Group "common"
@@ -788,6 +851,14 @@ SOURCE=..\ir\common\firmwalk.c
 # Begin Source File
 
 SOURCE=..\ir\common\firmwalk.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\common\irtools.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\common\irtools.h
 # End Source File
 # Begin Source File
 
@@ -889,6 +960,15 @@ SOURCE=..\ir\ir\irarch.c
 # Begin Source File
 
 SOURCE=..\ir\ir\irarch.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irargs.c
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irargs_t.h
 # End Source File
 # Begin Source File
 
@@ -1000,6 +1080,10 @@ SOURCE=..\ir\ir\irgwalk.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irgwalk_blk.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irhooks.c
 # End Source File
 # Begin Source File
@@ -1105,6 +1189,10 @@ SOURCE=..\ir\ir\irvrfy.c
 # Begin Source File
 
 SOURCE=..\ir\ir\irvrfy.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irvrfy_t.h
 # End Source File
 # Begin Source File
 
@@ -1217,6 +1305,10 @@ SOURCE=..\ir\opt\return.h
 # Begin Source File
 
 SOURCE=..\ir\opt\scalar_replace.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\scalar_replace.h
 # End Source File
 # Begin Source File
 
