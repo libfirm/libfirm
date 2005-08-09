@@ -110,18 +110,22 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
         ir_node *arg = get_irn_n(phi, i);
         ir_node *proj = pmap_get(arg_map, arg);
 
-        if(!proj) {
-          proj = new_r_Proj(irg, pred_bl, dummy, get_irn_mode(arg), n_projs++);
-          pmap_insert(arg_map, arg, proj);
-        }
+       	if(!proj && !nodes_interfere(chordal_env, phi, arg)) {
+	          proj = new_r_Proj(irg, pred_bl, dummy, get_irn_mode(arg), n_projs++);
+	          pmap_insert(arg_map, arg, proj);
+       	}
 
-        set_irn_n(phi, i, proj);
+		if (proj) {
+			assert(get_irn_mode(phi) == get_irn_mode(proj));
+	        set_irn_n(phi, i, proj);
+		}
       }
 
-      j = 0;
       in = malloc(n_projs * sizeof(in[0]));
-      pmap_foreach(arg_map, ent)
-        in[j++] = ent->key;
+      pmap_foreach(arg_map, ent) {
+      	int proj_nr = get_Proj_proj(ent->value);
+        in[proj_nr] = ent->key;
+      }
 
       perm = new_Perm(fact, chordal_env->cls, irg, pred_bl, n_projs, in);
       insert_after = sched_skip(sched_last(pred_bl), 0, skip_cf_predicator, chordal_env);
@@ -152,6 +156,7 @@ static void insert_all_perms(be_chordal_env_t *chordal_env) {
 #define get_pinning_block(irn) ((ir_node *)get_irn_link(irn))
 #define pin_irn(irn, lock) (set_irn_link(irn, lock))
 
+
 /**
  * Adjusts the register allocation for the phi-operands
  * by inserting perm nodes, if necessary.
@@ -165,87 +170,82 @@ static void adjust_phi_arguments(be_chordal_env_t *chordal_env, ir_node *phi) {
 	const arch_register_class_t *cls;
 
 	assert(is_Phi(phi) && "Can only handle phi-destruction :)");
-	DBG((dbg, LEVEL_1, "  for %+F\n", phi));
 
-	cls = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, arch_pos_make_out(0));
 	phi_block = get_nodes_block(phi);
 	phi_reg = get_reg(phi);
+	cls = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, arch_pos_make_out(0));
 
 	/* process all arguments of the phi */
 	for(i=0, max=get_irn_arity(phi); i<max; ++i) {
-		ir_node *perm;
-
 		arg = get_irn_n(phi, i);
-		assert(is_Proj(arg));
-		arg_block = get_nodes_block(arg);
+		arg_block = get_Block_cfgpred_block(phi_block, i);
 		arg_reg = get_reg(arg);
 		assert(arg_reg && "Register must be set while placing perms");
-		DBG((dbg, LEVEL_3, "%+F has register %s assigned\n", arg, arg_reg->name));
-		perm = get_Proj_pred(arg);
-		//TODO reenable this if classify is implemented. assert(is_Perm(perm));
 
-		DBG((dbg, LEVEL_1, "    arg %+F has perm %+F\n", arg, perm));
-		/* if registers don't match ...*/
-		if (phi_reg != arg_reg) {
-			DBG((dbg, LEVEL_1, "      regs don't match %d %d\n", phi_reg->name, arg_reg->name));
+		DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
-			/* First check if there is another phi in the same block
-			 * having arg at the same pos in its arg-list and the same color as arg */
+		if(nodes_interfere(chordal_env, phi, arg)) {
+			/* Insert a duplicate in arguments block,
+			 * make it the new phi arg,
+			 * set its register,
+			 * insert it into schedule,
+			 * pin it
+			 */
+			ir_node *dupl = new_Copy(session->main_env->node_factory, cls, session->irg, arg_block, arg);
+			assert(get_irn_mode(phi) == get_irn_mode(dupl));
+			set_irn_n(phi, i, dupl);
+			set_reg(dupl, phi_reg);
+			sched_add_after(sched_skip(sched_last(arg_block), 0, skip_cf_predicator, chordal_env), dupl);
+			pin_irn(dupl, phi_block);
+			DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
+		} else {
+			/*
+			 * First check if there is a phi
+			 * - in the same block
+			 * - having arg at the current pos in its arg-list
+			 * - having the same color as arg
+			 *
+			 * If found, then pin the arg
+			 */
+			DBG((dbg, LEVEL_1, "    they do not interfere\n"));
+			assert(is_Proj(arg));
 			if (!is_pinned(arg)) {
-				DBG((dbg, LEVEL_1, "        arg is not pinned\n"));
-				ir_node *other_phi = phi;
+				ir_node *other_phi;
+				DBG((dbg, LEVEL_1, "      searching for phi with same arg having args register\n"));
 				for(other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
-					if(other_phi == phi)
-						continue;
 					assert(is_Phi(other_phi) && get_nodes_block(phi) == get_nodes_block(other_phi) && "link fields are screwed up");
 					if (get_irn_n(other_phi, i) == arg && get_reg(other_phi) == arg_reg) {
-						DBG((dbg, LEVEL_1, "        but other phi (%+F) just pinned it\n", other_phi));
+						DBG((dbg, LEVEL_1, "        found %+F(%s)\n", other_phi, get_reg(other_phi)->name));
 						pin_irn(arg, phi_block);
 					}
 				}
 			}
 
-			/* If arg is pinned, another phi set the color of arg and pinned it.
-			 * So this phi can't change the color again and a duplicate must be inserted.
-			 *
-			 * If arg interferes with phi, one can never set the same color for both
-			 * Hence, a duplicate must be inserted */
-			if (is_pinned(arg) || nodes_interfere(chordal_env, phi, arg)) {
-				ir_node *dupl, *tmp;
-				assert(get_pinning_block(arg) == phi_block && "If arg is pinned it must be due to a phi in the same block");
-
-				dupl = new_Copy(session->main_env->node_factory, cls, session->irg, arg_block, arg);
+			if (is_pinned(arg)) {
+				/* Insert a duplicate of the original value in arguments block,
+				 * make it the new phi arg,
+				 * set its register,
+				 * insert it into schedule,
+				 * pin it
+				 */
+				ir_node *perm = get_Proj_pred(arg);
+				ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
+				ir_node *dupl = new_Copy(session->main_env->node_factory, cls, session->irg, arg_block, orig_val);
+				assert(get_irn_mode(phi) == get_irn_mode(dupl));
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
-				DBG((dbg, LEVEL_1, "      arg is pinned so insert dupl %+F\n", dupl));
-
-				/* Add dupl to schedule */
-				tmp = sched_next(perm);
-				while (is_Proj(tmp) && sched_has_next(tmp))
-					tmp = sched_next(tmp);
-				sched_add_after(tmp, dupl);
-
-				/* now the arg is the dupl */
-				arg = dupl;
+				sched_add_before(perm, dupl);
+				pin_irn(dupl, phi_block);
+				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 			} else {
-				/* Arg is not pinned. So set its color to the color of the phi.
-				 * If the phi color is used by another proj of this perm
-				 * one must NOT swap the colors. Proof: Critical edges removed,
-				 * livein(PhiBl) = liveout(ArgBl), if all phis are processed then
-				 * every color is used exactly once.
+				/* No other phi has the same color (else arg would be pinned),
+				 * so just set the register and pin
 				 */
-				DBG((dbg, LEVEL_1, "      arg is not pinned so just set register to %s\n", phi_reg->name));
 				set_reg(arg, phi_reg);
+				pin_irn(arg, phi_block);
+				DBG((dbg, LEVEL_1, "      arg is not pinned: so pin %+F(%s)\n", arg, get_reg(arg)->name));
 			}
-		} else {
-			DBG((dbg, LEVEL_1, "      regs match %d\n"));
 		}
-
-		/* Now the color of the arg (arg may be a dupl now) and the phi-result are equal.
-		 * Pin it, so everyone knows and it never gets changed again.
-		 * An arg never is a phi, because perms were inserted. So the link field is free */
-		DBG((dbg, LEVEL_1, "      arg has correct color (now), so pin it\n"));
-		pin_irn(arg, phi_block);
 	}
 }
 
@@ -277,10 +277,10 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 
 	build_phi_rings(chordal_env);
 	insert_all_perms(chordal_env);
-	dump_ir_block_graph(irg, "-ssa_destr_perms_placed");
+	dump_ir_block_graph_sched(irg, "-ssa_destr_perms_placed");
 
 	set_regs_or_place_dupls(chordal_env);
-	dump_ir_block_graph(irg, "-ssa_destr_regs_set");
+	dump_ir_block_graph_sched(irg, "-ssa_destr_regs_set");
 
 	pmap_destroy(perm_map);
 }

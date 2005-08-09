@@ -95,6 +95,7 @@ static void prepare_graph(be_main_session_env_t *s)
 	 * (This is just for the firm dummy backend)
 	 */
 	// localize_consts(s->irg);
+	current_ir_graph = s->irg;
 
 	/* Remove critical edges */
 	remove_critical_cf_edges(s->irg);
@@ -154,11 +155,6 @@ static void be_main_loop(void)
 		copystat_reset();
 		copystat_collect_irg(irg, env.arch_env);
 
-		/*
-		 * Verifying the schedule once again cannot hurt.
-		 */
-		sched_verify_irg(irg);
-
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
@@ -189,6 +185,7 @@ static void be_main_loop(void)
 		}
 		dump_ir_block_graph(session.irg, "-post");
 
+		copystat_dump(irg);
 		copystat_dump_pretty(irg);
 	}
 }

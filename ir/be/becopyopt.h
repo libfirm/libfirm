@@ -107,7 +107,7 @@ void free_copy_opt(copy_opt_t *co);
 /**
  * Checks if a node is optimizable, viz. is a target of a 'copy-op'
  */
-#define is_optimizable(arch_env, irn) (is_Phi(irn) || is_Copy(arch_env, irn))
+#define is_optimizable(arch_env, irn) ((is_Phi(irn) && mode_is_datab(get_irn_mode(irn))) || is_Copy(arch_env, irn))
 
 /**
  * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'

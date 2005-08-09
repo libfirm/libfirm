@@ -18,18 +18,19 @@
 
 #ifdef DO_STAT
 
-#define DEBUG_LVL 0 //SET_LEVEL_1
+#define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 #define MAX_ARITY 10
 #define MAX_CLS_SIZE 10
 #define MAX_CLS_PHIS 10
-#define MAX_PHASE 2
 
 /**
  * For an explanation of these values see the code of copystat_dump_pretty
  */
 enum vals_t {
+	/* FROM HERE: PROBLEM CHARACTERIZATION */
+
 	I_ALL_NODES = 0,
 	I_BLOCKS,
 
@@ -56,6 +57,8 @@ enum vals_t {
 	I_CLS_PHIS_S,
 	I_CLS_PHIS_E = I_CLS_PHIS_S+MAX_CLS_PHIS,
 
+	/* FROM HERE: RESULT VLAUES */
+
 	/* ilp values */
 	I_ILP_TIME,			/* !external set! solving time in seconds */
 	I_ILP_ITER,			/* !external set! number of simplex iterations */
@@ -65,7 +68,7 @@ enum vals_t {
 	I_COPIES_INIT,		/* !external set! number of copies in initial allocation */
 	I_COPIES_HEUR,		/* !external set! number of copies after heuristic */
 	I_COPIES_OPT,		/* !external set! number of copies after ilp */
-	I_COPIES_IF,		/* number of copies inevitable due to root-arg-interf */
+	I_COPIES_IF,		/* !external set! number of copies inevitable due to root-arg-interf */
 
 	ASIZE
 };
@@ -111,7 +114,7 @@ static void irg_stat_walker(ir_node *node, void *env) {
  	if (is_Block(node)) /* count all blocks */
  		curr_vals[I_BLOCKS]++;
 
- 	if (is_Phi(node)) /* collect phis */
+ 	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) /* collect phis */
  		pset_insert_ptr(all_phi_nodes, node);
 
  	if (is_Copy(arch_env, node))
@@ -214,7 +217,7 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 
 	/* determine number of phis on this class */
 	phis = 0;
-	for (i = 0; i < size-1; ++i)
+	for (i = 0; i < size; ++i)
 		if (is_Phi(members[i]))
 			phis++;
 	if (phis > MAX_CLS_PHIS)
@@ -292,13 +295,15 @@ void copystat_dump(ir_graph *irg) {
 	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
 	out = ffopen(buf, "stat", "wt");
 
-	fprintf(out, "%s\n", get_irp_prog_name());
+	fprintf(out, "%d\n", ASIZE);
 	for (i = 0; i < ASIZE; i++) {
+#if 0
 		if (i >= I_PHI_ARITY_S && i <= I_PHI_ARITY_E)
 			fprintf(out, "%i %i\n", curr_vals[i], curr_vals[I_PHI_CNT]);
 		else if (i >= I_CLS_SIZE_S && i <= I_CLS_SIZE_E)
 			fprintf(out, "%i %i\n", curr_vals[i], curr_vals[I_CLS_CNT]);
 		else
+#endif
 			fprintf(out, "%i\n", curr_vals[i]);
 	}
 
