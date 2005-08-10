@@ -24,6 +24,11 @@ static INLINE const ir_node *get_block(const ir_node *irn)
   return is_Block(irn) ? irn : get_nodes_block(irn);
 }
 
+static INLINE int is_firm_be_mode(const ir_mode *mode)
+{
+	return mode_is_data(mode);
+}
+
 /**
  * Check, if a node produces or consumes a data value.
  * If it does, it is significant for scheduling and register allocation.
@@ -37,13 +42,13 @@ static INLINE int is_data_node(const ir_node *irn)
 	int i, n;
 
 	/* If the node produces a data value, return immediately. */
-	if(mode_is_datab(get_irn_mode(irn)))
+	if(is_firm_be_mode(get_irn_mode(irn)))
 		return 1;
 
 	/* else check, if it takes a data value, if that is so, return */
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
-		if(mode_is_datab(get_irn_mode(op)))
+		if(is_firm_be_mode(get_irn_mode(op)))
 			return 1;
 	}
 

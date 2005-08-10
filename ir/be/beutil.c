@@ -133,3 +133,27 @@ void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix) {
     dump_ir_block_graph(irg, suffix);
     set_dump_node_edge_hook(old);
 }
+
+static void clear_link(ir_node *irn, void *data)
+{
+  set_irn_link(irn, NULL);
+}
+
+static void collect_phis(ir_node *irn, void *data)
+{
+  if(is_Phi(irn)) {
+    ir_node *bl = get_nodes_block(irn);
+    set_irn_link(irn, get_irn_link(bl));
+    set_irn_link(bl, irn);
+  }
+}
+
+void be_clear_links(ir_graph *irg)
+{
+	irg_walk_graph(irg, clear_link, NULL, NULL);
+}
+
+void be_collect_phis(ir_graph *irg)
+{
+	irg_walk_graph(irg, collect_phis, NULL, NULL);
+}
