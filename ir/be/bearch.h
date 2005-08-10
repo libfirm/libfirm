@@ -196,6 +196,7 @@ typedef enum _arch_irn_class_t {
   arch_irn_class_branch
 } arch_irn_class_t;
 
+
 /*
  * Some words about positions and indices:
  *
@@ -303,6 +304,7 @@ struct _arch_irn_ops_t {
    * @return A classification.
    */
   arch_irn_class_t (*classify)(const arch_irn_ops_t *self, const ir_node *irn);
+
 
 };
 
@@ -440,6 +442,13 @@ struct _arch_isa_if_t {
    */
   const arch_register_class_t *(*get_reg_class)(int i);
 
+	/**
+	 * Prepare a graph.
+	 * This function is called each time, the backend starts running over
+	 * a graph.
+	 * @param irg The graph.
+	 */
+	void (*prepare_graph)(ir_graph *irg);
 };
 
 #define ARCH_MAX_HANDLERS         8
