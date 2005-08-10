@@ -251,6 +251,12 @@ void set_opt_real_function_call(int value);
  */
 void set_opt_remove_Confirm(int value);
 
+/**
+ * Enable/Disable scalar replacement optimization.
+ */
+void set_opt_scalar_replacement(int value);
+void set_opt_scalar_replacement_verbose(int value);
+
 /** Enable/Disable normalizations of the firm representation.
  *
  *  This flag guards transformations that normalize the firm representation

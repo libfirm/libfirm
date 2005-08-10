@@ -105,6 +105,9 @@ typedef enum {
   /** Not really an optimization, removes Confirm nodes */
   OPT_REMOVE_CONFIRM                     = 0x01000000,
 
+  /** Scalar replacement. */
+  OPT_SCALAR_REPLACEMENT                 = 0x02000000,
+
   /** Turn off all optimizations. */
   OPT_OPTIMIZED                          = 0x40000000,
 
@@ -294,6 +297,16 @@ static INLINE int get_opt_real_func_call(void)
 static INLINE int get_opt_remove_Confirm(void)
 {
   return libFIRM_opt & OPT_REMOVE_CONFIRM;
+}
+
+/** Returns Confirm removal setting. */
+static INLINE int get_opt_scalar_replacement(void)
+{
+  return libFIRM_opt & OPT_SCALAR_REPLACEMENT;
+}
+
+static INLINE int get_opt_scalar_replacement_verbose(void) {
+  return libFIRM_verb & OPT_SCALAR_REPLACEMENT;
 }
 
 #define get_opt_cse()                            _get_opt_cse()

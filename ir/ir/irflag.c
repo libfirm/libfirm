@@ -49,6 +49,7 @@ optimization_state_t libFIRM_opt =
   ENABLE(OPT_IF_CONVERSION)                       |
   ENABLE(OPT_REAL_FUNC_CALL)                      |
   DISABLE(OPT_REMOVE_CONFIRM)                     |
+  ENABLE(OPT_SCALAR_REPLACEMENT)                  |
   0;
 
 optimization_state_t libFIRM_verb =
@@ -77,6 +78,7 @@ optimization_state_t libFIRM_verb =
   DISABLE(OPT_IF_CONVERSION)                      |
   DISABLE(OPT_REAL_FUNC_CALL)                     |
   DISABLE(OPT_REMOVE_CONFIRM)                     |
+  DISABLE(OPT_SCALAR_REPLACEMENT)                 |
   0;
 
 /** The Firm verbosity level */
@@ -383,6 +385,24 @@ void set_opt_remove_Confirm(int value)
     libFIRM_opt |= OPT_REMOVE_CONFIRM;
   else
     libFIRM_opt &= ~OPT_REMOVE_CONFIRM;
+}
+
+/* Enable/Disable scalar replacement optimization. */
+void set_opt_scalar_replacement(int value)
+{
+  if (value)
+    libFIRM_opt |= OPT_SCALAR_REPLACEMENT;
+  else
+    libFIRM_opt &= ~OPT_SCALAR_REPLACEMENT;
+}
+
+/* Set verbosity for scalar relacement */
+void set_opt_scalar_replacement_verbose(int value)
+{
+  if (value)
+    libFIRM_verb |= OPT_SCALAR_REPLACEMENT;
+  else
+    libFIRM_verb &= ~OPT_SCALAR_REPLACEMENT;
 }
 
 /* Save the current optimization state. */
