@@ -2,6 +2,8 @@
  * Debug facility.
  * @author Michael Beck, Sebastian Hack
  * @date 15.12.2004
+ *
+ * $Id$
  */
 
 #ifndef _FIRM_DEBUG_H
@@ -50,7 +52,8 @@ enum firm_dbg_level_t {
 	LEVEL_4 = 8,
 	LEVEL_5 = 16,
 
-	SET_LEVEL_1 = 1,   /**< use with firm_dbg_set_mask(). */
+  SET_LEVEL_0 = 0,   /**< use with firm_dbg_set_mask(). */
+	SET_LEVEL_1 = 1,
 	SET_LEVEL_2 = 3,
 	SET_LEVEL_3 = 7,
 	SET_LEVEL_4 = 15,
