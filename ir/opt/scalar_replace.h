@@ -1,7 +1,7 @@
 /*
  * Project:     libFIRM
  * File name:   ir/opt/scalar_replace.h
- * Purpose:     scalar replacement of arrays and compounds
+ * Purpose:     scalar replacement of compounds
  * Author:      Beyhan Veliev
  * Created:
  * CVS-ID:      $Id$
@@ -9,31 +9,18 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# ifndef _SCALAR_REPLACE_H_
-# define _SCALAR_REPLACE_H_
+#ifndef _SCALAR_REPLACE_H_
+#define _SCALAR_REPLACE_H_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "irgraph.h"
 
-#include "tv.h"
-#include "irgraph_t.h"
-#include "irouts.h"
-#include "pset.h"
-#include "hashptr.h"
-#include "irdump.h"
-#include "ircons.h"
-#include "irgmod.h"
-#include "obst.h"
-#include "irloop.h"
-#include "irdom.h"
-#include "irflag_t.h"
-#include "array.h"
-
-
-/*
- * find possible scalar replacements
+/**
+ * Do the scalar replacement optimization.
+ * Replace local compound entities (like structures and arrays)
+ * with atomic values if possible. Does not handle classes yet.
+ *
+ * @param irg  the graph which should be optimized
  */
-void find_scalar_replacements(ir_graph *irg);
+void scalar_replacement_opt(ir_graph *irg);
 
 #endif /* _SCALAR_REPLACE_H_ */
