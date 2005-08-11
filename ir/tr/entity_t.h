@@ -309,17 +309,17 @@ _set_entity_visited(entity *ent, unsigned long num) {
 static INLINE void
 _mark_entity_visited(entity *ent) {
   assert(ent && ent->kind == k_entity);
-  ent->visit = type_visited;
+  ent->visit = firm_type_visited;
 }
 
 static INLINE int
 _entity_visited(entity *ent) {
-  return _get_entity_visited(ent) >= type_visited;
+  return _get_entity_visited(ent) >= firm_type_visited;
 }
 
 static INLINE int
 _entity_not_visited(entity *ent) {
-  return _get_entity_visited(ent) < type_visited;
+  return _get_entity_visited(ent) < firm_type_visited;
 }
 
 #define is_entity(thing)                        _is_entity(thing)
