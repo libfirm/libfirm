@@ -232,7 +232,7 @@ static void start_type_walk(ir_node *node, void *ctx) {
 void type_walk(type_walk_func *pre, type_walk_func *post, void *env) {
   int i, n_types = get_irp_n_types();
 
-  ++type_visited;
+  inc_master_type_visited();
   for (i = 0; i < n_types; i++) {
     do_type_walk((type_or_ent *)get_irp_type(i), pre, post, env);
   }
@@ -285,14 +285,14 @@ static void type_walk_s2s_2(type_or_ent *tore,
   /* marked? */
   switch (get_kind(tore)) {
   case k_entity:
-    if (((entity *)tore)->visit >= type_visited) return;
+    if (entity_visited((entity *)tore)) return;
     break;
   case k_type:
     if(type_id == get_type_tpop((type*)tore)) {
       type_walk_s2s_2((type_or_ent *)skip_tid((type *)tore), pre, post, env);
       return;
     }
-    if (((type *)tore)->visit >= type_visited) return;
+    if (type_visited((type *)tore)) return;
     break;
   default:
     break;
@@ -306,26 +306,26 @@ static void type_walk_s2s_2(type_or_ent *tore,
       mark_type_visited(tp);
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
-	{
-	  for (i = 0; i < get_class_n_supertypes(tp); i++) {
-	    type_walk_s2s_2((type_or_ent *)get_class_supertype(tp, i), pre,
-			    post, env);
-	  }
-	  /* execute pre method */
-	  if(pre)
-	    pre(tore, env);
-	  tp = skip_tid((type*)tore);
+        {
+	        for (i = 0; i < get_class_n_supertypes(tp); i++) {
+	          type_walk_s2s_2((type_or_ent *)get_class_supertype(tp, i), pre,
+			          post, env);
+	        }
+	        /* execute pre method */
+	        if(pre)
+	          pre(tore, env);
+	        tp = skip_tid((type*)tore);
 
-	  for (i = 0; i < get_class_n_subtypes(tp); i++) {
-	    type_walk_s2s_2((type_or_ent *)get_class_subtype(tp, i), pre,
-			    post, env);
-	  }
+	        for (i = 0; i < get_class_n_subtypes(tp); i++) {
+	          type_walk_s2s_2((type_or_ent *)get_class_subtype(tp, i), pre,
+			          post, env);
+	        }
 
-	  /* execute post method */
-	  if(post)
-	    post(tore, env);
-	}
-	break;
+	        /* execute post method */
+	        if(post)
+	          post(tore, env);
+        }
+        break;
       case tpo_struct:
       case tpo_method:
       case tpo_union:
@@ -334,11 +334,11 @@ static void type_walk_s2s_2(type_or_ent *tore,
       case tpo_pointer:
       case tpo_primitive:
       case tpo_id:
-	/* dont care */
-	break;
+        /* dont care */
+        break;
       default:
-	printf(" *** Faulty type! \n");
-	break;
+        printf(" *** Faulty type! \n");
+        break;
       }
     } break; /* end case k_type */
   case k_entity:
@@ -358,7 +358,8 @@ void type_walk_super2sub(
 {
   int i, n_types = get_irp_n_types();
   type *tp;
-  ++type_visited;
+
+  inc_master_type_visited();
   type_walk_s2s_2((type_or_ent *)get_glob_type(), pre, post, env);
   for (i = 0; i < n_types; i++) {
     tp = get_irp_type(i);
@@ -379,14 +380,14 @@ type_walk_super_2(type_or_ent *tore,
   /* marked? */
   switch (get_kind(tore)) {
   case k_entity:
-    if (((entity *)tore)->visit >= type_visited) return;
+    if (entity_visited((entity *)tore)) return;
     break;
   case k_type:
     if(type_id == get_type_tpop((type*)tore)) {
       type_walk_super_2((type_or_ent *)skip_tid((type *)tore), pre, post, env);
       return;
     }
-    if (((type *)tore)->visit >= type_visited) return;
+    if (type_visited((type *)tore)) return;
     break;
   default:
     break;
@@ -400,22 +401,22 @@ type_walk_super_2(type_or_ent *tore,
       mark_type_visited(tp);
       switch (get_type_tpop_code(tp)) {
       case tpo_class:
-	{
-	  /* execute pre method */
-	  if(pre)
-	    pre(tore, env);
-	  tp = skip_tid((type*)tore);
+        {
+	        /* execute pre method */
+	        if (pre)
+	          pre(tore, env);
+	        tp = skip_tid((type*)tore);
 
-	  for (i = 0; i < get_class_n_supertypes(tp); i++) {
-	    type_walk_super_2((type_or_ent *)get_class_supertype(tp, i), pre,
-			      post, env);
-	  }
+	        for (i = 0; i < get_class_n_supertypes(tp); i++) {
+	          type_walk_super_2((type_or_ent *)get_class_supertype(tp, i), pre,
+			            post, env);
+	        }
 
-	  /* execute post method */
-	  if(post)
-	    post(tore, env);
-	}
-	break;
+	        /* execute post method */
+	        if (post)
+	          post(tore, env);
+        }
+        break;
       case tpo_struct:
       case tpo_method:
       case tpo_union:
@@ -424,11 +425,11 @@ type_walk_super_2(type_or_ent *tore,
       case tpo_pointer:
       case tpo_primitive:
       case tpo_id:
-	/* dont care */
-	break;
+        /* dont care */
+        break;
       default:
-	printf(" *** Faulty type! \n");
-	break;
+        printf(" *** Faulty type! \n");
+        break;
       }
     } break; /* end case k_type */
   case k_entity:
@@ -447,7 +448,8 @@ void type_walk_super(
 		  void *env) {
   int i, n_types = get_irp_n_types();
   type *tp;
-  ++type_visited;
+
+  inc_master_type_visited();
   type_walk_super_2((type_or_ent *)get_glob_type(), pre, post, env);
   for (i = 0; i < n_types; i++) {
     tp = get_irp_type(i);
@@ -467,27 +469,27 @@ class_walk_s2s_2(type *tp,
   int i;
 
   /* marked? */
-  if (tp->visit >= type_visited) return;
+  if (type_visited(tp)) return;
 
   assert(is_Class_type(tp));
   /* Assure all supertypes are visited before */
-  for (i=0; i < get_class_n_supertypes(tp); i++) {
-    if (get_type_visited(get_class_supertype(tp, i)) < type_visited)
+  for (i = get_class_n_supertypes(tp) - 1; i >= 0; --i) {
+    if (type_not_visited(get_class_supertype(tp, i)))
       return;
   }
 
   mark_type_visited(tp);
 
   /* execute pre method */
-  if(pre)
+  if (pre)
     pre(tp, env);
 
-  tp = skip_tid((type*)tp);
-  for (i=0; i<get_class_n_subtypes(tp); i++) {
+  tp = skip_tid(tp);
+  for (i = get_class_n_subtypes(tp) - 1; i >= 0; --i) {
     class_walk_s2s_2(get_class_subtype(tp, i), pre, post, env);
   }
   /* execute post method */
-  if(post)
+  if (post)
     post(tp, env);
 
   return;
@@ -501,13 +503,13 @@ void class_walk_super2sub(
   int i, n_types = get_irp_n_types();
   type *tp;
 
-  ++type_visited;
+  inc_master_type_visited();
   for (i = 0; i < n_types; i++) {
     tp = get_irp_type(i);
     if (is_Class_type(tp) &&
-	    (get_class_n_supertypes(tp) == 0) &&
-	    (tp->visit < type_visited))  {
-      assert(!is_frame_type(tp));
+	      (get_class_n_supertypes(tp) == 0) &&
+	      type_not_visited(tp)) {
+      assert(! is_frame_type(tp));
       assert(tp != get_glob_type());
       class_walk_s2s_2(tp, pre, post, env);
     }
@@ -522,13 +524,13 @@ void walk_types_entities(
 		  void *env)
 {
   int i;
-  switch(get_type_tpop_code(tp)) {
+  switch (get_type_tpop_code(tp)) {
   case tpo_class: {
-    for (i=0; i<get_class_n_members(tp); i++)
+    for (i = 0; i<get_class_n_members(tp); i++)
       doit(get_class_member(tp, i), env);
   } break;
   case tpo_struct: {
-    for (i=0; i<get_struct_n_members(tp); i++)
+    for (i = 0; i<get_struct_n_members(tp); i++)
       doit(get_struct_member(tp, i), env);
   } break;
   case tpo_union: {
