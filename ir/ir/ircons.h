@@ -3816,7 +3816,7 @@ ir_node *new_immBlock (void);
 /** Add a control flow edge to an immature block. */
 void add_immBlock_pred (ir_node *immblock, ir_node *jmp);
 
-/** Fix the number of predecessors of an immature block. */
+/** Finalize a Block node, when all control flows are known. */
 void mature_immBlock (ir_node *block);
 #define mature_cur_block() mature_immBlock(get_cur_block());
 
@@ -3831,7 +3831,7 @@ void mature_immBlock (ir_node *block);
  * @param  pos   The position/id of the local variable.
  * @param *mode  The mode of the value to get.
  */
-ir_node *get_d_value (dbg_info* db, int pos, ir_mode *mode);
+ir_node *get_d_value (dbg_info *db, int pos, ir_mode *mode);
 ir_node *get_value (int pos, ir_mode *mode);
 
 /** Remark a new definition of a variable.
@@ -3896,7 +3896,7 @@ void irp_finalize_cons(void);
  * @return a firm node of mode @p mode that initializes the var at position pos
  *
  * @note
- *      Do not return NULL
+ *      Do not return NULL!
  *      If this function is not set, FIRM will create a const node with tarval BAD.
  *      Use set_irg_loc_description()/get_irg_loc_description() to assign additional
  *      informations to local variables.
