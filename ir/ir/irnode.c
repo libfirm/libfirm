@@ -2055,6 +2055,7 @@ skip_Tuple (ir_node *node) {
 
   if (!get_opt_normalize()) return node;
 
+restart:
   node = skip_Id(node);
   if (get_irn_op(node) == op_Proj) {
     pred = skip_Id(get_Proj_pred(node));
@@ -2062,17 +2063,21 @@ skip_Tuple (ir_node *node) {
 
     /*
      * Looks strange but calls get_irn_op() only once
-     * most often cases.
+     * in most often cases.
      */
     if (op == op_Proj) { /* nested Tuple ? */
       pred = skip_Id(skip_Tuple(pred));
       op   = get_irn_op(pred);
 
-      if (op == op_Tuple)
-        return get_Tuple_pred(pred, get_Proj_proj(node));
+      if (op == op_Tuple) {
+        node = get_Tuple_pred(pred, get_Proj_proj(node));
+        goto restart;
+      }
     }
-    else if (op == op_Tuple)
-      return get_Tuple_pred(pred, get_Proj_proj(node));
+    else if (op == op_Tuple) {
+      node = get_Tuple_pred(pred, get_Proj_proj(node));
+      goto restart;
+    }
   }
   return node;
 }
