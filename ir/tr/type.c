@@ -84,22 +84,26 @@ int get_irp_new_node_nr(void);
 static ident *value_params_suffix = NULL;
 static ident *value_ress_suffix = NULL;
 
-void init_type(void) {
+/* Initialize the type module. */
+void firm_init_type(dbg_info *builtin_db)
+{
   value_params_suffix = new_id_from_str(VALUE_PARAMS_SUFFIX);
   value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
 
   /* construct none and unknown type. */
-  firm_none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"));
+  firm_none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"), builtin_db);
   set_type_size_bits(firm_none_type, 0);
   set_type_state (firm_none_type, layout_fixed);
   remove_irp_type(firm_none_type);
-  firm_unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"));
+
+  firm_unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"), builtin_db);
   set_type_size_bits(firm_unknown_type, 0);
   set_type_state (firm_unknown_type, layout_fixed);
   remove_irp_type(firm_unknown_type);
 }
 
-unsigned long type_visited;
+/** the global type visited flag */
+unsigned long firm_type_visited;
 
 void (set_master_type_visited)(unsigned long val) { _set_master_type_visited(val); }
 unsigned long (get_master_type_visited)(void)     { return _get_master_type_visited(); }
@@ -107,7 +111,7 @@ void (inc_master_type_visited)(void)              { _inc_master_type_visited(); 
 
 
 type *
-new_type(tp_op *type_op, ir_mode *mode, ident* name) {
+new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db) {
   type *res;
   int node_size;
 
@@ -129,6 +133,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident* name) {
   res->align      = -1;
   res->visit      = 0;
   res->link       = NULL;
+  res->dbi        = db;
 #ifdef DEBUG_libfirm
   res->nr         = get_irp_new_node_nr();
 #endif /* defined DEBUG_libfirm */
@@ -769,10 +774,10 @@ int smaller_type (type *st, type *lt) {
 /*-----------------------------------------------------------------*/
 
 /* create a new class type */
-type   *new_type_class (ident *name) {
+type   *new_d_type_class (ident *name, dbg_info *db) {
   type *res;
 
-  res = new_type(type_class, NULL, name);
+  res = new_type(type_class, NULL, name, db);
 
   res->attr.ca.members     = NEW_ARR_F (entity *, 0);
   res->attr.ca.subtypes    = NEW_ARR_F (type *, 0);
@@ -782,10 +787,8 @@ type   *new_type_class (ident *name) {
 
   return res;
 }
-type   *new_d_type_class (ident *name, dbg_info* db) {
-  type *res = new_type_class (name);
-  set_type_dbg_info(res, db);
-  return res;
+type   *new_type_class (ident *name) {
+  return new_d_type_class (name, NULL);
 }
 
 void free_class_entities(type *clss) {
@@ -996,17 +999,16 @@ int (is_Class_type)(const type *clss) {
 /*----------------------------------------------------------------**/
 
 /* create a new type struct */
+type   *new_d_type_struct(ident *name, dbg_info *db) {
+  type *res = new_type(type_struct, NULL, name, db);
+
+  res->attr.sa.members = NEW_ARR_F(entity *, 0);
+  return res;
+}
 type   *new_type_struct (ident *name) {
-  type *res;
-  res = new_type(type_struct, NULL, name);
-  res->attr.sa.members = NEW_ARR_F (entity *, 0);
-  return res;
+  return new_d_type_struct (name, NULL);
 }
-type   *new_d_type_struct (ident *name, dbg_info* db) {
-  type *res = new_type_struct (name);
-  set_type_dbg_info(res, db);
-  return res;
-}
+
 void free_struct_entities (type *strct) {
   int i;
   assert(strct && (strct->type_op == type_struct));
@@ -1099,11 +1101,11 @@ build_value_type(ident *name, int len, type **tps) {
 
 /* Create a new method type.
    N_param is the number of parameters, n_res the number of results.  */
-type *new_type_method (ident *name, int n_param, int n_res) {
+type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
   type *res;
 
   assert((get_mode_size_bytes(mode_P_code) != -1) && "unorthodox modes not implemented");
-  res = new_type(type_method, mode_P_code, name);
+  res = new_type(type_method, mode_P_code, name, db);
   res->state                        = layout_fixed;
   res->size                         = get_mode_size_bits(mode_P_code);
   res->attr.ma.n_params             = n_param;
@@ -1118,10 +1120,8 @@ type *new_type_method (ident *name, int n_param, int n_res) {
   return res;
 }
 
-type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db) {
-  type *res = new_type_method (name, n_param, n_res);
-  set_type_dbg_info(res, db);
-  return res;
+type *new_type_method(ident *name, int n_param, int n_res) {
+  return new_d_type_method(name, n_param, n_res, NULL);
 }
 
 void free_method_entities(type *method) {
@@ -1308,23 +1308,19 @@ int (is_Method_type)(const type *method) {
 /*-----------------------------------------------------------------*/
 
 /* create a new type uni */
-type  *new_type_union (ident *name) {
-  type *res;
-  res = new_type(type_union, NULL, name);
-  /*res->attr.ua.unioned_type = xcalloc(n_types, sizeof(res->attr.ua.unioned_type[0]));
-    res->attr.ua.delim_names  = xcalloc(n_types, sizeof(res->attr.ua.delim_names[0])); */
-  res->attr.ua.members = NEW_ARR_F (entity *, 0);
+type  *new_d_type_union(ident *name, dbg_info *db) {
+  type *res = new_type(type_union, NULL, name, db);
+
+  res->attr.ua.members = NEW_ARR_F(entity *, 0);
   return res;
 }
-type  *new_d_type_union (ident *name, dbg_info* db) {
-  type *res = new_type_union (name);
-  set_type_dbg_info(res, db);
-  return res;
+type  *new_type_union(ident *name) {
+  return new_d_type_union(name, NULL);
 }
-void free_union_entities (type *uni) {
+void free_union_entities(type *uni) {
   int i;
   assert(uni && (uni->type_op == type_union));
-  for (i = get_union_n_members(uni)-1; i >= 0; --i)
+  for (i = get_union_n_members(uni) - 1; i >= 0; --i)
     free_entity(get_union_member(uni, i));
 }
 void free_union_attrs (type *uni) {
@@ -1332,37 +1328,6 @@ void free_union_attrs (type *uni) {
   DEL_ARR_F(uni->attr.ua.members);
 }
 /* manipulate private fields of union */
-#if 0
-int    get_union_n_types      (type *uni) {
-  assert(uni && (uni->type_op == type_union));
-  return uni->attr.ua.n_types;
-}
-type  *get_union_unioned_type (type *uni, int pos) {
-  assert(uni && (uni->type_op == type_union));
-  assert(pos >= 0 && pos < get_union_n_types(uni));
-  return uni->attr.ua.unioned_type[pos] = skip_tid(uni->attr.ua.unioned_type[pos]);
-}
-void   set_union_unioned_type (type *uni, int pos, type *tp) {
-  assert(uni && (uni->type_op == type_union));
-  assert(pos >= 0 && pos < get_union_n_types(uni));
-  uni->attr.ua.unioned_type[pos] = tp;
-}
-ident *get_union_delim_nameid (type *uni, int pos) {
-  assert(uni && (uni->type_op == type_union));
-  assert(pos >= 0 && pos < get_union_n_types(uni));
-  return uni->attr.ua.delim_names[pos];
-}
-const char *get_union_delim_name (type *uni, int pos) {
-  assert(uni && (uni->type_op == type_union));
-  assert(pos >= 0 && pos < get_union_n_types(uni));
-  return get_id_str(uni->attr.ua.delim_names[pos]);
-}
-void   set_union_delim_nameid (type *uni, int pos, ident *id) {
-  assert(uni && (uni->type_op == type_union));
-  assert(pos >= 0 && pos < get_union_n_types(uni));
-  uni->attr.ua.delim_names[pos] = id;
-}
-#endif
 int    get_union_n_members      (const type *uni) {
   assert(uni && (uni->type_op == type_union));
   return (ARR_LEN (uni->attr.ua.members));
@@ -1388,7 +1353,7 @@ void   remove_union_member(type *uni, entity *member) {
   for (i = 0; i < (ARR_LEN (uni->attr.ua.members)); i++)
     if (uni->attr.ua.members[i] == member) {
       for(; i < (ARR_LEN (uni->attr.ua.members))-1; i++)
-    uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
+        uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
       ARR_SETLEN(entity*, uni->attr.ua.members, ARR_LEN(uni->attr.ua.members) - 1);
       break;
     }
@@ -1405,25 +1370,25 @@ int (is_Union_type)(const type *uni) {
 
 
 /* create a new type array -- set dimension sizes independently */
-type *new_type_array(ident *name, int n_dimensions, type *element_type) {
+type *new_d_type_array(ident *name, int n_dimensions, type *element_type, dbg_info *db) {
   type *res;
   int i;
-  ir_graph *rem = current_ir_graph;
+  ir_node *unk;
+
   assert(!is_Method_type(element_type));
 
-  res = new_type(type_array, NULL, name);
+  res = new_type(type_array, NULL, name, db);
   res->attr.aa.n_dimensions = n_dimensions;
   res->attr.aa.lower_bound  = xcalloc(n_dimensions, sizeof(*res->attr.aa.lower_bound));
   res->attr.aa.upper_bound  = xcalloc(n_dimensions, sizeof(*res->attr.aa.upper_bound));
   res->attr.aa.order        = xcalloc(n_dimensions, sizeof(*res->attr.aa.order));
 
-  current_ir_graph = get_const_code_irg();
+  unk = new_r_Unknown(get_const_code_irg(), mode_Iu);
   for (i = 0; i < n_dimensions; i++) {
-    res->attr.aa.lower_bound[i] = new_Unknown(mode_Iu);
-    res->attr.aa.upper_bound[i] = new_Unknown(mode_Iu);
+    res->attr.aa.lower_bound[i] =
+    res->attr.aa.upper_bound[i] = unk;
     res->attr.aa.order[i]       = i;
   }
-  current_ir_graph = rem;
 
   res->attr.aa.element_type = element_type;
   new_entity(res, mangle_u(name, new_id_from_chars("elem_ent", 8)), element_type);
@@ -1431,11 +1396,8 @@ type *new_type_array(ident *name, int n_dimensions, type *element_type) {
   return res;
 }
 
-type *new_d_type_array (ident *name, int n_dimensions,
-            type *element_type, dbg_info* db) {
-  type *res = new_type_array (name, n_dimensions, element_type);
-  set_type_dbg_info(res, db);
-  return res;
+type *new_type_array(ident *name, int n_dimensions, type *element_type) {
+  return new_d_type_array(name, n_dimensions, element_type, NULL);
 }
 
 void free_array_entities (type *array) {
@@ -1584,18 +1546,16 @@ int (is_Array_type)(const type *array) {
 /*-----------------------------------------------------------------*/
 
 /* create a new type enumeration -- set the enumerators independently */
-type   *new_type_enumeration    (ident *name, int n_enums) {
-  type *res;
-  res = new_type(type_enumeration, NULL, name);
+type   *new_d_type_enumeration(ident *name, int n_enums, dbg_info *db) {
+  type *res = new_type(type_enumeration, NULL, name, db);
+
   res->attr.ea.n_enums     = n_enums;
   res->attr.ea.enumer      = xcalloc(n_enums, sizeof(res->attr.ea.enumer[0]));
   res->attr.ea.enum_nameid = xcalloc(n_enums, sizeof(res->attr.ea.enum_nameid[0]));
   return res;
 }
-type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db) {
-  type *res = new_type_enumeration (name, n_enums);
-  set_type_dbg_info(res, db);
-  return res;
+type   *new_type_enumeration(ident *name, int n_enums) {
+  return new_d_type_enumeration(name, n_enums, NULL);
 }
 
 void free_enumeration_entities(type *enumeration) {
@@ -1648,20 +1608,19 @@ int (is_Enumeration_type)(const type *enumeration) {
 /*-----------------------------------------------------------------*/
 
 /* Create a new type pointer */
-type *new_type_pointer_mode (ident *name, type *points_to, ir_mode *ptr_mode) {
+type *new_d_type_pointer(ident *name, type *points_to, ir_mode *ptr_mode, dbg_info *db) {
   type *res;
+
   assert(mode_is_reference(ptr_mode));
-  res = new_type(type_pointer, ptr_mode, name);
+  res = new_type(type_pointer, ptr_mode, name, db);
   res->attr.pa.points_to = points_to;
   assert((get_mode_size_bytes(res->mode) != -1) && "unorthodox modes not implemented");
   res->size = get_mode_size_bits(res->mode);
   res->state = layout_fixed;
   return res;
 }
-type *new_d_type_pointer (ident *name, type *points_to, ir_mode *ptr_mode, dbg_info* db) {
-  type *res = new_type_pointer_mode (name, points_to, ptr_mode);
-  set_type_dbg_info(res, db);
-  return res;
+type *new_type_pointer(ident *name, type *points_to, ir_mode *ptr_mode) {
+  return new_d_type_pointer(name, points_to, ptr_mode, NULL);
 }
 void free_pointer_entities (type *pointer) {
   assert(pointer && (pointer->type_op == type_pointer));
@@ -1704,18 +1663,16 @@ type *find_pointer_type_to_type (type *tp) {
 /*-----------------------------------------------------------------*/
 
 /* create a new type primitive */
-type *new_type_primitive (ident *name, ir_mode *mode) {
+type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info *db) {
   type *res;
   /* @@@ assert( mode_is_data(mode) && (!mode_is_reference(mode))); */
-  res = new_type(type_primitive, mode, name);
+  res = new_type(type_primitive, mode, name, db);
   res->size  = get_mode_size_bits(mode);
   res->state = layout_fixed;
   return res;
 }
-type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db) {
-  type *res = new_type_primitive (name, mode);
-  set_type_dbg_info(res, db);
-  return res;
+type *new_type_primitive(ident *name, ir_mode *mode) {
+  return new_d_type_primitive(name, mode, NULL);
 }
 void free_primitive_entities (type *primitive) {
   assert(primitive && (primitive->type_op == type_primitive));
