@@ -78,6 +78,7 @@ extern "C" {
 #include "ifconv.h"         /* if conversion */
 #include "funccall.h"       /* real function call optimization */
 #include "return.h"         /* Return node normalizations */
+#include "scalar_replace.h" /* Scalar replacement */
 
 /* Analyses */
 #include "irouts.h"         /* Graph reversal / out edges. */
@@ -149,8 +150,9 @@ struct _firm_parameter_t {
 
   /**
    * This function is called, whenever a local variable is
-   * used before definition.  The function should either insert a default value,
-   * or raise a compiler error/warning.
+   * used before definition. The function should insert a default value,
+   * and/or raise a compiler error/warning. Note that returning
+   * an Unknown is allowed here.
    */
   uninitialized_local_variable_func_t *initialize_local_func;
 
