@@ -213,22 +213,22 @@ void irg_out_block_walk(ir_node *node,
 static int _count_outs(ir_node *n) {
   int start, i, res, irn_arity;
 
-  set_irn_visited(n, get_irg_visited(current_ir_graph));
+  mark_irn_visited(n);
   n->out = (ir_node **) 1;     /* Space for array size. */
 
   start = is_Block(n) ? 0 : -1;
   irn_arity = get_irn_arity(n);
   res = irn_arity - start + 1;  /* --1 or --0; 1 for array size. */
 
-  for (i = start; i < irn_arity; i++) {
+  for (i = start; i < irn_arity; ++i) {
     /* Optimize Tuples.  They annoy if walking the cfg. */
     ir_node *pred = skip_Tuple(get_irn_n(n, i));
     set_irn_n(n, i, pred);
 
     /* count outs for successors */
-    if (get_irn_visited(pred) < get_irg_visited(current_ir_graph)) {
+    if (irn_not_visited(pred))
       res += _count_outs(pred);
-    }
+
     /* Count my outs */
     pred->out = (ir_node **)( (int)pred->out + 1);
   }
@@ -248,7 +248,7 @@ static int count_outs(ir_graph *irg) {
 
   /* now handle special nodes */
   n = get_irg_frame(irg);
-  if (get_irn_visited(n) < get_irg_visited(current_ir_graph)) {
+  if (irn_not_visited(n)) {
     n->out = (ir_node **)1;
     ++res;
   }
