@@ -399,8 +399,8 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
 {
   int i;
 
-  if(get_Block_block_visited(node) < get_irg_block_visited(current_ir_graph)) {
-    set_Block_block_visited(node, get_irg_block_visited(current_ir_graph));
+  if (Block_not_block_visited(node)) {
+    mark_Block_block_visited(node);
 
     if(pre) pre(node, env);
 
@@ -453,9 +453,9 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
     for (i = 0; i < arity; i++) {
       pred = get_irn_n(node, i);
       if (get_irn_op(pred) == op_Phi) {
-	ir_node *block = get_nodes_block(pred);
+        ir_node *block = get_nodes_block(pred);
 
-	if (! is_Bad(block))
+        if (! is_Bad(block))
           irg_block_walk_2(block, pre, post, env);
       }
     }
