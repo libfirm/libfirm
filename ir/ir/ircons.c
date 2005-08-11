@@ -57,8 +57,8 @@ typedef struct Phi_in_stack Phi_in_stack;
 # define IRN_VRFY_IRG(res, irg)  irn_vrfy_irg(res, irg)
 #endif
 
-/*
- * language dependent initialization variable
+/**
+ * Language dependent variable initialization callback.
  */
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
@@ -1199,8 +1199,8 @@ new_d_Block (dbg_info* db, int arity, ir_node **in)
 /*
   ir_node *phi_merge            (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
   ir_node *get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
-  ir_node *new_rd_Phi0           (ir_graph *irg, ir_node *block, ir_mode *mode)
-  ir_node *new_rd_Phi_in         (ir_graph *irg, ir_node *block, ir_mode *mode,  ir_node **in, int ins)
+  ir_node *new_rd_Phi0          (ir_graph *irg, ir_node *block, ir_mode *mode)
+  ir_node *new_rd_Phi_in        (ir_graph *irg, ir_node *block, ir_mode *mode, ir_node **in, int ins)
 
   Call Graph:   ( A ---> B == A "calls" B)
 
@@ -1578,7 +1578,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
   {
     assert(in[i]);
 
-    in[i] = skip_Id(in[i]);  /* increasses the number of freed Phis. */
+    in[i] = skip_Id(in[i]);  /* increases the number of freed Phis. */
 
     /* Optimize self referencing Phis:  We can't detect them yet properly, as
        they still refer to the Phi0 they will replace.  So replace right now. */
@@ -1770,13 +1770,13 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     if (block == get_irg_start_block(current_ir_graph)) {
       /* Collapsing to Bad tarvals is no good idea.
          So we call a user-supplied routine here that deals with this case as
-         appropriate for the given language. Sorryly the only help we can give
+         appropriate for the given language. Sorrily the only help we can give
          here is the position.
 
          Even if all variables are defined before use, it can happen that
-         we get to the start block, if a cond has been replaced by a tuple
+         we get to the start block, if a Cond has been replaced by a tuple
          (bad, jmp).  In this case we call the function needlessly, eventually
-         generating an non existant error.
+         generating an non existent error.
          However, this SHOULD NOT HAPPEN, as bad control flow nodes are intercepted
          before recuring.
       */
@@ -1785,17 +1785,17 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
       else
         block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
-     There are none by definition. */
+         There are none by definition. */
       return block->attr.block.graph_arr[pos];
     } else {
       phi0 = new_rd_Phi0(current_ir_graph, block, mode);
       block->attr.block.graph_arr[pos] = phi0;
 #if PRECISE_EXC_CONTEXT
       if (get_opt_precise_exc_context()) {
-    /* Set graph_arr for fragile ops.  Also here we should break recursion.
-       We could choose a cyclic path through an cfop.  But the recursion would
-       break at some point. */
-    set_frag_value(block->attr.block.graph_arr, pos, phi0);
+        /* Set graph_arr for fragile ops.  Also here we should break recursion.
+           We could choose a cyclic path through an cfop.  But the recursion would
+           break at some point. */
+        set_frag_value(block->attr.block.graph_arr, pos, phi0);
       }
 #endif
     }
@@ -1809,7 +1809,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     assert (prevCfOp);
     if (is_Bad(prevCfOp)) {
       /* In case a Cond has been optimized we would get right to the start block
-     with an invalid definition. */
+         with an invalid definition. */
       nin[i-1] = new_Bad();
       continue;
     }
@@ -1818,9 +1818,9 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
     if (!is_Bad(prevBlock)) {
 #if PRECISE_EXC_CONTEXT
       if (get_opt_precise_exc_context() &&
-      is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
-    assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
-    nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
+          is_fragile_op(prevCfOp) && (get_irn_op (prevCfOp) != op_Bad)) {
+        assert(get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode));
+        nin[i-1] = get_r_frag_value_internal (prevBlock, prevCfOp, pos, mode);
       } else
 #endif
       nin[i-1] = get_r_value_internal (prevBlock, pos, mode);
@@ -1876,7 +1876,7 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
         create a proper Phi node, therefore a Phi0, i.e., a Phi without
         predecessors is returned.  This node is added to the linked list (field
         "link") of the containing block to be completed when this block is
-        matured. (Comlpletion will add a new Phi and turn the Phi0 into an Id
+        matured. (Completion will add a new Phi and turn the Phi0 into an Id
         node.)
 
      2. The value is already known in this block, graph_arr[pos] is set and we
@@ -1959,12 +1959,13 @@ get_r_value_internal (ir_node *block, int pos, ir_mode *mode)
 
 /* ************************************************************************** */
 
-/** Finalize a Block node, when all control flows are known.  */
-/** Acceptable parameters are only Block nodes.               */
+/*
+ * Finalize a Block node, when all control flows are known.
+ * Acceptable parameters are only Block nodes.
+ */
 void
 mature_immBlock (ir_node *block)
 {
-
   int ins;
   ir_node *n, **nin;
   ir_node *next;
@@ -2111,8 +2112,8 @@ new_d_Mul (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
 static void allocate_frag_arr(ir_node *res, ir_op *op, ir_node ***frag_store) {
   if (get_opt_precise_exc_context()) {
     if ((current_ir_graph->phase_state == phase_building) &&
-    (get_irn_op(res) == op) && /* Could be optimized away. */
-    !*frag_store)    /* Could be a cse where the arr is already set. */ {
+        (get_irn_op(res) == op) && /* Could be optimized away. */
+        !*frag_store)    /* Could be a cse where the arr is already set. */ {
       *frag_store = new_frag_arr(res);
     }
   }
@@ -2385,8 +2386,7 @@ new_d_Sync (dbg_info* db, int arity, ir_node** in)
 
 
 ir_node *
-(new_d_Bad)(void)
-{
+(new_d_Bad)(void) {
   return _new_d_Bad();
 }
 
@@ -2458,7 +2458,7 @@ new_d_Mux (dbg_info *db, ir_node *sel, ir_node *ir_false,
 /* (Uses also constructors of ?? interface, except new_Block.            */
 /* ********************************************************************* */
 
-/* * Block construction **/
+/*  Block construction */
 /* immature Block without predecessors */
 ir_node *new_d_immBlock (dbg_info* db) {
   ir_node *res;
@@ -2508,8 +2508,7 @@ add_immBlock_pred (ir_node *block, ir_node *jmp)
 
 /* changing the current block */
 void
-set_cur_block (ir_node *target)
-{
+set_cur_block (ir_node *target) {
   current_ir_graph->current_block = target;
 }
 
@@ -2565,15 +2564,15 @@ keep_alive (ir_node *ka) {
   add_End_keepalive(current_ir_graph->end, ka);
 }
 
-/** Useful access routines **/
+/* --- Useful access routines --- */
 /* Returns the current block of the current graph.  To set the current
    block use set_cur_block. */
-ir_node *get_cur_block() {
+ir_node *get_cur_block(void) {
   return get_irg_current_block(current_ir_graph);
 }
 
 /* Returns the frame type of the current graph */
-type *get_cur_frame_type() {
+type *get_cur_frame_type(void) {
   return get_irg_frame_type(current_ir_graph);
 }
 
@@ -2708,7 +2707,6 @@ ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode) {
 ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode) {
   return new_d_Shrs(NULL, op, k, mode);
 }
-#define new_Rotate new_Rot
 ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode) {
   return new_d_Rot(NULL, op, k, mode);
 }
