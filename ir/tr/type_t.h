@@ -38,8 +38,7 @@ typedef struct {
 
 /** struct attributes */
 typedef struct {
-  entity **members;    /**< fields of this struct. No method entities
-              allowed. */
+  entity **members;    /**< fields of this struct. No method entities allowed. */
 } stc_attr;
 
 /** method attributes */
@@ -56,12 +55,7 @@ typedef struct {
 
 /** union attributes */
 typedef struct {
-  int     n_types;
-  /* type  **unioned_type; * a list of unioned types. */
-  /* ident **delim_names;  * names of the union delimiters. */
-  entity **members;    /**< fields of this union. No method entities
-              allowed.  */
-
+  entity **members;    /**< fields of this union. No method entities allowed. */
 } uni_attr;
 
 /** array attributes */
@@ -129,7 +123,7 @@ struct type {
   ir_mode *mode;           /**< The mode for atomic types */
   unsigned long visit;     /**< visited counter for walks of the type information */
   void *link;              /**< holds temporary data - like in irnode_t.h */
-  struct dbg_info* dbi;    /**< A pointer to information for debug support. */
+  struct dbg_info *dbi;    /**< A pointer to information for debug support. */
 
   /* ------------- fields for analyses ---------------*/
 
@@ -144,17 +138,16 @@ struct type {
 /**
  *   Creates a new type representation:
  *
- *   @param type_op - the kind of this type.  May not be type_id.
- *   @param mode    - the mode to be used for this type, may be NULL
- *   @param name    - an ident for the name of this type.
+ *   @param type_op  the kind of this type.  May not be type_id.
+ *   @param mode     the mode to be used for this type, may be NULL
+ *   @param name     an ident for the name of this type.
+ *   @param db       debug info
  *
  *   @return A new type of the given type.  The remaining private attributes are not
  *           initialized.  The type is in state layout_undefined.
  */
 INLINE type *
-new_type(tp_op *type_op,
-     ir_mode *mode,
-     ident* name);
+new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db);
 void free_type_attrs       (type *tp);
 
 INLINE void free_class_entities      (type *clss);
@@ -176,19 +169,23 @@ INLINE void free_pointer_attrs    (type *pointer);
 INLINE void free_primitive_attrs  (type *primitive);
 
 
-/** initialize the type module */
-void init_type (void);
+/**
+ * Initialize the type module.
+ *
+ * @param buildin_db  debug info for builtin objects
+ */
+void firm_init_type(dbg_info *builtin_db);
 
 
 /* ------------------- *
  *  inline functions   *
  * ------------------- */
 
-extern unsigned long type_visited;
+extern unsigned long firm_type_visited;
 
-static INLINE void _set_master_type_visited(unsigned long val) { type_visited = val; }
-static INLINE unsigned long _get_master_type_visited(void)     { return type_visited; }
-static INLINE void _inc_master_type_visited(void)              { type_visited++; }
+static INLINE void _set_master_type_visited(unsigned long val) { firm_type_visited = val; }
+static INLINE unsigned long _get_master_type_visited(void)     { return firm_type_visited; }
+static INLINE void _inc_master_type_visited(void)              { ++firm_type_visited; }
 
 static INLINE void *
 _get_type_link(const type *tp) {
@@ -277,20 +274,20 @@ _set_type_visited(type *tp, unsigned long num) {
 static INLINE void
 _mark_type_visited(type *tp) {
   assert(tp && tp->kind == k_type);
-  assert(tp->visit < type_visited);
-  tp->visit = type_visited;
+  assert(tp->visit < firm_type_visited);
+  tp->visit = firm_type_visited;
 }
 
 static INLINE int
 _type_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
-  return tp->visit >= type_visited;
+  return tp->visit >= firm_type_visited;
 }
 
 static INLINE int
 _type_not_visited(const type *tp) {
   assert(tp && tp->kind == k_type);
-  return tp->visit  < type_visited;
+  return tp->visit  < firm_type_visited;
 }
 
 static INLINE int
