@@ -36,7 +36,7 @@
  * Computes type information for each node.  Stores the information in the
  * field defined in irtypeinfo.h. Sets typestate in irg to irg_typeinfo_consistent.
  *
- * Derives the information from nodes/pattarns that give hints about the
+ * Derives the information from nodes/patterns that give hints about the
  * type, as projecting an argument from the Start node.  Deletes all previous
  * type information.
  *
