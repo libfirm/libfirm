@@ -18,6 +18,7 @@ size_t phi_irn_data_offset = 0;
 
 static void phi_class_build(ir_node *irn, pset *pc) {
 	int i, max;
+	const ir_edge_t *edge;
 
 	/* If irn has a phi class assigned already
 	 * return immediately to stop recursion */
@@ -50,7 +51,6 @@ static void phi_class_build(ir_node *irn, pset *pc) {
 
 	/* Add a user of the irn to the class,
 	 * iff it is a phi node  */
-	const ir_edge_t *edge;
 	foreach_out_edge(irn, edge) {
 		ir_node *user = edge->src;
 		DBG((dbg, LEVEL_2, "  checking user %+F\n", user));
