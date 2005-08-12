@@ -816,7 +816,9 @@ new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_no
 ir_node *
 new_rd_Unknown (ir_graph *irg, ir_mode *m)
 {
-  return new_ir_node(NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
+  ir_node *res = new_ir_node(NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
+  res = optimize_node(res);
+  return res;
 }
 
 ir_node *
