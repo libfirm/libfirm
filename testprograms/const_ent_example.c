@@ -78,7 +78,7 @@ int main(int argc, char **argv)
   gt = new_type_method(gti, 1, 0);  /* 1 parameter, 0 results */
   /* Compiler defined types: dispatch table and pointer to it  */
   diptt = new_type_class(dipti);
-  diptpt = new_type_pointer(diptpi, diptt);
+  diptpt = new_type_pointer(diptpi, diptt, mode_P);
   /** add structure to type graph **/
   /* parameters of methods */
   set_method_param_type(gt, 0, intt);

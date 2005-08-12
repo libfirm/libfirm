@@ -75,7 +75,7 @@ main(void)
   class_prima = new_type_class(new_id_from_str ("PRIMA_INLINE"));
   /* We need type information for pointers to the class: */
   class_p_ptr = new_type_pointer (new_id_from_chars ("class_prima_ptr", 15),
-				  class_prima);
+				  class_prima, mode_P);
   /* An entity for the field (a).  The entity constructor automatically adds
      the entity as member of the owner. */
   a_e = new_entity(class_prima, new_id_from_chars ("a", 1), prim_t_int);

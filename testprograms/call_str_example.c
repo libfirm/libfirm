@@ -51,7 +51,7 @@ int main(int argc, char **argv)
   U8 = new_type_primitive (new_id_from_chars("char", 4), mode_Bu);
   /* An array containing unsigned 8 bit elements. */
   U8array = new_type_array (new_id_from_chars("char_arr", 8), 1, U8);
-  string_ptr = new_type_pointer (new_id_from_chars ("ptr_to_string", 13), U8array);
+  string_ptr = new_type_pointer (new_id_from_chars ("ptr_to_string", 13), U8array, mode_P);
 
   /* Make a global entity that represents the constant String. */
   const_str = new_entity(get_glob_type(), new_id_from_str("constStr"), U8array);
