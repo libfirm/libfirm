@@ -53,179 +53,179 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g37" label: "ARRAY-STACK_EXAMPLE_main" status:clustered color:white
-graph: { title: "n26"  label: "Block 26" status:clustered color:yellow
-edge: {sourcename: "n26" targetname: "n48" label: "0" class:13 priority:60 color:red}
-node: {title: "n50" label: "End 50"  info1: "End 50
+graph: { title: "g36" label: "ARRAY-STACK_EXAMPLE_main" status:clustered color:white
+graph: { title: "n25"  label: "Block 25" status:clustered color:yellow
+edge: {sourcename: "n25" targetname: "n47" label: "0" class:13 priority:60 color:red}
+node: {title: "n49" label: "End 49"  info1: "End 49
   mode:    X
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 26
+    -1:    Block 25
   Private Attributes:
 "
 color: blue}
 }
 
-graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
-edge: {sourcename: "n38" targetname: "n32" label: "0" class:13 priority:60 color:red}
-node: {title: "n48" label: "Return 48"  info1: "Return 48
+graph: { title: "n37"  label: "Block 37" status:clustered color:yellow
+edge: {sourcename: "n37" targetname: "n31" label: "0" class:13 priority:60 color:red}
+node: {title: "n47" label: "Return 47"  info1: "Return 47
   mode:    X
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 38
-     0:    Proj 46
-     1:    Proj 47
+    -1:    Block 37
+     0:    Proj 45
+     1:    Proj 46
   Private Attributes:
   return in method of type main_tp
     res 0 type: int
 "
 }
-edge: {sourcename: "n48" targetname: "n46" label: "0" class:14 priority:50 color:blue}
-edge: {sourcename: "n48" targetname: "n47" label: "1" class:1  priority:50}
-node: {title: "n46" label: "ProjM M 46"  info1: "Proj 46
+edge: {sourcename: "n47" targetname: "n45" label: "0" class:14 priority:50 color:blue}
+edge: {sourcename: "n47" targetname: "n46" label: "1" class:1  priority:50}
+node: {title: "n45" label: "ProjM M 45"  info1: "Proj 45
   mode:    M
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 38
-     0:    Load[Is] 44
+    -1:    Block 37
+     0:    Load[Is] 43
   Private Attributes:
   proj nr: 0
 "
 color: yellow}
-edge: {sourcename: "n46" targetname: "n44" label: "0" class:17 priority:10 color:blue}
-node: {title: "n47" label: "ProjIs res 47"  info1: "Proj 47
+edge: {sourcename: "n45" targetname: "n43" label: "0" class:17 priority:10 color:blue}
+node: {title: "n46" label: "ProjIs res 46"  info1: "Proj 46
   mode:    Is
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 38
-     0:    Load[Is] 44
+    -1:    Block 37
+     0:    Load[Is] 43
   Private Attributes:
   proj nr: 2
 "
 color: yellow}
-edge: {sourcename: "n47" targetname: "n44" label: "0" class:1  priority:50}
-node: {title: "n44" label: "Load[Is] 44"  info1: "Load[Is] 44
+edge: {sourcename: "n46" targetname: "n43" label: "0" class:1  priority:50}
+node: {title: "n43" label: "Load[Is] 43"  info1: "Load[Is] 43
   mode:    T
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 38
-     0:    Proj 35
-     1:    Sel 43
+    -1:    Block 37
+     0:    Proj 34
+     1:    Sel 42
   Private Attributes:
   pinned state: op_pin_state_pinned
   mode of loaded value: Is
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n44" targetname: "n35" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n44" targetname: "n43" label: "1" class:1  priority:50}
-node: {title: "n43" label: "Sel a_tp_elem_ent 43"  info1: "Sel 43
+edge: {sourcename: "n43" targetname: "n34" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n43" targetname: "n42" label: "1" class:1  priority:50}
+node: {title: "n42" label: "Sel a_tp_elem_ent 42"  info1: "Sel 42
   mode:    P
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   3
   pred nodes:
-    -1:    Block 38
-     0:    Proj 35
-     1:    Sel 41
-     2:    0x3 42
+    -1:    Block 37
+     0:    Proj 34
+     1:    Sel 40
+     2:    0x3 41
   Private Attributes:
-  Selecting entity a_tp_elem_ent (22)
+  Selecting entity a_tp_elem_ent (21)
     of type    int
     with owner a_tp.
 "
 }
-edge: {sourcename: "n43" targetname: "n35" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n43" targetname: "n41" label: "1" class:1  priority:50}
-edge: {sourcename: "n43" targetname: "n42" label: "2" class:16 priority:10}
-node: {title: "n41" label: "Sel a 41"  info1: "Sel 41
+edge: {sourcename: "n42" targetname: "n34" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n42" targetname: "n40" label: "1" class:1  priority:50}
+edge: {sourcename: "n42" targetname: "n41" label: "2" class:16 priority:10}
+node: {title: "n40" label: "Sel a 40"  info1: "Sel 40
   mode:    P
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   2
   pred nodes:
-    -1:    Block 38
-     0:    Proj 35
-     1:    Proj 33
+    -1:    Block 37
+     0:    Proj 34
+     1:    Proj 32
   Private Attributes:
-  Selecting entity a (39)
+  Selecting entity a (38)
     of type    a_tp
     with owner mainframe_tp.
 "
 }
-edge: {sourcename: "n41" targetname: "n35" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n41" targetname: "n33" label: "1" class:16 priority:10}
+edge: {sourcename: "n40" targetname: "n34" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n40" targetname: "n32" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
-edge: {sourcename: "n28" targetname: "n32" label: "0" class:13 priority:60 color:red}
-node: {title: "n35" label: "ProjM 1 35"  info1: "Proj 35
+graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
+edge: {sourcename: "n27" targetname: "n31" label: "0" class:13 priority:60 color:red}
+node: {title: "n34" label: "ProjM 1 34"  info1: "Proj 34
   mode:    M
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 28
-     0:    Start 29
+    -1:    Block 27
+     0:    Start 28
   Private Attributes:
   proj nr: 1
 "
 color: yellow}
-edge: {sourcename: "n35" targetname: "n29" label: "0" class:17 priority:10 color:blue}
-node: {title: "n33" label: "ProjP P_frame_base 33"  info1: "Proj 33
+edge: {sourcename: "n34" targetname: "n28" label: "0" class:17 priority:10 color:blue}
+node: {title: "n32" label: "ProjP P_frame_base 32"  info1: "Proj 32
   mode:    P
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 28
-     0:    Start 29
+    -1:    Block 27
+     0:    Start 28
   Private Attributes:
   proj nr: 2
 "
 color: yellow}
-edge: {sourcename: "n33" targetname: "n29" label: "0" class:1  priority:50}
-node: {title: "n42" label: "0x3Iu 42"  info1: "0x3 42
+edge: {sourcename: "n32" targetname: "n28" label: "0" class:1  priority:50}
+node: {title: "n41" label: "0x3Iu 41"  info1: "0x3 41
   mode:    Iu
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 28
+    -1:    Block 27
   Private Attributes:
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n32" label: "ProjX X_initial_exec 32"  info1: "Proj 32
+node: {title: "n31" label: "ProjX X_initial_exec 31"  info1: "Proj 31
   mode:    X
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 28
-     0:    Start 29
+    -1:    Block 27
+     0:    Start 28
   Private Attributes:
   proj nr: 0
 "
 color: yellow}
-edge: {sourcename: "n32" targetname: "n29" label: "0" class:13 priority:60 color:red}
-node: {title: "n29" label: "Start 29"  info1: "Start 29
+edge: {sourcename: "n31" targetname: "n28" label: "0" class:13 priority:60 color:red}
+node: {title: "n28" label: "Start 28"  info1: "Start 28
   mode:    T
   visited: 13
   irg:     ARRAY-STACK_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 28
+    -1:    Block 27
   Private Attributes:
   start of method of type main_tp
 "
@@ -234,8 +234,8 @@ color: blue}
 
 }
 
-node: {title: "e22" label: "ent a_tp_elem_ent" color: yellow
- info1: "entity a_tp_elem_ent (22)
+node: {title: "e21" label: "ent a_tp_elem_ent" color: yellow
+ info1: "entity a_tp_elem_ent (21)
   type:  int (14)
   owner: a_tp (19)
   allocation:  allocation_automatic
@@ -248,11 +248,11 @@ node: {title: "e22" label: "ent a_tp_elem_ent" color: yellow
 
 "
 }
-edge: { sourcename: "e22" targetname: "t14"class: 3 label: "type" color: red}
+edge: { sourcename: "e21" targetname: "t14"class: 3 label: "type" color: red}
 node: {title: "t19" label: "array a_tp" info1: "array type a_tp (19)
   array [0 .. 0] of <int (14)>
   order: <0>
-    entity a_tp_elem_ent (22)
+    entity a_tp_elem_ent (21)
       type:  int (14)
       owner: a_tp (19)
       allocation:  allocation_automatic
@@ -271,10 +271,10 @@ node: {title: "t19" label: "array a_tp" info1: "array type a_tp (19)
 "
 }
 edge: { sourcename: "t19" targetname: "t14"class: 10 label: "arr elt tp" color:green}
-edge: { sourcename: "t19" targetname: "e22"class: 10 label: "arr ent" color: green}
-edge: { sourcename: "n23" targetname: "t19"label: "upper 0"}
-edge: { sourcename: "n24" targetname: "t19"label: "lower 0"}
-node: {title: "n23" label: "0x9Iu 23"  info1: "0x9 23
+edge: { sourcename: "t19" targetname: "e21"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "n22" targetname: "t19"label: "upper 0"}
+edge: { sourcename: "n23" targetname: "t19"label: "lower 0"}
+node: {title: "n22" label: "0x9Iu 22"  info1: "0x9 22
   mode:    Iu
   visited: 2
   arity:   0
@@ -284,7 +284,7 @@ node: {title: "n23" label: "0x9Iu 23"  info1: "0x9 23
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n24" label: "0x0Iu 24"  info1: "0x0 24
+node: {title: "n23" label: "0x0Iu 23"  info1: "0x0 23
   mode:    Iu
   visited: 2
   arity:   0
@@ -304,10 +304,10 @@ node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
 
 "
 }
-node: {title: "e39" label: "ent a" color: yellow
- info1: "entity a (39)
+node: {title: "e38" label: "ent a" color: yellow
+ info1: "entity a (38)
   type:  a_tp (19)
-  owner: mainframe_tp (25)
+  owner: mainframe_tp (24)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_automatic
@@ -320,12 +320,12 @@ node: {title: "e39" label: "ent a" color: yellow
 
 "
 }
-edge: { sourcename: "e39" targetname: "t19"class: 3 label: "type" color: red}
-node: {title: "t25" label: "class mainframe_tp" info1: "class type mainframe_tp (25)
+edge: { sourcename: "e38" targetname: "t19"class: 3 label: "type" color: red}
+node: {title: "t24" label: "class mainframe_tp" info1: "class type mainframe_tp (24)
   members:
-    entity a (39)
+    entity a (38)
       type:  a_tp (19)
-      owner: mainframe_tp (25)
+      owner: mainframe_tp (24)
       Does not overwrite other entities.
       Is not overwritten by other entities.
       allocation:  allocation_automatic
@@ -346,7 +346,7 @@ node: {title: "t25" label: "class mainframe_tp" info1: "class type mainframe_tp 
 
 "
  color: green}
-edge: { sourcename: "t25" targetname: "e39"class: 12 label: "member" color:blue}
+edge: { sourcename: "t24" targetname: "e38"class: 12 label: "member" color:blue}
 node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
  info1: "entity main (18)
   type:  main_tp (16)
@@ -361,7 +361,7 @@ node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
   peculiarity: peculiarity_existent
   ld_name: ARRAY-STACK_EXAMPLE_main
   offset:  -1 bits, -1 bytes
-  irg = 37
+  irg = 36
 
 "
 }
@@ -395,7 +395,7 @@ node: {title: "t15" label: "class ARRAY-STACK_EXAMPLE" info1: "class type ARRAY-
       peculiarity: peculiarity_existent
       ld_name: ARRAY-STACK_EXAMPLE_main
       offset:  -1 bits, -1 bytes
-      irg = 37
+      irg = 36
   supertypes:
   subtypes:
   peculiarity: peculiarity_existent
@@ -423,6 +423,6 @@ node: {title: "t16" label: "method main_tp" info1: "method type main_tp (16)
 "
 }
 edge: { sourcename: "t16" targetname: "t14"class: 6 label: "res 0" color: green}
-edge: { sourcename: "n43" targetname: "e22"class:2 priority:2 linestyle:dotted}
-edge: { sourcename: "n41" targetname: "e39"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n42" targetname: "e21"class:2 priority:2 linestyle:dotted}
+edge: { sourcename: "n40" targetname: "e38"class:2 priority:2 linestyle:dotted}
 }

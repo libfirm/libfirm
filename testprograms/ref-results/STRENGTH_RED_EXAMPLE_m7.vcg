@@ -53,456 +53,456 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g488" label: "STRENGTH_RED_EXAMPLE_m7" status:clustered color:white
-graph: { title: "n477"  label: "Block 477" status:clustered color:yellow
-edge: {sourcename: "n477" targetname: "n528" label: "0" class:13 priority:60 color:red}
-node: {title: "n478" label: "End 478"  info1: "End 478
+graph: { title: "g480" label: "STRENGTH_RED_EXAMPLE_m7" status:clustered color:white
+graph: { title: "n469"  label: "Block 469" status:clustered color:yellow
+edge: {sourcename: "n469" targetname: "n520" label: "0" class:13 priority:60 color:red}
+node: {title: "n470" label: "End 470"  info1: "End 470
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 477
-     0:    Phi 532
+    -1:    Block 469
+     0:    Phi 524
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 color: blue}
 }
 
-graph: { title: "n525"  label: "Block 525" status:clustered color:yellow
-edge: {sourcename: "n525" targetname: "n501" label: "0" class:13 priority:60 color:red}
-node: {title: "n528" label: "Return 528"  info1: "Return 528
+graph: { title: "n517"  label: "Block 517" status:clustered color:yellow
+edge: {sourcename: "n517" targetname: "n493" label: "0" class:13 priority:60 color:red}
+node: {title: "n520" label: "Return 520"  info1: "Return 520
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 525
-     0:    Phi 532
-     1:    0x4 505
+    -1:    Block 517
+     0:    Phi 524
+     1:    0x4 497
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   return in method of type STRENGTH_RED_EXAMPLE_meth_tp
     res 0 type: int
 "
 }
-node: {title: "n528n505" label: "0x4Is 505"  info1: "0x4 505
+node: {title: "n520n497" label: "0x4Is 497"  info1: "0x4 497
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n528" targetname: "n532" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n528" targetname: "n528n505" label: "1" class:16 priority:10}
+edge: {sourcename: "n520" targetname: "n524" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n520" targetname: "n520n497" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n494"  label: "Block 494" status:clustered color:yellow
-edge: {sourcename: "n494" targetname: "n493" label: "0" class:13 priority:60 color:red}
-backedge: {sourcename: "n494" targetname: "n519" label: "1" linestyle:dashed class:13 priority:60 color:red}
-node: {title: "n532" label: "PhiM 532"  info1: "Phi 532
+graph: { title: "n486"  label: "Block 486" status:clustered color:yellow
+edge: {sourcename: "n486" targetname: "n485" label: "0" class:13 priority:60 color:red}
+backedge: {sourcename: "n486" targetname: "n511" label: "1" linestyle:dashed class:13 priority:60 color:red}
+node: {title: "n524" label: "PhiM 524"  info1: "Phi 524
   mode:    M
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 494
-     0:    Proj 486
-     1: be Proj 517
+    -1:    Block 486
+     0:    Proj 478
+     1: be Proj 509
   Private Attributes:
   backedges:  1
-  in loop 700 with depth 1
+  in loop 692 with depth 1
 "
 color: green}
-edge: {sourcename: "n532" targetname: "n486" label: "0" class:17 priority:10 color:blue}
-backedge: {sourcename: "n532" targetname: "n517" label: "1" linestyle:dashed class:17 priority:10 color:blue}
-node: {title: "n501" label: "ProjX false 501"  info1: "Proj 501
+edge: {sourcename: "n524" targetname: "n478" label: "0" class:17 priority:10 color:blue}
+backedge: {sourcename: "n524" targetname: "n509" label: "1" linestyle:dashed class:17 priority:10 color:blue}
+node: {title: "n493" label: "ProjX false 493"  info1: "Proj 493
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 494
-     0:    Cond 500
+    -1:    Block 486
+     0:    Cond 492
   Private Attributes:
   proj nr: 0
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 color: yellow}
-edge: {sourcename: "n501" targetname: "n500" label: "0" class:13 priority:60 color:red}
-node: {title: "n502" label: "ProjX true 502"  info1: "Proj 502
+edge: {sourcename: "n493" targetname: "n492" label: "0" class:13 priority:60 color:red}
+node: {title: "n494" label: "ProjX true 494"  info1: "Proj 494
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 494
-     0:    Cond 500
+    -1:    Block 486
+     0:    Cond 492
   Private Attributes:
   proj nr: 1
-  in loop 699 with depth 2
+  in loop 691 with depth 2
 "
 color: yellow}
-edge: {sourcename: "n502" targetname: "n500" label: "0" class:13 priority:60 color:red}
-node: {title: "n500" label: "Cond 500"  info1: "Cond 500
+edge: {sourcename: "n494" targetname: "n492" label: "0" class:13 priority:60 color:red}
+node: {title: "n492" label: "Cond 492"  info1: "Cond 492
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 494
-     0:    Proj 498
+    -1:    Block 486
+     0:    Proj 490
   Private Attributes:
-  in loop 699 with depth 2
+  in loop 691 with depth 2
   condition kind: dense
   default ProjNr: 0
 "
 }
-edge: {sourcename: "n500" targetname: "n498" label: "0" class:1  priority:50}
-node: {title: "n498" label: "Projb Gt 498"  info1: "Proj 498
+edge: {sourcename: "n492" targetname: "n490" label: "0" class:1  priority:50}
+node: {title: "n490" label: "Projb Gt 490"  info1: "Proj 490
   mode:    b
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 494
-     0:    Cmp 499
+    -1:    Block 486
+     0:    Cmp 491
   Private Attributes:
   proj nr: 4
-  in loop 699 with depth 2
+  in loop 691 with depth 2
 "
 color: yellow}
-edge: {sourcename: "n498" targetname: "n499" label: "0" class:1  priority:50}
-node: {title: "n499" label: "Cmp 499"  info1: "Cmp 499
+edge: {sourcename: "n490" targetname: "n491" label: "0" class:1  priority:50}
+node: {title: "n491" label: "Cmp 491"  info1: "Cmp 491
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 494
-     0:    Phi 533
-     1:    0x0 496
+    -1:    Block 486
+     0:    Phi 525
+     1:    0x0 488
   Private Attributes:
-  in loop 699 with depth 2
+  in loop 691 with depth 2
 "
 }
-node: {title: "n499n496" label: "0x0Is 496"  info1: "0x0 496
+node: {title: "n491n488" label: "0x0Is 488"  info1: "0x0 488
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n499" targetname: "n533" label: "0" class:1  priority:50}
-edge: {sourcename: "n499" targetname: "n499n496" label: "1" class:16 priority:10}
-node: {title: "n533" label: "PhiIs 533"  info1: "Phi 533
+edge: {sourcename: "n491" targetname: "n525" label: "0" class:1  priority:50}
+edge: {sourcename: "n491" targetname: "n491n488" label: "1" class:16 priority:10}
+node: {title: "n525" label: "PhiIs 525"  info1: "Phi 525
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 494
-     0:    0xA 491
-     1: be Sub 518
+    -1:    Block 486
+     0:    0xA 483
+     1: be Sub 510
   Private Attributes:
   backedges:  1
-  in loop 698 with depth 1
+  in loop 690 with depth 1
 "
 color: green}
-node: {title: "n533n491" label: "0xAIs 491"  info1: "0xA 491
+node: {title: "n525n483" label: "0xAIs 483"  info1: "0xA 483
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n533" targetname: "n533n491" label: "0" class:16 priority:10}
-backedge: {sourcename: "n533" targetname: "n518" label: "1" linestyle:dashed class:16 priority:10}
+edge: {sourcename: "n525" targetname: "n525n483" label: "0" class:16 priority:10}
+backedge: {sourcename: "n525" targetname: "n510" label: "1" linestyle:dashed class:16 priority:10}
 }
 
-graph: { title: "n489"  label: "Block 489" status:clustered color:yellow
-edge: {sourcename: "n489" targetname: "n483" label: "0" class:13 priority:60 color:red}
-node: {title: "n493" label: "Jmp 493"  info1: "Jmp 493
+graph: { title: "n481"  label: "Block 481" status:clustered color:yellow
+edge: {sourcename: "n481" targetname: "n475" label: "0" class:13 priority:60 color:red}
+node: {title: "n485" label: "Jmp 485"  info1: "Jmp 485
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 489
+    -1:    Block 481
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 }
 }
 
-graph: { title: "n503"  label: "Block 503" status:clustered color:yellow
-edge: {sourcename: "n503" targetname: "n502" label: "0" class:13 priority:60 color:red}
-node: {title: "n517" label: "ProjM M 517"  info1: "Proj 517
+graph: { title: "n495"  label: "Block 495" status:clustered color:yellow
+edge: {sourcename: "n495" targetname: "n494" label: "0" class:13 priority:60 color:red}
+node: {title: "n509" label: "ProjM M 509"  info1: "Proj 509
   mode:    M
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 503
-     0:    Store 515
+    -1:    Block 495
+     0:    Store 507
   Private Attributes:
   proj nr: 0
-  in loop 700 with depth 1
+  in loop 692 with depth 1
 "
 color: yellow}
-edge: {sourcename: "n517" targetname: "n515" label: "0" class:17 priority:10 color:blue}
-node: {title: "n515" label: "Store 515"  info1: "Store 515
+edge: {sourcename: "n509" targetname: "n507" label: "0" class:17 priority:10 color:blue}
+node: {title: "n507" label: "Store 507"  info1: "Store 507
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   3
   pred nodes:
-    -1:    Block 503
-     0:    Phi 532
-     1:    Add 512
-     2:    Add 513
+    -1:    Block 495
+     0:    Phi 524
+     1:    Add 504
+     2:    Add 505
   Private Attributes:
   pinned state: op_pin_state_pinned
-  in loop 700 with depth 1
+  in loop 692 with depth 1
   volatility: volatility_non_volatile
 "
 }
-edge: {sourcename: "n515" targetname: "n532" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n515" targetname: "n512" label: "1" class:1  priority:50}
-edge: {sourcename: "n515" targetname: "n513" label: "2" class:1  priority:50}
-node: {title: "n512" label: "AddP 512"  info1: "Add 512
+edge: {sourcename: "n507" targetname: "n524" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n507" targetname: "n504" label: "1" class:1  priority:50}
+edge: {sourcename: "n507" targetname: "n505" label: "2" class:1  priority:50}
+node: {title: "n504" label: "AddP 504"  info1: "Add 504
   mode:    P
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 503
-     0:    Mul 510
-     1:    SymC &a 492
+    -1:    Block 495
+     0:    Mul 502
+     1:    SymC &a 484
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 }
-node: {title: "n512n492" label: "SymC &a 492"  info1: "SymC &a 492
+node: {title: "n504n484" label: "SymC &a 484"  info1: "SymC &a 484
   mode:    P
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   kind:   addr_ent
-  entity: entity GlobalType.a (475)
+  entity: entity GlobalType.a (467)
 
   type of value: type_unknown
 "
 }
-edge: {sourcename: "n512" targetname: "n510" label: "0" class:1  priority:50}
-edge: {sourcename: "n512" targetname: "n512n492" label: "1" class:16 priority:10}
-node: {title: "n510" label: "MulIs 510"  info1: "Mul 510
+edge: {sourcename: "n504" targetname: "n502" label: "0" class:1  priority:50}
+edge: {sourcename: "n504" targetname: "n504n484" label: "1" class:16 priority:10}
+node: {title: "n502" label: "MulIs 502"  info1: "Mul 502
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 503
-     0:    0x4 505
-     1:    Add 509
+    -1:    Block 495
+     0:    0x4 497
+     1:    Add 501
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 }
-node: {title: "n510n505" label: "0x4Is 505"  info1: "0x4 505
+node: {title: "n502n497" label: "0x4Is 497"  info1: "0x4 497
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n510" targetname: "n510n505" label: "0" class:16 priority:10}
-edge: {sourcename: "n510" targetname: "n509" label: "1" class:1  priority:50}
-node: {title: "n509" label: "AddIs 509"  info1: "Add 509
+edge: {sourcename: "n502" targetname: "n502n497" label: "0" class:16 priority:10}
+edge: {sourcename: "n502" targetname: "n501" label: "1" class:1  priority:50}
+node: {title: "n501" label: "AddIs 501"  info1: "Add 501
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 503
-     0:    0x13 506
-     1:    Add 508
+    -1:    Block 495
+     0:    0x13 498
+     1:    Add 500
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 }
-node: {title: "n509n506" label: "0x13Is 506"  info1: "0x13 506
+node: {title: "n501n498" label: "0x13Is 498"  info1: "0x13 498
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n509" targetname: "n509n506" label: "0" class:16 priority:10}
-edge: {sourcename: "n509" targetname: "n508" label: "1" class:1  priority:50}
-node: {title: "n508" label: "AddIs 508"  info1: "Add 508
+edge: {sourcename: "n501" targetname: "n501n498" label: "0" class:16 priority:10}
+edge: {sourcename: "n501" targetname: "n500" label: "1" class:1  priority:50}
+node: {title: "n500" label: "AddIs 500"  info1: "Add 500
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 503
-     0:    0x4 505
-     1:    Phi 533
+    -1:    Block 495
+     0:    0x4 497
+     1:    Phi 525
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 }
-node: {title: "n508n505" label: "0x4Is 505"  info1: "0x4 505
+node: {title: "n500n497" label: "0x4Is 497"  info1: "0x4 497
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n508" targetname: "n508n505" label: "0" class:16 priority:10}
-edge: {sourcename: "n508" targetname: "n533" label: "1" class:16 priority:10}
-node: {title: "n513" label: "AddIs 513"  info1: "Add 513
+edge: {sourcename: "n500" targetname: "n500n497" label: "0" class:16 priority:10}
+edge: {sourcename: "n500" targetname: "n525" label: "1" class:16 priority:10}
+node: {title: "n505" label: "AddIs 505"  info1: "Add 505
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 503
-     0:    0x13 506
-     1:    Phi 533
+    -1:    Block 495
+     0:    0x13 498
+     1:    Phi 525
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 }
-node: {title: "n513n506" label: "0x13Is 506"  info1: "0x13 506
+node: {title: "n505n498" label: "0x13Is 498"  info1: "0x13 498
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n513" targetname: "n513n506" label: "0" class:16 priority:10}
-edge: {sourcename: "n513" targetname: "n533" label: "1" class:16 priority:10}
-node: {title: "n519" label: "Jmp 519"  info1: "Jmp 519
+edge: {sourcename: "n505" targetname: "n505n498" label: "0" class:16 priority:10}
+edge: {sourcename: "n505" targetname: "n525" label: "1" class:16 priority:10}
+node: {title: "n511" label: "Jmp 511"  info1: "Jmp 511
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 503
+    -1:    Block 495
   Private Attributes:
-  in loop 699 with depth 2
+  in loop 691 with depth 2
 "
 }
-node: {title: "n518" label: "SubIs 518"  info1: "Sub 518
+node: {title: "n510" label: "SubIs 510"  info1: "Sub 510
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   2
   pred nodes:
-    -1:    Block 503
-     0:    Phi 533
-     1:    0x1 504
+    -1:    Block 495
+     0:    Phi 525
+     1:    0x1 496
   Private Attributes:
-  in loop 698 with depth 1
+  in loop 690 with depth 1
 "
 }
-node: {title: "n518n504" label: "0x1Is 504"  info1: "0x1 504
+node: {title: "n510n496" label: "0x1Is 496"  info1: "0x1 496
   mode:    Is
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   Const of type type_unknown
 "
 color: yellow}
-edge: {sourcename: "n518" targetname: "n533" label: "0" class:16 priority:10}
-edge: {sourcename: "n518" targetname: "n518n504" label: "1" class:16 priority:10}
+edge: {sourcename: "n510" targetname: "n525" label: "0" class:16 priority:10}
+edge: {sourcename: "n510" targetname: "n510n496" label: "1" class:16 priority:10}
 }
 
-graph: { title: "n479"  label: "Block 479" status:clustered color:yellow
-edge: {sourcename: "n479" targetname: "n483" label: "0" class:13 priority:60 color:red}
-node: {title: "n486" label: "ProjM 1 486"  info1: "Proj 486
+graph: { title: "n471"  label: "Block 471" status:clustered color:yellow
+edge: {sourcename: "n471" targetname: "n475" label: "0" class:13 priority:60 color:red}
+node: {title: "n478" label: "ProjM 1 478"  info1: "Proj 478
   mode:    M
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 479
-     0:    Start 480
+    -1:    Block 471
+     0:    Start 472
   Private Attributes:
   proj nr: 1
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 color: yellow}
-edge: {sourcename: "n486" targetname: "n480" label: "0" class:17 priority:10 color:blue}
-node: {title: "n483" label: "ProjX X_initial_exec 483"  info1: "Proj 483
+edge: {sourcename: "n478" targetname: "n472" label: "0" class:17 priority:10 color:blue}
+node: {title: "n475" label: "ProjX X_initial_exec 475"  info1: "Proj 475
   mode:    X
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   1
   pred nodes:
-    -1:    Block 479
-     0:    Start 480
+    -1:    Block 471
+     0:    Start 472
   Private Attributes:
   proj nr: 0
-  in loop 697 with depth 0
+  in loop 689 with depth 0
 "
 color: yellow}
-edge: {sourcename: "n483" targetname: "n480" label: "0" class:13 priority:60 color:red}
-node: {title: "n480" label: "Start 480"  info1: "Start 480
+edge: {sourcename: "n475" targetname: "n472" label: "0" class:13 priority:60 color:red}
+node: {title: "n472" label: "Start 472"  info1: "Start 472
   mode:    T
   visited: 17
   irg:     STRENGTH_RED_EXAMPLE_m7
   arity:   0
   pred nodes:
-    -1:    Block 479
+    -1:    Block 471
   Private Attributes:
-  in loop 697 with depth 0
+  in loop 689 with depth 0
   start of method of type STRENGTH_RED_EXAMPLE_meth_tp
     param 0 type: int
 "

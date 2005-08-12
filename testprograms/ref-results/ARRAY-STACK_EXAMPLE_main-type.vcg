@@ -53,8 +53,8 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-node: {title: "e22" label: "ent a_tp_elem_ent" color: yellow
- info1: "entity a_tp_elem_ent (22)
+node: {title: "e21" label: "ent a_tp_elem_ent" color: yellow
+ info1: "entity a_tp_elem_ent (21)
   type:  int (14)
   owner: a_tp (19)
   allocation:  allocation_automatic
@@ -67,11 +67,11 @@ node: {title: "e22" label: "ent a_tp_elem_ent" color: yellow
 
 "
 }
-edge: { sourcename: "e22" targetname: "t14"class: 3 label: "type" color: red}
+edge: { sourcename: "e21" targetname: "t14"class: 3 label: "type" color: red}
 node: {title: "t19" label: "array a_tp" info1: "array type a_tp (19)
   array [0 .. 0] of <int (14)>
   order: <0>
-    entity a_tp_elem_ent (22)
+    entity a_tp_elem_ent (21)
       type:  int (14)
       owner: a_tp (19)
       allocation:  allocation_automatic
@@ -90,10 +90,10 @@ node: {title: "t19" label: "array a_tp" info1: "array type a_tp (19)
 "
 }
 edge: { sourcename: "t19" targetname: "t14"class: 10 label: "arr elt tp" color:green}
-edge: { sourcename: "t19" targetname: "e22"class: 10 label: "arr ent" color: green}
-edge: { sourcename: "n23" targetname: "t19"label: "upper 0"}
-edge: { sourcename: "n24" targetname: "t19"label: "lower 0"}
-node: {title: "n23" label: "0x9Iu 23"  info1: "0x9 23
+edge: { sourcename: "t19" targetname: "e21"class: 10 label: "arr ent" color: green}
+edge: { sourcename: "n22" targetname: "t19"label: "upper 0"}
+edge: { sourcename: "n23" targetname: "t19"label: "lower 0"}
+node: {title: "n22" label: "0x9Iu 22"  info1: "0x9 22
   mode:    Iu
   visited: 1
   arity:   0
@@ -103,7 +103,7 @@ node: {title: "n23" label: "0x9Iu 23"  info1: "0x9 23
   Const of type type_unknown
 "
 color: yellow}
-node: {title: "n24" label: "0x0Iu 24"  info1: "0x0 24
+node: {title: "n23" label: "0x0Iu 23"  info1: "0x0 23
   mode:    Iu
   visited: 1
   arity:   0
@@ -123,10 +123,10 @@ node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
 
 "
 }
-node: {title: "e39" label: "ent a" color: yellow
- info1: "entity a (39)
+node: {title: "e38" label: "ent a" color: yellow
+ info1: "entity a (38)
   type:  a_tp (19)
-  owner: mainframe_tp (25)
+  owner: mainframe_tp (24)
   Does not overwrite other entities.
   Is not overwritten by other entities.
   allocation:  allocation_automatic
@@ -139,12 +139,12 @@ node: {title: "e39" label: "ent a" color: yellow
 
 "
 }
-edge: { sourcename: "e39" targetname: "t19"class: 3 label: "type" color: red}
-node: {title: "t25" label: "class mainframe_tp" info1: "class type mainframe_tp (25)
+edge: { sourcename: "e38" targetname: "t19"class: 3 label: "type" color: red}
+node: {title: "t24" label: "class mainframe_tp" info1: "class type mainframe_tp (24)
   members:
-    entity a (39)
+    entity a (38)
       type:  a_tp (19)
-      owner: mainframe_tp (25)
+      owner: mainframe_tp (24)
       Does not overwrite other entities.
       Is not overwritten by other entities.
       allocation:  allocation_automatic
@@ -165,7 +165,7 @@ node: {title: "t25" label: "class mainframe_tp" info1: "class type mainframe_tp 
 
 "
  color: green}
-edge: { sourcename: "t25" targetname: "e39"class: 12 label: "member" color:blue}
+edge: { sourcename: "t24" targetname: "e38"class: 12 label: "member" color:blue}
 node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
  info1: "entity main (18)
   type:  main_tp (16)
@@ -180,7 +180,7 @@ node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
   peculiarity: peculiarity_existent
   ld_name: ARRAY-STACK_EXAMPLE_main
   offset:  -1 bits, -1 bytes
-  irg = 37
+  irg = 36
 
 "
 }
@@ -214,7 +214,7 @@ node: {title: "t15" label: "class ARRAY-STACK_EXAMPLE" info1: "class type ARRAY-
       peculiarity: peculiarity_existent
       ld_name: ARRAY-STACK_EXAMPLE_main
       offset:  -1 bits, -1 bytes
-      irg = 37
+      irg = 36
   supertypes:
   subtypes:
   peculiarity: peculiarity_existent

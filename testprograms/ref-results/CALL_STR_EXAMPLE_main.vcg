@@ -53,132 +53,132 @@ colorentry 123:  255 220  220
 colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
-graph: { title: "g49" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
-graph: { title: "n38"  label: "Block 38" status:clustered color:yellow
-edge: {sourcename: "n38" targetname: "n57" label: "0" class:13 priority:60 color:red}
-node: {title: "n59" label: "End 59"  info1: "End 59
+graph: { title: "g48" label: "CALL_STR_EXAMPLE_main" status:clustered color:white
+graph: { title: "n37"  label: "Block 37" status:clustered color:yellow
+edge: {sourcename: "n37" targetname: "n56" label: "0" class:13 priority:60 color:red}
+node: {title: "n58" label: "End 58"  info1: "End 58
   mode:    X
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 38
+    -1:    Block 37
   Private Attributes:
 "
 color: blue}
 }
 
-graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
-edge: {sourcename: "n50" targetname: "n44" label: "0" class:13 priority:60 color:red}
-node: {title: "n57" label: "Return 57"  info1: "Return 57
+graph: { title: "n49"  label: "Block 49" status:clustered color:yellow
+edge: {sourcename: "n49" targetname: "n43" label: "0" class:13 priority:60 color:red}
+node: {title: "n56" label: "Return 56"  info1: "Return 56
   mode:    X
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 50
-     0:    Proj 56
+    -1:    Block 49
+     0:    Proj 55
   Private Attributes:
   return in method of type CALL_STR_EXAMPLE_main
 "
 }
-edge: {sourcename: "n57" targetname: "n56" label: "0" class:14 priority:50 color:blue}
-node: {title: "n56" label: "ProjM M_regular 56"  info1: "Proj 56
+edge: {sourcename: "n56" targetname: "n55" label: "0" class:14 priority:50 color:blue}
+node: {title: "n55" label: "ProjM M_regular 55"  info1: "Proj 55
   mode:    M
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 50
-     0:    Call 54
+    -1:    Block 49
+     0:    Call 53
   Private Attributes:
   proj nr: 0
 "
 color: yellow}
-edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}
-node: {title: "n54" label: "Call 54"  info1: "Call 54
+edge: {sourcename: "n55" targetname: "n53" label: "0" class:17 priority:10 color:blue}
+node: {title: "n53" label: "Call 53"  info1: "Call 53
   mode:    T
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   3
   pred nodes:
-    -1:    Block 50
-     0:    Proj 47
-     1:    SymC f 52
-     2:    SymC &constStr 51
+    -1:    Block 49
+     0:    Proj 46
+     1:    SymC f 51
+     2:    SymC &constStr 50
   Private Attributes:
   pinned state: op_pin_state_pinned
   calling method of type f
     param 0 type: ptr_to_string
 "
 }
-edge: {sourcename: "n54" targetname: "n47" label: "0" class:17 priority:10 color:blue}
-edge: {sourcename: "n54" targetname: "n52" label: "1" class:16 priority:10}
-edge: {sourcename: "n54" targetname: "n51" label: "2" class:16 priority:10}
+edge: {sourcename: "n53" targetname: "n46" label: "0" class:17 priority:10 color:blue}
+edge: {sourcename: "n53" targetname: "n51" label: "1" class:16 priority:10}
+edge: {sourcename: "n53" targetname: "n50" label: "2" class:16 priority:10}
 }
 
-graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
-edge: {sourcename: "n40" targetname: "n44" label: "0" class:13 priority:60 color:red}
-node: {title: "n47" label: "ProjM 1 47"  info1: "Proj 47
+graph: { title: "n39"  label: "Block 39" status:clustered color:yellow
+edge: {sourcename: "n39" targetname: "n43" label: "0" class:13 priority:60 color:red}
+node: {title: "n46" label: "ProjM 1 46"  info1: "Proj 46
   mode:    M
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 40
-     0:    Start 41
+    -1:    Block 39
+     0:    Start 40
   Private Attributes:
   proj nr: 1
 "
 color: yellow}
-edge: {sourcename: "n47" targetname: "n41" label: "0" class:17 priority:10 color:blue}
-node: {title: "n52" label: "SymC f 52"  info1: "SymC f 52
+edge: {sourcename: "n46" targetname: "n40" label: "0" class:17 priority:10 color:blue}
+node: {title: "n51" label: "SymC f 51"  info1: "SymC f 51
   mode:    P
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 40
+    -1:    Block 39
   Private Attributes:
   kind: addr_name
   name: f
   type of value: type_unknown
 "
 }
-node: {title: "n51" label: "SymC &constStr 51"  info1: "SymC &constStr 51
+node: {title: "n50" label: "SymC &constStr 50"  info1: "SymC &constStr 50
   mode:    P
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 40
+    -1:    Block 39
   Private Attributes:
   kind:   addr_ent
-  entity: entity GlobalType.constStr (20)
+  entity: entity GlobalType.constStr (19)
 
   type of value: type_unknown
 "
 }
-node: {title: "n44" label: "ProjX X_initial_exec 44"  info1: "Proj 44
+node: {title: "n43" label: "ProjX X_initial_exec 43"  info1: "Proj 43
   mode:    X
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   1
   pred nodes:
-    -1:    Block 40
-     0:    Start 41
+    -1:    Block 39
+     0:    Start 40
   Private Attributes:
   proj nr: 0
 "
 color: yellow}
-edge: {sourcename: "n44" targetname: "n41" label: "0" class:13 priority:60 color:red}
-node: {title: "n41" label: "Start 41"  info1: "Start 41
+edge: {sourcename: "n43" targetname: "n40" label: "0" class:13 priority:60 color:red}
+node: {title: "n40" label: "Start 40"  info1: "Start 40
   mode:    T
   visited: 9
   irg:     CALL_STR_EXAMPLE_main
   arity:   0
   pred nodes:
-    -1:    Block 40
+    -1:    Block 39
   Private Attributes:
   start of method of type CALL_STR_EXAMPLE_main
 "
