@@ -813,11 +813,17 @@ new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_no
   return res;
 }
 
+/* this function is often called with current_ir_graph unset */
 ir_node *
 new_rd_Unknown (ir_graph *irg, ir_mode *m)
 {
-  ir_node *res = new_ir_node(NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
+  ir_graph *rem = current_ir_graph;
+  ir_node *res;
+
+  current_ir_graph = irg;
+  res = new_ir_node(NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
   res = optimize_node(res);
+  current_ir_graph = rem;
   return res;
 }
 
