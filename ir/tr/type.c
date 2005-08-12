@@ -1374,6 +1374,7 @@ type *new_d_type_array(ident *name, int n_dimensions, type *element_type, dbg_in
   type *res;
   int i;
   ir_node *unk;
+  ir_graph *rem = current_ir_graph;
 
   assert(!is_Method_type(element_type));
 
@@ -1383,12 +1384,14 @@ type *new_d_type_array(ident *name, int n_dimensions, type *element_type, dbg_in
   res->attr.aa.upper_bound  = xcalloc(n_dimensions, sizeof(*res->attr.aa.upper_bound));
   res->attr.aa.order        = xcalloc(n_dimensions, sizeof(*res->attr.aa.order));
 
-  unk = new_r_Unknown(get_const_code_irg(), mode_Iu);
+  current_ir_graph = get_const_code_irg();
+  unk = new_Unknown( mode_Iu);
   for (i = 0; i < n_dimensions; i++) {
     res->attr.aa.lower_bound[i] =
     res->attr.aa.upper_bound[i] = unk;
     res->attr.aa.order[i]       = i;
   }
+  current_ir_graph = rem;
 
   res->attr.aa.element_type = element_type;
   new_entity(res, mangle_u(name, new_id_from_chars("elem_ent", 8)), element_type);
