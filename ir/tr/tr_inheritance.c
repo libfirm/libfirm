@@ -57,27 +57,28 @@ static void copy_entities_from_superclass(type *clss, void *env)
       /* check whether inhent is already overwritten */
       overwritten = 0;
       for (k = 0; (k < get_class_n_members(clss)) && (overwritten == 0); k++) {
-	      thisent = get_class_member(clss, k);
-	      for(l = 0; l < get_entity_n_overwrites(thisent); l++) {
-	        if(inhent == get_entity_overwrites(thisent, l)) {
-	          /* overwritten - do not copy */
-	          overwritten = 1;
-	          break;
-	        }
-	      }
+	thisent = get_class_member(clss, k);
+	for(l = 0; l < get_entity_n_overwrites(thisent); l++) {
+	  if(inhent == get_entity_overwrites(thisent, l)) {
+	    /* overwritten - do not copy */
+	    overwritten = 1;
+	    break;
+	  }
+	}
       }
       /* Inherit entity */
       if (!overwritten) {
-	      thisent = copy_entity_own(inhent, clss);
-	      add_entity_overwrites(thisent, inhent);
-	      set_entity_peculiarity(thisent, peculiarity_inherited);
-	      set_entity_ld_ident(thisent, mfunc(inhent, clss));
-	      if (get_entity_variability(inhent) == variability_constant) {
-	        assert(is_atomic_entity(inhent) &&  /* @@@ */
-		       "Inheritance of constant, compound entities not implemented");
-	        set_entity_variability(thisent, variability_constant);
-	        set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
-	      }
+	thisent = copy_entity_own(inhent, clss);
+	add_entity_overwrites(thisent, inhent);
+	if (get_entity_peculiarity(inhent) == peculiarity_existent)
+	  set_entity_peculiarity(thisent, peculiarity_inherited);
+	set_entity_ld_ident(thisent, mfunc(inhent, clss));
+	if (get_entity_variability(inhent) == variability_constant) {
+	  assert(is_atomic_entity(inhent) &&  /* @@@ */
+		 "Inheritance of constant, compound entities not implemented");
+	  set_entity_variability(thisent, variability_constant);
+	  set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
+	}
       }
     }
   }
