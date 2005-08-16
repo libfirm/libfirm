@@ -24,6 +24,7 @@
 #include "beutil.h"
 #include "bechordal_t.h"
 #include "bearch.h"
+#include "belive_t.h"
 #include "benode_t.h"
 #include "besched_t.h"
 
@@ -96,7 +97,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
       ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
       ir_node *phi, *perm, *insert_after;
       ir_node **in;
-      int j, n_projs = 0;
+      int n_projs = 0;
       pmap_entry *ent;
       pmap *arg_map = pmap_create();
 
@@ -110,7 +111,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
         ir_node *arg = get_irn_n(phi, i);
         ir_node *proj = pmap_get(arg_map, arg);
 
-       	if(!proj && !nodes_interfere(chordal_env, phi, arg)) {
+       	if(!proj && !is_live_in(bl, arg)) {
 	          proj = new_r_Proj(irg, pred_bl, dummy, get_irn_mode(arg), n_projs++);
 	          pmap_insert(arg_map, arg, proj);
        	}
