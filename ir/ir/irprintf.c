@@ -537,7 +537,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 				case '=':
 					str = get_pnc_string(va_arg(args, int));
 					break;
-				case 'g':
+				case 'G':
 					{
 						ir_node *irn = va_arg(args, ir_node *);
 						dbg_info *dbg = get_irn_dbg_info(irn);

@@ -76,7 +76,7 @@ typedef void (ir_printf_cb_t)(const appender_t *app, void *object, size_t limit,
  * - @%B The block node number of the nodes block.
  * - @%b A bitset.
  * - @%= A pnc value
- * - @%g A debug info (if available)
+ * - @%G A debug info (if available)
  *
  * Each of these can be prepend by a '+' which means, that the given
  * pointer is a collection of items specified by the format. In this
