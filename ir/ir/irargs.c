@@ -266,7 +266,7 @@ lc_arg_env_t *firm_get_arg_env(void)
     lc_arg_register(env, "firm:ident", 'I', &ident_handler);
     lc_arg_register(env, "firm:indent", 'D', &indent_handler);
     lc_arg_register(env, "firm:pnc",      '=', &pnc_handler);
-    lc_arg_register(env, "firm:dbg_info", 'g', &debug_handler);
+    lc_arg_register(env, "firm:dbg_info", 'G', &debug_handler);
     /* lc_arg_register(env, "firm:bitset", 'b', &bitset_handler); */
   }
 
