@@ -17,8 +17,12 @@
 /*
   The public interface
 */
-/** read the file and build the graphs */
-void create_abstraction(const char *filename);
+/**
+ * read the file and build the graphs
+ *
+ * @return 0 on I/O error, non-zero else
+ */
+int create_abstraction(const char *filename);
 
 void free_abstraction(void);
 
@@ -27,6 +31,10 @@ void free_abstraction(void);
 
 /*
   $Log$
+  Revision 1.9  2005/08/16 10:18:35  beck
+  create_abstraction() now returns an error code if the file could not
+  be opened.
+
   Revision 1.8  2004/11/11 09:28:32  goetz
   treat pseudo irgs special
   parse 'local' from xml files

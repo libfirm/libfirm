@@ -730,7 +730,7 @@ parseEffect (xmlDocPtr doc, xmlNodePtr effelm)
 
 
 static
-void read_extern (const char *filename)
+int read_extern (const char *filename)
 {
   /* xmlNsPtr ns = NULL; */           /* no namespace for us */
   xmlDocPtr doc;                /* whole document */
@@ -743,7 +743,8 @@ void read_extern (const char *filename)
   LIBXML_TEST_VERSION xmlKeepBlanksDefault (0);
   VERBOSE_PRINT((stdout, "read file %s\n", filename));
   doc = xmlParseFile (filename);
-  CHECK (doc, "xmlParseFile");
+  if (! doc)
+    return 0;
 
   cur = xmlDocGetRootElement (doc);
   CHECK (cur, "xmlDocGetRootElement");
@@ -793,6 +794,8 @@ void read_extern (const char *filename)
 
   module -> next = modules;
   modules = module;
+
+  return 1;
 }
 
 /********************************************************************/
@@ -1635,12 +1638,13 @@ void create_abstract_module(module_t *module)
 }
 
 
-void create_abstraction(const char *filename)
+int create_abstraction(const char *filename)
 {
   module_t *module;
 
   /* read and parse XML file */
-  read_extern(filename);
+  if (! read_extern(filename))
+    return 0;
 
   /* finished reading and parsing here */
   /* build FIRM graphs */
@@ -1659,6 +1663,8 @@ void create_abstraction(const char *filename)
   entities = NULL;
   procs = NULL;
   modules = NULL;
+
+  return 1;
 }
 
 
@@ -1677,6 +1683,10 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.22  2005/08/16 10:18:35  beck
+ * create_abstraction() now returns an error code if the file could not
+ * be opened.
+ *
  * Revision 1.21  2005/03/10 10:05:38  goetz
  * chanmged method name
  *
