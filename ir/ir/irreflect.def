@@ -210,10 +210,10 @@ END_OP
 
 BEGIN_OP(Minus)
   BEGIN_ARGS
-    ARG("Result", Float)
+    ARG("Result", Num)
     MARK
     BLOCK
-    ARG_SAME("Op 0", Float, 0)
+    ARG_SAME("Op 0", Num, 0)
   END_ARGS
 END_OP
 
