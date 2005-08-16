@@ -31,55 +31,76 @@ static firm_dbg_module_t *dbg = NULL;
 #define MIN(a,b) ((a<b)?(a):(b))
 #define MAX(a,b) ((a<b)?(b):(a))
 
+
 /**
- * Computes the weight of a 'max independent set' wrt. ifg-edges only
- * (no coloring conflicts, no register constraints)
- * @return The costs of such a mis
- * NOTE: Code adapted from becopyheur
- * BETTER: Here we can be sure having a chordal graph to work on,
- * 		   so, for 'larger' opt-units we could use a special algorithm.
+ * Determines a maximum weighted independent set with respect to
+ * the interference and conflict edges of all nodes in a qnode.
  */
 static int ou_max_ind_set_costs(unit_t *ou) {
-	ir_node **irns;
-	int max, pos, curr_weight, best_weight = 0;
+	be_chordal_env_t *chordal_env = ou->co->chordal_env;
+	ir_node **safe, **unsafe;
+	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
+	int max, pos, curr_weight, best_weight = 0;
 
-	irns = alloca((ou->node_count-1) * sizeof(*irns));
-	curr = bitset_alloca(ou->node_count-1);
+	/* assign the nodes into two groups.
+	 * safe: node has no interference, hence it is in every max stable set.
+	 * unsafe: node has an interference
+	 */
+	safe = alloca((ou->node_count-1) * sizeof(*safe));
+	safe_costs = 0;
+	safe_count = 0;
+	unsafe = alloca((ou->node_count-1) * sizeof(*unsafe));
+	unsafe_costs = alloca((ou->node_count-1) * sizeof(*unsafe_costs));
+	unsafe_count = 0;
+	for(i=1; i<ou->node_count; ++i) {
+		int is_safe = 1;
+		for(o=1; o<ou->node_count; ++o) {
+			if (i==o)
+				continue;
+			if (nodes_interfere(chordal_env, ou->nodes[i], ou->nodes[o])) {
+				unsafe_costs[unsafe_count] = ou->costs[i];
+				unsafe[unsafe_count] = ou->nodes[i];
+				++unsafe_count;
+				is_safe = 0;
+				break;
+			}
+		}
+		if (is_safe) {
+			safe_costs += ou->costs[i];
+			safe[safe_count++] = ou->nodes[i];
+		}
+	}
 
-	/* brute force the best set */
+
+
+	/* now brute force the best set out of the unsafe nodes*/
+	curr = bitset_alloca(unsafe_count);
+
 	bitset_set_all(curr);
 	while ((max = bitset_popcnt(curr)) != 0) {
 		/* check if curr is a stable set */
-		int i, o, is_stable_set = 1;
+		for (i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
+			for (o=bitset_next_set(curr, i+1); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to qnode_max_ind_set(): NOT (curr, i) */
+					if (nodes_interfere(chordal_env, unsafe[i], unsafe[o]))
+						goto no_stable_set;
 
-		/* copy the irns */
-		i = 0;
+		/* if we arrive here, we have a stable set */
+		/* compute the weigth of the stable set*/
+		curr_weight = 0;
 		bitset_foreach(curr, pos)
-			irns[i++] = ou->nodes[1+pos];
-		assert(i==max);
+			curr_weight += unsafe_costs[pos];
 
-		for(i=0; i<max; ++i)
-			for(o=i+1; o<max; ++o) /* !!!!! difference to qnode_max_ind_set(): NOT o=i */
-				if (nodes_interfere(ou->co->chordal_env, irns[i], irns[o])) {
-					is_stable_set = 0;
-					break;
-				}
-
-		if (is_stable_set) {
-			/* calc current weigth */
-			curr_weight = 0;
-			bitset_foreach(curr, pos)
-				curr_weight += ou->costs[1+pos];
-
-			/* any better ? */
-			if (curr_weight > best_weight)
-				best_weight = curr_weight;
+		/* any better ? */
+		if (curr_weight > best_weight) {
+			best_weight = curr_weight;
 		}
 
+no_stable_set:
 		bitset_minus1(curr);
 	}
-	return best_weight;
+
+	return safe_costs+best_weight;
 }
 
 /**
@@ -290,12 +311,12 @@ int co_get_copy_costs(const copy_opt_t *co) {
 
 	list_for_each_entry(unit_t, curr, &co->units, units) {
 		int root_col = get_irn_col(co, curr->nodes[0]);
+		DBG((dbg, LEVEL_1, "  %3d costs for root %+F color %d\n", curr->inevitable_costs, curr->nodes[0], root_col));
 		res += curr->inevitable_costs;
-		DBG((dbg, LEVEL_1, "  Adding costs for root %+F color %d\n", curr->nodes[0], root_col));
 		for (i=1; i<curr->node_count; ++i) {
 			int arg_col = get_irn_col(co, curr->nodes[i]);
 			if (root_col != arg_col) {
-				DBG((dbg, LEVEL_1, "  Arg %+F color %d costs %d\n", curr->nodes[i], arg_col, curr->costs[i]));
+				DBG((dbg, LEVEL_1, "  %3d for arg %+F color %d\n", curr->costs[i], curr->nodes[i], arg_col));
 				res += curr->costs[i];
 			}
 		}

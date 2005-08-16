@@ -382,56 +382,79 @@ static int qnode_try_color(const qnode_t *qn) {
  * the interference and conflict edges of all nodes in a qnode.
  */
 static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
-	ir_node **irns;
+	ir_node **safe, **unsafe;
+	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
+	bitset_t *curr, *best;
 	int max, next, pos, curr_weight, best_weight = 0;
-	bitset_t *best, *curr;
 
-	irns = alloca((ou->node_count-1) * sizeof(*irns));
-	best = bitset_alloca(ou->node_count-1);
-	curr = bitset_alloca(ou->node_count-1);
+	/* assign the nodes into two groups.
+	 * safe: node has no interference, hence it is in every max stable set.
+	 * unsafe: node has an interference
+	 */
+	safe = alloca((ou->node_count-1) * sizeof(*safe));
+	safe_costs = 0;
+	safe_count = 0;
+	unsafe = alloca((ou->node_count-1) * sizeof(*unsafe));
+	unsafe_costs = alloca((ou->node_count-1) * sizeof(*unsafe_costs));
+	unsafe_count = 0;
+	for(i=1; i<ou->node_count; ++i) {
+		int is_safe = 1;
+		for(o=1; o<ou->node_count; ++o) {
+			if (qnode_are_conflicting(qn, ou->nodes[i], ou->nodes[o])) {
+				if (i!=o) {
+					unsafe_costs[unsafe_count] = ou->costs[i];
+					unsafe[unsafe_count] = ou->nodes[i];
+					++unsafe_count;
+				}
+				is_safe = 0;
+				break;
+			}
+		}
+		if (is_safe) {
+			safe_costs += ou->costs[i];
+			safe[safe_count++] = ou->nodes[i];
+		}
+	}
 
-	/* brute force the best set */
+
+
+	/* now brute force the best set out of the unsafe nodes*/
+	best = bitset_alloca(unsafe_count);
+	curr = bitset_alloca(unsafe_count);
+
 	bitset_set_all(curr);
 	while ((max = bitset_popcnt(curr)) != 0) {
 		/* check if curr is a stable set */
-		int i, o, is_stable_set = 1;
+		for (i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
+			for (o=bitset_next_set(curr, i); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to ou_max_ind_set_costs(): NOT (curr, i+1) */
+					if (qnode_are_conflicting(qn, unsafe[i], unsafe[o]))
+						goto no_stable_set;
 
-		/* copy the irns */
-		i = 0;
+		/* if we arrive here, we have a stable set */
+		/* compute the weigth of the stable set*/
+		curr_weight = 0;
 		bitset_foreach(curr, pos)
-			irns[i++] = ou->nodes[1+pos];
-		assert(i==max);
+			curr_weight += unsafe_costs[pos];
 
-		for(i=0; i<max; ++i)
-			for(o=i; o<max; ++o) /* !!!!! difference to ou_max_ind_set_costs(): NOT o=i+1 */
-				if (qnode_are_conflicting(qn, irns[i], irns[o])) {
-					is_stable_set = 0;
-					break;
-				}
-
-		if (is_stable_set) {
-			/* calc current weigth */
-			curr_weight = 0;
-			bitset_foreach(curr, pos)
-				curr_weight += ou->costs[1+pos];
-
-			/* any better ? */
-			if (curr_weight > best_weight) {
-				best_weight = curr_weight;
-				bitset_copy(best, curr);
-			}
+		/* any better ? */
+		if (curr_weight > best_weight) {
+			best_weight = curr_weight;
+			bitset_copy(best, curr);
 		}
 
+no_stable_set:
 		bitset_minus1(curr);
 	}
 
 	/* transfer the best set into the qn */
-	qn->mis_size = bitset_popcnt(best)+1;
-	qn->mis_costs = best_weight;
-	next = 0;
-	qn->mis[next++] = ou->nodes[0]; /* the root is alwazs in a max stable set */
+	qn->mis_size = 1+safe_count+bitset_popcnt(best);
+	qn->mis_costs = safe_costs+best_weight;
+	qn->mis[0] = ou->nodes[0]; /* the root is alwazs in a max stable set */
+	next = 1;
+	for (i=0; i<safe_count; ++i)
+		qn->mis[next++] = safe[i];
 	bitset_foreach(best, pos)
-		qn->mis[next++] = ou->nodes[1+pos];
+		qn->mis[next++] = unsafe[pos];
 }
 
 /**
