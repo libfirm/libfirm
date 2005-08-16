@@ -59,7 +59,7 @@ static firm_dbg_module_t *dbg;
 
 #ifdef BUILD_GRAPH
 
-#define IF_EDGE_HASH(e) ((e)->src)
+#define IF_EDGE_HASH(e) ((e)->src ^ (e)->tgt)
 #define IF_NODE_HASH(n) ((n)->nnr)
 
 static int if_edge_cmp(const void *p1, const void *p2, size_t size)
