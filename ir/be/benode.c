@@ -133,20 +133,52 @@ ir_node *new_Copy(const be_node_factory_t *factory,
   return new_ir_node(NULL, irg, bl, op, get_irn_mode(in), 1, ins);
 }
 
-#if 0
-ir_node *be_spill(const be_node_factory_t *factory, ir_node *irn)
+ir_node *be_spill(
+		const be_node_factory_t *factory,
+		const arch_env_t *arch_env,
+		ir_node *irn)
 {
-  ir_node *bl = get_nodes_block(irn);
-  ir_graph *irg = get_irn_irg(bl);
-  ir_node *spill =
-    new_Spill(factory, arch_get_irn_reg_class(irn), irg, bl, irn);
-  sched_add_after(irn, spill);
+  const arch_register_class_t *cls
+		= arch_get_irn_reg_class(arch_env, irn, arch_pos_make_out(0));
+  ir_node *bl    = get_nodes_block(irn);
+  ir_graph *irg  = get_irn_irg(bl);
+  ir_node *spill = new_Spill(factory, cls, irg, bl, irn);
+
+	ir_node *insert;
+
+	/*
+	 * search the right insertion point. a spill of a phi cannot be put
+	 * directly after the phi, if there are some phis behind the one which
+	 * is spilled.
+	 */
+	insert = sched_next(irn);
+	while(is_Phi(insert) && !sched_is_end(insert))
+		insert = sched_next(insert);
+
+	sched_add_before(insert, spill);
   return spill;
 }
-#endif
 
+ir_node *be_reload(
+		const be_node_factory_t *factory,
+		const arch_env_t *arch_env,
+		const arch_register_class_t *cls,
+		ir_node *irn, int pos, ir_mode *mode, ir_node *spill)
+{
+	ir_node *reload;
 
+  ir_node *bl   = get_nodes_block(irn);
+  ir_graph *irg = get_irn_irg(bl);
 
+	assert(is_Spill(factory, spill)
+			|| (is_Phi(spill) && get_irn_mode(spill) == mode_M));
+
+  reload = new_Reload(factory, cls, irg, bl, mode, spill);
+
+	set_irn_n(irn, pos, reload);
+  sched_add_before(irn, reload);
+  return reload;
+}
 
 /**
  * If the node is a proj, reset the node to the proj's target and return
@@ -174,10 +206,12 @@ be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
     arch_register_req_t *req, const ir_node *irn, int pos)
 {
   be_op_t *bo;
+	int index = arch_pos_get_index(pos);
   const be_node_factory_t *factory =
     container_of(_self, const be_node_factory_t, irn_ops);
 
-  pos = arch_pos_make_out(redir_proj(&irn, arch_pos_get_index(pos)));
+	if(arch_pos_is_out(pos))
+		pos = arch_pos_make_out(redir_proj(&irn, index));
 
   bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
@@ -185,9 +219,9 @@ be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
     int i;
 
     req->type = arch_register_req_type_normal;
-    req->cls = bo->cls;
+    req->cls  = bo->cls;
 
-    for(i = 0; i < bo->n_pos; ++pos)
+    for(i = 0; i < bo->n_pos; ++i)
       if(pos == bo->pos[i])
         return req;
   }
@@ -244,8 +278,21 @@ arch_irn_class_t be_node_classify(const arch_irn_ops_t *_self, const ir_node *ir
   idx = redir_proj(&irn, 0);
   bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
-  /* TODO Implement */
+	switch(bo->kind) {
+#define XXX(a) case node_kind_ ## a: return arch_irn_class_ ## a;
+		XXX(spill)
+		XXX(reload)
+		XXX(perm)
+		XXX(copy)
+#undef XXX
+	}
+
   return 0;
+}
+
+arch_irn_class_t be_node_get_flags(const arch_irn_ops_t *_self, const ir_node *irn)
+{
+	return 0;
 }
 
 static const arch_irn_ops_t *
@@ -270,7 +317,7 @@ int is_Spill(const be_node_factory_t *f, const ir_node *irn)
 {
   be_op_t *bo;
   bo = pmap_get(f->irn_op_map, get_irn_op(irn));
-  return bo->kind == node_kind_spill;
+  return bo != NULL && bo->kind == node_kind_spill;
 }
 
 be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
@@ -290,6 +337,7 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
   factory->irn_ops.set_irn_reg     = be_node_set_irn_reg;
   factory->irn_ops.get_irn_reg     = be_node_get_irn_reg;
   factory->irn_ops.classify        = be_node_classify;
+  factory->irn_ops.get_flags       = be_node_get_flags;
 
   for(i = 0, n = isa->get_n_reg_class(); i < n; ++i) {
     const arch_register_class_t *cls = isa->get_reg_class(i);
@@ -298,31 +346,31 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
     ent = get_op(factory, cls, node_kind_spill);
     snprintf(buf, sizeof(buf), "Spill_%s", cls->name);
     ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned,
-        0, 0, oparity_unary, 0);
+        0, oparity_unary, 0, 0);
     ent->n_pos = ARRSIZE(templ_pos_Spill);
     ent->pos = templ_pos_Spill;
     pmap_insert(factory->irn_op_map, ent->op, ent);
 
     ent = get_op(factory, cls, node_kind_reload);
     snprintf(buf, sizeof(buf), "Reload_%s", cls->name);
-    ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0, 0,
-        oparity_unary, sizeof(const arch_register_t *));
+    ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0,
+        oparity_unary, 0, sizeof(const arch_register_t *));
     ent->n_pos = ARRSIZE(templ_pos_Reload);
     ent->pos = templ_pos_Reload;
     pmap_insert(factory->irn_op_map, ent->op, ent);
 
     ent = get_op(factory, cls, node_kind_copy);
     snprintf(buf, sizeof(buf), "Copy_%s", cls->name);
-    ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0, 0,
-        oparity_unary, sizeof(const arch_register_t *));
+    ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0,
+        oparity_unary, 0, sizeof(const arch_register_t *));
     ent->n_pos = ARRSIZE(templ_pos_Copy);
     ent->pos = templ_pos_Copy;
     pmap_insert(factory->irn_op_map, ent->op, ent);
 
     ent = get_op(factory, cls, node_kind_perm);
     snprintf(buf, sizeof(buf), "Perm_%s", cls->name);
-    ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0, 0,
-        oparity_variable, sizeof(const arch_register_t) * cls->n_regs);
+    ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0,
+        oparity_variable, 0, sizeof(const arch_register_t) * cls->n_regs);
     ent->n_pos = 2 * cls->n_regs;
     ent->pos = obstack_alloc(&factory->obst, sizeof(ent->pos[0]) * ent->n_pos);
     for(j = 0; j < ent->n_pos; j += 2) {
@@ -406,88 +454,3 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   }
   return perm;
 }
-
-#if 0
-typedef struct _phi_perm_info_t {
-  const be_main_session_env_t *env;
-  const arch_register_class_t *cls;
-  pmap *perm_map;
-} phi_perm_info_t;
-
-static void clear_link(ir_node *irn, void *data)
-{
-  set_irn_link(irn, NULL);
-}
-
-static void collect_phis(ir_node *irn, void *data)
-{
-  phi_perm_info_t *pi = data;
-  if(is_Phi(irn) && arch_irn_has_reg_class(pi->env->main_env->arch_env,
-        irn, arch_pos_make_out(0), pi->cls)) {
-
-    ir_node *bl = get_nodes_block(irn);
-    set_irn_link(irn, get_irn_link(bl));
-    set_irn_link(bl, irn);
-  }
-}
-
-/* This is only semi-ugly :-) */
-#define INT_TO_PTR(i) ((void *) ((char *) 0 + (i)))
-#define PTR_TO_INT(p) ((int) ((char *) (p) - (char *) 0))
-
-static void insert_phi_perms(ir_node *bl, void *data)
-{
-  phi_perm_info_t *pi = data;
-  ir_graph *irg = pi->env->irg;
-
-  assert(is_Block(bl));
-
-  /* If the link flag is NULL, this block has no phis. */
-  if(get_irn_link(bl)) {
-    int i, n;
-
-    /* Look at all predecessors of the phi block */
-    for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
-      ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
-      ir_node *phi, *perm;
-      ir_node **in;
-      int n_phis = 0;
-      int j;
-
-      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi))
-        n_phis++;
-
-      in = malloc(n_phis * sizeof(in[0]));
-
-      /* Look at all phis in this block */
-      j = 0;
-      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi))
-        in[j++] = get_irn_n(phi, i);
-
-      perm = new_Perm(pi->env->main_env->node_factory, pi->cls, irg, pred_bl, n_phis, in);
-
-      j = 0;
-      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
-        ir_node *proj = new_r_Proj(irg, pred_bl, perm, get_irn_mode(phi), j++);
-        set_irn_n(phi, i, proj);
-      }
-
-      free(in);
-    }
-  }
-}
-
-void be_insert_phi_perms(const be_main_session_env_t *env,
-    const arch_register_class_t *cls)
-{
-  phi_perm_info_t pi;
-
-  pi.env = env;
-  pi.cls = cls;
-  pi.perm_map = pmap_create();
-
-  irg_walk_graph(env->irg, clear_link, collect_phis, &pi);
-  irg_block_walk_graph(env->irg, insert_phi_perms, NULL, &pi);
-  pmap_destroy(pi.perm_map);
-}
-#endif

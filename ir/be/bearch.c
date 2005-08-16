@@ -105,6 +105,12 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
   return 0;
 }
 
+int arch_get_n_operands(const arch_env_t *env, const ir_node *irn, int in_out)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	return ops->get_n_operands(ops, irn, in_out);
+}
+
 int arch_is_register_operand(const arch_env_t *env,
     const ir_node *irn, int pos)
 {
@@ -167,4 +173,10 @@ extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
   return ops->classify(ops, irn);
+}
+
+extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  return ops->get_flags(ops, irn);
 }

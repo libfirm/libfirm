@@ -73,7 +73,7 @@ static void live_end_at_block(ir_node *def, ir_node *block,
       mark_live_in(block, def);
 
       for(i = 0, n = get_irn_arity(block); i < n; ++i)
-        live_end_at_block(def, get_nodes_block(get_irn_n(block, i)), visited, 1);
+        live_end_at_block(def, get_Block_cfgpred_block(block, i), visited, 1);
     }
 
   }
@@ -120,17 +120,8 @@ static void liveness_for_node(ir_node *irn, void *env)
      * value as live out of that block.
      */
     if(is_Phi(use)) {
-      int i, n;
-
-      /* Mark the node as a phi operand, since a use by a phi was found. */
-      /* get_node_live_info(irn)->is_phi_op = 1; */
-
-      for(i = 0, n = get_irn_arity(use); i < n; ++i) {
-        if(get_irn_n(use, i) == irn) {
-          ir_node *pred_block = get_nodes_block(get_irn_n(use_block, i));
-          live_end_at_block(irn, pred_block, visited, 0);
-        }
-      }
+			ir_node *pred_block = get_Block_cfgpred_block(use_block, edge->pos);
+			live_end_at_block(irn, pred_block, visited, 0);
     }
 
     /*
@@ -166,6 +157,36 @@ void be_liveness(ir_graph *irg)
   if(live_info->live)
     del_set(live_info->live);
 
+	ir_fprintf(stderr, "%F\n", irg);
+
   live_info->live = new_set(cmp_irn_live, 8192);
   irg_walk_graph(irg, liveness_for_node, NULL, NULL);
+}
+
+static void dump_liveness_walker(ir_node *bl, void *data)
+{
+	FILE *f = data;
+	const irn_live_t *li;
+	char buf[64];
+
+	ir_fprintf(f, "%+F\n", bl);
+	live_foreach(bl, li) {
+		strcpy(buf, "");
+
+		if(live_is_in(li))
+			strcat(buf, "in ");
+
+		if(live_is_end(li))
+			strcat(buf, "end ");
+
+		if(live_is_out(li))
+			strcat(buf, "out ");
+
+		ir_fprintf(f, "\t%+20F %s\n", li->irn, buf);
+	}
+}
+
+void be_liveness_dump(ir_graph *irg, FILE *f)
+{
+	irg_block_walk_graph(irg, dump_liveness_walker, NULL, f);
 }

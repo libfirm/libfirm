@@ -55,8 +55,16 @@ ir_node *new_Copy(const be_node_factory_t *factory,
     const arch_register_class_t *cls,
     ir_graph *irg, ir_node *block, ir_node *in);
 
-ir_node *be_spill(const be_node_factory_t *factory, const arch_env_t *env, ir_node *irn);
-ir_node *be_reload(const be_node_factory_t *factory, const arch_env_t *env, ir_node *irn);
+ir_node *be_spill(
+		const be_node_factory_t *factory,
+		const arch_env_t *arch_env,
+		ir_node *irn);
+
+ir_node *be_reload(
+		const be_node_factory_t *factory,
+		const arch_env_t *arch_env,
+		const arch_register_class_t *cls,
+		ir_node *irn, int pos, ir_mode *mode, ir_node *spill);
 
 int is_Spill(const be_node_factory_t *f, const ir_node *irn);
 

@@ -131,4 +131,12 @@ void be_ra_chordal_done(be_chordal_env_t *info);
  */
 void be_ra_chordal_init(void);
 
+/**
+ * Check the register pressure in a graph.
+ * @param env The sesion env.
+ * @param cls The register class to consider.
+ */
+void be_check_pressure(const be_main_session_env_t *env, const arch_register_class_t *cls);
+
+
 #endif /* _BECHORDAL_T_H */

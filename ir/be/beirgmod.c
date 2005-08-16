@@ -25,11 +25,12 @@
 #include "besched_t.h"
 #include "belive_t.h"
 #include "benode_t.h"
+#include "beutil.h"
 
 #include "beirgmod.h"
 
 #define DBG_MODULE firm_dbg_register("firm.be.irgmod")
-#define DBG_LEVEL 0 //SET_LEVEL_4
+#define DBG_LEVEL 0 // SET_LEVEL_4
 
 struct _dom_front_info_t {
   pmap *df_map;
@@ -49,66 +50,9 @@ static INLINE ir_node *get_idom(ir_node *bl)
   return idom == NULL ? bl : idom;
 }
 
-static void compute_df_local(ir_node *bl, void *data)
-{
-  pmap *df_map = ((dom_front_info_t *) data)->df_map;
-  ir_node *idom = get_Block_idom(bl);
-  pset *df = pmap_get(df_map, bl);
-  int i, n;
-
-  /*
-   * In the case that the immediate dominator is NULL, the
-   * block is the start block and its immediate dominator
-   * must be itself, else it is inserted into its own
-   * dominance frontier.
-   */
-  if(idom == NULL)
-  	idom = bl;
-
-  /*
-   * Create a new dom frot set for this node,
-   * if none exists.
-   */
-  if(!df)
-  	pmap_insert(df_map, bl, pset_new_ptr(16));
-
-  for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
-
-    /* The predecessor block */
-    ir_node *pred = get_nodes_block(get_irn_n(bl, i));
-
-    /* The dominance frontier set of the predecessor. */
-    pset *df = pmap_get(df_map, pred);
-	  if(!df) {
-	  	df = pset_new_ptr(16);
-	  	pmap_insert(df_map, pred, df);
-	  }
-
-    assert(df && "dom front set must have been created for this node");
-
-    if(pred != idom && bl)
-      pset_insert_ptr(df, bl);
-  }
-}
-
-static void compute_df_up(ir_node *bl, void *data)
-{
-  pmap *df_map = ((dom_front_info_t *) data)->df_map;
-  ir_node *y;
-
-  for(y = get_Block_dominated_first(bl); y; y = get_Block_dominated_next(y)) {
-    ir_node *w;
-    pset *df = pmap_get(df_map, y);
-
-    for(w = pset_first(df); w; w = pset_next(df))
-      if(!block_dominates(bl, w) || bl == w)
-        pset_insert_ptr(df, w);
-  }
-}
-
 static void compute_df(ir_node *n, pmap *df_map)
 {
-  ir_node *y, *c;
+  ir_node *c;
   const ir_edge_t *edge;
   pset *df = pset_new_ptr_default();
 
@@ -133,7 +77,7 @@ static void compute_df(ir_node *n, pmap *df_map)
     df_c = pmap_get(df_map, c);
 
     for(w = pset_first(df_c); w; w = pset_next(df_c)) {
-      if(!block_dominates(n, w))
+      if(get_idom(w) != n)
         pset_insert_ptr(df, w);
     }
   }
@@ -150,14 +94,6 @@ dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
   info->df_map = pmap_create();
   compute_df(get_irg_start_block(irg), info->df_map);
 
-#if 0
-  /*
-   * This must be called as a post walker, since the dom front sets
-   * of all predecessors must be created when a block is reached.
-   */
-  dom_tree_walk_irg(irg, NULL, compute_df_local, info);
-  dom_tree_walk_irg(irg, NULL, compute_df_up, info);
-#endif
   return info;
 }
 
@@ -177,57 +113,22 @@ pset *be_get_dominance_frontier(dom_front_info_t *info, ir_node *block)
   return pmap_get(info->df_map, block);
 }
 
-/**
- * Algorithm to place the Phi-Functions.
- * @see Appel, Modern Compiler Implementation in Java, 2nd ed., p. 399ff
- *
- * This function takes an original node and a set of already placed
- * copies of that node called @p copies. It places phi nodes at the
- * iterated dominance frontiers of these copies and puts these phi nodes
- * in the @p copies set, since they are another form of copies of the
- * original value.
- *
- * The rename phase (see below) is responsible for fixing up the usages
- * of the original node.
- *
- * @param orig The original node.
- * @param copies A set contianing nodes representing a copy of the
- * original node. Each node must be inserted into the block's schedule.
- * @param copy_blocks A set in which the blocks are recorded which
- * contain a copy. This is just for efficiency in later phases (see
- * rename).
- */
-static void place_phi_functions(ir_node *orig, pset *copies,
-    pset *copy_blocks, dom_front_info_t *df_info)
+static void determine_phi_blocks(ir_node *orig, pset *copies,
+    pset *copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
 {
-  int i;
-  ir_node *orig_block = get_nodes_block(orig);
-  ir_graph *irg = get_irn_irg(orig);
-  ir_mode *mode = get_irn_mode(orig);
+	ir_node *bl;
+	ir_node *orig_block = get_nodes_block(orig);
   pdeq *worklist = new_pdeq();
-  pset *phi_blocks = pset_new_ptr(8);
-  ir_node **ins = NULL;
-  void *it;
   firm_dbg_module_t *dbg = DBG_MODULE;
-
-  /*
-   * Allocate an array for all blocks where the copies and the original
-   * value were defined.
-   */
-  int n_orig_blocks = pset_count(copy_blocks);
-  ir_node **orig_blocks = malloc(n_orig_blocks * sizeof(orig_blocks[0]));
 
   /*
    * Fill the worklist queue and the rest of the orig blocks array.
    */
-  for(it = pset_first(copy_blocks), i = 0; it; it = pset_next(copy_blocks)) {
-    ir_node *copy_block = it;
-
-   	assert(block_dominates(orig_block, copy_block)
+  for(bl = pset_first(copy_blocks); bl; bl = pset_next(copy_blocks)) {
+   	assert(block_dominates(orig_block, bl)
        	&& "The block of the copy must be dominated by the block of the value");
 
-    pdeq_putr(worklist, copy_block);
-    orig_blocks[i++] = copy_block;
+    pdeq_putr(worklist, bl);
   }
 
   while(!pdeq_empty(worklist)) {
@@ -240,67 +141,24 @@ static void place_phi_functions(ir_node *orig, pset *copies,
 	    DBG((dbg, LEVEL_3, "\t%+F\n", y));
 
     for(y = pset_first(df); y; y = pset_next(df)) {
-      int n_preds = get_irn_arity(y);
-
       if(!pset_find_ptr(phi_blocks, y)) {
-        ir_node *phi;
-        int insert = 1;
-
-        /*
-         * Set the orig node as the only operand of the
-         * phi node.
-         */
-        ins = realloc(ins, n_preds * sizeof(ins[0]));
-        for(i = 0; i < n_preds; ++i)
-          ins[i] = orig;
-
-        /* Insert phi node */
-        phi = new_r_Phi(irg, y, n_preds, ins, mode);
-        DBG((dbg, LEVEL_2, "    inserting phi %+F with %d args in block %+F\n",
-              phi, n_preds, y));
-
-        /*
-         * The phi node itself is also a copy of the original
-         * value. So put it in the copies set also, so that
-         * the rename phase can treat them right.
-         */
-        pset_insert_ptr(copies, phi);
-        pset_insert_ptr(copy_blocks, y);
-
-        /*
-         * Insert the phi node into the schedule if it
-         * can occur there (PhiM's are not to put into a schedule.
-         */
-        if(to_appear_in_schedule(phi))
-          sched_add_before(sched_first(y), phi);
-
-        /* Insert the phi node in the phi blocks set. */
         pset_insert_ptr(phi_blocks, y);
 
-        /*
-         * If orig or a copy of it were not defined in y,
-         * add y to the worklist.
-         */
-        for(i = 0; i < n_orig_blocks; ++i)
-          if(orig_blocks[i] == y) {
-            insert = 0;
-            break;
-          }
+				/*
+				 * Clear the link field of a possible phi block, since
+				 * the possibly created phi will be stored there. See,
+				 * search_def()
+				 */
+				set_irn_link(y, NULL);
 
-        if(insert)
-          pdeq_putr(worklist, y);
+				if(!pset_find_ptr(copy_blocks, y))
+					pdeq_putr(worklist, y);
 
       }
     }
   }
 
-  del_pset(phi_blocks);
   del_pdeq(worklist);
-
-  free(orig_blocks);
-
-  if(ins)
-    free(ins);
 }
 
 /**
@@ -323,12 +181,12 @@ static void place_phi_functions(ir_node *orig, pset *copies,
  * original node.
  * @return The valid copy for usage.
  */
-static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blocks)
+static ir_node *search_def(ir_node *usage, int pos, pset *copies,
+		pset *copy_blocks, pset *phi_blocks, ir_mode *mode)
 {
   ir_node *curr_bl;
   ir_node *start_irn;
   firm_dbg_module_t *dbg = DBG_MODULE;
-  firm_dbg_set_mask(dbg, DBG_LEVEL);
 
   curr_bl = get_nodes_block(usage);
 
@@ -359,13 +217,41 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
       ir_node *irn;
 
       /* Look at each instruction from last to first. */
-      for(irn = start_irn; !is_Block(irn); irn = sched_prev(irn)) {
+			sched_foreach_reverse_from(start_irn, irn) {
 
         /* Take the first copy we find. */
         if(pset_find_ptr(copies, irn))
           return irn;
       }
     }
+
+		else if(pset_find_ptr(phi_blocks, curr_bl)) {
+			ir_node *phi = get_irn_link(curr_bl);
+
+			if(!phi) {
+				int i, n_preds = get_irn_arity(curr_bl);
+				ir_graph *irg = get_irn_irg(curr_bl);
+				ir_node **ins = malloc(n_preds * sizeof(ins[0]));
+
+				for(i = 0; i < n_preds; ++i)
+					ins[i] = new_r_Unknown(irg, mode);
+
+				phi = new_r_Phi(irg, curr_bl, n_preds, ins, mode);
+				DBG((dbg, LEVEL_2, "\tcreating phi %+F in %+F\n", phi, curr_bl));
+
+				set_irn_link(curr_bl, phi);
+				sched_add_after(curr_bl, phi);
+				free(ins);
+
+				for(i = 0; i < n_preds; ++i) {
+					ir_node *arg = search_def(phi, i, copies, copy_blocks, phi_blocks, mode);
+					DBG((dbg, LEVEL_2, "\t\t%+F(%d) -> %+F\n", phi, i, arg));
+					set_irn_n(phi, i, arg);
+				}
+			}
+
+			return phi;
+		}
 
     /* If were not done yet, look in the immediate dominator */
     curr_bl = get_Block_idom(curr_bl);
@@ -376,11 +262,14 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
   return NULL;
 }
 
-static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
+static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks,
+		pset *phi_blocks, pset *ignore_uses)
 {
   int i = 0;
   int n_outs = 0;
   const ir_edge_t *edge;
+	ir_mode *mode = get_irn_mode(orig);
+
   firm_dbg_module_t *dbg = DBG_MODULE;
 
   struct {
@@ -390,7 +279,7 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
 
   /* Count the number of outs. */
   foreach_out_edge(orig, edge)
-    n_outs++;
+    n_outs += !pset_find_ptr(ignore_uses, get_edge_src_irn(edge));
 
   /*
    * Put all outs into an array.
@@ -399,9 +288,11 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
    */
   outs = malloc(n_outs * sizeof(outs[0]));
   foreach_out_edge(orig, edge) {
-    outs[i].irn = get_edge_src_irn(edge);
-    outs[i].pos = get_edge_src_pos(edge);
-    i += 1;
+		if(!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
+			outs[i].irn = get_edge_src_irn(edge);
+			outs[i].pos = get_edge_src_pos(edge);
+			i += 1;
+		}
   }
 
   /*
@@ -412,7 +303,7 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
     ir_node *irn = outs[i].irn;
     int pos = outs[i].pos;
 
-    def = search_def(irn, pos, copies, copy_blocks);
+    def = search_def(irn, pos, copies, copy_blocks, phi_blocks, mode);
     DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", irn, pos, def));
 
     if(def != NULL)
@@ -432,7 +323,7 @@ static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks)
  *
  * @param copies The set of all copies made (including the phi functions).
  */
-static void remove_odd_phis(pset *copies)
+static void remove_odd_phis(pset *copies, pset *unused_copies)
 {
   ir_node *irn;
 
@@ -443,22 +334,38 @@ static void remove_odd_phis(pset *copies)
 
       assert(sched_is_scheduled(irn) && "phi must be scheduled");
       for(i = 0, n = get_irn_arity(irn); i < n && !illegal; ++i)
-        illegal = is_Bad(get_irn_n(irn, i));
+        illegal = get_irn_n(irn, i) == NULL;
 
       if(illegal)
         sched_remove(irn);
     }
   }
+
+  for(irn = pset_first(unused_copies); irn; irn = pset_next(unused_copies)) {
+		sched_remove(irn);
+	}
 }
 
-void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
+void be_introduce_copies_ignore(dom_front_info_t *info, ir_node *orig,
+		int n, ir_node *copy_nodes[], pset *ignore_uses)
 {
   pset *copies = pset_new_ptr(2 * n);
   pset *copy_blocks = pset_new_ptr(2 * n);
+	pset *phi_blocks = pset_new_ptr(2 * n);
   int save_optimize = get_optimize();
   int save_normalize = get_opt_normalize();
   firm_dbg_module_t *dbg = DBG_MODULE;
   int i;
+
+#if 0
+	{
+		static int ser = 0;
+		char buf[128];
+
+		snprintf(buf, sizeof(buf), "-post-%d", ser++);
+		dump_ir_block_graph_sched(get_irn_irg(orig), buf);
+	}
+#endif
 
   firm_dbg_set_mask(dbg, DBG_LEVEL);
   DBG((dbg, LEVEL_1, "Introducing following copies of %+F\n", orig));
@@ -488,14 +395,27 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
   /*
    * Place the phi functions and reroute the usages.
    */
-  place_phi_functions(orig, copies, copy_blocks, info);
-  fix_usages(orig, copies, copy_blocks);
-  remove_odd_phis(copies);
+  determine_phi_blocks(orig, copies, copy_blocks, phi_blocks, info);
+  fix_usages(orig, copies, copy_blocks, phi_blocks, ignore_uses);
 
   /* reset the optimizations */
   set_optimize(save_optimize);
   set_opt_normalize(save_normalize);
 
   del_pset(copies);
+  del_pset(phi_blocks);
   del_pset(copy_blocks);
+
+
+}
+
+void be_introduce_copies(dom_front_info_t *info, ir_node *orig,
+		int n, ir_node *copy_nodes[])
+{
+	static pset *empty_set = NULL;
+
+	if(!empty_set)
+		empty_set = pset_new_ptr_default();
+
+	be_introduce_copies_ignore(info, orig, n, copy_nodes, empty_set);
 }

@@ -20,7 +20,7 @@ void be_liveness(ir_graph *irg);
  * @param f The output.
  * @param irg The graph.
  */
-void be_liveness_dump(FILE *f, ir_graph *irg);
+void be_liveness_dump(ir_graph *irg, FILE *f);
 
 /**
  * Check, if a node is live in at a block.
@@ -45,5 +45,6 @@ int (is_live_out)(const ir_node *block, const ir_node *irn);
  * @return 1, if @p irn is live at the end of the block, 0 if not.
  */
 int (is_live_end)(const ir_node *block, const ir_node *irn);
+
 
 #endif

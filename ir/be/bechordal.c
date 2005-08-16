@@ -259,7 +259,8 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-  return arch_irn_has_reg_class(env->session_env->main_env->arch_env, irn, arch_pos_make_out(0), env->cls);
+  return arch_irn_has_reg_class(env->session_env->main_env->arch_env,
+			irn, arch_pos_make_out(0), env->cls);
 }
 
 /**
@@ -303,10 +304,11 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * They are necessary to build up real intervals.
 	 */
 	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
-		DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
-		bitset_set(live, get_irn_graph_nr(irn));
-		if(has_reg_class(env, irn))
+		if(has_reg_class(env, irn)) {
+			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
+			bitset_set(live, get_irn_graph_nr(irn));
 			border_use(irn, step, 0);
+		}
 	}
 	++step;
 
@@ -618,3 +620,63 @@ set *be_ra_get_ifg_nodes(const be_chordal_env_t *env) {
 }
 
 #endif
+
+typedef struct {
+	const be_main_session_env_t *env;
+	const arch_register_class_t *cls;
+} check_pressure_info_t;
+
+
+static int check_pressure_has_class(const check_pressure_info_t *i, const ir_node *irn)
+{
+  return arch_irn_has_reg_class(i->env->main_env->arch_env,
+      irn, arch_pos_make_out(0), i->cls);
+}
+
+static void check_pressure_walker(ir_node *bl, void *data)
+{
+	check_pressure_info_t *info = data;
+	int n_regs = arch_register_class_n_regs(info->cls);
+
+	pset *live = pset_new_ptr_default();
+	int step = 0;
+	ir_node *irn;
+  irn_live_t *li;
+
+  live_foreach(bl, li) {
+    if(live_is_end(li) && check_pressure_has_class(info, li->irn)) {
+      ir_node *irn = (ir_node *) li->irn;
+      pset_insert_ptr(live, irn);
+    }
+  }
+
+	sched_foreach_reverse(bl, irn) {
+		int i, n;
+		int pressure = pset_count(live);
+
+		if(pressure > n_regs) {
+			ir_node *x;
+			ir_printf("%+10F@%+10F: pressure to high: %d\n", bl, irn, pressure);
+			for(x = pset_first(live); x; x = pset_next(live))
+				ir_printf("\t%+10F\n", x);
+		}
+
+		if(check_pressure_has_class(info, irn))
+			pset_remove_ptr(live, irn);
+
+		for(i = 0, n = get_irn_arity(irn); i < n; i++) {
+			ir_node *op = get_irn_n(irn, i);
+			if(check_pressure_has_class(info, op) && !is_Phi(irn))
+				pset_insert_ptr(live, op);
+		}
+		step++;
+	}
+}
+
+void be_check_pressure(const be_main_session_env_t *env, const arch_register_class_t *cls)
+{
+	check_pressure_info_t i;
+	i.env = env;
+	i.cls = cls;
+	irg_block_walk_graph(env->irg, check_pressure_walker, NULL, &i);
+}

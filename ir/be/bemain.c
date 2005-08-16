@@ -8,6 +8,7 @@
 #endif
 
 #include <stdarg.h>
+#include <mcheck.h>
 
 #include "obst.h"
 #include "bitset.h"
@@ -36,7 +37,7 @@
 #include "bearch_firm.h"
 #include "benode_t.h"
 #include "beirgmod.h"
-//#include "bespillilp.h"
+#include "bespillilp.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
@@ -90,12 +91,11 @@ be_init_session_env(be_main_session_env_t *env,
 
 static void prepare_graph(be_main_session_env_t *s)
 {
-	/*
-	 * Duplicate consts in each block
-	 * (This is just for the firm dummy backend)
-	 */
-	// localize_consts(s->irg);
+	/* set the current graph (this is important for several firm functions) */
 	current_ir_graph = s->irg;
+
+	/* Let the isa prepare the graph. */
+	s->main_env->arch_env->isa->prepare_graph(s->irg);
 
 	/* Remove critical edges */
 	remove_critical_cf_edges(s->irg);
@@ -108,7 +108,7 @@ static void prepare_graph(be_main_session_env_t *s)
 	s->dom_front = be_compute_dominance_frontiers(s->irg);
 
 	/* Ensure, that the ir_edges are computed. */
-	edges_assure(s->irg);
+	edges_activate(s->irg);
 
 	/* Compute loop nesting information (for weighting copies) */
 	if (get_irg_loopinfo_state(s->irg) != (loopinfo_valid & loopinfo_cf_consistent))
@@ -162,28 +162,44 @@ static void be_main_loop(void)
 
 			DBG((env.dbg, LEVEL_1, "----> Reg class: %s\n", cls->name));
 
-			be_numbering(irg);
-			be_liveness(irg);
+      be_spill_ilp(&session, cls);
+			dump_ir_block_graph_sched(session.irg, "-spill");
 
-			//be_spill_ilp(&session, cls);
+			be_liveness(irg);
+			be_numbering(irg);
+			be_check_pressure(&session, cls);
+
+#if 0
+			{
+				FILE *f;
+				char buf[128];
+				ir_snprintf(buf, sizeof(buf), "%F_%s-live.txt", irg, cls->name);
+				if((f = fopen(buf, "wt")) != NULL) {
+					be_liveness_dump(session.irg, f);
+					fclose(f);
+				}
+			}
+#endif
 
 			chordal_env = be_ra_chordal(&session, cls);
 
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(env.arch_env, irg, "");
 #endif
+#if 0
 			copystat_collect_cls(chordal_env);
 
 			be_copy_opt(chordal_env);
 
 			be_ssa_destruction(chordal_env);
 			be_ssa_destruction_check(chordal_env);
+#endif
 			be_ra_chordal_check(chordal_env);
 
 			be_ra_chordal_done(chordal_env);
 			be_numbering_done(irg);
 		}
-		dump_ir_block_graph(session.irg, "-post");
+		dump_ir_block_graph_sched(session.irg, "-post");
 
 		copystat_dump(irg);
 		copystat_dump_pretty(irg);
@@ -195,7 +211,10 @@ void be_main(int argc, const char *argv[])
 	assembler_t *gnu_assembler;
 	FILE *asm_output_file;
 
+	mtrace();
 	be_main_loop();
+	muntrace();
+
 	gnu_assembler = gnuasm_create_assembler();
 	asm_output_file = fopen("asm_output.asm", "w");
 
@@ -203,4 +222,5 @@ void be_main(int argc, const char *argv[])
 	gnuasm_dump(gnu_assembler, asm_output_file);
 	gnuasm_delete_assembler(gnu_assembler);
 	fclose(asm_output_file);
+
 }

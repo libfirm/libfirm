@@ -196,6 +196,13 @@ typedef enum _arch_irn_class_t {
   arch_irn_class_branch
 } arch_irn_class_t;
 
+/**
+ * Some flags describing a node in more detail.
+ */
+typedef enum _arch_irn_flags_t {
+	arch_irn_flags_spillable = 1,
+	arch_irn_flags_rematerializable = 2
+} arch_irn_flags_t;
 
 /*
  * Some words about positions and indices:
@@ -305,8 +312,18 @@ struct _arch_irn_ops_t {
    */
   arch_irn_class_t (*classify)(const arch_irn_ops_t *self, const ir_node *irn);
 
+	/**
+	 * Get the flags of a node.
+	 * @param self The irn ops themselves.
+	 * @param irn The node.
+	 * @return A set of flags.
+	 */
+	arch_irn_flags_t (*get_flags)(const arch_irn_ops_t *self, const ir_node *irn);
 
 };
+
+extern int
+arch_get_n_operands(const arch_env_t *env, const ir_node *irm, int in_out);
 
 /**
  * Get the register requirements for a node.
@@ -399,6 +416,14 @@ extern void arch_set_irn_register(const arch_env_t *env,
  * @return A classification of the node.
  */
 extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn);
+
+/**
+ * Get the flags of a node.
+ * @param env The architecture environment.
+ * @param irn The node.
+ * @return The flags.
+ */
+extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn);
 
 #define arch_irn_has_reg_class(env, irn, pos, cls) \
   ((cls) == arch_get_irn_reg_class(env, irn, pos))

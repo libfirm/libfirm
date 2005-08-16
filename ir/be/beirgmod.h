@@ -55,7 +55,9 @@ void be_free_dominance_frontiers(dom_front_info_t *info);
  * @param n			The number of copies ypu introduce.
  * @param copies	An array of nodes which are copies of @p orig.
  */
+void be_introduce_copies_ignore(dom_front_info_t *info, ir_node *orig,
+    int n, ir_node *copies[], pset *irgore_uses);
+
 void be_introduce_copies(dom_front_info_t *info, ir_node *orig,
     int n, ir_node *copies[]);
-
 #endif
