@@ -73,7 +73,7 @@ int is_superclass_of(type *high, type *low);
  *  many as possible).  If the remaining types are both class types
  *  and superclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-int is_subclass_ptr_of(type *low, type *high);
+int is_superclass_ptr_of(type *low, type *high);
 
 /** Returns true if high is (transitive) overwritten by low.
  *
@@ -142,7 +142,7 @@ void resolve_inheritance(mangle_inherited_name_func *mfunc);
 
 /** The state of the transitive closure.
  *
- *  @TODO: we could manage the state for each relation separately.  Invalidating
+ *  @todo: we could manage the state for each relation separately.  Invalidating
  *  the entity relations does not mean invalidating the class relation. */
 typedef enum {
   inh_transitive_closure_none,       /**<  Closure is not computed, can not be accessed. */
