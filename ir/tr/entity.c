@@ -585,12 +585,11 @@ new_compound_graph_path(type *tp, int length) {
   assert(is_type(tp) && is_compound_type(tp));
   assert(length > 0);
 
-  res = xmalloc(sizeof(*res) + (length-1) * sizeof(res->nodes[0]));
-  memset(res, 0, sizeof(*res) + (length-1) * sizeof(res->nodes[0]));
+  res = xmalloc(sizeof(*res) + (length-1) * sizeof(res->list[0]));
+  memset(res, 0, sizeof(*res) + (length-1) * sizeof(res->list[0]));
   res->kind         = k_ir_compound_graph_path;
   res->tp           = tp;
   res->len          = length;
-  res->arr_indicees = xcalloc(length, sizeof(res ->arr_indicees[0]));
 
   return res;
 }
@@ -599,7 +598,6 @@ new_compound_graph_path(type *tp, int length) {
 void free_compound_graph_path (compound_graph_path *gr) {
   assert(gr && is_compound_graph_path(gr));
   gr->kind = k_BAD;
-  free(gr ->arr_indicees);
   free(gr);
 }
 
@@ -640,7 +638,7 @@ entity *
 get_compound_graph_path_node(compound_graph_path *gr, int pos) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
-  return gr->nodes[pos];
+  return gr->list[pos].node;
 }
 
 void
@@ -648,7 +646,7 @@ set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
   assert(is_entity(node));
-  gr->nodes[pos] = node;
+  gr->list[pos].node = node;
   assert(is_proper_compound_graph_path(gr, pos));
 }
 
@@ -656,14 +654,14 @@ int
 get_compound_graph_path_array_index(compound_graph_path *gr, int pos) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
-  return gr->arr_indicees[pos];
+  return gr->list[pos].index;
 }
 
 void
 set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
-  gr->arr_indicees[pos] = index;
+  gr->list[pos].index = index;
 }
 
 /* A value of a compound entity is a pair of value and the corresponding path to a member of
@@ -778,10 +776,10 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   for (i = 0; i < (ARR_LEN (ent->val_paths)); i++) {
     compound_graph_path *path = ent->val_paths[i];
-    if (path->nodes[path->len-1] == value_ent) {
+    if (path->list[path->len-1].node == value_ent) {
       for(; i < (ARR_LEN (ent->val_paths))-1; i++) {
         ent->val_paths[i] = ent->val_paths[i+1];
-        ent->values[i]   = ent->values[i+1];
+        ent->values[i]    = ent->values[i+1];
       }
       ARR_SETLEN(entity*,  ent->val_paths, ARR_LEN(ent->val_paths) - 1);
       ARR_SETLEN(ir_node*, ent->values,    ARR_LEN(ent->values)    - 1);
@@ -796,7 +794,7 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   type *owner_tp = get_entity_owner(ent);
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = new_compound_graph_path(owner_tp, 1);
-  path->nodes[0] = member;
+  path->list[0].node = member;
   if (is_Array_type(owner_tp)) {
     int max;
     int i;
@@ -809,7 +807,7 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
         max = index;
       }
     }
-    path->arr_indicees[0] = max + 1;
+    path->list[0].index = max + 1;
   }
   add_compound_ent_value_w_path(ent, val, path);
 }

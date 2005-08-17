@@ -52,10 +52,11 @@ struct compound_graph_path {
   firm_kind kind;       /**< dynamic type tag for compound graph path. */
   type *tp;             /**< The type this path belongs to. */
   int len;              /**< length of the path */
-  int *arr_indicees;    /**< List of array indeces.  To compute position of
-			   array elements */
-  entity *nodes[1];     /**< List of entities of length len to express the
-			   access path. */
+  struct tuple {
+    int    index;       /**< Array index.  To compute position of array elements */
+    entity *node;       /**< entity */
+  } list[1];            /**< List of entitiy/index tuple of length len to express the
+                             access path. */
 };
 
 /** the type of an entity */
