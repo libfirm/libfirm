@@ -495,10 +495,9 @@ void (mark_type_visited)(type *tp) {
   _mark_type_visited(tp);
 }
 
-/* @@@ name clash with master flag
 int (type_visited)(const type *tp) {
   return _type_visited(tp);
-}*/
+}
 
 int (type_not_visited)(const type *tp) {
   return _type_not_visited(tp);
