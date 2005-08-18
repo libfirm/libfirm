@@ -198,6 +198,62 @@ static INLINE void new_backedge_info(ir_node *n) {
   }
 }
 
+/*
+ * Copies a node to the current_ir_graph. The Ins of the new node point to
+ * the predecessors on the graph of the old node.  For block/phi nodes not all
+ * predecessors might be copied.
+ * For Phi and Block nodes the function allocates in-arrays with an arity
+ * only for useful predecessors.  The arity is determined by counting
+ * the non-bad predecessors of the block.
+ */
+ir_node *copy_irn(ir_node *n, int copy_node_nr) {
+  ir_node *nn, *block;
+  int new_arity;
+  ir_op *op = get_irn_op(n);
+
+  /* The end node looses it's flexible in array.  This doesn't matter,
+     as dead node elimination builds End by hand, inlineing doesn't use
+     the End node. */
+  /* assert(op == op_End ||  ((_ARR_DESCR(n->in))->cookie != ARR_F_MAGIC)); */
+
+  if (op == op_Bad) {
+    /* node copied already */
+    return NULL;
+  } else if (op == op_Block) {
+    block = NULL;
+    new_arity = compute_new_arity(n);
+    n->attr.block.graph_arr = NULL;
+  } else {
+    block = get_nodes_block(n);
+    if (op == op_Phi) {
+      new_arity = compute_new_arity(block);
+    } else {
+      new_arity = get_irn_arity(n);
+    }
+  }
+  nn = new_ir_node(get_irn_dbg_info(n),
+           current_ir_graph,
+           block,
+           op,
+           get_irn_mode(n),
+           new_arity,
+           get_irn_in(n) + 1);
+  /* Copy the attributes.  These might point to additional data.  If this
+     was allocated on the old obstack the pointers now are dangling.  This
+     frees e.g. the memory of the graph_arr allocated in new_immBlock. */
+  copy_node_attr(n, nn);
+  new_backedge_info(nn);
+
+#if DEBUG_libfirm
+  if (copy_node_nr) {
+    /* for easier debugging, we want to copy the node numbers too */
+    nn->node_nr = n->node_nr;
+  }
+#endif
+
+  return nn;
+}
+
 /**
  * Copies the node to the new obstack. The Ins of the new node point to
  * the predecessors on the old obstack.  For block/phi nodes not all
@@ -211,57 +267,13 @@ static INLINE void new_backedge_info(ir_node *n) {
  *
  * Note: Also used for loop unrolling.
  */
-static void
-firm_copy_node (ir_node *n, void *env) {
-  ir_node *nn, *block;
-  int new_arity;
-  opcode op = get_irn_opcode(n);
-  int copy_node_nr = env != NULL;
+static void firm_copy_node (ir_node *n, void *env) {
+  ir_node *nn = copy_irn(n, env != NULL);
 
-  /* The end node looses it's flexible in array.  This doesn't matter,
-     as dead node elimination builds End by hand, inlineing doesn't use
-     the End node. */
-  /* assert(n->op == op_End ||  ((_ARR_DESCR(n->in))->cookie != ARR_F_MAGIC)); */
-
-  if (op == iro_Bad) {
-    /* node copied already */
-    return;
-  } else if (op == iro_Block) {
-    block = NULL;
-    new_arity = compute_new_arity(n);
-    n->attr.block.graph_arr = NULL;
-  } else {
-    block = get_nodes_block(n);
-    if (get_irn_opcode(n) == iro_Phi) {
-      new_arity = compute_new_arity(block);
-    } else {
-      new_arity = get_irn_arity(n);
-    }
-  }
-  nn = new_ir_node(get_irn_dbg_info(n),
-           current_ir_graph,
-           block,
-           get_irn_op(n),
-           get_irn_mode(n),
-           new_arity,
-           get_irn_in(n));
-  /* Copy the attributes.  These might point to additional data.  If this
-     was allocated on the old obstack the pointers now are dangling.  This
-     frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-  copy_node_attr(n, nn);
-  new_backedge_info(nn);
-  set_new_node(n, nn);
-
-#if DEBUG_libfirm
-  if (copy_node_nr) {
-    /* for easier debugging, we want to copy the node numbers too */
-    nn->node_nr = n->node_nr;
-  }
-#endif
-
-  /*  printf("\n old node: "); DDMSG2(n);
-      printf(" new node: "); DDMSG2(nn); */
+  if (nn)
+    set_new_node(n, nn);
 }
+
 
 /**
  * Copies new predecessors of old node to new node remembered in link.
