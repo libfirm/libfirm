@@ -307,7 +307,7 @@ unsigned long get_type_visited(const type *tp);
 void          set_type_visited(type *tp, unsigned long num);
 /* Sets visited field in type to type_visited. */
 void          mark_type_visited(type *tp);
-/* @@@ name clash!! int           type_visited(const type *tp); */
+int           type_visited(const type *tp);
 int           type_not_visited(const type *tp);
 
 /** Returns the associated link field of a type. */
@@ -318,15 +318,15 @@ void          set_type_link(type *tp, void *l);
 /**
  * Visited flag to traverse the type information.
  *
- * Increase this flag by one before traversing the type information.
- * Mark type nodes as visited by set_type_visited(type, type_visited).
- * Check whether node was already visited by comparing get_type_visited(type)
- * and type_visited.
+ * Increase this flag by one before traversing the type information
+ * using inc_master_type_visited().
+ * Mark type nodes as visited by mark_type_visited(type).
+ * Check whether node was already visited by type_visited(type)
+ * and type_not_visited(type).
  * Or use the function to walk all types.
  *
  * @see  typewalk
  */
-extern unsigned long type_visited;
 void          set_master_type_visited(unsigned long val);
 unsigned long get_master_type_visited(void);
 void          inc_master_type_visited(void);
