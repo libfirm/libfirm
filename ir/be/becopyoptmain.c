@@ -12,6 +12,8 @@
 #include "config.h"
 #endif
 
+
+#include <libcore/lc_timing.h>
 #include "debug.h"
 #include "irouts.h"
 #include "becopyopt.h"
@@ -19,7 +21,7 @@
 #include "becopyoptmain.h"
 
 #define DO_HEUR
-#undef DO_ILP
+#define DO_ILP
 
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
@@ -54,7 +56,11 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 #endif
 
 #ifdef DO_HEUR
+	lc_timer_t *timer = lc_timer_register("heur", NULL);
+	lc_timer_start(timer);
 	co_heur_opt(co);
+	lc_timer_stop(timer);
+	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
 #ifdef DO_STAT
 	costs = co_get_copy_costs(co);
 	costs_heur = costs;
@@ -72,6 +78,8 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "Opt  costs: %3d\n", costs_ilp));
 #endif
 #endif
+	assert(lower_bound <= costs_ilp);
+	assert(costs_ilp <= costs_heur);
 
 	free_copy_opt(co);
 }

@@ -58,17 +58,21 @@ enum vals_t {
 	I_CLS_PHIS_E = I_CLS_PHIS_S+MAX_CLS_PHIS,
 
 	/* FROM HERE: RESULT VLAUES */
+	/* all of them are external set */
 
 	/* ilp values */
-	I_ILP_TIME,			/* !external set! solving time in seconds */
-	I_ILP_ITER,			/* !external set! number of simplex iterations */
+	I_HEUR_TIME,		/* solving time in milli seconds */
+	I_ILP_TIME,			/* solving time in milli seconds */
+    I_ILP_VARS,
+    I_ILP_CSTR,
+	I_ILP_ITER,			/* number of simplex iterations */
 
 	/* copy instructions */
-	I_COPIES_MAX,		/* !external set! max possible costs of copies*/
-	I_COPIES_INIT,		/* !external set! number of copies in initial allocation */
-	I_COPIES_HEUR,		/* !external set! number of copies after heuristic */
-	I_COPIES_OPT,		/* !external set! number of copies after ilp */
-	I_COPIES_IF,		/* !external set! number of copies inevitable due to root-arg-interf */
+	I_COPIES_MAX,		/* max possible costs of copies*/
+	I_COPIES_INIT,		/* number of copies in initial allocation */
+	I_COPIES_HEUR,		/* number of copies after heuristic */
+	I_COPIES_OPT,		/* number of copies after ilp */
+	I_COPIES_IF,		/* number of copies inevitable due to root-arg-interf */
 
 	ASIZE
 };
@@ -280,8 +284,17 @@ void copystat_add_heur_costs(int costs) {
 void copystat_add_opt_costs(int costs) {
 	curr_vals[I_COPIES_OPT] += costs;
 }
+void copystat_add_heur_time(int time) {
+	curr_vals[I_HEUR_TIME] += time;
+}
 void copystat_add_ilp_time(int time) {
 	curr_vals[I_ILP_TIME] += time;
+}
+void copystat_add_ilp_vars(int vars) {
+	curr_vals[I_ILP_VARS] += vars;
+}
+void copystat_add_ilp_csts(int csts) {
+	curr_vals[I_ILP_CSTR] += csts;
 }
 void copystat_add_ilp_iter(int iters) {
 	curr_vals[I_ILP_ITER] += iters;

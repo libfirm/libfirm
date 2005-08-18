@@ -574,16 +574,20 @@ static void M_constr_walker(ir_node *block, void *env) {
 			}
 			minimal_costs = sum - max;
 
+			int gen_cst = 1;
 			if (assert_costs != -1) {
-				bitset_foreach(candidates, phi_nr)
-					assert(costs[phi_nr] == assert_costs);
+				bitset_foreach(candidates, phi_nr) {
+					/* possible, if argument of a OU are joined */
+					if (costs[phi_nr] != assert_costs)
+						gen_cst = 0;
+				}
 			}
 
 			/* generate an unequation finally.
 			 * phis are indexed in the bitset,
 			 * shared argument is irn
 			 * rhs is minimal_costs */
-			{
+			if (gen_cst) {
 				char buf[32];
 				ir_node *root;
 				int pos, irnnr, rootnr, cst_idx, y_idx, cst_counter = 0;
@@ -809,7 +813,9 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	DBG((dbg, LEVEL_2, "Applying solution...\n"));
 
 #ifdef DO_STAT
-	copystat_add_ilp_time(lpp_get_sol_time(pi->curr_lp));
+	copystat_add_ilp_time((int)(1000.0*lpp_get_sol_time(pi->curr_lp)));  //new we have ms
+	copystat_add_ilp_vars(lpp_get_var_count(pi->curr_lp));
+	copystat_add_ilp_csts(lpp_get_cst_count(pi->curr_lp));
 	copystat_add_ilp_iter(lpp_get_iter_cnt(pi->curr_lp));
 #endif
 

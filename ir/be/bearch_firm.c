@@ -21,7 +21,7 @@
 
 #include "irreflect.h"
 
-#define N_REGS 6
+#define N_REGS 8
 
 static arch_register_t datab_regs[N_REGS];
 
@@ -339,7 +339,6 @@ static void prepare_walker(ir_node *irn, void *data)
 			set_irn_link(nc, nc);
 		}
 	}
-
 }
 
 static void localize_const_walker(ir_node *irn, void *data)
@@ -352,14 +351,14 @@ static void localize_const_walker(ir_node *irn, void *data)
 			ir_node *op    = get_irn_n(irn, i);
 			opcode opc     = get_irn_opcode(op);
 
-			if(opc == iro_Const || opc == iro_SymConst) {
+			if(opc == iro_Const
+			|| (opc == iro_SymConst && get_SymConst_kind(op) == symconst_addr_ent)) {
 				ir_graph *irg   = get_irn_irg(bl);
 				ir_node *imm_bl = is_Phi(irn) ? get_Block_cfgpred_block(bl, i) : bl;
 
 				ir_node *imm = new_Imm(irg, imm_bl, op);
 				set_irn_n(irn, i, imm);
 			}
-
 		}
 	}
 }

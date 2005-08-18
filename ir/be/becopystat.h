@@ -24,10 +24,14 @@ void copystat_add_inevit_costs(int costs);
 void copystat_add_init_costs(int costs);
 void copystat_add_heur_costs(int costs);
 void copystat_add_opt_costs(int costs);
+void copystat_add_heur_time(int time);
 void copystat_add_ilp_time(int time);
+void copystat_add_ilp_vars(int vars);
+void copystat_add_ilp_csts(int csts);
 void copystat_add_ilp_iter(int iters);
 void copystat_dump(ir_graph *irg);
 void copystat_dump_pretty(ir_graph *irg);
+
 
 #else /* DO_STAT */
 
@@ -40,8 +44,11 @@ void copystat_dump_pretty(ir_graph *irg);
 #define copystat_add_init_costs(costs);
 #define copystat_add_heur_costs(costs);
 #define copystat_add_opt_costs(costs);
-#define copystat_add_ilp_time(int time);
-#define copystat_add_ilp_iter(int iters);
+#define copystat_add_heur_time(time);
+#define copystat_add_ilp_time(time);
+#define copystat_add_ilp_vars(vars);
+#define copystat_add_ilp_csts(csts);
+#define copystat_add_ilp_iter(iters);
 #define copystat_dump(irg);
 #define copystat_dump(irg);
 #define copystat_dump_pretty(irg);

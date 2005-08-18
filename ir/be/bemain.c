@@ -162,7 +162,7 @@ static void be_main_loop(void)
 
 			DBG((env.dbg, LEVEL_1, "----> Reg class: %s\n", cls->name));
 
-      be_spill_ilp(&session, cls);
+			be_spill_ilp(&session, cls);
 			dump_ir_block_graph_sched(session.irg, "-spill");
 
 			be_liveness(irg);
@@ -186,14 +186,12 @@ static void be_main_loop(void)
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(env.arch_env, irg, "");
 #endif
-#if 0
 			copystat_collect_cls(chordal_env);
 
 			be_copy_opt(chordal_env);
 
 			be_ssa_destruction(chordal_env);
 			be_ssa_destruction_check(chordal_env);
-#endif
 			be_ra_chordal_check(chordal_env);
 
 			be_ra_chordal_done(chordal_env);
@@ -202,7 +200,6 @@ static void be_main_loop(void)
 		dump_ir_block_graph_sched(session.irg, "-post");
 
 		copystat_dump(irg);
-		copystat_dump_pretty(irg);
 	}
 }
 

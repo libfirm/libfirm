@@ -387,6 +387,9 @@ static void process_block(ir_node *bl, void *data)
 		step++;
 	}
 
+	if(bl == get_irg_start_block(get_irn_irg(bl)))
+		goto end;
+
 	/*
 	 * Here, only the phis in the block and the values live in are in the
 	 * live set.
@@ -432,6 +435,8 @@ static void process_block(ir_node *bl, void *data)
 			lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, -1.0);
 		}
 	}
+
+end:
 
   del_pset(live);
 }
@@ -623,20 +628,9 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	si.enable_store   = 0;
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
-  irg_block_walk_graph(session_env->irg, process_block, NULL, &si);
+	irg_block_walk_graph(session_env->irg, process_block, NULL, &si);
 	if(si.enable_store)
 		add_store_costs(&si);
-
-	DBG((si.dbg, LEVEL_1, "%F\n", session_env->irg));
-  lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
-	assert(lpp_is_sol_valid(si.lpp) && "ILP not feasible");
-
-  // assert(lpp_is_sol_valid(si.lpp) && "solution of ILP must be valid");
-
-	DBG((si.dbg, LEVEL_1, "\tnodes: %d, vars: %d, csts: %d\n",
-				set_count(si.irn_use_heads), si.lpp->var_next, si.lpp->cst_next));
-	DBG((si.dbg, LEVEL_1, "\titerations: %d, solution time: %g\n",
-				si.lpp->iterations, si.lpp->sol_time));
 
 #ifdef DUMP_ILP
 	{
@@ -649,6 +643,17 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 		}
 	}
 #endif
+
+	DBG((si.dbg, LEVEL_1, "%F\n", session_env->irg));
+	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
+	assert(lpp_is_sol_valid(si.lpp) && "ILP not feasible");
+
+	assert(lpp_is_sol_valid(si.lpp) && "solution of ILP must be valid");
+
+	DBG((si.dbg, LEVEL_1, "\tnodes: %d, vars: %d, csts: %d\n",
+				set_count(si.irn_use_heads), si.lpp->var_next, si.lpp->cst_next));
+	DBG((si.dbg, LEVEL_1, "\titerations: %d, solution time: %g\n",
+				si.lpp->iterations, si.lpp->sol_time));
 
 #ifdef DUMP_SOLUTION
 	{
