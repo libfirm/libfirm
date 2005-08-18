@@ -567,7 +567,7 @@ static void writeback_results(spill_ilp_t *si)
 		/* Go through all live ranges of the node. */
     list_for_each_entry(live_range_t, lr, &uh->head, list) {
       int spilled = is_spilled(si, lr);
-			int rematd  = !is_zero(lpp_get_var_sol(si->lpp, lr->is_remat_var));
+			// int rematd  = !is_zero(lpp_get_var_sol(si->lpp, lr->is_remat_var));
 
 			if(spilled && !is_end_of_block_use(lr)) {
 				ir_node *bl      = get_nodes_block(lr->user);
