@@ -99,10 +99,18 @@ static void firm_init(void)
 	}
 
 	if(!op_imm) {
-		op_imm = new_ir_op(get_next_ir_opcode(), "Imm",
-				op_pin_state_pinned, 0, oparity_zero, 0, sizeof(imm_attr_t));
-	}
+		rflct_sig_t *sig;
+		int imm_opc = get_next_ir_opcode();
 
+		op_imm = new_ir_op(imm_opc, "Imm",
+				op_pin_state_pinned, 0, oparity_zero, 0, sizeof(imm_attr_t));
+
+		sig = rflct_signature_allocate(1, 1);
+		rflct_signature_set_arg(sig, 0, 0, "Imm", RFLCT_MC(Data), 0, 0);
+		rflct_signature_set_arg(sig, 1, 0, "Block", RFLCT_MC(BB), 0, 0);
+		rflct_new_opcode(imm_opc, "Imm", false);
+		rflct_opcode_add_signature(imm_opc, sig);
+	}
 }
 
 static int firm_get_n_reg_class(void)
@@ -332,15 +340,28 @@ static void prepare_walker(ir_node *irn, void *data)
 		}
 	}
 
-	else if(opc == iro_Const || opc == iro_SymConst) {
-		ir_node *bl   = get_nodes_block(irn);
-		ir_graph *irg = get_irn_irg(bl);
+}
 
-		ir_node *imm = new_Imm(irg, bl, irn);
-		exchange(irn, imm);
-		set_irn_link(imm, imm);
+static void localize_const_walker(ir_node *irn, void *data)
+{
+	if(!is_Block(irn)) {
+		int i, n;
+		ir_node *bl = get_nodes_block(irn);
+
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op    = get_irn_n(irn, i);
+			opcode opc     = get_irn_opcode(op);
+
+			if(opc == iro_Const || opc == iro_SymConst) {
+				ir_graph *irg   = get_irn_irg(bl);
+				ir_node *imm_bl = is_Phi(irn) ? get_Block_cfgpred_block(bl, i) : bl;
+
+				ir_node *imm = new_Imm(irg, imm_bl, op);
+				set_irn_n(irn, i, imm);
+			}
+
+		}
 	}
-
 }
 
 static void clear_link(ir_node *irn, void *data)
@@ -350,7 +371,7 @@ static void clear_link(ir_node *irn, void *data)
 
 static void firm_prepare_graph(ir_graph *irg)
 {
-	irg_walk_graph(irg, clear_link, NULL, NULL);
+	irg_walk_graph(irg, clear_link, localize_const_walker, NULL);
 	irg_walk_graph(irg, NULL, prepare_walker, NULL);
 }
 

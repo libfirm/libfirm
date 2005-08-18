@@ -567,18 +567,20 @@ static void writeback_results(spill_ilp_t *si)
 		/* Go through all live ranges of the node. */
     list_for_each_entry(live_range_t, lr, &uh->head, list) {
       int spilled = is_spilled(si, lr);
+			int rematd  = !is_zero(lpp_get_var_sol(si->lpp, lr->is_remat_var));
 
-      if(spilled && !is_end_of_block_use(lr)) {
+			if(spilled && !is_end_of_block_use(lr)) {
 				ir_node *bl      = get_nodes_block(lr->user);
 				ir_node *spill   = spill_live_range(si, lr, rem_phis);
 				ir_node *reload  = new_Reload(fact, si->cls,
 						si->session_env->irg, bl, mode, spill);
 
 				obstack_ptr_grow(si->obst, reload);
-        n_reloads++;
+				n_reloads++;
 
 				sched_add_before(lr->user, reload);
 			}
+
     }
 
 		if(n_reloads > 0) {
@@ -618,7 +620,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
   si.live_ranges    = new_set(cmp_live_range, 16384);
   si.spill_ctx      = new_set(cmp_spill_ctx, 4096);
 	si.enable_remat   = 1;
-	si.enable_store   = 1;
+	si.enable_store   = 0;
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
   irg_block_walk_graph(session_env->irg, process_block, NULL, &si);
