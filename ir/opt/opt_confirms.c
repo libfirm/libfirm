@@ -74,7 +74,7 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
 #define DBG_OUT_R(r_pnc, r_bound, left, pnc, right, v)
 #define DBG_OUT_L(l_pnc, l_bound, left, pnc, right, v)
 
-#endif
+#endif /* DEBUG_CONFIRM */
 
 /**
  * Check, if the value of a node is != 0.
@@ -693,6 +693,7 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
   return tv;
 }
 
+#ifdef DEBUG_CONFIRM
 /**
  * For debugging. Prints an interval into a string.
  */
@@ -717,7 +718,6 @@ static int iv_snprintf(char *buf, size_t len, const interval_t *iv) {
   return snprintf(buf, len, "<UNKNOWN>");
 }
 
-#ifdef DEBUG_CONFIRM
 /**
  * For debugging. Prints an interval compare
  */
