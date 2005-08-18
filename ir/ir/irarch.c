@@ -23,6 +23,7 @@
 #include "irhooks.h"
 #include "ircons.h"
 #include "irarch.h"
+#include "irreflect.h"
 
 #undef DEB
 
@@ -55,7 +56,19 @@ new_rd_Mulh (dbg_info *db, ir_graph *irg, ir_node *block,
   ir_node *res;
 
   if (! op_Mulh) {
-    op_Mulh = new_ir_op(get_next_ir_opcode(), "Mulh",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0);
+    rflct_sig_t *sig;
+    int mulh_opc = get_next_ir_opcode();
+
+    op_Mulh = new_ir_op(mulh_opc, "Mulh",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0);
+    sig = rflct_signature_allocate(1, 3);
+    rflct_signature_set_arg(sig, 0, 0, "Res", RFLCT_MC(Int), 0, 0);
+    rflct_signature_set_arg(sig, 1, 0, "Block", RFLCT_MC(BB), 0, 0);
+    rflct_signature_set_arg(sig, 1, 1, "Op 0", RFLCT_MC(Int), 0, 0);
+    rflct_signature_set_arg(sig, 1, 2, "Op 1", RFLCT_MC(Int), 0, 0);
+
+    rflct_new_opcode(mulh_opc, "Mulh", false);
+    rflct_opcode_add_signature(mulh_opc, sig);
+
   }
 
   in[0] = op1;
