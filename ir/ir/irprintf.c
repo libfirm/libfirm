@@ -548,6 +548,28 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 						}
 						break;
 					}
+        case 'P':
+          {
+            compound_graph_path *path = va_arg(args, compound_graph_path *);
+            int i, l = get_compound_graph_path_length(path);
+            entity *ent;
+
+            for (i = 0; i < l; ++i) {
+              ent = get_compound_graph_path_node(path, i);
+
+              DUMP_STR(".");
+              DUMP_STR(get_entity_name(ent));
+              if (is_Array_type(get_entity_owner(ent))) {
+                snprintf(buf, sizeof(buf), "[%d]",
+                  get_compound_graph_path_array_index(path, i));
+                DUMP_STR(buf);
+              }
+            }
+
+            /* clean the buffer again */
+            buf[0] = '\0';
+            break;
+          }
 			}
 
 			dump_with_settings(app, object, limit, &settings, str);

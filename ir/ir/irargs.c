@@ -99,6 +99,7 @@ static int firm_emit(lc_appendable_t *app,
   char add[64];
   char buf[256];
   char tv[256];
+  entity *ent;
 
   buf[0] = '\0';
   add[0] = '\0';
@@ -161,23 +162,30 @@ static int firm_emit(lc_appendable_t *app,
       snprintf(buf, sizeof(buf), "%s%s", A("op"), get_op_name(X));
       break;
     case k_ir_compound_graph_path:
-      strncat(buf, A("cgp"), sizeof(buf));
-
       n = get_compound_graph_path_length(X);
+      entity *ent;
+
       for (i = 0; i < n; ++i) {
-        entity *ent = get_compound_graph_path_node(X, i);
+        ent = get_compound_graph_path_node(X, i);
+
+        strncat(buf, ".", sizeof(buf));
         strncat(buf, get_entity_name(ent), sizeof(buf));
-        if (i < n - 1)
-          strncat(buf, ".", sizeof(buf));
+        if (is_Array_type(get_entity_owner(ent))) {
+          snprintf(add, sizeof(add), "[%d]",
+            get_compound_graph_path_array_index(X, i));
+          strncat(buf, add, sizeof(buf));
+        }
       }
+      add[0] = '\0';
       break;
+
     default:
       snprintf(buf, sizeof(buf), "UNKWN");
       snprintf(add, sizeof(add), "[%p]", X);
     }
   }
 
-  if(occ->flag_plus)
+  if (occ->flag_plus)
   	strncat(buf, add, sizeof(buf));
 
   return lc_arg_append(app, occ, buf, strlen(buf));
@@ -251,6 +259,7 @@ lc_arg_env_t *firm_get_arg_env(void)
     X("mode",      'm'),
     X("block",     'B'),
     X("pnc",       '='),
+    X("cg_path",   'P'),
   };
 
   int i;
