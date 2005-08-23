@@ -7,7 +7,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
@@ -15,15 +14,32 @@
 #include <malloc.h>
 #endif
 
+#undef NO_NULL_COLORS
+#undef NO_NULL_COLORS_EXTRA_CSTS
+#undef NO_NULL_COLORS_WITH_COSTS
+
+#if (defined(NO_NULL_COLORS_EXTRA_CSTS) || defined(NO_NULL_COLORS_WITH_COSTS)) && !defined(NO_NULL_COLORS)
+#error Chose your weapon!
+#endif
+
+#undef PRECOLOR_MAX_CLIQUE
+#define PATH_CONSTRAINTS_FOR_CLASSES
+
 #include "irprog.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
 //#include <lpp/lpp_cplex.h>
+#include <lpp/lpp_remote.h>
 #include "xmalloc.h"
+#include "pset.h"
+#include "irdom_t.h"
+#include "iredges_t.h"
+#include "bechordal_t.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "besched_t.h"
+#include "phiclass.h"
 
 #define LPP_HOST "i44pc52"
 #define LPP_SOLVER "cplex"
@@ -47,12 +63,17 @@ typedef struct _problem_instance_t {
 	struct list_head simplicials;	/**< holds all simpl_t's in right order to color*/
 	pset *removed;					/**< holds all removed simplicial irns */
 	/* lp problem */
-	lpp_t *dilp, *ilp_new, *ilp_newr;		/**< problem formulation directly as milp */
-	/* overhead stuff */
 	lpp_t *curr_lp;					/**< points to the problem currently used */
-	int cst_counter, last_x_var;
+	lpp_t *dilp;					/**< problem formulation directly as milp */
+#ifdef NO_NULL_COLORS_EXTRA_CSTS
+	int first_nnc_cst_idx;			/**< the first index of a constraint belonging to no-null-colors stuff*/
+#endif
+	int first_nnc_var_idx;			/**< the first index of a constraint belonging to no-null-colors stuff*/
+
+	int cst_counter, first_x_var, last_x_var;
 	char buf[32];
 	int all_simplicial;
+	pset *done;
 } problem_instance_t;
 
 #define is_removed(irn) pset_find_ptr(pi->removed, irn)
@@ -65,14 +86,17 @@ typedef struct _problem_instance_t {
 #define mangle_cst(buf, prefix, nr) \
 			snprintf((buf), sizeof(buf), "%c%d", (prefix), (nr))
 
-#define mangle_var(buf, prefix, node_nr, color) \
+#define mangle_var1(buf, prefix, color) \
+			snprintf((buf), sizeof(buf), "%c%d", (prefix), (color))
+
+#define mangle_var2(buf, prefix, node_nr, color) \
 			snprintf((buf), sizeof(buf), "%c%d_%d", (prefix), (node_nr), (color))
 
 #define mangle_var3(buf, prefix, n1, n2, col) \
 			snprintf((buf), sizeof(buf), "%c%d_%d_%d", (prefix), (n1), (n2), (col))
 
 #define mangle_var_irn(buf, prefix, irn, color) \
-			mangle_var((buf), (prefix), get_irn_graph_nr(irn), (color))
+			mangle_var2((buf), (prefix), get_irn_graph_nr(irn), (color))
 
 #define split_var(var, nnr, col) \
 			sscanf(var, "x%d_%d", (nnr), (col))
@@ -134,6 +158,45 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 		pi->all_simplicial = 1;
 }
 
+#ifdef NO_NULL_COLORS
+static void pi_add_constr_no_null_colors(problem_instance_t *pi) {
+	int cst_counter=0, col, var_idx, cst_idx;
+	int n_colors = pi->co->chordal_env->cls->n_regs;
+	char buf[40];
+
+	for (col = 0; col < n_colors; ++col) {
+		mangle_var1(buf, 'u', col);
+#ifdef NO_NULL_COLORS_WITH_COSTS
+		var_idx = lpp_add_var(pi->curr_lp, buf, lpp_binary, 1.0 / (double) (1 << (col+1)) );
+#else
+		var_idx = lpp_add_var(pi->curr_lp, buf, lpp_binary, 1.0 / (2.0 * n_colors) );
+#endif
+		if (!pi->first_nnc_var_idx)
+			pi->first_nnc_var_idx = var_idx;
+	}
+
+#ifdef NO_NULL_COLORS_EXTRA_CSTS
+	for (col = 0; col < n_colors; ++col) {
+		mangle_cst(buf, 'U', cst_counter++);
+		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 0);
+		if (!pi->first_nnc_cst_idx)
+			pi->first_nnc_cst_idx = cst_idx;
+		lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+col, -1);
+	}
+#endif
+
+#ifndef NO_NULL_COLORS_WITH_COSTS
+	for (col = 0; col < n_colors - 1; ++col) {
+		mangle_cst(buf, 'U', cst_counter++);
+		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 0);
+		lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+col  ,  1);
+		lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+col+1, -1);
+	}
+#endif
+
+}
+#endif
+
 /**
  * Add coloring-force conditions
  * Matrix A: knapsack constraint for each node
@@ -161,10 +224,15 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 				arch_get_allocatable_regs(get_arch_env(pi->co), curr->irn, arch_pos_make_out(0), pi->co->chordal_env->cls, pos_regs);
 				bitset_foreach(pos_regs, col) {
 					int var_idx;
-					mangle_var(pi->buf, 'x', nnr, col);
+					mangle_var2(pi->buf, 'x', nnr, col);
 					var_idx = lpp_add_var(pi->curr_lp, pi->buf, lpp_binary, 0);
+					if (!pi->first_x_var)
+						pi->first_x_var = var_idx;
 					pi->last_x_var = var_idx;
 					lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
+#ifdef NO_NULL_COLORS_EXTRA_CSTS
+					lpp_set_factor_fast(pi->curr_lp, pi->first_nnc_cst_idx+col, var_idx, 1);
+#endif
 				}
 			}
 	}
@@ -222,13 +290,20 @@ static void pi_add_constr_B(problem_instance_t *pi, int color) {
 					int cst_idx;
 					ir_node *n;
 					mangle_cst(pi->buf, 'B', pi->cst_counter);
+#ifdef NO_NULL_COLORS
+					cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, lpp_less, 0);
+#else
 					cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, lpp_less, 1);
+#endif
 					for (n = pset_first(living); n; n = pset_next(living)) {
 						int var_idx;
 						mangle_var_irn(pi->buf, 'x', n, color);
 						var_idx = lpp_get_var_idx(pi->curr_lp, pi->buf);
 						lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
 					}
+#ifdef NO_NULL_COLORS
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+color, -1.0);
+#endif
 					pi->cst_counter++;
 				}
 				pset_remove_ptr(living, irn);
@@ -239,159 +314,12 @@ static void pi_add_constr_B(problem_instance_t *pi, int color) {
 	assert(0 == pset_count(living));
 	del_pset(living);
 }
-/**
- * Generates constraints which interrelate x with y variables.
- * x1 and x2 have the different colors ==> y_12 = 1
- */
-static void pi_add_constr_E_new_reverse(problem_instance_t *pi) {
-	unit_t *curr;
-	bitset_t *root_regs, *arg_regs, *work_regs;
-	int cst_counter = 0;
-	unsigned nregs = pi->co->chordal_env->cls->n_regs;
-	root_regs = bitset_alloca(nregs);
-	arg_regs = bitset_alloca(nregs);
-	work_regs = bitset_alloca(nregs);
-
-	DBG((dbg, LEVEL_2, "Add E constraints...\n"));
-	/* for all roots of optimization units */
-	list_for_each_entry(unit_t, curr, &pi->co->units, units) {
-		ir_node *root, *arg;
-		int rootnr, argnr, color;
-		int y_idx, i;
-		char buf[32];
-
-		root = curr->nodes[0];
-		rootnr = get_irn_graph_nr(root);
-		bitset_clear_all(root_regs);
-		arch_get_allocatable_regs(get_arch_env(pi->co), root, arch_pos_make_out(0), pi->co->chordal_env->cls, root_regs);
-
-		/* for all arguments of root */
-		for (i = 1; i < curr->node_count; ++i) {
-			int extra_cst_idx;
-
-			arg = curr->nodes[i];
-			argnr = get_irn_graph_nr(arg);
-			bitset_clear_all(arg_regs);
-			arch_get_allocatable_regs(get_arch_env(pi->co), arg, arch_pos_make_out(0), pi->co->chordal_env->cls, arg_regs);
-
-			/* For all colors root and arg have in common, add 2 constraints to E */
-			bitset_copy(work_regs, root_regs);
-			bitset_and(work_regs, arg_regs);
-
-			/* y_ij1 + y_ij2 + .... + y_ijk <= 1 */
-			mangle_cst(buf, 'Z', cst_counter++);
-			extra_cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, bitset_popcnt(work_regs)-1);
-
-			bitset_foreach(work_regs, color) {
-				int root_idx, arg_idx, cst_idx;
-
-				/* Introduce new variable and set factor in objective function */
-				mangle_var3(buf, 'y', rootnr, argnr, color);
-				y_idx = lpp_add_var(pi->curr_lp, buf, lpp_binary, curr->costs[i]);
-
-				/* add new y var to the extra Z constraint */
-				lpp_set_factor_fast(pi->curr_lp, extra_cst_idx, y_idx, 1);
-
-				/* set starting value */
-				lpp_set_start_value(pi->curr_lp, y_idx, (get_irn_col(pi->co, root)==color && get_irn_col(pi->co, arg)==color) );
-
-				mangle_var(buf, 'x', rootnr, color);
-				root_idx = lpp_get_var_idx(pi->curr_lp, buf);
-				mangle_var(buf, 'x', argnr, color);
-				arg_idx = lpp_get_var_idx(pi->curr_lp, buf);
-
-				/* add root+y >= 1 */
-				mangle_cst(buf, 'E', cst_counter++);
-				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 1);
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, root_idx, 1);
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx,    1);
-
-				/* add arg+y >= 1 */
-				mangle_cst(buf, 'E', cst_counter++);
-				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 1);
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, arg_idx,  1);
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx,    1);
-			}
-		}
-	}
-}
 
 /**
  * Generates constraints which interrelate x with y variables.
  * x1 and x2 have the different colors ==> y_12 = 1
  */
-static void pi_add_constr_E_new(problem_instance_t *pi) {
-	unit_t *curr;
-	bitset_t *root_regs, *arg_regs, *work_regs;
-	int cst_counter = 0;
-	unsigned nregs = pi->co->chordal_env->cls->n_regs;
-	root_regs = bitset_alloca(nregs);
-	arg_regs = bitset_alloca(nregs);
-	work_regs = bitset_alloca(nregs);
-
-	DBG((dbg, LEVEL_2, "Add E constraints...\n"));
-	/* for all roots of optimization units */
-	list_for_each_entry(unit_t, curr, &pi->co->units, units) {
-		ir_node *root, *arg;
-		int rootnr, argnr, color;
-		int y_idx, i;
-		char buf[32];
-
-		root = curr->nodes[0];
-		rootnr = get_irn_graph_nr(root);
-		bitset_clear_all(root_regs);
-		arch_get_allocatable_regs(get_arch_env(pi->co), root, arch_pos_make_out(0), pi->co->chordal_env->cls, root_regs);
-
-		/* for all arguments of root */
-		for (i = 1; i < curr->node_count; ++i) {
-			int extra_cst_idx;
-
-			arg = curr->nodes[i];
-			argnr = get_irn_graph_nr(arg);
-			bitset_clear_all(arg_regs);
-			arch_get_allocatable_regs(get_arch_env(pi->co), arg, arch_pos_make_out(0), pi->co->chordal_env->cls, arg_regs);
-
-			/* y_ij1 + y_ij2 + .... + y_ijk <= 1 */
-			mangle_cst(buf, 'Z', cst_counter++);
-			extra_cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_less, 1);
-
-			/* For all colors root and arg have in common, add 2 constraints to E */
-			bitset_copy(work_regs, root_regs);
-			bitset_and(work_regs, arg_regs);
-			bitset_foreach(work_regs, color) {
-				int root_idx, arg_idx, cst_idx;
-
-				/* Introduce new variable and set factor in objective function */
-				mangle_var3(buf, 'y', rootnr, argnr, color);
-				y_idx = lpp_add_var(pi->curr_lp, buf, lpp_binary, -curr->costs[i]);
-
-				/* add new y var to the extra Z constraint */
-				lpp_set_factor_fast(pi->curr_lp, extra_cst_idx, y_idx, 1);
-
-				/* set starting value */
-				lpp_set_start_value(pi->curr_lp, y_idx, (get_irn_col(pi->co, root)==color && get_irn_col(pi->co, arg)==color) );
-
-				mangle_var(buf, 'x', rootnr, color);
-				root_idx = lpp_get_var_idx(pi->curr_lp, buf);
-				mangle_var(buf, 'x', argnr, color);
-				arg_idx = lpp_get_var_idx(pi->curr_lp, buf);
-
-				/* add root+arg-2y >= 0 */
-				mangle_cst(buf, 'E', cst_counter++);
-				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 0);
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, root_idx, 1);
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, arg_idx,  1);
-				lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx,   -2);
-			}
-		}
-	}
-}
-
-/**
- * Generates constraints which interrelate x with y variables.
- * x1 and x2 have the different colors ==> y_12 = 1
- */
-static void pi_add_constr_E_old(problem_instance_t *pi) {
+static void pi_add_constr_E(problem_instance_t *pi) {
 	unit_t *curr;
 	bitset_t *root_regs, *arg_regs, *work_regs;
 	int cst_counter = 0;
@@ -421,7 +349,7 @@ static void pi_add_constr_E_old(problem_instance_t *pi) {
 			arch_get_allocatable_regs(get_arch_env(pi->co), arg, arch_pos_make_out(0), pi->co->chordal_env->cls, arg_regs);
 
 			/* Introduce new variable and set factor in objective function */
-			mangle_var(buf, 'y', rootnr, argnr);
+			mangle_var2(buf, 'y', rootnr, argnr);
 			y_idx = lpp_add_var(pi->curr_lp, buf, lpp_binary, curr->costs[i]);
 
 			/* set starting value */
@@ -432,9 +360,9 @@ static void pi_add_constr_E_old(problem_instance_t *pi) {
 			bitset_and(work_regs, arg_regs);
 			bitset_foreach(work_regs, color) {
 				int root_idx, arg_idx, cst_idx;
-				mangle_var(buf, 'x', rootnr, color);
+				mangle_var2(buf, 'x', rootnr, color);
 				root_idx = lpp_get_var_idx(pi->curr_lp, buf);
-				mangle_var(buf, 'x', argnr, color);
+				mangle_var2(buf, 'x', argnr, color);
 				arg_idx = lpp_get_var_idx(pi->curr_lp, buf);
 
 				/* add root-arg-y <= 0 */
@@ -460,9 +388,9 @@ static void pi_add_constr_E_old(problem_instance_t *pi) {
 			bitset_xor(work_regs, arg_regs);
 			bitset_foreach(work_regs, color) {
 				int root_idx, arg_idx, cst_idx;
-				mangle_var(buf, 'x', rootnr, color);
+				mangle_var2(buf, 'x', rootnr, color);
 				root_idx = lpp_get_var_idx(pi->curr_lp, buf);
-				mangle_var(buf, 'x', argnr, color);
+				mangle_var2(buf, 'x', argnr, color);
 				arg_idx = lpp_get_var_idx(pi->curr_lp, buf);
 
 				mangle_cst(buf, 'E', cst_counter++);
@@ -497,7 +425,7 @@ static INLINE int get_costs(problem_instance_t *pi, ir_node *phi, ir_node *irn) 
 	return 0;
 }
 
-static void M_constr_walker(ir_node *block, void *env) {
+static void clique_path_walker(ir_node *block, void *env) {
 	problem_instance_t *pi = env;
 	int count, arity, row, col, other_row, *costs;
 	ir_node **phis, *phi, *irn, **phi_matrix;
@@ -563,46 +491,27 @@ static void M_constr_walker(ir_node *block, void *env) {
 			if (bitset_popcnt(candidates) < 2)
 				continue;
 
-			/* compute the minimal costs (rhs) */
-			int phi_nr, sum=0, max=-1, minimal_costs;
-			int assert_costs=-1;
-			bitset_foreach(candidates, phi_nr) {
-				costs[phi_nr] = get_costs(pi, phis[phi_nr], irn);
-				assert_costs = costs[phi_nr];
-				sum += costs[phi_nr];
-				max = MAX(max, costs[phi_nr]);
-			}
-			minimal_costs = sum - max;
-
-			int gen_cst = 1;
-			if (assert_costs != -1) {
-				bitset_foreach(candidates, phi_nr) {
-					/* possible, if argument of a OU are joined */
-					if (costs[phi_nr] != assert_costs)
-						gen_cst = 0;
-				}
-			}
-
 			/* generate an unequation finally.
 			 * phis are indexed in the bitset,
 			 * shared argument is irn
-			 * rhs is minimal_costs */
-			if (gen_cst) {
+			 * rhs is phi_count - 1 */
+			{
 				char buf[32];
 				ir_node *root;
 				int pos, irnnr, rootnr, cst_idx, y_idx, cst_counter = 0;
+				int minimal_unequal_count = bitset_popcnt(candidates)-1;
 
 				irnnr = get_irn_graph_nr(irn);
 				mangle_cst(buf, 'M', cst_counter++);
-				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, minimal_costs);
+				cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, minimal_unequal_count);
 
 				/* for all phis */
 				bitset_foreach(candidates, pos) {
 					root = phis[pos];
 					rootnr = get_irn_graph_nr(root);
-					mangle_var(buf, 'y', rootnr, irnnr);
+					mangle_var2(buf, 'y', rootnr, irnnr);
 					y_idx = lpp_get_var_idx(pi->curr_lp, buf);
-					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, costs[pos]);
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, 1);
 				}
 			}
 		}
@@ -615,20 +524,22 @@ static void M_constr_walker(ir_node *block, void *env) {
  * in the same block, iff they use the same arg at the same pos.
  * Only one of the phis can get the arg.
  */
-static void pi_add_constr_M(problem_instance_t *pi) {
-	dom_tree_walk_irg(get_irg(pi->co), M_constr_walker, NULL, pi);
+static void pi_add_clique_path_cstr(problem_instance_t *pi) {
+	DBG((dbg, LEVEL_2, "Adding clique path constraints...\n"));
+	dom_tree_walk_irg(get_irg(pi->co), clique_path_walker, NULL, pi);
 }
 
+#ifndef PATH_CONSTRAINTS_FOR_CLASSES
 /**
  * Matrix P: Path contraints.
- * If 2 nodes interfere and are there is a path of equal-color-edges
+ * If 2 nodes interfere and there is a path of equal-color-edges
  * connecting them, then at least one of those equal-color-edges
  * will break and cause some costs.
  */
-static void pi_add_constr_P(problem_instance_t *pi) {
+static void pi_add_path_cstr(problem_instance_t *pi) {
 	unit_t *curr;
 	int cst_counter = 0;
-	DBG((dbg, LEVEL_2, "Add P constraints...\n"));
+	DBG((dbg, LEVEL_2, "Adding path constraints...\n"));
 
 	/* for all optimization units (only phis) */
 	list_for_each_entry(unit_t, curr, &pi->co->units, units) {
@@ -646,27 +557,254 @@ static void pi_add_constr_P(problem_instance_t *pi) {
 				const ir_node *arg2 = curr->nodes[o];
 				int arg2nr = get_irn_graph_nr(arg2);
 				if (nodes_interfere(pi->co->chordal_env, arg1, arg2)) {
-					int cst_idx, y_idx, min_costs;
+					int cst_idx, y_idx;
 					char buf[32];
 
 					mangle_cst(buf, 'P', cst_counter++);
-					min_costs = MIN(curr->costs[i], curr->costs[o]);
-					cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, min_costs);
+					cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 1);
 
-					mangle_var(buf, 'y', rootnr, arg1nr);
+					mangle_var2(buf, 'y', rootnr, arg1nr);
 					y_idx = lpp_get_var_idx(pi->curr_lp, buf);
-					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, curr->costs[i]);
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, 1);
 
-					mangle_var(buf, 'y', rootnr, arg2nr);
+					mangle_var2(buf, 'y', rootnr, arg2nr);
 					y_idx = lpp_get_var_idx(pi->curr_lp, buf);
-					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, curr->costs[o]);
+					lpp_set_factor_fast(pi->curr_lp, cst_idx, y_idx, 1);
 				}
 			}
 		}
 	}
 }
+#endif
 
-static void pi_solve_ilp(problem_instance_t *pi);
+#ifdef PATH_CONSTRAINTS_FOR_CLASSES
+static INLINE int get_y_var_idx(problem_instance_t *pi, int nnr1, int nnr2) {
+	int res;
+	char buf[30];
+
+	mangle_var2(buf, 'y', nnr1, nnr2);
+	if ((res = lpp_get_var_idx(pi->curr_lp, buf)) != -1)
+		return res;
+
+	mangle_var2(buf, 'y', nnr2, nnr1);
+	if ((res = lpp_get_var_idx(pi->curr_lp, buf)) != -1)
+		return res;
+
+	assert(0 && "One of them must work");
+}
+
+static void check_ecc_and_add_cut(problem_instance_t *pi, ir_node **path, int length, pset *remain, ir_node *tgt) {
+	if (path[length-1] == tgt) { /* we found a path */
+		int cst_idx, var_idx, i, nnr1, nnr2;
+		char buf[30];
+
+		printf("+++++++++++++++++++++++++++++++ PATH: %d\n", length);
+
+		/* add cut to ilp */
+		mangle_cst(buf, 'Q', pi->cst_counter++);
+		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 1);
+
+		/* add all vars along the path */
+		nnr2 = get_irn_graph_nr(path[0]);
+		for (i=1; i<length; ++i) {
+			nnr1 = nnr2;
+			nnr2 = get_irn_graph_nr(path[i]);
+			var_idx = get_y_var_idx(pi, nnr1, nnr2);
+			lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
+		}
+	} else { /* try to extend the path */
+		be_chordal_env_t *cenv = pi->co->chordal_env;
+		const ir_edge_t *edge;
+		ir_node *end = path[length-1];
+		ir_node **next = alloca(pset_count(remain) * sizeof(*next));
+		int i, o, max, next_pos = 0;
+		pset *done = pset_new_ptr_default();
+
+		/* find all potential next nodes on path */
+		/*  args of phis */
+		if (is_Phi(end))
+			for(i=0, max=get_irn_arity(end); i<max; ++i) {
+				ir_node *arg = get_irn_n(end, i);
+				if (!pset_find_ptr(done, arg) && pset_find_ptr(remain, arg)) {
+					next[next_pos++] = arg;
+					pset_insert_ptr(done, arg);
+				}
+			}
+		/*  outs of phis and other nodes */
+		foreach_out_edge(end, edge) {
+			ir_node *user = edge->src;
+			if (is_Phi(user) && !pset_find_ptr(done, user) && pset_find_ptr(remain, user)) {
+				next[next_pos++] = user;
+				pset_insert_ptr(done, user);
+			}
+		}
+		del_pset(done);
+
+
+		/* delete all potential nodes with interferences to other nodes in the path */
+		for (i=0; i<next_pos; ++i) {
+			ir_node *nn = next[i];
+
+			/* if next is the tgt, it may interfere with path[0],
+			 * so skip the first check */
+			o = (nn == tgt && length > 1) ? 1 : 0;
+
+			for(; o<length; ++o)
+				if (nodes_interfere(cenv, nn, path[o])) {
+					next[i] = NULL;
+					break;
+				}
+		}
+		/* now we have all possible nodes in next; impossibles are NULL */
+
+		/* try to finish path with all possible nodes */
+		for (i=0; i<next_pos; ++i) {
+			if (!next[i]) /* this was an impossible node */
+				continue;
+
+			path[length] = next[i];
+			pset_remove_ptr(remain, next[i]);
+			check_ecc_and_add_cut(pi, path, length+1, remain, tgt);
+			pset_insert_ptr(remain, next[i]);
+		}
+	}
+}
+
+static void path_cstr_for_classes_walker(ir_node *irn, void *env) {
+	problem_instance_t *pi = env;
+	be_chordal_env_t *cenv;
+	int i, o, max;
+	ir_node *m;
+	pset *class = get_phi_class(irn);
+	if (!class || pset_find_ptr(pi->done, class))
+		return;
+
+	pset_insert_ptr(pi->done, class);
+
+	/* pset to array */
+	max = pset_count(class);
+	ir_node **cls = alloca(max * sizeof(*cls));
+	for(i=0, m = pset_first(class); m; i++, m = pset_next(class)) {
+		DBG((dbg, LEVEL_1, " class member: %+F\n", m));
+		cls[i] = m;
+	}
+
+	cenv = pi->co->chordal_env;
+	for(i=0; i<max; ++i) {
+		ir_node **path = alloca(max * sizeof(*path));
+		pset *remain = pset_new_ptr(8);
+		pset_insert_pset_ptr(remain, class);
+
+		/* add cls[i] to path and remove it from remainder */
+		path[0] = cls[i];
+		pset_remove_ptr(remain, cls[i]);
+
+		for(o=i+1; o<max; ++o)
+			if (nodes_interfere(cenv, cls[i], cls[o]))
+				check_ecc_and_add_cut(pi, path, 1, remain, cls[o]);
+
+		/* insert back into remainder */
+		pset_insert_ptr(remain, cls[i]);
+	}
+}
+
+
+/**
+ * Matrix P: Path contraints.
+ * If 2 nodes interfere and there is a path of equal-color-edges
+ * connecting them, then at least one of those equal-color-edges
+ * will break and cause some costs.
+ */
+static void pi_add_path_cstr_for_classes(problem_instance_t *pi) {
+	DBG((dbg, LEVEL_2, "Adding path constraints for phi classes...\n"));
+	pi->cst_counter = 0;
+	pi->done = pset_new_ptr_default();
+	irg_walk_graph(get_irg(pi->co), path_cstr_for_classes_walker, NULL, pi);
+	del_pset(pi->done);
+}
+#endif
+
+#ifdef PRECOLOR_MAX_CLIQUE
+struct pre_col {
+	problem_instance_t *pi;
+	pset **clique;
+};
+
+#define has_reg_class(pi,irn) \
+  (arch_get_irn_reg_class(pi->co->chordal_env->session_env->main_env->arch_env, \
+                          irn, arch_pos_make_out(0)) == pi->co->chordal_env->cls)
+
+static void preColoringWalker(ir_node *bl, void *env) {
+	struct pre_col *e = env;
+	pset **clique = e->clique;
+	pset *max_clique = clique ? *clique : NULL;
+	int max = max_clique ? pset_count(max_clique) : 0;
+	problem_instance_t *pi = e->pi;
+
+	int i, n;
+	pset *live       = pset_new_ptr_default();
+	ir_node *irn;
+	irn_live_t *li;
+
+	/* as always, bring the live end nodes to life here */
+	live_foreach(bl, li) {
+	  if(live_is_end(li) && has_reg_class(pi, li->irn)) {
+	    pset_insert_ptr(live, irn);
+	  }
+	}
+
+	sched_foreach_reverse(bl, irn) {
+		int pres = pset_count(live);
+
+		if(pres > max) {
+			max = pres;
+			if(max_clique)
+				del_pset(max_clique);
+
+			max_clique = pset_new_ptr_default();
+			pset_insert_pset_ptr(max_clique, live);
+		}
+
+
+
+		if(has_reg_class(pi, irn))
+			pset_remove_ptr(live, irn);
+
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op = get_irn_n(irn, i);
+			if(has_reg_class(pi, op) && !is_Phi(irn))
+				pset_insert_ptr(live, op);
+		}
+	}
+
+  del_pset(live);
+  *clique = max_clique;
+}
+
+static void pi_add_constr_preColoring(problem_instance_t *pi) {
+	ir_node *irn;
+	int cst_counter, color;
+	struct pre_col pre_col;
+
+	pre_col.clique = NULL;
+	pre_col.pi = pi;
+
+	dom_tree_walk_irg(get_irg(pi->co), preColoringWalker, NULL, &pre_col);
+
+	color = 0;
+	for (irn = pset_first(*pre_col.clique); irn; irn = pset_next(*pre_col.clique)) {
+		int cst_idx, var_idx, nnr = get_irn_graph_nr(irn);
+		char buf[100];
+
+		mangle_cst(buf, 'K', cst_counter++);
+		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_equal, 1);
+
+		mangle_var2(buf, 'x', nnr, color++);
+		var_idx = lpp_get_var_idx(pi->curr_lp, buf);
+		lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
+	}
+}
+#endif
 
 /**
  * Generate the initial problem matrices and vectors.
@@ -681,7 +819,6 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	pi->removed = pset_new_ptr_default();
 	INIT_LIST_HEAD(&pi->simplicials);
 	pi->dilp     = new_lpp(co->name, lpp_minimize);
-	pi->last_x_var = -1;
 
 	/* problem size reduction */
 	pi_find_simplicials(pi);
@@ -690,33 +827,27 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 
 	/* built objective and constraints */
 	pi->curr_lp = pi->dilp;
-	pi_add_constr_A(pi);
-	for (col = 0; col < pi->co->chordal_env->cls->n_regs; ++col)
-		pi_add_constr_B(pi, col);
-	pi_add_constr_E_old(pi);
-	pi_add_constr_M(pi);
-	pi_add_constr_P(pi);
-
-#if 0
-	pi_solve_ilp(pi);
-
-	pi->ilp_new  = new_lpp(co->name, lpp_minimize);
-	pi->ilp_newr = new_lpp(co->name, lpp_minimize);
-
-	pi->curr_lp = pi->ilp_new;
-	pi_add_constr_A(pi);
-	for (col = 0; col < pi->co->chordal_env->cls->n_regs; ++col)
-		pi_add_constr_B(pi, col);
-	pi_add_constr_E_new(pi);
-	pi_solve_ilp(pi);
-
-	pi->curr_lp = pi->ilp_newr;
-	pi_add_constr_A(pi);
-	for (col = 0; col < pi->co->chordal_env->cls->n_regs; ++col)
-		pi_add_constr_B(pi, col);
-	pi_add_constr_E_new_reverse(pi);
-	pi_solve_ilp(pi);
+#ifdef NO_NULL_COLORS
+	pi_add_constr_no_null_colors(pi);
 #endif
+	pi_add_constr_A(pi);
+	for (col = 0; col < pi->co->chordal_env->cls->n_regs; ++col)
+		pi_add_constr_B(pi, col);
+	pi_add_constr_E(pi);
+
+#ifdef PATH_CONSTRAINTS_FOR_CLASSES
+	pi_add_path_cstr_for_classes(pi);
+#else
+	pi_add_path_cstr(pi);
+#endif
+	pi_add_clique_path_cstr(pi);
+#ifdef PRECOLOR_MAX_CLIQUE
+	pi_add_constr_preColoring(pi);
+#endif
+
+	FILE *out = fopen(pi->co->name, "wt");
+	lpp_dump_plain(pi->curr_lp, out);
+	fclose(out);
 
 	return pi;
 }
@@ -743,7 +874,7 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 	int i;
 	char var_name[64];
 	DBG((dbg, LEVEL_2, "Set start solution...\n"));
-	for (i=1; i<=pi->last_x_var; ++i) {
+	for (i=pi->first_x_var; i<=pi->last_x_var; ++i) {
 		int nnr, col;
 		double val;
 		/* get variable name */
@@ -766,7 +897,8 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 static void pi_solve_ilp(problem_instance_t *pi) {
 	pi_set_start_sol(pi);
 	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
-	printf("       SOLUTION TIME: %.2f\n", pi->curr_lp->sol_time);
+//	lpp_solve_cplex(pi->curr_lp);
+//	printf("       SOLUTION TIME: %.2f\n", pi->curr_lp->sol_time);
 }
 
 /**
@@ -813,24 +945,24 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	DBG((dbg, LEVEL_2, "Applying solution...\n"));
 
 #ifdef DO_STAT
-	copystat_add_ilp_time((int)(1000.0*lpp_get_sol_time(pi->curr_lp)));  //new we have ms
+	copystat_add_ilp_time((int)(1000.0*lpp_get_sol_time(pi->curr_lp)));  //now we have ms
 	copystat_add_ilp_vars(lpp_get_var_count(pi->curr_lp));
 	copystat_add_ilp_csts(lpp_get_cst_count(pi->curr_lp));
 	copystat_add_ilp_iter(lpp_get_iter_cnt(pi->curr_lp));
 #endif
 
-	sol = xmalloc((pi->last_x_var+1) * sizeof(*sol));
-	state = lpp_get_solution(pi->curr_lp, sol, 1, pi->last_x_var);
+	sol = xmalloc((pi->last_x_var - pi->first_x_var + 1) * sizeof(*sol));
+	state = lpp_get_solution(pi->curr_lp, sol, pi->first_x_var, pi->last_x_var);
 	if (state != lpp_optimal) {
 		printf("Solution state is not 'optimal': %d\n", state);
 		assert(state >= lpp_feasible && "The solution should at least be feasible!");
 	}
-	for (i=0; i<pi->last_x_var; ++i) {
+	for (i=0; i<pi->last_x_var - pi->first_x_var + 1; ++i) {
 		int nnr, col;
 		char var_name[64];
 
 		if (sol[i] > 1-EPSILON) { /* split varibale name into components */
-			lpp_get_var_name(pi->curr_lp, 1+i, var_name, sizeof(var_name));
+			lpp_get_var_name(pi->curr_lp, pi->first_x_var+i, var_name, sizeof(var_name));
 			if (split_var(var_name, &nnr, &col) == 2) {
 				DBG((dbg, LEVEL_2, "Irn %n  Idx %d  Var %s  Val %f\n", get_irn_for_graph_nr(get_irg(pi->co), nnr), i, var_name, sol[i]));
 				DBG((dbg, LEVEL_2, "x%d = %d\n", nnr, col));
