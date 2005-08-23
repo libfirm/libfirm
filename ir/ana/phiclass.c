@@ -67,8 +67,10 @@ static void phi_class_construction_walker(ir_node *node, void *env) {
 static void phi_class_destruction_walker(ir_node *node, void *env) {
 	pset *clss = _get_phi_class(node);
 	if (clss) {
-		//TODOdel_pset(clss);
-		_set_phi_class(node, NULL);
+		ir_node *n;
+		for(n = pset_first(clss); n; n = pset_next(clss))
+			_set_phi_class(n, NULL);
+		del_pset(clss);
 	}
 }
 
