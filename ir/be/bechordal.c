@@ -532,7 +532,7 @@ be_chordal_env_t *be_ra_chordal(
 		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", cls->name, irg);
     	plotter = new_plotter_ps(buf);
 
-    	draw_interval_tree(&draw_chordal_def_opts, env, plotter, arch_env, cls);
+    	draw_interval_tree(&draw_chordal_def_opts, env, plotter, env->session_env->main_env->arch_env, cls);
     	plotter_free(plotter);
 	}
 #endif
@@ -571,7 +571,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
 			n2_reg = arch_get_irn_register(arch_env, n2, 0);
 			if (nodes_interfere(chordal_env, n1, n2) && n1_reg == n2_reg) {
-				DBG((dbg, 0, "Values %+F and %+F interfere and have the same regiseter assigned\n", n1, n2));
+				DBG((dbg, 0, "Values %+F and %+F interfere and have the same register assigned\n", n1, n2));
 				assert(0 && "Interfering values have the same color!");
 			}
 		}
