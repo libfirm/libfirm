@@ -59,20 +59,6 @@ static void phi_class_build(ir_node *irn, pset *pc) {
 	}
 }
 
-pset *phi_class_compute_by_phis(pset *all_phi_nodes) {
-	int i;
-	ir_node *phi;
-	pset *all_phi_classes = pset_new_ptr_default();
-
-	for (i = 0, phi=pset_first(all_phi_nodes); phi; phi=pset_next(all_phi_nodes)) {
-		assert(is_Phi(phi) && mode_is_datab(get_irn_mode(phi)));
-		phi_class_build(phi, NULL);
-		pset_insert_ptr(all_phi_classes, _get_phi_class(phi));
-	}
-
-	return all_phi_classes;
-}
-
 static void phi_class_construction_walker(ir_node *node, void *env) {
 	if (is_Phi(node) && mode_is_datab(get_irn_mode(node)))
 		phi_class_build(node, NULL);
@@ -81,7 +67,7 @@ static void phi_class_construction_walker(ir_node *node, void *env) {
 static void phi_class_destruction_walker(ir_node *node, void *env) {
 	pset *clss = _get_phi_class(node);
 	if (clss) {
-		del_pset(clss);
+		//TODOdel_pset(clss);
 		_set_phi_class(node, NULL);
 	}
 }
@@ -89,6 +75,26 @@ static void phi_class_destruction_walker(ir_node *node, void *env) {
 void phi_class_compute(ir_graph *irg) {
 	irg_walk_graph(irg, phi_class_destruction_walker, NULL, NULL);
 	irg_walk_graph(irg, phi_class_construction_walker, NULL, NULL);
+}
+
+pset *phi_class_compute_by_phis(pset *all_phi_nodes) {
+	int i;
+	ir_node *phi;
+	pset *all_phi_classes = pset_new_ptr_default();
+
+	if (pset_count(all_phi_nodes)) {
+		ir_graph *irg = get_irn_irg(pset_first(all_phi_nodes));
+		pset_break(all_phi_nodes);
+		irg_walk_graph(irg, phi_class_destruction_walker, NULL, NULL);
+
+		for (i = 0, phi=pset_first(all_phi_nodes); phi; phi=pset_next(all_phi_nodes)) {
+			assert(is_Phi(phi) && mode_is_datab(get_irn_mode(phi)));
+			phi_class_build(phi, NULL);
+			pset_insert_ptr(all_phi_classes, _get_phi_class(phi));
+		}
+	}
+
+	return all_phi_classes;
 }
 
 void phi_class_free(ir_graph *irg) {

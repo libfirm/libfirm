@@ -24,6 +24,14 @@ void phi_class_init(void);
 void phi_class_compute(ir_graph *irg);
 
 /**
+ * Computes all phi classes of an irg. All phi nodes of this irg must be
+ * contained in @p all_phi_nodes. Otherwise the results may be wrong.
+ * @param all_phi_nodes All phi nodes of an irg.
+ * @return A set containing all phi classes as psets
+ */
+pset *phi_class_compute_by_phis(pset *all_phi_nodes);
+
+/**
  * Throws away all allocated memory for phi classes of an irg.
  * @param irg The ir-graph to free recources for.
  * @return Frees the internal data structures.
