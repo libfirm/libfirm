@@ -791,9 +791,9 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
 void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   compound_graph_path *path;
-  type *owner_tp = get_entity_owner(ent);
+  type *owner_tp = get_entity_owner(member);
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  path = new_compound_graph_path(owner_tp, 1);
+  path = new_compound_graph_path(get_entity_type(ent), 1);
   path->list[0].node = member;
   if (is_Array_type(owner_tp)) {
     int max;
