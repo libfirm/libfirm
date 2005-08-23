@@ -19,6 +19,7 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "becopyoptmain.h"
+#include "phiclass.h"
 
 #define DO_HEUR
 #define DO_ILP
@@ -40,13 +41,15 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	 * `grep get_irn_out *.c` by the irouts.h module.*/
 	compute_outs(chordal_env->session_env->irg);
 
-	co = new_copy_opt(chordal_env, get_costs_all_one);
+	co = new_copy_opt(chordal_env, get_costs_loop_depth);
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
-
+	phi_class_compute(chordal_env->session_env->irg);
 
 #ifdef DO_STAT
 	lower_bound = co_get_lower_bound(co);
 	DBG((dbg, LEVEL_1, "Lower Bound: %3d\n", lower_bound));
+	DBG((dbg, LEVEL_1, "Inevit Costs: %3d\n", co_get_inevit_copy_costs(co)));
+
 	costs = co_get_copy_costs(co);
 	costs_init = costs;
 	copystat_add_max_costs(co_get_max_copy_costs(co));
@@ -57,7 +60,7 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 
 #ifdef DO_HEUR
 	lc_timer_t *timer = lc_timer_register("heur", NULL);
-	lc_timer_start(timer);
+	lc_timer_reset_and_start(timer);
 	co_heur_opt(co);
 	lc_timer_stop(timer);
 	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
@@ -68,6 +71,8 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "Heur costs: %3d\n", costs_heur));
 #endif
 #endif
+
+	assert(lower_bound <= costs_heur);
 
 #ifdef DO_ILP
 	co_ilp_opt(co);
