@@ -55,6 +55,7 @@ void be_init(void)
 	be_ra_chordal_init();
 	be_copy_opt_init();
 	copystat_init();
+	phi_class_init();
 }
 
 static be_main_env_t *be_init_env(be_main_env_t *env)
@@ -152,9 +153,6 @@ static void be_main_loop(void)
 		/* Build liveness information */
 		be_liveness(irg);
 
-		copystat_reset();
-		copystat_collect_irg(irg, env.arch_env);
-
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
@@ -188,7 +186,9 @@ static void be_main_loop(void)
 #endif
 			copystat_collect_cls(chordal_env);
 
+//			dump_allocated_irg(env.arch_env, irg, "pre");
 			be_copy_opt(chordal_env);
+//			dump_allocated_irg(env.arch_env, irg, "post");
 
 			be_ssa_destruction(chordal_env);
 			be_ssa_destruction_check(chordal_env);

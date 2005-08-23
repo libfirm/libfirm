@@ -17,7 +17,6 @@
 
 void copystat_init(void);
 void copystat_reset(void);
-void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env);
 void copystat_collect_cls(be_chordal_env_t *chordal_env);
 void copystat_add_max_costs(int costs);
 void copystat_add_inevit_costs(int costs);
@@ -37,7 +36,6 @@ void copystat_dump_pretty(ir_graph *irg);
 
 #define copy_copystat_init();
 #define	copystat_reset();
-#define copystat_collect_irg(irg, arch_env);
 #define copystat_collect_cls(env);
 #define copystat_add_max_costs(costs);
 #define copystat_add_inevit_costs(costs);

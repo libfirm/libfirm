@@ -598,8 +598,6 @@ static void check_ecc_and_add_cut(problem_instance_t *pi, ir_node **path, int le
 		int cst_idx, var_idx, i, nnr1, nnr2;
 		char buf[30];
 
-		printf("+++++++++++++++++++++++++++++++ PATH: %d\n", length);
-
 		/* add cut to ilp */
 		mangle_cst(buf, 'Q', pi->cst_counter++);
 		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 1);
@@ -845,10 +843,6 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	pi_add_constr_preColoring(pi);
 #endif
 
-	FILE *out = fopen(pi->co->name, "wt");
-	lpp_dump_plain(pi->curr_lp, out);
-	fclose(out);
-
 	return pi;
 }
 
@@ -898,7 +892,7 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	pi_set_start_sol(pi);
 	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
 //	lpp_solve_cplex(pi->curr_lp);
-//	printf("       SOLUTION TIME: %.2f\n", pi->curr_lp->sol_time);
+	DBG((dbg, LEVEL_1, "Solution time: %.2f\n", pi->curr_lp->sol_time));
 }
 
 /**

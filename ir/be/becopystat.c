@@ -86,6 +86,7 @@ int curr_vals[ASIZE];
 static pset *all_phi_nodes;
 static pset *all_phi_classes;
 static pset *all_copy_nodes;
+static ir_graph *last_irg;
 
 void copystat_init(void) {
 	dbg = firm_dbg_register("ir.be.copystat");
@@ -118,7 +119,6 @@ static void irg_stat_walker(ir_node *node, void *env) {
  	if (is_Block(node)) /* count all blocks */
  		curr_vals[I_BLOCKS]++;
 
-	//TODO
  	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) /* collect phis */
  		pset_insert_ptr(all_phi_nodes, node);
 
@@ -126,10 +126,10 @@ static void irg_stat_walker(ir_node *node, void *env) {
  		pset_insert_ptr(all_copy_nodes, node);
 }
 
-void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env) {
+static void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env) {
 	irg_walk_graph(irg, irg_stat_walker, NULL, arch_env);
-	curr_vals[I_BLOCKS] -= 2; /* substract 2 for start and end block */
 	all_phi_classes = phi_class_compute_by_phis(all_phi_nodes);
+	last_irg = irg;
 }
 
 /**
@@ -277,6 +277,12 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 void copystat_collect_cls(be_chordal_env_t *chordal_env) {
 	ir_node *n;
 	pset *pc;
+	ir_graph *irg = chordal_env->session_env->irg;
+
+	if (last_irg != irg) {
+		copystat_reset();
+		copystat_collect_irg(irg, chordal_env->session_env->main_env->arch_env);
+	}
 
 	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
 		if (is_curr_reg_class(n))
