@@ -884,7 +884,7 @@ init_mode (void)
 
   /* Character Modes */
   newmode.sort         = irms_character;
-  newmode.arithmetic   = irma_none;
+  newmode.arithmetic   = irma_twos_complement;
 
   /* Character */
   newmode.name         = new_id_from_chars("C", 1);
