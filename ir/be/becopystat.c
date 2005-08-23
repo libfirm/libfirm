@@ -11,6 +11,7 @@
 #include <string.h>
 #include "irgraph.h"
 #include "irprog.h"
+#include "iredges.h"
 #include "phiclass_t.h"
 #include "becopyopt.h"
 #include "becopystat.h"
@@ -93,7 +94,6 @@ void copystat_init(void) {
 	all_phi_nodes = pset_new_ptr_default();
 	all_phi_classes = pset_new_ptr_default();
 	all_copy_nodes = pset_new_ptr_default();
-	phi_class_init();
 }
 
 void copystat_reset(void) {
@@ -118,6 +118,7 @@ static void irg_stat_walker(ir_node *node, void *env) {
  	if (is_Block(node)) /* count all blocks */
  		curr_vals[I_BLOCKS]++;
 
+	//TODO
  	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) /* collect phis */
  		pset_insert_ptr(all_phi_nodes, node);
 
@@ -132,10 +133,35 @@ void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env) {
 }
 
 /**
+ * @return 1 if the block at pos @p pos removed a critical edge
+ * 		   0 else
+ */
+static INLINE int was_edge_critical(const ir_node *bl, int pos) {
+	const ir_edge_t *edge;
+	const ir_node *bl_at_pos, *bl_before;
+	assert(is_Block(bl));
+
+	/* Does bl have several predecessors ?*/
+	if (get_irn_arity(bl) <= 1)
+		return 0;
+
+	/* Does the pred have exactly one predecessor */
+	bl_at_pos = get_irn_n(bl, pos);
+	if (get_irn_arity(bl_at_pos) != 1)
+		return 0;
+
+	/* Does the pred of the pred have several sucsecessors */
+	bl_before = get_irn_n(bl_at_pos, 0);
+	edge = get_block_succ_first(bl_before);
+	return get_block_succ_next(bl_before, edge) ? 1 : 0;
+}
+
+/**
  * Collect phi node data
  */
 static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
  	int arity, i;
+ 	ir_node *phi_bl;
 	assert(is_Phi(phi));
 
 	/* count all phi phis */
@@ -149,10 +175,11 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 	else
 		curr_vals[I_PHI_ARITY_S + arity]++;
 
+	phi_bl = get_nodes_block(phi);
 	/* type of argument {self, const, pred, glob} */
 	for (i = 0; i < arity; i++) {
         ir_node *block_of_arg, *block_ith_pred;
-		ir_node *cfg_node, *arg = get_irn_n(phi, i);
+		ir_node *arg = get_irn_n(phi, i);
 
 		if (arg == phi) {
 			curr_vals[I_PHI_ARG_SELF]++;
@@ -164,17 +191,12 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 			continue;
 		}
 
-		block_of_arg = get_nodes_block(arg);
-
 		/* get the pred block skipping blocks on critical edges */
-		cfg_node = get_irn_n(get_nodes_block(phi), i);
-		block_ith_pred = get_nodes_block(cfg_node);
-		if (get_irn_opcode(cfg_node) == iro_Jmp && get_irn_arity(block_ith_pred) == 1) {
-			/* Then cfg_node_block has exactly 1 pred and 1 succ block,
-			 * thus it must have been inserted during remove_critical_edges */
+		block_ith_pred = get_Block_cfgpred_block(phi_bl, i);
+		if (was_edge_critical(phi_bl, i))
 			block_ith_pred = get_Block_cfgpred_block(block_ith_pred, 0);
-		}
 
+		block_of_arg = get_nodes_block(arg);
 		if (block_of_arg == block_ith_pred) {
 			curr_vals[I_PHI_ARG_PRED]++;
 			continue;
@@ -215,8 +237,11 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 
 	/* get an array of all members for double iterating */
 	members = xmalloc(size * sizeof(*members));
-	for (i = 0, p = pset_first(pc); p; p = pset_next(pc))
+	DBG((dbg, LEVEL_2, "Phi-class:\n"));
+	for (i = 0, p = pset_first(pc); p; p = pset_next(pc)) {
+		DBG((dbg, LEVEL_2, "  %+F\n", p));
 		members[i++] = p;
+	}
 	assert(i == size);
 
 	/* determine number of phis on this class */
