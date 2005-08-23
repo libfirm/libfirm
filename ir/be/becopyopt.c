@@ -35,6 +35,7 @@ static firm_dbg_module_t *dbg = NULL;
 /**
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
+ * TODO: This runs in 2^n in worst case. Use a heuristic iff n>???
  */
 static int ou_max_ind_set_costs(unit_t *ou) {
 	be_chordal_env_t *chordal_env = ou->co->chordal_env;
@@ -275,8 +276,10 @@ int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
 		/* for phis the copies are placed in the corresponding pred-block */
 		loop = get_irn_loop(get_Block_cfgpred_block(root_block, pos));
 	}
-	if (loop)
-		cost = 2*get_loop_depth(loop);
+	if (loop) {
+		int d = get_loop_depth(loop);
+		cost = d*d;
+	}
 	return cost+1;
 }
 
