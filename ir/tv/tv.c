@@ -44,7 +44,6 @@
 
 #include "tv_t.h"
 #include "set.h"            /* to store tarvals in */
-/* #include "tune.h" */          /* some constants */
 #include "entity_t.h"       /* needed to store pointers to entities */
 #include "irmode_t.h"
 #include "irnode.h"         /* defines boolean return values (pnc_number)*/
@@ -59,8 +58,11 @@
 #define GET_OVERFLOW_MODE() int_overflow_mode
 
 /* unused, float to int doesn't work yet */
-#define TRUNCATE 1
-#define ROUND 2
+enum float_to_int_mode {
+  TRUNCATE,
+  ROUND
+};
+
 #define GET_FLOAT_TO_INT_MODE() TRUNCATE
 
 #define SWITCH_NOINFINITY 0
@@ -315,7 +317,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 tarval *new_tarval_from_long(long l, ir_mode *mode)
 {
   ANNOUNCE();
-  assert(mode && !((get_mode_sort(mode) == irms_memory)||(get_mode_sort(mode)==irms_control_flow)||(get_mode_sort(mode)==irms_auxiliary)));
+  assert(mode);
 
   switch(get_mode_sort(mode))
   {
@@ -335,7 +337,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
       return l ? tarval_bad : get_tarval(NULL, 0, mode);  /* null pointer or tarval_bad */
 
     default:
-      assert(0);
+      assert(0 && "unsupported mode sort");
   }
   return NULL;
 }
@@ -343,8 +345,10 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
 /* returns non-zero if can be converted to long */
 int tarval_is_long(tarval *tv)
 {
+  mode_sort sort = get_mode_sort(tv->mode);
+
   ANNOUNCE();
-  if (get_mode_sort(tv->mode) != irms_int_number) return 0;
+  if (sort != irms_int_number && sort != irms_character) return 0;
 
   if (get_mode_size_bits(tv->mode) > sizeof(long)<<3)
   {
@@ -891,9 +895,10 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
               fc_rnd(src->value, NULL);
               break;
             default:
+              assert(0);
               break;
           }
-          /* XXX floating point unit can't produce a value in integer
+          /* FIXME: floating point unit can't produce a value in integer
            * representation
            * an intermediate representation is needed here first. */
           /*  return get_tarval(); */
