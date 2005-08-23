@@ -20,7 +20,7 @@
 
 #include "irgwalk.h"
 #include "irprintf.h"
-#include "irouts.h"
+#include "iredges_t.h"
 
 #include "belive_t.h"
 #include "bechordal_t.h"
@@ -278,9 +278,10 @@ static color_t *reg_to_color(const draw_chordal_env_t *env,
     ir_node *rel_bl, ir_node *irn, color_t *color)
 {
   int i, n, phi_arg = 0;
+  const ir_edge_t *edge;
 
-  for(i = 0, n = get_irn_n_outs(irn); i < n && !phi_arg; ++i)
-    phi_arg |= is_Phi(get_irn_out(irn, i));
+  foreach_out_edge(irn, edge)
+    phi_arg |= is_Phi(edge->src);
 
 #if 1
   color->r = is_Phi(irn) ? 0.5 : 0.0;
