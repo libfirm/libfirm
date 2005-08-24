@@ -110,15 +110,16 @@ init_firm(const firm_parameter_t *param)
 void free_firm(void) {
   int i;
 
-  for (i = 0; i < get_irp_n_irgs(); i++)
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i)
     free_ir_graph(get_irp_irg(i));
 
-  for (i = 0; i < get_irp_n_types(); i++) {
-    free_type_entities(get_irp_type(i));
-    free_type(get_irp_type(i));
-  }
-
   free_type_entities(get_glob_type());
+  for (i = get_irp_n_types() - 1; i >= 0; --i)
+    free_type_entities(get_irp_type(i));
+
+  for (i = get_irp_n_types() - 1; i >= 0; --i)
+    free_type(get_irp_type(i));
+
   free_ir_prog();
 
   finish_tarval();
