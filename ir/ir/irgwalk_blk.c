@@ -206,7 +206,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
   block_entry_t *entry;
   ir_node       *block;
 
-  set_irn_visited(node, current_ir_graph->visited);
+  mark_irn_visited(node);
 
   if (node->op == op_Block) {
     /* predecessors of a block are control flow nodes */
@@ -214,7 +214,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
       ir_node *pred = get_irn_n(node, i);
       ir_node *blk  = get_nodes_block(pred);
 
-      if (pred->visited < current_ir_graph->visited) {
+      if (irn_not_visited(pred)) {
         collect_walk(pred, env);
 
         /* control flow predecessors are always block inputs */
@@ -237,24 +237,28 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
   else {
     block = get_nodes_block(node);
 
-    if (block->visited < current_ir_graph->visited)
+    if (irn_not_visited(block))
       collect_walk(block, env);
 
     is_phi = is_Phi(node);
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(node, i);
-      ir_node *blk  = get_nodes_block(pred);
 
-      if (pred->visited < current_ir_graph->visited) {
+      if (irn_not_visited(pred)) {
         collect_walk(pred, env);
 
-        /*
-         * Note that Phi predecessors are always block entries
-         * because Phi edges are always "outside" a block
-         */
-        if (block != blk || is_phi) {
-          entry = block_find_entry(blk, env);
-          ARR_APP1(ir_node *, entry->entry_list, pred);
+      /* BEWARE: predecessors of End nodes might be blocks */
+      if (is_no_Block(pred)) {
+        ir_node *blk  = get_nodes_block(pred);
+
+          /*
+           * Note that Phi predecessors are always block entries
+           * because Phi edges are always "outside" a block
+           */
+          if (block != blk || is_phi) {
+            entry = block_find_entry(blk, env);
+            ARR_APP1(ir_node *, entry->entry_list, pred);
+          }
         }
       }
     }
@@ -270,7 +274,7 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
 {
   int i;
 
-  set_irn_visited(node, current_ir_graph->visited);
+  mark_irn_visited(node);
 
   /*
    * Do not descent into Phi predecessors, these are always
@@ -280,12 +284,16 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
   if (! is_Phi(node)) {
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(node, i);
-      ir_node *blk  = get_nodes_block(pred);
 
-      if (pred->visited < current_ir_graph->visited) {
-        if (block != blk)
-          continue;
-        collect_blks_lists(pred, block, entry, env);
+      /* BEWARE: predecessors of End nodes might be blocks */
+      if (is_no_Block(pred)) {
+        ir_node *blk  = get_nodes_block(pred);
+
+        if (irn_not_visited(pred)) {
+          if (block != blk)
+            continue;
+          collect_blks_lists(pred, block, entry, env);
+        }
       }
     }
   }
