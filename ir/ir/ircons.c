@@ -62,17 +62,15 @@ typedef struct Phi_in_stack Phi_in_stack;
  */
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
-/* --------------------------------------------- */
-/* private interfaces, for professional use only */
-/* --------------------------------------------- */
 
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
    Phi node construction. */
-ir_node *
-new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
+static ir_node *
+new_bd_Block (dbg_info *db,  int arity, ir_node **in)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node (db, irg, NULL, op_Block, mode_BB, arity, in);
   set_Block_matured(res, 1);
@@ -91,10 +89,11 @@ new_rd_Block (dbg_info* db, ir_graph *irg,  int arity, ir_node **in)
   return res;
 }
 
-ir_node *
-new_rd_Start (dbg_info* db, ir_graph *irg, ir_node *block)
+static ir_node *
+new_bd_Start (dbg_info *db, ir_node *block)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Start, mode_T, 0, NULL);
   /* res->attr.start.irg = irg; */
@@ -103,10 +102,11 @@ new_rd_Start (dbg_info* db, ir_graph *irg, ir_node *block)
   return res;
 }
 
-ir_node *
-new_rd_End (dbg_info* db, ir_graph *irg, ir_node *block)
+static ir_node *
+new_bd_End (dbg_info *db, ir_node *block)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_End, mode_X, -1, NULL);
 
@@ -116,10 +116,11 @@ new_rd_End (dbg_info* db, ir_graph *irg, ir_node *block)
 
 /* Creates a Phi node with all predecessors.  Calling this constructor
    is only allowed if the corresponding block is mature.  */
-ir_node *
-new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in, ir_mode *mode)
+static ir_node *
+new_bd_Phi (dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
   int i;
   bool has_unknown = false;
 
@@ -148,10 +149,11 @@ new_rd_Phi (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in
   return res;
 }
 
-ir_node *
-new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con, type *tp)
+static ir_node *
+new_bd_Const_type (dbg_info *db, ir_node *block, ir_mode *mode, tarval *con, type *tp)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node (db, irg, irg->start_block, op_Const, mode, 0, NULL);
   res->attr.con.tv = con;
@@ -163,22 +165,27 @@ new_rd_Const_type (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, t
   return res;
 }
 
-ir_node *
-new_rd_Const (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
+static ir_node *
+new_bd_Const (dbg_info *db, ir_node *block, ir_mode *mode, tarval *con)
 {
+  ir_graph *irg = current_ir_graph;
+
   return new_rd_Const_type (db, irg, block, mode, con, firm_unknown_type);
 }
 
-ir_node *
-new_rd_Const_long (dbg_info* db, ir_graph *irg, ir_node *block, ir_mode *mode, long value)
+static ir_node *
+new_bd_Const_long (dbg_info *db, ir_node *block, ir_mode *mode, long value)
 {
-    return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
+  ir_graph *irg = current_ir_graph;
+
+  return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
 }
 
-ir_node *
-new_rd_Id (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *val, ir_mode *mode)
+static ir_node *
+new_bd_Id (dbg_info *db, ir_node *block, ir_node *val, ir_mode *mode)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Id, mode, 1, &val);
   res = optimize_node(res);
@@ -186,11 +193,12 @@ new_rd_Id (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *val, ir_mode *m
   return res;
 }
 
-ir_node *
-new_rd_Proj (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *mode,
+static ir_node *
+new_bd_Proj (dbg_info *db, ir_node *block, ir_node *arg, ir_mode *mode,
         long proj)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node (db, irg, block, op_Proj, mode, 1, &arg);
   res->attr.proj = proj;
@@ -206,11 +214,13 @@ new_rd_Proj (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode 
 
 }
 
-ir_node *
-new_rd_defaultProj (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *arg,
+static ir_node *
+new_bd_defaultProj (dbg_info *db, ir_node *block, ir_node *arg,
            long max_proj)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
   assert(arg->op == op_Cond);
   arg->attr.c.kind = fragmentary;
   arg->attr.c.default_proj = max_proj;
@@ -218,10 +228,11 @@ new_rd_defaultProj (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *arg,
   return res;
 }
 
-ir_node *
-new_rd_Conv (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *mode)
+static ir_node *
+new_bd_Conv (dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Conv, mode, 1, &op);
   res = optimize_node(res);
@@ -229,10 +240,11 @@ new_rd_Conv (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *
   return res;
 }
 
-ir_node *
-new_rd_Cast (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, type *to_tp)
+static ir_node *
+new_bd_Cast (dbg_info *db, ir_node *block, ir_node *op, type *to_tp)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   assert(is_atomic_type(to_tp));
 
@@ -243,10 +255,11 @@ new_rd_Cast (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *op, type *to_
   return res;
 }
 
-ir_node *
-new_rd_Tuple (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in)
+static ir_node *
+new_bd_Tuple (dbg_info *db, ir_node *block, int arity, ir_node **in)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Tuple, mode_T, arity, in);
   res = optimize_node (res);
@@ -254,12 +267,13 @@ new_rd_Tuple (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **
   return res;
 }
 
-ir_node *
-new_rd_Add (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Add (dbg_info *db, ir_node *block,
        ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op1;
   in[1] = op2;
@@ -269,12 +283,13 @@ new_rd_Add (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Sub (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Sub (dbg_info *db, ir_node *block,
        ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op1;
   in[1] = op2;
@@ -284,11 +299,12 @@ new_rd_Sub (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Minus (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Minus (dbg_info *db, ir_node *block,
               ir_node *op, ir_mode *mode)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Minus, mode, 1, &op);
   res = optimize_node(res);
@@ -296,12 +312,13 @@ new_rd_Minus (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Mul (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Mul (dbg_info *db, ir_node *block,
        ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op1;
   in[1] = op2;
@@ -311,12 +328,13 @@ new_rd_Mul (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Quot (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Quot (dbg_info *db, ir_node *block,
             ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  ir_node *in[3];
-  ir_node *res;
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = memop;
   in[1] = op1;
@@ -327,12 +345,13 @@ new_rd_Quot (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_DivMod (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_DivMod (dbg_info *db, ir_node *block,
           ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  ir_node *in[3];
-  ir_node *res;
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = memop;
   in[1] = op1;
@@ -343,12 +362,13 @@ new_rd_DivMod (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Div (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Div (dbg_info *db, ir_node *block,
            ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  ir_node *in[3];
-  ir_node *res;
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = memop;
   in[1] = op1;
@@ -359,12 +379,13 @@ new_rd_Div (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Mod (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Mod (dbg_info *db, ir_node *block,
            ir_node *memop, ir_node *op1, ir_node *op2)
 {
-  ir_node *in[3];
-  ir_node *res;
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = memop;
   in[1] = op1;
@@ -375,12 +396,13 @@ new_rd_Mod (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_And (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_And (dbg_info *db, ir_node *block,
            ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op1;
   in[1] = op2;
@@ -390,12 +412,13 @@ new_rd_And (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Or (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Or (dbg_info *db, ir_node *block,
           ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op1;
   in[1] = op2;
@@ -405,12 +428,13 @@ new_rd_Or (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Eor (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Eor (dbg_info *db, ir_node *block,
           ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op1;
   in[1] = op2;
@@ -420,11 +444,12 @@ new_rd_Eor (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Not    (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Not    (dbg_info *db, ir_node *block,
           ir_node *op, ir_mode *mode)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Not, mode, 1, &op);
   res = optimize_node(res);
@@ -432,12 +457,13 @@ new_rd_Not    (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Shl (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Shl (dbg_info *db, ir_node *block,
           ir_node *op, ir_node *k, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op;
   in[1] = k;
@@ -447,12 +473,13 @@ new_rd_Shl (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Shr (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Shr (dbg_info *db, ir_node *block,
        ir_node *op, ir_node *k, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op;
   in[1] = k;
@@ -462,12 +489,13 @@ new_rd_Shr (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Shrs (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Shrs (dbg_info *db, ir_node *block,
        ir_node *op, ir_node *k, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op;
   in[1] = k;
@@ -477,12 +505,13 @@ new_rd_Shrs (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Rot (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Rot (dbg_info *db, ir_node *block,
        ir_node *op, ir_node *k, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = op;
   in[1] = k;
@@ -492,11 +521,12 @@ new_rd_Rot (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Abs (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Abs (dbg_info *db, ir_node *block,
        ir_node *op, ir_mode *mode)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Abs, mode, 1, &op);
   res = optimize_node (res);
@@ -504,12 +534,14 @@ new_rd_Abs (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Cmp (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Cmp (dbg_info *db, ir_node *block,
        ir_node *op1, ir_node *op2)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
   in[0] = op1;
   in[1] = op2;
 
@@ -519,10 +551,11 @@ new_rd_Cmp (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Jmp (dbg_info* db, ir_graph *irg, ir_node *block)
+static ir_node *
+new_bd_Jmp (dbg_info *db, ir_node *block)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node (db, irg, block, op_Jmp, mode_X, 0, NULL);
   res = optimize_node (res);
@@ -530,10 +563,11 @@ new_rd_Jmp (dbg_info* db, ir_graph *irg, ir_node *block)
   return res;
 }
 
-ir_node *
-new_rd_IJmp (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *tgt)
+static ir_node *
+new_bd_IJmp (dbg_info *db, ir_node *block, ir_node *tgt)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node (db, irg, block, op_IJmp, mode_X, 1, &tgt);
   res = optimize_node (res);
@@ -544,10 +578,11 @@ new_rd_IJmp (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *tgt)
   return res;
 }
 
-ir_node *
-new_rd_Cond (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *c)
+static ir_node *
+new_bd_Cond (dbg_info *db, ir_node *block, ir_node *c)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   res = new_ir_node (db, irg, block, op_Cond, mode_T, 1, &c);
   res->attr.c.kind         = dense;
@@ -557,13 +592,14 @@ new_rd_Cond (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *c)
   return res;
 }
 
-ir_node *
-new_rd_Call (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
+static ir_node *
+new_bd_Call (dbg_info *db, ir_node *block, ir_node *store,
         ir_node *callee, int arity, ir_node **in, type *tp)
 {
-  ir_node **r_in;
-  ir_node *res;
-  int r_arity;
+  ir_node  **r_in;
+  ir_node  *res;
+  int      r_arity;
+  ir_graph *irg = current_ir_graph;
 
   r_arity = arity+2;
   NEW_ARR_A(ir_node *, r_in, r_arity);
@@ -582,13 +618,14 @@ new_rd_Call (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
   return res;
 }
 
-ir_node *
-new_rd_Return (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Return (dbg_info *db, ir_node *block,
               ir_node *store, int arity, ir_node **in)
 {
-  ir_node **r_in;
-  ir_node *res;
-  int r_arity;
+  ir_node  **r_in;
+  ir_node  *res;
+  int      r_arity;
+  ir_graph *irg = current_ir_graph;
 
   r_arity = arity+1;
   NEW_ARR_A (ir_node *, r_in, r_arity);
@@ -600,11 +637,12 @@ new_rd_Return (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Raise (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *obj)
+static ir_node *
+new_bd_Raise (dbg_info *db, ir_node *block, ir_node *store, ir_node *obj)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = store;
   in[1] = obj;
@@ -614,12 +652,13 @@ new_rd_Raise (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_no
   return res;
 }
 
-ir_node *
-new_rd_Load (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Load (dbg_info *db, ir_node *block,
         ir_node *store, ir_node *adr, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = store;
   in[1] = adr;
@@ -632,12 +671,13 @@ new_rd_Load (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Store (dbg_info* db, ir_graph *irg, ir_node *block,
+static ir_node *
+new_bd_Store (dbg_info *db, ir_node *block,
          ir_node *store, ir_node *adr, ir_node *val)
 {
-  ir_node *in[3];
-  ir_node *res;
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = store;
   in[1] = adr;
@@ -650,12 +690,13 @@ new_rd_Store (dbg_info* db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *
-new_rd_Alloc (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
+static ir_node *
+new_bd_Alloc (dbg_info *db, ir_node *block, ir_node *store,
         ir_node *size, type *alloc_type, where_alloc where)
 {
-  ir_node *in[2];
-  ir_node *res;
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = store;
   in[1] = size;
@@ -668,12 +709,13 @@ new_rd_Alloc (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
   return res;
 }
 
-ir_node *
-new_rd_Free (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
+static ir_node *
+new_bd_Free (dbg_info *db, ir_node *block, ir_node *store,
         ir_node *ptr, ir_node *size, type *free_type, where_alloc where)
 {
-  ir_node *in[3];
-  ir_node *res;
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
 
   in[0] = store;
   in[1] = ptr;
@@ -686,13 +728,14 @@ new_rd_Free (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store,
   return res;
 }
 
-ir_node *
-new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
+static ir_node *
+new_bd_Sel (dbg_info *db, ir_node *block, ir_node *store, ir_node *objptr,
            int arity, ir_node **in, entity *ent)
 {
-  ir_node **r_in;
-  ir_node *res;
-  int r_arity;
+  ir_node  **r_in;
+  ir_node  *res;
+  int      r_arity;
+  ir_graph *irg = current_ir_graph;
 
   assert(ent != NULL && is_entity(ent) && "entity expected in Sel construction");
 
@@ -711,13 +754,14 @@ new_rd_Sel (dbg_info* db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
   return res;
 }
 
-ir_node *
-new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+static ir_node *
+new_bd_InstOf (dbg_info *db, ir_node *block, ir_node *store,
            ir_node *objptr, type *ent)
 {
-  ir_node **r_in;
-  ir_node *res;
-  int r_arity;
+  ir_node  **r_in;
+  ir_node  *res;
+  int      r_arity;
+  ir_graph *irg = current_ir_graph;
 
   r_arity = 2;
   NEW_ARR_A(ir_node *, r_in, r_arity);
@@ -732,11 +776,12 @@ new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
   return res;
 }
 
-ir_node *
-new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
+static ir_node *
+new_bd_SymConst_type (dbg_info *db, ir_node *block, symconst_symbol value,
               symconst_kind symkind, type *tp) {
-  ir_node *res;
-  ir_mode *mode;
+  ir_node  *res;
+  ir_mode  *mode;
+  ir_graph *irg = current_ir_graph;
 
   if ((symkind == symconst_addr_name) || (symkind == symconst_addr_ent))
     mode = mode_P_data;   /* FIXME: can be mode_P_code */
@@ -754,15 +799,761 @@ new_rd_SymConst_type (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symb
   return res;
 }
 
+static ir_node *
+new_bd_SymConst (dbg_info *db, ir_node *block, symconst_symbol value,
+         symconst_kind symkind)
+{
+  ir_graph *irg = current_ir_graph;
+
+  ir_node *res = new_rd_SymConst_type(db, irg, block, value, symkind, firm_unknown_type);
+  return res;
+}
+
+static ir_node *
+new_bd_Sync (dbg_info *db, ir_node *block, int arity, ir_node **in)
+{
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  res = new_ir_node(db, irg, block, op_Sync, mode_M, arity, in);
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_Confirm (dbg_info *db, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp)
+{
+  ir_node  *in[2], *res;
+  ir_graph *irg = current_ir_graph;
+
+  in[0] = val;
+  in[1] = bound;
+  res = new_ir_node (db, irg, block, op_Confirm, get_irn_mode(val), 2, in);
+  res->attr.confirm_cmp = cmp;
+  res = optimize_node (res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+/* this function is often called with current_ir_graph unset */
+static ir_node *
+new_bd_Unknown (ir_mode *m)
+{
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  res = new_ir_node(NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
+  res = optimize_node(res);
+  return res;
+}
+
+static ir_node *
+new_bd_CallBegin (dbg_info *db, ir_node *block, ir_node *call)
+{
+  ir_node  *in[1];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  in[0] = get_Call_ptr(call);
+  res = new_ir_node(db, irg, block, op_CallBegin, mode_T, 1, in);
+  /* res->attr.callbegin.irg = irg; */
+  res->attr.callbegin.call = call;
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_EndReg (dbg_info *db, ir_node *block)
+{
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  res = new_ir_node(db, irg, block, op_EndReg, mode_T, -1, NULL);
+  irg->end_reg = res;
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_EndExcept (dbg_info *db, ir_node *block)
+{
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  res = new_ir_node(db, irg, block, op_EndExcept, mode_T, -1, NULL);
+  irg->end_except = res;
+  IRN_VRFY_IRG (res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_Break (dbg_info *db, ir_node *block)
+{
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  res = new_ir_node(db, irg, block, op_Break, mode_X, 0, NULL);
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_Filter (dbg_info *db, ir_node *block, ir_node *arg, ir_mode *mode,
+           long proj)
+{
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  res = new_ir_node(db, irg, block, op_Filter, mode, 1, &arg);
+  res->attr.filter.proj = proj;
+  res->attr.filter.in_cg = NULL;
+  res->attr.filter.backedge = NULL;
+
+  assert(res);
+  assert(get_Proj_pred(res));
+  assert(get_nodes_block(get_Proj_pred(res)));
+
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_Mux  (dbg_info *db, ir_node *block,
+    ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode)
+{
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  in[0] = sel;
+  in[1] = ir_false;
+  in[2] = ir_true;
+
+  res = new_ir_node(db, irg, block, op_Mux, mode, 3, in);
+  assert(res);
+
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+/* --------------------------------------------- */
+/* private interfaces, for professional use only */
+/* --------------------------------------------- */
+
+/* Constructs a Block with a fixed number of predecessors.
+   Does not set current_block.  Can not be used with automatic
+   Phi node construction. */
 ir_node *
-new_rd_SymConst (dbg_info* db, ir_graph *irg, ir_node *block, symconst_symbol value,
+new_rd_Block (dbg_info *db, ir_graph *irg,  int arity, ir_node **in)
+{
+  ir_graph *rem    = current_ir_graph;
+  ir_node  *res;
+
+  current_ir_graph = irg;
+  res = new_bd_Block (db, arity, in);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Start (dbg_info *db, ir_graph *irg, ir_node *block)
+{
+  ir_graph *rem = current_ir_graph;
+  ir_node  *res;
+
+  current_ir_graph = irg;
+  res = new_bd_Start (db, block);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_End (dbg_info *db, ir_graph *irg, ir_node *block)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = rem;
+  res = new_bd_End (db, block);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+/* Creates a Phi node with all predecessors.  Calling this constructor
+   is only allowed if the corresponding block is mature.  */
+ir_node *
+new_rd_Phi (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph  = irg;
+  res = new_bd_Phi (db, block,arity, in, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Const_type (dbg_info *db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con, type *tp)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph  = irg;
+  res = new_bd_Const_type (db, block, mode, con, tp);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Const (dbg_info *db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Const_type (db, block, mode, con, firm_unknown_type);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Const_long (dbg_info *db, ir_graph *irg, ir_node *block, ir_mode *mode, long value)
+{
+    return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
+}
+
+ir_node *
+new_rd_Id (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Id(db, block, val, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Proj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *mode,
+        long proj)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Proj(db, block, arg, mode, proj);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_defaultProj (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
+           long max_proj)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_defaultProj(db, block, arg, max_proj);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Conv (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Conv(db, block, op, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Cast (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, type *to_tp)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Cast(db, block, op, to_tp);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Tuple (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Tuple(db, block, arity, in);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Add (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op1, ir_node *op2, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Add(db, block, op1, op2, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Sub (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op1, ir_node *op2, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Sub(db, block, op1, op2, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Minus (dbg_info *db, ir_graph *irg, ir_node *block,
+              ir_node *op, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Minus(db, block, op, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Mul (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op1, ir_node *op2, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Mul(db, block, op1, op2, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Quot (dbg_info *db, ir_graph *irg, ir_node *block,
+            ir_node *memop, ir_node *op1, ir_node *op2)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Quot(db, block, memop, op1, op2);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
+          ir_node *memop, ir_node *op1, ir_node *op2)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_DivMod(db, block, memop, op1, op2);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Div (dbg_info *db, ir_graph *irg, ir_node *block,
+           ir_node *memop, ir_node *op1, ir_node *op2)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Div (db, block, memop, op1, op2);
+  current_ir_graph =rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Mod (dbg_info *db, ir_graph *irg, ir_node *block,
+           ir_node *memop, ir_node *op1, ir_node *op2)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Mod(db, block, memop, op1, op2);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_And (dbg_info *db, ir_graph *irg, ir_node *block,
+           ir_node *op1, ir_node *op2, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_And(db, block, op1, op2, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Or (dbg_info *db, ir_graph *irg, ir_node *block,
+          ir_node *op1, ir_node *op2, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Or(db, block, op1, op2, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Eor (dbg_info *db, ir_graph *irg, ir_node *block,
+          ir_node *op1, ir_node *op2, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Eor(db, block, op1, op2, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Not (dbg_info *db, ir_graph *irg, ir_node *block,
+          ir_node *op, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Not(db, block, op, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Shl (dbg_info *db, ir_graph *irg, ir_node *block,
+          ir_node *op, ir_node *k, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Shl (db, block, op, k, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Shr (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op, ir_node *k, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Shr(db, block, op, k, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Shrs (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op, ir_node *k, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Shrs(db, block, op, k, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Rot (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op, ir_node *k, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Rot(db, block, op, k, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Abs (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Abs(db, block, op, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Cmp (dbg_info *db, ir_graph *irg, ir_node *block,
+       ir_node *op1, ir_node *op2)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Cmp(db, block, op1, op2);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Jmp (dbg_info *db, ir_graph *irg, ir_node *block)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Jmp(db, block);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_IJmp (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *tgt)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_IJmp(db, block, tgt);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Cond (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Cond(db, block, c);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Call (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+        ir_node *callee, int arity, ir_node **in, type *tp)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Call(db, block, store, callee, arity, in, tp);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
+              ir_node *store, int arity, ir_node **in)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Return(db, block, store, arity, in);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Raise (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *obj)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Raise(db, block, store, obj);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Load (dbg_info *db, ir_graph *irg, ir_node *block,
+        ir_node *store, ir_node *adr, ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Load(db, block, store, adr, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Store (dbg_info *db, ir_graph *irg, ir_node *block,
+         ir_node *store, ir_node *adr, ir_node *val)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Store(db, block, store, adr, val);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Alloc (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+        ir_node *size, type *alloc_type, where_alloc where)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Alloc (db, block, store, size, alloc_type, where);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Free (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+        ir_node *ptr, ir_node *size, type *free_type, where_alloc where)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Free(db, block, store, ptr, size, free_type, where);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Sel (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
+           int arity, ir_node **in, entity *ent)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Sel(db, block, store, objptr, arity, in, ent);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+           ir_node *objptr, type *ent)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_InstOf(db, block, store, objptr, ent);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_SymConst_type (dbg_info *db, ir_graph *irg, ir_node *block, symconst_symbol value,
+              symconst_kind symkind, type *tp)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_SymConst_type(db, block, value, symkind, tp);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block, symconst_symbol value,
          symconst_kind symkind)
 {
   ir_node *res = new_rd_SymConst_type(db, irg, block, value, symkind, firm_unknown_type);
   return res;
 }
 
-ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, type *tp) {
+ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, type *tp)
+{
   symconst_symbol sym = {(type *)symbol};
   return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_addr_ent, tp);
 }
@@ -783,13 +1574,15 @@ ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, type *symbol, type *
 }
 
 ir_node *
-new_rd_Sync (dbg_info* db, ir_graph *irg, ir_node *block, int arity, ir_node **in)
+new_rd_Sync (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
 
-  res = new_ir_node(db, irg, block, op_Sync, mode_M, arity, in);
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
+  current_ir_graph = irg;
+  res = new_bd_Sync(db, block, arity, in);
+  current_ir_graph = rem;
+
   return res;
 }
 
@@ -802,14 +1595,13 @@ new_rd_Bad (ir_graph *irg)
 ir_node *
 new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp)
 {
-  ir_node *in[2], *res;
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
 
-  in[0] = val;
-  in[1] = bound;
-  res = new_ir_node (db, irg, block, op_Confirm, get_irn_mode(val), 2, in);
-  res->attr.confirm_cmp = cmp;
-  res = optimize_node (res);
-  IRN_VRFY_IRG(res, irg);
+  current_ir_graph = irg;
+  res = new_bd_Confirm(db, block, val, bound, cmp);
+  current_ir_graph = rem;
+
   return res;
 }
 
@@ -817,28 +1609,26 @@ new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_no
 ir_node *
 new_rd_Unknown (ir_graph *irg, ir_mode *m)
 {
+  ir_node  *res;
   ir_graph *rem = current_ir_graph;
-  ir_node *res;
 
   current_ir_graph = irg;
-  res = new_ir_node(NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
-  res = optimize_node(res);
+  res = new_bd_Unknown(m);
   current_ir_graph = rem;
+
   return res;
 }
 
 ir_node *
 new_rd_CallBegin (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *call)
 {
-  ir_node *in[1];
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
 
-  in[0] = get_Call_ptr(call);
-  res = new_ir_node(db, irg, block, op_CallBegin, mode_T, 1, in);
-  /* res->attr.callbegin.irg = irg; */
-  res->attr.callbegin.call = call;
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
+  current_ir_graph = irg;
+  res = new_bd_CallBegin(db, block, call);
+  current_ir_graph = rem;
+
   return res;
 }
 
@@ -867,11 +1657,13 @@ new_rd_EndExcept (dbg_info *db, ir_graph *irg, ir_node *block)
 ir_node *
 new_rd_Break (dbg_info *db, ir_graph *irg, ir_node *block)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
 
-  res = new_ir_node(db, irg, block, op_Break, mode_X, 0, NULL);
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
+  current_ir_graph = irg;
+  res = new_bd_Break(db, block);
+  current_ir_graph = rem;
+
   return res;
 }
 
@@ -879,19 +1671,13 @@ ir_node *
 new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *mode,
            long proj)
 {
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
 
-  res = new_ir_node(db, irg, block, op_Filter, mode, 1, &arg);
-  res->attr.filter.proj = proj;
-  res->attr.filter.in_cg = NULL;
-  res->attr.filter.backedge = NULL;
+  current_ir_graph = irg;
+  res = new_bd_Filter(db, block, arg, mode, proj);
+  current_ir_graph = rem;
 
-  assert(res);
-  assert(get_Proj_pred(res));
-  assert(get_nodes_block(get_Proj_pred(res)));
-
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
   return res;
 }
 
@@ -904,18 +1690,13 @@ ir_node *
 new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode)
 {
-  ir_node *in[3];
-  ir_node *res;
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
 
-  in[0] = sel;
-  in[1] = ir_false;
-  in[2] = ir_true;
+  current_ir_graph = irg;
+  res = new_bd_Mux(db, block, sel, ir_false, ir_true, mode);
+  current_ir_graph = rem;
 
-  res = new_ir_node(db, irg, block, op_Mux, mode, 3, in);
-  assert(res);
-
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
   return res;
 }
 
@@ -1144,7 +1925,7 @@ ir_node *new_r_Mux (ir_graph *irg, ir_node *block,
  *
  */
 ir_node *
-new_d_Start (dbg_info* db)
+new_d_Start (dbg_info *db)
 {
   ir_node *res;
 
@@ -1158,7 +1939,7 @@ new_d_Start (dbg_info* db)
 }
 
 ir_node *
-new_d_End (dbg_info* db)
+new_d_End (dbg_info *db)
 {
   ir_node *res;
   res = new_ir_node(db, current_ir_graph,  current_ir_graph->current_block,
@@ -1173,13 +1954,13 @@ new_d_End (dbg_info* db)
    Does set current_block.  Can be used with automatic Phi
    node construction. */
 ir_node *
-new_d_Block (dbg_info* db, int arity, ir_node **in)
+new_d_Block (dbg_info *db, int arity, ir_node **in)
 {
   ir_node *res;
   int i;
   bool has_unknown = false;
 
-  res = new_rd_Block(db, current_ir_graph, arity, in);
+  res = new_bd_Block(db, arity, in);
 
   /* Create and initialize array for Phi-node construction. */
   if (get_irg_phase_state(current_ir_graph) == phase_building) {
@@ -2013,49 +2794,49 @@ mature_immBlock (ir_node *block)
 }
 
 ir_node *
-new_d_Phi (dbg_info* db, int arity, ir_node **in, ir_mode *mode)
+new_d_Phi (dbg_info *db, int arity, ir_node **in, ir_mode *mode)
 {
-  return new_rd_Phi(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Phi(db, current_ir_graph->current_block,
             arity, in, mode);
 }
 
 ir_node *
-new_d_Const (dbg_info* db, ir_mode *mode, tarval *con)
+new_d_Const (dbg_info *db, ir_mode *mode, tarval *con)
 {
-  return new_rd_Const(db, current_ir_graph, current_ir_graph->start_block,
+  return new_bd_Const(db, current_ir_graph->start_block,
               mode, con);
 }
 
 ir_node *
-new_d_Const_long(dbg_info* db, ir_mode *mode, long value)
+new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 {
-  return new_rd_Const_long(db, current_ir_graph, current_ir_graph->start_block, mode, value);
+  return new_bd_Const_long(db, current_ir_graph->start_block, mode, value);
 }
 
 ir_node *
-new_d_Const_type (dbg_info* db, ir_mode *mode, tarval *con, type *tp)
+new_d_Const_type (dbg_info *db, ir_mode *mode, tarval *con, type *tp)
 {
-  return new_rd_Const_type(db, current_ir_graph, current_ir_graph->start_block,
+  return new_bd_Const_type(db, current_ir_graph->start_block,
                 mode, con, tp);
 }
 
 
 ir_node *
-new_d_Id (dbg_info* db, ir_node *val, ir_mode *mode)
+new_d_Id (dbg_info *db, ir_node *val, ir_mode *mode)
 {
-  return new_rd_Id(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Id(db, current_ir_graph->current_block,
            val, mode);
 }
 
 ir_node *
-new_d_Proj (dbg_info* db, ir_node *arg, ir_mode *mode, long proj)
+new_d_Proj (dbg_info *db, ir_node *arg, ir_mode *mode, long proj)
 {
-  return new_rd_Proj(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Proj(db, current_ir_graph->current_block,
              arg, mode, proj);
 }
 
 ir_node *
-new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj)
+new_d_defaultProj (dbg_info *db, ir_node *arg, long max_proj)
 {
   ir_node *res;
   assert(arg->op == op_Cond);
@@ -2066,51 +2847,51 @@ new_d_defaultProj (dbg_info* db, ir_node *arg, long max_proj)
 }
 
 ir_node *
-new_d_Conv (dbg_info* db, ir_node *op, ir_mode *mode)
+new_d_Conv (dbg_info *db, ir_node *op, ir_mode *mode)
 {
-  return new_rd_Conv(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Conv(db, current_ir_graph->current_block,
              op, mode);
 }
 
 ir_node *
-new_d_Cast (dbg_info* db, ir_node *op, type *to_tp)
+new_d_Cast (dbg_info *db, ir_node *op, type *to_tp)
 {
-  return new_rd_Cast(db, current_ir_graph, current_ir_graph->current_block, op, to_tp);
+  return new_bd_Cast(db, current_ir_graph->current_block, op, to_tp);
 }
 
 ir_node *
-new_d_Tuple (dbg_info* db, int arity, ir_node **in)
+new_d_Tuple (dbg_info *db, int arity, ir_node **in)
 {
-  return new_rd_Tuple(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Tuple(db, current_ir_graph->current_block,
               arity, in);
 }
 
 ir_node *
-new_d_Add (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
+new_d_Add (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  return new_rd_Add(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Add(db, current_ir_graph->current_block,
             op1, op2, mode);
 }
 
 ir_node *
-new_d_Sub (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
+new_d_Sub (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  return new_rd_Sub(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Sub(db, current_ir_graph->current_block,
             op1, op2, mode);
 }
 
 
 ir_node *
-new_d_Minus (dbg_info* db, ir_node *op,  ir_mode *mode)
+new_d_Minus (dbg_info *db, ir_node *op,  ir_mode *mode)
 {
-  return new_rd_Minus(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Minus(db, current_ir_graph->current_block,
               op, mode);
 }
 
 ir_node *
-new_d_Mul (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
+new_d_Mul (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  return new_rd_Mul(db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Mul(db, current_ir_graph->current_block,
             op1, op2, mode);
 }
 
@@ -2129,10 +2910,10 @@ static void allocate_frag_arr(ir_node *res, ir_op *op, ir_node ***frag_store) {
 
 
 ir_node *
-new_d_Quot (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
+new_d_Quot (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
 {
   ir_node *res;
-  res = new_rd_Quot (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_Quot (db, current_ir_graph->current_block,
              memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
@@ -2143,10 +2924,10 @@ new_d_Quot (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 }
 
 ir_node *
-new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
+new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
 {
   ir_node *res;
-  res = new_rd_DivMod (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_DivMod (db, current_ir_graph->current_block,
                memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
@@ -2157,10 +2938,10 @@ new_d_DivMod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 }
 
 ir_node *
-new_d_Div (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
+new_d_Div (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
 {
   ir_node *res;
-  res = new_rd_Div (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_Div (db, current_ir_graph->current_block,
             memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
@@ -2171,10 +2952,10 @@ new_d_Div (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 }
 
 ir_node *
-new_d_Mod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
+new_d_Mod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
 {
   ir_node *res;
-  res = new_rd_Mod (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_Mod (db, current_ir_graph->current_block,
             memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
@@ -2185,99 +2966,99 @@ new_d_Mod (dbg_info* db, ir_node *memop, ir_node *op1, ir_node *op2)
 }
 
 ir_node *
-new_d_And (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
+new_d_And (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  return new_rd_And (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_And (db, current_ir_graph->current_block,
             op1, op2, mode);
 }
 
 ir_node *
-new_d_Or (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
+new_d_Or (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  return new_rd_Or (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Or (db, current_ir_graph->current_block,
            op1, op2, mode);
 }
 
 ir_node *
-new_d_Eor (dbg_info* db, ir_node *op1, ir_node *op2, ir_mode *mode)
+new_d_Eor (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  return new_rd_Eor (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Eor (db, current_ir_graph->current_block,
             op1, op2, mode);
 }
 
 ir_node *
-new_d_Not (dbg_info* db, ir_node *op, ir_mode *mode)
+new_d_Not (dbg_info *db, ir_node *op, ir_mode *mode)
 {
-  return new_rd_Not (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Not (db, current_ir_graph->current_block,
             op, mode);
 }
 
 ir_node *
-new_d_Shl (dbg_info* db, ir_node *op, ir_node *k, ir_mode *mode)
+new_d_Shl (dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode)
 {
-  return new_rd_Shl (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Shl (db, current_ir_graph->current_block,
             op, k, mode);
 }
 
 ir_node *
-new_d_Shr (dbg_info* db, ir_node *op, ir_node *k, ir_mode *mode)
+new_d_Shr (dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode)
 {
-  return new_rd_Shr (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Shr (db, current_ir_graph->current_block,
             op, k, mode);
 }
 
 ir_node *
-new_d_Shrs (dbg_info* db, ir_node *op, ir_node *k, ir_mode *mode)
+new_d_Shrs (dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode)
 {
-  return new_rd_Shrs (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Shrs (db, current_ir_graph->current_block,
              op, k, mode);
 }
 
 ir_node *
-new_d_Rot (dbg_info* db, ir_node *op, ir_node *k, ir_mode *mode)
+new_d_Rot (dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode)
 {
-  return new_rd_Rot (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Rot (db, current_ir_graph->current_block,
              op, k, mode);
 }
 
 ir_node *
-new_d_Abs (dbg_info* db, ir_node *op, ir_mode *mode)
+new_d_Abs (dbg_info *db, ir_node *op, ir_mode *mode)
 {
-  return new_rd_Abs (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Abs (db, current_ir_graph->current_block,
             op, mode);
 }
 
 ir_node *
-new_d_Cmp (dbg_info* db, ir_node *op1, ir_node *op2)
+new_d_Cmp (dbg_info *db, ir_node *op1, ir_node *op2)
 {
-  return new_rd_Cmp (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Cmp (db, current_ir_graph->current_block,
             op1, op2);
 }
 
 ir_node *
-new_d_Jmp (dbg_info* db)
+new_d_Jmp (dbg_info *db)
 {
-  return new_rd_Jmp (db, current_ir_graph, current_ir_graph->current_block);
+  return new_bd_Jmp (db, current_ir_graph->current_block);
 }
 
 ir_node *
-new_d_IJmp (dbg_info* db, ir_node *tgt)
+new_d_IJmp (dbg_info *db, ir_node *tgt)
 {
-  return new_rd_IJmp (db, current_ir_graph, current_ir_graph->current_block, tgt);
+  return new_bd_IJmp (db, current_ir_graph->current_block, tgt);
 }
 
 ir_node *
-new_d_Cond (dbg_info* db, ir_node *c)
+new_d_Cond (dbg_info *db, ir_node *c)
 {
-  return new_rd_Cond (db, current_ir_graph, current_ir_graph->current_block, c);
+  return new_bd_Cond (db, current_ir_graph->current_block, c);
 }
 
 ir_node *
-new_d_Call (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **in,
+new_d_Call (dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node **in,
       type *tp)
 {
   ir_node *res;
-  res = new_rd_Call (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_Call (db, current_ir_graph->current_block,
              store, callee, arity, in, tp);
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);  /* Could be optimized away. */
@@ -2287,24 +3068,24 @@ new_d_Call (dbg_info* db, ir_node *store, ir_node *callee, int arity, ir_node **
 }
 
 ir_node *
-new_d_Return (dbg_info* db, ir_node* store, int arity, ir_node **in)
+new_d_Return (dbg_info *db, ir_node* store, int arity, ir_node **in)
 {
-  return new_rd_Return (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Return (db, current_ir_graph->current_block,
                store, arity, in);
 }
 
 ir_node *
-new_d_Raise (dbg_info* db, ir_node *store, ir_node *obj)
+new_d_Raise (dbg_info *db, ir_node *store, ir_node *obj)
 {
-  return new_rd_Raise (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Raise (db, current_ir_graph->current_block,
               store, obj);
 }
 
 ir_node *
-new_d_Load (dbg_info* db, ir_node *store, ir_node *addr, ir_mode *mode)
+new_d_Load (dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode)
 {
   ir_node *res;
-  res = new_rd_Load (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_Load (db, current_ir_graph->current_block,
              store, addr, mode);
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Load, &res->attr.load.exc.frag_arr);  /* Could be optimized away. */
@@ -2314,10 +3095,10 @@ new_d_Load (dbg_info* db, ir_node *store, ir_node *addr, ir_mode *mode)
 }
 
 ir_node *
-new_d_Store (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val)
+new_d_Store (dbg_info *db, ir_node *store, ir_node *addr, ir_node *val)
 {
   ir_node *res;
-  res = new_rd_Store (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_Store (db, current_ir_graph->current_block,
               store, addr, val);
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);  /* Could be optimized away. */
@@ -2327,11 +3108,11 @@ new_d_Store (dbg_info* db, ir_node *store, ir_node *addr, ir_node *val)
 }
 
 ir_node *
-new_d_Alloc (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
+new_d_Alloc (dbg_info *db, ir_node *store, ir_node *size, type *alloc_type,
            where_alloc where)
 {
   ir_node *res;
-  res = new_rd_Alloc (db, current_ir_graph, current_ir_graph->current_block,
+  res = new_bd_Alloc (db, current_ir_graph->current_block,
               store, size, alloc_type, where);
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Alloc, &res->attr.a.exc.frag_arr);  /* Could be optimized away. */
@@ -2341,54 +3122,54 @@ new_d_Alloc (dbg_info* db, ir_node *store, ir_node *size, type *alloc_type,
 }
 
 ir_node *
-new_d_Free (dbg_info* db, ir_node *store, ir_node *ptr,
+new_d_Free (dbg_info *db, ir_node *store, ir_node *ptr,
     ir_node *size, type *free_type, where_alloc where)
 {
-  return new_rd_Free (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Free (db, current_ir_graph->current_block,
              store, ptr, size, free_type, where);
 }
 
 ir_node *
-new_d_simpleSel (dbg_info* db, ir_node *store, ir_node *objptr, entity *ent)
+new_d_simpleSel (dbg_info *db, ir_node *store, ir_node *objptr, entity *ent)
 /* GL: objptr was called frame before.  Frame was a bad choice for the name
    as the operand could as well be a pointer to a dynamic object. */
 {
-  return new_rd_Sel (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Sel (db, current_ir_graph->current_block,
             store, objptr, 0, NULL, ent);
 }
 
 ir_node *
-new_d_Sel (dbg_info* db, ir_node *store, ir_node *objptr, int n_index, ir_node **index, entity *sel)
+new_d_Sel (dbg_info *db, ir_node *store, ir_node *objptr, int n_index, ir_node **index, entity *sel)
 {
-  return new_rd_Sel (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Sel (db, current_ir_graph->current_block,
             store, objptr, n_index, index, sel);
 }
 
 ir_node *
 new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, type *ent)
 {
-  return (new_rd_InstOf (db, current_ir_graph, current_ir_graph->current_block,
+  return (new_bd_InstOf (db, current_ir_graph->current_block,
                          store, objptr, ent));
 }
 
 ir_node *
-new_d_SymConst_type (dbg_info* db, symconst_symbol value, symconst_kind kind, type *tp)
+new_d_SymConst_type (dbg_info *db, symconst_symbol value, symconst_kind kind, type *tp)
 {
-  return new_rd_SymConst_type (db, current_ir_graph, current_ir_graph->start_block,
+  return new_bd_SymConst_type (db, current_ir_graph->start_block,
                          value, kind, tp);
 }
 
 ir_node *
-new_d_SymConst (dbg_info* db, symconst_symbol value, symconst_kind kind)
+new_d_SymConst (dbg_info *db, symconst_symbol value, symconst_kind kind)
 {
-  return new_rd_SymConst (db, current_ir_graph, current_ir_graph->start_block,
+  return new_bd_SymConst (db, current_ir_graph->start_block,
                          value, kind);
 }
 
 ir_node *
-new_d_Sync (dbg_info* db, int arity, ir_node** in)
+new_d_Sync (dbg_info *db, int arity, ir_node** in)
 {
-  return new_rd_Sync (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Sync (db, current_ir_graph->current_block,
               arity, in);
 }
 
@@ -2401,21 +3182,21 @@ ir_node *
 ir_node *
 new_d_Confirm (dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp)
 {
-  return new_rd_Confirm (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Confirm (db, current_ir_graph->current_block,
              val, bound, cmp);
 }
 
 ir_node *
 new_d_Unknown (ir_mode *m)
 {
-  return new_rd_Unknown(current_ir_graph, m);
+  return new_bd_Unknown(m);
 }
 
 ir_node *
 new_d_CallBegin (dbg_info *db, ir_node *call)
 {
   ir_node *res;
-  res = new_rd_CallBegin (db, current_ir_graph, current_ir_graph->current_block, call);
+  res = new_bd_CallBegin (db, current_ir_graph->current_block, call);
   return res;
 }
 
@@ -2423,7 +3204,7 @@ ir_node *
 new_d_EndReg (dbg_info *db)
 {
   ir_node *res;
-  res = new_rd_EndReg(db, current_ir_graph, current_ir_graph->current_block);
+  res = new_bd_EndReg(db, current_ir_graph->current_block);
   return res;
 }
 
@@ -2431,20 +3212,20 @@ ir_node *
 new_d_EndExcept (dbg_info *db)
 {
   ir_node *res;
-  res = new_rd_EndExcept(db, current_ir_graph, current_ir_graph->current_block);
+  res = new_bd_EndExcept(db, current_ir_graph->current_block);
   return res;
 }
 
 ir_node *
 new_d_Break (dbg_info *db)
 {
-  return new_rd_Break (db, current_ir_graph, current_ir_graph->current_block);
+  return new_bd_Break (db, current_ir_graph->current_block);
 }
 
 ir_node *
 new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj)
 {
-  return new_rd_Filter (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Filter (db, current_ir_graph->current_block,
             arg, mode, proj);
 }
 
@@ -2457,7 +3238,7 @@ ir_node *
 ir_node *
 new_d_Mux (dbg_info *db, ir_node *sel, ir_node *ir_false,
     ir_node *ir_true, ir_mode *mode) {
-  return new_rd_Mux (db, current_ir_graph, current_ir_graph->current_block,
+  return new_bd_Mux (db, current_ir_graph->current_block,
       sel, ir_false, ir_true, mode);
 }
 
@@ -2468,7 +3249,7 @@ new_d_Mux (dbg_info *db, ir_node *sel, ir_node *ir_false,
 
 /*  Block construction */
 /* immature Block without predecessors */
-ir_node *new_d_immBlock (dbg_info* db) {
+ir_node *new_d_immBlock (dbg_info *db) {
   ir_node *res;
 
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
@@ -2525,7 +3306,7 @@ set_cur_block (ir_node *target) {
 
 /* get a value from the parameter array from the current block by its index */
 ir_node *
-get_d_value (dbg_info* db, int pos, ir_mode *mode)
+get_d_value (dbg_info *db, int pos, ir_mode *mode)
 {
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
   inc_irg_visited(current_ir_graph);
