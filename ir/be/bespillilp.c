@@ -24,6 +24,7 @@
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
+#include <lpp/lpp_cplex.h>
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -39,8 +40,8 @@
 
 #define DBG_LEVEL SET_LEVEL_3
 
-#define DUMP_SOLUTION
-#define DUMP_ILP
+#undef DUMP_SOLUTION
+#undef DUMP_ILP
 
 #define LPP_SERVER "i44pc52"
 #define LPP_SOLVER "cplex"
@@ -645,7 +646,8 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 #endif
 
 	DBG((si.dbg, LEVEL_1, "%F\n", session_env->irg));
-	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
+//	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
+	lpp_solve_cplex(si.lpp);
 	assert(lpp_is_sol_valid(si.lpp) && "ILP not feasible");
 
 	assert(lpp_is_sol_valid(si.lpp) && "solution of ILP must be valid");

@@ -14,22 +14,20 @@
 #include <malloc.h>
 #endif
 
+#define PATH_CONSTRAINTS_FOR_CLASSES
+#undef PRECOLOR_MAX_CLIQUE
 #undef NO_NULL_COLORS
 #undef NO_NULL_COLORS_EXTRA_CSTS
 #undef NO_NULL_COLORS_WITH_COSTS
-
 #if (defined(NO_NULL_COLORS_EXTRA_CSTS) || defined(NO_NULL_COLORS_WITH_COSTS)) && !defined(NO_NULL_COLORS)
 #error Chose your weapon!
 #endif
-
-#undef PRECOLOR_MAX_CLIQUE
-#define PATH_CONSTRAINTS_FOR_CLASSES
 
 #include "irprog.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
-//#include <lpp/lpp_cplex.h>
+#include <lpp/lpp_cplex.h>
 #include <lpp/lpp_remote.h>
 #include "xmalloc.h"
 #include "pset.h"
@@ -890,8 +888,8 @@ static void pi_set_start_sol(problem_instance_t *pi) {
  */
 static void pi_solve_ilp(problem_instance_t *pi) {
 	pi_set_start_sol(pi);
-	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
-//	lpp_solve_cplex(pi->curr_lp);
+//	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
+	lpp_solve_cplex(pi->curr_lp);
 	DBG((dbg, LEVEL_1, "Solution time: %.2f\n", pi->curr_lp->sol_time));
 }
 
@@ -948,7 +946,7 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	sol = xmalloc((pi->last_x_var - pi->first_x_var + 1) * sizeof(*sol));
 	state = lpp_get_solution(pi->curr_lp, sol, pi->first_x_var, pi->last_x_var);
 	if (state != lpp_optimal) {
-		printf("Solution state is not 'optimal': %d\n", state);
+		printf("WARNING: Solution state is not 'optimal': %d\n", state);
 		assert(state >= lpp_feasible && "The solution should at least be feasible!");
 	}
 	for (i=0; i<pi->last_x_var - pi->first_x_var + 1; ++i) {

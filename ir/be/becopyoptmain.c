@@ -70,9 +70,9 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copystat_add_heur_costs(costs_heur);
 	DBG((dbg, LEVEL_1, "Heur costs: %3d\n", costs_heur));
 #endif
+	assert(lower_bound == -1 || costs_heur == -1 || lower_bound <= costs_heur);
 #endif
 
-	assert(lower_bound <= costs_heur);
 
 #ifdef DO_ILP
 	co_ilp_opt(co);
@@ -82,9 +82,9 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copystat_add_opt_costs(costs_ilp);
 	DBG((dbg, LEVEL_1, "Opt  costs: %3d\n", costs_ilp));
 #endif
+	assert(lower_bound == -1 || costs_ilp == -1 || lower_bound <= costs_ilp);
+	assert(costs_ilp == -1 || costs_heur == -1 || costs_ilp <= costs_heur);
 #endif
-	assert(lower_bound <= costs_ilp);
-	assert(costs_ilp <= costs_heur);
 
 	free_copy_opt(co);
 }

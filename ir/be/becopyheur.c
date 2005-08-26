@@ -380,7 +380,7 @@ static int qnode_try_color(const qnode_t *qn) {
 /**
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
- * TODO: This runs in 2^n in worst case. Use a heuristic iff n>???
+ * TODO: This runs in n! in worst case. Use a heuristic iff n>???
  */
 static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	ir_node **safe, **unsafe;

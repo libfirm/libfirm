@@ -29,7 +29,7 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-#define DEBUG_IRG "MergeSort.c__merge__datab"
+#define DEBUG_IRG "!!deflate.c__longest_match__datab"
 #define DEBUG_IRG_LVL_CO   SET_LEVEL_1
 #define DEBUG_IRG_LVL_HEUR SET_LEVEL_1
 #define DEBUG_IRG_LVL_ILP  SET_LEVEL_1

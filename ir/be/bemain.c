@@ -43,6 +43,11 @@
 #include "beasm_asm_gnu.h"
 
 #undef DUMP_ALLOCATED
+#define DUMP_PREPARED
+#define DUMP_SPILL
+#define DUMP_SCHED
+#undef DUMP_POST
+
 
 #define N_PHASES 256
 
@@ -115,9 +120,11 @@ static void prepare_graph(be_main_session_env_t *s)
 	if (get_irg_loopinfo_state(s->irg) != (loopinfo_valid & loopinfo_cf_consistent))
 		construct_cf_backedges(s->irg);
 
+#ifdef DUMP_PREPARED
 	dump_dominator_information(true);
 	dump_ir_block_graph(s->irg, "-prepared");
 	dump_dominator_information(false);
+#endif
 }
 
 static void be_main_loop(void)
@@ -135,6 +142,8 @@ static void be_main_loop(void)
 		ir_graph *irg = get_irp_irg(i);
 		be_main_session_env_t session;
 
+		dump_ir_block_graph(irg, "-be-begin");
+
 		DBG((env.dbg, LEVEL_1, "====> IRG: %F\n", irg));
 
 		/* Init the session. */
@@ -145,7 +154,9 @@ static void be_main_loop(void)
 
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
+#ifdef DUMP_SCHED
 		dump_ir_block_graph_sched(irg, "-sched");
+#endif
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
@@ -161,8 +172,9 @@ static void be_main_loop(void)
 			DBG((env.dbg, LEVEL_1, "----> Reg class: %s\n", cls->name));
 
 			be_spill_ilp(&session, cls);
+#ifdef DUMP_SPILL
 			dump_ir_block_graph_sched(session.irg, "-spill");
-
+#endif
 			be_liveness(irg);
 			be_numbering(irg);
 			be_check_pressure(&session, cls);
@@ -186,9 +198,9 @@ static void be_main_loop(void)
 #endif
 			copystat_collect_cls(chordal_env);
 
-//			dump_allocated_irg(env.arch_env, irg, "pre");
+			dump_allocated_irg(env.arch_env, irg, "pre");
 			be_copy_opt(chordal_env);
-//			dump_allocated_irg(env.arch_env, irg, "post");
+			dump_allocated_irg(env.arch_env, irg, "post");
 
 			be_ssa_destruction(chordal_env);
 			be_ssa_destruction_check(chordal_env);
@@ -197,8 +209,9 @@ static void be_main_loop(void)
 			be_ra_chordal_done(chordal_env);
 			be_numbering_done(irg);
 		}
+#ifdef DUMP_POST
 		dump_ir_block_graph_sched(session.irg, "-post");
-
+#endif
 		copystat_dump(irg);
 	}
 }

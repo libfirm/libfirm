@@ -35,7 +35,7 @@ static firm_dbg_module_t *dbg = NULL;
 /**
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
- * TODO: This runs in 2^n in worst case. Use a heuristic iff n>???
+ * TODO: This runs in n! in worst case. Use a heuristic iff n>???
  */
 static int ou_max_ind_set_costs(unit_t *ou) {
 	be_chordal_env_t *chordal_env = ou->co->chordal_env;

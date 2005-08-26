@@ -32,6 +32,7 @@ static void dump_allocated_block(ir_node *block, void *data)
 	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"%n\n", block, block);
 	sched_foreach(block, irn) {
 		const char *prefix = "";
+
     const arch_register_t *reg = arch_get_irn_register(env, irn, 0);
 
 		ir_fprintf(f, "\n");

@@ -251,8 +251,16 @@ be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn,
     int idx, const arch_register_t *reg)
 {
   const arch_register_t **regs;
+  be_op_t *bo;
+  const be_node_factory_t *factory =
+    container_of(_self, const be_node_factory_t, irn_ops);
 
   idx = redir_proj((const ir_node **) &irn, idx);
+  bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
+
+	if(!bo)
+		return;
+
   regs = (const arch_register_t **) &irn->attr;
   regs[idx] = reg;
 }
@@ -261,10 +269,25 @@ const arch_register_t *
 be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn, int idx)
 {
   const arch_register_t **regs;
+  be_op_t *bo;
+  int i, pos = arch_pos_make_out(idx);
+  const be_node_factory_t *factory =
+    container_of(_self, const be_node_factory_t, irn_ops);
 
   idx = redir_proj(&irn, idx);
-  regs = (const arch_register_t **) &irn->attr;
-  return regs[idx];
+  bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
+
+  if(!bo)
+  	return NULL;
+
+  for(i = 0; i < bo->n_pos; ++i) {
+  	if(bo->pos[i] == pos) {
+	  regs = (const arch_register_t **) &irn->attr;
+	  return regs[idx];
+  	}
+  }
+
+  return NULL;
 }
 
 arch_irn_class_t be_node_classify(const arch_irn_ops_t *_self, const ir_node *irn)

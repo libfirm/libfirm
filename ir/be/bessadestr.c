@@ -30,7 +30,7 @@
 
 static firm_dbg_module_t *dbg = NULL;
 #define DEBUG_LVL SET_LEVEL_0
-
+#undef DUMP_GRAPHS
 
 #define get_chordal_arch(ce) ((ce)->session_env->main_env->arch_env)
 #define get_reg(irn) arch_get_irn_register(get_chordal_arch(chordal_env), irn, 0)
@@ -278,10 +278,13 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 
 	build_phi_rings(chordal_env);
 	insert_all_perms(chordal_env);
+#ifdef DUMP_GRAPHS
 	dump_ir_block_graph_sched(irg, "-ssa_destr_perms_placed");
-
+#endif
 	set_regs_or_place_dupls(chordal_env);
+#ifdef DUMP_GRAPHS
 	dump_ir_block_graph_sched(irg, "-ssa_destr_regs_set");
+#endif
 
 	pmap_destroy(perm_map);
 }
