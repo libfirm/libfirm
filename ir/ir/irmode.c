@@ -209,27 +209,27 @@ ir_mode *mode_P_data;	/**< machine specific pointer mode for data addresses */
  * * */
 
 /* JNI access functions */
-INLINE ir_mode *get_modeT(void) { ANNOUNCE(); return mode_T; }
-INLINE ir_mode *get_modeF(void) { ANNOUNCE(); return mode_F; }
-INLINE ir_mode *get_modeD(void) { ANNOUNCE(); return mode_D; }
-INLINE ir_mode *get_modeE(void) { ANNOUNCE(); return mode_E; }
-INLINE ir_mode *get_modeBs(void) { ANNOUNCE(); return mode_Bs; }
-INLINE ir_mode *get_modeBu(void) { ANNOUNCE(); return mode_Bu; }
-INLINE ir_mode *get_modeHs(void) { ANNOUNCE(); return mode_Hs; }
-INLINE ir_mode *get_modeHu(void) { ANNOUNCE(); return mode_Hu; }
-INLINE ir_mode *get_modeIs(void) { ANNOUNCE(); return mode_Is; }
-INLINE ir_mode *get_modeIu(void) { ANNOUNCE(); return mode_Iu; }
-INLINE ir_mode *get_modeLs(void) { ANNOUNCE(); return mode_Ls; }
-INLINE ir_mode *get_modeLu(void) { ANNOUNCE(); return mode_Lu; }
-INLINE ir_mode *get_modeC(void) { ANNOUNCE(); return mode_C; }
-INLINE ir_mode *get_modeU(void) { ANNOUNCE(); return mode_U; }
-INLINE ir_mode *get_modeb(void) { ANNOUNCE(); return mode_b; }
-INLINE ir_mode *get_modeP(void) { ANNOUNCE(); return mode_P; }
-INLINE ir_mode *get_modeX(void) { ANNOUNCE(); return mode_X; }
-INLINE ir_mode *get_modeM(void) { ANNOUNCE(); return mode_M; }
-INLINE ir_mode *get_modeBB(void) { ANNOUNCE(); return mode_BB; }
-INLINE ir_mode *get_modeANY(void) { ANNOUNCE(); return mode_ANY; }
-INLINE ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
+ir_mode *get_modeT(void) { ANNOUNCE(); return mode_T; }
+ir_mode *get_modeF(void) { ANNOUNCE(); return mode_F; }
+ir_mode *get_modeD(void) { ANNOUNCE(); return mode_D; }
+ir_mode *get_modeE(void) { ANNOUNCE(); return mode_E; }
+ir_mode *get_modeBs(void) { ANNOUNCE(); return mode_Bs; }
+ir_mode *get_modeBu(void) { ANNOUNCE(); return mode_Bu; }
+ir_mode *get_modeHs(void) { ANNOUNCE(); return mode_Hs; }
+ir_mode *get_modeHu(void) { ANNOUNCE(); return mode_Hu; }
+ir_mode *get_modeIs(void) { ANNOUNCE(); return mode_Is; }
+ir_mode *get_modeIu(void) { ANNOUNCE(); return mode_Iu; }
+ir_mode *get_modeLs(void) { ANNOUNCE(); return mode_Ls; }
+ir_mode *get_modeLu(void) { ANNOUNCE(); return mode_Lu; }
+ir_mode *get_modeC(void) { ANNOUNCE(); return mode_C; }
+ir_mode *get_modeU(void) { ANNOUNCE(); return mode_U; }
+ir_mode *get_modeb(void) { ANNOUNCE(); return mode_b; }
+ir_mode *get_modeP(void) { ANNOUNCE(); return mode_P; }
+ir_mode *get_modeX(void) { ANNOUNCE(); return mode_X; }
+ir_mode *get_modeM(void) { ANNOUNCE(); return mode_M; }
+ir_mode *get_modeBB(void) { ANNOUNCE(); return mode_BB; }
+ir_mode *get_modeANY(void) { ANNOUNCE(); return mode_ANY; }
+ir_mode *get_modeBAD(void) { ANNOUNCE(); return mode_BAD; }
 
 
 ir_mode *(get_modeP_code)(void) {
