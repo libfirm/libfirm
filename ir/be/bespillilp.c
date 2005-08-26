@@ -38,7 +38,7 @@
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
-#define DBG_LEVEL SET_LEVEL_3
+#define DBG_LEVEL SET_LEVEL_0
 
 #undef DUMP_SOLUTION
 #undef DUMP_ILP

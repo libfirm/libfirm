@@ -29,7 +29,7 @@ static void dump_allocated_block(ir_node *block, void *data)
 	FILE *f = dump_env->f;
   arch_env_t *env = dump_env->env;
 
-	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"%n\n", block, block);
+	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"", block);
 	sched_foreach(block, irn) {
 		const char *prefix = "";
 
@@ -58,7 +58,7 @@ static void dump_allocated_block(ir_node *block, void *data)
 	if(get_irg_start_block(get_irn_irg(block)) != block) {
 		for(i = 0, n = get_irn_arity(block); i < n; ++i) {
 			ir_node *pred_bl = get_nodes_block(get_irn_n(block, i));
-			ir_fprintf(f, "edge:{sourcename:\"b%N\" targetname:\"b%N\"}\n", pred_bl, block);
+			ir_fprintf(f, "edge:{sourcename:\"b%N\" targetname:\"b%N\"}\n", block, pred_bl);
 		}
 	}
 }
