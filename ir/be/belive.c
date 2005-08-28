@@ -190,3 +190,29 @@ void be_liveness_dump(ir_graph *irg, FILE *f)
 {
 	irg_block_walk_graph(irg, dump_liveness_walker, NULL, f);
 }
+
+static void dom_check(ir_node *irn, void *data)
+{
+	if(!is_block(irn)) {
+		int i, n;
+		ir_node *bl = get_nodes_block(irn);
+
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op     = get_irn_n(irn, i);
+			ir_node *def_bl = get_nodes_block(op);
+			ir_node *use_bl = bl;
+
+			if(is_Phi(irn))
+				use_bl = get_Block_cfgpred_block(bl, i);
+
+			if(!block_dominates(def_bl, use_bl))
+				ir_fprintf(stderr, "In %+F(%d:%+Fr): %+F must dominate %+F\n",
+						irn, i, op, def_bl, use_bl);
+		}
+	}
+}
+
+void be_check_dominance(ir_graph *irg)
+{
+	irg_walk_graph(irg, dom_check, NULL, NULL);
+}

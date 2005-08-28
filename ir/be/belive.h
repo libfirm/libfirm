@@ -46,5 +46,10 @@ int (is_live_out)(const ir_node *block, const ir_node *irn);
  */
 int (is_live_end)(const ir_node *block, const ir_node *irn);
 
+/**
+ * Check, if the SSA dominance property is fulfilled.
+ * @param irg The graph.
+ */
+void be_check_dominance(ir_graph *irg);
 
 #endif
