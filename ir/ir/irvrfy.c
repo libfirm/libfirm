@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier. Till Riedel. Michael Beck.
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2003 Universitï¿½t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -1569,7 +1569,7 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
 static int check_dominance_for_node(ir_node *irn)
 {
 	/* This won't work for blocks and the end node */
-	if(!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
+	if(!is_Block(irn) && irn != get_irg_end(current_ir_graph)) {
 		int i, n;
 		ir_node *bl = get_nodes_block(irn);
 
@@ -1593,7 +1593,6 @@ static int check_dominance_for_node(ir_node *irn)
 int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 {
   int i;
-	int result = 1;
   ir_op *op;
 
   if (!opt_do_node_verification)
@@ -1622,18 +1621,11 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 				return 1;
 		}
 
-	/*
-	 * Check, if the dominance property is fulfilled
-	 * for all operands of the node.
-	 */
-	if(get_irg_dom_state(irg) == dom_consistent)
-		result &= check_dominance_for_node(n);
-
   if (op->verify_node)
-    result &= op->verify_node(n, irg);
+    return op->verify_node(n, irg);
 
   /* All went ok */
-  return result;
+  return 1;
 }
 
 int irn_vrfy(ir_node *n)
@@ -1655,6 +1647,9 @@ static void vrfy_wrap(ir_node *node, void *env)
   int *res = env;
 
   *res = irn_vrfy(node);
+
+  if(*res && get_irg_dom_state(current_ir_graph) == dom_consistent)
+	  *res = check_dominance_for_node(node);
 }
 
 int irg_vrfy(ir_graph *irg)
@@ -1668,7 +1663,8 @@ int irg_vrfy(ir_graph *irg)
   last_irg_error = NULL;
 
   assert(get_irg_pinned(irg) == op_pin_state_pinned);
-
+	if (get_irg_dom_state(current_ir_graph) != dom_consistent)
+		compute_doms(current_ir_graph);
   irg_walk_graph(irg, vrfy_wrap, NULL, &res);
 
   current_ir_graph = rem;
@@ -1682,9 +1678,6 @@ int irg_vrfy(ir_graph *irg)
       fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)current_ir_graph);
   }
 
-	if(get_irg_dom_state(irg) == dom_consistent) {
-
-	}
 
 #endif
 
