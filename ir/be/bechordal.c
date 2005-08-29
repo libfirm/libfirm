@@ -38,7 +38,7 @@
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
 
-#define DBG_LEVEL 0 //SET_LEVEL_4
+#define DBG_LEVEL SET_LEVEL_0
 #define NO_COLOR (-1)
 
 #undef DUMP_INTERVALS
@@ -384,14 +384,12 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *live = env->live;
 	bitset_t *colors = env->colors;
 	bitset_t *in_colors = env->in_colors;
-  const arch_env_t *arch_env = env->session_env->main_env->arch_env;
+	const arch_env_t *arch_env = env->session_env->main_env->arch_env;
 
 	const ir_node *irn;
 	border_t *b;
 	struct list_head *head = get_block_border_head(env, block);
 	pset *live_in = put_live_in(block, pset_new_ptr_default());
-
-
 
 	bitset_clear_all(live);
 	bitset_clear_all(colors);
@@ -411,10 +409,10 @@ static void assign(ir_node *block, void *env_ptr)
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
 		if(has_reg_class(env, irn)) {
-      const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
-      int col;
+			const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
+			int col;
 
-      assert(reg && "Node must have been assigned a register");
+			assert(reg && "Node must have been assigned a register");
 			col = arch_register_get_index(reg);
 
 			/* Mark the color of the live in value as used. */
@@ -440,16 +438,15 @@ static void assign(ir_node *block, void *env_ptr)
 		 * color.
 		 */
 		if(b->is_def && !is_live_in(block, irn)) {
-      const arch_register_t *reg;
+			const arch_register_t *reg;
 			int col = NO_COLOR;
 
 			DBG((dbg, LEVEL_4, "\tcolors in use: %b\n", colors));
 
-      col = bitset_next_clear(colors, 0);
-      reg = arch_register_for_index(env->cls, col);
+			col = bitset_next_clear(colors, 0);
+			reg = arch_register_for_index(env->cls, col);
 
-      assert(arch_get_irn_register(arch_env, irn, 0) == NULL
-          && "This node must not have been assigned a register yet");
+			assert(arch_get_irn_register(arch_env, irn, 0) == NULL && "This node must not have been assigned a register yet");
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 
 			bitset_set(colors, col);
@@ -462,12 +459,12 @@ static void assign(ir_node *block, void *env_ptr)
 
 		/* Clear the color upon a use. */
 		else if(!b->is_def) {
-      const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
+			const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
 			int col;
 
-      assert(reg && "Register must have been assigned");
+			assert(reg && "Register must have been assigned");
 
-      col = arch_register_get_index(reg);
+			col = arch_register_get_index(reg);
 			assert(bitset_is_set(live, nr) && "Cannot have a non live use");
 
 			bitset_clear(colors, col);
@@ -475,7 +472,7 @@ static void assign(ir_node *block, void *env_ptr)
 		}
 	}
 
-  del_pset(live_in);
+	del_pset(live_in);
 }
 
 void be_ra_chordal_init(void)

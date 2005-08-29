@@ -157,7 +157,6 @@ void be_liveness(ir_graph *irg)
   if(live_info->live)
     del_set(live_info->live);
 
-	ir_fprintf(stderr, "%F\n", irg);
 
   live_info->live = new_set(cmp_irn_live, 8192);
   irg_walk_graph(irg, liveness_for_node, NULL, NULL);
@@ -193,7 +192,7 @@ void be_liveness_dump(ir_graph *irg, FILE *f)
 
 static void dom_check(ir_node *irn, void *data)
 {
-	if(!is_block(irn)) {
+	if(!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
 		int i, n;
 		ir_node *bl = get_nodes_block(irn);
 
@@ -205,9 +204,10 @@ static void dom_check(ir_node *irn, void *data)
 			if(is_Phi(irn))
 				use_bl = get_Block_cfgpred_block(bl, i);
 
-			if(!block_dominates(def_bl, use_bl))
-				ir_fprintf(stderr, "In %+F(%d:%+Fr): %+F must dominate %+F\n",
-						irn, i, op, def_bl, use_bl);
+			if(!block_dominates(def_bl, use_bl)) {
+				ir_fprintf(stderr, "%+F in %+F must dominate %+F for user %+F\n", op, def_bl, use_bl, irn);
+				assert(0);
+			}
 		}
 	}
 }

@@ -12,8 +12,8 @@
 #include "config.h"
 #endif
 
-
 #include <libcore/lc_timing.h>
+#include "pmap.h"
 #include "debug.h"
 #include "irouts.h"
 #include "becopyopt.h"
@@ -23,8 +23,9 @@
 
 #define DO_HEUR
 #define DO_ILP
+#define DO_ILP_N_SEC
 
-#define DEBUG_LVL SET_LEVEL_1
+#define DEBUG_LVL SET_LEVEL_0
 static firm_dbg_module_t *dbg = NULL;
 
 void be_copy_opt_init(void) {
@@ -32,10 +33,44 @@ void be_copy_opt_init(void) {
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 }
 
+typedef struct color_saver {
+	arch_env_t *arch_env;
+	be_chordal_env_t *chordal_env;
+	pmap *saved_colors;
+	int flag;  /* 0 save; 1 load */
+} color_save_t;
+
+static void save_load(ir_node *irn, void *env) {
+	color_save_t *saver = env;
+	if (saver->chordal_env->cls == arch_get_irn_reg_class(saver->arch_env, irn, arch_pos_make_out(0))) {
+		if (saver->flag == 0) { /* save */
+			const arch_register_t *reg = arch_get_irn_register(saver->arch_env, irn, 0);
+			pmap_insert(saver->saved_colors, irn, (void *) reg);
+		} else { /*load */
+			arch_register_t *reg = pmap_get(saver->saved_colors, irn);
+			arch_set_irn_register(saver->arch_env, irn, 0, reg);
+		}
+	}
+}
+
+static void save_colors(color_save_t *color_saver) {
+	color_saver->flag = 0;
+	irg_walk_graph(color_saver->chordal_env->session_env->irg, save_load, NULL, color_saver);
+}
+
+static void load_colors(color_save_t *color_saver) {
+	color_saver->flag = 1;
+	irg_walk_graph(color_saver->chordal_env->session_env->irg, save_load, NULL, color_saver);
+}
+
 void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
-	int costs, costs_init=-1, costs_heur=-1, costs_ilp=-1;
+	int costs, costs_init=-1, costs_heur=-1, costs_ilp_n_sec=-1, costs_ilp=-1;
 	int lower_bound;
+	color_save_t saver;
+	saver.arch_env = chordal_env->session_env->main_env->arch_env;
+	saver.chordal_env = chordal_env;
+	saver.saved_colors = pmap_create();
 
 	/* BETTER: You can remove this if you replace all
 	 * `grep get_irn_out *.c` by the irouts.h module.*/
@@ -58,6 +93,8 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "Init costs: %3d\n", costs_init));
 #endif
 
+	save_colors(&saver);
+
 #ifdef DO_HEUR
 	lc_timer_t *timer = lc_timer_register("heur", NULL);
 	lc_timer_reset_and_start(timer);
@@ -73,9 +110,24 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	assert(lower_bound == -1 || costs_heur == -1 || lower_bound <= costs_heur);
 #endif
 
+	load_colors(&saver);
+
+#ifdef DO_ILP_N_SEC
+	co_ilp_opt(co, 2.0);
+#ifdef DO_STAT
+	costs = co_get_copy_costs(co);
+	costs_ilp_n_sec = costs;
+	copystat_add_ilp_n_sec_costs(costs_ilp_n_sec);
+	DBG((dbg, LEVEL_1, "N_Sec costs: %3d\n", costs_ilp_n_sec));
+#endif
+	assert(lower_bound == -1 || costs_ilp == -1 || lower_bound <= costs_ilp);
+	assert(costs_ilp == -1 || costs_heur == -1 || costs_ilp <= costs_heur);
+#endif
+
+	load_colors(&saver);
 
 #ifdef DO_ILP
-	co_ilp_opt(co);
+	co_ilp_opt(co, 0.0);
 #ifdef DO_STAT
 	costs = co_get_copy_costs(co);
 	costs_ilp = costs;
@@ -86,5 +138,6 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	assert(costs_ilp == -1 || costs_heur == -1 || costs_ilp <= costs_heur);
 #endif
 
+	pmap_destroy(saver.saved_colors);
 	free_copy_opt(co);
 }

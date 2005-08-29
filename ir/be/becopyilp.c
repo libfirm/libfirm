@@ -946,7 +946,7 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	sol = xmalloc((pi->last_x_var - pi->first_x_var + 1) * sizeof(*sol));
 	state = lpp_get_solution(pi->curr_lp, sol, pi->first_x_var, pi->last_x_var);
 	if (state != lpp_optimal) {
-		printf("WARNING: Solution state is not 'optimal': %d\n", state);
+		printf("WARNING %s: Solution state is not 'optimal': %d\n", pi->co->name, state);
 		assert(state >= lpp_feasible && "The solution should at least be feasible!");
 	}
 	for (i=0; i<pi->last_x_var - pi->first_x_var + 1; ++i) {
@@ -965,7 +965,7 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	}
 }
 
-void co_ilp_opt(copy_opt_t *co) {
+void co_ilp_opt(copy_opt_t *co, double time_limit) {
 	problem_instance_t *pi;
 
 	dbg = firm_dbg_register("ir.be.copyoptilp");
@@ -981,6 +981,7 @@ void co_ilp_opt(copy_opt_t *co) {
 		snprintf(buf, sizeof(buf), "%s.mps", co->name);
 		lpp_dump(pi->curr_lp, buf);
 #endif
+		lpp_set_time_limit(pi->curr_lp, time_limit);
 		pi_solve_ilp(pi);
 		pi_apply_solution(pi);
 		pi_set_simplicials(pi);

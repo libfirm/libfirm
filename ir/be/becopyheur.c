@@ -69,7 +69,7 @@ typedef struct _qnode_t {
 	set *changed_nodes;			/**< contains node_stat_t's. */
 } qnode_t;
 
-pset *pinned_global;			/**< optimized nodes should not be altered any more */
+static pset *pinned_global;			/**< optimized nodes should not be altered any more */
 
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
 	const conflict_t *xx = x;
