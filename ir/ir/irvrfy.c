@@ -22,6 +22,7 @@
 # include "irgwalk.h"
 # include "irdump.h"
 # include "irdom_t.h"
+# include "irprintf.h"
 
 /** if this flag is set, verify entity types in Load & Store nodes */
 static int vrfy_entities = 0;
@@ -1583,7 +1584,8 @@ static int check_dominance_for_node(ir_node *irn)
 
 			ASSERT_AND_RET_DBG(block_dominates(def_bl, use_bl),
 					"the definition of a value used violates the dominance property", 0,
-						ir_fprintf(stderr, "%+F of %+F must dominate %+F of user %+F\n",
+						ir_fprintf(stderr,
+							"graph %+F: %+F of %+F must dominate %+F of user %+F\n",
 							def_bl, op, use_bl, irn););
 		}
 	}
