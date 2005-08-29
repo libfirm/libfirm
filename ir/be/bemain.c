@@ -224,10 +224,9 @@ void be_main(int argc, const char *argv[])
 	assembler_t *gnu_assembler;
 	FILE *asm_output_file;
 
-	mtrace();
 	be_main_loop();
-	muntrace();
 
+#if 0
 	gnu_assembler = gnuasm_create_assembler();
 	asm_output_file = fopen("asm_output.asm", "w");
 
@@ -235,5 +234,5 @@ void be_main(int argc, const char *argv[])
 	gnuasm_dump(gnu_assembler, asm_output_file);
 	gnuasm_delete_assembler(gnu_assembler);
 	fclose(asm_output_file);
-
+#endif
 }
