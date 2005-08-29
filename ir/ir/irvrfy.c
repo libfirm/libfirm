@@ -1586,7 +1586,7 @@ static int check_dominance_for_node(ir_node *irn)
 					"the definition of a value used violates the dominance property", 0,
 						ir_fprintf(stderr,
 							"graph %+F: %+F of %+F must dominate %+F of user %+F\n",
-							def_bl, op, use_bl, irn););
+							current_ir_graph, def_bl, op, use_bl, irn););
 		}
 	}
 
