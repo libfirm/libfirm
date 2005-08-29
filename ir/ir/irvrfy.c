@@ -1581,8 +1581,10 @@ static int check_dominance_for_node(ir_node *irn)
 			if(is_Phi(irn))
 				use_bl = get_Block_cfgpred_block(bl, i);
 
-			ASSERT_AND_RET(block_dominates(def_bl, use_bl),
-					"the definition of a value used violates the dominance property", 0);
+			ASSERT_AND_RET_DBG(block_dominates(def_bl, use_bl),
+					"the definition of a value used violates the dominance property", 0,
+						ir_fprintf(stderr, "%+F of %+F must dominate %+F of user %+F\n",
+							def_bl, op, use_bl, irn););
 		}
 	}
 
