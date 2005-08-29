@@ -1593,6 +1593,7 @@ static int check_dominance_for_node(ir_node *irn)
 int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 {
   int i;
+	int result = 1;
   ir_op *op;
 
   if (!opt_do_node_verification)
@@ -1626,13 +1627,13 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 	 * for all operands of the node.
 	 */
 	if(get_irg_dom_state(irg) == dom_consistent)
-		check_dominance_for_node(n);
+		result &= check_dominance_for_node(n);
 
   if (op->verify_node)
-    return op->verify_node(n, irg);
+    result &= op->verify_node(n, irg);
 
   /* All went ok */
-  return 1;
+  return result;
 }
 
 int irn_vrfy(ir_node *n)
