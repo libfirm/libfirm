@@ -275,6 +275,19 @@ BEGIN_ARGS
 END_ARGS
 END_OP
 
+BEGIN_OP(Mod)
+BEGIN_ARGS
+  ARG("Memory", Mem)
+  ARG("CF", X)
+  ARG("Result", Int)
+  MARK
+  BLOCK
+  ARG("Memory", Mem)
+  ARG_SAME("Op 0", Int, 2)
+  ARG_SAME("Op 1", Int, 2)
+END_ARGS
+END_OP
+
 BEGIN_OP(Abs)
 BEGIN_ARGS
   ARG("Res", Num)
@@ -283,6 +296,18 @@ BEGIN_ARGS
   ARG_SAME("Op", Num, 0)
 END_ARGS
 END_OP
+
+BEGIN_OP(Mux)
+BEGIN_ARGS
+  ARG("Res", NumP)
+  MARK
+  BLOCK
+  ARG("Switch", Bool)
+  ARG_SAME("Op 0", NumP, 0)
+  ARG_SAME("Op 1", NumP, 0)
+END_ARGS
+END_OP
+
 
 BEGIN_OP(And)
 BEGIN_ARGS
