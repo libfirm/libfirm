@@ -21,6 +21,7 @@
 # include "irvrfy_t.h"
 # include "irgwalk.h"
 # include "irdump.h"
+# include "irdom_t.h"
 
 /** if this flag is set, verify entity types in Load & Store nodes */
 static int vrfy_entities = 0;
@@ -1559,14 +1560,45 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
   return 1;
 }
 
+/*
+ * Check dominance.
+ * For each usage of a node, it is checked, if the block of the
+ * node dominates the block of the usage (for phis: the predecessor
+ * block of the phi for the corresponding edge).
+ */
+static int check_dominance_for_node(ir_node *irn)
+{
+	/* This won't work for blocks and the end node */
+	if(!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
+		int i, n;
+		ir_node *bl = get_nodes_block(irn);
+
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op     = get_irn_n(irn, i);
+			ir_node *def_bl = get_nodes_block(op);
+			ir_node *use_bl = bl;
+
+			if(is_Phi(irn))
+				use_bl = get_Block_cfgpred_block(bl, i);
+
+			ASSERT_AND_RET(!block_dominates(def_bl, use_bl),
+					"the definition of a value used violates the dominance property", 0);
+		}
+	}
+
+	return 1;
+}
+
+
 int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 {
   int i;
   ir_op *op;
 
-  if (!opt_do_node_verification) return 1;
+  if (!opt_do_node_verification)
+		return 1;
 
-  if (! get_interprocedural_view()) {
+  if (!get_interprocedural_view()) {
     /*
      * do NOT check placement in interprocedural view, as we don't always know
      * the "right" graph ...
@@ -1583,11 +1615,18 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
   /* We don't want to test nodes whose predecessors are Bad,
      as we would have to special case that for each operation. */
-  if (op != op_Phi && op != op_Block)
-    for (i = get_irn_arity(n) - 1; i >= 0; --i) {
-      if (is_Bad(get_irn_n(n, i)))
-        return 1;
-    }
+	if (op != op_Phi && op != op_Block)
+		for (i = get_irn_arity(n) - 1; i >= 0; --i) {
+			if (is_Bad(get_irn_n(n, i)))
+				return 1;
+		}
+
+	/*
+	 * Check, if the dominance property is fulfilled
+	 * for all operands of the node.
+	 */
+	if(get_irg_dom_state(irg) == dom_consistent)
+		check_dominance_for_node(n);
 
   if (op->verify_node)
     return op->verify_node(n, irg);
@@ -1642,7 +1681,12 @@ int irg_vrfy(ir_graph *irg)
       fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)current_ir_graph);
   }
 
+	if(get_irg_dom_state(irg) == dom_consistent) {
+
+	}
+
 #endif
+
   return res;
 }
 
