@@ -14,18 +14,20 @@
 
 #include "fourcc.h"
 #include "obst.h"
-#include "irouts.h"
+#include "list.h"
+#include "iterator.h"
+
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irmode_t.h"
-#include "list.h"
-#include "iterator.h"
 #include "irdump.h"
 #include "irprintf_t.h"
 #include "debug.h"
 
 #include "besched_t.h"
 #include "beutil.h"
+#include "belive_t.h"
 #include "belistsched.h"
 
 /**
@@ -37,12 +39,51 @@ typedef struct _sched_env_t {
     void *selector_env;                         /**< A pointer to give to the selector. */
 } sched_env_t;
 
-static ir_node *trivial_select(void *env, void *block_env, const struct list_head *sched_head,
+#if 0
+/*
+ * Ugly global variable for the compare function
+ * since qsort(3) does not pass an extra pointer.
+ */
+static ir_node *curr_bl = NULL;
+
+static int cmp_usage(const void *a, const void *b)
+{
+	struct trivial_sched_env *env;
+	const ir_node *p = a;
+	const ir_node *q = b;
+	int res = 0;
+
+	res = is_live_end(env->curr_bl, a) - is_live_end(env->curr_bl, b);
+
+	/*
+	 * One of them is live at the end of the block.
+	 * Then, that one shall be scheduled at after the other
+	 */
+	if(res != 0)
+		return res;
+
+
+	return res;
+}
+#endif
+
+static ir_node *trivial_select(void *env, void *block_env,
+		const struct list_head *sched_head,
 		int curr_time, pset *ready_set)
 {
-    ir_node *res = pset_first(ready_set);
-    pset_break(ready_set);
-    return res;
+#if 0
+	int i, n = pset_count(ready_set);
+	ir_node *irn;
+	ir_node **ready = alloca(n * sizeof(ready[0]));
+
+	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set))
+		ready[i++] = irn;
+#endif
+
+
+	ir_node *res = pset_first(ready_set);
+	pset_break(ready_set);
+	return res;
 }
 
 static const list_sched_selector_t trivial_selector_struct = {
@@ -66,15 +107,8 @@ void list_sched(ir_graph *irg, const list_sched_selector_t *selector)
     env.selector_env = selector->init_graph ? selector->init_graph(irg) : NULL;
     env.irg = irg;
 
-    /* Normalize proj nodes. */
-    normalize_proj_nodes(irg);
-
-    /* Compute the outs */
-    if(get_irg_outs_state(irg) != outs_consistent)
-        compute_outs(irg);
-
-    /* Dump the graph. */
-    //dump_ir_block_graph(irg, "-before-sched");
+		/* Assure, that the out edges are computed */
+		edges_assure(irg);
 
     /* Schedule each single block. */
     irg_block_walk_graph(irg, list_sched_block, NULL, &env);
@@ -161,13 +195,14 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
  */
 static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 {
-    int i, n;
+	int i, n;
+	const ir_edge_t *edge;
 
-    for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
-        ir_node *user = get_irn_out(irn, i);
-				if(!is_Phi(user))
-					make_ready(env, user);
-    }
+	foreach_out_edge(irn, edge) {
+		ir_node *user = edge->src;
+		if(!is_Phi(user))
+			make_ready(env, user);
+	}
 }
 
 /**
@@ -231,21 +266,23 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
  */
 static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 {
-    int i, n;
-    assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
+	int i, n;
+	const ir_edge_t *edge;
 
-    for(i = 0, n = get_irn_n_outs(irn); i < n; ++i) {
-        ir_node *out = get_irn_out(irn, i);
+	assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
 
-        assert(is_Proj(out) && "successor of a modeT node must be a proj");
+	foreach_out_edge(irn, edge) {
+		ir_node *out = edge->src;
 
-        if(get_irn_mode(out) == mode_T)
-            add_tuple_projs(env, out);
-        else {
-            add_to_sched(env, out);
-            make_users_ready(env, out);
-        }
-    }
+		assert(is_Proj(out) && "successor of a modeT node must be a proj");
+
+		if(get_irn_mode(out) == mode_T)
+			add_tuple_projs(env, out);
+		else {
+			add_to_sched(env, out);
+			make_users_ready(env, out);
+		}
+	}
 }
 
 /**
@@ -266,6 +303,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	block_sched_env_t be;
 	const list_sched_selector_t *selector = env->selector;
 
+	const ir_edge_t *edge;
 	ir_node *irn;
 	int i, n, j, m;
 	int phi_seen = 0;
@@ -278,8 +316,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.dbg = firm_dbg_register("firm.be.sched");
 	be.block = block;
 	be.curr_time = 0;
-	be.ready_set = new_pset(node_cmp_func, get_irn_n_outs(block));
-	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_outs(block));
+	be.ready_set = new_pset(node_cmp_func, get_irn_n_edges(block));
+	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_edges(block));
 
   firm_dbg_set_mask(be.dbg, 0);
 
@@ -289,8 +327,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	DBG((be.dbg, LEVEL_1, "scheduling %+F\n", block));
 
 	/* Then one can add all nodes are ready to the set. */
-	for(i = 0, n = get_irn_n_outs(block); i < n; ++i) {
-		ir_node *irn = get_irn_out(block, i);
+	foreach_out_edge(block, edge) {
+		ir_node *irn = get_edge_src_irn(edge);
 
 		/* Skip the end node because of keepalive edges. */
 		if(get_irn_opcode(irn) == iro_End)

@@ -103,6 +103,9 @@ static void prepare_graph(be_main_session_env_t *s)
 	/* Let the isa prepare the graph. */
 	s->main_env->arch_env->isa->prepare_graph(s->irg);
 
+	/* Normalize proj nodes. */
+	normalize_proj_nodes(irg);
+
 	/* Remove critical edges */
 	remove_critical_cf_edges(s->irg);
 
