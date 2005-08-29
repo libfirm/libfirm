@@ -33,12 +33,7 @@ static int edge_cmp(const void *p1, const void *p2, size_t len)
 	return !res;
 }
 
-static INLINE unsigned edge_hash(const ir_edge_t *edge)
-{
-	unsigned result = HASH_PTR(edge->src);
-	result = TIMES37(result) + edge->pos;
-	return result;
-}
+#define edge_hash(edge) (TIMES37((edge)->pos) + HASH_PTR((edge)->src))
 
 /**
  * Initialize the out information for a graph.
@@ -57,6 +52,28 @@ void edges_init_graph(ir_graph *irg)
 
 		info->edges = new_set(edge_cmp, amount);
 	}
+}
+
+/**
+ * Get the edge object of an outgoing edge at a node.
+ * @param   irg The graph, the node is in.
+ * @param   src The node at which the edge originates.
+ * @param   pos The position of the edge.
+ * @return      The corresponding edge object or NULL,
+ *              if no such edge exists.
+ */
+const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos)
+{
+	if(edges_activated(irg)) {
+		irg_edge_info_t *info = _get_irg_edge_info(irg);
+		ir_edge_t templ;
+
+		templ.src = (ir_node *) src;
+		templ.pos = pos;
+		return set_find(info->edges, &templ, sizeof(templ), edge_hash(&templ));
+	}
+
+	return NULL;
 }
 
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg)
@@ -236,9 +253,9 @@ static void build_edges_walker(ir_node *irn, void *data)
 
 static void init_lh_walker(ir_node *irn, void *data)
 {
-        INIT_LIST_HEAD(_get_irn_outs_head(irn));
-        if(is_Block(irn))
-                INIT_LIST_HEAD(_get_block_succ_head(irn));
+	INIT_LIST_HEAD(_get_irn_outs_head(irn));
+	if(is_Block(irn))
+		INIT_LIST_HEAD(_get_block_succ_head(irn));
 }
 
 void edges_activate(ir_graph *irg)

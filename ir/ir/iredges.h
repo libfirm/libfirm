@@ -78,6 +78,16 @@ int get_irn_n_edges(const ir_node *irn);
 extern int get_edge_src_pos(const ir_edge_t *edge);
 
 /**
+ * Get the edge object of an outgoing edge at a node.
+ * @param   irg The graph, the node is in.
+ * @param   irn The node at which the edge originates.
+ * @param   pos The position of the edge.
+ * @return      The corresponding edge object or NULL,
+ *              if no such edge exists.
+ */
+const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *irn, int pos);
+
+/**
  * Check, if the out edges are activated.
  * @param irg The graph.
  * @return 1, if the edges are present for the given irg, 0 if not.
