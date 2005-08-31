@@ -46,7 +46,7 @@ static void copy_entities_from_superclass(type *clss, void *env)
   int overwritten;
   type *super, *inhenttype;
   entity *inhent, *thisent;
-  mangle_inherited_name_func *mfunc = (mangle_inherited_name_func *)env;
+  mangle_inherited_name_func *mfunc = *(mangle_inherited_name_func **)env;
 
   for(i = 0; i < get_class_n_supertypes(clss); i++) {
     super = get_class_supertype(clss, i);
@@ -91,7 +91,7 @@ static void copy_entities_from_superclass(type *clss, void *env)
 void resolve_inheritance(mangle_inherited_name_func *mfunc) {
   if (!mfunc)
     mfunc = default_mangle_inherited_name;
-  class_walk_super2sub(copy_entities_from_superclass, NULL, (void *)mfunc);
+  class_walk_super2sub(copy_entities_from_superclass, NULL, (void *)&mfunc);
 }
 
 
