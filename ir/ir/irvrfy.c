@@ -1667,8 +1667,6 @@ int irg_vrfy(ir_graph *irg)
   last_irg_error = NULL;
 
   assert(get_irg_pinned(irg) == op_pin_state_pinned);
-	if (get_irg_dom_state(current_ir_graph) != dom_consistent)
-		compute_doms(current_ir_graph);
   irg_walk_graph(irg, vrfy_wrap, NULL, &res);
 
   current_ir_graph = rem;
