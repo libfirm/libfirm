@@ -20,6 +20,24 @@ static firm_dbg_module_t *dbg;
 
 #if FIRM_EDGES_INPLACE
 
+/**
+ * This flag is set to 1, if the edges get initialized for an irg.
+ * Then register additional data is forbidden.
+ */
+static int edges_used = 0;
+
+static int edges_private_size = 0;
+
+int edges_register_private_data(size_t n)
+{
+	int res = edges_private_size;
+
+	assert(!edges_used && "you cannot register private edge data, if edges have been initialized");
+
+	edges_private_size += n;
+	return res;
+}
+
 #define TIMES37(x) (((x) << 5) + ((x) << 2) + (x))
 
 #define get_irn_out_list_head(irn) (&get_irn_out_info(irn)->outs)
@@ -44,6 +62,8 @@ void edges_init_graph(ir_graph *irg)
 	if(edges_activated(irg)) {
 		irg_edge_info_t *info = _get_irg_edge_info(irg);
 		int amount = 2048;
+
+		edges_used = 1;
 
 		if(info->edges) {
 			amount = set_count(info->edges);
@@ -102,8 +122,12 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
      * treated as unequal, ignoring the comparison function.
      * So, edges from blocks have extra storage (they are
      * ir_block_edge_t's).
+		 *
+		 * Also add the amount of registered private data to the
+		 * size of the edge.
      */
-    size = is_block_edge ? sizeof(ir_block_edge_t) : sizeof(ir_edge_t);
+    size = edges_private_size +
+			is_block_edge ? sizeof(ir_block_edge_t) : sizeof(ir_edge_t);
 
 		/* Initialize the edge template to search in the set. */
     memset(templ, 0, size);

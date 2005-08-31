@@ -196,6 +196,32 @@ void edges_node_deleted(ir_node *old, ir_graph *irg);
 void edges_invalidate(ir_node *irn, ir_graph *irg);
 
 /**
+ * Register additional memory in an edge.
+ * This must be called before Firm is initialized.
+ * @param  n Number of bytes you need.
+ * @return A number you have to keep and to pass
+ *         edges_get_private_data()
+ *         to get a pointer to your data.
+ */
+int edges_register_private_data(size_t n);
+
+/**
+ * Get a pointer to the private data you registered.
+ * @param  edge The edge.
+ * @param  ofs  The number, you obtained with
+ *              edges_register_private_data().
+ * @return A pointer to the private data.
+ */
+static INLINE void *_get_edge_private_data(const ir_edge_t *edge, int ofs)
+{
+	/* Get the size of the edge. */
+	size_t size =
+		is_Block(edge->src) ? sizeof(ir_block_edge_t) : sizeof(ir_edge_t);
+
+	return (void *) ((char *) edge + size + ofs);
+}
+
+/**
  * Initialize the out edges.
  * This must be called before firm is initialized.
  */
@@ -207,6 +233,7 @@ extern void init_edges(void);
 #define get_block_succ_next(irn,last)    _get_block_succ_next(irn, last)
 #define get_edge_src_irn(edge)           _get_edge_src_irn(edge)
 #define get_edge_src_pos(edge)           _get_edge_src_pos(edge)
+#define get_edge_private_data(edge,ofs)  _get_edge_private_data(edge,ofs)
 #define edges_activated(irg)             _edges_activated(irg)
 #define edges_assure(irg)                _edges_assure(irg)
 
@@ -223,6 +250,7 @@ extern void init_edges(void);
 #define get_irn_out_edge_next(irn,last)   NULL
 #define get_edge_src_irn(edge)            NULL
 #define get_edge_src_pos(edge)            -1
+#define get_edge_private_data(edge,ofs)   NULL
 #define edges_activated(irg)              0
 #define edges_assure(irg)
 
