@@ -15,6 +15,16 @@
 #include "irnode.h"
 
 /**
+ * convert an integer into pointer
+ */
+#define INT_TO_PTR(v)   ((void *)((char *)0 + (v)))
+
+/**
+ * convert a pointer into an integer
+ */
+#define PTR_TO_INT(v)   ((int)((char *)(v) - (char *)0))
+
+/**
  * The famous clear_link() walker-function.
  * Do not implement it by yourself, use this one
  */
