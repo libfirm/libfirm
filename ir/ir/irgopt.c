@@ -1716,6 +1716,7 @@ place_floats_late(ir_node *n, pdeq *worklist)
                    placement has to dominate DCA. */
       for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
         ir_node *out = get_irn_out(n, i);
+        ir_node *outbl;
 
         if (get_irn_op(out) == op_End) {
           /*
@@ -1726,7 +1727,7 @@ place_floats_late(ir_node *n, pdeq *worklist)
         }
 
         /* ignore if out is in dead code */
-        ir_node *outbl = get_irn_n(out, -1);
+        outbl = get_irn_n(out, -1);
         if (is_Block_unreachable(outbl))
           continue;
         dca = consumer_dom_dca(dca, out, n);
