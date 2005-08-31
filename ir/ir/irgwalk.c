@@ -246,7 +246,7 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
   ir_graph * rem = current_ir_graph;
 
-  hook_irg_walk(irg, (void *)pre, (void *)post);
+  hook_irg_walk(irg, (generic_func *)pre, (generic_func *)post);
   current_ir_graph = irg;
   irg_walk(get_irg_end(irg), pre, post, env);
   current_ir_graph = rem;
@@ -430,7 +430,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   ir_node *block, *pred;
   int i;
 
-  hook_irg_block_walk(current_ir_graph, node, (void *)pre, (void *)post);
+  hook_irg_block_walk(current_ir_graph, node, (generic_func *)pre, (generic_func *)post);
 
   assert(node);
   assert(!get_interprocedural_view());   /* interprocedural_view not implemented, because it

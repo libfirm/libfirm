@@ -66,6 +66,11 @@ typedef enum _if_result_t {
 } if_result_t;
 
 /**
+ * A generic function type.
+ */
+typedef void (generic_func)(void);
+
+/**
  * a hook entry
  */
 typedef struct hook_entry {
@@ -80,9 +85,9 @@ typedef struct hook_entry {
     void (*_hook_turn_into_id)(void *context, ir_node *node);
     void (*_hook_new_graph)(void *context, ir_graph *irg, entity *ent);
     void (*_hook_free_graph)(void *context, ir_graph *irg);
-    void (*_hook_irg_walk)(void *context, ir_graph *irg, void *pre, void *post);
-    void (*_hook_irg_walk_blkwise)(void *context, ir_graph *irg, void *pre, void *post);
-    void (*_hook_irg_block_walk)(void *context, ir_graph *irg, ir_node *node, void *pre, void *post);
+    void (*_hook_irg_walk)(void *context, ir_graph *irg, generic_func *pre, generic_func *post);
+    void (*_hook_irg_walk_blkwise)(void *context, ir_graph *irg, generic_func *pre, generic_func *post);
+    void (*_hook_irg_block_walk)(void *context, ir_graph *irg, ir_node *node, generic_func *pre, generic_func *post);
     void (*_hook_merge_nodes)(void *context, ir_node **new_node_array, int new_num_entries,
                               ir_node **old_node_array, int old_num_entries, hook_opt_kind opt);
     void (*_hook_reassociate)(void *context, int start);

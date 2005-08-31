@@ -381,7 +381,7 @@ void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *po
 {
   ir_graph * rem = current_ir_graph;
 
-  hook_irg_walk_blkwise(irg, (void *)pre, (void *)post);
+  hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);
   current_ir_graph = irg;
   do_irg_walk_blk(irg, pre, post, env);
   current_ir_graph = rem;
