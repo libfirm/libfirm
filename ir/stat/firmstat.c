@@ -1084,7 +1084,7 @@ static void stat_free_graph(void *ctx, ir_graph *irg)
  * @param pre  the pre walker
  * @param post the post walker
  */
-static void stat_irg_walk(void *ctx, ir_graph *irg, void *pre, void *post)
+static void stat_irg_walk(void *ctx, ir_graph *irg, generic_func *pre, generic_func *post)
 {
   if (! status->stat_options)
     return;
@@ -1106,7 +1106,7 @@ static void stat_irg_walk(void *ctx, ir_graph *irg, void *pre, void *post)
  * @param pre  the pre walker
  * @param post the post walker
  */
-static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, void *pre, void *post)
+static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, generic_func *pre, generic_func *post)
 {
   /* for now, do NOT differentiate between blockwise and normal */
   stat_irg_walk(ctx, irg, pre, post);
@@ -1121,7 +1121,7 @@ static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, void *pre, void *pos
  * @param pre  the pre walker
  * @param post the post walker
  */
-static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, void *pre, void *post)
+static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic_func *pre, generic_func *post)
 {
   if (! status->stat_options)
     return;
