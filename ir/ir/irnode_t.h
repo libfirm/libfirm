@@ -48,8 +48,8 @@ typedef struct {
   ir_graph *irg;
   unsigned long block_visited;  /**< for the walker that walks over all blocks. */
   /* Attributes private to construction: */
-  int matured:1;                /**< if set, all in-nodes of the block are fixed */
-  int dead:1;                   /**< if set, the block is dead (and could be replace by a Bad */
+  unsigned matured:1;         /**< if set, all in-nodes of the block are fixed */
+  unsigned dead:1;            /**< if set, the block is dead (and could be replace by a Bad */
   struct ir_node **graph_arr; /**< array to store all parameters */
   /* Attributes holding analyses information */
   struct dom_info dom;        /**< Datastructure that holds information about dominators.
@@ -580,7 +580,7 @@ _get_Block_cfgpred (ir_node *node, int pos) {
 
 /* Get the predecessor block.
  *
- *  Returns the block corresonding to the predecessor pos.
+ *  Returns the block corresponding to the predecessor pos.
  *
  *  There are several ambiguities we resolve with this function:
  *  - The direct predecessor can be a Proj, which is not pinned.
