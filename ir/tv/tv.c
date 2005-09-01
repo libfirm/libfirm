@@ -49,6 +49,7 @@
 #include "irnode.h"         /* defines boolean return values (pnc_number)*/
 #include "strcalc.h"
 #include "fltcalc.h"
+#include "irtools.h"
 
 /** Size of hash tables.  Should correspond to average number of distinct constant
     target values */
@@ -134,7 +135,7 @@ INLINE static void tarval_verify(tarval *tv)
 
 static int hash_tv(tarval *tv)
 {
-  return ((unsigned int)tv->value ^ (unsigned int)tv->mode) + tv->length;
+  return (PTR_TO_INT(tv->value) ^ PTR_TO_INT(tv->mode)) + tv->length;
 }
 
 static int hash_val(const void *value, unsigned int length)
@@ -945,6 +946,13 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
           }
           return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
 
+#if 0
+        case irms_reference:
+          /* allow 0 to be casted */
+          if (src == get_mode_null(src->mode))
+            return get_mode_null(m);
+          break;
+#endif
         default:
           break;
       }

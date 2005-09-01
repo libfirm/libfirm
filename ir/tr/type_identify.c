@@ -36,6 +36,7 @@
 #include "irprog_t.h"
 #include "mangle.h"
 #include "pset.h"
+#include "irtools.h"
 
 /* The hash set for types. */
 static pset *type_table = NULL;
@@ -62,8 +63,8 @@ int compare_strict (const void *tp1, const void *tp2) {
 
 /* stuff to compute a hash value for a type. */
 int firm_hash_name (type *tp) {
-  unsigned h = (unsigned)tp->type_op;
-  h = 9*h + (unsigned)tp->name;
+  unsigned h = (unsigned)PTR_TO_INT(tp->type_op);
+  h = 9*h + (unsigned)PTR_TO_INT(tp->name);
   return h;
 }
 

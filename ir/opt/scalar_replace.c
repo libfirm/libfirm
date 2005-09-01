@@ -37,9 +37,10 @@
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "irnode_t.h"
+#include "irtools.h"
 
-#define SET_VNUM(node, vnum) set_irn_link(node, (void *)vnum)
-#define GET_VNUM(node)       (unsigned)get_irn_link(node)
+#define SET_VNUM(node, vnum) set_irn_link(node, INT_TO_PTR(vnum))
+#define GET_VNUM(node)       (unsigned)PTR_TO_INT(get_irn_link(node))
 
 /**
  * A path element entry: it is either an entity
@@ -103,7 +104,7 @@ static unsigned path_hash(const path_t *path)
   unsigned i;
 
   for (i = 0; i < path->path_len; ++i)
-    hash ^= (unsigned)path->path[i].ent;
+    hash ^= (unsigned)PTR_TO_INT(path->path[i].ent);
 
   return hash >> 4;
 }
@@ -388,7 +389,7 @@ static unsigned allocate_value_numbers(pset *sels, entity *ent, unsigned vnum, i
           else
             printf("[%ld]", get_tarval_long(key->path[i].tv));
         }
-        printf(" = %u (%s)\n", (int)get_irn_link(sel), get_mode_name((*modes)[key->vnum]));
+        printf(" = %u (%s)\n", PTR_TO_INT(get_irn_link(sel)), get_mode_name((*modes)[key->vnum]));
       }
 #endif /* DEBUG_libfirm */
     }
