@@ -16,7 +16,7 @@ static stat_info_t *status;
 /**
  * calculated the dual logarithmus of |value|
  */
-static unsigned log2(long value) {
+static unsigned log2abs(long value) {
   unsigned res = 0;
 
   if (value < 0)
@@ -93,7 +93,7 @@ void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
     if (! tarval_is_long(tv))
       return;
 
-    bits = log2(get_tarval_long(tv));
+    bits = log2abs(get_tarval_long(tv));
 
     if (bits > ARR_SIZE(status->const_info.int_bits_count))
       bits = ARR_SIZE(status->const_info.int_bits_count);
