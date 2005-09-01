@@ -952,7 +952,7 @@ const void *sc_get_buffer(void)
   return (void*)calc_buffer;
 }
 
-const int sc_get_buffer_length(void)
+int sc_get_buffer_length(void)
 {
   return calc_buffer_size;
 }

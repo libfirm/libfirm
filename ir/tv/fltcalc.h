@@ -40,12 +40,12 @@ enum {
   FC_PACKED
 };
 
-/* rounding modes */
+/** IEEE-754 Rounding modes. */
 typedef enum {
-  FC_TONEAREST,
-  FC_TOPOSITIVE,
-  FC_TONEGATIVE,
-  FC_TOZERO
+  FC_TONEAREST,   /**< if unsure, to the nearest even */
+  FC_TOPOSITIVE,  /**< to +oo */
+  FC_TONEGATIVE,  /**< to -oo */
+  FC_TOZERO       /**< to 0 */
 } fc_rounding_mode_t;
 
 #define FC_DEFAULT_PRECISION 64
@@ -61,7 +61,7 @@ typedef enum {
  * returns the size of this buffer
  */
 const void *fc_get_buffer(void);
-const int fc_get_buffer_length(void);
+int fc_get_buffer_length(void);
 /*}@*/
 
 char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, char *result);
@@ -173,8 +173,8 @@ int fc_comp(const void *a, const void *b);
  * FC_TONEAREST (default):
  *    Any unrepresentable value is rounded to the nearest representable
  *    value. If it lies in the middle the value with the least significant
- *    bit of zero is chosen.
- *    Values too big to represent will round to +-infinity.
+ *    bit of zero is chosen (the even one).
+ *    Values too big to represent will round to +/-infinity.
  * FC_TONEGATIVE
  *    Any unrepresentable value is rounded towards negative infinity.
  *    Positive values too big to represent will round to the biggest
@@ -191,7 +191,7 @@ int fc_comp(const void *a, const void *b);
  *    Values too big to represent will round to the biggest/smallest
  *    representable value.
  *
- * These modes correspond to the modes required by the IEEE standard.
+ * These modes correspond to the modes required by the IEEE-754 standard.
  *
  * @param mode The new rounding mode. Any value other than the four
  *        defined values will have no effect.

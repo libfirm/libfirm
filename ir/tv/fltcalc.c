@@ -878,7 +878,7 @@ const void *fc_get_buffer(void)
   return calc_buffer;
 }
 
-const int fc_get_buffer_length(void)
+int fc_get_buffer_length(void)
 {
   return calc_buffer_size;
 }

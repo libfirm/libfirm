@@ -116,7 +116,7 @@ enum base_t {
  * function declarations
  */
 const void *sc_get_buffer(void);
-const int sc_get_buffer_length(void);
+int sc_get_buffer_length(void);
 
 void sc_val_from_str(const char *str, unsigned int len, void *buffer);
 void sc_val_from_long(long l, void *buffer);
