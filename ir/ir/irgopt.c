@@ -42,6 +42,7 @@
 #include "irflag_t.h"
 #include "irhooks.h"
 #include "iredges_t.h"
+#include "irtools.h"
 
 /* Defined in iropt.c */
 pset *new_identities (void);
@@ -398,7 +399,7 @@ copy_graph (int copy_node_nr) {
   set_new_node(om, nm);
 
   /* copy the live nodes */
-  irg_walk(get_nodes_block(oe), firm_copy_node, copy_preds, (void *)copy_node_nr);
+  irg_walk(get_nodes_block(oe), firm_copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
   /* copy_preds for the end node ... */
   set_nodes_block(ne, get_new_node(get_nodes_block(oe)));
 
@@ -412,7 +413,7 @@ copy_graph (int copy_node_nr) {
         (get_irn_visited(ka) < get_irg_visited(current_ir_graph))) {
       /* We must keep the block alive and copy everything reachable */
       set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
-      irg_walk(ka, firm_copy_node, copy_preds, (void *)copy_node_nr);
+      irg_walk(ka, firm_copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       add_End_keepalive(ne, get_new_node(ka));
     }
   }
@@ -425,7 +426,7 @@ copy_graph (int copy_node_nr) {
       if (get_irn_visited(ka) < get_irg_visited(current_ir_graph)) {
         /* We didn't copy the Phi yet.  */
         set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
-        irg_walk(ka, firm_copy_node, copy_preds, (void *)copy_node_nr);
+        irg_walk(ka, firm_copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       }
       add_End_keepalive(ne, get_new_node(ka));
     }
@@ -470,19 +471,19 @@ copy_graph_env (int copy_node_nr) {
   free_End(old_end);
   set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
   if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_frame(current_ir_graph), (void *)copy_node_nr);
+    firm_copy_node (get_irg_frame(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_frame(current_ir_graph), NULL);
   }
   if (get_irn_link(get_irg_globals(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_globals(current_ir_graph), (void *)copy_node_nr);
+    firm_copy_node (get_irg_globals(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_globals(current_ir_graph), NULL);
   }
   if (get_irn_link(get_irg_initial_mem(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_initial_mem(current_ir_graph), (void *)copy_node_nr);
+    firm_copy_node (get_irg_initial_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_initial_mem(current_ir_graph), NULL);
   }
   if (get_irn_link(get_irg_args(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_args(current_ir_graph), (void *)copy_node_nr);
+    firm_copy_node (get_irg_args(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_args(current_ir_graph), NULL);
   }
   set_irg_start      (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
@@ -495,13 +496,13 @@ copy_graph_env (int copy_node_nr) {
   set_irg_args       (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
 
   if (get_irn_link(get_irg_bad(current_ir_graph)) == NULL) {
-    firm_copy_node(get_irg_bad(current_ir_graph), (void *)copy_node_nr);
+    firm_copy_node(get_irg_bad(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
 
   if (get_irn_link(get_irg_no_mem(current_ir_graph)) == NULL) {
-    firm_copy_node(get_irg_no_mem(current_ir_graph), (void *)copy_node_nr);
+    firm_copy_node(get_irg_no_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_no_mem(current_ir_graph), NULL);
   }
   set_irg_no_mem(current_ir_graph, get_new_node(get_irg_no_mem(current_ir_graph)));
@@ -587,7 +588,7 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
       get_irn_link(n) == NULL) {
 
     /* save old predecessors in link field (position 0 is the block operand)*/
-    set_irn_link(n, (void *)get_irn_in(n));
+    set_irn_link(n, get_irn_in(n));
 
     /* count predecessors without bad nodes */
     old_irn_arity = get_irn_arity(n);
@@ -1273,7 +1274,7 @@ static void collect_calls2(ir_node *call, void *env) {
   if (op != op_Call) return;
 
   /* collect all call nodes */
-  eset_insert(x->call_nodes, (void *)call);
+  eset_insert(x->call_nodes, call);
   x->n_call_nodes++;
   x->n_call_nodes_orig++;
 

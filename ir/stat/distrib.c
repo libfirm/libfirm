@@ -13,6 +13,7 @@
 #endif
 
 #include "hashptr.h"
+#include "irtools.h"
 #include "xmalloc.h"
 #include "firmstat_t.h"
 
@@ -29,7 +30,7 @@ static unsigned addr_hash(const void *object)
  */
 static unsigned int_hash(const void *object)
 {
-  return (unsigned)object;
+  return (unsigned)PTR_TO_INT(object);
 }
 
 /**

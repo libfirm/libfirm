@@ -36,6 +36,7 @@
 # include "irflag_t.h"
 # include "array.h"
 # include "irhooks.h"
+# include "irtools.h"
 # include "opt_polymorphy.h"
 
 #ifdef DO_CACHEOPT
@@ -161,8 +162,8 @@ static int update_exc(ldst_info_t *info, ir_node *block, int pos)
   return 0;
 }
 
-#define get_irn_out_n(node)     (unsigned)get_irn_link(node)
-#define set_irn_out_n(node, n)  set_irn_link(adr, (void *)(n))
+#define get_irn_out_n(node)     (unsigned)PTR_TO_INT(get_irn_link(node))
+#define set_irn_out_n(node, n)  set_irn_link(adr, INT_TO_PTR(n))
 
 /**
  * walker, collects all Load/Store/Proj nodes
