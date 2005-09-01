@@ -888,6 +888,8 @@ static void pi_set_start_sol(problem_instance_t *pi) {
  */
 static void pi_solve_ilp(problem_instance_t *pi) {
 	pi_set_start_sol(pi);
+	double lower_bound = co_get_lower_bound(pi->co) - co_get_inevit_copy_costs(pi->co);
+	lpp_set_bound(pi->curr_lp, lower_bound);
 //	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
 	lpp_solve_cplex(pi->curr_lp);
 	DBG((dbg, LEVEL_1, "Solution time: %.2f\n", pi->curr_lp->sol_time));
@@ -930,8 +932,8 @@ static void pi_set_simplicials(problem_instance_t *pi) {
  * Sets the colors of irns according to the values of variables
  * provided by the solution of the solver.
  */
-static void pi_apply_solution(problem_instance_t *pi) {
-	int i;
+static int pi_apply_solution(problem_instance_t *pi) {
+	int res = 1, i;
 	double *sol;
 	lpp_sol_state_t state;
 	DBG((dbg, LEVEL_2, "Applying solution...\n"));
@@ -948,6 +950,7 @@ static void pi_apply_solution(problem_instance_t *pi) {
 	if (state != lpp_optimal) {
 		printf("WARNING %s: Solution state is not 'optimal': %d\n", pi->co->name, state);
 		assert(state >= lpp_feasible && "The solution should at least be feasible!");
+		res = 0;
 	}
 	for (i=0; i<pi->last_x_var - pi->first_x_var + 1; ++i) {
 		int nnr, col;
@@ -963,9 +966,11 @@ static void pi_apply_solution(problem_instance_t *pi) {
 				assert(0 && "This should be a x-var");
 		}
 	}
+	return res;
 }
 
-void co_ilp_opt(copy_opt_t *co, double time_limit) {
+int co_ilp_opt(copy_opt_t *co, double time_limit) {
+	int res = 1;
 	problem_instance_t *pi;
 
 	dbg = firm_dbg_register("ir.be.copyoptilp");
@@ -983,8 +988,9 @@ void co_ilp_opt(copy_opt_t *co, double time_limit) {
 #endif
 		lpp_set_time_limit(pi->curr_lp, time_limit);
 		pi_solve_ilp(pi);
-		pi_apply_solution(pi);
+		res = pi_apply_solution(pi);
 		pi_set_simplicials(pi);
 	}
 	free_pi(pi);
+	return res;
 }

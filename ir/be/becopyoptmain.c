@@ -22,10 +22,11 @@
 #include "phiclass.h"
 
 #define DO_HEUR
-#define DO_ILP
-#define DO_ILP_N_SEC
+#undef DO_ILP_5_SEC
+#undef DO_ILP_30_SEC
+#undef DO_ILP
 
-#define DEBUG_LVL SET_LEVEL_0
+#define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
 void be_copy_opt_init(void) {
@@ -65,7 +66,7 @@ static void load_colors(color_save_t *color_saver) {
 
 void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
-	int costs, costs_init=-1, costs_heur=-1, costs_ilp_n_sec=-1, costs_ilp=-1;
+	int costs, costs_init=-1, costs_heur=-1, costs_ilp_5_sec=-1, costs_ilp_30_sec=-1, costs_ilp=-1;
 	int lower_bound;
 	color_save_t saver;
 	saver.arch_env = chordal_env->session_env->main_env->arch_env;
@@ -110,24 +111,37 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	assert(lower_bound == -1 || costs_heur == -1 || lower_bound <= costs_heur);
 #endif
 
-	load_colors(&saver);
+	int was_optimal = 0;
 
-#ifdef DO_ILP_N_SEC
-	co_ilp_opt(co, 2.0);
+#ifdef DO_ILP_5_SEC
+	load_colors(&saver);
+	was_optimal = co_ilp_opt(co, 5.0);
 #ifdef DO_STAT
 	costs = co_get_copy_costs(co);
-	costs_ilp_n_sec = costs;
-	copystat_add_ilp_n_sec_costs(costs_ilp_n_sec);
-	DBG((dbg, LEVEL_1, "N_Sec costs: %3d\n", costs_ilp_n_sec));
+	costs_ilp_5_sec = costs;
+	copystat_add_ilp_5_sec_costs(costs_ilp_5_sec);
+	DBG((dbg, LEVEL_1, "5_Sec costs: %3d\n", costs_ilp_5_sec));
 #endif
-	assert(lower_bound == -1 || costs_ilp == -1 || lower_bound <= costs_ilp);
-	assert(costs_ilp == -1 || costs_heur == -1 || costs_ilp <= costs_heur);
 #endif
 
-	load_colors(&saver);
+
+#ifdef DO_ILP_30_SEC
+	if (!was_optimal) {
+		load_colors(&saver);
+		co_ilp_opt(co, 30.0);
+	}
+#ifdef DO_STAT
+	costs = co_get_copy_costs(co);
+	costs_ilp_30_sec = costs;
+	copystat_add_ilp_30_sec_costs(costs_ilp_30_sec);
+	DBG((dbg, LEVEL_1, "30_Sec costs: %3d\n", costs_ilp_30_sec));
+#endif
+#endif
+
 
 #ifdef DO_ILP
-	co_ilp_opt(co, 0.0);
+	load_colors(&saver);
+	co_ilp_opt(co, 1000.0);
 #ifdef DO_STAT
 	costs = co_get_copy_costs(co);
 	costs_ilp = costs;

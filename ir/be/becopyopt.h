@@ -162,7 +162,8 @@ void co_heur_opt(copy_opt_t *co);
 
 /**
  * Solves the problem using mixed integer programming
+ * @retruns 1 iff solution state was optimal
  */
-void co_ilp_opt(copy_opt_t *co, double time_limit);
+int co_ilp_opt(copy_opt_t *co, double time_limit);
 
 #endif
