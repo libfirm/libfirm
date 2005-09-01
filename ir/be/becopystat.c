@@ -72,7 +72,8 @@ enum vals_t {
 	I_COPIES_MAX,		/* max possible costs of copies*/
 	I_COPIES_INIT,		/* number of copies in initial allocation */
 	I_COPIES_HEUR,		/* number of copies after heuristic */
-	I_COPIES_NSEC,		/* number of copies after ilp with max n sec */
+	I_COPIES_5SEC,		/* number of copies after ilp with max n sec */
+	I_COPIES_30SEC,		/* number of copies after ilp with max n sec */
 	I_COPIES_OPT,		/* number of copies after ilp */
 	I_COPIES_IF,		/* number of copies inevitable due to root-arg-interf */
 
@@ -313,8 +314,11 @@ void copystat_add_init_costs(int costs) {
 void copystat_add_heur_costs(int costs) {
 	curr_vals[I_COPIES_HEUR] += costs;
 }
-void copystat_add_ilp_n_sec_costs(int costs) {
-	curr_vals[I_COPIES_NSEC] += costs;
+void copystat_add_ilp_5_sec_costs(int costs) {
+	curr_vals[I_COPIES_5SEC] += costs;
+}
+void copystat_add_ilp_30_sec_costs(int costs) {
+	curr_vals[I_COPIES_30SEC] += costs;
 }
 void copystat_add_opt_costs(int costs) {
 	curr_vals[I_COPIES_OPT] += costs;
