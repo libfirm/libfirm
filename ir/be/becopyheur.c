@@ -516,7 +516,7 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
  */
 static void ou_optimize(unit_t *ou) {
 	int i;
-	qnode_t *curr, *tmp;
+	qnode_t *curr = NULL, *tmp;
 	bitset_t *pos_regs = bitset_alloca(ou->co->chordal_env->cls->n_regs);
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
