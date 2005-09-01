@@ -890,8 +890,8 @@ static void pi_solve_ilp(problem_instance_t *pi) {
 	pi_set_start_sol(pi);
 	double lower_bound = co_get_lower_bound(pi->co) - co_get_inevit_copy_costs(pi->co);
 	lpp_set_bound(pi->curr_lp, lower_bound);
-//	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
-	lpp_solve_cplex(pi->curr_lp);
+	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
+//	lpp_solve_cplex(pi->curr_lp);
 	DBG((dbg, LEVEL_1, "Solution time: %.2f\n", pi->curr_lp->sol_time));
 }
 
