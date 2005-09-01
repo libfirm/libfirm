@@ -547,6 +547,11 @@ get_irn_except_attr (ir_node *node)
   return node->attr.except;
 }
 
+void *
+get_irn_generic_attr (ir_node *node) {
+  return &node->attr;
+}
+
 /** manipulate fields of individual nodes **/
 
 /* this works for all except Block */

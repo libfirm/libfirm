@@ -275,6 +275,7 @@ block_attr    get_irn_block_attr    (ir_node *node);
 load_attr     get_irn_load_attr     (ir_node *node);
 store_attr    get_irn_store_attr    (ir_node *node);
 except_attr   get_irn_except_attr   (ir_node *node);
+void         *get_irn_generic_attr  (ir_node *node);
 /** @} */
 
 /**
