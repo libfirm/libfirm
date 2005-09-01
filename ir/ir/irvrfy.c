@@ -1585,8 +1585,8 @@ static int check_dominance_for_node(ir_node *irn)
 			ASSERT_AND_RET_DBG(block_dominates(def_bl, use_bl),
 					"the definition of a value used violates the dominance property", 0,
 						ir_fprintf(stderr,
-							"graph %+F: %+F of %+F must dominate %+F of user %+F\n",
-							current_ir_graph, def_bl, op, use_bl, irn););
+							"graph %+F: %+F in %+F must dominate user %+F in %+F\n",
+							current_ir_graph, op, def_bl, irn, use_bl););
 		}
 	}
 
@@ -1652,8 +1652,8 @@ static void vrfy_wrap(ir_node *node, void *env)
 
   *res = irn_vrfy(node);
 
-  if(*res && get_irg_dom_state(current_ir_graph) == dom_consistent)
-	  *res = check_dominance_for_node(node);
+//  if(*res && get_irg_dom_state(current_ir_graph) == dom_consistent)
+//	  *res = check_dominance_for_node(node);
 }
 
 int irg_vrfy(ir_graph *irg)
