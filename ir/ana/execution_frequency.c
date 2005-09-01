@@ -18,6 +18,7 @@
 #include "firm_common_t.h"
 #include "set.h"
 #include "pdeq.h"
+#include "hashptr.h"
 
 #include "irprog_t.h"
 #include "irgraph_t.h"
@@ -49,9 +50,8 @@ static int exec_freq_cmp(const void *e1, const void *e2, size_t size) {
   return (ef1->reg != ef2->reg);
 }
 
-static INLINE unsigned int exec_freq_hash(void *e) {
-  unsigned int v = (unsigned int) ((reg_exec_freq *)e)->reg;
-  return v ^ (v>>8);
+static INLINE unsigned int exec_freq_hash(reg_exec_freq *e) {
+  return HASH_PTR(e->reg);
 }
 
 static INLINE void set_region_exec_freq(void *reg, double freq) {

@@ -19,6 +19,7 @@
 #include "pset.h"
 #include "irhooks.h"
 #include "array.h"
+#include "hashptr.h"
 
 /**
  * Metadata for block walker
@@ -51,14 +52,6 @@ static int addr_cmp(const void *elt, const void *key) {
 }
 
 /**
- * calculates a hash value for an block address
- * Addresses are typically aligned at 32bit, so we ignore the lowest bits
- */
-static INLINE unsigned block_hash(const ir_node *node) {
-  return (unsigned)node >> 3;
-}
-
-/**
  * Returns the associates block_entry_t for an block
  */
 static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
@@ -67,7 +60,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
   block_entry_t *elem;
 
   key.block = block;
-  elem = pset_find(ctx->blk_map, &key, block_hash(block));
+  elem = pset_find(ctx->blk_map, &key, HASH_PTR(block));
   if (elem)
     return elem;
 
@@ -79,7 +72,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
   elem->cf_list    = NEW_ARR_F(ir_node *, 0);
   elem->entry_list = NEW_ARR_F(ir_node *, 0);
 
-  return pset_insert(ctx->blk_map, elem, block_hash(block));
+  return pset_insert(ctx->blk_map, elem, HASH_PTR(block));
 }
 
 /**

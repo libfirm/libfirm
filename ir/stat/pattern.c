@@ -13,6 +13,7 @@
 #include "pset.h"
 #include "counter.h"
 #include "pattern_dmp.h"
+#include "hashptr.h"
 
 /*
  * just be make some things clear :-), the
@@ -132,7 +133,7 @@ static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len)
 /**
  * put a byte into the buffer
  */
-static INLINE void put_byte(CODE_BUFFER *buf, BYTE byte)
+static INLINE void put_byte(CODE_BUFFER *buf, unsigned byte)
 {
   if (buf->next < buf->end) {
     unsigned hash = buf->hash;
@@ -297,14 +298,6 @@ typedef struct _addr_entry_t {
 } addr_entry_t;
 
 /**
- * hash value of an address
- */
-static INLINE unsigned addr_hash(void *addr)
-{
-  return ((unsigned)addr) >> 3;
-}
-
-/**
  * compare two addresses
  */
 static int addr_cmp(const void *p1, const void *p2, size_t size) {
@@ -332,7 +325,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
   entry.addr = node;
   entry.id   = env->curr_id;
 
-  s_entry = set_hinsert(env->id_set, &entry, sizeof(entry), addr_hash(node));
+  s_entry = set_hinsert(env->id_set, &entry, sizeof(entry), HASH_PTR(node));
   r_entry = (addr_entry_t *)s_entry->dptr;
 
   if (r_entry->id != env->curr_id) {
@@ -354,6 +347,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
     ir_mode *mode = get_irn_mode(node);
 
     if (mode)
+      /* FIXME: not 64bit save */
       put_code(env->buf, (unsigned)mode);
     else
       put_tag(env->buf, VLC_TAG_EMPTY);

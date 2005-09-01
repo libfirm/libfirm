@@ -18,6 +18,7 @@
 #include "irdump_t.h"
 #include "irdom.h"
 #include "irflag.h"
+#include "hashptr.h"
 
 /*------------------------------------------------------------------*/
 /* A new in array via a hashmap. */
@@ -41,9 +42,8 @@ int region_attr_cmp(const void *e1, const void *e2, size_t size) {
   return (ra1->reg != ra2->reg);
 }
 
-static INLINE int attr_set_hash (region_attr *a) {
-  unsigned int v = (unsigned int) a->reg;
-  return v ^ (v>>8);
+static INLINE int attr_set_hash(region_attr *a) {
+  return HASH_PTR(a->reg);
 }
 
 static INLINE region_attr *get_region_attr(void *region) {
@@ -228,9 +228,9 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
 
     if (is_backedge(b, i)) {
       if (b != get_loop_element(l, 0).node) {
-	    if (get_firm_verbosity()) {
-	      printf("Loophead not at loop position 0. "); DDMN(b);
-	    }
+        if (get_firm_verbosity()) {
+	        printf("Loophead not at loop position 0. "); DDMN(b);
+        }
       }
       /* There are no backedges in the interval decomposition. */
       add_region_in(b, NULL);
