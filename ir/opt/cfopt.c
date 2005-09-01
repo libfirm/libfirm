@@ -5,7 +5,7 @@
  * Author:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
+ * Copyright:   (c) 1998-2004 Universitï¿½t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -24,7 +24,6 @@
 #include "iropt_t.h"
 #include "irgwalk.h"
 #include "irgmod.h"
-#include "irdump.h"
 #include "irvrfy.h"
 
 #include "array.h"
@@ -598,7 +597,7 @@ void optimize_cf(ir_graph *irg) {
         if (get_Block_dom_depth(ka) == -1)
           set_End_keepalive(end, i, new_Bad());
       }
-      else if (get_Block_dom_depth(get_nodes_block(ka)) == -1)
+      else if (is_Block_dead(get_nodes_block(ka)) || get_Block_dom_depth(get_nodes_block(ka)) == -1)
         set_End_keepalive(end, i, new_Bad());
     }
   }
