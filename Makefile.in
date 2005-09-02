@@ -25,6 +25,8 @@ enable_statistics := @enable_statistics@
 enable_external_effects := @enable_external_effects@
 # do we want to use the libcore for debug and ADT support
 enable_libcore := @enable_libcore@
+# do we want to disable xmalloc and friends
+disable_libiberty := @disable_libiberty@
 
 # suck in values for the linking procedure:
 LDFLAGS			= @LDFLAGS@
@@ -41,6 +43,12 @@ ifeq (@enable_external_effects@,yes)
 build_subdirs += ir/external
 endif
 
+ifeq ($(disable_libiberty),yes)
+build_add_lib := libfirm_xmalloc.a
+else
+build_add_lib :=
+endif
+
 subdirs := $(build_subdirs) ir/config
 
 SOURCES := Makefile.in MakeRules.in MakeTargets\
@@ -50,7 +58,7 @@ SOURCES := Makefile.in MakeRules.in MakeTargets\
 
 SHARED_LIB = libfirm.so
 
-INSTALL_LIBS = libfirm.a
+INSTALL_LIBS = libfirm.a $(build_add_lib)
 
 GENFILES := stamp-h config.log config.cache
 # config.status config.h.in $(srcdir)/stamp-h.in
@@ -64,7 +72,7 @@ include $(top_srcdir)/MakeTargets
 # add target firmjni if configured with --enable-firmjni
 all: firm
 
-firm: libfirm.a
+firm: libfirm.a $(build_add_lib)
 
 shared: $(SHARED_LIB)
 
@@ -73,12 +81,16 @@ $(OFILES): config.h Makefile
 $(XOFILES): subdir_all
 
 libfirm.a: $(XOFILES) $(OFILES)
-	$(AR) $(ARFLAGS) $@.new $(XOFILES) $(OFILES)
+	$(AR) $(ARFLAGS) $@.new $^
 	mv -f $@.new $@
 	$(RANLIB) $@
 
+libfirm_xmalloc.a: subdir_all ir/adt/xmalloc.o
+	$(AR) $(ARFLAGS) $@.new ir/adt/xmalloc.o
+	mv -f $@.new $@
+
 # dont know about xml here
-libfirm.so: subdir_all $(XOFILES) $(OFILES)
+libfirm.so: $(XOFILES)
 	ld -Bshareable -o ./libfirm.so $(XOFILES) -lm $(LDFLAGS) $(LIBS)
 
 testprograms:	libfirm.a

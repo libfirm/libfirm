@@ -25,6 +25,12 @@ SOURCES = Makefile.in 			        \
 
 ifeq ($(disable_libiberty),no)
 SOURCES += xmalloc.c
+ADDLIB =
+else
+ADDLIB = xmalloc.o
+
+xmalloc.o: xmalloc.c
+	$(COMPILE.c) -o $@ $<
 endif
 
 include $(topdir)/MakeRules
@@ -37,4 +43,4 @@ include $(top_srcdir)/MakeTargets
 pset.o:	set.c pset.h
 	$(COMPILE.c) -DPSET -o $@ $<
 
-all: subdir.o
+all: subdir.o $(ADDLIB)
