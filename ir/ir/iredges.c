@@ -103,7 +103,9 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 	if(!edges_activated(irg))
 		return;
 
+#if 0
 	assert(node_is_in_irgs_storage(irg, src) && "source not in irg");
+#endif
 
 	/*
 	 * Only do something, if the old and new target differ.
@@ -189,9 +191,10 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 
       ir_block_edge_t *block_edge;
 
+#if 0
 			if(!node_is_in_irgs_storage(irg, tgt))
 				return;
-
+#endif
 			assert(head->next && head->prev &&
 					"target list head must have been initialized");
 
