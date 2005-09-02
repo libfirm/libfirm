@@ -79,6 +79,7 @@ extern "C" {
 #include "funccall.h"       /* real function call optimization */
 #include "return.h"         /* Return node normalizations */
 #include "scalar_replace.h" /* Scalar replacement */
+//#include "opt_branches.h"   /* Branch optimizations */
 
 /* Analyses */
 #include "irouts.h"         /* Graph reversal / out edges. */
@@ -94,7 +95,6 @@ extern "C" {
 #include "execution_frequency.h"
 
 /* Support */
-#include "irtools.h"        /* often needed tools */
 #include "irgmod.h"         /* Support to modify ir */
 #include "irgwalk.h"        /* Support to walk ir */
 #include "typewalk.h"       /* Support to walk type information */
