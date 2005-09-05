@@ -207,11 +207,11 @@ static int is_std_fmt(const char *fmt)
 #endif
 
 struct settings {
-	char pad;
+	char flag_zero;
 	int width;
-	int left_just;
-	int put_plus;
-	int alternate;
+	int flag_minus;
+	int flag_plus;
+	int flag_hash;
 };
 
 /* Length specifiers. */
@@ -230,33 +230,135 @@ enum {
 static void dump_with_settings(const appender_t *app, void *object, size_t limit,
 		const struct settings *settings, const char *str)
 {
-	if(settings->width >= 0) {
+	if (settings->width >= 0) {
 		int i;
 		size_t n = strlen(str);
 		int lim = MIN(settings->width, (int)limit);
 		int to_print = MIN(lim, (int)n);
 		int to_pad = to_print - lim;
 
-		if(!settings->left_just)
+		if (!settings->flag_minus)
 			for(i = 0; i < to_pad; ++i)
-				app->append_char(object, lim, settings->pad);
+				app->append_char(object, lim, settings->flag_zero);
 
 		app->append_str(object, to_print, str);
 
-		if(!settings->left_just)
+		if (!settings->flag_minus)
 			for(i = 0; i < to_pad; ++i)
-				app->append_char(object, lim, settings->pad);
+				app->append_char(object, lim, settings->flag_zero);
 	}
 
 	else
 		app->append_str(object, limit, str);
 }
 
+/**
+ * emit a Firm object. Backported from irargs.
+ */
+static void firm_emit(char *buf, int buflen, char conversion,
+    const struct settings *occ, void *X)
+{
+#define A(s)    occ->flag_hash ? s " ": ""
+
+  firm_kind *obj = X;
+  int i, n;
+  ir_node *block;
+  char add[64];
+  char tv[256];
+  entity *ent;
+
+  buf[0] = '\0';
+  add[0] = '\0';
+
+  if (! X)
+    strncpy(buf, "(null)", buflen);
+  else {
+    switch (*obj) {
+    case k_BAD:
+      snprintf(buf, buflen, "BAD");
+      snprintf(add, sizeof(add), "[%p]", X);
+      break;
+    case k_entity:
+      snprintf(buf, buflen, "%s%s", A("ent"),
+          isupper(conversion) ? get_entity_ld_name(X): get_entity_name(X));
+      snprintf(add, sizeof(add), "[%ld]", get_entity_nr(X));
+      break;
+    case k_type:
+      snprintf(buf, buflen, "%s%s:%s", A("type"), get_type_tpop_name(X), get_type_name(X));
+      snprintf(add, sizeof(add), "[%ld]", get_type_nr(X));
+      break;
+    case k_ir_graph:
+      snprintf(buf, buflen, "%s%s", A("irg"), get_entity_name(get_irg_entity(X)));
+      snprintf(add, sizeof(add), "[%ld]", get_irg_graph_nr(X));
+      break;
+    case k_ir_node:
+      switch (conversion) {
+      case 'B':
+        block = is_no_Block(X) ? get_nodes_block(X) : X;
+        snprintf(buf, buflen, "%s%s%s", A("irn"), get_irn_opname(block),
+            get_mode_name(get_irn_mode(block)));
+        snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(block));
+        break;
+      case 'N':
+        snprintf(buf, buflen, "%ld", get_irn_node_nr(X));
+        break;
+      default:
+        if (is_Const(X)) {
+          tarval_snprintf(tv, sizeof(tv), get_Const_tarval(X));
+          snprintf(buf, buflen, "%s%s%s<%s>", A("irn"), get_irn_opname(X),
+            get_mode_name(get_irn_mode(X)), tv);
+        }
+        else
+          snprintf(buf, buflen, "%s%s%s", A("irn"), get_irn_opname(X),
+            get_mode_name(get_irn_mode(X)));
+        snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(X));
+      }
+      break;
+    case k_ir_mode:
+      snprintf(buf, buflen, "%s%s", A("mode"), get_mode_name(X));
+      break;
+    case k_tarval:
+      tarval_snprintf(tv, sizeof(tv), X);
+      snprintf(buf, buflen, "%s%s", A("tv"), tv);
+      break;
+    case k_ir_loop:
+      snprintf(buf, buflen, "ldepth[%d]", get_loop_depth(X));
+      break;
+    case k_ir_op:
+      snprintf(buf, buflen, "%s%s", A("op"), get_op_name(X));
+      break;
+    case k_ir_compound_graph_path:
+      n = get_compound_graph_path_length(X);
+
+      for (i = 0; i < n; ++i) {
+        ent = get_compound_graph_path_node(X, i);
+
+        strncat(buf, ".", buflen);
+        strncat(buf, get_entity_name(ent), buflen);
+        if (is_Array_type(get_entity_owner(ent))) {
+          snprintf(add, sizeof(add), "[%d]",
+            get_compound_graph_path_array_index(X, i));
+          strncat(buf, add, buflen);
+        }
+      }
+      add[0] = '\0';
+      break;
+
+    default:
+      snprintf(buf, buflen, "UNKWN");
+      snprintf(add, sizeof(add), "[%p]", X);
+    }
+  }
+
+  if (occ->flag_plus)
+  	strncat(buf, add, buflen);
+
+#undef A
+}
 
 /**
  * A small printf helper routine for ir nodes.
- * @param app An appender (this determines where the stuff is dumped
- * to).
+ * @param app An appender (this determines where the stuff is dumped to).
  * @param object A target passed to the appender.
  * @param limit The maximum number of characters to dump.
  * @param fmt The format string.
@@ -274,20 +376,20 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 
 	app->init(object, limit);
 
-	for(i = 0, n = strlen(fmt); i < n; ++i) {
+	for (i = 0, n = strlen(fmt); i < n; ++i) {
 		char ch = fmt[i];
 
-		if(ch == '%') {
+		if (ch == '%') {
 			int len;
 			const char *len_str = "";
 
 			struct settings settings;
 
-			settings.alternate = 0;
-			settings.pad = ' ';
+			settings.flag_hash = 0;
+			settings.flag_zero = ' ';
 			settings.width = -1;
-			settings.left_just = 0;
-			settings.put_plus = 0;
+			settings.flag_minus = 0;
+			settings.flag_plus  = 0;
 
 			ch = fmt[++i];
 
@@ -297,19 +399,19 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 			/* Set the string to print to the buffer by default. */
 			str = buf;
 
-			while(strchr("#0-+", ch)) {
+			while (strchr("#0-+", ch)) {
 				switch(ch) {
 					case '#':
-						settings.alternate = 1;
+						settings.flag_hash = 1;
 						break;
 					case '0':
-						settings.pad = '0';
+						settings.flag_zero = '0';
 						break;
 					case '-':
-						settings.left_just = 1;
+						settings.flag_minus = 1;
 						break;
 					case '+':
-						settings.put_plus = 1;
+						settings.flag_plus = 1;
 						break;
 				}
 
@@ -330,7 +432,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 			}
 
 			/* Ignore the precision */
-			if(ch == '.')
+			if (ch == '.')
 				while(isdigit(ch = fmt[++i]));
 
 			/* read the length modifier. */
@@ -358,7 +460,7 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 			}
 
 			/* Do the conversion specifier. */
-			switch(ch) {
+			switch (ch) {
 
 				/* The percent itself */
 				case '%':
@@ -432,55 +534,17 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 					break;
 
 				case 't':
-					str = get_type_name(va_arg(args, type *));
-					break;
-
-				case 'e':
-					str = get_entity_name(va_arg(args, entity *));
-					break;
-
-				case 'E':
-					str = get_entity_ld_name(va_arg(args, entity *));
-					break;
-
-				case 'T':
-					tarval_snprintf(buf, sizeof(buf), va_arg(args, tarval *));
-					break;
-
-				case 'n':
-					{
-						ir_node *irn = va_arg(args, ir_node *);
-						if (irn) {
-							if (is_Const(irn)) {
-								char tbuf[128];
-								tarval_snprintf(tbuf, sizeof(tbuf), get_Const_tarval(irn));
-								snprintf(buf, sizeof(buf), "%s%s<%s>:%ld",
-									get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), tbuf, get_irn_node_nr(irn));
-							}
-							else
-								snprintf(buf, sizeof(buf), "%s%s:%ld",
-									get_irn_opname(irn), get_mode_name(get_irn_mode(irn)), get_irn_node_nr(irn));
-						}
-						else
-							strncpy(buf, STRNIL, sizeof(buf));
-					}
-					break;
-
-				case 'O':
-					str = get_irn_opname(va_arg(args, ir_node *));
-					break;
-
-				case 'N':
-					snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(va_arg(args, ir_node *)));
-					break;
-
-				case 'm':
-					str = get_mode_name(va_arg(args, ir_mode *));
-					break;
-
-				case 'B':
-					snprintf(buf, sizeof(buf), "%ld",
-							get_irn_node_nr(get_nodes_block(va_arg(args, ir_node *))));
+        case 'e':
+        case 'E':
+        case 'T':
+        case 'n':
+        case 'O':
+        case 'm':
+        case 'B':
+        case 'P':
+        case 'F':
+        case 'f':
+          firm_emit(buf, sizeof(buf), ch, &settings, va_arg(args, void *));
 					break;
 
 				case 'b':
@@ -548,28 +612,6 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 						}
 						break;
 					}
-        case 'P':
-          {
-            compound_graph_path *path = va_arg(args, compound_graph_path *);
-            int i, l = get_compound_graph_path_length(path);
-            entity *ent;
-
-            for (i = 0; i < l; ++i) {
-              ent = get_compound_graph_path_node(path, i);
-
-              DUMP_STR(".");
-              DUMP_STR(get_entity_name(ent));
-              if (is_Array_type(get_entity_owner(ent))) {
-                snprintf(buf, sizeof(buf), "[%d]",
-                  get_compound_graph_path_array_index(path, i));
-                DUMP_STR(buf);
-              }
-            }
-
-            /* clean the buffer again */
-            buf[0] = '\0';
-            break;
-          }
 			}
 
 			dump_with_settings(app, object, limit, &settings, str);
