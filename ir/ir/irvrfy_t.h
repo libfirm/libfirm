@@ -35,7 +35,7 @@ extern const char *firm_vrfy_failure_msg;
 do { \
   if (opt_do_node_verification == NODE_VERIFICATION_ON) {\
     if (!(expr) && current_ir_graph != get_const_code_irg()) \
-    dump_ir_block_graph(current_ir_graph, "-assert"); \
+      dump_ir_block_graph(current_ir_graph, "-assert"); \
     assert((expr) && string); } \
   if (!(expr)) { \
     if (opt_do_node_verification == NODE_VERIFICATION_REPORT) \

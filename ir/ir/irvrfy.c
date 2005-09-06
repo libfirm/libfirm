@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier. Till Riedel. Michael Beck.
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universit�t Karlsruhe
+ * Copyright:   (c) 1998-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -1567,32 +1567,41 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
  * node dominates the block of the usage (for phis: the predecessor
  * block of the phi for the corresponding edge).
  */
-static int check_dominance_for_node(ir_node *irn)
+static int check_dominance_for_node(ir_node *use)
 {
-	/* This won't work for blocks and the end node */
-	if(!is_Block(irn) && irn != get_irg_end(current_ir_graph)) {
-		int i, n;
-		ir_node *bl = get_nodes_block(irn);
+  /* This won't work for blocks and the end node */
+  if (!is_Block(use) && use != get_irg_end(current_ir_graph)) {
+    int i;
+    ir_node *bl = get_nodes_block(use);
 
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			ir_node *op     = get_irn_n(irn, i);
-			ir_node *def_bl = get_nodes_block(op);
-			ir_node *use_bl = bl;
+    for (i = get_irn_arity(use) - 1; i >= 0; --i) {
+      ir_node *def    = get_irn_n(use, i);
+      ir_node *def_bl = get_nodes_block(def);
+      ir_node *use_bl = bl;
 
-			if(is_Phi(irn))
-				use_bl = get_Block_cfgpred_block(bl, i);
+      /* ignore dead definition blocks, will be removed */
+      if (is_Block_dead(def_bl) || get_Block_dom_depth(def_bl) == -1)
+        continue;
 
-			ASSERT_AND_RET_DBG(block_dominates(def_bl, use_bl),
-					"the definition of a value used violates the dominance property", 0,
-						ir_fprintf(stderr,
-							"graph %+F: %+F in %+F must dominate user %+F in %+F\n",
-							current_ir_graph, op, def_bl, irn, use_bl););
-		}
-	}
+      if (is_Phi(use))
+        use_bl = get_Block_cfgpred_block(bl, i);
 
-	return 1;
+      /* ignore dead use blocks, will be removed */
+      if (is_Block_dead(use_bl) || get_Block_dom_depth(use_bl) == -1)
+        continue;
+
+      ASSERT_AND_RET_DBG(
+        block_dominates(def_bl, use_bl),
+        "the definition of a value used violates the dominance property", 0,
+        ir_fprintf(stderr,
+                   "graph %+F: %+F of %+F must dominate %+F of user %+F input %d\n",
+                   current_ir_graph, def_bl, def, use_bl, use, i
+        );
+      );
+    }
+  }
+  return 1;
 }
-
 
 int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 {
@@ -1619,11 +1628,11 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 
   /* We don't want to test nodes whose predecessors are Bad,
      as we would have to special case that for each operation. */
-	if (op != op_Phi && op != op_Block)
-		for (i = get_irn_arity(n) - 1; i >= 0; --i) {
-			if (is_Bad(get_irn_n(n, i)))
-				return 1;
-		}
+  if (op != op_Phi && op != op_Block)
+    for (i = get_irn_arity(n) - 1; i >= 0; --i) {
+      if (is_Bad(get_irn_n(n, i)))
+        return 1;
+    }
 
   if (op->verify_node)
     return op->verify_node(n, irg);
@@ -1645,18 +1654,36 @@ int irn_vrfy(ir_node *n)
 /* Verify the whole graph.                                         */
 /*-----------------------------------------------------------------*/
 
-/* This *is* used, except gcc doesn't notice that */
-static void vrfy_wrap(ir_node *node, void *env)
+#ifdef DEBUG_libfirm
+/**
+ * Walker to check every node
+ */
+static void vrfy_wrap(ir_node *node, void *env) {
+  int *res = env;
+  *res = irn_vrfy(node);
+}
+
+/**
+ * Walker to check every node including SSA property.
+ * Only called if domonance info is available.
+ */
+static void vrfy_wrap_ssa(ir_node *node, void *env)
 {
   int *res = env;
 
   *res = irn_vrfy(node);
-
-//  if(*res && get_irg_dom_state(current_ir_graph) == dom_consistent)
-//	  *res = check_dominance_for_node(node);
+  if (*res)
+    *res = check_dominance_for_node(node);
 }
 
-int irg_vrfy(ir_graph *irg)
+#endif /* DEBUG_libfirm */
+
+/*
+ * Calls irn_vrfy for each node in irg.
+ * Graph must be in state "op_pin_state_pinned".
+ * If dominance info is available, check the SSA property.
+ */
+int irg_verify(ir_graph *irg, unsigned flags)
 {
   int res = 1;
 #ifdef DEBUG_libfirm
@@ -1667,7 +1694,17 @@ int irg_vrfy(ir_graph *irg)
   last_irg_error = NULL;
 
   assert(get_irg_pinned(irg) == op_pin_state_pinned);
-  irg_walk_graph(irg, vrfy_wrap, NULL, &res);
+
+  if (flags & VRFY_ENFORCE_SSA)
+    compute_doms(irg);
+
+  irg_walk_graph(
+    irg,
+    get_irg_dom_state(irg) == dom_consistent &&
+    get_irg_pinned(irg) == op_pin_state_pinned ?
+      vrfy_wrap_ssa : vrfy_wrap,
+    NULL, &res
+  );
 
   current_ir_graph = rem;
 
@@ -1679,9 +1716,7 @@ int irg_vrfy(ir_graph *irg)
     else
       fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)current_ir_graph);
   }
-
-
-#endif
+#endif /* DEBUG_libfirm */
 
   return res;
 }
@@ -1706,6 +1741,9 @@ typedef struct _vrfy_bad_env_t {
   int res;
 } vrfy_bad_env_t;
 
+/**
+ * Pre-Walker: check Bad predecessors of node.
+ */
 static void check_bads(ir_node *node, void *env)
 {
   vrfy_bad_env_t *venv = env;

@@ -65,13 +65,26 @@ int irn_vrfy_irg(struct ir_node *checknode, ir_graph *irg);
 int irn_vrfy_irg_dump(struct ir_node *checknode, ir_graph *irg, const char **bad_string);
 
 /**
- * Calls irn_vrfy for each node in irg.
+ * Flags for irg_verify().
+ */
+enum irg_verify_flags {
+  VRFY_NORMAL      = 0,      /**< check SSA property only if dominance information is available */
+  VRFY_ENFORCE_SSA = 1       /**< check SSA property by enforcing the dominance information recalculation */
+};
+
+/**
+ * Calls irn_vrfy() for each node in irg.
  * Graph must be in state "op_pin_state_pinned".
  *
  * \return
  * 	NON-zero on success.
  */
-int irg_vrfy(ir_graph *irg);
+int irg_verify(ir_graph *irg, unsigned flags);
+
+/**
+ * Compatibility macro. Deprecated soon.
+ */
+#define irg_vrfy(irg) irg_verify(irg, 0)
 
 /**
  * Possible flags for irg_vrfy_bads().
