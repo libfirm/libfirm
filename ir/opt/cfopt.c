@@ -5,7 +5,7 @@
  * Author:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universitï¿½t Karlsruhe
+ * Copyright:   (c) 1998-2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -24,6 +24,7 @@
 #include "iropt_t.h"
 #include "irgwalk.h"
 #include "irgmod.h"
+#include "irdump.h"
 #include "irvrfy.h"
 
 #include "array.h"
@@ -239,7 +240,6 @@ static int is_pred_of(ir_node *pred, ir_node *b) {
  **/
 static int test_whether_dispensable(ir_node *b, int pos) {
   int i, j, n_preds = 1;
-  int dispensable = 1;
   ir_node *cfop = get_Block_cfgpred(b, pos);
   ir_node *pred = get_nodes_block(cfop);
 
@@ -262,35 +262,45 @@ static int test_whether_dispensable(ir_node *b, int pos) {
       n_preds = get_Block_n_cfgpreds(pred);
     } else {
       /* b's pred blocks and pred's pred blocks must be pairwise disjunct.
-         Work preds < pos as if they were already removed. */
+         Handle all pred blocks with preds < pos as if they were already removed. */
       for (i = 0; i < pos; i++) {
-        ir_node *b_pred = get_nodes_block(get_Block_cfgpred(b, i));
+        ir_node *b_pred = get_Block_cfgpred_block(b, i);
         if (get_Block_block_visited(b_pred) + 1
             < get_irg_block_visited(current_ir_graph)) {
           for (j = 0; j < get_Block_n_cfgpreds(b_pred); j++) {
-            ir_node *b_pred_pred = get_nodes_block(get_Block_cfgpred(b_pred, j));
-            if (is_pred_of(b_pred_pred, pred)) dispensable = 0;
+            ir_node *b_pred_pred = get_Block_cfgpred_block(b_pred, j);
+            if (is_pred_of(b_pred_pred, pred))
+              goto non_dispensable;
           }
         } else {
-          if (is_pred_of(b_pred, pred)) dispensable = 0;
+          if (is_pred_of(b_pred, pred))
+            goto non_dispensable;
         }
       }
       for (i = pos +1; i < get_Block_n_cfgpreds(b); i++) {
-        ir_node *b_pred = get_nodes_block(get_Block_cfgpred(b, i));
-        if (is_pred_of(b_pred, pred)) dispensable = 0;
+        ir_node *b_pred = get_Block_cfgpred_block(b, i);
+        if (is_pred_of(b_pred, pred))
+          goto non_dispensable;
       }
-      if (!dispensable) {
-        set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
-        n_preds = 1;
-      } else {
-        n_preds = get_Block_n_cfgpreds(pred);
-      }
+      /* if we get here, the block is dispensable */
+      n_preds = get_Block_n_cfgpreds(pred);
     }
   }
 
   return n_preds;
+
+non_dispensable:
+  set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
+  return 1;
 }
 
+/**
+ * Store to defer the exchanged of Phi nodes.
+ */
+typedef struct _defer_ex_phi {
+  ir_node *phi_pred;    /**< the previous Phi node that will be replaced */
+  ir_node *phi;         /**< the new Phi node that replaces phi_pred */
+} defer_ex_phi;
 
 /**
  * This method removed Bad cf predecessors from Blocks and Phis, and removes
@@ -302,10 +312,10 @@ static int test_whether_dispensable(ir_node *b, int pos) {
  * for all nodes, not regarding whether there is a possibility for optimization.
  *
  * For each predecessor p of a Block b there are three cases:
- *  -#. The predecessor p is a Bad node:  just skip it.  The in array of b shrinks by one.
- *  -#. The predecessor p is empty.  Remove p.  All predecessors of p are now
+ *  -1. The predecessor p is a Bad node:  just skip it.  The in array of b shrinks by one.
+ *  -2. The predecessor p is empty.  Remove p.  All predecessors of p are now
  *      predecessors of b.
- *  -#. The predecessor p is a block containing useful code.  Just keep p as is.
+ *  -3. The predecessor p is a block containing useful code.  Just keep p as is.
  *
  * For Phi nodes f we have to check the conditions at the Block of f.
  * For cases 1 and 3 we proceed as for Blocks.  For case 2 we can have two
@@ -324,7 +334,7 @@ static int test_whether_dispensable(ir_node *b, int pos) {
  *       \      /                                      \      /
  *        \    /                                        |    /
  *        pred_b                                        |   /
- *         |   ____                                     |  /
+ *         |   ____                                     |  /  ____
  *         |  |    |                                    |  | |    |
  *         |  |    |       === optimized to ===>        \  | |    |
  *        loop_b   |                                     loop_b   |
@@ -343,6 +353,7 @@ static void optimize_blocks(ir_node *b, void *env) {
   int i, j, k, n, max_preds, n_preds, p_preds;
   ir_node *pred, *phi;
   ir_node **in;
+  defer_ex_phi *defers;
 
   /* Count the number of predecessor if this block is merged with pred blocks
      that are empty. */
@@ -351,6 +362,8 @@ static void optimize_blocks(ir_node *b, void *env) {
     max_preds += test_whether_dispensable(b, i);
   }
   in = xmalloc(max_preds * sizeof(*in));
+
+  defers = NEW_ARR_F(defer_ex_phi, 0);
 
 /*-
   printf(" working on "); DDMN(b);
@@ -372,7 +385,7 @@ static void optimize_blocks(ir_node *b, void *env) {
     /* Find the new predecessors for the Phi */
     p_preds = 0;
     for (i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
-      pred = get_nodes_block(get_Block_cfgpred(b, i));
+      pred = get_Block_cfgpred_block(b, i);
 
       if (is_Bad(get_Block_cfgpred(b, i))) {
         /* case Phi 1: Do nothing */
@@ -402,6 +415,10 @@ static void optimize_blocks(ir_node *b, void *env) {
 
            Somehow the removed Phi node can be used legally in loops.
            Therefore we replace the old phi by the new one.
+           This must be done _AFTER_ all Phis are optimized, or
+           it will fail if two Phis use the same pred_Phi.
+
+           FIXME: Is the following true? We ALWAYS replace it by the new one.
 
            Further we have to remove the old Phi node by replacing it
            by Bad.  Else it will remain in the keep alive array of End
@@ -409,9 +426,21 @@ static void optimize_blocks(ir_node *b, void *env) {
            replace it by Bad.
         */
         if (get_nodes_block(phi_pred) == pred) {
+          int i;
           /* remove the Phi as it might be kept alive. Further there
              might be other users. */
-          exchange(phi_pred, phi);  /* geht, ist aber doch semantisch falsch! Warum?? */
+          for (i = ARR_LEN(defers) - 1; i >= 0; --i)
+            if (defers[i].phi_pred == phi_pred)
+              break;
+
+          if (i < 0) {
+              /* we have a new replacement */
+            defer_ex_phi elem;
+
+            elem.phi_pred = phi_pred;
+            elem.phi      = phi;
+            ARR_APP1(defer_ex_phi, defers, elem);
+          }
         }
       } else {
         /* case Phi 3: */
@@ -429,6 +458,12 @@ static void optimize_blocks(ir_node *b, void *env) {
 
     phi = get_irn_link(phi);
   }
+
+  /* now, exchange all Phis */
+  for (i = ARR_LEN(defers) - 1; i >= 0; --i) {
+    exchange(defers[i].phi_pred, defers[i].phi);
+  }
+  DEL_ARR_F(defers);
 
   /*- This happens only if merge between loop backedge and single loop entry.
       See special case above. -*/
@@ -519,7 +554,7 @@ static void optimize_blocks(ir_node *b, void *env) {
            < get_irg_block_visited(current_ir_graph)) {
       /* case 2: It's an empty block and not yet visited. */
       assert(get_Block_n_cfgpreds(b) > 1);
-                        /* Else it should be optimized by equivalent_node. */
+      /* Else it should be optimized by equivalent_node. */
       for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
         ir_node *pred_block = get_Block_cfgpred(pred, j);
 
