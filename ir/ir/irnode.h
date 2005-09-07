@@ -1024,6 +1024,11 @@ type *get_irn_type(ir_node *n);
  */
 unsigned register_additional_node_data(unsigned size);
 
+/**
+ * Return a pointer to the node attributes.
+ * Needed for user-defined nodes.
+ */
+void *get_irn_generic_attr(ir_node *node);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
