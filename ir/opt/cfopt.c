@@ -240,11 +240,10 @@ static int is_pred_of(ir_node *pred, ir_node *b) {
  **/
 static int test_whether_dispensable(ir_node *b, int pos) {
   int i, j, n_preds = 1;
-  ir_node *cfop = get_Block_cfgpred(b, pos);
-  ir_node *pred = get_nodes_block(cfop);
+  ir_node *pred = get_Block_cfgpred_block(b, pos);
 
   /* Bad blocks will be optimized away, so we don't need space for them */
-  if (is_Bad(pred))
+  if (is_Block_dead(pred))
     return 0;
 
   if (get_Block_block_visited(pred) + 1
@@ -265,7 +264,8 @@ static int test_whether_dispensable(ir_node *b, int pos) {
          Handle all pred blocks with preds < pos as if they were already removed. */
       for (i = 0; i < pos; i++) {
         ir_node *b_pred = get_Block_cfgpred_block(b, i);
-        if (get_Block_block_visited(b_pred) + 1
+        if (! is_Block_dead(b_pred) &&
+            get_Block_block_visited(b_pred) + 1
             < get_irg_block_visited(current_ir_graph)) {
           for (j = 0; j < get_Block_n_cfgpreds(b_pred); j++) {
             ir_node *b_pred_pred = get_Block_cfgpred_block(b_pred, j);
