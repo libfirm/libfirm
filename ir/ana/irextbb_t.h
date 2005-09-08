@@ -23,6 +23,7 @@
 #include "firm_config.h"
 #include "irgraph_t.h"
 #include "irextbb.h"
+#include "irtools.h"
 
 /**
  * An extended block.
@@ -124,6 +125,15 @@ _get_extbb_block(ir_extblk *blk, int pos)
   return blk->blks[pos];
 }
 
+/**
+ * Return the leader basis block of an extended block
+ */
+static INLINE ir_node *
+_get_extbb_leader(ir_extblk *blk)
+{
+  return blk->blks[0];
+}
+
 #define get_extbb_visited(blk)		_get_extbb_visited(blk)
 #define set_extbb_visited(blk, v)	_set_extbb_visited(blk, v)
 #define mark_extbb_visited(blk)	  _mark_extbb_visited(blk)
@@ -132,5 +142,6 @@ _get_extbb_block(ir_extblk *blk, int pos)
 #define get_extbb_link(blk)       _get_extbb_link(blk)
 #define set_extbb_link(blk, link) _set_extbb_link(blk, link)
 #define get_extbb_n_blocks(blk)   _get_extbb_n_blocks(blk)
+#define get_extbb_leader(blk)     _get_extbb_leader(blk)
 
 #endif /* _IREXTBB_H_ */
