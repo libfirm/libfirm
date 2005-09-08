@@ -427,6 +427,36 @@ irg_inline_property get_irg_inline_property(const ir_graph *irg);
 /** Sets the inline property of a graph. */
 void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
 
+/** additional graph flags:
+ *  Tell about special properties of a graph. Some
+ *  of these may be discovered by analyses.
+ */
+typedef enum {
+  irg_const_function    = 0x00000001, /**< This graph did not access memory and calculates
+                                         its return values solely from its parameters.
+                                         GCC: __attribute__((const)). */
+  irg_pure_function     = 0x00000002, /**< This graph did NOT write to memory and calculates
+                                         its return values solely form its parameters and
+                                         the memory they points to (or global vars).
+                                         GCC: __attribute__((pure)). */
+  irg_noreturn_function = 0x00000004, /**< This graph did not return due to an aborting system
+                                         call.
+                                         GCC: __attribute__((noreturn)). */
+  irg_nothrow_function  = 0x00000008, /**< This graph cannot throw an exception.
+                                         GCC: __attribute__((nothrow)). */
+  irg_naked_function    = 0x00000010  /**< This graph is naked.
+                                         GCC: __attribute__((naked)). */
+} irg_additional_property;
+
+/** Returns the mask of the additional graph properties. */
+unsigned get_irg_additional_properties(const ir_graph *irg);
+
+/** Sets the mask of the additional graph properties. */
+void set_irg_additional_properties(ir_graph *irg, unsigned property_mask);
+
+/** Sets one additional graph property. */
+void set_irg_additional_property(ir_graph *irg, irg_additional_property flag);
+
 /** A void * field to link arbitrary information to the node. */
 void  set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (const ir_graph *irg);

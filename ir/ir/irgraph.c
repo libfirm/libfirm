@@ -176,15 +176,20 @@ new_r_ir_graph (entity *ent, int n_loc)
                        iropt.c */
   res->outs = NULL;
 
-  res->phase_state      = phase_building;
+  res->inline_property       = irg_inline_any;
+  res->additional_properties = 0;
+
+  res->phase_state         = phase_building;
   res->op_pin_state_pinned = op_pin_state_pinned;
-  res->outs_state       = outs_none;
-  res->dom_state        = dom_none;
-  res->typeinfo_state   = ir_typeinfo_none;
+  res->outs_state          = outs_none;
+  res->dom_state           = dom_none;
+  res->typeinfo_state      = ir_typeinfo_none;
   set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
-  res->loopinfo_state   = loopinfo_none;
-  res->class_cast_state = ir_class_casts_transitive;
-  res->extblk_state     = ir_extblk_info_none;
+  res->callee_info_state   = irg_callee_info_none;
+  res->loopinfo_state      = loopinfo_none;
+  res->execfreq_state      = exec_freq_none;
+  res->class_cast_state    = ir_class_casts_transitive;
+  res->extblk_state        = ir_extblk_info_none;
 
   /*-- Type information for the procedure of the graph --*/
   res->ent = ent;
@@ -667,6 +672,21 @@ irg_inline_property
 void
 (set_irg_inline_property)(ir_graph *irg, irg_inline_property s) {
   _set_irg_inline_property(irg, s);
+}
+
+unsigned
+(get_irg_additional_properties)(const ir_graph *irg) {
+  return _get_irg_additional_properties(irg);
+}
+
+void
+(set_irg_additional_properties)(ir_graph *irg, unsigned property_mask) {
+  _set_irg_additional_properties(irg, property_mask);
+}
+
+void
+(set_irg_additional_property)(ir_graph *irg, irg_additional_property flag) {
+  _set_irg_additional_property(irg, flag);
 }
 
 void

@@ -82,6 +82,10 @@ struct ir_graph {
   struct ir_node *current_block; /**< block for newly gen_*()-erated ir_nodes */
   struct obstack *extbb_obst;    /**< obstack for extended basic block info */
 
+  /* -- Fields for graph properties -- */
+  irg_inline_property inline_property;     /**< How to handle inlineing. */
+  unsigned additional_properties;          /**< additional graph properties. */
+
   /* -- Fields indicating different states of irgraph -- */
   irg_phase_state phase_state;       /**< compiler phase */
   op_pin_state op_pin_state_pinned;  /**< Flag for status of nodes */
@@ -89,7 +93,6 @@ struct ir_graph {
   irg_dom_state dom_state;           /**< Dominator information */
   ir_typeinfo_state typeinfo_state;        /**< Validity of type information */
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
-  irg_inline_property inline_property;     /**< How to handle inlineing. */
   irg_loopinfo_state loopinfo_state;       /**< state of loop information */
   exec_freq_state   execfreq_state;        /**< state of execution frequency information */
   ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
@@ -441,6 +444,21 @@ _set_irg_inline_property(ir_graph *irg, irg_inline_property s) {
   irg->inline_property = s;
 }
 
+static INLINE unsigned
+_get_irg_additional_properties(const ir_graph *irg) {
+  return irg->additional_properties;
+}
+
+static INLINE void
+_set_irg_additional_properties(ir_graph *irg, unsigned mask) {
+  irg->additional_properties = mask;
+}
+
+static INLINE void
+_set_irg_additional_property(ir_graph *irg, irg_additional_property flag) {
+  irg->additional_properties |= flag;
+}
+
 static INLINE void
 _set_irg_link(ir_graph *irg, void *thing) {
   irg->link = thing;
@@ -471,59 +489,62 @@ _inc_irg_block_visited(ir_graph *irg) {
   ++irg->block_visited;
 }
 
-#define get_interprocedural_view()         _get_interprocedural_view()
-#define is_ir_graph(thing)                 _is_ir_graph(thing)
-#define get_irg_start_block(irg)           _get_irg_start_block(irg)
-#define set_irg_start_block(irg, node)     _set_irg_start_block(irg, node)
-#define get_irg_start(irg)                 _get_irg_start(irg)
-#define set_irg_start(irg, node)           _set_irg_start(irg, node)
-#define get_irg_end_block(irg)             _get_irg_end_block(irg)
-#define set_irg_end_block(irg, node)       _set_irg_end_block(irg, node)
-#define get_irg_end(irg)                   _get_irg_end(irg)
-#define set_irg_end(irg, node)             _set_irg_end(irg, node)
-#define get_irg_end_reg(irg)               _get_irg_end_reg(irg)
-#define get_irg_end_except(irg)            _get_irg_end_except(irg)
-#define get_irg_cstore(irg)                _get_irg_cstore(irg)
-#define set_irg_cstore(irg, node)          _set_irg_cstore(irg, node)
-#define get_irg_frame(irg)                 _get_irg_frame(irg)
-#define set_irg_frame(irg, node)           _set_irg_frame(irg, node)
-#define get_irg_globals(irg)               _get_irg_globals(irg)
-#define set_irg_globals(irg, node)         _set_irg_globals(irg, node)
-#define get_irg_initial_mem(irg)           _get_irg_initial_mem(irg)
-#define set_irg_initial_mem(irg, node)     _set_irg_initial_mem(irg, node)
-#define get_irg_args(irg)                  _get_irg_args(irg)
-#define set_irg_args(irg, node)            _set_irg_args(irg, node)
-#define get_irg_bad(irg)                   _get_irg_bad(irg)
-#define set_irg_bad(irg, node)             _set_irg_bad(irg, node)
-#define get_irg_no_mem(irg)                _get_irg_no_mem(irg)
-#define set_irg_no_mem(irg, node)          _set_irg_no_mem(irg, node)
-#define get_irg_current_block(irg)         _get_irg_current_block(irg)
-#define set_irg_current_block(irg, node)   _set_irg_current_block(irg, node)
-#define get_irg_entity(irg)                _get_irg_entity(irg)
-#define set_irg_entity(irg, ent)           _set_irg_entity(irg, ent)
-#define get_irg_frame_type(irg)            _get_irg_frame_type(irg)
-#define set_irg_frame_type(irg, ftp)       _set_irg_frame_type(irg, ftp)
-#define get_irg_obstack(irg)               _get_irg_obstack(irg)
-#define get_irg_phase_state(irg)           _get_irg_phase_state(irg)
-#define set_irg_phase_low(irg)             _set_irg_phase_low(irg)
-#define get_irg_pinned(irg)                _get_irg_pinned(irg)
-#define get_irg_outs_state(irg)            _get_irg_outs_state(irg)
-#define set_irg_outs_inconsistent(irg)     _set_irg_outs_inconsistent(irg)
-#define get_irg_dom_state(irg)             _get_irg_dom_state(irg)
-#define set_irg_dom_inconsistent(irg)      _set_irg_dom_inconsistent(irg)
-#define get_irg_loopinfo_state(irg)        _get_irg_loopinfo_state(irg)
-#define set_irg_loopinfo_state(irg, s)     _set_irg_loopinfo_state(irg, s)
-#define set_irg_loopinfo_inconsistent(irg) _set_irg_loopinfo_inconsistent(irg)
-#define set_irg_pinned(irg, p)             _set_irg_pinned(irg, p)
-#define get_irg_callee_info_state(irg)     _get_irg_callee_info_state(irg)
-#define set_irg_callee_info_state(irg, s)  _set_irg_callee_info_state(irg, s)
-#define get_irg_inline_property(irg)       _get_irg_inline_property(irg)
-#define set_irg_inline_property(irg, s)    _set_irg_inline_property(irg, s)
-#define set_irg_link(irg, thing)           _set_irg_link(irg, thing)
-#define get_irg_link(irg)                  _get_irg_link(irg)
-#define get_irg_visited(irg)               _get_irg_visited(irg)
-#define get_irg_block_visited(irg)         _get_irg_block_visited(irg)
-#define set_irg_block_visited(irg, v)      _set_irg_block_visited(irg, v)
-#define inc_irg_block_visited(irg)         _inc_irg_block_visited(irg)
+#define get_interprocedural_view()            _get_interprocedural_view()
+#define is_ir_graph(thing)                    _is_ir_graph(thing)
+#define get_irg_start_block(irg)              _get_irg_start_block(irg)
+#define set_irg_start_block(irg, node)        _set_irg_start_block(irg, node)
+#define get_irg_start(irg)                    _get_irg_start(irg)
+#define set_irg_start(irg, node)              _set_irg_start(irg, node)
+#define get_irg_end_block(irg)                _get_irg_end_block(irg)
+#define set_irg_end_block(irg, node)          _set_irg_end_block(irg, node)
+#define get_irg_end(irg)                      _get_irg_end(irg)
+#define set_irg_end(irg, node)                _set_irg_end(irg, node)
+#define get_irg_end_reg(irg)                  _get_irg_end_reg(irg)
+#define get_irg_end_except(irg)               _get_irg_end_except(irg)
+#define get_irg_cstore(irg)                   _get_irg_cstore(irg)
+#define set_irg_cstore(irg, node)             _set_irg_cstore(irg, node)
+#define get_irg_frame(irg)                    _get_irg_frame(irg)
+#define set_irg_frame(irg, node)              _set_irg_frame(irg, node)
+#define get_irg_globals(irg)                  _get_irg_globals(irg)
+#define set_irg_globals(irg, node)            _set_irg_globals(irg, node)
+#define get_irg_initial_mem(irg)              _get_irg_initial_mem(irg)
+#define set_irg_initial_mem(irg, node)        _set_irg_initial_mem(irg, node)
+#define get_irg_args(irg)                     _get_irg_args(irg)
+#define set_irg_args(irg, node)               _set_irg_args(irg, node)
+#define get_irg_bad(irg)                      _get_irg_bad(irg)
+#define set_irg_bad(irg, node)                _set_irg_bad(irg, node)
+#define get_irg_no_mem(irg)                   _get_irg_no_mem(irg)
+#define set_irg_no_mem(irg, node)             _set_irg_no_mem(irg, node)
+#define get_irg_current_block(irg)            _get_irg_current_block(irg)
+#define set_irg_current_block(irg, node)      _set_irg_current_block(irg, node)
+#define get_irg_entity(irg)                   _get_irg_entity(irg)
+#define set_irg_entity(irg, ent)              _set_irg_entity(irg, ent)
+#define get_irg_frame_type(irg)               _get_irg_frame_type(irg)
+#define set_irg_frame_type(irg, ftp)          _set_irg_frame_type(irg, ftp)
+#define get_irg_obstack(irg)                  _get_irg_obstack(irg)
+#define get_irg_phase_state(irg)              _get_irg_phase_state(irg)
+#define set_irg_phase_low(irg)                _set_irg_phase_low(irg)
+#define get_irg_pinned(irg)                   _get_irg_pinned(irg)
+#define get_irg_outs_state(irg)               _get_irg_outs_state(irg)
+#define set_irg_outs_inconsistent(irg)        _set_irg_outs_inconsistent(irg)
+#define get_irg_dom_state(irg)                _get_irg_dom_state(irg)
+#define set_irg_dom_inconsistent(irg)         _set_irg_dom_inconsistent(irg)
+#define get_irg_loopinfo_state(irg)           _get_irg_loopinfo_state(irg)
+#define set_irg_loopinfo_state(irg, s)        _set_irg_loopinfo_state(irg, s)
+#define set_irg_loopinfo_inconsistent(irg)    _set_irg_loopinfo_inconsistent(irg)
+#define set_irg_pinned(irg, p)                _set_irg_pinned(irg, p)
+#define get_irg_callee_info_state(irg)        _get_irg_callee_info_state(irg)
+#define set_irg_callee_info_state(irg, s)     _set_irg_callee_info_state(irg, s)
+#define get_irg_inline_property(irg)          _get_irg_inline_property(irg)
+#define set_irg_inline_property(irg, s)       _set_irg_inline_property(irg, s)
+#define get_irg_additional_properties(irg)    _get_irg_additional_properties(irg)
+#define set_irg_additional_properties(irg, m) _set_irg_additional_properties(irg, m)
+#define set_irg_additional_property(irg, f)   _set_irg_additional_property(irg, f)
+#define set_irg_link(irg, thing)              _set_irg_link(irg, thing)
+#define get_irg_link(irg)                     _get_irg_link(irg)
+#define get_irg_visited(irg)                  _get_irg_visited(irg)
+#define get_irg_block_visited(irg)            _get_irg_block_visited(irg)
+#define set_irg_block_visited(irg, v)         _set_irg_block_visited(irg, v)
+#define inc_irg_block_visited(irg)            _inc_irg_block_visited(irg)
 
 # endif /* _IRGRAPH_T_H_ */
