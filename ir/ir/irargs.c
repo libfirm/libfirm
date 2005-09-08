@@ -163,7 +163,6 @@ static int firm_emit(lc_appendable_t *app,
       break;
     case k_ir_compound_graph_path:
       n = get_compound_graph_path_length(X);
-      entity *ent;
 
       for (i = 0; i < n; ++i) {
         ent = get_compound_graph_path_node(X, i);
