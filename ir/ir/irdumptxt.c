@@ -180,8 +180,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
     if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent)
       fprintf(F, "    recursion depth of procedure: %8.2lf\n", (double)get_irn_recursion_depth(n));
     if ((get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none) &&
-	(get_irp_loop_nesting_depth_state() != loop_nesting_depth_none) &&
-	(get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent))
+        (get_irp_loop_nesting_depth_state() != loop_nesting_depth_none) &&
+        (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent))
       fprintf(F, "    final evaluation:           **%8.2lf**\n", get_irn_final_cost(n));
 
     /* not dumped: graph_arr */
@@ -231,14 +231,14 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
     fprintf(F, "  calling method of type %s \n", get_type_name_ex(tp, &bad));
     if(get_unknown_type() != tp) {
       for (i = 0; i < get_method_n_params(tp); ++i)
-	fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+        fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
       for (i = 0; i < get_method_n_ress(tp); ++i)
-	fprintf(F, "    resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+        fprintf(F, "    resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
     }
     if (Call_has_callees(n)) {
       fprintf(F, "  possible callees: \n");
       for (i = 0; i < get_Call_n_callees(n); i++) {
-	fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
+        fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
       }
     }
   } break;
@@ -248,7 +248,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
     if (Call_has_callees(call)) {
       fprintf(F, "  possible callees: \n");
       for (i = 0; i < get_Call_n_callees(call); i++) {
-	fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
+        fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
       }
     }
   } break;
@@ -475,42 +475,42 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
     if (is_Class_type(get_entity_owner(ent))) {
       if (get_entity_n_overwrites(ent) > 0) {
-	fprintf(F, "%s  overwrites:\n", prefix);
-	for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
-	  entity *ov = get_entity_overwrites(ent, i);
-	  fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
-		  get_type_name(get_entity_owner(ov)));
-	}
+        fprintf(F, "%s  overwrites:\n", prefix);
+        for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
+	        entity *ov = get_entity_overwrites(ent, i);
+	        fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
+		        get_type_name(get_entity_owner(ov)));
+        }
       } else {
-	fprintf(F, "%s  Does not overwrite other entities. \n", prefix);
+        fprintf(F, "%s  Does not overwrite other entities. \n", prefix);
       }
       if (get_entity_n_overwrittenby(ent) > 0) {
-	fprintf(F, "%s  overwritten by:\n", prefix);
-	for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
-	  entity *ov = get_entity_overwrittenby(ent, i);
-	  fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
-		  get_type_name(get_entity_owner(ov)));
-	}
+        fprintf(F, "%s  overwritten by:\n", prefix);
+        for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
+	        entity *ov = get_entity_overwrittenby(ent, i);
+	        fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
+		        get_type_name(get_entity_owner(ov)));
+        }
       } else {
-	fprintf(F, "%s  Is not overwritten by other entities. \n", prefix);
+        fprintf(F, "%s  Is not overwritten by other entities. \n", prefix);
       }
 
       if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
-	entity *ov;
-	fprintf(F, "%s  transitive overwrites:\n", prefix);
-	for (ov = get_entity_trans_overwrites_first(ent);
-	     ov;
-	     ov = get_entity_trans_overwrites_next(ent)) {
-	  fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
-		  get_type_name(get_entity_owner(ov)));
-	}
-	fprintf(F, "%s  transitive overwritten by:\n", prefix);
-	for (ov = get_entity_trans_overwrittenby_first(ent);
-	     ov;
-	     ov = get_entity_trans_overwrittenby_next(ent)) {
-	  fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
-		  get_type_name(get_entity_owner(ov)));
-	}
+        entity *ov;
+        fprintf(F, "%s  transitive overwrites:\n", prefix);
+        for (ov = get_entity_trans_overwrites_first(ent);
+	           ov;
+	           ov = get_entity_trans_overwrites_next(ent)) {
+	        fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
+		        get_type_name(get_entity_owner(ov)));
+        }
+        fprintf(F, "%s  transitive overwritten by:\n", prefix);
+        for (ov = get_entity_trans_overwrittenby_first(ent);
+	           ov;
+	           ov = get_entity_trans_overwrittenby_next(ent)) {
+	        fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
+		        get_type_name(get_entity_owner(ov)));
+        }
       }
     }
 
@@ -536,6 +536,21 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       X(variability_part_constant);
       X(variability_constant);
     }
+
+    if (is_Method_type(get_entity_type(ent))) {
+      unsigned mask = get_entity_additional_properties(ent);
+
+      if (mask) {
+        fprintf(F, "\n%s  additional prop: ", prefix);
+
+        if (mask & irg_const_function)    fprintf(F, "const_function, ");
+        if (mask & irg_pure_function)     fprintf(F, "pure_function, ");
+        if (mask & irg_noreturn_function) fprintf(F, "noreturn_function, ");
+        if (mask & irg_nothrow_function)  fprintf(F, "nothrow_function, ");
+        if (mask & irg_naked_function)    fprintf(F, "naked_function, ");
+      }
+    }
+
     fprintf(F, "\n");
   } else {  /* no entattrs */
     fprintf(F, "%s(%3d) %*s: %s", prefix,
@@ -641,21 +656,21 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       int depth = get_weighted_loop_depth(acc);
       assert(depth < max_depth);
       if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
-	    L_freq[depth]++;
-	    max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
-	    if (addr_is_alloc(acc)) {
-	      LA_freq[depth]++;
-	      max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
-	    }
+        L_freq[depth]++;
+        max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
+        if (addr_is_alloc(acc)) {
+	        LA_freq[depth]++;
+	        max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
+        }
       } else if (get_irn_op(acc) == op_Store) {
-	    S_freq[depth]++;
-	    max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
-	    if (addr_is_alloc(acc)) {
-	      SA_freq[depth]++;
-	      max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
-	    }
+        S_freq[depth]++;
+        max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
+        if (addr_is_alloc(acc)) {
+	        SA_freq[depth]++;
+	        max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
+        }
       } else {
-	    assert(0);
+        assert(0);
       }
     }
 
@@ -664,11 +679,11 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
       fprintf(F, "%s  Load  Stats", prefix);
       for (i = 0; i <= max_L_freq; ++i) {
-	    if (L_freq[i])
-	      fprintf(F, "%c %d x  L%d", comma, L_freq[i], i);
-	    else
-	      fprintf(F, "         ");
-	    comma = ',';
+        if (L_freq[i])
+	        fprintf(F, "%c %d x  L%d", comma, L_freq[i], i);
+        else
+	        fprintf(F, "         ");
+        comma = ',';
       }
       fprintf(F, "\n");
     }
@@ -676,11 +691,11 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       //fprintf(F, "%s  LoadA Stats", prefix);
       char comma = ':';
       for (i = 0; i <= max_LA_freq; ++i) {
-	    //if (LA_freq[i])
-	      //fprintf(F, "%c %d x LA%d", comma, LA_freq[i], i);
-	      //else
-	      //fprintf(F, "         ");
-	    comma = ',';
+        //if (LA_freq[i])
+	        //fprintf(F, "%c %d x LA%d", comma, LA_freq[i], i);
+	        //else
+	        //fprintf(F, "         ");
+        comma = ',';
       }
       fprintf(F, "\n");
     }
@@ -689,11 +704,11 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
       fprintf(F, "%s  Store Stats", prefix);
       for (i = 0; i <= max_S_freq; ++i) {
-	    if (S_freq[i])
-	      fprintf(F, "%c %d x  S%d", comma, S_freq[i], i);
-	    else
-	      fprintf(F, "         ");
-	    comma = ',';
+        if (S_freq[i])
+	        fprintf(F, "%c %d x  S%d", comma, S_freq[i], i);
+        else
+	        fprintf(F, "         ");
+        comma = ',';
       }
       fprintf(F, "\n");
     }
@@ -701,11 +716,11 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       //fprintf(F, "%s  StoreAStats", prefix);
       char comma = ':';
       for (i = 0; i <= max_SA_freq; ++i) {
-	    //if (SA_freq[i])
-	      //fprintf(F, "%c %d x SA%d", comma, SA_freq[i], i);
-	    //else
-	      //fprintf(F, "         ");
-	    comma = ',';
+        //if (SA_freq[i])
+	        //fprintf(F, "%c %d x SA%d", comma, SA_freq[i], i);
+        //else
+	        //fprintf(F, "         ");
+        comma = ',';
       }
       fprintf(F, "\n");
     }
@@ -715,11 +730,11 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 #endif
     if (get_trouts_state() != outs_none) {
       if (is_Method_type(get_entity_type(ent))) {
-	fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
-	fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
+        fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
+        fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
       } else {
-	fprintf(F, "%s  Estimated #Loads:  %lf\n", prefix, get_entity_estimated_n_loads(ent));
-	fprintf(F, "%s  Estimated #Stores: %lf\n", prefix, get_entity_estimated_n_stores(ent));
+        fprintf(F, "%s  Estimated #Loads:  %lf\n", prefix, get_entity_estimated_n_loads(ent));
+        fprintf(F, "%s  Estimated #Stores: %lf\n", prefix, get_entity_estimated_n_stores(ent));
       }
     }
   }
@@ -739,7 +754,7 @@ void dump_entity (entity *ent) {
 void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity,
 				       int *max_disp, int disp[], const char *comma) {
 
-#if 0   /* Outputs loop depth of all occurences. */
+#if 0   /* Outputs loop depth of all occurrences. */
   int n_acc = get_entity_n_accesses(ent);
   int max_L_freq = -1;
   int max_S_freq = -1;
@@ -772,22 +787,22 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
       L_freq[depth]++;
       max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
       if (addr_is_alloc(acc)) {
-	    LA_freq[depth]++;
-	    max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
+        LA_freq[depth]++;
+        max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
       }
       if (get_entity_allocation(ent) == allocation_static) {
-	    disp[depth]++;
-	    *max_disp = (depth > *max_disp) ? depth : *max_disp;
+        disp[depth]++;
+        *max_disp = (depth > *max_disp) ? depth : *max_disp;
       }
     } else if (get_irn_op(acc) == op_Store) {
       S_freq[depth]++;
       max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
       if (addr_is_alloc(acc)) {
-	    SA_freq[depth]++;
-	    max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
+        SA_freq[depth]++;
+        max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
       }
       if (get_entity_allocation(ent) == allocation_static) {
-	    assert(0);
+        assert(0);
       }
     } else {
       assert(0);
@@ -824,11 +839,11 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
 
     if (get_trouts_state() != outs_none) {
       if (is_Method_type(get_entity_type(ent))) {
-	//fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
-	//fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
+        //fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
+        //fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
       } else {
-	fprintf(F, "%6.2lf ", get_entity_estimated_n_loads(ent));
-	fprintf(F, "%6.2lf", get_entity_estimated_n_stores(ent));
+        fprintf(F, "%6.2lf ", get_entity_estimated_n_loads(ent));
+        fprintf(F, "%6.2lf", get_entity_estimated_n_stores(ent));
       }
     }
 
@@ -844,7 +859,7 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
 
   if (verbosity & dump_verbosity_accessStats) {
 
-#if 0      /* Outputs loop depth of all occurences. */
+#if 0      /* Outputs loop depth of all occurrences. */
     int max_freq = -1;
     int max_disp = -1;
     int *freq, *disp; /* Accumulated accesses to static members: dispatch table. */
@@ -883,10 +898,10 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-	  ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-	if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
-	  dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, &max_disp, disp, comma);
-	}
+	        ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
+        if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
+	        dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, &max_disp, disp, comma);
+        }
       }
     }
 
@@ -913,10 +928,10 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-	  ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-	if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
-	  dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, NULL, 0, 0);
-	}
+	        ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
+        if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
+	        dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, NULL, 0, 0);
+        }
       }
     }
   }
@@ -946,10 +961,10 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     for (i = 0; i < get_class_n_members(tp); ++i) {
       entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-	  ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-	if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
-	  dump_entity_to_file_prefix(F, mem, "    ", verbosity);
-	}
+	        ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
+        if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
+	        dump_entity_to_file_prefix(F, mem, "    ", verbosity);
+        }
       }
     }
     if (verbosity & dump_verbosity_typeattrs) {
@@ -965,19 +980,19 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
       }
 
       if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
-	type *stp;
-	fprintf(F, "\n  transitive supertypes: ");
-	for (stp = get_class_trans_supertype_first(tp);
-	     stp;
-	     stp = get_class_trans_supertype_next(tp)) {
-	  fprintf(F, "\n    %s", get_type_name(stp));
-	}
-	fprintf(F, "\n  transitive subtypes: ");
-	for (stp = get_class_trans_subtype_first(tp);
-	     stp;
-	     stp = get_class_trans_subtype_next(tp)) {
-	  fprintf(F, "\n    %s", get_type_name(stp));
-	}
+        type *stp;
+        fprintf(F, "\n  transitive supertypes: ");
+        for (stp = get_class_trans_supertype_first(tp);
+	           stp;
+	           stp = get_class_trans_supertype_next(tp)) {
+	        fprintf(F, "\n    %s", get_type_name(stp));
+        }
+        fprintf(F, "\n  transitive subtypes: ");
+        for (stp = get_class_trans_subtype_first(tp);
+	           stp;
+	           stp = get_class_trans_subtype_next(tp)) {
+	        fprintf(F, "\n    %s", get_type_name(stp));
+        }
       }
 
       fprintf(F, "\n  peculiarity: %s\n", get_peculiarity_string(get_class_peculiarity(tp)));
@@ -1140,10 +1155,10 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     if (get_trouts_state() != outs_none) {
       fprintf(F, "  Estimated #Instances: %lf\n", get_type_estimated_n_instances(tp));
       if (is_Class_type(tp) && (get_irp_typeinfo_state() != ir_typeinfo_none)) {
-	fprintf(F, "  Estimated #dyn Calls: %lf\n", get_class_estimated_n_dyncalls(tp));
-	fprintf(F, "  Estimated #Upcasts:   %lf (#CastOps: %d)\n", get_class_estimated_n_upcasts(tp), get_class_n_upcasts(tp));
-	fprintf(F, "  Estimated #Downcasts: %lf (#CastOps: %d)\n", get_class_estimated_n_downcasts(tp), get_class_n_downcasts(tp));
-	assert(get_class_n_upcasts(tp) + get_class_n_downcasts(tp) == get_type_n_casts(tp));
+        fprintf(F, "  Estimated #dyn Calls: %lf\n", get_class_estimated_n_dyncalls(tp));
+        fprintf(F, "  Estimated #Upcasts:   %lf (#CastOps: %d)\n", get_class_estimated_n_upcasts(tp), get_class_n_upcasts(tp));
+        fprintf(F, "  Estimated #Downcasts: %lf (#CastOps: %d)\n", get_class_estimated_n_downcasts(tp), get_class_n_downcasts(tp));
+        assert(get_class_n_upcasts(tp) + get_class_n_downcasts(tp) == get_type_n_casts(tp));
       }
     }
 
