@@ -44,28 +44,11 @@
 /** general                                                       **/
 /*******************************************************************/
 
-entity *unknown_entity = NULL; entity *get_unknown_entity(void) { return unknown_entity; }
+entity *unknown_entity = NULL;
+
+entity *get_unknown_entity(void) { return unknown_entity; }
+
 #define UNKNOWN_ENTITY_NAME "unknown_entity"
-
-static INLINE entity *
-new_rd_entity (dbg_info *db, type *owner, ident *name, type *type);
-
-void
-init_entity (void)
-{
-  symconst_symbol sym;
-
-  assert(firm_unknown_type && "Call init_type before init_entity!");
-  assert(!unknown_entity && "Call init_entity only once!");
-  unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
-  set_entity_visibility(unknown_entity, visibility_external_allocated);
-  set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
-
-  sym.entity_p = unknown_entity;
-  current_ir_graph = get_const_code_irg();
-  unknown_entity->value = new_SymConst(sym, symconst_addr_ent);
-}
-
 
 /*-----------------------------------------------------------------*/
 /* ENTITY                                                          */
@@ -91,7 +74,14 @@ static INLINE void insert_entity_in_owner (entity *ent) {
 }
 
 /**
- * creates a new entity
+ * Creates a new entity. This entity is NOT inserted in the owner type.
+ *
+ * @param db     debug info for this entity
+ * @param owner  the owner type of the new entity
+ * @param name   the name of the new entity
+ * @param type   the type of the new entity
+ *
+ * @return the new created entity
  */
 static INLINE entity *
 new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
@@ -103,10 +93,12 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
 
   res = xmalloc(sizeof(*res));
   memset(res, 0, sizeof(*res));
-  res->kind = k_entity;
-  res->owner = owner;
-  res->name = name;
-  res->type = type;
+
+  res->kind    = k_entity;
+  res->name    = name;
+  res->ld_name = NULL;
+  res->owner   = owner;
+  res->type    = type;
 
   if (get_type_tpop(type) == type_method)
     res->allocation = allocation_static;
@@ -114,25 +106,30 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
     res->allocation = allocation_automatic;
 
   res->visibility = visibility_local;
-  res->offset = -1;
+
   if (is_Method_type(type)) {
     symconst_symbol sym;
     sym.entity_p = res;
     res->variability = variability_constant;
-    rem = current_ir_graph;
+    rem              = current_ir_graph;
     current_ir_graph = get_const_code_irg();
-    res->value = new_SymConst(sym, symconst_addr_ent);
+    res->value       = new_SymConst(sym, symconst_addr_ent);
     current_ir_graph = rem;
-  } else {
-    res->variability = variability_uninitialized;
-    res->value  = NULL;
-    res->values = NULL;
-    res->val_paths = NULL;
+    res->irg_add_properties = 0;
   }
-  res->peculiarity   = peculiarity_existent;
+  else {
+    res->variability = variability_uninitialized;
+    res->value       = NULL;
+    res->values      = NULL;
+    res->val_paths   = NULL;
+  }
+
   res->volatility    = volatility_non_volatile;
   res->stickyness    = stickyness_unsticky;
-  res->ld_name       = NULL;
+  res->offset        = -1;
+  res->link          = NULL;
+  res->peculiarity   = peculiarity_existent;
+
   if (is_Class_type(owner)) {
     res->overwrites    = NEW_ARR_F(entity *, 0);
     res->overwrittenby = NEW_ARR_F(entity *, 0);
@@ -141,8 +138,6 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
     res->overwrittenby = NULL;
   }
   res->irg = NULL;
-
-  //res->accesses = NULL;
 
 #ifdef DEBUG_libfirm
   res->nr = get_irp_new_node_nr();
@@ -187,10 +182,10 @@ static void free_entity_attrs(entity *ent) {
   if (ent->val_paths) {
     if (is_compound_entity(ent))
       for (i = 0; i < get_compound_ent_n_values(ent); i++)
-    if (ent->val_paths[i]) ;
-    /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
-    /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-    /* DEL_ARR_F(ent->val_paths); */
+        if (ent->val_paths[i]) ;
+        /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
+        /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
+        /* DEL_ARR_F(ent->val_paths); */
   }
   ent->val_paths = NULL;
   ent->values = NULL;
@@ -1298,4 +1293,31 @@ int (entity_visited)(entity *ent) {
 
 int (entity_not_visited)(entity *ent) {
   return _entity_not_visited(ent);
+}
+
+unsigned (get_entity_additional_properties)(const entity *ent) {
+  return _get_entity_additional_properties(ent);
+}
+
+void (set_entity_additional_properties)(entity *ent, unsigned property_mask) {
+  _set_entity_additional_properties(ent, property_mask);
+}
+
+void (set_entity_additional_property)(entity *ent, unsigned flag) {
+  _set_entity_additional_property(ent, (irg_additional_property)flag);
+}
+
+void init_entity(void)
+{
+  symconst_symbol sym;
+
+  assert(firm_unknown_type && "Call init_type before init_entity!");
+  assert(!unknown_entity && "Call init_entity only once!");
+  unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
+  set_entity_visibility(unknown_entity, visibility_external_allocated);
+  set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
+
+  sym.entity_p = unknown_entity;
+  current_ir_graph = get_const_code_irg();
+  unknown_entity->value = new_SymConst(sym, symconst_addr_ent);
 }

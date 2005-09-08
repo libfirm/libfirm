@@ -109,6 +109,8 @@ struct entity {
   ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
                The ir_graph constructor automatically sets this field.
                Yes, it must be here. */
+  unsigned irg_add_properties;  /**< If (type == method_type) this is a set of additional.
+               graph flags if the irg of an entity is not known. */
 
   /* ------------- fields for analyses ---------------*/
 
@@ -323,36 +325,74 @@ _entity_not_visited(entity *ent) {
   return _get_entity_visited(ent) < firm_type_visited;
 }
 
-#define is_entity(thing)                        _is_entity(thing)
-#define get_entity_name(ent)                    _get_entity_name(ent)
-#define get_entity_ident(ent)                   _get_entity_ident(ent)
-#define get_entity_owner(ent)                   _get_entity_owner(ent)
-#define get_entity_ld_ident(ent)                _get_entity_ld_ident(ent)
-#define set_entity_ld_ident(ent, ld_ident)      _set_entity_ld_ident(ent, ld_ident)
-#define get_entity_ld_name(ent)                 _get_entity_ld_name(ent)
-#define get_entity_type(ent)                    _get_entity_type(ent)
-#define set_entity_type(ent, type)              _set_entity_type(ent, type)
-#define get_entity_allocation(ent)              _get_entity_allocation(ent)
-#define set_entity_allocation(ent, al)          _set_entity_allocation(ent, al)
-#define get_entity_visibility(ent)              _get_entity_visibility(ent)
-#define get_entity_variability(ent)             _get_entity_variability(ent)
-#define get_entity_volatility(ent)              _get_entity_volatility(ent)
-#define set_entity_volatility(ent, vol)         _set_entity_volatility(ent, vol)
-#define get_entity_peculiarity(ent)             _get_entity_peculiarity(ent)
-#define set_entity_peculiarity(ent, pec)        _set_entity_peculiarity(ent, pec)
-#define get_entity_stickyness(ent)              _get_entity_stickyness(ent)
-#define set_entity_stickyness(ent, stickyness)  _set_entity_stickyness(ent, stickyness)
-#define get_entity_offset_bits(ent)             _get_entity_offset_bits(ent)
-#define get_entity_offset_bytes(ent)            _get_entity_offset_bytes(ent)
-#define set_entity_offset_bits(ent, offset)     _set_entity_offset_bits(ent, offset)
-#define set_entity_offset_bytes(ent, offset)    _set_entity_offset_bytes(ent, offset)
-#define get_entity_link(ent)                    _get_entity_link(ent)
-#define set_entity_link(ent, l)                 _set_entity_link(ent, l)
-#define get_entity_irg(ent)                     _get_entity_irg(ent)
-#define get_entity_visited(ent)                 _get_entity_visited(ent)
-#define set_entity_visited(ent, num)            _set_entity_visited(ent, num)
-#define mark_entity_visited(ent)                _mark_entity_visited(ent)
-#define entity_visited(ent)                     _entity_visited(ent)
-#define entity_not_visited(ent)                 _entity_not_visited(ent)
+static INLINE unsigned
+_get_entity_additional_properties(const entity *ent) {
+  ir_graph *irg;
+  assert(ent && ent->kind == k_entity);
+  assert(ent == unknown_entity || is_Method_type(ent->type));
+  irg = _get_entity_irg(ent);
+  return irg ?
+    get_irg_additional_properties(irg) :
+    ent->irg_add_properties;
+}
+
+static INLINE void
+_set_entity_additional_properties(entity *ent, unsigned mask) {
+  ir_graph *irg;
+  assert(ent && ent->kind == k_entity);
+  assert(ent == unknown_entity || is_Method_type(ent->type));
+  irg = _get_entity_irg(ent);
+  if (irg)
+    set_irg_additional_properties(irg, mask);
+  else
+    ent->irg_add_properties = mask;
+}
+
+static INLINE void
+_set_entity_additional_property(entity *ent, irg_additional_property flag) {
+  ir_graph *irg;
+  assert(ent && ent->kind == k_entity);
+  assert(ent == unknown_entity || is_Method_type(ent->type));
+  irg = _get_entity_irg(ent);
+  if (irg)
+    set_irg_additional_property(irg, flag);
+  else
+    ent->irg_add_properties |= flag;
+}
+
+#define is_entity(thing)                         _is_entity(thing)
+#define get_entity_name(ent)                     _get_entity_name(ent)
+#define get_entity_ident(ent)                    _get_entity_ident(ent)
+#define get_entity_owner(ent)                    _get_entity_owner(ent)
+#define get_entity_ld_ident(ent)                 _get_entity_ld_ident(ent)
+#define set_entity_ld_ident(ent, ld_ident)       _set_entity_ld_ident(ent, ld_ident)
+#define get_entity_ld_name(ent)                  _get_entity_ld_name(ent)
+#define get_entity_type(ent)                     _get_entity_type(ent)
+#define set_entity_type(ent, type)               _set_entity_type(ent, type)
+#define get_entity_allocation(ent)               _get_entity_allocation(ent)
+#define set_entity_allocation(ent, al)           _set_entity_allocation(ent, al)
+#define get_entity_visibility(ent)               _get_entity_visibility(ent)
+#define get_entity_variability(ent)              _get_entity_variability(ent)
+#define get_entity_volatility(ent)               _get_entity_volatility(ent)
+#define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)
+#define get_entity_peculiarity(ent)              _get_entity_peculiarity(ent)
+#define set_entity_peculiarity(ent, pec)         _set_entity_peculiarity(ent, pec)
+#define get_entity_stickyness(ent)               _get_entity_stickyness(ent)
+#define set_entity_stickyness(ent, stickyness)   _set_entity_stickyness(ent, stickyness)
+#define get_entity_offset_bits(ent)              _get_entity_offset_bits(ent)
+#define get_entity_offset_bytes(ent)             _get_entity_offset_bytes(ent)
+#define set_entity_offset_bits(ent, offset)      _set_entity_offset_bits(ent, offset)
+#define set_entity_offset_bytes(ent, offset)     _set_entity_offset_bytes(ent, offset)
+#define get_entity_link(ent)                     _get_entity_link(ent)
+#define set_entity_link(ent, l)                  _set_entity_link(ent, l)
+#define get_entity_irg(ent)                      _get_entity_irg(ent)
+#define get_entity_visited(ent)                  _get_entity_visited(ent)
+#define set_entity_visited(ent, num)             _set_entity_visited(ent, num)
+#define mark_entity_visited(ent)                 _mark_entity_visited(ent)
+#define entity_visited(ent)                      _entity_visited(ent)
+#define entity_not_visited(ent)                  _entity_not_visited(ent)
+#define get_entity_additional_properties(ent)    _get_entity_additional_properties(ent)
+#define set_entity_additional_properties(ent, m) _set_entity_additional_properties(ent, m)
+#define set_entity_additional_property(ent, f)   _set_entity_additional_property(ent, f)
 
 # endif /* _ENTITY_T_H_ */

@@ -52,6 +52,13 @@
 *                    The ir_graph constructor automatically sets this field.
 *                    If (type != method_type) access of this field will cause
 *                    an assertion.
+*  - unsigned irg_add_properties:
+*                    If (type == method_type) this mirrors the additional flags
+*                    of the corresponding irg if set or is an own set for
+*                    this entity. This construction allows to specify these
+*                    flags even if no graph is available.
+*                    If (type != method_type) access of this field will cause
+*                    an assertion.
 */
 
 # ifndef _ENTITY_H_
@@ -60,6 +67,7 @@
 # include "ident.h"
 # include "type.h"
 # include "dbginfo.h"
+# include "irgraph.h"
 
 # include "tr_inheritance.h"
 
@@ -82,7 +90,7 @@ typedef struct ir_graph ir_graph;
 
 /**
  *
- *   An abstract data type to represent program entites.
+ *   An abstract data type to represent program entities.
  *
  *   @param owner      A compound type this entity is a part of.
  *   @param type       The type of this entity.
@@ -93,7 +101,7 @@ typedef struct ir_graph ir_graph;
  *   @param visibility A flag indicating the visibility of this entity (values: local,
  *              external_visible,  external_allocated)
  *   @param variability A flag indicating the variability of this entity (values:
- *              uninitialized, initalized, part_constant, constant)
+ *              uninitialized, initialized, part_constant, constant)
  *   @param volatility @@@
  *   @param offset     The offset of the entity within the compound object in bits.  Only set
  *              if the owner in the state "layout_fixed".
@@ -250,7 +258,7 @@ const char *get_visibility_name(visibility vis);
 
 /** This enumeration flags the variability of entities. */
 typedef enum {
-  variability_uninitialized,    /**< The content of the entity is completely unknown. */
+  variability_uninitialized,    /**< The content of the entity is completely unknown. Default. */
   variability_initialized,      /**< After allocation the entity is initialized with the
                              value given somewhere in the entity. */
   variability_part_constant,    /**< For entities of compound types.
@@ -270,7 +278,7 @@ const char *get_variability_name(ent_variability var);
 
 /** This enumeration flags the volatility of entities. */
 typedef enum {
-  volatility_non_volatile,    /**< The entity is not volatile */
+  volatility_non_volatile,    /**< The entity is not volatile. Default. */
   volatility_is_volatile      /**< The entity is volatile */
 } ent_volatility;
 
@@ -287,9 +295,9 @@ const char *get_volatility_name(ent_volatility var);
 typedef enum {
   stickyness_unsticky,          /**< The entity can be removed from
                                    the program, unless contraindicated
-                                   by other attributes */
+                                   by other attributes. Default. */
   stickyness_sticky             /**< The entity must remain in the
-                                   program in any case */
+                                   program in any case. */
 } ent_stickyness;
 
 /** Get the entity's stickyness */
@@ -538,6 +546,15 @@ int        entity_visited(entity *ent);
 /** Returns true if this entity was not visited. */
 int        entity_not_visited(entity *ent);
 
+/** Returns the mask of the additional graph properties. */
+unsigned get_entity_additional_properties(const entity *ent);
+
+/** Sets the mask of the additional graph properties. */
+void set_entity_additional_properties(entity *ent, unsigned property_mask);
+
+/** Sets one additional graph property. */
+void set_entity_additional_property(entity *ent, unsigned flag);
+
 /**
  * @page unknown_entity
  *
@@ -557,6 +574,7 @@ int        entity_not_visited(entity *ent);
  *    ld_name       = "unknown_entity"
  *    owner         = unknown_type
  *    type          = unknown_type
+ *    allocation    = allocation_automatic
  *    visibility    = visibility_external_allocated
  *    offset        = -1
  *    variability   = variability_uninitialized
@@ -575,7 +593,8 @@ int        entity_not_visited(entity *ent);
  */
 /* A variable that contains the only unknown entity. */
 extern entity *unknown_entity;
-/* Returns the unknown entity */
+
+/** Returns the unknown entity */
 entity *get_unknown_entity(void);
 
 # endif /* _ENTITY_H_ */
