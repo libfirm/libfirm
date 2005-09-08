@@ -74,7 +74,7 @@ class Empty {
 	Ircons.matureImmBlock (Irgraph.getIrgEndBlock(irg));
 
 	/* Verify the graph.  Finds some very bad errors in the graph. */
-	Irvrfy.irgVrfy(irg);
+	Irvrfy.irgVerify(irg, Irvrfy.VRFY_NORMAL);
 	Ircons.irgFinalizeCons (irg);
 
 	System.out.println("Done building the graph.  Dumping it.");

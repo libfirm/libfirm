@@ -120,7 +120,7 @@ class IfElseExample {
 	/* Now we can mature the end block as all it's predecessors are known. */
 	Ircons.matureImmBlock (Irgraph.getIrgEndBlock(irg));
 
-	Irvrfy.irgVrfy(irg);
+	Irvrfy.irgVerify(irg, Irvrfy.VRFY_NORMAL);
 	Ircons.irgFinalizeCons (irg);
 
 	System.out.println("Done building the graph.  Optimizing it.");
