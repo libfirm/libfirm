@@ -67,10 +67,10 @@ int irn_vrfy_irg_dump(struct ir_node *checknode, ir_graph *irg, const char **bad
 /**
  * Flags for irg_verify().
  */
-enum irg_verify_flags {
+typedef enum _irg_verify_flags_t {
   VRFY_NORMAL      = 0,      /**< check SSA property only if dominance information is available */
   VRFY_ENFORCE_SSA = 1       /**< check SSA property by enforcing the dominance information recalculation */
-};
+} irg_verify_flags_t;
 
 /**
  * Calls irn_vrfy() for each node in irg.
