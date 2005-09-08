@@ -68,10 +68,11 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
   int n = get_Block_n_cfgpreds(block);
   env_t *env = ctx;
 
-  if (n > 1 || block == get_irg_start_block(current_ir_graph)) {
+  if (n <= 0 || n > 1 || block == get_irg_start_block(current_ir_graph)) {
     /*
      * block is a JOIN-node ie he control flow from
      * many other blocks joins here. block is a leader.
+     * Note that we handle unreachable blocks (n <= 0) here too.
      */
     allocate_extblk(block, env);
   }
