@@ -48,12 +48,17 @@
 
 #define MAX_PROJ	IMAX(pn_Load_max, pn_Store_max)
 
+enum changes_t {
+  DF_CHANGED = 1,       /**< data flow changed */
+  CF_CHANGED = 2,       /**< control flow changed */
+};
+
 /**
  * walker environment
  */
 typedef struct _walk_env_t {
   struct obstack obst;		/**< list of all stores */
-  int changes;
+  unsigned changes;             /**< a bitmask of graph changes */
 } walk_env_t;
 
 /**
@@ -87,14 +92,6 @@ enum block_flags_t {
 typedef struct _block_info_t {
   unsigned flags;               /**< flags for the block */
 } block_info_t;
-
-/**
- * walker, clears all links first
- */
-static void init_links(ir_node *n, void *env)
-{
-  set_irn_link(n, NULL);
-}
 
 /**
  * get the Load/Store info of a node
@@ -133,7 +130,7 @@ static block_info_t *get_block_info(ir_node *node, walk_env_t *env)
 /**
  * update the projection info for a Load/Store
  */
-static int update_projs(ldst_info_t *info, ir_node *proj)
+static unsigned update_projs(ldst_info_t *info, ir_node *proj)
 {
   long nr = get_Proj_proj(proj);
 
@@ -142,7 +139,7 @@ static int update_projs(ldst_info_t *info, ir_node *proj)
   if (info->projs[nr]) {
     /* there is already one, do CSE */
     exchange(proj, info->projs[nr]);
-    return 1;
+    return DF_CHANGED;
   }
   else {
     info->projs[nr] = proj;
@@ -153,7 +150,7 @@ static int update_projs(ldst_info_t *info, ir_node *proj)
 /**
  * update the exception block info for a Load/Store
  */
-static int update_exc(ldst_info_t *info, ir_node *block, int pos)
+static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
 {
   assert(info->exc_block == NULL && "more than one exception block found");
 
@@ -173,7 +170,7 @@ static int update_exc(ldst_info_t *info, ir_node *block, int pos)
 static void collect_nodes(ir_node *node, void *env)
 {
   ir_op       *op = get_irn_op(node);
-  ir_node     *pred;
+  ir_node     *pred, *blk, *pred_blk;
   ldst_info_t *ldst_info;
   walk_env_t  *wenv = env;
 
@@ -195,6 +192,19 @@ static void collect_nodes(ir_node *node, void *env)
 
         ldst_info->flags |= LDST_VISITED;
       }
+
+      /*
+       * Place the Proj's to the same block as the
+       * predecessor Load. This is always ok and prevents
+       * "non-SSA" form after optimizations if the Proj
+       * is in a wrong block.
+       */
+      blk      = get_nodes_block(node);
+      pred_blk = get_nodes_block(pred);
+      if (blk != pred_blk) {
+        wenv->changes |= DF_CHANGED;
+        set_nodes_block(node, pred_blk);
+      }
     }
     else if (op == op_Store) {
       ldst_info = get_ldst_info(pred, wenv);
@@ -206,6 +216,19 @@ static void collect_nodes(ir_node *node, void *env)
         set_irn_out_n(adr, get_irn_out_n(adr) + 1);
 
         ldst_info->flags |= LDST_VISITED;
+      }
+
+      /*
+       * Place the Proj's to the same block as the
+       * predecessor Store. This is always ok and prevents
+       * "non-SSA" form after optimizations if the Proj
+       * is in a wrong block.
+       */
+      blk      = get_nodes_block(node);
+      pred_blk = get_nodes_block(pred);
+      if (blk != pred_blk) {
+        wenv->changes |= DF_CHANGED;
+        set_nodes_block(node, pred_blk);
       }
     }
   }
@@ -362,13 +385,13 @@ static compound_graph_path *get_accessed_path(ir_node *ptr) {
 /**
  * optimize a Load
  */
-static int optimize_load(ir_node *load)
+static unsigned optimize_load(ir_node *load)
 {
   ldst_info_t *info = get_irn_link(load);
   ir_mode *load_mode = get_Load_mode(load);
   ir_node *pred, *mem, *ptr, *new_node;
   entity *ent;
-  int res = 0;
+  unsigned res = 0;
 
   /* do NOT touch volatile loads for now */
   if (get_Load_volatility(load) == volatility_is_volatile)
@@ -401,7 +424,7 @@ static int optimize_load(ir_node *load)
 
           exchange(info->projs[pn_Load_X_except], new_Bad());
           info->projs[pn_Load_X_except] = NULL;
-          res = 1;
+          res |= CF_CHANGED;
         }
       }
     }
@@ -414,7 +437,7 @@ static int optimize_load(ir_node *load)
        */
        exchange(info->projs[pn_Load_X_except], new_Bad());
        info->projs[pn_Load_X_except] = NULL;
-       res = 1;
+       res |= CF_CHANGED;
     }
   }
 
@@ -425,7 +448,7 @@ static int optimize_load(ir_node *load)
     /* a Load which value is neither used nor exception checked, remove it */
     exchange(info->projs[pn_Load_M], mem);
 
-    return 1;
+    return res | DF_CHANGED;
   }
 
   /* Load from a constant polymorphic field, where we can resolve
@@ -442,7 +465,7 @@ static int optimize_load(ir_node *load)
     }
     if (info->projs[pn_Load_res])
       exchange(info->projs[pn_Load_res], new_node);
-    return 1;
+    return res | DF_CHANGED;
   }
 
   /* check if we can determine the entity that will be loaded */
@@ -457,7 +480,7 @@ static int optimize_load(ir_node *load)
       if (info->projs[pn_Load_X_except]) {
         exchange(info->projs[pn_Load_X_except], new_Bad());
         info->projs[pn_Load_X_except] = NULL;
-        res = 1;
+        res |= CF_CHANGED;
       }
 
       if (variability_constant == get_entity_variability(ent)
@@ -473,7 +496,7 @@ static int optimize_load(ir_node *load)
         /* no memory */
         if (info->projs[pn_Load_M]) {
           exchange(info->projs[pn_Load_M], mem);
-          res = 1;
+          res |= DF_CHANGED;
         }
 
         /* no result :-) */
@@ -483,7 +506,7 @@ static int optimize_load(ir_node *load)
 
             DBG_OPT_RC(load, c);
             exchange(info->projs[pn_Load_res], c);
-            return 1;
+            return DF_CHANGED | res;
           }
         }
       }
@@ -514,11 +537,11 @@ static int optimize_load(ir_node *load)
 
           if (info->projs[pn_Load_M]) {
             exchange(info->projs[pn_Load_M], mem);
-            res = 1;
+            res |= DF_CHANGED;
           }
           if (info->projs[pn_Load_res]) {
             exchange(info->projs[pn_Load_res], copy_const_value(c));
-            return 1;
+            return res | DF_CHANGED;
           }
         }
         else {
@@ -576,13 +599,15 @@ static int optimize_load(ir_node *load)
           exchange(info->projs[pn_Load_M], mem);
 
         /* no exception */
-        if (info->projs[pn_Load_X_except])
+        if (info->projs[pn_Load_X_except]) {
           exchange( info->projs[pn_Load_X_except], new_Bad());
+          res |= CF_CHANGED;
+        }
 
         if (info->projs[pn_Load_res])
           exchange(info->projs[pn_Load_res], value);
 
-        return 1;
+        return res | DF_CHANGED;
       }
     }
     else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
@@ -623,10 +648,12 @@ static int optimize_load(ir_node *load)
         }
 
         /* no exception */
-        if (info->projs[pn_Load_X_except])
+        if (info->projs[pn_Load_X_except]) {
           exchange(info->projs[pn_Load_X_except], new_Bad());
+          res |= CF_CHANGED;
+        }
 
-        return 1;
+        return res |= DF_CHANGED;
       }
     }
 
@@ -640,12 +667,12 @@ static int optimize_load(ir_node *load)
 /**
  * optimize a Store
  */
-static int optimize_store(ir_node *store)
+static unsigned optimize_store(ir_node *store)
 {
   ldst_info_t *info = get_irn_link(store);
   ir_node *pred, *mem, *ptr, *value, *block;
   ir_mode *mode;
-  int res = 0;
+  unsigned res = 0;
 
   if (get_Store_volatility(store) == volatility_is_volatile)
     return 0;
@@ -684,7 +711,7 @@ static int optimize_store(ir_node *store)
       if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
         DBG_OPT_WAW(pred, store);
         exchange( pred_info->projs[pn_Store_M], get_Store_mem(pred) );
-        return 1;
+        return DF_CHANGED;
       }
     }
     else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
@@ -696,7 +723,7 @@ static int optimize_store(ir_node *store)
       if (! info->projs[pn_Store_X_except]) {
         DBG_OPT_WAR(store, pred);
         exchange( info->projs[pn_Store_M], mem );
-        return 1;
+        return DF_CHANGED;
       }
     }
 
@@ -724,7 +751,7 @@ static int optimize_store(ir_node *store)
  *
  * Is only allowed if the predecessor blocks have only one successor.
  */
-static int optimize_phi(ir_node *phi, void *env)
+static unsigned optimize_phi(ir_node *phi, void *env)
 {
   walk_env_t *wenv = env;
   int i, n;
@@ -735,6 +762,7 @@ static int optimize_phi(ir_node *phi, void *env)
   dbg_info *db = NULL;
   ldst_info_t *info;
   block_info_t *bl_info;
+  unsigned res = 0;
 
   /* Must be a memory Phi */
   if (get_irn_mode(phi) != mode_M)
@@ -749,8 +777,8 @@ static int optimize_phi(ir_node *phi, void *env)
   if (get_irn_op(store) != op_Store)
     return 0;
 
-  /* abort on bad blocks */
-  if (is_Bad(get_nodes_block(store)))
+  /* abort on dead blocks */
+  if (is_Block_dead(get_nodes_block(store)))
     return 0;
 
   /* check if the block has only one output */
@@ -779,8 +807,8 @@ static int optimize_phi(ir_node *phi, void *env)
     if (exc != info->exc_block)
       return 0;
 
-    /* abort on bad blocks */
-    if (is_Bad(get_nodes_block(store)))
+    /* abort on dead blocks */
+    if (is_Block_dead(get_nodes_block(store)))
       return 0;
 
     /* check if the block has only one output */
@@ -853,12 +881,14 @@ static int optimize_phi(ir_node *phi, void *env)
     if (n > 1) {
       /* the exception block should be optimized as some inputs are identical now */
     }
+
+    res |= CF_CHANGED;
   }
 
   /* sixt step: replace old Phi */
   exchange(phi, projM);
 
-  return 1;
+  return res | DF_CHANGED;
 }
 
 /**
@@ -904,7 +934,7 @@ void optimize_load_store(ir_graph *irg)
   env.changes = 0;
 
   /* init the links, then collect Loads/Stores/Proj's in lists */
-  irg_walk_graph(irg, init_links, collect_nodes, &env);
+  irg_walk_graph(irg, firm_clear_link, collect_nodes, &env);
 
   /* now we have collected enough information, optimize */
   irg_walk_graph(irg, NULL, do_load_store_optimize, &env);
@@ -915,8 +945,10 @@ void optimize_load_store(ir_graph *irg)
   if (env.changes) {
     if (get_irg_outs_state(current_ir_graph) == outs_consistent)
       set_irg_outs_inconsistent(current_ir_graph);
+  }
 
-    /* is this really needed: Yes, as exception block may get bad but this might be tested */
+  if (env.changes & CF_CHANGED) {
+    /* is this really needed: Yes, control flow changed, block might get Bad. */
     if (get_irg_dom_state(current_ir_graph) == dom_consistent)
       set_irg_dom_inconsistent(current_ir_graph);
   }
