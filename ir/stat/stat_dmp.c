@@ -179,6 +179,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
   int i, dump_opts = 1;
   block_entry_t *b_entry;
+  extbb_entry_t *eb_entry;
 
   if (! dmp->f)
     return;
@@ -249,7 +250,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     for (b_entry = pset_first(entry->block_hash);
 	       b_entry;
 	       b_entry = pset_next(entry->block_hash)) {
-      fprintf(dmp->f, "BLK %12ld %12u %12u %12u %12u %12u %4.8f\n",
+      fprintf(dmp->f, "BLK   %6ld %12u %12u %12u %12u %12u %4.8f\n",
 	      b_entry->block_nr,
 	      b_entry->cnt_nodes.cnt[0],
 	      b_entry->cnt_edges.cnt[0],
@@ -258,6 +259,24 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
               b_entry->cnt_phi_data.cnt[0],
 	      (double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
       );
+    }
+
+    if (dmp->status->stat_options & FIRMSTAT_COUNT_EXTBB) {
+      /* dump extended block info */
+      fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s %12s\n", "Extbb Nr", "Nodes", "intern E", "incoming E", "outgoing E", "Phi", "quot");
+      for (eb_entry = pset_first(entry->extbb_hash);
+           eb_entry;
+           eb_entry = pset_next(entry->extbb_hash)) {
+        fprintf(dmp->f, "ExtBB %6ld %12u %12u %12u %12u %12u %4.8f\n",
+          eb_entry->block_nr,
+          eb_entry->cnt_nodes.cnt[0],
+          eb_entry->cnt_edges.cnt[0],
+          eb_entry->cnt_in_edges.cnt[0],
+          eb_entry->cnt_out_edges.cnt[0],
+          eb_entry->cnt_phi_data.cnt[0],
+          (double)eb_entry->cnt_edges.cnt[0] / (double)eb_entry->cnt_nodes.cnt[0]
+        );
+      }
     }
   }
 }

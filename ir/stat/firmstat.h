@@ -30,6 +30,7 @@ enum firmstat_options_t {
   FIRMSTAT_COUNT_DELETED   = 0x00000010,    /**< if set, count deleted graphs */
   FIRMSTAT_COUNT_SELS      = 0x00000020,    /**< if set, count Sel(Sel(..)) differently */
   FIRMSTAT_COUNT_CONSTS    = 0x00000040,    /**< if set, count Const statistics */
+  FIRMSTAT_COUNT_EXTBB     = 0x00000080,    /**< if set, count extended Basic Block statistics */
   FIRMSTAT_CSV_OUTPUT      = 0x10000000     /**< CSV output of some mini-statistic */
 };
 

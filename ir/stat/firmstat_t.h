@@ -81,6 +81,7 @@ enum leaf_call_state_t {
 typedef struct _graph_entry_t {
   HASH_MAP(node_entry_t)  *opcode_hash;                 /**< hash map containing the opcode counter */
   HASH_MAP(block_entry_t) *block_hash;                  /**< hash map containing the block counter */
+  HASH_MAP(block_entry_t) *extbb_hash;                  /**< hash map containing the extended block counter */
   counter_t               cnt_walked;	                  /**< walker walked over the graph */
   counter_t               cnt_walked_blocks;            /**< walker walked over the graph blocks */
   counter_t               cnt_was_inlined;              /**< number of times other graph were inlined */
@@ -114,7 +115,7 @@ typedef struct _opt_entry_t {
 } opt_entry_t;
 
 /**
- * An entry for a block in a ir-graph
+ * An entry for a block or extended block in a ir-graph
  */
 typedef struct _block_entry_t {
   counter_t  cnt_nodes;     /**< the counter of nodes in this block */
@@ -124,6 +125,9 @@ typedef struct _block_entry_t {
   counter_t  cnt_phi_data;  /**< the counter of data Phi nodes in this block */
   long       block_nr;      /**< block nr */
 } block_entry_t;
+
+/** An entry for an extended block in a ir-graph */
+typedef block_entry_t extbb_entry_t;
 
 /**
  * Some potential interesting float values
@@ -184,8 +188,9 @@ typedef void (*dump_finish_FUNC)(dumper_t *dmp);
  * statistics info
  */
 typedef struct _statistic_info_t {
-  int                     stat_options;	  /**< statistic options: must be first */
-  struct obstack          cnts;           /**< obstack containing the counters */
+  unsigned                stat_options;	  /**< statistic options: field must be first */
+  struct obstack          cnts;           /**< obstack containing the counters that are incremented */
+  struct obstack          recalc_cnts;    /**< obstack containing the counters that are recalculated */
   HASH_MAP(graph_entry_t) *irg_hash;      /**< hash map containing the counter for irgs */
   HASH_MAP(ir_op)         *ir_op_hash;    /**< hash map containing all ir_ops (accessible by op_codes) */
   pdeq                    *wait_q;        /**< wait queue for leaf call decision */
