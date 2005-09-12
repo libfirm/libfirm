@@ -1469,7 +1469,7 @@ dump_extblock_graph(FILE *F, ir_graph *irg) {
   compute_extbb(irg);
   for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
     ir_extblk *extbb = arr[i];
-    ir_node *leader = extbb->blks[0];
+    ir_node *leader = get_extbb_leader(extbb);
     int j;
 
     fprintf(F, "graph: { title: \"");
