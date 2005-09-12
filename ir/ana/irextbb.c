@@ -155,7 +155,8 @@ void compute_extbb(ir_graph *irg) {
     for (block = extbb->link, i = 0; i < len; ++i) {
       ir_node *nblock = get_irn_link(block);
 
-      extbb->blks[i] = block;
+      /* ensure that the leader is the first one */
+      extbb->blks[len - 1 - i] = block;
       set_irn_link(block, NULL);
       block = nblock;
     }
