@@ -987,12 +987,15 @@ ir_node *get_fragile_op_mem(ir_node *node);
 
 /** Returns true if the operation is a forking control flow
  *  operation: Cond. */
-int is_forking_op(const ir_node *node);
+int is_irn_forking(const ir_node *node);
 
 /** Return the type associated with the value produced by n
  *  if the node remarks this type as it is the case for
  *  Cast, Const, SymConst and some Proj nodes. */
 type *get_irn_type(ir_node *n);
+
+/** Returns non-zero for constant-like nodes. */
+int is_irn_constlike(const ir_node *node);
 
 /**
  * Access custom node data.

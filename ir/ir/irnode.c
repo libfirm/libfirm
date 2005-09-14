@@ -2251,13 +2251,17 @@ ir_node *get_fragile_op_mem(ir_node *node) {
 }
 
 /* Returns true if the operation is a forking control flow operation. */
-int
-is_forking_op(const ir_node *node) {
-  return is_op_forking(get_irn_op(node));
+int (is_irn_forking)(const ir_node *node) {
+  return _is_irn_forking(node);
 }
 
 type *(get_irn_type)(ir_node *node) {
   return _get_irn_type(node);
+}
+
+/* Returns non-zero for constant-like nodes. */
+int (is_irn_constlike)(const ir_node *node) {
+  return _is_irn_constlike(node);
 }
 
 /** the get_type operation must be always implemented */

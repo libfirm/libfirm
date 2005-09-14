@@ -660,8 +660,16 @@ static INLINE cnst_classify_t _classify_Const(ir_node *node) {
   return CNST_NO_CONST;
 }
 
+static INLINE int _is_irn_forking(const ir_node *node) {
+  return is_op_forking(_get_irn_op(node));
+}
+
 static INLINE type *_get_irn_type(ir_node *node) {
   return _get_irn_op(node)->get_type(node);
+}
+
+static INLINE int _is_irn_constlike(const ir_node *node) {
+  return is_op_constlike(_get_irn_op(node));
 }
 
 /* this section MUST contain all inline functions */
@@ -703,6 +711,8 @@ static INLINE type *_get_irn_type(ir_node *node) {
 #define is_Block_dead(block)                  _is_Block_dead(block)
 #define get_Const_tarval(node)                _get_Const_tarval(node)
 #define classify_Const(node)                  _classify_Const(node)
+#define is_irn_forking(node)                  _is_irn_forking(node)
 #define get_irn_type(node)                    _get_irn_type(node)
+#define is_irn_constlike(node)                _is_irn_constlike(node)
 
 # endif /* _IRNODE_T_H_ */
