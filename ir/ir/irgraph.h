@@ -444,8 +444,10 @@ typedef enum {
                                          GCC: __attribute__((noreturn)). */
   irg_nothrow_function  = 0x00000008, /**< This graph cannot throw an exception.
                                          GCC: __attribute__((nothrow)). */
-  irg_naked_function    = 0x00000010  /**< This graph is naked.
+  irg_naked_function    = 0x00000010, /**< This graph is naked.
                                          GCC: __attribute__((naked)). */
+  irg_malloc_function   = 0x00000020  /**< This graph returns newly allocate memory.
+                                         GCC: __attribute__((malloc)). */
 } irg_additional_property;
 
 /** Returns the mask of the additional graph properties. */
