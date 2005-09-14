@@ -83,7 +83,7 @@ typedef struct _ldst_info_t {
  */
 enum block_flags_t {
   BLOCK_HAS_COND = 1,      /**< Block has conditional control flow */
-  BLOCK_HAS_EXC  = 2       /**< Block has exceptionl control flow */
+  BLOCK_HAS_EXC  = 2       /**< Block has exceptional control flow */
 };
 
 /**
@@ -148,7 +148,11 @@ static unsigned update_projs(ldst_info_t *info, ir_node *proj)
 }
 
 /**
- * update the exception block info for a Load/Store
+ * update the exception block info for a Load/Store node.
+ *
+ * @param info   the load/store info struct
+ * @param block  the exception handler block for this load/store
+ * @param pos    the control flow input of the block
  */
 static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
 {
@@ -165,7 +169,7 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
 /**
  * walker, collects all Load/Store/Proj nodes
  *
- * walks form Start -> End
+ * walks from Start -> End
  */
 static void collect_nodes(ir_node *node, void *env)
 {
@@ -233,9 +237,9 @@ static void collect_nodes(ir_node *node, void *env)
     }
   }
   else if (op == op_Block) { /* check, if it's an exception block */
-    int i, n;
+    int i;
 
-    for (i = 0, n = get_Block_n_cfgpreds(node); i < n; ++i) {
+    for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
       ir_node      *pred_block;
       block_info_t *bl_info;
 
@@ -243,15 +247,15 @@ static void collect_nodes(ir_node *node, void *env)
 
       /* ignore Bad predecessors, they will be removed later */
       if (is_Bad(pred))
-	continue;
+        continue;
 
       pred_block = get_nodes_block(pred);
       bl_info    = get_block_info(pred_block, wenv);
 
       if (is_fragile_op(pred))
-	bl_info->flags |= BLOCK_HAS_EXC;
-      else if (is_forking_op(pred))
-	bl_info->flags |= BLOCK_HAS_COND;
+	      bl_info->flags |= BLOCK_HAS_EXC;
+      else if (is_irn_forking(pred))
+        bl_info->flags |= BLOCK_HAS_COND;
 
       if (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store) {
         ldst_info = get_ldst_info(pred, wenv);
@@ -746,10 +750,10 @@ static unsigned optimize_store(ir_node *store)
  *        \  |  /                       Str
  *          Phi
  *
- * This removes the number of stores and allows for predicated execution.
- * Moves Stores back to the end of a function which may be bad
+ * This reduces the number of stores and allows for predicated execution.
+ * Moves Stores back to the end of a function which may be bad.
  *
- * Is only allowed if the predecessor blocks have only one successor.
+ * This is only possible if the predecessor blocks have only one successor.
  */
 static unsigned optimize_phi(ir_node *phi, void *env)
 {
@@ -781,7 +785,7 @@ static unsigned optimize_phi(ir_node *phi, void *env)
   if (is_Block_dead(get_nodes_block(store)))
     return 0;
 
-  /* check if the block has only one output */
+  /* check if the block has only one successor */
   bl_info = get_irn_link(get_nodes_block(store));
   if (bl_info->flags)
     return 0;
@@ -811,7 +815,7 @@ static unsigned optimize_phi(ir_node *phi, void *env)
     if (is_Block_dead(get_nodes_block(store)))
       return 0;
 
-    /* check if the block has only one output */
+    /* check if the block has only one successor */
     bl_info = get_irn_link(get_nodes_block(store));
     if (bl_info->flags)
       return 0;
@@ -885,7 +889,7 @@ static unsigned optimize_phi(ir_node *phi, void *env)
     res |= CF_CHANGED;
   }
 
-  /* sixt step: replace old Phi */
+  /* sixth step: replace old Phi */
   exchange(phi, projM);
 
   return res | DF_CHANGED;
