@@ -53,8 +53,10 @@ typedef enum {
   irop_flag_fragile     = 0x00000010,	/**< set if the operation can change the control flow because
                                              of an exception */
   irop_flag_forking     = 0x00000020, /**< the operation is a forking control flow */
-  irop_flag_highlevel   = 0x00000040  /**< the operation is a pure high-level one and can be
+  irop_flag_highlevel   = 0x00000040, /**< the operation is a pure high-level one and can be
                                            skipped in low-level optimizations */
+  irop_flag_constlike   = 0x00000080  /**< the operation has no arguments and is some
+                                           kind of a constant */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */

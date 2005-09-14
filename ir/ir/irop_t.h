@@ -167,6 +167,11 @@ static INLINE int is_op_highlevel(const ir_op *op) {
   return op->flags & irop_flag_highlevel;
 }
 
+/* Returns non-zero if operation is a const-like op */
+static INLINE int is_op_constlike(const ir_op *op) {
+  return op->flags & irop_flag_constlike;
+}
+
 static INLINE opcode _get_op_code(const ir_op *op) {
   return op->code;
 }

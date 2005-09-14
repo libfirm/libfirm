@@ -181,6 +181,7 @@ init_op(void)
 #define F   irop_flag_fragile
 #define Y   irop_flag_forking
 #define H   irop_flag_highlevel
+#define c   irop_flag_constlike
 
   op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr));
 
@@ -192,8 +193,8 @@ init_op(void)
   op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, L|X,     oparity_zero,     -1, 0);
   op_Raise     = new_ir_op(iro_Raise,     "Raise",     op_pin_state_pinned, L|X,     oparity_any,      -1, 0);
 
-  op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, N,       oparity_zero,     -1, sizeof(const_attr));
-  op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, N,       oparity_zero,     -1, sizeof(symconst_attr));
+  op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, c,       oparity_zero,     -1, sizeof(const_attr));
+  op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c,       oparity_zero,     -1, sizeof(symconst_attr));
 
   op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr));
   op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr));
