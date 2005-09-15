@@ -102,7 +102,7 @@ struct ir_op {
   unsigned flags;         /**< flags describing the behavior of the ir_op, a bitmaks of irop_flags */
 
   /* CallBacks */
-  computed_value_func	  computed_value;		/**< evaluates a node into a tarval if possible. */
+  computed_value_func	computed_value;		/**< evaluates a node into a tarval if possible. */
   equivalent_node_func  equivalent_node;	/**< optimizes the node by returning an equivalent one. */
   transform_node_func   transform_node;		/**< optimizes the node by transforming it. */
   node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
@@ -111,6 +111,7 @@ struct ir_op {
   get_type_func         get_type;               /**< return the type of a node */
   verify_node_func      verify_node;            /**< verify the node */
   verify_proj_node_func verify_proj_node;       /**< verify the Proj node */
+  op_func               generic;                /**< a generic function */
 };
 
 /**
@@ -184,6 +185,13 @@ static INLINE op_pin_state _get_op_pinned(const ir_op *op) {
   return op->op_pin_state_pinned;
 }
 
+static INLINE void _set_generic_function_ptr(ir_op *op, op_func func) {
+  op->generic = func;
+}
+
+static INLINE op_func _get_generic_function_ptr(const ir_op *op) {
+  return op->generic;
+}
 
 #define get_op_code(op)         _get_op_code(op)
 #define get_op_ident(op)        _get_op_ident(op)

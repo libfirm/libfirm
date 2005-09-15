@@ -188,4 +188,22 @@ unsigned get_next_ir_opcode(void);
 ir_op * new_ir_op(opcode code, const char *name, op_pin_state p,
 		   unsigned flags, op_arity opar, int op_index, size_t attr_size);
 
+/**
+ * A generic function pointer.
+ */
+typedef void (*op_func)(void);
+
+/** The NULL-function. */
+#define NULL_FUNC       ((generic_func)(NULL))
+
+/**
+ * Returns the generic function pointer from an ir operation.
+ */
+op_func get_generic_function_ptr(const ir_op *op);
+
+/**
+ * Store a generic function pointer into an ir operation.
+ */
+void set_generic_function_ptr(ir_op *op, op_func func);
+
 # endif /* _IROP_H_ */

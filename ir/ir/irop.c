@@ -359,3 +359,13 @@ void      set_op_pinned(ir_op *op, op_pin_state op_pin_state_pinned) {
 unsigned get_next_ir_opcode(void) {
   return next_iro++;
 }
+
+/* Returns the generic function pointer from an ir operation. */
+op_func (get_generic_function_ptr)(const ir_op *op) {
+  return _get_generic_function_ptr(op);
+}
+
+/* Store a generic function pointer into an ir operation. */
+void (set_generic_function_ptr)(ir_op *op, op_func func) {
+  _set_generic_function_ptr(op, func);
+}
