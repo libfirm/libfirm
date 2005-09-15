@@ -587,6 +587,7 @@ new_bd_Cond (dbg_info *db, ir_node *block, ir_node *c)
   res = new_ir_node (db, irg, block, op_Cond, mode_T, 1, &c);
   res->attr.c.kind         = dense;
   res->attr.c.default_proj = 0;
+  res->attr.c.pred         = COND_JMP_PRED_NONE;
   res = optimize_node (res);
   IRN_VRFY_IRG(res, irg);
   return res;
