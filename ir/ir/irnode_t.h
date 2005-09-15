@@ -80,9 +80,9 @@ typedef struct {
 
 /** Cond attributes */
 typedef struct {
-  cond_kind kind;    /**< flavor of Cond */
-  long default_proj; /**< for optimization: biggest Proj number, i.e. the one
-                          used for default. */
+  cond_kind kind;           /**< flavor of Cond */
+  long default_proj;        /**< only for non-binary Conds: biggest Proj number, i.e. the one used for default. */
+  cond_jmp_predicate pred;  /**< only for binary Conds: The jump predication. */
 } cond_attr;
 
 /** Const attributes */
@@ -672,6 +672,16 @@ static INLINE int _is_irn_constlike(const ir_node *node) {
   return is_op_constlike(_get_irn_op(node));
 }
 
+static INLINE cond_jmp_predicate _get_Cond_jmp_pred(ir_node *node) {
+  assert (_get_irn_op(node) == op_Cond);
+  return node->attr.c.pred;
+}
+
+static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
+  assert (_get_irn_op(node) == op_Cond);
+  node->attr.c.pred = pred;
+}
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
@@ -714,5 +724,7 @@ static INLINE int _is_irn_constlike(const ir_node *node) {
 #define is_irn_forking(node)                  _is_irn_forking(node)
 #define get_irn_type(node)                    _get_irn_type(node)
 #define is_irn_constlike(node)                _is_irn_constlike(node)
+#define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
+#define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
 
 # endif /* _IRNODE_T_H_ */

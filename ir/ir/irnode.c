@@ -2264,6 +2264,16 @@ int (is_irn_constlike)(const ir_node *node) {
   return _is_irn_constlike(node);
 }
 
+/* Returns the conditional jump predication of a Cond node. */
+cond_jmp_predicate (get_Cond_jmp_pred)(ir_node *cond) {
+  return _get_Cond_jmp_pred(cond);
+}
+
+/* Sets a new conditional jump predication. */
+void (set_Cond_jmp_pred)(ir_node *cond, cond_jmp_predicate pred) {
+  _set_Cond_jmp_pred(cond, pred);
+}
+
 /** the get_type operation must be always implemented */
 static type *get_Null_type(ir_node *n) {
   return NULL;
