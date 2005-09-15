@@ -2264,12 +2264,23 @@ int (is_irn_constlike)(const ir_node *node) {
   return _is_irn_constlike(node);
 }
 
-/* Returns the conditional jump predication of a Cond node. */
+/* Gets the string representation of the jump prediction .*/
+const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
+{
+  switch (pred) {
+  default:
+  case COND_JMP_PRED_NONE:  return "no prediction";
+  case COND_JMP_PRED_TRUE:  return "true taken";
+  case COND_JMP_PRED_FALSE: return "false taken";
+  }
+}
+
+/* Returns the conditional jump prediction of a Cond node. */
 cond_jmp_predicate (get_Cond_jmp_pred)(ir_node *cond) {
   return _get_Cond_jmp_pred(cond);
 }
 
-/* Sets a new conditional jump predication. */
+/* Sets a new conditional jump prediction. */
 void (set_Cond_jmp_pred)(ir_node *cond, cond_jmp_predicate pred) {
   _set_Cond_jmp_pred(cond, pred);
 }

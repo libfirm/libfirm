@@ -998,18 +998,21 @@ type *get_irn_type(ir_node *n);
 int is_irn_constlike(const ir_node *node);
 
 /**
- * A type for expression conditional jump predications.
+ * A type to express conditional jump predictions.
  */
 typedef enum {
-  COND_JMP_PRED_NONE,        /**< No jump predication. Default. */
+  COND_JMP_PRED_NONE,        /**< No jump prediction. Default. */
   COND_JMP_PRED_TRUE,        /**< The True case is predicted. */
   COND_JMP_PRED_FALSE        /**< The False case is predicted. */
 } cond_jmp_predicate;
 
-/** Returns the conditional jump predication of a Cond node. */
+/** Gets the string representation of the jump prediction .*/
+const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
+
+/** Returns the conditional jump prediction of a Cond node. */
 cond_jmp_predicate get_Cond_jmp_pred(ir_node *cond);
 
-/** Sets a new conditional jump predication. */
+/** Sets a new conditional jump prediction. */
 void set_Cond_jmp_pred(ir_node *cond, cond_jmp_predicate pred);
 
 /**
