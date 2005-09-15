@@ -874,6 +874,12 @@ handle_lut:
       }
       if (! f)
         fprintf (F, "%ld ", proj_nr);
+      if (code == iro_Cond && get_Cond_jmp_pred(pred) != COND_JMP_PRED_NONE) {
+        if (proj_nr == pn_Cond_false && get_Cond_jmp_pred(pred) == COND_JMP_PRED_FALSE)
+          fprintf(F, "PRED ");
+        if (proj_nr == pn_Cond_true && get_Cond_jmp_pred(pred) == COND_JMP_PRED_TRUE)
+          fprintf(F, "PRED ");
+      }
     }
     break;
   case iro_Filter:

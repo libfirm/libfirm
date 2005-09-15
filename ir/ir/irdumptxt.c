@@ -206,6 +206,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   case iro_Cond: {
     fprintf(F, "  condition kind: %s\n",  get_Cond_kind(n) == dense ? "dense" : "fragmentary");
     fprintf(F, "  default ProjNr: %ld\n", get_Cond_defaultProj(n));
+    if (get_Cond_jmp_pred(n) != COND_JMP_PRED_NONE)
+      fprintf(F, "  jump prediction: %s\n", get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));
   } break;
   case iro_Alloc: {
     fprintf(F, "  allocating entity of type: %s \n", get_type_name_ex(get_Alloc_type(n), &bad));
@@ -213,6 +215,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   } break;
   case iro_Free: {
     fprintf(F, "  freeing entity of type %s \n", get_type_name_ex(get_Free_type(n), &bad));
+    fprintf(F, "  allocated on: the %s\n", (get_Free_where(n) == stack_alloc) ? "stack" : "heap");
   } break;
   case iro_Sel: {
     entity *ent = get_Sel_entity(n);
