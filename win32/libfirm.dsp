@@ -1326,6 +1326,14 @@ SOURCE=..\ir\opt\tailrec.c
 
 SOURCE=..\ir\opt\tailrec.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\tropt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\tropt.h
+# End Source File
 # End Group
 # Begin Group "st"
 
