@@ -988,7 +988,6 @@ tarval *tarval_not(tarval *a)
 
   ANNOUNCE();
   assert(a);
-  assert(mode_is_int(a->mode)); /* bitwise negation is only allowed for integer */
 
   /* works for vector mode without changes */
 
@@ -999,7 +998,15 @@ tarval *tarval_not(tarval *a)
       sc_not(a->value, buffer);
       return get_tarval(buffer, a->length, a->mode);
 
+    case irms_internal_boolean:
+      if (a == tarval_b_true)
+        return tarval_b_false;
+      if (a == tarval_b_false)
+        return tarval_b_true;
+      return tarval_bad;
+
     default:
+      assert(0 && "bitwise negation is only allowed for integer and boolean");
       return tarval_bad;
   }
 }
