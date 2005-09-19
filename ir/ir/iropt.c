@@ -1809,30 +1809,6 @@ static ir_node *transform_node_Cond(ir_node *n)
     }
     /* We might generate an endless loop, so keep it alive. */
     add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_block(n));
-  } else if ((ta != tarval_bad) &&
-             (get_irn_mode(a) == mode_Iu) &&
-             (get_Cond_kind(n) == dense) &&
-             (get_opt_unreachable_code())) {
-    /* I don't want to allow Tuples smaller than the biggest Proj.
-       Also this tuple might get really big...
-       I generate the Jmp here, and remember it in link.  Link is used
-       when optimizing Proj. */
-    set_irn_link(n, new_r_Jmp(current_ir_graph, get_nodes_block(n)));
-    /* We might generate an endless loop, so keep it alive. */
-    add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_block(n));
-  } else if ((get_irn_op(a) == op_Eor)
-             && (get_irn_mode(a) == mode_b)
-             && (classify_tarval(value_of(get_Eor_right(a))) == TV_CLASSIFY_ONE)) {
-    /* The Eor is a negate.  Generate a new Cond without the negate,
-       simulate the negate by exchanging the results. */
-    set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_block(n),
-                               get_Eor_left(a)));
-  } else if ((get_irn_op(a) == op_Not)
-             && (get_irn_mode(a) == mode_b)) {
-    /* A Not before the Cond.  Generate a new Cond without the Not,
-       simulate the Not by exchanging the results. */
-    set_irn_link(n, new_r_Cond(current_ir_graph, get_nodes_block(n),
-                               get_Not_op(a)));
   }
   return n;
 }
@@ -3166,6 +3142,8 @@ gigo (ir_node *node)
  * These optimizations deallocate nodes from the obstack.
  * It can only be called if it is guaranteed that no other nodes
  * reference this one, i.e., right after construction of a node.
+ *
+ * current_ir_graph must be set to the graph of the node!
  */
 ir_node *
 optimize_node(ir_node *n)
