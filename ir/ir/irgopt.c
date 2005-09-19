@@ -199,18 +199,24 @@ static INLINE void new_backedge_info(ir_node *n) {
   }
 }
 
-/*
- * Copies a node to the current_ir_graph. The Ins of the new node point to
- * the predecessors on the graph of the old node.  For block/phi nodes not all
- * predecessors might be copied.
+/**
+ * Copies the node to the new obstack. The Ins of the new node point to
+ * the predecessors on the old obstack.  For block/phi nodes not all
+ * predecessors might be copied.  n->link points to the new node.
  * For Phi and Block nodes the function allocates in-arrays with an arity
  * only for useful predecessors.  The arity is determined by counting
  * the non-bad predecessors of the block.
+ *
+ * @param n    The node to be copied
+ * @param env  if non-NULL, the node number attribute will be copied to the new node
+ *
+ * Note: Also used for loop unrolling.
  */
-ir_node *copy_irn(ir_node *n, int copy_node_nr) {
+static void copy_node(ir_node *n, void *env) {
   ir_node *nn, *block;
   int new_arity;
   ir_op *op = get_irn_op(n);
+  int copy_node_nr = env != NULL;
 
   /* The end node looses it's flexible in array.  This doesn't matter,
      as dead node elimination builds End by hand, inlineing doesn't use
@@ -219,7 +225,7 @@ ir_node *copy_irn(ir_node *n, int copy_node_nr) {
 
   if (op == op_Bad) {
     /* node copied already */
-    return NULL;
+    return;
   } else if (op == op_Block) {
     block = NULL;
     new_arity = compute_new_arity(n);
@@ -252,29 +258,8 @@ ir_node *copy_irn(ir_node *n, int copy_node_nr) {
   }
 #endif
 
-  return nn;
+  set_new_node(n, nn);
 }
-
-/**
- * Copies the node to the new obstack. The Ins of the new node point to
- * the predecessors on the old obstack.  For block/phi nodes not all
- * predecessors might be copied.  n->link points to the new node.
- * For Phi and Block nodes the function allocates in-arrays with an arity
- * only for useful predecessors.  The arity is determined by counting
- * the non-bad predecessors of the block.
- *
- * @param n    The node to be copied
- * @param env  if non-NULL, the node number attribute will be copied to the new node
- *
- * Note: Also used for loop unrolling.
- */
-static void firm_copy_node (ir_node *n, void *env) {
-  ir_node *nn = copy_irn(n, env != NULL);
-
-  if (nn)
-    set_new_node(n, nn);
-}
-
 
 /**
  * Copies new predecessors of old node to new node remembered in link.
@@ -399,7 +384,7 @@ copy_graph (int copy_node_nr) {
   set_new_node(om, nm);
 
   /* copy the live nodes */
-  irg_walk(get_nodes_block(oe), firm_copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
+  irg_walk(get_nodes_block(oe), copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
   /* copy_preds for the end node ... */
   set_nodes_block(ne, get_new_node(get_nodes_block(oe)));
 
@@ -413,7 +398,7 @@ copy_graph (int copy_node_nr) {
         (get_irn_visited(ka) < get_irg_visited(current_ir_graph))) {
       /* We must keep the block alive and copy everything reachable */
       set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
-      irg_walk(ka, firm_copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
+      irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       add_End_keepalive(ne, get_new_node(ka));
     }
   }
@@ -426,7 +411,7 @@ copy_graph (int copy_node_nr) {
       if (get_irn_visited(ka) < get_irg_visited(current_ir_graph)) {
         /* We didn't copy the Phi yet.  */
         set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
-        irg_walk(ka, firm_copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
+        irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       }
       add_End_keepalive(ne, get_new_node(ka));
     }
@@ -471,19 +456,19 @@ copy_graph_env (int copy_node_nr) {
   free_End(old_end);
   set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
   if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_frame(current_ir_graph), INT_TO_PTR(copy_node_nr));
+    copy_node (get_irg_frame(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_frame(current_ir_graph), NULL);
   }
   if (get_irn_link(get_irg_globals(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_globals(current_ir_graph), INT_TO_PTR(copy_node_nr));
+    copy_node (get_irg_globals(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_globals(current_ir_graph), NULL);
   }
   if (get_irn_link(get_irg_initial_mem(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_initial_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
+    copy_node (get_irg_initial_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_initial_mem(current_ir_graph), NULL);
   }
   if (get_irn_link(get_irg_args(current_ir_graph)) == NULL) {
-    firm_copy_node (get_irg_args(current_ir_graph), INT_TO_PTR(copy_node_nr));
+    copy_node (get_irg_args(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_args(current_ir_graph), NULL);
   }
   set_irg_start      (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
@@ -496,13 +481,13 @@ copy_graph_env (int copy_node_nr) {
   set_irg_args       (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
 
   if (get_irn_link(get_irg_bad(current_ir_graph)) == NULL) {
-    firm_copy_node(get_irg_bad(current_ir_graph), INT_TO_PTR(copy_node_nr));
+    copy_node(get_irg_bad(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
   set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
 
   if (get_irn_link(get_irg_no_mem(current_ir_graph)) == NULL) {
-    firm_copy_node(get_irg_no_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
+    copy_node(get_irg_no_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_no_mem(current_ir_graph), NULL);
   }
   set_irg_no_mem(current_ir_graph, get_new_node(get_irg_no_mem(current_ir_graph)));
@@ -688,7 +673,7 @@ void remove_bad_predecessors(ir_graph *irg) {
  * Copy node for inlineing.  Updates attributes that change when
  * inlineing but not for dead node elimination.
  *
- * Copies the node by calling firm_copy_node and then updates the entity if
+ * Copies the node by calling copy_node() and then updates the entity if
  * it's a local one.  env must be a pointer of the frame type of the
  * inlined procedure. The new entities must be in the link field of
  * the entities.
@@ -698,7 +683,7 @@ copy_node_inline (ir_node *n, void *env) {
   ir_node *new;
   type *frame_tp = (type *)env;
 
-  firm_copy_node(n, NULL);
+  copy_node(n, NULL);
   if (get_irn_op(n) == op_Sel) {
     new = get_new_node (n);
     assert(get_irn_op(new) == op_Sel);
@@ -937,7 +922,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
     add_End_keepalive(get_irg_end(current_ir_graph), get_irn_n(end, i));
 
   /* The new end node will die.  We need not free as the in array is on the obstack:
-     firm_copy_node only generated 'D' arrays. */
+     copy_node() only generated 'D' arrays. */
 
   /* -- Replace Return nodes by Jump nodes. -- */
   n_ret = 0;
@@ -1496,7 +1481,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
         continue;
 
       /* Because all loops contain at least one op_pin_state_pinned node, now all
-         our inputs are either op_pin_state_pinned or place_early has already
+         our inputs are either op_pin_state_pinned or place_early() has already
          been finished on them.  We do not have any unfinished inputs!  */
       dep_block = get_irn_n(dep, -1);
       if ((!is_Block_dead(dep_block)) &&
@@ -1788,7 +1773,7 @@ void place_code(ir_graph *irg) {
   worklist = new_pdeq();
   place_early(worklist);
 
-  /* place_early invalidates the outs, place_late needs them. */
+  /* place_early() invalidates the outs, place_late needs them. */
   compute_irg_outs(irg);
   /* Now move the nodes down in the dominator tree. This reduces the
      unnecessary executions of the node. */
