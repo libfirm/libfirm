@@ -5,7 +5,7 @@
  * Author:      Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
+ * Copyright:   (c) 1998-2004 Universitï¿½t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #include "irnode_t.h"
@@ -175,7 +175,7 @@ void optimize_funccalls(int force_run)
           if (mode_M != get_irn_mode(mem))
             continue;
 
-          change = mem != gforce_runet_irg_initial_mem(irg);
+          change = mem != get_irg_initial_mem(irg);
           if (change)
             break;
         }
