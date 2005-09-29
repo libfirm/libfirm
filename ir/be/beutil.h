@@ -72,7 +72,7 @@ void localize_consts(ir_graph *irg);
  */
 void dump_allocated_irg(arch_env_t *env, ir_graph *irg, char *suffix);
 
-
+void be_clear_links(ir_graph *irg);
 
 static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) {
 	FILE *out;

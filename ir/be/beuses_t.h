@@ -19,7 +19,7 @@
  * An association between a node and a point in time.
  */
 struct _loc_t {
-  const ir_node *irn;  /**< A node. */
+  ir_node *irn;  /**< A node. */
   unsigned time;       /**< A time. */
 };
 

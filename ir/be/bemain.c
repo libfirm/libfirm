@@ -38,14 +38,15 @@
 #include "benode_t.h"
 #include "beirgmod.h"
 #include "bespillilp.h"
+#include "bespillbelady.h"
 
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
 
 #undef DUMP_BEGIN
 #undef DUMP_PREPARED
-#undef DUMP_SPILL
-#undef DUMP_SCHED
+#define DUMP_SCHED
+#define DUMP_SPILL
 #undef DUMP_ALLOCATED
 #undef DUMP_COPYMIN
 #undef DUMP_SSADESTR
@@ -177,7 +178,8 @@ static void be_main_loop(void)
 			DBG((env.dbg, LEVEL_1, "----> Reg class: %s\n", cls->name));
 
 			/* spilling */
-			be_spill_ilp(&session, cls);
+			//be_spill_ilp(&session, cls);
+			be_spill_belady(&session, cls);
 #ifdef DUMP_SPILL
 			dump_ir_block_graph_sched(session.irg, "-spill");
 #endif

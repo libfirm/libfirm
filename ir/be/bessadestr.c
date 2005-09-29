@@ -70,12 +70,6 @@ static INLINE void build_phi_rings(be_chordal_env_t *env)
   irg_walk_graph(env->session_env->irg, clear_link, collect_phis, env);
 }
 
-static int skip_cf_predicator(const ir_node *irn, void *data) {
-  be_chordal_env_t *chordal_env = data;
-  arch_env_t *ae = chordal_env->session_env->main_env->arch_env;
-  return arch_irn_classify(ae, irn) == arch_irn_class_branch;
-}
-
 static void insert_all_perms_walker(ir_node *bl, void *data)
 {
   be_chordal_env_t *chordal_env = data;
@@ -129,7 +123,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
       }
 
       perm = new_Perm(fact, chordal_env->cls, irg, pred_bl, n_projs, in);
-      insert_after = sched_skip(sched_last(pred_bl), 0, skip_cf_predicator, chordal_env);
+      insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, chordal_env->session_env->main_env->arch_env);
       sched_add_after(insert_after, perm);
       exchange(dummy, perm);
 
@@ -196,7 +190,7 @@ static void adjust_phi_arguments(be_chordal_env_t *chordal_env, ir_node *phi) {
 			assert(get_irn_mode(phi) == get_irn_mode(dupl));
 			set_irn_n(phi, i, dupl);
 			set_reg(dupl, phi_reg);
-			sched_add_after(sched_skip(sched_last(arg_block), 0, skip_cf_predicator, chordal_env), dupl);
+			sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, chordal_env->session_env->main_env->arch_env), dupl);
 			pin_irn(dupl, phi_block);
 			DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 		} else {

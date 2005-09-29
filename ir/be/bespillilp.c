@@ -498,7 +498,7 @@ static ir_node *spill_irn(spill_ilp_t *si, ir_node *irn, ir_node *ctx_irn)
 	return ctx->spill;
 }
 
-static ir_node *spill_phi(spill_ilp_t *si, ir_node *phi, ir_node *ctx_irn, pset *rem_phis)
+static ir_node *spill_phi(spill_ilp_t *si, ir_node *phi, ir_node *ctx_irn)
 {
 	int i, n;
 	ir_mode *mode = get_irn_mode(phi);
@@ -527,7 +527,7 @@ static ir_node *spill_phi(spill_ilp_t *si, ir_node *phi, ir_node *ctx_irn, pset 
 		ir_node *res;
 
 		if(is_Phi(arg))
-			res = spill_phi(si, arg, ctx_irn, rem_phis);
+			res = spill_phi(si, arg, ctx_irn);
 		else
 			res = spill_irn(si, arg, ctx_irn);
 
@@ -537,12 +537,12 @@ static ir_node *spill_phi(spill_ilp_t *si, ir_node *phi, ir_node *ctx_irn, pset 
 	return ctx->spill;
 }
 
-static ir_node *spill_live_range(spill_ilp_t *si, live_range_t *lr, pset *rem_phis)
+static ir_node *spill_live_range(spill_ilp_t *si, live_range_t *lr)
 {
 	const live_range_t *closest = lr->use_head->closest_use;
 
 	if(is_Phi(lr->irn) && closest && is_spilled(si, closest))
-		return spill_phi(si, lr->irn, lr->irn, rem_phis);
+		return spill_phi(si, lr->irn, lr->irn);
 	else
 		return spill_irn(si, lr->irn, lr->irn);
 }
@@ -550,8 +550,8 @@ static ir_node *spill_live_range(spill_ilp_t *si, live_range_t *lr, pset *rem_ph
 
 static void writeback_results(spill_ilp_t *si)
 {
-  const be_node_factory_t *fact = si->session_env->main_env->node_factory;
-  const arch_env_t *arch_env    = si->session_env->main_env->arch_env;
+	const be_node_factory_t *fact = si->session_env->main_env->node_factory;
+	const arch_env_t *arch_env    = si->session_env->main_env->arch_env;
 	ir_node *irn;
 	irn_use_head_t *uh;
 	pset *rem_phis = pset_new_ptr_default();
@@ -563,21 +563,21 @@ static void writeback_results(spill_ilp_t *si)
 
 	/* Look at each node and examine the usages. */
 	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
-    live_range_t *lr;
-    ir_node **reloads;
+    	live_range_t *lr;
+	    ir_node **reloads;
 
-    int n_reloads           = 0;
-    ir_node *irn            = uh->irn;
+	    int n_reloads           = 0;
+	    ir_node *irn            = uh->irn;
 		ir_mode *mode           = get_irn_mode(irn);
 
 		/* Go through all live ranges of the node. */
-    list_for_each_entry(live_range_t, lr, &uh->head, list) {
-      int spilled = is_spilled(si, lr);
+	    list_for_each_entry(live_range_t, lr, &uh->head, list) {
+	        int spilled = is_spilled(si, lr);
 			// int rematd  = !is_zero(lpp_get_var_sol(si->lpp, lr->is_remat_var));
 
 			if(spilled && !is_end_of_block_use(lr)) {
 				ir_node *bl      = get_nodes_block(lr->user);
-				ir_node *spill   = spill_live_range(si, lr, rem_phis);
+				ir_node *spill   = spill_live_range(si, lr);
 				ir_node *reload  = new_Reload(fact, si->cls,
 						si->session_env->irg, bl, mode, spill);
 
@@ -587,7 +587,7 @@ static void writeback_results(spill_ilp_t *si)
 				sched_add_before(lr->user, reload);
 			}
 
-    }
+    	}
 
 		if(n_reloads > 0) {
 			reloads = obstack_finish(si->obst);
@@ -595,7 +595,7 @@ static void writeback_results(spill_ilp_t *si)
 					n_reloads, reloads, rem_phis);
 			obstack_free(si->obst, reloads);
 		}
-  }
+    }
 
 	for(irn = pset_first(rem_phis); irn; irn = pset_next(rem_phis)) {
 		int i, n;

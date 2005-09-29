@@ -255,9 +255,13 @@ extern int sched_verify_irg(ir_graph *irg);
  * A predicate for a node.
  * @param irn The node.
  * @param data The custom data.
- * @return 1 or 0, depending on your criteria.
+ * @return 1 if irn should be skipped. Else 0.
  */
 typedef int (sched_predicator_t)(const ir_node *irn, void *data);
+
+
+int sched_skip_cf_predicator(const ir_node *irn, void *data);
+int sched_skip_phi_predicator(const ir_node *irn, void *data);
 
 /**
  * Skip nodes in a schedule.

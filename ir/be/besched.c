@@ -11,6 +11,7 @@
 #include "iredges_t.h"
 #include "debug.h"
 
+#include "bearch.h"
 #include "besched_t.h"
 #include "beutil.h"
 #include "belistsched.h"
@@ -184,6 +185,15 @@ int sched_verify_irg(ir_graph *irg)
   irg_block_walk_graph(irg, sched_verify_walker, NULL, &res);
 
   return res;
+}
+
+int sched_skip_cf_predicator(const ir_node *irn, void *data) {
+  arch_env_t *ae = data;
+  return arch_irn_classify(ae, irn) == arch_irn_class_branch;
+}
+
+int sched_skip_phi_predicator(const ir_node *irn, void *data) {
+	return is_Phi(irn);
 }
 
 extern ir_node *sched_skip(ir_node *from, int forward,

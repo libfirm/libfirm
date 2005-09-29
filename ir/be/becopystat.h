@@ -7,7 +7,7 @@
 #ifndef _BECOPYSTAT_H
 #define _BECOPYSTAT_H
 
-#define DO_STAT
+#undef DO_STAT
 
 #ifdef DO_STAT
 
@@ -36,7 +36,7 @@ void copystat_dump_pretty(ir_graph *irg);
 
 #else /* DO_STAT */
 
-#define copy_copystat_init();
+#define copystat_init();
 #define	copystat_reset();
 #define copystat_collect_cls(env);
 #define copystat_add_max_costs(costs);

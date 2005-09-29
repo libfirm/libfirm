@@ -12,6 +12,8 @@
 #ifndef _BEUSES_H
 #define _BEUSES_H
 
+#include "bearch.h"
+
 #define USES_INFINITY                 1000000
 #define USES_IS_INIFINITE(x)          ((x) >= USES_INFINITY)
 
