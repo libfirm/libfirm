@@ -26,7 +26,7 @@ static INLINE const ir_node *get_block(const ir_node *irn)
 
 static INLINE int is_firm_be_mode(const ir_mode *mode)
 {
-	return mode_is_data(mode);
+	return mode_is_datab(mode);
 }
 
 /**
