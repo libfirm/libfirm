@@ -10,6 +10,9 @@
 #include "obst.h"
 #include "debug.h"
 
+#include "irgraph.h"
+#include "beirgmod.h"
+
 typedef struct _be_main_env_t {
   struct obstack obst;
   struct _be_node_factory_t *node_factory;

@@ -179,10 +179,10 @@ static INLINE void _sched_set_time_stamp(ir_node *irn)
  */
 static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
 {
-  sched_info_t *info = get_irn_sched_info(irn);
+	sched_info_t *info = get_irn_sched_info(irn);
 	list_add_tail(&info->list, &get_irn_sched_info(before)->list);
-  _sched_set_time_stamp(irn);
-  info->scheduled = 1;
+	_sched_set_time_stamp(irn);
+	info->scheduled = 1;
 	return irn;
 }
 

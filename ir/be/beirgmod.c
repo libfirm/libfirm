@@ -225,7 +225,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies,
       }
     }
 
-		else if(pset_find_ptr(phi_blocks, curr_bl)) {
+		if(pset_find_ptr(phi_blocks, curr_bl)) {
 			ir_node *phi = get_irn_link(curr_bl);
 
 			if(!phi) {

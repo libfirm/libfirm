@@ -21,7 +21,7 @@ typedef struct _loc_t loc_t;
 typedef struct _be_uses_t be_uses_t;
 
 unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
-    unsigned from_step, const ir_node *def);
+    unsigned from_step, const ir_node *def, int skip_from_uses);
 
 be_uses_t *be_begin_uses(ir_graph *irg,
     const arch_env_t *arch_env,

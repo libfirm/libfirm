@@ -32,15 +32,13 @@
 #define DBG_FIX 4
 #define DBG_SPILL 8
 #define DBG_TRACE 32
-#define DEBUG_LVL (DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
+#define DEBUG_LVL SET_LEVEL_0 //(DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 static firm_dbg_module_t *dbg = NULL;
-
 
 typedef struct _workset_t workset_t;
 typedef struct _block_info_t block_info_t;
 typedef struct _reloader_t reloader_t;
 typedef struct _spill_info_t spill_info_t;
-typedef struct _spill_ctx_t spill_ctx_t;
 typedef struct _belady_env_t belady_env_t;
 
 struct _workset_t {
@@ -64,15 +62,8 @@ struct _spill_info_t {
 	reloader_t *reloaders;
 };
 
-struct _spill_ctx_t {
-	ir_node *spilled;  /**< The spilled node. */
-	ir_node *user;     /**< The node this spill is for. */
-	ir_node *spill;    /**< The spill itself. */
-};
-
 struct _belady_env_t {
 	struct obstack ob;
-	const be_main_session_env_t *session;
 	const be_node_factory_t *factory;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
@@ -85,8 +76,7 @@ struct _belady_env_t {
 	pset *used;			/**< holds the values used (so far) in the current BB */
 	set *spills;		/**< all spill_info_t's, which must be placed */
 
-	set *spill_ctxs;	/**< all spill contexts (multiple spilling and stop recursion) */
-	pset *mem_phis;		/**< all phis which must be converted to memory phis */
+	spill_env_t senv;	/* see bespill.h */
 	pset *reloads;		/**< all reload nodes placed */
 };
 
@@ -96,11 +86,6 @@ static int set_cmp_spillinfo(const void *x, const void *y, size_t size) {
 	return ! (xx->spilled_node == yy->spilled_node);
 }
 
-static int set_cmp_spillctx(const void *a, const void *b, size_t n) {
-	const spill_ctx_t *p = a;
-	const spill_ctx_t *q = b;
-	return !(p->user == q->user && p->spilled == q->spilled);
-}
 
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
@@ -240,7 +225,7 @@ static void build_start_set(belady_env_t *bel, ir_node *blk) {
 	sched_foreach(blk, irn)
 		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, 0) == bel->cls) {
 			loc.irn = irn;
-			loc.time = be_get_next_use(bel->uses, first, 0, irn);
+			loc.time = be_get_next_use(bel->uses, first, 0, irn, 1);
 			obstack_grow(&ob, &loc, sizeof(loc));
 			count++;
 		} else
@@ -249,7 +234,7 @@ static void build_start_set(belady_env_t *bel, ir_node *blk) {
 	live_foreach(blk, li)
 		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, 0) == bel->cls) {
 			loc.irn = (ir_node *)li->irn;
-			loc.time = be_get_next_use(bel->uses, first, 0, li->irn);
+			loc.time = be_get_next_use(bel->uses, first, 0, li->irn, 1);
 			obstack_grow(&ob, &loc, sizeof(loc));
 			count++;
 		}
@@ -324,7 +309,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	if (len > max_allowed) {
 		/* get current next-use distance */
 		for (i=0; i<ws->len; ++i)
-			workset_set_time(ws, i, be_get_next_use(bel->uses, bel->instr, bel->instr_nr, workset_get_val(ws, i)));
+			workset_set_time(ws, i, be_get_next_use(bel->uses, bel->instr, bel->instr_nr, workset_get_val(ws, i), is_usage));
 
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
@@ -381,7 +366,13 @@ static void decide(ir_node *blk, void *env) {
 	bel->instr_nr = 0;
 	new_vals = new_workset(&bel->ob, bel);
 	sched_foreach(blk, irn) {
-		DBG((dbg, DBG_DECIDE, "  %+F\n", irn));
+		ir_node *iii;
+		DBG((dbg, DBG_WSETS, "Current workset for %+F:\n", blk));
+		workset_foreach(bel->ws, iii)
+			DBG((dbg, DBG_WSETS, "  %+F\n", iii));
+		assert(workset_get_length(bel->ws) <= bel->n_regs && "Too much values in workset!");
+
+		DBG((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
 		/* projs are handled with the tuple value.
 		 * Phis are no real instr (see insert_starters)
@@ -479,80 +470,6 @@ next_value:
 	}
 }
 
-static INLINE spill_ctx_t *get_spill_ctx(set *sc, ir_node *to_spill, ir_node *ctx_irn) {
-	spill_ctx_t templ;
-
-	templ.spilled = to_spill;
-	templ.user    = ctx_irn;
-	templ.spill   = NULL;
-
-	return set_insert(sc, &templ, sizeof(templ), HASH_COMBINE(HASH_PTR(to_spill), HASH_PTR(ctx_irn)));
-}
-
-static INLINE ir_node *spill_irn(belady_env_t *bel, ir_node *irn, ir_node *ctx_irn) {
-	spill_ctx_t *ctx;
-	DBG((dbg, DBG_SPILL, "spill_irn %+F\n", irn));
-
-	ctx = get_spill_ctx(bel->spill_ctxs, irn, ctx_irn);
-	if(!ctx->spill)
-		ctx->spill = be_spill(bel->factory, bel->arch, irn);
-
-	return ctx->spill;
-}
-
-/**
- * If the first usage of a phi result would be out of memory
- * there is no sense in allocating a register for it.
- * Thus we spill it and all its operands to the same spill slot.
- * Therefore the phi/dataB becomes a phi/Memory
- */
-static ir_node *spill_phi(belady_env_t *bel, ir_node *phi, ir_node *ctx_irn) {
-	int i, n = get_irn_arity(phi);
-	ir_node **ins, *bl = get_nodes_block(phi);
-	ir_graph *irg = get_irn_irg(bl);
-	spill_ctx_t *ctx;
-
-	assert(is_Phi(phi));
-	DBG((dbg, DBG_SPILL, "spill_phi %+F\n", phi));
-
-	/* search an existing spill for this context */
-	ctx = get_spill_ctx(bel->spill_ctxs, phi, ctx_irn);
-
-	/* if not found spill the phi */
-	if(!ctx->spill) {
-		/* build a new PhiM with dummy in-array */
-		ins  = malloc(n * sizeof(ins[0]));
-		for(i=0; i<n; ++i)
-			ins[i] = new_r_Unknown(irg, mode_M);
-		ctx->spill = new_r_Phi(bel->session->irg, bl, n, ins, mode_M);
-		free(ins);
-
-		/* re-wire the phiM */
-		for(i=0; i<n; ++i) {
-			ir_node *arg = get_irn_n(phi, i);
-			ir_node *sub_res;
-
-			if(is_Phi(arg) && pset_find_ptr(bel->mem_phis, arg))
-				sub_res = spill_phi(bel, arg, ctx_irn);
-			else
-				sub_res = spill_irn(bel, arg, ctx_irn);
-
-			set_irn_n(ctx->spill, i, sub_res);
-		}
-	}
-	return ctx->spill;
-}
-
-static ir_node *spill_node(belady_env_t *bel, ir_node *to_spill) {
-	ir_node *res;
-	if (pset_find_ptr(bel->mem_phis, to_spill))
-		res = spill_phi(bel, to_spill, to_spill);
-	else
-		res = spill_irn(bel, to_spill, to_spill);
-
-	return res;
-}
-
 static void insert_spills_reloads(ir_graph *irg, belady_env_t *bel) {
 	ir_node *irn;
 	spill_info_t *si;
@@ -566,7 +483,7 @@ static void insert_spills_reloads(ir_graph *irg, belady_env_t *bel) {
 			ir_node *blk = get_nodes_block(irn);
 			workset_t *sws = ((block_info_t *)get_irn_link(blk))->ws_start;
 			if (!workset_contains(sws, irn))
-				pset_insert_ptr(bel->mem_phis, irn);
+				pset_insert_ptr(bel->senv.mem_phis, irn);
 		}
 	}
 
@@ -580,11 +497,12 @@ static void insert_spills_reloads(ir_graph *irg, belady_env_t *bel) {
 		/* go through all reloads for this spill */
 		for(rld = si->reloaders; rld; rld = rld->next) {
 			/* the spill for this reloader */
-			ir_node *spill   = spill_node(bel, si->spilled_node);
+			ir_node *spill   = be_spill_node(&bel->senv, si->spilled_node);
 
 			/* the reload */
 			ir_node *bl      = is_Block(rld->reloader) ? rld->reloader : get_nodes_block(rld->reloader);
 			ir_node *reload  = new_Reload(bel->factory, bel->cls, irg, bl, mode, spill);
+			DBG((dbg, DBG_SPILL, " RELOADER %+F   Reload %+F of %+F\n", rld->reloader, reload, si->spilled_node));
 			pset_insert_ptr(bel->reloads, reload);
 
 			/* remember the reaload */
@@ -595,19 +513,13 @@ static void insert_spills_reloads(ir_graph *irg, belady_env_t *bel) {
 
 		assert(n_reloads > 0);
 		reloads = obstack_finish(&ob);
-		be_introduce_copies_ignore(bel->session->dom_front, si->spilled_node, n_reloads, reloads, bel->mem_phis);
+		be_introduce_copies_ignore(bel->senv.session->dom_front, si->spilled_node, n_reloads, reloads, bel->senv.mem_phis);
 		obstack_free(&ob, reloads);
 	}
 
 	obstack_free(&ob, NULL);
 
-	/* remove all special phis form the irg and the schedule */
-	for(irn = pset_first(bel->mem_phis); irn; irn = pset_next(bel->mem_phis)) {
-		int i, n;
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i)
-			set_irn_n(irn, i, new_r_Bad(irg));
-		sched_remove(irn);
-	}
+	be_remove_spilled_phis(&bel->senv);
 }
 
 /**
@@ -616,8 +528,10 @@ static void insert_spills_reloads(ir_graph *irg, belady_env_t *bel) {
  */
 static void rescue_used_reloads(ir_node *irn, void *env) {
 	pset *rlds = ((belady_env_t *)env)->reloads;
-	if (pset_find_ptr(rlds, irn))
+	if (pset_find_ptr(rlds, irn)) {
+		DBG((dbg, DBG_SPILL, "Removing %+F in %+F\n", irn, get_nodes_block(irn)));
 		pset_remove_ptr(rlds, irn);
+	}
 }
 
 void be_spill_belady(const be_main_session_env_t *session, const arch_register_class_t *cls) {
@@ -629,7 +543,7 @@ void be_spill_belady(const be_main_session_env_t *session, const arch_register_c
 	/* init belady env */
 	belady_env_t *bel = alloca(sizeof(*bel));
 	obstack_init(&bel->ob);
-	bel->session = session;
+	bel->senv.session = session;
 	bel->factory = session->main_env->node_factory;
 	bel->arch = session->main_env->arch_env;
 	bel->cls = cls;
@@ -637,8 +551,8 @@ void be_spill_belady(const be_main_session_env_t *session, const arch_register_c
 	bel->ws = new_workset(&bel->ob, bel);
 	bel->uses = be_begin_uses(session->irg, session->main_env->arch_env, cls);
 	bel->spills = new_set(set_cmp_spillinfo, 32);
-	bel->spill_ctxs = new_set(set_cmp_spillctx, 32);
-	bel->mem_phis = pset_new_ptr_default();
+	bel->senv.spill_ctxs = new_set(be_set_cmp_spillctx, 32);
+	bel->senv.mem_phis = pset_new_ptr_default();
 	bel->reloads = pset_new_ptr_default();
 
 	/* do the work */
@@ -653,8 +567,8 @@ void be_spill_belady(const be_main_session_env_t *session, const arch_register_c
 
 	/* clean up */
 	del_pset(bel->reloads);
-	del_pset(bel->mem_phis);
-	del_set(bel->spill_ctxs);
+	del_pset(bel->senv.mem_phis);
+	del_set(bel->senv.spill_ctxs);
 	del_set(bel->spills);
 	be_end_uses(bel->uses);
 	obstack_free(&bel->ob, NULL);

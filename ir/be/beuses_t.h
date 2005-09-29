@@ -33,17 +33,4 @@ struct _loc_t {
  */
 int loc_compare(const void *loc1, const void *loc2);
 
-
-static INLINE loc_t *
-be_get_next_use_loc(
-    be_uses_t *uses,
-    const loc_t *from,
-    loc_t *loc)
-{
-  loc->time = be_get_next_use(uses, from->irn, from->time, loc->irn);
-  return loc;
-}
-
-
-
 #endif /* _BEUSES_T_H */

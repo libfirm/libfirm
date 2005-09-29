@@ -34,9 +34,10 @@
 #include "beuses_t.h"
 
 typedef struct _be_use_t {
-  const ir_node *bl;
-  const ir_node *irn;
-  unsigned next_use;
+	const ir_node *bl;
+	const ir_node *irn;
+	unsigned next_use;
+	int is_set;
 } be_use_t;
 
 struct _be_uses_t {
@@ -75,11 +76,12 @@ static INLINE be_use_t *get_or_set_use(be_uses_t *uses,
   templ.bl = bl;
   templ.irn = irn;
   templ.next_use = next_use;
+  templ.is_set = 0;
   return set_insert(uses->uses, &templ, sizeof(templ), hash);
 }
 
 unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
-    unsigned from_step, const ir_node *def);
+    unsigned from_step, const ir_node *def, int skip_from_uses);
 
 static unsigned get_next_use_bl(be_uses_t *uses, const ir_node *bl,
     const ir_node *def)
@@ -87,16 +89,17 @@ static unsigned get_next_use_bl(be_uses_t *uses, const ir_node *bl,
   be_use_t *u;
 
   u = get_or_set_use(uses, bl, def, 0);
-  if(USES_IS_INIFINITE(u->next_use))
-    return u->next_use;
-
-  u->next_use = USES_INFINITY;
-  u->next_use = be_get_next_use(uses, sched_first(bl), 0, def);
+  if(!u->is_set) {
+	u->is_set = 1;
+	u->next_use = USES_INFINITY;
+	u->next_use = be_get_next_use(uses, sched_first(bl), 0, def, 0);
+  }
   return u->next_use;
 }
 
 unsigned be_get_next_use(be_uses_t *uses,
-    const ir_node *from, unsigned from_step, const ir_node *def)
+    const ir_node *from, unsigned from_step, const ir_node *def,
+    int skip_from_uses)
 {
   unsigned next_use = USES_INFINITY;
   unsigned step = from_step;
@@ -108,34 +111,34 @@ unsigned be_get_next_use(be_uses_t *uses,
   sched_foreach_from(from, irn) {
     int i, n;
 
-    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-      ir_node *operand = get_irn_n(irn, i);
+	if(!skip_from_uses) {
+	    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+	      ir_node *operand = get_irn_n(irn, i);
 
-      if(operand == def) {
-        DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, irn));
-        return step;
-      }
-    }
+	      if(operand == def) {
+	        DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, irn));
+	        return step;
+	      }
+	    }
+	}
 
+	skip_from_uses = 0;
     step++;
   }
 
-  next_use = step;
-  foreach_block_succ(bl, succ_edge) {
-    const ir_node *succ_bl = succ_edge->src;
-    if(is_live_in(succ_bl, def)) {
-      unsigned next = get_next_use_bl(uses, succ_bl, def);
+	next_use = USES_INFINITY;
+	foreach_block_succ(bl, succ_edge) {
+ 		const ir_node *succ_bl = succ_edge->src;
+		if(is_live_in(succ_bl, def)) {
+			unsigned next = get_next_use_bl(uses, succ_bl, def);
 
-      DBG((uses->dbg, LEVEL_2, "\t\tnext use in succ %+F: %d\n", succ_bl, next));
-      next_use = sadd(next_use, next);
-      n++;
-    }
-  }
+			DBG((uses->dbg, LEVEL_2, "\t\tnext use in succ %+F: %d\n", succ_bl, next));
+			next_use = MIN(next_use, next);
+			n++;
+	    }
+	}
 
-  if(n > 1)
-    next_use = sdiv(next_use, n);
-
-  return sadd(next_use, step);
+	return next_use + step;
 }
 
 be_uses_t *be_begin_uses(
@@ -150,6 +153,7 @@ be_uses_t *be_begin_uses(
   uses->arch_env = arch_env;
   uses->uses     = new_set(cmp_use, 512);
   uses->dbg      = firm_dbg_register("be.uses");
+  firm_dbg_set_mask(uses->dbg, SET_LEVEL_0);
 
   return uses;
 }

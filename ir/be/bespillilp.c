@@ -33,6 +33,7 @@
 #include "bearch.h"
 #include "benode_t.h"
 #include "beutil.h"
+#include "bespillilp.h"
 
 #define BIGM 1000.0
 
@@ -53,15 +54,14 @@
 #define is_end_of_block_use(lr) (is_Block((lr)->user))
 
 typedef struct _spill_ilp_t {
-  const be_main_session_env_t *session_env;
-  const arch_register_class_t *cls;
+	const arch_register_class_t *cls;
 	firm_dbg_module_t *dbg;
-  lpp_t *lpp;
+	lpp_t *lpp;
 	set *irn_use_heads;
-  set *live_ranges;
-	set *spill_ctx;
-	pset *remove_phis;
-  struct obstack *obst;
+	set *live_ranges;
+	spill_env_t senv;
+//	pset *remove_phis;
+	struct obstack *obst;
 	int enable_store : 1;
 	int enable_remat : 1;
 } spill_ilp_t;
@@ -86,32 +86,19 @@ struct _live_range_t {
   int is_remat_var;
 };
 
-typedef struct _spill_ctx_t {
-	ir_node *spilled;  /**< The spilled node. */
-	ir_node *user;     /**< The node this spill is for. */
-	ir_node *spill;    /**< The spill itself. */
-} spill_ctx_t;
-
 static int has_reg_class(const spill_ilp_t *si, const ir_node *irn)
 {
-  return arch_irn_has_reg_class(si->session_env->main_env->arch_env,
+  return arch_irn_has_reg_class(si->senv.session->main_env->arch_env,
       irn, arch_pos_make_out(0), si->cls);
 }
 
 static int register_demand(spill_ilp_t *si, const ir_node *irn)
 {
-	const arch_env_t *arch_env = si->session_env->main_env->arch_env;
+	const arch_env_t *arch_env = si->senv.session->main_env->arch_env;
 	int n_in = arch_get_n_operands(arch_env, irn, 0);
 	int n_out = arch_get_n_operands(arch_env, irn, -1);
 
 	return MAX(n_in, n_out);
-}
-
-static int cmp_spill_ctx(const void *a, const void *b, size_t n)
-{
-	const spill_ctx_t *p = a;
-	const spill_ctx_t *q = b;
-  return !(p->user == q->user && p->spilled == q->spilled);
 }
 
 static int cmp_live_range(const void *a, const void *b, size_t n)
@@ -141,7 +128,7 @@ static int cmp_irn_use_head(const void *a, const void *b, size_t n)
 static INLINE int can_remat(const spill_ilp_t *si, const ir_node *irn, pset *live)
 {
 	int i, n;
-  const arch_env_t *arch_env    = si->session_env->main_env->arch_env;
+  const arch_env_t *arch_env    = si->senv.session->main_env->arch_env;
 	int remat = (arch_irn_get_flags(arch_env, irn) & arch_irn_flags_rematerializable) != 0;
 
 	for(i = 0, n = get_irn_arity(irn); i < n && remat; ++i) {
@@ -150,20 +137,6 @@ static INLINE int can_remat(const spill_ilp_t *si, const ir_node *irn, pset *liv
 	}
 
 	return remat;
-}
-
-static spill_ctx_t *get_spill_ctx(spill_ilp_t *si, ir_node *spilled, ir_node *ctx_irn)
-{
-	spill_ctx_t templ, *res;
-
-	templ.spilled = spilled;
-	templ.user    = ctx_irn;
-	templ.spill   = NULL;
-
-	res = set_insert(si->spill_ctx, &templ, sizeof(templ),
-			HASH_COMBINE(HASH_PTR(spilled), HASH_PTR(ctx_irn)));
-
-	return res;
 }
 
 static live_range_t *get_live_range(spill_ilp_t *si, ir_node *irn, ir_node *user, int pos)
@@ -206,34 +179,6 @@ static live_range_t *get_live_range(spill_ilp_t *si, ir_node *irn, ir_node *user
 	res->use_head = head;
 
   return res;
-}
-
-static live_range_t *lookup_live_range(const spill_ilp_t *si, ir_node *irn,
-		ir_node *user, int pos)
-{
-  live_range_t lr;
-  unsigned hash = HASH_COMBINE(HASH_PTR(irn), HASH_PTR(user));
-
-  lr.user    = user;
-  lr.irn     = irn;
-  lr.pos     = pos;
-  lr.in_mem_var = -1;
-
-  return set_find(si->live_ranges, &lr, sizeof(lr), hash);
-}
-
-static void create_block_live_range_sets(ir_node *bl, void *data)
-{
-	assert(is_Block(bl));
-	set_irn_link(bl, pset_new_ptr_default());
-}
-
-static void delete_block_live_range_sets(ir_node *bl, void *data)
-{
-	assert(is_Block(bl));
-
-	del_pset(get_irn_link(bl));
-	set_irn_link(bl, NULL);
 }
 
 #if 0
@@ -484,147 +429,72 @@ static int is_spilled(const spill_ilp_t *si, const live_range_t *lr)
 	return !is_zero(lpp_get_var_sol(si->lpp, lr->in_mem_var));
 }
 
-static ir_node *spill_irn(spill_ilp_t *si, ir_node *irn, ir_node *ctx_irn)
-{
-  const be_node_factory_t *fact = si->session_env->main_env->node_factory;
-  const arch_env_t *arch_env    = si->session_env->main_env->arch_env;
-	spill_ctx_t *ctx;
-
-	ctx = get_spill_ctx(si, irn, ctx_irn);
-	if(ctx->spill)
-		return ctx->spill;
-
-	ctx->spill = be_spill(fact, arch_env, irn);
-	return ctx->spill;
-}
-
-static ir_node *spill_phi(spill_ilp_t *si, ir_node *phi, ir_node *ctx_irn)
-{
-	int i, n;
-	ir_mode *mode = get_irn_mode(phi);
-	ir_node **ins;
-	ir_node *bl = get_nodes_block(phi);
-	ir_graph *irg = get_irn_irg(bl);
-	spill_ctx_t *ctx;
-
-	assert(is_Phi(phi));
-
-	ctx = get_spill_ctx(si, phi, ctx_irn);
-	if(ctx->spill)
-		return ctx->spill;
-
-	n    = get_irn_arity(phi);
-	ins  = malloc(n * sizeof(ins[0]));
-
-	for(i = 0; i < n; ++i)
-		ins[i]  = new_r_Unknown(irg, mode_M);
-
-	ctx->spill = new_r_Phi(irg, bl, n, ins, mode_M);
-	free(ins);
-
-	for(i = 0; i < n; ++i) {
-		ir_node *arg = get_irn_n(phi, i);
-		ir_node *res;
-
-		if(is_Phi(arg))
-			res = spill_phi(si, arg, ctx_irn);
-		else
-			res = spill_irn(si, arg, ctx_irn);
-
-		set_irn_n(ctx->spill, i, res);
-	}
-
-	return ctx->spill;
-}
-
-static ir_node *spill_live_range(spill_ilp_t *si, live_range_t *lr)
-{
-	const live_range_t *closest = lr->use_head->closest_use;
-
-	if(is_Phi(lr->irn) && closest && is_spilled(si, closest))
-		return spill_phi(si, lr->irn, lr->irn);
-	else
-		return spill_irn(si, lr->irn, lr->irn);
-}
-
-
 static void writeback_results(spill_ilp_t *si)
 {
-	const be_node_factory_t *fact = si->session_env->main_env->node_factory;
-	const arch_env_t *arch_env    = si->session_env->main_env->arch_env;
-	ir_node *irn;
+	const be_node_factory_t *fact = si->senv.session->main_env->node_factory;
 	irn_use_head_t *uh;
-	pset *rem_phis = pset_new_ptr_default();
+	si->senv.mem_phis = pset_new_ptr_default();
 
 	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
 		if(is_Phi(uh->irn) && is_spilled(si, uh->closest_use))
-			pset_insert_ptr(rem_phis, uh->irn);
+			pset_insert_ptr(si->senv.mem_phis, uh->irn);
 	}
 
 	/* Look at each node and examine the usages. */
 	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
-    	live_range_t *lr;
-	    ir_node **reloads;
+		live_range_t *lr;
+		ir_node **reloads;
 
-	    int n_reloads           = 0;
-	    ir_node *irn            = uh->irn;
+		int n_reloads           = 0;
+		ir_node *irn            = uh->irn;
 		ir_mode *mode           = get_irn_mode(irn);
 
 		/* Go through all live ranges of the node. */
-	    list_for_each_entry(live_range_t, lr, &uh->head, list) {
-	        int spilled = is_spilled(si, lr);
+		list_for_each_entry(live_range_t, lr, &uh->head, list) {
+			int spilled = is_spilled(si, lr);
 			// int rematd  = !is_zero(lpp_get_var_sol(si->lpp, lr->is_remat_var));
 
 			if(spilled && !is_end_of_block_use(lr)) {
 				ir_node *bl      = get_nodes_block(lr->user);
-				ir_node *spill   = spill_live_range(si, lr);
-				ir_node *reload  = new_Reload(fact, si->cls,
-						si->session_env->irg, bl, mode, spill);
+
+
+				ir_node *spill   = be_spill_node(&si->senv, lr->irn);
+				ir_node *reload  = new_Reload(fact, si->cls, si->senv.session->irg, bl, mode, spill);
 
 				obstack_ptr_grow(si->obst, reload);
 				n_reloads++;
 
 				sched_add_before(lr->user, reload);
 			}
-
-    	}
+		}
 
 		if(n_reloads > 0) {
 			reloads = obstack_finish(si->obst);
-			be_introduce_copies_ignore(si->session_env->dom_front, irn,
-					n_reloads, reloads, rem_phis);
+			be_introduce_copies_ignore(si->senv.session->dom_front, irn, n_reloads, reloads, si->senv.mem_phis);
 			obstack_free(si->obst, reloads);
 		}
-    }
-
-	for(irn = pset_first(rem_phis); irn; irn = pset_next(rem_phis)) {
-		int i, n;
-
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i)
-			set_irn_n(irn, i, new_r_Bad(si->session_env->irg));
-		sched_remove(irn);
 	}
+	be_remove_spilled_phis(&si->senv);
 }
 
 void be_spill_ilp(const be_main_session_env_t *session_env,
     const arch_register_class_t *cls)
 {
-	char buf[256];
 	char problem_name[256];
-  struct obstack obst;
-  spill_ilp_t si;
+	struct obstack obst;
+	spill_ilp_t si;
 
 	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", session_env->irg, cls->name);
 
-  obstack_init(&obst);
-  si.obst           = &obst;
+	obstack_init(&obst);
+	si.obst           = &obst;
 	si.dbg            = firm_dbg_register("be.ra.spillilp");
-  si.session_env    = session_env;
-  si.cls            = cls;
-  si.lpp            = new_lpp(problem_name, lpp_minimize);
-  si.irn_use_heads  = new_set(cmp_irn_use_head, 4096);
-  si.live_ranges    = new_set(cmp_live_range, 16384);
-  si.spill_ctx      = new_set(cmp_spill_ctx, 4096);
+	si.senv.session   = session_env;
+	si.cls            = cls;
+	si.lpp            = new_lpp(problem_name, lpp_minimize);
+	si.irn_use_heads  = new_set(cmp_irn_use_head, 4096);
+	si.live_ranges    = new_set(cmp_live_range, 16384);
+	si.senv.spill_ctxs= new_set(be_set_cmp_spillctx, 4096);
 	si.enable_remat   = 1;
 	si.enable_store   = 0;
 
@@ -636,6 +506,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 #ifdef DUMP_ILP
 	{
 		FILE *f;
+		char buf[256];
 
 		ir_snprintf(buf, sizeof(buf), "spill-%s.ilp", problem_name);
 		if((f = fopen(buf, "wt")) != NULL) {
@@ -660,6 +531,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 #ifdef DUMP_SOLUTION
 	{
 		FILE *f;
+		char buf[256];
 
 		ir_snprintf(buf, sizeof(buf), "spill-%s.sol", problem_name);
 		if((f = fopen(buf, "wt")) != NULL) {

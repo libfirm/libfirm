@@ -632,24 +632,33 @@ static int check_pressure_has_class(const check_pressure_info_t *i, const ir_nod
 
 static void check_pressure_walker(ir_node *bl, void *data)
 {
+	firm_dbg_module_t *dbg = firm_dbg_register("be.ra.pressure");
 	check_pressure_info_t *info = data;
 	int n_regs = arch_register_class_n_regs(info->cls);
 
 	pset *live = pset_new_ptr_default();
 	int step = 0;
 	ir_node *irn;
-  irn_live_t *li;
+	irn_live_t *li;
 
-  live_foreach(bl, li) {
-    if(live_is_end(li) && check_pressure_has_class(info, li->irn)) {
-      ir_node *irn = (ir_node *) li->irn;
-      pset_insert_ptr(live, irn);
-    }
-  }
+//	firm_dbg_set_mask(dbg, -1);
+
+	live_foreach(bl, li) {
+		if(live_is_end(li) && check_pressure_has_class(info, li->irn)) {
+			ir_node *irn = (ir_node *) li->irn;
+			pset_insert_ptr(live, irn);
+		}
+	}
+
+	DBG((dbg, LEVEL_1, "end set for %+F\n", bl));
+	for(irn = pset_first(live); irn; irn = pset_next(live))
+		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
 
 	sched_foreach_reverse(bl, irn) {
 		int i, n;
 		int pressure = pset_count(live);
+
+		DBG((dbg, LEVEL_1, "%+10F@%+10F: pressure %d\n", bl, irn, pressure));
 
 		if(pressure > n_regs) {
 			ir_node *x;

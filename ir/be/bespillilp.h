@@ -13,6 +13,7 @@
 
 #include "bearch.h"
 #include "be_t.h"
+#include "bespill.h"
 
 void be_spill_ilp(const be_main_session_env_t *env,
     const arch_register_class_t *cls);

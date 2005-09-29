@@ -319,7 +319,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.ready_set = new_pset(node_cmp_func, get_irn_n_edges(block));
 	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_edges(block));
 
-  firm_dbg_set_mask(be.dbg, 0);
+	firm_dbg_set_mask(be.dbg, 0);
 
 	if(selector->init_block)
 		block_env = selector->init_block(env->selector_env, block);

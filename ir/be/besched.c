@@ -49,7 +49,7 @@ void be_sched_dump(FILE *f, const ir_graph *irg)
 void be_sched_init(void)
 {
 	sched_irn_data_offset = register_additional_node_data(sizeof(sched_info_t));
-  firm_dbg_register("be.sched");
+	firm_dbg_register("be.sched");
 }
 
 void be_sched_test(void)
