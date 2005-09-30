@@ -41,10 +41,11 @@
 
 #define DBG_LEVEL SET_LEVEL_4
 
-#undef DUMP_SOLUTION
+#define DUMP_SOLUTION
 #define DUMP_ILP
-#undef DUMP_STATS
+#undef  DUMP_STATS
 
+#undef  SOLVE_LOCAL
 #define LPP_SERVER "i44pc52"
 #define LPP_SOLVER "cplex"
 
@@ -54,6 +55,17 @@
 
 #define is_end_of_block_use(lr) (is_Block((lr)->user))
 
+/**
+ * Reloads on edges.
+ */
+typedef struct _edge_reload_t {
+	ir_node *irn;
+	ir_node *bl;
+	int pos;
+	int in_mem_var;
+	struct _edge_reload_t *next;
+} edge_reload_t;
+
 typedef struct _spill_stat_t {
 	int n_spills;
 	int n_reloads;
@@ -62,11 +74,14 @@ typedef struct _spill_stat_t {
 
 typedef struct _spill_ilp_t {
 	const arch_register_class_t *cls;
+	const be_main_session_env_t *session;
 	firm_dbg_module_t *dbg;
 	lpp_t *lpp;
 	set *irn_use_heads;
 	set *live_ranges;
-	spill_env_t senv;
+	set *first_uses;
+	spill_env_t *senv;
+	edge_reload_t *edges;
 	struct obstack *obst;
 	int enable_store : 1;
 	int enable_remat : 1;
@@ -92,9 +107,21 @@ struct _live_range_t {
   int is_remat_var;
 };
 
+/*
+ * Associates the first use of a live-in in a block
+ * with its live range.
+ */
+typedef struct _first_use_t {
+	ir_node *bl;
+	ir_node *irn;       /**< A value live in at bl. */
+	live_range_t *lr;   /**< The live range for the first use of irn in bl. */
+} first_use_t;
+
+
+
 static int has_reg_class(const spill_ilp_t *si, const ir_node *irn)
 {
-  return arch_irn_has_reg_class(si->senv.session->main_env->arch_env,
+  return arch_irn_has_reg_class(si->session->main_env->arch_env,
       irn, arch_pos_make_out(0), si->cls);
 }
 
@@ -114,6 +141,38 @@ static int cmp_irn_use_head(const void *a, const void *b, size_t n)
 	return !(p->irn == q->irn);
 }
 
+static int cmp_first_use(const void *a, const void *b, size_t n)
+{
+  const first_use_t *p = a;
+  const first_use_t *q = b;
+
+  return !(p->irn == q->irn && p->bl == q->bl);
+}
+
+static void add_first_use(spill_ilp_t *si, ir_node *bl, ir_node *irn, live_range_t *lr)
+{
+	first_use_t templ;
+	templ.bl    = bl;
+	templ.irn   = irn;
+	templ.lr    = lr;
+
+	set_insert(si->first_uses, &templ, sizeof(templ),
+			HASH_COMBINE(HASH_PTR(bl), HASH_PTR(irn)));
+}
+
+static live_range_t *get_first_use_lr(spill_ilp_t *si, ir_node *bl, ir_node *irn)
+{
+	first_use_t *res;
+	first_use_t templ;
+	templ.bl    = bl;
+	templ.irn   = irn;
+
+	res = set_find(si->first_uses, &templ, sizeof(templ),
+			HASH_COMBINE(HASH_PTR(bl), HASH_PTR(irn)));
+
+	return res ? res->lr : NULL;
+}
+
 /**
  * Checks, if a vertain node can be recomputed at a certain position.
  * @param si    The spill ILP environment.
@@ -125,7 +184,7 @@ static int cmp_irn_use_head(const void *a, const void *b, size_t n)
 static INLINE int can_remat(const spill_ilp_t *si, const ir_node *irn, pset *live)
 {
 	int i, n;
-  const arch_env_t *arch_env    = si->senv.session->main_env->arch_env;
+  const arch_env_t *arch_env    = si->session->main_env->arch_env;
 	int remat = (arch_irn_get_flags(arch_env, irn) & arch_irn_flags_rematerializable) != 0;
 
 	for(i = 0, n = get_irn_arity(irn); i < n && remat; ++i) {
@@ -230,7 +289,7 @@ static void process_block(ir_node *bl, void *data)
 	int n_preds      = get_irn_arity(bl);
   pset *live       = pset_new_ptr_default();
   irn_live_t *li;
-  ir_node *irn, *next_irn;
+  ir_node *irn;
 
   /* as always, bring the live end nodes to life here */
   live_foreach(bl, li) {
@@ -277,13 +336,16 @@ static void process_block(ir_node *bl, void *data)
 		 */
 		must_be_in_mem = MAX(n_live + demand - n_regs, 0);
 
+		DBG((si->dbg, LEVEL_1, "%+F: demand: %d, live: %d, in mem: %d\n",
+					irn, demand, n_live, must_be_in_mem));
+
 		if(must_be_in_mem > 0) {
 
 			/*
 			 * The constraint limiting the pressure at this label to
 			 * the number of free registers.
 			 */
-			ir_snprintf(buf, sizeof(buf), "cp_%N_%d", bl, step);
+			ir_snprintf(buf, sizeof(buf), "cp_%N_%N_%d", bl, irn, step);
 			cst = lpp_add_cst(si->lpp, buf, lpp_greater, must_be_in_mem);
 
 			for(l = pset_first(live); l; l = pset_next(live)) {
@@ -305,9 +367,8 @@ static void process_block(ir_node *bl, void *data)
 				 * in the constraint which determines which values live at the
 				 * instruction must reside in memory.
 				 */
-				if(must_be_in_mem > 0) {
+				if(must_be_in_mem > 0)
 					lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 0.0);
-				}
 
 				/*
 				 * Check, if the node is a rematerializable node and
@@ -372,35 +433,39 @@ static void process_block(ir_node *bl, void *data)
 		int is_phi = is_Phi(irn) && get_nodes_block(irn) == bl;
 		int cst;
 
+		/* Deprecated: Can be done with the first uses map */
 		if(is_phi)
 			lr->use_head->closest_use = lr;
+
+		/*
+		 * Remind the liverange of the first use of a live (or phi) in the
+		 * current block.
+		 */
+		add_first_use(si, bl, irn, lr);
 
 		assert(has_reg_class(si, irn));
 		assert(is_Phi(irn) || is_live_in(bl, irn));
 
-#if 0
-		ir_snprintf(buf, sizeof(buf), "c%s_%N_%N", (is_phi ? "phi" : "li"), irn, bl);
-		cst = lpp_add_cst(si->lpp, buf, lpp_equal, 0.0);
-		lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, -n_preds);
-
 		for(i = 0; i < n_preds; ++i) {
 			ir_node *pred_bl     = get_Block_cfgpred_block(bl, i);
 			ir_node *end_node    = is_phi ? get_irn_n(irn, i) : irn;
 			live_range_t *op_lr  = get_live_range(si, end_node, pred_bl, -1);
+			edge_reload_t *edge  = obstack_alloc(si->obst, sizeof(edge[0]));
 
-			lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 1.0);
-		}
-#endif
+			ir_snprintf(buf, sizeof(buf), "edge_%N_%N_%N_%N",
+					bl, pred_bl, end_node, op_lr->irn);
+			edge->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD);
+			edge->bl         = bl;
+			edge->irn        = end_node;
+			edge->pos        = i;
 
-		for(i = 0; i < n_preds; ++i) {
-			ir_node *pred_bl     = get_Block_cfgpred_block(bl, i);
-			ir_node *end_node    = is_phi ? get_irn_n(irn, i) : irn;
-			live_range_t *op_lr  = get_live_range(si, end_node, pred_bl, -1);
 
-			ir_snprintf(buf, sizeof(buf), "cpred_%N_%N_%d", lr->irn, bl, i);
-			cst = lpp_add_cst(si->lpp, buf, lpp_equal, 0.0);
+			ir_snprintf(buf, sizeof(buf), "cedge_%N_%N_%N_%N",
+					bl, pred_bl, end_node, op_lr->irn);
+			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 			lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 1.0);
 			lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, -1.0);
+			lpp_set_factor_fast(si->lpp, cst, edge->in_mem_var, -1.0);
 		}
 	}
 
@@ -453,51 +518,34 @@ static int is_spilled(const spill_ilp_t *si, const live_range_t *lr)
 
 static void writeback_results(spill_ilp_t *si)
 {
-	const be_node_factory_t *fact = si->senv.session->main_env->node_factory;
 	irn_use_head_t *uh;
-	si->senv.mem_phis = pset_new_ptr_default();
+	edge_reload_t *edge;
+	pset *mem_phis = pset_new_ptr_default();
 
+	/* Put all completely spilled phis into the mem_phis set */
 	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
 		if(is_Phi(uh->irn) && is_spilled(si, uh->closest_use))
-			pset_insert_ptr(si->senv.mem_phis, uh->irn);
+			pset_insert_ptr(mem_phis, uh->irn);
 	}
 
 	/* Look at each node and examine the usages. */
 	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
 		live_range_t *lr;
-		ir_node **reloads;
-
-		int n_reloads           = 0;
-		ir_node *irn            = uh->irn;
-		ir_mode *mode           = get_irn_mode(irn);
 
 		/* Go through all live ranges of the node. */
 		list_for_each_entry(live_range_t, lr, &uh->head, list) {
-			int spilled = is_spilled(si, lr);
-			// int rematd  = !is_zero(lpp_get_var_sol(si->lpp, lr->is_remat_var));
-
-			if(spilled && !is_end_of_block_use(lr)) {
-				ir_node *bl      = get_nodes_block(lr->user);
-
-
-				ir_node *spill   = be_spill_node(&si->senv, lr->irn);
-				ir_node *reload  = new_Reload(fact, si->cls, si->senv.session->irg, bl, mode, spill);
-
-				/* inc_stats_reload(si); */
-				obstack_ptr_grow(si->obst, reload);
-				n_reloads++;
-
-				sched_add_before(lr->user, reload);
-			}
-		}
-
-		if(n_reloads > 0) {
-			reloads = obstack_finish(si->obst);
-			be_introduce_copies_ignore(si->senv.session->dom_front, irn, n_reloads, reloads, si->senv.mem_phis);
-			obstack_free(si->obst, reloads);
+			if(is_spilled(si, lr) && !is_end_of_block_use(lr))
+				be_add_spill(si->senv, lr->irn, lr->user);
 		}
 	}
-	be_remove_spilled_phis(&si->senv);
+
+	for(edge = si->edges; edge; edge = edge->next) {
+		if(!is_zero(edge->in_mem_var))
+			be_add_spill_on_edge(si->senv, edge->irn, edge->bl, edge->pos);
+	}
+
+	be_insert_spills_reloads(si->senv, mem_phis, NULL);
+	del_pset(mem_phis);
 }
 
 void be_spill_ilp(const be_main_session_env_t *session_env,
@@ -510,14 +558,16 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", session_env->irg, cls->name);
 
 	obstack_init(&obst);
+	si.session         = session_env;
 	si.obst            = &obst;
 	si.dbg             = firm_dbg_register("be.ra.spillilp");
-	si.senv.session    = session_env;
+	si.senv            = be_new_spill_env(si.dbg, session_env, cls);
 	si.cls             = cls;
 	si.lpp             = new_lpp(problem_name, lpp_minimize);
 	si.irn_use_heads   = new_set(cmp_irn_use_head, 4096);
 	si.live_ranges     = new_set(cmp_live_range, 16384);
-	si.senv.spill_ctxs = new_set(be_set_cmp_spillctx, 4096);
+	si.first_uses      = new_set(cmp_first_use, 4096);
+	si.edges           = NULL;
 	si.enable_remat    = 0;
 	si.enable_store    = 0;
 
@@ -540,8 +590,11 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 #endif
 
 	DBG((si.dbg, LEVEL_1, "%F\n", session_env->irg));
-//	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
+#ifdef SOLVE_LOCAL
 	lpp_solve_cplex(si.lpp);
+#else
+	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
+#endif
 	assert(lpp_is_sol_valid(si.lpp) && "solution of ILP must be valid");
 
 	DBG((si.dbg, LEVEL_1, "\tnodes: %d, vars: %d, csts: %d\n",
@@ -559,14 +612,14 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 			int i;
 			for(i = 0; i < si.lpp->var_next; ++i) {
 				lpp_name_t *name = si.lpp->vars[i];
-				fprintf(f, "%10s %4d %10f\n", name->name, name->nr, name->value);
+				fprintf(f, "%20s %4d %10f\n", name->name, name->nr, name->value);
 			}
 			fclose(f);
 		}
 	}
 #endif
 
-  writeback_results(&si);
+  // writeback_results(&si);
 
 #ifdef DUMP_STATS
 	{
