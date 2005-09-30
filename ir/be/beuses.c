@@ -33,6 +33,8 @@
 #include "bearch.h"
 #include "beuses_t.h"
 
+#define DBG_LEVEL SET_LEVEL_0
+
 typedef struct _be_use_t {
 	const ir_node *bl;
 	const ir_node *irn;
@@ -153,7 +155,7 @@ be_uses_t *be_begin_uses(
   uses->arch_env = arch_env;
   uses->uses     = new_set(cmp_use, 512);
   uses->dbg      = firm_dbg_register("be.uses");
-  firm_dbg_set_mask(uses->dbg, SET_LEVEL_0);
+  firm_dbg_set_mask(uses->dbg, DBG_LEVEL);
 
   return uses;
 }

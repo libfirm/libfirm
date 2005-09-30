@@ -21,7 +21,7 @@
 
 #include "irreflect.h"
 
-#define N_REGS 4
+#define N_REGS 8
 
 static arch_register_t datab_regs[N_REGS];
 

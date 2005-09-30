@@ -31,14 +31,13 @@
 #define DBG_WSETS 2
 #define DBG_FIX 4
 #define DBG_SPILL 8
+#define DBG_START 16
 #define DBG_TRACE 32
-#define DEBUG_LVL SET_LEVEL_0 //(DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
+#define DEBUG_LVL (DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 static firm_dbg_module_t *dbg = NULL;
 
 typedef struct _workset_t workset_t;
 typedef struct _block_info_t block_info_t;
-typedef struct _reloader_t reloader_t;
-typedef struct _spill_info_t spill_info_t;
 typedef struct _belady_env_t belady_env_t;
 
 struct _workset_t {
@@ -50,16 +49,6 @@ struct _workset_t {
 
 struct _block_info_t {
 	workset_t *ws_start, *ws_end;
-};
-
-struct _reloader_t {
-	reloader_t *next;
-	ir_node *reloader;
-};
-
-struct _spill_info_t {
-	ir_node *spilled_node;
-	reloader_t *reloaders;
 };
 
 struct _belady_env_t {
@@ -74,18 +63,10 @@ struct _belady_env_t {
 	ir_node *instr;		/**< current instruction */
 	unsigned instr_nr;	/**< current instruction number (relative to block start) */
 	pset *used;			/**< holds the values used (so far) in the current BB */
-	set *spills;		/**< all spill_info_t's, which must be placed */
 
-	spill_env_t senv;	/* see bespill.h */
+	spill_env_t *senv;	/* see bespill.h */
 	pset *reloads;		/**< all reload nodes placed */
 };
-
-static int set_cmp_spillinfo(const void *x, const void *y, size_t size) {
-	const spill_info_t *xx = x;
-	const spill_info_t *yy = y;
-	return ! (xx->spilled_node == yy->spilled_node);
-}
-
 
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
@@ -186,7 +167,7 @@ static INLINE void workset_remove(workset_t *ws, ir_node *val) {
 		}
 }
 
-static INLINE int workset_contains(const workset_t *ws, ir_node *val) {
+static INLINE int workset_contains(const workset_t *ws, const ir_node *val) {
 	int i;
 	for(i=0; i<ws->len; ++i)
 		if (ws->vals[i].irn == val)
@@ -225,7 +206,8 @@ static void build_start_set(belady_env_t *bel, ir_node *blk) {
 	sched_foreach(blk, irn)
 		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, 0) == bel->cls) {
 			loc.irn = irn;
-			loc.time = be_get_next_use(bel->uses, first, 0, irn, 1);
+			loc.time = be_get_next_use(bel->uses, first, 0, irn, 0);
+			DBG((dbg, DBG_START, "  %+F next-use %d\n", loc.irn, loc.time));
 			obstack_grow(&ob, &loc, sizeof(loc));
 			count++;
 		} else
@@ -234,7 +216,8 @@ static void build_start_set(belady_env_t *bel, ir_node *blk) {
 	live_foreach(blk, li)
 		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, 0) == bel->cls) {
 			loc.irn = (ir_node *)li->irn;
-			loc.time = be_get_next_use(bel->uses, first, 0, li->irn, 1);
+			loc.time = be_get_next_use(bel->uses, first, 0, li->irn, 0);
+			DBG((dbg, DBG_START, "  %+F next-use %d\n", loc.irn, loc.time));
 			obstack_grow(&ob, &loc, sizeof(loc));
 			count++;
 		}
@@ -277,22 +260,8 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 		if (!workset_contains(ws, val)) {
 			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			to_insert[demand++] = val;
-
-			if (is_usage) {
-				spill_info_t si, *found;
-				reloader_t *rld;
-
-				/* find the spill info or create it */
-				si.spilled_node = val;
-				si.reloaders = NULL;
-				found = set_insert(bel->spills, &si, sizeof(si), HASH_PTR(si.spilled_node));
-
-				/* insert the reloader into the linked list */
-				rld = obstack_alloc(&bel->ob, sizeof(*rld));
-				rld->reloader = bel->instr;
-				rld->next = found->reloaders;
-				found->reloaders = rld;
-			}
+			if (is_usage)
+				be_add_spill(bel->senv, val, bel->instr);
 		} else
 			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
 	}
@@ -435,9 +404,6 @@ static void fix_block_borders(ir_node *blk, void *env) {
 		DBG((dbg, DBG_FIX, "  Pred %+F\n", pred));
 
 		workset_foreach(wsb, irnb) {
-			spill_info_t si, *found;
-			reloader_t *rld;
-
 			/* if irnb is a phi of the current block we reload
 			 * the corresponding argument, else irnb itself */
 			if(is_Phi(irnb) && blk == get_nodes_block(irnb))
@@ -449,77 +415,12 @@ static void fix_block_borders(ir_node *blk, void *env) {
 					goto next_value;
 
 			/* irnb is in memory at the end of pred, so we have to reload it */
-
-			/* find the spill info or create it */
-			si.spilled_node = irnb;
-			si.reloaders = NULL;
-			found = set_insert(bel->spills, &si, sizeof(si), HASH_PTR(si.spilled_node));
-
-			/* insert the reloader into the linked list.
-			 * the schedule position depends on the cf-situation of the block */
-			rld = obstack_alloc(&bel->ob, sizeof(*rld));
-			rld->reloader = (max==1) ? sched_skip(sched_first(blk), 1, sched_skip_phi_predicator, NULL) : pred;
-			rld->next = found->reloaders;
-			found->reloaders = rld;
-
-			DBG((dbg, DBG_FIX, "    reload %+F before %+F\n", irnb, rld->reloader));
+			be_add_spill_on_edge(bel->senv, irnb, blk, i);
 
 next_value:
 			/*epsilon statement :)*/;
 		}
 	}
-}
-
-static void insert_spills_reloads(ir_graph *irg, belady_env_t *bel) {
-	ir_node *irn;
-	spill_info_t *si;
-	struct obstack ob;
-	obstack_init(&ob);
-
-	/* get all special spilled phis */
-	for(si = set_first(bel->spills); si; si = set_next(bel->spills)) {
-		irn = si->spilled_node;
-		if (is_Phi(irn)) {
-			ir_node *blk = get_nodes_block(irn);
-			workset_t *sws = ((block_info_t *)get_irn_link(blk))->ws_start;
-			if (!workset_contains(sws, irn))
-				pset_insert_ptr(bel->senv.mem_phis, irn);
-		}
-	}
-
-	/* process each spilled node */
-	for(si = set_first(bel->spills); si; si = set_next(bel->spills)) {
-		reloader_t *rld;
-		ir_node **reloads;
-		int n_reloads = 0;
-		ir_mode *mode = get_irn_mode(si->spilled_node);
-
-		/* go through all reloads for this spill */
-		for(rld = si->reloaders; rld; rld = rld->next) {
-			/* the spill for this reloader */
-			ir_node *spill   = be_spill_node(&bel->senv, si->spilled_node);
-
-			/* the reload */
-			ir_node *bl      = is_Block(rld->reloader) ? rld->reloader : get_nodes_block(rld->reloader);
-			ir_node *reload  = new_Reload(bel->factory, bel->cls, irg, bl, mode, spill);
-			DBG((dbg, DBG_SPILL, " RELOADER %+F   Reload %+F of %+F\n", rld->reloader, reload, si->spilled_node));
-			pset_insert_ptr(bel->reloads, reload);
-
-			/* remember the reaload */
-			obstack_ptr_grow(&ob, reload);
-			sched_add_before(rld->reloader, reload);
-			n_reloads++;
-		}
-
-		assert(n_reloads > 0);
-		reloads = obstack_finish(&ob);
-		be_introduce_copies_ignore(bel->senv.session->dom_front, si->spilled_node, n_reloads, reloads, bel->senv.mem_phis);
-		obstack_free(&ob, reloads);
-	}
-
-	obstack_free(&ob, NULL);
-
-	be_remove_spilled_phis(&bel->senv);
 }
 
 /**
@@ -534,6 +435,12 @@ static void rescue_used_reloads(ir_node *irn, void *env) {
 	}
 }
 
+static int is_mem_phi(const ir_node *irn, void *data) {
+	ir_node *blk = get_nodes_block(irn);
+	workset_t *sws = ((block_info_t *)get_irn_link(blk))->ws_start;
+	return !workset_contains(sws, irn);
+}
+
 void be_spill_belady(const be_main_session_env_t *session, const arch_register_class_t *cls) {
 	ir_node *irn;
 
@@ -543,22 +450,19 @@ void be_spill_belady(const be_main_session_env_t *session, const arch_register_c
 	/* init belady env */
 	belady_env_t *bel = alloca(sizeof(*bel));
 	obstack_init(&bel->ob);
-	bel->senv.session = session;
 	bel->factory = session->main_env->node_factory;
 	bel->arch = session->main_env->arch_env;
 	bel->cls = cls;
 	bel->n_regs = arch_register_class_n_regs(cls);
 	bel->ws = new_workset(&bel->ob, bel);
 	bel->uses = be_begin_uses(session->irg, session->main_env->arch_env, cls);
-	bel->spills = new_set(set_cmp_spillinfo, 32);
-	bel->senv.spill_ctxs = new_set(be_set_cmp_spillctx, 32);
-	bel->senv.mem_phis = pset_new_ptr_default();
+	bel->senv = be_new_spill_env(dbg, session, cls);
 	bel->reloads = pset_new_ptr_default();
 
 	/* do the work */
 	irg_block_walk_graph(session->irg, decide, NULL, bel);
 	irg_block_walk_graph(session->irg, fix_block_borders, NULL, bel);
-	insert_spills_reloads(session->irg, bel);
+	be_insert_spills_reloads(bel->senv, bel->reloads, is_mem_phi, NULL);
 
 	/* find all unused reloads and remove them from the schedule */
 	irg_walk_graph(session->irg, rescue_used_reloads, NULL, bel);
@@ -567,9 +471,7 @@ void be_spill_belady(const be_main_session_env_t *session, const arch_register_c
 
 	/* clean up */
 	del_pset(bel->reloads);
-	del_pset(bel->senv.mem_phis);
-	del_set(bel->senv.spill_ctxs);
-	del_set(bel->spills);
+	be_delete_spill_env(bel->senv);
 	be_end_uses(bel->uses);
 	obstack_free(&bel->ob, NULL);
 }

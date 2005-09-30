@@ -1,5 +1,5 @@
 /**
- * Author:      Daniel Grund
+ * Author:      Daniel Grund, Sebastian Hack
  * Date:		29.09.2005
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
@@ -54,11 +54,8 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size) {
 	return ! (xx->spilled_node == yy->spilled_node);
 }
 
-spill_env_t *be_new_spill_env(
-		firm_dbg_module_t *dbg,
-		const be_main_session_env_t *session,
-		const arch_register_class_t *cls)
-{
+spill_env_t *be_new_spill_env(firm_dbg_module_t *dbg,
+		const be_main_session_env_t *session, const arch_register_class_t *cls) {
 	spill_env_t *env = malloc(sizeof(env[0]));
 	env->spill_ctxs = new_set(cmp_spillctx, 1024);
 	env->spills     = new_set(cmp_spillinfo, 1024);
@@ -69,8 +66,7 @@ spill_env_t *be_new_spill_env(
 	return env;
 }
 
-void be_delete_spill_env(spill_env_t *senv)
-{
+void be_delete_spill_env(spill_env_t *senv) {
 	del_set(senv->spill_ctxs);
 	del_set(senv->spills);
 	obstack_free(&senv->obst, NULL);
@@ -89,7 +85,7 @@ static spill_ctx_t *be_get_spill_ctx(set *sc, ir_node *to_spill, ir_node *ctx_ir
 
 static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) {
 	spill_ctx_t *ctx;
-//	DBG((dbg, DBG_SPILL, "spill_irn %+F\n", irn));
+	DBG((senv->dbg, LEVEL_1, "spill_irn %+F\n", irn));
 
 	ctx = be_get_spill_ctx(senv->spill_ctxs, irn, ctx_irn);
 	if(!ctx->spill) {
@@ -114,7 +110,7 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn,
 	spill_ctx_t *ctx;
 
 	assert(is_Phi(phi));
-//	DBG((dbg, DBG_SPILL, "spill_phi %+F\n", phi));
+	DBG((senv->dbg, LEVEL_1, "spill_phi %+F\n", phi));
 
 	/* search an existing spill for this context */
 	ctx = be_get_spill_ctx(senv->spill_ctxs, phi, ctx_irn);
@@ -144,7 +140,7 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn,
 	return ctx->spill;
 }
 
-ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill, pset *mem_phis) {
+static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill, pset *mem_phis) {
 	ir_node *res;
 	if (pset_find_ptr(mem_phis, to_spill))
 		res = be_spill_phi(senv, to_spill, to_spill, mem_phis);
@@ -154,14 +150,21 @@ ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill, pset *mem_phis) {
 	return res;
 }
 
-void be_insert_spills_reloads(spill_env_t *senv, pset *mem_phis, pset *reload_set)
-{
+void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set, decide_irn_t is_mem_phi, void *data) {
 	ir_graph *irg = senv->session->irg;
 	ir_node *irn;
 	spill_info_t *si;
 	struct obstack ob;
+	pset *mem_phis = pset_new_ptr_default();
 
 	obstack_init(&ob);
+
+	/* get all special spilled phis */
+	for(si = set_first(senv->spills); si; si = set_next(senv->spills)) {
+		irn = si->spilled_node;
+		if (is_Phi(irn) && is_mem_phi(irn, data))
+			pset_insert_ptr(mem_phis, irn);
+	}
 
 	/* process each spilled node */
 	for(si = set_first(senv->spills); si; si = set_next(senv->spills)) {
@@ -206,10 +209,11 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *mem_phis, pset *reload_se
 			set_irn_n(irn, i, new_r_Bad(senv->session->irg));
 		sched_remove(irn);
 	}
+
+	del_pset(mem_phis);
 }
 
-void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before)
-{
+void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
 	spill_info_t templ, *res;
 	reloader_t *rel;
 
@@ -223,8 +227,7 @@ void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before)
 	res->reloaders = rel;
 }
 
-void be_add_spill_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos)
-{
+void be_add_spill_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos) {
 	ir_node *insert_bl = get_irn_arity(bl) == 1
 		? sched_first(bl) : get_Block_cfgpred_block(bl, pos);
 	be_add_spill(senv, to_spill, insert_bl);

@@ -641,7 +641,7 @@ static void check_pressure_walker(ir_node *bl, void *data)
 	ir_node *irn;
 	irn_live_t *li;
 
-	firm_dbg_set_mask(dbg, -1);
+//	firm_dbg_set_mask(dbg, -1);
 
 	live_foreach(bl, li) {
 		if(live_is_end(li) && check_pressure_has_class(info, li->irn)) {

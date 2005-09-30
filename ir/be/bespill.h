@@ -1,5 +1,5 @@
 /**
- * Author:      Daniel Grund
+ * Author:      Daniel Grund, Sebastian Hack
  * Date:		29.09.2005
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
@@ -18,6 +18,8 @@
 #include "bearch.h"
 
 typedef struct _spill_env_t spill_env_t;
+typedef int(*decide_irn_t)(const ir_node*, void*);
+
 
 spill_env_t *be_new_spill_env(
 		firm_dbg_module_t *dbg,
@@ -30,6 +32,6 @@ void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before);
 
 void be_add_spill_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos);
 
-void be_insert_spills_reloads(spill_env_t *senv, pset *mem_phis, pset *reload_set);
+void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set, decide_irn_t is_mem_phi, void *data);
 
 #endif /*BESPILL_H_*/
