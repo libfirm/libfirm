@@ -56,6 +56,9 @@ static INLINE int to_appear_in_schedule(ir_node *irn)
 {
   int i, n;
 
+  if(get_irn_opcode(irn) == iro_Start)
+  	return 1;
+
   for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
     ir_node *op = get_irn_n(irn, i);
     if(mode_is_datab(get_irn_mode(op)))

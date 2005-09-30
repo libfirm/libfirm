@@ -39,10 +39,10 @@
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
-#define DBG_LEVEL SET_LEVEL_0
+#define DBG_LEVEL SET_LEVEL_4
 
 #undef DUMP_SOLUTION
-#undef DUMP_ILP
+#define DUMP_ILP
 #undef DUMP_STATS
 
 #define LPP_SERVER "i44pc52"
@@ -181,30 +181,42 @@ static live_range_t *get_live_range(spill_ilp_t *si, ir_node *irn, ir_node *user
 static ir_node *process_irn(spill_ilp_t *si, pset *live, ir_node *irn, int *demand)
 {
 	int i, n;
-	int relevant_args = 0, num_projs = 0;
+	int relevant_args = 0, results = 0;
+
+	DBG((si->dbg, LEVEL_1, "at %+F\n", irn));
 
 	while(is_Proj(irn)) {
 		if(has_reg_class(si, irn)) {
 			assert(pset_find_ptr(live, irn) && "node must be live");
 			pset_remove_ptr(live, irn);
-			num_projs++;
+			results++;
 		}
 
+		DBG((si->dbg, LEVEL_1, "skipped proj %+F\n", irn));
 		irn = sched_prev(irn);
 	}
 
-	if(num_projs > 0)
+	DBG((si->dbg, LEVEL_1, "\tlanded at irn %+F\n", irn));
+
+	if(results > 0)
 		assert(get_irn_mode(irn) == mode_T && "node before projs must be tuple");
+
+	if(has_reg_class(si, irn)) {
+		assert( pset_find_ptr(live, irn) && "node must be live");
+		pset_remove_ptr(live, irn);
+		results = 1;
+	}
 
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
-		relevant_args += has_reg_class(si, op) && !pset_find_ptr(live, op);
+		if(has_reg_class(si, op) && !pset_find_ptr(live, op)) {
+			relevant_args++;
+			DBG((si->dbg, LEVEL_1, "\trelevant arg %+F\n", op));
+		}
 	}
 
-	assert(pset_find_ptr(live, irn) && "node must be live");
-	pset_remove_ptr(live, irn);
-
-	*demand = MAX(num_projs, relevant_args);
+	*demand = MAX(results, relevant_args);
+	DBG((si->dbg, LEVEL_1, "\tdemand: %d\n", *demand));
 	return irn;
 }
 
@@ -234,7 +246,7 @@ static void process_block(ir_node *bl, void *data)
     }
   }
 
-	for(irn = sched_last(bl); !sched_is_begin(irn) && !is_Phi(irn); irn = next_irn) {
+	for(irn = sched_last(bl); !sched_is_begin(irn) && !is_Phi(irn); irn = sched_prev(irn)) {
 		ir_node *l;
 		int cst;
 		int demand;
@@ -253,7 +265,7 @@ static void process_block(ir_node *bl, void *data)
 		n_live = pset_count(live);
 #endif
 
-		next_irn = process_irn(si, live, irn, &demand);
+		irn = process_irn(si, live, irn, &demand);
 		n_live = pset_count(live);
 
 		/*
@@ -506,7 +518,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	si.irn_use_heads   = new_set(cmp_irn_use_head, 4096);
 	si.live_ranges     = new_set(cmp_live_range, 16384);
 	si.senv.spill_ctxs = new_set(be_set_cmp_spillctx, 4096);
-	si.enable_remat    = 1;
+	si.enable_remat    = 0;
 	si.enable_store    = 0;
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
@@ -528,8 +540,8 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 #endif
 
 	DBG((si.dbg, LEVEL_1, "%F\n", session_env->irg));
-	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
-	// lpp_solve_cplex(si.lpp);
+//	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
+	lpp_solve_cplex(si.lpp);
 	assert(lpp_is_sol_valid(si.lpp) && "solution of ILP must be valid");
 
 	DBG((si.dbg, LEVEL_1, "\tnodes: %d, vars: %d, csts: %d\n",

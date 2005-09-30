@@ -302,7 +302,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	sched_env_t *env = env_ptr;
 	block_sched_env_t be;
 	const list_sched_selector_t *selector = env->selector;
-
 	const ir_edge_t *edge;
 	ir_node *irn;
 	int i, n, j, m;
@@ -345,14 +344,14 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		/* Other nodes must have all operands in other blocks to be made
 		 * ready */
 		else {
-			bool ready = true;
+			int ready = 1;
 
 			/* Check, if the operands of a node are not local to this block */
 			for(j = 0, m = get_irn_arity(irn); j < m; ++j) {
 				ir_node *operand = get_irn_n(irn, j);
 
 				if(get_nodes_block(operand) == block) {
-					ready = false;
+					ready = 0;
 					break;
 				}
 			}
