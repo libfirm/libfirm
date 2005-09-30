@@ -43,6 +43,7 @@
 
 #undef DUMP_SOLUTION
 #undef DUMP_ILP
+#undef DUMP_STATS
 
 #define LPP_SERVER "i44pc52"
 #define LPP_SOLVER "cplex"
@@ -53,6 +54,12 @@
 
 #define is_end_of_block_use(lr) (is_Block((lr)->user))
 
+typedef struct _spill_stat_t {
+	int n_spills;
+	int n_reloads;
+	int n_remat;
+} spill_stat_t;
+
 typedef struct _spill_ilp_t {
 	const arch_register_class_t *cls;
 	firm_dbg_module_t *dbg;
@@ -60,7 +67,6 @@ typedef struct _spill_ilp_t {
 	set *irn_use_heads;
 	set *live_ranges;
 	spill_env_t senv;
-//	pset *remove_phis;
 	struct obstack *obst;
 	int enable_store : 1;
 	int enable_remat : 1;
@@ -90,15 +96,6 @@ static int has_reg_class(const spill_ilp_t *si, const ir_node *irn)
 {
   return arch_irn_has_reg_class(si->senv.session->main_env->arch_env,
       irn, arch_pos_make_out(0), si->cls);
-}
-
-static int register_demand(spill_ilp_t *si, const ir_node *irn)
-{
-	const arch_env_t *arch_env = si->senv.session->main_env->arch_env;
-	int n_in = arch_get_n_operands(arch_env, irn, 0);
-	int n_out = arch_get_n_operands(arch_env, irn, -1);
-
-	return MAX(n_in, n_out);
 }
 
 static int cmp_live_range(const void *a, const void *b, size_t n)
@@ -181,27 +178,35 @@ static live_range_t *get_live_range(spill_ilp_t *si, ir_node *irn, ir_node *user
   return res;
 }
 
-#if 0
-static void annotate_live_ranges(ir_node *irn, void *data)
+static ir_node *process_irn(spill_ilp_t *si, pset *live, ir_node *irn, int *demand)
 {
-	const ir_edge_t *edge;
+	int i, n;
+	int relevant_args = 0, num_projs = 0;
 
-	foreach_out_edge(irn, edge) {
-		pset *lr_set;
+	while(is_Proj(irn)) {
+		if(has_reg_class(si, irn)) {
+			assert(pset_find_ptr(live, irn) && "node must be live");
+			pset_remove_ptr(live, irn);
+			num_projs++;
+		}
 
-		ir_node *user = edge->use;
-		int pos       = edge->pos;
-		ir_node *bl   = get_nodes_block(user);
-
-		if(is_Phi(user))
-			bl = get_Block_cfgpred_block(bl, pos);
-
-		lr_set = get_irn_link(bl);
-
+		irn = sched_prev(irn);
 	}
-}
-#endif
 
+	if(num_projs > 0)
+		assert(get_irn_mode(irn) == mode_T && "node before projs must be tuple");
+
+	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		ir_node *op = get_irn_n(irn, i);
+		relevant_args += has_reg_class(si, op) && !pset_find_ptr(live, op);
+	}
+
+	assert(pset_find_ptr(live, irn) && "node must be live");
+	pset_remove_ptr(live, irn);
+
+	*demand = MAX(num_projs, relevant_args);
+	return irn;
+}
 
 static void process_block(ir_node *bl, void *data)
 {
@@ -213,7 +218,7 @@ static void process_block(ir_node *bl, void *data)
 	int n_preds      = get_irn_arity(bl);
   pset *live       = pset_new_ptr_default();
   irn_live_t *li;
-  ir_node *irn;
+  ir_node *irn, *next_irn;
 
   /* as always, bring the live end nodes to life here */
   live_foreach(bl, li) {
@@ -229,7 +234,7 @@ static void process_block(ir_node *bl, void *data)
     }
   }
 
-	sched_foreach_reverse(bl, irn) {
+	for(irn = sched_last(bl); !sched_is_begin(irn) && !is_Phi(irn); irn = next_irn) {
 		ir_node *l;
 		int cst;
 		int demand;
@@ -240,10 +245,15 @@ static void process_block(ir_node *bl, void *data)
 		if(is_Phi(irn))
 			break;
 
+#if 0
 		if(has_reg_class(si, irn))
 			pset_remove_ptr(live, irn);
 
-		demand = register_demand(si, irn);
+		demand = register_demand(si, live, irn);
+		n_live = pset_count(live);
+#endif
+
+		next_irn = process_irn(si, live, irn, &demand);
 		n_live = pset_count(live);
 
 		/*
@@ -253,7 +263,7 @@ static void process_block(ir_node *bl, void *data)
 		 * So there are n_regs - demand registers available to store values
 		 * which are not used at this label. The rest must reside in memory.
 		 */
-		must_be_in_mem = MAX(n_live - (n_regs - demand), 0);
+		must_be_in_mem = MAX(n_live + demand - n_regs, 0);
 
 		if(must_be_in_mem > 0) {
 
@@ -461,6 +471,7 @@ static void writeback_results(spill_ilp_t *si)
 				ir_node *spill   = be_spill_node(&si->senv, lr->irn);
 				ir_node *reload  = new_Reload(fact, si->cls, si->senv.session->irg, bl, mode, spill);
 
+				/* inc_stats_reload(si); */
 				obstack_ptr_grow(si->obst, reload);
 				n_reloads++;
 
@@ -487,16 +498,16 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", session_env->irg, cls->name);
 
 	obstack_init(&obst);
-	si.obst           = &obst;
-	si.dbg            = firm_dbg_register("be.ra.spillilp");
-	si.senv.session   = session_env;
-	si.cls            = cls;
-	si.lpp            = new_lpp(problem_name, lpp_minimize);
-	si.irn_use_heads  = new_set(cmp_irn_use_head, 4096);
-	si.live_ranges    = new_set(cmp_live_range, 16384);
-	si.senv.spill_ctxs= new_set(be_set_cmp_spillctx, 4096);
-	si.enable_remat   = 1;
-	si.enable_store   = 0;
+	si.obst            = &obst;
+	si.dbg             = firm_dbg_register("be.ra.spillilp");
+	si.senv.session    = session_env;
+	si.cls             = cls;
+	si.lpp             = new_lpp(problem_name, lpp_minimize);
+	si.irn_use_heads   = new_set(cmp_irn_use_head, 4096);
+	si.live_ranges     = new_set(cmp_live_range, 16384);
+	si.senv.spill_ctxs = new_set(be_set_cmp_spillctx, 4096);
+	si.enable_remat    = 1;
+	si.enable_store    = 0;
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
 	irg_block_walk_graph(session_env->irg, process_block, NULL, &si);
@@ -517,10 +528,8 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 #endif
 
 	DBG((si.dbg, LEVEL_1, "%F\n", session_env->irg));
-//	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
-	lpp_solve_cplex(si.lpp);
-	assert(lpp_is_sol_valid(si.lpp) && "ILP not feasible");
-
+	lpp_solve_net(si.lpp, LPP_SERVER, LPP_SOLVER);
+	// lpp_solve_cplex(si.lpp);
 	assert(lpp_is_sol_valid(si.lpp) && "solution of ILP must be valid");
 
 	DBG((si.dbg, LEVEL_1, "\tnodes: %d, vars: %d, csts: %d\n",
@@ -544,7 +553,26 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 		}
 	}
 #endif
+
   writeback_results(&si);
+
+#ifdef DUMP_STATS
+	{
+		FILE *f;
+
+		ir_snprintf(buf, sizeof(buf), "%s-spill.stat", problem_name);
+		if((f = fopen(buf, "wt")) != NULL) {
+			fprintf(f, "%20s: %d\n", "nodes", set_count(si.irn_use_heads));
+			fprintf(f, "%20s: %d\n", "vars", si.lpp->var_next);
+			fprintf(f, "%20s: %d\n", "csts", si.lpp->cst_next);
+			fprintf(f, "%20s: %f\n", "sol time", si.lpp->sol_time);
+			fprintf(f, "%20s: %d\n", "spills", si->stats.n_spills);
+			fprintf(f, "%20s: %d\n", "reloads", si->stats.n_reloads);
+			fprintf(f, "%20s: %d\n", "remats", si->stats.n_remat);
+			fclose(f);
+		}
+	}
+#endif
 
   del_set(si.irn_use_heads);
   del_set(si.live_ranges);
