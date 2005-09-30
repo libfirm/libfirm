@@ -54,7 +54,9 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size) {
 	return ! (xx->spilled_node == yy->spilled_node);
 }
 
-spill_env_t *be_new_spill_env(const be_main_session_env_t *session,
+spill_env_t *be_new_spill_env(
+		firm_dbg_module_t *dbg,
+		const be_main_session_env_t *session,
 		const arch_register_class_t *cls)
 {
 	spill_env_t *env = malloc(sizeof(env[0]));
@@ -62,7 +64,7 @@ spill_env_t *be_new_spill_env(const be_main_session_env_t *session,
 	env->spills     = new_set(cmp_spillinfo, 1024);
 	env->session    = session;
 	env->cls        = cls;
-	env->dbg        = firm_dbg_register("be.ra.spill_env");
+	env->dbg        = dbg;
 	obstack_init(&env->obst);
 	return env;
 }
@@ -152,7 +154,7 @@ ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill, pset *mem_phis) {
 	return res;
 }
 
-void insert_spills_reloads(spill_env_t *senv, pset *mem_phis, pset *reload_set)
+void be_insert_spills_reloads(spill_env_t *senv, pset *mem_phis, pset *reload_set)
 {
 	ir_graph *irg = senv->session->irg;
 	ir_node *irn;
