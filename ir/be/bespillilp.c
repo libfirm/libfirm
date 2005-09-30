@@ -141,6 +141,13 @@ static int cmp_irn_use_head(const void *a, const void *b, size_t n)
 	return !(p->irn == q->irn);
 }
 
+static irn_use_head_t *get_use_head(spill_ilp_t *si, const ir_node *irn)
+{
+	irn_use_head_t templ;
+	templ.irn = (ir_node *) irn;
+	return set_find(si->irn_use_heads, &templ, sizeof(templ), HASH_PTR(irn));
+}
+
 static int cmp_first_use(const void *a, const void *b, size_t n)
 {
   const first_use_t *p = a;
@@ -516,17 +523,17 @@ static int is_spilled(const spill_ilp_t *si, const live_range_t *lr)
 	return !is_zero(lpp_get_var_sol(si->lpp, lr->in_mem_var));
 }
 
+static int is_mem_phi(const ir_node *phi, void *data)
+{
+	spill_ilp_t *si = data;
+	return is_spilled(si, get_use_head(si, phi)->closest_use);
+}
+
+
 static void writeback_results(spill_ilp_t *si)
 {
 	irn_use_head_t *uh;
 	edge_reload_t *edge;
-	pset *mem_phis = pset_new_ptr_default();
-
-	/* Put all completely spilled phis into the mem_phis set */
-	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
-		if(is_Phi(uh->irn) && is_spilled(si, uh->closest_use))
-			pset_insert_ptr(mem_phis, uh->irn);
-	}
 
 	/* Look at each node and examine the usages. */
 	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
@@ -544,8 +551,7 @@ static void writeback_results(spill_ilp_t *si)
 			be_add_spill_on_edge(si->senv, edge->irn, edge->bl, edge->pos);
 	}
 
-	be_insert_spills_reloads(si->senv, mem_phis, NULL);
-	del_pset(mem_phis);
+	be_insert_spills_reloads(si->senv, NULL, is_mem_phi, si);
 }
 
 void be_spill_ilp(const be_main_session_env_t *session_env,
@@ -619,7 +625,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	}
 #endif
 
-  // writeback_results(&si);
+  writeback_results(&si);
 
 #ifdef DUMP_STATS
 	{
