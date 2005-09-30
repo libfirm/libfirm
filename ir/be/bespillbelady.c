@@ -37,21 +37,8 @@
 static firm_dbg_module_t *dbg = NULL;
 
 typedef struct _workset_t workset_t;
-typedef struct _block_info_t block_info_t;
-typedef struct _belady_env_t belady_env_t;
 
-struct _workset_t {
-	belady_env_t *bel;
-	int i;				/**< used for iteration */
-	int len;			/**< current length */
-	loc_t vals[1];		/**< inlined array of the values/distances in this working set */
-};
-
-struct _block_info_t {
-	workset_t *ws_start, *ws_end;
-};
-
-struct _belady_env_t {
+typedef struct _belady_env_t {
 	struct obstack ob;
 	const be_node_factory_t *factory;
 	const arch_env_t *arch;
@@ -66,7 +53,18 @@ struct _belady_env_t {
 
 	spill_env_t *senv;	/* see bespill.h */
 	pset *reloads;		/**< all reload nodes placed */
+} belady_env_t;
+
+struct _workset_t {
+	belady_env_t *bel;
+	int i;				/**< used for iteration */
+	int len;			/**< current length */
+	loc_t vals[1];		/**< inlined array of the values/distances in this working set */
 };
+
+typedef struct _block_info_t {
+	workset_t *ws_start, *ws_end;
+} block_info_t;
 
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
@@ -261,7 +259,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			to_insert[demand++] = val;
 			if (is_usage)
-				be_add_spill(bel->senv, val, bel->instr);
+				be_add_reload(bel->senv, val, bel->instr);
 		} else
 			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
 	}
@@ -415,7 +413,7 @@ static void fix_block_borders(ir_node *blk, void *env) {
 					goto next_value;
 
 			/* irnb is in memory at the end of pred, so we have to reload it */
-			be_add_spill_on_edge(bel->senv, irnb, blk, i);
+			be_add_reload_on_edge(bel->senv, irnb, blk, i);
 
 next_value:
 			/*epsilon statement :)*/;

@@ -28,9 +28,9 @@ spill_env_t *be_new_spill_env(
 
 void be_delete_spill_env(spill_env_t *senv);
 
-void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before);
+void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before);
 
-void be_add_spill_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos);
+void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos);
 
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set, decide_irn_t is_mem_phi, void *data);
 

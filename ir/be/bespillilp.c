@@ -542,13 +542,13 @@ static void writeback_results(spill_ilp_t *si)
 		/* Go through all live ranges of the node. */
 		list_for_each_entry(live_range_t, lr, &uh->head, list) {
 			if(is_spilled(si, lr) && !is_end_of_block_use(lr))
-				be_add_spill(si->senv, lr->irn, lr->user);
+				be_add_reload(si->senv, lr->irn, lr->user);
 		}
 	}
 
 	for(edge = si->edges; edge; edge = edge->next) {
 		if(!is_zero(edge->in_mem_var))
-			be_add_spill_on_edge(si->senv, edge->irn, edge->bl, edge->pos);
+			be_add_reload_on_edge(si->senv, edge->irn, edge->bl, edge->pos);
 	}
 
 	be_insert_spills_reloads(si->senv, NULL, is_mem_phi, si);

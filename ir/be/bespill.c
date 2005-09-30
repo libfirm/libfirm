@@ -213,7 +213,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set, decide_irn_t 
 	del_pset(mem_phis);
 }
 
-void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
+void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
 	spill_info_t templ, *res;
 	reloader_t *rel;
 
@@ -227,8 +227,8 @@ void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
 	res->reloaders = rel;
 }
 
-void be_add_spill_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos) {
+void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos) {
 	ir_node *insert_bl = get_irn_arity(bl) == 1
 		? sched_first(bl) : get_Block_cfgpred_block(bl, pos);
-	be_add_spill(senv, to_spill, insert_bl);
+	be_add_reload(senv, to_spill, insert_bl);
 }
