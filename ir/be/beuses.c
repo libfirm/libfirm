@@ -131,7 +131,7 @@ unsigned be_get_next_use(be_uses_t *uses,
 	next_use = USES_INFINITY;
 	foreach_block_succ(bl, succ_edge) {
  		const ir_node *succ_bl = succ_edge->src;
-		if(is_live_in(succ_bl, def)) {
+		if(is_live_in(succ_bl, def) || (get_irn_arity(succ_bl) > 1 && is_live_end(bl, def))) {
 			unsigned next = get_next_use_bl(uses, succ_bl, def);
 
 			DBG((uses->dbg, LEVEL_2, "\t\tnext use in succ %+F: %d\n", succ_bl, next));

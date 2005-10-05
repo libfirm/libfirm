@@ -551,7 +551,7 @@ static void writeback_results(spill_ilp_t *si)
 			be_add_reload_on_edge(si->senv, edge->irn, edge->bl, edge->pos);
 	}
 
-	be_insert_spills_reloads(si->senv, NULL, is_mem_phi, si);
+	be_insert_spills_reloads(si->senv, NULL);
 }
 
 void be_spill_ilp(const be_main_session_env_t *session_env,
@@ -567,7 +567,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	si.session         = session_env;
 	si.obst            = &obst;
 	si.dbg             = firm_dbg_register("be.ra.spillilp");
-	si.senv            = be_new_spill_env(si.dbg, session_env, cls);
+	si.senv            = be_new_spill_env(si.dbg, session_env, cls, is_mem_phi, &si);
 	si.cls             = cls;
 	si.lpp             = new_lpp(problem_name, lpp_minimize);
 	si.irn_use_heads   = new_set(cmp_irn_use_head, 4096);

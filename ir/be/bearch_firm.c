@@ -142,7 +142,7 @@ static const arch_register_req_t *
 firm_get_irn_reg_req(const arch_irn_ops_t *self,
     arch_register_req_t *req, const ir_node *irn, int pos)
 {
-  if(is_firm_be_mode(get_irn_mode(irn)))
+  if(is_firm_be_mode(get_irn_mode(irn)) && get_irn_opcode(irn) != iro_Unknown)
     memcpy(req, &firm_std_reg_req, sizeof(*req));
   else
     req = NULL;
@@ -285,7 +285,7 @@ static ir_node *new_Imm(ir_graph *irg, ir_node *bl, ir_node *cnst)
 
 	if(get_irn_opcode(cnst) == iro_SymConst) {
 		attr->tp = imm_SymConst;
-		attr->data.ent = get_SymConst_entity(cnst);
+		//attr->data.ent = get_SymConst_entity(cnst);
 	}
 
 	else {
@@ -294,6 +294,10 @@ static ir_node *new_Imm(ir_graph *irg, ir_node *bl, ir_node *cnst)
 	}
 
 	return res;
+}
+
+int is_Imm(const ir_node *irn) {
+	return get_irn_op(irn) == op_imm;
 }
 
 static void prepare_walker(ir_node *irn, void *data)
@@ -352,7 +356,7 @@ static void localize_const_walker(ir_node *irn, void *data)
 			opcode opc     = get_irn_opcode(op);
 
 			if(opc == iro_Const
-			|| (opc == iro_SymConst && get_SymConst_kind(op) == symconst_addr_ent)) {
+			|| (opc == iro_SymConst /*&& get_SymConst_kind(op) == symconst_addr_ent*/)) {
 				ir_graph *irg   = get_irn_irg(bl);
 				ir_node *imm_bl = is_Phi(irn) ? get_Block_cfgpred_block(bl, i) : bl;
 

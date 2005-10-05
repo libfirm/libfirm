@@ -25,16 +25,17 @@
 #include "belive_t.h"
 #include "benode_t.h"
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
-#define DBG_DECIDE 1
-#define DBG_WSETS 2
-#define DBG_FIX 4
-#define DBG_SPILL 8
-#define DBG_START 16
-#define DBG_TRACE 32
+#define DBG_SPILL   1
+#define DBG_WSETS   2
+#define DBG_FIX     4
+#define DBG_DECIDE  8
+#define DBG_START  16
+#define DBG_TRACE  64
 #define DEBUG_LVL (DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 static firm_dbg_module_t *dbg = NULL;
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define SINGLE_START_PROJS
 
 typedef struct _workset_t workset_t;
 
@@ -184,6 +185,14 @@ static INLINE int workset_contains(const workset_t *ws, const ir_node *val) {
 #define workset_sort(ws) qsort((ws)->vals, (ws)->len, sizeof((ws)->vals[0]), loc_compare);
 
 
+static int is_mem_phi(const ir_node *irn, void *data) {
+	ir_node *blk = get_nodes_block(irn);
+	DBG((dbg, DBG_SPILL, "Is %+F a mem-phi?\n", irn));
+	workset_t *sws = ((block_info_t *)get_irn_link(blk))->ws_start;
+	DBG((dbg, DBG_SPILL, "  %d\n", !workset_contains(sws, irn)));
+	return !workset_contains(sws, irn);
+}
+
 /**
  * Collects all values live-in at block @p blk and all phi results in this block.
  * Then it adds the best values (at most n_regs) to the ws.
@@ -276,7 +285,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	if (len > max_allowed) {
 		/* get current next-use distance */
 		for (i=0; i<ws->len; ++i)
-			workset_set_time(ws, i, be_get_next_use(bel->uses, bel->instr, bel->instr_nr, workset_get_val(ws, i), is_usage));
+			workset_set_time(ws, i, be_get_next_use(bel->uses, bel->instr, bel->instr_nr, workset_get_val(ws, i), !is_usage));
 
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
@@ -314,6 +323,9 @@ static void decide(ir_node *blk, void *env) {
 	belady_env_t *bel = env;
 	workset_t *new_vals;
 	ir_node *irn;
+#ifdef SINGLE_START_PROJS
+	ir_node *start_blk = get_irg_start_block(get_irn_irg(blk));
+#endif
 	block_info_t *blk_info = obstack_alloc(&bel->ob, sizeof(*blk_info));
 	set_irn_link(blk, blk_info);
 
@@ -333,19 +345,26 @@ static void decide(ir_node *blk, void *env) {
 	bel->instr_nr = 0;
 	new_vals = new_workset(&bel->ob, bel);
 	sched_foreach(blk, irn) {
-		ir_node *iii;
-		DBG((dbg, DBG_WSETS, "Current workset for %+F:\n", blk));
-		workset_foreach(bel->ws, iii)
-			DBG((dbg, DBG_WSETS, "  %+F\n", iii));
 		assert(workset_get_length(bel->ws) <= bel->n_regs && "Too much values in workset!");
 
-		DBG((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
+#ifdef SINGLE_START_PROJS
+		if (is_Phi(irn) ||
+			(is_Proj(irn) && blk!=start_blk) ||
+			(get_irn_mode(irn) == mode_T && blk==start_blk)) {
+			DBG((dbg, DBG_DECIDE, "  ...%+F skipped\n", irn));
+			continue;
+		}
+#else
 		/* projs are handled with the tuple value.
 		 * Phis are no real instr (see insert_starters)
 		 * instr_nr does not increase */
-		if (is_Proj(irn) || is_Phi(irn))
+		if (is_Proj(irn) || is_Phi(irn)) {
+			DBG((dbg, DBG_DECIDE, "  ...%+F skipped\n", irn));
 			continue;
+		}
+#endif
+		DBG((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
 		/* set instruction in the workset */
 		bel->instr = irn;
@@ -407,12 +426,17 @@ static void fix_block_borders(ir_node *blk, void *env) {
 			if(is_Phi(irnb) && blk == get_nodes_block(irnb))
 				irnb = get_irn_n(irnb, i);
 
+			/* Unknowns are available everywhere */
+			if(get_irn_opcode(irnb) == iro_Unknown)
+				continue;
+
 			/* check if irnb is in a register at end of pred */
 			workset_foreach(wsp, irnp)
 				if (irnb == irnp)
 					goto next_value;
 
 			/* irnb is in memory at the end of pred, so we have to reload it */
+			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
 			be_add_reload_on_edge(bel->senv, irnb, blk, i);
 
 next_value:
@@ -427,16 +451,8 @@ next_value:
  */
 static void rescue_used_reloads(ir_node *irn, void *env) {
 	pset *rlds = ((belady_env_t *)env)->reloads;
-	if (pset_find_ptr(rlds, irn)) {
-		DBG((dbg, DBG_SPILL, "Removing %+F in %+F\n", irn, get_nodes_block(irn)));
+	if (pset_find_ptr(rlds, irn))
 		pset_remove_ptr(rlds, irn);
-	}
-}
-
-static int is_mem_phi(const ir_node *irn, void *data) {
-	ir_node *blk = get_nodes_block(irn);
-	workset_t *sws = ((block_info_t *)get_irn_link(blk))->ws_start;
-	return !workset_contains(sws, irn);
 }
 
 void be_spill_belady(const be_main_session_env_t *session, const arch_register_class_t *cls) {
@@ -454,18 +470,20 @@ void be_spill_belady(const be_main_session_env_t *session, const arch_register_c
 	bel->n_regs = arch_register_class_n_regs(cls);
 	bel->ws = new_workset(&bel->ob, bel);
 	bel->uses = be_begin_uses(session->irg, session->main_env->arch_env, cls);
-	bel->senv = be_new_spill_env(dbg, session, cls);
+	bel->senv = be_new_spill_env(dbg, session, cls, is_mem_phi, NULL);
 	bel->reloads = pset_new_ptr_default();
 
 	/* do the work */
 	irg_block_walk_graph(session->irg, decide, NULL, bel);
 	irg_block_walk_graph(session->irg, fix_block_borders, NULL, bel);
-	be_insert_spills_reloads(bel->senv, bel->reloads, is_mem_phi, NULL);
+	be_insert_spills_reloads(bel->senv, bel->reloads);
 
 	/* find all unused reloads and remove them from the schedule */
 	irg_walk_graph(session->irg, rescue_used_reloads, NULL, bel);
-	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads))
+	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads)) {
+		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
 		sched_remove(irn);
+	}
 
 	/* clean up */
 	del_pset(bel->reloads);

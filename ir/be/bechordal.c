@@ -39,6 +39,8 @@
 #include "bechordal_draw.h"
 
 #define DBG_LEVEL SET_LEVEL_0
+#define DBG_LEVEL_CHECK SET_LEVEL_0
+
 #define NO_COLOR (-1)
 
 #undef DUMP_INTERVALS
@@ -641,7 +643,7 @@ static void check_pressure_walker(ir_node *bl, void *data)
 	ir_node *irn;
 	irn_live_t *li;
 
-//	firm_dbg_set_mask(dbg, -1);
+	firm_dbg_set_mask(dbg, DBG_LEVEL_CHECK);
 
 	live_foreach(bl, li) {
 		if(live_is_end(li) && check_pressure_has_class(info, li->irn)) {

@@ -8,6 +8,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 
+#include "beutil.h"
 #include "besched.h"
 
 typedef unsigned int sched_timestep_t;
@@ -59,13 +60,7 @@ static INLINE int to_appear_in_schedule(ir_node *irn)
   if(get_irn_opcode(irn) == iro_Start)
   	return 1;
 
-  for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-    ir_node *op = get_irn_n(irn, i);
-    if(mode_is_datab(get_irn_mode(op)))
-      return 1;
-  }
-
-  return mode_is_datab(get_irn_mode(irn));
+  return is_data_node(irn);
 }
 
 /**
@@ -197,10 +192,10 @@ static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
  */
 static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
 {
-  sched_info_t *info = get_irn_sched_info(irn);
+	sched_info_t *info = get_irn_sched_info(irn);
 	list_add(&info->list, &get_irn_sched_info(after)->list);
-  _sched_set_time_stamp(irn);
-  info->scheduled = 1;
+	_sched_set_time_stamp(irn);
+	info->scheduled = 1;
 	return irn;
 }
 

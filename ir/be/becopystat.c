@@ -13,6 +13,7 @@
 #include "irprog.h"
 #include "iredges.h"
 #include "phiclass_t.h"
+#include "beutil.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "xmalloc.h"
@@ -121,7 +122,7 @@ static void irg_stat_walker(ir_node *node, void *env) {
  	if (is_Block(node)) /* count all blocks */
  		curr_vals[I_BLOCKS]++;
 
- 	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) /* collect phis */
+ 	if (is_Phi(node) && is_firm_be_mode(get_irn_mode(node))) /* collect phis */
  		pset_insert_ptr(all_phi_nodes, node);
 
  	if (is_Copy(arch_env, node))

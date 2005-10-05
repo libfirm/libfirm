@@ -18,6 +18,7 @@
 #include "irloop_t.h"
 
 #include "xmalloc.h"
+#include "beutil.h"
 #include "bechordal_t.h"
 #include "becopyopt.h"
 #include "becopystat.h"
@@ -135,7 +136,7 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 	INIT_LIST_HEAD(&unit->queue);
 
 	/* check all args */
-	if (is_Phi(root) && mode_is_datab(get_irn_mode(root))) {
+	if (is_Phi(root) && is_firm_be_mode(get_irn_mode(root))) {
 		for (i=0; i<arity; ++i) {
 			int o, arg_pos = 0;
 			ir_node *arg = get_irn_n(root, i);
@@ -256,7 +257,7 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	int i, max;
 	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
 		ir_node *n = get_irn_out(irn, i);
-		if (((is_Phi(n) && mode_is_datab(get_irn_mode(n))) ||
+		if (((is_Phi(n) && is_firm_be_mode(get_irn_mode(n))) ||
 			 is_Perm(get_arch_env(co), n)) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
 			return 1;
 	}

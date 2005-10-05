@@ -161,6 +161,7 @@ static void be_main_loop(void)
 
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
+
 #ifdef DUMP_SCHED
 		dump_ir_block_graph_sched(irg, "-sched");
 #endif

@@ -29,6 +29,8 @@
 #include "beutil.h"
 #include "belive_t.h"
 #include "belistsched.h"
+#include "bearch_firm.h"
+
 
 /**
  * Scheduling environment for the whole graph.
@@ -80,9 +82,18 @@ static ir_node *trivial_select(void *env, void *block_env,
 		ready[i++] = irn;
 #endif
 
+	ir_node *irn, *res = NULL;
+	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set))
+		if(!is_Imm(irn)) {
+			res = irn;
+			pset_break(ready_set);
+			break;
+		}
 
-	ir_node *res = pset_first(ready_set);
-	pset_break(ready_set);
+	if (!res) {
+		res = pset_first(ready_set);
+		pset_break(ready_set);
+	}
 	return res;
 }
 
@@ -230,6 +241,7 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
         sched_info_t *info = get_irn_sched_info(irn);
         INIT_LIST_HEAD(&info->list);
         info->scheduled = 1;
+        assert(get_irn_opcode(irn) != iro_Unknown && "'Unknown' in schedule!");
         sched_add_before(env->block, irn);
 
         DBG((env->dbg, LEVEL_2, "\tadding %+F\n", irn));
