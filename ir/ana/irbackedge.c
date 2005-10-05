@@ -83,21 +83,30 @@ static INLINE bool legal_backarray (ir_node *n) {
 
 
 void fix_backedges(struct obstack *obst, ir_node *n) {
-  opcode opc = get_irn_opcode(n);
   int *arr = mere_get_backarray(n);
-  if (ARR_LEN(arr) == ARR_LEN(get_irn_in(n))-1)
+  opcode opc;
+
+  if (! arr)
     return;
+
   if (ARR_LEN(arr) != ARR_LEN(get_irn_in(n))-1) {
     arr = new_backedge_arr(obst, ARR_LEN(get_irn_in(n))-1);
-    if (opc == iro_Phi)    n->attr.phi_backedge = arr;
-    if ((opc == iro_Block) && !get_interprocedural_view())
-      n->attr.block.backedge = arr;
-    if ((opc == iro_Block) && get_interprocedural_view())
-      n->attr.block.cg_backedge = arr;
-    if (opc == iro_Filter) n->attr.filter.backedge = arr;
-    return;
+
+    opc = get_irn_opcode(n);
+    if (opc == iro_Phi)
+      n->attr.phi_backedge = arr;
+    else if (opc == iro_Block) {
+      if (!get_interprocedural_view())
+        n->attr.block.backedge = arr;
+      else
+        n->attr.block.cg_backedge = arr;
+    }
+    else if (opc == iro_Filter)
+      n->attr.filter.backedge = arr;
   }
+
   assert(legal_backarray(n));
+
   /* @@@ more efficient in memory consumption, not possible with
    array implementation.
   if (ARR_LEN(arr) < ARR_LEN(get_irn_in(n))-1) {
