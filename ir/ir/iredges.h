@@ -48,6 +48,23 @@ const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
 	for(edge = get_irn_out_edge_first(irn); edge; edge = get_irn_out_edge_next(irn, edge))
 
 /**
+ * A convenience iteration macro over all out edges of a node, which is safe
+ * against alteration of the current edge.
+ * @param irn The node.
+ * @param edge An @c ir_edge_t pointer which shall be set to the current
+ * edge.
+ * @param ne The next edge, enables alteration safe erge processing.
+ */
+#define foreach_out_edge_safe(irn,edge,ne) \
+	for( \
+		(edge) = (get_irn_out_edge_first(irn)), \
+			(ne) = ((edge) ? (get_irn_out_edge_next(irn, edge)) : NULL); \
+		edge; \
+		(edge) = (ne), (ne) = ((edge) ? (get_irn_out_edge_next(irn, edge)) : NULL) \
+	)
+
+
+/**
  * A convenience iteration macro for all control flow edges
  * leaving a block, and thus are cf successor edges.
  * @param bl The block.
