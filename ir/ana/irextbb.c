@@ -80,7 +80,7 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
     ir_node *add_to = get_Block_cfgpred(block, 0);
 
     if (! is_Bad(add_to))
-      add_to = get_nodes_block(add_to);
+      add_to = get_irn_n(add_to, -1);
 
     /* blocks with only one BAD predecessors are leaders too */
     if (is_Bad(add_to)) {
@@ -110,7 +110,7 @@ static void post_walk_calc_extbb(ir_node *block, void *env)
 
     /* search the leader */
     do {
-      prev = get_nodes_block(get_Block_cfgpred(prev, 0));
+      prev = get_irn_n(get_Block_cfgpred(prev, 0), -1);
       extbb = get_Block_extbb(prev);
     } while (! extbb);
 
@@ -180,7 +180,7 @@ void free_extbb(ir_graph *irg) {
 
 /* Return the extended block of a node. */
 ir_extblk *get_nodes_extbb(ir_node *node) {
-  ir_node *block = is_Block(node) ? node : get_nodes_block(node);
+  ir_node *block = is_Block(node) ? node : get_irn_n(node, -1);
   return get_Block_extbb(block);
 }
 
