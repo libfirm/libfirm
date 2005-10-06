@@ -79,6 +79,7 @@ enum leaf_call_state_t {
  * An entry for ir_graphs. These numbers are calculated for every IR graph.
  */
 typedef struct _graph_entry_t {
+  struct obstack          recalc_cnts;                  /**< obstack containing the counters that are recalculated */
   HASH_MAP(node_entry_t)  *opcode_hash;                 /**< hash map containing the opcode counter */
   HASH_MAP(block_entry_t) *block_hash;                  /**< hash map containing the block counter */
   HASH_MAP(block_entry_t) *extbb_hash;                  /**< hash map containing the extended block counter */
@@ -190,7 +191,6 @@ typedef void (*dump_finish_FUNC)(dumper_t *dmp);
 typedef struct _statistic_info_t {
   unsigned                stat_options;	  /**< statistic options: field must be first */
   struct obstack          cnts;           /**< obstack containing the counters that are incremented */
-  struct obstack          recalc_cnts;    /**< obstack containing the counters that are recalculated */
   HASH_MAP(graph_entry_t) *irg_hash;      /**< hash map containing the counter for irgs */
   HASH_MAP(ir_op)         *ir_op_hash;    /**< hash map containing all ir_ops (accessible by op_codes) */
   pdeq                    *wait_q;        /**< wait queue for leaf call decision */

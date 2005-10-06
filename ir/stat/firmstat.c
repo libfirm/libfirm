@@ -232,8 +232,8 @@ static void graph_clear_entry(graph_entry_t *elem, int all)
     elem->extbb_hash = NULL;
   }
 
-  obstack_free(&status->recalc_cnts, NULL);
-  obstack_init(&status->recalc_cnts);
+  obstack_free(&elem->recalc_cnts, NULL);
+  obstack_init(&elem->recalc_cnts);
 }
 
 /**
@@ -257,6 +257,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
   /* allocate a new one */
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
   memset(elem, 0, sizeof(*elem));
+  obstack_init(&elem->recalc_cnts);
 
   /* clear counter */
   graph_clear_entry(elem, 1);
@@ -330,7 +331,7 @@ static void block_clear_entry(block_entry_t *elem)
  * @param block_nr  an IR  block number
  * @param hmap      a hash map containing long -> block_entry_t
  */
-static block_entry_t *block_get_entry(long block_nr, hmap_block_entry_t *hmap)
+static block_entry_t *block_get_entry(struct obstack *obst, long block_nr, hmap_block_entry_t *hmap)
 {
   block_entry_t key;
   block_entry_t *elem;
@@ -341,7 +342,7 @@ static block_entry_t *block_get_entry(long block_nr, hmap_block_entry_t *hmap)
   if (elem)
     return elem;
 
-  elem = obstack_alloc(&status->recalc_cnts, sizeof(*elem));
+  elem = obstack_alloc(obst, sizeof(*elem));
   memset(elem, 0, sizeof(*elem));
 
   /* clear new counter */
@@ -418,13 +419,13 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
   /* check for block */
   if (op == op_Block) {
     arity = get_irn_arity(node);
-    b_entry = block_get_entry(get_irn_node_nr(node), graph->block_hash);
+    b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(node), graph->block_hash);
 
     /* count all incoming edges */
     for (i = 0; i < arity; ++i) {
       ir_node *pred = get_irn_n(node, i);
       ir_node *other_block = get_nodes_block(pred);
-      block_entry_t *b_entry_other = block_get_entry(get_irn_node_nr(other_block), graph->block_hash);
+      block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
       cnt_inc(&b_entry->cnt_in_edges);	/* an edge coming from another block */
       cnt_inc(&b_entry_other->cnt_out_edges);
@@ -433,7 +434,7 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
   }
 
   block   = get_nodes_block(node);
-  b_entry = block_get_entry(get_irn_node_nr(block), graph->block_hash);
+  b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(block), graph->block_hash);
 
   if (op == op_Phi && mode_is_datab(get_irn_mode(node))) {
     /* count data Phi per block */
@@ -458,7 +459,7 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
     if (other_block == block)
       cnt_inc(&b_entry->cnt_edges);	/* a in block edge */
     else {
-      block_entry_t *b_entry_other = block_get_entry(get_irn_node_nr(other_block), graph->block_hash);
+      block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
       cnt_inc(&b_entry->cnt_in_edges);	/* an edge coming from another block */
       cnt_inc(&b_entry_other->cnt_out_edges);
@@ -480,7 +481,7 @@ static void undate_extbb_info(ir_node *node, graph_entry_t *graph)
   if (op == op_Block) {
     extbb = get_nodes_extbb(node);
     arity = get_irn_arity(node);
-    eb_entry = block_get_entry(get_extbb_node_nr(extbb), graph->extbb_hash);
+    eb_entry = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(extbb), graph->extbb_hash);
 
     /* count all incoming edges */
     for (i = 0; i < arity; ++i) {
@@ -488,7 +489,7 @@ static void undate_extbb_info(ir_node *node, graph_entry_t *graph)
       ir_extblk *other_extbb = get_nodes_extbb(pred);
 
       if (extbb != other_extbb) {
-        extbb_entry_t *eb_entry_other = block_get_entry(get_extbb_node_nr(other_extbb), graph->extbb_hash);
+        extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
 
         cnt_inc(&eb_entry->cnt_in_edges);	/* an edge coming from another extbb */
         cnt_inc(&eb_entry_other->cnt_out_edges);
@@ -498,7 +499,7 @@ static void undate_extbb_info(ir_node *node, graph_entry_t *graph)
   }
 
   extbb    = get_nodes_extbb(node);
-  eb_entry = block_get_entry(get_extbb_node_nr(extbb), graph->extbb_hash);
+  eb_entry = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(extbb), graph->extbb_hash);
 
   if (op == op_Phi && mode_is_datab(get_irn_mode(node))) {
     /* count data Phi per extbb */
@@ -521,7 +522,7 @@ static void undate_extbb_info(ir_node *node, graph_entry_t *graph)
     if (other_extbb == extbb)
       cnt_inc(&eb_entry->cnt_edges);	/* a in extbb edge */
     else {
-      extbb_entry_t *eb_entry_other = block_get_entry(get_extbb_node_nr(other_extbb), graph->extbb_hash);
+      extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
 
       cnt_inc(&eb_entry->cnt_in_edges);	/* an edge coming from another extbb */
       cnt_inc(&eb_entry_other->cnt_out_edges);
@@ -1616,8 +1617,9 @@ void stat_dump_snapshot(const char *name, const char *phase)
         continue;
       }
 
-      if (! entry->is_deleted || status->stat_options & FIRMSTAT_COUNT_DELETED)
+      if (! entry->is_deleted || status->stat_options & FIRMSTAT_COUNT_DELETED) {
         stat_dump_graph(entry);
+      }
 
       if (! entry->is_deleted) {
         /* clear the counter that are not accumulated */
@@ -1695,7 +1697,6 @@ void init_stat(unsigned enable_options)
   HOOK(hook_arch_dep_replace_DivMod_by_const, stat_arch_dep_replace_DivMod_by_const);
 
   obstack_init(&status->cnts);
-  obstack_init(&status->recalc_cnts);
 
   /* create the hash-tables */
   status->irg_hash   = new_pset(graph_cmp, 8);
