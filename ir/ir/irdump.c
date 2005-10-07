@@ -41,6 +41,7 @@
 #include "callgraph.h"
 #include "irextbb_t.h"
 #include "dbginfo_t.h"
+#include "irtools.h"
 
 #include "irvrfy.h"
 
@@ -134,7 +135,7 @@ int is_filtered_dump_name(ident *name) {
   return id_is_prefix(dump_file_filter_id, name);
 }
 
-/* To turn off display of edge labels.  Edge labels offen cause xvcg to
+/* To turn off display of edge labels.  Edge labels often cause xvcg to
    abort with a segmentation fault. */
 void turn_off_edge_labels(void) {
   edge_label = 0;
@@ -394,7 +395,8 @@ static void *ird_get_irn_link(ir_node *n) {
  * Sets the private link field.
  */
 static void ird_set_irn_link(ir_node *n, void *x) {
-  if (!irdump_link_map) init_irdump();
+  if (!irdump_link_map)
+    init_irdump();
   pmap_insert(irdump_link_map, (void *)n, x);
 }
 
@@ -644,6 +646,9 @@ dump_node_opcode(FILE *F, ir_node *n)
   }
   case iro_Load:
     fprintf (F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Load_mode(n), &bad));
+    break;
+  case iro_Block:
+    fprintf (F, "%s%s", is_Block_dead(n) ? "Dead " : "", get_irn_opname(n));
     break;
 
   default: {
@@ -1385,6 +1390,8 @@ static void dump_const_expression(FILE *F, ir_node *value) {
 static void
 dump_whole_block(FILE *F, ir_node *block) {
   ir_node *node;
+  const char *color = "yellow";
+
   assert(is_Block(block));
 
   fprintf(F, "graph: { title: \"");
@@ -1395,8 +1402,17 @@ dump_whole_block(FILE *F, ir_node *block) {
   if (get_opt_dump_abstvals())
     fprintf (F, " seqno: %d", (int)get_Block_seqno(block));
 #endif
-  fprintf(F, "\" status:clustered color:%s \n",
-       get_Block_matured(block) ? "yellow" : "red");
+
+  /* colorize blocks */
+  if (! get_Block_matured(block))
+    color = "red";
+  if (is_Block_dead(block))
+    color = "orange";
+
+  fprintf(F, "\" status:clustered color:%s \n", color);
+
+  /* ycomp can show attributs for blocks, VCG parses but ignores them */
+  dump_node_info(F, block);
 
   /* dump the blocks edges */
   dump_ir_data_edges(F, block);
@@ -1901,7 +1917,7 @@ static INLINE void dump_loop_info(FILE *F, ir_loop *loop) {
   fprintf (F, " info1: \"");
   fprintf (F, " loop nr: %d", get_loop_loop_nr(loop));
 #if DEBUG_libfirm   /* GL @@@ debug analyses */
-  fprintf (F, "\n The loop was analyzed %d times.", (int)get_loop_link(loop));
+  fprintf (F, "\n The loop was analyzed %d times.", PTR_TO_INT(get_loop_link(loop)));
 #endif
   fprintf (F, "\"");
 }
