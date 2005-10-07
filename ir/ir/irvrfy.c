@@ -828,6 +828,13 @@ static int verify_node_Cond(ir_node *n, ir_graph *irg) {
     mode_is_int(op1mode) ),  "Cond node", 0
   );
   ASSERT_AND_RET(mymode == mode_T, "Cond mode is not a tuple", 0);
+
+  if (op1mode == mode_b && get_irg_outs_state(irg) == outs_consistent) {
+    /* we have consistent outs, check for the right number of Proj's */
+    ASSERT_AND_RET(
+      get_irn_n_outs(n) == 2,
+      "BinaryCond node must have 2 successors", 0);
+  }
   return 1;
 }
 
@@ -1665,7 +1672,7 @@ static void vrfy_wrap(ir_node *node, void *env) {
 
 /**
  * Walker to check every node including SSA property.
- * Only called if domonance info is available.
+ * Only called if dominance info is available.
  */
 static void vrfy_wrap_ssa(ir_node *node, void *env)
 {
@@ -1729,6 +1736,9 @@ int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
   firm_vrfy_failure_msg = NULL;
   opt_do_node_verification = NODE_VERIFICATION_ERROR_ONLY;
   res = irn_vrfy_irg(n, irg);
+  if (! res && get_irg_dom_state(irg) == dom_consistent &&
+      get_irg_pinned(irg) == op_pin_state_pinned)
+    res = check_dominance_for_node(n);
   opt_do_node_verification = old;
   *bad_string = firm_vrfy_failure_msg;
 
