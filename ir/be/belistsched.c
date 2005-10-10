@@ -73,6 +73,8 @@ static ir_node *trivial_select(void *env, void *block_env,
 		const struct list_head *sched_head,
 		int curr_time, pset *ready_set)
 {
+	ir_node *res;
+
 #if 0
 	int i, n = pset_count(ready_set);
 	ir_node *irn;
@@ -82,18 +84,8 @@ static ir_node *trivial_select(void *env, void *block_env,
 		ready[i++] = irn;
 #endif
 
-	ir_node *irn, *res = NULL;
-	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set))
-		if(!is_Imm(irn)) {
-			res = irn;
-			pset_break(ready_set);
-			break;
-		}
-
-	if (!res) {
-		res = pset_first(ready_set);
-		pset_break(ready_set);
-	}
+	res = pset_first(ready_set);
+	pset_break(ready_set);
 	return res;
 }
 
@@ -408,4 +400,32 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	del_pset(be.ready_set);
 	del_pset(be.already_scheduled);
+}
+
+static void imm_scheduler(ir_node *irn, void *env) {
+	if(is_Imm(irn)) {
+		const ir_edge_t *e;
+		ir_node *user, *user_block, *before, *tgt_block;
+
+		// assert(1 == get_irn_n_edges(irn)); why is this wrong ?
+
+		e = get_irn_out_edge_first(irn);
+		user = e->src;
+		user_block = get_nodes_block(user);
+		if (is_Phi(user)) {
+			before = get_Block_cfgpred_block(user_block, e->pos);
+			tgt_block = before;
+		} else {
+			before = user;
+			tgt_block = user_block;
+		}
+
+		sched_remove(irn);
+		set_nodes_block(irn, tgt_block);
+		sched_add_before(before, irn);
+	}
+}
+
+void be_sched_imm(ir_graph *irg) {
+	irg_walk_graph(irg, imm_scheduler, NULL, NULL);
 }

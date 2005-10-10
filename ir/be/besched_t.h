@@ -55,8 +55,6 @@ static INLINE int _sched_get_time_step(const ir_node *irn)
  */
 static INLINE int to_appear_in_schedule(ir_node *irn)
 {
-  int i, n;
-
   if(get_irn_opcode(irn) == iro_Start)
   	return 1;
 

@@ -21,7 +21,7 @@
 
 #include "irreflect.h"
 
-#define N_REGS 8
+#define N_REGS 3
 
 static arch_register_t datab_regs[N_REGS];
 
@@ -142,7 +142,7 @@ static const arch_register_req_t *
 firm_get_irn_reg_req(const arch_irn_ops_t *self,
     arch_register_req_t *req, const ir_node *irn, int pos)
 {
-  if(is_firm_be_mode(get_irn_mode(irn)) && get_irn_opcode(irn) != iro_Unknown)
+  if(is_firm_be_mode(get_irn_mode(irn)))
     memcpy(req, &firm_std_reg_req, sizeof(*req));
   else
     req = NULL;
