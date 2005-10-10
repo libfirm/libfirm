@@ -653,6 +653,7 @@ typedef enum {
   pn_Div_M,           /**< Memory result.    */
   pn_Div_X_except,    /**< Execution result if exception occurred. */
   pn_Div_res          /**< Result of computation. */
+  pn_Div_max          /**< number of projections from a Div */
 } pn_Div;  /* Projection numbers for Div. */
 
 ir_node *get_Mod_left (ir_node *node);
