@@ -43,14 +43,28 @@
 /* **************************************************************************** */
 
 /**
+ * This hook is called to insert some special nodes into dumped graph
+ */
+typedef int (*DUMP_IR_GRAPH_FUNC)(FILE *F, ir_graph *irg);
+/**
  * This hook is called to dump the vcg attributes of a node to a file.
  * If this function returns zero, the default attributes are added, else
  * removed.
  */
 typedef int (*DUMP_NODE_VCGATTR_FUNC)(FILE *F, ir_node *node, ir_node *local);
+/**
+ * This hook is called to dump the vcg attributes of an edge to a file.
+ * If this function returns zero, the default attributes are added, else
+ * removed.
+ */
+typedef int (*DUMP_EDGE_VCGATTR_FUNC)(FILE *F, ir_node *node, int to);
 
+/** Set the ir graph dump hook. */
+void set_dump_ir_graph_hook(DUMP_IR_GRAPH_FUNC hook);
 /** Set the node_vcgattr hook. */
 void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook);
+/** Set the edge_vcgattr hook. */
+void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook);
 
 typedef int (*DUMP_NODE_EDGE_FUNC)(FILE *f, ir_node *node);
 

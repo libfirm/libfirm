@@ -105,12 +105,24 @@ DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void)
 }
 
 
-/** The vcg attribute hook. */
+/** The vcg node attribute hook. */
+static DUMP_IR_GRAPH_FUNC dump_ir_graph_hook = NULL;
+/** The vcg node attribute hook. */
 static DUMP_NODE_VCGATTR_FUNC dump_node_vcgattr_hook = NULL;
+/** The vcg edge attribute hook. */
+static DUMP_EDGE_VCGATTR_FUNC dump_edge_vcgattr_hook = NULL;
 
-/* set the hook */
+/* set the ir graph hook */
+void set_dump_ir_graph_hook(DUMP_IR_GRAPH_FUNC hook) {
+  dump_ir_graph_hook = hook;
+}
+/* set the node attribute hook */
 void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook) {
   dump_node_vcgattr_hook = hook;
+}
+/* set the edge attribute hook */
+void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook) {
+  dump_edge_vcgattr_hook = hook;
 }
 
 INLINE bool get_opt_dump_const_local(void) {
@@ -1073,6 +1085,19 @@ static void dump_const_block_local(FILE *F, ir_node *n) {
     fprintf (F, "edge: { sourcename: \"");
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \""); PRINT_CONSTBLKID(n,blk);
+
+	if (dump_edge_vcgattr_hook) {
+	  fprintf (F, "\" ");
+      if (dump_edge_vcgattr_hook(F, n, -1)) {
+        fprintf (F, "}\n");
+        return;
+      }
+	  else {
+        fprintf (F, " " BLOCK_EDGE_ATTR "}\n");
+		return;
+	  }
+    }
+
     fprintf (F, "\" "   BLOCK_EDGE_ATTR "}\n");
   }
 }
@@ -1151,6 +1176,19 @@ dump_ir_block_edge(FILE *F, ir_node *n)  {
       PRINT_NODEID(n);
       fprintf (F, "\" targetname: ");
       fprintf(F, "\""); PRINT_NODEID(block); fprintf(F, "\"");
+
+	  if (dump_edge_vcgattr_hook) {
+	    fprintf (F, " ");
+        if (dump_edge_vcgattr_hook(F, n, -1)) {
+          fprintf (F, "}\n");
+          return;
+        }
+	    else {
+          fprintf (F, " "  BLOCK_EDGE_ATTR "}\n");
+		  return;
+	    }
+      }
+
       fprintf (F, " "   BLOCK_EDGE_ATTR "}\n");
     }
   }
@@ -1183,6 +1221,10 @@ print_mem_edge_vcgattr(FILE *F, ir_node *from, int to) {
 static void
 print_edge_vcgattr(FILE *F, ir_node *from, int to) {
   assert(from);
+
+  if (dump_edge_vcgattr_hook)
+	if (dump_edge_vcgattr_hook(F, from, to))
+		return;
 
   if (dump_backedge_information_flag && is_backedge(from, to))
     fprintf (F, BACK_EDGE_ATTR);
@@ -2196,6 +2238,11 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
   else                            suffix1 = "-pure";
   f = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(f, get_irg_dump_name(irg), NULL);
+
+  /* call the dump graph hook */
+  if (dump_ir_graph_hook)
+    if (dump_ir_graph_hook(f, irg))
+      return;
 
   /* walk over the graph */
   /* dump_whole_node must be called in post visiting predecessors */
