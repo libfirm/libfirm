@@ -144,11 +144,10 @@ set_new_node (ir_node *old, ir_node *new)
 }
 
 /**
- * Get this new node, before the old node is forgotton.
+ * Get this new node, before the old node is forgotten.
  */
 static INLINE ir_node *
-get_new_node (ir_node * n)
-{
+get_new_node (ir_node * n) {
   return n->link;
 }
 
@@ -583,19 +582,19 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
     /* arity changing: set new predecessors without bad nodes */
     if (new_irn_arity < old_irn_arity) {
       /* Get new predecessor array. We do not resize the array, as we must
-	 keep the old one to update Phis. */
+         keep the old one to update Phis. */
       new_in = NEW_ARR_D (ir_node *, current_ir_graph->obst, (new_irn_arity+1));
 
       /* set new predecessors in array */
       new_in[0] = NULL;
       new_irn_n = 1;
       for (i = 0; i < old_irn_arity; i++) {
-	irn = get_irn_n(n, i);
-	if (!is_Bad(irn)) {
-	  new_in[new_irn_n] = irn;
-	  is_backedge(n, i) ? set_backedge(n, new_irn_n-1) : set_not_backedge(n, new_irn_n-1);
-	  new_irn_n++;
-	}
+        irn = get_irn_n(n, i);
+        if (!is_Bad(irn)) {
+	        new_in[new_irn_n] = irn;
+	        is_backedge(n, i) ? set_backedge(n, new_irn_n-1) : set_not_backedge(n, new_irn_n-1);
+	        new_irn_n++;
+        }
       }
       //ARR_SETLEN(int, n->attr.block.backedge, new_irn_arity);
       ARR_SHRINKLEN(n->attr.block.backedge, new_irn_arity);
@@ -635,14 +634,14 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
     /* Relink Phi predecessors if count of predecessors changed */
     if (old_irn_arity != ARR_LEN(get_irn_in(block))) {
       /* set new predecessors in array
-	 n->in[0] remains the same block */
+         n->in[0] remains the same block */
       new_irn_arity = 1;
       for(i = 1; i < old_irn_arity; i++)
-	if (!is_Bad((ir_node *)old_in[i])) {
-	  n->in[new_irn_arity] = n->in[i];
-	  is_backedge(n, i) ? set_backedge(n, new_irn_arity) : set_not_backedge(n, new_irn_arity);
-	  new_irn_arity++;
-	}
+        if (!is_Bad((ir_node *)old_in[i])) {
+	        n->in[new_irn_arity] = n->in[i];
+	        is_backedge(n, i) ? set_backedge(n, new_irn_arity) : set_not_backedge(n, new_irn_arity);
+	        new_irn_arity++;
+        }
 
       ARR_SETLEN(ir_node *, n->in, new_irn_arity);
       ARR_SETLEN(int, n->attr.phi_backedge, new_irn_arity);
@@ -666,7 +665,7 @@ void remove_bad_predecessors(ir_graph *irg) {
 
 
 /*--------------------------------------------------------------------*/
-/*  Funcionality for inlining                                         */
+/*  Functionality for inlining                                         */
 /*--------------------------------------------------------------------*/
 
 /**
@@ -1219,7 +1218,7 @@ typedef struct {
 } inline_irg_env;
 
 /**
- * Allocate a new nvironment for inlining.
+ * Allocate a new environment for inlining.
  */
 static inline_irg_env *new_inline_irg_env(void) {
   inline_irg_env *env    = xmalloc(sizeof(*env));
@@ -1423,6 +1422,8 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 
 /**
  * Returns non-zero, is a block is not reachable from Start.
+ *
+ * @param block  the block to test
  */
 static int
 is_Block_unreachable(ir_node *block) {
@@ -1435,21 +1436,31 @@ is_Block_unreachable(ir_node *block) {
  *
  * We have to avoid calls to get_nodes_block() here
  * because the graph is floating.
+ *
+ * move_out_of_loops() expects that place_floats_early() have placed
+ * all "living" nodes into a living block. That's why we must
+ * move nodes in dead block with "live" successors into a valid
+ * block.
+ * We move them just into the same block as it's successor (or
+ * in case of a Phi into the effective use block). For Phi successors,
+ * this may still be a dead block, but then there is no real use, as
+ * the control flow will be dead later.
  */
 static void
 place_floats_early(ir_node *n, pdeq *worklist)
 {
-  int i, start, irn_arity;
+  int i, irn_arity;
 
   /* we must not run into an infinite loop */
-  assert (irn_not_visited(n));
+  assert(irn_not_visited(n));
   mark_irn_visited(n);
 
   /* Place floating nodes. */
   if (get_irn_pinned(n) == op_pin_state_floats) {
-    int depth         = 0;
-    ir_node *b        = NULL;   /* The block to place this node in */
-    int bad_recursion = is_Block_unreachable(get_irn_n(n, -1));
+    ir_node *curr_block = get_irn_n(n, -1);
+    int in_dead_block   = is_Block_unreachable(curr_block);
+    int depth           = 0;
+    ir_node *b          = NULL;   /* The block to place this node in */
 
     assert(get_irn_op(n) != op_Block);
 
@@ -1465,29 +1476,43 @@ place_floats_early(ir_node *n, pdeq *worklist)
     /* find the block for this node. */
     irn_arity = get_irn_arity(n);
     for (i = 0; i < irn_arity; i++) {
-      ir_node *dep = get_irn_n(n, i);
-      ir_node *dep_block;
+      ir_node *pred = get_irn_n(n, i);
+      ir_node *pred_block;
 
-      if ((irn_not_visited(dep))
-         && (get_irn_pinned(dep) == op_pin_state_floats)) {
-        place_floats_early(dep, worklist);
+      if ((irn_not_visited(pred))
+         && (get_irn_pinned(pred) == op_pin_state_floats)) {
+
+        /*
+         * If the current node is NOT in a dead block, but one of its
+         * predecessors is, we must move the predecessor to a live block.
+         * Such thing can happen, if global CSE chose a node from a dead block.
+         * We move it simple to our block.
+         * Note that neither Phi nor End nodes are floating, so we don't
+         * need to handle them here.
+         */
+        if (! in_dead_block) {
+          if (get_irn_pinned(pred) == op_pin_state_floats &&
+              is_Block_unreachable(get_irn_n(pred, -1)))
+            set_nodes_block(pred, curr_block);
+        }
+        place_floats_early(pred, worklist);
       }
 
       /*
        * A node in the Bad block must stay in the bad block,
        * so don't compute a new block for it.
        */
-      if (bad_recursion)
+      if (in_dead_block)
         continue;
 
       /* Because all loops contain at least one op_pin_state_pinned node, now all
          our inputs are either op_pin_state_pinned or place_early() has already
          been finished on them.  We do not have any unfinished inputs!  */
-      dep_block = get_irn_n(dep, -1);
-      if ((!is_Block_dead(dep_block)) &&
-          (get_Block_dom_depth(dep_block) > depth)) {
-        b = dep_block;
-        depth = get_Block_dom_depth(dep_block);
+      pred_block = get_irn_n(pred, -1);
+      if ((!is_Block_dead(pred_block)) &&
+          (get_Block_dom_depth(pred_block) > depth)) {
+        b = pred_block;
+        depth = get_Block_dom_depth(pred_block);
       }
       /* Avoid that the node is placed in the Start block */
       if ((depth == 1) && (get_Block_dom_depth(get_irn_n(n, -1)) > 1)) {
@@ -1500,13 +1525,83 @@ place_floats_early(ir_node *n, pdeq *worklist)
       set_nodes_block(n, b);
   }
 
-  /* Add predecessors of non floating nodes on worklist. */
-  start = (get_irn_op(n) == op_Block) ? 0 : -1;
+  /*
+   * Add predecessors of non floating nodes and non-floating predecessors
+   * of floating nodes to worklist and fix their blocks if the are in dead block.
+   */
   irn_arity = get_irn_arity(n);
-  for (i = start; i < irn_arity; i++) {
-    ir_node *pred = get_irn_n(n, i);
-    if (irn_not_visited(pred)) {
-      pdeq_putr (worklist, pred);
+
+  if (get_irn_op(n) == op_End) {
+    /*
+     * Simplest case: End node. Predecessors are keep-alives,
+     * no need to move out of dead block.
+     */
+    for (i = -1; i < irn_arity; ++i) {
+      ir_node *pred = get_irn_n(n, i);
+      if (irn_not_visited(pred))
+        pdeq_putr(worklist, pred);
+    }
+  }
+  else if (is_Block(n)) {
+    /*
+     * Blocks: Predecessors are control flow, no need to move
+     * them out of dead block.
+     */
+    for (i = irn_arity - 1; i >= 0; --i) {
+      ir_node *pred = get_irn_n(n, i);
+      if (irn_not_visited(pred))
+        pdeq_putr(worklist, pred);
+    }
+  }
+  else if (is_Phi(n)) {
+    ir_node *pred;
+    ir_node *curr_block = get_irn_n(n, -1);
+    int in_dead_block   = is_Block_unreachable(curr_block);
+
+    /*
+     * Phi nodes: move nodes from dead blocks into the effective use
+     * of the Phi-input if the Phi is not in a bad block.
+     */
+    pred = get_irn_n(n, -1);
+    if (irn_not_visited(pred))
+      pdeq_putr(worklist, pred);
+
+    for (i = irn_arity - 1; i >= 0; --i) {
+      ir_node *pred = get_irn_n(n, i);
+
+      if (irn_not_visited(pred)) {
+        if (! in_dead_block &&
+            get_irn_pinned(pred) == op_pin_state_floats &&
+            is_Block_unreachable(get_irn_n(pred, -1))) {
+          set_nodes_block(pred, get_Block_cfgpred_block(curr_block, i));
+        }
+        pdeq_putr(worklist, pred);
+      }
+    }
+  }
+  else {
+    ir_node *pred;
+    ir_node *curr_block = get_irn_n(n, -1);
+    int in_dead_block   = is_Block_unreachable(curr_block);
+
+    /*
+     * All other nodes: move nodes from dead blocks into the same block.
+     */
+    pred = get_irn_n(n, -1);
+    if (irn_not_visited(pred))
+      pdeq_putr(worklist, pred);
+
+    for (i = irn_arity - 1; i >= 0; --i) {
+      ir_node *pred = get_irn_n(n, i);
+
+      if (irn_not_visited(pred)) {
+        if (! in_dead_block &&
+            get_irn_pinned(pred) == op_pin_state_floats &&
+            is_Block_unreachable(get_irn_n(pred, -1))) {
+          set_nodes_block(pred, curr_block);
+        }
+        pdeq_putr(worklist, pred);
+      }
     }
   }
 }
@@ -1525,9 +1620,10 @@ static INLINE void place_early(pdeq *worklist) {
   place_floats_early(get_irg_end(current_ir_graph), worklist);
 
   /* Work the content of the worklist. */
-  while (!pdeq_empty (worklist)) {
-    ir_node *n = pdeq_getl (worklist);
-    if (irn_not_visited(n)) place_floats_early(n, worklist);
+  while (!pdeq_empty(worklist)) {
+    ir_node *n = pdeq_getl(worklist);
+    if (irn_not_visited(n))
+      place_floats_early(n, worklist);
   }
 
   set_irg_outs_inconsistent(current_ir_graph);
@@ -1567,7 +1663,7 @@ static ir_node *calc_dca(ir_node *dca, ir_node *block)
  * A data flow edge points from producer to consumer.
  */
 static ir_node *
-consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
+consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *producer)
 {
   ir_node *block = NULL;
 
@@ -1591,8 +1687,8 @@ consumer_dom_dca (ir_node *dca, ir_node *consumer, ir_node *producer)
 
     if (! block)
       block = get_irn_n(producer, -1);
-
-  } else {
+  }
+  else {
     assert(is_no_Block(consumer));
     block = get_nodes_block(consumer);
   }
@@ -1657,9 +1753,9 @@ static void
 place_floats_late(ir_node *n, pdeq *worklist)
 {
   int i;
-  ir_node *early;
+  ir_node *early_blk;
 
-  assert (irn_not_visited(n)); /* no multiple placement */
+  assert(irn_not_visited(n)); /* no multiple placement */
 
   mark_irn_visited(n);
 
@@ -1667,9 +1763,9 @@ place_floats_late(ir_node *n, pdeq *worklist)
   if ((get_irn_op(n) != op_Block) &&
       (!is_cfop(n)) &&
       (get_irn_mode(n) != mode_X)) {
-    /* Remember the early placement of this block to move it
-       out of loop no further than the early placement. */
-    early = get_irn_n(n, -1);
+    /* Remember the early_blk placement of this block to move it
+       out of loop no further than the early_blk placement. */
+    early_blk = get_irn_n(n, -1);
 
     /*
      * BEWARE: Here we also get code, that is live, but
@@ -1691,38 +1787,41 @@ place_floats_late(ir_node *n, pdeq *worklist)
         place_floats_late(succ, worklist);
     }
 
-    /* We have to determine the final block of this node... except for
-       constants. */
-    if ((get_irn_pinned(n) == op_pin_state_floats) &&
-        (get_irn_op(n) != op_Const) &&
-        (get_irn_op(n) != op_SymConst)) {
-      ir_node *dca = NULL;  /* deepest common ancestor in the
-                   dominator tree of all nodes'
-                   blocks depending on us; our final
-                   placement has to dominate DCA. */
-      for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
-        ir_node *out = get_irn_out(n, i);
-        ir_node *outbl;
+    if (! is_Block_dead(early_blk)) {
+      /* do only move things that where not dead */
 
-        if (get_irn_op(out) == op_End) {
-          /*
-           * This consumer is the End node, a keep alive edge.
-           * This is not a real consumer, so we ignore it
-           */
-          continue;
+      /* We have to determine the final block of this node... except for
+         constants. */
+      if ((get_irn_pinned(n) == op_pin_state_floats) &&
+          (get_irn_op(n) != op_Const) &&
+          (get_irn_op(n) != op_SymConst)) {
+        ir_node *dca = NULL;  /* deepest common ancestor in the
+                     dominator tree of all nodes'
+                     blocks depending on us; our final
+                     placement has to dominate DCA. */
+        for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
+          ir_node *succ = get_irn_out(n, i);
+          ir_node *succ_blk;
+
+          if (get_irn_op(succ) == op_End) {
+            /*
+             * This consumer is the End node, a keep alive edge.
+             * This is not a real consumer, so we ignore it
+             */
+            continue;
+          }
+
+          /* ignore if succ is in dead code */
+          succ_blk = get_irn_n(succ, -1);
+          if (is_Block_unreachable(succ_blk))
+            continue;
+          dca = consumer_dom_dca(dca, succ, n);
         }
-
-        /* ignore if out is in dead code */
-        outbl = get_irn_n(out, -1);
-        if (is_Block_unreachable(outbl))
-          continue;
-        dca = consumer_dom_dca(dca, out, n);
+        if (dca) {
+          set_nodes_block(n, dca);
+          move_out_of_loops(n, early_blk);
+        }
       }
-      if (dca) {
-        set_nodes_block(n, dca);
-        move_out_of_loops (n, early);
-      }
-      /* else all outs are in dead code */
     }
   }
 
@@ -1731,7 +1830,7 @@ place_floats_late(ir_node *n, pdeq *worklist)
   for (i = 0; i < get_irn_n_outs(n); i++) {
     ir_node *succ = get_irn_out(n, i);
     if (irn_not_visited(get_irn_out(n, i))) {
-      pdeq_putr (worklist, succ);
+      pdeq_putr(worklist, succ);
     }
   }
 }
@@ -1744,9 +1843,10 @@ static INLINE void place_late(pdeq *worklist) {
   place_floats_late(get_irg_start_block(current_ir_graph), worklist);
 
   /* And now empty the worklist again... */
-  while (!pdeq_empty (worklist)) {
-    ir_node *n = pdeq_getl (worklist);
-    if (irn_not_visited(n)) place_floats_late(n, worklist);
+  while (!pdeq_empty(worklist)) {
+    ir_node *n = pdeq_getl(worklist);
+    if (irn_not_visited(n))
+      place_floats_late(n, worklist);
   }
 }
 
@@ -1775,6 +1875,7 @@ void place_code(ir_graph *irg) {
 
   /* place_early() invalidates the outs, place_late needs them. */
   compute_irg_outs(irg);
+
   /* Now move the nodes down in the dominator tree. This reduces the
      unnecessary executions of the node. */
   place_late(worklist);
