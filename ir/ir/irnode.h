@@ -652,7 +652,7 @@ void     set_Div_mem (ir_node *node, ir_node *mem);
 typedef enum {
   pn_Div_M,           /**< Memory result.    */
   pn_Div_X_except,    /**< Execution result if exception occurred. */
-  pn_Div_res          /**< Result of computation. */
+  pn_Div_res,         /**< Result of computation. */
   pn_Div_max          /**< number of projections from a Div */
 } pn_Div;  /* Projection numbers for Div. */
 
