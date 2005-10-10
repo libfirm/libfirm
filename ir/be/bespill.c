@@ -91,7 +91,7 @@ static spill_ctx_t *be_get_spill_ctx(set *sc, ir_node *to_spill, ir_node *ctx_ir
 
 static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) {
 	spill_ctx_t *ctx;
-	DBG((senv->dbg, LEVEL_1, "%+F\n", irn));
+	DBG((senv->dbg, LEVEL_1, "%+F in ctx %+F\n", irn, ctx_irn));
 
 	ctx = be_get_spill_ctx(senv->spill_ctxs, irn, ctx_irn);
 	if(!ctx->spill) {
@@ -115,7 +115,7 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) 
 	spill_ctx_t *ctx;
 
 	assert(is_Phi(phi));
-	DBG((senv->dbg, LEVEL_1, "%+F\n", phi));
+	DBG((senv->dbg, LEVEL_1, "%+F in ctx %+F\n", phi, ctx_irn));
 
 	/* search an existing spill for this context */
 	ctx = be_get_spill_ctx(senv->spill_ctxs, phi, ctx_irn);
@@ -180,6 +180,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	irg_walk_graph(senv->session->irg, phi_walker, NULL, senv);
 
 	/* Add reloads for mem_phis */
+	/* BETTER: These reloads (1) should only be inserted, if they are really needed */
 	DBG((senv->dbg, LEVEL_1, "Reloads for mem-phis:\n"));
 	for(irn = pset_first(senv->mem_phis); irn; irn = pset_next(senv->mem_phis)) {
 		const ir_edge_t *e;
@@ -189,7 +190,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 			if (is_Phi(user) && !pset_find_ptr(senv->mem_phis, user)) {
 					DBG((senv->dbg, LEVEL_1, " non-mem-phi user %+F\n", user));
 					ir_node *use_bl = get_nodes_block(user);
-					be_add_reload_on_edge(senv, irn, use_bl, e->pos);
+					be_add_reload_on_edge(senv, irn, use_bl, e->pos); /* (1) */
 			}
 		}
 	}
@@ -245,7 +246,7 @@ void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
 	spill_info_t templ, *res;
 	reloader_t *rel;
 
-	assert(get_irn_opcode(to_spill) != iro_Unknown);
+//	assert(get_irn_opcode(to_spill) != iro_Unknown);
 
 	templ.spilled_node = to_spill;
 	templ.reloaders    = NULL;

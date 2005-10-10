@@ -41,10 +41,6 @@ static INLINE int is_data_node(const ir_node *irn)
 {
 	int i, n;
 
-	/* Unknowns do not exist, so they produce nothing */
-	if(get_irn_opcode(irn) == iro_Unknown)
-		return 0;
-
 	/* If the node produces a data value, return immediately. */
 	if(is_firm_be_mode(get_irn_mode(irn)))
 		return 1;

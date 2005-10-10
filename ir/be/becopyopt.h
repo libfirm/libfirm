@@ -37,6 +37,9 @@
 #define DEBUG_LVL_HEUR SET_LEVEL_0
 #define DEBUG_LVL_ILP  SET_LEVEL_0
 
+#define MIS_HEUR_TRIGGER 8
+
+
 typedef int(*cost_fct_t)(ir_node*, ir_node*, int);
 
 /**

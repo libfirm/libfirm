@@ -233,7 +233,6 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
         sched_info_t *info = get_irn_sched_info(irn);
         INIT_LIST_HEAD(&info->list);
         info->scheduled = 1;
-        assert(get_irn_opcode(irn) != iro_Unknown && "'Unknown' in schedule!");
         sched_add_before(env->block, irn);
 
         DBG((env->dbg, LEVEL_2, "\tadding %+F\n", irn));
@@ -407,7 +406,10 @@ static void imm_scheduler(ir_node *irn, void *env) {
 		const ir_edge_t *e;
 		ir_node *user, *user_block, *before, *tgt_block;
 
-		// assert(1 == get_irn_n_edges(irn)); why is this wrong ?
+		if (1 != get_irn_n_edges(irn)) {
+			printf("Out edges: %d\n", get_irn_n_edges(irn));
+			assert(1 == get_irn_n_edges(irn));
+		}
 
 		e = get_irn_out_edge_first(irn);
 		user = e->src;

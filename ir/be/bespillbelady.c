@@ -12,9 +12,9 @@
 #include "irgraph.h"
 #include "irnode.h"
 #include "irmode.h"
-#include "ircons.h"
 #include "irgwalk.h"
 #include "iredges_t.h"
+#include "ircons_t.h"
 
 #include "beutil.h"
 #include "bearch.h"
@@ -31,7 +31,7 @@
 #define DBG_DECIDE  8
 #define DBG_START  16
 #define DBG_TRACE  64
-#define DEBUG_LVL SET_LEVEL_0 // (DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
+#define DEBUG_LVL SET_LEVEL_0 //(DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 static firm_dbg_module_t *dbg = NULL;
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -450,14 +450,38 @@ next_value:
  * The remaining nodes in bel->reloads will be removed from the graph.
  */
 static void rescue_used_reloads(ir_node *irn, void *env) {
-	pset *rlds = ((belady_env_t *)env)->reloads;
+	pset *rlds = (pset *)env;
 	if (pset_find_ptr(rlds, irn))
 		pset_remove_ptr(rlds, irn);
 }
 
-void be_spill_belady(const be_main_session_env_t *session, const arch_register_class_t *cls) {
+/**
+ * Finds all unused reloads and remove them from the schedule
+ * Also removes spills if they are not used anymore after removing reloads
+ */
+static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 	ir_node *irn;
 
+	irg_walk_graph(irg, rescue_used_reloads, NULL, bel->reloads);
+	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads)) {
+		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
+
+		ir_node *spill = get_irn_n(irn, 0);
+
+		/* remove reaload */
+		set_irn_n(irn, 0, new_Bad());
+		sched_remove(irn);
+
+		/* if spill not used anymore, remove it too
+		 * test of regclass is necessary since spill may be a phi-M */
+		if (get_irn_n_edges(spill) == 0 && bel->cls == arch_get_irn_reg_class(bel->arch, spill, 0)) {
+			set_irn_n(spill, 0, new_Bad());
+			sched_remove(spill);
+		}
+	}
+}
+
+void be_spill_belady(const be_main_session_env_t *session, const arch_register_class_t *cls) {
 	dbg = firm_dbg_register("ir.be.spillbelady");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
@@ -477,13 +501,7 @@ void be_spill_belady(const be_main_session_env_t *session, const arch_register_c
 	irg_block_walk_graph(session->irg, decide, NULL, bel);
 	irg_block_walk_graph(session->irg, fix_block_borders, NULL, bel);
 	be_insert_spills_reloads(bel->senv, bel->reloads);
-
-	/* find all unused reloads and remove them from the schedule */
-	irg_walk_graph(session->irg, rescue_used_reloads, NULL, bel);
-	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads)) {
-		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
-		sched_remove(irn);
-	}
+	remove_unused_reloads(session->irg, bel);
 
 	/* clean up */
 	del_pset(bel->reloads);

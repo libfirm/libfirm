@@ -283,14 +283,18 @@ static ir_node *new_Imm(ir_graph *irg, ir_node *bl, ir_node *cnst)
 	res = new_ir_node(NULL, irg, bl, op_imm, get_irn_mode(cnst), 0, ins);
 	attr = (imm_attr_t *) &res->attr;
 
-	if(get_irn_opcode(cnst) == iro_SymConst) {
-		attr->tp = imm_SymConst;
-		//attr->data.ent = get_SymConst_entity(cnst);
-	}
-
-	else {
-		attr->tp = imm_Const;
-		attr->data.tv = get_Const_tarval(cnst);
+	switch (get_irn_opcode(cnst)) {
+		case iro_Const:
+			attr->tp = imm_Const;
+			attr->data.tv = get_Const_tarval(cnst);
+			break;
+		case iro_SymConst:
+			attr->tp = imm_SymConst;
+			//attr->data.ent = get_SymConst_entity(cnst);
+			break;
+		case iro_Unknown:
+			break;
+		default:		assert(0 && "Cannot create Imm for this opcode");
 	}
 
 	return res;
@@ -356,6 +360,7 @@ static void localize_const_walker(ir_node *irn, void *data)
 			opcode opc     = get_irn_opcode(op);
 
 			if(opc == iro_Const
+			|| opc == iro_Unknown
 			|| (opc == iro_SymConst /*&& get_SymConst_kind(op) == symconst_addr_ent*/)) {
 				ir_graph *irg   = get_irn_irg(bl);
 				ir_node *imm_bl = is_Phi(irn) ? get_Block_cfgpred_block(bl, i) : bl;
