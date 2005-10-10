@@ -88,6 +88,6 @@ extern const list_sched_selector_t *trivial_selector;
  */
 void list_sched(ir_graph *irg, const list_sched_selector_t *select_func);
 
-
+void be_sched_imm(ir_graph *irg);
 
 #endif

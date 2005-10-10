@@ -161,6 +161,7 @@ static void be_main_loop(void)
 
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
+		be_sched_imm(irg);
 
 #ifdef DUMP_SCHED
 		dump_ir_block_graph_sched(irg, "-sched");
@@ -179,7 +180,7 @@ static void be_main_loop(void)
 			DBG((env.dbg, LEVEL_1, "----> Reg class: %s\n", cls->name));
 
 			/* spilling */
-//			be_spill_ilp(&session, cls);
+			//be_spill_ilp(&session, cls);
 			be_spill_belady(&session, cls);
 #ifdef DUMP_SPILL
 			dump_ir_block_graph_sched(session.irg, "-spill");

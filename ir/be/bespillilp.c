@@ -39,7 +39,7 @@
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
-#define DBG_LEVEL SET_LEVEL_4
+#define DBG_LEVEL SET_LEVEL_3
 
 #define DUMP_SOLUTION
 #define DUMP_ILP
@@ -98,13 +98,13 @@ typedef struct _irn_use_head_t {
 } irn_use_head_t;
 
 struct _live_range_t {
-  struct list_head list;
+	struct list_head list;
 	irn_use_head_t *use_head;
-  ir_node *user;
-  ir_node *irn;
+	ir_node *user;
+	ir_node *irn;
 	int pos;
-  int in_mem_var;
-  int is_remat_var;
+	int in_mem_var;
+	int is_remat_var;
 };
 
 /*
@@ -119,7 +119,7 @@ typedef struct _first_use_t {
 
 
 
-static int has_reg_class(const spill_ilp_t *si, const ir_node *irn)
+static INLINE int has_reg_class(const spill_ilp_t *si, const ir_node *irn)
 {
   return arch_irn_has_reg_class(si->session->main_env->arch_env,
       irn, arch_pos_make_out(0), si->cls);
@@ -204,26 +204,26 @@ static INLINE int can_remat(const spill_ilp_t *si, const ir_node *irn, pset *liv
 
 static live_range_t *get_live_range(spill_ilp_t *si, ir_node *irn, ir_node *user, int pos)
 {
-  live_range_t lr, *res;
+	live_range_t lr, *res;
 	irn_use_head_t iuh, *head;
 	int is_new;
-  unsigned hash = HASH_COMBINE(HASH_PTR(irn), HASH_PTR(user));
+	unsigned hash = HASH_COMBINE(HASH_PTR(irn), HASH_PTR(user));
 
-  lr.user    = user;
-  lr.irn     = irn;
-  lr.pos     = pos;
-  lr.in_mem_var = -1;
+	lr.user         = user;
+	lr.irn          = irn;
+	lr.pos          = pos;
+	lr.in_mem_var   = -1;
 	lr.is_remat_var = -1;
 
-  res = set_insert(si->live_ranges, &lr, sizeof(lr), hash);
+	res = set_insert(si->live_ranges, &lr, sizeof(lr), hash);
 	is_new = res->in_mem_var == -1;
 
-  if(is_new) {
-    char buf[128];
-    ir_snprintf(buf, sizeof(buf), "m_%s%N_%N_%d",
-				is_Phi(irn) ? "phi_" : "", irn, user, MAX(pos, 0));
-    res->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, pos >= 0 ? COST_LOAD : 0.0);
-  }
+	if(is_new) {
+		char buf[128];
+		ir_snprintf(buf, sizeof(buf), "m_%s%N_%N_%d",
+					is_Phi(irn) ? "phi_" : "", irn, user, MAX(pos, 0));
+		res->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, pos >= 0 ? COST_LOAD : 0.0);
+	}
 
 	memset(&iuh, 0, sizeof(iuh));
 	iuh.irn = irn;
@@ -241,121 +241,136 @@ static live_range_t *get_live_range(spill_ilp_t *si, ir_node *irn, ir_node *user
 
 	res->use_head = head;
 
-  return res;
+	return res;
 }
 
-static ir_node *process_irn(spill_ilp_t *si, pset *live, ir_node *irn, int *demand)
-{
-	int i, n;
-	int relevant_args = 0, results = 0;
-
-	DBG((si->dbg, LEVEL_1, "at %+F\n", irn));
-
-	while(is_Proj(irn)) {
-		if(has_reg_class(si, irn)) {
-			assert(pset_find_ptr(live, irn) && "node must be live");
-			pset_remove_ptr(live, irn);
-			results++;
-		}
-
-		DBG((si->dbg, LEVEL_1, "skipped proj %+F\n", irn));
-		irn = sched_prev(irn);
-	}
-
-	DBG((si->dbg, LEVEL_1, "\tlanded at irn %+F\n", irn));
-
-	if(results > 0)
-		assert(get_irn_mode(irn) == mode_T && "node before projs must be tuple");
-
-	if(has_reg_class(si, irn)) {
-		assert( pset_find_ptr(live, irn) && "node must be live");
-		pset_remove_ptr(live, irn);
-		results = 1;
-	}
-
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-		if(has_reg_class(si, op) && !pset_find_ptr(live, op)) {
-			relevant_args++;
-			DBG((si->dbg, LEVEL_1, "\trelevant arg %+F\n", op));
-		}
-	}
-
-	*demand = MAX(results, relevant_args);
-	DBG((si->dbg, LEVEL_1, "\tdemand: %d\n", *demand));
-	return irn;
+static void print_live_set(spill_ilp_t *si, pset *s) {
+	ir_node *n;
+	for(n=pset_first(s); n; n=pset_next(s))
+		DBG((si->dbg, LEVEL_3, "    %+F\n", n));
 }
 
 static void process_block(ir_node *bl, void *data)
 {
 	char buf[128];
-	int i, n;
-  spill_ilp_t *si  = data;
-  int step         = 0;
-  int n_regs       = arch_register_class_n_regs(si->cls);
+	int i, n, skipped=0;
+	spill_ilp_t *si  = data;
+	int step         = 0;
+	int n_regs       = arch_register_class_n_regs(si->cls);
 	int n_preds      = get_irn_arity(bl);
-  pset *live       = pset_new_ptr_default();
-  irn_live_t *li;
-  ir_node *irn;
+	pset *live       = pset_new_ptr_default();
+	irn_live_t *li;
+	ir_node *irn;
 
-  /* as always, bring the live end nodes to life here */
-  live_foreach(bl, li) {
-    if(live_is_end(li) && has_reg_class(si, li->irn)) {
-      ir_node *irn = (ir_node *) li->irn;
-      pset_insert_ptr(live, irn);
+	DBG((si->dbg, LEVEL_3, "\n"));
+	DBG((si->dbg, LEVEL_3, "Processing %+F\n", bl));
 
-      /*
-       * The "user" of the live range to the end of a block
-       * is the block itself. This is quite arbitrary.
-       */
-      set_irn_link(irn, get_live_range(si, irn, bl, -1));
-    }
-  }
+	/*
+	 * Get all live-end values of this block
+	 */
+	live_foreach(bl, li) {
+		if(live_is_end(li) && has_reg_class(si, li->irn)) {
+			ir_node *irn = (ir_node *) li->irn;
+			pset_insert_ptr(live, irn);
 
+			/*The "user" of the live range to the end of a block
+			 * is the block itself. This is quite arbitrary. */
+			set_irn_link(irn, get_live_range(si, irn, bl, -1));
+		}
+	}
+	DBG((si->dbg, LEVEL_3, "Live-End:\n"));
+	print_live_set(si, live);
+
+	/*
+	 * Walk through the schedule of this block from end to begin.
+	 * Phis are handled togther with live ins after this loop.
+	 */
 	for(irn = sched_last(bl); !sched_is_begin(irn) && !is_Phi(irn); irn = sched_prev(irn)) {
 		ir_node *l;
 		int cst;
+		int relevant_args, results;
 		int demand;
-		int n_live;
+		int n_cand;
 		int must_be_in_mem;
-
-		/* We handle phi togther with live ins after this loop (see below). */
-		if(is_Phi(irn))
-			break;
-
-#if 0
-		if(has_reg_class(si, irn))
-			pset_remove_ptr(live, irn);
-
-		demand = register_demand(si, live, irn);
-		n_live = pset_count(live);
-#endif
-
-		irn = process_irn(si, live, irn, &demand);
-		n_live = pset_count(live);
+		pset *cand;
 
 		/*
-		 * Determine, how many values (which are not used at the label)
-		 * must be in memory.
-		 * demand means the number of registers, the operation will consume.
-		 * So there are n_regs - demand registers available to store values
-		 * which are not used at this label. The rest must reside in memory.
+		 * Determine the number of results
 		 */
-		must_be_in_mem = MAX(n_live + demand - n_regs, 0);
+		/* Special handling of Projs */
+		if(is_Proj(irn)) {
+			if(has_reg_class(si, irn)) {
+				assert(pset_find_ptr(live, irn) && "node must be live");
+				pset_remove_ptr(live, irn);
+				skipped++;
+			}
 
-		DBG((si->dbg, LEVEL_1, "%+F: demand: %d, live: %d, in mem: %d\n",
-					irn, demand, n_live, must_be_in_mem));
+			DBG((si->dbg, LEVEL_2, "Skipped %+F\n", irn));
+			continue;
+		}
 
+		DBG((si->dbg, LEVEL_1, "Irn %+F\n", irn));
+		if(skipped > 0) {
+			/* ModeT node */
+			assert(get_irn_mode(irn) == mode_T && "node before projs must be tuple");
+			results = skipped;
+			skipped = 0;
+		} else {
+			/* Normal node */
+			if(has_reg_class(si, irn)) {
+				assert(get_irn_mode(irn) != mode_T && "node must not be a tuple");
+				assert(pset_find_ptr(live, irn) && "node must be live");
+				pset_remove_ptr(live, irn);
+				results = 1;
+			} else {
+				results = 0;
+			}
+		}
+
+		/* cand holds the irns which may be spilled */
+		cand = pset_new_ptr(8);
+		for(l=pset_first(live); l; l=pset_next(live))
+			pset_insert_ptr(cand, l);
+
+		/*
+		 * Determine number of arguments
+		 */
+		relevant_args = 0;
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op = get_irn_n(irn, i);
+			if(has_reg_class(si, op)) {
+				DBG((si->dbg, LEVEL_2, "  arg %+F\n", op));
+				relevant_args++;
+				/* arguments must not be spilled */
+				if(pset_find_ptr(cand, op))
+					pset_remove_ptr(cand, op);
+			}
+		}
+
+		/*
+		 * Determine, how many values must be in memory.
+		 * We have 'n_regs' registers.
+		 * The instr. needs 'demand'.
+		 * So (R:= n_regs - demand) registers can be used for candidates 'cand'.
+		 * The rest (M:= n_cand - R) must reside in memory.
+		 */
+		demand = MAX(results, relevant_args);
+		n_cand = pset_count(cand);
+		must_be_in_mem = n_cand - (n_regs - demand);
+
+		DBG((si->dbg, LEVEL_1, "  Demand: %d, Cands: %d, InMem: %d\n", demand, n_cand, must_be_in_mem));
+		DBG((si->dbg, LEVEL_3, "  Cand-Set:\n"));
+		print_live_set(si, cand);
+
+		/*
+		 * Generate the corresponding constraint spilling
+		 * enough candidates at this label.
+		 */
 		if(must_be_in_mem > 0) {
-
-			/*
-			 * The constraint limiting the pressure at this label to
-			 * the number of free registers.
-			 */
 			ir_snprintf(buf, sizeof(buf), "cp_%N_%N_%d", bl, irn, step);
 			cst = lpp_add_cst(si->lpp, buf, lpp_greater, must_be_in_mem);
 
-			for(l = pset_first(live); l; l = pset_next(live)) {
+			for(l = pset_first(cand); l; l = pset_next(cand)) {
 				live_range_t *lr = get_irn_link(l);
 				lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, 1.0);
 			}
@@ -366,16 +381,17 @@ static void process_block(ir_node *bl, void *data)
 
 			if(has_reg_class(si, op)) {
 				live_range_t *op_lr = get_live_range(si, op, irn, i);
-
 				set_irn_link(op, op_lr);
 
-				/*
-				 * The operand is reloaded at its usage, so it must not occur
-				 * in the constraint which determines which values live at the
-				 * instruction must reside in memory.
-				 */
-				if(must_be_in_mem > 0)
-					lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 0.0);
+//				/*
+//				 * The operand is reloaded at its usage, so it must not occur
+//				 * in the constraint which determines which values live at the
+//				 * instruction must reside in memory.
+//				 */
+//				if(must_be_in_mem > 0) {
+//					DBG((si->dbg, LEVEL_3, " Resetting %+F to 0:\n", op));
+//					lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 0.0);
+//				}
 
 				/*
 				 * Check, if the node is a rematerializable node and
@@ -414,12 +430,16 @@ static void process_block(ir_node *bl, void *data)
 			}
 		}
 
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				ir_node *op = get_irn_n(irn, i);
-				if(has_reg_class(si, op) && !is_Phi(irn))
-					pset_insert_ptr(live, op);
-			}
+		/*
+		 * Insert arguments of current instr into the live set
+		 */
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op = get_irn_n(irn, i);
+			if(has_reg_class(si, op))
+				pset_insert_ptr(live, op);
+		}
 
+		del_pset(cand);
 		step++;
 	}
 
@@ -427,9 +447,11 @@ static void process_block(ir_node *bl, void *data)
 		goto end;
 
 	/*
-	 * Here, only the phis in the block and the values live in are in the
-	 * live set.
+	 * Here, the live set contains
+	 * - phis of the block
+	 * - live-in values of the block
 	 *
+	 * TODO: comment is wrong
 	 * If a value is live in, it must be in a register in all predecessor
 	 * blocks or in memory at the end of all predecessor blocks. Also, the
 	 * closest use in the current block must then be from register or
@@ -439,6 +461,9 @@ static void process_block(ir_node *bl, void *data)
 		live_range_t *lr = get_irn_link(irn);
 		int is_phi = is_Phi(irn) && get_nodes_block(irn) == bl;
 		int cst;
+
+		assert(has_reg_class(si, irn));
+		assert(is_Phi(irn) || is_live_in(bl, irn));
 
 		/* Deprecated: Can be done with the first uses map */
 		if(is_phi)
@@ -450,25 +475,19 @@ static void process_block(ir_node *bl, void *data)
 		 */
 		add_first_use(si, bl, irn, lr);
 
-		assert(has_reg_class(si, irn));
-		assert(is_Phi(irn) || is_live_in(bl, irn));
-
 		for(i = 0; i < n_preds; ++i) {
 			ir_node *pred_bl     = get_Block_cfgpred_block(bl, i);
 			ir_node *end_node    = is_phi ? get_irn_n(irn, i) : irn;
 			live_range_t *op_lr  = get_live_range(si, end_node, pred_bl, -1);
 			edge_reload_t *edge  = obstack_alloc(si->obst, sizeof(edge[0]));
 
-			ir_snprintf(buf, sizeof(buf), "edge_%N_%N_%N_%N",
-					bl, pred_bl, end_node, op_lr->irn);
+			ir_snprintf(buf, sizeof(buf), "edge_%N_%N_%N_%N", bl, pred_bl, end_node, op_lr->irn);
 			edge->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD);
 			edge->bl         = bl;
 			edge->irn        = end_node;
 			edge->pos        = i;
 
-
-			ir_snprintf(buf, sizeof(buf), "cedge_%N_%N_%N_%N",
-					bl, pred_bl, end_node, op_lr->irn);
+			ir_snprintf(buf, sizeof(buf), "cedge_%N_%N_%N_%N", bl, pred_bl, end_node, op_lr->irn);
 			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 			lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 1.0);
 			lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, -1.0);
@@ -477,8 +496,7 @@ static void process_block(ir_node *bl, void *data)
 	}
 
 end:
-
-  del_pset(live);
+	del_pset(live);
 }
 
 /**
@@ -528,7 +546,6 @@ static int is_mem_phi(const ir_node *phi, void *data)
 	spill_ilp_t *si = data;
 	return is_spilled(si, get_use_head(si, phi)->closest_use);
 }
-
 
 static void writeback_results(spill_ilp_t *si)
 {
@@ -625,7 +642,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	}
 #endif
 
-  writeback_results(&si);
+	writeback_results(&si);
 
 #ifdef DUMP_STATS
 	{
@@ -645,8 +662,8 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	}
 #endif
 
-  del_set(si.irn_use_heads);
-  del_set(si.live_ranges);
-  free_lpp(si.lpp);
-  obstack_free(&obst, NULL);
+	del_set(si.irn_use_heads);
+	del_set(si.live_ranges);
+	free_lpp(si.lpp);
+	obstack_free(&obst, NULL);
 }

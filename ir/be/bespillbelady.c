@@ -31,7 +31,7 @@
 #define DBG_DECIDE  8
 #define DBG_START  16
 #define DBG_TRACE  64
-#define DEBUG_LVL (DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
+#define DEBUG_LVL SET_LEVEL_0 // (DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 static firm_dbg_module_t *dbg = NULL;
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -93,10 +93,9 @@ static INLINE workset_t *workset_clone(struct obstack *ob, workset_t *ws) {
  */
 static INLINE void workset_insert(workset_t *ws, ir_node *val) {
 	int i;
-	assert(ws->len < ws->bel->n_regs && "Workset already full!");
 	/* check for current regclass */
 	if (arch_get_irn_reg_class(ws->bel->arch, val, 0) != ws->bel->cls) {
-		DBG((dbg, 0, "Dropped %+F\n", val));
+		DBG((dbg, DBG_DECIDE, "Dropped %+F\n", val));
 		return;
 	}
 
@@ -106,6 +105,7 @@ static INLINE void workset_insert(workset_t *ws, ir_node *val) {
 			return;
 
 	/* insert val */
+	assert(ws->len < ws->bel->n_regs && "Workset already full!");
 	ws->vals[ws->len++].irn = val;
 }
 
@@ -116,7 +116,6 @@ static INLINE void workset_insert(workset_t *ws, ir_node *val) {
  */
 static INLINE void workset_bulk_insert(workset_t *ws, int cnt, ir_node **vals) {
 	int i, o;
-	assert(ws->len + cnt <= ws->bel->n_regs && "Workset does not have enough room!");
 
 	for(o=0; o<cnt; ++o) {
 		ir_node *val = vals[o];
@@ -135,6 +134,7 @@ static INLINE void workset_bulk_insert(workset_t *ws, int cnt, ir_node **vals) {
 			}
 
 		/* insert val */
+		assert(ws->len < ws->bel->n_regs && "Workset does not have enough room!");
 		ws->vals[ws->len++].irn = val;
 		DBG((dbg, DBG_TRACE, "Inserted\n"));
 
