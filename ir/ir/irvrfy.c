@@ -23,6 +23,7 @@
 # include "irdump.h"
 # include "irdom_t.h"
 # include "irprintf.h"
+# include "irouts.h"
 
 /** if this flag is set, verify entity types in Load & Store nodes */
 static int vrfy_entities = 0;
@@ -829,11 +830,12 @@ static int verify_node_Cond(ir_node *n, ir_graph *irg) {
   );
   ASSERT_AND_RET(mymode == mode_T, "Cond mode is not a tuple", 0);
 
-  if (op1mode == mode_b && get_irg_outs_state(irg) == outs_consistent) {
+  if (op1mode == mode_b && get_irg_outs_state(irg) == outs_consistent &&
+      !is_Block_dead(get_nodes_block(n))) {
     /* we have consistent outs, check for the right number of Proj's */
     ASSERT_AND_RET(
-      get_irn_n_outs(n) == 2,
-      "BinaryCond node must have 2 successors", 0);
+    get_irn_n_outs(n) == 2,
+   "Live binary Cond node must have 2 successors", 0);
   }
   return 1;
 }
@@ -1700,7 +1702,7 @@ int irg_verify(ir_graph *irg, unsigned flags)
   current_ir_graph = irg;
   last_irg_error = NULL;
 
-  assert(get_irg_pinned(irg) == op_pin_state_pinned);
+  assert(get_irg_pinned(irg) == op_pin_state_pinned && "Verification need pinned graph");
 
   if (flags & VRFY_ENFORCE_SSA)
     compute_doms(irg);
