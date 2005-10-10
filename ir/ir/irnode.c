@@ -223,6 +223,7 @@ get_irn_in (const ir_node *node) {
 
 void
 set_irn_in (ir_node *node, int arity, ir_node **in) {
+  int i;
   ir_node *** arr;
   assert(node);
   if (get_interprocedural_view()) { /* handle Filter and Block specially */
@@ -243,6 +244,11 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
     (*arr)[0] = block;
   }
   fix_backedges(current_ir_graph->obst, node);
+
+  for (i = 0; i < arity; i++) {
+    edges_notify_edge(node, i, in[i], (*arr)[i+1], current_ir_graph);
+  }
+
   memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
 }
 
