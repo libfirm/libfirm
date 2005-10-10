@@ -723,19 +723,19 @@ static ir_node *equivalent_node_Block(ir_node *n)
         (get_irn_mode(get_Cond_selector(get_Proj_pred(a))) == mode_b)) {
       /* Also a single entry Block following a single exit Block.  Phis have
          twice the same operand and will be optimized away. */
-      n = get_nodes_block(a);
+      n = get_nodes_block(get_Proj_pred(a));
       DBG_OPT_IFSIM1(oldn, a, b, n);
     }
   }
   else if (get_opt_unreachable_code() &&
            (n != current_ir_graph->start_block) &&
            (n != current_ir_graph->end_block)     ) {
-    int i, n_cfg = get_Block_n_cfgpreds(n);
+    int i;
 
     /* If all inputs are dead, this block is dead too, except if it is
-       the start or end block.  This is a step of unreachable code
+       the start or end block.  This is one step of unreachable code
        elimination */
-    for (i = 0; i < n_cfg; i++) {
+    for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
       ir_node *pred = get_Block_cfgpred(n, i);
       ir_node *pred_blk;
 
@@ -749,7 +749,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
         break;
       }
     }
-    if (i == n_cfg)
+    if (i < 0)
       n = set_Block_dead(n);
   }
 
@@ -762,13 +762,16 @@ static ir_node *equivalent_node_Block(ir_node *n)
  */
 static ir_node *equivalent_node_Jmp(ir_node *n)
 {
-  /* GL: Why not same for op_Raise?? */
   /* unreachable code elimination */
   if (is_Block_dead(get_nodes_block(n)))
     n = new_Bad();
 
   return n;
 }
+
+/* Same for op_Raise */
+#define equivalent_node_Raise   equivalent_node_Jmp
+
 
 /* We do not evaluate Cond here as we replace it by a new node, a Jmp.
    See transform_node_Proj_Cond(). */
@@ -1224,12 +1227,14 @@ static ir_node *equivalent_node_Proj(ir_node *n)
       assert(0); /* This should not happen! */
       n = new_Bad();
     }
-  } else if (get_irn_mode(n) == mode_X) {
+  }
+  else if (get_irn_mode(n) == mode_X) {
     if (is_Block_dead(get_nodes_block(skip_Proj(n)))) {
       /* Remove dead control flow -- early gigo(). */
       n = new_Bad();
     }
   }
+
   return n;
 }
 
@@ -1344,19 +1349,31 @@ static ir_node *equivalent_node_Cmp(ir_node *n)
 
 /**
  * Remove Confirm nodes if setting is on.
+ * Replace Confirms(x, '=', Constlike) by Constlike.
  */
 static ir_node *equivalent_node_Confirm(ir_node *n)
 {
-  if (get_Confirm_cmp(n) == pn_Cmp_Eq) {
+  ir_node *pred = get_Confirm_value(n);
+  pn_Cmp  pnc   = get_Confirm_cmp(n);
+
+  if (get_irn_op(pred) == op_Confirm && pnc == get_Confirm_cmp(pred)) {
+    /*
+     * rare case: two identical Confirms one after another,
+     * replace the second one with the first.
+     */
+    return pred;
+  }
+  if (pnc == pn_Cmp_Eq) {
     ir_node *bound = get_Confirm_bound(n);
-    ir_op *op      = get_irn_op(bound);
 
     /*
      * Optimize a rare case:
-     * Confirm(x, '=', Const) ==> Const
+     * Confirm(x, '=', Constlike) ==> Constlike
      */
-    if (op == op_Const || op == op_SymConst)
+    if (is_irn_constlike(bound)) {
+      DBG_OPT_CONFIRM(n, bound);
       return bound;
+    }
   }
   return get_opt_remove_Confirm() ? get_Confirm_value(n) : n;
 }
@@ -1389,6 +1406,7 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   switch (op->code) {
   CASE(Block);
   CASE(Jmp);
+  CASE(Raise);
   CASE(Or);
   CASE(Add);
   CASE(Eor);
@@ -1644,7 +1662,7 @@ static ir_node *transform_node_Div(ir_node *n)
     /* Turn Div into a tuple (mem, bad, value) */
     ir_node *mem = get_Div_mem(n);
 
-    turn_into_tuple(n, 3);
+    turn_into_tuple(n, pn_Div_max);
     set_Tuple_pred(n, pn_Div_M, mem);
     set_Tuple_pred(n, pn_Div_X_except, new_Bad());
     set_Tuple_pred(n, pn_Div_res, value);
@@ -2012,21 +2030,24 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
   if (get_opt_unreachable_code()) {
     ir_node *n = get_Proj_pred(proj);
     ir_node *b = get_Cond_selector(n);
-    tarval *tb = value_of(b);
 
-    if (tb != tarval_bad && mode_is_int(get_tarval_mode(tb))) {
-      /* we have a constant switch */
-      long num = get_Proj_proj(proj);
+    if (mode_is_int(get_irn_mode(b))) {
+      tarval *tb = value_of(b);
 
-      if (num != get_Cond_defaultProj(n)) { /* we cannot optimize default Proj's yet */
-        if (get_tarval_long(tb) == num) {
-          /* Do NOT create a jump here, or we will have 2 control flow ops
-           * in a block. This case is optimized away in optimize_cf(). */
-          return proj;
-        }
-        else {
-          /* this case will NEVER be taken, kill it */
-          return new_Bad();
+      if (tb != tarval_bad) {
+        /* we have a constant switch */
+        long num = get_Proj_proj(proj);
+
+        if (num != get_Cond_defaultProj(n)) { /* we cannot optimize default Proj's yet */
+          if (get_tarval_long(tb) == num) {
+            /* Do NOT create a jump here, or we will have 2 control flow ops
+             * in a block. This case is optimized away in optimize_cf(). */
+            return proj;
+          }
+          else {
+            /* this case will NEVER be taken, kill it */
+            return new_Bad();
+          }
         }
       }
     }
@@ -3097,7 +3118,8 @@ gigo (ir_node *node)
     if (is_Block(block)) {
       irn_arity = get_irn_arity(block);
       for (i = 0; i < irn_arity; i++) {
-        if (!is_Bad(get_irn_n(block, i))) break;
+        if (!is_Bad(get_irn_n(block, i)))
+          break;
       }
       if (i == irn_arity) return new_Bad();
     }
@@ -3116,9 +3138,12 @@ gigo (ir_node *node)
       return new_Bad();
 
     for (i = 0; i < irn_arity; i++) {
-      if (is_Bad(get_irn_n(node, i))) {
+      ir_node *pred = get_irn_n(node, i);
+
+      if (is_Bad(pred))
         return new_Bad();
-      }
+      if (is_Unknown(pred) && mode_is_data(get_irn_mode(node)))
+        return new_Unknown(get_irn_mode(node));
     }
   }
 #if 0
