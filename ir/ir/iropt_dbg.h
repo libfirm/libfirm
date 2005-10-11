@@ -29,13 +29,10 @@
  * @param oldn  the block that it is eliminated
  * @param n     the new node for this block, may be equal to oldn
  */
-#define DBG_OPT_DEAD_BLOCK(oldn, n)                              \
-  do {                                                           \
-    ir_node *ons[2];                                             \
-    ons[0] = oldn;                                               \
-    ons[1] = get_Block_cfgpred(oldn, 0);                         \
-    hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_DEAD_BLOCK); \
-    __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_dead_code);  \
+#define DBG_OPT_DEAD_BLOCK(oldn, n)                         \
+  do {                                                      \
+    hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_DEAD_BLOCK); \
+    __dbg_info_merge_pair(n, oldn, dbg_dead_code);          \
 	} while(0)
 
 
