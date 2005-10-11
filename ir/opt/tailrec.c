@@ -36,6 +36,8 @@
 #include "irflag.h"
 #include "trouts.h"
 #include "return.h"
+#include "scalar_replace.h"
+#include "irouts.h"
 #include "irhooks.h"
 
 /**
@@ -67,11 +69,11 @@ static void collect_data(ir_node *node, void *env)
       ir_node *start = get_Proj_pred(pred);
 
       if (get_irn_op(start) == op_Start) {
-	    if (get_Proj_proj(pred) == pn_Start_T_args) {
-	      /* found Proj(ProjT(Start)) */
-	      set_irn_link(node, data->proj_data);
-	      data->proj_data = node;
-	    }
+        if (get_Proj_proj(pred) == pn_Start_T_args) {
+	        /* found Proj(ProjT(Start)) */
+	        set_irn_link(node, data->proj_data);
+	        data->proj_data = node;
+        }
       }
     }
     else if (op == op_Start) {
@@ -98,11 +100,11 @@ static void collect_data(ir_node *node, void *env)
      */
     if (node != current_ir_graph->start_block) {
       for (i = 0; i < n_pred; ++i) {
-	    if (get_Block_cfgpred(node, i) == data->proj_X) {
-	      data->block   = node;
-	      data->blk_idx = i;
-	      break;
-	    }
+        if (get_Block_cfgpred(node, i) == data->proj_X) {
+	        data->block   = node;
+	        data->blk_idx = i;
+	        break;
+        }
       }
     }
     break;
@@ -228,7 +230,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 
       in[0] = new_r_Proj(irg, block, irg->args, mode, i);
       for (j = 0; j < n_tail_calls; ++j)
-	in[j + 1] = call_params[j][i];
+        in[j + 1] = call_params[j][i];
 
       phis[i + 1] = new_r_Phi(irg, block, n_tail_calls + 1, in, mode);
     }
@@ -258,6 +260,30 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   set_optimize(rem);
 }
 
+/**
+ * Check the lifetime of locals in the given graph.
+ * Tail recursion can only be done, if we can prove that
+ * the lifetime of locals end with the recursive call.
+ * We do this by checking that no address of a local variable is
+ * stored or transmitted as an argument to a call.
+ */
+static int check_lifetime_of_locals(ir_graph *irg)
+{
+  ir_node *irg_frame = get_irg_frame(irg);
+  int i;
+
+  if (get_irg_outs_state(irg) != outs_consistent)
+    compute_irg_outs(irg);
+
+  for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
+    ir_node *succ = get_irn_out(irg_frame, i);
+
+    if (get_irn_op(succ) == op_Sel && is_address_taken(succ))
+      return 0;
+  }
+  return 1;
+}
+
 /*
  * convert simple tail-calls into loops
  */
@@ -270,6 +296,9 @@ int opt_tail_rec_irg(ir_graph *irg)
   type *mtd_type, *call_type;
 
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
+    return 0;
+
+  if (! check_lifetime_of_locals(irg))
     return 0;
 
   /*
