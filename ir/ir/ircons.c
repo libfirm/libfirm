@@ -1701,7 +1701,6 @@ new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in) {
   return new_rd_Block(NULL, irg, arity, in);
 }
@@ -1911,7 +1910,6 @@ ir_node *new_r_Mux (ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
   return new_rd_Mux(NULL, irg, block, sel, ir_false, ir_true, mode);
 }
-
 
 /** ********************/
 /** public interfaces  */
@@ -2570,8 +2568,13 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
          However, this SHOULD NOT HAPPEN, as bad control flow nodes are intercepted
          before recuring.
       */
-      if (default_initialize_local_variable)
+      if (default_initialize_local_variable) {
+        ir_node *rem = get_cur_block();
+
+        set_cur_block(block);
         block->attr.block.graph_arr[pos] = default_initialize_local_variable(current_ir_graph, mode, pos - 1);
+        set_cur_block(rem);
+      }
       else
         block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
       /* We don't need to care about exception ops in the start block.
