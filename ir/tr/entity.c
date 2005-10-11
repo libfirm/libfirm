@@ -28,6 +28,7 @@
 # include "mangle.h"
 # include "typegmod.h"
 # include "array.h"
+# include "irtools.h"
 
 /* All this is needed to build the constant node for methods: */
 # include "irprog_t.h"
@@ -920,7 +921,7 @@ static void init_index(type *arr) {
   else
     init = get_array_upper_bound_int(arr, 0) +1;
 
-  set_entity_link(get_array_element_entity(arr), (void *)init);
+  set_entity_link(get_array_element_entity(arr), INT_TO_PTR(init));
 }
 
 
@@ -932,20 +933,20 @@ static int get_next_index(entity *elem_ent) {
   assert(get_array_n_dimensions(arr) == 1);
 
   if (has_array_lower_bound(arr, dim)) {
-    next = (int)get_entity_link(elem_ent) +1;
+    next = PTR_TO_INT(get_entity_link(elem_ent)) + 1;
     if (has_array_upper_bound(arr, dim)) {
       int upper = get_array_upper_bound_int(arr, dim);
       if (next == upper) next = get_array_lower_bound_int(arr, dim);
     }
   } else {
-    next = (int)get_entity_link(elem_ent) -1;
+    next = PTR_TO_INT(get_entity_link(elem_ent)) - 1;
     if (has_array_lower_bound(arr, dim)) {
       int upper = get_array_upper_bound_int(arr, dim);
       if (next == upper) next = get_array_upper_bound_int(arr, dim);
     }
   }
 
-  set_entity_link(elem_ent, (void *)next);
+  set_entity_link(elem_ent, INT_TO_PTR(next));
   return next;
 }
 
