@@ -126,13 +126,11 @@ static int is_const_sel(ir_node *sel) {
   return 1;
 }
 
-/**
+/*
  * Returns non-zero, if the address of an entity
  * represented by a Sel node (or it's successor Sels) is taken.
- *
- * @param sel  the Sel node
  */
-static int is_address_taken(ir_node *sel)
+int is_address_taken(ir_node *sel)
 {
   int i, n;
 

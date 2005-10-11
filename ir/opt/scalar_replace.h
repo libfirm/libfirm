@@ -15,6 +15,14 @@
 #include "irgraph.h"
 
 /**
+ * Returns non-zero, if the address of an entity
+ * represented by a Sel node (or it's successor Sels) is taken.
+ *
+ * @param sel  the Sel node
+ */
+int is_address_taken(ir_node *sel);
+
+/**
  * Do the scalar replacement optimization.
  * Replace local compound entities (like structures and arrays)
  * with atomic values if possible. Does not handle classes yet.
