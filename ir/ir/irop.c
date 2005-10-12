@@ -89,8 +89,9 @@ ir_op *op_CallBegin;   ir_op *get_op_CallBegin (void) { return op_CallBegin; }
 ir_op *op_EndReg;      ir_op *get_op_EndReg    (void) { return op_EndReg;    }
 ir_op *op_EndExcept;   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 
-ir_op *op_NoMem;       ir_op *get_op_NoMem     (void) { return op_NoMem; }
-ir_op *op_Mux;         ir_op *get_op_Mux       (void) { return op_Mux; }
+ir_op *op_NoMem;       ir_op *get_op_NoMem     (void) { return op_NoMem;     }
+ir_op *op_Mux;         ir_op *get_op_Mux       (void) { return op_Mux;       }
+ir_op *op_CopyB;       ir_op *get_op_CopyB     (void) { return op_CopyB;     }
 
 
 /*
@@ -202,7 +203,7 @@ init_op(void)
   op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, L|F, oparity_variable, -1, sizeof(call_attr));
   op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0);
   op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0);
-  op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, L,       oparity_binary,    0, 0);
+  op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, N,       oparity_binary,    0, 0);
   op_Mul       = new_ir_op(iro_Mul,       "Mul",       op_pin_state_floats, C,       oparity_binary,    0, 0);
   op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
   op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
@@ -244,6 +245,7 @@ init_op(void)
 
   op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N,       oparity_zero,     -1, 0);
   op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0);
+  op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(copyb_attr));
 
 #undef H
 #undef Y
@@ -317,6 +319,7 @@ void finish_op(void) {
 
   free_ir_op (op_NoMem    ); op_NoMem     = NULL;
   free_ir_op (op_Mux      ); op_Mux       = NULL;
+  free_ir_op (op_CopyB    ); op_CopyB     = NULL;
 }
 
 /* Returns the string for the opcode. */
