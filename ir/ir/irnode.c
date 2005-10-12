@@ -694,7 +694,7 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
     node->attr.block.in_cg[0] = NULL;
     node->attr.block.cg_backedge = new_backedge_arr(current_ir_graph->obst, arity);
     {
-      /* Fix backedge array.  fix_backedges operates depending on
+      /* Fix backedge array.  fix_backedges() operates depending on
      interprocedural_view. */
       int ipv = get_interprocedural_view();
       set_interprocedural_view(true);
@@ -2027,6 +2027,48 @@ void     set_Mux_true  (ir_node *node, ir_node *ir_true) {
   assert(node->op == op_Mux);
   node->in[3] = ir_true;
 }
+
+/* CopyB support */
+ir_node *get_CopyB_mem (ir_node *node) {
+  assert (node->op == op_CopyB);
+  return get_irn_n(node, 0);
+}
+
+void     set_CopyB_mem (ir_node *node, ir_node *mem) {
+  assert (node->op == op_CopyB);
+  set_irn_n(node, 0, mem);
+}
+
+ir_node *get_CopyB_dst (ir_node *node) {
+  assert (node->op == op_CopyB);
+  return get_irn_n(node, 1);
+}
+
+void     set_CopyB_dst (ir_node *node, ir_node *dst) {
+  assert (node->op == op_CopyB);
+  set_irn_n(node, 1, dst);
+}
+
+ir_node *get_CopyB_src (ir_node *node) {
+  assert (node->op == op_CopyB);
+  return get_irn_n(node, 2);
+}
+
+void     set_CopyB_src (ir_node *node, ir_node *src) {
+  assert (node->op == op_CopyB);
+  set_irn_n(node, 2, src);
+}
+
+type    *get_CopyB_type(ir_node *node) {
+  assert (node->op == op_CopyB);
+  return node->attr.copyb.data_type;
+}
+
+void     set_CopyB_type(ir_node *node, type *data_type) {
+  assert (node->op == op_CopyB && data_type);
+  node->attr.copyb.data_type = data_type;
+}
+
 
 ir_graph *
 get_irn_irg(const ir_node *node) {
