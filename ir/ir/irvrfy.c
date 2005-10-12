@@ -1570,6 +1570,37 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
   return 1;
 }
 
+/**
+ * verify a CopyB node
+ */
+static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
+  ir_mode *mymode  = get_irn_mode(n);
+  ir_mode *op1mode = get_irn_mode(get_CopyB_mem(n));
+  ir_mode *op2mode = get_irn_mode(get_CopyB_dst(n));
+  ir_mode *op3mode = get_irn_mode(get_CopyB_src(n));
+  type *t = get_CopyB_type(n);
+
+  /* CopyB: BB x M x ref x ref --> M x X */
+  ASSERT_AND_RET(
+    mymode == mode_T &&
+    op1mode == mode_M &&
+    mode_is_reference(op2mode) &&
+    mode_is_reference(op3mode),
+    "CopyB node", 0 );  /* operand M x ref x ref */
+
+  ASSERT_AND_RET(
+    is_compound_type(t),
+    "CopyB node should copy compound types only", 0 );
+
+  /* NoMem nodes are only allowed as memory input if the CopyB is NOT pinned.
+     This should happen RARELY, as CopyB COPIES MEMORY */
+  ASSERT_AND_RET(
+    (get_irn_op(get_CopyB_mem(n)) == op_NoMem) ||
+    (get_irn_op(get_CopyB_mem(n)) != op_NoMem && get_irn_pinned(n) == op_pin_state_pinned),
+    "CopyB node with wrong memory input", 0 );
+  return 1;
+}
+
 /*
  * Check dominance.
  * For each usage of a node, it is checked, if the block of the
@@ -1612,6 +1643,7 @@ static int check_dominance_for_node(ir_node *use)
   return 1;
 }
 
+/* Tests the modes of n and its predecessors. */
 int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 {
   int i;
@@ -1915,6 +1947,7 @@ void firm_set_default_verifyer(ir_op *op)
    CASE(Sync);
    CASE(Confirm);
    CASE(Mux);
+   CASE(CopyB);
    default:
      op->verify_node = NULL;
    }
