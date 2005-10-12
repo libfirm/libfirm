@@ -55,7 +55,7 @@ typedef struct Phi_in_stack Phi_in_stack;
 # define IRN_VRFY_IRG(res, irg)
 #else
 # define IRN_VRFY_IRG(res, irg)  irn_vrfy_irg(res, irg)
-#endif
+#endif /* NDEBUG */
 
 /**
  * Language dependent variable initialization callback.
@@ -296,6 +296,7 @@ new_bd_Sub (dbg_info *db, ir_node *block,
   res = new_ir_node (db, irg, block, op_Sub, mode, 2, in);
   res = optimize_node (res);
   IRN_VRFY_IRG(res, irg);
+
   return res;
 }
 
@@ -937,6 +938,27 @@ new_bd_Mux  (dbg_info *db, ir_node *block,
   res = new_ir_node(db, irg, block, op_Mux, mode, 3, in);
   assert(res);
 
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_CopyB  (dbg_info *db, ir_node *block,
+    ir_node *store, ir_node *dst, ir_node *src, type *data_type)
+{
+  ir_node  *in[3];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  in[0] = store;
+  in[1] = dst;
+  in[2] = src;
+
+  res = new_ir_node(db, irg, block, op_CopyB, mode_T, 3, in);
+
+  res->attr.copyb.exc.pin_state = op_pin_state_pinned;
+  res->attr.copyb.data_type     = data_type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -1701,6 +1723,19 @@ new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
   return res;
 }
 
+ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *dst, ir_node *src, type *data_type)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_CopyB(db, block, store, dst, src, data_type);
+  current_ir_graph = rem;
+
+  return res;
+}
+
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in) {
   return new_rd_Block(NULL, irg, arity, in);
 }
@@ -1909,6 +1944,11 @@ ir_node *new_r_NoMem  (ir_graph *irg) {
 ir_node *new_r_Mux (ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
   return new_rd_Mux(NULL, irg, block, sel, ir_false, ir_true, mode);
+}
+
+ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *dst, ir_node *src, type *data_type) {
+  return new_rd_CopyB(NULL, irg, block, store, dst, src, data_type);
 }
 
 /** ********************/
@@ -2566,7 +2606,7 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
          (bad, jmp).  In this case we call the function needlessly, eventually
          generating an non existent error.
          However, this SHOULD NOT HAPPEN, as bad control flow nodes are intercepted
-         before recuring.
+         before recurring.
       */
       if (default_initialize_local_variable) {
         ir_node *rem = get_cur_block();
@@ -3246,6 +3286,17 @@ new_d_Mux (dbg_info *db, ir_node *sel, ir_node *ir_false,
       sel, ir_false, ir_true, mode);
 }
 
+ir_node *new_d_CopyB(dbg_info *db,ir_node *store,
+    ir_node *dst, ir_node *src, type *data_type) {
+  ir_node *res;
+  res = new_bd_CopyB(db, current_ir_graph->current_block,
+    store, dst, src, data_type);
+#if PRECISE_EXC_CONTEXT
+  allocate_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
+#endif
+  return res;
+}
+
 /* ********************************************************************* */
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
@@ -3573,4 +3624,7 @@ ir_node *new_NoMem  (void) {
 }
 ir_node *new_Mux (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
   return new_d_Mux(NULL, sel, ir_false, ir_true, mode);
+}
+ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, type *data_type) {
+  return new_d_CopyB(NULL, store, dst, src, data_type);
 }

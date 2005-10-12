@@ -291,6 +291,7 @@
  *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
  *    ir_node *new_NoMem  (void);
  *    ir_node *new_Mux    (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+ *    ir_node *new_CopyB  (ir_node *store, ir_node *dst, ir_node *src, type *data_type);
  *
  *    void add_immBlock_pred (ir_node *block, ir_node *jmp);
  *    void mature_immBlock (ir_node *block);
@@ -935,6 +936,12 @@
  *    Returns the unique NoMem node current_ir_graph->no_mem.
  *    This node is used as input for operations that need a Memory, but do not
  *    change it like Div by const != 0, analyzed calls etc.
+ *
+ *    ir_node *new_CopyB (ir_node *store, ir_node *dst, ir_node *src, type *data_type)
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Describes a high level block copy of a compound type form address src to
+ *    address dst. Must be lowered to a Call to a runtime memory copy function.
  *
  *    ir_node *new_Proj (ir_node *arg, ir_mode *mode, long proj)
  *    ----------------------------------------------------------
@@ -1805,6 +1812,21 @@ ir_node *new_rd_NoMem  (ir_graph *irg);
 ir_node *new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
+/** Constructor for a CopyB node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *irg        The ir graph the node belong to.
+ * @param *block      The block the node belong to.
+ * @param *store      The current memory
+ * @param *dst        The ir_node that represents the destination address.
+ * @param *arg        The ir_node that represents the source address.
+ * @param *data_type  The type of the copied data
+ */
+ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *dst, ir_node *src, type *data_type);
+
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
 /*-------------------------------------------------------------------------*/
@@ -2489,6 +2511,20 @@ ir_node *new_r_NoMem  (ir_graph *irg);
  */
 ir_node *new_r_Mux  (ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+
+/** Constructor for a CopyB node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *irg        The ir graph the node belong to.
+ * @param *block      The block the node belong to.
+ * @param *store      The current memory
+ * @param *dst        The ir_node that represents the destination address.
+ * @param *arg        The ir_node that represents the source address.
+ * @param *data_type  The type of the copied data
+ */
+ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *dst, ir_node *src, type *data_type);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -3191,6 +3227,18 @@ ir_node *new_d_NoMem  (void);
 ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
     ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
+/** Constructor for a CopyB node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *store      The current memory
+ * @param *dst        The ir_node that represents the destination address.
+ * @param *arg        The ir_node that represents the source address.
+ * @param *data_type  The type of the copied data
+ */
+ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst, ir_node *src, type *data_type);
+
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
 /*-----------------------------------------------------------------------*/
@@ -3791,6 +3839,17 @@ ir_node *new_NoMem  (void);
  * @param *mode     The mode of the node (and it_true and ir_false).
  */
 ir_node *new_Mux  (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+
+/** Constructor for a CopyB node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *store      The current memory
+ * @param *dst        The ir_node that represents the destination address.
+ * @param *arg        The ir_node that represents the source address.
+ * @param *data_type  The type of the copied data
+ */
+ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, type *data_type);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
