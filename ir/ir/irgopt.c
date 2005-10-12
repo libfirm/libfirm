@@ -92,6 +92,7 @@ optimize_in_place_wrapper (ir_node *n, void *env) {
 static INLINE void do_local_optimize(ir_node *n) {
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
+
   if (get_opt_global_cse())
     set_irg_pinned(current_ir_graph, op_pin_state_floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
@@ -99,7 +100,6 @@ static INLINE void do_local_optimize(ir_node *n) {
   if (get_irg_dom_state(current_ir_graph) == dom_consistent)
     set_irg_dom_inconsistent(current_ir_graph);
   set_irg_loopinfo_inconsistent(current_ir_graph);
-
 
   /* Clean the value_table in irg for the CSE. */
   del_identities(current_ir_graph->value_table);
@@ -118,10 +118,22 @@ void local_optimize_node(ir_node *n) {
   current_ir_graph = rem;
 }
 
+/**
+ * Block-Walker: uses dominance depth to mark dead blocks.
+ */
+static void kill_dead_blocks(ir_node *block, void *env)
+{
+  if (get_Block_dom_depth(block) < 0)
+    set_Block_dead(block);
+}
+
 void
 local_optimize_graph (ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
+
+  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
+    irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 
   do_local_optimize(irg->end);
 
