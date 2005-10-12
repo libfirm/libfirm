@@ -70,17 +70,14 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
 
   if (n <= 0 || n > 1 || block == get_irg_start_block(current_ir_graph)) {
     /*
-     * block is a JOIN-node ie he control flow from
+     * block is a JOIN-node ie the control flow from
      * many other blocks joins here. block is a leader.
      * Note that we handle unreachable blocks (n <= 0) here too.
      */
     allocate_extblk(block, env);
   }
-  else {
-    ir_node *add_to = get_Block_cfgpred(block, 0);
-
-    if (! is_Bad(add_to))
-      add_to = get_irn_n(add_to, -1);
+  else {    /* we have only one control flow predecessor */
+    ir_node *add_to = get_Block_cfgpred_block(block, 0);
 
     /* blocks with only one BAD predecessors are leaders too */
     if (is_Bad(add_to)) {
@@ -96,25 +93,52 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
   }
 }
 
+static int _sentinel;
+
 /**
  * Post block-walker. Calculates the extended block info.
  * During construction, we use the (free) block input of all basic blocks
  * to point to there previous block.
  */
-static void post_walk_calc_extbb(ir_node *block, void *env)
+static void post_walk_calc_extbb(ir_node *block, void *ctx)
 {
   ir_extblk *extbb = get_Block_extbb(block);
+  env_t *env = ctx;
+  ir_extblk *sentinel = (ir_extblk *)&_sentinel;
 
   if (! extbb) {
-    ir_node *prev = block;
+    ir_node *curr, *prev;
 
-    /* search the leader */
-    do {
-      prev = get_irn_n(get_Block_cfgpred(prev, 0), -1);
+    /*
+     * Search the leader. It can happen, that we fall into an endless
+     * loop, because we enter an unreachable loop that is not yet detected.
+     * We break the loop using a sentinel.
+     */
+    for (curr = block; !extbb; curr = prev) {
+      prev = get_Block_cfgpred_block(curr, 0);
       extbb = get_Block_extbb(prev);
-    } while (! extbb);
+      set_Block_extbb(curr, sentinel);
+    }
 
-    addto_extblk(extbb, block);
+    if (extbb == sentinel) {
+      /* We detect a dead loop. We fix this by allocating an
+       * special Extended block
+       */
+      ir_printf("Dead loop detected starting with %+F::%+F\n", get_irg_entity(current_ir_graph), block);
+
+      allocate_extblk(block, env);
+      extbb = get_Block_extbb(block);
+      set_Block_extbb(block, sentinel);
+    }
+
+    /* replace all sentinels by the extbb info */
+    prev = block;
+    while (1) {
+      if (get_Block_extbb(prev) != sentinel)
+        break;
+      set_Block_extbb(prev, extbb);
+      prev = get_Block_cfgpred_block(prev, 0);
+    }
   }
 }
 
