@@ -918,6 +918,9 @@ handle_lut:
   case iro_Confirm:
     fprintf (F, "%s ", get_pnc_string(get_Confirm_cmp(n)));
     break;
+  case iro_CopyB:
+    fprintf (F, "(%s) ", get_type_name_ex(get_CopyB_type(n), &bad));
+    break;
 
   default:
     ;
@@ -1453,8 +1456,9 @@ dump_whole_block(FILE *F, ir_node *block) {
 
   fprintf(F, "\" status:clustered color:%s \n", color);
 
-  /* ycomp can show attributs for blocks, VCG parses but ignores them */
+  /* yComp can show attributes for blocks, XVCG parses but ignores them */
   dump_node_info(F, block);
+  print_node_dbg_info(F, get_irn_dbg_info(block));
 
   /* dump the blocks edges */
   dump_ir_data_edges(F, block);
