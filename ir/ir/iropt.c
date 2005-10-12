@@ -749,8 +749,10 @@ static ir_node *equivalent_node_Block(ir_node *n)
         break;
       }
     }
-    if (i < 0)
+    if (i < 0) {
       n = set_Block_dead(n);
+      DBG_OPT_DEAD_BLOCK(oldn, n);
+    }
   }
 
   return n;
@@ -1379,6 +1381,25 @@ static ir_node *equivalent_node_Confirm(ir_node *n)
 }
 
 /**
+ * Optimize CopyB(mem, x, x) into a Nop
+ */
+static ir_node *equivalent_node_CopyB(ir_node *n)
+{
+  ir_node *a = get_CopyB_dst(n);
+  ir_node *b = get_CopyB_src(n);
+
+  if (a == b) {
+    /* Turn CopyB into a tuple (mem, bad, bad) */
+    ir_node *mem = get_CopyB_mem(n);
+    turn_into_tuple(n, pn_CopyB_max);
+    set_Tuple_pred(n, pn_CopyB_M,        mem);
+    set_Tuple_pred(n, pn_CopyB_X_except, new_Bad());        /* no exception */
+    set_Tuple_pred(n, pn_Call_M_except,  new_Bad());
+  }
+  return n;
+}
+
+/**
  * equivalent_node() returns a node equivalent to input n. It skips all nodes that
  * perform no actual computation, as, e.g., the Id nodes.  It does not create
  * new nodes.  It is therefore safe to free n if the node returned is not n.
@@ -1429,6 +1450,7 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(Mux);
   CASE(Cmp);
   CASE(Confirm);
+  CASE(CopyB);
   default:
     op->equivalent_node  = NULL;
   }
