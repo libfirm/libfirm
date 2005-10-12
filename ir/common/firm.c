@@ -39,6 +39,7 @@
 # include "reassoc_t.h"
 # include "irhooks.h"
 # include "iredges_t.h"
+# include "debugger.h"
 
 void
 init_firm(const firm_parameter_t *param)
@@ -49,7 +50,7 @@ init_firm(const firm_parameter_t *param)
   memset(&def_params, 0, sizeof(def_params));
 
   if (param) {
-    /* check for reasonale size */
+    /* check for reasonable size */
     assert(param->size <= sizeof(def_params) && (param->size & 3) == 0 &&
 	   "parameter struct not initialized ???");
     size = sizeof(def_params);
@@ -104,6 +105,11 @@ init_firm(const firm_parameter_t *param)
   arch_dep_set_opts(arch_dep_mul_to_shift | arch_dep_div_by_const | arch_dep_mod_by_const);
 
   firm_archops_init(def_params.arch_op_settings);
+
+#ifndef NDEBUG
+  /* integrated debugger extension */
+  firm_init_debugger();
+#endif
 }
 
 
