@@ -27,25 +27,31 @@
 #include <stdio.h>
 #include <signal.h>
 
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#include <ctype.h>
+
 #include "set.h"
 #include "irhooks.h"
 #include "irprintf.h"
 
 #ifdef _WIN32
-/* Win32 support */
-
-/** Break into the debugger */
+/** Break into the debugger. The Win32 way. */
 static void firm_debug_break(void) {
   DebugBreak();
 }
-
+#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64))
+/** Break into the debugger. The ia32 way under GCC. */
+static void firm_debug_break(void) {
+  __asm__ __volatile__("int3");
+}
 #else
-
-/** Break into the debugger */
+/** Break into the debugger. Poor Unix way. */
 static void firm_debug_break(void) {
   raise(SIGINT);
 }
-
 #endif /* _WIN32 */
 
 /** supported breakpoint kinds */
