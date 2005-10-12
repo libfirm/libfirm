@@ -584,7 +584,7 @@ static unsigned optimize_load(ir_node *load)
    */
   INC_MASTER();
   for (pred = skip_Proj(mem); load != pred; pred = skip_Proj(get_Load_mem(pred))) {
-    ldst_info_t *info;
+    ldst_info_t *pred_info = get_irn_link(pred);
 
     /*
      * BEWARE: one might think that checking the modes is useless, because
@@ -595,8 +595,6 @@ static unsigned optimize_load(ir_node *load)
 
     if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
         get_irn_mode(get_Store_value(pred)) == load_mode) {
-      ldst_info_t *pred_info = get_irn_link(pred);
-
       /*
        * a Load immediately after a Store -- a read after write.
        * We may remove the Load, if both Load & Store does not have an exception handler
@@ -641,8 +639,6 @@ static unsigned optimize_load(ir_node *load)
        * hander because they would have exact the same exception...
        */
       if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
-        ldst_info_t *pred_info = get_irn_link(pred);
-
         DBG_OPT_RAR(load, pred);
 
         if (pred_info->projs[pn_Load_res]) {
@@ -681,10 +677,9 @@ static unsigned optimize_load(ir_node *load)
       break;
 
     /* check for cycles */
-    info = get_irn_link(pred);
-    if (NODE_VISITED(info))
+    if (NODE_VISITED(pred_info))
       break;
-    MARK_NODE(info);
+    MARK_NODE(pred_info);
   }
   return res;
 }
@@ -758,10 +753,9 @@ static unsigned optimize_store(ir_node *store)
       break;
 
     /* check for cycles */
-    info = get_irn_link(pred);
-    if (NODE_VISITED(info))
+    if (NODE_VISITED(pred_info))
       break;
-    MARK_NODE(info);
+    MARK_NODE(pred_info);
   }
   return res;
 }
