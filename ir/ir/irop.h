@@ -72,7 +72,7 @@ typedef enum {
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
   iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
   iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
-  iro_NoMem, iro_Mux,
+  iro_NoMem, iro_Mux, iro_CopyB,
   iro_MaxOpcode
 } opcode;
 
@@ -139,6 +139,7 @@ extern ir_op *op_EndExcept;       ir_op *get_op_EndExcept (void);
 
 extern ir_op *op_NoMem;           ir_op *get_op_NoMem     (void);
 extern ir_op *op_Mux;             ir_op *get_op_Mux       (void);
+extern ir_op *op_CopyB;           ir_op *get_op_CopyB     (void);
 
 /** Returns the ident for the opcode name */
 ident *get_op_ident(const ir_op *op);
