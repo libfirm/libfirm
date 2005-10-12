@@ -76,6 +76,7 @@ typedef struct _ldst_info_t {
   ir_node  *exc_block;          /**< the exception block if available */
   int      exc_idx;             /**< predecessor index in the exception block */
   unsigned flags;               /**< flags */
+  unsigned visited;             /**< visited counter for breaking loops */
 } ldst_info_t;
 
 /**
@@ -92,6 +93,13 @@ enum block_flags_t {
 typedef struct _block_info_t {
   unsigned flags;               /**< flags for the block */
 } block_info_t;
+
+/** the master visited flag for loop detection. */
+static unsigned master_visited = 0;
+
+#define INC_MASTER()       ++master_visited
+#define MARK_NODE(info)    (info)->visited = master_visited
+#define NODE_VISITED(info) (info)->visited >= master_visited
 
 /**
  * get the Load/Store info of a node
@@ -567,10 +575,17 @@ static unsigned optimize_load(ir_node *load)
   if (get_irn_out_n(ptr) <= 1)
     return res;
 
-  /* follow the memory chain as long as there are only Loads
-   * and try to replace current Load or Store by a previous one
+  /*
+   * follow the memory chain as long as there are only Loads
+   * and try to replace current Load or Store by a previous one.
+   * Note that in unreachable loops it might happen that we reach
+   * load again, as well as we can fall into a cycle.
+   * We break such cycles using a special visited flag.
    */
-  for (pred = skip_Proj(mem); ; pred = skip_Proj(get_Load_mem(pred))) {
+  INC_MASTER();
+  for (pred = skip_Proj(mem); load != pred; pred = skip_Proj(get_Load_mem(pred))) {
+    ldst_info_t *info;
+
     /*
      * BEWARE: one might think that checking the modes is useless, because
      * if the pointers are identical, they refer to the same object.
@@ -664,7 +679,13 @@ static unsigned optimize_load(ir_node *load)
     /* follow only Load chains */
     if (get_irn_op(pred) != op_Load)
       break;
-   }
+
+    /* check for cycles */
+    info = get_irn_link(pred);
+    if (NODE_VISITED(info))
+      break;
+    MARK_NODE(info);
+  }
   return res;
 }
 
@@ -701,7 +722,8 @@ static unsigned optimize_store(ir_node *store)
   mode  = get_irn_mode(value);
 
   /* follow the memory chain as long as there are only Loads */
-  for (pred = skip_Proj(mem); ; pred = skip_Proj(get_Load_mem(pred))) {
+  INC_MASTER();
+  for (pred = skip_Proj(mem); pred != store; pred = skip_Proj(get_Load_mem(pred))) {
     ldst_info_t *pred_info = get_irn_link(pred);
 
     if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
@@ -734,22 +756,30 @@ static unsigned optimize_store(ir_node *store)
     /* follow only Load chains */
     if (get_irn_op(pred) != op_Load)
       break;
+
+    /* check for cycles */
+    info = get_irn_link(pred);
+    if (NODE_VISITED(info))
+      break;
+    MARK_NODE(info);
   }
   return res;
 }
 
 /**
- * walker, optimizes Phi after Stores:
+ * walker, optimizes Phi after Stores to identical places:
  * Does the following optimization:
+ * @verbatim
  *
  *   val1   val2   val3          val1  val2  val3
  *    |      |      |               \    |    /
  *   Str    Str    Str               \   |   /
- *      \    |    /                     Phi
+ *      \    |    /                   PhiData
  *       \   |   /                       |
  *        \  |  /                       Str
- *          Phi
+ *          PhiM
  *
+ * @endverbatim
  * This reduces the number of stores and allows for predicated execution.
  * Moves Stores back to the end of a function which may be bad.
  *
@@ -802,7 +832,7 @@ static unsigned optimize_phi(ir_node *phi, void *env)
     if (get_irn_op(pred) != op_Store)
       return 0;
 
-    if (mode != get_irn_mode(get_Store_value(pred)) || ptr != get_Store_ptr(pred))
+    if (ptr != get_Store_ptr(pred) || mode != get_irn_mode(get_Store_value(pred)))
       return 0;
 
     info = get_irn_link(pred);
@@ -823,17 +853,17 @@ static unsigned optimize_phi(ir_node *phi, void *env)
 
   /*
    * ok, when we are here, we found all predecessors of a Phi that
-   * are Stores to the same address. That means whatever we do before
-   * we enter the block of the Phi, we do a Store.
-   * So, we can move the store to the current block:
+   * are Stores to the same address and size. That means whatever
+   * we do before we enter the block of the Phi, we do a Store.
+   * So, we can move the Store to the current block:
    *
    *   val1    val2    val3          val1  val2  val3
    *    |       |       |               \    |    /
    * | Str | | Str | | Str |             \   |   /
-   *      \     |     /                     Phi
+   *      \     |     /                   PhiData
    *       \    |    /                       |
    *        \   |   /                       Str
-   *           Phi
+   *           PhiM
    *
    * Is only allowed if the predecessor blocks have only one successor.
    */
@@ -896,7 +926,7 @@ static unsigned optimize_phi(ir_node *phi, void *env)
 }
 
 /**
- * walker, collects all Load/Store/Proj nodes
+ * walker, do the optiimizations
  */
 static void do_load_store_optimize(ir_node *n, void *env)
 {
@@ -938,6 +968,7 @@ void optimize_load_store(ir_graph *irg)
   env.changes = 0;
 
   /* init the links, then collect Loads/Stores/Proj's in lists */
+  master_visited = 0;
   irg_walk_graph(irg, firm_clear_link, collect_nodes, &env);
 
   /* now we have collected enough information, optimize */
