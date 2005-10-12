@@ -153,28 +153,33 @@ typedef struct {
 
 /** CallBegin attributes */
 typedef struct {
-  ir_node * call;            /**< associated Call-operation */
+  ir_node * call;               /**< associated Call-operation */
 } callbegin_attr;
 
 /** Cast attributes */
 typedef struct {
-  type *totype;
+  type *totype;                 /**< type of the casted node */
 } cast_attr;
 
 /** Load attributes */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ir_mode        *load_mode;    /**< the mode of this Load operation */
-  ent_volatility volatility;	/**< the volatility of a Load/Store operation */
+  ent_volatility volatility;	  /**< the volatility of a Load/Store operation */
 } load_attr;
 
 /** Store attributes */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-  ent_volatility volatility;	/**< the volatility of a Store operation */
+  ent_volatility volatility;	  /**< the volatility of a Store operation */
 } store_attr;
 
 typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
+
+typedef struct {
+  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+  type           *data_type;    /**< type of the copied entity */
+} copyb_attr;
 
 /**
  * Edge info to put into an irn.
@@ -185,7 +190,7 @@ typedef struct _irn_edge_info_t {
 } irn_edge_info_t;
 
 
-/** Some irnodes just have one attribute, these are stored here,
+/** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
   start_attr     start; /**< For Start */
@@ -211,11 +216,12 @@ typedef union {
   int *phi_backedge;    /**< For Phi after construction.
 			   Field n set to true if pred n is backedge.
 			   @todo Ev. replace by bitfield! */
-  long           proj;  /**< For Proj: contains the result position to project */
+  long           proj;          /**< For Proj: contains the result position to project */
   confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
-  filter_attr    filter;    /**< For Filter */
-  end_attr       end;       /**< For EndReg, EndExcept */
-  except_attr    except; /**< For Phi node construction in case of exceptions */
+  filter_attr    filter;        /**< For Filter */
+  end_attr       end;           /**< For EndReg, EndExcept */
+  except_attr    except;        /**< For Phi node construction in case of exceptions */
+  copyb_attr     copyb;         /**< For CopyB operation */
 } attr;
 
 
