@@ -56,7 +56,7 @@ static void firm_debug_break(void) {
 
 /** supported breakpoint kinds */
 typedef enum {
-  BP_CREATION = 0    /**< break on creation. */
+  BP_NODE = 0    /**< break on node number. */
 } bp_kind;
 
 /** A breakpoint. */
@@ -67,14 +67,23 @@ typedef struct _breakpoint {
   struct _breakpoint *next; /**< link to the next one */
 } breakpoint;
 
-/** A creation breakpoint. */
-typedef struct {
-  breakpoint  bp; /**< the breakpoint data */
-  long        nr; /**< the node number */
-} bp_create_t;
+/**
+ * Reasons for node number breakpoints.
+ */
+typedef enum _bp_reasons_t {
+  BP_ON_CREATION = 1,     /**< break if node with number is created */
+  BP_ON_LOWER    = 2      /**< break if node with number is lowered */
+} bp_reasons_t;
 
-/** The set containing the creation breakpoints. */
-static set *bp_creations;
+/** A node number breakpoint. */
+typedef struct {
+  breakpoint   bp;       /**< the breakpoint data */
+  long         nr;       /**< the node number */
+  bp_reasons_t reason;   /**< reason for the breakpoint */
+} bp_node_t;
+
+/** The set containing the breakpoints on node numbers. */
+static set *bp_node_numbers;
 
 /**< the list of all breakpoints */
 static breakpoint *bp_list;
@@ -86,29 +95,45 @@ static unsigned bp_num = 0;
 static int break_on_init = 0;
 
 /**
- * Compare two creation breakpoints
+ * return the reason string.
  */
-static int cmp_create_bp(const void *elt, const void *key, size_t size)
+static const char *reason_str(bp_reasons_t reason)
 {
-  const bp_create_t *e1 = elt;
-  const bp_create_t *e2 = key;
+  switch (reason) {
+  case BP_ON_CREATION: return "creation";
+  case BP_ON_LOWER:    return "lowering";
+  default:             assert(0);
+  }
+  return "unknown";
+}
 
-  return e1->nr - e2->nr;
+#define HASH_NODE_BP(key) (((key).nr << 2) ^ (key).reason)
+
+/**
+ * Compare two node number breakpoints
+ */
+static int cmp_node_bp(const void *elt, const void *key, size_t size)
+{
+  const bp_node_t *e1 = elt;
+  const bp_node_t *e2 = key;
+
+  return (e1->nr - e2->nr) | (e1->reason - e2->reason);
 }
 
 /**
- * Break if node nr is created.
+ * Break if node nr is reached.
  */
-static void break_on_creation(long nr)
+static void break_on_node(long nr, bp_reasons_t reason)
 {
-  bp_create_t key, *elem;
+  bp_node_t key, *elem;
 
-  key.bp.kind   = BP_CREATION;
+  key.bp.kind   = BP_NODE;
   key.bp.bpnr   = 0;
   key.bp.active = 1;
   key.nr        = nr;
+  key.reason    = reason;
 
-  elem = set_insert(bp_creations, &key, sizeof(key), nr);
+  elem = set_insert(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
 
   if (elem->bp.bpnr == 0) {
     /* new break point */
@@ -116,7 +141,7 @@ static void break_on_creation(long nr)
     elem->bp.next = bp_list;
     bp_list = &elem->bp;
 
-    printf("Firm BP %u: creation of Node %ld\n", elem->bp.bpnr, nr);
+    printf("Firm BP %u: %s of Node %ld\n", elem->bp.bpnr, reason_str(reason), nr);
   }
 }
 
@@ -129,7 +154,7 @@ static void bp_activate(unsigned bp, int active)
 
   for (p = bp_list; p; p = p->next) {
     if (p->bpnr == bp) {
-      p->bpnr = active;
+      p->active = active;
 
       printf("Firm BP %u is now %s\n", bp, active ? "enabled" : "disabled");
       return;
@@ -146,6 +171,7 @@ static void show_commands(void) {
   printf("Internal Firm debugger extension commands:\n"
     ".init         break after initialization\n"
     ".create nr    break if node nr was created\n"
+    ".lower nr     break before node nr is lowered\n"
     ".bp           show all breakpoints\n"
     ".enable nr    enable breakpoint nr\n"
     ".disable nr   disable breakpoint nr\n"
@@ -158,13 +184,15 @@ static void show_commands(void) {
  */
 static void show_bp(void) {
   breakpoint *p;
+  bp_node_t *node_p;
 
   for (p = bp_list; p; p = p->next) {
-    printf("Firm BP %u ", p->bpnr);
+    printf("Firm BP %u: ", p->bpnr);
 
     switch (p->kind) {
-    case BP_CREATION:
-      printf("creation of node %ld ", ((bp_create_t *)p)->nr);
+    case BP_NODE:
+      node_p = (bp_node_t *)p;
+      printf("%s of node %ld ", reason_str(node_p->reason), node_p->nr);
       break;
     }
 
@@ -186,7 +214,10 @@ void firm_break(const char *cmd) {
   while (isspace(*cmd)) ++cmd;
 
   if (sscanf(cmd, ".create %ld\n", &nr) == 1) {
-    break_on_creation(nr);
+    break_on_node(nr, BP_ON_CREATION);
+  }
+  else if (sscanf(cmd, ".lower %ld\n", &nr) == 1) {
+    break_on_node(nr, BP_ON_LOWER);
   }
   else if (strcmp(cmd, ".init") == 0)
     break_on_init = 1;
@@ -213,13 +244,34 @@ static hook_entry_t debugger_hooks[hook_last];
  */
 static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 {
-  bp_create_t key, *elem;
+  bp_node_t key, *elem;
 
-  key.nr   = get_irn_node_nr(node);
+  key.nr     = get_irn_node_nr(node);
+  key.reason = BP_ON_CREATION;
 
-  elem = set_find(bp_creations, &key, sizeof(key), key.nr);
+  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
   if (elem && elem->bp.active) {
     ir_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
+    firm_debug_break();
+  }
+}
+
+/**
+ * A new node is lowered.
+ *
+ * @param ctx   the hook context
+ * @param node  the new IR node that will be lowered
+ */
+static void dbg_lower_node(void *ctx, ir_node *node)
+{
+  bp_node_t key, *elem;
+
+  key.nr     = get_irn_node_nr(node);
+  key.reason = BP_ON_LOWER;
+
+  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  if (elem && elem->bp.active) {
+    ir_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
     firm_debug_break();
   }
 }
@@ -232,10 +284,11 @@ void firm_init_debugger(void)
 {
   char *env;
 
-  bp_creations = new_set(cmp_create_bp, 8);
+  bp_node_numbers = new_set(cmp_node_bp, 8);
 
   /* register the hooks */
   HOOK(hook_new_node,                         dbg_new_node);
+  HOOK(hook_lower,                            dbg_lower_node);
 
   env = getenv("FIRMDBG");
 
@@ -270,6 +323,10 @@ void firm_init_debugger(void)
  *
  * Break if a new IR-node with node number nr was created.
  * Typically used to find the place where wrong nodes are created.
+ *
+ * .lower nr
+ *
+ * Break before IR-node with node number nr is lowered.
  *
  * .bp
  *
