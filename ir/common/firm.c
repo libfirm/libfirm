@@ -32,6 +32,7 @@
 # include "ircons_t.h"
 # include "irgraph_t.h"
 # include "type_t.h"
+# include "entity_t.h"
 # include "type_identify.h"
 # include "firmstat.h"
 # include "irreflect_t.h"
@@ -60,7 +61,6 @@ init_firm(const firm_parameter_t *param)
     memcpy(&def_params, param, size);
   }
 
-
   /* initialize all ident stuff */
   init_ident(def_params.id_if, 1024);
   /* initialize Firm hooks */
@@ -80,7 +80,7 @@ init_firm(const firm_parameter_t *param)
   /* initialize tarvals, and floating point arithmetic */
   init_tarval_2();
   /* init graph construction */
-  init_irgraph();
+  firm_init_irgraph(def_params.cc_mask);
   /* kind of obstack initialization */
   firm_init_mangle();
   /* initialize all op codes an irnode can consist of */
@@ -92,9 +92,10 @@ init_firm(const firm_parameter_t *param)
   /* Builds a construct allowing to access all information to be constructed
      later. */
   init_irprog_2();
-  /* Constructs some idents needed. */
+  /* Initialize the type module and construct some idents needed. */
   firm_init_type(NULL);
-  init_entity();
+  /* initialize the entity module */
+  firm_init_entity();
   /* allocate a hash table. */
   init_type_identify(def_params.ti_if);
   /* Init reflection facility. */

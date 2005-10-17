@@ -174,6 +174,11 @@ struct _firm_parameter_t {
    * If not set, no architecture dependent operations will be used.
    */
   arch_ops_info *arch_op_settings;
+
+  /**
+   * The default calling convention.
+   */
+  unsigned cc_mask;
 };
 
 typedef struct _firm_parameter_t firm_parameter_t;
