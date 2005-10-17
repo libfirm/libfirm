@@ -1308,12 +1308,22 @@ void (set_entity_additional_property)(entity *ent, unsigned flag) {
   _set_entity_additional_property(ent, (irg_additional_property)flag);
 }
 
-void init_entity(void)
+/* Returns the calling convention of an entities graph. */
+unsigned (get_entity_calling_convention)(const entity *ent) {
+  return _get_entity_calling_convention(ent);
+}
+
+/* Sets the calling convention of an entities graph. */
+void (set_entity_calling_convention)(entity *ent, unsigned cc_mask) {
+  _set_entity_calling_convention(ent, cc_mask);
+}
+
+void firm_init_entity(void)
 {
   symconst_symbol sym;
 
-  assert(firm_unknown_type && "Call init_type before init_entity!");
-  assert(!unknown_entity && "Call init_entity only once!");
+  assert(firm_unknown_type && "Call init_type() before firm_init_entity()!");
+  assert(!unknown_entity && "Call firm_init_entity() only once!");
   unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
   set_entity_visibility(unknown_entity, visibility_external_allocated);
   set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));

@@ -83,7 +83,7 @@ struct entity {
                of owner is determined.  */
   void *link;           /**< To store some intermediate information */
   unsigned long visit;  /**< visited counter for walks of the type information */
-  struct dbg_info* dbi;    /**< A pointer to information for debug support. */
+  struct dbg_info *dbi;    /**< A pointer to information for debug support. */
 
   /* ------------- fields for atomic entities  ---------------*/
 
@@ -111,6 +111,8 @@ struct entity {
                Yes, it must be here. */
   unsigned irg_add_properties;  /**< If (type == method_type) this is a set of additional.
                graph flags if the irg of an entity is not known. */
+  unsigned irg_calling_conv;  /**< If (type == method_type) this is a set of calling.
+               convention flags if the irg of an entity is not known. */
 
   /* ------------- fields for analyses ---------------*/
 
@@ -121,6 +123,8 @@ struct entity {
 # endif /* DEBUG_libfirm */
 };
 
+/** Initialize entity module. */
+void firm_init_entity(void);
 
 
 /* ----------------------- inline functions ------------------------ */
@@ -360,6 +364,30 @@ _set_entity_additional_property(entity *ent, irg_additional_property flag) {
     ent->irg_add_properties |= flag;
 }
 
+static INLINE unsigned
+_get_entity_calling_convention(const entity *ent) {
+  ir_graph *irg;
+  assert(ent && ent->kind == k_entity);
+  assert(ent == unknown_entity || is_Method_type(ent->type));
+  irg = _get_entity_irg(ent);
+  if (irg)
+    return get_irg_calling_convention(irg);
+  else
+    return ent->irg_calling_conv;
+}
+
+static INLINE void
+_set_entity_calling_convention(entity *ent, unsigned cc_mask) {
+  ir_graph *irg;
+  assert(ent && ent->kind == k_entity);
+  assert(ent == unknown_entity || is_Method_type(ent->type));
+  irg = _get_entity_irg(ent);
+  if (irg)
+    set_irg_calling_convention(irg, cc_mask);
+  else
+    ent->irg_calling_conv = cc_mask;
+}
+
 #define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
 #define get_entity_ident(ent)                    _get_entity_ident(ent)
@@ -394,5 +422,7 @@ _set_entity_additional_property(entity *ent, irg_additional_property flag) {
 #define get_entity_additional_properties(ent)    _get_entity_additional_properties(ent)
 #define set_entity_additional_properties(ent, m) _set_entity_additional_properties(ent, m)
 #define set_entity_additional_property(ent, f)   _set_entity_additional_property(ent, f)
+#define get_entity_calling_convention(ent)       _get_entity_calling_convention(ent)
+#define set_entity_calling_convention(ent, cc)   _set_entity_calling_convention(ent, cc)
 
 # endif /* _ENTITY_T_H_ */

@@ -72,13 +72,6 @@
 # include "tr_inheritance.h"
 
 /*-----------------------------------------------------------------*/
-/* general                                                         */
-/*-----------------------------------------------------------------*/
-
-/** Initalize entity module. */
-void init_entity (void);
-
-/*-----------------------------------------------------------------*/
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
 
@@ -554,6 +547,12 @@ void set_entity_additional_properties(entity *ent, unsigned property_mask);
 
 /** Sets one additional graph property. */
 void set_entity_additional_property(entity *ent, unsigned flag);
+
+/** Returns the calling convention of an entities graph. */
+unsigned get_entity_calling_convention(const entity *ent);
+
+/** Sets the calling convention of an entities graph. */
+void set_entity_calling_convention(entity *ent, unsigned cc_mask);
 
 /**
  * @page unknown_entity
