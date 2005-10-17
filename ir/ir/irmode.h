@@ -39,12 +39,12 @@
 /**
  * Contains relevant information about a mode.
  *
- * Neccessary information about a mode is stored in this struct
+ * Necessary information about a mode is stored in this struct
  * which is used by the tarval module to perform calculations
  * and comparisons of values of a such described mode.
  *
  * ATTRIBUTES:
- *  -  modecode code:           An unambigous int (enum) for the mode
+ *  -  modecode code:           An unambiguous int (enum) for the mode
  *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
  *  -  mode_sort sort:          sort of mode specifying possible usage categories
  *  -  int    size:             size of the mode in Bits.
