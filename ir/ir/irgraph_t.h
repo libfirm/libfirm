@@ -97,6 +97,7 @@ struct ir_graph {
   exec_freq_state   execfreq_state;        /**< state of execution frequency information */
   ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
   irg_extblk_info_state extblk_state;      /**< state of extended basic block info */
+  unsigned calling_conv;                   /**< calling convention */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -146,8 +147,10 @@ struct ir_graph {
 
 /**
  * Initializes the graph construction module
+ *
+ * @param default_cc_mask  The default calling convention.
  */
-void init_irgraph(void);
+void firm_init_irgraph(unsigned default_cc_mask);
 
 /* Internal constructor that does not add to irp_irgs or the like. */
 ir_graph *new_r_ir_graph (entity *ent, int n_loc);
@@ -459,6 +462,16 @@ _set_irg_additional_property(ir_graph *irg, irg_additional_property flag) {
   irg->additional_properties |= flag;
 }
 
+static INLINE unsigned
+_get_irg_calling_convention(const ir_graph *irg) {
+  return irg->calling_conv;
+}
+
+static INLINE void
+_set_irg_calling_convention(ir_graph *irg, unsigned cc_mask) {
+  irg->calling_conv = cc_mask;
+}
+
 static INLINE void
 _set_irg_link(ir_graph *irg, void *thing) {
   irg->link = thing;
@@ -540,6 +553,8 @@ _inc_irg_block_visited(ir_graph *irg) {
 #define get_irg_additional_properties(irg)    _get_irg_additional_properties(irg)
 #define set_irg_additional_properties(irg, m) _set_irg_additional_properties(irg, m)
 #define set_irg_additional_property(irg, f)   _set_irg_additional_property(irg, f)
+#define get_irg_calling_convention(irg)       _get_irg_calling_convention(irg)
+#define set_irg_calling_convention(irg, cc)   _set_irg_calling_convention(irg, cc)
 #define set_irg_link(irg, thing)              _set_irg_link(irg, thing)
 #define get_irg_link(irg)                     _get_irg_link(irg)
 #define get_irg_visited(irg)                  _get_irg_visited(irg)

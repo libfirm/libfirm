@@ -79,10 +79,24 @@ void (set_interprocedural_view)(int state) {
 /** contains the suffix for frame type names */
 static ident *frame_type_suffix = NULL;
 
+/** The default firm calling convention mask. */
+static unsigned firm_default_cc_mask = 0;
+
 /* initialize the IR graph module */
-void init_irgraph(void) {
+void firm_init_irgraph(unsigned default_cc_mask) {
   frame_type_suffix = new_id_from_str(FRAME_TP_SUFFIX);
-	forbid_new_data = 1;
+	forbid_new_data   = 1;
+  firm_default_cc_mask = default_cc_mask;
+}
+
+/* Gets the default calling convention for new constructed graphs. */
+unsigned get_firm_default_calling_convention(void) {
+  return firm_default_cc_mask;
+}
+
+/* Sets the default calling convention for new constructed graphs. */
+void set_firm_default_calling_convention(unsigned cc_mask) {
+  firm_default_cc_mask = cc_mask;
 }
 
 /**
@@ -190,6 +204,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->execfreq_state      = exec_freq_none;
   res->class_cast_state    = ir_class_casts_transitive;
   res->extblk_state        = ir_extblk_info_none;
+  res->calling_conv        = get_firm_default_calling_convention();
 
   /*-- Type information for the procedure of the graph --*/
   res->ent = ent;
@@ -687,6 +702,18 @@ void
 void
 (set_irg_additional_property)(ir_graph *irg, irg_additional_property flag) {
   _set_irg_additional_property(irg, flag);
+}
+
+/* Returns the calling convention of a graph. */
+unsigned
+(get_irg_calling_convention)(const ir_graph *irg) {
+  return _get_irg_calling_convention(irg);
+}
+
+/* Sets the calling convention of a graph. */
+void
+(set_irg_calling_convention)(ir_graph *irg, unsigned cc_mask) {
+  _set_irg_calling_convention(irg, cc_mask);
 }
 
 void

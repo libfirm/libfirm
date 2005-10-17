@@ -459,6 +459,32 @@ void set_irg_additional_properties(ir_graph *irg, unsigned property_mask);
 /** Sets one additional graph property. */
 void set_irg_additional_property(ir_graph *irg, irg_additional_property flag);
 
+/**
+ * calling conventions
+ */
+typedef enum {
+  irg_cc_reg_param   = 0x00000001, /**< Transmit parameters in registers, else the stack is used.
+                                        This flag may be set as default on some architectures. */
+  irg_cc_last_on_top = 0x00000002, /**< The last non-register parameter is transmitted on top of
+                                        the stack. This is equivalent to the stddecl or pascal
+                                        calling convention. If this flag is not set, the first
+                                        non-register parameter is used (cdecl calling convention) */
+  irg_cc_this_call   = 0x00000004  /**< The first parameter is a this pointer and is transmitted
+                                        in a special way. */
+} irg_calling_convention;
+
+/** Returns the calling convention of a graph. */
+unsigned get_irg_calling_convention(const ir_graph *irg);
+
+/** Sets the calling convention of a graph. */
+void set_irg_calling_convention(ir_graph *irg, unsigned cc_mask);
+
+/** Gets the default calling convention for new constructed graphs. */
+unsigned get_firm_default_calling_convention(void);
+
+/** Sets the default calling convention for new constructed graphs. */
+void set_firm_default_calling_convention(unsigned cc_mask);
+
 /** A void * field to link arbitrary information to the node. */
 void  set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (const ir_graph *irg);
