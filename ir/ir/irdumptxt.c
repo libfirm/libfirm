@@ -83,6 +83,7 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
   return F;
 }
 
+/* Write the irnode and all its attributes to the file passed. */
 int dump_irnode_to_file(FILE *F, ir_node *n) {
   int i, bad = 0;
   char comma;
@@ -542,6 +543,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
     if (is_Method_type(get_entity_type(ent))) {
       unsigned mask = get_entity_additional_properties(ent);
+      unsigned cc   = get_entity_calling_convention(ent);
 
       if (mask) {
         fprintf(F, "\n%s  additional prop: ", prefix);
@@ -551,6 +553,17 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
         if (mask & irg_noreturn_function) fprintf(F, "noreturn_function, ");
         if (mask & irg_nothrow_function)  fprintf(F, "nothrow_function, ");
         if (mask & irg_naked_function)    fprintf(F, "naked_function, ");
+      }
+      fprintf(F, "\n%s  calling convention: ", prefix);
+      if (cc & irg_cc_reg_param) fprintf(F, "regparam, ");
+      if (cc & irg_cc_this_call) fprintf(F, "thiscall, ");
+      if ((cc & (irg_cc_last_on_top|irg_cc_callee_clear_stk)) == 0)
+        fprintf(F, "cdecl");
+      else if ((cc & (irg_cc_last_on_top|irg_cc_callee_clear_stk)) == (irg_cc_last_on_top|irg_cc_callee_clear_stk))
+        fprintf(F, "stdcall");
+      else {
+        fprintf(F, (cc & irg_cc_last_on_top) ? "last param on top, " : "first param on top, ");
+        fprintf(F, (cc & irg_cc_callee_clear_stk) ? "callee clear stack" : "caller clear stack");
       }
     }
 

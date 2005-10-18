@@ -1509,6 +1509,16 @@ dump_block_graph(FILE *F, ir_graph *irg) {
   current_ir_graph = rem;
 }
 
+/**
+ * Dump the info for an irg.
+ * Parsed by XVCG but not shown. use yComp.
+ */
+static void dump_graph_info(FILE *F, ir_graph *irg) {
+  fprintf(F, "info1:\"");
+  dump_entity_to_file(F, get_irg_entity(irg), dump_verbosity_entattrs | dump_verbosity_entconsts);
+  fprintf(F, "\"\n");
+}
+
 /** Dumps an irg as a graph clustered by block nodes.
  *  If interprocedural view edges can point to nodes out of this graph.
  */
@@ -1518,6 +1528,8 @@ static void dump_graph_from_list(FILE *F, ir_graph *irg) {
   PRINT_IRGID(irg);
   fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
       get_ent_dump_name(get_irg_entity(irg)));
+
+  dump_graph_info(F, irg);
 
   dump_block_graph(F, irg);
 
@@ -2318,6 +2330,8 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
   PRINT_IRGID(irg);
   fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
     get_ent_dump_name(get_irg_entity(irg)));
+
+  dump_graph_info(F, irg);
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_graph *irg     = get_irp_irg(i);
