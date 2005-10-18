@@ -557,9 +557,9 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       fprintf(F, "\n%s  calling convention: ", prefix);
       if (cc & irg_cc_reg_param) fprintf(F, "regparam, ");
       if (cc & irg_cc_this_call) fprintf(F, "thiscall, ");
-      if ((cc & (irg_cc_last_on_top|irg_cc_callee_clear_stk)) == 0)
+      if (IS_CDECL(cc))
         fprintf(F, "cdecl");
-      else if ((cc & (irg_cc_last_on_top|irg_cc_callee_clear_stk)) == (irg_cc_last_on_top|irg_cc_callee_clear_stk))
+      else if (IS_STDCALL(cc))
         fprintf(F, "stdcall");
       else {
         fprintf(F, (cc & irg_cc_last_on_top) ? "last param on top, " : "first param on top, ");
