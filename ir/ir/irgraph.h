@@ -463,13 +463,15 @@ void set_irg_additional_property(ir_graph *irg, irg_additional_property flag);
  * calling conventions
  */
 typedef enum {
-  irg_cc_reg_param   = 0x00000001, /**< Transmit parameters in registers, else the stack is used.
-                                        This flag may be set as default on some architectures. */
-  irg_cc_last_on_top = 0x00000002, /**< The last non-register parameter is transmitted on top of
-                                        the stack. This is equivalent to the stddecl or pascal
-                                        calling convention. If this flag is not set, the first
-                                        non-register parameter is used (cdecl calling convention) */
-  irg_cc_this_call   = 0x00000004  /**< The first parameter is a this pointer and is transmitted
+  irg_cc_reg_param        = 0x00000001, /**< Transmit parameters in registers, else the stack is used.
+                                             This flag may be set as default on some architectures. */
+  irg_cc_last_on_top      = 0x00000002, /**< The last non-register parameter is transmitted on top of
+                                             the stack. This is equivalent to the stdcall or pascal
+                                             calling convention. If this flag is not set, the first
+                                             non-register parameter is used (cdecl calling convention) */
+  irg_cc_callee_clear_stk = 0x00000004, /**< The callee clears the stack. This forbids variadic
+                                             function calls (stdcall). */
+  irg_cc_this_call        = 0x00000008  /**< The first parameter is a this pointer and is transmitted
                                         in a special way. */
 } irg_calling_convention;
 
