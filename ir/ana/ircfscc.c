@@ -298,7 +298,7 @@ init_node (ir_node *n, void *env) {
 }
 
 /**
- * Initializes the common global settings for the scc algorthm
+ * Initializes the common global settings for the scc algorithm
  */
 static INLINE void
 init_scc_common (void) {
@@ -348,6 +348,7 @@ static bool is_outermost_StartBlock(ir_node *n) {
 /** Returns true if n is a loop header, i.e., it is a Block node
  *  and has predecessors within the cfloop and out of the cfloop.
  *
+ *  @param n     the block node to check
  *  @param root  only needed for assertion.
  */
 static bool
@@ -364,13 +365,13 @@ is_head (ir_node *n, ir_node *root)
       ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
       if (is_backedge(n, i)) continue;
       if (!irn_is_in_stack(pred)) {
-	      some_outof_loop = 1;
+        some_outof_loop = 1;
       } else {
-	      if (get_irn_uplink(pred) < get_irn_uplink(root))  {
-	        DDMN(pred); DDMN(root);
-	        assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-	      }
-	      some_in_loop = 1;
+        if (get_irn_uplink(pred) < get_irn_uplink(root))  {
+          DDMN(pred); DDMN(root);
+          assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+        }
+        some_in_loop = 1;
       }
     }
   }
@@ -382,7 +383,9 @@ is_head (ir_node *n, ir_node *root)
  * Returns true if n is possible loop head of an endless loop.
  * I.e., it is a Block, Phi or Filter node and has only predecessors
  * within the loop.
- * @arg root: only needed for assertion.
+ *
+ * @param n     the block node to check
+ * @param root  only needed for assertion.
  */
 static bool
 is_endless_head (ir_node *n, ir_node *root)
