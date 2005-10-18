@@ -21,9 +21,11 @@ static INLINE int * new_backedge_arr(struct obstack *obst, int size) {
   return res;
 }
 
-/* Adapts backedges array to new size.
-   Must be called if in array of irnode is changed.  Else
-   Segmentation faults might occur.  */
+/**
+ * Adapts backedges array to new size.
+ * Must be called if in array of irnode is changed.  Else
+ * Segmentation faults might occur.
+ */
 void fix_backedges(struct obstack *obst, ir_node *n);
 
 #endif /* _IRBACKEDGE_T_H_ */
