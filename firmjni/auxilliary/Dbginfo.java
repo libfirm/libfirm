@@ -36,6 +36,9 @@ public class Dbginfo {
   /** Return the dbg object index of the given node, or <TT>-1</TT> if none has been set. */
   public static native int doGetDbgInfoIdx (int node);
 
+  /** Return the name of a debug action. */
+  public static native String dbgActionToString (int action);
+
   /** Return the dbg object of the given node, or <TT>null</TT> if none has been set. */
   public static Dbginfo getDbgInfo (int node)
   {
@@ -65,14 +68,14 @@ public class Dbginfo {
     _infos [idx] = new Dbginfo (file, line);
   }
 
-  public static void myJavaDbgInfoMergePair(int new_node, int old_node, int info) {
-    System.out.println("Optimization: "+ info);
+  public static void myJavaDbgInfoMergePair(int new_node, int old_node, int action) {
+    System.out.println("Optimization: "+ dbgActionToString(action));
     System.out.println("new Node " + Irnode.getIrnNodeNr(new_node));
     System.out.println("old Node " + Irnode.getIrnNodeNr(old_node));
   }
 
-  public static void myJavaDbgInfoMergeSets(int new_nodes[], int old_nodes[], int info) {
-    System.out.println("Optimization: "+ info);
+  public static void myJavaDbgInfoMergeSets(int new_nodes[], int old_nodes[], int action) {
+    System.out.println("Optimization: "+ dbgActionToString(action));
     System.out.print("new Nodes: ");
     for (int i = 0; i < new_nodes.length; i++)
       System.out.print(Irnode.getIrnNodeNr(new_nodes[i]) + ", ");

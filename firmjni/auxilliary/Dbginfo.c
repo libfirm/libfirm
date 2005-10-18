@@ -96,3 +96,8 @@ jint Java_firmjni_Dbginfo_doGetDbgInfoIdx (JNIEnv *env, jclass clss, jint jnode)
 
   return (0);
 }
+
+/** return the name of a debug action. */
+jstring Java_firmjni_Dbginfo_dbgActionToString (JNIEnv *env, jclass clss, jint a) {
+  return (*env)->NewStringUTF(env, dbg_action_2_str(a));
+}
