@@ -60,14 +60,49 @@ get_irn_dbg_info(ir_node *n) {
 void set_entity_dbg_info(entity *ent, dbg_info* db) {
   ent->dbi = db;
 }
+
 dbg_info *get_entity_dbg_info(entity *ent) {
   return ent->dbi;
 }
+
 /* Routines to access the field of a type containing the
    debugging information. */
 void set_type_dbg_info(type *tp, dbg_info* db) {
   tp->dbi = db;
 }
+
 dbg_info *get_type_dbg_info(type *tp) {
   return tp->dbi;
+}
+
+/*
+ * Converts a debug_action into a string.
+ */
+const char *dbg_action_2_str(dbg_action a) {
+#define CASE(a) case a: return #a
+
+  switch (a) {
+  CASE(dbg_error);
+  CASE(dbg_opt_ssa);
+  CASE(dbg_opt_auxnode);
+  CASE(dbg_const_eval);
+  CASE(dbg_opt_cse);
+  CASE(dbg_straightening);
+  CASE(dbg_if_simplification);
+  CASE(dbg_algebraic_simplification);
+  CASE(dbg_write_after_write);
+  CASE(dbg_write_after_read);
+  CASE(dbg_read_after_write);
+  CASE(dbg_read_after_read);
+  CASE(dbg_read_a_const);
+  CASE(dbg_rem_poly_call);
+  CASE(dbg_opt_confirm);
+  default:
+    if (a <= dbg_max)
+      return "string conversion not implemented";
+    else
+      assert(0);
+    return NULL;
+  }
+#undef CASE
 }

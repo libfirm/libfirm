@@ -121,43 +121,14 @@ typedef enum {
   dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
   dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation */
   dbg_max                       /**< Maximum value. */
-
 } dbg_action;
 
-
 /**
- * Converts enum values to strings.
+ * Converts a debug_action into a string.
+ *
+ * @param a  the debug action
  */
-#ifdef __GNUC__
-static const char* dbg_action_2_str(dbg_action) __attribute__ ((unused));
-#endif
-
-static const char* dbg_action_2_str(dbg_action a) {
-  switch(a) {
-  case dbg_error: return "dbg_error"; break;
-  case dbg_opt_ssa: return "dbg_opt_ssa"; break;
-  case dbg_opt_auxnode: return "dbg_opt_auxnode"; break;
-  case dbg_const_eval: return "dbg_const_eval"; break;
-  case dbg_opt_cse: return "dbg_opt_cse"; break;
-  case dbg_straightening: return "dbg_straightening"; break;
-  case dbg_if_simplification: return "dbg_if_simplification"; break;
-  case dbg_algebraic_simplification:
-    return "dbg_algebraic_simplification"; break;
-  case dbg_write_after_write: return "dbg_write_after_write"; break;
-  case dbg_write_after_read: return "dbg_write_after_read"; break;
-  case dbg_read_after_write: return "dbg_read_after_write"; break;
-  case dbg_read_after_read: return "dbg_read_after_read"; break;
-  case dbg_read_a_const: return "dbg_read_a_const"; break;
-  case dbg_rem_poly_call: return "dbg_rem_poly_call"; break;
-  case dbg_opt_confirm: return "dbg_opt_confirm"; break;
-  default:
-    if (a <= dbg_max)
-      return "string conversion not implemented";
-    else
-      assert(0);
-    return NULL;
-  }
-}
+const char *dbg_action_2_str(dbg_action a);
 
 /**
  * The type of the debug info merge function.
