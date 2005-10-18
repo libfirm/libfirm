@@ -6,32 +6,32 @@ use xvcg to view this graph:
 
 
 Creating an IR graph: IfElseExample...
-Optimization: 3
+Optimization: dbg_const_eval
 new Node 37
 old Node 36
-Optimization: 2
+Optimization: dbg_opt_auxnode
 new Nodes: 39,
 old Nodes: 40, 38, 39,
-Optimization: 4
+Optimization: dbg_opt_cse
 new Nodes: 39,
 old Nodes: 39, 39,
-Optimization: 2
+Optimization: dbg_opt_auxnode
 new Nodes: 23,
 old Nodes: 41, 38, 23,
-Optimization: 14
+Optimization: dbg_dead_code
 new Node 42
 old Node 42
-Optimization: 4
+Optimization: dbg_opt_cse
 new Nodes: 34,
 old Nodes: 47, 34,
-Optimization: 5
+Optimization: dbg_straightening
 new Nodes: 31,
 old Nodes: 46, 39,
 Done building the graph.  Optimizing it.
-Optimization: 5
+Optimization: dbg_straightening
 new Nodes: 31,
 old Nodes: 46, 39,
-Optimization: 4
+Optimization: dbg_opt_cse
 new Nodes: 39,
 old Nodes: 48, 39,
 use xvcg to view this graph:
