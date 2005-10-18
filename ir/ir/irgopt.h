@@ -174,19 +174,4 @@ void place_code(ir_graph *irg);
  */
 void remove_critical_cf_edges(ir_graph *irg);
 
-/**
- * Copies a node to the current_ir_graph. The Ins of the new node point to
- * the predecessors on the graph of the old node.  For block/phi nodes not all
- * predecessors might be copied.
- * For Phi and Block nodes the function allocates in-arrays with an arity
- * only for useful predecessors.  The arity is determined by counting
- * the non-bad predecessors of the block.
- * Does NOT copy Bad nodes, as these are "local" to the graph.
- * Use get_irg_bad() instead.
- *
- * @param n             The node to be copied
- * @param copy_node_nr  if non-NULL, the node number attribute will be copied to the new node
- */
-ir_node *copy_irn(ir_node *n, int copy_node_nr);
-
 # endif /* _IRGOPT_H_ */
