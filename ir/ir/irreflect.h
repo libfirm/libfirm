@@ -170,8 +170,8 @@ void rflct_new_opcode(opcode opc, const char *name, bool commutative);
 
 /**
  * Add a signature to the opcode.
- * @param opc The opcode.
- * @param args The signature.
+ * @param opc  The opcode.
+ * @param sig  The signature.
  * @return true, if the signature was added sucessfully, false if no
  * more signatures can be added to the opcode.
  */

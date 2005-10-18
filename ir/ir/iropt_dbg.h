@@ -251,7 +251,7 @@
  * Merge the debug info after a tuple optimization.
  * a Proj(Tuple) is replaced by the associated tuple value.
  *
- * @param oldn   the Proj node
+ * @param proj   the Proj node
  * @param tuple  the Tuple node
  * @param n      the Proj(Tuple) value
  */

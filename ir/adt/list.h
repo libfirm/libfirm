@@ -243,6 +243,7 @@ static INLINE void list_splice_init(struct list_head *list,
 
 /**
  * list_for_each_entry	-	iterate over list of given type
+ * @param type    the type of the struct where the listhead is embedded in
  * @param pos     the type * to use as a loop counter.
  * @param head    the head for your list.
  * @param member  the name of the list_struct within the struct.
@@ -254,6 +255,7 @@ static INLINE void list_splice_init(struct list_head *list,
 
 /**
  * list_for_each_entry_reverse - iterate backwards over list of given type.
+ * @param type    the type of the struct where the listhead is embedded in
  * @param pos     the type * to use as a loop counter.
  * @param head    the head for your list.
  * @param member  the name of the list_struct within the struct.
@@ -266,6 +268,7 @@ static INLINE void list_splice_init(struct list_head *list,
 
 /**
  * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
+ * @param type    the type of the struct where the listhead is embedded in
  * @param pos     the type * to use as a loop counter.
  * @param n       another type * to use as temporary storage
  * @param head    the head for your list.

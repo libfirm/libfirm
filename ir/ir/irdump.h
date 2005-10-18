@@ -82,7 +82,8 @@ DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void);
 
 /** Dump a firm graph.
  *
- *  @param irg  The firm graph to be dumped.
+ *  @param irg     The firm graph to be dumped.
+ *  @param suffix  A suffix for the file name.
  *
  *  @return
  *     A file containing the firm graph in vcg format.
@@ -100,7 +101,8 @@ void dump_ir_graph (ir_graph *irg, const char *suffix);
 
 /** Dump a firm graph without explicit block nodes.
  *
- *  @param irg   The firm graph to be dumped.
+ *  @param irg     The firm graph to be dumped.
+ *  @param suffix  A suffix for the file name.
  *
  *  @return
  *     A file containing the firm graph in vcg format.
@@ -134,14 +136,17 @@ void dump_ir_block_graph (ir_graph *irg, const char *suffix);
  */
 void dump_ir_extblock_graph (ir_graph *irg, const char *suffix);
 
-/** Dumps all graphs in interprocedural view to a file named All_graphs.vcg.
+/** Dumps all graphs in interprocedural view to a file named All_graphs<suffix>.vcg.
+ *
+ * @param suffix  A suffix for the file name.
  */
 void dump_all_cg_block_graph(const char *suffix);
 
 /** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.
  *
- *  @param irg   The firm graph to be dumped with its type information.
+ *  @param irg     The firm graph to be dumped with its type information.
+ *  @param suffix  A suffix for the file name.
  *
  *  @return
  *      A file containing the firm graph and the type information of the firm graph in vcg format.
@@ -157,7 +162,8 @@ void dump_ir_graph_w_types (ir_graph *irg, const char *suffix);
 /** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.
  *
- *  @param irg   The firm graph to be dumped with its type information.
+ *  @param irg     The firm graph to be dumped with its type information.
+ *  @param suffix  A suffix for the file name.
  *
  *  @return
  *      A file containing the firm graph and the type information of the firm graph in vcg format.
@@ -171,21 +177,24 @@ void dump_ir_graph_w_types (ir_graph *irg, const char *suffix);
  */
 void dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix);
 
-/** The type of a walker function that is called for each graph.
+/** The type of a dump function that is called for each graph.
  *
- *  @param irg   current visited graph
+ *  @param irg     current visited graph
+ *  @param suffix  A suffix for the file name.
  */
 typedef void dump_graph_func(ir_graph *irg, const char *suffix);
 
-/**  A walker that calls a dumper for each graph.
+/**
+ * A walker that calls a dumper for each graph.
  *
- *   @param dump_graph    The dumper to be used for dumping.
+ * @param dump_graph    The dumper to be used for dumping.
+ * @param suffix        A suffix for the file name.
  *
- *   @return
+ * @return
  *      Whatever the dumper creates.
  *
- *   Walks over all firm graphs and  calls a dumper for each graph.
- *   The following dumpers can be passed as arguments:
+ *  Walks over all firm graphs and  calls a dumper for each graph.
+ *  The following dumpers can be passed as arguments:
  *   - dump_ir_graph()
  *   - dump_ir_block_graph()
  *   - dump_cfg()
@@ -197,34 +206,37 @@ typedef void dump_graph_func(ir_graph *irg, const char *suffix);
 void dump_all_ir_graphs (dump_graph_func *dump_graph, const char *suffix);
 
 
-/**  Dump the control flow graph of a procedure.
+/**
+ * Dump the control flow graph of a procedure.
  *
- *   @param irg  The firm graph whose CFG shall be dumped.
+ * @param irg     The firm graph whose CFG shall be dumped.
+ * @param suffix  A suffix for the file name.
  *
- *   @return
+ * @return
  *      A file containing the CFG in vcg format.
  *
- *   Dumps the control flow graph of a procedure in standard xvcg format.
- *   Dumps the graph to a file.  The file name is constructed from the
- *   name of the entity describing the procedure (irg->entity) and the
- *   ending -cfg.vcg.  Eventually overwrites existing files.
+ * Dumps the control flow graph of a procedure in standard xvcg format.
+ * Dumps the graph to a file.  The file name is constructed from the
+ * name of the entity describing the procedure (irg->entity) and the
+ * ending -cfg.vcg.  Eventually overwrites existing files.
  *
  * @see turn_off_edge_labels()
  */
 void dump_cfg (ir_graph *irg, const char *suffix);
 
-/**  Dump a node and its predecessors forming a subgraph to a vcg file.
+/**
+ * Dump a node and its predecessors forming a subgraph to a vcg file.
  *
- *   @param root   The node serving as root for the subgraph.
- *   @param depth  Dump nodes on paths starting at root with length depth.
- *   @param suffix A suffix for the file name.
+ * @param root   The node serving as root for the subgraph.
+ * @param depth  Dump nodes on paths starting at root with length depth.
+ * @param suffix A suffix for the file name.
  *
- *   Dumps the graph to a file.  The file name is constructed from the
- *   name of the entity describing the procedure the passed node is
- *   in, suffix and the ending -subg_<nr>.vcg.  nr is a unique number
- *   for each graph dumped. Eventually overwrites existing files.
+ * Dumps the graph to a file.  The file name is constructed from the
+ * name of the entity describing the procedure the passed node is
+ * in, suffix and the ending -subg_<nr>.vcg.  nr is a unique number
+ * for each graph dumped. Eventually overwrites existing files.
  *
- *   @return
+ * @return
  *      A file containing the subgraph in vcg format.
  */
 void dump_subgraph (ir_node *root, int depth, const char *suffix);
@@ -238,6 +250,8 @@ void dump_subgraph (ir_node *root, int depth, const char *suffix);
  *
  * Dumps the callgraph to a file "Callgraph"<suffix>".vcg".
  *
+ * @param suffix A suffix for the file name.
+ *
  * @see dump_callgraph_loop_tree(const char *suffix)
  */
 void dump_callgraph(const char *suffix);
@@ -247,11 +261,13 @@ void dump_callgraph(const char *suffix);
 /* **************************************************************************** */
 
 /**
- *  Dumps all the type information needed for Calls, Sels, ... in this graph.
- *  Does not dump the graph!
+ * Dumps all the type information needed for Calls, Sels, ... in this graph.
+ * Does not dump the graph!
  *
- *  @param irg   The firm graph whose type information is to be dumped.
- *  @return
+ * @param irg    The firm graph whose type information is to be dumped.
+ * @param suffix A suffix for the file name.
+ *
+ * @return
  *      A file containing the type information of the firm graph in vcg format.
  *
  *  Dumps this graph to a file.  The file name is constructed from the
@@ -262,34 +278,39 @@ void dump_callgraph(const char *suffix);
  */
 void dump_type_graph (ir_graph *irg, const char *suffix);
 
-/**  Dumps all type information.
+/**
+ * Dumps all type information.
  *
- *   @return
+ * @param suffix A suffix for the file name.
+ *
+ * @return
  *      A file containing all type information for the program in standard
  *      vcg format.
  *
- *   Dumps all type information that is somehow reachable in standard vcg
- *   format.
- *   Dumps the graph to a file named All_types.vcg.
+ * Dumps all type information that is somehow reachable in standard vcg
+ * format.
+ * Dumps the graph to a file named All_types.vcg.
  *
  * @see turn_off_edge_labels()
  */
 void dump_all_types (const char *suffix);
 
-/**  Dumps the class hierarchy with or without entities.
+/**
+ * Dumps the class hierarchy with or without entities.
  *
- *   @param entities    Flag whether to dump the entities.
+ * @param entities    Flag whether to dump the entities.
+ * @param suffix      A suffix for the file name.
  *
- *   @return
+ * @return
  *      A file containing the class hierarchy tree for the program in standard
  *      vcg format.
  *
- *   Does not dump the global type.
- *   Dumps a node for all classes and the sub/supertype relations.  If
- *   entities is set to true also dumps the entities of classes, but without
- *   any additional information as the entities type.  The overwrites relation
- *   is dumped along with the entities.
- *   Dumps to a file class_hierarchy.vcg
+ * Does not dump the global type.
+ * Dumps a node for all classes and the sub/supertype relations.  If
+ * entities is set to true also dumps the entities of classes, but without
+ * any additional information as the entities type.  The overwrites relation
+ * is dumped along with the entities.
+ * Dumps to a file class_hierarchy.vcg
  */
 void dump_class_hierarchy (bool entities, const char *suffix);
 
@@ -305,27 +326,27 @@ void dump_class_hierarchy (bool entities, const char *suffix);
  *
  * Implementing this dumper was stimulated by Florian Liekwegs similar dumper.
  *
- * @arg irg     Dump the loop tree for this graph.
- * @arg suffix  Suffix to filename.
+ * @param irg     Dump the loop tree for this graph.
+ * @param suffix  A suffix for the file name.
  */
 void dump_loop_tree(ir_graph *irg, const char *suffix);
 
 /** Dumps the firm nodes in the sub-loop-tree of loop to a graph.
  *
- *  Dumps the loop nodes if dump_loop_information() is set.
- *  The name of the file is loop_<loop_nr><suffix>.vcg.
+ * Dumps the loop nodes if dump_loop_information() is set.
+ * The name of the file is loop_<loop_nr><suffix>.vcg.
  *
- *  @arg loop    Dump the loop tree for this loop.
- *  @arg suffix  Suffix to filename.
+ * @param l       Dump the loop tree for this loop.
+ * @param suffix  A suffix for the file name.
  */
 void dump_loop (ir_loop *l, const char *suffix);
 
 /** Dumps the loop tree over the call graph.
  *
- *  See for yourself what you can use this for.
- *  The filename is "Callgraph_looptree<suffix>.vcg".
+ * See for yourself what you can use this for.
+ * The filename is "Callgraph_looptree<suffix>.vcg".
  *
- *  @arg suffix  Suffix to filename.
+ * @param suffix  A suffix for the file name.
  */
 void dump_callgraph_loop_tree(const char *suffix);
 
@@ -441,11 +462,13 @@ void dump_types_as_text(unsigned verbosity, const char *suffix);
 
 /** Dumps all global variables as text.
  *
- *  Dumps a text representation of the entities in the global type.
+ * @param suffix  A suffix for the file name.
  *
- *  The file name is the program name (get_irp_name()), or 'TextTypes'
- *  if the program name is not set, appended by <suffix>-globals.txt.
- *  For verbosity see the documentation of the verbosity flags above.
+ * Dumps a text representation of the entities in the global type.
+ *
+ * The file name is the program name (get_irp_name()), or 'TextTypes'
+ * if the program name is not set, appended by <suffix>-globals.txt.
+ * For verbosity see the documentation of the verbosity flags above.
  */
 void dump_globals_as_text(unsigned verbosity, const char *suffix);
 
@@ -455,11 +478,11 @@ void dump_globals_as_text(unsigned verbosity, const char *suffix);
 
 /** Output a selected graph.
  *
- *  All graph dumpers check this name.  If the name is != "" and
- *  not a prefix of the graph to be dumped, the dumper does not
- *  dump the graph.
+ * All graph dumpers check this name.  If the name is != "" and
+ * not a prefix of the graph to be dumped, the dumper does not
+ * dump the graph.
  *
- *  @param name The prefix of the name (not the ld_name) of the method
+ * @param name The prefix of the name (not the ld_name) of the method
  *              entity to be dumped.
  */
 void   only_dump_method_with_name(ident *name);
@@ -471,20 +494,20 @@ ident *get_dump_file_filter_ident(void);
  *  prefix of name. */
 int is_filtered_dump_name(ident *name);
 
-/**  Sets the vcg flag "display_edge_labels" to no.
+/** Sets the vcg flag "display_edge_labels" to no.
  *
- *   This is necessary as xvcg and aisee both fail to display graphs
- *   with self-edges if these edges have labels.
+ * This is necessary as xvcg and aisee both fail to display graphs
+ * with self-edges if these edges have labels.
  */
 void turn_off_edge_labels(void);
 
 /**
- *  If set to true constants will be replicated for every use. In non
- *  blocked view edges from constant to block are skipped.  Vcg then
- *  layouts the graphs more compact, this makes them better readable.
- *  The flag is automatically and temporarily set to false if other
- *  edges are dumped, as outs, loop, ...
- *  Default setting: false.
+ * If set to true constants will be replicated for every use. In non
+ * blocked view edges from constant to block are skipped.  Vcg then
+ * layouts the graphs more compact, this makes them better readable.
+ * The flag is automatically and temporarily set to false if other
+ * edges are dumped, as outs, loop, ...
+ * Default setting: false.
  */
 void dump_consts_local(bool b);
 

@@ -19,7 +19,10 @@
 /**
  * Initializes the graph construction.
  *
- * @param func  @see uninitialized_local_variable_func_t
+ * @param func  callback that is called if a uninitialized
+ *              variable is detected
+ *
+ * @see uninitialized_local_variable_func_t
  */
 void init_cons(uninitialized_local_variable_func_t *func);
 

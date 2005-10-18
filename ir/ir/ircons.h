@@ -1821,7 +1821,7 @@ ir_node *new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *block      The block the node belong to.
  * @param *store      The current memory
  * @param *dst        The ir_node that represents the destination address.
- * @param *arg        The ir_node that represents the source address.
+ * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
 ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
@@ -2520,7 +2520,7 @@ ir_node *new_r_Mux  (ir_graph *irg, ir_node *block,
  * @param *block      The block the node belong to.
  * @param *store      The current memory
  * @param *dst        The ir_node that represents the destination address.
- * @param *arg        The ir_node that represents the source address.
+ * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
 ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
@@ -3234,7 +3234,7 @@ ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
  * @param *db         A pointer for debug information.
  * @param *store      The current memory
  * @param *dst        The ir_node that represents the destination address.
- * @param *arg        The ir_node that represents the source address.
+ * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
 ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst, ir_node *src, type *data_type);
@@ -3846,7 +3846,7 @@ ir_node *new_Mux  (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *m
  *
  * @param *store      The current memory
  * @param *dst        The ir_node that represents the destination address.
- * @param *arg        The ir_node that represents the source address.
+ * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
 ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, type *data_type);

@@ -285,7 +285,7 @@ static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv)
  *
  * @param iv     an empty interval, will be filled
  * @param bound  the bound value
- * @param pnc    the Confirm pnc relation
+ * @param pnc    the Confirm compare relation
  *
  * @return the filled interval or NULL if no interval
  *         can be created (happens only on floating point
@@ -527,8 +527,10 @@ static int is_transitive(pn_Cmp pnc) {
  * Return the value of a Cmp if one or both predecessors
  * are Confirm nodes.
  *
+ * @param cmp    the Cmp node
  * @param left   the left operand of the Cmp
  * @param right  the right operand of the Cmp
+ * @param pnc    the compare relation
  */
 tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
 {
@@ -696,6 +698,10 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
 #ifdef DEBUG_CONFIRM
 /**
  * For debugging. Prints an interval into a string.
+ *
+ * @param buf   address of a string buffer
+ * @param len   length of the string buffer
+ * @param iv    the interval
  */
 static int iv_snprintf(char *buf, size_t len, const interval_t *iv) {
   char smin[64], smax[64];
@@ -719,7 +725,11 @@ static int iv_snprintf(char *buf, size_t len, const interval_t *iv) {
 }
 
 /**
- * For debugging. Prints an interval compare
+ * For debugging. Prints an interval compare.
+ *
+ * @param l_iv  the left interval
+ * @param r_iv  the right interval
+ * @param pnc   the compare relation
  */
 static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
 {
@@ -732,7 +742,11 @@ static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp 
 }
 
 /**
- * For debugging. call *compare_iv() and prints inputs and result
+ * For debugging. call *compare_iv() and prints inputs and result.
+ *
+ * @param l_iv  the left interval
+ * @param r_iv  the right interval
+ * @param pnc   the compare relation
  */
 static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
 {

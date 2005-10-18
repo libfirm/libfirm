@@ -613,7 +613,7 @@ new_end_block(ir_node *end_block, ir_node *loop_head, set *l_n, set *loop_endblo
  * after loop block must have as well all copies of this node as predecessors.
  *
  * @param l_n             Contains all nodes of the loop.
- * @block block           A block after the loop.
+ * @param block           A block after the loop.
  * @param loop_in         A node from the loop, that is predecessor of the end block.
  * @param unroll_factor   An integer 2 <= unroll_factor <= 4.
  */
@@ -657,7 +657,7 @@ new_after_loop_block (set *l_n, ir_node* block, copies_t *loop_in, int unroll_fa
  *
  * @param l_n             Contains all nodes of the loop.
  * @param loop_outs       Contains nodes after the loop,that have as predecessor a node from the loop.
- * @block node            A node after the loop.
+ * @param node            A node after the loop.
  * @param loop_in         A node (Proj) from the loop, that is predecessor of *node.
  * @param unroll_factor   An integer 2 <= unroll_factor <= 4.
  */
