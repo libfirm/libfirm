@@ -487,6 +487,26 @@ unsigned get_firm_default_calling_convention(void);
 /** Sets the default calling convention for new constructed graphs. */
 void set_firm_default_calling_convention(unsigned cc_mask);
 
+/**
+ * check for the CDECL calling convention
+ */
+#define IS_CDECL(cc_mask)     (((cc_mask) & (irg_cc_callee_clear_stk|irg_cc_last_on_top)) == 0)
+
+/**
+ * check for the STDCALL calling convention
+ */
+#define IS_STDCALL(cc_mask)   (((cc_mask) & (irg_cc_callee_clear_stk|irg_cc_last_on_top)) == irg_cc_callee_clear_stk)
+
+/**
+ * add the CDECL convention bits
+ */
+#define SET_CDECL(cc_mask)    ((cc_mask) & ~(irg_cc_callee_clear_stk|irg_cc_last_on_top))
+
+/**
+ * add the STDCALL convention bits
+ */
+#define SET_STDCALL(cc_mask)  (((cc_mask) & ~irg_cc_last_on_top) | irg_cc_callee_clear_stk)
+
 /** A void * field to link arbitrary information to the node. */
 void  set_irg_link (ir_graph *irg, void *thing);
 void *get_irg_link (const ir_graph *irg);
