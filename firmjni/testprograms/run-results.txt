@@ -18,6 +18,9 @@ old Nodes: 39, 39,
 Optimization: 2
 new Nodes: 23,
 old Nodes: 41, 38, 23,
+Optimization: 14
+new Node 42
+old Node 42
 Optimization: 4
 new Nodes: 34,
 old Nodes: 47, 34,
