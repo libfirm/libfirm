@@ -36,4 +36,9 @@ typedef struct ir_graph ir_graph;
 typedef struct entity entity;
 #endif
 
+#ifndef _IR_EXTBB_TYPEDEF_
+#define _IR_EXTBB_TYPEDEF_
+typedef struct _ir_extblk ir_extblk;
+#endif
+
 #endif /* _FIRM_TYPES_H_ */
