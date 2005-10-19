@@ -337,8 +337,8 @@ static void do_reassociation(ir_node *n, void *env)
     res = 0;
 
     /* reassociation works only for integer or reference modes */
-    if (op->reassociate && (mode_is_int(mode) || mode_is_reference(mode))) {
-      res = op->reassociate(&n);
+    if (op->ops.reassociate && (mode_is_int(mode) || mode_is_reference(mode))) {
+      res = op->ops.reassociate(&n);
 
 			wenv->changes |= res;
     }
@@ -387,17 +387,28 @@ void optimize_reassociation(ir_graph *irg)
   }
 }
 
+/* Sets the default reassociation operation for an ir_op_ops. */
+ir_op_ops *firm_set_default_reassoc(opcode code, ir_op_ops *ops)
+{
+#define CASE(a) case iro_##a: ops->reassociate  = reassoc_##a; break
+
+  switch (code) {
+  CASE(Mul);
+  CASE(Add);
+  CASE(Sub);
+  CASE(And);
+  CASE(Or);
+  CASE(Eor);
+  default:
+    /* leave NULL */;
+  }
+
+  return ops;
+#undef CASE
+}
+
 /* initialize the reassociation by adding operations to some opcodes */
 void firm_init_reassociation(void)
 {
-#define INIT(a) op_##a->reassociate  = reassoc_##a;
-  INIT(Mul);
-  INIT(Add);
-  INIT(Sub);
-  INIT(And);
-  INIT(Or);
-  INIT(Eor);
-#undef INIT
-
   dbg = firm_dbg_register("firm.opt.reassoc");
 }

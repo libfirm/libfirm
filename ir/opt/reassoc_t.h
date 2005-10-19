@@ -21,6 +21,17 @@
 
 #include "reassoc.h"
 
+/**
+ * Sets the default reassociation operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
+ */
+ir_op_ops *firm_set_default_reassoc(opcode code, ir_op_ops *ops);
+
 /** Initialise the ressociation optimization */
 void firm_init_reassociation(void);
 
