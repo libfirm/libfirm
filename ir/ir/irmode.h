@@ -29,12 +29,8 @@
 #ifndef _IRMODE_H_
 #define _IRMODE_H_
 
+#include "firm_types.h"
 #include "ident.h"
-
-#ifndef _TARVAL_TYPEDEF_
-#define _TARVAL_TYPEDEF_
-  typedef struct tarval tarval;
-#endif
 
 /**
  * Contains relevant information about a mode.
