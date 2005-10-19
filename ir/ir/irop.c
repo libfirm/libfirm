@@ -24,6 +24,7 @@
 
 # include "iropt_t.h"             /* for firm_set_default_operations */
 # include "irvrfy_t.h"
+# include "reassoc_t.h"
 
 # include "xmalloc.h"
 
@@ -178,6 +179,7 @@ new_ir_op(opcode code, const char *name, op_pin_state p,
   firm_set_default_operations(code, &res->ops);
   firm_set_default_copy_attr(code, &res->ops);
   firm_set_default_verifyer(code, &res->ops);
+  firm_set_default_reassoc(code, &res->ops);
 
   hook_new_ir_op(res);
   return res;
