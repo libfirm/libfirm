@@ -14,9 +14,11 @@
 #include <string.h>
 
 /*
- * 32 bit should be enough for now
+ * 32 bit should be enough for most cases
  */
+#ifndef STAT_CNT_NUM
 #define STAT_CNT_NUM 1
+#endif
 
 typedef struct _counter_t {
   unsigned cnt[STAT_CNT_NUM];
