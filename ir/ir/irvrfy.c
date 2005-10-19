@@ -719,8 +719,8 @@ verify_node_Proj(ir_node *p, ir_graph *irg) {
 
   op = get_irn_op(pred);
 
-  if (op->verify_proj_node)
-    return op->verify_proj_node(pred, p);
+  if (op->ops.verify_proj_node)
+    return op->ops.verify_proj_node(pred, p);
 
   /* all went ok */
   return 1;
@@ -1675,8 +1675,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
         return 1;
     }
 
-  if (op->verify_node)
-    return op->verify_node(n, irg);
+  if (op->ops.verify_node)
+    return op->ops.verify_node(n, irg);
 
   /* All went ok */
   return 1;
@@ -1896,14 +1896,14 @@ int irg_vrfy_bads(ir_graph *irg, int flags)
 /*
  * set the default verify operation
  */
-void firm_set_default_verifyer(ir_op *op)
+void firm_set_default_verifyer(opcode code, ir_op_ops *ops)
 {
-#define CASE(a)                          \
-   case iro_##a:                         \
-     op->verify_node  = verify_node_##a; \
+#define CASE(a)                           \
+   case iro_##a:                          \
+     ops->verify_node  = verify_node_##a; \
      break
 
-   switch (op->code) {
+   switch (code) {
    CASE(Proj);
    CASE(Block);
    CASE(Start);
@@ -1949,16 +1949,16 @@ void firm_set_default_verifyer(ir_op *op)
    CASE(Mux);
    CASE(CopyB);
    default:
-     op->verify_node = NULL;
+     /* leave NULL */;
    }
 #undef CASE
 
 #define CASE(a)                          \
    case iro_##a:                         \
-     op->verify_proj_node  = verify_node_Proj_##a; \
+     ops->verify_proj_node  = verify_node_Proj_##a; \
      break
 
-   switch (op->code) {
+   switch (code) {
    CASE(Start);
    CASE(Cond);
    CASE(Raise);
@@ -1978,7 +1978,7 @@ void firm_set_default_verifyer(ir_op *op)
    CASE(EndReg);
    CASE(EndExcept);
    default:
-     op->verify_proj_node = NULL;
+     /* leave NULL */;
    }
 #undef CASE
 }

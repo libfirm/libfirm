@@ -591,22 +591,28 @@ static tarval *computed_value_Confirm(ir_node *n)
  */
 tarval *computed_value(ir_node *n)
 {
-  if (n->op->computed_value)
-    return n->op->computed_value(n);
+  if (n->op->ops.computed_value)
+    return n->op->ops.computed_value(n);
   return tarval_bad;
 }
 
 /**
- * set the default computed_value evaluator
+ * set the default computed_value evaluator in an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
  */
-static ir_op *firm_set_default_computed_value(ir_op *op)
+static ir_op_ops *firm_set_default_computed_value(opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                               \
   case iro_##a:                               \
-    op->computed_value  = computed_value_##a; \
+    ops->computed_value  = computed_value_##a; \
     break
 
-  switch (op->code) {
+  switch (code) {
   CASE(Const);
   CASE(SymConst);
   CASE(Add);
@@ -630,10 +636,10 @@ static ir_op *firm_set_default_computed_value(ir_op *op)
   CASE(Mux);
   CASE(Confirm);
   default:
-    op->computed_value  = NULL;
+    /* leave NULL */;
   }
 
-  return op;
+  return ops;
 #undef CASE
 }
 
@@ -1409,22 +1415,28 @@ static ir_node *equivalent_node_CopyB(ir_node *n)
 ir_node *
 equivalent_node(ir_node *n)
 {
-  if (n->op->equivalent_node)
-    return n->op->equivalent_node(n);
+  if (n->op->ops.equivalent_node)
+    return n->op->ops.equivalent_node(n);
   return n;
 }
 
 /**
- * set the default equivalent node operation
+ * sets the default equivalent node operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
  */
-static ir_op *firm_set_default_equivalent_node(ir_op *op)
+static ir_op_ops *firm_set_default_equivalent_node(opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                 \
   case iro_##a:                                 \
-    op->equivalent_node  = equivalent_node_##a; \
+    ops->equivalent_node  = equivalent_node_##a; \
     break
 
-  switch (op->code) {
+  switch (code) {
   CASE(Block);
   CASE(Jmp);
   CASE(Raise);
@@ -1452,10 +1464,10 @@ static ir_op *firm_set_default_equivalent_node(ir_op *op)
   CASE(Confirm);
   CASE(CopyB);
   default:
-    op->equivalent_node  = NULL;
+    /* leave NULL */;
   }
 
-  return op;
+  return ops;
 #undef CASE
 }
 
@@ -2759,22 +2771,28 @@ static ir_node *transform_node_Mux(ir_node *n)
  */
 static ir_node *transform_node(ir_node *n)
 {
-  if (n->op->transform_node)
-    n = n->op->transform_node(n);
+  if (n->op->ops.transform_node)
+    n = n->op->ops.transform_node(n);
   return n;
 }
 
 /**
- * set the default transform node operation
+ * sSets the default transform node operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
  */
-static ir_op *firm_set_default_transform_node(ir_op *op)
+static ir_op_ops *firm_set_default_transform_node(opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                 \
   case iro_##a:                                 \
-    op->transform_node  = transform_node_##a;   \
+    ops->transform_node  = transform_node_##a;   \
     break
 
-  switch (op->code) {
+  switch (code) {
   CASE(Add);
   CASE(Sub);
   CASE(Mul);
@@ -2795,10 +2813,10 @@ static ir_op *firm_set_default_transform_node(ir_op *op)
   CASE(End);
   CASE(Mux);
   default:
-    op->transform_node = NULL;
+    /* leave NULL */;
   }
 
-  return op;
+  return ops;
 #undef CASE
 }
 
@@ -2904,16 +2922,22 @@ static int node_cmp_attr_Confirm(ir_node *a, ir_node *b)
 }
 
 /**
- * set the default node attribute compare operation
+ * Set the default node attribute compare operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
  */
-static ir_op *firm_set_default_node_cmp_attr(ir_op *op)
+static ir_op_ops *firm_set_default_node_cmp_attr(opcode code, ir_op_ops *ops)
 {
-#define CASE(a)                             \
-  case iro_##a:                             \
-    op->node_cmp_attr  = node_cmp_attr_##a; \
+#define CASE(a)                              \
+  case iro_##a:                              \
+    ops->node_cmp_attr  = node_cmp_attr_##a; \
     break
 
-  switch (op->code) {
+  switch (code) {
   CASE(Const);
   CASE(Proj);
   CASE(Filter);
@@ -2928,10 +2952,10 @@ static ir_op *firm_set_default_node_cmp_attr(ir_op *op)
   CASE(Store);
   CASE(Confirm);
   default:
-    op->node_cmp_attr  = NULL;
+    /* leave NULL */;
   }
 
-  return op;
+  return ops;
 #undef CASE
 }
 
@@ -2973,8 +2997,8 @@ vt_cmp (const void *elt, const void *key)
    * here, we already now that the nodes are identical except their
    * attributes
    */
-  if (a->op->node_cmp_attr)
-    return a->op->node_cmp_attr(a, b);
+  if (a->op->ops.node_cmp_attr)
+    return a->op->ops.node_cmp_attr(a, b);
 
   return 0;
 }
@@ -3405,16 +3429,16 @@ optimize_in_place (ir_node *n)
   return optimize_in_place_2 (n);
 }
 
-/**
- * set the default ir op operations
+/*
+ * Sets the default operation for an ir_ops.
  */
-ir_op *firm_set_default_operations(ir_op *op)
+ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops)
 {
-  op = firm_set_default_computed_value(op);
-  op = firm_set_default_equivalent_node(op);
-  op = firm_set_default_transform_node(op);
-  op = firm_set_default_node_cmp_attr(op);
-  op = firm_set_default_get_type(op);
+  ops = firm_set_default_computed_value(code, ops);
+  ops = firm_set_default_equivalent_node(code, ops);
+  ops = firm_set_default_transform_node(code, ops);
+  ops = firm_set_default_node_cmp_attr(code, ops);
+  ops = firm_set_default_get_type(code, ops);
 
-  return op;
+  return ops;
 }

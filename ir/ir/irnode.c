@@ -2338,17 +2338,21 @@ static type *get_Null_type(ir_node *n) {
   return NULL;
 }
 
-/* set the get_type operation */
-ir_op *firm_set_default_get_type(ir_op *op)
+/* Sets the get_type operation for an ir_op_ops. */
+ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops)
 {
-  switch (op->code) {
-  case iro_Const:    op->get_type = get_Const_type; break;
-  case iro_SymConst: op->get_type = get_SymConst_value_type; break;
-  case iro_Cast:     op->get_type = get_Cast_type; break;
-  case iro_Proj:     op->get_type = get_Proj_type; break;
-  default:           op->get_type = get_Null_type; break;
+  switch (code) {
+  case iro_Const:    ops->get_type = get_Const_type; break;
+  case iro_SymConst: ops->get_type = get_SymConst_value_type; break;
+  case iro_Cast:     ops->get_type = get_Cast_type; break;
+  case iro_Proj:     ops->get_type = get_Proj_type; break;
+  default:
+    /* not allowed to be NULL */
+    if (! ops->get_type)
+      ops->get_type = get_Null_type;
+    break;
   }
-  return op;
+  return ops;
 }
 
 #ifdef DEBUG_libfirm

@@ -53,8 +53,14 @@ value_of(ir_node *n) {
 }
 
 /**
- * set the default ir op operations
+ * Sets the default operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
  */
-ir_op *firm_set_default_operations(ir_op *op);
+ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops);
 
 # endif /* _IROPT_T_H_ */

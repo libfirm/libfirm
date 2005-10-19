@@ -288,8 +288,16 @@ except_attr   get_irn_except_attr   (ir_node *node);
  */
 extern unsigned firm_add_node_size;
 
-/** Set the get_type operation of an ir_op. */
-ir_op *firm_set_default_get_type(ir_op *op);
+/**
+ * Sets the get_type operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
+ */
+ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops);
 
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
@@ -322,7 +330,7 @@ copy_node_attr(const ir_node *old_node, ir_node *new_node) {
   ir_op *op = _get_irn_op(old_node);
 
   /* must always exist */
-  op->copy_attr(old_node, new_node);
+  op->ops.copy_attr(old_node, new_node);
 }
 
 /**
@@ -671,7 +679,7 @@ static INLINE int _is_irn_forking(const ir_node *node) {
 }
 
 static INLINE type *_get_irn_type(ir_node *node) {
-  return _get_irn_op(node)->get_type(node);
+  return _get_irn_op(node)->ops.get_type(node);
 }
 
 static INLINE int _is_irn_constlike(const ir_node *node) {
