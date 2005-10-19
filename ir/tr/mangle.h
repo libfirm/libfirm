@@ -11,12 +11,12 @@
  */
 
 /**
-* @file mangle.h
-*
-* FIRM name mangling -- methods to manipulate names.
-*
-* @author Martin Trapp, Christian Schaefer
-*/
+ * @file mangle.h
+ *
+ * FIRM name mangling -- methods to manipulate names.
+ *
+ * @author Martin Trapp, Christian Schaefer
+ */
 
 #ifndef _MANGLE_H_
 #define _MANGLE_H_
@@ -37,5 +37,8 @@ ident *mangle_u (ident *first, ident* scnd);
 
 /** mangle: Returns a new ident that represents firstscnd. */
 ident *mangle   (ident *first, ident* scnd);
+
+/** returns a mangled name for a Win32 function using it's calling convention */
+ident *decorate_win32_c_fkt(entity *ent);
 
 #endif /* _MANGLE_H_ */
