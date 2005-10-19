@@ -54,7 +54,36 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g31" label: "MEMORY_EXAMPLE_main" status:clustered color:white
+info1: "entity main (18)
+  type:  main (16)
+  owner: MEMORY_EXAMPLE (15)
+  Does not overwrite other entities.
+  Is not overwritten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  calling convention: cdecl
+  atomic value: SymC &main
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: MEMORY_EXAMPLE_main
+  offset:  -1 bits, -1 bytes
+  irg = 31
+
+"
 graph: { title: "n20"  label: "Block 20" status:clustered color:yellow
+ info1: "Block 20
+  mode:    BB
+  visited: 18
+  irg:     MEMORY_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Return 78
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n20" targetname: "n78" label: "0" class:13 priority:60 color:red}
 node: {title: "n80" label: "End 80"  info1: "End 80
   mode:    X
@@ -70,6 +99,18 @@ color: blue}
 }
 
 graph: { title: "n72"  label: "Block 72" status:clustered color:yellow
+ info1: "Block 72
+  mode:    BB
+  visited: 18
+  irg:     MEMORY_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Proj 70
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n72" targetname: "n70" label: "0" class:13 priority:60 color:red}
 node: {title: "n78" label: "Return 78"  info1: "Return 78
   mode:    X
@@ -133,6 +174,19 @@ edge: {sourcename: "n74" targetname: "n35" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n48"  label: "Block 48" status:clustered color:yellow
+ info1: "Block 48
+  mode:    BB
+  visited: 18
+  irg:     MEMORY_EXAMPLE_main
+  arity:   2
+  pred nodes:
+     0:    Jmp 46
+     1:    Proj 69
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n48" targetname: "n46" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n48" targetname: "n69" label: "1" class:13 priority:60 color:red}
 node: {title: "n70" label: "ProjX true 70"  info1: "Proj 70
@@ -368,6 +422,18 @@ edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color
 }
 
 graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
+ info1: "Block 32
+  mode:    BB
+  visited: 18
+  irg:     MEMORY_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Proj 26
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
 node: {title: "n46" label: "Jmp 46"  info1: "Jmp 46
   mode:    X
@@ -478,6 +544,18 @@ edge: {sourcename: "n35" targetname: "n28" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n22"  label: "Block 22" status:clustered color:yellow
+ info1: "Block 22
+  mode:    BB
+  visited: 18
+  irg:     MEMORY_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Proj 26
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
 node: {title: "n42" label: "0x1Iu 42"  info1: "0x1 42
   mode:    Iu

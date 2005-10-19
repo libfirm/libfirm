@@ -54,7 +54,37 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g480" label: "STRENGTH_RED_EXAMPLE_m7" status:clustered color:white
+info1: "entity STRENGTH_RED_EXAMPLE_m7 (461)
+  type:  STRENGTH_RED_EXAMPLE_meth_tp (16)
+  owner: GlobalType (0)
+  Does not overwrite other entities.
+  Is not overwritten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  calling convention: cdecl
+  atomic value: SymC &STRENGTH_RED_EXAMPLE_m7
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: no yet set
+  offset:  -1 bits, -1 bytes
+  irg = 480
+
+"
 graph: { title: "n469"  label: "Block 469" status:clustered color:yellow
+ info1: "Block 469
+  mode:    BB
+  visited: 17
+  irg:     STRENGTH_RED_EXAMPLE_m7
+  arity:   1
+  pred nodes:
+     0:    Return 520
+  Private Attributes:
+  backedges:
+  in loop 689 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n469" targetname: "n520" label: "0" class:13 priority:60 color:red}
 node: {title: "n470" label: "End 470"  info1: "End 470
   mode:    X
@@ -71,6 +101,19 @@ color: blue}
 }
 
 graph: { title: "n517"  label: "Block 517" status:clustered color:yellow
+ info1: "Block 517
+  mode:    BB
+  visited: 17
+  irg:     STRENGTH_RED_EXAMPLE_m7
+  arity:   1
+  pred nodes:
+     0:    Proj 493
+  Private Attributes:
+  backedges:
+  in loop 689 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n517" targetname: "n493" label: "0" class:13 priority:60 color:red}
 node: {title: "n520" label: "Return 520"  info1: "Return 520
   mode:    X
@@ -104,6 +147,20 @@ edge: {sourcename: "n520" targetname: "n520n497" label: "1" class:16 priority:10
 }
 
 graph: { title: "n486"  label: "Block 486" status:clustered color:yellow
+ info1: "Block 486
+  mode:    BB
+  visited: 17
+  irg:     STRENGTH_RED_EXAMPLE_m7
+  arity:   2
+  pred nodes:
+     0:    Jmp 485
+     1: be Jmp 511
+  Private Attributes:
+  backedges:  1
+  in loop 691 with depth 2
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n486" targetname: "n485" label: "0" class:13 priority:60 color:red}
 backedge: {sourcename: "n486" targetname: "n511" label: "1" linestyle:dashed class:13 priority:60 color:red}
 node: {title: "n524" label: "PhiM 524"  info1: "Phi 524
@@ -237,6 +294,19 @@ backedge: {sourcename: "n525" targetname: "n510" label: "1" linestyle:dashed cla
 }
 
 graph: { title: "n481"  label: "Block 481" status:clustered color:yellow
+ info1: "Block 481
+  mode:    BB
+  visited: 17
+  irg:     STRENGTH_RED_EXAMPLE_m7
+  arity:   1
+  pred nodes:
+     0:    Proj 475
+  Private Attributes:
+  backedges:
+  in loop 689 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n481" targetname: "n475" label: "0" class:13 priority:60 color:red}
 node: {title: "n485" label: "Jmp 485"  info1: "Jmp 485
   mode:    X
@@ -252,6 +322,19 @@ node: {title: "n485" label: "Jmp 485"  info1: "Jmp 485
 }
 
 graph: { title: "n495"  label: "Block 495" status:clustered color:yellow
+ info1: "Block 495
+  mode:    BB
+  visited: 17
+  irg:     STRENGTH_RED_EXAMPLE_m7
+  arity:   1
+  pred nodes:
+     0:    Proj 494
+  Private Attributes:
+  backedges:
+  in loop 691 with depth 2
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n495" targetname: "n494" label: "0" class:13 priority:60 color:red}
 node: {title: "n509" label: "ProjM M 509"  info1: "Proj 509
   mode:    M
@@ -465,6 +548,19 @@ edge: {sourcename: "n510" targetname: "n510n496" label: "1" class:16 priority:10
 }
 
 graph: { title: "n471"  label: "Block 471" status:clustered color:yellow
+ info1: "Block 471
+  mode:    BB
+  visited: 17
+  irg:     STRENGTH_RED_EXAMPLE_m7
+  arity:   1
+  pred nodes:
+     0:    Proj 475
+  Private Attributes:
+  backedges:
+  in loop 689 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n471" targetname: "n475" label: "0" class:13 priority:60 color:red}
 node: {title: "n478" label: "ProjM 1 478"  info1: "Proj 478
   mode:    M

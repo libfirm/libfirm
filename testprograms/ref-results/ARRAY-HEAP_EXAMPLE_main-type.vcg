@@ -132,6 +132,7 @@ node: {title: "e17" label: "ent ARRAY-HEAP_EXAMPLE_main" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &ARRAY-HEAP_EXAMPLE_main
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
@@ -166,6 +167,7 @@ node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &ARRAY-HEAP_EXAMPLE_main
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent

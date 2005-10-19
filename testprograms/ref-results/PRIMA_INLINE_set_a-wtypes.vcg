@@ -54,7 +54,36 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g73" label: "PRIMA_INLINE_set_a" status:clustered color:white
+info1: "entity set_a (20)
+  type:  set_a (18)
+  owner: PRIMA_INLINE (15)
+  Does not overwrite other entities.
+  Is not overwritten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  calling convention: cdecl
+  atomic value: SymC &set_a
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: PRIMA_INLINE_set_a
+  offset:  -1 bits, -1 bytes
+  irg = 73
+
+"
 graph: { title: "n62"  label: "Block 62" status:clustered color:yellow
+ info1: "Block 62
+  mode:    BB
+  visited: 20
+  irg:     PRIMA_INLINE_set_a
+  arity:   1
+  pred nodes:
+     0:    Return 82
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n62" targetname: "n82" label: "0" class:13 priority:60 color:red}
 node: {title: "n228" label: "End 228"  info1: "End 228
   mode:    X
@@ -69,6 +98,18 @@ color: blue}
 }
 
 graph: { title: "n74"  label: "Block 74" status:clustered color:yellow
+ info1: "Block 74
+  mode:    BB
+  visited: 20
+  irg:     PRIMA_INLINE_set_a
+  arity:   1
+  pred nodes:
+     0:    Proj 68
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n74" targetname: "n68" label: "0" class:13 priority:60 color:red}
 node: {title: "n82" label: "Return 82"  info1: "Return 82
   mode:    X
@@ -160,6 +201,18 @@ edge: {sourcename: "n76" targetname: "n72" label: "0" class:16 priority:10}
 }
 
 graph: { title: "n64"  label: "Block 64" status:clustered color:yellow
+ info1: "Block 64
+  mode:    BB
+  visited: 20
+  irg:     PRIMA_INLINE_set_a
+  arity:   1
+  pred nodes:
+     0:    Proj 68
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n64" targetname: "n68" label: "0" class:13 priority:60 color:red}
 node: {title: "n71" label: "ProjM 1 71"  info1: "Proj 71
   mode:    M
@@ -256,6 +309,7 @@ node: {title: "t15" label: "class PRIMA_INLINE" info1: "class type PRIMA_INLINE 
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &set_a
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
@@ -270,6 +324,7 @@ node: {title: "t15" label: "class PRIMA_INLINE" info1: "class type PRIMA_INLINE 
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &c
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
@@ -299,6 +354,7 @@ node: {title: "e20" label: "ent PRIMA_INLINE_set_a" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &set_a
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
@@ -371,6 +427,7 @@ node: {title: "e23" label: "ent PRIMA_INLINE_c" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &c
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent

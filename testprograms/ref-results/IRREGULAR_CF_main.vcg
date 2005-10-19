@@ -54,7 +54,36 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g30" label: "IRREGULAR_CF_main" status:clustered color:white
+info1: "entity main (17)
+  type:  main (15)
+  owner: IRREGULAR_CF (14)
+  Does not overwrite other entities.
+  Is not overwritten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  calling convention: cdecl
+  atomic value: SymC &main
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: IRREGULAR_CF_main
+  offset:  -1 bits, -1 bytes
+  irg = 30
+
+"
 graph: { title: "n19"  label: "Block 19" status:clustered color:yellow
+ info1: "Block 19
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Return 54
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n19" targetname: "n54" label: "0" class:13 priority:60 color:red}
 node: {title: "n66" label: "End 66"  info1: "End 66
   mode:    X
@@ -69,6 +98,19 @@ color: blue}
 }
 
 graph: { title: "n52"  label: "Block 52" status:clustered color:yellow
+ info1: "Block 52
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   2
+  pred nodes:
+     0:    Jmp 51
+     1:    Jmp 49
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n52" targetname: "n51" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n52" targetname: "n49" label: "1" class:13 priority:60 color:red}
 node: {title: "n54" label: "Return 54"  info1: "Return 54
@@ -87,6 +129,18 @@ edge: {sourcename: "n54" targetname: "n28" label: "0" class:17 priority:10 color
 }
 
 graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
+ info1: "Block 50
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 46
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n50" targetname: "n46" label: "0" class:13 priority:60 color:red}
 node: {title: "n51" label: "Jmp 51"  info1: "Jmp 51
   mode:    X
@@ -101,6 +155,19 @@ node: {title: "n51" label: "Jmp 51"  info1: "Jmp 51
 }
 
 graph: { title: "n48"  label: "Block 48" status:clustered color:yellow
+ info1: "Block 48
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   2
+  pred nodes:
+     0:    Proj 47
+     1:    Jmp 41
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n48" targetname: "n47" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n48" targetname: "n41" label: "1" class:13 priority:60 color:red}
 node: {title: "n49" label: "Jmp 49"  info1: "Jmp 49
@@ -116,6 +183,18 @@ node: {title: "n49" label: "Jmp 49"  info1: "Jmp 49
 }
 
 graph: { title: "n42"  label: "Block 42" status:clustered color:yellow
+ info1: "Block 42
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 38
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n42" targetname: "n38" label: "0" class:13 priority:60 color:red}
 node: {title: "n46" label: "ProjX false 46"  info1: "Proj 46
   mode:    X
@@ -187,6 +266,18 @@ edge: {sourcename: "n43" targetname: "n34" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
+ info1: "Block 40
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 39
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n40" targetname: "n39" label: "0" class:13 priority:60 color:red}
 node: {title: "n41" label: "Jmp 41"  info1: "Jmp 41
   mode:    X
@@ -201,6 +292,18 @@ node: {title: "n41" label: "Jmp 41"  info1: "Jmp 41
 }
 
 graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
+ info1: "Block 31
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 25
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n31" targetname: "n25" label: "0" class:13 priority:60 color:red}
 node: {title: "n38" label: "ProjX false 38"  info1: "Proj 38
   mode:    X
@@ -272,6 +375,18 @@ edge: {sourcename: "n35" targetname: "n33" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n21"  label: "Block 21" status:clustered color:yellow
+ info1: "Block 21
+  mode:    BB
+  visited: 8
+  irg:     IRREGULAR_CF_main
+  arity:   1
+  pred nodes:
+     0:    Proj 25
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n21" targetname: "n25" label: "0" class:13 priority:60 color:red}
 node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
   mode:    M

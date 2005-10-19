@@ -106,6 +106,7 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &set_a
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
@@ -120,6 +121,7 @@ node: {title: "t15" label: "class PRIMA" info1: "class type PRIMA (15)
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &c
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
@@ -176,6 +178,7 @@ node: {title: "e20" label: "ent PRIMA_set_a" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &set_a
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
@@ -226,6 +229,7 @@ node: {title: "e23" label: "ent PRIMA_c" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &c
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
@@ -259,6 +263,7 @@ node: {title: "e26" label: "ent OO_PROGRAM_EXAMPLE_main" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &OO_PROGRAM_EXAMPLE_main
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
@@ -293,6 +298,7 @@ node: {title: "t0" label: "class GlobalType" info1: "class type GlobalType (0)
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &OO_PROGRAM_EXAMPLE_main
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent

@@ -90,6 +90,7 @@ node: {title: "t16" label: "class WHILE_EXAMPLE" info1: "class type WHILE_EXAMPL
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &main
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent
@@ -117,6 +118,7 @@ node: {title: "e18" label: "ent WHILE_EXAMPLE_main" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &main
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent

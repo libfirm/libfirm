@@ -54,7 +54,36 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g36" label: "ARRAY-STACK_EXAMPLE_main" status:clustered color:white
+info1: "entity main (18)
+  type:  main_tp (16)
+  owner: ARRAY-STACK_EXAMPLE (15)
+  Does not overwrite other entities.
+  Is not overwritten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  calling convention: cdecl
+  atomic value: SymC &main
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: ARRAY-STACK_EXAMPLE_main
+  offset:  -1 bits, -1 bytes
+  irg = 36
+
+"
 graph: { title: "n25"  label: "Block 25" status:clustered color:yellow
+ info1: "Block 25
+  mode:    BB
+  visited: 13
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Return 47
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n25" targetname: "n47" label: "0" class:13 priority:60 color:red}
 node: {title: "n49" label: "End 49"  info1: "End 49
   mode:    X
@@ -69,6 +98,18 @@ color: blue}
 }
 
 graph: { title: "n37"  label: "Block 37" status:clustered color:yellow
+ info1: "Block 37
+  mode:    BB
+  visited: 13
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Proj 31
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:13 priority:60 color:red}
 node: {title: "n47" label: "Return 47"  info1: "Return 47
   mode:    X
@@ -168,6 +209,18 @@ edge: {sourcename: "n40" targetname: "n32" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n27"  label: "Block 27" status:clustered color:yellow
+ info1: "Block 27
+  mode:    BB
+  visited: 13
+  irg:     ARRAY-STACK_EXAMPLE_main
+  arity:   1
+  pred nodes:
+     0:    Proj 31
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n27" targetname: "n31" label: "0" class:13 priority:60 color:red}
 node: {title: "n34" label: "ProjM 1 34"  info1: "Proj 34
   mode:    M
@@ -356,6 +409,7 @@ node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &main
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
@@ -390,6 +444,7 @@ node: {title: "t15" label: "class ARRAY-STACK_EXAMPLE" info1: "class type ARRAY-
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &main
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent

@@ -175,6 +175,7 @@ node: {title: "e18" label: "ent ARRAY-STACK_EXAMPLE_main" color: yellow
   allocation:  allocation_static
   visibility:  visibility_local
   variability: variability_constant
+  calling convention: cdecl
   atomic value: SymC &main
   volatility:  volatility_non_volatile
   peculiarity: peculiarity_existent
@@ -209,6 +210,7 @@ node: {title: "t15" label: "class ARRAY-STACK_EXAMPLE" info1: "class type ARRAY-
       allocation:  allocation_static
       visibility:  visibility_local
       variability: variability_constant
+      calling convention: cdecl
       atomic value: SymC &main
       volatility:  volatility_non_volatile
       peculiarity: peculiarity_existent

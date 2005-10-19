@@ -54,7 +54,37 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g77" label: "IRR_LOOP_loop2" status:clustered color:white
+info1: "entity loop2 (64)
+  type:  METH_TP_NOARG_NORES (15)
+  owner: IRR_LOOP (14)
+  Does not overwrite other entities.
+  Is not overwritten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  calling convention: cdecl
+  atomic value: SymC &loop2
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: IRR_LOOP_loop2
+  offset:  -1 bits, -1 bytes
+  irg = 77
+
+"
 graph: { title: "n66"  label: "Block 66" status:clustered color:yellow
+ info1: "Block 66
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Return 116
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n66" targetname: "n116" label: "0" class:13 priority:60 color:red}
 node: {title: "n67" label: "End 67"  info1: "End 67
   mode:    X
@@ -73,6 +103,20 @@ color: blue}
 }
 
 graph: { title: "n114"  label: "Block 114" status:clustered color:yellow
+ info1: "Block 114
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   2
+  pred nodes:
+     0:    Proj 100
+     1:    Proj 112
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n114" targetname: "n100" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n114" targetname: "n112" label: "1" class:13 priority:60 color:red}
 node: {title: "n116" label: "Return 116"  info1: "Return 116
@@ -106,6 +150,20 @@ edge: {sourcename: "n127" targetname: "n124" label: "1" class:17 priority:10 col
 }
 
 graph: { title: "n108"  label: "Block 108" status:clustered color:yellow
+ info1: "Block 108
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   2
+  pred nodes:
+     0:    Proj 88
+     1: be Proj 106
+  Private Attributes:
+  backedges:  1
+  in loop 131 with depth 1
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n108" targetname: "n88" label: "0" class:13 priority:60 color:red}
 backedge: {sourcename: "n108" targetname: "n106" label: "1" linestyle:dashed class:13 priority:60 color:red}
 node: {title: "n124" label: "PhiM 124"  info1: "Phi 124
@@ -193,6 +251,21 @@ edge: {sourcename: "n109" targetname: "n83" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n102"  label: "Block 102" status:clustered color:yellow
+ info1: "Block 102
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   3
+  pred nodes:
+     0:    Proj 94
+     1:    Proj 101
+     2:    Proj 113
+  Private Attributes:
+  backedges:
+  in loop 132 with depth 2
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n102" targetname: "n94" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n102" targetname: "n101" label: "1" class:13 priority:60 color:red}
 edge: {sourcename: "n102" targetname: "n113" label: "2" class:13 priority:60 color:red}
@@ -283,6 +356,20 @@ edge: {sourcename: "n103" targetname: "n82" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n96"  label: "Block 96" status:clustered color:yellow
+ info1: "Block 96
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   2
+  pred nodes:
+     0:    Proj 95
+     1: be Proj 107
+  Private Attributes:
+  backedges:  1
+  in loop 132 with depth 2
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n96" targetname: "n95" label: "0" class:13 priority:60 color:red}
 backedge: {sourcename: "n96" targetname: "n107" label: "1" linestyle:dashed class:13 priority:60 color:red}
 node: {title: "n126" label: "PhiM 126"  info1: "Phi 126
@@ -370,6 +457,19 @@ edge: {sourcename: "n97" targetname: "n81" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n90"  label: "Block 90" status:clustered color:yellow
+ info1: "Block 90
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Proj 89
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n90" targetname: "n89" label: "0" class:13 priority:60 color:red}
 node: {title: "n94" label: "ProjX false 94"  info1: "Proj 94
   mode:    X
@@ -441,6 +541,19 @@ edge: {sourcename: "n91" targetname: "n84" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n78"  label: "Block 78" status:clustered color:yellow
+ info1: "Block 78
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Proj 72
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n78" targetname: "n72" label: "0" class:13 priority:60 color:red}
 node: {title: "n88" label: "ProjX false 88"  info1: "Proj 88
   mode:    X
@@ -512,6 +625,19 @@ edge: {sourcename: "n85" targetname: "n80" label: "1" class:16 priority:10}
 }
 
 graph: { title: "n68"  label: "Block 68" status:clustered color:yellow
+ info1: "Block 68
+  mode:    BB
+  visited: 6
+  irg:     IRR_LOOP_loop2
+  arity:   1
+  pred nodes:
+     0:    Proj 72
+  Private Attributes:
+  backedges:
+  in loop 130 with depth 0
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n68" targetname: "n72" label: "0" class:13 priority:60 color:red}
 node: {title: "n75" label: "ProjM 1 75"  info1: "Proj 75
   mode:    M

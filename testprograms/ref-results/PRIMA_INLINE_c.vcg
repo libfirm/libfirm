@@ -54,7 +54,37 @@ colorentry 124:  255 240  240
 colorentry 125:  255 250  250
 
 graph: { title: "g96" label: "PRIMA_INLINE_c" status:clustered color:white
+info1: "entity c (23)
+  type:  c (21)
+  owner: PRIMA_INLINE (15)
+  Does not overwrite other entities.
+  Is not overwritten by other entities.
+  allocation:  allocation_static
+  visibility:  visibility_local
+  variability: variability_constant
+  calling convention: cdecl
+  atomic value: SymC &c
+  volatility:  volatility_non_volatile
+  peculiarity: peculiarity_existent
+  ld_name: PRIMA_INLINE_c
+  offset:  -1 bits, -1 bytes
+  irg = 96
+
+"
 graph: { title: "n102"  label: "Block 102" status:clustered color:yellow
+ info1: "Block 102
+  mode:    BB
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   2
+  pred nodes:
+     0:    Jmp 101
+     1:    Jmp 109
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n102" targetname: "n101" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n102" targetname: "n109" label: "1" class:13 priority:60 color:red}
 node: {title: "n131" label: "PhiM 131"  info1: "Phi 131
@@ -163,6 +193,18 @@ node: {title: "n109" label: "Jmp 109"  info1: "Jmp 109
 }
 
 graph: { title: "n97"  label: "Block 97" status:clustered color:yellow
+ info1: "Block 97
+  mode:    BB
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   1
+  pred nodes:
+     0:    Proj 91
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
 node: {title: "n98" label: "ProjP Arg 0 98"  info1: "Proj 98
   mode:    P
@@ -203,6 +245,18 @@ node: {title: "n101" label: "Jmp 101"  info1: "Jmp 101
 }
 
 graph: { title: "n87"  label: "Block 87" status:clustered color:yellow
+ info1: "Block 87
+  mode:    BB
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   1
+  pred nodes:
+     0:    Proj 91
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 edge: {sourcename: "n87" targetname: "n91" label: "0" class:13 priority:60 color:red}
 node: {title: "n94" label: "ProjM 1 94"  info1: "Proj 94
   mode:    M
@@ -270,6 +324,17 @@ color: blue}
 }
 
 graph: { title: "n85"  label: "Block 85" status:clustered color:yellow
+ info1: "Block 85
+  mode:    BB
+  visited: 25
+  irg:     PRIMA_INLINE_c
+  arity:   0
+  pred nodes:
+  Private Attributes:
+  backedges:
+  block visited: 0
+  Execution freqency statistics:
+"
 node: {title: "n246" label: "End 246"  info1: "End 246
   mode:    X
   visited: 25
