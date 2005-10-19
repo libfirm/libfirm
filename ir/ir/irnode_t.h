@@ -497,7 +497,7 @@ _set_irn_link(ir_node *node, void *link) {
   assert (node);
   /* Link field is used for Phi construction and various optimizations
      in iropt. */
-  assert(get_irg_phase_state(current_ir_graph) != phase_building);
+  assert(get_irg_phase_state(get_irn_irg(node)) != phase_building);
 
   node->link = link;
 }
