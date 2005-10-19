@@ -238,7 +238,7 @@ static int _count_outs(ir_node *n) {
 
 
 /** Returns the amount of out edges for not yet visited successors.
- *  This version handles some special nodes like irg_frame etc.
+ *  This version handles some special nodes like irg_frame, irg_args etc.
  */
 static int count_outs(ir_graph *irg) {
   ir_node *n;
@@ -249,6 +249,12 @@ static int count_outs(ir_graph *irg) {
 
   /* now handle special nodes */
   n = get_irg_frame(irg);
+  if (irn_not_visited(n)) {
+    n->out = (ir_node **)1;
+    ++res;
+  }
+
+  n = get_irg_args(irg);
   if (irn_not_visited(n)) {
     n->out = (ir_node **)1;
     ++res;
@@ -307,20 +313,27 @@ static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
  * @return The next free address
  */
 static ir_node **set_out_edges(ir_graph *irg, ir_node **free) {
-  ir_node *n;
-  int n_outs;
+  ir_node *n, *special[2];
+  int i, n_outs;
 
   inc_irg_visited(irg);
   free = _set_out_edges(get_irg_end(irg), free);
 
-  n = get_irg_frame(irg);
-  if (get_irn_visited(n) < get_irg_visited(current_ir_graph)) {
-    n_outs = PTR_TO_INT(n->out);
-    n->out = free;
+  /* handle special nodes */
+  special[0] = get_irg_frame(irg);
+  special[1] = get_irg_args(irg);
+
+  for (i = 1; i >= 0; --i) {
+    n = special[i];
+
+    if (get_irn_visited(n) < get_irg_visited(current_ir_graph)) {
+      n_outs = PTR_TO_INT(n->out);
+      n->out = free;
 #ifdef DEBUG_libfirm
-    n->out_valid = 1;
+      n->out_valid = 1;
 #endif /* defined DEBUG_libfirm */
-    free += n_outs;
+      free += n_outs;
+    }
   }
 
   return free;
