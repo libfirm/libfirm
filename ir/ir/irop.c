@@ -129,21 +129,33 @@ block_copy_attr(const ir_node *old_node, ir_node *new_node)
 }
 
 /**
- * Sets the copy_attr operation for an ir_op
+ * Sets the default copy_attr operation for an ir_ops
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
  */
-static ir_op *firm_set_default_copy_attr(ir_op *op) {
-  if (op->code == iro_Call)
-    op->copy_attr = call_copy_attr;
-  else if (op->code == iro_Block)
-    op->copy_attr = block_copy_attr;
-  else
-    op->copy_attr = default_copy_attr;
+static ir_op_ops *firm_set_default_copy_attr(opcode code, ir_op_ops *ops) {
+  if (code == iro_Call)
+    ops->copy_attr = call_copy_attr;
+  else if (code == iro_Block)
+    ops->copy_attr = block_copy_attr;
+  else {
+    /* not allowed to be NULL */
+    if (! ops->copy_attr)
+      ops->copy_attr = default_copy_attr;
+  }
 
-  return op;
+  return ops;
 }
 
+/* Creates a new ir operation. */
 ir_op *
-new_ir_op(opcode code, const char *name, op_pin_state p, unsigned flags, op_arity opar, int op_index, size_t attr_size)
+new_ir_op(opcode code, const char *name, op_pin_state p,
+          unsigned flags, op_arity opar, int op_index, size_t attr_size,
+          const ir_op_ops *ops)
 {
   ir_op *res;
 
@@ -158,9 +170,14 @@ new_ir_op(opcode code, const char *name, op_pin_state p, unsigned flags, op_arit
   res->opar      = opar;
   res->op_index  = op_index;
 
-  firm_set_default_operations(res);
-  firm_set_default_copy_attr(res);
-  firm_set_default_verifyer(res);
+  if (ops)
+    memcpy(&res->ops, ops, sizeof(res->ops));
+  else /* no given ops, set all operations to NULL */
+    memset(&res->ops, 0, sizeof(res->ops));
+
+  firm_set_default_operations(code, &res->ops);
+  firm_set_default_copy_attr(code, &res->ops);
+  firm_set_default_verifyer(code, &res->ops);
 
   hook_new_ir_op(res);
   return res;
@@ -184,68 +201,68 @@ init_op(void)
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
 
-  op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr));
+  op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr), NULL);
 
-  op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, sizeof(start_attr));
-  op_End       = new_ir_op(iro_End,       "End",       op_pin_state_pinned, X,       oparity_dynamic,  -1, 0);
-  op_Jmp       = new_ir_op(iro_Jmp,       "Jmp",       op_pin_state_pinned, X,       oparity_zero,     -1, 0);
-  op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X,       oparity_unary,    -1, 0);
-  op_Cond      = new_ir_op(iro_Cond,      "Cond",      op_pin_state_pinned, L|X|Y,   oparity_any,      -1, sizeof(cond_attr));
-  op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, L|X,     oparity_zero,     -1, 0);
-  op_Raise     = new_ir_op(iro_Raise,     "Raise",     op_pin_state_pinned, L|X,     oparity_any,      -1, 0);
+  op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, sizeof(start_attr), NULL);
+  op_End       = new_ir_op(iro_End,       "End",       op_pin_state_pinned, X,       oparity_dynamic,  -1, 0, NULL);
+  op_Jmp       = new_ir_op(iro_Jmp,       "Jmp",       op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
+  op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X,       oparity_unary,    -1, 0, NULL);
+  op_Cond      = new_ir_op(iro_Cond,      "Cond",      op_pin_state_pinned, L|X|Y,   oparity_any,      -1, sizeof(cond_attr), NULL);
+  op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, L|X,     oparity_zero,     -1, 0, NULL);
+  op_Raise     = new_ir_op(iro_Raise,     "Raise",     op_pin_state_pinned, L|X,     oparity_any,      -1, 0, NULL);
 
-  op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, c,       oparity_zero,     -1, sizeof(const_attr));
-  op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c,       oparity_zero,     -1, sizeof(symconst_attr));
+  op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, c,       oparity_zero,     -1, sizeof(const_attr), NULL);
+  op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c,       oparity_zero,     -1, sizeof(symconst_attr), NULL);
 
-  op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr));
-  op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr));
+  op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr), NULL);
+  op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr), NULL);
 
-  op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, L|F, oparity_variable, -1, sizeof(call_attr));
-  op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0);
-  op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0);
-  op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, N,       oparity_binary,    0, 0);
-  op_Mul       = new_ir_op(iro_Mul,       "Mul",       op_pin_state_floats, C,       oparity_binary,    0, 0);
-  op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
-  op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
-  op_Div       = new_ir_op(iro_Div,       "Div",       op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
-  op_Mod       = new_ir_op(iro_Mod,       "Mod",       op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr));
-  op_Abs       = new_ir_op(iro_Abs,       "Abs",       op_pin_state_floats, N,       oparity_unary,     0, 0);
-  op_And       = new_ir_op(iro_And,       "And",       op_pin_state_floats, C,       oparity_binary,    0, 0);
-  op_Or        = new_ir_op(iro_Or,        "Or",        op_pin_state_floats, C,       oparity_binary,    0, 0);
-  op_Eor       = new_ir_op(iro_Eor,       "Eor",       op_pin_state_floats, C,       oparity_binary,    0, 0);
-  op_Not       = new_ir_op(iro_Not,       "Not",       op_pin_state_floats, N,       oparity_unary,     0, 0);
-  op_Cmp       = new_ir_op(iro_Cmp,       "Cmp",       op_pin_state_floats, L,       oparity_binary,    0, 0);
-  op_Shl       = new_ir_op(iro_Shl,       "Shl",       op_pin_state_floats, L,       oparity_binary,    0, 0);
-  op_Shr       = new_ir_op(iro_Shr,       "Shr",       op_pin_state_floats, L,       oparity_binary,    0, 0);
-  op_Shrs      = new_ir_op(iro_Shrs,      "Shrs",      op_pin_state_floats, L,       oparity_binary,    0, 0);
-  op_Rot       = new_ir_op(iro_Rot,       "Rot",       op_pin_state_floats, L,       oparity_binary,    0, 0);
-  op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, 0);
-  op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, N|H,     oparity_unary,     0, sizeof(cast_attr));
+  op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, L|F, oparity_variable, -1, sizeof(call_attr), NULL);
+  op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
+  op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
+  op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
+  op_Mul       = new_ir_op(iro_Mul,       "Mul",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
+  op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr), NULL);
+  op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr), NULL);
+  op_Div       = new_ir_op(iro_Div,       "Div",       op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr), NULL);
+  op_Mod       = new_ir_op(iro_Mod,       "Mod",       op_pin_state_exc_pinned, L|F, oparity_binary,    1, sizeof(except_attr), NULL);
+  op_Abs       = new_ir_op(iro_Abs,       "Abs",       op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
+  op_And       = new_ir_op(iro_And,       "And",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
+  op_Or        = new_ir_op(iro_Or,        "Or",        op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
+  op_Eor       = new_ir_op(iro_Eor,       "Eor",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
+  op_Not       = new_ir_op(iro_Not,       "Not",       op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
+  op_Cmp       = new_ir_op(iro_Cmp,       "Cmp",       op_pin_state_floats, L,       oparity_binary,    0, 0, NULL);
+  op_Shl       = new_ir_op(iro_Shl,       "Shl",       op_pin_state_floats, L,       oparity_binary,    0, 0, NULL);
+  op_Shr       = new_ir_op(iro_Shr,       "Shr",       op_pin_state_floats, L,       oparity_binary,    0, 0, NULL);
+  op_Shrs      = new_ir_op(iro_Shrs,      "Shrs",      op_pin_state_floats, L,       oparity_binary,    0, 0, NULL);
+  op_Rot       = new_ir_op(iro_Rot,       "Rot",       op_pin_state_floats, L,       oparity_binary,    0, 0, NULL);
+  op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
+  op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, N|H,     oparity_unary,     0, sizeof(cast_attr), NULL);
 
-  op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, L,       oparity_variable, -1, sizeof(int));
+  op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, L,       oparity_variable, -1, sizeof(int), NULL);
 
-  op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_exc_pinned, L|F, oparity_any,      -1, sizeof(load_attr));
-  op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_exc_pinned, L|F, oparity_any,      -1, sizeof(store_attr));
-  op_Alloc     = new_ir_op(iro_Alloc,     "Alloc",     op_pin_state_pinned, L|F,     oparity_any,      -1, sizeof(alloc_attr));
-  op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, L,       oparity_any,      -1, sizeof(free_attr));
-  op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_pinned, N,       oparity_any,      -1, 0);
+  op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_exc_pinned, L|F, oparity_any,      -1, sizeof(load_attr), NULL);
+  op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_exc_pinned, L|F, oparity_any,      -1, sizeof(store_attr), NULL);
+  op_Alloc     = new_ir_op(iro_Alloc,     "Alloc",     op_pin_state_pinned, L|F,     oparity_any,      -1, sizeof(alloc_attr), NULL);
+  op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, L,       oparity_any,      -1, sizeof(free_attr), NULL);
+  op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_pinned, N,       oparity_any,      -1, 0, NULL);
 
-  op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, N,       oparity_any,      -1, sizeof(long));
-  op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,       oparity_variable, -1, 0);
-  op_Id        = new_ir_op(iro_Id,        "Id",        op_pin_state_floats, N,       oparity_any,      -1, 0);
-  op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F,     oparity_zero,     -1, 0);
-  op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_floats, L|H,     oparity_any,      -1, sizeof(confirm_attr));
+  op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, N,       oparity_any,      -1, sizeof(long), NULL);
+  op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,       oparity_variable, -1, 0, NULL);
+  op_Id        = new_ir_op(iro_Id,        "Id",        op_pin_state_floats, N,       oparity_any,      -1, 0, NULL);
+  op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F,     oparity_zero,     -1, 0, NULL);
+  op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_floats, L|H,     oparity_any,      -1, sizeof(confirm_attr), NULL);
 
-  op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_pinned, X|F,     oparity_zero,     -1, 0);
-  op_Filter    = new_ir_op(iro_Filter,    "Filter",    op_pin_state_pinned, L,       oparity_variable, -1, sizeof(filter_attr));
-  op_Break     = new_ir_op(iro_Break,     "Break",     op_pin_state_pinned, X,       oparity_zero,     -1, 0);
-  op_CallBegin = new_ir_op(iro_CallBegin, "CallBegin", op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(callbegin_attr));
-  op_EndReg    = new_ir_op(iro_EndReg,    "EndReg",    op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(end_attr));
-  op_EndExcept = new_ir_op(iro_EndExcept, "EndExcept", op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(end_attr));
+  op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_pinned, X|F,     oparity_zero,     -1, 0, NULL);
+  op_Filter    = new_ir_op(iro_Filter,    "Filter",    op_pin_state_pinned, L,       oparity_variable, -1, sizeof(filter_attr), NULL);
+  op_Break     = new_ir_op(iro_Break,     "Break",     op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
+  op_CallBegin = new_ir_op(iro_CallBegin, "CallBegin", op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(callbegin_attr), NULL);
+  op_EndReg    = new_ir_op(iro_EndReg,    "EndReg",    op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(end_attr), NULL);
+  op_EndExcept = new_ir_op(iro_EndExcept, "EndExcept", op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(end_attr), NULL);
 
-  op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N,       oparity_zero,     -1, 0);
-  op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0);
-  op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(copyb_attr));
+  op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N,       oparity_zero,     -1, 0, NULL);
+  op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0, NULL);
+  op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(copyb_attr), NULL);
 
 #undef H
 #undef Y
