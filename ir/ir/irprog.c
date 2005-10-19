@@ -287,11 +287,11 @@ void           set_irp_phase_state(irg_phase_state s) {
   irp->phase_state = s;
 }
 
-irg_outs_state get_irp_ip_outs_state() {
+irg_outs_state get_irp_ip_outs_state(void) {
   return irp->outs_state;
 }
 
-void set_irp_ip_outs_inconsistent() {
+void set_irp_ip_outs_inconsistent(void) {
   irp->outs_state = outs_inconsistent;
 }
 
