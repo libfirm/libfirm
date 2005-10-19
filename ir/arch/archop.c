@@ -306,20 +306,26 @@ static int verify_node_MinMax(ir_node *n, ir_graph *irg) {
  */
 void firm_archops_init(const arch_ops_info *info)
 {
+  ir_op_ops ops;
+
   if (! info)
     info = &default_settings;
 
   memcpy(&settings, info, sizeof(settings));
 
   if (info->enabled_ops & ARCH_OPS_MINMAX) {
-    op_Min = new_ir_op(get_next_ir_opcode(), "Min",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0);
-    op_Min->computed_value  = computed_value_Min;
-    op_Min->equivalent_node = equivalent_node_Min;
-    op_Min->verify_node     = verify_node_MinMax;
+    memset(&ops, 0, sizeof(ops));
 
-    op_Max = new_ir_op(get_next_ir_opcode(), "Max",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0);
-    op_Max->computed_value  = computed_value_Max;
-    op_Max->equivalent_node = equivalent_node_Max;
-    op_Max->verify_node     = verify_node_MinMax;
+    ops.computed_value  = computed_value_Min;
+    ops.equivalent_node = equivalent_node_Min;
+    ops.verify_node     = verify_node_MinMax;
+
+    op_Min = new_ir_op(get_next_ir_opcode(), "Min",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
+
+    ops.computed_value  = computed_value_Max;
+    ops.equivalent_node = equivalent_node_Max;
+    ops.verify_node     = verify_node_MinMax;
+
+    op_Max = new_ir_op(get_next_ir_opcode(), "Max",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
   }
 }
