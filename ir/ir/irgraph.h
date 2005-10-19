@@ -17,27 +17,14 @@
  *
  * @author Martin Trapp, Christian Schaefer
  */
+#ifndef _IRGRAPH_H_
+#define _IRGRAPH_H_
 
 #include <stddef.h>
 
+#include "firm_types.h"
 #include "irop.h"
 #include "irextbb.h"
-
-# ifndef _IRGRAPH_H_
-# define _IRGRAPH_H_
-# include "entity.h"
-
-/* to resolve recursion between irnode.h and irgraph.h */
-#ifndef _IR_NODE_TYPEDEF_
-#define _IR_NODE_TYPEDEF_
-typedef struct ir_node ir_node;
-#endif
-
-/* to resolve recursion between entity.h and irgraph.h */
-#ifndef _IR_GRAPH_TYPEDEF_
-#define _IR_GRAPH_TYPEDEF_
-typedef struct ir_graph ir_graph;
-#endif
 
 /**
  * @page ir_graph   The struct ir_graph
