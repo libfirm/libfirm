@@ -1119,7 +1119,7 @@ static void INLINE print_node_error(FILE *F, const char *err_msg)
 /**
  * prints debug messages of a node to file F as info3.
  */
-static void print_node_dbg_info(FILE *F, dbg_info *dbg)
+static void print_dbg_info(FILE *F, dbg_info *dbg)
 {
   char buf[1024];
 
@@ -1151,7 +1151,7 @@ static void dump_node(FILE *F, ir_node *n)
   fprintf(F, "\" ");
   bad |= dump_node_info(F, n);
   print_node_error(F, p);
-  print_node_dbg_info(F, get_irn_dbg_info(n));
+  print_dbg_info(F, get_irn_dbg_info(n));
   dump_node_vcgattr(F, n, NULL, bad);
   fprintf(F, "}\n");
   dump_const_node_local(F, n);
@@ -1458,7 +1458,7 @@ dump_whole_block(FILE *F, ir_node *block) {
 
   /* yComp can show attributes for blocks, XVCG parses but ignores them */
   dump_node_info(F, block);
-  print_node_dbg_info(F, get_irn_dbg_info(block));
+  print_dbg_info(F, get_irn_dbg_info(block));
 
   /* dump the blocks edges */
   dump_ir_data_edges(F, block);
@@ -1514,7 +1514,7 @@ dump_block_graph(FILE *F, ir_graph *irg) {
  * Parsed by XVCG but not shown. use yComp.
  */
 static void dump_graph_info(FILE *F, ir_graph *irg) {
-  fprintf(F, "info1:\"");
+  fprintf(F, "info1: \"");
   dump_entity_to_file(F, get_irg_entity(irg), dump_verbosity_entattrs | dump_verbosity_entconsts);
   fprintf(F, "\"\n");
 }
@@ -1523,13 +1523,15 @@ static void dump_graph_info(FILE *F, ir_graph *irg) {
  *  If interprocedural view edges can point to nodes out of this graph.
  */
 static void dump_graph_from_list(FILE *F, ir_graph *irg) {
+  entity *ent = get_irg_entity(irg);
 
   fprintf(F, "graph: { title: \"");
   PRINT_IRGID(irg);
   fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
-      get_ent_dump_name(get_irg_entity(irg)));
+      get_ent_dump_name(ent));
 
   dump_graph_info(F, irg);
+  print_dbg_info(F, get_entity_dbg_info(ent));
 
   dump_block_graph(F, irg);
 
@@ -1726,7 +1728,7 @@ int dump_type_node(FILE *F, type *tp)
   dump_type_to_file(F, tp, dump_verbosity_max);
 #endif
   fprintf (F, "\"\n");
-  print_node_dbg_info(F, get_type_dbg_info(tp));
+  print_dbg_info(F, get_type_dbg_info(tp));
   print_typespecific_vcgattr(F, tp);
   fprintf (F, "}\n");
 
@@ -1751,7 +1753,7 @@ void dump_entity_node(FILE *F, entity *ent, int color)
   dump_entity_to_file(F, ent, dump_verbosity_entattrs | dump_verbosity_entconsts);
 
   fprintf(F, "\"\n");
-  print_node_dbg_info(F, get_entity_dbg_info(ent));
+  print_dbg_info(F, get_entity_dbg_info(ent));
   fprintf(F, "}\n");
 }
 #undef X
@@ -2313,6 +2315,7 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
   FILE *F;
   int i;
   char *suffix1;
+  entity *ent;
 
   if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
@@ -2321,6 +2324,9 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
 
   if (get_interprocedural_view()) suffix1 = "-ip";
   else                            suffix1 = "";
+
+  ent = get_irg_entity(irg);
+
   F = vcg_open(irg, suffix, suffix1);
   dump_vcg_header(F, get_irg_dump_name(irg), NULL);
 
@@ -2329,9 +2335,10 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
   fprintf(F, "graph: { title: \"");
   PRINT_IRGID(irg);
   fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
-    get_ent_dump_name(get_irg_entity(irg)));
+    get_ent_dump_name(ent));
 
   dump_graph_info(F, irg);
+  print_dbg_info(F, get_entity_dbg_info(ent));
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_graph *irg     = get_irp_irg(i);
