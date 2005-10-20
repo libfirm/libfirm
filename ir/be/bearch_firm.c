@@ -86,7 +86,7 @@ static void firm_init(void)
 		int push_opc = get_next_ir_opcode();
 
 		op_push = new_ir_op(push_opc, "Push",
-				op_pin_state_pinned, 0, oparity_binary, 0, 0);
+				op_pin_state_pinned, 0, oparity_binary, 0, 0, NULL);
 
 		sig = rflct_signature_allocate(1, 3);
 		rflct_signature_set_arg(sig, 0, 0, "Store", RFLCT_MC(Mem), 0, 0);
@@ -103,7 +103,7 @@ static void firm_init(void)
 		int imm_opc = get_next_ir_opcode();
 
 		op_imm = new_ir_op(imm_opc, "Imm",
-				op_pin_state_pinned, 0, oparity_zero, 0, sizeof(imm_attr_t));
+				op_pin_state_pinned, 0, oparity_zero, 0, sizeof(imm_attr_t), NULL);
 
 		sig = rflct_signature_allocate(1, 1);
 		rflct_signature_set_arg(sig, 0, 0, "Imm", RFLCT_MC(Data), 0, 0);

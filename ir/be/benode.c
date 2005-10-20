@@ -369,7 +369,7 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
     ent = get_op(factory, cls, node_kind_spill);
     snprintf(buf, sizeof(buf), "Spill_%s", cls->name);
     ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned,
-        0, oparity_unary, 0, 0);
+        0, oparity_unary, 0, 0, NULL);
     ent->n_pos = ARRSIZE(templ_pos_Spill);
     ent->pos = templ_pos_Spill;
     pmap_insert(factory->irn_op_map, ent->op, ent);
@@ -377,7 +377,7 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
     ent = get_op(factory, cls, node_kind_reload);
     snprintf(buf, sizeof(buf), "Reload_%s", cls->name);
     ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0,
-        oparity_unary, 0, sizeof(const arch_register_t *));
+        oparity_unary, 0, sizeof(const arch_register_t *), NULL);
     ent->n_pos = ARRSIZE(templ_pos_Reload);
     ent->pos = templ_pos_Reload;
     pmap_insert(factory->irn_op_map, ent->op, ent);
@@ -385,7 +385,7 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
     ent = get_op(factory, cls, node_kind_copy);
     snprintf(buf, sizeof(buf), "Copy_%s", cls->name);
     ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0,
-        oparity_unary, 0, sizeof(const arch_register_t *));
+        oparity_unary, 0, sizeof(const arch_register_t *), NULL);
     ent->n_pos = ARRSIZE(templ_pos_Copy);
     ent->pos = templ_pos_Copy;
     pmap_insert(factory->irn_op_map, ent->op, ent);
@@ -393,7 +393,7 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
     ent = get_op(factory, cls, node_kind_perm);
     snprintf(buf, sizeof(buf), "Perm_%s", cls->name);
     ent->op = new_ir_op(get_next_ir_opcode(), buf, op_pin_state_pinned, 0,
-        oparity_variable, 0, sizeof(const arch_register_t) * cls->n_regs);
+        oparity_variable, 0, sizeof(const arch_register_t) * cls->n_regs, NULL);
     ent->n_pos = 2 * cls->n_regs;
     ent->pos = obstack_alloc(&factory->obst, sizeof(ent->pos[0]) * ent->n_pos);
     for(j = 0; j < ent->n_pos; j += 2) {
