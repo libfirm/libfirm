@@ -28,16 +28,9 @@
 #ifndef _TR_INHERITANCE_H_
 #define _TR_INHERITANCE_H_
 
+#include "firm_types.h"
 #include "type.h"
-/*#include "entity.h"*/
 #include "ident.h"
-
-
-/* to resolve recursion between entity.h and irgraph.h */
-#ifndef _IR_GRAPH_TYPEDEF_
-#define _IR_GRAPH_TYPEDEF_
-typedef struct ir_graph ir_graph;
-#endif
 
 /* ----------------------------------------------------------------------- */
 /* Classify pairs of types/entities in the inheritance relations.          */
@@ -227,7 +220,7 @@ typedef enum {
 				      the class hierarchy.  @@@ So far this does not happen in Firm. */
   ir_class_casts_transitive = 1, /**< Class casts conform to transitive inheritance edges. Default. */
   ir_class_casts_normalized = 2, /**< Class casts conform to inheritance edges. */
-  ir_class_casts_state_max,
+  ir_class_casts_state_max
 } ir_class_cast_state;
 char *get_class_cast_state_string(ir_class_cast_state s);
 
