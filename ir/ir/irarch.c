@@ -709,7 +709,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
   }
 
   if (res != irn)
-    hook_arch_dep_replace_div_by_const(irn);
+    hook_arch_dep_replace_division_by_const(irn);
 
   return res;
 }
@@ -800,7 +800,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
   }
 
   if (res != irn)
-    hook_arch_dep_replace_mod_by_const(irn);
+    hook_arch_dep_replace_division_by_const(irn);
 
   return res;
 }
@@ -907,7 +907,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
   }
 
   if (*div)
-    hook_arch_dep_replace_DivMod_by_const(irn);
+    hook_arch_dep_replace_division_by_const(irn);
 }
 
 
