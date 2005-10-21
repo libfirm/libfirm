@@ -17,10 +17,7 @@
 # ifndef _TYPE_IDENTIFY_H_
 # define _TYPE_IDENTIFY_H_
 
-#ifndef _TYPE_TYPEDEF_
-#define _TYPE_TYPEDEF_
-typedef struct type type;
-#endif
+#include "firm_types.h"
 
 /* ------------------------------------------------------------------------ */
 
