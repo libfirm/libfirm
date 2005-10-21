@@ -74,35 +74,78 @@ typedef void (generic_func)(void);
  * a hook entry
  */
 typedef struct hook_entry {
-  /** a union of all possible hook types */
+  /** A union of all possible hook types. */
   union {
+    /** This hook is called, after a new ir_op was created. */
     void (*_hook_new_ir_op)(void *context, ir_op *op);
+
+    /** This hook is called, before am ir_op is destroyed. */
     void (*_hook_free_ir_op)(void *context, ir_op *op);
+
+    /** This hook is called, after a new IR-node was created and before it is optimized. */
     void (*_hook_new_node)(void *context, ir_graph *graph, ir_node *node);
+
+    /** This hook is called, after a node input was changed. */
     void (*_hook_set_irn_n)(void *context, ir_node *src,
                             int pos, ir_node *tgt, ir_node *old_tgt);
-    void (*_hook_replaced)(void *context, ir_node *old_node, ir_node *new_node);
+
+    /** This hook is called, before a node is replaced (exchange()) by another. */
+    void (*_hook_replace)(void *context, ir_node *old_node, ir_node *new_node);
+
+    /** This hook is called, before a node is changed into an Id node. */
     void (*_hook_turn_into_id)(void *context, ir_node *node);
+
+    /** This hook is called, after a new graph was created and before the first block
+     *  on this graph is build. */
     void (*_hook_new_graph)(void *context, ir_graph *irg, entity *ent);
+
+    /** This hook is called before a graph is freed. */
     void (*_hook_free_graph)(void *context, ir_graph *irg);
+
+    /** This hook is called before an irg walk is started. */
     void (*_hook_irg_walk)(void *context, ir_graph *irg, generic_func *pre, generic_func *post);
+
+    /** This hook is called before an block wise irg walk is started. */
     void (*_hook_irg_walk_blkwise)(void *context, ir_graph *irg, generic_func *pre, generic_func *post);
+
+    /** This hook is called before an block walk is started. */
     void (*_hook_irg_block_walk)(void *context, ir_graph *irg, ir_node *node, generic_func *pre, generic_func *post);
+
+    /** This hook is called, when debug info must be merged. */
     void (*_hook_merge_nodes)(void *context, ir_node **new_node_array, int new_num_entries,
                               ir_node **old_node_array, int old_num_entries, hook_opt_kind opt);
+
+    /** This hook is called, when reassociation is started/stopped. */
     void (*_hook_reassociate)(void *context, int start);
+
+    /** This hook is called, before a node is lowered. */
     void (*_hook_lower)(void *context, ir_node *node);
+
+    /** This hook is called, before a graph is inlined. */
     void (*_hook_inline)(void *context, ir_node *call, ir_graph *irg);
+
+    /** This hook is called, before tail recursion is applied to a graph. */
     void (*_hook_tail_rec)(void *context, ir_graph *irg, int n_calls);
+
+    /** UNUSED YET */
     void (*_hook_strength_red)(void *context, ir_graph *irg, ir_node *strong, ir_node *cmp);
-    void (*_hook_dead_node_elim_start)(void *context, ir_graph *irg);
-    void (*_hook_dead_node_elim_stop)(void *context, ir_graph *irg);
+
+    /** This hook is called, when dead node elimination is started/stopped. */
+    void (*_hook_dead_node_elim)(void *context, ir_graph *irg, int start);
+
+    /** This hook is called after if conversion has run. */
     void (*_hook_if_conversion)(void *context, ir_graph *irg, ir_node *phi, int pos, ir_node *mux, if_result_t reason);
+
+    /** This hook is called after a call was detected as const call */
     void (*_hook_func_call)(void *context, ir_graph *irg, ir_node *call);
+
+    /** This hook is called after a Mul was replaced by a series of Shift and Add/Sub operations. */
     void (*_hook_arch_dep_replace_mul_with_shifts)(void *context, ir_node *irn);
-    void (*_hook_arch_dep_replace_div_by_const)(void *context, ir_node *irn);
-    void (*_hook_arch_dep_replace_mod_by_const)(void *context, ir_node *irn);
-    void (*_hook_arch_dep_replace_DivMod_by_const)(void *context, ir_node *irn);
+
+    /** This hook is called after a Div/Mod/DivMod by a constant value was replaced. */
+    void (*_hook_arch_dep_replace_division_by_const)(void *context, ir_node *irn);
+
+    /** This hook is called after a new mode was registered. */
     void (*_hook_new_mode)(void *context, const ir_mode *tmpl, ir_mode *mode);
   } hook;
 
@@ -121,7 +164,7 @@ typedef enum {
   hook_free_ir_op,
   hook_new_node,
   hook_set_irn_n,
-  hook_replaced,
+  hook_replace,
   hook_turn_into_id,
   hook_new_graph,
   hook_free_graph,
@@ -134,14 +177,11 @@ typedef enum {
   hook_inline,
   hook_tail_rec,
   hook_strength_red,
-  hook_dead_node_elim_start,
-  hook_dead_node_elim_stop,
+  hook_dead_node_elim,
   hook_if_conversion,
   hook_func_call,
   hook_arch_dep_replace_mul_with_shifts,
-  hook_arch_dep_replace_div_by_const,
-  hook_arch_dep_replace_mod_by_const,
-  hook_arch_dep_replace_DivMod_by_const,
+  hook_arch_dep_replace_division_by_const,
   hook_new_mode,
   hook_last,
 } hook_type_t;
@@ -181,7 +221,7 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_new_node(graph, node)        hook_exec(hook_new_node, (ctx, graph, node))
 #define hook_set_irn_n(src, pos, tgt, old_tgt) \
   hook_exec(hook_set_irn_n, (ctx, src, pos, tgt, old_tgt))
-#define hook_replaced(old, nw)            hook_exec(hook_replaced, (ctx, old, nw))
+#define hook_replace(old, nw)             hook_exec(hook_replace, (ctx, old, nw))
 #define hook_turn_into_id(node)           hook_exec(hook_turn_into_id, (ctx, node))
 #define hook_new_graph(irg, ent)          hook_exec(hook_new_graph, (ctx, irg, ent))
 #define hook_free_graph(irg)              hook_exec(hook_free_graph, (ctx, irg))
@@ -198,20 +238,15 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_tail_rec(irg, n_calls)       hook_exec(hook_tail_rec, (ctx, irg, n_calls))
 #define hook_strength_red(irg, strong, cmp) \
   hook_exec(hook_strength_red, (ctx, irg, strong, cmp))
-#define hook_dead_node_elim_start(irg)    hook_exec(hook_dead_node_elim_start, (ctx, irg))
-#define hook_dead_node_elim_stop(irg)     hook_exec(hook_dead_node_elim_stop, (ctx, irg))
+#define hook_dead_node_elim(irg, start)   hook_exec(hook_dead_node_elim, (ctx, irg, start))
 #define hook_if_conversion(irg, phi, pos, mux, reason) \
   hook_exec(hook_if_conversion, (ctx, irg, phi, pos, mux, reason))
 #define hook_func_call(irg, call) \
   hook_exec(hook_func_call, (ctx, irg, call))
 #define hook_arch_dep_replace_mul_with_shifts(irn) \
   hook_exec(hook_arch_dep_replace_mul_with_shifts, (ctx, irn))
-#define hook_arch_dep_replace_div_by_const(irn) \
-  hook_exec(hook_arch_dep_replace_div_by_const, (ctx, irn))
-#define hook_arch_dep_replace_mod_by_const(irn) \
-  hook_exec(hook_arch_dep_replace_mod_by_const, (ctx, irn))
-#define hook_arch_dep_replace_DivMod_by_const(irn) \
-  hook_exec(hook_arch_dep_replace_DivMod_by_const, (ctx, irn))
+#define hook_arch_dep_replace_division_by_const(irn) \
+  hook_exec(hook_arch_dep_replace_division_by_const, (ctx, irn))
 #define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (ctx, tmpl, mode))
 
 /* the initializer, move to hooks_t.h some day */
