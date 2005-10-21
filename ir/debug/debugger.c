@@ -34,7 +34,10 @@
 #include <ctype.h>
 
 #include "set.h"
+#include "ident.h"
 #include "irhooks.h"
+#include "irgraph_t.h"
+#include "entity_t.h"
 #include "irprintf.h"
 
 #ifdef _WIN32
@@ -56,16 +59,9 @@ static void firm_debug_break(void) {
 
 /** supported breakpoint kinds */
 typedef enum {
-  BP_NODE = 0    /**< break on node number. */
+  BP_NODE  = 'n',   /**< break on node number. */
+  BP_IDENT = 'i'    /**< break on ident. */
 } bp_kind;
-
-/** A breakpoint. */
-typedef struct _breakpoint {
-  bp_kind   kind;           /**< the kind of this break point */
-  unsigned  bpnr;           /**< break point number */
-  int       active;         /**< non-zero, if this break point is active */
-  struct _breakpoint *next; /**< link to the next one */
-} breakpoint;
 
 /**
  * Reasons for node number breakpoints.
@@ -74,21 +70,42 @@ typedef enum _bp_reasons_t {
   BP_ON_CREATION = 1,     /**< break if node with number is created */
   BP_ON_REPLACE  = 2,     /**< break if node with number is replaced */
   BP_ON_LOWER    = 3,     /**< break if node with number is lowered */
+  BP_ON_REMIRG   = 4,     /**< break if an IRG is removed */
   BP_MAX_REASON
 } bp_reasons_t;
+
+/** A breakpoint. */
+typedef struct _breakpoint {
+  bp_kind      kind;        /**< the kind of this break point */
+  unsigned     bpnr;        /**< break point number */
+  int          active;      /**< non-zero, if this break point is active */
+  bp_reasons_t reason;      /**< reason for the breakpoint */
+  struct _breakpoint *next; /**< link to the next one */
+} breakpoint;
 
 /** A node number breakpoint. */
 typedef struct {
   breakpoint   bp;       /**< the breakpoint data */
   long         nr;       /**< the node number */
-  bp_reasons_t reason;   /**< reason for the breakpoint */
 } bp_node_t;
 
 /** calculate the hash value for a node breakpoint */
-#define HASH_NODE_BP(key) (((key).nr << 2) ^ (key).reason)
+#define HASH_NODE_BP(key) (((key).nr << 2) ^ (key).bp.reason)
+
+/** A ident breakpoint. */
+typedef struct {
+  breakpoint   bp;       /**< the breakpoint data */
+  ident        *id;      /**< the ident */
+} bp_ident_t;
+
+/** calculate the hash value for an ident breakpoint */
+#define HASH_IDENT_BP(key) (HASH_PTR((key).id) ^ (key).bp.reason)
 
 /** The set containing the breakpoints on node numbers. */
 static set *bp_node_numbers;
+
+/** The set containing the breakpoints on idents. */
+static set *bp_idents;
 
 /**< the list of all breakpoints */
 static breakpoint *bp_list;
@@ -102,7 +119,7 @@ static int break_on_init = 0;
 /** the hook entries for the Firm debugger module. */
 static hook_entry_t debugger_hooks[hook_last];
 
-/** number of active breakpoints to maintein hooks. */
+/** number of active breakpoints to maintain hooks. */
 static unsigned num_active_bp[BP_MAX_REASON];
 
 /** hook the hook h with function fkt. */
@@ -126,8 +143,8 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 {
   bp_node_t key, *elem;
 
-  key.nr     = get_irn_node_nr(node);
-  key.reason = BP_ON_CREATION;
+  key.nr        = get_irn_node_nr(node);
+  key.bp.reason = BP_ON_CREATION;
 
   elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
   if (elem && elem->bp.active) {
@@ -147,8 +164,8 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 {
   bp_node_t key, *elem;
 
-  key.nr     = get_irn_node_nr(old);
-  key.reason = BP_ON_REPLACE;
+  key.nr        = get_irn_node_nr(old);
+  key.bp.reason = BP_ON_REPLACE;
 
   elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
   if (elem && elem->bp.active) {
@@ -167,8 +184,8 @@ static void dbg_lower_node(void *ctx, ir_node *node)
 {
   bp_node_t key, *elem;
 
-  key.nr     = get_irn_node_nr(node);
-  key.reason = BP_ON_LOWER;
+  key.nr        = get_irn_node_nr(node);
+  key.bp.reason = BP_ON_LOWER;
 
   elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
   if (elem && elem->bp.active) {
@@ -177,6 +194,29 @@ static void dbg_lower_node(void *ctx, ir_node *node)
   }
 }
 
+/**
+ * A graph will be deleted.
+ *
+ * @param ctx   the hook context
+ * @param irg   the IR graph that will be deleted
+ */
+static void dbg_free_graph(void *context, ir_graph *irg)
+{
+  bp_ident_t key, *elem;
+  entity *ent = get_irg_entity(irg);
+
+  if (! ent)
+    return;
+
+  key.id        = get_entity_ident(ent);
+  key.bp.reason = BP_ON_REMIRG;
+
+  elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+  if (elem && elem->bp.active) {
+    ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
+    firm_debug_break();
+  }
+}
 
 /**
  * return the reason string.
@@ -187,12 +227,11 @@ static const char *reason_str(bp_reasons_t reason)
   case BP_ON_CREATION: return "creation";
   case BP_ON_REPLACE:  return "replacing";
   case BP_ON_LOWER:    return "lowering";
+  case BP_ON_REMIRG:   return "removing IRG";
   default:             assert(0);
   }
   return "unknown";
 }
-
-#define HASH_NODE_BP(key) (((key).nr << 2) ^ (key).reason)
 
 /**
  * Compare two node number breakpoints
@@ -202,7 +241,18 @@ static int cmp_node_bp(const void *elt, const void *key, size_t size)
   const bp_node_t *e1 = elt;
   const bp_node_t *e2 = key;
 
-  return (e1->nr - e2->nr) | (e1->reason - e2->reason);
+  return (e1->nr - e2->nr) | (e1->bp.reason - e2->bp.reason);
+}
+
+/**
+ * Compare two ident breakpoints
+ */
+static int cmp_ident_bp(const void *elt, const void *key, size_t size)
+{
+  const bp_ident_t *e1 = elt;
+  const bp_ident_t *e2 = key;
+
+  return (e1->id != e2->id) | (e1->bp.reason - e2->bp.reason);
 }
 
 /**
@@ -210,48 +260,61 @@ static int cmp_node_bp(const void *elt, const void *key, size_t size)
  */
 static void update_hooks(breakpoint *bp)
 {
-  if (bp->kind == BP_NODE) {
-    bp_node_t *elem = (bp_node_t *)bp;
+  if (bp->active)
+    ++num_active_bp[bp->reason];
+  else
+    --num_active_bp[bp->reason];
 
-    if (elem->bp.active)
-      ++num_active_bp[elem->reason];
-    else
-      --num_active_bp[elem->reason];
+  if (num_active_bp[bp->reason] > 0) {
+    /* register the hooks on demand */
+    switch (bp->reason) {
+    case BP_ON_CREATION:
+      if (! IS_HOOKED(hook_new_node))
+        HOOK(hook_new_node, dbg_new_node);
+      break;
 
-    if (num_active_bp[elem->reason] > 0) {
-      /* register the hooks on demand */
-      switch (elem->reason) {
-      case BP_ON_CREATION:
-        if (! IS_HOOKED(hook_new_node))
-          HOOK(hook_new_node, dbg_new_node);
-        break;
+    case BP_ON_REPLACE:
+      if (! IS_HOOKED(hook_replace))
+        HOOK(hook_replace, dbg_replace);
 
-      case BP_ON_REPLACE:
-        if (! IS_HOOKED(hook_replace))
-          HOOK(hook_replace, dbg_replace);
+    case BP_ON_LOWER:
+      if (! IS_HOOKED(hook_lower))
+        HOOK(hook_lower, dbg_lower_node);
+      break;
 
-      case BP_ON_LOWER:
-        if (! IS_HOOKED(hook_lower))
-          HOOK(hook_lower, dbg_lower_node);
-        break;
-      }
+    case BP_ON_REMIRG:
+      if (! IS_HOOKED(hook_free_graph))
+        HOOK(hook_free_graph, dbg_free_graph);
+      break;
+
+    default:
+      ;
     }
-    else {
-      switch (elem->reason) {
-      case BP_ON_CREATION:
-        if (IS_HOOKED(hook_new_node))
-          UNHOOK(hook_new_node);
-        break;
+  }
+  else {
+    /* unregister the hook on demand */
+    switch (bp->reason) {
+    case BP_ON_CREATION:
+      if (IS_HOOKED(hook_new_node))
+        UNHOOK(hook_new_node);
+      break;
 
-      case BP_ON_REPLACE:
-        if (IS_HOOKED(hook_replace))
-          UNHOOK(hook_replace);
+    case BP_ON_REPLACE:
+      if (IS_HOOKED(hook_replace))
+        UNHOOK(hook_replace);
 
-      case BP_ON_LOWER:
-        if (IS_HOOKED(hook_lower))
-          UNHOOK(hook_lower);
-        break;
-      }
+    case BP_ON_LOWER:
+      if (IS_HOOKED(hook_lower))
+        UNHOOK(hook_lower);
+      break;
+
+    case BP_ON_REMIRG:
+      if (IS_HOOKED(hook_free_graph))
+        UNHOOK(hook_free_graph);
+      break;
+
+    default:
+      ;
     }
   }
 }
@@ -266,8 +329,8 @@ static void break_on_node(long nr, bp_reasons_t reason)
   key.bp.kind   = BP_NODE;
   key.bp.bpnr   = 0;
   key.bp.active = 1;
+  key.bp.reason = reason;
   key.nr        = nr;
-  key.reason    = reason;
 
   elem = set_insert(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
 
@@ -278,6 +341,32 @@ static void break_on_node(long nr, bp_reasons_t reason)
     bp_list = &elem->bp;
 
     printf("Firm BP %u: %s of Node %ld\n", elem->bp.bpnr, reason_str(reason), nr);
+
+    update_hooks(&elem->bp);
+  }
+}
+
+/**
+ * Break if ident name is reached.
+ */
+static void break_on_ident(const char *name, bp_reasons_t reason) {
+  bp_ident_t key, *elem;
+
+  key.bp.kind   = BP_IDENT;
+  key.bp.bpnr   = 0;
+  key.bp.active = 1;
+  key.bp.reason = reason;
+  key.id        = new_id_from_str(name);
+
+  elem = set_insert(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+
+  if (elem->bp.bpnr == 0) {
+    /* new break point */
+    elem->bp.bpnr = ++bp_num;
+    elem->bp.next = bp_list;
+    bp_list = &elem->bp;
+
+    printf("Firm BP %u: %s of ident \"%s\"\n", elem->bp.bpnr, reason_str(reason), name);
 
     update_hooks(&elem->bp);
   }
@@ -309,15 +398,16 @@ static void bp_activate(unsigned bp, int active)
  * Show a list of supported commands
  */
 static void show_commands(void) {
-  printf("Internal Firm debugger extension commands:\n"
-    ".init         break after initialization\n"
-    ".create nr    break if node nr was created\n"
-    ".replace nr   break if node nr is replaced by another node\n"
-    ".lower nr     break before node nr is lowered\n"
-    ".bp           show all breakpoints\n"
-    ".enable nr    enable breakpoint nr\n"
-    ".disable nr   disable breakpoint nr\n"
-    ".help         list all commands\n"
+  printf("Internal Firm debugger extension $Revision$ commands:\n"
+    ".init           break after initialization\n"
+    ".create nr      break if node nr was created\n"
+    ".replace nr     break if node nr is replaced by another node\n"
+    ".lower nr       break before node nr is lowered\n"
+    ".remirg name    break if the irg of entity name is deleted\n"
+    ".bp             show all breakpoints\n"
+    ".enable nr      enable breakpoint nr\n"
+    ".disable nr     disable breakpoint nr\n"
+    ".help           list all commands\n"
   );
 }
 
@@ -326,7 +416,8 @@ static void show_commands(void) {
  */
 static void show_bp(void) {
   breakpoint *p;
-  bp_node_t *node_p;
+  bp_node_t  *node_p;
+  bp_ident_t *ident_p;
 
   for (p = bp_list; p; p = p->next) {
     printf("Firm BP %u: ", p->bpnr);
@@ -334,7 +425,12 @@ static void show_bp(void) {
     switch (p->kind) {
     case BP_NODE:
       node_p = (bp_node_t *)p;
-      printf("%s of node %ld ", reason_str(node_p->reason), node_p->nr);
+      printf("%s of node %ld ", reason_str(p->reason), node_p->nr);
+      break;
+
+    case BP_IDENT:
+      ident_p = (bp_ident_t *)p;
+      printf("%s of ident \"%s\" ", reason_str(p->reason), get_id_str(ident_p->id));
       break;
     }
 
@@ -352,6 +448,7 @@ static void show_bp(void) {
 void firm_break(const char *cmd) {
   long nr;
   unsigned bp;
+  char name[1024];
 
   while (isspace(*cmd)) ++cmd;
 
@@ -363,6 +460,9 @@ void firm_break(const char *cmd) {
   }
   else if (sscanf(cmd, ".lower %ld\n", &nr) == 1) {
     break_on_node(nr, BP_ON_LOWER);
+  }
+  else if (sscanf(cmd, ".remirg %s\n", name) == 1) {
+    break_on_ident(name, BP_ON_REMIRG);
   }
   else if (strcmp(cmd, ".init") == 0)
     break_on_init = 1;
@@ -383,6 +483,7 @@ void firm_init_debugger(void)
   char *env;
 
   bp_node_numbers = new_set(cmp_node_bp, 8);
+  bp_idents       = new_set(cmp_ident_bp, 8);
 
   env = getenv("FIRMDBG");
 
@@ -426,6 +527,9 @@ void firm_init_debugger(void)
  *
  * Break before IR-node with node number nr is lowered.
  *
+ * .remirg name
+ *
+ * Break if the irg of entity name is deleted.
  * .bp
  *
  * Show all Firm internal breakpoints.
