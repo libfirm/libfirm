@@ -522,7 +522,7 @@ dead_node_elimination(ir_graph *irg) {
 	edges_init_graph(irg);
 
   /* inform statistics that we started a dead-node elimination run */
-  hook_dead_node_elim_start(irg);
+  hook_dead_node_elim(irg, 1);
 
   /* Remember external state of current_ir_graph. */
   rem = current_ir_graph;
@@ -561,7 +561,7 @@ dead_node_elimination(ir_graph *irg) {
   }
 
   /* inform statistics that the run is over */
-  hook_dead_node_elim_stop(irg);
+  hook_dead_node_elim(irg, 0);
 
   current_ir_graph = rem;
   set_interprocedural_view(rem_ipview);
