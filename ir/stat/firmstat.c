@@ -1395,29 +1395,19 @@ static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong, ir_node
 }
 
 /**
- * Start the dead node elimination.
+ * Start/Stop the dead node elimination.
  *
  * @param ctx  the hook context
  */
-static void stat_dead_node_elim_start(void *ctx, ir_graph *irg)
+static void stat_dead_node_elim(void *ctx, ir_graph *irg, int start)
 {
   if (! status->stat_options)
     return;
 
-  ++status->in_dead_node_elim;
-}
-
-/**
- * Stops the dead node elimination.
- *
- * @param ctx  the hook context
- */
-static void stat_dead_node_elim_stop(void *ctx, ir_graph *irg)
-{
-  if (! status->stat_options)
-    return;
-
-  --status->in_dead_node_elim;
+  if (start)
+    ++status->in_dead_node_elim;
+  else
+    --status->in_dead_node_elim;
 }
 
 /**
@@ -1474,12 +1464,12 @@ static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul)
 }
 
 /**
- * A division was replaced by a series of Shifts/Muls
+ * A division by const was replaced
  *
- * @param ctx  the hook context
- * @param div  the div node that will be optimized
+ * @param ctx   the hook context
+ * @param node  the division node that will be optimized
  */
-static void stat_arch_dep_replace_div_by_const(void *ctx, ir_node *div)
+static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node)
 {
   if (! status->stat_options)
     return;
@@ -1487,45 +1477,7 @@ static void stat_arch_dep_replace_div_by_const(void *ctx, ir_node *div)
   STAT_ENTER;
   {
     graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-    removed_due_opt(div, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
-  }
-  STAT_LEAVE;
-}
-
-/**
- * A modulo was replaced by a series of Shifts/Muls
- *
- * @param ctx  the hook context
- * @param mod  the mod node that will be optimized
- */
-static void stat_arch_dep_replace_mod_by_const(void *ctx, ir_node *mod)
-{
-  if (! status->stat_options)
-    return;
-
-  STAT_ENTER;
-  {
-    graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-    removed_due_opt(mod, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
-  }
-  STAT_LEAVE;
-}
-
-/**
- * A DivMod was replaced by a series of Shifts/Muls
- *
- * @param ctx     the hook context
- * @param divmod  the divmod node that will be optimized
- */
-static void stat_arch_dep_replace_DivMod_by_const(void *ctx, ir_node *divmod)
-{
-  if (! status->stat_options)
-    return;
-
-  STAT_ENTER;
-  {
-    graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-    removed_due_opt(divmod, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
+    removed_due_opt(node, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
   }
   STAT_LEAVE;
 }
@@ -1672,29 +1624,26 @@ void init_stat(unsigned enable_options)
   status->stat_options = enable_options & FIRMSTAT_ENABLED ? enable_options : 0;
 
   /* register all hooks */
-  HOOK(hook_new_ir_op,                        stat_new_ir_op);
-  HOOK(hook_free_ir_op,                       stat_free_ir_op);
-  HOOK(hook_new_node,                         stat_new_node);
-  HOOK(hook_turn_into_id,                     stat_turn_into_id);
-  HOOK(hook_new_graph,                        stat_new_graph);
-  HOOK(hook_free_graph,                       stat_free_graph);
-  HOOK(hook_irg_walk,                         stat_irg_walk);
-  HOOK(hook_irg_walk_blkwise,                 stat_irg_walk_blkwise);
-  HOOK(hook_irg_block_walk,                   stat_irg_block_walk);
-  HOOK(hook_merge_nodes,                      stat_merge_nodes);
-  HOOK(hook_reassociate,                      stat_reassociate);
-  HOOK(hook_lower,                            stat_lower);
-  HOOK(hook_inline,                           stat_inline);
-  HOOK(hook_tail_rec,                         stat_tail_rec);
-  HOOK(hook_strength_red,                     stat_strength_red);
-  HOOK(hook_dead_node_elim_start,             stat_dead_node_elim_start);
-  HOOK(hook_dead_node_elim_stop,              stat_dead_node_elim_stop);
-  HOOK(hook_if_conversion,                    stat_if_conversion);
-  HOOK(hook_func_call,                        stat_func_call);
-  HOOK(hook_arch_dep_replace_mul_with_shifts, stat_arch_dep_replace_mul_with_shifts);
-  HOOK(hook_arch_dep_replace_div_by_const,    stat_arch_dep_replace_div_by_const);
-  HOOK(hook_arch_dep_replace_mod_by_const,    stat_arch_dep_replace_mod_by_const);
-  HOOK(hook_arch_dep_replace_DivMod_by_const, stat_arch_dep_replace_DivMod_by_const);
+  HOOK(hook_new_ir_op,                          stat_new_ir_op);
+  HOOK(hook_free_ir_op,                         stat_free_ir_op);
+  HOOK(hook_new_node,                           stat_new_node);
+  HOOK(hook_turn_into_id,                       stat_turn_into_id);
+  HOOK(hook_new_graph,                          stat_new_graph);
+  HOOK(hook_free_graph,                         stat_free_graph);
+  HOOK(hook_irg_walk,                           stat_irg_walk);
+  HOOK(hook_irg_walk_blkwise,                   stat_irg_walk_blkwise);
+  HOOK(hook_irg_block_walk,                     stat_irg_block_walk);
+  HOOK(hook_merge_nodes,                        stat_merge_nodes);
+  HOOK(hook_reassociate,                        stat_reassociate);
+  HOOK(hook_lower,                              stat_lower);
+  HOOK(hook_inline,                             stat_inline);
+  HOOK(hook_tail_rec,                           stat_tail_rec);
+  HOOK(hook_strength_red,                       stat_strength_red);
+  HOOK(hook_dead_node_elim,                     stat_dead_node_elim);
+  HOOK(hook_if_conversion,                      stat_if_conversion);
+  HOOK(hook_func_call,                          stat_func_call);
+  HOOK(hook_arch_dep_replace_mul_with_shifts,   stat_arch_dep_replace_mul_with_shifts);
+  HOOK(hook_arch_dep_replace_division_by_const, stat_arch_dep_replace_division_by_const);
 
   obstack_init(&status->cnts);
 
