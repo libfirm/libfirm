@@ -11,75 +11,69 @@
  */
 
 /**
-*  @file entity.h
-*
-*  Entities represent all program known objects.
-*
-*  @author Martin Trapp, Christian Schaefer
-*  @author Goetz Lindenmaier
-*
-*  An entity is the representation of program known objects in Firm.
-*  The primary concept of entities is to represent members of complex
-*  types, i.e., fields and methods of classes.  As not all programming
-*  language model all variables and methods as members of some class,
-*  the concept of entities is extended to cover also local and global
-*  variables, and arbitrary procedures.
-*
-*  An entity always specifies the type of the object it represents and
-*  the type of the object it is a part of, the owner of the entity.
-*  Originally this is the type of the class of which the entity is a
-*  member.
-*  The owner of local variables is the procedure they are defined in.
-*  The owner of global variables and procedures visible in the whole
-*  program is a universally defined class type "GlobalType".  The owner
-*  of procedures defined in the scope of an other procedure is the
-*  enclosing procedure.
-*
-*  In detail the datastructure entity has the following fields:
-*
-*  - ident *name:    Name of this entity as specified in the source code.
-*                    Only unequivocal in conjuction with scope.
-*  - ident *ld_name: Unique name of this entity, i.e., the mangled
-*                    name.  E.g., for a class `A' with field `a' this
-*                    is the ident for `A_a'.
-*  - type *type:     The type of this entity, e.g., a method type, a
-*                    basic type of the language or a class itself.
-*  - type *owner:    The class this entity belongs to.  In case of local
-* 	             variables the method they are defined in.
-*  - int offset:     Offset in bits for this entity.  Fixed when layout
-* 	             of owner is determined.
-*  - ir_graph *irg:  If (type == method_type) this is the corresponding irg.
-*                    The ir_graph constructor automatically sets this field.
-*                    If (type != method_type) access of this field will cause
-*                    an assertion.
-*  - unsigned irg_add_properties:
-*                    If (type == method_type) this mirrors the additional flags
-*                    of the corresponding irg if set or is an own set for
-*                    this entity. This construction allows to specify these
-*                    flags even if no graph is available.
-*                    If (type != method_type) access of this field will cause
-*                    an assertion.
-*/
+ * @file entity.h
+ *
+ * Entities represent all program known objects.
+ *
+ * @author Martin Trapp, Christian Schaefer
+ * @author Goetz Lindenmaier
+ *
+ * An entity is the representation of program known objects in Firm.
+ * The primary concept of entities is to represent members of complex
+ * types, i.e., fields and methods of classes.  As not all programming
+ * language model all variables and methods as members of some class,
+ * the concept of entities is extended to cover also local and global
+ * variables, and arbitrary procedures.
+ *
+ * An entity always specifies the type of the object it represents and
+ * the type of the object it is a part of, the owner of the entity.
+ * Originally this is the type of the class of which the entity is a
+ * member.
+ * The owner of local variables is the procedure they are defined in.
+ * The owner of global variables and procedures visible in the whole
+ * program is a universally defined class type "GlobalType".  The owner
+ * of procedures defined in the scope of an other procedure is the
+ * enclosing procedure.
+ *
+ * In detail the datastructure entity has the following fields:
+ *
+ * - ident *name:    Name of this entity as specified in the source code.
+ *                   Only unequivocal in conjuction with scope.
+ * - ident *ld_name: Unique name of this entity, i.e., the mangled
+ *                   name.  E.g., for a class `A' with field `a' this
+ *                   is the ident for `A_a'.
+ * - type *type:     The type of this entity, e.g., a method type, a
+ *                   basic type of the language or a class itself.
+ * - type *owner:    The class this entity belongs to.  In case of local
+ *	             variables the method they are defined in.
+ * - int offset:     Offset in bits for this entity.  Fixed when layout
+ *	             of owner is determined.
+ * - ir_graph *irg:  If (type == method_type) this is the corresponding irg.
+ *                   The ir_graph constructor automatically sets this field.
+ *                   If (type != method_type) access of this field will cause
+ *                   an assertion.
+ * - unsigned irg_add_properties:
+ *                   If (type == method_type) this mirrors the additional flags
+ *                   of the corresponding irg if set or is an own set for
+ *                   this entity. This construction allows to specify these
+ *                   flags even if no graph is available.
+ *                   If (type != method_type) access of this field will cause
+ *                   an assertion.
+ */
+#ifndef _ENTITY_H_
+#define _ENTITY_H_
 
-# ifndef _ENTITY_H_
-# define _ENTITY_H_
+#include "firm_types.h"
+#include "ident.h"
+#include "type.h"
+#include "dbginfo.h"
+#include "irgraph.h"
 
-# include "ident.h"
-# include "type.h"
-# include "dbginfo.h"
-# include "irgraph.h"
-
-# include "tr_inheritance.h"
+#include "tr_inheritance.h"
 
 /*-----------------------------------------------------------------*/
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
-
-/* to resolve recursion between entity.h and irgraph.h */
-#ifndef _IR_GRAPH_TYPEDEF_
-#define _IR_GRAPH_TYPEDEF_
-typedef struct ir_graph ir_graph;
-#endif
 
 /**
  *
@@ -455,7 +449,7 @@ int  get_compound_ent_value_offset_bytes(entity *ent, int pos);
  * have an open upper bound.  If there are several open bounds, we do
  * nothing.  There must be initializer elements for all array
  * elements.  Uses the link field in the array element entities.  The
- * array bounds must be representable as ints.
+ * array bounds must be representable as integers.
  *
  * @param ent Any entity.
  */
@@ -513,7 +507,7 @@ int is_atomic_entity(entity *ent);
    array or union type. */
 int is_compound_entity(entity *ent);
 
-/** Returns true if ent1 and ent2 have are equal except for their owner.
+/** Returns non-zero if ent1 and ent2 have are equal except for their owner.
    Two entities are equal if
     - they have the same type (the same C-struct)
     - ...?
@@ -596,4 +590,12 @@ extern entity *unknown_entity;
 /** Returns the unknown entity */
 entity *get_unknown_entity(void);
 
-# endif /* _ENTITY_H_ */
+/** Encodes how a pointer parameter is accessed. */
+typedef enum acc_bits {
+  ptr_access_none  = 0,		      /**< no access */
+  ptr_access_read  = 1,		      /**< read access */
+  ptr_access_write = 2,		      /**< write access */
+  ptr_access_rw    = ptr_access_read|ptr_access_write	/**< read AND write access */
+} ptr_access_kind;
+
+#endif /* _ENTITY_H_ */
