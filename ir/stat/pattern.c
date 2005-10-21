@@ -30,32 +30,32 @@ typedef unsigned char BYTE;
  * The code buffer
  */
 typedef struct _code_buf_t {
-  BYTE		*next;		/**< next byte to be written */
-  BYTE		*end;		/**< end of the buffer */
-  BYTE		*start;		/**< start of the buffer */
-  unsigned	hash;		/**< calculates the hash value */
+  BYTE	    *next;    /**< next byte to be written */
+  BYTE	    *end;     /**< end of the buffer */
+  BYTE	    *start;   /**< start of the buffer */
+  unsigned	hash;     /**< calculates the hash value */
 } CODE_BUFFER;
 
 /**
  * VLC codes
  */
 enum vlc_code_t {
-  VLC_7BIT       = 0x00,	/**< 8 bit code, carrying 7 bits payload */
-  VLC_14BIT      = 0x80,	/**< 16 bit code, carrying 14 bits payload */
-  VLC_21BIT      = 0xC0,	/**< 24 bit code, carrying 21 bits payload */
-  VLC_28BIT      = 0xE0,	/**< 32 bit code, carrying 28 bits payload */
-  VLC_32BIT      = 0xF0,	/**< 40 bit code, carrying 32 bits payload */
+  VLC_7BIT       = 0x00,  /**< 8 bit code, carrying 7 bits payload */
+  VLC_14BIT      = 0x80,  /**< 16 bit code, carrying 14 bits payload */
+  VLC_21BIT      = 0xC0,  /**< 24 bit code, carrying 21 bits payload */
+  VLC_28BIT      = 0xE0,  /**< 32 bit code, carrying 28 bits payload */
+  VLC_32BIT      = 0xF0,  /**< 40 bit code, carrying 32 bits payload */
 
-  VLC_TAG_FIRST  = 0xF1, 	/**< first possible tag value */
-  VLC_TAG_ICONST = 0xFB,	/**< encodes an integer constant */
-  VLC_TAG_EMPTY  = 0xFC,	/**< encodes an empty entity */
-  VLC_TAG_OPTION = 0xFD, 	/**< options exists */
-  VLC_TAG_REF    = 0xFE,	/**< special tag, next code is an ID */
-  VLC_TAG_END    = 0xFF,	/**< end tag */
+  VLC_TAG_FIRST  = 0xF1,  /**< first possible tag value */
+  VLC_TAG_ICONST = 0xFB,  /**< encodes an integer constant */
+  VLC_TAG_EMPTY  = 0xFC,  /**< encodes an empty entity */
+  VLC_TAG_OPTION = 0xFD,  /**< options exists */
+  VLC_TAG_REF    = 0xFE,  /**< special tag, next code is an ID */
+  VLC_TAG_END    = 0xFF,  /**< end tag */
 };
 
 /*
- * An entry for patterns
+ * An entry for patterns.
  */
 typedef struct _pattern_entry_t {
   counter_t   count;        /**< amount of pattern occurance */
@@ -67,8 +67,8 @@ typedef struct _pattern_entry_t {
  * current options
  */
 enum options_t {
-  OPT_WITH_MODE   = 0x00000001,	/**< use modes */
-  OPT_ENC_GRAPH   = 0x00000002,	/**< encode graphs, not terms */
+  OPT_WITH_MODE   = 0x00000001, /**< use modes */
+  OPT_ENC_DAG     = 0x00000002, /**< encode DAGs, not terms */
   OPT_WITH_ICONST = 0x00000004, /**< encode integer constants */
 };
 
@@ -99,10 +99,10 @@ static int pattern_count_cmp(const void *elt, const void *key)
   pattern_entry_t **e1 = (pattern_entry_t **)elt;
   pattern_entry_t **e2 = (pattern_entry_t **)key;
 
-  cmp = cnt_cmp(&(*e1)->count, &(*e2)->count);
-
   /* we want it sorted in descending order */
-  return cmp * - 1;
+  cmp = cnt_cmp(&(*e2)->count, &(*e1)->count);
+
+  return cmp;
 }
 
 /**
@@ -153,7 +153,7 @@ static unsigned buf_lenght(const CODE_BUFFER *buf)
 }
 
 /**
- * returns the current length of a buffer
+ * returns the current content of a buffer
  */
 static const BYTE *buf_content(const CODE_BUFFER *buf)
 {
@@ -188,7 +188,7 @@ static INLINE BYTE get_byte(CODE_BUFFER *buf)
   return VLC_TAG_END;
 }
 
-#define BITS(n)		(1 << (n))
+#define BITS(n)   (1 << (n))
 
 /**
  * put a 32bit value into the buffer
@@ -222,7 +222,7 @@ static void put_code(CODE_BUFFER *buf, unsigned code)
   }
 }
 
-#define BIT_MASK(n)	((1 << (n)) - 1)
+#define BIT_MASK(n) ((1 << (n)) - 1)
 
 /**
  * get 32 bit from the buffer
@@ -285,16 +285,16 @@ static BYTE next_tag(CODE_BUFFER *buf)
  * environment for the pattern encoder
  */
 typedef struct _codec_enc_t {
-  CODE_BUFFER      *buf;		/**< the code buffer */
-  set              *id_set;		/**< the set containing all already seen nodes */
-  unsigned         curr_id;		/**< current node id */
-  unsigned         options;		/**< encoding options */
-  pattern_dumper_t *dmp;		/**< dumper for the decoder */
+  CODE_BUFFER      *buf;      /**< the code buffer */
+  set              *id_set;   /**< the set containing all already seen nodes */
+  unsigned         curr_id;   /**< current node id */
+  unsigned         options;   /**< encoding options */
+  pattern_dumper_t *dmp;      /**< dumper for the decoder */
 } codec_env_t;
 
 typedef struct _addr_entry_t {
-  void *addr;		/**< the address */
-  unsigned id;		/**< associated ID */
+  void *addr;     /**< the address */
+  unsigned id;    /**< associated ID */
 } addr_entry_t;
 
 /**
@@ -359,10 +359,10 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
       tarval *tv = get_Const_tarval(node);
 
       if (tarval_is_long(tv)) {
-	long v = get_tarval_long(tv);
+        long v = get_tarval_long(tv);
 
-	put_tag(env->buf, VLC_TAG_ICONST);
-	put_code(env->buf, v);
+        put_tag(env->buf, VLC_TAG_ICONST);
+        put_code(env->buf, v);
       }
     }
   }
@@ -389,9 +389,9 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 }
 
 /**
- * encode an IR-node (and its children)
+ * encode a DAG staring by the IR-node node
  *
- * @param @node      The root node of the graph
+ * @param node       The root node of the graph
  * @param buf        The code buffer to store the bitstring in
  * @param max_depth  The maximum depth for descending
  *
@@ -403,11 +403,11 @@ static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
   int         res;
 
   env.buf     = buf;
-  env.curr_id = 1;	/* 0 is used for special purpose */
+  env.curr_id = 1;  /* 0 is used for special purpose */
   env.options = status->options;
   env.dmp     = NULL;
 
-  if (env.options & OPT_ENC_GRAPH)
+  if (env.options & OPT_ENC_DAG)
     env.id_set = new_set(addr_cmp, 32);
   else
     env.id_set = NULL;
@@ -420,7 +420,7 @@ static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
 
   res = _encode_node(node, max_depth, &env);
 
-  if (env.options & OPT_ENC_GRAPH)
+  if (env.options & OPT_ENC_DAG)
     del_set(env.id_set);
 
   return max_depth - res;
@@ -521,7 +521,7 @@ static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump)
   init_buf(&buf, b, len);
 
   env.buf     = &buf;
-  env.curr_id = 1;	/* 0 is used for special purpose */
+  env.curr_id = 1;  /* 0 is used for special purpose */
   env.dmp     = dump;
 
   /* decode options */
@@ -538,11 +538,14 @@ static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump)
  * the environment for the pattern calculation
  */
 typedef struct _pattern_env {
-  int max_depth;		/**< maximum depth for pattern generation */
+  int max_depth;    /**< maximum depth for pattern generation */
 } pattern_env_t;
 
 /**
  * Returns the associates pattern_entry_t for a CODE_BUF
+ *
+ * @param buf  the code buffer
+ * @param set  the hash table containing all pattern entries
  */
 static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set)
 {
@@ -565,31 +568,38 @@ static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set)
   }
 
   cnt_clr(&key->count);
-  assert(key != (void *)4);
   return pset_insert(set, key, hash);
 }
 
 /**
- * walker for nodes pattern calculation
+ * count a pattern
+ */
+static void count_pattern(CODE_BUFFER *buf, int depth) {
+  pattern_entry_t *entry;
+
+  /* ignore single node pattern (i.e. constants) */
+  if (depth > 1) {
+    entry = pattern_get_entry(buf, status->pattern_hash);
+
+    /* increase count */
+    cnt_inc(&entry->count);
+  }
+}
+
+/**
+ * pre-walker for nodes pattern calculation
  */
 static void calc_nodes_pattern(ir_node *node, void *ctx)
 {
   BYTE            buffer[1024];
   pattern_env_t   *env = ctx;
   CODE_BUFFER     buf;
-  pattern_entry_t *entry;
   int             depth;
 
   init_buf(&buf, buffer, sizeof(buffer));
   depth = encode_node(node, &buf, env->max_depth);
 
-  /* ignore single node pattern (i.e. constants) */
-  if (depth > 1) {
-    entry = pattern_get_entry(&buf, status->pattern_hash);
-
-    /* increase count */
-    cnt_inc(&entry->count);
-  }
+  count_pattern(&buf, depth);
 }
 
 /**
@@ -665,7 +675,7 @@ void stat_init_pattern_history(int enable)
     return;
 
   status->bound   = 10;
-  status->options = OPT_WITH_MODE | OPT_ENC_GRAPH | OPT_WITH_ICONST;
+  status->options = OPT_WITH_MODE | OPT_ENC_DAG | OPT_WITH_ICONST;
 
   obstack_init(&status->obst);
 
