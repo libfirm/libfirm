@@ -183,16 +183,24 @@ typedef enum {
   hook_arch_dep_replace_mul_with_shifts,
   hook_arch_dep_replace_division_by_const,
   hook_new_mode,
-  hook_last,
+  hook_last
 } hook_type_t;
 
 /**
- * register the hook entry.
+ * register a hook entry.
  *
  * @param hook   the hook type
  * @param entry  the hook entry
  */
 void register_hook(hook_type_t hook, hook_entry_t *entry);
+
+/**
+ * unregister a hook entry.
+ *
+ * @param hook   the hook type
+ * @param entry  the hook entry
+ */
+void unregister_hook(hook_type_t hook, hook_entry_t *entry);
 
 #ifdef FIRM_ENABLE_HOOKS
 
