@@ -11,18 +11,19 @@
  */
 
 /**
-* @file irouts.h
-*
-* Implements Def-Use edges, also called outedges.
-*
-* @author Goetz Lindenmaier
-*
-* @todo eventually add reverse conrtol flow graph. (If needed.)
-*/
+ * @file irouts.h
+ *
+ * Implements Def-Use edges, also called outedges.
+ *
+ * @author Goetz Lindenmaier
+ *
+ * @todo eventually add reverse conrtol flow graph. (If needed.)
+ */
 
 # ifndef _IROUTS_H_
 # define _IROUTS_H_
 
+# include "firm_types.h"
 # include "irgraph.h"
 # include "irnode.h"
 
@@ -51,12 +52,6 @@ int             get_Block_n_cfg_outs (ir_node *node);
 /** Access predecessor n. */
 ir_node *get_Block_cfg_out  (ir_node *node, int pos);
 
-#ifndef _IRG_WALK_FUNC_TYPEDEF_
-#define _IRG_WALK_FUNC_TYPEDEF_
-/** The type of the walk function */
-typedef void irg_walk_func(ir_node *, void *);
-#endif
-
 /** Walks over the graph starting at node.  Walks also if graph is in state
    "outs_inconsistent".  Assumes current_ir_graph is set properly. */
 void irg_out_walk(ir_node *node,
@@ -79,7 +74,7 @@ void irg_out_block_walk(ir_node *node,
    out edges from block to floating nodes even if graph is in state
    "op_pin_state_floats".   Optimizes Tuple nodes. */
 void compute_irg_outs(ir_graph *irg);
-#define compute_outs(X)   compute_irg_outs(X)
+#define compute_outs(irg)   compute_irg_outs(irg)
 void compute_irp_outs(void);
 /** Computes the out edges in interprocedural view */
 void compute_ip_outs(void);
