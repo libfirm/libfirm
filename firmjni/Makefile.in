@@ -83,7 +83,7 @@ MEMBERS += $(IMPL_MEMBERS)
 # How to pass function pointers? Or how to obtain them?
 #      Irgwalk.m Typewalk.m
 #
-FIRM_PATH_HEADERS=common/firm.h common/firm_common.h \
+FIRM_PATH_HEADERS=common/firm_types.h common/firm.h common/firm_common.h \
 	ident/ident.h tv/tv.h \
 	tr/type.h tr/entity.h tr/type_or_entity.h tr/tpop.h tr/mangle.h \
 	tr/type_identify.h					\
@@ -145,16 +145,16 @@ Heapanal.java:
 	javah -classpath $(topdir) -o $@ $(PACKAGENAME).$(<:.class=)
 
 %.o:	%.c %.h
-	gcc $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) -c $< -o $@
 
 $(OFILES):
-	gcc $(CPPFLAGS) -c $(@:.o=.c) -o $@
+	$(CC) $(CPPFLAGS) -c $(@:.o=.c) -o $@
 
 
 # We need firmlower and abor for heap analysis stuff, which is called from aux/Heapanal.java
 # BY the way, what is ../../sw/lib/  can this be removed? Probaly, so I did.
 jni:    $(HFILES) $(OFILES)  # ../libfirm.a
-	gcc -shared -fPIC -o $(LIBNAME) *.o -lfirm -L.. $(LDFLAGS)
+	$(CC) -shared -fPIC -o $(LIBNAME) *.o -lfirm -L.. $(LDFLAGS)
 install:
 	cp libfirmjni.so $(libdir)
 #	mkdir $(javadir)
@@ -201,7 +201,7 @@ $(FIRM_SOURCE_DIR_HEADERS): $(SOURCE_DIR)
 #	troff -a -C -z  $(FIRM_SRC_HEADER) > $(SOURCE_DIR)/$(notdir $@)
 
 $(FIRM_HEADERS):$(FIRM_SOURCE_DIR_HEADERS) $(SOURCE_DIR)/firm_typedefs.h
-	gcc $(CPPFLAGS) -E -C -P $(SOURCE_DIR)/$@ -o $@
+	$(CC) $(CPPFLAGS) -E -C -P $(SOURCE_DIR)/$@ -o $@
 
 ###############################################################################
 # Call crecoder to construct from each header a .java file specifying the
@@ -213,7 +213,7 @@ $(FIRM_HEADERS):$(FIRM_SOURCE_DIR_HEADERS) $(SOURCE_DIR)/firm_typedefs.h
 H_FROM_JAVA=$(subst .java,.h,$(shell echo $@|$(SHELL_TOLOWER)))
 
 %.java: $(FIRM_SOURCE_DIR_HEADERS) $(SOURCE_DIR)/firm_typedefs.h
-	gcc $(CPPFLAGS) -E -C -P $(SOURCE_DIR)/$(H_FROM_JAVA) -o $(H_FROM_JAVA)
+	$(CC) $(CPPFLAGS) -E -C -P $(SOURCE_DIR)/$(H_FROM_JAVA) -o $(H_FROM_JAVA)
 	env CLASSPATH=$(FIRM_JNI_TOOLS_DIR)/crecoder.jar:$$CLASSPATH java crecoder/tools/jniBuilder/BuildJNI $(H_FROM_JAVA);\
 	rm $(H_FROM_JAVA);
 # remove the patched header so that further compilation finds the proper firm headers
