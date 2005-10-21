@@ -1,3 +1,13 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/iredges.h
+ * Purpose:     Public header for the automatically updating outs.
+ * Author:      Sebastian Hack
+ * Created:     3.2.2005
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2005 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /**
  * Public header for the automatically updating outs.
@@ -40,8 +50,8 @@ const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
 
 /**
  * A convenience iteration macro over all out edges of a node.
- * @param irn The node.
- * @param edge An @c ir_edge_t pointer which shall be set to the current
+ * @param irn  The node.
+ * @param edge An ir_edge_t pointer which shall be set to the current
  * edge.
  */
 #define foreach_out_edge(irn,edge) \
@@ -50,10 +60,11 @@ const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
 /**
  * A convenience iteration macro over all out edges of a node, which is safe
  * against alteration of the current edge.
- * @param irn The node.
- * @param edge An @c ir_edge_t pointer which shall be set to the current
+ *
+ * @param irn  The node.
+ * @param edge An ir_edge_t pointer which shall be set to the current
  * edge.
- * @param ne The next edge, enables alteration safe erge processing.
+ * @param ne   The next edge, enables alteration safe edge processing.
  */
 #define foreach_out_edge_safe(irn,edge,ne) \
 	for( \
