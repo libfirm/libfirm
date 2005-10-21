@@ -52,6 +52,8 @@ turn_into_tuple (ir_node *node, int arity)
 void
 exchange (ir_node *old, ir_node *nw)
 {
+  hook_replace(old, nw);
+
   /*
    * If new outs are on, we can skip the id node creation and reroute
    * the edges from the old node to the new directly.
@@ -76,9 +78,9 @@ exchange (ir_node *old, ir_node *nw)
       block = is_Block(nw) ? nw : get_nodes_block(nw);
 
       if (!block) {
-	DDMN(old);
-	DDMN(nw);
-	assert(0 && "cannot find legal block for id");
+        DDMN(old);
+        DDMN(nw);
+        assert(0 && "cannot find legal block for id");
       }
     }
 
