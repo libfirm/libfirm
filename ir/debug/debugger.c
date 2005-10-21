@@ -72,7 +72,9 @@ typedef struct _breakpoint {
  */
 typedef enum _bp_reasons_t {
   BP_ON_CREATION = 1,     /**< break if node with number is created */
-  BP_ON_LOWER    = 2      /**< break if node with number is lowered */
+  BP_ON_REPLACE  = 2,     /**< break if node with number is replaced */
+  BP_ON_LOWER    = 3,     /**< break if node with number is lowered */
+  BP_MAX_REASON
 } bp_reasons_t;
 
 /** A node number breakpoint. */
@@ -81,6 +83,9 @@ typedef struct {
   long         nr;       /**< the node number */
   bp_reasons_t reason;   /**< reason for the breakpoint */
 } bp_node_t;
+
+/** calculate the hash value for a node breakpoint */
+#define HASH_NODE_BP(key) (((key).nr << 2) ^ (key).reason)
 
 /** The set containing the breakpoints on node numbers. */
 static set *bp_node_numbers;
@@ -94,6 +99,85 @@ static unsigned bp_num = 0;
 /** set if break on init command was issued. */
 static int break_on_init = 0;
 
+/** the hook entries for the Firm debugger module. */
+static hook_entry_t debugger_hooks[hook_last];
+
+/** number of active breakpoints to maintein hooks. */
+static unsigned num_active_bp[BP_MAX_REASON];
+
+/** hook the hook h with function fkt. */
+#define HOOK(h, fkt) \
+  debugger_hooks[h].hook._##h = fkt; register_hook(h, &debugger_hooks[h])
+
+/** unhook the hook h */
+#define UNHOOK(h)   unregister_hook(h, &debugger_hooks[h])
+
+/** returns non-zero if a entry hook h is used */
+#define IS_HOOKED(h) (debugger_hooks[h].next != NULL)
+
+/**
+ * A new node is created.
+ *
+ * @param ctx   the hook context
+ * @param irg   the IR graph on which the node is created
+ * @param node  the new IR node that was created
+ */
+static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
+{
+  bp_node_t key, *elem;
+
+  key.nr     = get_irn_node_nr(node);
+  key.reason = BP_ON_CREATION;
+
+  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  if (elem && elem->bp.active) {
+    ir_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
+    firm_debug_break();
+  }
+}
+
+/**
+ * A node is replaced.
+ *
+ * @param ctx   the hook context
+ * @param old   the IR node the is replaced
+ * @param nw    the new IR node that will replace old
+ */
+static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
+{
+  bp_node_t key, *elem;
+
+  key.nr     = get_irn_node_nr(old);
+  key.reason = BP_ON_REPLACE;
+
+  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  if (elem && elem->bp.active) {
+    ir_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
+    firm_debug_break();
+  }
+}
+
+/**
+ * A new node is lowered.
+ *
+ * @param ctx   the hook context
+ * @param node  the new IR node that will be lowered
+ */
+static void dbg_lower_node(void *ctx, ir_node *node)
+{
+  bp_node_t key, *elem;
+
+  key.nr     = get_irn_node_nr(node);
+  key.reason = BP_ON_LOWER;
+
+  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  if (elem && elem->bp.active) {
+    ir_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
+    firm_debug_break();
+  }
+}
+
+
 /**
  * return the reason string.
  */
@@ -101,6 +185,7 @@ static const char *reason_str(bp_reasons_t reason)
 {
   switch (reason) {
   case BP_ON_CREATION: return "creation";
+  case BP_ON_REPLACE:  return "replacing";
   case BP_ON_LOWER:    return "lowering";
   default:             assert(0);
   }
@@ -118,6 +203,57 @@ static int cmp_node_bp(const void *elt, const void *key, size_t size)
   const bp_node_t *e2 = key;
 
   return (e1->nr - e2->nr) | (e1->reason - e2->reason);
+}
+
+/**
+ * update the hooks
+ */
+static void update_hooks(breakpoint *bp)
+{
+  if (bp->kind == BP_NODE) {
+    bp_node_t *elem = (bp_node_t *)bp;
+
+    if (elem->bp.active)
+      ++num_active_bp[elem->reason];
+    else
+      --num_active_bp[elem->reason];
+
+    if (num_active_bp[elem->reason] > 0) {
+      /* register the hooks on demand */
+      switch (elem->reason) {
+      case BP_ON_CREATION:
+        if (! IS_HOOKED(hook_new_node))
+          HOOK(hook_new_node, dbg_new_node);
+        break;
+
+      case BP_ON_REPLACE:
+        if (! IS_HOOKED(hook_replace))
+          HOOK(hook_replace, dbg_replace);
+
+      case BP_ON_LOWER:
+        if (! IS_HOOKED(hook_lower))
+          HOOK(hook_lower, dbg_lower_node);
+        break;
+      }
+    }
+    else {
+      switch (elem->reason) {
+      case BP_ON_CREATION:
+        if (IS_HOOKED(hook_new_node))
+          UNHOOK(hook_new_node);
+        break;
+
+      case BP_ON_REPLACE:
+        if (IS_HOOKED(hook_replace))
+          UNHOOK(hook_replace);
+
+      case BP_ON_LOWER:
+        if (IS_HOOKED(hook_lower))
+          UNHOOK(hook_lower);
+        break;
+      }
+    }
+  }
 }
 
 /**
@@ -142,6 +278,8 @@ static void break_on_node(long nr, bp_reasons_t reason)
     bp_list = &elem->bp;
 
     printf("Firm BP %u: %s of Node %ld\n", elem->bp.bpnr, reason_str(reason), nr);
+
+    update_hooks(&elem->bp);
   }
 }
 
@@ -154,7 +292,10 @@ static void bp_activate(unsigned bp, int active)
 
   for (p = bp_list; p; p = p->next) {
     if (p->bpnr == bp) {
-      p->active = active;
+      if (p->active != active) {
+        p->active = active;
+        update_hooks(p);
+      }
 
       printf("Firm BP %u is now %s\n", bp, active ? "enabled" : "disabled");
       return;
@@ -171,6 +312,7 @@ static void show_commands(void) {
   printf("Internal Firm debugger extension commands:\n"
     ".init         break after initialization\n"
     ".create nr    break if node nr was created\n"
+    ".replace nr   break if node nr is replaced by another node\n"
     ".lower nr     break before node nr is lowered\n"
     ".bp           show all breakpoints\n"
     ".enable nr    enable breakpoint nr\n"
@@ -216,6 +358,9 @@ void firm_break(const char *cmd) {
   if (sscanf(cmd, ".create %ld\n", &nr) == 1) {
     break_on_node(nr, BP_ON_CREATION);
   }
+  else if (sscanf(cmd, ".replace %ld\n", &nr) == 1) {
+    break_on_node(nr, BP_ON_REPLACE);
+  }
   else if (sscanf(cmd, ".lower %ld\n", &nr) == 1) {
     break_on_node(nr, BP_ON_LOWER);
   }
@@ -232,63 +377,12 @@ void firm_break(const char *cmd) {
   }
 }
 
-/** the hook entries for the Firm debugger module */
-static hook_entry_t debugger_hooks[hook_last];
-
-/**
- * A new node is created.
- *
- * @param ctx   the hook context
- * @param irg   the IR graph on which the node is created
- * @param node  the new IR node that was created
- */
-static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
-{
-  bp_node_t key, *elem;
-
-  key.nr     = get_irn_node_nr(node);
-  key.reason = BP_ON_CREATION;
-
-  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
-  if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
-    firm_debug_break();
-  }
-}
-
-/**
- * A new node is lowered.
- *
- * @param ctx   the hook context
- * @param node  the new IR node that will be lowered
- */
-static void dbg_lower_node(void *ctx, ir_node *node)
-{
-  bp_node_t key, *elem;
-
-  key.nr     = get_irn_node_nr(node);
-  key.reason = BP_ON_LOWER;
-
-  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
-  if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
-    firm_debug_break();
-  }
-}
-
-#define HOOK(h, fkt) \
-  debugger_hooks[h].hook._##h = fkt; register_hook(h, &debugger_hooks[h])
-
 /* creates the debugger tables */
 void firm_init_debugger(void)
 {
   char *env;
 
   bp_node_numbers = new_set(cmp_node_bp, 8);
-
-  /* register the hooks */
-  HOOK(hook_new_node,                         dbg_new_node);
-  HOOK(hook_lower,                            dbg_lower_node);
 
   env = getenv("FIRMDBG");
 
@@ -324,6 +418,10 @@ void firm_init_debugger(void)
  * Break if a new IR-node with node number nr was created.
  * Typically used to find the place where wrong nodes are created.
  *
+ * .replace nr
+ *
+ * Break before IR-node with node number nr is replaced by another node.
+ *
  * .lower nr
  *
  * Break before IR-node with node number nr is lowered.
@@ -345,11 +443,11 @@ void firm_init_debugger(void)
  * List all commands.
  *
  *
- * The Firm debugger extension is access using the function firm_break().
- * The following example shows how to set a creating breakpoint in GDB when
+ * The Firm debugger extension can be accessed using the function firm_break().
+ * The following example shows how to set a creation breakpoint in GDB when
  * node 2101 is created.
  *
- * 1.) set FRIMDBG=".init"
+ * 1.) set FIRMDBG=".init"
  * 2.) start gdb with your compiler
  * 3.) after gdb breaks, issue
  *
