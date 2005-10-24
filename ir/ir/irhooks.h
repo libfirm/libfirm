@@ -147,6 +147,9 @@ typedef struct hook_entry {
 
     /** This hook is called after a new mode was registered. */
     void (*_hook_new_mode)(void *context, const ir_mode *tmpl, ir_mode *mode);
+
+    /** This hook is called after a new entity was created */
+    void (*_hook_new_entity)(void *context, entity *ent);
   } hook;
 
   /** the context for every hook */
@@ -183,6 +186,7 @@ typedef enum {
   hook_arch_dep_replace_mul_with_shifts,
   hook_arch_dep_replace_division_by_const,
   hook_new_mode,
+  hook_new_entity,
   hook_last
 } hook_type_t;
 
@@ -256,6 +260,7 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_arch_dep_replace_division_by_const(irn) \
   hook_exec(hook_arch_dep_replace_division_by_const, (ctx, irn))
 #define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (ctx, tmpl, mode))
+#define hook_new_entity(ent)              hook_exec(hook_new_entity, (ctx, ent))
 
 /* the initializer, move to hooks_t.h some day */
 int init_hooks(void);

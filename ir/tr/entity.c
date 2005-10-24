@@ -29,6 +29,7 @@
 # include "typegmod.h"
 # include "array.h"
 # include "irtools.h"
+# include "irhooks.h"
 
 /* All this is needed to build the constant node for methods: */
 # include "irprog_t.h"
@@ -159,6 +160,7 @@ new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
   /* Remember entity in it's owner. */
   insert_entity_in_owner (res);
 
+  hook_new_entity(res);
   return res;
 }
 
