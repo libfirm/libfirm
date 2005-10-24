@@ -175,6 +175,7 @@ static entity ** get_impl_methods(entity * method) {
  */
 static void sel_methods_walker(ir_node * node, void *env) {
   pmap *ldname_map = env;
+  entity **arr;
 
   /* Call standard optimizations */
   if (get_irn_op(node) == op_Sel) {
@@ -198,37 +199,39 @@ static void sel_methods_walker(ir_node * node, void *env) {
     assert(get_entity_peculiarity(ent) != peculiarity_inherited);
 
     if (!eset_contains(entities, ent)) {
-      /* Entity noch nicht behandelt. Alle (intern oder extern)
-       * implementierten Methoden suchen, die diese Entity
-       * überschreiben. Die Menge an entity.link speichern. */
+      /* Entity not yet handled. Find all (internal or external)
+       * implemented methods that overwrites this entity.
+       * This set is stored in the entity link. */
       set_entity_link(ent, get_impl_methods(ent));
       eset_insert(entities, ent);
     }
 
     /* -- As an add on we get an optimization that removes polymorphic calls.
-       This optimization is more powerful than that in transform_node_Sel.  -- */
-    if (get_entity_link(ent) == NULL) {
-      /* Die Sel-Operation kann nie einen Zeiger auf eine aufrufbare
-       * Methode zurückgeben. Damit ist sie insbesondere nicht
-       * ausführbar und nicht erreichbar. */
-      /* It may be description:  We call a method in a dead part of the program. */
+       This optimization is more powerful than that in transform_node_Sel().  -- */
+    arr = get_entity_link(ent);
+    if (arr == NULL) {
+      /*
+       * The Sel node never returns a pointer to a usable method.
+       * We could not call it, but it may be description:
+       * We call a method in a dead part of the program.
+       */
       assert (get_entity_peculiarity(ent) == peculiarity_description);
-    } else {
-      entity ** arr = get_entity_link(ent);
-      if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
-          (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
-        ir_node *new_node;
-        /* Die Sel-Operation kann immer nur _einen_ Wert auf eine
-         * interne Methode zurückgeben. Wir können daher die
-         * Sel-Operation durch eine Const- bzw. SymConst-Operation
-         * ersetzen. */
-        set_irg_current_block(current_ir_graph, get_nodes_block(node));
-        assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
-               peculiarity_existent);
-        new_node = copy_const_value(get_atomic_ent_value(arr[0]));
-        DBG_OPT_POLY(node, new_node);
-        exchange (node, new_node);
-      }
+    }
+    else if (get_opt_optimize() && get_opt_dyn_meth_dispatch() &&
+        (ARR_LEN(arr) == 1 && arr[0] != NULL)) {
+      ir_node *new_node;
+
+      /*
+       * The Sel node returns only one possible method.
+       * So we could replace the Sel node by a SymConst.
+       * This method must exists.
+       */
+      set_irg_current_block(current_ir_graph, get_nodes_block(node));
+      assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
+             peculiarity_existent);
+      new_node = copy_const_value(get_atomic_ent_value(arr[0]));
+      DBG_OPT_POLY(node, new_node);
+      exchange(node, new_node);
     }
   }
 }
@@ -236,7 +239,7 @@ static void sel_methods_walker(ir_node * node, void *env) {
 /** Initialize auxiliary data structures.
  *
  *  Computes a set of entities that overwrite an entity and contain
- *  an impelementation. The set is stored in the entity's link field.
+ *  an implementation. The set is stored in the entity's link field.
  *
  *  Further replaces Sel nodes where this set contains exactly one
  *  method by SymConst nodes.
@@ -250,8 +253,7 @@ static void sel_methods_init(void) {
   entities = eset_create();
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     entity * ent = get_irg_entity(get_irp_irg(i));
-    /* Nur extern sichtbare Methoden können überhaupt mit SymConst_ptr_name
-     * aufgerufen werden. */
+    /* only external visible methods are allowed to call by a SymConst_ptr_name */
     if (get_entity_visibility(ent) != visibility_local) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
     }
@@ -271,6 +273,8 @@ static void sel_methods_init(void) {
 /**
  * Returns an array of all methods that could be called at a Sel node.
  * This array contains every entry only once.
+ *
+ * @param sel  the Sel node
  */
 static entity ** get_Sel_arr(ir_node * sel) {
   static entity ** NULL_ARRAY = NULL;
@@ -297,6 +301,8 @@ static entity ** get_Sel_arr(ir_node * sel) {
 
 /**
  * Returns the number of possible called methods at a Sel node.
+ *
+ * @param sel  the Sel node
  */
 static int get_Sel_n_methods(ir_node * sel) {
   return ARR_LEN(get_Sel_arr(sel));
@@ -345,7 +351,7 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
   case iro_Start:
   case iro_Alloc:
   case iro_Load:
-    /* nothing: Die Operationen werden in "free_ana_walker" selbst
+    /* nothing: Die Operationen werden in free_ana_walker() selbst
      * behandelt. */
     break;
 
@@ -356,14 +362,18 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
   set_irn_link(node, NULL);
 }
 
-
-static void free_mark(ir_node * node, eset * set) {
+/**
+ * @param node  the current visited node
+ * @param set   the set of all free methods
+ */
+static void free_mark(ir_node *node, eset * set) {
   int i;
 
   if (get_irn_link(node) == MARK) {
     return; /* already visited */
   }
   set_irn_link(node, MARK);
+
   switch (get_irn_opcode(node)) {
   case iro_Sel: {
     entity * ent = get_Sel_entity(node);
@@ -404,11 +414,15 @@ static void free_mark(ir_node * node, eset * set) {
   set_irn_link(node, NULL);
 }
 
-
-static void free_ana_walker(ir_node * node, eset * set) {
+/**
+ * post-walker.
+ */
+static void free_ana_walker(ir_node *node, void *env) {
+  eset *set = env;
   int i;
+
   if (get_irn_link(node) == MARK) {
-    /* bereits in einem Zyklus besucht. */
+    /* already visited */
     return;
   }
   switch (get_irn_opcode(node)) {
@@ -426,8 +440,8 @@ static void free_ana_walker(ir_node * node, eset * set) {
    * Verräter ist. */
   case iro_Call:
     set_irn_link(node, MARK);
-    for (i = get_Call_arity(node) - 1; i >= 0; --i) {
-      ir_node * pred = get_Call_param(node, i);
+    for (i = get_Call_n_params(node) - 1; i >= 0; --i) {
+      ir_node *pred = get_Call_param(node, i);
       if (mode_is_reference(get_irn_mode(pred))) {
         free_mark(pred, set);
       }
@@ -469,24 +483,23 @@ static entity ** get_free_methods(void)
     }
     /* Finde alle Methoden die in dieser Methode extern sichtbar werden,
        z.B. da die Adresse einer Methode abgespeichert wird. */
-    irg_walk_graph(irg, NULL, (irg_walk_func *) free_ana_walker, set);
+    irg_walk_graph(irg, NULL, free_ana_walker, set);
   }
 
   /* insert sticky methods, too */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     entity * ent = get_irg_entity(get_irp_irg(i));
-    /* insert "external visible" methods. */
+    /* insert "sticky" methods. */
     if (get_entity_stickyness (ent) == stickyness_sticky) {
       eset_insert(set, ent);
     }
   }
 
-  /* Hauptprogramm ist auch dann frei, wenn es nicht "external
-   * visible" ist. */
-  if (get_irp_main_irg()) {
+  /* the main program is even then "free", if it's not external visible. */
+  if (get_irp_main_irg())
     eset_insert(set, get_irg_entity(get_irp_main_irg()));
-  }
-  /* Wandle Menge in Feld um.  Effizienter. */
+
+  /* Finally, transform the set into an array. */
   for (ent = eset_first(set); ent; ent = eset_next(set)) {
     ARR_APP1(entity *, arr, ent);
   }
