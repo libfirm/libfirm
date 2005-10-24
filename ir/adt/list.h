@@ -55,8 +55,8 @@ static INLINE void __list_add(struct list_head *new_node,
 
 /**
  * list_add - add a new entry
- * @param new   new entry to be added
- * @param head  list head to add it after
+ * @param new_node   new entry to be added
+ * @param head       list head to add it after
  *
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
@@ -68,8 +68,8 @@ static INLINE void list_add(struct list_head *new_node, struct list_head *head)
 
 /**
  * list_add_tail - add a new entry
- * @param new   new entry to be added
- * @param head  list head to add it before
+ * @param new_node   new entry to be added
+ * @param head       list head to add it before
  *
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
@@ -176,11 +176,11 @@ static INLINE void list_splice(struct list_head *list, struct list_head *head)
 }
 
 /**
- * list_splice_init - join two lists and reinitialise the emptied list.
+ * list_splice_init - join two lists and reinitialize the emptied list.
  * @param list   the new list to add.
  * @param head   the place to add it in the first list.
  *
- * The list at @list is reinitialised
+ * The list at list is reinitialized
  */
 static INLINE void list_splice_init(struct list_head *list,
 				    struct list_head *head)
