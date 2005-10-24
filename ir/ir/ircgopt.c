@@ -30,8 +30,12 @@
 #include "typewalk.h"
 #include "irtools.h"
 
-/* Call-Operationen an die "link"-Liste von "call_head" anhängen. */
-static void collect_call(ir_node * node, ir_node * head) {
+/**
+ * Walker: adds Call operations to a head's link list.
+ */
+static void collect_call(ir_node * node, void *env) {
+  ir_node *head = env;
+
   if (get_irn_op(node) == op_Call) {
     set_irn_link(node, get_irn_link(head));
     set_irn_link(head, node);
@@ -43,11 +47,11 @@ static void make_entity_to_description(type_or_ent *tore, void *env) {
     entity *ent = (entity *)tore;
 
     if ((is_Method_type(get_entity_type(ent)))                        &&
-	(get_entity_peculiarity(ent) != peculiarity_description)      &&
-	(get_entity_visibility(ent)  != visibility_external_allocated)   ) {
+        (get_entity_peculiarity(ent) != peculiarity_description)      &&
+        (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
       entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
       if (get_entity_link(impl) != env) {
-	set_entity_peculiarity(ent, peculiarity_description);
+        set_entity_peculiarity(ent, peculiarity_description);
       }
     }
   }
@@ -70,19 +74,24 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
         printf("dead method elimination: method %s kept alive.\n", get_entity_ld_name(marked[i]));
       }
     }
+
     for (i = 0; i < ARR_LEN(marked); ++i) {
       /* check for extern methods, these don't have an IRG */
       if (get_entity_visibility(marked[i]) != visibility_external_allocated) {
         ir_graph * irg = get_entity_irg(marked[i]);
         ir_node * node = get_irg_end(irg);
+
         /* collect calls */
-        irg_walk_graph(irg, firm_clear_link, (irg_walk_func *) collect_call, node);
+        irg_walk_graph(irg, firm_clear_link, collect_call, node);
+
         /* iterate calls */
         for (node = get_irn_link(node); node; node = get_irn_link(node)) {
           int i;
           assert(get_irn_op(node) == op_Call);
+
           for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
             entity * ent = get_Call_callee(node, i);
+
             if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
               set_entity_link(ent, MARK);
               ARR_APP1(entity *, marked, ent);
