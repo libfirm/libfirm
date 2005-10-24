@@ -47,7 +47,7 @@
 #include "mangle.h"
 #include "pseudo_irg.h"
 
-/** A path in a compund graph. */
+/** A path in a compound graph. */
 struct compound_graph_path {
   firm_kind kind;       /**< dynamic type tag for compound graph path. */
   type *tp;             /**< The type this path belongs to. */
@@ -113,6 +113,7 @@ struct entity {
                graph flags if the irg of an entity is not known. */
   unsigned irg_calling_conv;  /**< If (type == method_type) this is a set of calling.
                convention flags if the irg of an entity is not known. */
+  ptr_access_kind *param_access;  /**< the parameter access */
 
   /* ------------- fields for analyses ---------------*/
 
