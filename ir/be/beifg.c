@@ -5,8 +5,17 @@
  * @author Sebastian Hack
  * @date 27.06.2005
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+
 #include "debug.h"
 
 #include "beifg_t.h"
