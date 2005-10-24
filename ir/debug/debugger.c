@@ -46,7 +46,7 @@ static void firm_debug_break(void) {
   DebugBreak();
 }
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64))
-/** Break into the debugger. The ia32 way under GCC. */
+/** Break into the debugger. The ia32/x86_64 way under GCC. */
 static void firm_debug_break(void) {
   __asm__ __volatile__("int3");
 }
@@ -67,11 +67,12 @@ typedef enum {
  * Reasons for node number breakpoints.
  */
 typedef enum _bp_reasons_t {
-  BP_ON_NEW_NODE = 1,     /**< break if node with number is created */
-  BP_ON_REPLACE  = 2,     /**< break if node with number is replaced */
-  BP_ON_LOWER    = 3,     /**< break if node with number is lowered */
-  BP_ON_REMIRG   = 4,     /**< break if an IRG is removed */
-  BP_ON_NEW_ENT  = 5,     /**< break if a new entity is created */
+  BP_ON_NEW_NODE,    /**< break if node with number is created */
+  BP_ON_REPLACE,     /**< break if node with number is replaced */
+  BP_ON_LOWER,       /**< break if node with number is lowered */
+  BP_ON_REMIRG,      /**< break if an IRG is removed */
+  BP_ON_NEW_ENT,     /**< break if a new entity is created */
+  BP_ON_NEW_TYPE,    /**< break if a new type is created */
   BP_MAX_REASON
 } bp_reasons_t;
 
@@ -181,7 +182,7 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
  * @param ctx   the hook context
  * @param node  the new IR node that will be lowered
  */
-static void dbg_lower_node(void *ctx, ir_node *node)
+static void dbg_lower(void *ctx, ir_node *node)
 {
   bp_node_t key, *elem;
 
@@ -201,7 +202,7 @@ static void dbg_lower_node(void *ctx, ir_node *node)
  * @param ctx   the hook context
  * @param irg   the IR graph that will be deleted
  */
-static void dbg_free_graph(void *context, ir_graph *irg)
+static void dbg_free_graph(void *ctx, ir_graph *irg)
 {
   bp_ident_t key, *elem;
   entity *ent = get_irg_entity(irg);
@@ -225,7 +226,7 @@ static void dbg_free_graph(void *context, ir_graph *irg)
  * @param ctx   the hook context
  * @param ent   the newly created entity
  */
-static void dbg_new_entity(void *context, entity *ent)
+static void dbg_new_entity(void *ctx, entity *ent)
 {
   bp_ident_t key, *elem;
 
@@ -239,6 +240,25 @@ static void dbg_new_entity(void *context, entity *ent)
   }
 }
 
+/**
+ * A type was created.
+ *
+ * @param ctx   the hook context
+ * @param tp    the newly created type
+ */
+static void dbg_new_type(void *ctx, type *tp)
+{
+  bp_ident_t key, *elem;
+
+  key.id        = get_type_ident(tp);
+  key.bp.reason = BP_ON_NEW_TYPE;
+
+  elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+  if (elem && elem->bp.active) {
+    ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
+    firm_debug_break();
+  }
+}
 
 /**
  * return the reason string.
@@ -251,6 +271,7 @@ static const char *reason_str(bp_reasons_t reason)
   case BP_ON_LOWER:    return "node lowering";
   case BP_ON_REMIRG:   return "removing IRG";
   case BP_ON_NEW_ENT:  return "entity creation";
+  case BP_ON_NEW_TYPE: return "type creation";
   default:             assert(0);
   }
   return "unknown";
@@ -283,6 +304,9 @@ static int cmp_ident_bp(const void *elt, const void *key, size_t size)
  */
 static void update_hooks(breakpoint *bp)
 {
+#define CASE_ON(a, b)  case a: if (! IS_HOOKED(hook_##b)) HOOK(hook_##b, dbg_##b); break
+#define CASE_OFF(a, b) case a: if (IS_HOOKED(hook_##b)) UNHOOK(hook_##b); break
+
   if (bp->active)
     ++num_active_bp[bp->reason];
   else
@@ -291,30 +315,12 @@ static void update_hooks(breakpoint *bp)
   if (num_active_bp[bp->reason] > 0) {
     /* register the hooks on demand */
     switch (bp->reason) {
-    case BP_ON_NEW_NODE:
-      if (! IS_HOOKED(hook_new_node))
-        HOOK(hook_new_node, dbg_new_node);
-      break;
-
-    case BP_ON_REPLACE:
-      if (! IS_HOOKED(hook_replace))
-        HOOK(hook_replace, dbg_replace);
-
-    case BP_ON_LOWER:
-      if (! IS_HOOKED(hook_lower))
-        HOOK(hook_lower, dbg_lower_node);
-      break;
-
-    case BP_ON_REMIRG:
-      if (! IS_HOOKED(hook_free_graph))
-        HOOK(hook_free_graph, dbg_free_graph);
-      break;
-
-    case BP_ON_NEW_ENT:
-      if (! IS_HOOKED(hook_new_entity))
-        HOOK(hook_new_entity, dbg_new_entity);
-      break;
-
+    CASE_ON(BP_ON_NEW_NODE, new_node);
+    CASE_ON(BP_ON_REPLACE, replace);
+    CASE_ON(BP_ON_LOWER, lower);
+    CASE_ON(BP_ON_REMIRG, free_graph);
+    CASE_ON(BP_ON_NEW_ENT, new_entity);
+    CASE_ON(BP_ON_NEW_TYPE, new_type);
     default:
       ;
     }
@@ -322,34 +328,18 @@ static void update_hooks(breakpoint *bp)
   else {
     /* unregister the hook on demand */
     switch (bp->reason) {
-    case BP_ON_NEW_NODE:
-      if (IS_HOOKED(hook_new_node))
-        UNHOOK(hook_new_node);
-      break;
-
-    case BP_ON_REPLACE:
-      if (IS_HOOKED(hook_replace))
-        UNHOOK(hook_replace);
-
-    case BP_ON_LOWER:
-      if (IS_HOOKED(hook_lower))
-        UNHOOK(hook_lower);
-      break;
-
-    case BP_ON_REMIRG:
-      if (IS_HOOKED(hook_free_graph))
-        UNHOOK(hook_free_graph);
-      break;
-
-    case BP_ON_NEW_ENT:
-      if (IS_HOOKED(hook_new_entity))
-        UNHOOK(hook_new_entity);
-      break;
-
+    CASE_OFF(BP_ON_NEW_NODE, new_node);
+    CASE_OFF(BP_ON_REPLACE, replace);
+    CASE_OFF(BP_ON_LOWER, lower);
+    CASE_OFF(BP_ON_REMIRG, free_graph);
+    CASE_OFF(BP_ON_NEW_ENT, new_entity);
+    CASE_OFF(BP_ON_NEW_TYPE, new_type);
     default:
       ;
     }
   }
+#undef CASE_ON
+#undef CASE_OFF
 }
 
 /**
@@ -438,6 +428,7 @@ static void show_commands(void) {
     ".lower nr       break before node nr is lowered\n"
     ".remirg name    break if the irg of entity name is deleted\n"
     ".newent name    break if the entity name was created\n"
+    ".newtype name   break if the type name was created\n"
     ".bp             show all breakpoints\n"
     ".enable nr      enable breakpoint nr\n"
     ".disable nr     disable breakpoint nr\n"
@@ -500,6 +491,9 @@ void firm_break(const char *cmd) {
   }
   else if (sscanf(cmd, ".newent %s\n", name) == 1) {
     break_on_ident(name, BP_ON_NEW_ENT);
+  }
+  else if (sscanf(cmd, ".newtype %s\n", name) == 1) {
+    break_on_ident(name, BP_ON_NEW_TYPE);
   }
   else if (strcmp(cmd, ".init") == 0)
     break_on_init = 1;
@@ -571,6 +565,10 @@ void firm_init_debugger(void)
  * .newent name
  *
  * Break if the entity name was created.
+ *
+ * .newtype name
+ *
+ * Break if the type name was created.
  *
  * .bp
  *
