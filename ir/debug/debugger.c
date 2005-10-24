@@ -67,10 +67,11 @@ typedef enum {
  * Reasons for node number breakpoints.
  */
 typedef enum _bp_reasons_t {
-  BP_ON_CREATION = 1,     /**< break if node with number is created */
+  BP_ON_NEW_NODE = 1,     /**< break if node with number is created */
   BP_ON_REPLACE  = 2,     /**< break if node with number is replaced */
   BP_ON_LOWER    = 3,     /**< break if node with number is lowered */
   BP_ON_REMIRG   = 4,     /**< break if an IRG is removed */
+  BP_ON_NEW_ENT  = 5,     /**< break if a new entity is created */
   BP_MAX_REASON
 } bp_reasons_t;
 
@@ -144,7 +145,7 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
   bp_node_t key, *elem;
 
   key.nr        = get_irn_node_nr(node);
-  key.bp.reason = BP_ON_CREATION;
+  key.bp.reason = BP_ON_NEW_NODE;
 
   elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
   if (elem && elem->bp.active) {
@@ -219,15 +220,37 @@ static void dbg_free_graph(void *context, ir_graph *irg)
 }
 
 /**
+ * An entity was created.
+ *
+ * @param ctx   the hook context
+ * @param ent   the newly created entity
+ */
+static void dbg_new_entity(void *context, entity *ent)
+{
+  bp_ident_t key, *elem;
+
+  key.id        = get_entity_ident(ent);
+  key.bp.reason = BP_ON_NEW_ENT;
+
+  elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+  if (elem && elem->bp.active) {
+    ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
+    firm_debug_break();
+  }
+}
+
+
+/**
  * return the reason string.
  */
 static const char *reason_str(bp_reasons_t reason)
 {
   switch (reason) {
-  case BP_ON_CREATION: return "creation";
-  case BP_ON_REPLACE:  return "replacing";
-  case BP_ON_LOWER:    return "lowering";
+  case BP_ON_NEW_NODE: return "node creation";
+  case BP_ON_REPLACE:  return "node replace";
+  case BP_ON_LOWER:    return "node lowering";
   case BP_ON_REMIRG:   return "removing IRG";
+  case BP_ON_NEW_ENT:  return "entity creation";
   default:             assert(0);
   }
   return "unknown";
@@ -268,7 +291,7 @@ static void update_hooks(breakpoint *bp)
   if (num_active_bp[bp->reason] > 0) {
     /* register the hooks on demand */
     switch (bp->reason) {
-    case BP_ON_CREATION:
+    case BP_ON_NEW_NODE:
       if (! IS_HOOKED(hook_new_node))
         HOOK(hook_new_node, dbg_new_node);
       break;
@@ -287,6 +310,11 @@ static void update_hooks(breakpoint *bp)
         HOOK(hook_free_graph, dbg_free_graph);
       break;
 
+    case BP_ON_NEW_ENT:
+      if (! IS_HOOKED(hook_new_entity))
+        HOOK(hook_new_entity, dbg_new_entity);
+      break;
+
     default:
       ;
     }
@@ -294,7 +322,7 @@ static void update_hooks(breakpoint *bp)
   else {
     /* unregister the hook on demand */
     switch (bp->reason) {
-    case BP_ON_CREATION:
+    case BP_ON_NEW_NODE:
       if (IS_HOOKED(hook_new_node))
         UNHOOK(hook_new_node);
       break;
@@ -311,6 +339,11 @@ static void update_hooks(breakpoint *bp)
     case BP_ON_REMIRG:
       if (IS_HOOKED(hook_free_graph))
         UNHOOK(hook_free_graph);
+      break;
+
+    case BP_ON_NEW_ENT:
+      if (IS_HOOKED(hook_new_entity))
+        UNHOOK(hook_new_entity);
       break;
 
     default:
@@ -404,6 +437,7 @@ static void show_commands(void) {
     ".replace nr     break if node nr is replaced by another node\n"
     ".lower nr       break before node nr is lowered\n"
     ".remirg name    break if the irg of entity name is deleted\n"
+    ".newent name    break if the entity name was created\n"
     ".bp             show all breakpoints\n"
     ".enable nr      enable breakpoint nr\n"
     ".disable nr     disable breakpoint nr\n"
@@ -453,7 +487,7 @@ void firm_break(const char *cmd) {
   while (isspace(*cmd)) ++cmd;
 
   if (sscanf(cmd, ".create %ld\n", &nr) == 1) {
-    break_on_node(nr, BP_ON_CREATION);
+    break_on_node(nr, BP_ON_NEW_NODE);
   }
   else if (sscanf(cmd, ".replace %ld\n", &nr) == 1) {
     break_on_node(nr, BP_ON_REPLACE);
@@ -463,6 +497,9 @@ void firm_break(const char *cmd) {
   }
   else if (sscanf(cmd, ".remirg %s\n", name) == 1) {
     break_on_ident(name, BP_ON_REMIRG);
+  }
+  else if (sscanf(cmd, ".newent %s\n", name) == 1) {
+    break_on_ident(name, BP_ON_NEW_ENT);
   }
   else if (strcmp(cmd, ".init") == 0)
     break_on_init = 1;
@@ -530,6 +567,11 @@ void firm_init_debugger(void)
  * .remirg name
  *
  * Break if the irg of entity name is deleted.
+ *
+ * .newent name
+ *
+ * Break if the entity name was created.
+ *
  * .bp
  *
  * Show all Firm internal breakpoints.
