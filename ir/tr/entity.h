@@ -64,10 +64,7 @@
 #define _ENTITY_H_
 
 #include "firm_types.h"
-#include "ident.h"
-#include "type.h"
 #include "dbginfo.h"
-#include "irgraph.h"
 
 #include "tr_inheritance.h"
 
