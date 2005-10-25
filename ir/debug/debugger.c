@@ -39,6 +39,7 @@
 #include "irgraph_t.h"
 #include "entity_t.h"
 #include "irprintf.h"
+#include "debug.h"
 
 #ifdef _WIN32
 /** Break into the debugger. The Win32 way. */
@@ -422,17 +423,18 @@ static void bp_activate(unsigned bp, int active)
  */
 static void show_commands(void) {
   printf("Internal Firm debugger extension $Revision$ commands:\n"
-    ".init           break after initialization\n"
-    ".create nr      break if node nr was created\n"
-    ".replace nr     break if node nr is replaced by another node\n"
-    ".lower nr       break before node nr is lowered\n"
-    ".remirg name    break if the irg of entity name is deleted\n"
-    ".newent name    break if the entity name was created\n"
-    ".newtype name   break if the type name was created\n"
-    ".bp             show all breakpoints\n"
-    ".enable nr      enable breakpoint nr\n"
-    ".disable nr     disable breakpoint nr\n"
-    ".help           list all commands\n"
+    ".init              break after initialization\n"
+    ".create nr         break if node nr was created\n"
+    ".replace nr        break if node nr is replaced by another node\n"
+    ".lower nr          break before node nr is lowered\n"
+    ".remirg name       break if the irg of entity name is deleted\n"
+    ".newent name       break if the entity name was created\n"
+    ".newtype name      break if the type name was created\n"
+    ".bp                show all breakpoints\n"
+    ".enable nr         enable breakpoint nr\n"
+    ".disable nr        disable breakpoint nr\n"
+    ".setmask name lvl  sets the debug module name to level lvl\n"
+    ".help              list all commands\n"
   );
 }
 
@@ -464,6 +466,18 @@ static void show_bp(void) {
 }
 
 /**
+ * Sets the debug mask of module name to lvl
+ */
+static void set_dbg_level(const char *name, unsigned lvl)
+{
+  firm_dbg_module_t *module = firm_dbg_register(name);
+
+  firm_dbg_set_mask(module, lvl);
+
+  printf("Setting debug mask of module %s to %u\n", name, lvl);
+}
+
+/**
  * High level function to use from debugger interface
  *
  * Supported commands:
@@ -474,6 +488,7 @@ void firm_break(const char *cmd) {
   long nr;
   unsigned bp;
   char name[1024];
+  unsigned lvl;
 
   while (isspace(*cmd)) ++cmd;
 
@@ -503,6 +518,8 @@ void firm_break(const char *cmd) {
     bp_activate(bp, 1);
   else if (sscanf(cmd, ".disable %u", &bp) == 1)
     bp_activate(bp, 0);
+  else if (sscanf(cmd, ".setmask %s %u\n", name, &lvl) == 2)
+    set_dbg_level(name, lvl);
   else {
     show_commands();
   }
@@ -581,6 +598,10 @@ void firm_init_debugger(void)
  * .disable nr
  *
  * Disables breakpoint nr.
+ *
+ * .setmask name lvl
+ *
+ * Sets the debug module name to level lvl.
  *
  * .help
  *
