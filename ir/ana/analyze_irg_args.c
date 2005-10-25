@@ -34,31 +34,13 @@
 
 #include "analyze_irg_args.h"
 
-/**
- * A struct to save if a graph argument with mode reference is
- * read/write or both.
- */
-typedef struct {
-  unsigned char read;
-  unsigned char write;
-} rw_info_t;
-
-enum access {
-  ACC_UNKNOWN,
-  ACC_ACCESSED,
-  ACC_NOT_ACCESSED
-};
-
-#define ACCESS(a)	if ((a) == ACC_UNKNOWN) (a) = ACC_ACCESSED
-#define NOT_ACCESS(a)	if ((a) == ACC_UNKNOWN) (a) = ACC_NOT_ACCESSED
-
 static char v;
 static void *VISITED = &v;
 
 /**
  * Walk recursive the successors of a graph argument
  * with mode reference and mark in the "irg_args" if it will be read,
- * written or both.
+ * written or stored.
  *
  * @param arg   The graph argument with mode reference,
  *             that must be checked.
@@ -82,16 +64,6 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
     if (get_irn_mode(succ) == mode_M)
       continue;
 
-    /* A addition or subtraction of the argument with output, that
-       isn't with mode reference must not be checked.*/
-    if ((get_irn_op(succ) == op_Add || get_irn_op(succ) == op_Sub) &&
-        !mode_is_reference(get_irn_mode(succ)))
-      continue;
-
-    /* A Block as successor isn't interesting.*/
-    if (get_irn_op(succ) == op_Block)
-      continue;
-
     /* If we reach with the recursion a Call node and our reference
        isn't the address of this Call we accept that the reference will
        be read and written if the graph of the method represented by
@@ -101,8 +73,10 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
     if (get_irn_op(succ) == op_Call) {
       ir_node *Call_ptr  = get_Call_ptr(succ);
 
-      if (Call_ptr == arg)
-        return bits | ptr_access_read;
+      if (Call_ptr == arg) {
+        /* Hmm: not sure what this is, most likely a read */
+        bits |= ptr_access_read;
+      }
       else if (op_SymConst == get_irn_op(Call_ptr) &&
 	      get_SymConst_kind(Call_ptr) == symconst_addr_ent) {
         entity *meth_ent = get_SymConst_entity(Call_ptr);
@@ -113,23 +87,52 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
             bits |= get_method_param_access(meth_ent, p);
 	        }
 	      }
-      } else
-        bits |= ptr_access_rw;
+      } else /* can do anything */
+        bits |= ptr_access_all;
+
+      /* search stops here anyway */
+      continue;
     }
     else if (get_irn_op(succ) == op_Store) {
-      /* We have reached a Store node => the reference is written. */
-      bits |= ptr_access_write;
-    }
+      /* We have reached a Store node => the reference is written or stored. */
+      if (get_Store_ptr(succ) == arg) {
+        /* written to */
+        bits |= ptr_access_write;
+      }
+      else {
+        /* stored itself */
+        bits |= ptr_access_store;
+      }
+
+      /* search stops here anyway */
+      continue;
+   }
     else if (get_irn_op(succ) == op_Load) {
       /* We have reached a Load node => the reference is read. */
       bits |= ptr_access_read;
+
+      /* search stops here anyway */
+      continue;
+    }
+    else if (get_irn_op(succ) == op_Conv) {
+      /* our address is casted into something unknown. Break our search. */
+      return ptr_access_all;
     }
 
-    /* If we know that, the argument will be read and written, we
+    /* If we know that, the argument will be read, write and stored, we
        can break the recursion.*/
-    if (bits == ptr_access_rw)
-      return ptr_access_rw;
+    if (bits == ptr_access_all)
+      return ptr_access_all;
 
+    /*
+     * A calculation that do not lead to a reference mode ends our search.
+     * This is dangerous: It would allow to cast into integer and that cast back ...
+     * so, when we detect a Conv we go mad, see the Conv case above.
+     */
+    if (!mode_is_reference(get_irn_mode(succ)))
+      continue;
+
+    /* follow further the address calculation */
     bits = analyze_arg(succ, bits);
   }
   set_irn_link(arg, NULL);
@@ -151,8 +154,7 @@ static void analyze_ent_args(entity *ent)
   int nparams, i;
   long proj_nr;
   type *mtp;
-  unsigned bits;
-  rw_info_t *rw_info;
+  ptr_access_kind *rw_info;
 
   mtp     = get_entity_type(ent);
   nparams = get_method_n_params(mtp);
@@ -160,18 +162,20 @@ static void analyze_ent_args(entity *ent)
   ent->param_access = NEW_ARR_F(ptr_access_kind, nparams);
 
   /* If the method haven't parameters we have
-   * nothing to do.*/
+   * nothing to do.
+   */
   if (nparams <= 0)
     return;
 
   irg = get_entity_irg(ent);
 
-  if (! irg) {
-    /* if we could not determine the graph, set RW access */
-    for (i = nparams - 1; i >= 0; --i)
-      ent->param_access[i] =
-        is_Pointer_type(get_method_param_type(mtp, i)) ? ptr_access_rw : ptr_access_none;
+  /* we have not yet analysed the graph, set ALL access for pointer args */
+  for (i = nparams - 1; i >= 0; --i)
+    ent->param_access[i] =
+      is_Pointer_type(get_method_param_type(mtp, i)) ? ptr_access_all : ptr_access_none;
 
+  if (! irg) {
+    /* no graph, no better info */
     return;
   }
 
@@ -183,13 +187,11 @@ static void analyze_ent_args(entity *ent)
 
   /* A array to save the information for each argument with
      mode reference.*/
-  NEW_ARR_A(rw_info_t, rw_info, nparams);
+  NEW_ARR_A(ptr_access_kind, rw_info, nparams);
 
-  /* We initialize the element with UNKNOWN state. */
-  for (i = nparams - 1; i >= 0; --i) {
-    rw_info[i].read  = ACC_UNKNOWN;
-    rw_info[i].write = ACC_UNKNOWN;
-  }
+  /* We initialize the element with none state. */
+  for (i = nparams - 1; i >= 0; --i)
+    rw_info[i] = ptr_access_none;
 
   /* search for arguments with mode reference
      to analyze them.*/
@@ -198,31 +200,26 @@ static void analyze_ent_args(entity *ent)
     arg_mode = get_irn_mode(arg);
     proj_nr  = get_Proj_proj(arg);
 
-    if (mode_is_reference(arg_mode)) {
-      bits = analyze_arg(arg, ptr_access_none);
-
-      if (bits & ptr_access_read)
-        ACCESS(rw_info[proj_nr].read);
-      if (bits & ptr_access_write)
-        ACCESS(rw_info[proj_nr].write);
-    }
+    if (mode_is_reference(arg_mode))
+      rw_info[proj_nr] |= analyze_arg(arg, rw_info[proj_nr]);
   }
 
-  /* set all unknown values to NOT_ACCESSED */
-  for (i = nparams - 1; i >= 0; --i) {
-    NOT_ACCESS(rw_info[i].read);
-    NOT_ACCESS(rw_info[i].write);
+  /* copy the temporary info */
+  memcpy(ent->param_access, rw_info, nparams * sizeof(ent->param_access[0]));
 
-    ent->param_access[i] = (rw_info[i].read  == ACC_ACCESSED ? ptr_access_read : ptr_access_none) |
-                           (rw_info[i].write == ACC_ACCESSED ? ptr_access_write : ptr_access_none);
-  }
-
-  printf("%s:\n", get_entity_name(ent));
+  printf("\n%s:\n", get_entity_name(ent));
   for (i = 0; i < nparams; ++i) {
     if (is_Pointer_type(get_method_param_type(mtp, i)))
-      printf("Pointer Arg %i wird %s %s\n", i,
-        ent->param_access[i] & ptr_access_read  ? "gelesen" : "",
-        ent->param_access[i] & ptr_access_write ? "geschrieben" : "");
+      if (ent->param_access[i] != ptr_access_none) {
+        printf("  Pointer Arg %d access: ", i);
+        if (ent->param_access[i] & ptr_access_read)
+          printf("READ ");
+        if (ent->param_access[i] & ptr_access_write)
+          printf("WRITE ");
+        if (ent->param_access[i] & ptr_access_store)
+          printf("STORE ");
+        printf("\n");
+      }
   }
 }
 
@@ -241,7 +238,7 @@ ptr_access_kind get_method_param_access(entity *ent, int pos)
     if (pos < ARR_LEN(ent->param_access))
       return ent->param_access[pos];
     else
-      return ptr_access_rw;
+      return ptr_access_all;
   }
 
   analyze_ent_args(ent);
@@ -249,7 +246,7 @@ ptr_access_kind get_method_param_access(entity *ent, int pos)
   if (pos < ARR_LEN(ent->param_access))
     return ent->param_access[pos];
   else
-    return ptr_access_rw;
+    return ptr_access_all;
 }
 
 /**
