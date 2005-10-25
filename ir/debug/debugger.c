@@ -423,18 +423,19 @@ static void bp_activate(unsigned bp, int active)
  */
 static void show_commands(void) {
   printf("Internal Firm debugger extension $Revision$ commands:\n"
-    ".init              break after initialization\n"
-    ".create nr         break if node nr was created\n"
-    ".replace nr        break if node nr is replaced by another node\n"
-    ".lower nr          break before node nr is lowered\n"
-    ".remirg name       break if the irg of entity name is deleted\n"
-    ".newent name       break if the entity name was created\n"
-    ".newtype name      break if the type name was created\n"
-    ".bp                show all breakpoints\n"
-    ".enable nr         enable breakpoint nr\n"
-    ".disable nr        disable breakpoint nr\n"
-    ".setmask name lvl  sets the debug module name to level lvl\n"
-    ".help              list all commands\n"
+    ".init                  break after initialization\n"
+    ".create nr             break if node nr was created\n"
+    ".replace nr            break if node nr is replaced by another node\n"
+    ".lower nr              break before node nr is lowered\n"
+    ".remirg name           break if the irg of entity name is deleted\n"
+    ".newent name           break if the entity name was created\n"
+    ".newtype name          break if the type name was created\n"
+    ".bp                    show all breakpoints\n"
+    ".enable nr             enable breakpoint nr\n"
+    ".disable nr            disable breakpoint nr\n"
+    ".setmask name lvl      sets the debug module name to level lvl\n"
+    ".setoutfile name file  redirects debug output of module name to file\n"
+    ".help                  list all commands\n"
   );
 }
 
@@ -478,6 +479,23 @@ static void set_dbg_level(const char *name, unsigned lvl)
 }
 
 /**
+ * Redirects the debug output of module name to fname
+ */
+static void set_dbg_outfile(const char *name, const char *fname)
+{
+  firm_dbg_module_t *module = firm_dbg_register(name);
+  FILE *f = fopen(fname, "w");
+
+  if (! f) {
+    perror(fname);
+    return;
+  }
+
+  firm_dbg_set_file(module, f);
+  printf("Redirecting debug output of module %s to file %s\n", name, fname);
+}
+
+/**
  * High level function to use from debugger interface
  *
  * Supported commands:
@@ -487,7 +505,7 @@ static void set_dbg_level(const char *name, unsigned lvl)
 void firm_break(const char *cmd) {
   long nr;
   unsigned bp;
-  char name[1024];
+  char name[1024], fname[1024];
   unsigned lvl;
 
   while (isspace(*cmd)) ++cmd;
@@ -520,6 +538,8 @@ void firm_break(const char *cmd) {
     bp_activate(bp, 0);
   else if (sscanf(cmd, ".setmask %s %u\n", name, &lvl) == 2)
     set_dbg_level(name, lvl);
+  else if (sscanf(cmd, ".setoutfile %s %s\n", name, fname) == 2)
+    set_dbg_outfile(name, fname);
   else {
     show_commands();
   }
@@ -602,6 +622,10 @@ void firm_init_debugger(void)
  * .setmask name lvl
  *
  * Sets the debug module name to level lvl.
+ *
+ * .setoutfile name file
+ *
+ * Redirects debug output of module name to file\.
  *
  * .help
  *
