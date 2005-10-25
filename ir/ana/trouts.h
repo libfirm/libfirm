@@ -31,9 +31,8 @@
 # ifndef _TROUTS_H_
 # define _TROUTS_H_
 
-#include "type.h"
-#include "entity.h"
-#include "irnode.h"
+#include "firm_types.h"
+#include "irgraph.h"
 
 /*-----------------------------------------------------------------*/
 /* Accessing the trout datastructures.                             */
