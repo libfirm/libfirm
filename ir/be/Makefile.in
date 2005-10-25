@@ -1,12 +1,12 @@
 #
 # Project:     libFIRM
-# File name:   ir/ir/Makefile.in
+# File name:   ir/be/Makefile.in
 # Purpose:
 # Author:      Boris Boesler, Till Riedel
 # Modified by:
 # Created:
 # CVS-ID:      $Id$
-# Copyright:   (c) 1999-2003 Universit�t Karlsruhe
+# Copyright:   (c) 1999-2005 Universitaet Karlsruhe
 # Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 #
 
@@ -26,7 +26,8 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	becopyoptmain.c becopyopt.c becopyheur.c \
 	becopyilp.c becopystat.c bearch_firm.c bearch.c bechordal_draw.c \
 	bechordal_draw.h beirgmod.c beirgmod.h benode.c benode_t.h \
-	bessadestr.c beifg.c bespill.c bespillbelady.c bespillilp.c beuses.c
+	bessadestr.c beifg.c bespill.c bespillbelady.c bespillilp.c beuses.c \
+	firm2arch.c firm2arch.h
 
 include $(topdir)/MakeRules
 
