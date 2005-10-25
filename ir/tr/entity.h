@@ -588,11 +588,14 @@ extern entity *unknown_entity;
 entity *get_unknown_entity(void);
 
 /** Encodes how a pointer parameter is accessed. */
+/** Encodes how a pointer parameter is accessed. */
 typedef enum acc_bits {
   ptr_access_none  = 0,		      /**< no access */
   ptr_access_read  = 1,		      /**< read access */
   ptr_access_write = 2,		      /**< write access */
-  ptr_access_rw    = ptr_access_read|ptr_access_write	/**< read AND write access */
+  ptr_access_rw    = ptr_access_read|ptr_access_write,	/**< read AND write access */
+  ptr_access_store = 4,         /**< the pointer is stored */
+  ptr_access_all   = ptr_access_rw|ptr_access_store     /**< all possible access */
 } ptr_access_kind;
 
 #endif /* _ENTITY_H_ */
