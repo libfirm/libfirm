@@ -565,15 +565,17 @@ void firm_init_debugger(void)
 #endif /* NDEBUG */
 
 /**
- * @page debugger   The Firm debugger extension.
+ * @page debugger   The Firm debugger extension
  *
  * Firm contains a debugger extension. This allows to set debugger breakpoints
  * an various events.
  * The extension uses a text interface which can be access in the debugger.
  *
+ * @section sec_cmd Supported commands
+ *
  * The following commands are currently supported:
  *
- * .init
+ * @b .init
  *
  * Break immediately after the debugger extension was initialized.
  * Typically this command is used in the environment to stop the execution
@@ -582,52 +584,52 @@ void firm_init_debugger(void)
  * $export FIRMDBG=".init"
  *
  *
- * .create nr
+ * @b .create nr
  *
  * Break if a new IR-node with node number nr was created.
  * Typically used to find the place where wrong nodes are created.
  *
- * .replace nr
+ * @b .replace nr
  *
  * Break before IR-node with node number nr is replaced by another node.
  *
- * .lower nr
+ * @b .lower nr
  *
  * Break before IR-node with node number nr is lowered.
  *
- * .remirg name
+ * @b .remirg name
  *
  * Break if the irg of entity name is deleted.
  *
- * .newent name
+ * @b .newent name
  *
  * Break if the entity name was created.
  *
- * .newtype name
+ * @b .newtype name
  *
  * Break if the type name was created.
  *
- * .bp
+ * @b .bp
  *
  * Show all Firm internal breakpoints.
  *
- * .enable nr
+ * @b .enable nr
  *
  * Enables breakpoint nr.
  *
- * .disable nr
+ * @b .disable nr
  *
  * Disables breakpoint nr.
  *
- * .setmask name lvl
+ * @b .setmask name lvl
  *
  * Sets the debug module name to level lvl.
  *
- * .setoutfile name file
+ * @b .setoutfile name file
  *
  * Redirects debug output of module name to file\.
  *
- * .help
+ * @b .help
  *
  * List all commands.
  *
@@ -636,13 +638,32 @@ void firm_init_debugger(void)
  * The following example shows how to set a creation breakpoint in GDB when
  * node 2101 is created.
  *
- * 1.) set FIRMDBG=".init"
- * 2.) start gdb with your compiler
- * 3.) after gdb breaks, issue
+ * -# set FIRMDBG=".init"
+ * -# start gdb with your compiler
+ * -# after gdb breaks, issue
  *
  * p firm_debug(".create 2101")
  *
  * On the console the following text should be issued:
  *
  * Firm BP 1: creation of Node 2101
+ *
+ *
+ * @section gdb_macro GDB macro
+ *
+ * Add the following to your .gdbinit file:
+ * @code
+ #
+ # define firm "cmd"  Firm debugger extension
+ #
+ define firm
+ p firm_break($arg0)
+ end
+ * @endcode
+ *
+ * Then, all Firm debugger extension commands can be access in the gdb
+ * console using the firm prefix, eg.:
+ *
+ * firm ".create 2101"
+ * firm ".help"
  */
