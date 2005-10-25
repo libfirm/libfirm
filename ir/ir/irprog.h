@@ -37,6 +37,7 @@
 
 # include "irnode.h"
 # include "type.h"
+# include "irgraph.h"
 
 
 /**
