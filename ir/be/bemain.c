@@ -43,6 +43,8 @@
 #include "beasm_dump_globals.h"
 #include "beasm_asm_gnu.h"
 
+#include "firm2arch.h"
+
 #undef DUMP_BEGIN
 #undef DUMP_PREPARED
 #define DUMP_SCHED
@@ -153,6 +155,12 @@ static void be_main_loop(void)
 
 		/* Compute some analyses and prepare the graph for backend use. */
 		prepare_graph(&session);
+
+                create_bearch_asm_opcodes();
+                transform_firm();
+
+		dump_ir_block_graph(irg, "-transformed");
+#if 0
 #ifdef DUMP_PREPARED
 		dump_dominator_information(true);
 		dump_ir_block_graph(irg, "-prepared");
@@ -229,6 +237,7 @@ static void be_main_loop(void)
 		dump_ir_block_graph_sched(session.irg, "-end");
 #endif
 		copystat_dump(irg);
+#endif /* if 0 */
 	}
 }
 
