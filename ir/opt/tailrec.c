@@ -26,7 +26,7 @@
 #include <assert.h>
 #include "tailrec.h"
 #include "array.h"
-#include "irprog.h"
+#include "irprog_t.h"
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "irop.h"
@@ -266,6 +266,8 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
  * the lifetime of locals end with the recursive call.
  * We do this by checking that no address of a local variable is
  * stored or transmitted as an argument to a call.
+ *
+ * @return non-zero if it's ok to do tail recursion
  */
 static int check_lifetime_of_locals(ir_graph *irg)
 {
@@ -290,7 +292,6 @@ static int check_lifetime_of_locals(ir_graph *irg)
 int opt_tail_rec_irg(ir_graph *irg)
 {
   ir_node *end_block;
-  int n_preds;
   int i, n_tail_calls = 0;
   ir_node *rets = NULL;
   type *mtd_type, *call_type;
@@ -310,12 +311,11 @@ int opt_tail_rec_irg(ir_graph *irg)
   end_block = get_irg_end_block(irg);
   set_irn_link(end_block, NULL);
 
-  n_preds = get_Block_n_cfgpreds(end_block);
-  for (i = 0; i < n_preds; ++i) {
+  for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
     ir_node *ret = get_Block_cfgpred(end_block, i);
     ir_node *call, *call_ptr;
     entity *ent;
-    int j, n_ress;
+    int j;
     ir_node **ress;
 
     /* search all returns of a block */
@@ -341,18 +341,16 @@ int opt_tail_rec_irg(ir_graph *irg)
       continue;
 
     /* ok, mem is routed to a recursive call, check return args */
-    n_ress = get_Return_n_ress(ret);
     ress = get_Return_res_arr(ret);
-
-    for (j = 0; j < n_ress; ++j) {
+    for (j = get_Return_n_ress(ret) - 1; j >= 0; --j) {
       ir_node *irn = skip_Proj(skip_Proj(ress[j]));
 
       if (irn != call) {
-	    /* not routed to a call */
-	    break;
+	      /* not routed to a call */
+	      break;
       }
     }
-    if (j < n_ress)
+    if (j >= 0)
       continue;
 
     /*
@@ -365,7 +363,7 @@ int opt_tail_rec_irg(ir_graph *irg)
     if (mtd_type != call_type) {
       /*
        * Hmm, the types did not match, bad.
-       * This can happen in C when no prototyp is given
+       * This can happen in C when no prototype is given
        * or K&R style is used.
        */
 #if 0
@@ -407,14 +405,15 @@ void opt_tail_recursion(void)
 {
   int i;
   int n_opt_applications = 0;
+  ir_graph *irg;
 
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
     return;
 
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    current_ir_graph = get_irp_irg(i);
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    irg = get_irp_irg(i);
 
-    if (opt_tail_rec_irg(current_ir_graph))
+    if (opt_tail_rec_irg(irg))
       ++n_opt_applications;
   }
 
