@@ -21,6 +21,8 @@
 
 #include "irreflect.h"
 
+#include "bearch_firm.h"
+
 #define N_REGS 3
 
 static arch_register_t datab_regs[N_REGS];
@@ -31,14 +33,6 @@ static arch_register_class_t reg_classes[] = {
 
 static ir_op *op_push;
 static ir_op *op_imm;
-
-typedef struct {
-	enum { imm_Const, imm_SymConst } tp;
-	union {
-		tarval *tv;
-		entity *ent;
-	} data;
-} imm_attr_t;
 
 #define N_CLASSES \
   (sizeof(reg_classes) / sizeof(reg_classes[0]))

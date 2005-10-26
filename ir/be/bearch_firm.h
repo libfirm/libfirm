@@ -21,4 +21,12 @@ extern const arch_irn_handler_t firm_irn_handler;
 /* TODO UGLY*/
 int is_Imm(const ir_node *irn);
 
+typedef struct {
+	enum { imm_Const, imm_SymConst } tp;
+	union {
+		tarval *tv;
+		entity *ent;
+	} data;
+} imm_attr_t;
+
 #endif /* _BEARCH_FIRM_H */
