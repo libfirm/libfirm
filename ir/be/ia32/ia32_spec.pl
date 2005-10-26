@@ -81,15 +81,15 @@ $arch = "ia32";
 #                                      |_|         #
 #--------------------------------------------------#
 
-# arithmetic operations
-
 %nodes = (
+
+# arithmetic operations
 
 # commutative operations
 
 "Add" => {
   "op_flags" => "C",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Add: Add(a, b) = Add(b, a) = a + b",
@@ -97,8 +97,8 @@ $arch = "ia32";
 },
 
 "Add_i" => {
-  "op_flags" => "C",
-  "state"    => "floats",
+  "op_flags" => "N",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Add: Add(a, const) = Add(const, a) = a + const",
@@ -107,7 +107,7 @@ $arch = "ia32";
 
 "Mul" => {
   "op_flags" => "C",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
@@ -115,8 +115,8 @@ $arch = "ia32";
 },
 
 "Mul_i" => {
-  "op_flags" => "C",
-  "state"    => "floats",
+  "op_flags" => "N",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Mul: Mul(a, const) = Mul(const, a) = a * const",
@@ -125,7 +125,7 @@ $arch = "ia32";
 
 "And" => {
   "op_flags" => "C",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct And: And(a, b) = And(b, a) = a AND b",
@@ -133,8 +133,8 @@ $arch = "ia32";
 },
 
 "And_i" => {
-  "op_flags" => "C",
-  "state"    => "floats",
+  "op_flags" => "N",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct And: And(a, const) = And(const, a) = a AND const",
@@ -143,7 +143,7 @@ $arch = "ia32";
 
 "Or" => {
   "op_flags" => "C",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Or: Or(a, b) = Or(b, a) = a OR b",
@@ -151,8 +151,8 @@ $arch = "ia32";
 },
 
 "Or_i" => {
-  "op_flags" => "C",
-  "state"    => "floats",
+  "op_flags" => "N",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Or: Or(a, const) = Or(const, a) = a OR const",
@@ -161,7 +161,7 @@ $arch = "ia32";
 
 "Eor" => {
   "op_flags" => "C",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
@@ -169,8 +169,8 @@ $arch = "ia32";
 },
 
 "Eor_i" => {
-  "op_flags" => "C",
-  "state"    => "floats",
+  "op_flags" => "N",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
@@ -181,7 +181,7 @@ $arch = "ia32";
 
 "Sub" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Sub: Sub(a, b) = a - b",
@@ -190,7 +190,7 @@ $arch = "ia32";
 
 "Sub_i" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Sub: Sub(a, const) = a - const",
@@ -199,7 +199,7 @@ $arch = "ia32";
 
 "Mod" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Mod: Mod(a, b) = a % b",
@@ -208,7 +208,7 @@ $arch = "ia32";
 
 "Mod_i" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Mod: Mod(a, const) = a % const",
@@ -217,7 +217,7 @@ $arch = "ia32";
 
 "Shl" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Shl: Shl(a, b) = a << b",
@@ -226,7 +226,7 @@ $arch = "ia32";
 
 "Shl_i" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Shl: Shl(a, const) = a << const",
@@ -235,7 +235,7 @@ $arch = "ia32";
 
 "Shr" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Shr: Shr(a, b) = a >> b",
@@ -244,7 +244,7 @@ $arch = "ia32";
 
 "Shr_i" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Shr: Shr(a, const) = a >> const",
@@ -253,7 +253,7 @@ $arch = "ia32";
 
 "Shrs" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Shrs: Shrs(a, b) = a >> b",
@@ -262,7 +262,7 @@ $arch = "ia32";
 
 "Shrs_i" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Shrs: Shrs(a, const) = a >> const",
@@ -271,7 +271,7 @@ $arch = "ia32";
 
 "Rot" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 2,
   "args"     => "DEFAULT",
   "comment"  => "construct Rot: Rot(a, b) = a ROT b",
@@ -280,10 +280,59 @@ $arch = "ia32";
 
 "Rot_i" => {
   "op_flags" => "N",
-  "state"    => "floats",
+  "state"    => "pinned",
   "arity"    => 1,
   "args"     => "DEFAULT",
   "comment"  => "construct Rot: Rot(a, const) = a ROT const",
+  "rd_constructor" => "DEFAULT"
+},
+
+# other operations
+
+"Conv" => {
+  "op_flags" => "N",
+  "state"    => "pinned",
+  "arity"    => 1,
+  "args"     => "DEFAULT",
+  "comment"  => "construct Conv: Conv(a) = (conv)a",
+  "rd_constructor" => "DEFAULT"
+},
+
+"Cmp" => {
+  "op_flags" => "C",
+  "state"    => "pinned",
+  "arity"    => 2,
+  "args"     => "DEFAULT",
+  "comment"  => "construct Cmp: Cmp(a, b) = a CMP b",
+  "rd_constructor" => "DEFAULT"
+},
+
+"Cmp_i" => {
+  "op_flags" => "N",
+  "state"    => "pinned",
+  "arity"    => 1,
+  "args"     => "DEFAULT",
+  "comment"  => "construct Cmp: Cmp(a, const) = Cmp(const, a) = a CMP const",
+  "rd_constructor" => "DEFAULT"
+},
+
+# Load / Store
+
+"Load" => {
+  "op_flags" => "N",
+  "state"    => "pinned",
+  "arity"    => 2,
+  "args"     => "DEFAULT",
+  "comment"  => "construct Load: Load(mem-edge, ptr) = LD ptr",
+  "rd_constructor" => "DEFAULT"
+},
+
+"Store" => {
+  "op_flags" => "N",
+  "state"    => "pinned",
+  "arity"    => 3,
+  "args"     => "DEFAULT",
+  "comment"  => "construct Store: Store(mem-edge, ptr, val) = ST ptr,val",
   "rd_constructor" => "DEFAULT"
 }
 
