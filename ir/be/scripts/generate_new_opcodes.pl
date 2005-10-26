@@ -163,7 +163,10 @@ print OUT<<ENDOFHEADER;
  * date:       $creation_time
  */
 
-#include <libfirm/firm.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 
 #include "irprog_t.h"
@@ -174,8 +177,6 @@ print OUT<<ENDOFHEADER;
 #include "iropt_t.h"
 #include "firm_common_t.h"
 #include "irvrfy_t.h"
-#include "irvrfy.h"
-#include "iropt_dbg.h"
 
 #include "../firm2arch_nodes_attr.h"
 
