@@ -13,7 +13,7 @@ dnl
 
 AC_REVISION($Id$)
 
-AC_INIT(libfirm,0.3.0)
+AC_INIT(libfirm,1.3.0)
 AC_PREREQ(2.50)
 
 dnl if other files should be generated just add them to ac_output_files
@@ -21,7 +21,7 @@ ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/debug/Makefile
 		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
 		ir/ana/Makefile ir/tr/Makefile ir/ana2/Makefile ir/stat/Makefile \
 		ir/opt/Makefile ir/external/Makefile ir/config/Makefile \
-		ir/arch/Makefile \
+		ir/arch/Makefile ir/lower/Makefile \
 		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
 		libfirm.doxygen"
 
@@ -71,9 +71,18 @@ AC_ARG_WITH(libdir, [  --with-libdir=add       colon seperated list of directori
     LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`)
 
 dnl check for libxml2 library installation dir
-AC_ARG_WITH(libxml2, [  --with-libxml2=prefix   installation prefix of libxml2 (IPD: --with-libxml2=/usr/public/libxml2)],
-    LDFLAGS=$LDFLAGS" -L"$withval"/lib";
-	CPPFLAGS=$CPPFLAGS" -I"$withval"/include/libxml2")
+dnl AC_ARG_WITH(libxml2, [  --with-libxml2=prefix   installation prefix of libxml2 (IPD: --with-libxml2=/usr/public/libxml2)],
+dnl     LDFLAGS=$LDFLAGS" -L"$withval"/lib";
+dnl 	CPPFLAGS=$CPPFLAGS" -I"$withval"/include/libxml2")
+
+dnl check for libxml2 library installation dir
+AC_CHECK_PROG(XML2CONFIG, xml2-config, "xml2-config", "echo")
+if test "$XML2CONFIG" != "xml2-config"; then
+  AC_MSG_ERROR(xml2-config for detecting libxml2 not found)
+fi
+AC_SUBST(XML2CONFIG)
+LDFLAGS=$LDFLAGS" -L/usr/lib `$XML2CONFIG --libs`";
+CPPFLAGS=$CPPFLAGS" `$XML2CONFIG --cflags`";
 
 dnl set debugging
 dnl -------------
@@ -211,6 +220,10 @@ dnl ====================
 dnl check for a C compiler
 dnl ----------------------
 AC_PROG_CC
+
+dnl check for awk
+dnl -------------
+AC_PROG_AWK
 
 dnl check for prelinkable linker
 dnl ----------------------------
@@ -392,5 +405,5 @@ dnl ===============
 
 AC_OUTPUT($ac_output_file,[ touch stamp-h ])
 
-dnl snip the lower prt of config.h and put it to ir/config/firm_config.h
-gawk -f $CONF_DIR_NAME/filter.awk < config.h | sed -f $CONF_DIR_NAME/filter.sed > ir/config/firm_config.h
+dnl snip the lower part of config.h and put it to ir/config/firm_config.h
+$AWK -f $CONF_DIR_NAME/filter.awk < config.h | sed -f $CONF_DIR_NAME/filter.sed > ir/config/firm_config.h
