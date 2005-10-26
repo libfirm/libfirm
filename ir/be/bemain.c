@@ -47,6 +47,7 @@
 
 #undef DUMP_BEGIN
 #undef DUMP_PREPARED
+#define DUMP_TRANSFORM
 #define DUMP_SCHED
 #define DUMP_SPILL
 #undef DUMP_ALLOCATED
@@ -139,13 +140,16 @@ static void be_main_loop(void)
 	be_init_env(&env);
 	isa = arch_env_get_isa(env.arch_env);
 
+        /* create required irop's */
+        create_bearch_asm_opcodes();
+
 	/* For all graphs */
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		int j, m;
 		ir_graph *irg = get_irp_irg(i);
 		be_main_session_env_t session;
 
-		DBG((env.dbg, LEVEL_1, "====> IRG: %F\n", irg));
+		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
 #ifdef DUMP_BEGIN
 		dump_ir_block_graph(irg, "-begin");
 #endif
@@ -156,10 +160,12 @@ static void be_main_loop(void)
 		/* Compute some analyses and prepare the graph for backend use. */
 		prepare_graph(&session);
 
-                create_bearch_asm_opcodes();
-                transform_firm();
+                transform_firm(irg);
 
+#ifdef DUMP_TRANSFORM
 		dump_ir_block_graph(irg, "-transformed");
+#endif
+
 #if 0
 #ifdef DUMP_PREPARED
 		dump_dominator_information(true);
