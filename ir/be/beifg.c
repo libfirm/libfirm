@@ -4,6 +4,7 @@
  * source file and header by Kimon Hoffmann.
  * @author Sebastian Hack
  * @date 27.06.2005
+ * $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -16,6 +17,7 @@
 #include <alloca.h>
 #endif
 
+#include <stdlib.h>
 #include "debug.h"
 
 #include "beifg_t.h"
