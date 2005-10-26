@@ -29,7 +29,7 @@ CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/
 
 include $(top_srcdir)/MakeTargets
 
-subdir_depend depend:
+depend:
 	$(full_dir)/scripts/generate_new_opcodes.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl $(full_dirbe)
 
 all: subdir.o
