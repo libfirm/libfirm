@@ -8,6 +8,7 @@
 
 #include <libfirm/firm.h>
 #include <libfirm/pseudo_irg.h>
+#include "debug.h"
 
 #include "firm2arch.h"
 
@@ -16,16 +17,10 @@
  * Calls the interface function transform_node() which
  * needs to be implemented for each architecture.
  */
-void transform_firm() {
-  int i;
-
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_graph *irg = get_irp_irg(i);
-
-    if (! is_pseudo_ir_graph(irg)) {
-      irg_walk_blkwise_graph(irg, NULL, transform_node, NULL);
-    }
-  }
+void transform_firm(ir_graph *irg) {
+  firm_dbg_module_t *dbg = firm_dbg_register("be.transform");
+  if (! is_pseudo_ir_graph(irg))
+    irg_walk_blkwise_graph(irg, NULL, transform_node, dbg);
 }
 
 /**
@@ -36,15 +31,9 @@ void transform_firm() {
  * Calls the interface function finish_node_transformation which needs
  * to be implemented for each architecture.
  */
-void finish_transform() {
-  int i;
-
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_graph *irg = get_irp_irg(i);
-
-    if (! is_pseudo_ir_graph(irg)) {
- //     irg_walk_blkwise_graph(irg, NULL, finish_node_transformation, NULL);
-    }
+void finish_transform(ir_graph *irg) {
+  if (! is_pseudo_ir_graph(irg)) {
+ //   irg_walk_blkwise_graph(irg, NULL, finish_node_transformation, NULL);
   }
 }
 
