@@ -467,11 +467,21 @@ static void show_bp(void) {
 }
 
 /**
+ * firm_dbg_register() expects that the name is stored persistent.
+ * So we need this little helper function
+ */
+static firm_dbg_module_t *dbg_register(const char *name) {
+  ident *id = new_id_from_str(name);
+
+  return firm_dbg_register(get_id_str(id));
+}
+
+/**
  * Sets the debug mask of module name to lvl
  */
 static void set_dbg_level(const char *name, unsigned lvl)
 {
-  firm_dbg_module_t *module = firm_dbg_register(name);
+  firm_dbg_module_t *module = dbg_register(name);
 
   firm_dbg_set_mask(module, lvl);
 
@@ -483,7 +493,7 @@ static void set_dbg_level(const char *name, unsigned lvl)
  */
 static void set_dbg_outfile(const char *name, const char *fname)
 {
-  firm_dbg_module_t *module = firm_dbg_register(name);
+  firm_dbg_module_t *module = dbg_register(name);
   FILE *f = fopen(fname, "w");
 
   if (! f) {
@@ -502,7 +512,7 @@ static void set_dbg_outfile(const char *name, const char *fname)
  *  .create nr    break if node nr was created
  *  .help         list all commands
  */
-void firm_break(const char *cmd) {
+void firm_debug(const char *cmd) {
   long nr;
   unsigned bp;
   char name[1024], fname[1024];
@@ -556,7 +566,7 @@ void firm_init_debugger(void)
   env = getenv("FIRMDBG");
 
   if (env)
-    firm_break(env);
+    firm_debug(env);
 
   if (break_on_init)
     firm_debug_break();
@@ -634,7 +644,7 @@ void firm_init_debugger(void)
  * List all commands.
  *
  *
- * The Firm debugger extension can be accessed using the function firm_break().
+ * The Firm debugger extension can be accessed using the function firm_debug().
  * The following example shows how to set a creation breakpoint in GDB when
  * node 2101 is created.
  *
@@ -657,7 +667,7 @@ void firm_init_debugger(void)
  # define firm "cmd"  Firm debugger extension
  #
  define firm
- p firm_break($arg0)
+ p firm_debug($arg0)
  end
  * @endcode
  *
