@@ -5,11 +5,11 @@
 
 void create_bearch_asm_opcodes(void);
 
-void transform_firm(void);
+void transform_firm(ir_graph *irg);
 
 extern void transform_node(ir_node *node, void *env);
 
-void finish_transform(void);
+void finish_transform(ir_graph *irg);
 
 extern void finish_node_transformation(ir_node *node, void *env);
 
