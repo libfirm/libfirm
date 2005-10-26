@@ -14,47 +14,58 @@
 #ifndef _PMAP_H_
 #define _PMAP_H_
 
-/* Map die Adressen auf Adressen abbildet. Der Vergleich und das
- * Hashen findet �ber die Adresse statt. */
-
+/**  A map which maps addresses to addresses. */
 typedef struct pmap pmap;
 
+/**
+ * A key, value pair.
+ */
 typedef struct pmap_entry {
-  void * key;
-  void * value;
+  void *key;    /**< The key. */
+  void *value;  /**< The value. */
 } pmap_entry;
 
 
-/* Erzeugt eine neue leere Map. */
-pmap * pmap_create(void);
+/** Creates a new empty map. */
+pmap *pmap_create(void);
 
-/* L�scht eine Map. */
+/** Creates a new empty map with an initial number of slots. */
+pmap *pmap_create_ex(int slots);
+
+/** Deletes a map. */
 void pmap_destroy(pmap *);
 
-/* F�gt ein Paar (key,value) in die Map ein. Gibt es bereits einen
- * Eintrag mit "key" in er Map, so wird der entsprechende "value"
- * �berschrieben. */
-void pmap_insert(pmap *, void * key, void * value);
+/**
+ *  Inserts a pair (key,value) into the map. If an entry with key
+ * "key" already exists, its "value" is overwritten.
+ */
+void pmap_insert(pmap *map, void * key, void * value);
 
-/* Pr�ft ob ein Eintrag zu "key" exisitiert. */
-int pmap_contains(pmap *, void * key);
+/** Checks if an entry with key "key" exists. */
+int pmap_contains(pmap *map, void * key);
 
-/* Gibt den Eintrag zu "key" zur�ck. */
-pmap_entry * pmap_find(pmap *, void * key);
+/** Returns the key, value pair of "key". */
+pmap_entry * pmap_find(pmap *map, void * key);
 
-/* Gibt f�r den Eintrag zu "key" den "value" zur�ck. */
-void * pmap_get(pmap *, void * key);
+/** Returns the value of "key". */
+void * pmap_get(pmap *map, void * key);
 
-/* Mit den Funktionen "pmap_first" und "pmap_next" kann man durch die
- * Map iterieren. Die Funktionen geben einen Zeiger auf einen Eintrag
- * zur�ck (key,value). Die Funktionen geben "NULL" zur�ck, wenn kein
- * weiterer Eintrag existiert. */
-pmap_entry * pmap_first(pmap *);
-pmap_entry * pmap_next(pmap *);
+/**
+ * Returns the first entry of a map if the map is not empty.
+ */
+pmap_entry *pmap_first(pmap *map);
+
+/**
+ * Returns the next entry of a map or NULL if all entries were visited.
+ */
+pmap_entry *pmap_next(pmap *);
 
 #define pmap_foreach(pmap, curr) \
-	for(curr=pmap_first(pmap); curr; curr=pmap_next(pmap))
+	for (curr = pmap_first(pmap); curr; curr = pmap_next(pmap))
 
+/** Breaks an iteration.
+ *  Must be called, if a iteration ends before p_map_next() returns NULL.
+ */
 void pmap_break(pmap *map);
 
 #endif /* _PMAP_H_ */

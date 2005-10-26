@@ -1,6 +1,6 @@
 /*
  * Project:     libFIRM
- * File name:   ir/adt/eset.c
+ * File name:   ir/adt/pmap.c
  * Purpose:     Datentyp: Vereinfachte Map (hash-map) zum Speichern von
  *              Zeigern/Adressen -> Zeigern/Adressen.
  * Author:      Hubert Schmid
@@ -25,7 +25,12 @@ struct pmap {
 
 #define INITIAL_SLOTS 64
 
+/** map a pmap into a set */
+#define M2S(map)  (set *)(map)
 
+/**
+ * compare the keys of two entry pairs
+ */
 static int pmap_entry_cmp(const void *p1, const void *p2, size_t size) {
   const pmap_entry *entry1 = p1;
   const pmap_entry *entry2 = p2;
@@ -33,37 +38,36 @@ static int pmap_entry_cmp(const void *p1, const void *p2, size_t size) {
   return entry1->key != entry2->key;
 }
 
-
-pmap *pmap_create(void) {
-  return (pmap *)new_set(pmap_entry_cmp, INITIAL_SLOTS);
+/* Creates a new empty map with an initial number of slots. */
+pmap *pmap_create_ex(int slots) {
+  return (pmap *)new_set(pmap_entry_cmp, slots);
 }
 
+pmap *pmap_create(void) {
+  return pmap_create_ex(INITIAL_SLOTS);
+}
 
 void pmap_destroy(pmap *map) {
-  del_set((set *)map);
+  del_set(M2S(map));
 }
 
 
 void pmap_insert(pmap *map, void *key, void *value) {
-  if (pmap_contains(map, key)) {
-    pmap_entry * entry = pmap_find(map, key);
-    entry->value = value;
-  } else {
-    pmap_entry entry;
-    entry.key = key;
-    entry.value = value;
-    set_insert((set *)map, &entry, sizeof(pmap_entry), HASH_PTR(key));
-  }
+  pmap_entry entry, *p;
+
+  entry.key = key;
+  p = set_insert(M2S(map), &entry, sizeof(pmap_entry), HASH_PTR(key));
+  p->value = value;
 }
 
 
 int pmap_contains(pmap *map, void *key) {
-  return set_find((set *)map, &key, sizeof(pmap_entry), HASH_PTR(key)) != NULL;
+  return set_find(M2S(map), &key, sizeof(pmap_entry), HASH_PTR(key)) != NULL;
 }
 
 
 pmap_entry * pmap_find(pmap *map, void *key) {
-  return (pmap_entry *)set_find((set *)map, &key, sizeof(pmap_entry), HASH_PTR(key));
+  return (pmap_entry *)set_find(M2S(map), &key, sizeof(pmap_entry), HASH_PTR(key));
 }
 
 
@@ -74,15 +78,15 @@ void * pmap_get(pmap *map, void *key) {
 
 
 pmap_entry *pmap_first(pmap *map) {
-  return (pmap_entry *) set_first((set *)map);
+  return (pmap_entry *) set_first(M2S(map));
 }
 
 
 pmap_entry *pmap_next(pmap *map) {
-  return (pmap_entry *) set_next((set *)map);
+  return (pmap_entry *) set_next(M2S(map));
 }
 
 
 void pmap_break(pmap *map) {
-  set_break((set *)map);
+  set_break(M2S(map));
 }
