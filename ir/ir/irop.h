@@ -264,6 +264,22 @@ typedef int (*verify_node_func)(ir_node *self, ir_graph *irg);
 typedef int (*verify_proj_node_func)(ir_node *self, ir_node *proj);
 
 /**
+ * Reasons to call the dump_node operation:
+ */
+typedef enum {
+  dump_node_opcode_txt,   /**< dump the opcode */
+  dump_node_mode_txt,     /**< dump the mode */
+  dump_node_nodeattr_txt, /**< dump the node attributes */
+} dump_reason_t;
+
+/**
+ * The dump_node operation.
+ * Writes several informations requested by reason to
+ * an output file
+ */
+typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
+
+/**
  * io_op Operations.
  */
 typedef struct {
@@ -276,6 +292,7 @@ typedef struct {
   get_type_func         get_type;         /**< return the type of a node */
   verify_node_func      verify_node;      /**< verify the node */
   verify_proj_node_func verify_proj_node; /**< verify the Proj node */
+  dump_node_func        dump_node;        /**< dump a node */
   op_func               generic;          /**< a generic function */
 } ir_op_ops;
 
@@ -300,5 +317,8 @@ typedef struct {
 ir_op * new_ir_op(opcode code, const char *name, op_pin_state p,
 		   unsigned flags, op_arity opar, int op_index, size_t attr_size,
        const ir_op_ops *ops);
+
+/** Returns the ir_op_ops of an ir_op. */
+const ir_op_ops *get_op_ops(const ir_op *op);
 
 #endif /* _IROP_H_ */

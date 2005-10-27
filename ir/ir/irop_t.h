@@ -120,9 +120,14 @@ static INLINE op_func _get_generic_function_ptr(const ir_op *op) {
   return op->ops.generic;
 }
 
+static INLINE const ir_op_ops *_get_op_ops(const ir_op *op) {
+  return &op->ops;
+}
+
 #define get_op_code(op)         _get_op_code(op)
 #define get_op_ident(op)        _get_op_ident(op)
 #define get_op_pinned(op)       _get_op_pinned(op)
+#define get_op_ops(op)          _get_op_ops(op)
 
 
 #endif /* _IROP_T_H_ */

@@ -391,3 +391,8 @@ op_func (get_generic_function_ptr)(const ir_op *op) {
 void (set_generic_function_ptr)(ir_op *op, op_func func) {
   _set_generic_function_ptr(op, func);
 }
+
+/* Returns the ir_op_ops of an ir_op. */
+const ir_op_ops *(get_op_ops)(const ir_op *op) {
+  return _get_op_ops(op);
+}
