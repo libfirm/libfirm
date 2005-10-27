@@ -56,7 +56,8 @@ foreach my $op (keys(%nodes)) {
   $arity   = $n{"arity"};
 
   push(@obst_opvar, "ir_op *op_$op = NULL;\n");
-  push(@obst_get_opvar, "ir_op *get_op_$op(void) { return op_$op; }\n");
+  push(@obst_get_opvar, "ir_op *get_op_$op(void)   { return op_$op; }\n");
+  push(@obst_get_opvar, "int    is_$op(ir_node *n) { return get_irn_op(n) == op_$op ? 1 : 0; }\n\n");
 
   $n{"comment"} =~ s/^"|"$//g;
   $n{"comment"} = "/* ".$n{"comment"}." */\n";
@@ -144,7 +145,7 @@ foreach my $op (keys(%nodes)) {
   # construct the new_ir_op calls
   my $arity_str = $arity == 0 ? "zero" : ($arity == 1 ? "unary" : ($arity == 2 ? "binary" : ($arity == 3 ? "trinary" : $arity)));
   $temp  = "  op_$op = new_ir_op(get_next_ir_opcode(), \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-  $temp .= ", oparity_".$arity_str.", 0, sizeof(asmop_attr), NULL);\n";
+  $temp .= ", oparity_".$arity_str.", 0, sizeof(asmop_attr), &ops);\n";
   push(@obst_new_irop, $temp);
 }
 
@@ -181,6 +182,12 @@ print OUT<<ENDOFHEADER;
 #include "../firm2arch_nodes_attr.h"
 
 #include "new_nodes.h"
+#include "dump_support.inl"
+
+tarval *get_Immop_tarval(ir_node *node) {
+  asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(node);
+  return attr->tv;
+}
 
 ENDOFHEADER
 
@@ -206,6 +213,13 @@ void create_bearch_asm_opcodes(void) {
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
 
+  ir_op_ops ops;
+
+  memset(&ops, 0, sizeof(ops));
+
+  /* enter our modified dumper */
+  ops.dump_node = dump_node_ia32;
+
 ENDOFMAIN
 
 print OUT @obst_new_irop;
@@ -227,6 +241,8 @@ print OUT<<EOF;
  * created by: $0 $specfile $target_dir
  * date:       $creation_time
  */
+
+tarval *get_Immop_tarval(ir_node *node);
 
 EOF
 

@@ -52,7 +52,7 @@ ir_node *gen_imm_Add(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Add node
  */
-ir_node *gen_Add(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Add(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Add(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -81,7 +81,7 @@ ir_node *gen_imm_Mul(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Mul node
  */
-ir_node *gen_Mul(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Mul(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Mul(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -110,7 +110,7 @@ ir_node *gen_imm_And(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 And node
  */
-ir_node *gen_And(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_And(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_And(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -139,7 +139,7 @@ ir_node *gen_imm_Or(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mo
  * @param mode      node mode
  * @return the created ia32 Or node
  */
-ir_node *gen_Or(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Or(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Or(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -168,7 +168,7 @@ ir_node *gen_imm_Eor(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Eor node
  */
-ir_node *gen_Eor(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Eor(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Eor(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -197,7 +197,7 @@ ir_node *gen_imm_Cmp(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Cmp node
  */
-ir_node *gen_Cmp(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Cmp(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Cmp(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -226,8 +226,35 @@ ir_node *gen_imm_Sub(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Sub node
  */
-ir_node *gen_Sub(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
-  return new_rd_ia32_Sub(dbg, current_ir_graph, block, op1, op2, mode);
+ir_node *gen_Sub(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+  ir_node *sub = NULL;
+
+  /* transform "Const -- Sub -- Expr" into "Minus -- (Expr -- Sub -- Const)" */
+  if (is_Imm(op1) && !is_Imm(op2)) {
+    imm_attr_t *attr_imm = (imm_attr_t *)get_irn_generic_attr(op1);
+
+    DBG((mod, LEVEL_1, "optimizing c-e into -(e-c) ... "));
+
+    /* make sure that Imm is a Const and no SymConst */
+    if (attr_imm->tp == imm_Const) {
+      sub = gen_imm_Sub(dbg, block, op2, mode);
+
+      /* make the Const an attribute */
+      asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(sub);
+      attr->tv = attr_imm->data.tv;
+    }
+    else
+      goto gen_normal_sub;
+
+    /* negate result */
+    sub = new_rd_ia32_Minus(dbg, current_ir_graph, block, sub, mode);
+  }
+  else {
+gen_normal_sub:
+    sub = new_rd_ia32_Sub(dbg, current_ir_graph, block, op1, op2, mode);
+  }
+
+  return sub;
 }
 
 
@@ -255,7 +282,7 @@ ir_node *gen_imm_Mod(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Mod node
  */
-ir_node *gen_Mod(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Mod(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Mod(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -284,7 +311,7 @@ ir_node *gen_imm_Shl(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Shl node
  */
-ir_node *gen_Shl(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Shl(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Shl(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -313,7 +340,7 @@ ir_node *gen_imm_Shr(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Shr node
  */
-ir_node *gen_Shr(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Shr(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Shr(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -342,7 +369,7 @@ ir_node *gen_imm_Shrs(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *
  * @param mode      node mode
  * @return the created ia32 Shrs node
  */
-ir_node *gen_Shrs(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Shrs(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Shrs(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
@@ -371,8 +398,29 @@ ir_node *gen_imm_Rot(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @param mode      node mode
  * @return the created ia32 Rot node
  */
-ir_node *gen_Rot(dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
+ir_node *gen_Rot(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   return new_rd_ia32_Rot(dbg, current_ir_graph, block, op1, op2, mode);
+}
+
+
+
+/**
+ * Transforms a Minus node.
+ *
+ * @param mod     the debug module
+ * @param block   the block the new node should belong to
+ * @param node    the ir Minus node
+ * @param op      operator
+ * @param mode    node mode
+ * @return the created ia32 Minus node
+ */
+ir_node *gen_Minus(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_node *op, ir_mode *mode) {
+  if (is_ia32_Minus(op)) {
+    DBG((mod, LEVEL_1, "optimizing --(e) to e ..."));
+    return get_irn_n(op, 0);
+  }
+  else
+    return new_rd_ia32_Minus(get_irn_dbg_info(node), current_ir_graph, block, op, mode);
 }
 
 
@@ -412,7 +460,7 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
   ir_node *expr_op  = NULL;
   ir_node *asm_node = NULL;
 
-#define GENOP(a)  case iro_##a: asm_node = gen_##a(dbg, block, op1, op2, mode); break
+#define GENOP(a)  case iro_##a: asm_node = gen_##a(mod, dbg, block, op1, op2, mode); break
 #define GENOPI(a) case iro_##a: asm_node = gen_imm_##a(dbg, block, expr_op, mode); break
 
   if (com)
@@ -564,6 +612,7 @@ void transform_node(ir_node *node, void *env) {
     BINOP_NCOM(Rot);
 //    BINOP_ARITH_NCOM(DivMod);
 
+    UNOP(Minus);
     UNOP(Conv);
     GEN(Load);
     GEN(Store);
