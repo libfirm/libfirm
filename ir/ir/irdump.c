@@ -23,11 +23,11 @@
 
 #include "firm_common_t.h"
 
-#include "irnode_t.h"
-#include "irgraph_t.h"
+#include "irnode.h"
+#include "irgraph.h"
 #include "irprog_t.h"
 #include "entity_t.h"
-#include "irop_t.h"
+#include "irop.h"
 
 #include "irdump_t.h"
 
@@ -584,12 +584,17 @@ static list_tuple *construct_extblock_lists(ir_graph *irg) {
 /*
  * dump the name of a node n to the File F.
  */
-int
-dump_node_opcode(FILE *F, ir_node *n)
+int dump_node_opcode(FILE *F, ir_node *n)
 {
   int bad = 0;
+  const ir_op_ops *ops = get_op_ops(get_irn_op(n));
 
-  switch(get_irn_opcode(n)) {
+  /* call the dump_node operation if available */
+  if (ops->dump_node)
+    return ops->dump_node(n, F, dump_node_opcode_txt);
+
+  /* implementation for default nodes */
+  switch (get_irn_opcode(n)) {
 
   case iro_Const: {
     int res;
@@ -663,10 +668,9 @@ dump_node_opcode(FILE *F, ir_node *n)
     fprintf (F, "%s%s", is_Block_dead(n) ? "Dead " : "", get_irn_opname(n));
     break;
 
-  default: {
+  default:
 default_case:
     fprintf (F, "%s", get_irn_opname(n));
-  }
 
   }  /* end switch */
   return bad;
@@ -676,12 +680,18 @@ default_case:
  * Dump the mode of a node n to a file F.
  * Ignore modes that are "always known".
  */
-static INLINE int
-dump_node_mode(FILE *F, ir_node *n)
+static int dump_node_mode(FILE *F, ir_node *n)
 {
   int bad = 0;
-  opcode iro = get_irn_opcode(n);
+  const ir_op_ops *ops = get_op_ops(get_irn_op(n));
+  opcode iro;
 
+  /* call the dump_node operation if available */
+  if (ops->dump_node)
+    return ops->dump_node(n, F, dump_node_mode_txt);
+
+  /* default implementation */
+  iro = get_irn_opcode(n);
   switch (iro) {
     case iro_SymConst:
     case iro_Sel:
@@ -849,13 +859,18 @@ static const proj_lookup_t proj_lut[] = {
 /**
  * Dump additional node attributes of some nodes to a file F.
  */
-static INLINE int
+static int
 dump_node_nodeattr(FILE *F, ir_node *n)
 {
   int bad = 0;
   ir_node *pred;
   opcode code;
   long proj_nr;
+  const ir_op_ops *ops = get_op_ops(get_irn_op(n));
+
+  /* call the dump_node operation if available */
+  if (ops->dump_node)
+    return ops->dump_node(n, F, dump_node_nodeattr_txt);
 
   switch (get_irn_opcode(n)) {
   case iro_Start:
