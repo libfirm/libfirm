@@ -287,6 +287,15 @@ $arch = "ia32";
   "rd_constructor" => "DEFAULT"
 },
 
+"Minus" => {
+  "op_flags" => "N",
+  "state"    => "pinned",
+  "arity"    => 1,
+  "args"     => "DEFAULT",
+  "comment"  => "construct Minus: Minus(a) = -a",
+  "rd_constructor" => "DEFAULT"
+},
+
 # other operations
 
 "Conv" => {
