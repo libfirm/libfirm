@@ -90,6 +90,7 @@ extern "C" {
 #include "irloop.h"         /* loop and backedge analysis */
 #include "callgraph.h"      /* Callgraph construction */
 #include "irconsconfirm.h"  /* Confirm nodes */
+#include "analyze_irg_args.h" /* Simple pointer parameter analysis */
 #include "interval_analysis.h"
 #include "field_temperature.h"
 #include "execution_frequency.h"
