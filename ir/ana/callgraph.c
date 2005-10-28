@@ -10,14 +10,15 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
 #ifdef HAVE_STRING_H
-#include <string.h>
+# include <string.h>
 #endif
-
+# ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
 
 #include "callgraph.h"
 
