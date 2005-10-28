@@ -269,7 +269,7 @@ typedef int (*verify_proj_node_func)(ir_node *self, ir_node *proj);
 typedef enum {
   dump_node_opcode_txt,   /**< dump the opcode */
   dump_node_mode_txt,     /**< dump the mode */
-  dump_node_nodeattr_txt, /**< dump the node attributes */
+  dump_node_nodeattr_txt  /**< dump the node attributes */
 } dump_reason_t;
 
 /**
