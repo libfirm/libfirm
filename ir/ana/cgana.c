@@ -363,15 +363,22 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
 }
 
 /**
+ * Called for predecessors nodes of "interesting" ones.
+ * Interesting ones include all nodes that can somehow make
+ * a method visible.
+ *
+ * If a method (or a set of methods in case of polymorph calls) gets visible,
+ * add it to the set of 'free' methods
+ *
  * @param node  the current visited node
  * @param set   the set of all free methods
  */
 static void free_mark(ir_node *node, eset * set) {
   int i;
 
-  if (get_irn_link(node) == MARK) {
+  if (get_irn_link(node) == MARK)
     return; /* already visited */
-  }
+
   set_irn_link(node, MARK);
 
   switch (get_irn_opcode(node)) {
@@ -415,7 +422,7 @@ static void free_mark(ir_node *node, eset * set) {
 }
 
 /**
- * post-walker.
+ * post-walker. Find method addresses.
  */
 static void free_ana_walker(ir_node *node, void *env) {
   eset *set = env;
@@ -462,11 +469,16 @@ static void free_ana_walker(ir_node *node, void *env) {
   set_irn_link(node, NULL);
 }
 
-/* Die Datenstrukturen für sel-Methoden (sel_methods) muß vor dem
+/**
+ * returns a list of 'free' methods, i.e., the methods that can be called
+ * from external or via function pointers.
+ *
+ * Die Datenstrukturen für sel-Methoden (sel_methods) muß vor dem
  * Aufruf von "get_free_methods" aufgebaut sein. Die (internen)
  * SymConst(name)-Operationen müssen in passende SymConst(ent)-Operationen
  * umgewandelt worden sein, d.h. SymConst-Operationen verweisen immer
- * auf eine echt externe Methode. */
+ * auf eine echt externe Methode.
+ */
 static entity ** get_free_methods(void)
 {
   eset * set = eset_create();
@@ -494,6 +506,8 @@ static entity ** get_free_methods(void)
       eset_insert(set, ent);
     }
   }
+
+  /* insert all methods the initializes global variables */
 
   /* the main program is even then "free", if it's not external visible. */
   if (get_irp_main_irg())
@@ -753,8 +767,8 @@ void free_callee_info(ir_graph *irg) {
 }
 
 void free_irp_callee_info(void) {
-  int i, n_irgs = get_irp_n_irgs();
-  for (i = 0; i < n_irgs; ++i) {
+  int i;
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     free_callee_info(get_irp_irg(i));
   }
 }
@@ -764,13 +778,13 @@ void free_irp_callee_info(void) {
  * This optimization performs the following transformations for
  * all ir graphs:
  * - All SymConst operations that refer to intern methods are replaced
- *   by Const operations refering to the corresponding entity.
+ *   by Const operations referring to the corresponding entity.
  * - Sel nodes, that select entities that are not overwritten are
- *   replaced by Const nodes refering to the selected entity.
+ *   replaced by Const nodes referring to the selected entity.
  * - Sel nodes, for which no method exists at all are replaced by Bad
  *   nodes.
  * - Sel nodes with a pointer input that is an Alloc node are replaced
- *   by Const nodes refering to the entity that implements the method in
+ *   by Const nodes referring to the entity that implements the method in
  *   the type given by the Alloc node.
  */
 void opt_call_addrs(void) {
