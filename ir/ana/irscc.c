@@ -14,14 +14,15 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
 #ifdef HAVE_STRING_H
-#include <string.h>
+# include <string.h>
 #endif
-
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 
 #include "irloop_t.h"
 
