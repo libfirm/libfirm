@@ -30,39 +30,138 @@ tp_op *tpop_none;          tp_op *get_tpop_none       (void) { return tpop_none;
 tp_op *tpop_unknown;       tp_op *get_tpop_unknown    (void) { return tpop_unknown;     }
 
 tp_op *
-new_tpop (tp_opcode code, ident *name, unsigned flags, size_t attr_size)
+new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size,
+         const tp_op_ops *ops)
 {
   tp_op *res;
 
   res = xmalloc(sizeof(*res));
-  res->code      = code;
-  res->name      = name;
-  res->flags     = flags;
-  res->attr_size = attr_size;
+  res->code          = code;
+  res->name          = name;
+  res->flags         = flags;
+  res->attr_size     = attr_size;
+
+  if (ops)
+    memcpy(&res->ops, ops, sizeof(res->ops));
+  else
+    memset(&res->ops, 0, sizeof(res->ops));
+
   return res;
 }
 
-INLINE void
+void
 free_tpop(tp_op *tpop) {
   free(tpop);
 }
+
+static const tp_op_ops
+  /** tpop operations for class types */
+  class_ops = {
+    free_class_attrs,
+    free_class_entities,
+    NULL,
+    set_class_mode,
+    set_class_size_bits,
+    get_class_n_members,
+    get_class_member
+  },
+  /** tpop operations for struct types */
+  struct_ops = {
+    free_struct_attrs,
+    free_struct_entities,
+    NULL,
+    set_struct_mode,
+    set_struct_size_bits,
+    get_struct_n_members,
+    get_struct_member
+  },
+  /** tpop operations for method types */
+  method_ops = {
+    free_method_attrs,
+    free_method_entities,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+  },
+  /** tpop operations for union types */
+  union_ops = {
+    free_union_attrs,
+    free_union_entities,
+    NULL,
+    NULL,
+    set_union_size_bits,
+    get_union_n_members,
+    get_union_member
+  },
+  /** tpop operations for array types */
+  array_ops = {
+    free_array_attrs,
+    free_array_entities,
+    free_array_automatic_entities,
+    NULL,
+    set_array_size_bits,
+    NULL,
+    NULL
+  },
+  /** tpop operations for enumeration types */
+  enum_ops = {
+    free_enumeration_attrs,
+    free_enumeration_entities,
+    NULL,
+    set_enumeration_mode,
+    NULL,
+    NULL,
+    NULL
+  },
+  /** tpop operations for pointer types */
+  pointer_ops = {
+    free_pointer_attrs,
+    free_pointer_entities,
+    NULL,
+    set_pointer_mode,
+    NULL,
+    NULL,
+    NULL
+  },
+  /** tpop operations for pseudo types */
+  pseudo_ops = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    set_default_size_bits,
+    NULL,
+    NULL
+  },
+  /** tpop operations for primitive types */
+  null_ops = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+  };
 
 #define C     TP_OP_FLAG_COMPOUND
 #define ID(s) new_id_from_chars(s, sizeof(s) - 1)
 void
 init_tpop(void)
 {
-  type_class       = new_tpop(tpo_class      , ID("class"),       C, sizeof (cls_attr));
-  type_struct      = new_tpop(tpo_struct     , ID("struct"),      C, sizeof (stc_attr));
-  type_method      = new_tpop(tpo_method     , ID("method"),      0, sizeof (mtd_attr));
-  type_union       = new_tpop(tpo_union      , ID("union"),       C, sizeof (uni_attr));
-  type_array       = new_tpop(tpo_array      , ID("array"),       C, sizeof (arr_attr));
-  type_enumeration = new_tpop(tpo_enumeration, ID("enumeration"), 0, sizeof (enm_attr));
-  type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0, sizeof (ptr_attr));
-  type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0, /* sizeof (pri_attr) */ 0);
-  type_id          = new_tpop(tpo_id         , ID("type_id"),     0, /* sizeof (id_attr)  */ 0);
-  tpop_none        = new_tpop(tpo_none       , ID("tpop_none"),   0, /* sizeof (non_attr) */ 0);
-  tpop_unknown     = new_tpop(tpo_unknown    , ID("tpop_unknown"),0, /* sizeof (ukn_attr) */ 0);
+  type_class       = new_tpop(tpo_class      , ID("class"),       C, sizeof (cls_attr), &class_ops);
+  type_struct      = new_tpop(tpo_struct     , ID("struct"),      C, sizeof (stc_attr), &struct_ops);
+  type_method      = new_tpop(tpo_method     , ID("method"),      0, sizeof (mtd_attr), &method_ops);
+  type_union       = new_tpop(tpo_union      , ID("union"),       C, sizeof (uni_attr), &union_ops);
+  type_array       = new_tpop(tpo_array      , ID("array"),       C, sizeof (arr_attr), &array_ops);
+  type_enumeration = new_tpop(tpo_enumeration, ID("enumeration"), 0, sizeof (enm_attr), &enum_ops);
+  type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0, sizeof (ptr_attr), &pointer_ops);
+  type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0, /* sizeof (pri_attr) */ 0, &null_ops);
+  type_id          = new_tpop(tpo_id         , ID("type_id"),     0, /* sizeof (id_attr)  */ 0, &null_ops);
+  tpop_none        = new_tpop(tpo_none       , ID("tpop_none"),   0, /* sizeof (non_attr) */ 0, &pseudo_ops);
+  tpop_unknown     = new_tpop(tpo_unknown    , ID("tpop_unknown"),0, /* sizeof (ukn_attr) */ 0, &pseudo_ops);
 }
 #undef ID
 #undef C
@@ -88,15 +187,15 @@ const char  *get_tpop_name(const tp_op *op) {
   return get_id_str(op->name);
 }
 
-tp_opcode (get_tpop_code)(const tp_op *op){
-  return __get_tpop_code(op);
+tp_opcode (get_tpop_code)(const tp_op *op) {
+  return _get_tpop_code(op);
 }
 
-ident *(get_tpop_ident)(const tp_op *op){
-  return __get_tpop_ident(op);
+ident *(get_tpop_ident)(const tp_op *op) {
+  return _get_tpop_ident(op);
 }
 
 /* returns the attribute size of the operator. */
 int (get_tpop_attr_size)(const tp_op *op) {
-  return __get_tpop_attr_size(op);
+  return _get_tpop_attr_size(op);
 }

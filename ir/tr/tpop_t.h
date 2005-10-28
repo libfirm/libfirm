@@ -9,11 +9,13 @@
  * Copyright:   (c) 2001-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-# ifndef _TPOP_T_H_
-# define _TPOP_T_H_
+#ifndef _TPOP_T_H_
+#define _TPOP_T_H_
 
-# include <stddef.h>
-# include "tpop.h"
+#include "firm_types.h"
+#include "tpop.h"
+#include "irmode.h"
+
 /**
  * @file tpop_t.h
  *
@@ -23,6 +25,44 @@
  * @see  tpop.h
  */
 
+/** A function called to free attributes of a type. */
+typedef void (*free_attrs_func)(type *tp);
+
+/** A function called to free owned entities of a type. */
+typedef void (*free_entities_func)(type *tp);
+
+/** A function called to free all automatic allocated entities of a type. */
+typedef void (*free_auto_entities_func)(type *tp);
+
+/** A function called to set the mode of a type. */
+typedef void (*set_type_mode_func)(type *tp, ir_mode *m);
+
+/** A function called to set the size of a type in bits */
+typedef void (*set_type_size_func)(type *tp, int size);
+
+/** A function called to get the number of compound members */
+typedef int (*get_n_members_func)(const type *tp);
+
+/** A function called to get the pos'th compound member */
+typedef entity *(*get_member_func)(const type *tp, int pos);
+
+/** A function called to insert an entity into the type */
+typedef void (*insert_entity_func)(type *tp, entity *member);
+
+
+/**
+ * tp_op operations.
+ */
+typedef struct _tp_op_ops {
+  free_attrs_func         free_attrs;         /**< called to free the attributes of a type */
+  free_entities_func      free_entities;      /**< called to free the owned entities of a type */
+  free_auto_entities_func free_auto_entities; /**< called to free the automatic allocated entities of a type */
+  set_type_mode_func      set_type_mode;      /**< called to set a ir_mode of a type */
+  set_type_size_func      set_type_size;      /**< called to set the bit size of a type */
+  get_n_members_func      get_n_members;      /**< called to return the number of compound members */
+  get_member_func         get_member;         /**< called to get the pos'th compound member */
+} tp_op_ops;
+
 /** possible flags for a type opcode */
 enum tp_op_flags_t {
   TP_OP_FLAG_COMPOUND = 1   /**< is a compound type */
@@ -30,10 +70,11 @@ enum tp_op_flags_t {
 
 /** The type opcode */
 struct tp_op {
-  tp_opcode code;       /**< the tpop code */
-  ident *name;          /**< the name of the type opcode */
-  size_t attr_size;     /**< the attribute size for a type of this opcode */
-  unsigned flags;       /**< flags for this opcode */
+  tp_opcode code;                     /**< the tpop code */
+  ident     *name;                    /**< the name of the type opcode */
+  size_t    attr_size;                /**< the attribute size for a type of this opcode */
+  unsigned  flags;                    /**< flags for this opcode */
+  tp_op_ops ops;                      /**< tp_op operations */
 };
 
 /**
@@ -48,14 +89,16 @@ struct tp_op {
  *   @param flags       additional flags
  *   @param attr_size   the size of the attributes necessary for a type with
  *                      this opcode
+ *   @param ops         the tp_op operations for this type
  *   @return A new type opcode.
  */
-tp_op *new_tpop (tp_opcode code, ident *name, unsigned flags, size_t attr_size);
+tp_op *new_tpop (tp_opcode code, ident *name, unsigned flags, size_t attr_size,
+                 const tp_op_ops *ops);
 
 /**
  * Free a tpop datastructure.
  */
-void free_tpop(tp_op* tpop);
+void free_tpop(tp_op *tpop);
 
 /**
  *   Initialize the tpop module.
@@ -93,22 +136,22 @@ int get_tpop_attr_size (const tp_op *op);
  * -----------------*/
 
 static INLINE tp_opcode
-__get_tpop_code(const tp_op *op) {
+_get_tpop_code(const tp_op *op) {
   return op->code;
 }
 
 static INLINE ident *
-__get_tpop_ident(const tp_op *op){
+_get_tpop_ident(const tp_op *op){
   return op->name;
 }
 
 static INLINE int
-__get_tpop_attr_size(const tp_op *op) {
+_get_tpop_attr_size(const tp_op *op) {
   return op->attr_size;
 }
 
-#define get_tpop_code(op)      __get_tpop_code(op)
-#define get_tpop_ident(op)     __get_tpop_ident(op)
-#define get_tpop_attr_size(op) __get_tpop_attr_size(op)
+#define get_tpop_code(op)      _get_tpop_code(op)
+#define get_tpop_ident(op)     _get_tpop_ident(op)
+#define get_tpop_attr_size(op) _get_tpop_attr_size(op)
 
 #endif /* _TPOP_T_H_ */
