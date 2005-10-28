@@ -37,23 +37,12 @@
 
 #include <stdbool.h>
 
+# include "firm_types.h"
 # include "tpop.h"
 # include "firm_common.h"
 # include "ident.h"
 # include "irmode.h"
 # include "dbginfo.h"
-
-/* to resolve recursion between entity.h and type.h */
-#ifndef _ENTITY_TYPEDEF_
-#define _ENTITY_TYPEDEF_
-typedef struct entity entity;
-#endif
-
-#ifndef _IR_NODE_TYPEDEF_
-#define _IR_NODE_TYPEDEF_
-typedef struct ir_node ir_node;
-#endif
-
 # include "tr_inheritance.h"
 
 /**
@@ -344,12 +333,13 @@ int is_type            (const void *thing);
 /**
  *   Checks whether two types are structurally equal.
  *
- *   @param st pointer type
- *   @param lt pointer type
+ *   @param typ1  the first type
+ *   @param typ2  the second type
  *
  *   @return
  *    true if the types are equal, else false.
- *    Types are equal if :
+ *
+ *   Types are equal if :
  *    - they are the same type kind
  *    - they have the same name
  *    - they have the same mode (if applicable)
@@ -376,7 +366,7 @@ int is_type            (const void *thing);
  *       This is to avoid endless recursions; with pointer types cyclic
  *       type graphs are possible.)
  */
-int equal_type(type *tpy1, type *typ2);
+int equal_type(type *typ1, type *typ2);
 
 /**
  *   Checks whether two types are structural comparable.

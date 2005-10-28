@@ -41,13 +41,19 @@ typedef struct {
   entity **members;    /**< fields of this struct. No method entities allowed. */
 } stc_attr;
 
+/** A (type, entity) pair */
+typedef struct {
+  type   *tp;          /**< a type */
+  entity *ent;         /**< an entity */
+} tp_ent_pair;
+
 /** method attributes */
 typedef struct {
   int n_params;              /**< number of parameters */
-  type **param_type;         /**< code generation needs this information. */
+  tp_ent_pair *param_type;   /**< array of parameter type/value entities pairs */
   type *value_params;        /**< A type whose entities represent copied value arguments. */
   int n_res;                 /**< number of results */
-  type **res_type;           /**< array with result types */
+  tp_ent_pair *res_type;     /**< array of result type/value entity pairs */
   type *value_ress;          /**< A type whose entities represent copied value results. */
   variadicity variadicity;   /**< variadicity of the method. */
   int first_variadic_param;  /**< index of the first variadic param or -1 if non-variadic .*/
@@ -146,33 +152,44 @@ struct type {
  *   @return A new type of the given type.  The remaining private attributes are not
  *           initialized.  The type is in state layout_undefined.
  */
-INLINE type *
+type *
 new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db);
 void free_type_attrs       (type *tp);
 
-INLINE void free_class_entities      (type *clss);
-INLINE void free_struct_entities     (type *strct);
-INLINE void free_method_entities     (type *method);
-INLINE void free_union_entities      (type *uni);
-INLINE void free_array_entities      (type *array);
-INLINE void free_enumeration_entities(type *enumeration);
-INLINE void free_pointer_entities    (type *pointer);
-INLINE void free_primitive_entities  (type *primitive);
+void free_class_entities      (type *clss);
+void free_struct_entities     (type *strct);
+void free_method_entities     (type *method);
+void free_union_entities      (type *uni);
+void free_array_entities      (type *array);
+void free_enumeration_entities(type *enumeration);
+void free_pointer_entities    (type *pointer);
 
-INLINE void free_class_attrs      (type *clss);
-INLINE void free_struct_attrs     (type *strct);
-INLINE void free_method_attrs     (type *method);
-INLINE void free_union_attrs      (type *uni);
-INLINE void free_array_attrs      (type *array);
-INLINE void free_enumeration_attrs(type *enumeration);
-INLINE void free_pointer_attrs    (type *pointer);
-INLINE void free_primitive_attrs  (type *primitive);
+void free_array_automatic_entities(type *array);
 
+void free_class_attrs      (type *clss);
+void free_struct_attrs     (type *strct);
+void free_method_attrs     (type *method);
+void free_union_attrs      (type *uni);
+void free_array_attrs      (type *array);
+void free_enumeration_attrs(type *enumeration);
+void free_pointer_attrs    (type *pointer);
+
+void set_class_mode(type *tp, ir_mode *mode);
+void set_struct_mode(type *tp, ir_mode *mode);
+void set_pointer_mode(type *tp, ir_mode *mode);
+void set_primitive_mode(type *tp, ir_mode *mode);
+void set_enumeration_mode(type *tp, ir_mode *mode);
+
+void set_class_size_bits(type *tp, int bits);
+void set_struct_size_bits(type *tp, int bits);
+void set_union_size_bits(type *tp, int bits);
+void set_array_size_bits(type *tp, int size);
+void set_default_size_bits(type *tp, int size);
 
 /**
  * Initialize the type module.
  *
- * @param buildin_db  debug info for builtin objects
+ * @param builtin_db  debug info for builtin objects
  */
 void firm_init_type(dbg_info *builtin_db);
 
@@ -364,6 +381,18 @@ _is_atomic_type(const type *tp) {
       _is_enumeration_type(tp));
 }
 
+static INLINE int
+_get_method_n_params(const type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.n_params;
+}
+
+static INLINE int
+_get_method_n_ress(const type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.n_res;
+}
+
 
 #define set_master_type_visited(val)      _set_master_type_visited(val)
 #define get_master_type_visited()         _get_master_type_visited()
@@ -395,5 +424,7 @@ _is_atomic_type(const type *tp) {
 #define is_Pointer_type(pointer)          _is_pointer_type(pointer)
 #define is_Primitive_type(primitive)      _is_primitive_type(primitive)
 #define is_atomic_type(tp)                _is_atomic_type(tp)
+#define get_method_n_params(method)       _get_method_n_params(method)
+#define get_method_n_ress(method)         _get_method_n_ress(method)
 
 # endif /* _TYPE_T_H_ */
