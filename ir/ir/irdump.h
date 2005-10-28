@@ -37,6 +37,77 @@
 # include "irgraph.h"
 # include "irloop.h"
 
+/**
+ * Names of the 32 supported colors
+ */
+typedef enum {
+  ird_color_default      = -1,
+  ird_color_white        = 0,
+  ird_color_blue         = 1,
+  ird_color_red          = 2,
+  ird_color_green        = 3,
+  ird_color_yellow       = 4,
+  ird_color_magenta      = 5,
+  ird_color_cyan         = 6,
+  ird_color_darkgray     = 7,
+  ird_color_darkblue     = 8,
+  ird_color_darkred      = 9,
+  ird_color_darkgreen    = 10,
+  ird_color_darkyellow   = 11,
+  ird_color_darkmagenta  = 12,
+  ird_color_darkcyan     = 13,
+  ird_color_gold         = 14,
+  ird_color_lightgray    = 15,
+  ird_color_lightblue    = 16,
+  ird_color_lightred     = 17,
+  ird_color_lightgreen   = 18,
+  ird_color_lightyellow  = 19,
+  ird_color_lightmagenta = 20,
+  ird_color_lightcyan    = 21,
+  ird_color_lilac        = 22,
+  ird_color_turquoise    = 23,
+  ird_color_aquamarine   = 24,
+  ird_color_khaki        = 25,
+  ird_color_purple       = 26,
+  ird_color_yellowgreen  = 27,
+  ird_color_pink         = 28,
+  ird_color_orange       = 29,
+  ird_color_orchid       = 30,
+  ird_color_black        = 31
+} dumper_colors;
+
+/**
+ * Edge kinds
+ */
+typedef enum {
+  data_edge           = 0x01,   /**< a data edge between two basic blocks */
+  block_edge          = 0x02,   /**< an edge from a node to its basic block */
+  cf_edge             = 0x03,   /**< regularly control flow edge */
+  exc_cf_edge         = 0x04,   /**< exceptional control flow edge */
+  mem_edge            = 0x05,   /**< memory edge */
+  dominator_edge      = 0x06,   /**< dominator edge */
+  node2type_edge      = 0x07,   /**< an edge from an IR node to a type */
+
+  ent_type_edge       = 0x11,   /**< an edge from an entity to its type */
+  ent_own_edge        = 0x12,   /**< an edge from an entity to its owner type */
+  ent_overwrites_edge = 0x13,   /**< an edge from an entity to the entity it overwrites */
+  ent_value_edge      = 0x14,   /**< an edge from an entity to its value entity */
+  ent_corr_edge       = 0x15,   /**< an edge from an entity to the member entity its initializes */
+
+  meth_par_edge       = 0x21,   /**< an edge from a method type to one of its parameter types */
+  meth_res_edge       = 0x22,   /**< an edge from a method type to one of its result types */
+  type_super_edge     = 0x23,   /**< an edge from a class type to its super/basis type */
+  union_edge          = 0x24,   /**< an edge from a union type to its member types */
+  ptr_pts_to_edge     = 0x25,   /**< an edge from a pointer type to its points-to type */
+  arr_elt_type_edge   = 0x26,   /**< an edge from an array type to its element type */
+  arr_ent_edge        = 0x27,   /**< an edge from a array type to its element entity */
+  type_member_edge    = 0x28,   /**< an edge from a compound type to its member entities */
+
+  /* additional flags */
+  intra_edge          = 0,      /**< intra edge flag: edge do not cross basic block boundaries */
+  inter_edge          = 0x40,   /**< inter edge flag: edge cross basic block boundaries */
+  back_edge           = 0x80    /**< backwards edge flag */
+} edge_kind;
 
 /* **************************************************************************** */
 /*                                 GRAPH DUMPERS                                */

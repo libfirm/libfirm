@@ -89,7 +89,7 @@ int dump_const_local = 0;
 bool opt_dump_analysed_type_info = 1;
 bool opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
 
-static const char *overrule_nodecolor = NULL;
+static dumper_colors overrule_nodecolor = ird_color_default;
 
 /** An additional edge hook. */
 static DUMP_NODE_EDGE_FUNC dump_node_edge_hook = NULL;
@@ -225,6 +225,25 @@ const char *get_type_name_ex(type *tp, int *bad)
     return get_type_name(tp);
   *bad |= 1;
   return ERROR_TXT;
+}
+
+/**
+ * printf the VCG color
+ */
+static void print_vcg_color(FILE *F, dumper_colors color) {
+  static const char *color_names[32] = {
+    "white",        "blue",      "red",        "green",
+    "yellow",       "magenta",   "cyan",       "darkgray",
+    "darkblue",     "darkred",   "darkgreen",  "darkyellow",
+    "darkmagenta",  "darkcyan",  "gold",       "lightgray",
+    "lightblue",    "lightred",  "lightgreen", "lightyellow",
+    "lightmagenta", "lightcyan", "lilac",      "turquoise",
+    "aquamarine",   "khaki",     "purple",     "yellowgreen",
+    "pink",         "orange",    "orchid",     "black"
+  };
+
+  if (color != ird_color_default)
+    fprintf(F, "color: %s", color_names[color]);
 }
 
 /**
@@ -983,7 +1002,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
   ir_node *n;
 
   if (bad) {
-    fprintf(F, "color: red");
+    print_vcg_color(F, ird_color_red);
     return;
   }
 
@@ -993,6 +1012,11 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 
   n = local ? local : node;
 
+  if (overrule_nodecolor != ird_color_default) {
+    print_vcg_color(F, overrule_nodecolor);
+    return;
+  }
+
   switch (get_irn_opcode(n)) {
   case iro_Start:
   case iro_EndReg:
@@ -1000,28 +1024,26 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
   case iro_EndExcept:
     /* fall through */
   case iro_End:
-    fprintf (F, "color: blue");
+    print_vcg_color(F, ird_color_blue);
     break;
   case iro_Block:
     if (is_Block_dead(n))
-      fprintf (F, "color: lightred");
+      print_vcg_color(F, ird_color_lightred);
     else
-      fprintf (F, "color: lightyellow");
+      print_vcg_color(F, ird_color_lightyellow);
     break;
   case iro_Phi:
-    fprintf (F, "color: green");
+    print_vcg_color(F, ird_color_green);
     break;
   case iro_Const:
   case iro_Proj:
   case iro_Filter:
   case iro_Tuple:
-    fprintf (F, "color: yellow");
+    print_vcg_color(F, ird_color_yellow);
     break;
   default:
     PRINT_DEFAULT_NODE_ATTR;
   }
-
-  if (overrule_nodecolor) fprintf(F, " color: %s", overrule_nodecolor);
 }
 
 
@@ -1450,7 +1472,7 @@ static void dump_const_expression(FILE *F, ir_node *value) {
 static void
 dump_whole_block(FILE *F, ir_node *block) {
   ir_node *node;
-  const char *color = "yellow";
+  dumper_colors color = ird_color_yellow;
 
   assert(is_Block(block));
 
@@ -1465,11 +1487,13 @@ dump_whole_block(FILE *F, ir_node *block) {
 
   /* colorize blocks */
   if (! get_Block_matured(block))
-    color = "red";
+    color = ird_color_red;
   if (is_Block_dead(block))
-    color = "orange";
+    color = ird_color_orange;
 
-  fprintf(F, "\" status:clustered color:%s \n", color);
+  fprintf(F, "\" status:clustered ");
+  print_vcg_color(F, color);
+  fprintf(F, "\n");
 
   /* yComp can show attributes for blocks, XVCG parses but ignores them */
   dump_node_info(F, block);
@@ -2349,7 +2373,7 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
 
   fprintf(F, "graph: { title: \"");
   PRINT_IRGID(irg);
-  fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
+  fprintf(F, "\" label: \"%s\" status:clustered color: white \n",
     get_ent_dump_name(ent));
 
   dump_graph_info(F, irg);
@@ -2793,8 +2817,8 @@ dump_class_hierarchy (bool entities, const char *suffix)
 /*---------------------------------------------------------------------*/
 
 void dump_all_ir_graphs(dump_graph_func *dmp_grph, const char *suffix) {
-  int i, n_irgs = get_irp_n_irgs();
-  for (i = 0; i < n_irgs; ++i) {
+  int i;
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     dmp_grph(get_irp_irg(i), suffix);
   }
 }
@@ -3010,9 +3034,10 @@ void dump_loop(ir_loop *l, const char *suffix) {
 
       /* dump the nodes that go into the block */
       for (n = get_irn_link(b); n; n = get_irn_link(n)) {
-        if (eset_contains(extnodes, n)) overrule_nodecolor = "lightblue";
+        if (eset_contains(extnodes, n))
+          overrule_nodecolor = ird_color_lightblue;
         dump_node(F, n);
-        overrule_nodecolor = NULL;
+        overrule_nodecolor = ird_color_default;
         if (!eset_contains(extnodes, n)) dump_ir_data_edges(F, n);
       }
 
@@ -3032,9 +3057,10 @@ void dump_loop(ir_loop *l, const char *suffix) {
 
       /* dump the nodes that go into the block */
       for (n = get_irn_link(b); n; n = get_irn_link(n)) {
-        if (!eset_contains(loopnodes, n)) overrule_nodecolor = "lightblue";
+        if (!eset_contains(loopnodes, n))
+          overrule_nodecolor = ird_color_lightblue;
         dump_node(F, n);
-        overrule_nodecolor = NULL;
+        overrule_nodecolor = ird_color_default;
         if (eset_contains(loopnodes, n)) dump_ir_data_edges(F, n);
       }
 

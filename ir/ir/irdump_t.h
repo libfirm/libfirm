@@ -45,7 +45,7 @@
 #define ENT_CORR_EDGE_ATTR       "label: \"value %d corresponds to \" "
 #define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
 #define ENUM_ITEM_NODE_ATTR      "color: green"
-#define CALLGRAPH_EDGE_ATTR      "calls"
+/* #define CALLGRAPH_EDGE_ATTR      "calls" */
 
 #define PRINT_NODEID(X)       fprintf(F, "n%ld", get_irn_node_nr(X))
 #define PRINT_TYPEID(X)       fprintf(F, "\"t%ld\"", get_type_nr(X))
