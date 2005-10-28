@@ -26,19 +26,22 @@
 #endif
 
 #ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
+# include <inttypes.h>
 #endif
-
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 #ifdef HAVE_ALLOCA_H
 # include <alloca.h>
 #endif
 #ifdef HAVE_MALLOC_H
 # include <malloc.h>
 #endif
+#include <stdio.h>
+#include <assert.h>
 
 #include "xmalloc.h"
 
