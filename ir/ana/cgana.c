@@ -470,6 +470,54 @@ static void free_ana_walker(ir_node *node, void *env) {
 }
 
 /**
+ * Add all method addresses in global initializers to the set.
+ */
+static void add_method_address(entity *ent, eset *set)
+{
+  ir_node *n;
+  type *tp;
+  int i;
+
+  /* do not check uninitialized values */
+  if (get_entity_variability(ent) == variability_uninitialized)
+    return;
+
+  if (is_atomic_entity(ent)) {
+    tp = get_entity_type(ent);
+
+    /* only function pointers are interesting */
+    if (! is_Pointer_type(tp))
+      return;
+    if (! is_Method_type(get_pointer_points_to_type(tp)))
+      return;
+
+    /* let's check if it's the address of a function */
+    n = get_atomic_ent_value(ent);
+    if (get_irn_op(n) == op_SymConst) {
+      if (get_SymConst_kind(n) == symconst_addr_ent) {
+        ent = get_SymConst_entity(n);
+
+        eset_insert(set, ent);
+      }
+    }
+  }
+  else {
+    for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
+      n = get_compound_ent_value(ent, i);
+
+      /* let's check if it's the address of a function */
+      if (get_irn_op(n) == op_SymConst) {
+        if (get_SymConst_kind(n) == symconst_addr_ent) {
+          entity *ent = get_SymConst_entity(n);
+
+          eset_insert(set, ent);
+        }
+      }
+    }
+  }
+}
+
+/**
  * returns a list of 'free' methods, i.e., the methods that can be called
  * from external or via function pointers.
  *
@@ -481,43 +529,52 @@ static void free_ana_walker(ir_node *node, void *env) {
  */
 static entity ** get_free_methods(void)
 {
-  eset * set = eset_create();
+  eset *free_set = eset_create();
   int i;
-  entity ** arr = NEW_ARR_F(entity *, 0);
-  entity * ent;
+  entity **arr = NEW_ARR_F(entity *, 0);
+  entity *ent;
+  ir_graph *irg;
+  type *glob;
 
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph * irg = get_irp_irg(i);
-    entity * ent = get_irg_entity(irg);
+    irg = get_irp_irg(i);
+    ent = get_irg_entity(irg);
     /* insert "external visible" methods. */
     if (get_entity_visibility(ent) != visibility_local) {
-      eset_insert(set, ent);
+      eset_insert(free_set, ent);
     }
     /* Finde alle Methoden die in dieser Methode extern sichtbar werden,
        z.B. da die Adresse einer Methode abgespeichert wird. */
-    irg_walk_graph(irg, NULL, free_ana_walker, set);
+    irg_walk_graph(irg, NULL, free_ana_walker, free_set);
   }
 
   /* insert sticky methods, too */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    entity * ent = get_irg_entity(get_irp_irg(i));
+    ent = get_irg_entity(get_irp_irg(i));
     /* insert "sticky" methods. */
     if (get_entity_stickyness (ent) == stickyness_sticky) {
-      eset_insert(set, ent);
+      eset_insert(free_set, ent);
     }
   }
 
   /* insert all methods the initializes global variables */
+  glob = get_glob_type();
+  for (i = get_class_n_members(glob) - 1; i >= 0; --i) {
+    ent = get_class_member(glob, i);
+
+    add_method_address(ent, free_set);
+  }
 
   /* the main program is even then "free", if it's not external visible. */
-  if (get_irp_main_irg())
-    eset_insert(set, get_irg_entity(get_irp_main_irg()));
+  irg = get_irp_main_irg();
+  if (irg)
+    eset_insert(free_set, get_irg_entity(irg));
 
   /* Finally, transform the set into an array. */
-  for (ent = eset_first(set); ent; ent = eset_next(set)) {
+  for (ent = eset_first(free_set); ent; ent = eset_next(free_set)) {
     ARR_APP1(entity *, arr, ent);
   }
-  eset_destroy(set);
+  eset_destroy(free_set);
 
   return arr;
 }
