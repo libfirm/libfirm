@@ -336,7 +336,7 @@ int      is_irn_const_expression(ir_node *n);
  * Copies a firm subgraph that complies to the restrictions for
  * constant expressions to current_block in current_ir_graph.
  */
-ir_node *copy_const_value(ir_node *n);
+ir_node *copy_const_value(dbg_info *dbg, ir_node *n);
 
 /* Set has no effect for existent entities of type method. */
 ir_node *get_atomic_ent_value(entity *ent);
