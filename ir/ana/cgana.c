@@ -180,7 +180,8 @@ static void sel_methods_walker(ir_node * node, void *env) {
   /* Call standard optimizations */
   if (get_irn_op(node) == op_Sel) {
     ir_node *new_node = optimize_in_place(node);
-    if (node != new_node) exchange(node, new_node);
+    if (node != new_node)
+      exchange(node, new_node);
   }
 
   /* replace SymConst(name)-operations by SymConst(ent) */
@@ -229,7 +230,7 @@ static void sel_methods_walker(ir_node * node, void *env) {
       set_irg_current_block(current_ir_graph, get_nodes_block(node));
       assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
              peculiarity_existent);
-      new_node = copy_const_value(get_atomic_ent_value(arr[0]));
+      new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(arr[0]));
       DBG_OPT_POLY(node, new_node);
       exchange(node, new_node);
     }

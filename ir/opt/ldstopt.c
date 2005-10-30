@@ -514,7 +514,7 @@ static unsigned optimize_load(ir_node *load)
         /* no result :-) */
         if (info->projs[pn_Load_res]) {
           if (is_atomic_entity(ent)) {
-            ir_node *c = copy_const_value(get_atomic_ent_value(ent));
+            ir_node *c = copy_const_value(get_irn_dbg_info(load), get_atomic_ent_value(ent));
 
             DBG_OPT_RC(load, c);
             exchange(info->projs[pn_Load_res], c);
@@ -552,7 +552,7 @@ static unsigned optimize_load(ir_node *load)
             res |= DF_CHANGED;
           }
           if (info->projs[pn_Load_res]) {
-            exchange(info->projs[pn_Load_res], copy_const_value(c));
+            exchange(info->projs[pn_Load_res], copy_const_value(get_irn_dbg_info(load), c));
             return res | DF_CHANGED;
           }
         }

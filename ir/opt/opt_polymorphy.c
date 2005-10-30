@@ -63,7 +63,7 @@ ir_node *transform_node_Sel(ir_node *node)
     } else {
       ir_node *rem_block = get_cur_block();
       set_cur_block(get_nodes_block(node));
-      new_node = copy_const_value(get_atomic_ent_value(ent));
+      new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(ent));
       set_cur_block(rem_block);
       DBG_OPT_POLY(node, new_node);
     }
@@ -86,7 +86,7 @@ ir_node *transform_node_Sel(ir_node *node)
 
     rem_block = get_cur_block();
     set_cur_block(get_nodes_block(node));
-    new_node = copy_const_value(get_atomic_ent_value(called_ent));
+    new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(called_ent));
     set_cur_block(rem_block);
     DBG_OPT_POLY(node, new_node);
 
@@ -125,7 +125,7 @@ ir_node *transform_node_Load(ir_node *n)
   /* If the entity is a leave in the inheritance tree,
      we can replace the Sel by a constant. */
   if ((get_irp_phase_state() != phase_building) && (get_entity_n_overwrittenby(ent) == 0)) {
-    new_node = copy_const_value(get_atomic_ent_value(ent));
+    new_node = copy_const_value(get_irn_dbg_info(n), get_atomic_ent_value(ent));
     DBG_OPT_POLY(field_ptr, new_node);
 
     return new_node;
@@ -143,7 +143,7 @@ ir_node *transform_node_Load(ir_node *n)
     /* called_ent may not be description: has no Address/Const to Call! */
     assert(get_entity_peculiarity(loaded_ent) != peculiarity_description);
 
-    new_node = copy_const_value(get_atomic_ent_value(loaded_ent));
+    new_node = copy_const_value(get_irn_dbg_info(n), get_atomic_ent_value(loaded_ent));
     DBG_OPT_POLY(field_ptr, new_node);
 
     return new_node;
