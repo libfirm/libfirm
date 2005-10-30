@@ -541,6 +541,14 @@ void    set_class_supertype   (type *clss, type *supertype, int pos);
 void    remove_class_supertype(type *clss, type *supertype);
 
 /** Convenience macro */
+#define add_class_base_type(clss, basetype)  add_class_supertype(clss, basetype)
+#define get_class_n_base_types(clss)  get_class_n_supertypes(clss)
+#define get_class_base_type_index(clss, base_clss) get_class_supertype_index(clss, base_clss)
+#define get_class_base_type(clss, pos)  get_class_supertype(clss, pos)
+#define set_class_base_type(clss, basetype, pos) set_class_supertype(clss, basetype, pos)
+#define remove_class_base_type(clss, basetype)  remove_class_supertype(clss, basetype)
+
+/** Convenience macro */
 #define add_class_base_type(clss, basetype)        add_class_supertype(clss, basetype)
 #define get_class_n_base_types(clss)               get_class_n_supertypes(clss)
 #define get_class_base_type_index(clss, base_clss) get_class_supertype_index(clss, base_clss)
