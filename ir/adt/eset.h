@@ -30,6 +30,9 @@ eset *eset_copy(eset *source);
 /** Deletes a set. */
 void eset_destroy(eset *s);
 
+/** Returns the number of elements in the set. */
+int eset_count(eset *s);
+
 /** Inserts an address into the set. */
 void eset_insert(eset *s, void *p);
 

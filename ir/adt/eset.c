@@ -49,6 +49,10 @@ void eset_destroy(eset *s) {
   del_set((set *)s);
 }
 
+/* Returns the number of elements in the set. */
+int eset_count(eset *s) {
+  return set_count((set *)s);
+}
 
 void eset_insert(eset *s, void *p) {
   if (!eset_contains(s, p)) {
