@@ -35,4 +35,20 @@ ptr_access_kind get_method_param_access(entity *ent, int pos);
  */
 void analyze_irg_args(ir_graph *irg);
 
+/**
+ * Returns for a method the 'weight' that every parameter
+ * has on optimization possibility. Higher values allows
+ * higher optimization with procedure cloning.
+ *
+ * The values are calculation on demand only.
+ */
+float get_method_param_weight(entity *ent, int pos);
+
+/**
+ * Analyze the parameters of a given ir graph.
+ *
+ * @param irg The ir graph to analyze.
+ */
+void analyze_irg_args_weight(ir_graph *irg);
+
 #endif /*_ANALYZE_IRG_ARGS_H_ */

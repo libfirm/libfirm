@@ -41,7 +41,7 @@ static void *VISITED = &v;
 
 /**
  * Walk recursive the successors of a graph argument
- * with mode reference and mark in the "irg_args" if it will be read,
+ * with mode reference and mark if it will be read,
  * written or stored.
  *
  * @param arg   The graph argument with mode reference,
@@ -118,13 +118,16 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
     }
     else if (get_irn_op(succ) == op_Conv) {
       /* our address is casted into something unknown. Break our search. */
-      return ptr_access_all;
+      bits = ptr_access_all;
+      break;
     }
 
     /* If we know that, the argument will be read, write and stored, we
        can break the recursion.*/
-    if (bits == ptr_access_all)
-      return ptr_access_all;
+    if (bits == ptr_access_all) {
+      bits = ptr_access_all;
+      break;
+    }
 
     /*
      * A calculation that do not lead to a reference mode ends our search.
@@ -140,7 +143,6 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
   set_irn_link(arg, NULL);
   return bits;
 }
-
 
 /**
  * Check if a argument of the ir graph with mode
@@ -171,7 +173,7 @@ static void analyze_ent_args(entity *ent)
 
   irg = get_entity_irg(ent);
 
-  /* we have not yet analysed the graph, set ALL access for pointer args */
+  /* we have not yet analyzed the graph, set ALL access for pointer args */
   for (i = nparams - 1; i >= 0; --i)
     ent->param_access[i] =
       is_Pointer_type(get_method_param_type(mtp, i)) ? ptr_access_all : ptr_access_none;
@@ -225,6 +227,27 @@ static void analyze_ent_args(entity *ent)
   }
 }
 
+/**
+ * Analyze how pointer arguments of a given
+ * ir graph are accessed.
+ *
+ * @param irg   The ir graph to analyze.
+ */
+void analyze_irg_args(ir_graph *irg)
+{
+  entity *ent;
+
+  if (irg == get_const_code_irg())
+    return;
+
+  ent = get_irg_entity(irg);
+  if (! ent)
+    return;
+
+  if (! ent->param_access)
+    analyze_ent_args(ent);
+}
+
 /*
  * Compute for a method with pointer parameter(s)
  * if they will be read or written.
@@ -251,23 +274,174 @@ ptr_access_kind get_method_param_access(entity *ent, int pos)
     return ptr_access_all;
 }
 
+enum args_weight {
+  null_weight        = 0,  /* If can't be anything optimized. */
+  binop_weight       = 1,  /* If the argument have mode_weight and take part in binop. */
+  const_binop_weight = 1,  /* If the argument have mode_weight and take part in binop with a constant.*/
+  cmp_weight         = 4,  /* If the argument take part in cmp. */
+  const_cmp_weight   = 10  /* If the argument take part in cmp with a constant. */
+};
+
 /**
- * Analyze how pointer arguments of a given
- * ir graph are accessed.
+ * Compute the weight of a method parameter
  *
- * @param irg   The ir graph to analyze.
+ * @param arg  The parameter them weight muss be computed.
  */
-void analyze_irg_args(ir_graph *irg)
+static float calc_method_param_weight(ir_node *arg)
+{
+  int i;
+  ir_node *succ, *op;
+  float weight = null_weight;
+
+  /* We mark the nodes to avoid endless recursion */
+  set_irn_link(arg, VISITED);
+
+  for (i = get_irn_n_outs(arg) - 1; i >= 0; i--) {
+    succ = get_irn_out(arg, i);
+
+    /* We was here.*/
+    if (get_irn_link(succ) == VISITED)
+      continue;
+
+    /* We should not walk over the memory edge.*/
+    if (get_irn_mode(succ) == mode_M)
+      continue;
+
+    /* We have reached a cmp and we must increase the
+       weight with the cmp_weight.*/
+    if (get_irn_op(succ) == op_Cmp) {
+
+      if (get_Cmp_left(succ) == arg)
+        op = get_Cmp_right(succ);
+      else
+        op = get_Cmp_left(succ);
+
+      if (is_irn_constlike(op)) {
+        weight += const_cmp_weight;
+      }
+      else
+        weight += cmp_weight;
+    }
+    else if (is_binop(succ)) {
+      /* We have reached a binop and we must increase the
+	       weight with the binop_weight. If the other operand of the
+	       binop is a constant we increase the weight with const_binop_weight
+	       and call the function recursive.
+      */
+      if (get_binop_left(succ) == arg)
+	      op = get_binop_right(succ);
+      else
+	      op = get_binop_left(succ);
+
+      if (is_irn_constlike(op)) {
+	      weight += const_binop_weight;
+	      weight += calc_method_param_weight(succ);
+      }
+      else
+      	weight += binop_weight;
+    } else if (is_unop(succ)) {
+      /* We have reached a binop and we must increase the
+	       weight with the const_binop_weight and call the function recursive.*/
+      weight += const_binop_weight;
+      weight += calc_method_param_weight(succ);
+    }
+  }
+  set_irn_link(arg, NULL);
+  return weight;
+}
+
+/**
+ * Set a weight for each argument of a ir_graph.
+ * The args with a greater weight are good for optimize.
+ *
+ * @param ent  The entity of the ir_graph.
+ */
+static void analyze_method_params_weight(entity *ent)
+{
+  type *mtp;
+  ir_graph *irg;
+  int nparams, i, proj_nr;
+  ir_node *irg_args, *arg;
+
+  mtp      = get_entity_type(ent);
+  nparams  = get_method_n_params(mtp);
+
+  /* If the method haven't parameters we have
+   * nothing to do.
+   */
+  if (nparams <= 0)
+    return;
+
+  ent->param_weight = malloc(sizeof(float) * nparams);
+  irg               = get_entity_irg(ent);
+
+  /* First we initialize the parameter weight with 0. */
+  for (i = nparams - 1; i >= 0; i--)
+    ent->param_weight[i] = null_weight;
+
+  if (! irg) {
+    /* no graph, no better info */
+    return;
+  }
+
+  /* Call algorithm that computes the out edges */
+  if (get_irg_outs_state(irg) != outs_consistent)
+    compute_outs(irg);
+
+  irg_args = get_irg_args(irg);
+
+  for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
+    arg                          = get_irn_out(irg_args, i);
+    proj_nr                      = get_Proj_proj(arg);
+    ent->param_weight[proj_nr]  += calc_method_param_weight(arg);
+  }
+
+  printf("\n%s:\n", get_entity_name(ent));
+  for (i = nparams - 1; i >= 0; --i)
+    printf("The weight of argument %i is %f \n", i, ent->param_weight[i]);
+}
+
+/*
+ * Compute for a method with pointer parameter(s)
+ * if they will be read or written.
+ */
+float get_method_param_weight(entity *ent, int pos)
+{
+  type *mtp = get_entity_type(ent);
+  int  is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
+
+  assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
+
+  if (ent->param_weight) {
+    if (pos < ARR_LEN(ent->param_weight))
+      return ent->param_weight[pos];
+    else
+      return 0.0f;
+  }
+
+  analyze_method_params_weight(ent);
+
+  if (pos < ARR_LEN(ent->param_weight))
+    return ent->param_weight[pos];
+  else
+    return 0.0f;
+}
+
+
+/**
+ * Analyze argument's weight of a given
+ * ir graph.
+ *
+ * @param irg The ir graph to analyze.
+ */
+void analyze_irg_args_weight(ir_graph *irg)
 {
   entity *ent;
 
-  if (irg == get_const_code_irg())
-    return;
-
   ent = get_irg_entity(irg);
-  if (! ent)
+  if(! ent)
     return;
 
-  if (! ent->param_access)
-    analyze_ent_args(ent);
+  if(! ent->param_weight)
+    analyze_method_params_weight(ent);
 }
