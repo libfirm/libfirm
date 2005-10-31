@@ -566,7 +566,7 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
   case iro_Conv:
     nn = new_d_Conv(dbg, copy_const_value(dbg, get_Conv_op(n)), m); break;
   case iro_Unknown:
-    nn = new_d_Unknown(dbg, m); break;
+    nn = new_d_Unknown(m); break;
   default:
     DDMN(n);
     assert(0 && "opcode invalid or not implemented");
