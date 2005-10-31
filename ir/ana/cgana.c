@@ -472,6 +472,14 @@ static void free_ana_walker(ir_node *node, void *env) {
 
 /**
  * Add all method addresses in global initializers to the set.
+ *
+ * @note
+ * We do NOT check the type here, just it it's an entity address.
+ * The reason for this is code like:
+ *
+ * void *p = function;
+ *
+ * which is sometimes used to anchor functions.
  */
 static void add_method_address(entity *ent, eset *set)
 {
@@ -486,11 +494,8 @@ static void add_method_address(entity *ent, eset *set)
   if (is_atomic_entity(ent)) {
     tp = get_entity_type(ent);
 
-    /* only function pointers are interesting */
-    if (! is_Pointer_type(tp))
-      return;
-    if (! is_Method_type(get_pointer_points_to_type(tp)))
-      return;
+    /* ignore methods: these of course reference it's address */
+    if (is_Method_type(tp))
 
     /* let's check if it's the address of a function */
     n = get_atomic_ent_value(ent);
@@ -498,7 +503,8 @@ static void add_method_address(entity *ent, eset *set)
       if (get_SymConst_kind(n) == symconst_addr_ent) {
         ent = get_SymConst_entity(n);
 
-        eset_insert(set, ent);
+        if (is_Method_type(get_entity_type(ent)))
+          eset_insert(set, ent);
       }
     }
   }
@@ -511,7 +517,8 @@ static void add_method_address(entity *ent, eset *set)
         if (get_SymConst_kind(n) == symconst_addr_ent) {
           entity *ent = get_SymConst_entity(n);
 
-          eset_insert(set, ent);
+          if (is_Method_type(get_entity_type(ent)))
+            eset_insert(set, ent);
         }
       }
     }
