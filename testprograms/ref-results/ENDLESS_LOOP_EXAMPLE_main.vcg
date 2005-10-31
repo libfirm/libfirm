@@ -99,7 +99,7 @@ node: {title: "n66" label: "PhiM 66"  info1: "Phi 66
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n66" targetname: "n29" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n66" targetname: "n55" label: "1" class:17 priority:10 color:blue}
 node: {title: "n55" label: "ProjM M 55"  info1: "Proj 55
@@ -113,7 +113,7 @@ node: {title: "n55" label: "ProjM M 55"  info1: "Proj 55
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n55" targetname: "n53" label: "0" class:17 priority:10 color:blue}
 node: {title: "n53" label: "Store 53"  info1: "Store 53
   mode:    T
@@ -162,7 +162,7 @@ node: {title: "n62" label: "PhiIs 62"  info1: "Phi 62
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n62" targetname: "n33" label: "0" class:16 priority:10}
 edge: {sourcename: "n62" targetname: "n63" label: "1" class:1  priority:50}
 node: {title: "n63" label: "PhiIs 63"  info1: "Phi 63
@@ -177,7 +177,7 @@ node: {title: "n63" label: "PhiIs 63"  info1: "Phi 63
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n63" targetname: "n34" label: "0" class:16 priority:10}
 edge: {sourcename: "n63" targetname: "n62" label: "1" class:1  priority:50}
 node: {title: "n47" label: "Jmp 47"  info1: "Jmp 47
@@ -217,7 +217,7 @@ node: {title: "n33" label: "ProjIs Arg 0 33"  info1: "Proj 33
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n33" targetname: "n30" label: "0" class:16 priority:10}
 node: {title: "n35" label: "Jmp 35"  info1: "Jmp 35
   mode:    X
@@ -256,7 +256,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
 node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   mode:    P
@@ -269,7 +269,7 @@ node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   Private Attributes:
   proj nr: 3
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
 node: {title: "n30" label: "ProjT T_args 30"  info1: "Proj 30
   mode:    T
@@ -282,7 +282,7 @@ node: {title: "n30" label: "ProjT T_args 30"  info1: "Proj 30
   Private Attributes:
   proj nr: 4
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n30" targetname: "n23" label: "0" class:1  priority:50}
 node: {title: "n34" label: "0x1Is 34"  info1: "0x1 34
   mode:    Is
@@ -294,7 +294,7 @@ node: {title: "n34" label: "0x1Is 34"  info1: "0x1 34
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
   visited: 22
@@ -306,7 +306,7 @@ node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
 node: {title: "n23" label: "Start 23"  info1: "Start 23
   mode:    T
@@ -319,7 +319,7 @@ node: {title: "n23" label: "Start 23"  info1: "Start 23
   start of method of type main_tp
     param 0 type: int
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n20"  label: "Block 20" status:clustered color:yellow
@@ -345,7 +345,7 @@ node: {title: "n76" label: "End 76"  info1: "End 76
      1:    Phi 66
   Private Attributes:
 "
-color: blue}
+color:blue}
 edge: {sourcename: "n76" targetname: "n36" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n76" targetname: "n66" label: "1" }
 }

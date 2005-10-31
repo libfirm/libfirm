@@ -99,7 +99,7 @@ node: {title: "n180" label: "PhiM 180"  info1: "Phi 180
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n180" targetname: "n152" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n180" targetname: "n186" label: "1" class:17 priority:10 color:blue}
 node: {title: "n186" label: "ProjM M 186"  info1: "Proj 186
@@ -113,7 +113,7 @@ node: {title: "n186" label: "ProjM M 186"  info1: "Proj 186
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n186" targetname: "n187" label: "0" class:17 priority:10 color:blue}
 node: {title: "n187" label: "Store 187"  info1: "Store 187
   mode:    T
@@ -162,7 +162,7 @@ node: {title: "n188" label: "PhiIs 188"  info1: "Phi 188
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n188" targetname: "n42" label: "0" class:16 priority:10}
 edge: {sourcename: "n188" targetname: "n189" label: "1" class:1  priority:50}
 node: {title: "n189" label: "PhiIs 189"  info1: "Phi 189
@@ -177,7 +177,7 @@ node: {title: "n189" label: "PhiIs 189"  info1: "Phi 189
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n189" targetname: "n190" label: "0" class:16 priority:10}
 edge: {sourcename: "n189" targetname: "n188" label: "1" class:1  priority:50}
 node: {title: "n182" label: "Jmp 182"  info1: "Jmp 182
@@ -217,7 +217,7 @@ node: {title: "n152" label: "ProjM M 152"  info1: "Proj 152
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n152" targetname: "n153" label: "0" class:17 priority:10 color:blue}
 node: {title: "n153" label: "Store 153"  info1: "Store 153
   mode:    T
@@ -265,7 +265,7 @@ node: {title: "n47" label: "ProjM M 47"  info1: "Proj 47
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n47" targetname: "n45" label: "0" class:17 priority:10 color:blue}
 node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   mode:    P
@@ -278,7 +278,7 @@ node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
 node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   mode:    T
@@ -307,7 +307,7 @@ node: {title: "n190" label: "0x0Is 190"  info1: "0x0 190
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n142" label: "Jmp 142"  info1: "Jmp 142
   mode:    X
   visited: 25
@@ -344,7 +344,7 @@ node: {title: "n41" label: "0x2Is 41"  info1: "0x2 41
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
   mode:    M
   visited: 25
@@ -356,7 +356,7 @@ node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
 node: {title: "n43" label: "SymC PRIMA_INLINE size 43"  info1: "SymC PRIMA_INLINE size 43
   mode:    Iu
@@ -381,7 +381,7 @@ node: {title: "n42" label: "0x5Is 42"  info1: "0x5 42
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n34" label: "ProjX X_initial_exec 34"  info1: "Proj 34
   mode:    X
   visited: 25
@@ -393,7 +393,7 @@ node: {title: "n34" label: "ProjX X_initial_exec 34"  info1: "Proj 34
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
 node: {title: "n31" label: "Start 31"  info1: "Start 31
   mode:    T
@@ -405,7 +405,7 @@ node: {title: "n31" label: "Start 31"  info1: "Start 31
   Private Attributes:
   start of method of type OO_INLINE_EXAMPLE_main
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n28"  label: "Block 28" status:clustered color:yellow
@@ -431,7 +431,7 @@ node: {title: "n197" label: "End 197"  info1: "End 197
      1:    Phi 180
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 }

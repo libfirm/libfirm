@@ -94,7 +94,7 @@ node: {title: "n59" label: "End 59"  info1: "End 59
     -1:    Block 38
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n50"  label: "Block 50" status:clustered color:yellow
@@ -135,7 +135,7 @@ node: {title: "n56" label: "ProjM M_regular 56"  info1: "Proj 56
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}
 node: {title: "n54" label: "Call 54"  info1: "Call 54
   mode:    T
@@ -183,7 +183,7 @@ node: {title: "n47" label: "ProjM 1 47"  info1: "Proj 47
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n47" targetname: "n41" label: "0" class:17 priority:10 color:blue}
 node: {title: "n52" label: "SymC f 52"  info1: "SymC f 52
   mode:    P
@@ -223,7 +223,7 @@ node: {title: "n44" label: "ProjX X_initial_exec 44"  info1: "Proj 44
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n44" targetname: "n41" label: "0" class:13 priority:60 color:red}
 node: {title: "n41" label: "Start 41"  info1: "Start 41
   mode:    T
@@ -235,7 +235,7 @@ node: {title: "n41" label: "Start 41"  info1: "Start 41
   Private Attributes:
   start of method of type CALL_STR_EXAMPLE_main
 "
-color: blue}
+color:blue}
 }
 
 }

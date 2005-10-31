@@ -94,7 +94,7 @@ node: {title: "n109" label: "End 109"  info1: "End 109
     -1:    Block 28
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
@@ -138,7 +138,7 @@ node: {title: "n56" label: "ProjM M_regular 56"  info1: "Proj 56
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n56" targetname: "n54" label: "0" class:17 priority:10 color:blue}
 node: {title: "n58" label: "ProjIs 0 58"  info1: "Proj 58
   mode:    Is
@@ -151,7 +151,7 @@ node: {title: "n58" label: "ProjIs 0 58"  info1: "Proj 58
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n58" targetname: "n57" label: "0" class:1  priority:50}
 node: {title: "n57" label: "ProjT T_result 57"  info1: "Proj 57
   mode:    T
@@ -164,7 +164,7 @@ node: {title: "n57" label: "ProjT T_result 57"  info1: "Proj 57
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n57" targetname: "n54" label: "0" class:1  priority:50}
 node: {title: "n54" label: "Call 54"  info1: "Call 54
   mode:    T
@@ -195,7 +195,7 @@ node: {title: "n54n42" label: "0x5Is 42"  info1: "0x5 42
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n54" targetname: "n52" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n54" targetname: "n53" label: "1" class:1  priority:50}
 edge: {sourcename: "n54" targetname: "n48" label: "2" class:1  priority:50}
@@ -228,7 +228,7 @@ node: {title: "n52" label: "ProjM M_regular 52"  info1: "Proj 52
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n52" targetname: "n50" label: "0" class:17 priority:10 color:blue}
 node: {title: "n50" label: "Call 50"  info1: "Call 50
   mode:    T
@@ -258,7 +258,7 @@ node: {title: "n50n41" label: "0x2Is 41"  info1: "0x2 41
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n50" targetname: "n47" label: "0" class:14 priority:50 color:blue}
 edge: {sourcename: "n50" targetname: "n49" label: "1" class:1  priority:50}
 edge: {sourcename: "n50" targetname: "n48" label: "2" class:1  priority:50}
@@ -291,7 +291,7 @@ node: {title: "n47" label: "ProjM M 47"  info1: "Proj 47
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n47" targetname: "n45" label: "0" class:17 priority:10 color:blue}
 node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   mode:    P
@@ -304,7 +304,7 @@ node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
 node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   mode:    T
@@ -363,7 +363,7 @@ node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
 node: {title: "n34" label: "ProjX X_initial_exec 34"  info1: "Proj 34
   mode:    X
@@ -376,7 +376,7 @@ node: {title: "n34" label: "ProjX X_initial_exec 34"  info1: "Proj 34
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
 node: {title: "n31" label: "Start 31"  info1: "Start 31
   mode:    T
@@ -388,7 +388,7 @@ node: {title: "n31" label: "Start 31"  info1: "Start 31
   Private Attributes:
   start of method of type OO_PROGRAM_EXAMPLE_main
 "
-color: blue}
+color:blue}
 }
 
 }

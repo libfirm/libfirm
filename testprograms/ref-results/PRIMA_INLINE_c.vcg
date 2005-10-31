@@ -99,7 +99,7 @@ node: {title: "n131" label: "PhiM 131"  info1: "Phi 131
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n131" targetname: "n94" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n131" targetname: "n119" label: "1" class:17 priority:10 color:blue}
 node: {title: "n119" label: "ProjM M 119"  info1: "Proj 119
@@ -113,7 +113,7 @@ node: {title: "n119" label: "ProjM M 119"  info1: "Proj 119
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n119" targetname: "n117" label: "0" class:17 priority:10 color:blue}
 node: {title: "n117" label: "Store 117"  info1: "Store 117
   mode:    T
@@ -162,7 +162,7 @@ node: {title: "n127" label: "PhiIs 127"  info1: "Phi 127
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n127" targetname: "n99" label: "0" class:16 priority:10}
 edge: {sourcename: "n127" targetname: "n128" label: "1" class:1  priority:50}
 node: {title: "n128" label: "PhiIs 128"  info1: "Phi 128
@@ -177,7 +177,7 @@ node: {title: "n128" label: "PhiIs 128"  info1: "Phi 128
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n128" targetname: "n100" label: "0" class:16 priority:10}
 edge: {sourcename: "n128" targetname: "n127" label: "1" class:1  priority:50}
 node: {title: "n109" label: "Jmp 109"  info1: "Jmp 109
@@ -217,7 +217,7 @@ node: {title: "n98" label: "ProjP Arg 0 98"  info1: "Proj 98
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n98" targetname: "n95" label: "0" class:16 priority:10}
 node: {title: "n99" label: "ProjIs Arg 1 99"  info1: "Proj 99
   mode:    Is
@@ -230,7 +230,7 @@ node: {title: "n99" label: "ProjIs Arg 1 99"  info1: "Proj 99
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n99" targetname: "n95" label: "0" class:16 priority:10}
 node: {title: "n101" label: "Jmp 101"  info1: "Jmp 101
   mode:    X
@@ -269,7 +269,7 @@ node: {title: "n94" label: "ProjM 1 94"  info1: "Proj 94
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n94" targetname: "n88" label: "0" class:17 priority:10 color:blue}
 node: {title: "n95" label: "ProjT T_args 95"  info1: "Proj 95
   mode:    T
@@ -282,7 +282,7 @@ node: {title: "n95" label: "ProjT T_args 95"  info1: "Proj 95
   Private Attributes:
   proj nr: 4
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n95" targetname: "n88" label: "0" class:1  priority:50}
 node: {title: "n100" label: "0x0Is 100"  info1: "0x0 100
   mode:    Is
@@ -294,7 +294,7 @@ node: {title: "n100" label: "0x0Is 100"  info1: "0x0 100
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   mode:    X
   visited: 25
@@ -306,7 +306,7 @@ node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
 node: {title: "n88" label: "Start 88"  info1: "Start 88
   mode:    T
@@ -320,7 +320,7 @@ node: {title: "n88" label: "Start 88"  info1: "Start 88
     param 0 type: class_prima_ptr
     param 1 type: int
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n85"  label: "Block 85" status:clustered color:yellow
@@ -346,7 +346,7 @@ node: {title: "n246" label: "End 246"  info1: "End 246
      1:    Phi 131
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 }

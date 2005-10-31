@@ -102,7 +102,7 @@ node: {title: "n22" label: "0x9Iu 22"  info1: "0x9 22
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n23" label: "0x0Iu 23"  info1: "0x0 23
   mode:    Iu
   visited: 1
@@ -112,7 +112,7 @@ node: {title: "n23" label: "0x0Iu 23"  info1: "0x0 23
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "t14" label: "primitive int" info1: "primitive type int (14)
   visibility: visibility_external_allocated,
   state:      layout_fixed,

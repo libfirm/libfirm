@@ -94,7 +94,7 @@ node: {title: "n41" label: "End 41"  info1: "End 41
     -1:    Block 20
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
@@ -135,7 +135,7 @@ node: {title: "n38" label: "ProjM M 38"  info1: "Proj 38
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:17 priority:10 color:blue}
 node: {title: "n36" label: "Store 36"  info1: "Store 36
   mode:    T
@@ -199,7 +199,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
 node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   mode:    P
@@ -212,7 +212,7 @@ node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   Private Attributes:
   proj nr: 3
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
 node: {title: "n35" label: "0x2Is 35"  info1: "0x2 35
   mode:    Is
@@ -224,7 +224,7 @@ node: {title: "n35" label: "0x2Is 35"  info1: "0x2 35
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
   visited: 10
@@ -236,7 +236,7 @@ node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
 node: {title: "n23" label: "Start 23"  info1: "Start 23
   mode:    T
@@ -248,7 +248,7 @@ node: {title: "n23" label: "Start 23"  info1: "Start 23
   Private Attributes:
   start of method of type GLOBAL_VAR_main
 "
-color: blue}
+color:blue}
 }
 
 }

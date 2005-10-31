@@ -94,7 +94,7 @@ node: {title: "n154" label: "End 154"  info1: "End 154
     -1:    Block 85
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n97"  label: "Block 97" status:clustered color:yellow
@@ -138,7 +138,7 @@ node: {title: "n104" label: "ProjM M 104"  info1: "Proj 104
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
 node: {title: "n106" label: "AddIs 106"  info1: "Add 106
   mode:    Is
@@ -165,7 +165,7 @@ node: {title: "n105" label: "ProjIs res 105"  info1: "Proj 105
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
 node: {title: "n102" label: "Load[Is] 102"  info1: "Load[Is] 102
   mode:    T
@@ -212,7 +212,7 @@ node: {title: "n98" label: "ProjP Arg 0 98"  info1: "Proj 98
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n98" targetname: "n95" label: "0" class:16 priority:10}
 node: {title: "n99" label: "ProjIs Arg 1 99"  info1: "Proj 99
   mode:    Is
@@ -225,7 +225,7 @@ node: {title: "n99" label: "ProjIs Arg 1 99"  info1: "Proj 99
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n99" targetname: "n95" label: "0" class:16 priority:10}
 }
 
@@ -254,7 +254,7 @@ node: {title: "n94" label: "ProjM 1 94"  info1: "Proj 94
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n94" targetname: "n88" label: "0" class:17 priority:10 color:blue}
 node: {title: "n95" label: "ProjT T_args 95"  info1: "Proj 95
   mode:    T
@@ -267,7 +267,7 @@ node: {title: "n95" label: "ProjT T_args 95"  info1: "Proj 95
   Private Attributes:
   proj nr: 4
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n95" targetname: "n88" label: "0" class:1  priority:50}
 node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   mode:    X
@@ -280,7 +280,7 @@ node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
 node: {title: "n88" label: "Start 88"  info1: "Start 88
   mode:    T
@@ -294,7 +294,7 @@ node: {title: "n88" label: "Start 88"  info1: "Start 88
     param 0 type: class_prima_ptr
     param 1 type: int
 "
-color: blue}
+color:blue}
 }
 
 }

@@ -99,7 +99,7 @@ node: {title: "n109" label: "End OO_PROGRAM_EXAMPLE_main 109"  info1: "End OO_PR
      1:    Block 197
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n40"  label: "Block 40" status:clustered color:yellow
@@ -147,7 +147,7 @@ node: {title: "n202" label: "FilterM 0 202"  info1: "Filter 202
      0:    Proj 104
   backedges:
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n202" targetname: "n104" label: "0" class:17 priority:10 color:blue}
 node: {title: "n203" label: "FilterIs 0 203"  info1: "Filter 203
   mode:    Is
@@ -163,7 +163,7 @@ node: {title: "n203" label: "FilterIs 0 203"  info1: "Filter 203
      0:    Add 106
   backedges:
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n203" targetname: "n106" label: "0" class:16 priority:10}
 }
 
@@ -198,7 +198,7 @@ node: {title: "n196" label: "FilterM 0 196"  info1: "Filter 196
      0:    Proj 81
   backedges:
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n196" targetname: "n81" label: "0" class:17 priority:10 color:blue}
 node: {title: "n201" label: "ProjX 0 201"  info1: "Proj 201
   mode:    X
@@ -211,7 +211,7 @@ node: {title: "n201" label: "ProjX 0 201"  info1: "Proj 201
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n201" targetname: "n199" label: "0" class:13 priority:60 color:red}
 node: {title: "n199" label: "CallBegin c 199"  info1: "CallBegin c 199
   mode:    T
@@ -272,7 +272,7 @@ node: {title: "n47" label: "ProjM M 47"  info1: "Proj 47
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n47" targetname: "n45" label: "0" class:17 priority:10 color:blue}
 node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   mode:    P
@@ -285,7 +285,7 @@ node: {title: "n48" label: "ProjP res 48"  info1: "Proj 48
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n48" targetname: "n45" label: "0" class:1  priority:50}
 node: {title: "n45" label: "Alloc 45"  info1: "Alloc 45
   mode:    T
@@ -328,7 +328,7 @@ node: {title: "n195" label: "ProjX 0 195"  info1: "Proj 195
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n195" targetname: "n193" label: "0" class:13 priority:60 color:red}
 node: {title: "n193" label: "CallBegin set_a 193"  info1: "CallBegin set_a 193
   mode:    T
@@ -389,7 +389,7 @@ node: {title: "n37" label: "ProjM 1 37"  info1: "Proj 37
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n37" targetname: "n31" label: "0" class:17 priority:10 color:blue}
 node: {title: "n34" label: "ProjX X_initial_exec 34"  info1: "Proj 34
   mode:    X
@@ -402,7 +402,7 @@ node: {title: "n34" label: "ProjX X_initial_exec 34"  info1: "Proj 34
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n34" targetname: "n31" label: "0" class:13 priority:60 color:red}
 node: {title: "n31" label: "Start OO_PROGRAM_EXAMPLE_main 31"  info1: "Start OO_PROGRAM_EXAMPLE_main 31
   mode:    T
@@ -414,7 +414,7 @@ node: {title: "n31" label: "Start OO_PROGRAM_EXAMPLE_main 31"  info1: "Start OO_
   Private Attributes:
   start of method of type OO_PROGRAM_EXAMPLE_main
 "
-color: blue}
+color:blue}
 }
 
 }
@@ -465,7 +465,7 @@ node: {title: "n194" label: "ProjX 0 194"  info1: "Proj 194
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n194" targetname: "n189" label: "0" class:13 priority:60 color:red}
 node: {title: "n189" label: "EndReg PRIMA_set_a 189"  info1: "EndReg PRIMA_set_a 189
   mode:    T
@@ -476,7 +476,7 @@ node: {title: "n189" label: "EndReg PRIMA_set_a 189"  info1: "EndReg PRIMA_set_a
     -1:    Block 188
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n74"  label: "Block 74" status:clustered color:yellow
@@ -507,7 +507,7 @@ node: {title: "n81" label: "ProjM M 81"  info1: "Proj 81
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n81" targetname: "n79" label: "0" class:17 priority:10 color:blue}
 node: {title: "n79" label: "Store 79"  info1: "Store 79
   mode:    T
@@ -587,7 +587,7 @@ node: {title: "n184" label: "FilterM 1 184"  info1: "Filter 184
      0:    Proj 47
   backedges:
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n184" targetname: "n47" label: "0" class:17 priority:10 color:blue}
 node: {title: "n185" label: "FilterP 0 185"  info1: "Filter 185
   mode:    P
@@ -603,7 +603,7 @@ node: {title: "n185" label: "FilterP 0 185"  info1: "Filter 185
      0:    Proj 48
   backedges:
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n185" targetname: "n48" label: "0" class:16 priority:10}
 node: {title: "n186" label: "FilterIs 1 186"  info1: "Filter 186
   mode:    Is
@@ -619,7 +619,7 @@ node: {title: "n186" label: "FilterIs 1 186"  info1: "Filter 186
      0:    0x2 41
   backedges:
 "
-color: yellow}
+color:yellow}
 node: {title: "n186n41" label: "0x2Is 41"  info1: "0x2 41
   mode:    Is
   visited: 52
@@ -630,7 +630,7 @@ node: {title: "n186n41" label: "0x2Is 41"  info1: "0x2 41
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n186" targetname: "n186n41" label: "0" class:16 priority:10}
 node: {title: "n68" label: "ProjX X_initial_exec 68"  info1: "Proj 68
   mode:    X
@@ -643,7 +643,7 @@ node: {title: "n68" label: "ProjX X_initial_exec 68"  info1: "Proj 68
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n68" targetname: "n65" label: "0" class:13 priority:60 color:red}
 node: {title: "n65" label: "Start PRIMA_set_a 65"  info1: "Start PRIMA_set_a 65
   mode:    T
@@ -657,7 +657,7 @@ node: {title: "n65" label: "Start PRIMA_set_a 65"  info1: "Start PRIMA_set_a 65
     param 0 type: class_prima_ptr
     param 1 type: int
 "
-color: blue}
+color:blue}
 }
 
 }
@@ -708,7 +708,7 @@ node: {title: "n200" label: "ProjX 0 200"  info1: "Proj 200
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n200" targetname: "n181" label: "0" class:13 priority:60 color:red}
 node: {title: "n181" label: "EndReg PRIMA_c 181"  info1: "EndReg PRIMA_c 181
   mode:    T
@@ -719,7 +719,7 @@ node: {title: "n181" label: "EndReg PRIMA_c 181"  info1: "EndReg PRIMA_c 181
     -1:    Block 180
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n97"  label: "Block 97" status:clustered color:yellow
@@ -750,7 +750,7 @@ node: {title: "n104" label: "ProjM M 104"  info1: "Proj 104
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
 node: {title: "n106" label: "AddIs 106"  info1: "Add 106
   mode:    Is
@@ -777,7 +777,7 @@ node: {title: "n105" label: "ProjIs res 105"  info1: "Proj 105
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
 node: {title: "n102" label: "Load[Is] 102"  info1: "Load[Is] 102
   mode:    T
@@ -856,7 +856,7 @@ node: {title: "n176" label: "FilterM 1 176"  info1: "Filter 176
      0:    Filter 196
   backedges:
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n176" targetname: "n196" label: "0" class:17 priority:10 color:blue}
 node: {title: "n177" label: "FilterP 0 177"  info1: "Filter 177
   mode:    P
@@ -872,7 +872,7 @@ node: {title: "n177" label: "FilterP 0 177"  info1: "Filter 177
      0:    Proj 48
   backedges:
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n177" targetname: "n48" label: "0" class:16 priority:10}
 node: {title: "n178" label: "FilterIs 1 178"  info1: "Filter 178
   mode:    Is
@@ -888,7 +888,7 @@ node: {title: "n178" label: "FilterIs 1 178"  info1: "Filter 178
      0:    0x5 42
   backedges:
 "
-color: yellow}
+color:yellow}
 node: {title: "n178n42" label: "0x5Is 42"  info1: "0x5 42
   mode:    Is
   visited: 52
@@ -899,7 +899,7 @@ node: {title: "n178n42" label: "0x5Is 42"  info1: "0x5 42
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n178" targetname: "n178n42" label: "0" class:16 priority:10}
 node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   mode:    X
@@ -912,7 +912,7 @@ node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
 node: {title: "n88" label: "Start PRIMA_c 88"  info1: "Start PRIMA_c 88
   mode:    T
@@ -926,7 +926,7 @@ node: {title: "n88" label: "Start PRIMA_c 88"  info1: "Start PRIMA_c 88
     param 0 type: class_prima_ptr
     param 1 type: int
 "
-color: blue}
+color:blue}
 }
 
 }

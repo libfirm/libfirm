@@ -63,7 +63,7 @@ node: {title: "n23" label: "Start 23"  info1: "Start 23
   Private Attributes:
   start of method of type main
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n23" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
@@ -76,7 +76,7 @@ node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n26" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n22" label: "Block 22"  info1: "Block 22
@@ -91,7 +91,7 @@ node: {title: "n22" label: "Block 22"  info1: "Block 22
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
 node: {title: "n39" label: "0x0Iu 39"  info1: "0x0 39
   mode:    Iu
@@ -103,7 +103,7 @@ node: {title: "n39" label: "0x0Iu 39"  info1: "0x0 39
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: { sourcename: "n39" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n41" label: "Cmp 41"  info1: "Cmp 41
   mode:    T
@@ -131,7 +131,7 @@ node: {title: "n42" label: "Projb Eq 42"  info1: "Proj 42
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n42" targetname: "n41" label: "0" class:1  priority:50}
 edge: { sourcename: "n42" targetname: "n38" class:2  priority:50 linestyle:dotted}
 node: {title: "n43" label: "Cond 43"  info1: "Cond 43
@@ -160,7 +160,7 @@ node: {title: "n45" label: "ProjX true 45"  info1: "Proj 45
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n45" targetname: "n43" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n45" targetname: "n38" class:2  priority:50 linestyle:dotted}
 node: {title: "n46" label: "Block 46"  info1: "Block 46
@@ -175,7 +175,7 @@ node: {title: "n46" label: "Block 46"  info1: "Block 46
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n46" targetname: "n45" label: "0" class:13 priority:60 color:red}
 node: {title: "n47" label: "Jmp 47"  info1: "Jmp 47
   mode:    X
@@ -200,7 +200,7 @@ node: {title: "n32" label: "Block 32"  info1: "Block 32
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
 node: {title: "n35" label: "Jmp 35"  info1: "Jmp 35
   mode:    X
@@ -226,7 +226,7 @@ node: {title: "n38" label: "Block 38"  info1: "Block 38
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n38" targetname: "n35" label: "0" class:13 priority:60 color:red}
 edge: {sourcename: "n38" targetname: "n47" label: "1" class:13 priority:60 color:red}
 node: {title: "n44" label: "ProjX false 44"  info1: "Proj 44
@@ -240,7 +240,7 @@ node: {title: "n44" label: "ProjX false 44"  info1: "Proj 44
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n44" targetname: "n43" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n44" targetname: "n38" class:2  priority:50 linestyle:dotted}
 node: {title: "n60" label: "Block 60"  info1: "Block 60
@@ -255,7 +255,7 @@ node: {title: "n60" label: "Block 60"  info1: "Block 60
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n60" targetname: "n44" label: "0" class:13 priority:60 color:red}
 node: {title: "n33" label: "0x0Iu 33"  info1: "0x0 33
   mode:    Iu
@@ -267,7 +267,7 @@ node: {title: "n33" label: "0x0Iu 33"  info1: "0x0 33
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: { sourcename: "n33" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n58" label: "PhiIu 58"  info1: "Phi 58
   mode:    Iu
@@ -281,7 +281,7 @@ node: {title: "n58" label: "PhiIu 58"  info1: "Phi 58
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n58" targetname: "n33" label: "0" class:16 priority:10}
 edge: {sourcename: "n58" targetname: "n53" label: "1" class:1  priority:50}
 edge: { sourcename: "n58" targetname: "n38" class:2  priority:50 linestyle:dotted}
@@ -295,7 +295,7 @@ node: {title: "n34" label: "0x1Iu 34"  info1: "0x1 34
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: { sourcename: "n34" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n53" label: "PhiIu 53"  info1: "Phi 53
   mode:    Iu
@@ -309,7 +309,7 @@ node: {title: "n53" label: "PhiIu 53"  info1: "Phi 53
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n53" targetname: "n34" label: "0" class:16 priority:10}
 edge: {sourcename: "n53" targetname: "n58" label: "1" class:1  priority:50}
 edge: { sourcename: "n53" targetname: "n38" class:2  priority:50 linestyle:dotted}
@@ -339,7 +339,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n29" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n76" label: "Return 76"  info1: "Return 76
@@ -371,7 +371,7 @@ node: {title: "n20" label: "Block 20"  info1: "Block 20
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n20" targetname: "n76" label: "0" class:13 priority:60 color:red}
 node: {title: "n77" label: "End 77"  info1: "End 77
   mode:    X
@@ -382,7 +382,7 @@ node: {title: "n77" label: "End 77"  info1: "End 77
     -1:    Block 20
   Private Attributes:
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n77" targetname: "n20" class:2  priority:50 linestyle:dotted}
 edge: {sourcename: "n23" targetname: "n26" color: red linestyle: dashed}
 edge: {sourcename: "n23" targetname: "n29" color: red linestyle: dashed}

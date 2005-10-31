@@ -100,7 +100,7 @@ node: {title: "n337" label: "End 337"  info1: "End 337
   Private Attributes:
   in loop 639 with depth 0
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n384"  label: "Block 384" status:clustered color:yellow
@@ -147,7 +147,7 @@ node: {title: "n387n363" label: "0x4Is 363"  info1: "0x4 363
   in loop 639 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n387" targetname: "n391" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n387" targetname: "n387n363" label: "1" class:16 priority:10}
 }
@@ -185,7 +185,7 @@ node: {title: "n391" label: "PhiM 391"  info1: "Phi 391
   backedges:
   in loop 642 with depth 1
 "
-color: green}
+color:green}
 edge: {sourcename: "n391" targetname: "n345" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n391" targetname: "n377" label: "1" class:17 priority:10 color:blue}
 node: {title: "n359" label: "ProjX false 359"  info1: "Proj 359
@@ -200,7 +200,7 @@ node: {title: "n359" label: "ProjX false 359"  info1: "Proj 359
   proj nr: 0
   in loop 639 with depth 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n359" targetname: "n358" label: "0" class:13 priority:60 color:red}
 node: {title: "n360" label: "ProjX true 360"  info1: "Proj 360
   mode:    X
@@ -214,7 +214,7 @@ node: {title: "n360" label: "ProjX true 360"  info1: "Proj 360
   proj nr: 1
   in loop 641 with depth 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n360" targetname: "n358" label: "0" class:13 priority:60 color:red}
 node: {title: "n358" label: "Cond 358"  info1: "Cond 358
   mode:    T
@@ -243,7 +243,7 @@ node: {title: "n356" label: "Projb Gt 356"  info1: "Proj 356
   proj nr: 4
   in loop 641 with depth 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n356" targetname: "n357" label: "0" class:1  priority:50}
 node: {title: "n357" label: "Cmp 357"  info1: "Cmp 357
   mode:    T
@@ -269,7 +269,7 @@ node: {title: "n357n354" label: "0x0Is 354"  info1: "0x0 354
   in loop 639 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n357" targetname: "n392" label: "0" class:1  priority:50}
 edge: {sourcename: "n357" targetname: "n357n354" label: "1" class:16 priority:10}
 node: {title: "n392" label: "PhiIs 392"  info1: "Phi 392
@@ -285,7 +285,7 @@ node: {title: "n392" label: "PhiIs 392"  info1: "Phi 392
   backedges:
   in loop 640 with depth 1
 "
-color: green}
+color:green}
 node: {title: "n392n659" label: "0x28Is 659"  info1: "0x28 659
   mode:    Is
   visited: 26
@@ -296,7 +296,7 @@ node: {title: "n392n659" label: "0x28Is 659"  info1: "0x28 659
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n392" targetname: "n392n659" label: "0" class:16 priority:10}
 edge: {sourcename: "n392" targetname: "n646" label: "1" class:16 priority:10}
 }
@@ -362,7 +362,7 @@ node: {title: "n377" label: "ProjM M 377"  info1: "Proj 377
   proj nr: 0
   in loop 642 with depth 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n377" targetname: "n375" label: "0" class:17 priority:10 color:blue}
 node: {title: "n375" label: "Store 375"  info1: "Store 375
   mode:    T
@@ -391,7 +391,7 @@ node: {title: "n375n373" label: "0x13Is 373"  info1: "0x13 373
   in loop 639 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n375" targetname: "n391" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n375" targetname: "n655" label: "1" class:1  priority:50}
 edge: {sourcename: "n375" targetname: "n375n373" label: "2" class:16 priority:10}
@@ -417,7 +417,7 @@ node: {title: "n655n654" label: "0x9Is 654"  info1: "0x9 654
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n655" targetname: "n652" label: "0" class:1  priority:50}
 edge: {sourcename: "n655" targetname: "n655n654" label: "1" class:16 priority:10}
 node: {title: "n652" label: "AddP 652"  info1: "Add 652
@@ -471,7 +471,7 @@ node: {title: "n651n649" label: "0xFFFFFFFCIs 649"  info1: "0xFFFFFFFC 649
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n651" targetname: "n651n350" label: "0" class:16 priority:10}
 edge: {sourcename: "n651" targetname: "n651n649" label: "1" class:16 priority:10}
 node: {title: "n378" label: "Jmp 378"  info1: "Jmp 378
@@ -507,7 +507,7 @@ node: {title: "n646n649" label: "0xFFFFFFFCIs 649"  info1: "0xFFFFFFFC 649
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n646" targetname: "n392" label: "0" class:16 priority:10}
 edge: {sourcename: "n646" targetname: "n646n649" label: "1" class:16 priority:10}
 }
@@ -542,7 +542,7 @@ node: {title: "n345" label: "ProjM 1 345"  info1: "Proj 345
   proj nr: 1
   in loop 639 with depth 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n345" targetname: "n339" label: "0" class:17 priority:10 color:blue}
 node: {title: "n342" label: "ProjX X_initial_exec 342"  info1: "Proj 342
   mode:    X
@@ -556,7 +556,7 @@ node: {title: "n342" label: "ProjX X_initial_exec 342"  info1: "Proj 342
   proj nr: 0
   in loop 639 with depth 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n342" targetname: "n339" label: "0" class:13 priority:60 color:red}
 node: {title: "n339" label: "Start 339"  info1: "Start 339
   mode:    T
@@ -570,7 +570,7 @@ node: {title: "n339" label: "Start 339"  info1: "Start 339
   start of method of type STRENGTH_RED_EXAMPLE_meth_tp
     param 0 type: int
 "
-color: blue}
+color:blue}
 }
 
 }

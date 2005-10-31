@@ -97,7 +97,7 @@ node: {title: "n203" label: "End 203"  info1: "End 203
   Private Attributes:
   in loop 585 with depth 0
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n250"  label: "Block 250" status:clustered color:yellow
@@ -141,7 +141,7 @@ node: {title: "n253n229" label: "0x4Is 229"  info1: "0x4 229
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n253" targetname: "n257" label: "0" class:17 priority:10 color:blue}
 edge: {sourcename: "n253" targetname: "n253n229" label: "1" class:16 priority:10}
 }
@@ -176,7 +176,7 @@ node: {title: "n257" label: "PhiM 257"  info1: "Phi 257
   backedges:  1
   in loop 588 with depth 1
 "
-color: green}
+color:green}
 edge: {sourcename: "n257" targetname: "n211" label: "0" class:17 priority:10 color:blue}
 backedge: {sourcename: "n257" targetname: "n242" label: "1" linestyle:dashed class:17 priority:10 color:blue}
 node: {title: "n225" label: "ProjX false 225"  info1: "Proj 225
@@ -191,7 +191,7 @@ node: {title: "n225" label: "ProjX false 225"  info1: "Proj 225
   proj nr: 0
   in loop 585 with depth 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n225" targetname: "n224" label: "0" class:13 priority:60 color:red}
 node: {title: "n226" label: "ProjX true 226"  info1: "Proj 226
   mode:    X
@@ -205,7 +205,7 @@ node: {title: "n226" label: "ProjX true 226"  info1: "Proj 226
   proj nr: 1
   in loop 587 with depth 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n226" targetname: "n224" label: "0" class:13 priority:60 color:red}
 node: {title: "n224" label: "Cond 224"  info1: "Cond 224
   mode:    T
@@ -234,7 +234,7 @@ node: {title: "n222" label: "Projb Gt 222"  info1: "Proj 222
   proj nr: 4
   in loop 587 with depth 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n222" targetname: "n223" label: "0" class:1  priority:50}
 node: {title: "n223" label: "Cmp 223"  info1: "Cmp 223
   mode:    T
@@ -260,7 +260,7 @@ node: {title: "n223n220" label: "0x0Is 220"  info1: "0x0 220
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n223" targetname: "n258" label: "0" class:1  priority:50}
 edge: {sourcename: "n223" targetname: "n223n220" label: "1" class:16 priority:10}
 node: {title: "n258" label: "PhiIs 258"  info1: "Phi 258
@@ -276,7 +276,7 @@ node: {title: "n258" label: "PhiIs 258"  info1: "Phi 258
   backedges:  1
   in loop 586 with depth 1
 "
-color: green}
+color:green}
 node: {title: "n258n215" label: "0xAIs 215"  info1: "0xA 215
   mode:    Is
   visited: 17
@@ -288,7 +288,7 @@ node: {title: "n258n215" label: "0xAIs 215"  info1: "0xA 215
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n258" targetname: "n258n215" label: "0" class:16 priority:10}
 backedge: {sourcename: "n258" targetname: "n243" label: "1" linestyle:dashed class:16 priority:10}
 }
@@ -348,7 +348,7 @@ node: {title: "n242" label: "ProjM M 242"  info1: "Proj 242
   proj nr: 0
   in loop 588 with depth 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n242" targetname: "n240" label: "0" class:17 priority:10 color:blue}
 node: {title: "n240" label: "Store 240"  info1: "Store 240
   mode:    T
@@ -408,7 +408,7 @@ node: {title: "n237n230" label: "0x8Is 230"  info1: "0x8 230
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n237" targetname: "n237n230" label: "0" class:16 priority:10}
 edge: {sourcename: "n237" targetname: "n236" label: "1" class:1  priority:50}
 node: {title: "n236" label: "AddP 236"  info1: "Add 236
@@ -435,7 +435,7 @@ node: {title: "n236n230" label: "0x8Is 230"  info1: "0x8 230
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n236" targetname: "n236n230" label: "0" class:16 priority:10}
 edge: {sourcename: "n236" targetname: "n235" label: "1" class:1  priority:50}
 node: {title: "n235" label: "AddP 235"  info1: "Add 235
@@ -462,7 +462,7 @@ node: {title: "n235n229" label: "0x4Is 229"  info1: "0x4 229
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n235" targetname: "n235n229" label: "0" class:16 priority:10}
 edge: {sourcename: "n235" targetname: "n234" label: "1" class:1  priority:50}
 node: {title: "n234" label: "AddP 234"  info1: "Add 234
@@ -519,7 +519,7 @@ node: {title: "n232n229" label: "0x4Is 229"  info1: "0x4 229
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n232" targetname: "n232n229" label: "0" class:16 priority:10}
 edge: {sourcename: "n232" targetname: "n258" label: "1" class:16 priority:10}
 node: {title: "n244" label: "Jmp 244"  info1: "Jmp 244
@@ -557,7 +557,7 @@ node: {title: "n243n228" label: "0x1Is 228"  info1: "0x1 228
   in loop 585 with depth 0
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n243" targetname: "n258" label: "0" class:16 priority:10}
 edge: {sourcename: "n243" targetname: "n243n228" label: "1" class:16 priority:10}
 }
@@ -589,7 +589,7 @@ node: {title: "n211" label: "ProjM 1 211"  info1: "Proj 211
   proj nr: 1
   in loop 585 with depth 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n211" targetname: "n205" label: "0" class:17 priority:10 color:blue}
 node: {title: "n208" label: "ProjX X_initial_exec 208"  info1: "Proj 208
   mode:    X
@@ -603,7 +603,7 @@ node: {title: "n208" label: "ProjX X_initial_exec 208"  info1: "Proj 208
   proj nr: 0
   in loop 585 with depth 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n208" targetname: "n205" label: "0" class:13 priority:60 color:red}
 node: {title: "n205" label: "Start 205"  info1: "Start 205
   mode:    T
@@ -617,7 +617,7 @@ node: {title: "n205" label: "Start 205"  info1: "Start 205
   start of method of type STRENGTH_RED_EXAMPLE_meth_tp
     param 0 type: int
 "
-color: blue}
+color:blue}
 }
 
 }

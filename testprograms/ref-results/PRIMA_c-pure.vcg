@@ -65,7 +65,7 @@ node: {title: "n87" label: "Block 87"  info1: "Block 87
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n87" targetname: "n91" label: "0" class:13 priority:60 color:red}
 node: {title: "n88" label: "Start 88"  info1: "Start 88
   mode:    T
@@ -79,7 +79,7 @@ node: {title: "n88" label: "Start 88"  info1: "Start 88
     param 0 type: class_prima_ptr
     param 1 type: int
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n88" targetname: "n87" class:2  priority:50 linestyle:dotted}
 node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   mode:    X
@@ -92,7 +92,7 @@ node: {title: "n91" label: "ProjX X_initial_exec 91"  info1: "Proj 91
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n91" targetname: "n88" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n91" targetname: "n87" class:2  priority:50 linestyle:dotted}
 node: {title: "n97" label: "Block 97"  info1: "Block 97
@@ -107,7 +107,7 @@ node: {title: "n97" label: "Block 97"  info1: "Block 97
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n97" targetname: "n91" label: "0" class:13 priority:60 color:red}
 node: {title: "n95" label: "ProjT T_args 95"  info1: "Proj 95
   mode:    T
@@ -120,7 +120,7 @@ node: {title: "n95" label: "ProjT T_args 95"  info1: "Proj 95
   Private Attributes:
   proj nr: 4
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n95" targetname: "n88" label: "0" class:1  priority:50}
 edge: { sourcename: "n95" targetname: "n87" class:2  priority:50 linestyle:dotted}
 node: {title: "n99" label: "ProjIs Arg 1 99"  info1: "Proj 99
@@ -134,7 +134,7 @@ node: {title: "n99" label: "ProjIs Arg 1 99"  info1: "Proj 99
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n99" targetname: "n95" label: "0" class:16 priority:10}
 edge: { sourcename: "n99" targetname: "n97" class:2  priority:50 linestyle:dotted}
 node: {title: "n98" label: "ProjP Arg 0 98"  info1: "Proj 98
@@ -148,7 +148,7 @@ node: {title: "n98" label: "ProjP Arg 0 98"  info1: "Proj 98
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n98" targetname: "n95" label: "0" class:16 priority:10}
 edge: { sourcename: "n98" targetname: "n97" class:2  priority:50 linestyle:dotted}
 node: {title: "n94" label: "ProjM 1 94"  info1: "Proj 94
@@ -162,7 +162,7 @@ node: {title: "n94" label: "ProjM 1 94"  info1: "Proj 94
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n94" targetname: "n88" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n94" targetname: "n87" class:2  priority:50 linestyle:dotted}
 node: {title: "n101" label: "Sel a 101"  info1: "Sel 101
@@ -212,7 +212,7 @@ node: {title: "n105" label: "ProjIs res 105"  info1: "Proj 105
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n105" targetname: "n102" label: "0" class:1  priority:50}
 edge: { sourcename: "n105" targetname: "n97" class:2  priority:50 linestyle:dotted}
 node: {title: "n106" label: "AddIs 106"  info1: "Add 106
@@ -241,7 +241,7 @@ node: {title: "n104" label: "ProjM M 104"  info1: "Proj 104
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n104" targetname: "n102" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n104" targetname: "n97" class:2  priority:50 linestyle:dotted}
 node: {title: "n107" label: "Return 107"  info1: "Return 107
@@ -273,7 +273,7 @@ node: {title: "n85" label: "Block 85"  info1: "Block 85
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n85" targetname: "n107" label: "0" class:13 priority:60 color:red}
 node: {title: "n154" label: "End 154"  info1: "End 154
   mode:    X
@@ -284,6 +284,6 @@ node: {title: "n154" label: "End 154"  info1: "End 154
     -1:    Block 85
   Private Attributes:
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n154" targetname: "n85" class:2  priority:50 linestyle:dotted}
 }

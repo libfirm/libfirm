@@ -65,7 +65,7 @@ node: {title: "n22" label: "Block 22"  info1: "Block 22
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n22" targetname: "n26" label: "0" class:13 priority:60 color:red}
 node: {title: "n23" label: "Start 23"  info1: "Start 23
   mode:    T
@@ -77,7 +77,7 @@ node: {title: "n23" label: "Start 23"  info1: "Start 23
   Private Attributes:
   start of method of type GLOBAL_VAR_main
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n23" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
@@ -90,7 +90,7 @@ node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n26" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n32" label: "Block 32"  info1: "Block 32
@@ -105,7 +105,7 @@ node: {title: "n32" label: "Block 32"  info1: "Block 32
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n32" targetname: "n26" label: "0" class:13 priority:60 color:red}
 node: {title: "n35" label: "0x2Is 35"  info1: "0x2 35
   mode:    Is
@@ -117,7 +117,7 @@ node: {title: "n35" label: "0x2Is 35"  info1: "0x2 35
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 edge: { sourcename: "n35" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   mode:    P
@@ -130,7 +130,7 @@ node: {title: "n28" label: "ProjP P_globals 28"  info1: "Proj 28
   Private Attributes:
   proj nr: 3
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n28" targetname: "n23" label: "0" class:1  priority:50}
 edge: { sourcename: "n28" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
@@ -144,7 +144,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n29" targetname: "n22" class:2  priority:50 linestyle:dotted}
 node: {title: "n34" label: "Sel i 34"  info1: "Sel 34
@@ -195,7 +195,7 @@ node: {title: "n38" label: "ProjM M 38"  info1: "Proj 38
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n38" targetname: "n32" class:2  priority:50 linestyle:dotted}
 node: {title: "n39" label: "Return 39"  info1: "Return 39
@@ -224,7 +224,7 @@ node: {title: "n20" label: "Block 20"  info1: "Block 20
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n20" targetname: "n39" label: "0" class:13 priority:60 color:red}
 node: {title: "n41" label: "End 41"  info1: "End 41
   mode:    X
@@ -235,7 +235,7 @@ node: {title: "n41" label: "End 41"  info1: "End 41
     -1:    Block 20
   Private Attributes:
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n41" targetname: "n20" class:2  priority:50 linestyle:dotted}
 node: {title: "e18" label: "ent i" color: yellow
  info1: "entity i (18)

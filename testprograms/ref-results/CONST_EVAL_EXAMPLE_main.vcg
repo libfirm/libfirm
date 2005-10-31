@@ -94,7 +94,7 @@ node: {title: "n47" label: "End 47"  info1: "End 47
     -1:    Block 20
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n32"  label: "Block 32" status:clustered color:yellow
@@ -157,7 +157,7 @@ node: {title: "n29" label: "ProjM 1 29"  info1: "Proj 29
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n29" targetname: "n23" label: "0" class:17 priority:10 color:blue}
 node: {title: "n39" label: "0xCIs 39"  info1: "0xC 39
   mode:    Is
@@ -169,7 +169,7 @@ node: {title: "n39" label: "0xCIs 39"  info1: "0xC 39
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   mode:    X
   visited: 7
@@ -181,7 +181,7 @@ node: {title: "n26" label: "ProjX X_initial_exec 26"  info1: "Proj 26
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n26" targetname: "n23" label: "0" class:13 priority:60 color:red}
 node: {title: "n23" label: "Start 23"  info1: "Start 23
   mode:    T
@@ -193,7 +193,7 @@ node: {title: "n23" label: "Start 23"  info1: "Start 23
   Private Attributes:
   start of method of type main
 "
-color: blue}
+color:blue}
 }
 
 }

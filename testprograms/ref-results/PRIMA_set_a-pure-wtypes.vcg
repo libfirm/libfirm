@@ -65,7 +65,7 @@ node: {title: "n64" label: "Block 64"  info1: "Block 64
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n64" targetname: "n68" label: "0" class:13 priority:60 color:red}
 node: {title: "n65" label: "Start 65"  info1: "Start 65
   mode:    T
@@ -79,7 +79,7 @@ node: {title: "n65" label: "Start 65"  info1: "Start 65
     param 0 type: class_prima_ptr
     param 1 type: int
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n65" targetname: "n64" class:2  priority:50 linestyle:dotted}
 node: {title: "n68" label: "ProjX X_initial_exec 68"  info1: "Proj 68
   mode:    X
@@ -92,7 +92,7 @@ node: {title: "n68" label: "ProjX X_initial_exec 68"  info1: "Proj 68
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n68" targetname: "n65" label: "0" class:13 priority:60 color:red}
 edge: { sourcename: "n68" targetname: "n64" class:2  priority:50 linestyle:dotted}
 node: {title: "n74" label: "Block 74"  info1: "Block 74
@@ -107,7 +107,7 @@ node: {title: "n74" label: "Block 74"  info1: "Block 74
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n74" targetname: "n68" label: "0" class:13 priority:60 color:red}
 node: {title: "n72" label: "ProjT T_args 72"  info1: "Proj 72
   mode:    T
@@ -120,7 +120,7 @@ node: {title: "n72" label: "ProjT T_args 72"  info1: "Proj 72
   Private Attributes:
   proj nr: 4
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n72" targetname: "n65" label: "0" class:1  priority:50}
 edge: { sourcename: "n72" targetname: "n64" class:2  priority:50 linestyle:dotted}
 node: {title: "n76" label: "ProjIs Arg 1 76"  info1: "Proj 76
@@ -134,7 +134,7 @@ node: {title: "n76" label: "ProjIs Arg 1 76"  info1: "Proj 76
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n76" targetname: "n72" label: "0" class:16 priority:10}
 edge: { sourcename: "n76" targetname: "n74" class:2  priority:50 linestyle:dotted}
 node: {title: "n75" label: "ProjP Arg 0 75"  info1: "Proj 75
@@ -148,7 +148,7 @@ node: {title: "n75" label: "ProjP Arg 0 75"  info1: "Proj 75
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n75" targetname: "n72" label: "0" class:16 priority:10}
 edge: { sourcename: "n75" targetname: "n74" class:2  priority:50 linestyle:dotted}
 node: {title: "n71" label: "ProjM 1 71"  info1: "Proj 71
@@ -162,7 +162,7 @@ node: {title: "n71" label: "ProjM 1 71"  info1: "Proj 71
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n71" targetname: "n65" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n71" targetname: "n64" class:2  priority:50 linestyle:dotted}
 node: {title: "n78" label: "Sel a 78"  info1: "Sel 78
@@ -213,7 +213,7 @@ node: {title: "n81" label: "ProjM M 81"  info1: "Proj 81
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n81" targetname: "n79" label: "0" class:17 priority:10 color:blue}
 edge: { sourcename: "n81" targetname: "n74" class:2  priority:50 linestyle:dotted}
 node: {title: "n82" label: "Return 82"  info1: "Return 82
@@ -242,7 +242,7 @@ node: {title: "n62" label: "Block 62"  info1: "Block 62
   block visited: 0
   Execution freqency statistics:
 "
-color: lightyellow}
+color:lightyellow}
 edge: {sourcename: "n62" targetname: "n82" label: "0" class:13 priority:60 color:red}
 node: {title: "n136" label: "End 136"  info1: "End 136
   mode:    X
@@ -253,7 +253,7 @@ node: {title: "n136" label: "End 136"  info1: "End 136
     -1:    Block 62
   Private Attributes:
 "
-color: blue}
+color:blue}
 edge: { sourcename: "n136" targetname: "n62" class:2  priority:50 linestyle:dotted}
 node: {title: "e17" label: "ent a" color: yellow
  info1: "entity a (17)

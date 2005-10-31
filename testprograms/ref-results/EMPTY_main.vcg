@@ -94,7 +94,7 @@ node: {title: "n19" label: "End 19"  info1: "End 19
     -1:    Block 18
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n30"  label: "Block 30" status:clustered color:yellow
@@ -151,7 +151,7 @@ node: {title: "n27" label: "ProjM 1 27"  info1: "Proj 27
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n27" targetname: "n21" label: "0" class:17 priority:10 color:blue}
 node: {title: "n24" label: "ProjX X_initial_exec 24"  info1: "Proj 24
   mode:    X
@@ -164,7 +164,7 @@ node: {title: "n24" label: "ProjX X_initial_exec 24"  info1: "Proj 24
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n24" targetname: "n21" label: "0" class:13 priority:60 color:red}
 node: {title: "n21" label: "Start 21"  info1: "Start 21
   mode:    T
@@ -176,7 +176,7 @@ node: {title: "n21" label: "Start 21"  info1: "Start 21
   Private Attributes:
   start of method of type EMPTY_main
 "
-color: blue}
+color:blue}
 }
 
 }

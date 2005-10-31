@@ -94,7 +94,7 @@ node: {title: "n20" label: "End 20"  info1: "End 20
     -1:    Block 19
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
@@ -154,7 +154,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
 node: {title: "n32" label: "1.234567890123456716800000000000E+19D 32"  info1: "1.234567890123456716800000000000E+19 32
   mode:    D
@@ -166,7 +166,7 @@ node: {title: "n32" label: "1.234567890123456716800000000000E+19D 32"  info1: "1
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n25" label: "ProjX X_initial_exec 25"  info1: "Proj 25
   mode:    X
   visited: 4
@@ -178,7 +178,7 @@ node: {title: "n25" label: "ProjX X_initial_exec 25"  info1: "Proj 25
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
 node: {title: "n22" label: "Start 22"  info1: "Start 22
   mode:    T
@@ -190,7 +190,7 @@ node: {title: "n22" label: "Start 22"  info1: "Start 22
   Private Attributes:
   start of method of type FLOAT_EXAMPLE_main
 "
-color: blue}
+color:blue}
 }
 
 }

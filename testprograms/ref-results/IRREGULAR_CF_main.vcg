@@ -94,7 +94,7 @@ node: {title: "n66" label: "End 66"  info1: "End 66
     -1:    Block 19
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n52"  label: "Block 52" status:clustered color:yellow
@@ -207,7 +207,7 @@ node: {title: "n46" label: "ProjX false 46"  info1: "Proj 46
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n46" targetname: "n45" label: "0" class:13 priority:60 color:red}
 node: {title: "n47" label: "ProjX true 47"  info1: "Proj 47
   mode:    X
@@ -220,7 +220,7 @@ node: {title: "n47" label: "ProjX true 47"  info1: "Proj 47
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n47" targetname: "n45" label: "0" class:13 priority:60 color:red}
 node: {title: "n45" label: "Cond 45"  info1: "Cond 45
   mode:    T
@@ -247,7 +247,7 @@ node: {title: "n44" label: "Projb Eq 44"  info1: "Proj 44
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n44" targetname: "n43" label: "0" class:1  priority:50}
 node: {title: "n43" label: "Cmp 43"  info1: "Cmp 43
   mode:    T
@@ -316,7 +316,7 @@ node: {title: "n38" label: "ProjX false 38"  info1: "Proj 38
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n38" targetname: "n37" label: "0" class:13 priority:60 color:red}
 node: {title: "n39" label: "ProjX true 39"  info1: "Proj 39
   mode:    X
@@ -329,7 +329,7 @@ node: {title: "n39" label: "ProjX true 39"  info1: "Proj 39
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n39" targetname: "n37" label: "0" class:13 priority:60 color:red}
 node: {title: "n37" label: "Cond 37"  info1: "Cond 37
   mode:    T
@@ -356,7 +356,7 @@ node: {title: "n36" label: "Projb Eq 36"  info1: "Proj 36
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n36" targetname: "n35" label: "0" class:1  priority:50}
 node: {title: "n35" label: "Cmp 35"  info1: "Cmp 35
   mode:    T
@@ -399,7 +399,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
 node: {title: "n34" label: "0x2Is 34"  info1: "0x2 34
   mode:    Is
@@ -411,7 +411,7 @@ node: {title: "n34" label: "0x2Is 34"  info1: "0x2 34
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n32" label: "0x0Is 32"  info1: "0x0 32
   mode:    Is
   visited: 8
@@ -422,7 +422,7 @@ node: {title: "n32" label: "0x0Is 32"  info1: "0x0 32
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n33" label: "0x1Is 33"  info1: "0x1 33
   mode:    Is
   visited: 8
@@ -433,7 +433,7 @@ node: {title: "n33" label: "0x1Is 33"  info1: "0x1 33
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n25" label: "ProjX X_initial_exec 25"  info1: "Proj 25
   mode:    X
   visited: 8
@@ -445,7 +445,7 @@ node: {title: "n25" label: "ProjX X_initial_exec 25"  info1: "Proj 25
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
 node: {title: "n22" label: "Start 22"  info1: "Start 22
   mode:    T
@@ -457,7 +457,7 @@ node: {title: "n22" label: "Start 22"  info1: "Start 22
   Private Attributes:
   start of method of type main
 "
-color: blue}
+color:blue}
 }
 
 }

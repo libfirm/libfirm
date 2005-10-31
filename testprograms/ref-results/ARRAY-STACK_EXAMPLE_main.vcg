@@ -94,7 +94,7 @@ node: {title: "n49" label: "End 49"  info1: "End 49
     -1:    Block 25
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 graph: { title: "n37"  label: "Block 37" status:clustered color:yellow
@@ -138,7 +138,7 @@ node: {title: "n45" label: "ProjM M 45"  info1: "Proj 45
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n45" targetname: "n43" label: "0" class:17 priority:10 color:blue}
 node: {title: "n46" label: "ProjIs res 46"  info1: "Proj 46
   mode:    Is
@@ -151,7 +151,7 @@ node: {title: "n46" label: "ProjIs res 46"  info1: "Proj 46
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n46" targetname: "n43" label: "0" class:1  priority:50}
 node: {title: "n43" label: "Load[Is] 43"  info1: "Load[Is] 43
   mode:    T
@@ -233,7 +233,7 @@ node: {title: "n34" label: "ProjM 1 34"  info1: "Proj 34
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n34" targetname: "n28" label: "0" class:17 priority:10 color:blue}
 node: {title: "n32" label: "ProjP P_frame_base 32"  info1: "Proj 32
   mode:    P
@@ -246,7 +246,7 @@ node: {title: "n32" label: "ProjP P_frame_base 32"  info1: "Proj 32
   Private Attributes:
   proj nr: 2
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n32" targetname: "n28" label: "0" class:1  priority:50}
 node: {title: "n41" label: "0x3Iu 41"  info1: "0x3 41
   mode:    Iu
@@ -258,7 +258,7 @@ node: {title: "n41" label: "0x3Iu 41"  info1: "0x3 41
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n31" label: "ProjX X_initial_exec 31"  info1: "Proj 31
   mode:    X
   visited: 11
@@ -270,7 +270,7 @@ node: {title: "n31" label: "ProjX X_initial_exec 31"  info1: "Proj 31
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n31" targetname: "n28" label: "0" class:13 priority:60 color:red}
 node: {title: "n28" label: "Start 28"  info1: "Start 28
   mode:    T
@@ -282,7 +282,7 @@ node: {title: "n28" label: "Start 28"  info1: "Start 28
   Private Attributes:
   start of method of type main_tp
 "
-color: blue}
+color:blue}
 }
 
 }

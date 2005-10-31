@@ -94,7 +94,7 @@ node: {title: "n20" label: "End 20"  info1: "End 20
     -1:    Block 19
   Private Attributes:
 "
-color: blue}
+color:blue}
 }
 
 node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
@@ -109,7 +109,7 @@ node: {title: "n28" label: "ProjM 1 28"  info1: "Proj 28
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n28" targetname: "n22" label: "0" class:17 priority:10 color:blue}
 node: {title: "n50" label: "AddIs 50"  info1: "Add 50
   mode:    Is
@@ -137,7 +137,7 @@ node: {title: "n49" label: "0x5Is 49"  info1: "0x5 49
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 node: {title: "n42" label: "SubIs 42"  info1: "Sub 42
   mode:    Is
   visited: 11
@@ -164,7 +164,7 @@ node: {title: "n40" label: "0x3Is 40"  info1: "0x3 40
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 graph: { title: "n53"  label: "Block 53" status:clustered color:yellow
  info1: "Block 53
   mode:    BB
@@ -209,7 +209,7 @@ node: {title: "n55" label: "PhiIs 55"  info1: "Phi 55
   Private Attributes:
   backedges:
 "
-color: green}
+color:green}
 edge: {sourcename: "n55" targetname: "n50" label: "0" class:16 priority:10}
 edge: {sourcename: "n55" targetname: "n42" label: "1" class:16 priority:10}
 }
@@ -252,7 +252,7 @@ node: {title: "n37" label: "ProjX false 37"  info1: "Proj 37
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n37" targetname: "n36" label: "0" class:13 priority:60 color:red}
 graph: { title: "n39"  label: "Block 39" status:clustered color:yellow
  info1: "Block 39
@@ -292,7 +292,7 @@ node: {title: "n38" label: "ProjX true 38"  info1: "Proj 38
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n38" targetname: "n36" label: "0" class:13 priority:60 color:red}
 node: {title: "n35" label: "Projb Eq 35"  info1: "Proj 35
   mode:    b
@@ -306,7 +306,7 @@ node: {title: "n35" label: "Projb Eq 35"  info1: "Proj 35
   Private Attributes:
   proj nr: 1
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n35" targetname: "n34" label: "0" class:1  priority:50}
 node: {title: "n34" label: "Cmp 34"  info1: "Cmp 34
   mode:    T
@@ -335,7 +335,7 @@ node: {title: "n32" label: "ProjIs Arg 0 32"  info1: "Proj 32
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n32" targetname: "n29" label: "0" class:16 priority:10}
 node: {title: "n29" label: "ProjT T_args 29"  info1: "Proj 29
   mode:    T
@@ -349,7 +349,7 @@ node: {title: "n29" label: "ProjT T_args 29"  info1: "Proj 29
   Private Attributes:
   proj nr: 4
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n29" targetname: "n22" label: "0" class:1  priority:50}
 node: {title: "n33" label: "0x2Is 33"  info1: "0x2 33
   mode:    Is
@@ -362,7 +362,7 @@ node: {title: "n33" label: "0x2Is 33"  info1: "0x2 33
   Private Attributes:
   Const of type type_unknown
 "
-color: yellow}
+color:yellow}
 graph: { title: "n31"  label: "Block 31" status:clustered color:yellow
  info1: "Block 31
   mode:    BB
@@ -405,7 +405,7 @@ node: {title: "n25" label: "ProjX X_initial_exec 25"  info1: "Proj 25
   Private Attributes:
   proj nr: 0
 "
-color: yellow}
+color:yellow}
 edge: {sourcename: "n25" targetname: "n22" label: "0" class:13 priority:60 color:red}
 graph: { title: "n21"  label: "Block 21" status:clustered color:yellow
  info1: "Block 21
@@ -432,7 +432,7 @@ node: {title: "n22" label: "Start 22"  info1: "Start 22
   start of method of type GLOBAL_CSE_EXAMPLE_main
     param 0 type: int
 "
-color: blue}
+color:blue}
 }
 
 }
