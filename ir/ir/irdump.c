@@ -243,7 +243,7 @@ static void print_vcg_color(FILE *F, dumper_colors color) {
   };
 
   if (color != ird_color_default)
-    fprintf(F, "color: %s", color_names[color]);
+    fprintf(F, "color:%s", color_names[color]);
 }
 
 /**
@@ -1784,7 +1784,7 @@ void dump_entity_node(FILE *F, entity *ent, int color)
   fprintf (F, "label: ");
   fprintf (F, "\"ent %s\" ", get_ent_dump_name(ent));
   if (color)
-    fprintf(F, "color: %d", color);
+    fprintf(F, "color:%d", color);
   else
     fprintf (F, ENTITY_NODE_ATTR);
   fprintf (F, "\n info1: \"");
@@ -2712,8 +2712,8 @@ void dump_callgraph(const char *suffix) {
       int be = is_irg_callee_backedge(irg, j);
       char *attr;
       attr = (be) ?
-        "label:\"recursion %d\" color: %d" :
-        "label:\"calls %d\" color: %d";
+        "label:\"recursion %d\" color:%d" :
+        "label:\"calls %d\" color:%d";
       print_ent_ent_edge(F, ent, c, be, attr, get_irg_callee_loop_depth(irg, j), get_entity_color(ent));
     }
   }
