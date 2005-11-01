@@ -114,6 +114,8 @@ struct entity {
   unsigned irg_calling_conv;  /**< If (type == method_type) this is a set of calling.
                convention flags if the irg of an entity is not known. */
   ptr_access_kind *param_access;  /**< the parameter access */
+  float *param_weight; /**< The weight of method's parameters. Parameters
+                          with a high weight are good for procedure cloning.*/
 
   /* ------------- fields for analyses ---------------*/
 
