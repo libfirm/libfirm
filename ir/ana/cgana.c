@@ -54,8 +54,7 @@
 
 
 
-/* Eindeutige Adresse zur Markierung von besuchten Knoten und zur
- * Darstellung der unbekannten Methode. */
+/* unambiguous address used as a mark. */
 static void *MARK = &MARK;
 
 static eset *entities = NULL;
@@ -496,6 +495,7 @@ static void add_method_address(entity *ent, eset *set)
 
     /* ignore methods: these of course reference it's address */
     if (is_Method_type(tp))
+      return;
 
     /* let's check if it's the address of a function */
     n = get_atomic_ent_value(ent);
