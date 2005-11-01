@@ -191,7 +191,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->outs = NULL;
 
   res->inline_property       = irg_inline_any;
-  res->additional_properties = 0;
+  res->additional_properties = irg_no_property;
 
   res->phase_state         = phase_building;
   res->op_pin_state_pinned = op_pin_state_pinned;
