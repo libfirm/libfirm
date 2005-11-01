@@ -419,6 +419,7 @@ void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
  *  of these may be discovered by analyses.
  */
 typedef enum {
+  irg_no_property       = 0x00000000, /**< no additional properties, default */
   irg_const_function    = 0x00000001, /**< This graph did not access memory and calculates
                                          its return values solely from its parameters.
                                          GCC: __attribute__((const)). */
