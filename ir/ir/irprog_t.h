@@ -105,7 +105,7 @@ _get_irp_n_irgs(void) {
 static INLINE ir_graph *
 _get_irp_irg(int pos){
   if (get_visit_pseudo_irgs()) return get_irp_allirg(pos);
-  assert(0 <= pos && pos <= get_irp_n_irgs());
+  assert(0 <= pos && pos <= _get_irp_n_irgs());
   return irp->graphs[pos];
 }
 
