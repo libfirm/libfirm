@@ -39,6 +39,66 @@ static ir_op *op_imm;
 
 #define CLS_DATAB 0
 
+static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
+  ir_mode *mode;
+  int     bad = 0;
+  char    buf[1024];
+  tarval  *tv;
+
+  switch (reason) {
+    case dump_node_opcode_txt:
+      tv = get_Imm_tv(n);
+
+      if (tv) {
+        tarval_snprintf(buf, sizeof(buf), tv);
+        fprintf(F, "%s", buf);
+      }
+      else {
+        fprintf(F, "imm_SymConst");
+      }
+      break;
+
+    case dump_node_mode_txt:
+      mode = get_irn_mode(n);
+
+      if (mode && mode != mode_BB && mode != mode_ANY && mode != mode_BAD && mode != mode_T) {
+        fprintf(F, "[%s]", get_mode_name(mode));
+      }
+      break;
+
+    case dump_node_nodeattr_txt:
+      break;
+
+    case dump_node_info_txt: {
+      const char *name    = NULL;
+      ir_node    *old_sym = NULL;
+      imm_attr_t *attr    = (imm_attr_t *)get_irn_generic_attr(n);
+
+      if (is_Imm(n) && attr->tp == imm_SymConst) {
+        old_sym = attr->data.symconst;
+
+        switch (get_SymConst_kind(old_sym)) {
+          case symconst_addr_name:
+            name = get_id_str(get_SymConst_name(old_sym));
+            break;
+
+          case symconst_addr_ent:
+            name = get_entity_ld_name(get_SymConst_entity(old_sym));
+            break;
+
+          default:
+            assert(!"Unsupported SymConst");
+        }
+      }
+      if (name)
+        fprintf(F, "imm_SymConst = %s", name);
+      break;
+    }
+  }
+
+  return bad;
+}
+
 static void firm_init(void)
 {
   static struct obstack obst;
@@ -95,9 +155,13 @@ static void firm_init(void)
 	if(!op_imm) {
 		rflct_sig_t *sig;
 		int imm_opc = get_next_ir_opcode();
+                ir_op_ops ops;
+
+                memset(&ops, 0, sizeof(ops));
+                ops.dump_node = dump_node_Imm;
 
 		op_imm = new_ir_op(imm_opc, "Imm",
-				op_pin_state_pinned, 0, oparity_zero, 0, sizeof(imm_attr_t), NULL);
+				op_pin_state_pinned, 0, oparity_zero, 0, sizeof(imm_attr_t), &ops);
 
 		sig = rflct_signature_allocate(1, 1);
 		rflct_signature_set_arg(sig, 0, 0, "Imm", RFLCT_MC(Data), 0, 0);
@@ -268,34 +332,50 @@ static ir_node *new_Push(ir_graph *irg, ir_node *bl, ir_node *push, ir_node *arg
 	return new_ir_node(NULL, irg, bl, op_push, mode_M, 2, ins);
 }
 
-static ir_node *new_Imm(ir_graph *irg, ir_node *bl, ir_node *cnst)
-{
-	ir_node *ins[1];
-	ir_node *res;
-	imm_attr_t *attr;
+/**
+ * Creates an op_Imm node from an op_Const.
+ */
+static ir_node *new_Imm(ir_graph *irg, ir_node *bl, ir_node *cnst) {
+  ir_node    *ins[1];
+  ir_node    *res;
+  imm_attr_t *attr;
 
-	res = new_ir_node(NULL, irg, bl, op_imm, get_irn_mode(cnst), 0, ins);
-	attr = (imm_attr_t *) &res->attr;
+  res = new_ir_node(NULL, irg, bl, op_imm, get_irn_mode(cnst), 0, ins);
+  attr = (imm_attr_t *) &res->attr;
 
-	switch (get_irn_opcode(cnst)) {
-		case iro_Const:
-			attr->tp = imm_Const;
-			attr->data.tv = get_Const_tarval(cnst);
-			break;
-		case iro_SymConst:
-			attr->tp = imm_SymConst;
-			//attr->data.ent = get_SymConst_entity(cnst);
-			break;
-		case iro_Unknown:
-			break;
-		default:		assert(0 && "Cannot create Imm for this opcode");
-	}
+  switch (get_irn_opcode(cnst)) {
+    case iro_Const:
+      attr->tp      = imm_Const;
+      attr->data.tv = get_Const_tarval(cnst);
+      break;
+    case iro_SymConst:
+      attr->tp            = imm_SymConst;
+      attr->data.symconst = cnst;
+      break;
+    case iro_Unknown:
+      break;
+    default:
+      assert(0 && "Cannot create Imm for this opcode");
+  }
 
-	return res;
+  return res;
 }
 
 int is_Imm(const ir_node *irn) {
-	return get_irn_op(irn) == op_imm;
+  return get_irn_op(irn) == op_imm;
+}
+
+/**
+ * Returns the tarval from an Imm node or NULL in case of a SymConst
+ */
+tarval *get_Imm_tv(ir_node *irn) {
+  assert(is_Imm(irn) && "Cannot get tv from non-Imm");
+  imm_attr_t *attr = (imm_attr_t *)get_irn_generic_attr(irn);
+  if (attr->tp == imm_Const) {
+    return attr->data.tv;
+  }
+  else
+    return NULL;
 }
 
 static void prepare_walker(ir_node *irn, void *data)
