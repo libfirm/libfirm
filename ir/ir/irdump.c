@@ -1051,10 +1051,17 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
  * Dump the node information of a node n to a file F.
  */
 static INLINE int dump_node_info(FILE *F, ir_node *n)
-{ int bad = 0;
+{
+  int bad = 0;
+  const ir_op_ops *ops = get_op_ops(get_irn_op(n));
+
   fprintf (F, " info1: \"");
   bad = dump_irnode_to_file(F, n);
+  /* call the dump_node operation if available */
+  if (ops->dump_node)
+    bad = ops->dump_node(n, F, dump_node_info_txt);
   fprintf(F, "\"\n");
+
   return bad;
 }
 
