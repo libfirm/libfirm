@@ -15,6 +15,8 @@
 #include "transform.h"
 #include "new_nodes.h"
 
+
+
 /* determine if one operator is an Imm */
 ir_node *get_immediate_op(ir_node *op1, ir_node *op2) {
   if (op1)
@@ -38,8 +40,34 @@ ir_node *get_expr_op(ir_node *op1, ir_node *op2) {
  * @param mode      node mode
  * @return the created ia23 Add_i node
  */
-ir_node *gen_imm_Add(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
-  return new_rd_ia32_Add_i(dbg, current_ir_graph, block, expr_op, mode);
+ir_node *gen_imm_Add(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
+  ir_node *new_op;
+  tarval  *tv = get_Immop_tarval(const_op);
+  int     normal_add = 0;
+  tarval_classification_t class_tv, class_negtv;
+
+  /* const_op: tarval or SymConst? */
+  if (tv) {
+    /* optimize tarvals */
+    class_tv    = classify_tarval(tv);
+    class_negtv = classify_tarval(tarval_neg(tv));
+
+    if (class_tv == TV_CLASSIFY_ONE) { /* + 1 == INC */
+      new_op = new_rd_ia32_Inc(dbg, current_ir_graph, block, expr_op, mode);
+    }
+    else if (class_tv == TV_CLASSIFY_ALL_ONE || class_negtv == TV_CLASSIFY_ONE) { /* + (-1) == Sub */
+      new_op = new_rd_ia32_Dec(dbg, current_ir_graph, block, expr_op, mode);
+    }
+    else
+      normal_add = 1;
+  }
+  else
+    normal_add = 1;
+
+  if (normal_add)
+    new_op = new_rd_ia32_Lea_i(dbg, current_ir_graph, block, expr_op, mode);
+
+  return new_op;
 }
 
 /**
@@ -53,7 +81,52 @@ ir_node *gen_imm_Add(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
  * @return the created ia32 Add node
  */
 ir_node *gen_Add(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
-  return new_rd_ia32_Add(dbg, current_ir_graph, block, op1, op2, mode);
+  /* try to optimize with LEA */
+  ir_node *shli_op = is_ia32_Shl_i(op1) ? op1 : (is_ia32_Shl_i(op2) ? op2 : NULL);
+  ir_node *expr_op = shli_op == op1 ? op2 : (shli_op == op2 ? op1 : NULL);
+  int normal_add   = 0;
+  ir_node *new_op;
+
+  if (shli_op) {
+    tarval *tv   = get_Immop_tarval(shli_op);
+    tarval *offs = NULL;
+    if (tv) {
+      switch (get_tarval_long(tv)) {
+        case 1:
+        case 2:
+        case 3:
+          // If the other operand of the LEA is an LEA_i (that means LEA ofs(%regop1)),
+          // we can skip it and transform the whole sequence into LEA ofs(%regop1, %regop2, shl_val),
+          if (is_ia32_Lea_i(expr_op)) {
+            offs = get_Immop_tarval(expr_op);
+            expr_op = get_irn_n(expr_op, 0);
+          }
+
+          new_op = new_rd_ia32_Lea(dbg, current_ir_graph, block, expr_op, get_irn_n(shli_op, 0), mode);
+          set_Immop_attr_tv(new_op, tv);
+
+          if (offs)
+            set_ia32_Lea_offs(new_op, offs);
+
+          break;
+        default:
+          normal_add = 1;
+          break;
+      }
+    }
+    else
+      normal_add = 1;
+  }
+  else
+    normal_add = 1;
+
+  if (normal_add) {
+    new_op = new_rd_ia32_Lea(dbg, current_ir_graph, block, op1, op2, mode);
+    set_Immop_attr_tv(new_op, get_tarval_one(mode));
+    set_ia32_Lea_offs(new_op, NULL);
+  }
+
+  return new_op;
 }
 
 
@@ -67,7 +140,7 @@ ir_node *gen_Add(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 Mul_i node
  */
-ir_node *gen_imm_Mul(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Mul(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Mul_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -96,7 +169,7 @@ ir_node *gen_Mul(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 And_i node
  */
-ir_node *gen_imm_And(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_And(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_And_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -125,7 +198,7 @@ ir_node *gen_And(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 Or_i node
  */
-ir_node *gen_imm_Or(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Or(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Or_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -154,7 +227,7 @@ ir_node *gen_Or(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *
  * @param mode      node mode
  * @return the created ia23 Eor_i node
  */
-ir_node *gen_imm_Eor(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Eor(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Eor_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -183,7 +256,7 @@ ir_node *gen_Eor(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 Cmp_i node
  */
-ir_node *gen_imm_Cmp(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Cmp(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Cmp_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -212,8 +285,34 @@ ir_node *gen_Cmp(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 Sub_i node
  */
-ir_node *gen_imm_Sub(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
-  return new_rd_ia32_Sub_i(dbg, current_ir_graph, block, expr_op, mode);
+ir_node *gen_imm_Sub(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
+  ir_node *new_op;
+  tarval  *tv = get_Immop_tarval(const_op);
+  int     normal_sub = 0;
+  tarval_classification_t class_tv, class_negtv;
+
+  /* const_op: tarval or SymConst? */
+  if (tv) {
+    /* optimize tarvals */
+    class_tv    = classify_tarval(tv);
+    class_negtv = classify_tarval(tarval_neg(tv));
+
+    if (class_tv == TV_CLASSIFY_ONE) { /* - 1 == DEC */
+      new_op = new_rd_ia32_Dec(dbg, current_ir_graph, block, expr_op, mode);
+    }
+    else if (class_negtv == TV_CLASSIFY_ONE) { /* - (-1) == Sub */
+      new_op = new_rd_ia32_Inc(dbg, current_ir_graph, block, expr_op, mode);
+    }
+    else
+      normal_sub = 1;
+  }
+  else
+    normal_sub = 1;
+
+  if (normal_sub)
+    new_op = new_rd_ia32_Sub_i(dbg, current_ir_graph, block, expr_op, mode);
+
+  return new_op;
 }
 
 /**
@@ -229,28 +328,15 @@ ir_node *gen_imm_Sub(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *m
 ir_node *gen_Sub(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
   ir_node *sub = NULL;
 
-  /* transform "Const -- Sub -- Expr" into "Minus -- (Expr -- Sub -- Const)" */
+  /* transform "const - expr" into "-expr + const" */
   if (is_Imm(op1) && !is_Imm(op2)) {
-    imm_attr_t *attr_imm = (imm_attr_t *)get_irn_generic_attr(op1);
+    DBG((mod, LEVEL_1, "optimizing c-e into -e+c ... "));
 
-    DBG((mod, LEVEL_1, "optimizing c-e into -(e-c) ... "));
-
-    /* make sure that Imm is a Const and no SymConst */
-    if (attr_imm->tp == imm_Const) {
-      sub = gen_imm_Sub(dbg, block, op2, mode);
-
-      /* make the Const an attribute */
-      asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(sub);
-      attr->tv = attr_imm->data.tv;
-    }
-    else
-      goto gen_normal_sub;
-
-    /* negate result */
-    sub = new_rd_ia32_Minus(dbg, current_ir_graph, block, sub, mode);
+    sub = new_rd_ia32_Minus(dbg, current_ir_graph, block, op2, mode);
+    sub = gen_imm_Add(dbg, block, sub, op1, mode);
+    set_Immop_attr(sub, op1);
   }
   else {
-gen_normal_sub:
     sub = new_rd_ia32_Sub(dbg, current_ir_graph, block, op1, op2, mode);
   }
 
@@ -268,7 +354,7 @@ gen_normal_sub:
  * @param mode      node mode
  * @return the created ia23 Mod_i node
  */
-ir_node *gen_imm_Mod(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Mod(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Mod_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -297,7 +383,7 @@ ir_node *gen_Mod(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 Shl_i node
  */
-ir_node *gen_imm_Shl(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Shl(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Shl_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -326,7 +412,7 @@ ir_node *gen_Shl(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 Shr_i node
  */
-ir_node *gen_imm_Shr(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Shr(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Shr_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -355,7 +441,7 @@ ir_node *gen_Shr(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @param mode      node mode
  * @return the created ia23 Shrs_i node
  */
-ir_node *gen_imm_Shrs(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Shrs(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Shrs_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -384,7 +470,7 @@ ir_node *gen_Shrs(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node
  * @param mode      node mode
  * @return the created ia23 Rot_i node
  */
-ir_node *gen_imm_Rot(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_mode *mode) {
+ir_node *gen_imm_Rot(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
   return new_rd_ia32_Rot_i(dbg, current_ir_graph, block, expr_op, mode);
 }
 
@@ -461,7 +547,7 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
   ir_node *asm_node = NULL;
 
 #define GENOP(a)  case iro_##a: asm_node = gen_##a(mod, dbg, block, op1, op2, mode); break
-#define GENOPI(a) case iro_##a: asm_node = gen_imm_##a(dbg, block, expr_op, mode); break
+#define GENOPI(a) case iro_##a: asm_node = gen_imm_##a(dbg, block, expr_op, imm_op, mode); break
 
   if (com)
     imm_op  = get_immediate_op(op1, op2);
@@ -479,39 +565,29 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
   DBG((mod, LEVEL_1, "(op1: %s -- op2: %s) ... ", get_irn_opname(op1), get_irn_opname(op2)));
 
   if (imm_op) {
-    imm_attr_t *attr_imm = (imm_attr_t *)get_irn_generic_attr(imm_op);
-
     DBG((mod, LEVEL_1, "%s with imm ... ", get_irn_opname(node)));
 
-    /* make sure that Imm is a Const and no SymConst */
-    if (attr_imm->tp == imm_Const) {
-      switch(get_irn_opcode(node)) {
-        GENOPI(Add);
-        GENOPI(Mul);
-        GENOPI(And);
-        GENOPI(Or);
-        GENOPI(Eor);
-        GENOPI(Cmp);
+    switch(get_irn_opcode(node)) {
+      GENOPI(Add);
+      GENOPI(Mul);
+      GENOPI(And);
+      GENOPI(Or);
+      GENOPI(Eor);
+      GENOPI(Cmp);
 
-        GENOPI(Sub);
-        GENOPI(Mod);
-        GENOPI(Shl);
-        GENOPI(Shr);
-        GENOPI(Shrs);
-        GENOPI(Rot);
-        default:
-          assert("binop_i: THIS SHOULD NOT HAPPEN");
-      }
+      GENOPI(Sub);
+      GENOPI(Mod);
+      GENOPI(Shl);
+      GENOPI(Shr);
+      GENOPI(Shrs);
+      GENOPI(Rot);
+      default:
+        assert("binop_i: THIS SHOULD NOT HAPPEN");
+    }
 
-      /* make the Const an attribute */
-      asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(asm_node);
-      attr->tv = attr_imm->data.tv;
-    } /* TODO: SymConst support */
-    else
-      goto do_binop;
+    set_Immop_attr(asm_node, imm_op);
   }
   else {
-do_binop:
     DBG((mod, LEVEL_1, "%s as binop ... ", get_irn_opname(node)));
 
     switch(get_irn_opcode(node)) {
@@ -616,6 +692,10 @@ void transform_node(ir_node *node, void *env) {
     UNOP(Conv);
     GEN(Load);
     GEN(Store);
+
+    IGN(Block);
+    IGN(Start);
+    IGN(End);
   }
 
   if (asm_node) {
