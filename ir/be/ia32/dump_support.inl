@@ -8,6 +8,22 @@ static void fprintf_tv(FILE *F, tarval *tv, int brackets) {
     fprintf(F, "%s", buf);
 }
 
+const char *get_sc_name(ir_node *symc) {
+  if (get_irn_opcode(symc) != iro_SymConst)
+    return "NONE";
+
+  switch (get_SymConst_kind(symc)) {
+    case symconst_addr_name:
+      return get_id_str(get_SymConst_name(symc));
+
+    case symconst_addr_ent:
+      return get_entity_ld_name(get_SymConst_entity(symc));
+
+    default:
+      assert(!"Unsupported SymConst");
+  }
+}
+
 static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
   const char *name, *p;
   ir_mode    *mode = NULL;
@@ -22,8 +38,8 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
     case dump_node_mode_txt:
       mode = get_irn_mode(n);
 
-      if (mode && mode != mode_BB && mode != mode_ANY && mode != mode_BAD && mode != mode_T) {
-        /* dump below */
+      if (mode == mode_BB || mode == mode_ANY || mode == mode_BAD || mode == mode_T) {
+        mode = NULL;
       }
       else if (is_ia32_Load(n)) {
         mode = get_irn_mode(get_irn_n(n, 1));
@@ -44,8 +60,14 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
         if (tv)
           fprintf_tv(F, tv, 1);
         else {
-          fprintf(F, "[SymConst]");
+          fprintf(F, "[SymC &%s]", get_sc_name(get_old_ir(n)));
         }
+      }
+      else if (is_ia32_Call(n)) {
+        ir_node *old_call = get_old_ir(n);
+        ir_node *old_imm  = get_Call_ptr(old_call);
+
+        fprintf(F, "&%s ", get_sc_name(get_Imm_sc(old_imm)));
       }
       break;
 
