@@ -122,7 +122,7 @@ ir_node *gen_Add(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
 
   if (normal_add) {
     new_op = new_rd_ia32_Lea(dbg, current_ir_graph, block, op1, op2, mode);
-    set_Immop_attr_tv(new_op, get_tarval_one(mode));
+    set_Immop_attr_tv(new_op, get_tarval_one(mode_Iu));
     set_ia32_Lea_offs(new_op, NULL);
   }
 
@@ -645,6 +645,21 @@ ir_node *gen_Store(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_mod
 
 
 /**
+ * Transforms a Call.
+ *
+ * @param mod     the debug module
+ * @param block   the block the new node should belong to
+ * @param node    the ir Call node
+ * @param dummy   mode doesn't matter
+ * @return the created ia32 Store node
+ */
+ir_node *gen_Call(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_mode *dummy) {
+  return new_rd_ia32_Call(get_irn_dbg_info(node), current_ir_graph, block, node);
+}
+
+
+
+/**
  * Transforms the given firm node (and maybe some other related nodes)
  * into one or more assembler nodes.
  *
@@ -690,8 +705,10 @@ void transform_node(ir_node *node, void *env) {
 
     UNOP(Minus);
     UNOP(Conv);
+
     GEN(Load);
     GEN(Store);
+    GEN(Call);
 
     IGN(Block);
     IGN(Start);
