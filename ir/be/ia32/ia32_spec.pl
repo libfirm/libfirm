@@ -65,7 +65,7 @@ $arch = "ia32";
 #      for i = 1 to arity
 #         set in[i] = op_i
 #      done
-#      res = new_ir_node(dbg, irg, block, op_<arch>_<op-name>, mode, in)
+#      res = new_ir_node(db, irg, block, op_<arch>_<op-name>, mode, arity, in)
 #      res = optimize_node(res)
 #      IRN_VRFY_IRG(res, irg)
 #      return res
@@ -261,6 +261,32 @@ $arch = "ia32";
 "Lea_i" => {
   "arity"    => 1,
   "comment"  => "construct Lea: Lea(a) = lea offs(a) | res = a + offs",
+},
+
+# Call
+
+"Call" => {
+  "arity"    => 1,
+  "comment"  => "construct Call: Call(...)",
+  "args"     => [ { "type" => "ir_node *", "name" => "old_call" } ],
+  "rd_constructor" =>
+"  ir_node *res;
+  ir_node *in[1];
+  asmop_attr *attr;
+
+  if (!op_ia32_Call) assert(0);
+
+  in[0] = get_Call_mem(old_call);
+
+  res = new_ir_node(db, irg, block, op_ia32_Call, mode_T, 1, in);
+  res = optimize_node(res);
+  irn_vrfy_irg(res, irg);
+
+  attr = (asmop_attr *)get_irn_generic_attr(res);
+  attr->data.old_ir = old_call;
+
+  return res;
+"
 }
 
 ); # end of %nodes
