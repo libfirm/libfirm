@@ -204,6 +204,14 @@ tarval *get_Immop_tarval(ir_node *node) {
 }
 
 /**
+ * Return the old_ir attribute.
+ */
+ir_node *get_old_ir(ir_node *node) {
+  asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(node);
+  return attr->data.old_ir;
+}
+
+/**
  * Copy the attributes from an Imm to an Immop (Add_i, Sub_i, ...) node
  */
 void set_Immop_attr(ir_node *node, ir_node *imm) {
@@ -216,8 +224,8 @@ void set_Immop_attr(ir_node *node, ir_node *imm) {
     attr->data.tv = ia->data.tv;
   }
   else {
-    attr->tp            = asmop_SymConst;
-    attr->data.symconst = ia->data.symconst;
+    attr->tp          = asmop_SymConst;
+    attr->data.old_ir = ia->data.symconst;
   }
 }
 
@@ -304,11 +312,12 @@ print OUT<<EOF;
  * date:       $creation_time
  */
 
-tarval *get_Immop_tarval(ir_node *node);
+tarval  *get_Immop_tarval(ir_node *node);
+ir_node *get_old_ir(ir_node *node);
 void    set_Immop_attr(ir_node *node, ir_node *imm);
 void    set_Immop_attr_tv(ir_node *node, tarval *tv);
 void    set_ia32_Lea_offs(ir_node *node, tarval *offs);
-tarval *get_ia32_Lea_offs(ir_node *node);
+tarval  *get_ia32_Lea_offs(ir_node *node);
 
 EOF
 
