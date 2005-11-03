@@ -8,7 +8,7 @@ typedef struct {
   struct {
     tarval  *tv;       /**<< tarval for immediate operations */
     tarval  *offset;   /**<< offset for LEA */
-    ir_node *symconst; /**<< old symconst node in case of asmop_SymConst */
+    ir_node *old_ir;   /**<< old ir node to avoid duplicating information (symconst in case of asmop_SymConst) */
   } data;
 
   void *reg_constraints;
