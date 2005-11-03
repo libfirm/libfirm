@@ -40,10 +40,11 @@ static ir_op *op_imm;
 #define CLS_DATAB 0
 
 static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
-  ir_mode *mode;
-  int     bad = 0;
-  char    buf[1024];
-  tarval  *tv;
+  ir_mode    *mode;
+  int        bad = 0;
+  char       buf[1024];
+  tarval     *tv;
+  imm_attr_t *attr;
 
   switch (reason) {
     case dump_node_opcode_txt:
@@ -54,7 +55,7 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
         fprintf(F, "%s", buf);
       }
       else {
-        fprintf(F, "imm_SymConst");
+        fprintf(F, "immSymC");
       }
       break;
 
@@ -67,15 +68,11 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
       break;
 
     case dump_node_nodeattr_txt:
-      break;
-
-    case dump_node_info_txt: {
-      const char *name    = NULL;
-      ir_node    *old_sym = NULL;
-      imm_attr_t *attr    = (imm_attr_t *)get_irn_generic_attr(n);
+      attr = (imm_attr_t *)get_irn_generic_attr(n);
 
       if (is_Imm(n) && attr->tp == imm_SymConst) {
-        old_sym = attr->data.symconst;
+        const char *name    = NULL;
+        ir_node    *old_sym = attr->data.symconst;
 
         switch (get_SymConst_kind(old_sym)) {
           case symconst_addr_name:
@@ -89,11 +86,14 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
           default:
             assert(!"Unsupported SymConst");
         }
+
+        fprintf(F, "&%s ", name);
       }
-      if (name)
-        fprintf(F, "imm_SymConst = %s", name);
+
       break;
-    }
+
+    case dump_node_info_txt:
+      break;
   }
 
   return bad;
@@ -377,6 +377,20 @@ tarval *get_Imm_tv(ir_node *irn) {
   else
     return NULL;
 }
+
+/**
+ * Returns the SymConst from an Imm node or NULL in case of a Const
+ */
+ir_node *get_Imm_sc(ir_node *irn) {
+  assert(is_Imm(irn) && "Cannot get SymConst from non-Imm");
+  imm_attr_t *attr = (imm_attr_t *)get_irn_generic_attr(irn);
+  if (attr->tp == imm_SymConst) {
+    return attr->data.symconst;
+  }
+  else
+    return NULL;
+}
+
 
 static void prepare_walker(ir_node *irn, void *data)
 {
