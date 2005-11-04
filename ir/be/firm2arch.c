@@ -6,8 +6,9 @@
  * @version $Id$
  */
 
-#include <libfirm/firm.h>
-#include <libfirm/pseudo_irg.h>
+#include "pseudo_irg.h"
+#include "irgwalk.h"
+#include "irprog.h"
 #include "debug.h"
 
 #include "firm2arch.h"

@@ -1,7 +1,8 @@
 #ifndef FIRM2ARCH_H
 #define FIRM2ARCH_H
 
-#include <libfirm/firm.h>
+#include "irnode.h"
+#include "irgraph.h"
 
 void create_bearch_asm_opcodes(void);
 
