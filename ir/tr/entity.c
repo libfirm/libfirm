@@ -107,17 +107,25 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
   else
     res->allocation = allocation_automatic;
 
-  res->visibility = visibility_local;
+  res->visibility  = visibility_local;
+  res->volatility  = volatility_non_volatile;
+  res->stickyness  = stickyness_unsticky;
+  res->offset      = -1;
+  res->peculiarity = peculiarity_existent;
+  res->link        = NULL;
+
 
   if (is_Method_type(type)) {
     symconst_symbol sym;
-    sym.entity_p = res;
-    res->variability = variability_constant;
-    rem              = current_ir_graph;
-    current_ir_graph = get_const_code_irg();
-    res->value       = new_SymConst(sym, symconst_addr_ent);
-    current_ir_graph = rem;
-    res->irg_add_properties = 0;
+    sym.entity_p            = res;
+    rem                     = current_ir_graph;
+    current_ir_graph        = get_const_code_irg();
+    res->value              = new_SymConst(sym, symconst_addr_ent);
+    current_ir_graph        = rem;
+    res->variability        = variability_constant;
+    res->irg_add_properties = irg_no_property;
+    res->param_access       = NULL;
+    res->param_weight       = NULL;
   }
   else {
     res->variability = variability_uninitialized;
@@ -125,12 +133,6 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
     res->values      = NULL;
     res->val_paths   = NULL;
   }
-
-  res->volatility    = volatility_non_volatile;
-  res->stickyness    = stickyness_unsticky;
-  res->offset        = -1;
-  res->link          = NULL;
-  res->peculiarity   = peculiarity_existent;
 
   if (is_Class_type(owner)) {
     res->overwrites    = NEW_ARR_F(entity *, 0);
@@ -192,6 +194,15 @@ static void free_entity_attrs(entity *ent) {
   }
   ent->val_paths = NULL;
   ent->values = NULL;
+
+  if (ent->param_access) {
+    DEL_ARR_F(ent->param_access);
+    ent->param_access = NULL;
+  }
+  if (ent->param_weight) {
+    DEL_ARR_F(ent->param_weight);
+    ent->param_weight;
+  }
 }
 
 entity *
@@ -269,11 +280,6 @@ ident *
 (get_entity_ident)(const entity *ent) {
   return get_entity_ident(ent);
 }
-
-/*
-void   set_entitye_ld_name  (entity *, char *ld_name);
-void   set_entity_ld_ident (entity *, ident *ld_ident);
-*/
 
 type *
 (get_entity_owner)(entity *ent) {
@@ -389,7 +395,7 @@ set_entity_variability (entity *ent, ent_variability var)
 
   if ((is_compound_type(ent->type)) &&
       (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
-    /* Allocate datastructures for constant values */
+    /* Allocate data structures for constant values */
     ent->values    = NEW_ARR_F(ir_node *, 0);
     ent->val_paths = NEW_ARR_F(compound_graph_path *, 0);
   }
@@ -401,7 +407,7 @@ set_entity_variability (entity *ent, ent_variability var)
 
   if ((is_compound_type(ent->type)) &&
       (var == variability_uninitialized) && (ent->variability != variability_uninitialized)) {
-    /* Free datastructures for constant values */
+    /* Free data structures for constant values */
     DEL_ARR_F(ent->values);    ent->values    = NULL;
     DEL_ARR_F(ent->val_paths); ent->val_paths = NULL;
   }

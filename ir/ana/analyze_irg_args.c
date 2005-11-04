@@ -372,7 +372,7 @@ static void analyze_method_params_weight(entity *ent)
   if (nparams <= 0)
     return;
 
-  ent->param_weight = malloc(sizeof(float) * nparams);
+  ent->param_weight = NEW_ARR_F(float, nparams);
   irg               = get_entity_irg(ent);
 
   /* First we initialize the parameter weight with 0. */
@@ -396,9 +396,11 @@ static void analyze_method_params_weight(entity *ent)
     ent->param_weight[proj_nr]  += calc_method_param_weight(arg);
   }
 
+#if 0
   printf("\n%s:\n", get_entity_name(ent));
   for (i = nparams - 1; i >= 0; --i)
     printf("The weight of argument %i is %f \n", i, ent->param_weight[i]);
+#endif
 }
 
 /*
