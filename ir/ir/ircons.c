@@ -1526,6 +1526,20 @@ new_rd_Free (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 }
 
 ir_node *
+new_rd_simpleSel (dbg_info *db, ir_graph *irg, ir_node *block,
+                  ir_node *store, ir_node *objptr, entity *ent)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Sel(db, block, store, objptr, 0, NULL, ent);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
 new_rd_Sel (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
            int arity, ir_node **in, entity *ent)
 {
