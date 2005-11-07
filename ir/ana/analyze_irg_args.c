@@ -72,30 +72,59 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
        "Call" isn't computed else we analyze that graph. If our
        reference is the address of this
        Call node that mean the reference will be read.*/
-    if (get_irn_op(succ) == op_Call) {
-      ir_node *Call_ptr  = get_Call_ptr(succ);
+    switch (get_irn_opcode(succ)) {
 
-      if (Call_ptr == arg) {
+    case iro_Call: {
+      ir_node *ptr  = get_Call_ptr(succ);
+
+      if (ptr == arg) {
         /* Hmm: not sure what this is, most likely a read */
         bits |= ptr_access_read;
       }
-      else if (op_SymConst == get_irn_op(Call_ptr) &&
-	      get_SymConst_kind(Call_ptr) == symconst_addr_ent) {
-        entity *meth_ent = get_SymConst_entity(Call_ptr);
+      else {
+        ir_op *op = get_irn_op(ptr);
+        entity *meth_ent;
 
-	      for (p = get_Call_n_params(succ) - 1; p >= 0; --p){
-	        if (get_Call_param(succ, p) == arg) {
-            /* an arg can be used more than once ! */
-            bits |= get_method_param_access(meth_ent, p);
-	        }
-	      }
-      } else /* can do anything */
-        bits |= ptr_access_all;
+        if (op == op_SymConst && get_SymConst_kind(ptr) == symconst_addr_ent) {
+          meth_ent = get_SymConst_entity(ptr);
+
+          for (p = get_Call_n_params(succ) - 1; p >= 0; --p) {
+            if (get_Call_param(succ, p) == arg) {
+              /* an arg can be used more than once ! */
+              bits |= get_method_param_access(meth_ent, p);
+            }
+          }
+        }
+        else if (op == op_Sel && get_irp_callee_info_state() == irg_callee_info_consistent) {
+          /* is be a polymorphic call but callee information is available */
+          int i, n_params = get_Call_n_params(succ);
+
+          /* simply look into ALL possible callees */
+          for (i = get_Call_n_callees(succ) - 1; i >= 0; --i) {
+            meth_ent = get_Call_callee(succ, i);
+
+            /* unknown_entity is used to signal that we don't know what is called */
+            if (meth_ent == unknown_entity) {
+              bits |= ptr_access_all;
+              break;
+            }
+
+            for (p = n_params - 1; p >= 0; --p) {
+              if (get_Call_param(succ, p) == arg) {
+                /* an arg can be used more than once ! */
+                bits |= get_method_param_access(meth_ent, p);
+              }
+            }
+          }
+        }
+        else /* can do anything */
+          bits |= ptr_access_all;
+      }
 
       /* search stops here anyway */
       continue;
     }
-    else if (get_irn_op(succ) == op_Store) {
+    case iro_Store:
       /* We have reached a Store node => the reference is written or stored. */
       if (get_Store_ptr(succ) == arg) {
         /* written to */
@@ -108,17 +137,20 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
 
       /* search stops here anyway */
       continue;
-   }
-    else if (get_irn_op(succ) == op_Load) {
+
+    case iro_Load:
       /* We have reached a Load node => the reference is read. */
       bits |= ptr_access_read;
 
       /* search stops here anyway */
       continue;
-    }
-    else if (get_irn_op(succ) == op_Conv) {
+
+    case iro_Conv:
       /* our address is casted into something unknown. Break our search. */
       bits = ptr_access_all;
+      break;
+
+    default:
       break;
     }
 
@@ -275,11 +307,11 @@ ptr_access_kind get_method_param_access(entity *ent, int pos)
 }
 
 enum args_weight {
-  null_weight        = 0,  /* If can't be anything optimized. */
-  binop_weight       = 1,  /* If the argument have mode_weight and take part in binop. */
-  const_binop_weight = 1,  /* If the argument have mode_weight and take part in binop with a constant.*/
-  cmp_weight         = 4,  /* If the argument take part in cmp. */
-  const_cmp_weight   = 10  /* If the argument take part in cmp with a constant. */
+  null_weight        = 0,  /**< If can't be anything optimized. */
+  binop_weight       = 1,  /**< If the argument have mode_weight and take part in binop. */
+  const_binop_weight = 1,  /**< If the argument have mode_weight and take part in binop with a constant.*/
+  cmp_weight         = 4,  /**< If the argument take part in cmp. */
+  const_cmp_weight   = 10  /**< If the argument take part in cmp with a constant. */
 };
 
 /**
@@ -441,9 +473,9 @@ void analyze_irg_args_weight(ir_graph *irg)
   entity *ent;
 
   ent = get_irg_entity(irg);
-  if(! ent)
+  if (! ent)
     return;
 
-  if(! ent->param_weight)
+  if (! ent->param_weight)
     analyze_method_params_weight(ent);
 }
