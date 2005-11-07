@@ -43,6 +43,51 @@ typedef struct _walk_env {
 } walk_env_t;
 
 /**
+ * checks whether a Raise leaves a method
+ */
+static int is_method_leaving_raise(ir_node *raise)
+{
+  int i;
+  ir_node *proj = NULL;
+  ir_node *n;
+
+  for (i = get_irn_n_outs(raise) - 1; i >= 0; --i) {
+    ir_node *succ = get_irn_out(raise, i);
+
+    /* there should be only one ProjX node */
+    if (get_Proj_proj(succ) == pn_Raise_X) {
+      proj = succ;
+      break;
+    }
+  }
+
+  if (! proj) {
+    /* Hmm: no ProjX from a Raise? This should be a verification
+     * error. For now we just assert and return.
+     */
+    assert(! "No ProjX after Raise found");
+    return 1;
+  }
+
+  if (get_irn_n_outs(proj) != 1) {
+    /* Hmm: more than one user of ProjX: This is a verification
+     * error.
+     */
+    assert(! "More than one user of ProjX");
+    return 1;
+  }
+
+  n = get_irn_out(proj, 0);
+  if (get_irn_op(n) == op_End)
+    return 1;
+
+  assert(is_Block(n) && "Argh: user of ProjX is neither block for End");
+
+  /* ok, we get here so the raise will not leave the function */
+  return 0;
+}
+
+/**
  * determine if a value calculated by n "escape", ie
  * is stored somewhere we could not track
  */
@@ -56,7 +101,8 @@ static int do_escape(ir_node *n) {
     ir_node *succ = get_irn_out(n, i);
     ir_op *op     = get_irn_op(succ);
 
-    if (op == op_Store) {
+    switch (get_irn_opcode(succ)) {
+    case iro_Store:
       if (get_Store_value(succ) == n) {
         /*
          * We are storing n. As long as we do not further
@@ -64,15 +110,16 @@ static int do_escape(ir_node *n) {
          */
         return 1;
       }
-    }
-    else if (op == op_Conv) {
+      break;
+
+    case iro_Conv:
       /*
        * Should not happen, but if it does we leave the pointer
        * path and do not track further
        */
       return 1;
-    }
-    else if (op == op_Call) { /* most complicated case */
+
+    case iro_Call: { /* most complicated case */
       ir_node *ptr = get_Call_ptr(succ);
       entity *ent;
 
@@ -105,6 +152,48 @@ static int do_escape(ir_node *n) {
           }
         }
       }
+      break;
+    }
+
+    case iro_Return:
+      /* Bad: the allocate object is returned */
+      return 1;
+
+    case iro_Raise:
+      /* Hmm: if we do NOT leave the method, it's local */
+      return is_method_leaving_raise(succ);
+
+    case iro_Tuple: {
+      ir_node *proj;
+
+      /* Bad: trace the tuple backwards */
+      for (j = get_irn_arity(succ) - 1; j >= 0; --j)
+        if (get_irn_n(succ, j) == n)
+          break;
+
+      assert(j >= 0);
+
+
+      for (k = get_irn_n_outs(succ); k >= 0; --k) {
+        proj = get_irn_out(succ, k);
+
+        if (get_Proj_proj(proj) == j) {
+          /* we found the right Proj */
+          succ = proj;
+          break;
+        }
+      }
+
+      /*
+       * If we haven't found the right Proj, succ is still
+       * the Tuple and the search will end here.
+       */
+      break;
+    }
+
+    default:
+      break;
+
     }
 
     if (! mode_is_reference(get_irn_mode(succ)))
@@ -185,7 +274,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 
   /* convert all non-escaped heap allocs into frame variables */
   ftp = get_irg_frame_type(irg);
-  for (alloc = env->dead_allocs; alloc; alloc = next) {
+  for (alloc = env->found_allocs; alloc; alloc = next) {
     next = get_irn_link(alloc);
     dbg  = get_irn_dbg_info(alloc);
 
@@ -268,7 +357,7 @@ void escape_analysis(int run_scalar_replace)
     if (get_irg_outs_state(irg) != outs_consistent)
       compute_irg_outs(irg);
 
-    irg_walk_graph(irg, NULL, find_allocations, &env);
+    irg_walk_graph(irg, NULL, find_allocations, env);
 
     if (env->found_allocs || env->dead_allocs) {
       env->nr_changed   = 0;
