@@ -10,9 +10,10 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-/** @file escape_ana.c
+/**
+ * @file escape_ana.c
  *
- * escape analysis.
+ * A fast and simple Escape analysis.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -26,6 +27,7 @@
 #include "irgmod.h"
 #include "ircons.h"
 #include "escape_ana.h"
+#include "debug.h"
 
 /**
  * walker environment
@@ -41,6 +43,9 @@ typedef struct _walk_env {
   struct _walk_env *next;   /**< for linking environments */
 
 } walk_env_t;
+
+/** debug handle */
+firm_dbg_module_t *dbgHandle;
 
 /**
  * checks whether a Raise leaves a method
@@ -91,7 +96,7 @@ static int is_method_leaving_raise(ir_node *raise)
  * determine if a value calculated by n "escape", ie
  * is stored somewhere we could not track
  */
-static int do_escape(ir_node *n) {
+static int can_escape(ir_node *n) {
   int i, j, k;
 
   /* should always be pointer mode or we made some mistake */
@@ -136,10 +141,15 @@ static int do_escape(ir_node *n) {
           }
         }
       }
-      else {
+      else if (get_irn_op(ptr) == op_Sel) {
         /* go through all possible callees */
         for (k = get_Call_n_callees(succ) - 1; k >= 0; --k) {
           ent = get_Call_callee(succ, k);
+
+          if (ent == unknown_entity) {
+            /* we don't know what will be called, a possible escape */
+            return 1;
+          }
 
           for (j = get_Call_n_params(succ) - 1; j >= 0; --j) {
             if (get_Call_param(succ, j) == n) {
@@ -151,6 +161,9 @@ static int do_escape(ir_node *n) {
           }
         }
       }
+      else /* we don't know want will called */
+        return 1;
+
       break;
     }
 
@@ -198,7 +211,7 @@ static int do_escape(ir_node *n) {
     if (! mode_is_reference(get_irn_mode(succ)))
       continue;
 
-    if (do_escape(succ))
+    if (can_escape(succ))
       return 1;
   }
   return 0;
@@ -241,7 +254,7 @@ static void find_allocations(ir_node *alloc, void *ctx)
     return;
   }
 
-  if (! do_escape(adr)) {
+  if (! can_escape(adr)) {
     set_irn_link(alloc, env->found_allocs);
     env->found_allocs = alloc;
   }
@@ -255,7 +268,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
   ir_node *alloc, *next, *mem, *sel;
   type *ftp;
   entity *ent;
-  char name[32];
+  char name[128];
   unsigned nr = 0;
   dbg_info *dbg;
 
@@ -277,7 +290,9 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
     next = get_irn_link(alloc);
     dbg  = get_irn_dbg_info(alloc);
 
-    snprintf(name, sizeof(name), "_not_escaped_%u", nr++);
+    DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F\n", irg, alloc));
+
+    snprintf(name, sizeof(name), "%s_NE_%u", get_entity_name(get_irg_entity(irg)), nr++);
     ent = new_d_entity(ftp, new_id_from_str(name), get_Alloc_type(alloc), dbg);
 
     sel = new_rd_simpleSel(dbg, irg, get_nodes_block(alloc),
@@ -336,6 +351,9 @@ void escape_analysis(int run_scalar_replace)
     assert(! "need callee info");
     return;
   }
+
+  if (! dbgHandle)
+    dbgHandle = firm_dbg_register("firm.opt.escape_ana");
 
   /*
    * We treat memory for speed: we first collect all info in a
