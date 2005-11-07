@@ -253,6 +253,15 @@ static void dump_with_settings(const appender_t *app, void *object, size_t limit
 }
 
 /**
+ * Beware: do not set the entity ld_name
+ */
+static const char *get_entity_ld_name_ex(entity *ent) {
+  if (ent->ld_name)
+    return get_entity_ld_name(ent);
+  return get_entity_name(ent);
+}
+
+/**
  * emit a Firm object. Backported from irargs.
  */
 static void firm_emit(char *buf, int buflen, char conversion,
@@ -280,7 +289,7 @@ static void firm_emit(char *buf, int buflen, char conversion,
       break;
     case k_entity:
       snprintf(buf, buflen, "%s%s", A("ent"),
-          isupper(conversion) ? get_entity_ld_name(X): get_entity_name(X));
+          isupper(conversion) ? get_entity_ld_name_ex(X): get_entity_name(X));
       snprintf(add, sizeof(add), "[%ld]", get_entity_nr(X));
       break;
     case k_type:

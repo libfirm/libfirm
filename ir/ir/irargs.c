@@ -14,6 +14,8 @@
 # include "config.h"
 #endif
 
+#ifdef WITH_LIBCORE
+
 #include "bitset.h"
 
 #include <ctype.h>
@@ -85,6 +87,15 @@ static int firm_emit_dbg(lc_appendable_t *app,
 }
 
 /**
+ * Beware: do not set the entity ld_name
+ */
+static const char *get_entity_ld_name_ex(entity *ent) {
+  if (ent->ld_name)
+    return get_entity_ld_name(ent);
+  return get_entity_name(ent);
+}
+
+/**
  * emit a Firm object
  */
 static int firm_emit(lc_appendable_t *app,
@@ -114,7 +125,7 @@ static int firm_emit(lc_appendable_t *app,
       break;
     case k_entity:
       snprintf(buf, sizeof(buf), "%s%s", A("ent"),
-          isupper(occ->conversion) ? get_entity_ld_name(X): get_entity_name(X));
+          isupper(occ->conversion) ? get_entity_ld_name_ex(X): get_entity_name(X));
       snprintf(add, sizeof(add), "[%ld]", get_entity_nr(X));
       break;
     case k_type:
@@ -280,3 +291,5 @@ lc_arg_env_t *firm_get_arg_env(void)
 
   return env;
 }
+
+#endif /* WITH_LIBCORE */
