@@ -47,7 +47,7 @@ void finish_transform(ir_graph *irg) {
 void firmbe_gen_code(FILE *out) {
   int i;
 
-//  firmbe_gen_decls(out);
+  firmbe_gen_decls(out);
   for (i = 0; i < get_irp_n_irgs(); ++i) {
     ir_graph *irg = get_irp_irg(i);
 

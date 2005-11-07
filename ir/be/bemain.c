@@ -166,6 +166,7 @@ static void be_main_loop(void)
 		dump_ir_block_graph(irg, "-transformed");
 #endif
 
+
 #if 0
 #ifdef DUMP_PREPARED
 		dump_dominator_information(true);
@@ -249,18 +250,11 @@ static void be_main_loop(void)
 
 void be_main(int argc, const char *argv[])
 {
-	assembler_t *gnu_assembler;
-	FILE *asm_output_file;
+  FILE *asm_output_file;
 
-	be_main_loop();
+  be_main_loop();
 
-#if 0
-	gnu_assembler = gnuasm_create_assembler();
-	asm_output_file = fopen("asm_output.asm", "w");
-
-	asm_dump_globals(gnu_assembler);
-	gnuasm_dump(gnu_assembler, asm_output_file);
-	gnuasm_delete_assembler(gnu_assembler);
-	fclose(asm_output_file);
-#endif
+  asm_output_file = fopen(argv[0], "w");
+  firmbe_gen_code(asm_output_file);
+  fclose(asm_output_file);
 }

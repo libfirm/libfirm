@@ -17,7 +17,7 @@ subdir := ir/be/ia32
 full_dir = $(top_srcdir)/ir/be
 full_dirbe = $(full_dir)/$(FIRMBE_ARCH)
 
-SOURCES = Makefile.in new_nodes.c new_nodes.h transform.c transform.h
+SOURCES = Makefile.in new_nodes.c new_nodes.h transform.c transform.h gen_decls.c gen_decls.h
 
 include $(topdir)/MakeRules
 
