@@ -92,175 +92,238 @@ $arch = "ia32";
 "Add" => {
   "op_flags" => "C",
   "arity"    => 2,
-  "comment"  => "construct Add: Add(a, b) = Add(b, a) = a + b",
+  "comment"  => "construct Add: Add(a, b) = Add(b, a) = a + b"
 },
 
 "Add_i" => {
   "arity"    => 1,
   "comment"  => "construct Add: Add(a, const) = Add(const, a) = a + const",
-  "rd_constructor" => "DEFAULT"
 },
 
 "Mul" => {
   "op_flags" => "C",
   "arity"    => 2,
-  "comment"  => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "comment"  => "construct Mul: Mul(a, b) = Mul(b, a) = a * b"
 },
 
 "Mul_i" => {
   "state"    => "pinned",
   "arity"    => 1,
-  "comment"  => "construct Mul: Mul(a, const) = Mul(const, a) = a * const",
+  "comment"  => "construct Mul: Mul(a, const) = Mul(const, a) = a * const"
+},
+
+"Mulh" => {
+  "op_flags" => "C",
+  "arity"    => 2,
+  "comment"  => "construct Mulh: Mulh(a, b) = Mulh(b, a) = get_32_highest_bits(a * b)"
+},
+
+"Mulh_i" => {
+  "state"    => "pinned",
+  "arity"    => 1,
+  "comment"  => "construct Mulh: Mulh(a, const) = Mulh(const, a) = get_32_highest_bits(a * const)"
 },
 
 "And" => {
   "op_flags" => "C",
   "arity"    => 2,
-  "comment"  => "construct And: And(a, b) = And(b, a) = a AND b",
+  "comment"  => "construct And: And(a, b) = And(b, a) = a AND b"
 },
 
 "And_i" => {
   "arity"    => 1,
-  "comment"  => "construct And: And(a, const) = And(const, a) = a AND const",
+  "comment"  => "construct And: And(a, const) = And(const, a) = a AND const"
 },
 
 "Or" => {
   "op_flags" => "C",
   "arity"    => 2,
-  "comment"  => "construct Or: Or(a, b) = Or(b, a) = a OR b",
+  "comment"  => "construct Or: Or(a, b) = Or(b, a) = a OR b"
 },
 
 "Or_i" => {
   "arity"    => 1,
-  "comment"  => "construct Or: Or(a, const) = Or(const, a) = a OR const",
+  "comment"  => "construct Or: Or(a, const) = Or(const, a) = a OR const"
 },
 
 "Eor" => {
   "op_flags" => "C",
   "arity"    => 2,
-  "comment"  => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
+  "comment"  => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b"
 },
 
 "Eor_i" => {
   "arity"    => 1,
-  "comment"  => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
+  "comment"  => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const"
+},
+
+"Max" => {
+  "op_flags" => "C",
+  "arity"    => 2,
+  "comment"  => "construct Max: Max(a, b) = Max(b, a) = a > b ? a : b"
+},
+
+"Max_i" => {
+  "arity"    => 1,
+  "comment"  => "construct Max: Max(a, const) = Max(const, a) = a > const ? a : const"
+},
+
+"Min" => {
+  "op_flags" => "C",
+  "arity"    => 2,
+  "comment"  => "construct Min: Min(a, b) = Min(b, a) = a < b ? a : b"
+},
+
+"Min_i" => {
+  "arity"    => 1,
+  "comment"  => "construct Min: Min(a, const) = Min(const, a) = a < const ? a : const"
 },
 
 # not commutative operations
 
 "Sub" => {
   "arity"    => 2,
-  "comment"  => "construct Sub: Sub(a, b) = a - b",
+  "comment"  => "construct Sub: Sub(a, b) = a - b"
 },
 
 "Sub_i" => {
   "arity"    => 1,
-  "comment"  => "construct Sub: Sub(a, const) = a - const",
+  "comment"  => "construct Sub: Sub(a, const) = a - const"
 },
 
 "Mod" => {
   "arity"    => 2,
-  "comment"  => "construct Mod: Mod(a, b) = a % b",
+  "comment"  => "construct Mod: Mod(a, b) = a % b"
 },
 
 "Mod_i" => {
   "arity"    => 1,
-  "comment"  => "construct Mod: Mod(a, const) = a % const",
+  "comment"  => "construct Mod: Mod(a, const) = a % const"
+},
+
+"DivMod" => {
+  "arity"    => 2,
+  "comment"  => "construct DivMod: DivMod(a,b) = (a / b, a % b)"
+},
+
+"DivMod_i" => {
+  "arity"    => 1,
+  "comment"  => "construct DivMod: DivMod(a, const) = (a / const, a % const)"
+},
+
+"Div" => {
+  "arity"    => 2,
+  "comment"  => "construct Div: Div(a, b) = a / b"
+},
+
+"Div_i" => {
+  "arity"    => 1,
+  "comment"  => "construct Div: Div(a, const) = a / const"
 },
 
 "Shl" => {
   "arity"    => 2,
-  "comment"  => "construct Shl: Shl(a, b) = a << b",
+  "comment"  => "construct Shl: Shl(a, b) = a << b"
 },
 
 "Shl_i" => {
   "arity"    => 1,
-  "comment"  => "construct Shl: Shl(a, const) = a << const",
+  "comment"  => "construct Shl: Shl(a, const) = a << const"
 },
 
 "Shr" => {
   "arity"    => 2,
-  "comment"  => "construct Shr: Shr(a, b) = a >> b",
+  "comment"  => "construct Shr: Shr(a, b) = a >> b"
 },
 
 "Shr_i" => {
   "arity"    => 1,
-  "comment"  => "construct Shr: Shr(a, const) = a >> const",
+  "comment"  => "construct Shr: Shr(a, const) = a >> const"
 },
 
 "Shrs" => {
   "arity"    => 2,
-  "comment"  => "construct Shrs: Shrs(a, b) = a >> b",
+  "comment"  => "construct Shrs: Shrs(a, b) = a >> b"
 },
 
 "Shrs_i" => {
   "arity"    => 1,
-  "comment"  => "construct Shrs: Shrs(a, const) = a >> const",
+  "comment"  => "construct Shrs: Shrs(a, const) = a >> const"
 },
 
 "Rot" => {
   "arity"    => 2,
-  "comment"  => "construct Rot: Rot(a, b) = a ROT b",
+  "comment"  => "construct Rot: Rot(a, b) = a ROT b"
 },
 
 "Rot_i" => {
   "arity"    => 1,
-  "comment"  => "construct Rot: Rot(a, const) = a ROT const",
+  "comment"  => "construct Rot: Rot(a, const) = a ROT const"
 },
 
 "Minus" => {
   "arity"    => 1,
-  "comment"  => "construct Minus: Minus(a) = -a",
+  "comment"  => "construct Minus: Minus(a) = -a"
 },
 
 "Inc" => {
   "arity"    => 1,
-  "comment"  => "construct Increment: Inc(a) = a++",
+  "comment"  => "construct Increment: Inc(a) = a++"
 },
 
 "Dec" => {
   "arity"    => 1,
-  "comment"  => "construct Decrement: Dec(a) = a--",
+  "comment"  => "construct Decrement: Dec(a) = a--"
+},
+
+"Abs" => {
+  "arity"    => 1,
+  "comment"  => "construct Abs: Abs(a) = |a|"
+},
+
+"Not" => {
+  "arity"    => 1,
+  "comment"  => "construct Not: Not(a) = !a"
 },
 
 # other operations
 
 "Conv" => {
   "arity"    => 1,
-  "comment"  => "construct Conv: Conv(a) = (conv)a",
+  "comment"  => "construct Conv: Conv(a) = (conv)a"
 },
 
 "Cmp" => {
   "op_flags" => "C",
   "arity"    => 2,
-  "comment"  => "construct Cmp: Cmp(a, b) = a CMP b",
+  "comment"  => "construct Cmp: Cmp(a, b) = a CMP b"
 },
 
 "Cmp_i" => {
   "arity"    => 1,
-  "comment"  => "construct Cmp: Cmp(a, const) = Cmp(const, a) = a CMP const",
+  "comment"  => "construct Cmp: Cmp(a, const) = Cmp(const, a) = a CMP const"
 },
 
 # Load / Store
 
 "Load" => {
   "arity"    => 2,
-  "comment"  => "construct Load: Load(mem-edge, ptr) = LD ptr",
+  "comment"  => "construct Load: Load(mem-edge, ptr) = LD ptr"
 },
 
 "Store" => {
   "arity"    => 3,
-  "comment"  => "construct Store: Store(mem-edge, ptr, val) = ST ptr,val",
+  "comment"  => "construct Store: Store(mem-edge, ptr, val) = ST ptr,val"
 },
 
 "Lea" => {
   "arity"    => 2,
-  "comment"  => "construct Lea: Lea(a,b) = lea offs(a,b,const) | res = a + b * const + offs with const = 0,1,2,4,8",
+  "comment"  => "construct Lea: Lea(a,b) = lea offs(a,b,const) | res = a + b * const + offs with const = 0,1,2,4,8"
 },
 
 "Lea_i" => {
   "arity"    => 1,
-  "comment"  => "construct Lea: Lea(a) = lea offs(a) | res = a + offs",
+  "comment"  => "construct Lea: Lea(a) = lea offs(a) | res = a + offs"
 },
 
 # Call
