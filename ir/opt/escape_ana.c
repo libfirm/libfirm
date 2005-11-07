@@ -78,10 +78,10 @@ static int is_method_leaving_raise(ir_node *raise)
   }
 
   n = get_irn_out(proj, 0);
-  if (get_irn_op(n) == op_End)
-    return 1;
+  assert(is_Block(n) && "Argh: user of ProjX is no block");
 
-  assert(is_Block(n) && "Argh: user of ProjX is neither block for End");
+  if (n == get_irg_end_block(get_irn_irg(n)))
+    return 1;
 
   /* ok, we get here so the raise will not leave the function */
   return 0;
@@ -99,7 +99,6 @@ static int do_escape(ir_node *n) {
 
   for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
     ir_node *succ = get_irn_out(n, i);
-    ir_op *op     = get_irn_op(succ);
 
     switch (get_irn_opcode(succ)) {
     case iro_Store:
