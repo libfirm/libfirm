@@ -81,7 +81,7 @@ static int do_escape(ir_node *n) {
         ent = get_SymConst_entity(ptr);
 
         /* we know the called entity */
-        for (j = get_Call_n_params(succ); j >= 0; --j) {
+        for (j = get_Call_n_params(succ) - 1; j >= 0; --j) {
           if (get_Call_param(succ, j) == n) {
             /* n is the j'th param of the call */
             if (get_method_param_access(ent, j) & ptr_access_store)
@@ -95,7 +95,7 @@ static int do_escape(ir_node *n) {
         for (k = get_Call_n_callees(succ) - 1; k >= 0; --k) {
           ent = get_Call_callee(succ, k);
 
-          for (j = get_Call_n_params(succ); j >= 0; --j) {
+          for (j = get_Call_n_params(succ) - 1; j >= 0; --j) {
             if (get_Call_param(succ, j) == n) {
               /* n is the j'th param of the call */
               if (get_method_param_access(ent, j) & ptr_access_store)
@@ -133,7 +133,7 @@ static void find_allocations(ir_node *alloc, void *ctx)
     return;
 
   adr = NULL;
-  for (i = get_irn_n_outs(alloc); i >= 0; --i) {
+  for (i = get_irn_n_outs(alloc) - 1; i >= 0; --i) {
     ir_node *proj = get_irn_out(alloc, i);
 
     if (get_Proj_proj(proj) == pn_Alloc_res) {
