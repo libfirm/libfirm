@@ -297,7 +297,7 @@ tarval *get_tarval_P_void(void);
  * value.
  * The functions get_mode_{Max,Min,...} return tarvals retrieved from these
  * functions, but these are stored on initialization of the irmode module and
- * therefore the irmode functions should be prefered to the functions below. */
+ * therefore the irmode functions should be preferred to the functions below. */
 
 /** Returns the maximum value of a given mode. */
 tarval *get_tarval_max(ir_mode *mode);

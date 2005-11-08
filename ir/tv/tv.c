@@ -34,7 +34,9 @@
 #ifdef HAVE_STRINGS_H
 #include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
 #endif
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 #ifdef HAVE_ALLOCA_H
 # include <alloca.h>
 #endif
@@ -153,12 +155,13 @@ static int hash_val(const void *value, unsigned int length)
   return hash;
 }
 
-/* finds tarval with value/mode or creates new tarval */
+/** finds tarval with value/mode or creates new tarval */
 static tarval *get_tarval(const void *value, int length, ir_mode *mode)
 {
   tarval tv;
 
-  tv.mode = mode;
+  tv.kind   = k_tarval;
+  tv.mode   = mode;
   tv.length = length;
   if (length > 0) {
     /* if there already is such a value, it is returned, else value
@@ -1721,10 +1724,19 @@ void init_tarval_2(void)
 {
   ANNOUNCE();
 
+  tarval.bad->kind       = k_tarval;
   tarval_bad->mode       = mode_BAD;
+
+  tarval_undefined->kind = k_tarval;
   tarval_undefined->mode = mode_ANY;
+
+  tarval_b_true->kind    = k_tarval;
   tarval_b_true->mode    = mode_b;
+
+  tarval_b_false->kind   = k_tarval
   tarval_b_false->mode   = mode_b;
+
+  tarval_P_void->kind    = k_tarval;
   tarval_P_void->mode    = mode_P;
 
   /*
