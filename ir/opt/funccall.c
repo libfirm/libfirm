@@ -49,10 +49,9 @@ static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
 
     ptr = get_Call_ptr(call);
     if (get_irn_op(ptr) == op_SymConst && get_SymConst_kind(ptr) == symconst_addr_ent) {
-
       ent = get_SymConst_entity(ptr);
 
-      if ((get_entity_additional_properties(ent) & irg_const_function) == 0)
+      if ((get_entity_additional_properties(ent) & mtp_property_const) == 0)
         return;
       ++ctx->n_calls_removed_SymConst;
     }
@@ -67,7 +66,7 @@ static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
         return;
       for (i = 0; i < n_callees; ++i) {
         ent = get_Call_callee(call, i);
-        if ((get_entity_additional_properties(ent) & irg_const_function) == 0)
+        if ((get_entity_additional_properties(ent) & mtp_property_const) == 0)
 	        return;
       }
       ++ctx->n_calls_removed_Sel;
@@ -134,7 +133,7 @@ void optimize_funccalls(int force_run)
 
     change = 0;
 
-    if (get_irg_additional_properties(irg) & irg_const_function) {
+    if (get_irg_additional_properties(irg) & mtp_property_const) {
       /* already marked as a const function */
       ++num_pure;
     }
@@ -183,7 +182,7 @@ void optimize_funccalls(int force_run)
 
       if (! change) {
         /* no memory changes found, it's a const function */
-        set_irg_additional_property(irg, irg_const_function);
+        set_irg_additional_property(irg, mtp_property_const);
         ++num_pure;
       }
     }
@@ -200,7 +199,7 @@ void optimize_funccalls(int force_run)
       ir_graph *irg  = get_irp_irg(i);
 
       /* no need to do this on const functions */
-      if ((get_irg_additional_properties(irg) & irg_const_function) == 0) {
+      if ((get_irg_additional_properties(irg) & mtp_property_const) == 0) {
         ctx.changed = 0;
         irg_walk_graph(irg, NULL, rem_mem_from_const_fkt_calls, &ctx);
 
@@ -221,47 +220,6 @@ void optimize_funccalls(int force_run)
   else {
     if (get_firm_verbosity()) {
       printf("No graphs without side effects detected\n");
-    }
-  }
-}
-
-/**
- * Walker: Walks over all graphs and evaluates calls with
- * constant arguments.
- * Currently used only for non-virtual calls.
- */
-static void eval_calls(ir_node *call, void *env)
-{
-  ir_node  *ptr, *param;
-  entity   *ent;
-  ir_graph *irg;
-  int      i;
-
-  if (get_irn_op(call) != op_Call)
-    return;
-
-  ptr = get_Call_ptr(call);
-
-  if (get_irn_op(ptr) != op_SymConst)
-    return;
-
-  if (get_SymConst_kind(ptr) != symconst_addr_ent)
-    return;
-
-  ent = get_SymConst_entity(ptr);
-  irg = get_entity_irg(ent);
-
-  if (! irg)
-    return;
-
-  /* ok, we found the called graph here, check for const args */
-  for (i = get_Call_n_params(call) - 1; i >= 0; --i) {
-    param = get_Call_param(call, i);
-
-    if (is_irn_constlike(param)) {
-      /* Found one: add to statistics */
-
-      ir_printf("%+F called with const %+F at position %d\n", ent, param, i);
     }
   }
 }
