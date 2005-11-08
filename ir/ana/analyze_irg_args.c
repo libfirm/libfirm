@@ -398,14 +398,16 @@ static void analyze_method_params_weight(entity *ent)
   mtp      = get_entity_type(ent);
   nparams  = get_method_n_params(mtp);
 
+  /* allocate a new array. currently used as 'analysed' flag */
+  ent->param_weight = NEW_ARR_F(float, nparams);
+
   /* If the method haven't parameters we have
    * nothing to do.
    */
   if (nparams <= 0)
     return;
 
-  ent->param_weight = NEW_ARR_F(float, nparams);
-  irg               = get_entity_irg(ent);
+  irg = get_entity_irg(ent);
 
   /* First we initialize the parameter weight with 0. */
   for (i = nparams - 1; i >= 0; i--)
