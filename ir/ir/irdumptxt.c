@@ -543,27 +543,27 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
     if (is_Method_type(get_entity_type(ent))) {
       unsigned mask = get_entity_additional_properties(ent);
-      unsigned cc   = get_entity_calling_convention(ent);
+      unsigned cc   = get_method_calling_convention(get_entity_type(ent));
 
       if (mask) {
         fprintf(F, "\n%s  additional prop: ", prefix);
 
-        if (mask & irg_const_function)    fprintf(F, "const_function, ");
-        if (mask & irg_pure_function)     fprintf(F, "pure_function, ");
-        if (mask & irg_noreturn_function) fprintf(F, "noreturn_function, ");
-        if (mask & irg_nothrow_function)  fprintf(F, "nothrow_function, ");
-        if (mask & irg_naked_function)    fprintf(F, "naked_function, ");
+        if (mask & mtp_property_const)    fprintf(F, "const_function, ");
+        if (mask & mtp_property_pure)     fprintf(F, "pure_function, ");
+        if (mask & mtp_property_noreturn) fprintf(F, "noreturn_function, ");
+        if (mask & mtp_property_nothrow)  fprintf(F, "nothrow_function, ");
+        if (mask & mtp_property_naked)    fprintf(F, "naked_function, ");
       }
       fprintf(F, "\n%s  calling convention: ", prefix);
-      if (cc & irg_cc_reg_param) fprintf(F, "regparam, ");
-      if (cc & irg_cc_this_call) fprintf(F, "thiscall, ");
+      if (cc & cc_reg_param) fprintf(F, "regparam, ");
+      if (cc & cc_this_call) fprintf(F, "thiscall, ");
       if (IS_CDECL(cc))
         fprintf(F, "cdecl");
       else if (IS_STDCALL(cc))
         fprintf(F, "stdcall");
       else {
-        fprintf(F, (cc & irg_cc_last_on_top) ? "last param on top, " : "first param on top, ");
-        fprintf(F, (cc & irg_cc_callee_clear_stk) ? "callee clear stack" : "caller clear stack");
+        fprintf(F, (cc & cc_last_on_top) ? "last param on top, " : "first param on top, ");
+        fprintf(F, (cc & cc_callee_clear_stk) ? "callee clear stack" : "caller clear stack");
       }
     }
 
