@@ -1,4 +1,3 @@
-
 #ifndef _FIRM_BEARCH_H
 #define _FIRM_BEARCH_H
 
@@ -26,14 +25,14 @@ typedef struct _arch_irn_handler_t      arch_irn_handler_t;
 struct _be_node_factory_t;
 
 typedef enum _arch_register_type_t {
-	arch_register_type_none = 0,
+  arch_register_type_none = 0,
   arch_register_type_write_invariant,
-	arch_register_type_caller_saved,    /**< The register must be saved by the caller
-                                        upon a function call. It thus can be overwritten
-																								in the called function. */
-	arch_register_type_callee_saved,    /**< The register must be saved by the called function,
-                                        it thus survives a function call. */
-	arch_register_type_ignore           /**< Do not consider this register when allocating. */
+  arch_register_type_caller_saved,    /**< The register must be saved by the caller
+                                           upon a function call. It thus can be overwritten
+                                           in the called function. */
+  arch_register_type_callee_saved,    /**< The register must be saved by the called function,
+                                           it thus survives a function call. */
+  arch_register_type_ignore           /**< Do not consider this register when allocating. */
 } arch_register_type_t;
 
 /**
@@ -41,9 +40,9 @@ typedef enum _arch_register_type_t {
  */
 struct _arch_register_t {
   const char *name;                         /**< The name of the register. */
-	const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
-	int index;																/**< The index of the register in the class. */
-	arch_register_type_t type;                /**< The type of the register. */
+  const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
+  int index;                                /**< The index of the register in the class. */
+  arch_register_type_t type;                /**< The type of the register. */
   void *data;                               /**< Custom data. */
 };
 
@@ -67,9 +66,9 @@ static INLINE int _arch_register_get_index(const arch_register_t *reg)
  * Like general purpose or floating point.
  */
 struct _arch_register_class_t {
-  const char *name;               /**< The name of the register. */
-	int n_regs;								      /**< Number of registers in this class. */
-	const arch_register_t *regs;    /**< The array of registers. */
+  const char *name;               /**< The name of the register class. */
+  int n_regs;                     /**< Number of registers in this class. */
+  const arch_register_t *regs;    /**< The array of registers. */
 };
 
 #define arch_register_class_n_regs(cls) ((cls)->n_regs)
@@ -85,8 +84,8 @@ extern int arch_register_class_put(const arch_register_class_t *cls, bitset_t *b
 static INLINE const arch_register_t *
 _arch_register_for_index(const arch_register_class_t *cls, int idx)
 {
-	assert(0 <= idx && idx < cls->n_regs);
-	return &cls->regs[idx];
+  assert(0 <= idx && idx < cls->n_regs);
+  return &cls->regs[idx];
 }
 
 #define arch_register_for_index(cls, idx) \
@@ -104,14 +103,14 @@ _arch_register_for_index(const arch_register_class_t *cls, int idx)
  */
 struct _arch_immediate_t {
   const char *name;         /**< The name of the immediate. */
-	ir_mode *mode;						/**< The mode of the immediate. */
+  ir_mode *mode;            /**< The mode of the immediate. */
 };
 
 /**
  * The member of an enum.
  */
 struct _arch_enum_member_t {
-	arch_enum_t *enm;					/**< The enum, this member belongs to. */
+  arch_enum_t *enm;         /**< The enum, this member belongs to. */
 };
 
 /**
@@ -122,8 +121,8 @@ struct _arch_enum_member_t {
  * eq, ...) some other special attributes of an instruction.
  */
 struct _arch_enum_t {
-	int n_members;										/**< The number of members in this enum. */
-	arch_enum_member_t *members[1];		/**< The array of members. */
+  int n_members;                    /**< The number of members in this enum. */
+  arch_enum_member_t *members[1];   /**< The array of members. */
 };
 
 typedef enum _arch_operand_type_t {
@@ -132,29 +131,29 @@ typedef enum _arch_operand_type_t {
   arch_operand_type_register,
   arch_operand_type_immediate,
   arch_operand_type_symconst,
-	arch_operand_type_last
+  arch_operand_type_last
 } arch_operand_type_t;
 
 /**
  * Different types of register allocation requirements.
  */
 typedef enum _arch_register_req_type_t {
-  arch_register_req_type_none = 0,        /** No register requirement. */
+  arch_register_req_type_none = 0,        /**< No register requirement. */
 
-  arch_register_req_type_normal = 1,      /** All registers in the class
-                                            are allowed. */
+  arch_register_req_type_normal = 1,      /**< All registers in the class
+                                               are allowed. */
 
-  arch_register_req_type_limited = 2,     /** Only a real subset of
-                                            the class is allowed. */
+  arch_register_req_type_limited = 2,     /**< Only a real subset of
+                                               the class is allowed. */
 
-  arch_register_req_type_equal = 4,       /** The register must equal
-                                            another one at the node. */
+  arch_register_req_type_equal = 4,       /**< The register must equal
+                                               another one at the node. */
 
-  arch_register_req_type_unequal = 8,     /** The register must be unequal
-                                            to some other at the node. */
+  arch_register_req_type_unequal = 8,     /**< The register must be unequal
+                                               to some other at the node. */
 
-  arch_register_req_type_pair = 16        /** The register is part of a
-                                            register pair. */
+  arch_register_req_type_pair = 16        /**< The register is part of a
+                                               register pair. */
 } arch_register_req_type_t;
 
 #define arch_register_req_is_constr(x) \
@@ -164,19 +163,19 @@ typedef enum _arch_register_req_type_t {
  * Expresses requirements to register allocation for an operand.
  */
 typedef struct _arch_register_req_t {
-  arch_register_req_type_t type;          /** The type of the constraint. */
-  const arch_register_class_t *cls;       /** The register class this
-                                            constraint belongs to. */
+  arch_register_req_type_t type;          /**< The type of the constraint. */
+  const arch_register_class_t *cls;       /**< The register class this
+                                               constraint belongs to. */
   union {
     int (*limited)(const ir_node *irn, int pos, bitset_t *bs);
-                                          /** In case of the 'limited'
+                                          /**< In case of the 'limited'
                                             constraint, this function
                                             must put all allowable
                                             registers in the bitset and
                                             return the number of registers
                                             in the bitset. */
 
-    int pos;                             /** In case of the equal constraint,
+    int pos;                             /**< In case of the equal constraint,
                                             this gives the position of the
                                             operand to which the register of
                                             this should be equal to. Same for
@@ -200,8 +199,8 @@ typedef enum _arch_irn_class_t {
  * Some flags describing a node in more detail.
  */
 typedef enum _arch_irn_flags_t {
-	arch_irn_flags_spillable = 1,
-	arch_irn_flags_rematerializable = 2
+  arch_irn_flags_spillable = 1,
+  arch_irn_flags_rematerializable = 2
 } arch_irn_flags_t;
 
 /*
@@ -312,13 +311,13 @@ struct _arch_irn_ops_t {
    */
   arch_irn_class_t (*classify)(const arch_irn_ops_t *self, const ir_node *irn);
 
-	/**
-	 * Get the flags of a node.
-	 * @param self The irn ops themselves.
-	 * @param irn The node.
-	 * @return A set of flags.
-	 */
-	arch_irn_flags_t (*get_flags)(const arch_irn_ops_t *self, const ir_node *irn);
+  /**
+   * Get the flags of a node.
+   * @param self The irn ops themselves.
+   * @param irn The node.
+   * @return A set of flags.
+   */
+  arch_irn_flags_t (*get_flags)(const arch_irn_ops_t *self, const ir_node *irn);
 
 };
 
@@ -467,13 +466,13 @@ struct _arch_isa_if_t {
    */
   const arch_register_class_t *(*get_reg_class)(int i);
 
-	/**
-	 * Prepare a graph.
-	 * This function is called each time, the backend starts running over
-	 * a graph.
-	 * @param irg The graph.
-	 */
-	void (*prepare_graph)(ir_graph *irg);
+  /**
+   * Prepare a graph.
+   * This function is called each time, the backend starts running over
+   * a graph.
+   * @param irg The graph.
+   */
+  void (*prepare_graph)(ir_graph *irg);
 };
 
 #define ARCH_MAX_HANDLERS         8
