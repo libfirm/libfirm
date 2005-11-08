@@ -82,13 +82,13 @@ static int hash_entry(const entry_t *entry)
  */
 static void collect_irg_calls(ir_node *call, void *env)
 {
+  set *entrys = env;
   ir_node *call_ptr;
   entity *call_ent;
-  set *entrys;
+  type *mtp;
   entry_t key, *entry;
   ir_node *call_param;
-  int i;
-
+  int i, n_params;
 
   /* We collect just "Call" nodes*/
   if (get_irn_op(call) != op_Call)
@@ -103,12 +103,23 @@ static void collect_irg_calls(ir_node *call, void *env)
   if (get_SymConst_kind(call_ptr) != symconst_addr_ent)
     return;
 
-  entrys = env;
   call_ent = get_SymConst_entity(call_ptr);
+
+  /* we can only clone calls to existing entities */
+  if (get_entity_visibility(call_ent) == visibility_external_allocated)
+    return;
+
+  n_params = get_Call_n_params(call);
+
+  /* beware: we cannot clone variadic parameters */
+  mtp = get_Call_type(call);
+  if (get_method_variadicity(mtp) == variadicity_non_variadic) {
+    n_params = get_method_first_variadic_param_index(mtp);
+  }
 
   /* In this for loop we collect the calls, that have
      an constant parameter. */
-  for (i = get_Call_n_params(call) - 1; i >= 0; i--) {
+  for (i = n_params - 1; i >= 0; i--) {
     call_param = get_Call_param(call, i);
     if (is_Const(call_param)) {
       /* we have found a Call to collect and we save the informations,
@@ -150,7 +161,7 @@ void proc_cloning(float threshold)
   /* We iterate the set and arrange the element of the set in a plist'
      The elements are arranged dependent of their value descending.*/
   ITERATE_SET(set_entrys, entry) {
-    entry->weight *= get_method_param_weight(entry->t.ent, entry->t.pos);
+    entry->weight *= (get_method_param_weight(entry->t.ent, entry->t.pos) + 1);
 
     /*
      * Do not put entry with a weight < threshold in the list
