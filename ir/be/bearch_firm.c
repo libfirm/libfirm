@@ -369,8 +369,10 @@ int is_Imm(const ir_node *irn) {
  * Returns the tarval from an Imm node or NULL in case of a SymConst
  */
 tarval *get_Imm_tv(ir_node *irn) {
+  imm_attr_t *attr;
+
   assert(is_Imm(irn) && "Cannot get tv from non-Imm");
-  imm_attr_t *attr = (imm_attr_t *)get_irn_generic_attr(irn);
+  attr = (imm_attr_t *)get_irn_generic_attr(irn);
   if (attr->tp == imm_Const) {
     return attr->data.tv;
   }
@@ -382,8 +384,10 @@ tarval *get_Imm_tv(ir_node *irn) {
  * Returns the SymConst from an Imm node or NULL in case of a Const
  */
 ir_node *get_Imm_sc(ir_node *irn) {
+  imm_attr_t *attr;
+
   assert(is_Imm(irn) && "Cannot get SymConst from non-Imm");
-  imm_attr_t *attr = (imm_attr_t *)get_irn_generic_attr(irn);
+  attr = (imm_attr_t *)get_irn_generic_attr(irn);
   if (attr->tp == imm_SymConst) {
     return attr->data.symconst;
   }
@@ -414,14 +418,22 @@ static void prepare_walker(ir_node *irn, void *data)
 			char buf[128];
 			ir_node *nc;
 			ir_node *push;
-			int i, n;
+			int i, n = get_Call_n_params(irn);
 			type *nt;
+      unsigned cc = get_method_calling_convention(get_Call_type(irn));
 
-			store = new_Push(irg, bl, store, get_Call_param(irn, 0));
+      if (cc & cc_last_on_top) {
+			  store = new_Push(irg, bl, store, get_Call_param(irn, 0));
 
-			for(i = 1, n = get_Call_n_params(irn); i < n; ++i) {
-				store = new_Push(irg, bl, store, get_Call_param(irn, i));
-			}
+			  for (i = 1; i < n; ++i)
+				  store = new_Push(irg, bl, store, get_Call_param(irn, i));
+      }
+      else {
+        store = new_Push(irg, bl, store, get_Call_param(irn, n - 1));
+
+        for (i = n - 2; i >= 0; --i)
+          store = new_Push(irg, bl, store, get_Call_param(irn, i));
+      }
 
 			snprintf(buf, sizeof(buf), "push_%s", get_type_name(ct));
 
