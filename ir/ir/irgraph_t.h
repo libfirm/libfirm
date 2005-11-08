@@ -29,6 +29,7 @@
 #include "irprog.h"
 #include "pseudo_irg.h"
 #include "type_t.h"
+#include "entity_t.h"
 #include "typegmod.h"
 #include "tr_inheritance.h"
 
@@ -97,7 +98,6 @@ struct ir_graph {
   exec_freq_state   execfreq_state;        /**< state of execution frequency information */
   ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
   irg_extblk_info_state extblk_state;      /**< state of extended basic block info */
-  unsigned calling_conv;                   /**< calling convention */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -147,10 +147,8 @@ struct ir_graph {
 
 /**
  * Initializes the graph construction module
- *
- * @param default_cc_mask  The default calling convention.
  */
-void firm_init_irgraph(unsigned default_cc_mask);
+void firm_init_irgraph(void);
 
 /* Internal constructor that does not add to irp_irgs or the like. */
 ir_graph *new_r_ir_graph (entity *ent, int n_loc);
@@ -449,27 +447,25 @@ _set_irg_inline_property(ir_graph *irg, irg_inline_property s) {
 
 static INLINE unsigned
 _get_irg_additional_properties(const ir_graph *irg) {
+  if (irg->additional_properties & mtp_property_inherited)
+    return get_method_additional_properties(get_entity_type(irg->ent));
   return irg->additional_properties;
 }
 
 static INLINE void
 _set_irg_additional_properties(ir_graph *irg, unsigned mask) {
-  irg->additional_properties = mask;
+  /* do not allow to set the mtp_property_inherited flag or
+   * the automatic inheritance of flags will not work */
+  irg->additional_properties = mask & ~mtp_property_inherited;
 }
 
 static INLINE void
-_set_irg_additional_property(ir_graph *irg, irg_additional_property flag) {
-  irg->additional_properties |= flag;
-}
+_set_irg_additional_property(ir_graph *irg, mtp_additional_property flag) {
+  unsigned prop = irg->additional_properties;
 
-static INLINE unsigned
-_get_irg_calling_convention(const ir_graph *irg) {
-  return irg->calling_conv;
-}
-
-static INLINE void
-_set_irg_calling_convention(ir_graph *irg, unsigned cc_mask) {
-  irg->calling_conv = cc_mask;
+  if (prop & mtp_property_inherited)
+    prop = get_method_additional_properties(get_entity_type(irg->ent));
+  irg->additional_properties = prop | flag;
 }
 
 static INLINE void
@@ -553,8 +549,6 @@ _inc_irg_block_visited(ir_graph *irg) {
 #define get_irg_additional_properties(irg)    _get_irg_additional_properties(irg)
 #define set_irg_additional_properties(irg, m) _set_irg_additional_properties(irg, m)
 #define set_irg_additional_property(irg, f)   _set_irg_additional_property(irg, f)
-#define get_irg_calling_convention(irg)       _get_irg_calling_convention(irg)
-#define set_irg_calling_convention(irg, cc)   _set_irg_calling_convention(irg, cc)
 #define set_irg_link(irg, thing)              _set_irg_link(irg, thing)
 #define get_irg_link(irg)                     _get_irg_link(irg)
 #define get_irg_visited(irg)                  _get_irg_visited(irg)
