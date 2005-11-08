@@ -51,7 +51,8 @@ void finish_tarval(void);
  *   irmode.h for predefined modes
  */
 struct tarval {
-  ir_mode *mode;          /**< the mode of the stored value */
+  firm_kind kind;         /**< must be k_tarval */
+  ir_mode   *mode;        /**< the mode of the stored value */
   const void *value;      /**< the value stored in an internal way... */
   unsigned int length;    /**< the length of the stored value */
 };
