@@ -80,7 +80,7 @@ init_firm(const firm_parameter_t *param)
   /* initialize tarvals, and floating point arithmetic */
   init_tarval_2();
   /* init graph construction */
-  firm_init_irgraph(def_params.cc_mask);
+  firm_init_irgraph();
   /* kind of obstack initialization */
   firm_init_mangle();
   /* initialize all op codes an irnode can consist of */
@@ -93,7 +93,7 @@ init_firm(const firm_parameter_t *param)
      later. */
   init_irprog_2();
   /* Initialize the type module and construct some idents needed. */
-  firm_init_type(NULL);
+  firm_init_type(def_params.builtin_dbg, def_params.cc_mask);
   /* initialize the entity module */
   firm_init_entity();
   /* allocate a hash table. */
