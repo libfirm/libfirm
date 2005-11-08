@@ -79,6 +79,7 @@ extern "C" {
 #include "funccall.h"       /* real function call optimization */
 #include "return.h"         /* Return node normalizations */
 #include "scalar_replace.h" /* Scalar replacement */
+#include "proc_cloning.h"   /* procedure cloning */
 //#include "opt_branches.h"   /* Branch optimizations */
 
 /* Analyses */
@@ -180,6 +181,11 @@ struct _firm_parameter_t {
    * The default calling convention.
    */
   unsigned cc_mask;
+
+  /**
+   * The debug info that should be used for "builtin" objects.
+   */
+  dbg_info *builtin_dbg;
 };
 
 typedef struct _firm_parameter_t firm_parameter_t;
