@@ -282,19 +282,6 @@ ir_node *gen_Eor(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
 
 
 /**
- * Creates an ia32 Max with immediate.
- *
- * @param dbg       firm dbg
- * @param block     the block the new node should belong to
- * @param expr_op   operator
- * @param mode      node mode
- * @return the created ia23 Max_i node
- */
-ir_node *gen_imm_Max(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
-  return new_rd_ia32_Max_i(dbg, current_ir_graph, block, expr_op, mode);
-}
-
-/**
  * Creates an ia32 Max.
  *
  * @param dbg       firm dbg
@@ -308,19 +295,6 @@ ir_node *gen_Max(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
 }
 
 
-
-/**
- * Creates an ia32 Min with immediate.
- *
- * @param dbg       firm dbg
- * @param block     the block the new node should belong to
- * @param expr_op   operator
- * @param mode      node mode
- * @return the created ia23 Min_i node
- */
-ir_node *gen_imm_Min(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
-  return new_rd_ia32_Min_i(dbg, current_ir_graph, block, expr_op, mode);
-}
 
 /**
  * Creates an ia32 Min.
@@ -436,19 +410,6 @@ ir_node *gen_Sub(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
 
 
 /**
- * Creates an ia32 Mod with immediate.
- *
- * @param dbg       firm dbg
- * @param block     the block the new node should belong to
- * @param expr_op   operator
- * @param mode      node mode
- * @return the created ia23 Mod_i node
- */
-ir_node *gen_imm_Mod(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
-  return new_rd_ia32_Mod_i(dbg, current_ir_graph, block, expr_op, mode);
-}
-
-/**
  * Creates an ia32 Mod.
  *
  * @param dbg       firm node dbg
@@ -465,19 +426,6 @@ ir_node *gen_Mod(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
 
 
 /**
- * Creates an ia32 Div with immediate.
- *
- * @param dbg       firm dbg
- * @param block     the block the new node should belong to
- * @param expr_op   operator
- * @param mode      node mode
- * @return the created ia23 Div_i node
- */
-ir_node *gen_imm_Div(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
-  return new_rd_ia32_Div_i(dbg, current_ir_graph, block, expr_op, mode);
-}
-
-/**
  * Creates an ia32 Div.
  *
  * @param dbg       firm node dbg
@@ -492,19 +440,6 @@ ir_node *gen_Div(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
 }
 
 
-
-/**
- * Creates an ia32 DivMod with immediate.
- *
- * @param dbg       firm dbg
- * @param block     the block the new node should belong to
- * @param expr_op   operator
- * @param mode      node mode
- * @return the created ia23 DivMod_i node
- */
-ir_node *gen_imm_DivMod(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
-  return new_rd_ia32_DivMod_i(dbg, current_ir_graph, block, expr_op, mode);
-}
 
 /**
  * Creates an ia32 DivMod.
@@ -610,37 +545,8 @@ ir_node *gen_Shrs(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node
 
 
 /**
- * Creates an ia32 Rot with immediate.
- *
- * @param dbg       firm dbg
- * @param block     the block the new node should belong to
- * @param expr_op   operator
- * @param mode      node mode
- * @return the created ia23 Rot_i node
- */
-ir_node *gen_imm_Rot(dbg_info *dbg, ir_node *block, ir_node *expr_op, ir_node *const_op, ir_mode *mode) {
-  return new_rd_ia32_Rot_i(dbg, current_ir_graph, block, expr_op, mode);
-}
-
-/**
- * Creates an ia32 Rot.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created ia32 Rot node
- */
-ir_node *gen_Rot(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode) {
-  return new_rd_ia32_Rot(dbg, current_ir_graph, block, op1, op2, mode);
-}
-
-
-
-/**
  * Transforms commutative operations (op_Add, op_Mul, op_And, op_Or, op_Eor, op_Cmp)
- * and non-commutative operations with com == 0 (op_Sub, op_Mod, op_Div, op_DivMod, op_Shl, op_Shr, op_Shrs, op_Rot)
+ * and non-commutative operations with com == 0 (op_Sub, op_Mod, op_Div, op_DivMod, op_Shl, op_Shr, op_Shrs)
  *
  * @param mod       the debug module
  * @param block     the block node belongs to
@@ -652,10 +558,12 @@ ir_node *gen_Rot(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, ir_node 
  * @return the created assembler node
  */
 ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_node *op1, ir_node *op2, ir_mode *mode, int com) {
-  dbg_info *dbg     = get_irn_dbg_info(node);
-  ir_node *imm_op   = NULL;
-  ir_node *expr_op  = NULL;
-  ir_node *asm_node = NULL;
+  dbg_info *dbg      = get_irn_dbg_info(node);
+  ir_node  *imm_op   = NULL;
+  ir_node  *expr_op  = NULL;
+  ir_node  *asm_node = NULL;
+  opcode   opc       = get_irn_opcode(node);
+  ir_op    *op       = get_irn_op(node);
 
 #define GENOP(a)  case iro_##a: asm_node = gen_##a(mod, dbg, block, op1, op2, mode); break
 #define GENOPI(a) case iro_##a: asm_node = gen_imm_##a(dbg, block, expr_op, imm_op, mode); break
@@ -669,7 +577,19 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
 
   /* TODO: Op(Imm, Imm) support */
   if (is_Imm(op1) && is_Imm(op2)) {
-    DBG((mod, LEVEL_1, "found unexpected %s(Imm, Imm), creating binop ... ", get_irn_opname(node)));
+    DBG((mod, LEVEL_2, "found unexpected %s(Imm, Imm), creating binop ... ", get_irn_opname(node)));
+    imm_op = NULL;
+  }
+
+  /* On x86 there is only a DivMod operation, which
+     takes a register or a memory as argument (eax = eax DIV reg, edx = eax MOD reg)
+     Immediate is not possible, so we always generate "DIV reg" ops */
+  if (opc == iro_Div || opc == iro_Mod || opc == iro_DivMod) {
+    DBG((mod, LEVEL_2, "DIV imm not available, creating binop ... "));
+    imm_op = NULL;
+  }
+  else if (op == get_op_Min() || op == get_op_Max()) {
+    DBG((mod, LEVEL_2, "MIN/MAX imm not available, creating binop ... "));
     imm_op = NULL;
   }
 
@@ -678,7 +598,7 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
   if (imm_op) {
     DBG((mod, LEVEL_1, "%s with imm ... ", get_irn_opname(node)));
 
-    switch(get_irn_opcode(node)) {
+    switch(opc) {
       GENOPI(Add);
       GENOPI(Mul);
       GENOPI(And);
@@ -687,22 +607,12 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
       GENOPI(Cmp);
 
       GENOPI(Sub);
-      GENOPI(Mod);
-      GENOPI(Div);
-      GENOPI(DivMod);
       GENOPI(Shl);
       GENOPI(Shr);
       GENOPI(Shrs);
-      GENOPI(Rot);
       default:
-        if (get_irn_op(node) == get_op_Mulh()) {
+        if (op == get_op_Mulh()) {
           asm_node = gen_imm_Mulh(dbg, block, expr_op, imm_op, mode);
-        }
-        else if (get_irn_op(node) == get_op_Max()) {
-          asm_node = gen_imm_Max(dbg, block, expr_op, imm_op, mode);
-        }
-        else if (get_irn_op(node) == get_op_Min()) {
-          asm_node = gen_imm_Min(dbg, block, expr_op, imm_op, mode);
         }
         else
           assert("binop_i: THIS SHOULD NOT HAPPEN");
@@ -713,7 +623,7 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
   else {
     DBG((mod, LEVEL_1, "%s as binop ... ", get_irn_opname(node)));
 
-    switch(get_irn_opcode(node)) {
+    switch(opc) {
       GENOP(Add);
       GENOP(Mul);
       GENOP(And);
@@ -728,15 +638,14 @@ ir_node *gen_arith_Op(firm_dbg_module_t *mod, ir_node *block, ir_node *node, ir_
       GENOP(Shl);
       GENOP(Shr);
       GENOP(Shrs);
-      GENOP(Rot);
       default:
-        if (get_irn_op(node) == get_op_Mulh()) {
+        if (op == get_op_Mulh()) {
           asm_node = gen_Mulh(mod, dbg, block, op1, op2, mode);
         }
-        else if (get_irn_op(node) == get_op_Max()) {
+        else if (op == get_op_Max()) {
           asm_node = gen_Max(mod, dbg, block, op1, op2, mode);
         }
-        else if (get_irn_op(node) == get_op_Min()) {
+        else if (op == get_op_Min()) {
           asm_node = gen_Min(mod, dbg, block, op1, op2, mode);
         }
         else
@@ -907,7 +816,6 @@ void transform_node(ir_node *node, void *env) {
     BINOP_NCOM(Shl);
     BINOP_NCOM(Shr);
     BINOP_NCOM(Shrs);
-    BINOP_NCOM(Rot);
 
     UNOP(Minus);
     UNOP(Conv);
