@@ -132,13 +132,12 @@ static int is_const_sel(ir_node *sel) {
  */
 int is_address_taken(ir_node *sel)
 {
-  int i, n;
+  int i;
 
   if (! is_const_sel(sel))
     return 1;
 
-  n = get_irn_n_outs(sel);
-  for (i = 0; i < n; ++i) {
+  for (i = get_irn_n_outs(sel) - 1; i >= 0; --i) {
     ir_node *succ = get_irn_out(sel, i);
 
     switch (get_irn_opcode(succ)) {
