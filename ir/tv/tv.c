@@ -52,6 +52,7 @@
 #include "strcalc.h"
 #include "fltcalc.h"
 #include "irtools.h"
+#include "firm_common.h"
 
 /** Size of hash tables.  Should correspond to average number of distinct constant
     target values */
@@ -1724,7 +1725,7 @@ void init_tarval_2(void)
 {
   ANNOUNCE();
 
-  tarval.bad->kind       = k_tarval;
+  tarval_bad->kind       = k_tarval;
   tarval_bad->mode       = mode_BAD;
 
   tarval_undefined->kind = k_tarval;
@@ -1733,7 +1734,7 @@ void init_tarval_2(void)
   tarval_b_true->kind    = k_tarval;
   tarval_b_true->mode    = mode_b;
 
-  tarval_b_false->kind   = k_tarval
+  tarval_b_false->kind   = k_tarval;
   tarval_b_false->mode   = mode_b;
 
   tarval_P_void->kind    = k_tarval;
