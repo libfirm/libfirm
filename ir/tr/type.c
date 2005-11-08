@@ -87,9 +87,13 @@ int get_irp_new_node_nr(void);
 static ident *value_params_suffix = NULL;
 static ident *value_ress_suffix = NULL;
 
+/** The default calling convention for method types. */
+static unsigned default_cc_mask;
+
 /* Initialize the type module. */
-void firm_init_type(dbg_info *builtin_db)
+void firm_init_type(dbg_info *builtin_db, unsigned def_cc_mask)
 {
+  default_cc_mask     = def_cc_mask;
   value_params_suffix = new_id_from_str(VALUE_PARAMS_SUFFIX);
   value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
 
@@ -1102,6 +1106,7 @@ type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
   res->attr.ma.value_ress           = NULL;
   res->attr.ma.variadicity          = variadicity_non_variadic;
   res->attr.ma.first_variadic_param = -1;
+  res->attr.ma.irg_calling_conv     = default_cc_mask;
   hook_new_type(res);
   return res;
 }
@@ -1294,6 +1299,28 @@ void set_method_first_variadic_param_index(type *method, int index)
   assert(index >= 0 && index <= get_method_n_params(method));
 
   method->attr.ma.first_variadic_param = index;
+}
+
+unsigned (get_method_additional_properties)(const type *method) {
+  return _get_method_additional_properties(method);
+}
+
+void (set_method_additional_properties)(type *method, unsigned mask) {
+  _set_method_additional_properties(method, mask);
+}
+
+void (set_method_additional_property)(type *method, mtp_additional_property flag) {
+  _set_method_additional_property(method, flag);
+}
+
+/* Returns the calling convention of an entities graph. */
+unsigned (get_method_calling_convention)(const type *method) {
+  return _get_method_calling_convention(method);
+}
+
+/* Sets the calling convention of an entities graph. */
+void (set_method_calling_convention)(type *method, unsigned cc_mask) {
+  _set_method_calling_convention(method, cc_mask);
 }
 
 /* typecheck */

@@ -764,11 +764,89 @@ int get_method_first_variadic_param_index(const type *method);
  */
 void set_method_first_variadic_param_index(type *method, int index);
 
+/**
+ * additional method type properties:
+ *  Tell about special properties of a method type. Some
+ *  of these may be discovered by analyses.
+ */
+typedef enum {
+  mtp_no_property        = 0x00000000, /**< no additional properties, default */
+  mtp_property_const     = 0x00000001, /**< This graph did not access memory and calculates
+                                         its return values solely from its parameters.
+                                         GCC: __attribute__((const)). */
+  mtp_property_pure      = 0x00000002, /**< This graph did NOT write to memory and calculates
+                                         its return values solely form its parameters and
+                                         the memory they points to (or global vars).
+                                         GCC: __attribute__((pure)). */
+  mtp_property_noreturn  = 0x00000004, /**< This graph did not return due to an aborting system
+                                         call.
+                                         GCC: __attribute__((noreturn)). */
+  mtp_property_nothrow   = 0x00000008, /**< This graph cannot throw an exception.
+                                         GCC: __attribute__((nothrow)). */
+  mtp_property_naked     = 0x00000010, /**< This graph is naked.
+                                         GCC: __attribute__((naked)). */
+  mtp_property_malloc    = 0x00000020, /**< This graph returns newly allocate memory.
+                                         GCC: __attribute__((malloc)). */
+  mtp_property_inherited = 0x80000000  /**< used only in irgs, means property is inherited
+                                         from type. */
+} mtp_additional_property;
+
+/** Returns the mask of the additional graph properties. */
+unsigned get_method_additional_properties(const type *method);
+
+/** Sets the mask of the additional graph properties. */
+void set_method_additional_properties(type *method, unsigned property_mask);
+
+/** Sets one additional graph property. */
+void set_method_additional_property(type *method, mtp_additional_property flag);
+
+/**
+ * calling conventions
+ */
+typedef enum {
+  cc_reg_param        = 0x00000001, /**< Transmit parameters in registers, else the stack is used.
+                                             This flag may be set as default on some architectures. */
+  cc_last_on_top      = 0x00000002, /**< The last non-register parameter is transmitted on top of
+                                             the stack. This is equivalent to the stdcall or pascal
+                                             calling convention. If this flag is not set, the first
+                                             non-register parameter is used (cdecl calling convention) */
+  cc_callee_clear_stk = 0x00000004, /**< The callee clears the stack. This forbids variadic
+                                             function calls (stdcall). */
+  cc_this_call        = 0x00000008  /**< The first parameter is a this pointer and is transmitted
+                                        in a special way. */
+} calling_convention;
+
+/**
+ * check for the CDECL calling convention
+ */
+#define IS_CDECL(cc_mask)     (((cc_mask) & (cc_callee_clear_stk|cc_last_on_top)) == 0)
+
+/**
+ * check for the STDCALL calling convention
+ */
+#define IS_STDCALL(cc_mask)   (((cc_mask) & (cc_callee_clear_stk|cc_last_on_top)) == cc_callee_clear_stk)
+
+/**
+ * add the CDECL convention bits
+ */
+#define SET_CDECL(cc_mask)    ((cc_mask) & ~(cc_callee_clear_stk|cc_last_on_top))
+
+/**
+ * add the STDCALL convention bits
+ */
+#define SET_STDCALL(cc_mask)  (((cc_mask) & ~cc_last_on_top) | cc_callee_clear_stk)
+
+/** Returns the calling convention of an entities graph. */
+unsigned get_method_calling_convention(const type *method);
+
+/** Sets the calling convention of an entities graph. */
+void set_method_calling_convention(type *method, unsigned cc_mask);
+
 /** Returns true if a type is a method type. */
 int   is_Method_type     (const type *method);
 
 /**
- *   @page union_type   Representation of a union type.
+ *   @page union_type   Representation of a union (variant) type.
  *
  *   The union type represents union types.
  *   - n_types:     Number of unioned types.

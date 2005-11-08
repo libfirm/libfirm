@@ -10,14 +10,15 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# ifndef _TYPE_T_H_
-# define _TYPE_T_H_
+#ifndef _TYPE_T_H_
+#define _TYPE_T_H_
 
-# include "firm_config.h"
-# include "type.h"
-# include "tpop_t.h"
+#include "firm_config.h"
+#include "type.h"
+#include "tpop_t.h"
+#include "irgraph.h"
 
-# include "array.h"
+#include "array.h"
 
 /**
  * @file type_t.h
@@ -49,14 +50,16 @@ typedef struct {
 
 /** method attributes */
 typedef struct {
-  int n_params;              /**< number of parameters */
-  tp_ent_pair *param_type;   /**< array of parameter type/value entities pairs */
-  type *value_params;        /**< A type whose entities represent copied value arguments. */
-  int n_res;                 /**< number of results */
-  tp_ent_pair *res_type;     /**< array of result type/value entity pairs */
-  type *value_ress;          /**< A type whose entities represent copied value results. */
-  variadicity variadicity;   /**< variadicity of the method. */
-  int first_variadic_param;  /**< index of the first variadic param or -1 if non-variadic .*/
+  int n_params;                   /**< number of parameters */
+  tp_ent_pair *param_type;        /**< array of parameter type/value entities pairs */
+  type *value_params;             /**< A type whose entities represent copied value arguments. */
+  int n_res;                      /**< number of results */
+  tp_ent_pair *res_type;          /**< array of result type/value entity pairs */
+  type *value_ress;               /**< A type whose entities represent copied value results. */
+  variadicity variadicity;        /**< variadicity of the method. */
+  int first_variadic_param;       /**< index of the first variadic param or -1 if non-variadic .*/
+  unsigned additional_properties; /**< Set of additional method properties. */
+  unsigned irg_calling_conv;      /**< this is a set of calling convention flags. */
 } mtd_attr;
 
 /** union attributes */
@@ -66,13 +69,13 @@ typedef struct {
 
 /** array attributes */
 typedef struct {
-  int   n_dimensions;  /**< Number of array dimensions.  */
-  ir_node **lower_bound;   /**< Lower bounds of dimensions.  Usually all 0. */
-  ir_node **upper_bound;   /**< Upper bounds or dimensions. */
-  int *order;              /**< Ordering of dimensions. */
-  type *element_type;  /**< The type of the array elements. */
-  entity *element_ent; /**< Entity for the array elements, to be used for
-              element selection with Sel. */
+  int   n_dimensions;     /**< Number of array dimensions.  */
+  ir_node **lower_bound;  /**< Lower bounds of dimensions.  Usually all 0. */
+  ir_node **upper_bound;  /**< Upper bounds or dimensions. */
+  int *order;             /**< Ordering of dimensions. */
+  type *element_type;     /**< The type of the array elements. */
+  entity *element_ent;    /**< Entity for the array elements, to be used for
+                               element selection with Sel. */
 } arr_attr;
 
 /** enum attributes */
@@ -189,9 +192,10 @@ void set_default_size_bits(type *tp, int size);
 /**
  * Initialize the type module.
  *
- * @param builtin_db  debug info for builtin objects
+ * @param builtin_db       debug info for builtin objects
+ * @param default_cc_mask  default calling conventions for methods
  */
-void firm_init_type(dbg_info *builtin_db);
+void firm_init_type(dbg_info *builtin_db, unsigned default_cc_mask);
 
 
 /* ------------------- *
@@ -393,6 +397,41 @@ _get_method_n_ress(const type *method) {
   return method->attr.ma.n_res;
 }
 
+static INLINE unsigned
+_get_method_additional_properties(const type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.additional_properties;
+}
+
+static INLINE void
+_set_method_additional_properties(type *method, unsigned mask) {
+  assert(method && (method->type_op == type_method));
+
+  /* do not allow to set the mtp_property_inherited flag or
+   * the automatic inheritance of flags will not work */
+  method->attr.ma.additional_properties = mask & ~mtp_property_inherited;
+}
+
+static INLINE void
+_set_method_additional_property(type *method, mtp_additional_property flag) {
+  assert(method && (method->type_op == type_method));
+
+  /* do not allow to set the mtp_property_inherited flag or
+   * the automatic inheritance of flags will not work */
+  method->attr.ma.additional_properties |= flag & ~mtp_property_inherited;
+}
+
+static INLINE unsigned
+_get_method_calling_convention(const type *method) {
+  assert(method && (method->type_op == type_method));
+  return method->attr.ma.irg_calling_conv;
+}
+
+static INLINE void
+_set_method_calling_convention(type *method, unsigned cc_mask) {
+  assert(method && (method->type_op == type_method));
+  method->attr.ma.irg_calling_conv = cc_mask;
+}
 
 #define set_master_type_visited(val)      _set_master_type_visited(val)
 #define get_master_type_visited()         _get_master_type_visited()
@@ -426,5 +465,10 @@ _get_method_n_ress(const type *method) {
 #define is_atomic_type(tp)                _is_atomic_type(tp)
 #define get_method_n_params(method)       _get_method_n_params(method)
 #define get_method_n_ress(method)         _get_method_n_ress(method)
+#define get_method_additional_properties(method)        _get_method_additional_properties(method)
+#define set_method_additional_properties(method, mask)  _set_method_additional_properties(method, mask)
+#define set_method_additional_property(method, flag)    _set_method_additional_property(method, flag)
+#define get_method_calling_convention(method)           _get_method_calling_convention(method)
+#define set_method_calling_convention(method, cc_mask)  _set_method_calling_convention(method, cc_mask)
 
-# endif /* _TYPE_T_H_ */
+#endif /* _TYPE_T_H_ */
