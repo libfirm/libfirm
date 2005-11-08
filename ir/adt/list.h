@@ -206,8 +206,7 @@ static INLINE void list_splice_init(struct list_head *list,
  * @param head	the head for your list.
  */
 #define list_for_each(pos, head) \
-	for (pos = (head)->next, (pos->next); pos != (head); \
-        	pos = pos->next, (pos->next))
+	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 /**
  * __list_for_each	-	iterate over a list
@@ -228,8 +227,7 @@ static INLINE void list_splice_init(struct list_head *list,
  * @param head	the head for your list.
  */
 #define list_for_each_prev(pos, head) \
-	for (pos = (head)->prev, (pos->prev); pos != (head); \
-        	pos = pos->prev, (pos->prev))
+	for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
 /**
  * list_for_each_safe	-	iterate over a list safe against removal of list entry
