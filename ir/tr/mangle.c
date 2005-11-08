@@ -13,13 +13,13 @@
 # include "config.h"
 #endif
 
-# include "mangle.h"
-# include "obst.h"
+#include "mangle.h"
+#include "obst.h"
 
 /* Make types visible to allow most efficient access */
-# include "entity_t.h"
-# include "type_t.h"
-# include "tpop_t.h"
+#include "entity_t.h"
+#include "type_t.h"
+#include "tpop_t.h"
 
 /** a obstack used for temporary space */
 static struct obstack mangle_obst;
@@ -102,7 +102,7 @@ ident *mangle_u (ident *first, ident* scnd) {
 /* returns a mangled name for a Win32 function using it's calling convention */
 ident *decorate_win32_c_fkt(entity *ent) {
   type *tp         = get_entity_type(ent);
-  unsigned cc_mask = get_entity_calling_convention(ent);
+  unsigned cc_mask = get_method_calling_convention(tp);
   char buf[16];
   int size, i;
 
@@ -117,7 +117,7 @@ ident *decorate_win32_c_fkt(entity *ent) {
 
     snprintf(buf, sizeof(buf), "@%d", size);
 
-    if (cc_mask & irg_cc_reg_param)
+    if (cc_mask & cc_reg_param)
       return mangle3("@", get_entity_ident(ent), buf);
     else
       return mangle3("_", get_entity_ident(ent), buf);
