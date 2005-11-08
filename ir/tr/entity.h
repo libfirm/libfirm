@@ -530,20 +530,20 @@ int        entity_visited(entity *ent);
 /** Returns true if this entity was not visited. */
 int        entity_not_visited(entity *ent);
 
-/** Returns the mask of the additional graph properties. */
-unsigned get_entity_additional_properties(const entity *ent);
+/**
+ * Returns the mask of the additional entity properties.
+ * The properties are automatically inherited from the irg if available
+ * or from the method type if they were not set using
+ * set_entity_additional_properties() or
+ * set_entity_additional_property().
+ */
+unsigned get_entity_additional_properties(entity *ent);
 
 /** Sets the mask of the additional graph properties. */
 void set_entity_additional_properties(entity *ent, unsigned property_mask);
 
 /** Sets one additional graph property. */
-void set_entity_additional_property(entity *ent, unsigned flag);
-
-/** Returns the calling convention of an entities graph. */
-unsigned get_entity_calling_convention(const entity *ent);
-
-/** Sets the calling convention of an entities graph. */
-void set_entity_calling_convention(entity *ent, unsigned cc_mask);
+void set_entity_additional_property(entity *ent, mtp_additional_property flag);
 
 /**
  * @page unknown_entity

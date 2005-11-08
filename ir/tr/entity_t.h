@@ -79,11 +79,12 @@ struct entity {
   ent_variability variability;  /**< Specifies variability of entities content */
   ent_volatility volatility;    /**< Specifies volatility of entities content */
   ent_stickyness stickyness;    /**< Specifies whether this entity is sticky  */
-  int  offset;          /**< Offset in bits for this entity.  Fixed when layout
+  int  offset;                  /**< Offset in bits for this entity.  Fixed when layout
                of owner is determined.  */
-  void *link;           /**< To store some intermediate information */
+  peculiarity peculiarity;      /**< peculiarity of this entity */
   unsigned long visit;  /**< visited counter for walks of the type information */
   struct dbg_info *dbi;    /**< A pointer to information for debug support. */
+  void *link;                   /**< To store some intermediate information */
 
   /* ------------- fields for atomic entities  ---------------*/
 
@@ -105,14 +106,12 @@ struct entity {
 
   /* ------------- fields for methods ---------------*/
 
-  enum peculiarity peculiarity;
   ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
                The ir_graph constructor automatically sets this field.
                Yes, it must be here. */
-  unsigned irg_add_properties;  /**< If (type == method_type) this is a set of additional.
-               graph flags if the irg of an entity is not known. */
-  unsigned irg_calling_conv;  /**< If (type == method_type) this is a set of calling.
-               convention flags if the irg of an entity is not known. */
+  unsigned irg_add_properties;   /**< Additional graph properties can be
+               stored in a entity if no irg is available. */
+
   ptr_access_kind *param_access;  /**< the parameter access */
   float *param_weight; /**< The weight of method's parameters. Parameters
                           with a high weight are good for procedure cloning.*/
@@ -332,65 +331,6 @@ _entity_not_visited(entity *ent) {
   return _get_entity_visited(ent) < firm_type_visited;
 }
 
-static INLINE unsigned
-_get_entity_additional_properties(const entity *ent) {
-  ir_graph *irg;
-  assert(ent && ent->kind == k_entity);
-  assert(ent == unknown_entity || is_Method_type(ent->type));
-  irg = _get_entity_irg(ent);
-  return irg ?
-    get_irg_additional_properties(irg) :
-    ent->irg_add_properties;
-}
-
-static INLINE void
-_set_entity_additional_properties(entity *ent, unsigned mask) {
-  ir_graph *irg;
-  assert(ent && ent->kind == k_entity);
-  assert(ent == unknown_entity || is_Method_type(ent->type));
-  irg = _get_entity_irg(ent);
-  if (irg)
-    set_irg_additional_properties(irg, mask);
-  else
-    ent->irg_add_properties = mask;
-}
-
-static INLINE void
-_set_entity_additional_property(entity *ent, irg_additional_property flag) {
-  ir_graph *irg;
-  assert(ent && ent->kind == k_entity);
-  assert(ent == unknown_entity || is_Method_type(ent->type));
-  irg = _get_entity_irg(ent);
-  if (irg)
-    set_irg_additional_property(irg, flag);
-  else
-    ent->irg_add_properties |= flag;
-}
-
-static INLINE unsigned
-_get_entity_calling_convention(const entity *ent) {
-  ir_graph *irg;
-  assert(ent && ent->kind == k_entity);
-  assert(ent == unknown_entity || is_Method_type(ent->type));
-  irg = _get_entity_irg(ent);
-  if (irg)
-    return get_irg_calling_convention(irg);
-  else
-    return ent->irg_calling_conv;
-}
-
-static INLINE void
-_set_entity_calling_convention(entity *ent, unsigned cc_mask) {
-  ir_graph *irg;
-  assert(ent && ent->kind == k_entity);
-  assert(ent == unknown_entity || is_Method_type(ent->type));
-  irg = _get_entity_irg(ent);
-  if (irg)
-    set_irg_calling_convention(irg, cc_mask);
-  else
-    ent->irg_calling_conv = cc_mask;
-}
-
 #define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
 #define get_entity_ident(ent)                    _get_entity_ident(ent)
@@ -422,10 +362,5 @@ _set_entity_calling_convention(entity *ent, unsigned cc_mask) {
 #define mark_entity_visited(ent)                 _mark_entity_visited(ent)
 #define entity_visited(ent)                      _entity_visited(ent)
 #define entity_not_visited(ent)                  _entity_not_visited(ent)
-#define get_entity_additional_properties(ent)    _get_entity_additional_properties(ent)
-#define set_entity_additional_properties(ent, m) _set_entity_additional_properties(ent, m)
-#define set_entity_additional_property(ent, f)   _set_entity_additional_property(ent, f)
-#define get_entity_calling_convention(ent)       _get_entity_calling_convention(ent)
-#define set_entity_calling_convention(ent, cc)   _set_entity_calling_convention(ent, cc)
 
 # endif /* _ENTITY_T_H_ */

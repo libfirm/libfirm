@@ -123,7 +123,7 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
     res->value              = new_SymConst(sym, symconst_addr_ent);
     current_ir_graph        = rem;
     res->variability        = variability_constant;
-    res->irg_add_properties = irg_no_property;
+    res->irg_add_properties = mtp_property_inherited;
     res->param_access       = NULL;
     res->param_weight       = NULL;
   }
@@ -1305,26 +1305,63 @@ int (entity_not_visited)(entity *ent) {
   return _entity_not_visited(ent);
 }
 
-unsigned (get_entity_additional_properties)(const entity *ent) {
-  return _get_entity_additional_properties(ent);
+/* Returns the mask of the additional entity properties. */
+unsigned get_entity_additional_properties(entity *ent) {
+  ir_graph *irg;
+
+  assert(is_Method_type(get_entity_type(ent)));
+
+  /* first check, if the graph has additional properties */
+  irg = get_entity_irg(ent);
+
+  if (irg)
+    return get_irg_additional_properties(irg);
+
+  if (ent->irg_add_properties & mtp_property_inherited)
+    return get_method_additional_properties(get_entity_type(ent));
+
+  return ent->irg_add_properties;
 }
 
-void (set_entity_additional_properties)(entity *ent, unsigned property_mask) {
-  _set_entity_additional_properties(ent, property_mask);
+/* Sets the mask of the additional graph properties. */
+void set_entity_additional_properties(entity *ent, unsigned property_mask)
+{
+  ir_graph *irg;
+
+  assert(is_Method_type(get_entity_type(ent)));
+
+  /* first check, if the graph exists */
+  irg = get_entity_irg(ent);
+  if (irg)
+    set_irg_additional_properties(irg, property_mask);
+  else {
+    /* do not allow to set the mtp_property_inherited flag or
+     * the automatic inheritance of flags will not work */
+    ent->irg_add_properties = property_mask & ~mtp_property_inherited;
+  }
 }
 
-void (set_entity_additional_property)(entity *ent, unsigned flag) {
-  _set_entity_additional_property(ent, (irg_additional_property)flag);
-}
+/* Sets one additional graph property. */
+void set_entity_additional_property(entity *ent, mtp_additional_property flag)
+{
+  ir_graph *irg;
 
-/* Returns the calling convention of an entities graph. */
-unsigned (get_entity_calling_convention)(const entity *ent) {
-  return _get_entity_calling_convention(ent);
-}
+  assert(is_Method_type(get_entity_type(ent)));
 
-/* Sets the calling convention of an entities graph. */
-void (set_entity_calling_convention)(entity *ent, unsigned cc_mask) {
-  _set_entity_calling_convention(ent, cc_mask);
+  /* first check, if the graph exists */
+  irg = get_entity_irg(ent);
+  if (irg)
+    set_irg_additional_property(irg, flag);
+  else {
+    unsigned mask = ent->irg_add_properties;
+
+    if (mask & mtp_property_inherited)
+      mask = get_method_additional_properties(get_entity_type(ent));
+
+    /* do not allow to set the mtp_property_inherited flag or
+     * the automatic inheritance of flags will not work */
+    ent->irg_add_properties = mask | (flag & ~mtp_property_inherited);
+  }
 }
 
 void firm_init_entity(void)
