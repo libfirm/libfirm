@@ -787,7 +787,7 @@ typedef enum {
                                          GCC: __attribute__((naked)). */
   mtp_property_malloc    = 0x00000020, /**< This graph returns newly allocate memory.
                                          GCC: __attribute__((malloc)). */
-  mtp_property_inherited = 0x80000000  /**< used only in irgs, means property is inherited
+  mtp_property_inherited = 0x40000000  /**< used only in irgs, means property is inherited
                                          from type. */
 } mtp_additional_property;
 
