@@ -66,8 +66,12 @@ static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
         return;
       for (i = 0; i < n_callees; ++i) {
         ent = get_Call_callee(call, i);
+        if (ent == unknown_entity) {
+          /* we don't know which entity is called here */
+          return;
+        }
         if ((get_entity_additional_properties(ent) & mtp_property_const) == 0)
-	        return;
+          return;
       }
       ++ctx->n_calls_removed_Sel;
     }
