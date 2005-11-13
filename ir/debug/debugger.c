@@ -579,7 +579,7 @@ void firm_init_debugger(void)
  *
  * Firm contains a debugger extension. This allows to set debugger breakpoints
  * an various events.
- * The extension uses a text interface which can be access in the debugger.
+ * The extension uses a text interface which can be accessed from most debuggers.
  *
  * @section sec_cmd Supported commands
  *
