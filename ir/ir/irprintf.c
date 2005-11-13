@@ -55,7 +55,7 @@
  */
 static void str_init(void *object, size_t n)
 {
-	strcpy(object, "");
+  strcpy(object, "");
 }
 
 /**
@@ -63,12 +63,12 @@ static void str_init(void *object, size_t n)
  */
 static void str_append_char(void *object, size_t n, char ch)
 {
-	char buf[2];
+  char buf[2];
 
-	buf[0] = ch;
-	buf[1] = 0;
+  buf[0] = ch;
+  buf[1] = 0;
 
-	strncat(object, buf, n);
+  strncat(object, buf, n);
 }
 
 /**
@@ -76,7 +76,7 @@ static void str_append_char(void *object, size_t n, char ch)
  */
 static void str_append_str(void *object, size_t n, const char *str)
 {
-	strncat(object, str, n);
+  strncat(object, str, n);
 }
 
 
@@ -92,7 +92,7 @@ static void file_init(void *object, size_t n)
  */
 static void file_append_char(void *object, size_t n, char ch)
 {
-	fputc(ch, object);
+  fputc(ch, object);
 }
 
 /**
@@ -100,7 +100,7 @@ static void file_append_char(void *object, size_t n, char ch)
  */
 static void file_append_str(void *object, size_t n, const char *str)
 {
-	fputs(str, object);
+  fputs(str, object);
 }
 
 /**
@@ -115,8 +115,8 @@ static void obst_init(void *object, size_t n)
  */
 static void obst_append_char(void *object, size_t n, char ch)
 {
-	struct obstack *obst = object;
-	obstack_1grow(obst, ch);
+  struct obstack *obst = object;
+  obstack_1grow(obst, ch);
 }
 
 /**
@@ -124,8 +124,8 @@ static void obst_append_char(void *object, size_t n, char ch)
  */
 static void obst_append_str(void *object, size_t n, const char *str)
 {
-	struct obstack *obst = object;
-	obstack_grow(obst, str, strlen(str));
+  struct obstack *obst = object;
+  obstack_grow(obst, str, strlen(str));
 }
 
 
@@ -133,27 +133,27 @@ static void obst_append_str(void *object, size_t n, const char *str)
  * the file appender
  */
 static const appender_t file_appender = {
-	file_init,
-	file_append_char,
-	file_append_str
+  file_init,
+  file_append_char,
+  file_append_str
 };
 
 /**
  * the string buffer appender
  */
 static const appender_t str_appender = {
-	str_init,
-	str_append_char,
-	str_append_str
+  str_init,
+  str_append_char,
+  str_append_str
 };
 
 /**
  * the obstack appender.
  */
 static const appender_t obst_appender = {
-	obst_init,
-	obst_append_char,
-	obst_append_str
+  obst_init,
+  obst_append_char,
+  obst_append_str
 };
 
 #ifndef WITH_LIBCORE
@@ -164,63 +164,63 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 static INLINE void ir_common_printf(const appender_t *app, void *object,
 		size_t limit, const char *fmt, ...)
 {
-	va_list args;
+  va_list args;
 
-	va_start(args, fmt);
-	ir_common_vprintf(app, object, limit, fmt, args);
-	va_end(args);
+  va_start(args, fmt);
+  ir_common_vprintf(app, object, limit, fmt, args);
+  va_end(args);
 }
 
 #if 0
 static int is_std_fmt(const char *fmt)
 {
-	static const char *fmt_re_str =
-		"^[0 -+#']?[1-9]*(\\.[1-9]*)?[hlLqjzt]?[diouxXeEfFgGaAc]";
+  static const char *fmt_re_str =
+	  "^[0 -+#']?[1-9]*(\\.[1-9]*)?[hlLqjzt]?[diouxXeEfFgGaAc]";
 
-	static regex_t fmt_re;
-	static int preapred_re = 0;
+  static regex_t fmt_re;
+  static int preapred_re = 0;
 
-	regmatch_t match[1];
-	int res;
+  regmatch_t match[1];
+  int res;
 
-	if(!preapred_re) {
-		int res = regcomp(&fmt_re, fmt_re_str, REG_EXTENDED);
-		assert(res == 0 && "Could not prepare regex");
-		preapred_re = 1;
-	}
+  if(!preapred_re) {
+    int res = regcomp(&fmt_re, fmt_re_str, REG_EXTENDED);
+    assert(res == 0 && "Could not prepare regex");
+    preapred_re = 1;
+  }
 
-	res = regexec(&fmt_re, fmt, 1, &match[0], 0);
+  res = regexec(&fmt_re, fmt, 1, &match[0], 0);
 
 #if 0
-	if(res != 0) {
-		char buf[256];
-		regerror(res, &fmt_re, buf, sizeof(buf));
-		printf("%s ", buf);
-	}
+  if(res != 0) {
+    char buf[256];
+    regerror(res, &fmt_re, buf, sizeof(buf));
+    printf("%s ", buf);
+  }
 
-	printf("res: %d, start: %d, end: %d\n",
-			res, match[0].rm_so, match[0].rm_eo);
+  printf("res: %d, start: %d, end: %d\n",
+	  res, match[0].rm_so, match[0].rm_eo);
 #endif
 
-	return res == 0 ? match[0].rm_eo : -1;
+  return res == 0 ? match[0].rm_eo : -1;
 }
 #endif
 
 struct settings {
-	char flag_zero;
-	int width;
-	int flag_minus;
-	int flag_plus;
-	int flag_hash;
+  char flag_zero;
+  int width;
+  int flag_minus;
+  int flag_plus;
+  int flag_hash;
 };
 
 /* Length specifiers. */
 enum {
-	len_char,
-	len_short,
-	len_int,
-	len_long,
-	len_long_long
+  len_char,
+  len_short,
+  len_int,
+  len_long,
+  len_long_long
 };
 
 
@@ -230,26 +230,26 @@ enum {
 static void dump_with_settings(const appender_t *app, void *object, size_t limit,
 		const struct settings *settings, const char *str)
 {
-	if (settings->width >= 0) {
-		int i;
-		size_t n = strlen(str);
-		int lim = MIN(settings->width, (int)limit);
-		int to_print = MIN(lim, (int)n);
-		int to_pad = to_print - lim;
+  if (settings->width >= 0) {
+    int i;
+    size_t n = strlen(str);
+    int lim = MIN(settings->width, (int)limit);
+    int to_print = MIN(lim, (int)n);
+    int to_pad = to_print - lim;
 
-		if (!settings->flag_minus)
-			for(i = 0; i < to_pad; ++i)
-				app->append_char(object, lim, settings->flag_zero);
+    if (!settings->flag_minus)
+      for(i = 0; i < to_pad; ++i)
+	app->append_char(object, lim, settings->flag_zero);
 
-		app->append_str(object, to_print, str);
+    app->append_str(object, to_print, str);
 
-		if (!settings->flag_minus)
-			for(i = 0; i < to_pad; ++i)
-				app->append_char(object, lim, settings->flag_zero);
-	}
+    if (!settings->flag_minus)
+      for(i = 0; i < to_pad; ++i)
+	app->append_char(object, lim, settings->flag_zero);
+  }
 
-	else
-		app->append_str(object, limit, str);
+  else
+    app->append_str(object, limit, str);
 }
 
 /**
@@ -322,6 +322,26 @@ static void firm_emit(char *buf, int buflen, char conversion,
             tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
           snprintf(buf, buflen, "%s%s%s<%s>", A("irn"), get_irn_opname(X),
             get_mode_name(get_irn_mode(X)), tv ? tv_buf : ">NULL<");
+        }
+        else if (get_irn_op(X) == op_SymConst) {
+          switch (get_SymConst_kind(X)) {
+          case symconst_type_tag:    /* type tag */
+            snprintf(tv_buf, sizeof(tv_buf), "<ID:%s>", get_type_name(get_SymConst_type(X)));
+            break;
+          case symconst_size:        /* type size */
+            snprintf(tv_buf, sizeof(tv_buf), "<SIZE:%s>", get_type_name(get_SymConst_type(X)));
+            break;
+          case symconst_addr_name:   /* linker name */
+            snprintf(tv_buf, sizeof(tv_buf), "<EXT:%s>", get_id_str(get_SymConst_name(X)));
+            break;
+          case symconst_addr_ent:    /* entity name */
+            snprintf(tv_buf, sizeof(tv_buf), "<%s>", get_entity_name(get_SymConst_entity(X)));
+            break;
+          default:
+            tv_buf[0] = '\0';
+          }
+          snprintf(buf, buflen, "%s%s%s%s", A("irn"), get_irn_opname(X),
+            get_mode_name(get_irn_mode(X)), tv_buf);
         }
         else
           snprintf(buf, buflen, "%s%s%s", A("irn"), get_irn_opname(X),
