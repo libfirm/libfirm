@@ -273,7 +273,7 @@ static void firm_emit(char *buf, int buflen, char conversion,
   int i, n;
   ir_node *block;
   char add[64];
-  char tv[256];
+  char tv_buf[256];
   entity *ent;
 
   buf[0] = '\0';
@@ -297,7 +297,10 @@ static void firm_emit(char *buf, int buflen, char conversion,
       snprintf(add, sizeof(add), "[%ld]", get_type_nr(X));
       break;
     case k_ir_graph:
-      snprintf(buf, buflen, "%s%s", A("irg"), get_entity_name(get_irg_entity(X)));
+      if (X == get_const_code_irg())
+        snprintf(buf, buflen, "const_code_irg ");
+      else
+        snprintf(buf, buflen, "%s%s", A("irg"), get_entity_name(get_irg_entity(X)));
       snprintf(add, sizeof(add), "[%ld]", get_irg_graph_nr(X));
       break;
     case k_ir_node:
@@ -313,9 +316,12 @@ static void firm_emit(char *buf, int buflen, char conversion,
         break;
       default:
         if (is_Const(X)) {
-          tarval_snprintf(tv, sizeof(tv), get_Const_tarval(X));
+          tarval *tv = get_Const_tarval(X);
+
+          if (tv)
+            tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
           snprintf(buf, buflen, "%s%s%s<%s>", A("irn"), get_irn_opname(X),
-            get_mode_name(get_irn_mode(X)), tv);
+            get_mode_name(get_irn_mode(X)), tv ? tv_buf : ">NULL<");
         }
         else
           snprintf(buf, buflen, "%s%s%s", A("irn"), get_irn_opname(X),
@@ -327,8 +333,8 @@ static void firm_emit(char *buf, int buflen, char conversion,
       snprintf(buf, buflen, "%s%s", A("mode"), get_mode_name(X));
       break;
     case k_tarval:
-      tarval_snprintf(tv, sizeof(tv), X);
-      snprintf(buf, buflen, "%s%s", A("tv"), tv);
+      tarval_snprintf(tv_buf, sizeof(tv_buf), X);
+      snprintf(buf, buflen, "%s%s", A("tv"), tv_buf);
       break;
     case k_ir_loop:
       snprintf(buf, buflen, "ldepth[%d]", get_loop_depth(X));
