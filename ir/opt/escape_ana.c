@@ -22,6 +22,7 @@
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
+#include "type_t.h"
 #include "irouts.h"
 #include "analyze_irg_args.h"
 #include "irgmod.h"
@@ -35,7 +36,8 @@
 typedef struct _walk_env {
   ir_node *found_allocs;    /**< list of all found non-escaped allocs */
   ir_node *dead_allocs;     /**< list of all found dead alloc */
-  unsigned nr_changed;      /**< number of changed allocs */
+  unsigned nr_removed;      /**< number of removed allocs (placed of frame) */
+  unsigned nr_changed;      /**< number of changed allocs (allocated on stack now) */
   unsigned nr_deads;        /**< number of dead allocs */
 
   /* these fields are only used in the global escape analysis */
@@ -265,8 +267,8 @@ static void find_allocations(ir_node *alloc, void *ctx)
  */
 static void transform_allocs(ir_graph *irg, walk_env_t *env)
 {
-  ir_node *alloc, *next, *mem, *sel;
-  type *ftp;
+  ir_node *alloc, *next, *mem, *sel, *size;
+  type *ftp, *atp, *tp;
   entity *ent;
   char name[128];
   unsigned nr = 0;
@@ -275,6 +277,8 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
   /* kill all dead allocs */
   for (alloc = env->dead_allocs; alloc; alloc = next) {
     next = get_irn_link(alloc);
+
+    DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F unused, deleted.\n", irg, alloc));
 
     mem = get_Alloc_mem(alloc);
     turn_into_tuple(alloc, pn_Alloc_max);
@@ -288,26 +292,60 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
   ftp = get_irg_frame_type(irg);
   for (alloc = env->found_allocs; alloc; alloc = next) {
     next = get_irn_link(alloc);
-    dbg  = get_irn_dbg_info(alloc);
+    size = get_Alloc_size(alloc);
+    atp  = get_Alloc_type(alloc);
 
-    DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F\n", irg, alloc));
+    tp = NULL;
+    if (get_irn_op(size) == op_SymConst && get_SymConst_kind(size) == symconst_size)  {
+      /* if the size is a type size and the types matched */
+      assert(atp == get_SymConst_type(size));
+      tp = atp;
+    }
+    else if (is_Const(size)) {
+      tarval *tv = get_Const_tarval(size);
 
-    snprintf(name, sizeof(name), "%s_NE_%u", get_entity_name(get_irg_entity(irg)), nr++);
-    ent = new_d_entity(ftp, new_id_from_str(name), get_Alloc_type(alloc), dbg);
+      if (tv != tarval_bad && tarval_is_long(tv) &&
+          get_type_state(atp) == layout_fixed &&
+          get_tarval_long(tv) == get_type_size_bytes(atp)) {
+        /* a already lowered type size */
+        tp = atp;
+      }
+    }
 
-    sel = new_rd_simpleSel(dbg, irg, get_nodes_block(alloc),
-      get_irg_no_mem(irg), get_irg_frame(irg), ent);
-    mem = get_Alloc_mem(alloc);
+    if (tp && tp != firm_unknown_type) {
+      /* we could determine the type, so we could place it on the frame */
+      dbg  = get_irn_dbg_info(alloc);
 
-    turn_into_tuple(alloc, pn_Alloc_max);
-    set_Tuple_pred(alloc, pn_Alloc_M, mem);
-    set_Tuple_pred(alloc, pn_Alloc_X_except, new_r_Bad(irg));
-    set_Tuple_pred(alloc, pn_Alloc_res, sel);
+      DBG((dbgHandle, LEVEL_DEFAULT, "%+F allocation of %+F type %+F placed on frame\n", irg, alloc, tp));
 
-    ++env->nr_changed;
+      snprintf(name, sizeof(name), "%s_NE_%u", get_entity_name(get_irg_entity(irg)), nr++);
+      ent = new_d_entity(ftp, new_id_from_str(name), get_Alloc_type(alloc), dbg);
+
+      sel = new_rd_simpleSel(dbg, irg, get_nodes_block(alloc),
+        get_irg_no_mem(irg), get_irg_frame(irg), ent);
+      mem = get_Alloc_mem(alloc);
+
+      turn_into_tuple(alloc, pn_Alloc_max);
+      set_Tuple_pred(alloc, pn_Alloc_M, mem);
+      set_Tuple_pred(alloc, pn_Alloc_X_except, new_r_Bad(irg));
+      set_Tuple_pred(alloc, pn_Alloc_res, sel);
+
+      ++env->nr_removed;
+    }
+    else {
+      /*
+       * We could not determine the type or it is variable size.
+       * At least, we could place it on the stack
+       */
+      DBG((dbgHandle, LEVEL_DEFAULT, "%+F allocation of %+F type %+F placed on stack\n", irg, alloc));
+      set_Alloc_where(alloc, stack_alloc);
+
+      ++env->nr_changed;
+    }
   }
 
-  if (env->nr_changed | env->nr_deads) {
+  /* if allocs were removed somehow */
+  if (env->nr_removed | env->nr_deads) {
     set_irg_outs_inconsistent(irg);
 
     if (env->nr_deads)
@@ -331,6 +369,7 @@ void escape_enalysis_irg(ir_graph *irg)
 
   env.found_allocs = NULL;
   env.dead_allocs  = NULL;
+  env.nr_removed   = 0;
   env.nr_changed   = 0;
   env.nr_deads     = 0;
 
@@ -377,7 +416,7 @@ void escape_analysis(int run_scalar_replace)
     irg_walk_graph(irg, NULL, find_allocations, env);
 
     if (env->found_allocs || env->dead_allocs) {
-      env->nr_changed   = 0;
+      env->nr_removed   = 0;
       env->nr_deads     = 0;
       env->irg          = irg;
       env->next         = elist;
