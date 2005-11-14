@@ -53,6 +53,10 @@ static type *default_gen_pointer_type_to(type *tp);
 static ident *ptr_type_suffix = NULL;
 static gen_pointer_type_to_func gen_pointer_type_to = default_gen_pointer_type_to;
 
+/**
+ * Find a pointer type to a given type.
+ * Uses and updates trouts if available.
+ */
 static type *default_gen_pointer_type_to(type *tp) {
   type *res = NULL;
   if (get_trouts_state() == outs_consistent) {
@@ -62,10 +66,11 @@ static type *default_gen_pointer_type_to(type *tp) {
       ir_mode *mode = is_Method_type(tp) ? mode_P_code : mode_P_data;
 
       res = new_type_pointer(mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode);
-      /* Update trout for pointertypes, so we can use it in next call. */
+      /* Update trout for pointer types, so we can use it in next call. */
       add_type_pointertype_to(tp, res);
     }
-  } else {
+  }
+  else {
     res = find_pointer_type_to_type(tp);
     if (res == firm_unknown_type)
       res = new_type_pointer(mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode_P_data);
@@ -74,7 +79,7 @@ static type *default_gen_pointer_type_to(type *tp) {
   return res;
 }
 
-/* Return a type that is a depth times pointer to type. */
+/** Return a type that is a depth times pointer to type. */
 static type *pointerize_type(type *tp, int depth) {
   for (; depth > 0; --depth) {
     tp = gen_pointer_type_to(tp);
@@ -222,6 +227,15 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct) {
 
 /* - Cast optimization. ------------------------------------------- */
 
+/**
+ * Optimizes Casts:
+ *
+ *  (T1)(T2)x<T1> -> x<T1>
+ *
+ *  (T3)(T2)x<T1> -> (T3)x<T1>
+ *
+ * if possible.
+ */
 static void cancel_out_casts(ir_node *cast) {
   ir_node *orig, *pred = get_Cast_op(cast);
   type *tp_cast, *tp_pred, *tp_orig;
@@ -256,12 +270,16 @@ static void cancel_out_casts(ir_node *cast) {
     return;
   }
 
-  if (!(is_subclass_of  (tp_cast, tp_orig) || is_subclass_of  (tp_orig, tp_cast)))
-    /* Avoid (B2)(A)(new B1()) --> (B2)(new B1()) */
+  if (!(is_subclass_of  (tp_cast, tp_orig) || is_subclass_of  (tp_orig, tp_cast))) {
+    /* Avoid (B2)(A)(new B1()) --> (B2)(new B1())
+     * if B1 =!> B2  and  B2 =!> B1
+     */
     return;
+  }
 
   if ((is_subclass_of  (tp_cast, tp_pred) && is_superclass_of(tp_pred, tp_orig)) ||
       (is_superclass_of(tp_cast, tp_pred) && is_subclass_of  (tp_pred, tp_orig))   ) {
+    /* Cast --> Pred --> Orig */
     set_Cast_op (cast, orig);
     n_casts_removed ++;
   }
@@ -287,7 +305,7 @@ static void concretize_selected_entity(ir_node *sel) {
     if (!is_Class_type(orig_tp)) return;
     if (!is_Class_type(cast_tp)) return;
 
-    /* We only want to contretize, but not generalize. */
+    /* We only want to concretize, but not generalize. */
     if (!is_superclass_of(cast_tp, orig_tp)) return;
 
     /* Hmm, we are not properly typed. */
@@ -371,6 +389,9 @@ void remove_Cmp_Null_cast(ir_node *cmp) {
   n_casts_removed ++;
 }
 
+/**
+ * Post-Walker:
+ */
 static void irn_optimize_class_cast(ir_node *n, void *env) {
   if (get_irn_op(n) == op_Cast)
     cancel_out_casts(n);
