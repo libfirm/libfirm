@@ -235,6 +235,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   add_immBlock_pred (first_block, projX);
 
   res->method_execution_frequency = -1;
+  res->estimated_node_count       = 0;
 
   return res;
 }
@@ -807,6 +808,11 @@ void *get_irg_loc_description(ir_graph *irg, int n)
 {
   assert(0 <= n && n < irg->n_loc);
   return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
+}
+
+/* Returns a estimated node count of the irg. */
+unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg) {
+  return _get_irg_estimated_node_cnt(irg);
 }
 
 /* register additional space in an IR graph */

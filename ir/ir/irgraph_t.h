@@ -135,14 +135,16 @@ struct ir_graph {
                     every time someone walks through
                     the graph */
   unsigned long block_visited;       /**< same as visited, for a complete block */
+  unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
+                                          updated after every walk */
+#if FIRM_EDGES_INPLACE
+  irg_edge_info_t edge_info;  /**< edge info for automatic outs */
+#endif
 #ifdef DEBUG_libfirm
   int graph_nr;             /**< a unique graph number for each graph to make output
                    readable. */
 #endif
 
-#if FIRM_EDGES_INPLACE
-  irg_edge_info_t edge_info;  /**< edge info for automatic outs */
-#endif
 };
 
 /**
@@ -498,6 +500,11 @@ _inc_irg_block_visited(ir_graph *irg) {
   ++irg->block_visited;
 }
 
+static INLINE unsigned
+_get_irg_estimated_node_cnt(const ir_graph *irg) {
+  return irg->estimated_node_count;
+}
+
 #define get_interprocedural_view()            _get_interprocedural_view()
 #define is_ir_graph(thing)                    _is_ir_graph(thing)
 #define get_irg_start_block(irg)              _get_irg_start_block(irg)
@@ -555,5 +562,6 @@ _inc_irg_block_visited(ir_graph *irg) {
 #define get_irg_block_visited(irg)            _get_irg_block_visited(irg)
 #define set_irg_block_visited(irg, v)         _set_irg_block_visited(irg, v)
 #define inc_irg_block_visited(irg)            _inc_irg_block_visited(irg)
+#define get_irg_estimated_node_cnt(irg)       _get_irg_estimated_node_cnt(irg)
 
 # endif /* _IRGRAPH_T_H_ */

@@ -459,6 +459,11 @@ void set_irg_loc_description(ir_graph *irg, int n, void *description);
 /** get the description for local value n */
 void *get_irg_loc_description(ir_graph *irg, int n);
 
+/** Returns a estimated node count of the irg. This count is updated
+ * after every irg_walk_graph().
+ */
+unsigned get_irg_estimated_node_cnt(const ir_graph *irg);
+
 /**
  * Access custom graph data.
  * The data must have been registered with
