@@ -44,8 +44,9 @@ typedef struct _entry {
     tarval        *tv;    /**< The tarval of this constant argument. */
   } t;                    /**< The heuristic triple. */
 
-  float         weight;   /**< The estimated weight of this triple. */
-  struct _entry *next;    /**< used for linking and sorting */
+  unsigned      num_calls;  /**< number of calls */
+  float         weight;     /**< The estimated weight of this triple. */
+  struct _entry *next;      /**< used for linking and sorting */
 } entry_t;
 
 /**
@@ -113,27 +114,27 @@ static void collect_irg_calls(ir_node *call, void *env)
 
   /* beware: we cannot clone variadic parameters */
   mtp = get_Call_type(call);
-  if (get_method_variadicity(mtp) == variadicity_non_variadic) {
+  if (get_method_variadicity(mtp) != variadicity_non_variadic) {
     n_params = get_method_first_variadic_param_index(mtp);
   }
 
   /* In this for loop we collect the calls, that have
      an constant parameter. */
-  for (i = n_params - 1; i >= 0; i--) {
+  for (i = n_params - 1; i >= 0; --i) {
     call_param = get_Call_param(call, i);
     if (is_Const(call_param)) {
       /* we have found a Call to collect and we save the informations,
          which we need.*/
-      key.t.ent  = call_ent;
-      key.t.pos  = i;
-      key.t.tv   = get_Const_tarval(call_param);
-      key.weight = 0.0f;
+      key.t.ent     = call_ent;
+      key.t.pos     = i;
+      key.t.tv      = get_Const_tarval(call_param);
+      key.num_calls = 0;
 
       /* We insert our information in the set, where we collect the calls.*/
       entry     = set_insert(entrys, &key, sizeof(key), hash_entry(&key));
 
       /* we found one more */
-      entry->weight += 1.0f;
+      ++entry->num_calls;
     }
   }
 }
@@ -158,10 +159,11 @@ void proc_cloning(float threshold)
     irg_walk_graph(irg, collect_irg_calls, NULL, set_entrys);
   }
 
-  /* We iterate the set and arrange the element of the set in a plist'
+  /* We iterate the set and arrange the element of the set in a list.
      The elements are arranged dependent of their value descending.*/
   ITERATE_SET(set_entrys, entry) {
-    entry->weight *= (get_method_param_weight(entry->t.ent, entry->t.pos) + 1);
+    entry->weight = entry->num_calls *
+      (get_method_param_weight(entry->t.ent, entry->t.pos) + 1);
 
     /*
      * Do not put entry with a weight < threshold in the list
@@ -198,5 +200,7 @@ void proc_cloning(float threshold)
     ir_printf("Call for Method %E\n", entry->t.ent);
     printf("Position %i\n", entry->t.pos);
     ir_printf("Value %T\n", entry->t.tv);
+    printf("Number of calls %u\n", entry->num_calls);
+    printf("est. nodes %u\n", get_irg_estimated_node_cnt(get_entity_irg(entry->t.ent)));
   }
 }
