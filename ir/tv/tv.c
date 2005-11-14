@@ -305,7 +305,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 
     case irms_int_number:
     case irms_character:
-      sc_val_from_str(str, len, NULL);
+      sc_val_from_str(str, len, NULL, mode);
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 
     case irms_reference:
@@ -949,7 +949,6 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
               break;
           }
           return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
-
 #if 0
         case irms_reference:
           /* allow 0 to be casted */
