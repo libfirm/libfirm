@@ -550,6 +550,8 @@ int equal_type(type *typ1, type *typ2) {
 
     if (get_method_variadicity(typ1) != get_method_variadicity(typ2)) return 0;
     if (get_method_n_ress(typ1)      != get_method_n_ress(typ2)) return 0;
+    if (get_method_calling_convention(typ1) !=
+        get_method_calling_convention(typ2)) return 0;
 
     if (get_method_variadicity(typ1) == variadicity_non_variadic) {
       n_param1 = get_method_n_params(typ1);
@@ -564,7 +566,7 @@ int equal_type(type *typ1, type *typ2) {
 
     for (i = 0; i < n_param1; i++) {
       if (!equal_type(get_method_param_type(typ1, i), get_method_param_type(typ2, i)))
-    return 0;
+        return 0;
     }
     for (i = 0; i < get_method_n_ress(typ1); i++) {
       if (!equal_type(get_method_res_type(typ1, i), get_method_res_type(typ2, i)))
@@ -652,10 +654,25 @@ int smaller_type (type *st, type *lt) {
     }
   } break;
   case tpo_method:      {
+    int n_param1, n_param2;
+
     /** FIXME: is this still 1? */
     if (get_method_variadicity(st) != get_method_variadicity(lt)) return 0;
-    if (get_method_n_params(st) != get_method_n_params(lt)) return 0;
     if (get_method_n_ress(st) != get_method_n_ress(lt)) return 0;
+    if (get_method_calling_convention(st) !=
+      get_method_calling_convention(lt)) return 0;
+
+    if (get_method_variadicity(st) == variadicity_non_variadic) {
+      n_param1 = get_method_n_params(st);
+      n_param2 = get_method_n_params(lt);
+    }
+    else {
+      n_param1 = get_method_first_variadic_param_index(st);
+      n_param2 = get_method_first_variadic_param_index(lt);
+    }
+
+    if (n_param1 != n_param2) return 0;
+
     for (i = 0; i < get_method_n_params(st); i++) {
       if (!smaller_type(get_method_param_type(st, i), get_method_param_type(lt, i)))
         return 0;
