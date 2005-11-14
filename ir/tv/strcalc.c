@@ -76,6 +76,7 @@ static int carry_flag;              /**< some computation set the carry_flag:
                                          However, the meaning of carry is machine dependent
                                          and often defined in other ways! */
 
+static const char sex_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 
@@ -957,8 +958,29 @@ int sc_get_buffer_length(void)
   return calc_buffer_size;
 }
 
+/**
+ * Do sign extension if the mode is signed, expects all upper bits
+ * cleared.
+ */
+static void sign_extend(char *calc_buffer, ir_mode *mode) {
+  if (mode_is_signed(mode)) {
+    int bits    = get_mode_size_bits(mode) - 1;
+    int ofs     = bits >> 2;
+    int max     = max_digit[bits & 3];
+    int i;
+
+    if (calc_buffer[ofs] > max) {
+      /* sign bit is set, we need sign expansion */
+
+      for (i = ofs + 1; i < calc_buffer_size; ++i)
+        calc_buffer[i] = SC_F;
+      calc_buffer[ofs] = sex_digit[bits & 3];
+    }
+  }
+}
+
 /* FIXME doesn't check for overflows */
-void sc_val_from_str(const char *str, unsigned int len, void *buffer)
+void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode)
 {
   const char *orig_str = str;
   unsigned int orig_len = len;
@@ -977,8 +999,8 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer)
   if (buffer == NULL) buffer = calc_buffer;
 
   CLEAR_BUFFER(buffer);
-  memset(base, SC_0, calc_buffer_size);
-  memset(val, SC_0, calc_buffer_size);
+  CLEAR_BUFFER(base);
+  CLEAR_BUFFER(val);
 
   /* strip leading spaces */
   while ((len > 0) && (*str == ' ')) { len--; str++; }
@@ -1101,9 +1123,10 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer)
   } /* while (len > 0 ) */
 
   if (sign)
-  {
     _negate(calc_buffer, calc_buffer);
-  }
+
+  /* beware: even if hex numbers have no sign, we need sign extension here */
+  sign_extend(calc_buffer, mode);
 }
 
 void sc_val_from_long(long value, void *buffer)
@@ -1117,7 +1140,7 @@ void sc_val_from_long(long value, void *buffer)
   sign = (value < 0);
   is_minlong = value == LONG_MIN;
 
-  /* use absolute value, special treatment of MIN_LONG */
+  /* use absolute value, special treatment of MIN_LONG to avoid overflow */
   if (sign) {
     if (is_minlong)
       value = -(value+1);
@@ -1132,7 +1155,6 @@ void sc_val_from_long(long value, void *buffer)
     *pos++ = _digit(value & 0xf);
     value >>= 4;
   }
-
 
   if (sign) {
     if (is_minlong)

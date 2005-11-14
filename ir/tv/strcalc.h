@@ -23,6 +23,8 @@
 #ifndef _STRCALC_H_
 #define _STRCALC_H_
 
+#include "irmode.h"
+
 #ifdef STRCALC_DEBUG_ALL             /* switch on all debug options */
 #  ifndef STRCALC_DEBUG
 #    define STRCALC_DEBUG            /* switch on debug output */
@@ -118,9 +120,16 @@ enum base_t {
 const void *sc_get_buffer(void);
 int sc_get_buffer_length(void);
 
-void sc_val_from_str(const char *str, unsigned int len, void *buffer);
+/** create an value form a string representation */
+void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode);
+
+/** create a value from a long */
 void sc_val_from_long(long l, void *buffer);
+
+/** create a value form an unsigned long */
 void sc_val_from_ulong(unsigned long l, void *buffer);
+
+/** converts a value to a long */
 long sc_val_to_long(const void *val);
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
