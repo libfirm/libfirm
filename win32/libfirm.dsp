@@ -162,6 +162,10 @@ SOURCE=..\ir\adt\iterator.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\adt\list.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\adt\Makefile.in
 # End Source File
 # Begin Source File
@@ -225,6 +229,14 @@ SOURCE=..\ir\adt\xmalloc.h
 # Begin Group "ana"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\ana\analyze_irg_args.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\analyze_irg_args.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\ir\ana\callgraph.c
@@ -512,6 +524,14 @@ SOURCE=..\ir\arch\archop.c
 # Begin Source File
 
 SOURCE=..\ir\arch\archop.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\arch\modeconv.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\arch\modeconv.h
 # End Source File
 # End Group
 # Begin Group "be"
@@ -846,6 +866,10 @@ SOURCE=..\ir\common\firm_common_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\common\firm_types.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\common\firmwalk.c
 # End Source File
 # Begin Source File
@@ -895,6 +919,14 @@ SOURCE=..\ir\debug\dbginfo.h
 # Begin Source File
 
 SOURCE=..\ir\debug\dbginfo_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\debug\debugger.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\debug\debugger.h
 # End Source File
 # Begin Source File
 
@@ -1200,10 +1232,6 @@ SOURCE=..\ir\ir\Makefile.in
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\ir\pnc.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\ir\pseudo_irg.c
 # End Source File
 # Begin Source File
@@ -1221,6 +1249,14 @@ SOURCE=..\ir\opt\cfopt.c
 # Begin Source File
 
 SOURCE=..\ir\opt\cfopt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\escape_ana.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\escape_ana.h
 # End Source File
 # Begin Source File
 
@@ -1281,6 +1317,14 @@ SOURCE=..\ir\opt\opt_polymorphy.c
 # Begin Source File
 
 SOURCE=..\ir\opt\opt_polymorphy.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\proc_cloning.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\proc_cloning.h
 # End Source File
 # Begin Source File
 
@@ -1561,6 +1605,26 @@ SOURCE=..\ir\tv\tv.h
 # Begin Source File
 
 SOURCE=..\ir\tv\tv_t.h
+# End Source File
+# End Group
+# Begin Group "lower"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\lower\lower_calls.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\lower\lower_calls.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\lower\lower_intrinsics.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\lower\lower_intrinsics.h
 # End Source File
 # End Group
 # End Group
