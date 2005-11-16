@@ -8,7 +8,6 @@
 #endif
 
 #include <stdarg.h>
-#include <mcheck.h>
 
 #include "obst.h"
 #include "bitset.h"
@@ -83,9 +82,16 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
   env->node_factory = obstack_alloc(&env->obst, sizeof(*env->node_factory));
   be_node_factory_init(env->node_factory, isa);
 
-  arch_env_add_irn_handler(env->arch_env, &firm_irn_handler);
-  arch_env_add_irn_handler(env->arch_env,
-      be_node_get_irn_handler(env->node_factory));
+  /* Register the irn handler of the architecture */
+  if (isa->irn_handler)
+		arch_env_add_irn_handler(env->arch_env, isa->irn_handler);
+
+  /*
+   * Register the node handler of the back end infrastructure.
+   * This irn handler takes care of the platform independent
+   * spill, reload and perm nodes.
+   */
+  arch_env_add_irn_handler(env->arch_env, be_node_get_irn_handler(env->node_factory));
 
   return env;
 }
@@ -145,7 +151,6 @@ static void be_main_loop(void)
 
 	/* For all graphs */
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		int j, m;
 		ir_graph *irg = get_irp_irg(i);
 		be_main_session_env_t session;
 

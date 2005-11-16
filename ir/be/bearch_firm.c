@@ -484,8 +484,9 @@ static void firm_prepare_graph(ir_graph *irg)
 }
 
 const arch_isa_if_t firm_isa = {
-  firm_init,
-  firm_get_n_reg_class,
-  firm_get_reg_class,
-	firm_prepare_graph
+	firm_init,
+	firm_get_n_reg_class,
+	firm_get_reg_class,
+	firm_prepare_graph,
+	&firm_irn_handler
 };

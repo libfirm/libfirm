@@ -468,11 +468,19 @@ struct _arch_isa_if_t {
 
   /**
    * Prepare a graph.
-   * This function is called each time, the backend starts running over
+   * This function is called each time, the back end starts running over
    * a graph.
    * @param irg The graph.
    */
   void (*prepare_graph)(ir_graph *irg);
+
+  /**
+   * The irn handler for this architecture.
+   * The irn handler is registered by the Firm back end
+   * when the architecture is initialized.
+   * (May be NULL).
+   */
+  const arch_irn_handler_t *irn_handler;
 };
 
 #define ARCH_MAX_HANDLERS         8
