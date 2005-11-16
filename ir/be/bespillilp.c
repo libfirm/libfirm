@@ -21,6 +21,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "ircons_t.h"
+#include "irloop_t.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
@@ -35,15 +36,15 @@
 #include "beutil.h"
 #include "bespillilp.h"
 
-#define BIGM 1000.0
+#define BIGM 100000.0
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
-#define DBG_LEVEL SET_LEVEL_3
+#define DBG_LEVEL SET_LEVEL_0 // 3
 
 #define DUMP_SOLUTION
 #define DUMP_ILP
-#undef  DUMP_STATS
+#define DUMP_STATS
 
 #undef  SOLVE_LOCAL
 #define LPP_SERVER "i44pc52"
@@ -73,6 +74,7 @@ typedef struct _spill_stat_t {
 } spill_stat_t;
 
 typedef struct _spill_ilp_t {
+	spill_stat_t stats;
 	const arch_register_class_t *cls;
 	const be_main_session_env_t *session;
 	firm_dbg_module_t *dbg;
@@ -117,6 +119,27 @@ typedef struct _first_use_t {
 	live_range_t *lr;   /**< The live range for the first use of irn in bl. */
 } first_use_t;
 
+
+/**
+ * Get weight for spill/reload costs
+ * Actually computed with loop depth.
+ * @param irn The location where to check for the weights.
+ * @return The weights at this points.
+ */
+static double get_weight(const ir_node *irn)
+{
+	ir_loop *loop = get_irn_loop((ir_node *) irn);
+	int res = 1.0;
+
+	if(loop) {
+		int depth = get_loop_depth(loop);
+		res += depth * depth;
+
+		// ir_printf("%+F has loop depth %d\n", irn, depth);
+	}
+
+	return res;
+}
 
 
 static INLINE int has_reg_class(const spill_ilp_t *si, const ir_node *irn)
@@ -220,9 +243,14 @@ static live_range_t *get_live_range(spill_ilp_t *si, ir_node *irn, ir_node *user
 
 	if(is_new) {
 		char buf[128];
+		double cost = 0.0;
+
+		if(pos >= 0)
+			cost = get_weight(user) * COST_LOAD;
+
 		ir_snprintf(buf, sizeof(buf), "m_%s%N_%N_%d",
 					is_Phi(irn) ? "phi_" : "", irn, user, MAX(pos, 0));
-		res->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, pos >= 0 ? COST_LOAD : 0.0);
+		res->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, cost);
 	}
 
 	memset(&iuh, 0, sizeof(iuh));
@@ -341,6 +369,7 @@ static void process_block(ir_node *bl, void *data)
 			if(has_reg_class(si, op)) {
 				DBG((si->dbg, LEVEL_2, "  arg %+F\n", op));
 				relevant_args++;
+
 				/* arguments must not be spilled */
 				if(pset_find_ptr(cand, op))
 					pset_remove_ptr(cand, op);
@@ -383,15 +412,17 @@ static void process_block(ir_node *bl, void *data)
 				live_range_t *op_lr = get_live_range(si, op, irn, i);
 				set_irn_link(op, op_lr);
 
-//				/*
-//				 * The operand is reloaded at its usage, so it must not occur
-//				 * in the constraint which determines which values live at the
-//				 * instruction must reside in memory.
-//				 */
-//				if(must_be_in_mem > 0) {
-//					DBG((si->dbg, LEVEL_3, " Resetting %+F to 0:\n", op));
-//					lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 0.0);
-//				}
+#if 0
+				/*
+				 * The operand is reloaded at its usage, so it must not occur
+				 * in the constraint which determines which values live at the
+				 * instruction must reside in memory.
+				 */
+				if(must_be_in_mem > 0) {
+					DBG((si->dbg, LEVEL_3, " Resetting %+F to 0:\n", op));
+					lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 0.0);
+				}
+#endif
 
 				/*
 				 * Check, if the node is a rematerializable node and
@@ -481,13 +512,15 @@ static void process_block(ir_node *bl, void *data)
 			live_range_t *op_lr  = get_live_range(si, end_node, pred_bl, -1);
 			edge_reload_t *edge  = obstack_alloc(si->obst, sizeof(edge[0]));
 
-			ir_snprintf(buf, sizeof(buf), "edge_%N_%N_%N_%N", bl, pred_bl, end_node, op_lr->irn);
-			edge->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD);
+			ir_snprintf(buf, sizeof(buf), "edge_b%N_p%N_i%N", bl, pred_bl, end_node);
+			edge->in_mem_var = lpp_add_var(si->lpp, buf, lpp_binary, get_weight(pred_bl) * COST_LOAD);
 			edge->bl         = bl;
 			edge->irn        = end_node;
 			edge->pos        = i;
+			edge->next       = si->edges;
+			si->edges        = edge;
 
-			ir_snprintf(buf, sizeof(buf), "cedge_%N_%N_%N_%N", bl, pred_bl, end_node, op_lr->irn);
+			ir_snprintf(buf, sizeof(buf), "cedge_b%N_p%N_i%N", bl, pred_bl, end_node);
 			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 			lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, 1.0);
 			lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, -1.0);
@@ -511,23 +544,25 @@ end:
  */
 static void add_store_costs(spill_ilp_t *si)
 {
-	char buf[64];
-	irn_use_head_t *uh;
-	double costs = si->enable_store ? COST_STORE : 0.0;
+	if(si->enable_store) {
+		char buf[64];
+		irn_use_head_t *uh;
 
-	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
-		int cst;
-		live_range_t *lr;
+		for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
+			int cst;
+			live_range_t *lr;
 
-		ir_snprintf(buf, sizeof(buf), "cs_%N", uh->irn);
-		cst = lpp_add_cst(si->lpp, buf, lpp_less, 0);
+			ir_snprintf(buf, sizeof(buf), "cs_%N", uh->irn);
+			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0);
 
-		ir_snprintf(buf, sizeof(buf), "s_%N", uh->irn);
-		uh->spill_var = lpp_add_var(si->lpp, buf, lpp_binary, costs);
-		lpp_set_factor_fast(si->lpp, cst, uh->spill_var, -BIGM);
+			ir_snprintf(buf, sizeof(buf), "s_%N", uh->irn);
+			uh->spill_var = lpp_add_var(si->lpp, buf, lpp_binary,
+					get_weight(uh->irn) * COST_STORE);
+			lpp_set_factor_fast(si->lpp, cst, uh->spill_var, -BIGM);
 
-    list_for_each_entry(live_range_t, lr, &uh->head, list)
-			lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, 1.0);
+			list_for_each_entry(live_range_t, lr, &uh->head, list)
+				lpp_set_factor_fast(si->lpp, cst, lr->in_mem_var, 1.0);
+		}
 	}
 }
 
@@ -556,16 +591,26 @@ static void writeback_results(spill_ilp_t *si)
 	for(uh = set_first(si->irn_use_heads); uh; uh = set_next(si->irn_use_heads)) {
 		live_range_t *lr;
 
+		si->stats.n_spills += !is_zero(lpp_get_var_sol(si->lpp, uh->spill_var));
+
 		/* Go through all live ranges of the node. */
 		list_for_each_entry(live_range_t, lr, &uh->head, list) {
-			if(is_spilled(si, lr) && !is_end_of_block_use(lr))
+			if(is_spilled(si, lr) && !is_end_of_block_use(lr)) {
+				DBG((si->dbg, LEVEL_2, "%+F: inserting reload at user %+F\n",
+							lr->irn, lr->user));
 				be_add_reload(si->senv, lr->irn, lr->user);
+				si->stats.n_reloads += 1;
+			}
 		}
 	}
 
 	for(edge = si->edges; edge; edge = edge->next) {
-		if(!is_zero(edge->in_mem_var))
+		if(!is_zero(lpp_get_var_sol(si->lpp, edge->in_mem_var))) {
+			DBG((si->dbg, LEVEL_2, "%+F: insert reload on edge %d from %+F\n",
+						edge->irn, edge->pos, edge->bl));
 			be_add_reload_on_edge(si->senv, edge->irn, edge->bl, edge->pos);
+			si->stats.n_reloads += 1;
+		}
 	}
 
 	be_insert_spills_reloads(si->senv, NULL);
@@ -581,6 +626,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", session_env->irg, cls->name);
 
 	obstack_init(&obst);
+	memset(&si.stats, 0, sizeof(si.stats));
 	si.session         = session_env;
 	si.obst            = &obst;
 	si.dbg             = firm_dbg_register("be.ra.spillilp");
@@ -592,7 +638,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	si.first_uses      = new_set(cmp_first_use, 4096);
 	si.edges           = NULL;
 	si.enable_remat    = 0;
-	si.enable_store    = 0;
+	si.enable_store    = 1;
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
 	irg_block_walk_graph(session_env->irg, process_block, NULL, &si);
@@ -604,7 +650,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 		FILE *f;
 		char buf[256];
 
-		ir_snprintf(buf, sizeof(buf), "spill-%s.ilp", problem_name);
+		ir_snprintf(buf, sizeof(buf), "%s-spill.ilp", problem_name);
 		if((f = fopen(buf, "wt")) != NULL) {
 			lpp_dump_plain(si.lpp, f);
 			fclose(f);
@@ -630,7 +676,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 		FILE *f;
 		char buf[256];
 
-		ir_snprintf(buf, sizeof(buf), "spill-%s.sol", problem_name);
+		ir_snprintf(buf, sizeof(buf), "%s-spill.sol", problem_name);
 		if((f = fopen(buf, "wt")) != NULL) {
 			int i;
 			for(i = 0; i < si.lpp->var_next; ++i) {
@@ -646,6 +692,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 
 #ifdef DUMP_STATS
 	{
+		char buf[256];
 		FILE *f;
 
 		ir_snprintf(buf, sizeof(buf), "%s-spill.stat", problem_name);
@@ -654,9 +701,9 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 			fprintf(f, "%20s: %d\n", "vars", si.lpp->var_next);
 			fprintf(f, "%20s: %d\n", "csts", si.lpp->cst_next);
 			fprintf(f, "%20s: %f\n", "sol time", si.lpp->sol_time);
-			fprintf(f, "%20s: %d\n", "spills", si->stats.n_spills);
-			fprintf(f, "%20s: %d\n", "reloads", si->stats.n_reloads);
-			fprintf(f, "%20s: %d\n", "remats", si->stats.n_remat);
+			fprintf(f, "%20s: %d\n", "spills", si.stats.n_spills);
+			fprintf(f, "%20s: %d\n", "reloads", si.stats.n_reloads);
+			fprintf(f, "%20s: %d\n", "remats", si.stats.n_remat);
 			fclose(f);
 		}
 	}
