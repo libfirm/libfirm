@@ -61,6 +61,7 @@ void normalize_one_return(ir_graph *irg)
 
   /* look, if we have more than one return */
   n       = get_Block_n_cfgpreds(endbl);
+  assert(n > 0);
   returns = alloca((n + 7) >> 3);
   memset(returns, 0, (n + 7) >> 3);
 

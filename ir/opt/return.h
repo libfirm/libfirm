@@ -24,7 +24,7 @@
 /**
  * Normalize the Returns of a graph by creating a new End block
  * with One Return(Phi).
- * This is the prefered input for the if-conversion.
+ * This is the preferred input for the if-conversion.
  *
  * In pseudocode, it means:
  *
@@ -46,7 +46,7 @@ void normalize_one_return(ir_graph *irg);
 /**
  * Normalize the Returns of a graph by moving
  * the Returns upwards as much as possible.
- * This might be prefered for code generation.
+ * This might be preferred for code generation.
  *
  * In pseudocode, it means:
  *
