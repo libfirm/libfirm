@@ -222,8 +222,6 @@ static int rta_fill_graph (ir_graph* graph)
 }
 
 /** Traverse all graphs to collect method accesses and object allocations.
- *
- *  @param rerun Whether to rely on is_alive in a second run
  */
 static int rta_fill_incremental (void)
 {
@@ -232,7 +230,7 @@ static int rta_fill_incremental (void)
   int rerun  = TRUE;
   int old_ip_view = get_interprocedural_view();
 
-  set_interprocedural_view(false);     /* save this for later */
+  set_interprocedural_view(0);     /* save this for later */
 
   /* init_tables has added main_irg to _live_graphs */
 
@@ -535,6 +533,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.33  2005/11/17 17:26:57  beck
+ * removed bool type and depency from stdbool.h (not C89)
+ *
  * Revision 1.32  2005/01/05 14:24:52  beck
  * renames all is_x*_type() functions to is_X*_type() to prevent name clash with EDG frontend
  *

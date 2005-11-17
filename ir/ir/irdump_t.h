@@ -58,8 +58,8 @@
 #define PRINT_EXTBBID(X)      fprintf(F, "x%ld", get_irn_node_nr(X))
 
 extern int dump_dominator_information_flag;
-extern bool opt_dump_pointer_values_to_info;
-extern bool opt_dump_analysed_type_info;
+extern int opt_dump_pointer_values_to_info;
+extern int opt_dump_analysed_type_info;
 
 FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2);
 FILE *vcg_open_name (const char *name, const char *suffix);

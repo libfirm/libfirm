@@ -54,7 +54,7 @@ new_pseudo_ir_graph(entity *ent, int n_loc) {
   return res;
 }
 
-/* Returns true ir ir_graph is pseudo graph. */
+/* Returns non-zero ir ir_graph is pseudo graph. */
 int is_pseudo_ir_graph(ir_graph *irg)
 {
   int i, n_pseudo_irgs;
@@ -64,9 +64,9 @@ int is_pseudo_ir_graph(ir_graph *irg)
 
   n_pseudo_irgs = get_irp_n_pseudo_irgs();
   for (i = 0; i < n_pseudo_irgs; ++i) {
-    if (irg == get_irp_pseudo_irg(i)) return true;
+    if (irg == get_irp_pseudo_irg(i)) return 1;
   }
-  return false;
+  return 0;
 }
 
 static int visit_pseudo_irgs = 0;

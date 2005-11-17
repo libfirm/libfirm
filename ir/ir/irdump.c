@@ -86,8 +86,8 @@ int dump_dominator_information_flag = 0;
 int dump_loop_information_flag = 0;
 int dump_backedge_information_flag = 1;
 int dump_const_local = 0;
-bool opt_dump_analysed_type_info = 1;
-bool opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
+int opt_dump_analysed_type_info = 1;
+int opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
 
 static dumper_colors overrule_nodecolor = ird_color_default;
 
@@ -96,12 +96,12 @@ static DUMP_NODE_EDGE_FUNC dump_node_edge_hook = NULL;
 
 void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func)
 {
-    dump_node_edge_hook = func;
+  dump_node_edge_hook = func;
 }
 
 DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void)
 {
-    return dump_node_edge_hook;
+  return dump_node_edge_hook;
 }
 
 
@@ -125,11 +125,11 @@ void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook) {
   dump_edge_vcgattr_hook = hook;
 }
 
-INLINE bool get_opt_dump_const_local(void) {
+INLINE int get_opt_dump_const_local(void) {
   if (!dump_out_edge_flag && !dump_loop_information_flag)
     return dump_const_local;
   else
-    return false;
+    return 0;
 }
 
 void only_dump_method_with_name(ident *name) {
@@ -140,7 +140,7 @@ ident *get_dump_file_filter_ident(void) {
   return dump_file_filter_id;
 }
 
-/** Returns true if dump file filter is not set, or if it is a
+/** Returns non-zero if dump file filter is not set, or if it is a
  *  prefix of name. */
 int is_filtered_dump_name(ident *name) {
   if (!dump_file_filter_id) return 1;
@@ -153,52 +153,52 @@ void turn_off_edge_labels(void) {
   edge_label = 0;
 }
 
-void dump_consts_local(bool b) {
-  dump_const_local = b;
+void dump_consts_local(int flag) {
+  dump_const_local = flag;
 }
 
-void dump_constant_entity_values(bool b) {
-  const_entities = b;
+void dump_constant_entity_values(int flag) {
+  const_entities = flag;
 }
 
-void dump_keepalive_edges(bool b) {
-  dump_keepalive = b;
+void dump_keepalive_edges(int flag) {
+  dump_keepalive = flag;
 }
 
-bool get_opt_dump_keepalive_edges(void) {
+int get_opt_dump_keepalive_edges(void) {
   return dump_keepalive;
 }
 
-void dump_out_edges(bool b) {
-  dump_out_edge_flag = b;
+void dump_out_edges(int flag) {
+  dump_out_edge_flag = flag;
 }
 
-void dump_dominator_information(bool b) {
-  dump_dominator_information_flag = b;
+void dump_dominator_information(int flag) {
+  dump_dominator_information_flag = flag;
 }
 
-void dump_loop_information(bool b) {
-  dump_loop_information_flag = b;
+void dump_loop_information(int flag) {
+  dump_loop_information_flag = flag;
 }
 
-void dump_backedge_information(bool b) {
-  dump_backedge_information_flag = b;
+void dump_backedge_information(int flag) {
+  dump_backedge_information_flag = flag;
 }
 
 /* Dump the information of type field specified in ana/irtypeinfo.h.
  * If the flag is set, the type name is output in [] in the node label,
  * else it is output as info.
  */
-void set_opt_dump_analysed_type_info(bool b) {
-  opt_dump_analysed_type_info = b;
+void set_opt_dump_analysed_type_info(int flag) {
+  opt_dump_analysed_type_info = flag;
 }
 
-void dump_pointer_values_to_info(bool b) {
-  opt_dump_pointer_values_to_info = b;
+void dump_pointer_values_to_info(int flag) {
+  opt_dump_pointer_values_to_info = flag;
 }
 
-void dump_ld_names(bool b) {
-  dump_ld_name = b;
+void dump_ld_names(int flag) {
+  dump_ld_name = flag;
 }
 
 /* -------------- some extended helper functions ----------------- */
@@ -543,7 +543,7 @@ static ir_node **construct_block_lists(ir_graph *irg) {
   irg_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
 
   /* Collect also EndReg and EndExcept. We do not want to change the walker. */
-  set_interprocedural_view(false);
+  set_interprocedural_view(0);
 
   set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
   irg_walk(get_irg_end_reg(current_ir_graph), clear_link, collect_node, current_ir_graph);
@@ -893,7 +893,7 @@ dump_node_nodeattr(FILE *F, ir_node *n)
 
   switch (get_irn_opcode(n)) {
   case iro_Start:
-    if (false && get_interprocedural_view()) {
+    if (0 && get_interprocedural_view()) {
       fprintf (F, "%s ", get_ent_dump_name(get_irg_entity(current_ir_graph)));
     }
     break;
@@ -1069,7 +1069,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
  * checks whether a node is "constant-like" ie can be treated "block-less"
  */
 static INLINE
-bool is_constlike_node(ir_node *n) {
+int is_constlike_node(ir_node *n) {
   ir_op *op = get_irn_op(n);
   return (op == op_Const || op == op_Bad || op == op_NoMem || op == op_SymConst || op == op_Unknown);
 }
@@ -1133,16 +1133,16 @@ static void dump_const_block_local(FILE *F, ir_node *n) {
     PRINT_NODEID(n);
     fprintf (F, "\" targetname: \""); PRINT_CONSTBLKID(n,blk);
 
-	if (dump_edge_vcgattr_hook) {
-	  fprintf (F, "\" ");
+    if (dump_edge_vcgattr_hook) {
+      fprintf (F, "\" ");
       if (dump_edge_vcgattr_hook(F, n, -1)) {
         fprintf (F, "}\n");
         return;
       }
-	  else {
+      else {
         fprintf (F, " " BLOCK_EDGE_ATTR "}\n");
-		return;
-	  }
+        return;
+      }
     }
 
     fprintf (F, "\" "   BLOCK_EDGE_ATTR "}\n");
@@ -1224,16 +1224,16 @@ dump_ir_block_edge(FILE *F, ir_node *n)  {
       fprintf (F, "\" targetname: ");
       fprintf(F, "\""); PRINT_NODEID(block); fprintf(F, "\"");
 
-	  if (dump_edge_vcgattr_hook) {
-	    fprintf (F, " ");
+      if (dump_edge_vcgattr_hook) {
+        fprintf (F, " ");
         if (dump_edge_vcgattr_hook(F, n, -1)) {
           fprintf (F, "}\n");
           return;
         }
-	    else {
+        else {
           fprintf (F, " "  BLOCK_EDGE_ATTR "}\n");
-		  return;
-	    }
+          return;
+        }
       }
 
       fprintf (F, " "   BLOCK_EDGE_ATTR "}\n");
@@ -1243,10 +1243,10 @@ dump_ir_block_edge(FILE *F, ir_node *n)  {
 
 static void
 print_data_edge_vcgattr(FILE *F, ir_node *from, int to) {
-	/*
-	 * do not use get_nodes_block() here, will fail
-	 * if the irg is not pinned.
-	 */
+  /*
+   * do not use get_nodes_block() here, will fail
+   * if the irg is not pinned.
+   */
   if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
     fprintf (F, INTRA_DATA_EDGE_ATTR);
   else
@@ -1255,10 +1255,10 @@ print_data_edge_vcgattr(FILE *F, ir_node *from, int to) {
 
 static void
 print_mem_edge_vcgattr(FILE *F, ir_node *from, int to) {
-	/*
-	 * do not use get_nodes_block() here, will fail
-	 * if the irg is not pinned.
-	 */
+  /*
+   * do not use get_nodes_block() here, will fail
+   * if the irg is not pinned.
+   */
   if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
     fprintf (F, INTRA_MEM_EDGE_ATTR);
   else
@@ -1270,8 +1270,8 @@ print_edge_vcgattr(FILE *F, ir_node *from, int to) {
   assert(from);
 
   if (dump_edge_vcgattr_hook)
-	if (dump_edge_vcgattr_hook(F, from, to))
-		return;
+    if (dump_edge_vcgattr_hook(F, from, to))
+      return;
 
   if (dump_backedge_information_flag && is_backedge(from, to))
     fprintf (F, BACK_EDGE_ATTR);
@@ -2603,7 +2603,7 @@ dump_cfg (ir_graph *irg, const char *suffix)
 
   if (ipv) {
     printf("Warning: dumping cfg not in interprocedural view!\n");
-    set_interprocedural_view(false);
+    set_interprocedural_view(0);
   }
 
   if (get_irg_dom_state(irg) != dom_consistent)
@@ -2734,7 +2734,7 @@ void dump_all_cg_block_graph(const char *suffix) {
   FILE *f;
   int i;
   int rem_view = get_interprocedural_view();
-  set_interprocedural_view(true);
+  set_interprocedural_view(1);
 
   f = vcg_open_name("All_graphs", suffix);
   dump_vcg_header(f, "All_graphs", NULL);
@@ -2799,17 +2799,14 @@ dump_all_types (const char *suffix)
 }
 
 void
-dump_class_hierarchy (bool entities, const char *suffix)
+dump_class_hierarchy (int entities, const char *suffix)
 {
   FILE *f = vcg_open_name("class_hierarchy", suffix);
   h_env_t env;
 
-  env.f = f;
+  env.f        = f;
+  env.dump_ent = entities;
   dump_vcg_header(f, "class_hierarchy", NULL);
-  if (entities)
-    env.dump_ent = 1;
-  else
-    env.dump_ent = 0;
   type_walk(dump_class_hierarchy_node, NULL, &env);
   vcg_close(f);
 }

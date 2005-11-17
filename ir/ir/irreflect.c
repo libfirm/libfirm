@@ -64,7 +64,7 @@ typedef struct {
 typedef struct {
 	opcode opc;
 	const char *name;
-	bool commutative;
+	int commutative;
 	int sig_count;
 	rflct_arg_t *sigs[MAX_SIG_COUNT];
 } rflct_opcode_t;
@@ -326,23 +326,26 @@ char *rflct_to_string(char *buf, int n, opcode opc, int sig) {
 	return buf;
 }
 
+#define NON_VARIADIC 0
+#define VARIADIC     1
+
 #define ARG(name,modes) \
-_ARG(name, modes, false, -1)
+_ARG(name, modes, NON_VARIADIC, -1)
 
 #define ARG_SAME(name,modes,mode_same) \
-_ARG(name, modes, false, mode_same)
+_ARG(name, modes, NON_VARIADIC, mode_same)
 
 #define VARG(name,modes) \
-_ARG(name, modes, true, 0)
+_ARG(name, modes, VARIADIC, 0)
 
 #define VARG_SAME(name,modes) \
-_ARG(name, modes, true, 1)
+_ARG(name, modes, VARIADIC, 1)
 
 #define MARK \
-_ARG(NULL, None, false, -1)
+_ARG(NULL, None, NON_VARIADIC, -1)
 
 #define FINISH \
-_ARG(NULL, None, false, 0)
+_ARG(NULL, None, NON_VARIADIC, 0)
 
 #define BLOCK ARG("Block", BB)
 
@@ -401,7 +404,7 @@ arg->name = _name; \
 	arg->is_variadic = _var; \
 	arg->mode_equals = _me;
 
-void rflct_new_opcode(opcode opc, const char *name, bool commutative)
+void rflct_new_opcode(opcode opc, const char *name, int commutative)
 {
 	rflct_opcode_t *ropc = obstack_alloc(&obst, sizeof(*ropc));
 
@@ -414,7 +417,7 @@ void rflct_new_opcode(opcode opc, const char *name, bool commutative)
 	opcodes[opc] = ropc;
 }
 
-bool rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig)
+int rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig)
 {
 	rflct_arg_t *args = sig->args;
 	rflct_opcode_t *op = opcodes[opc];
@@ -425,12 +428,12 @@ bool rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig)
 	for(i = 0; i < MAX_SIG_COUNT && op->sigs[i] != NULL; i++);
 
 	if(i >= MAX_SIG_COUNT)
-		return false;
+		return 0;
 
 	op->sigs[op->sig_count++] = args;
 
 	free(sig);
-	return true;
+	return 1;
 }
 
 
@@ -454,7 +457,7 @@ rflct_sig_t *rflct_signature_allocate(int defs, int uses)
 	return sig;
 }
 
-int rflct_signature_get_index(const rflct_sig_t *sig, bool is_use, int num)
+int rflct_signature_get_index(const rflct_sig_t *sig, int is_use, int num)
 {
 	return is_use ? num + sig->defs + 1 : num;
 }
@@ -466,8 +469,8 @@ arg->name = _name; \
 	arg->is_variadic = _var; \
 	arg->mode_equals = _me;
 
-int rflct_signature_set_arg(rflct_sig_t *sig, bool is_use, int num,
-		const char *name, rflct_mode_class_t mc, bool is_variadic, int mode_equals)
+int rflct_signature_set_arg(rflct_sig_t *sig, int is_use, int num,
+		const char *name, rflct_mode_class_t mc, int is_variadic, int mode_equals)
 {
 	int index = rflct_signature_get_index(sig, is_use, num);
 	rflct_arg_t *arg = sig->args + index;
@@ -479,3 +482,6 @@ int rflct_signature_set_arg(rflct_sig_t *sig, bool is_use, int num,
 void firm_init_rflct(void) {
 	init_ops();
 }
+
+#undef VARIADIC
+#undef NON_VARIADIC

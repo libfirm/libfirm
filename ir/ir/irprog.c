@@ -135,11 +135,11 @@ void add_irp_irg(ir_graph *irg) {
 
 /* Removes irg from the list or irgs, shrinks the list by one. */
 void remove_irp_irg_from_list(ir_graph *irg){
-  int i, found = false;
+  int i, found = 0;
   assert(irg);
   for (i = 0; i < (ARR_LEN (irp->graphs)); i++) {
     if (irp->graphs[i] == irg) {
-      found = true;
+      found = 1;
       for(; i < (ARR_LEN (irp->graphs)) - 1; i++) {
         irp->graphs[i] = irp->graphs[i+1];
       }
@@ -177,23 +177,23 @@ ir_graph *(get_irp_irg)(int pos){
 
 void set_irp_irg(int pos, ir_graph *irg) {
   assert (irp && irg);
-  assert (pos < (ARR_LEN((irp)->graphs)));
+  assert (pos < (ARR_LEN(irp->graphs)));
   irp->graphs[pos] = irg;
 }
 
 /* Gets the number of graphs _and_ pseudo graphs. */
 int       get_irp_n_allirgs(void) {
   /* We can not call get_irp_n_irgs, as we end up in a recursion ... */
-  return ARR_LEN((irp)->graphs) + get_irp_n_pseudo_irgs();
+  return ARR_LEN(irp->graphs) + get_irp_n_pseudo_irgs();
 }
 
 /* Returns the ir graph at position pos of all graphs (including
  pseudo graphs).  Visits first graphs, then pseudo graphs. */
 ir_graph *get_irp_allirg(int pos) {
-  int n_irgs = ARR_LEN((irp)->graphs);
+  int n_irgs = ARR_LEN(irp->graphs);
   assert(0 <= pos);
   if (pos < n_irgs) {
-    return (irp)->graphs[pos];
+    return irp->graphs[pos];
   } else {
     return get_irp_pseudo_irg(pos-n_irgs);
   }

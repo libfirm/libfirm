@@ -518,15 +518,14 @@ int is_irn_const_expression(ir_node *n) {
   case iro_Const:
   case iro_SymConst:
   case iro_Unknown:
-    return true; break;
+    return 1;
   case iro_Conv:
   case iro_Cast:
     return is_irn_const_expression(get_irn_n(n, 0));
   default:
-    return false;
     break;
   }
-  return false;
+  return 0;
 }
 
 /*
@@ -622,15 +621,15 @@ int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
     node = get_compound_graph_path_node(gr, i);
     if (node == NULL)
       /* Path not yet complete. */
-      return true;
+      return 1;
     if (get_entity_owner(node) != owner)
-      return false;
+      return 0;
     owner = get_entity_type(node);
   }
   if (pos == get_compound_graph_path_length(gr))
     if (!is_atomic_type(owner))
-      return false;
-  return true;
+      return 0;
+  return 1;
 }
 
 /* Returns the length of a graph path */
@@ -711,14 +710,14 @@ static int equal_paths(compound_graph_path *path1, int *visited_indicees, compou
   int len1 = get_compound_graph_path_length(path1);
   int len2 = get_compound_graph_path_length(path2);
 
-  if (len2 > len1) return false;
+  if (len2 > len1) return 0;
 
   for (i = 0; i < len1; i++) {
     type   *tp;
     entity *node1 = get_compound_graph_path_node(path1, i);
     entity *node2 = get_compound_graph_path_node(path2, i);
 
-    if (node1 != node2) return false;
+    if (node1 != node2) return 0;
 
     tp = get_entity_owner(node1);
     if (is_Array_type(tp)) {
@@ -730,13 +729,13 @@ static int equal_paths(compound_graph_path *path1, int *visited_indicees, compou
       low = get_array_lower_bound_int(tp, 0);
       if (low + visited_indicees[i] < get_compound_graph_path_array_index(path2, i)) {
         visited_indicees[i]++;
-        return false;
+        return 0;
       }
       else
         assert(low + visited_indicees[i] == get_compound_graph_path_array_index(path2, i));
     }
   }
-  return true;
+  return 1;
 }
 
 /* Returns the position of a value with the given path.
@@ -1278,9 +1277,9 @@ int is_compound_entity(entity *ent) {
 
 /**
  * @todo not implemented!!! */
-bool equal_entity(entity *ent1, entity *ent2) {
+int equal_entity(entity *ent1, entity *ent2) {
   fprintf(stderr, " calling unimplemented equal entity!!! \n");
-  return true;
+  return 1;
 }
 
 

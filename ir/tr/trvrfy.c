@@ -41,18 +41,18 @@ static int check_class(type *tp) {
       entity *ovw = get_entity_overwrites(mem, j);
       /*printf(" overwrites: "); DDME(ovw);*/
       /* Check whether ovw is member of one of tp's supertypes. If so,
-     the representation is correct. */
-      found = false;
+         the representation is correct. */
+      found = 0;
       for (k = 0; k < get_class_n_supertypes(tp); k++) {
-    if (get_class_member_index(get_class_supertype(tp, k), ovw) >= 0) {
-      found = true;
-      break;
-    }
+        if (get_class_member_index(get_class_supertype(tp, k), ovw) >= 0) {
+          found = 0;
+          break;
+        }
       }
       if (!found) {
-    DDMT(tp); DDME(mem);
-    assert(found && "overwrites an entity not contained in direct supertype");
-    return error_ent_not_cont;
+        DDMT(tp); DDME(mem);
+        assert(found && "overwrites an entity not contained in direct supertype");
+        return error_ent_not_cont;
       }
     }
 

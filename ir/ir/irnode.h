@@ -267,7 +267,7 @@ ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 /** Get the predecessor block.
  *
- *  Returns the block corresonding to the predecessor pos of block.
+ *  Returns the block corresponding to the predecessor pos of block.
  *
  *  There are several ambiguities we resolve with this function:
  *  - The direct predecessor can be a Proj, which is not pinned.
@@ -277,8 +277,8 @@ void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
  *    Start, but the Bad node.
  */
 ir_node  *get_Block_cfgpred_block(ir_node *node, int pos);
-bool      get_Block_matured (ir_node *node);
-void      set_Block_matured (ir_node *node, bool matured);
+int       get_Block_matured (ir_node *node);
+void      set_Block_matured (ir_node *node, int matured);
 
 /** A visited flag only for block nodes.
  *  @see also: get_irn_visited() inc_irg_visited() inc_irg_block_visited()*/

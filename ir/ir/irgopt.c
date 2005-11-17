@@ -519,7 +519,7 @@ dead_node_elimination(ir_graph *irg) {
   struct obstack *graveyard_obst = NULL;
   struct obstack *rebirth_obst   = NULL;
 
-	edges_init_graph(irg);
+  edges_init_graph(irg);
 
   /* inform statistics that we started a dead-node elimination run */
   hook_dead_node_elim(irg, 1);
@@ -527,7 +527,7 @@ dead_node_elimination(ir_graph *irg) {
   /* Remember external state of current_ir_graph. */
   rem = current_ir_graph;
   current_ir_graph = irg;
-  set_interprocedural_view(false);
+  set_interprocedural_view(0);
 
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
@@ -603,9 +603,9 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
       for (i = 0; i < old_irn_arity; i++) {
         irn = get_irn_n(n, i);
         if (!is_Bad(irn)) {
-	        new_in[new_irn_n] = irn;
-	        is_backedge(n, i) ? set_backedge(n, new_irn_n-1) : set_not_backedge(n, new_irn_n-1);
-	        new_irn_n++;
+          new_in[new_irn_n] = irn;
+          is_backedge(n, i) ? set_backedge(n, new_irn_n-1) : set_not_backedge(n, new_irn_n-1);
+          ++new_irn_n;
         }
       }
       //ARR_SETLEN(int, n->attr.block.backedge, new_irn_arity);
@@ -650,9 +650,9 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
       new_irn_arity = 1;
       for(i = 1; i < old_irn_arity; i++)
         if (!is_Bad((ir_node *)old_in[i])) {
-	        n->in[new_irn_arity] = n->in[i];
-	        is_backedge(n, i) ? set_backedge(n, new_irn_arity) : set_not_backedge(n, new_irn_arity);
-	        new_irn_arity++;
+          n->in[new_irn_arity] = n->in[i];
+          is_backedge(n, i) ? set_backedge(n, new_irn_arity) : set_not_backedge(n, new_irn_arity);
+          ++new_irn_arity;
         }
 
       ARR_SETLEN(ir_node *, n->in, new_irn_arity);

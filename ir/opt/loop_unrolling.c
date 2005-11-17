@@ -112,7 +112,7 @@ copy_node (ir_node *n, void *env)
   ir_node *nn;
   int new_arity;
   ir_op *op = get_irn_op(n);
-  int copy_node_nr = false;
+  int copy_node_nr = 0;
 
   /* The end node looses it's flexible in array.  This doesn't matter,
      as dead node elimination builds End by hand, inlineing doesn't use

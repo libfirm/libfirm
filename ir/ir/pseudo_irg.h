@@ -26,7 +26,7 @@
  */
 ir_graph *new_pseudo_ir_graph(entity *ent, int n_loc);
 
-/** Returns true ir ir_graph is pseudo graph.
+/** Returns non-zero ir ir_graph is pseudo graph.
  *  Is irg a pseudo graph for analysis? */
 int      is_pseudo_ir_graph(ir_graph *irg);
 

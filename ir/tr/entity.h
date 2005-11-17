@@ -371,7 +371,7 @@ int     get_compound_graph_path_array_index(compound_graph_path *gr, int pos);
 void    set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
 
 /** Checks whether the path up to pos is correct. If the path contains a NULL,
- *  assumes the path is not complete and returns 'true'. */
+ *  assumes the path is not complete and returns non-zero. */
 int is_proper_compound_graph_path(compound_graph_path *gr, int pos);
 
 /* A value of a compound entity is a pair of a value and the description of the
@@ -509,7 +509,7 @@ int is_compound_entity(entity *ent);
     - they have the same type (the same C-struct)
     - ...?
 */
-bool equal_entity(entity *ent1, entity *ent2);
+int equal_entity(entity *ent1, entity *ent2);
 
 /** Outputs a unique number for this entity if libfirm is compiled for
    debugging, (configure with --enable-debug) else returns 0. */

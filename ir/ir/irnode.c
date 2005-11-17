@@ -642,14 +642,14 @@ ir_node  *
   return _get_Block_cfgpred_block(node, pos);
 }
 
-bool
+int
 get_Block_matured (ir_node *node) {
   assert (node->op == op_Block);
-  return node->attr.block.matured;
+  return (int)node->attr.block.matured;
 }
 
 void
-set_Block_matured (ir_node *node, bool matured) {
+set_Block_matured (ir_node *node, int matured) {
   assert (node->op == op_Block);
   node->attr.block.matured = matured;
 }
@@ -697,7 +697,7 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
       /* Fix backedge array.  fix_backedges() operates depending on
      interprocedural_view. */
       int ipv = get_interprocedural_view();
-      set_interprocedural_view(true);
+      set_interprocedural_view(1);
       fix_backedges(current_ir_graph->obst, node);
       set_interprocedural_view(ipv);
     }
@@ -1415,7 +1415,7 @@ int is_Cast_upcast(ir_node *node) {
 
   assert(fromtype);
 
-  if (!is_Class_type(totype)) return false;
+  if (!is_Class_type(totype)) return 0;
   return is_subclass_of(fromtype, totype);
 }
 
@@ -1437,7 +1437,7 @@ int is_Cast_downcast(ir_node *node) {
 
   assert(fromtype);
 
-  if (!is_Class_type(totype)) return false;
+  if (!is_Class_type(totype)) return 0;
   return is_subclass_of(totype, fromtype);
 }
 

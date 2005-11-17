@@ -246,10 +246,10 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
     ir_graph * irg;
     assert(get_irp_ip_view_state() == ip_view_valid);
 
-    set_interprocedural_view(false);
+    set_interprocedural_view(0);
     eset_insert(irg_set, current_ir_graph);
     irg_walk(node, (irg_walk_func *) collect_irgs, NULL, irg_set);
-    set_interprocedural_view(true);
+    set_interprocedural_view(1);
     visited = get_max_irg_visited() + 1;
     for (irg = eset_first(irg_set); irg; irg = eset_next(irg_set)) {
       set_irg_visited(irg, visited);
@@ -351,7 +351,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
   ir_graph *rem = current_ir_graph;
   int rem_view = get_interprocedural_view();
 
-  set_interprocedural_view(true);
+  set_interprocedural_view(1);
 
   inc_max_irg_visited();
   /* Fix all irg_visited flags */

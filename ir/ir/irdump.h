@@ -383,7 +383,7 @@ void dump_all_types (const char *suffix);
  * is dumped along with the entities.
  * Dumps to a file class_hierarchy.vcg
  */
-void dump_class_hierarchy (bool entities, const char *suffix);
+void dump_class_hierarchy (int entities, const char *suffix);
 
 /* **************************************************************************** */
 /*                              LOOPTREE DUMPERS                                */
@@ -461,12 +461,12 @@ void dump_graph_as_text(ir_graph *irg, const char *suffix);
 /** Verbosity for text dumpers */
 typedef enum {
   dump_verbosity_onlynames         = 0x00000001,   /**< only dump names. turns off all other
-						      flags up to 0x00010000. */
+                                                        flags up to 0x00010000. */
   dump_verbosity_fields            = 0x00000002,   /**< dump types and fields (like a type declaration) */
   dump_verbosity_methods           = 0x00000004,   /**< dump types and methods (like a type declaration) */
   dump_verbosity_nostatic          = 0x00000040,   /**< dump types and dynamic allocated fields (like a
-						        type declaration). This excludes methods and
-						        static, polymorphic fields. */
+                                                        type declaration). This excludes methods and
+                                                        static, polymorphic fields. */
   dump_verbosity_typeattrs         = 0x00000008,   /**< dump all type attributes */
   dump_verbosity_entattrs          = 0x00000010,   /**< dump all entity attributes */
   dump_verbosity_entconsts         = 0x00000020,   /**< dump entity constants */
@@ -493,9 +493,9 @@ typedef enum {
   dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< dump only enumeration types */
 
   dump_verbosity_max                = 0x4FF00FBE   /**< turn on all verbosity.
-						        Do not turn on negative flags!
-						        @@@ Because of a bug in gcc 3.2 we can not set the
-							first two bits. */
+                                                        Do not turn on negative flags!
+                                                        @@@ Because of a bug in gcc 3.2 we can not set the
+                                                        first two bits. */
 } dump_verbosity;
 
 
@@ -573,75 +573,75 @@ int is_filtered_dump_name(ident *name);
 void turn_off_edge_labels(void);
 
 /**
- * If set to true constants will be replicated for every use. In non
+ * If set to non-zero constants will be replicated for every use. In non
  * blocked view edges from constant to block are skipped.  Vcg then
  * layouts the graphs more compact, this makes them better readable.
  * The flag is automatically and temporarily set to false if other
  * edges are dumped, as outs, loop, ...
  * Default setting: false.
  */
-void dump_consts_local(bool b);
+void dump_consts_local(int flag);
 
 /**
- * Returns false if dump_out_edge_flag or dump_loop_information_flag
+ * Returns 0 if dump_out_edge_flag or dump_loop_information_flag
  * are set, else returns dump_const_local_flag.
  */
-bool get_opt_dump_const_local(void);
+int get_opt_dump_const_local(void);
 
 /**  Turns off dumping the values of constant entities. Makes type graphs
  *   better readable.
  */
-void dump_constant_entity_values(bool b);
+void dump_constant_entity_values(int flag);
 
 /**  Turns on dumping the edges from the End node to nodes to be kept
  *   alive.
  */
-void dump_keepalive_edges(bool b);
-bool get_opt_dump_keepalive_edges(void);
+void dump_keepalive_edges(int flag);
+int get_opt_dump_keepalive_edges(void);
 
 /** Turns on dumping the out edges starting from the Start block in
  *  dump_ir_graph.
  *
  *  To test the consistency of the out data structure.
  */
-void dump_out_edges(bool b);
+void dump_out_edges(int flag);
 
 /** If this flag is set the dumper dumps edges to immediate dominator in cfg.
  */
-void dump_dominator_information(bool b);
+void dump_dominator_information(int flag);
 
 /** If this flag is set the dumper dumps loop nodes and edges from
  *  these nodes to the contained ir nodes.
  *
  *  If the loops are interprocedural nodes can be missing.
  */
-void dump_loop_information(bool b);
+void dump_loop_information(int flag);
 
 /** If set and backedge info is computed, backedges are dumped dashed
  *  and as vcg 'backedge' construct.
  *
  *  Default: set.
  */
-void dump_backedge_information(bool b);
+void dump_backedge_information(int flag);
 
 /** Dump the information of type field specified in ana/irtypeinfo.h.
  *
  *  If the flag is set, the type name is output in [] in the node label,
  *  else it is output as info.
  */
-void set_opt_dump_analysed_type_info(bool b);
+void set_opt_dump_analysed_type_info(int flag);
 
 /** Write the address of a node into the vcg info.
  *
  *  This is off per default for automatic comparisons of
  *  vcg graphs -- these will differ in the pointer values!
  */
-void dump_pointer_values_to_info(bool b);
+void dump_pointer_values_to_info(int flag);
 
 /** Dumps ld_names of entities instead of there names.
  *
  * This option is on per default.
  */
-void dump_ld_names(bool b);
+void dump_ld_names(int flag);
 
 # endif /* _IRDUMP_H_ */
