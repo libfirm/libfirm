@@ -122,7 +122,7 @@ new_bd_Phi (dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode
   ir_node  *res;
   ir_graph *irg = current_ir_graph;
   int i;
-  bool has_unknown = false;
+  int has_unknown = 0;
 
   /* Don't assert that block matured: the use of this constructor is strongly
      restricted ... */
@@ -135,7 +135,7 @@ new_bd_Phi (dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode
 
   for (i = arity-1; i >= 0; i--)
     if (get_irn_op(in[i]) == op_Unknown) {
-      has_unknown = true;
+      has_unknown = 1;
       break;
     }
 
@@ -2011,7 +2011,7 @@ new_d_Block (dbg_info *db, int arity, ir_node **in)
 {
   ir_node *res;
   int i;
-  bool has_unknown = false;
+  int has_unknown = 0;
 
   res = new_bd_Block(db, arity, in);
 
@@ -2024,7 +2024,7 @@ new_d_Block (dbg_info *db, int arity, ir_node **in)
 
   for (i = arity-1; i >= 0; i--)
     if (get_irn_op(in[i]) == op_Unknown) {
-      has_unknown = true;
+      has_unknown = 1;
       break;
     }
 
