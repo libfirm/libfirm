@@ -91,7 +91,7 @@ void arch_dep_init(arch_dep_params_factory_t factory)
     rflct_signature_set_arg(sig, 1, 1, "Op 0", RFLCT_MC(Int), 0, 0);
     rflct_signature_set_arg(sig, 1, 2, "Op 1", RFLCT_MC(Int), 0, 0);
 
-    rflct_new_opcode(mulh_opc, "Mulh", false);
+    rflct_new_opcode(mulh_opc, "Mulh", 0);
     rflct_opcode_add_signature(mulh_opc, sig);
   }
 }
