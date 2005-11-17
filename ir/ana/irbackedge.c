@@ -71,14 +71,14 @@ static INLINE int *get_backarray(ir_node *n) {
 }
 
 /**
- * Returns true if node has no backarray, or
- *              if size of backarray == size of in array.
+ * Returns nin-zero if node has no backarray, or
+ *                  if size of backarray == size of in array.
  */
-static INLINE bool legal_backarray (ir_node *n) {
+static INLINE int legal_backarray (ir_node *n) {
   int *ba = mere_get_backarray(n);
   if (ba && (ARR_LEN(ba) != ARR_LEN(get_irn_in(n))-1))  /* Use get_irn_in -- sensitive to view! */
-    return false;
-  return true;
+    return 0;
+  return 1;
 }
 
 
@@ -133,37 +133,37 @@ int is_intra_backedge(ir_node *n, int pos) {
 }
 
 
-/** Returns true if the predecessor pos is a backedge. */
-bool is_backedge (ir_node *n, int pos) {
+/* Returns non-zero if the predecessor pos is a backedge. */
+int is_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
   if (ba) return ba[pos];
-  return false;
+  return 0;
 }
 
-/** Remarks that edge pos is a backedge. */
+/* Remarks that edge pos is a backedge. */
 void set_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
   assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
   ba[pos] = 1;
 }
 
-/** Remarks that edge pos is a backedge. */
+/* Remarks that edge pos is a backedge. */
 void set_not_backedge (ir_node *n, int pos) {
   int *ba = get_backarray (n);
   assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
   ba[pos] = 0;
 }
 
-/** Returns true if n has backedges. */
-bool has_backedges (ir_node *n) {
+/* Returns non-zero if n has backedges. */
+int has_backedges (ir_node *n) {
   int i;
   int *ba = get_backarray (n);
   if (ba) {
     int arity = get_irn_arity(n);
     for (i = 0; i < arity; i++)
-      if (ba[i]) return true;
+      if (ba[i]) return 1;
   }
-  return false;
+  return 0;
 }
 
 /** Sets all backedge information to zero. */
@@ -171,14 +171,14 @@ void clear_backedges (ir_node *n) {
   int i, arity;
   int rem = get_interprocedural_view();
   int *ba;
-  set_interprocedural_view(false);
+  set_interprocedural_view(0);
   ba = get_backarray (n);
   if (ba) {
     arity = get_irn_arity(n);
     for (i = 0; i < arity; i++)
       ba[i] = 0;
   }
-  set_interprocedural_view(true);
+  set_interprocedural_view(1);
   ba = get_backarray (n);
   if (ba) {
     arity = get_irn_arity(n);

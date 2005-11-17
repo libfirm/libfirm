@@ -112,15 +112,15 @@ static INLINE void exc_outs(void *reg, ir_node *cfop) {
 /* Walk a loop and add all edges.  Walk inner loops by recursion. */
 /*------------------------------------------------------------------*/
 
-/* return true if outer can be reached from inner via the outer loop relation */
+/* return non-zero if outer can be reached from inner via the outer loop relation */
 static int find_outer_loop(ir_loop *inner, ir_loop *outer, ir_node *b, ir_node *cfop) {
   if (get_loop_outer_loop(inner) == outer) {
     add_region_in(inner, b);
     add_loop_cfop(inner, cfop);
     exc_outs(b, cfop);
-    return true;
+    return 1;
   }
-  return false;
+  return 0;
 }
 
 static int test_loop_nest(ir_node *pred_b, ir_loop *nest) {
@@ -130,34 +130,34 @@ static int test_loop_nest(ir_node *pred_b, ir_loop *nest) {
     loop_element e = get_loop_element(nest, i);
     switch (*e.kind) {
     case k_ir_node: {
-      if (e.node == pred_b) return true;
+      if (e.node == pred_b) return 1;
     } break;
     case k_ir_loop: {
-      if (test_loop_nest(pred_b, e.son)) return true;
+      if (test_loop_nest(pred_b, e.son)) return 1;
     } break;
     default: break;
     }
   }
-  return false;
+  return 0;
 }
 
 static int find_inner_loop(ir_node *b, ir_loop *l, ir_node *pred, ir_node *cfop) {
   int i, n_elems = get_loop_n_elements(l);
-  int found = false;
+  int found = 0;
 
   for (i = 0; (i < n_elems) && !found; ++i) {
     loop_element e = get_loop_element(l, i);
     switch (*e.kind) {
     case k_ir_node: {
-      if (e.node == b) return false;
+      if (e.node == b) return 0;
     } break;
     case k_ir_loop: {
       found = test_loop_nest(pred, e.son);
       if (found) {
-	add_region_in(b, e.son);
-	exc_outs(e.son, cfop);
-	//if (is_fragile_op(cfop)) inc_region_n_exc_outs(b);
-	return found;
+        add_region_in(b, e.son);
+        exc_outs(e.son, cfop);
+        //if (is_fragile_op(cfop)) inc_region_n_exc_outs(b);
+        return found;
       }
     } break;
     default: break;
@@ -174,16 +174,16 @@ static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b, ir_node *
   assert(l_pos > -1);
   assert(l_pos > 0 && "Is this a necessary condition?  There could be a perfect nest ...");
 
-  for (i = l_pos -1, found = false; i > -1 && !found; --i) {
+  for (i = l_pos -1, found = 0; i > -1 && !found; --i) {
     ir_loop *k = get_loop_element(outer, i).son;
     if (is_ir_loop(k)) {
       found = test_loop_nest(pred_b, k);
       if (found) {
-	add_region_in(l, k);
-	//if (is_fragile_op(cfop)) inc_region_n_exc_outs(k);
-	exc_outs(k, cfop);
-	add_loop_cfop(l, cfop);
-	add_region_in(b, NULL);
+        add_region_in(l, k);
+        //if (is_fragile_op(cfop)) inc_region_n_exc_outs(k);
+        exc_outs(k, cfop);
+        add_loop_cfop(l, cfop);
+        add_region_in(b, NULL);
       }
     }
   }
@@ -200,9 +200,10 @@ static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b, ir_node *
 }
 
 
-/* Compute the edges for the interval graph.
+/**
+ * Compute the edges for the interval graph.
  *
- * @param b The block for which to constuct the edges.
+ * @param b The block for which to construct the edges.
  * @param l The loop of b.
  *
  * There are four cases:
@@ -240,9 +241,9 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
     cfop = get_Block_cfgpred(b, i);
     if (is_Proj(cfop)) {
       if (get_irn_op(get_Proj_pred(cfop)) != op_Cond) {
-	cfop = skip_Proj(cfop);
+        cfop = skip_Proj(cfop);
       } else {
-	assert(get_nodes_block(cfop) == get_nodes_block(skip_Proj(cfop)));
+        assert(get_nodes_block(cfop) == get_nodes_block(skip_Proj(cfop)));
       }
     }
 
@@ -348,9 +349,9 @@ void dump_region_edges(FILE *F, void *reg) {
   if (is_ir_node(reg) && get_Block_n_cfgpreds((ir_node *)reg) > get_region_n_ins(reg)) {
     for (i = n_ins; i < get_Block_n_cfgpreds((ir_node *)reg); ++i) {
       if (is_backedge((ir_node *)reg, i))
-	fprintf (F, "backedge: { sourcename: \"");
+        fprintf (F, "backedge: { sourcename: \"");
       else
-	fprintf (F, "edge: { sourcename: \"");
+        fprintf (F, "edge: { sourcename: \"");
       PRINT_NODEID(((ir_node *)reg));
       fprintf (F, "\" targetname: \"");
       PRINT_NODEID(get_nodes_block(skip_Proj(get_Block_cfgpred((ir_node *)reg, i))));
@@ -363,17 +364,17 @@ void dump_region_edges(FILE *F, void *reg) {
 
     if (is_ir_node(reg)) {
       if (get_Block_n_cfgpreds((ir_node *)reg) != get_region_n_ins(reg)) {
-	printf("n_cfgpreds = %d, n_ins = %d\n", get_Block_n_cfgpreds((ir_node *)reg), get_region_n_ins(reg));
-	DDMN((ir_node *)reg);
+        printf("n_cfgpreds = %d, n_ins = %d\n", get_Block_n_cfgpreds((ir_node *)reg), get_region_n_ins(reg));
+        DDMN((ir_node *)reg);
       }
     }
 
     if ((!target || (is_ir_node(reg) && !is_ir_node(target))) && i < get_Block_n_cfgpreds((ir_node *)reg)) {
       assert(is_ir_node(reg));
       if (is_backedge((ir_node *)reg, i))
-	fprintf (F, "backedge: { sourcename: \"");
+        fprintf (F, "backedge: { sourcename: \"");
       else
-	fprintf (F, "edge: { sourcename: \"");
+        fprintf (F, "edge: { sourcename: \"");
       PRINT_NODEID(((ir_node *)reg));
       fprintf (F, "\" targetname: \"");
       PRINT_NODEID(get_nodes_block(skip_Proj(get_Block_cfgpred((ir_node *)reg, i))));
@@ -429,7 +430,7 @@ void dump_interval_block(FILE *F, ir_node *block) {
     ir_node *pred = get_Block_cfgpred(block, i);
     if (is_Bad(pred)) {
       if (! fl)
-	fprintf(F, "Bad pred at pos: ");
+        fprintf(F, "Bad pred at pos: ");
       fprintf(F, "%d ", i);
       fl = 1;
     }

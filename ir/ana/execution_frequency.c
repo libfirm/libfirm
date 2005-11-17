@@ -278,7 +278,7 @@ int is_fragile_Proj(ir_node *n) {
 static double exception_prob = 0.001;
 
 static INLINE int is_loop_head(ir_node *cond) {
-  return false;
+  return 0;
 }
 
 /** Weight a single region in edge.

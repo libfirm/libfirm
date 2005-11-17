@@ -360,7 +360,7 @@ static int current_dfn = 1;        /**< Counter to generate depth first numberin
 /**********************************************************************/
 
 typedef struct scc_info {
-  bool in_stack;         /**< Marks whether node is on the stack. */
+  int in_stack;          /**< Marks whether node is on the stack. */
   int dfn;               /**< Depth first search number. */
   int uplink;            /**< dfn number of ancestor. */
   int visited;
@@ -403,17 +403,17 @@ static INLINE void
 mark_irg_in_stack (ir_graph *n) {
   scc_info *info = get_irg_link(n);
   assert(info);
-  info->in_stack = true;
+  info->in_stack = 1;
 }
 
 static INLINE void
 mark_irg_not_in_stack (ir_graph *n) {
   scc_info *info = get_irg_link(n);
   assert(info);
-  info->in_stack = false;
+  info->in_stack = 0;
 }
 
-static INLINE bool
+static INLINE int
 irg_is_in_stack (ir_graph *n) {
   scc_info *info = get_irg_link(n);
   assert(info);
@@ -615,12 +615,12 @@ init_scc (void) {
   }
 }
 
-/** Returns true if n is a loop header, i.e., it is a Block node
+/** Returns non-zero if n is a loop header, i.e., it is a Block node
  *  and has predecessors within the cfloop and out of the cfloop.
  *
  *  @param root: only needed for assertion.
  */
-static bool
+static int
 is_head (ir_graph *n, ir_graph *root)
 {
   int i, arity;
@@ -645,12 +645,12 @@ is_head (ir_graph *n, ir_graph *root)
 }
 
 /**
- * Returns true if n is possible loop head of an endless loop.
+ * Returns non-zero if n is possible loop head of an endless loop.
  * I.e., it is a Block, Phi or Filter node and has only predecessors
  * within the loop.
  * @arg root: only needed for assertion.
  */
-static bool
+static int
 is_endless_head (ir_graph *n, ir_graph *root)
 {
   int i, arity;
@@ -680,12 +680,12 @@ is_endless_head (ir_graph *n, ir_graph *root)
  * Check whether there is a parallel edge in the ip control flow.
  * Only
  */
-static bool
+static int
 is_ip_head (ir_graph *n, ir_graph *pred)
 {
   int is_be = 0;
   int iv_rem = get_interprocedural_view();
-  set_interprocedural_view(true);
+  set_interprocedural_view(1);
   {
     ir_node *sblock = get_irg_start_block(n);
     int i, arity = get_Block_n_cfgpreds(sblock);
@@ -702,7 +702,7 @@ is_ip_head (ir_graph *n, ir_graph *pred)
         //printf("   "); DDMG(ip_pred);
         if ((ip_pred == pred) && is_backedge(sblock, i)) {
 	      //printf("   found\n");
-	      is_be = 1;
+          is_be = 1;
         }
       }
     }

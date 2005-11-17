@@ -81,7 +81,7 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
 }
 
 /** Collect the entity representing the implementation of this
- *  entity (not the same if inherited) and all entities for overwriting
+ *  method (not the same if inherited) and all entities for overwriting
  *  implementations in "set".
  *  If the implementation of the method is not included in the
  *  compilation unit "open" is set to true.
@@ -93,7 +93,7 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
  * @param size     Number of entities in set.
  * @param open
  */
-static void collect_impls(entity *method, eset *set, int *size, bool *open) {
+static void collect_impls(entity *method, eset *set, int *size, int *open) {
   int i;
   entity *impl;
 
@@ -127,7 +127,7 @@ static entity ** get_impl_methods(entity * method) {
   eset * set = eset_create();
   int size = 0;
   entity ** arr;
-  bool open = false;
+  int open = 0;
 
   /* Collect all method entities that can be called here */
   collect_impls(method, set, &size, &open);
