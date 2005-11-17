@@ -42,13 +42,14 @@
 /** Returns true if the predesessor pos is a backedge. */
 int  is_inter_backedge(ir_node *n, int pos);
 int  is_intra_backedge(ir_node *n, int pos);
-bool is_backedge (ir_node *n, int pos);
+/** Returns non-zero if the predecessor pos is a backedge. */
+int is_backedge (ir_node *n, int pos);
 /** Remarks that edge pos is a backedge. */
 void set_backedge (ir_node *n, int pos);
 /** Remarks that edge pos is not a backedge. */
 void set_not_backedge (ir_node *n, int pos);
-/** Returns true if n has backedges. */
-bool has_backedges (ir_node *n);
+/** Returns non-zero if n has backedges. */
+int has_backedges (ir_node *n);
 /** Sets backedge information to zero. */
 void clear_backedges (ir_node *n);
 
@@ -117,7 +118,7 @@ int      get_loop_n_elements (ir_loop *loop);
 loop_element get_loop_element (ir_loop *loop, int pos);
 
 /** Returns the element number of the loop son in loop.
- *  Returns -1 if not found. O(#elements). */
+ *  Returns -1 if not found. O(|elements|). */
 int get_loop_element_pos(ir_loop *loop, void *le);
 
 /** Returns a unique node number for the loop node to make output
@@ -205,7 +206,7 @@ void free_all_loop_information (void);
  * @param n      The node to be tested.
  * @param block  A block node.
  *
- * Returns true, if the node n is not changed in the loop block
+ * Returns non-zero, if the node n is not changed in the loop block
  * belongs to or in inner loops of this block. */
 int is_loop_invariant(ir_node *n, ir_node *block);
 

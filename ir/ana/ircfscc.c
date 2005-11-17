@@ -59,7 +59,7 @@ void link_to_reg_end (ir_node *n, void *env);
  * construction.
  */
 typedef struct scc_info {
-  bool in_stack;         /**< Marks whether node is on the stack. */
+  int in_stack;          /**< Marks whether node is on the stack. */
   int dfn;               /**< Depth first search number. */
   int uplink;            /**< dfn number of ancestor. */
 } scc_info;
@@ -77,7 +77,7 @@ static INLINE scc_info *new_scc_info(void) {
 static INLINE void
 mark_irn_in_stack (ir_node *n) {
   scc_info *info = get_irn_link(n);
-  info->in_stack = true;
+  info->in_stack = 1;
 }
 
 /**
@@ -86,13 +86,13 @@ mark_irn_in_stack (ir_node *n) {
 static INLINE void
 mark_irn_not_in_stack (ir_node *n) {
   scc_info *info = get_irn_link(n);
-  info->in_stack = false;
+  info->in_stack = 0;
 }
 
 /**
  * Returns whether node n is on the stack.
  */
-static INLINE bool
+static INLINE int
 irn_is_in_stack (ir_node *n) {
   scc_info *info = get_irn_link(n);
   return info->in_stack;
@@ -309,6 +309,7 @@ init_scc_common (void) {
 
 /**
  * Initializes the scc algorithm for the intraprocedural case.
+ * Add scc info to every block node.
  */
 static INLINE void
 init_scc (ir_graph *irg) {
@@ -333,25 +334,25 @@ init_ip_scc (void) {
  * Condition for breaking the recursion: n is the block
  * that gets the initial control flow from the Start node.
  */
-static bool is_outermost_StartBlock(ir_node *n) {
+static int is_outermost_StartBlock(ir_node *n) {
   /* Test whether this is the outermost Start node.  If so
      recursion must end. */
   assert(is_Block(n));
   if ((get_Block_n_cfgpreds(n) == 1)  &&
       (get_irn_op(skip_Proj(get_Block_cfgpred(n, 0))) == op_Start) &&
       (get_nodes_block(skip_Proj(get_Block_cfgpred(n, 0))) == n)) {
-    return true;
+    return 1;
   }
-  return false;
+  return 0;
 }
 
-/** Returns true if n is a loop header, i.e., it is a Block node
+/** Returns non-zero if n is a loop header, i.e., it is a Block node
  *  and has predecessors within the cfloop and out of the cfloop.
  *
  *  @param n     the block node to check
  *  @param root  only needed for assertion.
  */
-static bool
+static int
 is_head (ir_node *n, ir_node *root)
 {
   int i, arity;
@@ -380,14 +381,14 @@ is_head (ir_node *n, ir_node *root)
 
 
 /**
- * Returns true if n is possible loop head of an endless loop.
+ * Returns non-zero if n is possible loop head of an endless loop.
  * I.e., it is a Block, Phi or Filter node and has only predecessors
  * within the loop.
  *
  * @param n     the block node to check
  * @param root  only needed for assertion.
  */
-static bool
+static int
 is_endless_head (ir_node *n, ir_node *root)
 {
   int i, arity;
@@ -696,7 +697,7 @@ int construct_ip_cf_backedges (void) {
 
   current_loop = NULL;
   new_loop();  /* sets current_loop */
-  set_interprocedural_view(true);
+  set_interprocedural_view(1);
 
   inc_max_irg_visited();
   for (i = 0; i < get_irp_n_irgs(); i++)
@@ -763,9 +764,9 @@ static void reset_backedges(ir_node *block) {
   int rem = get_interprocedural_view();
 
   assert(is_Block(block));
-  set_interprocedural_view(true);
+  set_interprocedural_view(1);
   clear_backedges(block);
-  set_interprocedural_view(false);
+  set_interprocedural_view(0);
   clear_backedges(block);
   set_interprocedural_view(rem);
 }
@@ -799,8 +800,8 @@ void free_cfloop_information(ir_graph *irg) {
 void free_all_cfloop_information (void) {
   int i;
   int rem = get_interprocedural_view();
-  set_interprocedural_view(true);  /* To visit all filter nodes */
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  set_interprocedural_view(1);  /* To visit all filter nodes */
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     free_cfloop_information(get_irp_irg(i));
   }
   set_interprocedural_view(rem);
