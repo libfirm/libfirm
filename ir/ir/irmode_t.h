@@ -101,7 +101,7 @@ _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
 
 /* Functions to check, whether a modecode is signed, float, int, num, data,
    datab or dataM. For more exact definitions read the corresponding pages
-   in the firm documentation or the followingenumeration
+   in the firm documentation or the following enumeration
 
    The set of "float" is defined as:
    ---------------------------------

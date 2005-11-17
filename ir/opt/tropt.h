@@ -73,7 +73,7 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
  *  Performs the following transformations:
  *    C c = (C)(B)(A)(B)new C()  --> C c = (C)(B)newC() --> C c = new C()
  *    (Optimizing downcasts as A a = (A)(B)(new A()) --> A a = new A() can
- *     be suppressed by setting flag opt_suppress_downcast_optimization.
+ *     be suppressed by setting the flag opt_suppress_downcast_optimization.
  *     Downcasting A to B might cause an exception.  It is not clear
  *     whether this is modeled by the Firm Cast node, as it has no exception
  *     outputs.);
