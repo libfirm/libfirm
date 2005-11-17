@@ -56,14 +56,14 @@ void set_current_ir_graph(ir_graph *graph) {
 }
 
 
-int __interprocedural_view = false;
+int firm_interprocedural_view = 0;
 
 int (get_interprocedural_view)(void) {
   return _get_interprocedural_view();
 }
 
 void (set_interprocedural_view)(int state) {
-  __interprocedural_view = state;
+  firm_interprocedural_view = state;
 
   /* set function vectors for faster access */
   if (state) {

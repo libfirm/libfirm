@@ -183,11 +183,11 @@ int node_is_in_irgs_storage(ir_graph *irg, ir_node *n);
 /* inline functions for graphs                                       */
 /*-------------------------------------------------------------------*/
 
-extern int __interprocedural_view;
+extern int firm_interprocedural_view;
 
 static INLINE int
 _get_interprocedural_view(void) {
-  return __interprocedural_view;
+  return firm_interprocedural_view;
 }
 
 static INLINE int
