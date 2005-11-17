@@ -33,7 +33,7 @@
 /*
  * Normalize the Returns of a graph by creating a new End block
  * with One Return(Phi).
- * This is the prefered input for the if-conversion.
+ * This is the preferred input for the if-conversion.
  *
  * In pseudocode, it means:
  *
@@ -170,7 +170,7 @@ static int can_move_ret(ir_node *ret)
 /*
  * Normalize the Returns of a graph by moving
  * the Returns upwards as much as possible.
- * This might be prefered for code generation.
+ * This might be preferred for code generation.
  *
  * In pseudocode, it means:
  *
@@ -313,11 +313,11 @@ void normalize_n_returns(ir_graph *irg)
 
   exchange(endbl, new_r_Block(irg, n_finals, in));
 
-  /* the end block is not automatically skiped, so do it here */
+  /* the end block is not automatically skipped, so do it here */
   set_irg_end_block(irg, skip_Id(get_irg_end_block(irg)));
 
   /* Invalidate analysis information:
-   * Blocks become dead and new Eeturns were deleted, so dominator, outs and loop are inconsistent,
+   * Blocks become dead and new Returns were deleted, so dominator, outs and loop are inconsistent,
    * trouts and callee-state should be still valid
    */
   set_irg_dom_inconsistent(irg);
