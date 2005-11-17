@@ -32,7 +32,6 @@ typedef enum _value_classify {
                              no signed zero exists or < 0 else */
 } value_classify;
 
-
 /**
  * Check, if the value of a node is != 0.
  *
@@ -42,6 +41,16 @@ typedef enum _value_classify {
  * @param n  a node representing the value
  */
 int value_not_zero(ir_node *n);
+
+/*
+ * Check, if the value of a node is != NULL.
+ *
+ * This is a often needed case, so we handle here Confirm
+ * nodes too.
+ *
+ * @param n  a node representing the value
+ */
+int value_not_null(ir_node *n);
 
 /**
  * Check, if the value of a node can be confirmed >= 0 or <= 0,

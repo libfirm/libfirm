@@ -76,7 +76,7 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
 
 #endif /* DEBUG_CONFIRM */
 
-/**
+/*
  * Check, if the value of a node is != 0.
  *
  * This is a often needed case, so we handle here Confirm
@@ -93,7 +93,7 @@ int value_not_zero(ir_node *n)
   while (get_irn_op(n) == op_Confirm) {
     /*
      * Note: A Confirm is never after a Const. So,
-     * we simply can check the bound for beeing a Const
+     * we simply can check the bound for being a Const
      * without the fear that is might be hidden by a further Confirm.
      */
     tv = value_of(get_Confirm_bound(n));
@@ -141,6 +141,38 @@ int value_not_zero(ir_node *n)
   return (pnc != pn_Cmp_Eq) && (pnc != pn_Cmp_Uo);
 
 #undef RET_ON
+}
+
+/*
+ * Check, if the value of a node is != NULL.
+ *
+ * This is a often needed case, so we handle here Confirm
+ * nodes too.
+ */
+int value_not_null(ir_node *n)
+{
+  tarval *tv;
+  ir_mode *mode = get_irn_mode(n);
+
+  assert(mode_is_reference(mode));
+
+  while (get_irn_op(n) == op_Confirm) {
+    /*
+     * Note: A Confirm is never after a Const. So,
+     * we simply can check the bound for being a Const
+     * without the fear that is might be hidden by a further Confirm.
+     */
+    tv = value_of(get_Confirm_bound(n));
+    if (tv == get_mode_null(mode) &&
+        get_Confirm_cmp(n) == pn_Cmp_Lg) {
+      /* n != C /\ C == 0 ==> n != 0 */
+      return 1;
+    }
+
+    /* there might be several Confirms one after other that form an interval */
+    n = get_Confirm_value(n);
+  }
+  return 0;
 }
 
 /*
@@ -430,28 +462,28 @@ static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_C
     if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
       return tarval_cmp(l_iv->min, r_iv->min) == pn_Cmp_Eq ? tv_true : tv_false;
 
-    /* if both interval do not intersect, it is never equal */
+    /* if both intervals do not intersect, it is never equal */
     res = tarval_cmp(l_iv->max, r_iv->min);
 
     /* b < c ==> [a,b] != [c,d] */
     if (res == pn_Cmp_Lt)
-            return tv_false;
+      return tv_false;
 
     /* b <= c ==> [a,b) != [c,d]  AND [a,b] != (c,d] */
     if ((l_iv->flags & MAX_EXCLUDED || r_iv->flags & MIN_EXCLUDED)
-              && (res == pn_Cmp_Eq))
-            return tv_false;
+        && (res == pn_Cmp_Eq))
+      return tv_false;
 
     res = tarval_cmp(r_iv->max, l_iv->min);
 
     /* d < a ==> [c,d] != [a,b] */
     if (res == pn_Cmp_Lt)
-            return tv_false;
+      return tv_false;
 
     /* d <= a ==> [c,d) != [a,b]  AND [c,d] != (a,b] */
     if ((r_iv->flags & MAX_EXCLUDED || l_iv->flags & MIN_EXCLUDED)
-            && (res == pn_Cmp_Eq))
-            return tv_false;
+        && (res == pn_Cmp_Eq))
+      return tv_false;
     break;
 
   case pn_Cmp_Lg:
@@ -758,7 +790,7 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
   ir_printf("In %e:\n", get_irg_entity(current_ir_graph));
   print_iv_cmp(l_iv, r_iv, pnc);
   ir_printf(" = %T\n", tv);
-	return tv;
+  return tv;
 }
 
 #endif /* DEBUG_CONFIRM */
