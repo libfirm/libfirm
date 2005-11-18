@@ -1639,7 +1639,7 @@ static INLINE void place_early(pdeq *worklist) {
   }
 
   set_irg_outs_inconsistent(current_ir_graph);
-  current_ir_graph->op_pin_state_pinned = op_pin_state_pinned;
+  set_irg_pinned(current_ir_graph, op_pin_state_pinned);
 }
 
 /**
