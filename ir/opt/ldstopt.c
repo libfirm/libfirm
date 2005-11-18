@@ -955,7 +955,7 @@ void optimize_load_store(ir_graph *irg)
   assert(get_irg_pinned(irg) != op_pin_state_floats &&
     "LoadStore optimization needs pinned graph");
 
-  if (!get_opt_redundant_LoadStore())
+  if (! get_opt_redundant_loadstore())
     return;
 
   obstack_init(&env.obst);
