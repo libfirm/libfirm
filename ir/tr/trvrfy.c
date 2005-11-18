@@ -45,7 +45,7 @@ static int check_class(type *tp) {
       found = 0;
       for (k = 0; k < get_class_n_supertypes(tp); k++) {
         if (get_class_member_index(get_class_supertype(tp, k), ovw) >= 0) {
-          found = 0;
+          found = 1;
           break;
         }
       }
