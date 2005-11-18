@@ -78,7 +78,7 @@ I_FLAG(redundant_loadstore                , 19, ON)
 I_FLAG(fragile_ops                        , 20, OFF)
 
 /** If conversion. */
-I_FLAG(if_conversion                      , 21, ON)
+I_FLAG(if_conversion                      , 21, OFF)
 
 /** Optimize real function calls. */
 I_FLAG(real_function_call                 , 22, ON)
