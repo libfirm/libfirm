@@ -37,8 +37,8 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "D:\work\libfirm\Release"
-# PROP Intermediate_Dir "D:\work\libfirm\Release"
+# PROP Output_Dir "d:\work\libfirm\Release"
+# PROP Intermediate_Dir "d:\work\libfirm\Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
 # ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /c
@@ -51,6 +51,11 @@ BSC32=bscmake.exe
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"S:\local\ipd\lib\libfirm.lib"
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Desc=Header install
+PostBuild_Cmds=cmd /c install.cmd .. s:\ipd\include\libfirm
+# End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
@@ -61,8 +66,8 @@ LIB32=link.exe -lib
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "D:\work\libfirm\Debug"
-# PROP Intermediate_Dir "D:\work\libfirm\Debug"
+# PROP Output_Dir "d:\work\libfirm\Debug"
+# PROP Intermediate_Dir "d:\work\libfirm\Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
 # ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /D /GZ /c
@@ -75,6 +80,11 @@ BSC32=bscmake.exe
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"S:\local\ipd\lib\libfirm_g.lib"
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Desc=Header install
+PostBuild_Cmds=cmd /c install.cmd .. s:\ipd\include\libfirm
+# End Special Build Tool
 
 !ENDIF 
 
@@ -95,7 +105,15 @@ SOURCE=.\firm_config.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\header.list
+# End Source File
+# Begin Source File
+
 SOURCE=.\ieee754.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\install.cmd
 # End Source File
 # Begin Source File
 
