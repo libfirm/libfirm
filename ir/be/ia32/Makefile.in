@@ -17,9 +17,8 @@ subdir := ir/be/ia32
 full_dir = $(top_srcdir)/ir/be
 full_dirbe = $(full_dir)/$(FIRMBE_ARCH)
 
-SOURCES = Makefile.in new_nodes.c new_nodes.h new_nodes.c.inl new_nodes.h.inl \
+SOURCES = Makefile.in new_nodes.c new_nodes.h \
 		emitter_gen.c emitter_gen.h emitter.c emitter.h \
-		regalloc_if.c regalloc_if.h regalloc_if_gen.inl \
 		transform.c transform.h gen_decls.c gen_decls.h
 
 include $(topdir)/MakeRules
@@ -32,13 +31,10 @@ CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/
 
 include $(top_srcdir)/MakeTargets
 
-$(full_dirbe)/new_nodes.c.inl $(full_dirbe)/new_nodes.h.inl: $(full_dir)/scripts/generate_new_opcodes.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl
+$(full_dirbe)/new_nodes.c $(full_dirbe)/new_nodes.h: $(full_dir)/scripts/generate_new_opcodes.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl
 	$(full_dir)/scripts/generate_new_opcodes.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl $(full_dirbe)
 
 $(full_dirbe)/emitter_gen.c $(full_dirbe)/emitter_gen.h: $(full_dir)/scripts/generate_emitter.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl emitter.c emitter.h
 	$(full_dir)/scripts/generate_emitter.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl $(full_dirbe)
-
-$(full_dirbe)/regalloc_if_gen.inl: $(full_dir)/scripts/generate_regalloc_if.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl
-	$(full_dir)/scripts/generate_regalloc_if.pl $(full_dirbe)/$(FIRMBE_ARCH)_spec.pl $(full_dirbe)
 
 all: subdir.o

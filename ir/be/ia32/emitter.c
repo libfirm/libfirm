@@ -2,20 +2,26 @@
 #include "emitter.h"
 
 char *get_dest_reg_name(ir_node *n, int num) {
+return NULL;
 }
 
 char *get_source_reg_name(ir_node *n, int num) {
+return NULL;
 }
 
 char *node_const_to_str(ir_node *n) {
+return NULL;
 }
 
 char *node_offset_to_str(ir_node *n) {
+return NULL;
 }
 
 void equalize_dest_src(ir_node *n) {
+#if 0
   if (get_dest_reg(n, 1) != get_source_reg(n, 1))
     fprintf("\tmovl %%%s, %%%s\t\t\t/* src -> dest for 2 address code */\n", get_source_reg_name(n, 1), get_dest_reg_name(n, 1));
+#endif
 }
 
 /*
@@ -82,6 +88,7 @@ const char *get_cmp_suffix(int cmp_code, int unsigned_cmp)
 }
 
 void emit_ia32_Proj_Cond(FILE *F, ir_node *n, ir_node *cond) {
+#if 0
   ir_node *succ_block = get_irn_out_edges_first(n);
   ir_node *sel        = get_Cond_selector(cond);
   ir_mode *sel_mode   = get_irn_mode(sel);
@@ -97,4 +104,5 @@ void emit_ia32_Proj_Cond(FILE *F, ir_node *n, ir_node *cond) {
           label,
           nr == pn_Cond_true ? "" : "!");
   }
+#endif
 }
