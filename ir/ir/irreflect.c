@@ -30,8 +30,6 @@
 
 extern int obstack_printf(struct obstack *obst, const char *fmt, ...);
 
-#define INLINE inline
-
 /**
  * Get the number of bits set in a word.
  */
