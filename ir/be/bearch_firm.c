@@ -148,7 +148,7 @@ static void firm_init(void)
 		rflct_signature_set_arg(sig, 1, 1, "Store", RFLCT_MC(Mem), 0, 0);
 		rflct_signature_set_arg(sig, 1, 2, "Arg", RFLCT_MC(Datab), 0, 0);
 
-		rflct_new_opcode(push_opc, "Push", false);
+		rflct_new_opcode(push_opc, "Push", 0);
 		rflct_opcode_add_signature(push_opc, sig);
 	}
 
@@ -166,7 +166,7 @@ static void firm_init(void)
 		sig = rflct_signature_allocate(1, 1);
 		rflct_signature_set_arg(sig, 0, 0, "Imm", RFLCT_MC(Data), 0, 0);
 		rflct_signature_set_arg(sig, 1, 0, "Block", RFLCT_MC(BB), 0, 0);
-		rflct_new_opcode(imm_opc, "Imm", false);
+		rflct_new_opcode(imm_opc, "Imm", 0);
 		rflct_opcode_add_signature(imm_opc, sig);
 	}
 }
