@@ -200,9 +200,7 @@ int  get_opt_dyn_meth_dispatch (void);
  * Controls the optimizations in tropt.h.  Default: on.
  */
 void set_opt_optimize_class_casts (int value);
-int  get_opt_optimize_class_casts (void);
 void set_opt_optimize_class_casts_verbose (int value);
-int  get_opt_optimize_class_casts_verbose (void);
 
 /** Restricts the behavior of cast optimization.
  *
