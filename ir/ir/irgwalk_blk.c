@@ -341,7 +341,7 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
   block_entry_t      *entry;
 
   /* switch off interprocedural view */
-  set_interprocedural_view(false);
+  set_interprocedural_view(0);
 
   obstack_init(&blks.obst);
   blks.blk_map  = new_pset(addr_cmp, 1);
