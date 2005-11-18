@@ -126,7 +126,7 @@ void optimize_funccalls(int force_run)
   int change;
   unsigned num_pure = 0;
 
-  if (! get_opt_real_func_call())
+  if (! get_opt_real_function_call())
     return;
 
   /* first step: detect, which functions are const, i.e. do NOT touch any memory */
