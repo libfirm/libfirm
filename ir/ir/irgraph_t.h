@@ -89,7 +89,7 @@ struct ir_graph {
 
   /* -- Fields indicating different states of irgraph -- */
   irg_phase_state phase_state;       /**< compiler phase */
-  op_pin_state op_pin_state_pinned;  /**< Flag for status of nodes */
+  op_pin_state irg_pinned_state;     /**< Flag for status of nodes */
   irg_outs_state outs_state;         /**< Out edges. */
   irg_dom_state dom_state;           /**< Dominator information */
   ir_typeinfo_state typeinfo_state;        /**< Validity of type information */
@@ -376,7 +376,7 @@ _set_irg_phase_low(ir_graph *irg) {
 
 static INLINE op_pin_state
 _get_irg_pinned(const ir_graph *irg) {
-  return irg->op_pin_state_pinned;
+  return irg->irg_pinned_state;
 }
 
 static INLINE irg_outs_state
@@ -417,7 +417,7 @@ _set_irg_loopinfo_inconsistent(ir_graph *irg) {
 
 static INLINE void
 _set_irg_pinned(ir_graph *irg, op_pin_state p) {
-  irg->op_pin_state_pinned = p;
+  irg->irg_pinned_state = p;
 }
 
 static INLINE irg_callee_info_state

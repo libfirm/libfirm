@@ -180,7 +180,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->additional_properties = mtp_property_inherited;  /* inherited from type */
 
   res->phase_state         = phase_building;
-  res->op_pin_state_pinned = op_pin_state_pinned;
+  res->irg_pinned_state    = op_pin_state_pinned;
   res->outs_state          = outs_none;
   res->dom_state           = dom_none;
   res->typeinfo_state      = ir_typeinfo_none;
@@ -272,9 +272,9 @@ ir_graph *new_const_code_irg(void) {
   obstack_init (res->obst);
   res->extbb_obst = NULL;
 
-  res->phase_state = phase_building;
-  res->op_pin_state_pinned = op_pin_state_pinned;
-  res->extblk_state = ir_extblk_info_none;
+  res->phase_state      = phase_building;
+  res->irg_pinned_state = op_pin_state_pinned;
+  res->extblk_state     = ir_extblk_info_none;
 
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
