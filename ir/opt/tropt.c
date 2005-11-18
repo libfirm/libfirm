@@ -37,7 +37,7 @@
 #include "trouts.h"
 #include "ircons.h"
 #include "irgmod.h"
-#include "irflag.h"
+#include "irflag_t.h"
 
 /* - statistics ---------------------------------------------- */
 
