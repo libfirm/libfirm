@@ -112,14 +112,11 @@
 /* Define the right volatile token */
 /* #undef volatile */
 
-/* Define the right inline token */
-#define inline __inline
-
 /* Define the right const token */
 /* #undef const */
 
 #ifdef USE_INLINING
-#define INLINE inline
+#define INLINE __inline
 #else
 #define INLINE
 #endif
