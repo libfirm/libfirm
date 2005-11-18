@@ -259,14 +259,14 @@ main(void)
   dump_all_ir_graphs(dump_type_graph, "");
   dump_all_ir_graphs(dump_graph_as_text, "");
   dump_all_types("");
-  dump_class_hierarchy (true, "");
+  dump_class_hierarchy (1, "");
 
   entity **free_methods;
   int arr_len;
   cgana(&arr_len, &free_methods);
   cg_construct(arr_len, free_methods);
 
-  set_interprocedural_view(true);
+  set_interprocedural_view(1);
   dump_ir_graph(main_irg, "");
   dump_ir_block_graph(main_irg, "");
   dump_ir_graph_w_types(main_irg, "");
