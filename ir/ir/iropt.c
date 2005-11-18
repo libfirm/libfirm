@@ -951,9 +951,10 @@ static ir_node *equivalent_node_Sub(ir_node *n)
 /**
  * Optimize an "idempotent unary op", ie op(op(n)) = n.
  *
- * @fixme -(-a) == a, but might overflow two times.
- * We handle it anyway here but the better way would be a
- * flag. This would be needed for Pascal for instance.
+ * @todo
+ *   -(-a) == a, but might overflow two times.
+ *   We handle it anyway here but the better way would be a
+ *   flag. This would be needed for Pascal for instance.
  */
 static ir_node *equivalent_node_idempotent_unop(ir_node *n)
 {
@@ -1383,7 +1384,7 @@ static ir_node *equivalent_node_Confirm(ir_node *n)
       return bound;
     }
   }
-  return get_opt_remove_Confirm() ? get_Confirm_value(n) : n;
+  return get_opt_remove_confirm() ? get_Confirm_value(n) : n;
 }
 
 /**
