@@ -76,7 +76,6 @@ static INLINE int _get_optimize (void) {
 #define get_firm_verbosity()                     _get_firm_verbosity()
 #define get_opt_dyn_meth_dispatch()              _get_opt_dyn_meth_dispatch()
 #define get_opt_optimize_class_casts()           _get_opt_optimize_class_casts()
-#define get_opt_optimize_class_casts_verbose()   _get_opt_optimize_class_casts_verbose()
 #define get_opt_suppress_downcast_optimization() _get_opt_suppress_downcast_optimization()
 
 #endif /* _IRFLAG_T_H_ */
