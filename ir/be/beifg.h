@@ -1,86 +1,40 @@
 /**
- * Common use interference graph.
- * Originally written by Sebastian Hack. Refactored into a seperate
- * source file and header by Kimon Hoffmann.
+ * @file   beifg.h
+ * @date   18.11.2005
  * @author Sebastian Hack
- * @date 27.06.2005
+ *
+ * Copyright (C) 2005 Universitaet Karlsruhe
+ * Released under the GPL
  */
-#ifndef _BEIFG_H_
-#define _BEIFG_H_
 
-typedef struct _be_if_graph_t be_if_graph_t;
-typedef struct _be_if_node_t be_if_node_t;
-typedef struct _be_if_edge_t be_if_edge_t;
+#ifndef _BEIFG_H
+#define _BEIFG_H
 
-/**
- * Creates a new interference graph with the specified number of
- * initial slots.
- * @param slots the initial number of slots used for hashing.
- * 		Must be greater than 0.
- * @return the created, empty interference graph.
- */
-be_if_graph_t* be_ifg_new(int slots);
+#include "obst.h"
+#include "bechordal_t.h"
 
-/**
- * Frees the passed interference graph an all contained nodes.
- * @param graph the interference graph that shall be freed. Please note
- * 		that after a call to this function all pointers to the graph,
- * 		its edges or its nodes are invalid.
- */
-void be_ifg_free(be_if_graph_t* graph);
+typedef struct _be_ifg_impl_t 	be_ifg_impl_t;
+typedef struct _be_ifg_t 				be_ifg_t;
 
-/**
- * Adds a new undirected interference edge between the two nodes
- * specified by their node numbers. If the corresponding nodes do
- * not yet exist in the iunterference grpah they are created pririor
- * to creation of the edge.
- * @param graph the graph to add the interference edge to.
- * @param source the key of the source node.
- * @param target the key of the target node.
- */
-void be_ifg_add_interference(be_if_graph_t* graph, int source, int target);
+struct _be_ifg_impl_t {
+	void (*free)(void *self);
 
-/**
- * Returns the set of all edges within the specified
- * graph.
- * @param graph the graph the return the set of edges of.
- * @return A set of all edges within the specified graph as
- * 		be_if_edge_t instances.
- */
-set* be_get_ifg_edges(const be_if_graph_t* graph);
+	int (*connected)(void *self, const ir_node *a, const ir_node *b);
+	int (*neighbours_arr)(void *self, const ir_node *irn, ir_node **arr, size_t n);
+	int (*neighbours_obst)(void *self, const ir_node *irn, struct obstack *obst);
+	int (*degree)(void *self, const ir_node *irn);
+};
 
-/**
- * Returns the set of all nodes within the specified
- * graph.
- * @param graph the graph the return the set of nodes of.
- * @return A set of all nodes within the specified graph as
- * 		be_if_node_t instances.
- */
-set* be_get_ifg_nodes(const be_if_graph_t* graph);
+struct _be_ifg_t {
+	const be_ifg_impl_t *impl;
+};
 
-/**
- * Returns whether the specified graph alreadz contains an undirected
- * edge between the two passed nodes.
- * @param graph the graph to which containment both nodes @p n1 and
- * 		@p n2 belong.
- * @param n1 the one end of the edge to query the graph for.
- * @param n2 the other end of the edge.
- * @return TRUE if the graph contains an edge between @p n1 and @p n2,
- * 		otherwise FALSE.
- */
-int be_ifg_has_edge(const be_if_graph_t* graph, const be_if_node_t* n1, const be_if_node_t* n2);
+#define be_ifg_free(self) 										((self)->impl->free(self))
+#define be_ifg_connected(self,a,b)						((self)->impl->connected(self, a, b))
+#define be_ifg_neighbours_arr(self,irn,arr,n)	((self)->impl->neighbours_arr(self, irn, arr, n))
+#define be_ifg_neighbours_obst(self,irn,obst)	((self)->impl->neighbours_arr(self, irn, obst))
+#define be_ifg_degree(self,irn)								((self)->impl->degree(self, irn))
 
-#define be_ifn_get_degree(ifnode) \
-	pset_count(ifnode->neighb)
+be_ifg_t *be_ifg_std_new(const be_chordal_env_t *env);
 
-#define be_ifn_foreach_neighbour(ifnode, curr) \
-	for (curr = pset_first(ifnode->neighbourNodes); curr; curr = pset_next(ifnode->neighbourNodes))
-
-#define be_ifg_foreach_node(ifgraph, curr) \
-	for (curr = set_first(ifgraph->nodes); curr; curr = set_next(ifgraph->nodes))
-
-#define be_ifg_foreach_edge(ifgraph, curr) \
-	for (curr = set_first(ifgraph->edges); curr; curr = set_next(ifgraph->edges))
-
-
-#endif /*_BEIFG_H_*/
+#endif /* _BEIFG_H */

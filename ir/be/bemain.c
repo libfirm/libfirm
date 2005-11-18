@@ -22,6 +22,7 @@
 #include "irloop_t.h"
 
 #include "be_t.h"
+#include "beifg.h"
 #include "bechordal_t.h"
 #include "benumb_t.h"
 #include "besched_t.h"
@@ -53,6 +54,8 @@
 #undef DUMP_COPYMIN
 #undef DUMP_SSADESTR
 #undef DUMP_END
+
+#undef DO_SSADESTR
 
 #define N_PHASES 256
 
@@ -139,7 +142,7 @@ static void prepare_graph(be_main_session_env_t *s)
 
 static void be_main_loop(void)
 {
-	int i, n;
+	int i, j, m, n;
 	be_main_env_t env;
 	const arch_isa_if_t *isa;
 
@@ -172,7 +175,6 @@ static void be_main_loop(void)
 #endif
 
 
-#if 0
 #ifdef DUMP_PREPARED
 		dump_dominator_information(true);
 		dump_ir_block_graph(irg, "-prepared");
@@ -196,6 +198,8 @@ static void be_main_loop(void)
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
+			be_ifg_t *ifg;
+
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 			DBG((env.dbg, LEVEL_1, "----> Reg class: %s\n", cls->name));
 
@@ -209,24 +213,16 @@ static void be_main_loop(void)
 			be_numbering(irg);
 			be_check_pressure(&session, cls);
 
-#if 0
-			{
-				FILE *f;
-				char buf[128];
-				ir_snprintf(buf, sizeof(buf), "%F_%s-live.txt", irg, cls->name);
-				if((f = fopen(buf, "wt")) != NULL) {
-					be_liveness_dump(session.irg, f);
-					fclose(f);
-				}
-			}
-#endif
-
 			/* allocation */
 			chordal_env = be_ra_chordal(&session, cls);
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(env.arch_env, irg, "");
 #endif
 
+			/* Build the interference graph. */
+			ifg = be_ifg_std_new(chordal_env);
+
+#ifdef DO_SSADESTR
 			/* copy minimization */
 			copystat_collect_cls(chordal_env);
 			be_copy_opt(chordal_env);
@@ -241,7 +237,9 @@ static void be_main_loop(void)
 #ifdef DUMP_SSADESTR
 			dump_allocated_irg(env.arch_env, irg, "-ssadestr");
 #endif
+#endif
 
+			be_ifg_free(ifg);
 			be_ra_chordal_done(chordal_env);
 			be_numbering_done(irg);
 		}
@@ -249,7 +247,6 @@ static void be_main_loop(void)
 		dump_ir_block_graph_sched(session.irg, "-end");
 #endif
 		copystat_dump(irg);
-#endif /* if 0 */
 	}
 }
 
