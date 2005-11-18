@@ -1226,7 +1226,7 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
 
   addr = find_valueid_in_proc_effects(eff -> effect.call.valrefid, proc);
   assert(addr && "no address for load");
-  /* if addr is Unknown, set propper mode */
+  /* if addr is Unknown, set proper mode */
   if(iro_Unknown == get_irn_opcode(addr -> firmnode)) {
     set_irn_mode(addr -> firmnode, mode_P);
   }
@@ -1234,16 +1234,16 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
   if(ent) {
     /* the address */
     sel = new_simpleSel(get_store(), addr -> firmnode, ent);
-    /* mthod type */
+    /* method type */
     mtype = get_entity_type(ent);
-    mik = true;
+    mik = 1;
   }
   else {
     /* the address */
     sel = addr -> firmnode;
-    /* mthod type */
+    /* method type */
     mtype = get_unknown_type();
-    mik = false;
+    mik = 0;
   }
 
   /* the args */
@@ -1683,6 +1683,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.23  2005/11/18 09:46:50  beck
+ * removed depency of bool type and stdbool.h (not C89)
+ *
  * Revision 1.22  2005/08/16 10:18:35  beck
  * create_abstraction() now returns an error code if the file could not
  * be opened.
