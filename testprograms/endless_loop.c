@@ -148,7 +148,7 @@ main(void)
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");
   /* turn_of_edge_labels(); */
-  dump_keepalive_edges(true);
+  dump_keepalive_edges(1);
   char *dump_file_suffix = "";
   dump_all_types(dump_file_suffix);
   dump_ir_block_graph (irg, dump_file_suffix);
