@@ -42,14 +42,14 @@ optimization_state_t libFIRM_verb = 0;
 int firm_verbosity_level;
 
 /* an external flag can be set and get from outside */
-#define E_FLAG(name, value, def)          \
-void set_opt_##name(int flag) {           \
-  if (value) libFIRM_opt |= irf_##name;   \
-  else       libFIRM_opt &= ~irf_##name;  \
-}                                         \
+#define E_FLAG(name, value, def)           \
+void set_opt_##name(int flag) {            \
+  if (flag) libFIRM_opt |= irf_##name;     \
+  else      libFIRM_opt &= ~irf_##name;    \
+}                                          \
 void set_opt_##name##_verbose(int flag) {  \
-  if (value) libFIRM_verb |= irf_##name;   \
-  else       libFIRM_verb &= ~irf_##name;  \
+  if (flag) libFIRM_verb |= irf_##name;    \
+  else      libFIRM_verb &= ~irf_##name;   \
 }                                          \
 int (get_opt_##name)(void) {               \
   return _get_opt_##name();                \
@@ -58,12 +58,12 @@ int (get_opt_##name)(void) {               \
 /* an internal flag can only be set from outside */
 #define I_FLAG(name, value, def)          \
 void set_opt_##name(int flag) {           \
-  if (value) libFIRM_opt |= irf_##name;   \
-  else       libFIRM_opt &= ~irf_##name;  \
+  if (flag) libFIRM_opt |= irf_##name;    \
+  else      libFIRM_opt &= ~irf_##name;   \
 }                                         \
-void set_opt_##name##_verbose(int flag) {  \
-  if (value) libFIRM_verb |= irf_##name;   \
-  else       libFIRM_verb &= ~irf_##name;  \
+void set_opt_##name##_verbose(int flag) { \
+  if (flag) libFIRM_verb |= irf_##name;   \
+  else      libFIRM_verb &= ~irf_##name;  \
 }
 
 /* generate them */
@@ -109,3 +109,11 @@ void restore_optimization_state(const optimization_state_t *state)
 {
   libFIRM_opt = *state;
 }
+
+#ifdef _DEBUG
+void firm_show_flags(void) {
+#define E_FLAG(name, value, def) printf(#name " = %s\n", get_opt_##name() ? "ON" : "OFF");
+#define I_FLAG(name, value, def) printf(#name " = %s\n", get_opt_##name() ? "ON" : "OFF");
+#include "irflag_t.def"
+}
+#endif
