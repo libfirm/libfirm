@@ -1,0 +1,94 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/irflag_t.def
+ * Purpose:     Flags to control optimizations, inline implementation.
+ * Author:      Michael Beck
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2004 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
+/** Turn off all optimizations. */
+I_FLAG(optimize                           , 0, ON)
+
+/** Common subexpression eliminations: Hash the nodes. */
+E_FLAG(cse                                , 1, ON)
+
+/** Don't use block predecessor for comparison.
+ *  Default must be zero as code placement must
+ *  be run right after a local optimize walk with
+ *  global_cse on. */
+I_FLAG(global_cse                         , 2, OFF)
+
+/** Evaluate operations. */
+I_FLAG(constant_folding                   , 3, ON)
+
+/** Bad node propagation. */
+I_FLAG(unreachable_code                   , 4, ON)
+
+/** */
+I_FLAG(control_flow_straightening         , 5, ON)
+
+/** */
+I_FLAG(control_flow_weak_simplification   , 6, ON)
+
+/** */
+I_FLAG(control_flow_strong_simplification , 7, ON)
+
+/** */
+I_FLAG(critical_edges                     , 8, ON)
+
+/** Reclaim memory. */
+I_FLAG(dead_node_elimination              , 9, ON)
+
+/** Reassociate nodes. */
+I_FLAG(reassociation                      , 10, ON)
+
+/** Do inlining transformation. */
+I_FLAG(inline                             , 11, ON)
+
+/** Remove dynamic method dispatch. */
+E_FLAG(dyn_meth_dispatch                  , 12, ON)
+
+/** Transformations that normalize the firm representation
+ *  as removing Ids and Tuples, useless Phis, SymConst(id) -> Const(entity) ...
+ */
+I_FLAG(normalize                          , 13, ON)
+
+/** Remove tail-recursion. */
+I_FLAG(tail_recursion                     , 14, ON)
+
+/** Free never called methods */
+I_FLAG(dead_method_elimination            , 15, ON)
+
+/** precise exception context */
+I_FLAG(precise_exc_context                , 16, ON)
+
+/** Do loop unrolling */
+I_FLAG(loop_unrolling                     , 17, ON)
+
+/** Do Strength reduction */
+I_FLAG(strength_red                       , 18, ON)
+
+/** Optimize Loads and Stores */
+I_FLAG(redundant_loadstore                , 19, ON)
+
+/** Optimize Fragile OPs */
+I_FLAG(fragile_ops                        , 20, OFF)
+
+/** If conversion. */
+I_FLAG(if_conversion                      , 21, ON)
+
+/** Optimize real function calls. */
+I_FLAG(real_function_call                 , 22, ON)
+
+/** Optimize cast nodes. */
+E_FLAG(optimize_class_casts               , 23, ON)
+E_FLAG(suppress_downcast_optimization     , 24, OFF)
+
+/** Not really an optimization, removes Confirm nodes */
+I_FLAG(remove_confirm                     , 25, OFF)
+
+/** Scalar replacement. */
+I_FLAG(scalar_replacement                 , 26, ON)

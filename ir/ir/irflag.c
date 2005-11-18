@@ -19,148 +19,67 @@
 
 /* DISABLE - don't do this optimization
    ENABLE  - lets see, if there is a better graph */
-#define ENABLE(a)   a
-#define DISABLE(a)  0
+#define ON	(-1)
+#define OFF  (0)
+
+#define FLAG(name, value, def)	(irf_##name & def) |
+#define E_FLAG(name, value, def)	FLAG(name, value, def)
+#define I_FLAG(name, value, def)	FLAG(name, value, def)
 
 optimization_state_t libFIRM_opt =
-  ENABLE(OPT_OPTIMIZED)                           |
-  ENABLE(OPT_CSE)                                 |
-  DISABLE(OPT_GLOBAL_CSE)                         |
-  ENABLE(OPT_LOOP_UNROLLING)                      |
-  ENABLE(OPT_STRENGTH_RED)                        |
-  ENABLE(OPT_CONSTANT_FOLDING)                    |
-  ENABLE(OPT_REDUNDANT_LOADSTORE)                 |
-  ENABLE(OPT_UNREACHABLE_CODE)                    |
-  ENABLE(OPT_CONTROL_FLOW_STRAIGHTENING)          |
-  ENABLE(OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION)    |
-  ENABLE(OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION)  |
-  ENABLE(OPT_CRITICAL_EDGES)                      |
-  ENABLE(OPT_DEAD_NODE_ELIMINATION)               |
-  ENABLE(OPT_DEAD_METHOD_ELIMINATION)             |
-  ENABLE(OPT_REASSOCIATION)                       |
-  ENABLE(OPT_INLINE)                              |
-  ENABLE(OPT_DYN_METH_DISPATCH)                   |
-  ENABLE(OPT_CLASS_CASTS)                         |
-  DISABLE(OPT_SUPPRESS_DOWNCAST_OPT)              |
-  ENABLE(OPT_NORMALIZE)                           |
-  ENABLE(OPT_TAIL_RECURSION)                      |
-  ENABLE(OPT_PRECISE_EXC_CONTEXT)                 |
-  DISABLE(OPT_FRAGILE_OPS)                        |
-  ENABLE(OPT_IF_CONVERSION)                       |
-  ENABLE(OPT_REAL_FUNC_CALL)                      |
-  DISABLE(OPT_REMOVE_CONFIRM)                     |
-  ENABLE(OPT_SCALAR_REPLACEMENT)                  |
+#include "irflag_t.def"
   0;
 
-optimization_state_t libFIRM_verb =
-  DISABLE(OPT_OPTIMIZED)                          |
-  DISABLE(OPT_CSE)                                |
-  DISABLE(OPT_GLOBAL_CSE)                         |
-  DISABLE(OPT_LOOP_UNROLLING)                     |
-  DISABLE(OPT_STRENGTH_RED)                       |
-  DISABLE(OPT_CONSTANT_FOLDING)                   |
-  DISABLE(OPT_REDUNDANT_LOADSTORE)                |
-  DISABLE(OPT_UNREACHABLE_CODE)                   |
-  DISABLE(OPT_CONTROL_FLOW_STRAIGHTENING)         |
-  DISABLE(OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION)   |
-  DISABLE(OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION) |
-  DISABLE(OPT_CRITICAL_EDGES)                     |
-  DISABLE(OPT_DEAD_NODE_ELIMINATION)              |
-  DISABLE(OPT_DEAD_METHOD_ELIMINATION)            |
-  DISABLE(OPT_REASSOCIATION)                      |
-  DISABLE(OPT_INLINE)                             |
-  DISABLE(OPT_DYN_METH_DISPATCH)                  |
-  DISABLE(OPT_CLASS_CASTS)                        |
-  DISABLE(OPT_NORMALIZE)                          |
-  DISABLE(OPT_TAIL_RECURSION)                     |
-  DISABLE(OPT_PRECISE_EXC_CONTEXT)                |
-  DISABLE(OPT_FRAGILE_OPS)                        |
-  DISABLE(OPT_IF_CONVERSION)                      |
-  DISABLE(OPT_REAL_FUNC_CALL)                     |
-  DISABLE(OPT_REMOVE_CONFIRM)                     |
-  DISABLE(OPT_SCALAR_REPLACEMENT)                 |
-  0;
+#undef FLAG
+#undef E_FLAG
+#undef I_FLAG
+
+
+/* verbose is always off on default */
+optimization_state_t libFIRM_verb = 0;
 
 /** The Firm verbosity level */
 int firm_verbosity_level;
 
-/* set the flags with set_flagname, get the flag with get_flagname */
-void set_opt_cse (int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_CSE;
-  else
-    libFIRM_opt &= ~OPT_CSE;
+/* an external flag can be set and get from outside */
+#define E_FLAG(name, value, def)          \
+void set_opt_##name(int flag) {           \
+  if (value) libFIRM_opt |= irf_##name;   \
+  else       libFIRM_opt &= ~irf_##name;  \
+}                                         \
+void set_opt_##name##_verbose(int flag) {  \
+  if (value) libFIRM_verb |= irf_##name;   \
+  else       libFIRM_verb &= ~irf_##name;  \
+}                                          \
+int (get_opt_##name)(void) {               \
+  return _get_opt_##name();                \
 }
 
-int (get_opt_cse)(void) {
-  return _get_opt_cse();
+/* an internal flag can only be set from outside */
+#define I_FLAG(name, value, def)          \
+void set_opt_##name(int flag) {           \
+  if (value) libFIRM_opt |= irf_##name;   \
+  else       libFIRM_opt &= ~irf_##name;  \
+}                                         \
+void set_opt_##name##_verbose(int flag) {  \
+  if (value) libFIRM_verb |= irf_##name;   \
+  else       libFIRM_verb &= ~irf_##name;  \
 }
 
-void set_opt_global_cse(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_GLOBAL_CSE;
-  else
-    libFIRM_opt &= ~OPT_GLOBAL_CSE;
+/* generate them */
+#include "irflag_t.def"
+
+#undef I_FLAG
+#undef E_FLAG
+
+/* for compatibility reasons */
+void set_optimize(int value) {
+  if (value) libFIRM_opt |= irf_optimize;
+  else       libFIRM_opt &= ~irf_optimize;
 }
 
-void set_opt_loop_unrolling (int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_LOOP_UNROLLING;
-  else
-    libFIRM_opt &= ~OPT_LOOP_UNROLLING;
-}
-
-void set_opt_loop_unrolling_verbose (int value)
-{
-  if (value)
-    libFIRM_verb |= OPT_LOOP_UNROLLING;
-  else
-    libFIRM_verb &= ~OPT_LOOP_UNROLLING;
-}
-
-void set_opt_strength_red (int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_STRENGTH_RED;
-  else
-    libFIRM_opt &= ~OPT_STRENGTH_RED;
-}
-
-void set_opt_strength_red_verbose (int value)
-{
-  if (value)
-    libFIRM_verb |= OPT_STRENGTH_RED;
-  else
-    libFIRM_verb &= ~OPT_STRENGTH_RED;
-}
-
-void
-set_opt_constant_folding(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_CONSTANT_FOLDING;
-  else
-    libFIRM_opt &= ~OPT_CONSTANT_FOLDING;
-}
-
-void
-set_opt_redundant_LoadStore(int value) {
-  if (value)
-    libFIRM_opt |= OPT_REDUNDANT_LOADSTORE;
-  else
-    libFIRM_opt &= ~OPT_REDUNDANT_LOADSTORE;
-}
-
-void
-set_opt_unreachable_code(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_UNREACHABLE_CODE;
-  else
-    libFIRM_opt &= ~OPT_UNREACHABLE_CODE;
+int (get_optimize)(void) {
+  return get_opt_optimize();
 }
 
 void set_opt_control_flow(int value)
@@ -171,238 +90,12 @@ void set_opt_control_flow(int value)
   set_opt_critical_edges(value);
 }
 
-/* Performs Straightening */
-void set_opt_control_flow_straightening(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_CONTROL_FLOW_STRAIGHTENING;
-  else
-    libFIRM_opt &= ~OPT_CONTROL_FLOW_STRAIGHTENING;
-}
-
-/* Performs if simplifications in local optimizations. */
-void set_opt_control_flow_weak_simplification(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION;
-  else
-    libFIRM_opt &= ~OPT_CONTROL_FLOW_WEAK_SIMPLIFICATION;
-}
-
-/* Performs strong if and loop simplification (in optimize_cf). */
-void set_opt_control_flow_strong_simplification(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION;
-  else
-    libFIRM_opt &= ~OPT_CONTROL_FLOW_STRONG_SIMPLIFICATION;
-}
-
-void set_opt_critical_edges(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_CRITICAL_EDGES;
-  else
-    libFIRM_opt &= ~OPT_CRITICAL_EDGES;
-}
-
-void set_opt_reassociation(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_REASSOCIATION;
-  else
-    libFIRM_opt &= ~OPT_REASSOCIATION;
-}
-
-void set_opt_dead_node_elimination(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_DEAD_NODE_ELIMINATION;
-  else
-    libFIRM_opt &= ~OPT_DEAD_NODE_ELIMINATION;
-}
-
-void set_opt_dead_method_elimination (int value) {
-  if (value)
-    libFIRM_opt |= OPT_DEAD_METHOD_ELIMINATION;
-  else
-    libFIRM_opt &= ~OPT_DEAD_METHOD_ELIMINATION;
-}
-
-void set_opt_dead_method_elimination_verbose (int value) {
-  if (value)
-    libFIRM_verb |= OPT_DEAD_METHOD_ELIMINATION;
-  else
-    libFIRM_verb &= ~OPT_DEAD_METHOD_ELIMINATION;
-}
-
-void set_optimize(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_OPTIMIZED;
-  else
-    libFIRM_opt &= ~OPT_OPTIMIZED;
-}
-
-int get_optimize(void)
-{
-  return get_opt_optimize();
-}
-
-
 void set_firm_verbosity (int value) {
   firm_verbosity_level = value;
 }
 
 int  (get_firm_verbosity) (void) {
   return _get_firm_verbosity();
-}
-
-
-
-/* Enable/Disables inlining. */
-void set_opt_inline(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_INLINE;
-  else
-    libFIRM_opt &= ~OPT_INLINE;
-}
-
-/* Enable/Disable optimization of dynamic method dispatch */
-void set_opt_dyn_meth_dispatch (int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_DYN_METH_DISPATCH;
-  else
-    libFIRM_opt &= ~OPT_DYN_METH_DISPATCH;
-}
-
-int (get_opt_dyn_meth_dispatch)(void) {
-  return _get_opt_dyn_meth_dispatch();
-}
-
-void set_opt_optimize_class_casts (int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_CLASS_CASTS;
-  else
-    libFIRM_opt &= ~OPT_CLASS_CASTS;
-}
-int  (get_opt_optimize_class_casts) (void) {
-  return _get_opt_optimize_class_casts();
-}
-void set_opt_optimize_class_casts_verbose (int value)
-{
-  if (value)
-    libFIRM_verb |= OPT_CLASS_CASTS;
-  else
-    libFIRM_verb &= ~OPT_CLASS_CASTS;
-}
-int  (get_opt_optimize_class_casts_verbose) (void) {
-  return _get_opt_optimize_class_casts_verbose();
-}
-void set_opt_suppress_downcast_optimization(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_SUPPRESS_DOWNCAST_OPT;
-  else
-    libFIRM_opt &= ~OPT_SUPPRESS_DOWNCAST_OPT;
-}
-int  (get_opt_suppress_downcast_optimization)(void) {
-  return _get_opt_suppress_downcast_optimization();
-}
-
-
-/* Enable/Disable normalizations of the firm representation. */
-void set_opt_normalize(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_NORMALIZE;
-  else
-    libFIRM_opt &= ~OPT_NORMALIZE;
-}
-
-/* Enable/Disable optimization of tail-recursion calls. */
-void set_opt_tail_recursion(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_TAIL_RECURSION;
-  else
-    libFIRM_opt &= ~OPT_TAIL_RECURSION;
-}
-
-/* Enable/Disable optimization of tail-recursion calls. */
-void set_opt_tail_recursion_verbose(int value)
-{
-  if (value)
-    libFIRM_verb |= OPT_TAIL_RECURSION;
-  else
-    libFIRM_verb &= ~OPT_TAIL_RECURSION;
-}
-
-/* Enable/Disable precise exception context. */
-void set_opt_precise_exc_context(int value)
-{
-#if PRECISE_EXC_CONTEXT
-  if (value)
-    libFIRM_opt |= OPT_PRECISE_EXC_CONTEXT;
-  else
-    libFIRM_opt &= ~OPT_PRECISE_EXC_CONTEXT;
-#endif
-}
-
-void set_opt_fragile_ops(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_FRAGILE_OPS;
-  else
-    libFIRM_opt &= ~OPT_FRAGILE_OPS;
-}
-
-/* Enable/Disable if conversion. */
-void set_opt_if_conversion(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_IF_CONVERSION;
-  else
-    libFIRM_opt &= ~OPT_IF_CONVERSION;
-}
-
-/* Enable/Disable real function call optimization. */
-void set_opt_real_function_call(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_REAL_FUNC_CALL;
-  else
-    libFIRM_opt &= ~OPT_REAL_FUNC_CALL;
-}
-
-/* Enable/Disable Confirm node removal. */
-void set_opt_remove_Confirm(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_REMOVE_CONFIRM;
-  else
-    libFIRM_opt &= ~OPT_REMOVE_CONFIRM;
-}
-
-/* Enable/Disable scalar replacement optimization. */
-void set_opt_scalar_replacement(int value)
-{
-  if (value)
-    libFIRM_opt |= OPT_SCALAR_REPLACEMENT;
-  else
-    libFIRM_opt &= ~OPT_SCALAR_REPLACEMENT;
-}
-
-/* Set verbosity for scalar relacement */
-void set_opt_scalar_replacement_verbose(int value)
-{
-  if (value)
-    libFIRM_verb |= OPT_SCALAR_REPLACEMENT;
-  else
-    libFIRM_verb &= ~OPT_SCALAR_REPLACEMENT;
 }
 
 /* Save the current optimization state. */

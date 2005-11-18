@@ -91,7 +91,7 @@ void set_opt_loop_unrolling_verbose (int value);
  *  - remove Load that loads a value already loaded (RAR)
  *  - replace Load of constant values with constants (RC)
  */
-void set_opt_redundant_LoadStore(int value);
+void set_opt_redundant_loadstore(int value);
 
 /** Enables/Disables constant subexpression elimination.
  *
@@ -249,7 +249,7 @@ void set_opt_real_function_call(int value);
 /**
  * Enable/Disable Confirm node removal during local optimization.
  */
-void set_opt_remove_Confirm(int value);
+void set_opt_remove_confirm(int value);
 
 /**
  * Enable/Disable scalar replacement optimization.
