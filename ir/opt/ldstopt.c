@@ -289,7 +289,7 @@ static entity *find_constant_entity(ir_node *ptr)
       entity *ent = get_Sel_entity(ptr);
       type *tp    = get_entity_owner(ent);
 
-      /* Do not fiddle about polymorphy. */
+      /* Do not fiddle with polymorphism. */
       if (is_Class_type(get_entity_owner(ent)) &&
           ((get_entity_n_overwrites(ent)    != 0) ||
            (get_entity_n_overwrittenby(ent) != 0)   ) )
@@ -464,7 +464,7 @@ static unsigned optimize_load(ir_node *load)
   }
 
   /* Load from a constant polymorphic field, where we can resolve
-     polymorphy. */
+     polymorphism. */
   new_node = transform_node_Load(load);
   if (new_node != load) {
     if (info->projs[pn_Load_M]) {
@@ -920,7 +920,7 @@ static unsigned optimize_phi(ir_node *phi, void *env)
 }
 
 /**
- * walker, do the optiimizations
+ * walker, do the optimizations
  */
 static void do_load_store_optimize(ir_node *n, void *env)
 {
