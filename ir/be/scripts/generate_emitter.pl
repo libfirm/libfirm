@@ -46,6 +46,11 @@ foreach my $op (keys(%nodes)) {
   push(@obst_header, $line.";\n");
   push(@obst_func, $line." {\n");
 
+  # check in/out register if needed
+  if (exists($n{"check_inout"}) && $n{"check_inout"} == 1) {
+    push(@obst_func, "  equalize_dest_src(F, n);\n\n");
+  }
+
   my @emit = split(/\n/, $n{"emit"});
 
   foreach(@emit) {
