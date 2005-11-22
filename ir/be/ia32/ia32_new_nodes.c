@@ -25,8 +25,6 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 
-#include "gen_ia32_regalloc_if.c.inl"
-
 
 
 /***********************************************************************************
@@ -39,8 +37,6 @@
  *                       | |
  *                       |_|
  ***********************************************************************************/
-
-
 
 /**
  * Prints a tarval to file F.
@@ -90,6 +86,10 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
   const char *name, *p;
   ir_mode    *mode = NULL;
   int        bad   = 0;
+  asmop_attr *attr;
+  int        i;
+  const arch_register_req_t **reqs;
+  const arch_register_t     **slots;
 
   switch (reason) {
     case dump_node_opcode_txt:
@@ -117,7 +117,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
     case dump_node_nodeattr_txt:
       name = get_irn_opname(n);
       p = name + strlen(name) - 2;
-      if (p[0] == '_' && p[1] == 'i') {
+      if ((p[0] == '_' && p[1] == 'i') || is_ia32_Const(n)) {
         tarval *tv = get_ia32_Immop_tarval(n);
         if (tv)
           fprintf_tv(F, tv, 1);
@@ -126,14 +126,61 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
         }
       }
       else if (is_ia32_Call(n)) {
-        ir_node *old_call = get_ia32_old_ir(n);
-        ir_node *sc       = get_Call_ptr(old_call);
+        ir_node *sc = get_ia32_old_ir(get_ia32_old_ir(n));
 
         fprintf(F, "&%s ", get_sc_name(sc));
       }
       break;
 
     case dump_node_info_txt:
+      attr = get_ia32_attr(n);
+
+      /* dump IN requirements */
+      if (get_irn_arity(n) > 0) {
+	reqs = get_ia32_in_req(n);
+
+	if (reqs) {
+	  for (i = 0; i < get_irn_arity(n); i++) {
+	    if (reqs[i]->type != arch_register_req_type_none)
+	      fprintf(F, "inreq[%d]=[%s]\n", i, reqs[i]->cls->name);
+	    else
+	      fprintf(F, "inreq[%d]=[none]\n", i);
+	  }
+	  fprintf(F, "\n");
+	}
+	else
+	  fprintf(F, "NO IN REQS\n");
+      }
+
+      /* dump OUT requirements */
+      if (attr->n_res > 0) {
+	reqs = get_ia32_out_req(n);
+
+	if (reqs) {
+	  for (i = 0; i < attr->n_res; i++) {
+	    if (reqs[i]->type != arch_register_req_type_none)
+	      fprintf(F, "outreq[%d]=[%s]\n", i, reqs[i]->cls->name);
+	    else
+	      fprintf(F, "outreq[%d]=[none]\n", i);
+	  }
+	}
+	else
+	  fprintf(F, "NO OUT REQS\n");
+      }
+
+      /* dump assigned registers */
+      slots = get_ia32_slots(n);
+      if (slots && attr->n_res > 0) {
+        for (i = 0; i < attr->n_res; i++) {
+	  if (slots[i]) {
+	    fprintf(F, "REG[%d]=[%s]\n", i, slots[i]->name);
+	  }
+	  else
+	    fprintf(F, "REG[%d]=[none]\n", i);
+        }
+      }
+
+      /* special for LEA */
       if (is_ia32_Lea(n)) {
         tarval *o  = get_ia32_offs(n);
         tarval *tv = get_ia32_Immop_tarval(n);
@@ -223,7 +270,8 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
       break;
     case iro_SymConst:
       attr->tp     = asmop_SymConst;
-      attr->old_ir = cnst;
+      attr->old_ir = calloc(1, sizeof(*cnst));
+      memcpy(attr->old_ir, cnst, sizeof(*cnst));
       break;
     case iro_Unknown:
       assert(0 && "Unknown Const NYI");
@@ -296,31 +344,18 @@ arch_irn_flags_t get_ia32_flags(const ir_node *node) {
 }
 
 /**
- * Returns the argument register slots of an ia32 node.
- */
-const arch_register_t **get_ia32_in_slots(const ir_node *node) {
-  asmop_attr *attr = get_ia32_attr(node);
-  return attr->in;
-}
-
-/**
  * Returns the result register slots of an ia32 node.
  */
-const arch_register_t **get_ia32_out_slots(const ir_node *node) {
+const arch_register_t **get_ia32_slots(const ir_node *node) {
   asmop_attr *attr = get_ia32_attr(node);
-  return attr->out;
+  return attr->slots;
 }
 
 /**
  * Returns the name of the IN register at position pos.
  */
 const char *get_ia32_in_reg_name(const ir_node *node, int pos) {
-  asmop_attr *attr = get_ia32_attr(node);
-
-  assert(is_ia32_irn(node) && "Not an ia32 node.");
-  assert(pos < get_irn_arity(node) && "Invalid IN position.");
-
-  return attr->in[pos]->name;
+  assert(0 && "in reg name not yet implemented");
 }
 
 /**
@@ -332,19 +367,14 @@ const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
   assert(is_ia32_irn(node) && "Not an ia32 node.");
   assert(pos < attr->n_res && "Invalid OUT position.");
 
-  return attr->out[pos]->name;
+  return attr->slots[pos]->name;
 }
 
 /**
  * Returns the index of the IN register at position pos within its register class.
  */
 int get_ia32_in_regnr(const ir_node *node, int pos) {
-  asmop_attr *attr = get_ia32_attr(node);
-
-  assert(is_ia32_irn(node) && "Not an ia32 node.");
-  assert(pos < get_irn_arity(node) && "Invalid IN position.");
-
-  return attr->in[pos]->index;
+  assert(0 && "in reg nr not yet implemented");
 }
 
 /**
@@ -356,7 +386,7 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
   assert(is_ia32_irn(node) && "Not an ia32 node.");
   assert(pos < attr->n_res && "Invalid OUT position.");
 
-  return attr->out[pos]->index;
+  return attr->slots[pos]->index;
 }
 
 /**
@@ -382,6 +412,9 @@ void set_ia32_DivMod_flavour(ir_node *node, divmod_flavour_t dm_flav) {
   asmop_attr *attr = get_ia32_attr(node);
   attr->dm_flav    = dm_flav;
 }
+
+/* include generated register allocator interface */
+#include "gen_ia32_regalloc_if.c.inl"
 
 /* Include the generated functions */
 #include "gen_ia32_new_nodes.c.inl"

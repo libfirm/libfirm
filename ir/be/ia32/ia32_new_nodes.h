@@ -30,8 +30,7 @@ void set_ia32_DivMod_flavour(ir_node *node, divmod_flavour_t dm_flav);
 arch_irn_flags_t            get_ia32_flags(const ir_node *node);
 const arch_register_req_t **get_ia32_in_req(const ir_node *node);
 const arch_register_req_t **get_ia32_out_req(const ir_node *node);
-const arch_register_t     **get_ia32_in_slots(const ir_node *node);
-const arch_register_t     **get_ia32_out_slots(const ir_node *node);
+const arch_register_t     **get_ia32_slots(const ir_node *node);
 
 const char *get_ia32_in_reg_name(const ir_node *node, int pos);
 const char *get_ia32_out_reg_name(const ir_node *node, int pos);
