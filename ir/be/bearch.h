@@ -481,6 +481,13 @@ struct _arch_isa_if_t {
    * (May be NULL).
    */
   const arch_irn_handler_t *irn_handler;
+
+  /**
+   * The code generation function for this architecture.
+   * (May be NULL)
+   * @param out The output file
+   */
+  void (*codegen)(FILE *out);
 };
 
 #define ARCH_MAX_HANDLERS         8
