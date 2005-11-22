@@ -43,7 +43,6 @@ my @obst_constructor; # stack for node constructor functions
 my @obst_new_irop;    # stack for the new_ir_op calls
 my @obst_header;      # stack for function prototypes
 my @obst_is_archirn;  # stack for the is_$arch_irn() function
-my $temp;
 my $orig_op;
 my $arity;
 
@@ -71,6 +70,8 @@ foreach my $op (keys(%nodes)) {
   # create constructor head
   my $complete_args = "";
   my $arg_names     = "";
+  my $temp          = "";
+
   $temp = "ir_node *new_rd_$op(dbg_info *db, ir_graph *irg, ir_node *block";
   if (!exists($n{"args"}) || $n{"args"} eq "DEFAULT") { # default args
     if ($n{"arity"} !~ /^[0-3]$/) {
@@ -114,11 +115,9 @@ foreach my $op (keys(%nodes)) {
       $temp .= "  in[".($i - 1)."] = op".$i.";\n";
     }
     $temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
-    $temp .= "  res = optimize_node(res);\n";
-    $temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
     # set register flags
-    $temp .= "  attr = (asmop_attr *)get_irn_generic_attr(res);\n\n";
+    $temp .= "  attr = get_ia32_attr(res);\n\n";
     $temp .= "  attr->flags  = 0;                                 /* clear flags */\n";
     if (!exists($n{"spill"}) || $n{"spill"} == 1) {
       $temp .= "  attr->flags |= arch_irn_flags_spillable;          /* op is spillable */\n";
@@ -140,7 +139,6 @@ foreach my $op (keys(%nodes)) {
       if (@in) {
         $temp .= "\n  /* allocate memory for IN register requirements and assigned registers */\n";
         $temp .= "  attr->in_req    = malloc(".($#in + 1)." * sizeof(arch_register_req_t *)); /* space for in requirements */\n";
-        $temp .= "  attr->in        = malloc(".($#in + 1)." * sizeof(arch_register_t *));     /* space for assigned register to arguments */\n";
         for ($idx = 0; $idx <= $#in; $idx++) {
           $temp .= "  attr->in_req[$idx] = &".$op."_reg_req_in_".$idx.";\n";
         }
@@ -149,7 +147,7 @@ foreach my $op (keys(%nodes)) {
       if (@out) {
         $temp .= "\n  /* allocate memory for OUT register requirements and assigned registers */\n";
         $temp .= "  attr->out_req    = malloc(".($#out + 1)." * sizeof(arch_register_req_t *)); /* space for out requirements */\n";
-        $temp .= "  attr->out        = calloc(sizeof(arch_register_t *), ".($#out + 1).");     /* space for assigned register to results */\n";
+        $temp .= "  attr->slots      = calloc(sizeof(arch_register_t *), ".($#out + 1).");     /* space for assigned registers */\n";
         for ($idx = 0; $idx <= $#out; $idx++) {
           $temp .= "  attr->out_req[$idx] = &".$op."_reg_req_out_".$idx.";\n";
         }
@@ -210,8 +208,6 @@ void $arch\_create_opcodes(void) {
   ir_op_ops ops;
 
   memset(&ops, 0, sizeof(ops));
-
-  /* enter our modified dumper */
   ops.dump_node = dump_node_$arch;
 
 ENDOFMAIN
