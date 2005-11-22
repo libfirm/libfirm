@@ -12,9 +12,6 @@ use Data::Dumper;
 my $specfile   = $ARGV[0];
 my $target_dir = $ARGV[1];
 
-my $target_c = $target_dir."/emitter_gen.c";
-my $target_h = $target_dir."/emitter_gen.h";
-
 our $arch;
 our %nodes;
 
@@ -29,6 +26,9 @@ unless ($return = do $specfile) {
   warn "couldn't run $specfile"       unless $return;
 }
 use strict "subs";
+
+my $target_c = $target_dir."/gen_".$arch."_emitter.c";
+my $target_h = $target_dir."/gen_".$arch."_emitter.h";
 
 # stacks for output
 my @obst_func;   # stack for the emit functions
@@ -68,7 +68,7 @@ foreach my $op (keys(%nodes)) {
         }
         else {
           $regkind = ($2 eq "s" ? "source" : "dest");
-          push(@params, "get_".$regkind."_reg(n, $3)");
+          push(@params, "get_".$regkind."_reg_name(n, $3)");
         }
         s/%$1/%%\%s/;
       }
@@ -87,9 +87,11 @@ open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
 
 my $creation_time = localtime(time());
 
+my $tmp = uc($arch);
+
 print OUT<<EOF;
-#ifndef _EMITTER_GEN_H_
-#define _EMITTER_GEN_H_
+#ifndef _GEN_$tmp\_EMITTER_H_
+#define _GEN_$tmp\_EMITTER_H_
 
 /**
  * Function prototypes for the emitter functions.
@@ -105,7 +107,7 @@ EOF
 
 print OUT @obst_header;
 
-print OUT "#endif /* _EMITTER_GEN_H_ */\n";
+print OUT "#endif /* _GEN_$tmp\_EMITTER_H_ */\n";
 
 close(OUT);
 
@@ -125,8 +127,9 @@ print OUT<<EOF;
 #include <stdio.h>
 
 #include "irnode.h"
-#include "emitter_gen.h"
-#include "emitter.h"
+#include "gen_$arch\_emitter.h"
+#include "$arch\_emitter.h"
+#include "$arch\_new_nodes.h"
 
 EOF
 
