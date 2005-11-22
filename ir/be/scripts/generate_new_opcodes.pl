@@ -15,9 +15,6 @@ my $state      = 1;
 my $cur_op     = "";
 my $line_nr    = 0;
 
-my $target_c = $target_dir."/new_nodes.c";
-my $target_h = $target_dir."/new_nodes.h";
-
 our $arch;
 our %nodes;
 
@@ -33,6 +30,9 @@ unless ($return = do $specfile) {
 }
 use strict "subs";
 
+my $target_c = $target_dir."/gen_".$arch."_new_nodes.c.inl";
+my $target_h = $target_dir."/gen_".$arch."_new_nodes.h.inl";
+
 #print Dumper(%nodes);
 
 # create c code file from specs
@@ -42,11 +42,12 @@ my @obst_get_opvar;   # stack for the get_op_<arch>_<op-name>() functions
 my @obst_constructor; # stack for node constructor functions
 my @obst_new_irop;    # stack for the new_ir_op calls
 my @obst_header;      # stack for function prototypes
+my @obst_is_archirn;  # stack for the is_$arch_irn() function
 my $temp;
 my $orig_op;
 my $arity;
 
-push(@obst_header, "void create_bearch_asm_opcodes(void);");
+push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
 foreach my $op (keys(%nodes)) {
   my %n = %{ $nodes{"$op"} };
@@ -57,9 +58,11 @@ foreach my $op (keys(%nodes)) {
 
   push(@obst_opvar, "ir_op *op_$op = NULL;\n");
   push(@obst_get_opvar, "ir_op *get_op_$op(void)   { return op_$op; }\n");
-  push(@obst_get_opvar, "int    is_$op(ir_node *n) { return get_irn_op(n) == op_$op ? 1 : 0; }\n\n");
+  push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_irn_op(n) == op_$op; }\n\n");
 
-  push(@obst_header, "int is_$op(ir_node *n);\n");
+  push(@obst_is_archirn, "is_$op(node)");
+
+  push(@obst_header, "int is_$op(const ir_node *n);\n");
 
   $n{"comment"} =~ s/^"|"$//g;
   $n{"comment"} = "/* ".$n{"comment"}." */\n";
@@ -83,8 +86,9 @@ foreach my $op (keys(%nodes)) {
   }
   else { # user defined args
     for my $href (@{ $n{"args"} }) {
-      $complete_args .= ", ".$href->{"type"}.$href->{"name"};
-      $arg_names     .= ", ".$href->{"name"};
+      $href->{"type"} .= " " if ($href->{"type"} !~ / [*]?$/); # put a space between name and type if there is none at the end
+      $complete_args  .= ", ".$href->{"type"}.$href->{"name"};
+      $arg_names      .= ", ".$href->{"name"};
     }
   }
   $complete_args = substr($complete_args, 2);
@@ -98,7 +102,8 @@ foreach my $op (keys(%nodes)) {
       print "DEFAULT rd_constructor requires arity 0,1,2 or 3! Ignoring op $orig_op!\n";
       next;
     }
-    $temp  = "  ir_node *res;\n";
+    $temp  = "  asmop_attr *attr;\n";
+    $temp .= "  ir_node *res;\n";
     $temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
     $temp .= "\n";
     $temp .= "  if (!op_$op) {\n";
@@ -110,8 +115,52 @@ foreach my $op (keys(%nodes)) {
     }
     $temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
     $temp .= "  res = optimize_node(res);\n";
-    $temp .= "  irn_vrfy_irg(res, irg);\n";
-    $temp .= "  return res;\n";
+    $temp .= "  irn_vrfy_irg(res, irg);\n\n";
+
+    # set register flags
+    $temp .= "  attr = (asmop_attr *)get_irn_generic_attr(res);\n\n";
+    $temp .= "  attr->flags  = 0;                                 /* clear flags */\n";
+    if (!exists($n{"spill"}) || $n{"spill"} == 1) {
+      $temp .= "  attr->flags |= arch_irn_flags_spillable;          /* op is spillable */\n";
+    }
+    if (exists($n{"remat"}) && $n{"remat"} == 1) {
+      $temp .= "  attr->flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
+    }
+
+    # allocate memory and set pointer to register requirements
+    if (exists($n{"reg_req"})) {
+      my %req = %{ $n{"reg_req"} };
+      my $idx;
+
+      undef my @in;
+      @in = @{ $req{"in"} } if (exists($req{"in"}));
+      undef my @out;
+      @out = @{ $req{"out"} } if exists(($req{"out"}));
+
+      if (@in) {
+        $temp .= "\n  /* allocate memory for IN register requirements and assigned registers */\n";
+        $temp .= "  attr->in_req    = malloc(".($#in + 1)." * sizeof(arch_register_req_t *)); /* space for in requirements */\n";
+        $temp .= "  attr->in        = malloc(".($#in + 1)." * sizeof(arch_register_t *));     /* space for assigned register to arguments */\n";
+        for ($idx = 0; $idx <= $#in; $idx++) {
+          $temp .= "  attr->in_req[$idx] = &".$op."_reg_req_in_".$idx.";\n";
+        }
+      }
+
+      if (@out) {
+        $temp .= "\n  /* allocate memory for OUT register requirements and assigned registers */\n";
+        $temp .= "  attr->out_req    = malloc(".($#out + 1)." * sizeof(arch_register_req_t *)); /* space for out requirements */\n";
+        $temp .= "  attr->out        = calloc(sizeof(arch_register_t *), ".($#out + 1).");     /* space for assigned register to results */\n";
+        for ($idx = 0; $idx <= $#out; $idx++) {
+          $temp .= "  attr->out_req[$idx] = &".$op."_reg_req_out_".$idx.";\n";
+        }
+        $temp .= "  attr->n_res      = ".($#out + 1).";\n";
+      }
+      else {
+        $temp .= "  attr->n_res      = 0;\n";
+      }
+    }
+
+    $temp .= "\n  return res;\n";
 
     push(@obst_constructor, $temp);
   }
@@ -122,157 +171,32 @@ foreach my $op (keys(%nodes)) {
   # close constructor function
   push(@obst_constructor, "}\n\n");
 
-#  # create the _r and _d wrapper
-#  $temp  = "ir_node *new_r_$op(ir_graph *irg, ir_node *block, $complete_args)";
-#  push(@obst_header, $temp.";\n");
-#  $temp .= " {\n";
-#  $temp .= "  return new_rd_$op(NULL, irg, block".$arg_names.");\n";
-#  $temp .= "}\n\n";
-#  push(@obst_constructor, $temp);
-#
-#  $temp  = "ir_node *new_d_$op(dbg_info *db, $complete_args)";
-#  push(@obst_header, $temp.";\n");
-#  $temp .= " {\n";
-#  $temp .= "  return new_rd_$op(db, current_ir_graph, current_ir_graph->current_block".$arg_names.");\n";
-#  $temp .= "}\n\n";
-#  push(@obst_constructor, $temp);
-#
-#  $temp  = "ir_node *new_$op($complete_args)";
-#  push(@obst_header, $temp.";\n");
-#  $temp .= " {\n";
-#  $temp .= "  return new_d_$op(NULL".$arg_names.");\n";
-#  $temp .= "}\n\n";
-#  push(@obst_constructor, $temp);
-
-  # construct the new_ir_op calls
-
   # set default values for state and flags if not given
   $n{"state"}    = "pinned" if (! exists($n{"state"}));
   $n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
 
-  my $arity_str = $arity == 0 ? "zero" : ($arity == 1 ? "unary" : ($arity == 2 ? "binary" : ($arity == 3 ? "trinary" : $arity)));
   $temp  = "  op_$op = new_ir_op(get_next_ir_opcode(), \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-  $temp .= ", oparity_".$arity_str.", 0, sizeof(asmop_attr), &ops);\n";
+  $temp .= ", ".translate_arity($arity).", 0, sizeof(asmop_attr), &ops);\n";
   push(@obst_new_irop, $temp);
 }
 
 # emit the code
-my $creation_time = localtime(time());
 
 open(OUT, ">$target_c") || die("Could not open $target_c, reason: $!\n");
-
-print OUT<<ENDOFHEADER;
-/**
- * This file implements the creation of the achitecture specific firm opcodes
- * and the coresponding node constructors for the $arch assembler irg.
- * DO NOT EDIT THIS FILE, your changes will be lost.
- * Edit $specfile instead.
- * created by: $0 $specfile $target_dir
- * date:       $creation_time
- */
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <stdlib.h>
-
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "ircons_t.h"
-#include "iropt_t.h"
-#include "firm_common_t.h"
-#include "irvrfy_t.h"
-
-#include "../firm2arch_nodes_attr.h"
-#include "../bearch_firm.h"
-
-#include "new_nodes.h"
-#include "dump_support.inl"
-
-/**
- * Return the tarval of an immediate operation or NULL in case of SymConst
- */
-tarval *get_Immop_tarval(ir_node *node) {
-  asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(node);
-  if (attr->tp == asmop_Const)
-    return attr->data.tv;
-  else
-    return NULL;
-}
-
-/**
- * Return the old_ir attribute.
- */
-ir_node *get_old_ir(ir_node *node) {
-  asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(node);
-  return attr->data.old_ir;
-}
-
-/**
- * Copy the attributes from an Imm to an Immop (Add_i, Sub_i, ...) node
- */
-void set_Immop_attr(ir_node *node, ir_node *imm) {
-  asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(node);
-  assert(is_Imm(imm) && "Need Imm to set Immop attr");
-
-  imm_attr_t *ia = (imm_attr_t *)get_irn_generic_attr(imm);
-  if (ia->tp == imm_Const) {
-    attr->tp      = asmop_Const;
-    attr->data.tv = ia->data.tv;
-  }
-  else {
-    attr->tp          = asmop_SymConst;
-    attr->data.old_ir = ia->data.symconst;
-  }
-}
-
-/**
- * Sets the attributes of an immediate operation to the specified tarval
- */
-void set_Immop_attr_tv(ir_node *node, tarval *tv) {
-  asmop_attr *attr = (asmop_attr *)get_irn_generic_attr(node);
-
-  attr->tp         = asmop_Const;
-  attr->data.tv    = tv;
-}
-
-/**
- * Sets the offset for a Lea.
- */
-void set_ia32_Lea_offs(ir_node *node, tarval *offs) {
-  assert(is_ia32_Lea(node) && "Cannot set offset in non-Lea node.");
-
-  asmop_attr *attr  = (asmop_attr *)get_irn_generic_attr(node);
-  attr->data.offset = offs;
-}
-
-/**
- * Gets the offset for a Lea.
- */
-tarval *get_ia32_Lea_offs(ir_node *node) {
-  assert(is_ia32_Lea(node) && "Cannot get offset for a non-Lea node.");
-
-  asmop_attr *attr  = (asmop_attr *)get_irn_generic_attr(node);
-  return attr->data.offset;
-}
-
-ENDOFHEADER
 
 print OUT @obst_opvar;
 print OUT "\n";
 print OUT @obst_get_opvar;
 print OUT "\n";
+print OUT "int is_".$arch."_irn(const ir_node *node) {\n  if (".join(" ||\n      ", @obst_is_archirn).")\n    return 1;\n  else\n    return 0;\n}\n\n";
 print OUT @obst_constructor;
 
 print OUT<<ENDOFMAIN;
 /**
- * Creates the architecture specific firm operations
+ * Creates the $arch specific firm operations
  * needed for the assembler irgs.
  */
-void create_bearch_asm_opcodes(void) {
+void $arch\_create_opcodes(void) {
 #define N   irop_flag_none
 #define L   irop_flag_labeled
 #define C   irop_flag_commutative
@@ -288,7 +212,7 @@ void create_bearch_asm_opcodes(void) {
   memset(&ops, 0, sizeof(ops));
 
   /* enter our modified dumper */
-  ops.dump_node = dump_node_ia32;
+  ops.dump_node = dump_node_$arch;
 
 ENDOFMAIN
 
@@ -297,31 +221,31 @@ print OUT "}\n";
 
 close(OUT);
 
-$creation_time = localtime(time());
-
 open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
-print OUT<<EOF;
-#ifndef NEW_NODES_H
-#define NEW_NODES_H
-
-/**
- * Function prototypes for the assembler ir node constructors.
- * DO NOT EDIT THIS FILE, your changes will be lost.
- * Edit $specfile instead.
- * created by: $0 $specfile $target_dir
- * date:       $creation_time
- */
-
-tarval  *get_Immop_tarval(ir_node *node);
-ir_node *get_old_ir(ir_node *node);
-void    set_Immop_attr(ir_node *node, ir_node *imm);
-void    set_Immop_attr_tv(ir_node *node, tarval *tv);
-void    set_ia32_Lea_offs(ir_node *node, tarval *offs);
-tarval  *get_ia32_Lea_offs(ir_node *node);
-
-EOF
 
 print OUT @obst_header;
-print OUT "\n#endif\n";
 
 close(OUT);
+
+###
+# Translates numeric arity into string constant.
+###
+sub translate_arity {
+  my $arity = shift;
+
+  if    ($arity == 0) {
+    return "oparity_zero";
+  }
+  elsif ($arity == 1) {
+    return "oparity_unary";
+  }
+  elsif ($arity == 1) {
+    return "oparity_binary";
+  }
+  elsif ($arity == 1) {
+    return "oparity_trinary";
+  }
+  else {
+    return "$arity";
+  }
+}
