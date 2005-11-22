@@ -94,7 +94,7 @@ static INLINE workset_t *workset_clone(struct obstack *ob, workset_t *ws) {
 static INLINE void workset_insert(workset_t *ws, ir_node *val) {
 	int i;
 	/* check for current regclass */
-	if (arch_get_irn_reg_class(ws->bel->arch, val, 0) != ws->bel->cls) {
+	if (arch_get_irn_reg_class(ws->bel->arch, val, -1) != ws->bel->cls) {
 		DBG((dbg, DBG_DECIDE, "Dropped %+F\n", val));
 		return;
 	}
@@ -121,7 +121,7 @@ static INLINE void workset_bulk_insert(workset_t *ws, int cnt, ir_node **vals) {
 		ir_node *val = vals[o];
 		DBG((dbg, DBG_TRACE, "Bulk insert %+F\n", val));
 		/* check for current regclass */
-		if (arch_get_irn_reg_class(ws->bel->arch, val, 0) != ws->bel->cls) {
+		if (arch_get_irn_reg_class(ws->bel->arch, val, -1) != ws->bel->cls) {
 			DBG((dbg, DBG_TRACE, "Wrong reg class\n"));
 			goto no_insert;
 		}
@@ -211,7 +211,7 @@ static void build_start_set(belady_env_t *bel, ir_node *blk) {
 	first = sched_first(blk);
 	count = 0;
 	sched_foreach(blk, irn)
-		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, 0) == bel->cls) {
+		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, -1) == bel->cls) {
 			loc.irn = irn;
 			loc.time = be_get_next_use(bel->uses, first, 0, irn, 0);
 			DBG((dbg, DBG_START, "  %+F next-use %d\n", loc.irn, loc.time));
@@ -221,7 +221,7 @@ static void build_start_set(belady_env_t *bel, ir_node *blk) {
 			break;
 
 	live_foreach(blk, li)
-		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, 0) == bel->cls) {
+		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, -1) == bel->cls) {
 			loc.irn = (ir_node *)li->irn;
 			loc.time = be_get_next_use(bel->uses, first, 0, li->irn, 0);
 			DBG((dbg, DBG_START, "  %+F next-use %d\n", loc.irn, loc.time));
@@ -474,7 +474,7 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 
 		/* if spill not used anymore, remove it too
 		 * test of regclass is necessary since spill may be a phi-M */
-		if (get_irn_n_edges(spill) == 0 && bel->cls == arch_get_irn_reg_class(bel->arch, spill, 0)) {
+		if (get_irn_n_edges(spill) == 0 && bel->cls == arch_get_irn_reg_class(bel->arch, spill, -1)) {
 			set_irn_n(spill, 0, new_Bad());
 			sched_remove(spill);
 		}
