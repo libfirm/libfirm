@@ -66,8 +66,6 @@ $arch = "ia32";
 #         set in[i] = op_i
 #      done
 #      res = new_ir_node(db, irg, block, op_<arch>_<op-name>, mode, arity, in)
-#      res = optimize_node(res)
-#      IRN_VRFY_IRG(res, irg)
 #      return res
 #
 # NOTE: rd_constructor and args are only optional if and only if arity is 0,1,2 or 3
@@ -350,8 +348,6 @@ $arch = "ia32";
   }
 
   res = new_ir_node(db, irg, block, op_ia32_DivMod, mode, 4, in);
-  res = optimize_node(res);
-  irn_vrfy_irg(res, irg);
 
   set_ia32_DivMod_flavour(res, dm_flav);
   set_ia32_n_res(res, 2);
@@ -510,7 +506,7 @@ $arch = "ia32";
   "arity"    => "0",
   "remat"    => 1,
   "comment"  => "represents an integer constant",
-  "reg_req"  => { "out" => [ "general_purpose" ] }
+  "reg_req"  => { "out" => [ "general_purpose" ] },
 },
 
 "Cltd" => {
@@ -527,7 +523,7 @@ $arch = "ia32";
   "arity"    => 2,
   "remat"    => 1,
   "comment"  => "construct Load: Load(mem-edge, ptr) = LD ptr",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"  => { "in" => [ "none", "general_purpose" ], "out" => [ "general_purpose" ] },
   "emit"     => '. movl (%s1), %d1\t\t\t/* Load((%s1)) -> %d1 */'
 },
 
@@ -535,7 +531,7 @@ $arch = "ia32";
   "arity"    => 3,
   "remat"    => 1,
   "comment"  => "construct Store: Store(mem-edge, ptr, val) = ST ptr,val",
-  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"  => { "in" => [ "none", "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
   "emit"     => '. movl %s1, (%d1)\t\t\t/* Store(%s1) -> (%d1) */'
 },
 
@@ -576,11 +572,9 @@ $arch = "ia32";
   in[0] = get_Call_mem(old_call);
 
   res = new_ir_node(db, irg, block, op_ia32_Call, mode_T, 1, in);
-  res = optimize_node(res);
-  irn_vrfy_irg(res, irg);
 
-  attr = get_ia32_attr(res);
-  attr->old_ir = old_call;
+  attr         = get_ia32_attr(res);
+  attr->old_ir = get_Call_ptr(old_call);
   attr->n_res  = 1;
 
   return res;
