@@ -70,7 +70,7 @@ static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, int pos, 
   if (is_ia32_irn(irn)) {
     const arch_register_t **slots;
 
-    slots      = get_ia32_out_slots(irn);
+    slots      = get_ia32_slots(irn);
     slots[pos] = reg;
   }
 }
@@ -79,7 +79,7 @@ static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const
   if (is_ia32_irn(irn)) {
     const arch_register_t **slots;
 
-    slots = get_ia32_out_slots(irn);
+    slots = get_ia32_slots(irn);
 
     return slots[pos];
   }

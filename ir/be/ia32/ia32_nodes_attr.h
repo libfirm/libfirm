@@ -23,8 +23,7 @@ typedef struct {
   const arch_register_req_t **in_req;  /**<< register requirements for arguments */
   const arch_register_req_t **out_req; /**<< register requirements for results */
 
-  const arch_register_t **in;          /**<< register slots for arguments */
-  const arch_register_t **out;         /**<< register slots for results */
+  const arch_register_t **slots;          /**<< register slots for assigned registers */
 } asmop_attr;
 
 #endif /* _IA32_NODES_ATTR_H_ */
