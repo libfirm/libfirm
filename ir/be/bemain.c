@@ -22,7 +22,6 @@
 #include "irloop_t.h"
 
 #include "be_t.h"
-#include "beifg.h"
 #include "bechordal_t.h"
 #include "benumb_t.h"
 #include "besched_t.h"
@@ -34,20 +33,20 @@
 #include "becopyoptmain.h"
 #include "becopystat.h"
 #include "bessadestr.h"
-#include "bearch_firm.h"
 #include "benode_t.h"
 #include "beirgmod.h"
 #include "bespillilp.h"
 #include "bespillbelady.h"
 
-#include "beasm_dump_globals.h"
-#include "beasm_asm_gnu.h"
+// #include "beasm_dump_globals.h"
+// #include "beasm_asm_gnu.h"
+
+// #include "bearch_firm.h"
 
 #include "firm2arch.h"
 
 #undef DUMP_BEGIN
-#undef DUMP_PREPARED
-#define DUMP_TRANSFORM
+#define DUMP_PREPARED
 #define DUMP_SCHED
 #define DUMP_SPILL
 #undef DUMP_ALLOCATED
@@ -55,25 +54,47 @@
 #undef DUMP_SSADESTR
 #undef DUMP_END
 
-#undef DO_SSADESTR
-
 #define N_PHASES 256
+
+extern const arch_isa_if_t firm_isa;
+extern const arch_isa_if_t ia32_isa;
+
+const struct {
+  const char *name;
+  const arch_isa_if_t *isa;
+} isa_name_arch_map[] = {
+  { "firm", &firm_isa },
+  { "ia32", &ia32_isa }
+};
+
+#define N_ISAS (sizeof(isa_name_arch_map) / sizeof(isa_name_arch_map[0]))
+
+const arch_isa_if_t *get_backend_isa_if(const char *name) {
+  int i;
+
+  for (i = 0; i < N_ISAS; i++) {
+    if (!strcmp(isa_name_arch_map[i].name, name))
+      return isa_name_arch_map[i].isa;
+  }
+
+  fprintf(stderr, "Unsupported ISA '%s'\n", name);
+  assert(0);
+  return NULL;
+}
 
 void be_init(void)
 {
-	be_sched_init();
-	be_liveness_init();
-	be_numbering_init();
-	be_ra_chordal_init();
-	be_copy_opt_init();
-	copystat_init();
-	phi_class_init();
+  be_sched_init();
+  be_liveness_init();
+  be_numbering_init();
+  be_ra_chordal_init();
+  be_copy_opt_init();
+  copystat_init();
+  phi_class_init();
 }
 
-static be_main_env_t *be_init_env(be_main_env_t *env)
+static be_main_env_t *be_init_env(be_main_env_t *env, const arch_isa_if_t *isa)
 {
-  const arch_isa_if_t *isa = &firm_isa;
-
   obstack_init(&env->obst);
   env->dbg = firm_dbg_register("be.main");
   firm_dbg_set_mask(env->dbg, SET_LEVEL_1);
@@ -87,7 +108,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 
   /* Register the irn handler of the architecture */
   if (isa->irn_handler)
-		arch_env_add_irn_handler(env->arch_env, isa->irn_handler);
+    arch_env_add_irn_handler(env->arch_env, isa->irn_handler);
 
   /*
    * Register the node handler of the back end infrastructure.
@@ -111,46 +132,41 @@ be_init_session_env(be_main_session_env_t *env,
 
 static void prepare_graph(be_main_session_env_t *s)
 {
-	/* set the current graph (this is important for several firm functions) */
-	current_ir_graph = s->irg;
+  /* set the current graph (this is important for several firm functions) */
+  current_ir_graph = s->irg;
 
-	/* Let the isa prepare the graph. */
-	s->main_env->arch_env->isa->prepare_graph(s->irg);
+  /* Let the isa prepare the graph. */
+  s->main_env->arch_env->isa->prepare_graph(s->irg);
 
-	/* Normalize proj nodes. */
-	normalize_proj_nodes(s->irg);
+  /* Normalize proj nodes. */
+  normalize_proj_nodes(s->irg);
 
-	/* Remove critical edges */
-	remove_critical_cf_edges(s->irg);
+  /* Remove critical edges */
+  remove_critical_cf_edges(s->irg);
 
-	/* Compute the dominance information. */
-	free_dom_and_peace(s->irg);
-	compute_doms(s->irg);
+  /* Compute the dominance information. */
+  free_dom_and_peace(s->irg);
+  compute_doms(s->irg);
 
-	/* Compute the dominance frontiers */
-	s->dom_front = be_compute_dominance_frontiers(s->irg);
+  /* Compute the dominance frontiers */
+  s->dom_front = be_compute_dominance_frontiers(s->irg);
 
-	/* Ensure, that the ir_edges are computed. */
-	edges_activate(s->irg);
+  /* Ensure, that the ir_edges are computed. */
+  edges_activate(s->irg);
 
-	/* Compute loop nesting information (for weighting copies) */
-	if (get_irg_loopinfo_state(s->irg) != (loopinfo_valid & loopinfo_cf_consistent))
-		construct_cf_backedges(s->irg);
+  /* Compute loop nesting information (for weighting copies) */
+  if (get_irg_loopinfo_state(s->irg) != (loopinfo_valid & loopinfo_cf_consistent))
+    construct_cf_backedges(s->irg);
 
-	be_check_dominance(s->irg);
+  be_check_dominance(s->irg);
 }
 
-static void be_main_loop(void)
+static void be_main_loop(const arch_isa_if_t *isa)
 {
-	int i, j, m, n;
+	int i, j, n, m;
 	be_main_env_t env;
-	const arch_isa_if_t *isa;
 
-	be_init_env(&env);
-	isa = arch_env_get_isa(env.arch_env);
-
-        /* create required irop's */
-        create_bearch_asm_opcodes();
+	be_init_env(&env, isa);
 
 	/* For all graphs */
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
@@ -168,22 +184,17 @@ static void be_main_loop(void)
 		/* Compute some analyses and prepare the graph for backend use. */
 		prepare_graph(&session);
 
-                transform_firm(irg);
-
-#ifdef DUMP_TRANSFORM
-		dump_ir_block_graph(irg, "-transformed");
-#endif
-
-
 #ifdef DUMP_PREPARED
-		dump_dominator_information(true);
+		dump_dominator_information(1);
 		dump_ir_block_graph(irg, "-prepared");
-		dump_dominator_information(false);
+		dump_dominator_information(0);
 #endif
 
 		/* Schedule the graphs. */
 		list_sched(irg, trivial_selector);
-		be_sched_imm(irg);
+
+// TODO: add architecture dependent schedule magic
+//		be_sched_imm(irg);
 
 #ifdef DUMP_SCHED
 		dump_ir_block_graph_sched(irg, "-sched");
@@ -198,8 +209,6 @@ static void be_main_loop(void)
 		/* Perform the following for each register class. */
 		for(j = 0, m = isa->get_n_reg_class(); j < m; ++j) {
 			be_chordal_env_t *chordal_env;
-			be_ifg_t *ifg;
-
 			const arch_register_class_t *cls = isa->get_reg_class(j);
 			DBG((env.dbg, LEVEL_1, "----> Reg class: %s\n", cls->name));
 
@@ -213,16 +222,24 @@ static void be_main_loop(void)
 			be_numbering(irg);
 			be_check_pressure(&session, cls);
 
+#if 0
+			{
+				FILE *f;
+				char buf[128];
+				ir_snprintf(buf, sizeof(buf), "%F_%s-live.txt", irg, cls->name);
+				if((f = fopen(buf, "wt")) != NULL) {
+					be_liveness_dump(session.irg, f);
+					fclose(f);
+				}
+			}
+#endif
+
 			/* allocation */
 			chordal_env = be_ra_chordal(&session, cls);
 #ifdef DUMP_ALLOCATED
 			dump_allocated_irg(env.arch_env, irg, "");
 #endif
 
-			/* Build the interference graph. */
-			ifg = be_ifg_std_new(chordal_env);
-
-#ifdef DO_SSADESTR
 			/* copy minimization */
 			copystat_collect_cls(chordal_env);
 			be_copy_opt(chordal_env);
@@ -237,9 +254,7 @@ static void be_main_loop(void)
 #ifdef DUMP_SSADESTR
 			dump_allocated_irg(env.arch_env, irg, "-ssadestr");
 #endif
-#endif
 
-			be_ifg_free(ifg);
 			be_ra_chordal_done(chordal_env);
 			be_numbering_done(irg);
 		}
@@ -250,13 +265,26 @@ static void be_main_loop(void)
 	}
 }
 
+/**
+ * Backend main driver. Expects the following arguments:
+ * argc = 2
+ * argv[0] = backend isa name
+ * argv[1] = output file name
+ */
 void be_main(int argc, const char *argv[])
 {
   FILE *asm_output_file;
+  const arch_isa_if_t *isa;
 
-  be_main_loop();
+  /* get requested isa */
+  isa = get_backend_isa_if(argv[0]);
 
-  asm_output_file = fopen(argv[0], "w");
-  firmbe_gen_code(asm_output_file);
-  fclose(asm_output_file);
+  be_main_loop(isa);
+
+  /* generate code if supported by isa */
+  if (isa->codegen) {
+    asm_output_file = fopen(argv[1], "w");
+    isa->codegen(asm_output_file);
+    fclose(asm_output_file);
+  }
 }
