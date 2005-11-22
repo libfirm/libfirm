@@ -43,8 +43,6 @@
 
 // #include "bearch_firm.h"
 
-#include "firm2arch.h"
-
 #undef DUMP_BEGIN
 #define DUMP_PREPARED
 #define DUMP_SCHED
