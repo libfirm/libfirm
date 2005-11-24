@@ -201,7 +201,7 @@ static void free_entity_attrs(entity *ent) {
   }
   if (ent->param_weight) {
     DEL_ARR_F(ent->param_weight);
-    ent->param_weight;
+    ent->param_weight = NULL;
   }
 }
 
