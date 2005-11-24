@@ -23,7 +23,11 @@
 #include "ident_t.h"
 #include "set.h"
 
-typedef const struct set_entry ident_s;
+/* for debugging only, not the real implementation */
+struct ident {
+  char reserved[sizeof(unsigned) + sizeof(size_t)];
+  char data[1];
+};
 
 /** The current ident module implementation. */
 static ident_if_t impl;
@@ -33,7 +37,7 @@ static ident_if_t impl;
  *
  * @param handle   the handle for the set
  * @param str      the string which shall be stored
- * @param len      lenght of str in bytes
+ * @param len      length of str in bytes
  *
  * @return id - a handle for the generated ident
  *

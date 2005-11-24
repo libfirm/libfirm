@@ -35,7 +35,7 @@
  */
 #ifndef _IDENT_TYPEDEF_
 #define _IDENT_TYPEDEF_
-typedef const struct s_ident ident;
+typedef const struct ident ident;
 #endif
 
 /**
