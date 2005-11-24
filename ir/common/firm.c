@@ -20,8 +20,13 @@
 
 # include <stdio.h>
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#endif
+
 # include "ident_t.h"
 # include "firm.h"
+# include "irflag_t.h"
 # include "mangle.h"
 /* init functions are not public */
 # include "tv_t.h"
@@ -42,6 +47,16 @@
 # include "iredges_t.h"
 # include "debugger.h"
 
+#ifdef WITH_LIBCORE
+lc_opt_entry_t *firm_opt_get_root(void)
+{
+	static lc_opt_entry_t *grp = NULL;
+	if(!grp)
+		grp = lc_opt_get_grp(lc_opt_root_grp(), "firm");
+	return grp;
+}
+#endif
+
 void
 init_firm(const firm_parameter_t *param)
 {
@@ -61,6 +76,8 @@ init_firm(const firm_parameter_t *param)
     memcpy(&def_params, param, size);
   }
 
+	/* initialize firm flags */
+	firm_init_flags();
   /* initialize all ident stuff */
   init_ident(def_params.id_if, 1024);
   /* initialize Firm hooks */
@@ -111,8 +128,23 @@ init_firm(const firm_parameter_t *param)
   /* integrated debugger extension */
   firm_init_debugger();
 #endif
-}
 
+#ifdef WITH_LIBCORE
+	/* Process command line and ini file. */
+
+	if(def_params.ini_file) {
+		FILE *f = fopen(def_params.ini_file, "rt");
+		if(f) {
+			lc_opt_from_file(def_params.ini_file, f, NULL);
+			fclose(f);
+		}
+	}
+
+	lc_opt_from_argv(firm_opt_get_root(), def_params.arg_prefix,
+			def_params.argc, def_params.argv, NULL);
+
+#endif
+}
 
 void free_firm(void) {
   int i;
