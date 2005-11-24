@@ -14,7 +14,12 @@
 # include "config.h"
 #endif
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#endif
+
 #include "firm_common.h"
+#include "irtools.h"
 #include "irflag_t.h"
 
 /* DISABLE - don't do this optimization
@@ -117,3 +122,22 @@ void firm_show_flags(void) {
 #include "irflag_t.def"
 }
 #endif
+
+#ifdef WITH_LIBCORE
+static const lc_opt_table_entry_t firm_flags[] = {
+#define I_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
+#define E_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
+#include "irflag_t.def"
+#undef I_FLAG
+#undef E_FLAG
+	{ NULL }
+};
+#endif
+
+void firm_init_flags(void)
+{
+#ifdef WITH_LIBCORE
+	lc_opt_entry_t *grp = lc_opt_get_grp(firm_opt_get_root(), "opt");
+	lc_opt_add_table(grp, firm_flags);
+#endif
+}
