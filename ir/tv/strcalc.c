@@ -32,6 +32,7 @@
 #include <limits.h>   /* definition of LONG_MIN, used in sc_get_val_from_long */
 
 #include "strcalc.h"
+#include "xmalloc.h"
 
 /*
  * local definitions and macros
@@ -1600,8 +1601,8 @@ void init_strcalc(int precision)
     calc_buffer_size = (precision / 2);
     max_value_size   = (precision / 4);
 
-    calc_buffer   = malloc(calc_buffer_size+1 * sizeof(char));
-    output_buffer = malloc(bit_pattern_size+1 * sizeof(char));
+    calc_buffer   = xmalloc(calc_buffer_size+1 * sizeof(char));
+    output_buffer = xmalloc(bit_pattern_size+1 * sizeof(char));
 
     if (calc_buffer == NULL || output_buffer == NULL) {
       assert(0 && "malloc failed");
