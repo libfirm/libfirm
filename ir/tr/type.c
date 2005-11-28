@@ -90,6 +90,11 @@ static ident *value_ress_suffix = NULL;
 /** The default calling convention for method types. */
 static unsigned default_cc_mask;
 
+/* return the default calling convention for method types */
+unsigned get_default_cc_mask(void) {
+  return default_cc_mask;
+}
+
 /* Initialize the type module. */
 void firm_init_type(dbg_info *builtin_db, unsigned def_cc_mask)
 {
