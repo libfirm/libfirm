@@ -283,4 +283,9 @@ void save_optimization_state(optimization_state_t *state);
  */
 void restore_optimization_state(const optimization_state_t *state);
 
+/**
+ * Switches ALL optimizations off.
+ */
+void all_optimizations_off(void);
+
 #endif /* _IRFLAG_H_ */

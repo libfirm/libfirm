@@ -39,29 +39,31 @@ extern optimization_state_t libFIRM_verb;
 
 extern int firm_verbosity_level;
 
+/** initialises the flags */
+void firm_init_flags(void);
+
 /* generate the getter functions for external access */
-#define E_FLAG(name, value, def)					\
-static INLINE int _get_opt_##name(void) {			\
-  return libFIRM_opt & irf_##name;					\
-}													\
-static INLINE int get_opt_##name##_verbose(void) {	\
-  return libFIRM_verb & irf_##name;					\
+#define E_FLAG(name, value, def)                    \
+static INLINE int _get_opt_##name(void) {           \
+  return libFIRM_opt & irf_##name;                  \
+}                                                   \
+static INLINE int get_opt_##name##_verbose(void) {  \
+  return libFIRM_verb & irf_##name;                 \
 }
 
 /* generate the getter functions for internal access */
-#define I_FLAG(name, value, def)						\
-	static INLINE int get_opt_##name(void) {			\
-	return libFIRM_opt & irf_##name;					\
-}														\
-	static INLINE int get_opt_##name##_verbose(void) {	\
-	return libFIRM_verb & irf_##name;					\
+#define I_FLAG(name, value, def)                   \
+static INLINE int get_opt_##name(void) {           \
+  return libFIRM_opt & irf_##name;                 \
+}                                                  \
+static INLINE int get_opt_##name##_verbose(void) { \
+  return libFIRM_verb & irf_##name;                \
 }
 
 #include "irflag_t.def"
 
 #undef I_FLAG
 #undef E_FLAG
-
 
 static INLINE int _get_firm_verbosity (void) {
 	return firm_verbosity_level;

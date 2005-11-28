@@ -14,6 +14,8 @@
 # include "config.h"
 #endif
 
+#include <stdio.h>
+
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #endif
@@ -115,11 +117,24 @@ void restore_optimization_state(const optimization_state_t *state)
   libFIRM_opt = *state;
 }
 
+/* Switches ALL optimizations off */
+void all_optimizations_off(void)
+{
+  libFIRM_opt = 0;
+}
+
 #ifdef _DEBUG
-void firm_show_flags(void) {
-#define E_FLAG(name, value, def) printf(#name " = %s\n", get_opt_##name() ? "ON" : "OFF");
-#define I_FLAG(name, value, def) printf(#name " = %s\n", get_opt_##name() ? "ON" : "OFF");
+/* only for debugging */
+void firm_show_flags(FILE *f) {
+  if (! f)
+    f = stdout;
+  printf("Firm optimization state:\n");
+#define E_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
+#define I_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
 #include "irflag_t.def"
+#undef I_FLAG
+#undef E_FLAG
+  printf("\n");
 }
 #endif
 
