@@ -814,6 +814,9 @@ typedef enum {
                                         in a special way. */
 } calling_convention;
 
+/** return the default calling convention for method types */
+unsigned get_default_cc_mask(void);
+
 /**
  * check for the CDECL calling convention
  */
