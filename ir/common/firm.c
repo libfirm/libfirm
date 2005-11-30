@@ -76,6 +76,10 @@ init_firm(const firm_parameter_t *param)
     memcpy(&def_params, param, size);
   }
 
+#ifdef WITH_LIBCORE
+  lc_opt_init();
+#endif
+
 	/* initialize firm flags */
 	firm_init_flags();
   /* initialize all ident stuff */
