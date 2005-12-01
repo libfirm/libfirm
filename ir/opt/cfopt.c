@@ -636,7 +636,6 @@ void optimize_cf(ir_graph *irg) {
         set_End_keepalive(end, i, new_Bad());
     }
   }
-
   irg_block_walk_graph(current_ir_graph, NULL, remove_senseless_conds, NULL);
 
   /* Use block visited flag to mark non-empty blocks. */
@@ -652,7 +651,7 @@ void optimize_cf(ir_graph *irg) {
   in[0] = get_nodes_block(end);
   inc_irg_visited(current_ir_graph);
 
-  for (i = 0; i < get_End_n_keepalives(end); i++) {
+  for (i = 0, n = get_End_n_keepalives(end); i < n; i++) {
     ir_node *ka = get_End_keepalive(end, i);
 
     if (irn_not_visited(ka)) {
@@ -664,14 +663,16 @@ void optimize_cf(ir_graph *irg) {
         ARR_APP1 (ir_node *, in, ka);
       } else if (get_irn_op(ka) == op_Phi) {
         mark_irn_visited(ka);
-        ARR_APP1 (ir_node *, in, ka);
+        if (! is_Block_dead(get_nodes_block(ka)))
+          ARR_APP1 (ir_node *, in, ka);
       } else if (get_irn_op(ka) == op_IJmp) {
         mark_irn_visited(ka);
-        ARR_APP1 (ir_node *, in, ka);
+        if (! is_Block_dead(get_nodes_block(ka)))
+          ARR_APP1 (ir_node *, in, ka);
       }
     }
   }
-  /* DEL_ARR_F(end->in);   GL @@@ tut nicht ! */
+  DEL_ARR_F(end->in);    /* GL @@@ tut nicht! MMB Warum? */
   end->in = in;
 
 
