@@ -181,3 +181,25 @@ _arr_resize (void *elts, int nelts, size_t eltsize)
 
   return dp->v.elts;
 }
+
+#ifdef DEBUG_libfirm
+/**
+ * This function returns the length of a flexible array.
+ * Do NOT use is in code, use ARR_LEN() macro!
+ * This function is intended to be called from a debugger.
+ */
+int array_len(void *arr) {
+  return ARR_LEN(arr);
+}
+
+/**
+ * This function returns the array descriptor of a flexible array.
+ * Do NOT use is in code!.
+ * This function is intended to be called from a debugger.
+ */
+_arr_descr *array_descr(void *arr) {
+  if (! arr)
+    return NULL;
+  return ((_arr_descr *)(void *)((char *)(arr) - _ARR_ELTS_OFFS));
+}
+#endif /* DEBUG_libfirm */
