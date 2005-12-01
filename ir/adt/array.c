@@ -200,6 +200,6 @@ int array_len(void *arr) {
 _arr_descr *array_descr(void *arr) {
   if (! arr)
     return NULL;
-  return ((_arr_descr *)(void *)((char *)(arr) - _ARR_ELTS_OFFS));
+  return _ARR_DESCR(arr);
 }
 #endif /* DEBUG_libfirm */
