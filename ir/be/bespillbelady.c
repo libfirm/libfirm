@@ -4,8 +4,17 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #include "obst.h"
 #include "set.h"
 #include "pset.h"
@@ -186,9 +195,11 @@ static INLINE int workset_contains(const workset_t *ws, const ir_node *val) {
 
 
 static int is_mem_phi(const ir_node *irn, void *data) {
+	workset_t *sws;
 	ir_node *blk = get_nodes_block(irn);
+
 	DBG((dbg, DBG_SPILL, "Is %+F a mem-phi?\n", irn));
-	workset_t *sws = ((block_info_t *)get_irn_link(blk))->ws_start;
+	sws = ((block_info_t *)get_irn_link(blk))->ws_start;
 	DBG((dbg, DBG_SPILL, "  %d\n", !workset_contains(sws, irn)));
 	return !workset_contains(sws, irn);
 }
@@ -400,18 +411,19 @@ static void decide(ir_node *blk, void *env) {
 }
 
 /**
- * 'decide' is block-local and makes assumtions
+ * 'decide' is block-local and makes assumptions
  * about the set of live-ins. Thus we must adapt the
  * live-outs to the live-ins at each block-border.
  */
 static void fix_block_borders(ir_node *blk, void *env) {
 	belady_env_t *bel = env;
 	int i, max;
+	workset_t *wsb;
 
 	DBG((dbg, DBG_FIX, "\n"));
 	DBG((dbg, DBG_FIX, "Fixing %+F\n", blk));
 
-	workset_t *wsb = ((block_info_t *)get_irn_link(blk))->ws_start;
+	wsb = ((block_info_t *)get_irn_link(blk))->ws_start;
 
 	/* process all pred blocks */
 	for (i=0, max=get_irn_arity(blk); i<max; ++i) {
@@ -464,11 +476,12 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 
 	irg_walk_graph(irg, rescue_used_reloads, NULL, bel->reloads);
 	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads)) {
+		ir_node *spill;
 		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
 
-		ir_node *spill = get_irn_n(irn, 0);
+		spill = get_irn_n(irn, 0);
 
-		/* remove reaload */
+		/* remove reload */
 		set_irn_n(irn, 0, new_Bad());
 		sched_remove(irn);
 
@@ -482,30 +495,30 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 }
 
 void be_spill_belady(const be_main_session_env_t *session, const arch_register_class_t *cls) {
+	belady_env_t bel;
 	dbg = firm_dbg_register("ir.be.spillbelady");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	/* init belady env */
-	belady_env_t *bel = alloca(sizeof(*bel));
-	obstack_init(&bel->ob);
-	bel->factory = session->main_env->node_factory;
-	bel->arch = session->main_env->arch_env;
-	bel->cls = cls;
-	bel->n_regs = arch_register_class_n_regs(cls);
-	bel->ws = new_workset(&bel->ob, bel);
-	bel->uses = be_begin_uses(session->irg, session->main_env->arch_env, cls);
-	bel->senv = be_new_spill_env(dbg, session, cls, is_mem_phi, NULL);
-	bel->reloads = pset_new_ptr_default();
+	obstack_init(&bel.ob);
+	bel.factory = session->main_env->node_factory;
+	bel.arch = session->main_env->arch_env;
+	bel.cls = cls;
+	bel.n_regs = arch_register_class_n_regs(cls);
+	bel.ws = new_workset(&bel.ob, &bel);
+	bel.uses = be_begin_uses(session->irg, session->main_env->arch_env, cls);
+	bel.senv = be_new_spill_env(dbg, session, cls, is_mem_phi, NULL);
+	bel.reloads = pset_new_ptr_default();
 
 	/* do the work */
-	irg_block_walk_graph(session->irg, decide, NULL, bel);
-	irg_block_walk_graph(session->irg, fix_block_borders, NULL, bel);
-	be_insert_spills_reloads(bel->senv, bel->reloads);
-	remove_unused_reloads(session->irg, bel);
+	irg_block_walk_graph(session->irg, decide, NULL, &bel);
+	irg_block_walk_graph(session->irg, fix_block_borders, NULL, &bel);
+	be_insert_spills_reloads(bel.senv, bel.reloads);
+	remove_unused_reloads(session->irg, &bel);
 
 	/* clean up */
-	del_pset(bel->reloads);
-	be_delete_spill_env(bel->senv);
-	be_end_uses(bel->uses);
-	obstack_free(&bel->ob, NULL);
+	del_pset(bel.reloads);
+	be_delete_spill_env(bel.senv);
+	be_end_uses(bel.uses);
+	obstack_free(&bel.ob, NULL);
 }

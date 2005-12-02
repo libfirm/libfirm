@@ -188,9 +188,10 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 		foreach_out_edge(irn, e) {
 			ir_node *user = e->src;
 			if (is_Phi(user) && !pset_find_ptr(senv->mem_phis, user)) {
-					DBG((senv->dbg, LEVEL_1, " non-mem-phi user %+F\n", user));
-					ir_node *use_bl = get_nodes_block(user);
-					be_add_reload_on_edge(senv, irn, use_bl, e->pos); /* (1) */
+				ir_node *use_bl;
+				DBG((senv->dbg, LEVEL_1, " non-mem-phi user %+F\n", user));
+				use_bl = get_nodes_block(user);
+				be_add_reload_on_edge(senv, irn, use_bl, e->pos); /* (1) */
 			}
 		}
 	}

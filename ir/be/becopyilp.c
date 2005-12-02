@@ -3,6 +3,7 @@
  * Date:		17.05.2005
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * CVS-ID:      $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -589,6 +590,7 @@ static INLINE int get_y_var_idx(problem_instance_t *pi, int nnr1, int nnr2) {
 		return res;
 
 	assert(0 && "One of them must work");
+  return -1;
 }
 
 static void check_ecc_and_add_cut(problem_instance_t *pi, ir_node **path, int length, pset *remain, ir_node *tgt) {
@@ -670,7 +672,7 @@ static void path_cstr_for_classes_walker(ir_node *irn, void *env) {
 	problem_instance_t *pi = env;
 	be_chordal_env_t *cenv;
 	int i, o, max;
-	ir_node *m;
+	ir_node *m, **cls;
 	pset *class = get_phi_class(irn);
 	if (!class || pset_find_ptr(pi->done, class))
 		return;
@@ -679,7 +681,7 @@ static void path_cstr_for_classes_walker(ir_node *irn, void *env) {
 
 	/* pset to array */
 	max = pset_count(class);
-	ir_node **cls = alloca(max * sizeof(*cls));
+	cls = alloca(max * sizeof(*cls));
 	for(i=0, m = pset_first(class); m; i++, m = pset_next(class)) {
 		DBG((dbg, LEVEL_1, " class member: %+F\n", m));
 		cls[i] = m;
@@ -887,8 +889,10 @@ static void pi_set_start_sol(problem_instance_t *pi) {
  * Invoke a solver
  */
 static void pi_solve_ilp(problem_instance_t *pi) {
+  double lower_bound;
+
 	pi_set_start_sol(pi);
-	double lower_bound = co_get_lower_bound(pi->co) - co_get_inevit_copy_costs(pi->co);
+	lower_bound = co_get_lower_bound(pi->co) - co_get_inevit_copy_costs(pi->co);
 	lpp_set_bound(pi->curr_lp, lower_bound);
 	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
 //	lpp_solve_cplex(pi->curr_lp);

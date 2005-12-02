@@ -68,7 +68,9 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
 	int costs, costs_init=-1, costs_heur=-1, costs_ilp_5_sec=-1, costs_ilp_30_sec=-1, costs_ilp=-1;
 	int lower_bound;
+  int was_optimal = 0;
 	color_save_t saver;
+
 	saver.arch_env = chordal_env->session_env->main_env->arch_env;
 	saver.chordal_env = chordal_env;
 	saver.saved_colors = pmap_create();
@@ -97,11 +99,13 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	save_colors(&saver);
 
 #ifdef DO_HEUR
-	lc_timer_t *timer = lc_timer_register("heur", NULL);
-	lc_timer_reset_and_start(timer);
-	co_heur_opt(co);
-	lc_timer_stop(timer);
-	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+  {
+	  lc_timer_t *timer = lc_timer_register("heur", NULL);
+	  lc_timer_reset_and_start(timer);
+	  co_heur_opt(co);
+	  lc_timer_stop(timer);
+	  copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+  }
 #ifdef DO_STAT
 	costs = co_get_copy_costs(co);
 	costs_heur = costs;
@@ -110,8 +114,6 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 #endif
 	assert(lower_bound == -1 || costs_heur == -1 || lower_bound <= costs_heur);
 #endif
-
-	int was_optimal = 0;
 
 #ifdef DO_ILP_5_SEC
 	load_colors(&saver);
