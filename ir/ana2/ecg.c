@@ -16,6 +16,8 @@
 # include "config.h"
 #endif
 
+#include <assert.h>
+
 /**
    Erweiterter Aufrufgraph.
 */
@@ -1263,6 +1265,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.20  2005/12/05 12:01:06  beck
+  needed include added
+
   Revision 1.19  2005/03/22 13:55:51  liekweg
   Need to initialise typalise now
 
