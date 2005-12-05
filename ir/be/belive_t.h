@@ -7,7 +7,7 @@
 #ifndef _BELIVE_T_H
 #define _BELIVE_T_H
 
-#include "config.h"
+#include "firm_config.h"
 
 #include "irgraph_t.h"
 #include "iredges_t.h"

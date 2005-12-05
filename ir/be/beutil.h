@@ -2,11 +2,11 @@
 #ifndef _BEUTIL_H
 #define _BEUTIL_H
 
+#include "firm_config.h"
+
 #include <stdio.h>
 
 #include "irnode.h"
-#include "config.h"
-
 #include "bearch.h"
 
 /** Undefine this to disable debugging mode. */
