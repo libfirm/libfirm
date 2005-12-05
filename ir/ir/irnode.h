@@ -1084,6 +1084,7 @@ void *get_irn_generic_attr(ir_node *node);
 void    dump_irn(ir_node *n);
 
 #include "ident.h"
+#include <stdio.h>
 
 #ifdef __GNUC__
 /* GNU C has the __FUNCTION__ extension */
