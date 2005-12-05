@@ -16,6 +16,8 @@
 #  include "config.h"
 # endif
 
+#include <assert.h>
+
 /*
  pto_ctx: Manage context-sensitivity markers
 */
@@ -85,6 +87,9 @@ ctx_info_t *set_curr_ctx (ctx_info_t *ctx)
 
 /*
   $Log$
+  Revision 1.6  2005/12/05 12:19:54  beck
+  added missing include <assert.h> (not anymore included in libFirm)
+
   Revision 1.5  2005/01/14 13:37:55  liekweg
   Insert purpose descr
 

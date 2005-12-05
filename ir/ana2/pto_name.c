@@ -24,7 +24,11 @@
 # include "pto_name.h"
 # include "pto_util.h"
 
+#include <assert.h>
+
+#ifdef HAVE_STRING_H
 # include <string.h>            /* for memcpy */
+#endif
 # include <obstack.h>
 # include <errno.h>
 
@@ -654,6 +658,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.16  2005/12/05 12:19:54  beck
+  added missing include <assert.h> (not anymore included in libFirm)
+
   Revision 1.15  2005/03/02 10:14:38  beck
   placed a return on all execution pathes
 

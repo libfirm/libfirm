@@ -20,8 +20,14 @@
  pto_init: Initialisation Functions
 */
 
+# include <assert.h>
 # include <obstack.h>
+#ifdef HAVE_STRING_H
 # include <string.h>
+#endif
+#ifdef HAVE_STRINGS_H
+# include <strings.h>
+#endif
 
 # include "pto.h"
 # include "pto_init.h"
@@ -430,6 +436,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.20  2005/12/05 12:19:54  beck
+  added missing include <assert.h> (not anymore included in libFirm)
+
   Revision 1.19  2005/06/17 17:42:32  beck
   added doxygen docu
   fixed (void) function headers
