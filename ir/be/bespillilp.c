@@ -8,6 +8,10 @@
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <math.h>
 
 #include "hashptr.h"
