@@ -197,6 +197,16 @@ AC_ARG_ENABLE(libcore,
 fi])
 AC_SUBST(enable_libcore)
 
+dnl enable wchar_t support for identifiers
+dnl --------------------------------
+AC_ARG_ENABLE(wchar_support,
+[  --enable-wchar-support  enable wchar_t support for identifiers (needed for java)],
+[if test "$enableval"=yes; then
+  AC_DEFINE(FIRM_ENABLE_WCHAR)
+fi])
+AC_SUBST(enable_wchar_support)
+
+
 dnl disable external effects in XML
 dnl -------------------------------
 AC_MSG_CHECKING([for using external effects in xml2])
