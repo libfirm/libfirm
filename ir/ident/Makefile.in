@@ -24,7 +24,7 @@ SOURCES += Makefile.in ident.c ident_t.h
 
 include $(topdir)/MakeRules
 
-CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common
+CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(topdir)/ir/config
 
 include $(top_srcdir)/MakeTargets
 
