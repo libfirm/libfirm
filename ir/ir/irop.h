@@ -25,6 +25,8 @@
 #define _IROP_H_
 
 #include "firm_types.h"
+
+#include <stdio.h>
 #include "ident.h"
 
 /** The allowed parities */
