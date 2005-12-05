@@ -19,7 +19,8 @@
      not quite complete
 ***/
 
-# include "exc.h"
+#include <assert.h>
+#include "exc.h"
 
 static char* exc_strings [] = {
   "Invalid",					/* invalid */
