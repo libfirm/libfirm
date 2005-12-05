@@ -31,10 +31,10 @@ void init_ident (ident_if_t *id_if, int initial_n_idents);
 void finish_ident (void);
 
 /** The hash function of the internal ident module implementation. */
-#define ID_HASH(str, len) \
-  (((  ((unsigned char *)(str))[0] * 33 \
-     + ((unsigned char *)(str))[(len)>>1]) * 31 \
-    + ((unsigned char *)(str))[(len)-1]) * 9 \
+#define ID_HASH(type, str, len) \
+  (((  ((type *)(str))[0] * 33 \
+     + ((type *)(str))[(len)>>1]) * 31 \
+    + ((type *)(str))[(len)-1]) * 9 \
    + (len))
 
 # endif /* _IDENT_T_H_ */

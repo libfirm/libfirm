@@ -20,6 +20,17 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
+#ifdef FIRM_ENABLE_WCHAR
+#include <wchar.h>
+#endif
+
 #include "ident_t.h"
 #include "set.h"
 
@@ -49,7 +60,7 @@ static ident *set_new_id_from_chars(void *handle, const char *str, int len)
 
   /* GL: Who added this assert?  And why? */
   //assert(len > 0);
-  return (ident *)set_hinsert0(id_set, str, len, ID_HASH(str, len));
+  return (ident *)set_hinsert0(id_set, str, len, ID_HASH(unsigned char, str, len));
 }
 
 /**
@@ -121,6 +132,111 @@ static int def_get_id_strlen(void *handle, ident *id)
   return strlen(impl.get_id_str(handle, id));
 }
 
+#ifdef FIRM_ENABLE_WCHAR
+/**
+ * Stores a wide character string in the ident module and returns a
+ * handle for the string.
+ *
+ * @param handle   the handle for the set
+ * @param wstr     the wide character string which shall be stored
+ * @param len      length of wstr
+ *
+ * @return id - a handle for the generated ident
+ *
+ * Default implementation using libfirm sets.
+ */
+static ident *set_new_id_from_wchars(void *handle, const wchar_t *wstr, int len)
+{
+  set *id_set = handle;
+  wchar_t *tmp;
+
+  /* can't use hinsert0 here, so copy and add a 0 */
+  tmp = alloca((len + 1) * sizeof(*tmp));
+  memcpy(tmp, wstr, len * sizeof(*tmp));
+  tmp[len] = L'\0';
+
+  return (ident *)set_hinsert(id_set, tmp, (len + 1) * sizeof(wchar_t), ID_HASH(wchar_t, tmp, len));
+}
+
+/**
+ * Stores a wide character string in the ident module and
+ * returns a handle for the string.
+ *
+ * @param handle   the handle for the set
+ * @param wstr     the wide character string which shall be stored
+ *
+ * Default implementation using libfirm sets.
+ */
+static ident *set_new_id_from_wcs(void *handle, const wchar_t *wstr)
+{
+  assert(wstr);
+  return (ident *)set_new_id_from_wchars(handle, wstr, wcslen(wstr));
+}
+
+/**
+ * Returns a wide character string represented by an ident.
+ *
+ * @param handle   the handle for the set
+ * @param id       the ident
+ *
+ * Default implementation using libfirm sets.
+ */
+static const wchar_t *set_get_id_wcs(void *handle, ident *id)
+{
+  struct set_entry *entry = (struct set_entry *)id;
+
+  return (const wchar_t *)entry->dptr;
+}
+
+/**
+ * Returns the length of the string represented by an ident.
+ *
+ * @param handle   the handle for the set
+ * @param id       the ident
+ *
+ * Default implementation using libfirm sets.
+ */
+static int set_get_id_wcslen(void *handle, ident *id)
+{
+  struct set_entry *entry = (struct set_entry *)id;
+
+  /* len + \0 is stored for wchar_t */
+  return entry->size / sizeof(wchar_t) - 1;
+}
+
+/**
+ * Default implementation if no new_id_from_wcs() is provided.
+ */
+static ident *def_new_id_from_wcs(void *handle, const wchar_t *wstr)
+{
+  return impl.new_id_from_wchars(handle, wstr, wcslen(wstr));
+}
+
+/**
+ * Default implementation if no new_id_from_wchars() is provided.
+ */
+static ident *def_new_id_from_wchars(void *handle, const wchar_t *wstr, int len)
+{
+  return impl.new_id_from_chars(handle, (const char *)wstr, (len + 1) * sizeof(wchar_t));
+}
+
+/**
+ * Default implementation if no get_id_wcs() is provided.
+ */
+static const wchar_t *def_get_id_wcs(void *handle, ident *id)
+{
+  return (const wchar_t *)impl.get_id_str(handle, id);
+}
+
+/**
+ * Default implementation if no get_id_wcslen() is provided.
+ */
+static int def_get_id_wcslen(void *handle, ident *id)
+{
+  return wcslen(impl.get_id_wcs(handle, id));
+}
+#endif /* FIRM_ENABLE_WCHAR */
+
 /* Initialize the ident module. */
 void init_ident(ident_if_t *id_if, int initial_n_idents)
 {
@@ -131,13 +247,30 @@ void init_ident(ident_if_t *id_if, int initial_n_idents)
       impl.new_id_from_str = def_new_id_from_str;
     if (! impl.get_id_strlen)
       impl.get_id_strlen = def_get_id_strlen;
+
+#ifdef FIRM_ENABLE_WCHAR
+    if (! impl.new_id_from_wcs)
+      impl.new_id_from_wcs = def_new_id_from_wcs;
+    if (! impl.new_id_from_wchars)
+      impl.new_id_from_wchars = def_new_id_from_wchars;
+    if (! impl.get_id_wcs)
+      impl.get_id_wcs = def_get_id_wcs;
+    if (! impl.get_id_wcslen)
+      impl.get_id_wcslen = def_get_id_wcslen;
+#endif /* FIRM_ENABLE_WCHAR */
   }
   else {
-   impl.new_id_from_str   = set_new_id_from_str;
-   impl.new_id_from_chars = set_new_id_from_chars;
-   impl.get_id_str        = set_get_id_str;
-   impl.get_id_strlen     = set_get_id_strlen;
-   impl.finish_ident      = set_finish_ident;
+   impl.new_id_from_str    = set_new_id_from_str;
+   impl.new_id_from_chars  = set_new_id_from_chars;
+   impl.get_id_str         = set_get_id_str;
+   impl.get_id_strlen      = set_get_id_strlen;
+   impl.finish_ident       = set_finish_ident;
+#ifdef FIRM_ENABLE_WCHAR
+   impl.new_id_from_wcs    = set_new_id_from_wcs;
+   impl.new_id_from_wchars = set_new_id_from_wchars;
+   impl.get_id_wcs         = set_get_id_wcs;
+   impl.get_id_wcslen      = set_get_id_wcslen;
+#endif /* FIRM_ENABLE_WCHAR */
 
    impl.handle = new_set(memcmp, initial_n_idents);
   }
@@ -195,12 +328,33 @@ int id_contains_char(ident *id, char c)
   return strchr(get_id_str(id), c) != NULL;
 }
 
-int print_id (ident *id)
+#ifdef FIRM_ENABLE_WCHAR
+
+ident *new_id_from_wcs (const wchar_t *str)
 {
-  return printf("%s", get_id_str(id));
+  assert(str);
+  return impl.new_id_from_wcs(impl.handle, str);
 }
 
-int fprint_id (FILE *F, ident *id)
+ident *new_id_from_wchars (const wchar_t *str, int len)
 {
-  return fprintf(F, "%s", get_id_str(id));
+  assert(len > 0);
+  return impl.new_id_from_wchars(impl.handle, str, len);
 }
+
+const wchar_t *get_id_wcs(ident *id)
+{
+  return impl.get_id_wcs(impl.handle, id);
+}
+
+int  get_id_wcslen(ident *id)
+{
+  return impl.get_id_wcslen(impl.handle, id);
+}
+
+int id_contains_wchar (ident *id, wchar_t c)
+{
+  return wcschr(get_id_wcs(id), c) != NULL;
+}
+
+#endif /* FIRM_ENABLE_WCHAR */

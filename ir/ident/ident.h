@@ -16,14 +16,14 @@
  *
  * Identifiers are used in the firm library. This is the interface to it.
  */
+#ifndef _IDENT_H_
+#define _IDENT_H_
 
+#include "firm_config.h"
 
-# ifndef _IDENT_H_
-# define _IDENT_H_
-
-# include <stdio.h>
-# include <assert.h>
-# include "firm_common.h"
+#ifdef FIRM_ENABLE_WCHAR
+#include <wchar.h>
+#endif
 
 /* Identifiers */
 
@@ -42,6 +42,9 @@ typedef const struct ident ident;
  * The ident module interface.
  */
 typedef struct _ident_if_t {
+  /** The handle. */
+  void *handle;
+
   /**
    * Store a string and create an ident.
    * This function may be NULL, new_id_from_chars()
@@ -78,9 +81,43 @@ typedef struct _ident_if_t {
    */
   void (*finish_ident)(void *handle);
 
-  /** The handle. */
-  void *handle;
+#ifdef FIRM_ENABLE_WCHAR
+  /**
+   * Store a wide character string and create an ident.
+   * This function may be NULL, new_id_from_wchars()
+   * is then used to emulate it's behavior.
+   *
+   * @param wstr - the string which shall be stored
+   */
+  ident *(*new_id_from_wcs)(void *handle, const wchar_t *wstr);
 
+  /**
+   * Store a wide character string and create an ident.
+   * This function may be NULL, new_id_from_chars() is then used appropriate.
+   * Beware: the string might not be stored at a right alignment!
+   *
+   * @param wstr - the wide character string which shall be stored
+   * @param len  - the length of the string
+   */
+  ident *(*new_id_from_wchars)(void *handle, const wchar_t *wstr, int len);
+
+  /**
+   * Returns a wide character string represented by an ident.
+   * This function may be NULL, get_id_str() is then used.
+   * This assume that the strings are stored at an address aligned
+   * for wchar_t, so beware!
+   */
+  const wchar_t *(*get_id_wcs)(void *handle, ident *id);
+
+  /**
+   * Returns the length of the string represented by an ident.
+   * This function may be NULL, get_id_wcs() is then used
+   * to emulate it's behavior.
+   *
+   * @param id - the ident
+   */
+  int  (*get_id_wcslen)(void *handle, ident *id);
+#endif
 } ident_if_t;
 
 /**
@@ -136,6 +173,7 @@ const char *get_id_str  (ident *id);
  * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
 int  get_id_strlen(ident *id);
+
 /**
  * Returns true if prefix is a prefix of an ident.
  *
@@ -176,29 +214,71 @@ int id_is_suffix (ident *suffix, ident *id);
  */
 int id_contains_char (ident *id, char c);
 
+#ifdef FIRM_ENABLE_WCHAR
 /**
- * Prints the ident to stdout.
+ *  Store a wide character string and create an ident.
  *
- * @param id - The ident to be printed.
+ *  Stores a string in the ident module and returns a handle for the string.
  *
- * @return
- *    number of bytes written
+ *  Copies the string. @p str must be zero terminated
  *
- * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix(), fprint_id()
+ * @param str - the wide character string which shall be stored
+ *
+ * @return id - a handle for the generated ident
+ *
+ * @see get_id_wcs(), get_id_wcs()
  */
-int print_id (ident *id);
+ident *new_id_from_wcs (const wchar_t *str);
+
+/** Store a wide character string and create an ident.
+ *
+ * Stores a string in the ident module and returns a handle for the string.
+ * Copies the string. This version takes non-zero-terminated strings.
+ *
+ * @param wstr - the wide character string (or whatever) which shall be stored
+ * @param len  - the length of string
+ *
+ * @return id - a handle for the generated ident
+ *
+ * @see new_id_from_str(), get_id_strlen()
+ */
+ident *new_id_from_wchars (const wchar_t *str, int len);
 
 /**
- * Prints the ident to the file passed.
+ * Returns a wide character string represented by an ident.
  *
- * @param F  - file pointer to print the ident to.
- * @param id - The ident to print and the file.
+ * Returns the string represented by id. This string is
+ * NULL terminated. The string may not be changed.
  *
- * @return
- *    number of btes written
+ * @param id - the ident
  *
- * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix(), print_id()
+ * @return cp - a string
+ *
+ * @see new_id_from_wcs(), new_id_from_wchars(), get_id_wcslen()
  */
-int fprint_id (FILE *F, ident *id);
+const wchar_t *get_id_wcs(ident *id);
+
+/**
+ * Returns the length of the wide character string represented by an ident.
+ *
+ * @param id - the ident
+ *
+ * @return len - the length of the string
+ *
+ * @see new_id_from_wcs(), new_id_from_wchars(), get_id_wcs()
+ */
+int  get_id_wcslen(ident *id);
+
+/**
+ * Return true if an ident contains a given character.
+ *
+ * @param id     - the ident
+ * @param c      - the character
+ *
+ * @see new_id_from_wcs(), new_id_from_chars(), get_id_str()
+ */
+int id_contains_wchar (ident *id, wchar_t c);
+
+#endif /* FIRM_ENABLE_WCHAR */
 
 # endif /* _IDENT_H_ */
