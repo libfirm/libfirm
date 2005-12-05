@@ -14,6 +14,8 @@
 #define _TV_T_H_
 
 #include "firm_config.h"
+
+#include <assert.h>
 #include "entity.h"
 #include "irmode.h"
 #include "tv.h"
