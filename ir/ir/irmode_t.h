@@ -18,6 +18,7 @@
 # ifndef _IRMODE_T_H_
 # define _IRMODE_T_H_
 
+# include <assert.h>
 # include "irmode.h"
 # include "tv.h"
 
