@@ -10,6 +10,8 @@
 # include "config.h"
 #endif
 
+#include <assert.h>
+
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif

@@ -17,10 +17,11 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
+
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
-
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -120,9 +121,9 @@ static ir_node *normalize_values_type(type *totype, ir_node *pred) {
       ir_node *new_cast;
       int i, n_subtypes = get_class_n_subtypes(fromtype);
       for (i = 0; i < n_subtypes && !new_type; ++i) {
-	type *new_sub = get_class_subtype(fromtype, i);
-	if (is_superclass_of(new_sub, totype))
-	  new_type = new_sub;
+        type *new_sub = get_class_subtype(fromtype, i);
+        if (is_superclass_of(new_sub, totype))
+          new_type = new_sub;
       }
       assert(new_type);
       fromtype = new_type;

@@ -23,13 +23,19 @@
 #include "config.h"
 #endif
 
-# include <stdio.h>
+#include <assert.h>
 
+#ifdef HAVE_STDIO_H
+# include <stdio.h>
+#endif
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
 #ifdef HAVE_MALLOC_H
 # include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
 #endif
 
 # include "st.h"
