@@ -52,6 +52,7 @@ static int seqno_cmp(const void *elt, const void *key, size_t size)
 
   return (e1->filename != e2->filename) | (e1->lineno - e2->lineno);
 }
+
 /*
  * Create a new sequence number from a filename and a line number.
  */
@@ -60,6 +61,19 @@ seqno_t firm_seqno_enter(const char *filename, unsigned lineno)
   struct sn_entry key;
 
   key.filename = new_id_from_str(filename);
+  key.lineno   = lineno;
+
+  return set_insert(seqnos, &key, sizeof(key), HASH(key));
+}
+
+/*
+ * Create a new sequence number from a filename ident and a line number.
+ */
+seqno_t firm_seqno_enter_id(ident *filename, unsigned lineno)
+{
+  struct sn_entry key;
+
+  key.filename = filename;
   key.lineno   = lineno;
 
   return set_insert(seqnos, &key, sizeof(key), HASH(key));

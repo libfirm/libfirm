@@ -45,6 +45,16 @@ typedef struct sn_entry *seqno_t;
 seqno_t firm_seqno_enter(const char *filename, unsigned lineno);
 
 /**
+ * Create a new sequence number from a filename ident and a line number.
+ *
+ * @param filename  an ident
+ * @param lineno    a line number
+ *
+ * @return  a sequence number for this position.
+ */
+seqno_t firm_seqno_enter_id(ident *filename, unsigned lineno);
+
+/**
  * Retrieve filename and line number from a sequence number.
  *
  * @param seqno   a sequence number
