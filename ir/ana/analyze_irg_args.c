@@ -217,7 +217,7 @@ static void analyze_ent_args(entity *ent)
 
   /* Call algorithm that computes the out edges */
   if (get_irg_outs_state(irg) != outs_consistent)
-    compute_outs(irg);
+    compute_irg_outs(irg);
 
   irg_args = get_irg_args(irg);
 
@@ -420,7 +420,7 @@ static void analyze_method_params_weight(entity *ent)
 
   /* Call algorithm that computes the out edges */
   if (get_irg_outs_state(irg) != outs_consistent)
-    compute_outs(irg);
+    compute_irg_outs(irg);
 
   irg_args = get_irg_args(irg);
 
