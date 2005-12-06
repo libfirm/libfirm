@@ -74,7 +74,6 @@ void irg_out_block_walk(ir_node *node,
    out edges from block to floating nodes even if graph is in state
    "op_pin_state_floats".   Optimizes Tuple nodes. */
 void compute_irg_outs(ir_graph *irg);
-#define compute_outs(irg)   compute_irg_outs(irg)
 void compute_irp_outs(void);
 /** Computes the out edges in interprocedural view */
 void compute_ip_outs(void);
