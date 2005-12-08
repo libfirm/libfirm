@@ -565,6 +565,10 @@ dead_node_elimination(ir_graph *irg) {
 
   current_ir_graph = rem;
   set_interprocedural_view(rem_ipview);
+
+	/* reset the dominator's state */
+	if(get_irg_dom_state(irg) != dom_none)
+		set_irg_dom_inconsistent(irg);
 }
 
 /**
