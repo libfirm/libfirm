@@ -12,6 +12,8 @@
 #ifndef _TPOP_T_H_
 #define _TPOP_T_H_
 
+#include <stdlib.h>
+
 #include "firm_types.h"
 #include "tpop.h"
 #include "irmode.h"
