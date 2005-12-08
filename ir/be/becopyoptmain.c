@@ -67,8 +67,8 @@ static void load_colors(color_save_t *color_saver) {
 void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
 	int costs, costs_init=-1, costs_heur=-1, costs_ilp_5_sec=-1, costs_ilp_30_sec=-1, costs_ilp=-1;
-	int lower_bound;
-  int was_optimal = 0;
+	int lower_bound = -1;
+        int was_optimal = 0;
 	color_save_t saver;
 
 	saver.arch_env = chordal_env->session_env->main_env->arch_env;
@@ -77,7 +77,7 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 
 	/* BETTER: You can remove this if you replace all
 	 * `grep get_irn_out *.c` by the irouts.h module.*/
-	compute_outs(chordal_env->session_env->irg);
+	compute_irg_outs(chordal_env->session_env->irg);
 
 	co = new_copy_opt(chordal_env, get_costs_loop_depth);
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
