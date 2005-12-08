@@ -26,10 +26,10 @@
 #include "pset.h"
 #include "entity.h"
 
-arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa)
+arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if)
 {
   memset(env, 0, sizeof(*env));
-  env->isa = isa;
+  env->isa = isa_if->init();
   return env;
 }
 
@@ -105,19 +105,13 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
   return 0;
 }
 
-int arch_get_n_operands(const arch_env_t *env, const ir_node *irn, int in_out)
-{
-  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-	return ops->get_n_operands(ops, irn, in_out);
-}
-
 int arch_is_register_operand(const arch_env_t *env,
     const ir_node *irn, int pos)
 {
-  arch_register_req_t local_req;
-  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
-  return req != NULL;
+	arch_register_req_t local_req;
+	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
+	return req != NULL;
 }
 
 int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
@@ -154,19 +148,17 @@ arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos)
 }
 
 extern const arch_register_t *
-arch_get_irn_register(const arch_env_t *env, const ir_node *irn, int idx)
+arch_get_irn_register(const arch_env_t *env, const ir_node *irn)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  assert(idx >= 0);
-  return ops->get_irn_reg(ops, irn, idx);
+  return ops->get_irn_reg(ops, irn);
 }
 
 extern void arch_set_irn_register(const arch_env_t *env,
-    ir_node *irn, int idx, const arch_register_t *reg)
+    ir_node *irn, const arch_register_t *reg)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  assert(idx >= 0);
-  ops->set_irn_reg(ops, irn, idx, reg);
+  ops->set_irn_reg(ops, irn, reg);
 }
 
 extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn)

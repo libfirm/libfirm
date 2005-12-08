@@ -13,9 +13,11 @@
 #endif
 
 #include <libcore/lc_timing.h>
+
 #include "pmap.h"
 #include "debug.h"
 #include "irouts.h"
+#include "bearch.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "becopyoptmain.h"
@@ -43,25 +45,25 @@ typedef struct color_saver {
 
 static void save_load(ir_node *irn, void *env) {
 	color_save_t *saver = env;
-	if (saver->chordal_env->cls == arch_get_irn_reg_class(saver->arch_env, irn, arch_pos_make_out(0))) {
+	if (saver->chordal_env->cls == arch_get_irn_reg_class(saver->arch_env, irn, -1)) {
 		if (saver->flag == 0) { /* save */
-			const arch_register_t *reg = arch_get_irn_register(saver->arch_env, irn, 0);
+			const arch_register_t *reg = arch_get_irn_register(saver->arch_env, irn);
 			pmap_insert(saver->saved_colors, irn, (void *) reg);
 		} else { /*load */
 			arch_register_t *reg = pmap_get(saver->saved_colors, irn);
-			arch_set_irn_register(saver->arch_env, irn, 0, reg);
+			arch_set_irn_register(saver->arch_env, irn, reg);
 		}
 	}
 }
 
 static void save_colors(color_save_t *color_saver) {
 	color_saver->flag = 0;
-	irg_walk_graph(color_saver->chordal_env->session_env->irg, save_load, NULL, color_saver);
+	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
 }
 
 static void load_colors(color_save_t *color_saver) {
 	color_saver->flag = 1;
-	irg_walk_graph(color_saver->chordal_env->session_env->irg, save_load, NULL, color_saver);
+	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
 }
 
 void be_copy_opt(be_chordal_env_t *chordal_env) {
@@ -70,18 +72,17 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	int lower_bound = -1;
         int was_optimal = 0;
 	color_save_t saver;
-
-	saver.arch_env = chordal_env->session_env->main_env->arch_env;
+	saver.arch_env = chordal_env->main_env->arch_env;
 	saver.chordal_env = chordal_env;
 	saver.saved_colors = pmap_create();
 
 	/* BETTER: You can remove this if you replace all
 	 * `grep get_irn_out *.c` by the irouts.h module.*/
-	compute_irg_outs(chordal_env->session_env->irg);
+	compute_irg_outs(chordal_env->irg);
 
 	co = new_copy_opt(chordal_env, get_costs_loop_depth);
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
-	phi_class_compute(chordal_env->session_env->irg);
+	phi_class_compute(chordal_env->irg);
 
 #ifdef DO_STAT
 	lower_bound = co_get_lower_bound(co);
@@ -99,13 +100,13 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	save_colors(&saver);
 
 #ifdef DO_HEUR
-  {
-	  lc_timer_t *timer = lc_timer_register("heur", NULL);
-	  lc_timer_reset_and_start(timer);
-	  co_heur_opt(co);
-	  lc_timer_stop(timer);
-	  copystat_add_heur_time(lc_timer_elapsed_msec(timer));
-  }
+	{
+		lc_timer_t *timer = lc_timer_register("heur", NULL);
+		lc_timer_reset_and_start(timer);
+		co_heur_opt(co);
+		lc_timer_stop(timer);
+		copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	}
 #ifdef DO_STAT
 	costs = co_get_copy_costs(co);
 	costs_heur = costs;
@@ -115,16 +116,18 @@ void be_copy_opt(be_chordal_env_t *chordal_env) {
 	assert(lower_bound == -1 || costs_heur == -1 || lower_bound <= costs_heur);
 #endif
 
+	{
 #ifdef DO_ILP_5_SEC
-	load_colors(&saver);
-	was_optimal = co_ilp_opt(co, 5.0);
+		load_colors(&saver);
+		was_optimal = co_ilp_opt(co, 5.0);
 #ifdef DO_STAT
-	costs = co_get_copy_costs(co);
-	costs_ilp_5_sec = costs;
-	copystat_add_ilp_5_sec_costs(costs_ilp_5_sec);
-	DBG((dbg, LEVEL_1, "5_Sec costs: %3d\n", costs_ilp_5_sec));
+		costs = co_get_copy_costs(co);
+		costs_ilp_5_sec = costs;
+		copystat_add_ilp_5_sec_costs(costs_ilp_5_sec);
+		DBG((dbg, LEVEL_1, "5_Sec costs: %3d\n", costs_ilp_5_sec));
 #endif
 #endif
+	}
 
 
 #ifdef DO_ILP_30_SEC

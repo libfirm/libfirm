@@ -25,27 +25,28 @@ static void dump_allocated_block(ir_node *block, void *data)
 {
 	int i, n;
 	const ir_node *irn;
-  struct dump_env *dump_env = data;
+	struct dump_env *dump_env = data;
 	FILE *f = dump_env->f;
-  arch_env_t *env = dump_env->env;
+	arch_env_t *env = dump_env->env;
 
 	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"", block);
 	sched_foreach(block, irn) {
 		const char *prefix = "";
 
-    const arch_register_t *reg = arch_get_irn_register(env, irn, 0);
+		const arch_register_t *reg = arch_get_irn_register(env, irn);
 
 		ir_fprintf(f, "\n");
-    if(reg)
-      ir_fprintf(f, "%s = ", arch_register_get_name(reg));
+		if(reg)
+			ir_fprintf(f, "%s = ", arch_register_get_name(reg));
+
 		ir_fprintf(f, "%n(", irn);
 
 		if(block != get_irg_start_block(get_irn_irg(block))) {
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
-        if(arch_is_register_operand(dump_env->env, op, arch_pos_make_out(0))) {
+				if(arch_is_register_operand(dump_env->env, op, -1)) {
 					ir_fprintf(f, "%s%s", prefix,
-              arch_register_get_name(arch_get_irn_register(env, op, 0)));
+						arch_register_get_name(arch_get_irn_register(env, op)));
 					prefix = ", ";
 				}
 			}

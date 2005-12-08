@@ -14,19 +14,23 @@
 #include "pmap.h"
 #include "list.h"
 
+struct _arch_isa_t;
+
 /**
  * A selector interface which is used by the list schedule framework.
  * You can implement your own list scheduler by implementing these
  * functions.
  */
 typedef struct _list_sched_selector_t {
+
 	/**
 	 * Called before a graph is being scheduled.
+	 * @param isa The isa.
 	 * @param irg The graph.
 	 * @return The environment pointer that is passed to all other
 	 * functions in this struct.
 	 */
-	void *(*init_graph)(ir_graph *irg);
+	void *(*init_graph)(const struct _arch_isa_t *isa, ir_graph *irg);
 
 	/**
 	 * Called before scheduling starts on a block.
@@ -42,7 +46,7 @@ typedef struct _list_sched_selector_t {
 	 * The function does not have to delete the node from the ready set.
 	 *
 	 * @param env Some private information as returned by init_graph().
-	 * @return block_env Some provate information as returned by init_block().
+	 * @return block_env Some private information as returned by init_block().
 	 * @param sched_head The schedule so far.
 	 * @param curr_time The current time step which the picked node
 	 * will be assigned to.
@@ -57,7 +61,7 @@ typedef struct _list_sched_selector_t {
 	/**
 	 * Called after a block has been scheduled.
 	 * @param env The environment.
-	 * @param block_env The per block environemtn as returned by init_block().
+	 * @param block_env The per block environment as returned by init_block().
 	 * @param block The block that has been finished.
 	 */
 	void (*finish_block)(void *env, void *block_env, ir_node *block);
@@ -81,13 +85,9 @@ extern const list_sched_selector_t *trivial_selector;
  * Each block in the graph gets a list head to its link field being the
  * head of the schedule. You can walk this list using the functions in
  * list.h.
+ * @param isa The isa which implements the scheduler.
  * @param irg The graph to schedule.
- * @param sched_obst An obstack to allocate the lists on.
- * @param map Maps each block to a list head giving the schedule.
- * @param select_func A selection function.
  */
-void list_sched(ir_graph *irg, const list_sched_selector_t *select_func);
-
-void be_sched_imm(ir_graph *irg);
+void list_sched(const struct _arch_isa_t *isa, ir_graph *irg);
 
 #endif

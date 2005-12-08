@@ -101,23 +101,24 @@ const list_sched_selector_t *trivial_selector = &trivial_selector_struct;
 
 static void list_sched_block(ir_node *block, void *env_ptr);
 
-void list_sched(ir_graph *irg, const list_sched_selector_t *selector)
+void list_sched(const struct _arch_isa_t *isa, ir_graph *irg)
 {
-    sched_env_t env;
+	sched_env_t env;
+	const list_sched_selector_t *selector;
 
-    memset(&env, 0, sizeof(env));
-    env.selector = selector;
-    env.selector_env = selector->init_graph ? selector->init_graph(irg) : NULL;
-    env.irg = irg;
+	memset(&env, 0, sizeof(env));
+	selector = env.selector = isa->impl->get_list_sched_selector(isa);
+	env.selector_env = selector->init_graph ? selector->init_graph(isa, irg) : NULL;
+	env.irg = irg;
 
-		/* Assure, that the out edges are computed */
-		edges_assure(irg);
+	/* Assure, that the out edges are computed */
+	edges_assure(irg);
 
-    /* Schedule each single block. */
-    irg_block_walk_graph(irg, list_sched_block, NULL, &env);
+	/* Schedule each single block. */
+	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
 
-		if(selector->finish_graph)
-			selector->finish_graph(env.selector_env, irg);
+	if(selector->finish_graph)
+		selector->finish_graph(env.selector_env, irg);
 }
 
 
@@ -125,15 +126,12 @@ void list_sched(ir_graph *irg, const list_sched_selector_t *selector)
  * Environment for a block scheduler.
  */
 typedef struct _block_sched_env_t {
-    int curr_time;
-    pset *ready_set;
-    pset *already_scheduled;
-    ir_node *block;
-		firm_dbg_module_t *dbg;
+	int curr_time;
+	pset *ready_set;
+	pset *already_scheduled;
+	ir_node *block;
+	firm_dbg_module_t *dbg;
 } block_sched_env_t;
-
-
-
 
 /**
  * Try to put a node in the ready set.
@@ -198,7 +196,6 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
  */
 static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 {
-	int i, n;
 	const ir_edge_t *edge;
 
 	foreach_out_edge(irn, edge) {
@@ -269,7 +266,6 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
  */
 static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 {
-	int i, n;
 	const ir_edge_t *edge;
 
 	assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
@@ -307,7 +303,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	const list_sched_selector_t *selector = env->selector;
 	const ir_edge_t *edge;
 	ir_node *irn;
-	int i, n, j, m;
+	int j, m;
 	int phi_seen = 0;
 	sched_info_t *info = get_irn_sched_info(block);
 
@@ -399,35 +395,4 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	del_pset(be.ready_set);
 	del_pset(be.already_scheduled);
-}
-
-static void imm_scheduler(ir_node *irn, void *env) {
-	if(is_Imm(irn)) {
-		const ir_edge_t *e;
-		ir_node *user, *user_block, *before, *tgt_block;
-
-		if (1 != get_irn_n_edges(irn)) {
-			printf("Out edges: %d\n", get_irn_n_edges(irn));
-			assert(1 == get_irn_n_edges(irn));
-		}
-
-		e = get_irn_out_edge_first(irn);
-		user = e->src;
-		user_block = get_nodes_block(user);
-		if (is_Phi(user)) {
-			before = get_Block_cfgpred_block(user_block, e->pos);
-			tgt_block = before;
-		} else {
-			before = user;
-			tgt_block = user_block;
-		}
-
-		sched_remove(irn);
-		set_nodes_block(irn, tgt_block);
-		sched_add_before(before, irn);
-	}
-}
-
-void be_sched_imm(ir_graph *irg) {
-	irg_walk_graph(irg, imm_scheduler, NULL, NULL);
 }

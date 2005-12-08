@@ -42,7 +42,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
       return NULL;
     }
 
-    if (arch_pos_is_in(pos)) {
+    if (pos >= 0) {
       irn_req = get_ia32_in_req(irn);
     }
     else {

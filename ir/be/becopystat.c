@@ -275,7 +275,7 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 
 #define is_curr_reg_class(irn) \
   (arch_get_irn_reg_class(chordal_env->session_env->main_env->arch_env, irn, \
-                          arch_pos_make_out(0)) == chordal_env->cls)
+                          -1) == chordal_env->cls)
 
 void copystat_collect_cls(be_chordal_env_t *chordal_env) {
 	ir_node *n;

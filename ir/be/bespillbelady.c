@@ -11,6 +11,7 @@
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
+
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -33,6 +34,7 @@
 #include "beirgmod.h"
 #include "belive_t.h"
 #include "benode_t.h"
+#include "bechordal_t.h"
 
 #define DBG_SPILL   1
 #define DBG_WSETS   2
@@ -199,7 +201,7 @@ static int is_mem_phi(const ir_node *irn, void *data) {
 	ir_node *blk = get_nodes_block(irn);
 
 	DBG((dbg, DBG_SPILL, "Is %+F a mem-phi?\n", irn));
-	sws = ((block_info_t *)get_irn_link(blk))->ws_start;
+	sws = ((block_info_t *) get_irn_link(blk))->ws_start;
 	DBG((dbg, DBG_SPILL, "  %d\n", !workset_contains(sws, irn)));
 	return !workset_contains(sws, irn);
 }
@@ -416,9 +418,9 @@ static void decide(ir_node *blk, void *env) {
  * live-outs to the live-ins at each block-border.
  */
 static void fix_block_borders(ir_node *blk, void *env) {
+	workset_t *wsb;
 	belady_env_t *bel = env;
 	int i, max;
-	workset_t *wsb;
 
 	DBG((dbg, DBG_FIX, "\n"));
 	DBG((dbg, DBG_FIX, "Fixing %+F\n", blk));
@@ -494,27 +496,28 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 	}
 }
 
-void be_spill_belady(const be_main_session_env_t *session, const arch_register_class_t *cls) {
+void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	belady_env_t bel;
+
 	dbg = firm_dbg_register("ir.be.spillbelady");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	/* init belady env */
 	obstack_init(&bel.ob);
-	bel.factory = session->main_env->node_factory;
-	bel.arch = session->main_env->arch_env;
-	bel.cls = cls;
-	bel.n_regs = arch_register_class_n_regs(cls);
-	bel.ws = new_workset(&bel.ob, &bel);
-	bel.uses = be_begin_uses(session->irg, session->main_env->arch_env, cls);
-	bel.senv = be_new_spill_env(dbg, session, cls, is_mem_phi, NULL);
+	bel.factory = chordal_env->main_env->node_factory;
+	bel.arch    = chordal_env->main_env->arch_env;
+	bel.cls     = chordal_env->cls;
+	bel.n_regs  = arch_register_class_n_regs(bel.cls);
+	bel.ws      = new_workset(&bel.ob, &bel);
+	bel.uses    = be_begin_uses(chordal_env->irg, chordal_env->main_env->arch_env, bel.cls);
+	bel.senv    = be_new_spill_env(dbg, chordal_env, is_mem_phi, NULL);
 	bel.reloads = pset_new_ptr_default();
 
 	/* do the work */
-	irg_block_walk_graph(session->irg, decide, NULL, &bel);
-	irg_block_walk_graph(session->irg, fix_block_borders, NULL, &bel);
+	irg_block_walk_graph(chordal_env->irg, decide, NULL, &bel);
+	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &bel);
 	be_insert_spills_reloads(bel.senv, bel.reloads);
-	remove_unused_reloads(session->irg, &bel);
+	remove_unused_reloads(chordal_env->irg, &bel);
 
 	/* clean up */
 	del_pset(bel.reloads);

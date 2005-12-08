@@ -6,28 +6,32 @@
 #include "config.h"
 #endif
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#endif
+
 #include "bitset.h"
 #include "obst.h"
 
 #include "irmode_t.h"
 #include "irnode_t.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "ircons_t.h"
 #include "irgwalk.h"
 #include "type.h"
 
 #include "../bearch.h"
+#include "../besched.h"
 #include "../beutil.h"
-
-#include "irreflect.h"
 
 #define N_REGS 3
 
 typedef struct {
   enum  { imm_Const, imm_SymConst } tp;
   union {
-    tarval  *tv;
-    ir_node *symconst;
+    const_attr    cnst_attr;
+    symconst_attr symc_attr;
   } data;
 } imm_attr_t;
 
@@ -40,6 +44,8 @@ static arch_register_class_t reg_classes[] = {
 static ir_op *op_push;
 static ir_op *op_imm;
 
+const arch_isa_if_t firm_isa;
+
 #define N_CLASSES \
   (sizeof(reg_classes) / sizeof(reg_classes[0]))
 
@@ -47,7 +53,7 @@ static ir_op *op_imm;
 
 tarval *get_Imm_tv(ir_node *n) {
   imm_attr_t *attr = (imm_attr_t *)get_irn_generic_attr(n);
-  return attr->data.tv;
+  return attr->tp == imm_Const ? attr->data.cnst_attr.tv : NULL;
 }
 
 int is_Imm(const ir_node *irn) {
@@ -87,15 +93,15 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
 
       if (is_Imm(n) && attr->tp == imm_SymConst) {
         const char *name    = NULL;
-        ir_node    *old_sym = attr->data.symconst;
+        symconst_attr *sc_attr = &attr->data.symc_attr;
 
-        switch (get_SymConst_kind(old_sym)) {
+        switch (sc_attr->num) {
           case symconst_addr_name:
-            name = get_id_str(get_SymConst_name(old_sym));
+            name = get_id_str(sc_attr->sym.ident_p);
             break;
 
           case symconst_addr_ent:
-            name = get_entity_ld_name(get_SymConst_entity(old_sym));
+            name = get_entity_ld_name(sc_attr->sym.entity_p);
             break;
 
           default:
@@ -114,14 +120,17 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
   return bad;
 }
 
-static void firm_init(void)
+static void *firm_init(void)
 {
   static struct obstack obst;
   static int inited = 0;
+	arch_isa_t *isa = malloc(sizeof(*isa));
   int k;
 
+	isa->impl = &firm_isa;
+
   if(inited)
-    return;
+    return NULL;
 
   inited = 1;
   obstack_init(&obst);
@@ -151,47 +160,37 @@ static void firm_init(void)
 	 * bit more like real machines.
 	 */
 	if(!op_push) {
-		rflct_sig_t *sig;
 		int push_opc = get_next_ir_opcode();
 
 		op_push = new_ir_op(push_opc, "Push",
 				op_pin_state_pinned, 0, oparity_binary, 0, 0, NULL);
-
-		sig = rflct_signature_allocate(1, 3);
-		rflct_signature_set_arg(sig, 0, 0, "Store", RFLCT_MC(Mem), 0, 0);
-		rflct_signature_set_arg(sig, 1, 0, "Block", RFLCT_MC(BB), 0, 0);
-		rflct_signature_set_arg(sig, 1, 1, "Store", RFLCT_MC(Mem), 0, 0);
-		rflct_signature_set_arg(sig, 1, 2, "Arg", RFLCT_MC(Datab), 0, 0);
-
-		rflct_new_opcode(push_opc, "Push", 0);
-		rflct_opcode_add_signature(push_opc, sig);
 	}
 
 	if(!op_imm) {
-		rflct_sig_t *sig;
 		int imm_opc = get_next_ir_opcode();
-                ir_op_ops ops;
+		ir_op_ops ops;
 
-                memset(&ops, 0, sizeof(ops));
-                ops.dump_node = dump_node_Imm;
+		memset(&ops, 0, sizeof(ops));
+		ops.dump_node = dump_node_Imm;
 
 		op_imm = new_ir_op(imm_opc, "Imm",
 				op_pin_state_pinned, 0, oparity_zero, 0, sizeof(imm_attr_t), &ops);
-
-		sig = rflct_signature_allocate(1, 1);
-		rflct_signature_set_arg(sig, 0, 0, "Imm", RFLCT_MC(Data), 0, 0);
-		rflct_signature_set_arg(sig, 1, 0, "Block", RFLCT_MC(BB), 0, 0);
-		rflct_new_opcode(imm_opc, "Imm", 0);
-		rflct_opcode_add_signature(imm_opc, sig);
 	}
+
+	return isa;
 }
 
-static int firm_get_n_reg_class(void)
+static void firm_done(void *self)
+{
+	free(self);
+}
+
+static int firm_get_n_reg_class(const void *self)
 {
   return N_CLASSES;
 }
 
-static const arch_register_class_t *firm_get_reg_class(int i)
+static const arch_register_class_t *firm_get_reg_class(const void *self, int i)
 {
   assert(i >= 0 && i < N_CLASSES);
   return &reg_classes[i];
@@ -202,14 +201,6 @@ static const arch_register_req_t firm_std_reg_req = {
   &reg_classes[CLS_DATAB],
   { NULL }
 };
-
-static const rflct_arg_t *get_arg(const ir_node *irn, int pos)
-{
-  int sig = rflct_get_signature(irn);
-  const rflct_arg_t *args =
-    rflct_get_args(get_irn_opcode(irn), sig, arch_pos_is_in(pos));
-  return &args[arch_pos_get_index(pos)];
-}
 
 static const arch_register_req_t *
 firm_get_irn_reg_req(const arch_irn_ops_t *self,
@@ -223,20 +214,8 @@ firm_get_irn_reg_req(const arch_irn_ops_t *self,
   return req;
 }
 
-static int firm_get_n_operands(const arch_irn_ops_t *self, const ir_node *irn, int in_out)
-{
-  int sig;
-
-	while(is_Proj(irn))
-		irn = get_Proj_pred(irn);
-
-	sig = rflct_get_signature(irn);
-  return rflct_get_args_count(get_irn_opcode(irn), sig, in_out >= 0);
-}
-
 struct irn_reg_assoc {
   const ir_node *irn;
-  int pos;
   const arch_register_t *reg;
 };
 
@@ -245,37 +224,32 @@ static int cmp_irn_reg_assoc(const void *a, const void *b, size_t len)
   const struct irn_reg_assoc *x = a;
   const struct irn_reg_assoc *y = b;
 
-  return !(x->irn == y->irn && x->pos == y->pos);
+  return x->irn != y->irn;
 }
 
-static struct irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, int pos)
+static struct irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn)
 {
   static set *reg_set = NULL;
   struct irn_reg_assoc templ;
-  unsigned int hash;
 
   if(!reg_set)
     reg_set = new_set(cmp_irn_reg_assoc, 1024);
 
   templ.irn = irn;
-  templ.pos = pos;
   templ.reg = NULL;
-  hash = HASH_PTR(irn) + 7 * pos;
 
-  return set_insert(reg_set, &templ, sizeof(templ), hash);
+  return set_insert(reg_set, &templ, sizeof(templ), HASH_PTR(irn));
 }
 
-static void firm_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn,
-    int pos, const arch_register_t *reg)
+static void firm_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg)
 {
-  struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, pos);
+  struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn);
   assoc->reg = reg;
 }
 
-static const arch_register_t *firm_get_irn_reg(const arch_irn_ops_t *self,
-    const ir_node *irn, int pos)
+static const arch_register_t *firm_get_irn_reg(const arch_irn_ops_t *self, const ir_node *irn)
 {
-  struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, pos);
+  struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn);
   return assoc->reg;
 }
 
@@ -322,7 +296,6 @@ static arch_irn_flags_t firm_get_flags(const arch_irn_ops_t *self, const ir_node
 
 static const arch_irn_ops_t irn_ops = {
   firm_get_irn_reg_req,
-  firm_get_n_operands,
   firm_set_irn_reg,
   firm_get_irn_reg,
   firm_classify,
@@ -361,11 +334,11 @@ static ir_node *new_Imm(ir_graph *irg, ir_node *bl, ir_node *cnst) {
   switch (get_irn_opcode(cnst)) {
     case iro_Const:
       attr->tp      = imm_Const;
-      attr->data.tv = get_Const_tarval(cnst);
+      attr->data.cnst_attr = get_irn_const_attr(cnst);
       break;
     case iro_SymConst:
-      attr->tp            = imm_SymConst;
-      attr->data.symconst = cnst;
+      attr->tp             = imm_SymConst;
+      attr->data.symc_attr = get_irn_symconst_attr(cnst);
       break;
     case iro_Unknown:
       break;
@@ -397,7 +370,6 @@ static void prepare_walker(ir_node *irn, void *data)
 			ir_node *ins[1];
 			char buf[128];
 			ir_node *nc;
-			ir_node *push;
 			int i, n = get_Call_n_params(irn);
 			type *nt;
       unsigned cc = get_method_calling_convention(get_Call_type(irn));
@@ -452,22 +424,107 @@ static void localize_const_walker(ir_node *irn, void *data)
 	}
 }
 
+static const arch_irn_handler_t *firm_get_irn_handler(const void *self)
+{
+	return &firm_irn_handler;
+}
+
+typedef struct _firm_code_gen_t {
+	const arch_code_generator_if_t *impl;
+	ir_graph *irg;
+} firm_code_gen_t;
+
+
 static void clear_link(ir_node *irn, void *data)
 {
 	set_irn_link(irn, NULL);
 }
 
-static void firm_prepare_graph(ir_graph *irg)
+static void firm_prepare_graph(void *self)
 {
-	irg_walk_graph(irg, clear_link, localize_const_walker, NULL);
-	irg_walk_graph(irg, NULL, prepare_walker, NULL);
+	firm_code_gen_t *cg = self;
+
+	irg_walk_graph(cg->irg, clear_link, localize_const_walker, NULL);
+	irg_walk_graph(cg->irg, NULL, prepare_walker, NULL);
 }
 
+static void firm_before_sched(void *self)
+{
+}
+
+static void imm_scheduler(ir_node *irn, void *env) {
+	if(is_Imm(irn)) {
+		const ir_edge_t *e;
+		ir_node *user, *user_block, *before, *tgt_block;
+
+		if (1 != get_irn_n_edges(irn)) {
+			printf("Out edges: %d\n", get_irn_n_edges(irn));
+			assert(1 == get_irn_n_edges(irn));
+		}
+
+		e = get_irn_out_edge_first(irn);
+		user = e->src;
+		user_block = get_nodes_block(user);
+		if (is_Phi(user)) {
+			before = get_Block_cfgpred_block(user_block, e->pos);
+			tgt_block = before;
+		} else {
+			before = user;
+			tgt_block = user_block;
+		}
+
+		sched_remove(irn);
+		set_nodes_block(irn, tgt_block);
+		sched_add_before(before, irn);
+	}
+}
+
+static void firm_before_ra(void *self)
+{
+	firm_code_gen_t *cg = self;
+	irg_walk_graph(cg->irg, imm_scheduler, NULL, NULL);
+}
+
+static void firm_codegen_done(void *self)
+{
+	free(self);
+}
+
+static const arch_code_generator_if_t firm_code_gen = {
+	firm_prepare_graph,
+	firm_before_sched,
+	firm_before_ra,
+	firm_codegen_done
+};
+
+static arch_code_generator_t *firm_make_code_generator(void *self, ir_graph *irg)
+{
+	firm_code_gen_t *cg = malloc(sizeof(*cg));
+	cg->impl = &firm_code_gen;
+	cg->irg  = irg;
+	return (arch_code_generator_t *) cg;
+}
+
+
+static const list_sched_selector_t *firm_get_list_sched_selector(const void *self) {
+	return trivial_selector;
+}
+
+#ifdef WITH_LIBCORE
+static void firm_register_options(lc_opt_entry_t *ent)
+{
+}
+#endif
+
 const arch_isa_if_t firm_isa = {
+#ifdef WITH_LIBCORE
+	firm_register_options,
+#endif
 	firm_init,
+	firm_done,
 	firm_get_n_reg_class,
 	firm_get_reg_class,
-	firm_prepare_graph,
-	&firm_irn_handler,
-        NULL
+	firm_get_irn_handler,
+	firm_make_code_generator,
+	firm_get_list_sched_selector
 };

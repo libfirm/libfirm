@@ -8,39 +8,38 @@
 #ifndef _BEIFG_T_H_
 #define _BEIFG_T_H_
 
-#include "pset.h"
-#include "set.h"
-
 #include "beifg.h"
 
-/**
- * Structure that represents a single interference graph.
- */
-struct _be_if_graph_t {
-	/**
-	 * Set of nodes in this graph as be_if_node_t structs.
-	 */
-	set* nodes;
-	/**
-	 * Set of edges in this graph as be_if_edge_t structs.
-	 */
-	set* edges;
+struct _be_ifg_impl_t {
+	size_t iter_size;
+
+	void (*free)(void *self);
+	int (*connected)(const void *self, const ir_node *a, const ir_node *b);
+
+	ir_node *(*neighbours_begin)(const void *self, void *iter, const ir_node *irn);
+	ir_node *(*neighbours_next)(const void *self, void *iter);
+
+	ir_node *(*nodes_begin)(const void *self, void *iter);
+	ir_node *(*nodes_next)(const void *self, void *iter);
+
+	int (*degree)(const void *self, const ir_node *irn);
 };
 
-/**
- * Node type contained in i0nterference graphs.
- */
-struct _be_if_node_t {
-	int nodeNumber;
-	pset* neighbourNodes;
+struct _be_ifg_t {
+	const be_ifg_impl_t *impl;
 };
 
-/**
- * Edge type contained in interference graphs.
- */
-struct _be_if_edge_t {
-	int sourceNode;
-	int targetNode;
-};
+#ifdef _BE_IFG_USE_MACROS
+
+#define be_ifg_iter_size(self)                    ((self)->impl->iter_size)
+#define be_ifg_free(self)                         ((self)->impl->free(self))
+#define be_ifg_connected(self,a,b)                ((self)->impl->connected(self, a, b))
+#define be_ifg_neighbours_begin(self, iter, irn)  ((self)->impl->neighbours_begin(self, iter, irn))
+#define be_ifg_neighbours_next(self, iter)        ((self)->impl->neighbours_next(self, iter))
+#define be_ifg_nodes_begin(self, iter)            ((self)->impl->nodes_begin(self, iter))
+#define be_ifg_nodes_next(self, iter)             ((self)->impl->nodes_next(self, iter))
+#define be_ifg_degree(self,irn)                   ((self)->impl->degree(self, irn))
+
+#endif
 
 #endif /*_BEIFG_T_H_*/

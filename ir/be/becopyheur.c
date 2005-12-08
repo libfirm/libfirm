@@ -225,7 +225,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	}
 	if (!arch_reg_is_allocatable(arch_env,
 								 irn,
-								 arch_pos_make_out(0),
+								 -1,
 								 arch_register_for_index(cls, col)))
 		goto ret_imposs;
 
@@ -243,7 +243,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 			pset *live_ins = put_live_in(irn_bl, pset_new_ptr_default());
 			for (n = pset_first(live_ins); n; n = pset_next(live_ins)) {
 				DBG((dbg, LEVEL_4, "Checking %+F which is live-in at the block\n", n));
-				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), cls)
+				if (arch_irn_has_reg_class(arch_env, n, -1, cls)
 					&& n != trigger && qnode_get_new_color(qn, n) == col
 					&& nodes_interfere(chordal_env, irn, n)) {
 
@@ -276,7 +276,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 			for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
 				ir_node *n = get_irn_out(curr_bl, i);
 				DBG((dbg, LEVEL_4, "Checking %+F defined in same block\n", n));
-				if (arch_irn_has_reg_class(arch_env, n, arch_pos_make_out(0), cls)
+				if (arch_irn_has_reg_class(arch_env, n, -1, cls)
 					&& n != trigger && qnode_get_new_color(qn, n) == col
 					&& nodes_interfere(chordal_env, irn, n)) {
 						DBG((dbg, LEVEL_4, "\t        %+F\ttroubles\n", n));
@@ -556,7 +556,7 @@ static void ou_optimize(unit_t *ou) {
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	arch_get_allocatable_regs(get_arch_env(ou->co), ou->nodes[0], arch_pos_make_out(0), ou->co->chordal_env->cls, pos_regs);
+	arch_get_allocatable_regs(get_arch_env(ou->co), ou->nodes[0], -1, ou->co->chordal_env->cls, pos_regs);
 	bitset_foreach(pos_regs, i)
 		ou_insert_qnode(ou, new_qnode(ou, i));
 

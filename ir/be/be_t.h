@@ -11,19 +11,31 @@
 #include "debug.h"
 
 #include "irgraph.h"
+
+#include "be.h"
 #include "beirgmod.h"
 
-typedef struct _be_main_env_t {
+struct _be_options_t {
+	char ilp_server[128];
+	char ilp_solver[128];
+};
+
+struct _be_main_env_t {
   struct obstack obst;
   struct _be_node_factory_t *node_factory;
   struct _arch_env_t *arch_env;
+  struct _be_options_t *options;
   firm_dbg_module_t *dbg;
-} be_main_env_t;
+};
 
-typedef struct _be_main_session_env_t {
-  const be_main_env_t *main_env;
+#if 0
+struct _be_main_session_env_t {
+  const struct _be_main_env_t *main_env;
   ir_graph *irg;
   struct _dom_front_info_t *dom_front;
-} be_main_session_env_t;
+};
+#endif
+
+
 
 #endif

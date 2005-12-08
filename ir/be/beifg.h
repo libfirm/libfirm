@@ -10,31 +10,26 @@
 #ifndef _BEIFG_H
 #define _BEIFG_H
 
-#include "obst.h"
-#include "bechordal_t.h"
+#include "irnode.h"
 
-typedef struct _be_ifg_impl_t 	be_ifg_impl_t;
-typedef struct _be_ifg_t 				be_ifg_t;
+typedef struct _be_ifg_impl_t   be_ifg_impl_t;
+typedef struct _be_ifg_t        be_ifg_t;
 
-struct _be_ifg_impl_t {
-	void (*free)(void *self);
+#define be_ifg_iter_alloca(self)                  (alloca(be_ifg_iter_size(self)))
 
-	int (*connected)(void *self, const ir_node *a, const ir_node *b);
-	int (*neighbours_arr)(void *self, const ir_node *irn, ir_node **arr, size_t n);
-	int (*neighbours_obst)(void *self, const ir_node *irn, struct obstack *obst);
-	int (*degree)(void *self, const ir_node *irn);
-};
+size_t be_ifg_iter_size(const void *self);
+void be_ifg_free(void *self);
+int be_ifg_connected(const void *self, const ir_node *a, const ir_node *b);
+ir_node *be_ifg_neighbours_begin(const void *self, void *iter, const ir_node *irn);
+ir_node *be_ifg_neighbours_next(const void *self, void *iter);
+ir_node *be_ifg_nodes_begin(const void *self, void *iter);
+ir_node *be_ifg_nodes_next(const void *self, void *iter);
+int be_ifg_degree(const void *self, const ir_node *irn);
 
-struct _be_ifg_t {
-	const be_ifg_impl_t *impl;
-};
+#define be_ifg_foreach_neighbour(self, iter, irn, pos) \
+	for(pos = be_ifg_neighbours_begin(self, iter, irn); (pos); pos = be_ifg_neighbours_next(self, iter))
 
-#define be_ifg_free(self) 										((self)->impl->free(self))
-#define be_ifg_connected(self,a,b)						((self)->impl->connected(self, a, b))
-#define be_ifg_neighbours_arr(self,irn,arr,n)	((self)->impl->neighbours_arr(self, irn, arr, n))
-#define be_ifg_neighbours_obst(self,irn,obst)	((self)->impl->neighbours_arr(self, irn, obst))
-#define be_ifg_degree(self,irn)								((self)->impl->degree(self, irn))
-
-be_ifg_t *be_ifg_std_new(const be_chordal_env_t *env);
+#define be_ifg_foreach_node(self, iter, pos) \
+	for(pos = be_ifg_nodes_begin(self, iter); (pos); pos = be_ifg_nodes_next(self, iter))
 
 #endif /* _BEIFG_H */

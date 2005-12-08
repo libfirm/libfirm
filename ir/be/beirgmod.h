@@ -10,6 +10,8 @@
 #ifndef _BEIRGMOD_H
 #define _BEIRGMOD_H
 
+#include "pset.h"
+
 /*
  * Forward type declaration.
  */

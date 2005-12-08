@@ -51,16 +51,15 @@ typedef struct {
 } be_op_t;
 
 static int templ_pos_Spill[] = {
-  arch_pos_make_in(0)
+	0
 };
 
 static int templ_pos_Reload[] = {
-  arch_pos_make_out(0)
+	-1
 };
 
 static int templ_pos_Copy[] = {
-  arch_pos_make_in(0),
-  arch_pos_make_out(0)
+	0, -1
 };
 
 #define ARRSIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -138,8 +137,7 @@ ir_node *be_spill(
 		const arch_env_t *arch_env,
 		ir_node *irn)
 {
-  const arch_register_class_t *cls
-		= arch_get_irn_reg_class(arch_env, irn, arch_pos_make_out(0));
+  const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, irn, -1);
   ir_node *bl    = get_nodes_block(irn);
   ir_graph *irg  = get_irn_irg(bl);
   ir_node *spill = new_Spill(factory, cls, irg, bl, irn);
@@ -159,11 +157,10 @@ ir_node *be_spill(
   return spill;
 }
 
-ir_node *be_reload(
-		const be_node_factory_t *factory,
-		const arch_env_t *arch_env,
-		const arch_register_class_t *cls,
-		ir_node *irn, int pos, ir_mode *mode, ir_node *spill)
+ir_node *be_reload(const be_node_factory_t *factory,
+				   const arch_env_t *arch_env,
+				   const arch_register_class_t *cls,
+				   ir_node *irn, int pos, ir_mode *mode, ir_node *spill)
 {
 	ir_node *reload;
 
@@ -195,7 +192,7 @@ static int redir_proj(const ir_node **node, int def)
 
   if(is_Proj(n)) {
     *node = get_Proj_pred(n);
-    def = get_Proj_proj(n);
+    def = -(get_Proj_proj(n) + 1);
   }
 
   return def;
@@ -205,89 +202,76 @@ static const arch_register_req_t *
 be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
     arch_register_req_t *req, const ir_node *irn, int pos)
 {
-  be_op_t *bo;
-	int index = arch_pos_get_index(pos);
-  const be_node_factory_t *factory =
-    container_of(_self, const be_node_factory_t, irn_ops);
+	be_op_t *bo;
+	const be_node_factory_t *factory =
+		container_of(_self, const be_node_factory_t, irn_ops);
 
-	if(arch_pos_is_out(pos))
-		pos = arch_pos_make_out(redir_proj(&irn, index));
+	/*
+	 * were interested in an output operand, so
+	 * let's resolve projs.
+	 */
+	if(pos < 0)
+		pos = redir_proj((const ir_node **) &irn, pos);
 
-  bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
+	bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
-  if(bo) {
-    int i;
+	if(bo) {
+		int i;
 
-    req->type = arch_register_req_type_normal;
-    req->cls  = bo->cls;
+		req->type = arch_register_req_type_normal;
+		req->cls  = bo->cls;
 
-    for(i = 0; i < bo->n_pos; ++i)
-      if(pos == bo->pos[i])
-        return req;
-  }
+		for(i = 0; i < bo->n_pos; ++i)
+			if(pos == bo->pos[i])
+				return req;
+	}
 
-  return NULL;
-}
-
-static int
-be_node_get_n_operands(const arch_irn_ops_t *_self, const ir_node *irn, int in_out)
-{
-  be_op_t *bo;
-  int i, res = 0;
-  const be_node_factory_t *factory =
-    container_of(_self, const be_node_factory_t, irn_ops);
-
-  redir_proj(&irn, 0);
-  bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
-
-  for(i = 0; i < bo->n_pos; ++i)
-    res += (bo->pos[i] ^ in_out) > 0;
-
-  return res;
+	return NULL;
 }
 
 void
 be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn,
-    int idx, const arch_register_t *reg)
+    const arch_register_t *reg)
 {
-  const arch_register_t **regs;
-  be_op_t *bo;
-  const be_node_factory_t *factory =
-    container_of(_self, const be_node_factory_t, irn_ops);
+	int pos;
+	const arch_register_t **regs;
+	be_op_t *bo;
+	const be_node_factory_t *factory =
+		container_of(_self, const be_node_factory_t, irn_ops);
 
-  idx = redir_proj((const ir_node **) &irn, idx);
-  bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
+	pos = redir_proj((const ir_node **) &irn, -1);
+	bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
 	if(!bo)
 		return;
 
-  regs = (const arch_register_t **) &irn->attr;
-  regs[idx] = reg;
+	regs = (const arch_register_t **) &irn->attr;
+	regs[-pos - 1] = reg;
 }
 
 const arch_register_t *
-be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn, int idx)
+be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn)
 {
-  const arch_register_t **regs;
-  be_op_t *bo;
-  int i, pos = arch_pos_make_out(idx);
-  const be_node_factory_t *factory =
-    container_of(_self, const be_node_factory_t, irn_ops);
+	int i, pos;
+	const arch_register_t **regs;
+	be_op_t *bo;
+	const be_node_factory_t *factory =
+		container_of(_self, const be_node_factory_t, irn_ops);
 
-  idx = redir_proj(&irn, idx);
-  bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
+	pos = redir_proj((const ir_node **) &irn, -1);
+	bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
-  if(!bo)
-  	return NULL;
+	if(!bo)
+		return NULL;
 
-  for(i = 0; i < bo->n_pos; ++i) {
-  	if(bo->pos[i] == pos) {
-	  regs = (const arch_register_t **) &irn->attr;
-	  return regs[idx];
-  	}
-  }
+	for(i = 0; i < bo->n_pos; ++i) {
+		if(bo->pos[i] == pos) {
+			regs = (const arch_register_t **) &irn->attr;
+			return regs[-pos - 1];
+		}
+	}
 
-  return NULL;
+	return NULL;
 }
 
 arch_irn_class_t be_node_classify(const arch_irn_ops_t *_self, const ir_node *irn)
@@ -308,6 +292,8 @@ arch_irn_class_t be_node_classify(const arch_irn_ops_t *_self, const ir_node *ir
 		XXX(perm)
 		XXX(copy)
 #undef XXX
+		default:
+		return 0;
 	}
 
   return 0;
@@ -343,8 +329,7 @@ int is_Spill(const be_node_factory_t *f, const ir_node *irn)
   return bo != NULL && bo->kind == node_kind_spill;
 }
 
-be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
-    const arch_isa_if_t *isa)
+be_node_factory_t *be_node_factory_init(be_node_factory_t *factory, const arch_isa_t *isa)
 {
   char buf[256];
   int i, j, n;
@@ -356,14 +341,13 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
   factory->handler.get_irn_ops = be_node_get_irn_ops;
 
   factory->irn_ops.get_irn_reg_req = be_node_get_irn_reg_req;
-  factory->irn_ops.get_n_operands  = be_node_get_n_operands;
   factory->irn_ops.set_irn_reg     = be_node_set_irn_reg;
   factory->irn_ops.get_irn_reg     = be_node_get_irn_reg;
   factory->irn_ops.classify        = be_node_classify;
   factory->irn_ops.get_flags       = be_node_get_flags;
 
-  for(i = 0, n = isa->get_n_reg_class(); i < n; ++i) {
-    const arch_register_class_t *cls = isa->get_reg_class(i);
+  for(i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
+    const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
     be_op_t *ent;
 
     ent = get_op(factory, cls, node_kind_spill);
@@ -397,8 +381,8 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
     ent->n_pos = 2 * cls->n_regs;
     ent->pos = obstack_alloc(&factory->obst, sizeof(ent->pos[0]) * ent->n_pos);
     for(j = 0; j < ent->n_pos; j += 2) {
-      ent->pos[j] = arch_pos_make_in(j);
-      ent->pos[j + 1] = arch_pos_make_out(j);
+      ent->pos[j] = j;
+      ent->pos[j + 1] = -(j + 1);
     }
     pmap_insert(factory->irn_op_map, ent->op, ent);
 
@@ -407,15 +391,18 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
   return factory;
 }
 
-ir_node *insert_Perm_after(const be_main_session_env_t *env,
-    const arch_register_class_t *cls, ir_node *pos)
+ir_node *insert_Perm_after(const be_main_env_t *env,
+						   const arch_register_class_t *cls,
+						   dom_front_info_t *dom_front,
+						   ir_node *pos)
 {
-  const arch_env_t *arch_env = env->main_env->arch_env;
-  ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
-  ir_graph *irg = get_irn_irg(bl);
-  pset *live = put_live_end(bl, pset_new_ptr_default());
+  const arch_env_t *arch_env  = env->arch_env;
+  ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
+  ir_graph *irg               = get_irn_irg(bl);
+  pset *live                  = put_live_end(bl, pset_new_ptr_default());
+  firm_dbg_module_t *dbg      = firm_dbg_register("firm.be.node");
+
   ir_node *curr, *irn, *perm, **nodes;
-  firm_dbg_module_t *dbg = firm_dbg_register("firm.be.node");
   int i, n;
 
   firm_dbg_set_mask(dbg, DBG_LEVEL);
@@ -435,13 +422,13 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
     for(x = pset_first(live); x; x = pset_next(live))
       DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
 
-    if(arch_irn_has_reg_class(arch_env, irn, arch_pos_make_out(0), cls))
+    if(arch_irn_has_reg_class(arch_env, irn, -1, cls))
       pset_remove_ptr(live, irn);
 
     for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
       ir_node *op = get_irn_n(irn, i);
 
-      if(arch_irn_has_reg_class(arch_env, op, arch_pos_make_out(0), cls))
+      if(arch_irn_has_reg_class(arch_env, op, -1, cls))
         pset_insert_ptr(live, op);
     }
   }
@@ -455,7 +442,7 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
     nodes[i] = irn;
   }
 
-  perm = new_Perm(env->main_env->node_factory, cls, irg, bl, n, nodes);
+  perm = new_Perm(env->node_factory, cls, irg, bl, n, nodes);
   sched_add_after(pos, perm);
   free(nodes);
 
@@ -463,17 +450,17 @@ ir_node *insert_Perm_after(const be_main_session_env_t *env,
   for(i = 0; i < n; ++i) {
     ir_node *copies[1];
     ir_node *perm_op = get_irn_n(perm, i);
-	const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op, 0);
+	const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
 
     ir_mode *mode = get_irn_mode(perm_op);
     ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
-    arch_set_irn_register(arch_env, proj, 0, reg);
+    arch_set_irn_register(arch_env, proj, reg);
 
     sched_add_after(curr, proj);
     curr = proj;
 
     copies[0] = proj;
-    be_introduce_copies(env->dom_front, perm_op, array_size(copies), copies);
+    be_introduce_copies(dom_front, perm_op, array_size(copies), copies);
   }
   return perm;
 }

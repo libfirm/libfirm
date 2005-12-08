@@ -32,12 +32,12 @@ static firm_dbg_module_t *dbg = NULL;
 #define DEBUG_LVL SET_LEVEL_0
 #undef DUMP_GRAPHS
 
-#define get_chordal_arch(ce) ((ce)->session_env->main_env->arch_env)
-#define get_reg(irn) arch_get_irn_register(get_chordal_arch(chordal_env), irn, 0)
-#define set_reg(irn, reg) arch_set_irn_register(get_chordal_arch(chordal_env), irn, 0, reg)
+#define get_chordal_arch(ce) ((ce)->main_env->arch_env)
+#define get_reg(irn) arch_get_irn_register(get_chordal_arch(chordal_env), irn)
+#define set_reg(irn, reg) arch_set_irn_register(get_chordal_arch(chordal_env), irn, reg)
 
 #define is_Perm(irn)            (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
-#define get_reg_cls(irn)        (arch_get_irn_reg_class(arch_env, irn, arch_pos_make_out(0)))
+#define get_reg_cls(irn)        (arch_get_irn_reg_class(arch_env, irn, -1))
 #define is_curr_reg_class(irn)  (get_reg_cls(p) == chordal_env->cls)
 
 static void clear_link(ir_node *irn, void *data)
@@ -51,10 +51,7 @@ static void clear_link(ir_node *irn, void *data)
 static void collect_phis(ir_node *irn, void *data)
 {
   be_chordal_env_t *env = data;
-  if(is_Phi(irn) &&
-      arch_irn_has_reg_class(env->session_env->main_env->arch_env,
-        irn, arch_pos_make_out(0), env->cls)) {
-
+  if(is_Phi(irn) && chordal_has_class(env, irn)) {
     ir_node *bl = get_nodes_block(irn);
     set_irn_link(irn, get_irn_link(bl));
     set_irn_link(bl, irn);
@@ -67,15 +64,15 @@ static void collect_phis(ir_node *irn, void *data)
  */
 static INLINE void build_phi_rings(be_chordal_env_t *env)
 {
-  irg_walk_graph(env->session_env->irg, clear_link, collect_phis, env);
+  irg_walk_graph(env->irg, clear_link, collect_phis, env);
 }
 
 static void insert_all_perms_walker(ir_node *bl, void *data)
 {
   be_chordal_env_t *chordal_env = data;
   pmap *perm_map = chordal_env->data;
-  ir_graph *irg = chordal_env->session_env->irg;
-  const be_node_factory_t *fact = chordal_env->session_env->main_env->node_factory;
+  ir_graph *irg = chordal_env->irg;
+  const be_node_factory_t *fact = chordal_env->main_env->node_factory;
 
   /* Dummy targets for the projs */
   ir_node *dummy = new_rd_Unknown(irg, mode_T);
@@ -123,7 +120,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
       }
 
       perm = new_Perm(fact, chordal_env->cls, irg, pred_bl, n_projs, in);
-      insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, chordal_env->session_env->main_env->arch_env);
+      insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, chordal_env->main_env->arch_env);
       sched_add_after(insert_after, perm);
       exchange(dummy, perm);
 
@@ -144,7 +141,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 
 static void insert_all_perms(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "Placing perms...\n"));
-	irg_block_walk_graph(chordal_env->session_env->irg, insert_all_perms_walker, NULL, chordal_env);
+	irg_block_walk_graph(chordal_env->irg, insert_all_perms_walker, NULL, chordal_env);
 }
 
 #define is_pinned(irn) (get_irn_link(irn))
@@ -160,7 +157,6 @@ static void insert_all_perms(be_chordal_env_t *chordal_env) {
 static void adjust_phi_arguments(be_chordal_env_t *chordal_env, ir_node *phi) {
 	int i, max;
 	ir_node *arg, *phi_block, *arg_block;
-	const be_main_session_env_t *session = chordal_env->session_env;
 	const arch_register_t *phi_reg, *arg_reg;
 	const arch_register_class_t *cls;
 
@@ -168,7 +164,7 @@ static void adjust_phi_arguments(be_chordal_env_t *chordal_env, ir_node *phi) {
 
 	phi_block = get_nodes_block(phi);
 	phi_reg = get_reg(phi);
-	cls = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, arch_pos_make_out(0));
+	cls = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, -1);
 
 	/* process all arguments of the phi */
 	for(i=0, max=get_irn_arity(phi); i<max; ++i) {
@@ -186,11 +182,11 @@ static void adjust_phi_arguments(be_chordal_env_t *chordal_env, ir_node *phi) {
 			 * insert it into schedule,
 			 * pin it
 			 */
-			ir_node *dupl = new_Copy(session->main_env->node_factory, cls, session->irg, arg_block, arg);
+			ir_node *dupl = new_Copy(chordal_env->main_env->node_factory, cls, chordal_env->irg, arg_block, arg);
 			assert(get_irn_mode(phi) == get_irn_mode(dupl));
 			set_irn_n(phi, i, dupl);
 			set_reg(dupl, phi_reg);
-			sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, chordal_env->session_env->main_env->arch_env), dupl);
+			sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, chordal_env->main_env->arch_env), dupl);
 			pin_irn(dupl, phi_block);
 			DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 		} else {
@@ -225,7 +221,7 @@ static void adjust_phi_arguments(be_chordal_env_t *chordal_env, ir_node *phi) {
 				 */
 				ir_node *perm = get_Proj_pred(arg);
 				ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
-				ir_node *dupl = new_Copy(session->main_env->node_factory, cls, session->irg, arg_block, orig_val);
+				ir_node *dupl = new_Copy(chordal_env->main_env->node_factory, cls, chordal_env->irg, arg_block, orig_val);
 				assert(get_irn_mode(phi) == get_irn_mode(dupl));
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
@@ -255,14 +251,13 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 static void	set_regs_or_place_dupls(be_chordal_env_t *chordal_env)
 {
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
-	irg_block_walk_graph(chordal_env->session_env->irg,
-		set_regs_or_place_dupls_walker, NULL, chordal_env);
+	irg_block_walk_graph(chordal_env->irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
 }
 
 
 void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	pmap *perm_map = pmap_create();
-	ir_graph *irg = chordal_env->session_env->irg;
+	ir_graph *irg = chordal_env->irg;
 
 	dbg = firm_dbg_register("ir.be.ssadestr");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
@@ -310,5 +305,5 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 }
 
 void be_ssa_destruction_check(be_chordal_env_t *chordal_env) {
-	irg_block_walk_graph(chordal_env->session_env->irg, ssa_destruction_check_walker, NULL, chordal_env);
+	irg_block_walk_graph(chordal_env->irg, ssa_destruction_check_walker, NULL, chordal_env);
 }

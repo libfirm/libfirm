@@ -34,8 +34,7 @@ struct _be_node_factory_t {
 
 typedef struct _be_node_factory_t 			be_node_factory_t;
 
-be_node_factory_t *be_node_factory_init(be_node_factory_t *factory,
-    const arch_isa_if_t *isa);
+be_node_factory_t *be_node_factory_init(be_node_factory_t *factory, const arch_isa_t *isa);
 
 const arch_irn_handler_t *be_node_get_irn_handler(const be_node_factory_t *f);
 
@@ -68,10 +67,9 @@ ir_node *be_reload(
 
 int is_Spill(const be_node_factory_t *f, const ir_node *irn);
 
-ir_node *insert_Perm_after(const be_main_session_env_t *env,
-    const arch_register_class_t *cls, ir_node *pos);
-
-void be_insert_phi_perms(const be_main_session_env_t *env,
-    const arch_register_class_t *cls);
+ir_node *insert_Perm_after(const be_main_env_t *env,
+						   const arch_register_class_t *cls,
+						   dom_front_info_t *dom_front,
+						   ir_node *pos);
 
 #endif /* _BENODE_T_H */

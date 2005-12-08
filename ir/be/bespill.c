@@ -14,6 +14,7 @@
 #include "besched.h"
 #include "bespill.h"
 #include "benode_t.h"
+#include "bechordal_t.h"
 
 typedef struct _reloader_t reloader_t;
 typedef struct _spill_info_t spill_info_t;
@@ -37,7 +38,7 @@ typedef struct _spill_ctx_t {
 struct _spill_env_t {
 	firm_dbg_module_t *dbg;
 	const arch_register_class_t *cls;
-	const be_main_session_env_t *session;
+	const be_chordal_env_t *chordal_env;
 	struct obstack obst;
 	set *spill_ctxs;
 	set *spills;				/**< all spill_info_t's, which must be placed */
@@ -58,16 +59,18 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size) {
 	return ! (xx->spilled_node == yy->spilled_node);
 }
 
-spill_env_t *be_new_spill_env(firm_dbg_module_t *dbg, const be_main_session_env_t *session,
-		const arch_register_class_t *cls, decide_irn_t is_mem_phi, void *data) {
+spill_env_t *be_new_spill_env(firm_dbg_module_t *dbg,
+							  const be_chordal_env_t *chordal_env,
+							  decide_irn_t is_mem_phi, void *data) {
+
 	spill_env_t *env = malloc(sizeof(env[0]));
-	env->spill_ctxs = new_set(cmp_spillctx, 1024);
-	env->spills     = new_set(cmp_spillinfo, 1024);
-	env->session    = session;
-	env->cls        = cls;
-	env->dbg        = dbg;
-	env->is_mem_phi = is_mem_phi;
-	env->data       = data;
+	env->spill_ctxs  = new_set(cmp_spillctx, 1024);
+	env->spills      = new_set(cmp_spillinfo, 1024);
+	env->cls         = chordal_env->cls;
+	env->dbg         = dbg;
+	env->is_mem_phi  = is_mem_phi;
+	env->data        = data;
+	env->chordal_env = chordal_env;
 	obstack_init(&env->obst);
 	return env;
 }
@@ -95,7 +98,7 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 
 	ctx = be_get_spill_ctx(senv->spill_ctxs, irn, ctx_irn);
 	if(!ctx->spill) {
-		const be_main_env_t *env = senv->session->main_env;
+		const be_main_env_t *env = senv->chordal_env->main_env;
 		ctx->spill = be_spill(env->node_factory, env->arch_env, irn);
 	}
 
@@ -111,7 +114,7 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) {
 	int i, n = get_irn_arity(phi);
 	ir_node **ins, *bl = get_nodes_block(phi);
-	ir_graph *irg = senv->session->irg;
+	ir_graph *irg = senv->chordal_env->irg;
 	spill_ctx_t *ctx;
 
 	assert(is_Phi(phi));
@@ -126,7 +129,7 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) 
 		ins  = malloc(n * sizeof(ins[0]));
 		for(i=0; i<n; ++i)
 			ins[i] = new_r_Unknown(irg, mode_M);
-		ctx->spill = new_r_Phi(senv->session->irg, bl, n, ins, mode_M);
+		ctx->spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
 		free(ins);
 
 		/* re-wire the phiM */
@@ -157,7 +160,7 @@ static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
 
 static void phi_walker(ir_node *irn, void *env) {
 	spill_env_t *senv = env;
-	const arch_env_t *arch = senv->session->main_env->arch_env;
+	const arch_env_t *arch = senv->chordal_env->main_env->arch_env;
 
 	if (is_Phi(irn) && arch_irn_has_reg_class(arch, irn, 0, senv->cls)
 			&& senv->is_mem_phi(irn, senv->data)) {
@@ -167,7 +170,7 @@ static void phi_walker(ir_node *irn, void *env) {
 }
 
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
-	ir_graph *irg = senv->session->irg;
+	ir_graph *irg = senv->chordal_env->irg;
 	ir_node *irn;
 	spill_info_t *si;
 	struct obstack ob;
@@ -177,7 +180,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	/* get all special spilled phis */
 	DBG((senv->dbg, LEVEL_1, "Mem-phis:\n"));
 	senv->mem_phis = pset_new_ptr_default();
-	irg_walk_graph(senv->session->irg, phi_walker, NULL, senv);
+	irg_walk_graph(senv->chordal_env->irg, phi_walker, NULL, senv);
 
 	/* Add reloads for mem_phis */
 	/* BETTER: These reloads (1) should only be inserted, if they are really needed */
@@ -188,10 +191,9 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 		foreach_out_edge(irn, e) {
 			ir_node *user = e->src;
 			if (is_Phi(user) && !pset_find_ptr(senv->mem_phis, user)) {
-				ir_node *use_bl;
-				DBG((senv->dbg, LEVEL_1, " non-mem-phi user %+F\n", user));
-				use_bl = get_nodes_block(user);
-				be_add_reload_on_edge(senv, irn, use_bl, e->pos); /* (1) */
+					ir_node *use_bl = get_nodes_block(user);
+					DBG((senv->dbg, LEVEL_1, " non-mem-phi user %+F\n", user));
+					be_add_reload_on_edge(senv, irn, use_bl, e->pos); /* (1) */
 			}
 		}
 	}
@@ -211,8 +213,8 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 			/* the reload */
 			ir_node *bl      = is_Block(rld->reloader) ? rld->reloader : get_nodes_block(rld->reloader);
-			ir_node *reload  = new_Reload(senv->session->main_env->node_factory,
-														senv->cls, irg, bl, mode, spill);
+			ir_node *reload  = new_Reload(senv->chordal_env->main_env->node_factory,
+				senv->cls, irg, bl, mode, spill);
 
 			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", reload, si->spilled_node, rld->reloader));
 			if(reload_set)
@@ -226,7 +228,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 		assert(n_reloads > 0);
 		reloads = obstack_finish(&ob);
-		be_introduce_copies_ignore(senv->session->dom_front, si->spilled_node,
+		be_introduce_copies_ignore(senv->chordal_env->dom_front, si->spilled_node,
 				n_reloads, reloads, senv->mem_phis);
 		obstack_free(&ob, reloads);
 	}
@@ -236,7 +238,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	for(irn = pset_first(senv->mem_phis); irn; irn = pset_next(senv->mem_phis)) {
 		int i, n;
 		for(i = 0, n = get_irn_arity(irn); i < n; ++i)
-			set_irn_n(irn, i, new_r_Bad(senv->session->irg));
+			set_irn_n(irn, i, new_r_Bad(senv->chordal_env->irg));
 		sched_remove(irn);
 	}
 

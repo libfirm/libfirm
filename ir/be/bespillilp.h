@@ -11,11 +11,8 @@
 #ifndef _BESPILLILP_H
 #define _BESPILLILP_H
 
-#include "bearch.h"
-#include "be_t.h"
-#include "bespill.h"
+#include "bechordal.h"
 
-void be_spill_ilp(const be_main_session_env_t *env,
-    const arch_register_class_t *cls);
+void be_spill_ilp(const be_chordal_env_t *env);
 
 #endif /* _BESPILLILP_H */

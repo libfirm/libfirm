@@ -27,7 +27,7 @@ static firm_dbg_module_t *dbg = NULL;
 
 #define is_curr_reg_class(irn) \
   (arch_get_irn_reg_class(get_arch_env(co), \
-                          irn, arch_pos_make_out(0)) == co->chordal_env->cls)
+                          irn, -1) == co->chordal_env->cls)
 
 #define MIN(a,b) ((a<b)?(a):(b))
 #define MAX(a,b) ((a<b)?(b):(a))

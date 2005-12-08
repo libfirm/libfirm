@@ -205,7 +205,7 @@ static void block_dims_walker(ir_node *block, void *data)
 
 	list_for_each_entry_reverse(border_t, b, head, list) {
     ir_node *irn = b->irn;
-    const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
+    const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn);
     int col = arch_register_get_index(reg);
 
     dims->max_step = max(dims->max_step, b->step);
@@ -277,7 +277,7 @@ static void set_y(const draw_chordal_env_t *env, ir_node *bl, int up)
 static color_t *reg_to_color(const draw_chordal_env_t *env,
     ir_node *rel_bl, ir_node *irn, color_t *color)
 {
-  int i, n, phi_arg = 0;
+  int phi_arg = 0;
   const ir_edge_t *edge;
 
   foreach_out_edge(irn, edge)
@@ -327,7 +327,7 @@ static void draw_block(ir_node *bl, void *data)
 
 	list_for_each_entry(border_t, b, head, list) {
     if(b->is_def) {
-      const arch_register_t *reg = arch_get_irn_register(env->arch_env, b->irn, 0);
+      const arch_register_t *reg = arch_get_irn_register(env->arch_env, b->irn);
       int col = arch_register_get_index(reg);
       int live_out = is_live_out(bl, b->irn);
       int x = (col + 1) * opts->h_inter_gap;
@@ -355,7 +355,7 @@ static void draw_block(ir_node *bl, void *data)
 
     for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
       if(arch_irn_has_reg_class(env->arch_env, irn, 0, env->cls)) {
-        const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn, 0);
+        const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn);
         int col = arch_register_get_index(reg);
         int x = (col + 1) * opts->h_inter_gap;
 
@@ -385,7 +385,7 @@ static void draw(draw_chordal_env_t *env, const rect_t *start_box)
   bbox.h = start_box->h + 2 * env->opts->y_margin;
 
   p->vtab->begin(p, &bbox);
-  irg_block_walk_graph(env->chordal_env->session_env->irg, draw_block, NULL, env);
+  irg_block_walk_graph(env->chordal_env->irg, draw_block, NULL, env);
   p->vtab->finish(p);
 }
 
@@ -396,7 +396,7 @@ void draw_interval_tree(const draw_chordal_opts_t *opts,
 {
   draw_chordal_env_t env;
   struct block_dims *start_dims;
-  ir_node *start_block = get_irg_start_block(chordal_env->session_env->irg);
+  ir_node *start_block = get_irg_start_block(chordal_env->irg);
 
   env.arch_env = arch_env;
   env.opts = opts;
@@ -408,7 +408,7 @@ void draw_interval_tree(const draw_chordal_opts_t *opts,
   env.chordal_env = chordal_env;
   obstack_init(&env.obst);
 
-  irg_block_walk_graph(chordal_env->session_env->irg, block_dims_walker, NULL, &env);
+  irg_block_walk_graph(chordal_env->irg, block_dims_walker, NULL, &env);
   layout(&env, start_block, opts->x_margin);
   set_y(&env, start_block, opts->y_margin);
   start_dims = pmap_get(env.block_dims, start_block);

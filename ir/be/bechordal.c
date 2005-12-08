@@ -34,6 +34,7 @@
 #include "besched_t.h"
 #include "belive_t.h"
 #include "bearch.h"
+#include "beifg.h"
 
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
@@ -44,138 +45,20 @@
 #define NO_COLOR (-1)
 
 #undef DUMP_INTERVALS
-#undef DUMP_PRESSURE
-#undef DUMP_IFG
 
-#if defined(DUMP_IFG) && !defined(BUILD_GRAPH)
-#error Must define BUILD_GRAPH to be able to dump it.
-#endif
+typedef struct _be_chordal_alloc_env_t {
+	be_chordal_env_t *chordal_env;
 
+	bitset_t *live;				/**< A liveness bitset. */
+	bitset_t *colors;			/**< The color mask. */
+	bitset_t *in_colors;        /**< Colors used by live in values. */
+	int colors_n;               /**< The number of colors. */
+} be_chordal_alloc_env_t;
 
 #include "fourcc.h"
 
 /* Make a fourcc for border checking. */
 #define BORDER_FOURCC				FOURCC('B', 'O', 'R', 'D')
-
-static firm_dbg_module_t *dbg;
-
-#ifdef BUILD_GRAPH
-
-#define IF_EDGE_HASH(e) ((e)->src ^ (e)->tgt)
-#define IF_NODE_HASH(n) ((n)->nnr)
-
-static int if_edge_cmp(const void *p1, const void *p2, size_t size)
-{
-	const if_edge_t *e1 = p1;
-	const if_edge_t *e2 = p2;
-
-	return !(e1->src == e2->src && e1->tgt == e2->tgt);
-}
-
-static int if_node_cmp(const void *p1, const void *p2, size_t size)
-{
-	const if_node_t *n1 = p1;
-	const if_node_t *n2 = p2;
-
-	return n1->nnr != n2->nnr;
-}
-
-static INLINE if_edge_t *edge_init(if_edge_t *edge, int src, int tgt)
-{
-	/* Bring the smaller entry to src. */
-	if(src > tgt) {
-		edge->src = tgt;
-		edge->tgt = src;
-	} else {
-		edge->src = src;
-		edge->tgt = tgt;
-	}
-
-	return edge;
-}
-
-static INLINE void add_if(const be_chordal_env_t *env, int src, int tgt)
-{
-	if_edge_t edge;
-	if_node_t node, *src_node, *tgt_node;
-	/* insert edge */
-	edge_init(&edge, src, tgt);
-	set_insert(env->edges, &edge, sizeof(edge), IF_EDGE_HASH(&edge));
-
-	/* insert nodes */
-	node.nnr = src;
-	node.neighb = pset_new_ptr(8);
-	src_node = set_insert(env->nodes, &node, sizeof(node), IF_NODE_HASH(&node));
-	node.nnr = tgt;
-	node.neighb = pset_new_ptr(8);
-	tgt_node = set_insert(env->nodes, &node, sizeof(node), IF_NODE_HASH(&node));
-
-	/* insert neighbors into nodes */
-	pset_insert_ptr(src_node->neighb, tgt_node);
-	pset_insert_ptr(tgt_node->neighb, src_node);
-}
-
-static INLINE int are_connected(const be_chordal_env_t *env, int src, int tgt)
-{
-	if_edge_t edge;
-	edge_init(&edge, src, tgt);
-	return set_find(env->edges, &edge, sizeof(edge), IF_EDGE_HASH(&edge)) != NULL;
-}
-
-int ifg_has_edge(const be_chordal_env_t *env, const if_node_t *n1, const if_node_t* n2) {
-	return are_connected(env, n1->nnr, n2->nnr);
-}
-
-#ifdef DUMP_IFG
-
-static void dump_ifg(const be_chordal_env_t *env)
-{
-	FILE *f;
-	set *edges = env->edges;
-	ir_graph *irg = env->irg;
-	char filename[128];
-
-	ir_snprintf(filename, sizeof(filename), "ifg_%s_%F.dot", env->cls->name, irg);
-
-	if((f = fopen(filename, "wt")) != NULL) {
-		bitset_pos_t pos;
-		int n_edges = 0;
-		if_edge_t *edge;
-		bitset_t *bs = bitset_malloc(get_graph_node_count(irg));
-
-		ir_fprintf(f, "graph \"%F\" {\n", irg);
-		fprintf(f, "\tnode [shape=box,style=filled]\n");
-
-		for(edge = set_first(edges); edge; edge = set_next(edges)) {
-			bitset_set(bs, edge->src);
-			bitset_set(bs, edge->tgt);
-			n_edges++;
-		}
-
-		fprintf(f, "\tx [label=\"nodes: %u, edges: %d\"]\n", bitset_popcnt(bs), n_edges);
-
-		bitset_foreach(bs, pos) {
-			int nr = (int) pos;
-			ir_node *irn = get_irn_for_graph_nr(irg, nr);
-
-			ir_fprintf(f, "\tn%d [label=\"%+F\"]\n", nr, irn);
-		}
-
-		for(edge = set_first(edges); edge; edge = set_next(edges)) {
-			fprintf(f, "\tn%d -- n%d [len=5]\n", edge->src, edge->tgt);
-		}
-
-		fprintf(f, "}\n");
-		fclose(f);
-
-		bitset_free(bs);
-	}
-
-}
-
-#endif /* DUMP_IFG */
-
-#endif /* BUILD_GRAPH */
 
 static void check_border_list(struct list_head *head)
 {
@@ -220,7 +103,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 
 		/* also allocate the def and tie it to the use. */
 		def = obstack_alloc(&env->obst, sizeof(*def));
-    memset(def, 0, sizeof(*def));
+		memset(def, 0, sizeof(*def));
 		b->other_end = def;
 		def->other_end = b;
 
@@ -252,17 +135,21 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	b->irn = irn;
 	b->step = step;
 	list_add_tail(&b->list, head);
-	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n",
-				is_def ? "def" : "use", irn, step));
+	DBG((env->dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n", is_def ? "def" : "use", irn, step));
 
 
 	return b;
 }
 
+/**
+ * Check, if an irn is of the register class currently under processing.
+ * @param env The chordal environment.
+ * @param irn The node.
+ * @return 1, if the node is of that register class, 0 if not.
+ */
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-  return arch_irn_has_reg_class(env->session_env->main_env->arch_env,
-			irn, arch_pos_make_out(0), env->cls);
+  return arch_irn_has_reg_class(env->main_env->arch_env, irn, -1, env->cls);
 }
 
 /**
@@ -281,8 +168,10 @@ static void pressure(ir_node *block, void *env_ptr)
 #define border_use(irn, step, real) \
 	border_add(env, head, irn, step, ++pressure, 0, real)
 
-	be_chordal_env_t *env = env_ptr;
-	bitset_t *live = env->live;
+	be_chordal_alloc_env_t *alloc_env = env_ptr;
+	be_chordal_env_t *env             = alloc_env->chordal_env;
+	bitset_t *live                    = alloc_env->live;
+	firm_dbg_module_t *dbg            = env->dbg;
 	ir_node *irn;
 
 	int i, n;
@@ -298,7 +187,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	/* Set up the border list in the block info */
 	head = obstack_alloc(&env->obst, sizeof(*head));
 	INIT_LIST_HEAD(head);
-  assert(pmap_get(env->border_heads, block) == NULL);
+	assert(pmap_get(env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);
 
 	/*
@@ -327,16 +216,10 @@ static void pressure(ir_node *block, void *env_ptr)
 	     * register of the current class, make a border for it.
 	     */
 		if(has_reg_class(env, irn)) {
-			bitset_pos_t elm;
 			int nr = get_irn_graph_nr(irn);
 
 			bitset_clear(live, nr);
 			border_def(irn, step, 1);
-
-#ifdef BUILD_GRAPH
-			bitset_foreach(live, elm)
-				add_if(env, nr, (int) elm);
-#endif
 		}
 
 		/*
@@ -382,11 +265,13 @@ static void pressure(ir_node *block, void *env_ptr)
 
 static void assign(ir_node *block, void *env_ptr)
 {
-	be_chordal_env_t *env = env_ptr;
-	bitset_t *live = env->live;
-	bitset_t *colors = env->colors;
-	bitset_t *in_colors = env->in_colors;
-	const arch_env_t *arch_env = env->session_env->main_env->arch_env;
+	be_chordal_alloc_env_t *alloc_env = env_ptr;
+	be_chordal_env_t *env       = alloc_env->chordal_env;
+	firm_dbg_module_t *dbg      = env->dbg;
+	bitset_t *live              = alloc_env->live;
+	bitset_t *colors            = alloc_env->colors;
+	bitset_t *in_colors         = alloc_env->in_colors;
+	const arch_env_t *arch_env  = env->main_env->arch_env;
 
 	const ir_node *irn;
 	border_t *b;
@@ -411,7 +296,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 */
 	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
 		if(has_reg_class(env, irn)) {
-			const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
+			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
 			int col;
 
 			assert(reg && "Node must have been assigned a register");
@@ -448,20 +333,20 @@ static void assign(ir_node *block, void *env_ptr)
 			col = bitset_next_clear(colors, 0);
 			reg = arch_register_for_index(env->cls, col);
 
-			assert(arch_get_irn_register(arch_env, irn, 0) == NULL && "This node must not have been assigned a register yet");
+			assert(arch_get_irn_register(arch_env, irn) == NULL && "This node must not have been assigned a register yet");
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 
 			bitset_set(colors, col);
 			bitset_set(live, nr);
 
-			arch_set_irn_register(arch_env, irn, 0, reg);
+			arch_set_irn_register(arch_env, irn, reg);
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n",
             arch_register_get_name(reg), col, irn));
 		}
 
 		/* Clear the color upon a use. */
 		else if(!b->is_def) {
-			const arch_register_t *reg = arch_get_irn_register(arch_env, irn, 0);
+			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
 			int col;
 
 			assert(reg && "Register must have been assigned");
@@ -477,51 +362,29 @@ static void assign(ir_node *block, void *env_ptr)
 	del_pset(live_in);
 }
 
-void be_ra_chordal_init(void)
+void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 {
-	dbg = firm_dbg_register(DBG_CHORDAL);
-	firm_dbg_set_mask(dbg, DBG_LEVEL);
-}
+	int node_count        = get_graph_node_count(chordal_env->irg);
+	int colors_n          = arch_register_class_n_regs(chordal_env->cls);
+	ir_graph *irg         = chordal_env->irg;
+	void *base            = obstack_base(&chordal_env->obst);
 
-be_chordal_env_t *be_ra_chordal(
-    const be_main_session_env_t *session,
-    const arch_register_class_t *cls)
-{
-  ir_graph *irg = session->irg;
-	int node_count = get_graph_node_count(irg);
-	int colors_n = arch_register_class_n_regs(cls);
-	be_chordal_env_t *env = malloc(sizeof(*env));
+	be_chordal_alloc_env_t env;
 
 	if(get_irg_dom_state(irg) != dom_consistent)
 		compute_doms(irg);
 
-	obstack_init(&env->obst);
-
-#ifdef BUILD_GRAPH
-	env->edges = new_set(if_edge_cmp, node_count);
-	env->nodes = new_set(if_node_cmp, node_count);
-#endif
-
-  env->session_env = session;
-	env->live = bitset_obstack_alloc(&env->obst, node_count);
-	env->colors = bitset_obstack_alloc(&env->obst, colors_n);
-	env->in_colors = bitset_obstack_alloc(&env->obst, colors_n);
-	env->colors_n = colors_n;
-	env->cls = cls;
-	env->border_heads = pmap_create();
+	env.chordal_env  = chordal_env;
+	env.live         = bitset_obstack_alloc(&chordal_env->obst, node_count);
+	env.colors       = bitset_obstack_alloc(&chordal_env->obst, colors_n);
+	env.in_colors    = bitset_obstack_alloc(&chordal_env->obst, colors_n);
+	env.colors_n     = colors_n;
 
 	/* First, determine the pressure */
-	dom_tree_walk_irg(irg, pressure, NULL, env);
-
-	/* Insert probable spills */
-	be_ra_chordal_spill(env);
+	dom_tree_walk_irg(irg, pressure, NULL, &env);
 
 	/* Assign the colors */
-	dom_tree_walk_irg(irg, assign, NULL, env);
-
-#ifdef DUMP_IFG
-	dump_ifg(env);
-#endif
+	dom_tree_walk_irg(irg, assign, NULL, &env);
 
 #ifdef DUMP_INTERVALS
 	{
@@ -531,160 +394,10 @@ be_chordal_env_t *be_ra_chordal(
 		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", cls->name, irg);
     	plotter = new_plotter_ps(buf);
 
-    	draw_interval_tree(&draw_chordal_def_opts, env, plotter, env->session_env->main_env->arch_env, cls);
+    	draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter, env->arch_env, cls);
     	plotter_free(plotter);
 	}
 #endif
-	return env;
-}
 
-void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
-	const arch_env_t *arch_env = chordal_env->session_env->main_env->arch_env;
-	struct obstack ob;
-	pmap_entry *pme;
-	ir_node **nodes, *n1, *n2;
-	int i, o;
-
-	/* Collect all irns */
-	obstack_init(&ob);
-	pmap_foreach(chordal_env->border_heads, pme) {
-		border_t *curr;
-		struct list_head *head = pme->value;
-		list_for_each_entry(border_t, curr, head, list)
-			if (curr->is_def && curr->is_real)
-				if (arch_get_irn_reg_class(arch_env, curr->irn, arch_pos_make_out(0)) == chordal_env->cls)
-					obstack_ptr_grow(&ob, curr->irn);
-	}
-	obstack_ptr_grow(&ob, NULL);
-	nodes = (ir_node **) obstack_finish(&ob);
-
-	/* Check them */
-	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
-		const arch_register_t *n1_reg, *n2_reg;
-
-		n1_reg = arch_get_irn_register(arch_env, n1, 0);
-		if (!arch_reg_is_allocatable(arch_env, n1, arch_pos_make_out(0), n1_reg)) {
-			DBG((dbg, 0, "Register assigned to %+F is not allowed\n", n1));
-			assert(0 && "Register constraint does not hold");
-		}
-		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
-			n2_reg = arch_get_irn_register(arch_env, n2, 0);
-			if (nodes_interfere(chordal_env, n1, n2) && n1_reg == n2_reg) {
-				DBG((dbg, 0, "Values %+F and %+F interfere and have the same register assigned\n", n1, n2));
-				assert(0 && "Interfering values have the same color!");
-			}
-		}
-	}
-	obstack_free(&ob, NULL);
-}
-
-/* BETTER #ifdef BUILD_GRAPH --> faster version of checker with edges */
-
-void be_ra_chordal_done(be_chordal_env_t *env)
-{
-#ifdef BUILD_GRAPH
-	{
-		if_node_t *ifn;
-		for(ifn = set_first(env->nodes); ifn; ifn = set_next(env->nodes))
-			free(ifn->neighb);
-		free(env->nodes);
-		free(env->edges);
-	}
-#endif
-
-  pmap_destroy(env->border_heads);
-	obstack_free(&env->obst, NULL);
-	free(env);
-}
-
-
-
-int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
-{
-#ifdef BUILD_GRAPH
-	return are_connected(env, get_irn_graph_nr(a), get_irn_graph_nr(b));
-#else
-	return values_interfere(a, b);
-#endif /* BUILD_GRAPH */
-}
-
-#ifdef BUILD_GRAPH
-
-set *be_ra_get_ifg_edges(const be_chordal_env_t *env) {
-	return env->edges;
-}
-
-set *be_ra_get_ifg_nodes(const be_chordal_env_t *env) {
-	return env->nodes;
-}
-
-#endif
-
-typedef struct {
-	const be_main_session_env_t *env;
-	const arch_register_class_t *cls;
-} check_pressure_info_t;
-
-
-static int check_pressure_has_class(const check_pressure_info_t *i, const ir_node *irn)
-{
-  return arch_irn_has_reg_class(i->env->main_env->arch_env,
-      irn, arch_pos_make_out(0), i->cls);
-}
-
-static void check_pressure_walker(ir_node *bl, void *data)
-{
-	firm_dbg_module_t *dbg = firm_dbg_register("be.ra.pressure");
-	check_pressure_info_t *info = data;
-	int n_regs = arch_register_class_n_regs(info->cls);
-
-	pset *live = pset_new_ptr_default();
-	int step = 0;
-	ir_node *irn;
-	irn_live_t *li;
-
-	firm_dbg_set_mask(dbg, DBG_LEVEL_CHECK);
-
-	live_foreach(bl, li) {
-		if(live_is_end(li) && check_pressure_has_class(info, li->irn)) {
-			ir_node *irn = (ir_node *) li->irn;
-			pset_insert_ptr(live, irn);
-		}
-	}
-
-	DBG((dbg, LEVEL_1, "end set for %+F\n", bl));
-	for(irn = pset_first(live); irn; irn = pset_next(live))
-		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
-
-	sched_foreach_reverse(bl, irn) {
-		int i, n;
-		int pressure = pset_count(live);
-
-		DBG((dbg, LEVEL_1, "%+10F@%+10F: pressure %d\n", bl, irn, pressure));
-
-		if(pressure > n_regs) {
-			ir_node *x;
-			ir_printf("%+10F@%+10F: pressure to high: %d\n", bl, irn, pressure);
-			for(x = pset_first(live); x; x = pset_next(live))
-				ir_printf("\t%+10F\n", x);
-		}
-
-		if(check_pressure_has_class(info, irn))
-			pset_remove_ptr(live, irn);
-
-		for(i = 0, n = get_irn_arity(irn); i < n; i++) {
-			ir_node *op = get_irn_n(irn, i);
-			if(check_pressure_has_class(info, op) && !is_Phi(irn))
-				pset_insert_ptr(live, op);
-		}
-		step++;
-	}
-}
-
-void be_check_pressure(const be_main_session_env_t *env, const arch_register_class_t *cls)
-{
-	check_pressure_info_t i;
-	i.env = env;
-	i.cls = cls;
-	irg_block_walk_graph(env->irg, check_pressure_walker, NULL, &i);
+	obstack_free(&chordal_env->obst, base);
 }

@@ -52,23 +52,6 @@ void be_sched_init(void)
 	firm_dbg_register("be.sched");
 }
 
-void be_sched_test(void)
-{
-	int i, n;
-	struct obstack obst;
-
-	obstack_init(&obst);
-
-	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-
-		list_sched(irg, trivial_selector);
-		be_sched_dump(stdout, irg);
-	}
-
-	obstack_free(&obst, NULL);
-}
-
 void sched_renumber(const ir_node *block)
 {
   ir_node *irn;

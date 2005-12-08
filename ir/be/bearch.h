@@ -3,6 +3,10 @@
 
 #include "firm_config.h"
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#endif
+
 #include "irnode.h"
 #include "irmode.h"
 
@@ -13,14 +17,19 @@
 #include "list.h"
 #include "ident.h"
 
-typedef struct _arch_register_class_t   arch_register_class_t;
-typedef struct _arch_register_t         arch_register_t;
-typedef struct _arch_enum_t             arch_enum_t;
-typedef struct _arch_enum_member_t      arch_enum_member_t;
-typedef struct _arch_isa_if_t           arch_isa_if_t;
-typedef struct _arch_env_t              arch_env_t;
-typedef struct _arch_irn_ops_t          arch_irn_ops_t;
-typedef struct _arch_irn_handler_t      arch_irn_handler_t;
+#include "belistsched.h"
+
+typedef struct _arch_register_class_t     arch_register_class_t;
+typedef struct _arch_register_t           arch_register_t;
+typedef struct _arch_enum_t               arch_enum_t;
+typedef struct _arch_enum_member_t        arch_enum_member_t;
+typedef struct _arch_isa_if_t             arch_isa_if_t;
+typedef struct _arch_isa_t                arch_isa_t;
+typedef struct _arch_env_t                arch_env_t;
+typedef struct _arch_irn_ops_t            arch_irn_ops_t;
+typedef struct _arch_irn_handler_t        arch_irn_handler_t;
+typedef struct _arch_code_generator_t     arch_code_generator_t;
+typedef struct _arch_code_generator_if_t  arch_code_generator_if_t;
 
 struct _be_node_factory_t;
 
@@ -203,106 +212,39 @@ typedef enum _arch_irn_flags_t {
   arch_irn_flags_rematerializable = 2
 } arch_irn_flags_t;
 
-/*
- * Some words about positions and indices:
- *
- * Firm has the policy "One node per value", that's why there are
- * Proj nodes. This view has its advantages, but in a backend
- * setting where we talk about instructions (which can also have
- * multiple results and not a single Tuple value) this is sometimes
- * hard.
- *
- * Each node representing an instruction must provide information
- * about the kind of its operands (where operands mean both input
- * and output operands). Such an operand is addressed with a position
- * which is infact a tuple {in, out} x N. The fact that a position
- * is an input/output operand is encoded in the sign, so input operands
- * go from 0..n-1 and output operands from -1..-m if the
- * instruction has n input and m output operands.
- */
-
-#define _BEARCH_TRANSFORM_INDEX(cmp, index) ((index) cmp 0 ? -((index) + 1) : (index))
-
-/**
- * Make an in position from an index.
- * @param index The index.
- * @return The position representing the index as an in operand.
- */
-#define arch_pos_make_in(index)   _BEARCH_TRANSFORM_INDEX(<, index)
-
-/**
- * Make an out position from an index.
- * @param index The index.
- * @return The position representing the index as an out operand.
- */
-#define arch_pos_make_out(index)  _BEARCH_TRANSFORM_INDEX(>=, index)
-
-/**
- * Check, if a position denotes an input operand.
- * @param pos The position.
- * @return 1, if the position denotes an input operand 0 if not.
- */
-#define arch_pos_is_in(pos)       ((pos) >= 0)
-
-/**
- * Check, if a position denotes an output operand.
- * @param pos The position.
- * @return 1, if the position denotes an output operand 0 if not.
- */
-#define arch_pos_is_out(pos)      (!arch_pos_is_in(pos))
-
-/**
- * Get the index of a position.
- * @param pos The position.
- * @return The index of the position.
- */
-#define arch_pos_get_index(pos)   _BEARCH_TRANSFORM_INDEX(<, pos)
-
 struct _arch_irn_ops_t {
 
   /**
    * Get the register requirements for a given operand.
    * @param self The self pointer.
    * @param irn The node.
-   * @param pos The operand's position.
+   * @param pos The operand's position
+	 * 						(-1 for the result of the node, 0..n for the input
+	 * 						operands).
    * @return    The register requirements for the selected operand.
    *            The pointer returned is never NULL.
    */
   const arch_register_req_t *(*get_irn_reg_req)(const arch_irn_ops_t *self,
-      arch_register_req_t *req,
-      const ir_node *irn, int pos);
-
-  /**
-   * Get the number of operands of a node.
-   * @param irn     The node.
-   * @param in_out  Denotes wither input (a number >= 0) or
-   *                output (a number < 0).
-   * @return        The number of operands for either in, or output.
-   */
-  int (*get_n_operands)(const arch_irn_ops_t *self, const ir_node *irn, int in_out);
+      arch_register_req_t *req, const ir_node *irn, int pos);
 
   /**
    * Set the register for an output operand.
    * @param irn The node.
-   * @param pos The position of the output operand.
    * @param reg The register allocated to that operand.
    * @note      If the operand is not a register operand,
    *            the call is ignored.
    */
-  void (*set_irn_reg)(const arch_irn_ops_t *self, ir_node *irn,
-      int idx, const arch_register_t *reg);
+  void (*set_irn_reg)(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg);
 
   /**
    * Get the register allocated for an output operand.
    * @param irn The node.
-   * @param pos The index of the output operand.
    * @return    The register allocated at that operand. NULL, if
    *            the operand was no register operand or
    *            @c arch_register_invalid, if no register has yet been
    *            allocated for this node.
    */
-  const arch_register_t *(*get_irn_reg)(const arch_irn_ops_t *self,
-      const ir_node *irn, int idx);
+  const arch_register_t *(*get_irn_reg)(const arch_irn_ops_t *self, const ir_node *irn);
 
   /**
    * Classify the node.
@@ -320,9 +262,6 @@ struct _arch_irn_ops_t {
   arch_irn_flags_t (*get_flags)(const arch_irn_ops_t *self, const ir_node *irn);
 
 };
-
-extern int
-arch_get_n_operands(const arch_env_t *env, const ir_node *irm, int in_out);
 
 /**
  * Get the register requirements for a node.
@@ -392,11 +331,10 @@ arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos);
  * Get the register allocated at a certain output operand of a node.
  * @param env The arch nvironment.
  * @param irn The node.
- * @param idx The index of the output operand.
  * @return    The register allocated for this operand
  */
 extern const arch_register_t *
-arch_get_irn_register(const arch_env_t *env, const ir_node *irn, int idx);
+arch_get_irn_register(const arch_env_t *env, const ir_node *irn);
 
 /**
  * Set the register for a certain output operand.
@@ -405,8 +343,8 @@ arch_get_irn_register(const arch_env_t *env, const ir_node *irn, int idx);
  * @param idx The index of the output operand.
  * @param reg The register.
  */
-extern void arch_set_irn_register(const arch_env_t *env,
-    ir_node *irn, int idx, const arch_register_t *reg);
+extern void arch_set_irn_register(const arch_env_t *env, ir_node *irn,
+		const arch_register_t *reg);
 
 /**
  * Classify a node.
@@ -444,35 +382,89 @@ struct _arch_irn_handler_t {
 };
 
 /**
+ * The code generator.
+ */
+struct _arch_code_generator_if_t {
+
+	/**
+	 * Called, when the graph is being normalized.
+	 */
+	void (*prepare_graph)(void *self);
+
+	/**
+	 * Called before scheduling.
+	 */
+	void (*before_sched)(void *self);
+
+	/**
+	 * Called before register allocation.
+	 */
+	void (*before_ra)(void *self);
+
+	/**
+	 * Called after everything happened.
+	 * The code generator must also be de-allocated here.
+	 */
+	void (*done)(void *self);
+
+};
+
+#define _arch_cg_call(cg, func) \
+do { \
+	if((cg)->impl->func) \
+		(cg)->impl->func(cg); \
+} while(0)
+
+#define arch_code_generator_prepare_graph(cg)   _arch_cg_call(cg, prepare_graph)
+#define arch_code_generator_before_sched(cg)    _arch_cg_call(cg, before_sched)
+#define arch_code_generator_before_ra(cg)       _arch_cg_call(cg, before_ra)
+#define arch_code_generator_done(cg)            _arch_cg_call(cg, done)
+
+/**
+ * Code generator base class.
+ */
+struct _arch_code_generator_t {
+	const arch_code_generator_if_t *impl;
+};
+
+/**
+ * ISA base class.
+ */
+struct _arch_isa_t {
+	const arch_isa_if_t *impl;
+};
+
+/**
  * Architecture interface.
  */
 struct _arch_isa_if_t {
 
+#ifdef WITH_LIBCORE
+  void (*register_options)(lc_opt_entry_t *grp);
+#endif
+
   /**
    * Initialize the isa interface.
    */
-  void (*init)(void);
+  void *(*init)(void);
+
+  /**
+   * Free the isa instance.
+   */
+  void (*done)(void *self);
 
   /**
    * Get the the number of register classes in the isa.
    * @return The number of register classes.
    */
-  int (*get_n_reg_class)(void);
+  int (*get_n_reg_class)(const void *self);
 
   /**
    * Get the i-th register class.
    * @param i The number of the register class.
    * @return The register class.
    */
-  const arch_register_class_t *(*get_reg_class)(int i);
-
-  /**
-   * Prepare a graph.
-   * This function is called each time, the back end starts running over
-   * a graph.
-   * @param irg The graph.
-   */
-  void (*prepare_graph)(ir_graph *irg);
+  const arch_register_class_t *(*get_reg_class)(const void *self, int i);
 
   /**
    * The irn handler for this architecture.
@@ -480,15 +472,28 @@ struct _arch_isa_if_t {
    * when the architecture is initialized.
    * (May be NULL).
    */
-  const arch_irn_handler_t *irn_handler;
+  const arch_irn_handler_t *(*get_irn_handler)(const void *self);
 
   /**
-   * The code generation function for this architecture.
-   * (May be NULL)
-   * @param out The output file
+   * Produce a new code generator.
+   * @param self The this pointer.
+   * @param irg  The graph for which code shall be generated.
+   * @return     A code generator.
    */
-  void (*codegen)(FILE *out);
+  arch_code_generator_t *(*make_code_generator)(void *self, ir_graph *irg);
+
+  /**
+   * Get the list scheduler to use.
+   * @param self  The isa object.
+   * @return      The list scheduler selector.
+   */
+  const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
 };
+
+#define arch_isa_get_n_reg_class(isa)           ((isa)->impl->get_n_reg_class(isa))
+#define arch_isa_get_reg_class(isa,i)           ((isa)->impl->get_reg_class(isa, i))
+#define arch_isa_get_irn_handler(isa)           ((isa)->impl->get_irn_handler(isa))
+#define arch_isa_make_code_generator(isa,irg)   ((isa)->impl->make_code_generator(isa, irg))
 
 #define ARCH_MAX_HANDLERS         8
 
@@ -498,7 +503,7 @@ struct _arch_isa_if_t {
  */
 struct _arch_env_t {
   const struct _be_node_factory_t *node_factory;  /**< The node factory for be nodes. */
-  const arch_isa_if_t *isa;               /**< The isa about which everything is. */
+  arch_isa_t *isa;                                /**< The isa about which everything is. */
 
   arch_irn_handler_t const *handlers[ARCH_MAX_HANDLERS]; /**< The handlers are organized as
                                                            a stack. */

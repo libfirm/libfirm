@@ -73,12 +73,12 @@ typedef struct _unit_t {
 } unit_t;
 
 /* Helpers */
-#define get_arch_env(co) ((co)->chordal_env->session_env->main_env->arch_env)
-#define get_irg(co)      ((co)->chordal_env->session_env->irg)
+#define get_arch_env(co) ((co)->chordal_env->main_env->arch_env)
+#define get_irg(co)      ((co)->chordal_env->irg)
 #define get_irn_col(co, irn) \
-	arch_register_get_index(arch_get_irn_register(get_arch_env(co), irn, 0))
+	arch_register_get_index(arch_get_irn_register(get_arch_env(co), irn))
 #define set_irn_col(co, irn, col) \
-	arch_set_irn_register(get_arch_env(co), irn, 0, arch_register_for_index(co->chordal_env->cls, col))
+	arch_set_irn_register(get_arch_env(co), irn, arch_register_for_index(co->chordal_env->cls, col))
 
 
 #define list_entry_units(lh) list_entry(lh, unit_t, units)

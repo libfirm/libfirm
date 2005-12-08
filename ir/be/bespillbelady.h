@@ -9,9 +9,12 @@
 #define BESPILLBELADY_H_
 
 #include "be_t.h"
+#include "bechordal.h"
+
 #include "bearch.h"
 #include "bespill.h"
 
-void be_spill_belady(const be_main_session_env_t *env, const arch_register_class_t *cls);
+void be_spill_belady(const be_chordal_env_t *env);
+
 
 #endif /*BESPILLBELADY_H_*/

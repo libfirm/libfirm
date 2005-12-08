@@ -39,6 +39,9 @@
 #include "benode_t.h"
 #include "beutil.h"
 #include "bespillilp.h"
+#include "bespill.h"
+
+#include "bechordal_t.h"
 
 #define BIGM 100000.0
 
@@ -80,7 +83,7 @@ typedef struct _spill_stat_t {
 typedef struct _spill_ilp_t {
 	spill_stat_t stats;
 	const arch_register_class_t *cls;
-	const be_main_session_env_t *session;
+	const be_chordal_env_t *chordal_env;
 	firm_dbg_module_t *dbg;
 	lpp_t *lpp;
 	set *irn_use_heads;
@@ -133,13 +136,11 @@ typedef struct _first_use_t {
 static double get_weight(const ir_node *irn)
 {
 	ir_loop *loop = get_irn_loop((ir_node *) irn);
-	int res = 1.0;
+	int res = 1;
 
 	if(loop) {
 		int depth = get_loop_depth(loop);
 		res += depth * depth;
-
-		// ir_printf("%+F has loop depth %d\n", irn, depth);
 	}
 
 	return res;
@@ -148,8 +149,7 @@ static double get_weight(const ir_node *irn)
 
 static INLINE int has_reg_class(const spill_ilp_t *si, const ir_node *irn)
 {
-  return arch_irn_has_reg_class(si->session->main_env->arch_env,
-      irn, arch_pos_make_out(0), si->cls);
+	return chordal_has_class(si->chordal_env, irn);
 }
 
 static int cmp_live_range(const void *a, const void *b, size_t n)
@@ -218,7 +218,7 @@ static live_range_t *get_first_use_lr(spill_ilp_t *si, ir_node *bl, ir_node *irn
 static INLINE int can_remat(const spill_ilp_t *si, const ir_node *irn, pset *live)
 {
 	int i, n;
-  const arch_env_t *arch_env    = si->session->main_env->arch_env;
+	const arch_env_t *arch_env    = si->chordal_env->main_env->arch_env;
 	int remat = (arch_irn_get_flags(arch_env, irn) & arch_irn_flags_rematerializable) != 0;
 
 	for(i = 0, n = get_irn_arity(irn); i < n && remat; ++i) {
@@ -620,22 +620,22 @@ static void writeback_results(spill_ilp_t *si)
 	be_insert_spills_reloads(si->senv, NULL);
 }
 
-void be_spill_ilp(const be_main_session_env_t *session_env,
-    const arch_register_class_t *cls)
+void be_spill_ilp(const be_chordal_env_t *chordal_env)
 {
 	char problem_name[256];
 	struct obstack obst;
 	spill_ilp_t si;
 
-	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", session_env->irg, cls->name);
+	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s",
+		chordal_env->irg, chordal_env->cls->name);
 
 	obstack_init(&obst);
 	memset(&si.stats, 0, sizeof(si.stats));
-	si.session         = session_env;
+	si.chordal_env     = chordal_env;
 	si.obst            = &obst;
 	si.dbg             = firm_dbg_register("be.ra.spillilp");
-	si.senv            = be_new_spill_env(si.dbg, session_env, cls, is_mem_phi, &si);
-	si.cls             = cls;
+	si.senv            = be_new_spill_env(si.dbg, chordal_env, is_mem_phi, &si);
+	si.cls             = chordal_env->cls;
 	si.lpp             = new_lpp(problem_name, lpp_minimize);
 	si.irn_use_heads   = new_set(cmp_irn_use_head, 4096);
 	si.live_ranges     = new_set(cmp_live_range, 16384);
@@ -645,7 +645,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	si.enable_store    = 1;
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
-	irg_block_walk_graph(session_env->irg, process_block, NULL, &si);
+	irg_block_walk_graph(chordal_env->irg, process_block, NULL, &si);
 	if(si.enable_store)
 		add_store_costs(&si);
 
@@ -662,7 +662,7 @@ void be_spill_ilp(const be_main_session_env_t *session_env,
 	}
 #endif
 
-	DBG((si.dbg, LEVEL_1, "%F\n", session_env->irg));
+	DBG((si.dbg, LEVEL_1, "%F\n", chordal_env->irg));
 #ifdef SOLVE_LOCAL
 	lpp_solve_cplex(si.lpp);
 #else

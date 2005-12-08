@@ -53,7 +53,7 @@ static firm_dbg_module_t *dbg = NULL;
 
 typedef struct _simpl_t {
 	struct list_head chain;
-	if_node_t *ifn;
+	ir_node *irn;
 } simpl_t;
 
 typedef struct _problem_instance_t {
@@ -77,7 +77,7 @@ typedef struct _problem_instance_t {
 
 #define is_removed(irn) pset_find_ptr(pi->removed, irn)
 
-#define is_color_possible(irn,color) arch_reg_is_allocatable(get_arch_env(pi->co), irn, arch_pos_make_out(0), arch_register_for_index(pi->co->chordal_env->cls, color))
+#define is_color_possible(irn,color) arch_reg_is_allocatable(get_arch_env(pi->co), irn, -1, arch_register_for_index(pi->co->chordal_env->cls, color))
 
 /*
  * Some stuff for variable name handling.
@@ -105,24 +105,32 @@ typedef struct _problem_instance_t {
  * Checks if a node is simplicial in the graph
  * heeding the already removed nodes.
  */
-static INLINE int pi_is_simplicial(problem_instance_t *pi, const if_node_t *ifn) {
+static INLINE int pi_is_simplicial(problem_instance_t *pi, const ir_node *ifn) {
 	int i, o, size = 0;
-	if_node_t **all, *curr;
-	all = alloca(ifn_get_degree(ifn) * sizeof(*all));
+	ir_node **all, *curr;
+	be_ifg_t *ifg = pi->co->chordal_env->ifg;
+	void *iter = be_ifg_iter_alloca(ifg);
+
+	all = alloca(be_ifg_degree(ifg, ifn) * sizeof(*all));
 
 	/* get all non-removed neighbors */
-	foreach_neighb(ifn, curr)
+	be_ifg_foreach_neighbour(ifg, iter, ifn, curr)
 		if (!is_removed(curr))
 			all[size++] = curr;
 
 	/* check if these form a clique */
 	for (i=0; i<size; ++i)
 		for (o=i+1; o<size; ++o)
-			if (!ifg_has_edge(pi->co->chordal_env, all[i], all[o]))
+			if (!be_ifg_connected(ifg, all[i], all[o]))
 				return 0;
 
 	/* all edges exist so this is a clique */
 	return 1;
+}
+
+static int irn_cmp(const void *a, const void *b, size_t n)
+{
+	return a != b;
 }
 
 /**
@@ -130,30 +138,36 @@ static INLINE int pi_is_simplicial(problem_instance_t *pi, const if_node_t *ifn)
  * simplicial AND not member of a equal-color-wish
  */
 static void pi_find_simplicials(problem_instance_t *pi) {
-	set *if_nodes;
-	if_node_t *ifn;
+	ir_node *irn;
 	int redo = 1;
+	int n_nodes = 0;
+	const be_ifg_t *ifg = pi->co->chordal_env->ifg;
+	void *iter = be_ifg_iter_alloca(ifg);
 
 	DBG((dbg, LEVEL_2, "Find simlicials...\n"));
 
-	if_nodes = be_ra_get_ifg_nodes(pi->co->chordal_env);
 	while (redo) {
 		redo = 0;
-		for (ifn = set_first(if_nodes); ifn; ifn = set_next(if_nodes)) {
-			ir_node *irn = get_irn_for_graph_nr(get_irg(pi->co), ifn->nnr);
+		be_ifg_foreach_node(ifg, iter, irn) {
 			if (!is_removed(irn) && !is_optimizable(get_arch_env(pi->co), irn) && !is_optimizable_arg(pi->co, irn)) {
-          	 	if (pi_is_simplicial(pi, ifn)) {
+          	 	if (pi_is_simplicial(pi, irn)) {
 					simpl_t *s = xmalloc(sizeof(*s));
-					s->ifn = ifn;
+					s->irn = irn;
 					list_add(&s->chain, &pi->simplicials);
 					pset_insert_ptr(pi->removed, irn);
 					redo = 1;
-					DBG((dbg, LEVEL_2, " Removed %n %d\n", irn, get_irn_graph_nr(irn)));
+					DBG((dbg, LEVEL_2, " Removed %+F\n", irn));
           	 	}
 			}
 		}
 	}
-	if (set_count(be_ra_get_ifg_nodes(pi->co->chordal_env)) == pset_count(pi->removed))
+
+	/* TODO: Count inside the last look */
+	be_ifg_foreach_node(ifg, iter, irn) {
+		n_nodes++;
+	}
+
+	if (n_nodes == pset_count(pi->removed))
 		pi->all_simplicial = 1;
 }
 
@@ -220,7 +234,7 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 
 				/* iterate over all possible colors in order */
 				bitset_clear_all(pos_regs);
-				arch_get_allocatable_regs(get_arch_env(pi->co), curr->irn, arch_pos_make_out(0), pi->co->chordal_env->cls, pos_regs);
+				arch_get_allocatable_regs(get_arch_env(pi->co), curr->irn, -1, pi->co->chordal_env->cls, pos_regs);
 				bitset_foreach(pos_regs, col) {
 					int var_idx;
 					mangle_var2(pi->buf, 'x', nnr, col);
@@ -338,14 +352,14 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 		root = curr->nodes[0];
 		rootnr = get_irn_graph_nr(root);
 		bitset_clear_all(root_regs);
-		arch_get_allocatable_regs(get_arch_env(pi->co), root, arch_pos_make_out(0), pi->co->chordal_env->cls, root_regs);
+		arch_get_allocatable_regs(get_arch_env(pi->co), root, -1, pi->co->chordal_env->cls, root_regs);
 
 		/* for all arguments of root */
 		for (i = 1; i < curr->node_count; ++i) {
 			arg = curr->nodes[i];
 			argnr = get_irn_graph_nr(arg);
 			bitset_clear_all(arg_regs);
-			arch_get_allocatable_regs(get_arch_env(pi->co), arg, arch_pos_make_out(0), pi->co->chordal_env->cls, arg_regs);
+			arch_get_allocatable_regs(get_arch_env(pi->co), arg, -1, pi->co->chordal_env->cls, arg_regs);
 
 			/* Introduce new variable and set factor in objective function */
 			mangle_var2(buf, 'y', rootnr, argnr);
@@ -730,7 +744,7 @@ struct pre_col {
 
 #define has_reg_class(pi,irn) \
   (arch_get_irn_reg_class(pi->co->chordal_env->session_env->main_env->arch_env, \
-                          irn, arch_pos_make_out(0)) == pi->co->chordal_env->cls)
+                          irn, -1) == pi->co->chordal_env->cls)
 
 static void preColoringWalker(ir_node *bl, void *env) {
 	struct pre_col *e = env;
@@ -905,23 +919,23 @@ static void pi_solve_ilp(problem_instance_t *pi) {
  */
 static void pi_set_simplicials(problem_instance_t *pi) {
 	simpl_t *simpl, *tmp;
-	bitset_t *used_cols = bitset_alloca(arch_register_class_n_regs(pi->co->chordal_env->cls));
+	be_ifg_t *ifg        = pi->co->chordal_env->ifg;
+	bitset_t *used_cols  = bitset_alloca(arch_register_class_n_regs(pi->co->chordal_env->cls));
+	void *iter           = be_ifg_iter_alloca(ifg);
 
 	DBG((dbg, LEVEL_2, "Set simplicials...\n"));
 	/* color the simplicial nodes in right order */
 	list_for_each_entry_safe(simpl_t, simpl, tmp, &pi->simplicials, chain) {
 		int free_col;
-		ir_node *other_irn, *irn;
-		if_node_t *other, *ifn;
+		ir_node *other, *irn;
 
 		/* get free color by inspecting all neighbors */
-		ifn = simpl->ifn;
-		irn = get_irn_for_graph_nr(get_irg(pi->co), ifn->nnr);
+		irn = simpl->irn;
 		bitset_clear_all(used_cols);
-		foreach_neighb(ifn, other) {
-			other_irn = get_irn_for_graph_nr(get_irg(pi->co), other->nnr);
-			if (!is_removed(other_irn)) /* only inspect nodes which are in graph right now */
-				bitset_set(used_cols, get_irn_col(pi->co, other_irn));
+
+		be_ifg_foreach_neighbour(ifg, iter, irn, other) {
+			if (!is_removed(other)) /* only inspect nodes which are in graph right now */
+				bitset_set(used_cols, get_irn_col(pi->co, other));
 		}
 
 		/* now all bits not set are possible colors */
