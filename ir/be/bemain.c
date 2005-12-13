@@ -12,7 +12,7 @@
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif
+#endif /* WITH_LIBCORE */
 
 #include "obst.h"
 #include "bitset.h"
@@ -48,11 +48,13 @@
 #include "bespillbelady.h"
 
 #include "firm/bearch_firm.h"
+#include "ia32/bearch_ia32.h"
 
 #define DUMP_INITIAL		(1 << 0)
 #define DUMP_SCHED			(1 << 1)
 #define DUMP_PREPARED		(1 << 2)
-#define DUMP_FINAL			(1 << 3)
+#define DUMP_RA				(1 << 3)
+#define DUMP_FINAL			(1 << 4)
 
 /* options visible for anyone */
 be_options_t be_options = {
@@ -64,13 +66,13 @@ be_options_t be_options = {
 };
 
 /* dump flags */
-static unsigned dump_flags = 0;
+static unsigned dump_flags = DUMP_INITIAL | DUMP_SCHED | DUMP_PREPARED | DUMP_RA | DUMP_FINAL;
 
 /* register allocator to use. */
 static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
-static const arch_isa_if_t *isa_if = &firm_isa;
+static const arch_isa_if_t *isa_if = &ia32_isa_if;
 
 #ifdef WITH_LIBCORE
 
@@ -82,6 +84,7 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "initial",    DUMP_INITIAL },
 	{ "sched",      DUMP_SCHED  },
 	{ "prepared",   DUMP_PREPARED },
+	{ "regalloc",   DUMP_RA },
 	{ "final",      DUMP_FINAL },
 	{ "all",        2 * DUMP_FINAL - 1 },
 	{ NULL,         0 }
@@ -96,6 +99,7 @@ static const lc_opt_enum_const_ptr_items_t ra_items[] = {
 /* instruction set architectures. */
 static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ "firm",    &firm_isa },
+	{ "ia32",    &ia32_isa_if },
 	{ NULL,      NULL }
 };
 
@@ -112,16 +116,16 @@ static lc_opt_enum_const_ptr_var_t isa_var = {
 };
 
 static const lc_opt_table_entry_t be_main_options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump",			"dump irg on several occasions",		&dump_var),
-	LC_OPT_ENT_ENUM_PTR("ra",				"register allocator",								&ra_var),
-	LC_OPT_ENT_ENUM_PTR("isa",			"the instruction set architecture", &isa_var),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump irg on several occasions", &dump_var),
+	LC_OPT_ENT_ENUM_PTR("ra", "register allocator", &ra_var),
+	LC_OPT_ENT_ENUM_PTR("isa", "the instruction set architecture", &isa_var),
 
-	LC_OPT_ENT_STR ("ilp.server",	"the ilp server name",				be_options.ilp_server, sizeof(be_options.ilp_server)),
-	LC_OPT_ENT_STR ("ilp.solver",	"the ilp solver name",				be_options.ilp_solver, sizeof(be_options.ilp_solver)),
+	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
+	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", be_options.ilp_solver, sizeof(be_options.ilp_solver)),
 	{ NULL }
 };
 
-#endif
+#endif /* WITH_LIBCORE */
 
 void be_opt_register(void)
 {
@@ -143,7 +147,7 @@ void be_opt_register(void)
 		const arch_isa_if_t *isa = isa_items[i].value;
 		isa->register_options(be_grp_root);
 	}
-#endif
+#endif /* WITH_LIBCORE */
 }
 
 
@@ -159,13 +163,13 @@ void be_init(void)
 	phi_class_init();
 }
 
-static be_main_env_t *be_init_env(be_main_env_t *env)
+static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 {
   obstack_init(&env->obst);
   env->dbg = firm_dbg_register("be.main");
 
   env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
-  arch_env_init(env->arch_env, isa_if);
+  arch_env_init(env->arch_env, isa_if, file_handle);
 
   /* Register the irn handler of the architecture */
   if (arch_isa_get_irn_handler(env->arch_env->isa))
@@ -218,13 +222,13 @@ static void prepare_graph(be_main_env_t *s, ir_graph *irg)
 	be_check_dominance(irg);
 }
 
-static void be_main_loop(void)
+static void be_main_loop(FILE *file_handle)
 {
 	int i, n;
 	arch_isa_t *isa;
 	be_main_env_t env;
 
-	be_init_env(&env);
+	be_init_env(&env, file_handle);
 
 	isa = arch_env_get_isa(env.arch_env);
 
@@ -266,6 +270,8 @@ static void be_main_loop(void)
 		arch_code_generator_before_ra(cg);
 		ra->allocate(&env, irg);
 
+		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
+
 		arch_code_generator_done(cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
 	}
@@ -273,7 +279,7 @@ static void be_main_loop(void)
 	be_done_env(&env);
 }
 
-void be_main(int argc, const char *argv[])
+void be_main(FILE *file_handle)
 {
-  be_main_loop();
+  be_main_loop(file_handle);
 }
