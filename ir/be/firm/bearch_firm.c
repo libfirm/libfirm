@@ -120,7 +120,7 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
   return bad;
 }
 
-static void *firm_init(void)
+static void *firm_init(FILE *unused)
 {
   static struct obstack obst;
   static int inited = 0;
