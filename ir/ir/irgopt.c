@@ -451,6 +451,7 @@ copy_graph_env (int copy_node_nr) {
   set_irn_link(get_irg_globals    (current_ir_graph), NULL);
   set_irn_link(get_irg_args       (current_ir_graph), NULL);
   set_irn_link(get_irg_initial_mem(current_ir_graph), NULL);
+  set_irn_link(get_irg_bad        (current_ir_graph), NULL);
   set_irn_link(get_irg_no_mem     (current_ir_graph), NULL);
 
   /* we use the block walk flag for removing Bads from Blocks ins. */
@@ -466,6 +467,7 @@ copy_graph_env (int copy_node_nr) {
   set_irg_end_reg    (current_ir_graph, get_irg_end(current_ir_graph));
   free_End(old_end);
   set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
+
   if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
     copy_node (get_irg_frame(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_frame(current_ir_graph), NULL);
@@ -482,26 +484,22 @@ copy_graph_env (int copy_node_nr) {
     copy_node (get_irg_args(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_args(current_ir_graph), NULL);
   }
-  set_irg_start      (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
-
-  set_irg_start_block(current_ir_graph,
-              get_new_node(get_irg_start_block(current_ir_graph)));
-  set_irg_frame      (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
-  set_irg_globals    (current_ir_graph, get_new_node(get_irg_globals(current_ir_graph)));
-  set_irg_initial_mem(current_ir_graph, get_new_node(get_irg_initial_mem(current_ir_graph)));
-  set_irg_args       (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
-
   if (get_irn_link(get_irg_bad(current_ir_graph)) == NULL) {
     copy_node(get_irg_bad(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_bad(current_ir_graph), NULL);
   }
-  set_irg_bad(current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
-
   if (get_irn_link(get_irg_no_mem(current_ir_graph)) == NULL) {
     copy_node(get_irg_no_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
     copy_preds(get_irg_no_mem(current_ir_graph), NULL);
   }
-  set_irg_no_mem(current_ir_graph, get_new_node(get_irg_no_mem(current_ir_graph)));
+  set_irg_start      (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
+  set_irg_start_block(current_ir_graph, get_new_node(get_irg_start_block(current_ir_graph)));
+  set_irg_frame      (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
+  set_irg_globals    (current_ir_graph, get_new_node(get_irg_globals(current_ir_graph)));
+  set_irg_initial_mem(current_ir_graph, get_new_node(get_irg_initial_mem(current_ir_graph)));
+  set_irg_args       (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
+  set_irg_bad        (current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
+  set_irg_no_mem     (current_ir_graph, get_new_node(get_irg_no_mem(current_ir_graph)));
 }
 
 /**
@@ -519,25 +517,29 @@ dead_node_elimination(ir_graph *irg) {
   struct obstack *graveyard_obst = NULL;
   struct obstack *rebirth_obst   = NULL;
 
-  edges_init_graph(irg);
-
-  /* inform statistics that we started a dead-node elimination run */
-  hook_dead_node_elim(irg, 1);
-
-  /* Remember external state of current_ir_graph. */
-  rem = current_ir_graph;
-  current_ir_graph = irg;
-  set_interprocedural_view(0);
-
-  /* Handle graph state */
-  assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  free_callee_info(current_ir_graph);
-  free_irg_outs(current_ir_graph);
-  free_trouts();
-  /* @@@ so far we loose loops when copying */
-  free_loop_information(current_ir_graph);
-
   if (get_opt_optimize() && get_opt_dead_node_elimination()) {
+    assert(! edges_activated(irg) && "dead node elimination requieres disabled edges");
+
+    /* inform statistics that we started a dead-node elimination run */
+    hook_dead_node_elim(irg, 1);
+
+    /* Remember external state of current_ir_graph. */
+    rem = current_ir_graph;
+    current_ir_graph = irg;
+    set_interprocedural_view(0);
+
+    assert(get_irg_phase_state(current_ir_graph) != phase_building);
+
+    /* Handle graph state */
+    free_callee_info(current_ir_graph);
+    free_irg_outs(current_ir_graph);
+    free_trouts();
+
+    /* @@@ so far we loose loops when copying */
+    free_loop_information(current_ir_graph);
+
+    if (get_irg_dom_state(irg) != dom_none)
+      set_irg_dom_inconsistent(irg);
 
     /* A quiet place, where the old obstack can rest in peace,
        until it will be cremated. */
@@ -558,17 +560,13 @@ dead_node_elimination(ir_graph *irg) {
     /* Free memory from old unoptimized obstack */
     obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
     xfree (graveyard_obst);           /* ... then free it.           */
+
+    /* inform statistics that the run is over */
+    hook_dead_node_elim(irg, 0);
+
+    current_ir_graph = rem;
+    set_interprocedural_view(rem_ipview);
   }
-
-  /* inform statistics that the run is over */
-  hook_dead_node_elim(irg, 0);
-
-  current_ir_graph = rem;
-  set_interprocedural_view(rem_ipview);
-
-	/* reset the dominator's state */
-	if(get_irg_dom_state(irg) != dom_none)
-		set_irg_dom_inconsistent(irg);
 }
 
 /**
