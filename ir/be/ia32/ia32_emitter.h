@@ -1,16 +1,25 @@
 #ifndef _IA32_EMITTER_H_
 #define _IA32_EMITTER_H_
 
+#include "irargs_t.h"  // this also inlucdes <libcore/lc_print.h>
 #include "irnode.h"
+#include "set.h"
 
-const char *get_dest_reg_name(ir_node *n, int num);
+#include "debug.h"
 
-const char *get_source_reg_name(ir_node *n, int num);
+typedef struct _emit_env_t {
+	firm_dbg_module_t *mod;
+	FILE *out;
+	set *reg_set;
+} emit_env_t;
 
-char *node_const_to_str(ir_node *n);
-
-char *node_offset_to_str(ir_node *n);
+const lc_arg_env_t *ia32_get_arg_env(void);
 
 void equalize_dest_src(FILE *F, ir_node *n);
+
+int get_ia32_in_regnr(ir_node *irn, int pos);
+const char *get_ia32_in_reg_name(ir_node *irn, int pos);
+
+void ia32_gen_routine(FILE *F, ir_graph *irg, set *reg_set);
 
 #endif /* _IA32_EMITTER_H_ */

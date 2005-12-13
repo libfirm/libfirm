@@ -16,6 +16,9 @@ typedef struct {
 
   divmod_flavour_t dm_flav;   /**<< flavour of a DivMod (flavour_Div/Mod/DivMod) */
 
+  long pn_code;			/**<< projnum "types" (e.g. indicates the compare operator of a conditional jump
+                          or an argument number) */
+
   unsigned n_res;      /**<< number of results */
 
   arch_irn_flags_t    flags;     /**<< indicating if spillable and/or rematerializeable */

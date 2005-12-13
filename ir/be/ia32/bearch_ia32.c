@@ -1,8 +1,21 @@
 #include "pseudo_irg.h"
 #include "irgwalk.h"
+#include "irprog.h"
+#include "irprintf.h"
+#include "bearch_ia32.h"
 
 #include "bitset.h"
 #include "debug.h"
+
+#include <obstack.h>
+
+#ifdef obstack_chunk_alloc
+# undef obstack_chunk_alloc
+# define obstack_chunk_alloc malloc
+#else
+# define obstack_chunk_alloc malloc
+# define obstack_chunk_free free
+#endif
 
 #include "../bearch.h"                /* the general register allocator interface */
 
@@ -10,22 +23,49 @@
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
 #include "ia32_gen_decls.h"           /* interface declaration emitter */
 #include "ia32_transform.h"
+#include "ia32_emitter.h"
+#include "ia32_map_regs.h"
 
-/* define shorter names for classes and indicees */
+#define DEBUG_MODULE "be.isa.ia32"
 
-#define N_GP_REGS   N_ia32_general_purpose_REGS
-#define N_FP_REGS   N_ia32_floating_point_REGS
-#define N_FLAG_REGS N_ia32_flag_register_REGS
+/* TODO: ugly */
+static set *cur_reg_set = NULL;
 
-#define CLS_GP   CLASS_ia32_general_purpose
-#define CLS_FP   CLASS_ia32_floating_point
-#define CLS_FLAG CLASS_ia32_flag_register
+/**
+ * Stuff needed for dummy register requirements to keep register allocator
+ * happy during development.
+ */
+static arch_register_t       ia32_dummy_regs[500];
+static arch_register_class_t ia32_dummy_reg_class = {
+	"dummy",
+	500,
+	ia32_dummy_regs
+};
 
-#define N_CLASSES (sizeof(ia32_reg_classes) / sizeof(ia32_reg_classes[0]))
+static arch_register_req_t ia32_dummy_register_req = {
+	arch_register_req_type_normal,
+	&ia32_dummy_reg_class,
+	{ NULL }
+};
 
-extern arch_register_class_t ia32_reg_classes[3];
 
-/* Implementation of the register allocator functions */
+
+/**************************************************
+ *                         _ _              _  __
+ *                        | | |            (_)/ _|
+ *  _ __ ___  __ _    __ _| | | ___   ___   _| |_
+ * | '__/ _ \/ _` |  / _` | | |/ _ \ / __| | |  _|
+ * | | |  __/ (_| | | (_| | | | (_) | (__  | | |
+ * |_|  \___|\__, |  \__,_|_|_|\___/ \___| |_|_|
+ *            __/ |
+ *           |___/
+ **************************************************/
+
+static ir_node *my_skip_proj(const ir_node *n) {
+	while (is_Proj(n))
+		n = get_Proj_pred(n);
+	return (ir_node *)n;
+}
 
 /**
  * Return register requirements for an ia32 node.
@@ -33,140 +73,377 @@ extern arch_register_class_t ia32_reg_classes[3];
  * will be asked for this information.
  */
 static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-  const arch_register_req_t **irn_req;
+	const arch_register_req_t **irn_req;
+	long node_pos = pos == -1 ? 0 : pos;
+	ir_mode *mode = get_irn_mode(irn);
+	firm_dbg_module_t *mod = firm_dbg_register(DEBUG_MODULE);
 
-  if (is_Proj(irn)) {
-  }
-  else if (is_ia32_irn(irn)) {
-    if (get_irn_mode(irn) == mode_T) {
-      return NULL;
-    }
+	if (mode == mode_T || mode == mode_M) {
+		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
+		return NULL;
+	}
 
-    if (pos >= 0) {
-      irn_req = get_ia32_in_req(irn);
-    }
-    else {
-      irn_req = get_ia32_out_req(irn);
-      pos     = -1 - pos;
-    }
+	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
-    memcpy(req, irn_req[pos], sizeof(*req));
-    return req;
-  }
-  else
-    req = NULL;
+	if (is_Proj(irn)) {
+		if (pos == -1)
+			node_pos = translate_proj_pos(irn);
+		else
+			node_pos = pos;
 
-  return req;
+		irn = my_skip_proj(irn);
+
+		DBG((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
+	}
+
+	if (is_ia32_irn(irn)) {
+		if (pos >= 0) {
+			irn_req = get_ia32_in_req(irn);
+		}
+		else {
+			irn_req = get_ia32_out_req(irn);
+			pos     = node_pos;
+		}
+
+		DBG((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
+
+		memcpy(req, irn_req[pos], sizeof(*req));
+		return req;
+	}
+	else {
+		/* treat Phi like Const with default requirements */
+		if (is_Phi(irn)) {
+			DBG((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
+			if (mode_is_float(mode))
+				memcpy(req, &ia32_default_req_ia32_floating_point, sizeof(*req));
+			else if (mode_is_int(mode) || mode_is_reference(mode))
+				memcpy(req, &ia32_default_req_ia32_general_purpose, sizeof(*req));
+			else if (mode == mode_T || mode == mode_M) {
+				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
+				return NULL;
+			}
+			else
+				assert(0 && "unsupported Phi-Mode");
+		}
+		else if (get_irn_op(irn) == op_Start) {
+			DBG((mod, LEVEL_1, "returning reqs none for ProjX -> Start (%+F )\n", irn));
+			switch (node_pos) {
+				case pn_Start_X_initial_exec:
+				case pn_Start_P_value_arg_base:
+				case pn_Start_P_globals:
+				case pn_Start_P_frame_base:
+					memcpy(req, &ia32_default_req_none, sizeof(*req));
+					break;
+//					memcpy(req, &ia32_default_req_ia32_general_purpose, sizeof(*req));
+//					break;
+				case pn_Start_T_args:
+					assert(0 && "ProjT(pn_Start_T_args) should not be asked");
+			}
+		}
+		else if (get_irn_op(irn) == op_Return && pos >= 0) {
+			DBG((mod, LEVEL_1, "returning reqs EAX for %+F\n", irn));
+			memcpy(req, &ia32_default_req_ia32_general_purpose_eax, sizeof(*req));
+		}
+		else {
+			DBG((mod, LEVEL_1, "returning standard reqs for %+F (not ia32)\n", irn));
+			memcpy(req, &ia32_dummy_register_req, sizeof(*req));
+		}
+	}
+
+	return req;
 }
 
-static int ia32_get_n_operands(const arch_irn_ops_t *self, const ir_node *irn, int in_out) {
-  if (in_out >= 0)
-    return get_irn_arity(irn);
-  else
-    return get_ia32_n_res(irn);
+static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg) {
+	int pos = 0;
+
+	if (is_Proj(irn)) {
+		pos = translate_proj_pos(irn);
+		irn = my_skip_proj(irn);
+	}
+
+	if (is_ia32_irn(irn)) {
+		const arch_register_t **slots;
+
+		slots      = get_ia32_slots(irn);
+		slots[pos] = reg;
+	}
+	else {
+		ia32_set_firm_reg(self, irn, reg, cur_reg_set);
+	}
 }
 
-static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, int pos, const arch_register_t *reg) {
-  if (is_ia32_irn(irn)) {
-    const arch_register_t **slots;
+static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const ir_node *irn) {
+	int pos = 0;
+	const arch_register_t *reg = NULL;
 
-    slots      = get_ia32_slots(irn);
-    slots[pos] = reg;
-  }
-}
+	if (is_Proj(irn)) {
+		pos = translate_proj_pos(irn);
+		irn = my_skip_proj(irn);
+	}
 
-static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const ir_node *irn, int pos) {
-  if (is_ia32_irn(irn)) {
-    const arch_register_t **slots;
+	if (is_ia32_irn(irn)) {
+		const arch_register_t **slots;
+		slots = get_ia32_slots(irn);
+		reg   = slots[pos];
+	}
+	else {
+		reg = ia32_get_firm_reg(self, irn, cur_reg_set);
+	}
 
-    slots = get_ia32_slots(irn);
-
-    return slots[pos];
-  }
-  else
-    return NULL;
+	return reg;
 }
 
 static arch_irn_class_t ia32_classify(const arch_irn_ops_t *self, const ir_node *irn) {
-  if (is_ia32_irn(irn)) {
-    if (is_ia32_Cmp(irn) || is_ia32_Cmp_i(irn)) // TODO: ia32_Jmp
-      return arch_irn_class_branch;
-    else
-      return arch_irn_class_normal;
-  }
-  else
-    return 0;
+	irn = my_skip_proj(irn);
+	if (is_cfop(irn))
+		return arch_irn_class_branch;
+	else
+		return arch_irn_class_normal;
 }
 
 static arch_irn_flags_t ia32_get_flags(const arch_irn_ops_t *self, const ir_node *irn) {
-  if (is_ia32_irn(irn))
-    return get_ia32_flags(irn);
-  else
-    return 0;
+	irn = my_skip_proj(irn);
+	if (is_ia32_irn(irn))
+		return get_ia32_flags(irn);
+	else {
+		ir_printf("don't know flags of %+F\n", irn);
+		return 0;
+	}
 }
 
 /* fill register allocator interface */
 
 static const arch_irn_ops_t ia32_irn_ops = {
-  ia32_get_irn_reg_req,
-  ia32_get_n_operands,
-  ia32_set_irn_reg,
-  ia32_get_irn_reg,
-  ia32_classify,
-  ia32_get_flags
+	ia32_get_irn_reg_req,
+	ia32_set_irn_reg,
+	ia32_get_irn_reg,
+	ia32_classify,
+	ia32_get_flags
 };
 
-/* Implementation of the backend isa functions */
 
-static void ia32_init(void) {
-  ia32_register_init();
-  ia32_create_opcodes();
+
+/**************************************************
+ *                _                         _  __
+ *               | |                       (_)/ _|
+ *   ___ ___   __| | ___  __ _  ___ _ __    _| |_
+ *  / __/ _ \ / _` |/ _ \/ _` |/ _ \ '_ \  | |  _|
+ * | (_| (_) | (_| |  __/ (_| |  __/ | | | | | |
+ *  \___\___/ \__,_|\___|\__, |\___|_| |_| |_|_|
+ *                        __/ |
+ *                       |___/
+ **************************************************/
+
+typedef struct _ia32_code_gen_t {
+	const arch_code_generator_if_t *impl;    /* implementation */
+	ir_graph                       *irg;     /* current irg */
+	FILE                           *out;     /* output file */
+	set                            *reg_set; /* set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
+	firm_dbg_module_t              *mod;     /* debugging module */
+	int                             emit_decls;
+} ia32_code_gen_t;
+
+
+
+/**
+ * Transforms the standard firm graph into
+ * an ia32 firm graph
+ */
+static void ia32_prepare_graph(void *self) {
+	ia32_code_gen_t   *cg  = self;
+
+	if (! is_pseudo_ir_graph(cg->irg))
+		irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg->mod);
 }
 
-static int ia32_get_n_reg_class(void) {
-  return N_CLASSES;
+
+
+/**
+ * Dummy functions for hooks we don't need but which must be filled.
+ */
+static void ia32_before_sched(void *self) {
 }
 
-static const arch_register_class_t *ia32_get_reg_class(int i) {
-  assert(i >= 0 && i < N_CLASSES && "Invalid ia32 register class requested.");
-  return &ia32_reg_classes[i];
+static void ia32_before_ra(void *self) {
+}
+
+
+
+/**
+ * Emits the code, closes the output file and frees
+ * the code generator interface.
+ */
+static void ia32_codegen(void *self) {
+	ia32_code_gen_t *cg = self;
+	ir_graph       *irg = cg->irg;
+	FILE           *out = cg->out;
+
+	if (cg->emit_decls) {
+		ia32_gen_decls(cg->out);
+		cg->emit_decls = 0;
+	}
+
+//	ia32_finish_irg(irg);
+	ia32_gen_routine(out, irg, cur_reg_set);
+
+	cur_reg_set = NULL;
+
+	/* de-allocate code generator */
+	del_set(cg->reg_set);
+	free(self);
+}
+
+static const arch_code_generator_if_t ia32_code_gen_if = {
+	ia32_prepare_graph,
+	ia32_before_sched,   /* before scheduling hook */
+	ia32_before_ra,      /* before register allocation hook */
+	ia32_codegen         /* emit && done */
+};
+
+
+
+/*****************************************************************
+ *  ____             _                  _   _____  _____
+ * |  _ \           | |                | | |_   _|/ ____|  /\
+ * | |_) | __ _  ___| | _____ _ __   __| |   | | | (___   /  \
+ * |  _ < / _` |/ __| |/ / _ \ '_ \ / _` |   | |  \___ \ / /\ \
+ * | |_) | (_| | (__|   <  __/ | | | (_| |  _| |_ ____) / ____ \
+ * |____/ \__,_|\___|_|\_\___|_| |_|\__,_| |_____|_____/_/    \_\
+ *
+ *****************************************************************/
+
+typedef struct _ia32_isa_t {
+	const arch_isa_if_t *impl;
+	int                  num_codegens;
+	FILE                *output_file;
+} ia32_isa_t;
+
+/**
+ * Initializes the backend ISA and opens the output file.
+ */
+static void *ia32_init(FILE *out) {
+	int i;
+	static struct obstack obst;
+	static int inited    = 0;
+	ia32_isa_t *isa      = malloc(sizeof(*isa));
+
+	isa->impl = &ia32_isa_if;
+
+	if(inited)
+		return NULL;
+
+	inited = 1;
+
+	isa->output_file  = out;
+	isa->num_codegens = 0;
+
+	/* init dummy register requirements */
+	obstack_init(&obst);
+
+	for (i = 0; i < 500; i++) {
+		int n;
+		char buf[5];
+		char *name;
+		arch_register_t *reg = &ia32_dummy_regs[i];
+
+		n = snprintf(buf, sizeof(buf), "d%d", i);
+		name = obstack_copy0(&obst, buf, n);
+
+		reg->name      = name;
+		reg->reg_class = &ia32_dummy_reg_class;
+		reg->index     = i;
+		reg->type      = arch_register_type_none;
+	}
+
+	obstack_free(&obst, NULL);
+
+	ia32_register_init();
+	ia32_create_opcodes();
+
+	return isa;
+}
+
+
+
+/**
+ * Closes the output file and frees the ISA structure.
+ */
+static void ia32_done(void *self) {
+	free(self);
+}
+
+
+
+static int ia32_get_n_reg_class(const void *self) {
+	return N_CLASSES;
+}
+
+static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) {
+	assert(i >= 0 && i < N_CLASSES && "Invalid ia32 register class requested.");
+	return &ia32_reg_classes[i];
 }
 
 static const arch_irn_ops_t *ia32_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
-  return &ia32_irn_ops;
-}
-
-static void ia32_prepare_graph(ir_graph *irg) {
-  firm_dbg_module_t *dbg = firm_dbg_register("be.transform.ia32");
-  if (! is_pseudo_ir_graph(irg))
-    irg_walk_blkwise_graph(irg, NULL, ia32_transform_node, dbg);
-}
-
-static void ia32_codegen(FILE *out) {
-  ia32_gen_decls(out);
-
-#if 0
-  for (i = 0; i < get_irp_n_irgs(); ++i) {
-    ir_graph *irg = get_irp_irg(i);
-    if (! is_pseudo_ir_graph(irg)) {
-      ia32_finish_irg(irg);
-      ia32_gen_routine(out, irg);
-    }
-  }
-#endif
+	return &ia32_irn_ops;
 }
 
 const arch_irn_handler_t ia32_irn_handler = {
-  ia32_get_irn_ops
+	ia32_get_irn_ops
 };
 
-/* fill isa interface */
+const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
+	return &ia32_irn_handler;
+}
 
-const arch_isa_if_t ia32_isa = {
-  ia32_init,
-  ia32_get_n_reg_class,
-  ia32_get_reg_class,
-  ia32_prepare_graph,
-  &ia32_irn_handler,
-  ia32_codegen
+
+
+/**
+ * Initializes the code generator interface.
+ */
+static arch_code_generator_t *ia32_make_code_generator(void *self, ir_graph *irg) {
+	ia32_isa_t      *isa = self;
+	ia32_code_gen_t *cg  = malloc(sizeof(*cg));
+
+	cg->impl       = &ia32_code_gen_if;
+	cg->irg        = irg;
+	cg->reg_set    = new_set(cmp_irn_reg_assoc, 1024);
+	cg->mod        = firm_dbg_register("be.transform.ia32");
+	cg->out        = isa->output_file;
+
+	isa->num_codegens++;
+
+	if (isa->num_codegens > 1)
+		cg->emit_decls = 0;
+	else
+		cg->emit_decls = 1;
+
+	cur_reg_set = cg->reg_set;
+
+	return (arch_code_generator_t *)cg;
+}
+
+/**
+ * Returns the default scheduler
+ */
+static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
+	return trivial_selector;
+}
+
+#ifdef WITH_LIBCORE
+static void ia32_register_options(lc_opt_entry_t *ent)
+{
+}
+#endif /* WITH_LIBCORE */
+
+const arch_isa_if_t ia32_isa_if = {
+#ifdef WITH_LIBCORE
+	ia32_register_options,
+#endif
+	ia32_init,
+	ia32_done,
+	ia32_get_n_reg_class,
+	ia32_get_reg_class,
+	ia32_get_irn_handler,
+	ia32_make_code_generator,
+	ia32_get_list_sched_selector
 };
