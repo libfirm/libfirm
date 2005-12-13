@@ -209,13 +209,13 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	chordal_env.irg          = irg;
 	chordal_env.dbg          = firm_dbg_register("firm.be.chordal");
 	chordal_env.main_env     = main_env;
-	chordal_env.border_heads = pmap_create();
 	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
 
 	obstack_init(&chordal_env.obst);
 
 	/* Perform the following for each register class. */
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
+		chordal_env.border_heads = pmap_create();
 		chordal_env.cls = arch_isa_get_reg_class(isa, j);
 
 		be_liveness(irg);
@@ -262,10 +262,11 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 
 		be_ifg_free(chordal_env.ifg);
 		be_numbering_done(irg);
+
+		pmap_destroy(chordal_env.border_heads);
 	}
 
 	be_free_dominance_frontiers(chordal_env.dom_front);
-	pmap_destroy(chordal_env.border_heads);
 	obstack_free(&chordal_env.obst, NULL);
 }
 
