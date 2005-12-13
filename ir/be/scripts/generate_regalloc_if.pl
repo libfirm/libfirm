@@ -28,8 +28,9 @@ unless ($return = do $specfile) {
 }
 use strict "subs";
 
-my $target_c = $target_dir."/gen_".$arch."_regalloc_if.c.inl";
-my $target_h = $target_dir."/gen_".$arch."_regalloc_if.h";
+my $target_c   = $target_dir."/gen_".$arch."_regalloc_if.c";
+my $target_h   = $target_dir."/gen_".$arch."_regalloc_if.h";
+my $target_h_t = $target_dir."/gen_".$arch."_regalloc_if_t.h";
 
 # helper function
 my @rt = ("arch_register_type_none",
@@ -41,23 +42,44 @@ my @rt = ("arch_register_type_none",
 # stacks for output
 my @obst_regtypes;     # stack for the register type variables
 my @obst_regclasses;   # stack for the register class variables
-my @obst_classdef;     # stack to assign a number to a certain class
+my @obst_classdef;     # stack to define a name for a class index
+my @obst_regdef;       # stack to define a name for a register index
 my @obst_reginit;      # stack for the register type inits
 my @obst_req;          # stack for the register requirements
 my @obst_limit_func;   # stack for functions to return a subset of a register class
+my @obst_defreq_head;  # stack for prototypes of default requirement function
+my @obst_header_all;   # stack for some extern struct defs needed for bearch_$arch include
 
 my $numregs;
+my $class_ptr;
 my $class_idx = 0;
+
+my $tmp;
 
 my %reg2class;
 
-# generate register type and class variable and init function
+# there is a default NONE requirement
+$tmp = "/* Default NONE register requirements */\n";
+$tmp .= "const arch_register_req_t ia32_default_req_none = {\n";
+$tmp .= "  arch_register_req_type_none,\n";
+$tmp .= "  NULL,\n";
+$tmp .= "  { NULL }\n";
+$tmp .= "};\n\n";
+push(@obst_req, $tmp);
+
+push(@obst_header_all, "extern arch_register_class_t $arch\_reg_classes[N_CLASSES];\n\n");
+push(@obst_header_all, "extern const arch_register_req_t ia32_default_req_none;\n");
+
+push(@obst_classdef, "#define N_CLASSES ".scalar(keys(%reg_classes))."\n");
+
+# generate register type and class variable, init function and default requirements
 foreach my $class_name (keys(%reg_classes)) {
   my @class         = @{ $reg_classes{"$class_name"} };
   my $old_classname = $class_name;
 
   $class_name = $arch."_".$class_name;
   $numregs    = "N_".$class_name."_REGS";
+  $class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 
   push(@obst_regtypes, "#define $numregs ".($#class + 1)."\n");
   push(@obst_regtypes, "arch_register_t ".$class_name."_regs[$numregs];\n\n");
@@ -65,12 +87,54 @@ foreach my $class_name (keys(%reg_classes)) {
   push(@obst_classdef, "#define CLASS_$class_name $class_idx\n");
   push(@obst_regclasses, "{ \"$class_name\", $numregs, ".$class_name."_regs }");
 
+  # there is a default NORMAL requirement for each class
+  $tmp  = "/* Default NORMAL register requirements for class $class_name */\n";
+  $tmp .= "const arch_register_req_t ia32_default_req_$class_name = {\n";
+  $tmp .= "  arch_register_req_type_normal,\n";
+  $tmp .= "  $class_ptr,\n";
+  $tmp .= "  { NULL }\n";
+  $tmp .= "};\n\n";
+  push(@obst_req, $tmp);
+
+  push(@obst_header_all, "\nextern const arch_register_req_t ia32_default_req_$class_name;\n");
+
   my $idx = 0;
   push(@obst_reginit, "  /* Init of all registers in class '$class_name' */\n\n");
   foreach (@class) {
+    # For each class we build for each of it's member registers a limit function
+    # which limits the class to this particular register. We also build the
+    # corresponding requirement structs.
+    # We need those functions to set register requirements on demand in transformation
+    # esp. for Call and RegParams where we can mix int and float parameters.
+
+    my $limit_func_name = $arch."_limit_".$class_name."_".$_->{"name"};
+
+    # push the function prototype
+    $tmp = "int $limit_func_name(const ir_node *irn, int pos, bitset_t *bs)";
+    push(@obst_defreq_head, $tmp.";\n");
+
+    # push the function definition
+    $tmp .= " {\n";
+    $tmp .= "    bs = bitset_clear_all(bs);\n";
+    $tmp .= "    bitset_set(bs, REG_".uc($_->{"name"}).");\n";  # REGISTER to index assignment is done some lines down
+    $tmp .= "    return 1;\n";
+    $tmp .= "}\n\n";
+    push(@obst_limit_func, $tmp);
+
+    # push the default requirement struct
+    $tmp  = "const arch_register_req_t ia32_default_req_$class_name\_".$_->{"name"}." = {\n";
+    $tmp .= "  arch_register_req_type_limited,\n";
+    $tmp .= "  $class_ptr,\n";
+    $tmp .= "  { $limit_func_name }\n";
+    $tmp .= "};\n\n";
+    push(@obst_req, $tmp);
+
+    push(@obst_header_all, "extern const arch_register_req_t ia32_default_req_$class_name\_".$_->{"name"}.";\n");
+
     $reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
+    push(@obst_regdef, "#define REG_".uc($_->{"name"})." $idx\n");
     push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"name"}."\";\n");
-    push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = &$arch\_reg_classes[CLASS_$class_name];\n");
+    push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = $class_ptr;\n");
     push(@obst_reginit, "  ".$class_name."_regs[$idx].index     = $idx;\n");
     push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".$rt[$_->{"type"}].";\n\n");
     $idx++;
@@ -78,6 +142,8 @@ foreach my $class_name (keys(%reg_classes)) {
 
   $class_idx++;
 }
+
+push(@obst_header_all, "\n/* node specific requirements */\n");
 
 # generate node-register constraints
 foreach my $op (keys(%nodes)) {
@@ -89,6 +155,8 @@ foreach my $op (keys(%nodes)) {
 
   push(@obst_req, "/* IN requirements for '$op' */\n");
 
+  # we need to remember the classes of the IN constraints for
+  # OUT constraints like "in_s1"
   my @inidx_class;
 
   # check for argument requirements
@@ -98,15 +166,19 @@ foreach my $op (keys(%nodes)) {
     for (my $idx = 0; $idx <= $#in; $idx++) {
       my $class = undef;
 
-      push(@obst_req, "static const arch_register_req_t ".$op."_reg_req_in_$idx = {\n");
+      my $tmp2 = "const arch_register_req_t _".$op."_reg_req_in_$idx = ";
+
+      $tmp = "const arch_register_req_t *".$op."_reg_req_in_$idx = ";
+
+      push(@obst_header_all, "extern const arch_register_req_t *".$op."_reg_req_in_$idx;\n");
 
       if ($in[$idx] eq "none") {
         push(@inidx_class, "none");
-        push(@obst_req, "  arch_register_req_type_none,\n  NULL,\n  { NULL }");
+        $tmp .= "&ia32_default_req_none;\n";
       }
       elsif (is_reg_class($in[$idx])) {
         push(@inidx_class, $in[$idx]);
-        push(@obst_req, "  arch_register_req_type_normal,\n  &$arch\_reg_classes[CLASS_$arch\_".$in[$idx]."],\n  { NULL }");
+        $tmp .= "&ia32_default_req_".$arch."_".$in[$idx].";\n";
       }
       else {
         $class = build_subset_class_func($op, $idx, 1, $in[$idx]);
@@ -114,10 +186,13 @@ foreach my $op (keys(%nodes)) {
           die("Could not build subset for IN requirements '$op' pos $idx ... exiting.\n");
         }
         push(@inidx_class, $class);
-        push(@obst_req, "  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  { limit_reg_".$op."_in_".$idx." }");
+        $tmp  .= "&_".$op."_reg_req_in_$idx;\n";
+        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  { limit_reg_".$op."_in_".$idx." }\n};\n";
+
+        $tmp   = $tmp2.$tmp;
       }
 
-      push(@obst_req, "\n};\n\n");
+      push(@obst_req, $tmp."\n");
     }
   }
 
@@ -130,47 +205,58 @@ foreach my $op (keys(%nodes)) {
     for (my $idx = 0; $idx <= $#out; $idx++) {
       my $class = undef;
 
-      push(@obst_req, "static const arch_register_req_t ".$op."_reg_req_out_$idx = {\n");
+      my $tmp2 = "const arch_register_req_t _".$op."_reg_req_out_$idx = ";
+
+      $tmp = "const arch_register_req_t *".$op."_reg_req_out_$idx = ";
+
+      push(@obst_header_all, "extern const arch_register_req_t *".$op."_reg_req_out_$idx;\n");
 
       if ($out[$idx] eq "none") {
-        push(@obst_req, "  arch_register_req_type_none,\n  NULL,\n  { NULL }");
+        $tmp .= "&ia32_default_req_none;\n";
       }
       elsif (is_reg_class($out[$idx])) {
-        push(@obst_req, "  arch_register_req_type_normal,\n  &$arch\_reg_classes[CLASS_$arch\_".$out[$idx]."],\n  { NULL }");
+        $tmp .= "&ia32_default_req_".$arch."_".$out[$idx].";\n";
       }
       elsif ($out[$idx] =~ /^(!)?in_s(\d+)/) { # this is a "should be (un)equal to register at in_X"
-        push(@obst_req, "  arch_register_req_type_".($1 ? "un" : "")."equal,\n");
-        push(@obst_req, "  &$arch\_reg_classes[CLASS_$arch\_".$inidx_class[$2 - 1]."],\n");
-        push(@obst_req, "  { ".($2 - 1)." }");
+        $tmp  .= "&_".$op."_reg_req_out_$idx;\n";
+        $tmp2 .= " {\n";
+        $tmp2 .= "  arch_register_req_type_".($1 ? "un" : "")."equal,\n";
+        $tmp2 .= "  &$arch\_reg_classes[CLASS_$arch\_".$inidx_class[$2 - 1]."],\n";
+        $tmp2 .= "  { ".($2 - 1)." }\n};\n";
+
+        $tmp   = $tmp2.$tmp
       }
       else {
         $class = build_subset_class_func($op, $idx, 0, $out[$idx]);
         if (!defined $class) {
           die("Could not build subset for OUT requirements '$op' pos $idx ... exiting.\n");
         }
-        push(@obst_req, "  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  { limit_reg_".$op."_out_".$idx." }");
+        $tmp  .= "&_".$op."_reg_req_out_$idx;\n";
+        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  { limit_reg_".$op."_out_".$idx." }\n};\n";
+
+        $tmp   = $tmp2.$tmp
       }
 
-      push(@obst_req, "\n};\n\n");
+      push(@obst_req, $tmp."\n");
     }
   }
 }
 
 
 
-# generate header file
-open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
+# generate header _t (internal usage) file
+open(OUT, ">$target_h_t") || die("Could not open $target_h_t, reason: $!\n");
 
 my $creation_time = localtime(time());
 
-my $tmp = uc($arch);
+$tmp = uc($arch);
 
 print OUT<<EOF;
-#ifndef _GEN_$tmp\_REGALLOC_IF_H_
-#define _GEN_$tmp\_REGALLOC_IF_H_
+#ifndef _GEN_$tmp\_REGALLOC_IF_T_H_
+#define _GEN_$tmp\_REGALLOC_IF_T_H_
 
 /**
- * Generated register classes from spec
+ * Generated register classes from spec.
  *
  * DO NOT EDIT THIS FILE, your changes will be lost.
  * Edit $specfile instead.
@@ -178,13 +264,51 @@ print OUT<<EOF;
  * date:       $creation_time
  */
 
+#include "../bearch.h"
+
 EOF
 
-print OUT @obst_regtypes;
+print OUT @obst_regdef, "\n";
+
+print OUT @obst_classdef, "\n";
+
+print OUT @obst_regtypes, "\n";
+
+print OUT @obst_defreq_head, "\n";
 
 print OUT "void ".$arch."_register_init(void);\n\n";
 
+print OUT "\n#endif /* _GEN_$tmp\_REGALLOC_IF_T_H_ */\n";
+
+
+
+# generate header (external usage) file
+open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
+
+$creation_time = localtime(time());
+
+print OUT<<EOF;
+#ifndef _GEN_$tmp\_REGALLOC_IF_H_
+#define _GEN_$tmp\_REGALLOC_IF_H_
+
+/**
+ * Contains additional external requirements defs for external includes.
+ *
+ * DO NOT EDIT THIS FILE, your changes will be lost.
+ * Edit $specfile instead.
+ * created by: $0 $specfile $target_dir
+ * date:       $creation_time
+ */
+
+#include "gen_$arch\_regalloc_if_t.h"
+
+EOF
+
+print OUT @obst_header_all;
+
 print OUT "\n#endif /* _GEN_$tmp\_REGALLOC_IF_H_ */\n";
+
+close(OUT);
 
 
 
@@ -205,11 +329,9 @@ print OUT<<EOF;
  * date:       $creation_time
  */
 
-#include "gen_$arch\_regalloc_if.h"
+#include "gen_$arch\_regalloc_if_t.h"
 
 EOF
-
-print OUT @obst_classdef, "\n";
 
 print OUT "arch_register_class_t $arch\_reg_classes[] = {\n  ".join(",\n  ", @obst_regclasses)."\n};\n\n";
 

@@ -42,47 +42,95 @@ foreach my $op (keys(%nodes)) {
   # skip this node description if no emit information is available
   next if (!$n{"emit"} || length($n{"emit"}) < 1);
 
-  $line = "void emit_".$arch."_".$op."(FILE *F, ir_node *n)";
+  $line = "void emit_".$arch."_".$op."(ir_node *n, emit_env_t *env)";
   push(@obst_header, $line.";\n");
-  push(@obst_func, $line." {\n");
+  push(@obst_func, $line." {\n  FILE *F = env->out;\n");
 
+  my $cio = 0;
   # check in/out register if needed
   if (exists($n{"check_inout"}) && $n{"check_inout"} == 1) {
     push(@obst_func, "  equalize_dest_src(F, n);\n\n");
+    $cio = 1;
   }
 
   my @emit = split(/\n/, $n{"emit"});
 
-  foreach(@emit) {
+  foreach my $template (@emit) {
     # substitute only lines, starting with a '.'
-    if (/^(\d*)\.\s*/) {
+    if ($template =~ /^(\d*)\.\s*/) {
       my @params;
-      my $regkind;
+      my $res    = "";
+      my $res2   = "";
       my $indent = "  "; # default indent is 2 spaces
 
       $indent = " " x $1 if ($1 && $1 > 0);
       # remove indent, dot and trailing spaces
-      s/^\d*\.\s*//;
+      $template =~ s/^\d*\.\s*//;
       # substitute all format parameter
-      while (/%(([sd])(\d)|([co]))/) {
+      while ($template =~ /\%(([asd])(\d)|([com]))/) {
+        $res  .= $`;      # get everything before the match
+        $res2 .= $`;
+
         if ($4 && $4 eq "c") {
-          push(@params, "node_const_to_str(n)");
+          push(@params, "n");
+          $res  .= "\%c";
+          $res2 .= "\%c";
         }
         elsif ($4 && $4 eq "o") {
-          push(@params, "node_offset_to_str(n)");
+          push(@params, "n");
+          $res  .= "\%o";
+          $res2 .= "\%o";
         }
-        else {
-          $regkind = ($2 eq "s" ? "source" : "dest");
-          push(@params, "get_".$regkind."_reg_name(n, $3)");
+        elsif ($4 && $4 eq "m") {
+          push(@params, "n");
+          $res  .= "\%m";
+          $res2 .= "\%m";
         }
-        s/%$1/%%\%s/;
+        elsif ($2 && $2 eq "s") {
+          push(@params, "n");
+          if ($cio && $3 == 2) {
+            # check_in_out was set: if (s1 != d1) we
+            # need to exchange s2 by s1
+            $res2 .= "%1s"; # get name for first register
+          }
+          else {
+            $res2 .= "%".$3."s"; # substitute %sx with %xs
+          }
+          $res .= "%".$3."s"; # substitute %sx with %xs
+        }
+        elsif ($2 && $2 eq "d") {
+          push(@params, "n");
+          $res  .= "%".$3."d"; # substitute %sx with %xs
+          $res2 .= "%".$3."d"; # substitute %sx with %xs
+        }
+        elsif ($2 && $2 eq "a") {
+          push(@params, "get_irn_n(n, ".($3 - 1).")");
+          $res  .= "%+F";
+          $res2 .= "%+F";
+        }
+
+        $template = $'; # scan everything after the match
       }
+      $res  .= $template; # get the remaining string
+      $res2 .= $template; # get the remaining string
+
       my $parm = "";
       $parm = ", ".join(", ", @params) if (@params);
-      push(@obst_func, $indent.'fprintf(F, "\t'.$_.'\n"'.$parm.');'."\n");
+
+      if ($cio) {
+        push(@obst_func, $indent."if (get_irn_arity(n) > 1 && get_$arch\_in_regnr(n, 1) == get_$arch\_out_regnr(n, 0)) {\n");
+        push(@obst_func, $indent.'  lc_efprintf(ia32_get_arg_env(), F, "\t'.$res2.'\n"'.$parm.');'."\n");
+        push(@obst_func, $indent."}\n");
+        push(@obst_func, $indent."else {\n");
+        push(@obst_func, $indent.'  lc_efprintf(ia32_get_arg_env(), F, "\t'.$res.'\n"'.$parm.');'."\n");
+        push(@obst_func, $indent."}\n");
+      }
+      else {
+        push(@obst_func, $indent.'lc_efprintf(ia32_get_arg_env(), F, "\t'.$res.'\n"'.$parm.');'."\n");
+      }
     }
     else {
-      push(@obst_func, $_,"\n");
+      push(@obst_func, $template,"\n");
     }
   }
   push(@obst_func, "}\n\n");
@@ -107,6 +155,7 @@ print OUT<<EOF;
  */
 
 #include "irnode.h"
+#include "$arch\_emitter.h"
 
 EOF
 
@@ -133,7 +182,6 @@ print OUT<<EOF;
 
 #include "irnode.h"
 #include "gen_$arch\_emitter.h"
-#include "$arch\_emitter.h"
 #include "$arch\_new_nodes.h"
 
 EOF

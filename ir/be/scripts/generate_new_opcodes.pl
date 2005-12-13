@@ -31,7 +31,7 @@ unless ($return = do $specfile) {
 use strict "subs";
 
 my $target_c = $target_dir."/gen_".$arch."_new_nodes.c.inl";
-my $target_h = $target_dir."/gen_".$arch."_new_nodes.h.inl";
+my $target_h = $target_dir."/gen_".$arch."_new_nodes.h";
 
 #print Dumper(%nodes);
 
@@ -43,8 +43,10 @@ my @obst_constructor; # stack for node constructor functions
 my @obst_new_irop;    # stack for the new_ir_op calls
 my @obst_header;      # stack for function prototypes
 my @obst_is_archirn;  # stack for the is_$arch_irn() function
+my @obst_cmp_attr;    # stack for the compare attribute functions
 my $orig_op;
 my $arity;
+my $cmp_attr_func;
 
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
@@ -63,9 +65,22 @@ foreach my $op (keys(%nodes)) {
 
   push(@obst_header, "int is_$op(const ir_node *n);\n");
 
-  $n{"comment"} =~ s/^"|"$//g;
+  $n{"comment"} = "construct $op" if(!exists($n{"comment"}));
+  $n{"comment"} =~ s/^"|"$//g;    # remove "
   $n{"comment"} = "/* ".$n{"comment"}." */\n";
   push(@obst_constructor, $n{"comment"});
+
+  $cmp_attr_func = 0;
+  # create compare attribute function if needed
+  if (exists($n{"cmp_attr"})) {
+    push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
+    push(@obst_cmp_attr, "  asmop_attr *attr_a = get_ia32_attr(a);\n");
+    push(@obst_cmp_attr, "  asmop_attr *attr_b = get_ia32_attr(b);\n");
+    push(@obst_cmp_attr, $n{"cmp_attr"});
+    push(@obst_cmp_attr, "}\n\n");
+
+    $cmp_attr_func = 1;
+  }
 
   # create constructor head
   my $complete_args = "";
@@ -115,6 +130,9 @@ foreach my $op (keys(%nodes)) {
       $temp .= "  in[".($i - 1)."] = op".$i.";\n";
     }
     $temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
+    $temp .= "  set_ia32_pncode(res, -1);\n";
+    $temp .= "  res = optimize_node(res);\n";
+    $temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
     # set register flags
     $temp .= "  attr = get_ia32_attr(res);\n\n";
@@ -138,18 +156,18 @@ foreach my $op (keys(%nodes)) {
 
       if (@in) {
         $temp .= "\n  /* allocate memory for IN register requirements and assigned registers */\n";
-        $temp .= "  attr->in_req    = malloc(".($#in + 1)." * sizeof(arch_register_req_t *)); /* space for in requirements */\n";
+        $temp .= "  attr->in_req    = calloc(".($#in + 1).", sizeof(arch_register_req_t *));  /* space for in requirements */\n";
         for ($idx = 0; $idx <= $#in; $idx++) {
-          $temp .= "  attr->in_req[$idx] = &".$op."_reg_req_in_".$idx.";\n";
+          $temp .= "  attr->in_req[$idx] = ".$op."_reg_req_in_".$idx.";\n";
         }
       }
 
       if (@out) {
         $temp .= "\n  /* allocate memory for OUT register requirements and assigned registers */\n";
-        $temp .= "  attr->out_req    = malloc(".($#out + 1)." * sizeof(arch_register_req_t *)); /* space for out requirements */\n";
-        $temp .= "  attr->slots      = calloc(sizeof(arch_register_t *), ".($#out + 1).");     /* space for assigned registers */\n";
+        $temp .= "  attr->out_req    = calloc(".($#out + 1).", sizeof(arch_register_req_t *)); /* space for out requirements */\n";
+        $temp .= "  attr->slots      = calloc(".($#out + 1).", sizeof(arch_register_t *));     /* space for assigned registers */\n";
         for ($idx = 0; $idx <= $#out; $idx++) {
-          $temp .= "  attr->out_req[$idx] = &".$op."_reg_req_out_".$idx.";\n";
+          $temp .= "  attr->out_req[$idx] = ".$op."_reg_req_out_".$idx.";\n";
         }
         $temp .= "  attr->n_res      = ".($#out + 1).";\n";
       }
@@ -173,6 +191,13 @@ foreach my $op (keys(%nodes)) {
   $n{"state"}    = "pinned" if (! exists($n{"state"}));
   $n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
 
+  push(@obst_new_irop, "\n  memset(&ops, 0, sizeof(ops));\n");
+  push(@obst_new_irop, "  ops.dump_node     = dump_node_$arch;\n");
+
+  if ($cmp_attr_func) {
+    push(@obst_new_irop, "  ops.node_cmp_attr = cmp_attr_$op;\n");
+  }
+
   $temp  = "  op_$op = new_ir_op(get_next_ir_opcode(), \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
   $temp .= ", ".translate_arity($arity).", 0, sizeof(asmop_attr), &ops);\n";
   push(@obst_new_irop, $temp);
@@ -182,6 +207,8 @@ foreach my $op (keys(%nodes)) {
 
 open(OUT, ">$target_c") || die("Could not open $target_c, reason: $!\n");
 
+print OUT @obst_cmp_attr;
+print OUT "\n";
 print OUT @obst_opvar;
 print OUT "\n";
 print OUT @obst_get_opvar;
@@ -207,9 +234,6 @@ void $arch\_create_opcodes(void) {
 
   ir_op_ops ops;
 
-  memset(&ops, 0, sizeof(ops));
-  ops.dump_node = dump_node_$arch;
-
 ENDOFMAIN
 
 print OUT @obst_new_irop;
@@ -229,19 +253,24 @@ close(OUT);
 sub translate_arity {
   my $arity = shift;
 
-  if    ($arity == 0) {
-    return "oparity_zero";
-  }
-  elsif ($arity == 1) {
-    return "oparity_unary";
-  }
-  elsif ($arity == 1) {
-    return "oparity_binary";
-  }
-  elsif ($arity == 1) {
-    return "oparity_trinary";
+  if ($arity =~ /^\d+$/) {
+    if    ($arity == 0) {
+      return "oparity_zero";
+    }
+    elsif ($arity == 1) {
+      return "oparity_unary";
+    }
+    elsif ($arity == 2) {
+      return "oparity_binary";
+    }
+    elsif ($arity == 3) {
+      return "oparity_trinary";
+    }
+    else {
+      return "$arity";
+    }
   }
   else {
-    return "$arity";
+    return "oparity_".$arity;
   }
 }
