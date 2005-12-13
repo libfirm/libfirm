@@ -8,6 +8,9 @@
  *
  * Driver for the chordal register allocator.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "obst.h"
 #include "pset.h"
@@ -18,7 +21,7 @@
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif
+#endif /* WITH_LIBCORE */
 
 #include "irmode_t.h"
 #include "irgraph_t.h"
@@ -41,6 +44,14 @@
 
 #include "bespillbelady.h"
 #include "bespillilp.h"
+
+#define DO_SSADESTR
+
+#ifdef DO_SSADESTR
+#include "bessadestr.h"
+#include "becopystat.h"
+#include "becopyoptmain.h"
+#endif /* DO_SSADESTR */
 
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
@@ -258,7 +269,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		dump(BE_CH_DUMP_SSADESTR, irg, "-ssadestr", dump_ir_block_graph_sched);
 
 		copystat_dump(irg);
-#endif
+#endif /* DO_SSADESTR */
 
 		be_ifg_free(chordal_env.ifg);
 		be_numbering_done(irg);
