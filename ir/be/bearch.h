@@ -446,7 +446,7 @@ struct _arch_isa_if_t {
   /**
    * Initialize the isa interface.
    */
-  void *(*init)(void);
+  void *(*init)(FILE *file_handle);
 
   /**
    * Free the isa instance.
@@ -524,7 +524,7 @@ struct _arch_env_t {
  * @param isa The isa which shall be put into the environment.
  * @return The environment.
  */
-extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa);
+extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa, FILE *file_handle);
 
 /**
  * Add a node handler to the environment.
