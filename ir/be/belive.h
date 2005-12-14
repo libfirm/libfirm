@@ -23,6 +23,13 @@ void be_liveness(ir_graph *irg);
 void be_liveness_dump(ir_graph *irg, FILE *f);
 
 /**
+ * Dump the liveness information for a graph.
+ * @param irg The graph.
+ * @param cls_name A string used as substing in the filename.
+ */
+void be_liveness_dumpto(ir_graph *irg, const char *cls_name);
+
+/**
  * Check, if a node is live in at a block.
  * @param block The block.
  * @param irn The node to check for.

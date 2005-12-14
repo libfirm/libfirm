@@ -190,6 +190,17 @@ void be_liveness_dump(ir_graph *irg, FILE *f)
 	irg_block_walk_graph(irg, dump_liveness_walker, NULL, f);
 }
 
+void be_liveness_dumpto(ir_graph *irg, const char *cls_name)
+{
+	FILE *f;
+	char buf[128];
+	ir_snprintf(buf, sizeof(buf), "%F_%s-live.txt", irg, cls_name);
+	if((f = fopen(buf, "wt")) != NULL) {
+		be_liveness_dump(irg, f);
+		fclose(f);
+	}
+}
+
 static void dom_check(ir_node *irn, void *data)
 {
 	if(!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
