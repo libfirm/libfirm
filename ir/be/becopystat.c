@@ -23,9 +23,9 @@
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
-#define MAX_ARITY 10
-#define MAX_CLS_SIZE 10
-#define MAX_CLS_PHIS 10
+#define MAX_ARITY 20
+#define MAX_CLS_SIZE 20
+#define MAX_CLS_PHIS 20
 
 /**
  * For an explanation of these values see the code of copystat_dump_pretty
@@ -274,17 +274,17 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 }
 
 #define is_curr_reg_class(irn) \
-  (arch_get_irn_reg_class(chordal_env->session_env->main_env->arch_env, irn, \
+  (arch_get_irn_reg_class(chordal_env->main_env->arch_env, irn, \
                           -1) == chordal_env->cls)
 
 void copystat_collect_cls(be_chordal_env_t *chordal_env) {
 	ir_node *n;
 	pset *pc;
-	ir_graph *irg = chordal_env->session_env->irg;
+	ir_graph *irg = chordal_env->irg;
 
 	if (last_irg != irg) {
 		copystat_reset();
-		copystat_collect_irg(irg, chordal_env->session_env->main_env->arch_env);
+		copystat_collect_irg(irg, chordal_env->main_env->arch_env);
 	}
 
 	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
