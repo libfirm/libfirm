@@ -55,9 +55,9 @@ int values_interfere(const ir_node *a, const ir_node *b)
   int b2a = value_dominates(b, a);
 
   /* If there is no dominance relation, they do not interfere. */
-  if(a2b + b2a > 0) {
+  if((a2b | b2a) > 0) {
     const ir_edge_t *edge;
-    ir_node *bb = get_nodes_block(b);
+    ir_node *bb;
 
     /*
      * Adjust a and b so, that a dominates b if
@@ -68,6 +68,8 @@ int values_interfere(const ir_node *a, const ir_node *b)
       a = b;
       b = t;
     }
+
+		bb = get_nodes_block(b);
 
     /*
      * If a is live end in b's block it is
@@ -80,7 +82,9 @@ int values_interfere(const ir_node *a, const ir_node *b)
      * Look at all usages of a.
      * If there's one usage of a in the block of b, then
      * we check, if this use is dominated by b, if that's true
-     * a and b interfere.
+     * a and b interfere. Note that b must strictly dominate the user,
+		 * since if b is the last user of in the block, b and a do not
+		 * interfere.
      * Uses of a not in b's block can be disobeyed, because the
      * check for a being live at the end of b's block is already
      * performed.
@@ -89,6 +93,7 @@ int values_interfere(const ir_node *a, const ir_node *b)
       const ir_node *user = edge->src;
       if(get_nodes_block(user) == bb
           && !is_Phi(user)
+					&& b != user
           && value_dominates(b, user))
         return 1;
     }
