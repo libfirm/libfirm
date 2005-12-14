@@ -677,3 +677,6 @@ void firm_init_debugger(void)
  * firm ".create 2101"
  * firm ".help"
  */
+
+static void _firm_only_that_you_can_compile_with_NDEBUG_defined(void) {
+}
