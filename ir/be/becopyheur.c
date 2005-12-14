@@ -441,7 +441,7 @@ static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 		for (i=0; i<unsafe_count; ++i) {
 			bitset_set(best, i);
 			/* check if it is a stable set */
-			for (o=bitset_next_set(best, 0); o!=-1 && o<i; o=bitset_next_set(best, o+1))
+			for (o=bitset_next_set(best, 0); o!=-1 && o<=i; o=bitset_next_set(best, o+1))
 				if (qnode_are_conflicting(qn, unsafe[i], unsafe[o])) {
 					bitset_clear(best, i); /* clear the bit and try next one */
 					break;
