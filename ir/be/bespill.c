@@ -102,7 +102,7 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 	ctx = be_get_spill_ctx(senv->spill_ctxs, irn, ctx_irn);
 	if(!ctx->spill) {
 		const be_main_env_t *env = senv->chordal_env->main_env;
-		ctx->spill = be_spill(env->node_factory, env->arch_env, irn);
+		ctx->spill = be_spill(env->node_factory, env->arch_env, irn, ctx_irn);
 	}
 
 	return ctx->spill;

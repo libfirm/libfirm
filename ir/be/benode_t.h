@@ -40,7 +40,7 @@ const arch_irn_handler_t *be_node_get_irn_handler(const be_node_factory_t *f);
 
 ir_node *new_Spill(const be_node_factory_t *factory,
     const arch_register_class_t *cls,
-    ir_graph *irg, ir_node *bl, ir_node *node_to_spill);
+    ir_graph *irg, ir_node *bl, ir_node *node_to_spill, ir_node *ctx);
 
 ir_node *new_Reload(const be_node_factory_t *factory,
     const arch_register_class_t *cls, ir_graph *irg,
@@ -57,7 +57,8 @@ ir_node *new_Copy(const be_node_factory_t *factory,
 ir_node *be_spill(
 		const be_node_factory_t *factory,
 		const arch_env_t *arch_env,
-		ir_node *irn);
+		ir_node *irn,
+		ir_node *spill_ctx);
 
 ir_node *be_reload(
 		const be_node_factory_t *factory,
