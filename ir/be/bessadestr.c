@@ -29,8 +29,7 @@
 #include "besched_t.h"
 
 static firm_dbg_module_t *dbg = NULL;
-#define DEBUG_LVL SET_LEVEL_0
-#undef DUMP_GRAPHS
+#define DUMP_GRAPHS
 
 #define get_chordal_arch(ce) ((ce)->main_env->arch_env)
 #define get_reg(irn) arch_get_irn_register(get_chordal_arch(chordal_env), irn)
@@ -67,6 +66,26 @@ static INLINE void build_phi_rings(be_chordal_env_t *env)
   irg_walk_graph(env->irg, clear_link, collect_phis, env);
 }
 
+/**
+ * This struct represents a Proj for a Perm.
+ * It records the argument in the Perm and the corresponding Proj of the
+ * Perm.
+ */
+typedef struct {
+	ir_node *arg;  /**< The phi argument to make the Proj for. */
+	int pos;       /**< The proj number the Proj will get.
+									 This also denotes the position of @p arg
+									 in the in array of the Perm. */
+	ir_node *proj; /**< The proj created for @p arg. */
+} perm_proj_t;
+
+static int cmp_perm_proj(const void *a, const void *b, size_t n)
+{
+	const perm_proj_t *p = a;
+	const perm_proj_t *q = b;
+	return !(p->arg == q->arg);
+}
+
 static void insert_all_perms_walker(ir_node *bl, void *data)
 {
   be_chordal_env_t *chordal_env = data;
@@ -80,63 +99,91 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
   assert(is_Block(bl));
 
   /* If the link flag is NULL, this block has no phis. */
-  if(get_irn_link(bl)) {
-    int i, n;
+	if(get_irn_link(bl)) {
+		int i, n;
 
-    /* Look at all predecessors of the phi block */
-    for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
-      ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
-      ir_node *phi, *perm, *insert_after;
-      ir_node **in;
-      int n_projs = 0;
-      pmap_entry *ent;
-      pmap *arg_map = pmap_create();
+		/* Look at all predecessors of the phi block */
+		for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
+			ir_node *phi, *perm, *insert_after, **in;
+			perm_proj_t *pp;
 
-      assert(!pmap_contains(perm_map, pred_bl) && "Already permed that block");
+			set *arg_set     = new_set(cmp_perm_proj, chordal_env->cls->n_regs);
+			ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
+			int n_projs      = 0;
 
-      /*
-       * Note that all phis in the list are in the same register class
-       * by construction.
-       */
-      for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
-        ir_node *arg = get_irn_n(phi, i);
-        ir_node *proj = pmap_get(arg_map, arg);
+			assert(!pmap_contains(perm_map, pred_bl) && "Already permed that block");
 
-       	if(!proj && !is_live_in(bl, arg)) {
-	          proj = new_r_Proj(irg, pred_bl, dummy, get_irn_mode(arg), n_projs++);
-	          pmap_insert(arg_map, arg, proj);
-       	}
+			/*
+			 * Note that all phis in the list are in the same register class
+			 * by construction.
+			 */
+			for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+				perm_proj_t templ;
+				ir_node *arg     = get_irn_n(phi, i);
+				unsigned hash    = HASH_PTR(arg);
 
-		if (proj) {
-			assert(get_irn_mode(phi) == get_irn_mode(proj));
-	        set_irn_n(phi, i, proj);
+				templ.arg  = arg;
+				pp         = set_find(arg_set, &templ, sizeof(templ), hash);
+
+				/*
+				 * If a proj_perm_t entry has not been made in the argument set,
+				 * create one. The only restriction is, that the phi argument
+				 * mey not be live in at the current block, since this argument
+				 * interferes with the phi and must thus not be member of a
+				 * Perm. A copy will be inserted for this argument alter on.
+				 */
+				if(!pp && !is_live_in(bl, arg)) {
+					templ.pos = n_projs++;
+					set_insert(arg_set, &templ, sizeof(templ), hash);
+				}
+			}
+
+			/*
+			 * set the in array of the Perm to the arguments of the phis
+			 * recorded above
+			 */
+			in = malloc(n_projs * sizeof(in[0]));
+			for(pp = set_first(arg_set); pp; pp = set_next(arg_set))
+				in[pp->pos] = pp->arg;
+
+			perm = new_Perm(fact, chordal_env->cls, irg, pred_bl, n_projs, in);
+			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator,
+					chordal_env->main_env->arch_env);
+			sched_add_after(insert_after, perm);
+			exchange(dummy, perm);
+
+			/*
+			 * Make the Projs for the Perm.
+			 * register allocation is copied form former phi arguments
+			 * to the projs (new phi arguments)
+			 */
+			for(pp = set_first(arg_set); pp; pp = set_next(arg_set)) {
+				pp->proj = new_r_Proj(irg, pred_bl, perm, get_irn_mode(pp->arg), pp->pos);
+				set_reg(pp->proj, get_reg(pp->arg));
+				DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n",
+							get_reg(pp->arg)->name, pp->arg, pp->proj));
+			}
+
+			/*
+			 * Set the phi nodes to their new arguments: The Projs of the Perm
+			 */
+			for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+				perm_proj_t templ;
+
+				templ.arg = get_irn_n(phi, i);
+				pp        = set_find(arg_set, &templ, sizeof(templ), HASH_PTR(templ.arg));
+
+				assert(pp && "A Perm Proj must be created for this Phi argument");
+				set_irn_n(phi, i, pp->proj);
+			}
+
+			free(in);
+			del_set(arg_set);
+
+			/* register in perm map */
+			pmap_insert(perm_map, pred_bl, perm);
 		}
-      }
-
-      in = malloc(n_projs * sizeof(in[0]));
-      pmap_foreach(arg_map, ent) {
-      	int proj_nr = get_Proj_proj(ent->value);
-        in[proj_nr] = ent->key;
-      }
-
-      perm = new_Perm(fact, chordal_env->cls, irg, pred_bl, n_projs, in);
-      insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, chordal_env->main_env->arch_env);
-      sched_add_after(insert_after, perm);
-      exchange(dummy, perm);
-
-      /* register allocation is copied form former arguments to the projs (new arguments) */
-      pmap_foreach(arg_map, ent) {
-        DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", get_reg(ent->key)->name, ent->key, ent->value));
-        set_reg(ent->value, get_reg(ent->key));
-      }
-
-      free(in);
-      pmap_destroy(arg_map);
-
-      /* register in perm map */
-      pmap_insert(perm_map, pred_bl, perm);
-    }
-  }
+	}
 }
 
 static void insert_all_perms(be_chordal_env_t *chordal_env) {
@@ -260,7 +307,6 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	ir_graph *irg = chordal_env->irg;
 
 	dbg = firm_dbg_register("ir.be.ssadestr");
-	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	/* create a map for fast lookup of perms: block --> perm */
 	chordal_env->data = perm_map;
