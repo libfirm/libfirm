@@ -220,7 +220,7 @@ foreach my $op (keys(%nodes)) {
       elsif ($out[$idx] =~ /^(!)?in_s(\d+)/) { # this is a "should be (un)equal to register at in_X"
         $tmp  .= "&_".$op."_reg_req_out_$idx;\n";
         $tmp2 .= " {\n";
-        $tmp2 .= "  arch_register_req_type_".($1 ? "un" : "")."equal,\n";
+        $tmp2 .= "  arch_register_req_type_should_be_".($1 ? "different" : "same").",\n";
         $tmp2 .= "  &$arch\_reg_classes[CLASS_$arch\_".$inidx_class[$2 - 1]."],\n";
         $tmp2 .= "  { ".($2 - 1)." }\n};\n";
 
