@@ -8,7 +8,7 @@
   Modified by:
   Created:     Sat Nov 13 19:35:27 CET 2004
   CVS-ID:      $Id$
-  Copyright:   (c) 1999-2004 Universität Karlsruhe
+  Copyright:   (c) 1999-2004 Universitï¿½t Karlsruhe
   Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
 */
 
@@ -658,6 +658,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.17  2005/12/16 16:59:54  grund
+  *** empty log message ***
+
   Revision 1.16  2005/12/05 12:19:54  beck
   added missing include <assert.h> (not anymore included in libFirm)
 
