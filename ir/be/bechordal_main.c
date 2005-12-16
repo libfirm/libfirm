@@ -44,7 +44,7 @@
 
 #include "bespillbelady.h"
 #include "bespillilp.h"
-
+#include "beconstrperm.h"
 #include "belower.h"
 
 #define DO_SSADESTR
@@ -256,8 +256,10 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 			fprintf(stderr, "no valid spiller selected. falling back to belady\n");
 			be_spill_belady(&chordal_env);
 		}
-
 		dump(BE_CH_DUMP_SPILL, irg, "-spill", dump_ir_block_graph_sched);
+
+		/* Insert perms before reg-constrained instructions */
+		be_insert_constr_perms(&chordal_env);
 
 		be_liveness(irg);
 		be_numbering(irg);

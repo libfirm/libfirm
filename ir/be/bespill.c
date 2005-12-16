@@ -252,8 +252,6 @@ void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
 	spill_info_t templ, *res;
 	reloader_t *rel;
 
-//	assert(get_irn_opcode(to_spill) != iro_Unknown);
-
 	templ.spilled_node = to_spill;
 	templ.reloaders    = NULL;
 	res = set_insert(senv->spills, &templ, sizeof(templ), HASH_PTR(to_spill));

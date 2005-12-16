@@ -33,7 +33,6 @@ void copystat_add_ilp_iter(int iters);
 void copystat_dump(ir_graph *irg);
 void copystat_dump_pretty(ir_graph *irg);
 
-
 #else /* DO_STAT */
 
 #define copystat_init();

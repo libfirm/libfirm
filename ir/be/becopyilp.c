@@ -147,9 +147,10 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 	DBG((dbg, LEVEL_2, "Find simlicials...\n"));
 
 	while (redo) {
+		arch_register_req_t req;
 		redo = 0;
 		be_ifg_foreach_node(ifg, iter, irn) {
-			if (!is_removed(irn) && !is_optimizable(get_arch_env(pi->co), irn) && !is_optimizable_arg(pi->co, irn)) {
+			if (!is_removed(irn) && !is_optimizable(get_arch_env(pi->co), irn, &req) && !is_optimizable_arg(pi->co, irn)) {
           	 	if (pi_is_simplicial(pi, irn)) {
 					simpl_t *s = xmalloc(sizeof(*s));
 					s->irn = irn;

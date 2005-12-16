@@ -48,8 +48,7 @@ typedef int(*cost_fct_t)(ir_node*, ir_node*, int);
 typedef struct _copy_opt_t {
 	be_chordal_env_t *chordal_env;
 	char *name;						/**< ProgName__IrgName__RegClass */
-	struct list_head units;			/**< all units to optimize in right order */
-	pset *roots;					/**< used only temporary for detecting multiple appends */
+	struct list_head units;			/**< all units to optimize in specific order */
 	cost_fct_t get_costs;			/**< function ptr used to get costs for copies */
 	struct obstack ob;
 } copy_opt_t;
@@ -94,23 +93,21 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
  */
 void free_copy_opt(copy_opt_t *co);
 
-
-#define is_Perm(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
-
-/**
- * A copy is a proj haning out of perm node
- */
-#define is_Copy(arch_env, irn) (is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
-
-/**
- * returns the corresponding argument of the perm node for a copy
- */
 #define get_Copy_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
+#define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
+
+//TODO is second part of the condition ok?
+#define is_Reg_Phi(irn)						(is_Phi(irn) && is_firm_be_mode(get_irn_mode(irn)))
+#define is_Copy(arch_env, irn)				(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
+#define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
 
 /**
- * Checks if a node is optimizable, viz. is a target of a 'copy-op'
+ * Checks if a node is optimizable, viz. has somthing to do with coalescing
+ * @param arch The architecture environment
+ * @param irn  The irn to check
+ * @param req  A register_requirement structure (used to check for 2-addr-code)
  */
-#define is_optimizable(arch_env, irn) ((is_Phi(irn) && is_firm_be_mode(get_irn_mode(irn))) || is_Copy(arch_env, irn))
+#define is_optimizable(arch, irn, req) (is_Reg_Phi(irn) || is_Copy(arch, irn) || is_2addr_code(arch, irn, req))
 
 /**
  * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'
@@ -119,9 +116,7 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn);
 
 /**
  * Computes the costs of a copy according to loop depth
- * @param root, arg: clear.
- * @param pos:	-1 for perm-copies.
- * 				Else the argument position of arg in the phi node root.
+ * @param pos:	the argument position of arg in the root arguments
  * @return Must be >= 0 in all cases.
  */
 int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos);

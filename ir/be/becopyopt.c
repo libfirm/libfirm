@@ -120,54 +120,50 @@ static int ou_max_ind_set_costs(unit_t *ou) {
 	return safe_costs+best_weight;
 }
 
-/**
- * Builds an optimization unit for a given optimizable irn (root).
- * This opt-unit is inserted in the main structure co.
- * If an arg of root itself is optimizable process this arg before with a
- * recursive call. For handling this situation and loops co->root is used
- * to remember all roots.
- */
-static void co_append_unit(copy_opt_t *co, ir_node *root) {
-	int i, arity;
+static void co_collect_units(ir_node *irn, void *env) {
+	copy_opt_t *co = env;
 	unit_t *unit;
-	struct list_head *tmp;
+	arch_register_req_t req;
 
-	DBG((dbg, LEVEL_1, "\t  Root: %n %N\n", root, root));
-	/* check if we encountered this root earlier */
-	if (pset_find_ptr(co->roots, root))
+	if (!is_curr_reg_class(irn))
 		return;
-	pset_insert_ptr(co->roots, root);
+	if (!is_optimizable(get_arch_env(co), irn, &req))
+		return;
 
-	assert(is_curr_reg_class(root) && "node is in wrong register class!");
-
-	/* init unit */
-	arity = get_irn_arity(root);
+	/* Init a new unit */
 	unit = xcalloc(1, sizeof(*unit));
 	unit->co = co;
-	unit->nodes = xmalloc((arity+1) * sizeof(*unit->nodes));
-	unit->costs = xmalloc((arity+1) * sizeof(*unit->costs));
 	unit->node_count = 1;
-	unit->nodes[0] = root;
 	INIT_LIST_HEAD(&unit->queue);
 
-	/* check all args */
-	if (is_Phi(root) && is_firm_be_mode(get_irn_mode(root))) {
+	/* Phi with some/all of its arguments */
+	if (is_Reg_Phi(irn)) {
+		int i, arity;
+
+		/* init */
+		arity = get_irn_arity(irn);
+		unit->nodes = xmalloc((arity+1) * sizeof(*unit->nodes));
+		unit->costs = xmalloc((arity+1) * sizeof(*unit->costs));
+		unit->nodes[0] = irn;
+
+		/* fill */
 		for (i=0; i<arity; ++i) {
-			int o, arg_pos = 0;
-			ir_node *arg = get_irn_n(root, i);
+			int o, arg_pos;
+			ir_node *arg = get_irn_n(irn, i);
 
 			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
-			if (arg == root)
+			if (arg == irn)
 				continue;
-			if (nodes_interfere(co->chordal_env, root, arg)) {
-				unit->inevitable_costs += co->get_costs(root, arg, i);
+			if (nodes_interfere(co->chordal_env, irn, arg)) {
+				unit->inevitable_costs += co->get_costs(irn, arg, i);
 				continue;
 			}
 
 			/* Else insert the argument of the phi to the members of this ou */
-			DBG((dbg, LEVEL_1, "\t   Member: %n %N\n", arg, arg));
+			DBG((dbg, LEVEL_1, "\t   Member: %+F\n", arg));
 
 			/* Check if arg has occurred at a prior position in the arg/list */
+			arg_pos = 0;
 			for (o=0; o<unit->node_count; ++o)
 				if (unit->nodes[o] == arg) {
 					arg_pos = o;
@@ -177,58 +173,60 @@ static void co_append_unit(copy_opt_t *co, ir_node *root) {
 			if (!arg_pos) { /* a new argument */
 				/* insert node, set costs */
 				unit->nodes[unit->node_count] = arg;
-				unit->costs[unit->node_count] = co->get_costs(root, arg, i);
+				unit->costs[unit->node_count] = co->get_costs(irn, arg, i);
 				unit->node_count++;
 			} else { /* arg has occured before in same phi */
 				/* increase costs for existing arg */
-				unit->costs[arg_pos] += co->get_costs(root, arg, i);
+				unit->costs[arg_pos] += co->get_costs(irn, arg, i);
 			}
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
 		unit->costs = xrealloc(unit->costs, unit->node_count * sizeof(*unit->costs));
-	} else if (is_Copy(get_arch_env(co), root)) {
-		assert(!nodes_interfere(co->chordal_env, root, get_Copy_src(root)));
-		unit->nodes[1] = get_Copy_src(root);
-		unit->costs[1] = co->get_costs(root, unit->nodes[1], -1);
+	} else
+
+	/* Proj of a perm with corresponding arg */
+	if (is_Copy(get_arch_env(co), irn)) {
+		assert(!nodes_interfere(co->chordal_env, irn, get_Copy_src(irn)));
+		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
+		unit->costs = xmalloc(2 * sizeof(*unit->costs));
 		unit->node_count = 2;
-		unit->nodes = xrealloc(unit->nodes, 2 * sizeof(*unit->nodes));
-		unit->costs = xrealloc(unit->costs, 2 * sizeof(*unit->costs));
+		unit->nodes[0] = irn;
+		unit->nodes[1] = get_Copy_src(irn);
+		unit->costs[1] = co->get_costs(irn, unit->nodes[1], -1);
+	} else
+
+	/* Src == Tgt of a 2-addr-code instruction */
+	if (is_2addr_code(get_arch_env(co), irn, &req)) {
+		int pos = req.data.pos;
+		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
+		unit->costs = xmalloc(2 * sizeof(*unit->costs));
+		unit->node_count = 2;
+		unit->nodes[0] = irn;
+		unit->nodes[1] = get_irn_n(irn, pos);
+		unit->costs[1] = co->get_costs(irn, unit->nodes[1], pos);
 	} else
 		assert(0 && "This is not an optimizable node!");
-	/* TODO add ou's for 2-addr-code instructions */
 
+	/* Insert the new unit at a position according to its costs */
+	{
+		int i;
+		struct list_head *tmp;
 
-	/* Determine the maximum costs this unit can cause: all_nodes_cost */
-	for(i=1; i<unit->node_count; ++i) {
-		unit->sort_key = MAX(unit->sort_key, unit->costs[i]);
-		unit->all_nodes_costs += unit->costs[i];
+		/* Determine the maximum costs this unit can cause: all_nodes_cost */
+		for(i=1; i<unit->node_count; ++i) {
+			unit->sort_key = MAX(unit->sort_key, unit->costs[i]);
+			unit->all_nodes_costs += unit->costs[i];
+		}
+
+		/* Determine the minimal costs this unit will cause: min_nodes_costs */
+		unit->min_nodes_costs += unit->all_nodes_costs - ou_max_ind_set_costs(unit);
+
+		/* Insert the new ou according to its sort_key */
+		tmp = &co->units;
+		while (tmp->next != &co->units && list_entry_units(tmp->next)->sort_key > unit->sort_key)
+			tmp = tmp->next;
+		list_add(&unit->units, tmp);
 	}
-
-	/* Determine the minimal costs this unit will cause: min_nodes_costs */
-	unit->min_nodes_costs += unit->all_nodes_costs - ou_max_ind_set_costs(unit);
-
-	/* Insert the new ou according to its sort_key */
-	tmp = &co->units;
-	while (tmp->next != &co->units && list_entry_units(tmp->next)->sort_key > unit->sort_key)
-		tmp = tmp->next;
-	list_add(&unit->units, tmp);
-}
-
-static void co_collect_in_block(ir_node *block, void *env) {
-	copy_opt_t *co = env;
-	struct list_head *head = get_block_border_head(co->chordal_env, block);
-	border_t *curr;
-
-	list_for_each_entry_reverse(border_t, curr, head, list)
-		if (curr->is_def && curr->is_real && is_optimizable(get_arch_env(co), curr->irn))
-			co_append_unit(co, curr->irn);
-}
-
-static void co_collect_units(copy_opt_t *co) {
-	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
-	co->roots = pset_new_ptr(64);
-	dom_tree_walk_irg(get_irg(co), co_collect_in_block, NULL, co);
-	del_pset(co->roots);
 }
 
 copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node*, ir_node*, int)) {
@@ -254,8 +252,9 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	else
 		firm_dbg_set_mask(dbg, DEBUG_LVL_CO);
 
+	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	INIT_LIST_HEAD(&co->units);
-	co_collect_units(co);
+	irg_walk_graph(get_irg(co), co_collect_units, NULL, co);
 	return co;
 }
 
@@ -284,13 +283,12 @@ int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
 	ir_loop *loop;
 	ir_node *root_block = get_nodes_block(root);
 
-	assert(pos==-1 || is_Phi(root));
-	if (pos == -1) {
-		/* a perm places the copy in the same block as it resides */
-		loop = get_irn_loop(root_block);
-	} else {
+	if (is_Phi(root)) {
 		/* for phis the copies are placed in the corresponding pred-block */
 		loop = get_irn_loop(get_Block_cfgpred_block(root_block, pos));
+	} else {
+		/* a perm places the copy in the same block as it resides */
+		loop = get_irn_loop(root_block);
 	}
 	if (loop) {
 		int d = get_loop_depth(loop);
