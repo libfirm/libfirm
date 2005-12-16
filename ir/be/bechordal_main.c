@@ -45,6 +45,8 @@
 #include "bespillbelady.h"
 #include "bespillilp.h"
 
+#include "belower.h"
+
 #define DO_SSADESTR
 
 #ifdef DO_SSADESTR
@@ -82,7 +84,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 		n1_reg = arch_get_irn_register(arch_env, n1);
 		if (!arch_reg_is_allocatable(arch_env, n1, -1, n1_reg)) {
 			DBG((dbg, 0, "Register assigned to %+F is not allowed\n", n1));
-			assert(0 && "Register constraint does not hold");
+//			assert(0 && "Register constraint does not hold");
 		}
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
 			n2_reg = arch_get_irn_register(arch_env, n2);
@@ -160,7 +162,8 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
 	BE_CH_SPILL_BELADY,
 	BE_CH_COPYMIN_HEUR,
-	BE_CH_IFG_STD
+	BE_CH_IFG_STD,
+	BE_CH_LOWER_PERM_SWAP
 };
 
 #ifdef WITH_LIBCORE
@@ -182,6 +185,12 @@ static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
 	{ NULL, 0 }
 };
 
+static const lc_opt_enum_int_items_t lower_perm_items[] = {
+	{ "swap", BE_CH_LOWER_PERM_SWAP },
+	{ "copy", BE_CH_LOWER_PERM_COPY },
+	{ NULL, 0 }
+};
+
 static lc_opt_enum_int_var_t spill_var = {
 	&options.spill_method, spill_items
 };
@@ -192,6 +201,10 @@ static lc_opt_enum_int_var_t copymin_var = {
 
 static lc_opt_enum_int_var_t ifg_flavor_var = {
 	&options.spill_method, ifg_flavor_items
+};
+
+static lc_opt_enum_int_var_t lower_perm_var = {
+	&options.lower_perm_method, lower_perm_items
 };
 
 static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
@@ -276,6 +289,10 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 
 		pmap_destroy(chordal_env.border_heads);
 	}
+
+#ifdef DO_SSADESTR
+	lower_perms(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
+#endif /* DO_SSADESTR */
 
 	be_free_dominance_frontiers(chordal_env.dom_front);
 	obstack_free(&chordal_env.obst, NULL);
