@@ -247,6 +247,17 @@ char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
 	return buf;
 }
 
+
+/*************************************************
+ *                 _ _                         _
+ *                (_) |                       | |
+ *   ___ _ __ ___  _| |_    ___ ___  _ __   __| |
+ *  / _ \ '_ ` _ \| | __|  / __/ _ \| '_ \ / _` |
+ * |  __/ | | | | | | |_  | (_| (_) | | | | (_| |
+ *  \___|_| |_| |_|_|\__|  \___\___/|_| |_|\__,_|
+ *
+ *************************************************/
+
 /*
  * coding of conditions
  */
@@ -372,21 +383,38 @@ void emit_ia32_CondJmp_i(ir_node *irn, emit_env_t *env) {
 	finish_CondJmp(F, irn);
 }
 
+
+
+/*********************************************************
+ *                 _ _       _
+ *                (_) |     (_)
+ *   ___ _ __ ___  _| |_     _ _   _ _ __ ___  _ __  ___
+ *  / _ \ '_ ` _ \| | __|   | | | | | '_ ` _ \| '_ \/ __|
+ * |  __/ | | | | | | |_    | | |_| | | | | | | |_) \__ \
+ *  \___|_| |_| |_|_|\__|   | |\__,_|_| |_| |_| .__/|___/
+ *                         _/ |               | |
+ *                        |__/                |_|
+ *********************************************************/
+
+/* jump table entry (target and corresponding number) */
 typedef struct _branch_t {
 	ir_node *target;
 	int      value;
 } branch_t;
 
+/* jump table for switch generation */
 typedef struct _jmp_tbl_t {
-	ir_node  *defProj;
-	int       min_value;
-	int       max_value;
-	int       num_branches;
-	char     *label;
-	branch_t *branches;
+	ir_node  *defProj;         /**< default target */
+	int       min_value;       /**< smallest switch case */
+	int       max_value;       /**< largest switch case */
+	int       num_branches;    /**< number of jumps */
+	char     *label;           /**< label of the jump table */
+	branch_t *branches;        /**< jump array */
 } jmp_tbl_t;
 
-/* Compare two variables of type branch_t */
+/**
+ * Compare two variables of type branch_t. Used to sort all switch cases
+ */
 static int ia32_cmp_branch_t(const void *a, const void *b) {
 	branch_t *b1 = (branch_t *)a;
 	branch_t *b2 = (branch_t *)b;
@@ -417,7 +445,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, "JMPTBL_");
 	tbl.defProj      = NULL;
 	tbl.num_branches = get_irn_n_edges(irn);
-	tbl.branches     = calloc(tbl.num_branches, sizeof(*(tbl.branches)));
+	tbl.branches     = calloc(tbl.num_branches, sizeof(tbl.branches[0]));
 	tbl.min_value    = INT_MAX;
 	tbl.max_value    = INT_MIN;
 
@@ -446,7 +474,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 	}
 
 	/* sort the branches by their number */
-	qsort(tbl.branches, tbl.num_branches, sizeof(*(tbl.branches)), ia32_cmp_branch_t);
+	qsort(tbl.branches, tbl.num_branches, sizeof(tbl.branches[0]), ia32_cmp_branch_t);
 
 	/* two-complement's magic make this work without overflow */
 	interval = tbl.max_value - tbl.min_value;
@@ -512,6 +540,8 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 		fprintf(F, "\tjmp %s\t\t\t/* default case */\n", get_cfop_target(tbl.defProj, buf));
 	}
 
+	if (tbl.label)
+		free(tbl.label);
 	if (tbl.branches)
 		free(tbl.branches);
 }
@@ -525,6 +555,19 @@ void emit_Jmp(ir_node *irn, emit_env_t *env) {
 	char buf[SNPRINTF_BUF_LEN];
 	ir_fprintf(F, "\tjmp %s\t\t\t/* Jmp(%+F) */\n", get_cfop_target(irn, buf), get_irn_link(irn));
 }
+
+
+
+/****************************
+ *                  _
+ *                 (_)
+ *  _ __  _ __ ___  _  ___
+ * | '_ \| '__/ _ \| |/ __|
+ * | |_) | | | (_) | |\__ \
+ * | .__/|_|  \___/| ||___/
+ * | |            _/ |
+ * |_|           |__/
+ ****************************/
 
 /**
  * Emits code for a proj -> node
@@ -543,8 +586,20 @@ void emit_Proj(ir_node *irn, emit_env_t *env) {
 	}
 }
 
+
+
+/***********************************************************************************
+ *                  _          __                                             _
+ *                 (_)        / _|                                           | |
+ *  _ __ ___   __ _ _ _ __   | |_ _ __ __ _ _ __ ___   _____      _____  _ __| | __
+ * | '_ ` _ \ / _` | | '_ \  |  _| '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
+ * | | | | | | (_| | | | | | | | | | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
+ * |_| |_| |_|\__,_|_|_| |_| |_| |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
+ *
+ ***********************************************************************************/
+
 /**
- * Main emitting function
+ * Emits code for a node.
  */
 void ia32_emit_node(ir_node *irn, void *env) {
 	emit_env_t *emit_env   = env;
