@@ -82,24 +82,28 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env);
 
 enum {
 	/* spill method */
-	BE_CH_SPILL_BELADY = 1,
-	BE_CH_SPILL_ILP = 2,
+	BE_CH_SPILL_BELADY    = 1,
+	BE_CH_SPILL_ILP       = 2,
 
 	/* Dump flags */
-	BE_CH_DUMP_NONE         = (1 << 0),
-	BE_CH_DUMP_SPILL		= (1 << 1),
-	BE_CH_DUMP_COPYMIN		= (1 << 2),
-	BE_CH_DUMP_SSADESTR		= (1 << 3),
-	BE_CH_DUMP_TREE_INTV	= (1 << 4),
-	BE_CH_DUMP_ALL          = 2 * BE_CH_DUMP_TREE_INTV - 1,
+	BE_CH_DUMP_NONE       = (1 << 0),
+	BE_CH_DUMP_SPILL      = (1 << 1),
+	BE_CH_DUMP_COPYMIN    = (1 << 2),
+	BE_CH_DUMP_SSADESTR	  = (1 << 3),
+	BE_CH_DUMP_TREE_INTV  = (1 << 4),
+	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_TREE_INTV - 1,
 
 	/* copymin method */
-	BE_CH_COPYMIN_HEUR      = 1,
-	BE_CH_COPYMIN_ILP       = 2,
+	BE_CH_COPYMIN_HEUR    = 1,
+	BE_CH_COPYMIN_ILP     = 2,
 
 	/* ifg flavor */
-	BE_CH_IFG_STD           = 1,
-	BE_CH_IFG_FAST          = 2
+	BE_CH_IFG_STD         = 1,
+	BE_CH_IFG_FAST        = 2,
+
+	/* lower perm method */
+	BE_CH_LOWER_PERM_SWAP = 1,
+	BE_CH_LOWER_PERM_COPY = 2
 };
 
 typedef struct {
@@ -107,6 +111,7 @@ typedef struct {
 	int spill_method;
 	int copymin_method;
 	int ifg_flavor;
+	int lower_perm_method;
 
 	char ilp_server[128];
 	char ilp_solver[128];
