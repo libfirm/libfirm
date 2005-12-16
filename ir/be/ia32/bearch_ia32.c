@@ -134,8 +134,6 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 				case pn_Start_P_frame_base:
 					memcpy(req, &ia32_default_req_none, sizeof(*req));
 					break;
-//					memcpy(req, &ia32_default_req_ia32_general_purpose, sizeof(*req));
-//					break;
 				case pn_Start_T_args:
 					assert(0 && "ProjT(pn_Start_T_args) should not be asked");
 			}
