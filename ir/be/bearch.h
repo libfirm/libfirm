@@ -155,14 +155,12 @@ typedef enum _arch_register_req_type_t {
   arch_register_req_type_limited = 2,     /**< Only a real subset of
                                                the class is allowed. */
 
-  arch_register_req_type_equal = 4,       /**< The register must equal
-                                               another one at the node. */
+  arch_register_req_type_should_be_same = 4,       /**< The register should be equal
+                                                        another one at the node. */
 
-  arch_register_req_type_unequal = 8,     /**< The register must be unequal
-                                               to some other at the node. */
+  arch_register_req_type_should_be_different = 8,  /**< The register must be unequal
+                                                        to some other at the node. */
 
-  arch_register_req_type_pair = 16        /**< The register is part of a
-                                               register pair. */
 } arch_register_req_type_t;
 
 #define arch_register_req_is_constr(x) \
