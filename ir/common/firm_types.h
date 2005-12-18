@@ -13,12 +13,17 @@
 
 #ifndef _IDENT_TYPEDEF_
 #define _IDENT_TYPEDEF_
-typedef const struct s_ident ident;
+typedef const struct _ident ident;
 #endif
 
 #ifndef _IR_NODE_TYPEDEF_
 #define _IR_NODE_TYPEDEF_
 typedef struct ir_node ir_node;
+#endif
+
+#ifndef _IR_MODE_TYPEDEF_
+#define _IR_MODE_TYPEDEF_
+typedef struct ir_mode ir_mode;
 #endif
 
 #ifndef _IR_EDGE_TYPEDEF_
