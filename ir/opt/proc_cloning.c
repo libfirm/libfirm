@@ -24,11 +24,6 @@
 #include "config.h"
 #endif
 
-//#ifdef HAVE_MALLOC_H
-# include <malloc.h>
-//#endif
-
-#include <stdarg.h>
 #include <string.h>
 
 #include "tv.h"
@@ -46,91 +41,94 @@
 #include "irouts.h"
 #include "mangle.h"
 #include "irnode_t.h"
+#include "irtools.h"
+#include "irgmod.h"
+
 /* A macro to iterate sets.*/
-#define ITERATE_SET(set_entrys, entry) for(entry = set_first(set_entrys); entry; entry = set_next(set_entrys))
+#define ITERATE_SET(set_entries, entry) for(entry = set_first(set_entries); entry; entry = set_next(set_entries))
 
 /**
- * This struct contains the information quartuple for a Call, which we need to
+ * This struct contains the information quadruple for a Call, which we need to
  * decide if this function must be cloned.
  */
-typedef struct _entry {
-  struct triple {
-    entity        *ent;   /**< The entity of our Call. */
-    int           pos;    /**< Position of a constant argument of our Call. */
-    tarval        *tv;    /**< The tarval of this constant argument. */
-    ir_node       *call;  /**< The Call itself. */
-  } t;                    /**< The heuristic triple. */
-
-  unsigned      num_calls;  /**< number of calls */
-  float         weight;     /**< The estimated weight of this triple. */
-  struct _entry *next;      /**< used for linking and sorting */
-} entry_t;
+typedef struct quadruple {
+  entity          *ent;     /**< The entity of our Call. */
+  int             pos;      /**< Position of a constant argument of our Call. */
+  tarval          *tv;      /**< The tarval of this argument if Const node. */
+  ir_node         **calls;  /**< The list of all calls with the same characteristics */
+} quad_t;
 
 /**
- * Compare two triples.
+ * The quadruplets are hold in a sorted list
+ */
+typedef struct entry {
+  quad_t       q;      /**< the quadruple */
+  float        weight; /**< its weight */
+  struct entry *next;  /**< link to the next one */
+} entry_t;
+
+typedef struct q_set {
+  struct obstack obst;        /**< an obstack containing all entries */
+  pset           *map;        /**< a hash map containing the quadruples */
+  entry_t        *heavy_uses; /**< the ordered list of heavy uses */
+} q_set;
+
+/**
+ * Compare two quadruples.
  *
  * @return 0 if they are identically
  */
-static int entry_cmp(const void *elt, const void *key, size_t size)
+static int entry_cmp(const void *elt, const void *key)
 {
-  const entry_t *c1 = elt;
-  const entry_t *c2 = key;
+  const entry_t *e1 = elt;
+  const entry_t *e2 = key;
 
-  return (c1->t.ent != c2->t.ent) || (c1->t.pos != c2->t.pos) || (c1->t.tv != c2->t.tv);
+  return (e1->q.ent != e2->q.ent) || (e1->q.pos != e2->q.pos) || (e1->q.tv != e2->q.tv);
 }
 
 /**
  * Hash a element of typ entry_t
  *
- * @param entry The element to be heshed.
+ * @param entry The element to be hashed.
  */
 static int hash_entry(const entry_t *entry)
 {
-  return HASH_PTR(entry->t.ent) ^ HASH_PTR(entry->t.tv) ^ (entry->t.pos * 9);
+  return HASH_PTR(entry->q.ent) ^ HASH_PTR(entry->q.tv) ^ (entry->q.pos * 9);
 }
 
 /**
- * Collect all calls in a ir_graph
- * to a set.
- *
- * @param call   A ir_node to be checked.
- * @param env    The set where we will collect the calls.
+ * free memory associated with a quadruplet
  */
-static void collect_irg_calls(ir_node *call, void *env)
+static void kill_entry(entry_t *entry) {
+  if (entry->q.calls) {
+    DEL_ARR_F(entry->q.calls);
+    entry->q.calls = NULL;
+  }
+}
+
+/**
+ * Process a call node
+ *
+ * @param call    A ir_node to be checked.
+ * @param callee  The entity of the callee
+ * @param hmap    The quadruple-set containing the calls with constant parameters
+ */
+static void process_call(ir_node *call, entity *callee, q_set *hmap)
 {
-  set *entrys = env;
-  ir_node *call_ptr;
-  entity *call_ent;
   type *mtp;
-  entry_t key, *entry;
+  entry_t *key, *entry;
   ir_node *call_param;
   int i, n_params;
 
-  /* We collect just "Call" nodes*/
-  if (get_irn_op(call) != op_Call)
-    return;
-
-  call_ptr = get_Call_ptr(call);
-
-  /* Call pointer must be a symconst*/
-  if (op_SymConst != get_irn_op(call_ptr))
-    return;
-  /* Call pointer must be the address of an entity.*/
-  if (get_SymConst_kind(call_ptr) != symconst_addr_ent)
-    return;
-
-  call_ent = get_SymConst_entity(call_ptr);
-
-  /* we can only clone calls to existing entities */
-  if (get_entity_visibility(call_ent) == visibility_external_allocated)
-    return;
-
   n_params = get_Call_n_params(call);
 
-  /* beware: we cannot clone variadic parameters */
+  /* Beware: we cannot clone variadic parameters as well as the
+   * last non-variadic one, which might be needed for the va_start()
+   * magic
+   */
   mtp = get_Call_type(call);
   if (get_method_variadicity(mtp) != variadicity_non_variadic) {
-    n_params = get_method_first_variadic_param_index(mtp);
+    n_params = get_method_first_variadic_param_index(mtp) - 1;
   }
 
   /* In this for loop we collect the calls, that have
@@ -140,29 +138,75 @@ static void collect_irg_calls(ir_node *call, void *env)
     if (is_Const(call_param)) {
       /* we have found a Call to collect and we save the informations,
          which we need.*/
+      if (! hmap->map)
+        hmap->map = new_pset(entry_cmp, 8);
 
-      key.t.ent     = call_ent;
-      key.t.pos     = i;
-      key.t.tv      = get_Const_tarval(call_param);
-      key.t.call    = call;
-      key.num_calls = 0;
+      key = obstack_alloc(&hmap->obst, sizeof(*key));
+
+      key->q.ent   = callee;
+      key->q.pos   = i;
+      key->q.tv    = get_Const_tarval(call_param);
+      key->q.calls = NULL;
+      key->weight  = 0.0F;
+      key->next    = NULL;
 
       /* We insert our information in the set, where we collect the calls.*/
-      entry     = set_insert(entrys, &key, sizeof(key), hash_entry(&key));
+      entry = pset_insert(hmap->map, key, hash_entry(key));
 
-      /* we found one more */
-      ++entry->num_calls;
-      break;
+      if (entry != key)
+        obstack_free(&hmap->obst, key);
+
+      /* add the call to the list */
+      if (! entry->q.calls) {
+        entry->q.calls = NEW_ARR_F(ir_node *, 1);
+        entry->q.calls[0] = call;
+      }
+      else
+        ARR_APP1(ir_node *, entry->q.calls, call);
     }
   }
 }
+
+/**
+ * Collect all calls in a ir_graph to a set.
+ *
+ * @param call   A ir_node to be checked.
+ * @param env   The quadruple-set containing the calls with constant parameters
+ */
+static void collect_irg_calls(ir_node *call, void *env)
+{
+  q_set *hmap = env;
+  ir_node *call_ptr;
+  entity *callee;
+
+  /* We collect just "Call" nodes*/
+  if (get_irn_op(call) == op_Call) {
+    call_ptr = get_Call_ptr(call);
+
+    /* Call pointer must be a symconst*/
+    if (op_SymConst != get_irn_op(call_ptr))
+      return;
+    /* Call pointer must be the address of an entity.*/
+    if (get_SymConst_kind(call_ptr) != symconst_addr_ent)
+      return;
+
+    callee = get_SymConst_entity(call_ptr);
+
+    /* we can only clone calls to existing entities */
+    if (get_entity_visibility(callee) == visibility_external_allocated)
+      return;
+
+    process_call(call, callee, hmap);
+  }
+}
+
 /**
  * Make a name for the clone. The clone name is
  * the name of the original method advanced with "_cl_pos_nr".
- * pos is the pos from our quartuple und  nr is a counter.
+ * pos is the pos from our quadruplet and nr is a counter.
  *
  * @param id  The ident of the cloned function.
- * @param pos The "pos" from our quartuple.
+ * @param pos The "pos" from our quadruplet.
  * @param nr  A counter for the clones.
  */
 static ident *get_clone_ident(ident *id, int pos, unsigned nr)
@@ -175,9 +219,9 @@ static ident *get_clone_ident(ident *id, int pos, unsigned nr)
 }
 
 /**
- * The function fill the bloks and nodes, that muss be in
+ * The function fill the blocks and nodes, that muss be in
  * the clone graph, from the original method graph. The cloned method
- * have one argument few, why it is replaced with a constan.
+ * have one argument few, why it is replaced with a constant.
  *
  * @param irn  A node from the original method graph.
  * @param env  The clone graph.
@@ -192,34 +236,26 @@ static void fill_clone_irg(ir_node *irn, void *env)
   arg       = get_irg_link(clone_irg);
   irg_args  = get_Proj_pred(arg);
 
-  if(get_irn_op(irn) == op_Call)
+  if (get_irn_op(irn) == op_Call)
     link = get_irn_link(irn);
 
-  /* We must copied all node outside the argument,
-     that we wont to replace with a constant,
-     the end node and block.*/
-  if(!(irn == arg || get_irg_end_block(current_ir_graph) == irn ||
-       get_irg_end(current_ir_graph) == irn))
-    copy_irn(irn, clone_irg);
+  /* Copy all nodes except the arg. */
+  if (irn != arg)
+    copy_irn_to_irg(irn, clone_irg);
 
   irn_copy = get_irn_link(irn);
 
-  if(get_irn_op(irn) == op_Call)
+  if (get_irn_op(irn) == op_Call)
     irn_copy->link = link;
 
-  /* I repair the ir graph of the copy block, why it
-     is set wrong from "copy_irn()".*/
-  if(is_Block(irn))
-    irn_copy->attr.block.irg = clone_irg;
-  /* If the original function have arguments with a bigger number
-     of the argument's number, that we want to replace, we muss
-     decrement them with one.*/
-  if(get_irn_op(irn) == op_Proj &&  get_Proj_pred(irn) == irg_args){
-    proj_nr  = get_Proj_proj(irn);
-    if(get_Proj_proj(arg) < proj_nr)
+  /* Fix argument numbers */
+  if (get_irn_op(irn) == op_Proj && get_Proj_pred(irn) == irg_args) {
+    proj_nr = get_Proj_proj(irn);
+    if (get_Proj_proj(arg) < proj_nr)
       set_Proj_proj(irn_copy, proj_nr - 1);
   }
 }
+
 /**
  * Set the predecessors of the copied nodes.
  * The copied nodes are set as link of their original nodes. The links of
@@ -229,76 +265,79 @@ static void set_preds(ir_node *irn, void *env)
 {
   int i;
   ir_node *irn_copy, *pred, *arg;
-  ir_graph *clone_irg;
-
-  clone_irg = env;
-  irn_copy  = get_irn_link(irn);
-
-  /* First we set the block our copy if it is not a block.*/
-  if(!is_Block(irn))
-    set_nodes_block(irn_copy, get_irn_link(get_nodes_block(irn)));
+  ir_graph *clone_irg = env;
 
   arg = get_irg_link(clone_irg);
-  /* Arg is the method argument, that wi have replaced with a constant.*/
-  if(arg == irn)
+  /* Arg is the method argument, that we have replaced by a constant.*/
+  if (arg == irn)
     return;
 
-  if(get_irn_op(irn) == op_Block){
-    for(i = get_Block_n_cfgpreds(irn) - 1; i >= 0; i--){
+  irn_copy  = get_irn_link(irn);
+
+  if (is_Block(irn)) {
+    for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; i--) {
       pred = get_Block_cfgpred(irn, i);
-      /* "End" block muss be covered extra, why it is not matured.*/
-      if(get_irg_end_block(current_ir_graph) == irn)
-	ARR_APP1 (ir_node *, get_irg_end_block(clone_irg)->in, get_irn_link(pred));
+      /* "End" block must be handled extra, because it is not matured.*/
+      if (get_irg_end_block(current_ir_graph) == irn)
+        add_immBlock_pred(get_irg_end_block(clone_irg), get_irn_link(pred));
       else
-	set_Block_cfgpred(irn_copy, i, get_irn_link(pred));
+        set_Block_cfgpred(irn_copy, i, get_irn_link(pred));
     }
-  }else
-    for(i = get_irn_arity(irn) - 1; i >= 0; i--){
+  }
+  else {
+    /* First we set the block our copy if it is not a block.*/
+    set_nodes_block(irn_copy, get_irn_link(get_nodes_block(irn)));
+    for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
       pred = get_irn_n(irn, i);
       set_irn_n(irn_copy, i, get_irn_link(pred));
     }
+  }
 }
+
 /**
  * Get the method argument at the position "pos".
  *
- * @param ent The entity of the function, that muss be cloned.
- * @param pos The position of the orgument.
+ * @param irg  irg that must be cloned.
+ * @param pos  The position of the argument.
  */
-static ir_node *get_method_arg(entity *ent, int pos)
+static ir_node *get_irg_arg(ir_graph *irg, int pos)
 {
-  ir_graph *irg;
-  ir_node *irg_args, *arg, *start;
+  ir_node *irg_args = get_irg_args(irg), *arg = NULL;
   int i;
-
-  irg      = get_entity_irg(ent);
 
   /* Call algorithm that computes the out edges */
   if (get_irg_outs_state(irg) != outs_consistent)
     compute_outs(irg);
-  start = get_irg_start(irg);
-  for(i = get_irn_n_outs(start) - 1; i >= 0; i--){
-    irg_args = get_irn_out(start, i);
-    if(is_Proj(get_irn_out(irg_args,0))){
-      set_irg_args(irg, irg_args);
-      break;
+
+  /* Search the argument with the number pos.*/
+  for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
+    ir_node *proj = get_irn_out(irg_args, i);
+    if (pos == get_Proj_proj(proj)) {
+      if (arg) {
+        /*
+         * More than one arg node found:
+         * We rely on the fact the only one arg exists, so do
+         * a cheap CSE in this case.
+         */
+        set_irn_out(irg_args, i, arg);
+        exchange(proj, arg);
+      }
+      else
+        arg = proj;
     }
   }
-  /* Search the argument whit the numer pos.*/
-  for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
-    arg = get_irn_out(irg_args, i);
-    if(pos == get_Proj_proj(arg))
-      break;
-  }
+  assert(arg && "Argument not found");
   return arg;
 }
+
 /**
- * Create a new graph for the clone of the procedur,
- * that we wont to clone.
+ * Create a new graph for the clone of the method,
+ * that we want to clone.
  *
- * @param ent The entity of the function, that muss be cloned.
- * @param t   Our quartuple.
+ * @param ent The entity of the method that must be cloned.
+ * @param q   Our quadruple.
  */
-static void create_clone_proc_irg(entity *ent, struct triple *t)
+static void create_clone_proc_irg(entity *ent, quad_t *q)
 {
   ir_graph *method_irg, *clone_irg;
   ir_node *arg, *const_arg;
@@ -306,71 +345,72 @@ static void create_clone_proc_irg(entity *ent, struct triple *t)
 
   method_irg = get_entity_irg(ent);
 
-  /* The ir graph of the cloned procedur have one local few,
-     why one of the arguments is replaced with a constant.*/
+  /* The ir graph of the cloned procedure have one local few,
+     because one of the arguments is replaced by a constant. */
   loc_n      = get_irg_n_loc(method_irg) - 1;
 
   /* We create the skeleton of the clone irg.*/
   clone_irg  = new_ir_graph(ent, loc_n);
 
-  arg        = get_method_arg(t->ent, t->pos);
-  /*This is the constante , with that we will replace the argument in position "t->pos".*/
-  const_arg  = new_r_Const(clone_irg, get_nodes_block(arg), get_irn_mode(arg), t->tv);
-  /* We have this nodes in the new ir_graph, and they muss not be
-     copied.*/
-  set_irn_link(arg, const_arg);
-  set_irn_link(get_irg_end(method_irg), get_irg_end(clone_irg));
-  set_irn_link(get_irg_end_block(method_irg), get_irg_end_block(clone_irg));
+  arg        = get_irg_arg(get_entity_irg(q->ent), q->pos);
+  /* we will replace the argument in position "q->pos" by this constant. */
+  const_arg  = new_r_Const_type(
+    clone_irg, get_nodes_block(arg), get_irn_mode(arg), q->tv,
+    get_method_param_type(get_entity_type(q->ent), q->pos));
 
-  /* I need this, why "irg_walk_graph" change "current_ir_graph" to passed irg.*/
+  /* We have this nodes in the new ir_graph, and they must not be copied.*/
+  set_irn_link(arg, const_arg);
+
+  /* I need this, because "irg_walk_graph" change "current_ir_graph" to passed irg.*/
   set_irg_link(clone_irg, arg);
-  /* We fill the bloks and nodes, that muss be in
+
+  /* We fill the blocks and nodes, that must be in
      the clone graph and set their preds.*/
   irg_walk_graph(method_irg, fill_clone_irg, set_preds, clone_irg);
 
-  /* The "cloned" ir_graph muss be corrected.*/
-  set_irg_start_block( clone_irg, get_irn_link(get_irg_start_block(method_irg)));
-  set_irg_start( clone_irg, get_irn_link(get_irg_start(method_irg)));
+  /* The "cloned" ir_graph must be corrected. */
   mature_block(get_irg_end_block(clone_irg));
   irg_finalize_cons(clone_irg);
 }
+
 /**
  * The function create a new entity type
  * for our clone and set it to clone entity.
  *
- * @param t   Contains information
+ * @param q   Contains information
  *            for the method to clone.
  * @param ent The entity of the clone.
  * @param nr  A pointer to the counter of clones.
  **/
-static void change_entity_type(struct triple *t, entity *ent, unsigned *nr)
+static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
 {
   type *mtp, *new_mtp, *tp;
   ident *tp_name;
   int i, n_params, n_ress, pos = 0;
 
-  mtp      = get_entity_type(t->ent);
-  tp_name  = get_clone_ident(get_type_ident(mtp), t->pos, (*nr)++);
+  mtp      = get_entity_type(q->ent);
+  tp_name  = get_clone_ident(get_type_ident(mtp), q->pos, (*nr)++);
   n_params = get_method_n_params(mtp);
   n_ress   = get_method_n_ress(mtp);
-  /* Create the new type for our clone. It muss have 1 parameter
-     few then the original.*/
+
+  /* Create the new type for our clone. It must have one parameter
+     less then the original.*/
   new_mtp  = new_type_method(tp_name, n_params - 1, n_ress);
 
-  /* We muss set the type of the methods parameters.*/
+  /* We must set the type of the methods parameters.*/
   for( i = 0; pos < (n_params - 1); i++){
 
-    if( i == t->pos - 1)
+    if (i == q->pos - 1)
       /* This is the position of the argument, that we have
-         replaced, t. m. "i" muss be incremented, but "pos" not
-         and nothing else muss be done.*/
+         replaced, q. m. "i" must be incremented, but "pos" not
+         and nothing else must be done.*/
       continue;
 
     tp = get_method_param_type(mtp, i);
     set_method_param_type(new_mtp, pos, tp);
     pos++;
   }
-  /* We muss set the type of the methods results.*/
+  /* We must set the type of the methods results.*/
   for( i = 0; i < n_ress; i++){
     tp = get_method_res_type(mtp, i);
     set_method_res_type(new_mtp, i, tp);
@@ -382,23 +422,22 @@ static void change_entity_type(struct triple *t, entity *ent, unsigned *nr)
 /**
  * Make a clone of a method.
  *
- * @param t   Contains information
+ * @param q   Contains information
  *            for the method to clone.
  */
-static entity *clone_method(struct triple *t)
+static entity *clone_method(quad_t *q)
 {
   entity *new_entity;
   ident *clone_ident;
-  ir_node *irn;
   ir_graph *rem;
   symconst_symbol sym;
   /* A counter for the clones.*/
   static unsigned nr = 0;
 
   /* We get a new ident for our clone method.*/
-  clone_ident = get_clone_ident(get_entity_ident(t->ent), t->pos, nr);
-  /* We get our entity for the clone method.*/
-  new_entity  = copy_entity_name (t->ent, clone_ident);
+  clone_ident = get_clone_ident(get_entity_ident(q->ent), q->pos, nr);
+  /* We get our entity for the clone method. */
+  new_entity  = copy_entity_name(q->ent, clone_ident);
 
   /* a cloned entity is always local */
   set_entity_visibility(new_entity, visibility_local);
@@ -407,24 +446,25 @@ static entity *clone_method(struct triple *t)
   set_entity_ld_ident(new_entity, get_entity_ident(new_entity));
 
   /* set a new type here.*/
-  change_entity_type(t, new_entity, &nr);
+  change_entity_type(q, new_entity, &nr);
 
-  /* We need naw a new ir_graph for our clone procedure.
-     This will we make with create_clone_proc_irg.*/
-  create_clone_proc_irg(new_entity, t);
-  /* We muss set the atomic value of our "new_entity". */
+  /* We need now a new ir_graph for our clone method. */
+  create_clone_proc_irg(new_entity, q);
+  /* We must set the atomic value of our "new_entity". */
   sym.entity_p = new_entity;
   rem = current_ir_graph;
   current_ir_graph =  get_const_code_irg();
   new_entity->value = new_SymConst(sym, symconst_addr_ent);
   current_ir_graph = rem;
-  /* The "new_entity" have not this information.*/
+
+  /* The "new_entity" have not this information. */
   new_entity->param_access = NULL;
   new_entity->param_weight = NULL;
 
   return new_entity;
 }
-/** The functin make a new "Call" node and return it.
+
+/** The function make a new "Call" node and return it.
  *
  * @param call        The call, that muss be exchanged.
  * @param new_entity  The entity of the cloned function.
@@ -446,7 +486,7 @@ static ir_node *new_cl_Call(ir_node *call, entity *new_entity, int pos)
   in       = malloc(sizeof(ir_node*) * (n_params - 1));
 
   /* we save the parameters of the new call in the array "in" without the
-   * parameter in posiotn "pos", that is replaced with a constant.*/
+   * parameter in position "pos", that is replaced with a constant.*/
   for(i = 0; i < n_params; i++){
     if(pos == i)
       continue;
@@ -457,36 +497,112 @@ static ir_node *new_cl_Call(ir_node *call, entity *new_entity, int pos)
   return new_r_Call(get_irn_irg(call), get_nodes_block(call), get_Call_mem(call),
 		    callee, n_params - 1, in, get_entity_type(new_entity));
 }
-/** A call node in the graph is the head of a list, that contains all
- *  clons lf this graph. If a call muss be exchanged in a graph, this muss
- *  be made in all cloned graph too. "wchange_calls" make this.
- *
- * @param call          The call, that muss be exchanged.
- * @param new_entity    The entity of the new function, that must be called from the new call.
- * @param pos           The position of the replaced parameter of "call".
- */
-static void exchange_calls(ir_node *call, entity *new_entity, int pos)
-{
-  ir_node *copy, *new_call;
-  int n_params;
 
-  n_params = get_Call_n_params(call);
-  copy     = get_irn_link(call);
+/**
+ * Exchange all Calls now to Calls of the cloned entity
+ *
+ * @param q             The quadruple
+ * @param cloned_ent    The entity of the new function, that must be called from the new call.
+ */
+static void exchange_calls(quad_t *q, entity *cloned_ent)
+{
+  int pos = q->pos;
+  ir_node *new_call, *call;
+  int i;
 
   /* We iterate the list of the "call".*/
-  for( ; copy; copy = get_irn_link(copy)){
-    if(!is_ir_node(copy) ||
-       get_irn_irg(copy) == get_irn_irg(call))
-      break;
+  for (i = 0; i < ARR_LEN(q->calls); ++i) {
+    call = q->calls[i];
+
     /* A clone exist and the copy of "call" in this
-     * clon graph must be exchanged with new one.*/
-    new_call = new_cl_Call(copy, new_entity, pos);
-    exchange(copy, new_call);
-    /* The list muss be updatet too.*/
-    set_irn_link(call, new_call);
-    call = new_call;
+     * clone graph must be exchanged with new one.*/
+    new_call = new_cl_Call(call, cloned_ent, pos);
+    exchange(call, new_call);
   }
 }
+
+/**
+ * The weight formula:
+ * We save one instruction in every caller and param_weight instructions
+ * in the callee.
+ */
+static float calculate_weight(const entry_t *entry) {
+  return ARR_LEN(entry->q.calls) *
+    (get_method_param_weight(entry->q.ent, entry->q.pos) + 1);
+}
+
+/*
+ * after we exchanged all calls, some entries on the list for
+ * the next cloned entity may get invalid, so we have to check
+ * them and may even update the list of heavy uses.
+ */
+static void reorder_weights(q_set *hmap, float threshold)
+{
+  entry_t **adr, *p, *entry;
+  int i, len;
+  entity *callee;
+
+restart:
+  entry = hmap->heavy_uses;
+  if (! entry)
+    return;
+
+  len = ARR_LEN(entry->q.calls);
+  for (i = 0; i < len; ++i) {
+    ir_node *ptr, *call = entry->q.calls[i];
+
+    /* might be exchanged */
+    call = skip_Id(call);
+
+    /* we know, that a SymConst is here */
+    ptr = get_Call_ptr(call);
+    assert(get_irn_op(ptr) == op_SymConst);
+
+    callee = get_SymConst_entity(ptr);
+    if (callee != entry->q.ent) {
+      /*
+       * This call is already changed because of a previous
+       * optimization. Remove it from the list.
+       */
+      len -= 1;
+      entry->q.calls[i] = entry->q.calls[len];
+      entry->q.calls[len] = NULL;
+
+      /* the new call should be processed */
+      process_call(call, callee, hmap);
+    }
+  }
+
+  /* the length might be changed */
+  ARR_SHRINKLEN(entry->q.calls, len);
+
+  /* recalculate the weight and resort the heavy uses map */
+  entry->weight = calculate_weight(entry);
+
+  if (len <= 0 || entry->weight < threshold) {
+    hmap->heavy_uses = entry->next;
+    kill_entry(entry);
+
+    /* we have changed the list, check the next one */
+    goto restart;
+  }
+
+  adr = NULL;
+  for (p = entry->next; p && entry->weight < p->weight; p = p->next) {
+    adr = &p->next;
+  }
+
+  if (adr) {
+    hmap->heavy_uses = entry->next;
+    entry->next      = *adr;
+    *adr             = entry;
+    entry            = hmap->heavy_uses;
+
+    /* we have changed the list, check the next one */
+    goto restart;
+  }
+}
+
 /*
  * Do the procedure cloning. Evaluate a heuristic weight for every
  * call(..., Const, ...). If the weight is bigger than threshold,
@@ -494,111 +610,92 @@ static void exchange_calls(ir_node *call, entity *new_entity, int pos)
  */
 void proc_cloning(float threshold)
 {
-  ir_node *new_call, *link;
-  set *set_entrys, *new_entrys;
-  entry_t *entry,*p, *heavy_uses = NULL, key;
+  entry_t *entry = NULL, *p;
   ir_graph *irg;
   int i, count = 0;
-  /* "set_entrys" contains the Calls to cloning, after
-      the walk over the graph. */
-  set_entrys  = new_set(entry_cmp, 8);
+  q_set hmap;
 
-  entry       = NULL;
+  obstack_init(&hmap.obst);
+  hmap.map        = NULL;
+  hmap.heavy_uses = NULL;
 
+  /* initially fill our map by visiting all irgs */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     irg = get_irp_irg(i);
-    irg_walk_graph(irg, collect_irg_calls, NULL, set_entrys);
+    irg_walk_graph(irg, collect_irg_calls, NULL, &hmap);
   }
-  /* We have the "Call" nodes to optimize in set "set_entrys". Our algorithm
+
+  /* We have the "Call" nodes to optimize in set "set_entries". Our algorithm
      replace one constant parameter and make a new "Call" node for all found "Calls". It exchange the
      old one with the new one and the algorithm is called with the new "Call".
      */
-  while(set_count(set_entrys)){
+  while (hmap.map || hmap.heavy_uses) {
     /* We iterate the set and arrange the element of the set in a list.
        The elements are arranged dependent of their value descending.*/
-    ITERATE_SET(set_entrys, entry) {
-      entry->weight = entry->num_calls *
-	(get_method_param_weight(entry->t.ent, entry->t.pos) + 1);
+    if (hmap.map) {
+      for (entry = pset_first(hmap.map); entry; entry = pset_next(hmap.map)) {
+        entry->weight = calculate_weight(entry);
+
+        /*
+         * Do not put entry with a weight < threshold in the list
+         */
+        if (entry->weight < threshold) {
+          kill_entry(entry);
+          continue;
+        }
+
+        /* put entry in the heavy uses list */
+        entry->next = NULL;
+        if (! hmap.heavy_uses)
+          hmap.heavy_uses = entry;
+        else {
+          if (entry->weight >= hmap.heavy_uses->weight) {
+            entry->next     = hmap.heavy_uses;
+            hmap.heavy_uses = entry;
+          }
+          else {
+            for (p = hmap.heavy_uses; p->next; p = p->next) {
+              if (entry->weight >= p->next->weight) {
+                entry->next = p->next;
+                p->next     = entry;
+                break;
+              }
+            }
+            if (! p->next)
+              p->next = entry;
+          }
+        }
+      }
+      del_pset(hmap.map);
+      hmap.map = NULL;
+    }
+
+    /* Print some information about the list. */
+    printf("-----------------\n");
+    for (entry = hmap.heavy_uses; entry; entry = entry->next) {
+      printf("\nweight: is %f\n", entry->weight);
+      ir_printf("Call for Method %E\n", entry->q.ent);
+      printf("Position %i\n", entry->q.pos);
+      ir_printf("Value %T\n", entry->q.tv);
+    }
+
+    entry = hmap.heavy_uses;
+    if (entry) {
+      entity *ent = clone_method(&entry->q);
+
+      hmap.heavy_uses = entry->next;
+
+      /* We must exchange the copies of this call in all clones too.*/
+      exchange_calls(&entry->q, ent);
+      kill_entry(entry);
 
       /*
-       * Do not put entry with a weight < threshold in the list
+       * after we exchanged all calls, some entries on the list for
+       * the next cloned entity may get invalid, so we have to check
+       * them and may even update the list of heavy uses.
        */
-      if (entry->weight < threshold)
-	continue;
-
-      /* put entry in the heavy uses list */
-      entry->next = NULL;
-      if (! heavy_uses)
-	heavy_uses = entry;
-      else {
-	if (entry->weight >= heavy_uses->weight) {
-	  entry->next = heavy_uses;
-	  heavy_uses  = entry;
-	}
-	else {
-	  for (p = heavy_uses; p->next; p = p->next) {
-	    if (entry->weight >= p->next->weight) {
-	      entry->next = p->next;
-	      p->next     = entry;
-	      break;
-	    }
-	  }
-	  if (! p->next)
-	    p->next = entry;
-	}
-      }
+      reorder_weights(&hmap, threshold);
     }
-
-    /* Print some informations about the list. */
-    for (entry = heavy_uses; entry; entry = entry->next) {
-    printf("\nweight: is %f\n", entry->weight);
-    ir_printf("Call for Method %E\n", entry->t.ent);
-    printf("Position %i\n", entry->t.pos);
-    ir_printf("Value %T\n", entry->t.tv);
-    }
-
-   /* "new_entrys" contain already optimized Calls, that muss
-      be optimized again, why we can optimize just one constan
-      parameter at once and when a Call have to constant parameters
-      the algorithm muss be repeated, but we don't need to walk over
-      the graph again.*/
-    new_entrys  = new_set(entry_cmp, 8);
-
-    for (entry = heavy_uses; entry; entry = entry->next) {
-      count = set_count(new_entrys);
-      /* The new cloned method shoul be made.*/
-      entity *ent = clone_method(&entry->t);
-
-      /* The new Call for the new methode should be made.*/
-      new_call = new_cl_Call(entry->t.call, ent, entry->t.pos);
-
-      /* A call node in the graph is the head of a list, that contains all
-       *  clons lf this graph. The "new_call" must be inherits this list.*/
-      set_irn_link(new_call, get_irn_link(entry->t.call));
-
-      exchange(entry->t.call, new_call);
-      /* We set the new Call in the set "new_entrys" if it
-	 have constant parameter.*/
-      collect_irg_calls(new_call, new_entrys);
-      /* We muss exchange the copies ot this call in all clones too.*/
-      exchange_calls(new_call, ent, entry->t.pos);
-    }
-    /* The "Calls" in the set "set_entrys" are optimized. */
-    del_set(set_entrys);
-    set_entrys  = new_set(entry_cmp, 8);
-    /* The set "set_entrys" must contain the new "Calls" to optimize t.m.
-       we must copy all entys of "new_entrys" to "set_entrys"*/
-    ITERATE_SET(new_entrys, entry) {
-      key.t.ent     = entry->t.ent;
-      key.t.pos     = entry->t.pos;
-      key.t.tv      = entry->t.tv;
-      key.t.call    = entry->t.call;
-      key.num_calls = 0;
-
-      set_insert(set_entrys, &key, sizeof(key), hash_entry(&key));
-    }
-    del_set(new_entrys);
-    entry = NULL;
-    heavy_uses = NULL;
   }
+  obstack_free(&hmap.obst, NULL);
 }
