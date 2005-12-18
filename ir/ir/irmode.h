@@ -53,7 +53,10 @@
  *    The tech report 1999-44 describing FIRM and predefined modes
  *    tarval.h
  */
+#ifndef _IR_MODE_TYPEDEF_
+#define _IR_MODE_TYPEDEF_
 typedef struct ir_mode ir_mode;
+#endif
 
 /* ********** Predefined modes ********** */
 
