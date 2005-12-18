@@ -13,14 +13,12 @@
 #define _IRTOOLS_H_
 
 #include "firm_config.h"
+#include "firm_types.h"
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 lc_opt_entry_t *firm_opt_get_root(void);
 #endif
-
-
-#include "irnode.h"
 
 /**
  * convert an integer into pointer
@@ -37,5 +35,18 @@ lc_opt_entry_t *firm_opt_get_root(void);
  * Do not implement it by yourself, use this one
  */
 void firm_clear_link(ir_node *n, void *env);
+
+/**
+ * Copies a node to a new irg. The Ins of the new node point to
+ * the predecessors on the old irg.  n->link points to the new node.
+ *
+ * @param n    The node to be copied
+ * @param irg  the new irg
+ *
+ * Does NOT copy standard nodes like Start, End etc that are fixed
+ * in an irg. Instead, the corresponding nodes of the new irg are returned.
+ * Note further, that the new nodes have no block.
+ */
+void copy_irn_to_irg(ir_node *n, ir_graph *irg);
 
 #endif /* _IRTOOLS_H_ */
