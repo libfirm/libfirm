@@ -187,3 +187,26 @@ void clear_backedges (ir_node *n) {
   }
   set_interprocedural_view(rem);
 }
+
+int *new_backedge_arr(struct obstack *obst, int size) {
+  int *res = NEW_ARR_D (int, obst, size);
+  memset(res, 0, sizeof(int) * size);
+  return res;
+}
+
+/* TODO: add an ir_op operation */
+void new_backedge_info(ir_node *n) {
+  switch(get_irn_opcode(n)) {
+  case iro_Block:
+    n->attr.block.cg_backedge = NULL;
+    n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  case iro_Phi:
+    n->attr.phi_backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  case iro_Filter:
+    n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  default: ;
+  }
+}

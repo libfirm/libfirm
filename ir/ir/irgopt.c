@@ -193,23 +193,6 @@ compute_new_arity(ir_node *b) {
   }
 }
 
-/* TODO: add an ir_op operation */
-static INLINE void new_backedge_info(ir_node *n) {
-  switch(get_irn_opcode(n)) {
-  case iro_Block:
-    n->attr.block.cg_backedge = NULL;
-    n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  case iro_Phi:
-    n->attr.phi_backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  case iro_Filter:
-    n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  default: ;
-  }
-}
-
 /**
  * Copies the node to the new obstack. The Ins of the new node point to
  * the predecessors on the old obstack.  For block/phi nodes not all

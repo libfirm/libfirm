@@ -39,6 +39,7 @@
 # include "hashptr.h"
 # include "pset.h"
 # include "strength_red.h"
+# include "irbackedge_t.h"
 
 /* We will unroll maximal 4-times.  */
 #define MAX_UNROLL 4
@@ -61,29 +62,6 @@ static int set_cmp(const void *elt, const void *key, size_t size)
   const copies_t *c2 = key;
 
   return c1->irn != c2->irn;
-}
-
-static INLINE int * new_backedge_arr(struct obstack *obst, int size)
-{
-  int *res = NEW_ARR_D (int, obst, size);
-  memset(res, 0, sizeof(int) * size);
-  return res;
-}
-
-static INLINE void new_backedge_info(ir_node *n) {
-  switch(get_irn_opcode(n)) {
-  case iro_Block:
-    n->attr.block.cg_backedge = NULL;
-    n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  case iro_Phi:
-    n->attr.phi_backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  case iro_Filter:
-    n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  default: ;
-  }
 }
 
 /**

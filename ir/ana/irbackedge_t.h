@@ -13,13 +13,15 @@
 #ifndef _IRBACKEDGE_T_H_
 #define _IRBACKEDGE_T_H_
 
-# include <string.h>
+/**
+ * Allocate a new backedge array on the obstack for given size.
+ */
+int *new_backedge_arr(struct obstack *obst, int size);
 
-static INLINE int * new_backedge_arr(struct obstack *obst, int size) {
-  int *res = NEW_ARR_D (int, obst, size);
-  memset(res, 0, sizeof(int) * size);
-  return res;
-}
+/**
+ * allocate new backedge info for nodes.
+ */
+void new_backedge_info(ir_node *n);
 
 /**
  * Adapts backedges array to new size.
