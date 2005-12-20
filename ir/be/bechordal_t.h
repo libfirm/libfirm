@@ -91,7 +91,8 @@ enum {
 	BE_CH_DUMP_COPYMIN    = (1 << 2),
 	BE_CH_DUMP_SSADESTR	  = (1 << 3),
 	BE_CH_DUMP_TREE_INTV  = (1 << 4),
-	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_TREE_INTV - 1,
+	BE_CH_DUMP_CONSTR     = (1 << 5),
+	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_CONSTR - 1,
 
 	/* copymin method */
 	BE_CH_COPYMIN_HEUR    = 1,

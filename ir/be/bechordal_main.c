@@ -260,6 +260,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 
 		/* Insert perms before reg-constrained instructions */
 		be_insert_constr_perms(&chordal_env);
+		dump(BE_CH_DUMP_CONSTR, irg, "-constr", dump_ir_block_graph_sched);
 
 		be_liveness(irg);
 		be_numbering(irg);
