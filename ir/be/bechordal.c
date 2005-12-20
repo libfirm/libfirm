@@ -367,7 +367,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	int node_count        = get_graph_node_count(chordal_env->irg);
 	int colors_n          = arch_register_class_n_regs(chordal_env->cls);
 	ir_graph *irg         = chordal_env->irg;
-	void *base            = obstack_base(&chordal_env->obst);
 
 	be_chordal_alloc_env_t env;
 
@@ -399,5 +398,4 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	}
 #endif
 
-	obstack_free(&chordal_env->obst, base);
 }

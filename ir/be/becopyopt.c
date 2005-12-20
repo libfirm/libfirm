@@ -269,11 +269,18 @@ void free_copy_opt(copy_opt_t *co) {
 
 int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	int i, max;
+	arch_env_t *aenv = co->chordal_env->main_env->arch_env;
+
 	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
 		ir_node *n = get_irn_out(irn, i);
-		if (((is_Phi(n) && is_firm_be_mode(get_irn_mode(n))) ||
-			 is_Perm(get_arch_env(co), n)) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
-			return 1;
+		arch_register_req_t req;
+		arch_get_register_req(aenv, &req, n, -1);
+
+		if(	(	(req.type == arch_register_req_type_should_be_same && get_irn_n(n, req.data.pos) == irn) ||
+				is_Reg_Phi(n) ||
+				is_Perm(get_arch_env(co), n)
+			) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
+				return 1;
 	}
 	return 0;
 }

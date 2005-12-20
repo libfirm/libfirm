@@ -435,8 +435,9 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory, const arch_i
     ent->n_pos = 2 * cls->n_regs;
     ent->pos = obstack_alloc(&factory->obst, sizeof(ent->pos[0]) * ent->n_pos);
     for(j = 0; j < ent->n_pos; j += 2) {
-      ent->pos[j] = j;
-      ent->pos[j + 1] = -(j + 1);
+    	int k = j / 2;
+      ent->pos[j] = k;
+      ent->pos[j + 1] = -(k + 1);
     }
     pmap_insert(factory->irn_op_map, ent->op, ent);
 

@@ -96,8 +96,7 @@ void free_copy_opt(copy_opt_t *co);
 #define get_Copy_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
 #define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
 
-//TODO is second part of the condition ok?
-#define is_Reg_Phi(irn)						(is_Phi(irn) && is_firm_be_mode(get_irn_mode(irn)))
+#define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
 #define is_Copy(arch_env, irn)				(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
 #define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
 
