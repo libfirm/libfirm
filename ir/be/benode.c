@@ -461,7 +461,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			fprintf(f, get_mode_name(get_irn_mode(irn)));
 			break;
 		case dump_node_nodeattr_txt:
-			fprintf(f, bo->cls->name);
+			fprintf(f, "%s ", bo->cls->name);
 			break;
 		case dump_node_info_txt:
 			for(i = 0; i < attr->n_regs; ++i) {
