@@ -309,5 +309,5 @@ void lower_perms(be_chordal_env_t *chord_env, int do_copy) {
 	env.chord_env = chord_env;
 	env.do_copy   = do_copy;
 
-	irg_walk_blkwise_graph(chord_env->irg,  NULL, lower_perms_walker, &env);
+	irg_block_walk_graph(chord_env->irg,  NULL, lower_perms_walker, &env);
 }
