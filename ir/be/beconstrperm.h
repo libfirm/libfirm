@@ -13,7 +13,7 @@
 
 /**
  * Inserts a perm instruction before all instructions having
- * one the register requirement "arch_register_req_type_limited"
+ * the register requirement "arch_register_req_type_limited"
  */
 void be_insert_constr_perms(be_chordal_env_t *cenv);
 
