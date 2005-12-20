@@ -209,7 +209,7 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
   static const lc_arg_handler_t ia32_mode_handler  = { ia32_get_arg_type, ia32_get_mode_suffix };
 
   if(env == NULL) {
-    env = firm_get_arg_env();
+    env = lc_arg_new_env();
 
     lc_arg_register(env, "ia32:sreg", 's', &ia32_reg_handler);
     lc_arg_register(env, "ia32:dreg", 'd', &ia32_reg_handler);
