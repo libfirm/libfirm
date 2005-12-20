@@ -238,16 +238,23 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
   } else {
     arr = &node->in;
   }
-  if (arity != ARR_LEN(*arr) - 1) {
+
+	for (i = 0; i < arity; i++) {
+		if (i < ARR_LEN(*arr)-1)
+    	edges_notify_edge(node, i, in[i], (*arr)[i+1], current_ir_graph);
+		else
+	    edges_notify_edge(node, i, in[i], NULL,        current_ir_graph);
+  }
+	for(;i < ARR_LEN(*arr)-1; i++) {
+		edges_notify_edge(node, i, NULL, (*arr)[i+1], current_ir_graph);
+	}
+
+	if (arity != ARR_LEN(*arr) - 1) {
     ir_node * block = (*arr)[0];
     *arr = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
     (*arr)[0] = block;
   }
   fix_backedges(current_ir_graph->obst, node);
-
-  for (i = 0; i < arity; i++) {
-    edges_notify_edge(node, i, in[i], (*arr)[i+1], current_ir_graph);
-  }
 
   memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
 }
