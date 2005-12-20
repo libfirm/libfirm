@@ -374,9 +374,9 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 		compute_doms(irg);
 
 	env.chordal_env  = chordal_env;
-	env.live         = bitset_obstack_alloc(&chordal_env->obst, node_count);
-	env.colors       = bitset_obstack_alloc(&chordal_env->obst, colors_n);
-	env.in_colors    = bitset_obstack_alloc(&chordal_env->obst, colors_n);
+	env.live         = bitset_malloc(node_count);
+	env.colors       = bitset_malloc(colors_n);
+	env.in_colors    = bitset_malloc(colors_n);
 	env.colors_n     = colors_n;
 
 	/* First, determine the pressure */
@@ -398,4 +398,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	}
 #endif
 
+	free(env.live);
+	free(env.colors);
+	free(env.in_colors);
 }
