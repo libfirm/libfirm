@@ -28,18 +28,19 @@
 
 # include "loop_unrolling.h"
 
+#include "irnode_t.h"
 # include "irgwalk.h"
 # include "ircons.h"
 # include "irgmod.h"
 # include "irloop_t.h"
 # include "irgopt_t.h"
-# include "irnode_t.h"
 # include "irouts.h"
 # include "trouts.h"
 # include "hashptr.h"
 # include "pset.h"
 # include "strength_red.h"
-# include "irbackedge_t.h"
+# include "compute_loop_info.h"
+# include "irdump.h"
 
 /* We will unroll maximal 4-times.  */
 #define MAX_UNROLL 4
@@ -64,6 +65,29 @@ static int set_cmp(const void *elt, const void *key, size_t size)
   return c1->irn != c2->irn;
 }
 
+static INLINE int * new_backedge_arr(struct obstack *obst, int size)
+{
+  int *res = NEW_ARR_D (int, obst, size);
+  memset(res, 0, sizeof(int) * size);
+  return res;
+}
+
+static INLINE void new_backedge_info(ir_node *n) {
+  switch(get_irn_opcode(n)) {
+  case iro_Block:
+    n->attr.block.cg_backedge = NULL;
+    n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  case iro_Phi:
+    n->attr.phi_backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  case iro_Filter:
+    n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+    break;
+  default: ;
+  }
+}
+
 /**
  * Remember the new node in the old node by using a field all nodes have.
  */
@@ -84,13 +108,18 @@ set_new_node (ir_node *old, ir_node *new)
  * @param n    The node to be copied
  * @param env  if non-NULL, the node number attribute will be copied to the new node
  */
-static void
-copy_node (ir_node *n, void *env)
+void
+copy_irn (ir_node *n, void *env)
 {
+  ir_graph *irg;
   ir_node *nn;
   int new_arity;
-  ir_op *op = get_irn_op(n);
+  irg              = env;
+  ir_op *op        = get_irn_op(n);
   int copy_node_nr = 0;
+
+  if(irg == NULL)
+    irg = current_ir_graph;
 
   /* The end node looses it's flexible in array.  This doesn't matter,
      as dead node elimination builds End by hand, inlineing doesn't use
@@ -104,7 +133,7 @@ copy_node (ir_node *n, void *env)
   new_arity = get_irn_arity(n);
 
   nn = new_ir_node(get_irn_dbg_info(n),
-           current_ir_graph,
+           irg,
            NULL,            /* no block yet, will be set later */
            op,
            get_irn_mode(n),
@@ -153,9 +182,11 @@ set_preds (set *l_n, copies_t *value, induct_var_info *info, int unroll_factor, 
 {
   int i, p, irn_arity;
   copies_t key, *value_pred;
+  if(value->copy[0] == NULL ||
+     get_irn_op(value->irn) != get_irn_op(value->copy[0]))
+    return;
   // The head of the unrolling loop.
   ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
-
   irn_arity = get_irn_arity(value->irn);
 
   for (i = 0; i < irn_arity; i++) {
@@ -331,11 +362,23 @@ new_loop_head(set *l_n, induct_var_info *info, copies_t *value, int unroll_facto
   if (copy_head) {
     /* The first copy of the loop head must point to the loop head.*/
     value->copy[0] = new_Block(1, &backedge_jmp);
-
-    for (i = 1; i < unroll_factor - 1; ++i) {
+    if(info->l_itervar_phi->flags & do_loop){
+      value_backedge_jmp->copy[0] = new_r_Jmp(current_ir_graph, value->copy[0]);
+      for (i = 1; i < unroll_factor - 1; ++i) {
       /* all other copies must point to the copy before it in the array. */
-      value->copy[i] = new_Block(1, &value_backedge_jmp->copy[i-1]);
-    }
+      value->copy[i] = new_Block(1, &backedge_jmp);
+      value_backedge_jmp->copy[i] = new_r_Jmp(current_ir_graph, value->copy[i]);
+      }
+      for (i = 1; i < unroll_factor - 1; ++i){
+	set_nodes_block(value_backedge_jmp->copy[i-1], get_nodes_block(backedge_jmp));
+	set_Block_cfgpred (value->copy[i], 0, value_backedge_jmp->copy[i-1]);
+      }
+    }else
+      for (i = 1; i < unroll_factor - 1; ++i) {
+	/* all other copies must point to the copy before it in the array. */
+	set_nodes_block(value_backedge_jmp->copy[i-1], get_nodes_block(backedge_jmp));
+	value->copy[i] = new_Block(1, &value_backedge_jmp->copy[i-1]);
+      }
   }
   else {
     /* If the loop head must not be copy. block.irn is the successor of the loop head.*/
@@ -362,19 +405,25 @@ set_Phi_copies(copies_t *phi, copies_t *phi_pred, int unroll_factor)
 {
   int p;
 
-  /* The first copy of Phi node get the node along the backedge as predecessor. The next copies
-     the copies of this node.*/
-  phi->copy[0] = phi_pred->irn;
-  for (p = 1; p < unroll_factor - 1; ++p) {
-    /* If two phi nodes are in cycle.  */
-    if (phi_pred->copy[p - 1] == NULL && get_irn_op(phi_pred->irn) == op_Phi) {
-      if (p & 1)
-	      phi->copy[p] =  phi->irn;
-      else
-	      phi->copy[p] =  phi_pred->irn;
-    } else
-      phi->copy[p] =  phi_pred->copy[p - 1];
-  }
+  if(phi_pred != NULL){
+    /* The first copy of Phi node get the node along the backedge as predecessor. The next copies
+       the copies of this node.*/
+    phi->copy[0] = phi_pred->irn;
+    for (p = 1; p < unroll_factor - 1; ++p) {
+      /* If two phi nodes are in cycle.  */
+      if (phi_pred->copy[p - 1] == NULL && get_irn_op(phi_pred->irn) == op_Phi) {
+	if (p & 1)
+	  phi->copy[p] =  phi->irn;
+	else
+	  phi->copy[p] =  phi_pred->irn;
+      } else
+	phi->copy[p] =  phi_pred->copy[p - 1];
+    }
+  }else
+    /* The predecessors of phi are loop invariant and the copies von phi
+       must be phi it self.*/
+    for(p = 0; p < unroll_factor - 1; ++p)
+      phi->copy[p] = phi->irn;
 }
 
 /**
@@ -422,10 +471,19 @@ loop_head_nodes(set *l_n, induct_var_info *info)
 static void
 copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
 {
-  int i;
+  int i, opt;
   copies_t *value, *info_op, *phi, *loop_h = NULL, key, *value_block;
+  ir_node *proj_b, *cond, *proj_1, *proj_0;
+  proj_b = get_irn_out(info->cmp, 0);
+  cond   = get_irn_out(proj_b, 0);
+  proj_0 = get_irn_out(cond, 0);
+  proj_1 = get_irn_out(cond, 1);
 
   ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
+  /* I will create some nodes and need the optimization to
+     be set off.*/
+  opt = get_opt_optimize();
+  set_opt_optimize(0);
 
   for (value = set_first(l_n); value != NULL; value = set_next(l_n)) {
     if(value->irn == loop_head)
@@ -433,26 +491,38 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
     else if (is_Phi_in_loop_head(value->irn, loop_head))
       phi = value;
     else if (copy_loop_head){
-      /* The loop head must be copied. */
-      for (i = 0; i < unroll_factor - 1; i++){
-	      copy_node(value->irn, NULL);
-	      value->copy[i] = get_irn_link(value->irn);
-      }
+      if(value->irn == proj_0){
+	for (i = 0; i < unroll_factor - 1; i++)
+	  /* In the copies of the loop head we replace the cmp branche with a jmp node.
+	     This is just for "for" loops."do" loops are handled in function
+	     new_loop_head().*/
+	  value->copy[i] = new_r_Jmp(current_ir_graph, get_nodes_block(value->irn));
+      }else if(value->irn != proj_b && value->irn != cond &&
+	      value->irn != proj_1)
+	/* The loop head must be copied. */
+	for (i = 0; i < unroll_factor - 1; i++){
+	  copy_irn(value->irn, NULL);
+	  value->copy[i] = get_irn_link(value->irn);
+	}
     } else {
       /* The loop head and its nodes must not be copied. */
       if((value->irn->op == op_Block             &&
-	        value->irn != loop_head)               ||
-	       (value->irn->op != op_Block             &&
-	        get_nodes_block(value->irn) != loop_head)) {
-	      for (i = 0; i<unroll_factor -1; i++){
-	        copy_node(value->irn, NULL);
-	        value->copy[i] = get_irn_link(value->irn);
-	      }
+	  value->irn != loop_head)               ||
+	 (value->irn->op != op_Block             &&
+	  get_nodes_block(value->irn) != loop_head)) {
+	  for (i = 0; i<unroll_factor -1; i++){
+	    copy_irn(value->irn, NULL);
+	    value->copy[i] = get_irn_link(value->irn);
+	  }
       }
     }
   }
+
   /* Treat the loop head block */
   new_loop_head(l_n, info, loop_h, unroll_factor, copy_loop_head);
+  /* I have created the nodes and I set the optimization
+     to it old value.*/
+  set_opt_optimize(opt);
 
   /* Similarly treat the Phis in the loop head block. info->op is the node
      along the backedges. */
@@ -474,17 +544,20 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
   }
 
   for (value = set_first(l_n); value != NULL; value = set_next(l_n)) {
+
     /* Set the predecessors of the copies. */
-    if (copy_loop_head)
-      set_preds(l_n, value, info, unroll_factor, NULL);
-    else if ((value->irn->op != op_Block) && get_nodes_block(value->irn) != loop_head)
+    if (copy_loop_head){
+	set_preds(l_n, value, info, unroll_factor, NULL);
+    }else if ((value->irn->op != op_Block) && get_nodes_block(value->irn) != loop_head)
       set_preds(l_n, value, info, unroll_factor, NULL);
 
-    if (is_Phi_in_loop_head(value->irn, loop_head))
+    if (is_Phi_in_loop_head(value->irn, loop_head) &&
+	has_backedges(value->irn))
       /* Set the backedge of phis in the loop head. */
       set_phi_backedge(l_n, value, info, unroll_factor);
 
-    if ((value->irn->op != op_Block) && !is_Phi_in_loop_head(value->irn, loop_head)) {
+    if ((value->irn->op != op_Block) && !is_Phi_in_loop_head(value->irn, loop_head) &&
+	value->copy[0] != NULL ) {
       ir_node *nodes_block = get_nodes_block(value->irn);
 
       if (!copy_loop_head && nodes_block == loop_head)
@@ -495,8 +568,18 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
       /* Set the copy of the node in the accordant copy of its block. */
       for(i = 0; i < unroll_factor - 1; i++){
         set_nodes_block(value->copy[i], value_block->copy[i]);
-        //add_End_keepalive(get_irg_end(current_ir_graph), value->copy[p]);
       }
+    }
+  }
+  /* I muss repaire some control flow edges, when the loop head
+     have been copied.*/
+  if (copy_loop_head && !(info->l_itervar_phi->flags & do_loop)){
+    key.irn = proj_0;
+    value   = set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn));
+    key.irn = get_irn_out(proj_0, 0);
+    info_op = set_find( l_n, &key, sizeof(key), HASH_PTR(key.irn));
+    for (i = 0; i < unroll_factor - 1; i++){
+      set_Block_cfgpred(info_op->copy[i], 0, value->copy[i]);
     }
   }
 }
@@ -754,7 +837,9 @@ set_loop_outs(set *l_n, set *loop_outs, set *loop_endblock_outs, induct_var_info
   ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
   ir_node *end_block = get_irg_end_block(current_ir_graph);
 
-  for (value = set_first(l_n); value != NULL; value = set_next(l_n))
+  for (value = set_first(l_n); value != NULL; value = set_next(l_n)){
+    if(get_irn_node_nr(value->irn) == 35047)
+      printf("\nHi\n");
     if (! is_Phi_in_loop_head(value->irn, loop_head) &&
         (get_irn_opcode(value->irn) == iro_Proj && value->copy[0] != NULL))
       for (i = 0; i < get_irn_n_outs(value->irn); ++i) {
@@ -767,23 +852,26 @@ set_loop_outs(set *l_n, set *loop_outs, set *loop_endblock_outs, induct_var_info
               (key.irn->op != op_Block && get_Block_dom_depth(get_nodes_block(key.irn)) >
                get_Block_dom_depth(loop_head))) {
 
-            for (p = 0; p < get_irn_arity(key.irn); p++)
+	    for (p = 0; p < get_irn_arity(key.irn); p++)
               if (value->irn == get_irn_n(key.irn, p)) {
-		              if (get_irn_op(value->irn) == op_Proj && is_exception_possible(value->irn)) {
-                    if (set_find(loop_outs, &key, sizeof(key), HASH_PTR(key.irn)) == NULL) {
-                      /* If the loop out is for exceptions in the loop. */
-                      if ((get_irn_op(key.irn) == op_Phi && get_irn_mode(key.irn) == mode_M) ||
+		if (get_irn_op(value->irn) == op_Proj && is_exception_possible(value->irn)) {
+		  if (set_find(loop_outs, &key, sizeof(key), HASH_PTR(key.irn)) == NULL) {
+		    /* If the loop out is for exceptions in the loop. */
+		    if ((get_irn_op(key.irn) == op_Phi && get_irn_mode(key.irn) == mode_M) ||
                         get_irn_op(key.irn) == op_Call)
-                        new_after_loop_node(l_n,loop_outs, key.irn, value, unroll_factor);
-                      else
-                        continue;
-                    } else
-                      continue;
-                  } else
-                    set_irn_n(key.irn, p, value->copy[unroll_factor-2]);
+		      new_after_loop_node(l_n,loop_outs, key.irn, value, unroll_factor);
+		    else
+		      continue;
+		  } else
+		    continue;
+		} else
+		  /* Loop outs in the loop head must be not changed.*/
+		  if(get_nodes_block(value->irn) != loop_head)
+		    set_irn_n(key.irn, p, value->copy[unroll_factor-2]);
               }
           }
       }
+  }
   /* This function searches for loop outs associated with function call in the unrolling loop. */
   new_end_block (end_block, loop_head, l_n, loop_endblock_outs, unroll_factor);
 }
@@ -801,10 +889,10 @@ static void do_loop_unroll(ir_node *n, void *env)
   induct_var_info info;
   copies_t *value;
   set *loop_nodes, *loop_outs, *loop_endblock_outs;
-  ir_node *cmp_out, *phi_init, *loop_head;
+  ir_node *phi_init, *loop_head;
   ir_node *backedge_jmp;
   int l_sons = 0, unroll_factor = 0;
-  int cmp_typ, init, iter_end, iter_increment, diff, iter_number;
+  tarval *init, *iter_end, *iter_increment,*tarval_null, *tarval_one, *tarval_three, *tarval_two, *diff, *iter_number;
   int backedge_pos;
 
   copy_loop_head = 0;
@@ -828,40 +916,50 @@ static void do_loop_unroll(ir_node *n, void *env)
   l_sons = get_loop_n_sons(info.l_itervar_phi);
   if ( l_sons != 0)
     return;
+  /* "do" loops are not implementit gut for this reason
+      at the time we don't unroll them.*/
+  if(info.l_itervar_phi->flags & do_loop)
+    return;
 
-  cmp_out  = get_irn_out(info.cmp, 0);
   phi_init = get_Phi_pred(info.itervar_phi, info.init_pred_pos);
 
-  if (! is_Proj(cmp_out)) return;
-  if (get_irn_op(info.increment) != op_Const   ||
-      get_irn_op(phi_init) != op_Const         ||
-      get_irn_op(info.cmp_const) != op_Const) return;
+  if ((!(info.l_itervar_phi->flags & loop_is_count_loop))  ||
+      (info.l_itervar_phi->flags & loop_is_endless)        ||
+      (info.l_itervar_phi->flags & loop_is_dead)           ||
+      (info.l_itervar_phi->flags & once))
+    return;
 
-  cmp_typ        = get_Proj_proj(cmp_out);
-  init           = get_tarval_long(get_Const_tarval(phi_init));
-  iter_end       = get_tarval_long(get_Const_tarval(info.cmp_const));
-  iter_increment = get_tarval_long(get_Const_tarval(info.increment));
+  init           = info.l_itervar_phi->loop_iter_start;
+  iter_end       = info.l_itervar_phi->loop_iter_end;
+  iter_increment = info.l_itervar_phi->loop_iter_increment;
+  tarval_null = get_mode_null(get_tarval_mode(iter_increment));
+  tarval_one  = get_mode_one(get_tarval_mode(init));
 
-  if (iter_end < init){
-    int p = iter_end;
-    iter_end = init;
-    init = p;
-  }
+  if(tarval_is_double(init) || tarval_is_double(iter_end) || tarval_is_double(iter_increment))
+    return;
 
-  iter_increment = iter_increment < 0 ? -iter_increment : iter_increment;
-  diff = iter_end - init;
+  if((tarval_is_negative(init) && tarval_is_negative(iter_end)) ||
+     (!tarval_is_negative(init) && !tarval_is_negative(iter_end)) ||
+     (tarval_is_null(init) || tarval_is_null(iter_end)))
+    diff = tarval_abs(tarval_sub(iter_end, init));
+  else
+    diff = tarval_add(tarval_abs(iter_end),tarval_abs(init));
 
-  if (diff == 0 || iter_increment == 0) return;
+  iter_increment = tarval_abs(iter_increment);
+
+  if(!(info.l_itervar_phi->flags & do_loop))
+    diff = tarval_add(diff, tarval_one);
   /* Test for the value of unroll factor. */
-  iter_number = diff/iter_increment;
-  if ((cmp_typ == pn_Cmp_Le || cmp_typ == pn_Cmp_Ge) && (iter_end % iter_increment == 0))
-    iter_number ++;
+  if (tarval_cmp(tarval_mod(diff,iter_increment), tarval_null) == pn_Cmp_Eq)
+    iter_number = tarval_div(diff, iter_increment);
+  else
+    return;
+  tarval_two = tarval_add(tarval_one, tarval_one);
+  tarval_three = tarval_add(tarval_two,tarval_one);
 
-  if ((iter_number & 3) == 0)
-    unroll_factor = 4;
-  else if ((iter_number % 3) == 0)
+  if (tarval_cmp(tarval_mod(iter_number, tarval_three), tarval_null) == pn_Cmp_Eq)
     unroll_factor = 3;
-  else if ((iter_number & 1) == 0)
+  else if (tarval_cmp(tarval_mod(iter_number, tarval_two), tarval_null) == pn_Cmp_Eq)
     unroll_factor = 2;
   else return;
 
@@ -890,7 +988,6 @@ static void do_loop_unroll(ir_node *n, void *env)
   /* A set containing all predecessors
      of the end block from the unrolling loop. */
   loop_endblock_outs = new_set(set_cmp, 8);
-
   /* Find all nodes of the unrolling loop. */
   find_loop_nodes(info.itervar_phi, get_loop_node(info.l_itervar_phi, 0), loop_nodes);
 
@@ -923,8 +1020,12 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
 
   /* -- Precompute some information -- */
 
+  /* Call algorithm that computes the loop information */
+  // construct_backedges(irg);
+  compute_loop_info(irg);
   /* Call algorithm that computes the backedges */
-  construct_cf_backedges(irg);
+  // construct_cf_backedges(irg);
+  dump_loop_tree(current_ir_graph, "-deadlooptree");
 
   /* Call algorithm that computes the dominator trees. */
   compute_doms(irg);

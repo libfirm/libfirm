@@ -21,10 +21,10 @@
 #define _LOOP_UNROLLING_H_
 
 #include "irgraph.h"
-
+/* Make a copy for a ir node.*/
+void copy_irn(ir_node *irn, void *env);
 /**
  * Do Loop unrolling in the given graph.
  */
 void optimize_loop_unrolling(ir_graph *irg);
-
 #endif  /* _LOOP_UNROLLING_H_ */
