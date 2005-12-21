@@ -91,6 +91,12 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
   const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
 
   switch(req->type) {
+	case arch_register_req_type_none:
+		bitset_clear_all(bs);
+		return 0;
+
+	case arch_register_req_type_should_be_different:
+	case arch_register_req_type_should_be_same:
     case arch_register_req_type_normal:
       arch_register_class_put(req->cls, bs);
       return req->cls->n_regs;
@@ -123,6 +129,8 @@ int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
 	arch_get_register_req(env, &req, irn, pos);
 	switch(req.type) {
 		case arch_register_req_type_normal:
+		case arch_register_req_type_should_be_different:
+		case arch_register_req_type_should_be_same:
 			res = req.cls == reg->reg_class;
 			break;
 		case arch_register_req_type_limited:
@@ -131,6 +139,7 @@ int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
 				req.data.limited(irn, pos, bs);
 				res = bitset_is_set(bs, arch_register_get_index(reg));
 			}
+			break;
 		default:
 			res = 0;
 	}
