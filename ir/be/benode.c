@@ -265,6 +265,9 @@ be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
 	const be_node_factory_t *factory =
 		container_of(_self, const be_node_factory_t, irn_ops);
 
+	if(get_irn_mode(irn) == mode_T && pos < 0)
+		return NULL;
+
 	/*
 	 * were interested in an output operand, so
 	 * let's resolve projs.
@@ -298,6 +301,9 @@ be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn,
 	const be_node_factory_t *factory =
 		container_of(_self, const be_node_factory_t, irn_ops);
 
+	if(get_irn_mode(irn) == mode_T && pos < 0)
+		return NULL;
+
 	pos = redir_proj((const ir_node **) &irn, -1);
 	bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
@@ -315,6 +321,9 @@ be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn)
 	be_op_t *bo;
 	const be_node_factory_t *factory =
 		container_of(_self, const be_node_factory_t, irn_ops);
+
+	if(get_irn_mode(irn) == mode_T && pos < 0)
+		return NULL;
 
 	pos = redir_proj((const ir_node **) &irn, -1);
 	bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
@@ -487,14 +496,22 @@ ir_node *insert_Perm_after(const be_main_env_t *env,
   const arch_env_t *arch_env  = env->arch_env;
   ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
   ir_graph *irg               = get_irn_irg(bl);
-  pset *live                  = put_live_end(bl, pset_new_ptr_default());
+  pset *live                  = pset_new_ptr_default();
   firm_dbg_module_t *dbg      = firm_dbg_register("firm.be.node");
 
+  irn_live_t *li;
   ir_node *curr, *irn, *perm, **nodes;
   int i, n;
 
   firm_dbg_set_mask(dbg, DBG_LEVEL);
   DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
+
+
+	live_foreach(bl, li) {
+		ir_node *irn = (ir_node *) li->irn;
+		if(live_is_end(li) && arch_irn_has_reg_class(arch_env, irn, -1, cls))
+			pset_insert_ptr(live, irn);
+	}
 
   sched_foreach_reverse(bl, irn) {
     ir_node *x;
