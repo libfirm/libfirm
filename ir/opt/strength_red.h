@@ -32,17 +32,29 @@ void reduce_strength(ir_graph *irg);
 # ifndef _STRENGTH_RED_TYP_
 # define _STRENGTH_RED_TYP_
 typedef struct _induct_var_info {
-  ir_op   *operation_code;
-  ir_node *increment, *init, *op, *itervar_phi, *c, *new_phi, *new_increment, *new_init;
-  ir_node *new_op, *new_add, *reducible_node;
-  ir_node *old_ind, *symconst, *new_cmp, *cmp_const, *cmp_init_block, *cmp;
-  int      be_pos, strong_reduced;
-  int      init_pred_pos, op_pred_pos, out_loop_res, phi_pred, reducible;
-  ir_loop *l_itervar_phi;
-}induct_var_info;
+  ir_op   *operation_code;  /**< The opcode of "op" */
+  ir_node *increment;       /**< The value which increase or decrease the iteration variable. */
+  ir_node *init;            /**< The start value of the iteration variable. */
+  ir_node *op;              /**< The operation which increase or decrease the iteration variable. */
+  ir_node *itervar_phi;     /**< The iteration variable. */
+  ir_node *new_phi;         /**< The new iteration variable. */
+  ir_node *new_increment;   /**< The new increment which replace the old one. */
+  ir_node *new_init;        /**< The new init value of the iteration variable. */
+  ir_node *new_op;          /**< The new operation that we need after replace. */
+  ir_node *new_cmp;         /**< The new Cmp which replaces the old one. */
+  ir_node *cmp;             /**< The Cmp which breaks the loop and compares the iteration variable with a constant. */
+  ir_node *cmp_const;       /**< The other operand of Cmp. */
+  ir_node *cmp_init_block;  /**< The initial block of the Cmp. */
+  ir_node *reducible_node;  /**< The reducible nodes are save here. */
+  int     is_reducible;     /**< To save information if anything is reducible. */
+  int     phi_pred;         /**< To save the value of iteration variable predecessors. */
+  int     init_pred_pos;    /**< To save the position of iteration variable start value. */
+  int     op_pred_pos;      /**< To save the backedge of iteration variable. */
+  ir_loop *l_itervar_phi;   /**< The loop of the induction variable */
+} induct_var_info;
 #endif
 
-/** If an ir_node is induction variable return info else return NULL. */
-induct_var_info *is_induction_variable ( induct_var_info *info);
+/** If an ir_node is an induction variable return info else return NULL. */
+induct_var_info *is_induction_variable(induct_var_info *info);
 
 #endif /* _STRENGTH_RED_H_ */
