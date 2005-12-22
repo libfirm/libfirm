@@ -24,6 +24,20 @@
 #ifndef _IRLOOP_T_H_
 #define _IRLOOP_T_H_
 
+/**
+ * Possible loop flags, can be or'ed.
+ */
+typedef enum loop_flags {
+  loop_is_count_loop = 0x00000001,  /**< if set it's a counting loop */
+  loop_downto_loop   = 0x00000002,  /**< if set, it's a downto loop, else an upto loop */
+  loop_is_endless    = 0x00000004,  /**< if set, this is an endless loop */
+  loop_is_dead       = 0x00000008,  /**< if set, it's a dead loop ie will never be entered */
+  loop_wrap_around   = 0x00000010,  /**< this loop is NOT endless, because of wrap around */
+  loop_end_false     = 0x00000020,  /**< this loop end can't be computed "from compute_loop_info.c" */
+  do_loop            = 0x00000040,  /**< this is a do loop */
+  once               = 0x00000080,  /**< this is a do loop, with a false condition.It itarate once */
+} loop_flags_t;
+
 /** The loops datastructure. */
 struct ir_loop {
   firm_kind kind;		    /**< A type tag, set to k_ir_loop. */
@@ -33,6 +47,11 @@ struct ir_loop {
   int depth;                        /**< Nesting depth */
   int n_sons;                       /**< Number of ir_nodes in array "children" */
   int n_nodes;                      /**< Number of loop_nodes in array "children" */
+  unsigned flags;                   /**< a set of loop_flags_t */
+  tarval  *loop_iter_start;         /**< counting loop: the start value */
+  tarval  *loop_iter_end;           /**< counting loop: the last value reached */
+  tarval  *loop_iter_increment;     /**< counting loop: the increment */
+  ir_node *loop_iter_variable;      /**< The iteration variable of counting loop.*/
 
   /*
   struct state_entry *mem_phis;
@@ -46,7 +65,6 @@ struct ir_loop {
 			      readable. */
   void *link;              /**< GL @@@ For debugging the analyses. */
 #endif
-
 };
 
 
