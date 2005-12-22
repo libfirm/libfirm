@@ -25,6 +25,18 @@
 #include "irprintf.h"
 #include "beifg_t.h"
 
+size_t (be_ifg_nodes_iter_size)(const void *self)
+{
+	const be_ifg_t *ifg = self;
+	return ifg->impl->nodes_iter_size;
+}
+
+size_t (be_ifg_neighbours_iter_size)(const void *self)
+{
+	const be_ifg_t *ifg = self;
+	return ifg->impl->neighbours_iter_size;
+}
+
 void (be_ifg_free)(void *self)
 {
 	be_ifg_t *ifg = self;

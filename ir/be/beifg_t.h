@@ -34,6 +34,9 @@ struct _be_ifg_t {
 
 #ifdef _BE_IFG_USE_MACROS
 
+#define be_ifg_nodes_iter_size(self)              ((self)->impl->nodes_iter_size)
+#define be_ifg_neighbours_iter_size(self)         ((self)->impl->neighbours_iter_size)
+
 #define be_ifg_free(self)                         ((self)->impl->free(self))
 #define be_ifg_connected(self,a,b)                ((self)->impl->connected(self, a, b))
 #define be_ifg_neighbours_begin(self, iter, irn)  ((self)->impl->neighbours_begin(self, iter, irn))

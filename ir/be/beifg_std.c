@@ -110,7 +110,7 @@ static ir_node *ifg_std_nodes_next(const void *self, void *iter)
 	return get_next_node(iter);
 }
 
-static void ifg_std_nodes_end(const void *self, void *iter)
+static void ifg_std_nodes_break(const void *self, void *iter)
 {
 	node_break(iter, 1);
 }
@@ -208,7 +208,7 @@ static ir_node *ifg_std_neighbours_next(const void *self, void *iter)
 	return get_next_neighbour(iter);
 }
 
-static void ifg_std_neighbours_end(const void *self, void *iter)
+static void ifg_std_neighbours_break(const void *self, void *iter)
 {
 	neighbours_break(iter, 1);
 }
