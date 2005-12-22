@@ -27,7 +27,8 @@ SOURCES += Makefile.in \
 		irloop_t.h irbackedge.c irbackedge_t.h irscc.c ircfscc.c 	\
 		irtypeinfo.c irsimpletype.c interval_analysis.c			\
 		callgraph.c field_temperature.c execution_frequency.c phiclass.c \
-		irextbb.c irextbb_t.h irconsconfirm.c analyze_irg_args.c
+		irextbb.c irextbb_t.h irconsconfirm.c analyze_irg_args.c \
+		compute_loop_info.c compute_loop_info.h
 
 include $(topdir)/MakeRules
 
