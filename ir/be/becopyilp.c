@@ -109,7 +109,7 @@ static INLINE int pi_is_simplicial(problem_instance_t *pi, const ir_node *ifn) {
 	int i, o, size = 0;
 	ir_node **all, *curr;
 	be_ifg_t *ifg = pi->co->chordal_env->ifg;
-	void *iter = be_ifg_iter_alloca(ifg);
+	void *iter = be_ifg_neighbours_iter_alloca(ifg);
 
 	all = alloca(be_ifg_degree(ifg, ifn) * sizeof(*all));
 
@@ -142,7 +142,7 @@ static void pi_find_simplicials(problem_instance_t *pi) {
 	int redo = 1;
 	int n_nodes = 0;
 	const be_ifg_t *ifg = pi->co->chordal_env->ifg;
-	void *iter = be_ifg_iter_alloca(ifg);
+	void *iter = be_ifg_neighbours_iter_alloca(ifg);
 
 	DBG((dbg, LEVEL_2, "Find simlicials...\n"));
 
@@ -922,7 +922,7 @@ static void pi_set_simplicials(problem_instance_t *pi) {
 	simpl_t *simpl, *tmp;
 	be_ifg_t *ifg        = pi->co->chordal_env->ifg;
 	bitset_t *used_cols  = bitset_alloca(arch_register_class_n_regs(pi->co->chordal_env->cls));
-	void *iter           = be_ifg_iter_alloca(ifg);
+	void *iter           = be_ifg_neighbours_iter_alloca(ifg);
 
 	DBG((dbg, LEVEL_2, "Set simplicials...\n"));
 	/* color the simplicial nodes in right order */
