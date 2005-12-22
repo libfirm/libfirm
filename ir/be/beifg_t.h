@@ -11,16 +11,19 @@
 #include "beifg.h"
 
 struct _be_ifg_impl_t {
-	size_t iter_size;
+	size_t nodes_iter_size;
+	size_t neighbours_iter_size;
 
 	void (*free)(void *self);
 	int (*connected)(const void *self, const ir_node *a, const ir_node *b);
 
 	ir_node *(*neighbours_begin)(const void *self, void *iter, const ir_node *irn);
 	ir_node *(*neighbours_next)(const void *self, void *iter);
+	void (*neighbours_break)(const void *self, void *iter);
 
 	ir_node *(*nodes_begin)(const void *self, void *iter);
 	ir_node *(*nodes_next)(const void *self, void *iter);
+	void (*nodes_break)(const void *self, void *iter);
 
 	int (*degree)(const void *self, const ir_node *irn);
 };
@@ -31,13 +34,14 @@ struct _be_ifg_t {
 
 #ifdef _BE_IFG_USE_MACROS
 
-#define be_ifg_iter_size(self)                    ((self)->impl->iter_size)
 #define be_ifg_free(self)                         ((self)->impl->free(self))
 #define be_ifg_connected(self,a,b)                ((self)->impl->connected(self, a, b))
 #define be_ifg_neighbours_begin(self, iter, irn)  ((self)->impl->neighbours_begin(self, iter, irn))
 #define be_ifg_neighbours_next(self, iter)        ((self)->impl->neighbours_next(self, iter))
+#define be_ifg_neighbours_break(self, iter)       ((self)->impl->neighbours_break(self, iter))
 #define be_ifg_nodes_begin(self, iter)            ((self)->impl->nodes_begin(self, iter))
 #define be_ifg_nodes_next(self, iter)             ((self)->impl->nodes_next(self, iter))
+#define be_ifg_nodes_break(self, iter)            ((self)->impl->nodes_break(self, iter))
 #define be_ifg_degree(self,irn)                   ((self)->impl->degree(self, irn))
 
 #endif

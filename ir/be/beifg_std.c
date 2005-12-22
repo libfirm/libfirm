@@ -6,6 +6,7 @@
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -77,6 +78,14 @@ static void find_nodes(const void *self, void *iter) {
 	it->nodes = obstack_finish(&it->obst);
 }
 
+static INLINE void node_break(nodes_iter_t *it, int force)
+{
+	if((it->curr >= it->n || force) && it->nodes) {
+		obstack_free(&it->obst, NULL);
+		it->nodes = NULL;
+	}
+}
+
 static ir_node *get_next_node(void *iter)
 {
 	nodes_iter_t *it = iter;
@@ -85,10 +94,7 @@ static ir_node *get_next_node(void *iter)
 	if(it->curr < it->n)
 		res = it->nodes[it->curr++];
 
-	if(it->curr >= it-> n && it->nodes) {
-		obstack_free(&it->obst, NULL);
-		it->nodes = NULL;
-	}
+	node_break(it, 0);
 
 	return res;
 }
@@ -102,6 +108,11 @@ static ir_node *ifg_std_nodes_begin(const void *self, void *iter)
 static ir_node *ifg_std_nodes_next(const void *self, void *iter)
 {
 	return get_next_node(iter);
+}
+
+static void ifg_std_nodes_end(const void *self, void *iter)
+{
+	node_break(iter, 1);
 }
 
 typedef struct _adj_iter_t {
@@ -167,16 +178,21 @@ static void find_neighbours(const ifg_std_t *ifg, adj_iter_t *it, const ir_node 
 		it->neighbours = obstack_finish(&it->obst);
 }
 
+static INLINE void neighbours_break(adj_iter_t *it, int force)
+{
+	if((it->curr >= it->degree || force) && it->neighbours) {
+		obstack_free(&it->obst, NULL);
+		it->neighbours = NULL;
+	}
+}
+
 static ir_node *get_next_neighbour(adj_iter_t *it) {
 	ir_node *res = NULL;
 
 	if(it->curr < it->degree)
 		res = it->neighbours[it->curr++];
 
-	if(it->curr >= it->degree && it->neighbours) {
-		obstack_free(&it->obst, NULL);
-		it->neighbours = NULL;
-	}
+	neighbours_break(it, 0);
 
 	return res;
 }
@@ -192,6 +208,11 @@ static ir_node *ifg_std_neighbours_next(const void *self, void *iter)
 	return get_next_neighbour(iter);
 }
 
+static void ifg_std_neighbours_end(const void *self, void *iter)
+{
+	neighbours_break(iter, 1);
+}
+
 static int ifg_std_degree(const void *self, const ir_node *irn)
 {
 	adj_iter_t it;
@@ -200,13 +221,17 @@ static int ifg_std_degree(const void *self, const ir_node *irn)
 }
 
 static const be_ifg_impl_t ifg_std_impl = {
-	MAX(sizeof(adj_iter_t), sizeof(nodes_iter_t)),
+	sizeof(nodes_iter_t),
+	sizeof(adj_iter_t),
+
 	ifg_std_free,
 	ifg_std_connected,
 	ifg_std_neighbours_begin,
 	ifg_std_neighbours_next,
+	ifg_std_neighbours_break,
 	ifg_std_nodes_begin,
 	ifg_std_nodes_next,
+	ifg_std_nodes_break,
 	ifg_std_degree
 };
 

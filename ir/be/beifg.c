@@ -25,12 +25,6 @@
 #include "irprintf.h"
 #include "beifg_t.h"
 
-size_t (be_ifg_iter_size)(const void *self)
-{
-	const be_ifg_t *ifg = self;
-	return ifg->impl->iter_size;
-}
-
 void (be_ifg_free)(void *self)
 {
 	be_ifg_t *ifg = self;
@@ -55,6 +49,12 @@ ir_node *(be_ifg_neighbours_next)(const void *self, void *iter)
 	return ifg->impl->neighbours_next(self, iter);
 }
 
+void (be_ifg_neighbours_break)(const void *self, void *iter)
+{
+	const be_ifg_t *ifg = self;
+	ifg->impl->neighbours_break(self, iter);
+}
+
 ir_node *(be_ifg_nodes_begin)(const void *self, void *iter)
 {
 	const be_ifg_t *ifg = self;
@@ -67,6 +67,12 @@ ir_node *(be_ifg_nodes_next)(const void *self, void *iter)
 	return ifg->impl->nodes_next(self, iter);
 }
 
+void (be_ifg_nodes_break)(const void *self, void *iter)
+{
+	const be_ifg_t *ifg = self;
+	ifg->impl->nodes_break(self, iter);
+}
+
 int (be_ifg_degree)(const void *self, const ir_node *irn)
 {
 	const be_ifg_t *ifg = self;
@@ -77,7 +83,7 @@ int (be_ifg_degree)(const void *self, const ir_node *irn)
 int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
 {
 	int degree = be_ifg_degree(ifg, irn);
-	void *iter = be_ifg_iter_alloca(ifg);
+	void *iter = be_ifg_neighbours_iter_alloca(ifg);
 
 	ir_node **neighbours = malloc(degree * sizeof(neighbours[0]));
 
@@ -100,10 +106,10 @@ int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
 	return 1;
 }
 
-void be_fg_check(const be_ifg_t *ifg)
+void be_ifg_check(const be_ifg_t *ifg)
 {
-	void *iter1 = be_ifg_iter_alloca(ifg);
-	void *iter2 = be_ifg_iter_alloca(ifg);
+	void *iter1 = be_ifg_neighbours_iter_alloca(ifg);
+	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
 
 	ir_node *n, *m;
 
