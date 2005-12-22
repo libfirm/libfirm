@@ -799,19 +799,25 @@ void set_method_additional_properties(type *method, unsigned property_mask);
 void set_method_additional_property(type *method, mtp_additional_property flag);
 
 /**
- * calling conventions
+ * calling conventions: the lower 8 bits are flags, the upper 24
+ * are the number of arguments transmitted in registers.
  */
 typedef enum {
   cc_reg_param        = 0x00000001, /**< Transmit parameters in registers, else the stack is used.
-                                             This flag may be set as default on some architectures. */
+                                         This flag may be set as default on some architectures. */
   cc_last_on_top      = 0x00000002, /**< The last non-register parameter is transmitted on top of
-                                             the stack. This is equivalent to the stdcall or pascal
-                                             calling convention. If this flag is not set, the first
-                                             non-register parameter is used (cdecl calling convention) */
+                                         the stack. If this flag is not set, the first
+                                         non-register parameter is used (cdecl/stdcall convention) */
   cc_callee_clear_stk = 0x00000004, /**< The callee clears the stack. This forbids variadic
-                                             function calls (stdcall). */
-  cc_this_call        = 0x00000008  /**< The first parameter is a this pointer and is transmitted
-                                        in a special way. */
+                                         function calls (stdcall). */
+  cc_this_call        = 0x00000008, /**< The first parameter is a this pointer and is transmitted
+                                         in a special way. */
+
+  /* for easier access */
+  cc_cdecl_set        = 0,                                /**< cdecl calling convention */
+  cc_stdcall_set      = cc_callee_clear_stk,              /**< stdcall calling convention */
+  cc_fastcall_set     = cc_reg_param|cc_callee_clear_stk, /**< fastcall calling convention */
+  cc_defmask          = cc_reg_param|cc_last_on_top|cc_callee_clear_stk
 } calling_convention;
 
 /** return the default calling convention for method types */
@@ -820,28 +826,44 @@ unsigned get_default_cc_mask(void);
 /**
  * check for the CDECL calling convention
  */
-#define IS_CDECL(cc_mask)     (((cc_mask) & (cc_callee_clear_stk|cc_last_on_top)) == 0)
+#define IS_CDECL(cc_mask)     (((cc_mask) & cc_defmask) == cc_cdecl_set)
 
 /**
  * check for the STDCALL calling convention
  */
-#define IS_STDCALL(cc_mask)   (((cc_mask) & (cc_callee_clear_stk|cc_last_on_top)) == cc_callee_clear_stk)
+#define IS_STDCALL(cc_mask)   (((cc_mask) & cc_defmask) == cc_stdcall_set)
+
+/**
+ * check for the FASTCALL calling convention
+ */
+#define IS_FASTCALL(cc_mask)  (((cc_mask) & cc_defmask) == cc_fastcall_set)
 
 /**
  * add the CDECL convention bits
  */
-#define SET_CDECL(cc_mask)    ((cc_mask) & ~(cc_callee_clear_stk|cc_last_on_top))
+#define SET_CDECL(cc_mask)    (((cc_mask) & ~cc_defmask) | cc_cdecl_set)
 
 /**
  * add the STDCALL convention bits
  */
-#define SET_STDCALL(cc_mask)  (((cc_mask) & ~cc_last_on_top) | cc_callee_clear_stk)
+#define SET_STDCALL(cc_mask)  (((cc_mask) & ~cc_defmask) | cc_stdcall_set)
+
+/**
+ * add the FASTCALL convention bits
+ */
+#define SET_FASTCALL(cc_mask) (((cc_mask) & ~cc_defmask) | cc_fastcall_set)
 
 /** Returns the calling convention of an entities graph. */
 unsigned get_method_calling_convention(const type *method);
 
 /** Sets the calling convention of an entities graph. */
 void set_method_calling_convention(type *method, unsigned cc_mask);
+
+/** Returns the number of register parameters in a fastcall. 0 means default. */
+unsigned get_method_fastcall_n_regs(type *method);
+
+/** Sets the number of register parameters in a fastcall. 0 means default. */
+void set_method_fastcall_n_regs(type *method, unsigned n_regs);
 
 /** Returns true if a type is a method type. */
 int   is_Method_type     (const type *method);

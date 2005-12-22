@@ -1345,6 +1345,18 @@ void (set_method_calling_convention)(type *method, unsigned cc_mask) {
   _set_method_calling_convention(method, cc_mask);
 }
 
+/* Returns the number of register parameters in a fastcall. 0 means default. */
+unsigned get_method_fastcall_n_regs(type *method) {
+  assert(IS_FASTCALL(get_method_calling_convention(method)) && "not fastcall");
+  return method->attr.ma.irg_calling_conv >> 8;
+}
+
+/* Sets the number of register parameters in a fastcall. 0 means default. */
+void set_method_fastcall_n_regs(type *method, unsigned n_regs) {
+  assert(IS_FASTCALL(get_method_calling_convention(method)) && "not fastcall");
+  method->attr.ma.irg_calling_conv = n_regs << 8 | (method->attr.ma.irg_calling_conv & 0xFF);
+}
+
 /* typecheck */
 int (is_Method_type)(const type *method) {
   return _is_method_type(method);
