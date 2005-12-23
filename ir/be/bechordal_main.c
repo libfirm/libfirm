@@ -47,13 +47,9 @@
 #include "beconstrperm.h"
 #include "belower.h"
 
-#define DO_SSADESTR
-
-#ifdef DO_SSADESTR
+#include "becopyoptmain.h"
 #include "bessadestr.h"
 #include "becopystat.h"
-#include "becopyoptmain.h"
-#endif /* DO_SSADESTR */
 
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
@@ -273,21 +269,21 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 
 		/* Build the interference graph. */
 		chordal_env.ifg = be_ifg_std_new(&chordal_env);
+		be_ifg_check(chordal_env.ifg);
 
-#ifdef DO_SSADESTR
 		/* copy minimization */
 		copystat_collect_cls(&chordal_env);
 		be_copy_opt(&chordal_env);
 		dump(BE_CH_DUMP_COPYMIN, irg, "-copymin", dump_ir_block_graph_sched);
+		be_ra_chordal_check(&chordal_env);
 
 		/* ssa destruction */
 		be_ssa_destruction(&chordal_env);
+		dump(BE_CH_DUMP_SSADESTR, irg, "-ssadestr", dump_ir_block_graph_sched);
 		be_ssa_destruction_check(&chordal_env);
 		be_ra_chordal_check(&chordal_env);
-		dump(BE_CH_DUMP_SSADESTR, irg, "-ssadestr", dump_ir_block_graph_sched);
 
 		copystat_dump(irg);
-#endif /* DO_SSADESTR */
 
 		be_ifg_free(chordal_env.ifg);
 		be_numbering_done(irg);
@@ -295,9 +291,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		pmap_destroy(chordal_env.border_heads);
 	}
 
-#ifdef DO_SSADESTR
 	lower_perms(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
-#endif /* DO_SSADESTR */
 
 	be_free_dominance_frontiers(chordal_env.dom_front);
 	obstack_free(&chordal_env.obst, NULL);
