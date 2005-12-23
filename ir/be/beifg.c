@@ -120,7 +120,7 @@ int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
 
 void be_ifg_check(const be_ifg_t *ifg)
 {
-	void *iter1 = be_ifg_neighbours_iter_alloca(ifg);
+	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
 	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
 
 	ir_node *n, *m;

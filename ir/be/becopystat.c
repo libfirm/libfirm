@@ -125,8 +125,10 @@ static void irg_stat_walker(ir_node *node, void *env) {
  	if (is_Reg_Phi(node)) /* collect phis */
  		pset_insert_ptr(all_phi_nodes, node);
 
- 	if (is_Copy(arch_env, node))
+ 	if (is_Perm_Proj(arch_env, node))
  		pset_insert_ptr(all_copy_nodes, node);
+
+	/* TODO: Add 2-Addr-Code nodes */
 }
 
 static void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env) {

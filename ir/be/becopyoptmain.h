@@ -4,9 +4,10 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 
- * Main header for the optimization reducing the copy costs needed for:
- * - phi coalescing
- * - register-constrained nodes
+ * Main file for the optimization reducing the copies needed for:
+ * - Phi coalescing
+ * - Register-constrained nodes
+ * - Two-address code instructions
  */
 
 #ifndef _BECOPYOPTMAIN_H
@@ -19,6 +20,5 @@
 
 void be_copy_opt_init(void);
 void be_copy_opt(be_chordal_env_t *chordal_env);
-void be_copy_opt_verify(be_chordal_env_t *chordal_env);
 
 #endif

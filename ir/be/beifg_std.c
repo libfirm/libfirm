@@ -20,6 +20,7 @@
 #include "irgwalk.h"
 
 #include "be_t.h"
+#include "belive_t.h"
 #include "bera.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
@@ -71,8 +72,9 @@ static void find_nodes(const void *self, void *iter) {
 	nodes_iter_t *it = iter;
 
 	obstack_init(&it->obst);
-	it->n    = 0;
-	it->curr = 0;
+	it->n     = 0;
+	it->curr  = 0;
+	it->env   = ifg->env;
 
 	irg_block_walk_graph(ifg->env->irg, nodes_walker, NULL, iter);
 	it->nodes = obstack_finish(&it->obst);
@@ -118,80 +120,64 @@ static void ifg_std_nodes_break(const void *self, void *iter)
 typedef struct _adj_iter_t {
 	const be_chordal_env_t *env;
 	const ir_node *irn;
-	struct obstack obst;
-	int degree;
-	unsigned visited_nr;
-	unsigned build_list : 1;
-
-	int curr;
-	ir_node **neighbours;
+	int reached_end;
+	pset *neighbours;
 } adj_iter_t;
 
 static void find_neighbour_walker(ir_node *block, void *data)
 {
 	adj_iter_t *it          = data;
-	unsigned visited        = it->visited_nr;
 	struct list_head *head  = get_block_border_head(it->env, block);
 
 	border_t *b;
 	int has_started = 0;
 
+	if(!is_live_in(block, it->irn) && block != get_nodes_block(it->irn))
+		return;
+
 	foreach_border_head(head, b) {
 		ir_node *irn = b->irn;
 
-		if(irn == it->irn)
-			has_started = b->is_def;
-
-		/*
-		 * If the def/use of the node is inside the live range
-		 * of the node in question, they interfere.
-		 * To avoid that a node is added twice, we record the
-		 * visit in the visited number provided by core firm.
-		 */
-		else if(has_started && get_irn_visited(irn) < visited) {
-			if(it->build_list)
-				obstack_ptr_grow(&it->obst, irn);
-
-			set_irn_visited(irn, visited);
-			it->degree++;
+		if(irn == it->irn) {
+			if(b->is_def)
+				has_started = 1;
+			else
+				break; /* if we reached the end of the node's lifetime we can safely break */
 		}
+		else if(b->is_def) {
+			/* if any other node than the one in question starts living, add it to the set */
+			pset_insert_ptr(it->neighbours, irn);
+		}
+		else if(!has_started) {
+			/* we only delete, if the live range in question has not yet started */
+			pset_remove_ptr(it->neighbours, irn);
+		}
+
 	}
 }
 
-static void find_neighbours(const ifg_std_t *ifg, adj_iter_t *it, const ir_node *irn, int build_list)
+static void find_neighbours(const ifg_std_t *ifg, adj_iter_t *it, const ir_node *irn)
 {
-	if(build_list)
-		obstack_init(&it->obst);
+	it->env         = ifg->env;
+	it->irn         = irn;
+	it->neighbours  = pset_new_ptr(16);
+	it->reached_end = 0;
 
-	it->env        = ifg->env;
-	it->irn        = irn;
-	it->degree     = 0;
-	it->visited_nr = get_irg_visited(ifg->env->irg) + 1;
-	it->build_list = build_list;
-	it->neighbours = NULL;
-	it->curr       = 0;
-
-	set_irg_visited(ifg->env->irg, it->visited_nr);
 	dom_tree_walk(get_nodes_block(irn), find_neighbour_walker, NULL, it);
-
-	if(build_list)
-		it->neighbours = obstack_finish(&it->obst);
 }
 
 static INLINE void neighbours_break(adj_iter_t *it, int force)
 {
-	if((it->curr >= it->degree || force) && it->neighbours) {
-		obstack_free(&it->obst, NULL);
+	if((it->reached_end || force) && it->neighbours) {
+		del_pset(it->neighbours);
 		it->neighbours = NULL;
 	}
 }
 
 static ir_node *get_next_neighbour(adj_iter_t *it) {
-	ir_node *res = NULL;
+	ir_node *res = pset_next(it->neighbours);
 
-	if(it->curr < it->degree)
-		res = it->neighbours[it->curr++];
-
+	it->reached_end = res == NULL;
 	neighbours_break(it, 0);
 
 	return res;
@@ -199,8 +185,9 @@ static ir_node *get_next_neighbour(adj_iter_t *it) {
 
 static ir_node *ifg_std_neighbours_begin(const void *self, void *iter, const ir_node *irn)
 {
-	find_neighbours(self, iter, irn, 1);
-	return get_next_neighbour(iter);
+	adj_iter_t *it = iter;
+	find_neighbours(self, iter, irn);
+	return pset_first(it->neighbours);
 }
 
 static ir_node *ifg_std_neighbours_next(const void *self, void *iter)
@@ -216,8 +203,11 @@ static void ifg_std_neighbours_break(const void *self, void *iter)
 static int ifg_std_degree(const void *self, const ir_node *irn)
 {
 	adj_iter_t it;
-	find_neighbours(self, &it, irn, 0);
-	return it.degree;
+	int degree;
+	find_neighbours(self, &it, irn);
+	degree = pset_count(it.neighbours);
+	neighbours_break(&it, 1);
+	return degree;
 }
 
 static const be_ifg_impl_t ifg_std_impl = {

@@ -5,9 +5,11 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 
  * Main file for the optimization reducing the copies needed for:
- * - phi coalescing
- * - register-constrained nodes
+ * - Phi coalescing
+ * - Register-constrained nodes
+ * - Two-address code instructions
  */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -24,23 +26,23 @@
 #include "phiclass.h"
 
 #define DO_HEUR
-#undef DO_ILP_5_SEC
-#undef DO_ILP_30_SEC
+#undef DO_CLASSES
 #undef DO_ILP
 
-#define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
-void be_copy_opt_init(void) {
-	dbg = firm_dbg_register("ir.be.copyoptmain");
-	firm_dbg_set_mask(dbg, DEBUG_LVL);
-}
+
+/**
+ * Helpers for saving and restoring colors of nodes.
+ * Used to get dependable and comparable benchmark results.
+ */
+#if (defined(DO_HEUR) && defined(DO_BETTER)) || (defined(DO_HEUR) && defined(DO_ILP)) || (defined(DO_BETTER) && defined(DO_ILP))
 
 typedef struct color_saver {
 	arch_env_t *arch_env;
 	be_chordal_env_t *chordal_env;
 	pmap *saved_colors;
-	int flag;  /* 0 save; 1 load */
+	int flag; /* 0 save, 1 load */
 } color_save_t;
 
 static void save_load(ir_node *irn, void *env) {
@@ -66,93 +68,118 @@ static void load_colors(color_save_t *color_saver) {
 	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
 }
 
+#endif /* Need save/load stuff */
+
+
+
+void be_copy_opt_init(void) {
+	dbg = firm_dbg_register("ir.be.copyoptmain");
+}
+
+
+
 void be_copy_opt(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
-	int costs, costs_init=-1, costs_heur=-1, costs_ilp_5_sec=-1, costs_ilp_30_sec=-1, costs_ilp=-1;
-	int lower_bound = -1;
-	int was_optimal = 0;
 
+#ifdef DO_STAT
+	lc_timer_t *timer;
 	color_save_t saver;
-	saver.arch_env = chordal_env->main_env->arch_env;
-	saver.chordal_env = chordal_env;
-	saver.saved_colors = pmap_create();
+	int costs, costs_inevit, costs_init, costs_heur, costs_classes, costs_ilp, lower_bound;
+#endif
 
-	/* BETTER: You can remove this if you replace all
-	 * `grep get_irn_out *.c` by the irouts.h module.*/
-	compute_irg_outs(chordal_env->irg);
 
 	co = new_copy_opt(chordal_env, get_costs_loop_depth);
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
 	phi_class_compute(chordal_env->irg);
 
-#ifdef DO_STAT
-	lower_bound = co_get_lower_bound(co);
-	DBG((dbg, LEVEL_1, "Lower Bound: %3d\n", lower_bound));
-	DBG((dbg, LEVEL_1, "Inevit Costs: %3d\n", co_get_inevit_copy_costs(co)));
 
-	costs = co_get_copy_costs(co);
-	costs_init = costs;
-	copystat_add_max_costs(co_get_max_copy_costs(co));
-	copystat_add_inevit_costs(co_get_inevit_copy_costs(co));
-	copystat_add_init_costs(costs_init);
-	DBG((dbg, LEVEL_1, "Init costs: %3d\n", costs_init));
+#ifdef DO_STAT
+#if (defined(DO_HEUR) && defined(DO_BETTER)) || (defined(DO_HEUR) && defined(DO_ILP)) || (defined(DO_BETTER) && defined(DO_ILP))
+		saver.arch_env = chordal_env->main_env->arch_env;
+		saver.chordal_env = chordal_env;
+		saver.saved_colors = pmap_create();
+		save_colors(&saver);
 #endif
 
-//	save_colors(&saver);
+		costs_inevit = co_get_inevit_copy_costs(co);
+		lower_bound  = co_get_lower_bound(co);
+		costs_init   = co_get_copy_costs(co);
+
+		DBG((dbg, LEVEL_1, "Inevit Costs: %3d\n", costs_inevit));
+		DBG((dbg, LEVEL_1, "Lower Bound: %3d\n", lower_bound));
+		DBG((dbg, LEVEL_1, "Init costs: %3d\n", costs_init));
+
+		copystat_add_inevit_costs(costs_inevit);
+		copystat_add_init_costs(costs_init);
+		copystat_add_max_costs(co_get_max_copy_costs(co));
+#endif
+
 
 #ifdef DO_HEUR
-	{
-		lc_timer_t *timer = lc_timer_register("heur", NULL);
-		lc_timer_reset_and_start(timer);
-		co_heur_opt(co);
-		lc_timer_stop(timer);
-		copystat_add_heur_time(lc_timer_elapsed_msec(timer));
-	}
 #ifdef DO_STAT
-	costs = co_get_copy_costs(co);
-	costs_heur = costs;
-	copystat_add_heur_costs(costs_heur);
+	timer = lc_timer_register("heur", NULL);
+	lc_timer_reset_and_start(timer);
+#endif
+
+	co_heur_opt(co);
+
+#ifdef DO_STAT
+	lc_timer_stop(timer);
+	costs_heur = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "Heur costs: %3d\n", costs_heur));
+	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_costs(costs_heur);
+	assert(lower_bound <= costs_heur);
 #endif
-	assert(lower_bound == -1 || costs_heur == -1 || lower_bound <= costs_heur);
-#endif
+#endif /* DO_HEUR */
 
-#ifdef DO_ILP_5_SEC
+
+
+#ifdef DO_CLASSES
+#ifdef DO_STAT
+#ifdef DO_HEUR
 	load_colors(&saver);
-	was_optimal = co_ilp_opt(co, 5.0);
-#ifdef DO_STAT
-	costs = co_get_copy_costs(co);
-	costs_ilp_5_sec = costs;
-	copystat_add_ilp_5_sec_costs(costs_ilp_5_sec);
-	DBG((dbg, LEVEL_1, "5_Sec costs: %3d\n", costs_ilp_5_sec));
 #endif
+	timer = lc_timer_register("classes", NULL);
+	lc_timer_reset_and_start(timer);
 #endif
 
-#ifdef DO_ILP_30_SEC
-	if (!was_optimal) {
-		load_colors(&saver);
-		co_ilp_opt(co, 30.0);
-	}
+	co_classes_opt(co);
+
 #ifdef DO_STAT
-	costs = co_get_copy_costs(co);
-	costs_ilp_30_sec = costs;
-	copystat_add_ilp_30_sec_costs(costs_ilp_30_sec);
-	DBG((dbg, LEVEL_1, "30_Sec costs: %3d\n", costs_ilp_30_sec));
+	lc_timer_stop(timer);
+	costs_classes = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "Classes costs: %3d\n", costs_classes));
+	copystat_add_classes_time(lc_timer_elapsed_msec(timer));
+	copystat_add_classes_costs(costs_heur);
+	assert(lower_bound <= costs_classes);
 #endif
-#endif
+#endif /* DO_CLASSES */
+
+
 
 #ifdef DO_ILP
-	load_colors(&saver);
-	co_ilp_opt(co, 60.0);
 #ifdef DO_STAT
-	costs = co_get_copy_costs(co);
-	costs_ilp = costs;
-	copystat_add_opt_costs(costs_ilp);
-	DBG((dbg, LEVEL_1, "Opt  costs: %3d\n", costs_ilp));
+#if defined(DO_HEUR) || defined(DO_CLASSES)
+	load_colors(&saver);
 #endif
-	assert(lower_bound == -1 || costs_ilp == -1 || lower_bound <= costs_ilp);
 #endif
 
+	co_ilp_opt(co, 60.0);
+
+#ifdef DO_STAT
+	costs_ilp = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "Opt  costs: %3d\n", costs_ilp));
+	copystat_add_opt_costs(costs_ilp);
+	assert(lower_bound <= costs_ilp);
+#endif
+#endif /* DO_ILP */
+
+
+#ifdef DO_STAT
+#if (defined(DO_HEUR) && defined(DO_BETTER)) || (defined(DO_HEUR) && defined(DO_ILP)) || (defined(DO_BETTER) && defined(DO_ILP))
 	pmap_destroy(saver.saved_colors);
+#endif
+#endif
 	free_copy_opt(co);
 }

@@ -993,10 +993,6 @@ int co_ilp_opt(copy_opt_t *co, double time_limit) {
 	problem_instance_t *pi;
 
 	dbg = firm_dbg_register("ir.be.copyoptilp");
-	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, DEBUG_IRG_LVL_ILP);
-	else
-		firm_dbg_set_mask(dbg, DEBUG_LVL_ILP);
 
 	pi = new_pi(co);
 	if (!pi->all_simplicial) {

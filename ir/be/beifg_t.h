@@ -49,4 +49,6 @@ struct _be_ifg_t {
 
 #endif
 
+void be_ifg_check(const be_ifg_t *ifg);
+
 #endif /*_BEIFG_T_H_*/

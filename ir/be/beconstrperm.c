@@ -35,6 +35,7 @@ static void walker_insert_constr_perms(ir_node *bl, void *env) {
 			/* if a restriction is found, insert a perm before the irn */
 			if (req.type == arch_register_req_type_limited) {
 				insert_Perm_after(menv, cenv->cls, cenv->dom_front, sched_prev(irn));
+				/* TODO: Next line is overkill. Update_liveness would suffice. */
 				be_liveness(get_irn_irg(bl));
 				break;
 			}

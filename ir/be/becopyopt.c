@@ -185,7 +185,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 	} else
 
 	/* Proj of a perm with corresponding arg */
-	if (is_Copy(get_arch_env(co), irn)) {
+	if (is_Perm_Proj(get_arch_env(co), irn)) {
 		assert(!nodes_interfere(co->chordal_env, irn, get_Copy_src(irn)));
 		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
 		unit->costs = xmalloc(2 * sizeof(*unit->costs));
@@ -198,17 +198,20 @@ static void co_collect_units(ir_node *irn, void *env) {
 	/* Src == Tgt of a 2-addr-code instruction */
 	if (is_2addr_code(get_arch_env(co), irn, &req)) {
 		int pos = req.data.pos;
-		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
-		unit->costs = xmalloc(2 * sizeof(*unit->costs));
-		unit->node_count = 2;
-		unit->nodes[0] = irn;
-		unit->nodes[1] = get_irn_n(irn, pos);
-		unit->costs[1] = co->get_costs(irn, unit->nodes[1], pos);
+		ir_node *other = get_irn_n(irn, pos);
+		if (!nodes_interfere(co->chordal_env, irn, other)) {
+			unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
+			unit->costs = xmalloc(2 * sizeof(*unit->costs));
+			unit->node_count = 2;
+			unit->nodes[0] = irn;
+			unit->nodes[1] = other;
+			unit->costs[1] = co->get_costs(irn, other, pos);
+		}
 	} else
 		assert(0 && "This is not an optimizable node!");
 
 	/* Insert the new unit at a position according to its costs */
-	{
+	if (unit->node_count > 1) {
 		int i;
 		struct list_head *tmp;
 
@@ -226,6 +229,8 @@ static void co_collect_units(ir_node *irn, void *env) {
 		while (tmp->next != &co->units && list_entry_units(tmp->next)->sort_key > unit->sort_key)
 			tmp = tmp->next;
 		list_add(&unit->units, tmp);
+	} else {
+		free(unit);
 	}
 }
 
@@ -235,7 +240,6 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	copy_opt_t *co;
 
 	dbg = firm_dbg_register("ir.be.copyopt");
-	firm_dbg_set_mask(dbg, DEBUG_LVL_CO);
 
 	co = xcalloc(1, sizeof(*co));
 	co->chordal_env = chordal_env;
@@ -247,10 +251,6 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
 	co->name = xmalloc(len);
 	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
-	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, DEBUG_IRG_LVL_CO);
-	else
-		firm_dbg_set_mask(dbg, DEBUG_LVL_CO);
 
 	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	INIT_LIST_HEAD(&co->units);
@@ -263,17 +263,19 @@ void free_copy_opt(copy_opt_t *co) {
 	xfree(co->name);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
 		xfree(curr->nodes);
+		xfree(curr->costs);
 		xfree(curr);
 	}
 }
 
 int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
-	int i, max;
 	arch_env_t *aenv = co->chordal_env->main_env->arch_env;
+	const ir_edge_t *edge;
 
-	for(i=0, max=get_irn_n_outs(irn); i<max; ++i) {
-		ir_node *n = get_irn_out(irn, i);
+	foreach_out_edge(irn, edge) {
+		ir_node *n = edge->src;
 		arch_register_req_t req;
+
 		arch_get_register_req(aenv, &req, n, -1);
 
 		if(	(	(req.type == arch_register_req_type_should_be_same && get_irn_n(n, req.data.pos) == irn) ||
@@ -282,6 +284,7 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 			) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
 				return 1;
 	}
+
 	return 0;
 }
 

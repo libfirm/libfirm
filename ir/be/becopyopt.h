@@ -29,16 +29,7 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 
-#define DEBUG_IRG "!!deflate.c__longest_match__datab"
-#define DEBUG_IRG_LVL_CO   SET_LEVEL_1
-#define DEBUG_IRG_LVL_HEUR SET_LEVEL_1
-#define DEBUG_IRG_LVL_ILP  SET_LEVEL_1
-#define DEBUG_LVL_CO   SET_LEVEL_0
-#define DEBUG_LVL_HEUR SET_LEVEL_0
-#define DEBUG_LVL_ILP  SET_LEVEL_0
-
 #define MIS_HEUR_TRIGGER 8
-
 
 typedef int(*cost_fct_t)(ir_node*, ir_node*, int);
 
@@ -82,6 +73,12 @@ typedef struct _unit_t {
 
 #define list_entry_units(lh) list_entry(lh, unit_t, units)
 
+#define get_Copy_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
+#define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
+#define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
+#define is_Perm_Proj(arch_env, irn)			(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
+#define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
+
 
 /**
  * Generate the problem. Collect all infos and optimizable nodes.
@@ -93,20 +90,13 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
  */
 void free_copy_opt(copy_opt_t *co);
 
-#define get_Copy_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
-#define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
-
-#define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
-#define is_Copy(arch_env, irn)				(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
-#define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
-
 /**
  * Checks if a node is optimizable, viz. has somthing to do with coalescing
  * @param arch The architecture environment
  * @param irn  The irn to check
  * @param req  A register_requirement structure (used to check for 2-addr-code)
  */
-#define is_optimizable(arch, irn, req) (is_Reg_Phi(irn) || is_Copy(arch, irn) || is_2addr_code(arch, irn, req))
+#define is_optimizable(arch, irn, req) (is_Reg_Phi(irn) || is_Perm_Proj(arch, irn) || is_2addr_code(arch, irn, req))
 
 /**
  * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'

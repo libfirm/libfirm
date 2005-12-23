@@ -156,6 +156,7 @@ static INLINE int qnode_get_new_color(const qnode_t *qn, ir_node *irn) {
 static INLINE void qnode_set_new_color(const qnode_t *qn, ir_node *irn, int color) {
 	node_stat_t *found = qnode_find_or_insert_node(qn, irn);
 	found->new_color = color;
+	DBG((dbg, LEVEL_3, "\t      col(%+F) := %d\n", irn, color));
 }
 
 /**
@@ -178,6 +179,8 @@ static INLINE int qnode_is_pinned_local(const qnode_t *qn, ir_node *irn) {
 static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
 	node_stat_t *found = qnode_find_or_insert_node(qn, irn);
 	found->pinned_local = 1;
+	if (found->new_color == NO_COLOR)
+		found->new_color = get_irn_col(qn->ou->co, irn);
 }
 
 /**
@@ -203,130 +206,56 @@ static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
  *             This should be true in SSA.
  */
 static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const ir_node *trigger) {
-	ir_node *res;
-	struct obstack confl_ob;
-	ir_node **confl, *cn;
-	int i, irn_col;
 	const be_chordal_env_t *chordal_env = qn->ou->co->chordal_env;
-	const arch_env_t *arch_env = get_arch_env(qn->ou->co);
 	const arch_register_class_t *cls = chordal_env->cls;
+	const arch_env_t *arch_env = chordal_env->main_env->arch_env;
+	int irn_col = qnode_get_new_color(qn, irn);
 
-	DBG((dbg, LEVEL_3, "\t      %+F \tcaused col(%+F) \t%2d --> %2d\n", trigger, irn, qnode_get_new_color(qn, irn), col));
-	obstack_init(&confl_ob);
-	irn_col = qnode_get_new_color(qn, irn);
+	DBG((dbg, LEVEL_3, "\t    %+F \tcaused col(%+F) \t%2d --> %2d\n", trigger, irn, irn_col, col));
 
 	if (irn_col == col) {
-		DBG((dbg, LEVEL_4, "\t      Already same color.\n"));
-		goto ret_save;
+		DBG((dbg, LEVEL_3, "\t      %+F same color\n", irn));
+		return CHANGE_SAVE;
 	}
 	if (pset_find_ptr(pinned_global, irn) || qnode_is_pinned_local(qn, irn)) {
-		res = irn;
-		goto ret_confl;
+		DBG((dbg, LEVEL_3, "\t      %+F conflicting\n", irn));
+		return irn;
 	}
-	if (!arch_reg_is_allocatable(arch_env,
-								 irn,
-								 -1,
-								 arch_register_for_index(cls, col)))
-		goto ret_imposs;
+	if (!arch_reg_is_allocatable(arch_env, irn, -1, arch_register_for_index(cls, col))) {
+		DBG((dbg, LEVEL_3, "\t      %+F impossible\n", irn));
+		return CHANGE_IMPOSSIBLE;
+	}
 
-	/* get all nodes which would conflict with this change */
+	/*
+	 * Process all nodes which would conflict with this change
+	 */
 	{
-		struct obstack q;
-		int in, out;
-		ir_node *irn_bl;
+		be_ifg_t *ifg = chordal_env->ifg;
+		void *iter = be_ifg_neighbours_iter_alloca(ifg);
+		ir_node *sub_res, *curr;
 
-		irn_bl = get_nodes_block(irn);
-
-		/* first check for a conflicting node which is 'living in' the irns block */
-		{
-			ir_node *n;
-			pset *live_ins = put_live_in(irn_bl, pset_new_ptr_default());
-			for (n = pset_first(live_ins); n; n = pset_next(live_ins)) {
-				DBG((dbg, LEVEL_4, "Checking %+F which is live-in at the block\n", n));
-				if (arch_irn_has_reg_class(arch_env, n, -1, cls)
-					&& n != trigger && qnode_get_new_color(qn, n) == col
-					&& nodes_interfere(chordal_env, irn, n)) {
-
-					DBG((dbg, LEVEL_4, "\t        %+F\ttroubles\n", n));
-					obstack_ptr_grow(&confl_ob, n);
-					pset_break(live_ins);
-					break;
+		/*
+		 * Try to color all conflicting nodes 'curr'
+		 * with the color of the irn itself.
+		 */
+		be_ifg_foreach_neighbour(ifg, iter, irn, curr) {
+			DBG((dbg, LEVEL_3, "\t      Confl %+F(%d)\n", curr, qnode_get_new_color(qn, curr)));
+			if (qnode_get_new_color(qn, curr) == col && curr != trigger) {
+				sub_res = qnode_color_irn(qn, curr, irn_col, irn);
+				if (sub_res != CHANGE_SAVE) {
+					be_ifg_neighbours_break(ifg, iter);
+					return sub_res;
 				}
 			}
-            del_pset(live_ins);
-		}
-
-		/* setup the queue of blocks. */
-		obstack_init(&q);
-		obstack_ptr_grow(&q, irn_bl);
-		in = 1;
-		out = 0;
-
-		/* process the queue. The code below checks for every block dominated
-		 * by the irns one, and in which the irn is live, if there are
-		 * conflicting nodes */
-		while (out < in) {
-			ir_node *curr_bl, *sub_bl;
-			int i, max;
-
-			curr_bl = ((ir_node **)obstack_base(&q))[out++];
-
-			/* Add to the result all nodes in the block, which have
-			 * the target color and interfere with the irn */
-			for (i = 0, max = get_irn_n_outs(curr_bl); i < max; ++i) {
-				ir_node *n = get_irn_out(curr_bl, i);
-				DBG((dbg, LEVEL_4, "Checking %+F defined in same block\n", n));
-				if (arch_irn_has_reg_class(arch_env, n, -1, cls)
-					&& n != trigger && qnode_get_new_color(qn, n) == col
-					&& nodes_interfere(chordal_env, irn, n)) {
-						DBG((dbg, LEVEL_4, "\t        %+F\ttroubles\n", n));
-						obstack_ptr_grow(&confl_ob, n);
-				}
-			}
-
-			/* If irn lives out check i-dominated blocks where the irn lives in */
-			/* Fill the queue */
-			if (is_live_out(curr_bl, irn)) {
-				dominates_for_each(curr_bl, sub_bl)
-					if (is_live_in(sub_bl, irn)) {
-						obstack_ptr_grow(&q, sub_bl);
-						in++;
-					}
-			}
-		}
-		obstack_free(&q, NULL);
-		obstack_ptr_grow(&confl_ob, NULL);
-		confl = (ir_node **) obstack_finish(&confl_ob);
-	}
-
-	/* process all nodes which would conflict with this change */
-	for (i = 0, cn = confl[0]; cn; cn = confl[++i]) {
-		ir_node *sub_res;
-
-		/* try to color the conflicting node cn with the color of the irn itself */
-		sub_res = qnode_color_irn(qn, cn, irn_col, irn);
-		if (sub_res != CHANGE_SAVE) {
-			res = sub_res;
-			goto ret_confl;
 		}
 	}
-	/* if we arrive here all sub changes can be applied, so it's save to change this irn */
 
-ret_save:
-	DBG((dbg, LEVEL_3, "\t      %+F save\n", irn));
-	obstack_free(&confl_ob, NULL);
+	/*
+	 * If we arrive here, all sub changes have been applied.
+	 * So it's save to change this irn
+	 */
 	qnode_set_new_color(qn, irn, col);
 	return CHANGE_SAVE;
-
-ret_imposs:
-	DBG((dbg, LEVEL_3, "\t      %+F impossible\n", irn));
-	obstack_free(&confl_ob, NULL);
-	return CHANGE_IMPOSSIBLE;
-
-ret_confl:
-	DBG((dbg, LEVEL_3, "\t      %+F conflicting\n", irn));
-	obstack_free(&confl_ob, NULL);
-	return res;
 }
 
 /**
@@ -377,21 +306,6 @@ static int qnode_try_color(const qnode_t *qn) {
 	return 1;
 }
 
-typedef int(*confl_f)(const ir_node *a, const ir_node *b, void *data);
-
-/**
- * @param result	Gets filled with the computed maximum independent set.
- * @param count		The size of input arrays / the number of nodes
- * @param nodes		A set of nodes to copmute the max. ind. set for
- * @param weights	Weights associated to the nodes in @p nodes
- * @param confl		Callback function to decide if two values interfere
- * @param data		Passed into all callbacks
- * @return The size of the computed set
- */
-//int max_ind_set(ir_node **result, int count, ir_node **nodes, int *weights, confl_f confl, void *data) {
-//
-//}
-
 /**
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
@@ -437,7 +351,7 @@ static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	best = bitset_alloca(unsafe_count);
 
 	if (unsafe_count > MIS_HEUR_TRIGGER) {
-		/* Heuristik: Greedy trial and error form index 0 to unsafe_count-1 */
+		/* Heuristic: Greedy trial and error form index 0 to unsafe_count-1 */
 		for (i=0; i<unsafe_count; ++i) {
 			bitset_set(best, i);
 			/* check if it is a stable set */
@@ -570,6 +484,7 @@ static void ou_optimize(unit_t *ou) {
 		/* try */
 		if (qnode_try_color(curr))
 			break;
+
 		/* no success, so re-insert */
 		del_set(curr->changed_nodes);
 		curr->changed_nodes = new_set(set_cmp_node_stat_t, SLOTS_CHANGED_NODES);
@@ -579,13 +494,14 @@ static void ou_optimize(unit_t *ou) {
 	/* apply the best found qnode */
 	if (curr->mis_size >= 2) {
 		node_stat_t *ns;
+		int root_col = qnode_get_new_color(curr, ou->nodes[0]);
 		DBG((dbg, LEVEL_1, "\t  Best color: %d  Costs: %d << %d << %d\n", curr->color, ou->min_nodes_costs, ou->all_nodes_costs - curr->mis_costs, ou->all_nodes_costs));
 		/* globally pin root and all args which have the same color */
 		pset_insert_ptr(pinned_global, ou->nodes[0]);
 		for (i=1; i<ou->node_count; ++i) {
 			ir_node *irn = ou->nodes[i];
 			int nc = qnode_get_new_color(curr, irn);
-			if (nc != NO_COLOR && nc == qnode_get_new_color(curr, ou->nodes[0]))
+			if (nc != NO_COLOR && nc == root_col)
 				pset_insert_ptr(pinned_global, irn);
 		}
 
@@ -597,10 +513,6 @@ static void ou_optimize(unit_t *ou) {
 				set_irn_col(ou->co, ns->irn, ns->new_color);
 			}
 		}
-		/*
-		 * Enable for checking register allocation after each ou
-		 * be_ra_chordal_check(ou->co->chordal_env);
-		 */
 	}
 
 	/* free best qnode (curr) and queue */
@@ -612,10 +524,6 @@ static void ou_optimize(unit_t *ou) {
 void co_heur_opt(copy_opt_t *co) {
 	unit_t *curr;
 	dbg = firm_dbg_register("ir.be.copyoptheur");
-	if (!strcmp(co->name, DEBUG_IRG))
-		firm_dbg_set_mask(dbg, DEBUG_IRG_LVL_HEUR);
-	else
-		firm_dbg_set_mask(dbg, DEBUG_LVL_HEUR);
 
 	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
 	list_for_each_entry(unit_t, curr, &co->units, units)
