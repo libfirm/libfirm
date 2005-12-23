@@ -259,7 +259,7 @@ static int redir_proj(const ir_node **node, int def)
 
 static const arch_register_req_t *
 be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
-    arch_register_req_t *req, const ir_node *irn, int pos)
+		arch_register_req_t *req, const ir_node *irn, int pos)
 {
 	be_op_t *bo;
 	const be_node_factory_t *factory =
@@ -302,7 +302,7 @@ be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn,
 		container_of(_self, const be_node_factory_t, irn_ops);
 
 	if(get_irn_mode(irn) == mode_T && pos < 0)
-		return NULL;
+		return;
 
 	pos = redir_proj((const ir_node **) &irn, -1);
 	bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
