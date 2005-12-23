@@ -303,18 +303,21 @@ static int reassoc_Mul(ir_node **node)
     t1 = get_binop_left(add_sub);
     t2 = get_binop_right(add_sub);
 
-    in[0] = new_rd_Mul(NULL, current_ir_graph, block, c, t1, mode);
-    in[1] = new_rd_Mul(NULL, current_ir_graph, block, c, t2, mode);
+    /* we can only multiplication rules on integer arithmetic */
+    if (mode_is_int(get_irn_mode(t1)) && mode_is_int(get_irn_mode(t2))) {
+      in[0] = new_rd_Mul(NULL, current_ir_graph, block, c, t1, mode);
+      in[1] = new_rd_Mul(NULL, current_ir_graph, block, c, t2, mode);
 
-    mode  = get_mode_from_ops(in[0], in[1]);
-    irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
+      mode  = get_mode_from_ops(in[0], in[1]);
+      irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
-    DBG((dbg, LEVEL_5, "Applied: (%n .%s. %n) %n %n => (%n %n %n) .%s. (%n %n %n)\n",
-        t1, get_op_name(op), t2, n, c, t1, n, c, get_op_name(op), t2, n, c));
-    exchange(n, irn);
-		*node = irn;
+      DBG((dbg, LEVEL_5, "Applied: (%n .%s. %n) %n %n => (%n %n %n) .%s. (%n %n %n)\n",
+          t1, get_op_name(op), t2, n, c, t1, n, c, get_op_name(op), t2, n, c));
+      exchange(n, irn);
+		  *node = irn;
 
-    return 1;
+      return 1;
+    }
   }
   return 0;
 }
