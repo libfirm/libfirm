@@ -26,21 +26,22 @@
 #include <alloca.h>
 #endif
 
-# include "loop_unrolling.h"
+#include "loop_unrolling.h"
 
 #include "irnode_t.h"
-# include "irgwalk.h"
-# include "ircons.h"
-# include "irgmod.h"
-# include "irloop_t.h"
-# include "irgopt_t.h"
-# include "irouts.h"
-# include "trouts.h"
-# include "hashptr.h"
-# include "pset.h"
-# include "strength_red.h"
-# include "compute_loop_info.h"
-# include "irdump.h"
+#include "irgwalk.h"
+#include "ircons.h"
+#include "irgmod.h"
+#include "irloop_t.h"
+#include "irgopt_t.h"
+#include "irouts.h"
+#include "trouts.h"
+#include "hashptr.h"
+#include "pset.h"
+#include "strength_red.h"
+#include "compute_loop_info.h"
+#include "irdump.h"
+#include "irtools.h"
 
 /* We will unroll maximal 4-times.  */
 #define MAX_UNROLL 4
@@ -65,29 +66,6 @@ static int set_cmp(const void *elt, const void *key, size_t size)
   return c1->irn != c2->irn;
 }
 
-static INLINE int * new_backedge_arr(struct obstack *obst, int size)
-{
-  int *res = NEW_ARR_D (int, obst, size);
-  memset(res, 0, sizeof(int) * size);
-  return res;
-}
-
-static INLINE void new_backedge_info(ir_node *n) {
-  switch(get_irn_opcode(n)) {
-  case iro_Block:
-    n->attr.block.cg_backedge = NULL;
-    n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  case iro_Phi:
-    n->attr.phi_backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  case iro_Filter:
-    n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-    break;
-  default: ;
-  }
-}
-
 /**
  * Remember the new node in the old node by using a field all nodes have.
  */
@@ -97,65 +75,6 @@ set_new_node (ir_node *old, ir_node *new)
   old->link = new;
 }
 
-/**
- * Copies the node to the new obstack. The Ins of the new node point to
- * the predecessors on the old obstack.  For block/phi nodes not all
- * predecessors might be copied.  n->link points to the new node.
- * For Phi and Block nodes the function allocates in-arrays with an arity
- * only for useful predecessors.  The arity is determined by counting
- * the non-bad predecessors of the block.
- *
- * @param n    The node to be copied
- * @param env  if non-NULL, the node number attribute will be copied to the new node
- */
-void
-copy_irn (ir_node *n, void *env)
-{
-  ir_graph *irg;
-  ir_node *nn;
-  int new_arity;
-  irg              = env;
-  ir_op *op        = get_irn_op(n);
-  int copy_node_nr = 0;
-
-  if(irg == NULL)
-    irg = current_ir_graph;
-
-  /* The end node looses it's flexible in array.  This doesn't matter,
-     as dead node elimination builds End by hand, inlineing doesn't use
-     the End node. */
-  /* assert(op == op_End ||  ((_ARR_DESCR(n->in))->cookie != ARR_F_MAGIC)); */
-
-  if (op == op_Bad)
-    /* node copied already */
-    return;
-
-  new_arity = get_irn_arity(n);
-
-  nn = new_ir_node(get_irn_dbg_info(n),
-           irg,
-           NULL,            /* no block yet, will be set later */
-           op,
-           get_irn_mode(n),
-           new_arity,
-           get_irn_in(n));
-
-
-  /* Copy the attributes.  These might point to additional data.  If this
-     was allocated on the old obstack the pointers now are dangling.  This
-     frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-  copy_node_attr(n, nn);
-  new_backedge_info(nn);
-  set_new_node(n, nn);
-
-#if DEBUG_libfirm
-  if (copy_node_nr) {
-    /* for easier debugging, we want to copy the node numbers too */
-    nn->node_nr = n->node_nr;
-  }
-#endif
-
-}
 /*Check if phi in the loop head is.
  *
  * @param phi               Must be a phi node from the loop.
@@ -180,13 +99,15 @@ static int is_Phi_in_loop_head(ir_node *phi, ir_node *loop_head) {
 static void
 set_preds (set *l_n, copies_t *value, induct_var_info *info, int unroll_factor, void *env)
 {
+  ir_node *loop_head;
   int i, p, irn_arity;
   copies_t key, *value_pred;
   if(value->copy[0] == NULL ||
      get_irn_op(value->irn) != get_irn_op(value->copy[0]))
     return;
-  // The head of the unrolling loop.
-  ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
+
+  /* The head of the unrolling loop. */
+  loop_head = get_loop_node(info->l_itervar_phi, 0);
   irn_arity = get_irn_arity(value->irn);
 
   for (i = 0; i < irn_arity; i++) {
@@ -473,17 +394,17 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
 {
   int i, opt;
   copies_t *value, *info_op, *phi, *loop_h = NULL, key, *value_block;
-  ir_node *proj_b, *cond, *proj_1, *proj_0;
+  ir_node *proj_b, *cond, *proj_1, *proj_0, *loop_head;
   proj_b = get_irn_out(info->cmp, 0);
   cond   = get_irn_out(proj_b, 0);
   proj_0 = get_irn_out(cond, 0);
   proj_1 = get_irn_out(cond, 1);
 
-  ir_node *loop_head = get_loop_node(info->l_itervar_phi, 0);
+  loop_head = get_loop_node(info->l_itervar_phi, 0);
   /* I will create some nodes and need the optimization to
      be set off.*/
-  opt = get_opt_optimize();
-  set_opt_optimize(0);
+  opt = get_optimize();
+  set_optimize(0);
 
   for (value = set_first(l_n); value != NULL; value = set_next(l_n)) {
     if(value->irn == loop_head)
@@ -492,28 +413,28 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
       phi = value;
     else if (copy_loop_head){
       if(value->irn == proj_0){
-	for (i = 0; i < unroll_factor - 1; i++)
-	  /* In the copies of the loop head we replace the cmp branche with a jmp node.
-	     This is just for "for" loops."do" loops are handled in function
-	     new_loop_head().*/
-	  value->copy[i] = new_r_Jmp(current_ir_graph, get_nodes_block(value->irn));
+        for (i = 0; i < unroll_factor - 1; i++)
+        /* In the copies of the loop head we replace the cmp branche with a jmp node.
+        This is just for "for" loops."do" loops are handled in function
+        new_loop_head().*/
+        value->copy[i] = new_r_Jmp(current_ir_graph, get_nodes_block(value->irn));
       }else if(value->irn != proj_b && value->irn != cond &&
-	      value->irn != proj_1)
-	/* The loop head must be copied. */
-	for (i = 0; i < unroll_factor - 1; i++){
-	  copy_irn(value->irn, NULL);
-	  value->copy[i] = get_irn_link(value->irn);
-	}
+        value->irn != proj_1)
+        /* The loop head must be copied. */
+        for (i = 0; i < unroll_factor - 1; i++){
+          copy_irn_to_irg(value->irn, current_ir_graph);
+          value->copy[i] = get_irn_link(value->irn);
+        }
     } else {
       /* The loop head and its nodes must not be copied. */
       if((value->irn->op == op_Block             &&
-	  value->irn != loop_head)               ||
-	 (value->irn->op != op_Block             &&
-	  get_nodes_block(value->irn) != loop_head)) {
-	  for (i = 0; i<unroll_factor -1; i++){
-	    copy_irn(value->irn, NULL);
-	    value->copy[i] = get_irn_link(value->irn);
-	  }
+        value->irn != loop_head)               ||
+        (value->irn->op != op_Block             &&
+        get_nodes_block(value->irn) != loop_head)) {
+        for (i = 0; i<unroll_factor -1; i++) {
+          copy_irn_to_irg(value->irn, current_ir_graph);
+          value->copy[i] = get_irn_link(value->irn);
+        }
       }
     }
   }
@@ -522,7 +443,7 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
   new_loop_head(l_n, info, loop_h, unroll_factor, copy_loop_head);
   /* I have created the nodes and I set the optimization
      to it old value.*/
-  set_opt_optimize(opt);
+  set_optimize(opt);
 
   /* Similarly treat the Phis in the loop head block. info->op is the node
      along the backedges. */
@@ -547,17 +468,17 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
 
     /* Set the predecessors of the copies. */
     if (copy_loop_head){
-	set_preds(l_n, value, info, unroll_factor, NULL);
+      set_preds(l_n, value, info, unroll_factor, NULL);
     }else if ((value->irn->op != op_Block) && get_nodes_block(value->irn) != loop_head)
       set_preds(l_n, value, info, unroll_factor, NULL);
 
     if (is_Phi_in_loop_head(value->irn, loop_head) &&
-	has_backedges(value->irn))
+      has_backedges(value->irn))
       /* Set the backedge of phis in the loop head. */
       set_phi_backedge(l_n, value, info, unroll_factor);
 
     if ((value->irn->op != op_Block) && !is_Phi_in_loop_head(value->irn, loop_head) &&
-	value->copy[0] != NULL ) {
+      value->copy[0] != NULL ) {
       ir_node *nodes_block = get_nodes_block(value->irn);
 
       if (!copy_loop_head && nodes_block == loop_head)
@@ -571,7 +492,7 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
       }
     }
   }
-  /* I muss repaire some control flow edges, when the loop head
+  /* I must repair some control flow edges, when the loop head
      have been copied.*/
   if (copy_loop_head && !(info->l_itervar_phi->flags & do_loop)){
     key.irn = proj_0;
@@ -583,6 +504,7 @@ copy_loop_body(set *l_n, induct_var_info *info, int unroll_factor)
     }
   }
 }
+
 /**
  * Returns non-zero if a Proj node from the loop has a predecessor that
  * can throw an exception.
