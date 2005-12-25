@@ -57,28 +57,28 @@ static void copy_entities_from_superclass(type *clss, void *env)
       /* check whether inhent is already overwritten */
       overwritten = 0;
       for (k = 0; (k < get_class_n_members(clss)) && (overwritten == 0); k++) {
-	thisent = get_class_member(clss, k);
-	for(l = 0; l < get_entity_n_overwrites(thisent); l++) {
-	  if(inhent == get_entity_overwrites(thisent, l)) {
-	    /* overwritten - do not copy */
-	    overwritten = 1;
-	    break;
-	  }
-	}
+        thisent = get_class_member(clss, k);
+        for(l = 0; l < get_entity_n_overwrites(thisent); l++) {
+          if(inhent == get_entity_overwrites(thisent, l)) {
+            /* overwritten - do not copy */
+            overwritten = 1;
+            break;
+          }
+        }
       }
       /* Inherit entity */
       if (!overwritten) {
-	thisent = copy_entity_own(inhent, clss);
-	add_entity_overwrites(thisent, inhent);
-	if (get_entity_peculiarity(inhent) == peculiarity_existent)
-	  set_entity_peculiarity(thisent, peculiarity_inherited);
-	set_entity_ld_ident(thisent, mfunc(inhent, clss));
-	if (get_entity_variability(inhent) == variability_constant) {
-	  assert(is_atomic_entity(inhent) &&  /* @@@ */
-		 "Inheritance of constant, compound entities not implemented");
-	  set_entity_variability(thisent, variability_constant);
-	  set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
-	}
+        thisent = copy_entity_own(inhent, clss);
+        add_entity_overwrites(thisent, inhent);
+        if (get_entity_peculiarity(inhent) == peculiarity_existent)
+          set_entity_peculiarity(thisent, peculiarity_inherited);
+        set_entity_ld_ident(thisent, mfunc(inhent, clss));
+        if (get_entity_variability(inhent) == variability_constant) {
+          assert(is_atomic_entity(inhent) &&  /* @@@ */
+                 "Inheritance of constant, compound entities not implemented");
+          set_entity_variability(thisent, variability_constant);
+          set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
+        }
       }
     }
   }
@@ -132,10 +132,14 @@ static void assert_valid_state(void) {
 /* arrays) listing all subtypes...                                         */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
+typedef enum {
+  d_up   = 0,
+  d_down = 1,
+} dir;
+
 typedef struct {
   firm_kind *kind;   /* An entity or type. */
-  pset *up;
-  pset *down;
+  pset *directions[2];
 } tr_inh_trans_tp;
 
 /* We use this set for all types and entities.  */
@@ -148,14 +152,9 @@ static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size) {
 }
 
 static INLINE unsigned int tr_inh_trans_hash(void *e) {
-  void *v = (void *) ((tr_inh_trans_tp *)e)->kind;
-  return HASH_PTR(v);
+  tr_inh_trans_tp *v = e;
+  return HASH_PTR(v->kind);
 }
-
-typedef enum {
-  d_up,
-  d_down,
-} dir;
 
 /* This always completes successfully. */
 static tr_inh_trans_tp* get_firm_kind_entry(firm_kind *k) {
@@ -166,8 +165,8 @@ static tr_inh_trans_tp* get_firm_kind_entry(firm_kind *k) {
 
   found = set_find(tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
   if (!found) {
-    a.up   = pset_new_ptr(16);
-    a.down = pset_new_ptr(16);
+    a.directions[d_up]   = pset_new_ptr(16);
+    a.directions[d_down] = pset_new_ptr(16);
     found = set_insert(tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
   }
   return found;
@@ -178,7 +177,7 @@ static pset *get_entity_map(entity *ent, dir d) {
 
   assert(is_entity(ent));
   found = get_firm_kind_entry((firm_kind *)ent);
-  return (d == d_up) ? found->up : found->down;
+  return found->directions[d];
 }
 /*
 static void  add_entity_map(entity *ent, dir d, entity *new) {
@@ -186,10 +185,7 @@ static void  add_entity_map(entity *ent, dir d, entity *new) {
 
   assert(is_entity(ent) && is_entity(new));
   tr_inh_trans_tp *found = get_firm_kind_entry((firm_kind *)ent);
-  if (d == d_up)
-    pset_insert_ptr(found->up,   new);
-  else
-    pset_insert_ptr(found->down, new);
+  pset_insert_ptr(found->directions[d], new);
 }
 */
 static pset *get_type_map(type *tp, dir d) {
@@ -197,7 +193,7 @@ static pset *get_type_map(type *tp, dir d) {
 
   assert(is_type(tp));
   found = get_firm_kind_entry((firm_kind *)tp);
-  return (d == d_up) ? found->up : found->down;
+  return found->directions[d];
 }
 /*
 static void  add_type_map(type *tp, dir d, type *new) {
@@ -205,8 +201,7 @@ static void  add_type_map(type *tp, dir d, type *new) {
 
   assert(is_type(tp) && is_type(new));
   found = get_firm_kind_entry((firm_kind *)tp);
-  if (d == d_up) pset_insert_ptr(found->up,   new);
-  else           pset_insert_ptr(found->down, new);
+  pset_insert_ptr(found->directions[d], new);
 }
 */
 
@@ -400,8 +395,8 @@ void free_inh_transitive_closure(void) {
   if (tr_inh_trans_set) {
     tr_inh_trans_tp *elt;
     for (elt = set_first(tr_inh_trans_set); elt; elt = set_next(tr_inh_trans_set)) {
-      del_pset(elt->up);
-      del_pset(elt->down);
+      del_pset(elt->directions[d_up]);
+      del_pset(elt->directions[d_down]);
     }
     del_set(tr_inh_trans_set);
     tr_inh_trans_set = NULL;
@@ -473,7 +468,7 @@ entity *get_entity_trans_overwrites_next (entity *ent) {
 /* ----------------------------------------------------------------------- */
 
 /* Returns true if low is subclass of high. */
-int is_subclass_of(type *low, type *high) {
+int is_SubClass_of(type *low, type *high) {
   int i, n_subtypes;
   assert(is_Class_type(low) && is_Class_type(high));
 
@@ -489,7 +484,7 @@ int is_subclass_of(type *low, type *high) {
   for (i = 0; i < n_subtypes; i++) {
     type *stp = get_class_subtype(high, i);
     if (low == stp) return 1;
-    if (is_subclass_of(low, stp))
+    if (is_SubClass_of(low, stp))
       return 1;
   }
   return 0;
@@ -502,23 +497,15 @@ int is_subclass_of(type *low, type *high) {
  *  many as possible).  If the remaining types are both class types
  *  and subclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-int is_subclass_ptr_of(type *low, type *high) {
+int is_SubClass_ptr_of(type *low, type *high) {
   while (is_Pointer_type(low) && is_Pointer_type(high)) {
     low  = get_pointer_points_to_type(low);
     high = get_pointer_points_to_type(high);
   }
 
   if (is_Class_type(low) && is_Class_type(high))
-    return is_subclass_of(low, high);
+    return is_SubClass_of(low, high);
   return 0;
-}
-
-int is_superclass_of(type *high, type *low) {
-  return is_subclass_of(low, high);
-}
-
-int is_superclass_ptr_of(type *high, type *low) {
-  return is_subclass_ptr_of(low, high);
 }
 
 int is_overwritten_by(entity *high, entity *low) {
@@ -640,8 +627,8 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
 
   if (!is_Class_type(totype)) return;
 
-  if (is_subclass_of(totype, fromtype) ||
-      is_subclass_of(fromtype, totype)   ) {
+  if (is_SubClass_of(totype, fromtype) ||
+      is_SubClass_of(fromtype, totype)   ) {
     this_state = ir_class_casts_transitive;
     if ((get_class_supertype_index(totype, fromtype) != -1) ||
 	(get_class_supertype_index(fromtype, totype) != -1) ||

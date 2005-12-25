@@ -42,7 +42,7 @@
  *  a subclass of high.  I.e, we search in all subtypes of high for low.
  *  @@@ this can be implemented more efficient if we know the set of all
  *  subclasses of high.  */
-int is_subclass_of(type *low, type *high);
+int is_SubClass_of(type *low, type *high);
 
 /** Subclass check for pointers to classes.
  *
@@ -50,7 +50,7 @@ int is_subclass_of(type *low, type *high);
  *  many as possible).  If the remaining types are both class types
  *  and subclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-int is_subclass_ptr_of(type *low, type *high);
+int is_SubClass_ptr_of(type *low, type *high);
 
 /** Returns true if high is superclass of low.
  *
@@ -58,7 +58,7 @@ int is_subclass_ptr_of(type *low, type *high);
  *  a subclass of high.  I.e, we search in all subtypes of high for low.
  *  @@@ this can be implemented more efficient if we know the set of all
  *  subclasses of high.  */
-int is_superclass_of(type *high, type *low);
+#define is_SuperClass_of(high, low) is_SubClass_of(low, high)
 
 /** Superclass check for pointers to classes.
  *
@@ -66,14 +66,14 @@ int is_superclass_of(type *high, type *low);
  *  many as possible).  If the remaining types are both class types
  *  and superclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-int is_superclass_ptr_of(type *low, type *high);
+#define is_SuperClass_ptr_of(low, high) is_SubClass_ptr_of(high, low)
 
 /** Returns true if high is (transitive) overwritten by low.
  *
  *  Returns false if high == low. */
 int is_overwritten_by(entity *high, entity *low);
 
-/** Resolve polymorphy in the inheritance relation.
+/** Resolve polymorphism in the inheritance relation.
  *
  *  Returns the dynamically referenced entity if the static entity and the
  *  dynamic type are given.
