@@ -430,7 +430,7 @@ static unsigned optimize_load(ir_node *load)
         type *s_type = get_entity_type(ent);
         type *a_type = get_Alloc_type(mem);
 
-        if (is_subclass_of(s_type, a_type)) {
+        if (is_SubClass_of(s_type, a_type)) {
           /* ok, condition met: there can't be an exception because
            * Alloc guarantees that enough memory was allocated */
 

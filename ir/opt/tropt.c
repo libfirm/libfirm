@@ -113,7 +113,7 @@ static ir_node *normalize_values_type(type *totype, ir_node *pred) {
 
   set_cur_block(get_nodes_block(pred));
 
-  if (is_subclass_of(totype, fromtype)) {
+  if (is_SubClass_of(totype, fromtype)) {
     /* downcast */
     while (get_class_subtype_index(fromtype, totype) == -1) {
       /* Insert a cast to a subtype of fromtype. */
@@ -122,7 +122,7 @@ static ir_node *normalize_values_type(type *totype, ir_node *pred) {
       int i, n_subtypes = get_class_n_subtypes(fromtype);
       for (i = 0; i < n_subtypes && !new_type; ++i) {
         type *new_sub = get_class_subtype(fromtype, i);
-        if (is_superclass_of(new_sub, totype))
+        if (is_SuperClass_of(new_sub, totype))
           new_type = new_sub;
       }
       assert(new_type);
@@ -136,7 +136,7 @@ static ir_node *normalize_values_type(type *totype, ir_node *pred) {
     }
   }
   else {
-    assert(is_superclass_of(totype, fromtype));
+    assert(is_SuperClass_of(totype, fromtype));
     /* upcast */
     while (get_class_supertype_index(fromtype, totype) == -1) {
       /* Insert a cast to a supertype of fromtype. */
@@ -144,7 +144,7 @@ static ir_node *normalize_values_type(type *totype, ir_node *pred) {
       int i, n_supertypes = get_class_n_supertypes(fromtype);
       for (i = 0; i < n_supertypes && !new_type; ++i) {
 	type *new_super = get_class_supertype(fromtype, i);
-	if (is_subclass_of(new_super, totype))
+	if (is_SubClass_of(new_super, totype))
 	  new_type = new_super;
       }
       assert(new_type);
@@ -262,7 +262,7 @@ static void cancel_out_casts(ir_node *cast) {
   if (!is_Class_type(tp_pred)) return;
   if (!is_Class_type(tp_orig)) return;
 
-  if (is_subclass_of(tp_pred, tp_cast) && get_opt_suppress_downcast_optimization())
+  if (is_SubClass_of(tp_pred, tp_cast) && get_opt_suppress_downcast_optimization())
     return;
 
   if (tp_cast == tp_orig) {
@@ -271,15 +271,15 @@ static void cancel_out_casts(ir_node *cast) {
     return;
   }
 
-  if (!(is_subclass_of  (tp_cast, tp_orig) || is_subclass_of  (tp_orig, tp_cast))) {
+  if (!(is_SubClass_of  (tp_cast, tp_orig) || is_SubClass_of  (tp_orig, tp_cast))) {
     /* Avoid (B2)(A)(new B1()) --> (B2)(new B1())
      * if B1 =!> B2  and  B2 =!> B1
      */
     return;
   }
 
-  if ((is_subclass_of  (tp_cast, tp_pred) && is_superclass_of(tp_pred, tp_orig)) ||
-      (is_superclass_of(tp_cast, tp_pred) && is_subclass_of  (tp_pred, tp_orig))   ) {
+  if ((is_SubClass_of  (tp_cast, tp_pred) && is_SuperClass_of(tp_pred, tp_orig)) ||
+      (is_SuperClass_of(tp_cast, tp_pred) && is_SubClass_of  (tp_pred, tp_orig))   ) {
     /* Cast --> Pred --> Orig */
     set_Cast_op (cast, orig);
     n_casts_removed ++;
@@ -307,7 +307,7 @@ static void concretize_selected_entity(ir_node *sel) {
     if (!is_Class_type(cast_tp)) return;
 
     /* We only want to concretize, but not generalize. */
-    if (!is_superclass_of(cast_tp, orig_tp)) return;
+    if (!is_SuperClass_of(cast_tp, orig_tp)) return;
 
     /* Hmm, we are not properly typed. */
     if (get_class_member_index(cast_tp, sel_ent) == -1) return;
