@@ -636,7 +636,7 @@ int smaller_type (type *st, type *lt) {
 
   switch(get_type_tpop_code(st)) {
   case tpo_class:       {
-    return is_subclass_of(st, lt);
+    return is_SubClass_of(st, lt);
   } break;
   case tpo_struct:      {
     if (get_struct_n_members(st) != get_struct_n_members(lt)) return 0;
@@ -900,7 +900,7 @@ void    add_class_supertype   (type *clss, type *supertype) {
   assert(clss && (clss->type_op == type_class));
   assert(supertype && (supertype -> type_op == type_class));
   ARR_APP1 (type *, clss->attr.ca.supertypes, supertype);
-  for (i = 0; i < get_class_n_subtypes(supertype); i++)
+  for (i = get_class_n_subtypes(supertype) - 1; i >= 0; --i)
     if (get_class_subtype(supertype, i) == clss)
       /* Class already registered */
       return;
@@ -1345,16 +1345,20 @@ void (set_method_calling_convention)(type *method, unsigned cc_mask) {
   _set_method_calling_convention(method, cc_mask);
 }
 
-/* Returns the number of register parameters in a fastcall. 0 means default. */
-unsigned get_method_fastcall_n_regs(type *method) {
-  assert(IS_FASTCALL(get_method_calling_convention(method)) && "not fastcall");
-  return method->attr.ma.irg_calling_conv >> 8;
+/* Returns the number of registers parameters, 0 means default. */
+unsigned get_method_n_regparams(type *method) {
+  unsigned cc = get_method_calling_convention(method);
+  assert(IS_FASTCALL(cc));
+
+  return cc & ~cc_bits;
 }
 
-/* Sets the number of register parameters in a fastcall. 0 means default. */
-void set_method_fastcall_n_regs(type *method, unsigned n_regs) {
-  assert(IS_FASTCALL(get_method_calling_convention(method)) && "not fastcall");
-  method->attr.ma.irg_calling_conv = n_regs << 8 | (method->attr.ma.irg_calling_conv & 0xFF);
+/* Sets the number of registers parameters, 0 means default. */
+void set_method_n_regparams(type *method, unsigned n_regs) {
+  unsigned cc = get_method_calling_convention(method);
+  assert(IS_FASTCALL(cc));
+
+  set_method_calling_convention(method, (cc & cc_bits) | (n_regs & ~cc_bits));
 }
 
 /* typecheck */
