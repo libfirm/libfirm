@@ -1423,7 +1423,7 @@ int is_Cast_upcast(ir_node *node) {
   assert(fromtype);
 
   if (!is_Class_type(totype)) return 0;
-  return is_subclass_of(fromtype, totype);
+  return is_SubClass_of(fromtype, totype);
 }
 
 /* Checks for downcast.
@@ -1445,7 +1445,7 @@ int is_Cast_downcast(ir_node *node) {
   assert(fromtype);
 
   if (!is_Class_type(totype)) return 0;
-  return is_subclass_of(totype, fromtype);
+  return is_SubClass_of(totype, fromtype);
 }
 
 int
