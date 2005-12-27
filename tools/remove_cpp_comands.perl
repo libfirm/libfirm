@@ -67,11 +67,13 @@ $multiline = 0;
 foreach $line (@lines) {
 
     if ($line =~ /\#ifdef __cplusplus/) {
-#       There is extern "C" in firm.h, guarded by #ifdef __cplusplus
+#       There is extern "C" in some header files guarded by #ifdef __cplusplus
 #       crecoder does not grok the extern "C", so remove thses three lines.
 	$eat = 2;
     } elsif ($eat > 0) {
 	$eat = $eat -1;
+    } elsif ($line =~ /wchar_t/) {
+	# of course crecoder cannot handle wchar_t, what else?
     } elsif ($multiline > 0) {
         # this line connects a previous one, kill it
         if ($line =~ /\\$/) {
