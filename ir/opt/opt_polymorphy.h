@@ -5,7 +5,7 @@
  * Author:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 2005 UniversitÅ‰t Karlsruhe
+ * Copyright:   (c) 2005 Universit‰t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -13,15 +13,22 @@
  *
  *  This file subsumes optimization code from cgana.
  */
-
 #ifndef _OPT_POLYMORPHY_H_
 #define _OPT_POLYMORPHY_H_
 
-#include "irnode.h"
+#include "firm_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Transform  Sel(Alloc)[method]
- * to SymC[method]
+ * to SymC[method] under the following conditions:
+ *
+ * - opt_dyn_meth_dispatch must be set
+ * - the method is not overwritten OR
+ * - the dynamic type is known
  */
 ir_node *transform_node_Sel(ir_node *node);
 
@@ -34,5 +41,9 @@ ir_node *transform_node_Sel(ir_node *node);
  *  Therefore we call this optimization in ldstopt.
  */
 ir_node *transform_node_Load(ir_node *n);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _OPT_POLYMORPHY_H_ */
