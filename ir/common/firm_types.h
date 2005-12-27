@@ -43,7 +43,12 @@ typedef struct tarval tarval;
 
 #ifndef _TYPE_TYPEDEF_
 #define _TYPE_TYPEDEF_
-typedef struct type type;
+typedef struct ir_type type;
+#endif
+
+#ifndef _IR_TYPE_TYPEDEF_
+#define _IR_TYPE_TYPEDEF_
+typedef struct ir_type ir_type;
 #endif
 
 #ifndef _IR_GRAPH_TYPEDEF_

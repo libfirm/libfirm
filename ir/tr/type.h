@@ -105,7 +105,7 @@
  */
 #ifndef _TYPE_TYPEDEF_
 #define _TYPE_TYPEDEF_
-typedef struct type type;
+typedef struct ir_type type;
 #endif
 
 # include "type_or_entity.h"
@@ -814,7 +814,7 @@ typedef enum {
   cc_this_call        = 0x08000000, /**< The first parameter is a this pointer and is transmitted
                                          in a special way. */
 
-  /* some ofter used cases */
+  /* some often used cases */
   cc_cdecl_set        = 0,                                /**< cdecl calling convention */
   cc_stdcall_set      = cc_callee_clear_stk,              /**< stdcall calling convention */
   cc_fastcall_set     = cc_reg_param|cc_callee_clear_stk, /**< fastcall calling convention */
