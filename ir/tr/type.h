@@ -819,7 +819,7 @@ typedef enum {
   cc_stdcall_set      = cc_callee_clear_stk,              /**< stdcall calling convention */
   cc_fastcall_set     = cc_reg_param|cc_callee_clear_stk, /**< fastcall calling convention */
 
-  cc_bits             = 0xFF000000                          /**< the calling convention bits */
+  cc_bits             = (0xFF << 24)                      /**< the calling convention bits */
 } calling_convention;
 
 /** return the default calling convention for method types */
