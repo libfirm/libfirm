@@ -114,7 +114,7 @@ typedef union {
 } tp_attr;
 
 /** the structure of a type */
-struct type {
+struct ir_type {
   firm_kind kind;          /**< the firm kind, must be k_type */
   const tp_op *type_op;    /**< the type operation of the type */
   ident *name;             /**< The name of the type */
