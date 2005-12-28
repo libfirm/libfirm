@@ -22,6 +22,7 @@
 #ifndef _IRGRAPH_T_H_
 #define _IRGRAPH_T_H_
 
+#include "firm_types.h"
 #include "irgraph.h"
 
 #include "firm_common_t.h"
@@ -58,29 +59,29 @@ struct ir_graph {
   struct entity  *ent;               /**< The entity of this procedure, i.e.,
                     the type of the procedure and the
                     class it belongs to. */
-  struct type    *frame_type;    /**< A class type representing the stack frame.
-                    Can include "inner" methods. */
-  struct ir_node *start_block;   /**< block the start node will belong to */
-  struct ir_node *start;         /**< start node of this ir_graph */
-  struct ir_node *end_block;     /**< block the end node will belong to */
-  struct ir_node *end;           /**< end node of this ir_graph */
-  struct ir_node *end_reg;       /**< end node of this ir_graph */
-  struct ir_node *end_except;    /**< end node of this ir_graph */
-  struct ir_node *cstore;        /**< constant store -- no more needed!! */
-  struct ir_node *frame;         /**< method's frame */
-  struct ir_node *globals;       /**< pointer to the data segment containing all
-                                      globals as well as global procedures. */
-  struct ir_node *initial_mem;   /**< initial memory of this graph */
-  struct ir_node *args;          /**< methods arguments */
-  struct ir_node **proj_args;    /**< projs of the methods arguments */
-  struct ir_node *bad;           /**< bad node of this ir_graph, the one and
-                    only in this graph */
-  struct ir_node *no_mem;        /**< NoMem node of this ir_graph, the one and
+  ir_type *frame_type;    /**< A class type representing the stack frame.
+                               Can include "inner" methods. */
+  ir_node *start_block;   /**< block the start node will belong to */
+  ir_node *start;         /**< start node of this ir_graph */
+  ir_node *end_block;     /**< block the end node will belong to */
+  ir_node *end;           /**< end node of this ir_graph */
+  ir_node *end_reg;       /**< end node of this ir_graph */
+  ir_node *end_except;    /**< end node of this ir_graph */
+  ir_node *cstore;        /**< constant store -- no more needed!! */
+  ir_node *frame;         /**< method's frame */
+  ir_node *globals;       /**< pointer to the data segment containing all
+                               globals as well as global procedures. */
+  ir_node *initial_mem;   /**< initial memory of this graph */
+  ir_node *args;          /**< methods arguments */
+  ir_node **proj_args;    /**< projs of the methods arguments */
+  ir_node *bad;           /**< bad node of this ir_graph, the one and
+                               only in this graph */
+  ir_node *no_mem;        /**< NoMem node of this ir_graph, the one and
                                       only in this graph */
   /* GL removed: we need unknown with mode for analyses. */
   /*   struct ir_node *unknown;*/           /**< unknown node of this ir_graph */
   struct obstack *obst;          /**< obstack where all of the ir_nodes live */
-  struct ir_node *current_block; /**< block for newly gen_*()-erated ir_nodes */
+  ir_node *current_block;        /**< block for newly gen_*()-erated ir_nodes */
   struct obstack *extbb_obst;    /**< obstack for extended basic block info */
 
   /* -- Fields for graph properties -- */
