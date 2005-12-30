@@ -510,7 +510,7 @@ get_irn_symconst_attr (ir_node *node)
   return node->attr.i;
 }
 
-type *
+ir_type *
 get_irn_call_attr (ir_node *node)
 {
   assert (node->op == op_Call);
@@ -583,7 +583,7 @@ set_nodes_block (ir_node *node, ir_node *block) {
 
 /* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
-type *is_frame_pointer(ir_node *n) {
+ir_type *is_frame_pointer(ir_node *n) {
   if ((get_irn_op(n) == op_Proj) &&
       (get_Proj_proj(n) == pn_Start_P_frame_base)) {
     ir_node *start = get_Proj_pred(n);
@@ -596,7 +596,7 @@ type *is_frame_pointer(ir_node *n) {
 
 /* Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
  * from Start.  If so returns global type, else Null. */
-type *is_globals_pointer(ir_node *n) {
+ir_type *is_globals_pointer(ir_node *n) {
   if ((get_irn_op(n) == op_Proj) &&
       (get_Proj_proj(n) == pn_Start_P_globals)) {
     ir_node *start = get_Proj_pred(n);
@@ -961,14 +961,14 @@ cnst_classify_t (classify_Const)(ir_node *node)
 /* The source language type.  Must be an atomic type.  Mode of type must
    be mode of node. For tarvals from entities type must be pointer to
    entity type. */
-type *
+ir_type *
 get_Const_type (ir_node *node) {
   assert (node->op == op_Const);
   return node->attr.con.tp;
 }
 
 void
-set_Const_type (ir_node *node, type *tp) {
+set_Const_type (ir_node *node, ir_type *tp) {
   assert (node->op == op_Const);
   if (tp != firm_unknown_type) {
     assert (is_atomic_type(tp));
@@ -990,7 +990,7 @@ set_SymConst_kind (ir_node *node, symconst_kind num) {
   node->attr.i.num = num;
 }
 
-type *
+ir_type *
 get_SymConst_type (ir_node *node) {
   assert (   (node->op == op_SymConst)
           && (   get_SymConst_kind(node) == symconst_type_tag
@@ -999,7 +999,7 @@ get_SymConst_type (ir_node *node) {
 }
 
 void
-set_SymConst_type (ir_node *node, type *tp) {
+set_SymConst_type (ir_node *node, ir_type *tp) {
   assert (   (node->op == op_SymConst)
           && (   get_SymConst_kind(node) == symconst_type_tag
               || get_SymConst_kind(node) == symconst_size));
@@ -1047,7 +1047,7 @@ set_SymConst_symbol (ir_node *node, union symconst_symbol sym) {
   node->attr.i.sym = sym;
 }
 
-type *
+ir_type *
 get_SymConst_value_type (ir_node *node) {
   assert (node->op == op_SymConst);
   if (node->attr.i.tp) node->attr.i.tp = skip_tid(node->attr.i.tp);
@@ -1055,7 +1055,7 @@ get_SymConst_value_type (ir_node *node) {
 }
 
 void
-set_SymConst_value_type (ir_node *node, type *tp) {
+set_SymConst_value_type (ir_node *node, ir_type *tp) {
   assert (node->op == op_SymConst);
   node->attr.i.tp = tp;
 }
@@ -1124,14 +1124,14 @@ set_Sel_entity (ir_node *node, entity *ent) {
   node->attr.s.ent = ent;
 }
 
-type *
+ir_type *
 get_InstOf_ent (ir_node *node) {
   assert (node->op = op_InstOf);
   return (node->attr.io.ent);
 }
 
 void
-set_InstOf_ent (ir_node *node, type *ent) {
+set_InstOf_ent (ir_node *node, ir_type *ent) {
   assert (node->op = op_InstOf);
   node->attr.io.ent = ent;
 }
@@ -1229,14 +1229,14 @@ set_Call_param (ir_node *node, int pos, ir_node *param) {
   set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
 }
 
-type *
+ir_type *
 get_Call_type (ir_node *node) {
   assert (node->op == op_Call);
   return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
 void
-set_Call_type (ir_node *node, type *tp) {
+set_Call_type (ir_node *node, ir_type *tp) {
   assert (node->op == op_Call);
   assert ((get_unknown_type() == tp) || is_Method_type(tp));
   node->attr.call.cld_tp = tp;
@@ -1390,14 +1390,14 @@ BINOP(Cmp)
 UNOP(Conv)
 UNOP(Cast)
 
-type *
+ir_type *
 get_Cast_type (ir_node *node) {
   assert (node->op == op_Cast);
   return node->attr.cast.totype;
 }
 
 void
-set_Cast_type (ir_node *node, type *to_tp) {
+set_Cast_type (ir_node *node, ir_type *to_tp) {
   assert (node->op == op_Cast);
   node->attr.cast.totype = to_tp;
 }
@@ -1408,8 +1408,8 @@ set_Cast_type (ir_node *node, type *to_tp) {
  * Returns true if the Cast node casts a class type to a super type.
  */
 int is_Cast_upcast(ir_node *node) {
-  type *totype   = get_Cast_type(node);
-  type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
+  ir_type *totype   = get_Cast_type(node);
+  ir_type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
   ir_graph *myirg = get_irn_irg(node);
 
   assert(get_irg_typeinfo_state(myirg) == ir_typeinfo_consistent);
@@ -1431,8 +1431,8 @@ int is_Cast_upcast(ir_node *node) {
  * Returns true if the Cast node casts a class type to a sub type.
  */
 int is_Cast_downcast(ir_node *node) {
-  type *totype   = get_Cast_type(node);
-  type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
+  ir_type *totype   = get_Cast_type(node);
+  ir_type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
 
   assert(get_irg_typeinfo_state(get_irn_irg(node)) == ir_typeinfo_consistent);
   assert(fromtype);
@@ -1709,14 +1709,14 @@ set_Alloc_size (ir_node *node, ir_node *size) {
   set_irn_n(node, 1, size);
 }
 
-type  *
+ir_type  *
 get_Alloc_type (ir_node *node) {
   assert (node->op == op_Alloc);
   return node->attr.a.type = skip_tid(node->attr.a.type);
 }
 
 void
-set_Alloc_type (ir_node *node, type *tp) {
+set_Alloc_type (ir_node *node, ir_type *tp) {
   assert (node->op == op_Alloc);
   node->attr.a.type = tp;
 }
@@ -1770,14 +1770,14 @@ set_Free_size (ir_node *node, ir_node *size) {
   set_irn_n(node, 2, size);
 }
 
-type  *
+ir_type *
 get_Free_type (ir_node *node) {
   assert (node->op == op_Free);
   return node->attr.f.type = skip_tid(node->attr.f.type);
 }
 
 void
-set_Free_type (ir_node *node, type *tp) {
+set_Free_type (ir_node *node, ir_type *tp) {
   assert (node->op == op_Free);
   node->attr.f.type = tp;
 }
@@ -1825,9 +1825,9 @@ set_Sync_pred (ir_node *node, int pos, ir_node *pred) {
   set_irn_n(node, pos, pred);
 }
 
-type *get_Proj_type(ir_node *n)
+ir_type *get_Proj_type(ir_node *n)
 {
-  type *tp      = NULL;
+  ir_type *tp   = NULL;
   ir_node *pred = get_Proj_pred(n);
 
   switch (get_irn_opcode(pred)) {
@@ -1837,10 +1837,10 @@ type *get_Proj_type(ir_node *n)
     assert(get_irn_mode(pred) == mode_T);
     pred_pred = get_Proj_pred(pred);
     if (get_irn_op(pred_pred) == op_Start)  {
-      type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
+      ir_type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
       tp = get_method_param_type(mtp, get_Proj_proj(n));
     } else if (get_irn_op(pred_pred) == op_Call) {
-      type *mtp = get_Call_type(pred_pred);
+      ir_type *mtp = get_Call_type(pred_pred);
       tp = get_method_res_type(mtp, get_Proj_proj(n));
     }
   } break;
@@ -2066,12 +2066,12 @@ void     set_CopyB_src (ir_node *node, ir_node *src) {
   set_irn_n(node, 2, src);
 }
 
-type    *get_CopyB_type(ir_node *node) {
+ir_type *get_CopyB_type(ir_node *node) {
   assert (node->op == op_CopyB);
   return node->attr.copyb.data_type;
 }
 
-void     set_CopyB_type(ir_node *node, type *data_type) {
+void     set_CopyB_type(ir_node *node, ir_type *data_type) {
   assert (node->op == op_CopyB && data_type);
   node->attr.copyb.data_type = data_type;
 }
@@ -2165,13 +2165,14 @@ ir_node *skip_HighLevel(ir_node *node) {
 
 #if 0
 /* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
-   than any other approach, as Id chains are resolved and all point to the real node, or
-   all id's are self loops. */
+ * than any other approach, as Id chains are resolved and all point to the real node, or
+ * all id's are self loops.
+ *
+ * Moreover, it CANNOT be switched off using get_opt_normalize() ...
+ */
 ir_node *
 skip_Id (ir_node *node) {
   /* don't assert node !!! */
-
-  if (!get_opt_normalize()) return node;
 
   /* Don't use get_Id_pred:  We get into an endless loop for
      self-referencing Ids. */
@@ -2193,8 +2194,14 @@ skip_Id (ir_node *node) {
 }
 #else
 /* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
-   than any other approach, as Id chains are resolved and all point to the real node, or
-   all id's are self loops. */
+ * than any other approach, as Id chains are resolved and all point to the real node, or
+ * all id's are self loops.
+ *
+ * Note: This function takes 10% of mostly ANY the compiler run, so it's
+ * a little bit "hand optimized".
+ *
+ * Moreover, it CANNOT be switched off using get_opt_normalize() ...
+ */
 ir_node *
 skip_Id (ir_node *node) {
   ir_node *pred;
@@ -2202,9 +2209,7 @@ skip_Id (ir_node *node) {
 
   if (!node || (node->op != op_Id)) return node;
 
-  if (!get_opt_normalize()) return node;
-
-  /* Don't use get_Id_pred:  We get into an endless loop for
+  /* Don't use get_Id_pred():  We get into an endless loop for
      self-referencing Ids. */
   pred = node->in[0+1];
 
@@ -2229,6 +2234,16 @@ skip_Id (ir_node *node) {
   }
 }
 #endif
+
+void skip_Id_and_store(ir_node **node) {
+  ir_node *n = *node;
+
+  if (!n || (n->op != op_Id)) return;
+
+  /* Don't use get_Id_pred():  We get into an endless loop for
+     self-referencing Ids. */
+  *node = skip_Id(n);
+}
 
 int
 (is_Bad)(const ir_node *node) {
@@ -2310,7 +2325,7 @@ int (is_irn_forking)(const ir_node *node) {
   return _is_irn_forking(node);
 }
 
-type *(get_irn_type)(ir_node *node) {
+ir_type *(get_irn_type)(ir_node *node) {
   return _get_irn_type(node);
 }
 
@@ -2340,8 +2355,8 @@ void (set_Cond_jmp_pred)(ir_node *cond, cond_jmp_predicate pred) {
   _set_Cond_jmp_pred(cond, pred);
 }
 
-/** the get_type operation must be always implemented */
-static type *get_Null_type(ir_node *n) {
+/** the get_type/get_type_attr operation must be always implemented */
+static ir_type *get_Null_type(ir_node *n) {
   return NULL;
 }
 
@@ -2357,6 +2372,60 @@ ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops)
     /* not allowed to be NULL */
     if (! ops->get_type)
       ops->get_type = get_Null_type;
+    break;
+  }
+  return ops;
+}
+
+/** Return the attribute type of a SymConst node if exists */
+static ir_type *get_SymConst_attr_type(ir_node *self) {
+  symconst_kind kind = get_SymConst_kind(self);
+  if (kind == symconst_type_tag || kind == symconst_size)
+    return get_SymConst_type(self);
+  return NULL;
+}
+
+/** Return the attribute entity of a SymConst node if exists */
+static entity *get_SymConst_attr_entity(ir_node *self) {
+  symconst_kind kind = get_SymConst_kind(self);
+  if (kind == symconst_addr_ent)
+    return get_SymConst_entity(self);
+  return NULL;
+}
+
+/* Sets the get_type operation for an ir_op_ops. */
+ir_op_ops *firm_set_default_get_type_attr(opcode code, ir_op_ops *ops)
+{
+  switch (code) {
+  case iro_SymConst: ops->get_type_attr = get_SymConst_attr_type; break;
+  case iro_Call:     ops->get_type_attr = get_Call_type; break;
+  case iro_Alloc:    ops->get_type_attr = get_Alloc_type; break;
+  case iro_Free:     ops->get_type_attr = get_Free_type; break;
+  case iro_Cast:     ops->get_type_attr = get_Cast_type; break;
+  default:
+    /* not allowed to be NULL */
+    if (! ops->get_type_attr)
+      ops->get_type_attr = get_Null_type;
+    break;
+  }
+  return ops;
+}
+
+/** the get_entity_attr operation must be always implemented */
+static entity *get_Null_ent(ir_node *n) {
+  return NULL;
+}
+
+/* Sets the get_type operation for an ir_op_ops. */
+ir_op_ops *firm_set_default_get_entity_attr(opcode code, ir_op_ops *ops)
+{
+  switch (code) {
+  case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;
+  case iro_Sel:      ops->get_entity_attr = get_Sel_entity; break;
+  default:
+    /* not allowed to be NULL */
+    if (! ops->get_entity_attr)
+      ops->get_entity_attr = get_Null_ent;
     break;
   }
   return ops;
