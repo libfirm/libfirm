@@ -33,6 +33,10 @@
 #include "firm_types.h"
 #include "ident.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup debug    The Firm interface to debugging support.
  *
@@ -202,5 +206,9 @@ void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info);
 void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
                             ir_node **old_nodes, int n_old_nodes,
                             dbg_action info);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _DBGINFO_H_ */
