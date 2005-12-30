@@ -56,7 +56,8 @@ typedef struct _i_record {
 unsigned lower_intrinsic_calls(const i_record *list, int length);
 
 /**
- * A mapper for the integer absolute value: inttype abs(inttype v)
+ * A mapper for the integer absolute value: inttype abs(inttype v).
+ * Replaces the call by a Abs node.
  *
  * @return always 1
  */
@@ -64,6 +65,7 @@ int i_mapper_Abs(ir_node *call, void *ctx);
 
 /**
  * A mapper for the alloca() function: pointer alloca(inttype size)
+ * Replaces the call by a Alloca(stack_alloc) node.
  *
  * @return always 1
  */

@@ -28,6 +28,7 @@
 #include "lower_intrinsics.h"
 #include "pmap.h"
 
+/** Walker environment */
 typedef struct _walker_env {
   pmap     *map;              /**< the intrinsic map. */
   unsigned nr_of_intrinsics;  /**< statistics */
