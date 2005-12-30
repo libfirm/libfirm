@@ -20,20 +20,21 @@
 
 #include <stddef.h>
 
-# include "xmalloc.h"
-# include "ircons.h"
-# include "irgraph_t.h"
-# include "irprog_t.h"
-# include "irnode_t.h"
-# include "iropt_t.h"
-# include "irflag_t.h"
-# include "array.h"
-# include "irgmod.h"
-# include "mangle.h"
-# include "irouts.h"
-# include "irhooks.h"
-# include "irgwalk.h"
-# include "iredges_t.h"
+#include "xmalloc.h"
+#include "ircons.h"
+#include "irgraph_t.h"
+#include "irprog_t.h"
+#include "irnode_t.h"
+#include "iropt_t.h"
+#include "irflag_t.h"
+#include "array.h"
+#include "irgmod.h"
+#include "mangle.h"
+#include "irouts.h"
+#include "irhooks.h"
+#include "irgwalk.h"
+#include "iredges_t.h"
+#include "type_t.h"
 
 /**
  * Indicates, whether additional data can be registered to graphs.
@@ -534,13 +535,13 @@ void
   _set_irg_entity(irg, ent);
 }
 
-type *
+ir_type *
 (get_irg_frame_type)(ir_graph *irg) {
   return _get_irg_frame_type(irg);
 }
 
 void
-(set_irg_frame_type)(ir_graph *irg, type *ftp) {
+(set_irg_frame_type)(ir_graph *irg, ir_type *ftp) {
   _set_irg_frame_type(irg, ftp);
 }
 
