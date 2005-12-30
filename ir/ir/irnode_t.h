@@ -87,14 +87,14 @@ typedef struct {
 
 /** Const attributes */
 typedef struct {
-  tarval *tv;        /**< the target value */
-  type   *tp;        /**< the source type, for analyses. default: type_unknown. */
+  tarval  *tv;       /**< the target value */
+  ir_type *tp;       /**< the source type, for analyses. default: type_unknown. */
 } const_attr;
 
 typedef struct {
   symconst_symbol sym;  // old tori
   symconst_kind num;
-  type *tp;          /**< the source type, for analyses. default: type_unknown. */
+  ir_type *tp;       /**< the source type, for analyses. default: type_unknown. */
 } symconst_attr;
 
 /** Sel attributes */
@@ -114,27 +114,27 @@ typedef struct {
 
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-  type *cld_tp;                 /**< type of called procedure */
+  ir_type *cld_tp;              /**< type of called procedure */
   entity ** callee_arr;         /**< result of callee analysis */
 } call_attr;
 
 /** Alloc attributes */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-  type *type;                   /**< Type of the allocated object.  */
+  ir_type *type;                /**< Type of the allocated object.  */
   where_alloc where;            /**< stack, heap or other managed part of memory */
 } alloc_attr;
 
 /** Free attributes */
 typedef struct {
-  type *type;                   /**< Type of the allocated object.  */
+  ir_type *type;                /**< Type of the allocated object.  */
   where_alloc where;            /**< stack, heap or other managed part of memory */
 } free_attr;
 
 /** InstOf attributes */
 typedef struct
 {
-  type *ent;
+  ir_type *ent;
   int dfn;
 } io_attr;
 
@@ -158,7 +158,7 @@ typedef struct {
 
 /** Cast attributes */
 typedef struct {
-  type *totype;                 /**< type of the casted node */
+  ir_type *totype;              /**< type of the casted node */
 } cast_attr;
 
 /** Load attributes */
@@ -178,7 +178,7 @@ typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
 
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-  type           *data_type;    /**< type of the copied entity */
+  ir_type        *data_type;    /**< type of the copied entity */
 } copyb_attr;
 
 /**
@@ -250,7 +250,7 @@ struct ir_node {
   /* ------- For analyses -------- */
   ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
 #ifdef  DO_HEAPANALYSIS
-  struct abstval *av;
+  struct abstval *av;      /**< the abstract value of this node */
   struct section *sec;
 #endif
 #if FIRM_EDGES_INPLACE
@@ -273,8 +273,8 @@ long          get_irn_proj_attr     (ir_node *node);
 alloc_attr    get_irn_alloc_attr    (ir_node *node);
 free_attr     get_irn_free_attr     (ir_node *node);
 symconst_attr get_irn_symconst_attr (ir_node *node);
-type         *get_irn_call_attr     (ir_node *node);
-type         *get_irn_funccall_attr (ir_node *node);
+ir_type      *get_irn_call_attr     (ir_node *node);
+ir_type      *get_irn_funccall_attr (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi_attr      (ir_node *node);
 block_attr    get_irn_block_attr    (ir_node *node);
@@ -298,6 +298,28 @@ extern unsigned firm_add_node_size;
  *    The operations.
  */
 ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops);
+
+/**
+ * Sets the get_type_attr operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
+ */
+ir_op_ops *firm_set_default_get_type_attr(opcode code, ir_op_ops *ops);
+
+/**
+ * Sets the get_entity_attr operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
+ */
+ir_op_ops *firm_set_default_get_entity_attr(opcode code, ir_op_ops *ops);
 
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
@@ -361,10 +383,10 @@ _get_irn_intra_arity (const ir_node *node) {
 static INLINE int
 _get_irn_inter_arity (const ir_node *node) {
   assert(node);
-  if (_get_irn_opcode(node) == iro_Filter) {
+  if (_get_irn_op(node) == op_Filter) {
     assert(node->attr.filter.in_cg);
     return ARR_LEN(node->attr.filter.in_cg) - 1;
-  } else if (_get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
+  } else if (_get_irn_op(node) == op_Block && node->attr.block.in_cg) {
     return ARR_LEN(node->attr.block.in_cg) - 1;
   }
   return _get_irn_intra_arity(node);
@@ -381,9 +403,14 @@ extern int (*_get_irn_arity)(const ir_node *node);
  */
 static INLINE ir_node *
 _get_irn_intra_n (const ir_node *node, int n) {
+  ir_node *nn;
+
   assert(node); assert(-1 <= n && n < _get_irn_intra_arity(node));
 
-  return (node->in[n + 1] = skip_Id(node->in[n + 1]));
+  nn = node->in[n + 1];
+  if (!nn || (nn->op != op_Id)) return nn;
+
+  return (node->in[n + 1] = skip_Id(nn));
 }
 
 /**
@@ -678,8 +705,16 @@ static INLINE int _is_irn_forking(const ir_node *node) {
   return is_op_forking(_get_irn_op(node));
 }
 
-static INLINE type *_get_irn_type(ir_node *node) {
+static INLINE ir_type *_get_irn_type(ir_node *node) {
   return _get_irn_op(node)->ops.get_type(node);
+}
+
+static INLINE ir_type *get_irn_type_attr(ir_node *node) {
+  return _get_irn_op(node)->ops.get_type_attr(node);
+}
+
+static INLINE entity *get_irn_entity_attr(ir_node *node) {
+  return _get_irn_op(node)->ops.get_entity_attr(node);
 }
 
 static INLINE int _is_irn_constlike(const ir_node *node) {
