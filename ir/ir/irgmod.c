@@ -175,9 +175,8 @@ void part_block(ir_node *node) {
             get_Block_cfgpred_arr(old_block));
   set_irg_current_block(current_ir_graph, new_block);
   {
-    ir_node *in[1];
-    in[0] = new_Jmp();
-    set_irn_in(old_block, 1, in);
+    ir_node *jmp = new_Jmp();
+    set_irn_in(old_block, 1, &jmp);
     irn_vrfy_irg(old_block, current_ir_graph);
   }
 
