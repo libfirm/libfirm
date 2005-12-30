@@ -9,19 +9,19 @@
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-# ifndef _IRNODE_H_
-# define _IRNODE_H_
+#ifndef _IRNODE_H_
+#define _IRNODE_H_
 
 #include <stddef.h>
 
-# include "irgraph.h"
-# include "entity.h"
-# include "firm_common.h"
-# include "irop.h"
-# include "irmode.h"
-# include "type.h"
-# include "irextbb.h"
-# include "dbginfo.h"
+#include "irgraph.h"
+#include "entity.h"
+#include "firm_common.h"
+#include "irop.h"
+#include "irmode.h"
+#include "type.h"
+#include "irextbb.h"
+#include "dbginfo.h"
 
 /**
  * @file irnode.h
@@ -245,13 +245,13 @@ typedef enum {
  *
  * Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
-type *is_frame_pointer(ir_node *n);
+ir_type *is_frame_pointer(ir_node *n);
 
 /** Test whether arbitrary node is globals pointer.
  *
  * Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
  * from Start.  If so returns global type, else Null. */
-type *is_globals_pointer(ir_node *n);
+ir_type *is_globals_pointer(ir_node *n);
 
 /** Test whether arbitrary node is value arg base.
  *
@@ -423,10 +423,10 @@ cnst_classify_t classify_Const(ir_node *irn);
 /** Returns the source language type of a Const node.
  * Must be an atomic type.  Mode of type must be mode of node.
  */
-type    *get_Const_type   (ir_node *node);
+ir_type  *get_Const_type   (ir_node *node);
 
 /** Sets the source language type of a Const node. */
-void     set_Const_type   (ir_node *node, type *tp);
+void     set_Const_type   (ir_node *node, ir_type *tp);
 
 /**  This enum names the three different kinds of symbolic Constants
      represented by SymConst.  The content of the attribute type_or_id
@@ -449,9 +449,9 @@ typedef enum {
  *
  *  This union contains the symbolic information represented by the node.  */
 union symconst_symbol {
-  type   *type_p;
-  ident  *ident_p;
-  entity *entity_p;
+  ir_type *type_p;
+  ident   *ident_p;
+  entity  *entity_p;
 };
 
 typedef union symconst_symbol symconst_symbol;
@@ -463,8 +463,8 @@ symconst_kind get_SymConst_kind (const ir_node *node);
 void          set_SymConst_kind (ir_node *node, symconst_kind num);
 
 /** Only to access SymConst of kind type_tag or size.  Else assertion: */
-type    *get_SymConst_type (ir_node *node);
-void     set_SymConst_type (ir_node *node, type *tp);
+ir_type  *get_SymConst_type (ir_node *node);
+void     set_SymConst_type (ir_node *node, ir_type *tp);
 
 /** Only to access SymConst of kind addr_name.  Else assertion: */
 ident   *get_SymConst_name (ir_node *node);
@@ -484,8 +484,8 @@ void                  set_SymConst_symbol (ir_node *node,
 /** Access the type of the value represented by the SymConst.
  *
  *  Example: primitive type int for SymConst size. */
-type *get_SymConst_value_type (ir_node *node);
-void  set_SymConst_value_type (ir_node *node, type *tp);
+ir_type *get_SymConst_value_type (ir_node *node);
+void    set_SymConst_value_type (ir_node *node, ir_type *tp);
 
 ir_node *get_Sel_mem (ir_node *node);
 void     set_Sel_mem (ir_node *node, ir_node *mem);
@@ -499,8 +499,8 @@ entity  *get_Sel_entity (ir_node *node); /* entity to select */
 void     set_Sel_entity (ir_node *node, entity *ent);
 
 /** InstOf access */
-type    *get_InstOf_ent (ir_node *node);
-void    set_InstOf_ent (ir_node *node, type *ent);
+ir_type *get_InstOf_ent (ir_node *node);
+void    set_InstOf_ent (ir_node *node, ir_type *ent);
 ir_node *get_InstOf_store (ir_node *node);
 void    set_InstOf_store (ir_node *node, ir_node *obj);
 ir_node *get_InstOf_obj (ir_node *node);
@@ -533,9 +533,9 @@ ir_node *get_Call_param (ir_node *node, int pos);
 /** Sets the call parameter at position pos. */
 void     set_Call_param (ir_node *node, int pos, ir_node *param);
 /** Gets the type of a call. */
-type    *get_Call_type (ir_node *node);
+ir_type *get_Call_type (ir_node *node);
 /** Sets the type of a call. */
-void     set_Call_type (ir_node *node, type *tp);
+void     set_Call_type (ir_node *node, ir_type *tp);
 /** Gets the arity of a call. Identical to get_Call_n_params(). */
 int      get_Call_arity (ir_node *node);
 
@@ -767,8 +767,8 @@ void     set_Conv_op (ir_node *node, ir_node *op);
  */
 ir_node *get_Cast_op (ir_node *node);
 void     set_Cast_op (ir_node *node, ir_node *op);
-type    *get_Cast_type (ir_node *node);
-void     set_Cast_type (ir_node *node, type *to_tp);
+ir_type *get_Cast_type (ir_node *node);
+void     set_Cast_type (ir_node *node, ir_type *to_tp);
 
 /** Checks for upcast.
  *
@@ -871,8 +871,8 @@ ir_node *get_Alloc_mem (ir_node *node);
 void     set_Alloc_mem (ir_node *node, ir_node *mem);
 ir_node *get_Alloc_size (ir_node *node);
 void     set_Alloc_size (ir_node *node, ir_node *size);
-type    *get_Alloc_type (ir_node *node);
-void     set_Alloc_type (ir_node *node, type *tp);
+ir_type *get_Alloc_type (ir_node *node);
+void     set_Alloc_type (ir_node *node, ir_type *tp);
 
 /** The allocation place. */
 typedef enum {
@@ -889,8 +889,8 @@ ir_node *get_Free_ptr (ir_node *node);
 void     set_Free_ptr (ir_node *node, ir_node *ptr);
 ir_node *get_Free_size (ir_node *node);
 void     set_Free_size (ir_node *node, ir_node *size);
-type    *get_Free_type (ir_node *node);
-void     set_Free_type (ir_node *node, type *tp);
+ir_type *get_Free_type (ir_node *node);
+void     set_Free_type (ir_node *node, ir_type *tp);
 
 where_alloc  get_Free_where (ir_node *node);
 void         set_Free_where (ir_node *node, where_alloc where);
@@ -903,7 +903,7 @@ void      set_Sync_pred (ir_node *node, int pos, ir_node *pred);
 /** Returns the source language type of a Proj node.
  * Must be an atomic type.  Mode of type must be mode of node.
  */
-type     *get_Proj_type (ir_node *node);
+ir_type  *get_Proj_type (ir_node *node);
 
 /** Return the predecessor of a Proj node. */
 ir_node  *get_Proj_pred (const ir_node *node);
@@ -955,8 +955,8 @@ ir_node *get_CopyB_dst (ir_node *node);
 void     set_CopyB_dst (ir_node *node, ir_node *dst);
 ir_node *get_CopyB_src (ir_node *node);
 void     set_CopyB_src (ir_node *node, ir_node *src);
-type    *get_CopyB_type(ir_node *node);
-void     set_CopyB_type(ir_node *node, type *data_type);
+ir_type *get_CopyB_type(ir_node *node);
+void     set_CopyB_type(ir_node *node, ir_type *data_type);
 
 /*
  *
@@ -969,7 +969,7 @@ void     set_CopyB_type(ir_node *node, type *data_type);
 /** returns operand of node if node is a Proj. */
 ir_node *skip_Proj (ir_node *node);
 /** returns operand of node if node is a Id */
-ir_node *skip_Id  (ir_node *node);   /* Same as skip_nop. */
+ir_node *skip_Id  (ir_node *node);   /* Old name is skip_nop(). */
 /** returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
 ir_node *skip_Tuple (ir_node *node);
@@ -1013,7 +1013,14 @@ int is_irn_forking(const ir_node *node);
 /** Return the type associated with the value produced by n
  *  if the node remarks this type as it is the case for
  *  Cast, Const, SymConst and some Proj nodes. */
-type *get_irn_type(ir_node *n);
+ir_type *get_irn_type(ir_node *n);
+
+/** Return the type attribute of a node n (SymConst, Call, Alloc, Free,
+    Cast) or NULL.*/
+ir_type *get_irn_type_attr(ir_node *n);
+
+/** Return the entity attribute of a node n (SymConst, Sel) or NULL. */
+entity *get_irn_entity_attr(ir_node *n);
 
 /** Returns non-zero for constant-like nodes. */
 int is_irn_constlike(const ir_node *node);
@@ -1134,4 +1141,4 @@ int dump_node_opcode(FILE *F, ir_node *n);
 }
 #endif
 
-# endif /* _IRNODE_H_ */
+#endif /* _IRNODE_H_ */
