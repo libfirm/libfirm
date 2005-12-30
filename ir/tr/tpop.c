@@ -160,8 +160,8 @@ init_tpop(void)
   type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0, sizeof (ptr_attr), &pointer_ops);
   type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0, /* sizeof (pri_attr) */ 0, &null_ops);
   type_id          = new_tpop(tpo_id         , ID("type_id"),     0, /* sizeof (id_attr)  */ 0, &null_ops);
-  tpop_none        = new_tpop(tpo_none       , ID("tpop_none"),   0, /* sizeof (non_attr) */ 0, &pseudo_ops);
-  tpop_unknown     = new_tpop(tpo_unknown    , ID("tpop_unknown"),0, /* sizeof (ukn_attr) */ 0, &pseudo_ops);
+  tpop_none        = new_tpop(tpo_none       , ID("None"),        0, /* sizeof (non_attr) */ 0, &pseudo_ops);
+  tpop_unknown     = new_tpop(tpo_unknown    , ID("Unknown"),     0, /* sizeof (ukn_attr) */ 0, &pseudo_ops);
 }
 #undef ID
 #undef C
