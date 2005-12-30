@@ -19,8 +19,8 @@
 
 /* ircons */
 #define add_in_edge(X, Y)     add_immBlock_pred(X, Y)
-#define mature_block(X)	      mature_immBlock(X)
-#define switch_block(X)	      set_cur_block(X)
+#define mature_block(X)       mature_immBlock(X)
+#define switch_block(X)       set_cur_block(X)
 #define finalize_cons(X)      irg_finalize_cons(X)
 
 /* irgraph */
@@ -37,8 +37,8 @@
 #define get_Sel_n_index       get_Sel_n_indexs
 #define get_SymConst_ptrinfo  get_SymConst_name
 #define set_SymConst_ptrinfo  set_SymConst_name
-#define type_tag	      symconst_type_tag
-#define size	              symconst_size
+#define type_tag              symconst_type_tag
+#define size                  symconst_size
 #define linkage_ptr_info      symconst_addr_name
 
 #define get_nodes_Block(X)    get_nodes_block(X)
@@ -84,17 +84,17 @@
 #define get_null_of_mode         get_mode_null
 #define get_fsigned_of_mode      get_mode_fsigned
 #define get_ffloat_of_mode       get_mode_ffloat
-#define get_mode_size(X)         { assert(get_mode_size_bytes(X) != -1); get_mode_size_bytes(X); }
+#define get_mode_size(X)         (assert(get_mode_size_bytes(X) != -1), get_mode_size_bytes(X))
 
 
 /* irop */
 #define floats                   op_pin_state_floats
-#define pinned    	   	 op_pin_state_pinned
-#define op_pinned		 op_pin_state
+#define pinned                   op_pin_state_pinned
+#define op_pinned                op_pin_state
 
 /* irdump */
-#define dump_cg_graph dump_ir_graph
-#define dump_cg_block_graph dump_ir_block_graph
+#define dump_cg_graph                dump_ir_graph
+#define dump_cg_block_graph          dump_ir_block_graph
 #define dont_dump_loop_information() dump_loop_information(0)
 
 /* type.h */
@@ -133,5 +133,10 @@
 /* irouts.h */
 #define compute_outs(X)   compute_irg_outs(X)
 
+/* tr_inheritance.h */
+#define is_subclass_of(low, high)       is_SubClass_of(low, high)
+#define is_subclass_ptr_of(low, high)   is_SubClass_ptr_of(low, high)
+#define is_superclass_of(high, low)     is_SuperClass_of(high, low)
+#define is_superclass_ptr_of(low, high) is_SuperClass_ptr_of(low, high)
 
-#endif
+#endif /* __OLD_FCTNAMES_H__ */
