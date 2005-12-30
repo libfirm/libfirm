@@ -35,7 +35,7 @@
 #include "set.h"
 
 /* for debugging only, not the real implementation */
-struct ident {
+struct _ident {
   char reserved[sizeof(unsigned) + sizeof(size_t)];
   char data[1];
 };

@@ -25,6 +25,10 @@
 #include <wchar.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Identifiers */
 
 /**
@@ -35,7 +39,7 @@
  */
 #ifndef _IDENT_TYPEDEF_
 #define _IDENT_TYPEDEF_
-typedef const struct ident ident;
+typedef const struct _ident ident;
 #endif
 
 /**
@@ -280,5 +284,9 @@ int  get_id_wcslen(ident *id);
 int id_contains_wchar (ident *id, wchar_t c);
 
 #endif /* FIRM_ENABLE_WCHAR */
+
+#ifdef __cplusplus
+}
+#endif
 
 # endif /* _IDENT_H_ */
