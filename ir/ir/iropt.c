@@ -24,24 +24,24 @@
 #include <string.h>
 #endif
 
-# include "irnode_t.h"
-# include "irgraph_t.h"
-# include "iredges_t.h"
-# include "irmode_t.h"
-# include "iropt_t.h"
-# include "ircons_t.h"
-# include "irgmod.h"
-# include "irvrfy.h"
-# include "tv_t.h"
-# include "dbginfo_t.h"
-# include "iropt_dbg.h"
-# include "irflag_t.h"
-# include "irhooks.h"
-# include "irarch.h"
-# include "hashptr.h"
-# include "archop.h"
-# include "opt_polymorphy.h"
-# include "opt_confirms.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
+#include "iredges_t.h"
+#include "irmode_t.h"
+#include "iropt_t.h"
+#include "ircons_t.h"
+#include "irgmod.h"
+#include "irvrfy.h"
+#include "tv_t.h"
+#include "dbginfo_t.h"
+#include "iropt_dbg.h"
+#include "irflag_t.h"
+#include "irhooks.h"
+#include "irarch.h"
+#include "hashptr.h"
+#include "archop.h"
+#include "opt_polymorphy.h"
+#include "opt_confirms.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -1932,7 +1932,7 @@ static ir_node *transform_node_Not(ir_node *n)
 static ir_node *transform_node_Cast(ir_node *n) {
   ir_node *oldn = n;
   ir_node *pred = get_Cast_op(n);
-  type *tp = get_irn_type(n);
+  ir_type *tp = get_irn_type(n);
 
   if (get_irn_op(pred) == op_Const && get_Const_type(pred) != tp) {
     n = new_rd_Const_type(NULL, current_ir_graph, get_irn_n(pred, -1), get_irn_mode(pred),
@@ -3235,7 +3235,7 @@ optimize_node(ir_node *n)
       tv = computed_value(n);
       if (tv != tarval_bad) {
         ir_node *nw;
-        type *old_tp = get_irn_type(n);
+        ir_type *old_tp = get_irn_type(n);
         int i, arity = get_irn_arity(n);
         int node_size;
 
@@ -3346,7 +3346,7 @@ optimize_in_place_2 (ir_node *n)
       tv = computed_value(n);
       if (tv != tarval_bad) {
         /* evaluation was successful -- replace the node. */
-        type *old_tp = get_irn_type(n);
+        ir_type *old_tp = get_irn_type(n);
         int i, arity = get_irn_arity(n);
 
         /*
@@ -3440,6 +3440,8 @@ ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops)
   ops = firm_set_default_transform_node(code, ops);
   ops = firm_set_default_node_cmp_attr(code, ops);
   ops = firm_set_default_get_type(code, ops);
+  ops = firm_set_default_get_type_attr(code, ops);
+  ops = firm_set_default_get_entity_attr(code, ops);
 
   return ops;
 }
