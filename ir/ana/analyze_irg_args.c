@@ -189,7 +189,7 @@ static void analyze_ent_args(entity *ent)
   ir_mode *arg_mode;
   int nparams, i;
   long proj_nr;
-  type *mtp;
+  ir_type *mtp;
   ptr_access_kind *rw_info;
 
   mtp     = get_entity_type(ent);
@@ -243,6 +243,7 @@ static void analyze_ent_args(entity *ent)
   /* copy the temporary info */
   memcpy(ent->param_access, rw_info, nparams * sizeof(ent->param_access[0]));
 
+#if 0
   printf("\n%s:\n", get_entity_name(ent));
   for (i = 0; i < nparams; ++i) {
     if (is_Pointer_type(get_method_param_type(mtp, i)))
@@ -257,6 +258,7 @@ static void analyze_ent_args(entity *ent)
         printf("\n");
       }
   }
+#endif
 }
 
 /**
@@ -286,8 +288,8 @@ void analyze_irg_args(ir_graph *irg)
  */
 ptr_access_kind get_method_param_access(entity *ent, int pos)
 {
-  type *mtp = get_entity_type(ent);
-  int  is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
+  ir_type *mtp = get_entity_type(ent);
+  int    is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
 
   assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
 
@@ -390,7 +392,7 @@ static float calc_method_param_weight(ir_node *arg)
  */
 static void analyze_method_params_weight(entity *ent)
 {
-  type *mtp;
+  ir_type *mtp;
   ir_graph *irg;
   int nparams, i, proj_nr;
   ir_node *irg_args, *arg;
@@ -443,8 +445,8 @@ static void analyze_method_params_weight(entity *ent)
  */
 float get_method_param_weight(entity *ent, int pos)
 {
-  type *mtp = get_entity_type(ent);
-  int  is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
+  ir_type *mtp = get_entity_type(ent);
+  int     is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
 
   assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
 
