@@ -42,9 +42,9 @@
  * - ident *ld_name: Unique name of this entity, i.e., the mangled
  *                   name.  E.g., for a class `A' with field `a' this
  *                   is the ident for `A_a'.
- * - type *type:     The type of this entity, e.g., a method type, a
+ * - ir_type *type:  The type of this entity, e.g., a method type, a
  *                   basic type of the language or a class itself.
- * - type *owner:    The class this entity belongs to.  In case of local
+ * - ir_type *owner: The class this entity belongs to.  In case of local
  *	             variables the method they are defined in.
  * - int offset:     Offset in bits for this entity.  Fixed when layout
  *	             of owner is determined.
@@ -127,7 +127,7 @@ typedef struct entity entity;
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-entity     *new_entity (type *owner, ident *name, type *tp);
+entity     *new_entity (ir_type *owner, ident *name, ir_type *tp);
 
 /**
  * Creates a new entity.
@@ -138,7 +138,7 @@ entity     *new_entity (type *owner, ident *name, type *tp);
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-entity     *new_d_entity (type *owner, ident *name, type *tp, dbg_info *db);
+entity     *new_d_entity (ir_type *owner, ident *name, ir_type *tp, dbg_info *db);
 
 /**
  * Copies the entity if the new_owner is different from the
@@ -152,7 +152,7 @@ entity     *new_d_entity (type *owner, ident *name, type *tp, dbg_info *db);
  *       itself and not to the origin.  Right now we have to change
  *       the peculiarity and then set a new atomic value by hand.
  */
-entity     *copy_entity_own (entity *old, type *new_owner);
+entity     *copy_entity_own (entity *old, ir_type *new_owner);
 
 /**
  * Copies the entity if the new_name is different from the
@@ -193,20 +193,20 @@ void        set_entity_ld_ident (entity *ent, ident *ld_ident);
 const char *get_entity_ld_name (entity *ent);
 
 /** Returns the owner of the entity. */
-type       *get_entity_owner (entity *ent);
+ir_type    *get_entity_owner (entity *ent);
 
 /** Sets the owner field in entity to owner.  Don't forget to add
    ent to owner!! */
-void        set_entity_owner (entity *ent, type *owner);
+void        set_entity_owner (entity *ent, ir_type *owner);
 
 /** Asserts if the type owner is either a compound type or an array */
-void assert_legal_owner_of_ent(type *owner);
+void assert_legal_owner_of_ent(ir_type *owner);
 
 /** Returns the type of an entity. */
-type     *get_entity_type (entity *ent);
+ir_type  *get_entity_type (entity *ent);
 
 /** Sets the type of an entity. */
-void      set_entity_type (entity *ent, type *tp);
+void      set_entity_type (entity *ent, ir_type *tp);
 
 /** The allocation type. */
 typedef enum {
@@ -354,7 +354,7 @@ typedef struct compound_graph_path compound_graph_path;
 #endif /* _COMPOUND_GRAPH_PATH_TYPEDEF_ */
 
 /** Creates a new compound graph path. */
-compound_graph_path *new_compound_graph_path(type *tp, int length);
+compound_graph_path *new_compound_graph_path(ir_type *tp, int length);
 
 /** Returns non-zero if an object is a compound graph path */
 int     is_compound_graph_path(void *thing);
@@ -579,7 +579,6 @@ void set_entity_additional_property(entity *ent, mtp_additional_property flag);
  *    overwrittenby = NULL
  *    irg           = NULL
  *    link          = NULL
- *
  */
 /* A variable that contains the only unknown entity. */
 extern entity *unknown_entity;
@@ -587,7 +586,6 @@ extern entity *unknown_entity;
 /** Returns the unknown entity */
 entity *get_unknown_entity(void);
 
-/** Encodes how a pointer parameter is accessed. */
 /** Encodes how a pointer parameter is accessed. */
 typedef enum acc_bits {
   ptr_access_none  = 0,		      /**< no access */
