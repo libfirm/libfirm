@@ -245,7 +245,21 @@ typedef void (*copy_attr_func)(const ir_node *old_node, ir_node *new_node);
  * The get_type operation.
  * Return the type of the node self.
  */
-typedef type *(*get_type_func)(ir_node *self);
+typedef ir_type *(*get_type_func)(ir_node *self);
+
+/**
+ * The get_type_attr operation. Used to traverse all types that can be
+ * accessed from an ir_graph.
+ * Return the type attribute of the node self.
+ */
+typedef ir_type *(*get_type_attr_func)(ir_node *self);
+
+/**
+ * The get_entity_attr operation. Used to traverse all entities that can be
+ * accessed from an ir_graph.
+ * Return the entity attribute of the node self.
+ */
+typedef entity *(*get_entity_attr_func)(ir_node *self);
 
 /**
  * The verify_node operation.
@@ -286,13 +300,15 @@ typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
  * io_op Operations.
  */
 typedef struct {
-  computed_value_func	  computed_value;		/**< evaluates a node into a tarval if possible. */
-  equivalent_node_func  equivalent_node;	/**< optimizes the node by returning an equivalent one. */
-  transform_node_func   transform_node;		/**< optimizes the node by transforming it. */
-  node_cmp_attr_func    node_cmp_attr;		/**< compares two node attributes. */
+  computed_value_func	  computed_value;   /**< evaluates a node into a tarval if possible. */
+  equivalent_node_func  equivalent_node;  /**< optimizes the node by returning an equivalent one. */
+  transform_node_func   transform_node;   /**< optimizes the node by transforming it. */
+  node_cmp_attr_func    node_cmp_attr;    /**< compares two node attributes. */
   reassociate_func      reassociate;      /**< reassociate a tree */
   copy_attr_func        copy_attr;        /**< copy node attributes */
   get_type_func         get_type;         /**< return the type of a node */
+  get_type_attr_func    get_type_attr;    /**< return the type attribute of a node */
+  get_entity_attr_func  get_entity_attr;  /**< return the entity attribute of a node */
   verify_node_func      verify_node;      /**< verify the node */
   verify_proj_node_func verify_proj_node; /**< verify the Proj node */
   dump_node_func        dump_node;        /**< dump a node */
