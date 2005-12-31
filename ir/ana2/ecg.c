@@ -30,6 +30,8 @@
 #include "irvrfy.h"
 #include "trvrfy.h"
 #include "xmalloc.h"
+#include "irdump.h"
+#include "irprog_t.h"
 
 # ifndef TRUE
 #  define TRUE 1
@@ -1265,6 +1267,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.21  2005/12/31 15:58:57  beck
+  added missing includes
+
   Revision 1.20  2005/12/05 12:01:06  beck
   needed include added
 
