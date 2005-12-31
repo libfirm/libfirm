@@ -11,50 +11,34 @@
  */
 
 /**
-* @file irvrfy.h
-*
-* ir graph verification.
-*
-* @author Christian Schaefer
-*/
-
-# ifndef _IRVRFY_H_
-# define _IRVRFY_H_
-
-# include "irnode.h"
-# include "irgraph.h"
-
-typedef enum _node_verification_t {
-  NODE_VERIFICATION_OFF        = 0,	/**< do not verify nodes at all */
-  NODE_VERIFICATION_ON         = 1,	/**< do node verification and assert on error in debug version */
-  NODE_VERIFICATION_REPORT     = 2,	/**< do node verification, but report to stderr only */
-  NODE_VERIFICATION_ERROR_ONLY = 3	/**< do node verification, but NEVER do assert nor report */
-} node_verification_t;
-
-/** Select verification of nodes.
+ * @file irvrfy.h
  *
- *  Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
- *  Turn the verification off during development to check partial implementations.
+ * ir graph verification.
+ *
+ * @author Christian Schaefer
  */
-void do_node_verification(node_verification_t mode);
+#ifndef _IRVRFY_H_
+#define _IRVRFY_H_
+
+#include "firm_types.h"
 
 /**
  * Tests the modes of checknode and its predecessors.
- * Checknode must be in current_ir_graph.
+ * checknode must be in current_ir_graph.
  *
  * \return
  * 	NON-zero on success
  */
-int irn_vrfy(struct ir_node *checknode);
+int irn_vrfy(ir_node *checknode);
 
 /**
  * Tests the modes of checknode and its predecessors.
- * Checknode must be in given ir_graph.
+ * checknode must be in given ir_graph.
  *
  * \return
  * 	NON-zero on success
  */
-int irn_vrfy_irg(struct ir_node *checknode, ir_graph *irg);
+int irn_vrfy_irg(ir_node *checknode, ir_graph *irg);
 
 /**
  * Same as irn_vrfy_irg, but temporary sets verification mode to
@@ -62,7 +46,7 @@ int irn_vrfy_irg(struct ir_node *checknode, ir_graph *irg);
  * \return
  * 	NON-zero on success
  */
-int irn_vrfy_irg_dump(struct ir_node *checknode, ir_graph *irg, const char **bad_string);
+int irn_vrfy_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string);
 
 /**
  * Flags for irg_verify().
@@ -97,7 +81,7 @@ enum verify_bad_flags_t {
 };
 
 /**
- * Verify occurance of bad nodes in a graph.
+ * Verify occurrence of bad nodes in a graph.
  *
  * @param irg    The graph to verify
  * @param flags  combination of verify_bad_flags_t flags describing
