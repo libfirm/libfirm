@@ -36,6 +36,7 @@ typedef enum {
 
 extern optimization_state_t libFIRM_opt;
 extern optimization_state_t libFIRM_verb;
+extern firm_verification_t opt_do_node_verification;
 
 extern int firm_verbosity_level;
 
@@ -71,6 +72,11 @@ static INLINE int _get_firm_verbosity (void) {
 
 static INLINE int _get_optimize (void) {
   return get_opt_optimize();
+}
+
+static INLINE firm_verification_t
+get_node_verification_mode(void) {
+  return opt_do_node_verification;
 }
 
 #define get_optimize()                           _get_optimize()

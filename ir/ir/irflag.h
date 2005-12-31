@@ -28,11 +28,13 @@
  * 3. Verbosity flags.
  *    a) Flags to steer the level of the information.
  *    b) Flags to steer in which phase information should be dumped.
- *
+ * 4. Verification flag
+ *    This one controls the behavior of node and type verifications
  */
-
 #ifndef _IRFLAG_H_
 #define _IRFLAG_H_
+
+#include "firm_types.h"
 
 /**
  * A container type to load/restore all optimizations
@@ -287,5 +289,22 @@ void restore_optimization_state(const optimization_state_t *state);
  * Switches ALL optimizations off.
  */
 void all_optimizations_off(void);
+
+/**
+ * Possible verification modes.
+ */
+typedef enum _firm_verification_t {
+  FIRM_VERIFICATION_OFF        = 0,	/**< do not verify nodes at all */
+  FIRM_VERIFICATION_ON         = 1,	/**< do node verification and assert on error in debug version */
+  FIRM_VERIFICATION_REPORT     = 2,	/**< do node verification, but report to stderr only */
+  FIRM_VERIFICATION_ERROR_ONLY = 3	/**< do node verification, but NEVER do assert nor report */
+} firm_verification_t;
+
+/** Select verification of nodes.
+ *
+ *  Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
+ *  Turn the verification off during development to check partial implementations.
+ */
+void do_node_verification(firm_verification_t mode);
 
 #endif /* _IRFLAG_H_ */

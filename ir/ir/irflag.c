@@ -156,3 +156,9 @@ void firm_init_flags(void)
 	lc_opt_add_table(grp, firm_flags);
 #endif
 }
+
+firm_verification_t opt_do_node_verification = FIRM_VERIFICATION_ON;
+
+void do_node_verification(firm_verification_t mode) {
+  opt_do_node_verification = mode;
+}
