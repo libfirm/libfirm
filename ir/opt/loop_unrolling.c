@@ -947,7 +947,6 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
   compute_loop_info(irg);
   /* Call algorithm that computes the backedges */
   // construct_cf_backedges(irg);
-  dump_loop_tree(current_ir_graph, "-deadlooptree");
 
   /* Call algorithm that computes the dominator trees. */
   compute_doms(irg);
