@@ -814,13 +814,17 @@ typedef enum {
   cc_this_call        = 0x08000000, /**< The first parameter is a this pointer and is transmitted
                                          in a special way. */
 
-  /* some often used cases */
-  cc_cdecl_set        = 0,                                /**< cdecl calling convention */
-  cc_stdcall_set      = cc_callee_clear_stk,              /**< stdcall calling convention */
-  cc_fastcall_set     = cc_reg_param|cc_callee_clear_stk, /**< fastcall calling convention */
 
-  cc_bits             = (0xFF << 24)                      /**< the calling convention bits */
+  cc_bits             = (0xFF << 24)  /**< the calling convention bits */
 } calling_convention;
+
+/* some often used cases: made as defines for firmjni */
+/** cdecl calling convention */
+#define cc_cdecl_set    (0)
+/** stdcall calling convention */
+#define cc_stdcall_set  cc_callee_clear_stk
+/** fastcall calling convention */
+#define cc_fastcall_set (cc_reg_param|cc_callee_clear_stk)
 
 /** return the default calling convention for method types */
 unsigned get_default_cc_mask(void);
