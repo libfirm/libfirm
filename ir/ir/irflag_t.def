@@ -66,7 +66,7 @@ I_FLAG(dead_method_elimination            , 15, ON)
 I_FLAG(precise_exc_context                , 16, ON)
 
 /** Do loop unrolling */
-I_FLAG(loop_unrolling                     , 17, ON)
+I_FLAG(loop_unrolling                     , 17, OFF)	/* currently buggy, 2.1.2006 */
 
 /** Do Strength reduction */
 I_FLAG(strength_red                       , 18, ON)
