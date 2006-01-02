@@ -28,6 +28,7 @@
 #include "eset.h"
 #include "irgwalk.h"
 #include "irgmod.h"
+#include "typewalk.h"
 #include "irvrfy.h"
 #include "trvrfy.h"
 
@@ -533,6 +534,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.34  2006/01/02 15:01:16  beck
+ * missing include added
+ *
  * Revision 1.33  2005/11/17 17:26:57  beck
  * removed bool type and depency from stdbool.h (not C89)
  *
