@@ -112,6 +112,7 @@ typedef struct {
 #endif
 } except_attr;
 
+/** Call attributes */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ir_type *cld_tp;              /**< type of called procedure */
@@ -132,8 +133,7 @@ typedef struct {
 } free_attr;
 
 /** InstOf attributes */
-typedef struct
-{
+typedef struct {
   ir_type *ent;
   int dfn;
 } io_attr;
@@ -176,6 +176,7 @@ typedef struct {
 
 typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
 
+/** CopyB attribute */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ir_type        *data_type;    /**< type of the copied entity */
@@ -232,8 +233,8 @@ struct ir_node {
   firm_kind kind;          /**< distinguishes this node from others */
   ir_op *op;               /**< Opcode of this node. */
   ir_mode *mode;           /**< Mode of this node. */
-  unsigned long visited;   /**< visited counter for walks of the graph */
   struct ir_node **in;     /**< array with predecessors / operands */
+  unsigned long visited;   /**< visited counter for walks of the graph */
   void *link;              /**< to attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
 			      during optimization to link to nodes that
@@ -709,11 +710,11 @@ static INLINE ir_type *_get_irn_type(ir_node *node) {
   return _get_irn_op(node)->ops.get_type(node);
 }
 
-static INLINE ir_type *get_irn_type_attr(ir_node *node) {
+static INLINE ir_type *_get_irn_type_attr(ir_node *node) {
   return _get_irn_op(node)->ops.get_type_attr(node);
 }
 
-static INLINE entity *get_irn_entity_attr(ir_node *node) {
+static INLINE entity *_get_irn_entity_attr(ir_node *node) {
   return _get_irn_op(node)->ops.get_entity_attr(node);
 }
 
@@ -772,6 +773,8 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 #define classify_Const(node)                  _classify_Const(node)
 #define is_irn_forking(node)                  _is_irn_forking(node)
 #define get_irn_type(node)                    _get_irn_type(node)
+#define get_irn_type_attr(node)               _get_irn_type_attr(node)
+#define get_irn_entity_attr(node)             _get_irn_entity_attr(node)
 #define is_irn_constlike(node)                _is_irn_constlike(node)
 #define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
