@@ -2325,8 +2325,22 @@ int (is_irn_forking)(const ir_node *node) {
   return _is_irn_forking(node);
 }
 
+/* Return the type associated with the value produced by n
+ * if the node remarks this type as it is the case for
+ * Cast, Const, SymConst and some Proj nodes. */
 ir_type *(get_irn_type)(ir_node *node) {
   return _get_irn_type(node);
+}
+
+/* Return the type attribute of a node n (SymConst, Call, Alloc, Free,
+   Cast) or NULL.*/
+ir_type *(get_irn_type_attr)(ir_node *node) {
+  return _get_irn_type_attr(node);
+}
+
+/* Return the entity attribute of a node n (SymConst, Sel) or NULL. */
+entity *(get_irn_entity_attr)(ir_node *node) {
+  return _get_irn_entity_attr(node);
 }
 
 /* Returns non-zero for constant-like nodes. */
