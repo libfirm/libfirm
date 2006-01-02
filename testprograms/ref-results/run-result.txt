@@ -168,20 +168,6 @@ Done building the graph.  Dumping and optimizing it.
 Creating an IR graph: IF_EXAMPLE...
 Done building the graph.  Dumping and optimizing it.
 
-loop unrolling with factor 2
-
-loop unrolling with factor 2
-
-loop unrolling with factor 2
-
-loop unrolling with factor 4
-
-loop unrolling with factor 2
-
-loop unrolling with factor 4
-
-loop unrolling with factor 2
-
 Creating an IR graph: THREE_CFPRED_EXAMPLE ...
 Optimizing ...
 Dumping the graph and a control flow graph.
