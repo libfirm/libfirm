@@ -49,7 +49,7 @@
 
 static int i_pos = 0;
 static int arr_pos = 1;
-static type *typ, *typ2;
+static ir_type *typ, *typ2;
 
 static ir_node *r1, *f, *r, *c2;
 
@@ -72,7 +72,7 @@ typedef enum {
  * @param fct_name     the name of the function
  * @param loop_dir     the loop direction
  */
-static void function_begin(type *owner, type *mtp, char *fct_name, loop_dir_t loop_dir) {
+static void function_begin(ir_type *owner, ir_type *mtp, char *fct_name, loop_dir_t loop_dir) {
   symconst_symbol sym;
   ir_node *x, *t, *cmp;
 
@@ -94,7 +94,7 @@ static void function_begin(type *owner, type *mtp, char *fct_name, loop_dir_t lo
   entity *ent = new_entity (owner,  new_id_from_str(fct_name), mtp);
 
   /* make type infromation for the array */
-  type *array_type = new_type_array(new_id_from_str("array"), N_DIMS, typ);
+  ir_type *array_type = new_type_array(new_id_from_str("array"), N_DIMS, typ);
 
   /* set the bounds for the array */
   set_array_bounds_int(array_type, 0, L_BOUND, U_BOUND);
@@ -175,9 +175,9 @@ int
 main(void)
 {
   ir_graph *irg;
-  type *owner;
+  ir_type *owner;
   entity *ent, *array_ent, *array_ent2;
-  type *proc_tp, *array_type, *array_type2; /* type information for the method main */
+  ir_type *proc_tp, *array_type, *array_type2; /* type information for the method main */
   ir_node *x,*x1 ,  *r, *t, *f, *f1, *t1, *cmp, *r1, *r2;
   int i_pos;
 
@@ -187,7 +187,7 @@ main(void)
 
   arch_dep_set_opts(arch_dep_none);
 
-  do_node_verification(NODE_VERIFICATION_REPORT);
+  do_node_verification(FIRM_VERIFICATION_REPORT);
 
   typ = new_type_primitive(new_id_from_chars(PRIM_NAME, strlen(PRIM_NAME)), mode_Is);
 

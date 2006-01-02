@@ -44,9 +44,9 @@ int
 main(void)
 {
   ir_graph *irg;
-  type *owner;
-  type *proc_main;
-  type     *prim_t_int;
+  ir_type *owner;
+  ir_type *proc_main;
+  ir_type *prim_t_int;
   entity *ent;
   ir_node *b, *x, *r, *t, *f;
 
@@ -139,7 +139,7 @@ main(void)
   local_optimize_graph(irg);
   dead_node_elimination(irg);
 
-  compute_outs(irg);
+  compute_irg_outs(irg);
 
   /* verify the graph */
   irg_vrfy(irg);
