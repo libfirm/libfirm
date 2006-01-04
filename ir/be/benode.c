@@ -87,6 +87,8 @@ static const ir_op_ops be_node_ops = {
 	NULL,
 	NULL,
 	NULL,
+	NULL,
+	NULL,
 	dump_node,
 	NULL
 };
