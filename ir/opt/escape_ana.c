@@ -23,6 +23,7 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "type_t.h"
+#include "irgwalk.h"
 #include "irouts.h"
 #include "analyze_irg_args.h"
 #include "irgmod.h"

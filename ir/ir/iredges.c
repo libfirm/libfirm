@@ -17,6 +17,7 @@
 
 #include "irnode_t.h"
 #include "iredges_t.h"
+#include "irgwalk.h"
 #include "irdump_t.h"
 #include "irprintf.h"
 #include "irhooks.h"
