@@ -19,8 +19,6 @@
  * @author Goetz Lindenmaier
  *
  */
-
-
 # ifndef _IRDOM_T_H_
 # define _IRDOM_T_H_
 
@@ -28,17 +26,16 @@
 
 /** For dominator information */
 typedef struct dom_info {
-  struct ir_node *idom;			/**< immediate CFG dominator */
-  struct ir_node *next; 		/**< The next node in the dominated
-					   list of @c idom. */
-  struct ir_node *first;		/**< The first node in the list of nodes
-					   this nodes dominates immediately. */
-  unsigned tree_pre_num;			/**< The pre-order number from a dfs walk
-					   over the dominator tree. */
-  unsigned max_subtree_pre_num;	        /**< The largest tree pre num found in the
-					   dominator subtree of this node. */
-  int pre_num;		      		/**< pre-order graph-walk number */
-  int dom_depth;	      		/**< depth in dominator-tree */
+  ir_node *idom;   /**< immediate CFG dominator */
+  ir_node *next;   /**< The next node in the dominated list of @c idom. */
+  ir_node *first;  /**< The first node in the list of nodes
+                        this nodes dominates immediately. */
+  unsigned tree_pre_num;         /**< The pre-order number from a dfs walk
+                                      over the dominator tree. */
+  unsigned max_subtree_pre_num;  /**< The largest tree pre num found in the
+                                      dominator subtree of this node. */
+  int pre_num;     /**< pre-order graph-walk number */
+  int dom_depth;   /**< depth in dominator-tree */
 } dom_info;
 
 #endif /* _IRDOM_T_H_ */
