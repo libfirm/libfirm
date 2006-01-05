@@ -13,6 +13,7 @@
 #include "ircons_t.h"
 #include "iredges_t.h"
 #include "debug.h"
+#include "irgwalk.h"
 
 #include "besched.h"
 #include "bespill.h"
