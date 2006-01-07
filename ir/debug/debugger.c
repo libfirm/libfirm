@@ -60,7 +60,7 @@ static void firm_debug_break(void) {
 
 /** supported breakpoint kinds */
 typedef enum {
-  BP_NODE  = 'n',   /**< break on node number. */
+  BP_NR  = 'n',   /**< break on node number. */
   BP_IDENT = 'i'    /**< break on ident. */
 } bp_kind;
 
@@ -86,14 +86,14 @@ typedef struct _breakpoint {
   struct _breakpoint *next; /**< link to the next one */
 } breakpoint;
 
-/** A node number breakpoint. */
+/** A number breakpoint. */
 typedef struct {
   breakpoint   bp;       /**< the breakpoint data */
   long         nr;       /**< the node number */
-} bp_node_t;
+} bp_nr_t;
 
 /** calculate the hash value for a node breakpoint */
-#define HASH_NODE_BP(key) (((key).nr << 2) ^ (key).bp.reason)
+#define HASH_NR_BP(key) (((key).nr << 2) ^ (key).bp.reason)
 
 /** A ident breakpoint. */
 typedef struct {
@@ -105,7 +105,7 @@ typedef struct {
 #define HASH_IDENT_BP(key) (HASH_PTR((key).id) ^ (key).bp.reason)
 
 /** The set containing the breakpoints on node numbers. */
-static set *bp_node_numbers;
+static set *bp_numbers;
 
 /** The set containing the breakpoints on idents. */
 static set *bp_idents;
@@ -144,12 +144,12 @@ static unsigned num_active_bp[BP_MAX_REASON];
  */
 static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 {
-  bp_node_t key, *elem;
+  bp_nr_t key, *elem;
 
   key.nr        = get_irn_node_nr(node);
   key.bp.reason = BP_ON_NEW_NODE;
 
-  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
   if (elem && elem->bp.active) {
     ir_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
     firm_debug_break();
@@ -165,12 +165,12 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
  */
 static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 {
-  bp_node_t key, *elem;
+  bp_nr_t key, *elem;
 
   key.nr        = get_irn_node_nr(old);
   key.bp.reason = BP_ON_REPLACE;
 
-  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
   if (elem && elem->bp.active) {
     ir_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
     firm_debug_break();
@@ -185,12 +185,12 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
  */
 static void dbg_lower(void *ctx, ir_node *node)
 {
-  bp_node_t key, *elem;
+  bp_nr_t key, *elem;
 
   key.nr        = get_irn_node_nr(node);
   key.bp.reason = BP_ON_LOWER;
 
-  elem = set_find(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
   if (elem && elem->bp.active) {
     ir_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
     firm_debug_break();
@@ -205,19 +205,32 @@ static void dbg_lower(void *ctx, ir_node *node)
  */
 static void dbg_free_graph(void *ctx, ir_graph *irg)
 {
-  bp_ident_t key, *elem;
-  entity *ent = get_irg_entity(irg);
+  {
+    bp_nr_t key, *elem;
+    key.nr        = get_irg_graph_nr(irg);
+    key.bp.reason = BP_ON_REMIRG;
 
-  if (! ent)
-    return;
+    elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+    if (elem && elem->bp.active) {
+      ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, irg);
+      firm_debug_break();
+    }
+  }
+  {
+    bp_ident_t key, *elem;
+    entity *ent = get_irg_entity(irg);
 
-  key.id        = get_entity_ident(ent);
-  key.bp.reason = BP_ON_REMIRG;
+    if (! ent)
+      return;
 
-  elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
-  if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
-    firm_debug_break();
+    key.id        = get_entity_ident(ent);
+    key.bp.reason = BP_ON_REMIRG;
+
+    elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+    if (elem && elem->bp.active) {
+      ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
+      firm_debug_break();
+    }
   }
 }
 
@@ -229,15 +242,29 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
  */
 static void dbg_new_entity(void *ctx, entity *ent)
 {
-  bp_ident_t key, *elem;
+  {
+    bp_ident_t key, *elem;
 
-  key.id        = get_entity_ident(ent);
-  key.bp.reason = BP_ON_NEW_ENT;
+    key.id        = get_entity_ident(ent);
+    key.bp.reason = BP_ON_NEW_ENT;
 
-  elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
-  if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
-    firm_debug_break();
+    elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+    if (elem && elem->bp.active) {
+      ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
+      firm_debug_break();
+    }
+  }
+  {
+    bp_nr_t key, *elem;
+
+    key.nr        = get_entity_nr(ent);
+    key.bp.reason = BP_ON_NEW_ENT;
+
+    elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+    if (elem && elem->bp.active) {
+      ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
+      firm_debug_break();
+    }
   }
 }
 
@@ -249,15 +276,29 @@ static void dbg_new_entity(void *ctx, entity *ent)
  */
 static void dbg_new_type(void *ctx, type *tp)
 {
-  bp_ident_t key, *elem;
+  {
+    bp_nr_t key, *elem;
 
-  key.id        = get_type_ident(tp);
-  key.bp.reason = BP_ON_NEW_TYPE;
+    key.nr        = get_type_nr(tp);
+    key.bp.reason = BP_ON_NEW_TYPE;
 
-  elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
-  if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
-    firm_debug_break();
+    elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+    if (elem && elem->bp.active) {
+      ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
+      firm_debug_break();
+    }
+  }
+  {
+    bp_ident_t key, *elem;
+
+    key.id        = get_type_ident(tp);
+    key.bp.reason = BP_ON_NEW_TYPE;
+
+    elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+    if (elem && elem->bp.active) {
+      ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
+      firm_debug_break();
+    }
   }
 }
 
@@ -279,12 +320,12 @@ static const char *reason_str(bp_reasons_t reason)
 }
 
 /**
- * Compare two node number breakpoints
+ * Compare two number breakpoints
  */
-static int cmp_node_bp(const void *elt, const void *key, size_t size)
+static int cmp_nr_bp(const void *elt, const void *key, size_t size)
 {
-  const bp_node_t *e1 = elt;
-  const bp_node_t *e2 = key;
+  const bp_nr_t *e1 = elt;
+  const bp_nr_t *e2 = key;
 
   return (e1->nr - e2->nr) | (e1->bp.reason - e2->bp.reason);
 }
@@ -344,19 +385,19 @@ static void update_hooks(breakpoint *bp)
 }
 
 /**
- * Break if node nr is reached.
+ * Break if nr is reached.
  */
-static void break_on_node(long nr, bp_reasons_t reason)
+static void break_on_nr(long nr, bp_reasons_t reason)
 {
-  bp_node_t key, *elem;
+  bp_nr_t key, *elem;
 
-  key.bp.kind   = BP_NODE;
+  key.bp.kind   = BP_NR;
   key.bp.bpnr   = 0;
   key.bp.active = 1;
   key.bp.reason = reason;
   key.nr        = nr;
 
-  elem = set_insert(bp_node_numbers, &key, sizeof(key), HASH_NODE_BP(key));
+  elem = set_insert(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 
   if (elem->bp.bpnr == 0) {
     /* new break point */
@@ -364,7 +405,7 @@ static void break_on_node(long nr, bp_reasons_t reason)
     elem->bp.next = bp_list;
     bp_list = &elem->bp;
 
-    printf("Firm BP %u: %s of Node %ld\n", elem->bp.bpnr, reason_str(reason), nr);
+    printf("Firm BP %u: %s of Nr %ld\n", elem->bp.bpnr, reason_str(reason), nr);
 
     update_hooks(&elem->bp);
   }
@@ -427,9 +468,9 @@ static void show_commands(void) {
     ".create nr             break if node nr was created\n"
     ".replace nr            break if node nr is replaced by another node\n"
     ".lower nr              break before node nr is lowered\n"
-    ".remirg name           break if the irg of entity name is deleted\n"
-    ".newent name           break if the entity name was created\n"
-    ".newtype name          break if the type name was created\n"
+    ".remirg nr|name        break if the irg of nr or entity name is deleted\n"
+    ".newent nr|name        break if the entity nr or name was created\n"
+    ".newtype nr|name       break if the type nr or name was created\n"
     ".bp                    show all breakpoints\n"
     ".enable nr             enable breakpoint nr\n"
     ".disable nr            disable breakpoint nr\n"
@@ -444,16 +485,16 @@ static void show_commands(void) {
  */
 static void show_bp(void) {
   breakpoint *p;
-  bp_node_t  *node_p;
+  bp_nr_t  *node_p;
   bp_ident_t *ident_p;
 
   for (p = bp_list; p; p = p->next) {
     printf("Firm BP %u: ", p->bpnr);
 
     switch (p->kind) {
-    case BP_NODE:
-      node_p = (bp_node_t *)p;
-      printf("%s of node %ld ", reason_str(p->reason), node_p->nr);
+    case BP_NR:
+      node_p = (bp_nr_t *)p;
+      printf("%s of Nr %ld ", reason_str(p->reason), node_p->nr);
       break;
 
     case BP_IDENT:
@@ -521,19 +562,28 @@ void firm_debug(const char *cmd) {
   while (isspace(*cmd)) ++cmd;
 
   if (sscanf(cmd, ".create %ld\n", &nr) == 1) {
-    break_on_node(nr, BP_ON_NEW_NODE);
+    break_on_nr(nr, BP_ON_NEW_NODE);
   }
   else if (sscanf(cmd, ".replace %ld\n", &nr) == 1) {
-    break_on_node(nr, BP_ON_REPLACE);
+    break_on_nr(nr, BP_ON_REPLACE);
   }
   else if (sscanf(cmd, ".lower %ld\n", &nr) == 1) {
-    break_on_node(nr, BP_ON_LOWER);
+    break_on_nr(nr, BP_ON_LOWER);
+  }
+  else if (sscanf(cmd, ".remirg %ld\n", &nr) == 1) {
+    break_on_nr(nr, BP_ON_REMIRG);
   }
   else if (sscanf(cmd, ".remirg %s\n", name) == 1) {
     break_on_ident(name, BP_ON_REMIRG);
   }
+  else if (sscanf(cmd, ".newent %ld\n", &nr) == 1) {
+    break_on_nr(nr, BP_ON_NEW_ENT);
+  }
   else if (sscanf(cmd, ".newent %s\n", name) == 1) {
     break_on_ident(name, BP_ON_NEW_ENT);
+  }
+  else if (sscanf(cmd, ".newtype %ld\n", &nr) == 1) {
+    break_on_nr(nr, BP_ON_NEW_TYPE);
   }
   else if (sscanf(cmd, ".newtype %s\n", name) == 1) {
     break_on_ident(name, BP_ON_NEW_TYPE);
@@ -560,7 +610,7 @@ void firm_init_debugger(void)
 {
   char *env;
 
-  bp_node_numbers = new_set(cmp_node_bp, 8);
+  bp_numbers = new_set(cmp_nr_bp, 8);
   bp_idents       = new_set(cmp_ident_bp, 8);
 
   env = getenv("FIRMDBG");
@@ -607,13 +657,25 @@ void firm_init_debugger(void)
  *
  * Break before IR-node with node number nr is lowered.
  *
+ * @b .remirg nr
+ *
+ * Break if the irg with graph number nr is deleted.
+ *
  * @b .remirg name
  *
  * Break if the irg of entity name is deleted.
  *
+ * @b .newent nr
+ *
+ * Break if the entity with number nr was created.
+ *
  * @b .newent name
  *
  * Break if the entity name was created.
+ *
+ * @b .newtype nr
+ *
+ * Break if the type with number nr was created.
  *
  * @b .newtype name
  *
