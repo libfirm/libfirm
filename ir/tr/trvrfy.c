@@ -65,6 +65,67 @@ do { \
 #endif /* NDEBUG */
 
 /**
+ * Show diagnostic if an entity overwrites another one not
+ * in direct superclasses.
+ */
+static void show_ent_not_supertp(entity *ent, entity *ovw)
+{
+  ir_type *owner = get_entity_owner(ent);
+  ir_type *ov_own = get_entity_owner(ovw);
+  int i;
+
+  fprintf(stderr, "Type verification error:\n");
+  ir_fprintf(stderr, "Entity %+F::%+e owerwrites ", owner, ent);
+  ir_fprintf(stderr, "Entity %+F::%+e\n", ov_own, ovw);
+
+  ir_fprintf(stderr, "Supertypes of %+F:\n", owner);
+  for (i = 0; i < get_class_n_supertypes(owner); ++i) {
+    ir_type *super = get_class_supertype(owner, i);
+    ir_fprintf(stderr, " %+F:\n", super);
+  }
+}
+
+/**
+ * Show diagnostic if an entity owerwrites a wrong number of things.
+ */
+static void show_ent_overwrite_cnt(entity *ent)
+{
+  ir_type *owner = get_entity_owner(ent);
+  int i, j, k, found, show_stp = 0;
+
+  fprintf(stderr, "Type verification error:\n");
+  ir_fprintf(stderr, "Entity %+F::%+e owerwrites\n", owner, ent);
+  for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
+    entity *ovw = get_entity_overwrites(ent, i);
+    ir_type *ov_own = get_entity_owner(ovw);
+
+    for (k = 0; k < i; ++k)
+      if (ovw == get_entity_overwrites(ent, k)) {
+        ir_fprintf(stderr, "  %+F::%+e entered more than once\n", ov_own, ovw);
+        break;
+      }
+
+    found = 0;
+    for (j = get_class_n_supertypes(owner) - 1; j >= 0; --j) {
+      if (ov_own == get_class_supertype(owner, j)) {
+        show_stp = found = 1;
+        break;
+      }
+    }
+    if (! found)
+      ir_fprintf(stderr, "  %+F::%+e not in super types of %t\n", ov_own, ovw, owner);
+  }
+
+  if (show_stp) {
+    ir_fprintf(stderr, "Supertypes of %+F:\n", owner);
+    for (i = 0; i < get_class_n_supertypes(owner); ++i) {
+      ir_type *super = get_class_supertype(owner, i);
+      ir_fprintf(stderr, " %+F:\n", super);
+    }
+  }
+}
+
+/**
  * Check a class
  */
 static int check_class(ir_type *tp) {
@@ -73,41 +134,47 @@ static int check_class(ir_type *tp) {
 
   /*printf("\n"); DDMT(tp);*/
 
-  for (i = 0; i < get_class_n_members(tp); i++) {
-
+  for (i = get_class_n_members(tp) - 1; i >= 0; --i) {
     entity *mem = get_class_member(tp, i);
-    assert(mem && "NULL members not allowed");
-    /*printf(" %d, %d", get_entity_n_overwrites(mem), get_class_n_supertypes(tp)); DDME(mem);*/
-    if (!mem) return error_null_mem;
 
-    if (get_entity_n_overwrites(mem) > get_class_n_supertypes(tp)) {
-      ASSERT_AND_RET_DBG(
-        get_entity_n_overwrites(mem) <= get_class_n_supertypes(tp),
-        "wrong number of entity overwrites",
-        error_wrong_ent_overwrites,
-        ir_fprintf(stderr, "%+F %+F\n", tp, mem)
-      );
-    }
-    for (j = 0; j < get_entity_n_overwrites(mem); j++) {
+    ASSERT_AND_RET_DBG(
+      tp == get_entity_owner(mem),
+      "class member with wrong owner",
+      error_ent_wrong_owner,
+      ir_fprintf(stderr, "Type verification error:\n%+F %+e(owner %+F)\n",tp, mem, get_entity_owner(mem))
+    );
+    ASSERT_AND_RET_DBG(
+      mem,
+      "NULL members not allowed",
+      error_null_mem,
+      ir_fprintf(stderr, "Type verification error:\n%+F member %d is NULL\n", tp, i)
+    );
+
+    ASSERT_AND_RET_DBG(
+      get_entity_n_overwrites(mem) <= get_class_n_supertypes(tp),
+      "wrong number of entity overwrites",
+      error_wrong_ent_overwrites,
+      show_ent_overwrite_cnt(mem)
+    );
+
+    for (j = get_entity_n_overwrites(mem) - 1; j >= 0; --j) {
       entity *ovw = get_entity_overwrites(mem, j);
       /*printf(" overwrites: "); DDME(ovw);*/
       /* Check whether ovw is member of one of tp's supertypes. If so,
          the representation is correct. */
       found = 0;
-      for (k = 0; k < get_class_n_supertypes(tp); k++) {
+      for (k = get_class_n_supertypes(tp) - 1; k >= 0; --k) {
         if (get_class_member_index(get_class_supertype(tp, k), ovw) >= 0) {
           found = 1;
           break;
         }
       }
-      if (!found) {
-        ASSERT_AND_RET_DBG(
-          found,
-          "overwrites an entity not contained in direct supertype",
-          error_ent_not_cont,
-          ir_fprintf(stderr, "%+F %+F\n", tp, mem)
-        );
-      }
+      ASSERT_AND_RET_DBG(
+        found,
+        "overwrites an entity not contained in direct supertype",
+        error_ent_not_cont,
+        show_ent_not_supertp(mem, ovw)
+      );
     }
   }
   return 0;
@@ -231,7 +298,7 @@ static int constants_on_wrong_irg(entity *ent) {
         get_class_peculiarity(get_entity_owner(ent)) == peculiarity_description,
         "Value in constant atomic entity not set.",
         0,
-        ir_fprintf(stderr, "%+F, owner %+F\n", ent, get_entity_owner(ent))
+        ir_fprintf(stderr, "%+e, owner %+F\n", ent, get_entity_owner(ent))
       );
     }
   }
@@ -264,7 +331,7 @@ int check_entity(entity *ent) {
       0,
       "Method ents with pec_exist must have an irg",
       error_existent_entity_without_irg,
-      ir_fprintf(stderr, "%+F\n", ent)
+      ir_fprintf(stderr, "%+e\n", ent)
     );
   }
   set_visit_pseudo_irgs(rem_vpi);
@@ -279,7 +346,7 @@ int check_entity(entity *ent) {
         get_entity_peculiarity(impl) == peculiarity_existent,
 	     "inherited method entities must have constant pointing to existent entity.",
        error_inherited_ent_without_const,
-       ir_fprintf(stderr, "%+F points to %+F\n", ent, impl)
+       ir_fprintf(stderr, "%+e points to %+e\n", ent, impl)
       );
     }
   }
@@ -291,7 +358,7 @@ int check_entity(entity *ent) {
 	    get_entity_allocation(ent) != allocation_automatic,
       "Entities in global type are not allowed to by dynamic or automatic allocated",
       error_glob_ent_allocation,
-      ir_fprintf(stderr, "%+F\n", ent)
+      ir_fprintf(stderr, "%+e\n", ent)
     );
   }
 
@@ -303,7 +370,7 @@ int check_entity(entity *ent) {
           get_irn_mode(val) == get_type_mode(tp),
 	        "Mode of constant in entity must match type.",
           error_ent_const_mode,
-          ir_fprintf(stderr, "%+F const %+F, type %+F(%+F)\n",
+          ir_fprintf(stderr, "%+e const %+F, type %+F(%+F)\n",
             ent, val, tp, get_type_mode(tp))
         );
     }

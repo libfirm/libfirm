@@ -31,15 +31,16 @@
  * possible trvrfy() error codes
  */
 enum trvrfy_error_codes {
-  no_error                          = 0, /**< no error */
-  error_ent_not_cont                = 1, /**< overwritten entity not in superclass */
-  error_null_mem                    = 2, /**< compound contains NULL member */
-  error_const_on_wrong_irg          = 3, /**< constant placed on wrong IRG */
-  error_existent_entity_without_irg = 4, /**< Method entities with pecularity_exist must have an irg */
-  error_wrong_ent_overwrites        = 5, /**< number of entity overwrites exceeds number of class overwrites */
-  error_inherited_ent_without_const = 6, /**< inherited method entity not pointing to existent entity */
-  error_glob_ent_allocation         = 7, /**< wrong allocation of a global entity */
-  error_ent_const_mode              = 8  /**< Mode of constant in entity did not match entities type. */
+  no_error = 0,                      /**< no error */
+  error_ent_not_cont,                /**< overwritten entity not in superclass */
+  error_null_mem,                    /**< compound contains NULL member */
+  error_const_on_wrong_irg,          /**< constant placed on wrong IRG */
+  error_existent_entity_without_irg, /**< Method entities with pecularity_exist must have an irg */
+  error_wrong_ent_overwrites,        /**< number of entity overwrites exceeds number of class overwrites */
+  error_inherited_ent_without_const, /**< inherited method entity not pointing to existent entity */
+  error_glob_ent_allocation,         /**< wrong allocation of a global entity */
+  error_ent_const_mode,              /**< Mode of constant in entity did not match entities type. */
+  error_ent_wrong_owner              /**< Mode of constant in entity did not match entities type. */
 };
 
 /**
