@@ -26,8 +26,9 @@
 
 /* lowering walker environment */
 typedef struct _lower_env_t {
-	be_chordal_env_t *chord_env;
-	int               do_copy;
+	be_chordal_env_t  *chord_env;
+	int                do_copy;
+	firm_dbg_module_t *dbg_module;
 } lower_env_t;
 
 /* holds a perm register pair */
@@ -90,13 +91,15 @@ static int get_n_checked_pairs(reg_pair_t *pairs, int n) {
 static ir_node *get_node_for_register(reg_pair_t *pairs, int n, const arch_register_t *reg, int in_out) {
 	int i;
 
-	for (i = 0; i < n; i++) {
-		if (in_out) {
+	if (in_out) {
+		for (i = 0; i < n; i++) {
 			/* out register matches */
 			if (pairs[i].out_reg->index == reg->index)
 				return pairs[i].out_node;
 		}
-		else {
+	}
+	else {
+		for (i = 0; i < n; i++) {
 			/* in register matches */
 			if (pairs[i].in_reg->index == reg->index)
 				return pairs[i].in_node;
@@ -104,6 +107,37 @@ static ir_node *get_node_for_register(reg_pair_t *pairs, int n, const arch_regis
 	}
 
 	return NULL;
+}
+
+/**
+ * Gets the index in the register pair array where the in/out register
+ * corresponds to reg_idx.
+ *
+ * @param pairs  The array of register pairs
+ * @param n      The number of pairs
+ * @param reg    The register index to look for
+ * @param in_out 0 == look for IN register, 1 == look for OUT register
+ * @return The corresponding index in pairs or -1 if not found
+ */
+static int get_pairidx_for_regidx(reg_pair_t *pairs, int n, int reg_idx, int in_out) {
+	int i;
+
+	if (in_out) {
+		for (i = 0; i < n; i++) {
+			/* out register matches */
+			if (pairs[i].out_reg->index == reg_idx)
+				return i;
+		}
+	}
+	else {
+		for (i = 0; i < n; i++) {
+			/* in register matches */
+			if (pairs[i].in_reg->index == reg_idx)
+				return i;
+		}
+	}
+
+	return -1;
 }
 
 /**
@@ -118,6 +152,7 @@ static ir_node *get_node_for_register(reg_pair_t *pairs, int n, const arch_regis
 static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int n, int start) {
 	int head         = pairs[start].in_reg->index;
 	int cur_idx      = pairs[start].out_reg->index;
+	int cur_pair_idx = start;
 	int n_pairs_done = get_n_checked_pairs(pairs, n) + 1;
 	int idx;
 
@@ -135,14 +170,19 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	/* check for cycle or end of a chain */
 	while (cur_idx != head && n_pairs_done < n) {
 		/* goto next register in cycle or chain */
-		cur_idx = pairs[cur_idx].out_reg->index;
+		cur_pair_idx = get_pairidx_for_regidx(pairs, n, cur_idx, 0);
+
+		if (cur_pair_idx < 0)
+			break;
+
+		cur_idx = pairs[cur_pair_idx].out_reg->index;
 
 		/* it's not the first element: insert it */
 		if (cur_idx != head) {
-			cycle->elems[idx++] = pairs[cur_idx].out_reg;
+			cycle->elems[idx++] = pairs[cur_pair_idx].out_reg;
 			cycle->n_elems++;
 
-			pairs[cur_idx].checked = 1;
+			pairs[cur_pair_idx].checked = 1;
 			n_pairs_done++;
 		}
 		else {
@@ -165,6 +205,7 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 	const be_node_factory_t     *fact;
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
+	firm_dbg_module_t           *mod;
 	lower_env_t     *env = walk_env;
 	reg_pair_t      *pairs;
 	const ir_edge_t *edge;
@@ -176,9 +217,10 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 	fact     = env->chord_env->main_env->node_factory;
 	arch_env = env->chord_env->main_env->arch_env;
 	do_copy  = env->do_copy;
+	mod      = env->dbg_module;
 
 	/* check if perm */
-	if (! is_Perm(arch_env, irn))
+	if (is_Proj(irn) || !  is_Perm(arch_env, irn))
 		return;
 
 	block = get_nodes_block(irn);
@@ -217,21 +259,30 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 
 	/* Mark all equal pairs as checked, and exchange the OUT proj with
 		the IN node. */
-	i = 0;
-	while (pairs[i].in_reg->index == pairs[i].out_reg->index) {
-		/* remove the proj from the schedule */
-		sched_remove(pairs[i].out_node);
+	for (i = 0; i < n; i++) {
+		if (pairs[i].in_reg->index == pairs[i].out_reg->index) {
+			DBG((mod, LEVEL_1, "removing equal perm register pair (%+F, %+F, %s)\n",
+				pairs[i].in_node, pairs[i].out_node, pairs[i].out_reg->name));
+			/* If scheduling point and in-node are the same, then get the scheduling
+			   pred of this node, otherwise we would break the scheduling list */
+			if (sched_point == pairs[i].in_node) {
+				sched_point = sched_prev(sched_point);
+			}
 
-		/* remove the argument from schedule */
-		sched_remove(pairs[i].in_node);
+			/* remove the proj from the schedule */
+			sched_remove(pairs[i].out_node);
 
-		/* exchange the proj with the argument */
-		exchange(pairs[i].out_node, pairs[i].in_node);
+			/* remove the argument from schedule */
+			sched_remove(pairs[i].in_node);
 
-		/* add the argument after the magic scheduling point */
-		sched_add_after(sched_point, pairs[i].in_node);
+			/* exchange the proj with the argument */
+			exchange(pairs[i].out_node, pairs[i].in_node);
 
-		pairs[i++].checked = 1;
+			/* add the argument after the magic scheduling point */
+			sched_add_after(sched_point, pairs[i].in_node);
+
+			pairs[i].checked = 1;
+		}
 	}
 
 	/* Set do_copy to 0 if it's on but we have no free register */
@@ -252,7 +303,7 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 //        the copy cascade (this reduces the cycle into a chain)
 
 		/* build copy/swap nodes from back to front */
-		for (i = cycle->n_elems - 2; i >= 0; i++) {
+		for (i = cycle->n_elems - 2; i >= 0; i--) {
 			arg = get_node_for_register(pairs, n, cycle->elems[i], 0);
 			res = get_node_for_register(pairs, n, cycle->elems[i + 1], 1);
 
@@ -268,6 +319,9 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 				in[0] = arg;
 				in[1] = get_node_for_register(pairs, n, cycle->elems[i + 1], 0);
 
+				DBG((mod, LEVEL_1, "creating exchange node (%+F, %s) <-> (%+F, %s)\n",
+					arg, cycle->elems[i]->name, res, cycle->elems[i + 1]->name));
+
 				cpyxchg = new_Perm(fact, reg_class, env->chord_env->irg, block, 2, in);
 				set_Proj_pred(res, cpyxchg);
 				set_Proj_proj(res, 0);
@@ -275,6 +329,9 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 				set_Proj_proj(get_node_for_register(pairs, n, cycle->elems[i], 1), 1);
 			}
 			else {
+				DBG((mod, LEVEL_1, "creating copy node (%+F, %s) -> (%+F, %s)\n",
+					arg, cycle->elems[i]->name, res, cycle->elems[i + 1]->name));
+
 				cpyxchg = new_Copy(fact, reg_class, env->chord_env->irg, block, arg);
 				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
 
@@ -289,7 +346,7 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 			sched_add_after(sched_point, cpyxchg);
 		}
 
-		free(cycle->elems);
+//		free(cycle->elems);
 		free(cycle);
 	}
 
@@ -306,8 +363,9 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 void lower_perms(be_chordal_env_t *chord_env, int do_copy) {
 	lower_env_t env;
 
-	env.chord_env = chord_env;
-	env.do_copy   = do_copy;
+	env.chord_env  = chord_env;
+	env.do_copy    = do_copy;
+	env.dbg_module = firm_dbg_register("ir.be.lower");
 
-	irg_block_walk_graph(chord_env->irg,  NULL, lower_perms_walker, &env);
+	irg_walk_blkwise_graph(chord_env->irg,  NULL, lower_perms_walker, &env);
 }
