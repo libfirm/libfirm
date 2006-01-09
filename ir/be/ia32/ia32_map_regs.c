@@ -101,6 +101,6 @@ long translate_proj_pos(const ir_node *proj) {
 		return nr;
 	}
 
-	assert(0 && "unsupported Proj(X)");
-	return -1;
+//	assert(0 && "unsupported Proj(X)");
+	return nr;
 }
