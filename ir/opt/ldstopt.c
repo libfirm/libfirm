@@ -286,8 +286,8 @@ static entity *find_constant_entity(ir_node *ptr)
       return get_SymConst_entity(ptr);
     }
     else if (op == op_Sel) {
-      entity *ent = get_Sel_entity(ptr);
-      type *tp    = get_entity_owner(ent);
+      entity  *ent = get_Sel_entity(ptr);
+      ir_type *tp  = get_entity_owner(ent);
 
       /* Do not fiddle with polymorphism. */
       if (is_Class_type(get_entity_owner(ent)) &&
@@ -426,9 +426,9 @@ static unsigned optimize_load(ir_node *load)
 
       if (get_irn_op(skip_Proj(mem)) == op_Alloc) {
         /* ok, check the types */
-        entity *ent  = get_Sel_entity(ptr);
-        type *s_type = get_entity_type(ent);
-        type *a_type = get_Alloc_type(mem);
+        entity  *ent    = get_Sel_entity(ptr);
+        ir_type *s_type = get_entity_type(ent);
+        ir_type *a_type = get_Alloc_type(mem);
 
         if (is_SubClass_of(s_type, a_type)) {
           /* ok, condition met: there can't be an exception because
@@ -590,7 +590,7 @@ static unsigned optimize_load(ir_node *load)
      * BEWARE: one might think that checking the modes is useless, because
      * if the pointers are identical, they refer to the same object.
      * This is only true in strong typed languages, not in C were the following
-     * is possible a = *(type1 *)p; b = *(type2 *)p ...
+     * is possible a = *(ir_type1 *)p; b = *(ir_type2 *)p ...
      */
 
     if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
@@ -701,7 +701,7 @@ static unsigned optimize_store(ir_node *store)
    * BEWARE: one might think that checking the modes is useless, because
    * if the pointers are identical, they refer to the same object.
    * This is only true in strong typed languages, not is C were the following
-   * is possible *(type1 *)p = a; *(type2 *)p = b ...
+   * is possible *(ir_type1 *)p = a; *(ir_type2 *)p = b ...
    */
 
   ptr   = get_Store_ptr(store);
@@ -978,7 +978,6 @@ void optimize_load_store(ir_graph *irg)
 
   if (env.changes & CF_CHANGED) {
     /* is this really needed: Yes, control flow changed, block might get Bad. */
-    if (get_irg_dom_state(current_ir_graph) == dom_consistent)
-      set_irg_dom_inconsistent(current_ir_graph);
+    set_irg_doms_inconsistent(current_ir_graph);
   }
 }
