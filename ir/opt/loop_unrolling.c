@@ -961,7 +961,7 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
 
   if (unroll_done) {
     /* unrolling was done, all info is invalid */
-    set_irg_dom_inconsistent(irg);
+    set_irg_doms_inconsistent(irg);
     set_irg_outs_inconsistent(irg);
     set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
     set_trouts_inconsistent();

@@ -87,7 +87,7 @@ unsigned lower_intrinsic_calls(const i_record *list, int length) {
       set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
       /* exception control flow might have changed */
-      set_irg_dom_inconsistent(irg);
+      set_irg_doms_inconsistent(irg);
       set_irg_loopinfo_inconsistent(irg);
 
       nr_of_intrinsics += wenv.nr_of_intrinsics;

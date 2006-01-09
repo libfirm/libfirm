@@ -350,7 +350,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
     set_irg_outs_inconsistent(irg);
 
     if (env->nr_deads)
-      set_irg_dom_inconsistent(irg);
+      set_irg_doms_inconsistent(irg);
   }
 }
 

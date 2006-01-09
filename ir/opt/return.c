@@ -121,7 +121,7 @@ void normalize_one_return(ir_graph *irg)
    * a new Block was added, so dominator, outs and loop are inconsistent,
    * trouts and callee-state should be still valid
    */
-  set_irg_dom_inconsistent(irg);
+  set_irg_doms_inconsistent(irg);
   set_irg_outs_inconsistent(irg);
   set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
 }
@@ -320,7 +320,7 @@ void normalize_n_returns(ir_graph *irg)
    * Blocks become dead and new Returns were deleted, so dominator, outs and loop are inconsistent,
    * trouts and callee-state should be still valid
    */
-  set_irg_dom_inconsistent(irg);
+  set_irg_doms_inconsistent(irg);
   set_irg_outs_inconsistent(irg);
   set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
 }
