@@ -209,7 +209,7 @@ static void prepare_graph(be_main_env_t *s, ir_graph *irg)
 	remove_critical_cf_edges(irg);
 
 	/* Compute the dominance information. */
-	free_dom_and_peace(irg);
+	free_dom(irg);
 	compute_doms(irg);
 
 	/* Ensure, that the ir_edges are computed. */
