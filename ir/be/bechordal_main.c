@@ -292,6 +292,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	}
 
 	lower_perms(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
+	dump(BE_CH_DUMP_LOWER, irg, "-belower", dump_ir_block_graph_sched);
 
 	be_free_dominance_frontiers(chordal_env.dom_front);
 	obstack_free(&chordal_env.obst, NULL);
