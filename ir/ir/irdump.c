@@ -2114,13 +2114,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
        "port_sharing: no\n"
        "orientation: %s\n"
        "classname 1:  \"intrablock Data\"\n"
-       "classname 16: \"interblock Data\"\n"
        "classname 2:  \"Block\"\n"
-       "classname 13: \"Control Flow\"\n"
-       "classname 18: \"Exception Control Flow for Interval Analysis\"\n"
-       "classname 14: \"intrablock Memory\"\n"
-       "classname 17: \"interblock Memory\"\n"
-       "classname 15: \"Dominators\"\n"
        "classname 3:  \"Entity type\"\n"
        "classname 4:  \"Entity owner\"\n"
        "classname 5:  \"Method Param\"\n"
@@ -2131,6 +2125,13 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
        "classname 10: \"Array Element Type\"\n"
        "classname 11: \"Overwrites\"\n"
        "classname 12: \"Member\"\n"
+       "classname 13: \"Control Flow\"\n"
+       "classname 14: \"intrablock Memory\"\n"
+       "classname 15: \"Dominators\"\n"
+       "classname 16: \"interblock Data\"\n"
+       "classname 17: \"interblock Memory\"\n"
+       "classname 18: \"Exception Control Flow for Interval Analysis\"\n"
+       "classname 19: \"Postdominators\"\n"
        "infoname 1: \"Attribute\"\n"
        "infoname 2: \"Verification errors\"\n"
        "infoname 3: \"Debug info\"\n",
@@ -2522,27 +2523,6 @@ dump_block_to_cfg(ir_node *block, void *env) {
     fprintf (F, "\" ");
     fprintf(F, "info1:\"");
 
-#if 0
-    if (dump_dominator_information_flag) {
-      fprintf(F, "dom depth %d\n", get_Block_dom_depth(block));
-      fprintf(F, "tree pre num %d\n", get_Block_dom_tree_pre_num(block));
-      fprintf(F, "max subtree pre num %d\n", get_Block_dom_max_subtree_pre_num(block));
-    }
-
-    /* show arity and possible Bad predecessors of the block */
-    fprintf(F, "arity: %d\n", get_Block_n_cfgpreds(block));
-    for (fl = i = 0; i < get_Block_n_cfgpreds(block); ++i) {
-      ir_node *pred = get_Block_cfgpred(block, i);
-      if (is_Bad(pred)) {
-        if (! fl)
-          fprintf(F, "Bad pred at pos: ");
-        fprintf(F, "%d ", i);
-        fl = 1;
-      }
-    }
-    if (fl)
-      fprintf(F, "\n");
-#else
     /* the generic version. */
     dump_irnode_to_file(F, block);
 
@@ -2550,7 +2530,6 @@ dump_block_to_cfg(ir_node *block, void *env) {
     for (i = 0; i < get_Block_n_cfgpreds(block); ++i)
       if ((fl = is_Bad(get_Block_cfgpred(block, i))))
         break;
-#endif
 
     fprintf (F, "\"");  /* closing quote of info */
 
@@ -2572,14 +2551,24 @@ dump_block_to_cfg(ir_node *block, void *env) {
         fprintf (F, "\"}\n");
       }
 
-    /* Dump dominator edge */
-    if (dump_dominator_information_flag && get_Block_idom(block)) {
-      pred = get_Block_idom(block);
-      fprintf (F, "edge: { sourcename: \"");
-      PRINT_NODEID(block);
-      fprintf (F, "\" targetname: \"");
-      PRINT_NODEID(pred);
-      fprintf (F, "\" " DOMINATOR_EDGE_ATTR "}\n");
+    /* Dump dominator/postdominator edge */
+    if (dump_dominator_information_flag) {
+      if (get_irg_dom_state(current_ir_graph) == dom_consistent && get_Block_idom(block)) {
+        pred = get_Block_idom(block);
+        fprintf (F, "edge: { sourcename: \"");
+        PRINT_NODEID(block);
+        fprintf (F, "\" targetname: \"");
+        PRINT_NODEID(pred);
+        fprintf (F, "\" " DOMINATOR_EDGE_ATTR "}\n");
+      }
+      if (get_irg_postdom_state(current_ir_graph) == dom_consistent && get_Block_ipostdom(block)) {
+        pred = get_Block_ipostdom(block);
+        fprintf (F, "edge: { sourcename: \"");
+        PRINT_NODEID(block);
+        fprintf (F, "\" targetname: \"");
+        PRINT_NODEID(pred);
+        fprintf (F, "\" " POSTDOMINATOR_EDGE_ATTR "}\n");
+      }
     }
   }
 }
@@ -2589,7 +2578,6 @@ dump_cfg (ir_graph *irg, const char *suffix)
 {
   FILE *f;
   ir_graph *rem = current_ir_graph;
-  int ddif = dump_dominator_information_flag;
   int ipv = get_interprocedural_view();
 
   /* if a filter is set, dump only the irg's that match the filter */
@@ -2606,14 +2594,10 @@ dump_cfg (ir_graph *irg, const char *suffix)
     set_interprocedural_view(0);
   }
 
-  if (get_irg_dom_state(irg) != dom_consistent)
-    dump_dominator_information_flag = 0;
-
   /* walk over the blocks in the graph */
   irg_block_walk(get_irg_end(irg), dump_block_to_cfg, NULL, f);
   dump_node(f, get_irg_bad(irg));
 
-  dump_dominator_information_flag = ddif;
   set_interprocedural_view(ipv);
   vcg_close(f);
   current_ir_graph = rem;

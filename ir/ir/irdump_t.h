@@ -12,14 +12,15 @@
 #define DEFAULT_ENUM_ITEM_ATTRIBUTE " "
 
 /* Attributes of edges between Firm nodes */
-#define INTRA_DATA_EDGE_ATTR "class:1  priority:50"
-#define INTER_DATA_EDGE_ATTR "class:16 priority:10"
-#define BLOCK_EDGE_ATTR      "class:2  priority:50 linestyle:dotted"
-#define CF_EDGE_ATTR         "class:13 priority:60 color:red"
-#define EXC_CF_EDGE_ATTR     "class:18 priority:60 color:blue"
-#define INTRA_MEM_EDGE_ATTR  "class:14 priority:50 color:blue"
-#define INTER_MEM_EDGE_ATTR  "class:17 priority:10 color:blue"
-#define DOMINATOR_EDGE_ATTR  "class:15 color:red"
+#define INTRA_DATA_EDGE_ATTR     "class:1  priority:50"
+#define INTER_DATA_EDGE_ATTR     "class:16 priority:10"
+#define BLOCK_EDGE_ATTR          "class:2  priority:50 linestyle:dotted"
+#define CF_EDGE_ATTR             "class:13 priority:60 color:red"
+#define EXC_CF_EDGE_ATTR         "class:18 priority:60 color:blue"
+#define INTRA_MEM_EDGE_ATTR      "class:14 priority:50 color:blue"
+#define INTER_MEM_EDGE_ATTR      "class:17 priority:10 color:blue"
+#define DOMINATOR_EDGE_ATTR      "class:15 color:red"
+#define POSTDOMINATOR_EDGE_ATTR  "class:19 color:red linestyle:dotted"
 
 #define BACK_EDGE_ATTR "linestyle:dashed "
 
