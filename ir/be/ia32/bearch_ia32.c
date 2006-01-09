@@ -195,8 +195,10 @@ static arch_irn_class_t ia32_classify(const arch_irn_ops_t *self, const ir_node 
 	irn = my_skip_proj(irn);
 	if (is_cfop(irn))
 		return arch_irn_class_branch;
-	else
+	else if (is_ia32_irn(irn))
 		return arch_irn_class_normal;
+	else
+		return 0;
 }
 
 static arch_irn_flags_t ia32_get_flags(const arch_irn_ops_t *self, const ir_node *irn) {
@@ -232,16 +234,20 @@ static const arch_irn_ops_t ia32_irn_ops = {
  *                       |___/
  **************************************************/
 
+typedef struct _ia32_isa_t {
+	const arch_isa_if_t *impl;
+	int                  num_codegens;
+} ia32_isa_t;
+
 typedef struct _ia32_code_gen_t {
-	const arch_code_generator_if_t *impl;    /* implementation */
-	ir_graph                       *irg;     /* current irg */
-	FILE                           *out;     /* output file */
-	set                            *reg_set; /* set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
-	firm_dbg_module_t              *mod;     /* debugging module */
+	const arch_code_generator_if_t *impl;     /* implementation */
+	ir_graph                       *irg;      /* current irg */
+	FILE                           *out;      /* output file */
+	const arch_env_t               *arch_env; /* the arch env */
+	set                            *reg_set;  /* set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
+	firm_dbg_module_t              *mod;      /* debugging module */
 	int                             emit_decls;
 } ia32_code_gen_t;
-
-
 
 /**
  * Transforms the standard firm graph into
@@ -282,7 +288,7 @@ static void ia32_codegen(void *self) {
 	}
 
 //	ia32_finish_irg(irg);
-	ia32_gen_routine(out, irg, cur_reg_set);
+	ia32_gen_routine(out, irg, cg->arch_env);
 
 	cur_reg_set = NULL;
 
@@ -291,12 +297,41 @@ static void ia32_codegen(void *self) {
 	free(self);
 }
 
+static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env);
+
 static const arch_code_generator_if_t ia32_code_gen_if = {
+	ia32_cg_init,
 	ia32_prepare_graph,
 	ia32_before_sched,   /* before scheduling hook */
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_codegen         /* emit && done */
 };
+
+/**
+ * Initializes the code generator.
+ */
+static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
+	ia32_isa_t      *isa = (ia32_isa_t *)arch_env->isa;
+	ia32_code_gen_t *cg  = malloc(sizeof(*cg));
+
+	cg->impl       = &ia32_code_gen_if;
+	cg->irg        = irg;
+	cg->reg_set    = new_set(cmp_irn_reg_assoc, 1024);
+	cg->mod        = firm_dbg_register("be.transform.ia32");
+	cg->out        = F;
+	cg->arch_env   = arch_env;
+
+	isa->num_codegens++;
+
+	if (isa->num_codegens > 1)
+		cg->emit_decls = 0;
+	else
+		cg->emit_decls = 1;
+
+	cur_reg_set = cg->reg_set;
+
+	return (arch_code_generator_t *)cg;
+}
 
 
 
@@ -310,16 +345,10 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
  *
  *****************************************************************/
 
-typedef struct _ia32_isa_t {
-	const arch_isa_if_t *impl;
-	int                  num_codegens;
-	FILE                *output_file;
-} ia32_isa_t;
-
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *ia32_init(FILE *out) {
+static void *ia32_init(void) {
 	int i;
 	static struct obstack obst;
 	static int inited    = 0;
@@ -332,7 +361,6 @@ static void *ia32_init(FILE *out) {
 
 	inited = 1;
 
-	isa->output_file  = out;
 	isa->num_codegens = 0;
 
 	/* init dummy register requirements */
@@ -398,26 +426,8 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 /**
  * Initializes the code generator interface.
  */
-static arch_code_generator_t *ia32_make_code_generator(void *self, ir_graph *irg) {
-	ia32_isa_t      *isa = self;
-	ia32_code_gen_t *cg  = malloc(sizeof(*cg));
-
-	cg->impl       = &ia32_code_gen_if;
-	cg->irg        = irg;
-	cg->reg_set    = new_set(cmp_irn_reg_assoc, 1024);
-	cg->mod        = firm_dbg_register("be.transform.ia32");
-	cg->out        = isa->output_file;
-
-	isa->num_codegens++;
-
-	if (isa->num_codegens > 1)
-		cg->emit_decls = 0;
-	else
-		cg->emit_decls = 1;
-
-	cur_reg_set = cg->reg_set;
-
-	return (arch_code_generator_t *)cg;
+static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self) {
+	return &ia32_code_gen_if;
 }
 
 /**
@@ -442,6 +452,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_n_reg_class,
 	ia32_get_reg_class,
 	ia32_get_irn_handler,
-	ia32_make_code_generator,
+	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector
 };
