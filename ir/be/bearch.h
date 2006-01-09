@@ -327,7 +327,7 @@ arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos);
 
 /**
  * Get the register allocated at a certain output operand of a node.
- * @param env The arch nvironment.
+ * @param env The arch environment.
  * @param irn The node.
  * @return    The register allocated for this operand
  */
@@ -386,10 +386,10 @@ struct _arch_code_generator_if_t {
 
 
 	/**
-	 * Initialzie the code generator.
+	 * Initialize the code generator.
 	 * @param file The file to dump to.
-	 * @param irg  The fucntion to generate code for.
-	 * @param env  The archicture environment.
+	 * @param irg  The function to generate code for.
+	 * @param env  The architecture environment.
 	 * @return     A newly created code generator.
 	 */
 	void *(*init)(FILE *file, ir_graph *irg, const arch_env_t *env);
