@@ -131,9 +131,9 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   ir_node *p;
   int i, j, n_params;
   collect_t data;
-  int rem         = get_optimize();
-  entity *ent     = get_irg_entity(irg);
-  type *method_tp = get_entity_type(ent);
+  int rem            = get_optimize();
+  entity *ent        = get_irg_entity(irg);
+  ir_type *method_tp = get_entity_type(ent);
 
   assert(n_tail_calls);
 
@@ -141,7 +141,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   set_irg_outs_inconsistent(irg);
 
   /* we add new blocks and change the control flow */
-  set_irg_dom_inconsistent(irg);
+  set_irg_doms_inconsistent(irg);
 
   /* we add a new loop */
   set_irg_loopinfo_inconsistent(irg);
@@ -251,7 +251,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   }
 
   /* tail recursion was done, all info is invalid */
-  set_irg_dom_inconsistent(irg);
+  set_irg_doms_inconsistent(irg);
   set_irg_outs_inconsistent(irg);
   set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
   set_trouts_inconsistent();
@@ -294,7 +294,7 @@ int opt_tail_rec_irg(ir_graph *irg)
   ir_node *end_block;
   int i, n_tail_calls = 0;
   ir_node *rets = NULL;
-  type *mtd_type, *call_type;
+  ir_type *mtd_type, *call_type;
 
   if (! get_opt_tail_recursion() || ! get_opt_optimize())
     return 0;
