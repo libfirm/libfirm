@@ -97,8 +97,7 @@ static INLINE void do_local_optimize(ir_node *n) {
     set_irg_pinned(current_ir_graph, op_pin_state_floats);
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
-  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
-    set_irg_dom_inconsistent(current_ir_graph);
+  set_irg_doms_inconsistent(current_ir_graph);
   set_irg_loopinfo_inconsistent(current_ir_graph);
 
   /* Clean the value_table in irg for the CSE. */
@@ -521,8 +520,7 @@ dead_node_elimination(ir_graph *irg) {
     /* @@@ so far we loose loops when copying */
     free_loop_information(current_ir_graph);
 
-    if (get_irg_dom_state(irg) != dom_none)
-      set_irg_dom_inconsistent(irg);
+    set_irg_doms_inconsistent(irg);
 
     /* A quiet place, where the old obstack can rest in peace,
        until it will be cremated. */
