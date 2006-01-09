@@ -384,6 +384,16 @@ struct _arch_irn_handler_t {
  */
 struct _arch_code_generator_if_t {
 
+
+	/**
+	 * Initialzie the code generator.
+	 * @param file The file to dump to.
+	 * @param irg  The fucntion to generate code for.
+	 * @param env  The archicture environment.
+	 * @return     A newly created code generator.
+	 */
+	void *(*init)(FILE *file, ir_graph *irg, const arch_env_t *env);
+
 	/**
 	 * Called, when the graph is being normalized.
 	 */
@@ -444,7 +454,7 @@ struct _arch_isa_if_t {
   /**
    * Initialize the isa interface.
    */
-  void *(*init)(FILE *file_handle);
+  void *(*init)(void);
 
   /**
    * Free the isa instance.
@@ -473,12 +483,11 @@ struct _arch_isa_if_t {
   const arch_irn_handler_t *(*get_irn_handler)(const void *self);
 
   /**
-   * Produce a new code generator.
+   * Get the code generator interface.
    * @param self The this pointer.
-   * @param irg  The graph for which code shall be generated.
-   * @return     A code generator.
+   * @return     Some code generator interface.
    */
-  arch_code_generator_t *(*make_code_generator)(void *self, ir_graph *irg);
+  const arch_code_generator_if_t *(*get_code_generator)(void *self);
 
   /**
    * Get the list scheduler to use.
@@ -522,7 +531,7 @@ struct _arch_env_t {
  * @param isa The isa which shall be put into the environment.
  * @return The environment.
  */
-extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa, FILE *file_handle);
+extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa);
 
 /**
  * Add a node handler to the environment.

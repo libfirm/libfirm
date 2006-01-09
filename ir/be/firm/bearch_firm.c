@@ -120,7 +120,7 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
   return bad;
 }
 
-static void *firm_init(FILE *unused)
+static void *firm_init(void)
 {
   static struct obstack obst;
   static int inited = 0;
@@ -490,21 +490,29 @@ static void firm_codegen_done(void *self)
 	free(self);
 }
 
+static void *firm_cg_init(FILE *file_handle, ir_graph *irg, const arch_env_t *env);
+
 static const arch_code_generator_if_t firm_code_gen = {
+	firm_cg_init,
 	firm_prepare_graph,
 	firm_before_sched,
 	firm_before_ra,
 	firm_codegen_done
 };
 
-static arch_code_generator_t *firm_make_code_generator(void *self, ir_graph *irg)
+static void *firm_cg_init(FILE *file_handle, ir_graph *irg, const arch_env_t *env)
 {
 	firm_code_gen_t *cg = malloc(sizeof(*cg));
 	cg->impl = &firm_code_gen;
 	cg->irg  = irg;
-	return (arch_code_generator_t *) cg;
+	return cg;
 }
 
+
+static const arch_code_generator_if_t *firm_get_code_generator(void *self)
+{
+	return &firm_code_gen;
+}
 
 static const list_sched_selector_t *firm_get_list_sched_selector(const void *self) {
 	return trivial_selector;
@@ -525,6 +533,6 @@ const arch_isa_if_t firm_isa = {
 	firm_get_n_reg_class,
 	firm_get_reg_class,
 	firm_get_irn_handler,
-	firm_make_code_generator,
+	firm_get_code_generator,
 	firm_get_list_sched_selector
 };

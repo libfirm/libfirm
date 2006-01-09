@@ -163,13 +163,13 @@ void be_init(void)
 	phi_class_init();
 }
 
-static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
+static be_main_env_t *be_init_env(be_main_env_t *env)
 {
   obstack_init(&env->obst);
   env->dbg = firm_dbg_register("be.main");
 
   env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
-  arch_env_init(env->arch_env, isa_if, file_handle);
+  arch_env_init(env->arch_env, isa_if);
 
   /* Register the irn handler of the architecture */
   if (arch_isa_get_irn_handler(env->arch_env->isa))
@@ -228,7 +228,7 @@ static void be_main_loop(FILE *file_handle)
 	arch_isa_t *isa;
 	be_main_env_t env;
 
-	be_init_env(&env, file_handle);
+	be_init_env(&env);
 
 	isa = arch_env_get_isa(env.arch_env);
 
@@ -237,6 +237,7 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *irg = get_irp_irg(i);
 
 		arch_code_generator_t *cg;
+		const arch_code_generator_if_t *cg_if;
 
 		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
 		dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
@@ -244,8 +245,11 @@ static void be_main_loop(FILE *file_handle)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
+		/* Get the code generator interface. */
+		cg_if = isa->impl->get_code_generator(isa);
+
 		/* get a code generator for this graph. */
-		cg = arch_isa_make_code_generator(isa, irg);
+		cg = cg_if->init(file_handle, irg, env.arch_env);
 
 		/* create the code generator and generate code. */
 		prepare_graph(&env, irg);
