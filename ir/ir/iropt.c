@@ -2960,12 +2960,11 @@ static ir_op_ops *firm_set_default_node_cmp_attr(opcode code, ir_op_ops *ops)
 #undef CASE
 }
 
-/**
+/*
  * Compare function for two nodes in the hash table. Gets two
  * nodes as parameters.  Returns 0 if the nodes are a cse.
  */
-static int
-vt_cmp (const void *elt, const void *key)
+static int identities_cmp(const void *elt, const void *key)
 {
   ir_node *a, *b;
   int i, irn_arity_a;
@@ -3042,7 +3041,7 @@ ir_node_hash (ir_node *node)
 
 pset *
 new_identities(void) {
-  return new_pset(vt_cmp, N_IR_NODES);
+  return new_pset(identities_cmp, N_IR_NODES);
 }
 
 void
@@ -3101,7 +3100,7 @@ identify_cons (pset *value_table, ir_node *n) {
   return n;
 }
 
-/**
+/*
  * Return the canonical node computing the same value as n.
  * Looks up the node in a hash table, enters it in the table
  * if it isn't there yet.
@@ -3423,10 +3422,9 @@ optimize_in_place (ir_node *n)
   if (get_irg_outs_state(current_ir_graph) == outs_consistent)
     set_irg_outs_inconsistent(current_ir_graph);
 
-  /* Maybe we could also test whether optimizing the node can
+  /* FIXME: Maybe we could also test whether optimizing the node can
      change the control graph. */
-  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
-    set_irg_dom_inconsistent(current_ir_graph);
+  set_irg_doms_inconsistent(current_ir_graph);
   return optimize_in_place_2 (n);
 }
 
