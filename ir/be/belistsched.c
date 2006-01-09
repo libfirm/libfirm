@@ -293,7 +293,7 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
  * Also the outs must have been computed.
  *
  * @param block The block node.
- * @param env Schedulting environment.
+ * @param env Scheduling environment.
  */
 static void list_sched_block(ir_node *block, void *env_ptr)
 {
