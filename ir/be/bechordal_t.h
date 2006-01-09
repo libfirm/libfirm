@@ -36,17 +36,16 @@
  * A liveness interval border.
  */
 typedef struct _border_t {
-	unsigned magic;								/**< A magic number for checking. */
-	struct list_head list;				/**< list head for queuing. */
-	struct _border_t *other_end;	/**< The other end of the border. */
-	ir_node *irn;						      /**< The node. */
-	unsigned step;								/**< The number equal to the interval border. */
-	unsigned pressure;						/**< The pressure at this interval border.
-																	(The border itself is counting). */
-	unsigned is_def : 1;					/**< Does this border denote a use or a def. */
-	unsigned is_real : 1;					/**< Is the def/use real? Or is it just inserted
-												at block beginnings or ends to ensure that inside
-												a block, each value has one begin and one end. */
+	unsigned magic;                 /**< A magic number for checking. */
+	struct list_head list;          /**< list head for queuing. */
+	struct _border_t *other_end;    /**< The other end of the border. */
+	ir_node *irn;                   /**< The node. */
+	unsigned step;                  /**< The number equal to the interval border. */
+	unsigned pressure;              /**< The pressure at this interval border. (The border itself is counting). */
+	unsigned is_def : 1;            /**< Does this border denote a use or a def. */
+	unsigned is_real : 1;           /**< Is the def/use real? Or is it just inserted
+                                        at block beginnings or ends to ensure that inside
+                                        a block, each value has one begin and one end. */
 } border_t;
 
 /**
@@ -89,9 +88,10 @@ enum {
 	BE_CH_DUMP_NONE       = (1 << 0),
 	BE_CH_DUMP_SPILL      = (1 << 1),
 	BE_CH_DUMP_COPYMIN    = (1 << 2),
-	BE_CH_DUMP_SSADESTR	  = (1 << 3),
+	BE_CH_DUMP_SSADESTR   = (1 << 3),
 	BE_CH_DUMP_TREE_INTV  = (1 << 4),
 	BE_CH_DUMP_CONSTR     = (1 << 5),
+    BE_CH_DUMP_LOWER      = (1 << 6),
 	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_CONSTR - 1,
 
 	/* copymin method */
