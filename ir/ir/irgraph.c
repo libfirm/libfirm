@@ -184,6 +184,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->irg_pinned_state    = op_pin_state_pinned;
   res->outs_state          = outs_none;
   res->dom_state           = dom_none;
+  res->pdom_state          = dom_none;
   res->typeinfo_state      = ir_typeinfo_none;
   set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
   res->callee_info_state   = irg_callee_info_none;
@@ -622,9 +623,14 @@ irg_dom_state
   return _get_irg_dom_state(irg);
 }
 
+irg_dom_state
+(get_irg_postdom_state)(const ir_graph *irg) {
+  return _get_irg_postdom_state(irg);
+}
+
 void
-(set_irg_dom_inconsistent)(ir_graph *irg) {
-  _set_irg_dom_inconsistent(irg);
+(set_irg_doms_inconsistent)(ir_graph *irg) {
+  _set_irg_doms_inconsistent(irg);
 }
 
 irg_loopinfo_state

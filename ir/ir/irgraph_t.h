@@ -92,7 +92,8 @@ struct ir_graph {
   irg_phase_state phase_state;       /**< compiler phase */
   op_pin_state irg_pinned_state;     /**< Flag for status of nodes */
   irg_outs_state outs_state;         /**< Out edges. */
-  irg_dom_state dom_state;           /**< Dominator information */
+  irg_dom_state dom_state;           /**< Dominator state information */
+  irg_dom_state pdom_state;          /**< Post Dominator state information */
   ir_typeinfo_state typeinfo_state;        /**< Validity of type information */
   irg_callee_info_state callee_info_state; /**< Validity of callee information */
   irg_loopinfo_state loopinfo_state;       /**< state of loop information */
@@ -396,9 +397,17 @@ _get_irg_dom_state(const ir_graph *irg) {
   return irg->dom_state;
 }
 
+static INLINE irg_dom_state
+_get_irg_postdom_state(const ir_graph *irg) {
+  return irg->pdom_state;
+}
+
 static INLINE void
-_set_irg_dom_inconsistent(ir_graph *irg) {
-  irg->dom_state = dom_inconsistent;
+_set_irg_doms_inconsistent(ir_graph *irg) {
+  if (irg->dom_state != dom_none)
+    irg->dom_state = dom_inconsistent;
+  if (irg->pdom_state != dom_none)
+    irg->pdom_state = dom_inconsistent;
 }
 
 static INLINE irg_loopinfo_state
@@ -545,7 +554,8 @@ _get_irg_estimated_node_cnt(const ir_graph *irg) {
 #define get_irg_outs_state(irg)               _get_irg_outs_state(irg)
 #define set_irg_outs_inconsistent(irg)        _set_irg_outs_inconsistent(irg)
 #define get_irg_dom_state(irg)                _get_irg_dom_state(irg)
-#define set_irg_dom_inconsistent(irg)         _set_irg_dom_inconsistent(irg)
+#define get_irg_postdom_state(irg)            _get_irg_postdom_state(irg)
+#define set_irg_doms_inconsistent(irg)        _set_irg_doms_inconsistent(irg)
 #define get_irg_loopinfo_state(irg)           _get_irg_loopinfo_state(irg)
 #define set_irg_loopinfo_state(irg, s)        _set_irg_loopinfo_state(irg, s)
 #define set_irg_loopinfo_inconsistent(irg)    _set_irg_loopinfo_inconsistent(irg)

@@ -318,7 +318,7 @@ irg_outs_state get_irg_outs_state(const ir_graph *irg);
 void           set_irg_outs_inconsistent(ir_graph *irg);
 
 /** state: dom_state
- * Signals the state of the dominator information.
+ * Signals the state of the dominator / post dominator information.
  */
 typedef enum {
   dom_none,             /**< dominator are not computed, no memory is allocated */
@@ -326,11 +326,14 @@ typedef enum {
   dom_inconsistent      /**< dominator information is computed but the graph has been changed since */
 } irg_dom_state;
 
-/** returns the dom_state of an IR graph. */
+/** returns the dominator state of an IR graph. */
 irg_dom_state get_irg_dom_state(const ir_graph *irg);
 
-/** sets the dom_state of an IR graph. */
-void set_irg_dom_inconsistent(ir_graph *irg);
+/** returns the post dominator state of an IR graph. */
+irg_dom_state get_irg_postdom_state(const ir_graph *irg);
+
+/** sets the dominator and post dominator state of an IR graph to inconsistent. */
+void set_irg_doms_inconsistent(ir_graph *irg);
 
 /** state: loopinfo_state
  *  Loop information describes the loops within the control and
