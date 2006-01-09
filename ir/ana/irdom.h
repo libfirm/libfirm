@@ -11,27 +11,23 @@
  */
 
 /**
-* @file irdom.h
-*
-*   This file contains routines to construct and access dominator information.
-*
-*   The dominator information is stored in three fields of block nodes:
-*     - idom: a reference to the block that is the immediate dominator of
-*       this block.
-*     - dom_depth: a number giving the depth of the block in the dominator
-*       tree.
-*     - pre_num:  Number in preorder traversal.
-*
-* @author Goetz Lindenmaier
-*/
+ * @file irdom.h
+ *
+ *   This file contains routines to construct and access dominator information.
+ *
+ *   The dominator information is stored in three fields of block nodes:
+ *     - idom: a reference to the block that is the immediate dominator of
+ *       this block.
+ *     - dom_depth: a number giving the depth of the block in the dominator
+ *       tree.
+ *     - pre_num:  Number in preorder traversal.
+ *
+ * @author Goetz Lindenmaier
+ */
+#ifndef _IRDOM_H_
+#define _IRDOM_H_
 
-
-# ifndef _IRDOM_H_
-# define _IRDOM_H_
-
-# include "irgraph.h"
-# include "irgwalk.h"
-# include "irnode.h"
+#include "firm_types.h"
 
 
 /** Accessing the dominator data structure.
@@ -47,8 +43,24 @@ void set_Block_idom(ir_node *bl, ir_node *n);
 int get_Block_dom_depth(const ir_node *bl);
 void set_Block_dom_depth(ir_node *bl, int depth);
 
-int get_Block_pre_num(const ir_node *bl);
-void set_Block_pre_num(ir_node *bl, int num);
+int get_Block_dom_pre_num(const ir_node *bl);
+void set_Block_dom_pre_num(ir_node *bl, int num);
+
+/** Accessing the post dominator data structure.
+ *
+ * These routines only work properly if the ir_graph is in state
+ * dom_consistent or dom_inconsistent.
+ *
+ * If the block is not reachable from End, returns a Bad node.
+ */
+ir_node *get_Block_ipostdom(const ir_node *bl);
+void set_Block_ipostdom(ir_node *bl, ir_node *n);
+
+int get_Block_postdom_depth(const ir_node *bl);
+void set_Block_postdom_depth(ir_node *bl, int depth);
+
+int get_Block_postdom_pre_num(const ir_node *bl);
+void set_Block_postdom_pre_num(ir_node *bl, int num);
 
 /**
  * Get the pre-order number of a block resulting from a
@@ -100,12 +112,30 @@ ir_node *get_Block_dominated_next(const ir_node *dom);
 			curr = get_Block_dominated_next(curr))
 
 /**
+ * Iterate over all nodes which are immediately post dominated by a given
+ * node.
+ * @param bl   The block whose post dominated blocks shall be iterated on.
+ * @param curr An iterator variable of type ir_node*
+ */
+#define postdominates_for_each(bl,curr) \
+	for(curr = get_Block_postdominated_first(bl); curr; \
+			curr = get_Block_postdominated_next(curr))
+
+/**
  * Check, if a block dominates another block.
  * @param a The first block.
  * @param b The second block.
  * @return 1, if @p a dominates @p b, else 0.
  */
 int block_dominates(const ir_node *a, const ir_node *b);
+
+/**
+ * Check, if a block post dominates another block.
+ * @param a The first block.
+ * @param b The second block.
+ * @return 1, if @p a post dominates @p b, else 0.
+ */
+int block_postdominates(const ir_node *a, const ir_node *b);
 
 /**
  * Visit all nodes in the dominator subtree of a given node.
@@ -119,6 +149,17 @@ int block_dominates(const ir_node *a, const ir_node *b);
 void dom_tree_walk(ir_node *n, irg_walk_func *pre,
 		irg_walk_func *post, void *env);
 
+/**
+ * Visit all nodes in the post dominator subtree of a given node.
+ * Call a pre-visitor before descending to the children and call a
+ * post-visitor after returning from them.
+ * @param n The node to start walking from.
+ * @param pre The pre-visitor callback.
+ * @param post The post-visitor callback.
+ * @param env Some custom data passed to the visitors.
+ */
+void postdom_tree_walk(ir_node *n, irg_walk_func *pre,
+		irg_walk_func *post, void *env);
 
 /**
  * Walk over the dominator tree of an irg starting at the root.
@@ -128,6 +169,16 @@ void dom_tree_walk(ir_node *n, irg_walk_func *pre,
  * @param env Some private data to give to the visitors.
  */
 void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
+		irg_walk_func *post, void *env);
+
+/**
+ * Walk over the post dominator tree of an irg starting at the root.
+ * @param irg The graph.
+ * @param pre A pre-visitor to call.
+ * @param post A post-visitor to call.
+ * @param env Some private data to give to the visitors.
+ */
+void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 		irg_walk_func *post, void *env);
 
 /* ------------ Building and Removing the dominator data structure ----------- */
@@ -149,7 +200,27 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  */
 void compute_doms(ir_graph *irg);
 
+/** Computes the post dominator trees.
+ *
+ * Sets a flag in irg to "dom_consistent".
+ * If the control flow of the graph is changed this flag must be set to
+ * "dom_inconsistent".
+ * Does not compute post dominator information for endless lops.  Blocks
+ * not reachable from End contain the following information:
+ * @code
+ *   idom = NULL;
+ *   dom_depth = -1;
+ *   pre_num = -1;
+ * @endcode
+ * Also constructs outs information.  As this information is correct after
+ * the run does not free the outs information.
+ */
+void compute_postdoms(ir_graph *irg);
+
 /** Frees the dominator data structures.  Sets the flag in irg to "dom_none". */
-void free_dom_and_peace(ir_graph *irg);
+void free_dom(ir_graph *irg);
+
+/** Frees the post dominator data structures.  Sets the flag in irg to "dom_none". */
+void free_postdom(ir_graph *irg);
 
 #endif /* _IRDOM_H_ */
