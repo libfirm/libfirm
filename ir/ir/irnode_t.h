@@ -50,22 +50,21 @@ typedef struct {
   /* Attributes private to construction: */
   unsigned matured:1;         /**< if set, all in-nodes of the block are fixed */
   unsigned dead:1;            /**< if set, the block is dead (and could be replace by a Bad */
-  struct ir_node **graph_arr; /**< array to store all parameters */
+  ir_node **graph_arr;        /**< array to store all parameters */
   /* Attributes holding analyses information */
-  struct dom_info dom;        /**< Datastructure that holds information about dominators.
-                 @@@ @todo
-                 Eventually overlay with graph_arr as only valid
-                 in different phases.  Eventually inline the whole
-                 datastructure. */
-  /*   exc_t exc;  */            /**< role of this block for exception handling */
-  /*   ir_node *handler_entry; */    /**< handler entry block iff this block is part of a region */
+  dom_info dom;               /**< Datastructure that holds information about dominators.
+                                   @@@ @todo
+                                   Eventually overlay with graph_arr as only valid
+                                   in different phases.  Eventually inline the whole
+                                   datastructure. */
+  dom_info pdom;              /**< Datastructure that holds information about post-dominators. */
   ir_node ** in_cg;           /**< array with predecessors in
-                   * interprocedural_view, if they differ
-                   * from intraprocedural predecessors */
+                               * interprocedural_view, if they differ
+                               * from intraprocedural predecessors */
   int *backedge;              /**< Field n set to true if pred n is backedge.
-                     @@@ @todo Ev. replace by bitfield! */
+                                   @@@ @todo Ev. replace by bit field! */
   int *cg_backedge;           /**< Field n set to true if pred n is interprocedural backedge.
-                     @@@ @todo Ev. replace by bitfield! */
+                                   @@@ @todo Ev. replace by bit field! */
   ir_extblk *extblk;          /**< the extended basic block this block belongs to */
 
   struct list_head succ_head; /**< A list head for all successor edges of a block. */
