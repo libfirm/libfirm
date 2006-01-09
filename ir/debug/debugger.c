@@ -125,6 +125,22 @@ static hook_entry_t debugger_hooks[hook_last];
 /** number of active breakpoints to maintain hooks. */
 static unsigned num_active_bp[BP_MAX_REASON];
 
+/**
+ * The debug message buffer
+ */
+static char firm_dbg_msg_buf[2048];
+
+/**
+ * If set, the debug extension writes all output to the
+ * firm_dbg_msg_buf buffer
+ */
+static int redir_output = 0;
+
+/**
+ * Is set to one, if the debug extension is active
+ */
+static int is_active = 0;
+
 /** hook the hook h with function fkt. */
 #define HOOK(h, fkt) \
   debugger_hooks[h].hook._##h = fkt; register_hook(h, &debugger_hooks[h])
@@ -134,6 +150,74 @@ static unsigned num_active_bp[BP_MAX_REASON];
 
 /** returns non-zero if a entry hook h is used */
 #define IS_HOOKED(h) (debugger_hooks[h].next != NULL)
+
+/* some macros needed to create the info string */
+#define _DBG_VERSION(major, minor)  #major "." #minor
+#define DBG_VERSION(major, minor)   _DBG_VERSION(major, minor)
+#define API_VERSION(major, minor)   "API:" DBG_VERSION(major, minor)
+
+/* the API version: change if needed */
+#define FIRM_DBG_MAJOR  1
+#define FIRM_DBG_MINOR  0
+
+/** for automatic detection of the debug extension */
+static const char *firm_debug_info_string =
+  API_VERSION(FIRM_DBG_MAJOR, FIRM_DBG_MINOR)
+  ;
+
+/**
+ * Returns non-zero, if the debug extension is active
+ */
+int firm_debug_active(void) {
+  return is_active;
+}
+
+/**
+ * reset the debug text buffer
+ */
+static void reset_dbg_buf(void) {
+  firm_dbg_msg_buf[0] = '\0';
+}
+
+/**
+ * Add text to the debug text buffer
+ */
+static void add_to_dbg_buf(const char *buf) {
+  strncat(firm_dbg_msg_buf, buf, sizeof(firm_dbg_msg_buf));
+}
+
+/**
+ * Return the content of the debug text buffer.
+ *
+ * To be called from the debugger.
+ */
+const char *firm_debug_text(void) {
+  return firm_dbg_msg_buf;
+}
+
+/**
+ * debug output
+ */
+static void dbg_printf(const char *fmt, ...)
+{
+  char buf[1024];
+
+  va_list args;
+  va_start(args, fmt);
+
+  if (fmt[0] != '+')
+    reset_dbg_buf();
+  else
+    ++fmt;
+
+  ir_vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  if (redir_output)
+    add_to_dbg_buf(buf);
+  else
+    puts(buf);
+}
 
 /**
  * A new node is created.
@@ -151,7 +235,7 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 
   elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
   if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
+    dbg_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
     firm_debug_break();
   }
 }
@@ -172,7 +256,7 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 
   elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
   if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
+    dbg_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
     firm_debug_break();
   }
 }
@@ -192,7 +276,7 @@ static void dbg_lower(void *ctx, ir_node *node)
 
   elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
   if (elem && elem->bp.active) {
-    ir_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
+    dbg_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
     firm_debug_break();
   }
 }
@@ -228,7 +312,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
 
     elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
     if (elem && elem->bp.active) {
-      ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
+      dbg_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
       firm_debug_break();
     }
   }
@@ -262,7 +346,7 @@ static void dbg_new_entity(void *ctx, entity *ent)
 
     elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
     if (elem && elem->bp.active) {
-      ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
+      dbg_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
       firm_debug_break();
     }
   }
@@ -296,7 +380,7 @@ static void dbg_new_type(void *ctx, type *tp)
 
     elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
     if (elem && elem->bp.active) {
-      ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
+      dbg_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
       firm_debug_break();
     }
   }
@@ -405,7 +489,7 @@ static void break_on_nr(long nr, bp_reasons_t reason)
     elem->bp.next = bp_list;
     bp_list = &elem->bp;
 
-    printf("Firm BP %u: %s of Nr %ld\n", elem->bp.bpnr, reason_str(reason), nr);
+    dbg_printf("Firm BP %u: %s of Nr %ld\n", elem->bp.bpnr, reason_str(reason), nr);
 
     update_hooks(&elem->bp);
   }
@@ -431,7 +515,7 @@ static void break_on_ident(const char *name, bp_reasons_t reason) {
     elem->bp.next = bp_list;
     bp_list = &elem->bp;
 
-    printf("Firm BP %u: %s of ident \"%s\"\n", elem->bp.bpnr, reason_str(reason), name);
+    dbg_printf("Firm BP %u: %s of ident \"%s\"\n", elem->bp.bpnr, reason_str(reason), name);
 
     update_hooks(&elem->bp);
   }
@@ -451,11 +535,11 @@ static void bp_activate(unsigned bp, int active)
         update_hooks(p);
       }
 
-      printf("Firm BP %u is now %s\n", bp, active ? "enabled" : "disabled");
+      dbg_printf("Firm BP %u is now %s\n", bp, active ? "enabled" : "disabled");
       return;
     }
   }
-  printf("Error: Firm BP %u not exists.\n", bp);
+  dbg_printf("Error: Firm BP %u not exists.\n", bp);
 }
 
 
@@ -463,7 +547,7 @@ static void bp_activate(unsigned bp, int active)
  * Show a list of supported commands
  */
 static void show_commands(void) {
-  printf("Internal Firm debugger extension $Revision$ commands:\n"
+  dbg_printf("Internal Firm debugger extension $Revision$ commands:\n"
     ".init                  break after initialization\n"
     ".create nr             break if node nr was created\n"
     ".replace nr            break if node nr is replaced by another node\n"
@@ -487,24 +571,28 @@ static void show_bp(void) {
   breakpoint *p;
   bp_nr_t  *node_p;
   bp_ident_t *ident_p;
+  int have_one = 0;
 
+  dbg_printf("Firm Breakpoints:");
   for (p = bp_list; p; p = p->next) {
-    printf("Firm BP %u: ", p->bpnr);
+    have_one = 1;
+    dbg_printf("+\n  BP %u: ", p->bpnr);
 
     switch (p->kind) {
     case BP_NR:
       node_p = (bp_nr_t *)p;
-      printf("%s of Nr %ld ", reason_str(p->reason), node_p->nr);
+      dbg_printf("%s of Nr %ld ", reason_str(p->reason), node_p->nr);
       break;
 
     case BP_IDENT:
       ident_p = (bp_ident_t *)p;
-      printf("%s of ident \"%s\" ", reason_str(p->reason), get_id_str(ident_p->id));
+      dbg_printf("+%s of ident \"%s\" ", reason_str(p->reason), get_id_str(ident_p->id));
       break;
     }
 
-    printf(p->active ? "enabled\n" : "disabled\n");
+    dbg_printf(p->active ? "+enabled" : "+disabled");
   }
+  dbg_printf(have_one ? "+\n" : "+ NONE\n");
 }
 
 /**
@@ -526,7 +614,7 @@ static void set_dbg_level(const char *name, unsigned lvl)
 
   firm_dbg_set_mask(module, lvl);
 
-  printf("Setting debug mask of module %s to %u\n", name, lvl);
+  dbg_printf("Setting debug mask of module %s to %u\n", name, lvl);
 }
 
 /**
@@ -543,7 +631,7 @@ static void set_dbg_outfile(const char *name, const char *fname)
   }
 
   firm_dbg_set_file(module, f);
-  printf("Redirecting debug output of module %s to file %s\n", name, fname);
+  dbg_printf("Redirecting debug output of module %s to file %s\n", name, fname);
 }
 
 /**
@@ -615,12 +703,19 @@ void firm_init_debugger(void)
 
   env = getenv("FIRMDBG");
 
+  is_active = 1;
+
   if (env)
     firm_debug(env);
 
   if (break_on_init)
     firm_debug_break();
 }
+
+#else
+
+/* some picky compiler do not allow empty files */
+static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
 
 #endif /* NDEBUG */
 
@@ -634,7 +729,6 @@ void firm_init_debugger(void)
  * @section sec_cmd Supported commands
  *
  * The following commands are currently supported:
- *
  * @b .init
  *
  * Break immediately after the debugger extension was initialized.
@@ -699,7 +793,7 @@ void firm_init_debugger(void)
  *
  * @b .setoutfile name file
  *
- * Redirects debug output of module name to file\.
+ * Redirects debug output of module name to file.
  *
  * @b .help
  *
@@ -739,6 +833,3 @@ void firm_init_debugger(void)
  * firm ".create 2101"
  * firm ".help"
  */
-
-static void _firm_only_that_you_can_compile_with_NDEBUG_defined(void) {
-}
