@@ -17,7 +17,7 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-static set *cur_reg_set = NULL;
+static const arch_env_t *arch_env = NULL;
 
 
 /*************************************************************
@@ -79,7 +79,6 @@ static int ia32_get_arg_type(const lc_arg_occ_t *occ) {
 static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
-	const arch_register_t **slots;
 
 	assert(get_irn_arity(irn) > pos && "Invalid IN position");
 
@@ -87,28 +86,9 @@ static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
 	   in register we need. */
 	op = get_irn_n(irn, pos);
 
-	if (is_Proj(op)) {
-		pos = (int)translate_proj_pos(op);
-		while(is_Proj(op))
-			op = get_Proj_pred(op);
-	}
+	reg = arch_get_irn_register(arch_env, op);
 
-	if (is_ia32_irn(op)) {
-		/* The operator is an ia32 node: this node has only one out */
-		slots = get_ia32_slots(op);
-		reg   = slots[0];
-	}
-	else {
-		/* The operator is not an ia32 node: check for Phi or Proj */
-		if (is_Phi(op)) {
-			/* Phi's getting register assigned */
-			reg  = ia32_get_firm_reg(NULL, op, cur_reg_set);
-			assert(reg && "No register assigned to Phi node");
-		}
-		else {
-			assert(0 && "Unsupported node for IN register");
-		}
-	}
+	assert(reg && "could not get in register");
 
 	return reg;
 }
@@ -737,14 +717,14 @@ void ia32_gen_labels(ir_node *block, void *env) {
 /**
  * Main driver
  */
-void ia32_gen_routine(FILE *F, ir_graph *irg, set *reg_set) {
+void ia32_gen_routine(FILE *F, ir_graph *irg, const arch_env_t *env) {
 	emit_env_t emit_env;
 
-	emit_env.mod     = firm_dbg_register("be.codegen.ia32");
-	emit_env.out     = F;
-	emit_env.reg_set = reg_set;
+	emit_env.mod      = firm_dbg_register("ir.be.codegen.ia32");
+	emit_env.out      = F;
+	emit_env.arch_env = env;
 
-	cur_reg_set = reg_set;
+	arch_env = env;
 
 	ia32_emit_start(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
