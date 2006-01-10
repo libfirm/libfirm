@@ -155,7 +155,7 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 
 
 static be_ra_chordal_opts_t options = {
-	BE_CH_DUMP_NONE,
+	BE_CH_DUMP_ALL,
 	BE_CH_SPILL_BELADY,
 	BE_CH_COPYMIN_HEUR,
 	BE_CH_IFG_STD,
@@ -211,11 +211,22 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 }
 #endif
 
-static void dump(int mask, ir_graph *irg, const char *suffix,
-				 void (*dump)(ir_graph *, const char *))
+static void dump(int mask, ir_graph *irg,
+				 const arch_register_class_t *cls,
+				 const char *suffix,
+				 void (*dump_func)(ir_graph *, const char *))
 {
-	if((options.dump_flags & mask) == mask)
-		dump(irg, suffix);
+
+	if((options.dump_flags & mask) == mask) {
+		if(cls) {
+			char buf[256];
+			snprintf(buf, sizeof(buf), "-%s%s", cls->name, suffix);
+			dump_func(irg, buf);
+		}
+
+		else
+			dump_func(irg, suffix);
+	}
 }
 
 static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
@@ -252,13 +263,13 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 			fprintf(stderr, "no valid spiller selected. falling back to belady\n");
 			be_spill_belady(&chordal_env);
 		}
-		dump(BE_CH_DUMP_SPILL, irg, "-spill", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 		be_liveness(irg);
 		be_check_pressure(&chordal_env);
 
 		/* Insert perms before reg-constrained instructions */
 		be_insert_constr_perms(&chordal_env);
-		dump(BE_CH_DUMP_CONSTR, irg, "-constr", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-constr", dump_ir_block_graph_sched);
 
 		be_liveness(irg);
 		be_numbering(irg);
@@ -274,12 +285,12 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		/* copy minimization */
 		copystat_collect_cls(&chordal_env);
 		be_copy_opt(&chordal_env);
-		dump(BE_CH_DUMP_COPYMIN, irg, "-copymin", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 		be_ra_chordal_check(&chordal_env);
 
 		/* ssa destruction */
 		be_ssa_destruction(&chordal_env);
-		dump(BE_CH_DUMP_SSADESTR, irg, "-ssadestr", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_SSADESTR, irg, chordal_env.cls, "-ssadestr", dump_ir_block_graph_sched);
 		be_ssa_destruction_check(&chordal_env);
 		be_ra_chordal_check(&chordal_env);
 
@@ -292,7 +303,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	}
 
 	lower_perms(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
-	dump(BE_CH_DUMP_LOWER, irg, "-belower", dump_ir_block_graph_sched);
+	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower", dump_ir_block_graph_sched);
 
 	be_free_dominance_frontiers(chordal_env.dom_front);
 	obstack_free(&chordal_env.obst, NULL);
