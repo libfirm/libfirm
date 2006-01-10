@@ -205,6 +205,7 @@ static INLINE void _sched_remove(ir_node *irn)
 {
   sched_info_t *info = get_irn_sched_info(irn);
   list_del(&info->list);
+	INIT_LIST_HEAD(&info->list);
   info->scheduled = 0;
 }
 
