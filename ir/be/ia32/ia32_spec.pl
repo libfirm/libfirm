@@ -89,9 +89,6 @@ $arch = "ia32";
                          { "name" => "xmm5", "type" => 0 },
                          { "name" => "xmm6", "type" => 0 },
                          { "name" => "xmm7", "type" => 0 },
-                       ],
-  "flag_register"   => [
-                         { "name" => "eflags", "type" => 0 }
                        ]
 ); # %reg_classes
 
@@ -509,21 +506,21 @@ $arch = "ia32";
   "op_flags" => "C|L|X|Y",
   "arity"    => 2,
   "comment"  => "construct conditional jump: CMP A, B && JMPxx LABEL",
-  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "none", "flag_register" ] },
+  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "none", "none" ] },
 },
 
 "CondJmp_i" => {
   "op_flags" => "L|X|Y",
   "arity"    => 1,
   "comment"  => "construct conditional jump: CMP A, const && JMPxx LABEL",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "none", "flag_register" ] },
+  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "none", "none" ] },
 },
 
 "SwitchJmp" => {
   "op_flags" => "L|X|Y",
   "arity"    => 1,
   "comment"  => "construct switch",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "flag_register" ] },
+  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "none" ] },
 },
 
 "Const" => {
@@ -584,7 +581,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"  => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"     => '. movl %s2, (%s1)\t\t\t/* Store(%s1) -> (%s2), (%a1, %a2) */'
+  "emit"     => '. movl %s2, (%s1)\t\t\t/* Store(%s2) -> (%s1), (%a1, %a2) */'
 },
 
 "Lea" => {
@@ -722,7 +719,7 @@ $arch = "ia32";
   "op_flags" => "C|L|X|Y",
   "arity"    => 2,
   "comment"  => "construct conditional jump: CMP A, B && JMPxx LABEL",
-  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "none", "flag_register" ] },
+  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "none", "none" ] },
 },
 
 "fConst" => {
