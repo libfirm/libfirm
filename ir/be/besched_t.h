@@ -210,7 +210,7 @@ static INLINE void _sched_remove(ir_node *irn)
 }
 
 /**
- * Check, if thenode is scheduled.
+ * Check, if the node is scheduled.
  * @param irn The node.
  * @return 1, if the node is scheduled, 0 if not.
  */
