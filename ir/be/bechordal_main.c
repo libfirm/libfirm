@@ -302,6 +302,8 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		pmap_destroy(chordal_env.border_heads);
 	}
 
+	dump(BE_CH_DUMP_SSADESTR, irg, NULL, "-ssadestr-complete", dump_ir_block_graph_sched);
+
 	lower_perms(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower", dump_ir_block_graph_sched);
 
