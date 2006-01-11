@@ -230,59 +230,64 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, chordal_env->main_env->arch_env), dupl);
 				pin_irn(dupl, phi_block);
 				DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
-			} else {
-				if (phi_reg == arg_reg) {
-					pin_irn(arg, phi_block);
-					DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, get_reg(arg)->name));
-				} else {
-					/*
-					 * First check if there is a phi
-					 * - in the same block
-					 * - having arg at the current pos in its arg-list
-					 * - having the same color as arg
-					 *
-					 * If found, then pin the arg
-					 */
-					DBG((dbg, LEVEL_1, "    they do not interfere\n"));
-					assert(is_Proj(arg));
-					if (!is_pinned(arg)) {
-						ir_node *other_phi;
-						DBG((dbg, LEVEL_1, "      searching for phi with same arg having args register\n"));
-						for(other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
-							assert(is_Phi(other_phi) && get_nodes_block(phi) == get_nodes_block(other_phi) && "link fields are screwed up");
-							if (get_irn_n(other_phi, i) == arg && get_reg(other_phi) == arg_reg) {
-								DBG((dbg, LEVEL_1, "        found %+F(%s)\n", other_phi, get_reg(other_phi)->name));
-								pin_irn(arg, phi_block);
-								break;
-							}
-						}
-					}
+				continue; /* with next argument */
+			}
 
-					if (is_pinned(arg)) {
-						/* Insert a duplicate of the original value in arguments block,
-						 * make it the new phi arg,
-						 * set its register,
-						 * insert it into schedule,
-						 * pin it
-						 */
-						ir_node *perm = get_Proj_pred(arg);
-						ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
-						ir_node *dupl = new_Copy(chordal_env->main_env->node_factory, cls, chordal_env->irg, arg_block, orig_val);
-						assert(get_irn_mode(phi) == get_irn_mode(dupl));
-						set_irn_n(phi, i, dupl);
-						set_reg(dupl, phi_reg);
-						sched_add_before(perm, dupl);
-						pin_irn(dupl, phi_block);
-						DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
-					} else {
-						/* No other phi has the same color (else arg would have been pinned),
-						 * so just set the register and pin
-						 */
-						set_reg(arg, phi_reg);
+			if (phi_reg == arg_reg) {
+				/* Phi and arg have the same register,
+				 * so pin and continue
+				 */
+				pin_irn(arg, phi_block);
+				DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, get_reg(arg)->name));
+				continue;
+			}
+
+			DBG((dbg, LEVEL_1, "    they do not interfere\n"));
+			assert(is_Proj(arg));
+			/*
+			 * First check if there is an other phi
+			 * - in the same block
+			 * - having arg at the current pos in its arg-list
+			 * - having the same color as arg
+			 *
+			 * If found, then pin the arg (for that phi)
+			 */
+			if (!is_pinned(arg)) {
+				ir_node *other_phi;
+				DBG((dbg, LEVEL_1, "      searching for phi with same arg having args register\n"));
+				for(other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
+					assert(is_Phi(other_phi) && get_nodes_block(phi) == get_nodes_block(other_phi) && "link fields are screwed up");
+					if (get_irn_n(other_phi, i) == arg && get_reg(other_phi) == arg_reg) {
+						DBG((dbg, LEVEL_1, "        found %+F(%s)\n", other_phi, get_reg(other_phi)->name));
 						pin_irn(arg, phi_block);
-						DBG((dbg, LEVEL_1, "      arg is not pinned: so pin %+F(%s)\n", arg, get_reg(arg)->name));
+						break;
 					}
 				}
+			}
+
+			if (is_pinned(arg)) {
+				/* Insert a duplicate of the original value in arguments block,
+				 * make it the new phi arg,
+				 * set its register,
+				 * insert it into schedule,
+				 * pin it
+				 */
+				ir_node *perm = get_Proj_pred(arg);
+				ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
+				ir_node *dupl = new_Copy(chordal_env->main_env->node_factory, cls, chordal_env->irg, arg_block, orig_val);
+				assert(get_irn_mode(phi) == get_irn_mode(dupl));
+				set_irn_n(phi, i, dupl);
+				set_reg(dupl, phi_reg);
+				sched_add_before(perm, dupl);
+				pin_irn(dupl, phi_block);
+				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
+			} else {
+				/* No other phi has the same color (else arg would have been pinned),
+				 * so just set the register and pin
+				 */
+				set_reg(arg, phi_reg);
+				pin_irn(arg, phi_block);
+				DBG((dbg, LEVEL_1, "      arg is not pinned: so pin %+F(%s)\n", arg, get_reg(arg)->name));
 			}
 		}
 	}
