@@ -18,7 +18,7 @@
 #include "besched.h"
 
 #include "irgmod.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 
 #undef is_Perm
