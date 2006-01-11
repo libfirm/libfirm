@@ -49,6 +49,7 @@ typedef enum _perm_type_t {
 	PERM_COPY
 } perm_type_t;
 
+/* structure to represent cycles or chains in a perm */
 typedef struct _perm_cycle_t {
 	const arch_register_t **elems;       /**< the registers in the cycle */
 	int                     n_elems;     /**< number of elements in the cycle */
@@ -66,6 +67,7 @@ static int compare_reg_pair(const void *a, const void *b) {
 		return -1;
 }
 
+/* returns the number register pairs marked as checked */
 static int get_n_checked_pairs(reg_pair_t *pairs, int n) {
 	int i, n_checked = 0;
 
@@ -280,11 +282,10 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				set_Proj_proj(pairs[i].out_node, get_Proj_proj(pairs[i].in_node));
 			}
 
-
 			/* remove the proj from the schedule */
 			sched_remove(pairs[i].out_node);
 
-			/* exchange the proj with the argument */
+			/* reroute the edges from the proj to the argument */
 			edges_reroute(pairs[i].out_node, pairs[i].in_node, env->chord_env->irg);
 
 			pairs[i].checked = 1;
@@ -313,7 +314,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			continue;
 		}
 
-//todo: - iff PERM_CYCLE && do_copy -> determine free temp reg and insert copy to/from it before/after
+//TODO: - iff PERM_CYCLE && do_copy -> determine free temp reg and insert copy to/from it before/after
 //        the copy cascade (this reduces the cycle into a chain)
 
 		/* build copy/swap nodes from back to front */
