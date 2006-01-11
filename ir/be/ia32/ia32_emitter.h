@@ -17,7 +17,7 @@ const lc_arg_env_t *ia32_get_arg_env(void);
 
 void equalize_dest_src(FILE *F, ir_node *n);
 
-int get_ia32_in_regnr(ir_node *irn, int pos);
+int get_ia32_reg_nr(ir_node *irn, int posi, int in_out);
 const char *get_ia32_in_reg_name(ir_node *irn, int pos);
 
 void ia32_gen_routine(FILE *F, ir_graph *irg, const arch_env_t *env);

@@ -40,8 +40,9 @@ const arch_register_t     **get_ia32_slots(const ir_node *node);
 void set_ia32_regreq_out(ir_node *node, const arch_register_req_t *req, int pos);
 void set_ia32_regreq_in(ir_node *node, const arch_register_req_t *req, int pos);
 
-const char *get_ia32_out_reg_name(const ir_node *node, int pos);
-int         get_ia32_out_regnr(const ir_node *node, int pos);
+const char            *get_ia32_out_reg_name(const ir_node *node, int pos);
+int                    get_ia32_out_regnr(const ir_node *node, int pos);
+const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos);
 
 int is_ia32_irn(const ir_node *node);
 

@@ -404,6 +404,19 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
 }
 
 /**
+ * Returns the OUT register at position pos.
+ */
+const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
+	asmop_attr *attr = get_ia32_attr(node);
+
+	assert(is_ia32_irn(node) && "Not an ia32 node.");
+	assert(pos < attr->n_res && "Invalid OUT position.");
+	assert(attr->slots[pos]  && "No register assigned");
+
+	return attr->slots[pos];
+}
+
+/**
  * Sets the number of results.
  */
 void set_ia32_n_res(ir_node *node, int n_res) {
