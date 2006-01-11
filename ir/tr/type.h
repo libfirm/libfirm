@@ -103,9 +103,9 @@
  *  @todo
  *      mode maybe not global field??
  */
-#ifndef _TYPE_TYPEDEF_
-#define _TYPE_TYPEDEF_
-typedef struct ir_type type;
+#ifndef _IR_TYPE_TYPEDEF_
+#define _IR_TYPE_TYPEDEF_
+typedef struct ir_type ir_type;
 #endif
 
 # include "type_or_entity.h"
@@ -114,7 +114,7 @@ typedef struct ir_type type;
     Does not free array entity.
     Warning: make sure these entities are not referenced anywhere else.
 */
-void        free_type_entities(type *tp);
+void        free_type_entities(ir_type *tp);
 
 /** Frees the memory used by the type.
  *
@@ -124,16 +124,16 @@ void        free_type_entities(type *tp);
  * param subtypes of method types!!! Make sure these are not
  * referenced any more.  Further make sure there is no pointer type
  * that refers to this type.                           */
-void        free_type(type *tp);
+void        free_type(ir_type *tp);
 
-const tp_op*get_type_tpop(const type *tp);
-ident*      get_type_tpop_nameid(const type *tp);
-const char* get_type_tpop_name(const type *tp);
-tp_opcode   get_type_tpop_code(const type *tp);
+const tp_op*get_type_tpop(const ir_type *tp);
+ident*      get_type_tpop_nameid(const ir_type *tp);
+const char* get_type_tpop_name(const ir_type *tp);
+tp_opcode   get_type_tpop_code(const ir_type *tp);
 
-ident*      get_type_ident(const type *tp);
-void        set_type_ident(type *tp, ident* id);
-const char* get_type_name(const type *tp);
+ident*      get_type_ident(const ir_type *tp);
+void        set_type_ident(ir_type *tp, ident* id);
+const char* get_type_name(const ir_type *tp);
 
 /** This enumeration flags the visibility of entities and types.
  *
@@ -197,8 +197,8 @@ typedef enum {
  * Entities of types are never visibility_external_allocated (right?).
  * Else returns visibility_local.
  */
-visibility get_type_visibility (const type *tp);
-void       set_type_visibility (type *tp, visibility v);
+visibility get_type_visibility (const ir_type *tp);
+void       set_type_visibility (ir_type *tp, visibility v);
 
 
 
@@ -220,53 +220,53 @@ typedef enum {
 const char *get_type_state_name(type_state s);
 
 /** Returns the type layout state of a type. */
-type_state  get_type_state(const type *tp);
+type_state  get_type_state(const ir_type *tp);
 
 /** Sets the type layout state of a type.
  *
  * For primitives, pointer and method types the layout is always fixed.
  * This call is legal but has no effect.
  */
-void        set_type_state(type *tp, type_state state);
+void        set_type_state(ir_type *tp, type_state state);
 
 /** Returns the mode of a type.
  *
  * Returns NULL for all non atomic types.
  */
-ir_mode*    get_type_mode(const type *tp);
+ir_mode*    get_type_mode(const ir_type *tp);
 
 /** Sets the mode of a type.
  *
  * Only has an effect on primitive, enumeration and pointer types.
  */
-void        set_type_mode(type *tp, ir_mode* m);
+void        set_type_mode(ir_type *tp, ir_mode* m);
 
 /** Returns the size of a type in bytes, returns -1 if the size is NOT
  *  a byte size, i.e. not dividable by 8. */
-int         get_type_size_bytes(const type *tp);
+int         get_type_size_bytes(const ir_type *tp);
 
 /** Returns the size of a type in bits. */
-int         get_type_size_bits(const type *tp);
+int         get_type_size_bits(const ir_type *tp);
 
 /** Sets the size of a type in bytes.
  *
  * For primitive, enumeration, pointer and method types the size
  * is always fixed. This call is legal but has no effect.
  */
-void        set_type_size_bytes(type *tp, int size);
+void        set_type_size_bytes(ir_type *tp, int size);
 
 /** Sets the size of a type in bits.
  *
  * For primitive, enumeration, pointer and method types the size
  * is always fixed. This call is legal but has no effect.
  */
-void        set_type_size_bits(type *tp, int size);
+void        set_type_size_bits(ir_type *tp, int size);
 
 /** Returns the alignment of a type in bytes.
  *
  *  Returns -1 if the alignment is NOT
  *  a byte size, i.e. not dividable by 8. Calls get_type_alignment_bits(). */
-int         get_type_alignment_bytes(type *tp);
+int         get_type_alignment_bytes(ir_type *tp);
 
 /** Returns the alignment of a type in bits.
  *
@@ -278,38 +278,38 @@ int         get_type_alignment_bytes(type *tp);
  *  -#.) method types return 0 here.
  *  -#.) all other types return 8 here (i.e. aligned at byte).
  */
-int         get_type_alignment_bits(type *tp);
+int         get_type_alignment_bits(ir_type *tp);
 
 /** Sets the alignment of a type in bytes. */
-void        set_type_alignment_bytes(type *tp, int size);
+void        set_type_alignment_bytes(ir_type *tp, int size);
 
 /** Sets the alignment of a type in bits.
  *
  * For method types the alignment is always fixed.
  * This call is legal but has no effect.
  */
-void        set_type_alignment_bits(type *tp, int size);
+void        set_type_alignment_bits(ir_type *tp, int size);
 
-unsigned long get_type_visited(const type *tp);
-void          set_type_visited(type *tp, unsigned long num);
+unsigned long get_type_visited(const ir_type *tp);
+void          set_type_visited(ir_type *tp, unsigned long num);
 /* Sets visited field in type to type_visited. */
-void          mark_type_visited(type *tp);
-int           type_visited(const type *tp);
-int           type_not_visited(const type *tp);
+void          mark_type_visited(ir_type *tp);
+int           type_visited(const ir_type *tp);
+int           type_not_visited(const ir_type *tp);
 
 /** Returns the associated link field of a type. */
-void*         get_type_link(const type *tp);
+void*         get_type_link(const ir_type *tp);
 /** Sets the associated link field of a type. */
-void          set_type_link(type *tp, void *l);
+void          set_type_link(ir_type *tp, void *l);
 
 /**
  * Visited flag to traverse the type information.
  *
  * Increase this flag by one before traversing the type information
  * using inc_master_type_visited().
- * Mark type nodes as visited by mark_type_visited(type).
- * Check whether node was already visited by type_visited(type)
- * and type_not_visited(type).
+ * Mark type nodes as visited by mark_type_visited(ir_type).
+ * Check whether node was already visited by type_visited(ir_type)
+ * and type_not_visited(ir_type).
  * Or use the function to walk all types.
  *
  * @see  typewalk
@@ -326,7 +326,7 @@ void          inc_master_type_visited(void);
  * @return
  *     true if the thing is a type, else false
  */
-int is_type            (const void *thing);
+int is_type  (const void *thing);
 
 /**
  *   Checks whether two types are structurally equal.
@@ -364,7 +364,7 @@ int is_type            (const void *thing);
  *       This is to avoid endless recursions; with pointer types cyclic
  *       type graphs are possible.)
  */
-int equal_type(type *typ1, type *typ2);
+int equal_type(ir_type *typ1, ir_type *typ2);
 
 /**
  *   Checks whether two types are structural comparable.
@@ -401,7 +401,7 @@ int equal_type(type *typ1, type *typ2);
  *      @return smaller than the points_to type of lt.
  *
  */
-int smaller_type (type *st, type *lt);
+int smaller_type (ir_type *st, ir_type *lt);
 
 /**
  *  @page class_type    Representation of a class type
@@ -435,73 +435,73 @@ int smaller_type (type *st, type *lt);
  */
 
 /** Creates a new class type. */
-type   *new_type_class (ident *name);
+ir_type *new_type_class (ident *name);
 
 /** Creates a new class type with debug information. */
-type   *new_d_type_class (ident *name, dbg_info *db);
+ir_type *new_d_type_class (ident *name, dbg_info *db);
 
 /* --- manipulate private fields of class type  --- */
 
 /** Adds the entity as member of the class.  */
-void    add_class_member   (type *clss, entity *member);
+void    add_class_member   (ir_type *clss, entity *member);
 
 /** Returns the number of members of this class. */
-int     get_class_n_members (const type *clss);
+int     get_class_n_members (const ir_type *clss);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-entity *get_class_member   (const type *clss, int pos);
+entity *get_class_member   (const ir_type *clss, int pos);
 
 /** Returns index of mem in clss, -1 if not contained. */
-int     get_class_member_index(type *clss, entity *mem);
+int     get_class_member_index(ir_type *clss, entity *mem);
 
 /** Finds the member with name 'name'. If several members with the same
  *  name returns one of them.  Returns NULL if no member found. */
-entity *get_class_member_by_name(type *clss, ident *name);
+entity *get_class_member_by_name(ir_type *clss, ident *name);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
  *  the passed entity. */
-void    set_class_member   (type *clss, entity *member, int pos);
+void    set_class_member   (ir_type *clss, entity *member, int pos);
 
 /** Replaces complete member list in class type by the list passed.
  *
  *  Copies the list passed. This function is necessary to reduce the number of members.
  *  members is an array of entities, num the size of this array.  Sets all
  *  owners of the members passed to clss. */
-void    set_class_members  (type *clss, entity *members[], int arity);
+void    set_class_members  (ir_type *clss, entity *members[], int arity);
 
 /** Finds member in the list of members and removes it.
  *
  *  Shrinks the member list, so iterate from the end!!!
  *  Does not deallocate the entity.  */
-void    remove_class_member(type *clss, entity *member);
+void    remove_class_member(ir_type *clss, entity *member);
 
 
 /** Adds subtype as subtype to clss.
  *
  *  Checks whether clss is a supertype of subtype.  If not
  *  adds also clss as supertype to subtype.  */
-void    add_class_subtype   (type *clss, type *subtype);
+void    add_class_subtype   (ir_type *clss, ir_type *subtype);
 
 /** Returns the number of subtypes */
-int     get_class_n_subtypes (const type *clss);
+int     get_class_n_subtypes (const ir_type *clss);
 
 /** Gets the subtype at position pos, 0 <= pos < n_subtype. */
-type   *get_class_subtype   (type *clss, int pos);
+ir_type *get_class_subtype   (ir_type *clss, int pos);
 
 /** Returns the index to access subclass as subtype of class.
  *
  *  If subclass is no direct subtype of class returns -1.
  */
-int get_class_subtype_index(type *clss, const type *subclass);
+int get_class_subtype_index(ir_type *clss, const ir_type *subclass);
 
 /** Sets the subtype at position pos, 0 <= pos < n_subtype.
  *
  *  Does not set the corresponding supertype relation for subtype: this might
  *  be a different position! */
-void    set_class_subtype   (type *clss, type *subtype, int pos);
+void    set_class_subtype   (ir_type *clss, ir_type *subtype, int pos);
 
 /** Finds subtype in the list of subtypes and removes it  */
-void    remove_class_subtype(type *clss, type *subtype);
+void    remove_class_subtype(ir_type *clss, ir_type *subtype);
 
 /* Convenience macros */
 #define add_class_derived_type(clss, drvtype)       add_class_subtype(clss, drvtype)
@@ -515,28 +515,28 @@ void    remove_class_subtype(type *clss, type *subtype);
  *
  *  Checks whether clss is a subtype of supertype.  If not
  *  adds also clss as subtype to supertype.  */
-void    add_class_supertype   (type *clss, type *supertype);
+void    add_class_supertype   (ir_type *clss, ir_type *supertype);
 
 /** Returns the number of supertypes */
-int     get_class_n_supertypes (const type *clss);
+int     get_class_n_supertypes (const ir_type *clss);
 
 /** Returns the index to access superclass as supertype of class.
  *
  *  If superclass is no direct supertype of class returns -1.
  */
-int     get_class_supertype_index(type *clss, type *super_clss);
+int     get_class_supertype_index(ir_type *clss, ir_type *super_clss);
 
 /** Gets the supertype at position pos,  0 <= pos < n_supertype. */
-type   *get_class_supertype   (type *clss, int pos);
+ir_type *get_class_supertype   (ir_type *clss, int pos);
 
 /** Sets the supertype at position pos, 0 <= pos < n_supertype.
  *
  *  Does not set the corresponding subtype relation for supertype: this might
  *  be at a different position! */
-void    set_class_supertype   (type *clss, type *supertype, int pos);
+void    set_class_supertype   (ir_type *clss, ir_type *supertype, int pos);
 
 /** Finds supertype in the list of supertypes and removes it */
-void    remove_class_supertype(type *clss, type *supertype);
+void    remove_class_supertype(ir_type *clss, ir_type *supertype);
 
 /** Convenience macro */
 #define add_class_base_type(clss, basetype)  add_class_supertype(clss, basetype)
@@ -573,17 +573,17 @@ typedef enum peculiarity {
 const char *get_peculiarity_string(peculiarity p);
 
 /** Returns the peculiarity of the class. */
-peculiarity get_class_peculiarity (const type *clss);
+peculiarity get_class_peculiarity (const ir_type *clss);
 /** Sets the peculiarity of the class. */
-void        set_class_peculiarity (type *clss, peculiarity pec);
+void        set_class_peculiarity (ir_type *clss, peculiarity pec);
 
 /* Set and get a class' dfn --
    @todo This is an undocumented field, subject to change! */
-void set_class_dfn (type *clss, int dfn);
-int  get_class_dfn (const type *clss);
+void set_class_dfn (ir_type *clss, int dfn);
+int  get_class_dfn (const ir_type *clss);
 
 /** Returns true if a type is a class type. */
-int is_Class_type(const type *clss);
+int is_Class_type(const ir_type *clss);
 
 /**
  *  @page struct_type   Representation of a struct type
@@ -601,33 +601,33 @@ int is_Class_type(const type *clss);
  *             but not shrinked.
  */
 /** Creates a new type struct */
-type   *new_type_struct (ident *name);
+ir_type *new_type_struct (ident *name);
 /** Creates a new type struct with debug information. */
-type   *new_d_type_struct (ident *name, dbg_info* db);
+ir_type *new_d_type_struct (ident *name, dbg_info* db);
 
 /* --- manipulate private fields of struct --- */
 
 /** Adds the entity as member of the struct.  */
-void    add_struct_member   (type *strct, entity *member);
+void    add_struct_member   (ir_type *strct, entity *member);
 
 /** Returns the number of members of this struct. */
-int     get_struct_n_members (const type *strct);
+int     get_struct_n_members (const ir_type *strct);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-entity *get_struct_member   (const type *strct, int pos);
+entity *get_struct_member   (const ir_type *strct, int pos);
 
 /** Returns index of member in strct, -1 if not contained. */
-int     get_struct_member_index(type *strct, entity *member);
+int     get_struct_member_index(ir_type *strct, entity *member);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
-void    set_struct_member   (type *strct, int pos, entity *member);
+void    set_struct_member   (ir_type *strct, int pos, entity *member);
 
 /** Finds member in the list of members and removes it. */
-void    remove_struct_member (type *strct, entity *member);
+void    remove_struct_member (ir_type *strct, entity *member);
 
 /** Returns true if a type is a struct type. */
-int     is_Struct_type(const type *strct);
+int     is_Struct_type(const ir_type *strct);
 
 /**
  * @page method_type    Representation of a method type
@@ -677,7 +677,7 @@ int     is_Struct_type(const type *strct);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-type *new_type_method (ident *name, int n_param, int n_res);
+ir_type *new_type_method (ident *name, int n_param, int n_res);
 
 /** Create a new method type with debug information.
  *
@@ -689,43 +689,43 @@ type *new_type_method (ident *name, int n_param, int n_res);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db);
+ir_type *new_d_type_method (ident *name, int n_param, int n_res, dbg_info* db);
 
 /* -- manipulate private fields of method. -- */
 
 /** Returns the number of parameters of this method. */
-int   get_method_n_params  (const type *method);
+int   get_method_n_params  (const ir_type *method);
 
 /** Returns the type of the parameter at position pos of a method. */
-type *get_method_param_type(type *method, int pos);
+ir_type *get_method_param_type(ir_type *method, int pos);
 /** Sets the type of the parameter at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
-void  set_method_param_type(type *method, int pos, type* tp);
+void  set_method_param_type(ir_type *method, int pos, ir_type *tp);
 /** Returns an entity that represents the copied value argument.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-entity *get_method_value_param_ent(type *method, int pos);
+entity *get_method_value_param_ent(ir_type *method, int pos);
 /**
  * Returns a type that represents the copied value arguments.
  */
-type *get_method_value_param_type(const type *method);
+ir_type *get_method_value_param_type(const ir_type *method);
 
 /** Returns the number of results of a method type. */
-int   get_method_n_ress   (const type *method);
+int   get_method_n_ress   (const ir_type *method);
 /** Returns the return type of a method type at position pos. */
-type *get_method_res_type(type *method, int pos);
+ir_type *get_method_res_type(ir_type *method, int pos);
 /** Sets the type of the result at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
-void  set_method_res_type(type *method, int pos, type* tp);
+void  set_method_res_type(ir_type *method, int pos, ir_type *tp);
 /** Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-entity *get_method_value_res_ent(type *method, int pos);
+entity *get_method_value_res_ent(ir_type *method, int pos);
 
 /**
  * Returns a type that represents the copied value results.
  */
-type *get_method_value_res_type(const type *method);
+ir_type *get_method_value_res_type(const ir_type *method);
 
 /**
  * This enum flags the variadicity of methods (methods with a
@@ -741,10 +741,10 @@ typedef enum variadicity {
 const char *get_variadicity_name(variadicity vari);
 
 /** Returns the variadicity of a method. */
-variadicity get_method_variadicity(const type *method);
+variadicity get_method_variadicity(const ir_type *method);
 
 /** Sets the variadicity of a method. */
-void set_method_variadicity(type *method, variadicity vari);
+void set_method_variadicity(ir_type *method, variadicity vari);
 
 /**
  * Returns the first variadic parameter index of a type.
@@ -752,7 +752,7 @@ void set_method_variadicity(type *method, variadicity vari);
  * of the method type plus one is returned for variadic functions.
  * Non-variadic function types always return -1 here.
  */
-int get_method_first_variadic_param_index(const type *method);
+int get_method_first_variadic_param_index(const ir_type *method);
 
 /**
  * Sets the first variadic parameter index. This allows to specify
@@ -760,7 +760,7 @@ int get_method_first_variadic_param_index(const type *method);
  * but still have the knowledge, which parameter must be passed as
  * variadic one.
  */
-void set_method_first_variadic_param_index(type *method, int index);
+void set_method_first_variadic_param_index(ir_type *method, int index);
 
 /**
  * additional method type properties:
@@ -785,18 +785,20 @@ typedef enum {
                                          GCC: __attribute__((naked)). */
   mtp_property_malloc    = 0x00000020, /**< This method returns newly allocate memory.
                                          GCC: __attribute__((malloc)). */
+  mtp_property_intrinsic = 0x00000040, /**< This method is intrinsic. It is expected that
+                                         a lowering phase will remove all calls to it. */
   mtp_property_inherited = 0x40000000  /**< used only in irg's, means property is inherited
                                          from type. */
 } mtp_additional_property;
 
 /** Returns the mask of the additional graph properties. */
-unsigned get_method_additional_properties(const type *method);
+unsigned get_method_additional_properties(const ir_type *method);
 
 /** Sets the mask of the additional graph properties. */
-void set_method_additional_properties(type *method, unsigned property_mask);
+void set_method_additional_properties(ir_type *method, unsigned property_mask);
 
 /** Sets one additional graph property. */
-void set_method_additional_property(type *method, mtp_additional_property flag);
+void set_method_additional_property(ir_type *method, mtp_additional_property flag);
 
 /**
  * calling conventions: lower 24 bits are the number of register parameters,
@@ -860,19 +862,19 @@ unsigned get_default_cc_mask(void);
 #define SET_FASTCALL(cc_mask) (((cc_mask) & ~cc_bits) | cc_fastcall_set)
 
 /** Returns the calling convention of an entities graph. */
-unsigned get_method_calling_convention(const type *method);
+unsigned get_method_calling_convention(const ir_type *method);
 
 /** Sets the calling convention of an entities graph. */
-void set_method_calling_convention(type *method, unsigned cc_mask);
+void set_method_calling_convention(ir_type *method, unsigned cc_mask);
 
 /** Returns the number of registers parameters, 0 means default. */
-unsigned get_method_n_regparams(type *method);
+unsigned get_method_n_regparams(ir_type *method);
 
 /** Sets the number of registers parameters, 0 means default. */
-void set_method_n_regparams(type *method, unsigned n_regs);
+void set_method_n_regparams(ir_type *method, unsigned n_regs);
 
 /** Returns true if a type is a method type. */
-int   is_Method_type     (const type *method);
+int   is_Method_type     (const ir_type *method);
 
 /**
  *   @page union_type   Representation of a union (variant) type.
@@ -884,30 +886,30 @@ int   is_Method_type     (const type *method);
  *                  but not shrinked.
  */
 /** Creates a new type union. */
-type   *new_type_union (ident *name);
+ir_type   *new_type_union (ident *name);
 
 /** Creates a new type union with debug information. */
-type   *new_d_type_union (ident *name, dbg_info* db);
+ir_type   *new_d_type_union (ident *name, dbg_info* db);
 
 /* --- manipulate private fields of struct --- */
 
 /** Returns the number of unioned types of this union */
-int     get_union_n_members      (const type *uni);
+int     get_union_n_members      (const ir_type *uni);
 
 /** Adds a new entity to a union type */
-void    add_union_member (type *uni, entity *member);
+void    add_union_member (ir_type *uni, entity *member);
 
 /** Returns the entity at position pos of a union */
-entity *get_union_member (const type *uni, int pos);
+entity *get_union_member (const ir_type *uni, int pos);
 
 /** Overwrites a entity at position pos in a union type. */
-void    set_union_member (type *uni, int pos, entity *member);
+void    set_union_member (ir_type *uni, int pos, entity *member);
 
 /** Finds member in the list of members and removes it. */
-void    remove_union_member (type *uni, entity *member);
+void    remove_union_member (ir_type *uni, entity *member);
 
 /** Returns true if a type is a union type. */
-int     is_Union_type          (const type *uni);
+int     is_Union_type          (const ir_type *uni);
 
 /**
  * @page array_type Representation of an array type
@@ -935,8 +937,8 @@ int     is_Union_type          (const type *uni);
  * The entity for array elements is built automatically.
  * Set dimension sizes after call to constructor with set_* routines.
  */
-type *new_type_array         (ident *name, int n_dimensions,
-                  type *element_type);
+ir_type *new_type_array         (ident *name, int n_dimensions,
+                  ir_type *element_type);
 
 /** Create a new type array with debug information.
  *
@@ -946,76 +948,76 @@ type *new_type_array         (ident *name, int n_dimensions,
  * Set dimension sizes after call to constructor with set_* routines.
  * A legal array type must have at least one dimension set.
  */
-type *new_d_type_array         (ident *name, int n_dimensions,
-                  type *element_type, dbg_info* db);
+ir_type *new_d_type_array         (ident *name, int n_dimensions,
+                  ir_type *element_type, dbg_info* db);
 
 /* --- manipulate private fields of array type --- */
 
 /** Returns the number of array dimensions of this type. */
-int   get_array_n_dimensions (const type *array);
+int   get_array_n_dimensions (const ir_type *array);
 
 /**
  * Allocates Const nodes of mode_I for one array dimension.
  * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
-void  set_array_bounds_int   (type *array, int dimension, int lower_bound,
+void  set_array_bounds_int   (ir_type *array, int dimension, int lower_bound,
                                                           int upper_bound);
 /**
  * Sets the bounds for one array dimension.
  * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
-void  set_array_bounds       (type *array, int dimension, ir_node *lower_bound,
+void  set_array_bounds       (ir_type *array, int dimension, ir_node *lower_bound,
                                                           ir_node *upper_bound);
 /** Sets the lower bound for one array dimension, i.e. [lower,upper[ */
-void  set_array_lower_bound  (type *array, int dimension, ir_node *lower_bound);
+void  set_array_lower_bound  (ir_type *array, int dimension, ir_node *lower_bound);
 
 /** Allocates Const nodes of mode_I for the lower bound of an array
     dimension, i.e. [lower,upper[ */
-void  set_array_lower_bound_int (type *array, int dimension, int lower_bound);
+void  set_array_lower_bound_int (ir_type *array, int dimension, int lower_bound);
 
 /** Sets the upper bound for one array dimension, i.e. [lower,upper[ */
-void  set_array_upper_bound  (type *array, int dimension, ir_node *upper_bound);
+void  set_array_upper_bound  (ir_type *array, int dimension, ir_node *upper_bound);
 
 /** Allocates Const nodes of mode_I for the upper bound of an array
     dimension, i.e. [lower,upper[. */
-void  set_array_upper_bound_int (type *array, int dimension, int upper_bound);
+void  set_array_upper_bound_int (ir_type *array, int dimension, int upper_bound);
 
 /** Returns true if lower bound != Unknown. */
-int       has_array_lower_bound     (const type *array, int dimension);
+int       has_array_lower_bound     (const ir_type *array, int dimension);
 /** Returns the lower bound of an array. */
-ir_node * get_array_lower_bound     (const type *array, int dimension);
+ir_node * get_array_lower_bound     (const ir_type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-long      get_array_lower_bound_int (const type *array, int dimension);
+long      get_array_lower_bound_int (const ir_type *array, int dimension);
 /** returns true if lower bound != Unknown */
-int       has_array_upper_bound     (const type *array, int dimension);
+int       has_array_upper_bound     (const ir_type *array, int dimension);
 /** Returns the upper bound of an array. */
-ir_node * get_array_upper_bound     (const type *array, int dimension);
+ir_node * get_array_upper_bound     (const ir_type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-long      get_array_upper_bound_int (const type *array, int dimension);
+long      get_array_upper_bound_int (const ir_type *array, int dimension);
 
 /** Sets an array dimension to a specific order. */
-void set_array_order (type *array, int dimension, int order);
+void set_array_order (ir_type *array, int dimension, int order);
 
 /** Returns the order of an array dimension. */
-int  get_array_order (const type *array, int dimension);
+int  get_array_order (const ir_type *array, int dimension);
 
 /** Find the array dimension that is placed at order ord. */
-int find_array_dimension(const type *array, int order);
+int find_array_dimension(const ir_type *array, int order);
 
 /** Sets the array element type. */
-void  set_array_element_type (type *array, type *tp);
+void  set_array_element_type (ir_type *array, ir_type* tp);
 
 /** Gets the array element type. */
-type *get_array_element_type (type *array);
+ir_type *get_array_element_type (ir_type *array);
 
 /** Sets the array element entity. */
-void  set_array_element_entity (type *array, entity *ent);
+void  set_array_element_entity (ir_type *array, entity *ent);
 
 /** Get the array element entity. */
-entity *get_array_element_entity (const type *array);
+entity *get_array_element_entity (const ir_type *array);
 
 /** Returns true if a type is an array type. */
-int    is_Array_type(const type *array);
+int    is_Array_type(const ir_type *array);
 
 /**
  * @page enumeration_type   Representation of an enumeration type
@@ -1030,33 +1032,33 @@ int    is_Array_type(const type *array);
  *                  constants
  */
 /** Create a new type enumeration -- set the enumerators independently. */
-type   *new_type_enumeration    (ident *name, int n_enums);
+ir_type   *new_type_enumeration    (ident *name, int n_enums);
 
 /** Create a new type enumeration with debug information -- set the enumerators independently. */
-type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db);
+ir_type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db);
 
 /* --- manipulate fields of enumeration type. --- */
 
 /** Returns the number of enumeration values of this enumeration */
-int     get_enumeration_n_enums (const type *enumeration);
+int     get_enumeration_n_enums (const ir_type *enumeration);
 
 /** Sets the enumeration value at a given position. */
-void    set_enumeration_enum    (type *enumeration, int pos, tarval *con);
+void    set_enumeration_enum    (ir_type *enumeration, int pos, tarval *con);
 
 /** Returns the enumeration value at a given position. */
-tarval *get_enumeration_enum    (const type *enumeration, int pos);
+tarval *get_enumeration_enum    (const ir_type *enumeration, int pos);
 
 /** Assign an ident to an enumeration value at a given position. */
-void    set_enumeration_nameid  (type *enumeration, int pos, ident *id);
+void    set_enumeration_nameid  (ir_type *enumeration, int pos, ident *id);
 
 /** Returns the assigned ident of an enumeration value at a given position. */
-ident  *get_enumeration_nameid  (const type *enumeration, int pos);
+ident  *get_enumeration_nameid  (const ir_type *enumeration, int pos);
 
 /** Returns the assigned name of an enumeration value at a given position. */
-const char *get_enumeration_name(const type *enumeration, int pos);
+const char *get_enumeration_name(const ir_type *enumeration, int pos);
 
 /** Returns true if a type is a enumeration type. */
-int     is_Enumeration_type     (const type *enumeration);
+int     is_Enumeration_type     (const ir_type *enumeration);
 
 /**
  * @page pointer_type   Representation of a pointer type
@@ -1068,26 +1070,26 @@ int     is_Enumeration_type     (const type *enumeration);
  */
 
 /** Creates a new type pointer. */
-type *new_type_pointer           (ident *name, type *points_to, ir_mode *ptr_mode);
+ir_type *new_type_pointer           (ident *name, ir_type *points_to, ir_mode *ptr_mode);
 
 /** Creates a new type pointer with debug information. */
-type *new_d_type_pointer         (ident *name, type *points_to, ir_mode *ptr_mode, dbg_info* db);
+ir_type *new_d_type_pointer         (ident *name, ir_type *points_to, ir_mode *ptr_mode, dbg_info* db);
 
 /* --- manipulate fields of type_pointer --- */
 
 /** Sets the type to which a pointer points to. */
-void  set_pointer_points_to_type (type *pointer, type *tp);
+void  set_pointer_points_to_type (ir_type *pointer, ir_type *tp);
 
 /** Returns the type to which a pointer points to. */
-type *get_pointer_points_to_type (type *pointer);
+ir_type *get_pointer_points_to_type (ir_type *pointer);
 
 /** Returns true if a type is a pointer type. */
-int   is_Pointer_type            (const type *pointer);
+int   is_Pointer_type            (const ir_type *pointer);
 
 /** Returns the first pointer type that has as points_to tp.
  *  Not efficient: O(#types).
  *  If not found returns unknown_type. */
-type *find_pointer_type_to_type (type *tp);
+ir_type *find_pointer_type_to_type (ir_type *tp);
 
 /**
  * @page primitive_type Representation of a primitive type
@@ -1097,13 +1099,13 @@ type *find_pointer_type_to_type (type *tp);
  * important information they carry is held in the common mode field.
 */
 /** Creates a new primitive type. */
-type *new_type_primitive (ident *name, ir_mode *mode);
+ir_type *new_type_primitive (ident *name, ir_mode *mode);
 
 /** Creates a new primitive type with debug information. */
-type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
+ir_type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
-int  is_Primitive_type  (const type *primitive);
+int  is_Primitive_type  (const ir_type *primitive);
 
 
 /**
@@ -1126,7 +1128,7 @@ int  is_Primitive_type  (const type *primitive);
 /** A variable that contains the only none type. */
 extern type *firm_none_type;
 /** Returns the none type */
-type *get_none_type(void);
+ir_type *get_none_type(void);
 
 /**
  * @page unknown_type
@@ -1148,7 +1150,7 @@ type *get_none_type(void);
 /** A variable that contains the only unknown type. */
 extern type *firm_unknown_type;
 /** Returns the unknown type */
-type *get_unknown_type(void);
+ir_type *get_unknown_type(void);
 
 
 /**
@@ -1156,7 +1158,7 @@ type *get_unknown_type(void);
  *  @param tp   any type
  *  @return true if type is primitive, pointer or enumeration
  */
-int is_atomic_type(const type *tp);
+int is_atomic_type(const ir_type *tp);
 
 /* --- Support for compound types --- */
 
@@ -1171,7 +1173,7 @@ int is_atomic_type(const type *tp);
  *
  * @return Number of members in the compound type.
  */
-int get_compound_n_members(const type *tp);
+int get_compound_n_members(const ir_type *tp);
 
 /**
  * Gets the member of a firm compound type at position pos.
@@ -1183,7 +1185,7 @@ int get_compound_n_members(const type *tp);
  *
  * @see get_compound_n_members() for justification of existence.
  */
-entity *get_compound_member(const type *tp, int pos);
+entity *get_compound_member(const ir_type *tp, int pos);
 
 /**
  * Checks whether a type is compound.
@@ -1192,19 +1194,19 @@ entity *get_compound_member(const type *tp, int pos);
  *
  * @return true if the type is class, structure, union or array type.
  */
-int is_compound_type(const type *tp);
+int is_compound_type(const ir_type *tp);
 
 /**
  * Checks, whether a type is a frame type
  */
-int is_frame_type(const type *tp);
+int is_frame_type(const ir_type *tp);
 
 /**
  * Makes a new frame type. Frame types are class types,
  * so all class access functions work.
  * Frame types are not in the global list of types.
  */
-type   *new_type_frame(ident *name);
+ir_type   *new_type_frame(ident *name);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
@@ -1215,7 +1217,7 @@ type   *new_type_frame(ident *name);
  *  debugging, (configure with --enable-debug) else returns the address
  *  of the type cast to long.
  */
-long get_type_nr(const type *tp);
+long get_type_nr(const ir_type *tp);
 
 
 # endif /* _TYPE_H_ */
