@@ -6,6 +6,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irop_t.h"
+#include "irargs_t.h"
 
 #include "../besched.h"
 
@@ -73,8 +74,7 @@ static int ia32_get_arg_type(const lc_arg_occ_t *occ) {
 
 
 /**
- * Returns the register at in position pos. If the IN node is not an
- * ia32 node, we check for phi and proj.
+ * Returns the register at in position pos.
  */
 static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
 	ir_node                *op;
@@ -88,31 +88,90 @@ static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
 
 	reg = arch_get_irn_register(arch_env, op);
 
-	assert(reg && "could not get in register");
+	assert(reg && "no in register found");
+	return reg;
+}
 
+/**
+ * Returns the register at out position pos.
+ */
+static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
+	ir_node                *proj;
+	const arch_register_t  *reg = NULL;
+
+	assert(get_irn_n_edges(irn) > pos && "Invalid OUT position");
+
+	/* 1st case: irn is not of mode_T, so it has only                 */
+	/*           one OUT register -> good                             */
+	/* 2nd case: irn is of mode_T -> collect all Projs and ask the    */
+	/*           Proj with the corresponding projnum for the register */
+
+	if (get_irn_mode(irn) != mode_T) {
+		reg = arch_get_irn_register(arch_env, irn);
+	}
+	else if (is_ia32_irn(irn)) {
+		reg = get_ia32_out_reg(irn, pos);
+	}
+	else {
+		const ir_edge_t *edge;
+
+		foreach_out_edge(irn, edge) {
+			proj = get_edge_src_irn(edge);
+			assert(is_Proj(proj) && "non-Proj from mode_T node");
+			if (get_Proj_proj(proj) == pos) {
+				reg = arch_get_irn_register(arch_env, proj);
+				break;
+			}
+		}
+	}
+
+	assert(reg && "no out register found");
 	return reg;
 }
 
 /**
  * Returns the number of the in register at position pos.
  */
-int get_ia32_in_regnr(ir_node *irn, int pos) {
+int get_ia32_reg_nr(ir_node *irn, int pos, int in_out) {
 	const arch_register_t *reg;
+	ir_node               *op;
 
-	reg = get_in_reg(irn, pos);
-	assert(reg && "no in register");
-	return reg->index;
+	if (in_out == 1) {
+		/* special case Proj P_fame_base */
+		op = get_irn_n(irn, pos);
+		if (is_Proj(op) && get_Proj_proj(op) == pn_Start_P_frame_base) {
+			return 10;
+		}
+
+		reg = get_in_reg(irn, pos);
+	}
+	else {
+		reg = get_out_reg(irn, pos);
+	}
+
+	return arch_register_get_index(reg);
 }
 
 /**
  * Returns the name of the in register at position pos.
  */
-const char *get_ia32_in_reg_name(ir_node *irn, int pos) {
+const char *get_ia32_reg_name(ir_node *irn, int pos, int in_out) {
 	const arch_register_t *reg;
+	ir_node               *op;
 
-	reg = get_in_reg(irn, pos);
-	assert(reg && "no in register");
-	return reg->name;
+	if (in_out == 1) {
+		/* special case Proj P_fame_base */
+		op = get_irn_n(irn, pos);
+		if (is_Proj(op) && get_Proj_proj(op) == pn_Start_P_frame_base) {
+			return "x(esp)";
+		}
+		reg = get_in_reg(irn, pos);
+	}
+	else {
+		reg = get_out_reg(irn, pos);
+	}
+
+	return arch_register_get_name(reg);
 }
 
 /**
@@ -129,12 +188,13 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 		return lc_arg_append(app, occ, "(null)", 6);
 
 	if (occ->conversion == 's') {
-		buf = get_ia32_in_reg_name(X, nr);
+		buf = get_ia32_reg_name(X, nr, 1);
 	}
 	else { /* 'd' */
-		buf = get_ia32_out_reg_name(X, nr);
+		buf = get_ia32_reg_name(X, nr, 0);
 	}
 
+	lc_appendable_chadd(app, '%');
 	return lc_arg_append(app, occ, buf, strlen(buf));
 }
 
@@ -182,33 +242,34 @@ static int ia32_get_mode_suffix(lc_appendable_t *app,
  * We use the firm environment with some additional handlers.
  */
 const lc_arg_env_t *ia32_get_arg_env(void) {
-  static lc_arg_env_t *env = NULL;
+	static lc_arg_env_t *env = NULL;
 
-  static const lc_arg_handler_t ia32_reg_handler   = { ia32_get_arg_type, ia32_get_reg_name };
-  static const lc_arg_handler_t ia32_const_handler = { ia32_get_arg_type, ia32_const_to_str };
-  static const lc_arg_handler_t ia32_mode_handler  = { ia32_get_arg_type, ia32_get_mode_suffix };
+	static const lc_arg_handler_t ia32_reg_handler   = { ia32_get_arg_type, ia32_get_reg_name };
+	static const lc_arg_handler_t ia32_const_handler = { ia32_get_arg_type, ia32_const_to_str };
+	static const lc_arg_handler_t ia32_mode_handler  = { ia32_get_arg_type, ia32_get_mode_suffix };
 
-  if(env == NULL) {
-    env = lc_arg_new_env();
+	if(env == NULL) {
+		/* extend the firm printer */
+		env = firm_get_arg_env();
 
-    lc_arg_register(env, "ia32:sreg", 's', &ia32_reg_handler);
-    lc_arg_register(env, "ia32:dreg", 'd', &ia32_reg_handler);
-    lc_arg_register(env, "ia32:cnst", 'c', &ia32_const_handler);
-    lc_arg_register(env, "ia32:offs", 'o', &ia32_const_handler);
-    lc_arg_register(env, "ia32:mode", 'm', &ia32_mode_handler);
-  }
+		lc_arg_register(env, "ia32:sreg", 's', &ia32_reg_handler);
+		lc_arg_register(env, "ia32:dreg", 'd', &ia32_reg_handler);
+		lc_arg_register(env, "ia32:cnst", 'c', &ia32_const_handler);
+		lc_arg_register(env, "ia32:offs", 'o', &ia32_const_handler);
+		lc_arg_register(env, "ia32:mode", 'm', &ia32_mode_handler);
+	}
 
-  return env;
+	return env;
 }
 
 /**
  * For 2-address code we need to make sure the first src reg is equal to dest reg.
  */
 void equalize_dest_src(FILE *F, ir_node *n) {
-	if (get_ia32_in_regnr(n, 0) != get_ia32_out_regnr(n, 0)) {
-		if (get_irn_arity(n) > 1 && get_ia32_in_regnr(n, 1) == get_ia32_out_regnr(n, 0)) {
+	if (get_ia32_reg_nr(n, 0, 1) != get_ia32_reg_nr(n, 0, 0)) {
+		if (get_irn_arity(n) > 1 && get_ia32_reg_nr(n, 1, 1) == get_ia32_reg_nr(n, 0, 0)) {
 			if (! is_op_commutative(get_irn_op(n))) {
-				/* we only need to echange for non-commutative ops */
+				/* we only need to exchange for non-commutative ops */
 				lc_efprintf(ia32_get_arg_env(), F, "\txchg %1s, %2s\t\t\t/* xchg src1 <-> src2 for 2 address code */\n", n, n);
 			}
 		}
@@ -592,6 +653,9 @@ void ia32_emit_node(ir_node *irn, void *env) {
 #define EMIT(a)      if (get_irn_opcode(irn) == iro_##a) { emit_##a(irn, emit_env); return; }
 
 	/* generated int emitter functions */
+	IA32_EMIT(Copy);
+	IA32_EMIT(Perm);
+
 	IA32_EMIT(Const);
 
 	IA32_EMIT(Add);
@@ -671,6 +735,9 @@ void ia32_emit_node(ir_node *irn, void *env) {
 void ia32_gen_block(ir_node *block, void *env) {
 	ir_node *irn;
 
+	if (! is_Block(block))
+		return;
+
 	fprintf(((emit_env_t *)env)->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
@@ -728,6 +795,6 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const arch_env_t *env) {
 
 	ia32_emit_start(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
-	irg_block_walk_graph(irg, NULL, ia32_gen_block, &emit_env);
+	irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
 	ia32_emit_end(F, irg);
 }
