@@ -26,27 +26,10 @@
 #include "ia32_emitter.h"
 #include "ia32_map_regs.h"
 
-#define DEBUG_MODULE "be.isa.ia32"
+#define DEBUG_MODULE "ir.be.isa.ia32"
 
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
-
-/**
- * Stuff needed for dummy register requirements to keep register allocator
- * happy during development.
- */
-static arch_register_t       ia32_dummy_regs[500];
-static arch_register_class_t ia32_dummy_reg_class = {
-	"dummy",
-	500,
-	ia32_dummy_regs
-};
-
-static arch_register_req_t ia32_dummy_register_req = {
-	arch_register_req_type_normal,
-	&ia32_dummy_reg_class,
-	{ NULL }
-};
 
 
 
@@ -131,6 +114,8 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 				case pn_Start_X_initial_exec:
 				case pn_Start_P_value_arg_base:
 				case pn_Start_P_globals:
+					memcpy(req, &ia32_default_req_none, sizeof(*req));
+					break;
 				case pn_Start_P_frame_base:
 					memcpy(req, &ia32_default_req_none, sizeof(*req));
 					break;
@@ -143,8 +128,9 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 			memcpy(req, &ia32_default_req_ia32_general_purpose_eax, sizeof(*req));
 		}
 		else {
-			DBG((mod, LEVEL_1, "returning standard reqs for %+F (not ia32)\n", irn));
-			memcpy(req, &ia32_dummy_register_req, sizeof(*req));
+			DBG((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
+			req = NULL;
+			//memcpy(req, &ia32_dummy_register_req, sizeof(*req));
 		}
 	}
 
@@ -349,10 +335,8 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
  * Initializes the backend ISA and opens the output file.
  */
 static void *ia32_init(void) {
-	int i;
-	static struct obstack obst;
-	static int inited    = 0;
-	ia32_isa_t *isa      = malloc(sizeof(*isa));
+	static int inited = 0;
+	ia32_isa_t *isa   = malloc(sizeof(*isa));
 
 	isa->impl = &ia32_isa_if;
 
@@ -362,26 +346,6 @@ static void *ia32_init(void) {
 	inited = 1;
 
 	isa->num_codegens = 0;
-
-	/* init dummy register requirements */
-	obstack_init(&obst);
-
-	for (i = 0; i < 500; i++) {
-		int n;
-		char buf[5];
-		char *name;
-		arch_register_t *reg = &ia32_dummy_regs[i];
-
-		n = snprintf(buf, sizeof(buf), "d%d", i);
-		name = obstack_copy0(&obst, buf, n);
-
-		reg->name      = name;
-		reg->reg_class = &ia32_dummy_reg_class;
-		reg->index     = i;
-		reg->type      = arch_register_type_none;
-	}
-
-	obstack_free(&obst, NULL);
 
 	ia32_register_init();
 	ia32_create_opcodes();
