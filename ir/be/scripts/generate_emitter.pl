@@ -33,8 +33,27 @@ my $target_h = $target_dir."/gen_".$arch."_emitter.h";
 # stacks for output
 my @obst_func;   # stack for the emit functions
 my @obst_header;  # stack for the function prototypes
-
 my $line;
+
+# some default emitter functions (Copy, Perm)
+
+$line  = "#undef is_ia32_Perm\n";
+$line .= "#define is_ia32_Perm(irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm && ! is_Proj(irn))\n";
+$line .= "#undef is_ia32_Copy\n";
+$line .= "#define is_ia32_Copy(irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_copy)\n";
+push(@obst_header, $line."\n");
+
+$line = "void emit_".$arch."_Copy(ir_node *n, emit_env_t *env)";
+push(@obst_header, $line.";\n");
+$line .= " {\n  FILE *F = env->out;\n";
+$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\tmov %1s, %1d\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
+push(@obst_func, $line);
+
+$line = "void emit_".$arch."_Perm(ir_node *n, emit_env_t *env)";
+push(@obst_header, $line.";\n");
+$line .= " {\n  FILE *F = env->out;\n";
+$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\txchg %1s, %1d\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
+push(@obst_func, $line);
 
 foreach my $op (keys(%nodes)) {
   my %n = %{ $nodes{"$op"} };
@@ -118,7 +137,7 @@ foreach my $op (keys(%nodes)) {
       $parm = ", ".join(", ", @params) if (@params);
 
       if ($cio) {
-        push(@obst_func, $indent."if (get_irn_arity(n) > 1 && get_$arch\_in_regnr(n, 1) == get_$arch\_out_regnr(n, 0)) {\n");
+        push(@obst_func, $indent."if (get_irn_arity(n) > 1 && get_$arch\_reg_nr(n, 1, 1) == get_$arch\_reg_nr(n, 0, 0)) {\n");
         push(@obst_func, $indent.'  lc_efprintf(ia32_get_arg_env(), F, "\t'.$res2.'\n"'.$parm.');'."\n");
         push(@obst_func, $indent."}\n");
         push(@obst_func, $indent."else {\n");
