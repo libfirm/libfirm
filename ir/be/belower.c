@@ -182,13 +182,15 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 			cycle->elems[idx++] = pairs[cur_pair_idx].out_reg;
 			cycle->n_elems++;
 
-			pairs[cur_pair_idx].checked = 1;
 			n_pairs_done++;
 		}
 		else {
 			/* we are there where we started -> CYCLE */
 			cycle->type = PERM_CYCLE;
 		}
+
+		/* mark the pair as checked */
+		pairs[cur_pair_idx].checked = 1;
 	}
 
 	return cycle;
@@ -199,9 +201,10 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
  * copy and swap operations to permute registers.
  *
  * @param irn      The perm node
+ * @param block    The block the perm node belongs to
  * @param walk_env The environment
  */
-static void lower_perms_walker(ir_node *irn, void *walk_env) {
+static void lower_perm_node(ir_node *irn, void *walk_env) {
 	const be_node_factory_t     *fact;
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
@@ -211,19 +214,24 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 	const ir_edge_t *edge;
 	perm_cycle_t    *cycle;
 	int              n, i, pn, do_copy;
-	ir_node         *block, *arg, *res, *sched_point, *in[2];
+	ir_node         *sched_point, *block, *in[2];
+	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
+
+	if (is_Block(irn))
+		return;
 
 	fact     = env->chord_env->main_env->node_factory;
 	arch_env = env->chord_env->main_env->arch_env;
 	do_copy  = env->do_copy;
 	mod      = env->dbg_module;
+	block    = get_nodes_block(irn);
 
-	/* check if perm */
-	if (is_Proj(irn) || !  is_Perm(arch_env, irn))
+	/* check if perm
+	   Note: A Proj on a Perm will cause is_Perm()
+	         also to return true */
+	if (is_Proj(irn) || ! is_Perm(arch_env, irn))
 		return;
-
-	block = get_nodes_block(irn);
 
 	/*
 		Get the schedule predecessor node to the perm
@@ -232,6 +240,7 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 			should be ok.
 	*/
 	sched_point = sched_prev(irn);
+	DBG((mod, LEVEL_1, "sched point is %+F\n", sched_point));
 	assert(sched_point && "Perm is not scheduled or has no predecessor");
 
 	n = get_irn_arity(irn);
@@ -261,25 +270,22 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 		the IN node. */
 	for (i = 0; i < n; i++) {
 		if (pairs[i].in_reg->index == pairs[i].out_reg->index) {
-			DBG((mod, LEVEL_1, "removing equal perm register pair (%+F, %+F, %s)\n",
-				pairs[i].in_node, pairs[i].out_node, pairs[i].out_reg->name));
-			/* If scheduling point and in-node are the same, then get the scheduling
-			   pred of this node, otherwise we would break the scheduling list */
-			if (sched_point == pairs[i].in_node) {
-				sched_point = sched_prev(sched_point);
+			DBG((mod, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
+				irn, pairs[i].in_node, pairs[i].out_node, pairs[i].out_reg->name));
+
+			/* We have to check for a special case:
+				The in-node could be a Proj from a Perm. In this case,
+				we need to correct the projnum */
+			if (is_Perm(arch_env, pairs[i].in_node) && is_Proj(pairs[i].in_node)) {
+				set_Proj_proj(pairs[i].out_node, get_Proj_proj(pairs[i].in_node));
 			}
+
 
 			/* remove the proj from the schedule */
 			sched_remove(pairs[i].out_node);
 
-			/* remove the argument from schedule */
-			sched_remove(pairs[i].in_node);
-
 			/* exchange the proj with the argument */
-			exchange(pairs[i].out_node, pairs[i].in_node);
-
-			/* add the argument after the magic scheduling point */
-			sched_add_after(sched_point, pairs[i].in_node);
+			edges_reroute(pairs[i].out_node, pairs[i].in_node, env->chord_env->irg);
 
 			pairs[i].checked = 1;
 		}
@@ -299,13 +305,24 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 		cycle = calloc(1, sizeof(*cycle));
 		cycle = get_perm_cycle(cycle, pairs, n, i);
 
+		/* We don't need to do anything if we have a Perm with two
+			elements which represents a cycle, because those nodes
+			already represent exchange nodes */
+		if (n == 2 && cycle->type == PERM_CYCLE) {
+			free(cycle);
+			continue;
+		}
+
 //todo: - iff PERM_CYCLE && do_copy -> determine free temp reg and insert copy to/from it before/after
 //        the copy cascade (this reduces the cycle into a chain)
 
 		/* build copy/swap nodes from back to front */
 		for (i = cycle->n_elems - 2; i >= 0; i--) {
-			arg = get_node_for_register(pairs, n, cycle->elems[i], 0);
-			res = get_node_for_register(pairs, n, cycle->elems[i + 1], 1);
+			arg1 = get_node_for_register(pairs, n, cycle->elems[i], 0);
+			arg2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 0);
+
+			res1 = get_node_for_register(pairs, n, cycle->elems[i], 1);
+			res2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 1);
 
 			/*
 				If we have a cycle and don't copy: we need to create exchange nodes
@@ -316,34 +333,48 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 				OUT_2 = out node with register i
 			*/
 			if (cycle->type == PERM_CYCLE && !do_copy) {
-				in[0] = arg;
-				in[1] = get_node_for_register(pairs, n, cycle->elems[i + 1], 0);
+				in[0] = arg1;
+				in[1] = arg2;
 
-				DBG((mod, LEVEL_1, "creating exchange node (%+F, %s) <-> (%+F, %s)\n",
-					arg, cycle->elems[i]->name, res, cycle->elems[i + 1]->name));
+				DBG((mod, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
+					irn, arg1, cycle->elems[i]->name, arg2, cycle->elems[i + 1]->name));
+				DBG((mod, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
+					irn, res1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
 				cpyxchg = new_Perm(fact, reg_class, env->chord_env->irg, block, 2, in);
-				set_Proj_pred(res, cpyxchg);
-				set_Proj_proj(res, 0);
-				set_Proj_pred(get_node_for_register(pairs, n, cycle->elems[i], 1), cpyxchg);
-				set_Proj_proj(get_node_for_register(pairs, n, cycle->elems[i], 1), 1);
+
+				sched_remove(res1);
+				sched_remove(res2);
+
+				set_Proj_pred(res2, cpyxchg);
+				set_Proj_proj(res2, 0);
+				set_Proj_pred(res1, cpyxchg);
+				set_Proj_proj(res1, 1);
+
+				sched_add_after(sched_point, res1);
+				sched_add_after(sched_point, res2);
+
+				arch_set_irn_register(arch_env, res2, cycle->elems[i + 1]);
+				arch_set_irn_register(arch_env, res1, cycle->elems[i]);
 			}
 			else {
-				DBG((mod, LEVEL_1, "creating copy node (%+F, %s) -> (%+F, %s)\n",
-					arg, cycle->elems[i]->name, res, cycle->elems[i + 1]->name));
+				DBG((mod, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
+					irn, arg1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
-				cpyxchg = new_Copy(fact, reg_class, env->chord_env->irg, block, arg);
+				cpyxchg = new_Copy(fact, reg_class, env->chord_env->irg, block, arg1);
 				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
 
 				/* remove the proj from the schedule */
-				sched_remove(res);
+				sched_remove(res2);
 
 				/* exchange copy node and proj */
-				exchange(res, cpyxchg);
+				exchange(res2, cpyxchg);
 			}
 
 			/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
 			sched_add_after(sched_point, cpyxchg);
+
+			DBG((mod, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 		}
 
 //		free(cycle->elems);
@@ -355,7 +386,7 @@ static void lower_perms_walker(ir_node *irn, void *walk_env) {
 }
 
 /**
- * Walks over all nodes in an irg and performs perm lowering.
+ * Walks over all blocks in an irg and performs perm lowering.
  *
  * @param chord_env The chordal environment containing the irg
  * @param do_copy   1 == resolve cycles with a free reg if available
@@ -367,5 +398,5 @@ void lower_perms(be_chordal_env_t *chord_env, int do_copy) {
 	env.do_copy    = do_copy;
 	env.dbg_module = firm_dbg_register("ir.be.lower");
 
-	irg_walk_blkwise_graph(chord_env->irg,  NULL, lower_perms_walker, &env);
+	irg_walk_blkwise_graph(chord_env->irg,  NULL, lower_perm_node, &env);
 }
