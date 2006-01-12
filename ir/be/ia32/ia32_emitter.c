@@ -187,10 +187,10 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 	if (!X)
 		return lc_arg_append(app, occ, "(null)", 6);
 
-	if (occ->conversion == 's') {
+	if (occ->conversion == 'S') {
 		buf = get_ia32_reg_name(X, nr, 1);
 	}
-	else { /* 'd' */
+	else { /* 'D' */
 		buf = get_ia32_reg_name(X, nr, 0);
 	}
 
@@ -210,10 +210,10 @@ static int ia32_const_to_str(lc_appendable_t *app,
 	if (!X)
 		return lc_arg_append(app, occ, "(null)", 6);
 
-	if (occ->conversion == 'c') {
+	if (occ->conversion == 'C') {
 		buf = node_const_to_str(X);
 	}
-	else { /* 'o' */
+	else { /* 'O' */
 		buf = node_offset_to_str(X);
 	}
 
@@ -251,12 +251,13 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
 	if(env == NULL) {
 		/* extend the firm printer */
 		env = firm_get_arg_env();
+			//lc_arg_new_env();
 
-		lc_arg_register(env, "ia32:sreg", 's', &ia32_reg_handler);
-		lc_arg_register(env, "ia32:dreg", 'd', &ia32_reg_handler);
-		lc_arg_register(env, "ia32:cnst", 'c', &ia32_const_handler);
-		lc_arg_register(env, "ia32:offs", 'o', &ia32_const_handler);
-		lc_arg_register(env, "ia32:mode", 'm', &ia32_mode_handler);
+		lc_arg_register(env, "ia32:sreg", 'S', &ia32_reg_handler);
+		lc_arg_register(env, "ia32:dreg", 'D', &ia32_reg_handler);
+		lc_arg_register(env, "ia32:cnst", 'C', &ia32_const_handler);
+		lc_arg_register(env, "ia32:offs", 'O', &ia32_const_handler);
+		lc_arg_register(env, "ia32:mode", 'M', &ia32_mode_handler);
 	}
 
 	return env;
@@ -270,11 +271,11 @@ void equalize_dest_src(FILE *F, ir_node *n) {
 		if (get_irn_arity(n) > 1 && get_ia32_reg_nr(n, 1, 1) == get_ia32_reg_nr(n, 0, 0)) {
 			if (! is_op_commutative(get_irn_op(n))) {
 				/* we only need to exchange for non-commutative ops */
-				lc_efprintf(ia32_get_arg_env(), F, "\txchg %1s, %2s\t\t\t/* xchg src1 <-> src2 for 2 address code */\n", n, n);
+				lc_efprintf(ia32_get_arg_env(), F, "\txchg %1S, %2S\t\t\t/* xchg src1 <-> src2 for 2 address code */\n", n, n);
 			}
 		}
 		else {
-			lc_efprintf(ia32_get_arg_env(), F, "\tmovl %1s, %1d\t\t\t/* src -> dest for 2 address code */\n", n, n);
+			lc_efprintf(ia32_get_arg_env(), F, "\tmovl %1S, %1D\t\t\t/* src -> dest for 2 address code */\n", n, n);
 		}
 	}
 }
@@ -409,7 +410,7 @@ static void finish_CondJmp(FILE *F, ir_node *irn) {
 static void emit_ia32_CondJmp(ir_node *irn, emit_env_t *env) {
 	FILE *F = env->out;
 
-	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %2s, %1s\t\t\t/* CondJmp(%+F, %+F) */\n", irn, irn,
+	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %2S, %1S\t\t\t/* CondJmp(%+F, %+F) */\n", irn, irn,
 																	get_irn_n(irn, 0), get_irn_n(irn, 1));
 	finish_CondJmp(F, irn);
 }
@@ -420,7 +421,7 @@ static void emit_ia32_CondJmp(ir_node *irn, emit_env_t *env) {
 void emit_ia32_CondJmp_i(ir_node *irn, emit_env_t *env) {
 	FILE *F = env->out;
 
-	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %c, %1s\t\t\t/* CondJmp_i(%+F) */\n", irn, irn, get_irn_n(irn, 0));
+	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %C, %1S\t\t\t/* CondJmp_i(%+F) */\n", irn, irn, get_irn_n(irn, 0));
 	finish_CondJmp(F, irn);
 }
 
@@ -534,11 +535,11 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 		/* emit the table */
 		if (tbl.min_value != 0) {
 			fprintf(F, "\tcmpl %lu, -%d", interval, tbl.min_value);
-			lc_efprintf(env, F, "(%1s)\t\t/* first switch value is not 0 */\n", irn);
+			lc_efprintf(env, F, "(%1S)\t\t/* first switch value is not 0 */\n", irn);
 		}
 		else {
 			fprintf(F, "\tcmpl %lu, ", interval);
-			lc_efprintf(env, F, "%1s\t\t\t/* compare for switch */\n", irn);
+			lc_efprintf(env, F, "%1S\t\t\t/* compare for switch */\n", irn);
 		}
 
 		fprintf(F, "\tja %s\t\t\t/* default jump if out of range  */\n", get_cfop_target(tbl.defProj, buf));
@@ -546,8 +547,8 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 		if (tbl.num_branches > 1) {
 			/* create table */
 
-			fprintf(F, "\tjmp *%s", tbl.label);
-			lc_efprintf(env, F, "(,%1s,4)\t\t/* get jump table entry as target */\n", irn);
+			//fprintf(F, "\tjmp *%s", tbl.label);
+			lc_efprintf(env, F, "\tjmp *%s(,%1S,4)\t\t/* get jump table entry as target */\n", tbl.label, irn);
 
 			fprintf(F, "\t.section\t.rodata\t\t/* start jump table */\n");
 			fprintf(F, "\t.align 4\n");
@@ -573,7 +574,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 	else { // no jump table
 		for (i = 0; i < tbl.num_branches; ++i) {
 			fprintf(F, "\tcmpl %d, ", tbl.branches[i].value);
-			lc_efprintf(env, F, "%1s", irn);
+			lc_efprintf(env, F, "%1S", irn);
 			fprintf(F, "\t\t\t/* case %d */\n", tbl.branches[i].value);
 			fprintf(F, "\tje %s\n", get_cfop_target(tbl.branches[i].target, buf));
 		}

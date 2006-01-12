@@ -125,7 +125,7 @@ $arch = "ia32";
   "comment"     => "construct Add: Add(a, b) = Add(b, a) = a + b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. addl %s2, %d1\t\t\t/* Add(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. addl %S2, %D1\t\t\t/* Add(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Add_i" => {
@@ -134,7 +134,7 @@ $arch = "ia32";
   "comment"     => "construct Add: Add(a, const) = Add(const, a) = a + const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. addl %c, %d1\t\t\t/* Add(%c, %s1) -> %d1, (%a1, const) */'
+  "emit"        => '. addl %C, %D1\t\t\t/* Add(%C, %S1) -> %D1, (%A1, const) */'
 },
 
 "Mul" => {
@@ -144,10 +144,10 @@ $arch = "ia32";
   "reg_req"     => { "in" => [ "eax", "general_purpose" ], "out" => [ "eax" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
-4. imull %s2\t\t\t/* signed Mul(%s1, %s2) -> %d1, (%a1, %a2) */
+4. imull %S2\t\t\t/* signed Mul(%S1, %S2) -> %D1, (%A1, %A2) */
   }
   else {
-4. mull %s2\t\t\t/* unsigned Mul(%s1, %s2) -> %d1, (%a1, %a2) */
+4. mull %S2\t\t\t/* unsigned Mul(%S1, %S2) -> %D1, (%A1, %A2) */
   }
 '
 },
@@ -159,10 +159,10 @@ $arch = "ia32";
   "reg_req"     => { "in" => [ "eax" ], "out" => [ "eax" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
-4. imull %c\t\t\t/* signed Mul(%c, %s1) -> %d1, (%a1, const) */
+4. imull %C\t\t\t/* signed Mul(%C, %S1) -> %D1, (%A1, const) */
   }
   else {
-4. mull %c\t\t\t/* unsigned Mul(%c, %s1) -> %d1, (%a1, const) */
+4. mull %C\t\t\t/* unsigned Mul(%C, %S1) -> %D1, (%A1, const) */
   }
 '
 },
@@ -174,10 +174,10 @@ $arch = "ia32";
   "reg_req"     => { "in" => [ "eax", "general_purpose" ], "out" => [ "edx" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
-4. imull %s2\t\t\t/* signed Mulh(%s1, %s2) -> %d1, (%a1, %a2) */
+4. imull %S2\t\t\t/* signed Mulh(%S1, %S2) -> %D1, (%A1, %A2) */
   }
   else {
-4. mull %s2\t\t\t/* unsigned Mulh(%s1, %s2) -> %d1, (%a1, %a2) */
+4. mull %S2\t\t\t/* unsigned Mulh(%S1, %S2) -> %D1, (%A1, %A2) */
   }
 '
 },
@@ -189,10 +189,10 @@ $arch = "ia32";
   "reg_req"     => { "in" => [ "eax" ], "out" => [ "edx" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
-4. imull %c\t\t\t/* signed Mulh(%c, %s1) -> %d1, (%a1, const) */
+4. imull %C\t\t\t/* signed Mulh(%C, %S1) -> %D1, (%A1, const) */
   }
   else {
-4. mull %c\t\t\t/* unsigned Mulh(%c, %s1) -> %d1, (%a1, const) */
+4. mull %C\t\t\t/* unsigned Mulh(%C, %S1) -> %D1, (%A1, const) */
   }
 '
 },
@@ -204,7 +204,7 @@ $arch = "ia32";
   "comment"     => "construct And: And(a, b) = And(b, a) = a AND b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. andl %s2, %d1\t\t\t/* And(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. andl %S2, %D1\t\t\t/* And(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "And_i" => {
@@ -213,7 +213,7 @@ $arch = "ia32";
   "comment"     => "construct And: And(a, const) = And(const, a) = a AND const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. andl %c, %d1\t\t\t/* And(%c, %s1) -> %d1, (%a1, const) */'
+  "emit"        => '. andl %C, %D1\t\t\t/* And(%C, %S1) -> %D1, (%A1, const) */'
 },
 
 "Or" => {
@@ -223,7 +223,7 @@ $arch = "ia32";
   "comment"     => "construct Or: Or(a, b) = Or(b, a) = a OR b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. orl %s2, %d1\t\t\t/* Or(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. orl %S2, %D1\t\t\t/* Or(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Or_i" => {
@@ -232,7 +232,7 @@ $arch = "ia32";
   "comment"     => "construct Or: Or(a, const) = Or(const, a) = a OR const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. orl %c, %d1\t\t\t/* Or(%c, %s1) -> %d1, (%a1, const) */'
+  "emit"        => '. orl %C, %D1\t\t\t/* Or(%C, %S1) -> %D1, (%A1, const) */'
 },
 
 "Eor" => {
@@ -242,7 +242,7 @@ $arch = "ia32";
   "comment"     => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. xorl %s2, %d1\t\t\t/* Xor(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. xorl %S2, %D1\t\t\t/* Xor(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Eor_i" => {
@@ -251,7 +251,7 @@ $arch = "ia32";
   "comment"     => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. xorl %c, %d1\t\t\t/* Xor(%c, %s1) -> %d1, (%a1, const) */'
+  "emit"        => '. xorl %C, %D1\t\t\t/* Xor(%C, %S1) -> %D1, (%A1, const) */'
 },
 
 "Max" => {
@@ -262,12 +262,12 @@ $arch = "ia32";
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
   "emit"        =>
-'2. cmpl %s2, %s1\t\t\t/* prepare Max (%s1 should be %d1), (%a1, %a2) */
+'2. cmpl %S2, %S1\t\t\t/* prepare Max (%S1 should be %D1), (%A1, %A2) */
   if (mode_is_signed(get_irn_mode(n))) {
-4.  cmovl %s2, %d1\t\t\t/* %s1 is less %s2 */
+4.  cmovl %S2, %D1\t\t\t/* %S1 is less %S2 */
   }
   else {
-4.  cmovb %s2, %d1\t\t\t/* %s1 is below %s2 */
+4.  cmovb %S2, %D1\t\t\t/* %S1 is below %S2 */
   }
 '
 },
@@ -280,12 +280,12 @@ $arch = "ia32";
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
   "emit"        =>
-'2. cmpl %s2, %s1\t\t\t/* prepare Min (%s1 should be %d1), (%a1, %a2) */
+'2. cmpl %S2, %S1\t\t\t/* prepare Min (%S1 should be %D1), (%A1, %A2) */
   if (mode_is_signed(get_irn_mode(n))) {
-2.  cmovg %s2, %d1\t\t\t/* %s1 is greater %s2 */
+2.  cmovg %S2, %D1\t\t\t/* %S1 is greater %S2 */
   }
   else {
-2.  cmova %s2, %d1\t\t\t/* %s1 is above %s2 */
+2.  cmova %S2, %D1\t\t\t/* %S1 is above %S2 */
   }
 '
 },
@@ -298,7 +298,7 @@ $arch = "ia32";
   "comment"     => "construct Sub: Sub(a, b) = a - b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. subl %s2, %d1\t\t\t/* Sub(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. subl %S2, %D1\t\t\t/* Sub(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Sub_i" => {
@@ -307,7 +307,7 @@ $arch = "ia32";
   "comment"     => "construct Sub: Sub(a, const) = a - const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. subl %c, %d1\t\t\t/* Sub(%s1, %c) -> %d1, (%a1, const) */'
+  "emit"        => '. subl %C, %D1\t\t\t/* Sub(%S1, %C) -> %D1, (%A1, const) */'
 },
 
 "DivMod" => {
@@ -317,10 +317,10 @@ $arch = "ia32";
   "comment"     => "construct DivMod: DivMod(a,b) = (a / b, a % b)",
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
-4.  idivl %s2\t\t\t/* signed Mod(%s1, %s2) -> %d1, (%a2, %a3, %4) */
+4.  idivl %S2\t\t\t/* signed Mod(%S1, %S2) -> %D1, (%A2, %A3, %4) */
   }
   else {
-4.  divl %s2\t\t\t/* unsigned Mod(%s1, %s2) -> %d1, (%a2, %a3, %a4) */
+4.  divl %S2\t\t\t/* unsigned Mod(%S1, %S2) -> %D1, (%A2, %A3, %A4) */
   }
 ',
   "args"     => [
@@ -383,7 +383,7 @@ $arch = "ia32";
   "comment"     => "construct Shl: Shl(a, b) = a << b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. shll %s2, %d1\t\t\t/* Shl(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. shll %S2, %D1\t\t\t/* Shl(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Shl_i" => {
@@ -392,7 +392,7 @@ $arch = "ia32";
   "comment"     => "construct Shl: Shl(a, const) = a << const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. shll %c, %d1\t\t\t/* Shl(%s1, %c) -> %d1, (%a1, const) */'
+  "emit"        => '. shll %C, %D1\t\t\t/* Shl(%S1, %C) -> %D1, (%A1, const) */'
 },
 
 "Shr" => {
@@ -401,7 +401,7 @@ $arch = "ia32";
   "comment"     => "construct Shr: Shr(a, b) = a >> b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. shrl %s2, %d1\t\t\t/* Shr(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. shrl %S2, %D1\t\t\t/* Shr(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Shr_i" => {
@@ -410,7 +410,7 @@ $arch = "ia32";
   "comment"     => "construct Shr: Shr(a, const) = a >> const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. shrl %c, %d1\t\t\t/* Shr(%s1, %c) -> %d1, (%a1, const) */'
+  "emit"        => '. shrl %C, %D1\t\t\t/* Shr(%S1, %C) -> %D1, (%A1, const) */'
 },
 
 "Shrs" => {
@@ -419,7 +419,7 @@ $arch = "ia32";
   "comment"     => "construct Shrs: Shrs(a, b) = a >> b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. sarl %s2, %d1\t\t\t/* Shrs(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. sarl %S2, %D1\t\t\t/* Shrs(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Shrs_i" => {
@@ -428,7 +428,7 @@ $arch = "ia32";
   "comment"     => "construct Shrs: Shrs(a, const) = a >> const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. sarl %c, %d1\t\t\t/* Shrs(%s1, %c) -> %d1, (%a1, const) */'
+  "emit"        => '. sarl %C, %D1\t\t\t/* Shrs(%S1, %C) -> %D1, (%A1, const) */'
 },
 
 "RotR" => {
@@ -437,7 +437,7 @@ $arch = "ia32";
   "comment"     => "construct RotR: RotR(a, b) = a ROTR b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. rorl %s2, %d1\t\t\t/* RotR(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. rorl %S2, %D1\t\t\t/* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "RotL" => {
@@ -446,7 +446,7 @@ $arch = "ia32";
   "comment"     => "construct RotL: RotL(a, b) = a ROTL b",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. roll %s2, %d1\t\t\t/* RotL(%s1, %s2) -> %d1, (%a1, %a2) */'
+  "emit"        => '. roll %S2, %D1\t\t\t/* RotL(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "RotL_i" => {
@@ -455,7 +455,7 @@ $arch = "ia32";
   "comment"     => "construct RotL: RotL(a, const) = a ROTL const",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. roll %c, %d1\t\t\t/* RotL(%s1, %c) -> %d1, (%a1, const) */'
+  "emit"        => '. roll %C, %D1\t\t\t/* RotL(%S1, %C) -> %D1, (%A1, const) */'
 },
 
 "Minus" => {
@@ -464,7 +464,7 @@ $arch = "ia32";
   "comment"     => "construct Minus: Minus(a) = -a",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. negl %d1\t\t\t/* Neg(%s1) -> %d1, (%a1) */'
+  "emit"        => '. negl %D1\t\t\t/* Neg(%S1) -> %D1, (%A1) */'
 },
 
 "Inc" => {
@@ -473,7 +473,7 @@ $arch = "ia32";
   "comment"     => "construct Increment: Inc(a) = a++",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. incl %d1\t\t\t/* Inc(%s1) -> %d1, (%a1) */'
+  "emit"        => '. incl %D1\t\t\t/* Inc(%S1) -> %D1, (%A1) */'
 },
 
 "Dec" => {
@@ -482,7 +482,7 @@ $arch = "ia32";
   "comment"     => "construct Decrement: Dec(a) = a--",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. decl %d1\t\t\t/* Dec(%s1) -> %d1, (%a1) */'
+  "emit"        => '. decl %D1\t\t\t/* Dec(%S1) -> %D1, (%A1) */'
 },
 
 "Not" => {
@@ -491,7 +491,7 @@ $arch = "ia32";
   "comment"     => "construct Not: Not(a) = !a",
   "check_inout" => 1,
   "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_s1" ] },
-  "emit"        => '. notl %d1\t\t\t/* Not(%s1) -> %d1, (%a1) */'
+  "emit"        => '. notl %D1\t\t\t/* Not(%S1) -> %D1, (%A1) */'
 },
 
 # other operations
@@ -529,7 +529,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "represents an integer constant",
   "reg_req"  => { "out" => [ "general_purpose" ] },
-  "emit"     => '. movl %c, %d1\t\t\t/* Mov Const into register */',
+  "emit"     => '. movl %C, %D1\t\t\t/* Mov Const into register */',
   "cmp_attr" =>
 '
   if (attr_a->tp == attr_b->tp) {
@@ -559,7 +559,7 @@ $arch = "ia32";
   "remat"       => 1,
   "comment"     => "construct Cltd: sign extend EAX -> EDX:EAX",
   "reg_req"     => { "in" => [ "eax" ], "out" => [ "eax", "edx" ] },
-  "emit"        => '. cltd\t\t\t/* sign extend EAX -> EDX:EAX, (%a1) */'
+  "emit"        => '. cltd\t\t\t/* sign extend EAX -> EDX:EAX, (%A1) */'
 },
 
 # Load / Store
@@ -571,7 +571,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"  => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"     => '. movl (%s1), %d1\t\t\t/* Load((%s1)) -> %d1, (%a1) */'
+  "emit"     => '. movl (%S1), %D1\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
 },
 
 "Store" => {
@@ -581,21 +581,21 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"  => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"     => '. movl %s2, (%s1)\t\t\t/* Store(%s2) -> (%s1), (%a1, %a2) */'
+  "emit"     => '. movl %S2, (%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "Lea" => {
   "arity"    => 2,
   "comment"  => "construct Lea: Lea(a,b) = lea offs(a,b,const) | res = a + b * const + offs with const = 0,1,2,4,8",
   "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"     => '. leal %o(%s1, %s2, %c), %d1\t\t/* %d1 = %s1 + %s2 << %c + %o, (%a1, %a2) */'
+  "emit"     => '. leal %O(%S1, %S2, %C), %D1\t\t/* %D1 = %S1 + %S2 << %C + %O, (%A1, %A2) */'
 },
 
 "Lea_i" => {
   "arity"    => 1,
   "comment"  => "construct Lea: Lea(a) = lea offs(a) | res = a + offs",
   "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"     => '. leal %c(%s1), %d1\t\t\t/* %d1 = %s1 + %c, (%a1)*/'
+  "emit"     => '. leal %C(%S1), %D1\t\t\t/* %D1 = %S1 + %C, (%A1)*/'
 },
 
 "RegParam" => {
@@ -646,7 +646,7 @@ $arch = "ia32";
   "check_inout" => 1,
   "comment"     => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_s1" ] },
-  "emit"        => '. add%m %s2, %d1\t\t\t/* SSE Add(%s1, %s2) -> %d1 */'
+  "emit"        => '. add%M %S2, %D1\t\t\t/* SSE Add(%S1, %S2) -> %D1 */'
 },
 
 "fMul" => {
@@ -655,7 +655,7 @@ $arch = "ia32";
   "check_inout" => 1,
   "comment"     => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_s1" ] },
-  "emit"        =>'. muls%m %s2, %d1\t\t\t/* SSE Mul(%s1, %s2) -> %d1 */'
+  "emit"        =>'. muls%M %S2, %D1\t\t\t/* SSE Mul(%S1, %S2) -> %D1 */'
 },
 
 "fMax" => {
@@ -665,7 +665,7 @@ $arch = "ia32";
   "check_inout" => 1,
   "comment"     => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_s1" ] },
-  "emit"        =>'. maxs%m %s2, %d1\t\t\t/* SSE Max(%s1, %s2) -> %d1 */'
+  "emit"        =>'. maxs%M %S2, %D1\t\t\t/* SSE Max(%S1, %S2) -> %D1 */'
 },
 
 "fMin" => {
@@ -675,7 +675,7 @@ $arch = "ia32";
   "check_inout" => 1,
   "comment"     => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_s1" ] },
-  "emit"        =>'. mins%m %s2, %d1\t\t\t/* SSE Min(%s1, %s2) -> %d1 */'
+  "emit"        =>'. mins%M %S2, %D1\t\t\t/* SSE Min(%S1, %S2) -> %D1 */'
 },
 
 # not commutative operations
@@ -686,7 +686,7 @@ $arch = "ia32";
   "check_inout" => 1,
   "comment"     => "construct SSE Sub: Sub(a, b) = a - b",
   "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_s1" ] },
-  "emit"        => '. subs%m %s2, %d1\t\t\t/* SSE Sub(%s1, %s2) -> %d1 */'
+  "emit"        => '. subs%M %S2, %D1\t\t\t/* SSE Sub(%S1, %S2) -> %D1 */'
 },
 
 "fDiv" => {
@@ -695,7 +695,7 @@ $arch = "ia32";
   "check_inout" => 1,
   "comment"     => "construct SSE Div: Div(a, b) = a / b",
   "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_s1" ] },
-  "emit"        => '. divs%m %s2, %d1\t\t\t/* SSE Div(%s1, %s2) -> %d1 */'
+  "emit"        => '. divs%M %S2, %D1\t\t\t/* SSE Div(%S1, %S2) -> %D1 */'
 },
 
 "fMinus" => {
@@ -704,7 +704,7 @@ $arch = "ia32";
   "check_inout" => 1,
   "comment"     => "construct SSE Minus: Minus(a) = -a",
   "reg_req"     => { "in" => [ "floating_point" ], "out" => [ "in_s1" ] },
-  "emit"        => '. xorp%m c %d1\t\t\t/* SSE Minus(%s1) -> %d1 */'
+  "emit"        => '. xorp%M c %D1\t\t\t/* SSE Minus(%S1) -> %D1 */'
 },
 
 # other operations
@@ -728,7 +728,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "represents a SSE constant",
   "reg_req"  => { "out" => [ "floating_point" ] },
-  "emit"     => '. mov%m %c, %d1\t\t\t/* Mov fConst into register */',
+  "emit"     => '. mov%M %C, %D1\t\t\t/* Mov fConst into register */',
   "cmp_attr" =>
 '
   if (attr_a->tp == attr_b->tp) {
@@ -762,7 +762,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct SSE Load: Load(ptr, mem) = LD ptr",
   "reg_req"  => { "in" => [ "general_purpose", "none" ], "out" => [ "floating_point" ] },
-  "emit"     => '. movl (%s1), %d1\t\t\t/* Load((%s1)) -> %d1 */'
+  "emit"     => '. movl (%S1), %D1\t\t\t/* Load((%S1)) -> %D1 */'
 },
 
 "fStore" => {
@@ -772,7 +772,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"  => { "in" => [ "general_purpose", "floating_point", "none" ] },
-  "emit"     => '. movl %s2, (%s1)\t\t\t/* Store(%s2) -> (%s1), (%a1, %a2) */'
+  "emit"     => '. movl %S2, (%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "fStackParam" => {
