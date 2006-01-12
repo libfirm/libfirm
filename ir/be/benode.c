@@ -218,6 +218,12 @@ static ir_node *find_a_spill_walker(ir_node *irn, unsigned visited_nr)
 	return NULL;
 }
 
+ir_node *get_Spill_context(const ir_node *irn) {
+	be_spill_attr_t *a = (be_spill_attr_t *) &irn->attr;
+	assert(is_be_kind(irn, node_kind_spill));
+	return a->spill_ctx;
+}
+
 /**
  * Finds a spill for a reload.
  * If the reload is directly using the spill, this is simple,
@@ -234,7 +240,8 @@ static INLINE ir_node *find_a_spill(ir_node *irn)
 	return find_a_spill_walker(irn, visited_nr);
 }
 
-unsigned get_irn_spill_offset(ir_node *irn)
+
+unsigned get_Spill_offset(ir_node *irn)
 {
 	be_node_attr_t *a = (be_node_attr_t *) &irn->attr;
 	assert(is_be_node(irn));
@@ -242,7 +249,7 @@ unsigned get_irn_spill_offset(ir_node *irn)
 	switch(a->op->kind) {
 	case node_kind_reload:
 		assert(0 && "not yet implemented");
-		return get_irn_spill_offset(find_a_spill(irn));
+		return get_Spill_offset(find_a_spill(irn));
 	case node_kind_spill:
 		return ((be_spill_attr_t *) a)->offset;
 	default:
@@ -429,7 +436,6 @@ be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
 
 void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req)
 {
-	be_op_t *bo;
 	be_node_attr_t *a = get_attr_and_check(irn, node_kind_perm);
 
 	assert(pos >= 0 && pos < get_irn_arity(irn) && "position out of range");

@@ -68,6 +68,12 @@ ir_node *be_reload(
 
 int is_Spill(const ir_node *irn);
 
+void set_Spill_offset(ir_node *irn, unsigned offset);
+unsigned get_Spill_offset(ir_node *irn);
+
+ir_node *get_Spill_context(const ir_node *irn);
+
+
 int is_Perm(const ir_node *irn);
 
 /**
