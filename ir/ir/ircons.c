@@ -964,6 +964,27 @@ new_bd_CopyB  (dbg_info *db, ir_node *block,
   return res;
 }
 
+static ir_node *
+new_bd_Bound (dbg_info *db, ir_node *block,
+    ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper)
+{
+  ir_node  *in[4];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  in[0] = store;
+  in[1] = idx;
+  in[2] = lower;
+  in[3] = upper;
+
+  res = new_ir_node(db, irg, block, op_Bound, mode_T, 4, in);
+
+  res->attr.copyb.exc.pin_state = op_pin_state_pinned;
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
 /* --------------------------------------------- */
 /* private interfaces, for professional use only */
 /* --------------------------------------------- */
@@ -1750,6 +1771,19 @@ ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
   return res;
 }
 
+ir_node *new_rd_Bound(dbg_info *db, ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Bound(db, block, store, idx, lower, upper);
+  current_ir_graph = rem;
+
+  return res;
+}
+
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in) {
   return new_rd_Block(NULL, irg, arity, in);
 }
@@ -1959,10 +1993,13 @@ ir_node *new_r_Mux (ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
   return new_rd_Mux(NULL, irg, block, sel, ir_false, ir_true, mode);
 }
-
 ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, type *data_type) {
   return new_rd_CopyB(NULL, irg, block, store, dst, src, data_type);
+}
+ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
+  return new_rd_Bound(NULL, irg, block, store, idx, lower, upper);
 }
 
 /** ********************/
@@ -2591,7 +2628,7 @@ get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode
   }
   return res;
 }
-#endif
+#endif /* PRECISE_EXC_CONTEXT */
 
 /**
     computes the predecessors for the real phi node, and then
@@ -3311,6 +3348,17 @@ ir_node *new_d_CopyB(dbg_info *db,ir_node *store,
   return res;
 }
 
+ir_node *new_d_Bound(dbg_info *db,ir_node *store,
+    ir_node *idx, ir_node *lower, ir_node *upper) {
+  ir_node *res;
+  res = new_bd_Bound(db, current_ir_graph->current_block,
+    store, idx, lower, upper);
+#if PRECISE_EXC_CONTEXT
+  allocate_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
+#endif
+  return res;
+}
+
 /* ********************************************************************* */
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
@@ -3641,4 +3689,7 @@ ir_node *new_Mux (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mo
 }
 ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, type *data_type) {
   return new_d_CopyB(NULL, store, dst, src, data_type);
+}
+ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
+  return new_d_Bound(NULL, store, idx, lower, upper);
 }

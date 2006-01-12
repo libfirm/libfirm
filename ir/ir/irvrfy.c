@@ -694,6 +694,47 @@ static int verify_node_Proj_EndExcept(ir_node *n, ir_node *p) {
 }
 
 /**
+ * verify a Proj(CopyB) node
+ */
+static int verify_node_Proj_CopyB(ir_node *n, ir_node *p) {
+  ir_mode *mode = get_irn_mode(p);
+  long proj     = get_Proj_proj(p);
+
+  ASSERT_AND_RET_DBG(
+    ((proj == pn_CopyB_M        && mode == mode_M) ||
+     (proj == pn_CopyB_X_except && mode == mode_X)),
+    "wrong Proj from CopyB", 0,
+    show_proj_failure(p);
+  );
+  if (proj == pn_CopyB_X_except)
+    ASSERT_AND_RET(
+      get_irn_pinned(n) == op_pin_state_pinned,
+      "Exception Proj from unpinned CopyB", 0);
+  return 1;
+}
+
+/**
+ * verify a Proj(Bound) node
+ */
+static int verify_node_Proj_Bound(ir_node *n, ir_node *p) {
+  ir_mode *mode = get_irn_mode(p);
+  long proj     = get_Proj_proj(p);
+
+  ASSERT_AND_RET_DBG(
+    ((proj == pn_Bound_M        && mode == mode_M) ||
+     (proj == pn_Bound_X_except && mode == mode_X) ||
+     (proj == pn_Bound_res      && mode == get_irn_mode(get_Bound_index(n)))),
+    "wrong Proj from Bound", 0,
+    show_proj_failure(p);
+  );
+  if (proj == pn_Bound_X_except)
+    ASSERT_AND_RET(
+      get_irn_pinned(n) == op_pin_state_pinned,
+      "Exception Proj from unpinned Bound", 0);
+  return 1;
+}
+
+/**
  * verify a Proj node
  */
 static int
@@ -1581,6 +1622,34 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
   return 1;
 }
 
+/**
+ * verify a Bound node
+ */
+static int verify_node_Bound(ir_node *n, ir_graph *irg) {
+  ir_mode *mymode  = get_irn_mode(n);
+  ir_mode *op1mode = get_irn_mode(get_Bound_mem(n));
+  ir_mode *op2mode = get_irn_mode(get_Bound_index(n));
+  ir_mode *op3mode = get_irn_mode(get_Bound_lower(n));
+  ir_mode *op4mode = get_irn_mode(get_Bound_upper(n));
+
+  /* Bound: BB x M x ref x ref --> M x X */
+  ASSERT_AND_RET(
+    mymode == mode_T &&
+    op1mode == mode_M &&
+    op2mode == op3mode &&
+    op3mode == op4mode &&
+    mode_is_int(op3mode),
+    "Bound node", 0 );  /* operand M x int x int x int */
+
+  /* NoMem nodes are only allowed as memory input if the Bound is NOT pinned.
+     This should happen RARELY, as Bound COPIES MEMORY */
+  ASSERT_AND_RET(
+    (get_irn_op(get_Bound_mem(n)) == op_NoMem) ||
+    (get_irn_op(get_Bound_mem(n)) != op_NoMem && get_irn_pinned(n) == op_pin_state_pinned),
+    "Bound node with wrong memory input", 0 );
+  return 1;
+}
+
 /*
  * Check dominance.
  * For each usage of a node, it is checked, if the block of the
@@ -1928,6 +1997,7 @@ void firm_set_default_verifyer(opcode code, ir_op_ops *ops)
    CASE(Confirm);
    CASE(Mux);
    CASE(CopyB);
+   CASE(Bound);
    default:
      /* leave NULL */;
    }
@@ -1957,6 +2027,8 @@ void firm_set_default_verifyer(opcode code, ir_op_ops *ops)
    CASE(CallBegin);
    CASE(EndReg);
    CASE(EndExcept);
+   CASE(CopyB);
+   CASE(Bound);
    default:
      /* leave NULL */;
    }

@@ -292,6 +292,7 @@
  *    ir_node *new_NoMem  (void);
  *    ir_node *new_Mux    (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
  *    ir_node *new_CopyB  (ir_node *store, ir_node *dst, ir_node *src, type *data_type);
+ *    ir_node *new_Bound  (ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
  *
  *    void add_immBlock_pred (ir_node *block, ir_node *jmp);
  *    void mature_immBlock (ir_node *block);
@@ -942,6 +943,12 @@
  *
  *    Describes a high level block copy of a compound type form address src to
  *    address dst. Must be lowered to a Call to a runtime memory copy function.
+ *
+ *    ir_node *new_Bound  (ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Describes a high level bounds check. Must be lowered to a Call to a runtime check
+ *    function.
  *
  *    ir_node *new_Proj (ir_node *arg, ir_mode *mode, long proj)
  *    ----------------------------------------------------------
@@ -1817,8 +1824,6 @@ ir_node *new_rd_NoMem  (ir_graph *irg);
 
 /** Constructor for a Mux node.
  *
- * Adds the node to the block in current_ir_block.
- *
  * @param *db       A pointer for debug information.
  * @param *irg      The ir graph the node belong to.
  * @param *block    The block the node belong to.
@@ -1832,8 +1837,6 @@ ir_node *new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
 
 /** Constructor for a CopyB node.
  *
- * Adds the node to the block in current_ir_block.
- *
  * @param *db         A pointer for debug information.
  * @param *irg        The ir graph the node belong to.
  * @param *block      The block the node belong to.
@@ -1844,6 +1847,20 @@ ir_node *new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
  */
 ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, type *data_type);
+
+/** Constructor for a Bound node.
+ * Checks whether lower <= idx && idx < upper.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *irg        The ir graph the node belong to.
+ * @param *block      The block the node belong to.
+ * @param *store      The current memory
+ * @param *idx        The ir_node that represents an index.
+ * @param *lower      The ir_node that represents the lower bound for the index.
+ * @param *upper      The ir_node that represents the upper bound for the index.
+ */
+ir_node *new_rd_Bound(dbg_info *db, ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -2518,8 +2535,6 @@ ir_node *new_r_NoMem  (ir_graph *irg);
 
 /** Constructor for a Mux node.
  *
- * Adds the node to the block in current_ir_block.
- *
  * @param *irg      The ir graph the node belong to.
  * @param *block    The block the node belong to.
  * @param *sel      The ir_node that calculates the boolean select.
@@ -2532,8 +2547,6 @@ ir_node *new_r_Mux  (ir_graph *irg, ir_node *block,
 
 /** Constructor for a CopyB node.
  *
- * Adds the node to the block in current_ir_block.
- *
  * @param *irg        The ir graph the node belong to.
  * @param *block      The block the node belong to.
  * @param *store      The current memory
@@ -2543,6 +2556,19 @@ ir_node *new_r_Mux  (ir_graph *irg, ir_node *block,
  */
 ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, type *data_type);
+
+/** Constructor for a Bound node.
+ * Checks whether lower <= idx && idx < upper.
+ *
+ * @param *irg        The ir graph the node belong to.
+ * @param *block      The block the node belong to.
+ * @param *store      The current memory
+ * @param *idx        The ir_node that represents an index.
+ * @param *lower      The ir_node that represents the lower bound for the index.
+ * @param *upper      The ir_node that represents the upper bound for the index.
+ */
+ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
+    ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -3234,8 +3260,6 @@ ir_node *new_d_NoMem  (void);
 
 /** Constructor for a Mux node.
  *
- * Adds the node to the block in current_ir_block.
- *
  * @param *db       A pointer for debug information.
  * @param *sel      The ir_node that calculates the boolean select.
  * @param *ir_true  The ir_node that calculates the true result.
@@ -3247,8 +3271,6 @@ ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
 
 /** Constructor for a CopyB node.
  *
- * Adds the node to the block in current_ir_block.
- *
  * @param *db         A pointer for debug information.
  * @param *store      The current memory
  * @param *dst        The ir_node that represents the destination address.
@@ -3256,6 +3278,17 @@ ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
  * @param *data_type  The type of the copied data
  */
 ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst, ir_node *src, type *data_type);
+
+/** Constructor for a Bound node.
+ * Checks whether lower <= idx && idx < upper.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *store      The current memory
+ * @param *idx        The ir_node that represents an index.
+ * @param *lower      The ir_node that represents the lower bound for the index.
+ * @param *upper      The ir_node that represents the upper bound for the index.
+ */
+ir_node *new_d_Bound(dbg_info *db, ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -3868,6 +3901,18 @@ ir_node *new_Mux  (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *m
  * @param *data_type  The type of the copied data
  */
 ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, type *data_type);
+
+/** Constructor for a Bound node.
+ * Checks whether lower <= idx && idx < upper.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param *store      The current memory
+ * @param *idx        The ir_node that represents an index.
+ * @param *lower      The ir_node that represents the lower bound for the index.
+ * @param *upper      The ir_node that represents the upper bound for the index.
+ */
+ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

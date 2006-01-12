@@ -181,6 +181,11 @@ typedef struct {
   ir_type        *data_type;    /**< type of the copied entity */
 } copyb_attr;
 
+/** Bound attribute */
+typedef struct {
+  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+} bound_attr;
+
 /**
  * Edge info to put into an irn.
  */
@@ -222,6 +227,7 @@ typedef union {
   end_attr       end;           /**< For EndReg, EndExcept */
   except_attr    except;        /**< For Phi node construction in case of exceptions */
   copyb_attr     copyb;         /**< For CopyB operation */
+  bound_attr     bound;         /**< For Bound operation */
 } attr;
 
 

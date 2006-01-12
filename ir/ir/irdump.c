@@ -858,6 +858,24 @@ static const pns_lookup_t alloc_lut[] = {
 #undef X
 };
 
+/** the lookup table for Proj(CopyB) names */
+static const pns_lookup_t copyb_lut[] = {
+#define X(a)    { pn_CopyB_##a, #a }
+  X(M),
+  X(X_except),
+  X(M_except)
+#undef X
+};
+
+/** the lookup table for Proj(Bound) names */
+static const pns_lookup_t bound_lut[] = {
+#define X(a)    { pn_Bound_##a, #a }
+  X(M),
+  X(X_except),
+  X(res),
+  X(M_except)
+#undef X
+};
 
 /** the Proj lookup table */
 static const proj_lookup_t proj_lut[] = {
@@ -871,7 +889,9 @@ static const proj_lookup_t proj_lut[] = {
   { iro_Mod,     E(mod_lut) },
   { iro_Load,    E(load_lut) },
   { iro_Store,   E(store_lut) },
-  { iro_Alloc,   E(alloc_lut) }
+  { iro_Alloc,   E(alloc_lut) },
+  { iro_CopyB,   E(copyb_lut) },
+  { iro_Bound,   E(bound_lut) }
 #undef E
 };
 

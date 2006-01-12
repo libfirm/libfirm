@@ -93,6 +93,7 @@ ir_op *op_EndExcept;   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 ir_op *op_NoMem;       ir_op *get_op_NoMem     (void) { return op_NoMem;     }
 ir_op *op_Mux;         ir_op *get_op_Mux       (void) { return op_Mux;       }
 ir_op *op_CopyB;       ir_op *get_op_CopyB     (void) { return op_CopyB;     }
+ir_op *op_Bound;       ir_op *get_op_Bound     (void) { return op_Bound;     }
 
 
 /*
@@ -265,6 +266,7 @@ init_op(void)
   op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N,       oparity_zero,     -1, 0, NULL);
   op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0, NULL);
   op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(copyb_attr), NULL);
+  op_Bound     = new_ir_op(iro_Bound,     "Bound",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(bound_attr), NULL);
 
 #undef H
 #undef Y
@@ -339,6 +341,7 @@ void finish_op(void) {
   free_ir_op (op_NoMem    ); op_NoMem     = NULL;
   free_ir_op (op_Mux      ); op_Mux       = NULL;
   free_ir_op (op_CopyB    ); op_CopyB     = NULL;
+  free_ir_op (op_Bound    ); op_Bound     = NULL;
 }
 
 /* Returns the string for the opcode. */

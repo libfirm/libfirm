@@ -2076,7 +2076,53 @@ void     set_CopyB_type(ir_node *node, ir_type *data_type) {
   node->attr.copyb.data_type = data_type;
 }
 
+/* Bound support */
 
+/* Returns the memory input of a Bound operation. */
+ir_node *get_Bound_mem(ir_node *bound) {
+  assert (bound->op == op_Bound);
+  return get_irn_n(bound, 0);
+}
+
+void     set_Bound_mem (ir_node *bound, ir_node *mem) {
+  assert (bound->op == op_Bound);
+  set_irn_n(bound, 0, mem);
+}
+
+/* Returns the index input of a Bound operation. */
+ir_node *get_Bound_index(ir_node *bound) {
+  assert (bound->op == op_Bound);
+  return get_irn_n(bound, 1);
+}
+
+void     set_Bound_index(ir_node *bound, ir_node *idx) {
+  assert (bound->op == op_Bound);
+  set_irn_n(bound, 1, idx);
+}
+
+/* Returns the lower bound input of a Bound operation. */
+ir_node *get_Bound_lower(ir_node *bound) {
+  assert (bound->op == op_Bound);
+  return get_irn_n(bound, 2);
+}
+
+void     set_Bound_lower(ir_node *bound, ir_node *lower) {
+  assert (bound->op == op_Bound);
+  set_irn_n(bound, 2, lower);
+}
+
+/* Returns the upper bound input of a Bound operation. */
+ir_node *get_Bound_upper(ir_node *bound) {
+  assert (bound->op == op_Bound);
+  return get_irn_n(bound, 3);
+}
+
+void     set_Bound_upper(ir_node *bound, ir_node *upper) {
+  assert (bound->op == op_Bound);
+  set_irn_n(bound, 3, upper);
+}
+
+/* returns the graph of a node */
 ir_graph *
 get_irn_irg(const ir_node *node) {
 	/*
