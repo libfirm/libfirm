@@ -169,7 +169,7 @@ static border_t *handle_constraint_perm(be_chordal_alloc_env_t *alloc_env, borde
 	int n                      = get_irn_arity(perm_border->irn);
 	int n_projs                = 0;
 
-	border_t *b, *next_border;
+	border_t *b, *next_border, *cnstr_border;
 
 	arch_register_req_t req;
 	ir_node *cnstr;
@@ -182,14 +182,15 @@ static border_t *handle_constraint_perm(be_chordal_alloc_env_t *alloc_env, borde
 	 * After the Perm, there must be a sequence of Projs
 	 * which extract the permuted values of the Perm.
 	 */
-	for(b = border_next(perm_border); is_Proj(b->irn); b = border_next(b)) {
+	for(b = perm_border; is_Proj(b->irn); b = border_next(b)) {
 		assert(is_Proj(b->irn));
 		assert(b->is_def);
 		n_projs++;
 	}
 
-	cnstr       = b->irn;
-	next_border = border_next(b);
+	cnstr_border = b;
+	next_border  = border_next(b);
+	cnstr        = b->irn;
 
 	assert(n_projs == n && "There must be as many Projs as the Perm is wide");
 
@@ -211,7 +212,7 @@ static border_t *handle_constraint_perm(be_chordal_alloc_env_t *alloc_env, borde
 	 * constraint of the Perm's Proj. So we only have to
 	 * consider output constraints here.
 	 */
-	for(b = border_next(perm_border); b != next_border; b = border_next(b)) {
+	for(b = perm_border; b != next_border; b = border_next(b)) {
 		ir_node *irn = b->irn;
 
 		req.type = arch_register_req_type_normal;
@@ -229,7 +230,7 @@ static border_t *handle_constraint_perm(be_chordal_alloc_env_t *alloc_env, borde
 		}
 	}
 
-	for(b = border_next(perm_border); b != next_border; b = border_next(b)) {
+	for(b = perm_border; b != next_border; b = border_next(b)) {
 		ir_node *irn = b->irn;
 		int nr       = get_irn_graph_nr(irn);
 
@@ -243,7 +244,7 @@ static border_t *handle_constraint_perm(be_chordal_alloc_env_t *alloc_env, borde
 		}
 	}
 
-	return next_border;
+	return cnstr_border;
 }
 
 /**
@@ -461,7 +462,7 @@ static void assign(ir_node *block, void *env_ptr)
 			 * nodes in the border list.
 			 */
 			if(is_Perm(b->irn))
-				b = handle_constraint_perm(alloc_env, b);
+				b = handle_constraint_perm(alloc_env, border_next(b));
 		}
 	}
 
