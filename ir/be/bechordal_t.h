@@ -30,8 +30,6 @@
 /** Defines an invalid register index. */
 #define NO_COLOR (-1)
 
-#define DBG_CHORDAL "firm.be.ra.chordal"
-
 /**
  * A liveness interval border.
  */
@@ -71,6 +69,8 @@ static INLINE struct list_head *_get_block_border_head(const be_chordal_env_t *i
 #define get_block_border_head(info, bl)     _get_block_border_head(info, bl)
 
 #define foreach_border_head(head, pos)		list_for_each_entry_reverse(border_t, pos, head, list)
+#define border_next(b)                      (list_entry((b)->list.next, border_t, list))
+#define border_prev(b)                      (list_entry((b)->list.prev, border_t, list))
 
 #define chordal_has_class(chordal_env, irn) \
 	arch_irn_has_reg_class(chordal_env->main_env->arch_env, irn, -1, chordal_env->cls)
@@ -108,7 +108,7 @@ enum {
 };
 
 typedef struct {
-	int dump_flags;
+	unsigned dump_flags;
 	int spill_method;
 	int copymin_method;
 	int ifg_flavor;

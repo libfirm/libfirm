@@ -28,18 +28,48 @@ static void walker_insert_constr_perms(ir_node *bl, void *env) {
 	int pos, max;
 
 	sched_foreach(bl, irn) {
+		ir_node *perm = NULL;
+
 		/* check for a restriction of the result (-1) or one of the operands (0..n) */
 		max = get_irn_arity(irn);
 		for(pos=-1; pos<max; ++pos) {
 			arch_get_register_req(aenv, &req, irn, pos);
 			/* if a restriction is found, insert a perm before the irn */
 			if (cenv->cls == arch_get_irn_reg_class(aenv, irn, pos) && req.type == arch_register_req_type_limited) {
-				insert_Perm_after(menv, cenv->cls, cenv->dom_front, sched_prev(irn));
-				/* TODO: Next line is overkill. Update_liveness would suffice. */
-				be_liveness(get_irn_irg(bl));
-				break;
+
+				if(!perm)
+					perm = insert_Perm_after(menv, cenv->cls, cenv->dom_front, sched_prev(irn));
+
+				/*
+				 * Turn an input constraint into an output constraint:
+				 * The Proj of the Perm which corresponds to the input
+				 * constraint will have the input constraint of the node
+				 * as an output constraint
+				 */
+				if(pos >= 0) {
+					ir_node *op = get_irn_n(irn, pos);
+
+					/*
+					 * The operand must be a proj now, since a perm cut
+					 * all live ranges.
+					 */
+					assert(is_Proj(op));
+					be_set_Perm_out_req(perm, get_Proj_proj(op), &req);
+				}
 			}
 		}
+
+		/*
+		 * If we inserted a perm,
+		 * we have to recompute liveness analysis since inserting
+		 * a Perm changes the liveness situation at the end
+		 * of the block.
+		 * (its needed by successive calls to insert_Perm_after)
+		 * Perhaps thinking about an online liveness analysis
+		 * would help.
+		 */
+		if(perm)
+			be_liveness(get_irn_irg(bl));
 	}
 }
 

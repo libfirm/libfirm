@@ -11,6 +11,14 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+
 #include <ctype.h>
 
 #include "obst.h"
@@ -33,6 +41,7 @@
 #include "benumb_t.h"
 #include "besched_t.h"
 #include "belive_t.h"
+#include "benode_t.h"
 #include "bearch.h"
 #include "beifg.h"
 
@@ -152,6 +161,91 @@ static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
   return arch_irn_has_reg_class(env->main_env->arch_env, irn, -1, env->cls);
 }
 
+static border_t *handle_constraint_perm(be_chordal_alloc_env_t *alloc_env, border_t *perm_border)
+{
+	const arch_env_t *arch_env = alloc_env->chordal_env->main_env->arch_env;
+	bitset_t *bs               = bitset_alloca(alloc_env->chordal_env->cls->n_regs);
+	ir_node *perm              = perm_border->irn;
+	int n                      = get_irn_arity(perm_border->irn);
+	int n_projs                = 0;
+
+	border_t *b, *next_border;
+
+	arch_register_req_t req;
+	ir_node *cnstr;
+	int has_cnstr = 0;
+	int i, m;
+
+	assert(is_Perm(perm));
+
+	/*
+	 * After the Perm, there must be a sequence of Projs
+	 * which extract the permuted values of the Perm.
+	 */
+	for(b = border_next(perm_border); is_Proj(b->irn); b = border_next(b)) {
+		assert(is_Proj(b->irn));
+		assert(b->is_def);
+		n_projs++;
+	}
+
+	cnstr       = b->irn;
+	next_border = border_next(b);
+
+	assert(n_projs == n && "There must be as many Projs as the Perm is wide");
+
+	/* The node after the last perm proj must be the constrained node. */
+	cnstr = b->irn;
+	for(i = -1, m = get_irn_arity(cnstr); i < m; ++i) {
+		req.type = arch_register_req_type_normal;
+		if(arch_get_register_req(arch_env, &req, cnstr, i) && req.type == arch_register_req_type_limited) {
+			has_cnstr = 1;
+			break;
+		}
+	}
+
+	assert(has_cnstr && "The node must have a register constraint");
+
+	/*
+	 * Consider the code in beconstrperm.c
+	 * We turned each input constraint of a node into an output
+	 * constraint of the Perm's Proj. So we only have to
+	 * consider output constraints here.
+	 */
+	for(b = border_next(perm_border); b != next_border; b = border_next(b)) {
+		ir_node *irn = b->irn;
+
+		req.type = arch_register_req_type_normal;
+		if(arch_get_register_req(arch_env, &req, irn, -1) && req.type == arch_register_req_type_limited) {
+			const arch_register_t *reg;
+			int col;
+
+			bitset_clear_all(bs);
+			req.data.limited(irn, -1, bs);
+			col = bitset_next_set(bs, 0);
+			reg = arch_register_for_index(alloc_env->chordal_env->cls, col);
+
+			arch_set_irn_register(arch_env, irn, reg);
+			bitset_set(alloc_env->colors, col);
+		}
+	}
+
+	for(b = border_next(perm_border); b != next_border; b = border_next(b)) {
+		ir_node *irn = b->irn;
+		int nr       = get_irn_graph_nr(irn);
+
+		bitset_set(alloc_env->live, nr);
+
+		if(arch_get_irn_register(arch_env, irn) == NULL) {
+			int col                    = bitset_next_clear(alloc_env->colors, 0);
+			const arch_register_t *reg = arch_register_for_index(alloc_env->chordal_env->cls, col);
+
+			arch_set_irn_register(arch_env, irn, reg);
+		}
+	}
+
+	return next_border;
+}
+
 /**
  * Annotate the register pressure to the nodes and compute
  * the liveness intervals.
@@ -211,10 +305,10 @@ static void pressure(ir_node *block, void *env_ptr)
 		DBG((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
 		DBG((dbg, LEVEL_2, "\tlive: %b\n", live));
 
-	    /*
-	     * If the node defines some value, which can put into a
-	     * register of the current class, make a border for it.
-	     */
+		/*
+		 * If the node defines some value, which can put into a
+		 * register of the current class, make a border for it.
+		 */
 		if(has_reg_class(env, irn)) {
 			int nr = get_irn_graph_nr(irn);
 
@@ -356,6 +450,18 @@ static void assign(ir_node *block, void *env_ptr)
 
 			bitset_clear(colors, col);
 			bitset_clear(live, nr);
+
+			/*
+			 * If we encounter a Perm, it is due to register constraints.
+			 * To achieve a valid coloring in the presence of register
+			 * constraints, we invoke a special function which takes care
+			 * that all constraints are fulfilled.
+			 * This function assigned valid colors to the projs of the
+			 * Perm and the constrained node itself and skips these
+			 * nodes in the border list.
+			 */
+			if(is_Perm(b->irn))
+				b = handle_constraint_perm(alloc_env, b);
 		}
 	}
 

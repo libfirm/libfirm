@@ -66,8 +66,24 @@ ir_node *be_reload(
 		const arch_register_class_t *cls,
 		ir_node *irn, int pos, ir_mode *mode, ir_node *spill);
 
-int is_Spill(const be_node_factory_t *f, const ir_node *irn);
+int is_Spill(const ir_node *irn);
 
+int is_Perm(const ir_node *irn);
+
+/**
+ * Modify the output register requirements of a Perm.
+ * This function incur register constraints to an output value of a Perm.
+ * This is used when handling register constraints in general,
+ * see beconstrperm.c
+ */
+void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req);
+
+/**
+ * Insert a Perm node after a specific node in the schedule.
+ * The Perm permutes over all values live at the given node.
+ * This means that all liveness intervals are cut apart at this
+ * location in the program.
+ */
 ir_node *insert_Perm_after(const be_main_env_t *env,
 						   const arch_register_class_t *cls,
 						   dom_front_info_t *dom_front,

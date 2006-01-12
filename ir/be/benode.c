@@ -5,6 +5,8 @@
  *
  * Backend node support.
  *
+ * This file provdies Perm, Copy, Spill and Reload nodes.
+ *
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
@@ -20,6 +22,7 @@
 #include "pmap.h"
 #include "util.h"
 #include "debug.h"
+#include "fourcc.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"
@@ -35,6 +38,8 @@
 #include "beirgmod.h"
 
 #define DBG_LEVEL 0
+
+#define BENODE_MAGIC FOURCC('B', 'E', 'N', 'O')
 
 typedef enum _node_kind_t {
 	node_kind_spill,
@@ -53,14 +58,22 @@ typedef struct {
 } be_op_t;
 
 typedef struct {
-	const be_node_factory_t *factory;
-	int n_regs;
-	const arch_register_t *reg[1];
+	const arch_register_t *reg;
+	arch_register_req_t   req;
+} be_reg_data_t;
+
+typedef struct {
+	unsigned      magic;
+	const be_op_t *op;
+	int           n_regs;
+	be_reg_data_t reg_data[1];
 } be_node_attr_t;
 
 typedef struct {
 	be_node_attr_t attr;
-	ir_node *spill_ctx;
+	ir_node *spill_ctx;  /**< The node in whose context this spill was introduced. */
+	unsigned offset;     /**< The offset of the memory location the spill writes to
+						   in the spill area. */
 } be_spill_attr_t;
 
 static int templ_pos_Spill[] = {
@@ -93,17 +106,44 @@ static const ir_op_ops be_node_ops = {
 	NULL
 };
 
+static INLINE int is_be_node(const ir_node *irn)
+{
+	const be_node_attr_t *attr = (const be_node_attr_t *) &irn->attr;
+	return attr->magic == BENODE_MAGIC;
+}
+
+static INLINE int is_be_kind(const ir_node *irn, node_kind_t kind)
+{
+	const be_node_attr_t *a = (const be_node_attr_t *) &irn->attr;
+	return a->magic == BENODE_MAGIC && a->op && a->op->kind == kind;
+}
+
+static INLINE void *get_attr_and_check(ir_node *irn, node_kind_t kind)
+{
+	is_be_kind(irn, kind);
+	return &irn->attr;
+}
+
 static be_node_attr_t *init_node_attr(ir_node *irn,
-		const be_node_factory_t *fact, int n_regs)
+									  const be_op_t *op,
+									  const arch_register_class_t *cls,
+									  int n_regs)
+
 {
 	be_node_attr_t *attr = (be_node_attr_t *) &irn->attr;
 	int i;
 
+	attr->magic   = BENODE_MAGIC;
 	attr->n_regs  = n_regs;
-	attr->factory = fact;
+	attr->op      = op;
 
-	for(i = 0; i < n_regs; ++i)
-		attr->reg[i] = NULL;
+	for(i = 0; i < n_regs; ++i) {
+		be_reg_data_t *rd = attr->reg_data + i;
+
+		rd->reg      = NULL;
+		rd->req.cls  = cls;
+		rd->req.type = arch_register_req_type_normal;
+	}
 
 	return attr;
 }
@@ -134,18 +174,82 @@ ir_node *new_Spill(const be_node_factory_t *factory,
 		const arch_register_class_t *cls,
 		ir_graph *irg, ir_node *bl, ir_node *node_to_spill, ir_node *ctx)
 {
-	be_spill_attr_t *attr;
+	be_spill_attr_t *a;
 	ir_node *irn;
 	ir_node *in[1];
-	ir_op *op = get_op(factory, cls, node_kind_spill)->op;
+	be_op_t *bop = get_op(factory, cls, node_kind_spill);
+	ir_op *op    = bop->op;
 
 	assert(op && "Spill opcode must be present for this register class");
-	in[0] = node_to_spill;
-	irn  = new_ir_node(NULL, irg, bl, op, mode_M, 1, in);
-	attr = (be_spill_attr_t *) init_node_attr(irn, factory, 0);
-	attr->spill_ctx = ctx;
+	in[0]        = node_to_spill;
+	irn          = new_ir_node(NULL, irg, bl, op, mode_M, 1, in);
+	a            = (be_spill_attr_t *) init_node_attr(irn, bop, cls, 0);
+	a->spill_ctx = ctx;
+	a->offset    = 0;
 
 	return irn;
+}
+
+void set_Spill_offset(ir_node *irn, unsigned offset)
+{
+	be_spill_attr_t *a = (be_spill_attr_t *) &irn->attr;
+	assert(is_be_kind(irn, node_kind_spill));
+	a->offset = offset;
+}
+
+static ir_node *find_a_spill_walker(ir_node *irn, unsigned visited_nr)
+{
+	if(get_irn_visited(irn) < visited_nr) {
+		set_irn_visited(irn, visited_nr);
+
+		if(is_Phi(irn)) {
+			int i, n;
+			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+				ir_node *n = find_a_spill_walker(get_irn_n(irn, i), visited_nr);
+				if(n != NULL)
+					return n;
+			}
+		}
+
+		else if(is_be_kind(irn, node_kind_spill))
+			return irn;
+	}
+
+	return NULL;
+}
+
+/**
+ * Finds a spill for a reload.
+ * If the reload is directly using the spill, this is simple,
+ * else we perform DFS from the reload (over all PhiMs) and return
+ * the first spill node we find.
+ */
+static INLINE ir_node *find_a_spill(ir_node *irn)
+{
+	ir_graph *irg       = get_irn_irg(irn);
+	unsigned visited_nr = get_irg_visited(irg) + 1;
+
+	assert(is_be_kind(irn, node_kind_reload));
+	set_irg_visited(irg, visited_nr);
+	return find_a_spill_walker(irn, visited_nr);
+}
+
+unsigned get_irn_spill_offset(ir_node *irn)
+{
+	be_node_attr_t *a = (be_node_attr_t *) &irn->attr;
+	assert(is_be_node(irn));
+
+	switch(a->op->kind) {
+	case node_kind_reload:
+		assert(0 && "not yet implemented");
+		return get_irn_spill_offset(find_a_spill(irn));
+	case node_kind_spill:
+		return ((be_spill_attr_t *) a)->offset;
+	default:
+		assert(0 && "Illegal node kind (spill/reload required)");
+	}
+
+	return 0;
 }
 
 ir_node *new_Reload(const be_node_factory_t *factory,
@@ -153,14 +257,14 @@ ir_node *new_Reload(const be_node_factory_t *factory,
 		ir_node *bl, ir_mode *mode, ir_node *spill_node)
 {
 	ir_node *irn, *in[1];
-	ir_op *op = get_op(factory, cls, node_kind_reload)->op;
+	be_op_t *bop = get_op(factory, cls, node_kind_reload);
+	ir_op *op    = bop->op;
 
 	assert(op && "Reload opcode must be present for this register class");
-	// assert(is_Spill(factory, spill_node) && "Operand of Reload must be a Spill");
 	in[0] = spill_node;
 
 	irn  = new_ir_node(NULL, irg, bl, op, mode, 1, in);
-	init_node_attr(irn, factory, 1);
+	init_node_attr(irn, bop, cls, 1);
 
 	return irn;
 }
@@ -170,10 +274,11 @@ ir_node *new_Perm(const be_node_factory_t *factory,
 		ir_graph *irg, ir_node *bl, int arity, ir_node **in)
 {
 	ir_node *irn;
-	ir_op *op = get_op(factory, cls, node_kind_perm)->op;
+	be_op_t *bop = get_op(factory, cls, node_kind_perm);
+	ir_op *op    = bop->op;
 
 	irn  = new_ir_node(NULL, irg, bl, op, mode_T, arity, in);
-	init_node_attr(irn, factory, arity);
+	init_node_attr(irn, bop, cls, arity);
 
 	return irn;
 }
@@ -183,12 +288,13 @@ ir_node *new_Copy(const be_node_factory_t *factory,
 		ir_graph *irg, ir_node *bl, ir_node *in)
 {
 	ir_node *irn, *ins[1];
-	ir_op *op = get_op(factory, cls, node_kind_copy)->op;
+	be_op_t *bop = get_op(factory, cls, node_kind_copy);
+	ir_op *op    = bop->op;
 
 	ins[0] = in;
 
 	irn  = new_ir_node(NULL, irg, bl, op, get_irn_mode(in), 1, ins);
-	init_node_attr(irn, factory, 1);
+	init_node_attr(irn, bop, cls, 1);
 
 	return irn;
 }
@@ -228,7 +334,7 @@ ir_node *be_reload(const be_node_factory_t *factory,
 	ir_node *bl   = get_nodes_block(irn);
 	ir_graph *irg = get_irn_irg(bl);
 
-	assert(is_Spill(factory, spill)
+	assert(is_Spill(spill)
 			|| (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 
 	reload = new_Reload(factory, cls, irg, bl, mode, spill);
@@ -236,6 +342,17 @@ ir_node *be_reload(const be_node_factory_t *factory,
 	set_irn_n(irn, pos, reload);
 	sched_add_before(irn, reload);
 	return reload;
+}
+
+static INLINE arch_register_req_t *get_Perm_reqs(ir_node *perm)
+{
+	be_node_attr_t *attr = (be_node_attr_t *) &perm->attr;
+	char *ptr            = (char *) &perm->attr;
+
+	ptr += sizeof(be_node_attr_t);
+	ptr += sizeof(arch_register_t *) * attr->n_regs;
+
+	return (arch_register_req_t *) ptr;
 }
 
 /**
@@ -267,30 +384,58 @@ be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
 	const be_node_factory_t *factory =
 		container_of(_self, const be_node_factory_t, irn_ops);
 
+	/* We cannot get output requirements for tuple nodes. */
 	if(get_irn_mode(irn) == mode_T && pos < 0)
 		return NULL;
 
 	/*
-	 * were interested in an output operand, so
-	 * let's resolve projs.
+	 * if we're interested in an output operand (pos < 0), so let's resolve projs.
 	 */
 	if(pos < 0)
 		pos = redir_proj((const ir_node **) &irn, pos);
 
+	/* look if the node is one of ours. */
 	bo = pmap_get(factory->irn_op_map, get_irn_op(irn));
 
 	if(bo) {
 		int i;
 
-		req->type = arch_register_req_type_normal;
-		req->cls  = bo->cls;
+		for(i = 0; i < bo->n_pos; ++i) {
+			if(pos == bo->pos[i]) {
 
-		for(i = 0; i < bo->n_pos; ++i)
-			if(pos == bo->pos[i])
+				/* be nodes have no input constraints.
+				   so return normal register requirements. */
+				if(pos >= 0) {
+					req->cls = bo->cls;
+					req->type = arch_register_req_type_normal;
+				}
+
+				/*
+				 * if an output requirement is requested,
+				 * return the one stored in the node.
+				 */
+				else {
+					be_node_attr_t *attr = (be_node_attr_t *) &irn->attr;
+					*req = attr->reg_data[pos].req;
+				}
+
 				return req;
+			}
+		}
 	}
 
 	return NULL;
+}
+
+void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req)
+{
+	be_op_t *bo;
+	be_node_attr_t *a = get_attr_and_check(irn, node_kind_perm);
+
+	assert(pos >= 0 && pos < get_irn_arity(irn) && "position out of range");
+	assert(a->op->kind == node_kind_perm && "node must be a perm node");
+
+	a->reg_data[pos].req = *req;
 }
 
 void
@@ -303,7 +448,7 @@ be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn,
 	const be_node_factory_t *factory =
 		container_of(_self, const be_node_factory_t, irn_ops);
 
-	if(get_irn_mode(irn) == mode_T && pos < 0)
+	if(get_irn_mode(irn) == mode_T)
 		return;
 
 	pos = redir_proj((const ir_node **) &irn, -1);
@@ -313,7 +458,7 @@ be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn,
 		return;
 
 	attr = (be_node_attr_t *) &irn->attr;
-	attr->reg[-pos - 1] = reg;
+	attr->reg_data[-pos - 1].reg = reg;
 }
 
 const arch_register_t *
@@ -324,7 +469,7 @@ be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn)
 	const be_node_factory_t *factory =
 		container_of(_self, const be_node_factory_t, irn_ops);
 
-	if(get_irn_mode(irn) == mode_T && pos < 0)
+	if(get_irn_mode(irn) == mode_T)
 		return NULL;
 
 	pos = redir_proj((const ir_node **) &irn, -1);
@@ -336,7 +481,7 @@ be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn)
 	for(i = 0; i < bo->n_pos; ++i) {
 		if(bo->pos[i] == pos) {
 			be_node_attr_t *attr = (be_node_attr_t *) &irn->attr;
-			return attr->reg[-pos - 1];
+			return attr->reg_data[-pos - 1].reg;
 		}
 	}
 
@@ -390,11 +535,14 @@ const arch_irn_handler_t *be_node_get_irn_handler(const be_node_factory_t *f)
 	return &f->handler;
 }
 
-int is_Spill(const be_node_factory_t *f, const ir_node *irn)
+int is_Spill(const ir_node *irn)
 {
-	be_op_t *bo;
-	bo = pmap_get(f->irn_op_map, get_irn_op(irn));
-	return bo != NULL && bo->kind == node_kind_spill;
+	return is_be_kind(irn, node_kind_spill);
+}
+
+int is_Perm(const ir_node *irn)
+{
+	return is_be_kind(irn, node_kind_perm);
 }
 
 be_node_factory_t *be_node_factory_init(be_node_factory_t *factory, const arch_isa_t *isa)
@@ -441,7 +589,8 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory, const arch_i
 		ent = get_op(factory, cls, node_kind_perm);
 		ent->op = new_ir_op(get_next_ir_opcode(), "Perm", op_pin_state_pinned, 0,
 				oparity_variable, 0,
-				sizeof(be_node_attr_t) + sizeof(arch_register_t) * cls->n_regs, &be_node_ops);
+				sizeof(be_node_attr_t)
+				+ sizeof(be_reg_data_t) * cls->n_regs, &be_node_ops);
 		ent->n_pos = 2 * cls->n_regs;
 		ent->pos = obstack_alloc(&factory->obst, sizeof(ent->pos[0]) * ent->n_pos);
 		for(j = 0; j < ent->n_pos; j += 2) {
@@ -458,10 +607,12 @@ be_node_factory_t *be_node_factory_init(be_node_factory_t *factory, const arch_i
 
 static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 {
-	be_node_attr_t *attr = (be_node_attr_t *) &irn->attr;
-	be_op_t *bo          = pmap_get(attr->factory->irn_op_map, get_irn_op(irn));
-
+	be_node_attr_t *at = (be_node_attr_t *) &irn->attr;
+	const be_op_t *bo;
 	int i;
+
+	assert(is_be_node(irn));
+	bo = at->op;
 
 	switch(reason) {
 		case dump_node_opcode_txt:
@@ -474,19 +625,19 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			fprintf(f, "%s ", bo->cls->name);
 			break;
 		case dump_node_info_txt:
-			for(i = 0; i < attr->n_regs; ++i) {
-				const arch_register_t *reg = attr->reg[i];
+			for(i = 0; i < at->n_regs; ++i) {
+				const arch_register_t *reg = at->reg_data[i].reg;
 				fprintf(f, "reg #%d: %s\n", i, reg ? reg->name : "n/a");
 			}
 
 			if(bo->kind == node_kind_spill) {
-				be_spill_attr_t *a = (be_spill_attr_t *) attr;
+				be_spill_attr_t *a = (be_spill_attr_t *) at;
 				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
 			}
 			break;
 	}
 
-	return 1;
+	return 0;
 }
 
 ir_node *insert_Perm_after(const be_main_env_t *env,
@@ -556,7 +707,7 @@ ir_node *insert_Perm_after(const be_main_env_t *env,
 	for(i = 0; i < n; ++i) {
 		ir_node *copies[1];
 		ir_node *perm_op = get_irn_n(perm, i);
-	const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
+		const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
 
 		ir_mode *mode = get_irn_mode(perm_op);
 		ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
