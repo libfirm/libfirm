@@ -8,10 +8,10 @@ typedef enum { flavour_Div, flavour_Mod, flavour_DivMod } divmod_flavour_t;
 typedef enum { pn_EAX, pn_EDX } pn_ia32_Register;
 
 typedef struct {
-  enum { asmop_Const, asmop_SymConst } tp;
+  enum { asmop_Const, asmop_SymConst, asmop_AddrMode } tp;
 
   tarval  *tv;       /**<< tarval for immediate operations */
-  tarval  *offset;   /**<< offset for LEA */
+  tarval  *offset;   /**<< offset for AddrMode */
   ir_node *old_ir;   /**<< old ir node to avoid duplicating information (symconst in case of asmop_SymConst) */
 
   divmod_flavour_t dm_flav;   /**<< flavour of a DivMod (flavour_Div/Mod/DivMod) */
