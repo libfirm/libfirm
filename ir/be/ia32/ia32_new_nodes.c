@@ -47,13 +47,13 @@
  * @param brackets  1 == print square brackets around tarval
  */
 static void fprintf_tv(FILE *F, tarval *tv, int brackets) {
-  char buf[1024];
-  tarval_snprintf(buf, sizeof(buf), tv);
+	char buf[1024];
+	tarval_snprintf(buf, sizeof(buf), tv);
 
-  if (brackets)
-    fprintf(F, "[%s]", buf);
-  else
-    fprintf(F, "%s", buf);
+	if (brackets)
+		fprintf(F, "[%s]", buf);
+	else
+		fprintf(F, "%s", buf);
 }
 
 /**
@@ -62,21 +62,21 @@ static void fprintf_tv(FILE *F, tarval *tv, int brackets) {
  * @return name of the SymConst
  */
 const char *get_sc_name(ir_node *symc) {
-  if (get_irn_opcode(symc) != iro_SymConst)
-    return "NONE";
+	if (get_irn_opcode(symc) != iro_SymConst)
+		return "NONE";
 
-  switch (get_SymConst_kind(symc)) {
-    case symconst_addr_name:
-      return get_id_str(get_SymConst_name(symc));
+	switch (get_SymConst_kind(symc)) {
+		case symconst_addr_name:
+			return get_id_str(get_SymConst_name(symc));
 
-    case symconst_addr_ent:
-      return get_entity_ld_name(get_SymConst_entity(symc));
+		case symconst_addr_ent:
+			return get_entity_ld_name(get_SymConst_entity(symc));
 
-    default:
-      assert(0 && "Unsupported SymConst");
-  }
+		default:
+			assert(0 && "Unsupported SymConst");
+	}
 
-  return NULL;
+	return NULL;
 }
 
 /**
@@ -87,122 +87,148 @@ const char *get_sc_name(ir_node *symc) {
  * @return 0 on success or != 0 on failure
  */
 static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
-  const char *name, *p;
-  ir_mode    *mode = NULL;
-  int        bad   = 0;
-  asmop_attr *attr;
-  int        i;
-  const arch_register_req_t **reqs;
-  const arch_register_t     **slots;
+	const char *name, *p;
+	ir_mode    *mode = NULL;
+	int        bad   = 0;
+	asmop_attr *attr;
+	int        i;
+	const arch_register_req_t **reqs;
+	const arch_register_t     **slots;
 
-  switch (reason) {
-    case dump_node_opcode_txt:
-      name = get_irn_opname(n);
-      fprintf(F, "%s", name);
-      break;
+	switch (reason) {
+		case dump_node_opcode_txt:
+			name = get_irn_opname(n);
+			fprintf(F, "%s", name);
+			break;
 
-    case dump_node_mode_txt:
-      mode = get_irn_mode(n);
+		case dump_node_mode_txt:
+			mode = get_irn_mode(n);
 
-      if (mode == mode_BB || mode == mode_ANY || mode == mode_BAD || mode == mode_T) {
-        mode = NULL;
-      }
-      else if (is_ia32_Load(n)) {
-        mode = get_irn_mode(get_irn_n(n, 1));
-      }
-      else if (is_ia32_Store(n)) {
-        mode = get_irn_mode(get_irn_n(n, 2));
-      }
+			if (mode == mode_BB || mode == mode_ANY || mode == mode_BAD || mode == mode_T) {
+				mode = NULL;
+			}
+			else if (is_ia32_Load(n)) {
+				mode = get_irn_mode(get_irn_n(n, 1));
+			}
+			else if (is_ia32_Store(n)) {
+				mode = get_irn_mode(get_irn_n(n, 2));
+			}
 
-      if (mode)
-        fprintf(F, "[%s]", get_mode_name(mode));
-      break;
+			if (mode) {
+				fprintf(F, "[%s]", get_mode_name(mode));
+			}
+			break;
 
-    case dump_node_nodeattr_txt:
-      name = get_irn_opname(n);
-      p = name + strlen(name) - 2;
-      if ((p[0] == '_' && p[1] == 'i') || is_ia32_Const(n) || is_ia32_fConst(n)) {
-        tarval *tv = get_ia32_Immop_tarval(n);
-        if (tv)
-          fprintf_tv(F, tv, 1);
-        else {
-          fprintf(F, "[SymC &%s]", get_sc_name(get_ia32_old_ir(n)));
-        }
-      }
-      else if (is_ia32_Call(n)) {
-        ir_node *sc = get_ia32_old_ir(n);
+		case dump_node_nodeattr_txt:
+			name = get_irn_opname(n);
+			p = name + strlen(name) - 2;
+			if ((p[0] == '_' && p[1] == 'i') || is_ia32_Const(n) || is_ia32_fConst(n)) {
+				tarval *tv = get_ia32_Immop_tarval(n);
+				if (tv) {
+					fprintf_tv(F, tv, 1);
+				}
+				else {
+					fprintf(F, "[SymC &%s]", get_sc_name(get_ia32_old_ir(n)));
+				}
+			}
+			else if (is_ia32_Call(n)) {
+				ir_node *sc = get_ia32_old_ir(n);
 
-        fprintf(F, "&%s ", get_sc_name(sc));
-      }
-      break;
+				fprintf(F, "&%s ", get_sc_name(sc));
+			}
 
-    case dump_node_info_txt:
-      attr = get_ia32_attr(n);
+			if (is_ia32_AddrMode(n)) {
+				fprintf(F, "[AddrMode] ");
+			}
 
-      /* dump IN requirements */
-      if (get_irn_arity(n) > 0) {
-	reqs = get_ia32_in_req(n);
+			break;
 
-	if (reqs) {
-	  for (i = 0; i < get_irn_arity(n); i++) {
-	    if (reqs[i]->type != arch_register_req_type_none)
-	      fprintf(F, "inreq[%d]=[%s]\n", i, reqs[i]->cls->name);
-	    else
-	      fprintf(F, "inreq[%d]=[none]\n", i);
-	  }
-	  fprintf(F, "\n");
+		case dump_node_info_txt:
+			attr = get_ia32_attr(n);
+
+			/* dump IN requirements */
+			if (get_irn_arity(n) > 0) {
+				reqs = get_ia32_in_req(n);
+
+				if (reqs) {
+					for (i = 0; i < get_irn_arity(n); i++) {
+						if (reqs[i]->type != arch_register_req_type_none) {
+							fprintf(F, "inreq[%d]=[%s]\n", i, reqs[i]->cls->name);
+						}
+						else {
+							fprintf(F, "inreq[%d]=[none]\n", i);
+						}
+					}
+
+					fprintf(F, "\n");
+				}
+				else {
+					fprintf(F, "NO IN REQS\n");
+				}
+			}
+
+			/* dump OUT requirements */
+			if (attr->n_res > 0) {
+				reqs = get_ia32_out_req(n);
+
+				if (reqs) {
+					for (i = 0; i < attr->n_res; i++) {
+						if (reqs[i]->type != arch_register_req_type_none) {
+							fprintf(F, "outreq[%d]=[%s]\n", i, reqs[i]->cls->name);
+						}
+						else {
+							fprintf(F, "outreq[%d]=[none]\n", i);
+						}
+					}
+				}
+				else {
+					fprintf(F, "NO OUT REQS\n");
+				}
+			}
+
+			/* dump assigned registers */
+			slots = get_ia32_slots(n);
+			if (slots && attr->n_res > 0) {
+				for (i = 0; i < attr->n_res; i++) {
+					if (slots[i]) {
+						fprintf(F, "reg #%d = %s\n", i, slots[i]->name);
+					}
+					else {
+						fprintf(F, "reg #%d = n/a\n", i);
+					}
+				}
+			}
+
+			/* special for LEA */
+			if (is_ia32_Lea(n) || is_ia32_Lea_i(n)) {
+				tarval *o  = get_ia32_offs(n);
+				tarval *tv = get_ia32_Immop_tarval(n);
+
+				if (is_ia32_AddrMode(n)) {
+					fprintf(F, "AddrMode ");
+				}
+
+				fprintf(F, "LEA ");
+				if (o) {
+					fprintf_tv(F, o, 0);
+				}
+
+				fprintf(F, "(%s", get_irn_opname(get_irn_n(n, 0)));
+
+				if (is_ia32_Lea(n)) {
+					fprintf(F, ", %s", get_irn_opname(get_irn_n(n, 1)));
+				}
+
+				if (tv) {
+					fprintf(F, ", ");
+					fprintf_tv(F, tv, 0);
+				}
+				fprintf(F, ")\n");
+			}
+			break;
 	}
-	else
-	  fprintf(F, "NO IN REQS\n");
-      }
 
-      /* dump OUT requirements */
-      if (attr->n_res > 0) {
-	reqs = get_ia32_out_req(n);
-
-	if (reqs) {
-	  for (i = 0; i < attr->n_res; i++) {
-	    if (reqs[i]->type != arch_register_req_type_none)
-	      fprintf(F, "outreq[%d]=[%s]\n", i, reqs[i]->cls->name);
-	    else
-	      fprintf(F, "outreq[%d]=[none]\n", i);
-	  }
-	}
-	else
-	  fprintf(F, "NO OUT REQS\n");
-      }
-
-      /* dump assigned registers */
-      slots = get_ia32_slots(n);
-      if (slots && attr->n_res > 0) {
-        for (i = 0; i < attr->n_res; i++) {
-	  if (slots[i]) {
-	    fprintf(F, "REG[%d]=[%s]\n", i, slots[i]->name);
-	  }
-	  else
-	    fprintf(F, "REG[%d]=[none]\n", i);
-        }
-      }
-
-      /* special for LEA */
-      if (is_ia32_Lea(n)) {
-        tarval *o  = get_ia32_offs(n);
-        tarval *tv = get_ia32_Immop_tarval(n);
-
-        fprintf(F, "LEA ");
-        if (o)
-          fprintf_tv(F, o, 0);
-        fprintf(F, "(%s, %s", get_irn_opname(get_irn_n(n, 0)), get_irn_opname(get_irn_n(n, 1)));
-        if (tv) {
-          fprintf(F, ", ");
-          fprintf_tv(F, tv, 0);
-        }
-        fprintf(F, ")\n");
-      }
-      break;
-  }
-
-  return bad;
+	return bad;
 }
 
 
@@ -295,12 +321,28 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
  * Sets the type of an ia32_Const.
  */
 void set_ia32_Const_type(ir_node *node, int type) {
-	asmop_attr *attr   = get_ia32_attr(node);
+	asmop_attr *attr = get_ia32_attr(node);
 
 	assert((is_ia32_Const(node) || is_ia32_fConst(node)) && "Need ia32_Const to set type");
 	assert((type == asmop_Const || type == asmop_SymConst) && "Unsupported ia32_Const type");
 
 	attr->tp = type;
+}
+
+/**
+ * Sets the AddrMode attribute
+ */
+void set_ia32_AddrMode(ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->tp = asmop_AddrMode;
+}
+
+/**
+ * Returns whether or not the node is an AddrMode node.
+ */
+int is_ia32_AddrMode(ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return (attr->tp == asmop_AddrMode);
 }
 
 /**

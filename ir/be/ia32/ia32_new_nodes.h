@@ -22,6 +22,9 @@ void    set_ia32_Immop_tarval(ir_node *node, tarval *tv);
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
 void set_ia32_Const_type(ir_node *node, int type);
 
+void set_ia32_AddrMode(ir_node *node);
+int   is_ia32_AddrMode(ir_node *node);
+
 void set_ia32_pncode(ir_node *node, long code);
 long get_ia32_pncode(const ir_node *node);
 
@@ -46,7 +49,7 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos);
 
 int is_ia32_irn(const ir_node *node);
 
-/* Inlcude the generated headers */
+/* Include the generated headers */
 #include "gen_ia32_new_nodes.h"
 
 #endif /* _IA32_NEW_NODES_H_ */
