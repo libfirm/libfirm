@@ -1009,7 +1009,7 @@ static ir_node *equivalent_node_Div(ir_node *n)
   if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
     /* Turn Div into a tuple (mem, bad, a) */
     ir_node *mem = get_Div_mem(n);
-    turn_into_tuple(n, 3);
+    turn_into_tuple(n, pn_Div_max);
     set_Tuple_pred(n, pn_Div_M,        mem);
     set_Tuple_pred(n, pn_Div_X_except, new_Bad());        /* no exception */
     set_Tuple_pred(n, pn_Div_res,      a);
@@ -1031,7 +1031,7 @@ static ir_node *equivalent_node_DivMod(ir_node *n)
     ir_node *mem = get_Div_mem(n);
     ir_mode *mode = get_irn_mode(b);
 
-    turn_into_tuple(n, 4);
+    turn_into_tuple(n, pn_DivMod_max);
     set_Tuple_pred(n, pn_DivMod_M,        mem);
     set_Tuple_pred(n, pn_DivMod_X_except, new_Bad());        /* no exception */
     set_Tuple_pred(n, pn_DivMod_res_div,  a);
@@ -1370,7 +1370,7 @@ static ir_node *equivalent_node_Confirm(ir_node *n)
      * rare case: two identical Confirms one after another,
      * replace the second one with the first.
      */
-    return pred;
+    n = pred;
   }
   if (pnc == pn_Cmp_Eq) {
     ir_node *bound = get_Confirm_bound(n);
@@ -1402,6 +1402,54 @@ static ir_node *equivalent_node_CopyB(ir_node *n)
     set_Tuple_pred(n, pn_CopyB_M,        mem);
     set_Tuple_pred(n, pn_CopyB_X_except, new_Bad());        /* no exception */
     set_Tuple_pred(n, pn_Call_M_except,  new_Bad());
+  }
+  return n;
+}
+
+/**
+ * Optimize Bounds(idx, idx, upper) into idx.
+ */
+static ir_node *equivalent_node_Bound(ir_node *n)
+{
+  ir_node *idx   = get_Bound_index(n);
+  ir_node *lower = get_Bound_lower(n);
+  int ret_tuple = 0;
+
+  /* By definition lower < upper, so if idx == lower -->
+     lower <= idx && idx < upper */
+  if (idx == lower) {
+    /* Turn Bound into a tuple (mem, bad, idx) */
+    ret_tuple = 1;
+  }
+  else {
+    ir_node *pred = skip_Proj(idx);
+
+    if (get_irn_op(pred) == op_Bound) {
+      /*
+       * idx was Bounds_check previously, it is still valid if
+       * lower <= pred_lower && pred_upper <= upper.
+       */
+      ir_node *upper = get_Bound_upper(n);
+       if (get_Bound_lower(pred) == lower &&
+           get_Bound_upper(pred) == upper) {
+         /*
+          * One could expect that we simple return the previous
+          * Bound here. However, this would be wrong, as we could
+          * add an exception Proj to a new location than.
+          * So, we must turn in into a tuple
+          */
+         ret_tuple = 1;
+       }
+    }
+  }
+  if (ret_tuple) {
+    /* Turn Bound into a tuple (mem, bad, idx) */
+    ir_node *mem = get_Bound_mem(n);
+    turn_into_tuple(n, pn_Bound_max);
+    set_Tuple_pred(n, pn_Bound_M_regular, mem);
+    set_Tuple_pred(n, pn_Bound_X_except,  new_Bad());       /* no exception */
+    set_Tuple_pred(n, pn_Bound_res,       idx);
+    set_Tuple_pred(n, pn_Bound_M_except,  mem);
   }
   return n;
 }
@@ -1464,6 +1512,7 @@ static ir_op_ops *firm_set_default_equivalent_node(opcode code, ir_op_ops *ops)
   CASE(Cmp);
   CASE(Confirm);
   CASE(CopyB);
+  CASE(Bound);
   default:
     /* leave NULL */;
   }
@@ -1569,7 +1618,9 @@ static ir_node *transform_node_AddSub(ir_node *n)
 }
 
 /**
- * Do the AddSub optimization, then Transform Add(a,a) into Mul(a, 2)
+ * Do the AddSub optimization, then Transform
+ *   Add(a,a)          -> Mul(a, 2)
+ *   Add(Mul(a, x), a) -> Mul(a, x+1)
  * if the mode is integer or float.
  * Transform Add(a,-b) into Sub(a,b).
  * Reassociation might fold this further.
@@ -1584,8 +1635,9 @@ static ir_node *transform_node_Add(ir_node *n)
   mode = get_irn_mode(n);
   if (mode_is_num(mode)) {
     ir_node *a = get_Add_left(n);
+    ir_node *b = get_Add_right(n);
 
-    if (a == get_Add_right(n)) {
+    if (a == b) {
       ir_node *block = get_irn_n(n, -1);
 
       n = new_rd_Mul(
@@ -1597,28 +1649,86 @@ static ir_node *transform_node_Add(ir_node *n)
             mode);
       DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
     }
-    else {
-      ir_node *b = get_Add_right(n);
+    else if (get_irn_op(a) == op_Minus) {
+      n = new_rd_Sub(
+          get_irn_dbg_info(n),
+          current_ir_graph,
+          get_irn_n(n, -1),
+          b,
+          get_Minus_op(a),
+          mode);
+      DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
+    }
+    else if (get_irn_op(b) == op_Minus) {
+      n = new_rd_Sub(
+          get_irn_dbg_info(n),
+          current_ir_graph,
+          get_irn_n(n, -1),
+          a,
+          get_Minus_op(b),
+          mode);
+      DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
+    }
+    else if (get_irn_op(a) == op_Mul) {
+      ir_node *ma = get_Mul_left(a);
+      ir_node *mb = get_Mul_right(a);
 
-      if (get_irn_op(a) == op_Minus) {
-        n = new_rd_Sub(
-            get_irn_dbg_info(n),
-            current_ir_graph,
-            get_irn_n(n, -1),
-            b,
-            get_Minus_op(a),
-            mode);
-        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
+      if (b == ma) {
+        ir_node *blk = get_irn_n(n, -1);
+        n = new_rd_Mul(
+          get_irn_dbg_info(n), current_ir_graph, blk,
+          ma,
+          new_rd_Add(
+            get_irn_dbg_info(n), current_ir_graph, blk,
+            mb,
+            new_r_Const_long(current_ir_graph, blk, mode, 1),
+            mode),
+          mode);
+        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
       }
-      else if (get_irn_op(b) == op_Minus) {
-        n = new_rd_Sub(
-            get_irn_dbg_info(n),
-            current_ir_graph,
-            get_irn_n(n, -1),
-            a,
-            get_Minus_op(b),
-            mode);
-        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
+      else if (b == mb) {
+        ir_node *blk = get_irn_n(n, -1);
+        n = new_rd_Mul(
+          get_irn_dbg_info(n), current_ir_graph, blk,
+          mb,
+          new_rd_Add(
+            get_irn_dbg_info(n), current_ir_graph, blk,
+            ma,
+            new_r_Const_long(current_ir_graph, blk, mode, 1),
+            mode),
+          mode);
+        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+      }
+    }
+    else if (get_irn_op(b) == op_Mul) {
+      ir_node *ma = get_Mul_left(b);
+      ir_node *mb = get_Mul_right(b);
+
+      if (a == ma) {
+        ir_node *blk = get_irn_n(n, -1);
+        n = new_rd_Mul(
+          get_irn_dbg_info(n), current_ir_graph, blk,
+          ma,
+          new_rd_Add(
+            get_irn_dbg_info(n), current_ir_graph, blk,
+            mb,
+            new_r_Const_long(current_ir_graph, blk, mode, 1),
+            mode),
+          mode);
+        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+      }
+      else if (a == mb) {
+        ir_node *blk = get_irn_n(n, -1);
+        n = new_rd_Mul(
+          get_irn_dbg_info(n), current_ir_graph, blk,
+          mb,
+          new_rd_Add(
+            get_irn_dbg_info(n), current_ir_graph, blk,
+            ma,
+            new_r_Const_long(current_ir_graph, blk, mode, 1),
+            mode),
+          mode);
+        DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
       }
     }
   }
@@ -1626,24 +1736,64 @@ static ir_node *transform_node_Add(ir_node *n)
 }
 
 /**
- * Do the AddSub optimization, then Transform Sub(0,a) into Minus(a).
+ * Do the AddSub optimization, then Transform
+ *   Sub(0,a)          -> Minus(a)
+ *   Sub(Mul(a, x), a) -> Mul(a, x-1)
  */
 static ir_node *transform_node_Sub(ir_node *n)
 {
   ir_mode *mode;
   ir_node *oldn = n;
+  ir_node *a, *b;
 
   n = transform_node_AddSub(n);
 
   mode = get_irn_mode(n);
-  if (mode_is_num(mode) && (classify_Const(get_Sub_left(n)) == CNST_NULL)) {
+  a    = get_Sub_left(n);
+  b    = get_Sub_right(n);
+  if (mode_is_num(mode) && (classify_Const(a) == CNST_NULL)) {
     n = new_rd_Minus(
           get_irn_dbg_info(n),
           current_ir_graph,
           get_irn_n(n, -1),
-          get_Sub_right(n),
+          b,
           mode);
     DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_0_A);
+  }
+  else if (get_irn_op(a) == op_Mul) {
+    ir_node *ma = get_Mul_left(a);
+    ir_node *mb = get_Mul_right(a);
+
+    if (ma == b) {
+      ir_node *blk = get_irn_n(n, -1);
+      n = new_rd_Mul(
+        get_irn_dbg_info(n),
+        current_ir_graph, blk,
+        ma,
+        new_rd_Sub(
+          get_irn_dbg_info(n),
+          current_ir_graph, blk,
+          mb,
+          new_r_Const_long(current_ir_graph, blk, mode, 1),
+          mode),
+        mode);
+      DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
+    }
+    else if (mb == b) {
+      ir_node *blk = get_irn_n(n, -1);
+      n = new_rd_Mul(
+        get_irn_dbg_info(n),
+        current_ir_graph, blk,
+        mb,
+        new_rd_Sub(
+          get_irn_dbg_info(n),
+          current_ir_graph, blk,
+          ma,
+          new_r_Const_long(current_ir_graph, blk, mode, 1),
+          mode),
+        mode);
+      DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
+    }
   }
 
   return n;
@@ -1727,7 +1877,7 @@ static ir_node *transform_node_Mod(ir_node *n)
     /* Turn Mod into a tuple (mem, bad, value) */
     ir_node *mem = get_Mod_mem(n);
 
-    turn_into_tuple(n, 3);
+    turn_into_tuple(n, pn_Mod_max);
     set_Tuple_pred(n, pn_Mod_M, mem);
     set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
     set_Tuple_pred(n, pn_Mod_res, value);
@@ -1786,7 +1936,7 @@ static ir_node *transform_node_DivMod(ir_node *n)
 
   if (evaluated) { /* replace by tuple */
     ir_node *mem = get_DivMod_mem(n);
-    turn_into_tuple(n, 4);
+    turn_into_tuple(n, pn_DivMod_max);
     set_Tuple_pred(n, pn_DivMod_M,        mem);
     set_Tuple_pred(n, pn_DivMod_X_except, new_Bad());  /* no exception */
     set_Tuple_pred(n, pn_DivMod_res_div,  a);
@@ -1852,7 +2002,7 @@ static ir_node *transform_node_Cond(ir_node *n)
     /* It's a boolean Cond, branching on a boolean constant.
                Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
     jmp = new_r_Jmp(current_ir_graph, get_nodes_block(n));
-    turn_into_tuple(n, 2);
+    turn_into_tuple(n, pn_Cond_max);
     if (ta == tarval_b_true) {
       set_Tuple_pred(n, pn_Cond_false, new_Bad());
       set_Tuple_pred(n, pn_Cond_true, jmp);
