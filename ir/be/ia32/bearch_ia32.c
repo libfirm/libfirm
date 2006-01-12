@@ -123,14 +123,13 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 					assert(0 && "ProjT(pn_Start_T_args) should not be asked");
 			}
 		}
-		else if (get_irn_op(irn) == op_Return && pos >= 0) {
+		else if (get_irn_op(irn) == op_Return && pos > 0) {
 			DBG((mod, LEVEL_1, "returning reqs EAX for %+F\n", irn));
 			memcpy(req, &ia32_default_req_ia32_general_purpose_eax, sizeof(*req));
 		}
 		else {
 			DBG((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
 			req = NULL;
-			//memcpy(req, &ia32_dummy_register_req, sizeof(*req));
 		}
 	}
 
