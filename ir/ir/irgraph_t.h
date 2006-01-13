@@ -56,7 +56,7 @@ typedef struct _irg_edge_info_t {
 struct ir_graph {
   firm_kind         kind;            /**<  always set to k_ir_graph*/
   /* --  Basics of the representation -- */
-  struct entity  *ent;               /**< The entity of this procedure, i.e.,
+  entity  *ent;           /**< The entity of this procedure, i.e.,
                     the type of the procedure and the
                     class it belongs to. */
   ir_type *frame_type;    /**< A class type representing the stack frame.
@@ -112,12 +112,12 @@ struct ir_graph {
   /* -- Fields for optimizations / analysis information -- */
   pset *value_table;                 /**< hash table for global value numbering (cse)
                     for optimizing use in iropt.c */
-  struct ir_node **outs;             /**< Space for the out arrays. */
+  ir_node **outs;                    /**< Space for the out arrays. */
 
 #ifdef DEBUG_libfirm
   int             n_outs;            /**< Size wasted for outs */
 #endif /* defined DEBUG_libfirm */
-  struct ir_loop *loop;              /**< The outermost loop */
+  ir_loop *loop;                     /**< The outermost loop */
   void *link;                        /**< A void* field to link any information to
                     the node. */
 
@@ -348,14 +348,14 @@ _set_irg_entity(ir_graph *irg, entity *ent) {
   irg->ent = ent;
 }
 
-static INLINE type *
+static INLINE ir_type *
 _get_irg_frame_type(ir_graph *irg) {
   assert(irg && irg->frame_type);
   return irg->frame_type = skip_tid(irg->frame_type);
 }
 
 static INLINE void
-_set_irg_frame_type(ir_graph *irg, type *ftp) {
+_set_irg_frame_type(ir_graph *irg, ir_type *ftp) {
   assert(is_Class_type(ftp));
   irg->frame_type = ftp;
 }

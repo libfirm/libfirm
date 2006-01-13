@@ -48,9 +48,9 @@ struct ir_prog {
                                        to allocate nodes the represent values
                                        of constant entities. It is not meant as
                                        a procedure.  */
-  type      *glob_type;           /**< global type.  Must be a class as it can
+  ir_type   *glob_type;           /**< global type.  Must be a class as it can
                                        have fields and procedures.  */
-  type     **types;               /**< all types in the ir */
+  ir_type  **types;               /**< all types in the ir */
   ir_mode  **modes;               /**< all modes in the ir */
 
   /* -- states of and access to generated information -- */
@@ -69,7 +69,7 @@ struct ir_prog {
   inh_transitive_closure_state inh_trans_closure_state;  /**< trans closure of inh relations. */
 
   irp_callgraph_state callgraph_state; /**< State of the callgraph. */
-  struct ir_loop *outermost_cg_loop;   /**< For callgraph analysis: entry point
+  ir_loop *outermost_cg_loop;          /**< For callgraph analysis: entry point
 					    to looptree over callgraph. */
   int max_callgraph_loop_depth;        /**< needed in callgraph. */
   int max_callgraph_recursion_depth;   /**< needed in callgraph. */
@@ -89,7 +89,7 @@ void  add_irp_mode(ir_mode *mode);
 
 /* INLINE functions */
 
-static INLINE type *
+static INLINE ir_type *
 _get_glob_type(void) {
   assert(irp);
   return irp->glob_type = skip_tid(irp->glob_type);
@@ -116,7 +116,7 @@ _get_irp_n_types (void) {
   return ARR_LEN(irp->types);
 }
 
-static INLINE type *
+static INLINE ir_type *
 _get_irp_type(int pos) {
   assert (irp && irp->types);
   /* Don't set the skip_tid result so that no double entries are generated. */
