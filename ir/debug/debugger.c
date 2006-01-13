@@ -358,7 +358,7 @@ static void dbg_new_entity(void *ctx, entity *ent)
  * @param ctx   the hook context
  * @param tp    the newly created type
  */
-static void dbg_new_type(void *ctx, type *tp)
+static void dbg_new_type(void *ctx, ir_type *tp)
 {
   {
     bp_nr_t key, *elem;

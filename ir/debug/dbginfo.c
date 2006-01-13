@@ -67,11 +67,11 @@ dbg_info *get_entity_dbg_info(entity *ent) {
 
 /* Routines to access the field of a type containing the
    debugging information. */
-void set_type_dbg_info(type *tp, dbg_info* db) {
+void set_type_dbg_info(ir_type *tp, dbg_info* db) {
   tp->dbi = db;
 }
 
-dbg_info *get_type_dbg_info(type *tp) {
+dbg_info *get_type_dbg_info(ir_type *tp) {
   return tp->dbi;
 }
 

@@ -75,12 +75,12 @@ dbg_info *get_entity_dbg_info(entity *ent);
 /**
  * Sets the debug information of a type.
  */
-void set_type_dbg_info(type *tp, dbg_info *db);
+void set_type_dbg_info(ir_type *tp, dbg_info *db);
 
 /**
  * Returns the debug information of a type.
  */
-dbg_info *get_type_dbg_info(type *tp);
+dbg_info *get_type_dbg_info(ir_type *tp);
 
 /**
  * An enumeration indicating the action performed by a transformation.
