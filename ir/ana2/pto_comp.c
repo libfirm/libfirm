@@ -29,7 +29,7 @@
 # include "pto_mod.h"
 
 # include "irnode_t.h"
-# include "irprog.h"
+# include "irprog_t.h"
 # include "xmalloc.h"
 # include "irmemwalk.h"
 
@@ -72,7 +72,7 @@ static void pto_end_block (ir_node*, pto_env_t*);
 static int add_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 {
   int change = FALSE;
-  type *meth = get_entity_type (get_irg_entity (graph));
+  ir_type *meth = get_entity_type (get_irg_entity (graph));
   ir_node **args = get_irg_proj_args (graph);
   int i, n_args;
 
@@ -113,7 +113,7 @@ static int add_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 /* Transfer the actual arguments to the formal arguments */
 static void set_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 {
-  type *meth = get_entity_type (get_irg_entity (graph));
+  ir_type *meth = get_entity_type (get_irg_entity (graph));
   ir_node **args = get_irg_proj_args (graph);
   int i, n_args;
 
@@ -143,7 +143,7 @@ static void set_graph_args (ir_graph *graph, ir_node *call, pto_env_t *env)
 /* Transfer the graph's result to the call */
 static int set_graph_result (ir_graph *graph, ir_node *call)
 {
-  type *tp = get_entity_type (get_irg_entity (graph));
+  ir_type *tp = get_entity_type (get_irg_entity (graph));
   ir_node *end_block;
   pto_t *ret_pto, *call_pto;
   int change;
@@ -640,7 +640,7 @@ static void pto_raise (ir_node *raise, pto_env_t *pto_env)
 static void pto_end_block (ir_node *end_block, pto_env_t *pto_env)
 {
   /* perform end block */
-  type *tp = get_entity_type (get_irg_entity (get_irn_irg (end_block)));
+  ir_type *tp = get_entity_type (get_irg_entity (get_irn_irg (end_block)));
   pto_t *end_pto;
   int i, n_ins;
 
@@ -650,7 +650,7 @@ static void pto_end_block (ir_node *end_block, pto_env_t *pto_env)
 
   tp = get_method_res_type (tp, 0);
 
-  if (mode_P != get_type_mode (tp)) {
+  if (! mode_is_reference(get_type_mode (tp))) {
     return;
   }
 
@@ -756,6 +756,10 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.18  2006/01/13 22:57:41  beck
+  renamed all types 'type' to 'ir_type'
+  used mode_is_reference instead of != mode_P test
+
   Revision 1.17  2005/02/25 16:48:21  liekweg
   fix typo
 
