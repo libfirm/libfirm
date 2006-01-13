@@ -9,12 +9,10 @@
  * Copyright:   (c) 2001-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifndef _TYPEGMOD_H_
+#define _TYPEGMOD_H_
 
-
-# ifndef _TYPEGMOD_H_
-# define _TYPEGMOD_H_
-
-# include "type.h"
+#include "firm_types.h"
 
 /**
  *
@@ -36,7 +34,7 @@
  *  @param new_type  - The new type that will replace old_type.
  *
  */
-void exchange_types(type *old_type, type *new_type);
+void exchange_types(ir_type *old_type, ir_type *new_type);
 
 /** Skip id types until a useful type is reached.
  *
@@ -46,6 +44,6 @@ void exchange_types(type *old_type, type *new_type);
  *    tp if it is not an id type.
  *    If tp is an id type returns the real type it stands for.
  */
-type *skip_tid(type *tp);
+ir_type *skip_tid(ir_type *tp);
 
-# endif /*_TYPEGMOD_H_ */
+#endif /*_TYPEGMOD_H_ */
