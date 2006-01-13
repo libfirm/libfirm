@@ -23,7 +23,7 @@ typedef struct alloc_info
 {
   ir_graph *graph;
   ir_node *alloc;
-  type *tp;
+  ir_type *tp;
   struct alloc_info *prev;
 } alloc_info_t;
 
@@ -82,6 +82,9 @@ void ecg_ecg (void);
 
 /*
 $Log$
+Revision 1.4  2006/01/13 22:00:15  beck
+renamed all types 'type' to 'ir_type'
+
 Revision 1.3  2004/11/20 21:20:29  liekweg
 Added iterator functions
 

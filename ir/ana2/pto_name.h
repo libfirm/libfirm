@@ -42,7 +42,7 @@ typedef struct desc_str
   int ctx;
   int col_idx;
   desc_kind_t kind;
-  type *tp;
+  ir_type *tp;
   ir_node *node;                /* allocation node */
   struct desc_str *prev;        /* linked list */
 } desc_t;
@@ -55,7 +55,7 @@ typedef struct obj_desc_str
   int ctx;
   int col_idx;
   desc_kind_t kind;
-  type *tp;
+  ir_type *tp;
   ir_node *node;                /* allocation node */
   struct desc_str *prev;        /* linked list */
 
@@ -72,7 +72,7 @@ typedef struct arr_desc_str
   int ctx;
   int col_idx;
   desc_kind_t kind;
-  type *tp;
+  ir_type *tp;
   ir_node *node;                /* allocation node */
   struct desc_str *prev;        /* linked list */
 
@@ -89,7 +89,7 @@ void pto_dump_names (const char*);
 qset_t *get_entry (desc_t*, entity*);
 
 /* get a new descriptor for the given type at the given node */
-desc_t *new_name (type*, ir_node*, int);
+desc_t *new_name (ir_type*, ir_node*, int);
 
 /* get a new descriptor for the given (presumably static) entity */
 desc_t *new_ent_name (entity*);
@@ -111,6 +111,9 @@ void pto_name_cleanup (void);
 
 /*
   $Log$
+  Revision 1.7  2006/01/13 22:00:15  beck
+  renamed all types 'type' to 'ir_type'
+
   Revision 1.6  2004/12/15 13:30:41  liekweg
   print yet nicer names
 
