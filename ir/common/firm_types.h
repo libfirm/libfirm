@@ -56,6 +56,11 @@ typedef struct ir_type ir_type;
 typedef struct ir_graph ir_graph;
 #endif
 
+#ifndef _IR_LOOP_TYPEDEF_
+#define _IR_LOOP_TYPEDEF_
+typedef struct ir_loop ir_loop;
+#endif
+
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
 typedef struct entity entity;
