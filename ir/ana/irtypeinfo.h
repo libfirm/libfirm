@@ -19,14 +19,10 @@
  * graph is valid.  Further it defines an auxiliary type "init_type".
  *
  */
+#ifndef _IRTYPEINFO_H_
+#define _IRTYPEINFO_H_
 
-
-# ifndef _IRTYPEINFO_H_
-# define _IRTYPEINFO_H_
-
-# include "irgraph.h"
-# include "irnode.h"
-# include "type.h"
+#include "firm_types.h"
 
 /* ------------ Auxiliary type. --------------------------------------- */
 
@@ -36,7 +32,7 @@
  *  variable is set by init_irtypeinfo.  The type is freed by
  *  free_irtypeinfo.
  */
-extern type *initial_type;
+extern ir_type *initial_type;
 
 
 
@@ -92,7 +88,7 @@ void              set_irp_typeinfo_inconsistent(void);
  * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
  * assume current_ir_graph set properly.
  */
-type *get_irn_typeinfo_type(ir_node *n);
-void  set_irn_typeinfo_type(ir_node *n, type *tp);
+ir_type *get_irn_typeinfo_type(ir_node *n);
+void    set_irn_typeinfo_type(ir_node *n, ir_type *tp);
 
 #endif /* _IRTYPEINFO_H_ */

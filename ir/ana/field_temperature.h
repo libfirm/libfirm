@@ -27,10 +27,7 @@
  * - We compute a value for the entity based on the Sel nodes.
  */
 
-#include "irnode.h"
-#include "entity.h"
-#include "type.h"
-
+#include "firm_types.h"
 
 /* The number of array elements we assume if not both bounds are given. */
 #define DEFAULT_N_ARRAY_ELEMENTS 1
@@ -60,32 +57,32 @@ double get_irn_final_cost(ir_node *n);
 
 /** Get accumulated(really?) execution frequencies.
  *  A heuristic weights the recursions. */
-double get_type_estimated_n_instances(type *clss);
-double get_type_estimated_mem_consumption_bytes(type *tp);
+double get_type_estimated_n_instances(ir_type *clss);
+double get_type_estimated_mem_consumption_bytes(ir_type *tp);
 /** Estimates the size of an object.
  *
  *  The heuristic mainly affects array sizes.
  *  Further this ignores padding for alignment, especially of small fields. */
-int    get_type_estimated_size_bytes(type *tp);
+int    get_type_estimated_size_bytes(ir_type *tp);
 /** Estimates the number of fields of a single Object.
  *  The heuristic mainly affects array sizes.
  *  @@@ Misses inherited fields! */
-int    get_type_estimated_n_fields(type *tp);
-double get_type_estimated_n_casts(type *clss);
+int    get_type_estimated_n_fields(ir_type *tp);
+double get_type_estimated_n_casts(ir_type *clss);
 
-double get_class_estimated_n_upcasts(type *clss);
-double get_class_estimated_n_downcasts(type *clss);
+double get_class_estimated_n_upcasts(ir_type *clss);
+double get_class_estimated_n_downcasts(ir_type *clss);
 /** Returns the number of accesses to the dispatch table.
  *
  *  This includes the initialization of the pointer field, and accesses
  *  to virtual fields (as instance marker in Java).  Certainly this
  *  includes virtual method calls. */
-double get_class_estimated_n_dyncalls(type *clss);
+double get_class_estimated_n_dyncalls(ir_type *clss);
 /** Returns the number of writes to the dispatch pointer.
  *  This is the same as the number of allocations. */
-double get_class_estimated_dispatch_writes(type *clss);
+double get_class_estimated_dispatch_writes(ir_type *clss);
 /** Returns the number of reads of the dispatch pointer. */
-double get_class_estimated_dispatch_reads (type *clss);
+double get_class_estimated_dispatch_reads (ir_type *clss);
 
 double get_entity_estimated_n_loads(entity *ent);
 double get_entity_estimated_n_stores(entity *ent);
@@ -105,7 +102,7 @@ typedef enum {
 } irp_temperature_state;
 
 /** An auxiliary/temporary function */
-int is_jack_rts_class(type *t);
+int is_jack_rts_class(ir_type *t);
 int is_jack_rts_entity(entity *e);
 
 #endif /* _FIELD_TEMPERATURE_H_ */

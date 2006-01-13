@@ -32,9 +32,7 @@
 #ifndef _FIRM_WALK_H_
 #define _FIRM_WALK_H_
 
-#include "type.h"
-#include "irgraph.h"
-#include "typewalk.h"
+#include "firm_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +62,7 @@ void *get_firm_walk_link(void *thing);
  *  to a firm structure. The real link field of firm structure is used
  *  by this firm walker to collect walking data.
  *
- *  @param thing firm structur
+ *  @param thing firm structure
  *  @param link Pointer to link field
  *
  *  @note After calling firm_walk_finalize() the stored link
@@ -79,7 +77,7 @@ typedef void firm_walk_finalize_func(void *env);
 /** Mode callback function definition */
 typedef void firm_walk_mode_func(ir_mode *mode, void *env);
 /** Type callback function definition */
-typedef void firm_walk_type_func(type *tp, void *env);
+typedef void firm_walk_type_func(ir_type *tp, void *env);
 /** Entity callback function definition */
 typedef void firm_walk_entity_func(entity *ent, void *env);
 /** Graph callback function definition */
