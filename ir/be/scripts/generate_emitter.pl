@@ -46,13 +46,13 @@ push(@obst_header, $line."\n");
 $line = "void emit_".$arch."_Copy(ir_node *n, emit_env_t *env)";
 push(@obst_header, $line.";\n");
 $line .= " {\n  FILE *F = env->out;\n";
-$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\tmov %1s, %1d\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
+$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\tmov %1S, %1D\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
 push(@obst_func, $line);
 
 $line = "void emit_".$arch."_Perm(ir_node *n, emit_env_t *env)";
 push(@obst_header, $line.";\n");
 $line .= " {\n  FILE *F = env->out;\n";
-$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\txchg %1s, %1d\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
+$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\txchg %1S, %1D\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
 push(@obst_func, $line);
 
 foreach my $op (keys(%nodes)) {
@@ -86,43 +86,43 @@ foreach my $op (keys(%nodes)) {
       # remove indent, dot and trailing spaces
       $template =~ s/^\d*\.\s*//;
       # substitute all format parameter
-      while ($template =~ /\%(([asd])(\d)|([com]))/) {
+      while ($template =~ /\%(([ASD])(\d)|([COM]))/) {
         $res  .= $`;      # get everything before the match
         $res2 .= $`;
 
-        if ($4 && $4 eq "c") {
+        if ($4 && $4 eq "C") {
           push(@params, "n");
-          $res  .= "\%c";
-          $res2 .= "\%c";
+          $res  .= "\%C";
+          $res2 .= "\%C";
         }
-        elsif ($4 && $4 eq "o") {
+        elsif ($4 && $4 eq "O") {
           push(@params, "n");
-          $res  .= "\%o";
-          $res2 .= "\%o";
+          $res  .= "\%O";
+          $res2 .= "\%O";
         }
-        elsif ($4 && $4 eq "m") {
+        elsif ($4 && $4 eq "M") {
           push(@params, "n");
-          $res  .= "\%m";
-          $res2 .= "\%m";
+          $res  .= "\%M";
+          $res2 .= "\%M";
         }
-        elsif ($2 && $2 eq "s") {
+        elsif ($2 && $2 eq "S") {
           push(@params, "n");
           if ($cio && $3 == 2) {
             # check_in_out was set: if (s1 != d1) we
             # need to exchange s2 by s1
-            $res2 .= "%1s"; # get name for first register
+            $res2 .= "%1S"; # get name for first register
           }
           else {
-            $res2 .= "%".$3."s"; # substitute %sx with %xs
+            $res2 .= "%".$3."S"; # substitute %sx with %xs
           }
-          $res .= "%".$3."s"; # substitute %sx with %xs
+          $res .= "%".$3."S"; # substitute %sx with %xs
         }
-        elsif ($2 && $2 eq "d") {
+        elsif ($2 && $2 eq "D") {
           push(@params, "n");
-          $res  .= "%".$3."d"; # substitute %sx with %xs
-          $res2 .= "%".$3."d"; # substitute %sx with %xs
+          $res  .= "%".$3."D"; # substitute %sx with %xs
+          $res2 .= "%".$3."D"; # substitute %sx with %xs
         }
-        elsif ($2 && $2 eq "a") {
+        elsif ($2 && $2 eq "A") {
           push(@params, "get_irn_n(n, ".($3 - 1).")");
           $res  .= "%+F";
           $res2 .= "%+F";
