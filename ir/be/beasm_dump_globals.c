@@ -59,13 +59,13 @@ static unsigned highest_bit(unsigned v)
 static int ent_is_string_const(entity *ent)
 {
   int res = 0;
-  type *ty;
+  ir_type *ty;
 
   ty = get_entity_type(ent);
 
   /* if it's an array */
   if (is_Array_type(ty)) {
-    type *elm_ty = get_array_element_type(ty);
+    ir_type *elm_ty = get_array_element_type(ty);
 
     /* and the array's alement type is primitive */
     if (is_Primitive_type(elm_ty)) {
@@ -207,7 +207,7 @@ struct arr_info {
  */
 static void asm_dump_global ( assembler_t *assembler, entity *ent)
 {
-  type *ty            = get_entity_type(ent);
+  ir_type *ty         = get_entity_type(ent);
   const char *ld_name = get_entity_ld_name(ent);
   int align, /*is_constant,*/ h;
   int i, /*j,*/ size = 0;
@@ -273,7 +273,7 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
         /* potential spare values should be already included! */
      		for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
         		entity *step = get_compound_ent_value_member(ent, i);
-            		type *stype  = get_entity_type(step);
+            		ir_type *stype  = get_entity_type(step);
 
             		if (get_type_mode(stype)) {
 
@@ -321,7 +321,7 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 		    /*entity *member            = get_compound_ent_value_member(ent, i); */
 		    compound_graph_path *path = get_compound_ent_value_path(ent, i);
 		    entity *node              = get_compound_graph_path_node(path, 0);
-		    /*type *node_type           = get_entity_type(node);*/
+		    /*ir_type *node_type        = get_entity_type(node);*/
 
 		    /* get the access path to the costant value */
 		    graph_length = get_compound_graph_path_length(path);
@@ -330,10 +330,10 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 		    /* We wanna know how many arrays are on the path to the entity. We also have to know how
 		     * many elements each array holds to calculate the offset for the entity. */
 		    for (j = 0; j < graph_length; j++) {
-		      entity *step    = get_compound_graph_path_node(path, j);
-		      type *step_type = get_entity_type(step);
-		      int ty_size     = (get_type_size_bits(step_type) + 7) >> 3;
-		      int n           = 0;
+		      entity *step       = get_compound_graph_path_node(path, j);
+		      ir_type *step_type = get_entity_type(step);
+		      int ty_size        = (get_type_size_bits(step_type) + 7) >> 3;
+		      int n              = 0;
 		      int k;
 
 		      if (is_Array_type(step_type))
@@ -349,10 +349,10 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 		    if (aipos) aipos--;
 
 		    for (offset = j = 0; j < graph_length; j++) {
-		      entity *step    = get_compound_graph_path_node(path, j);
-		      type *step_type = get_entity_type(step);
-		      int ent_ofs     = get_entity_offset_bytes(step);
-		      int stepsize    = 0;
+		      entity *step       = get_compound_graph_path_node(path, j);
+		      ir_type *step_type = get_entity_type(step);
+		      int ent_ofs        = get_entity_offset_bytes(step);
+		      int stepsize       = 0;
 
 		      /* add all positive offsets (= offsets in structs) */
 		      if (ent_ofs >= 0) offset += ent_ofs;
@@ -438,7 +438,7 @@ static void asm_dump_global ( assembler_t *assembler, entity *ent)
 
 void asm_dump_globals ( assembler_t *assembler ) {
 
-  type *gt = get_glob_type();
+  ir_type *gt = get_glob_type();
   int i, n = get_class_n_members(gt);
 
   for (i = 0; i < n; i++)
