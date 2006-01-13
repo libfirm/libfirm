@@ -46,8 +46,8 @@ static hash_types_func_t    *hash_types_func;
 static compare_types_func_t *compare_types_func;
 
 int compare_names (const void *tp1, const void *tp2) {
-  type *t1 = (type *) tp1;
-  type *t2 = (type *) tp2;
+  ir_type *t1 = (ir_type *) tp1;
+  ir_type *t2 = (ir_type *) tp2;
 
   return (t1 != t2 &&
 	  (t1->type_op !=  t2->type_op ||
@@ -56,21 +56,21 @@ int compare_names (const void *tp1, const void *tp2) {
 
 /* stuff for comparing two types. */
 int compare_strict (const void *tp1, const void *tp2) {
-  type *t1 = (type *) tp1;
-  type *t2 = (type *) tp2;
+  ir_type *t1 = (ir_type *) tp1;
+  ir_type *t2 = (ir_type *) tp2;
   return t1 != t2;
 }
 
 /* stuff to compute a hash value for a type. */
-int firm_hash_name (type *tp) {
+int firm_hash_name (ir_type *tp) {
   unsigned h = (unsigned)PTR_TO_INT(tp->type_op);
   h = 9*h + (unsigned)PTR_TO_INT(tp->name);
   return h;
 }
 
 /* The function that hashes a type. */
-type *mature_type(type *tp) {
-  type *o;
+ir_type *mature_type(ir_type *tp) {
+  ir_type *o;
 
   assert(type_table);
 
@@ -85,8 +85,8 @@ type *mature_type(type *tp) {
 
 
 /* The function that hashes a type. */
-type *mature_type_free(type *tp) {
-  type *o;
+ir_type *mature_type_free(ir_type *tp) {
+  ir_type *o;
 
   assert(type_table);
 
@@ -101,8 +101,8 @@ type *mature_type_free(type *tp) {
 }
 
 /* The function that hashes a type. */
-type *mature_type_free_entities(type *tp) {
-  type *o;
+ir_type *mature_type_free_entities(ir_type *tp) {
+  ir_type *o;
 
   assert(type_table);
 

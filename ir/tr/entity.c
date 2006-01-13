@@ -57,7 +57,7 @@ entity *get_unknown_entity(void) { return unknown_entity; }
 /*-----------------------------------------------------------------*/
 
 static INLINE void insert_entity_in_owner (entity *ent) {
-  type *owner = ent->owner;
+  ir_type *owner = ent->owner;
   switch (get_type_tpop_code(owner)) {
   case tpo_class: {
     add_class_member (owner, ent);
@@ -86,7 +86,7 @@ static INLINE void insert_entity_in_owner (entity *ent) {
  * @return the new created entity
  */
 static INLINE entity *
-new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
+new_rd_entity (dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 {
   entity *res;
   ir_graph *rem;
@@ -154,7 +154,7 @@ new_rd_entity (dbg_info *db, type *owner, ident *name, type *type)
 }
 
 entity *
-new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
+new_d_entity (ir_type *owner, ident *name, ir_type *type, dbg_info *db) {
   entity *res;
 
   assert_legal_owner_of_ent(owner);
@@ -167,7 +167,7 @@ new_d_entity (type *owner, ident *name, type *type, dbg_info *db) {
 }
 
 entity *
-new_entity (type *owner, ident *name, type *type) {
+new_entity (ir_type *owner, ident *name, ir_type *type) {
   return new_d_entity(owner, name, type, NULL);
 }
 
@@ -206,7 +206,7 @@ static void free_entity_attrs(entity *ent) {
 }
 
 entity *
-copy_entity_own (entity *old, type *new_owner) {
+copy_entity_own (entity *old, ir_type *new_owner) {
   entity *newe;
   assert(old && old->kind == k_entity);
   assert_legal_owner_of_ent(new_owner);
@@ -281,20 +281,20 @@ ident *
   return get_entity_ident(ent);
 }
 
-type *
+ir_type *
 (get_entity_owner)(entity *ent) {
   return _get_entity_owner(ent);
 }
 
 void
-set_entity_owner (entity *ent, type *owner) {
+set_entity_owner (entity *ent, ir_type *owner) {
   assert(ent && ent->kind == k_entity);
   assert_legal_owner_of_ent(owner);
   ent->owner = owner;
 }
 
 void   /* should this go into type.c? */
-assert_legal_owner_of_ent(type *owner) {
+assert_legal_owner_of_ent(ir_type *owner) {
   assert(get_type_tpop_code(owner) == tpo_class ||
           get_type_tpop_code(owner) == tpo_union ||
           get_type_tpop_code(owner) == tpo_struct ||
@@ -317,13 +317,13 @@ const char *
   return _get_entity_ld_name(ent);
 }
 
-type *
+ir_type *
 (get_entity_type)(entity *ent) {
   return _get_entity_type(ent);
 }
 
 void
-(set_entity_type)(entity *ent, type *type) {
+(set_entity_type)(entity *ent, ir_type *type) {
   _set_entity_type(ent, type);
 }
 
@@ -583,7 +583,7 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
 
 /* Creates a new compound graph path. */
 compound_graph_path *
-new_compound_graph_path(type *tp, int length) {
+new_compound_graph_path(ir_type *tp, int length) {
   compound_graph_path *res;
 
   assert(is_type(tp) && is_compound_type(tp));
@@ -615,7 +615,7 @@ int is_compound_graph_path(void *thing) {
 int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
   int i;
   entity *node;
-  type *owner = gr->tp;
+  ir_type *owner = gr->tp;
 
   for (i = 0; i <= pos; i++) {
     node = get_compound_graph_path_node(gr, i);
@@ -713,7 +713,7 @@ static int equal_paths(compound_graph_path *path1, int *visited_indicees, compou
   if (len2 > len1) return 0;
 
   for (i = 0; i < len1; i++) {
-    type   *tp;
+    ir_type *tp;
     entity *node1 = get_compound_graph_path_node(path1, i);
     entity *node2 = get_compound_graph_path_node(path2, i);
 
@@ -795,7 +795,7 @@ remove_compound_ent_value(entity *ent, entity *value_ent) {
 void
 add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   compound_graph_path *path;
-  type *owner_tp = get_entity_owner(member);
+  ir_type *owner_tp = get_entity_owner(member);
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
   path = new_compound_graph_path(get_entity_type(ent), 1);
   path->list[0].node = member;
@@ -860,9 +860,9 @@ void
 set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   int i;
   ir_graph *rem = current_ir_graph;
-  type *arrtp = get_entity_type(ent);
+  ir_type *arrtp = get_entity_type(ent);
   ir_node *val;
-  type *elttp = get_array_element_type(arrtp);
+  ir_type *elttp = get_array_element_type(arrtp);
 
   assert(is_Array_type(arrtp));
   assert(get_array_n_dimensions(arrtp) == 1);
@@ -892,8 +892,8 @@ int  get_compound_ent_value_offset_bits(entity *ent, int pos) {
 
   for (i = 0; i < path_len; ++i) {
     entity *node = get_compound_graph_path_node(path, i);
-    type *node_tp = get_entity_type(node);
-    type *owner_tp = get_entity_owner(node);
+    ir_type *node_tp = get_entity_type(node);
+    ir_type *owner_tp = get_entity_owner(node);
     if (is_Array_type(owner_tp)) {
       int size  = get_type_size_bits(node_tp);
       int align = get_type_alignment_bits(node_tp);
@@ -918,7 +918,7 @@ int  get_compound_ent_value_offset_bytes(entity *ent, int pos) {
 }
 
 
-static void init_index(type *arr) {
+static void init_index(ir_type *arr) {
   int init;
   int dim = 0;
 
@@ -934,7 +934,7 @@ static void init_index(type *arr) {
 
 
 static int get_next_index(entity *elem_ent) {
-  type *arr = get_entity_owner(elem_ent);
+  ir_type *arr = get_entity_owner(elem_ent);
   int next;
   int dim = 0;
 
@@ -971,7 +971,7 @@ static int get_next_index(entity *elem_ent) {
  *  evaluate the index against the upper bound.)
  */
 void compute_compound_ent_array_indicees(entity *ent) {
-  type *tp = get_entity_type(ent);
+  ir_type *tp = get_entity_type(ent);
   int i, n_vals;
   entity *unknown_bound_entity = NULL;
 
@@ -999,7 +999,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
     int j, path_len =  get_compound_graph_path_length(path);
     for (j = 0; j < path_len; ++j) {
       entity *node = get_compound_graph_path_node(path, j);
-      type *elem_tp = get_entity_type(node);
+      ir_type *elem_tp = get_entity_type(node);
 
       if (is_Array_type(elem_tp)) {
         int dim = 0;
@@ -1020,7 +1020,7 @@ void compute_compound_ent_array_indicees(entity *ent) {
     int j, path_len =  get_compound_graph_path_length(path);
     for (j = 0; j < path_len; ++j) {
       entity *node = get_compound_graph_path_node(path, j);
-      type *owner_tp = get_entity_owner(node);
+      ir_type *owner_tp = get_entity_owner(node);
       if (is_Array_type(owner_tp))
         set_compound_graph_path_array_index (path, j, get_next_index(node));
     }
@@ -1047,7 +1047,7 @@ static int *resize (int *buf, int *size) {
    A second iteration now permutes the actual elements into two
    new arrays. */
 void sort_compound_ent_values(entity *ent) {
-  type *tp;
+  ir_type *tp;
   int i, n_vals;
   int tp_size;
   int size;
@@ -1262,14 +1262,14 @@ int
 }
 
 int is_atomic_entity(entity *ent) {
-  type* t = get_entity_type(ent);
+  ir_type *t = get_entity_type(ent);
   assert(ent && ent->kind == k_entity);
   return (is_Primitive_type(t) || is_Pointer_type(t) ||
       is_Enumeration_type(t) || is_Method_type(t));
 }
 
 int is_compound_entity(entity *ent) {
-  type* t = get_entity_type(ent);
+  ir_type *t = get_entity_type(ent);
   assert(ent && ent->kind == k_entity);
   return (is_Class_type(t) || is_Struct_type(t) ||
       is_Array_type(t) || is_Union_type(t));

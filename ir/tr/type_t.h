@@ -155,9 +155,9 @@ struct ir_type {
  *   @return A new type of the given type.  The remaining private attributes are not
  *           initialized.  The type is in state layout_undefined.
  */
-type *
+ir_type *
 new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db);
-void free_type_attrs       (type *tp);
+void free_type_attrs       (ir_type *tp);
 
 void free_class_entities      (ir_type *clss);
 void free_struct_entities     (ir_type *strct);

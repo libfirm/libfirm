@@ -43,7 +43,7 @@ typedef void type_walk_func(type_or_ent *tore, void *env);
  * @param clss    points to the visited class
  * @param env     free environment pointer
  */
-typedef void class_walk_func(type *clss, void *env);
+typedef void class_walk_func(ir_type *clss, void *env);
 
 /** Touches every type and entity in unspecified order.  If new
  *  types/entities are created during the traversal these will
@@ -119,7 +119,7 @@ typedef void entity_walk_func(entity *ent, void *env);
  * @param doit  the entity walker function
  * @param env   environment, will be passed to the walker function
  */
-void walk_types_entities(type *tp,
+void walk_types_entities(ir_type *tp,
              entity_walk_func *doit,
              void *env);
 

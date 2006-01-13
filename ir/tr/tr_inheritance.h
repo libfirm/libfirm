@@ -42,7 +42,7 @@
  *  a subclass of high.  I.e, we search in all subtypes of high for low.
  *  @@@ this can be implemented more efficient if we know the set of all
  *  subclasses of high.  */
-int is_SubClass_of(type *low, type *high);
+int is_SubClass_of(ir_type *low, ir_type *high);
 
 /** Subclass check for pointers to classes.
  *
@@ -50,7 +50,7 @@ int is_SubClass_of(type *low, type *high);
  *  many as possible).  If the remaining types are both class types
  *  and subclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-int is_SubClass_ptr_of(type *low, type *high);
+int is_SubClass_ptr_of(ir_type *low, ir_type *high);
 
 /** Returns true if high is superclass of low.
  *
@@ -78,7 +78,7 @@ int is_overwritten_by(entity *high, entity *low);
  *  Returns the dynamically referenced entity if the static entity and the
  *  dynamic type are given.
  *  Searches downwards in overwritten tree. */
-entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
+entity *resolve_ent_polymorphy(ir_type *dynamic_class, entity* static_ent);
 
 /* ----------------------------------------------------------------------- */
 /* Resolve implicit inheritance.                                           */
@@ -88,7 +88,7 @@ entity *resolve_ent_polymorphy(type *dynamic_class, entity* static_ent);
  *
  *  Returns an ident that consists of the name of type followed by an
  *  underscore and the name (not ld_name) of the entity. */
-ident *default_mangle_inherited_name(entity *super, type *clss);
+ident *default_mangle_inherited_name(entity *super, ir_type *clss);
 
 /** Type of argument functions for inheritance resolver.
  *
@@ -97,7 +97,7 @@ ident *default_mangle_inherited_name(entity *super, type *clss);
  *                used.
  * @param clss    The class type in which the new entity will be placed.
  */
-typedef ident *mangle_inherited_name_func(entity *super, type *clss);
+typedef ident *mangle_inherited_name_func(entity *super, ir_type *clss);
 
 /** Resolve implicit inheritance.
  *
@@ -163,15 +163,15 @@ void free_inh_transitive_closure(void);
 /* - subtype ------------------------------------------------------------- */
 
 /** Iterate over all transitive subtypes. */
-type *get_class_trans_subtype_first(type *tp);
-type *get_class_trans_subtype_next (type *tp);
-int   is_class_trans_subtype (type *tp, type *subtp);
+ir_type *get_class_trans_subtype_first(ir_type *tp);
+ir_type *get_class_trans_subtype_next (ir_type *tp);
+int   is_class_trans_subtype (ir_type *tp, ir_type *subtp);
 
 /* - supertype ----------------------------------------------------------- */
 
 /** Iterate over all transitive supertypes. */
-type *get_class_trans_supertype_first(type *tp);
-type *get_class_trans_supertype_next (type *tp);
+ir_type *get_class_trans_supertype_first(ir_type *tp);
+ir_type *get_class_trans_supertype_next (ir_type *tp);
 
 /* - overwrittenby ------------------------------------------------------- */
 

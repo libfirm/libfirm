@@ -28,28 +28,28 @@
  */
 
 /** A function called to free attributes of a type. */
-typedef void (*free_attrs_func)(type *tp);
+typedef void (*free_attrs_func)(ir_type *tp);
 
 /** A function called to free owned entities of a type. */
-typedef void (*free_entities_func)(type *tp);
+typedef void (*free_entities_func)(ir_type *tp);
 
 /** A function called to free all automatic allocated entities of a type. */
-typedef void (*free_auto_entities_func)(type *tp);
+typedef void (*free_auto_entities_func)(ir_type *tp);
 
 /** A function called to set the mode of a type. */
-typedef void (*set_type_mode_func)(type *tp, ir_mode *m);
+typedef void (*set_type_mode_func)(ir_type *tp, ir_mode *m);
 
 /** A function called to set the size of a type in bits */
-typedef void (*set_type_size_func)(type *tp, int size);
+typedef void (*set_type_size_func)(ir_type *tp, int size);
 
 /** A function called to get the number of compound members */
-typedef int (*get_n_members_func)(const type *tp);
+typedef int (*get_n_members_func)(const ir_type *tp);
 
 /** A function called to get the pos'th compound member */
-typedef entity *(*get_member_func)(const type *tp, int pos);
+typedef entity *(*get_member_func)(const ir_type *tp, int pos);
 
 /** A function called to insert an entity into the type */
-typedef void (*insert_entity_func)(type *tp, entity *member);
+typedef void (*insert_entity_func)(ir_type *tp, entity *member);
 
 
 /**

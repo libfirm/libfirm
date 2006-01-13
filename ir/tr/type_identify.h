@@ -47,13 +47,13 @@ int compare_strict (const void *tp1, const void *tp2);
  *
  *   @param tp The type to compute a hash for.
  */
-typedef int (hash_types_func_t)(type *tp);
+typedef int (hash_types_func_t)(ir_type *tp);
 
 /** Computes a hash value by the type name.
  *
  * Uses the name of the type and the type opcode to compute the hash.
  */
-int firm_hash_name (type *tp);
+int firm_hash_name (ir_type *tp);
 
 /* ------------------------------------------------------------------------ */
 
@@ -75,7 +75,7 @@ int firm_hash_name (type *tp);
  *
  * @param tp     The type to mature.
  */
-type *       mature_type(type *tp);
+ir_type *    mature_type(ir_type *tp);
 
 /** Finalize type construction.
  *
@@ -89,7 +89,7 @@ type *       mature_type(type *tp);
  *
  * @param tp     The type to mature.
  */
-type *       mature_type_free(type *tp);
+ir_type *    mature_type_free(ir_type *tp);
 
 /** Finalize type construction.
  *
@@ -106,7 +106,7 @@ type *       mature_type_free(type *tp);
  *
  * @param tp     The type to mature.
  */
-type *       mature_type_free_entities(type *tp);
+ir_type *    mature_type_free_entities(ir_type *tp);
 
 /**
  * The interface type for the type identify module;

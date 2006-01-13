@@ -50,7 +50,7 @@
 /** A path in a compound graph. */
 struct compound_graph_path {
   firm_kind kind;       /**< dynamic type tag for compound graph path. */
-  type *tp;             /**< The type this path belongs to. */
+  ir_type *tp;          /**< The type this path belongs to. */
   int len;              /**< length of the path */
   struct tuple {
     int    index;       /**< Array index.  To compute position of array elements */
@@ -69,9 +69,9 @@ struct entity {
                            to the name of the entity, separated by a underscore.
                            E.g.,  for a class `A' with field `a' this
                            is the ident for `A_a'. */
-  type *type;           /**< The type of this entity, e.g., a method type, a
+  ir_type *type;        /**< The type of this entity, e.g., a method type, a
                            basic type of the language or a class itself */
-  type *owner;          /**< The compound type (e.g. class type) this entity belongs to. */
+  ir_type *owner;       /**< The compound type (e.g. class type) this entity belongs to. */
   ent_allocation allocation;  /**< Distinguishes static and dynamically allocated
                  entities and some further cases. */
   visibility visibility;  /**< Specifies visibility to external program
@@ -147,7 +147,7 @@ _get_entity_ident(const entity *ent) {
   return ent->name;
 }
 
-static INLINE type *
+static INLINE ir_type *
 _get_entity_owner(entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->owner = skip_tid(ent->owner);
@@ -174,14 +174,14 @@ _get_entity_ld_name(entity *ent) {
   return get_id_str(get_entity_ld_ident(ent));
 }
 
-static INLINE type *
+static INLINE ir_type *
 _get_entity_type(entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->type = skip_tid(ent->type);
 }
 
 static INLINE void
-_set_entity_type(entity *ent, type *type) {
+_set_entity_type(entity *ent, ir_type *type) {
   assert(ent && ent->kind == k_entity);
   ent->type = type;
 }

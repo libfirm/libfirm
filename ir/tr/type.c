@@ -1379,7 +1379,7 @@ ir_type *new_d_type_union(ident *name, dbg_info *db) {
   return res;
 }
 
-type  *new_type_union(ident *name) {
+ir_type *new_type_union(ident *name) {
   return new_d_type_union(name, NULL);
 }
 

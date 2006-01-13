@@ -281,7 +281,7 @@ static void type_walk_s2s_2(type_or_ent *tore,
     break;
   case k_type:
     if (type_id == get_type_tpop((ir_type*)tore)) {
-      type_walk_s2s_2((type_or_ent *)skip_tid((type *)tore), pre, post, env);
+      type_walk_s2s_2((type_or_ent *)skip_tid((ir_type *)tore), pre, post, env);
       return;
     }
     if (type_visited((ir_type *)tore)) return;

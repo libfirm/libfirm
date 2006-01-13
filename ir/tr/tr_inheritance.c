@@ -34,17 +34,17 @@
 /* Resolve implicit inheritance.                                           */
 /* ----------------------------------------------------------------------- */
 
-ident *default_mangle_inherited_name(entity *super, type *clss) {
+ident *default_mangle_inherited_name(entity *super, ir_type *clss) {
   return mangle_u(new_id_from_str("inh"), mangle_u(get_type_ident(clss), get_entity_ident(super)));
 }
 
 /** Replicates all entities in all super classes that are not overwritten
    by an entity of this class. */
-static void copy_entities_from_superclass(type *clss, void *env)
+static void copy_entities_from_superclass(ir_type *clss, void *env)
 {
   int i, j, k, l;
   int overwritten;
-  type *super, *inhenttype;
+  ir_type *super, *inhenttype;
   entity *inhent, *thisent;
   mangle_inherited_name_func *mfunc = *(mangle_inherited_name_func **)env;
 
@@ -188,7 +188,7 @@ static void  add_entity_map(entity *ent, dir d, entity *new) {
   pset_insert_ptr(found->directions[d], new);
 }
 */
-static pset *get_type_map(type *tp, dir d) {
+static pset *get_type_map(ir_type *tp, dir d) {
   tr_inh_trans_tp *found;
 
   assert(is_type(tp));
@@ -196,7 +196,7 @@ static pset *get_type_map(type *tp, dir d) {
   return found->directions[d];
 }
 /*
-static void  add_type_map(type *tp, dir d, type *new) {
+static void  add_type_map(ir_type *tp, dir d, type *new) {
   tr_inh_trans_tp *found;
 
   assert(is_type(tp) && is_type(new));
@@ -222,7 +222,7 @@ static void  add_type_map(type *tp, dir d, type *new) {
  * If it is marked with master_flag_visited it is fully processed.
  *
  * Well, we still miss some candidates ... */
-static void compute_down_closure(type *tp) {
+static void compute_down_closure(ir_type *tp) {
   pset *myset, *subset;
   int i, n_subtypes, n_members, n_supertypes;
   unsigned long master_visited = get_master_type_visited();
@@ -234,7 +234,7 @@ static void compute_down_closure(type *tp) {
   /* Recursive descend. */
   n_subtypes = get_class_n_subtypes(tp);
   for (i = 0; i < n_subtypes; ++i) {
-    type *stp = get_class_subtype(tp, i);
+    ir_type *stp = get_class_subtype(tp, i);
     if (get_type_visited(stp) < master_visited-1) {
       compute_down_closure(stp);
     }
@@ -243,7 +243,7 @@ static void compute_down_closure(type *tp) {
   /* types */
   myset = get_type_map(tp, d_down);
   for (i = 0; i < n_subtypes; ++i) {
-    type *stp = get_class_subtype(tp, i);
+    ir_type *stp = get_class_subtype(tp, i);
     subset = get_type_map(stp, d_down);
     pset_insert_ptr(myset, stp);
     pset_insert_pset_ptr(myset, subset);
@@ -269,14 +269,14 @@ static void compute_down_closure(type *tp) {
   /* Walk up. */
   n_supertypes = get_class_n_supertypes(tp);
   for (i = 0; i < n_supertypes; ++i) {
-    type *stp = get_class_supertype(tp, i);
+    ir_type *stp = get_class_supertype(tp, i);
     if (get_type_visited(stp) < master_visited-1) {
       compute_down_closure(stp);
     }
   }
 }
 
-static void compute_up_closure(type *tp) {
+static void compute_up_closure(ir_type *tp) {
   pset *myset, *subset;
   int i, n_subtypes, n_members, n_supertypes;
   unsigned long master_visited = get_master_type_visited();
@@ -288,7 +288,7 @@ static void compute_up_closure(type *tp) {
   /* Recursive descend. */
   n_supertypes = get_class_n_supertypes(tp);
   for (i = 0; i < n_supertypes; ++i) {
-    type *stp = get_class_supertype(tp, i);
+    ir_type *stp = get_class_supertype(tp, i);
     if (get_type_visited(stp) < get_master_type_visited()-1) {
       compute_up_closure(stp);
     }
@@ -297,7 +297,7 @@ static void compute_up_closure(type *tp) {
   /* types */
   myset = get_type_map(tp, d_up);
   for (i = 0; i < n_supertypes; ++i) {
-    type *stp = get_class_supertype(tp, i);
+    ir_type *stp = get_class_supertype(tp, i);
     subset = get_type_map(stp, d_up);
     pset_insert_ptr(myset, stp);
     pset_insert_pset_ptr(myset, subset);
@@ -323,7 +323,7 @@ static void compute_up_closure(type *tp) {
   /* Walk down. */
   n_subtypes = get_class_n_subtypes(tp);
   for (i = 0; i < n_subtypes; ++i) {
-    type *stp = get_class_subtype(tp, i);
+    ir_type *stp = get_class_subtype(tp, i);
     if (get_type_visited(stp) < master_visited-1) {
       compute_up_closure(stp);
     }
@@ -343,14 +343,14 @@ void compute_inh_transitive_closure(void) {
   inc_master_type_visited();  /* Inc twice: one if on stack, second if values computed. */
   inc_master_type_visited();
   for (i = 0; i < n_types; ++i) {
-    type *tp = get_irp_type(i);
+    ir_type *tp = get_irp_type(i);
     if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
       int j, n_subtypes = get_class_n_subtypes(tp);
       int has_unmarked_subtype = 0;
 
       assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_subtypes; ++j) {
-        type *stp = get_class_subtype(tp, j);
+        ir_type *stp = get_class_subtype(tp, j);
         if (type_not_visited(stp)) {
           has_unmarked_subtype = 1;
           break;
@@ -367,14 +367,14 @@ void compute_inh_transitive_closure(void) {
   inc_master_type_visited();
   inc_master_type_visited();
   for (i = 0; i < n_types; ++i) {
-    type *tp = get_irp_type(i);
+    ir_type *tp = get_irp_type(i);
     if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
       int j, n_supertypes = get_class_n_supertypes(tp);
       int has_unmarked_supertype = 0;
 
       assert(get_type_visited(tp) < get_master_type_visited()-1);
       for (j = 0; j < n_supertypes; ++j) {
-	      type *stp = get_class_supertype(tp, j);
+	      ir_type *stp = get_class_supertype(tp, j);
         if (type_not_visited(stp)) {
           has_unmarked_supertype = 1;
           break;
@@ -406,29 +406,29 @@ void free_inh_transitive_closure(void) {
 
 /* - subtype ------------------------------------------------------------- */
 
-type *get_class_trans_subtype_first(type *tp) {
+ir_type *get_class_trans_subtype_first(ir_type *tp) {
   assert_valid_state();
   return pset_first(get_type_map(tp, d_down));
 }
 
-type *get_class_trans_subtype_next (type *tp) {
+ir_type *get_class_trans_subtype_next (ir_type *tp) {
   assert_valid_state();
   return pset_next(get_type_map(tp, d_down));
 }
 
-int is_class_trans_subtype (type *tp, type *subtp) {
+int is_class_trans_subtype (ir_type *tp, ir_type *subtp) {
   assert_valid_state();
   return (pset_find_ptr(get_type_map(tp, d_down), subtp) != NULL);
 }
 
 /* - supertype ----------------------------------------------------------- */
 
-type *get_class_trans_supertype_first(type *tp) {
+ir_type *get_class_trans_supertype_first(ir_type *tp) {
   assert_valid_state();
   return pset_first(get_type_map(tp, d_up));
 }
 
-type *get_class_trans_supertype_next (type *tp) {
+ir_type *get_class_trans_supertype_next (ir_type *tp) {
   assert_valid_state();
   return pset_next(get_type_map(tp, d_up));
 }
@@ -468,7 +468,7 @@ entity *get_entity_trans_overwrites_next (entity *ent) {
 /* ----------------------------------------------------------------------- */
 
 /* Returns true if low is subclass of high. */
-int is_SubClass_of(type *low, type *high) {
+int is_SubClass_of(ir_type *low, ir_type *high) {
   int i, n_subtypes;
   assert(is_Class_type(low) && is_Class_type(high));
 
@@ -482,7 +482,7 @@ int is_SubClass_of(type *low, type *high) {
   /* depth first search from high downwards. */
   n_subtypes = get_class_n_subtypes(high);
   for (i = 0; i < n_subtypes; i++) {
-    type *stp = get_class_subtype(high, i);
+    ir_type *stp = get_class_subtype(high, i);
     if (low == stp) return 1;
     if (is_SubClass_of(low, stp))
       return 1;
@@ -497,7 +497,7 @@ int is_SubClass_of(type *low, type *high) {
  *  many as possible).  If the remaining types are both class types
  *  and subclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-int is_SubClass_ptr_of(type *low, type *high) {
+int is_SubClass_ptr_of(ir_type *low, ir_type *high) {
   while (is_Pointer_type(low) && is_Pointer_type(high)) {
     low  = get_pointer_points_to_type(low);
     high = get_pointer_points_to_type(high);
@@ -530,7 +530,7 @@ int is_overwritten_by(entity *high, entity *low) {
 
 
 /** Need two routines because I want to assert the result. */
-static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity *static_ent) {
+static entity *resolve_ent_polymorphy2 (ir_type *dynamic_class, entity *static_ent) {
   int i, n_overwrittenby;
   entity *res = NULL;
 
@@ -551,7 +551,7 @@ static entity *resolve_ent_polymorphy2 (type *dynamic_class, entity *static_ent)
  * Returns the dynamically referenced entity if the static entity and the
  * dynamic type are given.
  * Search downwards in overwritten tree. */
-entity *resolve_ent_polymorphy(type *dynamic_class, entity *static_ent) {
+entity *resolve_ent_polymorphy(ir_type *dynamic_class, entity *static_ent) {
   entity *res;
   assert(static_ent && is_entity(static_ent));
 
@@ -611,7 +611,7 @@ typedef struct ccs_env {
 void verify_irn_class_cast_state(ir_node *n, void *env) {
   ccs_env             *ccs = (ccs_env *)env;
   ir_class_cast_state this_state = ir_class_casts_any;
-  type                *fromtype, *totype;
+  ir_type             *fromtype, *totype;
   int                 ref_depth = 0;
 
   if (get_irn_op(n) != op_Cast) return;

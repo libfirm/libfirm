@@ -127,14 +127,14 @@ static void do_mode_conv(ir_node *n, void *env)
   /* special case: fix the Return */
   if (get_irn_op(n) == op_Return) {
     entity *ent = get_irg_entity(current_ir_graph);
-    type *mt = get_entity_type(ent);
+    ir_type *mt = get_entity_type(ent);
     int i, n_ress = get_method_n_ress(mt);
 
     mode  = mode_is_signed(mode) ? wenv->s_mode : wenv->u_mode;
     block = get_nodes_block(n);
     for (i = 0; i < n_ress; ++i) {
       ir_node *pred = get_irn_n(n, i + 1);
-      type *rt = get_method_res_type(mt, i);
+      ir_type *rt = get_method_res_type(mt, i);
 
       if (is_atomic_type(rt)) {
         mode = get_type_mode(rt);

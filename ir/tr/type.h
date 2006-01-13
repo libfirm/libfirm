@@ -1126,7 +1126,7 @@ int  is_Primitive_type  (const ir_type *primitive);
  *    - size:  0
  */
 /** A variable that contains the only none type. */
-extern type *firm_none_type;
+extern ir_type *firm_none_type;
 /** Returns the none type */
 ir_type *get_none_type(void);
 
@@ -1148,7 +1148,7 @@ ir_type *get_none_type(void);
  *    - size:  0
  */
 /** A variable that contains the only unknown type. */
-extern type *firm_unknown_type;
+extern ir_type *firm_unknown_type;
 /** Returns the unknown type */
 ir_type *get_unknown_type(void);
 
