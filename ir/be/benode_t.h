@@ -66,15 +66,16 @@ ir_node *be_reload(
 		const arch_register_class_t *cls,
 		ir_node *irn, int pos, ir_mode *mode, ir_node *spill);
 
-int is_Spill(const ir_node *irn);
+int be_is_Spill(const ir_node *irn);
+int be_is_Reload(const ir_node *irn);
+int be_is_Copy(const ir_node *irn);
+int be_is_Perm(const ir_node *irn);
 
 void set_Spill_offset(ir_node *irn, unsigned offset);
 unsigned get_Spill_offset(ir_node *irn);
 
 ir_node *get_Spill_context(const ir_node *irn);
 
-
-int is_Perm(const ir_node *irn);
 
 /**
  * Modify the output register requirements of a Perm.
