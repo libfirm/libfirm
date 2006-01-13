@@ -363,7 +363,7 @@ static void prepare_walker(ir_node *irn, void *data)
 
 		ir_node *store   = get_Call_mem(irn);
 		ir_node *ptr     = get_Call_ptr(irn);
-		type *ct         = get_Call_type(irn);
+		ir_type *ct      = get_Call_type(irn);
 		int np           = get_Call_n_params(irn) > 0 ? 1 : 0;
 
 		if(np > 0) {
@@ -371,7 +371,7 @@ static void prepare_walker(ir_node *irn, void *data)
 			char buf[128];
 			ir_node *nc;
 			int i, n = get_Call_n_params(irn);
-			type *nt;
+			ir_type *nt;
       unsigned cc = get_method_calling_convention(get_Call_type(irn));
 
       if (cc & cc_last_on_top) {
@@ -502,7 +502,7 @@ static const arch_code_generator_if_t firm_code_gen = {
 
 static void *firm_cg_init(FILE *file_handle, ir_graph *irg, const arch_env_t *env)
 {
-	firm_code_gen_t *cg = malloc(sizeof(*cg));
+	firm_code_gen_t *cg = xmalloc(sizeof(*cg));
 	cg->impl = &firm_code_gen;
 	cg->irg  = irg;
 	return cg;
