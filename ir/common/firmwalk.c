@@ -24,6 +24,7 @@
 #include "irnode_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
+#include "typewalk.h"
 #include "irtools.h"
 
 #include "array.h"
@@ -217,7 +218,7 @@ void *get_firm_walk_link(void *thing)
 static
 void fw_collect_tore(type_or_ent *tore, void *env)
 {
-  type *tp;
+  ir_type *tp;
   entity *ent;
 
   switch (get_kind(tore)) {
@@ -229,7 +230,7 @@ void fw_collect_tore(type_or_ent *tore, void *env)
       pmap_insert(entity_map, ent, env);
     break;
   case k_type:
-    tp = (type *)tore;
+    tp = (ir_type *)tore;
 
     /*  append type to list */
     set_type_link(tp, NULL);
@@ -374,7 +375,7 @@ void firm_walk(firm_walk_interface *wif)
   if (wif->do_type)
   {
     for (entry = pmap_first(type_map); entry; entry = pmap_next(type_map))
-      wif->do_type((type *)entry->key, wif->env);
+      wif->do_type((ir_type *)entry->key, wif->env);
   }
   if (wif->do_type_finalize) wif->do_type_finalize(wif->env);
 
