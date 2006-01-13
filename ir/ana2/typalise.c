@@ -65,16 +65,16 @@ static void cough_and_die (ir_node *node)
 /*
   Exception b/d
 */
-static type *java_lang_Throwable_tp = NULL;
+static ir_type *java_lang_Throwable_tp = NULL;
 
-static type *get_java_lang_Throwable (void)
+static ir_type *get_java_lang_Throwable (void)
 {
   assert (NULL != java_lang_Throwable_tp);
 
   return (java_lang_Throwable_tp);
 }
 
-static void find_java_lang_Throwable (type *tp, void *_unused)
+static void find_java_lang_Throwable (ir_type *tp, void *_unused)
 {
   const char *name = get_type_name (tp);
 
@@ -89,7 +89,7 @@ static void find_java_lang_Throwable (type *tp, void *_unused)
 /*
   Ctors, Dtors for typalise_t-s
 */
-static typalise_t *ta_exact (type *tp)
+static typalise_t *ta_exact (ir_type *tp)
 {
   typalise_t *ta = xmalloc (sizeof (typalise_t));
   ta->kind = type_exact;
@@ -111,7 +111,7 @@ static typalise_t *ta_types (lset_t *set)
   return (ta);
 }
 
-static typalise_t *ta_type (type *tp)
+static typalise_t *ta_type (ir_type *tp)
 {
   typalise_t *ta = xmalloc (sizeof (typalise_t));
   ta->kind = type_type;
@@ -144,7 +144,7 @@ static void ta_delete (typalise_t *ta)
    Find out whether otype is a subtype of stype.
    Return non-zero iff otype is a subtype of stype.
 */
-static int is_subtype (type *otype, type *stype)
+static int is_subtype (ir_type *otype, ir_type *stype)
 {
   int n_sub = get_class_n_subtypes (stype);
   int is_sub = FALSE;
@@ -155,7 +155,7 @@ static int is_subtype (type *otype, type *stype)
   }
 
   for (i = 0; (!is_sub) && (i < n_sub); i ++) {
-    type *sub = get_class_subtype (stype, i);
+    ir_type *sub = get_class_subtype (stype, i);
 
     is_sub |= is_subtype (otype, sub);
   }
@@ -169,7 +169,7 @@ static int is_subtype (type *otype, type *stype)
     Compute the closure of all subtypes of otype (including otype
     itself)
 */
-static void _collect_subtypes (type *otype, lset_t *set)
+static void _collect_subtypes (ir_type *otype, lset_t *set)
 {
   int i, n_sub;
 
@@ -177,13 +177,13 @@ static void _collect_subtypes (type *otype, lset_t *set)
 
   n_sub = get_class_n_subtypes (otype);
   for (i = 0; i < n_sub; i ++) {
-    type *sub = get_class_subtype (otype, i);
+    ir_type *sub = get_class_subtype (otype, i);
 
     _collect_subtypes (sub, set);
   }
 }
 
-static lset_t *subtype_closure (type *otype)
+static lset_t *subtype_closure (ir_type *otype)
 {
   lset_t *set = lset_create ();
 
@@ -241,9 +241,9 @@ static lset_t *get_owner_types (ir_graph *graph)
 /**
    Return a list containing all types of 'set' which are a subtype of 'type'.
 */
-static lset_t *filter_for_type (lset_t *set, type *stype)
+static lset_t *filter_for_type (lset_t *set, ir_type *stype)
 {
-  type *curs = (type*) lset_first (set);
+  ir_type *curs = (ir_type*) lset_first (set);
   lset_t *lset = lset_create ();
 
   while (NULL != curs) {
@@ -349,8 +349,8 @@ static typalise_t *ta_join (typalise_t *one, typalise_t *two)
       res = ta_join (two, one);
     } break;
     case (type_type): {
-      type *one_type = one->res.type;
-      type *two_type = two->res.type;
+      ir_type *one_type = one->res.type;
+      ir_type *two_type = two->res.type;
 
       if (is_subtype (one_type, two_type)) {
         ta_delete (one);
@@ -397,7 +397,7 @@ static const char *ta_name (typalise_t *ta)
   case (type_types): {
     len += sprintf (buf+len, "one_of ");
 
-    type *iter = lset_first (ta->res.types);
+    ir_type *iter = lset_first (ta->res.types);
 
     int size = BUF_SIZE - len - 1;
     while ((NULL != iter) && (0 < size)) {
@@ -423,9 +423,9 @@ static const char *ta_name (typalise_t *ta)
    method.  Presumably, this is because clazz inherits the graph as
    the implementation for a method.
 */
-static int uses_graph (type *clazz, entity *meth, ir_graph *graph)
+static int uses_graph (ir_type *clazz, entity *meth, ir_graph *graph)
 {
-  type *g_clazz = get_entity_owner (meth);
+  ir_type *g_clazz = get_entity_owner (meth);
   int i, n_over, use = FALSE;
 
   if (g_clazz == clazz) {
@@ -472,7 +472,7 @@ static int ta_supports (typalise_t *ta, ir_graph *graph)
   }
   case (type_type): {
     entity *meth = get_irg_entity (graph);
-    type *tp = get_entity_owner (meth);
+    ir_type *tp = get_entity_owner (meth);
     int res = is_subtype (tp, ta->res.type);
 
     if (res) {
@@ -484,7 +484,7 @@ static int ta_supports (typalise_t *ta, ir_graph *graph)
     return (res);
   }
   case (type_types): {
-    type *tp = get_entity_owner (get_irg_entity (graph));
+    ir_type *tp = get_entity_owner (get_irg_entity (graph));
 
     return (lset_contains (ta->res.types, tp));
   }
@@ -506,7 +506,7 @@ static int ta_supports (typalise_t *ta, ir_graph *graph)
 static typalise_t *typalise_call (ir_node *call)
 {
   entity *ent = NULL;
-  type *tp = NULL;
+  ir_type *tp = NULL;
   typalise_t *res = NULL;
   ir_node *call_ptr = get_Call_ptr (call);
 
@@ -561,7 +561,7 @@ static typalise_t *typalise_call (ir_node *call)
 static typalise_t *typalise_load (ir_node *load)
 {
   entity *ent = NULL;
-  type *tp = NULL;
+  ir_type *tp = NULL;
   typalise_t *res = NULL;
   ir_node *load_ptr = get_Load_ptr (load);
 
@@ -614,7 +614,7 @@ static typalise_t *typalise_proj (ir_node *proj)
       entity   *meth  = get_irg_entity (graph);
 
       long n = get_Proj_proj (proj);
-      type *tp = get_method_param_type (get_entity_type (meth), n);
+      ir_type *tp = get_method_param_type (get_entity_type (meth), n);
       if (is_Pointer_type (tp)) {
         tp = get_pointer_points_to_type (tp);
       }
@@ -684,7 +684,7 @@ typalise_t *typalise (ir_node *node)
   case (iro_Cast): {
     /* casts always succeed */
     typalise_t *ta = NULL;
-    type *tp = get_Cast_type (node);
+    ir_type *tp = get_Cast_type (node);
 
     if (is_Pointer_type (tp)) {
       tp = get_pointer_points_to_type (tp);
@@ -724,7 +724,7 @@ typalise_t *typalise (ir_node *node)
     /* FILTER */
     /* it's call (sel (ptr)) or load (sel (ptr)) */
     entity *ent = get_Sel_entity (node);
-    type *tp = get_entity_type (ent);
+    ir_type *tp = get_entity_type (ent);
 
     if (is_Method_type (tp)) {
       /* obsoleted by typalise_call */
@@ -774,7 +774,7 @@ typalise_t *typalise (ir_node *node)
   } break;
 
   case (iro_Alloc): {
-    type *type = get_Alloc_type (node);
+    ir_type *type = get_Alloc_type (node);
     res = ta_exact (type);
   } break;
 
@@ -793,7 +793,7 @@ typalise_t *typalise (ir_node *node)
     }
 
     if (NULL != meth) {
-      type *tp = get_method_res_type ((type*) meth, 0);
+      ir_type *tp = get_method_res_type ((ir_type*) meth, 0);
       res = ta_type (tp);
     } else {
       /* could be anything */
@@ -807,12 +807,12 @@ typalise_t *typalise (ir_node *node)
 
   case (iro_SymConst): {
     if (get_SymConst_kind (node) == symconst_type_tag) {
-      type *tp = get_SymConst_type (node);
+      ir_type *tp = get_SymConst_type (node);
 
       res = ta_type (tp);
     } else if (get_SymConst_kind (node) == symconst_addr_ent) {
       entity *ent = get_SymConst_entity (node);
-      type *tp = get_entity_owner (ent);
+      ir_type *tp = get_entity_owner (ent);
 
       while (is_Pointer_type (tp)) {
         tp = get_pointer_points_to_type (tp);
@@ -874,6 +874,9 @@ void typalise_init (void)
 
 /*
   $Log$
+  Revision 1.12  2006/01/13 21:54:02  beck
+  renamed all types 'type' to 'ir_type'
+
   Revision 1.11  2005/05/13 16:35:14  beck
   made (void) prototypes
   removed unused fprintf arguments

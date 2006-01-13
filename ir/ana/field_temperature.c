@@ -106,7 +106,7 @@ double get_irn_final_cost(ir_node *n) {
   return cost_loop*(cost_method + cost_rec);
 }
 
-double get_type_estimated_n_instances(type *tp) {
+double get_type_estimated_n_instances(ir_type *tp) {
   int i, n_allocs = get_type_n_allocs(tp);
   double n_instances = 0;
   for (i = 0; i < n_allocs; ++i) {
@@ -116,12 +116,12 @@ double get_type_estimated_n_instances(type *tp) {
   return n_instances;
 }
 
-double get_type_estimated_mem_consumption_bytes(type *tp) {
+double get_type_estimated_mem_consumption_bytes(ir_type *tp) {
   assert(0);
   return 0.0;
 }
 
-int get_type_estimated_n_fields(type *tp) {
+int get_type_estimated_n_fields(ir_type *tp) {
   int s = 0;
   switch(get_type_tpop_code(tp)) {
 
@@ -160,7 +160,7 @@ int get_type_estimated_n_fields(type *tp) {
   return s;
 }
 
-int get_type_estimated_size_bytes(type *tp) {
+int get_type_estimated_size_bytes(ir_type *tp) {
   int s = 0;
 
   switch(get_type_tpop_code(tp)) {
@@ -203,7 +203,7 @@ int get_type_estimated_size_bytes(type *tp) {
   return s;
 }
 
-double get_type_estimated_n_casts(type *tp) {
+double get_type_estimated_n_casts(ir_type *tp) {
   int i, n_casts = get_type_n_casts(tp);
   double n_instances = 0;
   for (i = 0; i < n_casts; ++i) {
@@ -213,7 +213,7 @@ double get_type_estimated_n_casts(type *tp) {
   return n_instances;
 }
 
-double get_class_estimated_n_upcasts(type *clss) {
+double get_class_estimated_n_upcasts(ir_type *clss) {
   double n_instances = 0;
   int i, j, n_casts, n_pointertypes;
 
@@ -234,7 +234,7 @@ double get_class_estimated_n_upcasts(type *clss) {
   return n_instances;
 }
 
-double get_class_estimated_n_downcasts(type *clss) {
+double get_class_estimated_n_downcasts(ir_type *clss) {
   double n_instances = 0;
   int i, j, n_casts, n_pointertypes;
 
@@ -256,12 +256,12 @@ double get_class_estimated_n_downcasts(type *clss) {
 }
 
 
-double get_class_estimated_dispatch_writes(type *clss) {
+double get_class_estimated_dispatch_writes(ir_type *clss) {
   return get_type_estimated_n_instances(clss);
 }
 
 /** Returns the number of reads of the dispatch pointer. */
-double get_class_estimated_dispatch_reads (type *clss) {
+double get_class_estimated_dispatch_reads (ir_type *clss) {
   int i, n_mems = get_class_n_members(clss);
   double n_calls = 0;
   for (i = 0; i < n_mems; ++i) {
@@ -271,7 +271,7 @@ double get_class_estimated_dispatch_reads (type *clss) {
   return n_calls;
 }
 
-double get_class_estimated_n_dyncalls(type *clss) {
+double get_class_estimated_n_dyncalls(ir_type *clss) {
   return get_class_estimated_dispatch_reads(clss) +
          get_class_estimated_dispatch_writes(clss);
 }
@@ -360,7 +360,7 @@ int is_jack_rts_name(ident *name) {
 }
 
 
-int is_jack_rts_class(type *t) {
+int is_jack_rts_class(ir_type *t) {
   ident *name = get_type_ident(t);
   return is_jack_rts_name(name);
 }

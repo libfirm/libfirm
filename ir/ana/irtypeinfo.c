@@ -50,7 +50,7 @@ static pmap *type_node_map = NULL;
  *  variable is set by init_irtypeinfo.  The type is freed by
  *  free_irtypeinfo.
  */
-type *initial_type = NULL;
+ir_type *initial_type = NULL;
 
 /* ------------ Initializing this module. ----------------------------- */
 
@@ -135,18 +135,18 @@ void set_irp_typeinfo_inconsistent(void) {
  * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
  * assume current_ir_graph set properly.
  */
-type *get_irn_typeinfo_type(ir_node *n) {
-  type *res = initial_type;
+ir_type *get_irn_typeinfo_type(ir_node *n) {
+  ir_type *res = initial_type;
   assert(get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
 	 get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  );
 
   if (pmap_contains(type_node_map, (void *)n))
-    res = (type *) pmap_get(type_node_map, (void *)n);
+    res = (ir_type *) pmap_get(type_node_map, (void *)n);
 
   return res;
 }
 
-void set_irn_typeinfo_type(ir_node *n, type *tp) {
+void set_irn_typeinfo_type(ir_node *n, ir_type *tp) {
   assert(get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
   	 get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent  );
 

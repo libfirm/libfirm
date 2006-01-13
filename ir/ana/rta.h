@@ -53,7 +53,7 @@ void rta_delete_dead_graphs (void);
 void rta_cleanup(void);
 
 /** Returns non-zero if the given class is alive. */
-int rta_is_alive_class(type *clazz);
+int rta_is_alive_class(ir_type *clazz);
 
 /** Returns non-zero if the given graph is alive. */
 int rta_is_alive_graph(ir_graph *graph);
@@ -65,6 +65,9 @@ void rta_report (void);
 
 /*
  * $Log$
+ * Revision 1.14  2006/01/13 21:52:00  beck
+ * renamed all types 'type' to 'ir_type'
+ *
  * Revision 1.13  2004/10/21 07:23:34  goetz
  * comments
  *

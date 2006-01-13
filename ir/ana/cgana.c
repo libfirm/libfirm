@@ -483,7 +483,7 @@ static void free_ana_walker(ir_node *node, void *env) {
 static void add_method_address(entity *ent, eset *set)
 {
   ir_node *n;
-  type *tp;
+  ir_type *tp;
   int i;
 
   /* do not check uninitialized values */
@@ -542,7 +542,7 @@ static entity ** get_free_methods(void)
   entity **arr = NEW_ARR_F(entity *, 0);
   entity *ent;
   ir_graph *irg;
-  type *glob;
+  ir_type *glob;
 
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     irg = get_irp_irg(i);

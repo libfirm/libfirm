@@ -34,7 +34,7 @@ typedef struct typalise
 {
   typalise_kind kind;
   union {
-    type *type;                 /* for kind == kind_exact and kind == kind_type */
+    ir_type *type;              /* for kind == kind_exact and kind == kind_type */
     lset_t *types;              /* for kind == kind_types */
   } res;
   int id;
@@ -66,6 +66,9 @@ void typalise_init (void);
 
 /*
   $Log$
+  Revision 1.4  2006/01/13 21:54:03  beck
+  renamed all types 'type' to 'ir_type'
+
   Revision 1.3  2005/03/22 13:56:09  liekweg
   "small" fix for exception b/d
 

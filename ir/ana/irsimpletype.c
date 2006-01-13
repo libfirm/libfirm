@@ -33,7 +33,7 @@
 
 #define VERBOSE_UNKNOWN_TYPE(s) printf s
 
-static type *phi_cycle_type = NULL;
+static ir_type *phi_cycle_type = NULL;
 
 
 /* ------------ Building and Removing the type information  ----------- */
@@ -52,7 +52,7 @@ static void precompute_pointer_types(void) {
     set_type_link(get_irp_type(i), (void *)firm_unknown_type);
 
   for (i = get_irp_n_types() - 1; i >= 0; --i) {
-    type *tp = get_irp_type(i);
+    ir_type *tp = get_irp_type(i);
     if (is_Pointer_type(tp))
       set_type_link(get_pointer_points_to_type(tp), (void *)tp);
   }
@@ -65,9 +65,9 @@ static void precompute_pointer_types(void) {
  * Returns a pointer to type which was stored in the link field
  * to speed up search.
  */
-static type *find_pointer_type_to (type *tp) {
+static ir_type *find_pointer_type_to (ir_type *tp) {
 #if 0
-  return (type *)get_type_link(tp);
+  return (ir_type *)get_type_link(tp);
 #else
   if (get_type_n_pointertypes_to(tp) > 0)
     return get_type_pointertype_to(tp, 0);
@@ -76,10 +76,10 @@ static type *find_pointer_type_to (type *tp) {
 #endif
 }
 
-static type *compute_irn_type(ir_node *n);
+static ir_type *compute_irn_type(ir_node *n);
 
-static type *find_type_for_Proj(ir_node *n) {
-  type *tp;
+static ir_type *find_type_for_Proj(ir_node *n) {
+  ir_type *tp;
 
   /* Avoid nested Tuples. */
   ir_node *pred = skip_Tuple(get_Proj_pred(n));
@@ -99,10 +99,10 @@ static type *find_type_for_Proj(ir_node *n) {
     assert(get_irn_mode(pred) == mode_T);
     pred_pred = get_Proj_pred(pred);
     if (get_irn_op(pred_pred) == op_Start)  {
-      type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
+      ir_type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
       tp = get_method_param_type(mtp, get_Proj_proj(n));
     } else if (get_irn_op(pred_pred) == op_Call) {
-      type *mtp = get_Call_type(pred_pred);
+      ir_type *mtp = get_Call_type(pred_pred);
       tp = get_method_res_type(mtp, get_Proj_proj(n));
     } else if (get_irn_op(pred_pred) == op_Tuple) {
       assert(0 && "Encountered nested Tuple");
@@ -149,9 +149,9 @@ static type *find_type_for_Proj(ir_node *n) {
  * Try to determine the type of a node.
  * If a type cannot be determined, return @p firm_none_type.
  */
-static type *find_type_for_node(ir_node *n) {
-  type *tp = NULL;
-  type *tp1 = NULL, *tp2 = NULL;
+static ir_type *find_type_for_node(ir_node *n) {
+  ir_type *tp = NULL;
+  ir_type *tp1 = NULL, *tp2 = NULL;
   ir_node *a = NULL, *b = NULL;
 
   /* DDMN(n); */
@@ -178,10 +178,10 @@ static type *find_type_for_node(ir_node *n) {
     /* Check returned type. */
     /*
     int i;
-    type *meth_type = get_entity_type(get_irg_entity(current_ir_graph));
+    ir_type *meth_type = get_entity_type(get_irg_entity(current_ir_graph));
     for (i = 0; i < get_method_n_ress(meth_type); i++) {
-      type *res_type = get_method_res_type(meth_type, i);
-      type *ana_res_type = get_irn_type(get_Return_res(n, i));
+      ir_type *res_type = get_method_res_type(meth_type, i);
+      ir_type *ana_res_type = get_irn_type(get_Return_res(n, i));
       if (ana_res_type == firm_unknown_type) continue;
       if (res_type != ana_res_type && "return value has wrong type") {
         DDMN(n);
@@ -361,8 +361,8 @@ default_code: {
 }
 
 
-static type *compute_irn_type(ir_node *n) {
-  type *tp = get_irn_typeinfo_type(n);
+static ir_type *compute_irn_type(ir_node *n) {
+  ir_type *tp = get_irn_typeinfo_type(n);
 
   if (tp == initial_type) {
     tp = find_type_for_node(n);
@@ -376,7 +376,7 @@ static type *compute_irn_type(ir_node *n) {
 
 static void compute_type(ir_node *n, void *env) {
 
-  type *tp = get_irn_typeinfo_type(n);
+  ir_type *tp = get_irn_typeinfo_type(n);
   if (tp ==  phi_cycle_type) {
     /* printf(" recomputing for phi_cycle_type "); DDMN(n); */
     set_irn_typeinfo_type(n, initial_type);

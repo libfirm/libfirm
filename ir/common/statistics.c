@@ -56,7 +56,7 @@ void print_graph_counts(int verbosity) {
 void print_type_counts(int verbosity) {
   int i, counter, total = 0;
   for (i = 0; i < get_irp_n_types(); i++) {
-    type *tp = get_irp_type(i);
+    ir_type *tp = get_irp_type(i);
     counter = -1;
     if (is_Class_type(tp)) counter = get_class_n_members(tp);
     if (is_Struct_type(tp)) counter = get_struct_n_members(tp);

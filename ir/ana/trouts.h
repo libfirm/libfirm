@@ -61,31 +61,31 @@ ir_node *get_entity_reference(entity *ent, int pos);
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Alloc nodes that create an instance of this type. */
-int get_type_n_allocs(type *tp);
+int get_type_n_allocs(ir_type *tp);
 /** Alloc node that create an instance of this type. */
-ir_node *get_type_alloc(type *tp, int pos);
+ir_node *get_type_alloc(ir_type *tp, int pos);
 
 /** Number of Cast nodes that cast a pointer to this type. */
-int get_type_n_casts(type *tp);
+int get_type_n_casts(ir_type *tp);
 /** Cast node that cast a pointer to this type. */
-ir_node *get_type_cast(type *tp, int pos);
-void add_type_cast(type *tp, ir_node *cast);
+ir_node *get_type_cast(ir_type *tp, int pos);
+void add_type_cast(ir_type *tp, ir_node *cast);
 /** Return number of upcasts. O(#casts). */
-int get_class_n_upcasts(type *clss);
+int get_class_n_upcasts(ir_type *clss);
 /** Return number of downcasts. O(#casts). */
-int get_class_n_downcasts(type *clss);
+int get_class_n_downcasts(ir_type *clss);
 
 /* Access all pointer types that point to tp. */
-int   get_type_n_pointertypes_to(type *tp);
-type *get_type_pointertype_to(type *tp, int pos);
-void  add_type_pointertype_to(type *tp, type *ptp);
+int     get_type_n_pointertypes_to(ir_type *tp);
+ir_type *get_type_pointertype_to(ir_type *tp, int pos);
+void    add_type_pointertype_to(ir_type *tp, ir_type *ptp);
 
 /* Access all array types that contain elements of type tp.
  * Does not find subarrays, e.g., int[] being element of int[][]
  * for multi dimensional arrays. */
-int   get_type_n_arraytypes_of(type *tp);
-type *get_type_arraytype_of(type *tp, int pos);
-void  add_type_arraytype_of(type *tp, type *atp);
+int     get_type_n_arraytypes_of(ir_type *tp);
+ir_type *get_type_arraytype_of(ir_type *tp, int pos);
+void    add_type_arraytype_of(ir_type *tp, ir_type *atp);
 
 
 

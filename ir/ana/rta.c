@@ -101,7 +101,7 @@ static int add_graph (ir_graph *graph)
   return (FALSE);
 }
 
-static int add_class (type *clazz)
+static int add_class (ir_type *clazz)
 {
   if (!eset_contains (_live_classes, clazz)) {
     if (verbose > 1) {
@@ -201,7 +201,7 @@ static void rta_act (ir_node *node, void *env)
     }
 
   } else if (iro_Alloc == op) { /* ALLOC */
-    type *type = get_Alloc_type (node);
+    ir_type *type = get_Alloc_type (node);
 
     *change |= add_class (type);
   }
@@ -359,7 +359,7 @@ static void init_tables (void)
 
   /* Find static allocated classes */
   for (i = 0; i < n_globs; ++i) {
-    type *member_type = get_entity_type(get_class_member(get_glob_type(), i));
+    ir_type *member_type = get_entity_type(get_class_member(get_glob_type(), i));
     if (is_Class_type(member_type))
       eset_insert(_live_classes, member_type);
   }
@@ -500,7 +500,7 @@ void rta_cleanup (void)
 }
 
 /* Say whether this class might be instantiated at any point in the program: */
-int  rta_is_alive_class  (type   *clazz)
+int  rta_is_alive_class  (ir_type   *clazz)
 {
   return (eset_contains (_live_classes, clazz));
 }
@@ -517,7 +517,7 @@ void rta_report (void)
   int i;
 
   for (i = 0; i < get_irp_n_types(); ++i) {
-    type *tp = get_irp_type(i);
+    ir_type *tp = get_irp_type(i);
     if (is_Class_type(tp) && rta_is_alive_class(tp)) {
       fprintf(stdout, "RTA: considered allocated: "); DDMT(tp);
     }
@@ -534,6 +534,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.35  2006/01/13 21:51:59  beck
+ * renamed all types 'type' to 'ir_type'
+ *
  * Revision 1.34  2006/01/02 15:01:16  beck
  * missing include added
  *

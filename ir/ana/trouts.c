@@ -68,7 +68,7 @@ void set_entity_reference_array(entity *ent, ir_node **refs) {
     pmap_insert(entity_reference_map, (void *)ent, (void *)refs);
 }
 
-static ir_node **get_type_alloc_array(type *tp) {
+static ir_node **get_type_alloc_array(ir_type *tp) {
   ir_node **res;
   if (!type_alloc_map) type_alloc_map = pmap_create();
 
@@ -81,13 +81,13 @@ static ir_node **get_type_alloc_array(type *tp) {
 
   return res;
 }
-void set_type_alloc_array(type *tp, ir_node **alls) {
+void set_type_alloc_array(ir_type *tp, ir_node **alls) {
   ir_node **old = pmap_get(type_alloc_map, (void *)tp);
   if (old != alls)
     pmap_insert(type_alloc_map, (void *)tp, (void *)alls);
 }
 
-static ir_node **get_type_cast_array(type *tp) {
+static ir_node **get_type_cast_array(ir_type *tp) {
   ir_node **res;
   if (!type_cast_map) type_cast_map = pmap_create();
 
@@ -100,47 +100,47 @@ static ir_node **get_type_cast_array(type *tp) {
 
   return res;
 }
-void set_type_cast_array(type *tp, ir_node **alls) {
+void set_type_cast_array(ir_type *tp, ir_node **alls) {
   ir_node **old = pmap_get(type_cast_map, (void *)tp);
   if (old != alls)
     pmap_insert(type_cast_map, (void *)tp, (void *)alls);
 }
 
-static type **get_type_pointertype_array(type *tp) {
-  type **res;
+static ir_type **get_type_pointertype_array(ir_type *tp) {
+  ir_type **res;
   if (!type_pointertype_map) type_pointertype_map = pmap_create();
 
   if (pmap_contains(type_pointertype_map, (void *)tp)) {
-    res = (type **) pmap_get(type_pointertype_map, (void *)tp);
+    res = (ir_type **) pmap_get(type_pointertype_map, (void *)tp);
   } else {
-    res = NEW_ARR_F(type *, 0);
+    res = NEW_ARR_F(ir_type *, 0);
     pmap_insert(type_pointertype_map, (void *)tp, (void *)res);
   }
 
   return res;
 }
-void set_type_pointertype_array(type *tp, type **pts) {
-  type **old = pmap_get(type_pointertype_map, (void *)tp);
+void set_type_pointertype_array(ir_type *tp, ir_type **pts) {
+  ir_type **old = pmap_get(type_pointertype_map, (void *)tp);
   if (old != pts)
     pmap_insert(type_pointertype_map, (void *)tp, (void *)pts);
 }
 
-static type **get_type_arraytype_array(type *tp) {
-  type **res;
+static ir_type **get_type_arraytype_array(ir_type *tp) {
+  ir_type **res;
   if (!type_arraytype_map) type_arraytype_map = pmap_create();
 
   if (pmap_contains(type_arraytype_map, (void *)tp)) {
-    res = (type **) pmap_get(type_arraytype_map, (void *)tp);
+    res = (ir_type **) pmap_get(type_arraytype_map, (void *)tp);
   } else {
-    res = NEW_ARR_F(type *, 0);
+    res = NEW_ARR_F(ir_type *, 0);
     pmap_insert(type_arraytype_map, (void *)tp, (void *)res);
   }
 
   return res;
 }
 
-void set_type_arraytype_array(type *tp, type **pts) {
-  type **old = pmap_get(type_arraytype_map, (void *)tp);
+void set_type_arraytype_array(ir_type *tp, ir_type **pts) {
+  ir_type **old = pmap_get(type_arraytype_map, (void *)tp);
   if (old != pts)
     pmap_insert(type_arraytype_map, (void *)tp, (void *)pts);
 }
@@ -241,7 +241,7 @@ void set_entity_reference(entity *ent, int pos, ir_node *n) {
 /**------------------------------------------------------------------*/
 
 /* Number of Alloc nodes that create an instance of this type */
-int get_type_n_allocs(type *tp) {
+int get_type_n_allocs(ir_type *tp) {
   ir_node **allocs;
 
   assert(tp && is_type(tp));
@@ -251,7 +251,7 @@ int get_type_n_allocs(type *tp) {
 }
 
 /* Alloc node that creates an instance of this type */
-ir_node *get_type_alloc(type *tp, int pos) {
+ir_node *get_type_alloc(ir_type *tp, int pos) {
   ir_node **allocs;
   assert(0 <= pos && pos < get_type_n_allocs(tp));
 
@@ -259,7 +259,7 @@ ir_node *get_type_alloc(type *tp, int pos) {
   return allocs[pos];
 }
 
-void add_type_alloc(type *tp, ir_node *n) {
+void add_type_alloc(ir_type *tp, ir_node *n) {
   ir_node **allocs;
 
   assert(tp && is_type(tp));
@@ -270,7 +270,7 @@ void add_type_alloc(type *tp, ir_node *n) {
   set_type_alloc_array(tp, allocs);
 }
 
-void set_type_alloc(type *tp, int pos, ir_node *n) {
+void set_type_alloc(ir_type *tp, int pos, ir_node *n) {
   ir_node **allocs;
 
   assert(0 <= pos && pos < get_type_n_allocs(tp));
@@ -281,7 +281,7 @@ void set_type_alloc(type *tp, int pos, ir_node *n) {
 }
 
 /* Number of Cast nodes that create an instance of this type */
-int get_type_n_casts(type *tp) {
+int get_type_n_casts(ir_type *tp) {
   ir_node **casts;
 
   assert(tp && is_type(tp));
@@ -291,7 +291,7 @@ int get_type_n_casts(type *tp) {
 }
 
 
-int get_class_n_upcasts(type *clss) {
+int get_class_n_upcasts(ir_type *clss) {
   int i, n_casts = get_type_n_casts(clss);
   int n_instances = 0;
   for (i = 0; i < n_casts; ++i) {
@@ -301,7 +301,7 @@ int get_class_n_upcasts(type *clss) {
   return n_instances;
 }
 
-int get_class_n_downcasts(type *clss) {
+int get_class_n_downcasts(ir_type *clss) {
   int i, n_casts = get_type_n_casts(clss);
   int n_instances = 0;
   for (i = 0; i < n_casts; ++i) {
@@ -313,7 +313,7 @@ int get_class_n_downcasts(type *clss) {
 
 
 /* Cast node that creates an instance of this type */
-ir_node *get_type_cast(type *tp, int pos) {
+ir_node *get_type_cast(ir_type *tp, int pos) {
   ir_node **casts;
   assert(0 <= pos && pos < get_type_n_casts(tp));
 
@@ -321,7 +321,7 @@ ir_node *get_type_cast(type *tp, int pos) {
   return casts[pos];
 }
 
-void add_type_cast(type *tp, ir_node *n) {
+void add_type_cast(ir_type *tp, ir_node *n) {
   ir_node **casts;
 
   assert(tp && is_type(tp));
@@ -332,7 +332,7 @@ void add_type_cast(type *tp, ir_node *n) {
   set_type_cast_array(tp, casts);
 }
 
-void set_type_cast(type *tp, int pos, ir_node *n) {
+void set_type_cast(ir_type *tp, int pos, ir_node *n) {
   ir_node **casts;
 
   assert(0 <= pos && pos < get_type_n_casts(tp));
@@ -344,8 +344,8 @@ void set_type_cast(type *tp, int pos, ir_node *n) {
 
 /**------------------------------------------------------------------*/
 
-int get_type_n_pointertypes_to(type *tp) {
-  type ** pts;
+int get_type_n_pointertypes_to(ir_type *tp) {
+  ir_type ** pts;
 
   assert(tp && is_type(tp));
 
@@ -353,8 +353,8 @@ int get_type_n_pointertypes_to(type *tp) {
   return ARR_LEN(pts);
 }
 
-type *get_type_pointertype_to(type *tp, int pos) {
-  type ** pts;
+ir_type *get_type_pointertype_to(ir_type *tp, int pos) {
+  ir_type ** pts;
 
   assert(0 <= pos && pos < get_type_n_pointertypes_to(tp));
 
@@ -362,8 +362,8 @@ type *get_type_pointertype_to(type *tp, int pos) {
   return pts[pos];
 }
 
-void add_type_pointertype_to(type *tp, type *ptp) {
-  type ** pts;
+void add_type_pointertype_to(ir_type *tp, ir_type *ptp) {
+  ir_type ** pts;
 
   assert(tp && is_type(tp));
   assert(ptp && is_Pointer_type(ptp));
@@ -373,8 +373,8 @@ void add_type_pointertype_to(type *tp, type *ptp) {
   set_type_pointertype_array(tp, pts);
 }
 
-void set_type_pointertype_to(type *tp, int pos, type *ptp) {
-  type ** pts;
+void set_type_pointertype_to(ir_type *tp, int pos, ir_type *ptp) {
+  ir_type ** pts;
 
   assert(0 <= pos && pos < get_type_n_pointertypes_to(tp));
   assert(ptp && is_Pointer_type(ptp));
@@ -386,8 +386,8 @@ void set_type_pointertype_to(type *tp, int pos, type *ptp) {
 
 /**------------------------------------------------------------------*/
 
-int   get_type_n_arraytypes_of(type *tp) {
-  type ** pts;
+int   get_type_n_arraytypes_of(ir_type *tp) {
+  ir_type ** pts;
 
   assert(tp && is_type(tp));
 
@@ -395,8 +395,8 @@ int   get_type_n_arraytypes_of(type *tp) {
   return ARR_LEN(pts);
 }
 
-type *get_type_arraytype_of(type *tp, int pos) {
-  type ** pts;
+ir_type *get_type_arraytype_of(ir_type *tp, int pos) {
+  ir_type ** pts;
 
   assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
 
@@ -404,8 +404,8 @@ type *get_type_arraytype_of(type *tp, int pos) {
   return pts[pos];
 }
 
-void  add_type_arraytype_of(type *tp, type *atp) {
-  type ** pts;
+void  add_type_arraytype_of(ir_type *tp, ir_type *atp) {
+  ir_type ** pts;
 
   assert(tp && is_type(tp));
   assert(atp && is_Array_type(atp));
@@ -415,8 +415,8 @@ void  add_type_arraytype_of(type *tp, type *atp) {
   set_type_arraytype_array(tp, pts);
 }
 
-void  set_type_arraytype_of(type *tp, int pos, type *atp) {
-  type ** pts;
+void  set_type_arraytype_of(ir_type *tp, int pos, ir_type *atp) {
+  ir_type ** pts;
 
   assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
   assert(atp && is_Array_type(atp));
@@ -532,7 +532,7 @@ static void chain_accesses(ir_node *n, void *env) {
   }
 }
 
-static void chain_types(type *tp) {
+static void chain_types(ir_type *tp) {
   if (is_Pointer_type(tp)) {
     add_type_pointertype_to(get_pointer_points_to_type(tp), tp);
   } else if (is_Array_type(tp)) {
