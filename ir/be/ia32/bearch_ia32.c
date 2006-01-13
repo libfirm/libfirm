@@ -84,8 +84,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 			irn_req = get_ia32_in_req(irn, pos);
 		}
 		else {
-			irn_req = get_ia32_out_req(irn, pos);
-			pos     = node_pos;
+			irn_req = get_ia32_out_req(irn, node_pos);
 		}
 
 		DBG((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
