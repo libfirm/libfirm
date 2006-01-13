@@ -1014,24 +1014,24 @@ static ir_node *gen_Call(firm_dbg_module_t *mod, ir_node *block, ir_node *call, 
 		for (i = stack_idx; i < n; i++) {
 			/* pass it on stack */
 			if (mode_is_float(get_irn_mode(param[i]))) {
-				stack_param[i] = new_rd_ia32_fStackArg(get_irn_dbg_info(param[i]), current_ir_graph,
+				stack_param[i - stack_idx] = new_rd_ia32_fStackArg(get_irn_dbg_info(param[i]), current_ir_graph,
 														block, call_Mem, param[i], mode_M);
 			}
 			else {
-				stack_param[i] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), current_ir_graph,
+				stack_param[i - stack_idx] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), current_ir_graph,
 														block, call_Mem, param[i], mode_M);
 			}
 		}
 	}
 	else {
-		for (i = n - 1, j = stack_idx; i >= stack_idx; i--, j++) {
+		for (i = n - 1, j = 0; i >= stack_idx; i--, j++) {
 			/* pass it on stack */
 			if (mode_is_float(get_irn_mode(param[i]))) {
-				stack_param[i] = new_rd_ia32_fStackArg(get_irn_dbg_info(param[i]), current_ir_graph,
+				stack_param[j] = new_rd_ia32_fStackArg(get_irn_dbg_info(param[i]), current_ir_graph,
 														block, call_Mem, param[i], mode_M);
 			}
 			else {
-				stack_param[i] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), current_ir_graph,
+				stack_param[j] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), current_ir_graph,
 														block, call_Mem, param[i], mode_M);
 			}
 		}
@@ -1231,7 +1231,7 @@ static ir_node *gen_Proj_Start(firm_dbg_module_t *mod, ir_node *block, ir_node *
 		case pn_Start_T_args:
 			/* We cannot use get_method_n_params here as the function might
 			   be variadic or one argument is not used. */
-			n  = get_irn_n_edges(proj);
+			n = get_irn_n_edges(proj);
 
 			/* we are done here when there are no parameters */
 			if (n < 1)
@@ -1240,10 +1240,11 @@ static ir_node *gen_Proj_Start(firm_dbg_module_t *mod, ir_node *block, ir_node *
 			/* temporary remember all proj arg x */
 			projargs = calloc(n, sizeof(ir_node *));
 
+			i = 0;
 			foreach_out_edge((const ir_node *)proj, edge) {
 				succ = get_edge_src_irn(edge);
 				assert(is_Proj(succ) && "non-Proj from a Proj_T (pn_Start_T_args).");
-				projargs[get_Proj_proj(succ)] = succ;
+				projargs[i++] = succ;
 			}
 
 			cc = get_method_calling_convention(tp);
@@ -1263,14 +1264,14 @@ static ir_node *gen_Proj_Start(firm_dbg_module_t *mod, ir_node *block, ir_node *
 				if (mode_is_int(mode) && cur_gp_idx < maxnum_gpreg_args) {
 					/* parameter got passed in general purpose register */
 					irn = new_rd_ia32_RegParam(get_irn_dbg_info(proj), current_ir_graph, block, proj, mode);
-					set_ia32_pncode(irn, i);
+					set_ia32_pncode(irn, get_Proj_proj(projargs[i]));
 					set_ia32_req_out(irn, current_gpreg_param_req[cur_gp_idx], 0);
 					cur_gp_idx++;
 				}
 				else if (mode_is_float(mode) && cur_fp_idx < maxnum_fpreg_args) {
 					/* parameter got passed in floating point register*/
 					irn = new_rd_ia32_RegParam(get_irn_dbg_info(proj), current_ir_graph, block, proj, mode);
-					set_ia32_pncode(irn, i);
+					set_ia32_pncode(irn, get_Proj_proj(projargs[i]));
 					set_ia32_req_out(irn, current_fpreg_param_req[cur_fp_idx], 0);
 					cur_fp_idx++;
 				}
@@ -1285,35 +1286,18 @@ static ir_node *gen_Proj_Start(firm_dbg_module_t *mod, ir_node *block, ir_node *
 			}
 
 			/* create all remaining stack parameters */
-			if (cc & cc_last_on_top) {
-				for (i = stack_idx; i < n; i++) {
-					mode = get_irn_mode(projargs[i]);
+			for (i = stack_idx; i < n; i++) {
+				mode = get_irn_mode(projargs[i]);
 
-					if (mode_is_float(mode))
-						irn = new_rd_ia32_fStackParam(get_irn_dbg_info(projargs[i]), current_ir_graph, block, proj_M, mode);
-					else
-						irn = new_rd_ia32_StackParam(get_irn_dbg_info(projargs[i]), current_ir_graph, block, proj_M, mode);
+				if (mode_is_float(mode))
+					irn = new_rd_ia32_fStackParam(get_irn_dbg_info(projargs[i]), current_ir_graph, block, proj_M, mode);
+				else
+					irn = new_rd_ia32_StackParam(get_irn_dbg_info(projargs[i]), current_ir_graph, block, proj_M, mode);
 
-					set_ia32_pncode(irn, i);
+				set_ia32_pncode(irn, get_Proj_proj(projargs[i]));
 
-					/* kill the old "Proj Arg" and replace with the new stack param */
-					exchange(projargs[i], irn);
-				}
-			}
-			else {
-				for (i = n - 1, j = stack_idx; i >= stack_idx; i--, j++) {
-					mode = get_irn_mode(projargs[i]);
-
-					if (mode_is_float(mode))
-						irn = new_rd_ia32_fStackParam(get_irn_dbg_info(projargs[i]), current_ir_graph, block, proj_M, mode);
-					else
-						irn = new_rd_ia32_StackParam(get_irn_dbg_info(projargs[i]), current_ir_graph, block, proj_M, mode);
-
-					set_ia32_pncode(irn, j);
-
-					/* kill the old "Proj Arg" and replace with the new stack param */
-					exchange(projargs[i], irn);
-				}
+				/* kill the old "Proj Arg" and replace with the new stack param */
+				exchange(projargs[i], irn);
 			}
 
 			free(projargs);
