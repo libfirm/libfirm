@@ -510,11 +510,11 @@ void    dump_entity (entity *ent);
 
 /** Write the type and all its attributes to the file passed.
  * */
-void    dump_type_to_file (FILE *f, type *tp, dump_verbosity verbosity);
+void    dump_type_to_file (FILE *f, ir_type *tp, dump_verbosity verbosity);
 
 /** Write the type and all its attributes to stdout.
  *  */
-void    dump_type (type *tp);
+void    dump_type (ir_type *tp);
 
 
 /** Dump type information as text.

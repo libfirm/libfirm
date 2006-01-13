@@ -186,8 +186,8 @@ int      is_ir_graph(const void *thing);
 entity  *get_irg_entity (const ir_graph *irg);
 void     set_irg_entity (ir_graph *irg, entity *ent);
 
-type    *get_irg_frame_type (ir_graph *irg);
-void     set_irg_frame_type (ir_graph *irg, type *ftp);
+ir_type *get_irg_frame_type (ir_graph *irg);
+void     set_irg_frame_type (ir_graph *irg, ir_type *ftp);
 
 ir_node *get_irg_start_block (const ir_graph *irg);
 void     set_irg_start_block (ir_graph *irg, ir_node *node);

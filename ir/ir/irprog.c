@@ -45,7 +45,7 @@ static ir_prog *new_incomplete_ir_prog (void) {
   res->kind          = k_ir_prog;
   res->graphs        = NEW_ARR_F(ir_graph *, 0);
   res->pseudo_graphs = NEW_ARR_F(ir_graph *, 0);
-  res->types         = NEW_ARR_F(type *, 0);
+  res->types         = NEW_ARR_F(ir_type *, 0);
   res->modes         = NEW_ARR_F(ir_mode *, 0);
 
 #ifdef DEBUG_libfirm
@@ -122,7 +122,7 @@ void set_irp_main_irg(ir_graph *main_irg) {
   irp->main_irg = main_irg;
 }
 
-type *(get_glob_type)(void) {
+ir_type *(get_glob_type)(void) {
   return _get_glob_type();
 }
 
@@ -200,14 +200,14 @@ ir_graph *get_irp_allirg(int pos) {
 }
 
 /* Adds type to the list of types in irp. */
-void add_irp_type(type *typ) {
+void add_irp_type(ir_type *typ) {
   assert (typ != NULL);
   assert(irp);
-  ARR_APP1 (type *, irp->types, typ);
+  ARR_APP1 (ir_type *, irp->types, typ);
 }
 
 /* Remove type form the list of types in irp. */
-void remove_irp_type(type *typ) {
+void remove_irp_type(ir_type *typ) {
   int i;
   assert(typ);
 
@@ -216,7 +216,7 @@ void remove_irp_type(type *typ) {
       for(; i < (ARR_LEN(irp->types)) - 1; i++) {
         irp->types[i] = irp->types[i+1];
       }
-      ARR_SETLEN(type *, irp->types, (ARR_LEN(irp->types)) - 1);
+      ARR_SETLEN(ir_type *, irp->types, (ARR_LEN(irp->types)) - 1);
       break;
     }
   }
@@ -226,11 +226,11 @@ int (get_irp_n_types) (void) {
   return _get_irp_n_types();
 }
 
-type *(get_irp_type) (int pos) {
+ir_type *(get_irp_type) (int pos) {
   return _get_irp_type(pos);
 }
 
-void  set_irp_type(int pos, type *typ) {
+void  set_irp_type(int pos, ir_type *typ) {
   assert (irp && typ);
   assert (pos < (ARR_LEN((irp)->types)));
   irp->types[pos] = typ;

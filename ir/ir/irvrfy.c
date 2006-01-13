@@ -67,7 +67,7 @@ static void show_entity_failure(ir_node *node)
     entity *ent = get_irg_entity(irg);
 
     if (ent) {
-      type *ent_type = get_entity_owner(ent);
+      ir_type *ent_type = get_entity_owner(ent);
 
       if (ent_type) {
         if (ent_type == get_glob_type())
@@ -166,7 +166,7 @@ static void show_proj_failure(ir_node *n)
 /**
  * Prints a failure message for a proj from Start
  */
-static void show_proj_mode_failure(ir_node *n, type *ty)
+static void show_proj_mode_failure(ir_node *n, ir_type *ty)
 {
   long proj  = get_Proj_proj(n);
   ir_mode *m = get_type_mode(ty);
@@ -209,7 +209,7 @@ static void show_node_on_graph(ir_graph *irg, ir_node *n)
 /**
  * Show call parameters
  */
-static void show_call_param(ir_node *n, type *mt)
+static void show_call_param(ir_node *n, ir_type *mt)
 {
   int i;
 
@@ -230,7 +230,7 @@ static void show_call_param(ir_node *n, type *mt)
 /**
  * Show return modes
  */
-static void show_return_modes(ir_graph *irg, ir_node *n, type *mt, int i)
+static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i)
 {
   entity *ent = get_irg_entity(irg);
 
@@ -245,7 +245,7 @@ static void show_return_modes(ir_graph *irg, ir_node *n, type *mt, int i)
 /**
  * Show return number of results
  */
-static void show_return_nres(ir_graph *irg, ir_node *n, type *mt)
+static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt)
 {
   entity *ent = get_irg_entity(irg);
 
@@ -590,7 +590,7 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
   ir_mode *mode = get_irn_mode(p);
   long proj     = get_Proj_proj(p);
   long nr       = get_Proj_proj(pred);
-  type *mt; /* A method type */
+  ir_type *mt; /* A method type */
 
   pred = skip_Id(get_Proj_pred(pred));
   ASSERT_AND_RET((get_irn_mode(pred) == mode_T), "Proj from something not a tuple", 0);
@@ -868,7 +868,7 @@ static int verify_node_Return(ir_node *n, ir_graph *irg) {
   int i;
   ir_mode *mymode   = get_irn_mode(n);
   ir_mode *mem_mode = get_irn_mode(get_Return_mem(n));
-  type *mt;
+  ir_type *mt;
 
   /* Return: BB x M x data1 x ... x datan --> X */
 
@@ -884,7 +884,7 @@ static int verify_node_Return(ir_node *n, ir_graph *irg) {
     "Number of results for Return doesn't match number of results in type.", 0,
   show_return_nres(irg, n, mt););
   for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
-    type *res_type = get_method_res_type(mt, i);
+    ir_type *res_type = get_method_res_type(mt, i);
 
     if (is_atomic_type(res_type)) {
       ASSERT_AND_RET_DBG(
@@ -1003,7 +1003,7 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
   ir_mode *mymode  = get_irn_mode(n);
   ir_mode *op1mode = get_irn_mode(get_Call_mem(n));
   ir_mode *op2mode = get_irn_mode(get_Call_ptr(n));
-  type *mt;
+  ir_type *mt;
   int i;
 
   /* Call: BB x M x ref x data1 x ... x datan
@@ -1045,7 +1045,7 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
   }
 
   for (i = 0; i < get_method_n_params(mt); i++) {
-    type *t = get_method_param_type(mt, i);
+    ir_type *t = get_method_param_type(mt, i);
 
     if (is_atomic_type(t)) {
       ASSERT_AND_RET_DBG(
@@ -1599,7 +1599,7 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
   ir_mode *op1mode = get_irn_mode(get_CopyB_mem(n));
   ir_mode *op2mode = get_irn_mode(get_CopyB_dst(n));
   ir_mode *op3mode = get_irn_mode(get_CopyB_src(n));
-  type *t = get_CopyB_type(n);
+  ir_type *t = get_CopyB_type(n);
 
   /* CopyB: BB x M x ref x ref --> M x X */
   ASSERT_AND_RET(

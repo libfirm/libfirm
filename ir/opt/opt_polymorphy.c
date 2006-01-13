@@ -28,7 +28,7 @@
  * If we find a dynamic type this means that the pointer always points
  * to an object of this type during runtime.   We resolved polymorphy.
  */
-static type *get_dynamic_type(ir_node *ptr) {
+static ir_type *get_dynamic_type(ir_node *ptr) {
   ptr = skip_Cast(skip_Proj(ptr));
   if (get_irn_op(ptr) == op_Alloc)
     return get_Alloc_type(ptr);
@@ -41,7 +41,7 @@ static type *get_dynamic_type(ir_node *ptr) {
 ir_node *transform_node_Sel(ir_node *node)
 {
   ir_node *new_node, *ptr;
-  type    *dyn_tp;
+  ir_type *dyn_tp;
   entity  *ent = get_Sel_entity(node);
 
   if (get_irp_phase_state() == phase_building) return node;
@@ -108,7 +108,7 @@ ir_node *transform_node_Load(ir_node *n)
 {
   ir_node *field_ptr, *new_node, *ptr;
   entity  *ent;
-  type    *dyn_tp;
+  ir_type *dyn_tp;
 
   if (!(get_opt_optimize() && get_opt_dyn_meth_dispatch()))
     return n;

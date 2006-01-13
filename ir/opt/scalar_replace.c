@@ -64,7 +64,7 @@ typedef struct _path_t {
 
 typedef struct _scalars_t {
   entity *ent;                 /**< A entity for scalar replacement. */
-  type *ent_owner;             /**< The owner of this entity. */
+  ir_type *ent_owner;          /**< The owner of this entity. */
 } scalars_t;
 
 
@@ -268,7 +268,7 @@ static int find_possible_replacements(ir_graph *irg)
 
     if (get_irn_op(succ) == op_Sel) {
       entity *ent = get_Sel_entity(succ);
-      type *ent_type;
+      ir_type *ent_type;
 
       if (get_entity_link(ent) == ADDRESS_TAKEN)
         continue;
@@ -674,7 +674,7 @@ void scalar_replacement_opt(ir_graph *irg)
   ir_mode   **modes;
   set       *set_ent;
   pset      *sels;
-  type      *ent_type;
+  ir_type   *ent_type;
   ir_graph  *rem;
 
   if (! get_opt_scalar_replacement())

@@ -115,7 +115,7 @@ static void kill_entry(entry_t *entry) {
  */
 static void process_call(ir_node *call, entity *callee, q_set *hmap)
 {
-  type *mtp;
+  ir_type *mtp;
   entry_t *key, *entry;
   ir_node *call_param;
   int i, n_params;
@@ -384,8 +384,8 @@ static void create_clone_proc_irg(entity *ent, quad_t *q)
  **/
 static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
 {
-  type *mtp, *new_mtp, *tp;
-  ident *tp_name;
+  ir_type *mtp, *new_mtp, *tp;
+  ident   *tp_name;
   int i, n_params, n_ress, pos = 0;
 
   mtp      = get_entity_type(q->ent);
@@ -473,7 +473,7 @@ static entity *clone_method(quad_t *q)
 static ir_node *new_cl_Call(ir_node *call, entity *new_entity, int pos)
 {
   ir_node **in;
-  type *mtp;
+  ir_type *mtp;
   int i, n_params, new_params = 0;
   ir_node *callee;
   symconst_symbol sym;

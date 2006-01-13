@@ -202,7 +202,7 @@ static void pto_name_alloc_colors (void)
 /* See whether the given entity is a field. */
 static int is_field (entity *ent)
 {
-  type *tp = get_entity_type (ent);
+  ir_type *tp = get_entity_type (ent);
 
   if (is_Primitive_type (tp) || is_Pointer_type (tp)) {
     /* actually, we don't get by by restricting ourselves to pointer types */
@@ -212,9 +212,9 @@ static int is_field (entity *ent)
   }
 }
 
-/* Helper to collect_fields(type*): collect all fields of the given
+/* Helper to collect_fields(ir_type*): collect all fields of the given
   clazz and its super classes into the given obstack. */
-static void _collect_fields (type *clazz, struct obstack *obst)
+static void _collect_fields (ir_type *clazz, struct obstack *obst)
 {
   int n_members = get_class_n_members (clazz);
   int n_supers  = get_class_n_supertypes (clazz);
@@ -231,7 +231,7 @@ static void _collect_fields (type *clazz, struct obstack *obst)
   }
 
   for (i = 0; i < n_supers; i ++) {
-    type *s_clazz = get_class_supertype (clazz, i);
+    ir_type *s_clazz = get_class_supertype (clazz, i);
 
     _collect_fields (s_clazz, obst);
   }
@@ -239,7 +239,7 @@ static void _collect_fields (type *clazz, struct obstack *obst)
 
 /* Collect the fields of the given class and its super classes into an array.
   The last entry of the array is written NULL. */
-static entity **collect_fields (type *clazz)
+static entity **collect_fields (ir_type *clazz)
 {
   struct obstack obst;
   int n_fields;
@@ -302,7 +302,7 @@ static void pto_name_dump_finish (FILE *stream)
 /* Write a node for the given descriptor into the given stream */
 static void pto_name_dump_desc (desc_t *desc, FILE *stream)
 {
-  type *tp = desc->tp;
+  ir_type *tp = desc->tp;
   const char *tp_name = get_type_name (tp);
   ir_node *nd;
 
@@ -473,7 +473,7 @@ qset_t *get_entry (desc_t *desc, entity *ent)
 
 
 /* get a new descriptor for the given type at the given node */
-desc_t *new_name (type *tp, ir_node *node, int ctx)
+desc_t *new_name (ir_type *tp, ir_node *node, int ctx)
 {
   desc_t *desc = NULL;
 
@@ -535,7 +535,7 @@ desc_t *new_ent_name (entity *ent)
 {
   int i;
   int missing = TRUE;
-  type *tp = get_entity_type (ent);
+  ir_type *tp = get_entity_type (ent);
 
   assert (is_Pointer_type (tp));
   tp = get_pointer_points_to_type (tp);
@@ -658,6 +658,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.18  2006/01/13 22:56:21  beck
+  renamed all types 'type' to 'ir_type'
+
   Revision 1.17  2005/12/16 16:59:54  grund
   *** empty log message ***
 

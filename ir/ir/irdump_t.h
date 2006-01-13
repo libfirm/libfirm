@@ -70,7 +70,7 @@ void vcg_close (FILE *F);
 
 
 const char *get_ent_dump_name(entity *ent);
-const char *get_type_name_ex(type *tp, int *bad);
+const char *get_type_name_ex(ir_type *tp, int *bad);
 const char *get_mode_name_ex(ir_mode *mode, int *bad);
 /**
  * dump the name of a node n to the File F.
@@ -82,6 +82,6 @@ int dump_node_label(FILE *F, ir_node *n);
 
 
 /** Writes vcg representation with title "PRINT_TYPEID(tp)" to file F. */
-int dump_type_node(FILE *F, type *tp);
+int dump_type_node(FILE *F, ir_type *tp);
 
 #endif /* __IRDUMPT_T_H__ */

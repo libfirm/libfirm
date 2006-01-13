@@ -152,7 +152,7 @@ typedef struct hook_entry {
     void (*_hook_new_entity)(void *context, entity *ent);
 
     /** This hook is called after a new type was created. */
-    void (*_hook_new_type)(void *context, type *tp);
+    void (*_hook_new_type)(void *context, ir_type *tp);
   } hook;
 
   /** the context for every hook */

@@ -189,7 +189,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
     /* not dumped: mature    */
   }  break;
   case iro_Start: {
-    type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
+    ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
     fprintf(F, "  start of method of type %s \n", get_type_name_ex(tp, &bad));
     for (i = 0; i < get_method_n_params(tp); ++i)
       fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
@@ -231,7 +231,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
     }
   } break;
   case iro_Call: {
-    type *tp = get_Call_type(n);
+    ir_type *tp = get_Call_type(n);
     fprintf(F, "  calling method of type %s \n", get_type_name_ex(tp, &bad));
     if(get_unknown_type() != tp) {
       for (i = 0; i < get_method_n_params(tp); ++i)
@@ -261,14 +261,14 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   } break;
   case iro_Return: {
     if (!get_interprocedural_view()) {
-      type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
+      ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
       fprintf(F, "  return in method of type %s \n", get_type_name_ex(tp, &bad));
       for (i = 0; i < get_method_n_ress(tp); ++i)
         fprintf(F, "    res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
     }
   } break;
   case iro_Const: {
-    type *tp = get_Const_type(n);
+    ir_type *tp = get_Const_type(n);
     assert(tp != firm_none_type);
     fprintf(F, "  Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
   } break;
@@ -438,9 +438,9 @@ static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
  *  "prefix"    node8, ... node15,\n
  *  "prefix"    node16, node17\n
  */
-static void dump_type_list(FILE *F, type *tp, char *prefix,
-			   int (*get_n_types)(type *tp),
-			   type *(*get_type)(type *tp, int pos),
+static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
+			   int (*get_n_types)(ir_type *tp),
+			   ir_type *(*get_type)(ir_type *tp, int pos),
 			   char *name) {
   int i, n_nodes = get_n_types(tp);
   char *comma = "";
@@ -461,7 +461,7 @@ static void dump_type_list(FILE *F, type *tp, char *prefix,
 #define X(a)    case a: fprintf(F, #a); break
 void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity) {
   int i, j;
-  type *owner, *type;
+  ir_type *owner, *type;
 
   assert(is_entity(ent));
   owner = get_entity_owner(ent);
@@ -868,7 +868,7 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
 }
 
 /* A fast hack to dump a csv. */
-void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const char *comma) {
+void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const char *comma) {
   int i;
   char buf[1024 + 10];
   if (!is_Class_type(tp)) return;   // we also want array types. Stupid, these are classes in java.
@@ -953,7 +953,7 @@ void dump_typecsv_to_file(FILE *F, type *tp, dump_verbosity verbosity, const cha
   }
 }
 
-void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
+void dump_type_to_file (FILE *F, ir_type *tp, dump_verbosity verbosity) {
   int i;
 
   if ((is_Class_type(tp))       && (verbosity & dump_verbosity_noClassTypes)) return;
@@ -986,17 +986,17 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
     if (verbosity & dump_verbosity_typeattrs) {
       fprintf(F, "  supertypes: ");
       for (i = 0; i < get_class_n_supertypes(tp); ++i) {
-        type *stp = get_class_supertype(tp, i);
+        ir_type *stp = get_class_supertype(tp, i);
         fprintf(F, "\n    %s", get_type_name(stp));
       }
       fprintf(F, "\n  subtypes: ");
       for (i = 0; i < get_class_n_subtypes(tp); ++i) {
-        type *stp = get_class_subtype(tp, i);
+        ir_type *stp = get_class_subtype(tp, i);
         fprintf(F, "\n    %s", get_type_name(stp));
       }
 
       if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
-        type *stp;
+        ir_type *stp;
         fprintf(F, "\n  transitive supertypes: ");
         for (stp = get_class_trans_supertype_first(tp);
 	           stp;
@@ -1030,7 +1030,7 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   case tpo_array:
     if (verbosity & dump_verbosity_typeattrs) {
       int i, n_dim;
-      type *elem_tp = get_array_element_type(tp);
+      ir_type *elem_tp = get_array_element_type(tp);
 
       fprintf(F, "\n  array ");
 
@@ -1074,7 +1074,7 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
 
   case tpo_pointer:
     if (verbosity & dump_verbosity_typeattrs) {
-      type *tt = get_pointer_points_to_type(tp);
+      ir_type *tt = get_pointer_points_to_type(tp);
       fprintf(F, "\n  points to %s (%ld)\n", get_type_name(tt), get_type_nr(tt));
     }
     break;
@@ -1084,13 +1084,13 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
       fprintf(F, "\n  variadicity: %s", get_variadicity_name(get_method_variadicity(tp)));
       fprintf(F, "\n  return types: %d", get_method_n_ress(tp));
       for (i = 0; i < get_method_n_ress(tp); ++i) {
-        type *rtp = get_method_res_type(tp, i);
+        ir_type *rtp = get_method_res_type(tp, i);
         fprintf(F, "\n    %s", get_type_name(rtp));
       }
 
       fprintf(F, "\n  parameter types: %d", get_method_n_params(tp));
       for (i = 0; i < get_method_n_params(tp); ++i) {
-        type *ptp = get_method_param_type(tp, i);
+        ir_type *ptp = get_method_param_type(tp, i);
         fprintf(F, "\n    %s", get_type_name(ptp));
       }
       if (get_method_variadicity(tp)) {
@@ -1183,7 +1183,7 @@ void dump_type_to_file (FILE *F, type *tp, dump_verbosity verbosity) {
   fprintf(F, "\n\n");
 }
 
-void dump_type(type *tp) {
+void dump_type(ir_type *tp) {
   dump_type_to_file (stdout, tp, dump_verbosity_max);
 }
 
@@ -1202,7 +1202,7 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
   }
 
   for (i = 0; i < n_types; ++i) {
-    type *t = get_irp_type(i);
+    ir_type *t = get_irp_type(i);
 
     //if (is_jack_rts_class(t)) continue;
 
@@ -1220,7 +1220,7 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
 void dump_globals_as_text(unsigned verbosity, const char *suffix) {
   const char *basename;
   FILE *F, *CSV = NULL;
-  type *g = get_glob_type();
+  ir_type *g = get_glob_type();
   int i, n_mems = get_class_n_members(g);
 
   basename = irp_prog_name_is_set() ? get_irp_prog_name() : "TextGlobals";

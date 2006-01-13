@@ -219,7 +219,7 @@ const char *get_mode_name_ex(ir_mode *mode, int *bad)
  * returns the name of a type or <ERROR> if mode is NOT a mode object.
  * in the later case, sets bad
  */
-const char *get_type_name_ex(type *tp, int *bad)
+const char *get_type_name_ex(ir_type *tp, int *bad)
 {
   if (is_type(tp))
     return get_type_name(tp);
@@ -250,7 +250,7 @@ static void print_vcg_color(FILE *F, dumper_colors color) {
  * prints the edge from a type S to a type T with additional info fmt, ...
  * to the file F
  */
-static void print_type_type_edge(FILE *F, type *S, type *T, const char *fmt, ...)
+static void print_type_type_edge(FILE *F, ir_type *S, ir_type *T, const char *fmt, ...)
 {
   va_list ap;
 
@@ -266,7 +266,7 @@ static void print_type_type_edge(FILE *F, type *S, type *T, const char *fmt, ...
  * prints the edge from a type T to an entity E with additional info fmt, ...
  * to the file F
  */
-static void print_type_ent_edge(FILE *F, type *T, entity *E, const char *fmt, ...)
+static void print_type_ent_edge(FILE *F, ir_type *T, entity *E, const char *fmt, ...)
 {
   va_list ap;
 
@@ -302,7 +302,7 @@ static void print_ent_ent_edge(FILE *F, entity *E, entity *T, int backedge, cons
  * prints the edge from an entity E to a type T with additional info fmt, ...
  * to the file F
  */
-static void print_ent_type_edge(FILE *F, entity *E, type *T, const char *fmt, ...)
+static void print_ent_type_edge(FILE *F, entity *E, ir_type *T, const char *fmt, ...)
 {
   va_list ap;
 
@@ -318,7 +318,7 @@ static void print_ent_type_edge(FILE *F, entity *E, type *T, const char *fmt, ..
  * prints the edge from a node N to a type T with additional info fmt, ...
  * to the file F
  */
-static void print_node_type_edge(FILE *F, const ir_node *N, type *T, const char *fmt, ...)
+static void print_node_type_edge(FILE *F, const ir_node *N, ir_type *T, const char *fmt, ...)
 {
   va_list ap;
 
@@ -367,7 +367,7 @@ static void print_ent_node_edge(FILE *F, entity *E, const ir_node *N, const char
  * prints the edge from a type E to an enumeration item item with additional info fmt, ...
  * to the file F
  */
-static void print_enum_item_edge(FILE *F, type *E, int item, const char *fmt, ...)
+static void print_enum_item_edge(FILE *F, ir_type *E, int item, const char *fmt, ...)
 {
   va_list ap;
 
@@ -742,7 +742,7 @@ static int dump_node_typeinfo(FILE *F, ir_node *n) {
   if (opt_dump_analysed_type_info) {
     if (get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
         get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent) {
-      type *tp = get_irn_typeinfo_type(n);
+      ir_type *tp = get_irn_typeinfo_type(n);
       if (tp != firm_none_type)
         fprintf(F, "[%s] ", get_type_name_ex(tp, &bad));
       else
@@ -1693,7 +1693,7 @@ static void dump_node2type_edges(ir_node *n, void *env)
 }
 
 #if 0
-static int print_type_info(FILE *F, type *tp) {
+static int print_type_info(FILE *F, ir_type *tp) {
   int bad = 0;
 
   if (get_type_state(tp) == layout_undefined) {
@@ -1708,7 +1708,7 @@ static int print_type_info(FILE *F, type *tp) {
   return bad;
 }
 
-static void print_typespecific_info(FILE *F, type *tp) {
+static void print_typespecific_info(FILE *F, ir_type *tp) {
   switch (get_type_tpop_code(tp)) {
   case tpo_class:
     {
@@ -1743,7 +1743,7 @@ static void print_typespecific_info(FILE *F, type *tp) {
 }
 #endif
 
-static void print_typespecific_vcgattr(FILE *F, type *tp) {
+static void print_typespecific_vcgattr(FILE *F, ir_type *tp) {
   switch (get_type_tpop_code(tp)) {
   case tpo_class:
     {
@@ -1779,7 +1779,7 @@ static void print_typespecific_vcgattr(FILE *F, type *tp) {
 }
 
 
-int dump_type_node(FILE *F, type *tp)
+int dump_type_node(FILE *F, ir_type *tp)
 {
   int bad = 0;
 
@@ -1824,7 +1824,7 @@ void dump_entity_node(FILE *F, entity *ent, int color)
 }
 #undef X
 
-static void dump_enum_item(FILE *F, type *tp, int pos)
+static void dump_enum_item(FILE *F, ir_type *tp, int pos)
 {
   char buf[1024];
   ident *id  = get_enumeration_nameid(tp, pos);
@@ -1892,7 +1892,7 @@ dump_type_info(type_or_ent *tore, void *env) {
     } break;
   case k_type:
     {
-      type *tp = (type *)tore;
+      ir_type *tp = (ir_type *)tore;
       dump_type_node(F, tp);
       /* and now the edges */
       switch (get_type_tpop_code(tp)) {
@@ -1991,7 +1991,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *ctx) {
   } break; /* case k_entity */
   case k_type:
     {
-      type *tp = (type *)tore;
+      ir_type *tp = (ir_type *)tore;
       if (tp == get_glob_type()) break;
       switch (get_type_tpop_code(tp)) {
         case tpo_class: {

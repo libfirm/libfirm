@@ -675,7 +675,7 @@ void remove_bad_predecessors(ir_graph *irg) {
 static INLINE void
 copy_node_inline (ir_node *n, void *env) {
   ir_node *new;
-  type *frame_tp = (type *)env;
+  ir_type *frame_tp = (ir_type *)env;
 
   copy_node(n, NULL);
   if (get_irn_op(n) == op_Sel) {
@@ -707,7 +707,7 @@ static void find_addr(ir_node *node, void *env)
  */
 static int can_inline(ir_node *call, ir_graph *called_graph)
 {
-  type *call_type = get_Call_type(call);
+  ir_type *call_type = get_Call_type(call);
   int params, ress, i, res;
   assert(is_Method_type(call_type));
 
@@ -716,7 +716,7 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
 
   /* check params */
   for (i = 0; i < params; ++i) {
-    type *p_type = get_method_param_type(call_type, i);
+    ir_type *p_type = get_method_param_type(call_type, i);
 
     if (is_compound_type(p_type))
       return 0;
@@ -724,7 +724,7 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
 
   /* check res */
   for (i = 0; i < ress; ++i) {
-    type *r_type = get_method_res_type(call_type, i);
+    ir_type *r_type = get_method_res_type(call_type, i);
 
     if (is_compound_type(r_type))
       return 0;
@@ -746,7 +746,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *ret, *phi;
   int arity, n_ret, n_exc, n_res, i, j, rem_opt, irn_arity;
   int exc_handling;
-  type *called_frame;
+  ir_type *called_frame;
   irg_inline_property prop = get_irg_inline_property(called_graph);
 
   if ( (prop != irg_inline_forced) &&

@@ -86,7 +86,7 @@ void set_main_ctx (ctx_info_t*);
 /* ====================
    Alloc stuff
    ==================== */
-static void append_alloc (graph_info_t *ginfo, ir_node *alloc, type *tp)
+static void append_alloc (graph_info_t *ginfo, ir_node *alloc, ir_type *tp)
 {
   alloc_info_t *ainfo = xmalloc (sizeof (alloc_info_t));
 
@@ -419,7 +419,7 @@ static void ecg_calls_act (ir_node *node, void *env)
       assert (0 && "Unexpected address expression");
     }
   } else if (op_Alloc == op) {
-    type *tp = get_Alloc_type (node);
+    ir_type *tp = get_Alloc_type (node);
     /* const char *name = get_type_name (tp); */
 
     append_alloc (graph_info, node, tp);
@@ -1267,6 +1267,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.22  2006/01/13 22:55:03  beck
+  renamed all types 'type' to 'ir_type'
+
   Revision 1.21  2005/12/31 15:58:57  beck
   added missing includes
 

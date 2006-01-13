@@ -133,23 +133,23 @@ ir_graph *get_irp_allirg(int pos);
 
 
 /** Returns the "global" type of the irp. */
-type *get_glob_type(void);
+ir_type *get_glob_type(void);
 
 /** Adds type to the list of types in irp. */
-void  add_irp_type(type *typ);
+void  add_irp_type(ir_type *typ);
 
 /** Removes type from the list of types, deallocates it and
     shrinks the list by one. */
-void  remove_irp_type(type *typ);
+void  remove_irp_type(ir_type *typ);
 
 /** Returns the number of all types in the irp. */
 int   get_irp_n_types(void);
 
 /** Returns the type at position pos in the irp. */
-type *get_irp_type(int pos);
+ir_type *get_irp_type(int pos);
 
 /** Overwrites the type at position pos with another type. */
-void  set_irp_type(int pos, type *typ);
+void  set_irp_type(int pos, ir_type *typ);
 
 /** Returns the number of all modes in the irp. */
 int   get_irp_n_modes(void);
