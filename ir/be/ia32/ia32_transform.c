@@ -182,7 +182,7 @@ static ir_node *gen_Add(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, i
 
 					new_op = new_rd_ia32_Lea(dbg, current_ir_graph, block, expr_op, get_irn_n(shli_op, 0), mode);
 					set_ia32_Immop_tarval(new_op, tv);
-					set_ia32_offs(new_op, offs);
+					set_ia32_am_offs(new_op, offs);
 
 					break;
 				default:
@@ -199,7 +199,7 @@ static ir_node *gen_Add(firm_dbg_module_t *mod, dbg_info *dbg, ir_node *block, i
 	if (normal_add) {
 		new_op = new_rd_ia32_Lea(dbg, current_ir_graph, block, op1, op2, mode);
 		set_ia32_Immop_tarval(new_op, get_tarval_one(mode_Iu));
-		set_ia32_offs(new_op, NULL);
+		set_ia32_am_offs(new_op, NULL);
 	}
 
 	return new_op;
@@ -1264,14 +1264,14 @@ static ir_node *gen_Proj_Start(firm_dbg_module_t *mod, ir_node *block, ir_node *
 					/* parameter got passed in general purpose register */
 					irn = new_rd_ia32_RegParam(get_irn_dbg_info(proj), current_ir_graph, block, proj, mode);
 					set_ia32_pncode(irn, i);
-					set_ia32_regreq_out(irn, current_gpreg_param_req[cur_gp_idx], 0);
+					set_ia32_req_out(irn, current_gpreg_param_req[cur_gp_idx], 0);
 					cur_gp_idx++;
 				}
 				else if (mode_is_float(mode) && cur_fp_idx < maxnum_fpreg_args) {
 					/* parameter got passed in floating point register*/
 					irn = new_rd_ia32_RegParam(get_irn_dbg_info(proj), current_ir_graph, block, proj, mode);
 					set_ia32_pncode(irn, i);
-					set_ia32_regreq_out(irn, current_fpreg_param_req[cur_fp_idx], 0);
+					set_ia32_req_out(irn, current_fpreg_param_req[cur_fp_idx], 0);
 					cur_fp_idx++;
 				}
 

@@ -148,7 +148,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* dump IN requirements */
 			if (get_irn_arity(n) > 0) {
-				reqs = get_ia32_in_req(n);
+				reqs = get_ia32_in_req_all(n);
 
 				if (reqs) {
 					for (i = 0; i < get_irn_arity(n); i++) {
@@ -169,7 +169,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* dump OUT requirements */
 			if (attr->n_res > 0) {
-				reqs = get_ia32_out_req(n);
+				reqs = get_ia32_out_req_all(n);
 
 				if (reqs) {
 					for (i = 0; i < attr->n_res; i++) {
@@ -201,12 +201,8 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* special for LEA */
 			if (is_ia32_Lea(n) || is_ia32_Lea_i(n)) {
-				tarval *o  = get_ia32_offs(n);
+				tarval *o  = get_ia32_am_offs(n);
 				tarval *tv = get_ia32_Immop_tarval(n);
-
-				if (is_ia32_AddrMode(n)) {
-					fprintf(F, "AddrMode ");
-				}
 
 				fprintf(F, "LEA ");
 				if (o) {
@@ -249,18 +245,88 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
  * Firm was made by people hating const :-(
  */
 asmop_attr *get_ia32_attr(const ir_node *node) {
-  return (asmop_attr *)get_irn_generic_attr((ir_node *)node);
+	assert(is_ia32_irn(node) && "need ia32 node to get ia32 attributes");
+	return (asmop_attr *)get_irn_generic_attr((ir_node *)node);
+}
+
+/**
+ * Gets the type of an ia32 node.
+ */
+asmop_type_t get_ia32_op_type(const ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return attr->tp;
+}
+
+/**
+ * Sets the type of an ia32 node.
+ */
+void set_ia32_op_type(const ir_node *node, asmop_type_t tp) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->tp         = tp;
+}
+
+/**
+ * Gets the addr mode type of an ia32 node
+ */
+addrmode_type_t get_ia32_am_type(const ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return attr->am_tp;
+}
+
+/**
+ * Sets the addr mode type of an ia32 node
+ */
+void set_ia32_am_type(const ir_node *node, addrmode_type_t am_tp) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->am_tp      = am_tp;
+}
+
+/**
+ * Gets the addr mode offset.
+ */
+tarval *get_ia32_am_offs(const ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return attr->am_offs;
+}
+
+/**
+ * Sets the offset for addr mode.
+ */
+void set_ia32_am_offs(ir_node *node, tarval *am_offs) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->am_offs    = am_offs;
+}
+
+/**
+ * Gets the addr mode const.
+ */
+tarval *get_ia32_am_const(const ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return attr->am_const;
+}
+
+/**
+ * Sets the const for addr mode.
+ */
+void set_ia32_am_const(ir_node *node, tarval *am_const) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->am_const   = am_const;
 }
 
 /**
  * Return the tarval of an immediate operation or NULL in case of SymConst
  */
 tarval *get_ia32_Immop_tarval(const ir_node *node) {
-  asmop_attr *attr = get_ia32_attr(node);
-  if (attr->tp == asmop_Const)
+	asmop_attr *attr = get_ia32_attr(node);
     return attr->tv;
-  else
-    return NULL;
+}
+
+/**
+ * Sets the attributes of an immediate operation to the specified tarval
+ */
+void set_ia32_Immop_tarval(ir_node *node, tarval *tv) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->tv = tv;
 }
 
 /**
@@ -272,109 +338,17 @@ ir_node *get_ia32_old_ir(const ir_node *node) {
 }
 
 /**
- * Copy the attributes from an ia32_Const to an Immop (Add_i, Sub_i, ...) node
+ * Sets the old_ir attribute.
  */
-void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
-  asmop_attr *na = get_ia32_attr(node);
-  asmop_attr *ca = get_ia32_attr(cnst);
-
-  assert((is_ia32_Const(cnst) || is_ia32_fConst(cnst)) && "Need ia32_Const to set Immop attr");
-
-  na->tp     = ca->tp;
-  na->tv     = ca->tv;
-
-  if (ca->old_ir) {
-    na->old_ir = calloc(1, sizeof(*(ca->old_ir)));
-    memcpy(na->old_ir, ca->old_ir, sizeof(*(ca->old_ir)));
-  }
-  else
-    na->old_ir = NULL;
-}
-
-/**
- * Copy the attributes from a Const to an ia32_Const
- */
-void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
-  asmop_attr *attr = get_ia32_attr(ia32_cnst);
-
-  assert((is_ia32_Const(ia32_cnst) || is_ia32_fConst(ia32_cnst)) && "Need ia32_Const to set Const attr");
-
-  switch (get_irn_opcode(cnst)) {
-    case iro_Const:
-      attr->tp = asmop_Const;
-      attr->tv = get_Const_tarval(cnst);
-      break;
-    case iro_SymConst:
-      attr->tp     = asmop_SymConst;
-      attr->old_ir = calloc(1, sizeof(*cnst));
-      memcpy(attr->old_ir, cnst, sizeof(*cnst));
-      break;
-    case iro_Unknown:
-      assert(0 && "Unknown Const NYI");
-      break;
-    default:
-      assert(0 && "Cannot create ia32_Const for this opcode");
-  }
-}
-
-/**
- * Sets the type of an ia32_Const.
- */
-void set_ia32_Const_type(ir_node *node, int type) {
-	asmop_attr *attr = get_ia32_attr(node);
-
-	assert((is_ia32_Const(node) || is_ia32_fConst(node)) && "Need ia32_Const to set type");
-	assert((type == asmop_Const || type == asmop_SymConst) && "Unsupported ia32_Const type");
-
-	attr->tp = type;
-}
-
-/**
- * Sets the AddrMode attribute
- */
-void set_ia32_AddrMode(ir_node *node) {
-	asmop_attr *attr = get_ia32_attr(node);
-	attr->tp = asmop_AddrMode;
-}
-
-/**
- * Returns whether or not the node is an AddrMode node.
- */
-int is_ia32_AddrMode(ir_node *node) {
-	asmop_attr *attr = get_ia32_attr(node);
-	return (attr->tp == asmop_AddrMode);
-}
-
-/**
- * Sets the attributes of an immediate operation to the specified tarval
- */
-void set_ia32_Immop_tarval(ir_node *node, tarval *tv) {
-	asmop_attr *attr = get_ia32_attr(node);
-
-	attr->tp = asmop_Const;
-	attr->tv = tv;
-}
-
-/**
- * Sets the offset for a Lea.
- */
-void set_ia32_offs(ir_node *node, tarval *offs) {
-	asmop_attr *attr = get_ia32_attr(node);
-	attr->offset     = offs;
-}
-
-/**
- * Gets the offset for a Lea.
- */
-tarval *get_ia32_offs(const ir_node *node) {
-	asmop_attr *attr = get_ia32_attr(node);
-	return attr->offset;
+void set_ia32_old_ir(ir_node *node, ir_node *old_ir) {
+  asmop_attr *attr = get_ia32_attr(node);
+  attr->old_ir = old_ir;
 }
 
 /**
  * Returns the argument register requirements of an ia32 node.
  */
-const arch_register_req_t **get_ia32_in_req(const ir_node *node) {
+const arch_register_req_t **get_ia32_in_req_all(const ir_node *node) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->in_req;
 }
@@ -382,15 +356,31 @@ const arch_register_req_t **get_ia32_in_req(const ir_node *node) {
 /**
  * Returns the result register requirements of an ia32 node.
  */
-const arch_register_req_t **get_ia32_out_req(const ir_node *node) {
+const arch_register_req_t **get_ia32_out_req_all(const ir_node *node) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->out_req;
 }
 
 /**
+ * Returns the argument register requirement at position pos of an ia32 node.
+ */
+const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return attr->in_req[pos];
+}
+
+/**
+ * Returns the result register requirement at position pos of an ia32 node.
+ */
+const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return attr->out_req[pos];
+}
+
+/**
  * Sets the OUT register requirements at position pos.
  */
-void set_ia32_regreq_out(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos) {
 	asmop_attr *attr   = get_ia32_attr(node);
 	attr->out_req[pos] = req;
 }
@@ -398,7 +388,7 @@ void set_ia32_regreq_out(ir_node *node, const arch_register_req_t *req, int pos)
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_ia32_regreq_in(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
 	asmop_attr *attr  = get_ia32_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -409,6 +399,14 @@ void set_ia32_regreq_in(ir_node *node, const arch_register_req_t *req, int pos) 
 arch_irn_flags_t get_ia32_flags(const ir_node *node) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->flags;
+}
+
+/**
+ * Sets the register flag of an ia32 node.
+ */
+void set_ia32_flags(const ir_node *node, arch_irn_flags_t flags) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->flags      = flags;
 }
 
 /**
@@ -429,7 +427,7 @@ const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
 	assert(pos < attr->n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
-	return attr->slots[pos]->name;
+	return arch_register_get_name(attr->slots[pos]);
 }
 
 /**
@@ -442,7 +440,7 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
 	assert(pos < attr->n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
-	return attr->slots[pos]->index;
+	return arch_register_get_index(attr->slots[pos]);
 }
 
 /**
@@ -463,7 +461,7 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
  */
 void set_ia32_n_res(ir_node *node, int n_res) {
 	asmop_attr *attr = get_ia32_attr(node);
-	attr->n_res = n_res;
+	attr->n_res      = n_res;
 }
 
 /**
@@ -472,6 +470,14 @@ void set_ia32_n_res(ir_node *node, int n_res) {
 int get_ia32_n_res(const ir_node *node) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->n_res;
+}
+
+/**
+ * Returns the flavour of an ia32 DivMod,
+ */
+divmod_flavour_t get_ia32_DivMod_flavour(const ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return attr->dm_flav;
 }
 
 /**
@@ -495,7 +501,106 @@ long get_ia32_pncode(const ir_node *node) {
  */
 void set_ia32_pncode(ir_node *node, long code) {
 	asmop_attr *attr = get_ia32_attr(node);
-	attr->pn_code = code;
+	attr->pn_code    = code;
+}
+
+
+/******************************************************************************************************
+ *                      _       _         _   _           __                  _   _
+ *                     (_)     | |       | | | |         / _|                | | (_)
+ *  ___ _ __   ___  ___ _  __ _| |   __ _| |_| |_ _ __  | |_ _   _ _ __   ___| |_ _  ___  _ __    ___
+ * / __| '_ \ / _ \/ __| |/ _` | |  / _` | __| __| '__| |  _| | | | '_ \ / __| __| |/ _ \| '_ \  / __|
+ * \__ \ |_) |  __/ (__| | (_| | | | (_| | |_| |_| |    | | | |_| | | | | (__| |_| | (_) | | | | \__ \
+ * |___/ .__/ \___|\___|_|\__,_|_|  \__,_|\__|\__|_|    |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_| |___/
+ *     | |
+ *     |_|
+ ******************************************************************************************************/
+
+/**
+ * Gets the type of an ia32_Const.
+ */
+unsigned get_ia32_Const_type(ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+
+	assert((is_ia32_Const(node) || is_ia32_fConst(node)) && "Need ia32_Const to get type");
+
+	return attr->tp;
+}
+
+/**
+ * Sets the type of an ia32_Const.
+ */
+void set_ia32_Const_type(ir_node *node, int type) {
+	asmop_attr *attr = get_ia32_attr(node);
+
+	assert((is_ia32_Const(node) || is_ia32_fConst(node)) && "Need ia32_Const to set type");
+	assert((type == asmop_Const || type == asmop_SymConst) && "Unsupported ia32_Const type");
+
+	attr->tp = type;
+}
+
+/**
+ * Copy the attributes from an ia32_Const to an Immop (Add_i, Sub_i, ...) node
+ */
+void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
+	asmop_attr *na = get_ia32_attr(node);
+	asmop_attr *ca = get_ia32_attr(cnst);
+
+	assert((is_ia32_Const(cnst) || is_ia32_fConst(cnst)) && "Need ia32_Const to set Immop attr");
+
+	na->tp = ca->tp;
+	na->tv = ca->tv;
+
+	if (ca->old_ir) {
+		na->old_ir = calloc(1, sizeof(*(ca->old_ir)));
+		memcpy(na->old_ir, ca->old_ir, sizeof(*(ca->old_ir)));
+	}
+	else {
+		na->old_ir = NULL;
+	}
+}
+
+/**
+ * Copy the attributes from a Const to an ia32_Const
+ */
+void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
+	asmop_attr *attr = get_ia32_attr(ia32_cnst);
+
+	assert((is_ia32_Const(ia32_cnst) || is_ia32_fConst(ia32_cnst)) && "Need ia32_Const to set Const attr");
+
+	switch (get_irn_opcode(cnst)) {
+		case iro_Const:
+			attr->tp = asmop_Const;
+			attr->tv = get_Const_tarval(cnst);
+			break;
+		case iro_SymConst:
+			attr->tp     = asmop_SymConst;
+			attr->tv     = NULL;
+			attr->old_ir = calloc(1, sizeof(*cnst));
+			memcpy(attr->old_ir, cnst, sizeof(*cnst));
+			break;
+		case iro_Unknown:
+			assert(0 && "Unknown Const NYI");
+			break;
+		default:
+			assert(0 && "Cannot create ia32_Const for this opcode");
+	}
+}
+
+/**
+ * Sets the AddrMode attribute
+ */
+void set_ia32_AddrMode(ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	attr->tp         = asmop_AddrMode;
+}
+
+/**
+ * Returns whether or not the node is an AddrMode node.
+ */
+int is_ia32_AddrMode(ir_node *node) {
+	asmop_attr *attr = get_ia32_attr(node);
+	return (attr->tp == asmop_AddrMode);
 }
 
 /* Include the generated functions */

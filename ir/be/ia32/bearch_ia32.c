@@ -56,7 +56,7 @@ static ir_node *my_skip_proj(const ir_node *n) {
  * will be asked for this information.
  */
 static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-	const arch_register_req_t **irn_req;
+	const arch_register_req_t *irn_req;
 	long node_pos = pos == -1 ? 0 : pos;
 	ir_mode *mode = get_irn_mode(irn);
 	firm_dbg_module_t *mod = firm_dbg_register(DEBUG_MODULE);
@@ -81,16 +81,16 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 
 	if (is_ia32_irn(irn)) {
 		if (pos >= 0) {
-			irn_req = get_ia32_in_req(irn);
+			irn_req = get_ia32_in_req(irn, pos);
 		}
 		else {
-			irn_req = get_ia32_out_req(irn);
+			irn_req = get_ia32_out_req(irn, pos);
 			pos     = node_pos;
 		}
 
 		DBG((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
 
-		memcpy(req, irn_req[pos], sizeof(*req));
+		memcpy(req, irn_req, sizeof(*req));
 		return req;
 	}
 	else {

@@ -56,7 +56,7 @@ const char *node_const_to_str(ir_node *n) {
  */
 char *node_offset_to_str(ir_node *n) {
 	char   *buf;
-	tarval *tv = get_ia32_offs(n);
+	tarval *tv = get_ia32_am_offs(n);
 
 	if (tv) {
 		buf = malloc(SNPRINTF_BUF_LEN);
