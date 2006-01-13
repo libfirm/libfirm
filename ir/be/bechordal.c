@@ -165,6 +165,35 @@ static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 #define has_limited_constr(req, irn) \
 	(arch_get_register_req(arch_env, (req), irn, -1) && (req)->type == arch_register_req_type_limited)
 
+static int try_pre_color(be_chordal_env_t *env, ir_node *irn,
+						 pset *pre_colored, bitset_t *colors_used)
+{
+	arch_register_req_t req;
+
+	if(arch_get_register_req(env->main_env->arch_env, &req, irn, -1)
+		&& req.type == arch_register_req_type_limited) {
+
+		bitset_t *bs          = bitset_alloca(env->cls->n_regs);
+		const arch_register_t *reg;
+		int col;
+
+		req.data.limited(irn, -1, bs);
+		col = bitset_next_set(bs, 0);
+		reg = arch_register_for_index(env->cls, col);
+
+		pset_insert_ptr(pre_colored, irn);
+		arch_set_irn_register(env->main_env->arch_env, irn, reg);
+
+		bitset_set(colors_used, col);
+
+		DBG((env->dbg, LEVEL_2, "pre coloring %+F with %s\n", irn, reg->name));
+
+		return 1;
+	}
+
+	return 0;
+}
+
 /**
  * Handle register targeting constraints signaled by a Perm.
  * @param alloc_env    Private data for the allocation phase.
@@ -232,13 +261,10 @@ static ir_node *handle_constraints_at_perm(be_chordal_alloc_env_t *alloc_env, ir
 	const arch_env_t *arch_env = env->main_env->arch_env;
 
 	pset *leftover        = pset_new_ptr(8);
-	bitset_t *bs          = bitset_alloca(env->cls->n_regs);
+	pset *pre_colored     = pset_new_ptr(8);
 	bitset_t *colors_used = bitset_alloca(env->cls->n_regs);
-	ir_node *irn, *cnstr;
+	ir_node *irn, *cnstr, *last;
 	int has_cnstr = 0;
-	int col;
-	arch_register_req_t req;
-	const arch_register_t *reg, *cnstr_reg = NULL;
 
 	assert(be_is_Perm(perm));
 
@@ -247,82 +273,58 @@ static ir_node *handle_constraints_at_perm(be_chordal_alloc_env_t *alloc_env, ir
 	/*
 	 * Color constrained Projs first.
 	 */
-	for(irn = sched_next(perm); is_Proj(irn); irn = sched_next(irn)) {
-		arch_register_req_t req;
-
-		if(has_limited_constr(&req, irn)) {
-			bitset_clear_all(bs);
-			req.data.limited(irn, -1, bs);
-			col = bitset_next_set(bs, 0);
-			reg = arch_register_for_index(env->cls, col);
-
-			pset_insert_ptr(alloc_env->pre_colored, irn);
-			arch_set_irn_register(arch_env, irn, reg);
-			bitset_set(colors_used, col);
-
-			DBG((dbg, LEVEL_2, "\tPerm Proj with constraints: %+F set to %s\n", irn, reg->name));
-		}
-
-		else
+	for(irn = sched_next(perm); is_Proj(irn); irn = sched_next(irn))
+		if(!try_pre_color(env, irn, pre_colored, colors_used))
 			pset_insert_ptr(leftover, irn);
 
-	}
 	cnstr = irn;
+	last  = irn;
 
-	if(has_limited_constr(&req, cnstr)) {
-		bitset_clear_all(bs);
-		req.data.limited(cnstr, -1, bs);
-		col = bitset_next_set(colors_used, 0);
-		reg = arch_register_for_index(env->cls, col);
+	if(get_irn_mode(cnstr) == mode_T) {
+		for(irn = sched_next(cnstr); is_Proj(irn); irn = sched_next(irn))
+			if(!try_pre_color(env, irn, pre_colored, colors_used))
+				pset_insert_ptr(leftover, irn);
 
-		arch_set_irn_register(arch_env, cnstr, reg);
-		pset_insert_ptr(alloc_env->pre_colored, cnstr);
+		last = sched_prev(irn);
+	}
 
-		DBG((dbg, LEVEL_2, "\tConstrained node: %+F set to %s\n", irn, reg->name));
+	else
+		try_pre_color(env, cnstr, pre_colored, colors_used);
 
-		/*
-		 * The color of the constrained node must not be used!
-		 * The Proj which has been assigned that color might
-		 * interfere with the constrained node which leads
-		 * to an invalid register allocation.
-		 */
-		assert(!bitset_is_set(colors_used, reg->index));
+	for(irn = pset_first(leftover); irn; irn = pset_next(leftover)) {
+		const arch_register_t *reg;
+		ir_node *precol;
+		int colored = 0;
 
-		/*
-		 * Look for a Proj not interfering with the constrained node.
-		 * This Proj can be safely set to the constrafined nodes
-		 * color.
-		 */
-		for(irn = pset_first(leftover); irn; irn = pset_next(leftover)) {
-			if(!values_interfere(irn, cnstr)) {
-
-				DBG((dbg, LEVEL_2, "\tFound Proj not interfering with contr node %+F set to %s\n", irn, reg->name));
-				pset_insert_ptr(alloc_env->pre_colored, irn);
+		for(precol = pset_first(pre_colored); precol; precol = pset_next(pre_colored)) {
+			if(!values_interfere(irn, precol)) {
+				reg = arch_get_irn_register(arch_env, irn);
 				arch_set_irn_register(arch_env, irn, reg);
-				bitset_set(colors_used, reg->index);
-				pset_remove_ptr(leftover, irn);
-				pset_break(leftover);
+				pset_break(pre_colored);
+				colored = 1;
 				break;
 			}
 		}
+
+		if(!colored) {
+			int col = bitset_next_clear(colors_used, 0);
+
+			assert(col >=0 && "There must be a register left");
+			reg = arch_register_for_index(env->cls, col);
+			arch_set_irn_register(arch_env, irn, reg);
+			bitset_set(colors_used, reg->index);
+			pset_insert_ptr(alloc_env->pre_colored, irn);
+
+			DBG((dbg, LEVEL_2, "coloring leftover %+F with %s\n", irn, reg->name));
+		}
 	}
 
-	/*
-	 * Color the leftover Projs with the leftover colors.
-	 */
-	for(irn = pset_first(leftover); irn; irn = pset_next(leftover)) {
-		col = bitset_next_clear(colors_used, 0);
-		reg = arch_register_for_index(env->cls, col);
-
-		arch_set_irn_register(arch_env, irn, reg);
-		pset_insert_ptr(alloc_env->pre_colored, irn);
-		bitset_set(colors_used, col);
-
-		DBG((dbg, LEVEL_2, "\tLeft over %+F set to %s\n", irn, reg->name));
-	}
+	pset_insert_pset_ptr(alloc_env->pre_colored, pre_colored);
 
 	del_pset(leftover);
-	return cnstr;
+	del_pset(pre_colored);
+
+	return last;
 }
 
 /**
@@ -339,7 +341,7 @@ static void constraints(ir_node *bl, void *data)
 	ir_node *irn;
 
 	for(irn = sched_first(bl); !sched_is_end(irn); irn = sched_next(irn)) {
-		if(be_is_Perm(irn))
+		if(be_is_Perm(irn) && arch_irn_has_reg_class(arch_env, irn, 0, env->chordal_env->cls))
 			irn = handle_constraints_at_perm(env, irn);
 	}
 }
