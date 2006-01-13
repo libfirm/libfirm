@@ -21,11 +21,12 @@
 
 static void walker_insert_constr_perms(ir_node *bl, void *env) {
 	ir_node *irn;
-	be_chordal_env_t *cenv = env;
-	const be_main_env_t *menv = cenv->main_env;
-	const arch_env_t *aenv = menv->arch_env;
+	int pos, max, cnt = 0;
 	arch_register_req_t req;
-	int pos, max;
+	ir_graph *irg             = get_irn_irg(bl);
+	be_chordal_env_t *cenv    = env;
+	const be_main_env_t *menv = cenv->main_env;
+	const arch_env_t *aenv    = menv->arch_env;
 
 	sched_foreach(bl, irn) {
 		ir_node *perm = NULL;
@@ -33,12 +34,25 @@ static void walker_insert_constr_perms(ir_node *bl, void *env) {
 		/* check for a restriction of the result (-1) or one of the operands (0..n) */
 		max = get_irn_arity(irn);
 		for(pos=-1; pos<max; ++pos) {
+			req.type = arch_register_req_type_none;
 			arch_get_register_req(aenv, &req, irn, pos);
+
 			/* if a restriction is found, insert a perm before the irn */
 			if (cenv->cls == arch_get_irn_reg_class(aenv, irn, pos) && req.type == arch_register_req_type_limited) {
 
-				if(!perm)
+				/*
+				 * If we inserted a perm,
+				 * we have to recompute liveness analysis since inserting
+				 * a Perm changes the liveness situation at the end
+				 * of the block.
+				 * (its needed by successive calls to insert_Perm_after)
+				 * Perhaps thinking about an online liveness analysis
+				 * would help.
+				 */
+				if(!perm) {
 					perm = insert_Perm_after(menv, cenv->cls, cenv->dom_front, sched_prev(irn));
+					be_liveness(irg);
+				}
 
 				/*
 				 * Turn an input constraint into an output constraint:
@@ -58,18 +72,6 @@ static void walker_insert_constr_perms(ir_node *bl, void *env) {
 				}
 			}
 		}
-
-		/*
-		 * If we inserted a perm,
-		 * we have to recompute liveness analysis since inserting
-		 * a Perm changes the liveness situation at the end
-		 * of the block.
-		 * (its needed by successive calls to insert_Perm_after)
-		 * Perhaps thinking about an online liveness analysis
-		 * would help.
-		 */
-		if(perm)
-			be_liveness(get_irn_irg(bl));
 	}
 }
 
