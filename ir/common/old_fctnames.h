@@ -139,4 +139,11 @@
 #define is_superclass_of(high, low)     is_SuperClass_of(high, low)
 #define is_superclass_ptr_of(low, high) is_SuperClass_ptr_of(low, high)
 
+/* previously in irvrfy.h, now in irflag.h */
+#define NODE_VERIFICATION_OFF        FIRM_VERIFICATION_OFF
+#define NODE_VERIFICATION_ON         FIRM_VERIFICATION_ON
+#define NODE_VERIFICATION_REPORT     FIRM_VERIFICATION_REPORT
+#define NODE_VERIFICATION_ERROR_ONLY FIRM_VERIFICATION_ERROR_ONLY
+
+
 #endif /* __OLD_FCTNAMES_H__ */
