@@ -71,7 +71,10 @@ void clear_backedges (ir_node *n);
  * this would cost a lot of memory, though.
  */
 /* ------------------------------------------------------------------- */
+#ifndef _IR_LOOP_TYPEDEF_
+#define _IR_LOOP_TYPEDEF_
 typedef struct ir_loop ir_loop;
+#endif
 
 /** Loop elements: loop nodes and ir nodes */
 typedef union {
