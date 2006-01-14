@@ -1125,15 +1125,15 @@ set_Sel_entity (ir_node *node, entity *ent) {
 }
 
 ir_type *
-get_InstOf_ent (ir_node *node) {
+get_InstOf_type (ir_node *node) {
   assert (node->op = op_InstOf);
-  return (node->attr.io.ent);
+  return (node->attr.io.type);
 }
 
 void
-set_InstOf_ent (ir_node *node, ir_type *ent) {
+set_InstOf_type (ir_node *node, ir_type *type) {
   assert (node->op = op_InstOf);
-  node->attr.io.ent = ent;
+  node->attr.io.type = type;
 }
 
 ir_node *

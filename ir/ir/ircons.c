@@ -758,7 +758,7 @@ new_bd_Sel (dbg_info *db, ir_node *block, ir_node *store, ir_node *objptr,
 
 static ir_node *
 new_bd_InstOf (dbg_info *db, ir_node *block, ir_node *store,
-           ir_node *objptr, ir_type *ent)
+           ir_node *objptr, ir_type *type)
 {
   ir_node  **r_in;
   ir_node  *res;
@@ -771,7 +771,7 @@ new_bd_InstOf (dbg_info *db, ir_node *block, ir_node *store,
   r_in[1] = objptr;
 
   res = new_ir_node(db, irg, block, op_Sel, mode_T, r_arity, r_in);
-  res->attr.io.ent = ent;
+  res->attr.io.type = type;
 
   /* res = optimize(res); */
   IRN_VRFY_IRG(res, irg);
@@ -1576,13 +1576,13 @@ new_rd_Sel (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
 
 ir_node *
 new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-           ir_node *objptr, ir_type *ent)
+           ir_node *objptr, ir_type *type)
 {
   ir_node  *res;
   ir_graph *rem = current_ir_graph;
 
   current_ir_graph = irg;
-  res = new_bd_InstOf(db, block, store, objptr, ent);
+  res = new_bd_InstOf(db, block, store, objptr, type);
   current_ir_graph = rem;
 
   return res;
@@ -1835,8 +1835,8 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
   return new_rd_Sel(NULL, irg, block, store, objptr, n_index, index, ent);
 }
 ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
-                  ir_type *ent) {
-  return (new_rd_InstOf (NULL, irg, block, store, objptr, ent));
+                  ir_type *type) {
+  return (new_rd_InstOf (NULL, irg, block, store, objptr, type));
 }
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
                   ir_node *callee, int arity, ir_node **in,
@@ -3241,10 +3241,10 @@ new_d_Sel (dbg_info *db, ir_node *store, ir_node *objptr, int n_index, ir_node *
 }
 
 ir_node *
-new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *ent)
+new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *type)
 {
   return (new_bd_InstOf (db, current_ir_graph->current_block,
-                         store, objptr, ent));
+                         store, objptr, type));
 }
 
 ir_node *

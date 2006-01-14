@@ -133,8 +133,8 @@ typedef struct {
 
 /** InstOf attributes */
 typedef struct {
-  ir_type *ent;
-  int dfn;
+  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+  ir_type *type;                /**< the type of which the object pointer must be */
 } io_attr;
 
 /** Filter attributes */
@@ -152,19 +152,19 @@ typedef struct {
 
 /** CallBegin attributes */
 typedef struct {
-  ir_node * call;               /**< associated Call-operation */
+  ir_node * call;               /**< Associated Call-operation. */
 } callbegin_attr;
 
 /** Cast attributes */
 typedef struct {
-  ir_type *totype;              /**< type of the casted node */
+  ir_type *totype;              /**< Type of the casted node. */
 } cast_attr;
 
 /** Load attributes */
 typedef struct {
-  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-  ir_mode        *load_mode;    /**< the mode of this Load operation */
-  ent_volatility volatility;	  /**< the volatility of a Load/Store operation */
+  except_attr    exc;           /**< The exception attribute. MUST be the first one. */
+  ir_mode        *load_mode;    /**< The mode of this Load operation. */
+  ent_volatility volatility;	  /**< The volatility of a Load/Store operation. */
 } load_attr;
 
 /** Store attributes */
@@ -177,21 +177,21 @@ typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
 
 /** CopyB attribute */
 typedef struct {
-  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-  ir_type        *data_type;    /**< type of the copied entity */
+  except_attr    exc;           /**< The exception attribute. MUST be the first one. */
+  ir_type        *data_type;    /**< Type of the copied entity. */
 } copyb_attr;
 
 /** Bound attribute */
 typedef struct {
-  except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+  except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 } bound_attr;
 
 /**
  * Edge info to put into an irn.
  */
 typedef struct _irn_edge_info_t {
-  struct list_head outs_head;  /**< The list of all outs */
-  int out_count;               /**< number of outs in the list */
+  struct list_head outs_head;  /**< The list of all outs. */
+  int out_count;               /**< Number of outs in the list. */
 } irn_edge_info_t;
 
 

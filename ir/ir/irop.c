@@ -218,7 +218,7 @@ init_op(void)
   op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c,       oparity_zero,     -1, sizeof(symconst_attr), NULL);
 
   op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr), NULL);
-  op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_floats, L,       oparity_any,      -1, sizeof(sel_attr), NULL);
+  op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_floats, L|F|H,   oparity_unary,    -1, sizeof(io_attr), NULL);
 
   op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, L|F, oparity_variable, -1, sizeof(call_attr), NULL);
   op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);

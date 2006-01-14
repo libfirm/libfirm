@@ -950,6 +950,12 @@
  *    Describes a high level bounds check. Must be lowered to a Call to a runtime check
  *    function.
  *
+ *    ir_node *new_InstOf(ir_node *store, ir_node *ptr, ir_type *type);
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Describes a high level type check. Must be lowered to a Call to a runtime check
+ *    function.
+ *
  *    ir_node *new_Proj (ir_node *arg, ir_mode *mode, long proj)
  *    ----------------------------------------------------------
  *
@@ -1311,17 +1317,18 @@ ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
 
 /** Constructor for a InstOf node.
  *
- * For translating Java.  Not supported as standard firm node.
+ * A High-Level Type check.
  *
- * @param   *db     A pointer for debug information.
- * @param   *irg    The ir graph the node  belongs to.
- * @param   *block  The ir block the node belongs to.
- * @param   *store
- * @param   *objptr
- * @param   *ent
+ * @param   *db        A pointer for debug information.
+ * @param   *irg       The ir graph the node  belongs to.
+ * @param   *block     The ir block the node belongs to.
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
  */
 ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *objptr, ir_type *ent);
+			ir_node *objptr, ir_type *type);
 
 /** Constructor for a Call node.
  *
@@ -2044,15 +2051,17 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
 
 /** Constructor for a InstOf node.
  *
- * For translating Java.  Not supported as standard firm node.
+ * A High-Level Type check.
  *
- * @param   *irg   The ir graph the node  belongs to.
- * @param   *block The ir block the node belongs to.
- * @param   *x
- * @param   *y
- * @param   *z
+ * @param   *irg       The ir graph the node  belongs to.
+ * @param   *block     The ir block the node belongs to.
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
  */
-ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *x, ir_node *y, ir_type *z);
+ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store,
+			ir_node *objptr, ir_type *type);
 
 /** Constructor for a Call node.
  *
@@ -2779,16 +2788,15 @@ ir_node *new_d_Sel    (dbg_info *db, ir_node *store, ir_node *objptr, int arity,
 
 /** Constructor for a InstOf node.
  *
- * Adds the node to the block in current_ir_block.
+ * A High-Level Type check.
  *
- * For translating Java.  Not supported as standard firm node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *store
- * @param   *objptr
- * @param   *ent
+ * @param   *db        A pointer for debug information.
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
  */
-ir_node *new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *ent);
+ir_node *new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *type);
 
 /** Constructor for a Call node.
  *
@@ -3481,16 +3489,16 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
 
-/** Constructor for an InstOf node.
+/** Constructor for a InstOf node.
  *
- * Adds the node to the block in current_ir_block.
- * For translating Java.  Not supported as standard firm node.
+ * A High-Level Type check.
  *
- * @param   *store  The actual store.
- * @param   *obj
- * @param   *ent
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
  */
-ir_node *new_InstOf (ir_node *store, ir_node *obj, ir_type *ent);
+ir_node *new_InstOf (ir_node *store, ir_node *objptr, ir_type *type);
 
 /** Constructor for a Call node.
  *

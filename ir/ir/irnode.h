@@ -498,9 +498,22 @@ void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 entity  *get_Sel_entity (ir_node *node); /* entity to select */
 void     set_Sel_entity (ir_node *node, entity *ent);
 
+/**
+ * Projection numbers for result of InstOf node: use for Proj nodes!
+ */
+typedef enum {
+  pn_InstOf_M_regular = 0,   /**< The memory result. */
+  pn_InstOf_X_except = 1,    /**< The control flow result branching to the exception handler */
+  pn_InstOf_res = 2,         /**< The checked object pointer. */
+  pn_InstOf_M_except = 3,    /**< The memory result in case the runtime function terminated with
+                                 an exception */
+  pn_InstOf_max = 4          /**< number of projections from an InstOf */
+} pn_InstOf;
+#define pn_InstOf_M pn_InstOf_M_regular
+
 /** InstOf access */
-ir_type *get_InstOf_ent (ir_node *node);
-void    set_InstOf_ent (ir_node *node, ir_type *ent);
+ir_type *get_InstOf_type (ir_node *node);
+void    set_InstOf_type (ir_node *node, ir_type *type);
 ir_node *get_InstOf_store (ir_node *node);
 void    set_InstOf_store (ir_node *node, ir_node *obj);
 ir_node *get_InstOf_obj (ir_node *node);
