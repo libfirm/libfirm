@@ -329,12 +329,22 @@
  * A node was replaced by a constant due to a Confimation.
  *
  * @param oldn  the old node
- * @param c     the new constnt node
+ * @param c     the new constant node
  */
 #define DBG_OPT_CONFIRM_C(oldn, c)                              \
   do {                                                          \
     hook_merge_nodes(&c, 1, &oldn, 1, HOOK_OPT_CONFIRM_C);      \
     __dbg_info_merge_pair(c, oldn, dbg_opt_confirm);            \
+  } while(0)
+
+/**
+ * A exception exdge was removed due to a Confirmation prove.
+ *
+ * @param oldn  the old node
+ */
+#define DBG_OPT_EXC_REM(oldn)                                   \
+  do {                                                          \
+    hook_merge_nodes(NULL, 0, &oldn, 1, HOOK_OPT_EXC_REM);      \
   } while(0)
 
 /**
