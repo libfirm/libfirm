@@ -51,6 +51,7 @@ typedef enum {
   HOOK_OPT_CONFIRM,     /**< a value was substituted by another due to a Confirm */
   HOOK_OPT_CONFIRM_C,   /**< a value was substituted by a const due to a Confirm */
   HOOK_OPT_CONFIRM_E,   /**< a value was evaluated due to a Confirm */
+  HOOK_OPT_EXC_REM,     /**< a exception edge was removed due to a Confirmation prove */
   HOOK_LOWERED,         /**< lowered */
   HOOK_OPT_LAST
 } hook_opt_kind;
