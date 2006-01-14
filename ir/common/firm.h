@@ -80,6 +80,7 @@ extern "C" {
 #include "return.h"         /* Return node normalizations */
 #include "scalar_replace.h" /* Scalar replacement */
 #include "proc_cloning.h"   /* procedure cloning */
+#include "opt_confirms.h"   /* Confirm based optimizations */
 //#include "opt_branches.h"   /* Branch optimizations */
 
 /* Analyses */
