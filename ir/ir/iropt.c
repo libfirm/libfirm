@@ -1219,7 +1219,8 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 }
 
 /**
- * optimize Proj(Tuple) and gigo() for ProjX in Bad block
+ * optimize Proj(Tuple) and gigo() for ProjX in Bad block,
+ * ProjX(Load) and ProjX(Store)
  */
 static ir_node *equivalent_node_Proj(ir_node *n)
 {
@@ -1241,6 +1242,20 @@ static ir_node *equivalent_node_Proj(ir_node *n)
     if (is_Block_dead(get_nodes_block(skip_Proj(n)))) {
       /* Remove dead control flow -- early gigo(). */
       n = new_Bad();
+    }
+    else if (! get_opt_ldst_only_null_ptr_exceptions()) {
+      ir_op *op = get_irn_op(a);
+
+      if (op == op_Load || op == op_Store) {
+        /* get the load/store address */
+        ir_node *addr = get_irn_n(a, 1);
+        if (value_not_null(addr)) {
+          /* this node may float */
+          set_irn_pinned(a, op_pin_state_floats);
+          DBG_OPT_EXC_REM(n);
+          return new_Bad();
+        }
+      }
     }
   }
 
@@ -2116,6 +2131,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 
     if (proj_nr == pn_Div_X_except) {
       /* we found an exception handler, remove it */
+      DBG_OPT_EXC_REM(proj);
       return new_Bad();
     } else if (proj_nr == pn_Div_M) {
       /* the memory Proj can be removed */
@@ -2147,6 +2163,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 
     if (proj_nr == pn_Mod_X_except) {
       /* we found an exception handler, remove it */
+      DBG_OPT_EXC_REM(proj);
       return new_Bad();
     } else if (proj_nr == pn_Mod_M) {
       /* the memory Proj can be removed */
@@ -2186,6 +2203,7 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
 
     if (proj_nr == pn_DivMod_X_except) {
       /* we found an exception handler, remove it */
+      DBG_OPT_EXC_REM(proj);
       return new_Bad();
     }
     else if (proj_nr == pn_DivMod_M) {
