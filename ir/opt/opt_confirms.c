@@ -20,6 +20,7 @@
 #include "iropt_t.h"
 #include "iropt_dbg.h"
 #include "opt_confirms.h"
+#include "irflag_t.h"
 #include "irprintf.h"
 
 enum range_tags {
@@ -144,33 +145,31 @@ int value_not_zero(ir_node *n)
 }
 
 /*
- * Check, if the value of a node is != NULL.
+ * Check, if the value of a node cannot represent a NULL pointer.
  *
- * This is a often needed case, so we handle here Confirm
- * nodes too.
+ * - If sel_based_null_check_elim is enabled, all
+ *   Sel nodes can be skipped.
+ * - A SymConst(entity) is NEVER a NULL pointer
+ * - Confirms are evaluated
  */
 int value_not_null(ir_node *n)
 {
-  tarval *tv;
-  ir_mode *mode = get_irn_mode(n);
+  ir_op *op = get_irn_op(n);
 
-  assert(mode_is_reference(mode));
-
-  while (get_irn_op(n) == op_Confirm) {
-    /*
-     * Note: A Confirm is never after a Const. So,
-     * we simply can check the bound for being a Const
-     * without the fear that is might be hidden by a further Confirm.
-     */
-    tv = value_of(get_Confirm_bound(n));
-    if (tv == get_mode_null(mode) &&
-        get_Confirm_cmp(n) == pn_Cmp_Lg) {
-      /* n != C /\ C == 0 ==> n != 0 */
-      return 1;
+  assert(mode_is_reference(get_irn_mode(n)));
+  if (get_opt_sel_based_null_check_elim()) {
+    /* skip all Sel nodes */
+    while (op == op_Sel) {
+      n = get_Sel_ptr(n);
+      op = get_irn_op(n);
     }
-
-    /* there might be several Confirms one after other that form an interval */
-    n = get_Confirm_value(n);
+  }
+  if (op == op_SymConst && get_SymConst_kind(n) == symconst_addr_ent)
+    return 1;
+  if (op == op_Confirm) {
+    if (get_Confirm_cmp(n) == pn_Cmp_Lg &&
+        classify_Const(get_Confirm_bound(n)) == CNST_NULL)
+      return 1;
   }
   return 0;
 }

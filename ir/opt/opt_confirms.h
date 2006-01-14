@@ -42,11 +42,13 @@ typedef enum _value_classify {
  */
 int value_not_zero(ir_node *n);
 
-/*
- * Check, if the value of a node is != NULL.
+/**
+ * Check, if the value of a node cannot represent a NULL pointer.
  *
- * This is a often needed case, so we handle here Confirm
- * nodes too.
+ * - If sel_based_null_check_elim is enabled, all
+ *   Sel nodes can be skipped.
+ * - A SymConst(entity) is NEVER a NULL pointer
+ * - Confirms are evaluated
  *
  * @param n  a node representing the value
  */
