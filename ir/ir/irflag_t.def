@@ -87,8 +87,14 @@ I_FLAG(real_function_call                 , 22, ON)
 E_FLAG(optimize_class_casts               , 23, ON)
 E_FLAG(suppress_downcast_optimization     , 24, OFF)
 
-/** Not really an optimization, removes Confirm nodes */
+/** Not really an optimization, removes Confirm nodes. */
 I_FLAG(remove_confirm                     , 25, OFF)
 
 /** Scalar replacement. */
 I_FLAG(scalar_replacement                 , 26, ON)
+
+/** Load and Store have only Null exceptions. */
+I_FLAG(ldst_only_null_ptr_exceptions      , 27, ON)
+
+/** Sel-based Null-pointer check elimination. */
+I_FLAG(sel_based_null_check_elim          , 28, OFF)

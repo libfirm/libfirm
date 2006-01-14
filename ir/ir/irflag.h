@@ -95,9 +95,9 @@ void set_opt_loop_unrolling_verbose (int value);
  */
 void set_opt_redundant_loadstore(int value);
 
-/** Enables/Disables constant subexpression elimination.
+/** Enables/Disables common subexpression elimination.
  *
- * If opt_cse == 1 perform constant subexpression elimination.
+ * If opt_cse == 1 perform common subexpression elimination.
  * Default: opt_cse == 1.
  */
 void set_opt_cse (int value);
@@ -242,7 +242,9 @@ void set_opt_if_conversion(int value);
  * Enable/Disable real function call optimization.
  *
  * Real function call optimization detects "real functions" and
- * allows the floating of Call nodes.
+ * allows the floating of Call nodes. A "real function" is one that
+ * do only evaluate it's parameters and did not read or write memory
+ * to compute its results.
  */
 void set_opt_real_function_call(int value);
 
@@ -256,6 +258,37 @@ void set_opt_remove_confirm(int value);
  */
 void set_opt_scalar_replacement(int value);
 void set_opt_scalar_replacement_verbose(int value);
+
+/**
+ * Enable/Disable Null exception in Load and Store nodes only.
+ *
+ * If enabled, only Null pointer exception can occur at Load and
+ * store nodes. If it can be proven that the address input of these
+ * nodes is non-null, the exception edge can safely be removed.
+ * If disabled, other exceptions (like unaligned access, read-only memory,
+ * etc.) can occur.
+ *
+ * This flag is enabled by default.
+ */
+void set_opt_ldst_only_null_ptr_exceptions(int value);
+
+/**
+ * Enable/Disable Selection based Null pointer check elimination.
+ *
+ * In languages, where all addresses are always Sel nodes, Null
+ * pointers can only occur as input to Sel nodes.
+ * If Null pointers are the only source for exceptions in Load and
+ * Store nodes (as typical in high level languages), we can eliminate
+ * exception edges form Load and Store as we can prove that the Sel
+ * nodes representing the Load/Store address have non-null inputs.
+ * Enabling this flag enables this elimination.
+ *
+ * Enabling this flag is meaningless if ldst_non_null_exceptions is
+ * enabled.
+ *
+ * This flags should be set for Java style languages.
+ */
+void set_opt_sel_based_null_check_elim(int value);
 
 /** Enable/Disable normalizations of the firm representation.
  *
@@ -271,8 +304,21 @@ void set_opt_scalar_replacement_verbose(int value);
  */
 void set_opt_normalize (int value);
 
-
-/** Enable/Disable precise exception context. */
+/** Enable/Disable precise exception context.
+ *
+ * If enabled, all exceptions form a barrier for value, as in the
+ * following example:
+ *
+ * @code
+ * a = 1;
+ * b = 3 / 0;
+ * a = 2;
+ * @endcode
+ *
+ * If precise exception handling is enabled, an exception handler see a == 1,
+ * else it might see a == 2.
+ * Enable this for languages with strict exception order like Java.
+ */
 void set_opt_precise_exc_context(int value);
 
 /**
