@@ -509,20 +509,33 @@ next_value:
  * Removes all used reloads from bel->reloads.
  * The remaining nodes in bel->reloads will be removed from the graph.
  */
-static void rescue_used_reloads(ir_node *irn, void *env) {
+static void rescue_used_reloads_and_remove_copies(ir_node *irn, void *env) {
 	pset *rlds = (pset *)env;
 	if (pset_find_ptr(rlds, irn))
 		pset_remove_ptr(rlds, irn);
+
+
+	/* remove copies introduced for phi-spills */
+	if (be_is_Copy(irn)) {
+		ir_node *src, *spill;
+		assert(get_irn_n_edges(irn) == 1 && "This is not a copy introduced in 'compute_block_start_info()'. Who created it?");
+
+		spill = get_irn_edge(get_irn_irg(irn), irn, 0)->src;
+		assert(be_is_Spill(spill) && "This is not a copy introduced in 'compute_block_start_info()'. Who created it?");
+
+		src = get_irn_n(irn, 0);
+		set_irn_n(spill, 0, src);
+	}
 }
 
 /**
  * Finds all unused reloads and remove them from the schedule
  * Also removes spills if they are not used anymore after removing reloads
  */
-static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
+static void remove_copies_and_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 	ir_node *irn;
 
-	irg_walk_graph(irg, rescue_used_reloads, NULL, bel->reloads);
+	irg_walk_graph(irg, rescue_used_reloads_and_remove_copies, NULL, bel->reloads);
 	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads)) {
 		ir_node *spill;
 		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
@@ -564,7 +577,8 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	irg_block_walk_graph(chordal_env->irg, belady, NULL, &bel);
 	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &bel);
 	be_insert_spills_reloads(bel.senv, bel.reloads);
-	remove_unused_reloads(chordal_env->irg, &bel);
+	remove_copies_and_unused_reloads(chordal_env->irg, &bel);
+
 
 	/* clean up */
 	del_pset(bel.reloads);
