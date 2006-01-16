@@ -63,7 +63,8 @@ $tmp = "/* Default NONE register requirements */\n";
 $tmp .= "const arch_register_req_t ia32_default_req_none = {\n";
 $tmp .= "  arch_register_req_type_none,\n";
 $tmp .= "  NULL,\n";
-$tmp .= "  { NULL }\n";
+$tmp .= "  NULL,\n";
+$tmp .= "  0\n";
 $tmp .= "};\n\n";
 push(@obst_req, $tmp);
 
@@ -92,7 +93,8 @@ foreach my $class_name (keys(%reg_classes)) {
   $tmp .= "const arch_register_req_t ia32_default_req_$class_name = {\n";
   $tmp .= "  arch_register_req_type_normal,\n";
   $tmp .= "  $class_ptr,\n";
-  $tmp .= "  { NULL }\n";
+  $tmp .= "  NULL,\n";
+  $tmp .= "  0\n";
   $tmp .= "};\n\n";
   push(@obst_req, $tmp);
 
@@ -125,7 +127,8 @@ foreach my $class_name (keys(%reg_classes)) {
     $tmp  = "const arch_register_req_t ia32_default_req_$class_name\_".$_->{"name"}." = {\n";
     $tmp .= "  arch_register_req_type_limited,\n";
     $tmp .= "  $class_ptr,\n";
-    $tmp .= "  { $limit_func_name }\n";
+    $tmp .= "  $limit_func_name,\n";
+	$tmp .= "  0\n";
     $tmp .= "};\n\n";
     push(@obst_req, $tmp);
 
@@ -155,6 +158,39 @@ foreach my $op (keys(%nodes)) {
 
   push(@obst_req, "/* IN requirements for '$op' */\n");
 
+  # We can have IN requirements like "out_d1"
+  # and for those we need the associated register class
+  # That's why we have to check all out requirements first
+  # and remember their classes.
+  my @outidx_class;
+  if (exists($n{"reg_req"}{"out"})) {
+    my @out = @{ $n{"reg_req"}{"out"} };
+
+    for (my $idx = 0; $idx <= $#out; $idx++) {
+      my $class = undef;
+
+      if ($out[$idx] eq "none") {
+		$class = "none";
+      }
+      elsif (is_reg_class($out[$idx])) {
+		$class = $out[$idx];
+      }
+      elsif ($out[$idx] =~ /^(!)?in_s(\d+)/) {
+		$class = "UNKNOWN_CLASS";
+      }
+      else {
+		my @regs = split(/ /, $out[$idx]);
+        $class = get_reg_class($regs[0]);
+        if (!defined $class) {
+          die("Could not get register class  for '$op' pos $idx ... exiting.\n");
+        }
+      }
+
+      push(@outidx_class, $class);
+    }
+  }
+
+
   # we need to remember the classes of the IN constraints for
   # OUT constraints like "in_s1"
   my @inidx_class;
@@ -180,6 +216,15 @@ foreach my $op (keys(%nodes)) {
         push(@inidx_class, $in[$idx]);
         $tmp .= "&ia32_default_req_".$arch."_".$in[$idx].";\n";
       }
+	  elsif ($in[$idx] =~ /^(!)?out_d(\d+)/) { # this is a "should be (un)equal to register at out_X"
+        $tmp  .= "&_".$op."_reg_req_in_$idx;\n";
+        $tmp2 .= " {\n";
+        $tmp2 .= "  arch_register_req_type_should_be_".($1 ? "different" : "same").",\n";
+        $tmp2 .= "  &$arch\_reg_classes[CLASS_$arch\_".$outidx_class[$2 - 1]."],\n";
+        $tmp2 .= "  NULL,\n  -$2\n};\n";
+
+        $tmp   = $tmp2.$tmp
+      }
       else {
         $class = build_subset_class_func($op, $idx, 1, $in[$idx]);
         if (!defined $class) {
@@ -187,7 +232,7 @@ foreach my $op (keys(%nodes)) {
         }
         push(@inidx_class, $class);
         $tmp  .= "&_".$op."_reg_req_in_$idx;\n";
-        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  { limit_reg_".$op."_in_".$idx." }\n};\n";
+        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  limit_reg_".$op."_in_".$idx.",\n  0\n};\n";
 
         $tmp   = $tmp2.$tmp;
       }
@@ -222,7 +267,7 @@ foreach my $op (keys(%nodes)) {
         $tmp2 .= " {\n";
         $tmp2 .= "  arch_register_req_type_should_be_".($1 ? "different" : "same").",\n";
         $tmp2 .= "  &$arch\_reg_classes[CLASS_$arch\_".$inidx_class[$2 - 1]."],\n";
-        $tmp2 .= "  { ".($2 - 1)." }\n};\n";
+        $tmp2 .= "  NULL,\n  ".($2 - 1)."\n};\n";
 
         $tmp   = $tmp2.$tmp
       }
@@ -232,7 +277,7 @@ foreach my $op (keys(%nodes)) {
           die("Could not build subset for OUT requirements '$op' pos $idx ... exiting.\n");
         }
         $tmp  .= "&_".$op."_reg_req_out_$idx;\n";
-        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  { limit_reg_".$op."_out_".$idx." }\n};\n";
+        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  limit_reg_".$op."_out_".$idx.",\n  0\n};\n";
 
         $tmp   = $tmp2.$tmp
       }
