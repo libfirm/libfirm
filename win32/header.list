@@ -54,6 +54,7 @@ ir\ana\irouts.h
 ir\ana\trouts.h
 ir\ana\irdom.h
 ir\ana\cgana.h
+ir\ana\compute_loop_info.h
 ir\ana\irloop.h
 ir\ana\irtypeinfo.h
 ir\ana\irsimpletype.h
@@ -81,6 +82,7 @@ ir\opt\scalar_replace.h
 ir\opt\escape_ana.h
 ir\opt\proc_cloning.h
 ir\opt\opt_branches.h
+ir\opt\opt_confirms.h
 
 ir\tr\entity.h
 ir\tr\mangle.h
