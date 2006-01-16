@@ -833,11 +833,3 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  * firm ".create 2101"
  * firm ".help"
  */
-
-#ifdef __GNUC__
-static void _firm_only_that_you_can_compile_with_NDEBUG_defined(void) __attribute__((unused));
-#endif
-
-static void _firm_only_that_you_can_compile_with_NDEBUG_defined(void)
-{
-}
