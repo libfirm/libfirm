@@ -102,7 +102,7 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
       return req->cls->n_regs;
 
     case arch_register_req_type_limited:
-      return req->data.limited(irn, pos, bs);
+      return req->limited(irn, pos, bs);
 
     default:
       assert(0 && "This register requirement case is not covered");
@@ -136,7 +136,7 @@ int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
 		case arch_register_req_type_limited:
 			{
 				bitset_t *bs = bitset_alloca(req.cls->n_regs);
-				req.data.limited(irn, pos, bs);
+				req.limited(irn, pos, bs);
 				res = bitset_is_set(bs, arch_register_get_index(reg));
 			}
 			break;

@@ -199,7 +199,8 @@ static const arch_register_class_t *firm_get_reg_class(const void *self, int i)
 static const arch_register_req_t firm_std_reg_req = {
   arch_register_req_type_normal,
   &reg_classes[CLS_DATAB],
-  { NULL }
+  NULL,
+  0
 };
 
 static const arch_register_req_t *

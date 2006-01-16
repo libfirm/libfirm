@@ -72,7 +72,7 @@ static unsigned dump_flags = DUMP_INITIAL | DUMP_SCHED | DUMP_PREPARED | DUMP_RA
 static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
-static const arch_isa_if_t *isa_if = &firm_isa;
+static const arch_isa_if_t *isa_if = &ia32_isa_if;
 
 #ifdef WITH_LIBCORE
 

@@ -177,7 +177,7 @@ static int try_pre_color(be_chordal_env_t *env, ir_node *irn,
 		const arch_register_t *reg;
 		int col;
 
-		req.data.limited(irn, -1, bs);
+		req.limited(irn, -1, bs);
 		col = bitset_next_set(bs, 0);
 		reg = arch_register_for_index(env->cls, col);
 

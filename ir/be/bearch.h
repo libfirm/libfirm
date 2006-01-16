@@ -170,11 +170,10 @@ typedef enum _arch_register_req_type_t {
  * Expresses requirements to register allocation for an operand.
  */
 typedef struct _arch_register_req_t {
-  arch_register_req_type_t type;          /**< The type of the constraint. */
-  const arch_register_class_t *cls;       /**< The register class this
+	arch_register_req_type_t type;          /**< The type of the constraint. */
+	const arch_register_class_t *cls;       /**< The register class this
                                                constraint belongs to. */
-  union {
-    int (*limited)(const ir_node *irn, int pos, bitset_t *bs);
+	int (*limited)(const ir_node *irn, int pos, bitset_t *bs);
                                           /**< In case of the 'limited'
                                             constraint, this function
                                             must put all allowable
@@ -182,12 +181,11 @@ typedef struct _arch_register_req_t {
                                             return the number of registers
                                             in the bitset. */
 
-    int pos;                             /**< In case of the equal constraint,
+	int pos;                             /**< In case of the equal constraint,
                                             this gives the position of the
                                             operand to which the register of
                                             this should be equal to. Same for
                                             unequal. */
-  } data;
 } arch_register_req_t;
 
 /**
