@@ -1243,7 +1243,7 @@ static ir_node *equivalent_node_Proj(ir_node *n)
       /* Remove dead control flow -- early gigo(). */
       n = new_Bad();
     }
-    else if (! get_opt_ldst_only_null_ptr_exceptions()) {
+    else if (get_opt_ldst_only_null_ptr_exceptions()) {
       ir_op *op = get_irn_op(a);
 
       if (op == op_Load || op == op_Store) {
