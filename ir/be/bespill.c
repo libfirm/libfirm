@@ -8,6 +8,8 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
+
 #include "pset.h"
 #include "irnode_t.h"
 #include "ircons_t.h"
@@ -266,4 +268,171 @@ void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
 void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos) {
 	ir_node *insert_bl = get_irn_arity(bl) == 1 ? sched_first(bl) : get_Block_cfgpred_block(bl, pos);
 	be_add_reload(senv, to_spill, insert_bl);
+}
+
+
+
+/*
+
+		SPILL SLOT MANAGEMENT AND OPTS
+
+*/
+
+typedef struct _spill_slot_t {
+	unsigned size;
+	unsigned offset;
+	pset *members;
+} spill_slot_t;
+
+typedef struct _ss_env_t {
+	firm_dbg_module_t *dbg;
+	struct obstack ob;
+	be_chordal_env_t *cenv;
+	pmap *slots;		/* maps spill_contexts to spill_slots */
+} ss_env_t;
+
+
+static void compute_spill_slots_walker(ir_node *spill, void *env) {
+	ss_env_t *ssenv = env;
+	ir_node *ctx;
+	pmap_entry *entry;
+	spill_slot_t *ss;
+
+	if (!be_is_Spill(spill))
+		return;
+
+	/* check, if this spill is for a context already known */
+	ctx = get_Spill_context(spill);
+	entry = pmap_find(ssenv->slots, ctx);
+
+	if (!entry) {
+		/* this is a new spill context */
+		ss = obstack_alloc(&ssenv->ob, sizeof(*ss));
+		ss->members = pset_new_ptr(8);
+		ss->size = get_mode_size_bytes(get_irn_mode(get_irn_n(spill, 0)));
+		pmap_insert(ssenv->slots, ctx, ss);
+	} else {
+		ir_node *irn;
+		/* values with the same spill_ctx must go into the same spill slot */
+		ss = entry->value;
+		assert(ss->size == (unsigned)get_mode_size_bytes(get_irn_mode(get_irn_n(spill, 0))) && "Different sizes for the same spill slot");
+		for (irn = pset_first(ss->members); irn; irn = pset_next(ss->members)) {
+			/* use values_interfere here, because it uses the dominance check,
+			   which does work for values in memory */
+			assert(!values_interfere(spill, irn) && "Spills for the same spill slot must not interfere!");
+		}
+	}
+
+	pset_insert_ptr(ss->members, spill);
+}
+
+static int ss_sorter(const void *v1, const void *v2) {
+	const spill_slot_t *ss1 = v1;
+	const spill_slot_t *ss2 = v2;
+	return ((int) ss2->size) - ((int) ss1->size);
+}
+
+
+/* NOTE/TODO: This function assumes, that all spill slot sizes are a power of 2.
+   Further it assumes, that the alignment is equal to the size and the
+   baseaddr of the spill area is aligned sufficiently for all possible aligments.
+*/
+static void coalesce_slots(ss_env_t *ssenv) {
+	int i, o, used_slots;
+	unsigned curr_offset;
+	pmap_entry *entr;
+	spill_slot_t **ass;
+
+	/* Build an array of all spill slots */
+	int count = pmap_count(ssenv->slots);
+	ass = obstack_alloc(&ssenv->ob, count * sizeof(*ass));
+
+	i=0;
+	pmap_foreach(ssenv->slots, entr)
+		ass[i++] = entr->value;
+
+	/* Sort the array to minimize fragmentation and cache footprint.
+	   Large slots come first */
+	qsort(ass, count, sizeof(ass[0]), ss_sorter);
+
+	/* For each spill slot:
+		- assign a new offset to this slot
+	    - xor find another slot to coalesce with */
+	curr_offset = 0;
+	used_slots = 0;
+	for (i=0; i<count; ++i) { /* for each spill slot */
+		ir_node *n1;
+		int tgt_slot = -1;
+
+		DBG((ssenv->dbg, LEVEL_1, "Spill slot %d members:\n", i));
+		for(n1 = pset_first(ass[i]->members); n1; n1 = pset_next(ass[i]->members))
+			DBG((ssenv->dbg, LEVEL_1, "  %+F\n", n1));
+
+
+		for (o=0; o < used_slots && tgt_slot == -1; ++o) { /* for each offset-assigned spill slot */
+			/* check inter-slot-pairs for interference */
+			ir_node *n2;
+			for(n1 = pset_first(ass[i]->members); n1; n1 = pset_next(ass[i]->members))
+				for(n2 = pset_first(ass[o]->members); n2; n2 = pset_next(ass[o]->members))
+					if(values_interfere(n1, n2)) {
+						pset_break(ass[i]->members);
+						pset_break(ass[o]->members);
+						DBG((ssenv->dbg, LEVEL_1, "    Interf %+F -- %+F\n", n1, n2));
+						goto interf_detected;
+					}
+
+			/* if we are here, there is no interference between ass[i] and ass[o] */
+			tgt_slot = o;
+
+interf_detected: /*nothing*/ ;
+		}
+
+		/* now the members of ass[i] join the members of ass[tgt_slot] */
+
+		/* do we need a new slot? */
+		if (tgt_slot == -1) {
+			tgt_slot = used_slots;
+			used_slots++;
+
+			ass[tgt_slot]->offset = curr_offset;
+			curr_offset += ass[i]->size;
+
+			/* init slot */
+			if (tgt_slot != i) {
+				ass[tgt_slot]->size = ass[i]->size;
+				del_pset(ass[tgt_slot]->members);
+				ass[tgt_slot]->members = pset_new_ptr(8);
+			}
+		}
+
+		/* copy the members to the target pset */
+		for(n1 = pset_first(ass[i]->members); n1; n1 = pset_next(ass[i]->members)) {
+			/* NOTE: If src and tgt pset are the same, inserting while iterating is not allowed */
+			if (tgt_slot != i)
+				pset_insert_ptr(ass[tgt_slot]->members, n1);
+
+			set_Spill_offset(n1, ass[tgt_slot]->offset);
+			DBG((ssenv->dbg, LEVEL_1, "    Offset %+F  %d\n", n1, ass[tgt_slot]->offset));
+		}
+	}
+
+	/* free all used psets, all other stuff is on the ssenv-obstack */
+	for (i=0; i<count; ++i)
+		del_pset(ass[i]->members);
+
+}
+
+void be_compute_spill_offsets(be_chordal_env_t *cenv) {
+	ss_env_t ssenv;
+
+	obstack_init(&ssenv.ob);
+	ssenv.cenv  = cenv;
+	ssenv.slots = pmap_create();
+	ssenv.dbg   = firm_dbg_register("ir.be.spillslots");
+
+	irg_walk_graph(cenv->irg, NULL, compute_spill_slots_walker, &ssenv);
+	coalesce_slots(&ssenv);
+
+	pmap_destroy(ssenv.slots);
+	obstack_free(&ssenv.ob, NULL);
 }

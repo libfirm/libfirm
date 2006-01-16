@@ -36,4 +36,9 @@ void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, in
 
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set);
 
+/**
+ * Computes the spill offsets for all spill nodes in the irg
+ */
+void be_compute_spill_offsets(be_chordal_env_t *cenv);
+
 #endif /*BESPILL_H_*/
