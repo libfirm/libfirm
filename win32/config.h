@@ -81,7 +81,7 @@
 #define DEBUG_libfirm 1
 
 /* define to 1 to use the libcore */
-#undef WITH_LIBCORE
+#define WITH_LIBCORE
 
 /* define to 1 to have wchar_t support for identifiers */
 #define FIRM_ENABLE_WCHAR
