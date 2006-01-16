@@ -39,7 +39,7 @@
 #include "besched_t.h"
 #include "belive_t.h"
 #include "bearch.h"
-#include "beifg.h"
+#include "beifg_t.h"
 #include "beifg_impl.h"
 
 #include "bespillbelady.h"
@@ -216,8 +216,7 @@ static void dump(int mask, ir_graph *irg,
 				 const char *suffix,
 				 void (*dump_func)(ir_graph *, const char *))
 {
-
-	if((options.dump_flags & mask) == mask) {
+	if(1 || (options.dump_flags & mask) == mask) {
 		if(cls) {
 			char buf[256];
 			snprintf(buf, sizeof(buf), "-%s%s", cls->name, suffix);
@@ -302,7 +301,9 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		pmap_destroy(chordal_env.border_heads);
 	}
 
-	dump(BE_CH_DUMP_SSADESTR, irg, NULL, "-ssadestr-complete", dump_ir_block_graph_sched);
+	be_compute_spill_offsets(&chordal_env);
+
+	dump(BE_CH_DUMP_LOWER, irg, NULL, "-spilloff", dump_ir_block_graph_sched);
 
 	lower_perms(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower", dump_ir_block_graph_sched);
