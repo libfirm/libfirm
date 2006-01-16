@@ -95,6 +95,7 @@ ir_op *op_Mux;         ir_op *get_op_Mux       (void) { return op_Mux;       }
 ir_op *op_CopyB;       ir_op *get_op_CopyB     (void) { return op_CopyB;     }
 ir_op *op_Bound;       ir_op *get_op_Bound     (void) { return op_Bound;     }
 
+ir_op *op_Keep;        ir_op *get_op_Keep      (void) { return op_Keep;      }
 
 /*
  * Copies all attributes stored in the old node to the new node.
@@ -268,6 +269,8 @@ init_op(void)
   op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(copyb_attr), NULL);
   op_Bound     = new_ir_op(iro_Bound,     "Bound",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(bound_attr), NULL);
 
+  op_Keep      = new_ir_op(iro_Keep,      "Keep",      op_pin_state_pinned, N,       oparity_variable, -1, 0, NULL);
+
 #undef H
 #undef Y
 #undef F
@@ -342,6 +345,8 @@ void finish_op(void) {
   free_ir_op (op_Mux      ); op_Mux       = NULL;
   free_ir_op (op_CopyB    ); op_CopyB     = NULL;
   free_ir_op (op_Bound    ); op_Bound     = NULL;
+
+  free_ir_op (op_Keep     ); op_Keep      = NULL;
 }
 
 /* Returns the string for the opcode. */
