@@ -141,7 +141,7 @@ $arch = "ia32";
   "op_flags"    => "C",
   "arity"       => 2,
   "comment"     => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"     => { "in" => [ "eax", "general_purpose" ], "out" => [ "eax" ] },
+  "reg_req"     => { "in" => [ "out_d1", "general_purpose" ], "out" => [ "eax" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
 4. imull %S2\t\t\t/* signed Mul(%S1, %S2) -> %D1, (%A1, %A2) */
@@ -156,7 +156,7 @@ $arch = "ia32";
   "state"       => "pinned",
   "arity"       => 1,
   "comment"     => "construct Mul: Mul(a, const) = Mul(const, a) = a * const",
-  "reg_req"     => { "in" => [ "eax" ], "out" => [ "eax" ] },
+  "reg_req"     => { "in" => [ "out_d1" ], "out" => [ "eax" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
 4. imull %C\t\t\t/* signed Mul(%C, %S1) -> %D1, (%A1, const) */
@@ -171,7 +171,7 @@ $arch = "ia32";
   "op_flags"    => "C",
   "arity"       => 2,
   "comment"     => "construct Mulh: Mulh(a, b) = Mulh(b, a) = get_32_highest_bits(a * b)",
-  "reg_req"     => { "in" => [ "eax", "general_purpose" ], "out" => [ "edx" ] },
+  "reg_req"     => { "in" => [ "out_d1", "general_purpose" ], "out" => [ "edx" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
 4. imull %S2\t\t\t/* signed Mulh(%S1, %S2) -> %D1, (%A1, %A2) */
@@ -186,7 +186,7 @@ $arch = "ia32";
   "state"       => "pinned",
   "arity"       => 1,
   "comment"     => "construct Mulh: Mulh(a, const) = Mulh(const, a) = get_32_highest_bits(a * const)",
-  "reg_req"     => { "in" => [ "eax" ], "out" => [ "edx" ] },
+  "reg_req"     => { "in" => [ "out_d1" ], "out" => [ "edx" ] },
   "emit"        =>
 '  if (mode_is_signed(get_irn_mode(n))) {
 4. imull %C\t\t\t/* signed Mulh(%C, %S1) -> %D1, (%A1, const) */
@@ -558,7 +558,7 @@ $arch = "ia32";
   "arity"       => 1,
   "remat"       => 1,
   "comment"     => "construct Cltd: sign extend EAX -> EDX:EAX",
-  "reg_req"     => { "in" => [ "eax" ], "out" => [ "eax", "edx" ] },
+  "reg_req"     => { "in" => [ "out_d1" ], "out" => [ "eax", "edx" ] },
   "emit"        => '. cltd\t\t\t/* sign extend EAX -> EDX:EAX, (%A1) */'
 },
 
