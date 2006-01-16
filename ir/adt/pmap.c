@@ -76,6 +76,9 @@ void * pmap_get(pmap *map, void *key) {
   return entry == NULL ? NULL : entry->value;
 }
 
+int pmap_count(pmap *map) {
+	return set_count(M2S(map));
+}
 
 pmap_entry *pmap_first(pmap *map) {
   return (pmap_entry *) set_first(M2S(map));

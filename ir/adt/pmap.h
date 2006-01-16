@@ -50,6 +50,8 @@ pmap_entry * pmap_find(pmap *map, void * key);
 /** Returns the value of "key". */
 void * pmap_get(pmap *map, void * key);
 
+int pmap_count(pmap *map);
+
 /**
  * Returns the first entry of a map if the map is not empty.
  */
