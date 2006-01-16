@@ -885,13 +885,13 @@ init_mode (void)
   /* Character Modes */
   newmode.sort         = irms_character;
   newmode.arithmetic   = irma_twos_complement;
+  newmode.modulo_shift = 0;
 
   /* Character */
   newmode.name         = new_id_from_chars("C", 1);
   newmode.code         = irm_C;
   newmode.sign         = 0;
   newmode.size         = 8;
-  newmode.modulo_shift = 32;
 
   mode_C = register_mode(&newmode);
 
@@ -900,7 +900,6 @@ init_mode (void)
   newmode.code         = irm_U;
   newmode.sign         = 0;
   newmode.size         = 16;
-  newmode.modulo_shift = 32;
 
   mode_U = register_mode(&newmode);
 
