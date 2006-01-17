@@ -182,7 +182,6 @@ static int try_pre_color(be_chordal_env_t *env, ir_node *irn,
 
 		pset_insert_ptr(pre_colored, irn);
 		arch_set_irn_register(env->main_env->arch_env, irn, reg);
-
 		bitset_set(colors_used, col);
 
 		DBG((env->dbg, LEVEL_2, "pre coloring %+F with %s\n", irn, reg->name));
@@ -290,16 +289,21 @@ static ir_node *handle_constraints_at_perm(be_chordal_alloc_env_t *alloc_env, ir
 	else
 		try_pre_color(env, cnstr, pre_colored, colors_used);
 
+	pset_insert_pset_ptr(alloc_env->pre_colored, pre_colored);
+
 	for(irn = pset_first(leftover); irn; irn = pset_next(leftover)) {
 		const arch_register_t *reg;
 		ir_node *precol;
 		int colored = 0;
 
 		for(precol = pset_first(pre_colored); precol; precol = pset_next(pre_colored)) {
+			arch_register_t *pre_col_reg = arch_get_irn_register(arch_env, precol);
+
 			if(!values_interfere(irn, precol)) {
-				reg = arch_get_irn_register(arch_env, irn);
-				arch_set_irn_register(arch_env, irn, reg);
+				reg = arch_get_irn_register(arch_env, precol);
 				pset_break(pre_colored);
+				pset_remove_ptr(pre_colored, precol);
+				DBG((dbg, LEVEL_2, "non-interfering %+F setting to %s\n", irn, reg->name));
 				colored = 1;
 				break;
 			}
@@ -308,17 +312,16 @@ static ir_node *handle_constraints_at_perm(be_chordal_alloc_env_t *alloc_env, ir
 		if(!colored) {
 			int col = bitset_next_clear(colors_used, 0);
 
-			assert(col >=0 && "There must be a register left");
+			assert(col >= 0 && col < env->cls->n_regs && "There must be a register left");
 			reg = arch_register_for_index(env->cls, col);
-			arch_set_irn_register(arch_env, irn, reg);
-			bitset_set(colors_used, reg->index);
-			pset_insert_ptr(alloc_env->pre_colored, irn);
 
 			DBG((dbg, LEVEL_2, "coloring leftover %+F with %s\n", irn, reg->name));
 		}
-	}
 
-	pset_insert_pset_ptr(alloc_env->pre_colored, pre_colored);
+		arch_set_irn_register(arch_env, irn, reg);
+		pset_insert_ptr(alloc_env->pre_colored, irn);
+		bitset_set(colors_used, reg->index);
+	}
 
 	del_pset(leftover);
 	del_pset(pre_colored);
@@ -520,8 +523,6 @@ static void assign(ir_node *block, void *env_ptr)
 		if(b->is_def && !is_live_in(block, irn)) {
 			const arch_register_t *reg;
 			int col = NO_COLOR;
-
-			DBG((dbg, LEVEL_4, "\tcolors in use: %b\n", colors));
 
 			if(pset_find_ptr(alloc_env->pre_colored, irn)) {
 				reg = arch_get_irn_register(arch_env, irn);
