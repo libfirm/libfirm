@@ -57,8 +57,9 @@ typedef enum {
   irop_flag_forking     = 0x00000020, /**< the operation is a forking control flow */
   irop_flag_highlevel   = 0x00000040, /**< the operation is a pure high-level one and can be
                                            skipped in low-level optimizations */
-  irop_flag_constlike   = 0x00000080  /**< the operation has no arguments and is some
+  irop_flag_constlike   = 0x00000080, /**< the operation has no arguments and is some
                                            kind of a constant */
+  irop_flag_keep        = 0x00000100  /**< this operation can be kept in End's keep-alive list */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */
@@ -74,7 +75,7 @@ typedef enum {
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
   iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
   iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
-  iro_NoMem, iro_Mux, iro_CopyB, iro_Bound,
+  iro_NoMem, iro_Mux, iro_CopyB, iro_Bound, iro_GC,
   iro_Keep,
   iro_MaxOpcode
 } opcode;
@@ -144,6 +145,7 @@ extern ir_op *op_NoMem;           ir_op *get_op_NoMem     (void);
 extern ir_op *op_Mux;             ir_op *get_op_Mux       (void);
 extern ir_op *op_CopyB;           ir_op *get_op_CopyB     (void);
 extern ir_op *op_Bound;           ir_op *get_op_Bound     (void);
+extern ir_op *op_GC;              ir_op *get_op_GC        (void);
 extern ir_op *op_Keep;            ir_op *get_op_Keep      (void);
 
 /** Returns the ident for the opcode name */
