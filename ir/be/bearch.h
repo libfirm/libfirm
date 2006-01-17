@@ -160,7 +160,7 @@ typedef struct _arch_register_req_t {
                                             return the number of registers
                                             in the bitset. */
 
-	const ir_node *other;                /**< In case of "should be equal"
+	ir_node *other;						  /**< In case of "should be equal"
 										    or should be different, this gives
 											the node to whose register this
 											one's should be the same/different. */
