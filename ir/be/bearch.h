@@ -107,33 +107,6 @@ _arch_register_for_index(const arch_register_class_t *cls, int idx)
  */
 #define arch_get_register_set_for_class(cls) ((cls)->set)
 
-/**
- * An immediate.
- */
-struct _arch_immediate_t {
-  const char *name;         /**< The name of the immediate. */
-  ir_mode *mode;            /**< The mode of the immediate. */
-};
-
-/**
- * The member of an enum.
- */
-struct _arch_enum_member_t {
-  arch_enum_t *enm;         /**< The enum, this member belongs to. */
-};
-
-/**
- * An enumeration operand type.
- *
- * Enumeration operand types can be used to describe the variants
- * of an instruction, like giving the cases for a compare (gt, lt,
- * eq, ...) some other special attributes of an instruction.
- */
-struct _arch_enum_t {
-  int n_members;                    /**< The number of members in this enum. */
-  arch_enum_member_t *members[1];   /**< The array of members. */
-};
-
 typedef enum _arch_operand_type_t {
   arch_operand_type_invalid,
   arch_operand_type_memory,
@@ -163,16 +136,22 @@ typedef enum _arch_register_req_type_t {
 
 } arch_register_req_type_t;
 
-#define arch_register_req_is_constr(x) \
-  ((x)->type & (arch_register_req_type_pair + arch_register_req_type_limited - 1) != 0)
+/**
+ * Convenience macro to check for set constraints.
+ * @param req   A pointer to register requirements.
+ * @param kind  The kind of constraint to check for (see arch_register_req_type_t).
+ * @return      1, If the kind of constraint is present, 0 if not.
+ */
+#define arch_register_req_is(req, kind) \
+	((req)->type & (arch_register_req_type_ ## kind) != 0)
 
 /**
  * Expresses requirements to register allocation for an operand.
  */
 typedef struct _arch_register_req_t {
 	arch_register_req_type_t type;          /**< The type of the constraint. */
-	const arch_register_class_t *cls;       /**< The register class this
-                                               constraint belongs to. */
+	const arch_register_class_t *cls;       /**< The register class this constraint belongs to. */
+
 	int (*limited)(const ir_node *irn, int pos, bitset_t *bs);
                                           /**< In case of the 'limited'
                                             constraint, this function
@@ -181,15 +160,14 @@ typedef struct _arch_register_req_t {
                                             return the number of registers
                                             in the bitset. */
 
-	int pos;                             /**< In case of the equal constraint,
-                                            this gives the position of the
-                                            operand to which the register of
-                                            this should be equal to. Same for
-                                            unequal. */
+	const ir_node *other;                /**< In case of "should be equal"
+										    or should be different, this gives
+											the node to whose register this
+											one's should be the same/different. */
 } arch_register_req_t;
 
 /**
- * Certain node classes which are relevent for the register allocator.
+ * Certain node classes which are relevant for the register allocator.
  */
 typedef enum _arch_irn_class_t {
   arch_irn_class_normal,
