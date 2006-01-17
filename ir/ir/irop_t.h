@@ -100,6 +100,11 @@ static INLINE int is_op_constlike(const ir_op *op) {
   return op->flags & irop_flag_constlike;
 }
 
+/** Returns non-zero if operation is a keep-like op */
+static INLINE int is_op_keep(const ir_op *op) {
+  return op->flags & irop_flag_keep;
+}
+
 static INLINE opcode _get_op_code(const ir_op *op) {
   return op->code;
 }
