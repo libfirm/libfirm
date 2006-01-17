@@ -24,9 +24,9 @@ my $return;
 
 no strict "subs";
 unless ($return = do $specfile) {
-  warn "couldn't parse $specfile: $@" if $@;
-  warn "couldn't do $specfile: $!"    unless defined $return;
-  warn "couldn't run $specfile"       unless $return;
+	warn "couldn't parse $specfile: $@" if $@;
+	warn "couldn't do $specfile: $!"    unless defined $return;
+	warn "couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 
@@ -51,156 +51,162 @@ my $cmp_attr_func;
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
 foreach my $op (keys(%nodes)) {
-  my %n = %{ $nodes{"$op"} };
+	my %n = %{ $nodes{"$op"} };
 
-  $orig_op = $op;
-  $op      = $arch."_".$op;
-  $arity   = $n{"arity"};
+	$orig_op = $op;
+	$op      = $arch."_".$op;
+	$arity   = $n{"arity"};
 
-  push(@obst_opvar, "ir_op *op_$op = NULL;\n");
-  push(@obst_get_opvar, "ir_op *get_op_$op(void)   { return op_$op; }\n");
-  push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_irn_op(n) == op_$op; }\n\n");
+	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
+	push(@obst_get_opvar, "ir_op *get_op_$op(void)   { return op_$op; }\n");
+	push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_irn_op(n) == op_$op; }\n\n");
 
-  push(@obst_is_archirn, "is_$op(node)");
+	push(@obst_is_archirn, "is_$op(node)");
 
-  push(@obst_header, "int is_$op(const ir_node *n);\n");
+	push(@obst_header, "int is_$op(const ir_node *n);\n");
 
-  $n{"comment"} = "construct $op" if(!exists($n{"comment"}));
-  $n{"comment"} =~ s/^"|"$//g;    # remove "
-  $n{"comment"} = "/* ".$n{"comment"}." */\n";
-  push(@obst_constructor, $n{"comment"});
+	$cmp_attr_func = 0;
+	# create compare attribute function if needed
+	if (exists($n{"cmp_attr"})) {
+		push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
+		push(@obst_cmp_attr, "  asmop_attr *attr_a = get_ia32_attr(a);\n");
+		push(@obst_cmp_attr, "  asmop_attr *attr_b = get_ia32_attr(b);\n");
+		push(@obst_cmp_attr, $n{"cmp_attr"});
+		push(@obst_cmp_attr, "}\n\n");
 
-  $cmp_attr_func = 0;
-  # create compare attribute function if needed
-  if (exists($n{"cmp_attr"})) {
-    push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
-    push(@obst_cmp_attr, "  asmop_attr *attr_a = get_ia32_attr(a);\n");
-    push(@obst_cmp_attr, "  asmop_attr *attr_b = get_ia32_attr(b);\n");
-    push(@obst_cmp_attr, $n{"cmp_attr"});
-    push(@obst_cmp_attr, "}\n\n");
+		$cmp_attr_func = 1;
+	}
 
-    $cmp_attr_func = 1;
-  }
+	if (exists($n{"rd_constructor"}) && $n{"rd_constructor"} =~ /^NONE$/i) {
+		# we explicitly skip the constructor if the specification entry says NONE
+	}
+	else {
+		$n{"comment"} = "construct $op" if(!exists($n{"comment"}));
+		$n{"comment"} =~ s/^"|"$//g;    # remove "
+		$n{"comment"} = "/* ".$n{"comment"}." */\n";
+		push(@obst_constructor, $n{"comment"});
 
-  # create constructor head
-  my $complete_args = "";
-  my $arg_names     = "";
-  my $temp          = "";
+		# create constructor head
+		my $complete_args = "";
+		my $arg_names     = "";
+		my $temp          = "";
 
-  $temp = "ir_node *new_rd_$op(dbg_info *db, ir_graph *irg, ir_node *block";
-  if (!exists($n{"args"}) || $n{"args"} eq "DEFAULT") { # default args
-    if ($n{"arity"} !~ /^[0-3]$/) {
-      print "DEFAULT args require arity 0,1,2 or 3! Ignoring op $orig_op!\n";
-      next;
-    }
-    for (my $i = 1; $i <= $n{"arity"}; $i++) {
-      $complete_args .= ", ir_node *op".$i;
-      $arg_names     .= ", op".$i;
-    }
-    $complete_args .= ", ir_mode *mode";
-    $arg_names     .= ", mode";
-  }
-  else { # user defined args
-    for my $href (@{ $n{"args"} }) {
-      $href->{"type"} .= " " if ($href->{"type"} !~ / [*]?$/); # put a space between name and type if there is none at the end
-      $complete_args  .= ", ".$href->{"type"}.$href->{"name"};
-      $arg_names      .= ", ".$href->{"name"};
-    }
-  }
-  $complete_args = substr($complete_args, 2);
-  $temp .= ", $complete_args)";
-  push(@obst_constructor, $temp." {\n");
-  push(@obst_header, $temp.";\n");
+		$temp = "ir_node *new_rd_$op(dbg_info *db, ir_graph *irg, ir_node *block";
+		if (!exists($n{"args"}) || $n{"args"} =~ /^DEFAULT$/i) { # default args
+			if ($n{"arity"} !~ /^[0-3]$/) {
+				print "DEFAULT args require arity 0,1,2 or 3! Ignoring op $orig_op!\n";
+				next;
+			}
+			for (my $i = 1; $i <= $n{"arity"}; $i++) {
+				$complete_args .= ", ir_node *op".$i;
+				$arg_names     .= ", op".$i;
+			}
+			$complete_args .= ", ir_mode *mode";
+			$arg_names     .= ", mode";
+		}
+		else { # user defined args
+			for my $href (@{ $n{"args"} }) {
+				$href->{"type"} .= " " if ($href->{"type"} !~ / [*]?$/); # put a space between name and type if there is none at the end
+				$complete_args  .= ", ".$href->{"type"}.$href->{"name"};
+				$arg_names      .= ", ".$href->{"name"};
+			}
+		}
+		$complete_args = substr($complete_args, 2);
+		$temp .= ", $complete_args)";
+		push(@obst_constructor, $temp." {\n");
+		push(@obst_header, $temp.";\n");
 
-  # emit constructor code
-  if (!exists($n{"rd_constructor"}) || $n{"rd_constructor"} eq "DEFAULT") { # default constructor
-    if ($n{"arity"} !~ /^[0-3]$/) {
-      print "DEFAULT rd_constructor requires arity 0,1,2 or 3! Ignoring op $orig_op!\n";
-      next;
-    }
-    $temp  = "  asmop_attr *attr;\n";
-    $temp .= "  ir_node *res;\n";
-    $temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
-    $temp .= "\n";
-    $temp .= "  if (!op_$op) {\n";
-    $temp .= "    assert(0);\n";
-    $temp .= "    return NULL;\n";
-    $temp .= "  }\n\n";
-    for (my $i = 1; $i <= $arity; $i++) {
-      $temp .= "  in[".($i - 1)."] = op".$i.";\n";
-    }
-    $temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
-    $temp .= "  set_ia32_pncode(res, -1);\n";
-    $temp .= "  res = optimize_node(res);\n";
-    $temp .= "  irn_vrfy_irg(res, irg);\n\n";
+		# emit constructor code
+		if (!exists($n{"rd_constructor"}) || $n{"rd_constructor"} =~ /^DEFAULT$/i) { # default constructor
+			if ($n{"arity"} !~ /^[0-3]$/) {
+				print "DEFAULT rd_constructor requires arity 0,1,2 or 3! Ignoring op $orig_op!\n";
+				next;
+			}
+			$temp  = "  asmop_attr *attr;\n";
+			$temp .= "  ir_node *res;\n";
+			$temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
+			$temp .= "\n";
+			$temp .= "  if (!op_$op) {\n";
+			$temp .= "    assert(0);\n";
+			$temp .= "    return NULL;\n";
+			$temp .= "  }\n\n";
+			for (my $i = 1; $i <= $arity; $i++) {
+				$temp .= "  in[".($i - 1)."] = op".$i.";\n";
+			}
+			$temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
+			$temp .= "  set_ia32_pncode(res, -1);\n";
+			$temp .= "  res = optimize_node(res);\n";
+			$temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
-    # set register flags
-    $temp .= "  attr = get_ia32_attr(res);\n\n";
-    $temp .= "  attr->flags  = 0;                                 /* clear flags */\n";
-    if (!exists($n{"spill"}) || $n{"spill"} == 1) {
-      $temp .= "  attr->flags |= arch_irn_flags_spillable;          /* op is spillable */\n";
-    }
-    if (exists($n{"remat"}) && $n{"remat"} == 1) {
-      $temp .= "  attr->flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
-    }
+			# set register flags
+			$temp .= "  attr = get_ia32_attr(res);\n\n";
+			$temp .= "  attr->flags  = 0;                                 /* clear flags */\n";
+			if (!exists($n{"spill"}) || $n{"spill"} == 1) {
+				$temp .= "  attr->flags |= arch_irn_flags_spillable;          /* op is spillable */\n";
+			}
+			if (exists($n{"remat"}) && $n{"remat"} == 1) {
+				$temp .= "  attr->flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
+			}
 
-    # allocate memory and set pointer to register requirements
-    if (exists($n{"reg_req"})) {
-      my %req = %{ $n{"reg_req"} };
-      my $idx;
+			# allocate memory and set pointer to register requirements
+			if (exists($n{"reg_req"})) {
+				my %req = %{ $n{"reg_req"} };
+				my $idx;
 
-      undef my @in;
-      @in = @{ $req{"in"} } if (exists($req{"in"}));
-      undef my @out;
-      @out = @{ $req{"out"} } if exists(($req{"out"}));
+				undef my @in;
+				@in = @{ $req{"in"} } if (exists($req{"in"}));
+				undef my @out;
+				@out = @{ $req{"out"} } if exists(($req{"out"}));
 
-      if (@in) {
-        $temp .= "\n  /* allocate memory for IN register requirements and assigned registers */\n";
-        $temp .= "  attr->in_req    = calloc(".($#in + 1).", sizeof(arch_register_req_t *));  /* space for in requirements */\n";
-        for ($idx = 0; $idx <= $#in; $idx++) {
-          $temp .= "  attr->in_req[$idx] = ".$op."_reg_req_in_".$idx.";\n";
-        }
-      }
+				if (@in) {
+					$temp .= "\n  /* allocate memory for IN register requirements and assigned registers */\n";
+					$temp .= "  attr->in_req    = calloc(".($#in + 1).", sizeof(arch_register_req_t *));  /* space for in requirements */\n";
+					for ($idx = 0; $idx <= $#in; $idx++) {
+						$temp .= "  attr->in_req[$idx] = ".$op."_reg_req_in_".$idx.";\n";
+					}
+				}
 
-      if (@out) {
-        $temp .= "\n  /* allocate memory for OUT register requirements and assigned registers */\n";
-        $temp .= "  attr->out_req    = calloc(".($#out + 1).", sizeof(arch_register_req_t *)); /* space for out requirements */\n";
-        $temp .= "  attr->slots      = calloc(".($#out + 1).", sizeof(arch_register_t *));     /* space for assigned registers */\n";
-        for ($idx = 0; $idx <= $#out; $idx++) {
-          $temp .= "  attr->out_req[$idx] = ".$op."_reg_req_out_".$idx.";\n";
-        }
-        $temp .= "  attr->n_res      = ".($#out + 1).";\n";
-      }
-      else {
-        $temp .= "  attr->n_res      = 0;\n";
-      }
-    }
+				if (@out) {
+					$temp .= "\n  /* allocate memory for OUT register requirements and assigned registers */\n";
+					$temp .= "  attr->out_req    = calloc(".($#out + 1).", sizeof(arch_register_req_t *)); /* space for out requirements */\n";
+					$temp .= "  attr->slots      = calloc(".($#out + 1).", sizeof(arch_register_t *));     /* space for assigned registers */\n";
+					for ($idx = 0; $idx <= $#out; $idx++) {
+						$temp .= "  attr->out_req[$idx] = ".$op."_reg_req_out_".$idx.";\n";
+					}
+					$temp .= "  attr->n_res      = ".($#out + 1).";\n";
+				}
+				else {
+					$temp .= "  attr->n_res      = 0;\n";
+				}
+			}
 
-    $temp .= "\n  return res;\n";
+			$temp .= "\n  return res;\n";
 
-    push(@obst_constructor, $temp);
-  }
-  else { # user defined constructor
-    push(@obst_constructor, $n{"rd_constructor"});
-  }
+			push(@obst_constructor, $temp);
+		}
+		else { # user defined constructor
+			push(@obst_constructor, $n{"rd_constructor"});
+		}
 
-  # close constructor function
-  push(@obst_constructor, "}\n\n");
+		# close constructor function
+		push(@obst_constructor, "}\n\n");
 
-  # set default values for state and flags if not given
-  $n{"state"}    = "pinned" if (! exists($n{"state"}));
-  $n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
+	} # constructor creation
 
-  push(@obst_new_irop, "\n  memset(&ops, 0, sizeof(ops));\n");
-  push(@obst_new_irop, "  ops.dump_node     = dump_node_$arch;\n");
+	# set default values for state and flags if not given
+	$n{"state"}    = "pinned" if (! exists($n{"state"}));
+	$n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
 
-  if ($cmp_attr_func) {
-    push(@obst_new_irop, "  ops.node_cmp_attr = cmp_attr_$op;\n");
-  }
+	push(@obst_new_irop, "\n  memset(&ops, 0, sizeof(ops));\n");
+	push(@obst_new_irop, "  ops.dump_node     = dump_node_$arch;\n");
 
-  $temp  = "  op_$op = new_ir_op(get_next_ir_opcode(), \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-  $temp .= ", ".translate_arity($arity).", 0, sizeof(asmop_attr), &ops);\n";
-  push(@obst_new_irop, $temp);
+	if ($cmp_attr_func) {
+		push(@obst_new_irop, "  ops.node_cmp_attr = cmp_attr_$op;\n");
+	}
+
+	$temp  = "  op_$op = new_ir_op(get_next_ir_opcode(), \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
+	$temp .= ", ".translate_arity($arity).", 0, sizeof(asmop_attr), &ops);\n";
+	push(@obst_new_irop, $temp);
 }
 
 # emit the code
@@ -232,7 +238,7 @@ void $arch\_create_opcodes(void) {
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
 
-  ir_op_ops ops;
+	ir_op_ops ops;
 
 ENDOFMAIN
 
@@ -251,26 +257,26 @@ close(OUT);
 # Translates numeric arity into string constant.
 ###
 sub translate_arity {
-  my $arity = shift;
+	my $arity = shift;
 
-  if ($arity =~ /^\d+$/) {
-    if    ($arity == 0) {
-      return "oparity_zero";
-    }
-    elsif ($arity == 1) {
-      return "oparity_unary";
-    }
-    elsif ($arity == 2) {
-      return "oparity_binary";
-    }
-    elsif ($arity == 3) {
-      return "oparity_trinary";
-    }
-    else {
-      return "$arity";
-    }
-  }
-  else {
-    return "oparity_".$arity;
-  }
+	if ($arity =~ /^\d+$/) {
+		if    ($arity == 0) {
+			return "oparity_zero";
+		}
+		elsif ($arity == 1) {
+			return "oparity_unary";
+		}
+		elsif ($arity == 2) {
+			return "oparity_binary";
+		}
+		elsif ($arity == 3) {
+			return "oparity_trinary";
+		}
+		else {
+			return "$arity";
+		}
+	}
+	else {
+		return "oparity_".$arity;
+	}
 }
