@@ -1684,7 +1684,8 @@ static ir_node *transform_node_Add(ir_node *n)
           mode);
       DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
     }
-    else if (get_irn_op(a) == op_Mul) {
+    /* do NOT execute this code if reassociation is enabled, it does the inverse! */
+    else if (!get_opt_reassociation() && get_irn_op(a) == op_Mul) {
       ir_node *ma = get_Mul_left(a);
       ir_node *mb = get_Mul_right(a);
 
@@ -1715,7 +1716,8 @@ static ir_node *transform_node_Add(ir_node *n)
         DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
       }
     }
-    else if (get_irn_op(b) == op_Mul) {
+    /* do NOT execute this code if reassociation is enabled, it does the inverse! */
+    else if (!get_opt_reassociation() && get_irn_op(b) == op_Mul) {
       ir_node *ma = get_Mul_left(b);
       ir_node *mb = get_Mul_right(b);
 
@@ -1775,7 +1777,8 @@ static ir_node *transform_node_Sub(ir_node *n)
           mode);
     DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_0_A);
   }
-  else if (get_irn_op(a) == op_Mul) {
+  /* do NOT execute this code if reassociation is enabled, it does the inverse! */
+  else if (get_opt_reassociation() && get_irn_op(a) == op_Mul) {
     ir_node *ma = get_Mul_left(a);
     ir_node *mb = get_Mul_right(a);
 
@@ -3132,7 +3135,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(opcode code, ir_op_ops *ops)
  * Compare function for two nodes in the hash table. Gets two
  * nodes as parameters.  Returns 0 if the nodes are a cse.
  */
-static int identities_cmp(const void *elt, const void *key)
+int identities_cmp(const void *elt, const void *key)
 {
   ir_node *a, *b;
   int i, irn_arity_a;
@@ -3273,7 +3276,7 @@ identify_cons (pset *value_table, ir_node *n) {
  * Looks up the node in a hash table, enters it in the table
  * if it isn't there yet.
  */
-static ir_node *
+ir_node *
 identify_remember (pset *value_table, ir_node *n)
 {
   ir_node *o = NULL;
