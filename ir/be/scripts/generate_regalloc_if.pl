@@ -22,9 +22,9 @@ my $return;
 
 no strict "subs";
 unless ($return = do $specfile) {
-  warn "couldn't parse $specfile: $@" if $@;
-  warn "couldn't do $specfile: $!"    unless defined $return;
-  warn "couldn't run $specfile"       unless $return;
+	warn "couldn't parse $specfile: $@" if $@;
+	warn "couldn't do $specfile: $!"    unless defined $return;
+	warn "couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 
@@ -60,231 +60,122 @@ my %reg2class;
 
 # there is a default NONE requirement
 $tmp = "/* Default NONE register requirements */\n";
-$tmp .= "const arch_register_req_t ia32_default_req_none = {\n";
-$tmp .= "  arch_register_req_type_none,\n";
-$tmp .= "  NULL,\n";
-$tmp .= "  NULL,\n";
+$tmp .= "const $arch\_register_req_t $arch\_default_req_none = {\n";
+$tmp .= "  {\n";
+$tmp .= "    arch_register_req_type_none,\n";
+$tmp .= "    NULL,\n";
+$tmp .= "    NULL,\n";
+$tmp .= "    0\n";
+$tmp .= "  },\n";
 $tmp .= "  0\n";
 $tmp .= "};\n\n";
 push(@obst_req, $tmp);
 
 push(@obst_header_all, "extern arch_register_class_t $arch\_reg_classes[N_CLASSES];\n\n");
-push(@obst_header_all, "extern const arch_register_req_t ia32_default_req_none;\n");
+push(@obst_header_all, "extern const $arch\_register_req_t $arch\_default_req_none;\n");
 
 push(@obst_classdef, "#define N_CLASSES ".scalar(keys(%reg_classes))."\n");
 
 # generate register type and class variable, init function and default requirements
 foreach my $class_name (keys(%reg_classes)) {
-  my @class         = @{ $reg_classes{"$class_name"} };
-  my $old_classname = $class_name;
+	my @class         = @{ $reg_classes{"$class_name"} };
+	my $old_classname = $class_name;
 
-  $class_name = $arch."_".$class_name;
-  $numregs    = "N_".$class_name."_REGS";
-  $class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
+	$class_name = $arch."_".$class_name;
+	$numregs    = "N_".$class_name."_REGS";
+	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 
-  push(@obst_regtypes, "#define $numregs ".($#class + 1)."\n");
-  push(@obst_regtypes, "arch_register_t ".$class_name."_regs[$numregs];\n\n");
+	push(@obst_regtypes, "#define $numregs ".($#class + 1)."\n");
+	push(@obst_regtypes, "arch_register_t ".$class_name."_regs[$numregs];\n\n");
 
-  push(@obst_classdef, "#define CLASS_$class_name $class_idx\n");
-  push(@obst_regclasses, "{ \"$class_name\", $numregs, ".$class_name."_regs }");
+	push(@obst_classdef, "#define CLASS_$class_name $class_idx\n");
+	push(@obst_regclasses, "{ \"$class_name\", $numregs, ".$class_name."_regs }");
 
-  # there is a default NORMAL requirement for each class
-  $tmp  = "/* Default NORMAL register requirements for class $class_name */\n";
-  $tmp .= "const arch_register_req_t ia32_default_req_$class_name = {\n";
-  $tmp .= "  arch_register_req_type_normal,\n";
-  $tmp .= "  $class_ptr,\n";
-  $tmp .= "  NULL,\n";
-  $tmp .= "  0\n";
-  $tmp .= "};\n\n";
-  push(@obst_req, $tmp);
-
-  push(@obst_header_all, "\nextern const arch_register_req_t ia32_default_req_$class_name;\n");
-
-  my $idx = 0;
-  push(@obst_reginit, "  /* Init of all registers in class '$class_name' */\n\n");
-  foreach (@class) {
-    # For each class we build for each of it's member registers a limit function
-    # which limits the class to this particular register. We also build the
-    # corresponding requirement structs.
-    # We need those functions to set register requirements on demand in transformation
-    # esp. for Call and RegParams where we can mix int and float parameters.
-
-    my $limit_func_name = $arch."_limit_".$class_name."_".$_->{"name"};
-
-    # push the function prototype
-    $tmp = "int $limit_func_name(const ir_node *irn, int pos, bitset_t *bs)";
-    push(@obst_defreq_head, $tmp.";\n");
-
-    # push the function definition
-    $tmp .= " {\n";
-    $tmp .= "    bs = bitset_clear_all(bs);\n";
-    $tmp .= "    bitset_set(bs, REG_".uc($_->{"name"}).");\n";  # REGISTER to index assignment is done some lines down
-    $tmp .= "    return 1;\n";
-    $tmp .= "}\n\n";
-    push(@obst_limit_func, $tmp);
-
-    # push the default requirement struct
-    $tmp  = "const arch_register_req_t ia32_default_req_$class_name\_".$_->{"name"}." = {\n";
-    $tmp .= "  arch_register_req_type_limited,\n";
-    $tmp .= "  $class_ptr,\n";
-    $tmp .= "  $limit_func_name,\n";
+	# there is a default NORMAL requirement for each class
+	$tmp  = "/* Default NORMAL register requirements for class $class_name */\n";
+	$tmp .= "const $arch\_register_req_t $arch\_default_req_$class_name = {\n";
+	$tmp .= "  {\n";
+	$tmp .= "    arch_register_req_type_normal,\n";
+	$tmp .= "    $class_ptr,\n";
+	$tmp .= "    NULL,\n";
+	$tmp .= "    0\n";
+	$tmp .= "  },\n";
 	$tmp .= "  0\n";
-    $tmp .= "};\n\n";
-    push(@obst_req, $tmp);
+	$tmp .= "};\n\n";
+	push(@obst_req, $tmp);
 
-    push(@obst_header_all, "extern const arch_register_req_t ia32_default_req_$class_name\_".$_->{"name"}.";\n");
+	push(@obst_header_all, "\nextern const arch_register_req_t ia32_default_req_$class_name;\n");
 
-    $reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
-    push(@obst_regdef, "#define REG_".uc($_->{"name"})." $idx\n");
-    push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"name"}."\";\n");
-    push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = $class_ptr;\n");
-    push(@obst_reginit, "  ".$class_name."_regs[$idx].index     = $idx;\n");
-    push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".$rt[$_->{"type"}].";\n\n");
-    $idx++;
-  }
+	my $idx = 0;
+	push(@obst_reginit, "  /* Init of all registers in class '$class_name' */\n\n");
+	foreach (@class) {
+		# For each class we build for each of it's member registers a limit function
+		# which limits the class to this particular register. We also build the
+		# corresponding requirement structs.
+		# We need those functions to set register requirements on demand in transformation
+		# esp. for Call and RegParams where we can mix int and float parameters.
 
-  $class_idx++;
+		my $limit_func_name = $arch."_limit_".$class_name."_".$_->{"name"};
+
+		# push the function prototype
+		$tmp = "int $limit_func_name(const ir_node *irn, int pos, bitset_t *bs)";
+		push(@obst_defreq_head, $tmp.";\n");
+
+		# push the function definition
+		$tmp .= " {\n";
+		$tmp .= "    bs = bitset_clear_all(bs);\n";
+		$tmp .= "    bitset_set(bs, REG_".uc($_->{"name"}).");\n";  # REGISTER to index assignment is done some lines down
+		$tmp .= "    return 1;\n";
+		$tmp .= "}\n\n";
+		push(@obst_limit_func, $tmp);
+
+		# push the default requirement struct
+		$tmp  = "const $arch\_register_req_t $arch\_default_req_$class_name\_".$_->{"name"}." = {\n";
+		$tmp .= "  {\n";
+		$tmp .= "    arch_register_req_type_limited,\n";
+		$tmp .= "    $class_ptr,\n";
+		$tmp .= "    $limit_func_name,\n";
+		$tmp .= "    0\n";
+		$tmp .= "  },\n";
+		$tmp .= "  0\n";
+		$tmp .= "};\n\n";
+		push(@obst_req, $tmp);
+
+		push(@obst_header_all, "extern const $arch\_register_req_t $arch\_default_req_$class_name\_".$_->{"name"}.";\n");
+
+		$reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
+		push(@obst_regdef, "#define REG_".uc($_->{"name"})." $idx\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"name"}."\";\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = $class_ptr;\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].index     = $idx;\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".$rt[$_->{"type"}].";\n\n");
+		$idx++;
+	}
+
+	$class_idx++;
 }
 
 push(@obst_header_all, "\n/* node specific requirements */\n");
 
 # generate node-register constraints
 foreach my $op (keys(%nodes)) {
-  my %n = %{ $nodes{"$op"} };
+	my %n = %{ $nodes{"$op"} };
 
-  next if (!exists($n{"reg_req"}));
+	next if (!exists($n{"reg_req"}));
 
-  $op = $arch."_".$op;
+	$op = $arch."_".$op;
 
-  push(@obst_req, "/* IN requirements for '$op' */\n");
+	push(@obst_req, "/* IN requirements for '$op' */\n");
+	# check for argument requirements
+	if (exists($n{"reg_req"}{"in"})) {
+		generate_requirements(\%n, $op, "in");
+	}
 
-  # We can have IN requirements like "out_d1"
-  # and for those we need the associated register class
-  # That's why we have to check all out requirements first
-  # and remember their classes.
-  my @outidx_class;
-  if (exists($n{"reg_req"}{"out"})) {
-    my @out = @{ $n{"reg_req"}{"out"} };
-
-    for (my $idx = 0; $idx <= $#out; $idx++) {
-      my $class = undef;
-
-      if ($out[$idx] eq "none") {
-		$class = "none";
-      }
-      elsif (is_reg_class($out[$idx])) {
-		$class = $out[$idx];
-      }
-      elsif ($out[$idx] =~ /^(!)?in_s(\d+)/) {
-		$class = "UNKNOWN_CLASS";
-      }
-      else {
-		my @regs = split(/ /, $out[$idx]);
-        $class = get_reg_class($regs[0]);
-        if (!defined $class) {
-          die("Could not get register class  for '$op' pos $idx ... exiting.\n");
-        }
-      }
-
-      push(@outidx_class, $class);
-    }
-  }
-
-
-  # we need to remember the classes of the IN constraints for
-  # OUT constraints like "in_s1"
-  my @inidx_class;
-
-  # check for argument requirements
-  if (exists($n{"reg_req"}{"in"})) {
-    my @in = @{ $n{"reg_req"}{"in"} };
-
-    for (my $idx = 0; $idx <= $#in; $idx++) {
-      my $class = undef;
-
-      my $tmp2 = "const arch_register_req_t _".$op."_reg_req_in_$idx = ";
-
-      $tmp = "const arch_register_req_t *".$op."_reg_req_in_$idx = ";
-
-      push(@obst_header_all, "extern const arch_register_req_t *".$op."_reg_req_in_$idx;\n");
-
-      if ($in[$idx] eq "none") {
-        push(@inidx_class, "none");
-        $tmp .= "&ia32_default_req_none;\n";
-      }
-      elsif (is_reg_class($in[$idx])) {
-        push(@inidx_class, $in[$idx]);
-        $tmp .= "&ia32_default_req_".$arch."_".$in[$idx].";\n";
-      }
-	  elsif ($in[$idx] =~ /^(!)?out_d(\d+)/) { # this is a "should be (un)equal to register at out_X"
-        $tmp  .= "&_".$op."_reg_req_in_$idx;\n";
-        $tmp2 .= " {\n";
-        $tmp2 .= "  arch_register_req_type_should_be_".($1 ? "different" : "same").",\n";
-        $tmp2 .= "  &$arch\_reg_classes[CLASS_$arch\_".$outidx_class[$2 - 1]."],\n";
-        $tmp2 .= "  NULL,\n  -$2\n};\n";
-
-        $tmp   = $tmp2.$tmp
-      }
-      else {
-        $class = build_subset_class_func($op, $idx, 1, $in[$idx]);
-        if (!defined $class) {
-          die("Could not build subset for IN requirements '$op' pos $idx ... exiting.\n");
-        }
-        push(@inidx_class, $class);
-        $tmp  .= "&_".$op."_reg_req_in_$idx;\n";
-        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  limit_reg_".$op."_in_".$idx.",\n  0\n};\n";
-
-        $tmp   = $tmp2.$tmp;
-      }
-
-      push(@obst_req, $tmp."\n");
-    }
-  }
-
-  push(@obst_req, "/* OUT requirements for '$op' */\n");
-
-  # check for result requirements
-  if (exists($n{"reg_req"}{"out"})) {
-    my @out = @{ $n{"reg_req"}{"out"} };
-
-    for (my $idx = 0; $idx <= $#out; $idx++) {
-      my $class = undef;
-
-      my $tmp2 = "const arch_register_req_t _".$op."_reg_req_out_$idx = ";
-
-      $tmp = "const arch_register_req_t *".$op."_reg_req_out_$idx = ";
-
-      push(@obst_header_all, "extern const arch_register_req_t *".$op."_reg_req_out_$idx;\n");
-
-      if ($out[$idx] eq "none") {
-        $tmp .= "&ia32_default_req_none;\n";
-      }
-      elsif (is_reg_class($out[$idx])) {
-        $tmp .= "&ia32_default_req_".$arch."_".$out[$idx].";\n";
-      }
-      elsif ($out[$idx] =~ /^(!)?in_s(\d+)/) { # this is a "should be (un)equal to register at in_X"
-        $tmp  .= "&_".$op."_reg_req_out_$idx;\n";
-        $tmp2 .= " {\n";
-        $tmp2 .= "  arch_register_req_type_should_be_".($1 ? "different" : "same").",\n";
-        $tmp2 .= "  &$arch\_reg_classes[CLASS_$arch\_".$inidx_class[$2 - 1]."],\n";
-        $tmp2 .= "  NULL,\n  ".($2 - 1)."\n};\n";
-
-        $tmp   = $tmp2.$tmp
-      }
-      else {
-        $class = build_subset_class_func($op, $idx, 0, $out[$idx]);
-        if (!defined $class) {
-          die("Could not build subset for OUT requirements '$op' pos $idx ... exiting.\n");
-        }
-        $tmp  .= "&_".$op."_reg_req_out_$idx;\n";
-        $tmp2 .= " {\n  arch_register_req_type_limited,\n  &$arch\_reg_classes[CLASS_$arch\_".$class."],\n  limit_reg_".$op."_out_".$idx.",\n  0\n};\n";
-
-        $tmp   = $tmp2.$tmp
-      }
-
-      push(@obst_req, $tmp."\n");
-    }
-  }
+	push(@obst_req, "/* OUT requirements for '$op' */\n");
+	# check for result requirements
+	if (exists($n{"reg_req"}{"out"})) {
+		generate_requirements(\%n, $op, "out");
+	}
 }
 
 
@@ -389,16 +280,119 @@ print OUT @obst_req;
 
 close(OUT);
 
+###
+# Remember the register class for each index in the given requirements.
+# We need this information for requirements like "in_sX" or "out_dX"
+# @return array of classes corresponding to the requirement for each index
+###
+sub build_inout_idx_class {
+	my $n     = shift;
+	my $op    = shift;
+	my $inout = shift;
+	my @idx_class;
 
+	if (exists($n->{"reg_req"}{"$inout"})) {
+		my @reqs = @{ $n->{"reg_req"}{"$inout"} };
+
+		for (my $idx = 0; $idx <= $#reqs; $idx++) {
+			my $class = undef;
+
+			if ($reqs[$idx] eq "none") {
+				$class = "none";
+			}
+			elsif (is_reg_class($reqs[$idx])) {
+				$class = $reqs[$idx];
+			}
+			else {
+				my @regs = split(/ /, $reqs[$idx]);
+GET_CLASS:		foreach my $reg (@regs) {
+					if ($reg =~ /!?(in|out)\_r\d+/) {
+						$class = "UNKNOWN_CLASS";
+					}
+					else {
+						$class = get_reg_class($reg);
+						if (!defined $class) {
+							die("Could not get ".uc($inout)." register class for '$op' pos $idx (reg $reg) ... exiting.\n");
+						}
+						else {
+							last GET_CLASS;
+						} # !defined class
+					} # if (reg =~ ...
+				} # foreach
+			} # if
+
+			push(@idx_class, $class);
+		} # for
+	} # if
+
+	return @idx_class;
+}
+
+###
+# Generates the requirements for the given description
+###
+sub generate_requirements {
+	my $n     = shift;
+	my $op    = shift;
+	my $inout = shift;
+
+	# get classes for the complementary direction
+	my $outin     = ($inout eq "in") ? "out" : "in";
+
+	my @reqs = @{ $n->{"reg_req"}{"$inout"} };
+
+	for (my $idx = 0; $idx <= $#reqs; $idx++) {
+		my $class = undef;
+
+		my $tmp2 = "const $arch\_register_req_t _".$op."_reg_req_$inout\_$idx = ";
+		my $tmp  = "const $arch\_register_req_t *".$op."_reg_req_$inout\_$idx = ";
+
+		push(@obst_header_all, "extern const $arch\_register_req_t *".$op."_reg_req_$inout\_$idx;\n");
+
+		if ($reqs[$idx] eq "none") {
+			$tmp .= "&$arch\_default_req_none;\n";
+		}
+		elsif (is_reg_class($reqs[$idx])) {
+			$tmp .= "&$arch\_default_req_".$arch."_".$reqs[$idx].";\n";
+		}
+		else {
+			my @req_type_mask;
+			my ($class, $has_limit, $pos, $same) = build_subset_class_func($n, $op, $idx, (($inout eq "in") ? 1 : 0), $reqs[$idx]);
+			if (!defined($class)) {
+				die("Could not build subset for ".uc($inout)." requirements '$op' pos $idx ... exiting.\n");
+			}
+			if ($has_limit) {
+				push(@req_type_mask, "arch_register_req_type_limited");
+			}
+			if (defined($pos)) {
+				push(@req_type_mask, "arch_register_req_type_should_be_".($same ? "same" : "different"));
+			}
+			$tmp  .= "&_".$op."_reg_req_$inout\_$idx;\n";
+			$tmp2 .= " {\n";
+			$tmp2 .= "  {\n";
+			$tmp2 .= "    ".join(" | ", @req_type_mask).",\n";
+			$tmp2 .= "    &$arch\_reg_classes[CLASS_$arch\_".$class."],\n";
+			$tmp2 .= "    ".(defined($class) ? "limit_reg_".$op."_$inout\_".$idx : "NULL").",\n";
+			$tmp2 .= "    NULL\n";
+			$tmp2 .= "  },\n";
+			$tmp2 .= "  ".(defined($pos) ? $pos : "0")."\n};\n";
+
+			$tmp   = $tmp2.$tmp;
+		}
+
+		push(@obst_req, $tmp."\n");
+	}
+
+}
 
 ###
 # Determines whether $name is a specified register class or not.
 # @return 1 if name is register class, 0 otherwise
 ###
 sub is_reg_class {
-  my $name = shift;
-  return 1 if exists($reg_classes{"$name"});
-  return 0;
+	my $name = shift;
+	return 1 if exists($reg_classes{"$name"});
+	return 0;
 }
 
 ###
@@ -406,9 +400,9 @@ sub is_reg_class {
 # @return class or undef
 ###
 sub get_reg_class {
-  my $reg = shift;
-  return $reg2class{"$reg"}{"class"} if (exists($reg2class{"$reg"}));
-  return undef;
+	my $reg = shift;
+	return $reg2class{"$reg"}{"class"} if (exists($reg2class{"$reg"}));
+	return undef;
 }
 
 ###
@@ -416,90 +410,117 @@ sub get_reg_class {
 # @return index or undef
 ###
 sub get_reg_index {
-  my $reg = shift;
-  return $reg2class{"$reg"}{"index"} if (exists($reg2class{"$reg"}));
-  return undef;
+	my $reg = shift;
+	return $reg2class{"$reg"}{"index"} if (exists($reg2class{"$reg"}));
+	return undef;
 }
 
 ###
 # Generates the function for a given $op and a given IN-index
 # which returns a subset of possible register from a register class
-# @return classname from which the subset is derived or undef
+# @return classname from which the subset is derived or undef and
+#         pos which corresponds to in/out reference position or undef
 ###
 sub build_subset_class_func {
-  my $neg   = undef;
-  my $class = "";
-  my $temp;
+	my $neg   = undef;
+	my $class = undef;
+	my $temp;
+	my $has_limit = 0;
 
-  # build function header
-  my $op  = shift;
-  my $idx = shift;
-  my $in  = shift;
-  push(@obst_limit_func, "/* limit the possible registers for ".($in ? "IN" : "OUT")." $idx at op $op */\n");
-  push(@obst_limit_func, "int limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(const ir_node *irn, int pos, bitset_t *bs) {\n");
+	# build function header
+	my $n    = shift;
+	my $op   = shift;
+	my $idx  = shift;
+	my $in   = shift;
+	my $pos  = undef;
+	my $same = 1;
 
-  my @regs = split(/ /, shift);
+	my @temp_obst;
 
-  # set/unset registers
-  foreach (@regs) {
-    # check for negate
+	my $outin = $in ? "out" : "in";
+	my @regs  = split(/ /, shift);
 
-    if (substr($_, 0, 1) eq "!") {
-      if (defined($neg) && $neg == 0) {
-        # we have seen a positiv constraint as first one but this one is negative
-        # this doesn't make sense
-        print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
-        return undef;
-      }
+	my @idx_class = build_inout_idx_class($n, $op, $outin);
 
-      if (!defined($neg)) {
-        push(@obst_limit_func, "  bs = bitset_set_all(bs);     /* allow all register (negative constraints given) */\n");
-      }
+	# set/unset registers
+CHECK_REQS: foreach (@regs) {
+		if (/(!)?$outin\_r(\d+)/) {
+			if (defined($pos)) {
+				print STDERR "Multiple in/out references in one requirement not allowed.\n";
+				return (undef, undef, undef, undef);
+			}
+			$same  = 0 if ($1);
+			$class = $idx_class[$2 - 1];
+			$pos   = $in ? -$2 : $2 - 1;
+			next CHECK_REQS;
+		}
 
-      $_   = substr($_, 1); # skip '!'
-      $neg = 1;
-    }
-    else {
-      if (defined($neg) && $neg == 1) {
-        # we have seen a negative constraint as first one but this one is positive
-        # this doesn't make sense
-        print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
-        return undef;
-      }
+		# check for negate
+		if (substr($_, 0, 1) eq "!") {
+			if (defined($neg) && $neg == 0) {
+				# we have seen a positiv constraint as first one but this one is negative
+				# this doesn't make sense
+				print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
+				return (undef, undef, undef, undef);
+			}
 
-      if (!defined($neg)) {
-        push(@obst_limit_func, "  bs = bitset_clear_all(bs);   /* disallow all register (positive constraints given) */\n");
-      }
-      $neg = 0;
-    }
+			if (!defined($neg)) {
+				$has_limit = 1;
+				push(@temp_obst, "  bs = bitset_set_all(bs);     /* allow all register (negative constraints given) */\n");
+			}
 
-    # check if register belongs to one of the given classes
-    $temp = get_reg_class($_);
-    if (!defined($temp)) {
-      print STDERR "Unknown register '$_'!\n";
-      return undef;
-    }
+			$_   = substr($_, 1); # skip '!'
+			$neg = 1;
+		}
+		else {
+			if (defined($neg) && $neg == 1) {
+				# we have seen a negative constraint as first one but this one is positive
+				# this doesn't make sense
+				print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
+				return (undef, undef, undef, undef);
+			}
 
-    # set class
-    if (!$class) {
-      $class = $temp;
-    }
-    elsif ($class ne $temp) {
-      # all registers must belong to the same class
-      print STDERR "Registerclass mismatch. '$_' is not member of class '$class'.\n";
-      return undef;
-    }
+			if (!defined($neg)) {
+				$has_limit = 1;
+				push(@temp_obst, "  bs = bitset_clear_all(bs);   /* disallow all register (positive constraints given) */\n");
+			}
+			$neg = 0;
+		}
 
-    if ($neg == 1) {
-      push(@obst_limit_func, "  bitset_clear(bs, ".get_reg_index($_).");         /* disallow $_ */\n");
-    }
-    else {
-      push(@obst_limit_func, "  bitset_set(bs, ".get_reg_index($_).");           /* allow $_ */\n");
-    }
-  }
+		# check if register belongs to one of the given classes
+		$temp = get_reg_class($_);
+		if (!defined($temp)) {
+			print STDERR "Unknown register '$_'!\n";
+			return (undef, undef, undef, undef);
+		}
 
-  push(@obst_limit_func, "\n  return ".($neg ? scalar(@{ $reg_classes{"$class"} }) - scalar(@regs) : scalar(@regs)).";\n");
-  push(@obst_limit_func, "}\n\n");
+		# set class
+		if (!defined($class)) {
+			$class = $temp;
+		}
+		elsif ($class ne $temp) {
+			# all registers must belong to the same class
+			print STDERR "Registerclass mismatch. '$_' is not member of class '$class'.\n";
+			return (undef, undef, undef, undef);
+		}
 
-  return $class;
+		if ($neg == 1) {
+			$has_limit = 1;
+			push(@temp_obst, "  bitset_clear(bs, ".get_reg_index($_).");         /* disallow $_ */\n");
+		}
+		else {
+			$has_limit = 1;
+			push(@temp_obst, "  bitset_set(bs, ".get_reg_index($_).");           /* allow $_ */\n");
+		}
+	}
+
+	if ($has_limit == 1) {
+		push(@obst_limit_func, "/* limit the possible registers for ".($in ? "IN" : "OUT")." $idx at op $op */\n");
+		push(@obst_limit_func, "int limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(const ir_node *irn, int pos, bitset_t *bs) {\n");
+		push(@obst_limit_func, @temp_obst);
+		push(@obst_limit_func, "\n  return ".($neg ? scalar(@{ $reg_classes{"$class"} }) - scalar(@regs) : scalar(@regs)).";\n");
+		push(@obst_limit_func, "}\n\n");
+	}
+
+	return ($class, $has_limit, $pos, $same);
 }
