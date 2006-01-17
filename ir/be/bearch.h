@@ -21,8 +21,6 @@
 
 typedef struct _arch_register_class_t     arch_register_class_t;
 typedef struct _arch_register_t           arch_register_t;
-typedef struct _arch_enum_t               arch_enum_t;
-typedef struct _arch_enum_member_t        arch_enum_member_t;
 typedef struct _arch_isa_if_t             arch_isa_if_t;
 typedef struct _arch_isa_t                arch_isa_t;
 typedef struct _arch_env_t                arch_env_t;
