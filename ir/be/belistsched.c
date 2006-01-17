@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <limits.h>
 
 #include "fourcc.h"
 #include "obst.h"
@@ -29,8 +30,10 @@
 #include "beutil.h"
 #include "belive_t.h"
 #include "belistsched.h"
-#include "firm/bearch_firm.h"
+#include "bearch.h"
 
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
 
 /**
  * Scheduling environment for the whole graph.
@@ -98,6 +101,191 @@ static const list_sched_selector_t trivial_selector_struct = {
 };
 
 const list_sched_selector_t *trivial_selector = &trivial_selector_struct;
+
+typedef struct _usage_stats_t {
+	ir_node *irn;
+	struct _usage_stats_t *next;
+	int max_hops;
+	int uses_in_block;      /**< Number of uses inside the current block. */
+	int already_consumed;   /**< Number of insns using this value already
+							  scheduled. */
+} usage_stats_t;
+
+typedef struct {
+	struct obstack obst;
+	usage_stats_t *root;
+	pset *already_scheduled;
+} reg_pressure_selector_env_t;
+
+static INLINE usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
+{
+	usage_stats_t *us = get_irn_link(irn);
+
+	if(!us) {
+		us                   = obstack_alloc(&env->obst, sizeof(us[0]));
+		us->irn              = irn;
+		us->already_consumed = 0;
+		us->max_hops         = INT_MAX;
+		us->next             = env->root;
+		env->root            = us;
+		set_irn_link(irn, us);
+	}
+
+	return us;
+}
+
+static INLINE usage_stats_t *get_usage_stats(ir_node *irn)
+{
+	usage_stats_t *us = get_irn_link(irn);
+	assert(us && "This node must have usage stats");
+	return us;
+}
+
+static int max_hops_walker(ir_node *irn, ir_node *tgt, int depth, unsigned visited_nr)
+{
+	int i, n;
+	int res = 0;
+
+	if(irn != tgt) {
+		res = INT_MAX;
+
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *operand = get_irn_n(irn, i);
+
+			if(get_irn_visited(operand) < visited_nr) {
+				int tmp;
+
+				set_irn_visited(operand, visited_nr);
+				tmp = max_hops_walker(operand, tgt, depth + 1, visited_nr);
+				res = MAX(tmp, res);
+			}
+		}
+	}
+
+	return res;
+}
+
+static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
+{
+	ir_node *bl   = get_nodes_block(irn);
+	ir_graph *irg = get_irn_irg(bl);
+	int res       = INT_MAX;
+
+	const ir_edge_t *edge;
+
+	foreach_out_edge(irn, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+
+		if(get_nodes_block(user) == bl && !pset_find_ptr(env->already_scheduled, user)) {
+			unsigned visited_nr = get_irg_visited(irg) + 1;
+			int max_hops;
+
+			set_irg_visited(irg, visited_nr);
+			max_hops = max_hops_walker(user, irn, 0, visited_nr);
+			res = MAX(res, max_hops);
+		}
+	}
+
+	return res;
+}
+
+static void *reg_pressure_graph_init(const arch_isa_t *isa, ir_graph *irg)
+{
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	return NULL;
+}
+
+static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
+{
+	ir_node *irn;
+	reg_pressure_selector_env_t *env = xmalloc(sizeof(env[0]));
+
+	obstack_init(&env->obst);
+	env->root = NULL;
+	env->already_scheduled = pset_new_ptr(32);
+
+	/*
+	 * Collect usage statistics.
+	 */
+	sched_foreach(bl, irn) {
+		if(to_appear_in_schedule(irn)) {
+			int i, n;
+
+			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+				ir_node *op = get_irn_n(irn, i);
+				if(to_appear_in_schedule(op)) {
+					usage_stats_t *us = get_or_set_usage_stats(env, irn);
+					if(is_live_end(bl, op))
+						us->uses_in_block = 99999;
+					else
+						us->uses_in_block++;
+				}
+			}
+		}
+	}
+
+	return env;
+}
+
+static void reg_pressure_block_free(void *graph_env, void *block_env, ir_node *bl)
+{
+	reg_pressure_selector_env_t *env = block_env;
+	usage_stats_t *us;
+
+	for(us = env->root; us; us = us->next)
+		set_irn_link(us->irn, NULL);
+
+	obstack_free(&env->obst, NULL);
+	del_pset(env->already_scheduled);
+	free(env);
+}
+
+static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
+{
+	int i, n;
+	int sum = 0;
+
+	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		ir_node *op = get_irn_n(irn, i);
+
+		if(to_appear_in_schedule(op))
+			sum += compute_max_hops(env, op);
+	}
+
+	return sum;
+}
+
+ir_node *reg_pressure_select(void *graph_env, void *block_env,
+							 const struct list_head *sched_head,
+							 int curr_time, pset *ready_set)
+{
+	reg_pressure_selector_env_t *env = block_env;
+	ir_node *irn, *res     = NULL;
+	int curr_cost          = INT_MAX;
+
+	assert(pset_count(ready_set) > 0);
+
+	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set)) {
+		int costs = reg_pr_costs(env, irn);
+		if(costs <= curr_cost) {
+			res       = irn;
+			curr_cost = costs;
+		}
+	}
+
+	pset_insert_ptr(env->already_scheduled, res);
+	return res;
+}
+
+static const list_sched_selector_t reg_pressure_selector_struct = {
+	reg_pressure_graph_init,
+	reg_pressure_block_init,
+	reg_pressure_select,
+	reg_pressure_block_free,
+	NULL
+};
+
+const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;
 
 static void list_sched_block(ir_node *block, void *env_ptr);
 
@@ -367,8 +555,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.curr_time += phi_seen;
 
 	while(pset_count(be.ready_set) > 0) {
-		// DBG((be.dbg, LEVEL_2, "\tready set: %*n\n", pset_iterator, be.ready_set));
-
 		/* select a node to be scheduled and check if it was ready */
 		irn = selector->select(env->selector_env, block_env, &info->list, be.curr_time, be.ready_set);
 
