@@ -46,6 +46,7 @@ typedef enum _node_kind_t {
 	node_kind_reload,
 	node_kind_perm,
 	node_kind_copy,
+	node_kind_kill,
 	node_kind_last
 } node_kind_t;
 
@@ -76,6 +77,22 @@ typedef struct {
 						   in the spill area. */
 } be_spill_attr_t;
 
+
+ir_node *new_Keep(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+{
+	static ir_op *keep_op = NULL;
+	ir_node *irn;
+
+	if(!keep_op)
+		keep_op = new_ir_op(get_next_ir_opcode(), "Keep", op_pin_state_pinned,
+			irop_flag_keep, oparity_variable, 0, 0, NULL);
+
+	irn = new_ir_node(NULL, irg, bl, keep_op, mode_ANY, n, in);
+	keep_alive(irn);
+
+	return irn;
+}
+
 static int templ_pos_Spill[] = {
 	0
 };
@@ -86,6 +103,10 @@ static int templ_pos_Reload[] = {
 
 static int templ_pos_Copy[] = {
 	0, -1
+};
+
+static int templ_pos_Kill[] = {
+	0
 };
 
 static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason);
@@ -140,9 +161,10 @@ static be_node_attr_t *init_node_attr(ir_node *irn,
 	for(i = 0; i < n_regs; ++i) {
 		be_reg_data_t *rd = attr->reg_data + i;
 
-		rd->reg      = NULL;
-		rd->req.cls  = cls;
-		rd->req.type = arch_register_req_type_normal;
+		memset(&rd->req, 0, sizeof(rd->req));
+		rd->reg         = NULL;
+		rd->req.cls     = cls;
+		rd->req.type    = arch_register_req_type_normal;
 	}
 
 	return attr;
@@ -169,6 +191,8 @@ static be_op_t *get_op(const be_node_factory_t *fact,
 	return set_insert(fact->ops, &templ, sizeof(templ),
 		HASH_PTR(cls) + 7 * kind);
 }
+
+
 
 ir_node *new_Spill(const be_node_factory_t *factory,
 		const arch_register_class_t *cls,
@@ -397,6 +421,7 @@ be_node_get_irn_reg_req(const arch_irn_ops_t *_self,
 				/* be nodes have no input constraints.
 				   so return normal register requirements. */
 				if(pos >= 0) {
+					memset(req, 0, sizeof(req[0]));
 					req->cls = bo->cls;
 					req->type = arch_register_req_type_normal;
 				}
@@ -540,6 +565,7 @@ int be_is_Perm(const ir_node *irn)
 	return is_be_kind(irn, node_kind_perm);
 }
 
+
 be_node_factory_t *be_node_factory_init(be_node_factory_t *factory, const arch_isa_t *isa)
 {
 	int i, j, n;
@@ -628,6 +654,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			if(bo->kind == node_kind_spill) {
 				be_spill_attr_t *a = (be_spill_attr_t *) at;
 				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
+				ir_fprintf(f, "spill offset: %u\n", a->offset);
 			}
 			break;
 	}

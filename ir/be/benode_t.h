@@ -66,10 +66,14 @@ ir_node *be_reload(
 		const arch_register_class_t *cls,
 		ir_node *irn, int pos, ir_mode *mode, ir_node *spill);
 
+ir_node *new_Keep(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+
 int be_is_Spill(const ir_node *irn);
 int be_is_Reload(const ir_node *irn);
 int be_is_Copy(const ir_node *irn);
 int be_is_Perm(const ir_node *irn);
+
+const arch_register_class_t *be_node_get_reg_class(const ir_node *irn);
 
 void set_Spill_offset(ir_node *irn, unsigned offset);
 unsigned get_Spill_offset(ir_node *irn);
