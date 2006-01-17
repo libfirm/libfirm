@@ -143,7 +143,7 @@ typedef enum _arch_register_req_type_t {
  * @return      1, If the kind of constraint is present, 0 if not.
  */
 #define arch_register_req_is(req, kind) \
-	((req)->type & (arch_register_req_type_ ## kind) != 0)
+	(((req)->type & (arch_register_req_type_ ## kind)) != 0)
 
 /**
  * Expresses requirements to register allocation for an operand.
