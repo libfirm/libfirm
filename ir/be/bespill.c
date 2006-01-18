@@ -271,11 +271,11 @@ void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, in
 
 
 
-/*
+/****************************************
 
-		SPILL SLOT MANAGEMENT AND OPTS
+	SPILL SLOT MANAGEMENT AND OPTS
 
-*/
+****************************************/
 
 typedef struct _spill_slot_t {
 	unsigned size;
