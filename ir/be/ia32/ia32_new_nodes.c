@@ -92,7 +92,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 	int        bad   = 0;
 	asmop_attr *attr;
 	int        i;
-	const arch_register_req_t **reqs;
+	const ia32_register_req_t **reqs;
 	const arch_register_t     **slots;
 
 	switch (reason) {
@@ -152,8 +152,8 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 
 				if (reqs) {
 					for (i = 0; i < get_irn_arity(n); i++) {
-						if (reqs[i]->type != arch_register_req_type_none) {
-							fprintf(F, "inreq[%d]=[%s]\n", i, reqs[i]->cls->name);
+						if (reqs[i]->req.type != arch_register_req_type_none) {
+							fprintf(F, "inreq[%d]=[%s]\n", i, reqs[i]->req.cls->name);
 						}
 						else {
 							fprintf(F, "inreq[%d]=[none]\n", i);
@@ -173,8 +173,8 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 
 				if (reqs) {
 					for (i = 0; i < attr->n_res; i++) {
-						if (reqs[i]->type != arch_register_req_type_none) {
-							fprintf(F, "outreq[%d]=[%s]\n", i, reqs[i]->cls->name);
+						if (reqs[i]->req.type != arch_register_req_type_none) {
+							fprintf(F, "outreq[%d]=[%s]\n", i, reqs[i]->req.cls->name);
 						}
 						else {
 							fprintf(F, "outreq[%d]=[none]\n", i);
@@ -348,7 +348,7 @@ void set_ia32_old_ir(ir_node *node, ir_node *old_ir) {
 /**
  * Returns the argument register requirements of an ia32 node.
  */
-const arch_register_req_t **get_ia32_in_req_all(const ir_node *node) {
+const ia32_register_req_t **get_ia32_in_req_all(const ir_node *node) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->in_req;
 }
@@ -356,7 +356,7 @@ const arch_register_req_t **get_ia32_in_req_all(const ir_node *node) {
 /**
  * Returns the result register requirements of an ia32 node.
  */
-const arch_register_req_t **get_ia32_out_req_all(const ir_node *node) {
+const ia32_register_req_t **get_ia32_out_req_all(const ir_node *node) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->out_req;
 }
@@ -364,7 +364,7 @@ const arch_register_req_t **get_ia32_out_req_all(const ir_node *node) {
 /**
  * Returns the argument register requirement at position pos of an ia32 node.
  */
-const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
+const ia32_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->in_req[pos];
 }
@@ -372,7 +372,7 @@ const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
 /**
  * Returns the result register requirement at position pos of an ia32 node.
  */
-const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos) {
+const ia32_register_req_t *get_ia32_out_req(const ir_node *node, int pos) {
 	asmop_attr *attr = get_ia32_attr(node);
 	return attr->out_req[pos];
 }
@@ -380,7 +380,7 @@ const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos) {
 /**
  * Sets the OUT register requirements at position pos.
  */
-void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_ia32_req_out(ir_node *node, const ia32_register_req_t *req, int pos) {
 	asmop_attr *attr   = get_ia32_attr(node);
 	attr->out_req[pos] = req;
 }
@@ -388,7 +388,7 @@ void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos) {
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_ia32_req_in(ir_node *node, const ia32_register_req_t *req, int pos) {
 	asmop_attr *attr  = get_ia32_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -473,19 +473,19 @@ int get_ia32_n_res(const ir_node *node) {
 }
 
 /**
- * Returns the flavour of an ia32 DivMod,
+ * Returns the flavour of an ia32 node,
  */
-divmod_flavour_t get_ia32_DivMod_flavour(const ir_node *node) {
+op_flavour_t get_ia32_flavour(const ir_node *node) {
 	asmop_attr *attr = get_ia32_attr(node);
-	return attr->dm_flav;
+	return attr->op_flav;
 }
 
 /**
- * Sets the flavour of an ia32 DivMod node to flavour_Div/Mod/DivMod.
+ * Sets the flavour of an ia32 node to flavour_Div/Mod/DivMod/Mul/Mulh.
  */
-void set_ia32_DivMod_flavour(ir_node *node, divmod_flavour_t dm_flav) {
+void set_ia32_flavour(ir_node *node, op_flavour_t op_flav) {
 	asmop_attr *attr = get_ia32_attr(node);
-	attr->dm_flav    = dm_flav;
+	attr->op_flav    = op_flav;
 }
 
 /**
@@ -603,5 +603,17 @@ int is_ia32_AddrMode(ir_node *node) {
 	return (attr->tp == asmop_AddrMode);
 }
 
-/* Include the generated functions */
+
+
+/***************************************************************************************
+ *                  _                            _                   _
+ *                 | |                          | |                 | |
+ *  _ __   ___   __| | ___    ___ ___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __ ___
+ * | '_ \ / _ \ / _` |/ _ \  / __/ _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__/ __|
+ * | | | | (_) | (_| |  __/ | (_| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |  \__ \
+ * |_| |_|\___/ \__,_|\___|  \___\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|  |___/
+ *
+ ***************************************************************************************/
+
+/* Include the generated constructor functions */
 #include "gen_ia32_new_nodes.c.inl"

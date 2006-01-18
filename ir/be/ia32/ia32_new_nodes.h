@@ -95,32 +95,32 @@ void set_ia32_old_ir(ir_node *node, ir_node *old_ir);
 /**
  * Returns the argument register requirements of an ia32 node.
  */
-const arch_register_req_t **get_ia32_in_req_all(const ir_node *node);
+const ia32_register_req_t **get_ia32_in_req_all(const ir_node *node);
 
 /**
  * Returns the result register requirements of an ia32 node.
  */
-const arch_register_req_t **get_ia32_out_req_all(const ir_node *node);
+const ia32_register_req_t **get_ia32_out_req_all(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an ia32 node.
  */
-const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos);
+const ia32_register_req_t *get_ia32_in_req(const ir_node *node, int pos);
 
 /**
  * Returns the result register requirements of an ia32 node.
  */
-const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos);
+const ia32_register_req_t *get_ia32_out_req(const ir_node *node, int pos);
 
 /**
  * Sets the OUT register requirements at position pos.
  */
-void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos);
+void set_ia32_req_out(ir_node *node, const ia32_register_req_t *req, int pos);
 
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos);
+void set_ia32_req_in(ir_node *node, const ia32_register_req_t *req, int pos);
 
 /**
  * Returns the register flag of an ia32 node.
@@ -163,14 +163,14 @@ void set_ia32_n_res(ir_node *node, int n_res);
 int get_ia32_n_res(const ir_node *node);
 
 /**
- * Returns the flavour of an ia32 DivMod,
+ * Returns the flavour of an ia32 node,
  */
-divmod_flavour_t get_ia32_DivMod_flavour(const ir_node *node);
+op_flavour_t get_ia32_flavour(const ir_node *node);
 
 /**
- * Sets the flavour of an ia32 DivMod node to flavour_Div/Mod/DivMod.
+ * Sets the flavour of an ia32 node to flavour_Div/Mod/DivMod/Mul/Mulh.
  */
-void set_ia32_DivMod_flavour(ir_node *node, divmod_flavour_t dm_flav);
+void set_ia32_flavour(ir_node *node, op_flavour_t op_flav);
 
 /**
  * Returns the projnum code.
