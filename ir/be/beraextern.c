@@ -14,6 +14,7 @@
 #include "pmap.h"
 #include "pset.h"
 
+#include "irprintf_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
@@ -28,7 +29,6 @@
 typedef struct _be_raext_env_t {
 	arch_env_t *aenv;
 	const arch_register_class_t *cls;
-	be_node_factory_t *fact;
 	ir_graph *irg;
 
 	FILE *f;
@@ -37,13 +37,12 @@ typedef struct _be_raext_env_t {
 	pmap *blocks;
 } be_raext_env_t;
 
-
 /* Helpers */
 #define pmap_insert_sth(pmap, key, val) pmap_insert(pmap, (void *)key, (void *)val)
 #define pmap_get_sth(pmap, key)			pmap_get(pmap, (void *)key)
 
-#define set_var_nr(irn, nr)				set_irn_link(irn, (void *)nr)
-#define get_var_nr(irn)					((int)get_irn_link(irn))
+#define set_var_nr(irn, nr)				set_irn_link(irn, INT_TO_PTR(nr))
+#define get_var_nr(irn)					(PTR_TO_INT(get_irn_link(irn)))
 
 #define is_res_in_reg_class(irn) arch_irn_has_reg_class(raenv->aenv, irn, -1, raenv->cls)
 
@@ -88,18 +87,18 @@ static void ssa_destr_simple(ir_node *blk, void *env) {
 	/* for all phi nodes (which are scheduled at first) */
 	sched_foreach(blk, phi) {
 		int i, max;
+		const arch_register_class_t *cls;
 
 		if (!is_Phi(phi))
 			break;
 
-		if (!is_res_in_reg_class(phi))
-			continue;
+		cls = arch_get_irn_reg_class(raenv->aenv, phi, -1);
 
 		/* for all args of these phis */
 		for (i=0, max=get_irn_arity(phi); i<max; ++i) {
 			ir_node *arg = get_irn_n(phi, i);
 			ir_node *pred_blk = get_Block_cfgpred_block(blk, i);
-			ir_node *cpy = new_Copy(raenv->fact, raenv->cls, raenv->irg, pred_blk, arg);
+			ir_node *cpy = be_new_Copy(cls, raenv->irg, pred_blk, arg);
 			set_irn_n(phi, i, cpy);
 			sched_add_before(pred_blk, cpy);
 		}
@@ -158,7 +157,7 @@ static void dump_blocks(ir_node *blk, void *env) {
 		if (is_Phi(irn) || !is_sth_in_reg_class(raenv, irn))
 			continue;
 
-		fprintf(f, "    insn {\n");
+		fprintf(f, "    insn %d {\n", get_var_nr(irn));
 
 			/*
 			 * print all defs
@@ -168,6 +167,7 @@ static void dump_blocks(ir_node *blk, void *env) {
 				for (irn = sched_next(irn); is_Proj(irn); irn = sched_next(irn))
 					if (arch_irn_has_reg_class(raenv->aenv, irn, -1, raenv->cls))
 						fprintf(f, " %d", get_var_nr(irn));
+				irn = sched_prev(irn); /* for outer loop */
 			} else {
 				if (arch_irn_has_reg_class(raenv->aenv, irn, -1, raenv->cls))
 					fprintf(f, " %d", get_var_nr(irn));
@@ -218,6 +218,7 @@ static void dump_file(be_raext_env_t *raenv, char *filename) {
 		exit(1);
 	}
 
+	raenv->f = f;
 	fprintf(f, "regs %d\n", arch_register_class_n_regs(raenv->cls));
 	fprintf(f, "cfg %s {\n", "noname");
 
@@ -245,26 +246,27 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 	int clsnr, clss;
 
 	raenv.irg = irg;
-	raenv.fact = env->node_factory;
 	raenv.aenv = env->arch_env;
+	raenv.vars = pmap_create();
+	raenv.blocks = pmap_create();
+	raenv.next_var_nr = 0;
+
+	/* SSA destruction */
+	be_clear_links(irg);
+	irg_block_walk_graph(irg, ssa_destr_simple, NULL, &raenv);
+	phi_class_compute(irg);
+	irg_walk_graph(irg, values_to_vars, NULL, &raenv);
+
+	dump_ir_block_graph_sched(irg, "-extern-ssadestr");
 
 	/* For all register classes */
 	for(clsnr = 0, clss = arch_isa_get_n_reg_class(raenv.aenv->isa); clsnr < clss; ++clsnr) {
-		char *out, *in;
+		char out[256], in[256];
 
 		raenv.cls = arch_isa_get_reg_class(raenv.aenv->isa, clsnr);
-		raenv.vars = pmap_create();
-		raenv.blocks = pmap_create();
-		raenv.next_var_nr = 0;
-
-		/* SSA destruction */
-		be_clear_links(irg);
-		irg_block_walk_graph(irg, ssa_destr_simple, NULL, &raenv);
-		phi_class_compute(irg);
-		irg_walk_graph(irg, values_to_vars, NULL, &raenv);
 
 		/* Write file */
-		out = "trallala";
+		ir_snprintf(out, sizeof(out), "%F-%s.ra", irg, raenv.cls->name);
 		dump_file(&raenv, out);
 
 		/* Call */
@@ -275,14 +277,15 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 		//NOTE: free pmap entries (the psets) pmap_foreach(raenv.vars, pme)	del_pset(pme->value);
 
 
-		/* Clean up for this register class */
-		pmap_destroy(raenv.blocks);
-		pmap_destroy(raenv.vars);
 	}
+
+	/* Clean up */
+	pmap_destroy(raenv.blocks);
+	pmap_destroy(raenv.vars);
 }
 
 
-const be_ra_t be_ra_chordal_allocator = {
+const be_ra_t be_ra_external_allocator = {
 #ifdef WITH_LIBCORE
 	be_ra_extern_register_options,
 #endif
