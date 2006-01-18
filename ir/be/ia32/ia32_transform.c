@@ -247,16 +247,17 @@ ir_node *generate_Mul(transform_env_t *env, ir_node *op1, ir_node *op2, op_flavo
 	ir_graph   *irg   = env->irg;
 	ir_node    *block = env->block;
 	ir_mode    *mode  = env->mode;
+	ir_node    *mul;
 
 	/* create the mul */
 	if (is_imm_op) {
-		res = new_rd_ia32_Mul_i(dbg, irg, block, op1, mode);
+		mul = new_rd_ia32_Mul_i(dbg, irg, block, op1, mode_T);
 		set_ia32_Immop_attr(res, op2);
 	}
 	else {
-		res = new_rd_ia32_Mul(dbg, irg, block, op1, op2, mode);
+		mul = new_rd_ia32_Mul(dbg, irg, block, op1, op2, mode_T);
 	}
-	set_ia32_flavour(res, mul_flav);
+	set_ia32_flavour(mul, mul_flav);
 
 	/* create the mul infrastructure */
 	if (mul_flav == flavour_Mul) {
@@ -268,10 +269,10 @@ ir_node *generate_Mul(transform_env_t *env, ir_node *op1, ir_node *op2, op_flavo
 		pn_bad  = pn_EAX;
 	}
 
-	res        = new_rd_Proj(dbg, irg, block, res, mode, pn_good);
-	in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_bad);
+	res        = new_rd_Proj(dbg, irg, block, mul, mode, pn_good);
+	in_keep[0] = new_rd_Proj(dbg, irg, block, mul, mode, pn_bad);
 
-	new_Keep(irg, block, 1, in_keep);
+	be_new_Keep(&ia32_reg_classes[CLASS_ia32_general_purpose], irg, block, 1, in_keep);
 
 	return res;
 }
@@ -580,7 +581,7 @@ static ir_node *generate_DivMod(transform_env_t *env, ir_node *dividend, ir_node
 			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode_Is, pn_DivMod_res_div);
 		}
 
-		new_Keep(irg, block, 1, in_keep);
+		be_new_Keep(&ia32_reg_classes[CLASS_ia32_general_purpose], irg, block, 1, in_keep);
 	}
 
 	return res;

@@ -69,7 +69,7 @@ long translate_proj_pos(const ir_node *proj) {
 	else if (is_ia32_SwitchJmp(pred)) {
 		return 0;
 	}
-	else if (is_ia32_Cltd(pred)) {
+	else if (is_ia32_Cltd(pred) || is_ia32_Mul(pred)) {
 		if (nr == pn_EAX)
 			return 0;
 		if (nr == pn_EDX)

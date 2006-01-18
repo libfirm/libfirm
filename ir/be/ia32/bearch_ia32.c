@@ -395,7 +395,7 @@ static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self) {
  * Returns the default scheduler
  */
 static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
-	return trivial_selector;
+	return reg_pressure_selector;
 }
 
 #ifdef WITH_LIBCORE
