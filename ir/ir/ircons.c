@@ -985,20 +985,6 @@ new_bd_Bound (dbg_info *db, ir_node *block,
   return res;
 }
 
-static ir_node *
-new_bd_Keep(dbg_info *db, ir_node *block, int n, ir_node *in[])
-{
-	ir_graph *irg = current_ir_graph;
-	ir_node *res;
-
-	res = new_ir_node(db, irg, block, op_Keep, mode_ANY, n, in);
-	keep_alive(res);
-
-	res = optimize_node(res);
-	IRN_VRFY_IRG(res, irg);
-	return res;
-}
-
 /* --------------------------------------------- */
 /* private interfaces, for professional use only */
 /* --------------------------------------------- */
@@ -1798,18 +1784,6 @@ ir_node *new_rd_Bound(dbg_info *db, ir_graph *irg, ir_node *block,
   return res;
 }
 
-ir_node *new_rd_Keep(dbg_info *db, ir_graph *irg, ir_node *block, int n, ir_node *in[])
-{
-  ir_node  *res;
-  ir_graph *rem = current_ir_graph;
-
-  current_ir_graph = irg;
-  res = new_bd_Keep(db, block, n, in);
-  current_ir_graph = rem;
-
-  return res;
-}
-
 ir_node *new_r_Block  (ir_graph *irg,  int arity, ir_node **in) {
   return new_rd_Block(NULL, irg, arity, in);
 }
@@ -2026,12 +2000,6 @@ ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
 ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
   return new_rd_Bound(NULL, irg, block, store, idx, lower, upper);
-}
-
-ir_node *new_r_Keep(ir_graph *irg, ir_node *block,
-					int n, ir_node *in[])
-{
-	return new_rd_Keep(NULL, irg, block, n, in);
 }
 
 /** ********************/
@@ -3391,11 +3359,6 @@ ir_node *new_d_Bound(dbg_info *db,ir_node *store,
   return res;
 }
 
-ir_node *new_d_Keep(dbg_info *db, int n, ir_node *in[])
-{
-	return new_bd_Keep(db, current_ir_graph->current_block, n, in);
-}
-
 /* ********************************************************************* */
 /* Comfortable interface with automatic Phi node construction.           */
 /* (Uses also constructors of ?? interface, except new_Block.            */
@@ -3729,7 +3692,4 @@ ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_typ
 }
 ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
   return new_d_Bound(NULL, store, idx, lower, upper);
-}
-ir_node *new_Keep(int n, ir_node *in[]) {
-	return new_d_Keep(NULL, n, in);
 }

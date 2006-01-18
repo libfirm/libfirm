@@ -1862,13 +1862,6 @@ ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Bound(dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
-/**
- * Construct a new Keep node.
- * @see new_Keep().
- */
-ir_node *new_rd_Keep(dbg_info *db, ir_graph *irg, ir_node *block,
-					 int n, ir_node *in[]);
-
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
 /*-------------------------------------------------------------------------*/
@@ -2578,12 +2571,6 @@ ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
  */
 ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
-
-/**
- * Constructor of a Keep node.
- * @see new_Keep()
- */
-ir_node *new_r_Keep(ir_graph *irg, ir_node *block, int n, ir_node *in[]);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -3304,12 +3291,6 @@ ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst, ir_node *src, i
  */
 ir_node *new_d_Bound(dbg_info *db, ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
-/**
- * Constructor for a Keep node.
- * @see new_Keep.
- */
-ir_node *new_d_Keep(dbg_info *db, int n, ir_node *in[]);
-
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
 /*-----------------------------------------------------------------------*/
@@ -3933,14 +3914,6 @@ ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_typ
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
 ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
-
-/**
- * Constructor for a Keep node.
- * @param n    Number of inputs.
- * @param in   Input array.
- * @reutrn A new Keep node.
- */
-ir_node *new_Keep(int n, ir_node *in[]);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
