@@ -172,6 +172,7 @@ new_ir_op(opcode code, const char *name, op_pin_state p,
   res->flags     = flags;
   res->opar      = opar;
   res->op_index  = op_index;
+  res->tag       = NULL;
 
   if (ops)
     memcpy(&res->ops, ops, sizeof(res->ops));

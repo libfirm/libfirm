@@ -27,6 +27,7 @@ struct ir_op {
   op_arity opar;          /**< arity of operator. */
   int op_index;           /**< the index of the first data operand, 0 for most cases, 1 for Div etc. */
   unsigned flags;         /**< flags describing the behavior of the ir_op, a bitmaks of irop_flags */
+  void *tag;              /**< Some custom pointer the op's creator can attach stuff to. */
 
   ir_op_ops ops;          /**< the operations of the this op. */
 };
@@ -129,10 +130,19 @@ static INLINE const ir_op_ops *_get_op_ops(const ir_op *op) {
   return &op->ops;
 }
 
+static INLINE void _set_op_tag(ir_op *op, void *tag) {
+	op->tag = tag;
+}
+
+static INLINE void *_get_op_tag(ir_op *op) {
+	return op->tag;
+}
+
 #define get_op_code(op)         _get_op_code(op)
 #define get_op_ident(op)        _get_op_ident(op)
 #define get_op_pinned(op)       _get_op_pinned(op)
 #define get_op_ops(op)          _get_op_ops(op)
-
+#define set_op_tag(op, tag)     _set_op_tag((op), (tag))
+#define get_op_tag(op)          _get_op_tag(op)
 
 #endif /* _IROP_T_H_ */
