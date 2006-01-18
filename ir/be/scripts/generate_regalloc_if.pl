@@ -65,7 +65,7 @@ $tmp .= "  {\n";
 $tmp .= "    arch_register_req_type_none,\n";
 $tmp .= "    NULL,\n";
 $tmp .= "    NULL,\n";
-$tmp .= "    0\n";
+$tmp .= "    NULL\n";
 $tmp .= "  },\n";
 $tmp .= "  0\n";
 $tmp .= "};\n\n";
@@ -98,13 +98,13 @@ foreach my $class_name (keys(%reg_classes)) {
 	$tmp .= "    arch_register_req_type_normal,\n";
 	$tmp .= "    $class_ptr,\n";
 	$tmp .= "    NULL,\n";
-	$tmp .= "    0\n";
+	$tmp .= "    NULL\n";
 	$tmp .= "  },\n";
 	$tmp .= "  0\n";
 	$tmp .= "};\n\n";
 	push(@obst_req, $tmp);
 
-	push(@obst_header_all, "\nextern const arch_register_req_t ia32_default_req_$class_name;\n");
+	push(@obst_header_all, "\nextern const $arch\_register_req_t $arch\_default_req_$class_name;\n");
 
 	my $idx = 0;
 	push(@obst_reginit, "  /* Init of all registers in class '$class_name' */\n\n");
@@ -135,7 +135,7 @@ foreach my $class_name (keys(%reg_classes)) {
 		$tmp .= "    arch_register_req_type_limited,\n";
 		$tmp .= "    $class_ptr,\n";
 		$tmp .= "    $limit_func_name,\n";
-		$tmp .= "    0\n";
+		$tmp .= "    NULL\n";
 		$tmp .= "  },\n";
 		$tmp .= "  0\n";
 		$tmp .= "};\n\n";
@@ -201,6 +201,7 @@ print OUT<<EOF;
  */
 
 #include "../bearch.h"
+#include "$arch\_nodes_attr.h"
 
 EOF
 
@@ -372,7 +373,7 @@ sub generate_requirements {
 			$tmp2 .= "  {\n";
 			$tmp2 .= "    ".join(" | ", @req_type_mask).",\n";
 			$tmp2 .= "    &$arch\_reg_classes[CLASS_$arch\_".$class."],\n";
-			$tmp2 .= "    ".(defined($class) ? "limit_reg_".$op."_$inout\_".$idx : "NULL").",\n";
+			$tmp2 .= "    ".($has_limit ? "limit_reg_".$op."_$inout\_".$idx : "NULL").",\n";
 			$tmp2 .= "    NULL\n";
 			$tmp2 .= "  },\n";
 			$tmp2 .= "  ".(defined($pos) ? $pos : "0")."\n};\n";
