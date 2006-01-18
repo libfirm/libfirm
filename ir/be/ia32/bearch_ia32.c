@@ -2,7 +2,6 @@
 #include "irgwalk.h"
 #include "irprog.h"
 #include "irprintf.h"
-#include "bearch_ia32.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -18,6 +17,7 @@
 #endif
 
 #include "../bearch.h"                /* the general register allocator interface */
+#include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
@@ -56,10 +56,10 @@ static ir_node *my_skip_proj(const ir_node *n) {
  * will be asked for this information.
  */
 static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-	const arch_register_req_t *irn_req;
-	long node_pos = pos == -1 ? 0 : pos;
-	ir_mode *mode = get_irn_mode(irn);
-	firm_dbg_module_t *mod = firm_dbg_register(DEBUG_MODULE);
+	const ia32_register_req_t *irn_req;
+	long                       node_pos = pos == -1 ? 0 : pos;
+	ir_mode                   *mode     = get_irn_mode(irn);
+	firm_dbg_module_t         *mod      = firm_dbg_register(DEBUG_MODULE);
 
 	if (mode == mode_T || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
@@ -69,10 +69,12 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
 	if (is_Proj(irn)) {
-		if (pos == -1)
+		if (pos == -1) {
 			node_pos = translate_proj_pos(irn);
-		else
+		}
+		else {
 			node_pos = pos;
+		}
 
 		irn = my_skip_proj(irn);
 
@@ -89,7 +91,14 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 
 		DBG((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
 
-		memcpy(req, irn_req, sizeof(*req));
+		memcpy(req, &(irn_req->req), sizeof(*req));
+
+		if (arch_register_req_is(&(irn_req->req), should_be_same) ||
+			arch_register_req_is(&(irn_req->req), should_be_different)) {
+			assert(irn_req->pos >= 0 && "should be same/different constraint for in -> out NYI");
+			req->other = get_irn_n(irn, irn_req->pos);
+		}
+
 		return req;
 	}
 	else {
@@ -97,9 +106,9 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 		if (is_Phi(irn)) {
 			DBG((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
 			if (mode_is_float(mode))
-				memcpy(req, &ia32_default_req_ia32_floating_point, sizeof(*req));
+				memcpy(req, &(ia32_default_req_ia32_floating_point.req), sizeof(*req));
 			else if (mode_is_int(mode) || mode_is_reference(mode))
-				memcpy(req, &ia32_default_req_ia32_general_purpose, sizeof(*req));
+				memcpy(req, &(ia32_default_req_ia32_general_purpose.req), sizeof(*req));
 			else if (mode == mode_T || mode == mode_M) {
 				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
 				return NULL;
@@ -113,10 +122,10 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 				case pn_Start_X_initial_exec:
 				case pn_Start_P_value_arg_base:
 				case pn_Start_P_globals:
-					memcpy(req, &ia32_default_req_none, sizeof(*req));
+					memcpy(req, &(ia32_default_req_none.req), sizeof(*req));
 					break;
 				case pn_Start_P_frame_base:
-					memcpy(req, &ia32_default_req_none, sizeof(*req));
+					memcpy(req, &(ia32_default_req_none.req), sizeof(*req));
 					break;
 				case pn_Start_T_args:
 					assert(0 && "ProjT(pn_Start_T_args) should not be asked");
@@ -124,7 +133,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 		}
 		else if (get_irn_op(irn) == op_Return && pos > 0) {
 			DBG((mod, LEVEL_1, "returning reqs EAX for %+F\n", irn));
-			memcpy(req, &ia32_default_req_ia32_general_purpose_eax, sizeof(*req));
+			memcpy(req, &(ia32_default_req_ia32_general_purpose_eax.req), sizeof(*req));
 		}
 		else {
 			DBG((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
@@ -223,25 +232,15 @@ typedef struct _ia32_isa_t {
 	int                  num_codegens;
 } ia32_isa_t;
 
-typedef struct _ia32_code_gen_t {
-	const arch_code_generator_if_t *impl;     /* implementation */
-	ir_graph                       *irg;      /* current irg */
-	FILE                           *out;      /* output file */
-	const arch_env_t               *arch_env; /* the arch env */
-	set                            *reg_set;  /* set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
-	firm_dbg_module_t              *mod;      /* debugging module */
-	int                             emit_decls;
-} ia32_code_gen_t;
-
 /**
  * Transforms the standard firm graph into
  * an ia32 firm graph
  */
 static void ia32_prepare_graph(void *self) {
-	ia32_code_gen_t   *cg  = self;
+	ia32_code_gen_t *cg  = self;
 
 	if (! is_pseudo_ir_graph(cg->irg))
-		irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg->mod);
+		irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
 }
 
 
