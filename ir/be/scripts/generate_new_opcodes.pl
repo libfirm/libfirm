@@ -47,6 +47,7 @@ my @obst_cmp_attr;    # stack for the compare attribute functions
 my $orig_op;
 my $arity;
 my $cmp_attr_func;
+my $temp;
 
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
@@ -56,6 +57,7 @@ foreach my $op (keys(%nodes)) {
 	$orig_op = $op;
 	$op      = $arch."_".$op;
 	$arity   = $n{"arity"};
+	$temp    = "";
 
 	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
 	push(@obst_get_opvar, "ir_op *get_op_$op(void)   { return op_$op; }\n");
@@ -89,12 +91,12 @@ foreach my $op (keys(%nodes)) {
 		# create constructor head
 		my $complete_args = "";
 		my $arg_names     = "";
-		my $temp          = "";
+		$temp             = "";
 
 		$temp = "ir_node *new_rd_$op(dbg_info *db, ir_graph *irg, ir_node *block";
 		if (!exists($n{"args"}) || $n{"args"} =~ /^DEFAULT$/i) { # default args
-			if ($n{"arity"} !~ /^[0-3]$/) {
-				print "DEFAULT args require arity 0,1,2 or 3! Ignoring op $orig_op!\n";
+			if ($n{"arity"} !~ /^\d+$/) {
+				print "DEFAULT args require numeric arity (0, 1, 2, ...)! Ignoring op $orig_op!\n";
 				next;
 			}
 			for (my $i = 1; $i <= $n{"arity"}; $i++) {
@@ -118,7 +120,7 @@ foreach my $op (keys(%nodes)) {
 
 		# emit constructor code
 		if (!exists($n{"rd_constructor"}) || $n{"rd_constructor"} =~ /^DEFAULT$/i) { # default constructor
-			if ($n{"arity"} !~ /^[0-3]$/) {
+			if ($n{"arity"} !~ /^\d+$/) {
 				print "DEFAULT rd_constructor requires arity 0,1,2 or 3! Ignoring op $orig_op!\n";
 				next;
 			}
