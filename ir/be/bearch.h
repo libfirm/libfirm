@@ -1,6 +1,10 @@
 #ifndef _FIRM_BEARCH_H
 #define _FIRM_BEARCH_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "firm_config.h"
 
 #ifdef WITH_LIBCORE
