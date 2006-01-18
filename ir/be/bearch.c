@@ -92,7 +92,7 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
   const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
 
-  if(arch_register_req_is(req, none)) {
+  if(req->type == arch_register_req_type_none) {
 	  bitset_clear_all(bs);
 	  return 0;
   }
@@ -116,28 +116,20 @@ int arch_is_register_operand(const arch_env_t *env,
 int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
     int pos, const arch_register_t *reg)
 {
-	int res = 0;
 	arch_register_req_t req;
 
 	arch_get_register_req(env, &req, irn, pos);
-	switch(req.type) {
-		case arch_register_req_type_normal:
-		case arch_register_req_type_should_be_different:
-		case arch_register_req_type_should_be_same:
-			res = req.cls == reg->reg_class;
-			break;
-		case arch_register_req_type_limited:
-			{
-				bitset_t *bs = bitset_alloca(req.cls->n_regs);
-				req.limited(irn, pos, bs);
-				res = bitset_is_set(bs, arch_register_get_index(reg));
-			}
-			break;
-		default:
-			res = 0;
+
+	if(req.type == arch_register_req_type_none)
+		return 0;
+
+	if(arch_register_req_is(&req, limited)) {
+		bitset_t *bs = bitset_alloca(req.cls->n_regs);
+		req.limited(irn, pos, bs);
+		return bitset_is_set(bs, arch_register_get_index(reg));
 	}
 
-	return res;
+	return req.cls == reg->reg_class;
 }
 
 const arch_register_class_t *

@@ -401,15 +401,20 @@ static void *put_in_reg_req(arch_register_req_t *req, const ir_node *irn, int po
 static const arch_register_req_t *
 be_node_get_irn_reg_req(const arch_irn_ops_t *self, arch_register_req_t *req, const ir_node *irn, int pos)
 {
-	int out_pos = redir_proj((const ir_node **) &irn, pos);
+	int out_pos = pos;
 
-	if(pos < 0 && get_irn_mode(irn) == mode_T)
-		return NULL;
+	if(pos < 0) {
+		if(get_irn_mode(irn) == mode_T)
+			return NULL;
 
-	if(!is_be_node(irn))
-		return NULL;
+		out_pos = redir_proj((const ir_node **) &irn, pos);
+		assert(is_be_node(irn));
+		return put_out_reg_req(req, irn, out_pos);
+	}
 
-	req = pos >= 0 ? put_in_reg_req(req, irn, pos) : put_out_reg_req(req, irn, out_pos);
+	else {
+		return is_be_node(irn) ? put_in_reg_req(req, irn, pos) : NULL;
+	}
 
 	return req;
 }
