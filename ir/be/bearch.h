@@ -5,7 +5,6 @@
 #include "config.h"
 #endif
 
-#include "firm_config.h"
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
