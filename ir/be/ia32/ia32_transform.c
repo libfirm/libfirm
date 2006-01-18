@@ -1276,7 +1276,7 @@ static ir_node *gen_SymConst(transform_env_t *env) {
 static ir_node *gen_Const(transform_env_t *env) {
 	ir_node *cnst;
 	entity  *ent;
-	type    *tp;
+	ir_type *tp;
 	symconst_symbol sym;
 	firm_dbg_module_t *mod   = env->mod;
 	dbg_info          *dbg   = env->dbg;
@@ -1392,7 +1392,7 @@ static ir_node *gen_Proj_Start(transform_env_t *env, ir_node *proj, ir_node *sta
 	unsigned           cc;
 	ir_node           *proj_M     = get_irg_initial_mem(current_ir_graph);
 	entity            *irg_ent    = get_irg_entity(current_ir_graph);
-	type              *tp         = get_entity_type(irg_ent);
+	ir_type           *tp         = get_entity_type(irg_ent);
 	int                cur_gp_idx = 0;
 	int                cur_fp_idx = 0;
 	int                stack_idx  = 0;

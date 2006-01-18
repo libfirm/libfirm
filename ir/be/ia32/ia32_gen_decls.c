@@ -268,15 +268,15 @@ static void dump_atomic_init(struct obstack *obst, ir_node *init)
 static int ent_is_string_const(entity *ent)
 {
   int res = 0;
-  type *ty;
+  ir_type *ty;
 
   ty = get_entity_type(ent);
 
   /* if it's an array */
   if (is_Array_type(ty)) {
-    type *elm_ty = get_array_element_type(ty);
+    ir_type *elm_ty = get_array_element_type(ty);
 
-    /* and the array's alement type is primitive */
+    /* and the array's element type is primitive */
     if (is_Primitive_type(elm_ty)) {
       ir_mode *mode = get_type_mode(elm_ty);
 
@@ -358,7 +358,7 @@ struct arr_info {
  */
 static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack, entity *ent)
 {
-  type *ty            = get_entity_type(ent);
+  ir_type *ty         = get_entity_type(ent);
   const char *ld_name = get_entity_ld_name(ent);
   int align, h;
   struct obstack *obst = data_obstack;
@@ -404,7 +404,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
           /* potential spare values should be already included! */
        	  for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
             entity *step = get_compound_ent_value_member(ent, i);
-            type *stype  = get_entity_type(step);
+            ir_type *stype = get_entity_type(step);
 
             if (get_type_mode(stype)) {
               int align = (get_type_alignment_bits(stype) + 7) >> 3;
@@ -453,10 +453,10 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
             /* We wanna know how many arrays are on the path to the entity. We also have to know how
              * many elements each array holds to calculate the offset for the entity. */
             for (j = 0; j < graph_length; j++) {
-              entity *step      = get_compound_graph_path_node(path, j);
-              type   *step_type = get_entity_type(step);
-              int    ty_size    = (get_type_size_bits(step_type) + 7) >> 3;
-              int    k, n       = 0;
+              entity  *step      = get_compound_graph_path_node(path, j);
+              ir_type *step_type = get_entity_type(step);
+              int     ty_size    = (get_type_size_bits(step_type) + 7) >> 3;
+              int     k, n       = 0;
 
               if (is_Array_type(step_type))
                 for (k = 0; k < get_array_n_dimensions(step_type); k++)
@@ -471,10 +471,10 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
             if (aipos) aipos--;
 
             for (offset = j = 0; j < graph_length; j++) {
-              entity *step    = get_compound_graph_path_node(path, j);
-              type *step_type = get_entity_type(step);
-              int ent_ofs     = get_entity_offset_bytes(step);
-              int stepsize    = 0;
+              entity *step       = get_compound_graph_path_node(path, j);
+              ir_type *step_type = get_entity_type(step);
+              int ent_ofs        = get_entity_offset_bytes(step);
+              int stepsize       = 0;
 
               /* add all positive offsets (= offsets in structs) */
               if (ent_ofs >= 0) offset += ent_ofs;
@@ -549,7 +549,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
  */
 void ia32_dump_globals(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack)
 {
-  type *gt = get_glob_type();
+  ir_type *gt = get_glob_type();
   int i, n = get_class_n_members(gt);
 
   for (i = 0; i < n; i++)
