@@ -693,8 +693,6 @@ void ia32_emit_node(ir_node *irn, void *env) {
 
 	IA32_EMIT(Mul);
 	IA32_EMIT(Mul_i);
-	IA32_EMIT(Mulh);
-	IA32_EMIT(Mulh_i);
 
 	IA32_EMIT(Cltd);
 	IA32_EMIT(DivMod);
