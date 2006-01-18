@@ -211,7 +211,7 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 }
 #endif
 
-static void dump(int mask, ir_graph *irg,
+static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
 				 const char *suffix,
 				 void (*dump_func)(ir_graph *, const char *))
@@ -237,7 +237,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	compute_doms(irg);
 
 	chordal_env.irg          = irg;
-	chordal_env.dbg          = firm_dbg_register("firm.be.chordal");
+	chordal_env.dbg          = firm_dbg_register("be.chordal");
 	chordal_env.main_env     = main_env;
 	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
 
@@ -276,6 +276,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 
 		/* Color the graph. */
 		be_ra_chordal_color(&chordal_env);
+		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 
 		/* Build the interference graph. */
 		chordal_env.ifg = be_ifg_std_new(&chordal_env);

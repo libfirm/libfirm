@@ -43,7 +43,7 @@ static void check_constraints(const be_chordal_env_t *cenv, ir_node *base, ir_no
 		* would help.
 			*/
 			if(*perm == NULL) {
-				*perm = insert_Perm_after(menv, cenv->cls, cenv->dom_front, sched_prev(base));
+				*perm = insert_Perm_after(aenv, cenv->cls, cenv->dom_front, sched_prev(base));
 				be_liveness(cenv->irg);
 			}
 

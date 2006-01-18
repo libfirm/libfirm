@@ -72,7 +72,7 @@ static unsigned dump_flags = DUMP_INITIAL | DUMP_SCHED | DUMP_PREPARED | DUMP_RA
 static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
-static const arch_isa_if_t *isa_if = &firm_isa;
+static const arch_isa_if_t *isa_if = &ia32_isa_if;
 
 #ifdef WITH_LIBCORE
 
@@ -180,9 +180,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
    * This irn handler takes care of the platform independent
    * spill, reload and perm nodes.
    */
-  env->node_factory = obstack_alloc(&env->obst, sizeof(*env->node_factory));
-  be_node_factory_init(env->node_factory, env->arch_env->isa);
-  arch_env_add_irn_handler(env->arch_env, be_node_get_irn_handler(env->node_factory));
+  arch_env_add_irn_handler(env->arch_env, &be_node_irn_handler);
 
   return env;
 }
@@ -285,5 +283,6 @@ static void be_main_loop(FILE *file_handle)
 
 void be_main(FILE *file_handle)
 {
-  be_main_loop(file_handle);
+	be_node_init();
+	be_main_loop(file_handle);
 }

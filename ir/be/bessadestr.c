@@ -85,7 +85,6 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 	be_chordal_env_t *chordal_env = data;
 	pmap *perm_map = chordal_env->data;
 	ir_graph *irg = chordal_env->irg;
-	const be_node_factory_t *fact = chordal_env->main_env->node_factory;
 	int i, n;
 
 	assert(is_Block(bl));
@@ -139,7 +138,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			for(pp = set_first(arg_set); pp; pp = set_next(arg_set))
 				in[pp->pos] = pp->arg;
 
-			perm = new_Perm(fact, chordal_env->cls, irg, pred_bl, n_projs, in);
+			perm = be_new_Perm(chordal_env->cls, irg, pred_bl, n_projs, in);
 			free(in);
 			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, chordal_env->main_env->arch_env);
 			sched_add_after(insert_after, perm);
@@ -223,7 +222,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				 * insert it into schedule,
 				 * pin it
 				 */
-				ir_node *dupl = new_Copy(chordal_env->main_env->node_factory, cls, chordal_env->irg, arg_block, arg);
+				ir_node *dupl = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
 				assert(get_irn_mode(phi) == get_irn_mode(dupl));
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
@@ -274,7 +273,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				 */
 				ir_node *perm = get_Proj_pred(arg);
 				ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
-				ir_node *dupl = new_Copy(chordal_env->main_env->node_factory, cls, chordal_env->irg, arg_block, orig_val);
+				ir_node *dupl = be_new_Copy(cls, chordal_env->irg, arg_block, orig_val);
 				assert(get_irn_mode(phi) == get_irn_mode(dupl));
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);

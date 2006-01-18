@@ -80,6 +80,7 @@ const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
     arch_register_req_t *req, const ir_node *irn, int pos)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  req->type = arch_register_req_type_none;
   return ops->get_irn_reg_req(ops, req, irn, pos);
 }
 
@@ -90,25 +91,16 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
   const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
 
-  switch(req->type) {
-	case arch_register_req_type_none:
-		bitset_clear_all(bs);
-		return 0;
-
-	case arch_register_req_type_should_be_different:
-	case arch_register_req_type_should_be_same:
-    case arch_register_req_type_normal:
-      arch_register_class_put(req->cls, bs);
-      return req->cls->n_regs;
-
-    case arch_register_req_type_limited:
-      return req->limited(irn, pos, bs);
-
-    default:
-      assert(0 && "This register requirement case is not covered");
+  if(arch_register_req_is(req, none)) {
+	  bitset_clear_all(bs);
+	  return 0;
   }
 
-  return 0;
+  if(arch_register_req_is(req, limited))
+	  return req->limited(irn, pos, bs);
+
+  arch_register_class_put(req->cls, bs);
+  return req->cls->n_regs;
 }
 
 int arch_is_register_operand(const arch_env_t *env,

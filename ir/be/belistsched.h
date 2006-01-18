@@ -81,6 +81,12 @@ typedef struct _list_sched_selector_t {
 extern const list_sched_selector_t *trivial_selector;
 
 /**
+ * A selector that tries to minimize the register pressure.
+ * @note Not really operational yet.
+ */
+extern const list_sched_selector_t *reg_pressure_selector;
+
+/**
  * List schedule a graph.
  * Each block in the graph gets a list head to its link field being the
  * head of the schedule. You can walk this list using the functions in

@@ -200,7 +200,7 @@ static const arch_register_req_t firm_std_reg_req = {
   arch_register_req_type_normal,
   &reg_classes[CLS_DATAB],
   NULL,
-  0
+  NULL
 };
 
 static const arch_register_req_t *

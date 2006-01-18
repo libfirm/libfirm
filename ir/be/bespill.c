@@ -105,7 +105,7 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 	ctx = be_get_spill_ctx(senv->spill_ctxs, irn, ctx_irn);
 	if(!ctx->spill) {
 		const be_main_env_t *env = senv->chordal_env->main_env;
-		ctx->spill = be_spill(env->node_factory, env->arch_env, irn, ctx_irn);
+		ctx->spill = be_spill(env->arch_env, irn, ctx_irn);
 	}
 
 	return ctx->spill;
@@ -219,8 +219,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 			/* the reload */
 			ir_node *bl      = is_Block(rld->reloader) ? rld->reloader : get_nodes_block(rld->reloader);
-			ir_node *reload  = new_Reload(senv->chordal_env->main_env->node_factory,
-				senv->cls, irg, bl, mode, spill);
+			ir_node *reload  = be_new_Reload(senv->cls, irg, bl, mode, spill);
 
 			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", reload, si->spilled_node, rld->reloader));
 			if(reload_set)
@@ -302,7 +301,7 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 		return;
 
 	/* check, if this spill is for a context already known */
-	ctx = get_Spill_context(spill);
+	ctx = be_get_Spill_context(spill);
 	entry = pmap_find(ssenv->slots, ctx);
 
 	if (!entry) {
@@ -411,7 +410,7 @@ interf_detected: /*nothing*/ ;
 			if (tgt_slot != i)
 				pset_insert_ptr(ass[tgt_slot]->members, n1);
 
-			set_Spill_offset(n1, ass[tgt_slot]->offset);
+			be_set_Spill_offset(n1, ass[tgt_slot]->offset);
 			DBG((ssenv->dbg, LEVEL_1, "    Offset %+F  %d\n", n1, ass[tgt_slot]->offset));
 		}
 	}

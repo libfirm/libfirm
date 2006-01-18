@@ -297,7 +297,7 @@ static ir_node *handle_constraints_at_perm(be_chordal_alloc_env_t *alloc_env, ir
 		int colored = 0;
 
 		for(precol = pset_first(pre_colored); precol; precol = pset_next(pre_colored)) {
-			arch_register_t *pre_col_reg = arch_get_irn_register(arch_env, precol);
+			const arch_register_t *pre_col_reg = arch_get_irn_register(arch_env, precol);
 
 			if(!values_interfere(irn, precol)) {
 				reg = arch_get_irn_register(arch_env, precol);

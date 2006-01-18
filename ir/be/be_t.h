@@ -28,14 +28,4 @@ struct _be_main_env_t {
   firm_dbg_module_t *dbg;
 };
 
-#if 0
-struct _be_main_session_env_t {
-  const struct _be_main_env_t *main_env;
-  ir_graph *irg;
-  struct _dom_front_info_t *dom_front;
-};
-#endif
-
-
-
 #endif

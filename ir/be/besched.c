@@ -73,7 +73,7 @@ int sched_verify(const ir_node *block)
   const ir_node *irn;
   int i, n;
   int *save_time_step;
-  const ir_node **save_nodes;
+  ir_node **save_nodes;
   const ir_edge_t *edge;
   pset *scheduled_nodes = pset_new_ptr_default();
 

@@ -207,7 +207,6 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
  * @param walk_env The environment
  */
 static void lower_perm_node(ir_node *irn, void *walk_env) {
-	const be_node_factory_t     *fact;
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
 	firm_dbg_module_t           *mod;
@@ -223,7 +222,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	if (is_Block(irn))
 		return;
 
-	fact     = env->chord_env->main_env->node_factory;
 	arch_env = env->chord_env->main_env->arch_env;
 	do_copy  = env->do_copy;
 	mod      = env->dbg_module;
@@ -342,7 +340,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				DBG((mod, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
 					irn, res1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
-				cpyxchg = new_Perm(fact, reg_class, env->chord_env->irg, block, 2, in);
+				cpyxchg = be_new_Perm(reg_class, env->chord_env->irg, block, 2, in);
 
 				sched_remove(res1);
 				sched_remove(res2);
@@ -362,7 +360,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				DBG((mod, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
 					irn, arg1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
-				cpyxchg = new_Copy(fact, reg_class, env->chord_env->irg, block, arg1);
+				cpyxchg = be_new_Copy(reg_class, env->chord_env->irg, block, arg1);
 				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
 
 				/* remove the proj from the schedule */

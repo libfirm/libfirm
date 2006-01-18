@@ -56,7 +56,6 @@ typedef struct _workset_t workset_t;
 
 typedef struct _belady_env_t {
 	struct obstack ob;
-	const be_node_factory_t *factory;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	int n_regs;			/** number of regs in this reg-class */
@@ -292,7 +291,7 @@ static void compute_block_start_info(ir_node *blk, void *env) {
 		for (max=get_irn_arity(irn), o=0; o<max; ++o) {
 			ir_node *arg = get_irn_n(irn, o);
 			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(irn), o);
-			ir_node *cpy = new_Copy(bel->factory, bel->cls, irg, pred_block, arg);
+			ir_node *cpy = be_new_Copy(bel->cls, irg, pred_block, arg);
 			DBG((dbg, DBG_START, "    place a %+F of %+F in %+F\n", cpy, arg, pred_block));
 			sched_add_before(pred_block, cpy);
 			set_irn_n(irn, o, cpy);
@@ -563,7 +562,6 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 
 	/* init belady env */
 	obstack_init(&bel.ob);
-	bel.factory = chordal_env->main_env->node_factory;
 	bel.arch    = chordal_env->main_env->arch_env;
 	bel.cls     = chordal_env->cls;
 	bel.n_regs  = arch_register_class_n_regs(bel.cls);
