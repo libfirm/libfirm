@@ -65,6 +65,7 @@ typedef struct _belady_env_t {
 	ir_node *instr;		/**< current instruction */
 	unsigned instr_nr;	/**< current instruction number (relative to block start) */
 	pset *used;			/**< holds the values used (so far) in the current BB */
+	pset *copies;		/**< holds all copies placed due to phi-spilling */
 
 	spill_env_t *senv;	/* see bespill.h */
 	pset *reloads;		/**< all reload nodes placed */
@@ -292,6 +293,7 @@ static void compute_block_start_info(ir_node *blk, void *env) {
 			ir_node *arg = get_irn_n(irn, o);
 			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(irn), o);
 			ir_node *cpy = be_new_Copy(bel->cls, irg, pred_block, arg);
+			pset_insert_ptr(bel->copies, cpy);
 			DBG((dbg, DBG_START, "    place a %+F of %+F in %+F\n", cpy, arg, pred_block));
 			sched_add_before(pred_block, cpy);
 			set_irn_n(irn, o, cpy);
@@ -508,15 +510,22 @@ next_value:
  * Removes all used reloads from bel->reloads.
  * The remaining nodes in bel->reloads will be removed from the graph.
  */
-static void rescue_used_reloads_and_remove_copies(ir_node *irn, void *env) {
+static void rescue_used_reloads(ir_node *irn, void *env) {
 	pset *rlds = (pset *)env;
 	if (pset_find_ptr(rlds, irn))
 		pset_remove_ptr(rlds, irn);
+}
 
+/**
+ * Removes all copies introduced for phi-spills
+ */
+static void remove_copies(belady_env_t *bel) {
+	ir_node *irn;
 
-	/* remove copies introduced for phi-spills */
-	if (be_is_Copy(irn)) {
+	for (irn = pset_first(bel->copies); irn; irn = pset_next(bel->copies)) {
 		ir_node *src, *spill;
+
+		assert(be_is_Copy(irn));
 		assert(get_irn_n_edges(irn) == 1 && "This is not a copy introduced in 'compute_block_start_info()'. Who created it?");
 
 		spill = get_irn_edge(get_irn_irg(irn), irn, 0)->src;
@@ -531,10 +540,10 @@ static void rescue_used_reloads_and_remove_copies(ir_node *irn, void *env) {
  * Finds all unused reloads and remove them from the schedule
  * Also removes spills if they are not used anymore after removing reloads
  */
-static void remove_copies_and_unused_reloads(ir_graph *irg, belady_env_t *bel) {
+static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 	ir_node *irn;
 
-	irg_walk_graph(irg, rescue_used_reloads_and_remove_copies, NULL, bel->reloads);
+	irg_walk_graph(irg, rescue_used_reloads, NULL, bel->reloads);
 	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads)) {
 		ir_node *spill;
 		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
@@ -569,13 +578,16 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	bel.uses    = be_begin_uses(chordal_env->irg, chordal_env->main_env->arch_env, bel.cls);
 	bel.senv    = be_new_spill_env(dbg, chordal_env, is_mem_phi, NULL);
 	bel.reloads = pset_new_ptr_default();
+	bel.copies  = pset_new_ptr_default();
 
 	/* do the work */
 	irg_block_walk_graph(chordal_env->irg, compute_block_start_info, NULL, &bel);
 	irg_block_walk_graph(chordal_env->irg, belady, NULL, &bel);
 	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &bel);
 	be_insert_spills_reloads(bel.senv, bel.reloads);
-	remove_copies_and_unused_reloads(chordal_env->irg, &bel);
+	remove_unused_reloads(chordal_env->irg, &bel);
+	remove_copies(&bel);
+
 
 
 	/* clean up */
