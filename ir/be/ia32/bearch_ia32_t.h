@@ -1,6 +1,7 @@
 #ifndef _BEARCH_IA32_T_H_
 #define _BEARCH_IA32_T_H_
 
+#include "debug.h"
 #include "bearch_ia32.h"
 
 typedef struct _ia32_code_gen_t {
@@ -12,5 +13,11 @@ typedef struct _ia32_code_gen_t {
 	firm_dbg_module_t              *mod;      /* debugging module */
 	int                             emit_decls;
 } ia32_code_gen_t;
+
+typedef struct _ia32_isa_t {
+	const arch_isa_if_t *impl;
+	int                  num_codegens;
+	set                 *reg_projnum_map;
+} ia32_isa_t;
 
 #endif /* _BEARCH_IA32_T_H_ */

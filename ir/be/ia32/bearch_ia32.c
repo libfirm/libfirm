@@ -54,6 +54,18 @@ static ir_node *my_skip_proj(const ir_node *n) {
 	return (ir_node *)n;
 }
 
+static int is_Call_Proj(const ir_node *n) {
+	if (is_Proj(n)                               &&
+		is_Proj(get_Proj_pred(n))                &&
+		get_irn_mode(get_Proj_pred(n)) == mode_T &&
+		is_ia32_Call(get_Proj_pred(get_Proj_pred(n))))
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 /**
  * Return register requirements for an ia32 node.
  * If the node returns a tuple (mode_T) then the proj's
@@ -72,9 +84,15 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
-	if (is_Proj(irn)) {
+
+	if (is_Call_Proj(irn)) {
+		irn_req = ia32_projnum_reg_req_map[get_Proj_proj(irn)];
+		memcpy(req, &(irn_req->req), sizeof(*req));
+		return req;
+	}
+	else if (is_Proj(irn)) {
 		if (pos == -1) {
-			node_pos = translate_proj_pos(irn);
+			node_pos = ia32_translate_proj_pos(irn);
 		}
 		else {
 			node_pos = pos;
@@ -102,8 +120,6 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 			assert(irn_req->pos >= 0 && "should be same/different constraint for in -> out NYI");
 			req->other = get_irn_n(irn, irn_req->pos);
 		}
-
-		return req;
 	}
 	else {
 		/* treat Phi like Const with default requirements */
@@ -151,8 +167,11 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg) {
 	int pos = 0;
 
+	if (is_Call_Proj(irn)) {
+		/* don't skip the proj, we want to take the else below */
+	}
 	if (is_Proj(irn)) {
-		pos = translate_proj_pos(irn);
+		pos = ia32_translate_proj_pos(irn);
 		irn = my_skip_proj(irn);
 	}
 
@@ -163,7 +182,7 @@ static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arc
 		slots[pos] = reg;
 	}
 	else {
-		ia32_set_firm_reg(self, irn, reg, cur_reg_set);
+		ia32_set_firm_reg(irn, reg, cur_reg_set);
 	}
 }
 
@@ -171,8 +190,11 @@ static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const
 	int pos = 0;
 	const arch_register_t *reg = NULL;
 
-	if (is_Proj(irn)) {
-		pos = translate_proj_pos(irn);
+	if (is_Call_Proj(irn)) {
+		/* don't skip the proj, we want to take the else below */
+	}
+	else if (is_Proj(irn)) {
+		pos = ia32_translate_proj_pos(irn);
 		irn = my_skip_proj(irn);
 	}
 
@@ -182,7 +204,7 @@ static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const
 		reg   = slots[pos];
 	}
 	else {
-		reg = ia32_get_firm_reg(self, irn, cur_reg_set);
+		reg = ia32_get_firm_reg(irn, cur_reg_set);
 	}
 
 	return reg;
@@ -192,6 +214,8 @@ static arch_irn_class_t ia32_classify(const arch_irn_ops_t *self, const ir_node 
 	irn = my_skip_proj(irn);
 	if (is_cfop(irn))
 		return arch_irn_class_branch;
+	else if (is_ia32_Call(irn))
+		return arch_irn_class_call;
 	else if (is_ia32_irn(irn))
 		return arch_irn_class_normal;
 	else
@@ -230,11 +254,6 @@ static const arch_irn_ops_t ia32_irn_ops = {
  *                        __/ |
  *                       |___/
  **************************************************/
-
-typedef struct _ia32_isa_t {
-	const arch_isa_if_t *impl;
-	int                  num_codegens;
-} ia32_isa_t;
 
 /**
  * Transforms the standard firm graph into
@@ -303,7 +322,7 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
 
 	cg->impl       = &ia32_code_gen_if;
 	cg->irg        = irg;
-	cg->reg_set    = new_set(cmp_irn_reg_assoc, 1024);
+	cg->reg_set    = new_set(ia32_cmp_irn_reg_assoc, 1024);
 	cg->mod        = firm_dbg_register("be.transform.ia32");
 	cg->out        = F;
 	cg->arch_env   = arch_env;
@@ -346,9 +365,10 @@ static void *ia32_init(void) {
 
 	inited = 1;
 
-	isa->num_codegens = 0;
+	isa->num_codegens    = 0;
+	isa->reg_projnum_map = new_set(ia32_cmp_reg_projnum_assoc, 1024);
 
-	ia32_register_init();
+	ia32_register_init(isa);
 	ia32_create_opcodes();
 
 	return isa;
@@ -386,7 +406,10 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 	return &ia32_irn_handler;
 }
 
-
+long ia32_get_call_projnum_for_reg(const void *self, const arch_register_t *reg) {
+	ia32_isa_t *isa = (ia32_isa_t *)self;
+	return ia32_get_reg_projnum(reg, isa->reg_projnum_map);
+}
 
 /**
  * Initializes the code generator interface.
@@ -418,5 +441,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_reg_class,
 	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
-	ia32_get_list_sched_selector
+	ia32_get_list_sched_selector,
+	ia32_get_call_projnum_for_reg
 };
