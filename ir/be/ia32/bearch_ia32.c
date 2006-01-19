@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pseudo_irg.h"
 #include "irgwalk.h"
 #include "irprog.h"

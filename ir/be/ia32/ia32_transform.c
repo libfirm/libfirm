@@ -252,7 +252,7 @@ ir_node *generate_Mul(transform_env_t *env, ir_node *op1, ir_node *op2, op_flavo
 	/* create the mul */
 	if (is_imm_op) {
 		mul = new_rd_ia32_Mul_i(dbg, irg, block, op1, mode_T);
-		set_ia32_Immop_attr(res, op2);
+		set_ia32_Immop_attr(mul, op2);
 	}
 	else {
 		mul = new_rd_ia32_Mul(dbg, irg, block, op1, op2, mode_T);
