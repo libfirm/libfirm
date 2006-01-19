@@ -70,25 +70,33 @@ $arch = "ia32";
 #
 # NOTE: rd_constructor and args are only optional if and only if arity is 0,1,2 or 3
 
+# register types:
+#   0 - no special type
+#   1 - write invariant (writes to this register doesn't change it's content)
+#   2 - caller save (register must be saved by the caller of a function)
+#   3 - callee save (register must be saved by the called function)
+#   4 - ignore (do not assign this register)
+# NOTE: Make sure to list the registers returning the call-result at first and
+#       in the correct order, otherwise it will break the magic!
 %reg_classes = (
   "general_purpose" => [
-                         { "name" => "eax", "type" => 0 },
-                         { "name" => "ebx", "type" => 0 },
-                         { "name" => "ecx", "type" => 0 },
-                         { "name" => "edx", "type" => 0 },
-                         { "name" => "edi", "type" => 0 },
-                         { "name" => "esi", "type" => 0 },
-                         { "name" => "ebp", "type" => 0 }
+                         { "name" => "eax", "type" => 2 },
+                         { "name" => "edx", "type" => 2 },
+                         { "name" => "ebx", "type" => 3 },
+                         { "name" => "ecx", "type" => 2 },
+                         { "name" => "edi", "type" => 2 },
+                         { "name" => "esi", "type" => 3 },
+                         { "name" => "ebp", "type" => 3 }
                        ],
   "floating_point"  => [
-                         { "name" => "xmm0", "type" => 0 },
-                         { "name" => "xmm1", "type" => 0 },
-                         { "name" => "xmm2", "type" => 0 },
-                         { "name" => "xmm3", "type" => 0 },
-                         { "name" => "xmm4", "type" => 0 },
-                         { "name" => "xmm5", "type" => 0 },
-                         { "name" => "xmm6", "type" => 0 },
-                         { "name" => "xmm7", "type" => 0 },
+                         { "name" => "xmm0", "type" => 2 },
+                         { "name" => "xmm1", "type" => 2 },
+                         { "name" => "xmm2", "type" => 2 },
+                         { "name" => "xmm3", "type" => 2 },
+                         { "name" => "xmm4", "type" => 2 },
+                         { "name" => "xmm5", "type" => 2 },
+                         { "name" => "xmm6", "type" => 2 },
+                         { "name" => "xmm7", "type" => 2 },
                        ]
 ); # %reg_classes
 
