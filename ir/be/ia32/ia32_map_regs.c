@@ -2,26 +2,32 @@
  * Register mapping for firm nodes. Stolen from bearch_firm :)
  * $Id$
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 
 #include "ia32_map_regs.h"
 #include "ia32_new_nodes.h"
 
-struct irn_reg_assoc {
+
+/* Mapping to store registers in firm nodes */
+
+struct ia32_irn_reg_assoc {
 	const ir_node *irn;
 	const arch_register_t *reg;
 };
 
-int cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
-	const struct irn_reg_assoc *x = a;
-	const struct irn_reg_assoc *y = b;
+int ia32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
+	const struct ia32_irn_reg_assoc *x = a;
+	const struct ia32_irn_reg_assoc *y = b;
 
 	return !(x->irn == y->irn);
 }
 
-static struct irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set) {
-	struct irn_reg_assoc templ;
+static struct ia32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set) {
+	struct ia32_irn_reg_assoc templ;
 	unsigned int hash;
 
 	templ.irn = irn;
@@ -31,26 +37,60 @@ static struct irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set)
 	return set_insert(reg_set, &templ, sizeof(templ), hash);
 }
 
-void ia32_set_firm_reg(const arch_irn_ops_t *self, ir_node *irn,
-    const arch_register_t *reg, set *reg_set)
-{
-	struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
+void ia32_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set) {
+	struct ia32_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	assoc->reg = reg;
 }
 
-const arch_register_t *ia32_get_firm_reg(const arch_irn_ops_t *self,
-    const ir_node *irn, set *reg_set)
-{
-	struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
+const arch_register_t *ia32_get_firm_reg(const ir_node *irn, set *reg_set) {
+	struct ia32_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	return assoc->reg;
 }
+
+
+
+/* Mapping to store proj numbers for registers */
+
+struct ia32_reg_projnum_assoc {
+	const arch_register_t *reg;
+	long                   proj_num;
+};
+
+int ia32_cmp_reg_projnum_assoc(const void *a, const void *b, size_t len) {
+	const struct ia32_reg_projnum_assoc *x = a;
+	const struct ia32_reg_projnum_assoc *y = b;
+
+	return !(x->reg == y->reg);
+}
+
+static struct ia32_reg_projnum_assoc *get_reg_projnum_assoc(const arch_register_t *reg, set *reg_set) {
+	struct ia32_reg_projnum_assoc templ;
+	unsigned int hash;
+
+	templ.reg      = reg;
+	templ.proj_num = -1;
+	hash = HASH_PTR(reg);
+
+	return set_insert(reg_set, &templ, sizeof(templ), hash);
+}
+
+void ia32_set_reg_projnum(const arch_register_t *reg, long proj_num, set *reg_set) {
+	struct ia32_reg_projnum_assoc *assoc = get_reg_projnum_assoc(reg, reg_set);
+	assoc->proj_num = proj_num;
+}
+
+long ia32_get_reg_projnum(const arch_register_t *reg, set *reg_set) {
+	struct ia32_reg_projnum_assoc *assoc = get_reg_projnum_assoc(reg, reg_set);
+	return assoc->proj_num;
+}
+
 
 
 /**
  * Translates the projnum into a "real" argument position for register
  * requirements dependend on the predecessor.
  */
-long translate_proj_pos(const ir_node *proj) {
+long ia32_translate_proj_pos(const ir_node *proj) {
 	ir_node *first;
 	ir_node *pred = get_Proj_pred(proj);
 	long nr       = get_Proj_proj(proj);
