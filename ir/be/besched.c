@@ -94,7 +94,7 @@ int sched_verify(const ir_node *block)
   sched_foreach(block, irn) {
     sched_info_t *info = get_irn_sched_info(irn);
     save_time_step[i] = info->time_step;
-    save_nodes[i] = irn;
+    save_nodes[i] = (ir_node *)irn;
     info->time_step = i;
     pset_insert_ptr(scheduled_nodes, irn);
 
