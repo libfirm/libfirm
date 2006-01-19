@@ -263,6 +263,9 @@ static arch_irn_class_t firm_classify(const arch_irn_ops_t *self, const ir_node 
         case iro_Jmp:
             res = arch_irn_class_branch;
             break;
+		case iro_Call:
+			res = arch_irn_class_call;
+			break;
         default:
             res = arch_irn_class_normal;
     }
