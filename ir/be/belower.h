@@ -10,6 +10,6 @@
 
 #include "bechordal.h"
 
-void lower_perms(be_chordal_env_t *chord_env, int do_copy);
+void lower_nodes(be_chordal_env_t *chord_env, int do_copy);
 
 #endif /* _BELOWER_H_ */

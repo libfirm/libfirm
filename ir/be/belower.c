@@ -11,6 +11,10 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
+
+#include "ircons.h"
+
 #include "bearch.h"
 #include "belower.h"
 #include "benode_t.h"
@@ -23,6 +27,9 @@
 
 #undef is_Perm
 #define is_Perm(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
+
+#undef is_Call
+#define is_Call(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_call)
 
 /* lowering walker environment */
 typedef struct _lower_env_t {
@@ -201,6 +208,8 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 /**
  * Lowers a perm node.  Resolves cycles and creates a bunch of
  * copy and swap operations to permute registers.
+ * Note: The caller of this function has to make sure, that irn
+ *       is a Perm node.
  *
  * @param irn      The perm node
  * @param block    The block the perm node belongs to
@@ -219,19 +228,10 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
 
-	if (is_Block(irn))
-		return;
-
 	arch_env = env->chord_env->main_env->arch_env;
 	do_copy  = env->do_copy;
 	mod      = env->dbg_module;
 	block    = get_nodes_block(irn);
-
-	/* check if perm
-	   Note: A Proj on a Perm will cause is_Perm()
-	         also to return true */
-	if (is_Proj(irn) || ! is_Perm(arch_env, irn))
-		return;
 
 	/*
 		Get the schedule predecessor node to the perm
@@ -385,17 +385,118 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 }
 
 /**
- * Walks over all blocks in an irg and performs perm lowering.
+ * Adds Projs to keep nodes for each register class, which eats the
+ * caller saved registers.
+ * Note: The caller has to make sure, that call is a Call
+ *
+ * @param call     The Call node
+ * @param walk_env The walker environment
+ */
+static void lower_call_node(ir_node *call, void *walk_env) {
+	lower_env_t                 *env      = walk_env;
+	const arch_env_t            *arch_env = env->chord_env->main_env->arch_env;
+	firm_dbg_module_t           *mod      = env->dbg_module;
+	const arch_register_class_t *reg_class;
+	int                          i, j, set_size = 0, pn, keep_arity;
+	arch_isa_t                  *isa      = arch_env_get_isa(arch_env);
+	const ir_node               *proj_T   = NULL;
+	ir_node                     **in_keep, *block = get_nodes_block(call);
+	bitset_t                    *proj_set;
+	const ir_edge_t             *edge;
+	const arch_register_t       *reg;
+
+	/* Prepare the bitset where we store the projnums which are already in use*/
+	for (i = 0; i < arch_isa_get_n_reg_class(isa); i++) {
+		reg_class  = arch_isa_get_reg_class(isa, i);
+		set_size  += arch_register_class_n_regs(reg_class);
+	}
+
+	in_keep = malloc(set_size * sizeof(ir_node *));
+
+	proj_set = bitset_malloc(set_size);
+	bitset_clear_all(proj_set);
+
+	/* check if there is a ProjT node and which arguments are used */
+	foreach_out_edge(call, edge) {
+		if (get_irn_mode(get_edge_src_irn(edge)) == mode_T)
+			proj_T = get_edge_src_irn(edge);
+	}
+
+	/* set all used arguments */
+	if (proj_T) {
+		foreach_out_edge(proj_T, edge) {
+			bitset_set(proj_set, get_Proj_proj(get_edge_src_irn(edge)));
+		}
+	}
+
+	/* Create for each caller save register a proj (keep node arguement) */
+	/* if this proj is not already present */
+	for (i = 0; i < arch_isa_get_n_reg_class(isa); i++) {
+
+		/* reset the keep input, as we need one keep for each register class */
+		memset(in_keep, 0, set_size * sizeof(ir_node *));
+		keep_arity = 0;
+		reg_class  = arch_isa_get_reg_class(isa, i);
+
+		for (j = 0; j < arch_register_class_n_regs(reg_class); j++) {
+			reg = arch_register_for_index(reg_class, j);
+
+			/* only check caller save registers */
+			if (arch_register_type_is(reg, caller_saved)) {
+				pn = isa->impl->get_projnum_for_register(isa, reg);
+				if (!bitset_is_set(proj_set, pn)) {
+					in_keep[keep_arity++] = new_r_Proj(current_ir_graph, block, (ir_node *)proj_T, mode_Is, pn);
+				}
+			}
+		}
+
+		/* ok, we found some caller save register which are not in use but must be saved */
+		if (keep_arity) {
+			be_new_Keep(reg_class, current_ir_graph, block, keep_arity, in_keep);
+		}
+	}
+
+	bitset_free(proj_set);
+	return;
+}
+
+/**
+ * Calls the corresponding lowering function for the node.
+ *
+ * @param irn      The node to be checked for lowering
+ * @param walk_env The walker environment
+ */
+static void lower_nodes_walker(ir_node *irn, void *walk_env) {
+	lower_env_t      *env      = walk_env;
+	const arch_env_t *arch_env = env->chord_env->main_env->arch_env;
+
+	if (!is_Block(irn)) {
+		if (is_Perm(arch_env, irn) && ! is_Proj(irn)) {
+			lower_perm_node(irn, walk_env);
+		}
+		else if (is_Call(arch_env, irn)) {
+			lower_call_node(irn, walk_env);
+		}
+	}
+
+	return;
+}
+
+/**
+ * Walks over all blocks in an irg and performs some lowering.
  *
  * @param chord_env The chordal environment containing the irg
  * @param do_copy   1 == resolve cycles with a free reg if available
  */
-void lower_perms(be_chordal_env_t *chord_env, int do_copy) {
+void lower_nodes(be_chordal_env_t *chord_env, int do_copy) {
 	lower_env_t env;
 
 	env.chord_env  = chord_env;
 	env.do_copy    = do_copy;
 	env.dbg_module = firm_dbg_register("ir.be.lower");
 
-	irg_walk_blkwise_graph(chord_env->irg,  NULL, lower_perm_node, &env);
+	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_walker, &env);
 }
+
+#undef is_Perm
+#undef is_Call
