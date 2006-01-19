@@ -46,6 +46,15 @@ typedef enum _arch_register_type_t {
 } arch_register_type_t;
 
 /**
+ * Convenience macro to check for register type.
+ * @param req   A pointer to register.
+ * @param kind  The kind of type to check for (see arch_register_type_t).
+ * @return      1, If register is of given kind, 0 if not.
+ */
+#define arch_register_type_is(reg, kind) \
+	((reg)->type == arch_register_type_ ## kind)
+
+/**
  * A register.
  */
 struct _arch_register_t {
@@ -176,7 +185,8 @@ typedef enum _arch_irn_class_t {
   arch_irn_class_reload,
   arch_irn_class_copy,
   arch_irn_class_perm,
-  arch_irn_class_branch
+  arch_irn_class_branch,
+  arch_irn_class_call
 } arch_irn_class_t;
 
 /**
@@ -472,6 +482,14 @@ struct _arch_isa_if_t {
    * @return      The list scheduler selector.
    */
   const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
+
+  /**
+   * Get the proj number assigned to the register.
+   * @param self  The isa object.
+   * @param reg   The register
+   * @return      The proj number assigned to this register
+   */
+  long (*get_projnum_for_register)(const void *self, const arch_register_t *reg);
 };
 
 #define arch_isa_get_n_reg_class(isa)           ((isa)->impl->get_n_reg_class(isa))
