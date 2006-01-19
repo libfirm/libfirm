@@ -49,6 +49,7 @@ my @obst_req;          # stack for the register requirements
 my @obst_limit_func;   # stack for functions to return a subset of a register class
 my @obst_defreq_head;  # stack for prototypes of default requirement function
 my @obst_header_all;   # stack for some extern struct defs needed for bearch_$arch include
+my @obst_projnum_map;  # stack for mapping register projnums to requirements
 
 my $numregs;
 my $class_ptr;
@@ -75,6 +76,8 @@ push(@obst_header_all, "extern arch_register_class_t $arch\_reg_classes[N_CLASSE
 push(@obst_header_all, "extern const $arch\_register_req_t $arch\_default_req_none;\n");
 
 push(@obst_classdef, "#define N_CLASSES ".scalar(keys(%reg_classes))."\n");
+
+my $global_projnum_idx = 0;
 
 # generate register type and class variable, init function and default requirements
 foreach my $class_name (keys(%reg_classes)) {
@@ -148,13 +151,23 @@ foreach my $class_name (keys(%reg_classes)) {
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"name"}."\";\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = $class_ptr;\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].index     = $idx;\n");
-		push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".$rt[$_->{"type"}].";\n\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".$rt[$_->{"type"}].";\n");
+		if ($_->{"type"} == 2) {
+			# this is a caller saved register
+			push(@obst_reginit, "  ia32_set_reg_projnum(&".$class_name."_regs[$idx], $global_projnum_idx, isa->reg_projnum_map);\n");
+			push(@obst_projnum_map, "&$arch\_default_req_$class_name\_".$_->{"name"});
+			$global_projnum_idx++;
+		}
+		push(@obst_reginit, "\n");
 		$idx++;
 	}
 
 	$class_idx++;
 }
 
+push(@obst_regdef, "\n#define N_CALLER_SAVE_REGS ".scalar(@obst_projnum_map)."\n");
+
+push(@obst_header_all, "\nextern const $arch\_register_req_t *$arch\_projnum_reg_req_map[N_CALLER_SAVE_REGS];\n\n");
 push(@obst_header_all, "\n/* node specific requirements */\n");
 
 # generate node-register constraints
@@ -213,7 +226,7 @@ print OUT @obst_regtypes, "\n";
 
 print OUT @obst_defreq_head, "\n";
 
-print OUT "void ".$arch."_register_init(void);\n\n";
+print OUT "void ".$arch."_register_init(void *isa_ptr);\n\n";
 
 print OUT "\n#endif /* _GEN_$tmp\_REGALLOC_IF_T_H_ */\n";
 
@@ -266,13 +279,18 @@ print OUT<<EOF;
  * date:       $creation_time
  */
 
-#include "gen_$arch\_regalloc_if_t.h"
+#include "gen_$arch\_regalloc_if.h"
+#include "bearch_ia32_t.h"   /* we need this to put the caller saved registers into the isa set */
+#include "ia32_map_regs.h"
 
 EOF
 
 print OUT "arch_register_class_t $arch\_reg_classes[] = {\n  ".join(",\n  ", @obst_regclasses)."\n};\n\n";
 
-print OUT "void ".$arch."_register_init(void) {\n";
+print OUT "const $arch\_register_req_t *$arch\_projnum_reg_req_map[] = {\n  ".join(",\n  ", @obst_projnum_map)."\n};\n\n";
+
+print OUT "void ".$arch."_register_init(void *isa_ptr) {\n";
+print OUT "  ia32_isa_t *isa = (ia32_isa_t *)isa_ptr;\n\n";
 print OUT @obst_reginit;
 print OUT "}\n\n";
 
