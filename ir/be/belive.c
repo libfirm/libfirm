@@ -151,15 +151,54 @@ static int cmp_irn_live(const void *a, const void *b, size_t size)
   return !(p->block == q->block && p->irn == q->irn);
 }
 
+static int (*old_dump_block_func)(ir_node *self, FILE *F, dump_reason_t reason) = NULL;
+
+static int dump_block_func(ir_node *self, FILE *F, dump_reason_t reason)
+{
+	switch(reason) {
+	case dump_node_opcode_txt:
+		fprintf(F, get_irn_opname(self));
+		break;
+	case dump_node_mode_txt:
+		fprintf(F, get_irn_modename(self));
+		break;
+	case dump_node_nodeattr_txt:
+		break;
+	case dump_node_info_txt:
+		if(!get_irg_live_info(get_irn_irg(self))->live)
+			return 0;
+
+		fprintf(F, "liveness information:\n");
+		{
+			irn_live_t *li;
+			live_foreach(self, li) {
+				ir_fprintf(F, "%+F", li->irn);
+				if(live_is_in(li))
+					fprintf(F, " in");
+				if(live_is_end(li))
+					fprintf(F, " end");
+				if(live_is_out(li))
+					fprintf(F, " out");
+
+				fprintf(F, "\n");
+			}
+		}
+	}
+
+	return 0;
+}
+
 void be_liveness(ir_graph *irg)
 {
   irg_live_info_t *live_info = get_irg_live_info(irg);
   if(live_info->live)
     del_set(live_info->live);
 
-
   live_info->live = new_set(cmp_irn_live, 8192);
   irg_walk_graph(irg, liveness_for_node, NULL, NULL);
+
+  old_dump_block_func     = op_Block->ops.dump_node;
+  op_Block->ops.dump_node = dump_block_func;
 }
 
 static void dump_liveness_walker(ir_node *bl, void *data)
