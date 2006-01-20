@@ -6,21 +6,13 @@
 #include "irgwalk.h"
 #include "irprog.h"
 #include "irprintf.h"
+#include "iredges_t.h"
 
 #include "bitset.h"
 #include "debug.h"
 
-#include <obstack.h>
-
-#ifdef obstack_chunk_alloc
-# undef obstack_chunk_alloc
-# define obstack_chunk_alloc malloc
-#else
-# define obstack_chunk_alloc malloc
-# define obstack_chunk_free free
-#endif
-
 #include "../bearch.h"                /* the general register allocator interface */
+#include "../benode_t.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -66,6 +58,10 @@ static int is_Call_Proj(const ir_node *n) {
 	return 0;
 }
 
+static int is_used_by_Keep(const ir_node *n) {
+	return be_is_Keep(get_edge_src_irn(get_irn_out_edge_first(n)));
+}
+
 /**
  * Return register requirements for an ia32 node.
  * If the node returns a tuple (mode_T) then the proj's
@@ -85,7 +81,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
 
-	if (is_Call_Proj(irn)) {
+	if (is_Call_Proj(irn) && is_used_by_Keep(irn)) {
 		irn_req = ia32_projnum_reg_req_map[get_Proj_proj(irn)];
 		memcpy(req, &(irn_req->req), sizeof(*req));
 		return req;
@@ -167,7 +163,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg) {
 	int pos = 0;
 
-	if (is_Call_Proj(irn)) {
+	if (is_Call_Proj(irn) && is_used_by_Keep(irn)) {
 		/* don't skip the proj, we want to take the else below */
 	}
 	if (is_Proj(irn)) {
@@ -190,7 +186,7 @@ static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const
 	int pos = 0;
 	const arch_register_t *reg = NULL;
 
-	if (is_Call_Proj(irn)) {
+	if (is_Call_Proj(irn) && is_used_by_Keep(irn)) {
 		/* don't skip the proj, we want to take the else below */
 	}
 	else if (is_Proj(irn)) {
@@ -411,6 +407,10 @@ long ia32_get_call_projnum_for_reg(const void *self, const arch_register_t *reg)
 	return ia32_get_reg_projnum(reg, isa->reg_projnum_map);
 }
 
+int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
+	return is_ia32_irn(irn);
+}
+
 /**
  * Initializes the code generator interface.
  */
@@ -418,11 +418,15 @@ static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self) {
 	return &ia32_code_gen_if;
 }
 
+list_sched_selector_t ia32_sched_selector;
+
 /**
- * Returns the default scheduler
+ * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
 static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
-	return reg_pressure_selector;
+	memcpy(&ia32_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
+	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
+	return &ia32_sched_selector;
 }
 
 #ifdef WITH_LIBCORE
