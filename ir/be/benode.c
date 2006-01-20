@@ -506,6 +506,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 		case dump_node_nodeattr_txt:
 			break;
 		case dump_node_info_txt:
+			fprintf(f, "reg class: %s\n", at->cls->name);
 			for(i = 0; i < at->n_outs; ++i) {
 				const arch_register_t *reg = at->reg_data[i].reg;
 				fprintf(f, "reg #%d: %s\n", i, reg ? reg->name : "n/a");
@@ -514,7 +515,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			if(get_irn_be_opcode(irn) == beo_Spill) {
 				be_spill_attr_t *a = (be_spill_attr_t *) at;
 				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
-				ir_fprintf(f, "spill offset: %u\n", a->offset);
+				ir_fprintf(f, "spill offset: %04x (%u)\n", a->offset);
 			}
 			break;
 	}
@@ -587,6 +588,10 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 	}
 
 	n = pset_count(live);
+
+	if(n == 0)
+		return NULL;
+
 	nodes = malloc(n * sizeof(nodes[0]));
 
 	DBG((dbg, LEVEL_1, "live:\n"));
