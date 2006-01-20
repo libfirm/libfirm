@@ -567,7 +567,6 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	belady_env_t bel;
 
 	dbg = firm_dbg_register("ir.be.spillbelady");
-	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	/* init belady env */
 	obstack_init(&bel.ob);
@@ -579,6 +578,8 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	bel.senv    = be_new_spill_env(dbg, chordal_env, is_mem_phi, NULL);
 	bel.reloads = pset_new_ptr_default();
 	bel.copies  = pset_new_ptr_default();
+
+	DBG((dbg, LEVEL_1, "running on register class: %s\n", bel.cls->name));
 
 	/* do the work */
 	irg_block_walk_graph(chordal_env->irg, compute_block_start_info, NULL, &bel);
