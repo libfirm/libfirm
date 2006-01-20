@@ -23,7 +23,7 @@ int ia32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
 	const struct ia32_irn_reg_assoc *x = a;
 	const struct ia32_irn_reg_assoc *y = b;
 
-	return !(x->irn == y->irn);
+	return x->irn != y->irn;
 }
 
 static struct ia32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set) {

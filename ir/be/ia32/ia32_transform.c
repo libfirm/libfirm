@@ -1480,9 +1480,9 @@ static ir_node *gen_Proj_Start(transform_env_t *env, ir_node *proj, ir_node *sta
 			free(projargs);
 
 			break;
+		case pn_Start_P_frame_base:
 		case pn_Start_X_initial_exec:
 		case pn_Start_M:
-		case pn_Start_P_frame_base:
 		case pn_Start_P_globals:
 		case pn_Start_P_value_arg_base:
 			break;
@@ -1604,11 +1604,11 @@ void ia32_transform_node(ir_node *node, void *env) {
 		IGN(Break);
 		IGN(Cmp);
 
+		BAD(Alloc);
 		BAD(Raise);
 		BAD(Sel);
 		BAD(InstOf);
 		BAD(Cast);
-		BAD(Alloc);
 		BAD(Free);
 		BAD(Sync);
 		BAD(Tuple);

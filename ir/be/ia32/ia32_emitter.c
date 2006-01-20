@@ -141,12 +141,6 @@ int get_ia32_reg_nr(ir_node *irn, int pos, int in_out) {
 	ir_node               *op;
 
 	if (in_out == 1) {
-		/* special case Proj P_fame_base */
-		op = get_irn_n(irn, pos);
-		if (is_Proj(op) && get_Proj_proj(op) == pn_Start_P_frame_base) {
-			return 10;
-		}
-
 		reg = get_in_reg(irn, pos);
 	}
 	else {
@@ -164,11 +158,6 @@ const char *get_ia32_reg_name(ir_node *irn, int pos, int in_out) {
 	ir_node               *op;
 
 	if (in_out == 1) {
-		/* special case Proj P_fame_base */
-		op = get_irn_n(irn, pos);
-		if (is_Proj(op) && get_Proj_proj(op) == pn_Start_P_frame_base) {
-			return "x(esp)";
-		}
 		reg = get_in_reg(irn, pos);
 	}
 	else {
