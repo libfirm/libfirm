@@ -16,12 +16,14 @@
 
 struct _arch_isa_t;
 
+typedef struct _list_sched_selector_t list_sched_selector_t;
+
 /**
  * A selector interface which is used by the list schedule framework.
  * You can implement your own list scheduler by implementing these
  * functions.
  */
-typedef struct _list_sched_selector_t {
+struct _list_sched_selector_t {
 
 	/**
 	 * Called before a graph is being scheduled.
@@ -30,22 +32,21 @@ typedef struct _list_sched_selector_t {
 	 * @return The environment pointer that is passed to all other
 	 * functions in this struct.
 	 */
-	void *(*init_graph)(const struct _arch_isa_t *isa, ir_graph *irg);
+	void *(*init_graph)(const list_sched_selector_t *vtab, const struct _arch_isa_t *isa, ir_graph *irg);
 
 	/**
 	 * Called before scheduling starts on a block.
-	 * @param env The environment.
+	 * @param graph_env The environment.
 	 * @param block The block which is to be scheduled.
 	 * @return A per-block pointer that is additionally passed to select.
 	 */
-	void *(*init_block)(void *env, ir_node *block);
+	void *(*init_block)(void *graph_env, ir_node *block);
 
 	/**
 	 * The selection function.
 	 * It picks one node out of the ready list to be scheduled next.
 	 * The function does not have to delete the node from the ready set.
 	 *
-	 * @param env Some private information as returned by init_graph().
 	 * @return block_env Some private information as returned by init_block().
 	 * @param sched_head The schedule so far.
 	 * @param curr_time The current time step which the picked node
@@ -54,26 +55,36 @@ typedef struct _list_sched_selector_t {
 	 * nodes.
 	 * @return The chosen node.
 	 */
-	ir_node *(*select)(void *env, void *block_env,
-			const struct list_head *sched_head,
-			int curr_time, pset *ready_set);
+	ir_node *(*select)(void *block_env, pset *ready_set);
+
+	/**
+	 * This function descides, if a node should appear in a schedule.
+	 * @param block_env The block environment.
+	 * @param irn       The node.
+	 * @return 1, if the node should be scheduled, 0 if not.
+	 */
+	int (*to_appear_in_schedule)(void *block_env, const ir_node *irn);
 
 	/**
 	 * Called after a block has been scheduled.
 	 * @param env The environment.
 	 * @param block_env The per block environment as returned by init_block().
-	 * @param block The block that has been finished.
 	 */
-	void (*finish_block)(void *env, void *block_env, ir_node *block);
+	void (*finish_block)(void *block_env);
 
 	/**
 	 * Called after a whole graph has been scheduled.
 	 * @param env The environment.
-	 * @param irg The graph.
 	 */
-	void (*finish_graph)(void *env, ir_graph *irg);
-} list_sched_selector_t;
+	void (*finish_graph)(void *env);
 
+};
+
+/**
+ * A default implementation of to_appear_in_schedule,
+ * as required in list_sched_selector_t.
+ */
+extern be_default_to_appear_in_schedule(void *env, const ir_node *irn);
 
 /**
  * A trivial selector, that just selects the first ready node.

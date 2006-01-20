@@ -4,6 +4,7 @@
  * @date 20.10.2004
  * @author Sebastian Hack
  */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -13,7 +14,6 @@
 #include <string.h>
 #include <limits.h>
 
-#include "fourcc.h"
 #include "obst.h"
 #include "list.h"
 #include "iterator.h"
@@ -72,30 +72,25 @@ static int cmp_usage(const void *a, const void *b)
 }
 #endif
 
-static ir_node *trivial_select(void *env, void *block_env,
-		const struct list_head *sched_head,
-		int curr_time, pset *ready_set)
+static ir_node *trivial_select(void *block_env, pset *ready_set)
 {
 	ir_node *res;
-
-#if 0
-	int i, n = pset_count(ready_set);
-	ir_node *irn;
-	ir_node **ready = alloca(n * sizeof(ready[0]));
-
-	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set))
-		ready[i++] = irn;
-#endif
 
 	res = pset_first(ready_set);
 	pset_break(ready_set);
 	return res;
 }
 
+static int default_to_appear_in_schedule(void *env, const ir_node *irn)
+{
+	return to_appear_in_schedule(irn);
+}
+
 static const list_sched_selector_t trivial_selector_struct = {
 	NULL,
 	NULL,
 	trivial_select,
+	default_to_appear_in_schedule,
 	NULL,
 	NULL
 };
@@ -115,6 +110,7 @@ typedef struct {
 	struct obstack obst;
 	usage_stats_t *root;
 	pset *already_scheduled;
+	const list_sched_selector_t *vtab;
 } reg_pressure_selector_env_t;
 
 static INLINE usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
@@ -189,31 +185,32 @@ static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
 	return res;
 }
 
-static void *reg_pressure_graph_init(const arch_isa_t *isa, ir_graph *irg)
+static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, const arch_isa_t *isa, ir_graph *irg)
 {
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
-	return NULL;
+	return (void *) vtab;
 }
 
 static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 {
 	ir_node *irn;
-	reg_pressure_selector_env_t *env = xmalloc(sizeof(env[0]));
+	reg_pressure_selector_env_t *env  = xmalloc(sizeof(env[0]));
 
 	obstack_init(&env->obst);
-	env->root = NULL;
 	env->already_scheduled = pset_new_ptr(32);
+	env->root              = NULL;
+	env->vtab              = graph_env;
 
 	/*
 	 * Collect usage statistics.
 	 */
 	sched_foreach(bl, irn) {
-		if(to_appear_in_schedule(irn)) {
+		if(env->vtab->to_appear_in_schedule(env, irn)) {
 			int i, n;
 
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
-				if(to_appear_in_schedule(op)) {
+				if(env->vtab->to_appear_in_schedule(env, irn)) {
 					usage_stats_t *us = get_or_set_usage_stats(env, irn);
 					if(is_live_end(bl, op))
 						us->uses_in_block = 99999;
@@ -227,7 +224,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	return env;
 }
 
-static void reg_pressure_block_free(void *graph_env, void *block_env, ir_node *bl)
+static void reg_pressure_block_free(void *block_env)
 {
 	reg_pressure_selector_env_t *env = block_env;
 	usage_stats_t *us;
@@ -248,16 +245,14 @@ static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if(to_appear_in_schedule(op))
+		if(env->vtab->to_appear_in_schedule(env, op))
 			sum += compute_max_hops(env, op);
 	}
 
 	return sum;
 }
 
-ir_node *reg_pressure_select(void *graph_env, void *block_env,
-							 const struct list_head *sched_head,
-							 int curr_time, pset *ready_set)
+ir_node *reg_pressure_select(void *block_env, pset *ready_set)
 {
 	reg_pressure_selector_env_t *env = block_env;
 	ir_node *irn, *res     = NULL;
@@ -281,6 +276,7 @@ static const list_sched_selector_t reg_pressure_selector_struct = {
 	reg_pressure_graph_init,
 	reg_pressure_block_init,
 	reg_pressure_select,
+	default_to_appear_in_schedule,
 	reg_pressure_block_free,
 	NULL
 };
@@ -296,7 +292,7 @@ void list_sched(const struct _arch_isa_t *isa, ir_graph *irg)
 
 	memset(&env, 0, sizeof(env));
 	selector = env.selector = isa->impl->get_list_sched_selector(isa);
-	env.selector_env = selector->init_graph ? selector->init_graph(isa, irg) : NULL;
+	env.selector_env = selector->init_graph ? selector->init_graph(selector, isa, irg) : NULL;
 	env.irg = irg;
 
 	/* Assure, that the out edges are computed */
@@ -306,7 +302,7 @@ void list_sched(const struct _arch_isa_t *isa, ir_graph *irg)
 	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
 
 	if(selector->finish_graph)
-		selector->finish_graph(env.selector_env, irg);
+		selector->finish_graph(env.selector_env);
 }
 
 
@@ -319,6 +315,8 @@ typedef struct _block_sched_env_t {
 	pset *already_scheduled;
 	ir_node *block;
 	firm_dbg_module_t *dbg;
+	const list_sched_selector_t *selector;
+	void *selector_block_env;
 } block_sched_env_t;
 
 /**
@@ -485,12 +483,13 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
  */
 static void list_sched_block(ir_node *block, void *env_ptr)
 {
-	void *block_env = NULL;
 	sched_env_t *env = env_ptr;
 	block_sched_env_t be;
 	const list_sched_selector_t *selector = env->selector;
 	const ir_edge_t *edge;
 	ir_node *irn;
+	ir_node *start_node = get_irg_start(get_irn_irg(block));
+	ir_node *final_jmp  = NULL;
 	int j, m;
 	int phi_seen = 0;
 	sched_info_t *info = get_irn_sched_info(block);
@@ -499,16 +498,17 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	INIT_LIST_HEAD(&info->list);
 
 	/* Initialize the block scheduling environment */
-	be.dbg = firm_dbg_register("firm.be.sched");
-	be.block = block;
-	be.curr_time = 0;
-	be.ready_set = new_pset(node_cmp_func, get_irn_n_edges(block));
+	be.dbg               = firm_dbg_register("firm.be.sched");
+	be.block             = block;
+	be.curr_time         = 0;
+	be.ready_set         = new_pset(node_cmp_func, get_irn_n_edges(block));
 	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_edges(block));
+	be.selector          = selector;
 
 	firm_dbg_set_mask(be.dbg, 0);
 
 	if(selector->init_block)
-		block_env = selector->init_block(env->selector_env, block);
+		be.selector_block_env = selector->init_block(env->selector_env, block);
 
 	DBG((be.dbg, LEVEL_1, "scheduling %+F\n", block));
 
@@ -526,6 +526,15 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 			add_to_sched(&be, irn);
 			make_users_ready(&be, irn);
 			phi_seen = 1;
+		}
+
+		else if(irn == start_node) {
+			add_to_sched(&be, irn);
+			add_tuple_projs(&be, irn);
+		}
+
+		else if(get_irn_opcode(irn) == iro_Jmp) {
+			final_jmp = irn;
 		}
 
 		/* Other nodes must have all operands in other blocks to be made
@@ -556,7 +565,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	while(pset_count(be.ready_set) > 0) {
 		/* select a node to be scheduled and check if it was ready */
-		irn = selector->select(env->selector_env, block_env, &info->list, be.curr_time, be.ready_set);
+		irn = selector->select(be.selector_block_env, be.ready_set);
 
 		DBG((be.dbg, LEVEL_3, "\tpicked node %+F\n", irn));
 
@@ -577,7 +586,10 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	}
 
 	if(selector->finish_block)
-		selector->finish_block(env->selector_env, block_env, block);
+		selector->finish_block(be.selector_block_env);
+
+	if(final_jmp)
+		add_to_sched(&be, final_jmp);
 
 	del_pset(be.ready_set);
 	del_pset(be.already_scheduled);
