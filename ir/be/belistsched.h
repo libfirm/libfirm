@@ -58,7 +58,7 @@ struct _list_sched_selector_t {
 	ir_node *(*select)(void *block_env, pset *ready_set);
 
 	/**
-	 * This function descides, if a node should appear in a schedule.
+	 * This function decides, if a node should appear in a schedule.
 	 * @param block_env The block environment.
 	 * @param irn       The node.
 	 * @return 1, if the node should be scheduled, 0 if not.
