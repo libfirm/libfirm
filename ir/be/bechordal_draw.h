@@ -67,7 +67,6 @@ extern plotter_t *new_plotter_ps(const char *filename);
 extern void draw_interval_tree(
     const draw_chordal_opts_t *opts,
     const be_chordal_env_t *chordal_env,
-    plotter_t *plotter, const arch_env_t *env,
-    const arch_register_class_t *cls);
+    plotter_t *plotter);
 
 #endif /* _BECHORDAL_DRAW_H */

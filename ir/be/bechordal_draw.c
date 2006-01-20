@@ -390,20 +390,18 @@ static void draw(draw_chordal_env_t *env, const rect_t *start_box)
 }
 
 void draw_interval_tree(const draw_chordal_opts_t *opts,
-    const be_chordal_env_t *chordal_env,
-    plotter_t *plotter, const arch_env_t *arch_env,
-    const arch_register_class_t *cls)
+						const be_chordal_env_t *chordal_env,
+						plotter_t *plotter)
 {
   draw_chordal_env_t env;
   struct block_dims *start_dims;
   ir_node *start_block = get_irg_start_block(chordal_env->irg);
 
-  env.arch_env = arch_env;
+  env.arch_env = chordal_env->main_env->arch_env;
   env.opts = opts;
   env.block_dims = pmap_create();
   env.plotter = plotter;
-  env.chordal_env = chordal_env;
-  env.cls = cls;
+  env.cls = chordal_env->cls;
   env.max_color = 0;
   env.chordal_env = chordal_env;
   obstack_init(&env.obst);
