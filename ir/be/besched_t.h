@@ -53,7 +53,7 @@ static INLINE int _sched_get_time_step(const ir_node *irn)
  * @param irn The node to check for.
  * @return 1, if the node consumes/produces data, false if not.
  */
-static INLINE int to_appear_in_schedule(ir_node *irn)
+static INLINE int to_appear_in_schedule(const ir_node *irn)
 {
   if(get_irn_opcode(irn) == iro_Start)
   	return 1;
