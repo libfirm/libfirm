@@ -428,6 +428,9 @@ static void lower_call_node(ir_node *call, void *walk_env) {
 			bitset_set(proj_set, get_Proj_proj(get_edge_src_irn(edge)));
 		}
 	}
+	else {
+		proj_T = new_r_Proj(current_ir_graph, block, call, mode_T, pn_Call_T_result);
+	}
 
 	/* Create for each caller save register a proj (keep node arguement) */
 	/* if this proj is not already present */
@@ -471,11 +474,13 @@ static void lower_nodes_walker(ir_node *irn, void *walk_env) {
 	const arch_env_t *arch_env = env->chord_env->main_env->arch_env;
 
 	if (!is_Block(irn)) {
-		if (is_Perm(arch_env, irn) && ! is_Proj(irn)) {
-			lower_perm_node(irn, walk_env);
-		}
-		else if (is_Call(arch_env, irn)) {
-			lower_call_node(irn, walk_env);
+		if (!is_Proj(irn)) {
+			if (is_Perm(arch_env, irn)) {
+				lower_perm_node(irn, walk_env);
+			}
+			else if (is_Call(arch_env, irn)) {
+				lower_call_node(irn, walk_env);
+			}
 		}
 	}
 
