@@ -27,6 +27,7 @@ typedef struct _arch_register_t           arch_register_t;
 typedef struct _arch_isa_if_t             arch_isa_if_t;
 typedef struct _arch_isa_t                arch_isa_t;
 typedef struct _arch_env_t                arch_env_t;
+typedef struct _arch_irn_ops_if_t         arch_irn_ops_if_t;
 typedef struct _arch_irn_ops_t            arch_irn_ops_t;
 typedef struct _arch_irn_handler_t        arch_irn_handler_t;
 typedef struct _arch_code_generator_t     arch_code_generator_t;
@@ -197,7 +198,7 @@ typedef enum _arch_irn_flags_t {
   arch_irn_flags_rematerializable = 2
 } arch_irn_flags_t;
 
-struct _arch_irn_ops_t {
+struct _arch_irn_ops_if_t {
 
   /**
    * Get the register requirements for a given operand.
@@ -209,7 +210,7 @@ struct _arch_irn_ops_t {
    * @return    The register requirements for the selected operand.
    *            The pointer returned is never NULL.
    */
-  const arch_register_req_t *(*get_irn_reg_req)(const arch_irn_ops_t *self,
+  const arch_register_req_t *(*get_irn_reg_req)(const void *self,
       arch_register_req_t *req, const ir_node *irn, int pos);
 
   /**
@@ -219,7 +220,7 @@ struct _arch_irn_ops_t {
    * @note      If the operand is not a register operand,
    *            the call is ignored.
    */
-  void (*set_irn_reg)(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg);
+  void (*set_irn_reg)(const void *self, ir_node *irn, const arch_register_t *reg);
 
   /**
    * Get the register allocated for an output operand.
@@ -229,14 +230,14 @@ struct _arch_irn_ops_t {
    *            @c arch_register_invalid, if no register has yet been
    *            allocated for this node.
    */
-  const arch_register_t *(*get_irn_reg)(const arch_irn_ops_t *self, const ir_node *irn);
+  const arch_register_t *(*get_irn_reg)(const void *self, const ir_node *irn);
 
   /**
    * Classify the node.
    * @param irn The node.
    * @return A classification.
    */
-  arch_irn_class_t (*classify)(const arch_irn_ops_t *self, const ir_node *irn);
+  arch_irn_class_t (*classify)(const void *self, const ir_node *irn);
 
   /**
    * Get the flags of a node.
@@ -244,8 +245,15 @@ struct _arch_irn_ops_t {
    * @param irn The node.
    * @return A set of flags.
    */
-  arch_irn_flags_t (*get_flags)(const arch_irn_ops_t *self, const ir_node *irn);
+  arch_irn_flags_t (*get_flags)(const void *self, const ir_node *irn);
 
+};
+
+/**
+ * irn_ops base class.
+ */
+struct _arch_irn_ops_t {
+	const arch_irn_ops_if_t *impl;
 };
 
 /**
@@ -361,7 +369,7 @@ struct _arch_irn_handler_t {
     * @param irn Some node.
     * @return Operations for that irn.
     */
-  const arch_irn_ops_t *(*get_irn_ops)(const arch_irn_handler_t *handler,
+  const void *(*get_irn_ops)(const arch_irn_handler_t *handler,
       const ir_node *irn);
 
 };

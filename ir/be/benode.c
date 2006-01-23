@@ -399,7 +399,7 @@ static void *put_in_reg_req(arch_register_req_t *req, const ir_node *irn, int po
 }
 
 static const arch_register_req_t *
-be_node_get_irn_reg_req(const arch_irn_ops_t *self, arch_register_req_t *req, const ir_node *irn, int pos)
+be_node_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos)
 {
 	int out_pos = pos;
 
@@ -420,7 +420,7 @@ be_node_get_irn_reg_req(const arch_irn_ops_t *self, arch_register_req_t *req, co
 }
 
 static void
-be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn, const arch_register_t *reg)
+be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
 {
 	int out_pos;
 	be_node_attr_t *a;
@@ -434,7 +434,7 @@ be_node_set_irn_reg(const arch_irn_ops_t *_self, ir_node *irn, const arch_regist
 }
 
 const arch_register_t *
-be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn)
+be_node_get_irn_reg(const void *_self, const ir_node *irn)
 {
 	int out_pos;
 	be_node_attr_t *a;
@@ -448,7 +448,7 @@ be_node_get_irn_reg(const arch_irn_ops_t *_self, const ir_node *irn)
 	return a->reg_data[out_pos].reg;
 }
 
-arch_irn_class_t be_node_classify(const arch_irn_ops_t *_self, const ir_node *irn)
+arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 {
 	redir_proj(&irn, -1);
 
@@ -466,12 +466,12 @@ arch_irn_class_t be_node_classify(const arch_irn_ops_t *_self, const ir_node *ir
 	return 0;
 }
 
-arch_irn_class_t be_node_get_flags(const arch_irn_ops_t *_self, const ir_node *irn)
+arch_irn_class_t be_node_get_flags(const void *_self, const ir_node *irn)
 {
 	return 0;
 }
 
-static const arch_irn_ops_t be_node_irn_ops = {
+static const arch_irn_ops_if_t be_node_irn_ops_if = {
 	be_node_get_irn_reg_req,
 	be_node_set_irn_reg,
 	be_node_get_irn_reg,
@@ -479,7 +479,11 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	be_node_get_flags,
 };
 
-const arch_irn_ops_t *be_node_get_arch_ops(const arch_irn_handler_t *self, const ir_node *irn)
+static const arch_irn_ops_t be_node_irn_ops = {
+	&be_node_irn_ops_if
+};
+
+const void *be_node_get_arch_ops(const arch_irn_handler_t *self, const ir_node *irn)
 {
 	redir_proj((const ir_node **) &irn, -1);
 	return is_be_node(irn) ? &be_node_irn_ops : NULL;

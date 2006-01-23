@@ -204,7 +204,7 @@ static const arch_register_req_t firm_std_reg_req = {
 };
 
 static const arch_register_req_t *
-firm_get_irn_reg_req(const arch_irn_ops_t *self,
+firm_get_irn_reg_req(const void *self,
     arch_register_req_t *req, const ir_node *irn, int pos)
 {
   if(is_firm_be_mode(get_irn_mode(irn)))
@@ -242,19 +242,19 @@ static struct irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn)
   return set_insert(reg_set, &templ, sizeof(templ), HASH_PTR(irn));
 }
 
-static void firm_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg)
+static void firm_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
 {
   struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn);
   assoc->reg = reg;
 }
 
-static const arch_register_t *firm_get_irn_reg(const arch_irn_ops_t *self, const ir_node *irn)
+static const arch_register_t *firm_get_irn_reg(const void *self, const ir_node *irn)
 {
   struct irn_reg_assoc *assoc = get_irn_reg_assoc(irn);
   return assoc->reg;
 }
 
-static arch_irn_class_t firm_classify(const arch_irn_ops_t *self, const ir_node *irn)
+static arch_irn_class_t firm_classify(const void *self, const ir_node *irn)
 {
     arch_irn_class_t res;
 
@@ -273,7 +273,7 @@ static arch_irn_class_t firm_classify(const arch_irn_ops_t *self, const ir_node 
 	return res;
 }
 
-static arch_irn_flags_t firm_get_flags(const arch_irn_ops_t *self, const ir_node *irn)
+static arch_irn_flags_t firm_get_flags(const void *self, const ir_node *irn)
 {
 	arch_irn_flags_t res = arch_irn_flags_spillable;
 
@@ -298,22 +298,26 @@ static arch_irn_flags_t firm_get_flags(const arch_irn_ops_t *self, const ir_node
 	return res;
 }
 
-static const arch_irn_ops_t irn_ops = {
-  firm_get_irn_reg_req,
-  firm_set_irn_reg,
-  firm_get_irn_reg,
-  firm_classify,
+static const arch_irn_ops_if_t firm_irn_ops_if = {
+	firm_get_irn_reg_req,
+	firm_set_irn_reg,
+	firm_get_irn_reg,
+	firm_classify,
 	firm_get_flags
 };
 
-static const arch_irn_ops_t *firm_get_irn_ops(const arch_irn_handler_t *self,
-    const ir_node *irn)
+static const arch_irn_ops_t firm_irn_ops = {
+	&firm_irn_ops_if
+};
+
+static const void *firm_get_irn_ops(const arch_irn_handler_t *self,
+	const ir_node *irn)
 {
-  return &irn_ops;
+	return &firm_irn_ops;
 }
 
 const arch_irn_handler_t firm_irn_handler = {
-  firm_get_irn_ops,
+	firm_get_irn_ops,
 };
 
 static ir_node *new_Push(ir_graph *irg, ir_node *bl, ir_node *push, ir_node *arg)

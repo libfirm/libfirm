@@ -82,7 +82,7 @@ const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
   req->type = arch_register_req_type_none;
-  return ops->get_irn_reg_req(ops, req, irn, pos);
+  return ops->impl->get_irn_reg_req(ops, req, irn, pos);
 }
 
 int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
@@ -90,7 +90,7 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
 {
   arch_register_req_t local_req;
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
+  const arch_register_req_t *req = ops->impl->get_irn_reg_req(ops, &local_req, irn, pos);
 
   if(req->type == arch_register_req_type_none) {
 	  bitset_clear_all(bs);
@@ -109,7 +109,7 @@ int arch_is_register_operand(const arch_env_t *env,
 {
 	arch_register_req_t local_req;
 	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-	const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
+	const arch_register_req_t *req = ops->impl->get_irn_reg_req(ops, &local_req, irn, pos);
 	return req != NULL;
 }
 
@@ -137,7 +137,7 @@ arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos)
 {
   arch_register_req_t local_req;
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  const arch_register_req_t *req = ops->get_irn_reg_req(ops, &local_req, irn, pos);
+  const arch_register_req_t *req = ops->impl->get_irn_reg_req(ops, &local_req, irn, pos);
   return req ? req->cls : NULL;
 }
 
@@ -145,24 +145,24 @@ extern const arch_register_t *
 arch_get_irn_register(const arch_env_t *env, const ir_node *irn)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  return ops->get_irn_reg(ops, irn);
+  return ops->impl->get_irn_reg(ops, irn);
 }
 
 extern void arch_set_irn_register(const arch_env_t *env,
     ir_node *irn, const arch_register_t *reg)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  ops->set_irn_reg(ops, irn, reg);
+  ops->impl->set_irn_reg(ops, irn, reg);
 }
 
 extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  return ops->classify(ops, irn);
+  return ops->impl->classify(ops, irn);
 }
 
 extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  return ops->get_flags(ops, irn);
+  return ops->impl->get_flags(ops, irn);
 }
