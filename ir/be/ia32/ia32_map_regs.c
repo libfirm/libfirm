@@ -10,6 +10,54 @@
 
 #include "ia32_map_regs.h"
 #include "ia32_new_nodes.h"
+#include "gen_ia32_regalloc_if.h"
+
+static int maxnum_gpreg_args = 3;   /* maximum number of int arguments passed in registers; default 3 */
+static int maxnum_fpreg_args = 5;   /* maximum number of float arguments passed in registers; default 5 */
+
+/* this is the order of the assigned registers usesd for parameter passing */
+
+const ia32_register_req_t *gpreg_param_req_std[] = {
+	&ia32_default_req_ia32_general_purpose_eax,
+	&ia32_default_req_ia32_general_purpose_ecx,
+	&ia32_default_req_ia32_general_purpose_edx,
+	&ia32_default_req_ia32_general_purpose_ebx,
+	&ia32_default_req_ia32_general_purpose_edi,
+	&ia32_default_req_ia32_general_purpose_esi
+};
+
+const ia32_register_req_t *gpreg_param_req_this[] = {
+	&ia32_default_req_ia32_general_purpose_ecx,
+	&ia32_default_req_ia32_general_purpose_eax,
+	&ia32_default_req_ia32_general_purpose_edx,
+	&ia32_default_req_ia32_general_purpose_ebx,
+	&ia32_default_req_ia32_general_purpose_edi,
+	&ia32_default_req_ia32_general_purpose_esi
+};
+
+const ia32_register_req_t *fpreg_param_req_std[] = {
+	&ia32_default_req_ia32_floating_point_xmm0,
+	&ia32_default_req_ia32_floating_point_xmm1,
+	&ia32_default_req_ia32_floating_point_xmm2,
+	&ia32_default_req_ia32_floating_point_xmm3,
+	&ia32_default_req_ia32_floating_point_xmm4,
+	&ia32_default_req_ia32_floating_point_xmm5,
+	&ia32_default_req_ia32_floating_point_xmm6,
+	&ia32_default_req_ia32_floating_point_xmm7
+};
+
+const ia32_register_req_t *fpreg_param_req_this[] = {
+	NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
+	&ia32_default_req_ia32_floating_point_xmm0,
+	&ia32_default_req_ia32_floating_point_xmm1,
+	&ia32_default_req_ia32_floating_point_xmm2,
+	&ia32_default_req_ia32_floating_point_xmm3,
+	&ia32_default_req_ia32_floating_point_xmm4,
+	&ia32_default_req_ia32_floating_point_xmm5,
+	&ia32_default_req_ia32_floating_point_xmm6,
+	&ia32_default_req_ia32_floating_point_xmm7
+};
+
 
 
 /* Mapping to store registers in firm nodes */
@@ -87,6 +135,102 @@ long ia32_get_reg_projnum(const arch_register_t *reg, set *reg_set) {
 
 
 /**
+ * Check all parameters and determine the maximum number of parameters
+ * to pass in gp regs resp. in fp regs.
+ *
+ * @param n       The number of parameters
+ * @param modes   The parameter list
+ * @param n_int   Holds the number of int parameters to be passed in regs after the call
+ * @param n_float Holds the number of float parameters to be passed in regs after the call
+ * @return        The number of the last parameter to be passed in register
+ */
+int ia32_get_n_regparam_class(int n, ir_node **params, int *n_int, int *n_float) {
+	int i, finished = 0;
+
+	for (i = 0; i < n && !finished; i++) {
+		if (mode_is_int(get_irn_mode(params[i]))) {
+			*n_int = *n_int + 1;
+		}
+		else if (mode_is_float(get_irn_mode(params[i]))) {
+			*n_float = *n_float + 1;
+		}
+		else {
+			finished = 1;
+		}
+
+		/* test for maximum */
+		if (*n_int == maxnum_gpreg_args || *n_float == maxnum_fpreg_args) {
+			finished = 1;
+		}
+	}
+
+	return i - 1;
+}
+
+
+/**
+ * Returns the register requirements for parameter nr.
+ *
+ * @param n     The number of parameters
+ * @param modes The parameter list
+ * @param nr    The number of the parameter to return the requirements for
+ * @param cc    The calling convention
+ * @return      The register requirements
+ */
+const ia32_register_req_t *ia32_get_RegParam_req(int n, ir_node **params, long nr, unsigned cc) {
+	const ia32_register_req_t **current_gpreg_param_req;
+	const ia32_register_req_t **current_fpreg_param_req;
+	const ia32_register_req_t  *param_req = NULL;
+	int n_gpregparam = 0;
+	int n_fpregparam = 0;
+	int i, done      = 0;
+	int cur_gp_idx   = 0;
+	int cur_fp_idx   = 0;
+	int biggest_n    = ia32_get_n_regparam_class(n, params, &n_gpregparam, &n_fpregparam);
+
+	/* Check if parameter #nr is in range for passing in register */
+	if (nr <= biggest_n) {
+		current_gpreg_param_req = gpreg_param_req_std;
+		current_fpreg_param_req = fpreg_param_req_std;
+
+		if (cc & cc_this_call) {
+			current_gpreg_param_req = gpreg_param_req_this;
+			current_fpreg_param_req = fpreg_param_req_this;
+		}
+
+		/* loop over all parameters and determine whether its a int or float register parameter */
+		for (i = 0; i < nr && !done && (cc & cc_reg_param); i++) {
+			if (mode_is_int(get_irn_mode(params[i])) && cur_gp_idx < maxnum_gpreg_args) {
+				/* param can be passed in general purpose register and we have some registers left */
+				cur_gp_idx++;
+			}
+			else if (mode_is_float(get_irn_mode(params[i])) && cur_fp_idx < maxnum_fpreg_args) {
+				/* param can be passed in floating point register and we have some registers left */
+				assert(current_gpreg_param_req[cur_fp_idx] && "'this' pointer cannot be passed as float");
+				cur_fp_idx++;
+			}
+		}
+
+		/* now: i == nr, that's the parameter requirement we want */
+		if (mode_is_int(get_irn_mode(params[i])) && cur_gp_idx < maxnum_gpreg_args) {
+			/* parameter #nr can be passed in general purpose register */
+			param_req = current_gpreg_param_req[i];
+		}
+		else if (mode_is_float(get_irn_mode(params[i])) && cur_fp_idx < maxnum_fpreg_args) {
+			/* parameter #nr can be passed in floating point register */
+			param_req = current_fpreg_param_req[i];
+		}
+		else {
+			assert(0 && "This should not happen!");
+		}
+	}
+
+	return param_req;
+}
+
+
+
+/**
  * Translates the projnum into a "real" argument position for register
  * requirements dependend on the predecessor.
  */
@@ -128,7 +272,6 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 		return 0;
 	}
 	else if (is_Proj(pred)) {
-//		return nr + translate_proj_pos(pred);
 		first = get_Proj_pred(pred);
 
 		if (is_ia32_Call(first))

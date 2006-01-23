@@ -138,7 +138,6 @@ static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
  */
 int get_ia32_reg_nr(ir_node *irn, int pos, int in_out) {
 	const arch_register_t *reg;
-	ir_node               *op;
 
 	if (in_out == 1) {
 		reg = get_in_reg(irn, pos);
@@ -155,7 +154,6 @@ int get_ia32_reg_nr(ir_node *irn, int pos, int in_out) {
  */
 const char *get_ia32_reg_name(ir_node *irn, int pos, int in_out) {
 	const arch_register_t *reg;
-	ir_node               *op;
 
 	if (in_out == 1) {
 		reg = get_in_reg(irn, pos);

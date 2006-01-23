@@ -27,7 +27,8 @@
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
 
-
+#undef is_Start
+#define is_Start(irn) (get_irn_opcode(irn) == iro_Start)
 
 /**************************************************
  *                         _ _              _  __
@@ -58,9 +59,21 @@ static int is_Call_Proj(const ir_node *n) {
 	return 0;
 }
 
+static int is_Start_Proj(const ir_node *n) {
+	if (is_Proj(n)                               &&
+		is_Proj(get_Proj_pred(n))                &&
+		get_irn_mode(get_Proj_pred(n)) == mode_T &&
+		is_Start(get_Proj_pred(get_Proj_pred(n))))
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 static int is_P_frame_base_Proj(const ir_node *n) {
 	if (is_Proj(n)                                    &&
-		get_irn_opcode(get_Proj_pred(n)) == iro_Start &&
+		is_Start(n) &&
 		get_Proj_proj(n) == pn_Start_P_frame_base)
 	{
 		return 1;
@@ -78,11 +91,12 @@ static int is_used_by_Keep(const ir_node *n) {
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *self, arch_register_req_t *req, const ir_node *irn, int pos) {
+static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
 	const ia32_register_req_t *irn_req;
 	long                       node_pos = pos == -1 ? 0 : pos;
 	ir_mode                   *mode     = get_irn_mode(irn);
 	firm_dbg_module_t         *mod      = firm_dbg_register(DEBUG_MODULE);
+	const ia32_irn_ops_t      *ops      = self;
 
 	if (mode == mode_T || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
@@ -94,6 +108,12 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 
 	if (is_Call_Proj(irn) && is_used_by_Keep(irn)) {
 		irn_req = ia32_projnum_reg_req_map[get_Proj_proj(irn)];
+		memcpy(req, &(irn_req->req), sizeof(*req));
+		return req;
+	}
+	else if (is_Start_Proj(irn)) {
+		irn_req = ops->cg->reg_param_req[get_Proj_proj(irn)];
+		assert(irn_req && "missing requirement for regparam");
 		memcpy(req, &(irn_req->req), sizeof(*req));
 		return req;
 	}
@@ -143,7 +163,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 			else
 				assert(0 && "unsupported Phi-Mode");
 		}
-		else if (get_irn_op(irn) == op_Start) {
+		else if (is_Start(irn)) {
 			DBG((mod, LEVEL_1, "returning reqs none for ProjX -> Start (%+F )\n", irn));
 			switch (node_pos) {
 				case pn_Start_X_initial_exec:
@@ -169,10 +189,13 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const arch_irn_ops_t *sel
 	return req;
 }
 
-static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arch_register_t *reg) {
+static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
 	int pos = 0;
 
-	if ((is_Call_Proj(irn) && is_used_by_Keep(irn)) || is_P_frame_base_Proj(irn)) {
+	if ((is_Call_Proj(irn) && is_used_by_Keep(irn)) ||
+		is_P_frame_base_Proj(irn)                   ||
+		is_Start_Proj(irn))
+	{
 		/* don't skip the proj, we want to take the else below */
 	}
 	else if (is_Proj(irn)) {
@@ -191,11 +214,14 @@ static void ia32_set_irn_reg(const arch_irn_ops_t *self, ir_node *irn, const arc
 	}
 }
 
-static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const ir_node *irn) {
+static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *irn) {
 	int pos = 0;
 	const arch_register_t *reg = NULL;
 
-	if ((is_Call_Proj(irn) && is_used_by_Keep(irn)) || is_P_frame_base_Proj(irn)) {
+	if ((is_Call_Proj(irn) && is_used_by_Keep(irn)) ||
+		is_P_frame_base_Proj(irn)                   ||
+		is_Start_Proj(irn))
+	{
 		/* don't skip the proj, we want to take the else below */
 	}
 	else if (is_Proj(irn)) {
@@ -215,7 +241,7 @@ static const arch_register_t *ia32_get_irn_reg(const arch_irn_ops_t *self, const
 	return reg;
 }
 
-static arch_irn_class_t ia32_classify(const arch_irn_ops_t *self, const ir_node *irn) {
+static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	irn = my_skip_proj(irn);
 	if (is_cfop(irn))
 		return arch_irn_class_branch;
@@ -227,7 +253,7 @@ static arch_irn_class_t ia32_classify(const arch_irn_ops_t *self, const ir_node 
 		return 0;
 }
 
-static arch_irn_flags_t ia32_get_flags(const arch_irn_ops_t *self, const ir_node *irn) {
+static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	irn = my_skip_proj(irn);
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
@@ -239,12 +265,17 @@ static arch_irn_flags_t ia32_get_flags(const arch_irn_ops_t *self, const ir_node
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_t ia32_irn_ops = {
+static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_get_irn_reg_req,
 	ia32_set_irn_reg,
 	ia32_get_irn_reg,
 	ia32_classify,
 	ia32_get_flags
+};
+
+ia32_irn_ops_t ia32_irn_ops = {
+	&ia32_irn_ops_if,
+	NULL
 };
 
 
@@ -275,17 +306,18 @@ static void check_for_alloca(ir_node *irn, void *env) {
  * an ia32 firm graph
  */
 static void ia32_prepare_graph(void *self) {
-	ia32_code_gen_t *cg         = self;
-	int              has_alloca = 0;
+	ia32_code_gen_t *cg = self;
 
 	if (! is_pseudo_ir_graph(cg->irg)) {
 		/* If there is a alloca in the irg, we use %ebp for stack addressing */
 		/* instead of %esp, as alloca destroys %esp.                         */
 
-		/* check for alloca node */
-		irg_walk_blkwise_graph(cg->irg, check_for_alloca, NULL, &has_alloca);
+		cg->has_alloca = 0;
 
-		if (has_alloca) {
+		/* check for alloca node */
+		irg_walk_blkwise_graph(cg->irg, check_for_alloca, NULL, &(cg->has_alloca));
+
+		if (cg->has_alloca) {
 			ia32_general_purpose_regs[REG_EBP].type = arch_register_type_ignore;
 		}
 
@@ -388,6 +420,8 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
 
 	cur_reg_set = cg->reg_set;
 
+	ia32_irn_ops.cg = cg;
+
 	return (arch_code_generator_t *)cg;
 }
 
@@ -446,7 +480,7 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) 
 	return &ia32_reg_classes[i];
 }
 
-static const arch_irn_ops_t *ia32_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
+static const void *ia32_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
 	return &ia32_irn_ops;
 }
 

@@ -731,6 +731,7 @@ $arch = "ia32";
   "arity"    => "variable",
   "spill"    => 0,
   "comment"  => "construct Call: Call(...)",
+  "emit"     => '. call %C',
   "args"     => [
                   { "type" => "int",        "name" => "n" },
                   { "type" => "ir_node **", "name" => "in" }

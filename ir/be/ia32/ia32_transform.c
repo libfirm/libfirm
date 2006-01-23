@@ -20,59 +20,11 @@
 #include "../arch/archop.h"     /* we need this for Min and Max nodes */
 #include "ia32_transform.h"
 #include "ia32_new_nodes.h"
+#include "ia32_map_regs.h"
 
 #include "gen_ia32_regalloc_if.h"
 
 extern ir_op *get_op_Mulh(void);
-
-static int maxnum_gpreg_args = 3;   /* maximum number of int arguments passed in registers; default 3 */
-static int maxnum_fpreg_args = 5;   /* maximum number of float arguments passed in registers; default 5 */
-
-static const ia32_register_req_t **current_gpreg_param_req;
-static const ia32_register_req_t **current_fpreg_param_req;
-
-/* this is the order of the assigned registers usesd for parameter passing */
-
-const ia32_register_req_t *gpreg_param_req_std[] = {
-	&ia32_default_req_ia32_general_purpose_eax,
-	&ia32_default_req_ia32_general_purpose_ecx,
-	&ia32_default_req_ia32_general_purpose_edx,
-	&ia32_default_req_ia32_general_purpose_ebx,
-	&ia32_default_req_ia32_general_purpose_edi,
-	&ia32_default_req_ia32_general_purpose_esi
-};
-
-const ia32_register_req_t *gpreg_param_req_this[] = {
-	&ia32_default_req_ia32_general_purpose_ecx,
-	&ia32_default_req_ia32_general_purpose_eax,
-	&ia32_default_req_ia32_general_purpose_edx,
-	&ia32_default_req_ia32_general_purpose_ebx,
-	&ia32_default_req_ia32_general_purpose_edi,
-	&ia32_default_req_ia32_general_purpose_esi
-};
-
-const ia32_register_req_t *fpreg_param_req_std[] = {
-	&ia32_default_req_ia32_floating_point_xmm0,
-	&ia32_default_req_ia32_floating_point_xmm1,
-	&ia32_default_req_ia32_floating_point_xmm2,
-	&ia32_default_req_ia32_floating_point_xmm3,
-	&ia32_default_req_ia32_floating_point_xmm4,
-	&ia32_default_req_ia32_floating_point_xmm5,
-	&ia32_default_req_ia32_floating_point_xmm6,
-	&ia32_default_req_ia32_floating_point_xmm7
-};
-
-const ia32_register_req_t *fpreg_param_req_this[] = {
-	NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
-	&ia32_default_req_ia32_floating_point_xmm0,
-	&ia32_default_req_ia32_floating_point_xmm1,
-	&ia32_default_req_ia32_floating_point_xmm2,
-	&ia32_default_req_ia32_floating_point_xmm3,
-	&ia32_default_req_ia32_floating_point_xmm4,
-	&ia32_default_req_ia32_floating_point_xmm5,
-	&ia32_default_req_ia32_floating_point_xmm6,
-	&ia32_default_req_ia32_floating_point_xmm7
-};
 
 /* this is a struct to minimize the number of parameters
    passed to each gen_xxx function */
@@ -84,6 +36,7 @@ typedef struct _transform_env_t {
 	ir_node           *block;      /**<< The block, the node should belong to */
 	ir_node           *irn;        /**<< The irn, to be transformed */
 	ir_mode           *mode;       /**<< The mode of the irn */
+	ia32_code_gen_t   *cg;         /**<< The code generator */
 } transform_env_t;
 
 
@@ -1063,28 +1016,6 @@ ir_node *gen_Store(transform_env_t *env) {
 
 
 /**
- * Check all parameters and determine the maximum number of parameters
- * to pass in gp regs resp. in fp regs.
- */
-static void get_n_regparam_class(int n, ir_node **param, int *n_int, int *n_float) {
-	int i;
-
-	for (i = 0; i < n; i++) {
-		if (mode_is_int(get_irn_mode(param[i])))
-			*n_int = *n_int + 1;
-		else if (mode_is_float(get_irn_mode(param[i])))
-			*n_float = *n_float + 1;
-
-		/* test for maximum */
-		if (*n_int == maxnum_gpreg_args)
-			break;
-
-		if (*n_float == maxnum_fpreg_args)
-			break;
-	}
-}
-
-/**
  * Transforms a Call and its arguments corresponding to the calling convention.
  *
  * @param mod     the debug module
@@ -1097,8 +1028,7 @@ static ir_node *gen_Call(transform_env_t *env) {
 	const ia32_register_req_t **in_req;
 	ir_node          **in;
 	ir_node           *new_call, *sync;
-	ir_mode           *mode;
-	int                i, j, n_new_call_in;
+	int                i, j, n_new_call_in, ignore = 0;
 	asmop_attr        *attr;
 	firm_dbg_module_t *mod          = env->mod;
 	dbg_info          *dbg          = env->dbg;
@@ -1110,57 +1040,28 @@ static ir_node *gen_Call(transform_env_t *env) {
 	ir_node           *call_Mem     = get_Call_mem(call);
 	unsigned           cc           = get_method_calling_convention(get_Call_type(call));
 	int                n            = get_Call_n_params(call);
-	int                n_gpregparam = 0;
-	int                n_fpregparam = 0;
-	int                cur_gp_idx   = 0;
-	int                cur_fp_idx   = 0;
 	int                stack_idx    = 0;
-	int                done         = 0;
+	int                biggest_n    = -1;
 
 	if (cc & cc_reg_param)
-		get_n_regparam_class(n, param, &n_gpregparam, &n_fpregparam);
+		biggest_n = ia32_get_n_regparam_class(n, param, &ignore, &ignore);
+
+	/* remember: biggest_n = x means we can pass (x + 1) parameters in register */
 
 	/* do we need to pass arguments on stack? */
-	if (n - n_gpregparam - n_fpregparam > 0)
-		stack_param = calloc(n - n_gpregparam - n_fpregparam, sizeof(ir_node *));
+	if (biggest_n + 1 < n)
+		stack_param = calloc(n - biggest_n - 1, sizeof(ir_node *));
 
 	/* we need at least one in, either for the stack params or the call_Mem */
-	n_new_call_in = 1 + n_gpregparam + n_fpregparam;
-
-	current_gpreg_param_req = gpreg_param_req_std;
-	current_fpreg_param_req = fpreg_param_req_std;
-
-	if (cc & cc_this_call) {
-		current_gpreg_param_req = gpreg_param_req_this;
-		current_fpreg_param_req = fpreg_param_req_this;
-	}
+	n_new_call_in = biggest_n + 2;
 
 	/* the call has one IN for all stack parameter and one IN for each reg param */
 	in     = calloc(n_new_call_in, sizeof(ir_node *));
 	in_req = calloc(n_new_call_in, sizeof(arch_register_req_t *));
 
-	/* loop over all parameters and determine whether its a int or float register parameter */
-	for (i = 0; i < n && !done && (cc & cc_reg_param); i++) {
-		mode = get_irn_mode(param[i]);
-
-		if (mode_is_int(mode) && cur_gp_idx < maxnum_gpreg_args) {
-			/* param can be passed in general purpose register and we have some registers left */
-			in[cur_gp_idx + cur_fp_idx] = param[i];
-			in_req[cur_gp_idx] = current_gpreg_param_req[cur_gp_idx];
-			cur_gp_idx++;
-		}
-		else if (mode_is_float(mode) && cur_fp_idx < maxnum_fpreg_args) {
-			/* param can be passed in floating point register and we have some registers left */
-			assert(current_gpreg_param_req[cur_fp_idx] && "'this' pointer cannot be passed as float");
-			in[cur_gp_idx + cur_fp_idx] = param[i];
-			in_req[cur_fp_idx] = current_gpreg_param_req[cur_fp_idx];
-			cur_fp_idx++;
-		}
-
-		/* maximum number of register parameters in one class reached? */
-		if (cur_gp_idx >= maxnum_gpreg_args || cur_fp_idx >= maxnum_fpreg_args) {
-			done      = 1;
-		}
+	/* loop over all parameters and set the register requirements */
+	for (i = 0; i <= biggest_n && (cc & cc_reg_param); i++) {
+		in_req[i] = ia32_get_RegParam_req(n, param, i, cc);
 	}
 	stack_idx = i;
 
@@ -1193,7 +1094,7 @@ static ir_node *gen_Call(transform_env_t *env) {
 	}
 
 	if (stack_param) {
-		sync = new_r_Sync(irg, block, n - n_gpregparam - n_fpregparam, stack_param);
+		sync = new_r_Sync(irg, block, n - biggest_n - 1, stack_param);
 		in[n_new_call_in - 1] = sync;
 	}
 	else {
@@ -1208,9 +1109,10 @@ static ir_node *gen_Call(transform_env_t *env) {
 	/* set register requirements for in and out */
 	attr             = get_ia32_attr(new_call);
 	attr->in_req     = in_req;
-	attr->out_req    = calloc(1, sizeof(ia32_register_req_t *));
+	attr->out_req    = calloc(2, sizeof(ia32_register_req_t *));
 	attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
-	attr->slots      = calloc(1, sizeof(arch_register_t *));
+	attr->out_req[1] = &ia32_default_req_ia32_general_purpose_edx;
+	attr->slots      = calloc(2, sizeof(arch_register_t *));
 
 	/* stack parameter has no OUT register */
 	attr->in_req[n_new_call_in - 1] = &ia32_default_req_none;
@@ -1384,6 +1286,7 @@ static ir_node *gen_Cond(transform_env_t *env) {
  * @return Should be always NULL
  */
 static ir_node *gen_Proj_Start(transform_env_t *env, ir_node *proj, ir_node *start) {
+	const ia32_register_req_t *temp_req;
 	const ir_edge_t   *edge;
 	ir_node           *succ, *irn;
 	ir_node          **projargs;
@@ -1393,10 +1296,7 @@ static ir_node *gen_Proj_Start(transform_env_t *env, ir_node *proj, ir_node *sta
 	ir_node           *proj_M     = get_irg_initial_mem(current_ir_graph);
 	entity            *irg_ent    = get_irg_entity(current_ir_graph);
 	ir_type           *tp         = get_entity_type(irg_ent);
-	int                cur_gp_idx = 0;
-	int                cur_fp_idx = 0;
-	int                stack_idx  = 0;
-	int                done       = 0;
+	int                cur_pn     = 0;
 	firm_dbg_module_t *mod        = env->mod;
 	dbg_info          *dbg        = env->dbg;
 	ir_graph          *irg        = env->irg;
@@ -1409,6 +1309,9 @@ static ir_node *gen_Proj_Start(transform_env_t *env, ir_node *proj, ir_node *sta
 			/* We cannot use get_method_n_params here as the function might
 			   be variadic or one argument is not used. */
 			n = get_irn_n_edges(proj);
+
+			/* Allocate memory for all non variadic parameters in advance to be on the save side */
+			env->cg->reg_param_req = calloc(get_method_n_params(tp), sizeof(ia32_register_req_t *));
 
 			/* we are done here when there are no parameters */
 			if (n < 1)
@@ -1426,55 +1329,34 @@ static ir_node *gen_Proj_Start(transform_env_t *env, ir_node *proj, ir_node *sta
 
 			cc = get_method_calling_convention(tp);
 
-			/* get the correct order in case of 'this' call */
-			current_gpreg_param_req = gpreg_param_req_std;
-			current_fpreg_param_req = fpreg_param_req_std;
-			if (cc & cc_this_call) {
-				current_gpreg_param_req = gpreg_param_req_this;
-				current_fpreg_param_req = fpreg_param_req_this;
-			}
-
 			/* loop over all parameters and check whether its a int or float */
-			for (i = 0; i < n && !done && (cc & cc_reg_param); i++) {
-				mode = get_irn_mode(projargs[i]);
+			for (i = 0; i < n; i++) {
+				mode   = get_irn_mode(projargs[i]);
+				cur_pn = get_Proj_proj(projargs[i]);
 
-				if (mode_is_int(mode) && cur_gp_idx < maxnum_gpreg_args) {
-					/* parameter got passed in general purpose register */
-					irn = new_rd_ia32_RegParam(get_irn_dbg_info(proj), irg, block, proj, mode);
-					set_ia32_pncode(irn, get_Proj_proj(projargs[i]));
-					set_ia32_req_out(irn, current_gpreg_param_req[cur_gp_idx], 0);
-					cur_gp_idx++;
+				if (cc & cc_reg_param) {
+					temp_req = ia32_get_RegParam_req(n, projargs, cur_pn, cc);
 				}
-				else if (mode_is_float(mode) && cur_fp_idx < maxnum_fpreg_args) {
-					/* parameter got passed in floating point register*/
-					irn = new_rd_ia32_RegParam(get_irn_dbg_info(proj), irg, block, proj, mode);
-					set_ia32_pncode(irn, get_Proj_proj(projargs[i]));
-					set_ia32_req_out(irn, current_fpreg_param_req[cur_fp_idx], 0);
-					cur_fp_idx++;
+				else {
+					temp_req = NULL;
 				}
 
-				/* kill the old "Proj Arg" and replace with the new Arg */
-				exchange(projargs[i], irn);
-
-				if (cur_gp_idx >= maxnum_gpreg_args || cur_fp_idx >= maxnum_fpreg_args) {
-					stack_idx = i;
-					done      = 1;
+				if (temp_req) {
+					/* passed in register */
+					env->cg->reg_param_req[cur_pn] = temp_req;
 				}
-			}
+				else {
+					/* passed on stack */
+					if (mode_is_float(mode))
+						irn = new_rd_ia32_fStackParam(get_irn_dbg_info(projargs[i]), irg, block, proj_M, mode);
+					else
+						irn = new_rd_ia32_StackParam(get_irn_dbg_info(projargs[i]), irg, block, proj_M, mode);
 
-			/* create all remaining stack parameters */
-			for (i = stack_idx; i < n; i++) {
-				mode = get_irn_mode(projargs[i]);
+					set_ia32_pncode(irn, cur_pn);
 
-				if (mode_is_float(mode))
-					irn = new_rd_ia32_fStackParam(get_irn_dbg_info(projargs[i]), irg, block, proj_M, mode);
-				else
-					irn = new_rd_ia32_StackParam(get_irn_dbg_info(projargs[i]), irg, block, proj_M, mode);
-
-				set_ia32_pncode(irn, get_Proj_proj(projargs[i]));
-
-				/* kill the old "Proj Arg" and replace with the new stack param */
-				exchange(projargs[i], irn);
+					/* kill the old "Proj Arg" and replace with the new stack param */
+					exchange(projargs[i], irn);
+				}
 			}
 
 			free(projargs);
@@ -1554,6 +1436,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 	tenv.irn      = node;
 	tenv.mod      = cgenv->mod;
 	tenv.mode     = get_irn_mode(node);
+	tenv.cg       = cgenv;
 
 #define UNOP(a)        case iro_##a: asm_node = gen_##a(&tenv, get_##a##_op(node)); break
 #define BINOP(a)       case iro_##a: asm_node = gen_##a(&tenv, get_##a##_left(node), get_##a##_right(node)); break
