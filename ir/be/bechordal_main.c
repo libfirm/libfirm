@@ -80,7 +80,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 		n1_reg = arch_get_irn_register(arch_env, n1);
 		if (!arch_reg_is_allocatable(arch_env, n1, -1, n1_reg)) {
 			DBG((dbg, 0, "Register %s assigned to %+F is not allowed\n", n1_reg->name, n1));
-//			assert(0 && "Register constraint does not hold");
+			assert(0 && "Register constraint does not hold");
 		}
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
 			n2_reg = arch_get_irn_register(arch_env, n2);

@@ -9,9 +9,8 @@
  * The external register allocator is a program taking 2 arguments:
  *   1) An input file in which the cfg is defined
  *   2) An output file containing the essential actions performed during allocation
- */
+ *
 
-#if 0
 
 The input file format
 ----------------------
@@ -27,7 +26,7 @@ block		::= 'block' block-nr '{' insn* '}' .		// Grundblock im cfg versehen mit e
 edge		::= 'cf-edge' block-nr block-nr .			// Steuerflusskante src-->tgt
 
 insn		::= gen-insn 								// Befehl in einem block
-			  | copy-insn
+			  | copy-insn .
 
 gen-insn	::= 'insn' insn-nr '{' uses defs '}' .
 copy-insn	::= 'copy' insn-nr '{' uses defs '}' .
@@ -36,23 +35,32 @@ defs		::= 'def' var-list .						// Liste der definierten/verwendeten Variablen
 uses		::= 'use' var-list .
 
 var-list	::= var-ref
-			  | var-ref var-list
+			  | var-ref var-list .
 
 var-ref		::= var-nr
 			  | var-nr '<' reg-nr '>' .					// reg-nr gibt register constraint an.
 
 
-ident		::= non-whitespace-char*
-regcount, block-nr, insn-nr, reg-nr, var-nr ::= integer
+ident		::= non-whitespace-char* .
+regcount, block-nr, insn-nr, reg-nr, var-nr ::= integer .
 
 
 The output file format
 -----------------------
 
-outputfile	::= 'actions' '{' action-list '}'
-TODO
+outputfile	::= action* .
 
-#endif /* documentation of file formats */
+action		::= 'spill'  loc var-nr					// insert a spill    spill(var-nr);
+			  | 'reload' loc var-nr var-nr			// insert a reload   var-nr[1] := reload(var-nr[2]);
+			  | 'copy'   loc var-nr var-nr			// insert a copy     var-nr[1] := var-nr[2];
+			  | 'assign' var-nr reg-nr .			// assign var-nr the register reg-nr
+
+loc			::= 'before' insn-nr
+			  | 'after'  insn-nr .
+
+TODO
+ *
+ * End of file format docu */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -331,14 +339,6 @@ static void ssa_destr_rastello(be_raext_env_t *raenv) {
 	//TODO irg_block_walk_graph(irg, ssa_destr_rastello, NULL, &raenv);
 }
 
-/******************************************************************************
-   __      __   _                   ___   __      __
-   \ \    / /  | |                 |__ \  \ \    / /
-    \ \  / /_ _| |_   _  ___  ___     ) |  \ \  / /_ _ _ __
-     \ \/ / _` | | | | |/ _ \/ __|   / /    \ \/ / _` | '__|
-      \  / (_| | | |_| |  __/\__ \  / /_     \  / (_| | |
-       \/ \__,_|_|\__,_|\___||___/ |____|     \/ \__,_|_|
- *****************************************************************************/
 
 /**
  * Define variables (numbers) for all SSA-values.

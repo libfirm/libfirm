@@ -94,6 +94,7 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 /* register allocators */
 static const lc_opt_enum_const_ptr_items_t ra_items[] = {
 	{ "chordal", &be_ra_chordal_allocator },
+	{ "external", &be_ra_external_allocator },
 	{ NULL,      NULL }
 };
 
@@ -132,15 +133,17 @@ void be_opt_register(void)
 {
 #ifdef WITH_LIBCORE
 	int i;
+	lc_opt_entry_t *be_grp_ra;
 
 	be_grp_root = lc_opt_get_grp(firm_opt_get_root(), "be");
+	be_grp_ra   = lc_opt_get_grp(be_grp_root, "ra");
 
 	lc_opt_add_table(be_grp_root, be_main_options);
 
-	/* register register allocator options */
+	/* register allocator options */
 	for(i = 0; ra_items[i].name != NULL; ++i) {
 		const be_ra_t *ra = ra_items[i].value;
-		ra->register_options(be_grp_root);
+		ra->register_options(be_grp_ra);
 	}
 
 	/* register isa options */
