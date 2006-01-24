@@ -478,6 +478,15 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 
 static ir_node *select_node(block_sched_env_t *be)
 {
+	ir_node *irn;
+
+	for(irn = pset_first(be->ready_set); irn; irn = pset_next(be->ready_set)) {
+		if(be_is_Keep(irn)) {
+			pset_break(be->ready_set);
+			return irn;
+		}
+	}
+
 	return be->selector->select(be->selector_block_env, be->ready_set);
 }
 
