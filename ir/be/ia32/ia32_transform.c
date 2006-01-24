@@ -1486,6 +1486,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 		IGN(IJmp);
 		IGN(Break);
 		IGN(Cmp);
+		IGN(Unknown);
 
 		BAD(Alloc);
 		BAD(Raise);
@@ -1498,7 +1499,6 @@ void ia32_transform_node(ir_node *node, void *env) {
 		BAD(Id);
 		BAD(Bad);
 		BAD(Confirm);
-		BAD(Unknown);
 		BAD(Filter);
 		BAD(CallBegin);
 		BAD(EndReg);
