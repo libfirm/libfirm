@@ -7,6 +7,7 @@
 #include "irprog.h"
 #include "irprintf.h"
 #include "iredges_t.h"
+#include "ircons.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -73,7 +74,7 @@ static int is_Start_Proj(const ir_node *n) {
 
 static int is_P_frame_base_Proj(const ir_node *n) {
 	if (is_Proj(n)                                    &&
-		is_Start(n) &&
+		is_Start(get_Proj_pred(n)) &&
 		get_Proj_proj(n) == pn_Start_P_frame_base)
 	{
 		return 1;
@@ -334,23 +335,13 @@ static void ia32_set_P_frame_base_Proj_reg(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg = env;
 
 	if (is_P_frame_base_Proj(irn)) {
-		arch_set_irn_register(cg->arch_env, irn, &ia32_general_purpose_regs[REG_ESP]);
+		if (cg->has_alloca) {
+			arch_set_irn_register(cg->arch_env, irn, &ia32_general_purpose_regs[REG_EBP]);
+		}
+		else {
+			arch_set_irn_register(cg->arch_env, irn, &ia32_general_purpose_regs[REG_ESP]);
+		}
 	}
-}
-
-/**
- * This function is the hook before_sched but more important: it is
- * called after the dead node elimination. The dead node elimination changes
- * the memory location of the nodes, which will change the hash key of
- * the Proj_P_frame_base(Start) and this will fuck up the firm_node -> register
- * hash map. So we need to insert the register for this node after the dead node
- * elimination.
- */
-static void ia32_some_stuff_need_to_be_done_after_deadnode_elimination(void *self) {
-	ia32_code_gen_t *cg  = self;
-
-	if (! is_pseudo_ir_graph(cg->irg))
-		irg_walk_blkwise_graph(cg->irg, NULL, ia32_set_P_frame_base_Proj_reg, cg);
 }
 
 
@@ -358,10 +349,51 @@ static void ia32_some_stuff_need_to_be_done_after_deadnode_elimination(void *sel
 /**
  * Dummy functions for hooks we don't need but which must be filled.
  */
+static void ia32_before_sched(void *self) {
+}
+
 static void ia32_before_ra(void *self) {
 }
 
 
+/**
+ * Creates a Store for a Spill
+ */
+static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
+	ia32_code_gen_t *cg    = self;
+	unsigned         offs  = be_get_spill_offset(spill);
+	dbg_info        *dbg   = get_irn_dbg_info(spill);
+	ir_node         *block = get_nodes_block(spill);
+	ir_node         *ptr   = get_irg_frame(cg->irg);
+	ir_node         *val   = be_get_Spill_context(spill);
+	ir_node         *mem   = new_rd_NoMem(cg->irg);
+	ir_mode         *mode  = get_irn_mode(spill);
+	ir_node         *res;
+
+	res = new_rd_ia32_Store(dbg, cg->irg, block, ptr, val, mem, mode);
+	set_ia32_am_offs(res, new_tarval_from_long(offs, mode_Iu));
+
+	return res;
+}
+
+/**
+ * Create a Load for a Spill
+ */
+static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
+	ia32_code_gen_t *cg    = self;
+	dbg_info        *dbg   = get_irn_dbg_info(reload);
+	ir_node         *block = get_nodes_block(reload);
+	ir_node         *ptr   = get_irg_frame(cg->irg);
+	ir_mode         *mode  = get_irn_mode(reload);
+	ir_node         *store = get_irn_n(reload, 0);
+	tarval          *tv    = get_ia32_am_offs(store);
+	ir_node         *res;
+
+	res = new_rd_ia32_Load(dbg, cg->irg, block, ptr, store, mode);
+	set_ia32_am_offs(res, tv);
+
+	return res;
+}
 
 /**
  * Emits the code, closes the output file and frees
@@ -376,6 +408,10 @@ static void ia32_codegen(void *self) {
 		ia32_gen_decls(cg->out);
 		cg->emit_decls = 0;
 	}
+
+	/* set the stack register */
+	if (! is_pseudo_ir_graph(irg))
+		irg_walk_blkwise_graph(irg, NULL, ia32_set_P_frame_base_Proj_reg, cg);
 
 //	ia32_finish_irg(irg);
 	ia32_gen_routine(out, irg, cg->arch_env);
@@ -392,8 +428,10 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env);
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
 	ia32_prepare_graph,
-	ia32_some_stuff_need_to_be_done_after_deadnode_elimination,   /* before scheduling hook */
+	ia32_before_sched,   /* before scheduling hook */
 	ia32_before_ra,      /* before register allocation hook */
+	ia32_lower_spill,
+	ia32_lower_reload,
 	ia32_codegen         /* emit && done */
 };
 
