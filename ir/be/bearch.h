@@ -405,6 +405,16 @@ struct _arch_code_generator_if_t {
 	void (*before_ra)(void *self);
 
 	/**
+	 * Called after register allocation to lower Spills to Stores
+	 */
+	ir_node *(*lower_spill)(void *self, ir_node *spill);
+
+	/**
+	 * Called after register allocation to lower Reloads to Loads
+	 */
+	ir_node *(*lower_reload)(void *self, ir_node *reload);
+
+	/**
 	 * Called after everything happened.
 	 * The code generator must also be de-allocated here.
 	 */
@@ -482,7 +492,7 @@ struct _arch_isa_if_t {
    * @param self The this pointer.
    * @return     Some code generator interface.
    */
-  const arch_code_generator_if_t *(*get_code_generator)(void *self);
+  const arch_code_generator_if_t *(*get_code_generator_if)(void *self);
 
   /**
    * Get the list scheduler to use.

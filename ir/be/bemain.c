@@ -238,7 +238,6 @@ static void be_main_loop(FILE *file_handle)
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
-		arch_code_generator_t *cg;
 		const arch_code_generator_if_t *cg_if;
 
 		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
@@ -248,14 +247,14 @@ static void be_main_loop(FILE *file_handle)
 		current_ir_graph = irg;
 
 		/* Get the code generator interface. */
-		cg_if = isa->impl->get_code_generator(isa);
+		cg_if = isa->impl->get_code_generator_if(isa);
 
 		/* get a code generator for this graph. */
-		cg = cg_if->init(file_handle, irg, env.arch_env);
+		env.cg = cg_if->init(file_handle, irg, env.arch_env);
 
 		/* create the code generator and generate code. */
 		prepare_graph(&env, irg);
-		arch_code_generator_prepare_graph(cg);
+		arch_code_generator_prepare_graph(env.cg);
 
 		edges_deactivate(irg);
 		dead_node_elimination(irg);
@@ -264,7 +263,7 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
 		/* Schedule the graphs. */
-		arch_code_generator_before_sched(cg);
+		arch_code_generator_before_sched(env.cg);
 		list_sched(isa, irg);
 
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
@@ -273,12 +272,12 @@ static void be_main_loop(FILE *file_handle)
 		sched_verify_irg(irg);
 
 		/* Do register allocation */
-		arch_code_generator_before_ra(cg);
+		arch_code_generator_before_ra(env.cg);
 		ra->allocate(&env, irg);
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
-		arch_code_generator_done(cg);
+		arch_code_generator_done(env.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
 	}
 

@@ -25,6 +25,7 @@ struct _be_main_env_t {
   struct _be_node_factory_t *node_factory;
   struct _arch_env_t *arch_env;
   struct _be_options_t *options;
+  struct _arch_code_generator_t *cg;
   firm_dbg_module_t *dbg;
 };
 
