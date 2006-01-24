@@ -171,15 +171,6 @@ const be_ra_t be_ra_external_allocator = {
                  |_|
  *****************************************************************************/
 
-#define mark_as_done(irn, pos)			set_irn_link(irn, INT_TO_PTR(pos+1))
-#define has_been_done(irn, pos)			(PTR_TO_INT(get_irn_link(irn)) > pos)
-
-#define pmap_insert_sth(pmap, key, val) pmap_insert(pmap, (void *)key, (void *)val)
-#define pmap_get_sth(pmap, key)			pmap_get(pmap, (void *)key)
-#define set_var_nr(irn, nr)				set_irn_link(irn, INT_TO_PTR(nr))
-#define get_var_nr(irn)					PTR_TO_INT(get_irn_link(irn))
-
-
 /**
  * Checks if _the_ result of the irn belongs to the
  * current register class (raenv->cls)
@@ -224,6 +215,8 @@ static INLINE int is_sth_in_reg_class(be_raext_env_t *raenv, const ir_node *irn)
 
  *****************************************************************************/
 
+#define mark_as_done(irn, pos)			set_irn_link(irn, INT_TO_PTR(pos+1))
+#define has_been_done(irn, pos)			(PTR_TO_INT(get_irn_link(irn)) > pos)
 
 /**
  * Insert a copy for the argument of @p start_phi found at position @p pos.
@@ -339,6 +332,19 @@ static void ssa_destr_rastello(be_raext_env_t *raenv) {
 	//TODO irg_block_walk_graph(irg, ssa_destr_rastello, NULL, &raenv);
 }
 
+/******************************************************************************
+   __      __   _       ___   __      __
+   \ \    / /  | |     |__ \  \ \    / /
+    \ \  / /_ _| |___     ) |  \ \  / /_ _ _ __ ___
+     \ \/ / _` | / __|   / /    \ \/ / _` | '__/ __|
+      \  / (_| | \__ \  / /_     \  / (_| | |  \__ \
+       \/ \__,_|_|___/ |____|     \/ \__,_|_|  |___/
+ *****************************************************************************/
+
+#define pmap_insert_sth(pmap, key, val) pmap_insert(pmap, (void *)key, (void *)val)
+#define pmap_get_sth(pmap, key)			pmap_get(pmap, (void *)key)
+#define set_var_nr(irn, nr)				set_irn_link(irn, INT_TO_PTR(nr))
+#define get_var_nr(irn)					PTR_TO_INT(get_irn_link(irn))
 
 /**
  * Define variables (numbers) for all SSA-values.
@@ -380,6 +386,7 @@ static void values_to_vars(ir_node *irn, void *env) {
                           |_|
  *****************************************************************************/
 
+
 /**
  * Check if node irn has a limited-constraint at position pos.
  * If yes, dump it to FILE raenv->f
@@ -420,7 +427,12 @@ static void dump_blocks(ir_node *blk, void *env) {
 		if (is_Phi(irn) || !is_sth_in_reg_class(raenv, irn))
 			continue;
 
-		fprintf(f, "    insn %ld {\n", get_irn_node_nr(irn));
+		if (be_is_Copy(irn))
+			fprintf(f, "    copy");
+		else
+			fprintf(f, "    insn");
+
+		fprintf(f, " %ld {\n", get_irn_node_nr(irn));
 
 			/*
 			 * print all uses
@@ -540,12 +552,26 @@ static void execute(char *out_file, char *result_file) {
             |_|   |_|      |___/
  *****************************************************************************/
 
+#define pset_foreach(pset, irn)  for(irn=pset_first(pset); irn; irn=pset_next(pset))
+
+#define INVALID_FILE_FORMAT assert(0 && "Invalid file format.")
+
+static INLINE int get_location(const char *s, size_t len) {
+	if (!strncmp(s, "before", len))
+		return 1;
+	if (!strncmp(s, "after", len))
+		return 0;
+	INVALID_FILE_FORMAT;
+	return -1;
+}
+
 /**
  * Read in the actions performed by the external allocator.
- * Apply these transformations to the irg->
+ * Apply these transformations to the irg.
  */
 static void read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 	FILE *f;
+	pmap_entry *pme;
 
 	if (!(f = fopen(filename, "rt"))) {
 		fprintf(stderr, "Could not open file %s for reading\n", filename);
@@ -553,9 +579,42 @@ static void read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 	}
 	raenv->f = f;
 
-	//TODO: free pmap entries (the psets) pmap_foreach(raenv.vars, pme)	del_pset(pme->value);
+	/* parse the file */
+	while (!feof(f)) {
+		int loc, var_use, var_def, reg_nr;
+		char where[16];
+
+		/* assign register */
+		if (fscanf(f, " assign %d %d ", &var_use, &reg_nr) == 2) {
+			pset *vals = pmap_get_sth(raenv->vars, var_use);
+			ir_node *irn;
+
+			assert(vals && "Variable does not (yet?) exist!");
+			pset_foreach(vals, irn)
+				arch_set_irn_register(raenv->aenv, irn, arch_register_for_index(raenv->cls, var_use));
+		}
+
+		/* handle a reload */
+		else if (fscanf(f, " reload %s %d %d %d ", &where, &loc, &var_def, &var_use) == 4) {
+			int before = get_location(where, sizeof(where));
+			/* TODO */
+		}
+
+		/* handle a spill */
+		else if (fscanf(f, " spill %6s %d %d ", &where, &loc, &var_use) == 3) {
+			int before = get_location(where, sizeof(where));
+			/* TODO */
+		}
+
+		else
+			INVALID_FILE_FORMAT;
+	}
 
 	fclose(f);
+
+	/* Free the psets holding the variable-equivalence classes */
+	pmap_foreach(raenv->vars, pme)
+		del_pset(pme->value);
 }
 
 /******************************************************************************
