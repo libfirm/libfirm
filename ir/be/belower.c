@@ -384,6 +384,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	sched_remove(irn);
 }
 
+
+
 /**
  * Adds Projs to keep nodes for each register class, which eats the
  * caller saved registers.
@@ -463,6 +465,51 @@ static void lower_call_node(ir_node *call, void *walk_env) {
 	return;
 }
 
+
+
+/**
+ * Calls the backend code generator functions to lower Spill and
+ * Reload nodes into Store and Load. The backend is fully responsible
+ * for creating the new nodes and setting their input correct.
+ * Note: The caller of this has to make sure that irn is a Spill
+ *       or Reload!
+ *
+ * @param irn      The Spill/Reload node
+ * @param walk_env The walker environment
+ */
+static void lower_spill_reload(ir_node *irn, void *walk_env) {
+	lower_env_t           *env  = walk_env;
+	arch_code_generator_t *cg   = env->chord_env->main_env->cg;
+	const arch_env_t      *aenv = env->chord_env->main_env->arch_env;
+	ir_node               *res  = NULL;
+	ir_node               *sched_point;
+
+	if (be_is_Spill(irn) && cg->impl->lower_spill) {
+		res = cg->impl->lower_spill(cg, irn);
+	}
+	else if (be_is_Reload(irn) && cg->impl->lower_reload) {
+		res = cg->impl->lower_reload(cg, irn);
+		if (res && res != irn) {
+			/* copy the result register from the reload to the load */
+			arch_set_irn_register(aenv, res, arch_get_irn_register(aenv, irn));
+		}
+	}
+
+	if (res && res != irn) {
+		sched_point = sched_prev(irn);
+		sched_remove(irn);
+		exchange(irn, res);
+		sched_add_after(sched_point, res);
+	}
+	else {
+		DBG((env->dbg_module, LEVEL_1, "node %+F not lowered\n", irn));
+	}
+
+	return;
+}
+
+
+
 /**
  * Calls the corresponding lowering function for the node.
  *
@@ -480,6 +527,9 @@ static void lower_nodes_walker(ir_node *irn, void *walk_env) {
 			}
 			else if (is_Call(arch_env, irn)) {
 				lower_call_node(irn, walk_env);
+			}
+			else if (be_is_Spill(irn) || be_is_Reload(irn)) {
+				lower_spill_reload(irn, walk_env);
 			}
 		}
 	}
