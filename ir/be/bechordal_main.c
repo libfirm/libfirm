@@ -205,9 +205,7 @@ static lc_opt_enum_int_var_t lower_perm_var = {
 
 static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 {
-	lc_opt_entry_t *dump;
 	grp = lc_opt_get_grp(grp, "chordal");
-
 }
 #endif
 
