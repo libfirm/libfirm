@@ -97,8 +97,10 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
 	  return 0;
   }
 
-  if(arch_register_req_is(req, limited))
-	  return req->limited(irn, pos, bs);
+  if(arch_register_req_is(req, limited)) {
+	  req->limited(irn, pos, bs);
+	  return bitset_popcnt(bs);
+  }
 
   arch_register_class_put(req->cls, bs);
   return req->cls->n_regs;

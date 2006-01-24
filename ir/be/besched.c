@@ -170,6 +170,11 @@ int sched_verify_irg(ir_graph *irg)
   return res;
 }
 
+int (sched_comes_after)(const ir_node *n1, const ir_node *n2)
+{
+	return _sched_comes_after(n1, n2);
+}
+
 int sched_skip_cf_predicator(const ir_node *irn, void *data) {
   arch_env_t *ae = data;
   return arch_irn_classify(ae, irn) == arch_irn_class_branch;

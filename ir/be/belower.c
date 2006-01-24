@@ -19,7 +19,7 @@
 #include "belower.h"
 #include "benode_t.h"
 #include "bechordal_t.h"
-#include "besched.h"
+#include "besched_t.h"
 
 #include "irgmod.h"
 #include "iredges_t.h"
@@ -403,6 +403,7 @@ static void lower_call_node(ir_node *call, void *walk_env) {
 	arch_isa_t                  *isa      = arch_env_get_isa(arch_env);
 	const ir_node               *proj_T   = NULL;
 	ir_node                     **in_keep, *block = get_nodes_block(call);
+	ir_node                     *last_proj = NULL;
 	bitset_t                    *proj_set;
 	const ir_edge_t             *edge;
 	const arch_register_t       *reg;
@@ -426,8 +427,21 @@ static void lower_call_node(ir_node *call, void *walk_env) {
 
 	/* set all used arguments */
 	if (proj_T) {
+
+
 		foreach_out_edge(proj_T, edge) {
+			ir_node *proj       = get_edge_src_irn(edge);
+
+			assert(is_Proj(proj));
 			bitset_set(proj_set, get_Proj_proj(get_edge_src_irn(edge)));
+
+			/*
+			 * Filter out the last proj in the schedule.
+			 * After that one, we have to insert the Keep node.
+			 */
+			if(!last_proj || sched_comes_after(last_proj, proj))
+				last_proj = proj;
+
 		}
 	}
 	else {
@@ -450,14 +464,21 @@ static void lower_call_node(ir_node *call, void *walk_env) {
 			if (arch_register_type_is(reg, caller_saved)) {
 				pn = isa->impl->get_projnum_for_register(isa, reg);
 				if (!bitset_is_set(proj_set, pn)) {
-					in_keep[keep_arity++] = new_r_Proj(current_ir_graph, block, (ir_node *)proj_T, mode_Is, pn);
+					ir_node *proj = new_r_Proj(current_ir_graph, block, (ir_node *)proj_T, mode_Is, pn);
+
+					in_keep[keep_arity++] = proj;
+					sched_add_after(last_proj, proj);
+					last_proj = proj;
 				}
 			}
 		}
 
 		/* ok, we found some caller save register which are not in use but must be saved */
 		if (keep_arity) {
-			be_new_Keep(reg_class, current_ir_graph, block, keep_arity, in_keep);
+			ir_node *keep;
+
+			keep = be_new_Keep(reg_class, current_ir_graph, block, keep_arity, in_keep);
+			sched_add_after(last_proj, keep);
 		}
 	}
 
@@ -520,17 +541,15 @@ static void lower_nodes_walker(ir_node *irn, void *walk_env) {
 	lower_env_t      *env      = walk_env;
 	const arch_env_t *arch_env = env->chord_env->main_env->arch_env;
 
-	if (!is_Block(irn)) {
-		if (!is_Proj(irn)) {
-			if (is_Perm(arch_env, irn)) {
-				lower_perm_node(irn, walk_env);
-			}
-			else if (is_Call(arch_env, irn)) {
-				lower_call_node(irn, walk_env);
-			}
-			else if (be_is_Spill(irn) || be_is_Reload(irn)) {
-				lower_spill_reload(irn, walk_env);
-			}
+	if (!is_Block(irn) && !is_Proj(irn)) {
+		if (is_Perm(arch_env, irn)) {
+			lower_perm_node(irn, walk_env);
+		}
+		else if (is_Call(arch_env, irn)) {
+			lower_call_node(irn, walk_env);
+		}
+		else if (be_is_Spill(irn) || be_is_Reload(irn)) {
+			lower_spill_reload(irn, walk_env);
 		}
 	}
 

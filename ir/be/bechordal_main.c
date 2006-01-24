@@ -247,6 +247,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		chordal_env.cls = arch_isa_get_reg_class(isa, j);
 
 		be_liveness(irg);
+		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
 
 		/* spilling */
 		switch(options.spill_method) {

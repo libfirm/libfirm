@@ -354,7 +354,7 @@ static void draw_block(ir_node *bl, void *data)
     struct block_dims *dom_dims = pmap_get(env->block_dims, dom);
 
     for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-      if(arch_irn_has_reg_class(env->arch_env, irn, 0, env->cls)) {
+      if(arch_irn_has_reg_class(env->arch_env, irn, -1, env->cls)) {
         const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn);
         int col = arch_register_get_index(reg);
         int x = (col + 1) * opts->h_inter_gap;

@@ -14,6 +14,8 @@
 #include <string.h>
 #include <limits.h>
 
+#include "benode_t.h"
+
 #include "obst.h"
 #include "list.h"
 #include "iterator.h"
@@ -81,16 +83,21 @@ static ir_node *trivial_select(void *block_env, pset *ready_set)
 	return res;
 }
 
-static int default_to_appear_in_schedule(void *env, const ir_node *irn)
+static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
 {
-	return to_appear_in_schedule(irn);
+	int res = 0;
+
+	if(sel->to_appear_in_schedule)
+		res = sel->to_appear_in_schedule(block_env, irn);
+
+	return res || to_appear_in_schedule(irn) || be_is_Keep(irn);
 }
 
 static const list_sched_selector_t trivial_selector_struct = {
 	NULL,
 	NULL,
 	trivial_select,
-	default_to_appear_in_schedule,
+	NULL,
 	NULL,
 	NULL
 };
@@ -205,12 +212,12 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	 * Collect usage statistics.
 	 */
 	sched_foreach(bl, irn) {
-		if(env->vtab->to_appear_in_schedule(env, irn)) {
+		if(must_appear_in_schedule(env->vtab, env, irn)) {
 			int i, n;
 
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
-				if(env->vtab->to_appear_in_schedule(env, irn)) {
+				if(must_appear_in_schedule(env->vtab, env, irn)) {
 					usage_stats_t *us = get_or_set_usage_stats(env, irn);
 					if(is_live_end(bl, op))
 						us->uses_in_block = 99999;
@@ -245,7 +252,7 @@ static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if(env->vtab->to_appear_in_schedule(env, op))
+		if(must_appear_in_schedule(env->vtab, env, op))
 			sum += compute_max_hops(env, op);
 	}
 
@@ -276,7 +283,7 @@ static const list_sched_selector_t reg_pressure_selector_struct = {
 	reg_pressure_graph_init,
 	reg_pressure_block_init,
 	reg_pressure_select,
-	default_to_appear_in_schedule,
+	NULL,
 	reg_pressure_block_free,
 	NULL
 };
@@ -404,15 +411,15 @@ static int node_cmp_func(const void *p1, const void *p2)
 
 /**
  * Append an instruction to a schedule.
- * @param env The block scheduleing environment.
+ * @param env The block scheduling environment.
  * @param irn The node to add to the schedule.
- * @return The given node.
+ * @return    The given node.
  */
 static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
     /* If the node consumes/produces data, it is appended to the schedule
      * list, otherwise, it is not put into the list */
-    if(to_appear_in_schedule(irn)) {
+    if(must_appear_in_schedule(env->selector, env->selector_block_env, irn)) {
         sched_info_t *info = get_irn_sched_info(irn);
         INIT_LIST_HEAD(&info->list);
         info->scheduled = 1;
@@ -430,7 +437,6 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
 
     return irn;
 }
-
 
 /**
  * Add the proj nodes of a tuple-mode irn to the schedule immediately
@@ -470,6 +476,11 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 	}
 }
 
+static ir_node *select_node(block_sched_env_t *be)
+{
+	return be->selector->select(be->selector_block_env, be->ready_set);
+}
+
 /**
  * Perform list scheduling on a block.
  *
@@ -504,8 +515,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.ready_set         = new_pset(node_cmp_func, get_irn_n_edges(block));
 	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_edges(block));
 	be.selector          = selector;
-
-	firm_dbg_set_mask(be.dbg, 0);
 
 	if(selector->init_block)
 		be.selector_block_env = selector->init_block(env->selector_env, block);
@@ -565,7 +574,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	while(pset_count(be.ready_set) > 0) {
 		/* select a node to be scheduled and check if it was ready */
-		irn = selector->select(be.selector_block_env, be.ready_set);
+		irn = select_node(&be);
 
 		DBG((be.dbg, LEVEL_3, "\tpicked node %+F\n", irn));
 

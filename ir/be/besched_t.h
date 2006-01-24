@@ -249,6 +249,21 @@ extern int sched_verify(const ir_node *block);
 extern int sched_verify_irg(ir_graph *irg);
 
 /**
+ * Checks, if one node is scheduled before another.
+ * @param n1   A node.
+ * @param n2   Another node.
+ * @return     1, if n1 is in front of n2 in the schedule, 0 else.
+ * @note       Both nodes must be in the same block.
+ */
+static INLINE int _sched_comes_after(const ir_node *n1, const ir_node *n2)
+{
+	assert(_sched_is_scheduled(n1));
+	assert(_sched_is_scheduled(n2));
+	assert(get_nodes_block(n1) == get_nodes_block(n2));
+	return _sched_get_time_step(n1) < _sched_get_time_step(n2);
+}
+
+/**
  * A predicate for a node.
  * @param irn The node.
  * @param data The custom data.
@@ -273,16 +288,17 @@ extern ir_node *sched_skip(ir_node *from, int forward,
     sched_predicator_t *predicator, void *data);
 
 #define sched_get_time_step(irn)	    _sched_get_time_step(irn)
-#define sched_has_succ(irn) 				  _sched_has_succ(irn)
-#define sched_has_prev(irn) 				  _sched_has_prev(irn)
-#define sched_succ(irn) 						  _sched_succ(irn)
-#define sched_prev(irn) 						  _sched_prev(irn)
-#define sched_first(irn) 						  _sched_first(irn)
-#define sched_last(irn) 						  _sched_last(irn)
+#define sched_has_succ(irn) 			_sched_has_succ(irn)
+#define sched_has_prev(irn) 			_sched_has_prev(irn)
+#define sched_succ(irn) 				_sched_succ(irn)
+#define sched_prev(irn) 				_sched_prev(irn)
+#define sched_first(irn) 				_sched_first(irn)
+#define sched_last(irn) 				_sched_last(irn)
 #define sched_add_before(before, irn)	_sched_add_before(before, irn)
 #define sched_add_after(after, irn) 	_sched_add_after(after, irn)
 #define sched_remove(irn)            	_sched_remove(irn)
-#define sched_is_scheduled(irn)       _sched_is_scheduled(irn)
-#define sched_cmp(a, b)               _sched_cmp(a, b)
+#define sched_is_scheduled(irn)         _sched_is_scheduled(irn)
+#define sched_comes_after(n1, n2)       _sched_comes_after(n1, n1)
+#define sched_cmp(a, b)                 _sched_cmp(a, b)
 
 #endif

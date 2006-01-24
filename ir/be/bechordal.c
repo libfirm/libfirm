@@ -53,7 +53,7 @@
 
 #define NO_COLOR (-1)
 
-#undef DUMP_INTERVALS
+#define DUMP_INTERVALS
 
 typedef struct _be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
@@ -596,10 +596,10 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 		char buf[128];
     	plotter_t *plotter;
 
-		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", cls->name, irg);
+		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", chordal_env->cls->name, irg);
     	plotter = new_plotter_ps(buf);
 
-    	draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter, env->arch_env, cls);
+    	draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
     	plotter_free(plotter);
 	}
 #endif

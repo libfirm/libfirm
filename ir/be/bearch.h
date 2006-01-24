@@ -111,13 +111,6 @@ _arch_register_for_index(const arch_register_class_t *cls, int idx)
 #define arch_register_for_index(cls, idx) \
   _arch_register_for_index(cls, idx)
 
-/**
- * Get the register set for a register class.
- * @param cls The register class.
- * @return The set containing all registers in the class.
- */
-#define arch_get_register_set_for_class(cls) ((cls)->set)
-
 typedef enum _arch_operand_type_t {
   arch_operand_type_invalid,
   arch_operand_type_memory,
@@ -163,7 +156,7 @@ typedef struct _arch_register_req_t {
 	arch_register_req_type_t type;          /**< The type of the constraint. */
 	const arch_register_class_t *cls;       /**< The register class this constraint belongs to. */
 
-	int (*limited)(const ir_node *irn, int pos, bitset_t *bs);
+	void (*limited)(const ir_node *irn, int pos, bitset_t *bs);
                                           /**< In case of the 'limited'
                                             constraint, this function
                                             must put all allowable

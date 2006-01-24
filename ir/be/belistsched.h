@@ -80,11 +80,6 @@ struct _list_sched_selector_t {
 
 };
 
-/**
- * A default implementation of to_appear_in_schedule,
- * as required in list_sched_selector_t.
- */
-extern int be_default_to_appear_in_schedule(void *env, const ir_node *irn);
 
 /**
  * A trivial selector, that just selects the first ready node.
