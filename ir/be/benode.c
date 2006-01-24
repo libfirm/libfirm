@@ -519,7 +519,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			if(get_irn_be_opcode(irn) == beo_Spill) {
 				be_spill_attr_t *a = (be_spill_attr_t *) at;
 				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
-				ir_fprintf(f, "spill offset: %04x (%u)\n", a->offset);
+				ir_fprintf(f, "spill offset: %04x (%u)\n", a->offset, a->offset);
 			}
 			break;
 	}
