@@ -409,8 +409,7 @@ void be_introduce_copies_ignore(dom_front_info_t *info, ir_node *orig,
 
 }
 
-void be_introduce_copies(dom_front_info_t *info, ir_node *orig,
-		int n, ir_node *copy_nodes[])
+void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
 {
 	static pset *empty_set = NULL;
 
