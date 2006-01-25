@@ -241,9 +241,6 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 
 	obstack_init(&chordal_env.obst);
 
-	lower_nodes_before_ra(&chordal_env, 0);
-	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-before-ra", dump_ir_block_graph_sched);
-
 	/* Perform the following for each register class. */
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
 		chordal_env.border_heads = pmap_create();

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include "ircons.h"
+#include "debug.h"
 
 #include "bearch.h"
 #include "belower.h"
@@ -163,17 +164,30 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	int cur_idx      = pairs[start].out_reg->index;
 	int cur_pair_idx = start;
 	int n_pairs_done = get_n_checked_pairs(pairs, n);
-	int idx;
+	int idx, done = 0;
+	perm_type_t cycle_tp = PERM_CYCLE;
+
+	/* We could be right in the middle of a chain, so we need to find the start */
+	while (head != cur_idx && !done) {
+		/* goto previous register in cycle or chain */
+		cur_pair_idx = get_pairidx_for_regidx(pairs, n, head, 1);
+
+		if (cur_pair_idx < 0) {
+			cycle_tp = PERM_CHAIN;
+			done = 1;
+		}
+		else {
+			head  = pairs[cur_pair_idx].in_reg->index;
+			start = cur_pair_idx;
+		}
+	}
 
 	/* assume worst case: all remaining pairs build a cycle or chain */
-	cycle->elems    = calloc(n - n_pairs_done, sizeof(cycle->elems[0]));
+	cycle->elems    = calloc((n - n_pairs_done) * 2, sizeof(cycle->elems[0]));
 	cycle->n_elems  = 2;  /* initial number of elements is 2 */
 	cycle->elems[0] = pairs[start].in_reg;
 	cycle->elems[1] = pairs[start].out_reg;
-	cycle->type     = PERM_CHAIN; /* default is CHAIN, only changed when we found a cycle */
-
-	/* mark the first pair as checked */
-	pairs[start].checked = 1;
+	cycle->type     = cycle_tp;
 	n_pairs_done++;
 
 	idx = 2;
@@ -198,9 +212,19 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 			/* we are there where we started -> CYCLE */
 			cycle->type = PERM_CYCLE;
 		}
+	}
 
-		/* mark the pair as checked */
-		pairs[cur_pair_idx].checked = 1;
+	/* mark all pairs having one in/out register with cycle in common as checked */
+	for (idx = 0; idx < cycle->n_elems; idx++) {
+		cur_pair_idx = get_pairidx_for_regidx(pairs, n, cycle->elems[idx]->index, 0);
+
+		if (cur_pair_idx >= 0)
+			pairs[cur_pair_idx].checked = 1;
+
+		cur_pair_idx = get_pairidx_for_regidx(pairs, n, cycle->elems[idx]->index, 1);
+
+		if (cur_pair_idx >= 0)
+			pairs[cur_pair_idx].checked = 1;
 	}
 
 	return cycle;
@@ -224,7 +248,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	reg_pair_t      *pairs;
 	const ir_edge_t *edge;
 	perm_cycle_t    *cycle;
-	int              n, i, pn, do_copy;
+	int              n, i, pn, do_copy, j;
 	ir_node         *sched_point, *block, *in[2];
 	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
@@ -305,6 +329,12 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		cycle = calloc(1, sizeof(*cycle));
 		cycle = get_perm_cycle(cycle, pairs, n, i);
 
+		DB((mod, LEVEL_1, "%+F: following %s created:\n  ", irn, cycle->type == PERM_CHAIN ? "chain" : "cycle"));
+		for (j = 0; j < cycle->n_elems; j++) {
+			DB((mod, LEVEL_1, " %s", cycle->elems[j]->name));
+		}
+		DB((mod, LEVEL_1, "\n"));
+
 		/* We don't need to do anything if we have a Perm with two
 			elements which represents a cycle, because those nodes
 			already represent exchange nodes */
@@ -377,7 +407,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			DBG((mod, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 		}
 
-//		free(cycle->elems);
+		free(cycle->elems);
 		free(cycle);
 	}
 
@@ -395,16 +425,13 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
  * @param call     The Call node
  * @param walk_env The walker environment
  */
-static void lower_call_node(ir_node *call, void *walk_env) {
-	lower_env_t                 *env      = walk_env;
-	const arch_env_t            *arch_env = env->chord_env->main_env->arch_env;
-	firm_dbg_module_t           *mod      = env->dbg_module;
+static void lower_call_node(ir_node *call, const void *walk_env) {
+	const arch_env_t            *arch_env = walk_env;
 	const arch_register_class_t *reg_class;
 	int                          i, j, set_size = 0, pn, keep_arity;
 	arch_isa_t                  *isa      = arch_env_get_isa(arch_env);
 	const ir_node               *proj_T   = NULL;
 	ir_node                     **in_keep, *block = get_nodes_block(call);
-	ir_node                     *last_proj = NULL;
 	bitset_t                    *proj_set;
 	const ir_edge_t             *edge;
 	const arch_register_t       *reg;
@@ -428,28 +455,18 @@ static void lower_call_node(ir_node *call, void *walk_env) {
 
 	/* set all used arguments */
 	if (proj_T) {
-
-
 		foreach_out_edge(proj_T, edge) {
-			ir_node *proj       = get_edge_src_irn(edge);
+			ir_node *proj = get_edge_src_irn(edge);
 
 			assert(is_Proj(proj));
-			bitset_set(proj_set, get_Proj_proj(get_edge_src_irn(edge)));
-
-			/*
-			 * Filter out the last proj in the schedule.
-			 * After that one, we have to insert the Keep node.
-			 */
-			if(!last_proj || sched_comes_after(last_proj, proj))
-				last_proj = proj;
-
+			bitset_set(proj_set, get_Proj_proj(proj));
 		}
 	}
 	else {
 		proj_T = new_r_Proj(current_ir_graph, block, call, mode_T, pn_Call_T_result);
 	}
 
-	/* Create for each caller save register a proj (keep node arguement) */
+	/* Create for each caller save register a proj (keep node argument) */
 	/* if this proj is not already present */
 	for (i = 0; i < arch_isa_get_n_reg_class(isa); i++) {
 
@@ -468,18 +485,13 @@ static void lower_call_node(ir_node *call, void *walk_env) {
 					ir_node *proj = new_r_Proj(current_ir_graph, block, (ir_node *)proj_T, mode_Is, pn);
 
 					in_keep[keep_arity++] = proj;
-					sched_add_after(last_proj, proj);
-					last_proj = proj;
 				}
 			}
 		}
 
 		/* ok, we found some caller save register which are not in use but must be saved */
 		if (keep_arity) {
-			ir_node *keep;
-
-			keep = be_new_Keep(reg_class, current_ir_graph, block, keep_arity, in_keep);
-			sched_add_after(last_proj, keep);
+			be_new_Keep(reg_class, current_ir_graph, block, keep_arity, in_keep);
 		}
 	}
 
@@ -537,9 +549,8 @@ static void lower_spill_reload(ir_node *irn, void *walk_env) {
  * @param irn      The node to be checked for lowering
  * @param walk_env The walker environment
  */
-static void lower_nodes_before_ra_walker(ir_node *irn, void *walk_env) {
-	lower_env_t      *env      = walk_env;
-	const arch_env_t *arch_env = env->chord_env->main_env->arch_env;
+static void lower_nodes_before_sched_walker(ir_node *irn, const void *walk_env) {
+	const arch_env_t *arch_env = walk_env;
 
 	if (!is_Block(irn) && !is_Proj(irn)) {
 		if (is_Call(arch_env, irn)) {
@@ -573,22 +584,20 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	return;
 }
 
+
+
 /**
  * Walks over all blocks in an irg and performs lowering need
- * to be done before register allocation (e.g. call lowering).
+ * to be done before scheduling (e.g. call lowering).
  *
  * @param chord_env The chordal environment containing the irg
  * @param do_copy   1 == resolve cycles with a free reg if available
  */
-void lower_nodes_before_ra(be_chordal_env_t *chord_env, int do_copy) {
-	lower_env_t env;
-
-	env.chord_env  = chord_env;
-	env.do_copy    = do_copy;
-	env.dbg_module = firm_dbg_register("ir.be.lower");
-
-	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_before_ra_walker, &env);
+void lower_nodes_before_sched(ir_graph *irg, const void *env) {
+	irg_walk_blkwise_graph(irg, NULL, lower_nodes_before_sched_walker, env);
 }
+
+
 
 /**
  * Walks over all blocks in an irg and performs lowering need to be
