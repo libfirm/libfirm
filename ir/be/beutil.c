@@ -7,6 +7,7 @@
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irdump_t.h"
+#include "irdom_t.h"
 #include "ircons.h"
 #include "iropt.h"
 #include "irgopt.h"
@@ -159,4 +160,21 @@ void be_clear_links(ir_graph *irg)
 void be_collect_phis(ir_graph *irg)
 {
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
+}
+
+
+ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive) {
+	ir_node *irn, *idom;
+
+	/* search the current block */
+	for (irn=sched_prev(start_point_exclusive); irn; irn=sched_prev(irn))
+		if (pset_find_ptr(accept, irn))
+			return irn;
+
+	idom = get_Block_idom(get_nodes_block(start_point_exclusive));
+
+	if (idom)
+		return dom_up_search(accept, idom); /* continue search in idom-block */
+	else
+		return NULL; /* this was the start block and we did not find an acceptable irn */
 }

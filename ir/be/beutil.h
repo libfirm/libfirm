@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 
+#include "pset.h"
 #include "irnode.h"
 #include "bearch.h"
 
@@ -94,3 +95,10 @@ static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) 
 void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix);
 
 #endif
+
+/**
+ * Search for an irn in @p accept.
+ * The search is started at @p start_point_exclusive and continues upwards the dom-tree
+ * @return The first node out of accept if found. Else NULL is returned.
+ */
+ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive);
