@@ -10,6 +10,7 @@
 
 #include "bechordal.h"
 
-void lower_nodes(be_chordal_env_t *chord_env, int do_copy);
+void lower_nodes_before_ra(be_chordal_env_t *chord_env, int do_copy);
+void lower_nodes_after_ra(be_chordal_env_t *chord_env, int do_copy);
 
 #endif /* _BELOWER_H_ */

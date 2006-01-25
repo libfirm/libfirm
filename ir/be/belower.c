@@ -162,7 +162,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	int head         = pairs[start].in_reg->index;
 	int cur_idx      = pairs[start].out_reg->index;
 	int cur_pair_idx = start;
-	int n_pairs_done = get_n_checked_pairs(pairs, n) + 1;
+	int n_pairs_done = get_n_checked_pairs(pairs, n);
 	int idx;
 
 	/* assume worst case: all remaining pairs build a cycle or chain */
@@ -174,6 +174,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 
 	/* mark the first pair as checked */
 	pairs[start].checked = 1;
+	n_pairs_done++;
 
 	idx = 2;
 	/* check for cycle or end of a chain */
@@ -315,8 +316,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 //TODO: - iff PERM_CYCLE && do_copy -> determine free temp reg and insert copy to/from it before/after
 //        the copy cascade (this reduces the cycle into a chain)
 
-		/* build copy/swap nodes from back to front */
-		for (i = cycle->n_elems - 2; i >= 0; i--) {
+		/* build copy/swap nodes */
+		for (i = 0; i < cycle->n_elems - 1; i++) {
 			arg1 = get_node_for_register(pairs, n, cycle->elems[i], 0);
 			arg2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 0);
 
@@ -530,6 +531,25 @@ static void lower_spill_reload(ir_node *irn, void *walk_env) {
 }
 
 
+/**
+ * Calls the corresponding lowering function for the node.
+ *
+ * @param irn      The node to be checked for lowering
+ * @param walk_env The walker environment
+ */
+static void lower_nodes_before_ra_walker(ir_node *irn, void *walk_env) {
+	lower_env_t      *env      = walk_env;
+	const arch_env_t *arch_env = env->chord_env->main_env->arch_env;
+
+	if (!is_Block(irn) && !is_Proj(irn)) {
+		if (is_Call(arch_env, irn)) {
+			lower_call_node(irn, walk_env);
+		}
+	}
+
+	return;
+}
+
 
 /**
  * Calls the corresponding lowering function for the node.
@@ -537,16 +557,13 @@ static void lower_spill_reload(ir_node *irn, void *walk_env) {
  * @param irn      The node to be checked for lowering
  * @param walk_env The walker environment
  */
-static void lower_nodes_walker(ir_node *irn, void *walk_env) {
+static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	lower_env_t      *env      = walk_env;
 	const arch_env_t *arch_env = env->chord_env->main_env->arch_env;
 
 	if (!is_Block(irn) && !is_Proj(irn)) {
 		if (is_Perm(arch_env, irn)) {
 			lower_perm_node(irn, walk_env);
-		}
-		else if (is_Call(arch_env, irn)) {
-			lower_call_node(irn, walk_env);
 		}
 		else if (be_is_Spill(irn) || be_is_Reload(irn)) {
 			lower_spill_reload(irn, walk_env);
@@ -557,19 +574,37 @@ static void lower_nodes_walker(ir_node *irn, void *walk_env) {
 }
 
 /**
- * Walks over all blocks in an irg and performs some lowering.
+ * Walks over all blocks in an irg and performs lowering need
+ * to be done before register allocation (e.g. call lowering).
  *
  * @param chord_env The chordal environment containing the irg
  * @param do_copy   1 == resolve cycles with a free reg if available
  */
-void lower_nodes(be_chordal_env_t *chord_env, int do_copy) {
+void lower_nodes_before_ra(be_chordal_env_t *chord_env, int do_copy) {
 	lower_env_t env;
 
 	env.chord_env  = chord_env;
 	env.do_copy    = do_copy;
 	env.dbg_module = firm_dbg_register("ir.be.lower");
 
-	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_walker, &env);
+	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_before_ra_walker, &env);
+}
+
+/**
+ * Walks over all blocks in an irg and performs lowering need to be
+ * done after register allocation (e.g. perm and spill/reload lowering).
+ *
+ * @param chord_env The chordal environment containing the irg
+ * @param do_copy   1 == resolve cycles with a free reg if available
+ */
+void lower_nodes_after_ra(be_chordal_env_t *chord_env, int do_copy) {
+	lower_env_t env;
+
+	env.chord_env  = chord_env;
+	env.do_copy    = do_copy;
+	env.dbg_module = firm_dbg_register("ir.be.lower");
+
+	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_after_ra_walker, &env);
 }
 
 #undef is_Perm
