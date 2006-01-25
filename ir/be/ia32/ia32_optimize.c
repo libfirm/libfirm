@@ -1,0 +1,165 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "irnode.h"
+#include "irprog_t.h"
+#include "ircons.h"
+#include "firm_types.h"
+
+#include "ia32_new_nodes.h"
+#include "bearch_ia32_t.h"
+
+/**
+ * creates a unique ident by adding a number to a tag
+ *
+ * @param tag   the tag string, must contain a %d if a number
+ *              should be added
+ */
+static ident *unique_id(const char *tag)
+{
+  static unsigned id = 0;
+  char str[256];
+
+  snprintf(str, sizeof(str), tag, ++id);
+  return new_id_from_str(str);
+}
+
+
+
+/**
+ * Transforms a SymConst.
+ *
+ * @param mod     the debug module
+ * @param block   the block the new node should belong to
+ * @param node    the ir SymConst node
+ * @param mode    mode of the SymConst
+ * @return the created ia32 Const node
+ */
+static ir_node *gen_SymConst(ia32_transform_env_t *env) {
+	ir_node           *cnst;
+	firm_dbg_module_t *mod   = env->mod;
+	dbg_info          *dbg   = env->dbg;
+	ir_mode           *mode  = env->mode;
+	ir_graph          *irg   = env->irg;
+	ir_node           *block = env->block;
+
+	if (mode_is_float(mode)) {
+		cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
+
+	}
+	else {
+		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
+	}
+
+	set_ia32_Const_attr(cnst, env->irn);
+	return cnst;
+}
+
+/**
+ * Transforms a Const.
+ *
+ * @param mod     the debug module
+ * @param block   the block the new node should belong to
+ * @param node    the ir Const node
+ * @param mode    mode of the Const
+ * @return the created ia32 Const node
+ */
+static ir_node *gen_Const(ia32_transform_env_t *env) {
+	ir_node *cnst;
+	entity  *ent;
+	ir_type *tp;
+	symconst_symbol sym;
+	firm_dbg_module_t *mod   = env->mod;
+	dbg_info          *dbg   = env->dbg;
+	ir_mode           *mode  = env->mode;
+	ir_graph          *irg   = env->irg;
+	ir_node           *block = env->block;
+	ir_node           *node  = env->irn;
+
+	if (mode_is_float(mode)) {
+		tp  = get_Const_type(node);
+		if (tp == firm_unknown_type) {
+			tp = new_type_primitive(unique_id("tp_ia32_float_%u"), mode);
+		}
+
+		ent = new_entity(get_glob_type(), unique_id("ia32FloatCnst_%u"), tp);
+
+		set_entity_ld_ident(ent, get_entity_ident(ent));
+		set_entity_visibility(ent, visibility_local);
+		set_entity_variability(ent, variability_constant);
+		set_entity_allocation(ent, allocation_static);
+
+		set_atomic_ent_value(ent, node);
+
+		sym.entity_p = ent;
+
+		cnst = new_rd_SymConst(dbg, irg, block, sym, symconst_addr_ent);
+		env->irn = cnst;
+		cnst = gen_SymConst(env);
+	}
+	else {
+		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
+		set_ia32_Const_attr(cnst, node);
+	}
+
+	return cnst;
+}
+
+
+
+/**
+ * Transforms (all) Const's into ia32_Const and places them in the
+ * block where they are used (or in the cfg-pred Block in case of Phi's)
+ */
+void ia32_place_consts(ir_node *irn, void *env) {
+	ia32_code_gen_t      *cg = env;
+	ia32_transform_env_t  tenv;
+	ir_mode              *mode;
+	ir_node              *pred, *cnst;
+	int                   i;
+	opcode                opc;
+
+	if (is_Block(irn))
+		return;
+
+	mode = get_irn_mode(irn);
+
+	tenv.arch_env = cg->arch_env;
+	tenv.block    = get_nodes_block(irn);
+	tenv.cg       = cg;
+	tenv.irg      = cg->irg;
+	tenv.mod      = firm_dbg_register("ir.be.ia32.optimize");
+
+	/* Loop over all predecessors and check for Sym/Const nodes */
+	for (i = 0; i < get_irn_arity(irn); i++) {
+		pred      = get_irn_n(irn, i);
+		cnst      = NULL;
+		opc       = get_irn_opcode(pred);
+		tenv.irn  = pred;
+		tenv.mode = get_irn_mode(pred);
+		tenv.dbg  = get_irn_dbg_info(pred);
+
+		/* If it's a Phi, then we need to create the */
+		/* new Const in it's predecessor block       */
+		if (is_Phi(irn)) {
+			tenv.block = get_Block_cfgpred_block(get_nodes_block(irn), i);
+		}
+
+		switch (opc) {
+			case iro_Const:
+				cnst = gen_Const(&tenv);
+				break;
+			case iro_SymConst:
+				cnst = gen_SymConst(&tenv);
+				break;
+			default:
+				break;
+		}
+
+		/* if we found a const, then set it */
+		if (cnst) {
+			set_irn_n(irn, i, cnst);
+		}
+	}
+}
