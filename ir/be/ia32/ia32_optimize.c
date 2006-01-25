@@ -37,12 +37,11 @@ static ident *unique_id(const char *tag)
  * @return the created ia32 Const node
  */
 static ir_node *gen_SymConst(ia32_transform_env_t *env) {
-	ir_node           *cnst;
-	firm_dbg_module_t *mod   = env->mod;
-	dbg_info          *dbg   = env->dbg;
-	ir_mode           *mode  = env->mode;
-	ir_graph          *irg   = env->irg;
-	ir_node           *block = env->block;
+	ir_node  *cnst;
+	dbg_info *dbg   = env->dbg;
+	ir_mode  *mode  = env->mode;
+	ir_graph *irg   = env->irg;
+	ir_node  *block = env->block;
 
 	if (mode_is_float(mode)) {
 		cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
@@ -70,12 +69,11 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 	entity  *ent;
 	ir_type *tp;
 	symconst_symbol sym;
-	firm_dbg_module_t *mod   = env->mod;
-	dbg_info          *dbg   = env->dbg;
-	ir_mode           *mode  = env->mode;
-	ir_graph          *irg   = env->irg;
-	ir_node           *block = env->block;
-	ir_node           *node  = env->irn;
+	dbg_info *dbg   = env->dbg;
+	ir_mode  *mode  = env->mode;
+	ir_graph *irg   = env->irg;
+	ir_node  *block = env->block;
+	ir_node  *node  = env->irn;
 
 	if (mode_is_float(mode)) {
 		tp  = get_Const_type(node);

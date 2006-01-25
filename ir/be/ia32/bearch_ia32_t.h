@@ -28,4 +28,17 @@ typedef struct _ia32_irn_ops_t {
 	ia32_code_gen_t         *cg;
 } ia32_irn_ops_t;
 
+/* this is a struct to minimize the number of parameters
+   for transformation walker */
+typedef struct _ia32_transform_env_t {
+	const arch_env_t  *arch_env;   /**<< The arch_env */
+	firm_dbg_module_t *mod;        /**<< The firm debugger */
+	dbg_info          *dbg;        /**<< The node debug info */
+	ir_graph          *irg;        /**<< The irg, the node should be created in */
+	ir_node           *block;      /**<< The block, the node should belong to */
+	ir_node           *irn;        /**<< The irn, to be transformed */
+	ir_mode           *mode;       /**<< The mode of the irn */
+	ia32_code_gen_t   *cg;         /**<< The code generator */
+} ia32_transform_env_t;
+
 #endif /* _BEARCH_IA32_T_H_ */

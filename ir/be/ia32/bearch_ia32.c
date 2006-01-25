@@ -22,6 +22,7 @@
 #include "ia32_transform.h"
 #include "ia32_emitter.h"
 #include "ia32_map_regs.h"
+#include "ia32_optimize.h"
 
 #define DEBUG_MODULE "ir.be.isa.ia32"
 
@@ -322,7 +323,7 @@ static void ia32_prepare_graph(void *self) {
 			ia32_general_purpose_regs[REG_EBP].type = arch_register_type_ignore;
 		}
 
-		irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
+		irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
 	}
 }
 
@@ -385,11 +386,21 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 	ir_node         *block = get_nodes_block(reload);
 	ir_node         *ptr   = get_irg_frame(cg->irg);
 	ir_mode         *mode  = get_irn_mode(reload);
-	ir_node         *store = get_irn_n(reload, 0);
-	tarval          *tv    = get_ia32_am_offs(store);
+	ir_node         *pred  = get_irn_n(reload, 0);
+	tarval          *tv;
 	ir_node         *res;
 
-	res = new_rd_ia32_Load(dbg, cg->irg, block, ptr, store, mode);
+	if (be_is_Spill(pred)) {
+		tv = new_tarval_from_long(be_get_spill_offset(pred), mode_Iu);
+	}
+	else if (is_ia32_Store(pred)) {
+		tv = get_ia32_am_offs(pred);
+	}
+	else {
+		assert(0 && "unsupported Reload predecessor");
+	}
+
+	res = new_rd_ia32_Load(dbg, cg->irg, block, ptr, pred, mode);
 	set_ia32_am_offs(res, tv);
 
 	return res;
