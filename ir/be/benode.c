@@ -425,7 +425,7 @@ be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
 	int out_pos;
 	be_node_attr_t *a;
 
-	out_pos = redir_proj(&irn, -1);
+	out_pos = redir_proj((const ir_node **) &irn, -1);
 	a       = get_irn_attr(irn);
 
 	assert(is_be_node(irn));
@@ -439,7 +439,7 @@ be_node_get_irn_reg(const void *_self, const ir_node *irn)
 	int out_pos;
 	be_node_attr_t *a;
 
-	out_pos = redir_proj(&irn, -1);
+	out_pos = redir_proj((const ir_node **) &irn, -1);
 	a       = get_irn_attr(irn);
 
 	assert(is_be_node(irn));
@@ -450,7 +450,7 @@ be_node_get_irn_reg(const void *_self, const ir_node *irn)
 
 arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 {
-	redir_proj(&irn, -1);
+	redir_proj((const ir_node **) &irn, -1);
 
 	switch(get_irn_be_opcode(irn)) {
 #define XXX(a,b) case beo_ ## a: return arch_irn_class_ ## b;
