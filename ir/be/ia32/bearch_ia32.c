@@ -14,6 +14,7 @@
 
 #include "../bearch.h"                /* the general register allocator interface */
 #include "../benode_t.h"
+#include "../belower.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -109,8 +110,14 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 
 
 	if (is_Call_Proj(irn) && is_used_by_Keep(irn)) {
-		irn_req = ia32_projnum_reg_req_map[get_Proj_proj(irn)];
-		memcpy(req, &(irn_req->req), sizeof(*req));
+		if (pos >= 0) {
+			req = NULL;
+		}
+		else {
+			irn_req = ia32_projnum_reg_req_map[get_Proj_proj(irn)];
+			memcpy(req, &(irn_req->req), sizeof(*req));
+		}
+
 		return req;
 	}
 	else if (is_Start_Proj(irn)) {
@@ -351,6 +358,9 @@ static void ia32_set_P_frame_base_Proj_reg(ir_node *irn, void *env) {
  * Dummy functions for hooks we don't need but which must be filled.
  */
 static void ia32_before_sched(void *self) {
+	ia32_code_gen_t *cg = self;
+
+	lower_nodes_before_sched(cg->irg, cg->arch_env);
 }
 
 static void ia32_before_ra(void *self) {
