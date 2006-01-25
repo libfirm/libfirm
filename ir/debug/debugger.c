@@ -143,13 +143,20 @@ static int is_active = 0;
 
 /** hook the hook h with function fkt. */
 #define HOOK(h, fkt) \
-  debugger_hooks[h].hook._##h = fkt; register_hook(h, &debugger_hooks[h])
+do {                                    \
+  debugger_hooks[h].hook._##h = fkt;    \
+  register_hook(h, &debugger_hooks[h]); \
+} while(0)
 
 /** unhook the hook h */
-#define UNHOOK(h)   unregister_hook(h, &debugger_hooks[h])
+#define UNHOOK(h) \
+do {                                      \
+  unregister_hook(h, &debugger_hooks[h]); \
+  debugger_hooks[h].hook._##h = NULL;     \
+} while(0)
 
 /** returns non-zero if a entry hook h is used */
-#define IS_HOOKED(h) (debugger_hooks[h].next != NULL)
+#define IS_HOOKED(h) (debugger_hooks[h].hook._##h != NULL)
 
 /* some macros needed to create the info string */
 #define _DBG_VERSION(major, minor)  #major "." #minor
@@ -699,7 +706,7 @@ void firm_init_debugger(void)
   char *env;
 
   bp_numbers = new_set(cmp_nr_bp, 8);
-  bp_idents       = new_set(cmp_ident_bp, 8);
+  bp_idents  = new_set(cmp_ident_bp, 8);
 
   env = getenv("FIRMDBG");
 
