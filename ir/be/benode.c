@@ -543,38 +543,29 @@ static const ir_op_ops be_node_op_ops = {
 	NULL
 };
 
-ir_node *insert_Perm_after(const arch_env_t *arch_env,
-						   const arch_register_class_t *cls,
-						   dom_front_info_t *dom_front,
-						   ir_node *pos)
+pset *nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
 {
-	ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_graph *irg               = get_irn_irg(bl);
-	pset *live                  = pset_new_ptr_default();
-	firm_dbg_module_t *dbg      = firm_dbg_register("be.node");
-
+	firm_dbg_module_t *dbg = firm_dbg_register("firm.be.node");
+	ir_node *bl            = get_nodes_block(pos);
+	ir_node *irn;
 	irn_live_t *li;
-	ir_node *curr, *irn, *perm, **nodes;
-	int i, n;
-
-	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
-
 
 	live_foreach(bl, li) {
 		ir_node *irn = (ir_node *) li->irn;
-		if(live_is_end(li) && arch_irn_has_reg_class(arch_env, irn, -1, cls))
+		if(live_is_end(li) && arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
 			pset_insert_ptr(live, irn);
 	}
 
 	sched_foreach_reverse(bl, irn) {
+		int i, n;
 		ir_node *x;
 
-	/*
-	 * If we encounter the node we want to insert the Perm after,
-	 * exit immediately, so that this node is still live
-	 */
+		/*
+		 * If we encounter the node we want to insert the Perm after,
+		* exit immediately, so that this node is still live
+		*/
 		if(irn == pos)
-			break;
+			return live;
 
 		DBG((dbg, LEVEL_1, "%+F\n", irn));
 		for(x = pset_first(live); x; x = pset_next(live))
@@ -586,10 +577,31 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 			ir_node *op = get_irn_n(irn, i);
 
-			if(arch_irn_has_reg_class(arch_env, op, -1, cls))
+			if(arch_irn_consider_in_reg_alloc(arch_env, cls, op))
 				pset_insert_ptr(live, op);
 		}
 	}
+
+	return NULL;
+}
+
+ir_node *insert_Perm_after(const arch_env_t *arch_env,
+						   const arch_register_class_t *cls,
+						   dom_front_info_t *dom_front,
+						   ir_node *pos)
+{
+	ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
+	ir_graph *irg               = get_irn_irg(bl);
+	pset *live                  = pset_new_ptr_default();
+	firm_dbg_module_t *dbg      = firm_dbg_register("be.node");
+
+	ir_node *curr, *irn, *perm, **nodes;
+	int i, n;
+
+	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
+
+	if(!nodes_live_at(arch_env, cls, pos, live))
+		assert(0 && "position not found");
 
 	n = pset_count(live);
 

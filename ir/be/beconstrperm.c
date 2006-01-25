@@ -31,7 +31,9 @@ static void check_constraints(const be_chordal_env_t *cenv, ir_node *base, ir_no
 	for(pos = -1, n = get_irn_arity(irn); pos < n; ++pos) {
 		arch_get_register_req(aenv, &req, irn, pos);
 
-		if(arch_irn_has_reg_class(aenv, irn, pos, cenv->cls) && arch_register_req_is(&req, limited)) {
+		if(arch_irn_has_reg_class(aenv, irn, pos, cenv->cls)
+			&& arch_register_req_is(&req, limited)
+			&& !arch_irn_is_ignore(aenv, irn)) {
 
 		/*
 		* If we inserted a perm,

@@ -37,7 +37,6 @@ struct _be_node_factory_t;
 
 typedef enum _arch_register_type_t {
   arch_register_type_none = 0,
-  arch_register_type_write_invariant,
   arch_register_type_caller_saved,    /**< The register must be saved by the caller
                                            upon a function call. It thus can be overwritten
                                            in the called function. */
@@ -187,8 +186,9 @@ typedef enum _arch_irn_class_t {
  * Some flags describing a node in more detail.
  */
 typedef enum _arch_irn_flags_t {
-  arch_irn_flags_spillable = 1,
-  arch_irn_flags_rematerializable = 2
+  arch_irn_flags_dont_spill       = 1, /**< This must not be spilled. */
+  arch_irn_flags_rematerializable = 2, /**< This should be replicated instead of spilled/reloaded. */
+  arch_irn_flags_ignore           = 4, /**< Do not consider the node during register allocation. */
 } arch_irn_flags_t;
 
 struct _arch_irn_ops_if_t {
@@ -348,8 +348,14 @@ extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *
  */
 extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn);
 
+#define arch_irn_is_ignore(env, irn) \
+	(arch_irn_get_flags(env, irn) == arch_irn_flags_ignore)
+
 #define arch_irn_has_reg_class(env, irn, pos, cls) \
   ((cls) == arch_get_irn_reg_class(env, irn, pos))
+
+#define arch_irn_consider_in_reg_alloc(env, cls, irn) \
+	(arch_irn_has_reg_class(env, irn, -1, cls) && !arch_irn_is_ignore(env, irn))
 
 /**
  * Somebody who can be asked about nodes.

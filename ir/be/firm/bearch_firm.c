@@ -275,7 +275,7 @@ static arch_irn_class_t firm_classify(const void *self, const ir_node *irn)
 
 static arch_irn_flags_t firm_get_flags(const void *self, const ir_node *irn)
 {
-	arch_irn_flags_t res = arch_irn_flags_spillable;
+	arch_irn_flags_t res = 0;
 
 	if(get_irn_op(irn) == op_imm)
 		res |= arch_irn_flags_rematerializable;

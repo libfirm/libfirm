@@ -144,14 +144,23 @@ static INLINE usage_stats_t *get_usage_stats(ir_node *irn)
 	return us;
 }
 
-static int max_hops_walker(ir_node *irn, ir_node *tgt, int depth, unsigned visited_nr)
+static int max_hops_walker(reg_pressure_selector_env_t *env, ir_node *irn, ir_node *curr_bl, int depth, unsigned visited_nr)
 {
-	int i, n;
-	int res = 0;
+	ir_node *bl = get_nodes_block(irn);
+	/*
+	 * If the reached node is not in the block desired,
+	 * return the value passed for this situation.
+	 */
+	if(get_nodes_block(irn) != bl)
+		return block_dominates(bl, curr_bl) ? 0 : INT_MAX;
 
-	if(irn != tgt) {
-		res = INT_MAX;
-
+	/*
+	 * If the node is in the current block but not
+	 * yet scheduled, we keep on searching from that node.
+	 */
+	if(!pset_find_ptr(env->already_scheduled, irn)) {
+		int i, n;
+		int res = 0;
 		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 			ir_node *operand = get_irn_n(irn, i);
 
@@ -159,34 +168,38 @@ static int max_hops_walker(ir_node *irn, ir_node *tgt, int depth, unsigned visit
 				int tmp;
 
 				set_irn_visited(operand, visited_nr);
-				tmp = max_hops_walker(operand, tgt, depth + 1, visited_nr);
+				tmp = max_hops_walker(env, operand, bl, depth + 1, visited_nr);
 				res = MAX(tmp, res);
 			}
 		}
+
+		return res;
 	}
 
-	return res;
+	/*
+	 * If the node is in the current block and scheduled, return
+	 * the depth which indicates the number of steps to the
+	 * region of scheduled nodes.
+	 */
+	return depth;
 }
 
 static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	ir_node *bl   = get_nodes_block(irn);
 	ir_graph *irg = get_irn_irg(bl);
-	int res       = INT_MAX;
+	int res       = 0;
 
 	const ir_edge_t *edge;
 
 	foreach_out_edge(irn, edge) {
-		ir_node *user = get_edge_src_irn(edge);
+		ir_node *user       = get_edge_src_irn(edge);
+		unsigned visited_nr = get_irg_visited(irg) + 1;
+		int max_hops;
 
-		if(get_nodes_block(user) == bl && !pset_find_ptr(env->already_scheduled, user)) {
-			unsigned visited_nr = get_irg_visited(irg) + 1;
-			int max_hops;
-
-			set_irg_visited(irg, visited_nr);
-			max_hops = max_hops_walker(user, irn, 0, visited_nr);
-			res = MAX(res, max_hops);
-		}
+		set_irg_visited(irg, visited_nr);
+		max_hops = max_hops_walker(env, user, irn, 0, visited_nr);
+		res      = MAX(res, max_hops);
 	}
 
 	return res;
@@ -244,6 +257,23 @@ static void reg_pressure_block_free(void *block_env)
 	free(env);
 }
 
+static int get_result_hops_sum(reg_pressure_selector_env_t *env, ir_node *irn)
+{
+	int res = 0;
+	if(get_irn_mode(irn) == mode_T) {
+		const ir_edge_t *edge;
+
+		foreach_out_edge(irn, edge)
+			res += get_result_hops_sum(env, get_edge_src_irn(edge));
+	}
+
+	else if(mode_is_data(get_irn_mode(irn)))
+		res = compute_max_hops(env, irn);
+
+
+	return res;
+}
+
 static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	int i, n;
@@ -256,10 +286,12 @@ static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 			sum += compute_max_hops(env, op);
 	}
 
+	sum += get_result_hops_sum(env, irn);
+
 	return sum;
 }
 
-ir_node *reg_pressure_select(void *block_env, pset *ready_set)
+static ir_node *reg_pressure_select(void *block_env, pset *ready_set)
 {
 	reg_pressure_selector_env_t *env = block_env;
 	ir_node *irn, *res     = NULL;

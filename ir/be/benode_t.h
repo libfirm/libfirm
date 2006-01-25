@@ -52,7 +52,7 @@ int be_is_Copy(const ir_node *irn);
 int be_is_Perm(const ir_node *irn);
 int be_is_Keep(const ir_node *irn);
 
-void be_set_Spill_offset(ir_node *irn, unsigned offset);
+void     be_set_Spill_offset(ir_node *irn, unsigned offset);
 unsigned be_get_spill_offset(ir_node *irn);
 
 ir_node *be_get_Spill_context(const ir_node *irn);

@@ -464,6 +464,7 @@ static void lower_call_node(ir_node *call, const void *walk_env) {
 	}
 	else {
 		proj_T = new_r_Proj(current_ir_graph, block, call, mode_T, pn_Call_T_result);
+		last_proj = call;
 	}
 
 	/* Create for each caller save register a proj (keep node argument) */
