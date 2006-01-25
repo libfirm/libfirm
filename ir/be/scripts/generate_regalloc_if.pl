@@ -121,14 +121,13 @@ foreach my $class_name (keys(%reg_classes)) {
 		my $limit_func_name = $arch."_limit_".$class_name."_".$_->{"name"};
 
 		# push the function prototype
-		$tmp = "int $limit_func_name(const ir_node *irn, int pos, bitset_t *bs)";
+		$tmp = "void $limit_func_name(const ir_node *irn, int pos, bitset_t *bs)";
 		push(@obst_defreq_head, $tmp.";\n");
 
 		# push the function definition
 		$tmp .= " {\n";
 		$tmp .= "    bs = bitset_clear_all(bs);\n";
 		$tmp .= "    bitset_set(bs, REG_".uc($_->{"name"}).");\n";  # REGISTER to index assignment is done some lines down
-		$tmp .= "    return 1;\n";
 		$tmp .= "}\n\n";
 		push(@obst_limit_func, $tmp);
 
@@ -535,9 +534,8 @@ CHECK_REQS: foreach (@regs) {
 
 	if ($has_limit == 1) {
 		push(@obst_limit_func, "/* limit the possible registers for ".($in ? "IN" : "OUT")." $idx at op $op */\n");
-		push(@obst_limit_func, "int limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(const ir_node *irn, int pos, bitset_t *bs) {\n");
+		push(@obst_limit_func, "void limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(const ir_node *irn, int pos, bitset_t *bs) {\n");
 		push(@obst_limit_func, @temp_obst);
-		push(@obst_limit_func, "\n  return ".($neg ? scalar(@{ $reg_classes{"$class"} }) - scalar(@regs) : scalar(@regs)).";\n");
 		push(@obst_limit_func, "}\n\n");
 	}
 
