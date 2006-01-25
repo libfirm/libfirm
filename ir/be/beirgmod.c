@@ -4,6 +4,12 @@
 
 #include <stdlib.h>
 
+#ifdef WIN32
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #include "hashptr.h"
 #include "pdeq.h"
 #include "pset.h"
@@ -417,4 +423,25 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
 		empty_set = pset_new_ptr_default();
 
 	be_introduce_copies_ignore(info, orig, n, copy_nodes, empty_set);
+}
+
+void be_introduce_copies_pset(dom_front_info_t *info, pset *nodes) {
+	int i, n = pset_count(nodes);
+	ir_node *orig, *irn, **copy_nodes;
+	static pset *empty_set = NULL;
+
+	if (n<2)
+		return;
+
+	copy_nodes = alloca((n-1)*sizeof(*copy_nodes));
+	irn = pset_first(nodes);
+	orig = irn;
+	for (i=0, irn = pset_next(nodes); irn; irn=pset_next(nodes))
+		copy_nodes[i++] = irn;
+
+
+	if(!empty_set)
+		empty_set = pset_new_ptr_default();
+
+	be_introduce_copies_ignore(info, orig, n-1, copy_nodes, empty_set);
 }
