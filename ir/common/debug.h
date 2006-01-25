@@ -14,6 +14,7 @@
 #ifdef WITH_LIBCORE
 
 #define DBG(x) _LC_DBG(x)
+#define DB(x)  _LC_DB(x)
 #include <libcore/lc_debug.h>
 
 /* use the newer debug implementation in libcore */
@@ -69,6 +70,9 @@ void *_firm_dbg_make_msg(const firm_dbg_module_t *mod, unsigned mask, const char
 /* Internal function to the debug module. */
 void _firm_dbg_print_msg(const char *filename, int line, const char *func, void *data);
 
+/* Internal function to the debug module. */
+void _firm_dbg_print(const firm_dbg_module_t *mod, unsigned mask, const char *fmt, ...);
+
 /**
  * Register a module to the firm debug facility.
  * If the module has already been registered, no new module is allocated
@@ -115,8 +119,10 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 
 /* Else go without the name of the calling function. */
 #define _DBG(args) 	_DBG_MAIN("", args)
+#endif  /* __GNUC__ */
 #endif
-#endif
+
+#define _DB(args) _firm_dbg_print args
 
 /**
  * Debug messages issued with this macro are always printed, even in
@@ -124,6 +130,7 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
  * @see DBG()
  */
 #define DBG_RETAIL(args)		_DBG(args)
+#define DB_RETAIL(args)		  _DB(args)
 
 #ifdef DEBUG_libfirm
 
@@ -151,10 +158,12 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
  * @endcode
  */
 #define DBG(args) 					_DBG(args)
+#define DB(args) 		 			  _DB(args)
 
 #else
 #define DBG(args)
-#endif
+#define DB(args)
+#endif /* DEBUG_libfirm */
 
 #endif /* WITH_LIBCORE */
 
