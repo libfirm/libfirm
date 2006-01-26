@@ -26,6 +26,12 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 
+#ifdef _WIN32
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #undef is_Perm
 #define is_Perm(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
 
@@ -164,17 +170,17 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	int cur_idx      = pairs[start].out_reg->index;
 	int cur_pair_idx = start;
 	int n_pairs_done = get_n_checked_pairs(pairs, n);
-	int idx, done = 0;
+	int idx;
 	perm_type_t cycle_tp = PERM_CYCLE;
 
 	/* We could be right in the middle of a chain, so we need to find the start */
-	while (head != cur_idx && !done) {
+	while (head != cur_idx) {
 		/* goto previous register in cycle or chain */
 		cur_pair_idx = get_pairidx_for_regidx(pairs, n, head, 1);
 
 		if (cur_pair_idx < 0) {
 			cycle_tp = PERM_CHAIN;
-			done = 1;
+			break;
 		}
 		else {
 			head  = pairs[cur_pair_idx].in_reg->index;
@@ -188,11 +194,11 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	cycle->elems[0] = pairs[start].in_reg;
 	cycle->elems[1] = pairs[start].out_reg;
 	cycle->type     = cycle_tp;
-	n_pairs_done++;
+	cur_idx         = pairs[start].out_reg->index;
 
 	idx = 2;
 	/* check for cycle or end of a chain */
-	while (cur_idx != head && n_pairs_done < n) {
+	while (cur_idx != head) {
 		/* goto next register in cycle or chain */
 		cur_pair_idx = get_pairidx_for_regidx(pairs, n, cur_idx, 0);
 
@@ -205,8 +211,6 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 		if (cur_idx != head) {
 			cycle->elems[idx++] = pairs[cur_pair_idx].out_reg;
 			cycle->n_elems++;
-
-			n_pairs_done++;
 		}
 		else {
 			/* we are there where we started -> CYCLE */
@@ -272,7 +276,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	assert(n == get_irn_n_edges(irn) && "perm's in and out numbers different");
 
 	reg_class = arch_get_irn_register(arch_env, get_irn_n(irn, 0))->reg_class;
-	pairs     = calloc(n, sizeof(pairs[0]));
+	pairs     = alloca(n * sizeof(pairs[0]));
 
 	/* build the list of register pairs (in, out) */
 	i = 0;
@@ -464,7 +468,6 @@ static void lower_call_node(ir_node *call, const void *walk_env) {
 	}
 	else {
 		proj_T = new_r_Proj(current_ir_graph, block, call, mode_T, pn_Call_T_result);
-		last_proj = call;
 	}
 
 	/* Create for each caller save register a proj (keep node argument) */
@@ -595,7 +598,7 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
  * @param do_copy   1 == resolve cycles with a free reg if available
  */
 void lower_nodes_before_sched(ir_graph *irg, const void *env) {
-	irg_walk_blkwise_graph(irg, NULL, lower_nodes_before_sched_walker, env);
+	irg_walk_blkwise_graph(irg, NULL, lower_nodes_before_sched_walker, (void *)env);
 }
 
 
@@ -612,7 +615,7 @@ void lower_nodes_after_ra(be_chordal_env_t *chord_env, int do_copy) {
 
 	env.chord_env  = chord_env;
 	env.do_copy    = do_copy;
-	env.dbg_module = firm_dbg_register("ir.be.lower");
+	env.dbg_module = firm_dbg_register("firm.be.lower");
 
 	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_after_ra_walker, &env);
 }
