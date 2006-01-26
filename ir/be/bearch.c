@@ -85,8 +85,7 @@ const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
   return ops->impl->get_irn_reg_req(ops, req, irn, pos);
 }
 
-int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
-    int pos, const arch_register_class_t *cls, bitset_t *bs)
+int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs)
 {
   arch_register_req_t local_req;
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
@@ -98,7 +97,7 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
   }
 
   if(arch_register_req_is(req, limited)) {
-	  req->limited(irn, pos, bs);
+	  req->limited(req->limited_env, bs);
 	  return bitset_popcnt(bs);
   }
 
@@ -127,7 +126,7 @@ int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
 
 	if(arch_register_req_is(&req, limited)) {
 		bitset_t *bs = bitset_alloca(req.cls->n_regs);
-		req.limited(irn, pos, bs);
+		req.limited(req.limited_env, bs);
 		return bitset_is_set(bs, arch_register_get_index(reg));
 	}
 

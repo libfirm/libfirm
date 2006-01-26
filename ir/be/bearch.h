@@ -155,13 +155,15 @@ typedef struct _arch_register_req_t {
 	arch_register_req_type_t type;          /**< The type of the constraint. */
 	const arch_register_class_t *cls;       /**< The register class this constraint belongs to. */
 
-	void (*limited)(const ir_node *irn, int pos, bitset_t *bs);
+	void (*limited)(void *limited_env, bitset_t *bs);
                                           /**< In case of the 'limited'
                                             constraint, this function
                                             must put all allowable
                                             registers in the bitset and
                                             return the number of registers
                                             in the bitset. */
+
+	void *limited_env;                    /**< This is passed to limited. */
 
 	ir_node *other;						  /**< In case of "should be equal"
 										    or should be different, this gives
@@ -281,15 +283,13 @@ extern int arch_is_register_operand(const arch_env_t *env,
  * @param env The environment.
  * @param irn The node.
  * @param pos The postition of the node's operand.
- * @param cls The register class.
  * @param bs  The bitset all allocatable registers shall be put into.
  *            Note, that you can also pass NULL here. If you don't,
  *            make sure, the bitset is as large as the register class
  *            has registers.
  * @return    The amount of registers allocatable for that operand.
  */
-extern int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn,
-    int pos, const arch_register_class_t *cls, bitset_t *bs);
+extern int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs);
 
 /**
  * Check, if a register is assignable to an operand of a node.
@@ -348,8 +348,8 @@ extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *
  */
 extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn);
 
-#define arch_irn_is_ignore(env, irn) \
-	(arch_irn_get_flags(env, irn) == arch_irn_flags_ignore)
+#define arch_irn_is_ignore(env, irn) 0
+	// ((arch_irn_get_flags(env, irn) & arch_irn_flags_ignore) != 0)
 
 #define arch_irn_has_reg_class(env, irn, pos, cls) \
   ((cls) == arch_get_irn_reg_class(env, irn, pos))
