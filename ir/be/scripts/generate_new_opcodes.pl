@@ -143,8 +143,8 @@ foreach my $op (keys(%nodes)) {
 			# set register flags
 			$temp .= "  attr = get_ia32_attr(res);\n\n";
 			$temp .= "  attr->flags  = 0;                                 /* clear flags */\n";
-			if (!exists($n{"spill"}) || $n{"spill"} == 1) {
-				$temp .= "  attr->flags |= arch_irn_flags_spillable;          /* op is spillable */\n";
+			if (exists($n{"spill"}) && $n{"spill"} == 0) {
+				$temp .= "  attr->flags |= arch_irn_flags_dont_spill;          /* op is NOT spillable */\n";
 			}
 			if (exists($n{"remat"}) && $n{"remat"} == 1) {
 				$temp .= "  attr->flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
