@@ -66,6 +66,7 @@ $tmp .= "  {\n";
 $tmp .= "    arch_register_req_type_none,\n";
 $tmp .= "    NULL,\n";
 $tmp .= "    NULL,\n";
+$tmp .= "    NULL,\n";
 $tmp .= "    NULL\n";
 $tmp .= "  },\n";
 $tmp .= "  0\n";
@@ -101,6 +102,7 @@ foreach my $class_name (keys(%reg_classes)) {
 	$tmp .= "    arch_register_req_type_normal,\n";
 	$tmp .= "    $class_ptr,\n";
 	$tmp .= "    NULL,\n";
+	$tmp .= "    NULL,\n";
 	$tmp .= "    NULL\n";
 	$tmp .= "  },\n";
 	$tmp .= "  0\n";
@@ -121,7 +123,7 @@ foreach my $class_name (keys(%reg_classes)) {
 		my $limit_func_name = $arch."_limit_".$class_name."_".$_->{"name"};
 
 		# push the function prototype
-		$tmp = "void $limit_func_name(const ir_node *irn, int pos, bitset_t *bs)";
+		$tmp = "void $limit_func_name(void *_unused, bitset_t *bs)";
 		push(@obst_defreq_head, $tmp.";\n");
 
 		# push the function definition
@@ -137,6 +139,7 @@ foreach my $class_name (keys(%reg_classes)) {
 		$tmp .= "    arch_register_req_type_limited,\n";
 		$tmp .= "    $class_ptr,\n";
 		$tmp .= "    $limit_func_name,\n";
+		$tmp .= "    NULL,\n";
 		$tmp .= "    NULL\n";
 		$tmp .= "  },\n";
 		$tmp .= "  0\n";
@@ -391,6 +394,7 @@ sub generate_requirements {
 			$tmp2 .= "    ".join(" | ", @req_type_mask).",\n";
 			$tmp2 .= "    &$arch\_reg_classes[CLASS_$arch\_".$class."],\n";
 			$tmp2 .= "    ".($has_limit ? "limit_reg_".$op."_$inout\_".$idx : "NULL").",\n";
+			$tmp2 .= "    NULL,\n";
 			$tmp2 .= "    NULL\n";
 			$tmp2 .= "  },\n";
 			$tmp2 .= "  ".(defined($pos) ? $pos : "0")."\n};\n";
@@ -534,7 +538,7 @@ CHECK_REQS: foreach (@regs) {
 
 	if ($has_limit == 1) {
 		push(@obst_limit_func, "/* limit the possible registers for ".($in ? "IN" : "OUT")." $idx at op $op */\n");
-		push(@obst_limit_func, "void limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(const ir_node *irn, int pos, bitset_t *bs) {\n");
+		push(@obst_limit_func, "void limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(void *_unused, bitset_t *bs) {\n");
 		push(@obst_limit_func, @temp_obst);
 		push(@obst_limit_func, "}\n\n");
 	}
