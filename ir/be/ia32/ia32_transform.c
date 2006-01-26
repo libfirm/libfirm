@@ -81,11 +81,11 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 		class_negtv = classify_tarval(tarval_neg(tv));
 
 		if (class_tv == TV_CLASSIFY_ONE) { /* + 1 == INC */
-			DBG((env->mod, LEVEL_2, "optimizing Add(1) to Inc ... "));
+			DB((env->mod, LEVEL_2, "Add(1) to Inc ... "));
 			new_op = new_rd_ia32_Inc(dbg, irg, block, expr_op, mode);
 		}
 		else if (class_tv == TV_CLASSIFY_ALL_ONE || class_negtv == TV_CLASSIFY_ONE) { /* + (-1) == DEC */
-			DBG((mod, LEVEL_2, "optimizing Add(-1) to Dec ... "));
+			DB((mod, LEVEL_2, "Add(-1) to Dec ... "));
 			new_op = new_rd_ia32_Dec(dbg, irg, block, expr_op, mode);
 		}
 		else
@@ -431,11 +431,11 @@ static ir_node *gen_imm_Sub(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 		class_negtv = classify_tarval(tarval_neg(tv));
 
 		if (class_tv == TV_CLASSIFY_ONE) { /* - 1 == DEC */
-			DBG((mod, LEVEL_2, "optimizing Sub(1) to Dec ... "));
+			DB((mod, LEVEL_2, "Sub(1) to Dec ... "));
 			new_op = new_rd_ia32_Dec(dbg, irg, block, expr_op, mode);
 		}
 		else if (class_negtv == TV_CLASSIFY_ONE) { /* - (-1) == Sub */
-			DBG((mod, LEVEL_2, "optimizing Sub(-1) to Inc ... "));
+			DB((mod, LEVEL_2, "Sub(-1) to Inc ... "));
 			new_op = new_rd_ia32_Inc(dbg, irg, block, expr_op, mode);
 		}
 		else
@@ -732,7 +732,7 @@ static ir_node *gen_Rot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			long bits  = get_mode_size_bits(env->mode);
 
 			if (tarval_is_long(tv) && get_tarval_long(tv) == bits) {
-				DBG((env->mod, LEVEL_1, "optimizing RotL into RotR ... "));
+				DB((env->mod, LEVEL_1, "RotL into RotR ... "));
 				rotate = gen_RotR(env, op1, get_irn_n(minus, 0));
 			}
 		}
@@ -784,7 +784,7 @@ static ir_node *gen_arith_Op(ia32_transform_env_t *env, ir_node *op1, ir_node *o
 
 	/* TODO: Op(Const, Const) support */
 	if (is_ia32_Const(op1) && is_ia32_Const(op2)) {
-		DBG((mod, LEVEL_2, "found unexpected %s(Const, Const), creating binop ... ", get_irn_opname(node)));
+		DB((mod, LEVEL_2, "%+F(Const, Const) -> binop ... ", get_irn_opname(node)));
 		imm_op = NULL;
 	}
 
@@ -793,21 +793,21 @@ static ir_node *gen_arith_Op(ia32_transform_env_t *env, ir_node *op1, ir_node *o
 		case iro_Div:
 		case iro_Mod:
 		case iro_DivMod:
-			DBG((mod, LEVEL_2, "Div/Mod/DivMod imm not available, creating binop ... "));
+			DB((mod, LEVEL_2, "Div/Mod/DivMod imm -> binop ... "));
 			imm_op = NULL;
 			break;
 		default:
 			if (op == get_op_Min() || op == get_op_Max()) {
-				DBG((mod, LEVEL_2, "MIN/MAX imm not available, creating binop ... "));
+				DB((mod, LEVEL_2, "MIN/MAX imm -> binop ... "));
 				imm_op = NULL;
 			}
 			break;
 	}
 
-	DBG((mod, LEVEL_1, "(op1: %s -- op2: %s) ... ", get_irn_opname(op1), get_irn_opname(op2)));
+	DB((mod, LEVEL_1, "(%+F -- %+F) ... ", op1, op2));
 
 	if (!mode_is_float(env->mode) && imm_op) {
-		DBG((mod, LEVEL_1, "%s with imm ... ", get_irn_opname(node)));
+		DB((mod, LEVEL_1, "immop ... "));
 
 		switch(opc) {
 			GENOPI_SETATTR(Add);
@@ -831,7 +831,7 @@ static ir_node *gen_arith_Op(ia32_transform_env_t *env, ir_node *op1, ir_node *o
 		}
 	}
 	else {
-		DBG((mod, LEVEL_1, "%s as binop ... ", get_irn_opname(node)));
+		DB((mod, LEVEL_1, "binop ... "));
 
 		switch(opc) {
 			GENOP(Add);
@@ -887,7 +887,7 @@ static ir_node *gen_arith_Op(ia32_transform_env_t *env, ir_node *op1, ir_node *o
  */
 static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 	if (is_ia32_Minus(op) || is_ia32_fMinus(op)) {
-		DBG((env->mod, LEVEL_1, "optimizing --(e) to e ..."));
+		DB((env->mod, LEVEL_1, "--(e) to e ..."));
 		return get_irn_n(op, 0);
 	}
 	else {
@@ -1330,7 +1330,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 #define IGN(a)         case iro_##a: break
 #define BAD(a)         case iro_##a: goto bad
 
-	DBG((tenv.mod, LEVEL_1, "transforming node %s (%ld) ... ", get_irn_opname(node), get_irn_node_nr(node)));
+	DBG((tenv.mod, LEVEL_1, "check %+F ... ", node));
 
 	switch (code) {
 		BINOP_COM(Add);
@@ -1406,9 +1406,9 @@ bad:
 
 	if (asm_node) {
 		exchange(node, asm_node);
-		DBG((tenv.mod, LEVEL_1, "created node %+F[%p]\n", asm_node, asm_node));
+		DB((tenv.mod, LEVEL_1, "created node %+F[%p]\n", asm_node, asm_node));
 	}
 	else {
-		DBG((tenv.mod, LEVEL_1, "ignored\n"));
+		DB((tenv.mod, LEVEL_1, "ignored\n"));
 	}
 }
