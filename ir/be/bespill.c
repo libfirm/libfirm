@@ -14,6 +14,9 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
+#include "ident_t.h"
+#include "type_t.h"
+#include "entity_t.h"
 #include "debug.h"
 #include "irgwalk.h"
 
@@ -279,8 +282,9 @@ void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, in
 
 typedef struct _spill_slot_t {
 	unsigned size;
-	unsigned offset;
+	unsigned align;
 	pset *members;
+	ir_mode *largest_mode;	/* the mode of all members with largest size */
 } spill_slot_t;
 
 typedef struct _ss_env_t {
@@ -308,13 +312,15 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 		/* this is a new spill context */
 		ss = obstack_alloc(&ssenv->ob, sizeof(*ss));
 		ss->members = pset_new_ptr(8);
-		ss->size = get_mode_size_bytes(get_irn_mode(get_irn_n(spill, 0)));
+		ss->largest_mode = get_irn_mode(get_irn_n(spill, 0));
+		ss->size = get_mode_size_bytes(ss->largest_mode);
+		ss->align = ss->size; /* TODO Assumed for now */
 		pmap_insert(ssenv->slots, ctx, ss);
 	} else {
 		ir_node *irn;
 		/* values with the same spill_ctx must go into the same spill slot */
 		ss = entry->value;
-		assert(ss->size == (unsigned)get_mode_size_bytes(get_irn_mode(get_irn_n(spill, 0))) && "Different sizes for the same spill slot");
+		assert(ss->size == (unsigned)get_mode_size_bytes(get_irn_mode(get_irn_n(spill, 0))) && "Different sizes for the same spill slot are not allowed yet.");
 		for (irn = pset_first(ss->members); irn; irn = pset_next(ss->members)) {
 			/* use values_interfere here, because it uses the dominance check,
 			   which does work for values in memory */
@@ -332,19 +338,20 @@ static int ss_sorter(const void *v1, const void *v2) {
 }
 
 
-/* NOTE/TODO: This function assumes, that all spill slot sizes are a power of 2.
-   Further it assumes, that the alignment is equal to the size and the
-   baseaddr of the spill area is aligned sufficiently for all possible aligments.
-*/
-static void coalesce_slots(ss_env_t *ssenv) {
+/**
+ * This function should optimize the spill slots.
+ *  - Coalescing of multiple slots
+ *  - Ordering the slots
+ *
+ * Input slots are in @p ssenv->slots
+ * @p size The count of initial spill slots in @p ssenv->slots
+ *         This also is the size of the preallocated array @p ass
+ *
+ * @return An array of spill slots @p ass in specific order
+ **/
+static void optimize_slots(ss_env_t *ssenv, int size, spill_slot_t **ass) {
 	int i, o, used_slots;
-	unsigned curr_offset;
 	pmap_entry *entr;
-	spill_slot_t **ass;
-
-	/* Build an array of all spill slots */
-	int count = pmap_count(ssenv->slots);
-	ass = obstack_alloc(&ssenv->ob, count * sizeof(*ass));
 
 	i=0;
 	pmap_foreach(ssenv->slots, entr)
@@ -352,14 +359,13 @@ static void coalesce_slots(ss_env_t *ssenv) {
 
 	/* Sort the array to minimize fragmentation and cache footprint.
 	   Large slots come first */
-	qsort(ass, count, sizeof(ass[0]), ss_sorter);
+	qsort(ass, size, sizeof(ass[0]), ss_sorter);
 
 	/* For each spill slot:
 		- assign a new offset to this slot
 	    - xor find another slot to coalesce with */
-	curr_offset = 0;
 	used_slots = 0;
-	for (i=0; i<count; ++i) { /* for each spill slot */
+	for (i=0; i<size; ++i) { /* for each spill slot */
 		ir_node *n1;
 		int tgt_slot = -1;
 
@@ -393,9 +399,6 @@ interf_detected: /*nothing*/ ;
 			tgt_slot = used_slots;
 			used_slots++;
 
-			ass[tgt_slot]->offset = curr_offset;
-			curr_offset += ass[i]->size;
-
 			/* init slot */
 			if (tgt_slot != i) {
 				ass[tgt_slot]->size = ass[i]->size;
@@ -405,33 +408,80 @@ interf_detected: /*nothing*/ ;
 		}
 
 		/* copy the members to the target pset */
-		for(n1 = pset_first(ass[i]->members); n1; n1 = pset_next(ass[i]->members)) {
-			/* NOTE: If src and tgt pset are the same, inserting while iterating is not allowed */
-			if (tgt_slot != i)
-				pset_insert_ptr(ass[tgt_slot]->members, n1);
+		/* NOTE: If src and tgt pset are the same, inserting while iterating is not allowed */
+		if (tgt_slot != i)
+			for(n1 = pset_first(ass[i]->members); n1; n1 = pset_next(ass[i]->members))
+					pset_insert_ptr(ass[tgt_slot]->members, n1);
+	}
+}
 
-			be_set_Spill_offset(n1, ass[tgt_slot]->offset);
-			DBG((ssenv->dbg, LEVEL_1, "    Offset %+F  %d\n", n1, ass[tgt_slot]->offset));
-		}
+#define ALIGN_SPILL_AREA 16
+#define pset_foreach(pset, elm)  for(elm=pset_first(pset); elm; elm=pset_next(pset))
+
+static void assign_entities(ss_env_t *ssenv, int n, spill_slot_t **ss) {
+	int i, offset;
+	ir_type *frame = get_irg_frame_type(ssenv->cenv->irg);
+
+	/* aligning by increasing frame size */
+	offset = get_type_size_bits(frame) / 8;
+	offset = round_up2(offset, ALIGN_SPILL_AREA);
+	set_type_size_bytes(frame, -1);
+
+	/* create entities and assign offsets according to size and alignment*/
+	for (i=0; i<n; ++i) {
+		char buf[64];
+		ident *name, *type_id;
+		entity *spill_ent;
+		ir_node *irn;
+
+		/* build entity */
+		snprintf(buf, sizeof(buf), "spill_slot_%d", i);
+		name = new_id_from_str(buf);
+		snprintf(buf, sizeof(buf), "spill_slot_type_%d", i);
+		type_id = new_id_from_str(buf);
+
+		spill_ent = new_entity(frame, name, new_type_primitive(type_id, ss[i]->largest_mode));
+
+		/* align */
+		offset = round_up2(offset, ss[i]->align);
+		/* set */
+		set_entity_offset_bytes(spill_ent, offset);
+		/* next possible offset */
+		offset += ss[i]->size;
+
+		pset_foreach(ss[i]->members, irn)
+			be_set_Spill_entity(irn, spill_ent);
 	}
 
-	/* free all used psets, all other stuff is on the ssenv-obstack */
-	for (i=0; i<count; ++i)
-		del_pset(ass[i]->members);
-
+	/* set final size of stack frame */
+	set_type_size_bytes(frame, offset);
 }
 
 void be_compute_spill_offsets(be_chordal_env_t *cenv) {
 	ss_env_t ssenv;
+	spill_slot_t **ss;
+	int ss_size;
+	pmap_entry *pme;
 
 	obstack_init(&ssenv.ob);
 	ssenv.cenv  = cenv;
 	ssenv.slots = pmap_create();
 	ssenv.dbg   = firm_dbg_register("ir.be.spillslots");
 
+	/* Get initial spill slots */
 	irg_walk_graph(cenv->irg, NULL, compute_spill_slots_walker, &ssenv);
-	coalesce_slots(&ssenv);
 
+	/* Build an empty array for optimized spill slots */
+	ss_size = pmap_count(ssenv.slots);
+	ss = obstack_alloc(&ssenv.ob, ss_size * sizeof(*ss));
+	optimize_slots(&ssenv, ss_size, ss);
+
+	/* Integrate slots into the stack frame entity */
+	assign_entities(&ssenv, ss_size, ss);
+
+	/* Clean up */
+	pmap_foreach(ssenv.slots, pme)
+		del_pset(((spill_slot_t *)pme->value)->members);
 	pmap_destroy(ssenv.slots);
 	obstack_free(&ssenv.ob, NULL);
 }

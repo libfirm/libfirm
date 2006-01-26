@@ -73,8 +73,7 @@ typedef struct {
 typedef struct {
 	be_node_attr_t node_attr;
 	ir_node *spill_ctx;  /**< The node in whose context this spill was introduced. */
-	unsigned offset;     /**< The offset of the memory location the spill writes to
-						   in the spill area. */
+	entity *ent;     /**< The entity in the stack frame the spill writes to. */
 } be_spill_attr_t;
 
 static ir_op *op_Spill;
@@ -156,7 +155,7 @@ ir_node *be_new_Spill(const arch_register_class_t *cls, ir_graph *irg, ir_node *
 	in[0] = to_spill;
 	res   = new_ir_node(NULL, irg, bl, op_Spill, mode_M, 1, in);
 	a     = init_node_attr(res, cls, irg, 0);
-	a->offset    = BE_SPILL_NO_OFFSET;
+	a->ent    = NULL;
 	a->spill_ctx = ctx;
 	return res;
 }
@@ -234,11 +233,11 @@ void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req)
 	memcpy(&a->reg_data[pos].req, req, sizeof(req[0]));
 }
 
-void be_set_Spill_offset(ir_node *irn, unsigned offset)
+void be_set_Spill_entity(ir_node *irn, entity *ent)
 {
 	be_spill_attr_t *a = get_irn_attr(irn);
 	assert(be_is_Spill(irn));
-	a->offset = offset;
+	a->ent = ent;
 }
 
 static ir_node *find_a_spill_walker(ir_node *irn, unsigned visited_nr)
@@ -285,23 +284,23 @@ static INLINE ir_node *find_a_spill(ir_node *irn)
 }
 
 
-unsigned be_get_spill_offset(ir_node *irn)
+entity *be_get_spill_entity(ir_node *irn)
 {
 	int opc           = get_irn_opcode(irn);
 
 	switch(get_irn_be_opcode(irn)) {
 	case beo_Reload:
-		return be_get_spill_offset(find_a_spill(irn));
+		return be_get_spill_entity(find_a_spill(irn));
 	case beo_Spill:
 		{
 			be_spill_attr_t *a = get_irn_attr(irn);
-			return a->offset;
+			return a->ent;
 		}
 	default:
 		assert(0 && "Must give spill/reload node");
 	}
 
-	return (unsigned) -1;
+	return NULL;
 }
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
@@ -519,7 +518,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			if(get_irn_be_opcode(irn) == beo_Spill) {
 				be_spill_attr_t *a = (be_spill_attr_t *) at;
 				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
-				ir_fprintf(f, "spill offset: %04x (%u)\n", a->offset, a->offset);
+//TODO				ir_fprintf(f, "spill offset: %04x (%u)\n", a->offset, a->offset);
 			}
 			break;
 	}
