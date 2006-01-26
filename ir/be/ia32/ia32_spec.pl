@@ -526,18 +526,9 @@ $arch = "ia32";
   "emit"     => '. leal %C(%S1), %D1\t\t\t/* %D1 = %S1 + %C, (%A1)*/'
 },
 
-"RegParam" => {
-  "arity"    => 1,
-  "comment"  => "constructs a Register Parameter to cover parameters passed in register",
-  "reg_req"  => { "in" => [ "none" ], "out" => [ "none" ] },
-  "cmp_attr" =>
-'
-  return (attr_a->pn_code != attr_b->pn_code);
-'
-},
-
 "StackParam" => {
   "arity"    => 1,
+  "remat"    => 1,
   "comment"  => "constructs a Stack Parameter to retrieve a parameter from Stack",
   "reg_req"  => { "in" => [ "none" ], "out" => [ "general_purpose" ] },
   "cmp_attr" =>
@@ -705,6 +696,7 @@ $arch = "ia32";
 
 "fStackParam" => {
   "arity"    => 1,
+  "remat"    => 1,
   "comment"  => "constructs a Stack Parameter to retrieve a SSE parameter from Stack",
   "reg_req"  => { "in" => [ "none" ], "out" => [ "floating_point" ] },
   "cmp_attr" =>
@@ -729,7 +721,6 @@ $arch = "ia32";
   "op_flags" => "L|F",
   "state"    => "mem_pinned",
   "arity"    => "variable",
-  "spill"    => 0,
   "comment"  => "construct Call: Call(...)",
   "emit"     => '. call %C',
   "args"     => [
@@ -740,6 +731,25 @@ $arch = "ia32";
 "  if (!op_ia32_Call) assert(0);
   return new_ir_node(db, irg, block, op_ia32_Call, mode_T, n, in);
 "
+},
+
+# Return
+
+"Return" => {
+  "op_flags" => "L|X",
+  "state"    => "pinned",
+  "arity"    => "variable",
+  "comment"  => "construct Return: Return(...)",
+  "emit"     => '. ret',
+  "args"     => [
+                  { "type" => "int",        "name" => "n" },
+                  { "type" => "ir_node **", "name" => "in" }
+                ],
+  "rd_constructor" =>
+"  if (!op_ia32_Return) assert(0);
+  return new_ir_node(db, irg, block, op_ia32_Return, mode_X, n, in);
+"
 }
+
 
 ); # end of %nodes
