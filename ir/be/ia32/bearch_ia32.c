@@ -2,12 +2,19 @@
 #include "config.h"
 #endif
 
+#ifdef _WIN32
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #include "pseudo_irg.h"
 #include "irgwalk.h"
 #include "irprog.h"
 #include "irprintf.h"
 #include "iredges_t.h"
 #include "ircons.h"
+#include "irgmod.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -15,6 +22,7 @@
 #include "../bearch.h"                /* the general register allocator interface */
 #include "../benode_t.h"
 #include "../belower.h"
+#include "../besched_t.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -25,7 +33,7 @@
 #include "ia32_map_regs.h"
 #include "ia32_optimize.h"
 
-#define DEBUG_MODULE "ir.be.isa.ia32"
+#define DEBUG_MODULE "firm.be.ia32.isa"
 
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
@@ -136,7 +144,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 
 		irn = my_skip_proj(irn);
 
-		DBG((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
+		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
 	}
 
 	if (is_ia32_irn(irn)) {
@@ -147,7 +155,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 			irn_req = get_ia32_out_req(irn, node_pos);
 		}
 
-		DBG((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
+		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
 
 		memcpy(req, &(irn_req->req), sizeof(*req));
 
@@ -160,7 +168,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 	else {
 		/* treat Phi like Const with default requirements */
 		if (is_Phi(irn)) {
-			DBG((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
+			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
 			if (mode_is_float(mode))
 				memcpy(req, &(ia32_default_req_ia32_floating_point.req), sizeof(*req));
 			else if (mode_is_int(mode) || mode_is_reference(mode))
@@ -173,7 +181,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 				assert(0 && "unsupported Phi-Mode");
 		}
 		else if (is_Start(irn)) {
-			DBG((mod, LEVEL_1, "returning reqs none for ProjX -> Start (%+F )\n", irn));
+			DB((mod, LEVEL_1, "returning reqs none for ProjX -> Start (%+F )\n", irn));
 			switch (node_pos) {
 				case pn_Start_X_initial_exec:
 				case pn_Start_P_value_arg_base:
@@ -186,11 +194,11 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 			}
 		}
 		else if (get_irn_op(irn) == op_Return && pos > 0) {
-			DBG((mod, LEVEL_1, "returning reqs EAX for %+F\n", irn));
+			DB((mod, LEVEL_1, "returning reqs EAX for %+F\n", irn));
 			memcpy(req, &(ia32_default_req_ia32_general_purpose_eax.req), sizeof(*req));
 		}
 		else {
-			DBG((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
+			DB((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
 			req = NULL;
 		}
 	}
@@ -267,7 +275,9 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
 	else {
-		ir_printf("don't know flags of %+F\n", irn);
+		if (is_Start_Proj(irn))
+			return arch_irn_flags_ignore;
+
 		return 0;
 	}
 }
@@ -337,17 +347,86 @@ static void ia32_prepare_graph(void *self) {
 
 
 /**
- * Set the register for P_frame_base Proj to %esp.
+ * Stack reservation and StackParam lowering.
  */
-static void ia32_set_P_frame_base_Proj_reg(ir_node *irn, void *env) {
-	ia32_code_gen_t *cg = env;
+static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
+	firm_dbg_module_t *mod       = cg->mod;
+	ir_node           *frame     = get_irg_frame(irg);
+	ir_node           *end_block = get_irg_end_block(irg);
+	ir_node          **returns, **in, **new_in;
+	ir_node           *stack_reserve, *sched_point;
+	ir_node           *stack_free, *new_ret, *return_block;
+	int                stack_size = 0, i, n_res;
+	arch_register_t   *stack_reg;
+	tarval            *stack_size_tv;
+	dbg_info          *frame_dbg;
 
-	if (is_P_frame_base_Proj(irn)) {
-		if (cg->has_alloca) {
-			arch_set_irn_register(cg->arch_env, irn, &ia32_general_purpose_regs[REG_EBP]);
-		}
-		else {
-			arch_set_irn_register(cg->arch_env, irn, &ia32_general_purpose_regs[REG_ESP]);
+	/* Determine stack register */
+	if (cg->has_alloca) {
+		stack_reg = &ia32_general_purpose_regs[REG_EBP];
+	}
+	else {
+		stack_reg = &ia32_general_purpose_regs[REG_ESP];
+	}
+
+	/* If frame is used, then we need to reserve some stackspace. */
+	if (get_irn_n_edges(frame) > 0) {
+		/* The initial stack reservation. */
+		frame_dbg     = get_irn_dbg_info(frame);
+		stack_reserve = new_rd_ia32_Sub_i(frame_dbg, irg, get_nodes_block(frame), frame, mode_Is);
+		stack_size_tv = new_tarval_from_long(stack_size, mode_Is);
+		set_ia32_am_const(stack_reserve, stack_size_tv);
+		edges_reroute(frame, stack_reserve, irg);
+
+		/* set register */
+		arch_set_irn_register(cg->arch_env, frame, stack_reg);
+		arch_set_irn_register(cg->arch_env, stack_reserve, stack_reg);
+
+		/* insert into schedule */
+		sched_add_after(get_irg_start(irg), frame);
+		sched_add_after(frame, stack_reserve);
+
+		/* Free stack for each Return node */
+		returns = get_Block_cfgpred_arr(end_block);
+		for (i = 0; i < get_Block_n_cfgpreds(end_block); i++) {
+			assert(get_irn_opcode(returns[i]) == iro_Return && "cfgpred of endblock is not a return");
+
+			return_block = get_nodes_block(returns[i]);
+
+			/* free the stack */
+			stack_free = new_rd_ia32_Add_i(frame_dbg, irg, return_block, stack_reserve, mode_Is);
+			set_ia32_am_const(stack_free, stack_size_tv);
+			arch_set_irn_register(cg->arch_env, stack_free, stack_reg);
+
+			DBG((mod, LEVEL_1, "examining %+F, %+F created, block %+F\n", returns[i], stack_free, return_block));
+
+			/* get the old Return arguments */
+			n_res  = get_Return_n_ress(returns[i]);
+			in     = get_Return_res_arr(returns[i]);
+			new_in = alloca((n_res + 1) * sizeof(new_in[0]));
+
+			if (!new_in) {
+				printf("\nMUAAAAHAHAHAHAHAHAHAH\n");
+				exit(1);
+			}
+
+			/* copy the old to the new in's */
+			memcpy(new_in, in, n_res * sizeof(in[0]));
+			in[n_res] = stack_free;
+
+			/* create the new return node */
+			edges_deactivate(irg);
+			new_ret     = new_rd_ia32_Return(get_irn_dbg_info(returns[i]), irg, return_block, n_res + 1, new_in);
+			edges_activate(irg);
+			sched_point = sched_prev(returns[i]);
+
+			/* exchange the old return with the new one */
+			exchange(returns[i], new_ret);
+
+			/* remove the old one from schedule and add the new nodes properly */
+			sched_remove(returns[i]);
+			sched_add_after(sched_point, new_ret);
+			sched_add_before(new_ret, stack_free);
 		}
 	}
 }
@@ -372,7 +451,6 @@ static void ia32_before_ra(void *self) {
  */
 static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
 	ia32_code_gen_t *cg    = self;
-	unsigned         offs  = be_get_spill_offset(spill);
 	dbg_info        *dbg   = get_irn_dbg_info(spill);
 	ir_node         *block = get_nodes_block(spill);
 	ir_node         *ptr   = get_irg_frame(cg->irg);
@@ -380,6 +458,10 @@ static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
 	ir_node         *mem   = new_rd_NoMem(cg->irg);
 	ir_mode         *mode  = get_irn_mode(spill);
 	ir_node         *res;
+	entity          *ent   = be_get_spill_entity(spill);
+	unsigned         offs  = get_entity_offset_bytes(ent);
+
+	DB((cg->mod, LEVEL_1, "lower_spill: got offset %d for %+F\n", offs, ent));
 
 	res = new_rd_ia32_Store(dbg, cg->irg, block, ptr, val, mem, mode);
 	set_ia32_am_offs(res, new_tarval_from_long(offs, mode_Iu));
@@ -401,7 +483,10 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 	ir_node         *res;
 
 	if (be_is_Spill(pred)) {
-		tv = new_tarval_from_long(be_get_spill_offset(pred), mode_Iu);
+		entity   *ent  = be_get_spill_entity(pred);
+		unsigned  offs = get_entity_offset_bytes(ent);
+		DB((cg->mod, LEVEL_1, "lower_reload: got offset %d for %+F\n", offs, ent));
+		tv = new_tarval_from_long(offs, mode_Iu);
 	}
 	else if (is_ia32_Store(pred)) {
 		tv = get_ia32_am_offs(pred);
@@ -430,11 +515,8 @@ static void ia32_codegen(void *self) {
 		cg->emit_decls = 0;
 	}
 
-	/* set the stack register */
-	if (! is_pseudo_ir_graph(irg))
-		irg_walk_blkwise_graph(irg, NULL, ia32_set_P_frame_base_Proj_reg, cg);
-
-//	ia32_finish_irg(irg);
+	ia32_finish_irg(irg, cg);
+	dump_ir_block_graph_sched(irg, "-finished");
 	ia32_gen_routine(out, irg, cg->arch_env);
 
 	cur_reg_set = NULL;
@@ -466,7 +548,7 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
 	cg->impl       = &ia32_code_gen_if;
 	cg->irg        = irg;
 	cg->reg_set    = new_set(ia32_cmp_irn_reg_assoc, 1024);
-	cg->mod        = firm_dbg_register("be.transform.ia32");
+	cg->mod        = firm_dbg_register("firm.be.ia32.cg");
 	cg->out        = F;
 	cg->arch_env   = arch_env;
 
