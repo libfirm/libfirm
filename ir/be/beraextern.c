@@ -647,7 +647,7 @@ static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos)
 	arch_get_register_req(raenv->aenv, &req, irn, pos);
 	if (arch_register_req_is(&req, limited)) {
 		int reg_nr;
-		req.limited(irn, pos, bs);
+		req.limited(req.limited_env, bs);
 		reg_nr = bitset_next_set(bs, 0);
 		fprintf(raenv->f, " <%d>", reg_nr);
 		assert(-1 == bitset_next_set(bs, reg_nr+1) && "Constraints with more than 1 possible register are not supported");
