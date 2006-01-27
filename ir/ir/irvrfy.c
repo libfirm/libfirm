@@ -932,6 +932,11 @@ static int verify_node_Const(ir_node *n, ir_graph *irg) {
     mymode == mode_b)      /* we want boolean constants for static evaluation */
     ,"Const node", 0       /* of Cmp. */
   );
+  ASSERT_AND_RET(
+    /* the modes of the constant and teh tarval must match */
+    mymode == get_tarval_mode(get_Const_tarval(n)),
+    "Const node, tarval and node mode mismatch", 0
+  );
   return 1;
 }
 
