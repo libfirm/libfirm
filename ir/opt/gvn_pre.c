@@ -41,13 +41,13 @@ typedef struct block_info {
   struct block_info *next;
 } block_info;
 
-typedef struct avail_env {
+typedef struct pre_env {
   struct obstack *obst;   /**< the obstack to allocate on */
   ir_node *start_block;   /**< the start block of the current graph */
   ir_node *end_block;     /**< the end block of the current graph */
   block_info *list;       /**< links all block info entires for easier recovery */
   int changes;            /**< non-zero, if calculation of Antic_in has changed */
-} avail_env;
+} pre_env;
 
 /** The debug module handle. */
 static firm_dbg_module_t *dbg;
@@ -67,15 +67,19 @@ static int is_nice_value(ir_node *n) {
 
 #define pset_foreach(v, s)  for ((v) = pset_first(s); (v); (v) = pset_next(s))
 
+typedef unsigned (*HASH_FUNC)(void *);
+
 /** computes dst = dst \/ src */
-static void pset_union(pset *dst, pset *src, unsigned (*hash)(void *))
+static void pset_union(pset *dst, pset *src, HASH_FUNC hash)
 {
   void *entry;
 
   pset_foreach(entry, src) {
-    pset_insert(dst, entry, ir_node_hash(entry));
+    pset_insert(dst, entry, hash(entry));
   }
 }
+
+#define pset_union(d, s)  pset_union(d, s, (HASH_FUNC)ir_node_hash)
 
 #ifdef DEBUG_libfirm
 /**
@@ -86,15 +90,15 @@ static void dump_set(pset *set, char *txt, ir_node *block)
   ir_node *n;
   int i;
 
-  DBG((dbg, LEVEL_2, "%s(%+F) = {\n", txt, block));
+  DB((dbg, LEVEL_2, "%s(%+F) = {\n", txt, block));
   i = 0;
   pset_foreach(n, set) {
     if ((i & 3) == 3)
-      DBG((dbg, LEVEL_2, "\n"));
-    DBG((dbg, LEVEL_2, " %+F,", n));
+      DB((dbg, LEVEL_2, "\n"));
+    DB((dbg, LEVEL_2, " %+F,", n));
     ++i;
   }
-  DBG((dbg, LEVEL_2, "\n}\n"));
+  DB((dbg, LEVEL_2, "\n}\n"));
 }  /* dump_set */
 
 #else
@@ -121,7 +125,7 @@ static block_info *get_block_info(ir_node *block) {
  */
 static void compute_avail_top_down(ir_node *block, void *ctx)
 {
-  avail_env *env = ctx;
+  pre_env *env = ctx;
   block_info *dom_info;
   block_info *info = get_block_info(block);
   ir_node *dom_blk;
@@ -130,7 +134,7 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
   if (block == env->end_block)
     return;
 
-  pset_union(info->avail_out, info->nodes, ir_node_hash);
+  pset_union(info->avail_out, info->nodes);
 
   /* the root has no dominator */
   if (block != env->start_block) {
@@ -140,7 +144,7 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
     dom_info = get_block_info(dom_blk);
     assert(dom_info);
 
-    pset_union(info->avail_out, dom_info->avail_out, ir_node_hash);
+    pset_union(info->avail_out, dom_info->avail_out);
   }
   dump_set(info->avail_out, "Avail_out", block);
 }
@@ -148,7 +152,7 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
 /*
  * Implement phi_translate
  */
-static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, avail_env *env)
+static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *env)
 {
   ir_node *pred_block;
   ir_node *res;
@@ -210,7 +214,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, avail_env 
  */
 static void compute_antic(ir_node *block, void *ctx)
 {
-  avail_env *env = ctx;
+  pre_env *env = ctx;
   block_info *succ_info;
   block_info *info = get_block_info(block);
   ir_node *succ;
@@ -231,7 +235,7 @@ static void compute_antic(ir_node *block, void *ctx)
       int i, pos = -1;
       pset *nodes = new_pset(identities_cmp, 8);
 
-      pset_union(nodes, info->nodes, ir_node_hash);
+      pset_union(nodes, info->nodes);
 
       /* find blocks position in succ's block predecessors */
       succ = get_Block_cfg_out(block, 0);
@@ -261,7 +265,7 @@ static void compute_antic(ir_node *block, void *ctx)
         }
       }
      /* this step calculates Antic_in(b) = Antic_out(b) \/ Nodes(b) */
-     pset_union(info->antic_in, nodes, ir_node_hash);
+     pset_union(info->antic_in, nodes);
      del_pset(nodes);
    }
     else {
@@ -294,7 +298,7 @@ static void compute_antic(ir_node *block, void *ctx)
         }
       }
       /* this step calculates Antic_in(b) = Antic_out(b) \/ Nodes(b) */
-      pset_union(info->antic_in, info->nodes, ir_node_hash);
+      pset_union(info->antic_in, info->nodes);
     }
   }
 
@@ -311,7 +315,7 @@ static void compute_antic(ir_node *block, void *ctx)
 static void alloc_blk_info(ir_node *block, void *ctx)
 {
   int i;
-  avail_env *env = ctx;
+  pre_env *env = ctx;
   block_info *info = obstack_alloc(env->obst, sizeof(block_info));
 
   set_irn_link(block, info);
@@ -362,7 +366,7 @@ static int operands_equal(ir_node *n1, ir_node *n2)
  * Phi nodes can be leaders, all other 'leader' are
  * handled by the identify_remember mechanism right.
  */
-static ir_node *get_leader(ir_node *n)
+static ir_node *find_leader(ir_node *n)
 {
   ir_node *l = get_irn_link(n);
 
@@ -399,7 +403,7 @@ static ir_node *has_leader(ir_node *n)
  */
 static void insert_nodes(ir_node *block, void *ctx)
 {
-  avail_env *env = ctx;
+  pre_env *env = ctx;
   ir_node *v, *idom, *first_s;
   block_info *curr_info, *idom_info;
   int pos, arity = get_irn_intra_arity(block);
@@ -415,7 +419,7 @@ static void insert_nodes(ir_node *block, void *ctx)
   idom_info = get_block_info(idom);
 
   /* update the new_sets */
-  pset_union(curr_info->new_set, idom_info->new_set, ir_node_hash);
+  pset_union(curr_info->new_set, idom_info->new_set);
   pset_foreach(v, idom_info->new_set) {
     ir_node *old = identify_remember(idom_info->new_set, v);
 
@@ -443,7 +447,7 @@ static void insert_nodes(ir_node *block, void *ctx)
     /* If the value was already computed in the dominator, then
        it is totally redundant.  Hence we have nothing to insert. */
     if (pset_find(idom_info->avail_out, v, ir_node_hash(v))) {
-//      DBG((dbg, LEVEL_2, "Found %+F from block %+F avail in dom %+F\n", v, block, idom));
+//      DB((dbg, LEVEL_2, "Found %+F from block %+F avail in dom %+F\n", v, block, idom));
       continue;
     }
 
@@ -472,7 +476,7 @@ static void insert_nodes(ir_node *block, void *ctx)
         pred_info->not_found = 1;
       }
       else {
-        found = get_leader(found);
+        found = find_leader(found);
         pred_info->avail = found;
         pred_info->not_found = 0;
         by_some = 1;
@@ -481,7 +485,7 @@ static void insert_nodes(ir_node *block, void *ctx)
         else if (first_s != found)
           all_same = 0;
 
-        DBG((dbg, LEVEL_2, "Found %+F from block %+F as %+F in pred %+F\n", v, block, found, pred_blk));
+        DB((dbg, LEVEL_2, "Found %+F from block %+F as %+F in pred %+F\n", v, block, found, pred_blk));
       }  /* if */
     }  /* for */
 
@@ -490,7 +494,7 @@ static void insert_nodes(ir_node *block, void *ctx)
     if (! all_same && by_some) {
       ir_node *phi, **in;
       ir_mode *mode = NULL;
-      DBG((dbg, LEVEL_1, "Partial redundant %+F from block %+F found\n", v, block));
+      DB((dbg, LEVEL_1, "Partial redundant %+F from block %+F found\n", v, block));
 
       in = xmalloc(arity * sizeof(*in));
       /* for all predecessor blocks */
@@ -531,7 +535,7 @@ static void insert_nodes(ir_node *block, void *ctx)
       identify_remember(curr_info->avail_out, v);
       identify_remember(curr_info->new_set, v);
       set_irn_link(v, phi);
-      DBG((dbg, LEVEL_2, "New %+F for redundant %+F created\n", phi, v));
+      DB((dbg, LEVEL_2, "New %+F for redundant %+F created\n", phi, v));
       env->changes |= 1;
     }  /* if */
   }  /* pset_foreach */
@@ -542,16 +546,15 @@ static void insert_nodes(ir_node *block, void *ctx)
  */
 static void eliminate_nodes(ir_node *block, void *ctx)
 {
-  avail_env *env = ctx;
   block_info *curr_info = get_block_info(block);
   ir_node *v;
 
   pset_foreach(v, curr_info->nodes) {
     ir_node *l = identify_remember(curr_info->avail_out, v);
 
-    l = get_leader(l);
+    l = find_leader(l);
     if (l != v) {
-      DBG((dbg, LEVEL_2, "Replacing %+F by %+F\n", v, l));
+      DB((dbg, LEVEL_2, "Replacing %+F by %+F\n", v, l));
       exchange(v, l);
     }
   }
@@ -560,13 +563,14 @@ static void eliminate_nodes(ir_node *block, void *ctx)
 void do_gvn_pre(ir_graph *irg)
 {
   struct obstack obst;
-  avail_env a_env;
+  pre_env a_env;
   optimization_state_t state;
   block_info *p;
   int iter = 0;
 
   /* register a debug mask */
   dbg = firm_dbg_register("firm.opt.gvn_pre");
+  firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
   obstack_init(&obst);
   a_env.obst        = &obst;
@@ -604,20 +608,20 @@ void do_gvn_pre(ir_graph *irg)
 
   /* compute the anticipated value sets for all blocks */
   do {
-    DBG((dbg, LEVEL_1, "Antic_in Iteration %d starts ...\n", ++iter));
+    DB((dbg, LEVEL_1, "Antic_in Iteration %d starts ...\n", ++iter));
     a_env.changes = 0;
     irg_block_walk_graph(irg, compute_antic, NULL, &a_env);
 //    postdom_tree_walk_irg(irg, compute_antic, NULL, &a_env);
-    DBG((dbg, LEVEL_1, "------------------------\n"));
+    DB((dbg, LEVEL_1, "------------------------\n"));
   } while (a_env.changes != 0);
 
   /* compute redundant expressions */
   iter = 0;
   do {
-    DBG((dbg, LEVEL_1, "Insert Iteration %d starts ...\n", ++iter));
+    DB((dbg, LEVEL_1, "Insert Iteration %d starts ...\n", ++iter));
     a_env.changes = 0;
     dom_tree_walk_irg(irg, insert_nodes, NULL, &a_env);
-    DBG((dbg, LEVEL_1, "------------------------\n"));
+    DB((dbg, LEVEL_1, "------------------------\n"));
   } while (a_env.changes != 0);
 
   /* last step: eliminate nodes */
