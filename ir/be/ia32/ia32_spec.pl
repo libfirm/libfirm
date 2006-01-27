@@ -12,7 +12,7 @@ $arch = "ia32";
 # %nodes = (
 #
 # <op-name> => {
-#   "op_flags" => "N|L|C|X|I|F|Y|H|c",
+#   "op_flags" => "N|L|C|X|I|F|Y|H|c|K",
 #   "arity"    => "0|1|2|3|variable|dynamic|all",
 #   "state"    => "floats|pinned",
 #   "args"     => [
@@ -38,6 +38,7 @@ $arch = "ia32";
 #   Y   irop_flag_forking
 #   H   irop_flag_highlevel
 #   c   irop_flag_constlike
+#   K   irop_flag_keep
 #
 # op_flags: flags for the operation, OPTIONAL (default is "N")
 #
