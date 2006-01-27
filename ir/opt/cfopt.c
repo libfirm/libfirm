@@ -628,10 +628,13 @@ void optimize_cf(ir_graph *irg) {
       ir_node *ka = get_End_keepalive(end, i);
 
       if (is_Block(ka)) {
+        /* do NOT keep  dead blocks */
         if (get_Block_dom_depth(ka) == -1)
           set_End_keepalive(end, i, new_Bad());
       }
-      else if (is_Block_dead(get_nodes_block(ka)) || get_Block_dom_depth(get_nodes_block(ka)) == -1)
+      else if (is_Block_dead(get_nodes_block(ka)) ||
+               get_Block_dom_depth(get_nodes_block(ka)) == -1)
+        /* do NOT keep nodes in dead blocks */
         set_End_keepalive(end, i, new_Bad());
     }
   }
@@ -650,30 +653,32 @@ void optimize_cf(ir_graph *irg) {
   in[0] = get_nodes_block(end);
   inc_irg_visited(current_ir_graph);
 
+  /* fix the keep alive */
   for (i = 0, n = get_End_n_keepalives(end); i < n; i++) {
     ir_node *ka = get_End_keepalive(end, i);
 
     if (irn_not_visited(ka)) {
-      if ((get_irn_op(ka) == op_Block) && Block_not_block_visited(ka)) {
+      ir_op *op = get_irn_op(ka);
+
+      if ((op == op_Block) && Block_not_block_visited(ka)) {
         set_irg_block_visited(current_ir_graph,  /* Don't walk all the way to Start. */
               get_irg_block_visited(current_ir_graph)-1);
         irg_block_walk(ka, optimize_blocks, NULL, NULL);
         mark_irn_visited(ka);
         ARR_APP1 (ir_node *, in, ka);
-      } else if (get_irn_op(ka) == op_Phi) {
+      } else if (op == op_Phi) {
         mark_irn_visited(ka);
         if (! is_Block_dead(get_nodes_block(ka)))
           ARR_APP1 (ir_node *, in, ka);
-      } else if (get_irn_op(ka) == op_IJmp) {
+      } else if (is_op_keep(op)) {
         mark_irn_visited(ka);
         if (! is_Block_dead(get_nodes_block(ka)))
           ARR_APP1 (ir_node *, in, ka);
       }
     }
   }
-  DEL_ARR_F(end->in);    /* GL @@@ tut nicht! MMB Warum? */
+  DEL_ARR_F(end->in);
   end->in = in;
-
 
   /* the verifier doesn't work yet with floating nodes */
   if (get_irg_pinned(irg) == op_pin_state_pinned) {
