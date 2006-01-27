@@ -22,8 +22,6 @@
 #include "be_t.h"
 #include "bearch.h"
 
-#define BE_SPILL_NO_OFFSET ((unsigned) -1)
-
 typedef enum {
 	beo_NoBeOp = 0,
 	beo_Spill,
@@ -64,8 +62,12 @@ ir_node *be_get_Spill_context(const ir_node *irn);
  * This function incur register constraints to an output value of a Perm.
  * This is used when handling register constraints in general,
  * see beconstrperm.c
+ * @param irn The perm node.
+ * @param pos The position.
+ * @param req The requirements to set to.
+ * @param negate_limited When the requirements are limited, inverse the set of admissible registers.
  */
-void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req);
+void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req, unsigned negate_limited);
 
 /**
  * Insert a Perm node after a specific node in the schedule.

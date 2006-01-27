@@ -60,8 +60,15 @@ typedef struct {
 } be_op_t;
 
 typedef struct {
+	arch_register_req_t req;
+	unsigned            negate_limited : 1;
+	void                (*old_limited)(void *ptr, bitset_t *bs);
+	void                *old_limited_env;
+} be_req_t;
+
+typedef struct {
 	const arch_register_t *reg;
-	arch_register_req_t   req;
+	be_req_t              req;
 } be_reg_data_t;
 
 typedef struct {
@@ -128,8 +135,8 @@ static void *init_node_attr(ir_node* irn, const arch_register_class_t *cls, ir_g
 		a->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(irg), n_outs);
 		memset(a->reg_data, 0, n_outs * sizeof(a->reg_data[0]));
 		for(i = 0; i < n_outs; ++i) {
-			a->reg_data[i].req.cls  = cls;
-			a->reg_data[i].req.type = arch_register_req_type_normal;
+			a->reg_data[i].req.req.cls  = cls;
+			a->reg_data[i].req.req.type = arch_register_req_type_normal;
 		}
 	}
 
@@ -155,7 +162,7 @@ ir_node *be_new_Spill(const arch_register_class_t *cls, ir_graph *irg, ir_node *
 	in[0] = to_spill;
 	res   = new_ir_node(NULL, irg, bl, op_Spill, mode_M, 1, in);
 	a     = init_node_attr(res, cls, irg, 0);
-	a->ent    = NULL;
+	a->ent       = NULL;
 	a->spill_ctx = ctx;
 	return res;
 }
@@ -224,13 +231,31 @@ int be_is_Keep(const ir_node *irn)
 	return get_irn_be_opcode(irn) == beo_Keep;
 }
 
-void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req)
+static void be_limited(void *data, bitset_t *bs)
 {
-	be_node_attr_t *a = get_irn_attr(irn);
+	be_req_t *req = data;
+
+	req->old_limited(req->old_limited_env, bs);
+	if(req->negate_limited)
+		bitset_flip_all(bs);
+}
+
+void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req, unsigned negate_limited)
+{
+	be_node_attr_t *a   = get_irn_attr(irn);
+	be_req_t       *r = &a->reg_data[pos].req;
 
 	assert(be_is_Perm(irn));
 	assert(pos >= 0 && pos < get_irn_arity(irn));
-	memcpy(&a->reg_data[pos].req, req, sizeof(req[0]));
+	memcpy(&r->req, req, sizeof(req[0]));
+
+	if(arch_register_req_is(req, limited)) {
+		r->old_limited     = r->req.limited;
+		r->old_limited_env = r->req.limited_env;
+		r->req.limited     = be_limited;
+		r->req.limited_env = r;
+		r->negate_limited  = negate_limited;
+	}
 }
 
 void be_set_Spill_entity(ir_node *irn, entity *ent)
@@ -282,7 +307,6 @@ static INLINE ir_node *find_a_spill(ir_node *irn)
 	set_irg_visited(irg, visited_nr);
 	return find_a_spill_walker(irn, visited_nr);
 }
-
 
 entity *be_get_spill_entity(ir_node *irn)
 {
@@ -517,8 +541,9 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 
 			if(get_irn_be_opcode(irn) == beo_Spill) {
 				be_spill_attr_t *a = (be_spill_attr_t *) at;
+				unsigned ofs = get_entity_offset_bytes(a->ent);
 				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
-//TODO				ir_fprintf(f, "spill offset: %04x (%u)\n", a->offset, a->offset);
+				ir_fprintf(f, "spill entity: %+F offset %x (%d)\n", a->ent, ofs, ofs);
 			}
 			break;
 	}
