@@ -405,13 +405,27 @@ struct _arch_code_generator_if_t {
 
 	/**
 	 * Called after register allocation to lower Spills to Stores
+	 * @param self  The code generator
+	 * @param spill The spill node to lower
+	 * @return      The new backend node which substitutes the spill
 	 */
 	ir_node *(*lower_spill)(void *self, ir_node *spill);
 
 	/**
 	 * Called after register allocation to lower Reloads to Loads
+	 * @param self   The code generator
+	 * @param reload The reload node to lower
+	 * @return       The new backend node which substitutes the reload
 	 */
 	ir_node *(*lower_reload)(void *self, ir_node *reload);
+
+	/**
+	 * Called in lowering (e.g. alloca lowering) to set the
+	 * correct stack register.
+	 * @param self The code generator
+	 * @return     The stack register for the current irg
+	 */
+	const arch_register_t *(*get_stack_register)(void *self);
 
 	/**
 	 * Called after everything happened.
@@ -501,12 +515,13 @@ struct _arch_isa_if_t {
   const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
 
   /**
-   * Get the proj number assigned to the register.
-   * @param self  The isa object.
-   * @param reg   The register
-   * @return      The proj number assigned to this register
+   * Take a proj from a call, set the correct register and projnum for this proj
+   * @param self    The isa object.
+   * @param proj    The proj
+   * @param is_keep Non-zero if proj is a Keep argument
+   * @return        The backend proj number assigned to this proj
    */
-  long (*get_projnum_for_register)(const void *self, const arch_register_t *reg);
+  long (*handle_call_proj)(const void *self, ir_node *proj, int is_keep);
 };
 
 #define arch_isa_get_n_reg_class(isa)           ((isa)->impl->get_n_reg_class(isa))
