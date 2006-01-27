@@ -430,12 +430,15 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
  * @param walk_env The walker environment
  */
 static void lower_call_node(ir_node *call, const void *walk_env) {
-	const arch_env_t            *arch_env = walk_env;
+	const arch_env_t            *arch_env   = walk_env;
+	int                          bitset_idx = 0;
+	int                          set_size   = 0;
+	arch_isa_t                  *isa        = arch_env_get_isa(arch_env);
+	const ir_node               *proj_T     = NULL;
+	ir_node                     *block      = get_nodes_block(call);
 	const arch_register_class_t *reg_class;
-	int                          i, j, set_size = 0, pn, keep_arity;
-	arch_isa_t                  *isa      = arch_env_get_isa(arch_env);
-	const ir_node               *proj_T   = NULL;
-	ir_node                     **in_keep, *block = get_nodes_block(call);
+	int                          i, j, pn, keep_arity;
+	ir_node                     **in_keep;
 	bitset_t                    *proj_set;
 	const ir_edge_t             *edge;
 	const arch_register_t       *reg;
@@ -463,7 +466,8 @@ static void lower_call_node(ir_node *call, const void *walk_env) {
 			ir_node *proj = get_edge_src_irn(edge);
 
 			assert(is_Proj(proj));
-			bitset_set(proj_set, get_Proj_proj(proj));
+			pn = isa->impl->handle_call_proj(isa, proj, 0);
+			bitset_set(proj_set, pn);
 		}
 	}
 	else {
@@ -484,12 +488,16 @@ static void lower_call_node(ir_node *call, const void *walk_env) {
 
 			/* only check caller save registers */
 			if (arch_register_type_is(reg, caller_saved)) {
-				pn = isa->impl->get_projnum_for_register(isa, reg);
-				if (!bitset_is_set(proj_set, pn)) {
-					ir_node *proj = new_r_Proj(current_ir_graph, block, (ir_node *)proj_T, mode_Is, pn);
 
+				/* Only create new proj, iff not already present */
+				if (!bitset_is_set(proj_set, bitset_idx)) {
+					ir_node *proj = new_r_Proj(current_ir_graph, block, (ir_node *)proj_T, mode_Is, bitset_idx);
+
+					pn = isa->impl->handle_call_proj(isa, proj, 1);
 					in_keep[keep_arity++] = proj;
 				}
+
+				bitset_idx++;
 			}
 		}
 
