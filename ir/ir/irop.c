@@ -386,6 +386,13 @@ unsigned get_next_ir_opcode(void) {
   return next_iro++;
 }
 
+/* Returns the next free n IR opcode number, allows to register a bunch of user ops */
+unsigned get_next_ir_opcodes(unsigned num) {
+  unsigned base = next_iro;
+  next_iro += num;
+  return base;
+}
+
 /* Returns the generic function pointer from an ir operation. */
 op_func (get_generic_function_ptr)(const ir_op *op) {
   return _get_generic_function_ptr(op);

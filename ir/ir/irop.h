@@ -176,6 +176,9 @@ void set_op_pinned(ir_op *op, op_pin_state pinned);
 /** Returns the next free IR opcode number, allows to register user ops */
 unsigned get_next_ir_opcode(void);
 
+/** Returns the next free n IR opcode number, allows to register a bunch of user ops */
+unsigned get_next_ir_opcodes(unsigned num);
+
 /**
  * A generic function pointer.
  */
