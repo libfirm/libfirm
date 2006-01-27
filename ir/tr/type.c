@@ -1859,7 +1859,7 @@ int get_compound_member_index(const ir_type *tp, entity *member)
   int index = -1;
 
   if (op->ops.get_member_index)
-    index = op->ops.get_member(tp, member);
+    index = op->ops.get_member_index(tp, member);
   else
     assert(0 && "no members in this type");
 
