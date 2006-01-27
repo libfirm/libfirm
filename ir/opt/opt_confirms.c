@@ -147,6 +147,7 @@ int value_not_zero(ir_node *n)
 /*
  * Check, if the value of a node cannot represent a NULL pointer.
  *
+ * - Casts are skipped
  * - If sel_based_null_check_elim is enabled, all
  *   Sel nodes can be skipped.
  * - A SymConst(entity) is NEVER a NULL pointer
@@ -154,13 +155,15 @@ int value_not_zero(ir_node *n)
  */
 int value_not_null(ir_node *n)
 {
-  ir_op *op = get_irn_op(n);
+  ir_op *op;
 
+  n  = skip_Cast(n);
+  op = get_irn_op(n);
   assert(mode_is_reference(get_irn_mode(n)));
   if (get_opt_sel_based_null_check_elim()) {
-    /* skip all Sel nodes */
+    /* skip all Sel nodes and Cast's */
     while (op == op_Sel) {
-      n = get_Sel_ptr(n);
+      n = skip_Cast(get_Sel_ptr(n));
       op = get_irn_op(n);
     }
   }
