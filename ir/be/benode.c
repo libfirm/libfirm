@@ -93,6 +93,17 @@ static int beo_base = -1;
 
 static const ir_op_ops be_node_op_ops;
 
+#define N   irop_flag_none
+#define L   irop_flag_labeled
+#define C   irop_flag_commutative
+#define X   irop_flag_cfopcode
+#define I   irop_flag_ip_cfopcode
+#define F   irop_flag_fragile
+#define Y   irop_flag_forking
+#define H   irop_flag_highlevel
+#define c   irop_flag_constlike
+#define K   irop_flag_keep
+
 void be_node_init(void) {
 	static int inited = 0;
 	int i;
@@ -108,11 +119,11 @@ void be_node_init(void) {
 	for(i = beo_Spill; i < beo_Last; ++i)
 		get_next_ir_opcode();
 
-	op_Spill  = new_ir_op(beo_base + beo_Spill,  "Spill",  op_pin_state_mem_pinned, 0, oparity_unary,    0, sizeof(be_spill_attr_t), &be_node_op_ops);
-	op_Reload = new_ir_op(beo_base + beo_Reload, "Reload", op_pin_state_mem_pinned, 0, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_Perm   = new_ir_op(beo_base + beo_Perm,   "Perm",   op_pin_state_pinned,     0, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_Copy   = new_ir_op(beo_base + beo_Copy,   "Copy",   op_pin_state_pinned,     0, oparity_unary,    0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_Keep   = new_ir_op(beo_base + beo_Keep,   "Keep",   op_pin_state_pinned,     0, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Spill  = new_ir_op(beo_base + beo_Spill,  "Spill",  op_pin_state_mem_pinned, N, oparity_unary,    0, sizeof(be_spill_attr_t), &be_node_op_ops);
+	op_Reload = new_ir_op(beo_base + beo_Reload, "Reload", op_pin_state_mem_pinned, N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Perm   = new_ir_op(beo_base + beo_Perm,   "Perm",   op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Copy   = new_ir_op(beo_base + beo_Copy,   "Copy",   op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Keep   = new_ir_op(beo_base + beo_Keep,   "Keep",   op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
 
 	set_op_tag(op_Spill,  &be_node_tag);
 	set_op_tag(op_Reload, &be_node_tag);
