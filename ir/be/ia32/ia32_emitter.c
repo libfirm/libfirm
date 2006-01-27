@@ -608,7 +608,7 @@ void emit_Jmp(ir_node *irn, emit_env_t *env) {
 void emit_Proj(ir_node *irn, emit_env_t *env) {
 	ir_node *pred = get_Proj_pred(irn);
 
-	if (get_irn_opcode(pred) == iro_Start) {
+	if (get_irn_op(pred) == op_Start) {
 		switch(get_Proj_proj(irn)) {
 			case pn_Start_X_initial_exec:
 				emit_Jmp(irn, env);
@@ -619,6 +619,53 @@ void emit_Proj(ir_node *irn, emit_env_t *env) {
 	}
 }
 
+/********************
+ *   _____      _ _
+ *  / ____|    | | |
+ * | |     __ _| | |
+ * | |    / _` | | |
+ * | |___| (_| | | |
+ *  \_____\__,_|_|_|
+ *
+ ********************/
+
+void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
+	int                 i, n      = get_irn_arity(irn);
+	int                 args_size = 0;
+	ir_node            *sync      = get_irn_n(irn, n - 1);
+	FILE               *F         = emit_env->out;
+	const lc_arg_env_t *env       = ia32_get_arg_env();
+
+	if (get_irn_op(sync) == op_Sync) {
+		/* We have stack arguments */
+		ir_node **args = get_Sync_preds_arr(sync);
+
+		for (i = 0; i < get_Sync_n_preds(sync); i++) {
+			lc_efprintf(env, F, "\tpush %1D\t\t\t\t/* push %+F on stack */\n", args[i], args[i]);
+
+			if (mode_is_int(get_irn_mode(args[i]))) {
+				args_size += 4;
+			}
+			else {
+				args_size += 16;
+			}
+		}
+	}
+
+	lc_efprintf(env, F, "\tcall %C\t\t\t/* %+F */\n", irn, irn);
+
+	if (get_irn_op(sync) == op_Sync) {
+		/* We had stack arguments: clear the stack */
+		fprintf(F, "\tadd %d, ", args_size);
+		if (emit_env->cg->has_alloca) {
+			fprintf(F, "%ebp");
+		}
+		else {
+			fprintf(F, "%esp");
+		}
+		fprintf(F, "\t\t\t\t/* clear stack after call */\n");
+	}
+}
 
 
 /***********************************************************************************
@@ -711,6 +758,7 @@ void ia32_emit_node(ir_node *irn, void *env) {
 	IA32_EMIT(CondJmp);
 	IA32_EMIT(CondJmp_i);
 	IA32_EMIT(SwitchJmp);
+	IA32_EMIT(Call);
 
 	EMIT(Jmp);
 	EMIT(Proj);
@@ -774,14 +822,13 @@ void ia32_gen_labels(ir_node *block, void *env) {
 /**
  * Main driver
  */
-void ia32_gen_routine(FILE *F, ir_graph *irg, const arch_env_t *env) {
+void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	emit_env_t emit_env;
 
 	emit_env.mod      = firm_dbg_register("ir.be.codegen.ia32");
 	emit_env.out      = F;
-	emit_env.arch_env = env;
-
-	arch_env = env;
+	emit_env.arch_env = cg->arch_env;
+	emit_env.cg       = cg;
 
 	ia32_emit_start(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);

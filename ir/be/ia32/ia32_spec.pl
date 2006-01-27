@@ -722,7 +722,6 @@ $arch = "ia32";
   "state"    => "mem_pinned",
   "arity"    => "variable",
   "comment"  => "construct Call: Call(...)",
-  "emit"     => '. call %C',
   "args"     => [
                   { "type" => "int",        "name" => "n" },
                   { "type" => "ir_node **", "name" => "in" }
@@ -740,7 +739,6 @@ $arch = "ia32";
   "state"    => "pinned",
   "arity"    => "variable",
   "comment"  => "construct Return: Return(...)",
-  "emit"     => '. ret',
   "args"     => [
                   { "type" => "int",        "name" => "n" },
                   { "type" => "ir_node **", "name" => "in" }

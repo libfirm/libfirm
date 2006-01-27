@@ -532,7 +532,7 @@ static void ia32_codegen(void *self) {
 
 	ia32_finish_irg(irg, cg);
 	dump_ir_block_graph_sched(irg, "-finished");
-	ia32_gen_routine(out, irg, cg->arch_env);
+	ia32_gen_routine(out, irg, cg);
 
 	cur_reg_set = NULL;
 
