@@ -10,13 +10,14 @@
 #include <ctype.h>
 #include <assert.h>
 
+#include "xmalloc.h"
 #include <obstack.h>
 
 #ifdef obstack_chunk_alloc
 # undef obstack_chunk_alloc
-# define obstack_chunk_alloc malloc
+# define obstack_chunk_alloc xmalloc
 #else
-# define obstack_chunk_alloc malloc
+# define obstack_chunk_alloc xmalloc
 # define obstack_chunk_free free
 #endif
 
@@ -437,7 +438,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
            * size should be equal or bigger the number of fields
            */
           type_size = get_type_size_bytes(ty);
-          vals      = calloc(type_size, sizeof(*vals));
+          vals      = xcalloc(type_size, sizeof(*vals));
 
           /* collect the values and store them at the offsets */
           for(i = 0; i < get_compound_ent_n_values(ent); ++i) {
@@ -448,7 +449,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 
             /* get the access path to the costant value */
             graph_length = get_compound_graph_path_length(path);
-            ai = calloc(graph_length, sizeof(struct arr_info));
+            ai = xcalloc(graph_length, sizeof(struct arr_info));
 
             /* We wanna know how many arrays are on the path to the entity. We also have to know how
              * many elements each array holds to calculate the offset for the entity. */

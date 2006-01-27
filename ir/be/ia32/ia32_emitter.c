@@ -4,6 +4,7 @@
 
 #include <limits.h>
 
+#include "xmalloc.h"
 #include "tv.h"
 #include "iredges.h"
 #include "debug.h"
@@ -44,7 +45,7 @@ const char *node_const_to_str(ir_node *n) {
 	tarval *tv = get_ia32_Immop_tarval(n);
 
 	if (tv) {
-		buf = malloc(SNPRINTF_BUF_LEN);
+		buf = xmalloc(SNPRINTF_BUF_LEN);
 		tarval_snprintf(buf, SNPRINTF_BUF_LEN, tv);
 		return buf;
 	}
@@ -63,7 +64,7 @@ char *node_offset_to_str(ir_node *n) {
 	tarval *tv = get_ia32_am_offs(n);
 
 	if (tv) {
-		buf = malloc(SNPRINTF_BUF_LEN);
+		buf = xmalloc(SNPRINTF_BUF_LEN);
 		tarval_snprintf(buf, SNPRINTF_BUF_LEN, tv);
 		return buf;
 	}
@@ -474,11 +475,11 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 	FILE               *F   = emit_env->out;
 
 	/* fill the table structure */
-	tbl.label        = malloc(SNPRINTF_BUF_LEN);
+	tbl.label        = xmalloc(SNPRINTF_BUF_LEN);
 	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, "JMPTBL_");
 	tbl.defProj      = NULL;
 	tbl.num_branches = get_irn_n_edges(irn);
-	tbl.branches     = calloc(tbl.num_branches, sizeof(tbl.branches[0]));
+	tbl.branches     = xcalloc(tbl.num_branches, sizeof(tbl.branches[0]));
 	tbl.min_value    = INT_MAX;
 	tbl.max_value    = INT_MIN;
 

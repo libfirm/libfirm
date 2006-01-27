@@ -1034,14 +1034,14 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 
 	/* do we need to pass arguments on stack? */
 	if (biggest_n + 1 < n)
-		stack_param = calloc(n - biggest_n - 1, sizeof(ir_node *));
+		stack_param = xcalloc(n - biggest_n - 1, sizeof(ir_node *));
 
 	/* we need at least one in, either for the stack params or the call_Mem */
 	n_new_call_in = biggest_n + 2;
 
 	/* the call has one IN for all stack parameter and one IN for each reg param */
-	in     = calloc(n_new_call_in, sizeof(ir_node *));
-	in_req = calloc(n_new_call_in, sizeof(arch_register_req_t *));
+	in     = xcalloc(n_new_call_in, sizeof(ir_node *));
+	in_req = xcalloc(n_new_call_in, sizeof(arch_register_req_t *));
 
 	/* loop over all parameters and set the register requirements */
 	for (i = 0; i <= biggest_n && (cc & cc_reg_param); i++) {
@@ -1093,10 +1093,10 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 	/* set register requirements for in and out */
 	attr             = get_ia32_attr(new_call);
 	attr->in_req     = in_req;
-	attr->out_req    = calloc(2, sizeof(ia32_register_req_t *));
+	attr->out_req    = xcalloc(2, sizeof(ia32_register_req_t *));
 	attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
 	attr->out_req[1] = &ia32_default_req_ia32_general_purpose_edx;
-	attr->slots      = calloc(2, sizeof(arch_register_t *));
+	attr->slots      = xcalloc(2, sizeof(arch_register_t *));
 
 	/* stack parameter has no OUT register */
 	attr->in_req[n_new_call_in - 1] = &ia32_default_req_none;
@@ -1195,14 +1195,14 @@ static ir_node *gen_Proj_Start(ia32_transform_env_t *env, ir_node *proj, ir_node
 			n = get_irn_n_edges(proj);
 
 			/* Allocate memory for all non variadic parameters in advance to be on the save side */
-			env->cg->reg_param_req = calloc(get_method_n_params(tp), sizeof(ia32_register_req_t *));
+			env->cg->reg_param_req = xcalloc(get_method_n_params(tp), sizeof(ia32_register_req_t *));
 
 			/* we are done here when there are no parameters */
 			if (n < 1)
 				break;
 
 			/* temporary remember all proj arg x */
-			projargs = calloc(n, sizeof(ir_node *));
+			projargs = xcalloc(n, sizeof(ir_node *));
 
 			i = 0;
 			foreach_out_edge((const ir_node *)proj, edge) {
@@ -1285,6 +1285,36 @@ static ir_node *gen_Proj(ia32_transform_env_t *env) {
 
 
 
+/**
+ * Transforms an Alloc node into either ia32_Alloca or ia32_Malloc.
+ */
+static ir_node *gen_Alloc(ia32_transform_env_t *env) {
+	dbg_info *dbg   = env->dbg;
+	ir_graph *irg   = env->irg;
+	ir_node  *block = env->block;
+	ir_node  *irn   = env->irn;
+	ir_mode  *mode  = env->mode;
+	ir_node  *size  = get_Alloc_size(irn);
+	ir_node  *mem   = get_Alloc_mem(irn);
+	ir_node  *res;
+
+	if (get_Alloc_where(irn) == stack_alloc) {
+		if (is_ia32_Const(size)) {
+			res = new_rd_ia32_Alloca_i(dbg, irg, block, mem, mode);
+			set_ia32_Immop_attr(res, size);
+		}
+		else {
+			res = new_rd_ia32_Alloca(dbg, irg, block, size, mem, mode);
+		}
+	}
+	else {
+		assert(0 && "malloc should be already lowered");
+		res = NULL;
+	}
+
+	return res;
+}
+
 /*********************************************************
  *                  _             _      _
  *                 (_)           | |    (_)
@@ -1357,8 +1387,8 @@ void ia32_transform_node(ir_node *node, void *env) {
 		GEN(Store);
 		GEN(Call);
 		GEN(Cond);
-
 		GEN(Proj);
+		GEN(Alloc);
 
 		IGN(Block);
 		IGN(Start);
@@ -1373,7 +1403,6 @@ void ia32_transform_node(ir_node *node, void *env) {
 		IGN(Const);
 		IGN(SymConst);
 
-		BAD(Alloc);
 		BAD(Raise);
 		BAD(Sel);
 		BAD(InstOf);

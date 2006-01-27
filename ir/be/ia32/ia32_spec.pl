@@ -747,7 +747,24 @@ $arch = "ia32";
 "  if (!op_ia32_Return) assert(0);
   return new_ir_node(db, irg, block, op_ia32_Return, mode_X, n, in);
 "
-}
+},
 
+# M/Alloc
+
+"Alloca" => {
+  "op_flags" => "L|F",
+  "state"    => "pinned",
+  "arity"    => "2",
+  "comment"  => "construct Alloca: allocate memory on Stack",
+  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] }
+},
+
+"Alloca_i" => {
+  "op_flags" => "L|F",
+  "state"    => "pinned",
+  "arity"    => "1",
+  "comment"  => "construct Alloca: allocate memory on Stack",
+  "reg_req"  => { "out" => [ "general_purpose" ] }
+}
 
 ); # end of %nodes

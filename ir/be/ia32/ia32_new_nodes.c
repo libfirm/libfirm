@@ -552,7 +552,7 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
 	na->tv = ca->tv;
 
 	if (ca->old_ir) {
-		na->old_ir = calloc(1, sizeof(*(ca->old_ir)));
+		na->old_ir = xcalloc(1, sizeof(*(ca->old_ir)));
 		memcpy(na->old_ir, ca->old_ir, sizeof(*(ca->old_ir)));
 	}
 	else {
@@ -576,7 +576,7 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 		case iro_SymConst:
 			attr->tp     = asmop_SymConst;
 			attr->tv     = NULL;
-			attr->old_ir = calloc(1, sizeof(*cnst));
+			attr->old_ir = xcalloc(1, sizeof(*cnst));
 			memcpy(attr->old_ir, cnst, sizeof(*cnst));
 			break;
 		case iro_Unknown:

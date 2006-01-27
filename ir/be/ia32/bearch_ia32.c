@@ -313,7 +313,7 @@ ia32_irn_ops_t ia32_irn_ops = {
 static void check_for_alloca(ir_node *irn, void *env) {
 	int *has_alloca = env;
 
-	if (get_irn_opcode(irn) == iro_Alloc) {
+	if (get_irn_op(irn) == op_Alloc) {
 		if (get_Alloc_where(irn) == stack_alloc) {
 			*has_alloca = 1;
 		}
@@ -559,7 +559,7 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
  */
 static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
 	ia32_isa_t      *isa = (ia32_isa_t *)arch_env->isa;
-	ia32_code_gen_t *cg  = malloc(sizeof(*cg));
+	ia32_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
 	cg->impl       = &ia32_code_gen_if;
 	cg->irg        = irg;
@@ -599,7 +599,7 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
  */
 static void *ia32_init(void) {
 	static int inited = 0;
-	ia32_isa_t *isa   = malloc(sizeof(*isa));
+	ia32_isa_t *isa   = xmalloc(sizeof(*isa));
 
 	isa->impl = &ia32_isa_if;
 
