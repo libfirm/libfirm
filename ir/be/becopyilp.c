@@ -235,7 +235,7 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 
 				/* iterate over all possible colors in order */
 				bitset_clear_all(pos_regs);
-				arch_get_allocatable_regs(get_arch_env(pi->co), curr->irn, -1, pi->co->chordal_env->cls, pos_regs);
+				arch_get_allocatable_regs(get_arch_env(pi->co), curr->irn, -1, pos_regs);
 				bitset_foreach(pos_regs, col) {
 					int var_idx;
 					mangle_var2(pi->buf, 'x', nnr, col);
@@ -353,14 +353,14 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 		root = curr->nodes[0];
 		rootnr = get_irn_graph_nr(root);
 		bitset_clear_all(root_regs);
-		arch_get_allocatable_regs(get_arch_env(pi->co), root, -1, pi->co->chordal_env->cls, root_regs);
+		arch_get_allocatable_regs(get_arch_env(pi->co), root, -1, root_regs);
 
 		/* for all arguments of root */
 		for (i = 1; i < curr->node_count; ++i) {
 			arg = curr->nodes[i];
 			argnr = get_irn_graph_nr(arg);
 			bitset_clear_all(arg_regs);
-			arch_get_allocatable_regs(get_arch_env(pi->co), arg, -1, pi->co->chordal_env->cls, arg_regs);
+			arch_get_allocatable_regs(get_arch_env(pi->co), arg, -1, arg_regs);
 
 			/* Introduce new variable and set factor in objective function */
 			mangle_var2(buf, 'y', rootnr, argnr);

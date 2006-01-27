@@ -470,7 +470,7 @@ static void ou_optimize(unit_t *ou) {
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	arch_get_allocatable_regs(get_arch_env(ou->co), ou->nodes[0], -1, ou->co->chordal_env->cls, pos_regs);
+	arch_get_allocatable_regs(get_arch_env(ou->co), ou->nodes[0], -1, pos_regs);
 	bitset_foreach(pos_regs, i)
 		ou_insert_qnode(ou, new_qnode(ou, i));
 
