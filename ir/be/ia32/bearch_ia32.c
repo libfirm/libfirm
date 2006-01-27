@@ -398,12 +398,12 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 			set_ia32_am_const(stack_free, stack_size_tv);
 			arch_set_irn_register(cg->arch_env, stack_free, stack_reg);
 
-			DBG((mod, LEVEL_1, "examining %+F, %+F created, block %+F\n", returns[i], stack_free, return_block));
+			DBG((mod, LEVEL_1, "examining %+F, %+F created, block %+F", returns[i], stack_free, return_block));
 
 			/* get the old Return arguments */
 			n_res  = get_Return_n_ress(returns[i]);
 			in     = get_Return_res_arr(returns[i]);
-			new_in = alloca((n_res + 1) * sizeof(new_in[0]));
+			new_in = malloc((n_res + 1) * sizeof(new_in[0]));
 
 			if (!new_in) {
 				printf("\nMUAAAAHAHAHAHAHAHAHAH\n");
@@ -415,13 +415,15 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 			in[n_res] = stack_free;
 
 			/* create the new return node */
-			edges_deactivate(irg);
+//			edges_deactivate(irg);
 			new_ret     = new_rd_ia32_Return(get_irn_dbg_info(returns[i]), irg, return_block, n_res + 1, new_in);
-			edges_activate(irg);
+//			edges_activate(irg);
 			sched_point = sched_prev(returns[i]);
 
 			/* exchange the old return with the new one */
 			exchange(returns[i], new_ret);
+
+			DB((mod, LEVEL_1, " ... replaced with %+F\n", new_ret));
 
 			/* remove the old one from schedule and add the new nodes properly */
 			sched_remove(returns[i]);
@@ -502,6 +504,19 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 }
 
 /**
+ * Return the stack register for this irg.
+ */
+static const arch_register_t *ia32_get_stack_register(void *self) {
+	ia32_code_gen_t *cg = self;
+
+	if (cg->has_alloca) {
+		return &ia32_general_purpose_regs[REG_EBP];
+	}
+
+	return &ia32_general_purpose_regs[REG_ESP];
+}
+
+/**
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
@@ -535,6 +550,7 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_lower_spill,
 	ia32_lower_reload,
+	ia32_get_stack_register,
 	ia32_codegen         /* emit && done */
 };
 
@@ -633,9 +649,48 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 	return &ia32_irn_handler;
 }
 
-long ia32_get_call_projnum_for_reg(const void *self, const arch_register_t *reg) {
+long ia32_handle_call_proj(const void *self, ir_node *proj, int is_keep) {
 	ia32_isa_t *isa = (ia32_isa_t *)self;
-	return ia32_get_reg_projnum(reg, isa->reg_projnum_map);
+	long        pn  = get_Proj_proj(proj);
+
+	if (!is_keep) {
+		/* It's not a Keep proj, which means, that it is a result proj. */
+		/* Possible result proj numbers are 0 and 1                     */
+		/* Set the correct register (depends on the mode) and the       */
+		/* corresponding proj number                                    */
+		if (mode_is_float(get_irn_mode(proj))) {
+			assert(pn == 0 && "only one floating point result supported");
+
+			/* Get the proj number for the floating point result */
+			pn = ia32_get_reg_projnum(&ia32_floating_point_regs[REG_XMM0], isa->reg_projnum_map);
+		}
+		else {
+			/* In case of 64bit return value, the result is */
+			/* in EDX:EAX and we have two result projs.     */
+			switch (pn) {
+				case 0:
+					pn = ia32_get_reg_projnum(&ia32_floating_point_regs[REG_EAX], isa->reg_projnum_map);
+					break;
+				case 1:
+					pn = ia32_get_reg_projnum(&ia32_floating_point_regs[REG_EDX], isa->reg_projnum_map);
+					break;
+				default:
+					assert(0 && "only two int results supported");
+			}
+		}
+
+		/* Set the correct proj number */
+		set_Proj_proj(proj, pn);
+	}
+	else {
+		/* Set mode to floating point if required */
+		if (!strcmp(ia32_reg_classes[CLASS_ia32_floating_point].name,
+					ia32_projnum_reg_req_map[pn]->req.cls->name)) {
+			set_irn_mode(proj, mode_F);
+		}
+	}
+
+	return pn;
 }
 
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
@@ -677,5 +732,5 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector,
-	ia32_get_call_projnum_for_reg
+	ia32_handle_call_proj
 };
