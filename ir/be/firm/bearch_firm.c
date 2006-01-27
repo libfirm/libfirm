@@ -493,6 +493,10 @@ static void firm_before_ra(void *self)
 	irg_walk_graph(cg->irg, imm_scheduler, NULL, NULL);
 }
 
+static const arch_register_t *firm_get_stack_register(void *self) {
+	return &datab_regs[0];
+}
+
 static void firm_codegen_done(void *self)
 {
 	free(self);
@@ -507,6 +511,7 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_before_ra,
 	NULL,  /* lower spill */
 	NULL,  /* lower reload */
+	firm_get_stack_register,
 	firm_codegen_done
 };
 
@@ -528,6 +533,10 @@ static const list_sched_selector_t *firm_get_list_sched_selector(const void *sel
 	return trivial_selector;
 }
 
+static long firm_handle_call_proj(const void *self, ir_node *proj, int is_keep) {
+	return get_Proj_proj(proj);
+}
+
 #ifdef WITH_LIBCORE
 static void firm_register_options(lc_opt_entry_t *ent)
 {
@@ -544,5 +553,6 @@ const arch_isa_if_t firm_isa = {
 	firm_get_reg_class,
 	firm_get_irn_handler,
 	firm_get_code_generator_if,
-	firm_get_list_sched_selector
+	firm_get_list_sched_selector,
+	firm_handle_call_proj
 };
