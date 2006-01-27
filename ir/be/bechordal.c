@@ -170,13 +170,15 @@ static int try_pre_color(be_chordal_env_t *env, ir_node *irn,
 {
 	arch_register_req_t req;
 
-	if(arch_get_register_req(env->main_env->arch_env, &req, irn, -1) && arch_register_req_is(&req, limited)) {
+	if(arch_get_register_req(env->main_env->arch_env, &req, irn, -1)
+		&& req.cls == env->cls
+		&& arch_register_req_is(&req, limited)) {
 
 		bitset_t *bs          = bitset_alloca(env->cls->n_regs);
 		const arch_register_t *reg;
 		int col;
 
-		req.limited(irn, -1, bs);
+		req.limited(req.limited_env, bs);
 		col = bitset_next_set(bs, 0);
 		reg = arch_register_for_index(env->cls, col);
 

@@ -189,7 +189,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	}
 
 	/* assume worst case: all remaining pairs build a cycle or chain */
-	cycle->elems    = calloc((n - n_pairs_done) * 2, sizeof(cycle->elems[0]));
+	cycle->elems    = xcalloc((n - n_pairs_done) * 2, sizeof(cycle->elems[0]));
 	cycle->n_elems  = 2;  /* initial number of elements is 2 */
 	cycle->elems[0] = pairs[start].in_reg;
 	cycle->elems[1] = pairs[start].out_reg;
@@ -330,7 +330,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 		/* go to the first not-checked pair */
 		while (pairs[i].checked) i++;
-		cycle = calloc(1, sizeof(*cycle));
+		cycle = xcalloc(1, sizeof(*cycle));
 		cycle = get_perm_cycle(cycle, pairs, n, i);
 
 		DB((mod, LEVEL_1, "%+F: following %s created:\n  ", irn, cycle->type == PERM_CHAIN ? "chain" : "cycle"));
@@ -449,7 +449,7 @@ static void lower_call_node(ir_node *call, const void *walk_env) {
 		set_size  += arch_register_class_n_regs(reg_class);
 	}
 
-	in_keep = malloc(set_size * sizeof(ir_node *));
+	in_keep = xmalloc(set_size * sizeof(ir_node *));
 
 	proj_set = bitset_malloc(set_size);
 	bitset_clear_all(proj_set);

@@ -124,7 +124,7 @@ static void *firm_init(void)
 {
   static struct obstack obst;
   static int inited = 0;
-	arch_isa_t *isa = malloc(sizeof(*isa));
+	arch_isa_t *isa = xmalloc(sizeof(*isa));
   int k;
 
 	isa->impl = &firm_isa;
