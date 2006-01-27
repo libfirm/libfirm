@@ -235,7 +235,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	compute_doms(irg);
 
 	chordal_env.irg          = irg;
-	chordal_env.dbg          = firm_dbg_register("be.chordal");
+	chordal_env.dbg          = firm_dbg_register("firm.be.chordal");
 	chordal_env.main_env     = main_env;
 	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
 
@@ -243,8 +243,9 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 
 	/* Perform the following for each register class. */
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
+		chordal_env.cls          = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads = pmap_create();
-		chordal_env.cls = arch_isa_get_reg_class(isa, j);
+		chordal_env.constr_irn   = pset_new_ptr(32);
 
 		be_liveness(irg);
 		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
@@ -265,12 +266,13 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		be_liveness(irg);
 		be_check_pressure(&chordal_env);
 
+#if 0
 		/* Insert perms before reg-constrained instructions */
 		be_insert_constr_perms(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-constr", dump_ir_block_graph_sched);
+#endif
 
 		be_liveness(irg);
-		be_numbering(irg);
 		be_check_pressure(&chordal_env);
 
 		/* Color the graph. */
@@ -296,9 +298,9 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		copystat_dump(irg);
 
 		be_ifg_free(chordal_env.ifg);
-		be_numbering_done(irg);
 
 		pmap_destroy(chordal_env.border_heads);
+		del_pset(chordal_env.constr_irn);
 	}
 
 	be_compute_spill_offsets(&chordal_env);
