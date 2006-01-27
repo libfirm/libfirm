@@ -294,6 +294,7 @@ void $arch\_create_opcodes(void) {
 #define Y   irop_flag_forking
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
+#define K   irop_flag_keep
 
   ir_op_ops ops;
 
