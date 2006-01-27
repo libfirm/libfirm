@@ -669,6 +669,48 @@ void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
 }
 
 
+
+/**
+ * Emits code for Alloca (increase stack pointer, cpoy to destination)
+ */
+void emit_Alloca(ir_node *irn, emit_env_t *emit_env, int is_imm) {
+	const lc_arg_env_t *env = ia32_get_arg_env();
+	FILE               *F   = emit_env->out;
+	char               *sp;
+
+	if (emit_env->cg->has_alloca) {
+		sp = "%ebp";
+	}
+	else {
+		sp = "%esp";
+	}
+
+
+	/* allocate the memory */
+	fprintf(F, "\tsub %s", sp);
+
+	if (is_imm) {
+		lc_efprintf(env, F, "%C", irn);
+	}
+	else {
+		lc_efprintf(env, F, "%1S", irn);
+	}
+
+	fprintf(F, "\t\t\t\t/* reserve memory on stack */\n");
+
+	/* copy the new stack pointer to destination register */
+	lc_efprintf(env, F, "\tmov %s, %1D\t\t\t/* copy stack pointer to destination */\n", sp, irn);
+}
+
+void emit_ia32_Alloca(ir_node *irn, emit_env_t *emit_env) {
+	emit_Alloca(irn, emit_env, 0);
+}
+
+void emit_ia32_Alloca_i(ir_node *irn, emit_env_t *emit_env) {
+	emit_Alloca(irn, emit_env, 1);
+}
+
+
 /***********************************************************************************
  *                  _          __                                             _
  *                 (_)        / _|                                           | |
@@ -760,6 +802,8 @@ void ia32_emit_node(ir_node *irn, void *env) {
 	IA32_EMIT(CondJmp_i);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(Call);
+	IA32_EMIT(Alloca);
+	IA32_EMIT(Alloca_i);
 
 	EMIT(Jmp);
 	EMIT(Proj);
