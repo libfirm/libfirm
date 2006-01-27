@@ -48,9 +48,10 @@ typedef int (*get_n_members_func)(const ir_type *tp);
 /** A function called to get the pos'th compound member */
 typedef entity *(*get_member_func)(const ir_type *tp, int pos);
 
+typedef int (*get_member_index_func)(const ir_type *tp, entity *member);
+
 /** A function called to insert an entity into the type */
 typedef void (*insert_entity_func)(ir_type *tp, entity *member);
-
 
 /**
  * tp_op operations.
@@ -63,6 +64,7 @@ typedef struct _tp_op_ops {
   set_type_size_func      set_type_size;      /**< called to set the bit size of a type */
   get_n_members_func      get_n_members;      /**< called to return the number of compound members */
   get_member_func         get_member;         /**< called to get the pos'th compound member */
+  get_member_index_func   get_member_index;   /**< called to get the index of a compound member */
 } tp_op_ops;
 
 /** possible flags for a type opcode */

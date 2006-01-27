@@ -63,7 +63,8 @@ static const tp_op_ops
     set_class_mode,
     set_class_size_bits,
     get_class_n_members,
-    get_class_member
+    get_class_member,
+    get_class_member_index
   },
   /** tpop operations for struct types */
   struct_ops = {
@@ -73,12 +74,14 @@ static const tp_op_ops
     set_struct_mode,
     set_struct_size_bits,
     get_struct_n_members,
-    get_struct_member
+    get_struct_member,
+    get_struct_member_index
   },
   /** tpop operations for method types */
   method_ops = {
     free_method_attrs,
     free_method_entities,
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -93,7 +96,8 @@ static const tp_op_ops
     NULL,
     set_union_size_bits,
     get_union_n_members,
-    get_union_member
+    get_union_member,
+    get_union_member_index
   },
   /** tpop operations for array types */
   array_ops = {
@@ -103,6 +107,7 @@ static const tp_op_ops
     NULL,
     set_array_size_bits,
     NULL,
+    NULL,
     NULL
   },
   /** tpop operations for enumeration types */
@@ -111,6 +116,7 @@ static const tp_op_ops
     free_enumeration_entities,
     NULL,
     set_enumeration_mode,
+    NULL,
     NULL,
     NULL,
     NULL
@@ -123,6 +129,7 @@ static const tp_op_ops
     set_pointer_mode,
     NULL,
     NULL,
+    NULL,
     NULL
   },
   /** tpop operations for pseudo types */
@@ -133,10 +140,12 @@ static const tp_op_ops
     NULL,
     set_default_size_bits,
     NULL,
+    NULL,
     NULL
   },
   /** tpop operations for primitive types */
   null_ops = {
+    NULL,
     NULL,
     NULL,
     NULL,
