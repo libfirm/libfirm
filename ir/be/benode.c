@@ -106,18 +106,14 @@ static const ir_op_ops be_node_op_ops;
 
 void be_node_init(void) {
 	static int inited = 0;
-	int i;
 
 	if(inited)
 		return;
 
 	inited = 1;
 
-	beo_base = get_next_ir_opcode();
-
-	/* Acquire all needed opcodes. We assume that they are consecutive! */
-	for(i = beo_Spill; i < beo_Last; ++i)
-		get_next_ir_opcode();
+	/* Acquire all needed opcodes. */
+	beo_base = get_next_ir_opcodes(beo_Last - 1);
 
 	op_Spill  = new_ir_op(beo_base + beo_Spill,  "Spill",  op_pin_state_mem_pinned, N, oparity_unary,    0, sizeof(be_spill_attr_t), &be_node_op_ops);
 	op_Reload = new_ir_op(beo_base + beo_Reload, "Reload", op_pin_state_mem_pinned, N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
