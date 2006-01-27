@@ -57,6 +57,7 @@ struct _be_chordal_env_t {
 	ir_graph *irg;             /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
 	pmap *border_heads;        /**< Maps blocks to border heads. */
+	pset *constr_irn;          /**< Nodes which deserve special constraint handling. */
 	be_ifg_t *ifg;             /**< The interference graph. */
 	void *data;                /**< Some pointer, to which different
                                     phases can attach data to. */
