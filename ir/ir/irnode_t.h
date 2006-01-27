@@ -727,6 +727,10 @@ static INLINE int _is_irn_constlike(const ir_node *node) {
   return is_op_constlike(_get_irn_op(node));
 }
 
+static INLINE int _is_irn_keep(const ir_node *node) {
+  return is_op_keep(_get_irn_op(node));
+}
+
 static INLINE cond_jmp_predicate _get_Cond_jmp_pred(ir_node *node) {
   assert (_get_irn_op(node) == op_Cond);
   return node->attr.c.pred;
@@ -781,6 +785,7 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 #define get_irn_type_attr(node)               _get_irn_type_attr(node)
 #define get_irn_entity_attr(node)             _get_irn_entity_attr(node)
 #define is_irn_constlike(node)                _is_irn_constlike(node)
+#define is_irn_keep(node)                     _is_irn_keep(node)
 #define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
 

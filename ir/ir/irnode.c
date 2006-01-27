@@ -2394,6 +2394,14 @@ int (is_irn_constlike)(const ir_node *node) {
   return _is_irn_constlike(node);
 }
 
+/*
+ * Returns non-zero for nodes that are allowed to have keep-alives and
+ * are neither Block nor PhiM.
+ */
+int (is_irn_keep)(const ir_node *node) {
+  return _is_irn_keep(node);
+}
+
 /* Gets the string representation of the jump prediction .*/
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
 {
@@ -2415,9 +2423,9 @@ void (set_Cond_jmp_pred)(ir_node *cond, cond_jmp_predicate pred) {
   _set_Cond_jmp_pred(cond, pred);
 }
 
-/** the get_type/get_type_attr operation must be always implemented */
-static ir_type *get_Null_type(ir_node *n) {
-  return NULL;
+/** the get_type operation must be always implemented and return a firm type */
+static ir_type *get_Default_type(ir_node *n) {
+  return get_unknown_type();
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
@@ -2431,7 +2439,7 @@ ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops)
   default:
     /* not allowed to be NULL */
     if (! ops->get_type)
-      ops->get_type = get_Null_type;
+      ops->get_type = get_Default_type;
     break;
   }
   return ops;
@@ -2451,6 +2459,11 @@ static entity *get_SymConst_attr_entity(ir_node *self) {
   if (kind == symconst_addr_ent)
     return get_SymConst_entity(self);
   return NULL;
+}
+
+/** the get_type_attr operation must be always implemented */
+static ir_type *get_Null_type(ir_node *n) {
+  return firm_unknown_type;
 }
 
 /* Sets the get_type operation for an ir_op_ops. */

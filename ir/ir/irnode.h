@@ -1054,7 +1054,7 @@ int is_irn_forking(const ir_node *node);
 
 /** Return the type associated with the value produced by n
  *  if the node remarks this type as it is the case for
- *  Cast, Const, SymConst and some Proj nodes. */
+ *  Cast, Const, SymConst and some Proj nodes or unknown_type. */
 ir_type *get_irn_type(ir_node *n);
 
 /** Return the type attribute of a node n (SymConst, Call, Alloc, Free,
@@ -1066,6 +1066,12 @@ entity *get_irn_entity_attr(ir_node *n);
 
 /** Returns non-zero for constant-like nodes. */
 int is_irn_constlike(const ir_node *node);
+
+/**
+ * Returns non-zero for nodes that are allowed to have keep-alives and
+ * are neither Block nor PhiM.
+ */
+int is_irn_keep(const ir_node *node);
 
 /**
  * A type to express conditional jump predictions.
