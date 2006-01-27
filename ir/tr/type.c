@@ -799,10 +799,10 @@ int     (get_class_n_members) (const ir_type *clss) {
   return _get_class_n_members(clss);
 }
 
-int     get_class_member_index(ir_type *clss, entity *mem) {
-  int i;
+int     get_class_member_index(const ir_type *clss, entity *mem) {
+  int i, n;
   assert(clss && (clss->type_op == type_class));
-  for (i = 0; i < get_class_n_members(clss); i++)
+  for (i = 0, n = get_class_n_members(clss); i < n; ++i)
     if (get_class_member(clss, i) == mem)
       return i;
   return -1;
@@ -1038,10 +1038,10 @@ entity *get_struct_member   (const ir_type *strct, int pos) {
   return strct->attr.sa.members[pos];
 }
 
-int     get_struct_member_index(ir_type *strct, entity *mem) {
-  int i;
+int     get_struct_member_index(const ir_type *strct, entity *mem) {
+  int i, n;
   assert(strct && (strct->type_op == type_struct));
-  for (i = 0; i < get_struct_n_members(strct); i++)
+  for (i = 0, n = get_struct_n_members(strct); i < n; ++i)
     if (get_struct_member(strct, i) == mem)
       return i;
   return -1;
@@ -1409,6 +1409,14 @@ entity  *get_union_member (const ir_type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
   assert(pos >= 0 && pos < get_union_n_members(uni));
   return uni->attr.ua.members[pos];
+}
+int     get_union_member_index(const ir_type *uni, entity *mem) {
+  int i, n;
+  assert(uni && (uni->type_op == type_union));
+  for (i = 0, n = get_union_n_members(uni); i < n; ++i)
+    if (get_union_member(uni, i) == mem)
+      return i;
+  return -1;
 }
 void   set_union_member (ir_type *uni, int pos, entity *member) {
   assert(uni && (uni->type_op == type_union));
@@ -1842,6 +1850,20 @@ entity *get_compound_member(const ir_type *tp, int pos)
     assert(0 && "no members in this type");
 
   return res;
+}
+
+/* Returns index of member in tp, -1 if not contained. */
+int get_compound_member_index(const ir_type *tp, entity *member)
+{
+  const tp_op *op = get_type_tpop(tp);
+  int index = -1;
+
+  if (op->ops.get_member_index)
+    index = op->ops.get_member(tp, member);
+  else
+    assert(0 && "no members in this type");
+
+  return index;
 }
 
 int is_compound_type(const ir_type *tp) {

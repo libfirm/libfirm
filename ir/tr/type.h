@@ -452,7 +452,7 @@ int     get_class_n_members (const ir_type *clss);
 entity *get_class_member   (const ir_type *clss, int pos);
 
 /** Returns index of mem in clss, -1 if not contained. */
-int     get_class_member_index(ir_type *clss, entity *mem);
+int     get_class_member_index(const ir_type *clss, entity *mem);
 
 /** Finds the member with name 'name'. If several members with the same
  *  name returns one of them.  Returns NULL if no member found. */
@@ -617,7 +617,7 @@ int     get_struct_n_members (const ir_type *strct);
 entity *get_struct_member   (const ir_type *strct, int pos);
 
 /** Returns index of member in strct, -1 if not contained. */
-int     get_struct_member_index(ir_type *strct, entity *member);
+int     get_struct_member_index(const ir_type *strct, entity *member);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
@@ -901,6 +901,9 @@ void    add_union_member (ir_type *uni, entity *member);
 
 /** Returns the entity at position pos of a union */
 entity *get_union_member (const ir_type *uni, int pos);
+
+/** Returns index of member in uni, -1 if not contained. */
+int     get_union_member_index(const ir_type *uni, entity *member);
 
 /** Overwrites a entity at position pos in a union type. */
 void    set_union_member (ir_type *uni, int pos, entity *member);
@@ -1186,6 +1189,9 @@ int get_compound_n_members(const ir_type *tp);
  * @see get_compound_n_members() for justification of existence.
  */
 entity *get_compound_member(const ir_type *tp, int pos);
+
+/** Returns index of member in tp, -1 if not contained. */
+int     get_compound_member_index(const ir_type *tp, entity *member);
 
 /**
  * Checks whether a type is compound.
