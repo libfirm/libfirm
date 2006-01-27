@@ -95,8 +95,6 @@ ir_op *op_Mux;         ir_op *get_op_Mux       (void) { return op_Mux;       }
 ir_op *op_CopyB;       ir_op *get_op_CopyB     (void) { return op_CopyB;     }
 ir_op *op_Bound;       ir_op *get_op_Bound     (void) { return op_Bound;     }
 
-ir_op *op_Keep;        ir_op *get_op_Keep      (void) { return op_Keep;      }
-
 /*
  * Copies all attributes stored in the old node to the new node.
  * Assumes both have the same opcode and sufficient size.
@@ -205,13 +203,14 @@ init_op(void)
 #define Y   irop_flag_forking
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
+#define K   irop_flag_keep
 
   op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr), NULL);
 
   op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, sizeof(start_attr), NULL);
   op_End       = new_ir_op(iro_End,       "End",       op_pin_state_pinned, X,       oparity_dynamic,  -1, 0, NULL);
   op_Jmp       = new_ir_op(iro_Jmp,       "Jmp",       op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
-  op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X,       oparity_unary,    -1, 0, NULL);
+  op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X|K,     oparity_unary,    -1, 0, NULL);
   op_Cond      = new_ir_op(iro_Cond,      "Cond",      op_pin_state_pinned, L|X|Y,   oparity_any,      -1, sizeof(cond_attr), NULL);
   op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, L|X,     oparity_zero,     -1, 0, NULL);
   op_Raise     = new_ir_op(iro_Raise,     "Raise",     op_pin_state_pinned, L|X,     oparity_any,      -1, 0, NULL);
@@ -269,8 +268,6 @@ init_op(void)
   op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0, NULL);
   op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(copyb_attr), NULL);
   op_Bound     = new_ir_op(iro_Bound,     "Bound",   op_pin_state_mem_pinned, L|F|H, oparity_trinary,  -1, sizeof(bound_attr), NULL);
-
-  op_Keep      = new_ir_op(iro_Keep,      "Keep",      op_pin_state_pinned, N,       oparity_variable, -1, 0, NULL);
 
 #undef H
 #undef Y
@@ -346,8 +343,6 @@ void finish_op(void) {
   free_ir_op (op_Mux      ); op_Mux       = NULL;
   free_ir_op (op_CopyB    ); op_CopyB     = NULL;
   free_ir_op (op_Bound    ); op_Bound     = NULL;
-
-  free_ir_op (op_Keep     ); op_Keep      = NULL;
 }
 
 /* Returns the string for the opcode. */
