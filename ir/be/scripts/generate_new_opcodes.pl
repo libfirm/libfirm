@@ -127,6 +127,43 @@ foreach my $op (keys(%nodes)) {
 			$temp  = "  asmop_attr *attr;\n";
 			$temp .= "  ir_node *res;\n";
 			$temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
+
+			undef my $in_req_var;
+			undef my $out_req_var;
+			undef my $slots_var;
+
+			# set up static variables for requirements and registers
+			if (exists($n{"reg_req"})) {
+				my %req = %{ $n{"reg_req"} };
+				my $idx;
+
+				undef my @in;
+				@in = @{ $req{"in"} } if (exists($req{"in"}));
+				undef my @out;
+				@out = @{ $req{"out"} } if exists(($req{"out"}));
+
+				if (@in) {
+					$in_req_var = "_in_req_$op";
+					$temp .= "  static const $arch\_register_req_t *".$in_req_var."[] =\n  {\n";
+					for ($idx = 0; $idx <= $#in; $idx++) {
+						$temp .= "    ".$op."_reg_req_in_".$idx.",\n";
+					}
+					$temp .= "  };\n";
+				}
+
+				if (@out) {
+					$out_req_var = "_out_req_$op";
+					$slots_var   = "_slots_$op";
+
+					$temp .= "  static const $arch\_register_req_t *".$out_req_var."[] =\n  {\n";
+					for ($idx = 0; $idx <= $#out; $idx++) {
+						$temp .= "    ".$op."_reg_req_out_".$idx.",\n";
+					}
+					$temp .= "  };\n";
+					$temp .= "  static arch_register_t *".$slots_var."[".($#out + 1)."];\n";
+				}
+			}
+
 			$temp .= "\n";
 			$temp .= "  if (!op_$op) {\n";
 			$temp .= "    assert(0);\n";
@@ -153,32 +190,30 @@ foreach my $op (keys(%nodes)) {
 			# allocate memory and set pointer to register requirements
 			if (exists($n{"reg_req"})) {
 				my %req = %{ $n{"reg_req"} };
-				my $idx;
 
 				undef my @in;
 				@in = @{ $req{"in"} } if (exists($req{"in"}));
 				undef my @out;
 				@out = @{ $req{"out"} } if exists(($req{"out"}));
 
+				$temp .= "\n  /* set IN register requirements */\n";
 				if (@in) {
-					$temp .= "\n  /* allocate memory for IN register requirements and assigned registers */\n";
-					$temp .= "  attr->in_req    = calloc(".($#in + 1).", sizeof(arch_register_req_t *));  /* space for in requirements */\n";
-					for ($idx = 0; $idx <= $#in; $idx++) {
-						$temp .= "  attr->in_req[$idx] = ".$op."_reg_req_in_".$idx.";\n";
-					}
-				}
-
-				if (@out) {
-					$temp .= "\n  /* allocate memory for OUT register requirements and assigned registers */\n";
-					$temp .= "  attr->out_req    = calloc(".($#out + 1).", sizeof(arch_register_req_t *)); /* space for out requirements */\n";
-					$temp .= "  attr->slots      = calloc(".($#out + 1).", sizeof(arch_register_t *));     /* space for assigned registers */\n";
-					for ($idx = 0; $idx <= $#out; $idx++) {
-						$temp .= "  attr->out_req[$idx] = ".$op."_reg_req_out_".$idx.";\n";
-					}
-					$temp .= "  attr->n_res      = ".($#out + 1).";\n";
+					$temp .= "  attr->in_req  = ".$in_req_var.";\n";
 				}
 				else {
-					$temp .= "  attr->n_res      = 0;\n";
+					$temp .= "  attr->in_req  = NULL;\n";
+				}
+
+				$temp .= "\n  /* set OUT register requirements and get space for registers */\n";
+				if (@out) {
+					$temp .= "  attr->out_req = ".$out_req_var.";\n";
+					$temp .= "  attr->slots   = ".$slots_var.";\n";
+					$temp .= "  attr->n_res   = ".($#out + 1).";\n";
+				}
+				else {
+					$temp .= "  attr->out_req = NULL;\n";
+					$temp .= "  attr->slots   = NULL;\n";
+					$temp .= "  attr->n_res   = 0;\n";
 				}
 			}
 
@@ -215,13 +250,33 @@ foreach my $op (keys(%nodes)) {
 
 open(OUT, ">$target_c") || die("Could not open $target_c, reason: $!\n");
 
+print OUT "#include \"gen_$arch\_regalloc_if_t.h\"\n\n";
 print OUT @obst_cmp_attr;
 print OUT "\n";
 print OUT @obst_opvar;
 print OUT "\n";
 print OUT @obst_get_opvar;
 print OUT "\n";
-print OUT "int is_".$arch."_irn(const ir_node *node) {\n  if (".join(" ||\n      ", @obst_is_archirn).")\n    return 1;\n  else\n    return 0;\n}\n\n";
+
+print OUT<<ENDOFISIRN;
+
+static opcode ia32_opcode_start = -1;
+static opcode ia32_opcode_end   = -1;
+
+int is_$arch\_irn(const ir_node *node) {
+  opcode opc = get_irn_opcode(node);
+
+  assert(ia32_opcode_start > 0 && "missing opcode init");
+  assert(ia32_opcode_end > 0 && "missing opcode init");
+
+  if (opc > ia32_opcode_start && opc < ia32_opcode_end)
+    return 1;
+
+  return 0;
+}
+
+ENDOFISIRN
+
 print OUT @obst_constructor;
 
 print OUT<<ENDOFMAIN;
@@ -240,11 +295,14 @@ void $arch\_create_opcodes(void) {
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
 
-	ir_op_ops ops;
+  ir_op_ops ops;
+
+  ia32_opcode_start = get_next_ir_opcode();
 
 ENDOFMAIN
 
 print OUT @obst_new_irop;
+print OUT "\n  ia32_opcode_end = get_next_ir_opcode();\n";
 print OUT "}\n";
 
 close(OUT);
