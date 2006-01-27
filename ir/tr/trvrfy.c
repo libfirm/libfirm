@@ -276,8 +276,11 @@ static int constant_on_wrong_irg(ir_node *n) {
   return ! env.res;
 }
 
-/*
+/**
  * Check if constants node are NOT on the constant IR graph.
+ *
+ * @return NON-zero if an entity initializer constant is NOT on
+ * the current_ir_graph's obstack.
  */
 static int constants_on_wrong_irg(entity *ent) {
   if (get_entity_variability(ent) == variability_uninitialized) return 0;
@@ -319,7 +322,11 @@ int check_entity(entity *ent) {
   ir_type *owner = get_entity_owner(ent);
 
   current_ir_graph =  get_const_code_irg();
-  ASSERT_AND_RET(constants_on_wrong_irg(ent) == 0, "Contants placed on wrong IRG", error_const_on_wrong_irg);
+  ASSERT_AND_RET_DBG(
+    constants_on_wrong_irg(ent) == 0,
+    "Contants placed on wrong IRG",
+    error_const_on_wrong_irg,
+    ir_fprintf(stderr, "%+e not on %+F\n", ent, current_ir_graph));
 
   rem_vpi = get_visit_pseudo_irgs();
   set_visit_pseudo_irgs(1);
