@@ -65,6 +65,12 @@ typedef unsigned int bitset_unit_t;
 #define _bitset_inside_flip(unit_ptr,bit) (*unit_ptr) ^= ~(1 << (bit))
 
 /**
+ * Flip a whole unit.
+ * @param unit_ptr The pointer to the unit.
+ */
+#define _bitset_inside_flip_unit(unit_ptr) (*unit_ptr) = ~(*unit_ptr)
+
+/**
  * Count the number of leading zeroes in a unit.
  * @param unit A pointer to the unit.
  * @return The Number of leading zeroes.

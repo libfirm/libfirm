@@ -92,7 +92,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @param bs The bitset.
  * @return The highest bit which can be set or cleared plus 1.
  */
-#define bistet_size(bs)  ((bs)->size)
+#define bitset_size(bs)  ((bs)->size)
 
 /**
  * Allocate a bitset on an obstack.
@@ -183,6 +183,18 @@ static INLINE void bitset_flip(bitset_t *bs, bitset_pos_t bit)
 {
 	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
 	_bitset_inside_flip(unit, bit & BS_UNIT_MASK);
+}
+
+/**
+ * Flip the whole bitset.
+ * @param bs The bitset.
+ */
+static INLINE void bitset_flip_all(bitset_t *bs)
+{
+	bitset_pos_t i;
+	for(i = 0; i < bs->units; i++)
+		_bitset_inside_flip_unit(&bs->data[i]);
+	_bitset_mask_highest(bs);
 }
 
 /**
