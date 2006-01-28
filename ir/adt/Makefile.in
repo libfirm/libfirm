@@ -16,12 +16,12 @@ topdir = ../..
 subdir := ir/adt
 disable_libiberty := @disable_libiberty@
 
-INSTALL_HEADERS_ADT = pset.h set.h pmap.h eset.h hashptr.h array.h pdeq.h iterator.h align.h fourcc.h util.h plist.h
+INSTALL_HEADERS_ADT = pset.h set.h pmap.h eset.h hashptr.h array.h pdeq.h iterator.h align.h fourcc.h util.h plist.h bipartite.h
 
 SOURCES = Makefile.in 			        \
 	array.c obst.h pdeq.c   \
 	set.c pmap.c eset.c iterator.c xmalloc.h \
-	plist.c
+	plist.c bipartite.c
 
 ifeq ($(disable_libiberty),no)
 SOURCES += xmalloc.c
