@@ -44,7 +44,6 @@
 
 #include "bespillbelady.h"
 #include "bespillilp.h"
-#include "beconstrperm.h"
 #include "belower.h"
 
 #include "becopyoptmain.h"
