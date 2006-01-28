@@ -659,10 +659,10 @@ void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
 		/* We had stack arguments: clear the stack */
 		fprintf(F, "\tadd %d, ", args_size);
 		if (emit_env->cg->has_alloca) {
-			fprintf(F, "%ebp");
+			fprintf(F, "%%ebp");
 		}
 		else {
-			fprintf(F, "%esp");
+			fprintf(F, "%%esp");
 		}
 		fprintf(F, "\t\t\t\t/* clear stack after call */\n");
 	}
