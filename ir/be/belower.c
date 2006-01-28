@@ -561,7 +561,7 @@ static void lower_spill_reload(ir_node *irn, void *walk_env) {
  * @param irn      The node to be checked for lowering
  * @param walk_env The walker environment
  */
-static void lower_nodes_before_sched_walker(ir_node *irn, const void *walk_env) {
+static void lower_nodes_before_sched_walker(ir_node *irn, void *walk_env) {
 	const arch_env_t *arch_env = walk_env;
 
 	if (!is_Block(irn) && !is_Proj(irn)) {
