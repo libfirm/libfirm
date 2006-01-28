@@ -48,6 +48,7 @@ my $orig_op;
 my $arity;
 my $cmp_attr_func;
 my $temp;
+my $n_opcodes = 2;    # we have two additional border opcodes (lowest/highest)
 
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
@@ -130,7 +131,6 @@ foreach my $op (keys(%nodes)) {
 
 			undef my $in_req_var;
 			undef my $out_req_var;
-			undef my $slots_var;
 
 			# set up static variables for requirements and registers
 			if (exists($n{"reg_req"})) {
@@ -153,14 +153,12 @@ foreach my $op (keys(%nodes)) {
 
 				if (@out) {
 					$out_req_var = "_out_req_$op";
-					$slots_var   = "_slots_$op";
 
 					$temp .= "  static const $arch\_register_req_t *".$out_req_var."[] =\n  {\n";
 					for ($idx = 0; $idx <= $#out; $idx++) {
 						$temp .= "    ".$op."_reg_req_out_".$idx.",\n";
 					}
 					$temp .= "  };\n";
-					$temp .= "  static arch_register_t *".$slots_var."[".($#out + 1)."];\n";
 				}
 			}
 
@@ -207,7 +205,7 @@ foreach my $op (keys(%nodes)) {
 				$temp .= "\n  /* set OUT register requirements and get space for registers */\n";
 				if (@out) {
 					$temp .= "  attr->out_req = ".$out_req_var.";\n";
-					$temp .= "  attr->slots   = ".$slots_var.";\n";
+					$temp .= "  attr->slots   = xcalloc(".($#out + 1).", sizeof(attr->slots[0]));\n";
 					$temp .= "  attr->n_res   = ".($#out + 1).";\n";
 				}
 				else {
@@ -241,7 +239,8 @@ foreach my $op (keys(%nodes)) {
 		push(@obst_new_irop, "  ops.node_cmp_attr = cmp_attr_$op;\n");
 	}
 
-	$temp  = "  op_$op = new_ir_op(get_next_ir_opcode(), \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
+	$n_opcodes++;
+	$temp  = "  op_$op = new_ir_op(cur_opcode++, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
 	$temp .= ", ".translate_arity($arity).", 0, sizeof(asmop_attr), &ops);\n";
 	push(@obst_new_irop, $temp);
 }
@@ -297,13 +296,14 @@ void $arch\_create_opcodes(void) {
 #define K   irop_flag_keep
 
   ir_op_ops ops;
+  int cur_opcode = get_next_ir_opcodes($n_opcodes);
 
-  ia32_opcode_start = get_next_ir_opcode();
+  ia32_opcode_start = cur_opcode++;
 
 ENDOFMAIN
 
 print OUT @obst_new_irop;
-print OUT "\n  ia32_opcode_end = get_next_ir_opcode();\n";
+print OUT "\n  ia32_opcode_end = cur_opcode;\n";
 print OUT "}\n";
 
 close(OUT);
