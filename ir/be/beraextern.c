@@ -897,9 +897,12 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 
 #ifdef WITH_LIBCORE
 
+/* TODO: explicit cast to void * is ugly, but ISO-C forbids
+   assignment from func ptr to void ptr. This should probably be fixed
+   in libcore. (cw) */
 static const lc_opt_enum_const_ptr_items_t ssa_destr_items[] = {
-	{ "simple",    ssa_destr_simple },
-	{ "rastello",  ssa_destr_rastello },
+	{ "simple",    (void *)ssa_destr_simple },
+	{ "rastello",  (void *)ssa_destr_rastello },
 	{ NULL,      NULL }
 };
 
