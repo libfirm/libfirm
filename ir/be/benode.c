@@ -548,9 +548,15 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 
 			if(get_irn_be_opcode(irn) == beo_Spill) {
 				be_spill_attr_t *a = (be_spill_attr_t *) at;
-				unsigned ofs = get_entity_offset_bytes(a->ent);
+
 				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
-				ir_fprintf(f, "spill entity: %+F offset %x (%d)\n", a->ent, ofs, ofs);
+				if (a->ent) {
+					unsigned ofs = get_entity_offset_bytes(a->ent);
+					ir_fprintf(f, "spill entity: %+F offset %x (%d)\n", a->ent, ofs, ofs);
+				}
+				else {
+					ir_fprintf(f, "spill entity: n/a\n");
+				}
 			}
 			break;
 	}
