@@ -77,7 +77,7 @@ static int carry_flag;              /**< some computation set the carry_flag:
                                          However, the meaning of carry is machine dependent
                                          and often defined in other ways! */
 
-static const char sex_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
+static const char sex_digit[4] = { SC_E, SC_C, SC_8, SC_0 };
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 
@@ -975,7 +975,7 @@ static void sign_extend(char *calc_buffer, ir_mode *mode) {
 
       for (i = ofs + 1; i < calc_buffer_size; ++i)
         calc_buffer[i] = SC_F;
-      calc_buffer[ofs] = sex_digit[bits & 3];
+      calc_buffer[ofs] = or_table[calc_buffer[ofs]][sex_digit[bits & 3]];
     }
   }
 }
