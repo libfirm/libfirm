@@ -356,7 +356,7 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 	ir_node          **returns, **in, **new_in;
 	ir_node           *stack_reserve, *sched_point;
 	ir_node           *stack_free, *new_ret, *return_block;
-	int                stack_size = 0, i, n_res;
+	int                stack_size = 0, i, n_arg;
 	arch_register_t   *stack_reg;
 	tarval            *stack_size_tv;
 	dbg_info          *frame_dbg;
@@ -372,18 +372,28 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 	/* If frame is used, then we need to reserve some stackspace. */
 	if (get_irn_n_edges(frame) > 0) {
 		/* The initial stack reservation. */
+		stack_size    = get_type_size_bytes(get_irg_frame_type(irg));
 		frame_dbg     = get_irn_dbg_info(frame);
-		stack_reserve = new_rd_ia32_Sub_i(frame_dbg, irg, get_nodes_block(frame), frame, mode_Is);
+		stack_reserve = new_rd_ia32_Sub_i(frame_dbg, irg, get_nodes_block(frame), new_NoMem(), mode_Is);
 		stack_size_tv = new_tarval_from_long(stack_size, mode_Is);
-		set_ia32_am_const(stack_reserve, stack_size_tv);
+		set_ia32_Immop_tarval(stack_reserve, stack_size_tv);
+
+		assert(stack_size && "bOrken stack layout");
+
+		/* reroute all edges from frame pointer to corrected frame pointer */
 		edges_reroute(frame, stack_reserve, irg);
+		set_irn_n(stack_reserve, 0, frame);
+
+		/* schedule frame pointer */
+		if (! sched_is_scheduled(frame)) {
+			sched_add_after(get_irg_start(irg), frame);
+		}
 
 		/* set register */
 		arch_set_irn_register(cg->arch_env, frame, stack_reg);
 		arch_set_irn_register(cg->arch_env, stack_reserve, stack_reg);
 
 		/* insert into schedule */
-		sched_add_after(get_irg_start(irg), frame);
 		sched_add_after(frame, stack_reserve);
 
 		/* Free stack for each Return node */
@@ -395,15 +405,15 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 
 			/* free the stack */
 			stack_free = new_rd_ia32_Add_i(frame_dbg, irg, return_block, stack_reserve, mode_Is);
-			set_ia32_am_const(stack_free, stack_size_tv);
+			set_ia32_Immop_tarval(stack_free, stack_size_tv);
 			arch_set_irn_register(cg->arch_env, stack_free, stack_reg);
 
 			DBG((mod, LEVEL_1, "examining %+F, %+F created, block %+F", returns[i], stack_free, return_block));
 
 			/* get the old Return arguments */
-			n_res  = get_Return_n_ress(returns[i]);
+			n_arg  = get_Return_n_ress(returns[i]);
 			in     = get_Return_res_arr(returns[i]);
-			new_in = malloc((n_res + 1) * sizeof(new_in[0]));
+			new_in = xmalloc((n_arg + 2) * sizeof(new_in[0]));
 
 			if (!new_in) {
 				printf("\nMUAAAAHAHAHAHAHAHAHAH\n");
@@ -411,14 +421,14 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 			}
 
 			/* copy the old to the new in's */
-			memcpy(new_in, in, n_res * sizeof(in[0]));
-			in[n_res] = stack_free;
+			memcpy(new_in, in, n_arg * sizeof(in[0]));
+			new_in[n_arg++] = stack_free;
+			new_in[n_arg++] = get_Return_mem(returns[i]);
 
 			/* create the new return node */
-//			edges_deactivate(irg);
-			new_ret     = new_rd_ia32_Return(get_irn_dbg_info(returns[i]), irg, return_block, n_res + 1, new_in);
-//			edges_activate(irg);
+			new_ret     = new_rd_ia32_Return(get_irn_dbg_info(returns[i]), irg, return_block, n_arg, new_in);
 			sched_point = sched_prev(returns[i]);
+			sched_remove(returns[i]);
 
 			/* exchange the old return with the new one */
 			exchange(returns[i], new_ret);
@@ -426,7 +436,6 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 			DB((mod, LEVEL_1, " ... replaced with %+F\n", new_ret));
 
 			/* remove the old one from schedule and add the new nodes properly */
-			sched_remove(returns[i]);
 			sched_add_after(sched_point, new_ret);
 			sched_add_before(new_ret, stack_free);
 		}

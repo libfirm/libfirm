@@ -642,9 +642,10 @@ void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
 		ir_node **args = get_Sync_preds_arr(sync);
 
 		for (i = 0; i < get_Sync_n_preds(sync); i++) {
-			lc_efprintf(env, F, "\tpush %1D\t\t\t\t/* push %+F on stack */\n", args[i], args[i]);
+			ir_node *n = get_irn_n(args[i], 1);
+			lc_efprintf(env, F, "\tpush %1D\t\t\t\t/* push %+F(%+F) on stack */\n", n, args[i], n);
 
-			if (mode_is_int(get_irn_mode(args[i]))) {
+			if (mode_is_int(get_irn_mode(n))) {
 				args_size += 4;
 			}
 			else {
@@ -874,6 +875,9 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
 	emit_env.cg       = cg;
+
+	/* set the global arch_env (needed by print hooks) */
+	arch_env = cg->arch_env;
 
 	ia32_emit_start(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);

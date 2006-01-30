@@ -500,7 +500,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"  => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"     => '. movl (%S1), %D1\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
+  "emit"     => '. movl %O(%S1), %D1\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
 },
 
 "Store" => {
@@ -510,7 +510,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"  => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"     => '. movl %S2, (%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"     => '. movl %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "Lea" => {
@@ -682,7 +682,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct SSE Load: Load(ptr, mem) = LD ptr",
   "reg_req"  => { "in" => [ "general_purpose", "none" ], "out" => [ "floating_point" ] },
-  "emit"     => '. movl (%S1), %D1\t\t\t/* Load((%S1)) -> %D1 */'
+  "emit"     => '. movl O(%S1), %D1\t\t\t/* Load((%S1)) -> %D1 */'
 },
 
 "fStore" => {
@@ -692,7 +692,7 @@ $arch = "ia32";
   "remat"    => 1,
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"  => { "in" => [ "general_purpose", "floating_point", "none" ] },
-  "emit"     => '. movl %S2, (%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"     => '. movl %S2, O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "fStackParam" => {
