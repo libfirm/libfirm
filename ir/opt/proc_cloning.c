@@ -287,9 +287,17 @@ static void set_preds(ir_node *irn, void *env)
   else {
     /* First we set the block our copy if it is not a block.*/
     set_nodes_block(irn_copy, get_irn_link(get_nodes_block(irn)));
-    for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
-      pred = get_irn_n(irn, i);
-      set_irn_n(irn_copy, i, get_irn_link(pred));
+    if (get_irn_op(irn) == op_End) {
+      /* Handle the keep-alives. This must be done separately, because
+         the End node was NOT copied */
+      for (i = 0; i < get_End_n_keepalives(irn); ++i)
+        add_End_keepalive(irn_copy, get_irn_link(get_End_keepalive(irn, i)));
+    }
+    else {
+      for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
+        pred = get_irn_n(irn, i);
+        set_irn_n(irn_copy, i, get_irn_link(pred));
+      }
     }
   }
 }
@@ -386,7 +394,7 @@ static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
 {
   ir_type *mtp, *new_mtp, *tp;
   ident   *tp_name;
-  int i, n_params, n_ress, pos = 0;
+  int     i, j, n_params, n_ress;
 
   mtp      = get_entity_type(q->ent);
   tp_name  = get_clone_ident(get_type_ident(mtp), q->pos, (*nr)++);
@@ -398,24 +406,20 @@ static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
   new_mtp  = new_type_method(tp_name, n_params - 1, n_ress);
 
   /* We must set the type of the methods parameters.*/
-  for( i = 0; pos < (n_params - 1); i++){
-
-    if (i == q->pos - 1)
+  for (i = j = 0; i < n_params; ++i) {
+    if (i == q->pos)
       /* This is the position of the argument, that we have
-         replaced, q. m. "i" must be incremented, but "pos" not
-         and nothing else must be done.*/
+         replaced. */
       continue;
 
     tp = get_method_param_type(mtp, i);
-    set_method_param_type(new_mtp, pos, tp);
-    pos++;
+    set_method_param_type(new_mtp, j++, tp);
   }
   /* We must set the type of the methods results.*/
-  for( i = 0; i < n_ress; i++){
+  for (i = 0; i < n_ress; ++i) {
     tp = get_method_res_type(mtp, i);
     set_method_res_type(new_mtp, i, tp);
   }
-
   set_entity_type(ent, new_mtp);
 }
 
