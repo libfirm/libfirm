@@ -537,7 +537,7 @@ static ir_node **construct_block_lists(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
-  for (i = 0; i < get_irp_n_irgs(); i++)
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i)
     ird_set_irg_link(get_irp_irg(i), NULL);
 
   irg_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
@@ -928,6 +928,8 @@ handle_lut:
       fprintf (F, "%s ", get_pnc_string(get_Proj_proj(n)));
     else if (code == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
       fprintf (F, "Arg %ld ", proj_nr);
+    else if (code == iro_Cond && get_irn_mode(get_Cond_selector(pred)) != mode_b)
+      fprintf (F, "%ld ", proj_nr);
     else {
       unsigned i, j, f = 0;
 
@@ -2365,7 +2367,7 @@ void dump_ir_block_graph (ir_graph *irg, const char *suffix)
    * only the requested irg but also all irgs that can be reached
    * from irg.
    */
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_node **arr = ird_get_irg_link(get_irp_irg(i));
     if (arr) {
       dump_graph_from_list(f, get_irp_irg(i));
@@ -2407,7 +2409,7 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
   dump_graph_info(F, irg);
   print_dbg_info(F, get_entity_dbg_info(ent));
 
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph *irg     = get_irp_irg(i);
     list_tuple *lists = ird_get_irg_link(irg);
 
@@ -2498,7 +2500,7 @@ dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix)
   /* dump common blocked ir graph */
   construct_block_lists(irg);
 
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_node **arr = ird_get_irg_link(get_irp_irg(i));
     if (arr) {
       dump_graph_from_list(f, get_irp_irg(i));
@@ -2700,7 +2702,7 @@ static int get_entity_color(entity *ent) {
 
 void dump_callgraph(const char *suffix) {
   FILE *F;
-  int i, n_irgs = get_irp_n_irgs();
+  int i;
   int rem = edge_label;
   edge_label = 1;
   //ident *prefix = new_id_from_str("java/");
@@ -2708,7 +2710,7 @@ void dump_callgraph(const char *suffix) {
   F = vcg_open_name("Callgraph", suffix);
   dump_vcg_header(F, "Callgraph", NULL);
 
-  for (i = 0; i < n_irgs; ++i) {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph *irg = get_irp_irg(i);
     entity *ent = get_irg_entity(irg);
     int j, n_callees = get_irg_n_callees(irg);
@@ -2744,13 +2746,13 @@ void dump_all_cg_block_graph(const char *suffix) {
   dump_vcg_header(f, "All_graphs", NULL);
 
   /* collect nodes in all irgs reachable in call graph*/
-  for (i = 0; i < get_irp_n_irgs(); i++)
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i)
     ird_set_irg_link(get_irp_irg(i), NULL);
 
   cg_walk(clear_link, collect_node, NULL);
 
   /* dump all graphs */
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     current_ir_graph = get_irp_irg(i);
     assert(ird_get_irg_link(current_ir_graph));
     dump_graph_from_list(f, current_ir_graph);
@@ -2826,9 +2828,8 @@ dump_class_hierarchy (int entities, const char *suffix)
 
 void dump_all_ir_graphs(dump_graph_func *dmp_grph, const char *suffix) {
   int i;
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i)
     dmp_grph(get_irp_irg(i), suffix);
-  }
 }
 
 
