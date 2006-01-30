@@ -583,7 +583,7 @@ static const ir_op_ops be_node_op_ops = {
 pset *nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
 {
 	firm_dbg_module_t *dbg = firm_dbg_register("firm.be.node");
-	ir_node *bl            = get_nodes_block(pos);
+	const ir_node *bl      = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
 	irn_live_t *li;
 
@@ -619,7 +619,7 @@ pset *nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls
 		}
 	}
 
-	return NULL;
+	return live;
 }
 
 ir_node *insert_Perm_after(const arch_env_t *arch_env,
@@ -637,8 +637,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
-	if(!nodes_live_at(arch_env, cls, pos, live))
-		assert(0 && "position not found");
+	if(!nodes_live_at(arch_env, cls, pos, live));
 
 	n = pset_count(live);
 
