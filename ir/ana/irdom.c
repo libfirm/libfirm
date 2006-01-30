@@ -334,7 +334,7 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 }
 
 /*--------------------------------------------------------------------*/
-/*  Building and Removing the dominator datastructure                 */
+/*  Building and Removing the dominator data structure                */
 /*--------------------------------------------------------------------*/
 
 /**
@@ -389,7 +389,7 @@ typedef struct {
 
 
 /**
- * Walks Blocks along the out datastructure.  If recursion started with
+ * Walks Blocks along the out data structure.  If recursion started with
  * Start block misses control dead blocks.
  */
 static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
@@ -397,7 +397,7 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
   tmp_dom_info *tdi;
   int i;
 
-  assert(get_irn_op(bl) == op_Block);
+  assert(is_Block(bl));
   if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
     return;
   mark_Block_block_visited(bl);
@@ -414,9 +414,9 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
   tdi->block = bl;
 
   /* Iterate */
-  for(i = 0; i < get_Block_n_cfg_outs(bl); i++) {
+  for (i = get_Block_n_cfg_outs(bl) - 1; i >= 0; --i) {
     ir_node *pred = get_Block_cfg_out(bl, i);
-    assert(get_irn_opcode(pred) == iro_Block);
+    assert(is_Block(pred));
     init_tmp_dom_info(pred, tdi, tdi_list, used);
   }
 }
@@ -430,7 +430,7 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
   tmp_dom_info *tdi;
   int i;
 
-  assert(get_irn_op(bl) == op_Block);
+  assert(is_Block(bl));
   if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
     return;
   mark_Block_block_visited(bl);
@@ -447,7 +447,7 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
   tdi->block = bl;
 
   /* Iterate */
-  for(i = 0; i < get_Block_n_cfgpreds(bl); i++) {
+  for (i = get_Block_n_cfgpreds(bl) - 1; i >= 0; --i) {
     ir_node *pred = get_Block_cfgpred_block(bl, i);
     if (is_Bad(pred))
       continue;
@@ -506,7 +506,7 @@ void compute_doms(ir_graph *irg) {
   /* Memory for temporary information. */
   tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
 
-  /* We need the out datastructure. */
+  /* We need the out data structure. */
   if (current_ir_graph->outs_state != outs_consistent)
     compute_irg_outs(current_ir_graph);
 
@@ -528,7 +528,7 @@ void compute_doms(ir_graph *irg) {
 
     /* Step 2 */
     irn_arity = get_irn_arity(w->block);
-    for (j = 0;  j < irn_arity;  j++) {
+    for (j = 0; j < irn_arity;  j++) {
       ir_node *pred = get_Block_cfgpred_block(w->block, j);
       tmp_dom_info *u;
 
@@ -539,7 +539,7 @@ void compute_doms(ir_graph *irg) {
       if (u->semi < w->semi) w->semi = u->semi;
     }
     /* Add w to w->semi's bucket.  w is in exactly one bucket, so
-       buckets can ben implemented as linked lists. */
+       buckets can been implemented as linked lists. */
     w->bucket = w->semi->bucket;
     w->semi->bucket = w;
 
@@ -564,7 +564,7 @@ void compute_doms(ir_graph *irg) {
   tdi_list[0].dom = NULL;
   set_Block_idom(tdi_list[0].block, NULL);
   set_Block_dom_depth(tdi_list[0].block, 1);
-  for (i = 1;  i < n_blocks;  i++) {
+  for (i = 1; i < n_blocks;  i++) {
     tmp_dom_info *w = &tdi_list[i];
 
     if (w->dom != w->semi) w->dom = w->dom->dom;
@@ -614,7 +614,7 @@ void compute_postdoms(ir_graph *irg) {
   /* Memory for temporary information. */
   tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
 
-  /* We need the out datastructure. */
+  /* We need the out data structure. */
   if (current_ir_graph->outs_state != outs_consistent)
     compute_irg_outs(current_ir_graph);
 
