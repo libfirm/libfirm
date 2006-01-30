@@ -308,6 +308,16 @@ static int constants_on_wrong_irg(entity *ent) {
   return 0;
 }
 
+/**
+ * Shows a wrong entity allocation
+ */
+static void show_ent_alloc_error(entity *ent)
+{
+  ir_fprintf(stderr, "%+e owner %t has allocation %s\n",
+    ent, get_entity_type(ent),
+    get_allocation_name(get_entity_allocation(ent)));
+}
+
 /*
  * Check an entity. Currently, we check only if initialized constants
  * are build on the const irg graph.
@@ -365,7 +375,7 @@ int check_entity(entity *ent) {
 	    get_entity_allocation(ent) != allocation_automatic,
       "Entities in global type are not allowed to by dynamic or automatic allocated",
       error_glob_ent_allocation,
-      ir_fprintf(stderr, "%+e\n", ent)
+      show_ent_alloc_error(ent)
     );
   }
 
