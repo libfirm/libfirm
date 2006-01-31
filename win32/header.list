@@ -7,14 +7,15 @@ ir\adt\pset.h		adt
 ir\adt\set.h		adt
 ir\adt\pmap.h		adt
 ir\adt\eset.h		adt
-ir\adt\hashptr.h	adt
+ir\adt\hashptr.h		adt
 ir\adt\array.h		adt
 ir\adt\pdeq.h		adt
-ir\adt\iterator.h	adt
+ir\adt\iterator.h		adt
 ir\adt\align.h		adt
 ir\adt\fourcc.h		adt
 ir\adt\util.h		adt
 ir\adt\plist.h		adt
+ir\adt\xmalloc.h		adt
 
 ir\debug\dbginfo.h
 ir\debug\seqnumbers.h
