@@ -413,12 +413,7 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 			/* get the old Return arguments */
 			n_arg  = get_Return_n_ress(returns[i]);
 			in     = get_Return_res_arr(returns[i]);
-			new_in = xmalloc((n_arg + 2) * sizeof(new_in[0]));
-
-			if (!new_in) {
-				printf("\nMUAAAAHAHAHAHAHAHAHAH\n");
-				exit(1);
-			}
+			new_in = alloca((n_arg + 2) * sizeof(new_in[0]));
 
 			/* copy the old to the new in's */
 			memcpy(new_in, in, n_arg * sizeof(in[0]));
