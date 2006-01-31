@@ -640,21 +640,6 @@ new_bd_Return (dbg_info *db, ir_node *block,
 }
 
 static ir_node *
-new_bd_Raise (dbg_info *db, ir_node *block, ir_node *store, ir_node *obj)
-{
-  ir_node  *in[2];
-  ir_node  *res;
-  ir_graph *irg = current_ir_graph;
-
-  in[0] = store;
-  in[1] = obj;
-  res = new_ir_node(db, irg, block, op_Raise, mode_T, 2, in);
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
-  return res;
-}
-
-static ir_node *
 new_bd_Load (dbg_info *db, ir_node *block,
         ir_node *store, ir_node *adr, ir_mode *mode)
 {
@@ -752,28 +737,6 @@ new_bd_Sel (dbg_info *db, ir_node *block, ir_node *store, ir_node *objptr,
   res = new_ir_node(db, irg, block, op_Sel, mode_P_data, r_arity, r_in);
   res->attr.s.ent = ent;
   res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
-  return res;
-}
-
-static ir_node *
-new_bd_InstOf (dbg_info *db, ir_node *block, ir_node *store,
-           ir_node *objptr, ir_type *type)
-{
-  ir_node  **r_in;
-  ir_node  *res;
-  int      r_arity;
-  ir_graph *irg = current_ir_graph;
-
-  r_arity = 2;
-  NEW_ARR_A(ir_node *, r_in, r_arity);
-  r_in[0] = store;
-  r_in[1] = objptr;
-
-  res = new_ir_node(db, irg, block, op_Sel, mode_T, r_arity, r_in);
-  res->attr.io.type = type;
-
-  /* res = optimize(res); */
   IRN_VRFY_IRG(res, irg);
   return res;
 }
@@ -965,6 +928,38 @@ new_bd_CopyB  (dbg_info *db, ir_node *block,
 }
 
 static ir_node *
+new_bd_InstOf (dbg_info *db, ir_node *block, ir_node *store,
+           ir_node *objptr, ir_type *type)
+{
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  in[0] = store;
+  in[1] = objptr;
+  res = new_ir_node(db, irg, block, op_Sel, mode_T, 2, in);
+  res->attr.io.type = type;
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
+new_bd_Raise (dbg_info *db, ir_node *block, ir_node *store, ir_node *obj)
+{
+  ir_node  *in[2];
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+
+  in[0] = store;
+  in[1] = obj;
+  res = new_ir_node(db, irg, block, op_Raise, mode_T, 2, in);
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
 new_bd_Bound (dbg_info *db, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper)
 {
@@ -976,9 +971,7 @@ new_bd_Bound (dbg_info *db, ir_node *block,
   in[1] = idx;
   in[2] = lower;
   in[3] = upper;
-
   res = new_ir_node(db, irg, block, op_Bound, mode_T, 4, in);
-
   res->attr.copyb.exc.pin_state = op_pin_state_pinned;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
@@ -1478,19 +1471,6 @@ new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
 }
 
 ir_node *
-new_rd_Raise (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *obj)
-{
-  ir_node  *res;
-  ir_graph *rem = current_ir_graph;
-
-  current_ir_graph = irg;
-  res = new_bd_Raise(db, block, store, obj);
-  current_ir_graph = rem;
-
-  return res;
-}
-
-ir_node *
 new_rd_Load (dbg_info *db, ir_graph *irg, ir_node *block,
         ir_node *store, ir_node *adr, ir_mode *mode)
 {
@@ -1569,20 +1549,6 @@ new_rd_Sel (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node
 
   current_ir_graph = irg;
   res = new_bd_Sel(db, block, store, objptr, arity, in, ent);
-  current_ir_graph = rem;
-
-  return res;
-}
-
-ir_node *
-new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-           ir_node *objptr, ir_type *type)
-{
-  ir_node  *res;
-  ir_graph *rem = current_ir_graph;
-
-  current_ir_graph = irg;
-  res = new_bd_InstOf(db, block, store, objptr, type);
   current_ir_graph = rem;
 
   return res;
@@ -1771,6 +1737,33 @@ ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
   return res;
 }
 
+ir_node *
+new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+           ir_node *objptr, ir_type *type)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_InstOf(db, block, store, objptr, type);
+  current_ir_graph = rem;
+
+  return res;
+}
+
+ir_node *
+new_rd_Raise (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *obj)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Raise(db, block, store, obj);
+  current_ir_graph = rem;
+
+  return res;
+}
+
 ir_node *new_rd_Bound(dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper)
 {
@@ -1806,10 +1799,6 @@ ir_node *new_r_Return (ir_graph *irg, ir_node *block,
                ir_node *store, int arity, ir_node **in) {
   return new_rd_Return(NULL, irg, block, store, arity, in);
 }
-ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
-               ir_node *store, ir_node *obj) {
-  return new_rd_Raise(NULL, irg, block, store, obj);
-}
 ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
                ir_mode *mode, tarval *con) {
   return new_rd_Const(NULL, irg, block, mode, con);
@@ -1833,10 +1822,6 @@ ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                   ir_node *objptr, int n_index, ir_node **index,
                   entity *ent) {
   return new_rd_Sel(NULL, irg, block, store, objptr, n_index, index, ent);
-}
-ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
-                  ir_type *type) {
-  return (new_rd_InstOf (NULL, irg, block, store, objptr, type));
 }
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
                   ir_node *callee, int arity, ir_node **in,
@@ -1996,6 +1981,14 @@ ir_node *new_r_Mux (ir_graph *irg, ir_node *block,
 ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type) {
   return new_rd_CopyB(NULL, irg, block, store, dst, src, data_type);
+}
+ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
+                  ir_type *type) {
+  return (new_rd_InstOf (NULL, irg, block, store, objptr, type));
+}
+ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
+               ir_node *store, ir_node *obj) {
+  return new_rd_Raise(NULL, irg, block, store, obj);
 }
 ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
@@ -3170,13 +3163,6 @@ new_d_Return (dbg_info *db, ir_node* store, int arity, ir_node **in)
 }
 
 ir_node *
-new_d_Raise (dbg_info *db, ir_node *store, ir_node *obj)
-{
-  return new_bd_Raise (db, current_ir_graph->current_block,
-              store, obj);
-}
-
-ir_node *
 new_d_Load (dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode)
 {
   ir_node *res;
@@ -3238,13 +3224,6 @@ new_d_Sel (dbg_info *db, ir_node *store, ir_node *objptr, int n_index, ir_node *
 {
   return new_bd_Sel (db, current_ir_graph->current_block,
             store, objptr, n_index, index, sel);
-}
-
-ir_node *
-new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *type)
-{
-  return (new_bd_InstOf (db, current_ir_graph->current_block,
-                         store, objptr, type));
 }
 
 ir_node *
@@ -3346,6 +3325,20 @@ ir_node *new_d_CopyB(dbg_info *db,ir_node *store,
   allocate_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
 #endif
   return res;
+}
+
+ir_node *
+new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *type)
+{
+  return new_bd_InstOf (db, current_ir_graph->current_block,
+                        store, objptr, type);
+}
+
+ir_node *
+new_d_Raise (dbg_info *db, ir_node *store, ir_node *obj)
+{
+  return new_bd_Raise (db, current_ir_graph->current_block,
+              store, obj);
 }
 
 ir_node *new_d_Bound(dbg_info *db,ir_node *store,
@@ -3532,9 +3525,6 @@ ir_node *new_Cond   (ir_node *c) {
 ir_node *new_Return (ir_node *store, int arity, ir_node *in[]) {
   return new_d_Return(NULL, store, arity, in);
 }
-ir_node *new_Raise  (ir_node *store, ir_node *obj) {
-  return new_d_Raise(NULL, store, obj);
-}
 ir_node *new_Const  (ir_mode *mode, tarval *con) {
   return new_d_Const(NULL, mode, con);
 }
@@ -3557,9 +3547,6 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent) {
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
                      entity *ent) {
   return new_d_Sel(NULL, store, objptr, arity, in, ent);
-}
-ir_node *new_InstOf (ir_node *store, ir_node *objptr, ir_type *ent) {
-  return new_d_InstOf (NULL, store, objptr, ent);
 }
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,
              ir_type *tp) {
@@ -3689,6 +3676,12 @@ ir_node *new_Mux (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mo
 }
 ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type) {
   return new_d_CopyB(NULL, store, dst, src, data_type);
+}
+ir_node *new_InstOf (ir_node *store, ir_node *objptr, ir_type *ent) {
+  return new_d_InstOf (NULL, store, objptr, ent);
+}
+ir_node *new_Raise  (ir_node *store, ir_node *obj) {
+  return new_d_Raise(NULL, store, obj);
 }
 ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
   return new_d_Bound(NULL, store, idx, lower, upper);

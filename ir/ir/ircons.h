@@ -253,13 +253,11 @@
  *    ir_node *new_IJmp     (ir_node *tgt);
  *    ir_node *new_Cond     (ir_node *c);
  *    ir_node *new_Return   (ir_node *store, int arity, ir_node **in);
- *    ir_node *new_Raise    (ir_node *store, ir_node *obj);
  *    ir_node *new_Const    (ir_mode *mode, tarval *con);
  *    ir_node *new_SymConst (symconst_symbol value, symconst_kind kind);
  *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
  *    ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity,
  *                         ir_node **in, entity *ent);
- *    ir_node *new_InstOf (ir_node *store, ir_node obj, ir_type *ent);
  *    ir_node *new_Call   (ir_node *store, ir_node *callee, int arity,
  *                 ir_node **in, type_method *type);
  *    ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -292,6 +290,8 @@
  *    ir_node *new_NoMem  (void);
  *    ir_node *new_Mux    (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
  *    ir_node *new_CopyB  (ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
+ *    ir_node *new_InstOf (ir_node *store, ir_node obj, ir_type *ent);
+ *    ir_node *new_Raise  (ir_node *store, ir_node *obj);
  *    ir_node *new_Bound  (ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
  *
  *    void add_immBlock_pred (ir_node *block, ir_node *jmp);
@@ -493,22 +493,6 @@
  *      All results.
  *    Output
  *      Control flow to the end block.
- *
- *    ir_node *new_Raise (ir_node *store, ir_node *obj)
- *    -------------------------------------------------
- *
- *    Raises an exception.  Unconditional change of control flow.  Writes
- *    an explicit Except variable to memory to pass it to the exception
- *    handler.  See TechReport 1999-14, chapter Exceptions.
- *
- *    Inputs:
- *      The memory state.
- *      A pointer to the Except variable.
- *    Output:
- *      A tuple of control flow and the changed memory state.  The control flow
- *      points to the exception handler if it is definied in this procedure,
- *      else it points to the end_block.
- *
  *
  *    ---------
  *
@@ -938,28 +922,10 @@
  *    This node is used as input for operations that need a Memory, but do not
  *    change it like Div by const != 0, analyzed calls etc.
  *
- *    ir_node *new_CopyB (ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type)
- *    -----------------------------------------------------------------------------------
- *
- *    Describes a high level block copy of a compound type form address src to
- *    address dst. Must be lowered to a Call to a runtime memory copy function.
- *
- *    ir_node *new_Bound  (ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
- *    -----------------------------------------------------------------------------------
- *
- *    Describes a high level bounds check. Must be lowered to a Call to a runtime check
- *    function.
- *
- *    ir_node *new_InstOf(ir_node *store, ir_node *ptr, ir_type *type);
- *    -----------------------------------------------------------------------------------
- *
- *    Describes a high level type check. Must be lowered to a Call to a runtime check
- *    function.
- *
  *    ir_node *new_Proj (ir_node *arg, ir_mode *mode, long proj)
  *    ----------------------------------------------------------
  *
- *    Selects one entry of a tuple.  This is a hidden `fat edge'.
+ *    Selects one entry of a tuple.  This is a hidden edge with attributes.
  *
  *    Parameters
  *      *arg      A node producing a tuple.
@@ -978,7 +944,7 @@
  *    replaced by the Tuple operation so that the following Proj nodes have not to
  *    be changed.  (They are hard to find due to the implementation with pointers
  *    in only one direction.)  The Tuple node is smaller than any other
- *   node, so that a node can be changed into a Tuple by just changing it's
+ *    node, so that a node can be changed into a Tuple by just changing it's
  *    opcode and giving it a new in array.
  *
  *    Parameters
@@ -991,6 +957,49 @@
  *
  *    The single output of the Id operation is it's input.  Also needed
  *    for optimizations.
+ *
+ *
+ *    HIGH LEVEL OPERATIONS
+ *    ---------------------
+ *
+ *    ir_node *new_CopyB (ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type)
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Describes a high level block copy of a compound type from address src to
+ *    address dst. Must be lowered to a Call to a runtime memory copy function.
+ *
+ *
+ *    HIGH LEVEL OPERATIONS: Exception Support
+ *    ----------------------------------------
+ *    See TechReport 1999-14, chapter Exceptions.
+ *
+ *    ir_node *new_InstOf(ir_node *store, ir_node *ptr, ir_type *type);
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Describes a high level type check. Must be lowered to a Call to a runtime check
+ *    function.
+ *
+ *    ir_node *new_Raise (ir_node *store, ir_node *obj)
+ *    -------------------------------------------------
+ *
+ *    Raises an exception.  Unconditional change of control flow.  Writes
+ *    an explicit Except variable to memory to pass it to the exception
+ *    handler.  Must be lowered to a Call to a runtime check
+ *    function.
+ *
+ *    Inputs:
+ *      The memory state.
+ *      A pointer to the Except variable.
+ *    Output:
+ *      A tuple of control flow and the changed memory state.  The control flow
+ *      points to the exception handler if it is definied in this procedure,
+ *      else it points to the end_block.
+ *
+ *    ir_node *new_Bound  (ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Describes a high level bounds check. Must be lowered to a Call to a runtime check
+ *    function.
  *
  *
  *    COPING WITH DATA OBJECTS
@@ -1165,17 +1174,6 @@ ir_node *new_rd_Cond   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c)
 ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
 			ir_node *store, int arity, ir_node *in[]);
 
-/** Constructor for a Raise node.
- *
- * @param *db    A pointer for debug information.
- * @param *irg   The ir graph the node  belongs to.
- * @param *block The ir block the node belongs to.
- * @param *store The current memory.
- * @param *obj   A pointer to the Except variable.
- */
-ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *store, ir_node *obj);
-
 /** Constructor for a Const_type node.
  *
  * The constant represents a target value.  This constructor sets high
@@ -1314,21 +1312,6 @@ ir_node *new_rd_simpleSel (dbg_info *db, ir_graph *irg, ir_node *block,
  */
 ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 			ir_node *objptr, int n_index, ir_node *index[], entity *ent);
-
-/** Constructor for a InstOf node.
- *
- * A High-Level Type check.
- *
- * @param   *db        A pointer for debug information.
- * @param   *irg       The ir graph the node  belongs to.
- * @param   *block     The ir block the node belongs to.
- * @param   *store     The memory in which the object the entity should be selected
- *                     from is allocated.
- * @param   *objptr    A pointer to a object of a class type.
- * @param   *type      The type of which objptr must be.
- */
-ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *objptr, ir_type *type);
 
 /** Constructor for a Call node.
  *
@@ -1848,8 +1831,37 @@ ir_node *new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
 
+/** Constructor for a InstOf node.
+ *
+ * A High-Level Type check.
+ *
+ * @param   *db        A pointer for debug information.
+ * @param   *irg       The ir graph the node  belongs to.
+ * @param   *block     The ir block the node belongs to.
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
+ */
+ir_node *new_rd_InstOf (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+			ir_node *objptr, ir_type *type);
+
+/** Constructor for a Raise node.
+ *
+ * A High-Level Exception throw.
+ *
+ * @param *db    A pointer for debug information.
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param *store The current memory.
+ * @param *obj   A pointer to the Except variable.
+ */
+ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *store, ir_node *obj);
+
 /** Constructor for a Bound node.
- * Checks whether lower <= idx && idx < upper.
+ *
+ * A High-Level bounds check. Checks whether lower <= idx && idx < upper.
  *
  * @param *db         A pointer for debug information.
  * @param *irg        The ir graph the node belong to.
@@ -1945,16 +1957,6 @@ ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
 ir_node *new_r_Return (ir_graph *irg, ir_node *block,
 		       ir_node *store, int arity, ir_node *in[]);
 
-/** Constructor for a Raise node.
- *
- * @param *irg   The ir graph the node  belongs to.
- * @param *block The ir block the node belongs to.
- * @param *store The current memory.
- * @param *obj   A pointer to the Except variable.
- */
-ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
-               ir_node *store, ir_node *obj);
-
 /** Constructor for a Const node.
  *
  * Constructor for a Const node. The constant represents a target
@@ -2048,20 +2050,6 @@ ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
 ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node *index[],
                entity *ent);
-
-/** Constructor for a InstOf node.
- *
- * A High-Level Type check.
- *
- * @param   *irg       The ir graph the node  belongs to.
- * @param   *block     The ir block the node belongs to.
- * @param   *store     The memory in which the object the entity should be selected
- *                     from is allocated.
- * @param   *objptr    A pointer to a object of a class type.
- * @param   *type      The type of which objptr must be.
- */
-ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *objptr, ir_type *type);
 
 /** Constructor for a Call node.
  *
@@ -2433,7 +2421,6 @@ ir_node *new_r_Id     (ir_graph *irg, ir_node *block,
  * @param *irg    The ir graph the node  belongs to.
  *
  */
-
 ir_node *new_r_Bad    (ir_graph *irg);
 
 /** Constructor for a Confirm node.
@@ -2448,7 +2435,6 @@ ir_node *new_r_Bad    (ir_graph *irg);
  * @param *val    The value we express a constraint for
  * @param *bound  The value to compare against. Must be a firm node, typically a constant.
  * @param cmp     The compare operation.
- *
  */
 ir_node *new_r_Confirm (ir_graph *irg, ir_node *block,
             ir_node *val, ir_node *bound, pn_Cmp cmp);
@@ -2559,8 +2545,35 @@ ir_node *new_r_Mux  (ir_graph *irg, ir_node *block,
 ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
 
+/** Constructor for a InstOf node.
+ *
+ * A High-Level Type check.
+ *
+ * @param   *irg       The ir graph the node  belongs to.
+ * @param   *block     The ir block the node belongs to.
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
+ */
+ir_node *new_r_InstOf (ir_graph *irg, ir_node *block, ir_node *store,
+			ir_node *objptr, ir_type *type);
+
+/** Constructor for a Raise node.
+ *
+ * A High-Level Exception throw.
+ *
+ * @param *irg   The ir graph the node  belongs to.
+ * @param *block The ir block the node belongs to.
+ * @param *store The current memory.
+ * @param *obj   A pointer to the Except variable.
+ */
+ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
+               ir_node *store, ir_node *obj);
+
 /** Constructor for a Bound node.
- * Checks whether lower <= idx && idx < upper.
+ *
+ * A High-Level bounds check. Checks whether lower <= idx && idx < upper.
  *
  * @param *irg        The ir graph the node belong to.
  * @param *block      The block the node belong to.
@@ -2655,7 +2668,6 @@ ir_node *new_d_IJmp   (dbg_info *db, ir_node *tgt);
  * @param *db    A pointer for debug information.
  * @param *c     The conditions parameter.Can be of mode b or I_u.
  */
-
 ir_node *new_d_Cond   (dbg_info *db, ir_node *c);
 
 /** Constructor for a Return node.
@@ -2670,19 +2682,7 @@ ir_node *new_d_Cond   (dbg_info *db, ir_node *c);
  * @param arity  Number of array indices.
  * @param *in    Array with index inputs to the node.
  */
-
 ir_node *new_d_Return (dbg_info *db, ir_node *store, int arity, ir_node *in[]);
-
-/** Constructor for a Raise node.
- *
- * Adds the node to the block in current_ir_block.
- *
- * @param *db    A pointer for debug information.
- * @param *store The current memory.
- * @param *obj   A pointer to the Except variable.
- */
-
-ir_node *new_d_Raise  (dbg_info *db, ir_node *store, ir_node *obj);
 
 /** Constructor for a Const_type node.
  *
@@ -2786,18 +2786,6 @@ ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, entity *
 ir_node *new_d_Sel    (dbg_info *db, ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
 
-/** Constructor for a InstOf node.
- *
- * A High-Level Type check.
- *
- * @param   *db        A pointer for debug information.
- * @param   *store     The memory in which the object the entity should be selected
- *                     from is allocated.
- * @param   *objptr    A pointer to a object of a class type.
- * @param   *type      The type of which objptr must be.
- */
-ir_node *new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *type);
-
 /** Constructor for a Call node.
  *
  *  Represents all kinds of method and function calls.
@@ -2810,7 +2798,6 @@ ir_node *new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *t
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
  * @param   *tp     Type information of the procedure called.
  */
-
 ir_node *new_d_Call   (dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node *in[],
              ir_type *tp);
 
@@ -2834,7 +2821,6 @@ ir_node *new_d_Add    (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-
 ir_node *new_d_Sub    (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Minus node.
@@ -3107,7 +3093,6 @@ ir_node *new_d_Free   (dbg_info *db, ir_node *store, ir_node *ptr, ir_node *size
  */
 ir_node *new_d_Sync   (dbg_info *db, int arity, ir_node *in[]);
 
-
 /** Constructor for a Proj node.
  *
  * Projects a single value out of a tuple.  The parameter proj gives the
@@ -3120,7 +3105,6 @@ ir_node *new_d_Sync   (dbg_info *db, int arity, ir_node *in[]);
  * @param proj   The position of the value in the tuple.
  */
 ir_node *new_d_Proj   (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
-
 
 /** Constructor for a defaultProj node.
  *
@@ -3144,7 +3128,6 @@ ir_node *new_d_defaultProj (dbg_info *db, ir_node *arg, long max_proj);
  * @param **in    An array containing pointers to the nodes producing the tuple elements.
  */
 ir_node *new_d_Tuple  (dbg_info *db, int arity, ir_node *in[]);
-
 
 /** Constructor for a Id node.
  *
@@ -3178,7 +3161,6 @@ ir_node *new_d_Bad    (void);
  * @param cmp     The compare operation.
  */
 ir_node *new_d_Confirm (dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp);
-
 
 /** Constructor for an Unknown node.
  *
@@ -3280,8 +3262,31 @@ ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
  */
 ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
 
+/** Constructor for a InstOf node.
+ *
+ * A High-Level Type check.
+ *
+ * @param   *db        A pointer for debug information.
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
+ */
+ir_node *new_d_InstOf (dbg_info *db, ir_node *store, ir_node *objptr, ir_type *type);
+
+/** Constructor for a Raise node.
+ *
+ * A High-Level Exception throw.
+ *
+ * @param *db    A pointer for debug information.
+ * @param *store The current memory.
+ * @param *obj   A pointer to the Except variable.
+ */
+ir_node *new_d_Raise  (dbg_info *db, ir_node *store, ir_node *obj);
+
 /** Constructor for a Bound node.
- * Checks whether lower <= idx && idx < upper.
+ *
+ * A High-Level bounds check. Checks whether lower <= idx && idx < upper.
  *
  * @param *db         A pointer for debug information.
  * @param *store      The current memory
@@ -3389,15 +3394,6 @@ ir_node *new_Cond   (ir_node *c);
  */
 ir_node *new_Return (ir_node *store, int arity, ir_node *in[]);
 
-/**Constructor for a Raise node.
- *
- * Adds the node to the block in current_ir_block.
- *
- * @param *store The current memory.
- * @param *obj   A pointer to the Except variable.
- */
-ir_node *new_Raise  (ir_node *store, ir_node *obj);
-
 /** Constructor for a Const node.
  *
  * Constructor for a Const node. The constant represents a target
@@ -3488,17 +3484,6 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
  */
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
                      entity *ent);
-
-/** Constructor for a InstOf node.
- *
- * A High-Level Type check.
- *
- * @param   *store     The memory in which the object the entity should be selected
- *                     from is allocated.
- * @param   *objptr    A pointer to a object of a class type.
- * @param   *type      The type of which objptr must be.
- */
-ir_node *new_InstOf (ir_node *store, ir_node *objptr, ir_type *type);
 
 /** Constructor for a Call node.
  *
@@ -3742,7 +3727,7 @@ ir_node *new_Load   (ir_node *store, ir_node *addr, ir_mode *mode);
  */
 ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
 
-/**Constructor for a Alloc node.
+/** Constructor for a Alloc node.
  *
  * The Alloc node extends the memory by space for an entity of type alloc_type.
  * Adds the node to the block in current_ir_block.
@@ -3755,8 +3740,7 @@ ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
 ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
                      where_alloc where);
 
-
-/**Constructor for a Free node.
+/** Constructor for a Free node.
  *
  * Frees the memory occupied by the entity pointed to by the pointer
  * arg.  Type indicates the type of the entity the argument points to.
@@ -3796,7 +3780,7 @@ ir_node *new_Sync   (int arity, ir_node *in[]);
  */
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
 
-/** Costructor for a Filter node.
+/** Constructor for a Filter node.
  *
  * Constructor for a Filter node. Adds the node to the block in current_ir_block.
  * Filter is a node with two views used to construct the interprocedural view.
@@ -3903,8 +3887,29 @@ ir_node *new_Mux  (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *m
  */
 ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
 
+/** Constructor for a InstOf node.
+ *
+ * A High-Level Type check.
+ *
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    A pointer to a object of a class type.
+ * @param   *type      The type of which objptr must be.
+ */
+ir_node *new_InstOf (ir_node *store, ir_node *objptr, ir_type *type);
+
+/**Constructor for a Raise node.
+ *
+ * A High-Level Exception throw.
+ *
+ * @param *store The current memory.
+ * @param *obj   A pointer to the Except variable.
+ */
+ir_node *new_Raise  (ir_node *store, ir_node *obj);
+
 /** Constructor for a Bound node.
- * Checks whether lower <= idx && idx < upper.
+ *
+ * A High-Level bounds check. Checks whether lower <= idx && idx < upper.
  *
  * Adds the node to the block in current_ir_block.
  *
