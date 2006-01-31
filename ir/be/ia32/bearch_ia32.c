@@ -426,9 +426,17 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 			new_in[n_arg++] = get_Return_mem(returns[i]);
 
 			/* create the new return node */
-			new_ret     = new_rd_ia32_Return(get_irn_dbg_info(returns[i]), irg, return_block, n_arg, new_in);
-			sched_point = sched_prev(returns[i]);
-			sched_remove(returns[i]);
+			new_ret = new_rd_ia32_Return(get_irn_dbg_info(returns[i]), irg, return_block, n_arg, new_in);
+
+			/* In case the return node is the only node in the block, */
+			/* it is not scheduled, so we need this work-around.      */
+			if (! sched_is_scheduled(returns[i])) {
+				sched_point = return_block;
+			}
+			else {
+				sched_point = sched_prev(returns[i]);
+				sched_remove(returns[i]);
+			}
 
 			/* exchange the old return with the new one */
 			exchange(returns[i], new_ret);
@@ -437,7 +445,7 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 
 			/* remove the old one from schedule and add the new nodes properly */
 			sched_add_after(sched_point, new_ret);
-			sched_add_before(new_ret, stack_free);
+			sched_add_after(sched_point, stack_free);
 		}
 	}
 }
