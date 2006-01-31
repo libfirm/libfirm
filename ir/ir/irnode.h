@@ -387,20 +387,6 @@ int       get_Return_n_ress (ir_node *node);
 ir_node  *get_Return_res (ir_node *node, int pos);
 void      set_Return_res (ir_node *node, int pos, ir_node *res);
 
-ir_node *get_Raise_mem (ir_node *node);
-void     set_Raise_mem (ir_node *node, ir_node *mem);
-ir_node *get_Raise_exo_ptr (ir_node *node);  /* PoinTeR to EXception Object */
-void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
-
-/**
- * Projection numbers for Raise.
- */
-typedef enum {
-  pn_Raise_X,    /**< Execution result. */
-  pn_Raise_M,    /**< Memory result.    */
-  pn_Raise_max   /**< number of projections from a Raise */
-} pn_Raise;  /* Projection numbers for Raise. */
-
 typedef enum {
   CNST_NULL     =  0, /**< The node is a const(0). */
   CNST_ONE      = +1, /**< The node is a const(1). */
@@ -497,27 +483,6 @@ ir_node *get_Sel_index (ir_node *node, int pos);
 void     set_Sel_index (ir_node *node, int pos, ir_node *index);
 entity  *get_Sel_entity (ir_node *node); /* entity to select */
 void     set_Sel_entity (ir_node *node, entity *ent);
-
-/**
- * Projection numbers for result of InstOf node: use for Proj nodes!
- */
-typedef enum {
-  pn_InstOf_M_regular = 0,   /**< The memory result. */
-  pn_InstOf_X_except = 1,    /**< The control flow result branching to the exception handler */
-  pn_InstOf_res = 2,         /**< The checked object pointer. */
-  pn_InstOf_M_except = 3,    /**< The memory result in case the runtime function terminated with
-                                 an exception */
-  pn_InstOf_max = 4          /**< number of projections from an InstOf */
-} pn_InstOf;
-#define pn_InstOf_M pn_InstOf_M_regular
-
-/** InstOf access */
-ir_type *get_InstOf_type (ir_node *node);
-void    set_InstOf_type (ir_node *node, ir_type *type);
-ir_node *get_InstOf_store (ir_node *node);
-void    set_InstOf_store (ir_node *node, ir_node *obj);
-ir_node *get_InstOf_obj (ir_node *node);
-void    set_InstOf_obj (ir_node *node, ir_node *obj);
 
 /**
  * Projection numbers for result of Call node: use for Proj nodes!
@@ -970,6 +935,41 @@ ir_node *get_CopyB_src (ir_node *node);
 void     set_CopyB_src (ir_node *node, ir_node *src);
 ir_type *get_CopyB_type(ir_node *node);
 void     set_CopyB_type(ir_node *node, ir_type *data_type);
+
+/**
+ * Projection numbers for result of InstOf node: use for Proj nodes!
+ */
+typedef enum {
+  pn_InstOf_M_regular = 0,   /**< The memory result. */
+  pn_InstOf_X_except = 1,    /**< The control flow result branching to the exception handler */
+  pn_InstOf_res = 2,         /**< The checked object pointer. */
+  pn_InstOf_M_except = 3,    /**< The memory result in case the runtime function terminated with
+                                 an exception */
+  pn_InstOf_max = 4          /**< number of projections from an InstOf */
+} pn_InstOf;
+#define pn_InstOf_M pn_InstOf_M_regular
+
+/** InstOf access */
+ir_type *get_InstOf_type (ir_node *node);
+void    set_InstOf_type (ir_node *node, ir_type *type);
+ir_node *get_InstOf_store (ir_node *node);
+void    set_InstOf_store (ir_node *node, ir_node *obj);
+ir_node *get_InstOf_obj (ir_node *node);
+void    set_InstOf_obj (ir_node *node, ir_node *obj);
+
+/**
+ * Projection numbers for Raise.
+ */
+typedef enum {
+  pn_Raise_M,    /**< Memory result.    */
+  pn_Raise_X,    /**< Execution result. */
+  pn_Raise_max   /**< number of projections from a Raise */
+} pn_Raise;  /* Projection numbers for Raise. */
+
+ir_node *get_Raise_mem (ir_node *node);
+void     set_Raise_mem (ir_node *node, ir_node *mem);
+ir_node *get_Raise_exo_ptr (ir_node *node);  /* PoinTeR to EXception Object */
+void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
 
 /**
  * Projection numbers for result of Bound node: use for Proj nodes!
