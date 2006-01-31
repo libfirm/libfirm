@@ -350,8 +350,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 //TODO: - iff PERM_CYCLE && do_copy -> determine free temp reg and insert copy to/from it before/after
 //        the copy cascade (this reduces the cycle into a chain)
 
-		/* build copy/swap nodes */
-		for (i = 0; i < cycle->n_elems - 1; i++) {
+		/* build copy/swap nodes from back to front */
+		for (i = cycle->n_elems - 2; i >= 0; i--) {
 			arg1 = get_node_for_register(pairs, n, cycle->elems[i], 0);
 			arg2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 0);
 
@@ -370,6 +370,33 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				in[0] = arg1;
 				in[1] = arg2;
 
+				/* At this point we have to handle the following problem:     */
+				/*                                                            */
+				/* If we have a cycle with more than two elements, then       */
+				/* this could correspond to the following Perm node:          */
+				/*                                                            */
+				/*   +----+   +----+   +----+                                 */
+				/*   | r1 |   | r2 |   | r3 |                                 */
+				/*   +-+--+   +-+--+   +--+-+                                 */
+				/*     |        |         |                                   */
+				/*     |        |         |                                   */
+				/*   +-+--------+---------+-+                                 */
+				/*   |         Perm         |                                 */
+				/*   +-+--------+---------+-+                                 */
+				/*     |        |         |                                   */
+				/*     |        |         |                                   */
+				/*   +-+--+   +-+--+   +--+-+                                 */
+				/*   |Proj|   |Proj|   |Proj|                                 */
+				/*   | r2 |   | r3 |   | r1 |                                 */
+				/*   +----+   +----+   +----+                                 */
+				/*                                                            */
+				/* This node is about to be split up into two 2x Perm's       */
+				/* for which we need 4 Proj's and the one additional Proj     */
+				/* of the first Perm has to be one IN of the second. So in    */
+				/* general we need to create one additional Proj for each     */
+				/* "middle" Perm and set this to one in node of the successor */
+				/* Perm.                                                      */
+
 				DBG((mod, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
 					irn, arg1, cycle->elems[i]->name, arg2, cycle->elems[i + 1]->name));
 				DBG((mod, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
@@ -377,8 +404,21 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 				cpyxchg = be_new_Perm(reg_class, env->chord_env->irg, block, 2, in);
 
+				if (i > 0) {
+					/* cycle is not done yet */
+					int pidx = get_pairidx_for_regidx(pairs, n, cycle->elems[i]->index, 0);
+
+					/* create intermediate proj */
+					res2 = new_r_Proj(get_irn_irg(irn), block, cpyxchg, get_irn_mode(res1), 0);
+
+					/* set as in for next Perm */
+					pairs[pidx].in_node = res2;
+				}
+				else {
+					sched_remove(res2);
+				}
+
 				sched_remove(res1);
-				sched_remove(res2);
 
 				set_Proj_pred(res2, cpyxchg);
 				set_Proj_proj(res2, 0);
@@ -407,6 +447,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 			/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
 			sched_add_after(sched_point, cpyxchg);
+			/* set the new scheduling point */
+			sched_point = cpyxchg;
 
 			DBG((mod, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 		}
