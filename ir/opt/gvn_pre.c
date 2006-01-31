@@ -149,8 +149,38 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
   dump_set(info->avail_out, "Avail_out", block);
 }
 
-/*
- * Implement phi_translate
+/**
+ * Get the leader of an expression. In Firm, only
+ * Phi nodes can be leaders, all other 'leader' are
+ * handled by the identify_remember mechanism right.
+ */
+static ir_node *find_leader(ir_node *n)
+{
+  ir_node *l = get_irn_link(n);
+
+  if (l) {
+    assert(is_Phi(l));
+    return l;
+  }
+  return n;
+}  /* find_leader */
+
+/**
+ * Returns the Phi-leader if one exists, else NULL.
+ */
+static ir_node *has_leader(ir_node *n)
+{
+  ir_node *l = get_irn_link(n);
+
+  if (l) {
+    assert(is_Phi(l));
+    return l;
+  }
+  return NULL;
+}  /* has_leader */
+
+/**
+ * Implements phi_translate
  */
 static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *env)
 {
@@ -167,8 +197,9 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
 
   /* check if the node has at least one Phi predecessor */
   for (i = 0; i < arity; ++i) {
-    ir_node *phi = get_irn_intra_n(node, i);
-    if (is_Phi(phi) && get_nodes_block(phi) == block)
+    ir_node *pred   = get_irn_intra_n(node, i);
+    ir_node *leader = find_leader(pred);
+    if (is_Phi(leader) && get_nodes_block(leader) == block)
       break;
   }
   if (i >= arity) {
@@ -196,21 +227,34 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
   copy_node_attr(node, res);
   current_ir_graph->obst = old;
 
-  for (i = -1; i < arity; ++i) {
+  set_irn_n(res, -1, get_irn_intra_n(node, -1));
+  for (i = 0; i < arity; ++i) {
     ir_node *pred = get_irn_intra_n(node, i);
+    ir_node *leader = find_leader(pred);
 
-    if (! is_Phi(pred))
-      set_irn_n(res, i, pred);
+    if (is_Phi(leader) && get_nodes_block(leader) == block)
+      set_irn_n(res, i, get_Phi_pred(leader, pos));
     else
-      set_irn_n(res, i, get_Phi_pred(pred, pos));
+      set_irn_n(res, i, leader);
   }
   set_irn_link(res, NULL);
+
+  if (is_op_commutative(get_irn_op(res))) {
+    ir_node *l = get_binop_left(res);
+    ir_node *r = get_binop_right(res);
+
+    /* for commutative operators perform  a OP b == b OP a */
+    if (l > r) {
+      set_binop_left(res, r);
+      set_binop_right(res, l);
+    }
+  }
+
   return res;
-}
+}  /* phi_translate */
 
 /**
  * computes Antic_in(block):
- *
  */
 static void compute_antic(ir_node *block, void *ctx)
 {
@@ -362,30 +406,24 @@ static int operands_equal(ir_node *n1, ir_node *n2)
 }
 
 /**
- * Get the leader of an expression. In Firm, only
- * Phi nodes can be leaders, all other 'leader' are
- * handled by the identify_remember mechanism right.
+ * Replace a value in a set by an node computing the same
+ * value in a dominator block.
+ *
+ * @return non-zero if a replacement took place
  */
-static ir_node *find_leader(ir_node *n)
+static int value_replace(pset *set, ir_node *e)
 {
-  ir_node *l = get_irn_link(n);
+  ir_node *old = identify_remember(set, e);
 
-  if (l) {
-    assert(is_Phi(l));
-    return l;
+  if (old != e) {
+    /* e must dominate old here */
+    assert(block_dominates(get_nodes_block(e), get_nodes_block(old)));
+
+    pset_remove(set, old, ir_node_hash(old));
+    identify_remember(set, e);
+    return 1;
   }
-  return n;
-}
-
-static ir_node *has_leader(ir_node *n)
-{
-  ir_node *l = get_irn_link(n);
-
-  if (l) {
-    assert(is_Phi(l));
-    return l;
-  }
-  return NULL;
+  return 0;
 }
 
 /**
@@ -404,10 +442,10 @@ static ir_node *has_leader(ir_node *n)
 static void insert_nodes(ir_node *block, void *ctx)
 {
   pre_env *env = ctx;
-  ir_node *v, *idom, *first_s;
+  ir_node *e, *idom, *first_s;
   block_info *curr_info, *idom_info;
   int pos, arity = get_irn_intra_arity(block);
-  int all_same, by_some;
+  int all_same, by_some, updated;
 
   curr_info = get_block_info(block);
   curr_info->new_set = new_pset(identities_cmp, 8);
@@ -419,73 +457,69 @@ static void insert_nodes(ir_node *block, void *ctx)
   idom_info = get_block_info(idom);
 
   /* update the new_sets */
-  pset_union(curr_info->new_set, idom_info->new_set);
-  pset_foreach(v, idom_info->new_set) {
-    ir_node *old = identify_remember(idom_info->new_set, v);
-
-    if (old != v) {
-      /* v must dominate old here */
-      assert(block_dominates(get_nodes_block(v), get_nodes_block(old)));
-
-      pset_remove(curr_info->avail_out, old, ir_node_hash(old));
-      identify_remember(curr_info->avail_out, v);
-    }
+  updated = 0;
+  dump_set(idom_info->new_set, "[New Set]", idom);
+  pset_foreach(e, idom_info->new_set) {
+    identify_remember(curr_info->new_set, e);
+    updated |= value_replace(curr_info->avail_out, e);
   }
-  dump_set(curr_info->avail_out, "[Avail_out]", block);
+  if (updated)
+    dump_set(curr_info->avail_out, "Updated [Avail_out]", block);
 
   if (arity <= 1)
     return;
 
-  pset_foreach(v, curr_info->antic_in) {
+  pset_foreach(e, curr_info->antic_in) {
     /*
      * If we already have a leader for this node,
      * it is totally redundant.
      */
-    if (has_leader(v))
+    if (has_leader(e))
       continue;
 
     /* If the value was already computed in the dominator, then
        it is totally redundant.  Hence we have nothing to insert. */
-    if (pset_find(idom_info->avail_out, v, ir_node_hash(v))) {
+    if (pset_find(idom_info->avail_out, e, ir_node_hash(e))) {
 //      DB((dbg, LEVEL_2, "Found %+F from block %+F avail in dom %+F\n", v, block, idom));
       continue;
     }
 
-    all_same = 1;
     by_some  = 0;
+    all_same = 1;
     first_s  = NULL;
 
     /* for all predecessor blocks */
     for (pos = 0; pos < arity; ++pos) {
       block_info *pred_info;
       ir_node *pred_blk = get_Block_cfgpred_block(block, pos);
-      ir_node *trans, *found;
+      ir_node *e_prime, *v_prime, *e_dprime;
 
       /* ignore bad blocks. */
       if (is_Bad(pred_blk))
         continue;
 
-      trans = phi_translate(v, block, pos, env);
+      e_prime = phi_translate(e, block, pos, env);
+      v_prime = e_prime;
 
       pred_info = get_block_info(pred_blk);
-      found = pset_find(pred_info->avail_out, trans, ir_node_hash(trans));
+      e_dprime = pset_find(pred_info->avail_out, v_prime, ir_node_hash(v_prime));
 
-      if (found == NULL) {
+      if (e_dprime == NULL) {
         all_same = 0;
-        pred_info->avail = trans;
+        pred_info->avail = e_prime;
         pred_info->not_found = 1;
       }
       else {
-        found = find_leader(found);
-        pred_info->avail = found;
+        e_dprime = find_leader(e_dprime);
+        pred_info->avail = e_dprime;
         pred_info->not_found = 0;
         by_some = 1;
         if (first_s == NULL)
-          first_s = found;
-        else if (first_s != found)
+          first_s = e_dprime;
+        else if (first_s != e_dprime)
           all_same = 0;
 
-        DB((dbg, LEVEL_2, "Found %+F from block %+F as %+F in pred %+F\n", v, block, found, pred_blk));
+        DB((dbg, LEVEL_2, "Found %+F from block %+F as %+F in pred %+F\n", e, block, e_dprime, pred_blk));
       }  /* if */
     }  /* for */
 
@@ -494,7 +528,7 @@ static void insert_nodes(ir_node *block, void *ctx)
     if (! all_same && by_some) {
       ir_node *phi, **in;
       ir_mode *mode = NULL;
-      DB((dbg, LEVEL_1, "Partial redundant %+F from block %+F found\n", v, block));
+      DB((dbg, LEVEL_1, "Partial redundant %+F from block %+F found\n", e, block));
 
       in = xmalloc(arity * sizeof(*in));
       /* for all predecessor blocks */
@@ -510,18 +544,18 @@ static void insert_nodes(ir_node *block, void *ctx)
 
         /* ignore blocks that already have the expression */
         if (pred_info->not_found) {
-          ir_node *avail = pred_info->avail;
+          ir_node *e_prime = pred_info->avail;
           ir_node *nn;
-          assert(! is_Phi(avail));
+          assert(! is_Phi(e_prime));
 
-          mode = get_irn_mode(avail);
+          mode = get_irn_mode(e_prime);
           nn = new_ir_node(
-            get_irn_dbg_info(avail),
+            get_irn_dbg_info(e_prime),
             current_ir_graph, pred_blk,
-            get_irn_op(avail),
+            get_irn_op(e_prime),
             mode,
-            get_irn_arity(avail),
-            get_irn_in(avail) + 1);
+            get_irn_arity(e_prime),
+            get_irn_in(e_prime) + 1);
 
           pred_info->avail = identify_remember(pred_info->avail_out, nn);
         }
@@ -531,11 +565,11 @@ static void insert_nodes(ir_node *block, void *ctx)
       free(in);
       identify_remember(curr_info->avail_out, phi);
       identify_remember(curr_info->new_set, phi);
-      /* v might be translated, so add it here */
-      identify_remember(curr_info->avail_out, v);
-      identify_remember(curr_info->new_set, v);
-      set_irn_link(v, phi);
-      DB((dbg, LEVEL_2, "New %+F for redundant %+F created\n", phi, v));
+      /* e might be translated, so add it here */
+      identify_remember(curr_info->avail_out, e);
+      identify_remember(curr_info->new_set, e);
+      set_irn_link(e, phi);
+      DB((dbg, LEVEL_2, "New %+F for redundant %+F created\n", phi, e));
       env->changes |= 1;
     }  /* if */
   }  /* pset_foreach */
