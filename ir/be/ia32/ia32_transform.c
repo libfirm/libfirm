@@ -488,7 +488,21 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 	ir_node  *block = env->block;
 	ir_mode  *mode  = env->mode;
 	ir_node  *irn   = env->irn;
-	ir_node  *mem   = get_DivMod_mem(irn);
+	ir_node  *mem;
+
+	switch (dm_flav) {
+		case flavour_Div:
+			mem = get_Div_mem(irn);
+			break;
+		case flavour_Mod:
+			mem = get_Mod_mem(irn);
+			break;
+		case flavour_DivMod:
+			mem = get_DivMod_mem(irn);
+			break;
+		default:
+			assert(0);
+	}
 
 	if (mode_is_signed(mode)) {
 		/* in signed mode, we need to sign extend the dividend */
