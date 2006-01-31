@@ -65,9 +65,9 @@ typedef enum {
 /** The opcodes of the libFirm predefined operations. */
 typedef enum {
   iro_Block,
-  iro_Start, iro_End, iro_Jmp, iro_IJmp, iro_Cond, iro_Return, iro_Raise,
+  iro_Start, iro_End, iro_Jmp, iro_IJmp, iro_Cond, iro_Return,
   iro_Const, iro_SymConst,
-  iro_Sel,  iro_InstOf,
+  iro_Sel,
   iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Quot, iro_DivMod,
   iro_Div,  iro_Mod, iro_Abs, iro_And, iro_Or, iro_Eor, iro_Not,
   iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv, iro_Cast,
@@ -75,7 +75,8 @@ typedef enum {
   iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
   iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
   iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
-  iro_NoMem, iro_Mux, iro_CopyB, iro_Bound,
+  iro_NoMem, iro_Mux, iro_CopyB,
+  iro_InstOf, iro_Raise, iro_Bound,
   iro_MaxOpcode
 } opcode;
 
@@ -89,9 +90,7 @@ extern ir_op *op_Jmp;             ir_op *get_op_Jmp       (void);
 extern ir_op *op_IJmp;            ir_op *get_op_IJmp      (void);
 extern ir_op *op_Cond;            ir_op *get_op_Cond      (void);
 extern ir_op *op_Return;          ir_op *get_op_Return    (void);
-extern ir_op *op_Raise;           ir_op *get_op_Raise     (void);
 extern ir_op *op_Sel;             ir_op *get_op_Sel       (void);
-extern ir_op *op_InstOf;          ir_op *get_op_InstOf    (void);
 
 extern ir_op *op_Const;           ir_op *get_op_Const     (void);
 extern ir_op *op_SymConst;        ir_op *get_op_SymConst  (void);
@@ -143,6 +142,9 @@ extern ir_op *op_EndExcept;       ir_op *get_op_EndExcept (void);
 extern ir_op *op_NoMem;           ir_op *get_op_NoMem     (void);
 extern ir_op *op_Mux;             ir_op *get_op_Mux       (void);
 extern ir_op *op_CopyB;           ir_op *get_op_CopyB     (void);
+
+extern ir_op *op_InstOf;          ir_op *get_op_InstOf    (void);
+extern ir_op *op_Raise;           ir_op *get_op_Raise     (void);
 extern ir_op *op_Bound;           ir_op *get_op_Bound     (void);
 
 /** Returns the ident for the opcode name */
