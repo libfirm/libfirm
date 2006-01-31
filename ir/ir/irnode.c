@@ -918,30 +918,6 @@ set_Return_res (ir_node *node, int pos, ir_node *res){
   set_irn_n(node, pos + RETURN_RESULT_OFFSET, res);
 }
 
-ir_node *
-get_Raise_mem (ir_node *node) {
-  assert (node->op == op_Raise);
-  return get_irn_n(node, 0);
-}
-
-void
-set_Raise_mem (ir_node *node, ir_node *mem) {
-  assert (node->op == op_Raise);
-  set_irn_n(node, 0, mem);
-}
-
-ir_node *
-get_Raise_exo_ptr (ir_node *node) {
-  assert (node->op == op_Raise);
-  return get_irn_n(node, 1);
-}
-
-void
-set_Raise_exo_ptr (ir_node *node, ir_node *exo_ptr) {
-  assert (node->op == op_Raise);
-  set_irn_n(node, 1, exo_ptr);
-}
-
 tarval *(get_Const_tarval)(ir_node *node) {
 	return _get_Const_tarval(node);
 }
@@ -1122,42 +1098,6 @@ void
 set_Sel_entity (ir_node *node, entity *ent) {
   assert (node->op == op_Sel);
   node->attr.s.ent = ent;
-}
-
-ir_type *
-get_InstOf_type (ir_node *node) {
-  assert (node->op = op_InstOf);
-  return (node->attr.io.type);
-}
-
-void
-set_InstOf_type (ir_node *node, ir_type *type) {
-  assert (node->op = op_InstOf);
-  node->attr.io.type = type;
-}
-
-ir_node *
-get_InstOf_store (ir_node *node) {
-  assert (node->op = op_InstOf);
-  return (get_irn_n (node, 0));
-}
-
-void
-set_InstOf_store (ir_node *node, ir_node *obj) {
-  assert (node->op = op_InstOf);
-  set_irn_n (node, 0, obj);
-}
-
-ir_node *
-get_InstOf_obj (ir_node *node) {
-  assert (node->op = op_InstOf);
-  return (get_irn_n (node, 1));
-}
-
-void
-set_InstOf_obj (ir_node *node, ir_node *obj) {
-  assert (node->op = op_InstOf);
-  set_irn_n (node, 1, obj);
 }
 
 
@@ -2074,6 +2014,68 @@ ir_type *get_CopyB_type(ir_node *node) {
 void     set_CopyB_type(ir_node *node, ir_type *data_type) {
   assert (node->op == op_CopyB && data_type);
   node->attr.copyb.data_type = data_type;
+}
+
+
+ir_type *
+get_InstOf_type (ir_node *node) {
+  assert (node->op = op_InstOf);
+  return node->attr.io.type;
+}
+
+void
+set_InstOf_type (ir_node *node, ir_type *type) {
+  assert (node->op = op_InstOf);
+  node->attr.io.type = type;
+}
+
+ir_node *
+get_InstOf_store (ir_node *node) {
+  assert (node->op = op_InstOf);
+  return get_irn_n(node, 0);
+}
+
+void
+set_InstOf_store (ir_node *node, ir_node *obj) {
+  assert (node->op = op_InstOf);
+  set_irn_n(node, 0, obj);
+}
+
+ir_node *
+get_InstOf_obj (ir_node *node) {
+  assert (node->op = op_InstOf);
+  return get_irn_n(node, 1);
+}
+
+void
+set_InstOf_obj (ir_node *node, ir_node *obj) {
+  assert (node->op = op_InstOf);
+  set_irn_n(node, 1, obj);
+}
+
+/* Returns the memory input of a Raise operation. */
+ir_node *
+get_Raise_mem (ir_node *node) {
+  assert (node->op == op_Raise);
+  return get_irn_n(node, 0);
+}
+
+void
+set_Raise_mem (ir_node *node, ir_node *mem) {
+  assert (node->op == op_Raise);
+  set_irn_n(node, 0, mem);
+}
+
+ir_node *
+get_Raise_exo_ptr (ir_node *node) {
+  assert (node->op == op_Raise);
+  return get_irn_n(node, 1);
+}
+
+void
+set_Raise_exo_ptr (ir_node *node, ir_node *exo_ptr) {
+  assert (node->op == op_Raise);
+  set_irn_n(node, 1, exo_ptr);
 }
 
 /* Bound support */
