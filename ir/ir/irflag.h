@@ -24,7 +24,7 @@
  *        transformations in several algorithms on/off.
  * 2. Normalization flags.
  *    These flags steer transformations of the ir that improve it, as removing
- *    dump Phi nodes (one predecessor, all preds are equal ...), Ids, Tuples ...
+ *    dump Phi nodes (one predecessor, all predecessors are equal ...), Ids, Tuples ...
  * 3. Verbosity flags.
  *    a) Flags to steer the level of the information.
  *    b) Flags to steer in which phase information should be dumped.
@@ -66,8 +66,6 @@ int  get_firm_verbosity (void);
  *  - constant expression evaluation (2 + 5 ==> 7, 3 < 2 ==> false)
  *  - algebraic simplification  (a * 0 ==> 0, a or a ==> a)
  *  - simplification of tests   ( !(a < b) ==> (a >= b))
- *  - refining the memory representation
- *  - remove store after load
  * Default: opt_constant_folding == 1.
  */
 void set_opt_constant_folding (int value);
@@ -178,11 +176,12 @@ void set_opt_dead_node_elimination (int value);
  *
  * If opt_dead_method_elimination == 1 methods never called are
  * removed.
- * Default: opt_dead_method_elimination == 1. */
+ * Default: opt_dead_method_elimination == 1.
+ */
 void set_opt_dead_method_elimination (int value);
 void set_opt_dead_method_elimination_verbose (int value);
 
-/** Enable/Disables inlining.
+/** Enable/Disables method inlining.
  *
  * If opt_inline == 1 the inlining transformation is performed.
  */
@@ -263,7 +262,7 @@ void set_opt_scalar_replacement_verbose(int value);
  * Enable/Disable Null exception in Load and Store nodes only.
  *
  * If enabled, only Null pointer exception can occur at Load and
- * store nodes. If it can be proven that the address input of these
+ * store nodes. If it can be proved that the address input of these
  * nodes is non-null, the exception edge can safely be removed.
  * If disabled, other exceptions (like unaligned access, read-only memory,
  * etc.) can occur.
@@ -279,7 +278,7 @@ void set_opt_ldst_only_null_ptr_exceptions(int value);
  * pointers can only occur as input to Sel nodes.
  * If Null pointers are the only source for exceptions in Load and
  * Store nodes (as typical in high level languages), we can eliminate
- * exception edges form Load and Store as we can prove that the Sel
+ * exception edges from Load and Store when can prove that the Sel
  * nodes representing the Load/Store address have non-null inputs.
  * Enabling this flag enables this elimination.
  *
@@ -292,21 +291,22 @@ void set_opt_sel_based_null_check_elim(int value);
 
 /** Enable/Disable normalizations of the firm representation.
  *
- *  This flag guards transformations that normalize the firm representation
+ *  This flag guards transformations that normalize the Firm representation
  *  as removing Ids and Tuples, useless Phis, replacing SymConst(id) by
  *  Const(entity) and others.
  *  The transformations guarded by this flag are not guarded by flag
  *  "optimize".
- *  Many algorithms operating on firm can not deal with constructs in
+ *  Many algorithms operating on Firm can not deal with constructs in
  *  the non-normalized representation.
- *  default: 1
- *  @@@ ATTENTION: not all such transformations are guarded by a flag.
+ *  default: ON
+ *
+ *  @note ATTENTION: not all such transformations are guarded by a flag.
  */
 void set_opt_normalize (int value);
 
 /** Enable/Disable precise exception context.
  *
- * If enabled, all exceptions form a barrier for value, as in the
+ * If enabled, all exceptions form a barrier for values, as in the
  * following example:
  *
  * @code
@@ -320,6 +320,14 @@ void set_opt_normalize (int value);
  * Enable this for languages with strict exception order like Java.
  */
 void set_opt_precise_exc_context(int value);
+
+/** Enable/Disable closed world assumption.
+ *
+ * If enabled, optimizations expect to know the "whole world", i.e. no
+ * external types or callers exist.
+ * This enables some powerful optimizations.
+ */
+void set_opt_closed_world(int value);
 
 /**
  * Save the current optimization state.
@@ -346,7 +354,7 @@ typedef enum _firm_verification_t {
   FIRM_VERIFICATION_ERROR_ONLY = 3	/**< do node verification, but NEVER do assert nor report */
 } firm_verification_t;
 
-/** Select verification of nodes.
+/** Select verification of IR nodes and types.
  *
  *  Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
  *  Turn the verification off during development to check partial implementations.
