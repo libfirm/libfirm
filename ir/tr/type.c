@@ -765,6 +765,8 @@ ir_type *new_d_type_class (ident *name, dbg_info *db) {
   res->attr.ca.subtypes    = NEW_ARR_F (ir_type *, 0);
   res->attr.ca.supertypes  = NEW_ARR_F (ir_type *, 0);
   res->attr.ca.peculiarity = peculiarity_existent;
+  res->attr.ca.type_info   = NULL;
+  res->attr.ca.final       = 0;
   res->attr.ca.dfn         = 0;
   hook_new_type(res);
   return res;
@@ -774,11 +776,13 @@ ir_type *new_type_class (ident *name) {
   return new_d_type_class (name, NULL);
 }
 
+/* free all entities of a class */
 void free_class_entities(ir_type *clss) {
   int i;
   assert(clss && (clss->type_op == type_class));
   for (i = get_class_n_members(clss) - 1; i >= 0; --i)
     free_entity(get_class_member(clss, i));
+  /* do NOT free the type info here. It belongs to another class */
 }
 
 void free_class_attrs(ir_type *clss) {
@@ -939,6 +943,12 @@ void    remove_class_supertype(ir_type *clss, ir_type *supertype) {
       break;
     }
 }
+entity *get_class_type_info(const ir_type *clss) {
+  return clss->attr.ca.type_info;
+}
+void set_class_type_info(ir_type *clss, entity *ent) {
+  clss->attr.ca.type_info = ent;
+}
 
 const char *get_peculiarity_string(peculiarity p) {
 #define X(a)    case a: return #a
@@ -962,13 +972,19 @@ void        set_class_peculiarity (ir_type *clss, peculiarity pec) {
   clss->attr.ca.peculiarity = pec;
 }
 
-void set_class_dfn (ir_type *clss, int dfn)
-{
-  clss->attr.ca.dfn        = dfn;
+int (is_class_final)(const ir_type *clss) {
+  return _is_class_final(clss);
 }
 
-int get_class_dfn (const ir_type *clss)
-{
+void (set_class_final)(ir_type *clss, int final) {
+  _set_class_final(clss, final);
+}
+
+void set_class_dfn (ir_type *clss, int dfn) {
+  clss->attr.ca.dfn = dfn;
+}
+
+int get_class_dfn (const ir_type *clss) {
   return (clss->attr.ca.dfn);
 }
 

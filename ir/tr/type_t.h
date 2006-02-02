@@ -3,7 +3,7 @@
  * File name:   ir/tr/type_t.h
  * Purpose:     Representation of types -- private header.
  * Author:      Goetz Lindenmaier
- * Modified by:
+ * Modified by: Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 2001-2003 Universität Karlsruhe
@@ -33,7 +33,9 @@ typedef struct {
   entity  **members;   /**< fields and methods of this class */
   ir_type **subtypes;  /**< direct subtypes */
   ir_type **supertypes;/**< direct supertypes */
-  peculiarity peculiarity;
+  peculiarity peculiarity;  /**< peculiarity of this class */
+  entity  *type_info;  /**< a entity representing this class, used for type info */
+  unsigned final;      /**< non-zero if this is a final class */
   int dfn;             /**< number used for 'instanceof' operator */
 } cls_attr;
 
@@ -336,6 +338,18 @@ _get_class_member   (const ir_type *clss, int pos) {
 }
 
 static INLINE int
+_is_class_final   (const ir_type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.final;
+}
+
+static INLINE void
+_set_class_final   (ir_type *clss, int final) {
+  assert(clss && (clss->type_op == type_class));
+  clss->attr.ca.final = final;
+}
+
+static INLINE int
 _is_struct_type(const ir_type *strct) {
   assert(strct);
   return (strct->type_op == type_struct);
@@ -456,6 +470,8 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define is_Class_type(clss)               _is_class_type(clss)
 #define get_class_n_members(clss)         _get_class_n_members(clss)
 #define get_class_member(clss, pos)       _get_class_member(clss, pos)
+#define is_class_final(clss)              _is_class_final(clss)
+#define set_class_final(clss, final)      _set_class_final(clss, final)
 #define is_Struct_type(strct)             _is_struct_type(strct)
 #define is_Method_type(method)            _is_method_type(method)
 #define is_Union_type(uni)                _is_union_type(uni)

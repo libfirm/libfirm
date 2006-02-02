@@ -419,9 +419,9 @@ int smaller_type (ir_type *st, ir_type *lt);
  *  The following two are dynamic lists that can be grown with an "add_" function,
  *  but not shrinked:
  *
- *  - subtypes:   A list of direct subclasses.
+ *  - subtypes:    A list of direct subclasses.
  *
- *  - supertypes: A list of direct superclasses.
+ *  - supertypes:  A list of direct superclasses.
  *
  *  - peculiarity: The peculiarity of this class.  If the class is of peculiarity
  *                 "description" it only is a description of requirements to a class,
@@ -432,6 +432,17 @@ int smaller_type (ir_type *st, ir_type *lt);
  *                 no value for irg.
  *                 Values: description, existent, inherited.  Default: existent.
  *
+ *  - type_info:   An entity representing the type information of this class.
+ *                 This entity can be of arbitrari type, Firm did not use it yet.
+ *                 It allows to express the coupling of a type with an entity
+ *                 representing this type.  This information is useful for lowering
+ *                 of InstOf and TypeChk nodes.  Default: NULL
+ *
+ *  - final:       A final class is always a leaf in the class hierarchy.  Final
+ *                 classes cannot be super classes of other ones.  As this information
+ *                 can only be computed in whole world compilations, we allow to
+ *                 set this flag.  It is used in optimizations if get_opt_closed_world()
+ *                 is false.  Default:  false
  */
 
 /** Creates a new class type. */
@@ -576,6 +587,18 @@ const char *get_peculiarity_string(peculiarity p);
 peculiarity get_class_peculiarity (const ir_type *clss);
 /** Sets the peculiarity of the class. */
 void        set_class_peculiarity (ir_type *clss, peculiarity pec);
+
+/** Returns the type info entity of a class. */
+entity *get_class_type_info(const ir_type *clss);
+
+/** Set a type info entity for the class. */
+void set_class_type_info(ir_type *clss, entity *ent);
+
+/** Returns non-zero if a class is final. */
+int is_class_final(const ir_type *clss);
+
+/** Sets if a class is final. */
+void set_class_final(ir_type *clss, int final);
 
 /* Set and get a class' dfn --
    @todo This is an undocumented field, subject to change! */
