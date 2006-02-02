@@ -81,10 +81,10 @@
 #define DEBUG_libfirm 1
 
 /* define to 1 to use the libcore */
-#define WITH_LIBCORE
+#define WITH_LIBCORE 1
 
 /* define to 1 to have wchar_t support for identifiers */
-#define FIRM_ENABLE_WCHAR
+#define FIRM_ENABLE_WCHAR 1
 
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
@@ -101,10 +101,10 @@
 /* #undef WORDS_BIGENDIAN */
 
 /* Define to 1 if Firm statistics are activated */
-#define FIRM_STATISTICS
+#define FIRM_STATISTICS 1
 
 /* Define to 1 if Firm hooks are activated */
-#define FIRM_ENABLE_HOOKS
+#define FIRM_ENABLE_HOOKS 1
 
 /* Define to 1 if Firm inplace edges are activated */
 #define FIRM_EDGES_INPLACE 1
@@ -121,6 +121,7 @@
 #define INLINE
 #endif
 
+/* map some non-POSIX names for Win32 */
 #define snprintf    _snprintf
 #define strcasecmp  stricmp
 
