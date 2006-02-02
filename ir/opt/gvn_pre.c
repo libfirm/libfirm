@@ -77,18 +77,6 @@ static int is_nice_value(ir_node *n) {
 
 typedef unsigned (*HASH_FUNC)(void *);
 
-/** computes dst = dst \/ src */
-static void pset_union(pset *dst, pset *src, HASH_FUNC hash)
-{
-  void *entry;
-
-  pset_foreach(entry, src) {
-    pset_insert(dst, entry, hash(entry));
-  }
-}
-
-#define pset_union(d, s)  pset_union(d, s, (HASH_FUNC)ir_node_hash)
-
 #ifdef DEBUG_libfirm
 /**
  * Dump the Avail or Antic sets
@@ -121,6 +109,9 @@ static block_info *get_block_info(ir_node *block) {
   return get_irn_link(block);
 }
 
+#define new_value_set()     new_pset(identities_cmp, 8)
+#define del_value_set(set)  del_pset(set)
+
 /**
  * Add a value to a value set
  */
@@ -136,6 +127,15 @@ static ir_node *lookup(pset *value_set, ir_node *n)
 {
   return pset_find(value_set, n, ir_node_hash(n));
 }
+
+/** computes dst = dst \/ src for value sets */
+static void value_union(pset *dst, pset *src)
+{
+  void *entry;
+  pset_foreach(entry, src)
+    value_add(dst, entry);
+}
+
 
 /**
  * computes Avail_out(block):
@@ -158,9 +158,11 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
   if (block == env->end_block)
     return;
 
-  pset_union(info->avail_out, info->nodes);
-
-  /* the root has no dominator */
+  /*
+   * First add all nodes from the dominator.
+   * This must be done to ensure that Antic_out contains the leader
+   * for every node. The root has no dominator.
+   */
   if (block != env->start_block) {
     dom_blk = get_Block_idom(block);
     assert(is_Block(dom_blk));
@@ -168,8 +170,10 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
     dom_info = get_block_info(dom_blk);
     assert(dom_info);
 
-    pset_union(info->avail_out, dom_info->avail_out);
+    value_union(info->avail_out, dom_info->avail_out);
   }
+  value_union(info->avail_out, info->nodes);
+
   dump_set(info->avail_out, "Avail_out", block);
 }
 
@@ -320,9 +324,9 @@ static void compute_antic(ir_node *block, void *ctx)
     if (n_succ == 1) {
       ir_node *node;
       int i, pos = -1;
-      pset *nodes = new_pset(identities_cmp, 8);
+      pset *nodes = new_value_set();
 
-      pset_union(nodes, info->nodes);
+      value_union(nodes, info->nodes);
 
       /* find blocks position in succ's block predecessors */
       succ = get_Block_cfg_out(block, 0);
@@ -352,8 +356,8 @@ static void compute_antic(ir_node *block, void *ctx)
         }
       }
      /* this step calculates Antic_in(b) = Antic_out(b) \/ Nodes(b) */
-     pset_union(info->antic_in, nodes);
-     del_pset(nodes);
+     value_union(info->antic_in, nodes);
+     del_value_set(nodes);
    }
     else {
       ir_node *n, *succ0;
@@ -385,7 +389,7 @@ static void compute_antic(ir_node *block, void *ctx)
         }
       }
       /* this step calculates Antic_in(b) = Antic_out(b) \/ Nodes(b) */
-      pset_union(info->antic_in, info->nodes);
+      value_union(info->antic_in, info->nodes);
     }
   }
 
@@ -406,9 +410,9 @@ static void alloc_blk_info(ir_node *block, void *ctx)
   block_info *info = obstack_alloc(env->obst, sizeof(block_info));
 
   set_irn_link(block, info);
-  info->nodes     = new_pset(identities_cmp, 8);
-  info->antic_in  = new_pset(identities_cmp, 8);
-  info->avail_out = new_pset(identities_cmp, 8);
+  info->nodes     = new_value_set();
+  info->antic_in  = new_value_set();
+  info->avail_out = new_value_set();
   info->avail     = NULL;
   info->not_found = 0;
   info->new_set   = NULL;
@@ -496,7 +500,7 @@ static void insert_nodes(ir_node *block, void *ctx)
   int all_same, by_some, updated;
 
   curr_info = get_block_info(block);
-  curr_info->new_set = new_pset(identities_cmp, 8);
+  curr_info->new_set = new_value_set();
 
   if (block == env->start_block)
     return;
@@ -679,7 +683,7 @@ void do_gvn_pre(ir_graph *irg)
 
   obstack_init(&obst);
   a_env.obst        = &obst;
-  a_env.trans_set   = new_pset(identities_cmp, 8);
+  a_env.trans_set   = new_value_set();
   a_env.list        = NULL;
   a_env.start_block = get_irg_start_block(irg);
   a_env.end_block   = get_irg_end_block(irg);
@@ -692,11 +696,10 @@ void do_gvn_pre(ir_graph *irg)
   /* critical edges MUST be removed */
   remove_critical_cf_edges(irg);
 
-  /* we need dominator AND post dominator information */
+  /* we need dominator for Antic_out calculation */
   if (get_irg_dom_state(irg) != dom_consistent)
     compute_doms(irg);
-  if (get_irg_postdom_state(irg) != dom_consistent)
-    compute_postdoms(irg);
+  /* we get all nodes of a block by following outs */
   if (get_irg_outs_state(irg) != outs_consistent)
     compute_irg_outs(irg);
 
@@ -718,7 +721,6 @@ void do_gvn_pre(ir_graph *irg)
     DB((dbg, LEVEL_1, "Antic_in Iteration %d starts ...\n", ++iter));
     a_env.changes = 0;
     irg_block_walk_graph(irg, compute_antic, NULL, &a_env);
-//    postdom_tree_walk_irg(irg, compute_antic, NULL, &a_env);
     DB((dbg, LEVEL_1, "------------------------\n"));
   } while (a_env.changes != 0);
 
@@ -740,13 +742,18 @@ void do_gvn_pre(ir_graph *irg)
   /* clean up: delete all sets */
   for (p = a_env.list; p != NULL; p = p->next) {
     if (p->antic_in)
-      del_pset(p->antic_in);
+      del_value_set(p->antic_in);
     if (p->avail_out)
-      del_pset(p->avail_out);
+      del_value_set(p->avail_out);
     if (p->nodes)
-      del_pset(p->nodes);
+      del_value_set(p->nodes);
   }
-  del_pset(a_env.trans_set);
+  del_value_set(a_env.trans_set);
   obstack_free(&obst, NULL);
   set_irg_pinned(irg, op_pin_state_pinned);
+
+  if (a_env.pairs) {
+    set_irg_outs_inconsistent(irg);
+    set_irg_loopinfo_inconsistent(irg);
+  }
 }  /* do_gvn_pre */
