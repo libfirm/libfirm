@@ -23,6 +23,7 @@
 
 # include "pset.h"
 # include "iropt.h"
+# include "tv.h"
 
 ir_node *equivalent_node (ir_node *n);
 
@@ -38,8 +39,21 @@ ir_node *optimize_node (ir_node *n);
 
 ir_node *optimize_in_place_2 (ir_node *n);
 
-/* Calculate a hash value of a node. */
+/** Calculate a hash value of a node. */
 unsigned ir_node_hash (ir_node *node);
+
+/**
+ * Compare function for two nodes in the hash table. Gets two
+ * nodes as parameters.  Returns 0 if the nodes are a cse.
+ */
+int identities_cmp(const void *elt, const void *key);
+
+/**
+ * Return the canonical node computing the same value as n.
+ * Looks up the node in a hash table, enters it in the table
+ * if it isn't there yet.
+ */
+ir_node *identify_remember(pset *value_table, ir_node *n);
 
 /**
  * Returns the tarval of a Const node or tarval_bad for all other nodes.
