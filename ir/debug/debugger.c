@@ -42,18 +42,18 @@
 #include "debug.h"
 
 #ifdef _WIN32
-/** Break into the debugger. The Win32 way. */
-static void firm_debug_break(void) {
+/* Break into the debugger. The Win32 way. */
+void firm_debug_break(void) {
   DebugBreak();
 }
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64))
-/** Break into the debugger. The ia32/x86_64 way under GCC. */
-static void firm_debug_break(void) {
+/* Break into the debugger. The ia32/x86_64 way under GCC. */
+void firm_debug_break(void) {
   __asm__ __volatile__("int3");
 }
 #else
-/** Break into the debugger. Poor Unix way. */
-static void firm_debug_break(void) {
+/* Break into the debugger. Poor Unix way. */
+void firm_debug_break(void) {
   raise(SIGINT);
 }
 #endif /* _WIN32 */

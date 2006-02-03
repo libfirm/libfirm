@@ -12,6 +12,9 @@
 #ifndef __DEBUGGER_H__
 #define __DEBUGGER_H__
 
+/** Break into the debugger. */
+void firm_debug_break(void);
+
 /**
  * High level function to use from debugger interface
  *
