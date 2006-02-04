@@ -81,6 +81,7 @@ extern "C" {
 #include "scalar_replace.h" /* Scalar replacement */
 #include "proc_cloning.h"   /* procedure cloning */
 #include "opt_confirms.h"   /* Confirm based optimizations */
+#include "gvn_pre.h"        /* global value numbering and partial redundancy elimination */
 //#include "opt_branches.h"   /* Branch optimizations */
 
 /* Analyses */
