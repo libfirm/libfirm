@@ -74,6 +74,7 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 	ir_graph *irg   = env->irg;
 	ir_node  *block = env->block;
 	ir_node  *node  = env->irn;
+	ir_graph *rem;
 
 	if (mode_is_float(mode)) {
 		tp  = get_Const_type(node);
@@ -88,7 +89,12 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 		set_entity_variability(ent, variability_constant);
 		set_entity_allocation(ent, allocation_static);
 
-		set_atomic_ent_value(ent, node);
+		 /* we create a new entity here: It's initialization must resist on the
+		    const code irg */
+		rem = current_ir_graph;
+		current_ir_graph = get_const_code_irg();
+		set_atomic_ent_value(ent, copy_const_value(NULL, node));
+		current_ir_graph = rem;
 
 		sym.entity_p = ent;
 
@@ -130,7 +136,7 @@ void ia32_place_consts(ir_node *irn, void *env) {
 	tenv.mod      = firm_dbg_register("ir.be.ia32.optimize");
 
 	/* Loop over all predecessors and check for Sym/Const nodes */
-	for (i = 0; i < get_irn_arity(irn); i++) {
+	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 		pred      = get_irn_n(irn, i);
 		cnst      = NULL;
 		opc       = get_irn_opcode(pred);
