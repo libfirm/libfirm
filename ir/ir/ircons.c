@@ -1803,20 +1803,21 @@ ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
                ir_mode *mode, tarval *con) {
   return new_rd_Const(NULL, irg, block, mode, con);
 }
-
 ir_node *new_r_Const_long(ir_graph *irg, ir_node *block,
                ir_mode *mode, long value) {
   return new_rd_Const_long(NULL, irg, block, mode, value);
 }
-
 ir_node *new_r_Const_type(ir_graph *irg, ir_node *block,
                ir_mode *mode, tarval *con, ir_type *tp) {
   return new_rd_Const_type(NULL, irg, block, mode, con, tp);
 }
-
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
                        symconst_symbol value, symconst_kind symkind) {
   return new_rd_SymConst(NULL, irg, block, value, symkind);
+}
+ir_node *new_r_simpleSel(ir_graph *irg, ir_node *block, ir_node *store,
+                         ir_node *objptr, entity *ent) {
+  return new_rd_Sel(NULL, irg, block, store, objptr, 0, NULL, ent);
 }
 ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                   ir_node *objptr, int n_index, ir_node **index,

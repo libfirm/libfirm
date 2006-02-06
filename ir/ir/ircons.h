@@ -2028,6 +2028,23 @@ ir_node *new_r_Const_type(ir_graph *irg, ir_node *block,
 ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
 			 union symconst_symbol value, symconst_kind symkind);
 
+/** Constructor for a simpleSel node.
+ *
+ *  This is a shortcut for the new_d_Sel() constructor.  To be used for
+ *  Sel nodes that do not select from an array, i.e., have no index
+ *  inputs.  It adds the two parameters 0, NULL.
+ *
+ * @param   *irg       The ir graph the node  belongs to.
+ * @param   *block     The ir block the node belongs to.
+ * @param   *store     The memory in which the object the entity should be selected
+ *                     from is allocated.
+ * @param   *objptr    The object from that the Sel operation selects a
+ *                     single attribute out.
+ * @param   *ent       The entity to select.
+ */
+ir_node *new_r_simpleSel(ir_graph *irg, ir_node *block, ir_node *store,
+                         ir_node *objptr, entity *ent);
+
 /** Constructor for a Sel node.
  *
  * The select node selects an entity (field or method) from an entity
