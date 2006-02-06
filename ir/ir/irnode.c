@@ -40,10 +40,10 @@
 #define END_KEEPALIVE_OFFSET  0
 
 static const char *pnc_name_arr [] = {
-  "False", "Eq", "Lt", "Le",
-  "Gt", "Ge", "Lg", "Leg", "Uo",
-  "Ue", "Ul", "Ule", "Ug", "Uge",
-  "Ne", "True"
+  "pn_Cmp_False", "pn_Cmp_Eq", "pn_Cmp_Lt", "pn_Cmp_Le",
+  "pn_Cmp_Gt", "pn_Cmp_Ge", "pn_Cmp_Lg", "pn_Cmp_Leg",
+  "pn_Cmp_Uo", "pn_Cmp_Ue", "pn_Cmp_Ul", "pn_Cmp_Ule",
+  "pn_Cmp_Ug", "pn_Cmp_Uge", "pn_Cmp_Ne", "pn_Cmp_True"
 };
 
 /**
