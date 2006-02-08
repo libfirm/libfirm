@@ -98,11 +98,11 @@ main(void)
               new_entity(get_glob_type(),new_id_from_chars("VAR_B",6),prim_t_int));
    /* set VAR_A and VAR_B to constant values */
   set_store (new_Proj (new_Store (get_store (), a,
-		     	          new_Const (mode_Iu, new_tarval_from_long (0, mode_Is))),
+		     	          new_Const (mode_Iu, new_tarval_from_long (0, mode_Iu))),
                        mode_M, 0));
 
   set_store (new_Proj (new_Store (get_store (), b,
-			          new_Const (mode_Iu, new_tarval_from_long (1, mode_Is))),
+			          new_Const (mode_Iu, new_tarval_from_long (1, mode_Iu))),
                        mode_M, 0));
 
   /* finish this first block */
@@ -130,7 +130,7 @@ main(void)
   x = new_Cond (
         new_Proj (
           new_Cmp (
-            new_Const (mode_Iu, new_tarval_from_long (0, mode_Is)),
+            new_Const (mode_Iu, new_tarval_from_long (0, mode_Iu)),
             x),
           mode_b, pn_Cmp_Gt));
 
