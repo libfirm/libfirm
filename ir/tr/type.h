@@ -598,7 +598,7 @@ void set_class_type_info(ir_type *clss, entity *ent);
 int is_class_final(const ir_type *clss);
 
 /** Sets if a class is final. */
-void set_class_final(ir_type *clss, int final);
+void set_class_final(ir_type *clss, int flag);
 
 /* Set and get a class' dfn --
    @todo This is an undocumented field, subject to change! */
