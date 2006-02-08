@@ -69,6 +69,7 @@ ir\ana\irconsconfirm.h
 ir\ana\analyze_irg_args.h
 
 ir\opt\cfopt.h
+ir\opt\gvn_pre.h
 ir\opt\tailrec.h
 ir\opt\ldstopt.h
 ir\opt\strength_red.h
