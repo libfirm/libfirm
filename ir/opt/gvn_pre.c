@@ -178,22 +178,6 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
 }
 
 /**
- * Get the leader of an expression. In Firm, only
- * Phi nodes can be leaders, all other 'leader' are
- * handled by the identify_remember mechanism right.
- */
-static ir_node *find_Phi_leader(ir_node *n)
-{
-  ir_node *l = get_irn_link(n);
-
-  if (l) {
-    assert(is_Phi(l));
-    return l;
-  }
-  return n;
-}  /* find_Phi_leader */
-
-/**
  * Returns the Phi-leader if one exists, else NULL.
  */
 static ir_node *has_Phi_leader(ir_node *n)
