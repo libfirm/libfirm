@@ -84,16 +84,16 @@ static void caller_init(int arr_length, entity ** free_methods) {
     for (call = get_irn_link(get_irg_end(irg)); call; call = get_irn_link(call)) {
       if (get_irn_op(call) != op_Call) continue;
       for (j = get_Call_n_callees(call) - 1; j >= 0; --j) {
-	entity * ent = get_Call_callee(call, j);
-	if (get_entity_irg(ent)) {
-	  irg_data_t * data = get_entity_link(ent);
+        entity * ent = get_Call_callee(call, j);
+        if (get_entity_irg(ent)) {
+          irg_data_t * data = get_entity_link(ent);
 # ifndef CATE_jni
-	  assert(get_entity_irg(ent) && data);
-	  ++data->count;
+          assert(get_entity_irg(ent) && data);
+          ++data->count;
 # endif /* ndef CATE_jni */
-	} else {
-	  set_entity_link(ent, NULL);
-	}
+        } else {
+          set_entity_link(ent, NULL);
+        }
       }
     }
   }
@@ -369,15 +369,20 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
     data->except = new_EndExcept();
     /* mem */
     for (i = n_except - 1; i >= 0; --i) {
-      ir_node * node = skip_Proj(skip_Tuple(except_arr[i]));
-      if (get_irn_op(node) == op_Call) {
-    in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, 3);
-      } else if (get_irn_op(node) == op_Raise) {
-    in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, 1);
+      ir_node *node = skip_Proj(skip_Tuple(except_arr[i]));
+      ir_op *op = get_irn_op(node);
+      if (op == op_Call) {
+        in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, pn_Call_M_except);
+      } else if (op == op_Raise) {
+        in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, pn_Raise_M);
+      } else if (op == op_CopyB) {
+        in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, pn_CopyB_M_except);
+      } else if (op == op_Bound) {
+        in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, pn_Bound_M_except);
       } else {
-    assert(is_fragile_op(node));
-    /* We rely that all cfops have the memory output at the same position. */
-    in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, 0);
+        assert(is_fragile_op(node));
+        /* We rely that all cfops have the memory output at the same position. */
+        in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, 0);
       }
     }
     data->except_mem = new_Phi(n_except, in, mode_M);
@@ -681,7 +686,7 @@ static void construct_call(ir_node * call) {
       set_nodes_block(proj, except_block);
       exchange(proj, new_Break());
       set_irg_current_block(current_ir_graph, pre_block);
-      set_irn_n(except_block, 0, new_Proj(call, mode_X, 1));
+      set_irn_n(except_block, 0, new_Proj(call, mode_X, pn_Call_X_except));
       set_irg_current_block(current_ir_graph, post_block);
     }
 
@@ -832,12 +837,12 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
     current_ir_graph = get_irp_irg(i);
     for (node = get_irn_link(get_irg_end(current_ir_graph)); node; node = get_irn_link(node)) {
       if (get_irn_op(node) == op_Call) {
-	int j, n_callees = get_Call_n_callees(node);
-	for (j = 0; j < n_callees; ++j)
-	  if (get_entity_irg(get_Call_callee(node, j)))
-	    break;
-	if (j < n_callees)  /* There is an entity with a graph */
-	  construct_call(node);
+        int j, n_callees = get_Call_n_callees(node);
+        for (j = 0; j < n_callees; ++j)
+          if (get_entity_irg(get_Call_callee(node, j)))
+            break;
+          if (j < n_callees)  /* There is an entity with a graph */
+            construct_call(node);
       }
     }
   }
