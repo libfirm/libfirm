@@ -508,6 +508,7 @@ static void insert_nodes(ir_node *block, void *ctx)
     return;
 
   pset_foreach(e, curr_info->antic_in) {
+    ir_mode *mode;
     /*
      * If we already have a leader for this node,
      * it is totally redundant.
@@ -525,6 +526,7 @@ static void insert_nodes(ir_node *block, void *ctx)
     by_some  = 0;
     all_same = 1;
     first_s  = NULL;
+    mode     = NULL;
 
     /* for all predecessor blocks */
     for (pos = 0; pos < arity; ++pos) {
@@ -548,6 +550,7 @@ static void insert_nodes(ir_node *block, void *ctx)
         pred_info->not_found = 1;
       }
       else {
+        mode     = get_irn_mode(e_dprime);
         e_dprime = e_dprime;
         pred_info->avail = e_dprime;
         pred_info->not_found = 0;
@@ -565,7 +568,6 @@ static void insert_nodes(ir_node *block, void *ctx)
        it's defined by some predecessor, it is partially redundant. */
     if (! all_same && by_some) {
       ir_node *phi, **in;
-      ir_mode *mode = NULL;
       DB((dbg, LEVEL_1, "Partial redundant %+F from block %+F found\n", e, block));
 
       in = xmalloc(arity * sizeof(*in));
@@ -594,6 +596,7 @@ static void insert_nodes(ir_node *block, void *ctx)
             mode,
             get_irn_arity(e_prime),
             get_irn_in(e_prime) + 1);
+          copy_node_attr(e_prime, nn);
 
           DB((dbg, LEVEL_2, "New node %+F in block %+F created\n", nn, pred_blk));
           pred_info->avail = value_add(pred_info->avail_out, nn);
