@@ -616,7 +616,7 @@ void proc_cloning(float threshold)
 {
   entry_t *entry = NULL, *p;
   ir_graph *irg;
-  int i, count = 0;
+  int i;
   q_set hmap;
 
   obstack_init(&hmap.obst);
