@@ -961,9 +961,9 @@ void    set_InstOf_obj (ir_node *node, ir_node *obj);
  * Projection numbers for Raise.
  */
 typedef enum {
-  pn_Raise_M,    /**< Memory result.    */
-  pn_Raise_X,    /**< Execution result. */
-  pn_Raise_max   /**< number of projections from a Raise */
+  pn_Raise_X = 0,  /**< The control flow to the exception handler. */
+  pn_Raise_M = 1,  /**< The Memory result. */
+  pn_Raise_max     /**< number of projections from a Raise */
 } pn_Raise;  /* Projection numbers for Raise. */
 
 ir_node *get_Raise_mem (ir_node *node);
