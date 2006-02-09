@@ -275,7 +275,7 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
 	else {
-		if (is_Start_Proj(irn))
+		if (is_Start_Proj(irn) || is_Unknown(irn))
 			return arch_irn_flags_ignore;
 
 		return 0;
@@ -681,10 +681,10 @@ long ia32_handle_call_proj(const void *self, ir_node *proj, int is_keep) {
 			/* in EDX:EAX and we have two result projs.     */
 			switch (pn) {
 				case 0:
-					pn = ia32_get_reg_projnum(&ia32_floating_point_regs[REG_EAX], isa->reg_projnum_map);
+					pn = ia32_get_reg_projnum(&ia32_general_purpose_regs[REG_EAX], isa->reg_projnum_map);
 					break;
 				case 1:
-					pn = ia32_get_reg_projnum(&ia32_floating_point_regs[REG_EDX], isa->reg_projnum_map);
+					pn = ia32_get_reg_projnum(&ia32_general_purpose_regs[REG_EDX], isa->reg_projnum_map);
 					break;
 				default:
 					assert(0 && "only two int results supported");
