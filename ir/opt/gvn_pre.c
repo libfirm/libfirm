@@ -53,7 +53,7 @@ typedef struct pre_env {
   ir_node *start_block;   /**< the start block of the current graph */
   ir_node *end_block;     /**< the end block of the current graph */
   block_info *list;       /**< links all block info entires for easier recovery */
-  elim_pair *pairs;       /**< a list of node pairs that mut be eliminated */
+  elim_pair *pairs;       /**< a list of node pairs that must be eliminated */
   int changes;            /**< non-zero, if calculation of Antic_in has changed */
 } pre_env;
 
@@ -70,6 +70,8 @@ static int is_nice_value(ir_node *n) {
     return 0;
   if (is_irn_constlike(n))
     return 0;
+  if (is_Proj(n))
+    return is_nice_value(get_Proj_pred(n));
   return (get_irn_pinned(n) != op_pin_state_pinned);
 }
 
@@ -693,6 +695,8 @@ void do_gvn_pre(ir_graph *irg)
    */
   save_optimization_state(&state);
   set_opt_global_cse(1);
+
+  DB((dbg, LEVEL_1, "Doing GVN-PRE for %e\n", get_irg_entity(irg)));
 
   /* allocate block info for all blocks */
   irg_block_walk_graph(irg, NULL, alloc_blk_info, &a_env);
