@@ -1040,6 +1040,9 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 	int                n            = get_Call_n_params(call);
 	int                stack_idx    = 0;
 	int                biggest_n    = -1;
+	int                n_res        = get_method_n_ress(get_method_res_type(call));
+
+	assert(n_res <= 2 && "method with more than two results not supported");
 
 	if (cc & cc_reg_param)
 		biggest_n = ia32_get_n_regparam_class(n, param, &ignore, &ignore);
@@ -1075,6 +1078,8 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 				stack_param[i - stack_idx] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), irg,
 														block, call_Mem, param[i], mode_M);
 			}
+			/* set the argument number for later lowering */
+			set_ia32_pncode(stack_param[i - stack_idx], i - stack_idx);
 		}
 	}
 	else {
@@ -1088,6 +1093,8 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 				stack_param[j] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), irg,
 														block, call_Mem, param[i], mode_M);
 			}
+			/* set the argument number for later lowering */
+			set_ia32_pncode(stack_param[j], j);
 		}
 	}
 
@@ -1102,15 +1109,27 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 	/* create the new node */
 	new_call = new_rd_ia32_Call(dbg, irg, block, n_new_call_in, in);
 	set_ia32_Immop_attr(new_call, get_Call_ptr(call));
-	set_ia32_n_res(new_call, 1);
 
 	/* set register requirements for in and out */
 	attr             = get_ia32_attr(new_call);
 	attr->in_req     = in_req;
-	attr->out_req    = xcalloc(2, sizeof(ia32_register_req_t *));
-	attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
-	attr->out_req[1] = &ia32_default_req_ia32_general_purpose_edx;
-	attr->slots      = xcalloc(2, sizeof(arch_register_t *));
+
+	set_ia32_n_res(new_call, n_res);
+
+	attr->out_req    = xcalloc(n_res, sizeof(ia32_register_req_t *));
+	attr->slots      = xcalloc(n_res, sizeof(arch_register_t *));
+
+	/* two results only appear when a 64bit int result is broken up into two 32bit results */
+	if (n_res == 2) {
+		attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
+		attr->out_req[1] = &ia32_default_req_ia32_general_purpose_edx;
+	}
+	else {
+		if (mode_is_float(get_type_mode(get_method_res_type(get_Call_type(call)))))
+			attr->out_req[0] = &ia32_default_req_ia32_floating_point_xmm0;
+		else
+			attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
+	}
 
 	/* stack parameter has no OUT register */
 	attr->in_req[n_new_call_in - 1] = &ia32_default_req_none;

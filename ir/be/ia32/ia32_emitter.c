@@ -645,7 +645,7 @@ void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
 			ir_node *n = get_irn_n(args[i], 1);
 			lc_efprintf(env, F, "\tpush %1D\t\t\t\t/* push %+F(%+F) on stack */\n", n, args[i], n);
 
-			if (mode_is_int(get_irn_mode(n))) {
+			if (mode_is_float(get_irn_mode(n))) {
 				args_size += 4;
 			}
 			else {
