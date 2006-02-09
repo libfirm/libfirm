@@ -2525,6 +2525,10 @@ static INLINE ir_node ** new_frag_arr (ir_node *n)
   /* Here we rely on the fact that all frag ops have Memory as first result! */
   if (get_irn_op(n) == op_Call)
     arr[0] = new_Proj(n, mode_M, pn_Call_M_except);
+  else if (get_irn_op(n) == op_CopyB)
+    arr[0] = new_Proj(n, mode_M, pn_CopyB_M_except);
+  else if (get_irn_op(n) == op_Bound)
+    arr[0] = new_Proj(n, mode_M, pn_Bound_M_except);
   else {
     assert((pn_Quot_M == pn_DivMod_M) &&
        (pn_Quot_M == pn_Div_M)    &&
@@ -3438,6 +3442,18 @@ set_value (int pos, ir_node *value)
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
   assert(pos+1 < current_ir_graph->n_loc);
   current_ir_graph->current_block->attr.block.graph_arr[pos + 1] = value;
+}
+
+int
+find_value(ir_node *value)
+{
+  int i;
+  ir_node *bl = current_ir_graph->current_block;
+
+  for (i = 1; i < ARR_LEN(bl->attr.block.graph_arr); ++i)
+    if (bl->attr.block.graph_arr[i] == value)
+      return i - 1;
+  return -1;
 }
 
 /* get the current store */
