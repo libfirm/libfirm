@@ -210,7 +210,7 @@ static ir_node *equivalent_node_MinMax(ir_node *n)
 #define equivalent_node_Max equivalent_node_MinMax
 
 /*
- * Create Min and Mux from Mux nodes
+ * Create Min and Max from Mux nodes
  */
 ir_node *arch_transform_node_Mux(ir_node *n)
 {
