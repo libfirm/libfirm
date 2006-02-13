@@ -1040,7 +1040,7 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 	int                n            = get_Call_n_params(call);
 	int                stack_idx    = 0;
 	int                biggest_n    = -1;
-	int                n_res        = get_method_n_ress(get_method_res_type(call));
+	int                n_res        = get_method_n_ress(get_Call_type(call));
 
 	assert(n_res <= 2 && "method with more than two results not supported");
 
@@ -1125,7 +1125,7 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 		attr->out_req[1] = &ia32_default_req_ia32_general_purpose_edx;
 	}
 	else {
-		if (mode_is_float(get_type_mode(get_method_res_type(get_Call_type(call)))))
+		if (mode_is_float(get_type_mode(get_method_res_type(get_Call_type(call), 0))))
 			attr->out_req[0] = &ia32_default_req_ia32_floating_point_xmm0;
 		else
 			attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
