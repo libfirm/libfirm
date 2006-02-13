@@ -450,7 +450,6 @@ $arch = "TEMPLATE";
 "fDiv" => {
   "arity"       => 2,
   "remat"       => 1,
-  "check_inout" => 1,
   "comment"     => "construct FP Div: Div(a, b) = a / b",
   "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
   "emit"        => '. fdiv %S1, %S2, %D1\t\t\t/* FP Div(%S1, %S2) -> %D1 */'
@@ -459,7 +458,6 @@ $arch = "TEMPLATE";
 "fMinus" => {
   "arity"       => 1,
   "remat"       => 1,
-  "check_inout" => 1,
   "comment"     => "construct FP Minus: Minus(a) = -a",
   "reg_req"     => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
   "emit"        => '. fneg %S1, %D1\t\t\t/* FP Minus(%S1) -> %D1 */'
