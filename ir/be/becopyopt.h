@@ -96,7 +96,7 @@ void free_copy_opt(copy_opt_t *co);
  * @param irn  The irn to check
  * @param req  A register_requirement structure (used to check for 2-addr-code)
  */
-#define is_optimizable(arch, irn, req) (is_Reg_Phi(irn) || is_Perm_Proj(arch, irn) || is_2addr_code(arch, irn, req))
+#define is_optimizable(arch, irn, req) (!arch_irn_is_ignore(arch, irn) && (is_Reg_Phi(irn) || is_Perm_Proj(arch, irn) || is_2addr_code(arch, irn, req)))
 
 /**
  * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'

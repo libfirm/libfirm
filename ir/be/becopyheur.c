@@ -462,7 +462,10 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 static void ou_optimize(unit_t *ou) {
 	int i;
 	qnode_t *curr = NULL, *tmp;
-	bitset_t *pos_regs = bitset_alloca(ou->co->chordal_env->cls->n_regs);
+	arch_env_t *aenv = get_arch_env(ou->co);
+	const arch_register_class_t *cls = ou->co->chordal_env->cls;
+	bitset_t *pos_regs = bitset_alloca(cls->n_regs);
+	bitset_t *ign_regs = bitset_alloca(cls->n_regs);
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
 	for (i=0; i<ou->node_count; ++i)
@@ -470,7 +473,14 @@ static void ou_optimize(unit_t *ou) {
 
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
-	arch_get_allocatable_regs(get_arch_env(ou->co), ou->nodes[0], -1, pos_regs);
+
+	arch_get_allocatable_regs(aenv, ou->nodes[0], -1, pos_regs);
+
+	/* exclude ingore colors */
+	arch_put_non_ignore_regs(aenv, cls, ign_regs);
+	bitset_and(pos_regs, ign_regs);
+
+	/* create new qnode */
 	bitset_foreach(pos_regs, i)
 		ou_insert_qnode(ou, new_qnode(ou, i));
 

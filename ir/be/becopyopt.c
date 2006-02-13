@@ -124,6 +124,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 	copy_opt_t *co = env;
 	unit_t *unit;
 	arch_register_req_t req;
+	arch_env_t *aenv = co->chordal_env->main_env->arch_env;
 
 	if (!is_curr_reg_class(irn))
 		return;
@@ -268,20 +269,25 @@ void free_copy_opt(copy_opt_t *co) {
 }
 
 int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
-	arch_env_t *aenv = co->chordal_env->main_env->arch_env;
+	arch_env_t *aenv = get_arch_env(co);
 	const ir_edge_t *edge;
+
+	if (arch_irn_is_ignore(aenv, irn))
+		return 0;
 
 	foreach_out_edge(irn, edge) {
 		ir_node *n = edge->src;
-		arch_register_req_t req;
 
-		arch_get_register_req(aenv, &req, n, -1);
+		if (!nodes_interfere(co->chordal_env, irn, n) || irn == n) {
+			arch_register_req_t req;
+			arch_get_register_req(aenv, &req, n, -1);
 
-		if(	(	(req.type == arch_register_req_type_should_be_same && req.other == irn) ||
-				is_Reg_Phi(n) ||
-				is_Perm(get_arch_env(co), n)
-			) && (irn == n || !nodes_interfere(co->chordal_env, irn, n)))
+			if(is_Reg_Phi(n) ||
+			   is_Perm(aenv, n) ||
+			   (arch_register_req_is(&req, should_be_same) && req.other == irn)
+			  )
 				return 1;
+		}
 	}
 
 	return 0;

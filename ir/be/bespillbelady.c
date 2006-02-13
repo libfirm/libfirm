@@ -226,6 +226,14 @@ static int is_mem_phi(const ir_node *irn, void *data) {
 }
 
 /**
+ * @return The distance to the next use
+ *         Or 0 if irn is an ignore node
+ */
+#define get_distance(bel, from, from_step, def, skip_from_uses) \
+		((arch_irn_is_ignore(bel->arch, def) ) ? 0 : be_get_next_use(bel->uses, from, from_step, def, skip_from_uses))
+
+
+/**
  * Collects all values live-in at block @p blk and all phi results in this block.
  * Then it adds the best values (at most n_regs) to the blocks start_workset.
  * The phis among the remaining values get spilled: Introduce psudo-copies of
@@ -251,7 +259,7 @@ static void compute_block_start_info(ir_node *blk, void *env) {
 	sched_foreach(blk, irn)
 		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, -1) == bel->cls) {
 			loc.irn = irn;
-			loc.time = be_get_next_use(bel->uses, first, 0, irn, 0);
+			loc.time = get_distance(bel, first, 0, irn, 0);
 			obstack_grow(&ob, &loc, sizeof(loc));
 			DBG((dbg, DBG_START, "    %+F:\n", irn));
 			count++;
@@ -261,7 +269,7 @@ static void compute_block_start_info(ir_node *blk, void *env) {
 	live_foreach(blk, li)
 		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, -1) == bel->cls) {
 			loc.irn = (ir_node *)li->irn;
-			loc.time = be_get_next_use(bel->uses, first, 0, li->irn, 0);
+			loc.time = get_distance(bel, first, 0, li->irn, 0);
 			obstack_grow(&ob, &loc, sizeof(loc));
 			DBG((dbg, DBG_START, "    %+F:\n", irn));
 			count++;
@@ -348,7 +356,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	if (len > max_allowed) {
 		/* get current next-use distance */
 		for (i=0; i<ws->len; ++i)
-			workset_set_time(ws, i, be_get_next_use(bel->uses, bel->instr, bel->instr_nr, workset_get_val(ws, i), !is_usage));
+			workset_set_time(ws, i, get_distance(bel, bel->instr, bel->instr_nr, workset_get_val(ws, i), !is_usage));
 
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
