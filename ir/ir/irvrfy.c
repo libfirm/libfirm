@@ -655,7 +655,8 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
       break;
 
     default:
-      ASSERT_AND_RET(0, "Unknown opcode", 0);
+      /* ASSERT_AND_RET(0, "Unknown opcode", 0); */
+		break;
   }
   return 1;
 }
