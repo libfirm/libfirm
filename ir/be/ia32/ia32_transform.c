@@ -1116,19 +1116,21 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 
 	set_ia32_n_res(new_call, n_res);
 
-	attr->out_req    = xcalloc(n_res, sizeof(ia32_register_req_t *));
-	attr->slots      = xcalloc(n_res, sizeof(arch_register_t *));
+	if (n_res > 0) {
+		attr->out_req    = xcalloc(n_res, sizeof(ia32_register_req_t *));
+		attr->slots      = xcalloc(n_res, sizeof(arch_register_t *));
+	}
 
 	/* two results only appear when a 64bit int result is broken up into two 32bit results */
-	if (n_res == 2) {
-		attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
-		attr->out_req[1] = &ia32_default_req_ia32_general_purpose_edx;
-	}
-	else {
+	if (n_res == 1) {
 		if (mode_is_float(get_type_mode(get_method_res_type(get_Call_type(call), 0))))
 			attr->out_req[0] = &ia32_default_req_ia32_floating_point_xmm0;
 		else
 			attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
+	}
+	else if (n_res == 2) {
+		attr->out_req[0] = &ia32_default_req_ia32_general_purpose_eax;
+		attr->out_req[1] = &ia32_default_req_ia32_general_purpose_edx;
 	}
 
 	/* stack parameter has no OUT register */
