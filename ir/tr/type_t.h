@@ -115,15 +115,20 @@ typedef union {
   ptr_attr pa;      /**< attributes of a pointer type */
 } tp_attr;
 
+enum type_flags {
+  tf_none         = 0,  /**< No flags. */
+  tf_frame_type   = 1,  /**< Set if this is a frame type. */
+  tf_lowered_type = 2,  /**< Set if this is a lowered type. */
+  tf_layout_fixed = 4   /**< set if the layout of a type is fixed */
+};
+
 /** the structure of a type */
 struct ir_type {
   firm_kind kind;          /**< the firm kind, must be k_type */
   const tp_op *type_op;    /**< the type operation of the type */
   ident *name;             /**< The name of the type */
   visibility visibility;   /**< Visibility of entities of this type. */
-  char frame_type;         /**< True if this is a frame type, false else */
-  type_state state;        /**< Represents the types state: layout undefined or
-                                fixed. */
+  unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
   int size;                /**< Size of an entity of this type. This is determined
                                 when fixing the layout of this class.  Size must be
                                 given in bits. */
@@ -135,6 +140,7 @@ struct ir_type {
   unsigned long visit;     /**< visited counter for walks of the type information */
   void *link;              /**< holds temporary data - like in irnode_t.h */
   struct dbg_info *dbi;    /**< A pointer to information for debug support. */
+  ir_type *assoc_type;     /**< The associated lowered/unlowered type */
 
   /* ------------- fields for analyses ---------------*/
 
@@ -279,7 +285,7 @@ _get_type_size_bytes(const ir_type *tp) {
 static INLINE type_state
 _get_type_state(const ir_type *tp) {
   assert(tp && tp->kind == k_type);
-  return tp->state;
+  return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;
 }
 
 static INLINE unsigned long

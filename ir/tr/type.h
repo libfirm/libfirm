@@ -1226,9 +1226,14 @@ int     get_compound_member_index(const ir_type *tp, entity *member);
 int is_compound_type(const ir_type *tp);
 
 /**
- * Checks, whether a type is a frame type
+ * Checks, whether a type is a frame type.
  */
 int is_frame_type(const ir_type *tp);
+
+/**
+ * Checks, whether a type is a lowered type.
+ */
+int is_lowered_type(const ir_type *tp);
 
 /**
  * Makes a new frame type. Frame types are class types,
@@ -1236,6 +1241,18 @@ int is_frame_type(const ir_type *tp);
  * Frame types are not in the global list of types.
  */
 ir_type   *new_type_frame(ident *name);
+
+/**
+ * Sets a lowered type for a type. This sets both associations
+ * and marks lowered type as a "lowered" one.
+ */
+void set_lowered_type(ir_type *tp, ir_type *lowered_type);
+
+/**
+ * Gets the lowered/unlowered type of a type or NULL if this type
+ * has no lowered/unlowered one.
+ */
+ir_type *get_associated_type(const ir_type *tp);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/

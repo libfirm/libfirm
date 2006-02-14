@@ -141,13 +141,13 @@ new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db) {
   res->mode       = mode;
   res->name       = name;
   res->visibility = visibility_external_allocated;
-  res->frame_type = 0;
-  res->state      = layout_undefined;
+  res->flags      = tf_none;
   res->size       = -1;
   res->align      = -1;
   res->visit      = 0;
   res->link       = NULL;
   res->dbi        = db;
+  res.assoc_type  = NULL;
 #ifdef DEBUG_libfirm
   res->nr         = get_irp_new_node_nr();
 #endif /* defined DEBUG_libfirm */
@@ -445,7 +445,10 @@ set_type_state(ir_type *tp, type_state state) {
     default: break;
     } /* switch (tp) */
   }
-  tp->state = state;
+  if (state = layout_fixed)
+    tp->flags |= tf_layout_fixed;
+  else
+    tp->flags &= tf_layout_fixed;
 }
 
 unsigned long (get_type_visited)(const ir_type *tp) {
@@ -1134,7 +1137,7 @@ ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
 
   assert((get_mode_size_bytes(mode_P_code) != -1) && "unorthodox modes not implemented");
   res = new_type(type_method, mode_P_code, name, db);
-  res->state                        = layout_fixed;
+  res->flags                       |= tf_layout_fixed;
   res->size                         = get_mode_size_bits(mode_P_code);
   res->attr.ma.n_params             = n_param;
   res->attr.ma.param_type           = xcalloc(n_param, sizeof(res->attr.ma.param_type[0]));
@@ -1737,7 +1740,7 @@ ir_type *new_d_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode, 
   res->attr.pa.points_to = points_to;
   assert((get_mode_size_bytes(res->mode) != -1) && "unorthodox modes not implemented");
   res->size = get_mode_size_bits(res->mode);
-  res->state = layout_fixed;
+  res->flags |= tf_layout_fixed;
   hook_new_type(res);
   return res;
 }
@@ -1803,7 +1806,7 @@ ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info *db) {
   /* @@@ assert( mode_is_data(mode) && (!mode_is_reference(mode))); */
   res = new_type(type_primitive, mode, name, db);
   res->size  = get_mode_size_bits(mode);
-  res->state = layout_fixed;
+  res->flags |= tf_layout_fixed;
   hook_new_type(res);
   return res;
 }
@@ -1889,7 +1892,12 @@ int is_compound_type(const ir_type *tp) {
 
 /* Checks, whether a type is a frame ir_type */
 int is_frame_type(const ir_type *tp) {
-  return tp->frame_type;
+  return tp->flags & tf_frame_type;
+}
+
+/* Checks, whether a type is a lowered ir_type */
+int is_lowered_type(const ir_type *tp) {
+  return tp->flags & tf_lowered_type;
 }
 
 /* Makes a new frame type. */
@@ -1897,12 +1905,28 @@ ir_type *new_type_frame(ident *name)
 {
   ir_type *res = new_type_class(name);
 
-  res->frame_type = 1;
+  res->flags |= tf_frame_type;
 
   /* Remove type from type list.  Must be treated differently than other types. */
   remove_irp_type(res);
 
   return res;
+}
+
+/* Sets a lowered type for a type. This sets both associations. */
+void set_lowered_type(ir_type *tp, ir_type *lowered_type) {
+  assert(is_type(tp) && is_type(lowered_type));
+  lowered_type->flags |= tf_lowered_type;
+  tp->assoc_type = lowered_type;
+  lowered_type->assoc_type = tp;
+}
+
+/*
+ * Gets the lowered/unlowered type of a type or NULL if this type
+ * has no lowered/unlowered one.
+ */
+ir_type *get_associated_type(const ir_type *tp) {
+  return tp->assoc_type;
 }
 
 /* set the type size for the unknown and none ir_type */
