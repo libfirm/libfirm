@@ -147,7 +147,7 @@ new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db) {
   res->visit      = 0;
   res->link       = NULL;
   res->dbi        = db;
-  res.assoc_type  = NULL;
+  res->assoc_type = NULL;
 #ifdef DEBUG_libfirm
   res->nr         = get_irp_new_node_nr();
 #endif /* defined DEBUG_libfirm */
