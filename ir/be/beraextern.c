@@ -39,22 +39,11 @@ The output file format
 
 outputfile	::= spills | allocs .
 
-spills		::= 'spills' '{' node-nr+ '}' .
+spills		::= 'spills' node-nr+ .
 
-allocs		::= 'allocs' '{' alloc* '}' .
+allocs		::= 'allocs' alloc* .
 
 alloc		::= node-nr reg-nr .
-
-
-Constraints for output file
----------------------------
-1) The returned actions must result in a non-ssa-program
-   equivalent to the former input.
-2) All names (numbers) must be defined before their first use.
-   Numbers already occuring in the input file are implicitly defined in the output file.
-3) All spills of a variable must precede the first reload of this variable
-4) Each reload must define a new variable name
-
 
 
 ******** End of file format docu ********/
@@ -85,6 +74,7 @@ Constraints for output file
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
+#include "iredges_t.h"
 #include "irdom_t.h"
 #include "phiclass.h"
 
@@ -108,10 +98,8 @@ typedef struct _be_raext_env_t {
 
 	FILE *f;				/**< file handle used for out- and input file */
 	set *vars;				/**< contains all var_info_t */
-	int n_cls_vars;
+	int n_cls_vars;			/**< length of the array cls_vars */
 	var_info_t **cls_vars;	/**< only the var_infos for current cls. needed for double iterating */
-	set *edges;				/**< interference and affinity edges */
-	pmap *nodes;			/**< maps nodes numbers (int) to the node (ir_node*) having that node_nr */
 } be_raext_env_t;
 
 
@@ -131,7 +119,6 @@ typedef struct _be_raext_env_t {
 #define pset_foreach(pset, irn)  for(irn=pset_first(pset); irn; irn=pset_next(pset))
 #define set_foreach(set, e)  for(e=set_first(set); e; e=set_next(set))
 
-
 /**
  * Checks if _the_ result of the irn belongs to the
  * current register class (raenv->cls)
@@ -139,32 +126,32 @@ typedef struct _be_raext_env_t {
  */
 #define is_res_in_reg_class(irn) arch_irn_has_reg_class(raenv->aenv, irn, -1, raenv->cls)
 
+static INLINE ir_node *get_first_non_phi(pset *s) {
+	ir_node *irn;
 
-/**
- * Checks if the irn uses or defines values of the
- * current register class (raenv->cls)
- */
-static INLINE int is_sth_in_reg_class(be_raext_env_t *raenv, const ir_node *irn) {
-	int max, i;
+	pset_foreach(s, irn)
+		if (!is_Phi(irn)) {
+			pset_break(s);
+			return irn;
+		}
 
-	/* check arguments */
-	for (i=0, max=get_irn_arity(irn); i<max; ++i)
-		if (arch_irn_has_reg_class(raenv->aenv, get_irn_n(irn, i), -1, raenv->cls))
-			return 1;
-
-	/* check result(s) */
-	if (get_irn_mode(irn) == mode_T) {
-		ir_node *proj;
-		for (proj = sched_next(irn); is_Proj(proj); proj = sched_next(proj))
-			if (arch_irn_has_reg_class(raenv->aenv, proj, -1, raenv->cls))
-				return 1;
-		return 0;
-	} else {
-		return arch_irn_has_reg_class(raenv->aenv, irn, -1, raenv->cls);
-	}
-
-	assert(0 && "Where did you come from???");
+	assert(0 && "There must be a non-phi-irn in this");
+	return NULL;
 }
+
+static INLINE ir_node *get_first_phi(pset *s) {
+	ir_node *irn;
+
+	pset_foreach(s, irn)
+		if (is_Phi(irn)) {
+			pset_break(s);
+			return irn;
+		}
+
+	assert(0 && "There must be a phi in this");
+	return NULL;
+}
+
 
 /******************************************************************************
      _____ _____              _____            _
@@ -306,17 +293,14 @@ static void ssa_destr_rastello(be_raext_env_t *raenv) {
  *****************************************************************************/
 
 /**
- * This struct maps a variable (nr) to
- *  1) the values belonging to this variable
- *  2) the spills of this variable
+ * This struct maps a variable (nr) to the values belonging to this variable
  */
 struct _var_info_t {
-	int var_nr;		/* the key for comparesion */
+	int var_nr;		/* the key */
 	pset *values;	/* the ssa-values belonging to this variable */
-	pset *spills;	/* the spills of this variable */
-	pset *reloads;	/* the relaods of this variable */
-	unsigned reload_phase:1;	/* 0 initially, 1 if a reload of this var has been inserted */
 };
+
+#define SET_REMOVED -1
 
 /**
  * The link field of an irn points to the var_info struct
@@ -325,18 +309,14 @@ struct _var_info_t {
 #define set_var_info(irn, vi)				set_irn_link(irn, vi)
 #define get_var_info(irn)					((var_info_t *)get_irn_link(irn))
 
-/* TODO insn-nr handling if ext defines new ones */
-#define pmap_insert_sth(pmap, key, val)	pmap_insert(pmap, (void *)key, (void *)val)
-#define pmap_get_sth(pmap, key)			pmap_get(pmap, (void *)key)
-
-
 #define HASH_VAR_NR(var_nr) var_nr
-
-
 
 static int compare_var_infos(const void *e1, const void *e2, size_t size) {
 	const var_info_t *v1 = e1;
 	const var_info_t *v2 = e2;
+
+	if (v1->var_nr == SET_REMOVED || v2->var_nr == SET_REMOVED)
+		return 1;
 
 	return v1->var_nr != v2->var_nr;
 }
@@ -355,11 +335,8 @@ static INLINE var_info_t *var_find_or_insert(set *vars, int var_nr) {
 
 	found = set_insert(vars, &vi, sizeof(vi), HASH_VAR_NR(var_nr));
 
-	if (!found->values) {
+	if (!found->values)
 		found->values  = pset_new_ptr(1);
-		found->spills  = pset_new_ptr(1);
-		found->reloads = pset_new_ptr(1);
-	}
 
 	return found;
 }
@@ -379,77 +356,10 @@ static INLINE var_info_t *var_add_value(be_raext_env_t *raenv, int var_nr, ir_no
 	return vi;
 }
 
-/**
- * Adds a spill to a variable. Sets all pointers accordingly.
- */
-static INLINE var_info_t *var_add_spill(be_raext_env_t *raenv, int var_to_spill, ir_node *before) {
-	var_info_t *vi = var_find_or_insert(raenv->vars, var_to_spill);
-	ir_node *blk, *tospill, *spill;
-
-	assert(pset_count(vi->values) && "There are no values associated to this variable");
-	assert(!vi->reload_phase && "I have already seen a reload for this variable, so you cant spill anymore!");
-
-	/* add spill to graph and schedule */
-	blk     = get_nodes_block(before);
-	tospill = dom_up_search(vi->values, before); /* which value gets spilled */
-	spill   = be_new_Spill(raenv->cls, raenv->irg, blk, tospill, tospill); /* the corresponding spill node */
-
-	sched_add_before(before, spill);
-
-	/* the spill also points to the var_info of the spilled node */
-	set_var_info(spill, vi);
-
-	/* remember the spill */
-	pset_insert_ptr(vi->spills, spill);
-
-	return vi;
-}
-
-/**
- * Adds a reload to a variable. Sets all pointers accordingly.
- */
-static INLINE var_info_t *var_add_reload(be_raext_env_t *raenv, int var_to_reload, int var_nr_for_reload, ir_node *before) {
-	var_info_t *vi = var_find_or_insert(raenv->vars, var_to_reload);
-	ir_node *blk, *spill, *reload;
-
-	assert(pset_count(vi->spills) && "There are no spills associated to this variable");
-	/* now we enter the reload phase, so no more spills are allowed */
-	vi->reload_phase = 1;
-
-	/* add reload to graph and schedule */
-	blk    = get_nodes_block(before);
-	spill  = pset_first(vi->spills); /* For now use an arbitrary spill node. This is corrected later in fix_reloads */
-	pset_break(vi->spills);
-	reload = be_new_Reload(raenv->cls, raenv->irg, blk, get_irn_mode(get_irn_n(spill, 0)), spill);
-
-	sched_add_before(before, reload);
-
-	/* create a new variable for the result of the reload */
-	assert(!var_find(raenv->vars, var_nr_for_reload) && "Each reload must define a new variable");
-	var_add_value(raenv, var_nr_for_reload, reload);
-
-	/* remember the reload */
-	pset_insert_ptr(vi->reloads, reload);
-
-	return vi;
-}
-
 static INLINE pset *get_var_values(be_raext_env_t *raenv, int var_nr) {
 	var_info_t *vi = var_find(raenv->vars, var_nr);
-	assert(vi && "Variable does not (yet?) exist");
+	assert(vi && "Variable does not exist");
 	return vi->values;
-}
-
-static INLINE pset *get_var_spills(be_raext_env_t *raenv, int var_nr) {
-	var_info_t *vi = var_find(raenv->vars, var_nr);
-	assert(vi && "Variable does not (yet?) exist");
-	return vi->spills;
-}
-
-static INLINE pset *get_var_reloads(be_raext_env_t *raenv, int var_nr) {
-	var_info_t *vi = var_find(raenv->vars, var_nr);
-	assert(vi && "Variable does not (yet?) exist");
-	return vi->reloads;
 }
 
 /**
@@ -459,23 +369,23 @@ static INLINE pset *get_var_reloads(be_raext_env_t *raenv, int var_nr) {
  */
 static void values_to_vars(ir_node *irn, void *env) {
 	be_raext_env_t *raenv = env;
-	ir_node *n;
 	int nr;
 	pset *vals;
 
 	vals = get_phi_class(irn);
 
-	if (!vals) {
+	if (vals) {
+		nr = get_irn_node_nr(get_first_phi(vals));
+	} else {
 		/* not a phi class member, value == var */
+		nr = get_irn_node_nr(irn);
 		vals = pset_new_ptr(1);
 		pset_insert_ptr(vals, irn);
 	}
 
 	/* values <--> var mapping */
-	n = pset_first(vals);
-	nr = get_irn_node_nr(n);
-	for (; n; n=pset_next(vals))
-		var_add_value(raenv, nr, n);
+	pset_foreach(vals, irn)
+		var_add_value(raenv, nr, irn);
 }
 
 
@@ -491,32 +401,16 @@ static void values_to_vars(ir_node *irn, void *env) {
  *****************************************************************************/
 
 
-static INLINE ir_node *get_first_non_phi(pset *s) {
-	ir_node *irn;
-
-	pset_foreach(s, irn)
-		if (!is_Phi(irn)) {
-			pset_break(s);
-			return irn;
-		}
-
-	assert(0 && "There must be a non-phi-irn in this");
-	return NULL;
-}
-
 static void extract_vars_of_cls(be_raext_env_t *raenv) {
 	int count = 0;
-	set_entry *e;
+	var_info_t *vi;
 
 	raenv->cls_vars = malloc(set_count(raenv->vars) * sizeof(*raenv->cls_vars));
 	assert(raenv->cls_vars);
 
-	set_foreach(raenv->vars, e) {
-		var_info_t *vi = (var_info_t *)e->dptr;
-
+	set_foreach(raenv->vars, vi)
 		if (is_res_in_reg_class(get_first_non_phi(vi->values)))
 			raenv->cls_vars[count++] = vi;
-	}
 
 	raenv->cls_vars = realloc(raenv->cls_vars, count * sizeof(*raenv->cls_vars));
 	assert(raenv->cls_vars);
@@ -551,8 +445,13 @@ static void dump_nodes(be_raext_env_t *raenv) {
 	fprintf(f, "\nnodes {\n");
 
 	for (i=0; i<raenv->n_cls_vars; ++i) {
-		fprintf(f, "%d", raenv->cls_vars[i]->var_nr);
-		dump_constraint(raenv, get_first_non_phi(raenv->cls_vars[i]->values), -1);
+		var_info_t *vi = raenv->cls_vars[i];
+
+		if (vi->var_nr == SET_REMOVED)
+			continue;
+
+		fprintf(f, "%d", vi->var_nr);
+		dump_constraint(raenv, get_first_non_phi(vi->values), -1);
 		fprintf(f, "\n");
 	}
 
@@ -571,8 +470,14 @@ static void dump_interferences(be_raext_env_t *raenv) {
 	for (i=0; i<raenv->n_cls_vars; ++i) {
 		vi1 = raenv->cls_vars[i];
 
+		if (vi1->var_nr == SET_REMOVED)
+			continue;
+
 		for (o=i+1; o<raenv->n_cls_vars; ++o) {
 			vi2 = raenv->cls_vars[o];
+
+			if (vi2->var_nr == SET_REMOVED)
+				continue;
 
 			pset_foreach(vi1->values, irn1)
 				pset_foreach(vi2->values, irn2)
@@ -664,22 +569,95 @@ static void execute(char *prog_to_call, char *out_file, char *result_file) {
             |_|   |_|      |___/
  *****************************************************************************/
 
+/**
+ * Spill a variable and add reloads before all uses.
+ */
+static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr) {
+	var_info_t *vi = var_find(raenv->vars, var_nr);
+	ir_node *spill=NULL, *ctx, *irn;
+	const ir_edge_t *edge;
+	pset *spills  = pset_new_ptr(4);	/* the spills of this variable */
+	pset *reloads = pset_new_ptr(4);	/* the reloads of this variable */
+	int new_size, n_spills, n_reloads;
+
+	assert(vi && "Variable nr does not exist!");
+	assert(pset_count(vi->values) && "There are no values associated to this variable");
+
+	/* the spill context is set to an arbitrary node of the phi-class */
+	ctx = get_first_phi(vi->values);
+
+	/* for each value of this variable insert the spills */
+	pset_foreach(vi->values, irn) {
+		if (is_Phi(irn))
+			continue;
+
+		/* all ordinary nodes must be spilled */
+		spill = be_new_Spill(raenv->cls, raenv->irg, get_nodes_block(irn), irn, ctx);
+		sched_add_after(irn, spill);
+
+		/* remember the spill */
+		pset_insert_ptr(spills, spill);
+	}
+
+	assert(spill && "There must be at least one non-phi-node");
+
+	/* insert reloads and wire them arbitrary*/
+	pset_foreach(vi->values, irn)
+		foreach_out_edge(irn, edge) {
+			ir_node *reload, *src = edge->src;
+			if (is_Phi(src))
+				continue;
+
+			/* all real uses must be reloaded */
+			reload = be_new_Reload(raenv->cls, raenv->irg, get_nodes_block(src), get_irn_mode(get_irn_n(spill, 0)), spill);
+			sched_add_before(src, reload);
+
+			/* remember the reload */
+			pset_insert_ptr(reloads, reload);
+		}
+
+	/* correct the reload->spill pointers... */
+	be_introduce_copies_for_set(raenv->dom_info, spills, reloads); /* TODO */
+
+
+	/****** correct the variable <--> values mapping: ******
+	 *
+	 *  - if we had a phi class it gets split into several new variables
+	 *  - all reloads are new variables
+	 */
+	n_spills = pset_count(spills);
+	n_reloads = pset_count(reloads);
+
+	/* first make room for new pointers in the cls_var array */
+	new_size = raenv->n_cls_vars + n_reloads + ((n_spills>1) ? n_spills : 0);
+	raenv->cls_vars = realloc(raenv->cls_vars, (new_size) * sizeof(*raenv->cls_vars));
+	assert(raenv->cls_vars && "Out of mem!?");
+
+	/* if we had a real phi-class, we must... */
+	if (pset_count(spills) > 1) {
+		/* ...remove the old variable corresponding to the phi class */
+		vi->var_nr = SET_REMOVED;
+
+		/* ...add new vars for each non-phi-member */
+		pset_foreach(spills, irn) {
+			ir_node *spilled = get_irn_n(irn, 0);
+			raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(spilled), spilled);
+		}
+	}
+
+	/* add new variables for all reloads */
+	pset_foreach(reloads, irn)
+		raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(irn), irn);
+
+
+
+	del_pset(spills);
+	del_pset(reloads);
+}
+
 #define INVALID_FILE_FORMAT assert(0 && "Invalid file format.")
-
-static INLINE int is_before(const char *s, size_t len) {
-	if (!strncmp(s, "before", len))
-		return 1;
-	if (!strncmp(s, "after", len))
-		return 0;
-	INVALID_FILE_FORMAT;
-	return -1;
-}
-
-static void fix_reloads(be_raext_env_t *raenv) {
-	var_info_t *vi;
-	set_foreach(raenv->vars, vi)
-		be_introduce_copies_pset(raenv->dom_info, vi->spills);
-}
+#define BUFLEN 32
+#define BUFCONV " %32s "
 
 /**
  * Read in the actions performed by the external allocator.
@@ -688,8 +666,8 @@ static void fix_reloads(be_raext_env_t *raenv) {
  */
 static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 	FILE *f;
-	var_info_t *vi;
-	int phase=0;
+	char buf[BUFLEN];
+	int is_allocation = 0;
 
 	if (!(f = fopen(filename, "rt"))) {
 		fprintf(stderr, "Could not open file %s for reading\n", filename);
@@ -697,89 +675,39 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 	}
 	raenv->f = f;
 
-	/* parse the file */
-	while (phase == 0) {
-		int loc, var_use_ident, var_def_ident, pos;
-		char where[16];
+	/* read the action */
+	if (fscanf(f, BUFCONV, buf) != 1)
+		INVALID_FILE_FORMAT;
 
-		/* handle a spill */
-		if (fscanf(f, " spill %6s %d %d ", &where, &loc, &var_use_ident) == 3) {
+	/* do we spill */
+	if (!strcmp(buf, "spills")) {
+		int var_nr;
+		while (fscanf(f, " %d ", &var_nr) == 1)
+			var_add_spills_and_reloads(raenv, var_nr);
+	} else
 
-			/* determine the node to insert the spill before */
-			ir_node *anchor = pmap_get_sth(raenv->nodes, loc);
-			assert(anchor && "insn-nr does not exist");
-			if (!is_before(where, sizeof(where)))
-				anchor = sched_next(anchor);
+	/* or do we allocate */
+	if (!strcmp(buf, "allocs")) {
+		int var_nr, reg_nr;
 
-			var_add_spill(raenv, var_use_ident, anchor);
-		}
-
-		/* handle a reload */
-		else if (fscanf(f, " reload %s %d %d %d ", &where, &loc, &var_def_ident, &var_use_ident) == 4) {
-
-			/* determine the node to insert the spill before */
-			ir_node *anchor = pmap_get_sth(raenv->nodes, loc);
-			assert(anchor && "insn-nr does not exist");
-			if (!is_before(where, sizeof(where)))
-				anchor = sched_next(anchor);
-
-			var_add_reload(raenv, var_use_ident, var_def_ident, anchor);
-		}
-
-		/* handle a set_irn_n */
-		else if (fscanf(f, " setarg %d %d %d ", &loc, &pos, &var_use_ident) == 3) {
-			ir_node *to_change, *new_arg;
-			var_info_t *vi = var_find(raenv->vars, var_use_ident);
-			assert(vi && vi->values && "New argument does not exist");
-
-			to_change = pmap_get_sth(raenv->nodes, loc);
-			assert(to_change && "insn-nr does not exist");
-
-			new_arg = dom_up_search(vi->values, to_change);
-			set_irn_n(to_change, pos, new_arg);
-		}
-
-		/* handle a copy insertion */
-		else if (fscanf(f, " copy %s %d %d %d ", &where, &loc, &var_def_ident, &var_use_ident) == 4) {
-			/* TODO
-				Ziel der Kopie ist Variable die bereits existiert
-				Ziel der Kopie ist eine neue Variable
-			*/
-		}
-
-		else
-			phase++;
-	}
-
-	fix_reloads(raenv);
-
-	while (phase == 1) {
-		int var_use_ident, reg_nr;
-
-		/* assign register */
-		if (fscanf(f, " assign %d %d ", &var_use_ident, &reg_nr) == 2) {
-			pset *vals = get_var_values(raenv, var_use_ident);
+		is_allocation = 1;
+		while (fscanf(f, " %d %d ", &var_nr, &reg_nr) == 2) {
 			ir_node *irn;
+			pset *vals = get_var_values(raenv, var_nr);
 
-			assert(vals && "Variable does not (yet?) exist!");
+			assert(vals && "Variable nr does not exist!");
 			pset_foreach(vals, irn)
-				arch_set_irn_register(raenv->aenv, irn, arch_register_for_index(raenv->cls, var_use_ident));
+				arch_set_irn_register(raenv->aenv, irn, arch_register_for_index(raenv->cls, reg_nr));
 		}
-		else
-			phase++;
-	}
+	} else
+		INVALID_FILE_FORMAT;
 
 	if (!feof(f))
 		INVALID_FILE_FORMAT;
 
 	fclose(f);
 
-	/* Free the psets held in the variable-infos */
-	set_foreach(raenv->vars, vi) {
-		del_pset(vi->values);
-		del_pset(vi->spills);
-		del_pset(vi->reloads);
-	}
+	return is_allocation;
 }
 
 /******************************************************************************
@@ -810,6 +738,7 @@ static char callee[128] = "echo";
 static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 	be_raext_env_t raenv;
 	int clsnr, clss;
+	var_info_t *vi;
 
 	compute_doms(irg);
 
@@ -817,11 +746,10 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 	raenv.aenv     = env->arch_env;
 	raenv.dom_info = be_compute_dominance_frontiers(irg);
 	raenv.vars     = new_set(compare_var_infos, 64);
-	raenv.nodes    = pmap_create();
 
-	/* Insert copies */
 
-	//TODO
+	//TODO /* Insert copies */
+	//TODO /* Change In to Out constraints */
 
 	/* SSA destruction */
 	ssa_destr(&raenv);
@@ -854,10 +782,10 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 	}
 
 	/* Clean up */
-	pmap_destroy(raenv.nodes);
+	set_foreach(raenv.vars, vi)
+		del_pset(vi->values);
 	del_set(raenv.vars);
 	be_free_dominance_frontiers(raenv.dom_info);
-
 }
 
 /******************************************************************************
