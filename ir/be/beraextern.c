@@ -15,54 +15,35 @@
 The input file format
 ----------------------
 
-inputfile	::= regs cfg .
+inputfile	::= regs nodes interf affinities .
 
-regs		::= 'regs' regcount 'saved-by-caller' reg-list 'saved-by-callee' reg-list .						// Anzahl der register (0..regcount-1), die zur Verfuegung stehen
+regs		::= 'regs' regcount .						// Anzahl der register (0..regcount-1), die zur Verfuegung stehen
 
-reg-list	::= reg-nr
-			  | reg-nr reg-list
+nodes		::= 'nodes' '{' node* '}' .					// All nodes in the graph
 
-cfg			::= 'cfg' ident '{' block* edge* '}' .		// Steuerflussgraph der Prozedur
+interf		::= 'interferences' '{' edge* '}' .			// Interference edges of the graph
 
-block		::= 'block' block-nr '{' insn* '}' .		// Grundblock im cfg versehen mit einer nummer
+affinities	::= 'affinities' '{' edge* '}' .			// Affinity edges of the graph
 
-edge		::= 'cf-edge' block-nr block-nr .			// Steuerflusskante src-->tgt
+node		::= node-nr
+			  | node-nr '<' reg-nr '>' .				// Reg-nr is present in case of constraints
 
-insn		::= gen-insn 								// Befehl in einem block
-			  | copy-insn .
-
-gen-insn	::= 'insn' insn-nr '{' uses defs '}' .
-copy-insn	::= 'copy' insn-nr '{' uses defs '}' .
-call-insn	::= 'call' insn-nr '{' uses defs '}' .
-
-defs		::= 'def' var-list .						// Liste der definierten/verwendeten Variablen
-uses		::= 'use' var-list .
-
-var-list	::= var-ref
-			  | var-ref var-list .
-
-var-ref		::= var-nr
-			  | var-nr '<' reg-nr '>' .					// reg-nr gibt register constraint an.
+edge		::= '(' node-nr node-nr ')' .
 
 
-ident		::= non-whitespace-char* .
-regcount, block-nr, insn-nr, reg-nr, var-nr ::= integer .
+regcount, node-nr ::= integer .
 
 
 The output file format
 -----------------------
 
-outputfile	::= action* assign*.
+outputfile	::= spills | allocs .
 
-action		::= 'spill'  loc var-nr					// insert a spill    spill(var-nr);
-			  | 'reload' loc new-var-nr  var-nr		// insert a reload   new-var-nr := reload(var-nr);
-			  | 'setarg' insn-nr pos var-nr			// change a usage to insn(..., var-nr, ...)  (equals set_irn_n)
-			  | 'copy'   loc var-nr var-nr			// insert a copy     var-nr[1] := var-nr[2];
+spills		::= 'spills' '{' node-nr+ '}' .
 
-assign		::= 'assign' var-nr reg-nr .			// assign var-nr the register reg-nr
+allocs		::= 'allocs' '{' alloc* '}' .
 
-loc			::= 'before' insn-nr
-			  | 'after'  insn-nr .
+alloc		::= node-nr reg-nr .
 
 
 Constraints for output file
@@ -125,9 +106,12 @@ typedef struct _be_raext_env_t {
 	ir_graph *irg;
 	dom_front_info_t *dom_info;
 
-	FILE *f;		/**< file handle used for out- and input file */
-	set *vars;		/**< contains all var_info_t */
-	pmap *nodes;	/**< maps nodes numbers (int) to the node (ir_node*) having that node_nr */
+	FILE *f;				/**< file handle used for out- and input file */
+	set *vars;				/**< contains all var_info_t */
+	int n_cls_vars;
+	var_info_t **cls_vars;	/**< only the var_infos for current cls. needed for double iterating */
+	set *edges;				/**< interference and affinity edges */
+	pmap *nodes;			/**< maps nodes numbers (int) to the node (ir_node*) having that node_nr */
 } be_raext_env_t;
 
 
@@ -402,7 +386,7 @@ static INLINE var_info_t *var_add_spill(be_raext_env_t *raenv, int var_to_spill,
 	var_info_t *vi = var_find_or_insert(raenv->vars, var_to_spill);
 	ir_node *blk, *tospill, *spill;
 
-	assert(pset_count(vi->values) && "There are no values associated to this variable (yet?)");
+	assert(pset_count(vi->values) && "There are no values associated to this variable");
 	assert(!vi->reload_phase && "I have already seen a reload for this variable, so you cant spill anymore!");
 
 	/* add spill to graph and schedule */
@@ -428,7 +412,7 @@ static INLINE var_info_t *var_add_reload(be_raext_env_t *raenv, int var_to_reloa
 	var_info_t *vi = var_find_or_insert(raenv->vars, var_to_reload);
 	ir_node *blk, *spill, *reload;
 
-	assert(pset_count(vi->spills) && "There are no spills associated to this variable (yet?)");
+	assert(pset_count(vi->spills) && "There are no spills associated to this variable");
 	/* now we enter the reload phase, so no more spills are allowed */
 	vi->reload_phase = 1;
 
@@ -494,6 +478,181 @@ static void values_to_vars(ir_node *irn, void *env) {
 		var_add_value(raenv, nr, n);
 }
 
+
+/******************************************************************************
+    _____
+   |  __ \
+   | |  | |_   _ _ __ ___  _ __   ___ _ __
+   | |  | | | | | '_ ` _ \| '_ \ / _ \ '__|
+   | |__| | |_| | | | | | | |_) |  __/ |
+   |_____/ \__,_|_| |_| |_| .__/ \___|_|
+                          | |
+                          |_|
+ *****************************************************************************/
+
+
+static INLINE ir_node *get_first_non_phi(pset *s) {
+	ir_node *irn;
+
+	pset_foreach(s, irn)
+		if (!is_Phi(irn)) {
+			pset_break(s);
+			return irn;
+		}
+
+	assert(0 && "There must be a non-phi-irn in this");
+	return NULL;
+}
+
+static void extract_vars_of_cls(be_raext_env_t *raenv) {
+	int count = 0;
+	set_entry *e;
+
+	raenv->cls_vars = malloc(set_count(raenv->vars) * sizeof(*raenv->cls_vars));
+	assert(raenv->cls_vars);
+
+	set_foreach(raenv->vars, e) {
+		var_info_t *vi = (var_info_t *)e->dptr;
+
+		if (is_res_in_reg_class(get_first_non_phi(vi->values)))
+			raenv->cls_vars[count++] = vi;
+	}
+
+	raenv->cls_vars = realloc(raenv->cls_vars, count * sizeof(*raenv->cls_vars));
+	assert(raenv->cls_vars);
+
+	raenv->n_cls_vars = count;
+}
+
+
+/**
+ * Check if node irn has a limited-constraint at position pos.
+ * If yes, dump it to FILE raenv->f
+ */
+static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos) {
+	bitset_t *bs = bitset_alloca(raenv->cls->n_regs);
+	arch_register_req_t req;
+
+	arch_get_register_req(raenv->aenv, &req, irn, pos);
+	if (arch_register_req_is(&req, limited)) {
+		int reg_nr;
+		req.limited(req.limited_env, bs);
+		reg_nr = bitset_next_set(bs, 0);
+		fprintf(raenv->f, "<%d>", reg_nr);
+		assert(-1 == bitset_next_set(bs, reg_nr+1) && "Constraints with more than 1 possible register are not supported");
+	}
+}
+
+
+static void dump_nodes(be_raext_env_t *raenv) {
+	FILE *f = raenv->f;
+	int i;
+
+	fprintf(f, "\nnodes {\n");
+
+	for (i=0; i<raenv->n_cls_vars; ++i) {
+		fprintf(f, "%d", raenv->cls_vars[i]->var_nr);
+		dump_constraint(raenv, get_first_non_phi(raenv->cls_vars[i]->values), -1);
+		fprintf(f, "\n");
+	}
+
+	fprintf(f, "}\n");
+}
+
+
+static void dump_interferences(be_raext_env_t *raenv) {
+	int i,o;
+	var_info_t *vi1, *vi2;
+	ir_node *irn1, *irn2;
+	FILE *f = raenv->f;
+
+	fprintf(f, "\ninterferences {\n");
+
+	for (i=0; i<raenv->n_cls_vars; ++i) {
+		vi1 = raenv->cls_vars[i];
+
+		for (o=i+1; o<raenv->n_cls_vars; ++o) {
+			vi2 = raenv->cls_vars[o];
+
+			pset_foreach(vi1->values, irn1)
+				pset_foreach(vi2->values, irn2)
+					if (values_interfere(irn1, irn2)) {
+						pset_break(vi1->values);
+						pset_break(vi2->values);
+						fprintf(f, "(%d %d)\n", vi1->var_nr, vi2->var_nr);
+					}
+		}
+	}
+	fprintf(f, "}\n");
+}
+
+
+static void dump_affinities_walker(ir_node *irn, void *env) {
+	be_raext_env_t *raenv = env;
+
+	if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy) {
+		ir_node *src = get_irn_n(irn, 0);
+		var_info_t *vi1 = get_irn_link(irn);
+		var_info_t *vi2 = get_irn_link(src);
+
+		fprintf(raenv->f, "(%d %d)\n",  vi1->var_nr, vi2->var_nr);
+	}
+}
+
+
+static void dump_affinities(be_raext_env_t *raenv) {
+	fprintf(raenv->f, "\ninterferences {\n");
+	irg_walk_graph(raenv->irg, NULL, dump_affinities_walker, raenv);
+	fprintf(raenv->f, "}\n");
+}
+
+/**
+ * Dump all information needed by the external
+ * register allocator to a single file.
+ */
+static void dump_to_file(be_raext_env_t *raenv, char *filename) {
+	FILE *f;
+
+	if (!(f = fopen(filename, "wt"))) {
+		fprintf(stderr, "Could not open file %s for writing\n", filename);
+		exit(0xdeadbeef);
+	}
+	raenv->f = f;
+
+	/* dump register info */
+	fprintf(f, "regs %d\n", arch_register_class_n_regs(raenv->cls));
+
+	/* dump the interference graph */
+	dump_nodes(raenv);
+	dump_interferences(raenv);
+	dump_affinities(raenv);
+
+	fclose(f);
+}
+
+/******************************************************************************
+    ______                     _
+   |  ____|                   | |
+   | |__  __  _____  ___ _   _| |_ ___
+   |  __| \ \/ / _ \/ __| | | | __/ _ \
+   | |____ >  <  __/ (__| |_| | ||  __/
+   |______/_/\_\___|\___|\__,_|\__\___|
+ *****************************************************************************/
+
+/**
+ * Execute the external register allocator specified in the
+ * firm-option firm.be.ra.ext.callee
+ */
+static void execute(char *prog_to_call, char *out_file, char *result_file) {
+	char cmd_line[1024];
+	int ret_status;
+
+	snprintf(cmd_line, sizeof(cmd_line), "%s %s %s", prog_to_call, out_file, result_file);
+
+	ret_status = system(cmd_line);
+	assert(ret_status != -1 && "Invokation of external register allocator failed");
+}
+
 /******************************************************************************
                          _         _____                 _ _
        /\               | |       |  __ \               | | |
@@ -525,8 +684,9 @@ static void fix_reloads(be_raext_env_t *raenv) {
 /**
  * Read in the actions performed by the external allocator.
  * Apply these transformations to the irg.
+ * @return 1 if an allocation was read in. 0 otherwise.
  */
-static void read_and_apply_results(be_raext_env_t *raenv, char *filename) {
+static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 	FILE *f;
 	var_info_t *vi;
 	int phase=0;
@@ -536,8 +696,6 @@ static void read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 		exit(0xdeadbeef);
 	}
 	raenv->f = f;
-
-
 
 	/* parse the file */
 	while (phase == 0) {
@@ -625,199 +783,6 @@ static void read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 }
 
 /******************************************************************************
-    _____
-   |  __ \
-   | |  | |_   _ _ __ ___  _ __   ___ _ __
-   | |  | | | | | '_ ` _ \| '_ \ / _ \ '__|
-   | |__| | |_| | | | | | | |_) |  __/ |
-   |_____/ \__,_|_| |_| |_| .__/ \___|_|
-                          | |
-                          |_|
- *****************************************************************************/
-
-
-/**
- * Check if node irn has a limited-constraint at position pos.
- * If yes, dump it to FILE raenv->f
- */
-static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos) {
-	bitset_t *bs = bitset_alloca(raenv->cls->n_regs);
-	arch_register_req_t req;
-
-	arch_get_register_req(raenv->aenv, &req, irn, pos);
-	if (arch_register_req_is(&req, limited)) {
-		int reg_nr;
-		req.limited(req.limited_env, bs);
-		reg_nr = bitset_next_set(bs, 0);
-		fprintf(raenv->f, " <%d>", reg_nr);
-		assert(-1 == bitset_next_set(bs, reg_nr+1) && "Constraints with more than 1 possible register are not supported");
-	}
-}
-
-
-/**
- * Dump all blocks and instructions in that block
- */
-static void dump_blocks(ir_node *blk, void *env) {
-	be_raext_env_t *raenv = env;
-	ir_node *irn;
-	FILE *f = raenv->f;
-	int nr = get_irn_node_nr(blk);
-
-	pmap_insert_sth(raenv->nodes, nr, blk);
-
-	/* begin block scope */
-	fprintf(f, "\n");
-	fprintf(f, "  block %d {\n", nr);
-
-	/* for each instruction */
-	for(irn=sched_first(blk); !sched_is_end(irn); irn=sched_next(irn)) {
-		int max, i;
-		int node_nr;
-
-		if (is_Phi(irn) || !is_sth_in_reg_class(raenv, irn))
-			continue;
-
-		/* kind of instruction */
-		if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy)
-			fprintf(f, "    copy");
-		else if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_call)
-			fprintf(f, "    call");
-		else
-			fprintf(f, "    insn");
-
-		/* number */
-		node_nr = get_irn_node_nr(irn);
-		fprintf(f, " %ld {\n", node_nr);
-
-		pmap_insert_sth(raenv->nodes, node_nr, irn);
-
-
-		/*
-		 * print all uses
-		 */
-		fprintf(f, "      use");
-		for (i=0, max=get_irn_arity(irn); i<max; ++i) {
-			ir_node *arg = get_irn_n(irn, i);
-			if (arch_irn_has_reg_class(raenv->aenv, arg, -1, raenv->cls)) {
-				fprintf(f, " %d", get_var_info(arg)->var_nr);
-				dump_constraint(raenv, irn, i);
-			}
-		}
-		fprintf(f,"\n");
-
-		/*
-		 * print all defs
-		 */
-		fprintf(f, "      def");
-		/* special handling of projs */
-		if (get_irn_mode(irn) == mode_T) {
-			for (irn = sched_next(irn); is_Proj(irn); irn = sched_next(irn))
-				if (arch_irn_has_reg_class(raenv->aenv, irn, -1, raenv->cls)) {
-					fprintf(f, " %d", get_var_info(irn)->var_nr);
-					dump_constraint(raenv, irn, -1);
-				}
-			irn = sched_prev(irn); /* for outer loop */
-		} else {
-			if (arch_irn_has_reg_class(raenv->aenv, irn, -1, raenv->cls)) {
-				fprintf(f, " %d", get_var_info(irn)->var_nr);
-				dump_constraint(raenv, irn, -1);
-			}
-		}
-		fprintf(f,"\n");
-
-		/* end of insn scope */
-		fprintf(f, "    }\n");
-	}
-
-	/* end the block scope */
-	fprintf(f, "  }\n");
-}
-
-
-/**
- * Dump all control flow edges of this irg
- */
-static void dump_edges(ir_node *blk, void *env) {
-	be_raext_env_t *raenv = env;
-	int i, max;
-
-	if (get_irg_start_block(get_irn_irg(blk)) == blk)
-		return;
-
-	/* dump cf edges in the flow-order "pred succ" */
-	for (i=0, max=get_irn_arity(blk); i<max; ++i) {
-		ir_node *pred = get_Block_cfgpred_block(blk, i);
-		fprintf(raenv->f, "  cf_edge %ld %ld\n", get_irn_node_nr(pred), get_irn_node_nr(blk));
-	}
-}
-
-
-/**
- * Dump all information needed by the external
- * register allocator to a single file.
- */
-static void dump_to_file(be_raext_env_t *raenv, char *filename) {
-	FILE *f;
-	int i, reg_count;
-
-	if (!(f = fopen(filename, "wt"))) {
-		fprintf(stderr, "Could not open file %s for writing\n", filename);
-		exit(0xdeadbeef);
-	}
-	raenv->f = f;
-
-	/* dump register info */
-	reg_count = arch_register_class_n_regs(raenv->cls);
-	fprintf(f, "regs %d", reg_count);
-
-	fprintf(f, " saved-by-caller");
-	for (i=0; i<reg_count; ++i)
-		if (arch_register_type_is(arch_register_for_index(raenv->cls, i), caller_saved))
-			fprintf(f, " %d", i);
-
-	fprintf(f, " saved-by-callee");
-	for (i=0; i<reg_count; ++i)
-		if (arch_register_type_is(arch_register_for_index(raenv->cls, i), callee_saved))
-			fprintf(f, " %d", i);
-
-	fprintf(f, "\n");
-
-	/* dump the cfg */
-
-	fprintf(f, "cfg %s {\n", filename);
-	irg_block_walk_graph(raenv->irg, NULL, dump_blocks, raenv);
-	irg_block_walk_graph(raenv->irg, NULL, dump_edges, raenv);
-	fprintf(f, "}\n");
-
-	fclose(f);
-}
-
-
-/******************************************************************************
-    ______                     _
-   |  ____|                   | |
-   | |__  __  _____  ___ _   _| |_ ___
-   |  __| \ \/ / _ \/ __| | | | __/ _ \
-   | |____ >  <  __/ (__| |_| | ||  __/
-   |______/_/\_\___|\___|\__,_|\__\___|
- *****************************************************************************/
-
-/**
- * Execute the external register allocator specified in the
- * firm-option firm.be.ra.ext.callee
- */
-static void execute(char *prog_to_call, char *out_file, char *result_file) {
-	char cmd_line[1024];
-	int ret_status;
-
-	snprintf(cmd_line, sizeof(cmd_line), "%s %s %s", prog_to_call, out_file, result_file);
-
-	ret_status = system(cmd_line);
-	assert(ret_status != -1 && "Invokation of external register allocator failed");
-}
-
-/******************************************************************************
     __  __       _
    |  \/  |     (_)
    | \  / | __ _ _ _ __
@@ -853,28 +818,39 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 	raenv.dom_info = be_compute_dominance_frontiers(irg);
 	raenv.vars     = new_set(compare_var_infos, 64);
 	raenv.nodes    = pmap_create();
+
+	/* Insert copies */
+
+	//TODO
+
 	/* SSA destruction */
 	ssa_destr(&raenv);
 
-	be_clear_links(irg);
+	/* Mapping of SSA-Values <--> Variables */
 	phi_class_compute(irg);
+	be_clear_links(irg);
 	irg_walk_graph(irg, values_to_vars, NULL, &raenv);
 
 	dump_ir_block_graph_sched(irg, "-extern-ssadestr");
 
 	/* For all register classes */
 	for(clsnr = 0, clss = arch_isa_get_n_reg_class(raenv.aenv->isa); clsnr < clss; ++clsnr) {
+		int done = 0;
 		char out[256], in[256];
 
 		raenv.cls = arch_isa_get_reg_class(raenv.aenv->isa, clsnr);
 		ir_snprintf(out, sizeof(out), "%F-%s.ra", irg, raenv.cls->name);
 		ir_snprintf(in, sizeof(in), "%F-%s.ra.res", irg, raenv.cls->name);
 
-		dump_to_file(&raenv, out);
+		extract_vars_of_cls(&raenv);
 
-		execute(callee, out, in);
+		while (!done) {
+			dump_to_file(&raenv, out);
+			execute(callee, out, in);
+			done = read_and_apply_results(&raenv, in);
+		}
 
-		read_and_apply_results(&raenv, in);
+		free(raenv.cls_vars);
 	}
 
 	/* Clean up */
@@ -897,12 +873,9 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 
 #ifdef WITH_LIBCORE
 
-/* TODO: explicit cast to void * is ugly, but ISO-C forbids
-   assignment from func ptr to void ptr. This should probably be fixed
-   in libcore. (cw) */
 static const lc_opt_enum_const_ptr_items_t ssa_destr_items[] = {
-	{ "simple",    (void *)ssa_destr_simple },
-	{ "rastello",  (void *)ssa_destr_rastello },
+	{ "simple",    ssa_destr_simple },
+	{ "rastello",  ssa_destr_rastello },
 	{ NULL,      NULL }
 };
 
