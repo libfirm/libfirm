@@ -81,16 +81,14 @@ ir_node *be_get_Spill_context(const ir_node *irn);
 void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg);
 
 /**
- * Modify the output register requirements of a Perm.
- * This function incur register constraints to an output value of a Perm.
- * This is used when handling register constraints in general,
- * see beconstrperm.c
- * @param irn The perm node.
- * @param pos The position.
- * @param req The requirements to set to.
- * @param negate_limited When the requirements are limited, inverse the set of admissible registers.
+ * Impose register constraints on a backend node.
+ * The register subsets given by the limited function in @p req are copied to the backend node.
+ * This requires that the constraint type of the @p req is arch_register_req_type_limited.
+ * @param irn The backend node.
+ * @param pos The position (@see be_set_constr_single_reg()).
+ * @param req The register requirements which shall be transferred.
  */
-void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req, unsigned negate_limited);
+void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req);
 
 /**
  * Insert a Perm node after a specific node in the schedule.

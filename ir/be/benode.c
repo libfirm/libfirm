@@ -291,6 +291,29 @@ void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
 	r->req.cls         = reg->reg_class;
 }
 
+void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req)
+{
+	int idx           = pos < 0 ? -(pos - 1) : pos;
+	be_node_attr_t *a = get_irn_attr(irn);
+	be_reg_data_t *rd = &a->reg_data[idx];
+	be_req_t       *r = pos < 0 ? &rd->req : &rd->in_req;
+
+	assert(is_be_node(irn));
+	assert(!(pos >= 0) || pos < get_irn_arity(irn));
+	assert(!(pos < 0)  || -(pos + 1) <= a->n_outs);
+	assert(arch_register_req_is(req, limited));
+
+	r->kind            = be_req_kind_old_limited;
+	r->req.limited     = be_limited;
+	r->req.limited_env = r;
+	r->req.type        = arch_register_req_type_limited;
+	r->req.cls         = req->cls;
+
+	r->x.old_limited.old_limited     = req->limited;
+	r->x.old_limited.old_limited_env = req->limited_env;
+}
+
+
 void be_set_IncSP_offset(ir_node *irn, int offset)
 {
 
