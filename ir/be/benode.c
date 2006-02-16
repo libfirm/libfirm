@@ -59,16 +59,29 @@ typedef struct {
 	int *pos;
 } be_op_t;
 
+typedef enum {
+	be_req_kind_old_limited,
+	be_req_kind_negate_old_limited,
+	be_req_kind_single_reg
+} be_req_kind_t;
+
 typedef struct {
 	arch_register_req_t req;
-	unsigned            negate_limited : 1;
-	void                (*old_limited)(void *ptr, bitset_t *bs);
-	void                *old_limited_env;
+	be_req_kind_t       kind;
+	union {
+		struct {
+			void (*old_limited)(void *ptr, bitset_t *bs);
+			void *old_limited_env;
+		} old_limited;
+
+		const arch_register_t *single_reg;
+	} x;
 } be_req_t;
 
 typedef struct {
 	const arch_register_t *reg;
 	be_req_t              req;
+	be_req_t              in_req;
 } be_reg_data_t;
 
 typedef struct {
@@ -88,6 +101,9 @@ static ir_op *op_Reload;
 static ir_op *op_Perm;
 static ir_op *op_Copy;
 static ir_op *op_Keep;
+static ir_op *op_Call;
+static ir_op *op_IncSP;
+static ir_op *op_AddSP;
 
 static int beo_base = -1;
 
@@ -242,27 +258,47 @@ static void be_limited(void *data, bitset_t *bs)
 {
 	be_req_t *req = data;
 
-	req->old_limited(req->old_limited_env, bs);
-	if(req->negate_limited)
-		bitset_flip_all(bs);
+	switch(req->kind) {
+	case be_req_kind_negate_old_limited:
+	case be_req_kind_old_limited:
+		req->x.old_limited.old_limited(req->x.old_limited.old_limited_env, bs);
+		if(req->kind == be_req_kind_negate_old_limited)
+			bitset_flip_all(bs);
+		break;
+	case be_req_kind_single_reg:
+		bitset_clear_all(bs);
+		bitset_set(bs, req->x.single_reg->index);
+		break;
+	}
 }
 
-void be_set_Perm_out_req(ir_node *irn, int pos, const arch_register_req_t *req, unsigned negate_limited)
+void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
 {
-	be_node_attr_t *a   = get_irn_attr(irn);
-	be_req_t       *r = &a->reg_data[pos].req;
+	int idx           = pos < 0 ? -(pos - 1) : pos;
+	be_node_attr_t *a = get_irn_attr(irn);
+	be_reg_data_t *rd = &a->reg_data[idx];
+	be_req_t       *r = pos < 0 ? &rd->req : &rd->in_req;
 
-	assert(be_is_Perm(irn));
-	assert(pos >= 0 && pos < get_irn_arity(irn));
-	memcpy(&r->req, req, sizeof(req[0]));
+	assert(is_be_node(irn));
+	assert(!(pos >= 0) || pos < get_irn_arity(irn));
+	assert(!(pos < 0)  || -(pos + 1) <= a->n_outs);
 
-	if(arch_register_req_is(req, limited)) {
-		r->old_limited     = r->req.limited;
-		r->old_limited_env = r->req.limited_env;
-		r->req.limited     = be_limited;
-		r->req.limited_env = r;
-		r->negate_limited  = negate_limited;
-	}
+	r->kind            = be_req_kind_single_reg;
+	r->x.single_reg    = reg;
+	r->req.limited     = be_limited;
+	r->req.limited_env = r;
+	r->req.type        = arch_register_req_type_limited;
+	r->req.cls         = reg->reg_class;
+}
+
+void be_set_IncSP_offset(ir_node *irn, int offset)
+{
+
+}
+
+int be_get_IncSP_offset(ir_node *irn)
+{
+	return -1;
 }
 
 void be_set_Spill_entity(ir_node *irn, entity *ent)
@@ -391,7 +427,6 @@ static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int o
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
 
-
 	if(out_pos < a->n_outs)
 		memcpy(req, &a->reg_data[out_pos].req, sizeof(req[0]));
 	else {
@@ -407,22 +442,11 @@ static void *put_in_reg_req(arch_register_req_t *req, const ir_node *irn, int po
 	const be_node_attr_t *a = get_irn_attr(irn);
 	int n                   = get_irn_arity(irn);
 
-	req->type = arch_register_req_type_none;
-	req->cls  = NULL;
-
-	switch(get_irn_be_opcode(irn)) {
-	case beo_Spill:
-	case beo_Copy:
-	case beo_Keep:
-	case beo_Perm:
-		if(pos < n) {
-			req->type = arch_register_req_type_normal;
-			req->cls  = a->cls;
-		}
-		break;
-	case beo_Reload:
-	default:
-		req = NULL;
+	if(pos < get_irn_arity(irn))
+		memcpy(req, &a->reg_data[pos].in_req, sizeof(req[0]));
+	else {
+		req->type = arch_register_req_type_none;
+		req->cls  = NULL;
 	}
 
 	return req;
