@@ -21,17 +21,19 @@ regs		::= 'regs' regcount .						// Anzahl der register (0..regcount-1), die zur
 
 nodes		::= 'nodes' '{' node* '}' .					// All nodes in the graph
 
+node		::= node-info
+			  | node-info '<' reg-nr '>' .				// Reg-nr is present in case of constraints
+
+node-info	::= node-nr spill-costs .
+
 interf		::= 'interferences' '{' edge* '}' .			// Interference edges of the graph
 
 affinities	::= 'affinities' '{' edge* '}' .			// Affinity edges of the graph
 
-node		::= node-nr
-			  | node-nr '<' reg-nr '>' .				// Reg-nr is present in case of constraints
-
-edge		::= '(' node-nr node-nr ')' .
+edge		::= '(' node-nr ',' node-nr ')' .
 
 
-regcount, node-nr ::= integer .
+spill-costs, regcount, node-nr ::= integer .
 
 
 The output file format
@@ -198,7 +200,7 @@ static void handle_constraints_walker(ir_node *irn, void *env) {
 			set_irn_n(irn, pos, cpy);
 
 			/* set an out constraint for the copy */
-			arch_set_register_req(raenv->aenv, -1, &req); /* TODO */
+			arch_set_register_req(raenv->aenv, -1, &req);
 		}
 	}
 }
@@ -332,7 +334,8 @@ static void ssa_destr_simple(be_raext_env_t *raenv) {
 
 static void ssa_destr_rastello(be_raext_env_t *raenv) {
 	assert(0 && "NYI");
-	/* TODO
+	exit(0xDeadBeef);
+	/*
 	phi_class_compute(raenv->irg);
 	irg_block_walk_graph(irg, ssa_destr_rastello, NULL, &raenv);
 	*/
@@ -492,6 +495,25 @@ static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos)
 	}
 }
 
+static INLINE int get_spill_costs(var_info_t *vi) {
+	ir_node *irn;
+	int n_spills=0, n_reloads=0;
+
+	pset_foreach(vi->values, irn) {
+		if (is_Phi(irn)) {
+			/* number of reloads is the number of non-phi uses of all values of this var */
+			const ir_edge_t *edge;
+			foreach_out_edge(irn, edge)
+				if (!is_Phi(edge->src))
+					n_reloads++;
+		} else {
+			/* number of spills is the number of non-phi values for this var */
+			n_spills++;
+		}
+	}
+
+	return n_spills + n_reloads;
+}
 
 static void dump_nodes(be_raext_env_t *raenv) {
 	FILE *f = raenv->f;
@@ -505,7 +527,7 @@ static void dump_nodes(be_raext_env_t *raenv) {
 		if (vi->var_nr == SET_REMOVED)
 			continue;
 
-		fprintf(f, "%d", vi->var_nr);
+		fprintf(f, "%d %d", vi->var_nr, get_spill_costs(vi));
 		dump_constraint(raenv, get_first_non_phi(vi->values), -1);
 		fprintf(f, "\n");
 	}
@@ -539,7 +561,7 @@ static void dump_interferences(be_raext_env_t *raenv) {
 					if (values_interfere(irn1, irn2)) {
 						pset_break(vi1->values);
 						pset_break(vi2->values);
-						fprintf(f, "(%d %d)\n", vi1->var_nr, vi2->var_nr);
+						fprintf(f, "(%d, %d)\n", vi1->var_nr, vi2->var_nr);
 					}
 		}
 	}
@@ -549,13 +571,30 @@ static void dump_interferences(be_raext_env_t *raenv) {
 
 static void dump_affinities_walker(ir_node *irn, void *env) {
 	be_raext_env_t *raenv = env;
+	arch_register_req_t req;
+	int pos, max;
+	var_info_t *vi1, *vi2;
 
+	vi1 = get_var_info(irn);
+
+	/* copies have affinities */
+	/* TODO? remove this case by adding should_be_equal requirements */
 	if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy) {
-		ir_node *src = get_irn_n(irn, 0);
-		var_info_t *vi1 = get_irn_link(irn);
-		var_info_t *vi2 = get_irn_link(src);
+		vi2 = get_var_info(get_irn_n(irn, 0));
 
-		fprintf(raenv->f, "(%d %d)\n",  vi1->var_nr, vi2->var_nr);
+		fprintf(raenv->f, "(%d, %d)\n",  vi1->var_nr, vi2->var_nr);
+	}
+
+
+	/* should_be_equal constraints are affinites */
+	for (pos = 0, max = get_irn_arity(irn); pos<max; ++pos) {
+		arch_get_register_req(raenv->aenv, &req, irn, pos);
+
+		if (arch_register_req_is(&req, should_be_same)) {
+			vi2 = get_var_info(req.other);
+
+			fprintf(raenv->f, "(%d, %d)\n",  vi1->var_nr, vi2->var_nr);
+		}
 	}
 }
 
@@ -804,16 +843,17 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 
 	/* Insert copies for constraints */
 	handle_constraints(&raenv);
+	dump_ir_block_graph_sched(irg, "-extern-constr");
 
-	/* SSA destruction */
+	/* SSA destruction respectively transformation into "Conventional SSA" */
 	ssa_destr(&raenv);
+	dump_ir_block_graph_sched(irg, "-extern-ssadestr");
+
 
 	/* Mapping of SSA-Values <--> Variables */
 	phi_class_compute(irg);
 	be_clear_links(irg);
 	irg_walk_graph(irg, values_to_vars, NULL, &raenv);
-
-	dump_ir_block_graph_sched(irg, "-extern-ssadestr");
 
 	/* For all register classes */
 	for(clsnr = 0, clss = arch_isa_get_n_reg_class(raenv.aenv->isa); clsnr < clss; ++clsnr) {
@@ -834,6 +874,8 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 
 		free(raenv.cls_vars);
 	}
+
+	dump_ir_block_graph_sched(irg, "-extern-alloc");
 
 	/* Clean up */
 	set_foreach(raenv.vars, vi)
