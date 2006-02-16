@@ -73,7 +73,7 @@ typedef struct _belady_env_t {
 
 struct _workset_t {
 	belady_env_t *bel;
-	int i;				/**< used for iteration TODO remove this form the struct */
+//	int i;				/**< used for iteration TODO remove this form the struct */
 	int len;			/**< current length */
 	loc_t vals[1];		/**< inlined array of the values/distances in this working set */
 };
@@ -204,9 +204,15 @@ static INLINE int workset_contains(const workset_t *ws, const ir_node *val) {
 	return 0;
 }
 
-#define workset_foreach(ws, v)	for(ws->i=0; \
-									v=(ws->i < ws->len) ? ws->vals[ws->i].irn : NULL, ws->i < ws->len; \
-									ws->i++)
+/**
+ * Iterates over all values in the working set.
+ * @p ws The workset to iterate
+ * @p v  A variable to put the current value in
+ * @p i  An integer for internal use
+ */
+#define workset_foreach(ws, v, i)	for(i=0; \
+										v=(i < ws->len) ? ws->vals[i].irn : NULL, i < ws->len; \
+										++i)
 
 #define workset_set_time(ws, i, t) (ws)->vals[i].time=t
 #define workset_set_length(ws, length) (ws)->len = length
@@ -322,7 +328,7 @@ static void compute_block_start_info(ir_node *blk, void *env) {
  */
 static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	ir_node *val;
-	int i, len, max_allowed, demand;
+	int i, len, max_allowed, demand, iter;
 	workset_t *ws = bel->ws;
 	ir_node **to_insert = alloca(bel->n_regs * sizeof(*to_insert));
 
@@ -330,7 +336,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	 * 1. Identify the number of needed slots and the values to reload
 	 */
 	demand = 0;
-	workset_foreach(new_vals, val) {
+	workset_foreach(new_vals, val, iter) {
 		/* mark value as used */
 		if (is_usage)
 			pset_insert_ptr(bel->used, val);
@@ -394,6 +400,8 @@ static void belady(ir_node *blk, void *env) {
 	belady_env_t *bel = env;
 	workset_t *new_vals;
 	ir_node *irn;
+	int iter;
+
 #ifdef SINGLE_START_PROJS
 	ir_node *start_blk = get_irg_start_block(get_irn_irg(blk));
 #endif
@@ -404,7 +412,7 @@ static void belady(ir_node *blk, void *env) {
 
 	workset_copy(bel->ws, blk_info->ws_start);
 	DBG((dbg, DBG_WSETS, "Initial start workset for %+F:\n", blk));
-	workset_foreach(bel->ws, irn)
+	workset_foreach(bel->ws, irn, iter)
 		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
 
 	/* process the block from start to end */
@@ -460,10 +468,10 @@ static void belady(ir_node *blk, void *env) {
 	/* Remember end-workset for this block */
 	blk_info->ws_end = workset_clone(&bel->ob, bel->ws);
 	DBG((dbg, DBG_WSETS, "Start workset for %+F:\n", blk));
-	workset_foreach(blk_info->ws_start, irn)
+	workset_foreach(blk_info->ws_start, irn, iter)
 		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
 	DBG((dbg, DBG_WSETS, "End workset for %+F:\n", blk));
-	workset_foreach(blk_info->ws_end, irn)
+	workset_foreach(blk_info->ws_end, irn, iter)
 		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
 }
 
@@ -475,7 +483,7 @@ static void belady(ir_node *blk, void *env) {
 static void fix_block_borders(ir_node *blk, void *env) {
 	workset_t *wsb;
 	belady_env_t *bel = env;
-	int i, max;
+	int i, max, iter;
 
 	DBG((dbg, DBG_FIX, "\n"));
 	DBG((dbg, DBG_FIX, "Fixing %+F\n", blk));
@@ -489,7 +497,7 @@ static void fix_block_borders(ir_node *blk, void *env) {
 
 		DBG((dbg, DBG_FIX, "  Pred %+F\n", pred));
 
-		workset_foreach(wsb, irnb) {
+		workset_foreach(wsb, irnb, iter) {
 			/* if irnb is a phi of the current block we reload
 			 * the corresponding argument, else irnb itself */
 			if(is_Phi(irnb) && blk == get_nodes_block(irnb))
@@ -500,7 +508,7 @@ static void fix_block_borders(ir_node *blk, void *env) {
 				continue;
 
 			/* check if irnb is in a register at end of pred */
-			workset_foreach(wsp, irnp)
+			workset_foreach(wsp, irnp, iter)
 				if (irnb == irnp)
 					goto next_value;
 
