@@ -152,6 +152,61 @@ static INLINE ir_node *get_first_phi(pset *s) {
 	return NULL;
 }
 
+/******************************************************************************
+    _____                _            _____            _
+   / ____|              | |          / ____|          (_)
+  | |     ___  _ __  ___| |_ _ __   | |     ___  _ __  _  ___  ___
+  | |    / _ \| '_ \/ __| __| '__|  | |    / _ \| '_ \| |/ _ \/ __|
+  | |___| (_) | | | \__ \ |_| |     | |___| (_) | |_) | |  __/\__ \
+   \_____\___/|_| |_|___/\__|_|      \_____\___/| .__/|_|\___||___/
+                                                | |
+                                                |_|
+ *****************************************************************************/
+
+static void handle_constraints_walker(ir_node *irn, void *env) {
+	be_raext_env_t *raenv = env;
+	arch_register_req_t req;
+	int pos, max;
+
+	/* handle output constraints
+	 * user -> irn    becomes    user -> cpy -> irn
+	 */
+	arch_get_register_req(raenv->aenv, &req, irn, -1);
+	if (arch_register_req_is(&req, limited)) {
+		ir_node *cpy = be_new_Copy(req.cls, raenv->irg, get_nodes_block(irn), irn);
+		const ir_edge_t *edge;
+
+		/* all users of the irn use the copy instead */
+		sched_add_after(irn, cpy);
+		foreach_out_edge(irn, edge)
+			set_irn_n(edge->src, edge->pos, cpy);
+	}
+
+
+	/* handle input constraints by converting them into output constraints
+	 * of copies of the former argument
+	 * irn -> arg   becomes  irn -> copy -> arg
+     */
+	for (pos = 0, max = get_irn_arity(irn); pos<max; ++pos) {
+		arch_get_register_req(raenv->aenv, &req, irn, pos);
+		if (arch_register_req_is(&req, limited)) {
+			ir_node *arg = get_irn_n(irn, pos);
+			ir_node *cpy = be_new_Copy(req.cls, raenv->irg, get_nodes_block(irn), arg);
+
+			/* use the copy instead */
+			sched_add_before(irn, cpy);
+			set_irn_n(irn, pos, cpy);
+
+			/* set an out constraint for the copy */
+			arch_set_register_req(raenv->aenv, -1, &req); /* TODO */
+		}
+	}
+}
+
+static void handle_constraints(be_raext_env_t *raenv) {
+	irg_block_walk_graph(raenv->irg, NULL, handle_constraints_walker, raenv);
+}
+
 
 /******************************************************************************
      _____ _____              _____            _
@@ -617,7 +672,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 		}
 
 	/* correct the reload->spill pointers... */
-	be_introduce_copies_for_set(raenv->dom_info, spills, reloads); /* TODO */
+	be_introduce_copies_for_set(raenv->dom_info, spills, reloads);
 
 
 	/****** correct the variable <--> values mapping: ******
@@ -747,9 +802,8 @@ static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
 	raenv.dom_info = be_compute_dominance_frontiers(irg);
 	raenv.vars     = new_set(compare_var_infos, 64);
 
-
-	//TODO /* Insert copies */
-	//TODO /* Change In to Out constraints */
+	/* Insert copies for constraints */
+	handle_constraints(&raenv);
 
 	/* SSA destruction */
 	ssa_destr(&raenv);
