@@ -425,6 +425,13 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
 	be_introduce_copies_ignore(info, orig, n, copy_nodes, empty_set);
 }
 
+void be_introduce_copies_for_set(dom_front_info_t *info, pset *origs, pset *copies) {
+	/* TODO */
+	assert(0 && "NYI);
+	exit(0xDeadBeef);
+}
+
+
 void be_introduce_copies_pset(dom_front_info_t *info, pset *nodes) {
 	int i, n = pset_count(nodes);
 	ir_node *orig, *irn, **copy_nodes;
