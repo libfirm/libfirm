@@ -18,44 +18,44 @@ static int maxnum_fpreg_args = 5;   /* maximum number of float arguments passed 
 /* this is the order of the assigned registers usesd for parameter passing */
 
 const ia32_register_req_t *gpreg_param_req_std[] = {
-	&ia32_default_req_ia32_general_purpose_eax,
-	&ia32_default_req_ia32_general_purpose_ecx,
-	&ia32_default_req_ia32_general_purpose_edx,
-	&ia32_default_req_ia32_general_purpose_ebx,
-	&ia32_default_req_ia32_general_purpose_edi,
-	&ia32_default_req_ia32_general_purpose_esi
+	&ia32_default_req_ia32_gp_eax,
+	&ia32_default_req_ia32_gp_ecx,
+	&ia32_default_req_ia32_gp_edx,
+	&ia32_default_req_ia32_gp_ebx,
+	&ia32_default_req_ia32_gp_edi,
+	&ia32_default_req_ia32_gp_esi
 };
 
 const ia32_register_req_t *gpreg_param_req_this[] = {
-	&ia32_default_req_ia32_general_purpose_ecx,
-	&ia32_default_req_ia32_general_purpose_eax,
-	&ia32_default_req_ia32_general_purpose_edx,
-	&ia32_default_req_ia32_general_purpose_ebx,
-	&ia32_default_req_ia32_general_purpose_edi,
-	&ia32_default_req_ia32_general_purpose_esi
+	&ia32_default_req_ia32_gp_ecx,
+	&ia32_default_req_ia32_gp_eax,
+	&ia32_default_req_ia32_gp_edx,
+	&ia32_default_req_ia32_gp_ebx,
+	&ia32_default_req_ia32_gp_edi,
+	&ia32_default_req_ia32_gp_esi
 };
 
 const ia32_register_req_t *fpreg_param_req_std[] = {
-	&ia32_default_req_ia32_floating_point_xmm0,
-	&ia32_default_req_ia32_floating_point_xmm1,
-	&ia32_default_req_ia32_floating_point_xmm2,
-	&ia32_default_req_ia32_floating_point_xmm3,
-	&ia32_default_req_ia32_floating_point_xmm4,
-	&ia32_default_req_ia32_floating_point_xmm5,
-	&ia32_default_req_ia32_floating_point_xmm6,
-	&ia32_default_req_ia32_floating_point_xmm7
+	&ia32_default_req_ia32_fp_xmm0,
+	&ia32_default_req_ia32_fp_xmm1,
+	&ia32_default_req_ia32_fp_xmm2,
+	&ia32_default_req_ia32_fp_xmm3,
+	&ia32_default_req_ia32_fp_xmm4,
+	&ia32_default_req_ia32_fp_xmm5,
+	&ia32_default_req_ia32_fp_xmm6,
+	&ia32_default_req_ia32_fp_xmm7
 };
 
 const ia32_register_req_t *fpreg_param_req_this[] = {
 	NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
-	&ia32_default_req_ia32_floating_point_xmm0,
-	&ia32_default_req_ia32_floating_point_xmm1,
-	&ia32_default_req_ia32_floating_point_xmm2,
-	&ia32_default_req_ia32_floating_point_xmm3,
-	&ia32_default_req_ia32_floating_point_xmm4,
-	&ia32_default_req_ia32_floating_point_xmm5,
-	&ia32_default_req_ia32_floating_point_xmm6,
-	&ia32_default_req_ia32_floating_point_xmm7
+	&ia32_default_req_ia32_fp_xmm0,
+	&ia32_default_req_ia32_fp_xmm1,
+	&ia32_default_req_ia32_fp_xmm2,
+	&ia32_default_req_ia32_fp_xmm3,
+	&ia32_default_req_ia32_fp_xmm4,
+	&ia32_default_req_ia32_fp_xmm5,
+	&ia32_default_req_ia32_fp_xmm6,
+	&ia32_default_req_ia32_fp_xmm7
 };
 
 
@@ -247,13 +247,13 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 	else if (is_ia32_Store(pred)) {
 		return 0;
 	}
-	else if (is_ia32_CondJmp(pred) || is_ia32_CondJmp_i(pred)) {
+	else if (is_ia32_CondJmp(pred)) {
 		return 0;
 	}
 	else if (is_ia32_SwitchJmp(pred)) {
 		return 0;
 	}
-	else if (is_ia32_Cltd(pred) || is_ia32_Mul(pred)) {
+	else if (is_ia32_Cdq(pred) || is_ia32_Mulh(pred)) {
 		if (nr == pn_EAX)
 			return 0;
 		if (nr == pn_EDX)
@@ -264,6 +264,12 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 			return 0;
 		if (nr == pn_DivMod_res_mod || pn_Mod_res)
 			return 1;
+	}
+	else if (is_ia32_fDiv(pred)) {
+		if (nr == pn_Quot_res)
+			return 0;
+		else
+			assert(0 && "there should be no more Projs for a fDiv");
 	}
 	else if (is_ia32_Call(pred)) {
 		return 0;

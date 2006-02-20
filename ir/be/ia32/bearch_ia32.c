@@ -41,6 +41,8 @@ static set *cur_reg_set = NULL;
 #undef is_Start
 #define is_Start(irn) (get_irn_opcode(irn) == iro_Start)
 
+extern ir_node *be_new_NoReg(ir_graph *irg);
+
 /**************************************************
  *                         _ _              _  __
  *                        | | |            (_)/ _|
@@ -133,6 +135,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 		assert(irn_req && "missing requirement for regparam");
 		memcpy(req, &(irn_req->req), sizeof(*req));
 		return req;
+		//return NULL;
 	}
 	else if (is_Proj(irn)) {
 		if (pos == -1) {
@@ -170,9 +173,9 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 		if (is_Phi(irn)) {
 			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
 			if (mode_is_float(mode))
-				memcpy(req, &(ia32_default_req_ia32_floating_point.req), sizeof(*req));
+				memcpy(req, &(ia32_default_req_ia32_fp.req), sizeof(*req));
 			else if (mode_is_int(mode) || mode_is_reference(mode))
-				memcpy(req, &(ia32_default_req_ia32_general_purpose.req), sizeof(*req));
+				memcpy(req, &(ia32_default_req_ia32_gp.req), sizeof(*req));
 			else if (mode == mode_T || mode == mode_M) {
 				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
 				return NULL;
@@ -195,7 +198,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 		}
 		else if (get_irn_op(irn) == op_Return && pos > 0) {
 			DB((mod, LEVEL_1, "returning reqs EAX for %+F\n", irn));
-			memcpy(req, &(ia32_default_req_ia32_general_purpose_eax.req), sizeof(*req));
+			memcpy(req, &(ia32_default_req_ia32_gp_eax.req), sizeof(*req));
 		}
 		else {
 			DB((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
@@ -275,7 +278,7 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
 	else {
-		if (is_Start_Proj(irn) || is_Unknown(irn))
+		if (is_Start_Proj(irn))
 			return arch_irn_flags_ignore;
 
 		return 0;
@@ -337,7 +340,7 @@ static void ia32_prepare_graph(void *self) {
 		irg_walk_blkwise_graph(cg->irg, check_for_alloca, NULL, &(cg->has_alloca));
 
 		if (cg->has_alloca) {
-			ia32_general_purpose_regs[REG_EBP].type = arch_register_type_ignore;
+			ia32_gp_regs[REG_EBP].type = arch_register_type_ignore;
 		}
 
 		irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
@@ -350,6 +353,7 @@ static void ia32_prepare_graph(void *self) {
  * Stack reservation and StackParam lowering.
  */
 static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
+#if 0
 	firm_dbg_module_t *mod       = cg->mod;
 	ir_node           *frame     = get_irg_frame(irg);
 	ir_node           *end_block = get_irg_end_block(irg);
@@ -363,10 +367,10 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 
 	/* Determine stack register */
 	if (cg->has_alloca) {
-		stack_reg = &ia32_general_purpose_regs[REG_EBP];
+		stack_reg = &ia32_gp_regs[REG_EBP];
 	}
 	else {
-		stack_reg = &ia32_general_purpose_regs[REG_ESP];
+		stack_reg = &ia32_gp_regs[REG_ESP];
 	}
 
 	/* If frame is used, then we need to reserve some stackspace. */
@@ -443,6 +447,7 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 			sched_add_after(sched_point, stack_free);
 		}
 	}
+#endif
 }
 
 
@@ -470,15 +475,18 @@ static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
 	ir_node         *ptr   = get_irg_frame(cg->irg);
 	ir_node         *val   = be_get_Spill_context(spill);
 	ir_node         *mem   = new_rd_NoMem(cg->irg);
+	ir_node         *noreg = be_new_NoReg(cg->irg);
 	ir_mode         *mode  = get_irn_mode(spill);
 	ir_node         *res;
 	entity          *ent   = be_get_spill_entity(spill);
 	unsigned         offs  = get_entity_offset_bytes(ent);
+	char             buf[64];
 
 	DB((cg->mod, LEVEL_1, "lower_spill: got offset %d for %+F\n", offs, ent));
 
-	res = new_rd_ia32_Store(dbg, cg->irg, block, ptr, val, mem, mode);
-	set_ia32_am_offs(res, new_tarval_from_long(offs, mode_Iu));
+	res = new_rd_ia32_Store(dbg, cg->irg, block, ptr, noreg, val, mem, mode);
+	snprintf(buf, sizeof(buf), "%d", offs);
+	add_ia32_am_offs(res, buf);
 
 	return res;
 }
@@ -493,24 +501,29 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 	ir_node         *ptr   = get_irg_frame(cg->irg);
 	ir_mode         *mode  = get_irn_mode(reload);
 	ir_node         *pred  = get_irn_n(reload, 0);
-	tarval          *tv;
+	ir_node         *noreg = be_new_NoReg(cg->irg);
+	char             buf[64];
+	char            *ofs;
 	ir_node         *res;
 
 	if (be_is_Spill(pred)) {
 		entity   *ent  = be_get_spill_entity(pred);
 		unsigned  offs = get_entity_offset_bytes(ent);
 		DB((cg->mod, LEVEL_1, "lower_reload: got offset %d for %+F\n", offs, ent));
-		tv = new_tarval_from_long(offs, mode_Iu);
+
+		snprintf(buf, sizeof(buf), "%d", offs);
 	}
 	else if (is_ia32_Store(pred)) {
-		tv = get_ia32_am_offs(pred);
+		ofs = get_ia32_am_offs(pred);
+		strncpy(buf, ofs, sizeof(buf));
+		free(ofs);
 	}
 	else {
 		assert(0 && "unsupported Reload predecessor");
 	}
 
-	res = new_rd_ia32_Load(dbg, cg->irg, block, ptr, pred, mode);
-	set_ia32_am_offs(res, tv);
+	res = new_rd_ia32_Load(dbg, cg->irg, block, ptr, noreg, pred, mode);
+	add_ia32_am_offs(res, buf);
 
 	return res;
 }
@@ -522,10 +535,10 @@ static const arch_register_t *ia32_get_stack_register(void *self) {
 	ia32_code_gen_t *cg = self;
 
 	if (cg->has_alloca) {
-		return &ia32_general_purpose_regs[REG_EBP];
+		return &ia32_gp_regs[REG_EBP];
 	}
 
-	return &ia32_general_purpose_regs[REG_ESP];
+	return &ia32_gp_regs[REG_ESP];
 }
 
 /**
@@ -543,7 +556,7 @@ static void ia32_codegen(void *self) {
 	}
 
 	ia32_finish_irg(irg, cg);
-	dump_ir_block_graph_sched(irg, "-finished");
+	//dump_ir_block_graph_sched(irg, "-finished");
 	ia32_gen_routine(out, irg, cg);
 
 	cur_reg_set = NULL;
@@ -674,17 +687,17 @@ long ia32_handle_call_proj(const void *self, ir_node *proj, int is_keep) {
 			assert(pn == 0 && "only one floating point result supported");
 
 			/* Get the proj number for the floating point result */
-			pn = ia32_get_reg_projnum(&ia32_floating_point_regs[REG_XMM0], isa->reg_projnum_map);
+			pn = ia32_get_reg_projnum(&ia32_fp_regs[REG_XMM0], isa->reg_projnum_map);
 		}
 		else {
 			/* In case of 64bit return value, the result is */
 			/* in EDX:EAX and we have two result projs.     */
 			switch (pn) {
 				case 0:
-					pn = ia32_get_reg_projnum(&ia32_general_purpose_regs[REG_EAX], isa->reg_projnum_map);
+					pn = ia32_get_reg_projnum(&ia32_gp_regs[REG_EAX], isa->reg_projnum_map);
 					break;
 				case 1:
-					pn = ia32_get_reg_projnum(&ia32_general_purpose_regs[REG_EDX], isa->reg_projnum_map);
+					pn = ia32_get_reg_projnum(&ia32_gp_regs[REG_EDX], isa->reg_projnum_map);
 					break;
 				default:
 					assert(0 && "only two int results supported");
@@ -696,7 +709,7 @@ long ia32_handle_call_proj(const void *self, ir_node *proj, int is_keep) {
 	}
 	else {
 		/* Set mode to floating point if required */
-		if (!strcmp(ia32_reg_classes[CLASS_ia32_floating_point].name,
+		if (!strcmp(ia32_reg_classes[CLASS_ia32_fp].name,
 					ia32_projnum_reg_req_map[pn]->req.cls->name)) {
 			set_irn_mode(proj, mode_F);
 		}
@@ -722,7 +735,7 @@ list_sched_selector_t ia32_sched_selector;
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
 static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
-	memcpy(&ia32_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
+	memcpy(&ia32_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
 	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
 	return &ia32_sched_selector;
 }

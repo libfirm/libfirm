@@ -12,15 +12,17 @@ $arch = "ia32";
 # %nodes = (
 #
 # <op-name> => {
-#   "op_flags" => "N|L|C|X|I|F|Y|H|c|K",
-#   "arity"    => "0|1|2|3|variable|dynamic|all",
-#   "state"    => "floats|pinned",
-#   "args"     => [
-#                   { "type" => "type 1", "name" => "name 1" },
-#                   { "type" => "type 2", "name" => "name 2" },
-#                   ...
-#                 ],
-#   "comment"  => "any comment for constructor",
+#   "op_flags"  => "N|L|C|X|I|F|Y|H|c|K",
+#   "irn_flags" => "R|N|I"
+#   "arity"     => "0|1|2|3 ... |variable|dynamic|all",
+#   "state"     => "floats|pinned",
+#   "args"      => [
+#                    { "type" => "type 1", "name" => "name 1" },
+#                    { "type" => "type 2", "name" => "name 2" },
+#                    ...
+#                  ],
+#   "comment"   => "any comment for constructor",
+#   "emit"      => "emit code with templates",
 #   "rd_constructor" => "c source code which constructs an ir_node"
 # },
 #
@@ -28,6 +30,7 @@ $arch = "ia32";
 #
 # ); # close the %nodes initializer
 
+# op_flags: flags for the operation, OPTIONAL (default is "N")
 # the op_flags correspond to the firm irop_flags:
 #   N   irop_flag_none
 #   L   irop_flag_labeled
@@ -40,7 +43,11 @@ $arch = "ia32";
 #   c   irop_flag_constlike
 #   K   irop_flag_keep
 #
-# op_flags: flags for the operation, OPTIONAL (default is "N")
+# irn_flags: special node flags, OPTIONAL (default is 0)
+# following irn_flags are supported:
+#   R   rematerializeable
+#   N   not spillable
+#   I   ignore for register allocation
 #
 # state: state of the operation, OPTIONAL (default is "pinned")
 #
@@ -81,26 +88,27 @@ $arch = "ia32";
 #       caller save registers and in the correct order, otherwise it will break
 #       the magic!
 %reg_classes = (
-  "general_purpose" => [
-                         { "name" => "eax", "type" => 2 },
-                         { "name" => "edx", "type" => 2 },
-                         { "name" => "ebx", "type" => 3 },
-                         { "name" => "ecx", "type" => 2 },
-                         { "name" => "esi", "type" => 3 },
-                         { "name" => "edi", "type" => 3 },
-                         { "name" => "ebp", "type" => 3 },
-                         { "name" => "esp", "type" => 4 }  # we don't want esp to be assigned
-                       ],
-  "floating_point"  => [
-                         { "name" => "xmm0", "type" => 2 },
-                         { "name" => "xmm1", "type" => 2 },
-                         { "name" => "xmm2", "type" => 2 },
-                         { "name" => "xmm3", "type" => 2 },
-                         { "name" => "xmm4", "type" => 2 },
-                         { "name" => "xmm5", "type" => 2 },
-                         { "name" => "xmm6", "type" => 2 },
-                         { "name" => "xmm7", "type" => 2 },
-                       ]
+  "gp" => [
+            { "name" => "eax", "type" => 2 },
+            { "name" => "edx", "type" => 2 },
+            { "name" => "ebx", "type" => 3 },
+            { "name" => "ecx", "type" => 2 },
+            { "name" => "esi", "type" => 3 },
+            { "name" => "edi", "type" => 3 },
+            { "name" => "ebp", "type" => 3 },
+            { "name" => "esp", "type" => 4 }, # we don't want esp to be assigned
+            { "name" => "xxx", "type" => 4 }  # we need a dummy register for NoReg and Unknown nodes
+          ],
+  "fp" => [
+            { "name" => "xmm0", "type" => 2 },
+            { "name" => "xmm1", "type" => 2 },
+            { "name" => "xmm2", "type" => 2 },
+            { "name" => "xmm3", "type" => 2 },
+            { "name" => "xmm4", "type" => 2 },
+            { "name" => "xmm5", "type" => 2 },
+            { "name" => "xmm6", "type" => 2 },
+            { "name" => "xmm7", "type" => 2 }
+          ]
 ); # %reg_classes
 
 #--------------------------------------------------#
@@ -129,144 +137,90 @@ $arch = "ia32";
 
 # commutative operations
 
-"Add" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Add: Add(a, b) = Add(b, a) = a + b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. addl %S2, %D1\t\t\t/* Add(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
+# NOTE:
+# All nodes supporting Addressmode have 5 INs:
+# 1 - base    r1 == NoReg in case of no AM or no base
+# 2 - index   r2 == NoReg in case of no AM or no index
+# 3 - op1     r3 == always present
+# 4 - op2     r4 == NoReg in case of immediate operation
+# 5 - mem     NoMem in case of no AM otherwise it takes the mem from the Load
 
-"Add_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Add: Add(a, const) = Add(const, a) = a + const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. addl %C, %D1\t\t\t/* Add(%C, %S1) -> %D1, (%A1, const) */'
+"Add" => {
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. add %ia32_emit_binop\t\t\t/* Add(%A1, %A2) -> %D1 */'
 },
 
 "Mul" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "comment"     => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "eax in_r1", "edx in_r2" ] },
-  "emit"        =>
-'  if (mode_is_signed(get_irn_mode(n))) {
-4. imull %S2\t\t\t/* signed Mul(%S1, %S2) -> %D1, (%A1, %A2) */
-  }
-  else {
-4. mull %S2\t\t\t/* unsigned Mul(%S1, %S2) -> %D1, (%A1, %A2) */
-  }
-'
+  "op_flags"  => "C",
+  "irn_flags" => "A",
+  "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. imul %ia32_emit_binop\t\t\t/* Mul(%A1, %A2) -> %D1 */'
 },
 
-"Mul_i" => {
-  "state"       => "pinned",
-  "arity"       => 1,
-  "comment"     => "construct Mul: Mul(a, const) = Mul(const, a) = a * const",
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "eax in_r1", "edx" ] },
-  "emit"        =>
-'  if (mode_is_signed(get_irn_mode(n))) {
-4. imull %C\t\t\t/* signed Mul(%C, %S1) -> %D1, (%A1, const) */
-  }
-  else {
-4. mull %C\t\t\t/* unsigned Mul(%C, %S1) -> %D1, (%A1, const) */
-  }
-'
+# Mulh is an exception from the 4 INs with AM because the target is always EAX:EDX
+"Mulh" => {
+  "op_flags"  => "C",
+  "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r1", "edx in_r2" ] },
+  "emit"      => '. imul %ia32_emit_unop\t\t\t/* Mulh(%A1, %A2) -> %D1 */ '
 },
 
 "And" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct And: And(a, b) = And(b, a) = a AND b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. andl %S2, %D1\t\t\t/* And(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"And_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct And: And(a, const) = And(const, a) = a AND const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. andl %C, %D1\t\t\t/* And(%C, %S1) -> %D1, (%A1, const) */'
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. and %ia32_emit_binop\t\t\t/* And(%A1, %A2) -> %D1 */'
 },
 
 "Or" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. orl %S2, %D1\t\t\t/* Or(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Or_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Or: Or(a, const) = Or(const, a) = a OR const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. orl %C, %D1\t\t\t/* Or(%C, %S1) -> %D1, (%A1, const) */'
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. or %ia32_emit_binop\t\t\t/* Or(%A1, %A2) -> %D1 */'
 },
 
 "Eor" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. xorl %S2, %D1\t\t\t/* Xor(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Eor_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. xorl %C, %D1\t\t\t/* Xor(%C, %S1) -> %D1, (%A1, const) */'
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. xor %ia32_emit_binop\t\t\t/* Xor(%A1, %A2) -> %D1 */'
 },
 
 "Max" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        =>
-'2. cmpl %S2, %S1\t\t\t/* prepare Max (%S1 should be %D1), (%A1, %A2) */
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct Max: Max(a, b) = Max(b, a) = a > b ? a : b",
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
+  "emit"      =>
+'2. cmp %S1, %S2\t\t\t/* prepare Max (%S1 - %S2), (%A1, %A2) */
   if (mode_is_signed(get_irn_mode(n))) {
-4.  cmovl %S2, %D1\t\t\t/* %S1 is less %S2 */
+4.  cmovl %D1, %S2\t\t\t/* %S1 is less %S2 */
   }
   else {
-4.  cmovb %S2, %D1\t\t\t/* %S1 is below %S2 */
+4.  cmovb %D1, %S2\t\t\t/* %S1 is below %S2 */
   }
 '
 },
 
 "Min" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        =>
-'2. cmpl %S2, %S1\t\t\t/* prepare Min (%S1 should be %D1), (%A1, %A2) */
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct Min: Min(a, b) = Min(b, a) = a < b ? a : b",
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
+  "emit"      =>
+'2. cmp %S1, %S2\t\t\t/* prepare Min (%S1 - %S2), (%A1, %A2) */
   if (mode_is_signed(get_irn_mode(n))) {
-2.  cmovg %S2, %D1\t\t\t/* %S1 is greater %S2 */
+2.  cmovg %D1, %S2\t\t\t/* %S1 is greater %S2 */
   }
   else {
-2.  cmova %S2, %D1\t\t\t/* %S1 is above %S2 */
+2.  cmova %D1, %S2, %D1\t\t\t/* %S1 is above %S2 */
   }
 '
 },
@@ -274,202 +228,128 @@ $arch = "ia32";
 # not commutative operations
 
 "Sub" => {
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Sub: Sub(a, b) = a - b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. subl %S2, %D1\t\t\t/* Sub(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Sub_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Sub: Sub(a, const) = a - const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. subl %C, %D1\t\t\t/* Sub(%S1, %C) -> %D1, (%A1, const) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Sub: Sub(a, b) = a - b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. sub %ia32_emit_binop\t\t\t/* Sub(%A1, %A2) -> %D1 */'
 },
 
 "DivMod" => {
-  "op_flags"    => "F|L",
-  "state"       => "exc_pinned",
-  "arity"       => 4,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose", "general_purpose", "none" ], "out" => [ "eax in_r1", "edx in_r3" ] },
-  "emit"        =>
+  "op_flags" => "F|L",
+  "state"    => "exc_pinned",
+  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "eax in_r1", "edx in_r3" ] },
+  "emit"     =>
 '  if (mode_is_signed(get_irn_mode(n))) {
-4.  idivl %S2\t\t\t/* signed DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
+4.  idiv %S2\t\t\t/* signed DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
   }
   else {
-4.  divl %S2\t\t\t/* unsigned DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
+4.  div %S2\t\t\t/* unsigned DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
   }
 '
 },
 
 "Shl" => {
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Shl: Shl(a, b) = a << b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. shll %S2, %D1\t\t\t/* Shl(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Shl_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Shl: Shl(a, const) = a << const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. shll %C, %D1\t\t\t/* Shl(%S1, %C) -> %D1, (%A1, const) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Shl: Shl(a, b) = a << b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. shl %ia32_emit_binop\t\t\t/* Shl(%A1, %A2) -> %D1 */'
 },
 
 "Shr" => {
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Shr: Shr(a, b) = a >> b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. shrl %S2, %D1\t\t\t/* Shr(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Shr_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Shr: Shr(a, const) = a >> const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. shrl %C, %D1\t\t\t/* Shr(%S1, %C) -> %D1, (%A1, const) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Shr: Shr(a, b) = a >> b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. shr %ia32_emit_binop\t\t\t/* Shr(%A1, %A2) -> %D1 */'
 },
 
 "Shrs" => {
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct Shrs: Shrs(a, b) = a >> b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. sarl %S2, %D1\t\t\t/* Shrs(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Shrs_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Shrs: Shrs(a, const) = a >> const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. sarl %C, %D1\t\t\t/* Shrs(%S1, %C) -> %D1, (%A1, const) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. sar %ia32_emit_binop\t\t\t/* Shrs(%A1, %A2) -> %D1 */'
 },
 
 "RotR" => {
-  "arity"       => 2,
-  "remat"       => 1,
+  "irn_flags" => "R",
   "comment"     => "construct RotR: RotR(a, b) = a ROTR b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. rorl %S2, %D1\t\t\t/* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"     => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r1" ] },
+  "emit"        => '. ror %ia32_emit_binop\t\t\t/* RotR(%A1, %A2) -> %D1 */'
 },
 
 "RotL" => {
-  "arity"       => 2,
-  "remat"       => 1,
-  "comment"     => "construct RotL: RotL(a, b) = a ROTL b",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. roll %S2, %D1\t\t\t/* RotL(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "irn_flags" => "R",
+  "comment"   => "construct RotL: RotL(a, b) = a ROTL b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. rol %ia32_emit_binop\t\t\t/* RotL(%A1, %A2) -> %D1 */'
 },
 
-"RotL_i" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct RotL: RotL(a, const) = a ROTL const",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. roll %C, %D1\t\t\t/* RotL(%S1, %C) -> %D1, (%A1, const) */'
-},
+# unary operations
 
 "Minus" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Minus: Minus(a) = -a",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. negl %D1\t\t\t/* Neg(%S1) -> %D1, (%A1) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Minus: Minus(a) = -a",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. neg %ia32_emit_unop\t\t\t/* Neg(%A1) -> %D1, (%A1) */'
 },
 
 "Inc" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Increment: Inc(a) = a++",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. incl %D1\t\t\t/* Inc(%S1) -> %D1, (%A1) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Increment: Inc(a) = a++",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. inc %ia32_emit_unop\t\t\t/* Inc(%S1) -> %D1, (%A1) */'
 },
 
 "Dec" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Decrement: Dec(a) = a--",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. decl %D1\t\t\t/* Dec(%S1) -> %D1, (%A1) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Decrement: Dec(a) = a--",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. dec %ia32_emit_unop\t\t\t/* Dec(%S1) -> %D1, (%A1) */'
 },
 
 "Not" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Not: Not(a) = !a",
-  "check_inout" => 1,
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"        => '. notl %D1\t\t\t/* Not(%S1) -> %D1, (%A1) */'
+  "irn_flags" => "R",
+  "comment"   => "construct Not: Not(a) = !a",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. not %ia32_emit_unop\t\t\t/* Not(%S1) -> %D1, (%A1) */'
 },
 
 # other operations
 
 "Conv" => {
   "arity"    => 1,
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "in_r1" ] },
+  "reg_req"  => { "in" => [ "gp" ], "out" => [ "in_r1" ] },
   "comment"  => "construct Conv: Conv(a) = (conv)a"
 },
 
 "CondJmp" => {
-  "op_flags" => "C|L|X|Y",
-  "arity"    => 2,
-  "comment"  => "construct conditional jump: CMP A, B && JMPxx LABEL",
-  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "none", "none" ] },
-},
-
-"CondJmp_i" => {
-  "op_flags" => "L|X|Y",
-  "arity"    => 1,
-  "comment"  => "construct conditional jump: CMP A, const && JMPxx LABEL",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "none", "none" ] },
+  "op_flags"  => "C|L|X|Y",
+  "comment"   => "construct conditional jump: CMP A, B && JMPxx LABEL",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "none", "none" ] },
 },
 
 "SwitchJmp" => {
-  "op_flags" => "L|X|Y",
-  "arity"    => 1,
-  "comment"  => "construct switch",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "none" ] },
+  "op_flags"  => "L|X|Y",
+  "comment"   => "construct switch",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
 },
 
 "Const" => {
-  "op_flags" => "c",
-  "arity"    => "0",
-  "remat"    => 1,
-  "comment"  => "represents an integer constant",
-  "reg_req"  => { "out" => [ "general_purpose" ] },
-  "emit"     => '. movl %C, %D1\t\t\t/* Mov Const into register */',
-  "cmp_attr" =>
+  "op_flags"  => "c",
+  "irn_flags" => "R",
+  "comment"   => "represents an integer constant",
+  "reg_req"   => { "out" => [ "gp" ] },
+  "emit"      => '. mov %D1, %C\t\t\t/* Mov Const into register */',
+  "cmp_attr"  =>
 '
   if (attr_a->tp == attr_b->tp) {
-    if (attr_a->tp == asmop_SymConst) {
-      if (attr_a->old_ir == NULL || attr_b->old_ir == NULL)
+    if (attr_a->tp == ia32_SymConst) {
+      if (attr_a->sc == NULL || attr_b->sc == NULL)
         return 1;
       else
-        return strcmp(get_sc_name(attr_a->old_ir), get_sc_name(attr_b->old_ir));
+        return strcmp(attr_a->sc, attr_b->sc);
     }
     else {
-      if (attr_a->old_ir == NULL || attr_b->old_ir == NULL)
+      if (attr_a->tv == NULL || attr_b->tv == NULL)
         return 1;
 
       if (tarval_cmp(attr_a->tv, attr_b->tv) == pn_Cmp_Eq)
@@ -483,55 +363,44 @@ $arch = "ia32";
 '
 },
 
-"Cltd" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "comment"     => "construct Cltd: sign extend EAX -> EDX:EAX",
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "eax in_r1", "edx" ] },
-  "emit"        => '. cltd\t\t\t/* sign extend EAX -> EDX:EAX, (%A1) */'
+"Cdq" => {
+  "irn_flags" => "R",
+  "comment"   => "construct CDQ: sign extend EAX -> EDX:EAX",
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "eax in_r1", "edx" ] },
+  "emit"      => '. cdq\t\t\t/* sign extend EAX -> EDX:EAX, (%A1) */'
 },
 
 # Load / Store
 
 "Load" => {
-  "op_flags" => "L|F",
-  "state"    => "exc_pinned",
-  "arity"    => 2,
-  "remat"    => 1,
-  "comment"  => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"  => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"     => '. movl %O(%S1), %D1\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
+  "op_flags"  => "L|F",
+  "irn_flags" => "R",
+  "state"     => "exc_pinned",
+  "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "gp" ] },
+  "emit"      => '. mov %D1, %ia32_emit_am\t\t\t/* Load((%A1)) -> %D1 */'
 },
 
 "Store" => {
-  "op_flags" => "L|F",
-  "state"    => "exc_pinned",
-  "arity"    => 3,
-  "remat"    => 1,
-  "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"  => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"     => '. movl %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ] },
+  "emit"      => '. mov %ia32_emit_am, %S3\t\t\t/* Store(%A2) -> (%A1) */'
 },
 
 "Lea" => {
-  "arity"    => 2,
-  "comment"  => "construct Lea: Lea(a,b) = lea offs(a,b,const) | res = a + b * const + offs with const = 0,1,2,4,8",
-  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"     => '. leal %O(%S1, %S2, %C), %D1\t\t/* %D1 = %S1 + %S2 << %C + %O, (%A1, %A2) */'
-},
-
-"Lea_i" => {
-  "arity"    => 1,
-  "comment"  => "construct Lea: Lea(a) = lea offs(a) | res = a + offs",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"     => '. leal %C(%S1), %D1\t\t\t/* %D1 = %S1 + %C, (%A1)*/'
+  "irn_flags" => "R",
+  "comment"   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. lea %D1, %ia32_emit_am\t\t/* %D1 = %S1 + %S2 << %C + %O, (%A1, %A2) */'
 },
 
 "StackParam" => {
   "arity"    => 1,
   "remat"    => 1,
   "comment"  => "constructs a Stack Parameter to retrieve a parameter from Stack",
-  "reg_req"  => { "in" => [ "none" ], "out" => [ "general_purpose" ] },
+  "reg_req"  => { "in" => [ "none" ], "out" => [ "gp" ] },
   "cmp_attr" =>
 '
   return (attr_a->pn_code != attr_b->pn_code);
@@ -541,7 +410,7 @@ $arch = "ia32";
 "StackArg" => {
   "arity"    => 2,
   "comment"  => "constructs a Stack Argument to pass an argument on Stack",
-  "reg_req"  => { "in" => [ "none", "general_purpose" ], "out" => [ "none" ] },
+  "reg_req"  => { "in" => [ "none", "gp" ], "out" => [ "none" ] },
   "cmp_attr" =>
 '
   return (attr_a->pn_code != attr_b->pn_code);
@@ -560,106 +429,108 @@ $arch = "ia32";
 # commutative operations
 
 "fAdd" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "check_inout" => 1,
-  "comment"     => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
-  "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_r1" ] },
-  "emit"        => '. add%M %S2, %D1\t\t\t/* SSE Add(%S1, %S2) -> %D1 */'
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. adds%M %ia32_emit_binop\t\t\t/* SSE Add(%A1, %A2) -> %D1 */'
 },
 
 "fMul" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "check_inout" => 1,
-  "comment"     => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_r1" ] },
-  "emit"        =>'. muls%M %S2, %D1\t\t\t/* SSE Mul(%S1, %S2) -> %D1 */'
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. muls%M %ia32_emit_binop\t\t\t/* SSE Mul(%A1, %A2) -> %D1 */'
 },
 
 "fMax" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "check_inout" => 1,
-  "comment"     => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-  "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_r1" ] },
-  "emit"        =>'. maxs%M %S2, %D1\t\t\t/* SSE Max(%S1, %S2) -> %D1 */'
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. maxs%M %ia32_emit_binop\t\t\t/* SSE Max(%A1, %A2) -> %D1 */'
 },
 
 "fMin" => {
-  "op_flags"    => "C",
-  "arity"       => 2,
-  "remat"       => 1,
-  "check_inout" => 1,
-  "comment"     => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-  "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_r1" ] },
-  "emit"        =>'. mins%M %S2, %D1\t\t\t/* SSE Min(%S1, %S2) -> %D1 */'
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. mins%M %ia32_emit_binop\t\t\t/* SSE Min(%A1, %A2) -> %D1 */'
+},
+
+"fAnd" => {
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct SSE And: And(a, b) = a AND b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. andp%M %ia32_emit_binop\t\t\t/* SSE And(%A3, %A4) -> %D1 */'
+},
+
+"fOr" => {
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Or: Or(a, b) = a OR b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. orp%M %ia32_emit_binop\t\t\t/* SSE Or(%A3, %A4) -> %D1 */'
+},
+
+"fEor" => {
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Eor: Eor(a, b) = a XOR b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. xorp%M %ia32_emit_binop\t\t\t/* SSE Xor(%A3, %A4) -> %D1 */'
 },
 
 # not commutative operations
 
 "fSub" => {
-  "arity"       => 2,
-  "remat"       => 1,
-  "check_inout" => 1,
-  "comment"     => "construct SSE Sub: Sub(a, b) = a - b",
-  "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_r1" ] },
-  "emit"        => '. subs%M %S2, %D1\t\t\t/* SSE Sub(%S1, %S2) -> %D1 */'
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Sub: Sub(a, b) = a - b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. subs%M %ia32_emit_binop\t\t\t/* SSE Sub(%A1, %A2) -> %D1 */'
 },
 
 "fDiv" => {
-  "arity"       => 2,
-  "remat"       => 1,
-  "check_inout" => 1,
-  "comment"     => "construct SSE Div: Div(a, b) = a / b",
-  "reg_req"     => { "in" => [ "floating_point", "floating_point" ], "out" => [ "in_r1" ] },
-  "emit"        => '. divs%M %S2, %D1\t\t\t/* SSE Div(%S1, %S2) -> %D1 */'
-},
-
-"fMinus" => {
-  "arity"       => 1,
-  "remat"       => 1,
-  "check_inout" => 1,
-  "comment"     => "construct SSE Minus: Minus(a) = -a",
-  "reg_req"     => { "in" => [ "floating_point" ], "out" => [ "in_r1" ] },
-  "emit"        => '. xorp%M c %D1\t\t\t/* SSE Minus(%S1) -> %D1 */'
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Div: Div(a, b) = a / b",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r1" ] },
+  "emit"      => '. divs%M %ia32_emit_binop\t\t\t/* SSE Div(%A1, %A2) -> %D1 */'
 },
 
 # other operations
 
 "fConv" => {
   "arity"    => 1,
-  "reg_req"  => { "in" => [ "floating_point" ], "out" => [ "general_purpose" ] },
+  "reg_req"  => { "in" => [ "fp" ], "out" => [ "gp" ] },
   "comment"  => "construct Conv: Conv(a) = (conv)a"
 },
 
 "fCondJmp" => {
-  "op_flags" => "C|L|X|Y",
-  "arity"    => 2,
-  "comment"  => "construct conditional jump: CMP A, B && JMPxx LABEL",
-  "reg_req"  => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "none", "none" ] },
+  "op_flags"  => "C|L|X|Y",
+  "comment"   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "none", "none" ] },
 },
 
 "fConst" => {
-  "op_flags" => "c",
-  "arity"    => "0",
-  "remat"    => 1,
-  "comment"  => "represents a SSE constant",
-  "reg_req"  => { "out" => [ "floating_point" ] },
-  "emit"     => '. mov%M %C, %D1\t\t\t/* Mov fConst into register */',
-  "cmp_attr" =>
+  "op_flags"  => "c",
+  "irn_flags" => "R",
+  "comment"   => "represents a SSE constant",
+  "reg_req"   => { "out" => [ "fp" ] },
+  "emit"      => '. mov%M %D1, %C\t\t\t/* Load fConst into register */',
+  "cmp_attr"  =>
 '
   if (attr_a->tp == attr_b->tp) {
-    if (attr_a->tp == asmop_SymConst) {
-      if (attr_a->old_ir == NULL || attr_b->old_ir == NULL)
+    if (attr_a->tp == ia32_SymConst) {
+      if (attr_a->sc == NULL || attr_b->sc == NULL)
         return 1;
       else
-        return strcmp(get_sc_name(attr_a->old_ir), get_sc_name(attr_b->old_ir));
+        return strcmp(attr_a->sc, attr_b->sc);
     }
     else {
-      if (attr_a->old_ir == NULL || attr_b->old_ir == NULL)
+      if (attr_a->tv == NULL || attr_b->tv == NULL)
         return 1;
 
       if (tarval_cmp(attr_a->tv, attr_b->tv) == pn_Cmp_Eq)
@@ -676,30 +547,27 @@ $arch = "ia32";
 # Load / Store
 
 "fLoad" => {
-  "op_flags" => "L|F",
-  "state"    => "exc_pinned",
-  "arity"    => 2,
-  "remat"    => 1,
-  "comment"  => "construct SSE Load: Load(ptr, mem) = LD ptr",
-  "reg_req"  => { "in" => [ "general_purpose", "none" ], "out" => [ "floating_point" ] },
-  "emit"     => '. movl O(%S1), %D1\t\t\t/* Load((%S1)) -> %D1 */'
+  "op_flags"  => "L|F",
+  "irn_flags" => "R",
+  "state"     => "exc_pinned",
+  "comment"   => "construct SSE Load: Load(ptr, mem) = LD ptr",
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "fp" ] },
+  "emit"      => '. movs%M %D1, %ia32_emit_am\t\t\t/* Load((%A1)) -> %D1 */'
 },
 
 "fStore" => {
   "op_flags" => "L|F",
   "state"    => "exc_pinned",
-  "arity"    => 3,
-  "remat"    => 1,
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"  => { "in" => [ "general_purpose", "floating_point", "none" ] },
-  "emit"     => '. movl %S2, O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ] },
+  "emit"     => '. movs%M %ia32_emit_am, %S3\t\t\t/* Store(%S3) -> (%A1) */'
 },
 
 "fStackParam" => {
   "arity"    => 1,
   "remat"    => 1,
   "comment"  => "constructs a Stack Parameter to retrieve a SSE parameter from Stack",
-  "reg_req"  => { "in" => [ "none" ], "out" => [ "floating_point" ] },
+  "reg_req"  => { "in" => [ "none" ], "out" => [ "fp" ] },
   "cmp_attr" =>
 '
   return (attr_a->pn_code != attr_b->pn_code);
@@ -709,7 +577,7 @@ $arch = "ia32";
 "fStackArg" => {
   "arity"    => 2,
   "comment"  => "constructs a Stack Argument to pass an argument on Stack",
-  "reg_req"  => { "in" => [ "none", "floating_point" ], "out" => [ "none" ] },
+  "reg_req"  => { "in" => [ "none", "fp" ], "out" => [ "none" ] },
   "cmp_attr" =>
 '
   return (attr_a->pn_code != attr_b->pn_code);
@@ -757,15 +625,7 @@ $arch = "ia32";
   "state"    => "pinned",
   "arity"    => "2",
   "comment"  => "construct Alloca: allocate memory on Stack",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] }
+  "reg_req"  => { "in" => [ "gp" ], "out" => [ "gp" ] }
 },
-
-"Alloca_i" => {
-  "op_flags" => "L|F",
-  "state"    => "pinned",
-  "arity"    => "1",
-  "comment"  => "construct Alloca: allocate memory on Stack",
-  "reg_req"  => { "out" => [ "general_purpose" ] }
-}
 
 ); # end of %nodes

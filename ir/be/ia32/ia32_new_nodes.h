@@ -30,47 +30,52 @@ const char *get_sc_name(ir_node *symc);
 /**
  * Returns the attributes of an ia32 node.
  */
-asmop_attr *get_ia32_attr(const ir_node *node);
+ia32_attr_t *get_ia32_attr(const ir_node *node);
 
 /**
  * Gets the type of an ia32 node.
  */
-asmop_type_t get_ia32_op_type(const ir_node *node);
+ia32_op_type_t get_ia32_op_type(const ir_node *node);
 
 /**
  * Sets the type of an ia32 node.
  */
-void set_ia32_op_type(const ir_node *node, asmop_type_t tp);
+void set_ia32_op_type(ir_node *node, ia32_op_type_t tp);
 
 /**
- * Gets the addr mode type of an ia32 node
+ * Gets the supported addrmode of an ia32 node
  */
-addrmode_type_t get_ia32_am_type(const ir_node *node);
+ia32_am_type_t get_ia32_am_support(const ir_node *node);
 
 /**
- * Sets the addr mode type of an ia32 node
+ * Sets the supported addrmode of an ia32 node
  */
-void set_ia32_am_type(const ir_node *node, addrmode_type_t am_tp);
+void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp);
 
 /**
- * Gets the addr mode offset.
+ * Gets the joined addrmode offset.
  */
-tarval *get_ia32_am_offs(const ir_node *node);
+char *get_ia32_am_offs(const ir_node *node);
 
 /**
- * Sets the offset for addr mode.
+ * Adds an offset for addrmode.
  */
-void set_ia32_am_offs(ir_node *node, tarval *am_offs);
+void add_ia32_am_offs(ir_node *node, char *offset);
+
+/**
+ * Subs an offset for addrmode.
+ */
+void sub_ia32_am_offs(ir_node *node, char *offset);
 
 /**
  * Gets the addr mode const.
  */
-tarval *get_ia32_am_const(const ir_node *node);
+int get_ia32_am_scale(const ir_node *node);
 
 /**
  * Sets the const for addr mode.
  */
-void set_ia32_am_const(ir_node *node, tarval *am_const);
+void set_ia32_am_scale(ir_node *node, int scale);
 
 /**
  * Return the tarval of an immediate operation or NULL in case of SymConst
@@ -83,14 +88,19 @@ tarval *get_ia32_Immop_tarval(const ir_node *node);
 void set_ia32_Immop_tarval(ir_node *node, tarval *tv);
 
 /**
- * Return the old_ir attribute.
+ * Return the sc attribute.
  */
-ir_node *get_ia32_old_ir(const ir_node *node);
+char *get_ia32_sc(const ir_node *node);
 
 /**
- * Sets the old_ir attribute.
+ * Sets the sc attribute.
  */
-void set_ia32_old_ir(ir_node *node, ir_node *old_ir);
+void set_ia32_sc(ir_node *node, char *sc);
+
+/**
+ * Gets the string representation of the internal const (tv or symconst)
+ */
+char *get_ia32_cnst(ir_node *node);
 
 /**
  * Returns the argument register requirements of an ia32 node.
@@ -165,12 +175,12 @@ int get_ia32_n_res(const ir_node *node);
 /**
  * Returns the flavour of an ia32 node,
  */
-op_flavour_t get_ia32_flavour(const ir_node *node);
+ia32_op_flavour_t get_ia32_flavour(const ir_node *node);
 
 /**
  * Sets the flavour of an ia32 node to flavour_Div/Mod/DivMod/Mul/Mulh.
  */
-void set_ia32_flavour(ir_node *node, op_flavour_t op_flav);
+void set_ia32_flavour(ir_node *node, ia32_op_flavour_t op_flav);
 
 /**
  * Returns the projnum code.
@@ -217,18 +227,19 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
 
 /**
  * Sets the AddrMode attribute
+ * @param direction The "direction" of AM ('S' source or 'D' destination)
  */
-void set_ia32_AddrMode(ir_node *node);
+void set_ia32_AddrMode(ir_node *node, char direction);
 
 /**
- * Returns whether or not the node is an AddrMode node.
+ * Returns whether or not the node is an AddrModeS node.
  */
-int is_ia32_AddrMode(ir_node *node);
+int is_ia32_AddrModeS(ir_node *node);
 
 /**
- * Checks whether or not an ir_node is an ia32 node
+ * Returns whether or not the node is an AddrModeD node.
  */
-int is_ia32_irn(const ir_node *node);
+int is_ia32_AddrModeD(ir_node *node);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"

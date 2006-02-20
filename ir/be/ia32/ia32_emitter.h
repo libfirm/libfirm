@@ -18,7 +18,9 @@ typedef struct _emit_env_t {
 
 const lc_arg_env_t *ia32_get_arg_env(void);
 
-void equalize_dest_src(FILE *F, ir_node *n);
+char *ia32_emit_binop(ir_node *irn);
+char *ia32_emit_unop(ir_node *irn);
+char *ia32_emit_am(ir_node *irn);
 
 int get_ia32_reg_nr(ir_node *irn, int posi, int in_out);
 const char *get_ia32_in_reg_name(ir_node *irn, int pos);

@@ -25,6 +25,17 @@
 
 static const arch_env_t *arch_env = NULL;
 
+char *ia32_emit_binop(ir_node *irn) {
+	return "R1, R2";
+}
+
+char *ia32_emit_unop(ir_node *irn) {
+	return "R";
+}
+
+char *ia32_emit_am(ir_node *irn) {
+	return "AM";
+}
 
 /*************************************************************
  *             _       _    __   _          _
@@ -41,35 +52,24 @@ static const arch_env_t *arch_env = NULL;
  * Return node's tarval as string.
  */
 const char *node_const_to_str(ir_node *n) {
-	char   *buf;
-	tarval *tv = get_ia32_Immop_tarval(n);
+	char *s = get_ia32_cnst(n);
 
-	if (tv) {
-		buf = xmalloc(SNPRINTF_BUF_LEN);
-		tarval_snprintf(buf, SNPRINTF_BUF_LEN, tv);
-		return buf;
-	}
-	else if (get_ia32_old_ir(n)) {
-		return get_sc_name(get_ia32_old_ir(n));
-	}
-	else
-		return "0";
+	if (!s)
+		s = "NULL";
+
+	return s;
 }
 
 /**
  * Returns node's offset as string.
  */
 char *node_offset_to_str(ir_node *n) {
-	char   *buf;
-	tarval *tv = get_ia32_am_offs(n);
+	char *s = get_ia32_am_offs(n);
 
-	if (tv) {
-		buf = xmalloc(SNPRINTF_BUF_LEN);
-		tarval_snprintf(buf, SNPRINTF_BUF_LEN, tv);
-		return buf;
-	}
-	else
-		return "";
+	if (!s)
+		s = "";
+
+	return s;
 }
 
 /* We always pass the ir_node which is a pointer. */
@@ -736,15 +736,10 @@ void ia32_emit_node(ir_node *irn, void *env) {
 #define EMIT(a)      if (get_irn_opcode(irn) == iro_##a) { emit_##a(irn, emit_env); return; }
 
 	/* generated int emitter functions */
-	IA32_EMIT(Copy);
-	IA32_EMIT(Perm);
-
 	IA32_EMIT(Const);
 
 	IA32_EMIT(Add);
-	IA32_EMIT(Add_i);
 	IA32_EMIT(Sub);
-	IA32_EMIT(Sub_i);
 	IA32_EMIT(Minus);
 	IA32_EMIT(Inc);
 	IA32_EMIT(Dec);
@@ -753,30 +748,21 @@ void ia32_emit_node(ir_node *irn, void *env) {
 	IA32_EMIT(Min);
 
 	IA32_EMIT(And);
-	IA32_EMIT(And_i);
 	IA32_EMIT(Or);
-	IA32_EMIT(Or_i);
 	IA32_EMIT(Eor);
-	IA32_EMIT(Eor_i);
 	IA32_EMIT(Not);
 
 	IA32_EMIT(Shl);
-	IA32_EMIT(Shl_i);
 	IA32_EMIT(Shr);
-	IA32_EMIT(Shr_i);
 	IA32_EMIT(Shrs);
-	IA32_EMIT(Shrs_i);
 	IA32_EMIT(RotL);
-	IA32_EMIT(RotL_i);
 	IA32_EMIT(RotR);
 
 	IA32_EMIT(Lea);
-	IA32_EMIT(Lea_i);
 
 	IA32_EMIT(Mul);
-	IA32_EMIT(Mul_i);
 
-	IA32_EMIT(Cltd);
+	IA32_EMIT(Cdq);
 	IA32_EMIT(DivMod);
 
 	IA32_EMIT(Store);
@@ -787,7 +773,6 @@ void ia32_emit_node(ir_node *irn, void *env) {
 
 	IA32_EMIT(fAdd);
 	IA32_EMIT(fSub);
-	IA32_EMIT(fMinus);
 
 	IA32_EMIT(fMul);
 	IA32_EMIT(fDiv);
@@ -800,11 +785,8 @@ void ia32_emit_node(ir_node *irn, void *env) {
 
 	/* other emitter functions */
 	IA32_EMIT(CondJmp);
-	IA32_EMIT(CondJmp_i);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(Call);
-	IA32_EMIT(Alloca);
-	IA32_EMIT(Alloca_i);
 
 	EMIT(Jmp);
 	EMIT(Proj);
