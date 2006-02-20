@@ -73,7 +73,6 @@ typedef struct _belady_env_t {
 
 struct _workset_t {
 	belady_env_t *bel;
-//	int i;				/**< used for iteration TODO remove this form the struct */
 	int len;			/**< current length */
 	loc_t vals[1];		/**< inlined array of the values/distances in this working set */
 };
@@ -483,7 +482,7 @@ static void belady(ir_node *blk, void *env) {
 static void fix_block_borders(ir_node *blk, void *env) {
 	workset_t *wsb;
 	belady_env_t *bel = env;
-	int i, max, iter;
+	int i, max, iter, iter2;
 
 	DBG((dbg, DBG_FIX, "\n"));
 	DBG((dbg, DBG_FIX, "Fixing %+F\n", blk));
@@ -508,7 +507,7 @@ static void fix_block_borders(ir_node *blk, void *env) {
 				continue;
 
 			/* check if irnb is in a register at end of pred */
-			workset_foreach(wsp, irnp, iter)
+			workset_foreach(wsp, irnp, iter2)
 				if (irnb == irnp)
 					goto next_value;
 
