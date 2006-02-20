@@ -17,8 +17,8 @@
  *  Implementation of the datastructure to hold
  *  type information.
  *
- *  (C) 2001-2005 by Universitaet Karlsruhe
- *  Goetz Lindenmaier
+ *  (C) 2001-2006 by Universitaet Karlsruhe
+ *  Goetz Lindenmaier, Michael Beck
  *
  *  This module supplies a datastructure to represent all types
  *  known in the compiled program.  This includes types specified
@@ -1147,6 +1147,7 @@ ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
   res->attr.ma.value_ress           = NULL;
   res->attr.ma.variadicity          = variadicity_non_variadic;
   res->attr.ma.first_variadic_param = -1;
+  res->attr.ma.additional_properties = mtp_no_property;
   res->attr.ma.irg_calling_conv     = default_cc_mask;
   hook_new_type(res);
   return res;
