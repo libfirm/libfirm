@@ -21,9 +21,9 @@ my $return;
 
 no strict "subs";
 unless ($return = do $specfile) {
-  warn "couldn't parse $specfile: $@" if $@;
-  warn "couldn't do $specfile: $!"    unless defined $return;
-  warn "couldn't run $specfile"       unless $return;
+	warn "couldn't parse $specfile: $@" if $@;
+	warn "couldn't do $specfile: $!"    unless defined $return;
+	warn "couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 
@@ -35,124 +35,67 @@ my @obst_func;   # stack for the emit functions
 my @obst_header;  # stack for the function prototypes
 my $line;
 
-# some default emitter functions (Copy, Perm)
-
-$line  = "#undef is_ia32_Perm\n";
-$line .= "#define is_ia32_Perm(irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm && ! is_Proj(irn))\n";
-$line .= "#undef is_ia32_Copy\n";
-$line .= "#define is_ia32_Copy(irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_copy)\n";
-push(@obst_header, $line."\n");
-
-$line = "void emit_".$arch."_Copy(ir_node *n, emit_env_t *env)";
-push(@obst_header, $line.";\n");
-$line .= " {\n  FILE *F = env->out;\n";
-$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\tmov %1S, %1D\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
-push(@obst_func, $line);
-
-$line = "void emit_".$arch."_Perm(ir_node *n, emit_env_t *env)";
-push(@obst_header, $line.";\n");
-$line .= " {\n  FILE *F = env->out;\n";
-$line .= '  lc_efprintf(ia32_get_arg_env(), F, "\txchg %1S, %1D\t\t\t/* %+F */\n", n, n, n);'."\n}\n\n";
-push(@obst_func, $line);
-
 foreach my $op (keys(%nodes)) {
-  my %n = %{ $nodes{"$op"} };
+	my %n = %{ $nodes{"$op"} };
 
-  # skip this node description if no emit information is available
-  next if (!$n{"emit"} || length($n{"emit"}) < 1);
+	# skip this node description if no emit information is available
+	next if (!$n{"emit"} || length($n{"emit"}) < 1);
 
-  $line = "void emit_".$arch."_".$op."(ir_node *n, emit_env_t *env)";
-  push(@obst_header, $line.";\n");
-  push(@obst_func, $line." {\n  FILE *F = env->out;\n");
+	$line = "void emit_".$arch."_".$op."(ir_node *n, emit_env_t *env)";
+	push(@obst_header, $line.";\n");
+	push(@obst_func, $line." {\n  FILE *F = env->out;\n");
 
-  my $cio = 0;
-  # check in/out register if needed
-  if (exists($n{"check_inout"}) && $n{"check_inout"} == 1) {
-    push(@obst_func, "  equalize_dest_src(F, n);\n\n");
-    $cio = 1;
-  }
+	my @emit = split(/\n/, $n{"emit"});
 
-  my @emit = split(/\n/, $n{"emit"});
+	foreach my $template (@emit) {
+		# substitute only lines, starting with a '.'
+		if ($template =~ /^(\d*)\.\s*/) {
+			my @params;
+			my $res    = "";
+			my $indent = "  "; # default indent is 2 spaces
 
-  foreach my $template (@emit) {
-    # substitute only lines, starting with a '.'
-    if ($template =~ /^(\d*)\.\s*/) {
-      my @params;
-      my $res    = "";
-      my $res2   = "";
-      my $indent = "  "; # default indent is 2 spaces
+			$indent = " " x $1 if ($1 && $1 > 0);
+			# remove indent, dot and trailing spaces
+			$template =~ s/^\d*\.\s*//;
+			# substitute all format parameter
+			while ($template =~ /\%([ASD])(\d)|\%([COM])|\%(\w+)/) {
+				$res  .= $`;      # get everything before the match
 
-      $indent = " " x $1 if ($1 && $1 > 0);
-      # remove indent, dot and trailing spaces
-      $template =~ s/^\d*\.\s*//;
-      # substitute all format parameter
-      while ($template =~ /\%(([ASD])(\d)|([COM]))/) {
-        $res  .= $`;      # get everything before the match
-        $res2 .= $`;
+				if ($1 && $1 eq "S") {
+					push(@params, "n");
+					$res .= "%".$2."S"; # substitute %Sx with %xS
+				}
+				elsif ($1 && $1 eq "D") {
+					push(@params, "n");
+					$res .= "%".$2."D"; # substitute %Dx with %xD
+				}
+				elsif ($1 && $1 eq "A") {
+					push(@params, "get_irn_n(n, ".($2 - 1).")");
+					$res .= "%+F";
+				}
+				elsif ($3) {
+					push(@params, "n");
+					$res .= "%".$3;
+				}
+				elsif ($4) {  # backend provided function to call, has to return a string
+					push(@params, $4."(n)");
+					$res .= "\%s";
+				}
 
-        if ($4 && $4 eq "C") {
-          push(@params, "n");
-          $res  .= "\%C";
-          $res2 .= "\%C";
-        }
-        elsif ($4 && $4 eq "O") {
-          push(@params, "n");
-          $res  .= "\%O";
-          $res2 .= "\%O";
-        }
-        elsif ($4 && $4 eq "M") {
-          push(@params, "n");
-          $res  .= "\%M";
-          $res2 .= "\%M";
-        }
-        elsif ($2 && $2 eq "S") {
-          push(@params, "n");
-          if ($cio && $3 == 2) {
-            # check_in_out was set: if (s1 != d1) we
-            # need to exchange s2 by s1
-            $res2 .= "%1S"; # get name for first register
-          }
-          else {
-            $res2 .= "%".$3."S"; # substitute %sx with %xs
-          }
-          $res .= "%".$3."S"; # substitute %sx with %xs
-        }
-        elsif ($2 && $2 eq "D") {
-          push(@params, "n");
-          $res  .= "%".$3."D"; # substitute %sx with %xs
-          $res2 .= "%".$3."D"; # substitute %sx with %xs
-        }
-        elsif ($2 && $2 eq "A") {
-          push(@params, "get_irn_n(n, ".($3 - 1).")");
-          $res  .= "%+F";
-          $res2 .= "%+F";
-        }
+				$template = $'; # scan everything after the match
+			}
+			$res  .= $template; # get the remaining string
 
-        $template = $'; # scan everything after the match
-      }
-      $res  .= $template; # get the remaining string
-      $res2 .= $template; # get the remaining string
+			my $parm = "";
+			$parm = ", ".join(", ", @params) if (@params);
 
-      my $parm = "";
-      $parm = ", ".join(", ", @params) if (@params);
-
-      if ($cio) {
-        push(@obst_func, $indent."if (get_irn_arity(n) > 1 && get_$arch\_reg_nr(n, 1, 1) == get_$arch\_reg_nr(n, 0, 0)) {\n");
-        push(@obst_func, $indent.'  lc_efprintf(ia32_get_arg_env(), F, "\t'.$res2.'\n"'.$parm.');'."\n");
-        push(@obst_func, $indent."}\n");
-        push(@obst_func, $indent."else {\n");
-        push(@obst_func, $indent.'  lc_efprintf(ia32_get_arg_env(), F, "\t'.$res.'\n"'.$parm.');'."\n");
-        push(@obst_func, $indent."}\n");
-      }
-      else {
-        push(@obst_func, $indent.'lc_efprintf(ia32_get_arg_env(), F, "\t'.$res.'\n"'.$parm.');'."\n");
-      }
-    }
-    else {
-      push(@obst_func, $template,"\n");
-    }
-  }
-  push(@obst_func, "}\n\n");
+			push(@obst_func, $indent.'lc_efprintf('.$arch.'_get_arg_env(), F, "\t'.$res.'\n"'.$parm.');'."\n");
+		}
+		else {
+			push(@obst_func, $template,"\n");
+		}
+	}
+	push(@obst_func, "}\n\n");
 }
 
 open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");

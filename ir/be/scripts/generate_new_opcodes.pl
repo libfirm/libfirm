@@ -55,9 +55,14 @@ push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 foreach my $op (keys(%nodes)) {
 	my %n = %{ $nodes{"$op"} };
 
+	# determine arity from in requirements
+	$arity = 0;
+	if (exists($n{"reg_req"}) && exists($n{"reg_req"}{"in"})) {
+		$arity = scalar(@{ $n{"reg_req"}{"in"} });
+	}
+
 	$orig_op = $op;
 	$op      = $arch."_".$op;
-	$arity   = $n{"arity"};
 	$temp    = "";
 
 	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
@@ -72,8 +77,8 @@ foreach my $op (keys(%nodes)) {
 	# create compare attribute function if needed
 	if (exists($n{"cmp_attr"})) {
 		push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
-		push(@obst_cmp_attr, "  asmop_attr *attr_a = get_ia32_attr(a);\n");
-		push(@obst_cmp_attr, "  asmop_attr *attr_b = get_ia32_attr(b);\n");
+		push(@obst_cmp_attr, "  $arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
+		push(@obst_cmp_attr, "  $arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
 		push(@obst_cmp_attr, $n{"cmp_attr"});
 		push(@obst_cmp_attr, "}\n\n");
 
@@ -96,11 +101,11 @@ foreach my $op (keys(%nodes)) {
 
 		$temp = "ir_node *new_rd_$op(dbg_info *db, ir_graph *irg, ir_node *block";
 		if (!exists($n{"args"}) || $n{"args"} =~ /^DEFAULT$/i) { # default args
-			if ($n{"arity"} !~ /^\d+$/) {
+			if ($arity !~ /^\d+$/) {
 				print "DEFAULT args require numeric arity (0, 1, 2, ...)! Ignoring op $orig_op!\n";
 				next;
 			}
-			for (my $i = 1; $i <= $n{"arity"}; $i++) {
+			for (my $i = 1; $i <= $arity; $i++) {
 				$complete_args .= ", ir_node *op".$i;
 				$arg_names     .= ", op".$i;
 			}
@@ -121,11 +126,11 @@ foreach my $op (keys(%nodes)) {
 
 		# emit constructor code
 		if (!exists($n{"rd_constructor"}) || $n{"rd_constructor"} =~ /^DEFAULT$/i) { # default constructor
-			if ($n{"arity"} !~ /^\d+$/) {
-				print "DEFAULT rd_constructor requires arity 0,1,2 or 3! Ignoring op $orig_op!\n";
+			if ($arity !~ /^\d+$/) {
+				print "DEFAULT rd_constructor requires numeric arity! Ignoring op $orig_op!\n";
 				next;
 			}
-			$temp  = "  asmop_attr *attr;\n";
+			$temp  = "  $arch\_attr_t *attr;\n";
 			$temp .= "  ir_node *res;\n";
 			$temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
 
@@ -171,18 +176,25 @@ foreach my $op (keys(%nodes)) {
 				$temp .= "  in[".($i - 1)."] = op".$i.";\n";
 			}
 			$temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
-			$temp .= "  set_ia32_pncode(res, -1);\n";
-			$temp .= "  res = optimize_node(res);\n";
+			$temp .= "//  res = optimize_node(res);\n";
 			$temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
-			# set register flags
-			$temp .= "  attr = get_ia32_attr(res);\n\n";
+			# set flags
+			$temp .= "  attr = get_$arch\_attr(res);\n\n";
 			$temp .= "  attr->flags  = 0;                                 /* clear flags */\n";
-			if (exists($n{"spill"}) && $n{"spill"} == 0) {
-				$temp .= "  attr->flags |= arch_irn_flags_dont_spill;          /* op is NOT spillable */\n";
-			}
-			if (exists($n{"remat"}) && $n{"remat"} == 1) {
-				$temp .= "  attr->flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
+
+			if (exists($n{"irn_flags"})) {
+				foreach my $flag (split(/\|/, $n{"irn_flags"})) {
+					if ($flag eq "R") {
+						$temp .= "  attr->flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
+					}
+					elsif ($flag eq "N") {
+						$temp .= "  attr->flags |= arch_irn_flags_dont_spill;         /* op is NOT spillable */\n";
+					}
+					elsif ($flag eq "I") {
+						$temp .= "  attr->flags |= arch_irn_flags_ignore;             /* ignore op for register allocation */\n";
+					}
+				}
 			}
 
 			# allocate memory and set pointer to register requirements
@@ -241,7 +253,7 @@ foreach my $op (keys(%nodes)) {
 
 	$n_opcodes++;
 	$temp  = "  op_$op = new_ir_op(cur_opcode++, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-	$temp .= ", ".translate_arity($arity).", 0, sizeof(asmop_attr), &ops);\n";
+	$temp .= ", ".translate_arity($arity).", 2, sizeof($arch\_attr_t), &ops);\n";
 	push(@obst_new_irop, $temp);
 }
 
@@ -310,6 +322,7 @@ close(OUT);
 
 open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
 
+print OUT "int is_$arch\_irn(const ir_node *node);\n";
 print OUT @obst_header;
 
 close(OUT);
