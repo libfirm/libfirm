@@ -291,6 +291,7 @@ typedef struct _ss_env_t {
 	struct obstack ob;
 	be_chordal_env_t *cenv;
 	pmap *slots;		/* maps spill_contexts to spill_slots */
+  pmap *types;    /* maps modes to types */
 } ss_env_t;
 
 
@@ -417,6 +418,25 @@ interf_detected: /*nothing*/ ;
 #define ALIGN_SPILL_AREA 16
 #define pset_foreach(pset, elm)  for(elm=pset_first(pset); elm; elm=pset_next(pset))
 
+/**
+ * Returns a spill type for a mode. Keep them in a map to reduce
+ * the number of types.
+ */
+static ir_type *get_spill_type(pmap *types, ir_mode *mode) {
+  pmap_entry *e = pmap_find(types, mode);
+  ir_type *res;
+
+  if (! e) {
+		char buf[64];
+    snprintf(buf, sizeof(buf), "spill_slot_type_%s", get_mode_name(mode));
+    res = new_type_primitive(new_id_from_str(buf), mode);
+    pmap_insert(types, mode, res);
+  }
+  else
+    res = e->value;
+  return res;
+}
+
 static void assign_entities(ss_env_t *ssenv, int n, spill_slot_t **ss) {
 	int i, offset;
 	ir_type *frame = get_irg_frame_type(ssenv->cenv->irg);
@@ -429,17 +449,15 @@ static void assign_entities(ss_env_t *ssenv, int n, spill_slot_t **ss) {
 	/* create entities and assign offsets according to size and alignment*/
 	for (i=0; i<n; ++i) {
 		char buf[64];
-		ident *name, *type_id;
+		ident *name;
 		entity *spill_ent;
 		ir_node *irn;
 
 		/* build entity */
 		snprintf(buf, sizeof(buf), "spill_slot_%d", i);
 		name = new_id_from_str(buf);
-		snprintf(buf, sizeof(buf), "spill_slot_type_%d", i);
-		type_id = new_id_from_str(buf);
 
-		spill_ent = new_entity(frame, name, new_type_primitive(type_id, ss[i]->largest_mode));
+		spill_ent = new_entity(frame, name, get_spill_type(ssenv->types, ss[i]->largest_mode));
 
 		/* align */
 		offset = round_up2(offset, ss[i]->align);
@@ -465,6 +483,7 @@ void be_compute_spill_offsets(be_chordal_env_t *cenv) {
 	obstack_init(&ssenv.ob);
 	ssenv.cenv  = cenv;
 	ssenv.slots = pmap_create();
+  ssenv.types = pmap_create();
 	ssenv.dbg   = firm_dbg_register("ir.be.spillslots");
 
 	/* Get initial spill slots */
@@ -482,5 +501,6 @@ void be_compute_spill_offsets(be_chordal_env_t *cenv) {
 	pmap_foreach(ssenv.slots, pme)
 		del_pset(((spill_slot_t *)pme->value)->members);
 	pmap_destroy(ssenv.slots);
+  pmap_destroy(ssenv.types);
 	obstack_free(&ssenv.ob, NULL);
 }
