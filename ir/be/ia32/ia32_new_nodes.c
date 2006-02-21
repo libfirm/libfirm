@@ -408,7 +408,7 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp) {
 /**
  * Gets the addrmode flavour of an ia32 node
  */
-ia32_am_flavour_t get_ia32_am_support(const ir_node *node) {
+ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->am_flavour;
 }
