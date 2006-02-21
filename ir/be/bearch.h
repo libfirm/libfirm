@@ -10,6 +10,8 @@
 #include <libcore/lc_opts.h>
 #endif
 
+#include "type.h"
+
 #include "irnode.h"
 #include "irmode.h"
 
@@ -21,6 +23,7 @@
 #include "ident.h"
 
 #include "belistsched.h"
+#include "beabi_t.h"
 
 typedef struct _arch_register_class_t     arch_register_class_t;
 typedef struct _arch_register_t           arch_register_t;
@@ -37,12 +40,15 @@ struct _be_node_factory_t;
 
 typedef enum _arch_register_type_t {
   arch_register_type_none = 0,
-  arch_register_type_caller_saved,    /**< The register must be saved by the caller
-                                           upon a function call. It thus can be overwritten
-                                           in the called function. */
-  arch_register_type_callee_saved,    /**< The register must be saved by the called function,
-                                           it thus survives a function call. */
-  arch_register_type_ignore           /**< Do not consider this register when allocating. */
+  arch_register_type_caller_save  = 1, /**< The register must be saved by the caller
+                                            upon a function call. It thus can be overwritten
+                                            in the called function. */
+  arch_register_type_callee_save  = 2, /**< The register must be saved by the caller
+                                            upon a function call. It thus can be overwritten
+                                            in the called function. */
+  arch_register_type_ignore = 4,       /**< Do not consider this register when allocating. */
+  arch_register_type_sp = 8,           /**< This register is the stack pointer of the architecture. */
+  arch_register_type_bp = 16,          /**< The register is the base pointer of the architecture. */
 } arch_register_type_t;
 
 /**
@@ -87,6 +93,7 @@ static INLINE int _arch_register_get_index(const arch_register_t *reg)
 struct _arch_register_class_t {
   const char *name;               /**< The name of the register class. */
   int n_regs;                     /**< Number of registers in this class. */
+  ir_mode *mode;                  /**< The mode of the register class. */
   const arch_register_t *regs;    /**< The array of registers. */
 };
 
@@ -163,12 +170,13 @@ typedef struct _arch_register_req_t {
                                             return the number of registers
                                             in the bitset. */
 
-	void *limited_env;                    /**< This is passed to limited. */
+	void *limited_env;                    /**< This must passed to limited. */
 
-	ir_node *other;						  /**< In case of "should be equal"
-										    or should be different, this gives
-											the node to whose register this
-											one's should be the same/different. */
+	ir_node *other_same;            	  /**< The other which shall have the same reg
+										    as this one. (for case should_be_same). */
+
+	ir_node *other_different;             /**< The other node from which this one's register
+										    must be different (case must_be_different). */
 } arch_register_req_t;
 
 /**
@@ -292,6 +300,15 @@ extern int arch_is_register_operand(const arch_env_t *env,
 extern int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs);
 
 /**
+ * Put all registers which shall not be ignored by the register
+ * allocator in a bit set.
+ * @param env The arch env.
+ * @param cls The register class to consider.
+ * @param bs  The bit set to put the registers to.
+ */
+extern void arch_put_non_ignore_regs(const arch_env_t *env, const arch_register_class_t *cls, bitset_t *bs);
+
+/**
  * Check, if a register is assignable to an operand of a node.
  * @param env The architecture environment.
  * @param irn The node.
@@ -348,8 +365,7 @@ extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *
  */
 extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn);
 
-#define arch_irn_is_ignore(env, irn) 0
-	// ((arch_irn_get_flags(env, irn) & arch_irn_flags_ignore) != 0)
+#define arch_irn_is_ignore(env, irn) ((arch_irn_get_flags(env, irn) & arch_irn_flags_ignore) != 0)
 
 #define arch_irn_has_reg_class(env, irn, pos, cls) \
   ((cls) == arch_get_irn_reg_class(env, irn, pos))
@@ -458,7 +474,14 @@ struct _arch_code_generator_t {
  */
 struct _arch_isa_t {
 	const arch_isa_if_t *impl;
+	const arch_register_t *sp;  /** The stack pointer register. */
+	const arch_register_t *bp;  /** The base pointer register. */
+	const int stack_dir;        /** -1 for decreasing, 1 for increasing. */
 };
+
+#define arch_isa_stack_dir(isa)  ((isa)->stack_dir)
+#define arch_isa_sp(isa)         ((isa)->sp)
+#define arch_isa_bp(isa)         ((isa)->bp)
 
 /**
  * Architecture interface.
@@ -493,6 +516,22 @@ struct _arch_isa_if_t {
   const arch_register_class_t *(*get_reg_class)(const void *self, int i);
 
   /**
+   * Get the register class which shall be used to store a value of a given mode.
+   * @param self The this pointer.
+   * @param mode The mode in question.
+   * @return A register class which can hold values of the given mode.
+   */
+  const arch_register_class_t *(*get_reg_class_for_mode)(const void *self, const ir_mode *mode);
+
+  /**
+   * Get the ABI restrictions for procedure calls.
+   * @param self        The this pointer.
+   * @param method_type The type of the method (procedure) in question.
+   * @param p           The array of parameter locations to be filled.
+   */
+  void (*get_call_abi)(const void *self, ir_type *method_type, be_abi_call_t *abi);
+
+  /**
    * The irn handler for this architecture.
    * The irn handler is registered by the Firm back end
    * when the architecture is initialized.
@@ -524,10 +563,12 @@ struct _arch_isa_if_t {
   long (*handle_call_proj)(const void *self, ir_node *proj, int is_keep);
 };
 
-#define arch_isa_get_n_reg_class(isa)           ((isa)->impl->get_n_reg_class(isa))
-#define arch_isa_get_reg_class(isa,i)           ((isa)->impl->get_reg_class(isa, i))
-#define arch_isa_get_irn_handler(isa)           ((isa)->impl->get_irn_handler(isa))
-#define arch_isa_make_code_generator(isa,irg)   ((isa)->impl->make_code_generator(isa, irg))
+#define arch_isa_get_n_reg_class(isa)                       ((isa)->impl->get_n_reg_class(isa))
+#define arch_isa_get_reg_class(isa,i)                       ((isa)->impl->get_reg_class(isa, i))
+#define arch_isa_get_irn_handler(isa)			            ((isa)->impl->get_irn_handler(isa))
+#define arch_isa_get_call_abi(isa,tp,abi)                   ((isa)->impl->get_call_abi((isa), (tp), (abi)))
+#define arch_isa_get_reg_class_for_mode(isa,mode)           ((isa)->impl->get_reg_class_for_mode((isa), (mode)))
+#define arch_isa_make_code_generator(isa,irg)               ((isa)->impl->make_code_generator(isa, irg))
 
 #define ARCH_MAX_HANDLERS         8
 
@@ -566,7 +607,6 @@ extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa);
  * @param handler A node handler.
  * @return The environment itself.
  */
-extern arch_env_t *arch_env_add_irn_handler(arch_env_t *env,
-    const arch_irn_handler_t *handler);
+extern arch_env_t *arch_env_add_irn_handler(arch_env_t *env, const arch_irn_handler_t *handler);
 
 #endif /* _FIRM_BEARCH_H */

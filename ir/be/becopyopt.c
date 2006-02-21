@@ -198,7 +198,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 	/* Src == Tgt of a 2-addr-code instruction */
 	if (is_2addr_code(get_arch_env(co), irn, &req)) {
-		ir_node *other = req.other;
+		ir_node *other = req.other_same;
 		if (!nodes_interfere(co->chordal_env, irn, other)) {
 			unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
 			unit->costs = xmalloc(2 * sizeof(*unit->costs));
@@ -284,7 +284,7 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 
 			if(is_Reg_Phi(n) ||
 			   is_Perm(aenv, n) ||
-			   (arch_register_req_is(&req, should_be_same) && req.other == irn)
+			   (arch_register_req_is(&req, should_be_same) && req.other_same == irn)
 			  )
 				return 1;
 		}

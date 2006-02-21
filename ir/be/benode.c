@@ -717,7 +717,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 		curr = proj;
 
 		copies[0] = proj;
-		be_introduce_copies(dom_front, perm_op, 1, copies);
+		be_ssa_constr_single(dom_front, perm_op, 1, copies);
 	}
 	return perm;
 }

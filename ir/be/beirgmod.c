@@ -119,52 +119,48 @@ pset *be_get_dominance_frontier(dom_front_info_t *info, ir_node *block)
   return pmap_get(info->df_map, block);
 }
 
-static void determine_phi_blocks(ir_node *orig, pset *copies,
-    pset *copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
+static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
 {
 	ir_node *bl;
-	ir_node *orig_block = get_nodes_block(orig);
-  pdeq *worklist = new_pdeq();
-  firm_dbg_module_t *dbg = DBG_MODULE;
+	pdeq *worklist = new_pdeq();
+	firm_dbg_module_t *dbg = DBG_MODULE;
 
-  /*
-   * Fill the worklist queue and the rest of the orig blocks array.
-   */
-  for(bl = pset_first(copy_blocks); bl; bl = pset_next(copy_blocks)) {
-   	assert(block_dominates(orig_block, bl)
-       	&& "The block of the copy must be dominated by the block of the value");
+	/*
+	* Fill the worklist queue and the rest of the orig blocks array.
+	*/
+	for(bl = pset_first(copy_blocks); bl; bl = pset_next(copy_blocks)) {
+		pdeq_putr(worklist, bl);
+	}
 
-    pdeq_putr(worklist, bl);
-  }
+	while(!pdeq_empty(worklist)) {
+		ir_node *bl = pdeq_getl(worklist);
+		pset *df    = be_get_dominance_frontier(df_info, bl);
 
-  while(!pdeq_empty(worklist)) {
-    ir_node *bl = pdeq_getl(worklist);
-    ir_node *y;
-    pset *df = be_get_dominance_frontier(df_info, bl);
+		ir_node *y;
 
-    DBG((dbg, LEVEL_3, "dom front of %+F\n", bl));
-    for(y = pset_first(df); y; y = pset_next(df))
-	    DBG((dbg, LEVEL_3, "\t%+F\n", y));
+		DBG((dbg, LEVEL_3, "dom front of %+F\n", bl));
+		for(y = pset_first(df); y; y = pset_next(df))
+			DBG((dbg, LEVEL_3, "\t%+F\n", y));
 
-    for(y = pset_first(df); y; y = pset_next(df)) {
-      if(!pset_find_ptr(phi_blocks, y)) {
-        pset_insert_ptr(phi_blocks, y);
+		for(y = pset_first(df); y; y = pset_next(df)) {
+			if(!pset_find_ptr(phi_blocks, y)) {
+				pset_insert_ptr(phi_blocks, y);
 
 				/*
-				 * Clear the link field of a possible phi block, since
-				 * the possibly created phi will be stored there. See,
-				 * search_def()
-				 */
+				* Clear the link field of a possible phi block, since
+				* the possibly created phi will be stored there. See,
+				* search_def()
+				*/
 				set_irn_link(y, NULL);
 
 				if(!pset_find_ptr(copy_blocks, y))
 					pdeq_putr(worklist, y);
 
-      }
-    }
-  }
+			}
+		}
+	}
 
-  del_pdeq(worklist);
+	del_pdeq(worklist);
 }
 
 /**
@@ -187,49 +183,47 @@ static void determine_phi_blocks(ir_node *orig, pset *copies,
  * original node.
  * @return The valid copy for usage.
  */
-static ir_node *search_def(ir_node *usage, int pos, pset *copies,
-		pset *copy_blocks, pset *phi_blocks, ir_mode *mode)
+static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blocks, pset *phi_blocks, ir_mode *mode)
 {
-  ir_node *curr_bl;
-  ir_node *start_irn;
-  firm_dbg_module_t *dbg = DBG_MODULE;
+	ir_node *curr_bl;
+	ir_node *start_irn;
+	firm_dbg_module_t *dbg = DBG_MODULE;
 
-  curr_bl = get_nodes_block(usage);
+	curr_bl = get_nodes_block(usage);
 
+	DBG((dbg, LEVEL_1, "Searching valid def for use %+F at pos %d\n", usage, pos));
+	/*
+	* If the usage is in a phi node, search the copy in the
+	* predecessor denoted by pos.
+	*/
+	if(is_Phi(usage)) {
+		curr_bl = get_Block_cfgpred_block(curr_bl, pos);
+		start_irn = sched_last(curr_bl);
+	} else {
+		start_irn = sched_prev(usage);
+	}
 
-  DBG((dbg, LEVEL_1, "Searching valid def for use %+F at pos %d\n", usage, pos));
-  /*
-   * If the usage is in a phi node, search the copy in the
-   * predecessor denoted by pos.
-   */
-  if(is_Phi(usage)) {
-    curr_bl = get_Block_cfgpred_block(curr_bl, pos);
-    start_irn = sched_last(curr_bl);
-  } else {
-    start_irn = sched_prev(usage);
-  }
+	/*
+	 * Traverse the dominance tree upwards from the
+	 * predecessor block of the usage.
+  	 */
+	while(curr_bl != NULL) {
 
-  /*
-   * Traverse the dominance tree upwards from the
-   * predecessor block of the usage.
-   */
-  while(curr_bl != NULL) {
+	    /*
+		 * If this block contains a copy, search the block
+		 * instruction by instruction.
+		 */
+		if(pset_find_ptr(copy_blocks, curr_bl)) {
+			ir_node *irn;
 
-    /*
-     * If this block contains a copy, search the block
-     * instruction by instruction.
-     */
-    if(pset_find_ptr(copy_blocks, curr_bl)) {
-      ir_node *irn;
-
-      /* Look at each instruction from last to first. */
+			/* Look at each instruction from last to first. */
 			sched_foreach_reverse_from(start_irn, irn) {
 
-        /* Take the first copy we find. */
-        if(pset_find_ptr(copies, irn))
-          return irn;
-      }
-    }
+				/* Take the first copy we find. */
+				if(pset_find_ptr(copies, irn))
+					return irn;
+			}
+		}
 
 		if(pset_find_ptr(phi_blocks, curr_bl)) {
 			ir_node *phi = get_irn_link(curr_bl);
@@ -259,68 +253,71 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies,
 			return phi;
 		}
 
-    /* If were not done yet, look in the immediate dominator */
-    curr_bl = get_Block_idom(curr_bl);
-    if(curr_bl)
-      start_irn = sched_last(curr_bl);
-  }
+		/* If were not done yet, look in the immediate dominator */
+		curr_bl = get_Block_idom(curr_bl);
+		if(curr_bl)
+			start_irn = sched_last(curr_bl);
+	}
 
-  return NULL;
+	return NULL;
 }
 
-static void fix_usages(ir_node *orig, pset *copies, pset *copy_blocks,
-		pset *phi_blocks, pset *ignore_uses)
+static void fix_usages(int n_origs, ir_node *orig[], pset *copies,
+					   pset *copy_blocks, pset *phi_blocks, pset *ignore_uses)
 {
-  int i = 0;
-  int n_outs = 0;
-  const ir_edge_t *edge;
-	ir_mode *mode = get_irn_mode(orig);
+	firm_dbg_module_t *dbg = DBG_MODULE;
+	int n_outs             = 0;
+	ir_mode *mode          = get_irn_mode(orig[0]);
 
-  firm_dbg_module_t *dbg = DBG_MODULE;
+	int i, j;
 
-  struct {
-    ir_node *irn;
-    int pos;
-  } *outs;
+	struct {
+		ir_node *irn;
+		int pos;
+	} *outs;
 
-  /* Count the number of outs. */
-  foreach_out_edge(orig, edge)
-    n_outs += !pset_find_ptr(ignore_uses, get_edge_src_irn(edge));
+	/* Count the number of outs. */
+	for(i = 0; i < n_origs; ++i) {
+		const ir_edge_t *edge;
+		foreach_out_edge(orig[i], edge)
+			n_outs += !pset_find_ptr(ignore_uses, get_edge_src_irn(edge));
+	}
 
-  /*
-   * Put all outs into an array.
-   * This is neccessary, since the outs would be modified while
-   * interating on them what could bring the outs module in trouble.
-   */
-  outs = malloc(n_outs * sizeof(outs[0]));
-  foreach_out_edge(orig, edge) {
-		if(!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
-			outs[i].irn = get_edge_src_irn(edge);
-			outs[i].pos = get_edge_src_pos(edge);
-			i += 1;
+	/*
+	 * Put all outs into an array.
+	 * This is necessary, since the outs would be modified while
+	 * iterating on them what could bring the outs module in trouble.
+	 */
+	outs = alloca(n_outs * sizeof(outs[0]));
+	for(i = 0, j = 0; i < n_origs; ++i) {
+		const ir_edge_t *edge;
+		foreach_out_edge(orig[i], edge) {
+			if(!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
+				outs[j].irn = get_edge_src_irn(edge);
+				outs[j].pos = get_edge_src_pos(edge);
+				j += 1;
+			}
 		}
-  }
+	}
 
-  /*
-   * Search the valid def for each out and set it.
-   */
-  for(i = 0; i < n_outs; ++i) {
-    ir_node *def;
-    ir_node *irn = outs[i].irn;
-    int pos = outs[i].pos;
+	/*
+	 * Search the valid def for each out and set it.
+	 */
+	for(i = 0; i < n_outs; ++i) {
+		ir_node *def;
+		ir_node *irn = outs[i].irn;
+		int pos      = outs[i].pos;
 
-    def = search_def(irn, pos, copies, copy_blocks, phi_blocks, mode);
-    DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", irn, pos, def));
+		def = search_def(irn, pos, copies, copy_blocks, phi_blocks, mode);
+		DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", irn, pos, def));
 
-    if(def != NULL)
-      set_irn_n(irn, pos, def);
-  }
-
-  free(outs);
+		if(def != NULL)
+			set_irn_n(irn, pos, def);
+	}
 }
 
 /**
- * Remove phis which are not neccesary.
+ * Remove phis which are not necessary.
  * During place_phi_functions() phi functions are put on the dominance
  * frontiers blindly. However some of them will never be used (these
  * have at least one predecessor which is NULL, see search_def() for
@@ -352,103 +349,94 @@ static void remove_odd_phis(pset *copies, pset *unused_copies)
 	}
 }
 
-void be_introduce_copies_ignore(dom_front_info_t *info, ir_node *orig,
-		int n, ir_node *copy_nodes[], pset *ignore_uses)
+void be_ssa_constr_single_ignore(dom_front_info_t *info, ir_node *orig, int n, ir_node *copies[], pset *ignore_uses)
 {
-  pset *copies = pset_new_ptr(2 * n);
-  pset *copy_blocks = pset_new_ptr(2 * n);
-	pset *phi_blocks = pset_new_ptr(2 * n);
-  int save_optimize = get_optimize();
-  int save_normalize = get_opt_normalize();
-  firm_dbg_module_t *dbg = DBG_MODULE;
-  int i;
+	ir_node *origs[1];
+	origs[0] = orig;
+	be_ssa_constr_ignore(info, 1, origs, n, copies, ignore_uses);
+}
 
-#if 0
-	{
-		static int ser = 0;
-		char buf[128];
+void be_ssa_constr_ignore(dom_front_info_t *info, int n_origs, ir_node *orig_nodes[],
+						  int n_copies, ir_node *copy_nodes[], pset *ignore_uses)
+{
+	int n_all              = n_copies + n_origs;
+	pset *copies           = pset_new_ptr(2 * n_all);
+	pset *copy_blocks      = pset_new_ptr(2 * n_all);
+	pset *phi_blocks       = pset_new_ptr(2 * n_all);
+	int save_optimize      = get_optimize();
+	int save_normalize     = get_opt_normalize();
+	firm_dbg_module_t *dbg = DBG_MODULE;
 
-		snprintf(buf, sizeof(buf), "-post-%d", ser++);
-		dump_ir_block_graph_sched(get_irn_irg(orig), buf);
+	int i;
+
+	firm_dbg_set_mask(dbg, DBG_LEVEL);
+	// DBG((dbg, LEVEL_1, "Introducing following copies of %+F\n", orig));
+
+	/* Fill the sets. */
+	for(i = 0; i < n_origs; ++i) {
+		pset_insert_ptr(copies, orig_nodes[i]);
+		pset_insert_ptr(copy_blocks, get_nodes_block(orig_nodes[i]));
 	}
-#endif
 
-  firm_dbg_set_mask(dbg, DBG_LEVEL);
-  DBG((dbg, LEVEL_1, "Introducing following copies of %+F\n", orig));
+	/*
+	* All phis using the original values are also copies of it
+	* and must be present in the copies set.
+	*/
+	for(i = 0; i < n_copies; ++i) {
+		ir_node *bl = get_nodes_block(copy_nodes[i]);
+		DBG((dbg, LEVEL_1, "\t%+F in block %+F\n", copy_nodes[i], bl));
+		pset_insert_ptr(copies, copy_nodes[i]);
+		pset_insert_ptr(copy_blocks, get_nodes_block(bl));
+	}
 
-  /* Fill the sets. */
-  pset_insert_ptr(copies, orig);
-  pset_insert_ptr(copy_blocks, get_nodes_block(orig));
+	/*
+	* Disable optimization so that the phi functions do not
+	* disappear.
+	*/
+	set_optimize(0);
+	set_opt_normalize(0);
 
-  /*
-   * All phis using the original value are also copies of it
-   * and must be present in the copies set.
-   */
-  for(i = 0; i < n; ++i) {
-    DBG((dbg, LEVEL_1,
-          "  %+F in block %+F\n", copy_nodes[i], get_nodes_block(copy_nodes[i])));
-    pset_insert_ptr(copies, copy_nodes[i]);
-    pset_insert_ptr(copy_blocks, get_nodes_block(copy_nodes[i]));
-  }
+	/*
+	* Place the phi functions and reroute the usages.
+	*/
+	determine_phi_blocks(copies, copy_blocks, phi_blocks, info);
+	fix_usages(n_origs, orig_nodes, copies, copy_blocks, phi_blocks, ignore_uses);
 
-  /*
-   * Disable optimization so that the phi functions do not
-   * disappear.
-   */
-  set_optimize(0);
-  set_opt_normalize(0);
+	/* reset the optimizations */
+	set_optimize(save_optimize);
+	set_opt_normalize(save_normalize);
 
-  /*
-   * Place the phi functions and reroute the usages.
-   */
-  determine_phi_blocks(orig, copies, copy_blocks, phi_blocks, info);
-  fix_usages(orig, copies, copy_blocks, phi_blocks, ignore_uses);
-
-  /* reset the optimizations */
-  set_optimize(save_optimize);
-  set_opt_normalize(save_normalize);
-
-  del_pset(copies);
-  del_pset(phi_blocks);
-  del_pset(copy_blocks);
-
+	del_pset(copies);
+	del_pset(phi_blocks);
+	del_pset(copy_blocks);
 
 }
 
-void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
+
+void be_ssa_constr_single(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
 {
-	static pset *empty_set = NULL;
+	pset *empty_set = be_empty_set();
 
-	if(!empty_set)
-		empty_set = pset_new_ptr_default();
-
-	be_introduce_copies_ignore(info, orig, n, copy_nodes, empty_set);
+	assert(pset_count(empty_set) == 0);
+	be_ssa_constr_single_ignore(info, orig, n, copy_nodes, empty_set);
 }
 
-void be_introduce_copies_for_set(dom_front_info_t *info, pset *origs, pset *copies) {
-	/* TODO */
-	assert(0 && "NYI");
-	exit(0xDeadBeef);
-}
+void be_ssa_constr_sets(dom_front_info_t *info, pset *origs, pset *copies)
+{
+	int n_origs  = pset_count(origs);
+	int n_copies = pset_count(copies);
 
+	ir_node **orig_nodes = alloca(n_origs * sizeof(orig_nodes[0]));
+	ir_node **copy_nodes = alloca(n_copies * sizeof(orig_nodes[0]));
 
-void be_introduce_copies_pset(dom_front_info_t *info, pset *nodes) {
-	int i, n = pset_count(nodes);
-	ir_node *orig, *irn, **copy_nodes;
-	static pset *empty_set = NULL;
+	ir_node *irn;
+	int i;
 
-	if (n<2)
-		return;
+	for(i = 0, irn = pset_first(origs); irn; irn = pset_next(origs))
+		orig_nodes[i++] = irn;
 
-	copy_nodes = alloca((n-1)*sizeof(*copy_nodes));
-	irn = pset_first(nodes);
-	orig = irn;
-	for (i=0, irn = pset_next(nodes); irn; irn=pset_next(nodes))
+	for(i = 0, irn = pset_first(copies); irn; irn = pset_next(copies))
 		copy_nodes[i++] = irn;
 
-
-	if(!empty_set)
-		empty_set = pset_new_ptr_default();
-
-	be_introduce_copies_ignore(info, orig, n-1, copy_nodes, empty_set);
+	be_ssa_constr(info, n_origs, orig_nodes, n_copies, copy_nodes);
 }

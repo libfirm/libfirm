@@ -27,6 +27,8 @@
 #include "bechordal.h"
 #include "beirgmod.h"
 
+typedef struct _be_ra_chordal_opts_t be_ra_chordal_opts_t;
+
 /** Defines an invalid register index. */
 #define NO_COLOR (-1)
 
@@ -50,17 +52,16 @@ typedef struct _border_t {
  * Environment for each of the chordal register allocator phases
  */
 struct _be_chordal_env_t {
-	struct obstack obst;       /**< An obstack for temporary storage. */
-	firm_dbg_module_t *dbg;    /**< Debug module for the chordal register allocator. */
-	const be_main_env_t *main_env;   /**< Environment with back-end data. */
-	dom_front_info_t *dom_front; /**< Dominance frontiers. */
-	ir_graph *irg;             /**< The graph under examination. */
-	const arch_register_class_t *cls;   /**< The current register class. */
-	pmap *border_heads;        /**< Maps blocks to border heads. */
-	pset *constr_irn;          /**< Nodes which deserve special constraint handling. */
-	be_ifg_t *ifg;             /**< The interference graph. */
-	void *data;                /**< Some pointer, to which different
-                                    phases can attach data to. */
+	struct obstack obst;              /**< An obstack for temporary storage. */
+	be_ra_chordal_opts_t *opts;       /**< A pointer to the chordal ra options. */
+	firm_dbg_module_t *dbg;           /**< Debug module for the chordal register allocator. */
+	const be_main_env_t *main_env;    /**< Environment with back-end data. */
+	dom_front_info_t *dom_front;      /**< Dominance frontiers. */
+	ir_graph *irg;                    /**< The graph under examination. */
+	const arch_register_class_t *cls; /**< The current register class. */
+	pmap *border_heads;               /**< Maps blocks to border heads. */
+	be_ifg_t *ifg;                    /**< The interference graph. */
+	void *data;                       /**< Some pointer, to which different phases can attach data to. */
 };
 
 static INLINE struct list_head *_get_block_border_head(const be_chordal_env_t *inf, ir_node *bl) {
@@ -110,7 +111,7 @@ enum {
 	BE_CH_LOWER_PERM_COPY = 2
 };
 
-typedef struct {
+struct _be_ra_chordal_opts_t {
 	unsigned dump_flags;
 	int spill_method;
 	int copymin_method;
@@ -119,7 +120,7 @@ typedef struct {
 
 	char ilp_server[128];
 	char ilp_solver[128];
-} be_ra_chordal_opts_t;
+};
 
 
 #endif /* _BECHORDAL_T_H */

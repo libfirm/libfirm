@@ -200,7 +200,9 @@ static void handle_constraints_walker(ir_node *irn, void *env) {
 			set_irn_n(irn, pos, cpy);
 
 			/* set an out constraint for the copy */
-			arch_set_register_req(raenv->aenv, -1, &req);
+			/* TODO: Insert right code here. *
+			be_set_constr_single_reg(cpy, -1, &reg);
+			*/
 		}
 	}
 }
@@ -591,7 +593,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 		arch_get_register_req(raenv->aenv, &req, irn, pos);
 
 		if (arch_register_req_is(&req, should_be_same)) {
-			vi2 = get_var_info(req.other);
+			vi2 = get_var_info(req.other_same);
 
 			fprintf(raenv->f, "(%d, %d)\n",  vi1->var_nr, vi2->var_nr);
 		}
@@ -711,7 +713,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 		}
 
 	/* correct the reload->spill pointers... */
-	be_introduce_copies_for_set(raenv->dom_info, spills, reloads);
+	be_ssa_constr_sets(raenv->dom_info, spills, reloads);
 
 
 	/****** correct the variable <--> values mapping: ******

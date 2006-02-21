@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+#include "pset.h"
+
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irdump_t.h"
@@ -16,6 +18,16 @@
 #include "beutil.h"
 #include "besched_t.h"
 #include "bearch.h"
+
+pset *be_empty_set(void)
+{
+	static pset *empty_set = NULL;
+
+	if(!empty_set)
+		empty_set = pset_new_ptr_default();
+
+	return empty_set;
+}
 
 struct dump_env {
   FILE *f;

@@ -154,7 +154,7 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 
 
 static be_ra_chordal_opts_t options = {
-	BE_CH_DUMP_ALL,
+	BE_CH_DUMP_NONE,
 	BE_CH_SPILL_BELADY,
 	BE_CH_COPYMIN_HEUR,
 	BE_CH_IFG_STD,
@@ -186,6 +186,18 @@ static const lc_opt_enum_int_items_t lower_perm_items[] = {
 	{ NULL, 0 }
 };
 
+static const lc_opt_enum_int_items_t dump_items[] = {
+	{ "spill",    BE_CH_DUMP_SPILL },
+	{ "live",     BE_CH_DUMP_LIVE },
+	{ "color",    BE_CH_DUMP_COLOR },
+	{ "copymin",  BE_CH_DUMP_COPYMIN },
+	{ "ssadestr", BE_CH_DUMP_SSADESTR },
+	{ "tree",     BE_CH_DUMP_TREE_INTV },
+	{ "constr",   BE_CH_DUMP_CONSTR },
+	{ "lower",    BE_CH_DUMP_LOWER },
+	{ NULL, 0 }
+};
+
 static lc_opt_enum_int_var_t spill_var = {
 	&options.spill_method, spill_items
 };
@@ -200,6 +212,10 @@ static lc_opt_enum_int_var_t ifg_flavor_var = {
 
 static lc_opt_enum_int_var_t lower_perm_var = {
 	&options.lower_perm_method, lower_perm_items
+};
+
+static lc_opt_enum_int_var_t dump_var = {
+	&options.dump_flags, dump_items
 };
 
 static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
@@ -244,7 +260,6 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
 		chordal_env.cls          = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads = pmap_create();
-		chordal_env.constr_irn   = pset_new_ptr(32);
 
 		be_liveness(irg);
 		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
@@ -264,12 +279,6 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 		be_liveness(irg);
 		be_check_pressure(&chordal_env);
-
-#if 0
-		/* Insert perms before reg-constrained instructions */
-		be_insert_constr_perms(&chordal_env);
-		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-constr", dump_ir_block_graph_sched);
-#endif
 
 		be_liveness(irg);
 		be_check_pressure(&chordal_env);
@@ -299,7 +308,6 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 		be_ifg_free(chordal_env.ifg);
 
 		pmap_destroy(chordal_env.border_heads);
-		del_pset(chordal_env.constr_irn);
 	}
 
 	be_compute_spill_offsets(&chordal_env);

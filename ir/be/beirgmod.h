@@ -46,26 +46,40 @@ void be_free_dominance_frontiers(dom_front_info_t *info);
  * represent the same concrete value. This is the case if you
  * - copy
  * - spill and reload
- * - rematerialize
+ * - re-materialize
  * a value.
  *
  * This function reroutes all uses of the original value to the copies in the
- * corresponding dominance subtrees and creates Phi functions if neccessary.
+ * corresponding dominance subtrees and creates Phi functions if necessary.
  *
- * @param info		Dominance frontier information.
- * @param orig		The node for which you want to introduce copies.
- * @param n			The number of copies ypu introduce.
- * @param copies	An array of nodes which are copies of @p orig.
+ * @param info		  Dominance frontier information.
+ * @param n_origs     The number of nodes for which the copies are introduced.
+ * @param orig_nodes  The nodes for which you want to introduce copies.
+ * @param n_copies    The number of copies you introduce.
+ * @param copy_nodes  An array of nodes which are copies of @p orig.
+ * @param ignore_uses A set containing uses which shall not be rerouted.
  */
-void be_introduce_copies_ignore(dom_front_info_t *info, ir_node *orig,
-    int n, ir_node *copies[], pset *irgore_uses);
+void be_ssa_constr_ignore(dom_front_info_t *info, int n_origs, ir_node *orig_nodes[],
+						  int n_copies, ir_node *copy_nodes[], pset *ignore_uses);
 
-void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *copies[]);
+/**
+ * Same as be_ssa_constr_ignore() but with a single original node.
+ */
+void be_ssa_constr_single_ignore(dom_front_info_t *info, ir_node *orig, int n, ir_node *copies[], pset *ignore_uses);
 
-void be_introduce_copies_for_set(dom_front_info_t *info, pset *origs, pset *copies);
+/**
+ * Same as be_ssa_constr_single_ignore() but without ignoring nodes.
+ */
+void be_ssa_constr_single(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[]);
 
-/* obsolete
-void be_introduce_copies_pset(dom_front_info_t *info, pset *nodes);
-*/
+/**
+ * Same as be_ssa_constr_ignore() but without ignoring nodes.
+ */
+void be_ssa_constr(dom_front_info_t *info, int n_orig, ir_node *orig[], int n, ir_node *copy_nodes[]);
+
+/**
+ * Same as be_ssa_constr() but with psets.
+ */
+void be_ssa_constr_sets(dom_front_info_t *info, pset *origs, pset *copies);
 
 #endif

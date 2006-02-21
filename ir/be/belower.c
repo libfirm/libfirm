@@ -453,7 +453,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			DBG((mod, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 		}
 
-		free(cycle->elems);
+		free((void *) cycle->elems);
 		free(cycle);
 	}
 
@@ -529,7 +529,7 @@ static void lower_call_node(ir_node *call, const void *walk_env) {
 			reg = arch_register_for_index(reg_class, j);
 
 			/* only check caller save registers */
-			if (arch_register_type_is(reg, caller_saved)) {
+			if (arch_register_type_is(reg, caller_save)) {
 
 				/* Only create new proj, iff not already present */
 				if (!bitset_is_set(proj_set, bitset_idx)) {

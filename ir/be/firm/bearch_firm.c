@@ -24,6 +24,7 @@
 #include "../bearch.h"
 #include "../besched.h"
 #include "../beutil.h"
+#include "../beabi.h"
 
 #define N_REGS 3
 
@@ -38,7 +39,7 @@ typedef struct {
 static arch_register_t datab_regs[N_REGS];
 
 static arch_register_class_t reg_classes[] = {
-  { "datab", N_REGS, datab_regs },
+  { "datab", N_REGS, NULL, datab_regs },
 };
 
 static ir_op *op_push;
@@ -136,9 +137,10 @@ static void *firm_init(void)
   obstack_init(&obst);
 
   for(k = 0; k < N_CLASSES; ++k) {
-    const arch_register_class_t *cls = &reg_classes[k];
+    arch_register_class_t *cls = &reg_classes[k];
     int i;
 
+	cls->mode = mode_Is;
     for(i = 0; i < cls->n_regs; ++i) {
       int n;
       char buf[8];
@@ -195,6 +197,34 @@ static const arch_register_class_t *firm_get_reg_class(const void *self, int i)
   assert(i >= 0 && i < N_CLASSES);
   return &reg_classes[i];
 }
+
+static const arch_register_class_t *firm_get_reg_class_for_mode(const void *self, const ir_mode *irm)
+{
+	return mode_is_datab(irm) ? &reg_classes[CLS_DATAB] : NULL;
+}
+
+static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi)
+{
+	const arch_register_class_t *cls = &reg_classes[CLS_DATAB];
+	int i, n;
+
+	for(i = 0, n = get_method_n_params(method_type); i < n; ++i) {
+		ir_type *t = get_method_param_type(method_type, i);
+		if(is_Primitive_type(t))
+			be_abi_call_param_reg(abi, i, &cls->regs[i]);
+		else
+			be_abi_call_param_stack(abi, i);
+	}
+
+	for(i = 0, n = get_method_n_ress(method_type); i < n; ++i) {
+		ir_type *t = get_method_res_type(method_type, i);
+		if(is_Primitive_type(t))
+			be_abi_call_res_reg(abi, i, &cls->regs[i]);
+	}
+
+	be_abi_call_set_flags(abi, BE_ABI_NONE);
+}
+
 
 static const arch_register_req_t firm_std_reg_req = {
   arch_register_req_type_normal,
@@ -551,6 +581,8 @@ const arch_isa_if_t firm_isa = {
 	firm_done,
 	firm_get_n_reg_class,
 	firm_get_reg_class,
+	firm_get_reg_class_for_mode,
+	firm_get_call_abi,
 	firm_get_irn_handler,
 	firm_get_code_generator_if,
 	firm_get_list_sched_selector,

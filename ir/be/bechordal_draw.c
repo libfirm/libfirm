@@ -71,6 +71,16 @@ typedef struct {
   FILE *f;
 } ps_plotter_t;
 
+
+/*
+  ____  ____    ____  _       _   _
+ |  _ \/ ___|  |  _ \| | ___ | |_| |_ ___ _ __
+ | |_) \___ \  | |_) | |/ _ \| __| __/ _ \ '__|
+ |  __/ ___) | |  __/| | (_) | |_| ||  __/ |
+ |_|   |____/  |_|   |_|\___/ \__|\__\___|_|
+
+*/
+
 static void ps_begin(plotter_t *_self, const rect_t *vis)
 {
   FILE *f;
@@ -147,6 +157,63 @@ plotter_t *new_plotter_ps(const char *filename)
   p->vtab = &ps_plotter_vtab;
   return p;
 }
+
+/*
+   _____ _ _     _____  ____  _       _   _
+  |_   _(_) | __|__  / |  _ \| | ___ | |_| |_ ___ _ __
+    | | | | |/ /  / /  | |_) | |/ _ \| __| __/ _ \ '__|
+    | | | |   <  / /_  |  __/| | (_) | |_| ||  __/ |
+    |_| |_|_|\_\/____| |_|   |_|\___/ \__|\__\___|_|
+
+*/
+
+typedef struct {
+  base_plotter_t inh;
+  const char *filename;
+  FILE *f;
+} tikz_plotter_t;
+
+static void tikz_begin(plotter_t *_self, const rect_t *vis)
+{
+  FILE *f;
+  decl_self(tikz_plotter_t, _self);
+
+  f = self->f = fopen(self->filename, "wt");
+  fprintf(f, "\\begin{tikzpicture}\n");
+}
+
+static void tikz_setcolor(plotter_t *_self, const color_t *color)
+{
+  decl_self(tikz_plotter_t, _self);
+  set_color(_self, color);
+}
+
+static void tikz_line(plotter_t *_self, int x1, int y1, int x2, int y2)
+{
+  decl_self(tikz_plotter_t, _self);
+  fprintf(self->f, "\t\\draw (%d,%d) -- (%d,%d);\n", x1, y1, x2, y2);
+}
+
+static void tikz_box(plotter_t *_self, const rect_t *rect)
+{
+  decl_self(tikz_plotter_t, _self);
+
+  fprintf(self->f, "\t\\draw (%d,%d) rectangle (%d, %d)\n",
+	  rect->x, rect->y, rect->x + rect->w, rect->y + rect->h);
+}
+
+void tikz_text(plotter_t *_self, int x, int y, const char *str)
+{
+  decl_self(tikz_plotter_t, _self);
+  fprintf(self->f, "\t\\draw (%d,%d) node {%s};\n", x, y, str);
+}
+
+static void tikz_finish(plotter_t *_self)
+{
+  decl_self(tikz_plotter_t, _self);
+  fclose(self->f);
+}
+
 
 extern void plotter_free(plotter_t *self)
 {

@@ -10,6 +10,13 @@
 #include "irnode.h"
 #include "bearch.h"
 
+/**
+ * Get an empty set.
+ * This function always returns the same set.
+ */
+pset *be_empty_set(void);
+
+
 /** Undefine this to disable debugging mode. */
 #define BE_DEBUG 1
 

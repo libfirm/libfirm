@@ -236,8 +236,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 		assert(n_reloads > 0);
 		reloads = obstack_finish(&ob);
-		be_introduce_copies_ignore(senv->chordal_env->dom_front, si->spilled_node,
-				n_reloads, reloads, senv->mem_phis);
+		be_ssa_constr_single_ignore(senv->chordal_env->dom_front, si->spilled_node, n_reloads, reloads, senv->mem_phis);
 		obstack_free(&ob, reloads);
 	}
 
