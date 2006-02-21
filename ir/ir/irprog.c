@@ -253,14 +253,6 @@ void add_irp_mode(ir_mode *mode) {
   ARR_APP1(ir_mode *, irp->modes, mode);
 }
 
-#ifdef DEBUG_libfirm
-int get_irp_new_node_nr() {
-  assert(irp);
-  irp->max_node_nr = irp->max_node_nr + 1;
-  return irp->max_node_nr - 1;
-}
-#endif
-
 /*- File name / executable name or the like -*/
 void   set_irp_prog_name(ident *name) {
   irp->name = name;

@@ -80,7 +80,7 @@ struct ir_prog {
   ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
 
 #ifdef DEBUG_libfirm
-  long max_node_nr;                /**< to generate unique numbers for nodes. */
+  long max_node_nr;                   /**< to generate unique numbers for nodes. */
 #endif
 };
 
@@ -137,8 +137,12 @@ _get_irp_mode(int pos) {
 
 #ifdef DEBUG_libfirm
 /** Returns a new, unique number to number nodes or the like. */
-int get_irp_new_node_nr(void);
-#endif
+static INLINE long
+get_irp_new_node_nr(void) {
+  assert(irp);
+  return irp->max_node_nr++;
+}
+#endif /* DEBUG_libfirm */
 
 static INLINE ir_graph *
 _get_const_code_irg(void) {
