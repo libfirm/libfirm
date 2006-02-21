@@ -40,6 +40,7 @@
 #include "irmode_t.h"
 #include "ircons_t.h"
 #include "irdom_t.h"
+#include "irgwalk.h"
 
 #include "ifconv.h"
 #include "irflag_t.h"
