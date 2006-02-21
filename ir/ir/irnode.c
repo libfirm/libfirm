@@ -30,6 +30,7 @@
 #include "iredges_t.h"
 
 #include "irhooks.h"
+#include "irtools.h"
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */
@@ -465,13 +466,12 @@ void firm_set_irn_section(ir_node *n, struct section *s) {}
 
 
 /* Outputs a unique number for this node */
-long
-get_irn_node_nr(const ir_node *node) {
+long get_irn_node_nr(const ir_node *node) {
   assert(node);
 #ifdef DEBUG_libfirm
   return node->node_nr;
 #else
-  return (long)node;
+  return (long)PTR_TO_INT(node);
 #endif
 }
 
