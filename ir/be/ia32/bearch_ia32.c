@@ -561,6 +561,9 @@ static void ia32_codegen(void *self) {
 
 	cur_reg_set = NULL;
 
+	pmap_destroy(cg->tv_ent);
+	pmap_destroy(cg->types);
+
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
 	free(self);
@@ -592,6 +595,8 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
 	cg->mod        = firm_dbg_register("firm.be.ia32.cg");
 	cg->out        = F;
 	cg->arch_env   = arch_env;
+	cg->types      = pmap_create();
+	cg->tv_ent     = pmap_create();
 
 	isa->num_codegens++;
 

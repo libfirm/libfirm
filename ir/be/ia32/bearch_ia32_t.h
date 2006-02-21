@@ -6,15 +6,17 @@
 #include "ia32_nodes_attr.h"
 
 typedef struct _ia32_code_gen_t {
-	const arch_code_generator_if_t *impl;           /* implementation */
-	ir_graph                       *irg;            /* current irg */
-	FILE                           *out;            /* output file */
-	const arch_env_t               *arch_env;       /* the arch env */
-	set                            *reg_set;        /* set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
-	firm_dbg_module_t              *mod;            /* debugging module */
-	int                             emit_decls;     /* flag indicating if decls were already emitted */
-	int                             has_alloca;     /* indicates whether the irg contains an alloca or not */
-	const ia32_register_req_t     **reg_param_req; /* hold the requirements for the reg param nodes */
+	const arch_code_generator_if_t *impl;          /**< implementation */
+	ir_graph                       *irg;           /**< current irg */
+	FILE                           *out;           /**< output file */
+	const arch_env_t               *arch_env;      /**< the arch env */
+	set                            *reg_set;       /**< set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
+	firm_dbg_module_t              *mod;           /**< debugging module */
+	int                             emit_decls;    /**< flag indicating if decls were already emitted */
+	int                             has_alloca;    /**< indicates whether the irg contains an alloca or not */
+	const ia32_register_req_t     **reg_param_req; /**< hold the requirements for the reg param nodes */
+	pmap                           *types;         /**< A map of modes to primitive types */
+	pmap                           *tv_ent;        /**< A map of entities that store tarvals */
 } ia32_code_gen_t;
 
 typedef struct _ia32_isa_t {
@@ -31,14 +33,14 @@ typedef struct _ia32_irn_ops_t {
 /* this is a struct to minimize the number of parameters
    for transformation walker */
 typedef struct _ia32_transform_env_t {
-	const arch_env_t  *arch_env;   /**<< The arch_env */
-	firm_dbg_module_t *mod;        /**<< The firm debugger */
-	dbg_info          *dbg;        /**<< The node debug info */
-	ir_graph          *irg;        /**<< The irg, the node should be created in */
-	ir_node           *block;      /**<< The block, the node should belong to */
-	ir_node           *irn;        /**<< The irn, to be transformed */
-	ir_mode           *mode;       /**<< The mode of the irn */
-	ia32_code_gen_t   *cg;         /**<< The code generator */
+	const arch_env_t  *arch_env;   /**< The arch_env */
+	firm_dbg_module_t *mod;        /**< The firm debugger */
+	dbg_info          *dbg;        /**< The node debug info */
+	ir_graph          *irg;        /**< The irg, the node should be created in */
+	ir_node           *block;      /**< The block, the node should belong to */
+	ir_node           *irn;        /**< The irn, to be transformed */
+	ir_mode           *mode;       /**< The mode of the irn */
+	ia32_code_gen_t   *cg;         /**< The code generator */
 } ia32_transform_env_t;
 
 #endif /* _BEARCH_IA32_T_H_ */

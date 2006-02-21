@@ -18,11 +18,11 @@
  */
 static ident *unique_id(const char *tag)
 {
-  static unsigned id = 0;
-  char str[256];
+	static unsigned id = 0;
+	char str[256];
 
-  snprintf(str, sizeof(str), tag, ++id);
-  return new_id_from_str(str);
+	snprintf(str, sizeof(str), tag, ++id);
+	return new_id_from_str(str);
 }
 
 
@@ -43,16 +43,63 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	ir_graph *irg   = env->irg;
 	ir_node  *block = env->block;
 
-	if (mode_is_float(mode)) {
-		cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
-
-	}
-	else {
-		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
-	}
-
+	cnst = new_rd_ia32_Const(dbg, irg, block, mode);
 	set_ia32_Const_attr(cnst, env->irn);
 	return cnst;
+}
+
+/**
+ * Get a primitive type for a mode.
+ */
+static ir_type *get_prim_type(pmap *types, ir_mode *mode)
+{
+	pmap_entry *e = pmap_find(types, mode);
+	ir_type *res;
+
+	if (! e) {
+		char buf[64];
+		snprintf(buf, sizeof(buf), "prim_type_%s", get_mode_name(mode));
+		res = new_type_primitive(new_id_from_str(buf), mode);
+		pmap_insert(types, mode, res);
+	}
+	else
+		res = e->value;
+	return res;
+}
+
+/**
+ * Get an entity that is initialized with a tarval
+ */
+static entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
+{
+	tarval *tv    = get_Const_tarval(cnst);
+	pmap_entry *e = pmap_find(cg->tv_ent, tv);
+	entity *res;
+	ir_graph *rem;
+
+	if (! e) {
+		ir_mode *mode = get_irn_mode(cnst);
+		ir_type *tp = get_Const_type(cnst);
+		if (tp == firm_unknown_type)
+			tp = get_prim_type(cg->types, mode);
+
+		res = new_entity(get_glob_type(), unique_id("ia32FloatCnst_%u"), tp);
+
+		set_entity_ld_ident(res, get_entity_ident(res));
+		set_entity_visibility(res, visibility_local);
+		set_entity_variability(res, variability_constant);
+		set_entity_allocation(res, allocation_static);
+
+		 /* we create a new entity here: It's initialization must resist on the
+		    const code irg */
+		rem = current_ir_graph;
+		current_ir_graph = get_const_code_irg();
+		set_atomic_ent_value(res, new_Const_type(tv, tp));
+		current_ir_graph = rem;
+	}
+	else
+		res = e->value;
+	return res;
 }
 
 /**
@@ -66,47 +113,24 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
  */
 static ir_node *gen_Const(ia32_transform_env_t *env) {
 	ir_node *cnst;
-	entity  *ent;
-	ir_type *tp;
 	symconst_symbol sym;
-	dbg_info *dbg   = env->dbg;
-	ir_mode  *mode  = env->mode;
 	ir_graph *irg   = env->irg;
 	ir_node  *block = env->block;
 	ir_node  *node  = env->irn;
-	ir_graph *rem;
+	dbg_info *dbg   = env->dbg;
+	ir_mode  *mode  = env->mode;
 
 	if (mode_is_float(mode)) {
-		tp  = get_Const_type(node);
-		if (tp == firm_unknown_type) {
-			tp = new_type_primitive(unique_id("tp_ia32_float_%u"), mode);
-		}
-
-		ent = new_entity(get_glob_type(), unique_id("ia32FloatCnst_%u"), tp);
-
-		set_entity_ld_ident(ent, get_entity_ident(ent));
-		set_entity_visibility(ent, visibility_local);
-		set_entity_variability(ent, variability_constant);
-		set_entity_allocation(ent, allocation_static);
-
-		 /* we create a new entity here: It's initialization must resist on the
-		    const code irg */
-		rem = current_ir_graph;
-		current_ir_graph = get_const_code_irg();
-		set_atomic_ent_value(ent, copy_const_value(NULL, node));
-		current_ir_graph = rem;
-
-		sym.entity_p = ent;
+		sym.entity_p = get_entity_for_tv(env->cg, node);
 
 		cnst = new_rd_SymConst(dbg, irg, block, sym, symconst_addr_ent);
 		env->irn = cnst;
 		cnst = gen_SymConst(env);
 	}
 	else {
-		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
+		cnst = new_rd_ia32_Const(dbg, irg, block, get_irn_mode(node));
 		set_ia32_Const_attr(cnst, node);
 	}
-
 	return cnst;
 }
 
