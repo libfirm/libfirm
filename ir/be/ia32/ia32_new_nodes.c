@@ -12,7 +12,7 @@
 #ifdef _WIN32
 #include <malloc.h>
 #else
-#include <alloc.h>
+#include <alloca.h>
 #endif
 
 #include <stdlib.h>
@@ -403,6 +403,22 @@ ia32_am_type_t get_ia32_am_support(const ir_node *node) {
 void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->am_support  = am_tp;
+}
+
+/**
+ * Gets the addrmode flavour of an ia32 node
+ */
+ia32_am_flavour_t get_ia32_am_support(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->am_flavour;
+}
+
+/**
+ * Sets the addrmode flavour of an ia32 node
+ */
+void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->am_support  = am_flavour;
 }
 
 /**

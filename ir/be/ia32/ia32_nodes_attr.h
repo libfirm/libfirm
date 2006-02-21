@@ -16,14 +16,26 @@ typedef	enum {
 	ia32_am_Full   = 3    /**<< full addmode support */
 } ia32_am_type_t;
 
+/**
+ * Different AM types:
+ * O - Offset is set
+ * B - Base is set
+ * I - Index is set
+ * S - Scale is set
+ */
+typedef enum {
+	ia32_am_N = 0, ia32_am_O, ia32_am_B, ia32_am_I, ia32_am_IS, ia32_am_OB, ia32_am_OI, ia32_am_OIS, ia32_am_OBIS
+} ia32_am_flavour_t;
+
 typedef struct _ia32_register_req_t {
 	const arch_register_req_t req;
 	int pos;   /**<< in case of "should be same/different" we need to remember the pos to get the irn */
 } ia32_register_req_t;
 
 typedef struct _ia32_attr_t {
-	ia32_op_type_t tp;           /**<< ia32 node type */
-	ia32_am_type_t am_support;   /**<< indicates addrmode type supported by this node */
+	ia32_op_type_t    tp;           /**<< ia32 node type */
+	ia32_am_type_t    am_support;   /**<< indicates addrmode type supported by this node */
+	ia32_am_flavour_t am_flavour;   /**<< the concrete addrmode characteristics */
 
 	struct obstack *am_offs;  /**<< offsets for AddrMode */
 	int             am_scale; /**<< addrmode scale for index register */
