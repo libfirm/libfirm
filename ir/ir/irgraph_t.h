@@ -143,7 +143,7 @@ struct ir_graph {
   irg_edge_info_t edge_info;  /**< edge info for automatic outs */
 #endif
 #ifdef DEBUG_libfirm
-  int graph_nr;             /**< a unique graph number for each graph to make output
+  long graph_nr;              /**< a unique graph number for each graph to make output
                    readable. */
 #endif
 
