@@ -427,7 +427,7 @@ void be_introduce_copies(dom_front_info_t *info, ir_node *orig, int n, ir_node *
 
 void be_introduce_copies_for_set(dom_front_info_t *info, pset *origs, pset *copies) {
 	/* TODO */
-	assert(0 && "NYI);
+	assert(0 && "NYI");
 	exit(0xDeadBeef);
 }
 
