@@ -120,7 +120,7 @@ struct entity {
 
 
 #ifdef DEBUG_libfirm
-  int nr;             /**< a unique node number for each node to make output
+  long nr;             /**< a unique node number for each node to make output
                            readable. */
 # endif /* DEBUG_libfirm */
 };
