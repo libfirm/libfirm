@@ -1114,7 +1114,7 @@ int   is_Pointer_type            (const ir_type *pointer);
 
 /** Returns the first pointer type that has as points_to tp.
  *  Not efficient: O(#types).
- *  If not found returns unknown_type. */
+ *  If not found returns firm_unknown_type. */
 ir_type *find_pointer_type_to_type (ir_type *tp);
 
 /**
@@ -1123,7 +1123,7 @@ ir_type *find_pointer_type_to_type (ir_type *tp);
  * Primitive types are types that represent indivisible data values that
  * map directly to modes.  They don't have a private attribute.  The
  * important information they carry is held in the common mode field.
-*/
+ */
 /** Creates a new primitive type. */
 ir_type *new_type_primitive (ident *name, ir_mode *mode);
 
@@ -1135,7 +1135,7 @@ int  is_Primitive_type  (const ir_type *primitive);
 
 
 /**
- * @page none_type
+ * @page none_type The None type
  *
  *  This type is an auxiliary type dedicated to support type analyses.
  *

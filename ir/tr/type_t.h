@@ -145,7 +145,7 @@ struct ir_type {
   /* ------------- fields for analyses ---------------*/
 
 #ifdef DEBUG_libfirm
-  int nr;             /**< a unique node number for each node to make output
+  long nr;              /**< a unique node number for each node to make output
                            readable. */
 #endif
   tp_attr attr;            /* type kind specific fields. This must be the last

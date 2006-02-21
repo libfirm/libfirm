@@ -67,6 +67,7 @@
 # include "mangle.h"
 # include "tv_t.h"
 # include "irhooks.h"
+# include "irtools.h"
 
 # include "array.h"
 
@@ -77,11 +78,6 @@
 ir_type *firm_none_type;    ir_type *get_none_type(void)    { return firm_none_type;    }
 ir_type *firm_unknown_type; ir_type *get_unknown_type(void) { return firm_unknown_type; }
 
-
-#ifdef DEBUG_libfirm
-/* Returns a new, unique number to number nodes or the like. */
-int get_irp_new_node_nr(void);
-#endif
 
 /* Suffixes added to types used for pass-by-value representations. */
 static ident *value_params_suffix = NULL;
@@ -241,7 +237,7 @@ long get_type_nr(const ir_type *tp) {
 #ifdef DEBUG_libfirm
   return tp->nr;
 #else
-  return (long)tp;
+  return (long)PTR_TO_INT(tp);
 #endif
 }
 
