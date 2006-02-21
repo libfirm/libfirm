@@ -32,6 +32,7 @@
 #include "mangle.h"
 #include "irouts.h"
 #include "irhooks.h"
+#include "irtools.h"
 #include "irgwalk.h"
 #include "iredges_t.h"
 #include "type_t.h"
@@ -365,14 +366,12 @@ int
 }
 
 /* Outputs a unique number for this node */
-
-long
-get_irg_graph_nr(ir_graph *irg) {
+long get_irg_graph_nr(ir_graph *irg) {
   assert(irg);
 #ifdef DEBUG_libfirm
   return irg->graph_nr;
 #else
-  return (long)irg;
+  return (long)PTR_TO_INT(irg);
 #endif
 }
 
