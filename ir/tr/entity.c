@@ -267,7 +267,7 @@ get_entity_nr(entity *ent) {
 #ifdef DEBUG_libfirm
   return ent->nr;
 #else
-  return 0;
+  return (long)PTR_TO_INT(ent);
 #endif
 }
 
