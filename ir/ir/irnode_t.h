@@ -250,7 +250,7 @@ struct ir_node {
   /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
 	int out_valid;
-  int node_nr;             /**< a unique node number for each node to make output
+  long node_nr;            /**< a unique node number for each node to make output
 			      readable. */
 #endif
   /* ------- For analyses -------- */
