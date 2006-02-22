@@ -35,6 +35,7 @@
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
+#include "irgwalk.h"
 #include "iropt_t.h"
 #include "irgmod.h"
 #include "irmode_t.h"
