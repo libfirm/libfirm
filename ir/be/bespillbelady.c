@@ -4,8 +4,6 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
- * NOTE: Comments my be (partially) wrong, since there was a major bug
- *       (spilling of phis, prespill) whose fixing changed a lot.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -50,7 +48,6 @@
 static firm_dbg_module_t *dbg = NULL;
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#undef SINGLE_START_PROJS
 
 typedef struct _workset_t workset_t;
 
@@ -76,10 +73,6 @@ struct _workset_t {
 	int len;			/**< current length */
 	loc_t vals[1];		/**< inlined array of the values/distances in this working set */
 };
-
-typedef struct _block_info_t {
-	workset_t *ws_start, *ws_end;
-} block_info_t;
 
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
@@ -219,13 +212,28 @@ static INLINE int workset_contains(const workset_t *ws, const ir_node *val) {
 #define workset_get_val(ws, i) ((ws)->vals[i].irn)
 #define workset_sort(ws) qsort((ws)->vals, (ws)->len, sizeof((ws)->vals[0]), loc_compare);
 
+typedef struct _block_info_t {
+	workset_t *ws_start, *ws_end;
+} block_info_t;
+
+
+static INLINE void *new_block_info(struct obstack *ob) {
+	block_info_t *res = obstack_alloc(ob, sizeof(*res));
+	res->ws_start = NULL;
+	res->ws_end = NULL;
+
+	return res;
+}
+
+#define get_block_info(blk)			((block_info_t *)get_irn_link(blk))
+#define set_block_info(blk, info)	set_irn_link(blk, info)
 
 static int is_mem_phi(const ir_node *irn, void *data) {
 	workset_t *sws;
 	ir_node *blk = get_nodes_block(irn);
 
 	DBG((dbg, DBG_SPILL, "Is %+F a mem-phi?\n", irn));
-	sws = ((block_info_t *) get_irn_link(blk))->ws_start;
+	sws = get_block_info(blk)->ws_start;
 	DBG((dbg, DBG_SPILL, "  %d\n", !workset_contains(sws, irn)));
 	return !workset_contains(sws, irn);
 }
@@ -237,84 +245,6 @@ static int is_mem_phi(const ir_node *irn, void *data) {
 #define get_distance(bel, from, from_step, def, skip_from_uses) \
 		((arch_irn_is_ignore(bel->arch, def) ) ? 0 : be_get_next_use(bel->uses, from, from_step, def, skip_from_uses))
 
-
-/**
- * Collects all values live-in at block @p blk and all phi results in this block.
- * Then it adds the best values (at most n_regs) to the blocks start_workset.
- * The phis among the remaining values get spilled: Introduce psudo-copies of
- *  their args to break interference and make it possible to spill them to the
- *  same spill slot.
- */
-static void compute_block_start_info(ir_node *blk, void *env) {
-	belady_env_t *bel = env;
-	block_info_t *blk_info;
-	ir_node *irn, *first;
-	irn_live_t *li;
-	int i, count, ws_count;
-	loc_t loc, *starters;
-	ir_graph *irg = get_irn_irg(blk);
-	struct obstack ob;
-
-	obstack_init(&ob);
-
-	/* Get all values living at the block start */
-	DBG((dbg, DBG_START, "Living at start of %+F:\n", blk));
-	first = sched_first(blk);
-	count = 0;
-	sched_foreach(blk, irn)
-		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, -1) == bel->cls) {
-			loc.irn = irn;
-			loc.time = get_distance(bel, first, 0, irn, 0);
-			obstack_grow(&ob, &loc, sizeof(loc));
-			DBG((dbg, DBG_START, "    %+F:\n", irn));
-			count++;
-		} else
-			break;
-
-	live_foreach(blk, li)
-		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, -1) == bel->cls) {
-			loc.irn = (ir_node *)li->irn;
-			loc.time = get_distance(bel, first, 0, li->irn, 0);
-			obstack_grow(&ob, &loc, sizeof(loc));
-			DBG((dbg, DBG_START, "    %+F:\n", irn));
-			count++;
-		}
-	starters = obstack_finish(&ob);
-
-	/* Sort all values */
-	qsort(starters, count, sizeof(starters[0]), loc_compare);
-
-	/* Create the start workset for this block. Copy the best ones from starters */
-	blk_info = obstack_alloc(&bel->ob, sizeof(*blk_info));
-	set_irn_link(blk, blk_info);
-
-	ws_count = MIN(count, bel->n_regs);
-	blk_info->ws_start = new_workset(&bel->ob, bel);
-	workset_bulk_fill(blk_info->ws_start, ws_count, starters);
-
-	/* Spill the phis among the remaining values */
-	for (i=ws_count; i<count; ++i) {
-		int o, max;
-
-		irn = starters[i].irn;
-		if (!is_Phi(irn) || get_nodes_block(irn) != blk)
-			continue;
-
-		DBG((dbg, DBG_START, "For %+F:\n", irn));
-
-		for (max=get_irn_arity(irn), o=0; o<max; ++o) {
-			ir_node *arg = get_irn_n(irn, o);
-			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(irn), o);
-			ir_node *cpy = be_new_Copy(bel->cls, irg, pred_block, arg);
-			pset_insert_ptr(bel->copies, cpy);
-			DBG((dbg, DBG_START, "    place a %+F of %+F in %+F\n", cpy, arg, pred_block));
-			sched_add_before(pred_block, cpy);
-			set_irn_n(irn, o, cpy);
-		}
-	}
-
-	obstack_free(&ob, NULL);
-}
 
 /**
  * Performs the actions neccessary to grant the request that:
@@ -372,7 +302,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 			ir_node *irn = ws->vals[i].irn;
 			if (!pset_find_ptr(bel->used, irn)) {
 				ir_node *curr_bb = get_nodes_block(bel->instr);
-				workset_t *ws_start = ((block_info_t *) get_irn_link(curr_bb))->ws_start;
+				workset_t *ws_start = get_block_info(curr_bb)->ws_start;
 				workset_remove(ws_start, irn);
 
 				DBG((dbg, DBG_DECIDE, "    dispose %+F dumb\n", irn));
@@ -390,6 +320,118 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	workset_bulk_insert(bel->ws, demand, to_insert);
 }
 
+static void belady(ir_node *blk, void *env);
+
+/**
+ * Collects all values live-in at block @p blk and all phi results in this block.
+ * Then it adds the best values (at most n_regs) to the blocks start_workset.
+ * The phis among the remaining values get spilled: Introduce psudo-copies of
+ *  their args to break interference and make it possible to spill them to the
+ *  same spill slot.
+ */
+static block_info_t *compute_block_start_info(ir_node *blk, void *env) {
+	belady_env_t *bel = env;
+	ir_node *irn, *first;
+	irn_live_t *li;
+	int i, count, ws_count;
+	loc_t loc, *starters;
+	ir_graph *irg = get_irn_irg(blk);
+	struct obstack ob;
+	block_info_t *res = get_block_info(blk);
+
+	/* Have we seen this block before? */
+	if (res)
+		return res;
+
+	/* Create the block info for this block. */
+	res = new_block_info(&bel->ob);
+	set_block_info(blk, res);
+
+
+	/* Get all values living at the block start sorted by next use*/
+	obstack_init(&ob);
+
+	DBG((dbg, DBG_START, "Living at start of %+F:\n", blk));
+	first = sched_first(blk);
+	count = 0;
+	sched_foreach(blk, irn)
+		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, -1) == bel->cls) {
+			loc.irn = irn;
+			loc.time = get_distance(bel, first, 0, irn, 0);
+			obstack_grow(&ob, &loc, sizeof(loc));
+			DBG((dbg, DBG_START, "    %+F:\n", irn));
+			count++;
+		} else
+			break;
+
+	live_foreach(blk, li)
+		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, -1) == bel->cls) {
+			loc.irn = (ir_node *)li->irn;
+			loc.time = get_distance(bel, first, 0, li->irn, 0);
+			obstack_grow(&ob, &loc, sizeof(loc));
+			DBG((dbg, DBG_START, "    %+F:\n", irn));
+			count++;
+		}
+
+	starters = obstack_finish(&ob);
+	qsort(starters, count, sizeof(starters[0]), loc_compare);
+
+
+	/* If we have only one predecessor, we want the start_set of blk to be the end_set of pred */
+	if (get_irn_arity(blk) == 1 && blk != get_irg_start_block(get_irn_irg(blk))) {
+		ir_node *pred_blk       = get_Block_cfgpred_block(blk, 0);
+		block_info_t *pred_info = get_block_info(pred_blk);
+
+		/* if pred block has not been processed yet, do it now */
+		if (! pred_info) {
+			belady(pred_blk, bel);
+			pred_info = get_block_info(pred_blk);
+		}
+
+		/* now we have an end_set of pred */
+		assert(pred_info->ws_end && "The recursive call (above) is supposed to compute an end_set");
+		res->ws_start = workset_clone(&bel->ob, pred_info->ws_end);
+
+	} else
+
+	/* Else we want the start_set to be the values used 'the closest' */
+	{
+		/* Copy the best ones from starters to start workset */
+		ws_count = MIN(count, bel->n_regs);
+		res->ws_start = new_workset(&bel->ob, bel);
+		workset_bulk_fill(res->ws_start, ws_count, starters);
+	}
+
+
+	/* The phis of this block which are not in the start set have to be spilled later.
+	 * Therefore we add temporary copies in the pred_blocks so the spills can spill
+	 * into the same spill slot.
+	 * After spilling these copies get deleted. */
+	for (i=workset_get_length(res->ws_start); i<count; ++i) {
+		int o, max;
+
+		irn = starters[i].irn;
+		if (!is_Phi(irn) || get_nodes_block(irn) != blk)
+			continue;
+
+		DBG((dbg, DBG_START, "For %+F:\n", irn));
+
+		for (max=get_irn_arity(irn), o=0; o<max; ++o) {
+			ir_node *arg = get_irn_n(irn, o);
+			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(irn), o);
+			ir_node *cpy = be_new_Copy(bel->cls, irg, pred_block, arg);
+			pset_insert_ptr(bel->copies, cpy);
+			DBG((dbg, DBG_START, "    place a %+F of %+F in %+F\n", cpy, arg, pred_block));
+			sched_add_before(pred_block, cpy);
+			set_irn_n(irn, o, cpy);
+		}
+	}
+
+	obstack_free(&ob, NULL);
+	return res;
+}
+
+
 /**
  * For the given block @p blk, decide for each values
  * whether it is used from a register or is reloaded
@@ -400,17 +442,20 @@ static void belady(ir_node *blk, void *env) {
 	workset_t *new_vals;
 	ir_node *irn;
 	int iter;
+	block_info_t *blk_info;
 
-#ifdef SINGLE_START_PROJS
-	ir_node *start_blk = get_irg_start_block(get_irn_irg(blk));
-#endif
-	block_info_t *blk_info = get_irn_link(blk);
+	/* Don't do a block twice */
+	if (get_block_info(blk))
+		return;
+
+	/* get the starting workset for this block */
+	blk_info = compute_block_start_info(blk, bel);
 
 	DBG((dbg, DBG_DECIDE, "\n"));
 	DBG((dbg, DBG_DECIDE, "Decide for %+F\n", blk));
 
 	workset_copy(bel->ws, blk_info->ws_start);
-	DBG((dbg, DBG_WSETS, "Initial start workset for %+F:\n", blk));
+	DBG((dbg, DBG_WSETS, "Start workset for %+F:\n", blk));
 	workset_foreach(bel->ws, irn, iter)
 		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
 
@@ -423,14 +468,6 @@ static void belady(ir_node *blk, void *env) {
 		assert(workset_get_length(bel->ws) <= bel->n_regs && "Too much values in workset!");
 
 
-#ifdef SINGLE_START_PROJS
-		if (is_Phi(irn) ||
-			(is_Proj(irn) && blk!=start_blk) ||
-			(get_irn_mode(irn) == mode_T && blk==start_blk)) {
-			DBG((dbg, DBG_DECIDE, "  ...%+F skipped\n", irn));
-			continue;
-		}
-#else
 		/* projs are handled with the tuple value.
 		 * Phis are no real instr (see insert_starters)
 		 * instr_nr does not increase */
@@ -438,7 +475,6 @@ static void belady(ir_node *blk, void *env) {
 			DBG((dbg, DBG_DECIDE, "  ...%+F skipped\n", irn));
 			continue;
 		}
-#endif
 		DBG((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
 		/* set instruction in the workset */
@@ -466,9 +502,6 @@ static void belady(ir_node *blk, void *env) {
 
 	/* Remember end-workset for this block */
 	blk_info->ws_end = workset_clone(&bel->ob, bel->ws);
-	DBG((dbg, DBG_WSETS, "Start workset for %+F:\n", blk));
-	workset_foreach(blk_info->ws_start, irn, iter)
-		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
 	DBG((dbg, DBG_WSETS, "End workset for %+F:\n", blk));
 	workset_foreach(blk_info->ws_end, irn, iter)
 		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
@@ -487,12 +520,12 @@ static void fix_block_borders(ir_node *blk, void *env) {
 	DBG((dbg, DBG_FIX, "\n"));
 	DBG((dbg, DBG_FIX, "Fixing %+F\n", blk));
 
-	wsb = ((block_info_t *)get_irn_link(blk))->ws_start;
+	wsb = get_block_info(blk)->ws_start;
 
 	/* process all pred blocks */
 	for (i=0, max=get_irn_arity(blk); i<max; ++i) {
 		ir_node *irnb, *irnp, *pred = get_Block_cfgpred_block(blk, i);
-		workset_t *wsp = ((block_info_t *)get_irn_link(pred))->ws_end;
+		workset_t *wsp = get_block_info(pred)->ws_end;
 
 		DBG((dbg, DBG_FIX, "  Pred %+F\n", pred));
 
@@ -597,14 +630,12 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "running on register class: %s\n", bel.cls->name));
 
 	/* do the work */
-	irg_block_walk_graph(chordal_env->irg, compute_block_start_info, NULL, &bel);
-	irg_block_walk_graph(chordal_env->irg, belady, NULL, &bel);
+	be_clear_links(chordal_env->irg);
+	irg_block_walk_graph(chordal_env->irg, NULL, belady, &bel);
 	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &bel);
 	be_insert_spills_reloads(bel.senv, bel.reloads);
 	remove_unused_reloads(chordal_env->irg, &bel);
 	remove_copies(&bel);
-
-
 
 	/* clean up */
 	del_pset(bel.reloads);
