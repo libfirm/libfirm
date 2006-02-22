@@ -217,6 +217,17 @@ struct _firm_parameter_t {
 
 typedef struct _firm_parameter_t firm_parameter_t;
 
+#define libFirm_VERSION_MAJOR 0
+#define libFirm_VERSION_MINOR 4
+
+/**
+ * The Firm version number.
+ */
+typedef struct _firm_version_t {
+  unsigned major;
+  unsigned minor;
+} firm_version_t;
+
 /**
  * Initialize the firm library.
  *
@@ -234,6 +245,12 @@ void init_firm(const firm_parameter_t *params);
  * Frees all memory occupied by the firm library.
  */
 void free_firm(void);
+
+/**
+ * Returns the libFirm version number.
+ * If statically linked, always libFirm_VERSION_MAJOR, libFirm_VERSION_MINOR
+ */
+void firm_get_version(firm_version_t *version);
 
 #ifdef __cplusplus
 }
