@@ -311,12 +311,23 @@ static int reassoc_Mul(ir_node **node)
       mode  = get_mode_from_ops(in[0], in[1]);
       irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
-      DBG((dbg, LEVEL_5, "Applied: (%n .%s. %n) %n %n => (%n %n %n) .%s. (%n %n %n)\n",
-          t1, get_op_name(op), t2, n, c, t1, n, c, get_op_name(op), t2, n, c));
-      exchange(n, irn);
-		  *node = irn;
+      /* In some cases it might happen that the new irn is equal the old one, for
+       * instance in:
+       * (x - 1) * y == x * y - y
+       * will be transformed back by simpler optimization
+       * We could switch simple optimizations off, but this only happens iff y
+       * is a loop-invariant expreassion and that it is not clear if the new form
+       * is better.
+       * So, we let the old one.
+       */
+      if (irn != n) {
+        DBG((dbg, LEVEL_5, "Applied: (%n .%s. %n) %n %n => (%n %n %n) .%s. (%n %n %n)\n",
+            t1, get_op_name(op), t2, n, c, t1, n, c, get_op_name(op), t2, n, c));
+        exchange(n, irn);
+		    *node = irn;
 
-      return 1;
+        return 1;
+      }
     }
   }
   return 0;
