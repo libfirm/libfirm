@@ -32,12 +32,25 @@ my $target_c   = $target_dir."/gen_".$arch."_regalloc_if.c";
 my $target_h   = $target_dir."/gen_".$arch."_regalloc_if.h";
 my $target_h_t = $target_dir."/gen_".$arch."_regalloc_if_t.h";
 
-# helper function
-my @rt = ("arch_register_type_none",
-          "arch_register_type_write_invariant",
-          "arch_register_type_caller_saved",
-          "arch_register_type_callee_saved",
-          "arch_register_type_ignore");
+# helper array
+my @rt = ("arch_register_type_none",           # 0
+          "arch_register_type_caller_save",    # 1
+          "arch_register_type_callee_save",    # 2
+		  "",
+		  "arch_register_type_ignore",         # 4
+		  "",
+		  "",
+		  "",
+          "arch_register_type_sp",             # 8
+		  "",
+		  "",
+		  "",
+		  "",
+		  "",
+		  "",
+		  "",
+		  "arch_register_type_bp"              # 16
+		  );
 
 # stacks for output
 my @obst_regtypes;     # stack for the register type variables
@@ -64,13 +77,15 @@ my %reg2class;
 $tmp = "/* Default NONE register requirements */\n";
 $tmp .= "const $arch\_register_req_t $arch\_default_req_none = {\n";
 $tmp .= "  {\n";
-$tmp .= "    arch_register_req_type_none,\n";
-$tmp .= "    NULL,\n";
-$tmp .= "    NULL,\n";
-$tmp .= "    NULL,\n";
-$tmp .= "    NULL\n";
+$tmp .= "    arch_register_req_type_none,  /* register type  */\n";
+$tmp .= "    NULL,                         /* register class */\n";
+$tmp .= "    NULL,                         /* limit function */\n";
+$tmp .= "    NULL,                         /* limit environment */\n";
+$tmp .= "    NULL,                         /* node for same */\n";
+$tmp .= "    NULL                          /* node for different */\n";
 $tmp .= "  },\n";
-$tmp .= "  0\n";
+$tmp .= "  0,                              /* same pos */\n";
+$tmp .= "  0                               /* different pos */\n";
 $tmp .= "};\n\n";
 push(@obst_req, $tmp);
 push(@obst_header_all, "extern const $arch\_register_req_t $arch\_default_req_none;\n");
@@ -78,6 +93,7 @@ push(@obst_header_all, "extern const $arch\_register_req_t $arch\_default_req_no
 push(@obst_classdef, "#define N_CLASSES ".scalar(keys(%reg_classes))."\n");
 
 my $global_projnum_idx = 0;
+my $class_mode;
 
 # generate register type and class variable, init function and default requirements
 foreach my $class_name (keys(%reg_classes)) {
@@ -87,12 +103,13 @@ foreach my $class_name (keys(%reg_classes)) {
 	$class_name = $arch."_".$class_name;
 	$numregs    = "N_".$class_name."_REGS";
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
+	$class_mode = pop(@class)->{"mode"};
 
 	push(@obst_regtypes, "#define $numregs ".($#class + 1)."\n");
 	push(@obst_regtypes, "arch_register_t ".$class_name."_regs[$numregs];\n\n");
 
 	push(@obst_classdef, "#define CLASS_$class_name $class_idx\n");
-	push(@obst_regclasses, "{ \"$class_name\", $numregs, ".$class_name."_regs }");
+	push(@obst_regclasses, "{ \"$class_name\", $numregs, NULL, ".$class_name."_regs }");
 
 	# there is a default NORMAL requirement for each class
 	$tmp  = "/* Default NORMAL register requirements for class $class_name */\n";
@@ -100,17 +117,21 @@ foreach my $class_name (keys(%reg_classes)) {
 	$tmp .= "  {\n";
 	$tmp .= "    arch_register_req_type_normal,\n";
 	$tmp .= "    $class_ptr,\n";
-	$tmp .= "    NULL,\n";
-	$tmp .= "    NULL,\n";
-	$tmp .= "    NULL\n";
+	$tmp .= "    NULL,                    /* limit function */ \n";
+	$tmp .= "    NULL,                    /* limit environment */\n";
+	$tmp .= "    NULL,                    /* node for same */\n";
+	$tmp .= "    NULL                     /* node for different */\n";
 	$tmp .= "  },\n";
-	$tmp .= "  0\n";
+	$tmp .= "  0,                         /* same pos */\n";
+	$tmp .= "  0                          /* different pos */\n";
 	$tmp .= "};\n\n";
 	push(@obst_req, $tmp);
 	push(@obst_header_all, "extern const $arch\_register_req_t $arch\_default_req_$class_name;\n");
 
 	my $idx = 0;
 	push(@obst_reginit, "  /* Init of all registers in class '$class_name' */\n\n");
+	push(@obst_reginit, "  /* set largest possible mode for '$class_name' */\n");
+	push(@obst_reginit, "  $arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n\n");
 	foreach (@class) {
 		# For each class we build for each of it's member registers a limit function
 		# which limits the class to this particular register. We also build the
@@ -137,10 +158,12 @@ foreach my $class_name (keys(%reg_classes)) {
 		$tmp .= "    arch_register_req_type_limited,\n";
 		$tmp .= "    $class_ptr,\n";
 		$tmp .= "    $limit_func_name,\n";
-		$tmp .= "    NULL,\n";
-		$tmp .= "    NULL\n";
+		$tmp .= "    NULL,                     /* limit environment */\n";
+		$tmp .= "    NULL,                     /* node for same */\n";
+		$tmp .= "    NULL                      /* node for different */\n";
 		$tmp .= "  },\n";
-		$tmp .= "  0\n";
+		$tmp .= "  0,                          /* same pos */\n";
+		$tmp .= "  0                           /* different pos */\n";
 		$tmp .= "};\n\n";
 		push(@obst_req, $tmp);
 		push(@obst_header_all,"extern const $arch\_register_req_t $arch\_default_req_$class_name\_".$_->{"name"}.";\n");
@@ -282,6 +305,7 @@ print OUT<<EOF;
 #include "gen_$arch\_regalloc_if.h"
 #include "bearch_ia32_t.h"   /* we need this to put the caller saved registers into the isa set */
 #include "ia32_map_regs.h"
+#include "irmode.h"
 
 EOF
 
@@ -375,26 +399,35 @@ sub generate_requirements {
 		}
 		else {
 			my @req_type_mask;
-			my ($class, $has_limit, $pos, $same) = build_subset_class_func($n, $op, $idx, (($inout eq "in") ? 1 : 0), $reqs[$idx]);
+			my ($class, $has_limit, $same_pos, $different_pos) = build_subset_class_func($n, $op, $idx, (($inout eq "in") ? 1 : 0), $reqs[$idx]);
+
 			if (!defined($class)) {
 				die("Could not build subset for ".uc($inout)." requirements '$op' pos $idx ... exiting.\n");
 			}
+
 			if ($has_limit) {
 				push(@req_type_mask, "arch_register_req_type_limited");
 			}
-			if (defined($pos)) {
-				push(@req_type_mask, "arch_register_req_type_should_be_".($same ? "same" : "different"));
+			if (defined($same_pos)) {
+				push(@req_type_mask, "arch_register_req_type_should_be_same");
 			}
+			if (defined($different_pos)) {
+				push(@req_type_mask, "arch_register_req_type_should_be_different");
+			}
+
 			$tmp  .= "&_".$op."_reg_req_$inout\_$idx\n";
-			$tmp2 .= " {\n";
+			$tmp2 .= "{\n";
 			$tmp2 .= "  {\n";
 			$tmp2 .= "    ".join(" | ", @req_type_mask).",\n";
 			$tmp2 .= "    &$arch\_reg_classes[CLASS_$arch\_".$class."],\n";
 			$tmp2 .= "    ".($has_limit ? "limit_reg_".$op."_$inout\_".$idx : "NULL").",\n";
-			$tmp2 .= "    NULL,\n";
-			$tmp2 .= "    NULL\n";
+			$tmp2 .= "    NULL,        /* limit environment */\n";
+			$tmp2 .= "    NULL,        /* same node */\n";
+			$tmp2 .= "    NULL         /* different node */\n";
 			$tmp2 .= "  },\n";
-			$tmp2 .= "  ".(defined($pos) ? $pos : "0")."\n};\n";
+			$tmp2 .= "  ".(defined($same_pos) ? $same_pos : "0").",\n";
+			$tmp2 .= "  ".(defined($different_pos) ? $different_pos : "0")."\n";
+			$tmp2 .= "};\n";
 
 			push(@obst_req, $tmp2."\n");
 			push(@obst_header_all, "extern const $arch\_register_req_t _".$op."_reg_req_$inout\_$idx;\n");
@@ -442,20 +475,20 @@ sub get_reg_index {
 #         pos which corresponds to in/out reference position or undef
 ###
 sub build_subset_class_func {
-	my $neg   = undef;
-	my $class = undef;
+	my $neg           = undef;
+	my $class         = undef;
+	my $has_limit     = 0;
+	my $same_pos      = undef;
+	my $different_pos = undef;
 	my $temp;
-	my $has_limit = 0;
+	my @temp_obst;
+
 
 	# build function header
-	my $n    = shift;
-	my $op   = shift;
-	my $idx  = shift;
-	my $in   = shift;
-	my $pos  = undef;
-	my $same = 1;
-
-	my @temp_obst;
+	my $n   = shift;
+	my $op  = shift;
+	my $idx = shift;
+	my $in  = shift;
 
 	my $outin = $in ? "out" : "in";
 	my @regs  = split(/ /, shift);
@@ -465,13 +498,19 @@ sub build_subset_class_func {
 	# set/unset registers
 CHECK_REQS: foreach (@regs) {
 		if (/(!)?$outin\_r(\d+)/) {
-			if (defined($pos)) {
-				print STDERR "Multiple in/out references in one requirement not allowed.\n";
+			if (($1 && defined($different_pos)) || defined($same_pos)) {
+				print STDERR "Multiple in/out references of same type in one requirement not allowed.\n";
 				return (undef, undef, undef, undef);
 			}
-			$same  = 0 if ($1);
+
+			if ($1) {
+				$different_pos = $in ? -$2 : $2 - 1;
+			}
+			else {
+				$same_pos = $in ? -$2 : $2 - 1;
+			}
+
 			$class = $idx_class[$2 - 1];
-			$pos   = $in ? -$2 : $2 - 1;
 			next CHECK_REQS;
 		}
 
@@ -543,5 +582,5 @@ CHECK_REQS: foreach (@regs) {
 		push(@obst_limit_func, "}\n\n");
 	}
 
-	return ($class, $has_limit, $pos, $same);
+	return ($class, $has_limit, $same_pos, $different_pos);
 }
