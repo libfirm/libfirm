@@ -7,8 +7,8 @@
  * Implementation of the RA-Interface for an external, (non-SSA) register allocator.
  *
  * The external register allocator is a program taking 2 arguments:
- *   1) An input file in which the cfg is defined
- *   2) An output file containing the essential actions performed during allocation
+ *   1) An input file in which the interference graph is defined
+ *   2) An output file containing the instructions to perform
  *
 
 
@@ -200,9 +200,7 @@ static void handle_constraints_walker(ir_node *irn, void *env) {
 			set_irn_n(irn, pos, cpy);
 
 			/* set an out constraint for the copy */
-			/* TODO: Insert right code here. *
-			be_set_constr_single_reg(cpy, -1, &reg);
-			*/
+			be_set_constr_limited(cpy, -1, &req);
 		}
 	}
 }
