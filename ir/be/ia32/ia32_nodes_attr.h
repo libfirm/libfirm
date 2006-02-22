@@ -29,7 +29,8 @@ typedef enum {
 
 typedef struct _ia32_register_req_t {
 	const arch_register_req_t req;
-	int pos;   /**<< in case of "should be same/different" we need to remember the pos to get the irn */
+	int same_pos;        /**<< in case of "should be same" we need to remember the pos to get the irn */
+	int different_pos;   /**<< in case of "should be different" we need to remember the pos to get the irn */
 } ia32_register_req_t;
 
 typedef struct _ia32_attr_t {

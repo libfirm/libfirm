@@ -150,11 +150,11 @@ static void dump_reg_req(FILE *F, ir_node *n, const ia32_register_req_t **reqs, 
 			}
 
 			if (reqs[i]->req.type & arch_register_req_type_should_be_same) {
-				ir_fprintf(F, " same as %+F", get_irn_n(n, reqs[i]->pos));
+				ir_fprintf(F, " same as %+F", get_irn_n(n, reqs[i]->same_pos));
 			}
 
 			if (reqs[i]->req.type & arch_register_req_type_should_be_different) {
-				ir_fprintf(F, " different from %+F", get_irn_n(n, reqs[i]->pos));
+				ir_fprintf(F, " different from %+F", get_irn_n(n, reqs[i]->different_pos));
 			}
 
 			fprintf(F, "\n");

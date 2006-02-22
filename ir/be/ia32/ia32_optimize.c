@@ -157,7 +157,7 @@ void ia32_place_consts(ir_node *irn, void *env) {
 	tenv.block    = get_nodes_block(irn);
 	tenv.cg       = cg;
 	tenv.irg      = cg->irg;
-	tenv.mod      = firm_dbg_register("ir.be.ia32.optimize");
+	tenv.mod      = firm_dbg_register("firm.be.ia32.optimize");
 
 	/* Loop over all predecessors and check for Sym/Const nodes */
 	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {

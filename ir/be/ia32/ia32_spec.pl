@@ -80,34 +80,38 @@ $arch = "ia32";
 
 # register types:
 #   0 - no special type
-#   1 - write invariant (writes to this register doesn't change it's content)
-#   2 - caller save (register must be saved by the caller of a function)
-#   3 - callee save (register must be saved by the called function)
+#   1 - caller save (register must be saved by the caller of a function)
+#   2 - callee save (register must be saved by the called function)
 #   4 - ignore (do not assign this register)
+#   8 - this is the stack pointer
+#  16 - this is the base pointer
 # NOTE: Make sure to list the registers returning the call-result before all other
 #       caller save registers and in the correct order, otherwise it will break
 #       the magic!
+# Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
   "gp" => [
-            { "name" => "eax", "type" => 2 },
-            { "name" => "edx", "type" => 2 },
-            { "name" => "ebx", "type" => 3 },
-            { "name" => "ecx", "type" => 2 },
-            { "name" => "esi", "type" => 3 },
-            { "name" => "edi", "type" => 3 },
-            { "name" => "ebp", "type" => 3 },
-            { "name" => "esp", "type" => 4 }, # we don't want esp to be assigned
-            { "name" => "xxx", "type" => 4 }  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "eax", "type" => 1  },
+            { "name" => "edx", "type" => 1  },
+            { "name" => "ebx", "type" => 2  },
+            { "name" => "ecx", "type" => 1  },
+            { "name" => "esi", "type" => 2  },
+            { "name" => "edi", "type" => 2  },
+            { "name" => "ebp", "type" => 16 },
+            { "name" => "esp", "type" => 8  },
+            { "name" => "xxx", "type" => 4  },  # we need a dummy register for NoReg and Unknown nodes
+			{ "mode" => "mode_P" }
           ],
   "fp" => [
-            { "name" => "xmm0", "type" => 2 },
-            { "name" => "xmm1", "type" => 2 },
-            { "name" => "xmm2", "type" => 2 },
-            { "name" => "xmm3", "type" => 2 },
-            { "name" => "xmm4", "type" => 2 },
-            { "name" => "xmm5", "type" => 2 },
-            { "name" => "xmm6", "type" => 2 },
-            { "name" => "xmm7", "type" => 2 }
+            { "name" => "xmm0", "type" => 1 },
+            { "name" => "xmm1", "type" => 1 },
+            { "name" => "xmm2", "type" => 1 },
+            { "name" => "xmm3", "type" => 1 },
+            { "name" => "xmm4", "type" => 1 },
+            { "name" => "xmm5", "type" => 1 },
+            { "name" => "xmm6", "type" => 1 },
+            { "name" => "xmm7", "type" => 1 },
+			{ "mode" => "mode_D" }
           ]
 ); # %reg_classes
 
@@ -146,7 +150,6 @@ $arch = "ia32";
 # 5 - mem     NoMem in case of no AM otherwise it takes the mem from the Load
 
 "Add" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
@@ -154,7 +157,6 @@ $arch = "ia32";
 },
 
 "Mul" => {
-  "op_flags"  => "C",
   "irn_flags" => "A",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
@@ -163,14 +165,12 @@ $arch = "ia32";
 
 # Mulh is an exception from the 4 INs with AM because the target is always EAX:EDX
 "Mulh" => {
-  "op_flags"  => "C",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r1", "edx in_r2" ] },
   "emit"      => '. imul %ia32_emit_unop\t\t\t/* Mulh(%A1, %A2) -> %D1 */ '
 },
 
 "And" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
@@ -178,7 +178,6 @@ $arch = "ia32";
 },
 
 "Or" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
@@ -186,7 +185,6 @@ $arch = "ia32";
 },
 
 "Eor" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r1" ] },
@@ -194,7 +192,6 @@ $arch = "ia32";
 },
 
 "Max" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
@@ -210,7 +207,6 @@ $arch = "ia32";
 },
 
 "Min" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
@@ -322,7 +318,7 @@ $arch = "ia32";
 },
 
 "CondJmp" => {
-  "op_flags"  => "C|L|X|Y",
+  "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: CMP A, B && JMPxx LABEL",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "none", "none" ] },
 },
@@ -429,7 +425,6 @@ $arch = "ia32";
 # commutative operations
 
 "fAdd" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r1" ] },
@@ -437,7 +432,6 @@ $arch = "ia32";
 },
 
 "fMul" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
@@ -445,7 +439,6 @@ $arch = "ia32";
 },
 
 "fMax" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
@@ -453,7 +446,6 @@ $arch = "ia32";
 },
 
 "fMin" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
@@ -461,7 +453,6 @@ $arch = "ia32";
 },
 
 "fAnd" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct SSE And: And(a, b) = a AND b",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
@@ -469,7 +460,6 @@ $arch = "ia32";
 },
 
 "fOr" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct SSE Or: Or(a, b) = a OR b",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
@@ -477,7 +467,6 @@ $arch = "ia32";
 },
 
 "fEor" => {
-  "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct SSE Eor: Eor(a, b) = a XOR b",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
@@ -509,7 +498,7 @@ $arch = "ia32";
 },
 
 "fCondJmp" => {
-  "op_flags"  => "C|L|X|Y",
+  "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "none", "none" ] },
 },

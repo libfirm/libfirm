@@ -19,7 +19,7 @@
 #include "bitset.h"
 #include "debug.h"
 
-#include "../bearch.h"                /* the general register allocator interface */
+#include "../beabi.h"                 /* the general register allocator interface */
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
@@ -162,10 +162,14 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 
 		memcpy(req, &(irn_req->req), sizeof(*req));
 
-		if (arch_register_req_is(&(irn_req->req), should_be_same) ||
-			arch_register_req_is(&(irn_req->req), should_be_different)) {
-			assert(irn_req->pos >= 0 && "should be same/different constraint for in -> out NYI");
-			req->other = get_irn_n(irn, irn_req->pos);
+		if (arch_register_req_is(&(irn_req->req), should_be_same)) {
+			assert(irn_req->same_pos >= 0 && "should be same constraint for in -> out NYI");
+			req->other_same = get_irn_n(irn, irn_req->same_pos);
+		}
+
+		if (arch_register_req_is(&(irn_req->req), should_be_different)) {
+			assert(irn_req->different_pos >= 0 && "should be different constraint for in -> out NYI");
+			req->other_different = get_irn_n(irn, irn_req->different_pos);
 		}
 	}
 	else {
@@ -212,13 +216,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
 	int pos = 0;
 
-	if ((is_Call_Proj(irn) && is_used_by_Keep(irn)) ||
-		is_P_frame_base_Proj(irn)                   ||
-		is_Start_Proj(irn))
-	{
-		/* don't skip the proj, we want to take the else below */
-	}
-	else if (is_Proj(irn)) {
+	if (is_Proj(irn)) {
 		pos = ia32_translate_proj_pos(irn);
 		irn = my_skip_proj(irn);
 	}
@@ -238,13 +236,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 	int pos = 0;
 	const arch_register_t *reg = NULL;
 
-	if ((is_Call_Proj(irn) && is_used_by_Keep(irn)) ||
-		is_P_frame_base_Proj(irn)                   ||
-		is_Start_Proj(irn))
-	{
-		/* don't skip the proj, we want to take the else below */
-	}
-	else if (is_Proj(irn)) {
+	if (is_Proj(irn)) {
 		pos = ia32_translate_proj_pos(irn);
 		irn = my_skip_proj(irn);
 	}
@@ -278,9 +270,6 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
 	else {
-		if (is_Start_Proj(irn))
-			return arch_irn_flags_ignore;
-
 		return 0;
 	}
 }
@@ -313,16 +302,6 @@ ia32_irn_ops_t ia32_irn_ops = {
  *                       |___/
  **************************************************/
 
-static void check_for_alloca(ir_node *irn, void *env) {
-	int *has_alloca = env;
-
-	if (get_irn_op(irn) == op_Alloc) {
-		if (get_Alloc_where(irn) == stack_alloc) {
-			*has_alloca = 1;
-		}
-	}
-}
-
 /**
  * Transforms the standard firm graph into
  * an ia32 firm graph
@@ -331,18 +310,6 @@ static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
 
 	if (! is_pseudo_ir_graph(cg->irg)) {
-		/* If there is a alloca in the irg, we use %ebp for stack addressing */
-		/* instead of %esp, as alloca destroys %esp.                         */
-
-		cg->has_alloca = 0;
-
-		/* check for alloca node */
-		irg_walk_blkwise_graph(cg->irg, check_for_alloca, NULL, &(cg->has_alloca));
-
-		if (cg->has_alloca) {
-			ia32_gp_regs[REG_EBP].type = arch_register_type_ignore;
-		}
-
 		irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
 	}
 }
@@ -529,19 +496,6 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 }
 
 /**
- * Return the stack register for this irg.
- */
-static const arch_register_t *ia32_get_stack_register(void *self) {
-	ia32_code_gen_t *cg = self;
-
-	if (cg->has_alloca) {
-		return &ia32_gp_regs[REG_EBP];
-	}
-
-	return &ia32_gp_regs[REG_ESP];
-}
-
-/**
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
@@ -578,7 +532,6 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_lower_spill,
 	ia32_lower_reload,
-	ia32_get_stack_register,
 	ia32_codegen         /* emit && done */
 };
 
@@ -624,21 +577,27 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
  *
  *****************************************************************/
 
+static ia32_isa_t ia32_isa = {
+	&ia32_isa_if,
+	&ia32_gp_regs[REG_ESP],
+	&ia32_gp_regs[REG_EBP],
+	-1,
+	0,
+	NULL
+};
+
 /**
- * Initializes the backend ISA and opens the output file.
+ * Initializes the backend ISA.
  */
 static void *ia32_init(void) {
 	static int inited = 0;
-	ia32_isa_t *isa   = xmalloc(sizeof(*isa));
-
-	isa->impl = &ia32_isa_if;
+	ia32_isa_t *isa   = &ia32_isa;
 
 	if(inited)
 		return NULL;
 
 	inited = 1;
 
-	isa->num_codegens    = 0;
 	isa->reg_projnum_map = new_set(ia32_cmp_reg_projnum_assoc, 1024);
 
 	ia32_register_init(isa);
@@ -666,6 +625,103 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) 
 	assert(i >= 0 && i < N_CLASSES && "Invalid ia32 register class requested.");
 	return &ia32_reg_classes[i];
 }
+
+/**
+ * Get the register class which shall be used to store a value of a given mode.
+ * @param self The this pointer.
+ * @param mode The mode in question.
+ * @return A register class which can hold values of the given mode.
+ */
+const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
+	if (mode_is_float(mode))
+		return &ia32_reg_classes[CLASS_ia32_fp];
+	else
+		return &ia32_reg_classes[CLASS_ia32_gp];
+}
+
+/**
+ * Get the ABI restrictions for procedure calls.
+ * @param self        The this pointer.
+ * @param method_type The type of the method (procedure) in question.
+ * @param abi         The abi object to be modified
+ */
+void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+	ir_type  *tp;
+	ir_mode  *mode;
+	unsigned  cc        = get_method_calling_convention(method_type);
+	int       n         = get_method_n_params(method_type);
+	int       biggest_n = -1;
+	int       stack_idx = 0;
+	int       i, ignore;
+	ir_mode **modes;
+	const arch_register_t *reg;
+
+	/* set stack parameter passing style */
+	be_abi_call_set_flags(abi, BE_ABI_LEFT_TO_RIGHT);
+
+	/* collect the mode for each type */
+	modes = alloca(n * sizeof(modes[0]));
+
+	for (i = 0; i < n; i++) {
+		tp       = get_method_param_type(method_type, i);
+		modes[i] = get_type_mode(tp);
+	}
+
+	/* set register parameters  */
+	if (cc & cc_reg_param) {
+		/* determine the number of parameters passed via registers */
+		biggest_n = ia32_get_n_regparam_class(n, modes, &ignore, &ignore);
+
+		/* loop over all parameters and set the register requirements */
+		for (i = 0; i <= biggest_n; i++) {
+			reg = ia32_get_RegParam_reg(n, modes, i, cc);
+			assert(reg && "kaputt");
+			be_abi_call_param_reg(abi, i, reg);
+		}
+
+		stack_idx = i;
+	}
+
+
+	/* set stack parameters */
+	for (i = stack_idx; i < n; i++) {
+		be_abi_call_param_stack(abi, i);
+	}
+
+
+	/* set return registers */
+	n = get_method_n_ress(method_type);
+
+	assert(n <= 2 && "more than two results not supported");
+
+	/* In case of 64bit returns, we will have two 32bit values */
+	if (n == 2) {
+		tp   = get_method_res_type(method_type, 0);
+		mode = get_type_mode(tp);
+
+		assert(!mode_is_float(mode) && "two FP results not supported");
+
+		tp   = get_method_res_type(method_type, 1);
+		mode = get_type_mode(tp);
+
+		assert(!mode_is_float(mode) && "two FP results not supported");
+
+		be_abi_call_res_reg(abi, 0, &ia32_gp_regs[REG_EAX]);
+		be_abi_call_res_reg(abi, 1, &ia32_gp_regs[REG_EDX]);
+	}
+	else if (n == 1) {
+		tp   = get_method_res_type(method_type, 0);
+		mode = get_type_mode(tp);
+
+		if (mode_is_float(mode)) {
+			be_abi_call_res_reg(abi, 1, &ia32_fp_regs[REG_XMM0]);
+		}
+		else {
+			be_abi_call_res_reg(abi, 1, &ia32_gp_regs[REG_EAX]);
+		}
+	}
+}
+
 
 static const void *ia32_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
 	return &ia32_irn_ops;
@@ -759,6 +815,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_done,
 	ia32_get_n_reg_class,
 	ia32_get_reg_class,
+	ia32_get_reg_class_for_mode,
+	ia32_get_call_abi,
 	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector,

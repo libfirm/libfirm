@@ -20,9 +20,12 @@ typedef struct _ia32_code_gen_t {
 } ia32_code_gen_t;
 
 typedef struct _ia32_isa_t {
-	const arch_isa_if_t *impl;
-	int                  num_codegens;
-	set                 *reg_projnum_map;
+	const arch_isa_if_t   *impl;
+	const arch_register_t *sp;            /** The stack pointer register. */
+	const arch_register_t *bp;            /** The base pointer register. */
+	const int              stack_dir;     /** -1 for decreasing, 1 for increasing. */
+	int                    num_codegens;
+	set                   *reg_projnum_map;
 } ia32_isa_t;
 
 typedef struct _ia32_irn_ops_t {

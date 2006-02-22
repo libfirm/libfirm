@@ -24,6 +24,21 @@
 
 #include "gen_ia32_regalloc_if.h"
 
+#define SFP_SIGN "0x80000000"
+#define DFP_SIGN "0x8000000000000000"
+#define SFP_ABS  "0x7FFFFFFF"
+#define DFP_ABS  "0x7FFFFFFFFFFFFFFF"
+
+#define TP_SFP_SIGN "ia32_sfp_sign"
+#define TP_DFP_SIGN "ia32_dfp_sign"
+#define TP_SFP_ABS  "ia32_sfp_abs"
+#define TP_DFP_ABS  "ia32_dfp_abs"
+
+#define ENT_SFP_SIGN "IA32_SFP_SIGN"
+#define ENT_DFP_SIGN "IA32_DFP_SIGN"
+#define ENT_SFP_ABS  "IA32_SFP_ABS"
+#define ENT_DFP_ABS  "IA32_DFP_ABS"
+
 extern ir_op *get_op_Mulh(void);
 
 typedef ir_node *construct_binop_func(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, \
@@ -31,6 +46,10 @@ typedef ir_node *construct_binop_func(dbg_info *db, ir_graph *irg, ir_node *bloc
 
 typedef ir_node *construct_unop_func(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, \
 									 ir_node *op, ir_node *mem, ir_mode *mode);
+
+typedef enum {
+	ia32_SSIGN, ia32_DSIGN, ia32_SABS, ia32_DABS
+} ia32_known_const_t;
 
 /* TEMPORARY WORKAROUND */
 ir_node *be_new_NoReg(ir_graph *irg) {
@@ -46,6 +65,91 @@ ir_node *be_new_NoReg(ir_graph *irg) {
  * |_| |_|\___/ \__,_|\___|  \__|_|  \__,_|_| |_|___/_| \___/|_|  |_| |_| |_|\__,_|\__|_|\___/|_| |_|
  *
  ****************************************************************************************************/
+
+struct tv_ent {
+	entity *ent;
+	tarval *tv;
+};
+
+/* Compares two (entity, tarval) combinations */
+static int cmp_tv_ent(const void *a, const void *b, size_t len) {
+	const struct tv_ent *e1 = a;
+	const struct tv_ent *e2 = b;
+
+	return !(e1->tv == e2->tv);
+}
+
+/* Generates an entity for a known FP const (used for FP Neg + Abs) */
+static char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
+	static set    *const_set = NULL;
+	struct tv_ent  key;
+	struct tv_ent *entry;
+	char          *tp_name;
+	char          *ent_name;
+	char          *cnst_str;
+	ir_type       *tp;
+	ir_node       *cnst;
+	ir_graph      *rem;
+	entity        *ent;
+
+	if (! const_set) {
+		const_set = new_set(cmp_tv_ent, 10);
+	}
+
+	switch (kct) {
+		case ia32_SSIGN:
+			tp_name  = TP_SFP_SIGN;
+			ent_name = ENT_SFP_SIGN;
+			cnst_str = SFP_SIGN;
+			break;
+		case ia32_DSIGN:
+			tp_name  = TP_DFP_SIGN;
+			ent_name = ENT_DFP_SIGN;
+			cnst_str = DFP_SIGN;
+			break;
+		case ia32_SABS:
+			tp_name  = TP_SFP_ABS;
+			ent_name = ENT_SFP_ABS;
+			cnst_str = SFP_ABS;
+			break;
+		case ia32_DABS:
+			tp_name  = TP_DFP_ABS;
+			ent_name = ENT_DFP_ABS;
+			cnst_str = DFP_ABS;
+			break;
+	}
+
+
+	key.tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
+	key.ent = NULL;
+
+	entry = set_insert(const_set, &key, sizeof(key), HASH_PTR(key.tv));
+
+	if (! entry->ent) {
+		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
+		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
+
+		set_entity_ld_ident(ent, get_entity_ident(ent));
+		set_entity_visibility(ent, visibility_local);
+		set_entity_variability(ent, variability_constant);
+		set_entity_allocation(ent, allocation_static);
+
+		/* we create a new entity here: It's initialization must resist on the
+		    const code irg */
+		rem = current_ir_graph;
+		current_ir_graph = get_const_code_irg();
+		cnst = new_Const(mode, key.tv);
+		current_ir_graph = rem;
+
+		set_atomic_ent_value(ent, cnst);
+
+		/* set the entry for hashmap */
+		entry->ent = ent;
+	}
+
+	return ent_name;
+}
+
 
 #undef is_cnst
 #define is_cnst(op) (is_ia32_Const(op) || is_ia32_fConst(op))
@@ -323,6 +427,10 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
+			set_ia32_am_flavour(new_op, ia32_am_O);
+
+			/* Lea doesn't need a Proj */
+			return new_op;
 		}
 		else if (imm_op) {
 			/* This is expr + const */
@@ -596,13 +704,17 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			/* one tarval or another symconst - because this case is not   */
 			/* covered by constant folding                                 */
 
-			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
+			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode_T);
 			add_ia32_am_offs(new_op, get_ia32_cnst(op1));
 			sub_ia32_am_offs(new_op, get_ia32_cnst(op2));
 
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
+			set_ia32_am_flavour(new_op, ia32_am_O);
+
+			/* Lea doesn't need a Proj */
+			return new_op;
 		}
 		else if (imm_op) {
 			/* This is expr - const */
@@ -859,28 +971,6 @@ static ir_node *gen_Rot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 
 
 /**
- * Transforms a Minus node.
- *
- * @param env   The transformation environment
- * @param op    The operator
- * @return The created ia32 Minus node
- */
-static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
-	ir_node *new_op;
-
-	if (mode_is_float(env->mode)) {
-		assert(0);
-	}
-	else {
-		new_op = gen_unop(env, op, new_rd_ia32_Minus);
-	}
-
-	return new_op;
-}
-
-
-
-/**
  * Transforms a Conv node.
  *
  * @param env   The transformation environment
@@ -889,6 +979,39 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
  */
 static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 	return new_rd_ia32_Conv(env->dbg, env->irg, env->block, op, env->mode);
+}
+
+
+
+/**
+ * Transforms a Minus node.
+ *
+ * @param env   The transformation environment
+ * @param op    The operator
+ * @return The created ia32 Minus node
+ */
+static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
+	char    *name;
+	ir_node *new_op;
+	ir_node *noreg = be_new_NoReg(env->irg);
+	ir_node *nomem = new_rd_NoMem(env->irg);
+	int      size;
+
+	if (mode_is_float(env->mode)) {
+		new_op = new_rd_ia32_fEor(env->dbg, env->irg, env->block, noreg, noreg, op, noreg, nomem, mode_T);
+
+		size   = get_mode_size_bits(env->mode);
+		name   = gen_fp_known_const(env->mode, size == 32 ? ia32_SSIGN : ia32_DSIGN);
+
+		set_ia32_sc(new_op, name);
+
+		new_op = new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
+	}
+	else {
+		new_op = gen_unop(env, op, new_rd_ia32_Minus);
+	}
+
+	return new_op;
 }
 
 
@@ -930,18 +1053,28 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 	ir_node  *block = env->block;
 	ir_node  *noreg = be_new_NoReg(irg);
 	ir_node  *nomem = new_NoMem();
+	int       size;
+	char     *name;
 
 	if (mode_is_float(mode)) {
-		assert(0);
-	}
+		res = new_rd_ia32_fAnd(dbg,irg, block, noreg, noreg, op, noreg, nomem, mode_T);
 
-	res   = new_rd_ia32_Cdq(dbg, irg, block, op, mode_T);
-	p_eax = new_rd_Proj(dbg, irg, block, res, mode, pn_EAX);
-	p_edx = new_rd_Proj(dbg, irg, block, res, mode, pn_EDX);
-	res   = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, p_eax, p_edx, nomem, mode_T);
-	res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
-	res   = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, res, p_edx, nomem, mode_T);
-	res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
+		size   = get_mode_size_bits(mode);
+		name   = gen_fp_known_const(mode, size == 32 ? ia32_SABS : ia32_DABS);
+
+		set_ia32_sc(res, name);
+
+		res = new_rd_Proj(dbg, irg, block, res, mode, 0);
+	}
+	else {
+		res   = new_rd_ia32_Cdq(dbg, irg, block, op, mode_T);
+		p_eax = new_rd_Proj(dbg, irg, block, res, mode, pn_EAX);
+		p_edx = new_rd_Proj(dbg, irg, block, res, mode, pn_EDX);
+		res   = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, p_eax, p_edx, nomem, mode_T);
+		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
+		res   = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, res, p_edx, nomem, mode_T);
+		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
+	}
 
 	return res;
 }
@@ -1000,6 +1133,7 @@ ir_node *gen_Store(ia32_transform_env_t *env) {
  * @return the created ia32 Call node
  */
 static ir_node *gen_Call(ia32_transform_env_t *env) {
+#if 0
 	const ia32_register_req_t **in_req;
 	ir_node          **in;
 	ir_node           *new_call, *sync;
@@ -1113,6 +1247,7 @@ static ir_node *gen_Call(ia32_transform_env_t *env) {
 	attr->in_req[n_new_call_in - 1] = &ia32_default_req_none;
 
 	return new_call;
+#endif
 }
 
 
@@ -1182,6 +1317,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
  * @return Should be always NULL
  */
 static ir_node *gen_Proj_Start(ia32_transform_env_t *env, ir_node *proj, ir_node *start) {
+#if 0
 	const ia32_register_req_t *temp_req;
 	const ir_edge_t   *edge;
 	ir_node           *succ, *irn;
@@ -1267,6 +1403,7 @@ static ir_node *gen_Proj_Start(ia32_transform_env_t *env, ir_node *proj, ir_node
 	}
 
 	return NULL;
+#endif
 }
 
 /**
@@ -1367,8 +1504,8 @@ void ia32_transform_node(ir_node *node, void *env) {
 		GEN(Store);
 		GEN(Cond);
 
-		GEN(Proj);
-		GEN(Call);
+		IGN(Proj);
+		IGN(Call);
 		IGN(Alloc);
 
 		IGN(Block);
