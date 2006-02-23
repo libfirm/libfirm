@@ -241,10 +241,12 @@ static void dump(unsigned mask, ir_graph *irg,
 	}
 }
 
-static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
+static void be_ra_chordal_main(const be_irg_t *bi)
 {
 	int j, m;
 	be_chordal_env_t chordal_env;
+	ir_graph *irg = bi->irg;
+	const be_main_env_t *main_env = bi->main_env;
 	const arch_isa_t *isa = arch_env_get_isa(main_env->arch_env);
 
 	compute_doms(irg);
@@ -252,7 +254,7 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	chordal_env.irg          = irg;
 	chordal_env.dbg          = firm_dbg_register("firm.be.chordal");
 	chordal_env.main_env     = main_env;
-	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
+	chordal_env.dom_front    = bi->dom_front;
 
 	obstack_init(&chordal_env.obst);
 
@@ -317,7 +319,6 @@ static void be_ra_chordal_main(const be_main_env_t *main_env, ir_graph *irg)
 	lower_nodes_after_ra(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
-	be_free_dominance_frontiers(chordal_env.dom_front);
 	obstack_free(&chordal_env.obst, NULL);
 }
 

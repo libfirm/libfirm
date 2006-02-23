@@ -829,7 +829,10 @@ static char callee[128] = "echo";
  * Read in results and apply them
  *
  */
-static void be_ra_extern_main(const be_main_env_t *env, ir_graph *irg) {
+static void be_ra_extern_main(const be_irg_t *bi) {
+	be_main_env_t *env = bi->main_env;
+	ir_graph *irg = bi->irg;
+
 	be_raext_env_t raenv;
 	int clsnr, clss;
 	var_info_t *vi;

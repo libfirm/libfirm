@@ -49,6 +49,7 @@
 #include "becopyoptmain.h"
 #include "becopystat.h"
 #include "bessadestr.h"
+#include "beabi.h"
 
 
 #define DUMP_INITIAL		(1 << 0)
@@ -169,24 +170,54 @@ void be_init(void)
 
 static be_main_env_t *be_init_env(be_main_env_t *env)
 {
-  obstack_init(&env->obst);
-  env->dbg = firm_dbg_register("be.main");
+	int i, j, n;
 
-  env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
-  arch_env_init(env->arch_env, isa_if);
+	obstack_init(&env->obst);
+	env->dbg = firm_dbg_register("be.main");
 
-  /* Register the irn handler of the architecture */
-  if (arch_isa_get_irn_handler(env->arch_env->isa))
+	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
+	arch_env_init(env->arch_env, isa_if);
+
+	/* Register the irn handler of the architecture */
+	if (arch_isa_get_irn_handler(env->arch_env->isa))
 		arch_env_add_irn_handler(env->arch_env, arch_isa_get_irn_handler(env->arch_env->isa));
 
-  /*
-   * Register the node handler of the back end infrastructure.
-   * This irn handler takes care of the platform independent
-   * spill, reload and perm nodes.
-   */
-  arch_env_add_irn_handler(env->arch_env, &be_node_irn_handler);
+		/*
+		* Register the node handler of the back end infrastructure.
+		* This irn handler takes care of the platform independent
+		* spill, reload and perm nodes.
+	*/
+	arch_env_add_irn_handler(env->arch_env, &be_node_irn_handler);
 
-  return env;
+	/*
+	* Create the list of caller save registers.
+	*/
+	for(i = 0, n = arch_isa_get_n_reg_class(env->arch_env->isa); i < n; ++i) {
+		const arch_register_class_t *cls = arch_isa_get_reg_class(env->arch_env->isa, i);
+		for(j = 0; j < cls->n_regs; ++j) {
+			const arch_register_t *reg = arch_register_for_index(cls, j);
+			if(arch_register_type_is(reg, caller_save))
+				obstack_ptr_grow(&env->obst, reg);
+		}
+	}
+	obstack_ptr_grow(&env->obst, NULL);
+	env->caller_save = obstack_finish(&env->obst);
+
+	/*
+	* Create the list of callee save registers.
+	*/
+	for(i = 0, n = arch_isa_get_n_reg_class(env->arch_env->isa); i < n; ++i) {
+		const arch_register_class_t *cls = arch_isa_get_reg_class(env->arch_env->isa, i);
+		for(j = 0; j < cls->n_regs; ++j) {
+			const arch_register_t *reg = arch_register_for_index(cls, j);
+			if(arch_register_type_is(reg, callee_save))
+				obstack_ptr_grow(&env->obst, reg);
+		}
+	}
+	obstack_ptr_grow(&env->obst, NULL);
+	env->callee_save = obstack_finish(&env->obst);
+
+	return env;
 }
 
 static void be_done_env(be_main_env_t *env)
@@ -202,8 +233,10 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
 		dumper(irg, suffix);
 }
 
-static void prepare_graph(be_main_env_t *s, ir_graph *irg)
+static void prepare_graph(be_irg_t *birg)
 {
+	ir_graph *irg = birg->irg;
+
 	/* Normalize proj nodes. */
 	normalize_proj_nodes(irg);
 
@@ -221,7 +254,11 @@ static void prepare_graph(be_main_env_t *s, ir_graph *irg)
 	if (get_irg_loopinfo_state(irg) != (loopinfo_valid & loopinfo_cf_consistent))
 		construct_cf_backedges(irg);
 
+	/* check, if the dominance property is fulfilled. */
 	be_check_dominance(irg);
+
+	/* compute the dominance frontiers. */
+	birg->dom_front = be_compute_dominance_frontiers(irg);
 }
 
 static void be_main_loop(FILE *file_handle)
@@ -237,25 +274,37 @@ static void be_main_loop(FILE *file_handle)
 	/* For all graphs */
 	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-
 		const arch_code_generator_if_t *cg_if;
+		be_irg_t birg;
+
+		birg.irg      = irg;
+		birg.main_env = &env;
 
 		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
 		dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
 
 		/* set the current graph (this is important for several firm functions) */
-		current_ir_graph = irg;
+		current_ir_graph = birg.irg;
 
 		/* Get the code generator interface. */
 		cg_if = isa->impl->get_code_generator_if(isa);
 
 		/* get a code generator for this graph. */
-		env.cg = cg_if->init(file_handle, irg, env.arch_env);
+		birg.cg = cg_if->init(file_handle, birg.irg, env.arch_env);
 
 		/* create the code generator and generate code. */
-		prepare_graph(&env, irg);
-		arch_code_generator_prepare_graph(env.cg);
+		prepare_graph(&birg);
 
+		/* implement the ABI conventions. */
+		// birg.abi = be_abi_introduce(&birg);
+
+		arch_code_generator_prepare_graph(birg.cg);
+
+		/*
+		 * Since the code generator made a lot of new nodes and skipped
+		 * a lot of old ones, we should do dead node elim here.
+		 * Note that this requires disabling the edges here.
+		 */
 		edges_deactivate(irg);
 		dead_node_elimination(irg);
 		edges_activate(irg);
@@ -263,22 +312,27 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
 		/* Schedule the graphs. */
-		arch_code_generator_before_sched(env.cg);
+		arch_code_generator_before_sched(birg.cg);
 		list_sched(isa, irg);
 
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
+
+		/* connect all stack modifying nodes together (see beabi.c) */
+		// be_abi_fix_stack(birg.abi);
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
 
 		/* Do register allocation */
-		arch_code_generator_before_ra(env.cg);
-		ra->allocate(&env, irg);
+		arch_code_generator_before_ra(birg.cg);
+		ra->allocate(&birg);
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
-		arch_code_generator_done(env.cg);
+		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
+
+		be_free_dominance_frontiers(birg.dom_front);
 	}
 
 	be_done_env(&env);

@@ -13,11 +13,12 @@
 #include "irgraph.h"
 
 #include "be.h"
+#include "bearch.h"
 #include "beirgmod.h"
 
 struct _be_options_t {
-	char ilp_server[128];
 	char ilp_solver[128];
+	char ilp_server[128];
 };
 
 struct _be_main_env_t {
@@ -27,6 +28,17 @@ struct _be_main_env_t {
   struct _be_options_t *options;
   struct _arch_code_generator_t *cg;
   firm_dbg_module_t *dbg;
+
+  const arch_register_t **caller_save; /**< NULL-terminated list of caller save registers. */
+  const arch_register_t **callee_save; /**< NULL-terminated list of callee save registers. */
+};
+
+struct _be_irg_t {
+	ir_graph                      *irg;
+	struct _be_main_env_t         *main_env;
+	struct _dom_front_info_t      *dom_front;
+	struct _be_abi_irg_t          *abi;
+	struct _arch_code_generator_t *cg;
 };
 
 #endif
