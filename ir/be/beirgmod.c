@@ -412,6 +412,14 @@ void be_ssa_constr_ignore(dom_front_info_t *info, int n_origs, ir_node *orig_nod
 
 }
 
+void be_ssa_constr(dom_front_info_t *info, int n_origs, ir_node *orig[], int n_copies, ir_node *copy_nodes[])
+{
+	pset *empty_set = be_empty_set();
+
+	assert(pset_count(empty_set) == 0);
+	be_ssa_constr_ignore(info, n_origs, orig, n_copies, copy_nodes, empty_set);
+}
+
 
 void be_ssa_constr_single(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
 {

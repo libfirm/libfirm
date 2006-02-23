@@ -196,9 +196,10 @@ typedef enum _arch_irn_class_t {
  * Some flags describing a node in more detail.
  */
 typedef enum _arch_irn_flags_t {
-  arch_irn_flags_dont_spill       = 1, /**< This must not be spilled. */
-  arch_irn_flags_rematerializable = 2, /**< This should be replicated instead of spilled/reloaded. */
-  arch_irn_flags_ignore           = 4, /**< Do not consider the node during register allocation. */
+	arch_irn_flags_none             = 0, /**< Node flags. */
+	arch_irn_flags_dont_spill       = 1, /**< This must not be spilled. */
+	arch_irn_flags_rematerializable = 2, /**< This should be replicated instead of spilled/reloaded. */
+	arch_irn_flags_ignore           = 4, /**< Do not consider the node during register allocation. */
 } arch_irn_flags_t;
 
 struct _arch_irn_ops_if_t {
