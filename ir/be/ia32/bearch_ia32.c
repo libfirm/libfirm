@@ -325,7 +325,9 @@ static void ia32_prepare_graph(void *self) {
 
 	if (! is_pseudo_ir_graph(cg->irg)) {
 		irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
-//		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
+		dump_ir_block_graph_sched(cg->irg, "-transformed");
+		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
+		dump_ir_block_graph_sched(cg->irg, "-am");
 	}
 }
 
@@ -467,12 +469,12 @@ static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
 	DB((cg->mod, LEVEL_1, "lower_spill: got offset %d for %+F\n", offs, ent));
 
 	if (mode_is_float(mode)) {
-		ia32_new_NoReg_fp(cg);
-		res = new_rd_ia32_fStore(dbg, irg, block, ptr, noreg, val, mem, mode);
+		noreg = ia32_new_NoReg_fp(cg);
+		res   = new_rd_ia32_fStore(dbg, irg, block, ptr, noreg, val, mem, mode);
 	}
 	else {
-		ia32_new_NoReg_gp(cg);
-		res = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, val, mem, mode);
+		noreg = ia32_new_NoReg_gp(cg);
+		res   = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, val, mem, mode);
 	}
 
 	snprintf(buf, sizeof(buf), "%d", offs);
@@ -575,16 +577,18 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
  */
 static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
 	ia32_isa_t      *isa = (ia32_isa_t *)arch_env->isa;
-	ia32_code_gen_t *cg  = xmalloc(sizeof(*cg));
+	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
 
-	cg->impl       = &ia32_code_gen_if;
-	cg->irg        = irg;
-	cg->reg_set    = new_set(ia32_cmp_irn_reg_assoc, 1024);
-	cg->mod        = firm_dbg_register("firm.be.ia32.cg");
-	cg->out        = F;
-	cg->arch_env   = arch_env;
-	cg->types      = pmap_create();
-	cg->tv_ent     = pmap_create();
+	cg->impl     = &ia32_code_gen_if;
+	cg->irg      = irg;
+	cg->reg_set  = new_set(ia32_cmp_irn_reg_assoc, 1024);
+	cg->mod      = firm_dbg_register("firm.be.ia32.cg");
+	cg->out      = F;
+	cg->arch_env = arch_env;
+	cg->types    = pmap_create();
+	cg->tv_ent   = pmap_create();
+	cg->noreg_gp = NULL;
+	cg->noreg_fp = NULL;
 
 	isa->num_codegens++;
 
