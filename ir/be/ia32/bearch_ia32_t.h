@@ -17,6 +17,8 @@ typedef struct _ia32_code_gen_t {
 	const ia32_register_req_t     **reg_param_req; /**< hold the requirements for the reg param nodes */
 	pmap                           *types;         /**< A map of modes to primitive types */
 	pmap                           *tv_ent;        /**< A map of entities that store tarvals */
+	ir_node                        *noreg_gp;      /**< Holds the unique per irg GP NoReg node */
+	ir_node                        *noreg_fp;      /**< Holds the unique per irg FP NoReg node */
 } ia32_code_gen_t;
 
 typedef struct _ia32_isa_t {

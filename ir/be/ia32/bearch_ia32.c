@@ -41,7 +41,21 @@ static set *cur_reg_set = NULL;
 #undef is_Start
 #define is_Start(irn) (get_irn_opcode(irn) == iro_Start)
 
-extern ir_node *be_new_NoReg(ir_graph *irg);
+ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg) {
+	if (! cg->noreg_gp) {
+		cg->noreg_gp = be_new_NoReg(&ia32_gp_regs[REG_XXX], cg->irg, get_irg_start_block(cg->irg));
+	}
+
+	return cg->noreg_gp;
+}
+
+ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
+	if (! cg->noreg_fp) {
+		cg->noreg_fp = be_new_NoReg(&ia32_fp_regs[REG_XXXX], cg->irg, get_irg_start_block(cg->irg));
+	}
+
+	return cg->noreg_fp;
+}
 
 /**************************************************
  *                         _ _              _  __
@@ -311,6 +325,7 @@ static void ia32_prepare_graph(void *self) {
 
 	if (! is_pseudo_ir_graph(cg->irg)) {
 		irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
+		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
 	}
 }
 
@@ -437,21 +452,29 @@ static void ia32_before_ra(void *self) {
  */
 static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
 	ia32_code_gen_t *cg    = self;
+	ir_graph        *irg   = cg->irg;
 	dbg_info        *dbg   = get_irn_dbg_info(spill);
 	ir_node         *block = get_nodes_block(spill);
-	ir_node         *ptr   = get_irg_frame(cg->irg);
+	ir_node         *ptr   = get_irg_frame(irg);
 	ir_node         *val   = be_get_Spill_context(spill);
-	ir_node         *mem   = new_rd_NoMem(cg->irg);
-	ir_node         *noreg = be_new_NoReg(cg->irg);
+	ir_node         *mem   = new_rd_NoMem(irg);
 	ir_mode         *mode  = get_irn_mode(spill);
-	ir_node         *res;
 	entity          *ent   = be_get_spill_entity(spill);
 	unsigned         offs  = get_entity_offset_bytes(ent);
+	ir_node         *noreg, *res;
 	char             buf[64];
 
 	DB((cg->mod, LEVEL_1, "lower_spill: got offset %d for %+F\n", offs, ent));
 
-	res = new_rd_ia32_Store(dbg, cg->irg, block, ptr, noreg, val, mem, mode);
+	if (mode_is_float(mode)) {
+		ia32_new_NoReg_fp(cg);
+		res = new_rd_ia32_fStore(dbg, irg, block, ptr, noreg, val, mem, mode);
+	}
+	else {
+		ia32_new_NoReg_gp(cg);
+		res = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, val, mem, mode);
+	}
+
 	snprintf(buf, sizeof(buf), "%d", offs);
 	add_ia32_am_offs(res, buf);
 
@@ -463,16 +486,17 @@ static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
  */
 static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 	ia32_code_gen_t *cg    = self;
+	ir_graph        *irg   = cg->irg;
 	dbg_info        *dbg   = get_irn_dbg_info(reload);
 	ir_node         *block = get_nodes_block(reload);
-	ir_node         *ptr   = get_irg_frame(cg->irg);
+	ir_node         *ptr   = get_irg_frame(irg);
 	ir_mode         *mode  = get_irn_mode(reload);
 	ir_node         *pred  = get_irn_n(reload, 0);
-	ir_node         *noreg = be_new_NoReg(cg->irg);
 	char             buf[64];
 	char            *ofs;
-	ir_node         *res;
+	ir_node         *noreg, *res;
 
+	/* Get the offset to Load from. It can either be a Spill or a Store. */
 	if (be_is_Spill(pred)) {
 		entity   *ent  = be_get_spill_entity(pred);
 		unsigned  offs = get_entity_offset_bytes(ent);
@@ -480,7 +504,7 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 
 		snprintf(buf, sizeof(buf), "%d", offs);
 	}
-	else if (is_ia32_Store(pred)) {
+	else if (is_ia32_Store(pred) || is_ia32_fStore(pred)) {
 		ofs = get_ia32_am_offs(pred);
 		strncpy(buf, ofs, sizeof(buf));
 		free(ofs);
@@ -489,10 +513,21 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 		assert(0 && "unsupported Reload predecessor");
 	}
 
-	res = new_rd_ia32_Load(dbg, cg->irg, block, ptr, noreg, pred, mode);
+	/* Create the Load */
+	if (mode_is_float(mode)) {
+		noreg = ia32_new_NoReg_fp(cg);
+		res   = new_rd_ia32_fLoad(dbg, irg, block, ptr, noreg, pred, mode_T);
+	}
+	else {
+		noreg = ia32_new_NoReg_gp(cg);
+		res   = new_rd_ia32_Load(dbg, irg, block, ptr, noreg, pred, mode_T);
+	}
+
+	/* Set offset */
 	add_ia32_am_offs(res, buf);
 
-	return res;
+	/* Return the result Proj */
+	return new_rd_Proj(dbg, irg, block, res, mode);
 }
 
 /**
@@ -577,7 +612,7 @@ static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
  *
  *****************************************************************/
 
-static ia32_isa_t ia32_isa = {
+static ia32_isa_t ia32_isa_template = {
 	&ia32_isa_if,
 	&ia32_gp_regs[REG_ESP],
 	&ia32_gp_regs[REG_EBP],
@@ -591,17 +626,20 @@ static ia32_isa_t ia32_isa = {
  */
 static void *ia32_init(void) {
 	static int inited = 0;
-	ia32_isa_t *isa   = &ia32_isa;
+	ia32_isa_t *isa;
 
 	if(inited)
 		return NULL;
 
-	inited = 1;
+	isa = xcalloc(1, sizeof(*isa));
+	memcpy(isa, &ia32_isa_template, sizeof(*isa));
 
 	isa->reg_projnum_map = new_set(ia32_cmp_reg_projnum_assoc, 1024);
 
 	ia32_register_init(isa);
 	ia32_create_opcodes();
+
+	inited = 1;
 
 	return isa;
 }
