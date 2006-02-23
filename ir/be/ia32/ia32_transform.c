@@ -1090,11 +1090,17 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 static ir_node *gen_Load(ia32_transform_env_t *env) {
 	ir_node *node  = env->irn;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *new_op;
 
 	if (mode_is_float(env->mode)) {
-		return new_rd_ia32_fLoad(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
+		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
 	}
-	return new_rd_ia32_Load(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
+	else {
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
+	}
+
+	set_ia32_am_support(new_op, ia32_am_Source);
+	return new_op;
 }
 
 
@@ -1111,11 +1117,17 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *node  = env->irn;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *new_op;
 
 	if (mode_is_float(env->mode)) {
-		return new_rd_ia32_fStore(env->dbg, env->irg, env->block, get_Store_ptr(node), noreg, get_Store_value(node), get_Store_mem(node), env->mode);
+		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, get_Store_ptr(node), noreg, get_Store_value(node), get_Store_mem(node), env->mode);
 	}
-	return new_rd_ia32_Store(env->dbg, env->irg, env->block, get_Store_ptr(node), noreg, get_Store_value(node), get_Store_mem(node), env->mode);
+	else {
+		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, get_Store_ptr(node), noreg, get_Store_value(node), get_Store_mem(node), env->mode);
+	}
+
+	set_ia32_am_support(new_op, ia32_am_Dest);
+	return new_op;
 }
 
 
