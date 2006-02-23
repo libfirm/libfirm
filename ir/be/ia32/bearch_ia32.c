@@ -325,7 +325,7 @@ static void ia32_prepare_graph(void *self) {
 
 	if (! is_pseudo_ir_graph(cg->irg)) {
 		irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
-		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
+//		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
 	}
 }
 
