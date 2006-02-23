@@ -51,11 +51,6 @@ typedef enum {
 	ia32_SSIGN, ia32_DSIGN, ia32_SABS, ia32_DABS
 } ia32_known_const_t;
 
-/* TEMPORARY WORKAROUND */
-ir_node *be_new_NoReg(ir_graph *irg) {
-	return new_NoMem();
-}
-
 /****************************************************************************************************
  *                  _        _                        __                           _   _
  *                 | |      | |                      / _|                         | | (_)
@@ -177,14 +172,15 @@ static ir_node *get_expr_op(ir_node *op1, ir_node *op2) {
  * @return The constructed ia32 node.
  */
 static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2, construct_binop_func *func) {
-	ir_node           *new_op = NULL;
-	ir_mode           *mode   = env->mode;
-	dbg_info          *dbg    = env->dbg;
-	ir_graph          *irg    = env->irg;
-	ir_node           *block  = env->block;
-	firm_dbg_module_t *mod    = env->mod;
-	ir_node           *noreg  = be_new_NoReg(irg);
-	ir_node           *nomem  = new_NoMem();
+	ir_node           *new_op   = NULL;
+	ir_mode           *mode     = env->mode;
+	dbg_info          *dbg      = env->dbg;
+	ir_graph          *irg      = env->irg;
+	ir_node           *block    = env->block;
+	firm_dbg_module_t *mod      = env->mod;
+	ir_node           *noreg_gp = ia32_new_NoReg_gp(env->cg);
+	ir_node           *noreg_fp = ia32_new_NoReg_fp(env->cg);
+	ir_node           *nomem    = new_NoMem();
 	ir_node           *expr_op, *imm_op;
 
 
@@ -208,13 +204,12 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 	if (mode_is_float(mode)) {
 		/* floating point operations */
 		if (imm_op) {
-
-			new_op = func(dbg, irg, block, noreg, noreg, expr_op, noreg, nomem, mode_T);
+			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, expr_op, noreg_fp, nomem, mode_T);
 			set_ia32_Immop_attr(new_op, imm_op);
 			set_ia32_am_support(new_op, ia32_am_None);
 		}
 		else {
-			new_op = func(dbg, irg, block, noreg, noreg, op1, op2, nomem, mode_T);
+			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, op1, op2, nomem, mode_T);
 			set_ia32_am_support(new_op, ia32_am_Source);
 		}
 	}
@@ -222,7 +217,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 		/* integer operations */
 		if (imm_op) {
 			/* This is expr + const */
-			new_op = func(dbg, irg, block, noreg, noreg, expr_op, noreg, nomem, mode_T);
+			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, expr_op, noreg_gp, nomem, mode_T);
 			set_ia32_Immop_attr(new_op, imm_op);
 
 			/* set AM support */
@@ -230,7 +225,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 		}
 		else {
 			/* This is a normal operation */
-			new_op = func(dbg, irg, block, noreg, noreg, op1, op2, nomem, mode_T);
+			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, op1, op2, nomem, mode_T);
 
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Full);
@@ -258,7 +253,7 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 	ir_graph          *irg    = env->irg;
 	ir_node           *block  = env->block;
 	firm_dbg_module_t *mod    = env->mod;
-	ir_node           *noreg  = be_new_NoReg(irg);
+	ir_node           *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node           *nomem  = new_NoMem();
 	ir_node           *expr_op, *imm_op;
 	tarval            *tv;
@@ -320,7 +315,7 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 	dbg_info          *dbg    = env->dbg;
 	ir_graph          *irg    = env->irg;
 	ir_node           *block  = env->block;
-	ir_node           *noreg  = be_new_NoReg(irg);
+	ir_node           *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node           *nomem  = new_NoMem();
 
 	new_op = func(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
@@ -354,7 +349,7 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	ir_mode                *mode       = env->mode;
 	ir_graph               *irg        = env->irg;
 	ir_node                *block      = env->block;
-	ir_node                *noreg      = be_new_NoReg(irg);
+	ir_node                *noreg      = ia32_new_NoReg_gp(env->cg);
 	ir_node                *nomem      = new_NoMem();
 	int                     normal_add = 1;
 	tarval_classification_t class_tv, class_negtv;
@@ -401,7 +396,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_mode  *mode   = env->mode;
 	ir_graph *irg    = env->irg;
 	ir_node  *block  = env->block;
-	ir_node  *noreg  = be_new_NoReg(irg);
+	ir_node  *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *expr_op, *imm_op;
 
@@ -420,7 +415,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			/* one tarval or another symconst - because this case is not   */
 			/* covered by constant folding                                 */
 
-			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode_T);
+			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
 			add_ia32_am_offs(new_op, get_ia32_cnst(op1));
 			add_ia32_am_offs(new_op, get_ia32_cnst(op2));
 
@@ -640,7 +635,7 @@ static ir_node *gen_imm_Sub(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	ir_mode                *mode       = env->mode;
 	ir_graph               *irg        = env->irg;
 	ir_node                *block      = env->block;
-	ir_node                *noreg      = be_new_NoReg(irg);
+	ir_node                *noreg      = ia32_new_NoReg_gp(env->cg);
 	ir_node                *nomem      = new_NoMem();
 	int                     normal_sub = 1;
 	tarval_classification_t class_tv, class_negtv;
@@ -685,7 +680,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_mode  *mode   = env->mode;
 	ir_graph *irg    = env->irg;
 	ir_node  *block  = env->block;
-	ir_node  *noreg  = be_new_NoReg(irg);
+	ir_node  *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *expr_op, *imm_op;
 
@@ -704,7 +699,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			/* one tarval or another symconst - because this case is not   */
 			/* covered by constant folding                                 */
 
-			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode_T);
+			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
 			add_ia32_am_offs(new_op, get_ia32_cnst(op1));
 			sub_ia32_am_offs(new_op, get_ia32_cnst(op2));
 
@@ -993,12 +988,13 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 	char    *name;
 	ir_node *new_op;
-	ir_node *noreg = be_new_NoReg(env->irg);
-	ir_node *nomem = new_rd_NoMem(env->irg);
+	ir_node *noreg_gp = ia32_new_NoReg_gp(env->cg);
+	ir_node *noreg_fp = ia32_new_NoReg_fp(env->cg);
+	ir_node *nomem    = new_rd_NoMem(env->irg);
 	int      size;
 
 	if (mode_is_float(env->mode)) {
-		new_op = new_rd_ia32_fEor(env->dbg, env->irg, env->block, noreg, noreg, op, noreg, nomem, mode_T);
+		new_op = new_rd_ia32_fEor(env->dbg, env->irg, env->block, noreg_gp, noreg_gp, op, noreg_fp, nomem, mode_T);
 
 		size   = get_mode_size_bits(env->mode);
 		name   = gen_fp_known_const(env->mode, size == 32 ? ia32_SSIGN : ia32_DSIGN);
@@ -1047,17 +1043,18 @@ static ir_node *gen_Not(ia32_transform_env_t *env, ir_node *op) {
  */
 static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 	ir_node  *res, *p_eax, *p_edx;
-	dbg_info *dbg   = env->dbg;
-	ir_mode  *mode  = env->mode;
-	ir_graph *irg   = env->irg;
-	ir_node  *block = env->block;
-	ir_node  *noreg = be_new_NoReg(irg);
-	ir_node  *nomem = new_NoMem();
+	dbg_info *dbg      = env->dbg;
+	ir_mode  *mode     = env->mode;
+	ir_graph *irg      = env->irg;
+	ir_node  *block    = env->block;
+	ir_node  *noreg_gp = ia32_new_NoReg_gp(env->cg);
+	ir_node  *noreg_fp = ia32_new_NoReg_fp(env->cg);
+	ir_node  *nomem    = new_NoMem();
 	int       size;
 	char     *name;
 
 	if (mode_is_float(mode)) {
-		res = new_rd_ia32_fAnd(dbg,irg, block, noreg, noreg, op, noreg, nomem, mode_T);
+		res = new_rd_ia32_fAnd(dbg,irg, block, noreg_gp, noreg_gp, op, noreg_fp, nomem, mode_T);
 
 		size   = get_mode_size_bits(mode);
 		name   = gen_fp_known_const(mode, size == 32 ? ia32_SABS : ia32_DABS);
@@ -1070,9 +1067,9 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 		res   = new_rd_ia32_Cdq(dbg, irg, block, op, mode_T);
 		p_eax = new_rd_Proj(dbg, irg, block, res, mode, pn_EAX);
 		p_edx = new_rd_Proj(dbg, irg, block, res, mode, pn_EDX);
-		res   = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, p_eax, p_edx, nomem, mode_T);
+		res   = new_rd_ia32_Eor(dbg, irg, block, noreg_gp, noreg_gp, p_eax, p_edx, nomem, mode_T);
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
-		res   = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, res, p_edx, nomem, mode_T);
+		res   = new_rd_ia32_Sub(dbg, irg, block, noreg_gp, noreg_gp, res, p_edx, nomem, mode_T);
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
 	}
 
@@ -1092,7 +1089,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
  */
 static ir_node *gen_Load(ia32_transform_env_t *env) {
 	ir_node *node  = env->irn;
-	ir_node *noreg = be_new_NoReg(env->irg);
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 
 	if (mode_is_float(env->mode)) {
 		return new_rd_ia32_fLoad(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
@@ -1113,7 +1110,7 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
  */
 ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *node  = env->irn;
-	ir_node *noreg = be_new_NoReg(env->irg);
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 
 	if (mode_is_float(env->mode)) {
 		return new_rd_ia32_fStore(env->dbg, env->irg, env->block, get_Store_ptr(node), noreg, get_Store_value(node), get_Store_mem(node), env->mode);
@@ -1267,7 +1264,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 	ir_mode  *sel_mode = get_irn_mode(sel);
 	ir_node  *res      = NULL;
 	ir_node  *pred     = NULL;
-	ir_node  *noreg    = be_new_NoReg(irg);
+	ir_node  *noreg    = ia32_new_NoReg_gp(env->cg);
 	ir_node  *nomem    = new_NoMem();
 	ir_node  *cmp_a, *cmp_b, *cnst, *expr;
 
