@@ -177,7 +177,7 @@ int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float) 
  * @param cc    The calling convention
  * @return      The register
  */
-const arch_register_t *ia32_get_RegParam_req(int n, ir_mode **modes, long nr, unsigned cc) {
+const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, unsigned cc) {
 	const arch_register_t **current_gpreg_param_reg;
 	const arch_register_t **current_fpreg_param_reg;
 	const arch_register_t  *param_reg = NULL;
