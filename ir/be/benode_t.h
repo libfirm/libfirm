@@ -29,12 +29,19 @@ typedef enum {
 	beo_Perm,
 	beo_Copy,
 	beo_Keep,
+	beo_NoReg,
 	beo_Call,
 	beo_AddSP,
 	beo_IncSP,
+	beo_RegParams,
 	beo_StackParam,
 	beo_Last
 } be_opcode_t;
+
+typedef enum {
+	be_stack_dir_along = 0,
+	be_stack_dir_against = 1
+} be_stack_dir_t;
 
 void be_node_init(void);
 
@@ -47,10 +54,31 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 
 ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *operand);
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, int amount);
-ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n, ir_node *in[]);
+
+/**
+ * Make a stack pointer increase/decrease node.
+ * @param sp     The stack poitner register.
+ * @param irg    The graph to insert the node to.
+ * @param bl     The block to insert the node into.
+ * @param old_sp The node defining the former stack pointer.
+ * @param amount The mount of bytes the stack pointer shall be increased/decreased.
+ * @param dir    The direction in which the stack pointer shall be modified:
+ *               Along the stack's growing direction or against.
+ * @return       A new stack pointer increment/decrement node.
+ * @note         This node sets a register constraint to the @p sp register on its output.
+ */
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, unsigned amount, be_stack_dir_t dir);
+
+void     be_set_IncSP_offset(ir_node *irn, unsigned offset);
+unsigned be_get_IncSP_offset(ir_node *irn);
+
+void           be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir);
+be_stack_dir_t be_get_IncSP_direction(ir_node *irn);
+
+ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
 ir_node *be_new_StackParam(ir_graph *irg);
 ir_node *be_new_RegParams(ir_graph *irg, int n_out);
+ir_node *be_new_NoReg(const arch_register_t *reg, ir_graph *irg, ir_node *bl);
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn,ir_node *spill_ctx);
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, int pos, ir_mode *mode, ir_node *spill);
@@ -64,8 +92,6 @@ int be_is_Call(const ir_node *irn);
 int be_is_AddSP(const ir_node *irn);
 int be_is_IncSP(const ir_node *irn);
 
-void be_set_IncSP_offset(ir_node *irn, int offset);
-int be_get_IncSP_offset(ir_node *irn);
 
 void   be_set_Spill_entity(ir_node *irn, entity *ent);
 entity *be_get_spill_entity(ir_node *irn);
