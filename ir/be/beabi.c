@@ -338,7 +338,6 @@ static void adjust_call_walker(ir_node *irn, void *data)
 		adjust_call(data, irn);
 }
 
-#if 0
 /**
  * Walker to implement alloca-style allocations.
  * They are implemented using an add to the stack pointer
@@ -358,7 +357,7 @@ static void implement_stack_alloc(be_abi_irg_t *env, ir_node *irn)
 		res = be_new_Copy(isa->sp->reg_class, env->birg->irg, bl, res);
 
 	res = be_new_AddSP(isa->sp, env->birg->irg, bl, res, size);
-	pset_insert_ptr(env->stack_ops);
+	pset_insert_ptr(env->stack_ops, res);
 
 	if(isa->stack_dir < 0)
 		res = be_new_Copy(isa->sp->reg_class, env->birg->irg, bl, res);
@@ -388,7 +387,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *frame_pointer;
 	ir_node *reg_params, *reg_params_bl;
 	ir_node **args, **args_repl, **return_params;
-	ir_edge_t *edge;
+	const ir_edge_t *edge;
 
 
 	/* Find the maximum proj number of the argument tuple proj */
@@ -445,11 +444,10 @@ static void modify_irg(be_abi_irg_t *env)
 		return_params = obstack_finish(&env->obst);
 	}
 
-	/* If we can omit the framepointer, the stack pointer will become the frame pointer */
-	frame_pointer = be_new_IncSP(sp, irg, reg_params_bl, proj_sp, 0);
-	/* memorize this node for later fixup */
-	if(!env->omit_framepointer)
-		frame_pointer = be_new_Copy(sp->reg_class, irg, reg_params_bl, proj_sp);
+	/* If we can omit the frame pointer, the stack pointer will become the frame pointer */
+	env->init_sp = be_new_IncSP(sp, irg, reg_params_bl, proj_sp, 0, be_stack_dir_along);
+	/* memorize this node for later fix up */
+	frame_pointer = env->omit_framepointer ? env->init_sp : be_new_Copy(sp->reg_class, irg, reg_params_bl, proj_sp);
 	set_irg_frame(irg, frame_pointer);
 
 	/* reroute the edges from the original argument projs to the RegParam ones. */
@@ -482,8 +480,9 @@ static void modify_irg(be_abi_irg_t *env)
 			   node representing the load of that parameter */
 			else if(is_Primitive_type(param_type)) {
 				ir_mode *mode                    = get_type_mode(param_type);
-				const arch_register_class_t *cls = arch_isa_get_reg_class_for_mode(env->isa, mode);
-				args_repl[i] = be_new_StackParam(irg, cls, frame_pointer, XXX_offset);
+				const arch_register_class_t *cls = arch_isa_get_reg_class_for_mode(isa, mode);
+				// TODO: Correct offset computation!
+				args_repl[i] = be_new_StackParam(cls, irg, reg_params_bl, mode, frame_pointer, 0);
 			}
 
 			/* The stack parameter is not primitive (it is a struct or array),
@@ -498,7 +497,6 @@ static void modify_irg(be_abi_irg_t *env)
 	obstack_free(&env->obst, args);
 	be_abi_call_free(call);
 }
-#endif
 
 static void collect_alloca_walker(ir_node *irn, void *data)
 {
@@ -511,6 +509,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 {
 	be_abi_irg_t *env = malloc(sizeof(env[0]));
 
+	int i;
 	ir_node **stack_allocs;
 
 	env->birg        = birg;
@@ -523,16 +522,14 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	obstack_ptr_grow(&env->obst, NULL);
 	stack_allocs = obstack_finish(&env->obst);
 
-	/* If there are stack allocations in the irg, we need a framepointer */
+	/* If there are stack allocations in the irg, we need a frame pointer */
 	if(stack_allocs[0] != NULL)
 		env->omit_framepointer = 0;
 
-#if 0
-	modify_irg(&env);
+	modify_irg(env);
 
 	for(i = 0; stack_allocs[i] != NULL; ++i)
-		implement_stack_alloc(&env, stack_allocs[i]);
-#endif
+		implement_stack_alloc(env, stack_allocs[i]);
 
 	irg_walk_graph(env->birg->irg, NULL, adjust_call_walker, &env);
 	return env;

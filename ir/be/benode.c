@@ -85,7 +85,7 @@ typedef struct {
 } be_reg_data_t;
 
 typedef struct {
-	int                         n_outs;
+	int                         max_reg_data;
 	arch_irn_flags_t            flags;
 	const arch_register_class_t *cls;
 	be_reg_data_t               *reg_data;
@@ -151,7 +151,7 @@ void be_node_init(void) {
 	op_AddSP      = new_ir_op(beo_base + beo_Keep,   "AddSP",      op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_stack_attr_t), &be_node_op_ops);
 	op_IncSP      = new_ir_op(beo_base + beo_Keep,   "IncSP",      op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_stack_attr_t), &be_node_op_ops);
 	op_RegParams  = new_ir_op(beo_base + beo_Keep,   "RegParams",  op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_StackParam = new_ir_op(beo_base + beo_Keep,   "StackParam", op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_StackParam = new_ir_op(beo_base + beo_Keep,   "StackParam", op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_stack_attr_t), &be_node_op_ops);
 
 	set_op_tag(op_Spill,      &be_node_tag);
 	set_op_tag(op_Reload,     &be_node_tag);
@@ -166,21 +166,21 @@ void be_node_init(void) {
 	set_op_tag(op_StackParam, &be_node_tag);
 }
 
-static void *init_node_attr(ir_node* irn, const arch_register_class_t *cls, ir_graph *irg, int n_outs)
+static void *init_node_attr(ir_node* irn, const arch_register_class_t *cls, ir_graph *irg, int max_reg_data)
 {
 	be_node_attr_t *a = get_irn_attr(irn);
 
-	a->n_outs   = n_outs;
-	a->flags    = arch_irn_flags_none;
-	a->cls      = cls;
-	a->reg_data = NULL;
+	a->max_reg_data = max_reg_data;
+	a->flags        = arch_irn_flags_none;
+	a->cls          = cls;
+	a->reg_data     = NULL;
 
-	if(n_outs > 0) {
+	if(max_reg_data > 0) {
 		int i;
 
-		a->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(irg), n_outs);
-		memset(a->reg_data, 0, n_outs * sizeof(a->reg_data[0]));
-		for(i = 0; i < n_outs; ++i) {
+		a->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(irg), max_reg_data);
+		memset(a->reg_data, 0, max_reg_data * sizeof(a->reg_data[0]));
+		for(i = 0; i < max_reg_data; ++i) {
 			a->reg_data[i].req.req.cls  = cls;
 			a->reg_data[i].req.req.type = arch_register_req_type_normal;
 		}
@@ -222,7 +222,7 @@ be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
 	a       = get_irn_attr(irn);
 
 	assert(is_be_node(irn));
-	assert(out_pos < a->n_outs && "position too high");
+	assert(out_pos < a->max_reg_data && "position too high");
 	a->reg_data[out_pos].reg = reg;
 }
 
@@ -294,7 +294,7 @@ ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_n
 	memcpy(&real_in[3], in, n * sizeof(in[0]));
 
 	irn = new_ir_node(NULL, irg, bl, op_Call, mode_T, real_n, real_in);
-	init_node_attr(irn, NULL, irg, n_outs);
+	init_node_attr(irn, NULL, irg, (n_outs > real_n ? n_outs : real_n));
 	return irn;
 }
 
@@ -352,6 +352,19 @@ ir_node *be_new_NoReg(const arch_register_t *reg, ir_graph *irg, ir_node *bl)
 	return irn;
 }
 
+ir_node *be_new_StackParam(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, unsigned offset)
+{
+	be_stack_attr_t *a;
+	ir_node *irn;
+	ir_node *in[1];
+
+	in[0] = frame_pointer;
+	irn = new_ir_node(NULL, irg, bl, op_StackParam, mode, 1, in);
+	a = init_node_attr(irn, cls, irg, 1);
+	a->offset = offset;
+	return irn;
+}
+
 int be_is_Spill         (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Spill          ; }
 int be_is_Reload        (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Reload         ; }
 int be_is_Copy          (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Copy           ; }
@@ -391,7 +404,7 @@ void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
 
 	assert(is_be_node(irn));
 	assert(!(pos >= 0) || pos < get_irn_arity(irn));
-	assert(!(pos < 0)  || -(pos + 1) <= a->n_outs);
+	assert(!(pos < 0)  || -(pos + 1) <= a->max_reg_data);
 
 	r->kind            = be_req_kind_single_reg;
 	r->x.single_reg    = reg;
@@ -410,7 +423,7 @@ void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req
 
 	assert(is_be_node(irn));
 	assert(!(pos >= 0) || pos < get_irn_arity(irn));
-	assert(!(pos < 0)  || -(pos + 1) <= a->n_outs);
+	assert(!(pos < 0)  || -(pos + 1) <= a->max_reg_data);
 	assert(arch_register_req_is(req, limited));
 
 	r->kind            = be_req_kind_old_limited;
@@ -564,7 +577,7 @@ static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int o
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
 
-	if(out_pos < a->n_outs)
+	if(out_pos < a->max_reg_data)
 		memcpy(req, &a->reg_data[out_pos].req, sizeof(req[0]));
 	else {
 		req->type = arch_register_req_type_none;
@@ -620,7 +633,7 @@ be_node_get_irn_reg(const void *_self, const ir_node *irn)
 	a       = get_irn_attr(irn);
 
 	assert(is_be_node(irn));
-	assert(out_pos < a->n_outs && "position too high");
+	assert(out_pos < a->max_reg_data && "position too high");
 
 	return a->reg_data[out_pos].reg;
 }
@@ -689,7 +702,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			break;
 		case dump_node_info_txt:
 			fprintf(f, "reg class: %s\n", at->cls->name);
-			for(i = 0; i < at->n_outs; ++i) {
+			for(i = 0; i < at->max_reg_data; ++i) {
 				const arch_register_t *reg = at->reg_data[i].reg;
 				fprintf(f, "reg #%d: %s\n", i, reg ? reg->name : "n/a");
 			}
@@ -724,13 +737,27 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 	return 0;
 }
 
+void copy_attr(const ir_node *old_node, ir_node *new_node)
+{
+	be_node_attr_t *old_attr = get_irn_attr(old_attr);
+	be_node_attr_t *new_attr = get_irn_attr(new_node);
+
+	assert(is_be_node(old_node));
+	assert(is_be_node(new_node));
+
+	memcpy(new_attr, old_attr, old_node->op->attr_size);
+
+	new_attr->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(get_irn_irg(new_node)), new_attr->max_reg_data);
+	memcpy(new_attr->reg_data, old_attr->reg_data, new_attr->max_reg_data * sizeof(be_reg_data_t));
+}
+
 static const ir_op_ops be_node_op_ops = {
 	NULL,
 	NULL,
 	NULL,
 	NULL,
 	NULL,
-	NULL,
+	copy_attr,
 	NULL,
 	NULL,
 	NULL,
