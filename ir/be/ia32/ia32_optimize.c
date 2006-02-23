@@ -256,6 +256,28 @@ static ir_node *get_mem_proj(const ir_node *irn) {
 }
 
 /**
+ * Returns the Proj with number 0 connected to irn.
+ */
+static ir_node *get_res_proj(const ir_node *irn) {
+	const ir_edge_t *edge;
+	ir_node         *src;
+
+	assert(get_irn_mode(irn) == mode_T && "expected mode_T node");
+
+	foreach_out_edge(irn, edge) {
+		src = get_edge_src_irn(edge);
+
+		assert(is_Proj(src) && "Proj expected");
+
+		if (get_Proj_proj(src) == 0)
+			return src;
+	}
+
+	return NULL;
+}
+
+
+/**
  * Determines if irn is a Proj and if is_op_func returns true for it's predecessor.
  */
 static int pred_is_specific_node(const ir_node *irn, int (*is_op_func)(const ir_node *n)) {
@@ -294,6 +316,8 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 	if  (isadd) {
 		/* put LEA == ia32_am_O as right operand */
 		if (is_ia32_Lea(left) && get_ia32_am_flavour(left) == ia32_am_O) {
+			set_irn_n(irn, 2, right);
+			set_irn_n(irn, 3, left);
 			temp  = left;
 			left  = right;
 			right = temp;
@@ -301,6 +325,8 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 
 		/* put LEA != ia32_am_O as left operand */
 		if (is_ia32_Lea(right) && get_ia32_am_flavour(right) != ia32_am_O) {
+			set_irn_n(irn, 2, right);
+			set_irn_n(irn, 3, left);
 			temp  = left;
 			left  = right;
 			right = temp;
@@ -308,6 +334,8 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 
 		/* put SHL as right operand */
 		if (pred_is_specific_node(left, is_ia32_Shl)) {
+			set_irn_n(irn, 2, right);
+			set_irn_n(irn, 3, left);
 			temp  = left;
 			left  = right;
 			right = temp;
@@ -408,6 +436,11 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 		set_ia32_op_type(res, ia32_AddrModeS);
 
 		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %s]\n", base, index, scale, get_ia32_am_offs(res)));
+
+		/* get the result Proj of the Add/Sub */
+		irn = get_res_proj(irn);
+
+		assert(irn && "Couldn't find result proj");
 
 		/* exchange the old op with the new LEA */
 		exchange(irn, res);
@@ -536,14 +569,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				/* check further, otherwise we check for Store and remember the address, */
 				/* the Store points to. */
 
-				succ = get_edge_src_irn(get_irn_out_edge_first(irn));
-				assert(is_Proj(succ) && "successor of AM node is not Proj");
-
-				if (get_Proj_proj(succ) != 0) {
-					succ = get_edge_src_irn(get_irn_out_edge_next(irn, get_irn_out_edge_first(irn)));
-					assert(is_Proj(succ) && "successor of AM node is not Proj");
-					assert(get_Proj_proj(succ) == 0 && "Couldn't find result proj");
-				}
+				succ = get_res_proj(irn);
+				assert(succ && "Couldn't find result proj");
 
 				addr_b = NULL;
 				addr_i = NULL;

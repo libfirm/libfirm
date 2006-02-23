@@ -429,6 +429,10 @@ char *get_ia32_am_offs(const ir_node *node) {
 	char        *res  = NULL;
 	int          size;
 
+	if (! attr->am_offs) {
+		return NULL;
+	}
+
 	size = obstack_object_size(attr->am_offs);
     if (size > 0) {
 		res = xcalloc(1, size + 1);
@@ -738,14 +742,14 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
 
 	assert((is_ia32_Const(cnst) || is_ia32_fConst(cnst)) && "Need ia32_Const to set Immop attr");
 
-	na->tp = ca->tp;
 	na->tv = ca->tv;
 
 	if (ca->sc) {
 		na->sc = copy_str(na->sc, ca->sc);
 	}
 	else {
-		na->sc = NULL;
+		na->cnst = set_cnst_from_tv(na->cnst, na->tv);
+		na->sc   = NULL;
 	}
 }
 
