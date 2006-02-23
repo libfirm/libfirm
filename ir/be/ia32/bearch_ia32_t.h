@@ -5,16 +5,6 @@
 #include "bearch_ia32.h"
 #include "ia32_nodes_attr.h"
 
-/**
- * Creates the unique per irg GP NoReg node.
- */
-ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg);
-
-/**
- * Creates the unique per irg FP NoReg node.
- */
-ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg);
-
 /* some typedefs */
 
 typedef struct _ia32_code_gen_t {
@@ -59,5 +49,15 @@ typedef struct _ia32_transform_env_t {
 	ir_mode           *mode;       /**< The mode of the irn */
 	ia32_code_gen_t   *cg;         /**< The code generator */
 } ia32_transform_env_t;
+
+/**
+ * Creates the unique per irg GP NoReg node.
+ */
+ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg);
+
+/**
+ * Creates the unique per irg FP NoReg node.
+ */
+ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg);
 
 #endif /* _BEARCH_IA32_T_H_ */

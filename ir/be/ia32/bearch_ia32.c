@@ -527,7 +527,7 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
 	add_ia32_am_offs(res, buf);
 
 	/* Return the result Proj */
-	return new_rd_Proj(dbg, irg, block, res, mode);
+	return new_rd_Proj(dbg, irg, block, res, mode, 0);
 }
 
 /**
