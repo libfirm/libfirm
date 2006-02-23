@@ -422,8 +422,8 @@ static void modify_irg(be_abi_irg_t *env)
 			n_reg_param += arg->in_reg;
 		}
 
-		reg_params    = be_new_RegParams(irg, n_reg_param);
-		reg_params_bl = get_nodes_block(reg_params);
+		reg_params_bl = get_irg_start_block(irg);
+		reg_params    = be_new_RegParams(irg, reg_params_bl, n_reg_param);
 		reg_params_nr = 0;
 
 		proj_sp       = new_r_Proj(irg, reg_params_bl, reg_params, sp->reg_class->mode, reg_params_nr);

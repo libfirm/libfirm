@@ -365,6 +365,17 @@ ir_node *be_new_StackParam(const arch_register_class_t *cls, ir_graph *irg, ir_n
 	return irn;
 }
 
+ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
+{
+	be_node_attr_t *a;
+	ir_node *irn;
+	ir_node *in[1];
+
+	irn = new_ir_node(NULL, irg, bl, op_RegParams, mode_T, 0, in);
+	init_node_attr(irn, NULL, irg, n_outs);
+	return irn;
+}
+
 int be_is_Spill         (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Spill          ; }
 int be_is_Reload        (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Reload         ; }
 int be_is_Copy          (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Copy           ; }
