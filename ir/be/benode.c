@@ -141,17 +141,17 @@ void be_node_init(void) {
 	/* Acquire all needed opcodes. */
 	beo_base = get_next_ir_opcodes(beo_Last - 1);
 
-	op_Spill      = new_ir_op(beo_base + beo_Spill,  "Spill",      op_pin_state_mem_pinned, N, oparity_unary,    0, sizeof(be_spill_attr_t), &be_node_op_ops);
-	op_Reload     = new_ir_op(beo_base + beo_Reload, "Reload",     op_pin_state_mem_pinned, N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_Perm       = new_ir_op(beo_base + beo_Perm,   "Perm",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_Copy       = new_ir_op(beo_base + beo_Copy,   "Copy",       op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_Keep       = new_ir_op(beo_base + beo_Keep,   "Keep",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_NoReg      = new_ir_op(beo_base + beo_Keep,   "NoReg",      op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_Call       = new_ir_op(beo_base + beo_Keep,   "Call",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_AddSP      = new_ir_op(beo_base + beo_Keep,   "AddSP",      op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_stack_attr_t), &be_node_op_ops);
-	op_IncSP      = new_ir_op(beo_base + beo_Keep,   "IncSP",      op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_stack_attr_t), &be_node_op_ops);
-	op_RegParams  = new_ir_op(beo_base + beo_Keep,   "RegParams",  op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_StackParam = new_ir_op(beo_base + beo_Keep,   "StackParam", op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_stack_attr_t), &be_node_op_ops);
+	op_Spill      = new_ir_op(beo_base + beo_Spill,      "Spill",      op_pin_state_mem_pinned, N, oparity_unary,    0, sizeof(be_spill_attr_t), &be_node_op_ops);
+	op_Reload     = new_ir_op(beo_base + beo_Reload,     "Reload",     op_pin_state_mem_pinned, N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Perm       = new_ir_op(beo_base + beo_Perm,       "Perm",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Copy       = new_ir_op(beo_base + beo_Copy,       "Copy",       op_pin_state_floats,     N, oparity_unary,    0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Keep       = new_ir_op(beo_base + beo_Keep,       "Keep",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_NoReg      = new_ir_op(beo_base + beo_NoReg,      "NoReg",      op_pin_state_floats,     N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Call       = new_ir_op(beo_base + beo_Call,       "Call",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_AddSP      = new_ir_op(beo_base + beo_AddSP,      "AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_stack_attr_t), &be_node_op_ops);
+	op_IncSP      = new_ir_op(beo_base + beo_IncSP,      "IncSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t), &be_node_op_ops);
+	op_RegParams  = new_ir_op(beo_base + beo_RegParams,  "RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_StackParam = new_ir_op(beo_base + beo_StackParam, "StackParam", op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_stack_attr_t), &be_node_op_ops);
 
 	set_op_tag(op_Spill,      &be_node_tag);
 	set_op_tag(op_Reload,     &be_node_tag);
@@ -367,7 +367,6 @@ ir_node *be_new_StackParam(const arch_register_class_t *cls, ir_graph *irg, ir_n
 
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
 {
-	be_node_attr_t *a;
 	ir_node *irn;
 	ir_node *in[1];
 
@@ -712,7 +711,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 		case dump_node_nodeattr_txt:
 			break;
 		case dump_node_info_txt:
-			fprintf(f, "reg class: %s\n", at->cls->name);
+			fprintf(f, "reg class: %s\n", at->cls ? at->cls->name : "n/a");
 			for(i = 0; i < at->max_reg_data; ++i) {
 				const arch_register_t *reg = at->reg_data[i].reg;
 				fprintf(f, "reg #%d: %s\n", i, reg ? reg->name : "n/a");
@@ -750,16 +749,19 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 
 void copy_attr(const ir_node *old_node, ir_node *new_node)
 {
-	be_node_attr_t *old_attr = get_irn_attr(old_attr);
+	be_node_attr_t *old_attr = get_irn_attr(old_node);
 	be_node_attr_t *new_attr = get_irn_attr(new_node);
 
 	assert(is_be_node(old_node));
 	assert(is_be_node(new_node));
 
-	memcpy(new_attr, old_attr, old_node->op->attr_size);
+	memcpy(new_attr, old_attr, get_op_attr_size(get_irn_op(old_node)));
+	new_attr->reg_data = NULL;
 
-	new_attr->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(get_irn_irg(new_node)), new_attr->max_reg_data);
-	memcpy(new_attr->reg_data, old_attr->reg_data, new_attr->max_reg_data * sizeof(be_reg_data_t));
+	if(new_attr->max_reg_data > 0) {
+		new_attr->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(get_irn_irg(new_node)), new_attr->max_reg_data);
+		memcpy(new_attr->reg_data, old_attr->reg_data, new_attr->max_reg_data * sizeof(be_reg_data_t));
+	}
 }
 
 static const ir_op_ops be_node_op_ops = {
