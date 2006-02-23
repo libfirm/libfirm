@@ -27,8 +27,11 @@
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "bitset.h"
+#include "bearch.h"
 
 static firm_dbg_module_t *dbg = NULL;
+
+#define SEARCH_FREE_COLORS
 
 #define SLOTS_PINNED_GLOBAL 256
 #define SLOTS_CONFLICTS 8
@@ -183,6 +186,7 @@ static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
 		found->new_color = get_irn_col(qn->ou->co, irn);
 }
 
+
 /**
  * Possible return values of qnode_color_irn()
  */
@@ -194,69 +198,110 @@ static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
  * Performs virtual re-coloring of node @p n to color @p col. Virtual colors of
  * other nodes are changed too, as required to preserve correctness. Function is
  * aware of local and global pinning. Recursive.
- * @param  irn The node to set the color for
- * @param  col The color to set
+ *
+ * If irn == trigger the color @p col must be used. (the first recoloring)
+ * If irn != trigger an arbitrary free color may be used. If no color is free, @p col is used.
+ *
+ * @param  irn     The node to set the color for
+ * @param  col     The color to set
  * @param  trigger The irn that caused the wish to change the color of the irn
+ *                 External callers must call with trigger = irn
+ *
  * @return CHANGE_SAVE iff setting the color is possible, with all transitive effects.
  *         CHANGE_IMPOSSIBLE iff conflicts with reg-constraintsis occured.
  *         Else the first conflicting ir_node encountered is returned.
  *
- * ASSUMPTION: Assumes that a life range of a single value can't be split into
- * 			   several smaller intervals where other values can live in between.
- *             This should be true in SSA.
  */
 static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const ir_node *trigger) {
 	const be_chordal_env_t *chordal_env = qn->ou->co->chordal_env;
 	const arch_register_class_t *cls = chordal_env->cls;
 	const arch_env_t *arch_env = chordal_env->main_env->arch_env;
 	int irn_col = qnode_get_new_color(qn, irn);
+	ir_node *sub_res, *curr;
+	be_ifg_t *ifg = chordal_env->ifg;
+	void *iter = be_ifg_neighbours_iter_alloca(ifg);
+
 
 	DBG((dbg, LEVEL_3, "\t    %+F \tcaused col(%+F) \t%2d --> %2d\n", trigger, irn, irn_col, col));
 
+	/* If the target color is already set do nothing */
 	if (irn_col == col) {
 		DBG((dbg, LEVEL_3, "\t      %+F same color\n", irn));
 		return CHANGE_SAVE;
 	}
+
+	/* If the irn is pinned, changing color is impossible */
 	if (pset_find_ptr(pinned_global, irn) || qnode_is_pinned_local(qn, irn)) {
 		DBG((dbg, LEVEL_3, "\t      %+F conflicting\n", irn));
 		return irn;
 	}
+
+#ifdef SEARCH_FREE_COLORS
+	/* If we resolve conflicts (recursive calls) we can use any unused color.
+	 * In case of the first call @p col must be used.
+	 */
+	if (irn != trigger) {
+		bitset_t *free_cols = bitset_alloca(cls->n_regs);
+		arch_register_req_t req;
+		ir_node *curr;
+		int free_col;
+
+		/* Get all possible colors */
+		arch_put_non_ignore_regs(arch_env, cls, free_cols);
+
+		/* Exclude colors not assignable to the irn */
+		arch_get_register_req(arch_env, &req, irn, -1);
+		if (arch_register_req_is(&req, limited)) {
+			bitset_t *limited = bitset_alloca(cls->n_regs);
+			req.limited(req.limited_env, limited);
+			bitset_and(free_cols, limited);
+		}
+
+		/* Exclude the color of the irn, because it must _change_ its color */
+		bitset_clear(free_cols, irn_col);
+
+		/* Exclude all colors used by adjacent nodes */
+		be_ifg_foreach_neighbour(ifg, iter, irn, curr)
+			bitset_clear(free_cols, qnode_get_new_color(qn, curr));
+
+		free_col = bitset_next_set(free_cols, 0);
+
+		if (free_col != -1) {
+			qnode_set_new_color(qn, irn, free_col);
+			return CHANGE_SAVE;
+		}
+	}
+#endif /* SEARCH_FREE_COLORS */
+
+	/* If target color is not allocatable changing color is impossible */
 	if (!arch_reg_is_allocatable(arch_env, irn, -1, arch_register_for_index(cls, col))) {
 		DBG((dbg, LEVEL_3, "\t      %+F impossible\n", irn));
 		return CHANGE_IMPOSSIBLE;
 	}
 
 	/*
-	 * Process all nodes which would conflict with this change
+	 * If we arrive here changing color may be possible, but there may be conflicts.
+	 * Try to color all conflicting nodes 'curr' with the color of the irn itself.
 	 */
-	{
-		be_ifg_t *ifg = chordal_env->ifg;
-		void *iter = be_ifg_neighbours_iter_alloca(ifg);
-		ir_node *sub_res, *curr;
-
-		/*
-		 * Try to color all conflicting nodes 'curr'
-		 * with the color of the irn itself.
-		 */
-		be_ifg_foreach_neighbour(ifg, iter, irn, curr) {
-			DBG((dbg, LEVEL_3, "\t      Confl %+F(%d)\n", curr, qnode_get_new_color(qn, curr)));
-			if (qnode_get_new_color(qn, curr) == col && curr != trigger) {
-				sub_res = qnode_color_irn(qn, curr, irn_col, irn);
-				if (sub_res != CHANGE_SAVE) {
-					be_ifg_neighbours_break(ifg, iter);
-					return sub_res;
-				}
+	be_ifg_foreach_neighbour(ifg, iter, irn, curr) {
+		DBG((dbg, LEVEL_3, "\t      Confl %+F(%d)\n", curr, qnode_get_new_color(qn, curr)));
+		if (qnode_get_new_color(qn, curr) == col && curr != trigger) {
+			sub_res = qnode_color_irn(qn, curr, irn_col, irn);
+			if (sub_res != CHANGE_SAVE) {
+				be_ifg_neighbours_break(ifg, iter);
+				return sub_res;
 			}
 		}
 	}
 
 	/*
-	 * If we arrive here, all sub changes have been applied.
-	 * So it's save to change this irn
+	 * If we arrive here, all conflicts were resolved.
+	 * So it is save to change this irn
 	 */
 	qnode_set_new_color(qn, irn, col);
 	return CHANGE_SAVE;
 }
+
 
 /**
  * Tries to set the colors for all members of this queue node;
