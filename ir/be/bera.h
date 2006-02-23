@@ -24,7 +24,7 @@ typedef struct {
 #ifdef WITH_LIBCORE
 	void (*register_options)(lc_opt_entry_t *grp);
 #endif
-	void (*allocate)(const be_main_env_t *env, ir_graph *irg);
+	void (*allocate)(const be_irg_t *bi);
 } be_ra_t;
 
 
