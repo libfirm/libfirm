@@ -111,6 +111,7 @@ $arch = "ia32";
             { "name" => "xmm5", "type" => 1 },
             { "name" => "xmm6", "type" => 1 },
             { "name" => "xmm7", "type" => 1 },
+            { "name" => "xxxx", "type" => 4 },  # we need a dummy register for NoReg and Unknown nodes
 			{ "mode" => "mode_D" }
           ]
 ); # %reg_classes
