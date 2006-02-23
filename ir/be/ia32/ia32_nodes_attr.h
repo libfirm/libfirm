@@ -23,8 +23,24 @@ typedef	enum {
  * I - Index is set
  * S - Scale is set
  */
+
+enum {
+	ia32_O = 1,
+	ia32_B = 2,
+	ia32_I = 4,
+	ia32_S = 8
+};
+
 typedef enum {
-	ia32_am_N = 0, ia32_am_O, ia32_am_B, ia32_am_I, ia32_am_IS, ia32_am_OB, ia32_am_OI, ia32_am_OIS, ia32_am_OBIS
+	ia32_am_N    = 0,
+	ia32_am_O    = ia32_O,
+	ia32_am_B    = ia32_B,
+	ia32_am_I    = ia32_I,
+	ia32_am_IS   = ia32_I | ia32_S,
+	ia32_am_OB   = ia32_O | ia32_B,
+	ia32_am_OI   = ia32_O | ia32_I,
+	ia32_am_OIS  = ia32_O | ia32_I | ia32_S,
+	ia32_am_OBIS = ia32_O | ia32_B | ia32_I | ia32_S
 } ia32_am_flavour_t;
 
 typedef struct _ia32_register_req_t {
