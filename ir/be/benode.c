@@ -86,6 +86,7 @@ typedef struct {
 
 typedef struct {
 	int                         n_outs;
+	arch_irn_flags_t            flags;
 	const arch_register_class_t *cls;
 	be_reg_data_t               *reg_data;
 } be_node_attr_t;
@@ -170,6 +171,7 @@ static void *init_node_attr(ir_node* irn, const arch_register_class_t *cls, ir_g
 	be_node_attr_t *a = get_irn_attr(irn);
 
 	a->n_outs   = n_outs;
+	a->flags    = arch_irn_flags_none;
 	a->cls      = cls;
 	a->reg_data = NULL;
 
@@ -196,6 +198,34 @@ be_opcode_t get_irn_be_opcode(const ir_node *irn)
 {
 	return is_be_node(irn) ? get_irn_opcode(irn) - beo_base : beo_NoBeOp;
 }
+
+static int redir_proj(const ir_node **node, int pos)
+{
+	const ir_node *n = *node;
+
+	if(is_Proj(n)) {
+		assert(pos == -1 && "Illegal pos for a Proj");
+		*node = get_Proj_pred(n);
+		return get_Proj_proj(n);
+	}
+
+	return 0;
+}
+
+static void
+be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
+{
+	int out_pos;
+	be_node_attr_t *a;
+
+	out_pos = redir_proj((const ir_node **) &irn, -1);
+	a       = get_irn_attr(irn);
+
+	assert(is_be_node(irn));
+	assert(out_pos < a->n_outs && "position too high");
+	a->reg_data[out_pos].reg = reg;
+}
+
 
 ir_node *be_new_Spill(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *to_spill, ir_node *ctx)
 {
@@ -280,36 +310,45 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	a->dir    = dir;
 	a->offset = offset;
 
+	a->node_attr.flags |= arch_irn_flags_ignore;
+
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, -1, sp);
+	be_node_set_irn_reg(NULL, irn, sp);
 
 	return irn;
 }
 
 ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *op)
 {
+	be_node_attr_t *a;
 	ir_node *irn;
 	ir_node *in[2];
 
 	in[0]    = old_sp;
 	in[1]    = op;
 	irn      = new_ir_node(NULL, irg, bl, op_AddSP, sp->reg_class->mode, 2, in);
-	init_node_attr(irn, sp->reg_class, irg, 1);
+	a        = init_node_attr(irn, sp->reg_class, irg, 1);
+	a->flags |= arch_irn_flags_ignore;
 
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, -1, sp);
+	be_node_set_irn_reg(NULL, irn, sp);
 
 	return irn;
 }
 
 ir_node *be_new_NoReg(const arch_register_t *reg, ir_graph *irg, ir_node *bl)
 {
+	be_node_attr_t *a;
 	ir_node *irn;
 	ir_node *in[1];
 
 	irn = new_ir_node(NULL, irg, bl, op_NoReg, reg->reg_class->mode, 0, in);
-	init_node_attr(irn, reg->reg_class, irg, 1);
+	a   = init_node_attr(irn, reg->reg_class, irg, 1);
+	a->flags |= arch_irn_flags_ignore;
 	be_set_constr_single_reg(irn, -1, reg);
+	be_node_set_irn_reg(NULL, irn, reg);
 	return irn;
 }
 
@@ -521,19 +560,6 @@ ir_node *be_reload(const arch_env_t *arch_env,
 	return reload;
 }
 
-static int redir_proj(const ir_node **node, int pos)
-{
-	const ir_node *n = *node;
-
-	if(is_Proj(n)) {
-		assert(pos == -1 && "Illegal pos for a Proj");
-		*node = get_Proj_pred(n);
-		return get_Proj_proj(n);
-	}
-
-	return 0;
-}
-
 static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int out_pos)
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
@@ -584,20 +610,6 @@ be_node_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_nod
 	return req;
 }
 
-static void
-be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
-{
-	int out_pos;
-	be_node_attr_t *a;
-
-	out_pos = redir_proj((const ir_node **) &irn, -1);
-	a       = get_irn_attr(irn);
-
-	assert(is_be_node(irn));
-	assert(out_pos < a->n_outs && "position too high");
-	a->reg_data[out_pos].reg = reg;
-}
-
 const arch_register_t *
 be_node_get_irn_reg(const void *_self, const ir_node *irn)
 {
@@ -631,9 +643,10 @@ arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 	return 0;
 }
 
-arch_irn_class_t be_node_get_flags(const void *_self, const ir_node *irn)
+arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *irn)
 {
-	return 0;
+	be_node_attr_t *a = get_irn_attr(irn);
+	return a->flags;
 }
 
 static const arch_irn_ops_if_t be_node_irn_ops_if = {
@@ -681,19 +694,31 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 				fprintf(f, "reg #%d: %s\n", i, reg ? reg->name : "n/a");
 			}
 
-			if(get_irn_be_opcode(irn) == beo_Spill) {
-				be_spill_attr_t *a = (be_spill_attr_t *) at;
+			switch(get_irn_be_opcode(irn)) {
+			case beo_Spill:
+				{
+					be_spill_attr_t *a = (be_spill_attr_t *) at;
 
-				ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
-				if (a->ent) {
-					unsigned ofs = get_entity_offset_bytes(a->ent);
-					ir_fprintf(f, "spill entity: %+F offset %x (%d)\n", a->ent, ofs, ofs);
+					ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
+					if (a->ent) {
+						unsigned ofs = get_entity_offset_bytes(a->ent);
+						ir_fprintf(f, "spill entity: %+F offset %x (%d)\n", a->ent, ofs, ofs);
+					}
+					else {
+						ir_fprintf(f, "spill entity: n/a\n");
+					}
 				}
-				else {
-					ir_fprintf(f, "spill entity: n/a\n");
+				break;
+
+			case beo_IncSP:
+				{
+					be_stack_attr_t *a = (be_stack_attr_t *) at;
+					fprintf(f, "offset: %u\n", a->offset);
+					fprintf(f, "direction: %s\n", a->dir == be_stack_dir_along ? "along" : "against");
 				}
+				break;
 			}
-			break;
+
 	}
 
 	return 0;

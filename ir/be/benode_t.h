@@ -90,7 +90,9 @@ int be_is_Perm(const ir_node *irn);
 int be_is_Keep(const ir_node *irn);
 int be_is_Call(const ir_node *irn);
 int be_is_AddSP(const ir_node *irn);
-int be_is_IncSP(const ir_node *irn);
+int be_is_RegParams(const ir_node *irn);
+int be_is_StackParam(const ir_node *irn);
+int be_is_NoReg(const ir_node *irn);
 
 
 void   be_set_Spill_entity(ir_node *irn, entity *ent);
