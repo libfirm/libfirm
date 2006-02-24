@@ -234,6 +234,17 @@ static int node_is_comm(const ir_node *irn) {
 	return 0;
 }
 
+static int ia32_get_irn_n_edges(const ir_node *irn) {
+	const ir_edge_t *edge;
+	int cnt = 0;
+
+	foreach_out_edge(irn, edge) {
+		cnt++;
+	}
+
+	return cnt;
+}
+
 /**
  * Returns the first mode_M Proj connected to irn.
  */
@@ -578,7 +589,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				store  = NULL;
 
 				/* now check for users and Store */
-				if (get_irn_n_edges(succ) == 1) {
+				if (ia32_get_irn_n_edges(succ) == 1) {
 					succ = get_edge_src_irn(get_irn_out_edge_first(succ));
 
 					if (is_ia32_fStore(succ) || is_ia32_Store(succ)) {
@@ -675,7 +686,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			if (check_am_src) {
 				left = get_irn_n(irn, 2);
 
-				if (get_irn_n_edges(left) == 1) {
+				if (ia32_get_irn_n_edges(left) == 1) {
 					left = get_Proj_pred(left);
 
 					addr_b = get_irn_n(left, 0);

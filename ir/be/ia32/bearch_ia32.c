@@ -325,6 +325,8 @@ static void ia32_prepare_graph(void *self) {
 
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
 	dump_ir_block_graph_sched(cg->irg, "-transformed");
+	edges_deactivate(cg->irg);
+	edges_activate(cg->irg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
 	dump_ir_block_graph_sched(cg->irg, "-am");
 }

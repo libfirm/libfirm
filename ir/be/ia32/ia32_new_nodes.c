@@ -469,11 +469,12 @@ char *get_ia32_am_offs(const ir_node *node) {
 
 	size = obstack_object_size(attr->am_offs);
     if (size > 0) {
-		res = xcalloc(1, size + 1);
-		memcpy(res, obstack_base(attr->am_offs), size);
+		res    = xcalloc(1, size + 2);
+		res[0] = attr->offs_sign;
+		memcpy(&res[1], obstack_base(attr->am_offs), size);
     }
 
-	res[size] = '\0';
+	res[size + 1] = '\0';
 	return res;
 }
 
@@ -483,13 +484,28 @@ char *get_ia32_am_offs(const ir_node *node) {
 static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
+	if (! offset)
+		return;
+
+	/* offset could already have an explicit sign */
+	/* -> supersede op if necessary               */
+	if (offset[0] == '-' || offset[0] == '+') {
+		op = offset[0];
+		offset++;
+	}
+
 	if (!attr->am_offs) {
 		/* obstack is not initialized */
 		attr->am_offs = xcalloc(1, sizeof(*(attr->am_offs)));
 		obstack_init(attr->am_offs);
+		attr->offs_sign = op;
+	}
+	else {
+		/* If obstack is initialized, connect the new offset with op */
+		obstack_printf(attr->am_offs, "%c", op);
 	}
 
-	obstack_printf(attr->am_offs, "%c%s", op, offset);
+	obstack_printf(attr->am_offs, "%s", offset);
 }
 
 /**

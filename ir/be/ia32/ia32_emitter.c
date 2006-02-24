@@ -128,14 +128,7 @@ char *ia32_emit_am(const ir_node *n) {
 	}
 
 	if (am_flav & ia32_O) {
-		s = get_ia32_am_offs(n);
-
-		if (! had_output) {
-			/* skip the first 3 characters which are " <op> " */
-			s += 3;
-		}
-
-		obstack_printf(obst, "%s", s);
+		obstack_printf(obst, get_ia32_am_offs(n));
 	}
 
 	obstack_printf(obst, "] ");

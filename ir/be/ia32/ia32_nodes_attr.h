@@ -54,8 +54,9 @@ typedef struct _ia32_attr_t {
 	ia32_am_type_t    am_support;   /**<< indicates addrmode type supported by this node */
 	ia32_am_flavour_t am_flavour;   /**<< the concrete addrmode characteristics */
 
-	struct obstack *am_offs;  /**<< offsets for AddrMode */
-	int             am_scale; /**<< addrmode scale for index register */
+	struct obstack *am_offs;    /**<< offsets for AddrMode */
+	char            offs_sign;  /**<< the sign of the first offset */
+	int             am_scale;   /**<< addrmode scale for index register */
 
 	tarval *tv;   /**<< tarval for immediate operations */
 	char   *sc;   /**<< symconst name */
