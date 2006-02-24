@@ -490,14 +490,14 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 	/* 1st part: check for address calculations and transform the into Lea */
 
-	/* Following cases can occur: */
-	/* - Sub (l, imm) -> LEA [base - offset] */
+	/* Following cases can occur:                                  */
+	/* - Sub (l, imm) -> LEA [base - offset]                       */
 	/* - Sub (l, r == LEA with ia32_am_O)   -> LEA [base - offset] */
-	/* - Add (l, imm) -> LEA [base + offset] */
-	/* - Add (l, r == LEA with ia32_am_O)  -> LEA [base + offset] */
-	/* - Add (l == LEA with ia32_am_O, r)  -> LEA [base + offset] */
-	/* - Add (l, r) -> LEA [base + index * scale] */
-	/*              with scale > 1 iff l/r == shl (1,2,3) */
+	/* - Add (l, imm) -> LEA [base + offset]                       */
+	/* - Add (l, r == LEA with ia32_am_O)  -> LEA [base + offset]  */
+	/* - Add (l == LEA with ia32_am_O, r)  -> LEA [base + offset]  */
+	/* - Add (l, r) -> LEA [base + index * scale]                  */
+	/*              with scale > 1 iff l/r == shl (1,2,3)          */
 
 	if (is_ia32_Sub(irn) || is_ia32_Add(irn)) {
 		left  = get_irn_n(irn, 2);
@@ -511,21 +511,21 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 		}
 	}
 
-	/* 2nd part: fold following patterns:
+	/* 2nd part: fold following patterns:                                               */
 	/* - Load  -> LEA into Load  } TODO: If the LEA is used by more than one Load/Store */
 	/* - Store -> LEA into Store }       it might be better to keep the LEA             */
-	/* - op -> Load into AMop with am_Source
-	/*   conditions:                */
-	/*     - op is am_Source capable AND   */
-	/*     - the Load is only used by this op AND */
-	/*     - the Load is in the same block */
-	/* - Store -> op -> Load  into AMop with am_Dest  */
-	/*   conditions:                */
-	/*     - op is am_Dest capable AND   */
-	/*     - the Store uses the same address as the Load AND */
-	/*     - the Load is only used by this op AND */
-	/*     - the Load and Store are in the same block AND  */
-	/*     - nobody else uses the result of the op */
+	/* - op -> Load into AMop with am_Source                                            */
+	/*   conditions:                                                                    */
+	/*     - op is am_Source capable AND                                                */
+	/*     - the Load is only used by this op AND                                       */
+	/*     - the Load is in the same block                                              */
+	/* - Store -> op -> Load  into AMop with am_Dest                                    */
+	/*   conditions:                                                                    */
+	/*     - op is am_Dest capable AND                                                  */
+	/*     - the Store uses the same address as the Load AND                            */
+	/*     - the Load is only used by this op AND                                       */
+	/*     - the Load and Store are in the same block AND                               */
+	/*     - nobody else uses the result of the op                                      */
 
 	if ((res == irn) && (get_ia32_am_support(irn) != ia32_am_None) && !is_ia32_Lea(irn)) {
 		/* 1st: check for Load/Store -> LEA   */
