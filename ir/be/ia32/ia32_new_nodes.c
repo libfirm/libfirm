@@ -488,13 +488,8 @@ static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 		attr->am_offs = xcalloc(1, sizeof(*(attr->am_offs)));
 		obstack_init(attr->am_offs);
 	}
-	else {
-		/* obstack is initialized -> there is already one offset */
-		/* present -> connect the offsets with an add            */
-		obstack_printf(attr->am_offs, " %c ", op);
-	}
 
-	obstack_printf(attr->am_offs, "%s", offset);
+	obstack_printf(attr->am_offs, "%c%s", op, offset);
 }
 
 /**
@@ -568,7 +563,7 @@ void set_ia32_sc(ir_node *node, char *sc) {
 /**
  * Gets the string representation of the internal const (tv or symconst)
  */
-char *get_ia32_cnst(ir_node *node) {
+char *get_ia32_cnst(const ir_node *node) {
   ia32_attr_t *attr = get_ia32_attr(node);
   return attr->cnst;
 }

@@ -110,7 +110,7 @@ void set_ia32_sc(ir_node *node, char *sc);
 /**
  * Gets the string representation of the internal const (tv or symconst)
  */
-char *get_ia32_cnst(ir_node *node);
+char *get_ia32_cnst(const ir_node *node);
 
 /**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
