@@ -148,19 +148,17 @@ local_optimize_graph (ir_graph *irg) {
 /**
  * Remember the new node in the old node by using a field all nodes have.
  */
-static INLINE void
-set_new_node (ir_node *old, ir_node *new)
-{
-  old->link = new;
-}
+#define set_new_node(oldn, newn)  set_irn_link(oldn, newn)
 
 /**
  * Get this new node, before the old node is forgotten.
  */
-static INLINE ir_node *
-get_new_node (ir_node * n) {
-  return n->link;
-}
+#define get_new_node(oldn) get_irn_link(oldn)
+
+/**
+ * Check if a new node was set.
+ */
+#define has_new_node(n) (get_new_node(n) != NULL)
 
 /**
  * We use the block_visited flag to mark that we have computed the
@@ -325,26 +323,26 @@ copy_preds (ir_node *n, void *env) {
       set_irn_n (nn, i, get_new_node(get_irn_n(n, i)));
   }
   /* Now the new node is complete.  We can add it to the hash table for CSE.
-     @@@ inlinening aborts if we identify End. Why? */
+     @@@ inlining aborts if we identify End. Why? */
   if (get_irn_op(nn) != op_End)
     add_identities (current_ir_graph->value_table, nn);
 }
 
 /**
- * Copies the graph recursively, compacts the keepalive of the end node.
+ * Copies the graph recursively, compacts the keep-alives of the end node.
  *
+ * @param irg           the graph to be copied
  * @param copy_node_nr  If non-zero, the node number will be copied
  */
-static void
-copy_graph (int copy_node_nr) {
+static void copy_graph(ir_graph *irg, int copy_node_nr) {
   ir_node *oe, *ne, *ob, *nb, *om, *nm; /* old end, new end, old bad, new bad, old NoMem, new NoMem */
   ir_node *ka;      /* keep alive */
   int i, irn_arity;
 
-  oe = get_irg_end(current_ir_graph);
+  oe = get_irg_end(irg);
   /* copy the end node by hand, allocate dynamic in array! */
   ne = new_ir_node(get_irn_dbg_info(oe),
-           current_ir_graph,
+           irg,
            NULL,
            op_End,
            mode_X,
@@ -355,9 +353,9 @@ copy_graph (int copy_node_nr) {
   set_new_node(oe, ne);
 
   /* copy the Bad node */
-  ob = get_irg_bad(current_ir_graph);
-  nb =  new_ir_node(get_irn_dbg_info(ob),
-           current_ir_graph,
+  ob = get_irg_bad(irg);
+  nb = new_ir_node(get_irn_dbg_info(ob),
+           irg,
            NULL,
            op_Bad,
            mode_T,
@@ -366,9 +364,9 @@ copy_graph (int copy_node_nr) {
   set_new_node(ob, nb);
 
   /* copy the NoMem node */
-  om = get_irg_no_mem(current_ir_graph);
-  nm =  new_ir_node(get_irn_dbg_info(om),
-           current_ir_graph,
+  om = get_irg_no_mem(irg);
+  nm = new_ir_node(get_irn_dbg_info(om),
+           irg,
            NULL,
            op_NoMem,
            mode_M,
@@ -387,23 +385,23 @@ copy_graph (int copy_node_nr) {
   irn_arity = get_irn_arity(oe);
   for (i = 0; i < irn_arity; i++) {
     ka = get_irn_intra_n(oe, i);
-    if ((get_irn_op(ka) == op_Block) &&
-        (get_irn_visited(ka) < get_irg_visited(current_ir_graph))) {
+    if (is_Block(ka) &&
+        (get_irn_visited(ka) < get_irg_visited(irg))) {
       /* We must keep the block alive and copy everything reachable */
-      set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+      set_irg_visited(irg, get_irg_visited(irg)-1);
       irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       add_End_keepalive(ne, get_new_node(ka));
     }
   }
 
-  /* Now pick the Phis.  Here we will keep all! */
+  /* Now pick other nodes.  Here we will keep all! */
   irn_arity = get_irn_arity(oe);
   for (i = 0; i < irn_arity; i++) {
     ka = get_irn_intra_n(oe, i);
-    if ((get_irn_op(ka) == op_Phi)) {
-      if (get_irn_visited(ka) < get_irg_visited(current_ir_graph)) {
-        /* We didn't copy the Phi yet.  */
-        set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+    if (!is_Block(ka)) {
+      if (get_irn_visited(ka) < get_irg_visited(irg)) {
+        /* We didn't copy the node yet.  */
+        set_irg_visited(irg, get_irg_visited(irg)-1);
         irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       }
       add_End_keepalive(ne, get_new_node(ka));
@@ -425,63 +423,70 @@ copy_graph (int copy_node_nr) {
  */
 static void
 copy_graph_env (int copy_node_nr) {
-  ir_node *old_end;
-  /* Not all nodes remembered in current_ir_graph might be reachable
+  ir_graph *irg = current_ir_graph;
+  ir_node *old_end, *n;
+  /* Not all nodes remembered in irg might be reachable
      from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
-  set_irn_link(get_irg_frame      (current_ir_graph), NULL);
-  set_irn_link(get_irg_globals    (current_ir_graph), NULL);
-  set_irn_link(get_irg_args       (current_ir_graph), NULL);
-  set_irn_link(get_irg_initial_mem(current_ir_graph), NULL);
-  set_irn_link(get_irg_bad        (current_ir_graph), NULL);
-  set_irn_link(get_irg_no_mem     (current_ir_graph), NULL);
+  set_irn_link(get_irg_frame      (irg), NULL);
+  set_irn_link(get_irg_globals    (irg), NULL);
+  set_irn_link(get_irg_args       (irg), NULL);
+  set_irn_link(get_irg_initial_mem(irg), NULL);
+  set_irn_link(get_irg_bad        (irg), NULL);
+  set_irn_link(get_irg_no_mem     (irg), NULL);
 
   /* we use the block walk flag for removing Bads from Blocks ins. */
-  inc_irg_block_visited(current_ir_graph);
+  inc_irg_block_visited(irg);
 
   /* copy the graph */
-  copy_graph(copy_node_nr);
+  copy_graph(irg, copy_node_nr);
 
-  /* fix the fields in current_ir_graph */
-  old_end = get_irg_end(current_ir_graph);
-  set_irg_end        (current_ir_graph, get_new_node(old_end));
-  set_irg_end_except (current_ir_graph, get_irg_end(current_ir_graph));
-  set_irg_end_reg    (current_ir_graph, get_irg_end(current_ir_graph));
+  /* fix the fields in irg */
+  old_end = get_irg_end(irg);
+  set_irg_end        (irg, get_new_node(old_end));
+  set_irg_end_except (irg, get_irg_end(irg));
+  set_irg_end_reg    (irg, get_irg_end(irg));
   free_End(old_end);
-  set_irg_end_block  (current_ir_graph, get_new_node(get_irg_end_block(current_ir_graph)));
+  set_irg_end_block  (irg, get_new_node(get_irg_end_block(irg)));
 
-  if (get_irn_link(get_irg_frame(current_ir_graph)) == NULL) {
-    copy_node (get_irg_frame(current_ir_graph), INT_TO_PTR(copy_node_nr));
-    copy_preds(get_irg_frame(current_ir_graph), NULL);
+  n = get_irg_frame(irg);
+  if (!has_new_node(n)) {
+    copy_node (n, INT_TO_PTR(copy_node_nr));
+    copy_preds(n, NULL);
   }
-  if (get_irn_link(get_irg_globals(current_ir_graph)) == NULL) {
-    copy_node (get_irg_globals(current_ir_graph), INT_TO_PTR(copy_node_nr));
-    copy_preds(get_irg_globals(current_ir_graph), NULL);
+  n = get_irg_globals(irg);
+  if (!has_new_node(n)) {
+    copy_node (n, INT_TO_PTR(copy_node_nr));
+    copy_preds(n, NULL);
   }
-  if (get_irn_link(get_irg_initial_mem(current_ir_graph)) == NULL) {
-    copy_node (get_irg_initial_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
-    copy_preds(get_irg_initial_mem(current_ir_graph), NULL);
+  n = get_irg_initial_mem(irg);
+  if (!has_new_node(n)) {
+    copy_node (n, INT_TO_PTR(copy_node_nr));
+    copy_preds(n, NULL);
   }
-  if (get_irn_link(get_irg_args(current_ir_graph)) == NULL) {
-    copy_node (get_irg_args(current_ir_graph), INT_TO_PTR(copy_node_nr));
-    copy_preds(get_irg_args(current_ir_graph), NULL);
+  n = get_irg_args(irg);
+  if (!has_new_node(n)) {
+    copy_node (n, INT_TO_PTR(copy_node_nr));
+    copy_preds(n, NULL);
   }
-  if (get_irn_link(get_irg_bad(current_ir_graph)) == NULL) {
-    copy_node(get_irg_bad(current_ir_graph), INT_TO_PTR(copy_node_nr));
-    copy_preds(get_irg_bad(current_ir_graph), NULL);
+  n = get_irg_bad(irg);
+  if (!has_new_node(n)) {
+    copy_node(n, INT_TO_PTR(copy_node_nr));
+    copy_preds(n, NULL);
   }
-  if (get_irn_link(get_irg_no_mem(current_ir_graph)) == NULL) {
-    copy_node(get_irg_no_mem(current_ir_graph), INT_TO_PTR(copy_node_nr));
-    copy_preds(get_irg_no_mem(current_ir_graph), NULL);
+  n = get_irg_no_mem(irg);
+  if (!has_new_node(n)) {
+    copy_node(n, INT_TO_PTR(copy_node_nr));
+    copy_preds(n, NULL);
   }
-  set_irg_start      (current_ir_graph, get_new_node(get_irg_start(current_ir_graph)));
-  set_irg_start_block(current_ir_graph, get_new_node(get_irg_start_block(current_ir_graph)));
-  set_irg_frame      (current_ir_graph, get_new_node(get_irg_frame(current_ir_graph)));
-  set_irg_globals    (current_ir_graph, get_new_node(get_irg_globals(current_ir_graph)));
-  set_irg_initial_mem(current_ir_graph, get_new_node(get_irg_initial_mem(current_ir_graph)));
-  set_irg_args       (current_ir_graph, get_new_node(get_irg_args(current_ir_graph)));
-  set_irg_bad        (current_ir_graph, get_new_node(get_irg_bad(current_ir_graph)));
-  set_irg_no_mem     (current_ir_graph, get_new_node(get_irg_no_mem(current_ir_graph)));
+  set_irg_start      (irg, get_new_node(get_irg_start(irg)));
+  set_irg_start_block(irg, get_new_node(get_irg_start_block(irg)));
+  set_irg_frame      (irg, get_new_node(get_irg_frame(irg)));
+  set_irg_globals    (irg, get_new_node(get_irg_globals(irg)));
+  set_irg_initial_mem(irg, get_new_node(get_irg_initial_mem(irg)));
+  set_irg_args       (irg, get_new_node(get_irg_args(irg)));
+  set_irg_bad        (irg, get_new_node(get_irg_bad(irg)));
+  set_irg_no_mem     (irg, get_new_node(get_irg_no_mem(irg)));
 }
 
 /**
