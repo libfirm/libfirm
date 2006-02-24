@@ -112,7 +112,7 @@ enum {
 };
 
 struct _be_ra_chordal_opts_t {
-	unsigned dump_flags;
+	int dump_flags;
 	int spill_method;
 	int copymin_method;
 	int ifg_flavor;
