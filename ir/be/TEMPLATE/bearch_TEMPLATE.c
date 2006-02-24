@@ -315,13 +315,6 @@ static ir_node *TEMPLATE_lower_reload(void *self, ir_node *reload) {
 }
 
 /**
- * Returns the Stackregister
- */
-static const arch_register_t *TEMPLATE_get_stack_register(void *self) {
-	/* TODO */
-}
-
-/**
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
@@ -355,7 +348,6 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_before_ra,      /* before register allocation hook */
 	TEMPLATE_lower_spill,
 	TEMPLATE_lower_reload,
-	TEMPLATE_get_stack_register,
 	TEMPLATE_codegen         /* emit && done */
 };
 
