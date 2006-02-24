@@ -841,7 +841,14 @@ static ir_node *gen_DivMod(ia32_transform_env_t *env, ir_node *op1, ir_node *op2
  * @return The created ia32 fDiv node
  */
 static ir_node *gen_Quot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return gen_binop(env, op1, op2, new_rd_ia32_fDiv);
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *nomem = new_rd_NoMem(env->irg);
+	ir_node *new_op;
+
+	new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem, env->mode);
+	set_ia32_am_support(new_op, ia32_am_Source);
+
+	return new_op;
 }
 
 

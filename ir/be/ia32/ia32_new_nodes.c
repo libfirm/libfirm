@@ -190,10 +190,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 		case dump_node_mode_txt:
 			mode = get_irn_mode(n);
 
-			if (mode == mode_BB || mode == mode_ANY || mode == mode_BAD || mode == mode_T) {
-				mode = NULL;
-			}
-			else if (is_ia32_Load(n)) {
+			if (is_ia32_Load(n)) {
 				mode = get_irn_mode(get_irn_n(n, 0));
 			}
 			else if (is_ia32_Store(n)) {
@@ -219,8 +216,11 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 				fprintf(F, "[%s%s]", pref, get_ia32_cnst(n));
 			}
 
-			if (is_ia32_AddrModeS(n) || is_ia32_AddrModeD(n)) {
-				fprintf(F, "[AM] ");
+			if (is_ia32_AddrModeS(n)) {
+				fprintf(F, "[AM S] ");
+			}
+			else if (is_ia32_AddrModeD(n)) {
+				fprintf(F, "[AM D] ");
 			}
 
 			break;
@@ -273,6 +273,9 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 				case ia32_AddrModeS:
 					fprintf(F, "AM Source (Load)");
 					break;
+				default:
+					fprintf(F, "unknown (%d)", attr->tp);
+					break;
 			}
 			fprintf(F, "\n");
 
@@ -292,8 +295,32 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 				case ia32_am_Full:
 					fprintf(F, "full");
 					break;
+				default:
+					fprintf(F, "unknown (%d)", attr->am_support);
+					break;
 			}
 			fprintf(F, "\n");
+
+			/* dump am flavour */
+			fprintf(F, "AM flavour =");
+			if (attr->am_flavour == ia32_am_N) {
+				fprintf(F, " none");
+			}
+			else {
+				if (attr->am_flavour & ia32_O) {
+					fprintf(F, " O");
+				}
+				if (attr->am_flavour & ia32_B) {
+					fprintf(F, " B");
+				}
+				if (attr->am_flavour & ia32_I) {
+					fprintf(F, " I");
+				}
+				if (attr->am_flavour & ia32_S) {
+					fprintf(F, " S");
+				}
+			}
+			fprintf(F, " (%d)\n", attr->am_flavour);
 
 			/* dump AM offset */
 			fprintf(F, "AM offset = ");
@@ -316,16 +343,21 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* dump flags */
 			fprintf(F, "flags =");
-			if (attr->flags & arch_irn_flags_dont_spill) {
-				fprintf(F, " unspillable");
+			if (attr->flags == arch_irn_flags_none) {
+				fprintf(F, " none");
 			}
-			if (attr->flags & arch_irn_flags_rematerializable) {
-				fprintf(F, " remat");
+			else {
+				if (attr->flags & arch_irn_flags_dont_spill) {
+					fprintf(F, " unspillable");
+				}
+				if (attr->flags & arch_irn_flags_rematerializable) {
+					fprintf(F, " remat");
+				}
+				if (attr->flags & arch_irn_flags_ignore) {
+					fprintf(F, " ignore");
+				}
 			}
-			if (attr->flags & arch_irn_flags_ignore) {
-				fprintf(F, " ignore");
-			}
-			fprintf(F, "\n");
+			fprintf(F, " (%d)\n", attr->flags);
 
 			fprintf(F, "=== IA32 attr end ===\n");
 			/* end of: case dump_node_info_txt */
@@ -418,7 +450,7 @@ ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node) {
  */
 void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_support  = am_flavour;
+	attr->am_flavour  = am_flavour;
 }
 
 /**

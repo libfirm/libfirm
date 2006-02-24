@@ -397,7 +397,7 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 
 	/* ok, we can create a new LEA */
 	if (dolea) {
-		res = new_rd_ia32_Lea(dbg, irg, block, base, index, mode);
+		res = new_rd_ia32_Lea(dbg, irg, block, base, index, mode_Is);
 
 		/* add the old offset of a previous LEA */
 		if (offs) {
