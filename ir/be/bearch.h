@@ -437,14 +437,6 @@ struct _arch_code_generator_if_t {
 	ir_node *(*lower_reload)(void *self, ir_node *reload);
 
 	/**
-	 * Called in lowering (e.g. alloca lowering) to set the
-	 * correct stack register.
-	 * @param self The code generator
-	 * @return     The stack register for the current irg
-	 */
-	const arch_register_t *(*get_stack_register)(void *self);
-
-	/**
 	 * Called after everything happened.
 	 * The code generator must also be de-allocated here.
 	 */

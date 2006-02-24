@@ -523,10 +523,6 @@ static void firm_before_ra(void *self)
 	irg_walk_graph(cg->irg, imm_scheduler, NULL, NULL);
 }
 
-static const arch_register_t *firm_get_stack_register(void *self) {
-	return &datab_regs[0];
-}
-
 static void firm_codegen_done(void *self)
 {
 	free(self);
@@ -541,7 +537,6 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_before_ra,
 	NULL,  /* lower spill */
 	NULL,  /* lower reload */
-	firm_get_stack_register,
 	firm_codegen_done
 };
 
