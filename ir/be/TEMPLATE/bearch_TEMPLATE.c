@@ -254,9 +254,7 @@ TEMPLATE_irn_ops_t TEMPLATE_irn_ops = {
 static void TEMPLATE_prepare_graph(void *self) {
 	TEMPLATE_code_gen_t *cg = self;
 
-	if (! is_pseudo_ir_graph(cg->irg)) {
-		irg_walk_blkwise_graph(cg->irg, TEMPLATE_place_consts, TEMPLATE_transform_node, cg);
-	}
+	irg_walk_blkwise_graph(cg->irg, TEMPLATE_place_consts, TEMPLATE_transform_node, cg);
 }
 
 

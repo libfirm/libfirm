@@ -172,6 +172,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 {
 	int i, j, n;
 
+  memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
 	env->dbg = firm_dbg_register("be.main");
 
@@ -340,6 +341,9 @@ static void be_main_loop(FILE *file_handle)
 
 void be_main(FILE *file_handle)
 {
+	/* never build code for pseudo irgs */
+	set_visit_pseudo_irgs(0);
+
 	be_node_init();
 	be_main_loop(file_handle);
 }
