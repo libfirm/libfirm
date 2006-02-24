@@ -36,7 +36,6 @@ struct _be_main_env_t {
 struct _be_irg_t {
 	ir_graph                      *irg;
 	struct _be_main_env_t         *main_env;
-	struct _dom_front_info_t      *dom_front;
 	struct _be_abi_irg_t          *abi;
 	struct _arch_code_generator_t *cg;
 };

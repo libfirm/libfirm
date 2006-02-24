@@ -808,7 +808,7 @@ pset *nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls
 		for(x = pset_first(live); x; x = pset_next(live))
 			DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
 
-		if(arch_irn_has_reg_class(arch_env, irn, -1, cls))
+		if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
 			pset_remove_ptr(live, irn);
 
 		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {

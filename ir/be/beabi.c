@@ -50,6 +50,8 @@ struct _be_abi_irg_t {
 
 	unsigned omit_framepointer: 1;     /**< If one, the frame(base-)pointer can be used
 									     as an ordinary register. */
+
+	firm_dbg_module_t *dbg;            /**< The debugging module. */
 };
 
 static int cmp_call_arg(const void *a, const void *b, size_t n)
@@ -380,15 +382,21 @@ static void modify_irg(be_abi_irg_t *env)
 
 	int max_arg = 0;
 	int reg_params_nr = 0;
-	int n_reg_param   = 0;
+	ir_node *proj_sp = NULL;
 
 	int i, j, n;
-	ir_node *proj_sp;
 	ir_node *frame_pointer;
 	ir_node *reg_params, *reg_params_bl;
 	ir_node **args, **args_repl, **return_params;
 	const ir_edge_t *edge;
+	const arch_register_t *reg;
 
+	pset *callee_save = pset_new_ptr_default();
+	pset *regs        = pset_new_ptr_default();
+
+	firm_dbg_module_t *dbg = env->dbg;
+
+	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
 	/* Find the maximum proj number of the argument tuple proj */
 	foreach_out_edge(arg_tuple, edge)  {
@@ -407,56 +415,68 @@ static void modify_irg(be_abi_irg_t *env)
 		ir_node *irn = get_edge_src_irn(edge);
 		int nr       = get_Proj_proj(irn);
 		args[nr]     = irn;
+		DBG((dbg, LEVEL_2, "\treading arg: %d -> %+F\n", nr, irn));
 	}
 
 	/* Get the ABI constraints from the ISA */
 	arch_isa_get_call_abi(isa, method_type, call);
 
-	{
-		const arch_register_t **callee_save = env->birg->main_env->callee_save;
-		int n_reg_param = 0;
-
-		/* Count the register params and add them to the number of projs for the RegParams node */
-		for(i = 0; i < n_params; ++i) {
-			be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
-			n_reg_param += arg->in_reg;
+	/* Count the register params and add them to the number of projs for the RegParams node */
+	for(i = 0; i < n_params; ++i) {
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
+		if(arg->in_reg) {
+			assert(arg->reg != sp && "cannot use stack pointer as parameter register");
+			pset_insert_ptr(regs, arg->reg);
+			DBG((dbg, LEVEL_2, "\targ #%d -> reg %s\n", i, arg->reg->name));
 		}
+	}
 
-		reg_params_bl = get_irg_start_block(irg);
-		reg_params    = be_new_RegParams(irg, reg_params_bl, n_reg_param);
-		reg_params_nr = 0;
+	/* Collect all callee-save registers which are not used as parameter registers. */
+	for(i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
+		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
+		for(j = 0; j < cls->n_regs; ++j) {
+			const arch_register_t *reg = &cls->regs[j];
+			if(arch_register_type_is(reg, callee_save) && !pset_find_ptr(regs, reg))
+				pset_insert_ptr(callee_save, reg);
+		}
+	}
 
-		proj_sp       = new_r_Proj(irg, reg_params_bl, reg_params, sp->reg_class->mode, reg_params_nr);
-		be_set_constr_single_reg(reg_params, -(reg_params_nr + 1), sp);
+	pset_insert_ptr(callee_save, sp);
+
+	reg_params_bl = get_irg_start_block(irg);
+	reg_params    = be_new_RegParams(irg, reg_params_bl, pset_count(regs) + pset_count(callee_save));
+	reg_params_nr = 0;
+
+	/*
+	 * make proj nodes for the callee save registers.
+	 * memorize them, since Return nodes get those as inputs.
+	 */
+	for(reg = pset_first(callee_save); reg; reg = pset_next(callee_save)) {
+		ir_node *irn = new_r_Proj(irg, reg_params_bl, reg_params, reg->reg_class->mode, reg_params_nr);
+		be_set_constr_single_reg(reg_params, -(reg_params_nr + 1), reg);
+		obstack_ptr_grow(&env->obst, irn);
 		reg_params_nr++;
 
-		/* Make Projs for the callee save registers. */
-		for(i = 0; callee_save[i] != NULL; ++i, ++reg_params_nr) {
-			const arch_register_t *reg = callee_save[i];
-			ir_node *irn = new_r_Proj(irg, reg_params_bl, reg_params, reg->reg_class->mode, reg_params_nr);
-			be_set_constr_single_reg(reg_params, -(reg_params_nr + 1), reg);
+		DBG((dbg, LEVEL_2, "\tcallee save proj #%d -> reg %s\n", reg_params_nr - 1, reg->name));
 
-			/* memorize the callee save proj since they will be arguments to the Return nodes. */
-			obstack_ptr_grow(&env->obst, irn);
-		}
-
-		obstack_ptr_grow(&env->obst, NULL);
-		return_params = obstack_finish(&env->obst);
+		/* detect the proj of the stack register and memorize it. */
+		if(reg == sp)
+			proj_sp = irn;
 	}
+	obstack_ptr_grow(&env->obst, NULL);
+	return_params = obstack_finish(&env->obst);
 
-	/* If we can omit the frame pointer, the stack pointer will become the frame pointer */
+	assert(proj_sp != NULL && "There must be a Proj for the stack pointer");
+
+	/* This is the stack pointer add/sub which allocates the frame. remind it for later fixup. */
 	env->init_sp = be_new_IncSP(sp, irg, reg_params_bl, proj_sp, 0, be_stack_dir_along);
-	/* memorize this node for later fix up */
+
+	/*
+	 * if we can omit the frame pointer (use it as an ordinary register), the stack pointer becomes
+	 * the frame pointer, else we have to copy the current stack pointer to the frame pointer
+	 */
 	frame_pointer = env->omit_framepointer ? env->init_sp : be_new_Copy(sp->reg_class, irg, reg_params_bl, proj_sp);
 	set_irg_frame(irg, frame_pointer);
-
-	/* reroute the edges from the original argument projs to the RegParam ones. */
-	for(i = 0; i < max_arg; ++i) {
-		if(args[i]) {
-			assert(args_repl != NULL);
-			edges_reroute(args[i], args_repl[i], irg);
-		}
-	}
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
 	for(i = 0; i < max_arg; ++i) {
@@ -478,7 +498,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 			/* when the (stack) parameter is primitive, we insert a StackParam
 			   node representing the load of that parameter */
-			else if(is_Primitive_type(param_type)) {
+			else if(is_atomic_type(param_type)) {
 				ir_mode *mode                    = get_type_mode(param_type);
 				const arch_register_class_t *cls = arch_isa_get_reg_class_for_mode(isa, mode);
 				// TODO: Correct offset computation!
@@ -494,8 +514,19 @@ static void modify_irg(be_abi_irg_t *env)
 		}
 	}
 
+	/* reroute the edges from the original argument projs to the RegParam ones. */
+	for(i = 0; i < max_arg; ++i) {
+		if(args[i] != NULL) {
+			assert(args_repl[i] != NULL);
+			edges_reroute(args[i], args_repl[i], irg);
+		}
+	}
+
 	obstack_free(&env->obst, args);
 	be_abi_call_free(call);
+
+	del_pset(callee_save);
+	del_pset(regs);
 }
 
 static void collect_alloca_walker(ir_node *irn, void *data)
@@ -512,9 +543,10 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	int i;
 	ir_node **stack_allocs;
 
-	env->birg        = birg;
-	env->stack_ops   = pset_new_ptr(32);
 	env->omit_framepointer = 1;
+	env->birg              = birg;
+	env->stack_ops         = pset_new_ptr(32);
+	env->dbg               = firm_dbg_register("firm.be.abi");
 	obstack_init(&env->obst);
 
 	/* search for stack allocation nodes and record them */
@@ -538,10 +570,12 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 void be_abi_fix_stack(be_abi_irg_t *env)
 {
 	pset *origs = pset_new_ptr_default();
+	dom_front_info_t *df = be_compute_dominance_frontiers(env->birg->irg);
 
 	pset_insert_ptr(origs, env->init_sp);
-	be_ssa_constr_sets(env->birg->dom_front, origs, env->stack_ops);
+	be_ssa_constr_sets(df, origs, env->stack_ops);
 	del_pset(origs);
+	be_free_dominance_frontiers(df);
 }
 
 

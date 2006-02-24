@@ -162,7 +162,8 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
  */
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-  return arch_irn_has_reg_class(env->main_env->arch_env, irn, -1, env->cls);
+	// return arch_irn_has_reg_class(env->main_env->arch_env, irn, -1, env->cls);
+	return arch_irn_consider_in_reg_alloc(env->main_env->arch_env, env->cls, irn);
 }
 
 #define has_limited_constr(req, irn) \
@@ -469,6 +470,7 @@ static void pressure(ir_node *block, void *env_ptr)
 
 	be_chordal_alloc_env_t *alloc_env = env_ptr;
 	be_chordal_env_t *env             = alloc_env->chordal_env;
+	const arch_env_t *arch_env        = env->main_env->arch_env;
 	bitset_t *live                    = alloc_env->live;
 	firm_dbg_module_t *dbg            = env->dbg;
 	ir_node *irn;
@@ -693,10 +695,12 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	/* Handle register targeting constraints */
 	dom_tree_walk_irg(irg, constraints, NULL, &env);
 
+#if 0
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
 		snprintf(buf, sizeof(buf), "-%s-constr", chordal_env->cls->name);
 		dump_ir_block_graph_sched(chordal_env->irg, buf);
 	}
+#endif
 
 	be_numbering(irg);
 	env.live = bitset_malloc(get_graph_node_count(chordal_env->irg));
@@ -709,6 +713,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 	be_numbering_done(irg);
 
+#if 0
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
     	plotter_t *plotter;
 
@@ -717,6 +722,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
     	draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
     	plotter_free(plotter);
 	}
+#endif
 
 	free(env.live);
 	free(env.colors);

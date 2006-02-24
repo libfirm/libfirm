@@ -386,7 +386,7 @@ void be_ssa_constr_ignore(dom_front_info_t *info, int n_origs, ir_node *orig_nod
 		ir_node *bl = get_nodes_block(copy_nodes[i]);
 		DBG((dbg, LEVEL_1, "\t%+F in block %+F\n", copy_nodes[i], bl));
 		pset_insert_ptr(copies, copy_nodes[i]);
-		pset_insert_ptr(copy_blocks, get_nodes_block(bl));
+		pset_insert_ptr(copy_blocks, get_nodes_block(copy_nodes[i]));
 	}
 
 	/*

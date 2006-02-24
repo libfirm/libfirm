@@ -254,7 +254,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 	chordal_env.irg          = irg;
 	chordal_env.dbg          = firm_dbg_register("firm.be.chordal");
 	chordal_env.main_env     = main_env;
-	chordal_env.dom_front    = bi->dom_front;
+	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
 
 	obstack_init(&chordal_env.obst);
 
@@ -320,6 +320,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&chordal_env.obst, NULL);
+	be_free_dominance_frontiers(chordal_env.dom_front);
 }
 
 const be_ra_t be_ra_chordal_allocator = {

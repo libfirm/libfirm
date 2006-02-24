@@ -53,10 +53,11 @@
 
 
 #define DUMP_INITIAL		(1 << 0)
-#define DUMP_SCHED			(1 << 1)
-#define DUMP_PREPARED		(1 << 2)
-#define DUMP_RA				(1 << 3)
-#define DUMP_FINAL			(1 << 4)
+#define DUMP_ABI    		(1 << 1)
+#define DUMP_SCHED			(1 << 2)
+#define DUMP_PREPARED		(1 << 3)
+#define DUMP_RA				(1 << 4)
+#define DUMP_FINAL			(1 << 5)
 
 /* options visible for anyone */
 be_options_t be_options = {
@@ -68,14 +69,13 @@ be_options_t be_options = {
 };
 
 /* dump flags */
-static unsigned dump_flags = DUMP_INITIAL | DUMP_SCHED | DUMP_PREPARED | DUMP_RA | DUMP_FINAL;
+static unsigned dump_flags = 2 * DUMP_FINAL - 1;
 
 /* register allocator to use. */
 static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;
-
 #ifdef WITH_LIBCORE
 
 static lc_opt_entry_t *be_grp_root = NULL;
@@ -84,6 +84,7 @@ static lc_opt_entry_t *be_grp_root = NULL;
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "none",       0 },
 	{ "initial",    DUMP_INITIAL },
+	{ "abi",        DUMP_ABI    },
 	{ "sched",      DUMP_SCHED  },
 	{ "prepared",   DUMP_PREPARED },
 	{ "regalloc",   DUMP_RA },
@@ -258,8 +259,6 @@ static void prepare_graph(be_irg_t *birg)
 	/* check, if the dominance property is fulfilled. */
 	be_check_dominance(irg);
 
-	/* compute the dominance frontiers. */
-	birg->dom_front = be_compute_dominance_frontiers(irg);
 }
 
 static void be_main_loop(FILE *file_handle)
@@ -297,8 +296,10 @@ static void be_main_loop(FILE *file_handle)
 		prepare_graph(&birg);
 
 		/* implement the ABI conventions. */
-		// birg.abi = be_abi_introduce(&birg);
+		birg.abi = be_abi_introduce(&birg);
+		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
 
+		/* generate code */
 		arch_code_generator_prepare_graph(birg.cg);
 
 		/*
@@ -332,8 +333,6 @@ static void be_main_loop(FILE *file_handle)
 
 		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
-
-		be_free_dominance_frontiers(birg.dom_front);
 	}
 
 	be_done_env(&env);
