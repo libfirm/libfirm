@@ -21,20 +21,130 @@
 #include "ia32_new_nodes.h"
 #include "ia32_map_regs.h"
 
+#ifdef obstack_chunk_alloc
+# undef obstack_chunk_alloc
+# define obstack_chunk_alloc xmalloc
+#else
+# define obstack_chunk_alloc xmalloc
+# define obstack_chunk_free free
+#endif
+
 #define SNPRINTF_BUF_LEN 128
 
 static const arch_env_t *arch_env = NULL;
 
-char *ia32_emit_binop(ir_node *irn) {
-	return "R1, R2";
+char *ia32_emit_binop(const ir_node *n) {
+	static char *buf = NULL;
+
+	if (! buf) {
+		buf = xcalloc(1, SNPRINTF_BUF_LEN);
+	}
+	else {
+		memset(buf, 0, SNPRINTF_BUF_LEN);
+	}
+
+	switch(get_ia32_op_type(n)) {
+		case ia32_Normal:
+			if (get_ia32_cnst(n)) {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, get_ia32_cnst(n));
+			}
+			else {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %4S", n, n);
+			}
+			break;
+		case ia32_am_Source:
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, ia32_emit_am(n));
+			break;
+		case ia32_am_Dest:
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %4S", ia32_emit_am(n), n);
+			break;
+		default:
+			assert(0 && "unsupported op type");
+	}
+
+	return buf;
 }
 
-char *ia32_emit_unop(ir_node *irn) {
-	return "R";
+char *ia32_emit_unop(const ir_node *n) {
+	static char *buf = NULL;
+
+	if (! buf) {
+		buf = xcalloc(1, SNPRINTF_BUF_LEN);
+	}
+	else {
+		memset(buf, 0, SNPRINTF_BUF_LEN);
+	}
+
+	switch(get_ia32_op_type(n)) {
+		case ia32_Normal:
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
+			break;
+		case ia32_am_Dest:
+			snprintf(buf, SNPRINTF_BUF_LEN, ia32_emit_am(n));
+			break;
+		default:
+			assert(0 && "unsupported op type");
+	}
+
+	return buf;
 }
 
-char *ia32_emit_am(ir_node *irn) {
-	return "AM";
+char *ia32_emit_am(const ir_node *n) {
+	ia32_am_flavour_t am_flav    = get_ia32_am_flavour(n);
+	int               had_output = 0;
+	char             *s;
+	int               size;
+	static struct obstack *obst  = NULL;
+
+	if (! obst) {
+		obst = xcalloc(1, sizeof(*obst));
+	}
+	else {
+		obstack_free(obst, NULL);
+	}
+
+	/* obstack_free with NULL results in an uninitialized obstack */
+	obstack_init(obst);
+
+	obstack_printf(obst, "[");
+
+	if (am_flav & ia32_B) {
+		lc_eoprintf(ia32_get_arg_env(), obst, "%1S", n);
+		had_output = 1;
+	}
+
+	if (am_flav & ia32_I) {
+		if (had_output) {
+			obstack_printf(obst, "+");
+		}
+
+		lc_eoprintf(ia32_get_arg_env(), obst, "%2S", n);
+
+		if (am_flav & ia32_S) {
+			obstack_printf(obst, "*%d", get_ia32_am_scale(n));
+		}
+
+		had_output = 1;
+	}
+
+	if (am_flav & ia32_O) {
+		s = get_ia32_am_offs(n);
+
+		if (! had_output) {
+			/* skip the first 3 characters which are " <op> " */
+			s += 3;
+		}
+
+		obstack_printf(obst, "%s", s);
+	}
+
+	obstack_printf(obst, "] ");
+
+	size        = obstack_object_size(obst);
+	s           = obstack_finish(obst);
+	s[size - 1] = '\0';
+
+	return s;
 }
 
 /*************************************************************
@@ -47,30 +157,6 @@ char *ia32_emit_am(ir_node *irn) {
  * | |                                       | |
  * |_|                                       |_|
  *************************************************************/
-
-/**
- * Return node's tarval as string.
- */
-const char *node_const_to_str(ir_node *n) {
-	char *s = get_ia32_cnst(n);
-
-	if (!s)
-		s = "NULL";
-
-	return s;
-}
-
-/**
- * Returns node's offset as string.
- */
-char *node_offset_to_str(ir_node *n) {
-	char *s = get_ia32_am_offs(n);
-
-	if (!s)
-		s = "";
-
-	return s;
-}
 
 /* We always pass the ir_node which is a pointer. */
 static int ia32_get_arg_type(const lc_arg_occ_t *occ) {
@@ -203,10 +289,10 @@ static int ia32_const_to_str(lc_appendable_t *app,
 		return lc_arg_append(app, occ, "(null)", 6);
 
 	if (occ->conversion == 'C') {
-		buf = node_const_to_str(X);
+		buf = get_ia32_cnst(X);
 	}
 	else { /* 'O' */
-		buf = node_offset_to_str(X);
+		buf = get_ia32_am_offs(X);
 	}
 
 	return lc_arg_append(app, occ, buf, strlen(buf));
