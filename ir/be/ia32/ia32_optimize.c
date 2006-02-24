@@ -558,9 +558,11 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				left  = get_irn_n(irn, 2);
 				right = get_irn_n(irn, 3);
 
-				/* assure that Left operand is always a Load if there is one */
-				if (pred_is_specific_node(right, is_ia32_Load) ||
-					pred_is_specific_node(right, is_ia32_fLoad))
+				/* Assure that right operand is always a Load if there is one    */
+				/* because non-commutative ops can only use Dest AM if the right */
+				/* operand is a load, so we only need to check right operand.    */
+				if (pred_is_specific_node(left, is_ia32_Load) ||
+					pred_is_specific_node(left, is_ia32_fLoad))
 				{
 					set_irn_n(irn, 2, right);
 					set_irn_n(irn, 3, left);
@@ -574,7 +576,11 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			/* check for Store -> op -> Load */
 
 			/* Store -> op -> Load optimization is only possible if supported by op */
-			if (get_ia32_am_support(irn) & ia32_am_Dest) {
+			/* and if right operand is a Load                                       */
+			if (get_ia32_am_support(irn) & ia32_am_Dest &&
+				(pred_is_specific_node(right, is_ia32_Load)
+				 || pred_is_specific_node(right, is_ia32_fLoad)))
+			{
 
 				/* An address mode capable op always has a result Proj.                  */
 				/* If this Proj is used by more than one other node, we don't need to    */
@@ -614,16 +620,16 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					left  = get_irn_n(irn, 2);
 					right = get_irn_n(irn, 3);
 
-					/* Could be that the right operand is also a Load, so we make */
-					/* sure that the "interesting" Load is always the left one    */
+					/* Extra check for commutative ops: put the interesting load right */
 
 					/* right != NoMem means, we have a "binary" operation */
-					if (! is_NoMem(right) &&
-						(pred_is_specific_node(right, is_ia32_Load) ||
-						 pred_is_specific_node(right, is_ia32_fLoad)))
+					if (node_is_comm(irn) &&
+						! is_NoMem(left)  &&
+						(pred_is_specific_node(left, is_ia32_Load) ||
+						 pred_is_specific_node(left, is_ia32_fLoad)))
 					{
-						if ((addr_b == get_irn_n(get_Proj_pred(right), 0)) &&
-							(addr_i == get_irn_n(get_Proj_pred(right), 1)))
+						if ((addr_b == get_irn_n(get_Proj_pred(left), 0)) &&
+							(addr_i == get_irn_n(get_Proj_pred(left), 1)))
 						{
 							/* We exchange left and right, so it's easier to kill     */
 							/* the correct Load later and to handle unary operations. */
@@ -637,7 +643,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					}
 
 					/* skip the Proj for easier access */
-					left  = get_Proj_pred(left);
+					right = get_Proj_pred(right);
 
 					/* Compare Load and Store address */
 					if ((addr_b == get_irn_n(left, 0)) && (addr_i == get_irn_n(left, 1)))
@@ -682,43 +688,65 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				check_am_src = 1;
 			}
 
-			/* optimize op -> Load iff Load is only used by this op */
-			if (check_am_src) {
-				left = get_irn_n(irn, 2);
+			left  = get_irn_n(irn, 2);
+			right = get_irn_n(irn, 3);
 
-				if (ia32_get_irn_n_edges(left) == 1) {
-					left = get_Proj_pred(left);
+			/* normalize commutative ops */
+			if (node_is_comm(irn)) {
+				/* Assure that left operand is always a Load if there is one */
+				/* because non-commutative ops can only use Source AM if the */
+				/* left operand is a Load, so we only need to check the left */
+				/* operand afterwards.                                       */
+				if (pred_is_specific_node(right, is_ia32_Load) ||
+					pred_is_specific_node(right, is_ia32_fLoad))
+				{
+					set_irn_n(irn, 2, right);
+					set_irn_n(irn, 3, left);
 
-					addr_b = get_irn_n(left, 0);
-					addr_i = get_irn_n(left, 1);
+					temp  = left;
+					left  = right;
+					right = temp;
+				}
+			}
 
-					/* set new base, index and attributes */
-					set_irn_n(irn, 0, addr_b);
-					set_irn_n(irn, 1, addr_i);
-					add_ia32_am_offs(irn, get_ia32_am_offs(left));
-					set_ia32_am_scale(irn, get_ia32_am_scale(left));
-					set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
-					set_ia32_op_type(irn, ia32_AddrModeS);
+			/* optimize op -> Load iff Load is only used by this op   */
+			/* and left operand is a Load which only used by this irn */
+			if (check_am_src &&
+				(pred_is_specific_node(left, is_ia32_Load)
+				 || pred_is_specific_node(left, is_ia32_fLoad)) &&
+				(ia32_get_irn_n_edges(left) == 1))
+			{
+				left = get_Proj_pred(left);
 
-					/* connect to Load memory */
-					if (get_irn_arity(irn) == 5) {
-						/* binary AMop */
-						set_irn_n(irn, 4, get_irn_n(left, 2));
-					}
-					else {
-						/* unary AMop */
-						set_irn_n(irn, 3, get_irn_n(left, 2));
-					}
+				addr_b = get_irn_n(left, 0);
+				addr_i = get_irn_n(left, 1);
 
-					/* disconnect from Load */
-					set_irn_n(irn, 2, noreg_gp);
+				/* set new base, index and attributes */
+				set_irn_n(irn, 0, addr_b);
+				set_irn_n(irn, 1, addr_i);
+				add_ia32_am_offs(irn, get_ia32_am_offs(left));
+				set_ia32_am_scale(irn, get_ia32_am_scale(left));
+				set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
+				set_ia32_op_type(irn, ia32_AddrModeS);
 
-					/* If Load has a memory Proj, connect it to the op */
-					mem_proj = get_mem_proj(left);
-					if (mem_proj) {
-						set_Proj_pred(mem_proj, irn);
-						set_Proj_proj(mem_proj, 1);
-					}
+				/* connect to Load memory */
+				if (get_irn_arity(irn) == 5) {
+					/* binary AMop */
+					set_irn_n(irn, 4, get_irn_n(left, 2));
+				}
+				else {
+					/* unary AMop */
+					set_irn_n(irn, 3, get_irn_n(left, 2));
+				}
+
+				/* disconnect from Load */
+				set_irn_n(irn, 2, noreg_gp);
+
+				/* If Load has a memory Proj, connect it to the op */
+				mem_proj = get_mem_proj(left);
+				if (mem_proj) {
+					set_Proj_pred(mem_proj, irn);
+					set_Proj_proj(mem_proj, 1);
 				}
 			}
 		}
