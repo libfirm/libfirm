@@ -1107,6 +1107,8 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
+	set_ia32_ls_mode(new_op, get_Load_mode(node));
+
 	return new_op;
 }
 
@@ -1134,6 +1136,7 @@ ir_node *gen_Store(ia32_transform_env_t *env) {
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Dest);
+	set_ia32_ls_mode(new_op, get_irn_mode(get_Store_value(node)));
 	return new_op;
 }
 

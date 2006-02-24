@@ -190,15 +190,15 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 		case dump_node_mode_txt:
 			mode = get_irn_mode(n);
 
-			if (is_ia32_Load(n)) {
-				mode = get_irn_mode(get_irn_n(n, 0));
-			}
-			else if (is_ia32_Store(n)) {
-				mode = get_irn_mode(get_irn_n(n, 2));
+			if (is_ia32_Load(n) || is_ia32_Store(n)) {
+				mode = get_ia32_ls_mode(n);
 			}
 
 			if (mode) {
 				fprintf(F, "[%s]", get_mode_name(mode));
+			}
+			else {
+				fprintf(F, "[?NOMODE?]");
 			}
 			break;
 
@@ -216,11 +216,13 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 				fprintf(F, "[%s%s]", pref, get_ia32_cnst(n));
 			}
 
-			if (is_ia32_AddrModeS(n)) {
-				fprintf(F, "[AM S] ");
-			}
-			else if (is_ia32_AddrModeD(n)) {
-				fprintf(F, "[AM D] ");
+			if (! is_ia32_Lea(n)) {
+				if (is_ia32_AddrModeS(n)) {
+					fprintf(F, "[AM S] ");
+				}
+				else if (is_ia32_AddrModeD(n)) {
+					fprintf(F, "[AM D] ");
+				}
 			}
 
 			break;
@@ -569,6 +571,22 @@ void set_ia32_sc(ir_node *node, char *sc) {
 char *get_ia32_cnst(ir_node *node) {
   ia32_attr_t *attr = get_ia32_attr(node);
   return attr->cnst;
+}
+
+/**
+ * Gets the mode of the stored/loaded value (only set for Store/Load)
+ */
+ir_mode *get_ia32_ls_mode(const ir_node *node) {
+  ia32_attr_t *attr = get_ia32_attr(node);
+  return attr->ls_mode;
+}
+
+/**
+ * Sets the mode of the stored/loaded value (only set for Store/Load)
+ */
+void set_ia32_ls_mode(ir_node *node, ir_mode *mode) {
+  ia32_attr_t *attr = get_ia32_attr(node);
+  attr->ls_mode     = mode;
 }
 
 /**

@@ -61,6 +61,8 @@ typedef struct _ia32_attr_t {
 	char   *sc;   /**<< symconst name */
 	char   *cnst; /**<< points to the string representation of the constant value (either tv or sc) */
 
+	ir_mode *ls_mode;  /**<< the mode of the stored/loaded value */
+
 	ia32_op_flavour_t op_flav;   /**<< flavour of an op (flavour_Div/Mod/DivMod/Mul/Mulh) */
 	long              pn_code;   /**<< projnum "types" (e.g. indicate compare operators and argument numbers) */
 	long              n_res;     /**<< number of results */

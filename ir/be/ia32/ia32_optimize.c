@@ -387,6 +387,7 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 				scale = get_tarval_long(get_ia32_Immop_tarval(temp));
 
 				if (scale <= 3) {
+					scale = 1 << scale;
 					index = get_irn_n(temp, 2);
 
 					DBG((mod, LEVEL_1, "\tgot scaled index %+F\n", index));

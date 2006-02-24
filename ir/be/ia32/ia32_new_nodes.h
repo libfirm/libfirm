@@ -113,6 +113,16 @@ void set_ia32_sc(ir_node *node, char *sc);
 char *get_ia32_cnst(ir_node *node);
 
 /**
+ * Gets the mode of the stored/loaded value (only set for Store/Load)
+ */
+ir_mode *get_ia32_ls_mode(const ir_node *node);
+
+/**
+ * Sets the mode of the stored/loaded value (only set for Store/Load)
+ */
+void set_ia32_ls_mode(ir_node *node, ir_mode *mode);
+
+/**
  * Returns the argument register requirements of an ia32 node.
  */
 const ia32_register_req_t **get_ia32_in_req_all(const ir_node *node);
