@@ -132,3 +132,13 @@ void bipartite_matching(const bipartite_t *gr, int *matching)
 	bitset_free(matched_left);
 	bitset_free(matched_right);
 }
+
+void bipartite_dump(FILE *f, const bipartite_t *gr)
+{
+	int i;
+
+	for(i = 0; i < gr->n_left; ++i) {
+		bitset_fprint(f, gr->adj[i]);
+		fprintf(f, "\n");
+	}
+}
