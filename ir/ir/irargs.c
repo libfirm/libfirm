@@ -55,7 +55,7 @@ static int bitset_emit(lc_appendable_t *app,
   const char *prefix = "";
 
   lc_arg_append(app, occ, "[", 1);
-  for(p = bitset_next_set(b, 0); p != -1; p = bitset_next_set(b, p)) {
+  bitset_foreach(b, p) {
     int n;
 
     n = snprintf(buf, sizeof(buf), "%s%d", prefix, (int) p);
@@ -286,7 +286,7 @@ lc_arg_env_t *firm_get_arg_env(void)
     lc_arg_register(env, "firm:indent", 'D', &indent_handler);
     lc_arg_register(env, "firm:pnc",      '=', &pnc_handler);
     lc_arg_register(env, "firm:dbg_info", 'G', &debug_handler);
-    /* lc_arg_register(env, "firm:bitset", 'b', &bitset_handler); */
+    lc_arg_register(env, "firm:bitset", 'B', &bitset_handler);
   }
 
   return env;
