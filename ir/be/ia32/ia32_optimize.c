@@ -287,13 +287,38 @@ static ir_node *get_res_proj(const ir_node *irn) {
 	return NULL;
 }
 
+/**
+ * Determines if pred is a Proj and if is_op_func returns true for it's predecessor.
+ *
+ * @param pred       The node to be checked
+ * @param is_op_func The check-function
+ * @return 1 if conditions are fulfilled, 0 otherwise
+ */
+static int pred_is_specific_node(const ir_node *pred, int (*is_op_func)(const ir_node *n)) {
+	if (is_Proj(pred) && is_op_func(get_Proj_pred(pred))) {
+		return 1;
+	}
+
+	return 0;
+}
 
 /**
- * Determines if irn is a Proj and if is_op_func returns true for it's predecessor.
+ * Determines if pred is a Proj and if is_op_func returns true for it's predecessor
+ * and if the predecessor is in block bl.
+ *
+ * @param bl         The block
+ * @param pred       The node to be checked
+ * @param is_op_func The check-function
+ * @return 1 if conditions are fulfilled, 0 otherwise
  */
-static int pred_is_specific_node(const ir_node *irn, int (*is_op_func)(const ir_node *n)) {
-	if (is_Proj(irn) && is_op_func(get_Proj_pred(irn))) {
-		return 1;
+static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
+	int (*is_op_func)(const ir_node *n))
+{
+	if (is_Proj(pred)) {
+		pred = get_Proj_pred(pred);
+		if ((bl == get_nodes_block(pred)) && is_op_func(pred)) {
+			return 1;
+		}
 	}
 
 	return 0;
@@ -303,16 +328,17 @@ static int pred_is_specific_node(const ir_node *irn, int (*is_op_func)(const ir_
  * Folds Add or Sub to LEA if possible
  */
 static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
-	ir_graph *irg      = get_irn_irg(irn);
-	ir_mode  *mode     = get_irn_mode(irn);
-	dbg_info *dbg      = get_irn_dbg_info(irn);
-	ir_node  *block    = get_nodes_block(irn);
-	ir_node  *res      = irn;
-	char     *offs     = NULL;
-	char     *new_offs = NULL;
-	int       scale    = 0;
-	int       isadd    = 0;
-	int       dolea    = 0;
+	ir_graph *irg       = get_irn_irg(irn);
+	ir_mode  *mode      = get_irn_mode(irn);
+	dbg_info *dbg       = get_irn_dbg_info(irn);
+	ir_node  *block     = get_nodes_block(irn);
+	ir_node  *res       = irn;
+	char     *offs      = NULL;
+	char     *offs_cnst = NULL;
+	char     *offs_lea  = NULL;
+	int       scale     = 0;
+	int       isadd     = 0;
+	int       dolea     = 0;
 	ir_node  *left, *right, *temp;
 	ir_node  *base, *index;
 	ia32_am_flavour_t am_flav;
@@ -323,8 +349,14 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 	left  = get_irn_n(irn, 2);
 	right = get_irn_n(irn, 3);
 
-	/* "normalize" arguments in case of add */
-	if  (isadd) {
+	base    = left;
+	index   = noreg;
+	offs    = NULL;
+	scale   = 0;
+	am_flav = 0;
+
+	/* "normalize" arguments in case of add with two operands */
+	if  (isadd && ! be_is_NoReg(right)) {
 		/* put LEA == ia32_am_O as right operand */
 		if (is_ia32_Lea(left) && get_ia32_am_flavour(left) == ia32_am_O) {
 			set_irn_n(irn, 2, right);
@@ -343,8 +375,8 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 			right = temp;
 		}
 
-		/* put SHL as right operand */
-		if (pred_is_specific_node(left, is_ia32_Shl)) {
+		/* put SHL as left operand iff left is NOT a LEA */
+		if (! is_ia32_Lea(left) && pred_is_specific_node(right, is_ia32_Shl)) {
 			set_irn_n(irn, 2, right);
 			set_irn_n(irn, 3, left);
 			temp  = left;
@@ -353,46 +385,46 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 		}
 	}
 
-	/* Left operand could already be a LEA */
-	if (is_ia32_Lea(left)) {
-		DBG((mod, LEVEL_1, "\tgot LEA as left operand\n"));
-
-		base  = get_irn_n(left, 0);
-		index = get_irn_n(left, 1);
-		offs  = get_ia32_am_offs(left);
-		scale = get_ia32_am_scale(left);
-	}
-	else {
-		base  = left;
-		index = noreg;
-		offs  = NULL;
-		scale = 0;
-
-	}
-
-	/* check if operand is either const or right operand is AMConst (LEA with ia32_am_O) */
+	/* check if operand is either const */
 	if (get_ia32_cnst(irn)) {
 		DBG((mod, LEVEL_1, "\tfound op with imm"));
 
-		new_offs = get_ia32_cnst(irn);
-		dolea    = 1;
+		offs_cnst = get_ia32_cnst(irn);
+		dolea     = 1;
 	}
-	else if (is_ia32_Lea(right) && get_ia32_am_flavour(right) == ia32_am_O) {
+
+	/* determine the operand which needs to be checked */
+	if (be_is_NoReg(right)) {
+		temp = left;
+	}
+	else {
+		temp = right;
+	}
+
+	/* check if right operand is AMConst (LEA with ia32_am_O) */
+	if (is_ia32_Lea(temp) && get_ia32_am_flavour(temp) == ia32_am_O) {
 		DBG((mod, LEVEL_1, "\tgot op with LEA am_O"));
 
-		new_offs = get_ia32_am_offs(right);
+		offs_lea = get_ia32_am_offs(temp);
 		dolea    = 1;
 	}
-	/* we can only get an additional index if there isn't already one */
-	else if (isadd && be_is_NoReg(index)) {
+
+	if (isadd) {
 		/* default for add -> make right operand to index */
 		index = right;
 		dolea = 1;
 
 		DBG((mod, LEVEL_1, "\tgot LEA candidate with index %+F\n", index));
+
+		/* determine the operand which needs to be checked */
+		temp = left;
+		if (is_ia32_Lea(left)) {
+			temp = right;
+		}
+
 		/* check for SHL 1,2,3 */
-		if (pred_is_specific_node(right, is_ia32_Shl)) {
-			temp = get_Proj_pred(right);
+		if (pred_is_specific_node(temp, is_ia32_Shl)) {
+			temp = get_Proj_pred(temp);
 
 			if (get_ia32_Immop_tarval(temp)) {
 				scale = get_tarval_long(get_ia32_Immop_tarval(temp));
@@ -404,6 +436,39 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 					DBG((mod, LEVEL_1, "\tgot scaled index %+F\n", index));
 				}
 			}
+		}
+
+		/* fix base */
+		if (! be_is_NoReg(index)) {
+			/* if we have index, but left == right -> no base */
+			if (left == right) {
+				base = noreg;
+			}
+			else if (! is_ia32_Lea(left) && (index != right)) {
+				/* index != right -> we found a good Shl           */
+				/* left  != LEA   -> this Shl was the left operand */
+				/* -> base is right operand                        */
+				base = right;
+			}
+		}
+	}
+
+	/* Try to assimilate a LEA as left operand */
+	if (is_ia32_Lea(left) && (get_ia32_am_flavour(left) != ia32_am_O)) {
+		am_flav = get_ia32_am_flavour(left);
+
+		/* If we have an Add with a real right operand (not NoReg) and  */
+		/* the LEA contains already an index calculation then we create */
+		/* a new LEA.                                                   */
+		if (isadd && !be_is_NoReg(index) && (am_flav & ia32_am_I)) {
+			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
+		}
+		else {
+			DBG((mod, LEVEL_1, "\tgot LEA as left operand ... assimilating\n"));
+			offs  = get_ia32_am_offs(left);
+			base  = get_irn_n(left, 0);
+			index = get_irn_n(left, 1);
+			scale = get_ia32_am_scale(left);
 		}
 	}
 
@@ -418,12 +483,25 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 
 		/* add the new offset */
 		if (isadd) {
-			if (new_offs) {
-				add_ia32_am_offs(res, new_offs);
+			if (offs_cnst) {
+				add_ia32_am_offs(res, offs_cnst);
+			}
+			if (offs_lea) {
+				add_ia32_am_offs(res, offs_lea);
 			}
 		}
 		else {
-			sub_ia32_am_offs(res, new_offs);
+			/* either lea_O-cnst, -cnst or -lea_O  */
+			if (offs_cnst) {
+				if (offs_lea) {
+					add_ia32_am_offs(res, offs_lea);
+				}
+
+				sub_ia32_am_offs(res, offs_cnst);
+			}
+			else {
+				sub_ia32_am_offs(res, offs_lea);
+			}
 		}
 
 		/* set scale */
@@ -431,7 +509,7 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 
 		am_flav = ia32_am_N;
 		/* determine new am flavour */
-		if (offs || new_offs) {
+		if (offs || offs_cnst || offs_lea) {
 			am_flav |= ia32_O;
 		}
 		if (! be_is_NoReg(base)) {
@@ -473,7 +551,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 	ir_mode           *mode;
 	ir_node           *block, *noreg_gp, *noreg_fp;
 	ir_node           *left, *right, *temp;
-	ir_node           *store, *mem_proj;
+	ir_node           *store, *load, *mem_proj;
 	ir_node           *succ, *addr_b, *addr_i;
 	int                check_am_src = 0;
 
@@ -504,8 +582,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 		right = get_irn_n(irn, 3);
 
 	    /* Do not try to create a LEA if one of the operands is a Load. */
-		if (! pred_is_specific_node(left,  is_ia32_Load)  &&
-			! pred_is_specific_node(right, is_ia32_Load))
+		if (! pred_is_specific_nodeblock(block, left,  is_ia32_Load)  &&
+			! pred_is_specific_nodeblock(block, right, is_ia32_Load))
 		{
 			res = fold_addr(irn, mod, noreg_gp);
 		}
@@ -529,9 +607,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 	if ((res == irn) && (get_ia32_am_support(irn) != ia32_am_None) && !is_ia32_Lea(irn)) {
 		/* 1st: check for Load/Store -> LEA   */
-		if (is_ia32_Load(irn)  || is_ia32_fLoad(irn) ||
-			is_ia32_Store(irn) || is_ia32_fStore(irn))
-		{
+		if (is_ia32_Ld(irn) || is_ia32_St(irn)) {
 			left = get_irn_n(irn, 0);
 
 			if (is_ia32_Lea(left)) {
@@ -547,22 +623,24 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			}
 		}
 		/* check if at least one operand is a Load */
-		else if (pred_is_specific_node(get_irn_n(irn, 2), is_ia32_Load)  ||
-				 pred_is_specific_node(get_irn_n(irn, 2), is_ia32_fLoad) ||
-				 pred_is_specific_node(get_irn_n(irn, 3), is_ia32_Load)  ||
-				 pred_is_specific_node(get_irn_n(irn, 3), is_ia32_fLoad))
+		else if (pred_is_specific_nodeblock(block, get_irn_n(irn, 2), is_ia32_Ld) ||
+				 pred_is_specific_nodeblock(block, get_irn_n(irn, 3), is_ia32_Ld))
 		{
+			left  = get_irn_n(irn, 2);
+			if (get_irn_arity(irn) == 4) {
+				/* it's an "unary" operation */
+				right = left;
+			}
+			else {
+				right = get_irn_n(irn, 3);
+			}
 
 			/* normalize commutative ops */
 			if (node_is_comm(irn)) {
-				left  = get_irn_n(irn, 2);
-				right = get_irn_n(irn, 3);
-
 				/* Assure that right operand is always a Load if there is one    */
 				/* because non-commutative ops can only use Dest AM if the right */
 				/* operand is a load, so we only need to check right operand.    */
-				if (pred_is_specific_node(left, is_ia32_Load) ||
-					pred_is_specific_node(left, is_ia32_fLoad))
+				if (pred_is_specific_nodeblock(block, left, is_ia32_Ld))
 				{
 					set_irn_n(irn, 2, right);
 					set_irn_n(irn, 3, left);
@@ -577,9 +655,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 			/* Store -> op -> Load optimization is only possible if supported by op */
 			/* and if right operand is a Load                                       */
-			if (get_ia32_am_support(irn) & ia32_am_Dest &&
-				(pred_is_specific_node(right, is_ia32_Load)
-				 || pred_is_specific_node(right, is_ia32_fLoad)))
+			if ((get_ia32_am_support(irn) & ia32_am_Dest) &&
+				 pred_is_specific_nodeblock(block, right, is_ia32_Ld))
 			{
 
 				/* An address mode capable op always has a result Proj.                  */
@@ -617,16 +694,11 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 				if (store) {
 					/* we found a Store as single user: Now check for Load */
-					left  = get_irn_n(irn, 2);
-					right = get_irn_n(irn, 3);
 
-					/* Extra check for commutative ops: put the interesting load right */
-
-					/* right != NoMem means, we have a "binary" operation */
+					/* Extra check for commutative ops with two Loads */
+					/* -> put the interesting Load right              */
 					if (node_is_comm(irn) &&
-						! is_NoMem(left)  &&
-						(pred_is_specific_node(left, is_ia32_Load) ||
-						 pred_is_specific_node(left, is_ia32_fLoad)))
+						pred_is_specific_nodeblock(block, left, is_ia32_Ld))
 					{
 						if ((addr_b == get_irn_n(get_Proj_pred(left), 0)) &&
 							(addr_i == get_irn_n(get_Proj_pred(left), 1)))
@@ -643,34 +715,33 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					}
 
 					/* skip the Proj for easier access */
-					right = get_Proj_pred(right);
+					load = get_Proj_pred(right);
 
 					/* Compare Load and Store address */
-					if ((addr_b == get_irn_n(left, 0)) && (addr_i == get_irn_n(left, 1)))
+					if ((addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1)))
 					{
-						/* Left Load is from same address, so we can */
+						/* Right Load is from same address, so we can */
 						/* disconnect the Load and Store here        */
 
 						/* set new base, index and attributes */
 						set_irn_n(irn, 0, addr_b);
 						set_irn_n(irn, 1, addr_i);
-						add_ia32_am_offs(irn, get_ia32_am_offs(left));
-						set_ia32_am_scale(irn, get_ia32_am_scale(left));
-						set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
+						add_ia32_am_offs(irn, get_ia32_am_offs(load));
+						set_ia32_am_scale(irn, get_ia32_am_scale(load));
+						set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 						set_ia32_op_type(irn, ia32_AddrModeD);
 
-						/* connect to Load memory */
+						/* connect to Load memory and disconnect Load */
 						if (get_irn_arity(irn) == 5) {
 							/* binary AMop */
-							set_irn_n(irn, 4, get_irn_n(left, 2));
+							set_irn_n(irn, 4, get_irn_n(load, 2));
+							set_irn_n(irn, 3, noreg_gp);
 						}
 						else {
 							/* unary AMop */
-							set_irn_n(irn, 3, get_irn_n(left, 2));
+							set_irn_n(irn, 3, get_irn_n(load, 2));
+							set_irn_n(irn, 2, noreg_gp);
 						}
-
-						/* disconnect from Load */
-						set_irn_n(irn, 2, noreg_gp);
 
 						/* connect the memory Proj of the Store to the op */
 						mem_proj = get_mem_proj(store);
@@ -683,13 +754,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					check_am_src = 1;
 				}
 			} /* if (support AM Dest) */
-			else {
+			else if (get_ia32_am_support(irn) & ia32_am_Source) {
 				/* op doesn't support am AM Dest -> check for AM Source */
 				check_am_src = 1;
 			}
-
-			left  = get_irn_n(irn, 2);
-			right = get_irn_n(irn, 3);
 
 			/* normalize commutative ops */
 			if (node_is_comm(irn)) {
@@ -697,9 +765,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				/* because non-commutative ops can only use Source AM if the */
 				/* left operand is a Load, so we only need to check the left */
 				/* operand afterwards.                                       */
-				if (pred_is_specific_node(right, is_ia32_Load) ||
-					pred_is_specific_node(right, is_ia32_fLoad))
-				{
+				if (pred_is_specific_nodeblock(block, right, is_ia32_Ld))	{
 					set_irn_n(irn, 2, right);
 					set_irn_n(irn, 3, left);
 
@@ -711,9 +777,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 			/* optimize op -> Load iff Load is only used by this op   */
 			/* and left operand is a Load which only used by this irn */
-			if (check_am_src &&
-				(pred_is_specific_node(left, is_ia32_Load)
-				 || pred_is_specific_node(left, is_ia32_fLoad)) &&
+			if (check_am_src                                        &&
+				pred_is_specific_nodeblock(block, left, is_ia32_Ld) &&
 				(ia32_get_irn_n_edges(left) == 1))
 			{
 				left = get_Proj_pred(left);
