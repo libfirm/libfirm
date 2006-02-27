@@ -774,7 +774,7 @@ void set_ia32_pncode(ir_node *node, long code) {
 /**
  * Gets the type of an ia32_Const.
  */
-unsigned get_ia32_Const_type(ir_node *node) {
+unsigned get_ia32_Const_type(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
 	assert((is_ia32_Const(node) || is_ia32_fConst(node)) && "Need ia32_Const to get type");
@@ -806,7 +806,8 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
 	na->tv = ca->tv;
 
 	if (ca->sc) {
-		na->sc = copy_str(na->sc, ca->sc);
+		na->sc   = copy_str(na->sc, ca->sc);
+		na->cnst = na->sc;
 	}
 	else {
 		na->cnst = set_cnst_from_tv(na->cnst, na->tv);
@@ -863,7 +864,7 @@ void set_ia32_AddrMode(ir_node *node, char direction) {
 /**
  * Returns whether or not the node is an AddrModeS node.
  */
-int is_ia32_AddrModeS(ir_node *node) {
+int is_ia32_AddrModeS(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return (attr->tp == ia32_AddrModeS);
 }
@@ -871,12 +872,24 @@ int is_ia32_AddrModeS(ir_node *node) {
 /**
  * Returns whether or not the node is an AddrModeD node.
  */
-int is_ia32_AddrModeD(ir_node *node) {
+int is_ia32_AddrModeD(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return (attr->tp == ia32_AddrModeD);
 }
 
+/**
+ * Checks if node is a Load or fLoad.
+ */
+int is_ia32_Ld(const ir_node *node) {
+	return is_ia32_Load(node) || is_ia32_fLoad(node);
+}
 
+/**
+ * Checks if node is a Store or fStore.
+ */
+int is_ia32_St(const ir_node *node) {
+	return is_ia32_Store(node) || is_ia32_fStore(node);
+}
 
 /***************************************************************************************
  *                  _                            _                   _

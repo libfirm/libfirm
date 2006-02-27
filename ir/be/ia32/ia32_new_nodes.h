@@ -228,7 +228,7 @@ void set_ia32_pncode(ir_node *node, long code);
 /**
  * Gets the type of an ia32_Const.
  */
-unsigned get_ia32_Const_type(ir_node *node);
+unsigned get_ia32_Const_type(const ir_node *node);
 
 /**
  * Sets the type of an ia32_Const.
@@ -254,12 +254,22 @@ void set_ia32_AddrMode(ir_node *node, char direction);
 /**
  * Returns whether or not the node is an AddrModeS node.
  */
-int is_ia32_AddrModeS(ir_node *node);
+int is_ia32_AddrModeS(const ir_node *node);
 
 /**
  * Returns whether or not the node is an AddrModeD node.
  */
-int is_ia32_AddrModeD(ir_node *node);
+int is_ia32_AddrModeD(const ir_node *node);
+
+/**
+ * Checks if node is a Load or fLoad.
+ */
+int is_ia32_Ld(const ir_node *node);
+
+/**
+ * Checks if node is a Store or fStore.
+ */
+int is_ia32_St(const ir_node *node);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"
