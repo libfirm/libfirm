@@ -88,6 +88,7 @@ alloc		::= node-nr reg-nr .
 #include "beirgmod.h"
 #include "besched.h"
 #include "beutil.h"
+#include "belive_t.h"
 
 typedef struct _var_info_t var_info_t;
 
@@ -602,7 +603,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 
 
 static void dump_affinities(be_raext_env_t *raenv) {
-	fprintf(raenv->f, "\ninterferences {\n");
+	fprintf(raenv->f, "\naffinities {\n");
 	irg_walk_graph(raenv->irg, NULL, dump_affinities_walker, raenv);
 	fprintf(raenv->f, "}\n");
 }
@@ -819,7 +820,7 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
  * Default values for options
  */
 static void (*ssa_destr)(be_raext_env_t*) = ssa_destr_simple;
-static char callee[128] = "echo";
+static char callee[128] = "/ben/kimohoff/ipd-registerallocator/register_allocator";
 
 
 /**
@@ -840,6 +841,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	var_info_t *vi;
 
 	compute_doms(irg);
+	be_liveness(irg);
 
 	raenv.irg      = irg;
 	raenv.aenv     = env->arch_env;
@@ -903,14 +905,14 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 #ifdef WITH_LIBCORE
 
 
-static const lc_opt_enum_const_ptr_items_t ssa_destr_items[] = {
-	{ "simple",    (void*)ssa_destr_simple }, /* TODO make (void*) casts nicer */
-	{ "rastello",  (void*)ssa_destr_rastello },
+static const lc_opt_enum_func_ptr_items_t ssa_destr_items[] = {
+	{ "simple",     (int (*)()) ssa_destr_simple }, /* TODO make (void*) casts nicer */
+	{ "rastello",   (int (*)()) ssa_destr_rastello },
 	{ NULL,      NULL }
 };
 
-static lc_opt_enum_const_ptr_var_t ssa_destr_var = {
-	(const void **) &ssa_destr, ssa_destr_items
+static lc_opt_enum_func_ptr_var_t ssa_destr_var = {
+	 (int (**)()) &ssa_destr, ssa_destr_items
 };
 
 static const lc_opt_table_entry_t be_ra_extern_options[] = {
