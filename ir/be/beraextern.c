@@ -6,9 +6,11 @@
  *
  * Implementation of the RA-Interface for an external, (non-SSA) register allocator.
  *
- * The external register allocator is a program taking 2 arguments:
- *   1) An input file in which the interference graph is defined
- *   2) An output file containing the instructions to perform
+ * The external register allocator is a program:
+ *    PROG -i INPUTFILE -o OUTPUTFILE
+ *
+ *   1) Input file defines the interference graph
+ *   2) Output file contains the instructions to perform
  *
 
 
@@ -646,7 +648,7 @@ static void execute(char *prog_to_call, char *out_file, char *result_file) {
 	char cmd_line[1024];
 	int ret_status;
 
-	snprintf(cmd_line, sizeof(cmd_line), "%s %s %s", prog_to_call, out_file, result_file);
+	snprintf(cmd_line, sizeof(cmd_line), "%s -i %s -o %s", prog_to_call, out_file, result_file);
 
 	ret_status = system(cmd_line);
 	assert(ret_status != -1 && "Invokation of external register allocator failed");
