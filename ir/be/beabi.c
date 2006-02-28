@@ -21,6 +21,7 @@
 #include "beabi.h"
 #include "bearch.h"
 #include "benode_t.h"
+#include "besched_t.h"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -35,12 +36,16 @@ typedef struct _be_abi_call_arg_t {
 
 struct _be_abi_call_t {
 	be_abi_call_flags_t flags;
+	unsigned arg_gap;
 	set *params;
 };
 
 struct _be_abi_irg_t {
 	struct obstack      obst;
 	be_irg_t            *birg;
+	be_abi_call_t       *call;
+	type                *method_type;
+
 	ir_node             *init_sp;      /**< The node representing the stack pointer
 									     at the start of the function. */
 
@@ -48,8 +53,11 @@ struct _be_abi_irg_t {
 	pset                *ignore_regs;  /**< Contains all registers which shall be ignored
 									     during register allocation. */
 
-	unsigned omit_framepointer: 1;     /**< If one, the frame(base-)pointer can be used
-									     as an ordinary register. */
+	int start_block_bias;
+
+	unsigned omit_fp : 1;
+	unsigned dedicated_fp : 1;
+	unsigned left_to_right : 1;
 
 	firm_dbg_module_t *dbg;            /**< The debugging module. */
 };
@@ -80,9 +88,10 @@ static INLINE be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, i
 	return get_or_set_call_arg(call, is_res, pos, 0);
 }
 
-void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags)
+void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, unsigned arg_gap)
 {
-	call->flags = flags;
+	call->flags   = flags;
+	call->arg_gap = arg_gap;
 }
 
 void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos)
@@ -366,6 +375,14 @@ static void implement_stack_alloc(be_abi_irg_t *env, ir_node *irn)
 
 }
 
+static void collect_return_walker(ir_node *irn, void *data)
+{
+	if(get_irn_opcode(irn) == iro_Return) {
+		struct obstack *obst = data;
+		obstack_ptr_grow(obst, irn);
+	}
+}
+
 /**
  * Modify the irg itself and the frame type.
  */
@@ -375,6 +392,7 @@ static void modify_irg(be_abi_irg_t *env)
 	const arch_isa_t *isa     = env->birg->main_env->arch_env->isa;
 	ir_graph *irg             = env->birg->irg;
 	ir_node *bl               = get_irg_start_block(irg);
+	ir_node *end              = get_irg_end_block(irg);
 	ir_node *arg_tuple        = get_irg_args(irg);
 	type *method_type         = get_entity_type(get_irg_entity(irg));
 	int n_params              = get_method_n_params(method_type);
@@ -383,16 +401,17 @@ static void modify_irg(be_abi_irg_t *env)
 	int max_arg = 0;
 	int reg_params_nr = 0;
 	ir_node *proj_sp = NULL;
+	int arg_offset = 0;
 
 	int i, j, n;
+
 	ir_node *frame_pointer;
 	ir_node *reg_params, *reg_params_bl;
-	ir_node **args, **args_repl, **return_params;
+	ir_node **args, **args_repl;
 	const ir_edge_t *edge;
-	const arch_register_t *reg;
 
-	pset *callee_save = pset_new_ptr_default();
-	pset *regs        = pset_new_ptr_default();
+	pmap *regs = pmap_create();
+	pmap_entry *ent;
 
 	firm_dbg_module_t *dbg = env->dbg;
 
@@ -421,95 +440,120 @@ static void modify_irg(be_abi_irg_t *env)
 	/* Get the ABI constraints from the ISA */
 	arch_isa_get_call_abi(isa, method_type, call);
 
-	/* Count the register params and add them to the number of projs for the RegParams node */
+	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for(i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		if(arg->in_reg) {
 			assert(arg->reg != sp && "cannot use stack pointer as parameter register");
-			pset_insert_ptr(regs, arg->reg);
+			pmap_insert(regs, (void *) arg->reg, NULL);
 			DBG((dbg, LEVEL_2, "\targ #%d -> reg %s\n", i, arg->reg->name));
 		}
 	}
 
-	/* Collect all callee-save registers which are not used as parameter registers. */
+	/* Collect all callee-save registers */
 	for(i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
 		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
 		for(j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = &cls->regs[j];
-			if(arch_register_type_is(reg, callee_save) && !pset_find_ptr(regs, reg))
-				pset_insert_ptr(callee_save, reg);
+			if(arch_register_type_is(reg, callee_save))
+				pmap_insert(regs, (void *) reg, NULL);
 		}
 	}
 
-	pset_insert_ptr(callee_save, sp);
+	/* The stack pointer must also be saved but not necessarily be marked as callee save */
+	pmap_insert(regs, (void *) sp, NULL);
 
 	reg_params_bl = get_irg_start_block(irg);
-	reg_params    = be_new_RegParams(irg, reg_params_bl, pset_count(regs) + pset_count(callee_save));
+	reg_params    = be_new_RegParams(irg, reg_params_bl, pmap_count(regs));
 	reg_params_nr = 0;
 
 	/*
 	 * make proj nodes for the callee save registers.
 	 * memorize them, since Return nodes get those as inputs.
 	 */
-	for(reg = pset_first(callee_save); reg; reg = pset_next(callee_save)) {
-		ir_node *irn = new_r_Proj(irg, reg_params_bl, reg_params, reg->reg_class->mode, reg_params_nr);
+	for(ent = pmap_first(regs); ent; ent = pmap_next(regs)) {
+		arch_register_t *reg = ent->key;
+		ent->value = new_r_Proj(irg, reg_params_bl, reg_params, reg->reg_class->mode, reg_params_nr);
 		be_set_constr_single_reg(reg_params, -(reg_params_nr + 1), reg);
-		obstack_ptr_grow(&env->obst, irn);
 		reg_params_nr++;
 
-		DBG((dbg, LEVEL_2, "\tcallee save proj #%d -> reg %s\n", reg_params_nr - 1, reg->name));
-
-		/* detect the proj of the stack register and memorize it. */
-		if(reg == sp)
-			proj_sp = irn;
+		DBG((dbg, LEVEL_2, "\tregister save proj #%d -> reg %s\n", reg_params_nr - 1, reg->name));
 	}
-	obstack_ptr_grow(&env->obst, NULL);
-	return_params = obstack_finish(&env->obst);
 
+	proj_sp = pmap_get(regs, (void *) sp);
 	assert(proj_sp != NULL && "There must be a Proj for the stack pointer");
 
-	/* This is the stack pointer add/sub which allocates the frame. remind it for later fixup. */
-	env->init_sp = be_new_IncSP(sp, irg, reg_params_bl, proj_sp, 0, be_stack_dir_along);
+	if(env->omit_fp) {
+		/* This is the stack pointer add/sub which allocates the frame. remind it for later fix up. */
+		env->init_sp  = be_new_IncSP(sp, irg, reg_params_bl, proj_sp, 0, be_stack_dir_along);
+		frame_pointer = env->init_sp;
+	}
 
-	/*
-	 * if we can omit the frame pointer (use it as an ordinary register), the stack pointer becomes
-	 * the frame pointer, else we have to copy the current stack pointer to the frame pointer
-	 */
-	frame_pointer = env->omit_framepointer ? env->init_sp : be_new_Copy(sp->reg_class, irg, reg_params_bl, proj_sp);
+	else {
+		env->init_sp  = proj_sp;
+		frame_pointer = be_new_Copy(sp->reg_class, irg, reg_params_bl, proj_sp);
+	}
+
+	/* Set the new frame pointer. */
+	exchange(get_irg_frame(irg), frame_pointer);
 	set_irg_frame(irg, frame_pointer);
 
-	/* Now, introduce stack param nodes for all parameters passed on the stack */
-	for(i = 0; i < max_arg; ++i) {
-		ir_node *arg_proj = args[i];
-		if(arg_proj != NULL) {
-			be_abi_call_arg_t *arg;
-			ir_type *param_type;
-			int nr = get_Proj_proj(arg_proj);
+	/* compute the start offset for the stack parameters. */
+	{
+		int arg_offset = 0;
+		int arg_size   = 0;
+		int inc_dir    = isa->stack_dir * (env->left_to_right ? 1 : -1);
 
-			nr         = MIN(nr, n_params);
-			arg        = get_call_arg(call, 0, nr);
-			param_type = get_method_param_type(method_type, nr);
+		for(i = 0; i < n_params; ++i) {
+			be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
+			if(!arg->in_reg)
+				arg_size += get_type_size_bytes(get_method_param_type(method_type, i));
+		}
 
-			if(arg->in_reg) {
-				args_repl[i] = new_r_Proj(irg, reg_params_bl, reg_params, get_irn_mode(arg_proj), reg_params_nr);
-				be_set_constr_single_reg(reg_params, -(reg_params_nr + 1), arg->reg);
-				reg_params_nr++;
-			}
+		arg_offset = -isa->stack_dir * call->arg_gap + env->left_to_right * arg_size;
 
-			/* when the (stack) parameter is primitive, we insert a StackParam
-			   node representing the load of that parameter */
-			else if(is_atomic_type(param_type)) {
-				ir_mode *mode                    = get_type_mode(param_type);
-				const arch_register_class_t *cls = arch_isa_get_reg_class_for_mode(isa, mode);
-				// TODO: Correct offset computation!
-				args_repl[i] = be_new_StackParam(cls, irg, reg_params_bl, mode, frame_pointer, 0);
-			}
+		/* Now, introduce stack param nodes for all parameters passed on the stack */
+		for(i = 0; i < max_arg; ++i) {
+			ir_node *arg_proj = args[i];
+			if(arg_proj != NULL) {
+				be_abi_call_arg_t *arg;
+				ir_type *param_type;
+				int nr = get_Proj_proj(arg_proj);
 
-			/* The stack parameter is not primitive (it is a struct or array),
-			   we thus will create a node representing the parameter's address
-			   on the stack. */
-			else {
-				assert(0 && "struct parameters are not supported");
+				nr         = MIN(nr, n_params);
+				arg        = get_call_arg(call, 0, nr);
+				param_type = get_method_param_type(method_type, nr);
+
+				if(arg->in_reg) {
+					args_repl[i] = new_r_Proj(irg, reg_params_bl, reg_params, get_irn_mode(arg_proj), reg_params_nr);
+					be_set_constr_single_reg(reg_params, -(reg_params_nr + 1), arg->reg);
+					reg_params_nr++;
+				}
+
+				/* when the (stack) parameter is primitive, we insert a StackParam
+				node representing the load of that parameter */
+				else {
+					int size = get_type_size_bytes(param_type) * isa->stack_dir;
+
+					if(inc_dir < 0)
+						arg_offset -= size;
+
+					if(is_atomic_type(param_type)) {
+						ir_mode *mode                    = get_type_mode(param_type);
+						const arch_register_class_t *cls = arch_isa_get_reg_class_for_mode(isa, mode);
+						args_repl[i] = be_new_StackParam(cls, irg, reg_params_bl, mode, frame_pointer, arg_offset);
+					}
+
+					/* The stack parameter is not primitive (it is a struct or array),
+					we thus will create a node representing the parameter's address
+					on the stack. */
+					else {
+						assert(0 && "struct parameters are not supported");
+					}
+
+					if(inc_dir > 0)
+						arg_offset += size;
+				}
 			}
 		}
 	}
@@ -522,11 +566,54 @@ static void modify_irg(be_abi_irg_t *env)
 		}
 	}
 
+	/* All Return nodes hang on the End node, so look for them there. */
+	for(i = 0, n = get_irn_arity(end); i < n; ++i) {
+		ir_node *irn = get_irn_n(end, i);
+
+		if(get_irn_opcode(irn) == iro_Return) {
+			ir_node *bl = get_nodes_block(irn);
+			ir_node *ret;
+			int i, n;
+			ir_node **in;
+
+			/* collect all arguments of the return */
+			for(i = 0, n = get_irn_arity(irn); i < n; ++i)
+				obstack_ptr_grow(&env->obst, get_irn_n(irn, i));
+
+			/* Add the Proj nodes representing the caller save registers. */
+			for(ent = pmap_first(regs); ent; ent = pmap_next(regs), ++n) {
+				const arch_register_t *reg = ent->key;
+				ir_node *irn               = ent->value;
+
+				/*
+				 * If the register is the stack pointer,
+				 * add the fix up code. Either add the size of the stack
+				 * frame if we omitted the frame pointer or move the
+				 * frame pointer back to the stack register.
+				 */
+				if(reg == sp) {
+					if(!env->omit_fp) {
+						irn  = be_new_Copy(sp->reg_class, irg, bl, frame_pointer);
+						be_set_constr_single_reg(irn, -1, sp);
+					}
+
+					else
+						irn = be_new_IncSP(sp, irg, bl, proj_sp, 0, be_stack_dir_against);
+				}
+				obstack_ptr_grow(&env->obst, irn);
+			}
+
+			/* The in array for the new back end return is now ready. */
+			in  = obstack_finish(&env->obst);
+			ret = be_new_Return(irg, bl, n, in);
+			edges_reroute(irn, ret, irg);
+			obstack_free(&env->obst, in);
+		}
+	}
+
 	obstack_free(&env->obst, args);
 	be_abi_call_free(call);
-
-	del_pset(callee_save);
-	del_pset(regs);
+	pmap_destroy(regs);
 }
 
 static void collect_alloca_walker(ir_node *irn, void *data)
@@ -543,10 +630,16 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	int i;
 	ir_node **stack_allocs;
 
-	env->omit_framepointer = 1;
-	env->birg              = birg;
-	env->stack_ops         = pset_new_ptr(32);
-	env->dbg               = firm_dbg_register("firm.be.abi");
+	env->method_type   = get_entity_type(get_irg_entity(birg->irg));
+	env->call          = be_abi_call_new();
+	arch_isa_get_call_abi(birg->main_env->arch_env->isa, env->method_type, env->call);
+
+	env->omit_fp       = (env->call->flags & BE_ABI_TRY_OMIT_FRAME_POINTER) != 0;
+	env->dedicated_fp  = (env->call->flags & BE_ABI_FRAME_POINTER_DEDICATED) != 0;
+	env->left_to_right = (env->call->flags & BE_ABI_LEFT_TO_RIGHT) != 0;
+	env->birg          = birg;
+	env->stack_ops     = pset_new_ptr(32);
+	env->dbg           = firm_dbg_register("firm.be.abi");
 	obstack_init(&env->obst);
 
 	/* search for stack allocation nodes and record them */
@@ -556,7 +649,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	/* If there are stack allocations in the irg, we need a frame pointer */
 	if(stack_allocs[0] != NULL)
-		env->omit_framepointer = 0;
+		env->omit_fp = 0;
 
 	modify_irg(env);
 
@@ -567,17 +660,84 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	return env;
 }
 
-void be_abi_fix_stack(be_abi_irg_t *env)
+static void collect_stack_nodes(ir_node *irn, void *data)
 {
-	pset *origs = pset_new_ptr_default();
-	dom_front_info_t *df = be_compute_dominance_frontiers(env->birg->irg);
+	pset *s = data;
 
-	pset_insert_ptr(origs, env->init_sp);
-	be_ssa_constr_sets(df, origs, env->stack_ops);
-	del_pset(origs);
+	switch(be_get_irn_opcode(irn)) {
+	case beo_IncSP:
+	case beo_AddSP:
+		pset_insert_ptr(s, irn);
+	}
+}
+
+void be_abi_fix_stack_nodes(be_abi_irg_t *env)
+{
+	dom_front_info_t *df;
+	pset *stack_ops;
+
+	/* We need dominance frontiers for fix up */
+	df = be_compute_dominance_frontiers(env->birg->irg);
+
+	stack_ops = pset_new_ptr_default();
+	pset_insert_ptr(env->stack_ops, env->init_sp);
+	irg_walk_graph(env->birg->irg, collect_stack_nodes, NULL, stack_ops);
+	be_ssa_constr_set(df, stack_ops);
+	del_pset(stack_ops);
+
+	/* free these dominance frontiers */
 	be_free_dominance_frontiers(df);
 }
 
+static int get_dir(ir_node *irn)
+{
+	return 1 - 2 * (be_get_IncSP_direction(irn) == be_stack_dir_against);
+}
+
+static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
+{
+	const arch_env_t *aenv = env->birg->main_env->arch_env;
+	ir_node *irn;
+	int start_bias = bias;
+
+	sched_foreach(bl, irn) {
+		if(be_is_IncSP(irn)) {
+			int ofs = be_get_IncSP_offset(irn);
+			int dir = get_dir(irn);
+
+			if(ofs == BE_STACK_FRAME_SIZE) {
+				ofs = get_type_size_bytes(get_irg_frame_type(env->birg->irg));
+				be_set_IncSP_offset(irn, ofs);
+			}
+
+			bias += dir * ofs;
+		}
+
+		else
+			arch_set_stack_bias(aenv, irn, bias);
+	}
+
+	return bias;
+}
+
+static void stack_bias_walker(ir_node *bl, void *data)
+{
+	if(bl != get_irg_start_block(get_irn_irg(bl))) {
+		be_abi_irg_t *env = data;
+		process_stack_bias(env, bl, env->start_block_bias);
+	}
+}
+
+void be_abi_fix_stack_bias(be_abi_irg_t *env)
+{
+	ir_graph *irg  = env->birg->irg;
+
+	/* Determine the stack bias at the and of the start block. */
+	env->start_block_bias = process_stack_bias(env, get_irg_start_block(irg), 0);
+
+	/* fix the bias is all other blocks */
+	irg_block_walk_graph(irg, stack_bias_walker, NULL, env);
+}
 
 void be_abi_free(be_abi_irg_t *env)
 {
