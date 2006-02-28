@@ -464,98 +464,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 
 /**
- * Adds Projs to keep nodes for each register class, which eats the
- * caller saved registers.
- * Note: The caller has to make sure, that call is a Call
- *
- * @param call     The Call node
- * @param walk_env The walker environment
- */
-static void lower_call_node(ir_node *call, const void *walk_env) {
-	const arch_env_t            *arch_env   = walk_env;
-	int                          bitset_idx = 0;
-	int                          set_size   = 0;
-	arch_isa_t                  *isa        = arch_env_get_isa(arch_env);
-	const ir_node               *proj_T     = NULL;
-	ir_node                     *block      = get_nodes_block(call);
-	const arch_register_class_t *reg_class;
-	int                          i, j, pn, keep_arity;
-	ir_node                     **in_keep;
-	bitset_t                    *proj_set;
-	const ir_edge_t             *edge;
-	const arch_register_t       *reg;
-
-	/* Prepare the bitset where we store the projnums which are already in use*/
-	for (i = 0; i < arch_isa_get_n_reg_class(isa); i++) {
-		reg_class  = arch_isa_get_reg_class(isa, i);
-		set_size  += arch_register_class_n_regs(reg_class);
-	}
-
-	in_keep = xmalloc(set_size * sizeof(ir_node *));
-
-	proj_set = bitset_malloc(set_size);
-	bitset_clear_all(proj_set);
-
-	/* check if there is a ProjT node and which arguments are used */
-	foreach_out_edge(call, edge) {
-		if (get_irn_mode(get_edge_src_irn(edge)) == mode_T)
-			proj_T = get_edge_src_irn(edge);
-	}
-
-	/* set all used arguments */
-	if (proj_T) {
-		foreach_out_edge(proj_T, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-
-			assert(is_Proj(proj));
-			pn = isa->impl->handle_call_proj(isa, proj, 0);
-			bitset_set(proj_set, pn);
-		}
-	}
-	else {
-		proj_T = new_r_Proj(current_ir_graph, block, call, mode_T, pn_Call_T_result);
-	}
-
-	/* Create for each caller save register a proj (keep node argument) */
-	/* if this proj is not already present */
-	for (i = 0; i < arch_isa_get_n_reg_class(isa); i++) {
-
-		/* reset the keep input, as we need one keep for each register class */
-		memset(in_keep, 0, set_size * sizeof(ir_node *));
-		keep_arity = 0;
-		reg_class  = arch_isa_get_reg_class(isa, i);
-
-		for (j = 0; j < arch_register_class_n_regs(reg_class); j++) {
-			reg = arch_register_for_index(reg_class, j);
-
-			/* only check caller save registers */
-			if (arch_register_type_is(reg, caller_save)) {
-
-				/* Only create new proj, iff not already present */
-				if (!bitset_is_set(proj_set, bitset_idx)) {
-					ir_node *proj = new_r_Proj(current_ir_graph, block, (ir_node *)proj_T, mode_Is, bitset_idx);
-
-					pn = isa->impl->handle_call_proj(isa, proj, 1);
-					in_keep[keep_arity++] = proj;
-				}
-
-				bitset_idx++;
-			}
-		}
-
-		/* ok, we found some caller save register which are not in use but must be saved */
-		if (keep_arity) {
-			be_new_Keep(reg_class, current_ir_graph, block, keep_arity, in_keep);
-		}
-	}
-
-	bitset_free(proj_set);
-	return;
-}
-
-
-
-/**
  * Calls the backend code generator functions to lower Spill and
  * Reload nodes into Store and Load. The backend is fully responsible
  * for creating the new nodes and setting their input correct.
@@ -597,24 +505,6 @@ static void lower_spill_reload(ir_node *irn, void *walk_env) {
 }
 
 
-/**
- * Calls the corresponding lowering function for the node.
- *
- * @param irn      The node to be checked for lowering
- * @param walk_env The walker environment
- */
-static void lower_nodes_before_sched_walker(ir_node *irn, void *walk_env) {
-	const arch_env_t *arch_env = walk_env;
-
-	if (!is_Block(irn) && !is_Proj(irn)) {
-		if (is_Call(arch_env, irn)) {
-			lower_call_node(irn, walk_env);
-		}
-	}
-
-	return;
-}
-
 
 /**
  * Calls the corresponding lowering function for the node.
@@ -636,19 +526,6 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	}
 
 	return;
-}
-
-
-
-/**
- * Walks over all blocks in an irg and performs lowering need
- * to be done before scheduling (e.g. call lowering).
- *
- * @param chord_env The chordal environment containing the irg
- * @param do_copy   1 == resolve cycles with a free reg if available
- */
-void lower_nodes_before_sched(ir_graph *irg, const void *env) {
-	irg_walk_blkwise_graph(irg, NULL, lower_nodes_before_sched_walker, (void *)env);
 }
 
 

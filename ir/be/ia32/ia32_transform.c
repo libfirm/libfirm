@@ -20,7 +20,6 @@
 #include "../arch/archop.h"     /* we need this for Min and Max nodes */
 #include "ia32_transform.h"
 #include "ia32_new_nodes.h"
-#include "ia32_map_regs.h"
 
 #include "gen_ia32_regalloc_if.h"
 
@@ -1145,128 +1144,10 @@ ir_node *gen_Store(ia32_transform_env_t *env) {
 /**
  * Transforms a Call and its arguments corresponding to the calling convention.
  *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir Call node
- * @param dummy   mode doesn't matter
- * @return the created ia32 Call node
+ * @param env   The transformation environment
+ * @return The created ia32 Call node
  */
 static ir_node *gen_Call(ia32_transform_env_t *env) {
-#if 0
-	const ia32_register_req_t **in_req;
-	ir_node          **in;
-	ir_node           *new_call, *sync;
-	int                i, j, n_new_call_in, ignore = 0;
-	ia32_attr_t       *attr;
-	dbg_info          *dbg          = env->dbg;
-	ir_graph          *irg          = env->irg;
-	ir_node           *block        = env->block;
-	ir_node           *call         = env->irn;
-	ir_node          **stack_param  = NULL;
-	ir_node          **param        = get_Call_param_arr(call);
-	ir_node           *call_Mem     = get_Call_mem(call);
-	unsigned           cc           = get_method_calling_convention(get_Call_type(call));
-	int                n            = get_Call_n_params(call);
-	int                stack_idx    = 0;
-	int                biggest_n    = -1;
-	int                n_res        = get_method_n_ress(get_Call_type(call));
-
-	assert(n_res <= 2 && "method with more than two results not supported");
-
-	if (cc & cc_reg_param)
-		biggest_n = ia32_get_n_regparam_class(n, param, &ignore, &ignore);
-
-	/* remember: biggest_n = x means we can pass (x + 1) parameters in register */
-
-	/* do we need to pass arguments on stack? */
-	if (biggest_n + 1 < n)
-		stack_param = xcalloc(n - biggest_n - 1, sizeof(ir_node *));
-
-	/* we need at least one in, either for the stack params or the call_Mem */
-	n_new_call_in = biggest_n + 2;
-
-	/* the call has one IN for all stack parameter and one IN for each reg param */
-	in     = xcalloc(n_new_call_in, sizeof(ir_node *));
-	in_req = xcalloc(n_new_call_in, sizeof(arch_register_req_t *));
-
-	/* loop over all parameters and set the register requirements */
-	for (i = 0; i <= biggest_n && (cc & cc_reg_param); i++) {
-		in_req[i] = ia32_get_RegParam_req(n, param, i, cc);
-	}
-	stack_idx = i;
-
-	/* create remaining stack parameters */
-	if (cc & cc_last_on_top) {
-		for (i = stack_idx; i < n; i++) {
-			/* pass it on stack */
-			if (mode_is_float(get_irn_mode(param[i]))) {
-				stack_param[i - stack_idx] = new_rd_ia32_fStackArg(get_irn_dbg_info(param[i]), irg,
-														block, call_Mem, param[i], mode_M);
-			}
-			else {
-				stack_param[i - stack_idx] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), irg,
-														block, call_Mem, param[i], mode_M);
-			}
-			/* set the argument number for later lowering */
-			set_ia32_pncode(stack_param[i - stack_idx], i - stack_idx);
-		}
-	}
-	else {
-		for (i = n - 1, j = 0; i >= stack_idx; i--, j++) {
-			/* pass it on stack */
-			if (mode_is_float(get_irn_mode(param[i]))) {
-				stack_param[j] = new_rd_ia32_fStackArg(get_irn_dbg_info(param[i]), irg,
-														block, call_Mem, param[i], mode_M);
-			}
-			else {
-				stack_param[j] = new_rd_ia32_StackArg(get_irn_dbg_info(param[i]), irg,
-														block, call_Mem, param[i], mode_M);
-			}
-			/* set the argument number for later lowering */
-			set_ia32_pncode(stack_param[j], j);
-		}
-	}
-
-	if (stack_param) {
-		sync = new_r_Sync(irg, block, n - biggest_n - 1, stack_param);
-		in[n_new_call_in - 1] = sync;
-	}
-	else {
-		in[n_new_call_in - 1] = call_Mem;
-	}
-
-	/* create the new node */
-	new_call = new_rd_ia32_Call(dbg, irg, block, n_new_call_in, in);
-	set_ia32_Immop_attr(new_call, get_Call_ptr(call));
-
-	/* set register requirements for in and out */
-	attr             = get_ia32_attr(new_call);
-	attr->in_req     = in_req;
-
-	set_ia32_n_res(new_call, n_res);
-
-	if (n_res > 0) {
-		attr->out_req    = xcalloc(n_res, sizeof(ia32_register_req_t *));
-		attr->slots      = xcalloc(n_res, sizeof(arch_register_t *));
-	}
-
-	/* two results only appear when a 64bit int result is broken up into two 32bit results */
-	if (n_res == 1) {
-		if (mode_is_float(get_type_mode(get_method_res_type(get_Call_type(call), 0))))
-			attr->out_req[0] = &ia32_default_req_ia32_fp_xmm0;
-		else
-			attr->out_req[0] = &ia32_default_req_ia32_gp_eax;
-	}
-	else if (n_res == 2) {
-		attr->out_req[0] = &ia32_default_req_ia32_gp_eax;
-		attr->out_req[1] = &ia32_default_req_ia32_gp_edx;
-	}
-
-	/* stack parameter has no OUT register */
-	attr->in_req[n_new_call_in - 1] = &ia32_default_req_none;
-
-	return new_call;
-#endif
 }
 
 
@@ -1317,136 +1198,6 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 	}
 
 	return res;
-}
-
-
-
-/**
- * Transform the argument projs from a start node corresponding to the
- * calling convention.
- * It transforms "Proj Arg x -> ProjT -> Start <- ProjM" into
- * "RegParam x   -> ProjT -> Start" OR
- * "StackParam x -> ProjM -> Start"
- * whether parameter is passed in register or on stack.
- *
- * @param mod     the debug module
- * @param block   the block the nodes should belong to
- * @param proj    the ProjT node which points to Start
- * @param start   the Start node
- * @return Should be always NULL
- */
-static ir_node *gen_Proj_Start(ia32_transform_env_t *env, ir_node *proj, ir_node *start) {
-#if 0
-	const ia32_register_req_t *temp_req;
-	const ir_edge_t   *edge;
-	ir_node           *succ, *irn;
-	ir_node          **projargs;
-	ir_mode           *mode;
-	int                n, i;
-	unsigned           cc;
-	ir_node           *proj_M     = get_irg_initial_mem(current_ir_graph);
-	entity            *irg_ent    = get_irg_entity(current_ir_graph);
-	ir_type           *tp         = get_entity_type(irg_ent);
-	int                cur_pn     = 0;
-	ir_graph          *irg        = env->irg;
-	ir_node           *block      = env->block;
-
-	assert(is_Method_type(tp) && "irg type is not a method");
-
-	switch(get_Proj_proj(proj)) {
-		case pn_Start_T_args:
-			/* We cannot use get_method_n_params here as the function might
-			   be variadic or one argument is not used. */
-			n = get_irn_n_edges(proj);
-
-			/* Allocate memory for all non variadic parameters in advance to be on the save side */
-			env->cg->reg_param_req = xcalloc(get_method_n_params(tp), sizeof(ia32_register_req_t *));
-
-			/* we are done here when there are no parameters */
-			if (n < 1)
-				break;
-
-			/* temporary remember all proj arg x */
-			projargs = xcalloc(n, sizeof(ir_node *));
-
-			i = 0;
-			foreach_out_edge((const ir_node *)proj, edge) {
-				succ = get_edge_src_irn(edge);
-				assert(is_Proj(succ) && "non-Proj from a Proj_T (pn_Start_T_args).");
-				projargs[i++] = succ;
-			}
-
-			cc = get_method_calling_convention(tp);
-
-			/* loop over all parameters and check whether its a int or float */
-			for (i = 0; i < n; i++) {
-				mode   = get_irn_mode(projargs[i]);
-				cur_pn = get_Proj_proj(projargs[i]);
-
-				if (cc & cc_reg_param) {
-					temp_req = ia32_get_RegParam_req(n, projargs, cur_pn, cc);
-				}
-				else {
-					temp_req = NULL;
-				}
-
-				if (temp_req) {
-					/* passed in register */
-					env->cg->reg_param_req[cur_pn] = temp_req;
-				}
-				else {
-					/* passed on stack */
-					if (mode_is_float(mode))
-						irn = new_rd_ia32_fStackParam(get_irn_dbg_info(projargs[i]), irg, block, proj_M, mode);
-					else
-						irn = new_rd_ia32_StackParam(get_irn_dbg_info(projargs[i]), irg, block, proj_M, mode);
-
-					set_ia32_pncode(irn, cur_pn);
-
-					/* kill the old "Proj Arg" and replace with the new stack param */
-					exchange(projargs[i], irn);
-				}
-			}
-
-			free(projargs);
-
-			break;
-		case pn_Start_P_frame_base:
-		case pn_Start_X_initial_exec:
-		case pn_Start_M:
-		case pn_Start_P_globals:
-		case pn_Start_P_value_arg_base:
-			break;
-		default:
-			assert(0 && "unsupported Proj(Start)");
-	}
-
-	return NULL;
-#endif
-}
-
-/**
- * Transform some Proj's (Proj_Proj, Proj_Start, Proj_Cmp, Proj_Cond, Proj_Call).
- * All others are ignored.
- *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir Proj node
- * @param mode    mode of the Proj
- * @return The transformed node.
- */
-static ir_node *gen_Proj(ia32_transform_env_t *env) {
-	ir_node *new_node  = NULL;
-	ir_node *pred      = get_Proj_pred(env->irn);
-
-	if (env->mode == mode_M)
-		return NULL;
-
-	if (get_irn_op(pred) == op_Start) {
-		new_node = gen_Proj_Start(env, env->irn, pred);
-	}
-
-	return new_node;
 }
 
 
@@ -1523,10 +1274,10 @@ void ia32_transform_node(ir_node *node, void *env) {
 		GEN(Store);
 		GEN(Cond);
 
-		IGN(Proj);
 		IGN(Call);
 		IGN(Alloc);
 
+		IGN(Proj);
 		IGN(Block);
 		IGN(Start);
 		IGN(End);

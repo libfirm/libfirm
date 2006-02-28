@@ -133,26 +133,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
 
-	if (is_Call_Proj(irn) && is_used_by_Keep(irn)) {
-		if (pos >= 0) {
-			req = NULL;
-		}
-		else {
-			irn_req = ia32_projnum_reg_req_map[get_Proj_proj(irn)];
-			memcpy(req, &(irn_req->req), sizeof(*req));
-		}
-
-		return req;
-	}
-	else if (is_Start_Proj(irn)) {
-/*		irn_req = ops->cg->reg_param_req[get_Proj_proj(irn)];
-		assert(irn_req && "missing requirement for regparam");
-		memcpy(req, &(irn_req->req), sizeof(*req)); */
-		memcpy(req, &(ia32_default_req_ia32_gp.req), sizeof(*req));
-		return req;
-		//return NULL;
-	}
-	else if (is_Proj(irn)) {
+	if (is_Proj(irn)) {
 		if (pos == -1) {
 			node_pos = ia32_translate_proj_pos(irn);
 		}
@@ -201,23 +182,6 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 			}
 			else
 				assert(0 && "unsupported Phi-Mode");
-		}
-		else if (is_Start(irn)) {
-			DB((mod, LEVEL_1, "returning reqs none for ProjX -> Start (%+F )\n", irn));
-			switch (node_pos) {
-				case pn_Start_X_initial_exec:
-				case pn_Start_P_value_arg_base:
-				case pn_Start_P_globals:
-				case pn_Start_P_frame_base:
-					memcpy(req, &(ia32_default_req_none.req), sizeof(*req));
-					break;
-				case pn_Start_T_args:
-					assert(0 && "ProjT(pn_Start_T_args) should not be asked");
-			}
-		}
-		else if (get_irn_op(irn) == op_Return && pos > 0) {
-			DB((mod, LEVEL_1, "returning reqs EAX for %+F\n", irn));
-			memcpy(req, &(ia32_default_req_ia32_gp_eax.req), sizeof(*req));
 		}
 		else {
 			DB((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
@@ -345,101 +309,7 @@ static void ia32_prepare_graph(void *self) {
  * Stack reservation and StackParam lowering.
  */
 static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
-#if 0
-	firm_dbg_module_t *mod       = cg->mod;
-	ir_node           *frame     = get_irg_frame(irg);
-	ir_node           *end_block = get_irg_end_block(irg);
-	ir_node          **returns, **in, **new_in;
-	ir_node           *stack_reserve, *sched_point;
-	ir_node           *stack_free, *new_ret, *return_block;
-	int                stack_size = 0, i, n_arg;
-	arch_register_t   *stack_reg;
-	tarval            *stack_size_tv;
-	dbg_info          *frame_dbg;
 
-	/* Determine stack register */
-	if (cg->has_alloca) {
-		stack_reg = &ia32_gp_regs[REG_EBP];
-	}
-	else {
-		stack_reg = &ia32_gp_regs[REG_ESP];
-	}
-
-	/* If frame is used, then we need to reserve some stackspace. */
-	if (get_irn_n_edges(frame) > 0) {
-		/* The initial stack reservation. */
-		stack_size    = get_type_size_bytes(get_irg_frame_type(irg));
-		frame_dbg     = get_irn_dbg_info(frame);
-		stack_reserve = new_rd_ia32_Sub_i(frame_dbg, irg, get_nodes_block(frame), new_NoMem(), mode_Is);
-		stack_size_tv = new_tarval_from_long(stack_size, mode_Is);
-		set_ia32_Immop_tarval(stack_reserve, stack_size_tv);
-
-		assert(stack_size && "bOrken stack layout");
-
-		/* reroute all edges from frame pointer to corrected frame pointer */
-		edges_reroute(frame, stack_reserve, irg);
-		set_irn_n(stack_reserve, 0, frame);
-
-		/* schedule frame pointer */
-		if (! sched_is_scheduled(frame)) {
-			sched_add_after(get_irg_start(irg), frame);
-		}
-
-		/* set register */
-		arch_set_irn_register(cg->arch_env, frame, stack_reg);
-		arch_set_irn_register(cg->arch_env, stack_reserve, stack_reg);
-
-		/* insert into schedule */
-		sched_add_after(frame, stack_reserve);
-
-		/* Free stack for each Return node */
-		returns = get_Block_cfgpred_arr(end_block);
-		for (i = 0; i < get_Block_n_cfgpreds(end_block); i++) {
-			assert(get_irn_opcode(returns[i]) == iro_Return && "cfgpred of endblock is not a return");
-
-			return_block = get_nodes_block(returns[i]);
-
-			/* free the stack */
-			stack_free = new_rd_ia32_Add_i(frame_dbg, irg, return_block, stack_reserve, mode_Is);
-			set_ia32_Immop_tarval(stack_free, stack_size_tv);
-			arch_set_irn_register(cg->arch_env, stack_free, stack_reg);
-
-			DBG((mod, LEVEL_1, "examining %+F, %+F created, block %+F", returns[i], stack_free, return_block));
-
-			/* get the old Return arguments */
-			n_arg  = get_Return_n_ress(returns[i]);
-			in     = get_Return_res_arr(returns[i]);
-			new_in = alloca((n_arg + 2) * sizeof(new_in[0]));
-
-			/* copy the old to the new in's */
-			memcpy(new_in, in, n_arg * sizeof(in[0]));
-			new_in[n_arg++] = stack_free;
-			new_in[n_arg++] = get_Return_mem(returns[i]);
-
-			/* create the new return node */
-			new_ret = new_rd_ia32_Return(get_irn_dbg_info(returns[i]), irg, return_block, n_arg, new_in);
-
-			/* In case the return node is the only node in the block, */
-			/* it is not scheduled, so we need this work-around.      */
-			if (! sched_is_scheduled(returns[i])) {
-				sched_point = return_block;
-			}
-			else {
-				sched_point = sched_prev(returns[i]);
-				sched_remove(returns[i]);
-			}
-
-			/* exchange the old return with the new one */
-			exchange(returns[i], new_ret);
-
-			DB((mod, LEVEL_1, " ... replaced with %+F\n", new_ret));
-
-			/* remove the old one from schedule and add the new nodes properly */
-			sched_add_after(sched_point, new_ret);
-			sched_add_after(sched_point, stack_free);
-		}
-	}
-#endif
 }
 
 
@@ -448,9 +318,6 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
  * Dummy functions for hooks we don't need but which must be filled.
  */
 static void ia32_before_sched(void *self) {
-	ia32_code_gen_t *cg = self;
-
-	lower_nodes_before_sched(cg->irg, cg->arch_env);
 }
 
 static void ia32_before_ra(void *self) {
@@ -629,8 +496,7 @@ static ia32_isa_t ia32_isa_template = {
 	&ia32_gp_regs[REG_ESP],
 	&ia32_gp_regs[REG_EBP],
 	-1,
-	0,
-	NULL
+	0
 };
 
 /**
@@ -645,8 +511,6 @@ static void *ia32_init(void) {
 
 	isa = xcalloc(1, sizeof(*isa));
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
-
-	isa->reg_projnum_map = new_set(ia32_cmp_reg_projnum_assoc, 1024);
 
 	ia32_register_init(isa);
 	ia32_create_opcodes();
@@ -785,50 +649,6 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 	return &ia32_irn_handler;
 }
 
-long ia32_handle_call_proj(const void *self, ir_node *proj, int is_keep) {
-	ia32_isa_t *isa = (ia32_isa_t *)self;
-	long        pn  = get_Proj_proj(proj);
-
-	if (!is_keep) {
-		/* It's not a Keep proj, which means, that it is a result proj. */
-		/* Possible result proj numbers are 0 and 1                     */
-		/* Set the correct register (depends on the mode) and the       */
-		/* corresponding proj number                                    */
-		if (mode_is_float(get_irn_mode(proj))) {
-			assert(pn == 0 && "only one floating point result supported");
-
-			/* Get the proj number for the floating point result */
-			pn = ia32_get_reg_projnum(&ia32_fp_regs[REG_XMM0], isa->reg_projnum_map);
-		}
-		else {
-			/* In case of 64bit return value, the result is */
-			/* in EDX:EAX and we have two result projs.     */
-			switch (pn) {
-				case 0:
-					pn = ia32_get_reg_projnum(&ia32_gp_regs[REG_EAX], isa->reg_projnum_map);
-					break;
-				case 1:
-					pn = ia32_get_reg_projnum(&ia32_gp_regs[REG_EDX], isa->reg_projnum_map);
-					break;
-				default:
-					assert(0 && "only two int results supported");
-			}
-		}
-
-		/* Set the correct proj number */
-		set_Proj_proj(proj, pn);
-	}
-	else {
-		/* Set mode to floating point if required */
-		if (!strcmp(ia32_reg_classes[CLASS_ia32_fp].name,
-					ia32_projnum_reg_req_map[pn]->req.cls->name)) {
-			set_irn_mode(proj, mode_F);
-		}
-	}
-
-	return pn;
-}
-
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 	return is_ia32_irn(irn);
 }
@@ -869,6 +689,5 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_call_abi,
 	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
-	ia32_get_list_sched_selector,
-	ia32_handle_call_proj
+	ia32_get_list_sched_selector
 };

@@ -97,43 +97,6 @@ const arch_register_t *ia32_get_firm_reg(const ir_node *irn, set *reg_set) {
 
 
 
-/* Mapping to store proj numbers for registers */
-
-struct ia32_reg_projnum_assoc {
-	const arch_register_t *reg;
-	long                   proj_num;
-};
-
-int ia32_cmp_reg_projnum_assoc(const void *a, const void *b, size_t len) {
-	const struct ia32_reg_projnum_assoc *x = a;
-	const struct ia32_reg_projnum_assoc *y = b;
-
-	return !(x->reg == y->reg);
-}
-
-static struct ia32_reg_projnum_assoc *get_reg_projnum_assoc(const arch_register_t *reg, set *reg_set) {
-	struct ia32_reg_projnum_assoc templ;
-	unsigned int hash;
-
-	templ.reg      = reg;
-	templ.proj_num = -1;
-	hash = HASH_PTR(reg);
-
-	return set_insert(reg_set, &templ, sizeof(templ), hash);
-}
-
-void ia32_set_reg_projnum(const arch_register_t *reg, long proj_num, set *reg_set) {
-	struct ia32_reg_projnum_assoc *assoc = get_reg_projnum_assoc(reg, reg_set);
-	assoc->proj_num = proj_num;
-}
-
-long ia32_get_reg_projnum(const arch_register_t *reg, set *reg_set) {
-	struct ia32_reg_projnum_assoc *assoc = get_reg_projnum_assoc(reg, reg_set);
-	return assoc->proj_num;
-}
-
-
-
 /**
  * Check all parameters and determine the maximum number of parameters
  * to pass in gp regs resp. in fp regs.
