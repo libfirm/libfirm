@@ -222,7 +222,7 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 			be_abi_call_res_reg(abi, i, &cls->regs[i]);
 	}
 
-	be_abi_call_set_flags(abi, BE_ABI_NONE);
+	be_abi_call_set_flags(abi, BE_ABI_NONE, 0);
 }
 
 
@@ -328,12 +328,16 @@ static arch_irn_flags_t firm_get_flags(const void *self, const ir_node *irn)
 	return res;
 }
 
+static void firm_set_stack_bias(const void *self, ir_node *irn, int bias) {
+}
+
 static const arch_irn_ops_if_t firm_irn_ops_if = {
 	firm_get_irn_reg_req,
 	firm_set_irn_reg,
 	firm_get_irn_reg,
 	firm_classify,
-	firm_get_flags
+	firm_get_flags,
+	firm_set_stack_bias
 };
 
 static const arch_irn_ops_t firm_irn_ops = {
