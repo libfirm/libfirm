@@ -252,18 +252,6 @@ struct _arch_irn_ops_if_t {
   arch_irn_flags_t (*get_flags)(const void *self, const ir_node *irn);
 
   /**
-   * Check, if a node modifies the stack pointer by a constant.
-   * @param self The this pointer.
-   * @param irn  The node in question.
-   * @return     The (constant) amount by which the stack pointer is modifies
-   *             by this node. Return 0, if irn does not touch the stack pointer.
-   *             <tt>-n</tt> if the node modifies the sp by n against the stack's growing
-   *             direction and <tt>n</tt> if irn modifies the stack by n along the stack's
-   *             growing direction.
-   */
-  int (*modifies_sp)(const void *self, const ir_node *irn);
-
-  /**
    * Set a bias for the stack pointer.
    * If the node in question uses the stack pointer for indexing, it must
    * consider the value of <code>bias</code> additionally.
@@ -280,6 +268,9 @@ struct _arch_irn_ops_if_t {
 struct _arch_irn_ops_t {
 	const arch_irn_ops_if_t *impl;
 };
+
+extern void
+arch_set_stack_bias(const arch_env_t *env, ir_node *irn, int bias);
 
 /**
  * Get the register requirements for a node.

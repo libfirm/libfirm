@@ -85,6 +85,13 @@ const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
   return ops->impl->get_irn_reg_req(ops, req, irn, pos);
 }
 
+void arch_set_stack_bias(const arch_env_t *env, ir_node *irn, int bias)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  ops->impl->set_stack_bias(ops, irn, bias);
+}
+
+
 int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs)
 {
   arch_register_req_t local_req;
