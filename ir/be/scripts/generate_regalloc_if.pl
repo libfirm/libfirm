@@ -32,25 +32,31 @@ my $target_c   = $target_dir."/gen_".$arch."_regalloc_if.c";
 my $target_h   = $target_dir."/gen_".$arch."_regalloc_if.h";
 my $target_h_t = $target_dir."/gen_".$arch."_regalloc_if_t.h";
 
-# helper array
-my @rt = ("arch_register_type_none",           # 0
-          "arch_register_type_caller_save",    # 1
-          "arch_register_type_callee_save",    # 2
-		  "",
-		  "arch_register_type_ignore",         # 4
-		  "",
-		  "",
-		  "",
-          "arch_register_type_sp",             # 8
-		  "",
-		  "",
-		  "",
-		  "",
-		  "",
-		  "",
-		  "",
-		  "arch_register_type_bp"              # 16
-		  );
+# helper function
+sub translate_reg_type {
+	my $t = shift;
+
+	if ($t == 0) {
+		return "arch_register_type_none";
+	}
+	else {
+		my @types;
+
+		if ($t & 1) {
+			push(@types, "arch_register_type_caller_save");
+		}
+
+		if ($t & 2) {
+			push(@types, "arch_register_type_callee_save");
+		}
+
+		if ($t & 4) {
+			push(@types, "arch_register_type_ignore");
+		}
+
+		return join(" | ", @types);
+	}
+}
 
 # stacks for output
 my @obst_regtypes;     # stack for the register type variables
@@ -173,7 +179,7 @@ foreach my $class_name (keys(%reg_classes)) {
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"name"}."\";\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = $class_ptr;\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].index     = $idx;\n");
-		push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".$rt[$_->{"type"}].";\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".translate_reg_type($_->{"type"}).";\n");
 		if ($_->{"type"} == 2) {
 			# this is a caller saved register
 			push(@obst_reginit, "  ia32_set_reg_projnum(&".$class_name."_regs[$idx], $global_projnum_idx, isa->reg_projnum_map);\n");
