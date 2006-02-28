@@ -559,45 +559,61 @@ void set_ia32_Immop_tarval(ir_node *node, tarval *tv) {
  * Return the sc attribute.
  */
 char *get_ia32_sc(const ir_node *node) {
-  ia32_attr_t *attr = get_ia32_attr(node);
-  return attr->sc;
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->sc;
 }
 
 /**
  * Sets the sc attribute.
  */
 void set_ia32_sc(ir_node *node, char *sc) {
-  ia32_attr_t *attr = get_ia32_attr(node);
-  attr->sc          = copy_str(attr->sc, sc);
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->sc          = copy_str(attr->sc, sc);
 
-  if (attr->cnst) {
-	  free(attr->cnst);
-  }
-  attr->cnst = attr->sc;
+	if (attr->cnst) {
+		free(attr->cnst);
+	}
+	attr->cnst = attr->sc;
 }
 
 /**
  * Gets the string representation of the internal const (tv or symconst)
  */
 char *get_ia32_cnst(const ir_node *node) {
-  ia32_attr_t *attr = get_ia32_attr(node);
-  return attr->cnst;
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->cnst;
+}
+
+/**
+ * Sets the uses_frame attribute.
+ */
+void set_ia32_use_frame(ir_node *node, char flag) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->use_frame = flag;
+}
+
+/**
+ * Gets the uses_frame attribute
+ */
+char get_ia32_use_frame(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->use_frame;
 }
 
 /**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
  */
 ir_mode *get_ia32_ls_mode(const ir_node *node) {
-  ia32_attr_t *attr = get_ia32_attr(node);
-  return attr->ls_mode;
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->ls_mode;
 }
 
 /**
  * Sets the mode of the stored/loaded value (only set for Store/Load)
  */
 void set_ia32_ls_mode(ir_node *node, ir_mode *mode) {
-  ia32_attr_t *attr = get_ia32_attr(node);
-  attr->ls_mode     = mode;
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->ls_mode     = mode;
 }
 
 /**

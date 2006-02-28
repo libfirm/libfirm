@@ -145,9 +145,10 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 		return req;
 	}
 	else if (is_Start_Proj(irn)) {
-		irn_req = ops->cg->reg_param_req[get_Proj_proj(irn)];
+/*		irn_req = ops->cg->reg_param_req[get_Proj_proj(irn)];
 		assert(irn_req && "missing requirement for regparam");
-		memcpy(req, &(irn_req->req), sizeof(*req));
+		memcpy(req, &(irn_req->req), sizeof(*req)); */
+		memcpy(req, &(ia32_default_req_ia32_gp.req), sizeof(*req));
 		return req;
 		//return NULL;
 	}
@@ -288,6 +289,12 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	}
 }
 
+static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
+	if (get_ia32_use_frame(irn)) {
+		/* TODO: correct offset */
+	}
+}
+
 /* fill register allocator interface */
 
 static const arch_irn_ops_if_t ia32_irn_ops_if = {
@@ -295,7 +302,8 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_set_irn_reg,
 	ia32_get_irn_reg,
 	ia32_classify,
-	ia32_get_flags
+	ia32_get_flags,
+	ia32_set_stack_bias
 };
 
 ia32_irn_ops_t ia32_irn_ops = {
@@ -699,7 +707,7 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	const arch_register_t *reg;
 
 	/* set stack parameter passing style */
-	be_abi_call_set_flags(abi, BE_ABI_LEFT_TO_RIGHT);
+	be_abi_call_set_flags(abi, BE_ABI_FRAME_POINTER_DEDICATED, 4);
 
 	/* collect the mode for each type */
 	modes = alloca(n * sizeof(modes[0]));

@@ -113,6 +113,16 @@ void set_ia32_sc(ir_node *node, char *sc);
 char *get_ia32_cnst(const ir_node *node);
 
 /**
+ * Sets the uses_frame attribute.
+ */
+void set_ia32_use_frame(ir_node *node, char flag);
+
+/**
+ * Gets the uses_frame attribute
+ */
+char get_ia32_use_frame(const ir_node *node);
+
+/**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
  */
 ir_mode *get_ia32_ls_mode(const ir_node *node);

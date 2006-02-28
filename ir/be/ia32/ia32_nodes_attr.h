@@ -6,7 +6,7 @@
 #include "firm_types.h"
 #include "../bearch.h"
 
-typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod, flavour_Mul, flavour_Mulh } ia32_op_flavour_t;
+typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
 typedef enum { pn_EAX, pn_EDX } pn_ia32_Register;
 typedef enum { ia32_Normal, ia32_Const, ia32_SymConst, ia32_AddrModeD, ia32_AddrModeS } ia32_op_type_t;
 typedef	enum {
@@ -25,10 +25,10 @@ typedef	enum {
  */
 
 enum {
-	ia32_O = 1,
-	ia32_B = 2,
-	ia32_I = 4,
-	ia32_S = 8
+	ia32_O = (1 << 0),
+	ia32_B = (1 << 1),
+	ia32_I = (1 << 2),
+	ia32_S = (1 << 3)
 };
 
 typedef enum {
@@ -61,6 +61,8 @@ typedef struct _ia32_attr_t {
 	tarval *tv;   /**<< tarval for immediate operations */
 	char   *sc;   /**<< symconst name */
 	char   *cnst; /**<< points to the string representation of the constant value (either tv or sc) */
+
+	char use_frame;    /**<< indicates whether the operation uses the frame pointer or not */
 
 	ir_mode *ls_mode;  /**<< the mode of the stored/loaded value */
 

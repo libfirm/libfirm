@@ -91,15 +91,15 @@ $arch = "ia32";
 # Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
   "gp" => [
-            { "name" => "eax", "type" => 1  },
-            { "name" => "edx", "type" => 1  },
-            { "name" => "ebx", "type" => 2  },
-            { "name" => "ecx", "type" => 1  },
-            { "name" => "esi", "type" => 2  },
-            { "name" => "edi", "type" => 2  },
-            { "name" => "ebp", "type" => 16 },
-            { "name" => "esp", "type" => 8  },
-            { "name" => "xxx", "type" => 4  },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "eax", "type" => 1 },
+            { "name" => "edx", "type" => 1 },
+            { "name" => "ebx", "type" => 2 },
+            { "name" => "ecx", "type" => 1 },
+            { "name" => "esi", "type" => 2 },
+            { "name" => "edi", "type" => 2 },
+            { "name" => "ebp", "type" => 2 },
+            { "name" => "esp", "type" => 6 },
+            { "name" => "xxx", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
 			{ "mode" => "mode_P" }
           ],
   "fp" => [
