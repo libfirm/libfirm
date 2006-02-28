@@ -900,9 +900,10 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 
 #ifdef WITH_LIBCORE
 
+
 static const lc_opt_enum_const_ptr_items_t ssa_destr_items[] = {
-	{ "simple",    ssa_destr_simple },
-	{ "rastello",  ssa_destr_rastello },
+	{ "simple",    (void*)ssa_destr_simple }, /* TODO make (void*) casts nicer */
+	{ "rastello",  (void*)ssa_destr_rastello },
 	{ NULL,      NULL }
 };
 
