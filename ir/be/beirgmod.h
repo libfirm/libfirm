@@ -53,33 +53,26 @@ void be_free_dominance_frontiers(dom_front_info_t *info);
  * corresponding dominance subtrees and creates Phi functions if necessary.
  *
  * @param info		  Dominance frontier information.
- * @param n_origs     The number of nodes for which the copies are introduced.
- * @param orig_nodes  The nodes for which you want to introduce copies.
- * @param n_copies    The number of copies you introduce.
- * @param copy_nodes  An array of nodes which are copies of @p orig.
- * @param ignore_uses A set containing uses which shall not be rerouted.
+ * @param n           Length of nodes array.
+ * @param nodes       The nodes which shall represent the same SSA value.
+ * @param ignore_uses A set of nodes probably using one of the nodes in @p nodes.
+ *                    Their usage will not adjusted. They remain untouched by this function.
  */
-void be_ssa_constr_ignore(dom_front_info_t *info, int n_origs, ir_node *orig_nodes[],
-						  int n_copies, ir_node *copy_nodes[], pset *ignore_uses);
+void be_ssa_constr_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *ignore_uses);
 
 /**
- * Same as be_ssa_constr_ignore() but with a single original node.
+ * Same as be_ssa_constr_ignore() but with empty ignore set.
  */
-void be_ssa_constr_single_ignore(dom_front_info_t *info, ir_node *orig, int n, ir_node *copies[], pset *ignore_uses);
+void be_ssa_constr(dom_front_info_t *info, int n, ir_node *nodes[]);
 
 /**
- * Same as be_ssa_constr_single_ignore() but without ignoring nodes.
+ * Same as be_ssa_constr_ignore() but with pset instead of array.
  */
-void be_ssa_constr_single(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[]);
+void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_uses);
 
 /**
- * Same as be_ssa_constr_ignore() but without ignoring nodes.
+ * Same as be_ssa_constr() but with pset instead of array.
  */
-void be_ssa_constr(dom_front_info_t *info, int n_orig, ir_node *orig[], int n, ir_node *copy_nodes[]);
-
-/**
- * Same as be_ssa_constr() but with psets.
- */
-void be_ssa_constr_sets(dom_front_info_t *info, pset *origs, pset *copies);
+void be_ssa_constr_set(dom_front_info_t *info, pset *nodes);
 
 #endif

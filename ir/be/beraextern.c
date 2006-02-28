@@ -714,8 +714,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 		}
 
 	/* correct the reload->spill pointers... */
-	be_ssa_constr_sets(raenv->dom_info, spills, reloads);
-
+	be_ssa_constr_set(raenv->dom_info, spills);
 
 	/****** correct the variable <--> values mapping: ******
 	 *
@@ -745,8 +744,6 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 	/* add new variables for all reloads */
 	pset_foreach(reloads, irn)
 		raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(irn), irn);
-
-
 
 	del_pset(spills);
 	del_pset(reloads);

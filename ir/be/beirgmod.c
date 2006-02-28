@@ -98,6 +98,7 @@ dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 
   edges_assure(irg);
   info->df_map = pmap_create();
+  compute_doms(irg);
   compute_df(get_irg_start_block(irg), info->df_map);
 
   return info;
@@ -119,7 +120,7 @@ pset *be_get_dominance_frontier(dom_front_info_t *info, ir_node *block)
   return pmap_get(info->df_map, block);
 }
 
-static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
+static void determine_phi_blocks(pset *copies, pset* copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
 {
 	ir_node *bl;
 	pdeq *worklist = new_pdeq();
@@ -262,51 +263,50 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 	return NULL;
 }
 
-static void fix_usages(int n_origs, ir_node *orig[], pset *copies,
-					   pset *copy_blocks, pset *phi_blocks, pset *ignore_uses)
+static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *ignore_uses)
 {
 	firm_dbg_module_t *dbg = DBG_MODULE;
 	int n_outs             = 0;
-	ir_mode *mode          = get_irn_mode(orig[0]);
 
-	int i, j;
+	struct obstack obst;
+	ir_node *irn;
+	int i;
 
-	struct {
+	struct out {
 		ir_node *irn;
 		int pos;
 	} *outs;
 
-	/* Count the number of outs. */
-	for(i = 0; i < n_origs; ++i) {
-		const ir_edge_t *edge;
-		foreach_out_edge(orig[i], edge)
-			n_outs += !pset_find_ptr(ignore_uses, get_edge_src_irn(edge));
-	}
+	obstack_init(&obst);
 
 	/*
-	 * Put all outs into an array.
-	 * This is necessary, since the outs would be modified while
-	 * iterating on them what could bring the outs module in trouble.
-	 */
-	outs = alloca(n_outs * sizeof(outs[0]));
-	for(i = 0, j = 0; i < n_origs; ++i) {
+ 	* Put all outs into an array.
+ 	* This is necessary, since the outs would be modified while
+ 	* iterating on them what could bring the outs module in trouble.
+	*/
+	for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
 		const ir_edge_t *edge;
-		foreach_out_edge(orig[i], edge) {
+		foreach_out_edge(irn, edge) {
 			if(!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
-				outs[j].irn = get_edge_src_irn(edge);
-				outs[j].pos = get_edge_src_pos(edge);
-				j += 1;
+				struct out tmp;
+				tmp.irn = get_edge_src_irn(edge);
+				tmp.pos = get_edge_src_pos(edge);
+				obstack_grow(&obst, &tmp, sizeof(tmp));
+				n_outs++;
 			}
 		}
 	}
+	outs = obstack_finish(&obst);
 
 	/*
 	 * Search the valid def for each out and set it.
 	 */
 	for(i = 0; i < n_outs; ++i) {
+		ir_node *irn  = outs[i].irn;
+		int pos       = outs[i].pos;
+		ir_mode *mode = get_irn_mode(irn);
+
 		ir_node *def;
-		ir_node *irn = outs[i].irn;
-		int pos      = outs[i].pos;
 
 		def = search_def(irn, pos, copies, copy_blocks, phi_blocks, mode);
 		DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", irn, pos, def));
@@ -314,6 +314,8 @@ static void fix_usages(int n_origs, ir_node *orig[], pset *copies,
 		if(def != NULL)
 			set_irn_n(irn, pos, def);
 	}
+
+	obstack_free(&obst, NULL);
 }
 
 /**
@@ -349,44 +351,43 @@ static void remove_odd_phis(pset *copies, pset *unused_copies)
 	}
 }
 
-void be_ssa_constr_single_ignore(dom_front_info_t *info, ir_node *orig, int n, ir_node *copies[], pset *ignore_uses)
+void be_ssa_constr_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *ignore_uses)
 {
-	ir_node *origs[1];
-	origs[0] = orig;
-	be_ssa_constr_ignore(info, 1, origs, n, copies, ignore_uses);
+	pset *irns = pset_new_ptr(n);
+	int i;
+
+	for(i = 0; i < n; ++i)
+		pset_insert_ptr(irns, nodes[i]);
+	be_ssa_constr_set_ignore(info, irns, ignore_uses);
+	del_pset(irns);
 }
 
-void be_ssa_constr_ignore(dom_front_info_t *info, int n_origs, ir_node *orig_nodes[],
-						  int n_copies, ir_node *copy_nodes[], pset *ignore_uses)
+void be_ssa_constr(dom_front_info_t *info, int n, ir_node *nodes[])
 {
-	int n_all              = n_copies + n_origs;
-	pset *copies           = pset_new_ptr(2 * n_all);
-	pset *copy_blocks      = pset_new_ptr(2 * n_all);
-	pset *phi_blocks       = pset_new_ptr(2 * n_all);
+	pset *empty_set = be_empty_set();
+	assert(pset_count(empty_set) == 0);
+	be_ssa_constr_ignore(info, n, nodes, empty_set);
+}
+
+void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_uses)
+{
+	int n                  = pset_count(nodes);
+	pset *blocks           = pset_new_ptr(n);
+	pset *phi_blocks       = pset_new_ptr(n);
 	int save_optimize      = get_optimize();
 	int save_normalize     = get_opt_normalize();
 	firm_dbg_module_t *dbg = DBG_MODULE;
 
-	int i;
+	ir_node *irn;
 
 	firm_dbg_set_mask(dbg, DBG_LEVEL);
-	// DBG((dbg, LEVEL_1, "Introducing following copies of %+F\n", orig));
+	DBG((dbg, LEVEL_1, "Introducing following copies for:\n"));
 
 	/* Fill the sets. */
-	for(i = 0; i < n_origs; ++i) {
-		pset_insert_ptr(copies, orig_nodes[i]);
-		pset_insert_ptr(copy_blocks, get_nodes_block(orig_nodes[i]));
-	}
-
-	/*
-	* All phis using the original values are also copies of it
-	* and must be present in the copies set.
-	*/
-	for(i = 0; i < n_copies; ++i) {
-		ir_node *bl = get_nodes_block(copy_nodes[i]);
-		DBG((dbg, LEVEL_1, "\t%+F in block %+F\n", copy_nodes[i], bl));
-		pset_insert_ptr(copies, copy_nodes[i]);
-		pset_insert_ptr(copy_blocks, get_nodes_block(copy_nodes[i]));
+	for(irn = pset_first(nodes); irn; irn = pset_next(nodes)) {
+		ir_node *bl = get_nodes_block(irn);
+		pset_insert_ptr(blocks, bl);
+		DBG((dbg, LEVEL_1, "\t%+F in %+F\n", irn, bl));
 	}
 
 	/*
@@ -399,52 +400,22 @@ void be_ssa_constr_ignore(dom_front_info_t *info, int n_origs, ir_node *orig_nod
 	/*
 	* Place the phi functions and reroute the usages.
 	*/
-	determine_phi_blocks(copies, copy_blocks, phi_blocks, info);
-	fix_usages(n_origs, orig_nodes, copies, copy_blocks, phi_blocks, ignore_uses);
+	determine_phi_blocks(nodes, blocks, phi_blocks, df);
+	fix_usages(nodes, blocks, phi_blocks, ignore_uses);
 
 	/* reset the optimizations */
 	set_optimize(save_optimize);
 	set_opt_normalize(save_normalize);
 
-	del_pset(copies);
 	del_pset(phi_blocks);
-	del_pset(copy_blocks);
+	del_pset(blocks);
 
 }
 
-void be_ssa_constr(dom_front_info_t *info, int n_origs, ir_node *orig[], int n_copies, ir_node *copy_nodes[])
+void be_ssa_constr_set(dom_front_info_t *info, pset *nodes)
 {
 	pset *empty_set = be_empty_set();
 
 	assert(pset_count(empty_set) == 0);
-	be_ssa_constr_ignore(info, n_origs, orig, n_copies, copy_nodes, empty_set);
-}
-
-
-void be_ssa_constr_single(dom_front_info_t *info, ir_node *orig, int n, ir_node *copy_nodes[])
-{
-	pset *empty_set = be_empty_set();
-
-	assert(pset_count(empty_set) == 0);
-	be_ssa_constr_single_ignore(info, orig, n, copy_nodes, empty_set);
-}
-
-void be_ssa_constr_sets(dom_front_info_t *info, pset *origs, pset *copies)
-{
-	int n_origs  = pset_count(origs);
-	int n_copies = pset_count(copies);
-
-	ir_node **orig_nodes = alloca(n_origs * sizeof(orig_nodes[0]));
-	ir_node **copy_nodes = alloca(n_copies * sizeof(orig_nodes[0]));
-
-	ir_node *irn;
-	int i;
-
-	for(i = 0, irn = pset_first(origs); irn; irn = pset_next(origs))
-		orig_nodes[i++] = irn;
-
-	for(i = 0, irn = pset_first(copies); irn; irn = pset_next(copies))
-		copy_nodes[i++] = irn;
-
-	be_ssa_constr(info, n_origs, orig_nodes, n_copies, copy_nodes);
+	be_ssa_constr_set_ignore(info, nodes, empty_set);
 }
