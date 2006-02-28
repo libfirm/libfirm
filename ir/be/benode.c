@@ -68,6 +68,7 @@ typedef enum {
 typedef struct {
 	arch_register_req_t req;
 	be_req_kind_t       kind;
+	arch_irn_flags_t    flags;
 	union {
 		struct {
 			void (*old_limited)(void *ptr, bitset_t *bs);
@@ -86,7 +87,6 @@ typedef struct {
 
 typedef struct {
 	int                         max_reg_data;
-	arch_irn_flags_t            flags;
 	const arch_register_class_t *cls;
 	be_reg_data_t               *reg_data;
 } be_node_attr_t;
@@ -109,6 +109,7 @@ static ir_op *op_Perm;
 static ir_op *op_Copy;
 static ir_op *op_Keep;
 static ir_op *op_Call;
+static ir_op *op_Return;
 static ir_op *op_IncSP;
 static ir_op *op_AddSP;
 static ir_op *op_RegParams;
@@ -148,6 +149,7 @@ void be_node_init(void) {
 	op_Keep       = new_ir_op(beo_base + beo_Keep,       "Keep",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
 	op_NoReg      = new_ir_op(beo_base + beo_NoReg,      "NoReg",      op_pin_state_floats,     N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
 	op_Call       = new_ir_op(beo_base + beo_Call,       "Call",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_Return     = new_ir_op(beo_base + beo_Return,     "Return",     op_pin_state_pinned,     X, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
 	op_AddSP      = new_ir_op(beo_base + beo_AddSP,      "AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_stack_attr_t), &be_node_op_ops);
 	op_IncSP      = new_ir_op(beo_base + beo_IncSP,      "IncSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t), &be_node_op_ops);
 	op_RegParams  = new_ir_op(beo_base + beo_RegParams,  "RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
@@ -160,6 +162,7 @@ void be_node_init(void) {
 	set_op_tag(op_Keep,       &be_node_tag);
 	set_op_tag(op_NoReg,      &be_node_tag);
 	set_op_tag(op_Call,       &be_node_tag);
+	set_op_tag(op_Return,     &be_node_tag);
 	set_op_tag(op_AddSP,      &be_node_tag);
 	set_op_tag(op_IncSP,      &be_node_tag);
 	set_op_tag(op_RegParams,  &be_node_tag);
@@ -171,7 +174,6 @@ static void *init_node_attr(ir_node* irn, const arch_register_class_t *cls, ir_g
 	be_node_attr_t *a = get_irn_attr(irn);
 
 	a->max_reg_data = max_reg_data;
-	a->flags        = arch_irn_flags_none;
 	a->cls          = cls;
 	a->reg_data     = NULL;
 
@@ -194,7 +196,7 @@ static INLINE int is_be_node(const ir_node *irn)
 	return get_op_tag(get_irn_op(irn)) == &be_node_tag;
 }
 
-be_opcode_t get_irn_be_opcode(const ir_node *irn)
+be_opcode_t be_get_irn_opcode(const ir_node *irn)
 {
 	return is_be_node(irn) ? get_irn_opcode(irn) - beo_base : beo_NoBeOp;
 }
@@ -298,6 +300,14 @@ ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_n
 	return irn;
 }
 
+ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+{
+	ir_node *irn = new_ir_node(NULL, irg, bl, op_Return, mode_X, n, in);
+	init_node_attr(irn, NULL, irg, n);
+
+	return irn;
+}
+
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, unsigned offset, be_stack_dir_t dir)
 {
 	be_stack_attr_t *a;
@@ -310,7 +320,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	a->dir    = dir;
 	a->offset = offset;
 
-	a->node_attr.flags |= arch_irn_flags_ignore;
+	be_node_set_flags(irn, -1, arch_irn_flags_ignore);
 
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, -1, sp);
@@ -329,7 +339,8 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	in[1]    = op;
 	irn      = new_ir_node(NULL, irg, bl, op_AddSP, sp->reg_class->mode, 2, in);
 	a        = init_node_attr(irn, sp->reg_class, irg, 1);
-	a->flags |= arch_irn_flags_ignore;
+
+	be_node_set_flags(irn, -1, arch_irn_flags_ignore);
 
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, -1, sp);
@@ -346,7 +357,7 @@ ir_node *be_new_NoReg(const arch_register_t *reg, ir_graph *irg, ir_node *bl)
 
 	irn = new_ir_node(NULL, irg, bl, op_NoReg, reg->reg_class->mode, 0, in);
 	a   = init_node_attr(irn, reg->reg_class, irg, 1);
-	a->flags |= arch_irn_flags_ignore;
+	be_node_set_flags(irn, -1, arch_irn_flags_ignore);
 	be_set_constr_single_reg(irn, -1, reg);
 	be_node_set_irn_reg(NULL, irn, reg);
 	return irn;
@@ -375,17 +386,18 @@ ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
 	return irn;
 }
 
-int be_is_Spill         (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Spill          ; }
-int be_is_Reload        (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Reload         ; }
-int be_is_Copy          (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Copy           ; }
-int be_is_Perm          (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Perm           ; }
-int be_is_Keep          (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Keep           ; }
-int be_is_Call          (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_Call           ; }
-int be_is_IncSP         (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_IncSP          ; }
-int be_is_AddSP         (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_AddSP          ; }
-int be_is_RegParams     (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_RegParams      ; }
-int be_is_StackParam    (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_StackParam     ; }
-int be_is_NoReg         (const ir_node *irn) { return get_irn_be_opcode(irn) == beo_NoReg          ; }
+int be_is_Spill         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Spill          ; }
+int be_is_Reload        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Reload         ; }
+int be_is_Copy          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Copy           ; }
+int be_is_Perm          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Perm           ; }
+int be_is_Keep          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Keep           ; }
+int be_is_Call          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Call           ; }
+int be_is_Return        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Return         ; }
+int be_is_IncSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_IncSP          ; }
+int be_is_AddSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_AddSP          ; }
+int be_is_RegParams     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_RegParams      ; }
+int be_is_StackParam    (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_StackParam     ; }
+int be_is_NoReg         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_NoReg          ; }
 
 static void be_limited(void *data, bitset_t *bs)
 {
@@ -405,7 +417,7 @@ static void be_limited(void *data, bitset_t *bs)
 	}
 }
 
-void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
+static INLINE be_req_t *get_req(ir_node *irn, int pos)
 {
 	int idx           = pos < 0 ? -(pos + 1) : pos;
 	be_node_attr_t *a = get_irn_attr(irn);
@@ -415,6 +427,13 @@ void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
 	assert(is_be_node(irn));
 	assert(!(pos >= 0) || pos < get_irn_arity(irn));
 	assert(!(pos < 0)  || -(pos + 1) <= a->max_reg_data);
+
+	return r;
+}
+
+void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
+{
+	be_req_t *r = get_req(irn, pos);
 
 	r->kind            = be_req_kind_single_reg;
 	r->x.single_reg    = reg;
@@ -426,14 +445,8 @@ void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
 
 void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req)
 {
-	int idx           = pos < 0 ? -(pos - 1) : pos;
-	be_node_attr_t *a = get_irn_attr(irn);
-	be_reg_data_t *rd = &a->reg_data[idx];
-	be_req_t       *r = pos < 0 ? &rd->req : &rd->in_req;
+	be_req_t *r = get_req(irn, pos);
 
-	assert(is_be_node(irn));
-	assert(!(pos >= 0) || pos < get_irn_arity(irn));
-	assert(!(pos < 0)  || -(pos + 1) <= a->max_reg_data);
 	assert(arch_register_req_is(req, limited));
 
 	r->kind            = be_req_kind_old_limited;
@@ -444,6 +457,18 @@ void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req
 
 	r->x.old_limited.old_limited     = req->limited;
 	r->x.old_limited.old_limited_env = req->limited_env;
+}
+
+void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags)
+{
+	be_req_t *r = get_req(irn, pos);
+	r->flags = flags;
+}
+
+void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls)
+{
+	be_req_t *r = get_req(irn, pos);
+	r->req.cls = cls;
 }
 
 void be_set_IncSP_offset(ir_node *irn, unsigned offset)
@@ -495,7 +520,7 @@ static ir_node *find_a_spill_walker(ir_node *irn, unsigned visited_nr)
 			}
 		}
 
-		else if(get_irn_be_opcode(irn) == beo_Spill)
+		else if(be_get_irn_opcode(irn) == beo_Spill)
 			return irn;
 	}
 
@@ -528,7 +553,7 @@ entity *be_get_spill_entity(ir_node *irn)
 {
 	int opc           = get_irn_opcode(irn);
 
-	switch(get_irn_be_opcode(irn)) {
+	switch(be_get_irn_opcode(irn)) {
 	case beo_Reload:
 		return be_get_spill_entity(find_a_spill(irn));
 	case beo_Spill:
@@ -602,7 +627,7 @@ static void *put_in_reg_req(arch_register_req_t *req, const ir_node *irn, int po
 	const be_node_attr_t *a = get_irn_attr(irn);
 	int n                   = get_irn_arity(irn);
 
-	if(pos < get_irn_arity(irn))
+	if(pos < get_irn_arity(irn) && pos < a->max_reg_data)
 		memcpy(req, &a->reg_data[pos].in_req, sizeof(req[0]));
 	else {
 		req->type = arch_register_req_type_none;
@@ -648,11 +673,11 @@ be_node_get_irn_reg(const void *_self, const ir_node *irn)
 	return a->reg_data[out_pos].reg;
 }
 
-arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
+static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 {
 	redir_proj((const ir_node **) &irn, -1);
 
-	switch(get_irn_be_opcode(irn)) {
+	switch(be_get_irn_opcode(irn)) {
 #define XXX(a,b) case beo_ ## a: return arch_irn_class_ ## b;
 		XXX(Spill, spill)
 		XXX(Reload, reload)
@@ -666,10 +691,14 @@ arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 	return 0;
 }
 
-arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *irn)
+static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *irn)
 {
-	be_node_attr_t *a = get_irn_attr(irn);
-	return a->flags;
+	be_node_attr_t *a;
+
+	redir_proj((const ir_node **) &irn, -1);
+	assert(is_be_node(irn));
+	a = get_irn_attr(irn);
+	return a->max_reg_data > 0 ? a->reg_data[0].req.flags : arch_irn_flags_none;
 }
 
 static const arch_irn_ops_if_t be_node_irn_ops_if = {
@@ -717,7 +746,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 				fprintf(f, "reg #%d: %s\n", i, reg ? reg->name : "n/a");
 			}
 
-			switch(get_irn_be_opcode(irn)) {
+			switch(be_get_irn_opcode(irn)) {
 			case beo_Spill:
 				{
 					be_spill_attr_t *a = (be_spill_attr_t *) at;
@@ -747,10 +776,14 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 	return 0;
 }
 
-void copy_attr(const ir_node *old_node, ir_node *new_node)
+/**
+ * Copies the backend specific attributes from old node to new node.
+ */
+static void copy_attr(const ir_node *old_node, ir_node *new_node)
 {
 	be_node_attr_t *old_attr = get_irn_attr(old_node);
 	be_node_attr_t *new_attr = get_irn_attr(new_node);
+	int i;
 
 	assert(is_be_node(old_node));
 	assert(is_be_node(new_node));
@@ -761,6 +794,16 @@ void copy_attr(const ir_node *old_node, ir_node *new_node)
 	if(new_attr->max_reg_data > 0) {
 		new_attr->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(get_irn_irg(new_node)), new_attr->max_reg_data);
 		memcpy(new_attr->reg_data, old_attr->reg_data, new_attr->max_reg_data * sizeof(be_reg_data_t));
+
+		for(i = 0; i < old_attr->max_reg_data; ++i) {
+			be_req_t *r;
+
+			r = &new_attr->reg_data[i].req;
+			r->req.limited_env = r;
+
+			r = &new_attr->reg_data[i].in_req;
+			r->req.limited_env = r;
+		}
 	}
 }
 
@@ -858,7 +901,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 
 	curr = perm;
 	for(i = 0; i < n; ++i) {
-		ir_node *copies[1];
+		ir_node *copies[2];
 		ir_node *perm_op = get_irn_n(perm, i);
 		const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
 
@@ -869,8 +912,9 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 		sched_add_after(curr, proj);
 		curr = proj;
 
-		copies[0] = proj;
-		be_ssa_constr_single(dom_front, perm_op, 1, copies);
+		copies[0] = perm_op;
+		copies[1] = proj;
+		be_ssa_constr(dom_front, 2, copies);
 	}
 	return perm;
 }

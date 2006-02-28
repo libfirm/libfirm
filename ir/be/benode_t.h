@@ -31,6 +31,7 @@ typedef enum {
 	beo_Keep,
 	beo_NoReg,
 	beo_Call,
+	beo_Return,
 	beo_AddSP,
 	beo_IncSP,
 	beo_RegParams,
@@ -42,6 +43,8 @@ typedef enum {
 	be_stack_dir_along = 0,
 	be_stack_dir_against = 1
 } be_stack_dir_t;
+
+#define BE_STACK_FRAME_SIZE ((unsigned) -1)
 
 void be_node_init(void);
 
@@ -76,6 +79,7 @@ void           be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir);
 be_stack_dir_t be_get_IncSP_direction(ir_node *irn);
 
 ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
+ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_StackParam(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, unsigned offset);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 ir_node *be_new_NoReg(const arch_register_t *reg, ir_graph *irg, ir_node *bl);
@@ -83,12 +87,15 @@ ir_node *be_new_NoReg(const arch_register_t *reg, ir_graph *irg, ir_node *bl);
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn,ir_node *spill_ctx);
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, int pos, ir_mode *mode, ir_node *spill);
 
+be_opcode_t be_get_irn_opcode(const ir_node *irn);
+
 int be_is_Spill(const ir_node *irn);
 int be_is_Reload(const ir_node *irn);
 int be_is_Copy(const ir_node *irn);
 int be_is_Perm(const ir_node *irn);
 int be_is_Keep(const ir_node *irn);
 int be_is_Call(const ir_node *irn);
+int be_is_IncSP(const ir_node *irn);
 int be_is_AddSP(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
 int be_is_StackParam(const ir_node *irn);
@@ -117,6 +124,10 @@ void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
  * @param req The register requirements which shall be transferred.
  */
 void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req);
+
+void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags);
+
+void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls);
 
 /**
  * Insert a Perm node after a specific node in the schedule.
