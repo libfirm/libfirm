@@ -557,15 +557,6 @@ struct _arch_isa_if_t {
    * @return      The list scheduler selector.
    */
   const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
-
-  /**
-   * Take a proj from a call, set the correct register and projnum for this proj
-   * @param self    The isa object.
-   * @param proj    The proj
-   * @param is_keep Non-zero if proj is a Keep argument
-   * @return        The backend proj number assigned to this proj
-   */
-  long (*handle_call_proj)(const void *self, ir_node *proj, int is_keep);
 };
 
 #define arch_isa_get_n_reg_class(isa)                       ((isa)->impl->get_n_reg_class(isa))
