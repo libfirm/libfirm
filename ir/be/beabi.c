@@ -822,7 +822,7 @@ void be_abi_free(be_abi_irg_t *env)
 	free(env);
 }
 
-ir_node *be_abi_get_callee_save_node(be_abi_irg_t *abi, const arch_register_t *reg)
+ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg)
 {
 	assert(arch_register_type_is(reg, callee_save));
 	assert(pmap_contains(abi->regs, (void *) reg));
