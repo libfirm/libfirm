@@ -22,6 +22,7 @@
 #include "list.h"
 #include "ident.h"
 
+#include "be.h"
 #include "belistsched.h"
 #include "beabi_t.h"
 
@@ -415,7 +416,7 @@ struct _arch_code_generator_if_t {
 	 * @param env  The architecture environment.
 	 * @return     A newly created code generator.
 	 */
-	void *(*init)(FILE *file, ir_graph *irg, const arch_env_t *env);
+	void *(*init)(FILE *file, const be_irg_t *birg);
 
 	/**
 	 * Called, when the graph is being normalized.

@@ -83,8 +83,6 @@ $arch = "ia32";
 #   1 - caller save (register must be saved by the caller of a function)
 #   2 - callee save (register must be saved by the called function)
 #   4 - ignore (do not assign this register)
-#   8 - this is the stack pointer
-#  16 - this is the base pointer
 # NOTE: Make sure to list the registers returning the call-result before all other
 #       caller save registers and in the correct order, otherwise it will break
 #       the magic!

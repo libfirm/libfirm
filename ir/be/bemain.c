@@ -290,7 +290,7 @@ static void be_main_loop(FILE *file_handle)
 		cg_if = isa->impl->get_code_generator_if(isa);
 
 		/* get a code generator for this graph. */
-		birg.cg = cg_if->init(file_handle, birg.irg, env.arch_env);
+		birg.cg = cg_if->init(file_handle, &birg);
 
 		/* create the code generator and generate code. */
 		prepare_graph(&birg);

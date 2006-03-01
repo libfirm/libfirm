@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "bearch_ia32.h"
 #include "ia32_nodes_attr.h"
+#include "../be.h"
 
 /* some typedefs */
 
@@ -15,12 +16,9 @@ typedef struct _ia32_code_gen_t {
 	set                            *reg_set;       /**< set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
 	firm_dbg_module_t              *mod;           /**< debugging module */
 	int                             emit_decls;    /**< flag indicating if decls were already emitted */
-	int                             has_alloca;    /**< indicates whether the irg contains an alloca or not */
-	const ia32_register_req_t     **reg_param_req; /**< hold the requirements for the reg param nodes */
 	pmap                           *types;         /**< A map of modes to primitive types */
 	pmap                           *tv_ent;        /**< A map of entities that store tarvals */
-	ir_node                        *noreg_gp;      /**< Holds the unique per irg GP NoReg node */
-	ir_node                        *noreg_fp;      /**< Holds the unique per irg FP NoReg node */
+	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
 } ia32_code_gen_t;
 
 typedef struct _ia32_isa_t {

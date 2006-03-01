@@ -21,6 +21,7 @@
 #include "irgwalk.h"
 #include "type.h"
 
+#include "../be_t.h"
 #include "../bearch.h"
 #include "../besched.h"
 #include "../beutil.h"
@@ -532,7 +533,7 @@ static void firm_codegen_done(void *self)
 	free(self);
 }
 
-static void *firm_cg_init(FILE *file_handle, ir_graph *irg, const arch_env_t *env);
+static void *firm_cg_init(FILE *file_handle, const be_irg_t *birg);
 
 static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_cg_init,
@@ -544,11 +545,11 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_codegen_done
 };
 
-static void *firm_cg_init(FILE *file_handle, ir_graph *irg, const arch_env_t *env)
+static void *firm_cg_init(FILE *file_handle, const be_irg_t *birg)
 {
 	firm_code_gen_t *cg = xmalloc(sizeof(*cg));
 	cg->impl = &firm_code_gen_if;
-	cg->irg  = irg;
+	cg->irg  = birg->irg;
 	return cg;
 }
 

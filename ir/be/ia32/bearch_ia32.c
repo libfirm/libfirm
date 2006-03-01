@@ -23,6 +23,7 @@
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
+#include "../be.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -42,19 +43,11 @@ static set *cur_reg_set = NULL;
 #define is_Start(irn) (get_irn_opcode(irn) == iro_Start)
 
 ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg) {
-	if (! cg->noreg_gp) {
-		cg->noreg_gp = be_new_NoReg(&ia32_gp_regs[REG_XXX], cg->irg, get_irg_start_block(cg->irg));
-	}
-
-	return cg->noreg_gp;
+	return be_abi_get_callee_save_irn(cg->birg->abi, &ia32_gp_regs[REG_XXX]);
 }
 
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
-	if (! cg->noreg_fp) {
-		cg->noreg_fp = be_new_NoReg(&ia32_fp_regs[REG_XXXX], cg->irg, get_irg_start_block(cg->irg));
-	}
-
-	return cg->noreg_fp;
+	return be_abi_get_callee_save_irn(cg->birg->abi, &ia32_fp_regs[REG_XXXX]);
 }
 
 /**************************************************
@@ -72,45 +65,6 @@ static ir_node *my_skip_proj(const ir_node *n) {
 	while (is_Proj(n))
 		n = get_Proj_pred(n);
 	return (ir_node *)n;
-}
-
-static int is_Call_Proj(const ir_node *n) {
-	if (is_Proj(n)                               &&
-		is_Proj(get_Proj_pred(n))                &&
-		get_irn_mode(get_Proj_pred(n)) == mode_T &&
-		is_ia32_Call(get_Proj_pred(get_Proj_pred(n))))
-	{
-		return 1;
-	}
-
-	return 0;
-}
-
-static int is_Start_Proj(const ir_node *n) {
-	if (is_Proj(n)                               &&
-		is_Proj(get_Proj_pred(n))                &&
-		get_irn_mode(get_Proj_pred(n)) == mode_T &&
-		is_Start(get_Proj_pred(get_Proj_pred(n))))
-	{
-		return 1;
-	}
-
-	return 0;
-}
-
-static int is_P_frame_base_Proj(const ir_node *n) {
-	if (is_Proj(n)                                    &&
-		is_Start(get_Proj_pred(n)) &&
-		get_Proj_proj(n) == pn_Start_P_frame_base)
-	{
-		return 1;
-	}
-
-	return 0;
-}
-
-static int is_used_by_Keep(const ir_node *n) {
-	return be_is_Keep(get_edge_src_irn(get_irn_out_edge_first(n)));
 }
 
 /**
@@ -413,8 +367,8 @@ static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
  */
 static void ia32_codegen(void *self) {
 	ia32_code_gen_t *cg = self;
-	ir_graph       *irg = cg->irg;
-	FILE           *out = cg->out;
+	ir_graph        *irg = cg->irg;
+	FILE            *out = cg->out;
 
 	if (cg->emit_decls) {
 		ia32_gen_decls(cg->out);
@@ -435,7 +389,7 @@ static void ia32_codegen(void *self) {
 	free(self);
 }
 
-static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env);
+static void *ia32_cg_init(FILE *F, const be_irg_t *birg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
@@ -450,20 +404,19 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *ia32_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
-	ia32_isa_t      *isa = (ia32_isa_t *)arch_env->isa;
+static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
+	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env->isa;
 	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
 
 	cg->impl     = &ia32_code_gen_if;
-	cg->irg      = irg;
+	cg->irg      = birg->irg;
 	cg->reg_set  = new_set(ia32_cmp_irn_reg_assoc, 1024);
 	cg->mod      = firm_dbg_register("firm.be.ia32.cg");
 	cg->out      = F;
-	cg->arch_env = arch_env;
+	cg->arch_env = birg->main_env->arch_env;
 	cg->types    = pmap_create();
 	cg->tv_ent   = pmap_create();
-	cg->noreg_gp = NULL;
-	cg->noreg_fp = NULL;
+	cg->birg     = birg;
 
 	isa->num_codegens++;
 

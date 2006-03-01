@@ -710,85 +710,8 @@ void emit_Proj(ir_node *irn, emit_env_t *env) {
  ********************/
 
 void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
-	int                 i, n      = get_irn_arity(irn);
-	int                 args_size = 0;
-	ir_node            *sync      = get_irn_n(irn, n - 1);
-	FILE               *F         = emit_env->out;
-	const lc_arg_env_t *env       = ia32_get_arg_env();
-
-	if (get_irn_op(sync) == op_Sync) {
-		/* We have stack arguments */
-		ir_node **args = get_Sync_preds_arr(sync);
-
-		for (i = 0; i < get_Sync_n_preds(sync); i++) {
-			ir_node *n = get_irn_n(args[i], 1);
-			lc_efprintf(env, F, "\tpush %1D\t\t\t\t/* push %+F(%+F) on stack */\n", n, args[i], n);
-
-			if (mode_is_float(get_irn_mode(n))) {
-				args_size += 4;
-			}
-			else {
-				args_size += 16;
-			}
-		}
-	}
-
-	lc_efprintf(env, F, "\tcall %C\t\t\t/* %+F */\n", irn, irn);
-
-	if (get_irn_op(sync) == op_Sync) {
-		/* We had stack arguments: clear the stack */
-		fprintf(F, "\tadd %d, ", args_size);
-		if (emit_env->cg->has_alloca) {
-			fprintf(F, "%%ebp");
-		}
-		else {
-			fprintf(F, "%%esp");
-		}
-		fprintf(F, "\t\t\t\t/* clear stack after call */\n");
-	}
 }
 
-
-
-/**
- * Emits code for Alloca (increase stack pointer, cpoy to destination)
- */
-void emit_Alloca(ir_node *irn, emit_env_t *emit_env, int is_imm) {
-	const lc_arg_env_t *env = ia32_get_arg_env();
-	FILE               *F   = emit_env->out;
-	char               *sp;
-
-	if (emit_env->cg->has_alloca) {
-		sp = "%ebp";
-	}
-	else {
-		sp = "%esp";
-	}
-
-
-	/* allocate the memory */
-	fprintf(F, "\tsub %s", sp);
-
-	if (is_imm) {
-		lc_efprintf(env, F, "%C", irn);
-	}
-	else {
-		lc_efprintf(env, F, "%1S", irn);
-	}
-
-	fprintf(F, "\t\t\t\t/* reserve memory on stack */\n");
-
-	/* copy the new stack pointer to destination register */
-	lc_efprintf(env, F, "\tmov %s, %1D\t\t\t/* copy stack pointer to destination */\n", sp, irn);
-}
-
-void emit_ia32_Alloca(ir_node *irn, emit_env_t *emit_env) {
-	emit_Alloca(irn, emit_env, 0);
-}
-
-void emit_ia32_Alloca_i(ir_node *irn, emit_env_t *emit_env) {
-	emit_Alloca(irn, emit_env, 1);
-}
 
 
 /***********************************************************************************

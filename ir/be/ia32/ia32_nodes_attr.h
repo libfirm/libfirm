@@ -55,14 +55,14 @@ typedef struct _ia32_attr_t {
 	ia32_am_flavour_t am_flavour;   /**<< the concrete addrmode characteristics */
 
 	struct obstack *am_offs;    /**<< offsets for AddrMode */
-	char            offs_sign;  /**<< the sign of the first offset */
 	int             am_scale;   /**<< addrmode scale for index register */
+	char            offs_sign;  /**<< the sign of the first offset */
+
+	char use_frame;  /**<< indicates whether the operation uses the frame pointer or not */
 
 	tarval *tv;   /**<< tarval for immediate operations */
 	char   *sc;   /**<< symconst name */
 	char   *cnst; /**<< points to the string representation of the constant value (either tv or sc) */
-
-	char use_frame;    /**<< indicates whether the operation uses the frame pointer or not */
 
 	ir_mode *ls_mode;  /**<< the mode of the stored/loaded value */
 
