@@ -52,7 +52,7 @@ struct _be_abi_irg_t {
 	ir_node             *reg_params;
 
 	pset                *stack_ops;    /**< Contains all nodes modifying the stack pointer. */
-	pmap                *callee_save;
+	pmap                *regs;
 
 	int start_block_bias;
 
@@ -397,8 +397,8 @@ static ir_node *setup_frame(be_abi_irg_t *env)
 	ir_node *old_frame = get_irg_frame(irg);
 	int store_old_fp   = 1;
 	int omit_fp        = env->omit_fp;
-	ir_node *stack     = pmap_get(env->callee_save, (void *) sp);
-	ir_node *frame     = pmap_get(env->callee_save, (void *) bp);
+	ir_node *stack     = pmap_get(env->regs, (void *) sp);
+	ir_node *frame     = pmap_get(env->regs, (void *) bp);
 
 	int stack_nr       = get_Proj_proj(stack);
 
@@ -413,7 +413,7 @@ static ir_node *setup_frame(be_abi_irg_t *env)
 
 			irn   = new_r_Store(irg, bl, get_irg_initial_mem(irg), stack, frame);
 			irn   = new_r_Proj(irg, bl, irn, mode_M, pn_Store_M);
-			stack = be_new_IncSP(sp, irg, bl, irn, no_mem, get_mode_size_bytes(bp->reg_class->mode), be_stack_dir_along);
+			stack = be_new_IncSP(sp, irg, bl, stack, irn, get_mode_size_bytes(bp->reg_class->mode), be_stack_dir_along);
 		}
 
 		frame = be_new_Copy(bp->reg_class, irg, bl, stack);
@@ -455,7 +455,6 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *no_mem           = get_irg_no_mem(irg);
 	type *method_type         = get_entity_type(get_irg_entity(irg));
 	int n_params              = get_method_n_params(method_type);
-	pmap *regs                = pmap_create();
 
 	int max_arg               = 0;
 	int reg_params_nr         = 0;
@@ -470,6 +469,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	pmap_entry *ent;
 
+	env->regs = pmap_create();
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
@@ -501,7 +501,7 @@ static void modify_irg(be_abi_irg_t *env)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		if(arg->in_reg) {
 			assert(arg->reg != sp && "cannot use stack pointer as parameter register");
-			pmap_insert(regs, (void *) arg->reg, NULL);
+			pmap_insert(env->regs, (void *) arg->reg, NULL);
 			DBG((dbg, LEVEL_2, "\targ #%d -> reg %s\n", i, arg->reg->name));
 		}
 	}
@@ -512,22 +512,21 @@ static void modify_irg(be_abi_irg_t *env)
 		for(j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = &cls->regs[j];
 			if(arch_register_type_is(reg, callee_save))
-				pmap_insert(regs, (void *) reg, NULL);
+				pmap_insert(env->regs, (void *) reg, NULL);
 		}
 	}
 
-	/* The stack pointer must also be saved but not necessarily be marked as callee save */
-	pmap_insert(regs, (void *) sp, NULL);
-
+	pmap_insert(env->regs, (void *) sp, NULL);
+	pmap_insert(env->regs, (void *) isa->bp, NULL);
 	reg_params_bl = get_irg_start_block(irg);
-	env->reg_params = reg_params = be_new_RegParams(irg, reg_params_bl, pmap_count(regs));
+	env->reg_params = reg_params = be_new_RegParams(irg, reg_params_bl, pmap_count(env->regs));
 	reg_params_nr = 0;
 
 	/*
 	 * make proj nodes for the callee save registers.
 	 * memorize them, since Return nodes get those as inputs.
 	 */
-	for(ent = pmap_first(regs); ent; ent = pmap_next(regs)) {
+	for(ent = pmap_first(env->regs); ent; ent = pmap_next(env->regs)) {
 		arch_register_t *reg = ent->key;
 		int pos = -(reg_params_nr + 1);
 		ent->value = new_r_Proj(irg, reg_params_bl, reg_params, reg->reg_class->mode, reg_params_nr);
@@ -665,7 +664,7 @@ static void modify_irg(be_abi_irg_t *env)
 				obstack_ptr_grow(&env->obst, get_irn_n(irn, i));
 
 			/* Add the Proj nodes representing the caller save registers. */
-			for(ent = pmap_first(regs); ent; ent = pmap_next(regs), ++n) {
+			for(ent = pmap_first(env->regs); ent; ent = pmap_next(env->regs), ++n) {
 				const arch_register_t *reg = ent->key;
 				ir_node *irn               = ent->value;
 
@@ -691,7 +690,6 @@ static void modify_irg(be_abi_irg_t *env)
 
 	obstack_free(&env->obst, args);
 	be_abi_call_free(call);
-	env->callee_save = regs;
 }
 
 static void collect_alloca_walker(ir_node *irn, void *data)
@@ -827,6 +825,6 @@ void be_abi_free(be_abi_irg_t *env)
 ir_node *be_abi_get_callee_save_node(be_abi_irg_t *abi, const arch_register_t *reg)
 {
 	assert(arch_register_type_is(reg, callee_save));
-	assert(pmap_contains(abi->callee_save, (void *) reg));
-	return pmap_get(abi->callee_save, (void *) reg);
+	assert(pmap_contains(abi->regs, (void *) reg));
+	return pmap_get(abi->regs, (void *) reg);
 }
