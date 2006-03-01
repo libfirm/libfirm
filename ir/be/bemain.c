@@ -46,7 +46,7 @@
 #include "bechordal_t.h"
 #include "beifg.h"
 #include "beifg_impl.h"
-#include "becopyoptmain.h"
+#include "becopyopt.h"
 #include "becopystat.h"
 #include "bessadestr.h"
 #include "beabi.h"
@@ -72,7 +72,7 @@ be_options_t be_options = {
 static unsigned dump_flags = 2 * DUMP_FINAL - 1;
 
 /* register allocator to use. */
-static const be_ra_t *ra = &be_ra_chordal_allocator;
+static const be_ra_t *ra = &be_ra_external_allocator;
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;

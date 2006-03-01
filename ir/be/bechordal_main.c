@@ -46,7 +46,7 @@
 #include "bespillilp.h"
 #include "belower.h"
 
-#include "becopyoptmain.h"
+#include "becopyopt.h"
 #include "bessadestr.h"
 #include "becopystat.h"
 
@@ -295,7 +295,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 		/* copy minimization */
 		copystat_collect_cls(&chordal_env);
-		be_copy_opt(&chordal_env);
+		co_compare_solvers(&chordal_env);
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 		be_ra_chordal_check(&chordal_env);
 
