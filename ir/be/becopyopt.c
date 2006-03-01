@@ -14,31 +14,33 @@
 #include <malloc.h>
 #endif
 
-#include "irprog.h"
-#include "irloop_t.h"
+#include <libcore/lc_timing.h>
 
 #include "xmalloc.h"
+#include "debug.h"
+#include "pmap.h"
+#include "irgraph.h"
+#include "irgwalk.h"
+#include "irprog.h"
+#include "irloop_t.h"
+#include "iredges_t.h"
+#include "phiclass.h"
+
+#include "bearch.h"
 #include "beutil.h"
-#include "bechordal_t.h"
-#include "becopyopt.h"
+#include "becopyopt_t.h"
 #include "becopystat.h"
 
+
+
 static firm_dbg_module_t *dbg = NULL;
-
-#define is_curr_reg_class(irn) \
-  (arch_get_irn_reg_class(get_arch_env(co), \
-                          irn, -1) == co->chordal_env->cls)
-
-#define MIN(a,b) ((a<b)?(a):(b))
-#define MAX(a,b) ((a<b)?(b):(a))
-
 
 /**
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
  */
 static int ou_max_ind_set_costs(unit_t *ou) {
-	be_chordal_env_t *chordal_env = ou->co->chordal_env;
+	be_chordal_env_t *chordal_env = ou->co->cenv;
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
@@ -124,11 +126,10 @@ static void co_collect_units(ir_node *irn, void *env) {
 	copy_opt_t *co = env;
 	unit_t *unit;
 	arch_register_req_t req;
-	arch_env_t *aenv = co->chordal_env->main_env->arch_env;
 
-	if (!is_curr_reg_class(irn))
+	if (!is_curr_reg_class(co, irn))
 		return;
-	if (!is_optimizable(get_arch_env(co), irn, &req))
+	if (!co_is_optimizable(co->aenv, irn, &req))
 		return;
 
 	/* Init a new unit */
@@ -152,10 +153,10 @@ static void co_collect_units(ir_node *irn, void *env) {
 			int o, arg_pos;
 			ir_node *arg = get_irn_n(irn, i);
 
-			assert(is_curr_reg_class(arg) && "Argument not in same register class.");
+			assert(is_curr_reg_class(co, arg) && "Argument not in same register class.");
 			if (arg == irn)
 				continue;
-			if (nodes_interfere(co->chordal_env, irn, arg)) {
+			if (nodes_interfere(co->cenv, irn, arg)) {
 				unit->inevitable_costs += co->get_costs(irn, arg, i);
 				continue;
 			}
@@ -186,8 +187,8 @@ static void co_collect_units(ir_node *irn, void *env) {
 	} else
 
 	/* Proj of a perm with corresponding arg */
-	if (is_Perm_Proj(get_arch_env(co), irn)) {
-		assert(!nodes_interfere(co->chordal_env, irn, get_Copy_src(irn)));
+	if (is_Perm_Proj(co->aenv, irn)) {
+		assert(!nodes_interfere(co->cenv, irn, get_Copy_src(irn)));
 		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
 		unit->costs = xmalloc(2 * sizeof(*unit->costs));
 		unit->node_count = 2;
@@ -197,9 +198,9 @@ static void co_collect_units(ir_node *irn, void *env) {
 	} else
 
 	/* Src == Tgt of a 2-addr-code instruction */
-	if (is_2addr_code(get_arch_env(co), irn, &req)) {
+	if (is_2addr_code(co->aenv, irn, &req)) {
 		ir_node *other = req.other_same;
-		if (!nodes_interfere(co->chordal_env, irn, other)) {
+		if (!nodes_interfere(co->cenv, irn, other)) {
 			unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
 			unit->costs = xmalloc(2 * sizeof(*unit->costs));
 			unit->node_count = 2;
@@ -234,6 +235,10 @@ static void co_collect_units(ir_node *irn, void *env) {
 	}
 }
 
+void be_copy_opt_init(void) {
+	dbg = firm_dbg_register("ir.be.copyoptmain");
+}
+
 copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node*, ir_node*, int)) {
 	const char *s1, *s2, *s3;
 	int len;
@@ -242,11 +247,14 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	dbg = firm_dbg_register("ir.be.copyopt");
 
 	co = xcalloc(1, sizeof(*co));
-	co->chordal_env = chordal_env;
+	co->cenv = chordal_env;
+	co->aenv = chordal_env->main_env->arch_env;
+	co->irg = chordal_env->irg;
+	co->cls = chordal_env->cls;
 	co->get_costs = get_costs;
 
 	s1 = get_irp_prog_name();
-	s2 = get_entity_name(get_irg_entity(get_irg(co)));
+	s2 = get_entity_name(get_irg_entity(co->irg));
 	s3 = chordal_env->cls->name;
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
 	co->name = xmalloc(len);
@@ -254,7 +262,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 
 	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	INIT_LIST_HEAD(&co->units);
-	irg_walk_graph(get_irg(co), co_collect_units, NULL, co);
+	irg_walk_graph(co->irg, co_collect_units, NULL, co);
 	return co;
 }
 
@@ -269,21 +277,20 @@ void free_copy_opt(copy_opt_t *co) {
 }
 
 int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
-	arch_env_t *aenv = get_arch_env(co);
 	const ir_edge_t *edge;
 
-	if (arch_irn_is_ignore(aenv, irn))
+	if (arch_irn_is_ignore(co->aenv, irn))
 		return 0;
 
 	foreach_out_edge(irn, edge) {
 		ir_node *n = edge->src;
 
-		if (!nodes_interfere(co->chordal_env, irn, n) || irn == n) {
+		if (!nodes_interfere(co->cenv, irn, n) || irn == n) {
 			arch_register_req_t req;
-			arch_get_register_req(aenv, &req, n, -1);
+			arch_get_register_req(co->aenv, &req, n, -1);
 
 			if(is_Reg_Phi(n) ||
-			   is_Perm(aenv, n) ||
+			   is_Perm(co->aenv, n) ||
 			   (arch_register_req_is(&req, should_be_same) && req.other_same == irn)
 			  )
 				return 1;
@@ -362,4 +369,156 @@ int co_get_lower_bound(const copy_opt_t *co) {
 	list_for_each_entry(unit_t, curr, &co->units, units)
 		res += curr->inevitable_costs + curr->min_nodes_costs;
 	return res;
+}
+
+
+
+#define DO_HEUR
+#undef DO_CLASSES
+#undef DO_ILP
+
+
+/**
+ * Helpers for saving and restoring colors of nodes.
+ * Used to get dependable and comparable benchmark results.
+ */
+#if (defined(DO_HEUR) && defined(DO_BETTER)) || (defined(DO_HEUR) && defined(DO_ILP)) || (defined(DO_BETTER) && defined(DO_ILP))
+
+typedef struct color_saver {
+	arch_env_t *arch_env;
+	be_chordal_env_t *chordal_env;
+	pmap *saved_colors;
+	int flag; /* 0 save, 1 load */
+} color_save_t;
+
+static void save_load(ir_node *irn, void *env) {
+	color_save_t *saver = env;
+	if (saver->chordal_env->cls == arch_get_irn_reg_class(saver->arch_env, irn, -1)) {
+		if (saver->flag == 0) { /* save */
+			const arch_register_t *reg = arch_get_irn_register(saver->arch_env, irn);
+			pmap_insert(saver->saved_colors, irn, (void *) reg);
+		} else { /*load */
+			arch_register_t *reg = pmap_get(saver->saved_colors, irn);
+			arch_set_irn_register(saver->arch_env, irn, reg);
+		}
+	}
+}
+
+static void save_colors(color_save_t *color_saver) {
+	color_saver->flag = 0;
+	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
+}
+
+static void load_colors(color_save_t *color_saver) {
+	color_saver->flag = 1;
+	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
+}
+
+#endif /* Need save/load stuff */
+
+
+
+void co_compare_solvers(be_chordal_env_t *chordal_env) {
+	copy_opt_t *co;
+
+#ifdef DO_STAT
+	lc_timer_t *timer;
+	color_save_t saver;
+	int costs, costs_inevit, costs_init, costs_heur, costs_classes, costs_ilp, lower_bound;
+#endif
+
+	co = new_copy_opt(chordal_env, get_costs_loop_depth);
+	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
+	phi_class_compute(chordal_env->irg);
+
+
+#ifdef DO_STAT
+#if (defined(DO_HEUR) && defined(DO_BETTER)) || (defined(DO_HEUR) && defined(DO_ILP)) || (defined(DO_BETTER) && defined(DO_ILP))
+		saver.arch_env = chordal_env->main_env->arch_env;
+		saver.chordal_env = chordal_env;
+		saver.saved_colors = pmap_create();
+		save_colors(&saver);
+#endif
+
+		costs_inevit = co_get_inevit_copy_costs(co);
+		lower_bound  = co_get_lower_bound(co);
+		costs_init   = co_get_copy_costs(co);
+
+		DBG((dbg, LEVEL_1, "Inevit Costs: %3d\n", costs_inevit));
+		DBG((dbg, LEVEL_1, "Lower Bound: %3d\n", lower_bound));
+		DBG((dbg, LEVEL_1, "Init costs: %3d\n", costs_init));
+
+		copystat_add_inevit_costs(costs_inevit);
+		copystat_add_init_costs(costs_init);
+		copystat_add_max_costs(co_get_max_copy_costs(co));
+#endif
+
+
+#ifdef DO_HEUR
+#ifdef DO_STAT
+	timer = lc_timer_register("heur", NULL);
+	lc_timer_reset_and_start(timer);
+#endif
+
+	co_solve_heuristic(co);
+
+#ifdef DO_STAT
+	lc_timer_stop(timer);
+	costs_heur = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "Heur costs: %3d\n", costs_heur));
+	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_costs(costs_heur);
+	assert(lower_bound <= costs_heur);
+#endif
+#endif /* DO_HEUR */
+
+
+
+#ifdef DO_CLASSES
+#ifdef DO_STAT
+#ifdef DO_HEUR
+	load_colors(&saver);
+#endif
+	timer = lc_timer_register("classes", NULL);
+	lc_timer_reset_and_start(timer);
+#endif
+
+	co_classes_opt(co);
+
+#ifdef DO_STAT
+	lc_timer_stop(timer);
+	costs_classes = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "Classes costs: %3d\n", costs_classes));
+	copystat_add_classes_time(lc_timer_elapsed_msec(timer));
+	copystat_add_classes_costs(costs_heur);
+	assert(lower_bound <= costs_classes);
+#endif
+#endif /* DO_CLASSES */
+
+
+
+#ifdef DO_ILP
+#ifdef DO_STAT
+#if defined(DO_HEUR) || defined(DO_CLASSES)
+	load_colors(&saver);
+#endif
+#endif
+
+	co_solve_ilp1(co, 60.0);
+
+#ifdef DO_STAT
+	costs_ilp = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "Opt  costs: %3d\n", costs_ilp));
+	copystat_add_opt_costs(costs_ilp);
+	assert(lower_bound <= costs_ilp);
+#endif
+#endif /* DO_ILP */
+
+
+#ifdef DO_STAT
+#if (defined(DO_HEUR) && defined(DO_BETTER)) || (defined(DO_HEUR) && defined(DO_ILP)) || (defined(DO_BETTER) && defined(DO_ILP))
+	pmap_destroy(saver.saved_colors);
+#endif
+#endif
+	free_copy_opt(co);
 }

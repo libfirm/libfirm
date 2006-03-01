@@ -23,8 +23,9 @@
 #include <malloc.h>
 #endif
 
+#include "debug.h"
 #include "xmalloc.h"
-#include "becopyopt.h"
+#include "becopyopt_t.h"
 #include "becopystat.h"
 #include "bitset.h"
 #include "bearch.h"
@@ -104,7 +105,7 @@ static INLINE void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, const ir_node *n2) {
 	conflict_t c;
 	/* search for live range interference */
-	if (n1!=n2 && nodes_interfere(qn->ou->co->chordal_env, n1, n2))
+	if (n1!=n2 && nodes_interfere(qn->ou->co->cenv, n1, n2))
 		return 1;
 	/* search for recoloring conflicts */
 	if ((int)n1 < (int)n2) {
@@ -213,9 +214,10 @@ static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
  *
  */
 static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const ir_node *trigger) {
-	const be_chordal_env_t *chordal_env = qn->ou->co->chordal_env;
-	const arch_register_class_t *cls = chordal_env->cls;
-	const arch_env_t *arch_env = chordal_env->main_env->arch_env;
+	copy_opt_t *co = qn->ou->co;
+	const be_chordal_env_t *chordal_env = co->cenv;
+	const arch_register_class_t *cls = co->cls;
+	const arch_env_t *arch_env = co->aenv;
 	int irn_col = qnode_get_new_color(qn, irn);
 	ir_node *sub_res, *curr;
 	be_ifg_t *ifg = chordal_env->ifg;
@@ -507,8 +509,8 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 static void ou_optimize(unit_t *ou) {
 	int i;
 	qnode_t *curr = NULL, *tmp;
-	arch_env_t *aenv = get_arch_env(ou->co);
-	const arch_register_class_t *cls = ou->co->chordal_env->cls;
+	const arch_env_t *aenv = ou->co->aenv;
+	const arch_register_class_t *cls = ou->co->cls;
 	bitset_t *pos_regs = bitset_alloca(cls->n_regs);
 	bitset_t *ign_regs = bitset_alloca(cls->n_regs);
 
@@ -576,7 +578,7 @@ static void ou_optimize(unit_t *ou) {
 		free_qnode(curr);
 }
 
-void co_heur_opt(copy_opt_t *co) {
+int co_solve_heuristic(copy_opt_t *co) {
 	unit_t *curr;
 	dbg = firm_dbg_register("ir.be.copyoptheur");
 
@@ -586,4 +588,6 @@ void co_heur_opt(copy_opt_t *co) {
 			ou_optimize(curr);
 
 	del_pset(pinned_global);
+
+	return 0;
 }
