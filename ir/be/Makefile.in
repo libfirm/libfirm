@@ -23,8 +23,8 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beutil.h bemain.c besched.c bemain.c belive.c belive.h benumb.h \
 	benumb_t.h benumb.c bechordal.c bera.c beutil.c \
 	bera.h bechordalspill.c bechordal_main.c \
-	becopyoptmain.c becopyopt.c becopyheur.c beifg.c \
-	becopyilp.c becopystat.c bearch.c bechordal_draw.c \
+	becopyopt.c becopyheur.c becopyilp.c becopyilp1.c becopyilp2.c \
+	beifg.c becopystat.c bearch.c bechordal_draw.c \
 	bechordal_draw.h beirgmod.c beirgmod.h benode.c benode_t.h \
 	bessadestr.c beifg_std.c bespill.c bespillbelady.c bespillilp.c beuses.c \
 	belower.c belower.h beraextern.c beabi.c beabi.h beabi_t.h
