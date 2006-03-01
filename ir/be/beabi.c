@@ -187,7 +187,7 @@ static void adjust_call(be_abi_irg_t *env, ir_node *irn)
 	}
 	low_args = obstack_finish(obst);
 
-	/* If there are some parameters shich shall be passed on the stack. */
+	/* If there are some parameters which shall be passed on the stack. */
 	if(n_pos > 0) {
 		int curr_ofs      = 0;
 		int do_seq        = (call->flags & BE_ABI_USE_PUSH);
