@@ -308,14 +308,15 @@ ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 	return irn;
 }
 
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, unsigned offset, be_stack_dir_t dir)
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, unsigned offset, be_stack_dir_t dir)
 {
 	be_stack_attr_t *a;
 	ir_node *irn;
 	ir_node *in[1];
 
 	in[0]     = old_sp;
-	irn       = new_ir_node(NULL, irg, bl, op_IncSP, sp->reg_class->mode, 1, in);
+	in[1]     = mem;
+	irn       = new_ir_node(NULL, irg, bl, op_IncSP, sp->reg_class->mode, 2, in);
 	a         = init_node_attr(irn, sp->reg_class, irg, 1);
 	a->dir    = dir;
 	a->offset = offset;

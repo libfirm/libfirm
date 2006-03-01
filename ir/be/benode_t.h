@@ -70,7 +70,7 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
  * @return       A new stack pointer increment/decrement node.
  * @note         This node sets a register constraint to the @p sp register on its output.
  */
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, unsigned amount, be_stack_dir_t dir);
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, unsigned amount, be_stack_dir_t dir);
 
 void     be_set_IncSP_offset(ir_node *irn, unsigned offset);
 unsigned be_get_IncSP_offset(ir_node *irn);
