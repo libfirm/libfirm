@@ -30,4 +30,6 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env);
 void be_abi_fix_stack_nodes(be_abi_irg_t *env);
 void be_abi_free(be_abi_irg_t *abi);
 
+ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);
+
 #endif
