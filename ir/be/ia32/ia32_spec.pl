@@ -14,8 +14,8 @@ $arch = "ia32";
 # <op-name> => {
 #   "op_flags"  => "N|L|C|X|I|F|Y|H|c|K",
 #   "irn_flags" => "R|N|I"
-#   "arity"     => "0|1|2|3 ... |variable|dynamic|all",
-#   "state"     => "floats|pinned",
+#   "arity"     => "0|1|2|3 ... |variable|dynamic|any",
+#   "state"     => "floats|pinned|mem_pinned|exc_pinned",
 #   "args"      => [
 #                    { "type" => "type 1", "name" => "name 1" },
 #                    { "type" => "type 2", "name" => "name 2" },
@@ -49,7 +49,7 @@ $arch = "ia32";
 #   N   not spillable
 #   I   ignore for register allocation
 #
-# state: state of the operation, OPTIONAL (default is "pinned")
+# state: state of the operation, OPTIONAL (default is "floats")
 #
 # arity: arity of the operation, MUST NOT BE OMITTED
 #
@@ -83,10 +83,7 @@ $arch = "ia32";
 #   1 - caller save (register must be saved by the caller of a function)
 #   2 - callee save (register must be saved by the called function)
 #   4 - ignore (do not assign this register)
-# NOTE: Make sure to list the registers returning the call-result before all other
-#       caller save registers and in the correct order, otherwise it will break
-#       the magic!
-# Last entry of each class is the largest Firm-Mode a register can hold
+# NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
   "gp" => [
             { "name" => "eax", "type" => 1 },
@@ -109,7 +106,7 @@ $arch = "ia32";
             { "name" => "xmm5", "type" => 1 },
             { "name" => "xmm6", "type" => 1 },
             { "name" => "xmm7", "type" => 1 },
-            { "name" => "xxxx", "type" => 4 },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "xxxx", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
 			{ "mode" => "mode_D" }
           ]
 ); # %reg_classes
@@ -311,7 +308,6 @@ $arch = "ia32";
 # other operations
 
 "Conv" => {
-  "arity"    => 1,
   "reg_req"  => { "in" => [ "gp" ], "out" => [ "in_r1" ] },
   "comment"  => "construct Conv: Conv(a) = (conv)a"
 },
@@ -491,7 +487,6 @@ $arch = "ia32";
 # other operations
 
 "fConv" => {
-  "arity"    => 1,
   "reg_req"  => { "in" => [ "fp" ], "out" => [ "gp" ] },
   "comment"  => "construct Conv: Conv(a) = (conv)a"
 },
