@@ -10,13 +10,25 @@
 #include "tv.h"
 #include "irgmod.h"
 
-#include "../benode_t.h"
+#include "../be_t.h"
+#include "../beabi.h"
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
+#include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
 
 #undef is_NoMem
 #define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
+
+static int be_is_NoReg(be_abi_irg_t *babi, const ir_node *irn) {
+	if (be_abi_get_callee_save_irn(babi, &ia32_gp_regs[REG_XXX]) == irn ||
+		be_abi_get_callee_save_irn(babi, &ia32_fp_regs[REG_XXXX]) == irn)
+	{
+		return 1;
+	}
+
+	return 0;
+}
 
 /**
  * creates a unique ident by adding a number to a tag
@@ -327,7 +339,7 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
 /**
  * Folds Add or Sub to LEA if possible
  */
-static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
+static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
 	ir_graph *irg       = get_irn_irg(irn);
 	ir_mode  *mode      = get_irn_mode(irn);
 	dbg_info *dbg       = get_irn_dbg_info(irn);
@@ -356,7 +368,7 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 	am_flav = 0;
 
 	/* "normalize" arguments in case of add with two operands */
-	if  (isadd && ! be_is_NoReg(right)) {
+	if  (isadd && ! be_is_NoReg(babi, right)) {
 		/* put LEA == ia32_am_O as right operand */
 		if (is_ia32_Lea(left) && get_ia32_am_flavour(left) == ia32_am_O) {
 			set_irn_n(irn, 2, right);
@@ -394,7 +406,7 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 	}
 
 	/* determine the operand which needs to be checked */
-	if (be_is_NoReg(right)) {
+	if (be_is_NoReg(babi, right)) {
 		temp = left;
 	}
 	else {
@@ -439,7 +451,7 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 		}
 
 		/* fix base */
-		if (! be_is_NoReg(index)) {
+		if (! be_is_NoReg(babi, index)) {
 			/* if we have index, but left == right -> no base */
 			if (left == right) {
 				base = noreg;
@@ -460,7 +472,7 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 		/* If we have an Add with a real right operand (not NoReg) and  */
 		/* the LEA contains already an index calculation then we create */
 		/* a new LEA.                                                   */
-		if (isadd && !be_is_NoReg(index) && (am_flav & ia32_am_I)) {
+		if (isadd && !be_is_NoReg(babi, index) && (am_flav & ia32_am_I)) {
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
@@ -512,10 +524,10 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
 		if (offs || offs_cnst || offs_lea) {
 			am_flav |= ia32_O;
 		}
-		if (! be_is_NoReg(base)) {
+		if (! be_is_NoReg(babi, base)) {
 			am_flav |= ia32_B;
 		}
-		if (! be_is_NoReg(index)) {
+		if (! be_is_NoReg(babi, index)) {
 			am_flav |= ia32_I;
 		}
 		if (scale > 0) {
@@ -543,10 +555,11 @@ static ir_node *fold_addr(ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) 
  * Optimizes a pattern around irn to address mode if possible.
  */
 void ia32_optimize_am(ir_node *irn, void *env) {
-	ia32_code_gen_t   *cg  = env;
-	ir_graph          *irg = cg->irg;
-	firm_dbg_module_t *mod = cg->mod;
-	ir_node           *res = irn;
+	ia32_code_gen_t   *cg   = env;
+	ir_graph          *irg  = cg->irg;
+	firm_dbg_module_t *mod  = cg->mod;
+	ir_node           *res  = irn;
+	be_abi_irg_t      *babi = cg->birg->abi;
 	dbg_info          *dbg;
 	ir_mode           *mode;
 	ir_node           *block, *noreg_gp, *noreg_fp;
@@ -585,7 +598,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 		if (! pred_is_specific_nodeblock(block, left,  is_ia32_Load)  &&
 			! pred_is_specific_nodeblock(block, right, is_ia32_Load))
 		{
-			res = fold_addr(irn, mod, noreg_gp);
+			res = fold_addr(babi, irn, mod, noreg_gp);
 		}
 	}
 
