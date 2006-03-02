@@ -71,7 +71,7 @@ foreach my $op (keys(%nodes)) {
 
 	push(@obst_is_archirn, "is_$op(node)");
 
-	push(@obst_header, "ir_op *get_op_$op(void);\n")
+	push(@obst_header, "ir_op *get_op_$op(void);\n");
 	push(@obst_header, "int is_$op(const ir_node *n);\n");
 
 	$cmp_attr_func = 0;
