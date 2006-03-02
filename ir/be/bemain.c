@@ -72,7 +72,7 @@ be_options_t be_options = {
 static unsigned dump_flags = 2 * DUMP_FINAL - 1;
 
 /* register allocator to use. */
-static const be_ra_t *ra = &be_ra_external_allocator;
+static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;
@@ -171,9 +171,7 @@ void be_init(void)
 
 static be_main_env_t *be_init_env(be_main_env_t *env)
 {
-	int i, j, n;
-
-  memset(env, 0, sizeof(*env));
+	memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
 	env->dbg = firm_dbg_register("be.main");
 
@@ -190,34 +188,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 		* spill, reload and perm nodes.
 	*/
 	arch_env_add_irn_handler(env->arch_env, &be_node_irn_handler);
-
-	/*
-	* Create the list of caller save registers.
-	*/
-	for(i = 0, n = arch_isa_get_n_reg_class(env->arch_env->isa); i < n; ++i) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(env->arch_env->isa, i);
-		for(j = 0; j < cls->n_regs; ++j) {
-			const arch_register_t *reg = arch_register_for_index(cls, j);
-			if(arch_register_type_is(reg, caller_save))
-				obstack_ptr_grow(&env->obst, reg);
-		}
-	}
-	obstack_ptr_grow(&env->obst, NULL);
-	env->caller_save = obstack_finish(&env->obst);
-
-	/*
-	* Create the list of callee save registers.
-	*/
-	for(i = 0, n = arch_isa_get_n_reg_class(env->arch_env->isa); i < n; ++i) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(env->arch_env->isa, i);
-		for(j = 0; j < cls->n_regs; ++j) {
-			const arch_register_t *reg = arch_register_for_index(cls, j);
-			if(arch_register_type_is(reg, callee_save))
-				obstack_ptr_grow(&env->obst, reg);
-		}
-	}
-	obstack_ptr_grow(&env->obst, NULL);
-	env->callee_save = obstack_finish(&env->obst);
 
 	return env;
 }
@@ -241,6 +211,9 @@ static void prepare_graph(be_irg_t *birg)
 
 	/* Normalize proj nodes. */
 	normalize_proj_nodes(irg);
+
+	/* Make just one return node. */
+	// normalize_one_return(irg);
 
 	/* Remove critical edges */
 	remove_critical_cf_edges(irg);
@@ -320,7 +293,7 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
 		/* connect all stack modifying nodes together (see beabi.c) */
-		// be_abi_fix_stack(birg.abi);
+		be_abi_fix_stack_nodes(birg.abi);
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
@@ -328,11 +301,13 @@ static void be_main_loop(FILE *file_handle)
 		/* Do register allocation */
 		arch_code_generator_before_ra(birg.cg);
 		ra->allocate(&birg);
-
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
+
+		be_abi_fix_stack_bias(birg.abi);
 
 		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
+		be_abi_free(birg.abi);
 	}
 
 	be_done_env(&env);

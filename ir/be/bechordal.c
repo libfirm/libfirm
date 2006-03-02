@@ -62,8 +62,6 @@ typedef struct _be_chordal_alloc_env_t {
 	pset *pre_colored;    /**< Set of precolored nodes. */
 	bitset_t *live;				/**< A liveness bitset. */
 	bitset_t *colors;			/**< The color mask. */
-	bitset_t *valid_colors;	    /**< A mask of colors which shall be considered during allocation.
-								     Registers with the ignore bit on, must not be considered. */
 	bitset_t *in_colors;        /**< Colors used by live in values. */
 	int colors_n;               /**< The number of colors. */
 } be_chordal_alloc_env_t;
@@ -163,7 +161,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
 	// return arch_irn_has_reg_class(env->main_env->arch_env, irn, -1, env->cls);
-	return arch_irn_consider_in_reg_alloc(env->main_env->arch_env, env->cls, irn);
+	return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
 }
 
 #define has_limited_constr(req, irn) \
@@ -189,7 +187,7 @@ typedef struct {
 
 static insn_t *scan_insn(be_chordal_env_t *env, ir_node *irn, struct obstack *obst)
 {
-	const arch_env_t *arch_env = env->main_env->arch_env;
+	const arch_env_t *arch_env = env->birg->main_env->arch_env;
 	operand_t o;
 	insn_t *insn;
 	int i, n;
@@ -295,7 +293,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 	if(insn->has_constraints) {
 		firm_dbg_module_t *dbg = firm_dbg_register("firm.be.chordal.constr");
-		const arch_env_t *aenv = env->main_env->arch_env;
+		const arch_env_t *aenv = env->birg->main_env->arch_env;
 		int n_regs             = env->cls->n_regs;
 		bitset_t *bs           = bitset_alloca(n_regs);
 		ir_node **alloc_nodes  = alloca(n_regs * sizeof(alloc_nodes[0]));
@@ -340,7 +338,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 				bitset_clear_all(bs);
 				op->req.limited(op->req.limited_env, bs);
-				bitset_and(bs, alloc_env->valid_colors);
 
 				DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
 
@@ -364,7 +361,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 					bitset_clear_all(bs);
 					arch_get_allocatable_regs(aenv, proj, -1, bs);
-					bitset_and(bs, alloc_env->valid_colors);
 					bitset_foreach(bs, col)
 						bipartite_add(bp, n_alloc, col);
 
@@ -374,7 +370,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		}
 
 		bipartite_matching(bp, assignment);
-
 
 		for(i = 0; i < n_alloc; ++i) {
 			int j;
@@ -444,7 +439,7 @@ static void constraints(ir_node *bl, void *data)
 {
 	firm_dbg_module_t *dbg      = firm_dbg_register("firm.be.chordal.constr");
 	be_chordal_alloc_env_t *env = data;
-	arch_env_t *arch_env        = env->chordal_env->main_env->arch_env;
+	arch_env_t *arch_env        = env->chordal_env->birg->main_env->arch_env;
 	ir_node *irn;
 
 	for(irn = sched_first(bl); !sched_is_end(irn);) {
@@ -470,7 +465,7 @@ static void pressure(ir_node *block, void *env_ptr)
 
 	be_chordal_alloc_env_t *alloc_env = env_ptr;
 	be_chordal_env_t *env             = alloc_env->chordal_env;
-	const arch_env_t *arch_env        = env->main_env->arch_env;
+	const arch_env_t *arch_env        = env->birg->main_env->arch_env;
 	bitset_t *live                    = alloc_env->live;
 	firm_dbg_module_t *dbg            = env->dbg;
 	ir_node *irn;
@@ -572,18 +567,16 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *live              = alloc_env->live;
 	bitset_t *colors            = alloc_env->colors;
 	bitset_t *in_colors         = alloc_env->in_colors;
-	const arch_env_t *arch_env  = env->main_env->arch_env;
+	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
 
 	const ir_node *irn;
 	border_t *b;
 	struct list_head *head = get_block_border_head(env, block);
 	pset *live_in = put_live_in(block, pset_new_ptr_default());
 
+	bitset_clear_all(colors);
 	bitset_clear_all(live);
 	bitset_clear_all(in_colors);
-
-	bitset_copy(colors, alloc_env->valid_colors);
-	bitset_flip_all(colors);
 
 	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
@@ -615,7 +608,8 @@ static void assign(ir_node *block, void *env_ptr)
 	}
 
 	/*
-	 * Mind that the sequence of defs from back to front defines a perfect
+	 * Mind that the sequence
+	 * of defs from back to front defines a perfect
 	 * elimination order. So, coloring the definitions from first to last
 	 * will work.
 	 */
@@ -686,21 +680,16 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.chordal_env   = chordal_env;
 	env.colors_n      = colors_n;
 	env.colors        = bitset_malloc(colors_n);
-	env.valid_colors  = bitset_malloc(colors_n);
 	env.in_colors     = bitset_malloc(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
-
-	arch_put_non_ignore_regs(chordal_env->main_env->arch_env, chordal_env->cls, env.valid_colors);
 
 	/* Handle register targeting constraints */
 	dom_tree_walk_irg(irg, constraints, NULL, &env);
 
-#if 0
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
 		snprintf(buf, sizeof(buf), "-%s-constr", chordal_env->cls->name);
 		dump_ir_block_graph_sched(chordal_env->irg, buf);
 	}
-#endif
 
 	be_numbering(irg);
 	env.live = bitset_malloc(get_graph_node_count(chordal_env->irg));
@@ -713,21 +702,16 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 	be_numbering_done(irg);
 
-#if 0
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
     	plotter_t *plotter;
-
 		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", chordal_env->cls->name, irg);
     	plotter = new_plotter_ps(buf);
     	draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
     	plotter_free(plotter);
 	}
-#endif
 
 	free(env.live);
 	free(env.colors);
 	free(env.in_colors);
-	free(env.valid_colors);
-
 	del_pset(env.pre_colored);
 }

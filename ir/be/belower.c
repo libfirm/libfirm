@@ -257,7 +257,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
 
-	arch_env = env->chord_env->main_env->arch_env;
+	arch_env = env->chord_env->birg->main_env->arch_env;
 	do_copy  = env->do_copy;
 	mod      = env->dbg_module;
 	block    = get_nodes_block(irn);
@@ -475,8 +475,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
  */
 static void lower_spill_reload(ir_node *irn, void *walk_env) {
 	lower_env_t           *env  = walk_env;
-	arch_code_generator_t *cg   = env->chord_env->main_env->cg;
-	const arch_env_t      *aenv = env->chord_env->main_env->arch_env;
+	arch_code_generator_t *cg   = env->chord_env->birg->cg;
+	const arch_env_t      *aenv = env->chord_env->birg->main_env->arch_env;
 	ir_node               *res  = NULL;
 	ir_node               *sched_point;
 
@@ -514,7 +514,7 @@ static void lower_spill_reload(ir_node *irn, void *walk_env) {
  */
 static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	lower_env_t      *env      = walk_env;
-	const arch_env_t *arch_env = env->chord_env->main_env->arch_env;
+	const arch_env_t *arch_env = env->chord_env->birg->main_env->arch_env;
 
 	if (!is_Block(irn) && !is_Proj(irn)) {
 		if (is_Perm(arch_env, irn)) {

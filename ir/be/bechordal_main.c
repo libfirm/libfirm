@@ -53,7 +53,7 @@
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 	firm_dbg_module_t *dbg = chordal_env->dbg;
-	const arch_env_t *arch_env = chordal_env->main_env->arch_env;
+	const arch_env_t *arch_env = chordal_env->birg->main_env->arch_env;
 	struct obstack ob;
 	pmap_entry *pme;
 	ir_node **nodes, *n1, *n2;
@@ -251,9 +251,10 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	compute_doms(irg);
 
+	chordal_env.opts         = &options;
 	chordal_env.irg          = irg;
 	chordal_env.dbg          = firm_dbg_register("firm.be.chordal");
-	chordal_env.main_env     = main_env;
+	chordal_env.birg		 = bi;
 	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
 
 	obstack_init(&chordal_env.obst);

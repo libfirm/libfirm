@@ -107,7 +107,7 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 
 	ctx = be_get_spill_ctx(senv->spill_ctxs, irn, ctx_irn);
 	if(!ctx->spill) {
-		const be_main_env_t *env = senv->chordal_env->main_env;
+		const be_main_env_t *env = senv->chordal_env->birg->main_env;
 		ctx->spill = be_spill(env->arch_env, irn, ctx_irn);
 	}
 
@@ -169,7 +169,7 @@ static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
 
 static void phi_walker(ir_node *irn, void *env) {
 	spill_env_t *senv = env;
-	const arch_env_t *arch = senv->chordal_env->main_env->arch_env;
+	const arch_env_t *arch = senv->chordal_env->birg->main_env->arch_env;
 
 	if (is_Phi(irn) && arch_irn_has_reg_class(arch, irn, 0, senv->cls)
 			&& senv->is_mem_phi(irn, senv->data)) {
@@ -237,7 +237,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 		assert(n_reloads > 0);
 		obstack_ptr_grow(&ob, si->spilled_node);
 		reloads = obstack_finish(&ob);
-		be_ssa_constr_ignore(senv->chordal_env->dom_front, n_reloads, reloads, senv->mem_phis);
+		be_ssa_constr_ignore(senv->chordal_env->dom_front, n_reloads + 1, reloads, senv->mem_phis);
 		obstack_free(&ob, reloads);
 	}
 

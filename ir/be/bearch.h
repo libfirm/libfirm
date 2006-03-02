@@ -22,9 +22,9 @@
 #include "list.h"
 #include "ident.h"
 
-#include "be.h"
 #include "belistsched.h"
 #include "beabi_t.h"
+#include "be_t.h"
 
 typedef struct _arch_register_class_t     arch_register_class_t;
 typedef struct _arch_register_t           arch_register_t;
@@ -48,8 +48,6 @@ typedef enum _arch_register_type_t {
                                             upon a function call. It thus can be overwritten
                                             in the called function. */
   arch_register_type_ignore = 4,       /**< Do not consider this register when allocating. */
-  arch_register_type_sp = 8,           /**< This register is the stack pointer of the architecture. */
-  arch_register_type_bp = 16,          /**< The register is the base pointer of the architecture. */
 } arch_register_type_t;
 
 /**
@@ -59,7 +57,7 @@ typedef enum _arch_register_type_t {
  * @return      1, If register is of given kind, 0 if not.
  */
 #define arch_register_type_is(reg, kind) \
-	((reg)->type == arch_register_type_ ## kind)
+	(((reg)->type & arch_register_type_ ## kind) != 0)
 
 /**
  * A register.
@@ -181,6 +179,16 @@ typedef struct _arch_register_req_t {
 } arch_register_req_t;
 
 /**
+ * Format a register requirements information into a string.
+ * @param buf The string where to put it to.
+ * @param len The size of @p buf.
+ * @param req The requirements structure to format.
+ * @return    A pointer to buf.
+ */
+extern char *arch_register_req_format(char *buf, size_t len, const arch_register_req_t *req);
+
+
+/**
  * Certain node classes which are relevant for the register allocator.
  */
 typedef enum _arch_irn_class_t {
@@ -200,8 +208,17 @@ typedef enum _arch_irn_flags_t {
 	arch_irn_flags_none             = 0, /**< Node flags. */
 	arch_irn_flags_dont_spill       = 1, /**< This must not be spilled. */
 	arch_irn_flags_rematerializable = 2, /**< This should be replicated instead of spilled/reloaded. */
-	arch_irn_flags_ignore           = 4, /**< Do not consider the node during register allocation. */
+	arch_irn_flags_ignore           = 4, /**< Ignore node during register allocation. */
+	arch_irn_flags_last             = arch_irn_flags_ignore
 } arch_irn_flags_t;
+
+/**
+ * Get the string representation of a flag.
+ * This functions does not handle or'ed bitmasks of flags.
+ * @param flag The flag.
+ * @return The flag as a string.
+ */
+extern const char *arch_irn_flag_str(arch_irn_flags_t flag);
 
 struct _arch_irn_ops_if_t {
 
@@ -412,8 +429,7 @@ struct _arch_code_generator_if_t {
 	/**
 	 * Initialize the code generator.
 	 * @param file The file to dump to.
-	 * @param irg  The function to generate code for.
-	 * @param env  The architecture environment.
+	 * @param birg A backend IRG session.
 	 * @return     A newly created code generator.
 	 */
 	void *(*init)(FILE *file, const be_irg_t *birg);
@@ -558,6 +574,15 @@ struct _arch_isa_if_t {
    * @return      The list scheduler selector.
    */
   const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
+
+  /**
+   * Take a proj from a call, set the correct register and projnum for this proj
+   * @param self    The isa object.
+   * @param proj    The proj
+   * @param is_keep Non-zero if proj is a Keep argument
+   * @return        The backend proj number assigned to this proj
+   */
+  long (*handle_call_proj)(const void *self, ir_node *proj, int is_keep);
 };
 
 #define arch_isa_get_n_reg_class(isa)                       ((isa)->impl->get_n_reg_class(isa))

@@ -218,7 +218,7 @@ static live_range_t *get_first_use_lr(spill_ilp_t *si, ir_node *bl, ir_node *irn
 static INLINE int can_remat(const spill_ilp_t *si, const ir_node *irn, pset *live)
 {
 	int i, n;
-	const arch_env_t *arch_env    = si->chordal_env->main_env->arch_env;
+	const arch_env_t *arch_env    = si->chordal_env->birg->main_env->arch_env;
 	int remat = (arch_irn_get_flags(arch_env, irn) & arch_irn_flags_rematerializable) != 0;
 
 	for(i = 0, n = get_irn_arity(irn); i < n && remat; ++i) {

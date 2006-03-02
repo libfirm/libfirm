@@ -55,7 +55,7 @@ struct _be_chordal_env_t {
 	struct obstack obst;              /**< An obstack for temporary storage. */
 	be_ra_chordal_opts_t *opts;       /**< A pointer to the chordal ra options. */
 	firm_dbg_module_t *dbg;           /**< Debug module for the chordal register allocator. */
-	const be_main_env_t *main_env;    /**< Environment with back-end data. */
+	be_irg_t *birg;                   /**< Backend IRG session. */
 	dom_front_info_t *dom_front;      /**< Dominance frontiers. */
 	ir_graph *irg;                    /**< The graph under examination. */
 	const arch_register_class_t *cls; /**< The current register class. */
@@ -75,7 +75,7 @@ static INLINE struct list_head *_get_block_border_head(const be_chordal_env_t *i
 #define border_prev(b)                      (list_entry((b)->list.prev, border_t, list))
 
 #define chordal_has_class(chordal_env, irn) \
-	arch_irn_has_reg_class(chordal_env->main_env->arch_env, irn, -1, chordal_env->cls)
+	arch_irn_has_reg_class(chordal_env->birg->main_env->arch_env, irn, -1, chordal_env->cls)
 
 int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b);
 

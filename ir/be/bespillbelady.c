@@ -74,6 +74,15 @@ struct _workset_t {
 	loc_t vals[1];		/**< inlined array of the values/distances in this working set */
 };
 
+void workset_print(const workset_t *w)
+{
+	int i;
+
+	for(i = 0; i < w->len; ++i) {
+		ir_printf("%+F %d\n", w->vals[i].irn, w->vals[i].time);
+	}
+}
+
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
  */
@@ -242,12 +251,18 @@ static int is_mem_phi(const ir_node *irn, void *data) {
  * @return The distance to the next use
  *         Or 0 if irn is an ignore node
  */
-#define get_distance(bel, from, from_step, def, skip_from_uses) \
-		((arch_irn_is_ignore(bel->arch, def) ) ? 0 : be_get_next_use(bel->uses, from, from_step, def, skip_from_uses))
 
+static INLINE unsigned get_distance(belady_env_t *bel, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
+{
+	arch_irn_flags_t fl = arch_irn_get_flags(bel->arch, def);
+	if((fl & (arch_irn_flags_ignore | arch_irn_flags_dont_spill)) != 0)
+		return 0;
+	else
+		return be_get_next_use(bel->uses, from, from_step, def, skip_from_uses);
+}
 
 /**
- * Performs the actions neccessary to grant the request that:
+ * Performs the actions necessary to grant the request that:
  * - new_vals can be held in registers
  * - as few as possible other values are disposed
  * - the worst values get disposed
@@ -378,7 +393,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *env) {
 
 
 	/* If we have only one predecessor, we want the start_set of blk to be the end_set of pred */
-	if (get_irn_arity(blk) == 1 && blk != get_irg_start_block(get_irn_irg(blk))) {
+	if (get_Block_n_cfgpreds(blk) == 1 && blk != get_irg_start_block(get_irn_irg(blk))) {
 		ir_node *pred_blk       = get_Block_cfgpred_block(blk, 0);
 		block_info_t *pred_info = get_block_info(pred_blk);
 
@@ -469,7 +484,7 @@ static void belady(ir_node *blk, void *env) {
 
 
 		/* projs are handled with the tuple value.
-		 * Phis are no real instr (see insert_starters)
+		 * Phis are no real instr (see insert_starters())
 		 * instr_nr does not increase */
 		if (is_Proj(irn) || is_Phi(irn)) {
 			DBG((dbg, DBG_DECIDE, "  ...%+F skipped\n", irn));
@@ -618,11 +633,11 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 
 	/* init belady env */
 	obstack_init(&bel.ob);
-	bel.arch    = chordal_env->main_env->arch_env;
+	bel.arch    = chordal_env->birg->main_env->arch_env;
 	bel.cls     = chordal_env->cls;
 	bel.n_regs  = arch_register_class_n_regs(bel.cls);
 	bel.ws      = new_workset(&bel.ob, &bel);
-	bel.uses    = be_begin_uses(chordal_env->irg, chordal_env->main_env->arch_env, bel.cls);
+	bel.uses    = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, bel.cls);
 	bel.senv    = be_new_spill_env(dbg, chordal_env, is_mem_phi, NULL);
 	bel.reloads = pset_new_ptr_default();
 	bel.copies  = pset_new_ptr_default();

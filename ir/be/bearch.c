@@ -184,3 +184,45 @@ extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node 
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
   return ops->impl->get_flags(ops, irn);
 }
+
+extern const char *arch_irn_flag_str(arch_irn_flags_t fl)
+{
+	switch(fl) {
+#define XXX(x) case arch_irn_flags_ ## x: return #x;
+		XXX(dont_spill);
+		XXX(ignore);
+		XXX(rematerializable);
+		XXX(none);
+#undef XXX
+	}
+	return "n/a";
+}
+
+extern char *arch_register_req_format(char *buf, size_t len, const arch_register_req_t *req)
+{
+	char tmp[128];
+	snprintf(buf, len, "class: %s", req->cls->name);
+
+	if(arch_register_req_is(req, limited)) {
+		bitset_pos_t elm;
+		bitset_t *bs = bitset_alloca(req->cls->n_regs);
+		req->limited(req->limited_env, bs);
+		strncat(buf, " limited:", len);
+		bitset_foreach(bs, elm) {
+			strncat(buf, " ", len);
+			strncat(buf, req->cls->regs[elm].name, len);
+		}
+	}
+
+	if(arch_register_req_is(req, should_be_same)) {
+		snprintf(tmp, sizeof(tmp), " same to: %+F", req->other_different);
+		strncat(buf, tmp, len);
+	}
+
+	if(arch_register_req_is(req, should_be_different)) {
+		snprintf(tmp, sizeof(tmp), " different to: %+F", req->other_different);
+		strncat(buf, tmp, len);
+	}
+
+	return buf;
+}

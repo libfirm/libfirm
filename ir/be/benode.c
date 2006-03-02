@@ -23,6 +23,7 @@
 #include "util.h"
 #include "debug.h"
 #include "fourcc.h"
+#include "bitfiddle.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"
@@ -694,12 +695,16 @@ static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 
 static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *irn)
 {
+	int out_pos;
 	be_node_attr_t *a;
 
-	redir_proj((const ir_node **) &irn, -1);
+	out_pos = redir_proj((const ir_node **) &irn, -1);
+	a       = get_irn_attr(irn);
+
 	assert(is_be_node(irn));
-	a = get_irn_attr(irn);
-	return a->max_reg_data > 0 ? a->reg_data[0].req.flags : arch_irn_flags_none;
+	assert(out_pos < a->max_reg_data && "position too high");
+
+	return a->reg_data[out_pos].req.flags;
 }
 
 static const arch_irn_ops_if_t be_node_irn_ops_if = {
@@ -724,10 +729,63 @@ const arch_irn_handler_t be_node_irn_handler = {
 	be_node_get_arch_ops
 };
 
+
+static void dump_node_req(FILE *f, be_req_t *req)
+{
+	int i;
+	int did_something = 0;
+	const char *suffix = "";
+
+	if(req->flags != arch_irn_flags_none) {
+		fprintf(f, "flags: ");
+		for(i = arch_irn_flags_none; i <= log2_ceil(arch_irn_flags_last); ++i) {
+			if(req->flags & (1 << i)) {
+				fprintf(f, "%s%s", suffix, arch_irn_flag_str(1 << i));
+				suffix = "|";
+			}
+		}
+		suffix = ", ";
+		did_something = 1;
+	}
+
+	if(req->req.cls != 0) {
+		char tmp[256];
+		fprintf(f, suffix);
+		arch_register_req_format(tmp, sizeof(tmp), &req->req);
+		fprintf(f, "%s", tmp);
+		did_something = 1;
+	}
+
+	if(did_something)
+		fprintf(f, "\n");
+}
+
+static void dump_node_reqs(FILE *f, ir_node *irn)
+{
+	int i;
+	be_node_attr_t *a = get_irn_attr(irn);
+
+	fprintf(f, "registers: \n");
+	for(i = 0; i < a->max_reg_data; ++i) {
+		be_reg_data_t *rd = &a->reg_data[i];
+		if(rd->reg)
+			fprintf(f, "#%d: %s\n", i, rd->reg->name);
+	}
+
+	fprintf(f, "in requirements\n");
+	for(i = 0; i < a->max_reg_data; ++i) {
+		dump_node_req(f, &a->reg_data[i].in_req);
+	}
+
+	fprintf(f, "\nout requirements\n");
+	for(i = 0; i < a->max_reg_data; ++i) {
+		dump_node_req(f, &a->reg_data[i].req);
+	}
+}
+
 static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 {
 	be_node_attr_t *at = get_irn_attr(irn);
-	int i;
 
 	assert(is_be_node(irn));
 
@@ -741,11 +799,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 		case dump_node_nodeattr_txt:
 			break;
 		case dump_node_info_txt:
-			fprintf(f, "reg class: %s\n", at->cls ? at->cls->name : "n/a");
-			for(i = 0; i < at->max_reg_data; ++i) {
-				const arch_register_t *reg = at->reg_data[i].reg;
-				fprintf(f, "reg #%d: %s\n", i, reg ? reg->name : "n/a");
-			}
+			dump_node_reqs(f, irn);
 
 			switch(be_get_irn_opcode(irn)) {
 			case beo_Spill:

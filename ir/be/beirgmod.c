@@ -304,7 +304,7 @@ static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *
 	for(i = 0; i < n_outs; ++i) {
 		ir_node *irn  = outs[i].irn;
 		int pos       = outs[i].pos;
-		ir_mode *mode = get_irn_mode(irn);
+		ir_mode *mode = get_irn_mode(get_irn_n(irn, pos));
 
 		ir_node *def;
 

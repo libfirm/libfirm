@@ -144,7 +144,7 @@ static int sched_edge_hook(FILE *F, ir_node *irn)
 void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix) {
     DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
 
-		dump_consts_local(0);
+	dump_consts_local(0);
     set_dump_node_edge_hook(sched_edge_hook);
     dump_ir_block_graph(irg, suffix);
     set_dump_node_edge_hook(old);

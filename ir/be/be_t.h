@@ -28,9 +28,6 @@ struct _be_main_env_t {
   struct _be_options_t *options;
   struct _arch_code_generator_t *cg;
   firm_dbg_module_t *dbg;
-
-  const arch_register_t **caller_save; /**< NULL-terminated list of caller save registers. */
-  const arch_register_t **callee_save; /**< NULL-terminated list of callee save registers. */
 };
 
 struct _be_irg_t {
