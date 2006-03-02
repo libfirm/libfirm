@@ -35,8 +35,8 @@ affinities	::= 'affinities' '{' edge* '}' .			// Affinity edges of the graph
 edge		::= '(' node-nr ',' node-nr ')' .
 
 
-spill-costs, regcount, node-nr ::= integer .
-
+regcount, node-nr ::= int32 .
+spill-costs ::= uint32 .
 
 The output file format
 -----------------------
@@ -64,6 +64,7 @@ alloc		::= node-nr reg-nr .
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
@@ -90,12 +91,15 @@ alloc		::= node-nr reg-nr .
 #include "beutil.h"
 #include "belive_t.h"
 
+#define DBG_LEVEL 2
+
 typedef struct _var_info_t var_info_t;
 
 /**
  * Environment with all the needed stuff
  */
 typedef struct _be_raext_env_t {
+	firm_dbg_module_t *dbg;
 	arch_env_t *aenv;
 	const arch_register_class_t *cls;
 	ir_graph *irg;
@@ -433,6 +437,9 @@ static void values_to_vars(ir_node *irn, void *env) {
 	int nr;
 	pset *vals;
 
+	if(arch_get_irn_reg_class(raenv->aenv, irn, -1) == NULL)
+		return;
+
 	vals = get_phi_class(irn);
 
 	if (vals) {
@@ -498,11 +505,16 @@ static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos)
 	}
 }
 
-static INLINE int get_spill_costs(var_info_t *vi) {
+static INLINE unsigned int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi) {
 	ir_node *irn;
 	int n_spills=0, n_reloads=0;
 
 	pset_foreach(vi->values, irn) {
+		if (arch_irn_is_ignore(raenv->aenv, irn)) {
+			pset_break(vi->values);
+			return UINT_MAX;
+		}
+
 		if (is_Phi(irn)) {
 			/* number of reloads is the number of non-phi uses of all values of this var */
 			const ir_edge_t *edge;
@@ -530,7 +542,7 @@ static void dump_nodes(be_raext_env_t *raenv) {
 		if (vi->var_nr == SET_REMOVED)
 			continue;
 
-		fprintf(f, "%d %d", vi->var_nr, get_spill_costs(vi));
+		fprintf(f, "%d %u", vi->var_nr, get_spill_costs(raenv, vi));
 		dump_constraint(raenv, get_first_non_phi(vi->values), -1);
 		fprintf(f, "\n");
 	}
@@ -617,6 +629,7 @@ static void dump_to_file(be_raext_env_t *raenv, char *filename) {
 
 	if (!(f = fopen(filename, "wt"))) {
 		fprintf(stderr, "Could not open file %s for writing\n", filename);
+		assert(0);
 		exit(0xdeadbeef);
 	}
 	raenv->f = f;
@@ -672,7 +685,7 @@ static void execute(char *prog_to_call, char *out_file, char *result_file) {
 static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr) {
 	var_info_t *vi = var_find(raenv->vars, var_nr);
 	ir_node *spill=NULL, *ctx, *irn;
-	const ir_edge_t *edge;
+	const ir_edge_t *edge, *ne;
 	pset *spills  = pset_new_ptr(4);	/* the spills of this variable */
 	pset *reloads = pset_new_ptr(4);	/* the reloads of this variable */
 	int new_size, n_spills, n_reloads;
@@ -680,17 +693,26 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 	assert(vi && "Variable nr does not exist!");
 	assert(pset_count(vi->values) && "There are no values associated to this variable");
 
-	/* the spill context is set to an arbitrary node of the phi-class */
-	ctx = get_first_phi(vi->values);
+	/* the spill context is set to an arbitrary node of the phi-class,
+	 * or the node itself if it is not member of a phi class
+	 */
+	if (pset_count(vi->values) == 1)
+		ctx = get_first_non_phi(vi->values);
+	else
+		ctx = get_first_phi(vi->values);
+
+	DBG((raenv->dbg, LEVEL_2, "Spill context: %+F\n", ctx));
 
 	/* for each value of this variable insert the spills */
 	pset_foreach(vi->values, irn) {
-		if (is_Phi(irn))
+		if (is_Phi(irn)) {
+			sched_remove(irn);
 			continue;
+		}
 
 		/* all ordinary nodes must be spilled */
-		spill = be_new_Spill(raenv->cls, raenv->irg, get_nodes_block(irn), irn, ctx);
-		sched_add_after(irn, spill);
+		DBG((raenv->dbg, LEVEL_2, "  spilling %+F\n", irn));
+		spill = be_spill(raenv->aenv, irn, ctx);
 
 		/* remember the spill */
 		pset_insert_ptr(spills, spill);
@@ -700,14 +722,14 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 	/* insert reloads and wire them arbitrary*/
 	pset_foreach(vi->values, irn)
-		foreach_out_edge(irn, edge) {
+		foreach_out_edge_safe(irn, edge, ne) {
 			ir_node *reload, *src = edge->src;
-			if (is_Phi(src))
+			if (is_Phi(src) || be_is_Spill(src))
 				continue;
 
 			/* all real uses must be reloaded */
-			reload = be_new_Reload(raenv->cls, raenv->irg, get_nodes_block(src), get_irn_mode(get_irn_n(spill, 0)), spill);
-			sched_add_before(src, reload);
+			DBG((raenv->dbg, LEVEL_2, "  reloading before %+F\n", src));
+			reload = be_reload(raenv->aenv, raenv->cls, edge->src, edge->pos, get_irn_mode(get_irn_n(spill, 0)), spill);
 
 			/* remember the reload */
 			pset_insert_ptr(reloads, reload);
@@ -715,6 +737,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 	/* correct the reload->spill pointers... */
 	be_ssa_constr_set(raenv->dom_info, spills);
+
 
 	/****** correct the variable <--> values mapping: ******
 	 *
@@ -765,6 +788,7 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 
 	if (!(f = fopen(filename, "rt"))) {
 		fprintf(stderr, "Could not open file %s for reading\n", filename);
+		assert(0);
 		exit(0xdeadbeef);
 	}
 	raenv->f = f;
@@ -778,6 +802,7 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 		int var_nr;
 		while (fscanf(f, " %d ", &var_nr) == 1)
 			var_add_spills_and_reloads(raenv, var_nr);
+		be_liveness(raenv->irg);
 	} else
 
 	/* or do we allocate */
@@ -817,7 +842,8 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
  * Default values for options
  */
 static void (*ssa_destr)(be_raext_env_t*) = ssa_destr_simple;
-static char callee[128] = "/ben/kimohoff/ipd-registerallocator/register_allocator";
+static char callee[128] = "\"E:/user/kimohoff/ipd-registerallocator/win32/register allocator\"";
+//static char callee[128] = "/ben/kimohoff/ipd-registerallocator/register_allocator";
 
 
 /**
@@ -838,12 +864,13 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	var_info_t *vi;
 
 	compute_doms(irg);
-	be_liveness(irg);
 
 	raenv.irg      = irg;
 	raenv.aenv     = env->arch_env;
 	raenv.dom_info = be_compute_dominance_frontiers(irg);
 	raenv.vars     = new_set(compare_var_infos, 64);
+	raenv.dbg      = firm_dbg_register("ir.be.raextern");
+	firm_dbg_set_mask(raenv.dbg, DBG_LEVEL);
 
 	/* Insert copies for constraints */
 	handle_constraints(&raenv);
@@ -853,28 +880,34 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	ssa_destr(&raenv);
 	dump_ir_block_graph_sched(irg, "-extern-ssadestr");
 
-
 	/* Mapping of SSA-Values <--> Variables */
 	phi_class_compute(irg);
 	be_clear_links(irg);
 	irg_walk_graph(irg, values_to_vars, NULL, &raenv);
+	be_liveness(irg);
 
 	/* For all register classes */
 	for(clsnr = 0, clss = arch_isa_get_n_reg_class(raenv.aenv->isa); clsnr < clss; ++clsnr) {
-		int done = 0;
+		int done, round = 1;
 		char out[256], in[256];
 
 		raenv.cls = arch_isa_get_reg_class(raenv.aenv->isa, clsnr);
-		ir_snprintf(out, sizeof(out), "%F-%s.ra", irg, raenv.cls->name);
-		ir_snprintf(in, sizeof(in), "%F-%s.ra.res", irg, raenv.cls->name);
 
 		extract_vars_of_cls(&raenv);
 
-		while (!done) {
+		do {
+			ir_snprintf(out, sizeof(out), "%F-%s-%d.ra", irg, raenv.cls->name, round);
+			ir_snprintf(in, sizeof(in), "%F-%s-%d.ra.res", irg, raenv.cls->name, round);
+
 			dump_to_file(&raenv, out);
 			execute(callee, out, in);
 			done = read_and_apply_results(&raenv, in);
-		}
+
+			ir_snprintf(in, sizeof(in), "-extern-%s-round-%d", raenv.cls->name, round);
+			dump_ir_block_graph_sched(irg, in);
+
+			round++;
+		} while (!done);
 
 		free(raenv.cls_vars);
 	}
