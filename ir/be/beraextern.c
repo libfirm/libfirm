@@ -163,6 +163,23 @@ static INLINE ir_node *get_first_phi(pset *s) {
 	return NULL;
 }
 
+static int get_loop_weight(ir_node *irn) {
+	int cost = 0;
+	ir_loop *loop = get_irn_loop(get_nodes_block(irn));
+
+	if (loop) {
+		int d = get_loop_depth(loop);
+		cost = d*d;
+	}
+	return cost+1;
+}
+
+#define get_const_weight(irn) (1)
+
+#define get_spill_weight(irn)    get_loop_weight(irn)
+#define get_reload_weight(irn)   get_loop_weight(irn)
+#define get_affinity_weight(irn) get_loop_weight(irn)
+
 /******************************************************************************
     _____                _            _____            _
    / ____|              | |          / ____|          (_)
@@ -509,7 +526,7 @@ static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos)
 
 static INLINE unsigned int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi) {
 	ir_node *irn;
-	int n_spills=0, n_reloads=0;
+	int c_spills=0, c_reloads=0;
 
 	pset_foreach(vi->values, irn) {
 		if (arch_irn_is_ignore(raenv->aenv, irn)) {
@@ -522,14 +539,14 @@ static INLINE unsigned int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi
 			const ir_edge_t *edge;
 			foreach_out_edge(irn, edge)
 				if (!is_Phi(edge->src))
-					n_reloads++;
+					c_reloads += get_reload_weight(edge->src);
 		} else {
 			/* number of spills is the number of non-phi values for this var */
-			n_spills++;
+			c_spills += get_spill_weight(irn);
 		}
 	}
 
-	return n_spills + n_reloads;
+	return c_spills + c_reloads;
 }
 
 static void dump_nodes(be_raext_env_t *raenv) {
@@ -585,18 +602,6 @@ static void dump_interferences(be_raext_env_t *raenv) {
 	fprintf(f, "}\n");
 }
 
-
-static int get_weight(ir_node *irn) {
-	int cost = 0;
-	ir_loop *loop = get_irn_loop(get_nodes_block(irn));
-
-	if (loop) {
-		int d = get_loop_depth(loop);
-		cost = d*d;
-	}
-	return cost+1;
-}
-
 static void dump_affinities_walker(ir_node *irn, void *env) {
 	be_raext_env_t *raenv = env;
 	arch_register_req_t req;
@@ -615,7 +620,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 		if (! arch_irn_is_ignore(raenv->aenv, other)) {
 			vi2 = get_var_info(other);
 
-			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_weight(irn));
+			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
 		}
 	}
 
@@ -627,7 +632,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 		if (arch_register_req_is(&req, should_be_same) && arch_irn_is_ignore(raenv->aenv, req.other_same)) {
 			vi2 = get_var_info(req.other_same);
 
-			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_weight(irn));
+			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
 		}
 	}
 }
