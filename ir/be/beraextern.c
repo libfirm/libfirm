@@ -28,15 +28,17 @@ node		::= node-info
 
 node-info	::= node-nr spill-costs .
 
-interf		::= 'interferences' '{' edge* '}' .			// Interference edges of the graph
+interf		::= 'interferences' '{' i-edge* '}' .		// Interference edges of the graph
 
-affinities	::= 'affinities' '{' edge* '}' .			// Affinity edges of the graph
+i-edge		::= '(' node-nr ',' node-nr ')' .
 
-edge		::= '(' node-nr ',' node-nr ')' .
+affinities	::= 'affinities' '{' a-edge* '}' .			// Affinity edges of the graph
+
+a-edge		::= '(' node-nr ',' node-nr ',' weight ')' .
 
 
-regcount, node-nr ::= int32 .
-spill-costs ::= uint32 .
+weight, regcount, node-nr ::= int32 .
+spill-costs ::= int32 .									// negative spill costs indicate unspillable
 
 The output file format
 -----------------------
@@ -512,7 +514,7 @@ static INLINE unsigned int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi
 	pset_foreach(vi->values, irn) {
 		if (arch_irn_is_ignore(raenv->aenv, irn)) {
 			pset_break(vi->values);
-			return UINT_MAX;
+			return -1;
 		}
 
 		if (is_Phi(irn)) {
@@ -584,20 +586,37 @@ static void dump_interferences(be_raext_env_t *raenv) {
 }
 
 
+static int get_weight(ir_node *irn) {
+	int cost = 0;
+	ir_loop *loop = get_irn_loop(get_nodes_block(irn));
+
+	if (loop) {
+		int d = get_loop_depth(loop);
+		cost = d*d;
+	}
+	return cost+1;
+}
+
 static void dump_affinities_walker(ir_node *irn, void *env) {
 	be_raext_env_t *raenv = env;
 	arch_register_req_t req;
 	int pos, max;
 	var_info_t *vi1, *vi2;
 
+	if (arch_get_irn_reg_class(raenv->aenv, irn, -1) == NULL || arch_irn_is_ignore(raenv->aenv, irn))
+		return;
+
 	vi1 = get_var_info(irn);
 
 	/* copies have affinities */
-	/* TODO? remove this case by adding should_be_equal requirements */
 	if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy) {
-		vi2 = get_var_info(get_irn_n(irn, 0));
+		ir_node *other = get_irn_n(irn, 0);
 
-		fprintf(raenv->f, "(%d, %d)\n",  vi1->var_nr, vi2->var_nr);
+		if (! arch_irn_is_ignore(raenv->aenv, other)) {
+			vi2 = get_var_info(other);
+
+			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_weight(irn));
+		}
 	}
 
 
@@ -605,10 +624,10 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 	for (pos = 0, max = get_irn_arity(irn); pos<max; ++pos) {
 		arch_get_register_req(raenv->aenv, &req, irn, pos);
 
-		if (arch_register_req_is(&req, should_be_same)) {
+		if (arch_register_req_is(&req, should_be_same) && arch_irn_is_ignore(raenv->aenv, req.other_same)) {
 			vi2 = get_var_info(req.other_same);
 
-			fprintf(raenv->f, "(%d, %d)\n",  vi1->var_nr, vi2->var_nr);
+			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_weight(irn));
 		}
 	}
 }
@@ -802,7 +821,6 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 		int var_nr;
 		while (fscanf(f, " %d ", &var_nr) == 1)
 			var_add_spills_and_reloads(raenv, var_nr);
-		be_liveness(raenv->irg);
 	} else
 
 	/* or do we allocate */
@@ -884,7 +902,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	phi_class_compute(irg);
 	be_clear_links(irg);
 	irg_walk_graph(irg, values_to_vars, NULL, &raenv);
-	be_liveness(irg);
+
 
 	/* For all register classes */
 	for(clsnr = 0, clss = arch_isa_get_n_reg_class(raenv.aenv->isa); clsnr < clss; ++clsnr) {
@@ -898,6 +916,8 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 		do {
 			ir_snprintf(out, sizeof(out), "%F-%s-%d.ra", irg, raenv.cls->name, round);
 			ir_snprintf(in, sizeof(in), "%F-%s-%d.ra.res", irg, raenv.cls->name, round);
+
+			be_liveness(irg);
 
 			dump_to_file(&raenv, out);
 			execute(callee, out, in);
