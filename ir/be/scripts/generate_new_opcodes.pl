@@ -66,11 +66,12 @@ foreach my $op (keys(%nodes)) {
 	$temp    = "";
 
 	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
-	push(@obst_get_opvar, "ir_op *get_op_$op(void)   { return op_$op; }\n");
+	push(@obst_get_opvar, "ir_op *get_op_$op(void)         { return op_$op; }\n");
 	push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_irn_op(n) == op_$op; }\n\n");
 
 	push(@obst_is_archirn, "is_$op(node)");
 
+	push(@obst_header, "ir_op *get_op_$op(void);\n")
 	push(@obst_header, "int is_$op(const ir_node *n);\n");
 
 	$cmp_attr_func = 0;
@@ -176,7 +177,7 @@ foreach my $op (keys(%nodes)) {
 				$temp .= "  in[".($i - 1)."] = op".$i.";\n";
 			}
 			$temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
-			$temp .= "//  res = optimize_node(res);\n";
+			$temp .= "  res = optimize_node(res);\n";
 			$temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
 			# set flags
@@ -241,7 +242,7 @@ foreach my $op (keys(%nodes)) {
 	} # constructor creation
 
 	# set default values for state and flags if not given
-	$n{"state"}    = "pinned" if (! exists($n{"state"}));
+	$n{"state"}    = "floats" if (! exists($n{"state"}));
 	$n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
 
 	push(@obst_new_irop, "\n  memset(&ops, 0, sizeof(ops));\n");
