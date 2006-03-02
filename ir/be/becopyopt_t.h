@@ -4,7 +4,7 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
- * Header for copy optimization problem. Analysis and set up of the problem.
+ * Internal header for copy optimization problem.
  */
 
 #ifndef _BECOPYOPT_T_H
@@ -25,7 +25,7 @@ struct _copy_opt_t {
 	const arch_register_class_t *cls;
 	const arch_env_t *aenv;
 	ir_graph *irg;
-	char *name;						/**< ProgName__IrgName__RegClass */
+	char *name;						/**< ProgName__IrgName__RegClassName */
 
 	struct list_head units;			/**< all units to optimize in specific order */
 	cost_fct_t get_costs;			/**< function ptr used to get costs for copies */
@@ -40,7 +40,7 @@ typedef struct _unit_t {
 	copy_opt_t *co;				/**< the copy_opt this unit belongs to */
 	int node_count;				/**< size of the nodes array */
 	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
-	int *costs;					/**< costs[i] are arising, if nodes[i] has a different color */
+	int *costs;					/**< costs[i] are incurred, if nodes[i] has a different color */
 	int inevitable_costs;		/**< sum of costs of all args interfering with root */
 	int all_nodes_costs;		/**< sum of all costs[i] */
 	int min_nodes_costs;		/**< a lower bound for the costs in costs[], determined by a max indep. set */

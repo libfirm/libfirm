@@ -28,17 +28,15 @@
 #include "becopyopt_t.h"
 #include "becopystat.h"
 #include "bitset.h"
-#include "bearch.h"
 
 static firm_dbg_module_t *dbg = NULL;
 
 #define SEARCH_FREE_COLORS
 
-#define SLOTS_PINNED_GLOBAL 256
+#define SLOTS_PINNED_GLOBAL 64
 #define SLOTS_CONFLICTS 8
 #define SLOTS_CHANGED_NODES 32
 
-#define MIN(a,b) ((a<b)?(a):(b))
 #define list_entry_queue(lh) list_entry(lh, qnode_t, queue)
 #define HASH_CONFLICT(c) (HASH_PTR(c.n1) ^ HASH_PTR(c.n2))
 

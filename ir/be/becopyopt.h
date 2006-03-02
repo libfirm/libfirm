@@ -44,7 +44,7 @@ void free_copy_opt(copy_opt_t *co);
 int co_get_costs_loop_depth(ir_node *root, ir_node* arg, int pos);
 
 /**
- * All costs equal 1. Using this will reduce the number of copies.
+ * All costs equal 1. Using this will reduce the _number_ of copies.
  * @return Must be >= 0 in all cases.
  */
 int co_get_costs_all_one(ir_node *root, ir_node* arg, int pos);

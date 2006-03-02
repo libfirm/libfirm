@@ -27,8 +27,37 @@
 
 #include "becopyilp_t.h"
 
-int co_solve_ilp2(copy_opt_t *co, double time_limit) {
-	int res = 1;
+#define DEBUG_LVL 1
 
-	return res;
+typedef struct _my_env_t {
+	int foo;
+} my_env_t;
+
+
+static void ilp2_build(ilp_env_t *ienv) {
+	ienv->lp = new_lpp(ienv->co->name, lpp_minimize);
+
+}
+
+static void ilp2_apply(ilp_env_t *ienv) {
+
+}
+
+int co_solve_ilp2(copy_opt_t *co, double time_limit) {
+	lpp_sol_state_t sol_state;
+	ilp_env_t *ienv;
+	my_env_t my;
+	firm_dbg_module_t *dbg = firm_dbg_register("ir.be.coilp2");
+
+	firm_dbg_set_mask(dbg, DEBUG_LVL);
+
+	// my.bla = TODO
+
+	ienv = new_ilp_env(co, dbg, ilp2_build, ilp2_apply, &my);
+
+	sol_state = ilp_go(ienv, time_limit);
+
+	free_ilp_env(ienv);
+
+	return sol_state == lpp_optimal;
 }

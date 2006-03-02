@@ -32,7 +32,6 @@
 #include "becopystat.h"
 
 
-
 static firm_dbg_module_t *dbg = NULL;
 
 /**
@@ -276,7 +275,7 @@ void free_copy_opt(copy_opt_t *co) {
 	}
 }
 
-int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
+int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	const ir_edge_t *edge;
 
 	if (arch_irn_is_ignore(co->aenv, irn))
@@ -300,7 +299,7 @@ int is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	return 0;
 }
 
-int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
+int co_get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
 	int cost = 0;
 	ir_loop *loop;
 	ir_node *root_block = get_nodes_block(root);
@@ -319,7 +318,7 @@ int get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
 	return cost+1;
 }
 
-int get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
+int co_get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
 	return 1;
 }
 
@@ -427,7 +426,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	int costs, costs_inevit, costs_init, costs_heur, costs_classes, costs_ilp, lower_bound;
 #endif
 
-	co = new_copy_opt(chordal_env, get_costs_loop_depth);
+	co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
 	phi_class_compute(chordal_env->irg);
 

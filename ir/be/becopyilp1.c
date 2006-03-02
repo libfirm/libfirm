@@ -17,47 +17,35 @@
 #include "belive_t.h"
 #include "irdom_t.h"
 #include "irgwalk.h"
+#include "xmalloc.h"
+#include "pset.h"
+#include "irprog.h"
+#include "irdom_t.h"
+#include "iredges_t.h"
+
+#include "becopystat.h"
+#include "besched_t.h"
+#include "phiclass.h"
+
+#if 0 //temporary
 
 #define PATH_CONSTRAINTS_FOR_CLASSES
-#undef PRECOLOR_MAX_CLIQUE
-#undef NO_NULL_COLORS
-#undef NO_NULL_COLORS_EXTRA_CSTS
-#undef NO_NULL_COLORS_WITH_COSTS
-#if (defined(NO_NULL_COLORS_EXTRA_CSTS) || defined(NO_NULL_COLORS_WITH_COSTS)) && !defined(NO_NULL_COLORS)
-#error Chose your weapon!
-#endif
-
 #undef DUMP_MPS
+
 static firm_dbg_module_t *dbg = NULL;
 #define SLOTS_LIVING 32
 
-
-
-typedef struct _simpl_t {
-	struct list_head chain;
-	ir_node *irn;
-} simpl_t;
-
 typedef struct _problem_instance_t {
-	const copy_opt_t *co;			/** the copy_opt problem */
-	/* problem size reduction removing simple nodes */
-	struct list_head simplicials;	/**< holds all simpl_t's in right order to color*/
-	pset *removed;					/**< holds all removed simplicial irns */
-	/* lp problem */
-	lpp_t *curr_lp;					/**< points to the problem currently used */
-	lpp_t *dilp;					/**< problem formulation directly as milp */
-#ifdef NO_NULL_COLORS_EXTRA_CSTS
-	int first_nnc_cst_idx;			/**< the first index of a constraint belonging to no-null-colors stuff*/
-#endif
-	int first_nnc_var_idx;			/**< the first index of a constraint belonging to no-null-colors stuff*/
+	const copy_opt_t *co;			/**< the copy opt problem */
+	size_red_t *sr;					/**< problem size reduction. removes simple nodes */
+	lpp_t *lp;						/**< the linear programming problem */
 
+	/* Helpers for maintaining indices and finding variables */
+	int first_nnc_var_idx;			/**< the first index of a constraint belonging to no-null-colors stuff*/
 	int cst_counter, first_x_var, last_x_var;
 	char buf[32];
-	int all_simplicial;
 	pset *done;
 } problem_instance_t;
-
-#define is_removed(irn) pset_find_ptr(pi->removed, irn)
 
 #define is_color_possible(irn,color) arch_reg_is_allocatable(pi->co->aenv, irn, -1, arch_register_for_index(pi->co->cls, color))
 
@@ -84,116 +72,6 @@ typedef struct _problem_instance_t {
 
 
 /**
- * Checks if a node is simplicial in the graph
- * heeding the already removed nodes.
- */
-static INLINE int pi_is_simplicial(problem_instance_t *pi, const ir_node *ifn) {
-	int i, o, size = 0;
-	ir_node **all, *curr;
-	be_ifg_t *ifg = pi->co->cenv->ifg;
-	void *iter = be_ifg_neighbours_iter_alloca(ifg);
-
-	all = alloca(be_ifg_degree(ifg, ifn) * sizeof(*all));
-
-	/* get all non-removed neighbors */
-	be_ifg_foreach_neighbour(ifg, iter, ifn, curr)
-		if (!is_removed(curr))
-			all[size++] = curr;
-
-	/* check if these form a clique */
-	for (i=0; i<size; ++i)
-		for (o=i+1; o<size; ++o)
-			if (!be_ifg_connected(ifg, all[i], all[o]))
-				return 0;
-
-	/* all edges exist so this is a clique */
-	return 1;
-}
-
-static int irn_cmp(const void *a, const void *b, size_t n)
-{
-	return a != b;
-}
-
-/**
- * Iterative finds and 'removes' from the graph all nodes which are
- * simplicial AND not member of a equal-color-wish
- */
-static void pi_find_simplicials(problem_instance_t *pi) {
-	ir_node *irn;
-	int redo = 1;
-	int n_nodes = 0;
-	const be_ifg_t *ifg = pi->co->cenv->ifg;
-	void *iter = be_ifg_neighbours_iter_alloca(ifg);
-
-	DBG((dbg, LEVEL_2, "Find simlicials...\n"));
-
-	while (redo) {
-		arch_register_req_t req;
-		redo = 0;
-		be_ifg_foreach_node(ifg, iter, irn) {
-			if (!is_removed(irn) && !co_is_optimizable(pi->co->aenv, irn, &req) && !co_is_optimizable_arg(pi->co, irn)) {
-          	 	if (pi_is_simplicial(pi, irn)) {
-					simpl_t *s = xmalloc(sizeof(*s));
-					s->irn = irn;
-					list_add(&s->chain, &pi->simplicials);
-					pset_insert_ptr(pi->removed, irn);
-					redo = 1;
-					DBG((dbg, LEVEL_2, " Removed %+F\n", irn));
-          	 	}
-			}
-		}
-	}
-
-	/* TODO: Count inside the last look */
-	be_ifg_foreach_node(ifg, iter, irn) {
-		n_nodes++;
-	}
-
-	if (n_nodes == pset_count(pi->removed))
-		pi->all_simplicial = 1;
-}
-
-#ifdef NO_NULL_COLORS
-static void pi_add_constr_no_null_colors(problem_instance_t *pi) {
-	int cst_counter=0, col, var_idx, cst_idx;
-	int n_colors = pi->co->chordal_env->cls->n_regs;
-	char buf[40];
-
-	for (col = 0; col < n_colors; ++col) {
-		mangle_var1(buf, 'u', col);
-#ifdef NO_NULL_COLORS_WITH_COSTS
-		var_idx = lpp_add_var(pi->curr_lp, buf, lpp_binary, 1.0 / (double) (1 << (col+1)) );
-#else
-		var_idx = lpp_add_var(pi->curr_lp, buf, lpp_binary, 1.0 / (2.0 * n_colors) );
-#endif
-		if (!pi->first_nnc_var_idx)
-			pi->first_nnc_var_idx = var_idx;
-	}
-
-#ifdef NO_NULL_COLORS_EXTRA_CSTS
-	for (col = 0; col < n_colors; ++col) {
-		mangle_cst(buf, 'U', cst_counter++);
-		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 0);
-		if (!pi->first_nnc_cst_idx)
-			pi->first_nnc_cst_idx = cst_idx;
-		lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+col, -1);
-	}
-#endif
-
-#ifndef NO_NULL_COLORS_WITH_COSTS
-	for (col = 0; col < n_colors - 1; ++col) {
-		mangle_cst(buf, 'U', cst_counter++);
-		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_greater, 0);
-		lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+col  ,  1);
-		lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+col+1, -1);
-	}
-#endif
-
-}
-#endif
-
-/**
  * Add coloring-force conditions
  * Matrix A: knapsack constraint for each node
  */
@@ -208,7 +86,7 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 		bitset_t *pos_regs = bitset_alloca(pi->co->cenv->cls->n_regs);
 
 		list_for_each_entry_reverse(border_t, curr, head, list)
-			if (curr->is_def && curr->is_real && !is_removed(curr->irn)) {
+			if (curr->is_def && curr->is_real && !sr_is_removed(pi->sr->curr->irn)) {
 				int cst_idx, nnr, col;
 
 				nnr = get_irn_graph_nr(curr->irn);
@@ -226,9 +104,6 @@ static void pi_add_constr_A(problem_instance_t *pi) {
 						pi->first_x_var = var_idx;
 					pi->last_x_var = var_idx;
 					lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
-#ifdef NO_NULL_COLORS_EXTRA_CSTS
-					lpp_set_factor_fast(pi->curr_lp, pi->first_nnc_cst_idx+col, var_idx, 1);
-#endif
 				}
 			}
 	}
@@ -286,20 +161,13 @@ static void pi_add_constr_B(problem_instance_t *pi, int color) {
 					int cst_idx;
 					ir_node *n;
 					mangle_cst(pi->buf, 'B', pi->cst_counter);
-#ifdef NO_NULL_COLORS
-					cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, lpp_less, 0);
-#else
 					cst_idx = lpp_add_cst(pi->curr_lp, pi->buf, lpp_less, 1);
-#endif
 					for (n = pset_first(living); n; n = pset_next(living)) {
 						int var_idx;
 						mangle_var_irn(pi->buf, 'x', n, color);
 						var_idx = lpp_get_var_idx(pi->curr_lp, pi->buf);
 						lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
 					}
-#ifdef NO_NULL_COLORS
-					lpp_set_factor_fast(pi->curr_lp, cst_idx, pi->first_nnc_var_idx+color, -1.0);
-#endif
 					pi->cst_counter++;
 				}
 				pset_remove_ptr(living, irn);
@@ -404,21 +272,6 @@ static void pi_add_constr_E(problem_instance_t *pi) {
 			}
 		}
 	}
-}
-
-static INLINE int get_costs(problem_instance_t *pi, ir_node *phi, ir_node *irn) {
-	int i;
-	unit_t *curr;
-	/* search optimization unit for phi */
-	list_for_each_entry(unit_t, curr, &pi->co->units, units)
-		if (curr->nodes[0] == phi) {
-			for (i=1; i<curr->node_count; ++i)
-				if (curr->nodes[i] == irn)
-					return curr->costs[i];
-			assert(0 && "irn must occur in this ou");
-		}
-	assert(0 && "phi must be found in a ou");
-	return 0;
 }
 
 static void clique_path_walker(ir_node *block, void *env) {
@@ -719,83 +572,7 @@ static void pi_add_path_cstr_for_classes(problem_instance_t *pi) {
 }
 #endif
 
-#ifdef PRECOLOR_MAX_CLIQUE
-struct pre_col {
-	problem_instance_t *pi;
-	pset **clique;
-};
 
-static void preColoringWalker(ir_node *bl, void *env) {
-	struct pre_col *e = env;
-	pset **clique = e->clique;
-	pset *max_clique = clique ? *clique : NULL;
-	int max = max_clique ? pset_count(max_clique) : 0;
-	problem_instance_t *pi = e->pi;
-
-	int i, n;
-	pset *live       = pset_new_ptr_default();
-	ir_node *irn;
-	irn_live_t *li;
-
-	/* as always, bring the live end nodes to life here */
-	live_foreach(bl, li) {
-	  if(live_is_end(li) && has_reg_class(pi, li->irn)) {
-	    pset_insert_ptr(live, irn);
-	  }
-	}
-
-	sched_foreach_reverse(bl, irn) {
-		int pres = pset_count(live);
-
-		if(pres > max) {
-			max = pres;
-			if(max_clique)
-				del_pset(max_clique);
-
-			max_clique = pset_new_ptr_default();
-			pset_insert_pset_ptr(max_clique, live);
-		}
-
-
-
-		if(has_reg_class(pi, irn))
-			pset_remove_ptr(live, irn);
-
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			ir_node *op = get_irn_n(irn, i);
-			if(has_reg_class(pi, op) && !is_Phi(irn))
-				pset_insert_ptr(live, op);
-		}
-	}
-
-  del_pset(live);
-  *clique = max_clique;
-}
-
-static void pi_add_constr_preColoring(problem_instance_t *pi) {
-	ir_node *irn;
-	int cst_counter, color;
-	struct pre_col pre_col;
-
-	pre_col.clique = NULL;
-	pre_col.pi = pi;
-
-	dom_tree_walk_irg(get_irg(pi->co), preColoringWalker, NULL, &pre_col);
-
-	color = 0;
-	for (irn = pset_first(*pre_col.clique); irn; irn = pset_next(*pre_col.clique)) {
-		int cst_idx, var_idx, nnr = get_irn_graph_nr(irn);
-		char buf[100];
-
-		mangle_cst(buf, 'K', cst_counter++);
-		cst_idx = lpp_add_cst(pi->curr_lp, buf, lpp_equal, 1);
-
-		mangle_var2(buf, 'x', nnr, color++);
-		var_idx = lpp_get_var_idx(pi->curr_lp, buf);
-		lpp_set_factor_fast(pi->curr_lp, cst_idx, var_idx, 1);
-	}
-}
-#endif
 
 /**
  * Generate the initial problem matrices and vectors.
@@ -806,21 +583,14 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 
 	DBG((dbg, LEVEL_2, "Generating new instance...\n"));
 	pi = xcalloc(1, sizeof(*pi));
-	pi->co = co;
-	pi->removed = pset_new_ptr_default();
-	INIT_LIST_HEAD(&pi->simplicials);
-	pi->dilp     = new_lpp(co->name, lpp_minimize);
+	pi->co	= co;
+	pi->sr	= new_size_red(co);
+	pi->lp	= new_lpp(co->name, lpp_minimize);
 
-	/* problem size reduction */
-	pi_find_simplicials(pi);
-	if (pi->all_simplicial)
-		return pi;
+	return pi;
+}
 
-	/* built objective and constraints */
-	pi->curr_lp = pi->dilp;
-#ifdef NO_NULL_COLORS
-	pi_add_constr_no_null_colors(pi);
-#endif
+static void pi_construct(problem_instance_t *pi) {
 	pi_add_constr_A(pi);
 	for (col = 0; col < pi->co->cls->n_regs; ++col)
 		pi_add_constr_B(pi, col);
@@ -832,11 +602,6 @@ static problem_instance_t *new_pi(const copy_opt_t *co) {
 	pi_add_path_cstr(pi);
 #endif
 	pi_add_clique_path_cstr(pi);
-#ifdef PRECOLOR_MAX_CLIQUE
-	pi_add_constr_preColoring(pi);
-#endif
-
-	return pi;
 }
 
 /**
@@ -846,12 +611,11 @@ static void free_pi(problem_instance_t *pi) {
 	simpl_t *simpl, *tmp;
 
 	DBG((dbg, LEVEL_2, "Free instance...\n"));
-	free_lpp(pi->dilp);
-	list_for_each_entry_safe(simpl_t, simpl, tmp, &pi->simplicials, chain)
-		free(simpl);
-	del_pset(pi->removed);
+	free_lpp(pi->lp);
+	free_size_red(pi->sr);
 	free(pi);
 }
+
 
 /**
  * Set starting values for the mip problem according
@@ -878,52 +642,33 @@ static void pi_set_start_sol(problem_instance_t *pi) {
 	}
 }
 
+
 /**
  * Invoke a solver
  */
-static void pi_solve_ilp(problem_instance_t *pi) {
-  double lower_bound;
+static void pi_solve_ilp(problem_instance_t *pi, double time_limit) {
+	double lower_bound;
+#ifdef DUMP_MPS
+	char buf[512];
+	snprintf(buf, sizeof(buf), "%s.ilp1", co->name);
+	lpp_dump(pi->lp, buf);
+#endif
 
 	pi_set_start_sol(pi);
+
 	lower_bound = co_get_lower_bound(pi->co) - co_get_inevit_copy_costs(pi->co);
 	lpp_set_bound(pi->curr_lp, lower_bound);
+
+	lpp_set_time_limit(pi->curr_lp, time_limit);
+
+#ifdef LPP_SOLVE_REMOTE
 	lpp_solve_net(pi->curr_lp, LPP_HOST, LPP_SOLVER);
-//	lpp_solve_cplex(pi->curr_lp);
+#else
+	lpp_solve_cplex(pi->curr_lp);
+#endif
 	DBG((dbg, LEVEL_1, "Solution time: %.2f\n", pi->curr_lp->sol_time));
 }
 
-/**
- * Set the color of all simplicial nodes removed form
- * the graph before transforming it to an ilp.
- */
-static void pi_set_simplicials(problem_instance_t *pi) {
-	simpl_t *simpl, *tmp;
-	be_ifg_t *ifg        = pi->co->cenv->ifg;
-	bitset_t *used_cols  = bitset_alloca(arch_register_class_n_regs(pi->co->cls));
-	void *iter           = be_ifg_neighbours_iter_alloca(ifg);
-
-	DBG((dbg, LEVEL_2, "Set simplicials...\n"));
-	/* color the simplicial nodes in right order */
-	list_for_each_entry_safe(simpl_t, simpl, tmp, &pi->simplicials, chain) {
-		int free_col;
-		ir_node *other, *irn;
-
-		/* get free color by inspecting all neighbors */
-		irn = simpl->irn;
-		bitset_clear_all(used_cols);
-
-		be_ifg_foreach_neighbour(ifg, iter, irn, other) {
-			if (!is_removed(other)) /* only inspect nodes which are in graph right now */
-				bitset_set(used_cols, get_irn_col(pi->co, other));
-		}
-
-		/* now all bits not set are possible colors */
-		free_col = bitset_next_clear(used_cols, 0);
-		assert(free_col != -1 && "No free color found. This can not be.");
-		set_irn_col(pi->co, irn, free_col);
-		pset_remove_ptr(pi->removed, irn); /* irn is back in graph again */
-	}
-}
 
 /**
  * Sets the colors of irns according to the values of variables
@@ -966,24 +711,59 @@ static int pi_apply_solution(problem_instance_t *pi) {
 	return res;
 }
 
-int co_solve_ilp1(copy_opt_t *co, double time_limit) {
+
+int co_solve_ilp11(copy_opt_t *co, double time_limit) {
 	int res = 1;
 	problem_instance_t *pi;
 
-	dbg = firm_dbg_register("ir.be.copyoptilp");
+	dbg = firm_dbg_register("ir.be.copyoptilp1");
 
 	pi = new_pi(co);
-	if (!pi->all_simplicial) {
-#ifdef DUMP_MPS
-		char buf[512];
-		snprintf(buf, sizeof(buf), "%s.mps", co->name);
-		lpp_dump(pi->curr_lp, buf);
-#endif
-		lpp_set_time_limit(pi->curr_lp, time_limit);
-		pi_solve_ilp(pi);
-		res = pi_apply_solution(pi);
-		pi_set_simplicials(pi);
-	}
+
+	sr_remove(pi->sr);				/* problem size reduction */
+	pi_construct(pi);				/* set up the problem */
+	pi_solve_ilp(pi, time_limit);	/* solve it */
+	res = pi_apply_solution(pi);	/* apply solution */
+	sr_reinsert(pi->sr);			/* complete the partial solution */
+
 	free_pi(pi);
 	return res;
+}
+#endif
+
+#include "becopyilp_t.h"
+
+#define DEBUG_LVL 1
+
+typedef struct _my_env_t {
+	int foo;
+} my_env_t;
+
+
+static void ilp2_build(ilp_env_t *ienv) {
+	ienv->lp = new_lpp(ienv->co->name, lpp_minimize);
+
+}
+
+static void ilp2_apply(ilp_env_t *ienv) {
+
+}
+
+int co_solve_ilp1(copy_opt_t *co, double time_limit) {
+	lpp_sol_state_t sol_state;
+	ilp_env_t *ienv;
+	my_env_t my;
+	firm_dbg_module_t *dbg = firm_dbg_register("ir.be.coilp2");
+
+	firm_dbg_set_mask(dbg, DEBUG_LVL);
+
+	// my.bla = TODO
+
+	ienv = new_ilp_env(co, dbg, ilp2_build, ilp2_apply, &my);
+
+	sol_state = ilp_go(ienv, time_limit);
+
+	free_ilp_env(ienv);
+
+	return sol_state == lpp_optimal;
 }
