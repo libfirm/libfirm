@@ -225,10 +225,6 @@ static void prepare_graph(be_irg_t *birg)
 	/* Ensure, that the ir_edges are computed. */
 	edges_activate(irg);
 
-	/* Compute loop nesting information (for weighting copies) */
-	if (get_irg_loopinfo_state(irg) != (loopinfo_valid & loopinfo_cf_consistent))
-		construct_cf_backedges(irg);
-
 	/* check, if the dominance property is fulfilled. */
 	be_check_dominance(irg);
 
@@ -283,6 +279,9 @@ static void be_main_loop(FILE *file_handle)
 		edges_deactivate(irg);
 		dead_node_elimination(irg);
 		edges_activate(irg);
+
+		/* Compute loop nesting information (for weighting copies) */
+		construct_cf_backedges(irg);
 
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
