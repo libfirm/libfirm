@@ -68,7 +68,7 @@ void normalize_one_return(ir_graph *irg)
   for (n_rets = i = 0; i < n; ++i) {
     ir_node *node = get_Block_cfgpred(endbl, i);
 
-    if (get_irn_op(node) == op_Return) {
+    if (is_Return(node)) {
       ++n_rets;
 
       set_bit(i);
@@ -206,7 +206,7 @@ void normalize_n_returns(ir_graph *irg)
   for (n_finals = n_rets = i = 0; i < n; ++i) {
     ir_node *ret = get_Block_cfgpred(endbl, i);
 
-    if (get_irn_op(ret) == op_Return && can_move_ret(ret)) {
+    if (is_Return(ret) && can_move_ret(ret)) {
       /*
        * Ok, all conditions met, we can move this Return, put it
        * on our work list.
