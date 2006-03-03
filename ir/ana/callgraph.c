@@ -183,7 +183,7 @@ static void ana_Call(ir_node *n, void *env) {
   int i, n_callees;
   ir_graph *irg;
 
-  if (get_irn_op(n) != op_Call) return;
+  if (! is_Call(n)) return;
 
   irg = get_irn_irg(n);
   n_callees = get_Call_n_callees(n);
