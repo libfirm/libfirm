@@ -20,8 +20,8 @@ INSTALL_HEADERS := firm_types.h firm_common.h firm.h firmwalk.h statistics.h deb
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += Makefile.in 						\
-	panic.c firm_common.c firm.c firmwalk.c 		\
-	panic.h firm_common_t.h	statistics.c debug.c old_fctnames.h \
+	error.c firm_common.c firm.c firmwalk.c 		\
+	error.h firm_common_t.h	statistics.c debug.c old_fctnames.h \
 	irtools.c irtools.h
 
 include $(topdir)/MakeRules
@@ -30,7 +30,8 @@ CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/ident -I$(top_srcdir)/i
 		-I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/tv -I$(top_srcdir)/ir/ir \
 		-I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/debug \
 		-I$(top_srcdir)/ir/opt -I$(top_srcdir)/ir/arch -I$(top_srcdir)/ir/stat \
-                -I$(top_srcdir)/ir/external -I$(topdir)/ir/config -I$(top_srcdir)/ir/arch
+                -I$(top_srcdir)/ir/external -I$(top_srcdir)/ir/lower -I$(top_srcdir)/ir/arch \
+		-I$(topdir)/ir/config
 
 include $(top_srcdir)/MakeTargets
 
