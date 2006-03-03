@@ -116,7 +116,7 @@ static void irg_walk_cg(ir_node * node, unsigned long visited, eset * irg_set,
  * Insert all ir_graphs in irg_set, that are (transitive) reachable.
  */
 static void collect_irgs(ir_node * node, eset * irg_set) {
-  if (get_irn_op(node) == op_Call) {
+  if (is_Call(node)) {
     int i;
     for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
       entity * ent = get_Call_callee(node, i);

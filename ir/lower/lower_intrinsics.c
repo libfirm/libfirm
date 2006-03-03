@@ -44,7 +44,7 @@ static void call_mapper(ir_node *call, void *env) {
   const i_record *r;
   entity *ent;
 
-  if (get_irn_op(call) != op_Call)
+  if (! is_Call(call))
     return;
 
   symconst = get_Call_ptr(call);
