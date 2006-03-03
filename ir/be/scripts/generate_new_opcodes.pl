@@ -254,7 +254,7 @@ foreach my $op (keys(%nodes)) {
 
 	$n_opcodes++;
 	$temp  = "  op_$op = new_ir_op(cur_opcode++, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-	$temp .= ", ".translate_arity($arity).", 2, sizeof($arch\_attr_t), &ops);\n";
+	$temp .= ", ".translate_arity($arity).", 0, sizeof($arch\_attr_t), &ops);\n";
 	push(@obst_new_irop, $temp);
 }
 
