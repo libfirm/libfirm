@@ -1202,6 +1202,64 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 
 
 
+/**
+ * Transforms a CopyB node.
+ *
+ * @param env   The transformation environment
+ * @return The transformed node.
+ */
+static ir_node *gen_CopyB(ia32_transform_env_t *env) {
+	ir_node  *res   = NULL;
+	dbg_info *dbg   = env->dbg;
+	ir_graph *irg   = env->irg;
+	ir_mode  *mode  = env->mode;
+	ir_node  *block = env->block;
+	ir_node  *node  = env->irn;
+	ir_node  *src   = get_CopyB_src(node);
+	ir_node  *dst   = get_CopyB_dst(node);
+	ir_node  *mem   = get_CopyB_mem(node);
+	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
+	int       size  = get_type_size_bytes(get_CopyB_type(node));
+	int       rem;
+
+	/* If we have to copy more than 16 bytes, we use REP MOVSx and */
+	/* then we need the size explicitly in ECX.                    */
+	if (size >= 16) {
+		rem = size & 0x3; /* size % 4 */
+		size >>= 2;
+
+		res = new_rd_ia32_Const(dbg, irg, block, mode_Is);
+		set_ia32_op_type(res, ia32_Const);
+		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
+
+		res = new_rd_ia32_CopyB(dbg, irg, block, dst, src, res, mem, mode);
+		set_ia32_Immop_tarval(res, new_tarval_from_long(rem, mode_Is));
+	}
+	else {
+		res = new_rd_ia32_CopyB_i(dbg, irg, block, dst, src, mem, mode);
+		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
+	}
+
+	return res;
+}
+
+
+
+/**
+ * Transforms a Mux node into CMov.
+ *
+ * @param env   The transformation environment
+ * @return The transformed node.
+ */
+static ir_node *gen_Mux(ia32_transform_env_t *env) {
+	ir_node  *node  = env->irn;
+
+	return new_rd_ia32_CMov(env->dbg, env->irg, env->block,
+		get_Mux_sel(node), get_Mux_false(node), get_Mux_true(node), env->mode);
+}
+
+
+
 /*********************************************************
  *                  _             _      _
  *                 (_)           | |    (_)
@@ -1274,6 +1332,9 @@ void ia32_transform_node(ir_node *node, void *env) {
 		GEN(Store);
 		GEN(Cond);
 
+		GEN(CopyB);
+		GEN(Mux);
+
 		IGN(Call);
 		IGN(Alloc);
 
@@ -1290,13 +1351,13 @@ void ia32_transform_node(ir_node *node, void *env) {
 		/* constant transformation happens earlier */
 		IGN(Const);
 		IGN(SymConst);
+		IGN(Sync);
 
 		BAD(Raise);
 		BAD(Sel);
 		BAD(InstOf);
 		BAD(Cast);
 		BAD(Free);
-		BAD(Sync);
 		BAD(Tuple);
 		BAD(Id);
 		BAD(Bad);
@@ -1305,8 +1366,6 @@ void ia32_transform_node(ir_node *node, void *env) {
 		BAD(CallBegin);
 		BAD(EndReg);
 		BAD(EndExcept);
-		BAD(Mux);
-		BAD(CopyB);
 
 		default:
 			if (get_irn_op(node) == get_op_Max()) {

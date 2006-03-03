@@ -699,6 +699,59 @@ void emit_Proj(ir_node *irn, emit_env_t *env) {
 	}
 }
 
+/**********************************
+ *   _____                  ____
+ *  / ____|                |  _ \
+ * | |     ___  _ __  _   _| |_) |
+ * | |    / _ \| '_ \| | | |  _ <
+ * | |___| (_) | |_) | |_| | |_) |
+ *  \_____\___/| .__/ \__, |____/
+ *             | |     __/ |
+ *             |_|    |___/
+ **********************************/
+
+static void emit_CopyB_prolog(FILE *F, int rem, int size) {
+	fprintf(F, "\t/* memcopy %d bytes*/\n", size);
+	fprintf(F, "\tcld\t\t\t\t/* copy direction forward*/\n");
+
+	switch(rem) {
+		case 1:
+			fprintf(F, "\tmovsb\t\t\t\t/* memcopy remainder 1 */\n");
+			break;
+		case 2:
+			fprintf(F, "\tmovsw\t\t\t\t/* memcopy remainder 2 */\n");
+			break;
+		case 3:
+			fprintf(F, "\tmovsb\t\t\t\t/* memcopy remainder 3 */\n");
+			fprintf(F, "\tmovsw\t\t\t\t/* memcopy remainder 3 */\n");
+			break;
+	}
+}
+
+void emit_ia32_CopyB(ir_node *irn, emit_env_t *emit_env) {
+	FILE   *F    = emit_env->out;
+	tarval *tv   = get_ia32_Immop_tarval(irn);
+	int     rem  = get_tarval_long(tv);
+	int     size = get_tarval_long(get_ia32_Immop_tarval(get_irn_n(irn, 2)));
+
+	emit_CopyB_prolog(F, rem, size);
+
+	fprintf(F, "\trep movsd\t\t\t\t/* memcopy */\n");
+}
+
+void emit_ia32_CopyB_i(ir_node *irn, emit_env_t *emit_env) {
+	tarval *tv   = get_ia32_Immop_tarval(irn);
+	int     size = get_tarval_long(tv);
+	FILE   *F    = emit_env->out;
+
+	emit_CopyB_prolog(F, size & 0x3, size);
+
+	size >>= 2;
+	while (size--) {
+		fprintf(F, "\tmovsd\t\t\t\t/* memcopy unrolled */\n");
+	}
+}
+
 /********************
  *   _____      _ _
  *  / ____|    | | |
@@ -748,6 +801,7 @@ void ia32_emit_node(ir_node *irn, void *env) {
 
 	IA32_EMIT(Max);
 	IA32_EMIT(Min);
+	IA32_EMIT(CMov);
 
 	IA32_EMIT(And);
 	IA32_EMIT(Or);
@@ -769,6 +823,9 @@ void ia32_emit_node(ir_node *irn, void *env) {
 
 	IA32_EMIT(Store);
 	IA32_EMIT(Load);
+
+	IA32_EMIT(CopyB);
+	IA32_EMIT(CopyB_i);
 
 	/* generated floating point emitter */
 	IA32_EMIT(fConst);

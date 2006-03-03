@@ -22,6 +22,8 @@ $arch = "ia32";
 #                    ...
 #                  ],
 #   "comment"   => "any comment for constructor",
+#   "reg_req"   => { "in" => [ "reg_class|register" ], "out" => [ "reg_class|register|in_rX" ] },
+#   "cmp_attr"  => "c source code for comparing node attributes",
 #   "emit"      => "emit code with templates",
 #   "rd_constructor" => "c source code which constructs an ir_node"
 # },
@@ -217,6 +219,16 @@ $arch = "ia32";
 '
 },
 
+"CMov" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Mux: Mux(sel, a, b) == sel ? a : b",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "in_r2" ] },
+  "emit"      =>
+'. cmp %S1, 0\t\t\t/* compare Sel for CMov (%A2, %A3) */
+. cmovne %D1, %S3\t\t\t/* sel == true -> return %S3 */
+'
+},
+
 # not commutative operations
 
 "Sub" => {
@@ -387,27 +399,6 @@ $arch = "ia32";
   "emit"      => '. lea %D1, %ia32_emit_am\t\t/* %D1 = %S1 + %S2 << %C + %O, (%A1, %A2) */'
 },
 
-"StackParam" => {
-  "arity"    => 1,
-  "remat"    => 1,
-  "comment"  => "constructs a Stack Parameter to retrieve a parameter from Stack",
-  "reg_req"  => { "in" => [ "none" ], "out" => [ "gp" ] },
-  "cmp_attr" =>
-'
-  return (attr_a->pn_code != attr_b->pn_code);
-'
-},
-
-"StackArg" => {
-  "arity"    => 2,
-  "comment"  => "constructs a Stack Argument to pass an argument on Stack",
-  "reg_req"  => { "in" => [ "none", "gp" ], "out" => [ "none" ] },
-  "cmp_attr" =>
-'
-  return (attr_a->pn_code != attr_b->pn_code);
-'
-},
-
 #--------------------------------------------------------#
 #    __ _             _                     _            #
 #   / _| |           | |                   | |           #
@@ -546,25 +537,20 @@ $arch = "ia32";
   "emit"     => '. movs%M %ia32_emit_am, %S3\t\t\t/* Store(%S3) -> (%A1) */'
 },
 
-"fStackParam" => {
-  "arity"    => 1,
-  "remat"    => 1,
-  "comment"  => "constructs a Stack Parameter to retrieve a SSE parameter from Stack",
-  "reg_req"  => { "in" => [ "none" ], "out" => [ "fp" ] },
-  "cmp_attr" =>
-'
-  return (attr_a->pn_code != attr_b->pn_code);
-'
+# CopyB
+
+"CopyB" => {
+	"op_flags" => "F|H",
+	"state"    => "pinned",
+	"comment"  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
+	"reg_req"  => { "in" => [ "edi", "esi", "ecx", "none" ], "out" => [ "none" ] },
 },
 
-"fStackArg" => {
-  "arity"    => 2,
-  "comment"  => "constructs a Stack Argument to pass an argument on Stack",
-  "reg_req"  => { "in" => [ "none", "fp" ], "out" => [ "none" ] },
-  "cmp_attr" =>
-'
-  return (attr_a->pn_code != attr_b->pn_code);
-'
+"CopyB_i" => {
+	"op_flags" => "F|H",
+	"state"    => "pinned",
+	"comment"  => "implements a memcopy: CopyB(dst, src, mem) == memcpy(dst, src, attr(size))",
+	"reg_req"  => { "in" => [ "edi", "esi", "none" ], "out" => [ "none" ] },
 },
 
 # Call
@@ -582,33 +568,6 @@ $arch = "ia32";
 "  if (!op_ia32_Call) assert(0);
   return new_ir_node(db, irg, block, op_ia32_Call, mode_T, n, in);
 "
-},
-
-# Return
-
-"Return" => {
-  "op_flags" => "L|X",
-  "state"    => "pinned",
-  "arity"    => "variable",
-  "comment"  => "construct Return: Return(...)",
-  "args"     => [
-                  { "type" => "int",        "name" => "n" },
-                  { "type" => "ir_node **", "name" => "in" }
-                ],
-  "rd_constructor" =>
-"  if (!op_ia32_Return) assert(0);
-  return new_ir_node(db, irg, block, op_ia32_Return, mode_X, n, in);
-"
-},
-
-# M/Alloc
-
-"Alloca" => {
-  "op_flags" => "L|F",
-  "state"    => "pinned",
-  "arity"    => "2",
-  "comment"  => "construct Alloca: allocate memory on Stack",
-  "reg_req"  => { "in" => [ "gp" ], "out" => [ "gp" ] }
 },
 
 ); # end of %nodes
