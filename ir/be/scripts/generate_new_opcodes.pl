@@ -272,16 +272,16 @@ print OUT "\n";
 
 print OUT<<ENDOFISIRN;
 
-static opcode ia32_opcode_start = -1;
-static opcode ia32_opcode_end   = -1;
+static opcode $arch\_opcode_start = -1;
+static opcode $arch\_opcode_end   = -1;
 
 int is_$arch\_irn(const ir_node *node) {
   opcode opc = get_irn_opcode(node);
 
-  assert(ia32_opcode_start > 0 && "missing opcode init");
-  assert(ia32_opcode_end > 0 && "missing opcode init");
+  assert($arch\_opcode_start > 0 && "missing opcode init");
+  assert($arch\_opcode_end > 0 && "missing opcode init");
 
-  if (opc > ia32_opcode_start && opc < ia32_opcode_end)
+  if (opc > $arch\_opcode_start && opc < $arch\_opcode_end)
     return 1;
 
   return 0;
@@ -311,12 +311,12 @@ void $arch\_create_opcodes(void) {
   ir_op_ops ops;
   int cur_opcode = get_next_ir_opcodes($n_opcodes);
 
-  ia32_opcode_start = cur_opcode++;
+  $arch\_opcode_start = cur_opcode++;
 
 ENDOFMAIN
 
 print OUT @obst_new_irop;
-print OUT "\n  ia32_opcode_end = cur_opcode;\n";
+print OUT "\n  $arch\_opcode_end = cur_opcode;\n";
 print OUT "}\n";
 
 close(OUT);

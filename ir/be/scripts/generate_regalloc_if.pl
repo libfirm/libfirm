@@ -297,8 +297,8 @@ print OUT<<EOF;
  */
 
 #include "gen_$arch\_regalloc_if.h"
-#include "bearch_ia32_t.h"   /* we need this to put the caller saved registers into the isa set */
-#include "ia32_map_regs.h"
+#include "bearch_$arch\_t.h"   /* we need this to put the caller saved registers into the isa set */
+#include "$arch\_map_regs.h"
 #include "irmode.h"
 
 EOF
@@ -306,7 +306,7 @@ EOF
 print OUT "arch_register_class_t $arch\_reg_classes[] = {\n  ".join(",\n  ", @obst_regclasses)."\n};\n\n";
 
 print OUT "void ".$arch."_register_init(void *isa_ptr) {\n";
-print OUT "  ia32_isa_t *isa = (ia32_isa_t *)isa_ptr;\n\n";
+print OUT "  $arch\_isa_t *isa = ($arch\_isa_t *)isa_ptr;\n\n";
 print OUT @obst_reginit;
 print OUT "}\n\n";
 
