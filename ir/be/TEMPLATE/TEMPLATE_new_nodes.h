@@ -22,7 +22,7 @@
 /**
  * Returns the attributes of an TEMPLATE node.
  */
-TEMPLATE_attr *get_TEMPLATE_attr(const ir_node *node);
+TEMPLATE_attr_t *get_TEMPLATE_attr(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an TEMPLATE node.

@@ -1,6 +1,5 @@
 /**
  * Dumps global variables and constants as TEMPLATE assembler.
- * @author Christian Wuerdig
  * @date 14.02.2006
  * @version $Id$
  */

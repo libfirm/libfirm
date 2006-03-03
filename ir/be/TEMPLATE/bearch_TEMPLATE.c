@@ -1,3 +1,6 @@
+/* The main TEMPLATE backend driver file. */
+/* $Id$ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -16,6 +19,9 @@
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
+#include "../be.h"
+#include "../beabi.h"
+
 #include "bearch_TEMPLATE_t.h"
 
 #include "TEMPLATE_new_nodes.h"           /* TEMPLATE nodes interface */
@@ -93,10 +99,14 @@ static const arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self, arc
 
 		memcpy(req, &(irn_req->req), sizeof(*req));
 
-		if (arch_register_req_is(&(irn_req->req), should_be_same) ||
-			arch_register_req_is(&(irn_req->req), should_be_different)) {
-			assert(irn_req->pos >= 0 && "should be same/different constraint for in -> out NYI");
-			req->other = get_irn_n(irn, irn_req->pos);
+		if (arch_register_req_is(&(irn_req->req), should_be_same)) {
+			assert(irn_req->same_pos >= 0 && "should be same constraint for in -> out NYI");
+			req->other_same = get_irn_n(irn, irn_req->same_pos);
+		}
+
+		if (arch_register_req_is(&(irn_req->req), should_be_different)) {
+			assert(irn_req->different_pos >= 0 && "should be different constraint for in -> out NYI");
+			req->other_different = get_irn_n(irn, irn_req->different_pos);
 		}
 	}
 	/* get requirements for FIRM nodes */
@@ -119,30 +129,6 @@ static const arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self, arc
 				assert(0 && "unsupported Phi-Mode");
 			}
 		}
-		else if ((get_irn_op(irn) == op_Return) && pos > 0) {
-			/* pos == 0 is Memory -> no requirements */
-			DB((mod, LEVEL_1, "giving return (%+F) requirements\n", irn));
-
-			if (pos == 1) {
-				/* pos == 1 is Stackpointer */
-				memcpy(req, &(TEMPLATE_default_req_TEMPLATE_general_purpose_r6.req), sizeof(*req));
-			}
-			else {
-				if (mode_is_float(get_irn_mode(get_Return_res(irn, pos)))) {
-					/* fp result */
-					memcpy(req, &(TEMPLATE_default_req_TEMPLATE_floating_point_f0.req), sizeof(*req));
-				}
-				else {
-					/* integer result, 64bit results are returned as two 32bit values */
-					if (pos == 2) {
-						memcpy(req, &(TEMPLATE_default_req_TEMPLATE_general_purpose_r0.req), sizeof(*req));
-					}
-					else {
-						memcpy(req, &(TEMPLATE_default_req_TEMPLATE_general_purpose_r1.req), sizeof(*req));
-					}
-				}
-			}
-		}
 		else {
 			DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", irn));
 			req = NULL;
@@ -155,7 +141,7 @@ static const arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self, arc
 static void TEMPLATE_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
 	int pos = 0;
 
-	else if (is_Proj(irn)) {
+	if (is_Proj(irn)) {
 		pos = TEMPLATE_translate_proj_pos(irn);
 		irn = my_skip_proj(irn);
 	}
@@ -176,7 +162,7 @@ static const arch_register_t *TEMPLATE_get_irn_reg(const void *self, const ir_no
 	int pos = 0;
 	const arch_register_t *reg = NULL;
 
-	else if (is_Proj(irn)) {
+	if (is_Proj(irn)) {
 		pos = TEMPLATE_translate_proj_pos(irn);
 		irn = my_skip_proj(irn);
 	}
@@ -219,6 +205,19 @@ static arch_irn_flags_t TEMPLATE_get_flags(const void *self, const ir_node *irn)
 	return 0;
 }
 
+static entity *TEMPLATE_get_frame_entity(const void *self, const ir_node *irn) {
+	/* TODO: return the entity assigned to the frame */
+	return NULL;
+}
+
+/**
+ * This function is called by the generic backend to correct offsets for
+ * nodes accessing the stack.
+ */
+static void TEMPLATE_set_stack_bias(const void *self, ir_node *irn, int bias) {
+	/* TODO: correct offset if irn accesses the stack */
+}
+
 /* fill register allocator interface */
 
 static const arch_irn_ops_if_t TEMPLATE_irn_ops_if = {
@@ -226,7 +225,9 @@ static const arch_irn_ops_if_t TEMPLATE_irn_ops_if = {
 	TEMPLATE_set_irn_reg,
 	TEMPLATE_get_irn_reg,
 	TEMPLATE_classify,
-	TEMPLATE_get_flags
+	TEMPLATE_get_flags,
+	TEMPLATE_get_frame_entity,
+	TEMPLATE_set_stack_bias
 };
 
 TEMPLATE_irn_ops_t TEMPLATE_irn_ops = {
@@ -254,23 +255,30 @@ TEMPLATE_irn_ops_t TEMPLATE_irn_ops = {
 static void TEMPLATE_prepare_graph(void *self) {
 	TEMPLATE_code_gen_t *cg = self;
 
-	irg_walk_blkwise_graph(cg->irg, TEMPLATE_place_consts, TEMPLATE_transform_node, cg);
+	irg_walk_blkwise_graph(cg->irg, NULL, TEMPLATE_transform_node, cg);
 }
 
 
 
 /**
- * Fix offsets and stacksize
+ * Called immediatly before emit phase.
  */
 static void TEMPLATE_finish_irg(ir_graph *irg, TEMPLATE_code_gen_t *cg) {
-	/* TODO */
+	/* TODO: - fix offsets for nodes accessing stack
+			 - ...
+	*/
 }
 
 
+/**
+ * These are some hooks which must be filled but are probably not needed.
+ */
 static void TEMPLATE_before_sched(void *self) {
+	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
 static void TEMPLATE_before_ra(void *self) {
+	/* Some stuff you need to do immediatly after register allocation */
 }
 
 
@@ -318,7 +326,7 @@ static ir_node *TEMPLATE_lower_reload(void *self, ir_node *reload) {
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
-static void TEMPLATE_codegen(void *self) {
+static void TEMPLATE_emit_and_done(void *self) {
 	TEMPLATE_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
 	FILE               *out = cg->out;
@@ -339,7 +347,7 @@ static void TEMPLATE_codegen(void *self) {
 	free(self);
 }
 
-static void *TEMPLATE_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env);
+static void *TEMPLATE_cg_init(FILE *F, const be_irg_t *birg);
 
 static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_cg_init,
@@ -348,22 +356,23 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_before_ra,      /* before register allocation hook */
 	TEMPLATE_lower_spill,
 	TEMPLATE_lower_reload,
-	TEMPLATE_codegen         /* emit && done */
+	TEMPLATE_emit_and_done
 };
 
 /**
  * Initializes the code generator.
  */
-static void *TEMPLATE_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env) {
-	TEMPLATE_isa_t      *isa = (TEMPLATE_isa_t *)arch_env->isa;
+static void *TEMPLATE_cg_init(FILE *F, const be_irg_t *birg) {
+	TEMPLATE_isa_t      *isa = (TEMPLATE_isa_t *)birg->main_env->arch_env->isa;
 	TEMPLATE_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
-	cg->impl       = &TEMPLATE_code_gen_if;
-	cg->irg        = irg;
-	cg->reg_set    = new_set(TEMPLATE_cmp_irn_reg_assoc, 1024);
-	cg->mod        = firm_dbg_register("firm.be.TEMPLATE.cg");
-	cg->out        = F;
-	cg->arch_env   = arch_env;
+	cg->impl     = &TEMPLATE_code_gen_if;
+	cg->irg      = birg->irg;
+	cg->reg_set  = new_set(TEMPLATE_cmp_irn_reg_assoc, 1024);
+	cg->mod      = firm_dbg_register("firm.be.TEMPLATE.cg");
+	cg->out      = F;
+	cg->arch_env = birg->main_env->arch_env;
+	cg->birg     = birg;
 
 	isa->num_codegens++;
 
@@ -391,23 +400,31 @@ static void *TEMPLATE_cg_init(FILE *F, ir_graph *irg, const arch_env_t *arch_env
  *
  *****************************************************************/
 
+static TEMPLATE_isa_t TEMPLATE_isa_template = {
+	&TEMPLATE_isa_if,
+	&TEMPLATE_general_purpose_regs[REG_R6],
+	&TEMPLATE_general_purpose_regs[REG_R7],
+	-1,
+	0
+};
+
 /**
  * Initializes the backend ISA and opens the output file.
  */
 static void *TEMPLATE_init(void) {
 	static int inited = 0;
-	TEMPLATE_isa_t *isa   = xmalloc(sizeof(*isa));
-
-	isa->impl = &TEMPLATE_isa_if;
+	TEMPLATE_isa_t *isa;
 
 	if(inited)
 		return NULL;
 
-	inited            = 1;
-	isa->num_codegens = 0;
+	isa = xcalloc(1, sizeof(*isa));
+	memcpy(isa, &TEMPLATE_isa_template, sizeof(*isa));
 
 	TEMPLATE_register_init(isa);
 	TEMPLATE_create_opcodes();
+
+	inited = 1;
 
 	return isa;
 }
@@ -430,6 +447,88 @@ static int TEMPLATE_get_n_reg_class(const void *self) {
 static const arch_register_class_t *TEMPLATE_get_reg_class(const void *self, int i) {
 	assert(i >= 0 && i < N_CLASSES && "Invalid TEMPLATE register class requested.");
 	return &TEMPLATE_reg_classes[i];
+}
+
+
+
+/**
+ * Get the register class which shall be used to store a value of a given mode.
+ * @param self The this pointer.
+ * @param mode The mode in question.
+ * @return A register class which can hold values of the given mode.
+ */
+const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
+	if (mode_is_float(mode))
+		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_floating_point];
+	else
+		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_general_purpose];
+}
+
+
+
+/**
+ * Produces the type which sits between the stack args and the locals on the stack.
+ * it will contain the return address and space to store the old base pointer.
+ * @return The Firm type modelling the ABI between type.
+ */
+static ir_type *get_between_type(void) {
+	static ir_type *between_type = NULL;
+	static entity *old_bp_ent    = NULL;
+
+	if(!between_type) {
+		entity *ret_addr_ent;
+		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
+		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
+
+		between_type           = new_type_class(new_id_from_str("TEMPLATE_between_type"));
+		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
+		ret_addr_ent           = new_entity(between_type, new_id_from_str("old_bp"), ret_addr_type);
+
+		set_entity_offset_bytes(old_bp_ent, 0);
+		set_entity_offset_bytes(ret_addr_ent, get_type_size_bytes(old_bp_type));
+		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
+	}
+
+	return between_type;
+}
+
+/**
+ * Get the ABI restrictions for procedure calls.
+ * @param self        The this pointer.
+ * @param method_type The type of the method (procedure) in question.
+ * @param abi         The abi object to be modified
+ */
+void TEMPLATE_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+	ir_type  *between_type;
+	ir_type  *tp;
+	ir_mode  *mode;
+	int       i, n = get_method_n_params(method_type);
+	const arch_register_t *reg;
+
+	/* get the between type and the frame pointer save entity */
+	between_type = get_between_type();
+
+	/* set stack parameter passing style */
+	be_abi_call_set_flags(abi, BE_ABI_NONE, between_type);
+
+	for (i = 0; i < n; i++) {
+		/* TODO: implement register parameter: */
+		/* reg = get reg for param i;          */
+		/* be_abi_call_param_reg(abi, i, reg); */
+
+		/* default: all parameters on stack */
+		be_abi_call_param_stack(abi, i);
+	}
+
+	/* TODO: set correct return register */
+	/* default: return value is in R0 resp. F0 */
+	if (get_method_n_ress(method_type) > 0) {
+		tp   = get_method_res_type(method_type, 0);
+		mode = get_type_mode(tp);
+
+		be_abi_call_res_reg(abi, 0,
+			mode_is_float(mode) ? &TEMPLATE_floating_point_regs[REG_F0] : &TEMPLATE_general_purpose_regs[REG_R0]);
+	}
 }
 
 static const void *TEMPLATE_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
@@ -480,6 +579,8 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_done,
 	TEMPLATE_get_n_reg_class,
 	TEMPLATE_get_reg_class,
+	TEMPLATE_get_reg_class_for_mode,
+	TEMPLATE_get_call_abi,
 	TEMPLATE_get_irn_handler,
 	TEMPLATE_get_code_generator_if,
 	TEMPLATE_get_list_sched_selector,

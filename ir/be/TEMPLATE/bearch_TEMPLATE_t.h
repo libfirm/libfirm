@@ -4,7 +4,7 @@
 #include "debug.h"
 #include "bearch_TEMPLATE.h"
 #include "TEMPLATE_nodes_attr.h"
-
+#include "../be.h"
 
 typedef struct _TEMPLATE_code_gen_t {
 	const arch_code_generator_if_t *impl;           /* implementation */
@@ -14,21 +14,35 @@ typedef struct _TEMPLATE_code_gen_t {
 	set                            *reg_set;        /* set to memorize registers for FIRM nodes (e.g. phi) */
 	firm_dbg_module_t              *mod;            /* debugging module */
 	int                             emit_decls;     /* flag indicating if decls were already emitted */
-	int                             has_alloca;     /* indicates whether the irg contains an alloca or not */
-	const TEMPLATE_register_req_t **reg_param_req;  /* hold the requirements for the reg param nodes */
+	const be_irg_t                 *birg;           /* The be-irg (contains additional information about the irg) */
 } TEMPLATE_code_gen_t;
 
 
 typedef struct _TEMPLATE_isa_t {
-	const arch_isa_if_t *impl;
+	const arch_isa_if_t   *impl;
+	const arch_register_t *sp;            /** The stack pointer register. */
+	const arch_register_t *bp;            /** The base pointer register. */
+	const int              stack_dir;     /** -1 for decreasing, 1 for increasing. */
 	int                  num_codegens;
 } TEMPLATE_isa_t;
 
 
 typedef struct _TEMPLATE_irn_ops_t {
 	const arch_irn_ops_if_t *impl;
-	TEMPLATE_code_gen_t         *cg;
+	TEMPLATE_code_gen_t     *cg;
 } TEMPLATE_irn_ops_t;
+
+
+/* this is a struct to minimize the number of parameters
+   for transformation walker */
+typedef struct _TEMPLATE_transform_env_t {
+	firm_dbg_module_t *mod;      /**< The firm debugger */
+	dbg_info          *dbg;      /**< The node debug info */
+	ir_graph          *irg;      /**< The irg, the node should be created in */
+	ir_node           *block;    /**< The block, the node should belong to */
+	ir_node           *irn;      /**< The irn, to be transformed */
+	ir_mode           *mode;     /**< The mode of the irn */
+} TEMPLATE_transform_env_t;
 
 
 #endif /* _BEARCH_TEMPLATE_T_H_ */

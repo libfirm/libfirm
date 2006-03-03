@@ -1,3 +1,6 @@
+/* TEMPLATE emitter */
+/* $Id$ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -170,7 +173,7 @@ static int TEMPLATE_get_reg_name(lc_appendable_t *app,
 }
 
 /**
- * Returns the tarval or offset of an ia32 as a string.
+ * Returns the tarval or offset of an TEMPLATE node as a string.
  */
 static int TEMPLATE_const_to_str(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
@@ -209,52 +212,35 @@ static int TEMPLATE_get_mode_suffix(lc_appendable_t *app,
 }
 
 /**
- * Return the ia32 printf arg environment.
+ * Return the TEMPLATE printf arg environment.
  * We use the firm environment with some additional handlers.
  */
 const lc_arg_env_t *TEMPLATE_get_arg_env(void) {
 	static lc_arg_env_t *env = NULL;
 
-	static const lc_arg_handler_t ia32_reg_handler   = { ia32_get_arg_type, ia32_get_reg_name };
-	static const lc_arg_handler_t ia32_const_handler = { ia32_get_arg_type, ia32_const_to_str };
-	static const lc_arg_handler_t ia32_mode_handler  = { ia32_get_arg_type, ia32_get_mode_suffix };
+	static const lc_arg_handler_t TEMPLATE_reg_handler   = { TEMPLATE_get_arg_type, TEMPLATE_get_reg_name };
+	static const lc_arg_handler_t TEMPLATE_const_handler = { TEMPLATE_get_arg_type, TEMPLATE_const_to_str };
+	static const lc_arg_handler_t TEMPLATE_mode_handler  = { TEMPLATE_get_arg_type, TEMPLATE_get_mode_suffix };
 
 	if(env == NULL) {
 		/* extend the firm printer */
 		env = firm_get_arg_env();
 			//lc_arg_new_env();
 
-		lc_arg_register(env, "ia32:sreg", 'S', &ia32_reg_handler);
-		lc_arg_register(env, "ia32:dreg", 'D', &ia32_reg_handler);
-		lc_arg_register(env, "ia32:cnst", 'C', &ia32_const_handler);
-		lc_arg_register(env, "ia32:offs", 'O', &ia32_const_handler);
-		lc_arg_register(env, "ia32:mode", 'M', &ia32_mode_handler);
+		lc_arg_register(env, "TEMPLATE:sreg", 'S', &TEMPLATE_reg_handler);
+		lc_arg_register(env, "TEMPLATE:dreg", 'D', &TEMPLATE_reg_handler);
+		lc_arg_register(env, "TEMPLATE:cnst", 'C', &TEMPLATE_const_handler);
+		lc_arg_register(env, "TEMPLATE:offs", 'O', &TEMPLATE_const_handler);
+		lc_arg_register(env, "TEMPLATE:mode", 'M', &TEMPLATE_mode_handler);
 	}
 
 	return env;
 }
 
-/**
- * For 2-address code we need to make sure the first src reg is equal to dest reg.
- */
-void equalize_dest_src(FILE *F, ir_node *n) {
-	if (get_ia32_reg_nr(n, 0, 1) != get_ia32_reg_nr(n, 0, 0)) {
-		if (get_irn_arity(n) > 1 && get_ia32_reg_nr(n, 1, 1) == get_ia32_reg_nr(n, 0, 0)) {
-			if (! is_op_commutative(get_irn_op(n))) {
-				/* we only need to exchange for non-commutative ops */
-				lc_efprintf(ia32_get_arg_env(), F, "\txchg %1S, %2S\t\t\t/* xchg src1 <-> src2 for 2 address code */\n", n, n);
-			}
-		}
-		else {
-			lc_efprintf(ia32_get_arg_env(), F, "\tmovl %1S, %1D\t\t\t/* src -> dest for 2 address code */\n", n, n);
-		}
-	}
-}
-
 /*
  * Add a number to a prefix. This number will not be used a second time.
  */
-char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
+static char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
 	static unsigned long id = 0;
 	snprintf(buf, buflen, "%s%lu", prefix, ++id);
 	return buf;
@@ -269,62 +255,6 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 
 	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
 	return buf;
-}
-
-/*********************************************************
- *                 _ _       _
- *                (_) |     (_)
- *   ___ _ __ ___  _| |_     _ _   _ _ __ ___  _ __  ___
- *  / _ \ '_ ` _ \| | __|   | | | | | '_ ` _ \| '_ \/ __|
- * |  __/ | | | | | | |_    | | |_| | | | | | | |_) \__ \
- *  \___|_| |_| |_|_|\__|   | |\__,_|_| |_| |_| .__/|___/
- *                         _/ |               | |
- *                        |__/                |_|
- *********************************************************/
-
-/**
- * Emits code for a Switch (creates a jump table if
- * possible otherwise a cmp-jmp cascade).
- */
-void emit_TEMPLATE_Switch(const ir_node *irn, emit_env_t *emit_env) {
-	unsigned long       interval;
-	jmp_tbl_t          *tbl;
-	ir_node           **cases;
-	int                 def_projnum;
-	int                 do_jmp_tbl = 1;
-	const lc_arg_env_t *env        = ia32_get_arg_env();
-	FILE               *F          = emit_env->out;
-
-	/* TODO:                                                         */
-	/* - create list of projs, each corresponding to one switch case */
-	/* - determine the projnumber of the default case                */
-
-	tbl = create_jump_table(cases, def_projnum, "JMPTBL_");
-
-	/* two-complement's magic make this work without overflow */
-	interval = tbl.max_value - tbl.min_value;
-
-	/* check value interval: do not create jump table if interval is too large */
-	if (interval > 16 * 1024) {
-		do_jmp_tbl = 0;
-	}
-
-	/* check ratio of value interval to number of branches */
-	if (((float)(interval + 1) / (float)tbl.num_branches) > 8.0) {
-		do_jmp_tbl = 0;
-	}
-
-	if (do_jmp_tbl) {
-		/* TODO: emit table code */
-	}
-	else {
-		/* TODO: emit cmp - jmp cascade */
-	}
-
-	if (tbl.label)
-		free(tbl.label);
-	if (tbl.branches)
-		free(tbl.branches);
 }
 
 
@@ -350,10 +280,6 @@ void TEMPLATE_emit_node(ir_node *irn, void *env) {
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 
 #define BE_EMIT(a) if (is_TEMPLATE_##a(irn)) { emit_TEMPLATE_##a(irn, emit_env); return; }
-
-	/* generated int emitter functions */
-	BE_EMIT(Copy);
-	BE_EMIT(Perm);
 
 	BE_EMIT(Const);
 
@@ -402,9 +328,6 @@ void TEMPLATE_emit_node(ir_node *irn, void *env) {
 
 	BE_EMIT(fLoad);
 	BE_EMIT(fStore);
-
-	/* other emitter functions */
-//	BE_EMIT(Switch);
 
 	ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
 }
@@ -461,7 +384,7 @@ void TEMPLATE_gen_labels(ir_node *block, void *env) {
 /**
  * Main driver
  */
-void TEMPLATE_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
+void TEMPLATE_gen_routine(FILE *F, ir_graph *irg, const TEMPLATE_code_gen_t *cg) {
 	emit_env_t emit_env;
 
 	emit_env.mod      = firm_dbg_register("firm.be.TEMPLATE.emit");

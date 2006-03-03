@@ -7,6 +7,12 @@
 #include "config.h"
 #endif
 
+#ifdef _WIN32
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #include <stdlib.h>
 
 #include "irprog_t.h"
@@ -18,6 +24,7 @@
 #include "irop.h"
 #include "firm_common_t.h"
 #include "irvrfy_t.h"
+#include "irprintf.h"
 
 #include "../bearch.h"
 
@@ -39,6 +46,82 @@
  ***********************************************************************************/
 
 /**
+ * Returns a string containing the names of all registers within the limited bitset
+ */
+static char *get_limited_regs(const arch_register_req_t *req, char *buf, int max) {
+	bitset_t *bs   = bitset_alloca(req->cls->n_regs);
+	char     *p    = buf;
+	int       size = 0;
+	int       i, cnt;
+
+	req->limited(NULL, bs);
+
+	for (i = 0; i < req->cls->n_regs; i++) {
+		if (bitset_is_set(bs, i)) {
+			cnt = snprintf(p, max - size, " %s", req->cls->regs[i].name);
+			if (cnt < 0) {
+				fprintf(stderr, "dumper problem, exiting\n");
+				exit(1);
+			}
+
+			p    += cnt;
+			size += cnt;
+
+			if (size >= max)
+				break;
+		}
+	}
+
+	return buf;
+}
+
+/**
+ * Dumps the register requirements for either in or out.
+ */
+static void dump_reg_req(FILE *F, ir_node *n, const TEMPLATE_register_req_t **reqs, int inout) {
+	char *dir = inout ? "out" : "in";
+	int   max = inout ? get_TEMPLATE_n_res(n) : get_irn_arity(n);
+	char *buf = alloca(1024);
+	int   i;
+
+	memset(buf, 0, 1024);
+
+	if (reqs) {
+		for (i = 0; i < max; i++) {
+			fprintf(F, "%sreq #%d =", dir, i);
+
+			if (reqs[i]->req.type == arch_register_req_type_none) {
+				fprintf(F, " n/a");
+			}
+
+			if (reqs[i]->req.type & arch_register_req_type_normal) {
+				fprintf(F, " %s", reqs[i]->req.cls->name);
+			}
+
+			if (reqs[i]->req.type & arch_register_req_type_limited) {
+				fprintf(F, " %s", get_limited_regs(&reqs[i]->req, buf, 1024));
+			}
+
+			if (reqs[i]->req.type & arch_register_req_type_should_be_same) {
+				ir_fprintf(F, " same as %+F", get_irn_n(n, reqs[i]->same_pos));
+			}
+
+			if (reqs[i]->req.type & arch_register_req_type_should_be_different) {
+				ir_fprintf(F, " different from %+F", get_irn_n(n, reqs[i]->different_pos));
+			}
+
+			fprintf(F, "\n");
+		}
+
+		fprintf(F, "\n");
+	}
+	else {
+		fprintf(F, "%sreq = N/A\n", dir);
+	}
+}
+
+
+/**
  * Dumper interface for dumping TEMPLATE nodes in vcg.
  * @param n        the node to dump
  * @param F        the output file
@@ -46,80 +129,50 @@
  * @return 0 on success or != 0 on failure
  */
 static int dump_node_TEMPLATE(ir_node *n, FILE *F, dump_reason_t reason) {
-	const char    *name, *p;
-	ir_mode       *mode = NULL;
-	int            bad  = 0;
-	int            i;
+  	ir_mode     *mode = NULL;
+	int          bad  = 0;
+	int          i;
 	TEMPLATE_attr_t *attr;
 	const TEMPLATE_register_req_t **reqs;
-	const arch_register_t         **slots;
+	const arch_register_t     **slots;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
-			name = get_irn_opname(n);
-			fprintf(F, "%s", name);
+			fprintf(F, "%s", get_irn_opname(n));
 			break;
 
 		case dump_node_mode_txt:
 			mode = get_irn_mode(n);
 
-			if (mode == mode_BB || mode == mode_ANY || mode == mode_BAD || mode == mode_T) {
-				mode = NULL;
-			}
-
 			if (mode) {
 				fprintf(F, "[%s]", get_mode_name(mode));
+			}
+			else {
+				fprintf(F, "[?NOMODE?]");
 			}
 			break;
 
 		case dump_node_nodeattr_txt:
 
-			/* TODO: Dump node specific attributes which should */
-			/* visible in node name (e.g. const or the like).   */
+			/* TODO: dump some attributes which should show up */
+			/* in node name in dump (e.g. consts or the like)  */
 
 			break;
 
 		case dump_node_info_txt:
 			attr = get_TEMPLATE_attr(n);
+			fprintf(F, "=== TEMPLATE attr begin ===\n");
 
 			/* dump IN requirements */
 			if (get_irn_arity(n) > 0) {
 				reqs = get_TEMPLATE_in_req_all(n);
-
-				if (reqs) {
-					for (i = 0; i < get_irn_arity(n); i++) {
-						if (reqs[i]->req.type != arch_register_req_type_none) {
-							fprintf(F, "in req #%d = [%s]\n", i, reqs[i]->req.cls->name);
-						}
-						else {
-							fprintf(F, "in req #%d = n/a\n", i);
-						}
-					}
-
-					fprintf(F, "\n");
-				}
-				else {
-					fprintf(F, "in req = N/A\n");
-				}
+				dump_reg_req(F, n, reqs, 0);
 			}
 
 			/* dump OUT requirements */
 			if (attr->n_res > 0) {
 				reqs = get_TEMPLATE_out_req_all(n);
-
-				if (reqs) {
-					for (i = 0; i < attr->n_res; i++) {
-						if (reqs[i]->req.type != arch_register_req_type_none) {
-							fprintf(F, "out req #%d = [%s]\n", i, reqs[i]->req.cls->name);
-						}
-						else {
-							fprintf(F, "out req #%d = n/a\n", i);
-						}
-					}
-				}
-				else {
-					fprintf(F, "out req = N/A\n");
-				}
+				dump_reg_req(F, n, reqs, 1);
 			}
 
 			/* dump assigned registers */
@@ -134,9 +187,36 @@ static int dump_node_TEMPLATE(ir_node *n, FILE *F, dump_reason_t reason) {
 					}
 				}
 			}
+			fprintf(F, "\n");
 
+			/* dump n_res */
+			fprintf(F, "n_res = %d\n", get_TEMPLATE_n_res(n));
+
+			/* dump flags */
+			fprintf(F, "flags =");
+			if (attr->flags == arch_irn_flags_none) {
+				fprintf(F, " none");
+			}
+			else {
+				if (attr->flags & arch_irn_flags_dont_spill) {
+					fprintf(F, " unspillable");
+				}
+				if (attr->flags & arch_irn_flags_rematerializable) {
+					fprintf(F, " remat");
+				}
+				if (attr->flags & arch_irn_flags_ignore) {
+					fprintf(F, " ignore");
+				}
+			}
+			fprintf(F, " (%d)\n", attr->flags);
+
+			/* TODO: dump all additional attributes */
+
+			fprintf(F, "=== TEMPLATE attr end ===\n");
+			/* end of: case dump_node_info_txt */
 			break;
 	}
+
 
 	return bad;
 }
