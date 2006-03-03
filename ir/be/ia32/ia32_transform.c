@@ -457,7 +457,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
  * @param mode      node mode
  * @return the created ia32 Mul node
  */
-ir_node *gen_Mul(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Mul(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_node *new_op;
 
 	if (mode_is_float(env->mode)) {
@@ -1122,7 +1122,7 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
  * @param mode    node mode
  * @return the created ia32 Store node
  */
-ir_node *gen_Store(ia32_transform_env_t *env) {
+static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *node  = env->irn;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *new_op;
@@ -1288,7 +1288,6 @@ void ia32_transform_node(ir_node *node, void *env) {
 	if (is_Block(node))
 		return;
 
-	tenv.arch_env = cgenv->arch_env;
 	tenv.block    = get_nodes_block(node);
 	tenv.dbg      = get_irn_dbg_info(node);
 	tenv.irg      = current_ir_graph;

@@ -334,27 +334,11 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
 	return env;
 }
 
-/**
- * For 2-address code we need to make sure the first src reg is equal to dest reg.
- */
-void equalize_dest_src(FILE *F, ir_node *n) {
-	if (get_ia32_reg_nr(n, 0, 1) != get_ia32_reg_nr(n, 0, 0)) {
-		if (get_irn_arity(n) > 1 && get_ia32_reg_nr(n, 1, 1) == get_ia32_reg_nr(n, 0, 0)) {
-			if (! is_op_commutative(get_irn_op(n))) {
-				/* we only need to exchange for non-commutative ops */
-				lc_efprintf(ia32_get_arg_env(), F, "\txchg %1S, %2S\t\t\t/* xchg src1 <-> src2 for 2 address code */\n", n, n);
-			}
-		}
-		else {
-			lc_efprintf(ia32_get_arg_env(), F, "\tmovl %1S, %1D\t\t\t/* src -> dest for 2 address code */\n", n, n);
-		}
-	}
-}
 
 /*
  * Add a number to a prefix. This number will not be used a second time.
  */
-char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
+static char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
 	static unsigned long id = 0;
 	snprintf(buf, buflen, "%s%lu", prefix, ++id);
 	return buf;

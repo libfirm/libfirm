@@ -37,7 +37,6 @@ typedef struct _ia32_irn_ops_t {
 /* this is a struct to minimize the number of parameters
    for transformation walker */
 typedef struct _ia32_transform_env_t {
-	const arch_env_t  *arch_env;   /**< The arch_env */
 	firm_dbg_module_t *mod;        /**< The firm debugger */
 	dbg_info          *dbg;        /**< The node debug info */
 	ir_graph          *irg;        /**< The irg, the node should be created in */

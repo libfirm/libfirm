@@ -173,7 +173,6 @@ void ia32_place_consts(ir_node *irn, void *env) {
 
 	mode = get_irn_mode(irn);
 
-	tenv.arch_env = cg->arch_env;
 	tenv.block    = get_nodes_block(irn);
 	tenv.cg       = cg;
 	tenv.irg      = cg->irg;
