@@ -280,7 +280,7 @@ static int check_lifetime_of_locals(ir_graph *irg)
   for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
     ir_node *succ = get_irn_out(irg_frame, i);
 
-    if (get_irn_op(succ) == op_Sel && is_address_taken(succ))
+    if (is_Sel(succ) && is_address_taken(succ))
       return 0;
   }
   return 1;
@@ -318,13 +318,13 @@ int opt_tail_rec_irg(ir_graph *irg)
     int j;
     ir_node **ress;
 
-    /* search all returns of a block */
-    if (get_irn_op(ret) != op_Return)
+    /* search all Returns of a block */
+    if (! is_Return(ret))
       continue;
 
     /* check, if it's a Return self() */
     call = skip_Proj(get_Return_mem(ret));
-    if (get_irn_op(call) != op_Call)
+    if (! is_Call(call))
       continue;
 
     /* check if it's a recursive call */
