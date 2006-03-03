@@ -679,19 +679,19 @@ void remove_bad_predecessors(ir_graph *irg) {
  */
 static INLINE void
 copy_node_inline (ir_node *n, void *env) {
-  ir_node *new;
+  ir_node *nn;
   ir_type *frame_tp = (ir_type *)env;
 
   copy_node(n, NULL);
   if (get_irn_op(n) == op_Sel) {
-    new = get_new_node (n);
-    assert(get_irn_op(new) == op_Sel);
+    nn = get_new_node (n);
+    assert(is_Sel(nn));
     if (get_entity_owner(get_Sel_entity(n)) == frame_tp) {
-      set_Sel_entity(new, get_entity_link(get_Sel_entity(n)));
+      set_Sel_entity(nn, get_entity_link(get_Sel_entity(n)));
     }
   } else if (get_irn_op(n) == op_Block) {
-    new = get_new_node (n);
-    new->attr.block.irg = current_ir_graph;
+    nn = get_new_node (n);
+    nn->attr.block.irg = current_ir_graph;
   }
 }
 
@@ -786,7 +786,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   set_irg_callee_info_state(current_ir_graph, irg_callee_info_inconsistent);
 
   /* -- Check preconditions -- */
-  assert(get_irn_op(call) == op_Call);
+  assert(is_Call(call));
   /* @@@ does not work for InterfaceIII.java after cgana
      assert(get_Call_type(call) == get_entity_type(get_irg_entity(called_graph)));
      assert(smaller_type(get_entity_type(get_irg_entity(called_graph)),
@@ -928,7 +928,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   for (i = 0; i < arity; i++) {
     ir_node *ret;
     ret = get_irn_n(end_bl, i);
-    if (get_irn_op(ret) == op_Return) {
+    if (is_Return(ret)) {
       cf_pred[n_ret] = new_r_Jmp(current_ir_graph, get_nodes_block(ret));
       n_ret++;
     }
@@ -942,7 +942,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   n_ret = 0;
   for (i = 0; i < arity; i++) {
     ret = get_irn_n(end_bl, i);
-    if (get_irn_op(ret) == op_Return) {
+    if (is_Return(ret)) {
       cf_pred[n_ret] = get_Return_mem(ret);
       n_ret++;
     }
@@ -1008,7 +1008,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
       for (i = 0; i < arity; i++) {
         ir_node *ret;
         ret = skip_Proj(get_irn_n(end_bl, i));
-        if (get_irn_op(ret) == op_Call) {
+        if (is_Call(ret)) {
           cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_block(ret), ret, mode_M, 3);
           n_exc++;
         } else if (is_fragile_op(ret)) {
@@ -1131,7 +1131,7 @@ static ir_graph *get_call_called_irg(ir_node *call) {
   ir_node *addr;
   ir_graph *called_irg = NULL;
 
-  assert(get_irn_op(call) == op_Call);
+  assert(is_Call(call));
 
   addr = get_Call_ptr(call);
   if ((get_irn_op(addr) == op_SymConst) && (get_SymConst_kind (addr) == symconst_addr_ent)) {
@@ -1144,7 +1144,7 @@ static ir_graph *get_call_called_irg(ir_node *call) {
 static void collect_calls(ir_node *call, void *env) {
   ir_node *addr;
 
-  if (get_irn_op(call) != op_Call) return;
+  if (! is_Call(call)) return;
 
   addr = get_Call_ptr(call);
 
