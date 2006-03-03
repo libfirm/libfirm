@@ -226,6 +226,7 @@ void
 set_irn_in (ir_node *node, int arity, ir_node **in) {
   int i;
   ir_node *** arr;
+  ir_graph *irg = current_ir_graph;
   assert(node);
   if (get_interprocedural_view()) { /* handle Filter and Block specially */
     if (get_irn_opcode(node) == iro_Filter) {
@@ -242,20 +243,20 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
 
 	for (i = 0; i < arity; i++) {
 		if (i < ARR_LEN(*arr)-1)
-    	edges_notify_edge(node, i, in[i], (*arr)[i+1], current_ir_graph);
+    	edges_notify_edge(node, i, in[i], (*arr)[i+1], irg);
 		else
-	    edges_notify_edge(node, i, in[i], NULL,        current_ir_graph);
+	    edges_notify_edge(node, i, in[i], NULL,        irg);
   }
 	for(;i < ARR_LEN(*arr)-1; i++) {
-		edges_notify_edge(node, i, NULL, (*arr)[i+1], current_ir_graph);
+		edges_notify_edge(node, i, NULL, (*arr)[i+1], irg);
 	}
 
 	if (arity != ARR_LEN(*arr) - 1) {
     ir_node * block = (*arr)[0];
-    *arr = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
+    *arr = NEW_ARR_D(ir_node *, irg->obst, arity + 1);
     (*arr)[0] = block;
   }
-  fix_backedges(current_ir_graph->obst, node);
+  fix_backedges(irg->obst, node);
 
   memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
 }
@@ -1788,7 +1789,7 @@ ir_type *get_Proj_type(ir_node *n)
   case iro_Call: break;
   case iro_Load: {
     ir_node *a = get_Load_ptr(pred);
-    if (get_irn_op(a) == op_Sel)
+    if (is_Sel(a))
       tp = get_entity_type(get_Sel_entity(a));
   } break;
   default:
@@ -2313,10 +2314,28 @@ int
   return _is_Block(node);
 }
 
-/* returns true if node is a Unknown node. */
+/* returns true if node is an Unknown node. */
 int
 (is_Unknown)(const ir_node *node) {
   return _is_Unknown(node);
+}
+
+/* returns true if node is a Return node. */
+int
+(is_Return)(const ir_node *node) {
+  return _is_Return(node);
+}
+
+/* returns true if node is a Call node. */
+int
+(is_Call)(const ir_node *node) {
+  return _is_Call(node);
+}
+
+/* returns true if node is a Sel node. */
+int
+(is_Sel)(const ir_node *node) {
+  return _is_Sel(node);
 }
 
 int

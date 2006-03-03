@@ -1029,8 +1029,14 @@ int      is_Bad    (const ir_node *node);
 int      is_no_Block (const ir_node *node);
 /** returns true if the node is a Block */
 int      is_Block (const ir_node *node);
-/** returns true if node is a Unknown node. */
+/** returns true if node is an Unknown node. */
 int      is_Unknown (const ir_node *node);
+/** returns true if node is a Return node. */
+int      is_Return (const ir_node *node);
+/** returns true if node is a Call node. */
+int      is_Call (const ir_node *node);
+/** returns true if node is a Sel node. */
+int      is_Sel (const ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 int      is_Proj (const ir_node *node);

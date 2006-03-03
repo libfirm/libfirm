@@ -268,8 +268,12 @@ struct ir_node {
 };
 
 
-/** Returns the array with the ins.  The content of the array may not be
-   changed.  */
+/**
+ * Returns the array with the ins.  The content of the array may not be
+ * changed.
+ * Note that this function returns the whole in array including the
+ * block predecessor. So, it is NOT symmetric with set_irn_in().
+ */
 ir_node     **get_irn_in            (const ir_node *node);
 
 /** @{ */
@@ -601,6 +605,24 @@ _is_Unknown (const ir_node *node) {
 }
 
 static INLINE int
+_is_Return (const ir_node *node) {
+  assert(node);
+  return (node && _get_irn_op(node) == op_Return);
+}
+
+static INLINE int
+_is_Call (const ir_node *node) {
+  assert(node);
+  return (node && _get_irn_op(node) == op_Call);
+}
+
+static INLINE int
+_is_Sel (const ir_node *node) {
+  assert(node);
+  return (node && _get_irn_op(node) == op_Sel);
+}
+
+static INLINE int
 _is_no_Block(const ir_node *node) {
   assert(node && _is_ir_node(node));
   return (_get_irn_op(node) != op_Block);
@@ -766,6 +788,9 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 #define is_binop(node)                        _is_binop(node)
 #define is_Const(node)                        _is_Const(node)
 #define is_Unknown(node)                      _is_Unknown(node)
+#define is_Return(node)                       _is_Return(node)
+#define is_Call(node)                         _is_Call(node)
+#define is_Sel(node)                          _is_Sel(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)
