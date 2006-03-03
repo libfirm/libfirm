@@ -21,6 +21,18 @@
 
  *****************************************************************************/
 
+
+size_red_t *new_size_red(copy_opt_t *co) {
+	size_red_t *res = malloc(sizeof(*res));
+
+	res->co = co;
+	res->all_removed = pset_new_ptr_default();
+	res->col_suff = NULL;
+	obstack_init(&res->ob);
+
+	return res;
+}
+
 /**
  * Checks if a node is simplicial in the graph heeding the already removed nodes.
  */
@@ -104,6 +116,7 @@ void sr_reinsert(size_red_t *sr) {
 }
 
 void free_size_red(size_red_t *sr) {
+	del_pset(sr->all_removed);
 	obstack_free(&sr->ob, NULL);
 	free(sr);
 }
