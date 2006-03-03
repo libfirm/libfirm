@@ -84,6 +84,10 @@ extern "C" {
 #include "gvn_pre.h"        /* global value numbering and partial redundancy elimination */
 //#include "opt_branches.h"   /* Branch optimizations */
 
+/* Lowering */
+#include "lower_calls.h"      /* lowering of different calls */
+#include "lower_intrinsics.h" /* lowering of intrinsic calls */
+
 /* Analyses */
 #include "irouts.h"         /* Graph reversal / out edges. */
 #include "trouts.h"         /* Graph reversal / out edges for types. */
