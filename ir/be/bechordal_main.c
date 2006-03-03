@@ -164,7 +164,9 @@ static be_ra_chordal_opts_t options = {
 #ifdef WITH_LIBCORE
 static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "belady", BE_CH_SPILL_BELADY },
+#ifndef NO_ILP
 	{ "ilp",	BE_CH_SPILL_ILP },
+#endif
 	{ NULL, 0 }
 };
 
@@ -272,9 +274,11 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		case BE_CH_SPILL_BELADY:
 			be_spill_belady(&chordal_env);
 			break;
+#ifndef NO_ILP
 		case BE_CH_SPILL_ILP:
 			be_spill_ilp(&chordal_env);
 			break;
+#endif
 		default:
 			fprintf(stderr, "no valid spiller selected. falling back to belady\n");
 			be_spill_belady(&chordal_env);
