@@ -468,7 +468,7 @@ int be_has_frame_entity(const ir_node *irn)
 	return 0;
 }
 
-entity *be_get_frame_entity(ir_node *irn)
+entity *be_get_frame_entity(const ir_node *irn)
 {
 	if(be_has_frame_entity(irn)) {
 		be_frame_attr_t *a = get_irn_attr(irn);
@@ -621,17 +621,17 @@ ir_node *be_get_Spill_context(const ir_node *irn) {
  * else we perform DFS from the reload (over all PhiMs) and return
  * the first spill node we find.
  */
-static INLINE ir_node *find_a_spill(ir_node *irn)
+static INLINE ir_node *find_a_spill(const ir_node *irn)
 {
 	ir_graph *irg       = get_irn_irg(irn);
 	unsigned visited_nr = get_irg_visited(irg) + 1;
 
 	assert(be_is_Reload(irn));
 	set_irg_visited(irg, visited_nr);
-	return find_a_spill_walker(irn, visited_nr);
+	return find_a_spill_walker((ir_node *)irn, visited_nr);
 }
 
-entity *be_get_spill_entity(ir_node *irn)
+entity *be_get_spill_entity(const ir_node *irn)
 {
 	int opc           = get_irn_opcode(irn);
 
@@ -792,7 +792,7 @@ static entity *be_node_get_frame_entity(const void *self, const ir_node *irn)
 	return be_get_frame_entity(irn);
 }
 
-static void *be_node_set_stack_bias(const void *self, ir_node *irn, int bias)
+static void be_node_set_stack_bias(const void *self, ir_node *irn, int bias)
 {
 }
 

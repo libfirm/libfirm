@@ -26,6 +26,7 @@
 #include "irgwalk.h"
 #include "iredges_t.h"
 #include "ircons_t.h"
+#include "irprintf.h"
 
 #include "beutil.h"
 #include "bearch.h"

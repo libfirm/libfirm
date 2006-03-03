@@ -124,10 +124,10 @@ int be_is_NoReg(const ir_node *irn);
  *         if the node does not access the stack frame or is no back-end node.
  *
  */
-entity *be_get_frame_entity(ir_node *irn);
+entity *be_get_frame_entity(const ir_node *irn);
 
 void   be_set_Spill_entity(ir_node *irn, entity *ent);
-entity *be_get_spill_entity(ir_node *irn);
+entity *be_get_spill_entity(const ir_node *irn);
 
 ir_node *be_get_Spill_context(const ir_node *irn);
 
