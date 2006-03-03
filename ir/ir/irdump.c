@@ -45,7 +45,7 @@
 
 #include "irvrfy.h"
 
-#include "panic.h"
+#include "error.h"
 #include "array.h"
 #include "pmap.h"
 #include "eset.h"
