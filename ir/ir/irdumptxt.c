@@ -360,7 +360,7 @@ int addr_is_alloc(ir_node *acc) {
   if (is_memop(acc)) {
     addr = get_memop_ptr(acc);
   } else {
-    assert(get_irn_op(acc) == op_Call);
+    assert(is_Call(acc));
     addr = get_Call_ptr(acc);
   }
 
