@@ -91,6 +91,12 @@ void arch_set_stack_bias(const arch_env_t *env, ir_node *irn, int bias)
   ops->impl->set_stack_bias(ops, irn, bias);
 }
 
+entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  return ops->impl->get_frame_entity(ops, irn);
+}
+
 
 int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs)
 {

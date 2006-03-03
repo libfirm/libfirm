@@ -206,8 +206,15 @@ static const arch_register_class_t *firm_get_reg_class_for_mode(const void *self
 
 static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi)
 {
+	static ir_type *between_type = NULL;
 	const arch_register_class_t *cls = &reg_classes[CLS_DATAB];
 	int i, n;
+
+	if(!between_type) {
+		between_type = new_type_class(new_id_from_str("firm_be_between"));
+		set_type_size_bytes(between_type, 0);
+	}
+
 
 	for(i = 0, n = get_method_n_params(method_type); i < n; ++i) {
 		ir_type *t = get_method_param_type(method_type, i);
@@ -223,7 +230,7 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 			be_abi_call_res_reg(abi, i, &cls->regs[i]);
 	}
 
-	be_abi_call_set_flags(abi, BE_ABI_NONE, 0);
+	be_abi_call_set_flags(abi, BE_ABI_NONE, between_type);
 }
 
 
@@ -329,7 +336,13 @@ static arch_irn_flags_t firm_get_flags(const void *self, const ir_node *irn)
 	return res;
 }
 
-static void firm_set_stack_bias(const void *self, ir_node *irn, int bias) {
+static void firm_set_stack_bias(const void *self, ir_node *irn, int bias)
+{
+}
+
+static entity *firm_get_frame_entity(const void *self, const ir_node *irn)
+{
+	return NULL;
 }
 
 static const arch_irn_ops_if_t firm_irn_ops_if = {
@@ -338,6 +351,7 @@ static const arch_irn_ops_if_t firm_irn_ops_if = {
 	firm_get_irn_reg,
 	firm_classify,
 	firm_get_flags,
+	firm_get_frame_entity,
 	firm_set_stack_bias
 };
 

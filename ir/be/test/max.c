@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 void dequant_h263_inter_c(	short * data,
 				const short * coeff,
 				const unsigned int quant)

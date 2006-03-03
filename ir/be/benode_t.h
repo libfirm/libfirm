@@ -36,6 +36,9 @@ typedef enum {
 	beo_IncSP,
 	beo_RegParams,
 	beo_StackParam,
+	beo_FrameLoad,
+	beo_FrameStore,
+	beo_FrameAddr,
 	beo_Last
 } be_opcode_t;
 
@@ -43,6 +46,12 @@ typedef enum {
 	be_stack_dir_along = 0,
 	be_stack_dir_against = 1
 } be_stack_dir_t;
+
+typedef enum {
+	be_frame_flag_spill = 1,
+	be_frame_flag_local = 2,
+	be_frame_flag_arg   = 4
+} be_frame_flag_t;
 
 #define BE_STACK_FRAME_SIZE ((unsigned) -1)
 
@@ -55,6 +64,12 @@ ir_node *be_new_Reload(const arch_register_class_t *cls, ir_graph *irg, ir_node 
 ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *block, ir_node *in);
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
+
+ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
+						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, entity *ent);
+ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
+						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, entity *ent);
+ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, entity *ent);
 
 ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *operand);
 
@@ -80,7 +95,7 @@ be_stack_dir_t be_get_IncSP_direction(ir_node *irn);
 
 ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
 ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
-ir_node *be_new_StackParam(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, unsigned offset);
+ir_node *be_new_StackParam(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 ir_node *be_new_NoReg(const arch_register_t *reg, ir_graph *irg, ir_node *bl);
 
@@ -101,6 +116,15 @@ int be_is_RegParams(const ir_node *irn);
 int be_is_StackParam(const ir_node *irn);
 int be_is_NoReg(const ir_node *irn);
 
+
+/**
+ * Get the entity on the stack frame the given node uses.
+ * @param irn The node.
+ * @return The entity on the stack frame used by the node or NULL,
+ *         if the node does not access the stack frame or is no back-end node.
+ *
+ */
+entity *be_get_frame_entity(ir_node *irn);
 
 void   be_set_Spill_entity(ir_node *irn, entity *ent);
 entity *be_get_spill_entity(ir_node *irn);

@@ -270,6 +270,14 @@ struct _arch_irn_ops_if_t {
   arch_irn_flags_t (*get_flags)(const void *self, const ir_node *irn);
 
   /**
+   * Get the entity on the stack frame this node depends on.
+   * @param self The this pointer.
+   * @param irn  The node in question.
+   * @return The entity on the stack frame or NULL, if the node does not has a stack frame entity.
+   */
+  entity *(*get_frame_entity)(const void *self, const ir_node *irn);
+
+  /**
    * Set a bias for the stack pointer.
    * If the node in question uses the stack pointer for indexing, it must
    * consider the value of <code>bias</code> additionally.

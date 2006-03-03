@@ -241,13 +241,7 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 		return 0;
 	}
 	else if (is_Proj(pred)) {
-		first = get_Proj_pred(pred);
-
-		if (is_ia32_Call(first))
-			return 0;
-
-		assert(0 && "unsupported proj-pos translation Proj(Proj)");
-		return -1;
+		return nr;
 	}
 	else if (get_irn_opcode(pred) == iro_Start) {
 		return nr;
