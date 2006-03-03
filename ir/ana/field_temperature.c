@@ -319,19 +319,18 @@ double get_entity_estimated_n_dyncalls(entity *ent) {
     ir_node *acc = get_entity_access(ent, i);
 
     /* Call->Sel(ent) combination */
-    if ((get_irn_op(acc) == op_Call)  &&
-	(get_irn_op(get_Call_ptr(acc)) == op_Sel)) {
+    if (is_Call(acc) && is_Sel(get_Call_ptr(acc))) {
       n_calls += get_irn_final_cost(acc);
 
     /* MemOp->Sel combination for static, overwritten entities */
-    } else if (is_memop(acc) && (get_irn_op(get_memop_ptr(acc)) == op_Sel)) {
+    } else if (is_memop(acc) && is_Sel(get_memop_ptr(acc))) {
       entity *ent = get_Sel_entity(get_memop_ptr(acc));
       if (is_Class_type(get_entity_owner(ent))) {
-	/* We might call this for inner entities in compounds. */
-	if (get_entity_n_overwrites(ent) > 0 ||
-	    get_entity_n_overwrittenby(ent) > 0) {
-	  n_calls += get_irn_final_cost(acc);
-	}
+        /* We might call this for inner entities in compounds. */
+        if (get_entity_n_overwrites(ent) > 0 ||
+            get_entity_n_overwrittenby(ent) > 0) {
+          n_calls += get_irn_final_cost(acc);
+        }
       }
     }
 
