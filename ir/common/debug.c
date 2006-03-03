@@ -43,12 +43,18 @@ firm_dbg_module_t *firm_dbg_register(const char *name)
 static struct obstack dbg_obst;
 static set *module_set;
 
+/**
+ * A debug module.
+ */
 struct _firm_dbg_module_t {
   unsigned mask;
   const char *name;
   FILE *file;
 };
 
+/**
+ * Compares two modules by comparing it's names
+ */
 static int module_cmp(const void *p1, const void *p2, size_t size)
 {
   const firm_dbg_module_t *m1 = p1;
@@ -56,6 +62,9 @@ static int module_cmp(const void *p1, const void *p2, size_t size)
   return strcmp(m1->name, m2->name);
 }
 
+/**
+ * initialize the debug module
+ */
 static void firm_dbg_init(void)
 {
   obstack_init(&dbg_obst);
@@ -90,11 +99,18 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file)
   module->file = file;
 }
 
+/**
+ * A message info: a pair of debug handle and message
+ */
 typedef struct _msg_info_t {
   const char *msg;
   const firm_dbg_module_t *mod;
 } msg_info_t;
 
+/**
+ * Formats a message given by a printf-like format and a va_list argument,
+ * puts the test on an obstack and return a msg_info.
+ */
 static void *make_msg_info(const firm_dbg_module_t *mod, const char *fmt, va_list args)
 {
   static const char msg_header[] = "%s(%d) %s: ";
