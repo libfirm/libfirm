@@ -30,6 +30,7 @@
 #include "bearch.h"
 #include "firm/bearch_firm.h"
 #include "ia32/bearch_ia32.h"
+#include "TEMPLATE/bearch_TEMPLATE.h"
 
 #include "be_t.h"
 #include "benumb_t.h"
@@ -104,6 +105,7 @@ static const lc_opt_enum_const_ptr_items_t ra_items[] = {
 static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ "firm",    &firm_isa },
 	{ "ia32",    &ia32_isa_if },
+	{ "TEMPLATE",&TEMPLATE_isa_if },
 	{ NULL,      NULL }
 };
 
