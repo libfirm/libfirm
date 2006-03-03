@@ -284,12 +284,12 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
   int n_ret = 0;
 
   for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
-    if (get_irn_op(cfgpred_arr[i]) == op_Return) {
+    if (is_Return(cfgpred_arr[i])) {
       if (ret_arr) {
-	ARR_APP1(ir_node *, ret_arr, cfgpred_arr[i]);
+        ARR_APP1(ir_node *, ret_arr, cfgpred_arr[i]);
       } else {
-	ret_arr = NEW_ARR_F(ir_node *, 1);
-	ret_arr[0] = cfgpred_arr[i];
+        ret_arr = NEW_ARR_F(ir_node *, 1);
+        ret_arr[0] = cfgpred_arr[i];
       }
       ++n_ret;
     }
@@ -351,12 +351,12 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
   int n_except = 0;
   ir_node ** cfgpred_arr = get_Block_cfgpred_arr(end_block);
   for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
-    if (get_irn_op(cfgpred_arr[i]) != op_Return) {
+    if (! is_Return(cfgpred_arr[i])) {
       if (except_arr) {
-    ARR_APP1(ir_node *, except_arr, cfgpred_arr[i]);
+        ARR_APP1(ir_node *, except_arr, cfgpred_arr[i]);
       } else {
-    except_arr = NEW_ARR_F(ir_node *, 1);
-    except_arr[0] = cfgpred_arr[i];
+        except_arr = NEW_ARR_F(ir_node *, 1);
+        except_arr[0] = cfgpred_arr[i];
       }
       ++n_except;
     }

@@ -776,7 +776,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg) {
       ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
       if (is_Proj(pred) || get_irn_op(pred) == op_Tuple)
         break;   /*  We can not test properly.  How many tuples are there? */
-      ASSERT_AND_RET(((get_irn_op(pred) == op_Return) ||
+      ASSERT_AND_RET((is_Return(pred)                 ||
                       is_Bad(pred)                    ||
                       (get_irn_op(pred) == op_Raise)  ||
                       is_fragile_op(pred)               ),
