@@ -441,7 +441,7 @@ set_type_state(ir_type *tp, type_state state) {
     default: break;
     } /* switch (tp) */
   }
-  if (state = layout_fixed)
+  if (state == layout_fixed)
     tp->flags |= tf_layout_fixed;
   else
     tp->flags &= tf_layout_fixed;
