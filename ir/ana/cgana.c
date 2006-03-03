@@ -177,7 +177,7 @@ static void sel_methods_walker(ir_node * node, void *env) {
   entity **arr;
 
   /* Call standard optimizations */
-  if (get_irn_op(node) == op_Sel) {
+  if (is_Sel(node)) {
     ir_node *new_node = optimize_in_place(node);
     if (node != new_node)
       exchange(node, new_node);
@@ -281,7 +281,7 @@ static entity ** get_Sel_arr(ir_node * sel) {
   entity * ent;
   entity ** arr;
 
-  assert(sel && get_irn_op(sel) == op_Sel);
+  assert(is_Sel(sel));
   ent = get_Sel_entity(sel);
   ent = get_inherited_methods_implementation(ent);
 
@@ -709,7 +709,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
 
 /* */
 static void callee_walker(ir_node * call, void * env) {
-  if (get_irn_op(call) == op_Call) {
+  if (is_Call(call)) {
     eset * methods = eset_create();
     entity * ent;
     entity ** arr = NEW_ARR_F(entity *, 0);
@@ -797,7 +797,7 @@ static void sel_methods_dispose(void) {
 /*--------------------------------------------------------------------------*/
 
 static void destruct_walker(ir_node * node, void * env) {
-  if (get_irn_op(node) == op_Call) {
+  if (is_Call(node)) {
     remove_Call_callee_arr(node);
   }
 }
