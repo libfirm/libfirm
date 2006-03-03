@@ -115,7 +115,7 @@ ir_node *transform_node_Load(ir_node *n)
 
   field_ptr = get_Load_ptr(n);
 
-  if (get_irn_op(field_ptr) != op_Sel) return n;
+  if (! is_Sel(field_ptr)) return n;
 
   ent = get_Sel_entity(field_ptr);
   if ((get_entity_allocation(ent) != allocation_static)    ||

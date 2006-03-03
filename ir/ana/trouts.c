@@ -472,7 +472,7 @@ static entity *get_addr_entity(ir_node *addr, int pos) {
   switch (get_irn_opcode(addr)) {
   case iro_Sel:
     /* Treat jack array sels? They are compounds!  Follow to outermost entity.  */
-    while (get_irn_op(get_Sel_ptr(addr)) == op_Sel) {
+    while (is_Sel(get_Sel_ptr(addr))) {
       addr = get_Sel_ptr(addr);
     }
     assert (0 <= pos && pos < get_Sel_n_accessed_entities(addr));
@@ -517,7 +517,7 @@ static void chain_accesses(ir_node *n, void *env) {
     addr = get_memop_ptr(n);
   } else if (get_irn_op(n) == op_Call) {
     addr = get_Call_ptr(n);
-    if (get_irn_op(addr) != op_Sel) return;  /* Sels before Calls mean a Load / polymorphic Call. */
+    if (! is_Sel(addr)) return;  /* Sels before Calls mean a Load / polymorphic Call. */
   } else {
     return;
   }

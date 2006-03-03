@@ -421,7 +421,7 @@ static unsigned optimize_load(ir_node *load)
    * like x = new O; x->t;
    */
   if (info->projs[pn_Load_X_except]) {
-    if (get_irn_op(ptr) == op_Sel) {
+    if (is_Sel(ptr)) {
       ir_node *mem = get_Sel_mem(ptr);
 
       if (get_irn_op(skip_Proj(mem)) == op_Alloc) {

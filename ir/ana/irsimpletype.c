@@ -264,7 +264,7 @@ static ir_type *find_type_for_node(ir_node *n) {
   } break;
   case iro_Load: {
     ir_node *a = get_Load_ptr(n);
-    if (get_irn_op(a) == op_Sel)
+    if (is_Sel(a))
       tp = get_entity_type(get_Sel_entity(a));
     else if (is_Pointer_type(compute_irn_type(a))) {
       tp = get_pointer_points_to_type(get_irn_typeinfo_type(a));

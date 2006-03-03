@@ -189,7 +189,7 @@ static void link_all_leave_sels(entity *ent, ir_node *sel)
   for (i = 0; i < n; ++i) {
     ir_node *succ = get_irn_out(sel, i);
 
-    if (get_irn_op(succ) == op_Sel) {
+    if (is_Sel(succ)) {
       link_all_leave_sels(ent, succ);
       flag = 0;
     }
@@ -252,7 +252,7 @@ static int find_possible_replacements(ir_graph *irg)
   for (i = 0; i < n; ++i) {
     ir_node *succ = get_irn_out(irg_frame, i);
 
-    if (get_irn_op(succ) == op_Sel) {
+    if (is_Sel(succ)) {
       entity *ent = get_Sel_entity(succ);
       set_entity_link(ent, NULL);
     }
@@ -266,7 +266,7 @@ static int find_possible_replacements(ir_graph *irg)
   for (i = 0; i < n; ++i) {
     ir_node *succ = get_irn_out(irg_frame, i);
 
-    if (get_irn_op(succ) == op_Sel) {
+    if (is_Sel(succ)) {
       entity *ent = get_Sel_entity(succ);
       ir_type *ent_type;
 
@@ -311,7 +311,7 @@ static path_t *find_path(ir_node *sel, unsigned len)
   n    = get_Sel_n_indexs(sel);
   len += n + 1;
 
-  if (get_irn_op(pred) != op_Sel) {
+  if (! is_Sel(pred)) {
     /* we found the root */
 
     res = xmalloc(sizeof(*res) + (len - 1) * sizeof(res->path));
@@ -434,7 +434,7 @@ static void handle_first(ir_node *node, void *ctx)
     /* a load, check if we can resolve it */
     adr = get_Load_ptr(node);
 
-    if (get_irn_op(adr) != op_Sel)
+    if (! is_Sel(adr))
       return;
 
     if (! pset_find_ptr(env->sels, adr))
@@ -470,7 +470,7 @@ static void handle_first(ir_node *node, void *ctx)
     /* a Store always can be replaced */
     adr = get_Store_ptr(node);
 
-    if (get_irn_op(adr) != op_Sel)
+    if (! is_Sel(adr))
       return;
 
     if (! pset_find_ptr(env->sels, adr))
@@ -703,7 +703,7 @@ void scalar_replacement_opt(ir_graph *irg)
     for (i = 0 ; i < get_irn_n_outs(irg_frame); i++) {
       ir_node *succ = get_irn_out(irg_frame, i);
 
-      if (get_irn_op(succ) == op_Sel) {
+      if (is_Sel(succ)) {
         entity *ent = get_Sel_entity(succ);
 
         if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
