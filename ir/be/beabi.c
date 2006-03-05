@@ -5,7 +5,9 @@
  *
  */
 
-#include "firm_config.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 #include "obst.h"
 
 #include "type.h"
@@ -204,6 +206,10 @@ static be_stack_frame_t *stack_frame_init(be_stack_frame_t *frame, type *args, t
 	return frame;
 }
 
+/**
+ * If irn is a Sel node computing the address of an entity
+ * on the frame type return the entity, else NULL.
+ */
 static INLINE entity *get_sel_ent(ir_node *irn)
 {
 	if(get_irn_opcode(irn) == iro_Sel
@@ -215,6 +221,10 @@ static INLINE entity *get_sel_ent(ir_node *irn)
 	return NULL;
 }
 
+/**
+ * Walker: Replaces Loads, Stores and Sels of frame type entities
+ * by FrameLoad, FrameStore and FrameAdress.
+ */
 static void lower_frame_sels_walker(ir_node *irn, void *data)
 {
 	const arch_register_class_t *cls;
@@ -875,6 +885,9 @@ static void modify_irg(be_abi_irg_t *env)
 	be_abi_call_free(call);
 }
 
+/**
+ * Walker: puts all Alloc(stack_alloc) on a obstack
+ */
 static void collect_alloca_walker(ir_node *irn, void *data)
 {
 	be_abi_irg_t *env = data;
