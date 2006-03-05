@@ -98,7 +98,7 @@ int get_Block_n_cfg_outs(ir_node *bl) {
 
 ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
   int i, out_pos = 0;
-  assert(bl && (get_irn_op(bl) == op_Block));
+  assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
   assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
@@ -178,7 +178,7 @@ void irg_out_block_walk(ir_node *node,
             irg_walk_func *pre, irg_walk_func *post,
             void *env) {
 
-  assert((get_irn_op(node) == op_Block) || (get_irn_mode(node) == mode_X));
+  assert(is_Block(node) || (get_irn_mode(node) == mode_X));
 
   inc_irg_block_visited(current_ir_graph);
 
@@ -349,7 +349,7 @@ static INLINE void fix_start_proj(ir_graph *irg) {
   int i;
 
   if (get_Block_n_cfg_outs(startbl)) {
-    for (i = 0; i < get_irn_n_outs(startbl); i++)
+    for (i = get_irn_n_outs(startbl) - 1; i >= 0; --i)
       if (get_irn_mode(get_irn_out(startbl, i)) == mode_X) {
         proj = get_irn_out(startbl, i);
         break;
