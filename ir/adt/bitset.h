@@ -109,7 +109,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @return A pointer to an empty initialized bitset.
  */
 #define bitset_malloc(size) \
-	_bitset_prepare(malloc(_bitset_overall_size(sizeof(bitset_t), size)), size)
+	_bitset_prepare(xmalloc(_bitset_overall_size(sizeof(bitset_t), size)), size)
 
 /**
  * Free a bitset allocated with bitset_malloc().
