@@ -919,11 +919,11 @@ void     set_Mux_true  (ir_node *node, ir_node *ir_true);
  * Projection numbers for result of CopyB node: use for Proj nodes!
  */
 typedef enum {
-  pn_CopyB_M_regular = pn_Call_M_regular, /**< The memory result. */
-  pn_CopyB_X_except  = pn_Call_X_except,  /**< The control flow result branching to the exception handler */
-  pn_CopyB_M_except  = pn_Call_M_except,  /**< The memory result in case the runtime function terminated with
+  pn_CopyB_M_regular = 0,  /**< The memory result. */
+  pn_CopyB_X_except  = 1,  /**< The control flow result branching to the exception handler */
+  pn_CopyB_M_except  = 2,  /**< The memory result in case the runtime function terminated with
                  an exception */
-  pn_CopyB_max       = pn_Call_max        /**< number of projections from a CopyB */
+  pn_CopyB_max       = 3   /**< number of projections from a CopyB */
 } pn_CopyB;   /* Projection numbers for CopyB. */
 #define pn_CopyB_M pn_CopyB_M_regular
 
