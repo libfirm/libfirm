@@ -27,13 +27,47 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "typewalk.h"
 #include "lower_calls.h"
 #include "return.h"
+#include "irtools.h"
 #include "array.h"
+#include "pmap.h"
+
+/** A type map for def_find_pointer_type. */
+static pmap *type_map;
+
+/**
+ * Default implementation for finding a pointer type for a given element type.
+ * Simple create a new one.
+ */
+static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignment)
+{
+  ir_type *res;
+  pmap_entry *e;
+
+  /* Mode and alignment are always identical in all calls to def_find_pointer_type(), so
+     we simply can use a map from the element type to the pointer type. */
+  e = pmap_find(type_map, e_type);
+  if (e)
+    res = e->value;
+  else {
+    res = new_type_pointer(mangle_u(get_type_ident(e_type), new_id_from_chars("Ptr", 3)), e_type, mode);
+    set_type_alignment_bytes(res, alignment);
+    pmap_insert(type_map, e_type, res);
+  }
+  return res;
+}
 
 /**
  * Creates a new lowered type for a method type with compound
  * arguments. The new type is associated to the old one and returned.
+ *
+ * @param lp   parameter struct
+ * @param mtp  the method type to lower
+ *
+ * The current implementation expects that a lowered type already
+ * includes the necessery changes ...
  */
 static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 {
@@ -123,21 +157,59 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 }
 
 /**
- * Walker environment for fix_value_res_access().
+ * A call list entry.
+ */
+typedef struct cl_entry cl_entry;
+struct cl_entry {
+  cl_entry *next;   /**< Pointer to the next entry. */
+  ir_node  *call;   /**< Pointer to the Call node. */
+  ir_node  *copyb;  /**< List of all CopyB nodes. */
+};
+
+/**
+ * Walker environment for fix_args_and_collect_calls().
  */
 typedef struct _wlk_env_t {
-  int arg_shift;      /**< argument index shift for parameters. */
-  int first_hidden;   /**< index of the first hidden argument. */
+  int            arg_shift;     /**< The Argument index shift for parameters. */
+  int            first_hidden;  /**< The index of the first hidden argument. */
+  struct obstack obst;          /**< An obstack to allocate the data on. */
+  cl_entry       *cl_list;      /**< The call list. */
+  pmap           *dummy_map;    /**< A map for finding the dummy arguments. */
+  unsigned       dnr;           /**< The dummy index number. */
 } wlk_env;
 
 /**
- * Post walker: shift all parameter indeces and remove
- * Sel(Proj(P_frame_base())
+ * Return the call list entry of a call node.
+ * If no entry exists yet, allocate one and enter the node into
+ * the call list of the environment.
+ *
+ * @param call   A Call node.
+ * @param env    The environment.
  */
-static void fix_value_res_access(ir_node *n, void *ctx) {
-  wlk_env *env = ctx;
+static cl_entry *get_Call_entry(ir_node *call, wlk_env *env) {
+  cl_entry *res = get_irn_link(call);
+  if (res == NULL) {
+    cl_entry *res = obstack_alloc(&env->obst, sizeof(*res));
+    res->next  = env->cl_list;
+    res->call  = call;
+    res->copyb = NULL;
+    set_irn_link(call, res);
+    env->cl_list = res;
+  }
+  return res;
+}
 
-  if (env->arg_shift > 0 && is_Proj(n)) {
+/**
+ * Post walker: shift all parameter indeces
+ * and collect Calls with compound returns in the call list.
+ */
+static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
+  wlk_env *env = ctx;
+  int i;
+  ir_type *ctp;
+  ir_op *op = get_irn_op(n);
+
+  if (env->arg_shift > 0 && op == op_Proj) {
     ir_node *pred = get_Proj_pred(n);
 
     /* Fix the argument numbers */
@@ -146,11 +218,55 @@ static void fix_value_res_access(ir_node *n, void *ctx) {
       set_Proj_proj(n, pnr + env->arg_shift);
     }
   }
+  else if (op == op_Call) {
+    ctp = get_Call_type(n);
+    for (i = get_method_n_ress(ctp) -1; i >= 0; --i) {
+      if (is_compound_type(get_method_res_type(ctp, i))) {
+        /*
+         * This is a call with a compound return. As the result
+         * might be ignored, we must put it in the list.
+         */
+        (void)get_Call_entry(n, env);
+      }
+    }
+  }
+  else if (op == op_CopyB) {
+    ir_node *src = get_CopyB_src(n);
+    /* older scheme using value_res_ent */
+    if (is_Sel(src)) {
+      ir_node *proj = get_Sel_ptr(src);
+      if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_P_value_res_base) {
+        ir_node *call = get_Proj_pred(proj);
+        if (is_Call(call)) {
+          /* found a CopyB from compound Call result */
+          cl_entry *e = get_Call_entry(call, env);
+          set_irn_link(n, e->copyb);
+          e->copyb = n;
+        }
+      }
+    } else
+    /* new scheme: compound results are determined by the call type only */
+    if (is_Proj(src)) {
+      ir_node *proj = get_Proj_pred(src);
+      if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_T_result) {
+        ir_node *call = get_Proj_pred(proj);
+        if (is_Call(call)) {
+          ctp = get_Call_type(call);
+          if (is_compound_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
+            /* found a CopyB from compound Call result */
+            cl_entry *e = get_Call_entry(call, env);
+            set_irn_link(n, e->copyb);
+            e->copyb = n;
+          }
+        }
+      }
+    }
+  }
 }
 
 /**
- * returns non-zero if adr is a compound address
- * of a frame-type entity
+ * Returns non-zero if a node is a compound address
+ * of a frame-type entity.
  *
  * @param ft   the frame type
  * @param adr  the node
@@ -167,7 +283,7 @@ static int is_compound_address(ir_type *ft, ir_node *adr)
   return get_entity_owner(ent) == ft;
 }
 
-/** A pair for the copy-return-optimization */
+/** A pair for the copy-return-optimization. */
 typedef struct cr_pair {
   entity *ent;    /**< the entity than can be removed from the frame */
   ir_node *arg;   /**< the argument that replaces the entities address */
@@ -177,8 +293,9 @@ typedef struct cr_pair {
  * Post walker: fixes all entities addresses for the copy-return
  * optimization.
  *
- * Note: We expect the length of the cr array to be 1 (C, C++),
- * so ignore the linear search.
+ * Note: We expect the length of the cr_pair array (ie number of compound
+ * return values) to be 1 (C, C++) in almost all cases, so ignore the
+ * linear search complexity here.
  */
 static void do_copy_return_opt(ir_node *n, void *ctx) {
   cr_pair *arr = ctx;
@@ -197,9 +314,178 @@ static void do_copy_return_opt(ir_node *n, void *ctx) {
 }
 
 /**
- * Transform all graphs with compound parameter return:
- * Remove the return and use the hidden parameter instead.
+ * Return a Sel node that selects a dummy argument of type tp.
+ * Dummy arguments are only needed once and we use a map
+ * to store them.
+ * We could even assign all dummy arguments the same offset
+ * in the frame type ...
  *
+ * @param irg    the graph
+ * @param block  the block where a newly create Sel should be placed
+ * @param tp     the type of the dummy entity that should be create
+ * @param env    the environment
+ */
+static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_env *env)
+{
+  ir_node *sel;
+  pmap_entry *e;
+
+  /* use a map the check if we already create such an entity */
+  e = pmap_find(env->dummy_map, tp);
+  if (e)
+    sel = e->value;
+  else {
+    ir_type *ft = get_irg_frame_type(irg);
+    entity *ent;
+    char buf[16];
+
+    snprintf(buf, sizeof(buf), "dummy.%u", env->dnr++);
+    ent = new_entity(ft, new_id_from_str(buf), tp);
+    sel = new_r_simpleSel(
+      irg,
+      block,
+      get_irg_no_mem(irg),
+      get_irg_frame(irg),
+      ent);
+    pmap_insert(env->dummy_map, tp, sel);
+
+    if (get_type_state(ft) == layout_fixed) {
+      /* Fix the layout again */
+      assert(0 && "Fixed layout not implemented");
+    }
+  }
+  return sel;
+}
+
+/**
+ * Add the hidden parameter from the CopyB node to the Call node.
+ *
+ * @param irg    the graph
+ * @param n_com  number of compound results (will be number of hidden parameters)
+ * @param ins    in array to store the hidden parameters into
+ * @param entry  the call list
+ * @param env    the environment
+ */
+static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *entry, wlk_env *env)
+{
+  ir_node *p, *n, *src, *mem;
+  entity *ent;
+  ir_type *owner;
+  int idx, n_args;
+
+  n_args = 0;
+  for (p = entry->copyb; p; p = n) {
+    n   = get_irn_link(p);
+    src = get_CopyB_src(p);
+
+    /* old scheme using value_res_ent */
+    if (is_Sel(src)) {
+      ent = get_Sel_entity(src);
+      owner = get_entity_owner(ent);
+
+      /* find the hidden parameter index */
+      for (idx = 0; idx < get_struct_n_members(owner); ++idx)
+        if (get_struct_member(owner, idx) == ent)
+          break;
+      assert(idx < get_struct_n_members(owner));
+    }
+    else
+
+    /* new scheme: compound returns are determined by the call type and are Proj's */
+    idx = get_Proj_proj(src);
+
+    ins[idx] = get_CopyB_dst(p);
+    mem      = get_CopyB_mem(p);
+
+    /* get rid of the CopyB */
+    turn_into_tuple(p, pn_CopyB_max);
+    set_Tuple_pred(p, pn_CopyB_M_regular, mem);
+    set_Tuple_pred(p, pn_CopyB_M_except, get_irg_bad(irg));
+    set_Tuple_pred(p, pn_CopyB_X_except, get_irg_bad(irg));
+    ++n_args;
+  }
+
+  /* now create dummy entities for function with ignored return value */
+  if (n_args < n_com) {
+    ir_type *ctp = get_Call_type(entry->call);
+    int i, j;
+
+    if (is_lowered_type(ctp))
+      ctp = get_associated_type(ctp);
+
+    for (j = i = 0; i < get_method_n_ress(ctp); ++i) {
+      ir_type *rtp = get_method_res_type(ctp, i);
+      if (is_compound_type(rtp)) {
+        if (ins[j] == NULL)
+          ins[j] = get_dummy_sel(irg, get_nodes_block(entry->call), rtp, env);
+        ++j;
+      }
+    }
+  }
+}
+
+/**
+ * Fix all calls on a call list by adding hidden parameters.
+ *
+ * @param lp   the parameter struct
+ * @param irg  the graph
+ * @param env  the environment
+ */
+static void fix_call_list(const lower_params_t *lp, ir_graph *irg, wlk_env *env) {
+  cl_entry *p;
+  ir_node *call, **new_in;
+  ir_type *ctp, *lowered_mtp;
+  add_hidden hidden_params;
+  int i, n_params, n_com, pos;
+  unsigned dnr = 0;
+
+  new_in = NEW_ARR_F(ir_node *, 0);
+  for (p = env->cl_list; p; p = p->next) {
+    call = p->call;
+    ctp = get_Call_type(call);
+    lowered_mtp = create_modified_mtd_type(lp, ctp);
+    set_Call_type(call, lowered_mtp);
+
+    hidden_params = lp->hidden_params;
+    if (hidden_params == ADD_HIDDEN_SMART &&
+      get_method_variadicity(ctp) == variadicity_variadic)
+      hidden_params = ADD_HIDDEN_ALWAYS_IN_FRONT;
+
+    n_params = get_Call_n_params(call);
+
+    n_com = 0;
+    for (i = get_method_n_ress(ctp) - 1; i >= 0; --i) {
+      if (is_compound_type(get_method_res_type(ctp, i)))
+        ++n_com;
+    }
+    pos = 2;
+    ARR_RESIZE(ir_node *, new_in, n_params + n_com + pos);
+    memset(new_in, 0, sizeof(*new_in) * (n_params + n_com + pos));
+    if (hidden_params == ADD_HIDDEN_ALWAYS_IN_FRONT) {
+      add_hidden_param(irg, n_com, &new_in[pos], p, env);
+      pos += n_com;
+    }
+    /* copy all other parameters */
+    for (i = 0; i < n_params; ++i)
+      new_in[pos++] = get_Call_param(call, i);
+    if (hidden_params == ADD_HIDDEN_ALWAYS_LAST) {
+      add_hidden_param(irg, n_com, &new_in[pos], p, env);
+      pos += n_com;
+    }
+    new_in[0] = get_Call_mem(call);
+    new_in[1] = get_Call_ptr(call);
+
+    set_irn_in(call, n_params + n_com + 2, new_in);
+  }
+}
+
+/**
+ * Transform a graph. If it has compound parameter returns,
+ * remove them and use the hidden parameter instead.
+ * If it calls methods with compound parameter returns, add hidden
+ * parameters.
+ *
+ * @param lp   parameter struct
  * @param irg  the graph to transform
  */
 static void transform_irg(const lower_params_t *lp, ir_graph *irg)
@@ -213,7 +499,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
   add_hidden hidden_params;
 
   assert(ent && "Cannot tranform graph without an entity");
-  assert(get_irg_phase_state(irg) != phase_high && "call lowering must be done in phase high");
+  assert(get_irg_phase_state(irg) == phase_high && "call lowering must be done in phase high");
 
   mtp    = get_entity_type(ent);
   n_ress = get_method_n_ress(mtp);
@@ -223,111 +509,178 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
     if (is_compound_type(res_tp))
       ++n_com;
   }
-  if (! n_com)
-    return;
 
-  /* much easier if we have only one return */
-  normalize_one_return(irg);
+  if (n_com) {
+    /* much easier if we have only one return */
+    normalize_one_return(irg);
 
-  /* This graph has a compound argument. Create a new type */
-  lowered_mtp = create_modified_mtd_type(lp, mtp);
-  set_entity_type(ent, lowered_mtp);
+    /* This graph has a compound argument. Create a new type */
+    lowered_mtp = create_modified_mtd_type(lp, mtp);
+    set_entity_type(ent, lowered_mtp);
 
-  hidden_params = lp->hidden_params;
-  if (hidden_params == ADD_HIDDEN_SMART &&
-    get_method_variadicity(mtp) == variadicity_variadic)
-    hidden_params = ADD_HIDDEN_ALWAYS_IN_FRONT;
+    hidden_params = lp->hidden_params;
+    if (hidden_params == ADD_HIDDEN_SMART &&
+      get_method_variadicity(mtp) == variadicity_variadic)
+      hidden_params = ADD_HIDDEN_ALWAYS_IN_FRONT;
 
-  if (hidden_params == ADD_HIDDEN_ALWAYS_IN_FRONT) {
-    /* hidden arguments are added first */
-    env.arg_shift    = n_com;
-    env.first_hidden = 0;
-  }
-  else {
-    /* hidden arguments are added last */
-    env.arg_shift    = 0;
-    env.first_hidden = get_method_n_params(mtp);
-  }
-
-  if (env.arg_shift > 0) {
-    /* scan the code and argument numbers. */
-    irg_walk_graph(irg, NULL, fix_value_res_access, &env);
-  }
-
-  /*
-   * Now fix the return.
-   */
-
-  /* STEP 1: find the return */
-  endbl = get_irg_end_block(irg);
-  ret = NULL;
-  for (i = get_Block_n_cfgpreds(endbl) - 1; i >= 0; --i) {
-    ir_node *pred = get_Block_cfgpred(endbl, i);
-
-    if (is_Return(pred)) {
-      ret = pred;
-      break;
-    }
-  }
-  /* there should always be a return */
-  assert(ret);
-
-  /*
-   * STEP 2: fix it. For all compound return value add a CopyB,
-   * all others are copied.
-   */
-  NEW_ARR_A(ir_node *, new_in, n_ress - n_com + 1);
-
-  bl  = get_nodes_block(ret);
-  mem = get_Return_mem(ret);
-
-  ft = get_irg_frame_type(irg);
-  NEW_ARR_A(cr_pair, cr_opt, n_com);
-  n_cr_opt = 0;
-  for (j = 1, i = k = 0; i < n_ress; ++i) {
-    ir_node *pred = get_Return_res(ret, i);
-    res_tp = get_method_res_type(mtp, i);
-
-    if (is_compound_type(res_tp)) {
-      ir_node *arg = get_irg_args(irg);
-      arg = new_r_Proj(irg, get_nodes_block(arg), arg, mode_P_data, env.first_hidden + k);
-      ++k;
-
-      if (is_compound_address(ft, pred)) {
-        /* we can do the copy-return optimization here */
-        cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
-        cr_opt[n_cr_opt].arg = arg;
-        ++n_cr_opt;
-      }
-      else {
-        /* we cannot do copy-return optimization */
-        copy = new_r_CopyB(
-                irg, bl,
-                mem,
-                arg,
-                pred,
-                res_tp
-               );
-        mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
-      }
+    if (hidden_params == ADD_HIDDEN_ALWAYS_IN_FRONT) {
+      /* hidden arguments are added first */
+      env.arg_shift    = n_com;
+      env.first_hidden = 0;
     }
     else {
-      new_in[j] = pred;
-      ++j;
+      /* hidden arguments are added last */
+      env.arg_shift    = 0;
+      env.first_hidden = get_method_n_params(mtp);
     }
   }
-  new_in[0] = mem;
-  set_irn_in(ret, j, new_in);
+  else {
+    /* we must only search for calls */
+    env.arg_shift = 0;
+  }
+  obstack_init(&env.obst);
+  env.cl_list   = NULL;
+  env.dummy_map = pmap_create_ex(8);
+  env.dnr       = 0;
 
-  if (n_cr_opt > 0) {
-    irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
+  /* scan the code, fix argument numbers and collect calls. */
+  irg_walk_graph(irg, firm_clear_link, fix_args_and_collect_calls, &env);
 
-    for (i = ARR_LEN(cr_opt) - 1; i >= 0; --i) {
-      remove_class_member(ft, cr_opt[i].ent);
+  /* fix all calls */
+  if (env.cl_list)
+    fix_call_list(lp, irg, &env);
+
+  if (n_com) {
+    /*
+     * Now fix the Return node of the current graph.
+     */
+
+    /* STEP 1: find the return. This is simple, we have normalized the graph. */
+    endbl = get_irg_end_block(irg);
+    ret = NULL;
+    for (i = get_Block_n_cfgpreds(endbl) - 1; i >= 0; --i) {
+      ir_node *pred = get_Block_cfgpred(endbl, i);
+
+      if (is_Return(pred)) {
+        ret = pred;
+        break;
+      }
+    }
+    /* there should always be a return */
+    assert(ret);
+
+    /*
+     * STEP 2: fix it. For all compound return values add a CopyB,
+     * all others are copied.
+     */
+    NEW_ARR_A(ir_node *, new_in, n_ress - n_com + 1);
+
+    bl  = get_nodes_block(ret);
+    mem = get_Return_mem(ret);
+
+    ft = get_irg_frame_type(irg);
+    NEW_ARR_A(cr_pair, cr_opt, n_com);
+    n_cr_opt = 0;
+    for (j = 1, i = k = 0; i < n_ress; ++i) {
+      ir_node *pred = get_Return_res(ret, i);
+      res_tp = get_method_res_type(mtp, i);
+
+      if (is_compound_type(res_tp)) {
+        ir_node *arg = get_irg_args(irg);
+        arg = new_r_Proj(irg, get_nodes_block(arg), arg, mode_P_data, env.first_hidden + k);
+        ++k;
+
+        if (is_compound_address(ft, pred)) {
+          /* we can do the copy-return optimization here */
+          cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
+          cr_opt[n_cr_opt].arg = arg;
+          ++n_cr_opt;
+        }
+        else { /* copy-return optimization is impossible, do the copy. */
+          copy = new_r_CopyB(
+                  irg, bl,
+                  mem,
+                  arg,
+                  pred,
+                  res_tp
+                 );
+          mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
+        }
+      }
+      else { /* skalar return value */
+        new_in[j] = pred;
+        ++j;
+      }
+    }
+    new_in[0] = mem;
+    set_irn_in(ret, j, new_in);
+
+    if (n_cr_opt > 0) {
+      irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
+
+      for (i = ARR_LEN(cr_opt) - 1; i >= 0; --i) {
+        remove_class_member(ft, cr_opt[i].ent);
+      }
+    }
+  } /* n_com */
+
+  pmap_destroy(env.dummy_map);
+  obstack_free(&env.obst, NULL);
+}
+
+/**
+ * Returns non-zero if the given type is a method
+ * type that must be lowered.
+ *
+ * @param tp  The type.
+ */
+static int must_be_lowered(ir_type *tp) {
+  int i, n_ress;
+  ir_type *res_tp;
+
+  if (is_Method_type(tp)) {
+    n_ress = get_method_n_ress(tp);
+    for (i = 0; i < n_ress; ++i) {
+      res_tp = get_method_res_type(tp, i);
+
+      if (is_compound_type(res_tp))
+        return 1;
     }
   }
+  return 0;
+}
 
-  dump_ir_block_graph(irg, "-lc");
+/**
+ * type-walker: lower all method types of entities
+ * and points-to types.
+ */
+static void lower_method_types(type_or_ent *tore, void *env)
+{
+  const lower_params_t *lp = env;
+  ir_type *tp;
+
+  /* fix method entities */
+  if (is_entity(tore)) {
+    entity *ent = (entity *)tore;
+    tp = get_entity_type(ent);
+
+    if (must_be_lowered(tp)) {
+      tp = create_modified_mtd_type(lp, tp);
+      set_entity_type(ent, tp);
+    }
+  }
+  else {
+    tp = (ir_type *)tore;
+
+    /* fix pointer to methods */
+    if (is_Pointer_type(tp)) {
+      ir_type *etp = get_pointer_points_to_type(tp);
+      if (must_be_lowered(etp)) {
+        etp = create_modified_mtd_type(lp, etp);
+        set_pointer_points_to_type(tp, etp);
+      }
+    }
+  }
 }
 
 /*
@@ -349,18 +702,28 @@ void lower_compound_ret_calls(const lower_params_t *params)
 {
   int i;
   ir_graph *irg;
+  lower_params_t param = *params;
 
-  /* second step: Transform all graphs */
+  if (param.find_pointer_type == NULL) {
+    param.find_pointer_type = def_find_pointer_type;
+    type_map = pmap_create_ex(8);
+  }
+  else
+    type_map = NULL;
+
+  /* first step: Transform all graphs */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     irg = get_irp_irg(i);
 
     if (irg == get_const_code_irg())
       continue;
 
-    transform_irg(params, irg);
+    transform_irg(&param, irg);
   }
 
-  /*
-   * Last step: transform any other method types.
-   */
+  /* second step: Lower all method types of visible entities */
+  type_walk(NULL, lower_method_types, &param);
+
+  if (type_map)
+    pmap_destroy(type_map);
 }

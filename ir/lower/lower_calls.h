@@ -28,11 +28,18 @@ typedef enum add_hidden_params {
   ADD_HIDDEN_SMART           = 2,   /**< add hidden parameters last for non-variadic and first for variadic functions. */
 } add_hidden;
 
+/**
+ * A struct containing all control parameters for
+ * lower_compound_ret_calls().
+ */
 typedef struct {
-  int        def_ptr_alignment;   /**< default alignment for data pointer */
-  add_hidden hidden_params;       /**< where to add hidden params. */
+  int        def_ptr_alignment;   /**< Default alignment for data pointer. */
+  add_hidden hidden_params;       /**< Where to add hidden parameters. */
 
-  /** a function returning a pointer type for a given type */
+  /**
+   * A function returning a pointer type for a given type.
+   * If this pointer is NULL, a new pointer type is always created.
+   */
   ir_type *(*find_pointer_type)(ir_type *e_type, ir_mode *mode, int alignment);
 } lower_params_t;
 
@@ -50,6 +57,49 @@ typedef struct {
  *   stack.
  *
  * - Replace a possible block copy after the function call.
+ *
+ * - Changes the types of methods and calls to the lowered ones
+ *
+ * - lower all method types of existing entities
+ *
+ * In pseudo-code, the following transformation is done:
+ *
+   @code
+   struct x ret = func(a, b);
+   @endcode
+ *
+ * is translated into
+   @code
+   struct x ret;
+   func(&ret, a, b);
+   @endcode
+ *
+ * If the function returns only one possible result, the copy-on-return
+ * optimization is done, ie.
+   @code
+   struct x func(a) {
+     struct x ret;
+     ret.a = a;
+     return ret;
+   }
+   @endcode
+ *
+ * is transformed into
+ *
+   @code
+   void func(struct x *ret, a) {
+     ret->a = a;
+   }
+   @endcode
+ *
+ * @param params  A structure containing the control parameter for this
+ *                transformation.
+ *
+ * During the transformation, pointer types must be created or reused.
+ * The caller can provide params->find_pointer_type for this task to
+ * reduce the number of created pointer types.
+ * If params->find_pointer_type is NULL, new pointer types
+ * are always created automatically.
  */
 void lower_compound_ret_calls(const lower_params_t *params);
 
