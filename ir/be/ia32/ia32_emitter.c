@@ -229,13 +229,18 @@ int get_ia32_reg_nr(ir_node *irn, int pos, int in_out) {
 	return arch_register_get_index(reg);
 }
 
+enum io_direction {
+  IN_REG,
+  OUT_REG
+};
+
 /**
  * Returns the name of the in register at position pos.
  */
-const char *get_ia32_reg_name(ir_node *irn, int pos, int in_out) {
+static const char *get_ia32_reg_name(ir_node *irn, int pos, enum io_direction in_out) {
 	const arch_register_t *reg;
 
-	if (in_out == 1) {
+	if (in_out == IN_REG) {
 		reg = get_in_reg(irn, pos);
 	}
 	else {
@@ -258,12 +263,7 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 	if (!X)
 		return lc_arg_append(app, occ, "(null)", 6);
 
-	if (occ->conversion == 'S') {
-		buf = get_ia32_reg_name(X, nr, 1);
-	}
-	else { /* 'D' */
-		buf = get_ia32_reg_name(X, nr, 0);
-	}
+  buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
 
 	lc_appendable_chadd(app, '%');
 	return lc_arg_append(app, occ, buf, strlen(buf));
