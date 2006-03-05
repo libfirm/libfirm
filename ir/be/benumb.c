@@ -4,7 +4,13 @@
  * @date 8.12.2004
  */
 
-#include <stdlib.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 
 #include "impl.h"
 
