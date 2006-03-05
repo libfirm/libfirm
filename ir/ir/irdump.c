@@ -1322,7 +1322,7 @@ print_edge_vcgattr(FILE *F, ir_node *from, int to) {
   case iro_Block:
     fprintf (F, CF_EDGE_ATTR);
     break;
-  case iro_Start:   break;
+  case iro_Start:  break;
   case iro_End:
     if (to >= 0) {
       if (get_irn_mode(get_End_keepalive(from, to)) == mode_BB)
@@ -1331,108 +1331,21 @@ print_edge_vcgattr(FILE *F, ir_node *from, int to) {
     fprintf (F, INTER_MEM_EDGE_ATTR);
     }
     break;
-  case iro_EndReg:
-  case iro_EndExcept:
-  case iro_Jmp:
-  case iro_Break:
-  case iro_Cond:
-    print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Return:
-  case iro_Raise:
-    if (to == 0)
-      print_mem_edge_vcgattr(F, from, to);
-    else
-      print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Const:
-  case iro_SymConst:
-    print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Sel:
-  case iro_Call:
-    if (to == 0)
-      print_mem_edge_vcgattr(F, from, to);
-    else
-      print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_CallBegin:
-  case iro_Add:
-  case iro_Sub:
-  case iro_Minus:
-  case iro_Mul:
-    print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Quot:
-  case iro_DivMod:
-  case iro_Div:
-  case iro_Mod:
-    if (to == 0)
-      print_mem_edge_vcgattr(F, from, to);
-    else
-      print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Abs:
-  case iro_And:
-  case iro_Or:
-  case iro_Eor:
-  case iro_Shl:
-  case iro_Shr:
-  case iro_Shrs:
-  case iro_Rot:
-  case iro_Cmp:
-  case iro_Conv:
-      print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Phi:
-    if (get_irn_modecode(from) == irm_M)
-      fprintf (F, INTER_MEM_EDGE_ATTR);
-    else
-      print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Load:
-  case iro_Store:
-  case iro_Alloc:
-  case iro_Free:
-    if (to == 0)
-      print_mem_edge_vcgattr(F, from, to);
-    else
-      print_data_edge_vcgattr(F, from, to);
-    break;
-  case iro_Sync:
-    print_mem_edge_vcgattr(F, from, to);
-    break;
-  case iro_Tuple:  break;
-  case iro_Proj:
-  case iro_Filter:
-    switch (get_irn_modecode(from)) {
-    case irm_X:
-      fprintf (F, CF_EDGE_ATTR);
-      break;
-    case irm_M:
-      fprintf (F, INTER_MEM_EDGE_ATTR);
-      break;
-    default:
-      print_data_edge_vcgattr(F, from, to);
-      break;
-    }
-    break;
-  case iro_Bad:     break;
-  case iro_Unknown: break;
-  case iro_Id:
-    switch (get_irn_modecode(from)) {
-    case irm_M:
-      fprintf (F, INTRA_MEM_EDGE_ATTR);
-      break;
-    case irm_X:
-      fprintf (F, CF_EDGE_ATTR);
-      break;
-    default:
-      print_data_edge_vcgattr(F, from, to);
-      break;
-    } break;
   default:
-    ;
+    if (is_Proj(from)) {
+      if (get_irn_mode(from) == mode_M)
+        print_mem_edge_vcgattr(F, from, to);
+      else if (get_irn_mode(from) == mode_X)
+        fprintf(F, CF_EDGE_ATTR);
+      else
+        print_data_edge_vcgattr(F, from, to);
+    }
+    else if (get_irn_mode(get_irn_n(from, to)) == mode_M)
+      print_mem_edge_vcgattr(F, from, to);
+    else if (get_irn_mode(get_irn_n(from, to)) == mode_X)
+      fprintf (F, CF_EDGE_ATTR);
+    else
+      print_data_edge_vcgattr(F, from, to);
   }
 }
 
