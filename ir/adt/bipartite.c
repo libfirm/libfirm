@@ -4,6 +4,7 @@
 
 #include "bitset.h"
 #include "bipartite.h"
+#include "xmalloc.h"
 
 struct _bipartite_t {
 	int n_left, n_right;
@@ -13,12 +14,12 @@ struct _bipartite_t {
 bipartite_t *bipartite_new(int n_left, int n_right)
 {
 	int i;
-	bipartite_t *gr = malloc(sizeof(*gr));
+	bipartite_t *gr = xmalloc(sizeof(*gr) + n_left * sizeof(void *));
 	memset(gr, 0, sizeof(*gr));
 
 	gr->n_left = n_left;
 	gr->n_right = n_right;
-	gr->adj = malloc(n_left * sizeof(void *));
+	gr->adj = (bitset_t**)(gr + 1);
 
 	for(i = 0; i < n_left; ++i)
 		gr->adj[i] = bitset_malloc(n_right);
@@ -31,8 +32,6 @@ void bipartite_free(bipartite_t *gr)
 	int i;
 	for(i = 0; i < gr->n_left; ++i)
 		bitset_free(gr->adj[i]);
-
-	free(gr->adj);
 	free(gr);
 }
 
