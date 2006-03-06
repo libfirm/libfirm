@@ -134,6 +134,9 @@ typedef struct hook_entry {
     /** This hook is called, when dead node elimination is started/stopped. */
     void (*_hook_dead_node_elim)(void *context, ir_graph *irg, int start);
 
+    /** This hook is called, when a node is substituted during dead node elimination. */
+    void (*_hook_dead_node_elim_subst)(void *context, ir_graph *irg, ir_node *old, ir_node *nw);
+
     /** This hook is called after if conversion has run. */
     void (*_hook_if_conversion)(void *context, ir_graph *irg, ir_node *phi, int pos, ir_node *mux, if_result_t reason);
 
@@ -185,6 +188,7 @@ typedef enum {
   hook_tail_rec,
   hook_strength_red,
   hook_dead_node_elim,
+  hook_dead_node_elim_subst,
   hook_if_conversion,
   hook_func_call,
   hook_arch_dep_replace_mul_with_shifts,
@@ -256,6 +260,8 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_strength_red(irg, strong, cmp) \
   hook_exec(hook_strength_red, (ctx, irg, strong, cmp))
 #define hook_dead_node_elim(irg, start)   hook_exec(hook_dead_node_elim, (ctx, irg, start))
+#define hook_dead_node_elim_subst(irg, old, nw) \
+   hook_exec(hook_dead_node_elim_subst, (ctx, irg, old, nw))
 #define hook_if_conversion(irg, phi, pos, mux, reason) \
   hook_exec(hook_if_conversion, (ctx, irg, phi, pos, mux, reason))
 #define hook_func_call(irg, call) \
