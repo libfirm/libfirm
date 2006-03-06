@@ -120,5 +120,6 @@ ir\arch\modeconv.h
 ir\arch\archop.h
 
 ir\lower\lower_intrinsics.h
+ir\lower\lower_calls.h
 
 win32\firm_config.h
