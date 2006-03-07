@@ -12,6 +12,8 @@
 #include "config.h"
 #endif
 
+#ifdef WITH_ILP
+
 #include <math.h>
 
 #include "hashptr.h"
@@ -718,3 +720,10 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	free_lpp(si.lpp);
 	obstack_free(&obst, NULL);
 }
+
+#else /* WITH_ILP */
+
+static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+}
+
+#endif /* WITH_ILP */

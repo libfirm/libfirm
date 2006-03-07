@@ -8,6 +8,12 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#ifdef WITH_ILP
+
 #include "becopyilp_t.h"
 #include "beifg_t.h"
 
@@ -170,3 +176,10 @@ void free_ilp_env(ilp_env_t *ienv) {
 	free_lpp(ienv->lp);
 	free(ienv);
 }
+
+#else /* WITH_ILP */
+
+static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+}
+
+#endif /* WITH_ILP */

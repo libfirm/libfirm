@@ -25,6 +25,12 @@
  *		y_ij \in N,   w_ij \in R^+
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#ifdef WITH_ILP
+
 #include "becopyilp_t.h"
 
 #define DEBUG_LVL 1
@@ -61,3 +67,10 @@ int co_solve_ilp2(copy_opt_t *co, double time_limit) {
 
 	return sol_state == lpp_optimal;
 }
+
+#else /* WITH_ILP */
+
+static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+}
+
+#endif /* WITH_ILP */

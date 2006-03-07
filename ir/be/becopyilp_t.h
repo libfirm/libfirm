@@ -11,12 +11,18 @@
 #ifndef _BECOPYILP_T_H
 #define _BECOPYILP_T_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "firm_config.h"
+
+#ifndef _WIN32
+ #ifndef HAVE_ALLOCA_H
+  #define HAVE_ALLOCA_H 1
+ #endif /* HAVE_ALLOC_H */
+#endif /* _WIN32 */
+
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
+
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -150,4 +156,4 @@ void free_ilp_env(ilp_env_t *ienv);
 
  *****************************************************************************/
 
-#endif
+#endif /* _BECOPYILP_T_H */

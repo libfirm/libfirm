@@ -12,6 +12,12 @@
  *  - Clique path constraints
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#ifdef WITH_ILP
+
 #include "becopyilp_t.h"
 #include "benumb_t.h"
 #include "belive_t.h"
@@ -767,3 +773,11 @@ int co_solve_ilp1(copy_opt_t *co, double time_limit) {
 
 	return sol_state == lpp_optimal;
 }
+
+
+#else /* WITH_ILP */
+
+static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+}
+
+#endif /* WITH_ILP */
