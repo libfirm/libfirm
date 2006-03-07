@@ -30,7 +30,6 @@
 #include "bearch.h"
 #include "firm/bearch_firm.h"
 #include "ia32/bearch_ia32.h"
-#include "TEMPLATE/bearch_TEMPLATE.h"
 
 #include "be_t.h"
 #include "benumb_t.h"
@@ -105,7 +104,6 @@ static const lc_opt_enum_const_ptr_items_t ra_items[] = {
 static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ "firm",    &firm_isa },
 	{ "ia32",    &ia32_isa_if },
-	{ "TEMPLATE",&TEMPLATE_isa_if },
 	{ NULL,      NULL }
 };
 
@@ -182,14 +180,14 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 
 	/* Register the irn handler of the architecture */
 	if (arch_isa_get_irn_handler(env->arch_env->isa))
-		arch_env_add_irn_handler(env->arch_env, arch_isa_get_irn_handler(env->arch_env->isa));
+		arch_env_push_irn_handler(env->arch_env, arch_isa_get_irn_handler(env->arch_env->isa));
 
 		/*
 		* Register the node handler of the back end infrastructure.
 		* This irn handler takes care of the platform independent
 		* spill, reload and perm nodes.
 	*/
-	arch_env_add_irn_handler(env->arch_env, &be_node_irn_handler);
+	arch_env_push_irn_handler(env->arch_env, &be_node_irn_handler);
 
 	return env;
 }
@@ -291,10 +289,9 @@ static void be_main_loop(FILE *file_handle)
 		arch_code_generator_before_sched(birg.cg);
 		list_sched(isa, irg);
 
-		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
-
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_abi_fix_stack_nodes(birg.abi);
+		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
@@ -304,8 +301,7 @@ static void be_main_loop(FILE *file_handle)
 		ra->allocate(&birg);
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
-		/* This is not ready yet: */
-		/* be_abi_fix_stack_bias(birg.abi); */
+		be_abi_fix_stack_bias(birg.abi);
 
 		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
