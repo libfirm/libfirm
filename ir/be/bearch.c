@@ -34,12 +34,18 @@ arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if)
   return env;
 }
 
-arch_env_t *arch_env_add_irn_handler(arch_env_t *env,
+arch_env_t *arch_env_push_irn_handler(arch_env_t *env,
     const arch_irn_handler_t *handler)
 {
   assert(env->handlers_tos <= ARCH_MAX_HANDLERS);
   env->handlers[env->handlers_tos++] = handler;
   return env;
+}
+
+const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env)
+{
+  assert(env->handlers_tos > 0 && env->handlers_tos <= ARCH_MAX_HANDLERS);
+  return env->handlers[--env->handlers_tos];
 }
 
 static const arch_irn_ops_t *fallback_irn_ops = NULL;
@@ -85,10 +91,10 @@ const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
   return ops->impl->get_irn_reg_req(ops, req, irn, pos);
 }
 
-void arch_set_stack_bias(const arch_env_t *env, ir_node *irn, int bias)
+void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int offset)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
-  ops->impl->set_stack_bias(ops, irn, bias);
+  ops->impl->set_frame_offset(ops, irn, offset);
 }
 
 entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn)

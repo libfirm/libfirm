@@ -278,14 +278,12 @@ struct _arch_irn_ops_if_t {
   entity *(*get_frame_entity)(const void *self, const ir_node *irn);
 
   /**
-   * Set a bias for the stack pointer.
-   * If the node in question uses the stack pointer for indexing, it must
-   * consider the value of <code>bias</code> additionally.
+   * Set the offset of a node carrying an entity on the stack frame.
    * @param self The this pointer.
-   * @param irn  The node in question.
-   * @param bias The bias.
+   * @param irn  The node.
+   * @param offset The offset of the node's stack frame entity.
    */
-  void (*set_stack_bias)(const void *self, ir_node *irn, int bias);
+  void (*set_frame_offset)(const void *self, ir_node *irn, int offset);
 };
 
 /**
@@ -295,8 +293,9 @@ struct _arch_irn_ops_t {
 	const arch_irn_ops_if_t *impl;
 };
 
-extern void
-arch_set_stack_bias(const arch_env_t *env, ir_node *irn, int bias);
+extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias);
+
+extern entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);
 
 /**
  * Get the register requirements for a node.
@@ -458,22 +457,6 @@ struct _arch_code_generator_if_t {
 	void (*before_ra)(void *self);
 
 	/**
-	 * Called after register allocation to lower Spills to Stores
-	 * @param self  The code generator
-	 * @param spill The spill node to lower
-	 * @return      The new backend node which substitutes the spill
-	 */
-	ir_node *(*lower_spill)(void *self, ir_node *spill);
-
-	/**
-	 * Called after register allocation to lower Reloads to Loads
-	 * @param self   The code generator
-	 * @param reload The reload node to lower
-	 * @return       The new backend node which substitutes the reload
-	 */
-	ir_node *(*lower_reload)(void *self, ir_node *reload);
-
-	/**
 	 * Called after everything happened.
 	 * The code generator must also be de-allocated here.
 	 */
@@ -583,14 +566,6 @@ struct _arch_isa_if_t {
    */
   const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
 
-  /**
-   * Take a proj from a call, set the correct register and projnum for this proj
-   * @param self    The isa object.
-   * @param proj    The proj
-   * @param is_keep Non-zero if proj is a Keep argument
-   * @return        The backend proj number assigned to this proj
-   */
-  long (*handle_call_proj)(const void *self, ir_node *proj, int is_keep);
 };
 
 #define arch_isa_get_n_reg_class(isa)                       ((isa)->impl->get_n_reg_class(isa))
@@ -637,6 +612,13 @@ extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa);
  * @param handler A node handler.
  * @return The environment itself.
  */
-extern arch_env_t *arch_env_add_irn_handler(arch_env_t *env, const arch_irn_handler_t *handler);
+extern arch_env_t *arch_env_push_irn_handler(arch_env_t *env, const arch_irn_handler_t *handler);
+
+/**
+ * Remove a node handler from the handler stack.
+ * @param env The architecture environment.
+ * @return The popped handler.
+ */
+extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
 
 #endif /* _FIRM_BEARCH_H */
