@@ -131,9 +131,10 @@ foreach my $op (keys(%nodes)) {
 				print "DEFAULT rd_constructor requires numeric arity! Ignoring op $orig_op!\n";
 				next;
 			}
-			$temp  = "  $arch\_attr_t *attr;\n";
-			$temp .= "  ir_node *res;\n";
+
+			$temp  = "  ir_node *res;\n";
 			$temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
+			$temp .= "  int flags = 0;\n";
 
 			undef my $in_req_var;
 			undef my $out_req_var;
@@ -181,23 +182,22 @@ foreach my $op (keys(%nodes)) {
 			$temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
 			# set flags
-			$temp .= "  attr = get_$arch\_attr(res);\n\n";
-			$temp .= "  attr->flags  = 0;                                 /* clear flags */\n";
-
 			if (exists($n{"irn_flags"})) {
 				foreach my $flag (split(/\|/, $n{"irn_flags"})) {
 					if ($flag eq "R") {
-						$temp .= "  attr->flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
+						$temp .= "  flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
 					}
 					elsif ($flag eq "N") {
-						$temp .= "  attr->flags |= arch_irn_flags_dont_spill;         /* op is NOT spillable */\n";
+						$temp .= "  flags |= arch_irn_flags_dont_spill;         /* op is NOT spillable */\n";
 					}
 					elsif ($flag eq "I") {
-						$temp .= "  attr->flags |= arch_irn_flags_ignore;             /* ignore op for register allocation */\n";
+						$temp .= "  flags |= arch_irn_flags_ignore;             /* ignore op for register allocation */\n";
 					}
 				}
 			}
 
+			my $in_param;
+			my $out_param;
 			# allocate memory and set pointer to register requirements
 			if (exists($n{"reg_req"})) {
 				my %req = %{ $n{"reg_req"} };
@@ -207,26 +207,22 @@ foreach my $op (keys(%nodes)) {
 				undef my @out;
 				@out = @{ $req{"out"} } if exists(($req{"out"}));
 
-				$temp .= "\n  /* set IN register requirements */\n";
 				if (@in) {
-					$temp .= "  attr->in_req  = ".$in_req_var.";\n";
+					$in_param = $in_req_var;
 				}
 				else {
-					$temp .= "  attr->in_req  = NULL;\n";
+					$in_param = "NULL";
 				}
 
-				$temp .= "\n  /* set OUT register requirements and get space for registers */\n";
 				if (@out) {
-					$temp .= "  attr->out_req = ".$out_req_var.";\n";
-					$temp .= "  attr->slots   = xcalloc(".($#out + 1).", sizeof(attr->slots[0]));\n";
-					$temp .= "  attr->n_res   = ".($#out + 1).";\n";
+					$out_param = $out_req_var.", ".($#out + 1);
 				}
 				else {
-					$temp .= "  attr->out_req = NULL;\n";
-					$temp .= "  attr->slots   = NULL;\n";
-					$temp .= "  attr->n_res   = 0;\n";
+					$out_param = "NULL, 0";
 				}
 			}
+			$temp .= "\n  /* init node attributes */\n";
+			$temp .= "  init_$arch\_attributes(res, flags, $in_param, $out_param);\n";
 
 			$temp .= "\n  return res;\n";
 
