@@ -37,6 +37,9 @@
 #define WITH_LIBCORE 1
 #endif
 
+/* define to 1 to use the ILP solver */
+/* #undef WITH_ILP */
+
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
 
