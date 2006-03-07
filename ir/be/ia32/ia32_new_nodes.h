@@ -328,7 +328,7 @@ void alloc_ia32_reg_slots(ir_node *node, int num);
 /**
  * Initializes the nodes attributes.
  */
-void init_ia32_attributes(ir_node *node, int flags, const ia32_register_req_t **in_reqs, \
+void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs, \
 	const ia32_register_req_t **out_reqs, int n_res);
 
 /* Include the generated headers */
