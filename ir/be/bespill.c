@@ -222,7 +222,6 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 			ir_node *spill   = be_spill_node(senv, si->spilled_node);
 
 			/* the reload */
-			ir_node *bl      = is_Block(rld->reloader) ? rld->reloader : get_nodes_block(rld->reloader);
 			ir_node *reload  = be_reload(aenv, senv->cls, rld->reloader, mode, spill);
 
 			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", reload, si->spilled_node, rld->reloader));

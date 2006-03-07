@@ -742,7 +742,7 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 {
 	ir_node *reload;
 
-	ir_node *bl    = get_nodes_block(reloader);
+	ir_node *bl    = is_Block(reloader) ? reloader : get_nodes_block(reloader);
 	ir_graph *irg  = get_irn_irg(bl);
 	ir_node *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
