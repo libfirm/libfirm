@@ -12,15 +12,17 @@
 #include "bearch.h"
 #include "beabi_t.h"
 
-typedef enum {
-	BE_ABI_NONE = 0,
-	BE_ABI_LEFT_TO_RIGHT           = 1, /**< Arguments are from left to right. */
-	BE_ABI_USE_PUSH                = 2, /**< Use sequential stores for arguments. */
-	BE_ABI_TRY_OMIT_FRAME_POINTER  = 4, /**< Try to omit the frame pointer. */
-	BE_ABI_FRAME_POINTER_DEDICATED = 8, /**< If the function wants a frame pointer,
-										  use the one of the architecture, else
-										  an arbitrary register is used. */
-	BE_ABI_SAVE_OLD_FRAME_POINTER  = 16 /**< Always save the old frame pointer on the stack. */
+typedef struct {
+	unsigned left_to_right         :1;  /**< Arguments are from left to right. */
+	unsigned store_args_sequential :1;  /**< Use sequential stores for arguments. */
+	unsigned try_omit_fp:1;  /**< Try to omit the frame pointer. */
+	unsigned fp_free               :1;  /**< The function can use any register as frame pointer. */
+	unsigned call_has_imm          :1;  /**< A call can take the callee's address as an immediate. */
+} be_abi_call_flags_bits_t;
+
+typedef union {
+	be_abi_call_flags_bits_t bits;
+	unsigned val;
 } be_abi_call_flags_t;
 
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, ir_type *add_frame);
