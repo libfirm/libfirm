@@ -852,6 +852,33 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 	return is_allocation;
 }
 
+static void check_allocation(be_raext_env_t *raenv) {
+	int i, o;
+
+	for (i=0; i<raenv->n_cls_vars; ++i) {
+		var_info_t *vi1 = raenv->cls_vars[i];
+
+		if (vi1->var_nr == SET_REMOVED)
+			continue;
+
+		for (o=0; o<i; ++o) {
+			var_info_t *vi2 = raenv->cls_vars[o];
+			ir_node *irn1, *irn2;
+
+			if (vi2->var_nr == SET_REMOVED)
+				continue;
+
+			pset_foreach(vi1->values, irn1)
+				pset_foreach(vi2->values, irn2)
+					if (values_interfere(irn1, irn2)) {
+						dump_ir_block_graph_sched(raenv->irg, "ERROR");
+						ir_fprintf(stdout, "SSA values %+F and %+F interfere. They belong to varible %d and %d respectively.\n", irn1, irn2, vi1->var_nr, vi2->var_nr);
+						assert(0 && "ERROR graph dumped");
+					}
+		}
+	}
+}
+
 /******************************************************************************
     __  __       _
    |  \/  |     (_)
@@ -933,6 +960,8 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 
 			round++;
 		} while (!done);
+
+		check_allocation(&raenv);
 
 		free(raenv.cls_vars);
 	}
