@@ -285,88 +285,6 @@ static void ia32_before_ra(void *self) {
 }
 
 
-/**
- * Creates a Store for a Spill
- */
-static ir_node *ia32_lower_spill(void *self, ir_node *spill) {
-	ia32_code_gen_t *cg    = self;
-	ir_graph        *irg   = cg->irg;
-	dbg_info        *dbg   = get_irn_dbg_info(spill);
-	ir_node         *block = get_nodes_block(spill);
-	ir_node         *ptr   = get_irg_frame(irg);
-	ir_node         *val   = be_get_Spill_context(spill);
-	ir_node         *mem   = new_rd_NoMem(irg);
-	ir_mode         *mode  = get_irn_mode(spill);
-	entity          *ent   = be_get_spill_entity(spill);
-	unsigned         offs  = get_entity_offset_bytes(ent);
-	ir_node         *noreg, *res;
-	char             buf[64];
-
-	DB((cg->mod, LEVEL_1, "lower_spill: got offset %d for %+F\n", offs, ent));
-
-	if (mode_is_float(mode)) {
-		noreg = ia32_new_NoReg_fp(cg);
-		res   = new_rd_ia32_fStore(dbg, irg, block, ptr, noreg, val, mem, mode);
-	}
-	else {
-		noreg = ia32_new_NoReg_gp(cg);
-		res   = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, val, mem, mode);
-	}
-
-	snprintf(buf, sizeof(buf), "%d", offs);
-	add_ia32_am_offs(res, buf);
-
-	return res;
-}
-
-/**
- * Create a Load for a Spill
- */
-static ir_node *ia32_lower_reload(void *self, ir_node *reload) {
-	ia32_code_gen_t *cg    = self;
-	ir_graph        *irg   = cg->irg;
-	dbg_info        *dbg   = get_irn_dbg_info(reload);
-	ir_node         *block = get_nodes_block(reload);
-	ir_node         *ptr   = get_irg_frame(irg);
-	ir_mode         *mode  = get_irn_mode(reload);
-	ir_node         *pred  = get_irn_n(reload, 0);
-	char             buf[64];
-	char            *ofs;
-	ir_node         *noreg, *res;
-
-	/* Get the offset to Load from. It can either be a Spill or a Store. */
-	if (be_is_Spill(pred)) {
-		entity   *ent  = be_get_spill_entity(pred);
-		unsigned  offs = get_entity_offset_bytes(ent);
-		DB((cg->mod, LEVEL_1, "lower_reload: got offset %d for %+F\n", offs, ent));
-
-		snprintf(buf, sizeof(buf), "%d", offs);
-	}
-	else if (is_ia32_Store(pred) || is_ia32_fStore(pred)) {
-		ofs = get_ia32_am_offs(pred);
-		strncpy(buf, ofs, sizeof(buf));
-		free(ofs);
-	}
-	else {
-		assert(0 && "unsupported Reload predecessor");
-	}
-
-	/* Create the Load */
-	if (mode_is_float(mode)) {
-		noreg = ia32_new_NoReg_fp(cg);
-		res   = new_rd_ia32_fLoad(dbg, irg, block, ptr, noreg, pred, mode_T);
-	}
-	else {
-		noreg = ia32_new_NoReg_gp(cg);
-		res   = new_rd_ia32_Load(dbg, irg, block, ptr, noreg, pred, mode_T);
-	}
-
-	/* Set offset */
-	add_ia32_am_offs(res, buf);
-
-	/* Return the result Proj */
-	return new_rd_Proj(dbg, irg, block, res, mode, 0);
-}
 
 /**
  * Emits the code, closes the output file and frees
@@ -403,8 +321,6 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_prepare_graph,
 	ia32_before_sched,   /* before scheduling hook */
 	ia32_before_ra,      /* before register allocation hook */
-	ia32_lower_spill,
-	ia32_lower_reload,
 	ia32_codegen         /* emit && done */
 };
 
@@ -557,12 +473,13 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	int       i, ignore;
 	ir_mode **modes;
 	const arch_register_t *reg;
+	be_abi_call_flags_t call_flags = { 0, 0, 1, 0, 1 };
 
 	/* get the between type and the frame pointer save entity */
 	between_type = get_between_type();
 
 	/* set stack parameter passing style */
-	be_abi_call_set_flags(abi, BE_ABI_NONE, between_type);
+	be_abi_call_set_flags(abi, call_flags, between_type);
 
 	/* collect the mode for each type */
 	modes = alloca(n * sizeof(modes[0]));

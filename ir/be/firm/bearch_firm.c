@@ -209,6 +209,7 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	static ir_type *between_type = NULL;
 	const arch_register_class_t *cls = &reg_classes[CLS_DATAB];
 	int i, n;
+	be_abi_call_flags_t call_flags = { 0, 0, 0, 0, 0 };
 
 	if(!between_type) {
 		between_type = new_type_class(new_id_from_str("firm_be_between"));
@@ -230,7 +231,7 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 			be_abi_call_res_reg(abi, i, &cls->regs[i]);
 	}
 
-	be_abi_call_set_flags(abi, BE_ABI_NONE, between_type);
+	be_abi_call_set_flags(abi, call_flags, between_type);
 }
 
 
@@ -554,8 +555,6 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_prepare_graph,
 	firm_before_sched,
 	firm_before_ra,
-	NULL,  /* lower spill */
-	NULL,  /* lower reload */
 	firm_codegen_done
 };
 
