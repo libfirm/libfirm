@@ -29,11 +29,26 @@ typedef enum add_hidden_params {
 } add_hidden;
 
 /**
+ * Additional flags for the lowering.
+ */
+enum lowering_flags {
+  LF_NONE              = 0, /**< no additional flags */
+  LF_COMPOUND_PARAM    = 1, /**< lower calls with compound parameters */
+  LF_COMPOUND_RETURN   = 2, /**< lower calls with compound returns */
+  LF_RETURN_HIDDEN     = 4, /**< return the hidden address instead of void */
+  LF_SMALL_CMP_IN_REGS = 8  /**< return small compound values in registers */
+};
+
+/** Maximum number of registers that can be used to return compound values. */
+#define MAX_REGISTER_RET_VAL 2
+
+/**
  * A struct containing all control parameters for
  * lower_compound_ret_calls().
  */
 typedef struct {
   int        def_ptr_alignment;   /**< Default alignment for data pointer. */
+  unsigned   flags;               /**< A bitmask of enum lowering_flags. */
   add_hidden hidden_params;       /**< Where to add hidden parameters. */
 
   /**
@@ -41,14 +56,30 @@ typedef struct {
    * If this pointer is NULL, a new pointer type is always created.
    */
   ir_type *(*find_pointer_type)(ir_type *e_type, ir_mode *mode, int alignment);
+
+  /**
+   * If the LF_SMALL_CMP_IN_REGS flag is set, this function will be called
+   * to decide, whether a compound value should be returned in registers.
+   * This function must return the number of used registers and fill in the modes
+   * of the registers to use. Up to MAX_REGISTER_RET_VAL registers can be used.
+   */
+  int (*ret_compound_in_regs)(ir_type *compound_tp, ir_mode **modes);
 } lower_params_t;
 
 /**
- * Lower calls with compound return types.
+ * Lower calls with compound parameter and return types.
  * This function does the following transformations:
  *
+ * If LF_COMPOUND_PARAM is set:
+ *
+ * - Copy compound parameters to a new location on the callers
+ *   stack and transmit the address of this new location
+ *
+ * If LF_COMPOUND_RETURN is set:
+ *
  * - Adds a new (hidden) pointer parameter for
- *   any return compound type.
+ *   any return compound type. The return type is replaced by void
+ *   or if LOWERING_FLAGS_RETURN_HIDDEN is set by the address.
  *
  * - Use of the hidden parameters in the function code.
  *
@@ -57,6 +88,8 @@ typedef struct {
  *   stack.
  *
  * - Replace a possible block copy after the function call.
+ *
+ * General:
  *
  * - Changes the types of methods and calls to the lowered ones
  *
@@ -101,6 +134,6 @@ typedef struct {
  * If params->find_pointer_type is NULL, new pointer types
  * are always created automatically.
  */
-void lower_compound_ret_calls(const lower_params_t *params);
+void lower_calls_with_compounds(const lower_params_t *params);
 
 #endif /* _LOWER_CALLS_H_ */

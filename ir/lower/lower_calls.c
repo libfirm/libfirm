@@ -67,12 +67,13 @@ static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignm
  * @param mtp  the method type to lower
  *
  * The current implementation expects that a lowered type already
- * includes the necessery changes ...
+ * includes the necessary changes ...
  */
 static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 {
-  ir_type *lowered;
+  ir_type *lowered, *ptr_tp;
   ir_type **params, **results, *res_tp;
+  ir_mode *modes[MAX_REGISTER_RET_VAL];
   int n_ress, n_params, nn_ress, nn_params, i, first_variadic;
   ident *id;
   add_hidden hidden_params;
@@ -105,8 +106,25 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
     for (nn_ress = nn_params = i = 0; i < n_ress; ++i) {
       res_tp = get_method_res_type(mtp, i);
 
-      if (is_compound_type(res_tp))
-        params[nn_params++] = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
+      if (is_compound_type(res_tp)) {
+        int n_regs = 0;
+
+        if (lp->flags & LF_SMALL_CMP_IN_REGS)
+          n_regs = lp->ret_compound_in_regs(res_tp, modes);
+
+        if (n_regs > 0) {
+          /* this compound will be returned solely in registers */
+          assert(0);
+        }
+        else {
+          /* this compound will be allocated on callers stack and its
+             address will be transmitted as a hidden parameter. */
+          ptr_tp = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
+          params[nn_params++] = ptr_tp;
+          if (lp->flags & LF_RETURN_HIDDEN)
+            results[nn_ress++] = ptr_tp;
+        }
+      }
       else
         results[nn_ress++] = res_tp;
     }
@@ -170,12 +188,13 @@ struct cl_entry {
  * Walker environment for fix_args_and_collect_calls().
  */
 typedef struct _wlk_env_t {
-  int            arg_shift;     /**< The Argument index shift for parameters. */
-  int            first_hidden;  /**< The index of the first hidden argument. */
-  struct obstack obst;          /**< An obstack to allocate the data on. */
-  cl_entry       *cl_list;      /**< The call list. */
-  pmap           *dummy_map;    /**< A map for finding the dummy arguments. */
-  unsigned       dnr;           /**< The dummy index number. */
+  int                  arg_shift;     /**< The Argument index shift for parameters. */
+  int                  first_hidden;  /**< The index of the first hidden argument. */
+  struct obstack       obst;          /**< An obstack to allocate the data on. */
+  cl_entry             *cl_list;      /**< The call list. */
+  pmap                 *dummy_map;    /**< A map for finding the dummy arguments. */
+  unsigned             dnr;           /**< The dummy index number. */
+  const lower_params_t *params;       /**< lowering parameters */
 } wlk_env;
 
 /**
@@ -220,17 +239,21 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
   }
   else if (op == op_Call) {
     ctp = get_Call_type(n);
-    for (i = get_method_n_ress(ctp) -1; i >= 0; --i) {
-      if (is_compound_type(get_method_res_type(ctp, i))) {
-        /*
-         * This is a call with a compound return. As the result
-         * might be ignored, we must put it in the list.
-         */
-        (void)get_Call_entry(n, env);
+    if (env->params->flags & LF_COMPOUND_RETURN) {
+      /* check for compound returns */
+      for (i = get_method_n_ress(ctp) -1; i >= 0; --i) {
+        if (is_compound_type(get_method_res_type(ctp, i))) {
+          /*
+           * This is a call with a compound return. As the result
+           * might be ignored, we must put it in the list.
+           */
+          (void)get_Call_entry(n, env);
+        }
       }
     }
   }
-  else if (op == op_CopyB) {
+  else if (op == op_CopyB && env->params->flags & LF_COMPOUND_RETURN) {
+    /* check for compound returns */
     ir_node *src = get_CopyB_src(n);
     /* older scheme using value_res_ent */
     if (is_Sel(src)) {
@@ -427,17 +450,16 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 /**
  * Fix all calls on a call list by adding hidden parameters.
  *
- * @param lp   the parameter struct
  * @param irg  the graph
  * @param env  the environment
  */
-static void fix_call_list(const lower_params_t *lp, ir_graph *irg, wlk_env *env) {
+static void fix_call_list(ir_graph *irg, wlk_env *env) {
+  const lower_params_t *lp = env->params;
   cl_entry *p;
   ir_node *call, **new_in;
   ir_type *ctp, *lowered_mtp;
   add_hidden hidden_params;
   int i, n_params, n_com, pos;
-  unsigned dnr = 0;
 
   new_in = NEW_ARR_F(ir_node *, 0);
   for (p = env->cl_list; p; p = p->next) {
@@ -492,7 +514,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 {
   entity *ent = get_irg_entity(irg);
   ir_type *mtp, *lowered_mtp, *res_tp, *ft;
-  int i, j, k, n_ress, n_com, n_cr_opt;
+  int i, j, k, n_ress, n_ret_com, n_cr_opt;
   ir_node **new_in, *ret, *endbl, *bl, *mem, *copy;
   cr_pair *cr_opt;
   wlk_env env;
@@ -502,15 +524,19 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
   assert(get_irg_phase_state(irg) == phase_high && "call lowering must be done in phase high");
 
   mtp    = get_entity_type(ent);
-  n_ress = get_method_n_ress(mtp);
-  for (n_com = i = 0; i < n_ress; ++i) {
-    res_tp = get_method_res_type(mtp, i);
 
-    if (is_compound_type(res_tp))
-      ++n_com;
+  if (lp->flags & LF_COMPOUND_RETURN) {
+    /* calculate the number of compound returns */
+    n_ress = get_method_n_ress(mtp);
+    for (n_ret_com = i = 0; i < n_ress; ++i) {
+      res_tp = get_method_res_type(mtp, i);
+
+      if (is_compound_type(res_tp))
+        ++n_ret_com;
+    }
   }
 
-  if (n_com) {
+  if (n_ret_com) {
     /* much easier if we have only one return */
     normalize_one_return(irg);
 
@@ -525,7 +551,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 
     if (hidden_params == ADD_HIDDEN_ALWAYS_IN_FRONT) {
       /* hidden arguments are added first */
-      env.arg_shift    = n_com;
+      env.arg_shift    = n_ret_com;
       env.first_hidden = 0;
     }
     else {
@@ -542,15 +568,16 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
   env.cl_list   = NULL;
   env.dummy_map = pmap_create_ex(8);
   env.dnr       = 0;
+  env.params    = lp;
 
   /* scan the code, fix argument numbers and collect calls. */
   irg_walk_graph(irg, firm_clear_link, fix_args_and_collect_calls, &env);
 
   /* fix all calls */
   if (env.cl_list)
-    fix_call_list(lp, irg, &env);
+    fix_call_list(irg, &env);
 
-  if (n_com) {
+  if (n_ret_com) {
     /*
      * Now fix the Return node of the current graph.
      */
@@ -573,13 +600,13 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
      * STEP 2: fix it. For all compound return values add a CopyB,
      * all others are copied.
      */
-    NEW_ARR_A(ir_node *, new_in, n_ress - n_com + 1);
+    NEW_ARR_A(ir_node *, new_in, n_ress + 1);
 
     bl  = get_nodes_block(ret);
     mem = get_Return_mem(ret);
 
     ft = get_irg_frame_type(irg);
-    NEW_ARR_A(cr_pair, cr_opt, n_com);
+    NEW_ARR_A(cr_pair, cr_opt, n_ret_com);
     n_cr_opt = 0;
     for (j = 1, i = k = 0; i < n_ress; ++i) {
       ir_node *pred = get_Return_res(ret, i);
@@ -606,12 +633,17 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
                  );
           mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
         }
+        if (lp->flags & LF_RETURN_HIDDEN) {
+          new_in[j] = arg;
+          ++j;
+        }
       }
-      else { /* skalar return value */
+      else { /* scalar return value */
         new_in[j] = pred;
         ++j;
       }
     }
+    /* replace the in of the Return */
     new_in[0] = mem;
     set_irn_in(ret, j, new_in);
 
@@ -622,7 +654,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
         remove_class_member(ft, cr_opt[i].ent);
       }
     }
-  } /* n_com */
+  } /* if (n_ret_com) */
 
   pmap_destroy(env.dummy_map);
   obstack_free(&env.obst, NULL);
@@ -632,19 +664,23 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
  * Returns non-zero if the given type is a method
  * type that must be lowered.
  *
+ * @param lp  lowering parameters
  * @param tp  The type.
  */
-static int must_be_lowered(ir_type *tp) {
+static int must_be_lowered(const lower_params_t *lp, ir_type *tp) {
   int i, n_ress;
   ir_type *res_tp;
 
   if (is_Method_type(tp)) {
-    n_ress = get_method_n_ress(tp);
-    for (i = 0; i < n_ress; ++i) {
-      res_tp = get_method_res_type(tp, i);
+    if (lp->flags & LF_COMPOUND_RETURN) {
+      /* check for compound returns */
+      n_ress = get_method_n_ress(tp);
+      for (i = 0; i < n_ress; ++i) {
+        res_tp = get_method_res_type(tp, i);
 
-      if (is_compound_type(res_tp))
-        return 1;
+        if (is_compound_type(res_tp))
+          return 1;
+      }
     }
   }
   return 0;
@@ -664,7 +700,7 @@ static void lower_method_types(type_or_ent *tore, void *env)
     entity *ent = (entity *)tore;
     tp = get_entity_type(ent);
 
-    if (must_be_lowered(tp)) {
+    if (must_be_lowered(lp, tp)) {
       tp = create_modified_mtd_type(lp, tp);
       set_entity_type(ent, tp);
     }
@@ -675,7 +711,7 @@ static void lower_method_types(type_or_ent *tore, void *env)
     /* fix pointer to methods */
     if (is_Pointer_type(tp)) {
       ir_type *etp = get_pointer_points_to_type(tp);
-      if (must_be_lowered(etp)) {
+      if (must_be_lowered(lp, etp)) {
         etp = create_modified_mtd_type(lp, etp);
         set_pointer_points_to_type(tp, etp);
       }
@@ -684,7 +720,7 @@ static void lower_method_types(type_or_ent *tore, void *env)
 }
 
 /*
- * Lower calls with compound return types.
+ * Lower calls with compound parameters and return types.
  * This function does the following transformations:
  *
  * - Adds a new (hidden) pointer parameter for
@@ -698,7 +734,7 @@ static void lower_method_types(type_or_ent *tore, void *env)
  *
  * - Replace a possible block copy after the function call.
  */
-void lower_compound_ret_calls(const lower_params_t *params)
+void lower_calls_with_compounds(const lower_params_t *params)
 {
   int i;
   ir_graph *irg;
