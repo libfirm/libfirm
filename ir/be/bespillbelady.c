@@ -588,16 +588,15 @@ static void remove_copies(belady_env_t *bel) {
 	ir_node *irn;
 
 	for (irn = pset_first(bel->copies); irn; irn = pset_next(bel->copies)) {
-		ir_node *src, *spill;
+		ir_node *src, *user;
 
 		assert(be_is_Copy(irn));
 		assert(get_irn_n_edges(irn) == 1 && "This is not a copy introduced in 'compute_block_start_info()'. Who created it?");
 
-		spill = get_irn_edge(get_irn_irg(irn), irn, 0)->src;
-		assert(be_is_Spill(spill) && "This is not a copy introduced in 'compute_block_start_info()'. Who created it?");
+		user = get_irn_edge(get_irn_irg(irn), irn, 0)->src;
 
 		src = get_irn_n(irn, 0);
-		set_irn_n(spill, 0, src);
+		set_irn_n(user, 0, src);
 	}
 }
 
