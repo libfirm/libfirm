@@ -35,6 +35,9 @@ extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 
 static const arch_env_t *arch_env = NULL;
 
+/**
+ * Emits registers and/or address mode of a binary operation.
+ */
 char *ia32_emit_binop(const ir_node *n) {
 	static char *buf = NULL;
 
@@ -67,6 +70,9 @@ char *ia32_emit_binop(const ir_node *n) {
 	return buf;
 }
 
+/**
+ * Emits registers and/or address mode of a unary operation.
+ */
 char *ia32_emit_unop(const ir_node *n) {
 	static char *buf = NULL;
 
@@ -91,6 +97,9 @@ char *ia32_emit_unop(const ir_node *n) {
 	return buf;
 }
 
+/**
+ * Emits adressmode.
+ */
 char *ia32_emit_am(const ir_node *n) {
 	ia32_am_flavour_t am_flav    = get_ia32_am_flavour(n);
 	int               had_output = 0;
@@ -123,7 +132,7 @@ char *ia32_emit_am(const ir_node *n) {
 		lc_eoprintf(ia32_get_arg_env(), obst, "%2S", n);
 
 		if (am_flav & ia32_S) {
-			obstack_printf(obst, "*%d", get_ia32_am_scale(n));
+			obstack_printf(obst, "*%d", 1 << get_ia32_am_scale(n));
 		}
 
 		had_output = 1;

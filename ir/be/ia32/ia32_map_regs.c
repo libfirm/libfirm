@@ -198,7 +198,6 @@ const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, un
  * requirements dependend on the predecessor.
  */
 long ia32_translate_proj_pos(const ir_node *proj) {
-	ir_node *first;
 	ir_node *pred = get_Proj_pred(proj);
 	long nr       = get_Proj_proj(proj);
 
