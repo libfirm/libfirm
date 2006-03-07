@@ -124,8 +124,10 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR("ra", "register allocator", &ra_var),
 	LC_OPT_ENT_ENUM_PTR("isa", "the instruction set architecture", &isa_var),
 
+#ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
 	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", be_options.ilp_solver, sizeof(be_options.ilp_solver)),
+#endif /* WITH_ILP */
 	{ NULL }
 };
 
