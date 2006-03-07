@@ -274,11 +274,11 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		case BE_CH_SPILL_BELADY:
 			be_spill_belady(&chordal_env);
 			break;
-#ifndef NO_ILP
+#ifdef WITH_ILP
 		case BE_CH_SPILL_ILP:
 			be_spill_ilp(&chordal_env);
 			break;
-#endif
+#endif /* WITH_ILP */
 		default:
 			fprintf(stderr, "no valid spiller selected. falling back to belady\n");
 			be_spill_belady(&chordal_env);
