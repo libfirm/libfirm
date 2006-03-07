@@ -250,6 +250,7 @@ static void copy_node(ir_node *n, void *env) {
 #endif
 
   set_new_node(n, nn);
+  hook_dead_node_elim_subst(current_ir_graph, n, nn);
 }
 
 /**
@@ -505,7 +506,7 @@ dead_node_elimination(ir_graph *irg) {
   struct obstack *rebirth_obst   = NULL;
 
   if (get_opt_optimize() && get_opt_dead_node_elimination()) {
-    assert(! edges_activated(irg) && "dead node elimination requieres disabled edges");
+    assert(! edges_activated(irg) && "dead node elimination requires disabled edges");
 
     /* inform statistics that we started a dead-node elimination run */
     hook_dead_node_elim(irg, 1);
