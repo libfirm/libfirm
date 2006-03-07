@@ -295,6 +295,8 @@ static void ia32_codegen(void *self) {
 	ir_graph        *irg = cg->irg;
 	FILE            *out = cg->out;
 
+  ia32_register_emitters();
+
 	if (cg->emit_decls) {
 		ia32_gen_decls(cg->out);
 		cg->emit_decls = 0;

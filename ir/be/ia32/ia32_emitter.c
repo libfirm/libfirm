@@ -12,6 +12,7 @@
 #include "irprintf.h"
 #include "irop_t.h"
 #include "irargs_t.h"
+#include "irprog_t.h"
 
 #include "../besched.h"
 
@@ -773,77 +774,106 @@ void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
  ***********************************************************************************/
 
 /**
+ * Enters the emitter functions for handled nodes into the generic
+ * pointer of an opcode.
+ */
+void ia32_register_emitters(void) {
+  int i;
+
+#define BEGIN()      if (0)
+#define IA32_EMIT(a) else if (op_ia32_##a == op) op->ops.generic = (op_func)emit_ia32_##a
+#define EMIT(a)      else if (op_##a == op)      op->ops.generic = (op_func)emit_##a
+#define END()        else op->ops.generic = (op_func)NULL
+
+  for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
+    ir_op *op = get_irp_opcode(i);
+
+    BEGIN();
+	  /* generated int emitter functions */
+	  IA32_EMIT(Const);
+
+	  IA32_EMIT(Add);
+	  IA32_EMIT(Sub);
+	  IA32_EMIT(Minus);
+	  IA32_EMIT(Inc);
+	  IA32_EMIT(Dec);
+
+	  IA32_EMIT(Max);
+	  IA32_EMIT(Min);
+	  IA32_EMIT(CMov);
+
+	  IA32_EMIT(And);
+	  IA32_EMIT(Or);
+	  IA32_EMIT(Eor);
+	  IA32_EMIT(Not);
+
+	  IA32_EMIT(Shl);
+	  IA32_EMIT(Shr);
+	  IA32_EMIT(Shrs);
+	  IA32_EMIT(RotL);
+	  IA32_EMIT(RotR);
+
+	  IA32_EMIT(Lea);
+
+	  IA32_EMIT(Mul);
+
+	  IA32_EMIT(Cdq);
+	  IA32_EMIT(DivMod);
+
+	  IA32_EMIT(Store);
+	  IA32_EMIT(Load);
+
+	  IA32_EMIT(CopyB);
+	  IA32_EMIT(CopyB_i);
+
+	  /* generated floating point emitter */
+	  IA32_EMIT(fConst);
+
+	  IA32_EMIT(fAdd);
+	  IA32_EMIT(fSub);
+
+	  IA32_EMIT(fMul);
+	  IA32_EMIT(fDiv);
+
+	  IA32_EMIT(fMin);
+	  IA32_EMIT(fMax);
+
+	  IA32_EMIT(fLoad);
+	  IA32_EMIT(fStore);
+
+	  /* other emitter functions */
+	  IA32_EMIT(CondJmp);
+	  IA32_EMIT(SwitchJmp);
+	  IA32_EMIT(Call);
+
+	  EMIT(Jmp);
+	  EMIT(Proj);
+
+    END();
+  }
+
+#undef BEGIN
+#undef IA32_EMIT
+#undef EMIT
+#undef END
+
+}
+
+/**
  * Emits code for a node.
  */
-void ia32_emit_node(ir_node *irn, void *env) {
+static void ia32_emit_node(ir_node *irn, void *env) {
 	emit_env_t *emit_env   = env;
 	firm_dbg_module_t *mod = emit_env->mod;
 	FILE              *F   = emit_env->out;
+  ir_op             *op = get_irn_op(irn);
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 
-#define IA32_EMIT(a) if (is_ia32_##a(irn))               { emit_ia32_##a(irn, emit_env); return; }
-#define EMIT(a)      if (get_irn_opcode(irn) == iro_##a) { emit_##a(irn, emit_env); return; }
-
-	/* generated int emitter functions */
-	IA32_EMIT(Const);
-
-	IA32_EMIT(Add);
-	IA32_EMIT(Sub);
-	IA32_EMIT(Minus);
-	IA32_EMIT(Inc);
-	IA32_EMIT(Dec);
-
-	IA32_EMIT(Max);
-	IA32_EMIT(Min);
-	IA32_EMIT(CMov);
-
-	IA32_EMIT(And);
-	IA32_EMIT(Or);
-	IA32_EMIT(Eor);
-	IA32_EMIT(Not);
-
-	IA32_EMIT(Shl);
-	IA32_EMIT(Shr);
-	IA32_EMIT(Shrs);
-	IA32_EMIT(RotL);
-	IA32_EMIT(RotR);
-
-	IA32_EMIT(Lea);
-
-	IA32_EMIT(Mul);
-
-	IA32_EMIT(Cdq);
-	IA32_EMIT(DivMod);
-
-	IA32_EMIT(Store);
-	IA32_EMIT(Load);
-
-	IA32_EMIT(CopyB);
-	IA32_EMIT(CopyB_i);
-
-	/* generated floating point emitter */
-	IA32_EMIT(fConst);
-
-	IA32_EMIT(fAdd);
-	IA32_EMIT(fSub);
-
-	IA32_EMIT(fMul);
-	IA32_EMIT(fDiv);
-
-	IA32_EMIT(fMin);
-	IA32_EMIT(fMax);
-
-	IA32_EMIT(fLoad);
-	IA32_EMIT(fStore);
-
-	/* other emitter functions */
-	IA32_EMIT(CondJmp);
-	IA32_EMIT(SwitchJmp);
-	IA32_EMIT(Call);
-
-	EMIT(Jmp);
-	EMIT(Proj);
+  if (op->ops.generic) {
+    void (*emit)(ir_node *, void *) = (void (*)(ir_node *, void *))op->ops.generic;
+    (*emit)(irn, env);
+  }
 
 	ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
 }
@@ -852,7 +882,7 @@ void ia32_emit_node(ir_node *irn, void *env) {
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void ia32_gen_block(ir_node *block, void *env) {
+static void ia32_gen_block(ir_node *block, void *env) {
 	ir_node *irn;
 
 	if (! is_Block(block))
@@ -902,7 +932,7 @@ void ia32_gen_labels(ir_node *block, void *env) {
 }
 
 /**
- * Main driver
+ * Main driver. Emits the code for one routine.
  */
 void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	emit_env_t emit_env;
