@@ -709,6 +709,7 @@ static void execute(char *prog_to_call, char *out_file, char *result_file) {
 static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr) {
 	var_info_t *vi = var_find(raenv->vars, var_nr);
 	ir_node *spill=NULL, *ctx, *irn;
+	ir_mode *mode;
 	const ir_edge_t *edge, *ne;
 	pset *spills  = pset_new_ptr(4);	/* the spills of this variable */
 	pset *reloads = pset_new_ptr(4);	/* the reloads of this variable */
@@ -744,6 +745,8 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 	assert(spill && "There must be at least one non-phi-node");
 
+	mode = get_irn_mode(get_irn_n(spill, 0));
+
 	/* insert reloads and wire them arbitrary*/
 	pset_foreach(vi->values, irn)
 		foreach_out_edge_safe(irn, edge, ne) {
@@ -753,7 +756,8 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 			/* all real uses must be reloaded */
 			DBG((raenv->dbg, LEVEL_2, "  reloading before %+F\n", src));
-			reload = be_reload(raenv->aenv, raenv->cls, edge->src, edge->pos, get_irn_mode(get_irn_n(spill, 0)), spill);
+			reload = be_reload(raenv->aenv, raenv->cls, edge->src, mode, spill);
+			set_irn_n(edge->src, edge->pos, reload);
 
 			/* remember the reload */
 			pset_insert_ptr(reloads, reload);

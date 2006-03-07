@@ -179,7 +179,8 @@ static void phi_walker(ir_node *irn, void *env) {
 }
 
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
-	ir_graph *irg = senv->chordal_env->irg;
+	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
+	ir_graph *irg          = senv->chordal_env->irg;
 	ir_node *irn;
 	spill_info_t *si;
 	struct obstack ob;
@@ -222,15 +223,14 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 			/* the reload */
 			ir_node *bl      = is_Block(rld->reloader) ? rld->reloader : get_nodes_block(rld->reloader);
-			ir_node *reload  = be_new_Reload(senv->cls, irg, bl, mode, spill);
+			ir_node *reload  = be_reload(aenv, senv->cls, rld->reloader, mode, spill);
 
 			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", reload, si->spilled_node, rld->reloader));
 			if(reload_set)
 				pset_insert_ptr(reload_set, reload);
 
-			/* remember the reaload */
+			/* remember the reload */
 			obstack_ptr_grow(&ob, reload);
-			sched_add_before(rld->reloader, reload);
 			n_reloads++;
 		}
 

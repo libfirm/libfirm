@@ -20,6 +20,7 @@
 #include "obst.h"
 #include "set.h"
 #include "pset.h"
+#include "irprintf_t.h"
 #include "irgraph.h"
 #include "irnode.h"
 #include "irmode.h"
