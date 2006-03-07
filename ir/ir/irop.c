@@ -183,12 +183,16 @@ new_ir_op(opcode code, const char *name, op_pin_state p,
   firm_set_default_verifyer(code, &res->ops);
   firm_set_default_reassoc(code, &res->ops);
 
+  add_irp_opcode(res);
+
   hook_new_ir_op(res);
   return res;
 }
 
 void free_ir_op(ir_op *code) {
   hook_free_ir_op(code);
+
+  remove_irp_opcode(code);
   free(code);
 }
 

@@ -52,6 +52,7 @@ struct ir_prog {
                                        have fields and procedures.  */
   ir_type  **types;               /**< all types in the ir */
   ir_mode  **modes;               /**< all modes in the ir */
+  ir_op    **opcodes;             /**< all opcodes in the ir */
 
   /* -- states of and access to generated information -- */
   irg_phase_state phase_state;    /**< State of construction. */
@@ -135,6 +136,18 @@ _get_irp_mode(int pos) {
   return irp->modes[pos];
 }
 
+static INLINE int
+_get_irp_n_opcodes(void) {
+  assert (irp && irp->opcodes);
+  return ARR_LEN(irp->opcodes);
+}
+
+static INLINE ir_op *
+_get_irp_opcode(int pos) {
+  assert (irp && irp->opcodes);
+  return irp->opcodes[pos];
+}
+
 #ifdef DEBUG_libfirm
 /** Returns a new, unique number to number nodes or the like. */
 static INLINE long
@@ -164,6 +177,8 @@ void init_irprog_2(void);
 #define get_irp_type(pos)      _get_irp_type(pos)
 #define get_irp_n_modes()      _get_irp_n_modes()
 #define get_irp_mode(pos)      _get_irp_mode(pos)
+#define get_irp_n_opcodes()    _get_irp_n_opcodes()
+#define get_irp_opcode(pos)    _get_irp_opcode(pos)
 #define get_const_code_irg()   _get_const_code_irg()
 #define get_glob_type()        _get_glob_type()
 

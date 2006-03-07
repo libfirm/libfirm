@@ -47,6 +47,7 @@ static ir_prog *new_incomplete_ir_prog (void) {
   res->pseudo_graphs = NEW_ARR_F(ir_graph *, 0);
   res->types         = NEW_ARR_F(ir_type *, 0);
   res->modes         = NEW_ARR_F(ir_mode *, 0);
+  res->opcodes       = NEW_ARR_F(ir_op *, 0);
 
 #ifdef DEBUG_libfirm
   res->max_node_nr = 0;
@@ -102,6 +103,7 @@ void     free_ir_prog(void) {
   DEL_ARR_F(irp->pseudo_graphs);
   DEL_ARR_F(irp->types);
   DEL_ARR_F(irp->modes);
+  DEL_ARR_F(irp->opcodes);
 
   irp->name           = NULL;
   irp->const_code_irg = NULL;
@@ -230,7 +232,7 @@ ir_type *(get_irp_type) (int pos) {
   return _get_irp_type(pos);
 }
 
-void  set_irp_type(int pos, ir_type *typ) {
+void set_irp_type(int pos, ir_type *typ) {
   assert (irp && typ);
   assert (pos < (ARR_LEN((irp)->types)));
   irp->types[pos] = typ;
@@ -252,6 +254,41 @@ void add_irp_mode(ir_mode *mode) {
   assert(irp);
   ARR_APP1(ir_mode *, irp->modes, mode);
 }
+
+/* Adds opcode to the list of opcodes in irp. */
+void add_irp_opcode(ir_op *opcode) {
+  assert(opcode != NULL);
+  assert(irp);
+  ARR_APP1(ir_op *, irp->opcodes, opcode);
+}
+
+/* Removes opcode from the list of opcodes and shrinks the list by one. */
+void remove_irp_opcode(ir_op *opcode) {
+  int i;
+  assert(opcode);
+
+  for (i = ARR_LEN(irp->opcodes) -1; i >= 0; i--) {
+    if (irp->opcodes[i] == opcode) {
+      for(; i < (ARR_LEN(irp->opcodes)) - 1; i++) {
+        irp->opcodes[i] = irp->opcodes[i+1];
+      }
+      ARR_SETLEN(ir_op *, irp->opcodes, (ARR_LEN(irp->opcodes)) - 1);
+      break;
+    }
+  }
+}
+
+/* Returns the number of all opcodes in the irp. */
+int (get_irp_n_opcodes)(void) {
+  return _get_irp_n_opcodes();
+}
+
+/* Returns the opcode at position pos in the irp. */
+ir_op *(get_irp_opcode)(int pos) {
+  return _get_irp_opcode(pos);
+}
+
+
 
 /*- File name / executable name or the like -*/
 void   set_irp_prog_name(ident *name) {

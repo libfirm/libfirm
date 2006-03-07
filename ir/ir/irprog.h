@@ -157,6 +157,20 @@ int   get_irp_n_modes(void);
 /** Returns the mode at position pos in the irp. */
 ir_mode *get_irp_mode(int pos);
 
+/** Adds opcode to the list of opcodes in irp. */
+void  add_irp_opcode(ir_op *opcode);
+
+/** Removes opcode from the list of opcodes, deallocates it and
+    shrinks the list by one. */
+void  remove_irp_opcode(ir_op *opcode);
+
+/** Returns the number of all opcodes in the irp. */
+int   get_irp_n_opcodes(void);
+
+/** Returns the opcode at position pos in the irp. */
+ir_op *get_irp_opcode(int pos);
+
+
 /**  Return the graph for global constants.
  *
  *   Returns an irgraph that only contains constant expressions for
