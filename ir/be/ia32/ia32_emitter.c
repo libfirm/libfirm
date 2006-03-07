@@ -29,6 +29,8 @@
 # define obstack_chunk_free free
 #endif
 
+extern int obstack_printf(struct obstack *obst, char *fmt, ...);
+
 #define SNPRINTF_BUF_LEN 128
 
 static const arch_env_t *arch_env = NULL;

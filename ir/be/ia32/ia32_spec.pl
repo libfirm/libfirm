@@ -344,8 +344,8 @@ $arch = "ia32";
   "emit"      => '. mov %D1, %C\t\t\t/* Mov Const into register */',
   "cmp_attr"  =>
 '
-  if (attr_a->tp == attr_b->tp) {
-    if (attr_a->tp == ia32_SymConst) {
+  if (attr_a->data.tp == attr_b->data.tp) {
+    if (attr_a->data.tp == ia32_SymConst) {
       if (attr_a->sc == NULL || attr_b->sc == NULL)
         return 1;
       else
@@ -496,8 +496,8 @@ $arch = "ia32";
   "emit"      => '. mov%M %D1, %C\t\t\t/* Load fConst into register */',
   "cmp_attr"  =>
 '
-  if (attr_a->tp == attr_b->tp) {
-    if (attr_a->tp == ia32_SymConst) {
+  if (attr_a->data.tp == attr_b->data.tp) {
+    if (attr_a->data.tp == ia32_SymConst) {
       if (attr_a->sc == NULL || attr_b->sc == NULL)
         return 1;
       else

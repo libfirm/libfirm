@@ -113,14 +113,34 @@ void set_ia32_sc(ir_node *node, char *sc);
 char *get_ia32_cnst(const ir_node *node);
 
 /**
- * Sets the uses_frame attribute.
+ * Sets the uses_frame flag.
  */
-void set_ia32_use_frame(ir_node *node, char flag);
+void set_ia32_use_frame(ir_node *node);
 
 /**
- * Gets the uses_frame attribute
+ * Clears the uses_frame flag.
  */
-char get_ia32_use_frame(const ir_node *node);
+void clear_ia32_use_frame(ir_node *node);
+
+/**
+ * Gets the uses_frame flag.
+ */
+int is_ia32_use_frame(const ir_node *node);
+
+/**
+ * Sets node to commutative.
+ */
+void set_ia32_commutative(ir_node *node);
+
+/**
+ * Sets node to non-commutative.
+ */
+void clear_ia32_commutative(ir_node *node);
+
+/**
+ * Checks if node is commutative.
+ */
+int is_ia32_commutative(const ir_node *node);
 
 /**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
@@ -133,14 +153,34 @@ ir_mode *get_ia32_ls_mode(const ir_node *node);
 void set_ia32_ls_mode(ir_node *node, ir_mode *mode);
 
 /**
+ * Gets the frame entity assigned to this node;
+ */
+entity *get_ia32_frame_ent(const ir_node *node);
+
+/**
+ * Sets the frame entity for this node;
+ */
+void set_ia32_frame_ent(ir_node *node, entity *ent);
+
+/**
  * Returns the argument register requirements of an ia32 node.
  */
 const ia32_register_req_t **get_ia32_in_req_all(const ir_node *node);
 
 /**
+ * Sets the argument register requirements of an ia32 node.
+ */
+void set_ia32_in_req_all(ir_node *node, const ia32_register_req_t **reqs);
+
+/**
  * Returns the result register requirements of an ia32 node.
  */
 const ia32_register_req_t **get_ia32_out_req_all(const ir_node *node);
+
+/**
+ * Sets the result register requirements of an ia32 node.
+ */
+void set_ia32_out_req_all(ir_node *node, const ia32_register_req_t **reqs);
 
 /**
  * Returns the argument register requirements of an ia32 node.
@@ -170,7 +210,7 @@ arch_irn_flags_t get_ia32_flags(const ir_node *node);
 /**
  * Sets the register flag of an ia32 node.
  */
-void set_ia32_flags(const ir_node *node, arch_irn_flags_t flags);
+void set_ia32_flags(ir_node *node, arch_irn_flags_t flags);
 
 /**
  * Returns the result register slots of an ia32 node.
@@ -221,7 +261,6 @@ long get_ia32_pncode(const ir_node *node);
  * Sets the projnum code
  */
 void set_ia32_pncode(ir_node *node, long code);
-
 
 
 /******************************************************************************************************
@@ -280,6 +319,17 @@ int is_ia32_Ld(const ir_node *node);
  * Checks if node is a Store or fStore.
  */
 int is_ia32_St(const ir_node *node);
+
+/**
+ * Allocates num register slots for node.
+ */
+void alloc_ia32_reg_slots(ir_node *node, int num);
+
+/**
+ * Initializes the nodes attributes.
+ */
+void init_ia32_attributes(ir_node *node, int flags, const ia32_register_req_t **in_reqs,
+						  const ia32_register_req_t **out_reqs, int n_res);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"

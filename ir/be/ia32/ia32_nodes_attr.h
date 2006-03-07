@@ -45,36 +45,47 @@ typedef enum {
 
 typedef struct _ia32_register_req_t {
 	const arch_register_req_t req;
-	int same_pos;        /**<< in case of "should be same" we need to remember the pos to get the irn */
-	int different_pos;   /**<< in case of "should be different" we need to remember the pos to get the irn */
+	int same_pos;        /**< in case of "should be same" we need to remember the pos to get the irn */
+	int different_pos;   /**< in case of "should be different" we need to remember the pos to get the irn */
 } ia32_register_req_t;
 
 typedef struct _ia32_attr_t {
-	ia32_op_type_t    tp;           /**<< ia32 node type */
-	ia32_am_type_t    am_support;   /**<< indicates addrmode type supported by this node */
-	ia32_am_flavour_t am_flavour;   /**<< the concrete addrmode characteristics */
+	struct {
+		unsigned tp:3;              /**< ia32 node type */
 
-	struct obstack *am_offs;    /**<< offsets for AddrMode */
-	int             am_scale;   /**<< addrmode scale for index register */
-	char            offs_sign;  /**<< the sign of the first offset */
+		unsigned am_support:2;      /**< indicates addrmode type supported by this node */
+		unsigned am_flavour:4;      /**< the concrete addrmode characteristics */
+		unsigned am_scale:2;        /**< addrmode scale for index register */
 
-	char use_frame;  /**<< indicates whether the operation uses the frame pointer or not */
+		unsigned offs_sign:1;       /**< sign bit of the first offset */
 
-	tarval *tv;   /**<< tarval for immediate operations */
-	char   *sc;   /**<< symconst name */
-	char   *cnst; /**<< points to the string representation of the constant value (either tv or sc) */
+		unsigned use_frame:1;       /**< indicates whether the operation uses the frame pointer or not */
 
-	ir_mode *ls_mode;  /**<< the mode of the stored/loaded value */
+		unsigned op_flav:2;         /**< flavour of an op (flavour_Div/Mod/DivMod) */
 
-	ia32_op_flavour_t op_flav;   /**<< flavour of an op (flavour_Div/Mod/DivMod/Mul/Mulh) */
-	long              pn_code;   /**<< projnum "types" (e.g. indicate compare operators and argument numbers) */
-	long              n_res;     /**<< number of results */
-	arch_irn_flags_t  flags;     /**<< indicating if spillable and/or rematerializeable */
+		unsigned flags:4;           /**< indicating if spillable and/or rematerializeable */
 
-	const ia32_register_req_t **in_req;  /**<< register requirements for arguments */
-	const ia32_register_req_t **out_req; /**<< register requirements for results */
+		unsigned is_commutative:1;  /**< indicates whether op is commutative or not */
 
-	const arch_register_t **slots;          /**<< register slots for assigned registers */
+		unsigned n_res:10;          /**< number of results produced by this node */
+	} data;
+
+	struct obstack *am_offs;    /**< offsets for AddrMode */
+
+	tarval *tv;   /**< tarval for immediate operations */
+	char   *sc;   /**< symconst name */
+	char   *cnst; /**< points to the string representation of the constant value (either tv or sc) */
+
+	ir_mode *ls_mode;  /**< the mode of the stored/loaded value */
+
+	entity *frame_ent; /**< the frame entity attached to this node */
+
+	long pn_code;   /**< projnum "types" (e.g. indicate compare operators and argument numbers) */
+
+	const ia32_register_req_t **in_req;  /**< register requirements for arguments */
+	const ia32_register_req_t **out_req; /**< register requirements for results */
+
+	const arch_register_t **slots;          /**< register slots for assigned registers */
 } ia32_attr_t;
 
 #endif /* _IA32_NODES_ATTR_H_ */

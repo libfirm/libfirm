@@ -214,7 +214,7 @@ static entity *ia32_get_frame_entity(const void *self, const ir_node *irn)
 }
 
 static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
-	if (get_ia32_use_frame(irn)) {
+	if (is_ia32_use_frame(irn)) {
 		/* TODO: correct offset */
 	}
 }
