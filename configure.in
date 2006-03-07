@@ -197,6 +197,16 @@ AC_ARG_ENABLE(libcore,
 fi])
 AC_SUBST(enable_libcore)
 
+dnl enable ILP solver support
+dnl --------------------------------
+AC_ARG_ENABLE(ilp,
+[  --enable-ilp        enable ilp solver],
+[if test "$enableval"=yes; then
+  AC_DEFINE(WITH_ILP)
+fi])
+AC_SUBST(enable_ilp)
+
+
 dnl enable wchar_t support for identifiers
 dnl --------------------------------
 AC_ARG_ENABLE(wchar_support,
