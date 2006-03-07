@@ -1,6 +1,6 @@
 /*
  * Project:     libFIRM
- * File name:   ir/opt/scalar_replace.c
+ * File name:   ir/opt/data_flow_scalar_replace.c
  * Purpose:     scalar replacement of arrays and compounds
  * Author:      Beyhan Veliev
  * Modified by: Michael Beck
@@ -46,57 +46,40 @@
 #define GET_IRN_VNUM(irn)       (unsigned)PTR_TO_INT(get_irn_link(irn))
 
 
-/* To save for an entity all leaves for that the memory
- * edge was split.*/
+
 typedef struct _ent_leaves_t{
-  entity  *ent;
-  pset *leaves;
+  entity  *ent;               /**< An entity, that contains scalars for replace.*/
+  pset *leaves;               /**< All leaves of this entity.*/
 } ent_leaves_t;
 
 typedef struct _sels_t {
-  ir_node *sel;
-  entity  *ent;
+  ir_node *sel;               /**< A sel node, thats entity have scalars.*/
+  entity  *ent;               /**< The entity of this sel node.*/
 }sels_t;
 
 typedef struct _call_access_t {
-  ir_node *call;
-  unsigned int access_type;
+  ir_node *call;             /**< A call node, that have as parameter a scalar.*/
+  unsigned int access_type;  /**< The access type, with that this call access this scalar.*/
 }call_access_t;
 
 typedef struct _fixlist_entry_t {
-  ir_node *irn;
-  unsigned int vnum;
+  ir_node *irn;             /**< An ir node, that must be fixed.*/
+  unsigned int vnum;        /**< The value number, that must became this ir node.*/
 }fixlist_entry_t;
 
 typedef struct _syncs_fixlist_entry_t {
-  ir_node *irn;
-  int *accessed_vnum;
+  ir_node *irn;             /**< A sync node that must be fixed.*/
+  int *accessed_vnum;       /**< A pointer to save an array with value numbers, that must became this sync.*/
 }syncs_fixlist_entry_t;
 
 /* A entry, that save the memory
  * edge state and the access state for this leave
  * int the array,that is created for every block.*/
 typedef struct _leave_t {
-  ir_node *mem_edge_state;  /**< memory state for this scalar.*/
-  unsigned int access_type; /**< access state for this scalar.*/
-  set *calls;              /**< call nodes,that change this scalar.*/
+  ir_node *mem_edge_state;   /**< memory state for this scalar in this block.*/
+  unsigned int access_type;  /**< access state for this scalar in this block.*/
+  set *calls;                /**< call nodes,that change this scalar in this block.*/
 }value_arr_entry_t;
-
-/**
- * environment for memory walker
- */
-typedef struct _env_t {
-  struct obstack obst;                   /**< a obstack for the memory edge */
-  set                   *set_sels;       /**< a set with all sels, that are reachable from an entity with a scalar.*/
-  set                   *set_ent;        /**< a set with all entities that have one or more scalars.*/
-  fixlist_entry_t       *fix_phis;       /**< list of all Phi nodes that must be fixed */
-  fixlist_entry_t       *fix_ls;         /**< list of all Load or Store nodes that must be fixed */
-  syncs_fixlist_entry_t *fix_syncs;      /**< list of all Sync nodes that must be fixed */
-  unsigned int          nvals;           /**< to save the number of scalars.*/
-  unsigned int          gl_mem_vnum;     /**< indicate the position of the globule memory edge state in var_arr.*/
-  unsigned int          vnum_state;      /**< indicate the position of the value number state in var_arr.*/
-  unsigned int          changes;         /**< to save if by anlyse_calls is changed anything.*/
-} env_t;
 
 /**
  * A path element entry: it is either an entity
@@ -118,9 +101,22 @@ typedef struct _path_t {
   path_elem_t path[1];   /**< the path */
 } path_t;
 
-/* we need a special address that serves as an address stored. */
-static char _s;
-static void *ADDRESS_STORED = &_s;
+/**
+ * environment for memory walker
+ */
+typedef struct _env_t {
+  struct obstack obst;                   /**< a obstack for the memory edge */
+  set                   *set_sels;       /**< a set with all sels, that are reachable from an entity with a scalar.*/
+  set                   *set_ent;        /**< a set with all entities that have one or more scalars.*/
+  fixlist_entry_t       *fix_phis;       /**< list of all Phi nodes that must be fixed */
+  fixlist_entry_t       *fix_ls;         /**< list of all Load or Store nodes that must be fixed */
+  syncs_fixlist_entry_t *fix_syncs;      /**< list of all Sync nodes that must be fixed */
+  unsigned int          nvals;           /**< to save the number of scalars.*/
+  unsigned int          gl_mem_vnum;     /**< indicate the position of the globule memory edge state in var_arr.*/
+  unsigned int          vnum_state;      /**< indicate the position of the value number state in var_arr.*/
+  unsigned int          changes;         /**< to save if by anlyse_calls is changed anything.*/
+} env_t;
+
 
 
 /**
@@ -172,7 +168,7 @@ static int leave_cmp(const void *elt, const void *key, size_t size)
   const ir_node *c1 = elt;
   const ir_node *c2 = key;
 
-  return c1 != c2;
+  return get_Sel_entity(c1) != get_Sel_entity(c2);
 }
 
 /**
@@ -481,7 +477,7 @@ static unsigned allocate_value_numbers(set *set_sels, pset *leaves, entity *ent,
       continue;
 
     /* We have found a leave and we add it to the pset of this entity.*/
-    pset_insert_ptr(leaves, sel);
+    pset_insert(leaves, sel, HASH_PTR(get_Sel_entity(sel)));
 
     key  = find_path(sel, 0);
     path = set_find(pathes, key, sizeof(*key) + sizeof(key->path[0]) * key->path_len, path_hash(key));
@@ -503,55 +499,260 @@ static unsigned allocate_value_numbers(set *set_sels, pset *leaves, entity *ent,
   set_entity_link(ent, NULL);
   return vnum;
 }
-/* Analyze if this scalar was stored in this block
-   or earlier.*/
-static int is_scalar_stored(ir_node *call_blk, int ent_vnum) {
+/* Add a sync node to it fix list.
+ *
+ * @param sync     The sync node, that myst be addet to the fix list.
+ * @param unk_vnum An array whit the value number, that are synced with this sync node.
+ * @param env      The enviroment pinter.
+ */
+static void add_sync_to_fixlist(ir_node *sync, int *unk_vnum, env_t *env) {
 
-  value_arr_entry_t *val_arr, *val_arr_pred;
-  ir_node *pred;
-  int n;
+   syncs_fixlist_entry_t *s;
 
-  val_arr = get_irn_link(call_blk);
+   s = obstack_alloc(&env->obst, sizeof(*s));
+   s->irn  = sync;
+   s->accessed_vnum = unk_vnum;
+   set_irn_link(sync, env->fix_syncs);
+   env->fix_syncs = s;
+}
+/* Add a ir node to it fix list.
+ *
+ * @param irn     The ir node, that myst be addet to the fix list.
+ * @param vnum    The value number, that must baceme this ir node as predecessor later.
+ * @param env     The enviroment pinter.
+ */
+static void add_ls_to_fixlist(ir_node *irn, int vnum, env_t *env) {
 
-  if(val_arr[ent_vnum].access_type == 0)
-    return 0;
+  fixlist_entry_t *l;
 
-  n = get_Block_n_cfgpreds(call_blk) - 1;
+  l = obstack_alloc(&env->obst, sizeof(*l));
+  l->irn  = irn;
+  l->vnum = vnum;
 
-  for( ; n >= 0; n--) {
-    pred = get_Block_cfgpred(call_blk, n);
-    pred = get_nodes_block(pred);
-    val_arr_pred = get_irn_link(pred);
-
-    if(val_arr_pred[ent_vnum].access_type != 0)
-      /* This scalar wasn't stored in this block.*/
-      return 1;
+  if(get_irn_op(irn) == op_Phi) {
+    set_irn_link(l->irn, env->fix_phis);
+    env->fix_phis = l;
+  }else {
+    set_irn_link(l->irn, env->fix_ls);
+    env->fix_ls = l;
   }
-  return 0;
 }
 
+static void add_mem_edge(value_arr_entry_t *val_arr, int vnum, ir_node ***in, int **accessed_vnum) {
+
+  if(val_arr[vnum].mem_edge_state != NULL)
+    ARR_APP1(ir_node *, *in, val_arr[vnum].mem_edge_state);
+  else {
+    ARR_APP1(int, *accessed_vnum, vnum);
+    ARR_APP1(ir_node *, *in, new_Unknown(mode_M));
+  }
+}
+/** The function handles the scalars, that wase stored
+ *  in this block.
+ *
+ * @param blk    The block, that must be handled.
+ * @param env    The enviroment pinter.
+ */
+
+static void sync_stored_scalars(ir_node *blk, env_t *env) {
+
+  int                   i;
+  int                   *unk_vnum;                   /**< An arraw, where are saved the value number, that
+                                                          are synced from this sync node.*/
+  ent_leaves_t          *value_ent;
+  value_arr_entry_t     *val_arr_blk, *val_arr;
+  ir_node               *pred, *leave, **in;
+  ir_node               *sync_blk;                     /**< The block, where the sync node must be created.*/
+
+
+  val_arr_blk = get_irn_link(blk);
+
+  for(value_ent = set_first(env->set_ent); value_ent; value_ent = set_next(env->set_ent)) {
+
+
+    if(val_arr_blk[GET_ENT_VNUM(value_ent->ent)].access_type <= 3)
+      /* This entity is not stored in this block.*/
+      continue;
+
+    for(i = get_Block_n_cfgpreds(blk) - 1; i >= 0; i--) {
+
+      pred = get_Block_cfgpred(blk, i);
+      pred = get_nodes_block(pred);
+      val_arr = get_irn_link(pred);
+
+      if(val_arr[GET_ENT_VNUM(value_ent->ent)].access_type <= 3) {
+        /* In this predecessor block is this entity not acessed.
+         * We must sync in the end ot this block.*/
+        if(get_Block_n_cfgpreds(blk) > 1)
+          sync_blk = get_nodes_block(get_Block_cfgpred(blk, i));
+        else
+          sync_blk = blk;
+
+        val_arr = get_irn_link(sync_blk);
+        /* An array to save the memory edges, that must be
+         * synced.*/
+        in = NEW_ARR_F(ir_node *, 1);
+
+        /* An array to save the value numbers,
+         * that must be repaired.*/
+        unk_vnum = NEW_ARR_F(int, 0);
+        /* The global memory edge.*/
+        if(val_arr[env->gl_mem_vnum].mem_edge_state == NULL)
+         in[0] = new_Unknown(mode_M);
+        else
+         in[0] = val_arr[env->gl_mem_vnum].mem_edge_state;
+
+        for(leave = pset_first(value_ent->leaves); leave; leave = pset_next(value_ent->leaves))
+          /* All this memory edges must be synced.*/
+          add_mem_edge(val_arr, GET_IRN_VNUM(leave), &in, &unk_vnum);
+
+        /* We create the sync and set it in the global memory state.*/
+        val_arr[env->gl_mem_vnum].mem_edge_state = new_r_Sync(current_ir_graph, sync_blk, ARR_LEN(in), in);
+        /* We add this sync node to the sync's fix list.*/
+        add_sync_to_fixlist(val_arr[env->gl_mem_vnum].mem_edge_state, unk_vnum, env);
+
+        DEL_ARR_F(in);
+      }
+    }
+  }
+}
+/* The function split the memory edge of load and store nodes, that have
+ * as predecessor a scalar
+ *
+ * @param irn   The node, that memory edge must be spleted.
+ * @param env   The enviroment pinter.
+ */
+static void split_ls_mem_edge(ir_node *irn, env_t *env) {
+
+  ir_op              *op;
+  ir_node            *leave, *irn_blk, *mem_state, *new_mem_state;
+  unsigned           ent_vnum, sel_vnum, i;
+  value_arr_entry_t  *val_arr;
+  sels_t             key_sels, *value_sels;
+  ent_leaves_t       key_ent, *value_ent;
+
+  op = get_irn_op(irn);
+
+  if(op == op_Load)
+    key_sels.sel = get_Load_ptr(irn);
+  else
+    key_sels.sel = get_Store_ptr(irn);
+
+  value_sels = set_find(env->set_sels, &key_sels, sizeof(key_sels), HASH_PTR(key_sels.sel));
+
+  if(value_sels != NULL) {
+    /* we have found a load or store, that use a sel of our set
+     * and we must split or extend, if the memory edge have been
+     * split for this sel, the memory edge.*/
+
+    key_ent.ent = value_sels->ent;
+    value_ent = set_find(env->set_ent, &key_ent, sizeof(key_ent), HASH_PTR(key_ent.ent));
+    /*To check if the enities set is right filled. */
+    assert(value_ent && " This sel's entity isn't int the entity set.");
+
+    leave = pset_find(value_ent->leaves, key_sels.sel, HASH_PTR(get_Sel_entity(key_sels.sel)));
+    /*To check if the leaves set is right filled. */
+    assert(leave && "Anything in data_flow_scalar_replacment algorithm is wrong.");
+
+    ent_vnum = GET_ENT_VNUM(value_ent->ent);
+    sel_vnum = GET_IRN_VNUM(leave);
+    irn_blk = get_nodes_block(irn);
+    val_arr   = get_irn_link(irn_blk);
+
+    if(val_arr[ent_vnum].access_type == 0)
+      /* We have found a scalar, that address is not stored as jet.*/
+      i = sel_vnum;
+    else
+      /* This scalar have been stored.*/
+      i = env->gl_mem_vnum;
+
+    if(val_arr[i].mem_edge_state == NULL) {
+      /* We split now for this sel the memory edge in this block.*/
+      mem_state = new_Unknown(mode_M);
+      /* We must mark this node to fix later*/
+      add_ls_to_fixlist(irn, i, env);
+    }
+    else
+      /* We have split the memory edge and the current state is saved.*/
+      mem_state = val_arr[i].mem_edge_state;
+
+    /* We set this Load or Store to the memory edge of this
+     * sel.*/
+    if(op == op_Load)
+      set_Load_mem(irn, mem_state);
+    else
+      set_Store_mem(irn, mem_state);
+
+    /* When we have split or extended the memory edge we must
+     * update the memory_edge_state of this sel*/
+    new_mem_state = get_irn_out(irn, 0);
+    if(get_irn_mode(new_mem_state) == mode_M)
+      val_arr[i].mem_edge_state = new_mem_state;
+    else
+      val_arr[i].mem_edge_state = get_irn_out(irn, 1);
+  }
+}
+
+static void split_phi_mem_edge(ir_node *irn, env_t *env) {
+
+  ir_node            *irn_blk, *unk, **in;
+  int                n, i, j;
+  value_arr_entry_t  *val_arr;
+
+  irn_blk = get_nodes_block(irn);
+  val_arr = get_irn_link(irn_blk);
+
+  n = get_Block_n_cfgpreds(irn_blk);
+
+  in = alloca(sizeof(*in) * n);
+
+  for (i = env->gl_mem_vnum; i >= 0; --i) {
+
+    if(val_arr[i].access_type > 3)
+      /* This scalar was saved and we don't need
+       * to produce a phi for it.*/
+      continue;
+
+    unk = new_Unknown(mode_M);
+    for (j = n - 1; j >= 0; --j)
+      in[j] = unk;
+      if(i != env->gl_mem_vnum)
+        val_arr[i].mem_edge_state = new_r_Phi(current_ir_graph, irn_blk, n, in, mode_M);
+      else{
+        /* We use for the global memory the phi node, that
+         * is already available.*/
+        val_arr[i].mem_edge_state = irn;
+      }
+
+      add_ls_to_fixlist(val_arr[i].mem_edge_state, i, env);
+  }
+}
 
 /* The function handles the call nodes, that have
- * as parameter a scalar*/
-static void handle_call(env_t *env, ir_node *call, pset *accessed_entities) {
+ * as parameter a scalar
+ *
+ * @param env                The enviroment pinter.
+ * @param call               The call node, that must be handled.
+ * @param accessed_entities  A set wit all entities, that are accessed from this call node.*/
+static void split_call_mem_edge(env_t *env, ir_node *call, pset *accessed_entities) {
 
-  ent_leaves_t  key_ent, *value_ent;
-  value_arr_entry_t *val_arr;
-  call_access_t key_call, *value_call;
-  ir_node *call_blk, *new_mem_state, *leave;
-  ir_node *sync, **in;
-  entity *ent;
-  fixlist_entry_t *l;
-  syncs_fixlist_entry_t *s;
-  int fix_irn = 0, *accessed_leaves_vnum = NULL;
-  unsigned ent_vnum;
+  ent_leaves_t            key_ent, *value_ent;
+  value_arr_entry_t       *val_arr;
+  call_access_t           key_call, *value_call;
+  ir_node                 *call_blk, *new_mem_state, *leave;
+  ir_node                 *sync, **in;
+  entity                  *ent;
+  unsigned                ent_vnum;
+  int                     fix_irn = 0;                  /**< Set to 1 if we must add this call to it fix list.*/
+  int                     *accessed_leaves_vnum = NULL; /**< An arraw, where are saved the value number, that
+                                                             are synced from call's sync node, if we need it.*/
 
   call_blk = get_nodes_block(call);
   val_arr  = get_irn_link(call_blk);
-  /* To save the memory edges, that must be
+  /* An array to save the memory edges, that must be
    * synced.*/
   in       = NEW_ARR_F(ir_node *, 1);
-  /* To save the value numbers of the memory
+  /* An array to save the value numbers of the memory
    * edges that must be repaired.*/
   accessed_leaves_vnum = NEW_ARR_F(int, 0);
 
@@ -562,24 +763,27 @@ static void handle_call(env_t *env, ir_node *call, pset *accessed_entities) {
   if(get_irn_mode(new_mem_state) != mode_M)
     new_mem_state = get_irn_out(call,1);
 
+  /* The global memory is the first predecessor of the create sync node.*/
   if(val_arr[env->gl_mem_vnum].mem_edge_state == NULL) {
     in[0] = new_Unknown(mode_M);
     fix_irn = 1;
-  } else
+  }
+  else
     in[0] = val_arr[env->gl_mem_vnum].mem_edge_state;
 
+
   for(ent = pset_first(accessed_entities); ent; ent = pset_next(accessed_entities)) {
-    /* Whit this loop we iterate all accessed entities an collect
+    /* Whit this loop we iterate all accessed entities from this call and collect
      * all memory edges, that we must sync.*/
     ent_vnum = GET_ENT_VNUM(ent);
 
     key_call.call = call;
-    value_call = set_find(val_arr[ent_vnum].calls, &key_call, sizeof(key_call), HASH_PTR(key_call.call));
+    value_call    = set_find(val_arr[ent_vnum].calls, &key_call, sizeof(key_call), HASH_PTR(key_call.call));
 
-    key_ent.ent = ent;
-    value_ent = set_find(env->set_ent, &key_ent, sizeof(key_ent), HASH_PTR(key_ent.ent));
+    key_ent.ent   = ent;
+    value_ent     = set_find(env->set_ent, &key_ent, sizeof(key_ent), HASH_PTR(key_ent.ent));
 
-    if(!is_scalar_stored(call_blk, ent_vnum)) {
+    if(val_arr[ent_vnum].access_type <= 3) {
       /* This scalar's address wasn't stored in this block.*/
       switch(value_call->access_type) {
 
@@ -590,19 +794,12 @@ static void handle_call(env_t *env, ir_node *call, pset *accessed_entities) {
       case ptr_access_read:
       case ptr_access_write:
       case ptr_access_rw:
-      case 5:
-      case ptr_access_all:
         /* All this cases must be traded equal.*/
 
         for(leave = pset_first(value_ent->leaves); leave; leave = pset_next(value_ent->leaves)){
           /* All this memory edges must be synced.*/
-          if(val_arr[GET_IRN_VNUM(leave)].mem_edge_state != NULL)
-            ARR_APP1(ir_node *, in, val_arr[GET_IRN_VNUM(leave)].mem_edge_state);
-          else {
-            ARR_APP1(int, accessed_leaves_vnum, GET_IRN_VNUM(leave));
-            ARR_APP1(ir_node *, in, new_Unknown(mode_M));
-            fix_irn = 1;
-          }
+          add_mem_edge(val_arr, GET_IRN_VNUM(leave), &in, &accessed_leaves_vnum);
+
           /* We update the memory state of this leave.*/
           if(value_call->access_type != ptr_access_read)
             val_arr[GET_IRN_VNUM(leave)].mem_edge_state = new_mem_state;
@@ -621,27 +818,18 @@ static void handle_call(env_t *env, ir_node *call, pset *accessed_entities) {
     /* we must set the call memory to gobale momory*/
     set_Call_mem(call,in[0]);
 
-    if(fix_irn) {
+    if(fix_irn)
       /* We add this call node to the call fix list..*/
-      l = obstack_alloc(&env->obst, sizeof(*l));
-      l->irn = call;
-      l->vnum = env->gl_mem_vnum;
-      set_irn_link(l->irn, env->fix_ls);
-      env->fix_ls = l;
-    }
+      add_ls_to_fixlist(call, env->gl_mem_vnum, env);
+
   } else {
    /* We create the sync and set it as memory predecessor of the call node.*/
       sync = new_r_Sync(current_ir_graph, call_blk, ARR_LEN(in), in);
       set_Call_mem(call, sync);
 
-      if(fix_irn) {
+      if(ARR_LEN(accessed_leaves_vnum))
         /* We add this sync node to the sync's fix list.*/
-        s = obstack_alloc(&env->obst, sizeof(*s));
-        s->irn  = sync;
-        s->accessed_vnum = accessed_leaves_vnum;
-        set_irn_link(sync, env->fix_syncs);
-        env->fix_syncs = s;
-      }
+        add_sync_to_fixlist(sync, accessed_leaves_vnum, env);
   }
   DEL_ARR_F(in);
 }
@@ -649,132 +837,63 @@ static void handle_call(env_t *env, ir_node *call, pset *accessed_entities) {
 /* The function split the memory edge.*/
 static void split_memory_edge(ir_node *irn, void *ctx) {
 
-   env_t   *env = ctx;
-   ir_node *new_mem_state, *mem_state, *unk;
-   ir_node *leave, *sel, *irn_blk, **in;
-   ir_op   *op;
-   sels_t  key_sels, *value_sels;
-   ent_leaves_t key_ent, *value_ent;
-   value_arr_entry_t *val_arr;
-   fixlist_entry_t *l;
-   pset *accessed_entities;
-   unsigned ent_vnum, sel_vnum;
-   int i, j, n;
+   env_t              *env = ctx;
+   ir_node            *sel, *irn_blk;
+   ir_op              *op;
+   sels_t             key_sels, *value_sels;
+   value_arr_entry_t  *val_arr;
+   pset               *accessed_entities;
+   int                i;
 
 
    op = get_irn_op(irn);
 
-   if(op == op_Load || op == op_Store) {
+   if(op == op_Block)
+     irn_blk = irn;
+   else
+     irn_blk = get_nodes_block(irn);
 
-     if(op == op_Load)
-       key_sels.sel = get_Load_ptr(irn);
-     else
-       key_sels.sel = get_Store_ptr(irn);
+   if (Block_not_block_visited(irn_blk)) {
+     /* We sync first the stored scalar address in this block.*/
+    mark_Block_block_visited(irn_blk);
+    sync_stored_scalars(irn_blk, env);
+   }
 
-     value_sels = set_find(env->set_sels, &key_sels, sizeof(key_sels), HASH_PTR(key_sels.sel));
+   if(op == op_Load || op == op_Store)
 
-     if(value_sels != NULL) {
-     /* we have found a load or store, that use a sel of our set
-      * and we must split or extend, if the memory edge have been
-      * split for this sel, the memory edge.*/
+      split_ls_mem_edge(irn, env);
 
-       key_ent.ent = value_sels->ent;
-       value_ent = set_find(env->set_ent, &key_ent, sizeof(key_ent), HASH_PTR(key_ent.ent));
-       assert(value_ent && " This sel's entity isn't int the entity set.");
-
-       leave = pset_find_ptr(value_ent->leaves, key_sels.sel);
-
-       assert(leave && "Anything in data_flow_scalar_replacment algorithm is wrong.");
-
-       ent_vnum = GET_ENT_VNUM(value_ent->ent);
-       sel_vnum = GET_IRN_VNUM(leave);
-
-       irn_blk = get_nodes_block(irn);
-       val_arr   = get_irn_link(irn_blk);
-
-       if(val_arr[ent_vnum].access_type == 0)
-         /* We have found a scalar, that address i not stored as jet.*/
-         i = sel_vnum;
-       else
-         /* This scalar have been stored.*/
-         i = env->gl_mem_vnum;
-
-       if(val_arr[i].mem_edge_state == NULL) {
-          /* We split now for this sel the memory edge in this block.*/
-          mem_state = new_Unknown(mode_M);
-          /* We must mark this node to fix later*/
-          l = obstack_alloc(&env->obst, sizeof(*l));
-          l->irn  = irn;
-          l->vnum = i;
-
-          set_irn_link(irn, env->fix_ls);
-          env->fix_ls = l;
-       }else
-        /* We have split the memory edge and the current state is saved.*/
-        mem_state = val_arr[i].mem_edge_state;
-
-        /* We set this Load or Store to the memory edge of this
-         * sel.*/
-        if(op == op_Load)
-          set_Load_mem(irn, mem_state);
-        else
-          set_Store_mem(irn, mem_state);
-
-         /* When we have split or extended the memory edge we must
-          * update the memory_edge_state of this sel*/
-         new_mem_state = get_irn_out(irn, 0);
-         if(get_irn_mode(new_mem_state) == mode_M)
-          val_arr[i].mem_edge_state = new_mem_state;
-         else
-          val_arr[i].mem_edge_state = get_irn_out(irn, 1);
-        }
-      }
-    else
+   else {
       if (op == op_Phi && get_irn_mode(irn) == mode_M) {
         /*
          * found a memory Phi: Here, we must create new Phi nodes
          */
-        irn_blk = get_nodes_block(irn);
-        val_arr = get_irn_link(irn_blk);
-
-        n = get_Block_n_cfgpreds(irn_blk);
-
-        in = alloca(sizeof(*in) * n);
-
-        for (i = val_arr[env->gl_mem_vnum].access_type - 1; i >= 0; --i) {
-        unk = new_Unknown(mode_M);
-        for (j = n - 1; j >= 0; --j)
-          in[j] = unk;
-
-        val_arr[i].mem_edge_state = new_r_Phi(current_ir_graph, irn_blk, n, in, mode_M);
-
-        l = obstack_alloc(&env->obst, sizeof(*l));
-        l->irn = val_arr[i].mem_edge_state;
-        l->vnum = i;
-
-        set_irn_link(val_arr[i].mem_edge_state, env->fix_phis);
-        env->fix_phis = l;
-    }
-   }
-   if(op == op_Call) {
-      /* We save in this set all entities,
-       * that are accessed from this call node.*/
-      accessed_entities = new_pset(ent_cmp, 8);
-
-       for ( i = get_Call_n_params(irn) - 1; i >= 0; i--) {
-         sel = get_Call_param(irn, i);
-         if(get_irn_op(sel) == op_Sel) {
-           key_sels.sel = sel;
-           value_sels   = set_find(env->set_sels, &key_sels, sizeof(key_sels), HASH_PTR(key_sels.sel));
-         }
-
-         if(value_sels != NULL)
-           /* We save in this set all accessed entities from this call node.*/
-          pset_insert(accessed_entities, value_sels->ent, HASH_PTR(value_sels->ent));
+        split_phi_mem_edge(irn, env);
       }
-      if(pset_count(accessed_entities))
-       handle_call(env, irn, accessed_entities);
-  }
+      else {
+        if(op == op_Call) {
+          /* We save in this set all entities,
+           * that are accessed from this call node.*/
+          accessed_entities = new_pset(ent_cmp, 8);
+          val_arr = get_irn_link(get_nodes_block(irn));
+
+          for ( i = get_Call_n_params(irn) - 1; i >= 0; i--) {
+            sel = get_Call_param(irn, i);
+            if(get_irn_op(sel) == op_Sel) {
+              key_sels.sel = sel;
+              value_sels   = set_find(env->set_sels, &key_sels, sizeof(key_sels), HASH_PTR(key_sels.sel));
+            }
+
+            if(value_sels != NULL && val_arr[GET_ENT_VNUM(value_sels->ent)].access_type <= 3)
+              /* We save in this set all accessed entities from this call node whit
+               * access none, read, write or rw..*/
+              pset_insert(accessed_entities, value_sels->ent, HASH_PTR(value_sels->ent));
+          }
+
+          split_call_mem_edge(env, irn, accessed_entities);
+        }
+      }
+   }
 }
 
 /**
@@ -877,11 +996,12 @@ static void fix_syncs(env_t *env)
 {
   syncs_fixlist_entry_t *l;
   ir_node      *sync, *block, *pred, *val;
-  int i, k = 0;
+  int i, k;
 
 
   for (l = env->fix_syncs; l; l = get_irn_link(sync)) {
     sync = l->irn;
+    k = 0;
 
     /* The sync block must have one predecessor, when it
        have unknown nodes as predecessor.*/
@@ -896,7 +1016,7 @@ static void fix_syncs(env_t *env)
       set_irn_n(sync, 0, val);
     }
 
-    for (i = get_irn_arity(sync) - 1; i >= 0; --i) {
+    for (i = get_irn_arity(sync) - 1; i >= 1; --i) {
       /* We repair the leaves*/
       if(get_irn_op(get_irn_n(sync, i)) == op_Unknown) {
         inc_irg_block_visited(current_ir_graph);
@@ -909,17 +1029,23 @@ static void fix_syncs(env_t *env)
 /* For the end node we must sync all memory edges.*/
 static void sync_mem_edges(env_t *env) {
 
-  ent_leaves_t *entry_ent;
-  ir_node      *leave;
   value_arr_entry_t *val_arr;
   ir_node **in, *sync, *Return, *Return_blk;
-  int i = 1;
+  int i, vnum, vnum_state;
 
   Return     = get_Block_cfgpred(get_irg_end_block(current_ir_graph), 0);
   Return_blk = get_nodes_block(Return);
   val_arr    = get_irn_link(Return_blk);
+
+  vnum_state = 0;
+  for(i = 0; i <= env->gl_mem_vnum; i++)
+    /* we get the current state of non saved scalars.*/
+    if(val_arr[i].access_type <= 3)
+      vnum_state++;
+
+
   /* We allocate the memory, that we need for the successors of the sync.*/
-  in     = malloc(sizeof(ir_node*) *val_arr[env->vnum_state].access_type);
+  in     = malloc(sizeof(ir_node*) *vnum_state);
   /* The global memory edge is the first predecessor of this sync node.*/
   if(val_arr[env->gl_mem_vnum].mem_edge_state == NULL) {
     /* We must search through blocks for this memory state.*/
@@ -930,24 +1056,25 @@ static void sync_mem_edges(env_t *env) {
     in[0] = val_arr[env->gl_mem_vnum].mem_edge_state;
 
 
-  for(entry_ent = set_first(env->set_ent); entry_ent; entry_ent = set_next(env->set_ent)) {
-    if(val_arr[GET_ENT_VNUM(entry_ent->ent)].access_type ==0)
-      /* The address of this entity was not stored. We must sync the memory edges of it's scalars.*/
-      for(leave = pset_first(entry_ent->leaves); leave; leave = pset_next(entry_ent->leaves)) {
-        if(val_arr[GET_IRN_VNUM(leave)].mem_edge_state == NULL) {
-          /* We must search through blocks for this memory state.*/
-          inc_irg_block_visited(current_ir_graph);
-          in[i] = find_value(Return_blk, GET_IRN_VNUM(leave));
-        }
-        else
-          in[i] = val_arr[GET_IRN_VNUM(leave)].mem_edge_state;
-        i++;
+  for(i = 1, vnum = 0; vnum < env->gl_mem_vnum; vnum++) {
+
+    if(val_arr[vnum].access_type > 3)
+      /* this scalar was saved and we must not sync it memory edge.*/
+      continue;
+
+    if(val_arr[vnum].mem_edge_state == NULL) {
+      /* We must search through blocks for this memory state.*/
+      inc_irg_block_visited(current_ir_graph);
+      in[i] = find_value(Return_blk, vnum);
     }
+    else
+      in[i] = val_arr[vnum].mem_edge_state;
+    i++;
   }
 
   //assert(i < env->nvals && "Our nvals algorithm is baggy." );
 
-  sync = new_r_Sync(current_ir_graph, Return_blk, val_arr[env->vnum_state].access_type, in);
+  sync = new_r_Sync(current_ir_graph, Return_blk, vnum_state, in);
   set_Return_mem(Return, sync);
 
   free(in);
@@ -1041,7 +1168,6 @@ static void analyse_calls(ir_node *irn, void *ctx) {
               /* We must update our scalars number.*/
               key_ent.ent = value_sels->ent;
               value_ent = set_find(env->set_ent, &key_ent, sizeof(key_ent), HASH_PTR(key_ent.ent));
-              val_arr[env->vnum_state].access_type -= pset_count(value_ent->leaves);
             }
        }
      }
@@ -1054,7 +1180,8 @@ static void set_block_access(ir_node *irn, void *ctx){
   value_arr_entry_t *val_arr, *val_arr_pred;
   ent_leaves_t      *value_leaves;
   env_t             *env = ctx;
-  ir_node           *pred, *pred_blk;
+  ir_node           *pred, *pred_blk, *leave;
+  ir_loop           *blk_loop;
   int               i, vnum;
 
   val_arr = get_irn_link(irn);
@@ -1064,6 +1191,8 @@ static void set_block_access(ir_node *irn, void *ctx){
      * be updated.*/
     pred = get_Block_cfgpred(irn, i);
     pred_blk = get_nodes_block(pred);
+    blk_loop = get_irn_loop(pred_blk);
+
     val_arr_pred = get_irn_link(pred_blk);
 
     for(value_leaves = set_first(env->set_ent); value_leaves; value_leaves = set_next(env->set_ent)) {
@@ -1072,6 +1201,11 @@ static void set_block_access(ir_node *irn, void *ctx){
       if((val_arr_pred[vnum].access_type > 3) && (val_arr[vnum].access_type < 3)) {
         /* We have found a block for update it access and value number information.*/
             val_arr[vnum].access_type = val_arr_pred[vnum].access_type;
+            /* We update the access information of all leave, that belong to
+             * this entity.*/
+            for(leave = pset_first(value_leaves->leaves); leave; leave = pset_next(value_leaves->leaves))
+              val_arr[GET_IRN_VNUM(leave)].access_type = val_arr[vnum].access_type;
+
             val_arr[env->vnum_state].access_type = val_arr_pred[env->vnum_state].access_type;
             env->changes++;
           }
@@ -1147,6 +1281,8 @@ static void do_data_flow_scalar_replacement(set *set_ent, set *set_sels, int vnu
   }
   /* Debug info to see if analyse_calls work properly.*/
   irg_block_walk_graph(current_ir_graph, NULL, print_block_state, &env);
+
+  inc_irg_block_visited(current_ir_graph);
   /*
    * fourth step: walk over the graph blockwise in topological order
    * and split the memrory edge.
@@ -1183,9 +1319,15 @@ void data_flow_scalar_replacement_opt(ir_graph *irg)
   set_sels = new_set(sels_cmp, 8);
   set_ent  = new_set(ent_leaves_t_cmp, 8);
 
+  /* Call algorithm that remove the critical edges of a ir graph. */
+  remove_critical_cf_edges(irg);
+
   /* Call algorithm that computes the out edges */
   if (get_irg_outs_state(irg) != outs_consistent)
     compute_irg_outs(irg);
+
+  /* Call algorithm that computes the loop information */
+  compute_loop_info(irg);
 
   /* Find possible scalar replacements */
   if (find_possible_replacements(irg)) {
