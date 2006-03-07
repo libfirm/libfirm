@@ -43,8 +43,11 @@
 #include "beifg_impl.h"
 
 #include "bespillbelady.h"
-#include "bespillilp.h"
 #include "belower.h"
+
+#ifdef WITH_ILP
+#include "bespillilp.h"
+#endif /* WITH_ILP */
 
 #include "becopyopt.h"
 #include "bessadestr.h"
@@ -164,7 +167,7 @@ static be_ra_chordal_opts_t options = {
 #ifdef WITH_LIBCORE
 static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "belady", BE_CH_SPILL_BELADY },
-#ifndef NO_ILP
+#ifdef WITH_ILP
 	{ "ilp",	BE_CH_SPILL_ILP },
 #endif
 	{ NULL, 0 }
@@ -172,7 +175,9 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 
 static const lc_opt_enum_int_items_t copymin_items[] = {
 	{ "heur", BE_CH_COPYMIN_HEUR },
+#ifdef WITH_ILP
 	{ "ilp",  BE_CH_COPYMIN_ILP },
+#endif
 	{ NULL, 0 }
 };
 
@@ -231,7 +236,7 @@ static void dump(unsigned mask, ir_graph *irg,
 				 const char *suffix,
 				 void (*dump_func)(ir_graph *, const char *))
 {
-	if(1 || (options.dump_flags & mask) == mask) {
+	if(1 || ((options.dump_flags & mask) == mask)) {
 		if(cls) {
 			char buf[256];
 			snprintf(buf, sizeof(buf), "-%s%s", cls->name, suffix);
@@ -308,7 +313,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_ssa_destruction(&chordal_env);
 		dump(BE_CH_DUMP_SSADESTR, irg, chordal_env.cls, "-ssadestr", dump_ir_block_graph_sched);
 		be_ssa_destruction_check(&chordal_env);
-		be_ra_chordal_check(&chordal_env);
+//		be_ra_chordal_check(&chordal_env);
 
 		copystat_dump(irg);
 
