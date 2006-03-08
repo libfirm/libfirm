@@ -37,6 +37,12 @@ size_t (be_ifg_neighbours_iter_size)(const void *self)
 	return ifg->impl->neighbours_iter_size;
 }
 
+size_t (be_ifg_cliques_iter_size)(const void *self)
+{
+	const be_ifg_t *ifg = self;
+	return ifg->impl->cliques_iter_size;
+}
+
 void (be_ifg_free)(void *self)
 {
 	be_ifg_t *ifg = self;
@@ -83,6 +89,24 @@ void (be_ifg_nodes_break)(const void *self, void *iter)
 {
 	const be_ifg_t *ifg = self;
 	ifg->impl->nodes_break(self, iter);
+}
+
+int (be_ifg_cliques_begin)(const void *self, void *iter, ir_node **buf)
+{
+	const be_ifg_t *ifg = self;
+	return ifg->impl->cliques_begin(self, iter, buf);
+}
+
+int (be_ifg_cliques_next)(const void *self, void *iter, ir_node **buf)
+{
+	const be_ifg_t *ifg = self;
+	return ifg->impl->cliques_next(self, iter, buf);
+}
+
+void (be_ifg_cliques_break)(const void *self, void *iter)
+{
+	const be_ifg_t *ifg = self;
+	ifg->impl->cliques_break(self, iter);
 }
 
 int (be_ifg_degree)(const void *self, const ir_node *irn)

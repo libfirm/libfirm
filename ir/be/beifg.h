@@ -17,6 +17,7 @@ typedef struct _be_ifg_t        be_ifg_t;
 
 #define be_ifg_nodes_iter_alloca(self)          (alloca(be_ifg_nodes_iter_size(self)))
 #define be_ifg_neighbours_iter_alloca(self)     (alloca(be_ifg_neighbours_iter_size(self)))
+#define be_ifg_cliques_iter_alloca(self)        (alloca(be_ifg_cliques_iter_size(self)))
 
 size_t   (be_ifg_nodes_iter_size)(const void *self);
 size_t   (be_ifg_neighbours_iter_size)(const void *self);
@@ -28,6 +29,9 @@ void     (be_ifg_neighbours_break)(const void *self, void *iter);
 ir_node *(be_ifg_nodes_begin)(const void *self, void *iter);
 ir_node *(be_ifg_nodes_next)(const void *self, void *iter);
 void     (be_ifg_nodes_break)(const void *self, void *iter);
+int      (be_ifg_cliques_begin)(const void *self, void *iter, ir_node **buf);
+int      (be_ifg_cliques_next)(const void *self, void *iter);
+void     (be_ifg_cliques_break)(const void *self, void *iter);
 int      (be_ifg_degree)(const void *self, const ir_node *irn);
 
 #define be_ifg_foreach_neighbour(self, iter, irn, pos) \
@@ -35,5 +39,10 @@ int      (be_ifg_degree)(const void *self, const ir_node *irn);
 
 #define be_ifg_foreach_node(self, iter, pos) \
 	for(pos = be_ifg_nodes_begin(self, iter); (pos); pos = be_ifg_nodes_next(self, iter))
+
+#define be_ifg_foreach_clique(self, iter, buf, count) \
+	for(*(count) = be_ifg_cliques_begin(self, iter, buf); \
+        *(count) != -1 ; \
+        *(count) = be_ifg_cliques_next(self, iter))
 
 #endif /* _BEIFG_H */

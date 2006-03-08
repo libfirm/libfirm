@@ -13,6 +13,7 @@
 struct _be_ifg_impl_t {
 	size_t nodes_iter_size;
 	size_t neighbours_iter_size;
+	size_t cliques_iter_size;
 
 	void (*free)(void *self);
 	int (*connected)(const void *self, const ir_node *a, const ir_node *b);
@@ -24,6 +25,10 @@ struct _be_ifg_impl_t {
 	ir_node *(*nodes_begin)(const void *self, void *iter);
 	ir_node *(*nodes_next)(const void *self, void *iter);
 	void (*nodes_break)(const void *self, void *iter);
+
+	int (*cliques_begin)(const void *self, void *iter, ir_node **buf);
+	int (*cliques_next)(const void *self, void *iter);
+	void (*cliques_break)(const void *self, void *iter);
 
 	int (*degree)(const void *self, const ir_node *irn);
 };
@@ -45,6 +50,9 @@ struct _be_ifg_t {
 #define be_ifg_nodes_begin(self, iter)            ((self)->impl->nodes_begin(self, iter))
 #define be_ifg_nodes_next(self, iter)             ((self)->impl->nodes_next(self, iter))
 #define be_ifg_nodes_break(self, iter)            ((self)->impl->nodes_break(self, iter))
+#define be_ifg_cliques_begin(self, iter, buf)     ((self)->impl->cliques_begin(self, iter, buf))
+#define be_ifg_cliques_next(self, iter)           ((self)->impl->cliques_next(self, iter))
+#define be_ifg_cliques_break(self, iter)          ((self)->impl->cliques_break(self, iter))
 #define be_ifg_degree(self,irn)                   ((self)->impl->degree(self, irn))
 
 #endif

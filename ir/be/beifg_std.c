@@ -200,6 +200,117 @@ static void ifg_std_neighbours_break(const void *self, void *iter)
 	neighbours_break(iter, 1);
 }
 
+typedef struct _cliques_iter_t {
+	struct obstack ob;
+	const be_chordal_env_t *cenv;
+	ir_node **buf;
+	ir_node **blocks;
+	int n_blocks, blk;
+	struct list_head *bor;
+	pset *living;
+} cliques_iter_t;
+
+static INLINE void free_clique_iter(cliques_iter_t *it) {
+	it->n_blocks = -1;
+	obstack_free(&it->ob, NULL);
+	del_pset(it->living);
+}
+
+static void get_blocks_dom_order(ir_node *blk, void *env) {
+	cliques_iter_t *it = env;
+	obstack_ptr_grow(&it->ob, blk);
+}
+
+#define pset_foreach(pset, irn)  for(irn=pset_first(pset); irn; irn=pset_next(pset))
+
+
+/**
+ * NOTE: Be careful when changing this function!
+ *       First understand the control flow of consecutive calls.
+ */
+static INLINE int get_next_clique(cliques_iter_t *it) {
+
+	/* continue in the block we left the last time */
+	for (; it->blk < it->n_blocks; it->blk++) {
+		int output_on_shrink = 0;
+		struct list_head *head = get_block_border_head(it->cenv, it->blocks[it->blk]);
+
+		/* on entry to a new block set the first border ...
+		if (!it->bor)
+			it->bor = head->prev;
+
+		/* ... otherwise continue with the border we left the last time */
+		for (; it->bor != head; it->bor = it->bor->prev) {
+			border_t *b = list_entry(it->bor, border_t, list);
+
+			/* if its a definition irn starts living */
+			if (b->is_def) {
+				pset_insert_ptr(it->living, b->irn);
+				if (b->is_real)
+					output_on_shrink = 1;
+			} else
+
+			/* if its the last usage the irn dies */
+			{
+				/* before shrinking the set, return the current maximal clique */
+				if (output_on_shrink) {
+					int count = 0;
+					ir_node *irn;
+
+					/* fill the output buffer */
+					pset_foreach(it->living, irn)
+						it->buf[count++] = irn;
+
+					assert(count > 0 && "We have a 'last usage', so there must be sth. in it->living");
+
+					return count;
+				}
+
+				pset_remove_ptr(it->living, b->irn);
+			}
+		}
+
+		it->bor = NULL;
+		assert(0 == pset_count(it->living) && "Something has survived! (At the end of the block it->living must be empty)");
+	}
+
+	if (it->n_blocks != -1)
+		free_clique_iter(it);
+
+	return -1;
+}
+
+static int ifg_std_cliques_begin(const void *self, void *iter, ir_node **buf)
+{
+	const ifg_std_t *ifg = self;
+	cliques_iter_t *it = iter;
+	ir_node *start_bl = get_irg_start_block(it->cenv->irg);
+
+	obstack_init(&it->ob);
+	dom_tree_walk(start_bl, get_blocks_dom_order, NULL, it);
+
+	it->cenv     = ifg->env;
+	it->buf      = buf;
+	it->n_blocks = obstack_object_size(&it->ob) / sizeof(void *);
+	it->blocks   = obstack_finish(&it->ob);
+	it->blk      = 0;
+	it->bor      = NULL;
+	it->living   = pset_new_ptr(2 * arch_register_class_n_regs(it->cenv->cls));
+
+	return get_next_clique(it);
+}
+
+static int ifg_std_cliques_next(const void *self, void *iter)
+{
+	return get_next_clique(iter);
+}
+
+static void ifg_std_cliques_break(const void *self, void *iter)
+{
+	free_clique_iter(iter);
+}
+
+
 static int ifg_std_degree(const void *self, const ir_node *irn)
 {
 	adj_iter_t it;
@@ -213,6 +324,7 @@ static int ifg_std_degree(const void *self, const ir_node *irn)
 static const be_ifg_impl_t ifg_std_impl = {
 	sizeof(nodes_iter_t),
 	sizeof(adj_iter_t),
+	sizeof(cliques_iter_t),
 
 	ifg_std_free,
 	ifg_std_connected,
@@ -222,6 +334,9 @@ static const be_ifg_impl_t ifg_std_impl = {
 	ifg_std_nodes_begin,
 	ifg_std_nodes_next,
 	ifg_std_nodes_break,
+	ifg_std_cliques_begin,
+	ifg_std_cliques_next,
+	ifg_std_cliques_break,
 	ifg_std_degree
 };
 
