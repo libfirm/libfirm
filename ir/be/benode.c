@@ -613,7 +613,7 @@ void be_set_IncSP_offset(ir_node *irn, unsigned offset)
 	a->offset = offset;
 }
 
-unsigned be_get_IncSP_offset(ir_node *irn)
+unsigned be_get_IncSP_offset(const ir_node *irn)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
 	assert(be_is_IncSP(irn));
@@ -627,7 +627,7 @@ void be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir)
 	a->dir = dir;
 }
 
-be_stack_dir_t be_get_IncSP_direction(ir_node *irn)
+be_stack_dir_t be_get_IncSP_direction(const ir_node *irn)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
 	assert(be_is_IncSP(irn));

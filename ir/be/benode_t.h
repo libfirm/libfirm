@@ -97,10 +97,10 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, unsigned amount, be_stack_dir_t dir);
 
 void     be_set_IncSP_offset(ir_node *irn, unsigned offset);
-unsigned be_get_IncSP_offset(ir_node *irn);
+unsigned be_get_IncSP_offset(const ir_node *irn);
 
 void           be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir);
-be_stack_dir_t be_get_IncSP_direction(ir_node *irn);
+be_stack_dir_t be_get_IncSP_direction(const ir_node *irn);
 
 ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
 ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
