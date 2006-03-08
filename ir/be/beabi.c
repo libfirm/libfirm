@@ -1121,6 +1121,7 @@ void be_abi_free(be_abi_irg_t *env)
 	del_pset(env->stack_phis);
 	pmap_destroy(env->regs);
 	obstack_free(&env->obst, NULL);
+	arch_env_pop_irn_handler(env->birg->main_env->arch_env);
 	free(env);
 }
 
