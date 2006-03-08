@@ -282,7 +282,7 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 }
 
 /**
- * Returns the tarval or offset of an ia32 as a string.
+ * Returns the tarval, offset or scale of an ia32 as a string.
  */
 static int ia32_const_to_str(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
@@ -778,85 +778,79 @@ void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
  * pointer of an opcode.
  */
 void ia32_register_emitters(void) {
-  int i;
+	int i;
 
-#define BEGIN()      if (0)
-#define IA32_EMIT(a) else if (op_ia32_##a == op) op->ops.generic = (op_func)emit_ia32_##a
-#define EMIT(a)      else if (op_##a == op)      op->ops.generic = (op_func)emit_##a
-#define END()        else op->ops.generic = (op_func)NULL
+#define IA32_EMIT(a) op_ia32_##a->ops.generic = (op_func)emit_ia32_##a
+#define EMIT(a)      op_##a->ops.generic = (op_func)emit_##a
 
-  for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
-    ir_op *op = get_irp_opcode(i);
+	/* first clear all generic operations */
+	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
+		ir_op *op = get_irp_opcode(i);
+		op->ops.generic = (op_func)NULL;
+	}
 
-    BEGIN();
-	  /* generated int emitter functions */
-	  IA32_EMIT(Const);
+	/* generated int emitter functions */
+	IA32_EMIT(Const);
 
-	  IA32_EMIT(Add);
-	  IA32_EMIT(Sub);
-	  IA32_EMIT(Minus);
-	  IA32_EMIT(Inc);
-	  IA32_EMIT(Dec);
+	IA32_EMIT(Add);
+	IA32_EMIT(Sub);
+	IA32_EMIT(Minus);
+	IA32_EMIT(Inc);
+	IA32_EMIT(Dec);
 
-	  IA32_EMIT(Max);
-	  IA32_EMIT(Min);
-	  IA32_EMIT(CMov);
+	IA32_EMIT(Max);
+	IA32_EMIT(Min);
+	IA32_EMIT(CMov);
 
-	  IA32_EMIT(And);
-	  IA32_EMIT(Or);
-	  IA32_EMIT(Eor);
-	  IA32_EMIT(Not);
+	IA32_EMIT(And);
+	IA32_EMIT(Or);
+	IA32_EMIT(Eor);
+	IA32_EMIT(Not);
 
-	  IA32_EMIT(Shl);
-	  IA32_EMIT(Shr);
-	  IA32_EMIT(Shrs);
-	  IA32_EMIT(RotL);
-	  IA32_EMIT(RotR);
+	IA32_EMIT(Shl);
+	IA32_EMIT(Shr);
+	IA32_EMIT(Shrs);
+	IA32_EMIT(RotL);
+	IA32_EMIT(RotR);
 
-	  IA32_EMIT(Lea);
+	IA32_EMIT(Lea);
 
-	  IA32_EMIT(Mul);
+	IA32_EMIT(Mul);
 
-	  IA32_EMIT(Cdq);
-	  IA32_EMIT(DivMod);
+	IA32_EMIT(Cdq);
+	IA32_EMIT(DivMod);
 
-	  IA32_EMIT(Store);
-	  IA32_EMIT(Load);
+	IA32_EMIT(Store);
+	IA32_EMIT(Load);
 
-	  IA32_EMIT(CopyB);
-	  IA32_EMIT(CopyB_i);
+	IA32_EMIT(CopyB);
+	IA32_EMIT(CopyB_i);
 
-	  /* generated floating point emitter */
-	  IA32_EMIT(fConst);
+	/* generated floating point emitter */
+	IA32_EMIT(fConst);
 
-	  IA32_EMIT(fAdd);
-	  IA32_EMIT(fSub);
+	IA32_EMIT(fAdd);
+	IA32_EMIT(fSub);
 
-	  IA32_EMIT(fMul);
-	  IA32_EMIT(fDiv);
+	IA32_EMIT(fMul);
+	IA32_EMIT(fDiv);
 
-	  IA32_EMIT(fMin);
-	  IA32_EMIT(fMax);
+	IA32_EMIT(fMin);
+	IA32_EMIT(fMax);
 
-	  IA32_EMIT(fLoad);
-	  IA32_EMIT(fStore);
+	IA32_EMIT(fLoad);
+	IA32_EMIT(fStore);
 
-	  /* other emitter functions */
-	  IA32_EMIT(CondJmp);
-	  IA32_EMIT(SwitchJmp);
-	  IA32_EMIT(Call);
+	/* other emitter functions */
+	IA32_EMIT(CondJmp);
+	IA32_EMIT(SwitchJmp);
+	IA32_EMIT(Call);
 
-	  EMIT(Jmp);
-	  EMIT(Proj);
+	EMIT(Jmp);
+	EMIT(Proj);
 
-    END();
-  }
-
-#undef BEGIN
 #undef IA32_EMIT
 #undef EMIT
-#undef END
-
 }
 
 /**
@@ -866,14 +860,14 @@ static void ia32_emit_node(ir_node *irn, void *env) {
 	emit_env_t *emit_env   = env;
 	firm_dbg_module_t *mod = emit_env->mod;
 	FILE              *F   = emit_env->out;
-  ir_op             *op = get_irn_op(irn);
+	ir_op             *op = get_irn_op(irn);
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 
-  if (op->ops.generic) {
-    void (*emit)(ir_node *, void *) = (void (*)(ir_node *, void *))op->ops.generic;
-    (*emit)(irn, env);
-  }
+	if (op->ops.generic) {
+		void (*emit)(ir_node *, void *) = (void (*)(ir_node *, void *))op->ops.generic;
+		(*emit)(irn, env);
+	}
 
 	ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
 }
