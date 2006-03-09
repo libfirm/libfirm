@@ -543,6 +543,10 @@ static void firm_before_ra(void *self)
 	irg_walk_graph(cg->irg, imm_scheduler, NULL, NULL);
 }
 
+static void firm_after_ra(void *self)
+{
+}
+
 static void firm_codegen_done(void *self)
 {
 	free(self);
@@ -555,6 +559,7 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_prepare_graph,
 	firm_before_sched,
 	firm_before_ra,
+	firm_after_ra,
 	firm_codegen_done
 };
 
