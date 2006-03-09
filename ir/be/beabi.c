@@ -1147,13 +1147,13 @@ ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *re
   fixed on the SP register of the ISA.
 */
 
-static const arch_irn_ops_t *abi_get_irn_ops(const arch_irn_handler_t *handler, const ir_node *irn)
+static const void *abi_get_irn_ops(const arch_irn_handler_t *handler, const ir_node *irn)
 {
 	const be_abi_irg_t *abi = get_abi_from_handler(handler);
 	return is_Phi(irn) && pset_find_ptr(abi->stack_phis, (void *) irn) != NULL ? &abi->irn_ops : NULL;
 }
 
-static void be_abi_limited(bitset_t *bs, void *data)
+static void be_abi_limited(void *data, bitset_t *bs)
 {
 	be_abi_irg_t *abi = data;
 	bitset_clear_all(bs);
