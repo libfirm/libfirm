@@ -267,6 +267,11 @@ static const char *get_ia32_reg_name(ir_node *irn, int pos, enum io_direction in
 		reg = get_in_reg(irn, pos);
 	}
 	else {
+		/* destination address mode nodes don't have outputs */
+		if (get_ia32_op_type(irn) == ia32_AddrModeD) {
+			return "MEM";
+		}
+
 		reg = get_out_reg(irn, pos);
 	}
 
