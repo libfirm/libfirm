@@ -312,6 +312,9 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 
 				/* insert copy before the node into the schedule */
 				sched_add_before(irn, copy);
+
+				/* set copy as in */
+				set_irn_n(irn, reqs[i]->same_pos, copy);
 			}
 		}
 	}
