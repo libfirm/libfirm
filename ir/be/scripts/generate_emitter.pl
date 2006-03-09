@@ -32,7 +32,7 @@ my $target_h = $target_dir."/gen_".$arch."_emitter.h";
 
 # stacks for output
 my @obst_func;   # stack for the emit functions
-my @obst_header;  # stack for the function prototypes
+my @obst_register;  # stack for emitter register code
 my $line;
 
 foreach my $op (keys(%nodes)) {
@@ -41,9 +41,10 @@ foreach my $op (keys(%nodes)) {
 	# skip this node description if no emit information is available
 	next if (!$n{"emit"} || length($n{"emit"}) < 1);
 
-	$line = "void emit_".$arch."_".$op."(ir_node *n, emit_env_t *env)";
-	push(@obst_header, $line.";\n");
+	$line = "static void emit_".$arch."_".$op."(const ir_node *n, emit_env_t *env)";
 	push(@obst_func, $line." {\n  FILE *F = env->out;\n");
+ 	$line = "  BE_EMIT($op);\n";
+	push(@obst_register, $line);
 
 	my @emit = split(/\n/, $n{"emit"});
 
@@ -119,11 +120,11 @@ print OUT<<EOF;
 #include "irnode.h"
 #include "$arch\_emitter.h"
 
+void $arch\_register_spec_emitters(void);
+
+#endif /* _GEN_$tmp\_EMITTER_H_ */
+
 EOF
-
-print OUT @obst_header;
-
-print OUT "#endif /* _GEN_$tmp\_EMITTER_H_ */\n";
 
 close(OUT);
 
@@ -146,11 +147,42 @@ print OUT<<EOF;
 #include <stdio.h>
 
 #include "irnode.h"
+#include "irop_t.h"
+#include "irprog_t.h"
+
 #include "gen_$arch\_emitter.h"
 #include "$arch\_new_nodes.h"
 
 EOF
 
 print OUT @obst_func;
+
+print OUT<<EOF;
+/**
+ * Enters the emitter functions for handled nodes into the generic
+ * pointer of an opcode.
+ */
+void $arch\_register_spec_emitters(void) {
+  int i;
+
+#define BE_EMIT(a) op_$arch\_##a->ops.generic = (op_func)emit_$arch\_##a
+
+  /* first clear all generic operations */
+  for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
+    ir_op *op = get_irp_opcode(i);
+    op->ops.generic = (op_func)NULL;
+  }
+
+  /* generated emitter functions */
+EOF
+
+print OUT @obst_register;
+
+print OUT<<EOF;
+
+#undef BE_EMIT
+}
+
+EOF
 
 close(OUT);
