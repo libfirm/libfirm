@@ -787,12 +787,6 @@ void emit_be_IncSP(const ir_node *irn, emit_env_t *emit_env) {
 	}
 }
 
-void emit_be_AddSP(const ir_node *irn, emit_env_t *emit_env) {
-	FILE *F = emit_env->out;
-	lc_efprintf(ia32_get_arg_env(), F, "\tadd %1D, %1S\t\t\t/* %+F (AddSP) */\n", irn, irn, irn);
-}
-
-
 
 /***********************************************************************************
  *                  _          __                                             _
@@ -829,7 +823,6 @@ static void ia32_register_emitters(void) {
 	/* benode emitter */
 	BE_EMIT(Call);
 	BE_EMIT(IncSP);
-	// BE_EMIT(AddSP);
 
 	/* firm emitter */
 	EMIT(Jmp);

@@ -1292,6 +1292,25 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
  *
  ********************************************/
 
+static ir_node *gen_FrameAddr(ia32_transform_env_t *tenv) {
+	ir_node *new_op = NULL;
+
+	return new_op;
+}
+
+static ir_node *gen_FrameLoad(ia32_transform_env_t *tenv) {
+	ir_node *new_op = NULL;
+
+	return new_op;
+}
+
+static ir_node *gen_FrameStore(ia32_transform_env_t *tenv) {
+	ir_node *new_op = NULL;
+
+	return new_op;
+}
+
+
 
 /*********************************************************
  *                  _             _      _
@@ -1412,6 +1431,10 @@ void ia32_transform_node(ir_node *node, void *env) {
 			OTHER_BIN(Max);
 			OTHER_BIN(Min);
 			OTHER_BIN(Mulh);
+
+			BE_GEN(FrameAddr);
+			BE_GEN(FrameLoad);
+			BE_GEN(FrameStore);
 			break;
 bad:
 		fprintf(stderr, "Not implemented: %s\n", get_irn_opname(node));
