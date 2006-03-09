@@ -22,6 +22,25 @@
 #include "be_t.h"
 #include "bearch.h"
 
+/**
+ * The benode op's.  Must be available to register emitter function.
+ */
+extern ir_op *op_be_Spill;
+extern ir_op *op_be_Reload;
+extern ir_op *op_be_Perm;
+extern ir_op *op_be_Copy;
+extern ir_op *op_be_Keep;
+extern ir_op *op_be_Call;
+extern ir_op *op_be_Return;
+extern ir_op *op_be_IncSP;
+extern ir_op *op_be_AddSP;
+extern ir_op *op_be_SetSP;
+extern ir_op *op_be_RegParams;
+extern ir_op *op_be_StackParam;
+extern ir_op *op_be_FrameAddr;
+extern ir_op *op_be_FrameLoad;
+extern ir_op *op_be_FrameStore;
+
 typedef enum {
 	beo_NoBeOp = 0,
 	beo_Spill,
