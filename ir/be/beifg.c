@@ -97,10 +97,10 @@ int (be_ifg_cliques_begin)(const void *self, void *iter, ir_node **buf)
 	return ifg->impl->cliques_begin(self, iter, buf);
 }
 
-int (be_ifg_cliques_next)(const void *self, void *iter, ir_node **buf)
+int (be_ifg_cliques_next)(const void *self, void *iter)
 {
 	const be_ifg_t *ifg = self;
-	return ifg->impl->cliques_next(self, iter, buf);
+	return ifg->impl->cliques_next(self, iter);
 }
 
 void (be_ifg_cliques_break)(const void *self, void *iter)

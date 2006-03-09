@@ -103,13 +103,13 @@ static void build_interference_cstr(ilp_env_t *ienv) {
 	int i, col;
 
 	void *iter = be_ifg_cliques_iter_alloca(ifg);
-	ir_node *clique = alloca(sizeof(*clique) * n_colors);
+	ir_node **clique = alloca(sizeof(*clique) * n_colors);
 	int size;
 
 	char buf[16];
 
 	/* for each maximal clique */
-	be_ifg_foreach_clique(ifg, iter, &clique, &size) {
+	be_ifg_foreach_clique(ifg, iter, clique, &size) {
 
 		if (size < 2)
 			continue;
@@ -119,7 +119,7 @@ static void build_interference_cstr(ilp_env_t *ienv) {
 			int cst_idx = lpp_add_cst(lpp, NULL, lpp_less, 1.0);
 
 			/* for each member of this clique */
-			for (i=0; i<size, ++i) {
+			for (i=0; i<size; ++i) {
 				ir_node *irn = clique[i];
 
 				if (!sr_is_removed(ienv->sr, irn)) {
@@ -195,9 +195,9 @@ static void ilp2_build(ilp_env_t *ienv) {
 
 static void ilp2_apply(ilp_env_t *ienv) {
 	local_env_t *lenv = ienv->env;
-	double sol[];
+	double *sol;
 	lpp_sol_state_t state;
-	int count;
+	int i, count;
 
 	count = lenv->last_x_var - lenv->first_x_var + 1;
 	sol = xmalloc(count * sizeof(sol[0]));
@@ -208,7 +208,6 @@ static void ilp2_apply(ilp_env_t *ienv) {
 	}
 
 	for (i=0; i<count; ++i) {
-		char c;
 		int nodenr, color;
 		char var_name[16];
 
