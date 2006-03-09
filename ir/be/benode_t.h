@@ -33,7 +33,7 @@ extern ir_op *op_be_Keep;
 extern ir_op *op_be_Call;
 extern ir_op *op_be_Return;
 extern ir_op *op_be_IncSP;
-extern ir_op *op_be_AddSP;
+extern ir_op *op_be_Alloca;
 extern ir_op *op_be_SetSP;
 extern ir_op *op_be_RegParams;
 extern ir_op *op_be_StackParam;
@@ -51,7 +51,7 @@ typedef enum {
 	beo_NoReg,
 	beo_Call,
 	beo_Return,
-	beo_AddSP,
+	beo_Alloca,
 	beo_IncSP,
 	beo_SetSP,
 	beo_RegParams,
@@ -97,7 +97,7 @@ ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_re
 						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, entity *ent);
 ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, entity *ent);
 
-ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *operand);
+ir_node *be_new_Alloca(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *old_sp, ir_node *sz);
 
 ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *operand, ir_node *mem);
 
@@ -120,6 +120,9 @@ unsigned be_get_IncSP_offset(const ir_node *irn);
 
 void           be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir);
 be_stack_dir_t be_get_IncSP_direction(const ir_node *irn);
+
+entity *be_Call_get_entity(const ir_node *call);
+void    be_Call_set_entity(ir_node *call, entity *ent);
 
 ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
 ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
@@ -163,6 +166,12 @@ void   be_set_Spill_entity(ir_node *irn, entity *ent);
 entity *be_get_spill_entity(const ir_node *irn);
 
 ir_node *be_get_Spill_context(const ir_node *irn);
+
+/**
+ * Set the entities of a Reload to the ones of the Spill it is pointing to.
+ * @param irg The graph.
+ */
+void be_copy_entities_to_reloads(ir_graph *irg);
 
 /**
  * Impose a register constraint on a backend node.
