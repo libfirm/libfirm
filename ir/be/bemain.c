@@ -303,6 +303,7 @@ static void be_main_loop(FILE *file_handle)
 		ra->allocate(&birg);
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
+		arch_code_generator_after_ra(birg.cg);
 		be_abi_fix_stack_bias(birg.abi);
 
 		arch_code_generator_done(birg.cg);
