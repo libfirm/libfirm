@@ -66,9 +66,4 @@ int co_solve_ilp1(copy_opt_t *co, double time_limit);
  */
 int co_solve_ilp2(copy_opt_t *co, double time_limit);
 
-/**
- * Compares different solutions of the same problem
- */
-void co_compare_solvers(be_chordal_env_t *chordal_env);
-
 #endif

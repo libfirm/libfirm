@@ -7,9 +7,13 @@
 #ifndef _BECOPYSTAT_H
 #define _BECOPYSTAT_H
 
-#undef DO_STAT
+#define COPYOPT_STAT
 
-#ifdef DO_STAT
+#ifdef COPYOPT_STAT
+
+#define DO_HEUR
+#define DO_ILP1
+#define DO_ILP2
 
 #include "irgraph.h"
 #include "bearch.h"
@@ -33,7 +37,12 @@ void copystat_add_ilp_iter(int iters);
 void copystat_dump(ir_graph *irg);
 void copystat_dump_pretty(ir_graph *irg);
 
-#else /* DO_STAT */
+/**
+ * Compares different solutions of the same problem
+ */
+void co_compare_solvers(be_chordal_env_t *chordal_env);
+
+#else /* COPYOPT_STAT */
 
 #define copystat_init();
 #define	copystat_reset();
@@ -54,6 +63,6 @@ void copystat_dump_pretty(ir_graph *irg);
 #define copystat_dump(irg);
 #define copystat_dump_pretty(irg);
 
-#endif /* DO_STAT */
+#endif /* COPYOPT_STAT */
 
 #endif /* _BECOPYSTAT_H */

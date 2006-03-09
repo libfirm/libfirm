@@ -60,8 +60,7 @@ typedef struct _unit_t {
 
 #define list_entry_units(lh) list_entry(lh, unit_t, units)
 
-
-#define get_Copy_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
+#define get_Copy_src(irn)                   (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
 #define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
 #define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
 #define is_Perm_Proj(arch_env, irn)			(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))

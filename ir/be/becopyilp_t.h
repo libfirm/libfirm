@@ -11,18 +11,12 @@
 #ifndef _BECOPYILP_T_H
 #define _BECOPYILP_T_H
 
-#include "firm_config.h"
-
-#ifndef _WIN32
- #ifndef HAVE_ALLOCA_H
-  #define HAVE_ALLOCA_H 1
- #endif /* HAVE_ALLOC_H */
-#endif /* _WIN32 */
-
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
-
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -134,7 +128,6 @@ typedef struct _ilp_env_t ilp_env_t;
 typedef void(*ilp_callback)(ilp_env_t*);
 
 struct _ilp_env_t {
-	firm_dbg_module_t *dbg;
 	const copy_opt_t *co;			/**< the copy opt problem */
 	size_red_t *sr;					/**< problem size reduction. removes simple nodes */
 	lpp_t *lp;						/**< the linear programming problem */
@@ -144,16 +137,17 @@ struct _ilp_env_t {
 
 };
 
-ilp_env_t *new_ilp_env(copy_opt_t *co, firm_dbg_module_t *dbg, ilp_callback build, ilp_callback apply, void *env);
+ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env);
 
-lpp_sol_state_t ilp_go(ilp_env_t *ienv, double time_limit);
+lpp_sol_state_t ilp_go(ilp_env_t *ienv);
 
 void free_ilp_env(ilp_env_t *ienv);
 
 
-/******************************************************************************
+#define name_cdd(buf, char1, int1, int2) \
+			(snprintf(buf, sizeof(buf), "%c_%d_%d", char1, int1, int2), buf)
 
+#define name_cdd_sorted(buf, char1, int1, int2) \
+			name_cdd(buf, char1, MIN(int1, int2), MAX(int1, int2))
 
- *****************************************************************************/
-
-#endif /* _BECOPYILP_T_H */
+#endif

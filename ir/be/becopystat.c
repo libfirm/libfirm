@@ -9,16 +9,20 @@
 #endif
 
 #include <string.h>
-#include "irgraph.h"
-#include "irprog.h"
-#include "iredges.h"
-#include "phiclass_t.h"
-#include "beutil.h"
-#include "becopyopt.h"
-#include "becopystat.h"
-#include "xmalloc.h"
+#include <libcore/lc_timing.h>
 
-#ifdef DO_STAT
+#include "xmalloc.h"
+#include "irgraph.h"
+#include "irgwalk.h"
+#include "irprog.h"
+#include "iredges_t.h"
+#include "phiclass_t.h"
+#include "bechordal_t.h"
+#include "beutil.h"
+#include "becopyopt_t.h"
+#include "becopystat.h"
+
+#ifdef COPYOPT_STAT
 
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
@@ -275,33 +279,30 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 	xfree(members);
 }
 
-#define is_curr_reg_class(irn) \
-  (arch_get_irn_reg_class(chordal_env->main_env->arch_env, irn, \
-                          -1) == chordal_env->cls)
-
-void copystat_collect_cls(be_chordal_env_t *chordal_env) {
+void copystat_collect_cls(be_chordal_env_t *cenv) {
 	ir_node *n;
 	pset *pc;
-	ir_graph *irg = chordal_env->irg;
+	ir_graph *irg = cenv->irg;
+	arch_env_t *aenv = cenv->birg->main_env->arch_env;
 
 	if (last_irg != irg) {
 		copystat_reset();
-		copystat_collect_irg(irg, chordal_env->main_env->arch_env);
+		copystat_collect_irg(irg, aenv);
 	}
 
 	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
-		if (is_curr_reg_class(n))
-			stat_phi_node(chordal_env, n);
+		if (arch_get_irn_reg_class(aenv, n, -1) == cenv->cls)
+			stat_phi_node(cenv, n);
 
 	for (n = pset_first(all_copy_nodes); n; n = pset_next(all_copy_nodes))
-		if (is_curr_reg_class(n))
-			stat_copy_node(chordal_env, n);
+		if (arch_get_irn_reg_class(aenv, n, -1) == cenv->cls)
+			stat_copy_node(cenv, n);
 
 	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes)) {
 		ir_node *member = pset_first(pc);
 		pset_break(pc);
-		if (is_curr_reg_class(member))
-			stat_phi_class(chordal_env, pc);
+		if (arch_get_irn_reg_class(aenv, member, -1) == cenv->cls)
+			stat_phi_class(cenv, pc);
 	}
 }
 
@@ -412,4 +413,114 @@ void copystat_dump_pretty(ir_graph *irg) {
 	fclose(out);
 }
 
-#endif
+/**
+ * Helpers for saving and restoring colors of nodes.
+ * Used to get dependable and comparable benchmark results.
+ */
+typedef struct color_saver {
+	arch_env_t *arch_env;
+	be_chordal_env_t *chordal_env;
+	pmap *saved_colors;
+	int flag; /* 0 save, 1 load */
+} color_save_t;
+
+static void save_load(ir_node *irn, void *env) {
+	color_save_t *saver = env;
+	if (saver->chordal_env->cls == arch_get_irn_reg_class(saver->arch_env, irn, -1)) {
+		if (saver->flag == 0) { /* save */
+			const arch_register_t *reg = arch_get_irn_register(saver->arch_env, irn);
+			pmap_insert(saver->saved_colors, irn, (void *) reg);
+		} else { /*load */
+			arch_register_t *reg = pmap_get(saver->saved_colors, irn);
+			arch_set_irn_register(saver->arch_env, irn, reg);
+		}
+	}
+}
+
+static void save_colors(color_save_t *color_saver) {
+	color_saver->flag = 0;
+	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
+}
+
+static void load_colors(color_save_t *color_saver) {
+	color_saver->flag = 1;
+	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
+}
+
+/**
+ * Main compare routine
+ */
+void co_compare_solvers(be_chordal_env_t *chordal_env) {
+	copy_opt_t *co;
+	lc_timer_t *timer;
+	color_save_t saver;
+	int costs_inevit, costs_init, costs_heur, costs_ilp1, costs_ilp2, lower_bound;
+
+	co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
+	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
+	phi_class_compute(chordal_env->irg);
+
+	/* save colors */
+	saver.arch_env = chordal_env->birg->main_env->arch_env;
+	saver.chordal_env = chordal_env;
+	saver.saved_colors = pmap_create();
+	save_colors(&saver);
+
+	/* initial values */
+	costs_inevit = co_get_inevit_copy_costs(co);
+	lower_bound  = co_get_lower_bound(co);
+	costs_init   = co_get_copy_costs(co);
+
+	DBG((dbg, LEVEL_1, "Inevit Costs: %3d\n", costs_inevit));
+	DBG((dbg, LEVEL_1, "Lower Bound: %3d\n", lower_bound));
+	DBG((dbg, LEVEL_1, "Init costs: %3d\n", costs_init));
+
+	copystat_add_inevit_costs(costs_inevit);
+	copystat_add_init_costs(costs_init);
+	copystat_add_max_costs(co_get_max_copy_costs(co));
+
+
+#ifdef DO_HEUR
+	timer = lc_timer_register("heur", NULL);
+	lc_timer_reset_and_start(timer);
+
+	co_solve_heuristic(co);
+
+	lc_timer_stop(timer);
+	costs_heur = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "HEUR costs: %3d\n", costs_heur));
+	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_costs(costs_heur);
+	assert(lower_bound <= costs_heur);
+#endif /* DO_HEUR */
+
+
+#ifdef DO_ILP1
+	load_colors(&saver);
+
+	co_solve_ilp1(co, 60.0);
+
+	costs_ilp1 = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "ILP1 costs: %3d\n", costs_ilp1));
+	copystat_add_opt_costs(costs_ilp1); /*TODO ADAPT */
+	assert(lower_bound <= costs_ilp1);
+#endif /* DO_ILP1 */
+
+
+#ifdef DO_ILP2
+	load_colors(&saver);
+
+	co_solve_ilp2(co, 60.0);
+
+	costs_ilp2 = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "ILP2 costs: %3d\n", costs_ilp2));
+	copystat_add_opt_costs(costs_ilp2); /*TODO ADAPT */
+	assert(lower_bound <= costs_ilp2);
+#endif /* DO_ILP2 */
+
+	pmap_destroy(saver.saved_colors);
+	free_copy_opt(co);
+}
+
+
+#endif /* COPYOPT_STAT */

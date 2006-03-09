@@ -8,12 +8,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
-
-#ifdef WITH_ILP
-
 #include "becopyilp_t.h"
 #include "beifg_t.h"
 
@@ -137,12 +131,11 @@ void free_size_red(size_red_t *sr) {
 
  *****************************************************************************/
 
-ilp_env_t *new_ilp_env(copy_opt_t *co, firm_dbg_module_t *dbg, ilp_callback build, ilp_callback apply, void *env) {
+ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env) {
 	ilp_env_t *res = malloc(sizeof(*res));
 	assert(res);
 
 	res->co = co;
-	res->dbg = dbg;
 	res->build = build;
 	res->apply = apply;
 	res->env = env;
@@ -151,12 +144,10 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, firm_dbg_module_t *dbg, ilp_callback buil
 	return res;
 }
 
-lpp_sol_state_t ilp_go(ilp_env_t *ienv, double time_limit) {
+lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
 	sr_remove(ienv->sr);
 
 	ienv->build(ienv);
-
-	lpp_set_time_limit(ienv->lp, time_limit);
 
 #ifdef LPP_SOLVE_NET
 	lpp_solve_net(ienv->lp, LPP_HOST, LPP_SOLVER);
@@ -176,10 +167,3 @@ void free_ilp_env(ilp_env_t *ienv) {
 	free_lpp(ienv->lp);
 	free(ienv);
 }
-
-#else /* WITH_ILP */
-
-static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
-}
-
-#endif /* WITH_ILP */

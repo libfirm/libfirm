@@ -686,7 +686,7 @@ static int pi_apply_solution(problem_instance_t *pi) {
 	lpp_sol_state_t state;
 	DBG((dbg, LEVEL_2, "Applying solution...\n"));
 
-#ifdef DO_STAT
+#ifdef COPYOPT_STAT
 	copystat_add_ilp_time((int)(1000.0*lpp_get_sol_time(pi->curr_lp)));  //now we have ms
 	copystat_add_ilp_vars(lpp_get_var_count(pi->curr_lp));
 	copystat_add_ilp_csts(lpp_get_cst_count(pi->curr_lp));
@@ -746,12 +746,12 @@ typedef struct _my_env_t {
 } my_env_t;
 
 
-static void ilp2_build(ilp_env_t *ienv) {
+static void ilp1_build(ilp_env_t *ienv) {
 	ienv->lp = new_lpp(ienv->co->name, lpp_minimize);
 
 }
 
-static void ilp2_apply(ilp_env_t *ienv) {
+static void ilp1_apply(ilp_env_t *ienv) {
 
 }
 
@@ -759,15 +759,15 @@ int co_solve_ilp1(copy_opt_t *co, double time_limit) {
 	lpp_sol_state_t sol_state;
 	ilp_env_t *ienv;
 	my_env_t my;
-	firm_dbg_module_t *dbg = firm_dbg_register("ir.be.coilp2");
+	firm_dbg_module_t *dbg = firm_dbg_register("ir.be.coilp1");
 
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	// my.bla = TODO
 
-	ienv = new_ilp_env(co, dbg, ilp2_build, ilp2_apply, &my);
+	ienv = new_ilp_env(co, ilp1_build, ilp1_apply, &my);
 
-	sol_state = ilp_go(ienv, time_limit);
+	sol_state = ilp_go(ienv);
 
 	free_ilp_env(ienv);
 

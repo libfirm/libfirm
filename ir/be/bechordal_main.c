@@ -49,9 +49,9 @@
 #include "bespillilp.h"
 #endif /* WITH_ILP */
 
+#include "becopystat.h"
 #include "becopyopt.h"
 #include "bessadestr.h"
-#include "becopystat.h"
 
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
@@ -305,7 +305,15 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 		/* copy minimization */
 		copystat_collect_cls(&chordal_env);
+#ifdef COPYOPT_STAT
 		co_compare_solvers(&chordal_env);
+#else
+		{
+		copy_opt_t *co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
+		co_solve_heuristic(co);
+		free_copy_opt(co);
+		}
+#endif
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 		be_ra_chordal_check(&chordal_env);
 
