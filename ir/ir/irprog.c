@@ -24,6 +24,7 @@
 # include "array.h"
 # include "obst.h"
 # include "typegmod.h"
+# include "irop_t.h"
 
 #define GLOBAL_TYPE_NAME "GlobalType"
 #define INITAL_PROG_NAME "no_name_set"
@@ -288,7 +289,15 @@ ir_op *(get_irp_opcode)(int pos) {
   return _get_irp_opcode(pos);
 }
 
+/* Sets the generic function pointer of all opcodes to NULL */
+void  clear_irp_opcodes_generic_func(void) {
+  int i;
 
+  for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
+    ir_op *op = get_irp_opcode(i);
+    op->ops.generic = (op_func)NULL;
+  }
+}
 
 /*- File name / executable name or the like -*/
 void   set_irp_prog_name(ident *name) {

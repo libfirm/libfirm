@@ -170,6 +170,9 @@ int   get_irp_n_opcodes(void);
 /** Returns the opcode at position pos in the irp. */
 ir_op *get_irp_opcode(int pos);
 
+/** Sets the generic function pointer of all opcodes to NULL */
+void  clear_irp_opcodes_generic_func(void);
+
 
 /**  Return the graph for global constants.
  *
