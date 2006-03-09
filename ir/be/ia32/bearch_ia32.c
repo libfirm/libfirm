@@ -446,7 +446,7 @@ static ir_type *get_between_type(void)
 
 		between_type           = new_type_class(new_id_from_str("ia32_between_type"));
 		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, new_id_from_str("old_bp"), ret_addr_type);
+		ret_addr_ent           = new_entity(between_type, new_id_from_str("ret_addr"), ret_addr_type);
 
 		set_entity_offset_bytes(old_bp_ent, 0);
 		set_entity_offset_bytes(ret_addr_ent, get_type_size_bytes(old_bp_type));
@@ -533,9 +533,10 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	}
 	else if (n == 1) {
 		tp   = get_method_res_type(method_type, 0);
+		assert(is_atomic_type(tp));
 		mode = get_type_mode(tp);
 
-		be_abi_call_res_reg(abi, 0, &ia32_fp_regs[mode_is_float(mode) ? REG_XMM0 : REG_EAX]);
+		be_abi_call_res_reg(abi, 0, mode_is_float(mode) ? &ia32_fp_regs[REG_XMM0] : &ia32_gp_regs[REG_EAX]);
 	}
 }
 
