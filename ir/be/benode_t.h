@@ -146,6 +146,9 @@ int be_is_IncSP(const ir_node *irn);
 int be_is_AddSP(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
 int be_is_StackParam(const ir_node *irn);
+int be_is_FrameAddr(const ir_node *irn);
+int be_is_FrameLoad(const ir_node *irn);
+int be_is_FrameStore(const ir_node *irn);
 
 /**
  * Get the entity on the stack frame the given node uses.
