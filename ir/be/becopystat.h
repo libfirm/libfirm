@@ -7,7 +7,7 @@
 #ifndef _BECOPYSTAT_H
 #define _BECOPYSTAT_H
 
-#define COPYOPT_STAT
+#undef COPYOPT_STAT
 
 #ifdef COPYOPT_STAT
 

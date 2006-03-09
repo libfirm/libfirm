@@ -111,7 +111,7 @@ static INLINE int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) 
 
 #include <lpp/lpp.h>
 
-#undef LPP_SOLVE_NET
+#define LPP_SOLVE_NET
 
 #ifdef LPP_SOLVE_NET
 #  include <lpp/lpp_net.h>
