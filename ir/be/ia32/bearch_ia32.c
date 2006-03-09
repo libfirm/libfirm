@@ -284,6 +284,10 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 	if (! is_ia32_irn(irn))
 		return;
 
+	/* nodes with destination address mode don't produce values */
+	if (get_ia32_op_type(irn) == ia32_AddrModeD)
+		return;
+
 	reqs  = get_ia32_out_req_all(irn);
 	n_res = get_ia32_n_res(irn);
 	block = get_nodes_block(irn);
@@ -375,7 +379,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 
 	/* copy the register from the old node to the new Load */
 	reg = arch_get_irn_register(env->cg->arch_env, irn);
-	arch_set_irn_register(env->cg->arch_env, irn, reg);
+	arch_set_irn_register(env->cg->arch_env, new_op, reg);
 
 	exchange(irn, proj);
 
