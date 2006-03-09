@@ -344,6 +344,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	ir_node *nomem = new_rd_NoMem(env->irg);
 	ir_node *new_op, *proj;
 	ir_node *sched_point = NULL;
+	const arch_register_t *reg;
 
 	if (sched_is_scheduled(irn)) {
 		sched_point = sched_prev(irn);
@@ -371,6 +372,10 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 
 		sched_remove(irn);
 	}
+
+	/* copy the register from the old node to the new Load */
+	reg = arch_get_irn_register(env->cg->arch_env, irn);
+	arch_set_irn_register(env->cg->arch_env, irn, reg);
 
 	exchange(irn, proj);
 
