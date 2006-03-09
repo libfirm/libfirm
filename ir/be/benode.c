@@ -30,6 +30,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irprintf.h"
+#include "irgwalk.h"
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -732,19 +733,26 @@ entity *be_get_spill_entity(const ir_node *irn)
 	return NULL;
 }
 
-static void entity_copy_walker(ir_node *irn, void *data)
+static void link_reload_walker(ir_node *irn, void *data)
 {
+	ir_node **root = (ir_node **) data;
 	if(be_is_Reload(irn)) {
-		be_frame_attr_t *a = get_irn_attr(irn);
-		entity *ent        = be_get_spill_entity(irn);
-
-		a->ent = ent;
+		set_irn_link(irn, *root);
+		*root = irn;
 	}
 }
 
 void be_copy_entities_to_reloads(ir_graph *irg)
 {
-	irg_walk_graph(irg, entity_copy_walker, NULL, NULL);
+	ir_node *irn = NULL;
+	irg_walk_graph(irg, link_reload_walker, NULL, (void *) &irn);
+
+	while(irn) {
+		be_frame_attr_t *a = get_irn_attr(irn);
+		entity *ent        = be_get_spill_entity(irn);
+		a->ent = ent;
+		irn    = get_irn_link(irn);
+	}
 }
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
@@ -774,8 +782,10 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 	 * Here's one special case:
 	 * If the spill is in the start block, the spill must be after the frame
 	 * pointer is set up. This is checked here and fixed.
+	 * If the insertion point is already the block, everything is fine, since
+	 * the Spill gets inserted at the end of the block.
 	 */
-	if(bl == get_irg_start_block(irg))
+	if(bl == get_irg_start_block(irg) && insert != bl && sched_comes_after(insert, frame))
 		insert = sched_next(frame);
 
 	sched_add_before(insert, spill);

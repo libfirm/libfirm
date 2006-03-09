@@ -207,6 +207,8 @@ static const arch_register_class_t *firm_get_reg_class_for_mode(const void *self
 static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi)
 {
 	static ir_type *between_type = NULL;
+
+	be_abi_call_flags_t flags;
 	const arch_register_class_t *cls = &reg_classes[CLS_DATAB];
 	int i, n;
 	be_abi_call_flags_t call_flags = { 0, 0, 0, 0, 0 };
@@ -231,7 +233,8 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 			be_abi_call_res_reg(abi, i, &cls->regs[i]);
 	}
 
-	be_abi_call_set_flags(abi, call_flags, between_type);
+	flags.val = 0;
+	be_abi_call_set_flags(abi, flags, between_type);
 }
 
 

@@ -315,7 +315,7 @@ static int ia32_const_to_str(lc_appendable_t *app,
 		buf = get_ia32_am_offs(X);
 	}
 
-	return lc_arg_append(app, occ, buf, strlen(buf));
+	return buf ? lc_arg_append(app, occ, buf, strlen(buf)) : 0;
 }
 
 /**
@@ -829,7 +829,7 @@ static void ia32_register_emitters(void) {
 	/* benode emitter */
 	BE_EMIT(Call);
 	BE_EMIT(IncSP);
-	BE_EMIT(AddSP);
+	// BE_EMIT(AddSP);
 
 	/* firm emitter */
 	EMIT(Jmp);
