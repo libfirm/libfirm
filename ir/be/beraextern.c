@@ -471,8 +471,10 @@ static void values_to_vars(ir_node *irn, void *env) {
 	}
 
 	/* values <--> var mapping */
-	pset_foreach(vals, irn)
+	pset_foreach(vals, irn) {
+		DBG((raenv->dbg, 0, "Var %d contains %+F\n", nr, irn));
 		var_add_value(raenv, nr, irn);
+	}
 }
 
 
@@ -524,7 +526,7 @@ static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos)
 	}
 }
 
-static INLINE unsigned int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi) {
+static INLINE int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi) {
 	ir_node *irn;
 	int c_spills=0, c_reloads=0;
 
@@ -561,12 +563,13 @@ static void dump_nodes(be_raext_env_t *raenv) {
 		if (vi->var_nr == SET_REMOVED)
 			continue;
 
-		fprintf(f, "%d %u", vi->var_nr, get_spill_costs(raenv, vi));
+		fprintf(f, "%d %d", vi->var_nr, get_spill_costs(raenv, vi));
 		dump_constraint(raenv, get_first_non_phi(vi->values), -1);
 		fprintf(f, "\n");
 	}
 
 	fprintf(f, "}\n");
+	fflush(f);
 }
 
 
@@ -596,7 +599,10 @@ static void dump_interferences(be_raext_env_t *raenv) {
 						pset_break(vi1->values);
 						pset_break(vi2->values);
 						fprintf(f, "(%d, %d)\n", vi1->var_nr, vi2->var_nr);
+						goto NextVar;
 					}
+
+NextVar: ;
 		}
 	}
 	fprintf(f, "}\n");
@@ -690,6 +696,7 @@ static void execute(char *prog_to_call, char *out_file, char *result_file) {
 
 	ret_status = system(cmd_line);
 	assert(ret_status != -1 && "Invokation of external register allocator failed");
+	assert(ret_status == 0 && "External register allocator is unhappy with sth.");
 }
 
 /******************************************************************************
@@ -787,14 +794,17 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 		/* ...add new vars for each non-phi-member */
 		pset_foreach(spills, irn) {
-			ir_node *spilled = get_irn_n(irn, 0);
+			ir_node *spilled = get_irn_n(irn, 1);
+			assert(get_irn_node_nr(spilled) != 1089);
 			raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(spilled), spilled);
 		}
 	}
 
 	/* add new variables for all reloads */
-	pset_foreach(reloads, irn)
+	pset_foreach(reloads, irn) {
+		assert(get_irn_node_nr(irn) != 1089);
 		raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(irn), irn);
+	}
 
 	del_pset(spills);
 	del_pset(reloads);
@@ -874,7 +884,7 @@ static void check_allocation(be_raext_env_t *raenv) {
 
 			pset_foreach(vi1->values, irn1)
 				pset_foreach(vi2->values, irn2)
-					if (values_interfere(irn1, irn2)) {
+					if (values_interfere(irn1, irn2) && arch_get_irn_register(raenv->aenv, irn1) == arch_get_irn_register(raenv->aenv, irn2)) {
 						dump_ir_block_graph_sched(raenv->irg, "ERROR");
 						ir_fprintf(stdout, "SSA values %+F and %+F interfere. They belong to varible %d and %d respectively.\n", irn1, irn2, vi1->var_nr, vi2->var_nr);
 						assert(0 && "ERROR graph dumped");
@@ -896,7 +906,7 @@ static void check_allocation(be_raext_env_t *raenv) {
  * Default values for options
  */
 static void (*ssa_destr)(be_raext_env_t*) = ssa_destr_simple;
-static char callee[128] = "\"E:/user/kimohoff/ipd-registerallocator/win32/register allocator\"";
+static char callee[128] = "\"E:/user/kimohoff/public/register allocator\"";
 //static char callee[128] = "/ben/kimohoff/ipd-registerallocator/register_allocator";
 
 
@@ -913,7 +923,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	be_main_env_t *env = bi->main_env;
 	ir_graph *irg = bi->irg;
 
-	be_raext_env_t raenv;
+ 	be_raext_env_t raenv;
 	int clsnr, clss;
 	var_info_t *vi;
 
