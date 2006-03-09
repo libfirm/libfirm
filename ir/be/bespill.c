@@ -499,8 +499,10 @@ void be_compute_spill_offsets(be_chordal_env_t *cenv) {
 
 	/* Clean up */
 	pmap_foreach(ssenv.slots, pme)
-		del_pset(((spill_slot_t *)pme->value)->members);
+	del_pset(((spill_slot_t *)pme->value)->members);
 	pmap_destroy(ssenv.slots);
-  pmap_destroy(ssenv.types);
+	pmap_destroy(ssenv.types);
 	obstack_free(&ssenv.ob, NULL);
+
+	be_copy_entities_to_reloads(cenv->irg);
 }
