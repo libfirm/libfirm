@@ -163,15 +163,8 @@ print OUT<<EOF;
  * pointer of an opcode.
  */
 void $arch\_register_spec_emitters(void) {
-  int i;
 
 #define BE_EMIT(a) op_$arch\_##a->ops.generic = (op_func)emit_$arch\_##a
-
-  /* first clear all generic operations */
-  for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
-    ir_op *op = get_irp_opcode(i);
-    op->ops.generic = (op_func)NULL;
-  }
 
   /* generated emitter functions */
 EOF
