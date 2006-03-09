@@ -21,6 +21,7 @@ typedef struct _be_ifg_t        be_ifg_t;
 
 size_t   (be_ifg_nodes_iter_size)(const void *self);
 size_t   (be_ifg_neighbours_iter_size)(const void *self);
+size_t   (be_ifg_cliques_iter_size)(const void *self);
 void     (be_ifg_free)(void *self);
 int      (be_ifg_connected)(const void *self, const ir_node *a, const ir_node *b);
 ir_node *(be_ifg_neighbours_begin)(const void *self, void *iter, const ir_node *irn);
