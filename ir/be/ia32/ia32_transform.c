@@ -145,19 +145,17 @@ static char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 }
 
 
-#undef is_cnst
-#define is_cnst(op) (is_ia32_Const(op) || is_ia32_fConst(op))
 
 /* determine if one operator is an Imm */
 static ir_node *get_immediate_op(ir_node *op1, ir_node *op2) {
 	if (op1)
-		return is_cnst(op1) ? op1 : (is_cnst(op2) ? op2 : NULL);
-	else return is_cnst(op2) ? op2 : NULL;
+		return is_ia32_Cnst(op1) ? op1 : (is_ia32_Cnst(op2) ? op2 : NULL);
+	else return is_ia32_Cnst(op2) ? op2 : NULL;
 }
 
 /* determine if one operator is not an Imm */
 static ir_node *get_expr_op(ir_node *op1, ir_node *op2) {
-	return !is_cnst(op1) ? op1 : (!is_cnst(op2) ? op2 : NULL);
+	return !is_ia32_Cnst(op1) ? op1 : (!is_ia32_Cnst(op2) ? op2 : NULL);
 }
 
 
@@ -229,6 +227,10 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Full);
 		}
+	}
+
+	if (is_op_commutative(get_irn_op(env->irn))) {
+		set_ia32_commutative(new_op);
 	}
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
@@ -1106,6 +1108,8 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
+	set_ia32_op_type(new_op, ia32_AddrModeS);
+	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, get_Load_mode(node));
 
 	return new_op;
@@ -1125,17 +1129,33 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *node  = env->irn;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *val   = get_Store_value(node);
+	ir_node *ptr   = get_Store_ptr(node);
+	ir_node *mem   = get_Store_mem(node);
+	ir_node *sval  = val;
 	ir_node *new_op;
 
+	/* in case of storing a const -> make it an attribute */
+	if (is_ia32_Cnst(val)) {
+		sval = noreg;
+	}
+
 	if (mode_is_float(env->mode)) {
-		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, get_Store_ptr(node), noreg, get_Store_value(node), get_Store_mem(node), env->mode);
+		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
 	}
 	else {
-		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, get_Store_ptr(node), noreg, get_Store_value(node), get_Store_mem(node), env->mode);
+		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
+	}
+
+	/* stored const is an attribute (saves a register) */
+	if (is_ia32_Cnst(val)) {
+		set_ia32_Immop_attr(new_op, val);
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Dest);
-	set_ia32_ls_mode(new_op, get_irn_mode(get_Store_value(node)));
+	set_ia32_op_type(new_op, ia32_AddrModeD);
+	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_ls_mode(new_op, get_irn_mode(val));
 	return new_op;
 }
 

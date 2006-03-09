@@ -233,9 +233,6 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 		else
 			assert(0 && "there should be no more Projs for a fDiv");
 	}
-	else if (is_ia32_Call(pred)) {
-		return 0;
-	}
 	else if (get_irn_mode(proj) == mode_X && nr == pn_Start_X_initial_exec) {
 		return 0;
 	}

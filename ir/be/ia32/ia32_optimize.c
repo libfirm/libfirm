@@ -223,26 +223,7 @@ void ia32_place_consts(ir_node *irn, void *env) {
  ******************************************************************/
 
 static int node_is_comm(const ir_node *irn) {
-	if (is_ia32_Add(irn)  ||
-		is_ia32_fAdd(irn) ||
-		is_ia32_Mul(irn)  ||
-		is_ia32_Mulh(irn) ||
-		is_ia32_fMul(irn) ||
-		is_ia32_And(irn)  ||
-		is_ia32_fAnd(irn) ||
-		is_ia32_Or(irn)   ||
-		is_ia32_fOr(irn)  ||
-		is_ia32_Eor(irn)  ||
-		is_ia32_fEor(irn) ||
-		is_ia32_Min(irn)  ||
-		is_ia32_fMin(irn) ||
-		is_ia32_Max(irn)  ||
-		is_ia32_fMax(irn))
-	{
-		return 1;
-	}
-
-	return 0;
+	return is_ia32_irn(irn) ? is_ia32_commutative(irn) : 0;
 }
 
 static int ia32_get_irn_n_edges(const ir_node *irn) {
@@ -626,7 +607,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				add_ia32_am_offs(irn, get_ia32_am_offs(left));
 				set_ia32_am_scale(irn, get_ia32_am_scale(left));
 				set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
-				set_ia32_op_type(irn, get_ia32_op_type(left));
+
+				set_ia32_op_type(irn, is_ia32_St(irn) ? ia32_AddrModeD : ia32_AddrModeS);
 
 				/* set base and index */
 				set_irn_n(irn, 0, get_irn_n(left, 0));

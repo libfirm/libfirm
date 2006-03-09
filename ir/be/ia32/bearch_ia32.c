@@ -190,8 +190,6 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	irn = my_skip_proj(irn);
 	if (is_cfop(irn))
 		return arch_irn_class_branch;
-	else if (is_ia32_Call(irn))
-		return arch_irn_class_call;
 	else if (is_ia32_irn(irn))
 		return arch_irn_class_normal;
 	else

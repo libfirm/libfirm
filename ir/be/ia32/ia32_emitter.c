@@ -15,6 +15,7 @@
 #include "irprog_t.h"
 
 #include "../besched.h"
+#include "../benode_t.h"
 
 #include "ia32_emitter.h"
 #include "gen_ia32_emitter.h"
@@ -58,11 +59,21 @@ char *ia32_emit_binop(const ir_node *n) {
 				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %4S", n, n);
 			}
 			break;
-		case ia32_am_Source:
+		case ia32_AddrModeS:
 			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, ia32_emit_am(n));
 			break;
-		case ia32_am_Dest:
-			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %4S", ia32_emit_am(n), n);
+		case ia32_AddrModeD:
+			if (get_ia32_cnst(n)) {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %s", ia32_emit_am(n), get_ia32_cnst(n));
+			}
+			else {
+				if (is_ia32_St(n)) {
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %3S", ia32_emit_am(n), n);
+				}
+				else {
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %4S", ia32_emit_am(n), n);
+				}
+			}
 			break;
 		default:
 			assert(0 && "unsupported op type");
@@ -172,7 +183,7 @@ static int ia32_get_arg_type(const lc_arg_occ_t *occ) {
 /**
  * Returns the register at in position pos.
  */
-static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
+static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
 
@@ -191,7 +202,7 @@ static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
 /**
  * Returns the register at out position pos.
  */
-static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
+static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
 	ir_node                *proj;
 	const arch_register_t  *reg = NULL;
 
@@ -275,9 +286,8 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 	if (!X)
 		return lc_arg_append(app, occ, "(null)", 6);
 
-  buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
+	buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
 
-	lc_appendable_chadd(app, '%');
 	return lc_arg_append(app, occ, buf, strlen(buf));
 }
 
@@ -314,10 +324,7 @@ static int ia32_get_mode_suffix(lc_appendable_t *app,
 	if (!X)
 		return lc_arg_append(app, occ, "(null)", 6);
 
-	if (get_mode_size_bits(get_irn_mode(X)) == 32)
-		return lc_appendable_chadd(app, 's');
-	else
-		return lc_appendable_chadd(app, 'd');
+	return lc_appendable_chadd(app, get_mode_size_bits(get_irn_mode(X)) == 32 ? 's' : 'd');
 }
 
 /**
@@ -334,7 +341,6 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
 	if(env == NULL) {
 		/* extend the firm printer */
 		env = firm_get_arg_env();
-			//lc_arg_new_env();
 
 		lc_arg_register(env, "ia32:sreg", 'S', &ia32_reg_handler);
 		lc_arg_register(env, "ia32:dreg", 'D', &ia32_reg_handler);
@@ -443,7 +449,7 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 /**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
-static void finish_CondJmp(FILE *F, ir_node *irn) {
+static void finish_CondJmp(FILE *F, const ir_node *irn) {
 	const ir_node   *proj;
 	const ir_edge_t *edge;
 	char buf[SNPRINTF_BUF_LEN];
@@ -474,7 +480,7 @@ static void finish_CondJmp(FILE *F, ir_node *irn) {
 /**
  * Emits code for conditional jump with two variables.
  */
-static void emit_ia32_CondJmp(ir_node *irn, emit_env_t *env) {
+static void emit_ia32_CondJmp(const ir_node *irn, emit_env_t *env) {
 	FILE *F = env->out;
 
 	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %2S, %1S\t\t\t/* CondJmp(%+F, %+F) */\n", irn, irn,
@@ -485,7 +491,7 @@ static void emit_ia32_CondJmp(ir_node *irn, emit_env_t *env) {
 /**
  * Emits code for conditional jump with immediate.
  */
-void emit_ia32_CondJmp_i(ir_node *irn, emit_env_t *env) {
+void emit_ia32_CondJmp_i(const ir_node *irn, emit_env_t *env) {
 	FILE *F = env->out;
 
 	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %C, %1S\t\t\t/* CondJmp_i(%+F) */\n", irn, irn, get_irn_n(irn, 0));
@@ -601,12 +607,11 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 	if (do_jmp_tbl) {
 		/* emit the table */
 		if (tbl.min_value != 0) {
-			fprintf(F, "\tcmpl %lu, -%d", interval, tbl.min_value);
-			lc_efprintf(env, F, "(%1S)\t\t/* first switch value is not 0 */\n", irn);
+			lc_efprintf(env, F, "\tcmpl %lu, -%d(%1S)\t\t/* first switch value is not 0 */\n",
+				interval, tbl.min_value, irn);
 		}
 		else {
-			fprintf(F, "\tcmpl %lu, ", interval);
-			lc_efprintf(env, F, "%1S\t\t\t/* compare for switch */\n", irn);
+			lc_efprintf(env, F, "\tcmpl %lu, %1S\t\t\t/* compare for switch */\n", interval, irn);
 		}
 
 		fprintf(F, "\tja %s\t\t\t/* default jump if out of range  */\n", get_cfop_target(tbl.defProj, buf));
@@ -614,7 +619,6 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 		if (tbl.num_branches > 1) {
 			/* create table */
 
-			//fprintf(F, "\tjmp *%s", tbl.label);
 			lc_efprintf(env, F, "\tjmp *%s(,%1S,4)\t\t/* get jump table entry as target */\n", tbl.label, irn);
 
 			fprintf(F, "\t.section\t.rodata\t\t/* start jump table */\n");
@@ -640,9 +644,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 	}
 	else { // no jump table
 		for (i = 0; i < tbl.num_branches; ++i) {
-			fprintf(F, "\tcmpl %d, ", tbl.branches[i].value);
-			lc_efprintf(env, F, "%1S", irn);
-			fprintf(F, "\t\t\t/* case %d */\n", tbl.branches[i].value);
+			lc_efprintf(env, F, "\tcmpl %d, %1S\t\t\t/* case %d */\n", tbl.branches[i].value, irn, i);
 			fprintf(F, "\tje %s\n", get_cfop_target(tbl.branches[i].target, buf));
 		}
 
@@ -658,7 +660,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 /**
  * Emits code for a unconditional jump.
  */
-void emit_Jmp(ir_node *irn, emit_env_t *env) {
+void emit_Jmp(const ir_node *irn, emit_env_t *env) {
 	FILE *F = env->out;
 
 	char buf[SNPRINTF_BUF_LEN];
@@ -681,7 +683,7 @@ void emit_Jmp(ir_node *irn, emit_env_t *env) {
 /**
  * Emits code for a proj -> node
  */
-void emit_Proj(ir_node *irn, emit_env_t *env) {
+void emit_Proj(const ir_node *irn, emit_env_t *env) {
 	ir_node *pred = get_Proj_pred(irn);
 
 	if (get_irn_op(pred) == op_Start) {
@@ -724,7 +726,7 @@ static void emit_CopyB_prolog(FILE *F, int rem, int size) {
 	}
 }
 
-void emit_ia32_CopyB(ir_node *irn, emit_env_t *emit_env) {
+void emit_ia32_CopyB(const ir_node *irn, emit_env_t *emit_env) {
 	FILE   *F    = emit_env->out;
 	tarval *tv   = get_ia32_Immop_tarval(irn);
 	int     rem  = get_tarval_long(tv);
@@ -735,7 +737,7 @@ void emit_ia32_CopyB(ir_node *irn, emit_env_t *emit_env) {
 	fprintf(F, "\trep movsd\t\t\t\t/* memcopy */\n");
 }
 
-void emit_ia32_CopyB_i(ir_node *irn, emit_env_t *emit_env) {
+void emit_ia32_CopyB_i(const ir_node *irn, emit_env_t *emit_env) {
 	tarval *tv   = get_ia32_Immop_tarval(irn);
 	int     size = get_tarval_long(tv);
 	FILE   *F    = emit_env->out;
@@ -748,17 +750,41 @@ void emit_ia32_CopyB_i(ir_node *irn, emit_env_t *emit_env) {
 	}
 }
 
-/********************
- *   _____      _ _
- *  / ____|    | | |
- * | |     __ _| | |
- * | |    / _` | | |
- * | |___| (_| | | |
- *  \_____\__,_|_|_|
- *
- ********************/
 
-void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
+
+/*******************************************
+ *  _                          _
+ * | |                        | |
+ * | |__   ___ _ __   ___   __| | ___  ___
+ * | '_ \ / _ \ '_ \ / _ \ / _` |/ _ \/ __|
+ * | |_) |  __/ | | | (_) | (_| |  __/\__ \
+ * |_.__/ \___|_| |_|\___/ \__,_|\___||___/
+ *
+ *******************************************/
+
+void emit_be_Call(const ir_node *irn, emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+
+	lc_efprintf(ia32_get_arg_env(), F, "\tcall %3S\t\t\t/* %+F(%+F) (be_Call) */\n", irn, irn, get_irn_n(irn, 2));
+}
+
+void emit_be_IncSP(const ir_node *irn, emit_env_t *emit_env) {
+	FILE          *F    = emit_env->out;
+	unsigned       offs = be_get_IncSP_offset(irn);
+	be_stack_dir_t dir  = be_get_IncSP_direction(irn);
+
+	if (offs) {
+		lc_efprintf(ia32_get_arg_env(), F, "\tadd %1S,%s%u\t\t\t/* %+F (IncSP) */\n", irn,
+			(dir == be_stack_dir_along) ? " -" : " ", offs, irn);
+	}
+	else {
+		fprintf(F, "\t\t\t\t\t/* omitted IncSP with 0 */\n");
+	}
+}
+
+void emit_be_AddSP(const ir_node *irn, emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+	lc_efprintf(ia32_get_arg_env(), F, "\tadd %1D, %1S\t\t\t/* %+F (AddSP) */\n", irn, irn, irn);
 }
 
 
@@ -778,98 +804,52 @@ void emit_ia32_Call(ir_node *irn, emit_env_t *emit_env) {
  * pointer of an opcode.
  */
 void ia32_register_emitters(void) {
-	int i;
 
 #define IA32_EMIT(a) op_ia32_##a->ops.generic = (op_func)emit_ia32_##a
 #define EMIT(a)      op_##a->ops.generic = (op_func)emit_##a
+#define BE_EMIT(a)   op_be_##a->ops.generic = (op_func)emit_be_##a
 
-	/* first clear all generic operations */
-	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
-		ir_op *op = get_irp_opcode(i);
-		op->ops.generic = (op_func)NULL;
-	}
-
-	/* generated int emitter functions */
-	IA32_EMIT(Const);
-
-	IA32_EMIT(Add);
-	IA32_EMIT(Sub);
-	IA32_EMIT(Minus);
-	IA32_EMIT(Inc);
-	IA32_EMIT(Dec);
-
-	IA32_EMIT(Max);
-	IA32_EMIT(Min);
-	IA32_EMIT(CMov);
-
-	IA32_EMIT(And);
-	IA32_EMIT(Or);
-	IA32_EMIT(Eor);
-	IA32_EMIT(Not);
-
-	IA32_EMIT(Shl);
-	IA32_EMIT(Shr);
-	IA32_EMIT(Shrs);
-	IA32_EMIT(RotL);
-	IA32_EMIT(RotR);
-
-	IA32_EMIT(Lea);
-
-	IA32_EMIT(Mul);
-
-	IA32_EMIT(Cdq);
-	IA32_EMIT(DivMod);
-
-	IA32_EMIT(Store);
-	IA32_EMIT(Load);
-
-	IA32_EMIT(CopyB);
-	IA32_EMIT(CopyB_i);
-
-	/* generated floating point emitter */
-	IA32_EMIT(fConst);
-
-	IA32_EMIT(fAdd);
-	IA32_EMIT(fSub);
-
-	IA32_EMIT(fMul);
-	IA32_EMIT(fDiv);
-
-	IA32_EMIT(fMin);
-	IA32_EMIT(fMax);
-
-	IA32_EMIT(fLoad);
-	IA32_EMIT(fStore);
+	/* register all emitter functions defined in spec */
+	ia32_register_spec_emitters();
 
 	/* other emitter functions */
 	IA32_EMIT(CondJmp);
 	IA32_EMIT(SwitchJmp);
-	IA32_EMIT(Call);
+	IA32_EMIT(CopyB);
+	IA32_EMIT(CopyB_i);
 
+	/* benode emitter */
+	BE_EMIT(Call);
+	BE_EMIT(IncSP);
+	BE_EMIT(AddSP);
+
+	/* firm emitter */
 	EMIT(Jmp);
 	EMIT(Proj);
 
 #undef IA32_EMIT
+#undef BE_EMIT
 #undef EMIT
 }
 
 /**
  * Emits code for a node.
  */
-static void ia32_emit_node(ir_node *irn, void *env) {
-	emit_env_t *emit_env   = env;
-	firm_dbg_module_t *mod = emit_env->mod;
-	FILE              *F   = emit_env->out;
-	ir_op             *op = get_irn_op(irn);
+static void ia32_emit_node(const ir_node *irn, void *env) {
+	emit_env_t        *emit_env = env;
+	firm_dbg_module_t *mod      = emit_env->mod;
+	FILE              *F        = emit_env->out;
+	ir_op             *op       = get_irn_op(irn);
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 
 	if (op->ops.generic) {
-		void (*emit)(ir_node *, void *) = (void (*)(ir_node *, void *))op->ops.generic;
+		void (*emit)(const ir_node *, void *) = (void (*)(const ir_node *, void *))op->ops.generic;
 		(*emit)(irn, env);
 	}
-
-	ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
+	else {
+		ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
+	}
 }
 
 /**
@@ -877,7 +857,7 @@ static void ia32_emit_node(ir_node *irn, void *env) {
  * and emits code for each node.
  */
 static void ia32_gen_block(ir_node *block, void *env) {
-	ir_node *irn;
+	const ir_node *irn;
 
 	if (! is_Block(block))
 		return;
@@ -892,7 +872,7 @@ static void ia32_gen_block(ir_node *block, void *env) {
 /**
  * Emits code for function start.
  */
-void ia32_emit_start(FILE *F, ir_graph *irg) {
+static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	fprintf(F, "\t.text\n");
@@ -904,7 +884,7 @@ void ia32_emit_start(FILE *F, ir_graph *irg) {
 /**
  * Emits code for function end
  */
-void ia32_emit_end(FILE *F, ir_graph *irg) {
+static void ia32_emit_func_epilog(FILE *F, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	fprintf(F, "\tret\n");
@@ -915,7 +895,7 @@ void ia32_emit_end(FILE *F, ir_graph *irg) {
  * Sets labels for control flow nodes (jump target)
  * TODO: Jump optimization
  */
-void ia32_gen_labels(ir_node *block, void *env) {
+static void ia32_gen_labels(ir_node *block, void *env) {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
 
@@ -939,8 +919,8 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	/* set the global arch_env (needed by print hooks) */
 	arch_env = cg->arch_env;
 
-	ia32_emit_start(F, irg);
+	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 	irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
-	ia32_emit_end(F, irg);
+	ia32_emit_func_epilog(F, irg);
 }

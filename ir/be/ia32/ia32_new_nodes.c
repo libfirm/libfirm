@@ -180,7 +180,6 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i, n_res, am_flav, flags;
-	ia32_attr_t *attr;
 	const ia32_register_req_t **reqs;
 	const arch_register_t     **slots;
 
@@ -192,23 +191,15 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 		case dump_node_mode_txt:
 			mode = get_irn_mode(n);
 
-			if (is_ia32_Load(n) || is_ia32_Store(n)) {
+			if (is_ia32_Ld(n) || is_ia32_St(n)) {
 				mode = get_ia32_ls_mode(n);
 			}
 
-			if (mode) {
-				fprintf(F, "[%s]", get_mode_name(mode));
-			}
-			else {
-				fprintf(F, "[?NOMODE?]");
-			}
+			fprintf(F, "[%s]", mode ? get_mode_name(mode) : "?NOMODE?");
 			break;
 
 		case dump_node_nodeattr_txt:
-			if (is_ia32_Call(n)) {
-				fprintf(F, "&%s ", get_ia32_sc(n));
-			}
-			else if (get_ia32_cnst(n)) {
+			if (get_ia32_cnst(n)) {
 				char *pref = "";
 
 				if (get_ia32_sc(n)) {
@@ -230,7 +221,6 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_info_txt:
-			attr  = get_ia32_attr(n);
 			n_res = get_ia32_n_res(n);
 			fprintf(F, "=== IA32 attr begin ===\n");
 
@@ -250,15 +240,10 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 			slots = get_ia32_slots(n);
 			if (slots && n_res > 0) {
 				for (i = 0; i < n_res; i++) {
-					if (slots[i]) {
-						fprintf(F, "reg #%d = %s\n", i, slots[i]->name);
-					}
-					else {
-						fprintf(F, "reg #%d = n/a\n", i);
-					}
+					fprintf(F, "reg #%d = %s\n", i, slots[i] ? slots[i]->name : "n/a");
 				}
+				fprintf(F, "\n");
 			}
-			fprintf(F, "\n");
 
 			/* dump op type */
 			fprintf(F, "op = ");
@@ -510,15 +495,12 @@ static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 
 	/* offset could already have an explicit sign */
 	/* -> supersede op if necessary               */
-	if (offset[0] == '-' && op == '-') {
-		op = '+';
-	}
-	else if (offset[0] == '-' && op == '+') {
-		op = '-';
-	}
-
-	/* skip explicit sign */
 	if (offset[0] == '-' || offset[0] == '+') {
+		if (offset[0] == '-') {
+			op = (op == '-') ? '+' : '-';
+		}
+
+		/* skip explicit sign */
 		offset++;
 	}
 
@@ -563,8 +545,8 @@ int get_ia32_am_scale(const ir_node *node) {
  * Sets the index register scale for addrmode.
  */
 void set_ia32_am_scale(ir_node *node, int scale) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.am_scale    = scale;
+	ia32_attr_t *attr   = get_ia32_attr(node);
+	attr->data.am_scale = scale;
 }
 
 /**
@@ -617,7 +599,7 @@ char *get_ia32_cnst(const ir_node *node) {
  * Sets the uses_frame flag.
  */
 void set_ia32_use_frame(ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	ia32_attr_t *attr    = get_ia32_attr(node);
 	attr->data.use_frame = 1;
 }
 
@@ -625,7 +607,7 @@ void set_ia32_use_frame(ir_node *node) {
  * Clears the uses_frame flag.
  */
 void clear_ia32_use_frame(ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	ia32_attr_t *attr    = get_ia32_attr(node);
 	attr->data.use_frame = 0;
 }
 
@@ -658,7 +640,6 @@ void clear_ia32_commutative(ir_node *node) {
  */
 int is_ia32_commutative(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-
 	return attr->data.is_commutative;
 }
 
@@ -848,7 +829,7 @@ void set_ia32_pncode(ir_node *node, long code) {
 unsigned get_ia32_Const_type(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
-	assert((is_ia32_Const(node) || is_ia32_fConst(node)) && "Need ia32_Const to get type");
+	assert(is_ia32_Cnst(node) && "Need ia32_Const to get type");
 
 	return attr->data.tp;
 }
@@ -859,7 +840,7 @@ unsigned get_ia32_Const_type(const ir_node *node) {
 void set_ia32_Const_type(ir_node *node, int type) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
-	assert((is_ia32_Const(node) || is_ia32_fConst(node)) && "Need ia32_Const to set type");
+	assert(is_ia32_Cnst(node) && "Need ia32_Const to set type");
 	assert((type == ia32_Const || type == ia32_SymConst) && "Unsupported ia32_Const type");
 
 	attr->data.tp = type;
@@ -872,7 +853,7 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
 	ia32_attr_t *na = get_ia32_attr(node);
 	ia32_attr_t *ca = get_ia32_attr(cnst);
 
-	assert((is_ia32_Const(cnst) || is_ia32_fConst(cnst)) && "Need ia32_Const to set Immop attr");
+	assert(is_ia32_Cnst(cnst) && "Need ia32_Const to set Immop attr");
 
 	na->tv = ca->tv;
 
@@ -892,19 +873,19 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 	ia32_attr_t *attr = get_ia32_attr(ia32_cnst);
 
-	assert((is_ia32_Const(ia32_cnst) || is_ia32_fConst(ia32_cnst)) && "Need ia32_Const to set Const attr");
+	assert(is_ia32_Cnst(ia32_cnst) && "Need ia32_Const to set Const attr");
 
 	switch (get_irn_opcode(cnst)) {
 		case iro_Const:
-			attr->data.tp   = ia32_Const;
-			attr->tv   = get_Const_tarval(cnst);
-			attr->cnst = set_cnst_from_tv(attr->cnst, attr->tv);
+			attr->data.tp = ia32_Const;
+			attr->tv      = get_Const_tarval(cnst);
+			attr->cnst    = set_cnst_from_tv(attr->cnst, attr->tv);
 			break;
 		case iro_SymConst:
-			attr->data.tp   = ia32_SymConst;
-			attr->tv   = NULL;
-			attr->sc   = copy_str(attr->sc, get_sc_name(cnst));
-			attr->cnst = attr->sc;
+			attr->data.tp = ia32_SymConst;
+			attr->tv      = NULL;
+			attr->sc      = copy_str(attr->sc, get_sc_name(cnst));
+			attr->cnst    = attr->sc;
 			break;
 		case iro_Unknown:
 			assert(0 && "Unknown Const NYI");
@@ -963,6 +944,13 @@ int is_ia32_St(const ir_node *node) {
 }
 
 /**
+ * Checks if node is a Const or fConst.
+ */
+int is_ia32_Cnst(const ir_node *node) {
+	return is_ia32_Const(node) || is_ia32_fConst(node);
+}
+
+/**
  * Returns the name of the OUT register at position pos.
  */
 const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
@@ -1014,7 +1002,7 @@ void alloc_ia32_reg_slots(ir_node *node, int num) {
 		attr->slots = NULL;
 	}
 
-	attr->data.n_res;
+	attr->data.n_res = num;
 }
 
 /**
@@ -1038,6 +1026,18 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
  * |_| |_|\___/ \__,_|\___|  \___\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|  |___/
  *
  ***************************************************************************************/
+
+/* default compare operation to compare immediate ops */
+int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
+	if (a->data.tp == b->data.tp) {
+		if (! a->cnst || ! b->cnst)
+			return 1;
+
+		return strcmp(a->cnst, b->cnst);
+	}
+
+	return 1;
+}
 
 /* Include the generated constructor functions */
 #include "gen_ia32_new_nodes.c.inl"

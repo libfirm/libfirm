@@ -321,6 +321,11 @@ int is_ia32_Ld(const ir_node *node);
 int is_ia32_St(const ir_node *node);
 
 /**
+ * Checks if node is a Const or fConst.
+ */
+int is_ia32_Cnst(const ir_node *node);
+
+/**
  * Allocates num register slots for node.
  */
 void alloc_ia32_reg_slots(ir_node *node, int num);
