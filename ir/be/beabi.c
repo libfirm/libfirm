@@ -1124,8 +1124,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 {
 	be_abi_irg_t *env = malloc(sizeof(env[0]));
 
-	int i;
-	ir_node **nodes;
+	ir_node *dummy;
 	pmap_entry *ent;
 
 	env->isa           = birg->main_env->arch_env->isa;
@@ -1137,7 +1136,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->birg             = birg;
 	env->dbg              = firm_dbg_register("firm.be.abi");
 	env->stack_phis       = pset_new_ptr(16);
-	env->init_sp          = new_r_Unknown(birg->irg, env->isa->sp->reg_class->mode);
+	env->init_sp = dummy  = new_r_Unknown(birg->irg, env->isa->sp->reg_class->mode);
 
 	obstack_init(&env->obst);
 
@@ -1147,29 +1146,16 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	/* Lower all call nodes in the IRG. */
 	process_calls(env);
 
-#if 0
-	/* search for stack allocation nodes and record them */
-	irg_walk_graph(env->birg->irg, collect_alloca_walker, NULL, env);
-	obstack_ptr_grow(&env->obst, NULL);
-	nodes = obstack_finish(&env->obst);
-
-	/* If there are stack allocations in the irg, we need a frame pointer */
-	if(nodes[0] != NULL)
-		env->call->flags.bits.try_omit_fp = 0;
-#endif
-
+	/* Process the IRG */
 	modify_irg(env);
+
+	/* reroute the stack origin of the calls to the true stack origin. */
+	exchange(dummy, env->init_sp);
 
 	/* Make some important node pointers survive the dead node elimination. */
 	survive_dce_register_irn(env->dce_survivor, &env->init_sp);
 	for(ent = pmap_first(env->regs); ent; ent = pmap_next(env->regs))
 		survive_dce_register_irn(env->dce_survivor, (ir_node **) &ent->value);
-
-	/* Fix the alloca-style allocations */
-#if 0
-	for(i = 0; nodes[i] != NULL; ++i)
-		implement_stack_alloc(env, nodes[i]);
-#endif
 
 	arch_env_push_irn_handler(env->birg->main_env->arch_env, &env->irn_handler);
 
