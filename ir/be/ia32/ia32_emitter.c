@@ -809,6 +809,9 @@ void ia32_register_emitters(void) {
 #define EMIT(a)      op_##a->ops.generic = (op_func)emit_##a
 #define BE_EMIT(a)   op_be_##a->ops.generic = (op_func)emit_be_##a
 
+	/* first clear the generic function pointer for all ops */
+	clear_irp_opcodes_generic_func();
+
 	/* register all emitter functions defined in spec */
 	ia32_register_spec_emitters();
 
