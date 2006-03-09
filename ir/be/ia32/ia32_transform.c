@@ -5,12 +5,14 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
+#include "iropt_t.h"
+#include "irop_t.h"
+#include "irprog_t.h"
 #include "irgmod.h"
 #include "iredges.h"
 #include "irvrfy.h"
 #include "ircons.h"
 #include "dbginfo.h"
-#include "iropt_t.h"
 #include "debug.h"
 
 #include "../benode_t.h"
@@ -1280,6 +1282,17 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 
 
 
+/********************************************
+ *  _                          _
+ * | |                        | |
+ * | |__   ___ _ __   ___   __| | ___  ___
+ * | '_ \ / _ \ '_ \ / _ \ / _` |/ _ \/ __|
+ * | |_) |  __/ | | | (_) | (_| |  __/\__ \
+ * |_.__/ \___|_| |_|\___/ \__,_|\___||___/
+ *
+ ********************************************/
+
+
 /*********************************************************
  *                  _             _      _
  *                 (_)           | |    (_)
@@ -1289,8 +1302,6 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
  * |_| |_| |_|\__,_|_|_| |_|  \__,_|_|  |_| \_/ \___|_|
  *
  *********************************************************/
-
-
 
 /**
  * Transforms the given firm node (and maybe some other related nodes)
@@ -1321,6 +1332,16 @@ void ia32_transform_node(ir_node *node, void *env) {
 #define GEN(a)   case iro_##a: asm_node = gen_##a(&tenv); break
 #define IGN(a)   case iro_##a: break
 #define BAD(a)   case iro_##a: goto bad
+#define OTHER_BIN(a)                                                       \
+	if (get_irn_op(node) == get_op_##a()) {                                \
+		asm_node = gen_##a(&tenv, get_irn_n(node, 0), get_irn_n(node, 1)); \
+		break;                                                             \
+	}
+#define BE_GEN(a)                  \
+	if (be_is_##a(node)) {         \
+		asm_node = gen_##a(&tenv); \
+		break;                     \
+	}
 
 	DBG((tenv.mod, LEVEL_1, "check %+F ... ", node));
 
@@ -1367,6 +1388,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 		IGN(Break);
 		IGN(Cmp);
 		IGN(Unknown);
+
 		/* constant transformation happens earlier */
 		IGN(Const);
 		IGN(SymConst);
@@ -1387,21 +1409,16 @@ void ia32_transform_node(ir_node *node, void *env) {
 		BAD(EndExcept);
 
 		default:
-			if (get_irn_op(node) == get_op_Max()) {
-				asm_node = gen_Max(&tenv, get_irn_n(node, 0), get_irn_n(node, 1));
-			}
-			else if (get_irn_op(node) == get_op_Min()) {
-				asm_node = gen_Min(&tenv, get_irn_n(node, 0), get_irn_n(node, 1));
-			}
-			else if (get_irn_op(node) == get_op_Mulh()) {
-				asm_node = gen_Mulh(&tenv, get_irn_n(node, 0), get_irn_n(node, 1));
-			}
+			OTHER_BIN(Max);
+			OTHER_BIN(Min);
+			OTHER_BIN(Mulh);
 			break;
 bad:
 		fprintf(stderr, "Not implemented: %s\n", get_irn_opname(node));
 		assert(0);
 	}
 
+	/* exchange nodes if a new one was generated */
 	if (asm_node) {
 		exchange(node, asm_node);
 		DB((tenv.mod, LEVEL_1, "created node %+F[%p]\n", asm_node, asm_node));
@@ -1409,4 +1426,12 @@ bad:
 	else {
 		DB((tenv.mod, LEVEL_1, "ignored\n"));
 	}
+
+#undef UNOP
+#undef BINOP
+#undef GEN
+#undef IGN
+#undef BAD
+#undef OTHER_BIN
+#undef BE_GEN
 }

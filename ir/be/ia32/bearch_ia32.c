@@ -205,15 +205,22 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	}
 }
 
-static entity *ia32_get_frame_entity(const void *self, const ir_node *irn)
-{
-	/* TODO: Implement */
-	return NULL;
+static entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
+	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
 static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
+	char buf[64];
+	const ia32_irn_ops_t *ops = self;
+
 	if (is_ia32_use_frame(irn)) {
-		/* TODO: correct offset */
+		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
+
+		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
+		snprintf(buf, sizeof(buf), "%d", bias);
+		add_ia32_am_offs(irn, buf);
+		am_flav |= ia32_O;
+		set_ia32_am_flavour(irn, am_flav);
 	}
 }
 
@@ -263,12 +270,54 @@ static void ia32_prepare_graph(void *self) {
 }
 
 
+/**
+ * Insert copies for all ia32 nodes where the should_be_same requirement
+ * is not fulfilled.
+ */
+static void ia32_finish_irg_walker(ir_node *irn, void *env) {
+	ia32_code_gen_t            *cg = env;
+	const ia32_register_req_t **reqs;
+	const arch_register_t      *out_reg, *in_reg;
+	int                         n_res, i;
+	ir_node                    *copy, *in_node, *block;
+
+	if (! is_ia32_irn(irn))
+		return;
+
+	reqs  = get_ia32_out_req_all(irn);
+	n_res = get_ia32_n_res(irn);
+	block = get_nodes_block(irn);
+
+	/* check all OUT requirements, if there is a should_be_same */
+	for (i = 0; i < n_res; i++) {
+		if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
+			/* get in and out register */
+			out_reg = get_ia32_out_reg(irn, i);
+			in_node = get_irn_n(irn, reqs[i]->same_pos);
+			in_reg  = arch_get_irn_register(cg->arch_env, in_node);
+
+			/* check if in and out register are equal */
+			if (arch_register_get_index(out_reg) != arch_register_get_index(in_reg)) {
+				DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
+
+				/* create copy from in register */
+				copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
+
+				/* destination is the out register */
+				arch_set_irn_register(cg->arch_env, copy, out_reg);
+
+				/* insert copy before the node into the schedule */
+				sched_add_before(irn, copy);
+			}
+		}
+	}
+}
 
 /**
- * Stack reservation and StackParam lowering.
+ * Add Copy nodes for not fulfilled should_be_equal constraints
  */
 static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
-
+	irg_walk_blkwise_graph(irg, NULL, ia32_finish_irg_walker, cg);
 }
 
 
@@ -285,6 +334,131 @@ static void ia32_before_ra(void *self) {
 
 
 /**
+ * Transforms a be node into a Load.
+ */
+static void transform_to_Load(ia32_transform_env_t *env) {
+	ir_node *irn   = env->irn;
+	entity  *ent   = be_get_frame_entity(irn);
+	ir_mode *mode  = env->mode;
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *nomem = new_rd_NoMem(env->irg);
+	ir_node *new_op, *proj;
+	ir_node *sched_point = NULL;
+
+	if (sched_is_scheduled(irn)) {
+		sched_point = sched_prev(irn);
+	}
+
+	if (mode_is_float(mode)) {
+		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, get_irn_n(irn, 0), noreg, nomem, mode_T);
+	}
+	else {
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, get_irn_n(irn, 0), noreg, nomem, mode_T);
+	}
+
+	set_ia32_am_support(new_op, ia32_am_Source);
+	set_ia32_op_type(new_op, ia32_AddrModeS);
+	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_ls_mode(new_op, mode);
+	set_ia32_frame_ent(new_op, ent);
+	set_ia32_use_frame(new_op);
+
+	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, pn_Load_res);
+
+	if (sched_point) {
+		sched_add_after(sched_point, new_op);
+		sched_add_after(new_op, proj);
+
+		sched_remove(irn);
+	}
+
+	exchange(irn, proj);
+
+}
+
+/**
+ * Transforms a be node into a Store.
+ */
+static void transform_to_Store(ia32_transform_env_t *env) {
+	ir_node *irn   = env->irn;
+	entity  *ent   = be_get_frame_entity(irn);
+	ir_mode *mode  = env->mode;
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *nomem = new_rd_NoMem(env->irg);
+	ir_node *ptr   = get_irn_n(irn, 0);
+	ir_node *val   = get_irn_n(irn, 1);
+	ir_node *new_op, *proj;
+	ir_node *sched_point = NULL;
+
+	if (sched_is_scheduled(irn)) {
+		sched_point = sched_prev(irn);
+	}
+
+	if (mode_is_float(mode)) {
+		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+	}
+	else {
+		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+	}
+
+	set_ia32_am_support(new_op, ia32_am_Dest);
+	set_ia32_op_type(new_op, ia32_AddrModeD);
+	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_ls_mode(new_op, get_irn_mode(val));
+	set_ia32_frame_ent(new_op, ent);
+	set_ia32_use_frame(new_op);
+
+	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, 0);
+
+	if (sched_point) {
+		sched_add_after(sched_point, new_op);
+		sched_add_after(new_op, proj);
+
+		sched_remove(irn);
+	}
+
+	exchange(irn, proj);
+
+}
+
+/**
+ * Calls the transform functions for StackParam, Spill and Reload.
+ */
+static void ia32_after_ra_walker(ir_node *node, void *env) {
+	ia32_code_gen_t *cg = env;
+	ir_node *new_node   = NULL;
+	ia32_transform_env_t tenv;
+
+	if (is_Block(node))
+		return;
+
+	tenv.block = get_nodes_block(node);
+	tenv.dbg   = get_irn_dbg_info(node);
+	tenv.irg   = current_ir_graph;
+	tenv.irn   = node;
+	tenv.mod   = cg->mod;
+	tenv.mode  = get_irn_mode(node);
+	tenv.cg    = cg;
+
+	if (be_is_StackParam(node) || be_is_Reload(node)) {
+		transform_to_Load(&tenv);
+	}
+	else if (be_is_Spill(node)) {
+		transform_to_Store(&tenv);
+	}
+}
+
+/**
+ * We transform StackParam, Spill and Reload here. This needs to be done before
+ * stack biasing otherwise we would miss the corrected offset for these nodes.
+ */
+static void ia32_after_ra(void *self) {
+	ia32_code_gen_t *cg = self;
+	irg_walk_blkwise_graph(cg->irg, NULL, ia32_after_ra_walker, self);
+}
+
+
+/**
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
@@ -293,15 +467,13 @@ static void ia32_codegen(void *self) {
 	ir_graph        *irg = cg->irg;
 	FILE            *out = cg->out;
 
-  ia32_register_emitters();
-
 	if (cg->emit_decls) {
 		ia32_gen_decls(cg->out);
 		cg->emit_decls = 0;
 	}
 
 	ia32_finish_irg(irg, cg);
-	//dump_ir_block_graph_sched(irg, "-finished");
+	dump_ir_block_graph_sched(irg, "-finished");
 	ia32_gen_routine(out, irg, cg);
 
 	cur_reg_set = NULL;
@@ -321,6 +493,7 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_prepare_graph,
 	ia32_before_sched,   /* before scheduling hook */
 	ia32_before_ra,      /* before register allocation hook */
+	ia32_after_ra,       /* after register allocation hook */
 	ia32_codegen         /* emit && done */
 };
 

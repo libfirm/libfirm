@@ -803,7 +803,7 @@ void emit_be_AddSP(const ir_node *irn, emit_env_t *emit_env) {
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
  */
-void ia32_register_emitters(void) {
+static void ia32_register_emitters(void) {
 
 #define IA32_EMIT(a) op_ia32_##a->ops.generic = (op_func)emit_ia32_##a
 #define EMIT(a)      op_##a->ops.generic = (op_func)emit_##a
@@ -815,7 +815,7 @@ void ia32_register_emitters(void) {
 	/* register all emitter functions defined in spec */
 	ia32_register_spec_emitters();
 
-	/* other emitter functions */
+	/* other ia32 emitter functions */
 	IA32_EMIT(CondJmp);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
@@ -921,6 +921,8 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 
 	/* set the global arch_env (needed by print hooks) */
 	arch_env = cg->arch_env;
+
+	ia32_register_emitters();
 
 	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);

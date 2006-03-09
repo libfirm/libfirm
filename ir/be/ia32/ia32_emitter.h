@@ -25,7 +25,6 @@ char *ia32_emit_am(const ir_node *irn);
 int get_ia32_reg_nr(ir_node *irn, int posi, int in_out);
 const char *get_ia32_in_reg_name(ir_node *irn, int pos);
 
-void ia32_register_emitters(void);
 void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg);
 
 #endif /* _IA32_EMITTER_H_ */
