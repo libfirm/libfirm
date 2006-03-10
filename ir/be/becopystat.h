@@ -11,10 +11,6 @@
 
 #ifdef COPYOPT_STAT
 
-#define DO_HEUR
-#define DO_ILP1
-#define DO_ILP2
-
 #include "irgraph.h"
 #include "bearch.h"
 #include "bechordal_t.h"

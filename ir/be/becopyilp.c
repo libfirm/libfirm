@@ -67,10 +67,9 @@ void sr_remove(size_red_t *sr) {
 	void *iter = be_ifg_neighbours_iter_alloca(ifg);
 
 	while (redo) {
-		arch_register_req_t req;
 		redo = 0;
 		be_ifg_foreach_node(ifg, iter, irn) {
-			if (!sr_is_removed(sr, irn) && !co_is_optimizable(sr->co->aenv, irn, &req) && !co_is_optimizable_arg(sr->co, irn)) {
+			if (!sr_is_removed(sr, irn) && !co_is_optimizable_root(sr->co, irn) && !co_is_optimizable_arg(sr->co, irn)) {
           	 	if (sr_is_simplicial(sr, irn)) {
 					coloring_suffix_t *cs = obstack_alloc(&sr->ob, sizeof(*cs));
 

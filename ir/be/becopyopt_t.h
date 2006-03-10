@@ -10,12 +10,11 @@
 #ifndef _BECOPYOPT_T_H
 #define _BECOPYOPT_T_H
 
+#include <obstack.h>
 #include "list.h"
 #include "bearch.h"
 #include "bechordal_t.h"
 #include "becopyopt.h"
-
-#define MIS_HEUR_TRIGGER 8
 
 /**
  * Data representing the problem of copy minimization.
@@ -26,15 +25,48 @@ struct _copy_opt_t {
 	const arch_env_t *aenv;
 	ir_graph *irg;
 	char *name;						/**< ProgName__IrgName__RegClassName */
-
-	struct list_head units;			/**< all units to optimize in specific order */
 	cost_fct_t get_costs;			/**< function ptr used to get costs for copies */
-	struct obstack ob;
+
+	/** Representation as optimization units */
+	struct list_head units;			/**< all units to optimize in specific order */
+
+	/** Representation in graph structure. Only build on demand */
+	struct obstack obst;
+	set *nodes;
 };
 
-/**
- * A single unit of optimization. Lots of these form a copy-opt problem
- */
+/* Helpers */
+#define get_irn_col(co, irn)		arch_register_get_index(arch_get_irn_register((co)->aenv, irn))
+#define set_irn_col(co, irn, col)	arch_set_irn_register((co)->aenv, irn, arch_register_for_index((co)->cls, col))
+#define is_curr_reg_class(co, irn)	(arch_get_irn_reg_class((co)->aenv, irn, -1) == (co)->cls)
+
+#define MIN(a,b) ((a<b)?(a):(b))
+#define MAX(a,b) ((a<b)?(b):(a))
+
+#define list_entry_units(lh) list_entry(lh, unit_t, units)
+
+#define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
+
+#define get_Perm_src(irn)                   (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
+#define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
+#define is_Perm_Proj(arch_env, irn)			(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
+
+#define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
+
+
+/******************************************************************************
+   ____        _   _    _       _ _          _____ _
+  / __ \      | | | |  | |     (_) |        / ____| |
+ | |  | |_ __ | |_| |  | |_ __  _| |_ ___  | (___ | |_ ___  _ __ __ _  __ _  ___
+ | |  | | '_ \| __| |  | | '_ \| | __/ __|  \___ \| __/ _ \| '__/ _` |/ _` |/ _ \
+ | |__| | |_) | |_| |__| | | | | | |_\__ \  ____) | || (_) | | | (_| | (_| |  __/
+  \____/| .__/ \__|\____/|_| |_|_|\__|___/ |_____/ \__\___/|_|  \__,_|\__, |\___|
+        | |                                                            __/ |
+        |_|                                                           |___/
+ ******************************************************************************/
+
+#define MIS_HEUR_TRIGGER 8
+
 typedef struct _unit_t {
 	struct list_head units;		/**< chain for all units */
 	copy_opt_t *co;				/**< the copy_opt this unit belongs to */
@@ -50,60 +82,32 @@ typedef struct _unit_t {
 	struct list_head queue;		/**< list of qn's sorted by weight of qn-mis */
 } unit_t;
 
-/* Helpers */
-#define get_irn_col(co, irn)		arch_register_get_index(arch_get_irn_register((co)->aenv, irn))
-#define set_irn_col(co, irn, col)	arch_set_irn_register((co)->aenv, irn, arch_register_for_index((co)->cls, col))
-#define is_curr_reg_class(co, irn)	(arch_get_irn_reg_class((co)->aenv, irn, -1) == (co)->cls)
 
-#define MIN(a,b) ((a<b)?(a):(b))
-#define MAX(a,b) ((a<b)?(b):(a))
 
-#define list_entry_units(lh) list_entry(lh, unit_t, units)
+/******************************************************************************
+   _____                 _        _____ _
+  / ____|               | |      / ____| |
+ | |  __ _ __ __ _ _ __ | |__   | (___ | |_ ___  _ __ __ _  __ _  ___
+ | | |_ | '__/ _` | '_ \| '_ \   \___ \| __/ _ \| '__/ _` |/ _` |/ _ \
+ | |__| | | | (_| | |_) | | | |  ____) | || (_) | | | (_| | (_| |  __/
+  \_____|_|  \__,_| .__/|_| |_| |_____/ \__\___/|_|  \__,_|\__, |\___|
+                  | |                                       __/ |
+                  |_|                                      |___/
+ ******************************************************************************/
 
-#define get_Copy_src(irn)                   (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
-#define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
-#define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
-#define is_Perm_Proj(arch_env, irn)			(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
-#define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
+typedef struct _neighb_t neighb_t;
 
-/**
- * Checks if a node is optimizable, viz. has somthing to do with coalescing
- * @param arch The architecture environment
- * @param irn  The irn to check
- * @param req  A register_requirement structure (used to check for 2-addr-code)
- */
-#define co_is_optimizable(arch, irn, req) (!arch_irn_is_ignore(arch, irn) && (is_Reg_Phi(irn) || is_Perm_Proj(arch, irn) || is_2addr_code(arch, irn, req)))
+struct _neighb_t {
+	neighb_t *next;			/** the next neighbour entry*/
+	ir_node *irn;			/** the neighbour itself */
+	int costs;				/** the costs of the edge (node_t->irn, neighb_t->irn) */
+};
 
-/**
- * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'
- */
-int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn);
-
-/**
- * Returns the maximal costs possible, i.e. the costs if all
- * pairs would be assigned different registers.
- */
-int co_get_max_copy_costs(const copy_opt_t *co);
-
-/**
- * Returns the inevitable costs, i.e. the costs of
- * all copy pairs which interfere.
- */
-int co_get_inevit_copy_costs(const copy_opt_t *co);
-
-/**
- * Returns the current costs the copies are causing.
- * The result includes inevitable costs and the costs
- * of the copies regarding the current register allocation
- */
-int co_get_copy_costs(const copy_opt_t *co);
-
-/**
- * Returns a lower bound for the costs of copies in this ou.
- * The result includes inevitable costs and the costs of a
- * minimal costs caused by the nodes of the ou.
- */
-int co_get_lower_bound(const copy_opt_t *co);
+typedef struct _node_t {
+	ir_node *irn;			/** a node with affinity edges */
+	int count;				/** number of affinity edges in the linked list below */
+	neighb_t *neighbours;	/** a linked list of all affinity neighbours */
+} node_t;
 
 
 #endif

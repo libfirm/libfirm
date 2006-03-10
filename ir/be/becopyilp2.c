@@ -4,25 +4,26 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
+ *
  * ILP formalization using G=(V, E, Q):
- *  - 1 class of variables: equal color vars
+ *  - 2 class of variables: coloring vars x_ic   and   equal color vars y_ij
  *  - Path constraints
- *  - Clique path constraints
+ *  - Clique-star constraints
  *
  *
  *	\min \sum_{ (i,j) \in Q }  w_ij y_ij
  *
- *		y_ij				=  1			(i,j) \in E
+ *		\sum_c x_nc			=  1			n \in N, c \in C
  *
- *		\sum_c y_nc			=  |C| - 1		n \in N, c \in C
+ *		x_nc				=  0			n \in N, c \not\in C(n)
  *
- *		y_nc				=  1			n \in N, c \not\in C(n)
+ *		\sum x_nc			<= 1			x_nc \in Clique \in AllCliques,  c \in C
  *
  *		\sum_{e \in p} y_e	>= 1			p \in P		path constraints
  *
- *		\sum_{e \in cp} y_e	>= |cp| - 1		cp \in CP	clique-path constraints
+ *		\sum_{e \in cs} y_e	>= |cs| - 1		cs \in CP	clique-star constraints
  *
- *		y_ij \in N,   w_ij \in R^+
+ *		x_nc, y_ij \in N,   w_ij \in R^+
  */
 
 #ifdef HAVE_CONFIG_H
@@ -31,9 +32,11 @@
 
 #ifdef WITH_ILP
 
+#include "irtools.h"
+#include "irgwalk.h"
 #include "becopyilp_t.h"
 #include "beifg_t.h"
-#include "irtools.h"
+#include "besched_t.h"
 
 #define DEBUG_LVL 1
 
@@ -169,11 +172,17 @@ static void build_affinity_cstr(ilp_env_t *ienv) {
 	}
 }
 
-static void build_path_cstr(ilp_env_t *ienv) {
+/**
+ *
+ */
+static void build_clique_star_cstr(ilp_env_t *ienv) {
 
 }
 
-static void build_clique_path_cstr(ilp_env_t *ienv) {
+/**
+ *
+ */
+static void build_path_cstr(ilp_env_t *ienv) {
 
 }
 
@@ -185,8 +194,8 @@ static void ilp2_build(ilp_env_t *ienv) {
 	build_coloring_cstr(ienv);
 	build_interference_cstr(ienv);
 	build_affinity_cstr(ienv);
+	build_clique_star_cstr(ienv);
 	build_path_cstr(ienv);
-	build_clique_path_cstr(ienv);
 
 	lower_bound = co_get_lower_bound(ienv->co) - co_get_inevit_copy_costs(ienv->co);
 	lpp_set_bound(ienv->lp, lower_bound);

@@ -26,11 +26,122 @@
 
 #include "bearch.h"
 #include "beutil.h"
+#include "beifg_t.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
 
+/******************************************************************************
+    _____                           _
+   / ____|                         | |
+  | |  __  ___ _ __   ___ _ __ __ _| |
+  | | |_ |/ _ \ '_ \ / _ \ '__/ _` | |
+  | |__| |  __/ | | |  __/ | | (_| | |
+   \_____|\___|_| |_|\___|_|  \__,_|_|
+
+ ******************************************************************************/
 
 static firm_dbg_module_t *dbg = NULL;
+
+void be_copy_opt_init(void) {
+}
+
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node*, ir_node*, int)) {
+	const char *s1, *s2, *s3;
+	int len;
+	copy_opt_t *co;
+
+	dbg = firm_dbg_register("ir.be.copyopt");
+
+	co = xcalloc(1, sizeof(*co));
+	co->cenv      = chordal_env;
+	co->aenv      = chordal_env->birg->main_env->arch_env;
+	co->irg       = chordal_env->irg;
+	co->cls       = chordal_env->cls;
+	co->get_costs = get_costs;
+
+	s1 = get_irp_prog_name();
+	s2 = get_entity_name(get_irg_entity(co->irg));
+	s3 = chordal_env->cls->name;
+	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
+	co->name = xmalloc(len);
+	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
+
+	return co;
+}
+
+void free_copy_opt(copy_opt_t *co) {
+	xfree(co->name);
+}
+
+int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
+	arch_register_req_t req;
+
+	if (arch_irn_is_ignore(co->aenv, irn))
+		return 0;
+
+	if (is_Reg_Phi(irn) || is_Perm_Proj(co->aenv, irn) || is_2addr_code(co->aenv, irn, &req))
+		return 1;
+
+	return 0;
+}
+
+int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
+	const ir_edge_t *edge;
+
+	if (arch_irn_is_ignore(co->aenv, irn))
+		return 0;
+
+	foreach_out_edge(irn, edge) {
+		ir_node *n = edge->src;
+
+		if (!nodes_interfere(co->cenv, irn, n) || irn == n) {
+			arch_register_req_t req;
+			arch_get_register_req(co->aenv, &req, n, -1);
+
+			if(is_Reg_Phi(n) ||
+			   is_Perm(co->aenv, n) ||
+			   (arch_register_req_is(&req, should_be_same) && req.other_same == irn)
+			  )
+				return 1;
+		}
+	}
+
+	return 0;
+}
+
+int co_get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
+	int cost = 0;
+	ir_loop *loop;
+	ir_node *root_block = get_nodes_block(root);
+
+	if (is_Phi(root)) {
+		/* for phis the copies are placed in the corresponding pred-block */
+		loop = get_irn_loop(get_Block_cfgpred_block(root_block, pos));
+	} else {
+		/* a perm places the copy in the same block as it resides */
+		loop = get_irn_loop(root_block);
+	}
+	if (loop) {
+		int d = get_loop_depth(loop);
+		cost = d*d;
+	}
+	return cost+1;
+}
+
+int co_get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
+	return 1;
+}
+
+/******************************************************************************
+   ____        _   _    _       _ _          _____ _
+  / __ \      | | | |  | |     (_) |        / ____| |
+ | |  | |_ __ | |_| |  | |_ __  _| |_ ___  | (___ | |_ ___  _ __ __ _  __ _  ___
+ | |  | | '_ \| __| |  | | '_ \| | __/ __|  \___ \| __/ _ \| '__/ _` |/ _` |/ _ \
+ | |__| | |_) | |_| |__| | | | | | |_\__ \  ____) | || (_) | | | (_| | (_| |  __/
+  \____/| .__/ \__|\____/|_| |_|_|\__|___/ |_____/ \__\___/|_|  \__,_|\__, |\___|
+        | |                                                            __/ |
+        |_|                                                           |___/
+ ******************************************************************************/
 
 /**
  * Determines a maximum weighted independent set with respect to
@@ -126,7 +237,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 	if (!is_curr_reg_class(co, irn))
 		return;
-	if (!co_is_optimizable(co->aenv, irn, &req))
+	if (!co_is_optimizable_root(co, irn))
 		return;
 
 	/* Init a new unit */
@@ -185,12 +296,12 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 	/* Proj of a perm with corresponding arg */
 	if (is_Perm_Proj(co->aenv, irn)) {
-		assert(!nodes_interfere(co->cenv, irn, get_Copy_src(irn)));
+		assert(!nodes_interfere(co->cenv, irn, get_Perm_src(irn)));
 		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
 		unit->costs = xmalloc(2 * sizeof(*unit->costs));
 		unit->node_count = 2;
 		unit->nodes[0] = irn;
-		unit->nodes[1] = get_Copy_src(irn);
+		unit->nodes[1] = get_Perm_src(irn);
 		unit->costs[1] = co->get_costs(irn, unit->nodes[1], -1);
 	} else
 
@@ -232,40 +343,14 @@ static void co_collect_units(ir_node *irn, void *env) {
 	}
 }
 
-void be_copy_opt_init(void) {
-	dbg = firm_dbg_register("ir.be.copyoptmain");
-}
-
-copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node*, ir_node*, int)) {
-	const char *s1, *s2, *s3;
-	int len;
-	copy_opt_t *co;
-
-	dbg = firm_dbg_register("ir.be.copyopt");
-
-	co = xcalloc(1, sizeof(*co));
-	co->cenv = chordal_env;
-	co->aenv = chordal_env->birg->main_env->arch_env;
-	co->irg = chordal_env->irg;
-	co->cls = chordal_env->cls;
-	co->get_costs = get_costs;
-
-	s1 = get_irp_prog_name();
-	s2 = get_entity_name(get_irg_entity(co->irg));
-	s3 = chordal_env->cls->name;
-	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
-	co->name = xmalloc(len);
-	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
-
+void co_build_ou_structure(copy_opt_t *co) {
 	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	INIT_LIST_HEAD(&co->units);
 	irg_walk_graph(co->irg, co_collect_units, NULL, co);
-	return co;
 }
 
-void free_copy_opt(copy_opt_t *co) {
+void co_free_ou_structure(copy_opt_t *co) {
 	unit_t *curr, *tmp;
-	xfree(co->name);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
 		xfree(curr->nodes);
 		xfree(curr->costs);
@@ -273,52 +358,7 @@ void free_copy_opt(copy_opt_t *co) {
 	}
 }
 
-int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
-	const ir_edge_t *edge;
-
-	if (arch_irn_is_ignore(co->aenv, irn))
-		return 0;
-
-	foreach_out_edge(irn, edge) {
-		ir_node *n = edge->src;
-
-		if (!nodes_interfere(co->cenv, irn, n) || irn == n) {
-			arch_register_req_t req;
-			arch_get_register_req(co->aenv, &req, n, -1);
-
-			if(is_Reg_Phi(n) ||
-			   is_Perm(co->aenv, n) ||
-			   (arch_register_req_is(&req, should_be_same) && req.other_same == irn)
-			  )
-				return 1;
-		}
-	}
-
-	return 0;
-}
-
-int co_get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
-	int cost = 0;
-	ir_loop *loop;
-	ir_node *root_block = get_nodes_block(root);
-
-	if (is_Phi(root)) {
-		/* for phis the copies are placed in the corresponding pred-block */
-		loop = get_irn_loop(get_Block_cfgpred_block(root_block, pos));
-	} else {
-		/* a perm places the copy in the same block as it resides */
-		loop = get_irn_loop(root_block);
-	}
-	if (loop) {
-		int d = get_loop_depth(loop);
-		cost = d*d;
-	}
-	return cost+1;
-}
-
-int co_get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
-	return 1;
-}
+/* co_solve_heuristic() is implemented in becopyheur.c */
 
 int co_get_max_copy_costs(const copy_opt_t *co) {
 	int i, res = 0;
@@ -366,4 +406,108 @@ int co_get_lower_bound(const copy_opt_t *co) {
 	list_for_each_entry(unit_t, curr, &co->units, units)
 		res += curr->inevitable_costs + curr->min_nodes_costs;
 	return res;
+}
+
+/******************************************************************************
+   _____                 _        _____ _
+  / ____|               | |      / ____| |
+ | |  __ _ __ __ _ _ __ | |__   | (___ | |_ ___  _ __ __ _  __ _  ___
+ | | |_ | '__/ _` | '_ \| '_ \   \___ \| __/ _ \| '__/ _` |/ _` |/ _ \
+ | |__| | | | (_| | |_) | | | |  ____) | || (_) | | | (_| | (_| |  __/
+  \_____|_|  \__,_| .__/|_| |_| |_____/ \__\___/|_|  \__,_|\__, |\___|
+                  | |                                       __/ |
+                  |_|                                      |___/
+ ******************************************************************************/
+
+static int compare_node_t(const void *k1, const void *k2, size_t size) {
+	const node_t *n1 = k1;
+	const node_t *n2 = k2;
+
+	return (n1->irn != n2->irn);
+}
+
+static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
+	node_t new_node, *node;
+	neighb_t new_nbr, *nbr;
+	int allocnew;
+
+	new_node.irn        = n1;
+	new_node.count      = 0;
+	new_node.neighbours = NULL;
+	node = set_insert(co->nodes, new_node.irn, sizeof(new_node), HASH_PTR(new_node.irn));
+
+	allocnew = 1;
+	for (nbr = node->neighbours; nbr; nbr = nbr->next)
+		if (nbr->irn == n2) {
+			allocnew = 0;
+			break;
+		}
+
+	/* if we did not find n2 in n1's neighbourhood insert it */
+	if (allocnew) {
+		obstack_grow(&co->obst, &new_nbr, sizeof(new_nbr));
+		nbr = obstack_finish(&co->obst);
+		nbr->irn   = n2;
+		nbr->costs = 0;
+		nbr->next  = node->neighbours;
+		node->neighbours = nbr;
+		node->count++;
+	}
+
+	/* now nbr points to n1's neighbour-entry of n2 */
+	nbr->costs += costs;
+}
+
+static INLINE void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
+	if (! be_ifg_connected(co->cenv->ifg, n1, n2)) {
+		add_edge(co, n1, n2, costs);
+		add_edge(co, n2, n1, costs);
+	}
+}
+
+static void build_graph_walker(ir_node *irn, void *env) {
+	copy_opt_t *co = env;
+	int pos, max;
+	arch_register_req_t req;
+
+	if (!is_curr_reg_class(co, irn) || arch_irn_is_ignore(co->aenv, irn))
+		return;
+
+	/* Phis */
+	if (is_Reg_Phi(irn))
+		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
+			ir_node *arg = get_irn_n(irn, pos);
+			add_edges(co, irn, arg, co->get_costs(irn, arg, pos));
+		}
+
+	/* Perms */
+	else if (is_Perm_Proj(co->aenv, irn)) {
+		ir_node *arg = get_Perm_src(irn);
+		add_edges(co, irn, arg, co->get_costs(irn, arg, 0));
+	}
+
+	/* 2-address code */
+	else if (is_2addr_code(co->aenv, irn, &req))
+		add_edges(co, irn, req.other_same, co->get_costs(irn, req.other_same, 0));
+}
+
+void co_build_graph_structure(copy_opt_t *co) {
+	obstack_init(&co->obst);
+	co->nodes = new_set(compare_node_t, 32);
+
+	irg_walk_graph(co->irg, build_graph_walker, NULL, co);
+}
+
+void co_free_graph_structure(copy_opt_t *co) {
+	del_set(co->nodes);
+	obstack_free(&co->obst, NULL);
+}
+
+/* co_solve_ilp1() co_solve_ilp2() are implemented in becopyilpX.c */
+
+int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
+	node_t new_node;
+
+	new_node.irn        = irn;
+	return (int)set_find(co->nodes, new_node.irn, sizeof(new_node), HASH_PTR(new_node.irn));
 }

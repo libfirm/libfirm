@@ -310,7 +310,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 #else
 		{
 		copy_opt_t *co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
+		co_build_ou_structure(co);
 		co_solve_heuristic(co);
+		co_free_ou_structure(co);
 		free_copy_opt(co);
 		}
 #endif

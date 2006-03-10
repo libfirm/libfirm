@@ -134,7 +134,6 @@ struct _ilp_env_t {
 	void *env;
 	ilp_callback build;
 	ilp_callback apply;
-
 };
 
 ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env);

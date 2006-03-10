@@ -24,6 +24,10 @@
 
 #ifdef COPYOPT_STAT
 
+#define DO_HEUR
+#undef DO_ILP1
+#define DO_ILP2
+
 #define DEBUG_LVL SET_LEVEL_1
 static firm_dbg_module_t *dbg = NULL;
 
@@ -221,7 +225,7 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
 static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
 	curr_vals[I_CPY_CNT]++;
 	curr_vals[I_COPIES_MAX]++;
-	if (nodes_interfere(chordal_env, root, get_Copy_src(root))) {
+	if (nodes_interfere(chordal_env, root, get_Perm_src(root))) {
 		curr_vals[I_COPIES_IF]++;
 		assert(0 && "A Perm pair (in/out) should never interfere!");
 	}
@@ -456,9 +460,12 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	color_save_t saver;
 	int costs_inevit, costs_init, costs_heur, costs_ilp1, costs_ilp2, lower_bound;
 
-	co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
-	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
 	phi_class_compute(chordal_env->irg);
+
+	co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
+	co_build_ou_structure(co);
+	co_build_graph_structure(co);
+	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
 
 	/* save colors */
 	saver.arch_env = chordal_env->birg->main_env->arch_env;
@@ -519,6 +526,8 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 #endif /* DO_ILP2 */
 
 	pmap_destroy(saver.saved_colors);
+	co_free_graph_structure(co);
+	co_free_ou_structure(co);
 	free_copy_opt(co);
 }
 
