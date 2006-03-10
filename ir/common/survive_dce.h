@@ -5,6 +5,8 @@
 #ifndef _FIRM_SURVIVE_DCE_H
 #define _FIRM_SURVIVE_DCE_H
 
+#include "pmap.h"
+
 typedef struct _survive_dce_t survive_dce_t;
 
 /**
@@ -25,5 +27,14 @@ void           free_survive_dce(survive_dce_t *sd);
  * of the node it is currently pointing to after dead node elimination.
  */
 void survive_dce_register_irn(survive_dce_t *sd, ir_node **place);
+
+/**
+ * Register a map to survive the dce.
+ * All value parts of the map's entries are assumed to be ir node pointers
+ * and are registered with survive_dce_register_irn().
+ * @param sd    The survive dce private data.
+ * @param m     The map.
+ */
+void survive_dce_register_pmap(survive_dce_t *sd, pmap *m);
 
 #endif

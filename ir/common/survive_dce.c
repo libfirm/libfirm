@@ -72,5 +72,14 @@ void free_survive_dce(survive_dce_t *sd)
 
 void survive_dce_register_irn(survive_dce_t *sd, ir_node **place)
 {
-	pmap_insert(sd->places, *place, (void *) place);
+	if(*place != NULL)
+		pmap_insert(sd->places, *place, (void *) place);
+}
+
+void survive_dce_register_pmap(survive_dce_t *sd, pmap *m)
+{
+	pmap_entry *ent;
+
+	for(ent = pmap_first(m); ent; ent = pmap_next(m))
+		survive_dce_register_irn(sd, (ir_node **) &ent->value);
 }
