@@ -65,22 +65,26 @@ struct _be_stack_slot_t {
 
 struct _be_abi_irg_t {
 	struct obstack       obst;
-	firm_dbg_module_t    *dbg;            /**< The debugging module. */
-	be_stack_frame_t     *frame;
-	const be_irg_t       *birg;
+	firm_dbg_module_t    *dbg;          /**< The debugging module. */
+	be_stack_frame_t     *frame;        /**< The stack frame model. */
+	const be_irg_t       *birg;         /**< The back end IRG. */
 	const arch_isa_t     *isa;          /**< The isa. */
 	survive_dce_t        *dce_survivor;
 
-	be_abi_call_t        *call;
-	type                 *method_type;
+	be_abi_call_t        *call;         /**< The ABI call information. */
+	type                 *method_type;  /**< The type of the method of the IRG. */
 
 	ir_node              *init_sp;      /**< The node representing the stack pointer
 									     at the start of the function. */
 
-	ir_node              *reg_params;
-	pmap                 *regs;
-	pset                 *stack_phis;
-	int                  start_block_bias;
+	ir_node              *reg_params;   /**< The reg params node. */
+	pmap                 *regs;         /**< A map of all callee-save and ignore regs to
+											their Projs to the RegParams node. */
+
+	pset                 *stack_phis;   /**< The set of all Phi nodes inserted due to
+											stack pointer modifying nodes. */
+
+	int                  start_block_bias;	/**< The stack bias at the end of the start block. */
 
 	arch_irn_handler_t irn_handler;
 	arch_irn_ops_t     irn_ops;
@@ -364,6 +368,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const arch_isa_t *isa     = env->birg->main_env->arch_env->isa;
 	be_abi_call_t *call       = be_abi_call_new();
 	ir_type *mt               = get_Call_type(irn);
+	ir_node *call_ptr         = get_Call_ptr(irn);
 	int n_params              = get_method_n_params(mt);
 	ir_node *curr_mem         = get_Call_mem(irn);
 	ir_node *bl               = get_nodes_block(irn);
@@ -544,8 +549,33 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		obstack_ptr_grow(obst, get_Call_param(irn, low_args[i]));
 
 	in = obstack_finish(obst);
-	// if(env->call->flags.bits.call_has_imm && get_irn_opcode());
-	low_call = be_new_Call(irg, bl, curr_mem, curr_sp, get_Call_ptr(irn), curr_res_proj, n_low_args, in);
+	if(env->call->flags.bits.call_has_imm && get_irn_opcode(call_ptr) == iro_SymConst) {
+		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, curr_sp, curr_res_proj, n_low_args, in);
+		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
+	}
+
+	else
+		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, call_ptr, curr_res_proj, n_low_args, in);
+
+	/* Set the register classes and constraints of the Call parameters. */
+	for(i = 0; i < n_low_args; ++i) {
+		int index = low_args[i];
+		const arch_register_t *reg = get_call_arg(call, 0, index);
+		assert(reg != NULL);
+		be_set_constr_single_reg(low_call, index, reg);
+	}
+
+	/* Set the register constraints of the results. */
+	for(i = 0; res_projs[i]; ++i) {
+		ir_node *irn                 = res_projs[i];
+		int proj                     = get_Proj_proj(irn);
+
+		/* Correct Proj number since it has been adjusted! (see above) */
+		const be_abi_call_arg_t *arg = get_call_arg(call, 1, proj - pn_Call_max);
+
+		assert(arg->in_reg);
+		be_set_constr_single_reg(low_call, BE_OUT_POS(proj), arg->reg);
+	}
 	obstack_free(obst, in);
 	exchange(irn, low_call);
 
@@ -1125,7 +1155,6 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	be_abi_irg_t *env = malloc(sizeof(env[0]));
 
 	ir_node *dummy;
-	pmap_entry *ent;
 
 	env->isa           = birg->main_env->arch_env->isa;
 	env->method_type   = get_entity_type(get_irg_entity(birg->irg));
@@ -1154,41 +1183,57 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	/* Make some important node pointers survive the dead node elimination. */
 	survive_dce_register_irn(env->dce_survivor, &env->init_sp);
-	for(ent = pmap_first(env->regs); ent; ent = pmap_next(env->regs))
-		survive_dce_register_irn(env->dce_survivor, (ir_node **) &ent->value);
+	survive_dce_register_pmap(env->dce_survivor, env->regs);
 
 	arch_env_push_irn_handler(env->birg->main_env->arch_env, &env->irn_handler);
 
 	return env;
 }
 
-static void collect_stack_nodes(ir_node *irn, void *data)
+void be_abi_free(be_abi_irg_t *env)
+{
+	free_survive_dce(env->dce_survivor);
+	del_pset(env->stack_phis);
+	pmap_destroy(env->regs);
+	obstack_free(&env->obst, NULL);
+	arch_env_pop_irn_handler(env->birg->main_env->arch_env);
+	free(env);
+}
+
+
+/*
+
+  _____ _        ____  _             _
+ |  ___(_)_  __ / ___|| |_ __ _  ___| | __
+ | |_  | \ \/ / \___ \| __/ _` |/ __| |/ /
+ |  _| | |>  <   ___) | || (_| | (__|   <
+ |_|   |_/_/\_\ |____/ \__\__,_|\___|_|\_\
+
+*/
+
+static void collect_stack_nodes_walker(ir_node *irn, void *data)
 {
 	pset *s = data;
 
-	switch(be_get_irn_opcode(irn)) {
-	case beo_IncSP:
-//	case beo_AddSP:
-	case beo_SetSP:
+	if((is_Proj(irn) && be_is_Alloca(get_Proj_pred(irn)) && get_Proj_proj(irn) == pn_Alloc_res)
+		|| be_is_IncSP(irn)
+		|| be_is_SetSP(irn))
 		pset_insert_ptr(s, irn);
-	default:
-		break;
-	}
 }
 
 void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 {
 	dom_front_info_t *df;
-	pset *stack_ops;
+	pset *stack_nodes;
+	pmap_entry *ent;
 
 	/* We need dominance frontiers for fix up */
 	df = be_compute_dominance_frontiers(env->birg->irg);
-
-	stack_ops = pset_new_ptr_default();
-	pset_insert_ptr(stack_ops, env->init_sp);
-	irg_walk_graph(env->birg->irg, collect_stack_nodes, NULL, stack_ops);
-	be_ssa_constr_set_phis(df, stack_ops, env->stack_phis);
-	del_pset(stack_ops);
+	stack_nodes = pset_new_ptr(16);
+	pset_insert_ptr(stack_nodes, env->init_sp);
+	irg_walk_graph(env->birg->irg, collect_stack_nodes_walker, NULL, stack_nodes);
+	be_ssa_constr_set_phis(df, stack_nodes, env->stack_phis);
+	del_pset(stack_nodes);
 
 	/* free these dominance frontiers */
 	be_free_dominance_frontiers(df);
@@ -1271,7 +1316,7 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	struct bias_walk bw;
 
 	stack_frame_compute_initial_offset(env->frame);
-	stack_frame_dump(stdout, env->frame);
+	// stack_frame_dump(stdout, env->frame);
 
 	/* Determine the stack bias at the and of the start block. */
 	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg), 0);
@@ -1279,16 +1324,6 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	/* fix the bias is all other blocks */
 	bw.env = env;
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
-}
-
-void be_abi_free(be_abi_irg_t *env)
-{
-	free_survive_dce(env->dce_survivor);
-	del_pset(env->stack_phis);
-	pmap_destroy(env->regs);
-	obstack_free(&env->obst, NULL);
-	arch_env_pop_irn_handler(env->birg->main_env->arch_env);
-	free(env);
 }
 
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg)
