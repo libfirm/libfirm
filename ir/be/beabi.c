@@ -560,9 +560,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* Set the register classes and constraints of the Call parameters. */
 	for(i = 0; i < n_low_args; ++i) {
 		int index = low_args[i];
-		const arch_register_t *reg = get_call_arg(call, 0, index)->reg;
-		assert(reg != NULL);
-		be_set_constr_single_reg(low_call, index, reg);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, index);
+		assert(arg->reg != NULL);
+		be_set_constr_single_reg(low_call, index, arg->reg);
 	}
 
 	/* Set the register constraints of the results. */
@@ -1225,7 +1225,6 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 {
 	dom_front_info_t *df;
 	pset *stack_nodes;
-	pmap_entry *ent;
 
 	/* We need dominance frontiers for fix up */
 	df = be_compute_dominance_frontiers(env->birg->irg);
