@@ -1213,9 +1213,10 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		}
 
 		set_ia32_pncode(res, get_Proj_proj(sel));
+		set_ia32_am_support(res, ia32_am_Source);
 	}
 	else {
-		res = new_rd_ia32_SwitchJmp(dbg, irg, block, noreg, noreg, sel, nomem, mode_T);
+		res = new_rd_ia32_SwitchJmp(dbg, irg, block, sel, mode_T);
 		set_ia32_pncode(res, get_Cond_defaultProj(node));
 	}
 

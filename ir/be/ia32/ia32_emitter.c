@@ -43,6 +43,9 @@ static const arch_env_t *arch_env = NULL;
 char *ia32_emit_binop(const ir_node *n) {
 	static char *buf = NULL;
 
+	/* verify that this function is never called on non-AM supporting operations */
+	assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
+
 	if (! buf) {
 		buf = xcalloc(1, SNPRINTF_BUF_LEN);
 	}
@@ -53,26 +56,21 @@ char *ia32_emit_binop(const ir_node *n) {
 	switch(get_ia32_op_type(n)) {
 		case ia32_Normal:
 			if (get_ia32_cnst(n)) {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, get_ia32_cnst(n));
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
 			}
 			else {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %4S", n, n);
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %4S", n, n);
 			}
 			break;
 		case ia32_AddrModeS:
-			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, ia32_emit_am(n));
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n));
 			break;
 		case ia32_AddrModeD:
 			if (get_ia32_cnst(n)) {
 				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %s", ia32_emit_am(n), get_ia32_cnst(n));
 			}
 			else {
-				if (is_ia32_St(n)) {
-					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %3S", ia32_emit_am(n), n);
-				}
-				else {
-					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %4S", ia32_emit_am(n), n);
-				}
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %3S", ia32_emit_am(n), n);
 			}
 			break;
 		default:
@@ -488,8 +486,8 @@ static void finish_CondJmp(FILE *F, const ir_node *irn) {
 static void emit_ia32_CondJmp(const ir_node *irn, emit_env_t *env) {
 	FILE *F = env->out;
 
-	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %2S, %1S\t\t\t/* CondJmp(%+F, %+F) */\n", irn, irn,
-																	get_irn_n(irn, 0), get_irn_n(irn, 1));
+	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %s\t\t\t/* CondJmp(%+F, %+F) */\n",
+		ia32_emit_binop(irn), get_irn_n(irn, 0), get_irn_n(irn, 1));
 	finish_CondJmp(F, irn);
 }
 
@@ -499,7 +497,8 @@ static void emit_ia32_CondJmp(const ir_node *irn, emit_env_t *env) {
 void emit_ia32_CondJmp_i(const ir_node *irn, emit_env_t *env) {
 	FILE *F = env->out;
 
-	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %C, %1S\t\t\t/* CondJmp_i(%+F) */\n", irn, irn, get_irn_n(irn, 0));
+	lc_efprintf(ia32_get_arg_env(), F, "\tcmp %s\t\t\t/* CondJmp_i(%+F) */\n",
+		ia32_emit_binop(irn), get_irn_n(irn, 0));
 	finish_CondJmp(F, irn);
 }
 
@@ -624,7 +623,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, emit_env_t *emit_env) {
 		if (tbl.num_branches > 1) {
 			/* create table */
 
-			lc_efprintf(env, F, "\tjmp *%s(,%1S,4)\t\t/* get jump table entry as target */\n", tbl.label, irn);
+			lc_efprintf(env, F, "\tjmp [%1S*4+%s]\t\t/* get jump table entry as target */\n", irn, tbl.label);
 
 			fprintf(F, "\t.section\t.rodata\t\t/* start jump table */\n");
 			fprintf(F, "\t.align 4\n");

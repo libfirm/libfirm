@@ -344,13 +344,15 @@ static void ia32_before_ra(void *self) {
  * Transforms a be node into a Load.
  */
 static void transform_to_Load(ia32_transform_env_t *env) {
-	ir_node *irn   = env->irn;
-	entity  *ent   = be_get_frame_entity(irn);
-	ir_mode *mode  = env->mode;
-	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_node *nomem = new_rd_NoMem(env->irg);
-	ir_node *new_op, *proj;
+	ir_node *irn         = env->irn;
+	entity  *ent         = be_get_frame_entity(irn);
+	ir_mode *mode        = env->mode;
+	ir_node *noreg       = ia32_new_NoReg_gp(env->cg);
+	ir_node *nomem       = new_rd_NoMem(env->irg);
 	ir_node *sched_point = NULL;
+	ir_node *ptr         = get_irn_n(irn, 0);
+	ir_node *mem         = be_is_Reload(irn) ? get_irn_n(irn, 1) : nomem;
+	ir_node *new_op, *proj;
 	const arch_register_t *reg;
 
 	if (sched_is_scheduled(irn)) {
@@ -358,10 +360,10 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	}
 
 	if (mode_is_float(mode)) {
-		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, get_irn_n(irn, 0), noreg, nomem, mode_T);
+		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
 	}
 	else {
-		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, get_irn_n(irn, 0), noreg, nomem, mode_T);
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
@@ -658,7 +660,7 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	int       i, ignore;
 	ir_mode **modes;
 	const arch_register_t *reg;
-	be_abi_call_flags_t call_flags = { 0, 0, 1, 0, 1 };
+	be_abi_call_flags_t call_flags = { 0, 0, 0, 0, 1 };
 
 	/* get the between type and the frame pointer save entity */
 	between_type = get_between_type();
