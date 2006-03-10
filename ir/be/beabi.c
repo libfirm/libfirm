@@ -560,7 +560,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* Set the register classes and constraints of the Call parameters. */
 	for(i = 0; i < n_low_args; ++i) {
 		int index = low_args[i];
-		const arch_register_t *reg = get_call_arg(call, 0, index);
+		const arch_register_t *reg = get_call_arg(call, 0, index)->reg;
 		assert(reg != NULL);
 		be_set_constr_single_reg(low_call, index, reg);
 	}
