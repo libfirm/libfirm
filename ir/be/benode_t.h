@@ -22,6 +22,8 @@
 #include "be_t.h"
 #include "bearch.h"
 
+#define BE_OUT_POS(p) (-((p) + 1))
+
 /**
  * The benode op's.  Must be available to register emitter function.
  */
@@ -85,7 +87,16 @@ void be_node_init(void);
 
 const arch_irn_handler_t be_node_irn_handler;
 
+enum {
+	be_pos_Spill_frame = 0,
+	be_pos_Spill_val   = 1
+};
 ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *node_to_spill, ir_node *ctx);
+
+enum {
+	be_pos_Reload_frame = 0,
+	be_pos_Reload_mem   = 1
+};
 ir_node *be_new_Reload(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *spill_node, ir_mode *mode);
 ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *block, ir_node *in);
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
@@ -124,6 +135,12 @@ be_stack_dir_t be_get_IncSP_direction(const ir_node *irn);
 entity *be_Call_get_entity(const ir_node *call);
 void    be_Call_set_entity(ir_node *call, entity *ent);
 
+enum {
+	be_pos_Call_mem = 0,
+	be_pos_Call_sp  = 1,
+	be_pos_Call_ptr = 2
+};
+
 ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
 ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
@@ -145,8 +162,10 @@ int be_is_Copy(const ir_node *irn);
 int be_is_Perm(const ir_node *irn);
 int be_is_Keep(const ir_node *irn);
 int be_is_Call(const ir_node *irn);
+int be_is_Return(const ir_node *irn);
 int be_is_IncSP(const ir_node *irn);
-int be_is_AddSP(const ir_node *irn);
+int be_is_SetSP(const ir_node *irn);
+int be_is_Alloca(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
 int be_is_StackParam(const ir_node *irn);
 int be_is_FrameAddr(const ir_node *irn);
