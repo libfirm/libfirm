@@ -234,22 +234,6 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
 	return reg;
 }
 
-/**
- * Returns the number of the in register at position pos.
- */
-int get_ia32_reg_nr(ir_node *irn, int pos, int in_out) {
-	const arch_register_t *reg;
-
-	if (in_out == 1) {
-		reg = get_in_reg(irn, pos);
-	}
-	else {
-		reg = get_out_reg(irn, pos);
-	}
-
-	return arch_register_get_index(reg);
-}
-
 enum io_direction {
   IN_REG,
   OUT_REG
@@ -266,7 +250,7 @@ static const char *get_ia32_reg_name(ir_node *irn, int pos, enum io_direction in
 	}
 	else {
 		/* destination address mode nodes don't have outputs */
-		if (get_ia32_op_type(irn) == ia32_AddrModeD) {
+		if (is_ia32_irn(irn) && get_ia32_op_type(irn) == ia32_AddrModeD) {
 			return "MEM";
 		}
 
@@ -786,6 +770,23 @@ void emit_be_IncSP(const ir_node *irn, emit_env_t *emit_env) {
 	}
 }
 
+void emit_be_SetSP(const ir_node *irn, emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+
+	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D,%3S\t\t\t/* restore SP */\n", irn, irn);
+}
+
+void emit_be_Copy(const ir_node *irn, emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+
+	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D,%1S\t\t\t/* %+F */\n", irn, irn, irn);
+}
+
+void emit_be_Perm(const ir_node *irn, emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+
+	lc_efprintf(ia32_get_arg_env(), F, "\txchg %1S, %2S\t\t\t/* %+F(%1A, %2A) */\n", irn, irn, irn);
+}
 
 /***********************************************************************************
  *                  _          __                                             _
@@ -822,6 +823,9 @@ static void ia32_register_emitters(void) {
 	/* benode emitter */
 	BE_EMIT(Call);
 	BE_EMIT(IncSP);
+	BE_EMIT(SetSP);
+	BE_EMIT(Copy);
+	BE_EMIT(Perm);
 
 	/* firm emitter */
 	EMIT(Jmp);

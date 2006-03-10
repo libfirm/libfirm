@@ -213,7 +213,7 @@ static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	char buf[64];
 	const ia32_irn_ops_t *ops = self;
 
-	if (is_ia32_use_frame(irn)) {
+	if (is_ia32_use_frame(irn) && bias != 0) {
 		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
 
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
@@ -265,8 +265,11 @@ static void ia32_prepare_graph(void *self) {
 	dump_ir_block_graph_sched(cg->irg, "-transformed");
 	edges_deactivate(cg->irg);
 	edges_activate(cg->irg);
-	irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
-	dump_ir_block_graph_sched(cg->irg, "-am");
+
+	if (cg->opt.doam) {
+		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
+		dump_ir_block_graph_sched(cg->irg, "-am");
+	}
 }
 
 
@@ -528,6 +531,12 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->tv_ent   = pmap_create();
 	cg->birg     = birg;
 
+	/* set optimizations */
+	cg->opt.incdec    = 0;
+	cg->opt.doam      = 1;
+	cg->opt.placecnst = 1;
+	cg->opt.immops    = 1;
+
 	isa->num_codegens++;
 
 	if (isa->num_codegens > 1)
@@ -660,7 +669,7 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	int       i, ignore;
 	ir_mode **modes;
 	const arch_register_t *reg;
-	be_abi_call_flags_t call_flags = { 0, 0, 0, 0, 1 };
+	be_abi_call_flags_t call_flags = { 0, 0, 1, 0, 1 };
 
 	/* get the between type and the frame pointer save entity */
 	between_type = get_between_type();

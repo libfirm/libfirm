@@ -193,6 +193,11 @@ void ia32_place_consts(ir_node *irn, void *env) {
 			tenv.block = get_Block_cfgpred_block(get_nodes_block(irn), i);
 		}
 
+		/* put the const into the block where the original const was */
+		if (! cg->opt.placecnst) {
+			tenv.block = get_nodes_block(pred);
+		}
+
 		switch (opc) {
 			case iro_Const:
 				cnst = gen_Const(&tenv);
@@ -314,6 +319,62 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
 	}
 
 	return 0;
+}
+
+/**
+ * Checks if irn is a candidate for address calculation or address mode.
+ *
+ * address calculation (AC):
+ * - none of the operand must be a Load  within the same block OR
+ * - all Loads must have more than one user                    OR
+ * - the irn has a frame entity (it's a former FrameAddr)
+ *
+ * address mode (AM):
+ * - at least one operand has to be a Load within the same block AND
+ * - the load must not have other users than the irn             AND
+ * - the irn must not have a frame entity set
+ *
+ * @param block       The block the Loads must/not be in
+ * @param irn         The irn to check
+ * @param check_addr  1 if to check for address calculation, 0 otherwise
+ * return 1 if irn is a candidate for AC or AM, 0 otherwise
+ */
+static int is_candidate(const ir_node *block, const ir_node *irn, int check_addr) {
+	ir_node *load_proj;
+	int      n, is_cand = check_addr;
+
+	if (pred_is_specific_nodeblock(block, get_irn_n(irn, 2), is_ia32_Load)) {
+		load_proj = get_irn_n(irn, 2);
+		n         = ia32_get_irn_n_edges(load_proj);
+		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
+	}
+
+	if (pred_is_specific_nodeblock(block, get_irn_n(irn, 3), is_ia32_Load)) {
+		load_proj = get_irn_n(irn, 3);
+		n         = ia32_get_irn_n_edges(load_proj);
+		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
+	}
+
+	is_cand = get_ia32_frame_ent(irn) ? (check_addr ? 1 : 0) : (check_addr ? 0 : 1);
+
+	return is_cand;
+}
+
+/**
+ * Compares the base and index addr and the load/store entities
+ * and returns 1 if they are equal.
+ */
+static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
+									const ir_node *addr_b, const ir_node *addr_i)
+{
+	int     is_equal = (addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1));
+	entity *lent     = get_ia32_frame_ent(load);
+	entity *sent     = get_ia32_frame_ent(store);
+
+	/* are both entities set and equal? */
+	is_equal = (lent && sent && (lent == sent)) ? 1 : is_equal;
+
+	return is_equal;
 }
 
 /**
@@ -451,7 +512,9 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 		/* If we have an Add with a real right operand (not NoReg) and  */
 		/* the LEA contains already an index calculation then we create */
 		/* a new LEA.                                                   */
-		if (isadd && !be_is_NoReg(babi, index) && (am_flav & ia32_am_I)) {
+		/* If the LEA contains already a frame_entity then we also      */
+		/* create a new one  otherwise we would loose it.               */
+		if (isadd && ((!be_is_NoReg(babi, index) && (am_flav & ia32_am_I)) || get_ia32_frame_ent(left))) {
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
@@ -494,6 +557,13 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 				sub_ia32_am_offs(res, offs_lea);
 			}
 		}
+
+		/* copy the frame entity (could be set in case of Add */
+		/* which was a FrameAddr) */
+		set_ia32_frame_ent(res, get_ia32_frame_ent(irn));
+
+		if (is_ia32_use_frame(irn))
+			set_ia32_use_frame(res);
 
 		/* set scale */
 		set_ia32_am_scale(res, scale);
@@ -574,9 +644,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 		right = get_irn_n(irn, 3);
 
 	    /* Do not try to create a LEA if one of the operands is a Load. */
-		if (! pred_is_specific_nodeblock(block, left,  is_ia32_Load)  &&
-			! pred_is_specific_nodeblock(block, right, is_ia32_Load))
-		{
+		/* check is irn is a candidate for address calculation */
+		if (is_candidate(block, irn, 1)) {
 			res = fold_addr(babi, irn, mod, noreg_gp);
 		}
 	}
@@ -615,10 +684,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				set_irn_n(irn, 1, get_irn_n(left, 1));
 			}
 		}
-		/* check if at least one operand is a Load */
-		else if (pred_is_specific_nodeblock(block, get_irn_n(irn, 2), is_ia32_Ld) ||
-				 pred_is_specific_nodeblock(block, get_irn_n(irn, 3), is_ia32_Ld))
-		{
+		/* check if the node is an address mode candidate */
+		else if (is_candidate(block, irn, 0)) {
 			left  = get_irn_n(irn, 2);
 			if (get_irn_arity(irn) == 4) {
 				/* it's an "unary" operation */
@@ -711,8 +778,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					load = get_Proj_pred(right);
 
 					/* Compare Load and Store address */
-					if ((addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1)))
-					{
+					if (load_store_addr_is_equal(load, store, addr_b, addr_i)) {
 						/* Right Load is from same address, so we can */
 						/* disconnect the Load and Store here        */
 
@@ -723,6 +789,11 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 						set_ia32_am_scale(irn, get_ia32_am_scale(load));
 						set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 						set_ia32_op_type(irn, ia32_AddrModeD);
+						set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
+						set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
+
+						if (is_ia32_use_frame(load))
+							set_ia32_use_frame(irn);
 
 						/* connect to Load memory and disconnect Load */
 						if (get_irn_arity(irn) == 5) {
@@ -786,6 +857,11 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				set_ia32_am_scale(irn, get_ia32_am_scale(left));
 				set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
 				set_ia32_op_type(irn, ia32_AddrModeS);
+				set_ia32_frame_ent(irn, get_ia32_frame_ent(left));
+				set_ia32_ls_mode(irn, get_ia32_ls_mode(left));
+
+				if (is_ia32_use_frame(left))
+					set_ia32_use_frame(irn);
 
 				/* connect to Load memory */
 				if (get_irn_arity(irn) == 5) {

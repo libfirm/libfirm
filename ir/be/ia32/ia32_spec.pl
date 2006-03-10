@@ -360,7 +360,14 @@ $arch = "ia32";
   "comment"   => "represents an integer constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %C\t\t\t/* Mov Const into register */',
+  "emit"      =>
+'  if (get_ia32_Immop_tarval(n) == get_tarval_null(get_irn_mode(n))) {
+4.   sub %D1, %D1\t\t\t/* optimized mov 0 to register */
+  }
+  else {
+4.   mov %D1, %C\t\t\t/* Mov Const into register */
+  }
+',
 },
 
 "Cdq" => {

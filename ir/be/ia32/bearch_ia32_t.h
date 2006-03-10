@@ -8,6 +8,13 @@
 
 /* some typedefs */
 
+typedef struct _ia32_optimize_t {
+	unsigned incdec    : 1;   /**< optimize add/sub 1/-1 to inc/dec */
+	unsigned doam      : 1;   /**< do address mode optimizations */
+	unsigned placecnst : 1;   /**< place constants in the blocks where they are used */
+	unsigned immops    : 1;   /**< create operations with immediates */
+} ia32_optimize_t;
+
 typedef struct _ia32_code_gen_t {
 	const arch_code_generator_if_t *impl;          /**< implementation */
 	ir_graph                       *irg;           /**< current irg */
@@ -19,6 +26,7 @@ typedef struct _ia32_code_gen_t {
 	pmap                           *types;         /**< A map of modes to primitive types */
 	pmap                           *tv_ent;        /**< A map of entities that store tarvals */
 	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
+	ia32_optimize_t                 opt;           /**< contains optimization information */
 } ia32_code_gen_t;
 
 typedef struct _ia32_isa_t {

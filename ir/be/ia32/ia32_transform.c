@@ -183,8 +183,13 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 	ir_node           *expr_op, *imm_op;
 
 
-	/* check if it's an operation with immediate */
-	if (is_op_commutative(get_irn_op(env->irn))) {
+	/* Check if immediate optimization is on and */
+	/* if it's an operation with immediate.      */
+	if (! env->cg->opt.immops) {
+		expr_op = op1;
+		imm_op  = NULL;
+	}
+	else if (is_op_commutative(get_irn_op(env->irn))) {
 		imm_op  = get_immediate_op(op1, op2);
 		expr_op = get_expr_op(op1, op2);
 	}
@@ -263,7 +268,9 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 
 	assert(! mode_is_float(mode) && "Shift/Rotate with float not supported");
 
-	imm_op  = get_immediate_op(NULL, op2);
+	/* Check if immediate optimization is on and */
+	/* if it's an operation with immediate.      */
+	imm_op  = env->cg->opt.immops ? get_immediate_op(NULL, op2) : NULL;
 	expr_op = get_expr_op(op1, op2);
 
 	assert((expr_op || imm_op) && "invalid operands");
@@ -357,8 +364,8 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	int                     normal_add = 1;
 	tarval_classification_t class_tv, class_negtv;
 
-	/* const_op: tarval or SymConst? */
-	if (tv) {
+	/* try to optimize to inc/dec  */
+	if (env->cg->opt.incdec && tv) {
 		/* optimize tarvals */
 		class_tv    = classify_tarval(tv);
 		class_negtv = classify_tarval(tarval_neg(tv));
@@ -403,7 +410,9 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *expr_op, *imm_op;
 
-	imm_op  = get_immediate_op(op1, op2);
+	/* Check if immediate optimization is on and */
+	/* if it's an operation with immediate.      */
+	imm_op  = env->cg->opt.immops ? get_immediate_op(op1, op2) : NULL;
 	expr_op = get_expr_op(op1, op2);
 
 	assert((expr_op || imm_op) && "invalid operands");
@@ -643,8 +652,8 @@ static ir_node *gen_imm_Sub(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	int                     normal_sub = 1;
 	tarval_classification_t class_tv, class_negtv;
 
-	/* const_op: tarval or SymConst? */
-	if (tv) {
+	/* try to optimize to inc/dec  */
+	if (env->cg->opt.incdec && tv) {
 		/* optimize tarvals */
 		class_tv    = classify_tarval(tv);
 		class_negtv = classify_tarval(tarval_neg(tv));
@@ -687,7 +696,9 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *expr_op, *imm_op;
 
-	imm_op  = get_immediate_op(NULL, op2);
+	/* Check if immediate optimization is on and */
+	/* if it's an operation with immediate.      */
+	imm_op  = env->cg->opt.immops ? get_immediate_op(NULL, op2) : NULL;
 	expr_op = get_expr_op(op1, op2);
 
 	assert((expr_op || imm_op) && "invalid operands");
@@ -1201,7 +1212,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		cmp_b = get_Cmp_right(pred);
 
 		/* check if we can use a CondJmp with immediate */
-		cnst = get_immediate_op(cmp_a, cmp_b);
+		cnst = env->cg->opt.immops ? get_immediate_op(cmp_a, cmp_b) : NULL;
 		expr = get_expr_op(cmp_a, cmp_b);
 
 		if (cnst && expr) {
@@ -1247,7 +1258,7 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 
 	/* If we have to copy more than 16 bytes, we use REP MOVSx and */
 	/* then we need the size explicitly in ECX.                    */
-	if (size >= 16) {
+	if (size >= 16 * 4) {
 		rem = size & 0x3; /* size % 4 */
 		size >>= 2;
 
@@ -1275,7 +1286,7 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
  * @return The transformed node.
  */
 static ir_node *gen_Mux(ia32_transform_env_t *env) {
-	ir_node  *node  = env->irn;
+	ir_node *node  = env->irn;
 
 	return new_rd_ia32_CMov(env->dbg, env->irg, env->block,
 		get_Mux_sel(node), get_Mux_false(node), get_Mux_true(node), env->mode);
@@ -1293,19 +1304,28 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
  *
  ********************************************/
 
-static ir_node *gen_FrameAddr(ia32_transform_env_t *tenv) {
+static ir_node *gen_FrameAddr(ia32_transform_env_t *env) {
+	ir_node *new_op = NULL;
+	ir_node *node   = env->irn;
+	ir_node *op     = get_irn_n(node, 0);
+	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node *nomem  = new_rd_NoMem(env->irg);
+
+	new_op = new_rd_ia32_Add(env->dbg, env->irg, env->block, noreg, noreg, op, noreg, nomem, mode_T);
+	set_ia32_frame_ent(new_op, be_get_frame_entity(node));
+	set_ia32_am_support(new_op, ia32_am_Full);
+	set_ia32_use_frame(new_op);
+
+	return new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
+}
+
+static ir_node *gen_FrameLoad(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
 
 	return new_op;
 }
 
-static ir_node *gen_FrameLoad(ia32_transform_env_t *tenv) {
-	ir_node *new_op = NULL;
-
-	return new_op;
-}
-
-static ir_node *gen_FrameStore(ia32_transform_env_t *tenv) {
+static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
 
 	return new_op;
