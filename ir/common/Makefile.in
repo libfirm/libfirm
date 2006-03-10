@@ -22,7 +22,7 @@ SOURCES = $(INSTALL_HEADERS)
 SOURCES += Makefile.in 						\
 	error.c firm_common.c firm.c firmwalk.c 		\
 	error.h firm_common_t.h	statistics.c debug.c old_fctnames.h \
-	irtools.c irtools.h
+	irtools.c irtools.h survive_dce.c survive_dce.h
 
 include $(topdir)/MakeRules
 
