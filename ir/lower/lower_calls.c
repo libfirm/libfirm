@@ -248,6 +248,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
            * might be ignored, we must put it in the list.
            */
           (void)get_Call_entry(n, env);
+          break;
         }
       }
     }
