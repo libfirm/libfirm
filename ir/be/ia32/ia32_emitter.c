@@ -116,6 +116,10 @@ char *ia32_emit_am(const ir_node *n) {
 	char             *s;
 	int               size;
 	static struct obstack *obst  = NULL;
+	ir_mode *mode = get_ia32_ls_mode(n);
+
+	if (! is_ia32_Lea(n))
+		assert(mode && "AM node must have ls_mode attribute set.");
 
 	if (! obst) {
 		obst = xcalloc(1, sizeof(*obst));
@@ -126,6 +130,22 @@ char *ia32_emit_am(const ir_node *n) {
 
 	/* obstack_free with NULL results in an uninitialized obstack */
 	obstack_init(obst);
+
+	if (mode) {
+		switch (get_mode_size_bits(mode)) {
+			case 8:
+				obstack_printf(obst, "BYTE PTR ");
+				break;
+			case 16:
+				obstack_printf(obst, "WORD PTR ");
+				break;
+			case 32:
+				obstack_printf(obst, "DWORD PTR ");
+				break;
+			default:
+				assert(0 && "unsupported mode size");
+		}
+	}
 
 	obstack_printf(obst, "[");
 
@@ -203,8 +223,6 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
 	ir_node                *proj;
 	const arch_register_t  *reg = NULL;
-
-	assert(get_irn_n_edges(irn) > pos && "Invalid OUT position");
 
 	/* 1st case: irn is not of mode_T, so it has only                 */
 	/*           one OUT register -> good                             */
@@ -752,8 +770,18 @@ void emit_ia32_CopyB_i(const ir_node *irn, emit_env_t *emit_env) {
 
 void emit_be_Call(const ir_node *irn, emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
+	entity *ent = be_Call_get_entity(irn);
 
-	lc_efprintf(ia32_get_arg_env(), F, "\tcall %3S\t\t\t/* %+F(%+F) (be_Call) */\n", irn, irn, get_irn_n(irn, 2));
+	fprintf(F, "\tcall ");
+
+	if (ent) {
+		fprintf(F, "%s", get_entity_name(ent));
+	}
+	else {
+		lc_efprintf(ia32_get_arg_env(), F, "%1D", get_irn_n(irn, be_pos_Call_ptr));
+	}
+
+	ir_fprintf(F, "\t\t\t/* %+F (be_Call) */\n", irn);
 }
 
 void emit_be_IncSP(const ir_node *irn, emit_env_t *emit_env) {
