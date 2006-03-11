@@ -464,6 +464,50 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 
 /**
+ * Checks if node has a should_be_different constraint in output
+ * and adds a Keep then to assure the constraint.
+ */
+static void assure_different_constraint(ir_node *irn, lower_env_t *env) {
+	const arch_env_t          *arch_env = env->chord_env->birg->main_env->arch_env;
+	const arch_register_req_t *req;
+	arch_register_req_t        req_temp;
+	ir_node                   *in[2], *keep;
+
+	req = arch_get_register_req(arch_env, &req_temp, irn, -1);
+
+	if (req && arch_register_req_is(req, should_be_different)) {
+		/* We found a should_be_different constraint. */
+		assert(req->other_different && "missing irn for constraint");
+
+		in[0] = irn;
+		in[1] = req->other_different;
+
+		keep = be_new_Keep(req->cls, env->chord_env->birg->irg, get_nodes_block(irn), 2, in);
+		DBG((env->dbg_module, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
+	}
+}
+
+
+
+/**
+ * Calls the corresponding lowering function for the node.
+ *
+ * @param irn      The node to be checked for lowering
+ * @param walk_env The walker environment
+ */
+static void lower_nodes_before_ra_walker(ir_node *irn, void *walk_env) {
+	if (is_Block(irn))
+		return;
+
+	if (mode_is_datab(get_irn_mode(irn)))
+		assure_different_constraint(irn, walk_env);
+
+	return;
+}
+
+
+
+/**
  * Calls the corresponding lowering function for the node.
  *
  * @param irn      The node to be checked for lowering
@@ -485,8 +529,25 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 
 
 /**
+ * Walks over all blocks in an irg and performs action need to be
+ * done before register allocation (e.g. add Keeps for should be different constraints).
+ *
+ * @param chord_env The chordal environment containing the irg
+ */
+void lower_nodes_before_ra(be_chordal_env_t *chord_env) {
+	lower_env_t env;
+
+	env.chord_env  = chord_env;
+	env.dbg_module = firm_dbg_register("firm.be.lower");
+
+	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_before_ra_walker, &env);
+}
+
+
+
+/**
  * Walks over all blocks in an irg and performs lowering need to be
- * done after register allocation (e.g. perm and spill/reload lowering).
+ * done after register allocation (e.g. perm lowering).
  *
  * @param chord_env The chordal environment containing the irg
  * @param do_copy   1 == resolve cycles with a free reg if available
