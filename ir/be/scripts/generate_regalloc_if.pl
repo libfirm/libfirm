@@ -306,7 +306,6 @@ EOF
 print OUT "arch_register_class_t $arch\_reg_classes[] = {\n  ".join(",\n  ", @obst_regclasses)."\n};\n\n";
 
 print OUT "void ".$arch."_register_init(void *isa_ptr) {\n";
-print OUT "  $arch\_isa_t *isa = ($arch\_isa_t *)isa_ptr;\n\n";
 print OUT @obst_reginit;
 print OUT "}\n\n";
 
@@ -490,7 +489,7 @@ sub build_subset_class_func {
 	# set/unset registers
 CHECK_REQS: foreach (@regs) {
 		if (/(!)?$outin\_r(\d+)/) {
-			if (($1 && defined($different_pos)) || defined($same_pos)) {
+			if (($1 && defined($different_pos)) || (!$1 && defined($same_pos))) {
 				print STDERR "Multiple in/out references of same type in one requirement not allowed.\n";
 				return (undef, undef, undef, undef);
 			}
