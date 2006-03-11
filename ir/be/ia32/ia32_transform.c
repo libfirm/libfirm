@@ -182,7 +182,6 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 	ir_node           *nomem    = new_NoMem();
 	ir_node           *expr_op, *imm_op;
 
-
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
 	if (! env->cg->opt.immops) {
@@ -208,11 +207,13 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 	if (mode_is_float(mode)) {
 		/* floating point operations */
 		if (imm_op) {
+			DB((mod, LEVEL_1, "FP with immediate ..."));
 			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, expr_op, noreg_fp, nomem, mode_T);
 			set_ia32_Immop_attr(new_op, imm_op);
 			set_ia32_am_support(new_op, ia32_am_None);
 		}
 		else {
+			DB((mod, LEVEL_1, "FP binop ..."));
 			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, op1, op2, nomem, mode_T);
 			set_ia32_am_support(new_op, ia32_am_Source);
 		}
@@ -221,6 +222,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 		/* integer operations */
 		if (imm_op) {
 			/* This is expr + const */
+			DB((mod, LEVEL_1, "INT with immediate ..."));
 			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, expr_op, noreg_gp, nomem, mode_T);
 			set_ia32_Immop_attr(new_op, imm_op);
 
@@ -228,6 +230,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 			set_ia32_am_support(new_op, ia32_am_Dest);
 		}
 		else {
+			DB((mod, LEVEL_1, "INT binop ..."));
 			/* This is a normal operation */
 			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, op1, op2, nomem, mode_T);
 
@@ -295,12 +298,14 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 	/* integer operations */
 	if (imm_op) {
 		/* This is shift/rot with const */
+		DB((mod, LEVEL_1, "Shift/Rot with immediate ..."));
 
 		new_op = func(dbg, irg, block, noreg, noreg, expr_op, noreg, nomem, mode_T);
 		set_ia32_Immop_attr(new_op, imm_op);
 	}
 	else {
 		/* This is a normal shift/rot */
+		DB((mod, LEVEL_1, "Shift/Rot binop ..."));
 		new_op = func(dbg, irg, block, noreg, noreg, op1, op2, nomem, mode_T);
 	}
 
@@ -323,6 +328,7 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 	ir_node           *new_op = NULL;
 	ir_mode           *mode   = env->mode;
 	dbg_info          *dbg    = env->dbg;
+	firm_dbg_module_t *mod    = env->mod;
 	ir_graph          *irg    = env->irg;
 	ir_node           *block  = env->block;
 	ir_node           *noreg  = ia32_new_NoReg_gp(env->cg);
@@ -331,10 +337,12 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 	new_op = func(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 
 	if (mode_is_float(mode)) {
+		DB((mod, LEVEL_1, "FP unop ..."));
 		/* floating point operations don't support implicit store */
 		set_ia32_am_support(new_op, ia32_am_None);
 	}
 	else {
+		DB((mod, LEVEL_1, "INT unop ..."));
 		set_ia32_am_support(new_op, ia32_am_Dest);
 	}
 
@@ -356,7 +364,6 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	tarval                 *tv         = get_ia32_Immop_tarval(const_op);
 	firm_dbg_module_t      *mod        = env->mod;
 	dbg_info               *dbg        = env->dbg;
-	ir_mode                *mode       = env->mode;
 	ir_graph               *irg        = env->irg;
 	ir_node                *block      = env->block;
 	ir_node                *noreg      = ia32_new_NoReg_gp(env->cg);
@@ -644,7 +651,6 @@ static ir_node *gen_imm_Sub(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	tarval                 *tv         = get_ia32_Immop_tarval(const_op);
 	firm_dbg_module_t      *mod        = env->mod;
 	dbg_info               *dbg        = env->dbg;
-	ir_mode                *mode       = env->mode;
 	ir_graph               *irg        = env->irg;
 	ir_node                *block      = env->block;
 	ir_node                *noreg      = ia32_new_NoReg_gp(env->cg);
@@ -1175,17 +1181,6 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 
 
 /**
- * Transforms a Call and its arguments corresponding to the calling convention.
- *
- * @param env   The transformation environment
- * @return The created ia32 Call node
- */
-static ir_node *gen_Call(ia32_transform_env_t *env) {
-}
-
-
-
-/**
  * Transforms a Cond -> Proj[b] -> Cmp into a CondJmp or CondJmp_i
  *
  * @param env   The transformation environment
@@ -1252,7 +1247,6 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 	ir_node  *src   = get_CopyB_src(node);
 	ir_node  *dst   = get_CopyB_dst(node);
 	ir_node  *mem   = get_CopyB_mem(node);
-	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
 	int       size  = get_type_size_bytes(get_CopyB_type(node));
 	int       rem;
 
@@ -1396,6 +1390,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 		BINOP(Shl);
 		BINOP(Shr);
 		BINOP(Shrs);
+		BINOP(Rot);
 
 		BINOP(Quot);
 

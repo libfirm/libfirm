@@ -56,22 +56,6 @@ extern int obstack_printf(struct obstack *obst, char *fmt, ...);
  ***********************************************************************************/
 
 /**
- * Prints a tarval to file F.
- * @param F         output file
- * @param tv        tarval
- * @param brackets  1 == print square brackets around tarval
- */
-static void fprintf_tv(FILE *F, tarval *tv, int brackets) {
-	char buf[1024];
-	tarval_snprintf(buf, sizeof(buf), tv);
-
-	if (brackets)
-		fprintf(F, "[%s]", buf);
-	else
-		fprintf(F, "%s", buf);
-}
-
-/**
  * Returns the name of a SymConst.
  * @param symc  the SymConst
  * @return name of the SymConst
@@ -327,7 +311,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 			fprintf(F, "AM scale = %d\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
-			fprintf(F, "pn_code = %d\n", get_ia32_pncode(n));
+			fprintf(F, "pn_code = %ld\n", get_ia32_pncode(n));
 
 			/* dump n_res */
 			fprintf(F, "n_res = %d\n", get_ia32_n_res(n));

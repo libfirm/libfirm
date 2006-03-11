@@ -382,7 +382,6 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
  */
 static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
 	ir_graph *irg       = get_irn_irg(irn);
-	ir_mode  *mode      = get_irn_mode(irn);
 	dbg_info *dbg       = get_irn_dbg_info(irn);
 	ir_node  *block     = get_nodes_block(irn);
 	ir_node  *res       = irn;
@@ -605,7 +604,6 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
  */
 void ia32_optimize_am(ir_node *irn, void *env) {
 	ia32_code_gen_t   *cg   = env;
-	ir_graph          *irg  = cg->irg;
 	firm_dbg_module_t *mod  = cg->mod;
 	ir_node           *res  = irn;
 	be_abi_irg_t      *babi = cg->birg->abi;
@@ -646,7 +644,13 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 	    /* Do not try to create a LEA if one of the operands is a Load. */
 		/* check is irn is a candidate for address calculation */
 		if (is_candidate(block, irn, 1)) {
+			DBG((mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
 			res = fold_addr(babi, irn, mod, noreg_gp);
+
+			if (res == irn)
+				DB((mod, LEVEL_1, "transformed into %+F\n", res));
+			else
+				DB((mod, LEVEL_1, "not transformed\n"));
 		}
 	}
 
@@ -672,6 +676,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			left = get_irn_n(irn, 0);
 
 			if (is_ia32_Lea(left)) {
+				DBG((mod, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
+
 				/* get the AM attributes from the LEA */
 				add_ia32_am_offs(irn, get_ia32_am_offs(left));
 				set_ia32_am_scale(irn, get_ia32_am_scale(left));
@@ -686,6 +692,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 		}
 		/* check if the node is an address mode candidate */
 		else if (is_candidate(block, irn, 0)) {
+			DBG((mod, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
+
 			left  = get_irn_n(irn, 2);
 			if (get_irn_arity(irn) == 4) {
 				/* it's an "unary" operation */
@@ -811,6 +819,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 						mem_proj = get_mem_proj(store);
 						set_Proj_pred(mem_proj, irn);
 						set_Proj_proj(mem_proj, 1);
+
+						DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
 					}
 				} /* if (store) */
 				else if (get_ia32_am_support(irn) & ia32_am_Source) {
@@ -882,6 +892,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					set_Proj_pred(mem_proj, irn);
 					set_Proj_proj(mem_proj, 1);
 				}
+
+				DB((mod, LEVEL_1, "merged with %+F into source AM\n", left));
 			}
 		}
 	}

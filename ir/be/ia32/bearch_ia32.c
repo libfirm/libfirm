@@ -77,7 +77,6 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 	long                       node_pos = pos == -1 ? 0 : pos;
 	ir_mode                   *mode     = get_irn_mode(irn);
 	firm_dbg_module_t         *mod      = firm_dbg_register(DEBUG_MODULE);
-	const ia32_irn_ops_t      *ops      = self;
 
 	if (mode == mode_T || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
@@ -443,7 +442,6 @@ static void transform_to_Store(ia32_transform_env_t *env) {
  */
 static void ia32_after_ra_walker(ir_node *node, void *env) {
 	ia32_code_gen_t *cg = env;
-	ir_node *new_node   = NULL;
 	ia32_transform_env_t tenv;
 
 	if (is_Block(node))
@@ -669,7 +667,14 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	int       i, ignore;
 	ir_mode **modes;
 	const arch_register_t *reg;
-	be_abi_call_flags_t call_flags = { 0, 0, 1, 0, 1 };
+	be_abi_call_flags_t call_flags;
+
+	/* set abi flags for calls */
+	call_flags.bits.left_to_right         = 0;
+	call_flags.bits.store_args_sequential = 0;
+	call_flags.bits.try_omit_fp           = 1;
+	call_flags.bits.fp_free               = 0;
+	call_flags.bits.call_has_imm          = 1;
 
 	/* get the between type and the frame pointer save entity */
 	between_type = get_between_type();
