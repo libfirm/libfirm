@@ -335,11 +335,6 @@ $arch = "ia32";
 
 # other operations
 
-"Conv" => {
-  "reg_req"  => { "in" => [ "gp" ], "out" => [ "in_r1" ] },
-  "comment"  => "construct Conv: Conv(a) = (conv)a"
-},
-
 "CondJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: CMP A, B && JMPxx LABEL",
@@ -493,11 +488,6 @@ $arch = "ia32";
 
 # other operations
 
-"fConv" => {
-  "reg_req"  => { "in" => [ "fp" ], "out" => [ "gp" ] },
-  "comment"  => "construct Conv: Conv(a) = (conv)a"
-},
-
 "fCondJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
@@ -550,6 +540,28 @@ $arch = "ia32";
   "comment"  => "implements a memcopy: CopyB(dst, src, mem) == memcpy(dst, src, attr(size))",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"  => { "in" => [ "edi", "esi", "none" ], "out" => [ "none" ] },
+},
+
+# Conversions
+
+"Conv_I2I" => {
+  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3", "none" ] },
+  "comment"  => "construct Conv Int -> Int"
+},
+
+"Conv_I2FP" => {
+  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "fp", "none" ] },
+  "comment"  => "construct Conv Int -> Floating Point"
+},
+
+"Conv_FP2I" => {
+  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ], "out" => [ "gp", "none" ] },
+  "comment"  => "construct Conv Floating Point -> Int"
+},
+
+"Conv_FP2FP" => {
+  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ], "out" => [ "in_r3", "none" ] },
+  "comment"  => "construct Conv Floating Point -> Floating Point"
 },
 
 ); # end of %nodes

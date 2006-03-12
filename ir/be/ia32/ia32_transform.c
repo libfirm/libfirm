@@ -8,8 +8,8 @@
 #include "iropt_t.h"
 #include "irop_t.h"
 #include "irprog_t.h"
+#include "iredges_t.h"
 #include "irgmod.h"
-#include "iredges.h"
 #include "irvrfy.h"
 #include "ircons.h"
 #include "dbginfo.h"
@@ -993,19 +993,6 @@ static ir_node *gen_Rot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 
 
 /**
- * Transforms a Conv node.
- *
- * @param env   The transformation environment
- * @param op    The operator
- * @return The created ia32 Conv node
- */
-static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
-	return new_rd_ia32_Conv(env->dbg, env->irg, env->block, op, env->mode);
-}
-
-
-
-/**
  * Transforms a Minus node.
  *
  * @param env   The transformation environment
@@ -1288,6 +1275,71 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 
 
 
+/**
+ * Transforms a Conv node.
+ *
+ * @param env   The transformation environment
+ * @param op    The operator
+ * @return The created ia32 Conv node
+ */
+static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
+	dbg_info          *dbg      = env->dbg;
+	ir_graph          *irg      = env->irg;
+	ir_mode           *src_mode = get_irn_mode(op);
+	ir_mode           *tgt_mode = env->mode;
+	ir_node           *block    = env->block;
+	ir_node           *new_op   = NULL;
+	ir_node           *noreg    = ia32_new_NoReg_gp(env->cg);
+	ir_node           *nomem    = new_rd_NoMem(irg);
+	firm_dbg_module_t *mod      = env->mod;
+
+	if (src_mode == tgt_mode) {
+		/* this can happen when changing mode_P to mode_Is */
+		DB((mod, LEVEL_1, "killed Conv(mode, mode) ..."));
+		edges_reroute(env->irn, op, irg);
+	}
+	else if (mode_is_float(src_mode)) {
+		/* we convert from float ... */
+		if (mode_is_float(tgt_mode)) {
+			/* ... to float */
+			DB((mod, LEVEL_1, "create Conv(float, float) ..."));
+			new_op = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+		}
+		else {
+			/* ... to int */
+			DB((mod, LEVEL_1, "create Conv(float, int) ..."));
+			new_op = new_rd_ia32_Conv_FP2I(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+		}
+	}
+	else {
+		/* we convert from int ... */
+		if (mode_is_float(tgt_mode)) {
+			/* ... to float */
+			DB((mod, LEVEL_1, "create Conv(int, float) ..."));
+			new_op = new_rd_ia32_Conv_I2FP(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+		}
+		else {
+			/* ... to int */
+			DB((mod, LEVEL_1, "create Conv(int, int) ..."));
+
+			/* kill mode_P -> mode_Is resp. mode_Is -> mode_P Convs */
+			if (((src_mode == mode_P) && (tgt_mode == mode_Is)) ||
+				((src_mode == mode_Is) && (tgt_mode == mode_P)))
+			{
+				DB((mod, LEVEL_1, "killed Conv(Is, P)/(P, Is) ..."));
+				edges_reroute(env->irn, op, irg);
+			}
+			else {
+				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+			}
+		}
+	}
+
+	return new_op;
+}
+
+
+
 /********************************************
  *  _                          _
  * | |                        | |
@@ -1315,12 +1367,52 @@ static ir_node *gen_FrameAddr(ia32_transform_env_t *env) {
 
 static ir_node *gen_FrameLoad(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
+	ir_node *node   = env->irn;
+	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node *mem    = get_irn_n(node, 0);
+	ir_node *ptr    = get_irn_n(node, 1);
+	entity  *ent    = be_get_frame_entity(node);
+	ir_mode *mode   = get_type_mode(get_entity_type(ent));
+
+	if (mode_is_float(mode)) {
+		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+	}
+	else {
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+	}
+
+	set_ia32_frame_ent(new_op, ent);
+
+	set_ia32_am_support(new_op, ia32_am_Source);
+	set_ia32_op_type(new_op, ia32_AddrModeS);
+	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_ls_mode(new_op, mode);
 
 	return new_op;
 }
 
 static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
+	ir_node *node   = env->irn;
+	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node *mem    = get_irn_n(node, 0);
+	ir_node *ptr    = get_irn_n(node, 1);
+	ir_node *val    = get_irn_n(node, 2);
+	entity  *ent    = be_get_frame_entity(node);
+	ir_mode *mode   = get_irn_mode(val);
+
+	if (mode_is_float(mode)) {
+		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);
+	}
+	else {
+		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);
+	}
+	set_ia32_frame_ent(new_op, ent);
+
+	set_ia32_am_support(new_op, ia32_am_Dest);
+	set_ia32_op_type(new_op, ia32_AddrModeD);
+	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_ls_mode(new_op, mode);
 
 	return new_op;
 }
