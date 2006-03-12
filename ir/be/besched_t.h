@@ -55,10 +55,14 @@ static INLINE int _sched_get_time_step(const ir_node *irn)
  */
 static INLINE int to_appear_in_schedule(const ir_node *irn)
 {
-  if(get_irn_opcode(irn) == iro_Start)
-  	return 1;
+	switch(get_irn_opcode(irn)) {
+		case iro_Start:
+		case iro_Jmp:
+			return 1;
+		default:
+			return is_data_node(irn);
+	}
 
-  return is_data_node(irn);
 }
 
 /**

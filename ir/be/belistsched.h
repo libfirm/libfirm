@@ -14,7 +14,7 @@
 #include "pmap.h"
 #include "list.h"
 
-struct _arch_isa_t;
+#include "bearch_t.h"
 
 typedef struct _list_sched_selector_t list_sched_selector_t;
 
@@ -27,12 +27,11 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Called before a graph is being scheduled.
-	 * @param isa The isa.
-	 * @param irg The graph.
-	 * @return The environment pointer that is passed to all other
-	 * functions in this struct.
+	 * @param arch_env The architecture environment.
+	 * @param irg      The graph.
+	 * @return         The environment pointer that is passed to all other functions in this struct.
 	 */
-	void *(*init_graph)(const list_sched_selector_t *vtab, const struct _arch_isa_t *isa, ir_graph *irg);
+	void *(*init_graph)(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg);
 
 	/**
 	 * Called before scheduling starts on a block.
@@ -97,9 +96,9 @@ extern const list_sched_selector_t *reg_pressure_selector;
  * Each block in the graph gets a list head to its link field being the
  * head of the schedule. You can walk this list using the functions in
  * list.h.
- * @param isa The isa which implements the scheduler.
- * @param irg The graph to schedule.
+ * @param arch_env The architecture environment.
+ * @param irg      The graph to schedule.
  */
-void list_sched(const struct _arch_isa_t *isa, ir_graph *irg);
+void list_sched(const arch_env_t *arch_env, ir_graph *irg);
 
-#endif
+#endif /* _FIRM_LIST_SCHED */
