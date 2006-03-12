@@ -86,8 +86,6 @@ static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
 	ir_node                *proj;
 	const arch_register_t  *reg = NULL;
 
-	assert(get_irn_n_edges(irn) > pos && "Invalid OUT position");
-
 	/* 1st case: irn is not of mode_T, so it has only                 */
 	/*           one OUT register -> good                             */
 	/* 2nd case: irn is of mode_T -> collect all Projs and ask the    */
@@ -168,8 +166,7 @@ static int TEMPLATE_get_reg_name(lc_appendable_t *app,
 		buf = get_TEMPLATE_reg_name(X, nr, 0);
 	}
 
-	lc_appendable_chadd(app, '%');
-	return lc_arg_append(app, occ, buf, strlen(buf));
+	return buf ? lc_arg_append(app, occ, buf, strlen(buf)) : 0;
 }
 
 /**
@@ -270,66 +267,49 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
  ***********************************************************************************/
 
 /**
+ * Enters the emitter functions for handled nodes into the generic
+ * pointer of an opcode.
+ */
+static void TEMPLATE_register_emitters(void) {
+
+/* some convienience macros to register additional emitter functions
+   (other than the generated ones) */
+#define TEMPLATE_EMIT(a) op_TEMPLATE_##a->ops.generic = (op_func)emit_TEMPLATE_##a
+#define EMIT(a)          op_##a->ops.generic = (op_func)emit_##a
+#define BE_EMIT(a)       op_be_##a->ops.generic = (op_func)emit_be_##a
+
+	/* first clear the generic function pointer for all ops */
+	clear_irp_opcodes_generic_func();
+
+	/* register all emitter functions defined in spec */
+	TEMPLATE_register_spec_emitters();
+
+	/* register addtional emitter functions if needed */
+
+#undef TEMPLATE_EMIT
+#undef BE_EMIT
+#undef EMIT
+}
+
+
+/**
  * Emits code for a node.
  */
 void TEMPLATE_emit_node(ir_node *irn, void *env) {
-	emit_env_t *emit_env   = env;
-	firm_dbg_module_t *mod = emit_env->mod;
-	FILE              *F   = emit_env->out;
+	emit_env_t        *emit_env = env;
+	firm_dbg_module_t *mod      = emit_env->mod;
+	FILE              *F        = emit_env->out;
+	ir_op             *op       = get_irn_op(irn);
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 
-#define BE_EMIT(a) if (is_TEMPLATE_##a(irn)) { emit_TEMPLATE_##a(irn, emit_env); return; }
-
-	BE_EMIT(Const);
-
-	BE_EMIT(Add);
-	BE_EMIT(Add_i);
-	BE_EMIT(Sub);
-	BE_EMIT(Sub_i);
-	BE_EMIT(Minus);
-	BE_EMIT(Inc);
-	BE_EMIT(Dec);
-
-	BE_EMIT(And);
-	BE_EMIT(And_i);
-	BE_EMIT(Or);
-	BE_EMIT(Or_i);
-	BE_EMIT(Eor);
-	BE_EMIT(Eor_i);
-	BE_EMIT(Not);
-
-	BE_EMIT(Shl);
-	BE_EMIT(Shl_i);
-	BE_EMIT(Shr);
-	BE_EMIT(Shr_i);
-	BE_EMIT(RotL);
-	BE_EMIT(RotL_i);
-	BE_EMIT(RotR);
-
-	BE_EMIT(Mul);
-	BE_EMIT(Mul_i);
-
-	BE_EMIT(Store);
-	BE_EMIT(Load);
-
-	/* generated floating point emitter */
-	BE_EMIT(fConst);
-
-	BE_EMIT(fAdd);
-	BE_EMIT(fSub);
-	BE_EMIT(fMinus);
-
-	BE_EMIT(fMul);
-	BE_EMIT(fDiv);
-
-	BE_EMIT(fMin);
-	BE_EMIT(fMax);
-
-	BE_EMIT(fLoad);
-	BE_EMIT(fStore);
-
-	ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
+	if (op->ops.generic) {
+		void (*emit)(const ir_node *, void *) = (void (*)(const ir_node *, void *))op->ops.generic;
+		(*emit)(irn, env);
+	}
+	else {
+		ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
+	}
 }
 
 /**
@@ -352,7 +332,7 @@ void TEMPLATE_gen_block(ir_node *block, void *env) {
 /**
  * Emits code for function start.
  */
-void TEMPLATE_emit_start(FILE *F, ir_graph *irg) {
+void TEMPLATE_emit_func_prolog(FILE *F, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function header */
@@ -361,7 +341,7 @@ void TEMPLATE_emit_start(FILE *F, ir_graph *irg) {
 /**
  * Emits code for function end
  */
-void TEMPLATE_emit_end(FILE *F, ir_graph *irg) {
+void TEMPLATE_emit_func_epilog(FILE *F, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function end */
@@ -395,8 +375,11 @@ void TEMPLATE_gen_routine(FILE *F, ir_graph *irg, const TEMPLATE_code_gen_t *cg)
 	/* set the global arch_env (needed by print hooks) */
 	arch_env = cg->arch_env;
 
-	TEMPLATE_emit_start(F, irg);
+	/* register all emitter functions */
+	TEMPLATE_register_emitters();
+
+	TEMPLATE_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, &emit_env);
 	irg_walk_blkwise_graph(irg, NULL, TEMPLATE_gen_block, &emit_env);
-	TEMPLATE_emit_end(F, irg);
+	TEMPLATE_emit_func_epilog(F, irg);
 }

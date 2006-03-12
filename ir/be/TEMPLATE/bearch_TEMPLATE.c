@@ -278,49 +278,14 @@ static void TEMPLATE_before_sched(void *self) {
 }
 
 static void TEMPLATE_before_ra(void *self) {
+	/* Some stuff you need to do after scheduling but before register allocation */
+}
+
+static void TEMPLATE_after_ra(void *self) {
 	/* Some stuff you need to do immediatly after register allocation */
 }
 
 
-/**
- * Creates a Store for a Spill
- */
-static ir_node *TEMPLATE_lower_spill(void *self, ir_node *spill) {
-	TEMPLATE_code_gen_t *cg = self;
-	dbg_info        *dbg   = get_irn_dbg_info(spill);
-	ir_node         *block = get_nodes_block(spill);
-	ir_node         *ptr   = get_irg_frame(cg->irg);
-	ir_node         *val   = be_get_Spill_context(spill);
-	ir_node         *mem   = new_rd_NoMem(cg->irg);
-	ir_mode         *mode  = get_irn_mode(spill);
-	ir_node         *res;
-	entity          *ent   = be_get_spill_entity(spill);
-	unsigned         offs  = get_entity_offset_bytes(ent);
-
-	DB((cg->mod, LEVEL_1, "lower_spill: got offset %d for %+F\n", offs, ent));
-
-	/* TODO: create Store */
-
-	return res;
-}
-
-/**
- * Create a Load for a Spill
- */
-static ir_node *TEMPLATE_lower_reload(void *self, ir_node *reload) {
-	TEMPLATE_code_gen_t *cg = self;
-	dbg_info        *dbg   = get_irn_dbg_info(reload);
-	ir_node         *block = get_nodes_block(reload);
-	ir_node         *ptr   = get_irg_frame(cg->irg);
-	ir_mode         *mode  = get_irn_mode(reload);
-	ir_node         *pred  = get_irn_n(reload, 0);
-	tarval          *tv;
-	ir_node         *res;
-
-	/* TODO: create Load */
-
-	return res;
-}
 
 /**
  * Emits the code, closes the output file and frees
@@ -354,8 +319,7 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_prepare_graph,
 	TEMPLATE_before_sched,   /* before scheduling hook */
 	TEMPLATE_before_ra,      /* before register allocation hook */
-	TEMPLATE_lower_spill,
-	TEMPLATE_lower_reload,
+	TEMPLATE_after_ra,       /* after register allocation hook */
 	TEMPLATE_emit_and_done
 };
 
@@ -504,12 +468,20 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
 	const arch_register_t *reg;
+	be_abi_call_flags_t call_flags;
+
+	/* set abi flags for calls */
+	call_flags.bits.left_to_right         = 0;
+	call_flags.bits.store_args_sequential = 1;
+	call_flags.bits.try_omit_fp           = 1;
+	call_flags.bits.fp_free               = 0;
+	call_flags.bits.call_has_imm          = 1;
 
 	/* get the between type and the frame pointer save entity */
 	between_type = get_between_type();
 
 	/* set stack parameter passing style */
-	be_abi_call_set_flags(abi, BE_ABI_NONE, between_type);
+	be_abi_call_set_flags(abi, call_flags, between_type);
 
 	for (i = 0; i < n; i++) {
 		/* TODO: implement register parameter: */
