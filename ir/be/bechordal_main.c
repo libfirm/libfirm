@@ -266,9 +266,6 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	obstack_init(&chordal_env.obst);
 
-	/* add Keeps for should_be_different constrained nodes */
-	lower_nodes_before_ra(&chordal_env);
-
 	/* Perform the following for each register class. */
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
 		chordal_env.cls          = arch_isa_get_reg_class(isa, j);

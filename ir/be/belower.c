@@ -467,11 +467,12 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
  * Checks if node has a should_be_different constraint in output
  * and adds a Keep then to assure the constraint.
  */
-static void assure_different_constraint(ir_node *irn, lower_env_t *env) {
-	const arch_env_t          *arch_env = env->chord_env->birg->main_env->arch_env;
+static void assure_different_constraint(ir_node *irn, be_irg_t *birg) {
+	const arch_env_t          *arch_env = birg->main_env->arch_env;
 	const arch_register_req_t *req;
 	arch_register_req_t        req_temp;
 	ir_node                   *in[2], *keep;
+	firm_dbg_module_t         *mod = firm_dbg_register("firm.be.lower");
 
 	req = arch_get_register_req(arch_env, &req_temp, irn, -1);
 
@@ -482,20 +483,20 @@ static void assure_different_constraint(ir_node *irn, lower_env_t *env) {
 		in[0] = irn;
 		in[1] = req->other_different;
 
-		keep = be_new_Keep(req->cls, env->chord_env->birg->irg, get_nodes_block(irn), 2, in);
-		DBG((env->dbg_module, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
+		keep = be_new_Keep(req->cls, birg->irg, get_nodes_block(irn), 2, in);
+		DBG((mod, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
 	}
 }
 
 
 
 /**
- * Calls the corresponding lowering function for the node.
+ * Calls the functions to assure register constraints.
  *
  * @param irn      The node to be checked for lowering
  * @param walk_env The walker environment
  */
-static void lower_nodes_before_ra_walker(ir_node *irn, void *walk_env) {
+static void assure_constraints_walker(ir_node *irn, void *walk_env) {
 	if (is_Block(irn))
 		return;
 
@@ -503,6 +504,17 @@ static void lower_nodes_before_ra_walker(ir_node *irn, void *walk_env) {
 		assure_different_constraint(irn, walk_env);
 
 	return;
+}
+
+
+
+/**
+ * Walks over all nodes to assure register constraints.
+ *
+ * @param birg  The birg structure containing the irg
+ */
+void assure_constraints(be_irg_t *birg) {
+	irg_walk_blkwise_graph(birg->irg, NULL, assure_constraints_walker, birg);
 }
 
 
@@ -524,23 +536,6 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	}
 
 	return;
-}
-
-
-
-/**
- * Walks over all blocks in an irg and performs action need to be
- * done before register allocation (e.g. add Keeps for should be different constraints).
- *
- * @param chord_env The chordal environment containing the irg
- */
-void lower_nodes_before_ra(be_chordal_env_t *chord_env) {
-	lower_env_t env;
-
-	env.chord_env  = chord_env;
-	env.dbg_module = firm_dbg_register("firm.be.lower");
-
-	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_before_ra_walker, &env);
 }
 
 

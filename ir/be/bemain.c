@@ -287,6 +287,9 @@ static void be_main_loop(FILE *file_handle)
 
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
+		/* add Keeps for should_be_different constrained nodes */
+		assure_constraints(&birg);
+
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
 		list_sched(isa, irg);
