@@ -24,18 +24,8 @@
 
 #include "belistsched.h"
 #include "beabi_t.h"
+#include "bearch_t.h"
 #include "be_t.h"
-
-typedef struct _arch_register_class_t     arch_register_class_t;
-typedef struct _arch_register_t           arch_register_t;
-typedef struct _arch_isa_if_t             arch_isa_if_t;
-typedef struct _arch_isa_t                arch_isa_t;
-typedef struct _arch_env_t                arch_env_t;
-typedef struct _arch_irn_ops_if_t         arch_irn_ops_if_t;
-typedef struct _arch_irn_ops_t            arch_irn_ops_t;
-typedef struct _arch_irn_handler_t        arch_irn_handler_t;
-typedef struct _arch_code_generator_t     arch_code_generator_t;
-typedef struct _arch_code_generator_if_t  arch_code_generator_if_t;
 
 struct _be_node_factory_t;
 
@@ -442,6 +432,11 @@ struct _arch_code_generator_if_t {
 	void *(*init)(FILE *file, const be_irg_t *birg);
 
 	/**
+	 * Called before abi introduce.
+	 */
+	void (*before_abi)(void *self);
+
+	/**
 	 * Called, when the graph is being normalized.
 	 */
 	void (*prepare_graph)(void *self);
@@ -475,6 +470,7 @@ do { \
 		(cg)->impl->func(cg); \
 } while(0)
 
+#define arch_code_generator_before_abi(cg)      _arch_cg_call(cg, before_abi)
 #define arch_code_generator_prepare_graph(cg)   _arch_cg_call(cg, prepare_graph)
 #define arch_code_generator_before_sched(cg)    _arch_cg_call(cg, before_sched)
 #define arch_code_generator_before_ra(cg)       _arch_cg_call(cg, before_ra)
