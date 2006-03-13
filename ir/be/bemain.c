@@ -50,7 +50,7 @@
 #include "becopystat.h"
 #include "bessadestr.h"
 #include "beabi.h"
-
+#include "belower.h"
 
 #define DUMP_INITIAL		(1 << 0)
 #define DUMP_ABI    		(1 << 1)
@@ -266,6 +266,9 @@ static void be_main_loop(FILE *file_handle)
 		/* create the code generator and generate code. */
 		prepare_graph(&birg);
 
+		/* some transformations need to be done before abi introduce */
+		arch_code_generator_before_abi(birg.cg);
+
 		/* implement the ABI conventions. */
 		birg.abi = be_abi_introduce(&birg);
 		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
@@ -292,7 +295,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
-		list_sched(isa, irg);
+		list_sched(env.arch_env, irg);
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_abi_fix_stack_nodes(birg.abi);
