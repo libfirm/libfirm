@@ -159,10 +159,16 @@ static char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
  * Prints the old node name on cg obst and returns a pointer to it.
  */
 const char *get_old_node_name(ia32_transform_env_t *env) {
+	static int name_cnt = 0;
 	ia32_isa_t *isa = (ia32_isa_t *)env->cg->arch_env->isa;
 
 	lc_eoprintf(firm_get_arg_env(), isa->name_obst, "%+F", env->irn);
 	obstack_1grow(isa->name_obst, 0);
+	isa->name_obst_size += obstack_object_size(isa->name_obst);
+	name_cnt++;
+	if (name_cnt % 1024 == 0) {
+		printf("name obst size reached %d bytes after %d nodes\n", isa->name_obst_size, name_cnt);
+	}
  	return obstack_finish(isa->name_obst);
 }
 #endif /* NDEBUG */
@@ -1368,6 +1374,7 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 }
 
 
+#if 0
 /**
  * Checks of we can omit the Int -> Int Conv
  */
@@ -1377,15 +1384,6 @@ static int ignore_int_conv(ir_mode *src_mode, ir_mode *tgt_mode) {
 	int tgt_sign = mode_is_signed(tgt_mode);
 	int src_bits = get_mode_size_bits(src_mode);
 	int tgt_bits = get_mode_size_bits(tgt_mode);
-
-	/* mode_P is already converted in mode_Is */
-#if 0
-	/* ignore mode_P -> mode_Is Convs */
-	ignore = ((src_mode == mode_P) && (tgt_mode == mode_Is)) ? 1 : 0;
-
-	/* ignore mode_Is -> mode_P Convs */
-	ignore = ((src_mode == mode_Is) && (tgt_mode == mode_P)) ? 1 : 0;
-#endif
 
 	/* ignore Convs small -> big if same signedness */
 	ignore = (src_sign == tgt_sign) && (src_bits < tgt_bits) ? 1 : ignore;
@@ -1398,6 +1396,7 @@ static int ignore_int_conv(ir_mode *src_mode, ir_mode *tgt_mode) {
 
 	return ignore;
 }
+#endif /* if 0 */
 
 /**
  * Transforms a Conv node.
@@ -1444,16 +1443,8 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 		}
 		else {
 			/* ... to int */
-			DB((mod, LEVEL_1, "create Conv(int, int) ..."));
-
-			/* check if we can omit the Conv */
-			if (ignore_int_conv(src_mode, tgt_mode)) {
-				DB((mod, LEVEL_1, "omitted Conv ..."));
-				edges_reroute(env->irn, op, irg);
-			}
-			else {
-				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
-			}
+			DB((mod, LEVEL_1, "omitting Conv(Int, Int) ..."));
+			edges_reroute(env->irn, op, irg);
 		}
 	}
 

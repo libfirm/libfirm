@@ -59,7 +59,7 @@ char *ia32_emit_binop(const ir_node *n) {
 				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
 			}
 			else {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %4S", n, n);
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S,%4S", n, n);
 			}
 			break;
 		case ia32_AddrModeS:
@@ -139,11 +139,8 @@ char *ia32_emit_am(const ir_node *n) {
 			case 16:
 				obstack_printf(obst, "WORD PTR ");
 				break;
-			case 32:
-				obstack_printf(obst, "DWORD PTR ");
-				break;
 			default:
-				assert(0 && "unsupported mode size");
+				break;
 		}
 	}
 
@@ -324,12 +321,19 @@ static int ia32_const_to_str(lc_appendable_t *app,
 static int ia32_get_mode_suffix(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
-	ir_node *X = arg->v_ptr;
+	ir_node *X    = arg->v_ptr;
+	ir_mode *mode = is_ia32_Lea(X) ? get_irn_mode(X) : get_ia32_ls_mode(X);
 
 	if (!X)
 		return lc_arg_append(app, occ, "(null)", 6);
 
-	return lc_appendable_chadd(app, get_mode_size_bits(get_irn_mode(X)) == 32 ? 's' : 'd');
+	if (mode_is_float(mode)) {
+		return lc_appendable_chadd(app, get_mode_size_bits(mode) == 32 ? 's' : 'd');
+	}
+	else {
+
+		return lc_appendable_chadd(app, mode_is_signed(mode) ? 's' : 'z');
+	}
 }
 
 /**
@@ -801,13 +805,13 @@ void emit_be_IncSP(const ir_node *irn, emit_env_t *emit_env) {
 void emit_be_SetSP(const ir_node *irn, emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 
-	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D,%3S\t\t\t/* restore SP */\n", irn, irn);
+	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D, %3S\t\t\t/* restore SP */\n", irn, irn);
 }
 
 void emit_be_Copy(const ir_node *irn, emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 
-	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D,%1S\t\t\t/* %+F */\n", irn, irn, irn);
+	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D, %1S\t\t\t/* %+F */\n", irn, irn, irn);
 }
 
 void emit_be_Perm(const ir_node *irn, emit_env_t *emit_env) {

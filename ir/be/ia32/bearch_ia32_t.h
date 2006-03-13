@@ -39,6 +39,7 @@ typedef struct _ia32_isa_t {
 	int                    num_codegens;
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
+	unsigned long          name_obst_size;
 #endif /* NDEBUG */
 } ia32_isa_t;
 

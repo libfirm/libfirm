@@ -544,6 +544,15 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->opt.placecnst = 1;
 	cg->opt.immops    = 1;
 
+#ifndef NDEBUG
+	if (isa->name_obst_size) {
+		//printf("freed %d bytes from name obst\n", isa->name_obst_size);
+		isa->name_obst_size = 0;
+		obstack_free(isa->name_obst, NULL);
+		obstack_init(isa->name_obst);
+	}
+#endif /* NDEBUG */
+
 	isa->num_codegens++;
 
 	if (isa->num_codegens > 1)
@@ -598,6 +607,7 @@ static void *ia32_init(void) {
 #ifndef NDEBUG
 	isa->name_obst = xcalloc(1, sizeof(*(isa->name_obst)));
 	obstack_init(isa->name_obst);
+	isa->name_obst_size = 0;
 #endif /* NDEBUG */
 
 	inited = 1;
@@ -614,6 +624,7 @@ static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
 #ifndef NDEBUG
+	//printf("name obst size = %d bytes\n", isa->name_obst_size);
 	obstack_free(isa->name_obst, NULL);
 #endif /* NDEBUG */
 
@@ -647,7 +658,7 @@ const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self, const
 /**
  * Produces the type which sits between the stack args and the locals on the stack.
  * it will contain the return address and space to store the old base pointer.
- * @return The Firm type modelling the ABI between type.
+ * @return The Firm type modeling the ABI between type.
  */
 static ir_type *get_between_type(void)
 {

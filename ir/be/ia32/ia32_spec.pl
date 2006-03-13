@@ -381,7 +381,14 @@ $arch = "ia32";
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %ia32_emit_am\t\t\t/* Load((%A1)) -> %D1 */'
+  "emit"      =>
+'  if (get_mode_size_bits(get_ia32_ls_mode(n)) < 32) {
+4.   mov%Mx %D1, %ia32_emit_am\t\t\t/* Load((%A1)) -> %D1 */
+  }
+  else {
+4.   mov %D1, %ia32_emit_am\t\t\t/* Load((%A1)) -> %D1 */
+  }
+'
 },
 
 "Store" => {
