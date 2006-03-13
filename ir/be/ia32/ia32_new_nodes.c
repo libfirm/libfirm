@@ -351,6 +351,18 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			fprintf(F, "\n");
 
+#ifndef NDEBUG
+			/* dump original ir node name */
+			fprintf(F, "orig node = ");
+			if (get_ia32_orig_node(n)) {
+				fprintf(F, "%s", get_ia32_orig_node(n));
+			}
+			else {
+				fprintf(F, "n/a");
+			}
+			fprintf(F, "\n");
+#endif /* NDEBUG */
+
 			fprintf(F, "=== IA32 attr end ===\n");
 			/* end of: case dump_node_info_txt */
 			break;
@@ -795,6 +807,25 @@ void set_ia32_pncode(ir_node *node, long code) {
 	attr->pn_code     = code;
 }
 
+#ifndef NDEBUG
+
+/**
+ * Returns the name of the original ir node.
+ */
+const char *get_ia32_orig_node(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->orig_node;
+}
+
+/**
+ * Sets the name of the original ir node.
+ */
+void set_ia32_orig_node(ir_node *node, const char *name) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->orig_node   = name;
+}
+
+#endif /* NDEBUG */
 
 /******************************************************************************************************
  *                      _       _         _   _           __                  _   _

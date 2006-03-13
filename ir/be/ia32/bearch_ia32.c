@@ -1,3 +1,9 @@
+/**
+ * This is the main ia32 firm backend driver.
+ *
+ * $Id$
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -259,11 +265,13 @@ ia32_irn_ops_t ia32_irn_ops = {
  */
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
+	firm_dbg_module_t *old_mod = cg->mod;
 
-	irg_walk_blkwise_graph(cg->irg, ia32_place_consts, ia32_transform_node, cg);
+	cg->mod = firm_dbg_register("firm.be.ia32.transform");
+	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	dump_ir_block_graph_sched(cg->irg, "-transformed");
-	edges_deactivate(cg->irg);
-	edges_activate(cg->irg);
+
+	cg->mod = old_mod;
 
 	if (cg->opt.doam) {
 		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
@@ -505,6 +513,7 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
+	NULL,                /* before abi introduce hook */
 	ia32_prepare_graph,
 	ia32_before_sched,   /* before scheduling hook */
 	ia32_before_ra,      /* before register allocation hook */
@@ -562,11 +571,12 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
  *****************************************************************/
 
 static ia32_isa_t ia32_isa_template = {
-	&ia32_isa_if,
-	&ia32_gp_regs[REG_ESP],
-	&ia32_gp_regs[REG_EBP],
-	-1,
-	0
+	&ia32_isa_if,            /* isa interface implementation */
+	&ia32_gp_regs[REG_ESP],  /* stack pointer register */
+	&ia32_gp_regs[REG_EBP],  /* base pointer register */
+	-1,                      /* stack direction */
+	0,                       /* number of code generator objects so far */
+	NULL                     /* name obstack */
 };
 
 /**
@@ -585,6 +595,11 @@ static void *ia32_init(void) {
 	ia32_register_init(isa);
 	ia32_create_opcodes();
 
+#ifndef NDEBUG
+	isa->name_obst = xcalloc(1, sizeof(*(isa->name_obst)));
+	obstack_init(isa->name_obst);
+#endif /* NDEBUG */
+
 	inited = 1;
 
 	return isa;
@@ -596,6 +611,12 @@ static void *ia32_init(void) {
  * Closes the output file and frees the ISA structure.
  */
 static void ia32_done(void *self) {
+	ia32_isa_t *isa = self;
+
+#ifndef NDEBUG
+	obstack_free(isa->name_obst, NULL);
+#endif /* NDEBUG */
+
 	free(self);
 }
 

@@ -1,7 +1,15 @@
+/**
+ * This file implements the IR transformation from firm into
+ * ia32-Firm.
+ *
+ * $Id$
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include "irargs_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
@@ -146,7 +154,18 @@ static char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 	return ent_name;
 }
 
+#ifndef NDEBUG
+/**
+ * Prints the old node name on cg obst and returns a pointer to it.
+ */
+const char *get_old_node_name(ia32_transform_env_t *env) {
+	ia32_isa_t *isa = (ia32_isa_t *)env->cg->arch_env->isa;
 
+	lc_eoprintf(firm_get_arg_env(), isa->name_obst, "%+F", env->irn);
+	obstack_1grow(isa->name_obst, 0);
+ 	return obstack_finish(isa->name_obst);
+}
+#endif /* NDEBUG */
 
 /* determine if one operator is an Imm */
 static ir_node *get_immediate_op(ir_node *op1, ir_node *op2) {
@@ -239,6 +258,10 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 		}
 	}
 
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	if (is_op_commutative(get_irn_op(env->irn))) {
 		set_ia32_commutative(new_op);
 	}
@@ -312,6 +335,10 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 	/* set AM support */
 	set_ia32_am_support(new_op, ia32_am_Dest);
 
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
 
@@ -345,6 +372,10 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 		DB((mod, LEVEL_1, "INT unop ..."));
 		set_ia32_am_support(new_op, ia32_am_Dest);
 	}
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
@@ -461,6 +492,10 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			set_ia32_am_support(new_op, ia32_am_Full);
 		}
 	}
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
@@ -631,6 +666,9 @@ static ir_node *gen_Min(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	else {
 		new_op = new_rd_ia32_Min(env->dbg, env->irg, env->block, op1, op2, env->mode);
 		set_ia32_am_support(new_op, ia32_am_None);
+#ifndef NDEBUG
+		set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
 	}
 
 	return new_op;
@@ -747,6 +785,10 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 		}
 	}
 
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
 
@@ -821,6 +863,10 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
 	}
 
+#ifndef NDEBUG
+	set_ia32_orig_node(res, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return res;
 }
 
@@ -867,6 +913,10 @@ static ir_node *gen_Quot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) 
 
 	new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem, env->mode);
 	set_ia32_am_support(new_op, ia32_am_Source);
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
 
 	return new_op;
 }
@@ -1015,6 +1065,10 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 
 		set_ia32_sc(new_op, name);
 
+#ifndef NDEBUG
+		set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
 		new_op = new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
 	}
 	else {
@@ -1075,15 +1129,33 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 
 		set_ia32_sc(res, name);
 
+#ifndef NDEBUG
+		set_ia32_orig_node(res, get_old_node_name(env));
+#endif /* NDEBUG */
+
 		res = new_rd_Proj(dbg, irg, block, res, mode, 0);
 	}
 	else {
 		res   = new_rd_ia32_Cdq(dbg, irg, block, op, mode_T);
+#ifndef NDEBUG
+		set_ia32_orig_node(res, get_old_node_name(env));
+#endif /* NDEBUG */
+
 		p_eax = new_rd_Proj(dbg, irg, block, res, mode, pn_EAX);
 		p_edx = new_rd_Proj(dbg, irg, block, res, mode, pn_EDX);
+
 		res   = new_rd_ia32_Eor(dbg, irg, block, noreg_gp, noreg_gp, p_eax, p_edx, nomem, mode_T);
+#ifndef NDEBUG
+		set_ia32_orig_node(res, get_old_node_name(env));
+#endif /* NDEBUG */
+
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
+
 		res   = new_rd_ia32_Sub(dbg, irg, block, noreg_gp, noreg_gp, res, p_edx, nomem, mode_T);
+#ifndef NDEBUG
+		set_ia32_orig_node(res, get_old_node_name(env));
+#endif /* NDEBUG */
+
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
 	}
 
@@ -1117,6 +1189,10 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, get_Load_mode(node));
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
 
 	return new_op;
 }
@@ -1162,6 +1238,11 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	set_ia32_op_type(new_op, ia32_AddrModeD);
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, get_irn_mode(val));
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return new_op;
 }
 
@@ -1213,6 +1294,10 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		set_ia32_pncode(res, get_Cond_defaultProj(node));
 	}
 
+#ifndef NDEBUG
+	set_ia32_orig_node(res, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return res;
 }
 
@@ -1255,6 +1340,10 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
 	}
 
+#ifndef NDEBUG
+	set_ia32_orig_node(res, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return res;
 }
 
@@ -1267,13 +1356,48 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
  * @return The transformed node.
  */
 static ir_node *gen_Mux(ia32_transform_env_t *env) {
-	ir_node *node  = env->irn;
-
-	return new_rd_ia32_CMov(env->dbg, env->irg, env->block,
+	ir_node *node   = env->irn;
+	ir_node *new_op = new_rd_ia32_CMov(env->dbg, env->irg, env->block, \
 		get_Mux_sel(node), get_Mux_false(node), get_Mux_true(node), env->mode);
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
+	return new_op;
 }
 
 
+/**
+ * Checks of we can omit the Int -> Int Conv
+ */
+static int ignore_int_conv(ir_mode *src_mode, ir_mode *tgt_mode) {
+	int ignore   = 0;
+	int src_sign = mode_is_signed(src_mode);
+	int tgt_sign = mode_is_signed(tgt_mode);
+	int src_bits = get_mode_size_bits(src_mode);
+	int tgt_bits = get_mode_size_bits(tgt_mode);
+
+	/* mode_P is already converted in mode_Is */
+#if 0
+	/* ignore mode_P -> mode_Is Convs */
+	ignore = ((src_mode == mode_P) && (tgt_mode == mode_Is)) ? 1 : 0;
+
+	/* ignore mode_Is -> mode_P Convs */
+	ignore = ((src_mode == mode_Is) && (tgt_mode == mode_P)) ? 1 : 0;
+#endif
+
+	/* ignore Convs small -> big if same signedness */
+	ignore = (src_sign == tgt_sign) && (src_bits < tgt_bits) ? 1 : ignore;
+
+	/* ignore Bool -> Int Conv */
+	ignore = (src_mode == mode_b) ? 1 : ignore;
+
+	/* ignore Int -> Int Convs if same bitsize */
+	ignore = (src_bits == tgt_bits) ? 1 : ignore;
+
+	return ignore;
+}
 
 /**
  * Transforms a Conv node.
@@ -1303,12 +1427,12 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 		if (mode_is_float(tgt_mode)) {
 			/* ... to float */
 			DB((mod, LEVEL_1, "create Conv(float, float) ..."));
-			new_op = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+			new_op = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 		}
 		else {
 			/* ... to int */
 			DB((mod, LEVEL_1, "create Conv(float, int) ..."));
-			new_op = new_rd_ia32_Conv_FP2I(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+			new_op = new_rd_ia32_Conv_FP2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 		}
 	}
 	else {
@@ -1316,23 +1440,29 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 		if (mode_is_float(tgt_mode)) {
 			/* ... to float */
 			DB((mod, LEVEL_1, "create Conv(int, float) ..."));
-			new_op = new_rd_ia32_Conv_I2FP(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+			new_op = new_rd_ia32_Conv_I2FP(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 		}
 		else {
 			/* ... to int */
 			DB((mod, LEVEL_1, "create Conv(int, int) ..."));
 
-			/* kill mode_P -> mode_Is resp. mode_Is -> mode_P Convs */
-			if (((src_mode == mode_P) && (tgt_mode == mode_Is)) ||
-				((src_mode == mode_Is) && (tgt_mode == mode_P)))
-			{
-				DB((mod, LEVEL_1, "killed Conv(Is, P)/(P, Is) ..."));
+			/* check if we can omit the Conv */
+			if (ignore_int_conv(src_mode, tgt_mode)) {
+				DB((mod, LEVEL_1, "omitted Conv ..."));
 				edges_reroute(env->irn, op, irg);
 			}
 			else {
-				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem, tgt_mode);
+				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 			}
 		}
+	}
+
+	if (new_op) {
+#ifndef NDEBUG
+		set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
+		new_op = new_rd_Proj(dbg, irg, block, new_op, tgt_mode, 0);
 	}
 
 	return new_op;
@@ -1350,6 +1480,9 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
  *
  ********************************************/
 
+/**
+ * Transforms a FrameAddr into an ia32 Add.
+ */
 static ir_node *gen_FrameAddr(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
 	ir_node *node   = env->irn;
@@ -1362,9 +1495,16 @@ static ir_node *gen_FrameAddr(ia32_transform_env_t *env) {
 	set_ia32_am_support(new_op, ia32_am_Full);
 	set_ia32_use_frame(new_op);
 
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
 }
 
+/**
+ * Transforms a FrameLoad into an ia32 Load.
+ */
 static ir_node *gen_FrameLoad(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
 	ir_node *node   = env->irn;
@@ -1388,9 +1528,17 @@ static ir_node *gen_FrameLoad(ia32_transform_env_t *env) {
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, mode);
 
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
 	return new_op;
 }
 
+
+/**
+ * Transforms a FrameStore into an ia32 Store.
+ */
 static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
 	ir_node *node   = env->irn;
@@ -1413,6 +1561,10 @@ static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 	set_ia32_op_type(new_op, ia32_AddrModeD);
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, mode);
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
 
 	return new_op;
 }

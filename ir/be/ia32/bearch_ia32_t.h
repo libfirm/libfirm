@@ -1,6 +1,8 @@
 #ifndef _BEARCH_IA32_T_H_
 #define _BEARCH_IA32_T_H_
 
+#include "firm_config.h"
+
 #include "debug.h"
 #include "bearch_ia32.h"
 #include "ia32_nodes_attr.h"
@@ -35,6 +37,9 @@ typedef struct _ia32_isa_t {
 	const arch_register_t *bp;            /** The base pointer register. */
 	const int              stack_dir;     /** -1 for decreasing, 1 for increasing. */
 	int                    num_codegens;
+#ifndef NDEBUG
+	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
+#endif /* NDEBUG */
 } ia32_isa_t;
 
 typedef struct _ia32_irn_ops_t {

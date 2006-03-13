@@ -7,6 +7,8 @@
  * $Id$
  */
 
+#include "firm_config.h"
+
 #include "ia32_nodes_attr.h"
 
 /**
@@ -262,6 +264,19 @@ long get_ia32_pncode(const ir_node *node);
  */
 void set_ia32_pncode(ir_node *node, long code);
 
+#ifndef NDEBUG
+
+/**
+ * Returns the name of the original ir node.
+ */
+const char *get_ia32_orig_node(const ir_node *node);
+
+/**
+ * Sets the name of the original ir node.
+ */
+void set_ia32_orig_node(ir_node *node, const char *name);
+
+#endif /* NDEBUG */
 
 /******************************************************************************************************
  *                      _       _         _   _           __                  _   _

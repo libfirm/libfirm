@@ -4,9 +4,10 @@
 /**
  * Transforms a Firm Const into an ia32 Const and places it
  * in the Block where it's used.
+ * Additionally all mode_P nodes are changed into mode_Is nodes.
  * This function is called by a walker.
  */
-void ia32_place_consts(ir_node *irn, void *env);
+void ia32_place_consts_set_modes(ir_node *irn, void *env);
 
 /**
  * Checks for address mode patterns and performs the
