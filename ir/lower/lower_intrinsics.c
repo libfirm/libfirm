@@ -27,6 +27,7 @@
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "lower_intrinsics.h"
 #include "pmap.h"
 
@@ -80,12 +81,12 @@ static void call_mapper(ir_node *node, void *env) {
 
 /* Go through all graphs and map calls to intrinsic functions. */
 unsigned lower_intrinsics(i_record *list, int length) {
-  int                  i, n_ops = get_irp_n_opcodes();
-  ir_graph             *irg;
-  pmap                 *c_map = pmap_create_ex(length);
-  const i_instr_record **i_map;
-  unsigned             nr_of_intrinsics = 0;
-  walker_env_t         wenv;
+  int            i, n_ops = get_irp_n_opcodes();
+  ir_graph       *irg;
+  pmap           *c_map = pmap_create_ex(length);
+  i_instr_record **i_map;
+  unsigned       nr_of_intrinsics = 0;
+  walker_env_t   wenv;
 
   /* we use the ir_op generic pointers here */
   NEW_ARR_A(const i_instr_record *, i_map, n_ops);
