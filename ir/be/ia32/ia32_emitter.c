@@ -44,147 +44,6 @@ extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 
 static const arch_env_t *arch_env = NULL;
 
-/**
- * Emits registers and/or address mode of a binary operation.
- */
-char *ia32_emit_binop(const ir_node *n) {
-	static char *buf = NULL;
-
-	/* verify that this function is never called on non-AM supporting operations */
-	assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
-
-	if (! buf) {
-		buf = xcalloc(1, SNPRINTF_BUF_LEN);
-	}
-	else {
-		memset(buf, 0, SNPRINTF_BUF_LEN);
-	}
-
-	switch(get_ia32_op_type(n)) {
-		case ia32_Normal:
-			if (get_ia32_cnst(n)) {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
-			}
-			else {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S,%4S", n, n);
-			}
-			break;
-		case ia32_AddrModeS:
-			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n));
-			break;
-		case ia32_AddrModeD:
-			if (get_ia32_cnst(n)) {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %s", ia32_emit_am(n), get_ia32_cnst(n));
-			}
-			else {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %3S", ia32_emit_am(n), n);
-			}
-			break;
-		default:
-			assert(0 && "unsupported op type");
-	}
-
-	return buf;
-}
-
-/**
- * Emits registers and/or address mode of a unary operation.
- */
-char *ia32_emit_unop(const ir_node *n) {
-	static char *buf = NULL;
-
-	if (! buf) {
-		buf = xcalloc(1, SNPRINTF_BUF_LEN);
-	}
-	else {
-		memset(buf, 0, SNPRINTF_BUF_LEN);
-	}
-
-	switch(get_ia32_op_type(n)) {
-		case ia32_Normal:
-			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
-			break;
-		case ia32_am_Dest:
-			snprintf(buf, SNPRINTF_BUF_LEN, ia32_emit_am(n));
-			break;
-		default:
-			assert(0 && "unsupported op type");
-	}
-
-	return buf;
-}
-
-/**
- * Emits adressmode.
- */
-char *ia32_emit_am(const ir_node *n) {
-	ia32_am_flavour_t am_flav    = get_ia32_am_flavour(n);
-	int               had_output = 0;
-	char             *s;
-	int               size;
-	static struct obstack *obst  = NULL;
-	ir_mode *mode = get_ia32_ls_mode(n);
-
-	if (! is_ia32_Lea(n))
-		assert(mode && "AM node must have ls_mode attribute set.");
-
-	if (! obst) {
-		obst = xcalloc(1, sizeof(*obst));
-	}
-	else {
-		obstack_free(obst, NULL);
-	}
-
-	/* obstack_free with NULL results in an uninitialized obstack */
-	obstack_init(obst);
-
-	if (mode) {
-		switch (get_mode_size_bits(mode)) {
-			case 8:
-				obstack_printf(obst, "BYTE PTR ");
-				break;
-			case 16:
-				obstack_printf(obst, "WORD PTR ");
-				break;
-			default:
-				break;
-		}
-	}
-
-	obstack_printf(obst, "[");
-
-	if (am_flav & ia32_B) {
-		lc_eoprintf(ia32_get_arg_env(), obst, "%1S", n);
-		had_output = 1;
-	}
-
-	if (am_flav & ia32_I) {
-		if (had_output) {
-			obstack_printf(obst, "+");
-		}
-
-		lc_eoprintf(ia32_get_arg_env(), obst, "%2S", n);
-
-		if (am_flav & ia32_S) {
-			obstack_printf(obst, "*%d", 1 << get_ia32_am_scale(n));
-		}
-
-		had_output = 1;
-	}
-
-	if (am_flav & ia32_O) {
-		obstack_printf(obst, get_ia32_am_offs(n));
-	}
-
-	obstack_printf(obst, "] ");
-
-	size        = obstack_object_size(obst);
-	s           = obstack_finish(obst);
-	s[size - 1] = '\0';
-
-	return s;
-}
-
 /*************************************************************
  *             _       _    __   _          _
  *            (_)     | |  / _| | |        | |
@@ -372,8 +231,159 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
 	return env;
 }
 
+/**
+ * Emits registers and/or address mode of a binary operation.
+ */
+char *ia32_emit_binop(const ir_node *n) {
+	static char *buf = NULL;
 
-/*
+	/* verify that this function is never called on non-AM supporting operations */
+	assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
+
+	if (! buf) {
+		buf = xcalloc(1, SNPRINTF_BUF_LEN);
+	}
+	else {
+		memset(buf, 0, SNPRINTF_BUF_LEN);
+	}
+
+	switch(get_ia32_op_type(n)) {
+		case ia32_Normal:
+			if (get_ia32_cnst(n)) {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
+			}
+			else {
+				const arch_register_t *in1 = get_in_reg(n, 2);
+				const arch_register_t *in2 = get_in_reg(n, 3);
+				const arch_register_t *out = get_ia32_n_res(n) > 0 ? get_out_reg(n, 0) : NULL;
+				const arch_register_t *in;
+
+				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
+				out = out ? out : in1;
+
+				snprintf(buf, SNPRINTF_BUF_LEN, "%s, %s", \
+					arch_register_get_name(out), arch_register_get_name(in));
+			}
+			break;
+		case ia32_AddrModeS:
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n));
+			break;
+		case ia32_AddrModeD:
+			if (get_ia32_cnst(n)) {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %s", ia32_emit_am(n), get_ia32_cnst(n));
+			}
+			else {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %3S", ia32_emit_am(n), n);
+			}
+			break;
+		default:
+			assert(0 && "unsupported op type");
+	}
+
+	return buf;
+}
+
+/**
+ * Emits registers and/or address mode of a unary operation.
+ */
+char *ia32_emit_unop(const ir_node *n) {
+	static char *buf = NULL;
+
+	if (! buf) {
+		buf = xcalloc(1, SNPRINTF_BUF_LEN);
+	}
+	else {
+		memset(buf, 0, SNPRINTF_BUF_LEN);
+	}
+
+	switch(get_ia32_op_type(n)) {
+		case ia32_Normal:
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
+			break;
+		case ia32_am_Dest:
+			snprintf(buf, SNPRINTF_BUF_LEN, ia32_emit_am(n));
+			break;
+		default:
+			assert(0 && "unsupported op type");
+	}
+
+	return buf;
+}
+
+/**
+ * Emits adress mode.
+ */
+char *ia32_emit_am(const ir_node *n) {
+	ia32_am_flavour_t am_flav    = get_ia32_am_flavour(n);
+	int               had_output = 0;
+	char             *s;
+	int               size;
+	static struct obstack *obst  = NULL;
+	ir_mode *mode = get_ia32_ls_mode(n);
+
+	if (! is_ia32_Lea(n))
+		assert(mode && "AM node must have ls_mode attribute set.");
+
+	if (! obst) {
+		obst = xcalloc(1, sizeof(*obst));
+	}
+	else {
+		obstack_free(obst, NULL);
+	}
+
+	/* obstack_free with NULL results in an uninitialized obstack */
+	obstack_init(obst);
+
+	if (mode) {
+		switch (get_mode_size_bits(mode)) {
+			case 8:
+				obstack_printf(obst, "BYTE PTR ");
+				break;
+			case 16:
+				obstack_printf(obst, "WORD PTR ");
+				break;
+			default:
+				break;
+		}
+	}
+
+	obstack_printf(obst, "[");
+
+	if (am_flav & ia32_B) {
+		lc_eoprintf(ia32_get_arg_env(), obst, "%1S", n);
+		had_output = 1;
+	}
+
+	if (am_flav & ia32_I) {
+		if (had_output) {
+			obstack_printf(obst, "+");
+		}
+
+		lc_eoprintf(ia32_get_arg_env(), obst, "%2S", n);
+
+		if (am_flav & ia32_S) {
+			obstack_printf(obst, "*%d", 1 << get_ia32_am_scale(n));
+		}
+
+		had_output = 1;
+	}
+
+	if (am_flav & ia32_O) {
+		obstack_printf(obst, get_ia32_am_offs(n));
+	}
+
+	obstack_printf(obst, "] ");
+
+	size        = obstack_object_size(obst);
+	s           = obstack_finish(obst);
+	s[size - 1] = '\0';
+
+	return s;
+}
+
+
+
+/**
  * Add a number to a prefix. This number will not be used a second time.
  */
 static char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
@@ -381,6 +391,7 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
 	snprintf(buf, buflen, "%s%lu", prefix, ++id);
 	return buf;
 }
+
 
 
 /*************************************************
@@ -974,9 +985,8 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 		void (*emit)(const ir_node *, void *) = (void (*)(const ir_node *, void *))op->ops.generic;
 		(*emit)(irn, env);
 	}
-	else {
-		ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
-	}
+
+	ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
 }
 
 /**

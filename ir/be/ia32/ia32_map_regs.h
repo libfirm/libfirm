@@ -7,6 +7,15 @@
 #include "../bearch.h"
 #include "ia32_nodes_attr.h"
 
+/**
+ * Convenience macro to check if register <code>out<\code>
+ * and register <code>in<\code> are equal.
+ */
+#define REGS_ARE_EQUAL(out, in) \
+	((arch_register_get_class(out) == arch_register_get_class(in)) && \
+	(arch_register_get_index(out) == arch_register_get_index(in)))
+
+
 int  ia32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len);
 void ia32_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set);
 const arch_register_t *ia32_get_firm_reg(const ir_node *irn, set *reg_set);

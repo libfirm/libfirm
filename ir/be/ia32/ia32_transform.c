@@ -24,12 +24,15 @@
 #include "debug.h"
 
 #include "../benode_t.h"
+#include "../besched.h"
+
 #include "bearch_ia32_t.h"
 
 #include "ia32_nodes_attr.h"
 #include "../arch/archop.h"     /* we need this for Min and Max nodes */
 #include "ia32_transform.h"
 #include "ia32_new_nodes.h"
+#include "ia32_map_regs.h"
 
 #include "gen_ia32_regalloc_if.h"
 
@@ -1573,6 +1576,70 @@ static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
  * |_| |_| |_|\__,_|_|_| |_|  \__,_|_|  |_| \_/ \___|_|
  *
  *********************************************************/
+
+/**
+ * Transforms a Sub or fSub into Neg--Add iff OUT_REG == SRC2_REG.
+ * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
+ */
+void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
+	ia32_transform_env_t tenv;
+	ir_node *in1, *in2, *noreg, *nomem, *res;
+	const arch_register_t *in1_reg, *in2_reg, *out_reg, **slots;
+
+	/* Return if AM node or not a Sub or fSub */
+	if (get_ia32_op_type(irn) != ia32_Normal || !(is_ia32_Sub(irn) || is_ia32_fSub(irn)))
+		return;
+
+	noreg   = ia32_new_NoReg_gp(cg);
+	nomem   = new_rd_NoMem(cg->irg);
+	in1     = get_irn_n(irn, 2);
+	in2     = get_irn_n(irn, 3);
+	in1_reg = arch_get_irn_register(cg->arch_env, in1);
+	in2_reg = arch_get_irn_register(cg->arch_env, in2);
+	out_reg = get_ia32_out_reg(irn, 0);
+
+	tenv.block    = get_nodes_block(irn);
+	tenv.dbg      = get_irn_dbg_info(irn);
+	tenv.irg      = cg->irg;
+	tenv.irn      = irn;
+	tenv.mod      = cg->mod;
+	tenv.mode     = get_ia32_res_mode(irn);
+	tenv.cg       = cg;
+
+	/* in case of sub and OUT == SRC2 we can transform the sequence into neg src2 -- add */
+	if (REGS_ARE_EQUAL(out_reg, in2_reg)) {
+		/* generate the neg src2 */
+		res = gen_Minus(&tenv, in2);
+		arch_set_irn_register(cg->arch_env, res, in2_reg);
+
+		/* add to schedule */
+		sched_add_before(irn, res);
+
+		/* generate the add */
+		if (mode_is_float(tenv.mode)) {
+			res = new_rd_ia32_fAdd(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, mode_T);
+		}
+		else {
+			res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, mode_T);
+		}
+
+#ifndef NDEBUG
+		set_ia32_orig_node(res, get_old_node_name(&tenv));
+#endif /* NDEBUG */
+		/* copy register */
+		slots    = get_ia32_slots(res);
+		slots[0] = in2_reg;
+
+		/* add to schedule */
+		sched_add_before(irn, res);
+
+		/* remove the old sub */
+		sched_remove(irn);
+
+		/* exchange the add and the sub */
+		exchange(irn, res);
+	}
+}
 
 /**
  * Transforms the given firm node (and maybe some other related nodes)

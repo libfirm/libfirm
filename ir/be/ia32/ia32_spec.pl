@@ -424,7 +424,7 @@ $arch = "ia32";
   "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. adds%M %ia32_emit_binop\t\t\t/* SSE Add(%A1, %A2) -> %D1 */'
+  "emit"      => '. adds%M %ia32_emit_binop\t\t\t/* SSE Add(%A3, %A4) -> %D1 */'
 },
 
 "fMul" => {
@@ -432,7 +432,7 @@ $arch = "ia32";
   "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. muls%M %ia32_emit_binop\t\t\t/* SSE Mul(%A1, %A2) -> %D1 */'
+  "emit"      => '. muls%M %ia32_emit_binop\t\t\t/* SSE Mul(%A3, %A4) -> %D1 */'
 },
 
 "fMax" => {
@@ -440,7 +440,7 @@ $arch = "ia32";
   "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. maxs%M %ia32_emit_binop\t\t\t/* SSE Max(%A1, %A2) -> %D1 */'
+  "emit"      => '. maxs%M %ia32_emit_binop\t\t\t/* SSE Max(%A3, %A4) -> %D1 */'
 },
 
 "fMin" => {
@@ -448,7 +448,7 @@ $arch = "ia32";
   "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. mins%M %ia32_emit_binop\t\t\t/* SSE Min(%A1, %A2) -> %D1 */'
+  "emit"      => '. mins%M %ia32_emit_binop\t\t\t/* SSE Min(%A3, %A4) -> %D1 */'
 },
 
 "fAnd" => {

@@ -328,6 +328,10 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
 	return 0;
 }
 
+static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
+
+}
+
 /**
  * Checks if irn is a candidate for address calculation or address mode.
  *

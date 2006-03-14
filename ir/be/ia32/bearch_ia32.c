@@ -286,6 +286,7 @@ static void ia32_prepare_graph(void *self) {
 /**
  * Insert copies for all ia32 nodes where the should_be_same requirement
  * is not fulfilled.
+ * Transform Sub into Neg -- Add if IN2 == OUT
  */
 static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 	ia32_code_gen_t            *cg = env;
@@ -331,6 +332,9 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 			}
 		}
 	}
+
+	/* check if there is a sub which need to be transformed */
+	ia32_transform_sub_to_neg_add(irn, cg);
 }
 
 /**
