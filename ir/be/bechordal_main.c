@@ -292,9 +292,6 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_liveness(irg);
 		be_check_pressure(&chordal_env);
 
-		be_liveness(irg);
-		be_check_pressure(&chordal_env);
-
 		/* Color the graph. */
 		be_ra_chordal_color(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
@@ -304,7 +301,6 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_ifg_check(chordal_env.ifg);
 
 		/* copy minimization */
-		copystat_collect_cls(&chordal_env);
 #ifdef COPYOPT_STAT
 		co_compare_solvers(&chordal_env);
 #else
