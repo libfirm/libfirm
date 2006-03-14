@@ -506,8 +506,12 @@ void co_free_graph_structure(copy_opt_t *co) {
 /* co_solve_ilp1() co_solve_ilp2() are implemented in becopyilpX.c */
 
 int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
-	node_t new_node;
+	node_t new_node, *n;
 
-	new_node.irn        = irn;
-	return (int)set_find(co->nodes, new_node.irn, sizeof(new_node), HASH_PTR(new_node.irn));
+	new_node.irn = irn;
+	n = set_find(co->nodes, new_node.irn, sizeof(new_node), HASH_PTR(new_node.irn));
+	if (n) {
+		return (n->count > 0);
+	} else
+		return 0;
 }

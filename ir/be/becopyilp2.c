@@ -173,10 +173,176 @@ static void build_affinity_cstr(ilp_env_t *ienv) {
 }
 
 /**
- *
+ * Helping stuff for build_clique_star_cstr
+ */
+typedef struct _edge_t {
+	ir_node *n1, *n2;
+} edge_t;
+
+static int compare_edge_t(const void *k1, const void *k2, size_t size) {
+	const edge_t *e1 = k1;
+	const edge_t *e2 = k2;
+
+	return ! (e1->n1 == e2->n1   &&   e1->n2 == e2->n2);
+}
+
+#define HASH_EDGE(e) (HASH_PTR((e)->n1) ^ HASH_PTR((e)->n2))
+
+static INLINE edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
+	edge_t new_edge;
+
+	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
+		new_edge.n1 = n1;
+		new_edge.n2 = n2;
+	} else {
+		new_edge.n1 = n2;
+		new_edge.n2 = n1;
+	}
+	*counter++;
+	return set_insert(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+}
+
+static INLINE edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2) {
+	edge_t new_edge;
+
+	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
+		new_edge.n1 = n1;
+		new_edge.n2 = n2;
+	} else {
+		new_edge.n1 = n2;
+		new_edge.n2 = n1;
+	}
+	return set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+}
+
+static INLINE void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
+	edge_t new_edge, *e;
+
+	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
+		new_edge.n1 = n1;
+		new_edge.n2 = n2;
+	} else {
+		new_edge.n1 = n2;
+		new_edge.n2 = n1;
+	}
+	e = set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	if (e) {
+		e->n1 = NULL;
+		e->n2 = NULL;
+		*counter--;
+	}
+}
+
+#define pset_foreach(pset, irn)  for(irn=pset_first(pset); irn; irn=pset_next(pset))
+
+/**
+ * Search for an interference clique and an external node
+ * with affinity edges to all nodes of the clique.
+ * At most 1 node of the clique can be colored equally with the external node.
  */
 static void build_clique_star_cstr(ilp_env_t *ienv) {
+	node_t *node;
 
+	/* for each node with affinity edges */
+	co_gs_foreach_node(ienv->co, node) {
+		struct obstack ob;
+		neighb_t *nbr;
+		ir_node *center = node->irn;
+		ir_node **nodes;
+		set *edges;
+		int i, o, n_nodes, n_edges;
+
+		obstack_init(&ob);
+		edges = new_set(compare_edge_t, 8);
+
+		/* get all affinity neighbours */
+		n_nodes = 0;
+		co_gs_foreach_neighb(node, nbr) {
+			obstack_ptr_grow(&ob, nbr->irn);
+			++n_nodes;
+		}
+		nodes = obstack_finish(&ob);
+
+		/* get all interference edges between these */
+		n_edges = 0;
+		for (i=0; i<n_nodes; ++i)
+			for (o=0; o<i; ++o)
+				if (be_ifg_connected(ienv->co->cenv->ifg, nodes[i], nodes[o]))
+					add_edge(edges, nodes[i], nodes[o], &n_edges);
+
+		/* cover all these interference edges with maximal cliques */
+		while (n_edges) {
+			edge_t *e;
+			pset *clique = pset_new_ptr(8);
+			int growed;
+
+			/* get 2 starting nodes to form a clique */
+			for (e=set_first(edges); !e->n1; e=set_next(edges))
+				/*nothing*/ ;
+
+			remove_edge(edges, e->n1, e->n2, &n_edges);
+			pset_insert_ptr(clique, e->n1);
+			pset_insert_ptr(clique, e->n2);
+
+			/* while the clique is growing */
+			do {
+				growed = 0;
+
+				/* search for a candidate to extend the clique */
+				for (i=0; i<n_nodes; ++i) {
+					ir_node *member, *cand = nodes[i];
+					int is_cand;
+
+					/* if its already in the clique try the next */
+					if (pset_find_ptr(clique, cand))
+						continue;
+
+					/* are there all necessary interferences? */
+					is_cand = 1;
+					pset_foreach(clique, member) {
+						if (!find_edge(edges, cand, member)) {
+							is_cand = 0;
+							pset_break(clique);
+							break;
+						}
+					}
+
+					/* now we know if we have a clique extender */
+					if (is_cand) {
+						/* first remove all covered edges */
+						pset_foreach(clique, member)
+							remove_edge(edges, cand, member, &n_edges);
+
+						/* insert into clique */
+						pset_insert_ptr(clique, cand);
+						growed = 1;
+						break;
+					}
+				}
+			} while (growed);
+
+			/* now the clique is maximal. Finally add the constraint */
+			{
+				ir_node *member;
+				int var_idx, cst_idx, center_nr, member_nr;
+				char buf[16];
+
+				cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater, pset_count(clique)-1);
+				center_nr = get_irn_node_nr(center);
+
+				pset_foreach(clique, member) {
+					member_nr = get_irn_node_nr(member);
+					var_idx = lpp_get_var_idx(ienv->lp, name_cdd_sorted(buf, 'y', center_nr, member_nr));
+					lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1.0);
+				}
+			}
+
+			del_pset(clique);
+		}
+
+		del_set(edges);
+		obstack_free(&ob, NULL);
+	}
 }
 
 /**

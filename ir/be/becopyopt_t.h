@@ -69,13 +69,13 @@ struct _copy_opt_t {
 
 typedef struct _unit_t {
 	struct list_head units;		/**< chain for all units */
-	copy_opt_t *co;				/**< the copy_opt this unit belongs to */
+	copy_opt_t *co;				/**< the copy opt this unit belongs to */
 	int node_count;				/**< size of the nodes array */
 	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
 	int *costs;					/**< costs[i] are incurred, if nodes[i] has a different color */
 	int inevitable_costs;		/**< sum of costs of all args interfering with root */
 	int all_nodes_costs;		/**< sum of all costs[i] */
-	int min_nodes_costs;		/**< a lower bound for the costs in costs[], determined by a max indep. set */
+	int min_nodes_costs;		/**< a lower bound for the costs in costs[], determined by a max independent set */
 	int sort_key;				/**< maximum costs. controls the order of ou's in the struct list_head units. */
 
 	/* for heuristic */
@@ -96,6 +96,8 @@ typedef struct _unit_t {
  ******************************************************************************/
 
 typedef struct _neighb_t neighb_t;
+typedef struct _node_t node_t;
+
 
 struct _neighb_t {
 	neighb_t *next;			/** the next neighbour entry*/
@@ -103,11 +105,17 @@ struct _neighb_t {
 	int costs;				/** the costs of the edge (node_t->irn, neighb_t->irn) */
 };
 
-typedef struct _node_t {
+struct _node_t {
 	ir_node *irn;			/** a node with affinity edges */
 	int count;				/** number of affinity edges in the linked list below */
 	neighb_t *neighbours;	/** a linked list of all affinity neighbours */
-} node_t;
+};
 
+#define co_gs_nodes_begin(co)			set_first((co)->nodes)
+#define co_gs_nodes_next(co)			set_next((co)->nodes)
+#define co_gs_nodes_break(co)			set_break((co)->nodes)
+#define co_gs_foreach_node(co, node)	for (node = co_gs_nodes_begin(co); node; node = co_gs_nodes_next(co))
+
+#define co_gs_foreach_neighb(node, neighb)	for (neighb = node->neighbours; neighb; neighb = neighb->next)
 
 #endif
