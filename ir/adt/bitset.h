@@ -268,8 +268,7 @@ static INLINE bitset_pos_t bitset_max(const bitset_t *bs)
  * @return The next set bit from pos on, or -1, if no set bit was found
  * after pos.
  */
-static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
-		bitset_pos_t pos, int set)
+static INLINE bitset_pos_t _bitset_next(const bitset_t *bs, bitset_pos_t pos, int set)
 {
 	if(pos >= bs->size)
 		return -1;
