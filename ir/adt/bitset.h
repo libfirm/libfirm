@@ -13,14 +13,14 @@
 #include <assert.h>
 #include <string.h>
 
+#include "firm_config.h"
+#include "bitfiddle.h"
+
 #ifdef _WIN32
 #include <malloc.h>
 #else
 #include <alloca.h>
 #endif
-
-#include "firm_config.h"
-#include "bitfiddle.h"
 
 typedef unsigned int bitset_pos_t;
 
@@ -66,7 +66,7 @@ static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t size)
 	bitset_t *ptr = area;
 	memset(area, 0, _bitset_overall_size(sizeof(bitset_t), size));
 	ptr->units = _bitset_units(size);
-  ptr->size = size;
+	ptr->size = size;
 	ptr->data = _bitset_data_ptr(area, sizeof(bitset_t), size);
 	return ptr;
 }
@@ -268,14 +268,15 @@ static INLINE bitset_pos_t bitset_max(const bitset_t *bs)
  * @return The next set bit from pos on, or -1, if no set bit was found
  * after pos.
  */
-static INLINE bitset_pos_t _bitset_next(const bitset_t *bs, bitset_pos_t pos, int set)
+static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
+		bitset_pos_t pos, int set)
 {
+	bitset_pos_t unit_number = pos / BS_UNIT_SIZE_BITS;
+
 	if(pos >= bs->size)
 		return -1;
 
 	{
-		bitset_pos_t unit_number = pos / BS_UNIT_SIZE_BITS;
-		bitset_unit_t set_mask   = -set;
 		bitset_pos_t bit_in_unit = pos & BS_UNIT_MASK;
 		bitset_pos_t in_unit_mask = (1 << bit_in_unit) - 1;
 
@@ -291,7 +292,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs, bitset_pos_t pos, in
 		 * counts the bits from 1 on.
 		 */
 		bitset_pos_t next_in_this_unit =
-			_bitset_inside_ntz_value((set_mask ^ curr_unit) & ~in_unit_mask);
+			_bitset_inside_ntz_value((set ? curr_unit : ~curr_unit) & ~in_unit_mask);
 
 		/* If there is a bit set in the current unit, exit. */
 		if(next_in_this_unit < BS_UNIT_SIZE_BITS)
@@ -302,7 +303,8 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs, bitset_pos_t pos, in
 			bitset_pos_t i;
 			for(i = unit_number + 1; i < bs->units; ++i) {
 				bitset_unit_t data = bs->data[i];
-				bitset_pos_t first_set = _bitset_inside_ntz_value(set_mask ^ data);
+				bitset_pos_t first_set =
+					_bitset_inside_ntz_value(set ? data : ~data);
 
 				if(first_set < BS_UNIT_SIZE_BITS)
 					return first_set + i * BS_UNIT_SIZE_BITS;
