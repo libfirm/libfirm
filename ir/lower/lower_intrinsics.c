@@ -66,15 +66,20 @@ static void call_mapper(ir_node *node, void *env) {
   else {
     if (0 <= op->code && op->code < ARR_LEN(wenv->i_map)) {
       const i_instr_record *r = wenv->i_map[op->code];
-      if (r) {  /* we have a mapper */
-        wenv->nr_of_intrinsics += r->i_mapper(node, r->ctx) ? 1 : 0;
+      /* run all possible mapper */
+      while (r) {
+        if (r->i_mapper(node, r->ctx)) {
+          ++wenv->nr_of_intrinsics;
+          break;
+        }
+        r = r->link;
       }
     }
   }
 }
 
 /* Go through all graphs and map calls to intrinsic functions. */
-unsigned lower_intrinsics(const i_record *list, int length) {
+unsigned lower_intrinsics(i_record *list, int length) {
   int                  i, n_ops = get_irp_n_opcodes();
   ir_graph             *irg;
   pmap                 *c_map = pmap_create_ex(length);
@@ -95,6 +100,7 @@ unsigned lower_intrinsics(const i_record *list, int length) {
       ir_op *op = list[i].i_instr.op;
       assert(0 <= op->code && op->code < ARR_LEN(i_map));
 
+      list[i].i_instr.link = i_map[op->code];
       i_map[op->code] = &list[i].i_instr;
     }
   }
@@ -116,6 +122,9 @@ unsigned lower_intrinsics(const i_record *list, int length) {
       /* exception control flow might have changed */
       set_irg_doms_inconsistent(irg);
       set_irg_loopinfo_inconsistent(irg);
+
+      /* optimize it, tuple might be created */
+      local_optimize_graph(irg);
 
       nr_of_intrinsics += wenv.nr_of_intrinsics;
     }

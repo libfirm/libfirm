@@ -44,6 +44,7 @@ typedef struct _i_call_record {
   entity        *i_ent;     /**< the entity representing an intrinsic call */
   i_mapper_func i_mapper;   /**< the mapper function to call */
   void          *ctx;       /**< mapper context */
+  void          *link;      /**< used in the construction algorithm, must be NULL */
 } i_call_record;
 
 /**
@@ -54,6 +55,7 @@ typedef struct _i_instr_record {
   ir_op         *op;        /**< the opcode that must be mapped. */
   i_mapper_func i_mapper;   /**< the mapper function to call */
   void          *ctx;       /**< mapper context */
+  void          *link;      /**< used in the construction algorithm, must be NULL */
 } i_instr_record;
 
 /**
@@ -77,7 +79,7 @@ typedef union _i_record {
  *
  * @return number of found intrinsics.
  */
-unsigned lower_intrinsics(const i_record *list, int length);
+unsigned lower_intrinsics(i_record *list, int length);
 
 /**
  * A mapper for the integer absolute value: inttype abs(inttype v).
@@ -138,7 +140,8 @@ typedef struct _runtime_rt {
     INTRINSIC_INSTR,
     op_Div,
     i_mapper_RuntimeCall,
-    &rt_Div
+    &rt_Div,
+    NULL
   };
   @endcode
  *
@@ -156,7 +159,8 @@ typedef struct _runtime_rt {
     INTRINSIC_INSTR,
     op_Conv,
     i_mapper_RuntimeCall,
-    &rt_Float2Double
+    &rt_Float2Double,
+    NULL
   };
   @endcode
  */
