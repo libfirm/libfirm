@@ -526,14 +526,16 @@ static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos)
 	}
 }
 
+#define UNSPILLABLE -1
+
 static INLINE int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi) {
 	ir_node *irn;
 	int c_spills=0, c_reloads=0;
 
 	pset_foreach(vi->values, irn) {
-		if (arch_irn_is_ignore(raenv->aenv, irn)) {
+		if (arch_irn_is_ignore(raenv->aenv, irn) || be_is_Reload(irn)) {
 			pset_break(vi->values);
-			return -1;
+			return UNSPILLABLE;
 		}
 
 		if (is_Phi(irn)) {
