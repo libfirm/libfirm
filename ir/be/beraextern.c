@@ -623,7 +623,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 
 	/* copies have affinities */
 	if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy) {
-		ir_node *other = get_irn_n(irn, 0);
+		ir_node *other = get_irn_n(irn, be_pos_Copy_orig);
 
 		if (! arch_irn_is_ignore(raenv->aenv, other)) {
 			vi2 = get_var_info(other);
@@ -754,7 +754,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 	assert(spill && "There must be at least one non-phi-node");
 
-	mode = get_irn_mode(get_irn_n(spill, 0));
+	mode = get_irn_mode(get_irn_n(spill, be_pos_Spill_val));
 
 	/* insert reloads and wire them arbitrary*/
 	pset_foreach(vi->values, irn)
@@ -796,8 +796,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 		/* ...add new vars for each non-phi-member */
 		pset_foreach(spills, irn) {
-			ir_node *spilled = get_irn_n(irn, 1);
-			assert(get_irn_node_nr(spilled) != 1089);
+			ir_node *spilled = get_irn_n(irn, be_pos_Spill_val);
 			raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(spilled), spilled);
 		}
 	}

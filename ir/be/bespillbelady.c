@@ -595,7 +595,7 @@ static void remove_copies(belady_env_t *bel) {
 
 		user = get_irn_edge(get_irn_irg(irn), irn, 0)->src;
 
-		src = get_irn_n(irn, 0);
+		src = get_irn_n(irn, be_pos_Copy_orig);
 		set_irn_n(user, 0, src);
 	}
 }
@@ -612,7 +612,7 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 		ir_node *spill;
 		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
 
-		spill = get_irn_n(irn, 0);
+		spill = get_irn_n(irn, be_pos_Reload_mem);
 
 		/* remove reload */
 		set_irn_n(irn, 0, new_Bad());

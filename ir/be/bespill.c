@@ -312,7 +312,7 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 		/* this is a new spill context */
 		ss = obstack_alloc(&ssenv->ob, sizeof(*ss));
 		ss->members = pset_new_ptr(8);
-		ss->largest_mode = get_irn_mode(get_irn_n(spill, 0));
+		ss->largest_mode = get_irn_mode(get_irn_n(spill, be_pos_Spill_val));
 		ss->size = get_mode_size_bytes(ss->largest_mode);
 		ss->align = ss->size; /* TODO Assumed for now */
 		pmap_insert(ssenv->slots, ctx, ss);
@@ -320,7 +320,7 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 		ir_node *irn;
 		/* values with the same spill_ctx must go into the same spill slot */
 		ss = entry->value;
-		assert(ss->size == (unsigned)get_mode_size_bytes(get_irn_mode(get_irn_n(spill, 0))) && "Different sizes for the same spill slot are not allowed yet.");
+		assert(ss->size == (unsigned)get_mode_size_bytes(get_irn_mode(get_irn_n(spill, be_pos_Spill_val))) && "Different sizes for the same spill slot are not allowed yet.");
 		for (irn = pset_first(ss->members); irn; irn = pset_next(ss->members)) {
 			/* use values_interfere here, because it uses the dominance check,
 			   which does work for values in memory */
