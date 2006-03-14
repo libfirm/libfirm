@@ -288,7 +288,7 @@ ir_node *be_new_Reload(const arch_register_class_t *cls, const arch_register_cla
 ir_node *(be_get_Reload_mem)(const ir_node *irn)
 {
 	assert(be_is_Reload(irn));
-	return get_irn_n(irn, 1);
+	return get_irn_n(irn, be_pos_Reload_mem);
 }
 
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
