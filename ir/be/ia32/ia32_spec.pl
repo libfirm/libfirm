@@ -551,24 +551,22 @@ $arch = "ia32";
 
 # Conversions
 
-"Conv_I2I" => {
-  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3", "none" ] },
-  "comment"  => "construct Conv Int -> Int"
-},
-
 "Conv_I2FP" => {
   "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "fp", "none" ] },
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Int -> Floating Point"
 },
 
 "Conv_FP2I" => {
   "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ], "out" => [ "gp", "none" ] },
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Floating Point -> Int"
 },
 
 "Conv_FP2FP" => {
-  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ], "out" => [ "in_r3", "none" ] },
-  "comment"  => "construct Conv Floating Point -> Floating Point"
+  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ], "out" => [ "fp", "none" ] },
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "comment"  => "construct Conv Floating Point -> Floating Point",
 },
 
 ); # end of %nodes

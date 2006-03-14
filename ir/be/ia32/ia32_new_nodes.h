@@ -155,6 +155,16 @@ ir_mode *get_ia32_ls_mode(const ir_node *node);
 void set_ia32_ls_mode(ir_node *node, ir_mode *mode);
 
 /**
+ * Gets the mode of the result.
+ */
+ir_mode *get_ia32_res_mode(const ir_node *node);
+
+/**
+ * Sets the mode of the result.
+ */
+void set_ia32_res_mode(ir_node *node, ir_mode *mode);
+
+/**
  * Gets the frame entity assigned to this node;
  */
 entity *get_ia32_frame_ent(const ir_node *node);

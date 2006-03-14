@@ -268,6 +268,8 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 	set_ia32_orig_node(new_op, get_old_node_name(env));
 #endif /* NDEBUG */
 
+	set_ia32_res_mode(new_op, mode);
+
 	if (is_op_commutative(get_irn_op(env->irn))) {
 		set_ia32_commutative(new_op);
 	}
@@ -345,6 +347,8 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 	set_ia32_orig_node(new_op, get_old_node_name(env));
 #endif /* NDEBUG */
 
+	set_ia32_res_mode(new_op, mode);
+
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
 
@@ -382,6 +386,8 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 #ifndef NDEBUG
 	set_ia32_orig_node(new_op, get_old_node_name(env));
 #endif /* NDEBUG */
+
+	set_ia32_res_mode(new_op, mode);
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
@@ -502,6 +508,8 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 #ifndef NDEBUG
 	set_ia32_orig_node(new_op, get_old_node_name(env));
 #endif /* NDEBUG */
+
+	set_ia32_res_mode(new_op, mode);
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
@@ -648,6 +656,9 @@ static ir_node *gen_Max(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	else {
 		new_op = new_rd_ia32_Max(env->dbg, env->irg, env->block, op1, op2, env->mode);
 		set_ia32_am_support(new_op, ia32_am_None);
+#ifndef NDEBUG
+		set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
 	}
 
 	return new_op;
@@ -795,6 +806,8 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	set_ia32_orig_node(new_op, get_old_node_name(env));
 #endif /* NDEBUG */
 
+	set_ia32_res_mode(new_op, mode);
+
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
 
@@ -847,7 +860,7 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 		set_ia32_Immop_tarval(edx_node, get_tarval_null(mode_Iu));
 	}
 
-	res = new_rd_ia32_DivMod(dbg, irg, block, dividend, divisor, edx_node, mem, mode);
+	res = new_rd_ia32_DivMod(dbg, irg, block, dividend, divisor, edx_node, mem, mode_T);
 
 	set_ia32_flavour(res, dm_flav);
 	set_ia32_n_res(res, 2);
@@ -872,6 +885,8 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 #ifndef NDEBUG
 	set_ia32_orig_node(res, get_old_node_name(env));
 #endif /* NDEBUG */
+
+	set_ia32_res_mode(res, mode_Is);
 
 	return res;
 }
@@ -1075,6 +1090,8 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 		set_ia32_orig_node(new_op, get_old_node_name(env));
 #endif /* NDEBUG */
 
+		set_ia32_res_mode(new_op, env->mode);
+
 		new_op = new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
 	}
 	else {
@@ -1139,6 +1156,8 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 		set_ia32_orig_node(res, get_old_node_name(env));
 #endif /* NDEBUG */
 
+		set_ia32_res_mode(res, mode);
+
 		res = new_rd_Proj(dbg, irg, block, res, mode, 0);
 	}
 	else {
@@ -1146,6 +1165,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 #ifndef NDEBUG
 		set_ia32_orig_node(res, get_old_node_name(env));
 #endif /* NDEBUG */
+		set_ia32_res_mode(res, mode);
 
 		p_eax = new_rd_Proj(dbg, irg, block, res, mode, pn_EAX);
 		p_edx = new_rd_Proj(dbg, irg, block, res, mode, pn_EDX);
@@ -1154,6 +1174,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 #ifndef NDEBUG
 		set_ia32_orig_node(res, get_old_node_name(env));
 #endif /* NDEBUG */
+		set_ia32_res_mode(res, mode);
 
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
 
@@ -1161,6 +1182,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 #ifndef NDEBUG
 		set_ia32_orig_node(res, get_old_node_name(env));
 #endif /* NDEBUG */
+		set_ia32_res_mode(res, mode);
 
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
 	}
@@ -1374,29 +1396,6 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 }
 
 
-#if 0
-/**
- * Checks of we can omit the Int -> Int Conv
- */
-static int ignore_int_conv(ir_mode *src_mode, ir_mode *tgt_mode) {
-	int ignore   = 0;
-	int src_sign = mode_is_signed(src_mode);
-	int tgt_sign = mode_is_signed(tgt_mode);
-	int src_bits = get_mode_size_bits(src_mode);
-	int tgt_bits = get_mode_size_bits(tgt_mode);
-
-	/* ignore Convs small -> big if same signedness */
-	ignore = (src_sign == tgt_sign) && (src_bits < tgt_bits) ? 1 : ignore;
-
-	/* ignore Bool -> Int Conv */
-	ignore = (src_mode == mode_b) ? 1 : ignore;
-
-	/* ignore Int -> Int Convs if same bitsize */
-	ignore = (src_bits == tgt_bits) ? 1 : ignore;
-
-	return ignore;
-}
-#endif /* if 0 */
 
 /**
  * Transforms a Conv node.
@@ -1452,6 +1451,9 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 #ifndef NDEBUG
 		set_ia32_orig_node(new_op, get_old_node_name(env));
 #endif /* NDEBUG */
+		set_ia32_res_mode(new_op, tgt_mode);
+
+		set_ia32_am_support(new_op, ia32_am_Source);
 
 		new_op = new_rd_Proj(dbg, irg, block, new_op, tgt_mode, 0);
 	}

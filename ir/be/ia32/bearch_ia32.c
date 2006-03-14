@@ -152,7 +152,10 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 }
 
 static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
-	int pos = 0;
+	int                   pos = 0;
+	const ia32_irn_ops_t *ops = self;
+
+	DBG((ops->cg->mod, LEVEL_1, "ia32 assigned register %s to node %+F\n", reg->name, irn));
 
 	if (is_Proj(irn)) {
 		pos = ia32_translate_proj_pos(irn);

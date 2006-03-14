@@ -1,3 +1,9 @@
+/**
+ * This file implements the node emitter.
+ *
+ * $Id$
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -13,6 +19,7 @@
 #include "irop_t.h"
 #include "irargs_t.h"
 #include "irprog_t.h"
+#include "iredges_t.h"
 
 #include "../besched.h"
 #include "../benode_t.h"
@@ -322,7 +329,11 @@ static int ia32_get_mode_suffix(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	ir_node *X    = arg->v_ptr;
-	ir_mode *mode = is_ia32_Lea(X) ? get_irn_mode(X) : get_ia32_ls_mode(X);
+	ir_mode *mode = get_irn_mode(X);
+
+	if (mode == mode_T) {
+		mode = is_ia32_AddrModeS(X) || is_ia32_AddrModeD(X) ? get_ia32_ls_mode(X) : get_ia32_res_mode(X);
+	}
 
 	if (!X)
 		return lc_arg_append(app, occ, "(null)", 6);
@@ -718,6 +729,9 @@ void emit_Proj(const ir_node *irn, emit_env_t *env) {
  *             |_|    |___/
  **********************************/
 
+/**
+ * Emit movsb/w instructions to make mov count divideable by 4
+ */
 static void emit_CopyB_prolog(FILE *F, int rem, int size) {
 	fprintf(F, "\t/* memcopy %d bytes*/\n", size);
 	fprintf(F, "\tcld\t\t\t\t/* copy direction forward*/\n");
@@ -736,6 +750,9 @@ static void emit_CopyB_prolog(FILE *F, int rem, int size) {
 	}
 }
 
+/**
+ * Emit rep movsd instruction for memcopy.
+ */
 void emit_ia32_CopyB(const ir_node *irn, emit_env_t *emit_env) {
 	FILE   *F    = emit_env->out;
 	tarval *tv   = get_ia32_Immop_tarval(irn);
@@ -747,6 +764,9 @@ void emit_ia32_CopyB(const ir_node *irn, emit_env_t *emit_env) {
 	fprintf(F, "\trep movsd\t\t\t\t/* memcopy */\n");
 }
 
+/**
+ * Emits unrolled memcopy.
+ */
 void emit_ia32_CopyB_i(const ir_node *irn, emit_env_t *emit_env) {
 	tarval *tv   = get_ia32_Immop_tarval(irn);
 	int     size = get_tarval_long(tv);
@@ -762,6 +782,59 @@ void emit_ia32_CopyB_i(const ir_node *irn, emit_env_t *emit_env) {
 
 
 
+/***************************
+ *   _____
+ *  / ____|
+ * | |     ___  _ ____   __
+ * | |    / _ \| '_ \ \ / /
+ * | |___| (_) | | | \ V /
+ *  \_____\___/|_| |_|\_/
+ *
+ ***************************/
+
+/**
+ * Emit code for conversions (I, FP), (FP, I) and (FP, FP).
+ */
+static void emit_ia32_Conv(const ir_node *irn, emit_env_t *emit_env) {
+	FILE               *F    = emit_env->out;
+	const lc_arg_env_t *env  = ia32_get_arg_env();
+	char               *from, *to, buf[64];
+	ir_mode *src_mode, *tgt_mode;
+
+	src_mode = is_ia32_AddrModeS(irn) ? get_ia32_ls_mode(irn) : get_irn_mode(get_irn_n(irn, 2));
+	tgt_mode = get_ia32_res_mode(irn);
+
+	from = mode_is_float(src_mode) ? (get_mode_size_bits(src_mode) == 32 ? "ss" : "sd") : "si";
+	to   = mode_is_float(tgt_mode) ? (get_mode_size_bits(tgt_mode) == 32 ? "ss" : "sd") : "si";
+
+	switch(get_ia32_op_type(irn)) {
+		case ia32_Normal:
+			lc_esnprintf(env, buf, sizeof(buf), "%1D, %3S", irn, irn);
+			break;
+		case ia32_AddrModeS:
+			lc_esnprintf(env, buf, sizeof(buf), "%1D, %s", irn, ia32_emit_am(irn));
+			break;
+		default:
+			assert(0 && "unsupported op type for Conv");
+	}
+
+	lc_efprintf(env, F, "\tcvt%s2%s %s\t\t\t/* %+F(%+F, %+F) */\n", from, to, buf, irn, src_mode, tgt_mode);
+}
+
+void emit_ia32_Conv_I2FP(const ir_node *irn, emit_env_t *emit_env) {
+	emit_ia32_Conv(irn, emit_env);
+}
+
+void emit_ia32_Conv_FP2I(const ir_node *irn, emit_env_t *emit_env) {
+	emit_ia32_Conv(irn, emit_env);
+}
+
+void emit_ia32_Conv_FP2FP(const ir_node *irn, emit_env_t *emit_env) {
+	emit_ia32_Conv(irn, emit_env);
+}
+
+
+
 /*******************************************
  *  _                          _
  * | |                        | |
@@ -772,6 +845,9 @@ void emit_ia32_CopyB_i(const ir_node *irn, emit_env_t *emit_env) {
  *
  *******************************************/
 
+/**
+ * Emits a backend call
+ */
 void emit_be_Call(const ir_node *irn, emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	entity *ent = be_Call_get_entity(irn);
@@ -788,6 +864,9 @@ void emit_be_Call(const ir_node *irn, emit_env_t *emit_env) {
 	ir_fprintf(F, "\t\t\t/* %+F (be_Call) */\n", irn);
 }
 
+/**
+ * Emits code to increase stack pointer.
+ */
 void emit_be_IncSP(const ir_node *irn, emit_env_t *emit_env) {
 	FILE          *F    = emit_env->out;
 	unsigned       offs = be_get_IncSP_offset(irn);
@@ -802,18 +881,27 @@ void emit_be_IncSP(const ir_node *irn, emit_env_t *emit_env) {
 	}
 }
 
+/**
+ * Emits code to set stack pointer.
+ */
 void emit_be_SetSP(const ir_node *irn, emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 
 	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D, %3S\t\t\t/* restore SP */\n", irn, irn);
 }
 
+/**
+ * Emits code for Copy.
+ */
 void emit_be_Copy(const ir_node *irn, emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 
 	lc_efprintf(ia32_get_arg_env(), F, "\tmov %1D, %1S\t\t\t/* %+F */\n", irn, irn, irn);
 }
 
+/**
+ * Emits code for exchange.
+ */
 void emit_be_Perm(const ir_node *irn, emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 
@@ -851,6 +939,9 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
+	IA32_EMIT(Conv_I2FP);
+	IA32_EMIT(Conv_FP2I);
+	IA32_EMIT(Conv_FP2FP);
 
 	/* benode emitter */
 	BE_EMIT(Call);

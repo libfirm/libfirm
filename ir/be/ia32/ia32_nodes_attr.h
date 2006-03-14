@@ -79,6 +79,7 @@ typedef struct _ia32_attr_t {
 	char   *cnst; /**< points to the string representation of the constant value (either tv or sc) */
 
 	ir_mode *ls_mode;  /**< the mode of the stored/loaded value */
+	ir_mode *res_mode; /**< the mode of the result */
 
 	entity *frame_ent; /**< the frame entity attached to this node */
 

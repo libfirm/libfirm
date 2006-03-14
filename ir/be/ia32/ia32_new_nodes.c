@@ -656,6 +656,22 @@ void set_ia32_ls_mode(ir_node *node, ir_mode *mode) {
 }
 
 /**
+ * Gets the mode of the result.
+ */
+ir_mode *get_ia32_res_mode(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->res_mode;
+}
+
+/**
+ * Sets the mode of the result.
+ */
+void set_ia32_res_mode(ir_node *node, ir_mode *mode) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->res_mode    = mode;
+}
+
+/**
  * Gets the frame entity assigned to this node;
  */
 entity *get_ia32_frame_ent(const ir_node *node) {
@@ -1045,7 +1061,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
 /* default compare operation to compare immediate ops */
 int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	if (a->data.tp == b->data.tp) {
-		if (! a->cnst || ! b->cnst)
+		if (! (a->cnst && b->cnst))
 			return 1;
 
 		return strcmp(a->cnst, b->cnst);
