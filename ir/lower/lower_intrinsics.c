@@ -88,14 +88,14 @@ unsigned lower_intrinsics(const i_record *list, int length) {
 
   /* fill a map for faster search */
   for (i = length - 1; i >= 0; --i) {
-    if (list->i_call.kind == INTRINSIC_CALL) {
+    if (list[i].i_call.kind == INTRINSIC_CALL) {
       pmap_insert(c_map, list[i].i_call.i_ent, (void *)&list[i].i_call);
     }
     else {
-      ir_op *op = list->i_instr.op;
+      ir_op *op = list[i].i_instr.op;
       assert(0 <= op->code && op->code < ARR_LEN(i_map));
 
-      i_map[op->code] = &list->i_instr;
+      i_map[op->code] = &list[i].i_instr;
     }
   }
 
@@ -254,24 +254,27 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
     res_proj = new_r_Proj(irg, bl, call, mode_T, pn_Call_T_result);
 
   if (n_proj > 0) {
-    n_proj += n_res;
+    n_proj += n_res - 1;
 
     /* we are ready */
     turn_into_tuple(node, n_proj);
 
     for (i = 0; i < n_proj; ++i)
       set_Tuple_pred(node, i, new_r_Bad(irg));
-    if (rt->mem_proj_nr > 0)
+    if (rt->mem_proj_nr >= 0)
       set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_M, pn_Call_M_regular));
-    if (rt->exc_proj_nr > 0)
-      set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_X, pn_Call_X_except));
-    if (rt->exc_mem_proj_nr > 0)
-      set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_M, pn_Call_M_except));
+    if (get_irn_op(mem) != op_NoMem) {
+      /* Exceptions can only be handled with real memory */
+      if (rt->exc_proj_nr >= 0)
+        set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_X, pn_Call_X_except));
+      if (rt->exc_mem_proj_nr >= 0)
+        set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_M, pn_Call_M_except));
+    }
 
-    if (rt->res_proj_nr > 0)
+    if (rt->res_proj_nr >= 0)
       for (i = 0; i < n_res; ++i)
         set_Tuple_pred(node, rt->res_proj_nr + i,
-          new_r_Proj(irg, bl, call, get_type_mode(get_method_res_type(mtp, i)), i));
+          new_r_Proj(irg, bl, res_proj, get_type_mode(get_method_res_type(mtp, i)), i));
     return 1;
   }
   else {
@@ -280,7 +283,7 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
       ir_mode *mode = get_type_mode(get_method_res_type(mtp, 0));
 
       res_proj = new_r_Proj(irg, bl, call, mode_T, pn_Call_T_result);
-      res_proj = new_r_Proj(irg, bl, call, mode, 0);
+      res_proj = new_r_Proj(irg, bl, res_proj, mode, 0);
 
       exchange(node, res_proj);
       return 1;
