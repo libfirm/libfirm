@@ -275,38 +275,38 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 		return -1;
 
 	{
-		lc_bitset_pos_t unit_number = pos / LC_BS_UNIT_SIZE_BITS;
-		lc_bitset_unit_t set_mask   = -set;
-		lc_bitset_pos_t bit_in_unit = pos & LC_BS_UNIT_MASK;
-		lc_bitset_pos_t in_unit_mask = (1 << bit_in_unit) - 1;
+		bitset_pos_t unit_number = pos / BS_UNIT_SIZE_BITS;
+		bitset_unit_t set_mask   = -set;
+		bitset_pos_t bit_in_unit = pos & BS_UNIT_MASK;
+		bitset_pos_t in_unit_mask = (1 << bit_in_unit) - 1;
 
 		/*
 		 * Mask out the bits smaller than pos in the current unit.
 		 * We are only interested in bits set higher than pos.
 		 */
-		lc_bitset_unit_t curr_unit = bs->data[unit_number];
+		bitset_unit_t curr_unit = bs->data[unit_number];
 
 		/*
 		 * Find the next bit set in the unit.
 		 * Mind that this function returns 0, if the unit is -1 and
 		 * counts the bits from 1 on.
 		 */
-		lc_bitset_pos_t next_in_this_unit =
-			_lc_bitset_inside_ntz_value((set_mask ^ curr_unit) & ~in_unit_mask);
+		bitset_pos_t next_in_this_unit =
+			_bitset_inside_ntz_value((set_mask ^ curr_unit) & ~in_unit_mask);
 
 		/* If there is a bit set in the current unit, exit. */
-		if(next_in_this_unit < LC_BS_UNIT_SIZE_BITS)
-			return next_in_this_unit + unit_number * LC_BS_UNIT_SIZE_BITS;
+		if(next_in_this_unit < BS_UNIT_SIZE_BITS)
+			return next_in_this_unit + unit_number * BS_UNIT_SIZE_BITS;
 
 		/* Else search for set bits in the next units. */
 		else {
-			lc_bitset_pos_t i;
+			bitset_pos_t i;
 			for(i = unit_number + 1; i < bs->units; ++i) {
-				lc_bitset_unit_t data = bs->data[i];
-				lc_bitset_pos_t first_set = _lc_bitset_inside_ntz_value(set_mask ^ data);
+				bitset_unit_t data = bs->data[i];
+				bitset_pos_t first_set = _bitset_inside_ntz_value(set_mask ^ data);
 
-				if(first_set < LC_BS_UNIT_SIZE_BITS)
-					return first_set + i * LC_BS_UNIT_SIZE_BITS;
+				if(first_set < BS_UNIT_SIZE_BITS)
+					return first_set + i * BS_UNIT_SIZE_BITS;
 			}
 		}
 	}
