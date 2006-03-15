@@ -13,12 +13,19 @@
 
 #include "firm_types.h"
 
+/** A default threshold. */
+#define DEFAULT_CLONE_THRESHOLD 300
+
 /**
- * Do the procedure cloning. Evaluate a heuristic weight for every
- * call(..., Const, ...). If the weight is bigger than threshold,
+ * Do procedure cloning. Evaluate a heuristic weight for every
+ * Call(..., Const, ...). If the weight is bigger than threshold,
  * clone the entity and fix the calls.
  *
  * @param threshold   the threshold for cloning
+ *
+ * The threshold is an estimation of how many instructions are saved
+ * when executing a cloned method. If threshold is 0.0, every possible
+ * call is cloned.
  */
 void proc_cloning(float threshold);
 
