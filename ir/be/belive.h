@@ -7,6 +7,7 @@
 #ifndef _BELIVE_H
 #define _BELIVE_H
 
+#include "firm_types.h"
 #include <stdio.h>
 
 /**
@@ -25,7 +26,7 @@ void be_liveness_dump(ir_graph *irg, FILE *f);
 /**
  * Dump the liveness information for a graph.
  * @param irg The graph.
- * @param cls_name A string used as substing in the filename.
+ * @param cls_name A string used as substring in the filename.
  */
 void be_liveness_dumpto(ir_graph *irg, const char *cls_name);
 
@@ -59,4 +60,4 @@ int (is_live_end)(const ir_node *block, const ir_node *irn);
  */
 void be_check_dominance(ir_graph *irg);
 
-#endif
+#endif /* _BELIVE_H */
