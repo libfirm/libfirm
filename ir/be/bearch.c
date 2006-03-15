@@ -227,12 +227,12 @@ extern char *arch_register_req_format(char *buf, size_t len, const arch_register
 	}
 
 	if(arch_register_req_is(req, should_be_same)) {
-		snprintf(tmp, sizeof(tmp), " same to: %+F", req->other_different);
+		ir_snprintf(tmp, sizeof(tmp), " same to: %+F", req->other_different);
 		strncat(buf, tmp, len);
 	}
 
 	if(arch_register_req_is(req, should_be_different)) {
-		snprintf(tmp, sizeof(tmp), " different to: %+F", req->other_different);
+		ir_snprintf(tmp, sizeof(tmp), " different to: %+F", req->other_different);
 		strncat(buf, tmp, len);
 	}
 
