@@ -7,8 +7,7 @@
 #ifndef _FIRM_LIST_SCHED
 #define _FIRM_LIST_SCHED
 
-#include "irgraph.h"
-#include "irnode.h"
+#include "firm_types.h"
 
 #include "pset.h"
 #include "pmap.h"
