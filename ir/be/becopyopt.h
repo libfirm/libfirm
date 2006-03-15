@@ -13,7 +13,7 @@
 #ifndef _BECOPYOPT_H
 #define _BECOPYOPT_H
 
-#include "irnode.h"
+#include "firm_types.h"
 #include "bechordal.h"
 
 /**
@@ -36,10 +36,9 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs);
 void free_copy_opt(copy_opt_t *co);
 
 /**
- * Checks if a node is optimizable, viz. has somthing to do with coalescing
+ * Checks if a node is optimizable, viz. has something to do with coalescing
  * @param arch The architecture environment
  * @param irn  The irn to check
- * @param req  A register_requirement structure (used to check for 2-addr-code)
  */
 int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn);
 
@@ -139,4 +138,4 @@ int co_solve_ilp2(copy_opt_t *co, double time_limit);
  */
 int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn);
 
-#endif
+#endif /* _BECOPYOPT_H */
