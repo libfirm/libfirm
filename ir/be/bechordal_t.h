@@ -8,6 +8,9 @@
 #ifndef _BECHORDAL_T_H
 #define _BECHORDAL_T_H
 
+#include "firm_types.h"
+#include "firm_config.h"
+
 #include <stdlib.h>
 
 #include "bitset.h"
@@ -16,9 +19,6 @@
 #include "pset.h"
 #include "pmap.h"
 #include "set.h"
-
-#include "irnode.h"
-#include "irgraph.h"
 
 #include "be_t.h"
 #include "beifg.h"
