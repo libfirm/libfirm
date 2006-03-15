@@ -10,6 +10,7 @@
 #ifndef _BEIRGMOD_H
 #define _BEIRGMOD_H
 
+#include "firm_types.h"
 #include "pset.h"
 
 /*
@@ -96,4 +97,4 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *info, pset *nodes, pset *ph
  */
 void be_ssa_constr_set_phis(dom_front_info_t *info, pset *nodes, pset *phis);
 
-#endif
+#endif /* _BEIRGMOD_H */
