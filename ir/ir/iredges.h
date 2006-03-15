@@ -18,7 +18,7 @@
 #ifndef _FIRM_EDGES_H
 #define _FIRM_EDGES_H
 
-#include "irnode.h"
+#include "firm_types.h"
 
 #ifndef _IR_EDGE_TYPEDEF_
 #define _IR_EDGE_TYPEDEF_
