@@ -445,6 +445,7 @@ sub is_reg_class {
 ###
 sub get_reg_class {
 	my $reg = shift;
+	$reg = substr($reg, 1) if ($reg =~ /!.*/);
 	return $reg2class{"$reg"}{"class"} if (exists($reg2class{"$reg"}));
 	return undef;
 }
