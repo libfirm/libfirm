@@ -211,7 +211,7 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	be_abi_call_flags_t flags;
 	const arch_register_class_t *cls = &reg_classes[CLS_DATAB];
 	int i, n;
-	be_abi_call_flags_t call_flags = { 0, 0, 0, 0, 0 };
+  be_abi_call_flags_t call_flags = { { 0, 0, 0, 0, 0 } };
 
 	if(!between_type) {
 		between_type = new_type_class(new_id_from_str("firm_be_between"));
