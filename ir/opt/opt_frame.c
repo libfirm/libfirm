@@ -50,7 +50,7 @@ void opt_frame_irg(ir_graph *irg) {
 
 #ifdef FIRM_EDGES_INPLACE
   if (edges_activated(irg)) { /* use inplace edges */
-    ir_edge_t *edge;
+    const ir_edge_t *edge;
 
     /* mark all used entities */
     foreach_out_edge(frame, edge) {
