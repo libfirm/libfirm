@@ -82,7 +82,7 @@ extern "C" {
 #include "proc_cloning.h"   /* procedure cloning */
 #include "opt_confirms.h"   /* Confirm based optimizations */
 #include "gvn_pre.h"        /* global value numbering and partial redundancy elimination */
-//#include "opt_branches.h"   /* Branch optimizations */
+#include "opt_frame.h"      /* frame type optimization */
 
 /* Lowering */
 #include "lower_calls.h"      /* lowering of different calls */
