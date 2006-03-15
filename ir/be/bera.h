@@ -7,16 +7,13 @@
 #ifndef _BERA_H
 #define _BERA_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "firm_config.h"
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #endif
 
-#include "irnode.h"
-#include "irgraph.h"
+#include "firm_types.h"
 
 #include "be.h"
 
