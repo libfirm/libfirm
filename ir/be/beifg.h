@@ -10,7 +10,7 @@
 #ifndef _BEIFG_H
 #define _BEIFG_H
 
-#include "irnode.h"
+#include "firm_types.h"
 
 typedef struct _be_ifg_impl_t   be_ifg_impl_t;
 typedef struct _be_ifg_t        be_ifg_t;
