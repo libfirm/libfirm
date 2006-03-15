@@ -6,7 +6,7 @@
 #ifndef _BEABI_H
 #define _BEABI_H
 
-#include "type.h"
+#include "firm_types.h"
 
 #include "be.h"
 #include "bearch.h"
@@ -15,7 +15,7 @@
 typedef struct {
 	unsigned left_to_right         :1;  /**< Arguments are from left to right. */
 	unsigned store_args_sequential :1;  /**< Use sequential stores for arguments. */
-	unsigned try_omit_fp:1;  /**< Try to omit the frame pointer. */
+	unsigned try_omit_fp           :1;  /**< Try to omit the frame pointer. */
 	unsigned fp_free               :1;  /**< The function can use any register as frame pointer. */
 	unsigned call_has_imm          :1;  /**< A call can take the callee's address as an immediate. */
 } be_abi_call_flags_bits_t;
