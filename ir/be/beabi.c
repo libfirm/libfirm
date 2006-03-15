@@ -11,7 +11,7 @@
 #include "obst.h"
 
 #include "type.h"
-#include "survive_dce.h"
+#include "irgopt.h"
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
@@ -1152,6 +1152,7 @@ static void collect_alloca_walker(ir_node *irn, void *data)
 
 be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 {
+	pmap_entry *ent;
 	be_abi_irg_t *env = malloc(sizeof(env[0]));
 
 	ir_node *dummy;
@@ -1183,7 +1184,9 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	/* Make some important node pointers survive the dead node elimination. */
 	survive_dce_register_irn(env->dce_survivor, &env->init_sp);
-	survive_dce_register_pmap(env->dce_survivor, env->regs);
+
+	pmap_foreach(env->regs, ent)
+		survive_dce_register_irn(env->dce_survivor, (ir_node **) &ent->value);
 
 	arch_env_push_irn_handler(env->birg->main_env->arch_env, &env->irn_handler);
 
