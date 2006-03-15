@@ -58,6 +58,28 @@ void local_optimize_graph (ir_graph *irg);
  */
 void dead_node_elimination(ir_graph *irg);
 
+typedef struct _survive_dce_t survive_dce_t;
+
+/**
+ * Make a new Survive DCE environment.
+ */
+survive_dce_t *new_survive_dce(void);
+
+/**
+ * Free a Survive DCE environment.
+ */
+void free_survive_dce(survive_dce_t *sd);
+
+/**
+ * Register a node pointer to be patched upon DCE.
+ * When DCE occurs, the node pointer specified by @p place will be
+ * patched to the new address of the node it is pointing to.
+ *
+ * @param sd    The Survive DCE environment.
+ * @param place The address of the node pointer.
+ */
+void survive_dce_register_irn(survive_dce_t *sd, ir_node **place);
+
 /**  Cleans the control flow from Bad predecesors.
  *
  * Removes Bad predecesors from Blocks and the corresponding

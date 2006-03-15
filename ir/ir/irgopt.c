@@ -29,6 +29,7 @@
 
 #include "array.h"
 #include "pset.h"
+#include "pmap.h"
 #include "eset.h"
 #include "pdeq.h"       /* Fuer code placement */
 #include "xmalloc.h"
@@ -664,6 +665,118 @@ void remove_bad_predecessors(ir_graph *irg) {
   irg_walk_graph(irg, init_link, relink_bad_predecessors, NULL);
 }
 
+
+/*
+	 __                      _  __ __
+	(_     __    o     _    | \/  |_
+	__)|_| | \_/ | \_/(/_   |_/\__|__
+
+  The following stuff implements a facility that automatically patches
+  registered ir_node pointers to the new node when a dead node elimination occurs.
+*/
+
+struct _survive_dce_t {
+	struct obstack obst;
+	pmap *places;
+	pmap *new_places;
+	hook_entry_t dead_node_elim;
+	hook_entry_t dead_node_elim_subst;
+};
+
+typedef struct _survive_dce_list_t {
+	struct _survive_dce_list_t *next;
+	ir_node **place;
+} survive_dce_list_t;
+
+static void dead_node_hook(void *context, ir_graph *irg, int start)
+{
+	survive_dce_t *sd = context;
+
+	/* Create a new map before the dead node elimination is performed. */
+	if(start) {
+		sd->new_places = pmap_create_ex(pmap_count(sd->places));
+	}
+
+	/* Patch back all nodes if dead node elimination is over and something is to be done. */
+	else {
+		pmap_destroy(sd->places);
+		sd->places     = sd->new_places;
+		sd->new_places = NULL;
+	}
+}
+
+static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_node *nw)
+{
+	survive_dce_t *sd = context;
+	survive_dce_list_t *list = pmap_get(sd->places, old);
+
+	/* If the node is to be patched back, write the new address to all registered locations. */
+	if(list) {
+		survive_dce_list_t *p;
+
+		for(p = list; p; p = p->next)
+			*(p->place) = nw;
+
+		pmap_insert(sd->new_places, nw, list);
+	}
+}
+
+/**
+ * Make a new Survive DCE environment.
+ */
+survive_dce_t *new_survive_dce(void)
+{
+	survive_dce_t *res = xmalloc(sizeof(res[0]));
+	obstack_init(&res->obst);
+	res->places     = pmap_create();
+	res->new_places = NULL;
+
+	res->dead_node_elim.hook._hook_dead_node_elim = dead_node_hook;
+	res->dead_node_elim.context                   = res;
+	res->dead_node_elim.next                      = NULL;
+
+	res->dead_node_elim_subst.hook._hook_dead_node_elim_subst = dead_node_subst_hook;
+	res->dead_node_elim_subst.context = res;
+	res->dead_node_elim_subst.next    = NULL;
+
+	register_hook(hook_dead_node_elim, &res->dead_node_elim);
+	register_hook(hook_dead_node_elim_subst, &res->dead_node_elim_subst);
+	return res;
+}
+
+/**
+ * Free a Survive DCE environment.
+ */
+void free_survive_dce(survive_dce_t *sd)
+{
+	obstack_free(&sd->obst, NULL);
+	pmap_destroy(sd->places);
+	unregister_hook(hook_dead_node_elim, &sd->dead_node_elim);
+	unregister_hook(hook_dead_node_elim_subst, &sd->dead_node_elim_subst);
+	free(sd);
+}
+
+/**
+ * Register a node pointer to be patched upon DCE.
+ * When DCE occurs, the node pointer specified by @p place will be
+ * patched to the new address of the node it is pointing to.
+ *
+ * @param sd    The Survive DCE environment.
+ * @param place The address of the node pointer.
+ */
+void survive_dce_register_irn(survive_dce_t *sd, ir_node **place)
+{
+	if(*place != NULL) {
+		ir_node *irn      = *place;
+		survive_dce_list_t *curr = pmap_get(sd->places, irn);
+		survive_dce_list_t *nw   = obstack_alloc(&sd->obst, sizeof(nw));
+
+		nw->next  = curr;
+		nw->place = place;
+
+		pmap_insert(sd->places, irn, nw);
+	}
+}
 
 /*--------------------------------------------------------------------*/
 /*  Functionality for inlining                                         */
