@@ -8,9 +8,6 @@
 #ifndef __BECHORDAL_H
 #define __BECHORDAL_H
 
-#include "irgraph.h"
-#include "irnode.h"
-
 #include "bearch.h"
 #include "bera.h"
 
