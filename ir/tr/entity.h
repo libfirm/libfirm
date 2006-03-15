@@ -598,4 +598,8 @@ typedef enum acc_bits {
   ptr_access_all   = ptr_access_rw|ptr_access_store     /**< all possible access */
 } ptr_access_kind;
 
+#define IS_READ(a)     ((a) & ptr_access_read)
+#define IS_WRITTEN(a)  ((a) & ptr_access_write)
+#define IS_STORED(a)   ((a) & ptr_access_store)
+
 #endif /* _ENTITY_H_ */
