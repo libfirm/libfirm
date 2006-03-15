@@ -7,7 +7,7 @@
 #ifndef _BEASM_TYPES_H
 #define _BEASM_TYPES_H
 
-#include "tv.h"
+#include "type.h"
 
 
 /**
