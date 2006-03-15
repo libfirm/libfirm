@@ -1,26 +1,15 @@
 #ifndef _FIRM_BEARCH_H
 #define _FIRM_BEARCH_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#include "firm_config.h"
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #endif
 
-#include "type.h"
-
-#include "irnode.h"
-#include "irmode.h"
+#include "firm_types.h"
 
 #include "bitset.h"
-#include "hashptr.h"
-#include "fourcc.h"
-#include "set.h"
-#include "list.h"
-#include "ident.h"
 
 #include "belistsched.h"
 #include "beabi_t.h"
