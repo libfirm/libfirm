@@ -27,6 +27,8 @@
 #include "pset.h"
 #include "entity.h"
 
+#include "irprintf.h"
+
 arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if)
 {
   memset(env, 0, sizeof(*env));
