@@ -115,16 +115,18 @@ ir_op *op_be_Reload;
 ir_op *op_be_Perm;
 ir_op *op_be_Copy;
 ir_op *op_be_Keep;
+ir_op *op_be_CopyKeep;
 ir_op *op_be_Call;
 ir_op *op_be_Return;
 ir_op *op_be_IncSP;
-ir_op *op_be_Alloca;
+ir_op *op_be_AddSP;
 ir_op *op_be_SetSP;
 ir_op *op_be_RegParams;
 ir_op *op_be_StackParam;
 ir_op *op_be_FrameAddr;
 ir_op *op_be_FrameLoad;
 ir_op *op_be_FrameStore;
+ir_op *op_be_Epilogue;
 
 static int beo_base = -1;
 
@@ -157,9 +159,10 @@ void be_node_init(void) {
 	op_be_Perm       = new_ir_op(beo_base + beo_Perm,       "Perm",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
 	op_be_Copy       = new_ir_op(beo_base + beo_Copy,       "Copy",       op_pin_state_floats,     N, oparity_unary,    0, sizeof(be_node_attr_t),  &be_node_op_ops);
 	op_be_Keep       = new_ir_op(beo_base + beo_Keep,       "Keep",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_be_CopyKeep   = new_ir_op(beo_base + beo_CopyKeep,   "CopyKeep",   op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
 	op_be_Call       = new_ir_op(beo_base + beo_Call,       "Call",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_call_attr_t),  &be_node_op_ops);
 	op_be_Return     = new_ir_op(beo_base + beo_Return,     "Return",     op_pin_state_pinned,     X, oparity_variable, 0, sizeof(be_node_attr_t),  &be_node_op_ops);
-	op_be_Alloca     = new_ir_op(beo_base + beo_Alloca,     "Alloca",     op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_be_AddSP      = new_ir_op(beo_base + beo_AddSP,      "AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),  &be_node_op_ops);
 	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t), &be_node_op_ops);
 	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,      "IncSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t), &be_node_op_ops);
 	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams,  "RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),  &be_node_op_ops);
@@ -167,15 +170,17 @@ void be_node_init(void) {
 	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "FrameAddr",  op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_frame_attr_t), &be_node_op_ops);
 	op_be_FrameLoad  = new_ir_op(beo_base + beo_FrameLoad,  "FrameLoad",  op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t), &be_node_op_ops);
 	op_be_FrameStore = new_ir_op(beo_base + beo_FrameStore, "FrameStore", op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t), &be_node_op_ops);
+	op_be_Epilogue   = new_ir_op(beo_base + beo_Epilogue,   "Epilogue",   op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_node_attr_t),  &be_node_op_ops);
 
 	set_op_tag(op_be_Spill,      &be_node_tag);
 	set_op_tag(op_be_Reload,     &be_node_tag);
 	set_op_tag(op_be_Perm,       &be_node_tag);
 	set_op_tag(op_be_Copy,       &be_node_tag);
 	set_op_tag(op_be_Keep,       &be_node_tag);
+	set_op_tag(op_be_CopyKeep,   &be_node_tag);
 	set_op_tag(op_be_Call,       &be_node_tag);
 	set_op_tag(op_be_Return,     &be_node_tag);
-	set_op_tag(op_be_Alloca,     &be_node_tag);
+	set_op_tag(op_be_AddSP,      &be_node_tag);
 	set_op_tag(op_be_SetSP,      &be_node_tag);
 	set_op_tag(op_be_IncSP,      &be_node_tag);
 	set_op_tag(op_be_RegParams,  &be_node_tag);
@@ -183,6 +188,7 @@ void be_node_init(void) {
 	set_op_tag(op_be_FrameLoad,  &be_node_tag);
 	set_op_tag(op_be_FrameStore, &be_node_tag);
 	set_op_tag(op_be_FrameAddr,  &be_node_tag);
+	set_op_tag(op_be_Epilogue,   &be_node_tag);
 }
 
 static void *init_node_attr(ir_node* irn, int max_reg_data)
@@ -394,22 +400,22 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	return irn;
 }
 
-ir_node *be_new_Alloca(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *old_sp, ir_node *sz)
+ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz)
 {
 	be_node_attr_t *a;
 	ir_node *irn;
-	ir_node *in[3];
+	ir_node *in[be_pos_AddSP_last];
 
-	in[0]    = mem;
-	in[1]    = old_sp;
-	in[2]    = sz;
-	irn      = new_ir_node(NULL, irg, bl, op_be_Alloca, mode_T, 3, in);
-	a        = init_node_attr(irn, 3);
+	in[be_pos_AddSP_old_sp] = old_sp;
+	in[be_pos_AddSP_size]   = sz;
 
-	be_node_set_flags(irn, OUT_POS(pn_Alloc_res), arch_irn_flags_ignore);
+	irn      = new_ir_node(NULL, irg, bl, op_be_AddSP, mode_T, be_pos_AddSP_last, in);
+	a        = init_node_attr(irn, be_pos_AddSP_last);
+
+	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_ignore);
 
 	/* Set output constraint to stack register. */
-	be_set_constr_single_reg(irn, OUT_POS(pn_Alloc_res), sp);
+	be_set_constr_single_reg(irn, OUT_POS(0), sp);
 
 	return irn;
 }
@@ -516,6 +522,38 @@ ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg,
 	return irn;
 }
 
+ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
+{
+	ir_node *irn;
+	ir_node **in = (ir_node **) alloca((n + 1) * sizeof(in[0]));
+
+	in[0] = src;
+	memcpy(&in[1], in_keep, n * sizeof(in[0]));
+	irn   = new_ir_node(NULL, irg, bl, op_be_CopyKeep, mode, n + 1, in);
+	init_node_attr(irn, n);
+	be_node_set_reg_class(irn, OUT_POS(0), cls);
+	be_node_set_reg_class(irn, 0, cls);
+
+	return irn;
+}
+
+ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode)
+{
+	ir_node *in[1];
+
+	in[0] = keep;
+	return be_new_CopyKeep(cls, irg, bl, src, 1, in, mode);
+}
+
+ir_node *be_new_Epilogue(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+{
+	ir_node *irn;
+
+	irn = new_ir_node(NULL, irg, bl, op_be_Epilogue, mode_T, n, in);
+	init_node_attr(irn, n);
+	return irn;
+}
+
 int be_is_Spill         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Spill          ; }
 int be_is_Reload        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Reload         ; }
 int be_is_Copy          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Copy           ; }
@@ -525,12 +563,13 @@ int be_is_Call          (const ir_node *irn) { return be_get_irn_opcode(irn) == 
 int be_is_Return        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Return         ; }
 int be_is_IncSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_IncSP          ; }
 int be_is_SetSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_SetSP          ; }
-int be_is_Alloca        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Alloca         ; }
+int be_is_AddSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_AddSP          ; }
 int be_is_RegParams     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_RegParams      ; }
 int be_is_StackParam    (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_StackParam     ; }
 int be_is_FrameAddr     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameAddr      ; }
 int be_is_FrameLoad     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameLoad      ; }
 int be_is_FrameStore    (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameStore     ; }
+int be_is_Epilogue        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Epilogue         ; }
 
 int be_has_frame_entity(const ir_node *irn)
 {

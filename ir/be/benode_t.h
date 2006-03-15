@@ -35,13 +35,15 @@ extern ir_op *op_be_Keep;
 extern ir_op *op_be_Call;
 extern ir_op *op_be_Return;
 extern ir_op *op_be_IncSP;
-extern ir_op *op_be_Alloca;
+extern ir_op *op_be_AddSP;
 extern ir_op *op_be_SetSP;
 extern ir_op *op_be_RegParams;
 extern ir_op *op_be_StackParam;
 extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_FrameLoad;
 extern ir_op *op_be_FrameStore;
+extern ir_op *op_be_Epilogue;
+extern ir_op *op_be_Prologue;
 
 typedef enum {
 	beo_NoBeOp = 0,
@@ -50,10 +52,10 @@ typedef enum {
 	beo_Perm,
 	beo_Copy,
 	beo_Keep,
-	beo_NoReg,
+	beo_CopyKeep,
 	beo_Call,
 	beo_Return,
-	beo_Alloca,
+	beo_AddSP,
 	beo_IncSP,
 	beo_SetSP,
 	beo_RegParams,
@@ -61,6 +63,8 @@ typedef enum {
 	beo_FrameLoad,
 	beo_FrameStore,
 	beo_FrameAddr,
+	beo_Epilogue,
+	beo_Prologue,
 	beo_Last
 } be_opcode_t;
 
@@ -112,7 +116,25 @@ ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_re
 						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, entity *ent);
 ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, entity *ent);
 
-ir_node *be_new_Alloca(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *old_sp, ir_node *sz);
+enum {
+	be_pos_AddSP_old_sp = 0,
+	be_pos_AddSP_size   = 1,
+	be_pos_AddSP_last   = 2
+};
+
+/**
+ * Make a new AddSP node.
+ * An AddSP node expresses an increase of the stack pointer in the direction the stack
+ * grows. In contrast to IncSP, the amount of bytes the stack pointer is grown, is not
+ * given by a constant but an ordinary Firm node.
+ * @param sp     The stack pointer register.
+ * @param irg    The graph.
+ * @param bl     The block.
+ * @param old_sp The node representing the old stack pointer value.
+ * @param sz     The node expressing the size by which the stack pointer shall be grown.
+ * @return       A new AddSP node.
+ */
+ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz);
 
 ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *operand, ir_node *mem);
 
@@ -129,6 +151,8 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
  * @note         This node sets a register constraint to the @p sp register on its output.
  */
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, unsigned amount, be_stack_dir_t dir);
+
+
 
 void     be_set_IncSP_offset(ir_node *irn, unsigned offset);
 unsigned be_get_IncSP_offset(const ir_node *irn);
@@ -150,8 +174,15 @@ ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 
+ir_node *be_new_Epilogue(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+ir_node *be_new_Prologue(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn,ir_node *spill_ctx);
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *reloader, ir_mode *mode, ir_node *spill);
+
+ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode);
+ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode);
+
 
 /**
  * Get the backend opcode of a backend node.
@@ -165,16 +196,19 @@ int be_is_Reload(const ir_node *irn);
 int be_is_Copy(const ir_node *irn);
 int be_is_Perm(const ir_node *irn);
 int be_is_Keep(const ir_node *irn);
+int be_is_CopyKeep(const ir_node *irn);
 int be_is_Call(const ir_node *irn);
 int be_is_Return(const ir_node *irn);
 int be_is_IncSP(const ir_node *irn);
 int be_is_SetSP(const ir_node *irn);
-int be_is_Alloca(const ir_node *irn);
+int be_is_AddSP(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
 int be_is_StackParam(const ir_node *irn);
 int be_is_FrameAddr(const ir_node *irn);
 int be_is_FrameLoad(const ir_node *irn);
 int be_is_FrameStore(const ir_node *irn);
+int be_is_Epilogue(const ir_node *irn);
+int be_is_Prologue(const ir_node *irn);
 
 /**
  * Get the entity on the stack frame the given node uses.
