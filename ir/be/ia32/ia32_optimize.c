@@ -356,14 +356,14 @@ static int is_candidate(const ir_node *block, const ir_node *irn, int check_addr
 
 	in = get_irn_n(irn, 2);
 
-	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld) || be_is_StackParam(in)) {
+	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
 	}
 
 	in = get_irn_n(irn, 3);
 
-	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld) || be_is_StackParam(in)) {
+	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
 	}

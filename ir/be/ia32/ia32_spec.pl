@@ -151,7 +151,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. add %ia32_emit_binop\t\t\t/* Add(%A1, %A2) -> %D1 */'
 },
 
@@ -159,7 +159,7 @@ $arch = "ia32";
   "irn_flags" => "A",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. imul %ia32_emit_binop\t\t\t/* Mul(%A1, %A2) -> %D1 */'
 },
 
@@ -175,7 +175,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. and %ia32_emit_binop\t\t\t/* And(%A1, %A2) -> %D1 */'
 },
 
@@ -183,7 +183,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. or %ia32_emit_binop\t\t\t/* Or(%A1, %A2) -> %D1 */'
 },
 
@@ -191,7 +191,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. xor %ia32_emit_binop\t\t\t/* Xor(%A1, %A2) -> %D1 */'
 },
 
@@ -228,7 +228,7 @@ $arch = "ia32";
 "CMov" => {
   "irn_flags" => "R",
   "comment"   => "construct Mux: Mux(sel, a, b) == sel ? a : b",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "in_r2 !in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "in_r2" ] },
   "emit"      =>
 '. cmp %S1, 0\t\t\t/* compare Sel for CMov (%A2, %A3) */
 . cmovne %D1, %S3\t\t\t/* sel == true -> return %S3 */
@@ -241,7 +241,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct Sub: Sub(a, b) = a - b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. sub %ia32_emit_binop\t\t\t/* Sub(%A1, %A2) -> %D1 */'
 },
 
@@ -423,7 +423,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. adds%M %ia32_emit_binop\t\t\t/* SSE Add(%A3, %A4) -> %D1 */'
 },
 
@@ -431,7 +431,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. muls%M %ia32_emit_binop\t\t\t/* SSE Mul(%A3, %A4) -> %D1 */'
 },
 
@@ -439,7 +439,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. maxs%M %ia32_emit_binop\t\t\t/* SSE Max(%A3, %A4) -> %D1 */'
 },
 
@@ -447,7 +447,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. mins%M %ia32_emit_binop\t\t\t/* SSE Min(%A3, %A4) -> %D1 */'
 },
 
@@ -455,7 +455,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE And: And(a, b) = a AND b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. andp%M %ia32_emit_binop\t\t\t/* SSE And(%A3, %A4) -> %D1 */'
 },
 
@@ -463,7 +463,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE Or: Or(a, b) = a OR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. orp%M %ia32_emit_binop\t\t\t/* SSE Or(%A3, %A4) -> %D1 */'
 },
 
@@ -471,7 +471,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE Eor: Eor(a, b) = a XOR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. xorp%M %ia32_emit_binop\t\t\t/* SSE Xor(%A3, %A4) -> %D1 */'
 },
 
@@ -481,7 +481,7 @@ $arch = "ia32";
   "irn_flags" => "R",
   "comment"   => "construct SSE Sub: Sub(a, b) = a - b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. subs%M %ia32_emit_binop\t\t\t/* SSE Sub(%A1, %A2) -> %D1 */'
 },
 
