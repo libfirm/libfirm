@@ -1476,6 +1476,37 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
  *
  ********************************************/
 
+static ir_node *gen_StackParam(ia32_transform_env_t *env) {
+	ir_node *new_op = NULL;
+	ir_node *node   = env->irn;
+	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node *mem    = new_rd_NoMem(env->irg);
+	ir_node *ptr    = get_irn_n(node, 0);
+	entity  *ent    = be_get_frame_entity(node);
+	ir_mode *mode   = env->mode;
+
+	if (mode_is_float(mode)) {
+		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+	}
+	else {
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+	}
+
+	set_ia32_frame_ent(new_op, ent);
+	set_ia32_use_frame(new_op);
+
+	set_ia32_am_support(new_op, ia32_am_Source);
+	set_ia32_op_type(new_op, ia32_AddrModeS);
+	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_ls_mode(new_op, mode);
+
+#ifndef NDEBUG
+	set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
+	return new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, 0);
+}
+
 /**
  * Transforms a FrameAddr into an ia32 Add.
  */
@@ -1518,6 +1549,7 @@ static ir_node *gen_FrameLoad(ia32_transform_env_t *env) {
 	}
 
 	set_ia32_frame_ent(new_op, ent);
+	set_ia32_use_frame(new_op);
 
 	set_ia32_am_support(new_op, ia32_am_Source);
 	set_ia32_op_type(new_op, ia32_AddrModeS);
@@ -1551,7 +1583,9 @@ static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 	else {
 		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);
 	}
+
 	set_ia32_frame_ent(new_op, ent);
+	set_ia32_use_frame(new_op);
 
 	set_ia32_am_support(new_op, ia32_am_Dest);
 	set_ia32_op_type(new_op, ia32_AddrModeD);
@@ -1755,6 +1789,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 			BE_GEN(FrameAddr);
 			BE_GEN(FrameLoad);
 			BE_GEN(FrameStore);
+			BE_GEN(StackParam);
 			break;
 bad:
 		fprintf(stderr, "Not implemented: %s\n", get_irn_opname(node));

@@ -405,7 +405,7 @@ $arch = "ia32";
   "comment"   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. lea %D1, %ia32_emit_am\t\t/* %D1 = %S1 + %S2 << scale + %O, (%A1, %A2) */'
+  "emit"      => '. lea %D1, %ia32_emit_am\t\t/* LEA(%A1, %A2) */'
 },
 
 #--------------------------------------------------------#

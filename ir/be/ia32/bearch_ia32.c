@@ -21,6 +21,7 @@
 #include "iredges_t.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgopt.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -274,6 +275,10 @@ static void ia32_prepare_graph(void *self) {
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	dump_ir_block_graph_sched(cg->irg, "-transformed");
 
+	edges_deactivate(cg->irg);
+	dead_node_elimination(cg->irg);
+	edges_activate(cg->irg);
+
 	cg->mod = old_mod;
 
 	if (cg->opt.doam) {
@@ -470,7 +475,8 @@ static void ia32_after_ra_walker(ir_node *node, void *env) {
 	tenv.mode  = get_irn_mode(node);
 	tenv.cg    = cg;
 
-	if (be_is_StackParam(node) || be_is_Reload(node)) {
+	/* be_is_StackParam(node) || */
+	if (be_is_Reload(node)) {
 		transform_to_Load(&tenv);
 	}
 	else if (be_is_Spill(node)) {

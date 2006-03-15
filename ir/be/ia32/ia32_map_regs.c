@@ -202,7 +202,7 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 	long nr       = get_Proj_proj(proj);
 
 	if (is_ia32_Ld(pred)) {
-		if (nr == pn_Load_res)
+		if (nr == pn_Load_res || nr == 0)
 			return 0;
 		assert(0 && "unsupported Proj(Load) number");
 	}

@@ -12,6 +12,8 @@
 
 #include "../be_t.h"
 #include "../beabi.h"
+#include "../benode_t.h"
+#include "../besched_t.h"
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
@@ -271,7 +273,7 @@ static ir_node *get_mem_proj(const ir_node *irn) {
 }
 
 /**
- * Returns the Proj with number 0 connected to irn.
+ * Returns the first Proj with mode != mode_M connected to irn.
  */
 static ir_node *get_res_proj(const ir_node *irn) {
 	const ir_edge_t *edge;
@@ -284,7 +286,7 @@ static ir_node *get_res_proj(const ir_node *irn) {
 
 		assert(is_Proj(src) && "Proj expected");
 
-		if (get_Proj_proj(src) == 0)
+		if (get_irn_mode(src) != mode_M)
 			return src;
 	}
 
@@ -328,9 +330,7 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
 	return 0;
 }
 
-static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
 
-}
 
 /**
  * Checks if irn is a candidate for address calculation or address mode.
@@ -351,22 +351,24 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
  * return 1 if irn is a candidate for AC or AM, 0 otherwise
  */
 static int is_candidate(const ir_node *block, const ir_node *irn, int check_addr) {
-	ir_node *load_proj;
+	ir_node *in;
 	int      n, is_cand = check_addr;
 
-	if (pred_is_specific_nodeblock(block, get_irn_n(irn, 2), is_ia32_Load)) {
-		load_proj = get_irn_n(irn, 2);
-		n         = ia32_get_irn_n_edges(load_proj);
+	in = get_irn_n(irn, 2);
+
+	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld) || be_is_StackParam(in)) {
+		n         = ia32_get_irn_n_edges(in);
 		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
 	}
 
-	if (pred_is_specific_nodeblock(block, get_irn_n(irn, 3), is_ia32_Load)) {
-		load_proj = get_irn_n(irn, 3);
-		n         = ia32_get_irn_n_edges(load_proj);
+	in = get_irn_n(irn, 3);
+
+	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld) || be_is_StackParam(in)) {
+		n         = ia32_get_irn_n_edges(in);
 		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
 	}
 
-	is_cand = get_ia32_frame_ent(irn) ? (check_addr ? 1 : 0) : (check_addr ? 0 : 1);
+	is_cand = get_ia32_frame_ent(irn) ? (check_addr ? 1 : 0) : is_cand;
 
 	return is_cand;
 }
@@ -383,10 +385,15 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 	entity *sent     = get_ia32_frame_ent(store);
 
 	/* are both entities set and equal? */
-	is_equal = (lent && sent && (lent == sent)) ? 1 : is_equal;
+	is_equal = lent && sent && (lent == sent);
+
+	/* are the load and the store of the same mode? */
+	is_equal = get_ia32_ls_mode(load) == get_ia32_ls_mode(store);
 
 	return is_equal;
 }
+
+
 
 /**
  * Folds Add or Sub to LEA if possible
@@ -411,12 +418,6 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 
 	left  = get_irn_n(irn, 2);
 	right = get_irn_n(irn, 3);
-
-	base    = left;
-	index   = noreg;
-	offs    = NULL;
-	scale   = 0;
-	am_flav = 0;
 
 	/* "normalize" arguments in case of add with two operands */
 	if  (isadd && ! be_is_NoReg(babi, right)) {
@@ -447,6 +448,12 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 			right = temp;
 		}
 	}
+
+	base    = left;
+	index   = noreg;
+	offs    = NULL;
+	scale   = 0;
+	am_flav = 0;
 
 	/* check if operand is either const */
 	if (get_ia32_cnst(irn)) {
@@ -524,7 +531,7 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 		/* a new LEA.                                                   */
 		/* If the LEA contains already a frame_entity then we also      */
 		/* create a new one  otherwise we would loose it.               */
-		if (isadd && ((!be_is_NoReg(babi, index) && (am_flav & ia32_am_I)) || get_ia32_frame_ent(left))) {
+		if ((isadd && ((!be_is_NoReg(babi, index) && (am_flav & ia32_am_I))) || get_ia32_frame_ent(left))) {
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
