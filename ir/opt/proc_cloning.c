@@ -24,7 +24,15 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
 
 #include "tv.h"
 #include "set.h"
@@ -35,14 +43,13 @@
 #include "proc_cloning.h"
 #include "analyze_irg_args.h"
 #include "irprintf.h"
-#include "old_fctnames.h"
 #include "ircons.h"
-#include "loop_unrolling.h"
 #include "irouts.h"
 #include "mangle.h"
 #include "irnode_t.h"
 #include "irtools.h"
 #include "irgmod.h"
+#include "array.h"
 
 /* A macro to iterate sets.*/
 #define ITERATE_SET(set_entries, entry) for(entry = set_first(set_entries); entry; entry = set_next(set_entries))
@@ -74,9 +81,9 @@ typedef struct q_set {
 } q_set;
 
 /**
- * Compare two quadruples.
+ * Compare two quadruplets.
  *
- * @return 0 if they are identically
+ * @return zero if they are identically, non-zero else
  */
 static int entry_cmp(const void *elt, const void *key)
 {
@@ -87,9 +94,9 @@ static int entry_cmp(const void *elt, const void *key)
 }
 
 /**
- * Hash a element of typ entry_t
+ * Hash an element of type entry_t.
  *
- * @param entry The element to be hashed.
+ * @param entry  The element to be hashed.
  */
 static int hash_entry(const entry_t *entry)
 {
@@ -97,7 +104,7 @@ static int hash_entry(const entry_t *entry)
 }
 
 /**
- * free memory associated with a quadruplet
+ * Free memory associated with a quadruplet.
  */
 static void kill_entry(entry_t *entry) {
   if (entry->q.calls) {
@@ -107,7 +114,7 @@ static void kill_entry(entry_t *entry) {
 }
 
 /**
- * Process a call node
+ * Process a call node.
  *
  * @param call    A ir_node to be checked.
  * @param callee  The entity of the callee
@@ -179,11 +186,11 @@ static void collect_irg_calls(ir_node *call, void *env)
   ir_node *call_ptr;
   entity *callee;
 
-  /* We collect just "Call" nodes*/
-  if (get_irn_op(call) == op_Call) {
+  /* We collect just "Call" nodes */
+  if (is_Call(call)) {
     call_ptr = get_Call_ptr(call);
 
-    /* Call pointer must be a symconst*/
+    /* Call pointer must be a SymConst*/
     if (op_SymConst != get_irn_op(call_ptr))
       return;
     /* Call pointer must be the address of an entity.*/
@@ -201,8 +208,8 @@ static void collect_irg_calls(ir_node *call, void *env)
 }
 
 /**
- * Make a name for the clone. The clone name is
- * the name of the original method advanced with "_cl_pos_nr".
+ * Make a name for a clone. The clone name is
+ * the name of the original method suffixed with "_cl_pos_nr".
  * pos is the pos from our quadruplet and nr is a counter.
  *
  * @param id  The ident of the cloned function.
@@ -219,25 +226,21 @@ static ident *get_clone_ident(ident *id, int pos, unsigned nr)
 }
 
 /**
- * The function fill the blocks and nodes, that muss be in
- * the clone graph, from the original method graph. The cloned method
- * have one argument few, why it is replaced with a constant.
+ * Pre-Walker: Copies blocks and nodes from the original method graph
+ * to the cloned graph. Fixes the argument projection numbers for
+ * all arguments behind the removed one.
  *
  * @param irn  A node from the original method graph.
  * @param env  The clone graph.
  */
-static void fill_clone_irg(ir_node *irn, void *env)
+static void copy_nodes(ir_node *irn, void *env)
 {
-  ir_node *arg, *irg_args, *irn_copy, *link;
+  ir_node *arg, *irg_args, *irn_copy;
   int proj_nr;
-  ir_graph *clone_irg;
+  ir_graph *clone_irg = env;
 
-  clone_irg = env;
-  arg       = get_irg_link(clone_irg);
-  irg_args  = get_Proj_pred(arg);
-
-  if (get_irn_op(irn) == op_Call)
-    link = get_irn_link(irn);
+  arg      = get_irg_link(clone_irg);
+  irg_args = get_Proj_pred(arg);
 
   /* Copy all nodes except the arg. */
   if (irn != arg)
@@ -245,11 +248,8 @@ static void fill_clone_irg(ir_node *irn, void *env)
 
   irn_copy = get_irn_link(irn);
 
-  if (get_irn_op(irn) == op_Call)
-    irn_copy->link = link;
-
   /* Fix argument numbers */
-  if (get_irn_op(irn) == op_Proj && get_Proj_pred(irn) == irg_args) {
+  if (is_Proj(irn) && get_Proj_pred(irn) == irg_args) {
     proj_nr = get_Proj_proj(irn);
     if (get_Proj_proj(arg) < proj_nr)
       set_Proj_proj(irn_copy, proj_nr - 1);
@@ -257,7 +257,7 @@ static void fill_clone_irg(ir_node *irn, void *env)
 }
 
 /**
- * Set the predecessors of the copied nodes.
+ * Post-walker: Set the predecessors of the copied nodes.
  * The copied nodes are set as link of their original nodes. The links of
  * "irn" predecessors are the predecessors of copied node.
  */
@@ -315,7 +315,7 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos)
 
   /* Call algorithm that computes the out edges */
   if (get_irg_outs_state(irg) != outs_consistent)
-    compute_outs(irg);
+    compute_irg_outs(irg);
 
   /* Search the argument with the number pos.*/
   for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
@@ -343,22 +343,17 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos)
  * that we want to clone.
  *
  * @param ent The entity of the method that must be cloned.
- * @param q   Our quadruple.
+ * @param q   Our quadruplet.
  */
 static void create_clone_proc_irg(entity *ent, quad_t *q)
 {
   ir_graph *method_irg, *clone_irg;
   ir_node *arg, *const_arg;
-  int loc_n;
 
   method_irg = get_entity_irg(ent);
 
-  /* The ir graph of the cloned procedure have one local few,
-     because one of the arguments is replaced by a constant. */
-  loc_n      = get_irg_n_loc(method_irg) - 1;
-
   /* We create the skeleton of the clone irg.*/
-  clone_irg  = new_ir_graph(ent, loc_n);
+  clone_irg  = new_ir_graph(ent, 0);
 
   arg        = get_irg_arg(get_entity_irg(q->ent), q->pos);
   /* we will replace the argument in position "q->pos" by this constant. */
@@ -366,18 +361,18 @@ static void create_clone_proc_irg(entity *ent, quad_t *q)
     clone_irg, get_nodes_block(arg), get_irn_mode(arg), q->tv,
     get_method_param_type(get_entity_type(q->ent), q->pos));
 
-  /* We have this nodes in the new ir_graph, and they must not be copied.*/
+  /* args copy in the cloned graph will be the const. */
   set_irn_link(arg, const_arg);
 
-  /* I need this, because "irg_walk_graph" change "current_ir_graph" to passed irg.*/
+  /* Store the arg that will be replaced here, so we can easily detect it. */
   set_irg_link(clone_irg, arg);
 
-  /* We fill the blocks and nodes, that must be in
-     the clone graph and set their preds.*/
-  irg_walk_graph(method_irg, fill_clone_irg, set_preds, clone_irg);
+  /* We copy the blocks and nodes, that must be in
+     the clone graph and set their predecessors. */
+  irg_walk_graph(method_irg, copy_nodes, set_preds, clone_irg);
 
-  /* The "cloned" ir_graph must be corrected. */
-  mature_block(get_irg_end_block(clone_irg));
+  /* The "cloned" graph must be matured. */
+  mature_immBlock(get_irg_end_block(clone_irg));
   irg_finalize_cons(clone_irg);
 }
 
@@ -385,8 +380,7 @@ static void create_clone_proc_irg(entity *ent, quad_t *q)
  * The function create a new entity type
  * for our clone and set it to clone entity.
  *
- * @param q   Contains information
- *            for the method to clone.
+ * @param q   Contains information for the method to clone.
  * @param ent The entity of the clone.
  * @param nr  A pointer to the counter of clones.
  **/
@@ -415,7 +409,7 @@ static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
     tp = get_method_param_type(mtp, i);
     set_method_param_type(new_mtp, j++, tp);
   }
-  /* We must set the type of the methods results.*/
+  /* Copy the methods result types. */
   for (i = 0; i < n_ress; ++i) {
     tp = get_method_res_type(mtp, i);
     set_method_res_type(new_mtp, i, tp);
@@ -426,8 +420,7 @@ static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
 /**
  * Make a clone of a method.
  *
- * @param q   Contains information
- *            for the method to clone.
+ * @param q   Contains information for the method to clone.
  */
 static entity *clone_method(quad_t *q)
 {
@@ -449,11 +442,12 @@ static entity *clone_method(quad_t *q)
   /* set a ld name here: Should we mangle this ? */
   set_entity_ld_ident(new_entity, get_entity_ident(new_entity));
 
-  /* set a new type here.*/
+  /* set a new type here. */
   change_entity_type(q, new_entity, &nr);
 
   /* We need now a new ir_graph for our clone method. */
   create_clone_proc_irg(new_entity, q);
+
   /* We must set the atomic value of our "new_entity". */
   sym.entity_p = new_entity;
   rem = current_ir_graph;
@@ -461,16 +455,17 @@ static entity *clone_method(quad_t *q)
   new_entity->value = new_SymConst(sym, symconst_addr_ent);
   current_ir_graph = rem;
 
-  /* The "new_entity" have not this information. */
+  /* The "new_entity" don't have this information. */
   new_entity->param_access = NULL;
   new_entity->param_weight = NULL;
 
   return new_entity;
 }
 
-/** The function make a new "Call" node and return it.
+/**
+ * Creates a new "cloned" Call node and return it.
  *
- * @param call        The call, that muss be exchanged.
+ * @param call        The call that must be cloned.
  * @param new_entity  The entity of the cloned function.
  * @param pos         The position of the replaced parameter of this call.
  **/
@@ -481,32 +476,33 @@ static ir_node *new_cl_Call(ir_node *call, entity *new_entity, int pos)
   int i, n_params, new_params = 0;
   ir_node *callee;
   symconst_symbol sym;
+  ir_graph *irg = get_irn_irg(call);
+  ir_node *bl = get_nodes_block(call);
 
   sym.entity_p = new_entity;
-  callee = new_r_SymConst(get_irn_irg(call), get_nodes_block(call), sym, symconst_addr_ent);
+  callee = new_r_SymConst(irg, bl, sym, symconst_addr_ent);
 
   mtp      = get_entity_type(new_entity);
   n_params = get_Call_n_params(call);
-  in       = malloc(sizeof(ir_node*) * (n_params - 1));
+  NEW_ARR_A(ir_node *, in, n_params - 1);
 
   /* we save the parameters of the new call in the array "in" without the
    * parameter in position "pos", that is replaced with a constant.*/
-  for(i = 0; i < n_params; i++){
-    if(pos == i)
-      continue;
-    in[new_params] = get_Call_param(call, i);
-    new_params++;
+  for (i = 0; i < n_params; i++){
+    if (pos != i)
+      in[new_params++] = get_Call_param(call, i);
   }
-  /* We make and return the new call.*/
-  return new_r_Call(get_irn_irg(call), get_nodes_block(call), get_Call_mem(call),
+  /* Create and return the new Call. */
+  return new_r_Call(irg, bl, get_Call_mem(call),
 		    callee, n_params - 1, in, get_entity_type(new_entity));
 }
 
 /**
- * Exchange all Calls now to Calls of the cloned entity
+ * Exchange all Calls stored in the quadruplet to Calls of the cloned entity.
  *
  * @param q             The quadruple
- * @param cloned_ent    The entity of the new function, that must be called from the new call.
+ * @param cloned_ent    The entity of the new function that must be called
+ *                      from the new Call.
  */
 static void exchange_calls(quad_t *q, entity *cloned_ent)
 {
@@ -535,8 +531,8 @@ static float calculate_weight(const entry_t *entry) {
     (get_method_param_weight(entry->q.ent, entry->q.pos) + 1);
 }
 
-/*
- * after we exchanged all calls, some entries on the list for
+/**
+ * After we exchanged all calls, some entries on the list for
  * the next cloned entity may get invalid, so we have to check
  * them and may even update the list of heavy uses.
  */
@@ -555,7 +551,7 @@ restart:
   for (i = 0; i < len; ++i) {
     ir_node *ptr, *call = entry->q.calls[i];
 
-    /* might be exchanged */
+    /* might be exchanged, so skip Id nodes here. */
     call = skip_Id(call);
 
     /* we know, that a SymConst is here */
@@ -568,12 +564,13 @@ restart:
        * This call is already changed because of a previous
        * optimization. Remove it from the list.
        */
-      len -= 1;
+      --len;
       entry->q.calls[i] = entry->q.calls[len];
       entry->q.calls[len] = NULL;
 
       /* the new call should be processed */
       process_call(call, callee, hmap);
+      --i;
     }
   }
 
