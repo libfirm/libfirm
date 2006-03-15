@@ -3,12 +3,14 @@
 #endif
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
 #include "obst.h"
 #include "beasm_asm_gnu.h"
+#include "tv.h"
 
 static struct obstack *get_obstack_for_segment ( gnuasm_privdata_t *privdata, asm_segment_t segment ) {
 
