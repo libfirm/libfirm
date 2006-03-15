@@ -233,6 +233,86 @@ static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	}
 }
 
+typedef struct {
+	be_abi_call_flags_bits_t flags;
+	const arch_isa_t *isa;
+	ir_graph *irg;
+} ia32_abi_env_t;
+
+static void *ia32_abi_init(const be_abi_call_t *call, const arch_isa_t *isa, ir_graph *irg)
+{
+	ia32_abi_env_t *env    = xmalloc(sizeof(env[0]));
+	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
+	env->flags = fl.bits;
+	env->irg   = irg;
+	env->isa   = isa;
+	return env;
+}
+
+static void ia32_abi_dont_save_regs(void *self, pset *s)
+{
+	ia32_abi_env_t *env = self;
+	if(env->flags.try_omit_fp)
+		pset_insert_ptr(s, env->isa->bp);
+}
+
+static const arch_register_t *ia32_abi_prologue(void *self, pmap *reg_map)
+{
+	ia32_abi_env_t *env = self;
+	return env->isa->bp;
+}
+
+static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
+{
+}
+
+/**
+ * Produces the type which sits between the stack args and the locals on the stack.
+ * it will contain the return address and space to store the old base pointer.
+ * @return The Firm type modeling the ABI between type.
+ */
+static ir_type *ia32_abi_get_between_type(void *self)
+{
+	static ir_type *omit_fp_between_type = NULL;
+	static ir_type *between_type         = NULL;
+
+	ia32_abi_env_t *env = self;
+
+	if(!between_type) {
+		entity *old_bp_ent;
+		entity *ret_addr_ent;
+		entity *omit_fp_ret_addr_ent;
+
+		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
+		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
+
+		between_type           = new_type_class(new_id_from_str("ia32_between_type"));
+		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
+		ret_addr_ent           = new_entity(between_type, new_id_from_str("ret_addr"), ret_addr_type);
+
+		set_entity_offset_bytes(old_bp_ent, 0);
+		set_entity_offset_bytes(ret_addr_ent, get_type_size_bytes(old_bp_type));
+		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
+
+		omit_fp_between_type   = new_type_class(new_id_from_str("ia32_between_type_omit_fp"));
+		omit_fp_ret_addr_ent   = new_entity(omit_fp_between_type, new_id_from_str("ret_addr"), ret_addr_type);
+
+		set_entity_offset_bytes(omit_fp_ret_addr_ent, 0);
+		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
+	}
+
+	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
+}
+
+static const be_abi_callbacks_t ia32_abi_callbacks = {
+	ia32_abi_init,
+	free,
+	ia32_abi_get_between_type,
+	ia32_abi_dont_save_regs,
+	ia32_abi_prologue,
+	ia32_abi_epilogue,
+};
+
 /* fill register allocator interface */
 
 static const arch_irn_ops_if_t ia32_irn_ops_if = {
@@ -669,40 +749,12 @@ const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self, const
 }
 
 /**
- * Produces the type which sits between the stack args and the locals on the stack.
- * it will contain the return address and space to store the old base pointer.
- * @return The Firm type modeling the ABI between type.
- */
-static ir_type *get_between_type(void)
-{
-	static ir_type *between_type = NULL;
-	static entity *old_bp_ent    = NULL;
-
-	if(!between_type) {
-		entity *ret_addr_ent;
-		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
-		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
-
-		between_type           = new_type_class(new_id_from_str("ia32_between_type"));
-		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, new_id_from_str("ret_addr"), ret_addr_type);
-
-		set_entity_offset_bytes(old_bp_ent, 0);
-		set_entity_offset_bytes(ret_addr_ent, get_type_size_bytes(old_bp_type));
-		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
-	}
-
-	return between_type;
-}
-
-/**
  * Get the ABI restrictions for procedure calls.
  * @param self        The this pointer.
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
 void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
-	ir_type  *between_type;
 	ir_type  *tp;
 	ir_mode  *mode;
 	unsigned  cc        = get_method_calling_convention(method_type);
@@ -721,11 +773,8 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	call_flags.bits.fp_free               = 0;
 	call_flags.bits.call_has_imm          = 1;
 
-	/* get the between type and the frame pointer save entity */
-	between_type = get_between_type();
-
 	/* set stack parameter passing style */
-	be_abi_call_set_flags(abi, call_flags, between_type);
+	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
 
 	/* collect the mode for each type */
 	modes = alloca(n * sizeof(modes[0]));
