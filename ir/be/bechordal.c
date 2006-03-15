@@ -334,7 +334,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		for(i = 0, n_alloc = 0; i < insn->n_ops; ++i) {
 			operand_t *op = &insn->ops[i];
 			if(arch_register_req_is(&op->req, limited) && arch_irn_consider_in_reg_alloc(aenv, env->cls, op->carrier)) {
-				arch_register_t *reg = arch_get_irn_register(aenv, op->carrier);
+				const arch_register_t *reg = arch_get_irn_register(aenv, op->carrier);
 
 				pmap_insert(partners, op->carrier, op->partner ? op->partner->carrier : NULL);
 				alloc_nodes[n_alloc] = op->carrier;
