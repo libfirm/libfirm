@@ -1399,6 +1399,70 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 }
 
 
+/**
+ * Following conversion rules apply:
+ *
+ *  INT -> INT
+ * ============
+ *  1) n bit -> m bit   n < m    (upscale)
+ *     always ignored
+ *  2) n bit -> m bit   n == m   (sign change)
+ *     always ignored
+ *  3) n bit -> m bit   n > m    (downscale)
+ *     a) Un -> Um = AND Un, (1 << m) - 1
+ *     b) Sn -> Um same as a)
+ *     c) Un -> Sm same as a)
+ *     d) Sn -> Sm = ASHL Sn, (n - m); ASHR Sn, (n - m)
+ *
+ *  INT -> FLOAT
+ * ==============
+ *  SSE(1/2) convert to float or double (cvtsi2ss/sd)
+ *
+ *  FLOAT -> INT
+ * ==============
+ *  SSE(1/2) convert from float or double to 32bit int (cvtss/sd2si)
+ *  if target mode < 32bit: additional INT -> INT conversion (see above)
+ *
+ *  FLOAT -> FLOAT
+ * ================
+ *  SSE(1/2) convert from float or double to double or float (cvtss/sd2sd/ss)
+ */
+
+static ir_node *gen_int_downscale_conv(ia32_transform_env_t *env, ir_node *op,
+									   ir_mode *src_mode, ir_mode *tgt_mode)
+{
+	int       n     = get_mode_size_bits(src_mode);
+	int       m     = get_mode_size_bits(tgt_mode);
+	dbg_info *dbg   = env->dbg;
+	ir_graph *irg   = env->irg;
+	ir_node  *block = env->block;
+	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node  *nomem = new_rd_NoMem(irg);
+	ir_node  *new_op, *proj;
+
+	assert(n > m && "downscale expected");
+
+	if (mode_is_signed(src_mode) && mode_is_signed(tgt_mode)) {
+		/* ASHL Sn, n - m */
+		new_op = new_rd_ia32_Shl(dbg, irg, block, noreg, noreg, op, noreg, nomem, mode_T);
+		proj   = new_rd_Proj(dbg, irg, block, new_op, src_mode, 0);
+		set_ia32_Immop_tarval(new_op, new_tarval_from_long(n - m, mode_Is));
+		set_ia32_am_support(new_op, ia32_am_Source);
+#ifndef NDEBUG
+		set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+
+		/* ASHR Sn, n - m */
+		new_op = new_rd_ia32_Shrs(dbg, irg, block, noreg, noreg, proj, noreg, nomem, mode_T);
+		set_ia32_Immop_tarval(new_op, new_tarval_from_long(n - m, mode_Is));
+	}
+	else {
+		new_op = new_rd_ia32_And(dbg, irg, block, noreg, noreg, op, noreg, nomem, mode_T);
+		set_ia32_Immop_tarval(new_op, new_tarval_from_long((1 << m) - 1, mode_Is));
+	}
+
+	return new_op;
+}
 
 /**
  * Transforms a Conv node.
@@ -1417,6 +1481,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 	ir_node           *noreg    = ia32_new_NoReg_gp(env->cg);
 	ir_node           *nomem    = new_rd_NoMem(irg);
 	firm_dbg_module_t *mod      = env->mod;
+	ir_node           *proj;
 
 	if (src_mode == tgt_mode) {
 		/* this can happen when changing mode_P to mode_Is */
@@ -1434,6 +1499,17 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 			/* ... to int */
 			DB((mod, LEVEL_1, "create Conv(float, int) ..."));
 			new_op = new_rd_ia32_Conv_FP2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
+			/* if target mode is not int: add an additional downscale convert */
+			if (get_mode_size_bits(tgt_mode) < 32) {
+#ifndef NDEBUG
+				set_ia32_orig_node(new_op, get_old_node_name(env));
+#endif /* NDEBUG */
+				set_ia32_res_mode(new_op, tgt_mode);
+				set_ia32_am_support(new_op, ia32_am_Source);
+
+				proj   = new_rd_Proj(dbg, irg, block, new_op, mode_Is, 0);
+				new_op = gen_int_downscale_conv(env, proj, src_mode, tgt_mode);
+			}
 		}
 	}
 	else {
@@ -1445,8 +1521,14 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 		}
 		else {
 			/* ... to int */
-			DB((mod, LEVEL_1, "omitting Conv(Int, Int) ..."));
-			edges_reroute(env->irn, op, irg);
+			if (get_mode_size_bits(src_mode) <= get_mode_size_bits(tgt_mode)) {
+				DB((mod, LEVEL_1, "omitting upscale Conv(%+F, %+F) ...", src_mode, tgt_mode));
+				edges_reroute(env->irn, op, irg);
+			}
+			else {
+				DB((mod, LEVEL_1, "create downscale Conv(%+F, %+F) ...", src_mode, tgt_mode));
+				new_op = gen_int_downscale_conv(env, op, src_mode, tgt_mode);
+			}
 		}
 	}
 
