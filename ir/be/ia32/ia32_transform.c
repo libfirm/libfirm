@@ -36,6 +36,13 @@
 
 #include "gen_ia32_regalloc_if.h"
 
+#ifdef NDEBUG
+#define SET_IA32_ORIG_NODE(n, o)
+#else
+#define SET_IA32_ORIG_NODE(n, o) set_ia32_orig_node(n, o);
+#endif /* NDEBUG */
+
+
 #define SFP_SIGN "0x80000000"
 #define DFP_SIGN "0x8000000000000000"
 #define SFP_ABS  "0x7FFFFFFF"
@@ -267,9 +274,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 		}
 	}
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -346,9 +351,7 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 	/* set AM support */
 	set_ia32_am_support(new_op, ia32_am_Dest);
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -386,9 +389,7 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 		set_ia32_am_support(new_op, ia32_am_Dest);
 	}
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -508,9 +509,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 		}
 	}
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -659,9 +658,7 @@ static ir_node *gen_Max(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	else {
 		new_op = new_rd_ia32_Max(env->dbg, env->irg, env->block, op1, op2, env->mode);
 		set_ia32_am_support(new_op, ia32_am_None);
-#ifndef NDEBUG
-		set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 	}
 
 	return new_op;
@@ -686,9 +683,7 @@ static ir_node *gen_Min(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	else {
 		new_op = new_rd_ia32_Min(env->dbg, env->irg, env->block, op1, op2, env->mode);
 		set_ia32_am_support(new_op, ia32_am_None);
-#ifndef NDEBUG
-		set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 	}
 
 	return new_op;
@@ -805,9 +800,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 		}
 	}
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -885,9 +878,7 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
 	}
 
-#ifndef NDEBUG
-	set_ia32_orig_node(res, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 
 	set_ia32_res_mode(res, mode_Is);
 
@@ -938,9 +929,7 @@ static ir_node *gen_Quot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) 
 	new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem, env->mode);
 	set_ia32_am_support(new_op, ia32_am_Source);
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_op;
 }
@@ -1089,9 +1078,7 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 
 		set_ia32_sc(new_op, name);
 
-#ifndef NDEBUG
-		set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 		set_ia32_res_mode(new_op, env->mode);
 
@@ -1155,9 +1142,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 
 		set_ia32_sc(res, name);
 
-#ifndef NDEBUG
-		set_ia32_orig_node(res, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 
 		set_ia32_res_mode(res, mode);
 
@@ -1165,26 +1150,20 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 	}
 	else {
 		res   = new_rd_ia32_Cdq(dbg, irg, block, op, mode_T);
-#ifndef NDEBUG
-		set_ia32_orig_node(res, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 		set_ia32_res_mode(res, mode);
 
 		p_eax = new_rd_Proj(dbg, irg, block, res, mode, pn_EAX);
 		p_edx = new_rd_Proj(dbg, irg, block, res, mode, pn_EDX);
 
 		res   = new_rd_ia32_Eor(dbg, irg, block, noreg_gp, noreg_gp, p_eax, p_edx, nomem, mode_T);
-#ifndef NDEBUG
-		set_ia32_orig_node(res, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 		set_ia32_res_mode(res, mode);
 
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
 
 		res   = new_rd_ia32_Sub(dbg, irg, block, noreg_gp, noreg_gp, res, p_edx, nomem, mode_T);
-#ifndef NDEBUG
-		set_ia32_orig_node(res, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 		set_ia32_res_mode(res, mode);
 
 		res   = new_rd_Proj(dbg, irg, block, res, mode, 0);
@@ -1221,9 +1200,7 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, get_Load_mode(node));
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_op;
 }
@@ -1270,9 +1247,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, get_irn_mode(val));
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_op;
 }
@@ -1325,9 +1300,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		set_ia32_pncode(res, get_Cond_defaultProj(node));
 	}
 
-#ifndef NDEBUG
-	set_ia32_orig_node(res, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 
 	return res;
 }
@@ -1371,9 +1344,7 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
 	}
 
-#ifndef NDEBUG
-	set_ia32_orig_node(res, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 
 	return res;
 }
@@ -1391,9 +1362,7 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 	ir_node *new_op = new_rd_ia32_CMov(env->dbg, env->irg, env->block, \
 		get_Mux_sel(node), get_Mux_false(node), get_Mux_true(node), env->mode);
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_op;
 }
@@ -1448,9 +1417,7 @@ static ir_node *gen_int_downscale_conv(ia32_transform_env_t *env, ir_node *op,
 		proj   = new_rd_Proj(dbg, irg, block, new_op, src_mode, 0);
 		set_ia32_Immop_tarval(new_op, new_tarval_from_long(n - m, mode_Is));
 		set_ia32_am_support(new_op, ia32_am_Source);
-#ifndef NDEBUG
-		set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 		/* ASHR Sn, n - m */
 		new_op = new_rd_ia32_Shrs(dbg, irg, block, noreg, noreg, proj, noreg, nomem, mode_T);
@@ -1501,9 +1468,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 			new_op = new_rd_ia32_Conv_FP2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 			/* if target mode is not int: add an additional downscale convert */
 			if (get_mode_size_bits(tgt_mode) < 32) {
-#ifndef NDEBUG
-				set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+				SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 				set_ia32_res_mode(new_op, tgt_mode);
 				set_ia32_am_support(new_op, ia32_am_Source);
 
@@ -1533,9 +1498,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 	}
 
 	if (new_op) {
-#ifndef NDEBUG
-		set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 		set_ia32_res_mode(new_op, tgt_mode);
 
 		set_ia32_am_support(new_op, ia32_am_Source);
@@ -1582,9 +1545,7 @@ static ir_node *gen_StackParam(ia32_transform_env_t *env) {
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, mode);
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, 0);
 }
@@ -1604,9 +1565,7 @@ static ir_node *gen_FrameAddr(ia32_transform_env_t *env) {
 	set_ia32_am_support(new_op, ia32_am_Full);
 	set_ia32_use_frame(new_op);
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
 }
@@ -1638,9 +1597,7 @@ static ir_node *gen_FrameLoad(ia32_transform_env_t *env) {
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, mode);
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_op;
 }
@@ -1674,9 +1631,7 @@ static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, mode);
 
-#ifndef NDEBUG
-	set_ia32_orig_node(new_op, get_old_node_name(env));
-#endif /* NDEBUG */
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	return new_op;
 }
@@ -1739,9 +1694,7 @@ void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, mode_T);
 		}
 
-#ifndef NDEBUG
-		set_ia32_orig_node(res, get_old_node_name(&tenv));
-#endif /* NDEBUG */
+		SET_IA32_ORIG_NODE(res, get_old_node_name(&tenv));
 		/* copy register */
 		slots    = get_ia32_slots(res);
 		slots[0] = in2_reg;
