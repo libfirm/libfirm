@@ -43,59 +43,78 @@ foreach my $op (keys(%nodes)) {
 
 	$line = "static void emit_".$arch."_".$op."(const ir_node *n, emit_env_t *env)";
 	push(@obst_func, $line." {\n  FILE *F = env->out;\n");
- 	$line = "  BE_EMIT($op);\n";
-	push(@obst_register, $line);
+	push(@obst_func, "  char cmd_buf[256], cmnt_buf[256];\n");
+	push(@obst_func, "  const lc_arg_env_t *arg_env = $arch\_get_arg_env();\n\n");
+	push(@obst_register, "  BE_EMIT($op);\n");
 
 	my @emit = split(/\n/, $n{"emit"});
 
 	foreach my $template (@emit) {
 		# substitute only lines, starting with a '.'
 		if ($template =~ /^(\d*)\.\s*/) {
-			my @params;
-			my $res    = "";
 			my $indent = "  "; # default indent is 2 spaces
 
 			$indent = " " x $1 if ($1 && $1 > 0);
 			# remove indent, dot and trailing spaces
 			$template =~ s/^\d*\.\s*//;
-			# substitute all format parameter
-			while ($template =~ /\%([ASD])(\d)|\%([COM])|\%(\w+)/) {
-				$res  .= $`;      # get everything before the match
+			my $fmt = $template;
+			my $cnt = 0;
+			my $buf = 'cmd_buf';
 
-				if ($1 && $1 eq "S") {
-					push(@params, "n");
-					$res .= "%".$2."S"; # substitute %Sx with %xS
-				}
-				elsif ($1 && $1 eq "D") {
-					push(@params, "n");
-					$res .= "%".$2."D"; # substitute %Dx with %xD
-				}
-				elsif ($1 && $1 eq "A") {
-					push(@params, "get_irn_n(n, ".($2 - 1).")");
-					$res .= "%+F";
-				}
-				elsif ($3) {
-					push(@params, "n");
-					$res .= "%".$3;
-				}
-				elsif ($4) {  # backend provided function to call, has to return a string
-					push(@params, $4."(n)");
-					$res .= "\%s";
+			foreach $template (split(/\/\*/, $fmt, 2)) {
+				my @params;
+				my $res = "";
+				$cnt++;
+
+				$template =~ s/(\\t)*$//;
+
+				if ($cnt == 2) {
+					# add the comment begin string
+					$res .= "/*";
+					$buf = "cmnt_buf";
 				}
 
-				$template = $'; # scan everything after the match
+				# substitute all format parameter
+				while ($template =~ /\%([ASD])(\d)|\%([COM])|\%(\w+)/) {
+					$res  .= $`;      # get everything before the match
+
+					if ($1 && $1 eq "S") {
+						push(@params, "n");
+						$res .= "%".$2."S"; # substitute %Sx with %xS
+					}
+					elsif ($1 && $1 eq "D") {
+						push(@params, "n");
+						$res .= "%".$2."D"; # substitute %Dx with %xD
+					}
+					elsif ($1 && $1 eq "A") {
+						push(@params, "get_irn_n(n, ".($2 - 1).")");
+						$res .= "%+F";
+					}
+					elsif ($3) {
+						push(@params, "n");
+						$res .= "%".$3;
+					}
+					elsif ($4) {  # backend provided function to call, has to return a string
+						push(@params, $4."(n)");
+						$res .= "\%s";
+					}
+
+					$template = $'; # scan everything after the match
+				}
+				$res .= $template; # get the remaining string
+
+				my $parm = "";
+				$parm = ", ".join(", ", @params) if (@params);
+
+				push(@obst_func, $indent.'lc_esnprintf(arg_env, '.$buf.', 256, "'.$res.'"'.$parm.');'."\n");
 			}
-			$res  .= $template; # get the remaining string
-
-			my $parm = "";
-			$parm = ", ".join(", ", @params) if (@params);
-
-			push(@obst_func, $indent.'lc_efprintf('.$arch.'_get_arg_env(), F, "\t'.$res.'\n"'.$parm.');'."\n");
 		}
 		else {
 			push(@obst_func, $template,"\n");
 		}
 	}
+
+	push(@obst_func, '  lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, n);'."\n");
 	push(@obst_func, "}\n\n");
 }
 
