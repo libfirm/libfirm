@@ -296,6 +296,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		const arch_env_t *aenv = env->birg->main_env->arch_env;
 		int n_regs             = env->cls->n_regs;
 		bitset_t *bs           = bitset_alloca(n_regs);
+		bitset_t *non_ignore   = bitset_alloca(n_regs);
 		ir_node **alloc_nodes  = alloca(n_regs * sizeof(alloc_nodes[0]));
 		bipartite_t *bp        = bipartite_new(n_regs, n_regs);
 		int *assignment        = alloca(n_regs * sizeof(assignment[0]));
@@ -305,6 +306,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		long col;
 		const ir_edge_t *edge;
 		ir_node *perm = insert_Perm_after(aenv, env->cls, env->dom_front, sched_prev(irn));
+
+		arch_put_non_ignore_regs(aenv, env->cls, non_ignore);
 
 		/* Registers are propagated by insert_Perm_after(). Clean them here! */
 		if(perm) {
@@ -323,14 +326,16 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		/*
 		 * If there was no Perm made, nothing was alive in this register class.
 		 * This means, that the node has no operands, thus no input constraints.
-		 * so it had output constraints. The other results then can be assigned freeliy.
+		 * so it had output constraints. The other results then can be assigned freely.
 		 */
 
 		pair_up_operands(insn);
 
 		for(i = 0, n_alloc = 0; i < insn->n_ops; ++i) {
 			operand_t *op = &insn->ops[i];
-			if(arch_register_req_is(&op->req, limited)) {
+			if(arch_register_req_is(&op->req, limited) && arch_irn_consider_in_reg_alloc(aenv, env->cls, op->carrier)) {
+				arch_register_t *reg = arch_get_irn_register(aenv, op->carrier);
+
 				pmap_insert(partners, op->carrier, op->partner ? op->partner->carrier : NULL);
 				alloc_nodes[n_alloc] = op->carrier;
 
@@ -338,6 +343,13 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 				bitset_clear_all(bs);
 				op->req.limited(op->req.limited_env, bs);
+				assert((!reg || bitset_is_set(bs, reg->index)) && "color of pre-colored node is not in its allowed colors");
+				bitset_and(bs, non_ignore);
+
+				/* if the node is pre-colored, explicitly allow the color with which it is pre-colored. */
+				if(reg) {
+					bitset_set(bs, reg->index);
+				}
 
 				DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
 
@@ -349,6 +361,18 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		}
 
 		if(perm) {
+			/* Make the input constraints of the node to output constraints of the Perm's Projs */
+			for(i = insn->use_start; i < insn->n_ops; ++i) {
+				operand_t *op = &insn->ops[i];
+
+				/*
+					If the operand is an "in" operand, constrained and the carrier is a Proj to the Perm,
+					then copy the in constraint to the Perm's out constraint
+				*/
+				if(arch_register_req_is(&op->req, limited) && is_Proj(op->carrier) && perm == get_Proj_pred(op->carrier))
+					be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(op->carrier)), &op->req);
+			}
+
 			foreach_out_edge(perm, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 
@@ -361,6 +385,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 					bitset_clear_all(bs);
 					arch_get_allocatable_regs(aenv, proj, -1, bs);
+					bitset_and(bs, non_ignore);
 					bitset_foreach(bs, col)
 						bipartite_add(bp, n_alloc, col);
 
@@ -371,6 +396,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 		bipartite_matching(bp, assignment);
 
+		/* Assign colors obtained from the matching. */
 		for(i = 0; i < n_alloc; ++i) {
 			int j;
 			ir_node *nodes[2];
@@ -393,8 +419,11 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		}
 
 
+		/* Allocate the non-constrained Projs of the Perm. */
 		if(perm) {
 			bitset_clear_all(bs);
+
+			/* Put the colors of all Projs in a bitset. */
 			foreach_out_edge(perm, edge) {
 				ir_node *proj              = get_edge_src_irn(edge);
 				const arch_register_t *reg = arch_get_irn_register(aenv, proj);
@@ -403,7 +432,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 					bitset_set(bs, reg->index);
 			}
 
-			// bitset_or(bs, alloc_env->ignore_colors);
+			/* Assign the not yet assigned Projs of the Perm a suitable color. */
 			foreach_out_edge(perm, edge) {
 				ir_node *proj              = get_edge_src_irn(edge);
 				const arch_register_t *reg = arch_get_irn_register(aenv, proj);
