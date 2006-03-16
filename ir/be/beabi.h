@@ -19,6 +19,8 @@ struct _be_abi_call_flags_bits_t {
 	unsigned try_omit_fp           : 1;  /**< Try to omit the frame pointer. */
 	unsigned fp_free               : 1;  /**< The function can use any register as frame pointer. */
 	unsigned call_has_imm          : 1;  /**< A call can take the callee's address as an immediate. */
+	unsigned irg_is_leaf           : 1;  /**< 1
+	, if the IRG is a leaf function. */
 };
 
 union _be_abi_call_flags_t {
