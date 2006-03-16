@@ -525,6 +525,8 @@ static void ou_optimize(unit_t *ou) {
 	arch_put_non_ignore_regs(aenv, cls, ign_regs);
 	bitset_and(pos_regs, ign_regs);
 
+	assert(bitset_popcnt(pos_regs) != 0 && "No register is allowed for this node !!?");
+
 	/* create new qnode */
 	bitset_foreach(pos_regs, i)
 		ou_insert_qnode(ou, new_qnode(ou, i));
