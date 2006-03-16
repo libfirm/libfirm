@@ -41,7 +41,7 @@ foreach my $op (keys(%nodes)) {
 	# skip this node description if no emit information is available
 	next if (!$n{"emit"} || length($n{"emit"}) < 1);
 
-	$line = "static void emit_".$arch."_".$op."(const ir_node *n, emit_env_t *env)";
+	$line = "static void emit_".$arch."_".$op."(const ir_node *n, $arch\_emit_env_t *env)";
 	push(@obst_func, $line." {\n  FILE *F = env->out;\n");
 	push(@obst_func, "  char cmd_buf[256], cmnt_buf[256];\n");
 	push(@obst_func, "  const lc_arg_env_t *arg_env = $arch\_get_arg_env();\n\n");
@@ -95,7 +95,7 @@ foreach my $op (keys(%nodes)) {
 						$res .= "%".$3;
 					}
 					elsif ($4) {  # backend provided function to call, has to return a string
-						push(@params, $4."(n)");
+						push(@params, $4."(n, env)");
 						$res .= "\%s";
 					}
 
