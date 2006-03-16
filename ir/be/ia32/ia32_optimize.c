@@ -531,7 +531,9 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 		/* a new LEA.                                                   */
 		/* If the LEA contains already a frame_entity then we also      */
 		/* create a new one  otherwise we would loose it.               */
-		if ((isadd && ((!be_is_NoReg(babi, index) && (am_flav & ia32_am_I))) || get_ia32_frame_ent(left))) {
+		if ((isadd && !be_is_NoReg(babi, index) && (am_flav & ia32_am_I)) ||
+			get_ia32_frame_ent(left))
+		{
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
