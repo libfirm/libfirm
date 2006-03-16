@@ -317,7 +317,7 @@ static void add_possible_partners(insn_t *insn, int curr, const arch_register_t 
 			Furthermore, if the operand has already been paired (due to previous calls)
 			to this function, we do not touch this partnership.
 		*/
-		if(!values_interfere(op->irn, op->carrier) && !op->partner) {
+		if(!values_interfere(op->irn, op->carrier)) {
 			int has_constraint = arch_register_req_is(&op->req, limited);
 
 			if(has_constraint && out_reg && out_reg->reg_class == op->req.cls) {
@@ -325,22 +325,26 @@ static void add_possible_partners(insn_t *insn, int curr, const arch_register_t 
 				op->req.limited(op->req.limited_env, bs);
 				if(bitset_is_set(bs, out_reg->index)) {
 					bipartite_add(bp, curr, i - insn->use_start);
-					return;
 				}
 			}
 
 			if(!has_constraint || can_be_constrained) {
 				bipartite_add(bp, curr, i - insn->use_start);
+#if 0
 				if(arch_register_req_is(&op->req, should_be_same) && op->req.other_same == op->carrier)
 					return;
+#endif
 			}
 		}
 	}
 }
 
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
 static void pair_up_operands(const arch_env_t *arch_env, insn_t *insn) {
 	int i;
-	bipartite_t *bp = bipartite_new(insn->use_start, insn->n_ops - insn->use_start);
+	int m = MAX(insn->n_ops - insn->use_start, 1);
+	bipartite_t *bp = bipartite_new(MAX(insn->use_start, 1), m);
 	int *match      = alloca(insn->use_start * sizeof(match[0]));
 
 	for(i = 0; i < insn->use_start; ++i) {
@@ -370,17 +374,21 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	insn_t *insn           = scan_insn(env, irn, &env->obst);
 	ir_node *res           = insn->next_insn;
 
+
 	if(insn->pre_colored) {
 		int i;
 		for(i = 0; i < insn->use_start; ++i)
 			pset_insert_ptr(alloc_env->pre_colored, insn->ops[i].carrier);
 	}
 
+	if(be_is_Perm(irn) || be_is_RegParams(irn) || (be_is_Barrier(irn) && !insn->in_constraints))
+		goto end;
+
 	/*
 		Perms inserted before the constraint handling phase are considered to be
 		correctly precolored. These Perms arise during the ABI handling phase.
 	*/
-	if(insn->has_constraints && !be_is_Perm(irn)) {
+	if(insn->has_constraints) {
 		firm_dbg_module_t *dbg = firm_dbg_register("firm.be.chordal.constr");
 		const arch_env_t *aenv = env->birg->main_env->arch_env;
 		int n_regs             = env->cls->n_regs;
@@ -394,7 +402,10 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		int i, n_alloc;
 		long col;
 		const ir_edge_t *edge;
-		ir_node *perm = insert_Perm_after(aenv, env->cls, env->dom_front, sched_prev(irn));
+		ir_node *perm = NULL;
+
+//		if(!insn->pre_colored || insn->in_constraints)
+		perm = insert_Perm_after(aenv, env->cls, env->dom_front, sched_prev(irn));
 
 		arch_put_non_ignore_regs(aenv, env->cls, non_ignore);
 
@@ -431,7 +442,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 				DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier, pmap_get(partners, op->carrier)));
 
-				bitset_clear_all(bs);
+ 				bitset_clear_all(bs);
 				op->req.limited(op->req.limited_env, bs);
 				bitset_and(bs, non_ignore);
 
@@ -445,17 +456,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		}
 
 		if(perm) {
-			/* Make the input constraints of the node to output constraints of the Perm's Projs */
-			for(i = insn->use_start; i < insn->n_ops; ++i) {
-				operand_t *op = &insn->ops[i];
-
-				/*
-					If the operand is an "in" operand, constrained and the carrier is a Proj to the Perm,
-					then copy the in constraint to the Perm's out constraint
-				*/
-				if(arch_register_req_is(&op->req, limited) && is_Proj(op->carrier) && perm == get_Proj_pred(op->carrier))
-					be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(op->carrier)), &op->req);
-			}
 
 			foreach_out_edge(perm, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
@@ -505,6 +505,18 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 		/* Allocate the non-constrained Projs of the Perm. */
 		if(perm) {
+			/* Make the input constraints of the node to output constraints of the Perm's Projs */
+			for(i = insn->use_start; i < insn->n_ops; ++i) {
+				operand_t *op = &insn->ops[i];
+
+				/*
+					If the operand is an "in" operand, constrained and the carrier is a Proj to the Perm,
+					then copy the in constraint to the Perm's out constraint
+				*/
+				if(arch_register_req_is(&op->req, limited) && is_Proj(op->carrier) && perm == get_Proj_pred(op->carrier))
+					be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(op->carrier)), &op->req);
+			}
+
 			bitset_clear_all(bs);
 
 			/* Put the colors of all Projs in a bitset. */
@@ -537,6 +549,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		pmap_destroy(partners);
 	}
 
+end:
 	obstack_free(&env->obst, base);
 	return res;
 }

@@ -886,11 +886,11 @@ static void clearup_frame(be_abi_irg_t *env, ir_node *ret, pmap *reg_map, struct
 		ir_node *irn               = ent->value;
 
 		if(reg == sp)
-			irn = stack;
+			obstack_ptr_grow(&env->obst, stack);
 		else if(reg == bp)
-			irn = frame;
-
-		obstack_ptr_grow(obst, irn);
+			obstack_ptr_grow(&env->obst, frame);
+		else if(arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
+			obstack_ptr_grow(obst, irn);
 	}
 }
 
@@ -967,17 +967,52 @@ static void create_register_perms(const arch_isa_t *isa, ir_graph *irg, ir_node 
 	obstack_free(&obst, NULL);
 }
 
-static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs)
+typedef struct {
+	const arch_register_t *reg;
+	ir_node *irn;
+} reg_node_map_t;
+
+static int cmp_regs(const void *a, const void *b)
+{
+	const reg_node_map_t *p = a;
+	const reg_node_map_t *q = b;
+
+	if(p->reg->reg_class == q->reg->reg_class)
+		return p->reg->index - q->reg->index;
+	else
+		return p->reg->reg_class - q->reg->reg_class;
+}
+
+static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
+{
+	pmap_entry *ent;
+	int n = pmap_count(reg_map);
+	int i = 0;
+	reg_node_map_t *res = obstack_alloc(obst, n * sizeof(res[0]));
+
+	pmap_foreach(reg_map, ent) {
+		res[i].reg = ent->key;
+		res[i].irn = ent->value;
+		i++;
+	}
+
+	qsort(res, n, sizeof(res[0]), cmp_regs);
+	return res;
+}
+
+static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
 {
 	ir_graph *irg = env->birg->irg;
 	int i, j, n;
+	int n_regs = pmap_count(regs);
 	ir_node *irn;
 	ir_node **in;
-	pmap_entry *ent;
+	reg_node_map_t *rm;
 
+	rm = reg_map_to_arr(&env->obst, regs);
 
-	for(ent = pmap_first(regs), n = 0; ent; ent = pmap_next(regs), ++n)
-		obstack_ptr_grow(&env->obst, ent->value);
+	for(i = 0, n = 0; i < n_regs; ++i, ++n)
+		obstack_ptr_grow(&env->obst, rm[i].irn);
 
 	if(mem) {
 		obstack_ptr_grow(&env->obst, *mem);
@@ -988,22 +1023,28 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 	irn = be_new_Barrier(env->birg->irg, bl, n, in);
 	obstack_free(&env->obst, in);
 
-	for(ent = pmap_first(regs), n = 0; ent; ent = pmap_next(regs), ++n) {
+	for(n = 0; n < n_regs; ++n) {
 		int pos = BE_OUT_POS(n);
-		const arch_register_t *reg = ent->key;
+		ir_node *proj;
+		const arch_register_t *reg = rm[n].reg;
 
-		ent->value = new_r_Proj(env->birg->irg, bl, irn, get_irn_mode(ent->value), n);
-		be_set_constr_single_reg(irn, n, reg);
+		proj = new_r_Proj(env->birg->irg, bl, irn, get_irn_mode(rm[i].irn), n);
+		if(in_req)
+			be_set_constr_single_reg(irn, n, reg);
 		be_set_constr_single_reg(irn, pos, reg);
 		be_node_set_reg_class(irn, pos, reg->reg_class);
-		arch_set_irn_register(env->birg->main_env->arch_env, ent->value, reg);
+		arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
 		if(arch_register_type_is(reg, ignore))
 			be_node_set_flags(irn, pos, arch_irn_flags_ignore);
+
+		pmap_insert(regs, (void *) reg, proj);
 	}
 
 	if(mem) {
 		*mem = new_r_Proj(env->birg->irg, bl, irn, mode_M, n);
 	}
+
+	obstack_free(&env->obst, rm);
 }
 
 /**
@@ -1029,6 +1070,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	int i, j, n;
 
+	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
 	ir_node *frame_pointer;
 	ir_node *reg_params_bl;
@@ -1053,7 +1095,7 @@ static void modify_irg(be_abi_irg_t *env)
 		int nr       = get_Proj_proj(irn);
 		max_arg      = MAX(max_arg, nr);
 	}
-	max_arg += 1;
+	max_arg = MAX(max_arg + 1, n_params);
 	args        = obstack_alloc(&env->obst, max_arg * sizeof(args[0]));
 	memset(args, 0, max_arg * sizeof(args[0]));
 	used_proj_nr = bitset_alloca(1024);
@@ -1073,7 +1115,7 @@ static void modify_irg(be_abi_irg_t *env)
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for(i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
-		if(arg->in_reg) {
+		if(arg->in_reg && args[i]) {
 			assert(arg->reg != sp && "cannot use stack pointer as parameter register");
 			assert(i == get_Proj_proj(args[i]));
 
@@ -1106,18 +1148,22 @@ static void modify_irg(be_abi_irg_t *env)
 	 * Note, that if a register corresponds to an argument, the regs map contains
 	 * the old Proj from start for that argument.
 	 */
-	pmap_foreach(env->regs, ent) {
-		arch_register_t *reg = ent->key;
-		ir_node *arg_proj    = ent->value;
+
+	rm = reg_map_to_arr(&env->obst, env->regs);
+	for(i = 0, n = pmap_count(env->regs); i < n; ++i) {
+		arch_register_t *reg = (void *) rm[i].reg;
+		ir_node *arg_proj    = rm[i].irn;
+		ir_node *proj;
 		ir_mode *mode        = arg_proj ? get_irn_mode(arg_proj) : reg->reg_class->mode;
-		long nr              = arg_proj ? get_Proj_proj(arg_proj) : (long) bitset_next_clear(used_proj_nr, 0);
+		long nr              = i;
 		int pos              = BE_OUT_POS((int) nr);
 
 		assert(nr >= 0);
 		bitset_set(used_proj_nr, nr);
-		ent->value = new_r_Proj(irg, reg_params_bl, env->reg_params, mode, nr);
+		proj = new_r_Proj(irg, reg_params_bl, env->reg_params, mode, nr);
+		pmap_insert(env->regs, (void *) reg, proj);
 		be_set_constr_single_reg(env->reg_params, pos, reg);
-		arch_set_irn_register(env->birg->main_env->arch_env, ent->value, reg);
+		arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
 
 		/*
 		 * If the register is an ignore register,
@@ -1128,10 +1174,11 @@ static void modify_irg(be_abi_irg_t *env)
 
 		DBG((dbg, LEVEL_2, "\tregister save proj #%d -> reg %s\n", nr, reg->name));
 	}
+	obstack_free(&env->obst, rm);
 
 	/* Generate the Prologue */
 	fp_reg = call->cb->prologue(env->cb, env->regs);
-	create_barrier(env, bl, NULL, env->regs);
+	create_barrier(env, bl, NULL, env->regs, 0);
 	env->init_sp  = pmap_get(env->regs, (void *) sp);
 	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_along);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
@@ -1174,7 +1221,7 @@ static void modify_irg(be_abi_irg_t *env)
 			}
 
 			assert(repl != NULL);
-			exchange(args[i], repl);
+			edges_reroute(args[i], repl, irg);
 		}
 	}
 
@@ -1209,7 +1256,7 @@ static void modify_irg(be_abi_irg_t *env)
 			}
 
 			/* Make the Epilogue node and call the arch's epilogue maker. */
-			create_barrier(env, bl, &mem, reg_map);
+			create_barrier(env, bl, &mem, reg_map, 1);
 			call->cb->epilogue(env->cb, bl, &mem, reg_map);
 
 			obstack_ptr_grow(&env->obst, mem);
