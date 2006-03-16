@@ -167,7 +167,7 @@ static int dump_block_func(ir_node *self, FILE *F, dump_reason_t reason)
 	case dump_node_info_txt:
 		if(!get_irg_live_info(get_irn_irg(self))->live)
 			return 0;
-
+#if 0
 		fprintf(F, "liveness information:\n");
 		{
 			irn_live_t *li;
@@ -183,6 +183,7 @@ static int dump_block_func(ir_node *self, FILE *F, dump_reason_t reason)
 				fprintf(F, "\n");
 			}
 		}
+#endif
 	}
 
 	return 0;
