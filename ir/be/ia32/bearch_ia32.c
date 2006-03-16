@@ -353,7 +353,7 @@ static void ia32_prepare_graph(void *self) {
 
 	cg->mod = firm_dbg_register("firm.be.ia32.transform");
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
-	dump_ir_block_graph_sched(cg->irg, "-transformed");
+	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
 	edges_deactivate(cg->irg);
 	dead_node_elimination(cg->irg);
@@ -363,7 +363,7 @@ static void ia32_prepare_graph(void *self) {
 
 	if (cg->opt.doam) {
 		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
-		dump_ir_block_graph_sched(cg->irg, "-am");
+		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
 	}
 }
 
@@ -589,7 +589,7 @@ static void ia32_codegen(void *self) {
 	}
 
 	ia32_finish_irg(irg, cg);
-	dump_ir_block_graph_sched(irg, "-finished");
+	be_dump(irg, "-finished", dump_ir_block_graph_sched);
 	ia32_gen_routine(out, irg, cg);
 
 	cur_reg_set = NULL;

@@ -101,7 +101,16 @@ static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) 
  */
 void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix);
 
-#endif
+/**
+ * Dumps a graph and numbers all dumps.
+ * @param irg    The graph
+ * @param suffix A suffix to its file name.
+ * @param dumper The dump function
+ */
+void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const char *));
+
+
+#endif /* _BEUTIL_H */
 
 /**
  * Search for an irn in @p accept.

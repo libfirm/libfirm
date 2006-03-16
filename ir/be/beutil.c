@@ -150,6 +150,28 @@ void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix) {
     set_dump_node_edge_hook(old);
 }
 
+/**
+ * Dumps a graph and numbers all dumps.
+ * @param irg    The graph
+ * @param suffix A suffix to its file name.
+ * @param dumper The dump function
+ */
+void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const char *)) {
+	static ir_graph *last_irg = NULL;
+	static int       nr       = 0;
+	char             buf[128];
+
+	if (irg != last_irg) {
+		last_irg = irg;
+		nr       = 0;
+	}
+
+	snprintf(buf, sizeof(buf), "-%02d%s", nr++, suffix);
+	dumper(irg, buf);
+}
+
+
+
 static void clear_link(ir_node *irn, void *data)
 {
   set_irn_link(irn, NULL);
