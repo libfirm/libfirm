@@ -204,19 +204,31 @@ static const arch_register_class_t *firm_get_reg_class_for_mode(const void *self
 	return mode_is_datab(irm) ? &reg_classes[CLS_DATAB] : NULL;
 }
 
-static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi)
-{
+static ir_type *firm_abi_get_between_type(void *self) {
 	static ir_type *between_type = NULL;
-
-	be_abi_call_flags_t flags;
-	const arch_register_class_t *cls = &reg_classes[CLS_DATAB];
-	int i, n;
-  be_abi_call_flags_t call_flags = { { 0, 0, 0, 0, 0 } };
 
 	if(!between_type) {
 		between_type = new_type_class(new_id_from_str("firm_be_between"));
 		set_type_size_bytes(between_type, 0);
 	}
+
+	return between_type;
+}
+
+static const be_abi_callbacks_t firm_abi_callbacks = {
+	NULL,
+	NULL,
+	firm_abi_get_between_type,
+	NULL,
+	NULL,
+	NULL,
+};
+
+static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi)
+{
+	const arch_register_class_t *cls = &reg_classes[CLS_DATAB];
+	int i, n;
+	be_abi_call_flags_t flags = { { 0, 0, 0, 0, 0 } };
 
 
 	for(i = 0, n = get_method_n_params(method_type); i < n; ++i) {
@@ -234,7 +246,7 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	}
 
 	flags.val = 0;
-	be_abi_call_set_flags(abi, flags, between_type);
+	be_abi_call_set_flags(abi, flags, &firm_abi_callbacks);
 }
 
 
