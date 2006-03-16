@@ -751,6 +751,8 @@ static void assign(ir_node *block, void *env_ptr)
 			}
 
 			bitset_set(colors, col);
+
+			assert(!arch_register_type_is(reg, ignore) && "Must not assign ignore register");
 			arch_set_irn_register(arch_env, irn, reg);
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n",
