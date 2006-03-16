@@ -735,8 +735,11 @@ static int cmp_call_dependecy(const void *c1, const void *c2)
 static void link_calls_in_block_walker(ir_node *irn, void *data)
 {
 	if(is_Call(irn)) {
-		ir_node *bl = get_nodes_block(irn);
-		void *save  = get_irn_link(bl);
+		be_abi_irg_t *env = data;
+		ir_node *bl       = get_nodes_block(irn);
+		void *save        = get_irn_link(bl);
+
+		env->call->flags.bits.irg_is_leaf = 0;
 
 		set_irn_link(irn, save);
 		set_irn_link(bl, irn);
@@ -801,7 +804,8 @@ static void process_calls(be_abi_irg_t *env)
 {
 	ir_graph *irg = env->birg->irg;
 
-	irg_walk_graph(irg, firm_clear_link, link_calls_in_block_walker, NULL);
+	env->call->flags.bits.irg_is_leaf = 1;
+	irg_walk_graph(irg, firm_clear_link, link_calls_in_block_walker, env);
 	irg_block_walk_graph(irg, NULL, process_calls_in_block, env);
 }
 
