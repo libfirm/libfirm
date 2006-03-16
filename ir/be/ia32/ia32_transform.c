@@ -351,7 +351,7 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 	/* set AM support */
 	set_ia32_am_support(new_op, ia32_am_Dest);
 
-  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -389,7 +389,7 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 		set_ia32_am_support(new_op, ia32_am_Dest);
 	}
 
-  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -509,7 +509,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 		}
 	}
 
-  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
