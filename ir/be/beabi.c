@@ -26,6 +26,7 @@
 #include "beabi.h"
 #include "bearch.h"
 #include "benode_t.h"
+#include "belive_t.h"
 #include "besched_t.h"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -176,9 +177,9 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
 be_abi_call_t *be_abi_call_new(void)
 {
 	be_abi_call_t *call = malloc(sizeof(call[0]));
-	call->flags.val = 0;
-	call->params    = new_set(cmp_call_arg, 16);
-	call->cb        = NULL;
+	call->flags.val  = 0;
+	call->params     = new_set(cmp_call_arg, 16);
+	call->cb         = NULL;
 	return call;
 }
 
@@ -962,16 +963,17 @@ static void create_register_perms(const arch_isa_t *isa, ir_graph *irg, ir_node 
 	obstack_free(&obst, NULL);
 }
 
-static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs,
-						   ir_node *(*barrier_node_constr)(ir_graph *irg, ir_node *bl, int n, ir_node *in[]))
+static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs)
 {
+	ir_graph *irg = env->birg->irg;
+	int i, j, n;
+	ir_node *irn;
+	ir_node **in;
 	pmap_entry *ent;
-	ir_node **in, *irn;
-	int n = 0;
 
-	for(ent = pmap_first(regs), n = 0; ent; ent = pmap_next(regs), ++n) {
+
+	for(ent = pmap_first(regs), n = 0; ent; ent = pmap_next(regs), ++n)
 		obstack_ptr_grow(&env->obst, ent->value);
-	}
 
 	if(mem) {
 		obstack_ptr_grow(&env->obst, *mem);
@@ -979,19 +981,24 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 	}
 
 	in = (ir_node **) obstack_finish(&env->obst);
-	irn = barrier_node_constr(env->birg->irg, bl, n, in);
+	irn = be_new_Barrier(env->birg->irg, bl, n, in);
 	obstack_free(&env->obst, in);
 
 	for(ent = pmap_first(regs), n = 0; ent; ent = pmap_next(regs), ++n) {
 		int pos = BE_OUT_POS(n);
 		const arch_register_t *reg = ent->key;
 
-		be_set_constr_single_reg(irn, pos, reg);
 		ent->value = new_r_Proj(env->birg->irg, bl, irn, get_irn_mode(ent->value), n);
-		if(arch_register_type_is(reg, ignore)) {
+		be_set_constr_single_reg(irn, n, reg);
+		be_set_constr_single_reg(irn, pos, reg);
+		be_node_set_reg_class(irn, pos, reg->reg_class);
+		arch_set_irn_register(env->birg->main_env->arch_env, ent->value, reg);
+		if(arch_register_type_is(reg, ignore))
 			be_node_set_flags(irn, pos, arch_irn_flags_ignore);
-			arch_set_irn_register(env->birg->main_env->arch_env, ent->value, reg);
-		}
+	}
+
+	if(mem) {
+		*mem = new_r_Proj(env->birg->irg, bl, irn, mode_M, n);
 	}
 }
 
@@ -1120,9 +1127,12 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* Generate the Prologue */
 	fp_reg = call->cb->prologue(env->cb, env->regs);
-	create_barrier(env, bl, NULL, env->regs, be_new_Epilogue);
-	frame_pointer = pmap_get(env->regs, (void *) fp_reg);
+	create_barrier(env, bl, NULL, env->regs);
 	env->init_sp  = pmap_get(env->regs, (void *) sp);
+	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_along);
+	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
+	pmap_insert(env->regs, (void *) sp, env->init_sp);
+	frame_pointer = pmap_get(env->regs, (void *) fp_reg);
 	set_irg_frame(irg, frame_pointer);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
@@ -1169,15 +1179,14 @@ static void modify_irg(be_abi_irg_t *env)
 		ir_node *irn = get_irn_n(end, i);
 
 		if(get_irn_opcode(irn) == iro_Return) {
-			ir_node *bl   = get_nodes_block(irn);
-			int n_res     = get_Return_n_ress(irn);
-			pmap *reg_map = pmap_create();
-			ir_node *mem  = get_Return_mem(irn);
+			ir_node *bl    = get_nodes_block(irn);
+			int n_res      = get_Return_n_ress(irn);
+			pmap *reg_map  = pmap_create();
+			ir_node *mem   = get_Return_mem(irn);
 			ir_node *ret;
 			int i, n;
 			ir_node **in;
 
-			/* Add the stack pointer as an argument to the epilogue. */
 			pmap_insert(reg_map, (void *) sp, pmap_get(env->regs, (void *) sp));
 
 			/* Insert results for Return into the register map. */
@@ -1196,7 +1205,7 @@ static void modify_irg(be_abi_irg_t *env)
 			}
 
 			/* Make the Epilogue node and call the arch's epilogue maker. */
-			create_barrier(env, bl, &mem, reg_map, be_new_Epilogue);
+			create_barrier(env, bl, &mem, reg_map);
 			call->cb->epilogue(env->cb, bl, &mem, reg_map);
 
 			obstack_ptr_grow(&env->obst, mem);
@@ -1290,7 +1299,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	arch_env_push_irn_handler(env->birg->main_env->arch_env, &env->irn_handler);
 
 	env->call->cb->done(env->cb);
-
+	be_liveness(irg);
 	return env;
 }
 
@@ -1335,6 +1344,9 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	irg_walk_graph(env->birg->irg, collect_stack_nodes_walker, NULL, stack_nodes);
 	be_ssa_constr_set_phis(df, stack_nodes, env->stack_phis);
 	del_pset(stack_nodes);
+
+	/* Liveness could have changed due to Phi nodes. */
+	be_liveness(env->birg->irg);
 
 	/* free these dominance frontiers */
 	be_free_dominance_frontiers(df);
@@ -1452,7 +1464,12 @@ ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *re
 static const void *abi_get_irn_ops(const arch_irn_handler_t *handler, const ir_node *irn)
 {
 	const be_abi_irg_t *abi = get_abi_from_handler(handler);
-	return is_Phi(irn) && pset_find_ptr(abi->stack_phis, (void *) irn) != NULL ? &abi->irn_ops : NULL;
+	const void *res = NULL;
+
+	if(is_Phi(irn) && pset_find_ptr(abi->stack_phis, (void *) irn))
+		res = &abi->irn_ops;
+
+	return res;
 }
 
 static void be_abi_limited(void *data, bitset_t *bs)
@@ -1467,10 +1484,20 @@ static const arch_register_req_t *abi_get_irn_reg_req(const void *self, arch_reg
 	be_abi_irg_t *abi          = get_abi_from_ops(self);
 	const arch_register_t *reg = abi->isa->sp;
 
-	req->cls         = reg->reg_class;
-	req->type        = arch_register_req_type_limited;
-	req->limited     = be_abi_limited;
-	req->limited_env = abi;
+	memset(req, 0, sizeof(req[0]));
+
+	if(pos == BE_OUT_POS(0)) {
+		req->cls         = reg->reg_class;
+		req->type        = arch_register_req_type_limited;
+		req->limited     = be_abi_limited;
+		req->limited_env = abi;
+	}
+
+	else if(pos >= 0 && pos < get_irn_arity(irn)) {
+		req->cls  = reg->reg_class;
+		req->type = arch_register_req_type_normal;
+	}
+
 	return req;
 }
 
