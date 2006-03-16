@@ -88,6 +88,8 @@ int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
 int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	const ir_edge_t *edge;
 
+	assert(0 && "Is buggy and obsolete. Do not use");
+
 	if (arch_irn_is_ignore(co->aenv, irn))
 		return 0;
 
@@ -419,22 +421,22 @@ int co_get_lower_bound(const copy_opt_t *co) {
                   |_|                                      |___/
  ******************************************************************************/
 
-static int compare_node_t(const void *k1, const void *k2, size_t size) {
-	const node_t *n1 = k1;
-	const node_t *n2 = k2;
+static int compare_affinity_t(const void *k1, const void *k2, size_t size) {
+	const affinity_t *n1 = k1;
+	const affinity_t *n2 = k2;
 
 	return (n1->irn != n2->irn);
 }
 
 static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
-	node_t new_node, *node;
+	affinity_t new_node, *node;
 	neighb_t new_nbr, *nbr;
 	int allocnew;
 
 	new_node.irn        = n1;
 	new_node.count      = 0;
 	new_node.neighbours = NULL;
-	node = set_insert(co->nodes, new_node.irn, sizeof(new_node), HASH_PTR(new_node.irn));
+	node = set_insert(co->nodes, &new_node, sizeof(new_node), HASH_PTR(new_node.irn));
 
 	allocnew = 1;
 	for (nbr = node->neighbours; nbr; nbr = nbr->next)
@@ -493,7 +495,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 
 void co_build_graph_structure(copy_opt_t *co) {
 	obstack_init(&co->obst);
-	co->nodes = new_set(compare_node_t, 32);
+	co->nodes = new_set(compare_affinity_t, 32);
 
 	irg_walk_graph(co->irg, build_graph_walker, NULL, co);
 }
@@ -506,10 +508,10 @@ void co_free_graph_structure(copy_opt_t *co) {
 /* co_solve_ilp1() co_solve_ilp2() are implemented in becopyilpX.c */
 
 int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
-	node_t new_node, *n;
+	affinity_t new_node, *n;
 
 	new_node.irn = irn;
-	n = set_find(co->nodes, new_node.irn, sizeof(new_node), HASH_PTR(new_node.irn));
+	n = set_find(co->nodes, &new_node, sizeof(new_node), HASH_PTR(new_node.irn));
 	if (n) {
 		return (n->count > 0);
 	} else

@@ -96,7 +96,7 @@ typedef struct _unit_t {
  ******************************************************************************/
 
 typedef struct _neighb_t neighb_t;
-typedef struct _node_t node_t;
+typedef struct _affinity_t affinity_t;
 
 
 struct _neighb_t {
@@ -105,17 +105,25 @@ struct _neighb_t {
 	int costs;				/** the costs of the edge (node_t->irn, neighb_t->irn) */
 };
 
-struct _node_t {
+struct _affinity_t {
 	ir_node *irn;			/** a node with affinity edges */
 	int count;				/** number of affinity edges in the linked list below */
 	neighb_t *neighbours;	/** a linked list of all affinity neighbours */
 };
 
+
+static INLINE affinity_t *get_affinity_info(const copy_opt_t *co, ir_node *irn) {
+	affinity_t find;
+
+	find.irn = irn;
+	return set_find(co->nodes, &find, sizeof(find), HASH_PTR(irn));
+}
+
 #define co_gs_nodes_begin(co)			set_first((co)->nodes)
 #define co_gs_nodes_next(co)			set_next((co)->nodes)
 #define co_gs_nodes_break(co)			set_break((co)->nodes)
-#define co_gs_foreach_node(co, node)	for (node = co_gs_nodes_begin(co); node; node = co_gs_nodes_next(co))
+#define co_gs_foreach_aff_node(co, aff_node)	for (aff_node = co_gs_nodes_begin(co); aff_node; aff_node = co_gs_nodes_next(co))
 
-#define co_gs_foreach_neighb(node, neighb)	for (neighb = node->neighbours; neighb; neighb = neighb->next)
+#define co_gs_foreach_neighb(aff_node, neighb)	for (neighb = aff_node->neighbours; neighb; neighb = neighb->next)
 
 #endif

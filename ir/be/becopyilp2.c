@@ -32,6 +32,9 @@
 
 #ifdef WITH_ILP
 
+#include <bitset.h>
+#include "pdeq.h"
+
 #include "irtools.h"
 #include "irgwalk.h"
 #include "becopyilp_t.h"
@@ -113,8 +116,13 @@ static void build_interference_cstr(ilp_env_t *ienv) {
 
 	/* for each maximal clique */
 	be_ifg_foreach_clique(ifg, iter, clique, &size) {
+		int realsize = 0;
 
-		if (size < 2)
+		for (i=0; i<size; ++i)
+			if (!sr_is_removed(ienv->sr, clique[i]))
+				++realsize;
+
+		if (realsize < 2)
 			continue;
 
 		/* for all colors */
@@ -166,7 +174,7 @@ static void build_affinity_cstr(ilp_env_t *ienv) {
 
 				lpp_set_factor_fast(ienv->lp, cst_idx, root_idx,  1.0);
 				lpp_set_factor_fast(ienv->lp, cst_idx, arg_idx,  -1.0);
-				lpp_set_factor_fast(ienv->lp, cst_idx, root_idx, -1.0);
+				lpp_set_factor_fast(ienv->lp, cst_idx, y_idx, -1.0);
 			}
 		}
 	}
@@ -198,7 +206,7 @@ static INLINE edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counte
 		new_edge.n1 = n2;
 		new_edge.n2 = n1;
 	}
-	*counter++;
+	(*counter)++;
 	return set_insert(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
@@ -229,7 +237,7 @@ static INLINE void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counte
 	if (e) {
 		e->n1 = NULL;
 		e->n2 = NULL;
-		*counter--;
+		(*counter)--;
 	}
 }
 
@@ -241,13 +249,13 @@ static INLINE void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counte
  * At most 1 node of the clique can be colored equally with the external node.
  */
 static void build_clique_star_cstr(ilp_env_t *ienv) {
-	node_t *node;
+	affinity_t *aff;
 
 	/* for each node with affinity edges */
-	co_gs_foreach_node(ienv->co, node) {
+	co_gs_foreach_aff_node(ienv->co, aff) {
 		struct obstack ob;
 		neighb_t *nbr;
-		ir_node *center = node->irn;
+		ir_node *center = aff->irn;
 		ir_node **nodes;
 		set *edges;
 		int i, o, n_nodes, n_edges;
@@ -257,7 +265,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 
 		/* get all affinity neighbours */
 		n_nodes = 0;
-		co_gs_foreach_neighb(node, nbr) {
+		co_gs_foreach_neighb(aff, nbr) {
 			obstack_ptr_grow(&ob, nbr->irn);
 			++n_nodes;
 		}
@@ -280,9 +288,9 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 			for (e=set_first(edges); !e->n1; e=set_next(edges))
 				/*nothing*/ ;
 
-			remove_edge(edges, e->n1, e->n2, &n_edges);
 			pset_insert_ptr(clique, e->n1);
 			pset_insert_ptr(clique, e->n2);
+			remove_edge(edges, e->n1, e->n2, &n_edges);
 
 			/* while the clique is growing */
 			do {
@@ -345,11 +353,86 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 	}
 }
 
+
+static void extend_path(ilp_env_t *ienv, pdeq *path, ir_node *irn) {
+	be_ifg_t *ifg = ienv->co->cenv->ifg;
+	int i, len;
+	ir_node **curr_path;
+	affinity_t *aff;
+	neighb_t *nbr;
+
+	/* do not walk backwards or in circles */
+	if (pdeq_contains(path, irn))
+		return;
+
+	/* insert the new irn */
+	pdeq_putr(path, irn);
+
+
+
+	/* check for forbidden interferences */
+	len = pdeq_len(path);
+	curr_path = alloca(len * sizeof(*curr_path));
+	pdeq_copyl(path, curr_path);
+
+	for (i=1; i<len; ++i)
+		if (be_ifg_connected(ifg, irn, curr_path[i]))
+			goto end;
+
+
+
+	/* check for terminating interference */
+	if (be_ifg_connected(ifg, irn, curr_path[0])) {
+
+		/* One node is not a path. */
+		/* And a path of length 2 is covered by a clique star constraint. */
+		if (len > 2) {
+			/* finally build the constraint */
+			int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater, 1.0);
+			for (i=1; i<len; ++i) {
+				char buf[16];
+				int nr_1    = get_irn_node_nr(curr_path[i-1]);
+				int nr_2    = get_irn_node_nr(curr_path[i]);
+				int var_idx = lpp_get_var_idx(ienv->lp, name_cdd_sorted(buf, 'y', nr_1, nr_2));
+				lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1.0);
+			}
+		}
+
+		/* this path cannot be extended anymore */
+		goto end;
+	}
+
+
+
+	/* recursively extend the path */
+	aff = get_affinity_info(ienv->co, irn);
+	co_gs_foreach_neighb(aff, nbr)
+		extend_path(ienv, path, nbr->irn);
+
+
+end:
+	/* remove the irn */
+	pdeq_getr(path);
+
+}
+
 /**
- *
+ *  Search a path of affinity edges, whose ends are connected
+ *  by an interference edge and there are no other interference
+ *  edges in between.
+ *  Then at least one of these affinity edges must break.
  */
 static void build_path_cstr(ilp_env_t *ienv) {
+	affinity_t *aff_info;
 
+	/* for each node with affinity edges */
+	co_gs_foreach_aff_node(ienv->co, aff_info) {
+		pdeq *path = new_pdeq();
+
+		extend_path(ienv, path, aff_info->irn);
+
+		del_pdeq(path);
+	}
 }
 
 static void ilp2_build(ilp_env_t *ienv) {
@@ -374,28 +457,32 @@ static void ilp2_apply(ilp_env_t *ienv) {
 	lpp_sol_state_t state;
 	int i, count;
 
-	count = lenv->last_x_var - lenv->first_x_var + 1;
-	sol = xmalloc(count * sizeof(sol[0]));
-	state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
-	if (state != lpp_optimal) {
-		printf("WARNING %s: Solution state is not 'optimal': %d\n", ienv->co->name, state);
-		assert(state >= lpp_feasible && "The solution should at least be feasible!");
-	}
+	/* first check if there was sth. to optimize */
+	if (lenv->first_x_var >= 0) {
 
-	for (i=0; i<count; ++i) {
-		int nodenr, color;
-		char var_name[16];
+		count = lenv->last_x_var - lenv->first_x_var + 1;
+		sol = xmalloc(count * sizeof(sol[0]));
+		state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
+		if (state != lpp_optimal) {
+			printf("WARNING %s: Solution state is not 'optimal': %d\n", ienv->co->name, state);
+			assert(state >= lpp_feasible && "The solution should at least be feasible!");
+		}
 
-		if (sol[i] > 1-EPSILON) { /* split variable name into components */
-			lpp_get_var_name(ienv->lp, lenv->first_x_var+i, var_name, sizeof(var_name));
+		for (i=0; i<count; ++i) {
+			int nodenr, color;
+			char var_name[16];
 
-			if (sscanf(var_name, "x_%d_%d", &nodenr, &color) == 2) {
-				ir_node *irn = pmap_get(lenv->nr_2_irn, INT_TO_PTR(nodenr));
-				assert(irn && "This node number must be present in the map");
+			if (sol[i] > 1-EPSILON) { /* split variable name into components */
+				lpp_get_var_name(ienv->lp, lenv->first_x_var+i, var_name, sizeof(var_name));
 
-				set_irn_col(ienv->co, irn, color);
-			} else
-				assert(0 && "This should be a x-var");
+				if (sscanf(var_name, "x_%d_%d", &nodenr, &color) == 2) {
+					ir_node *irn = pmap_get(lenv->nr_2_irn, INT_TO_PTR(nodenr));
+					assert(irn && "This node number must be present in the map");
+
+					set_irn_col(ienv->co, irn, color);
+				} else
+					assert(0 && "This should be a x-var");
+			}
 		}
 	}
 

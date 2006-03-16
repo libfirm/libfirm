@@ -289,10 +289,8 @@ void copystat_collect_cls(be_chordal_env_t *cenv) {
 	ir_graph *irg = cenv->irg;
 	arch_env_t *aenv = cenv->birg->main_env->arch_env;
 
-	if (last_irg != irg) {
-		copystat_reset();
-		copystat_collect_irg(irg, aenv);
-	}
+	copystat_reset();
+	copystat_collect_irg(irg, aenv);
 
 	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
 		if (arch_get_irn_reg_class(aenv, n, -1) == cenv->cls)
@@ -461,6 +459,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	int costs_inevit, costs_init, costs_heur, costs_ilp1, costs_ilp2, lower_bound;
 
 	phi_class_compute(chordal_env->irg);
+	copystat_collect_cls(chordal_env);
 
 	co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
 	co_build_ou_structure(co);
@@ -472,6 +471,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	saver.chordal_env = chordal_env;
 	saver.saved_colors = pmap_create();
 	save_colors(&saver);
+	be_ra_chordal_check(co->cenv);
 
 	/* initial values */
 	costs_inevit = co_get_inevit_copy_costs(co);
@@ -494,6 +494,8 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	co_solve_heuristic(co);
 
 	lc_timer_stop(timer);
+
+	be_ra_chordal_check(co->cenv);
 	costs_heur = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "HEUR costs: %3d\n", costs_heur));
 	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
@@ -519,6 +521,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 
 	co_solve_ilp2(co, 60.0);
 
+	be_ra_chordal_check(co->cenv);
 	costs_ilp2 = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "ILP2 costs: %3d\n", costs_ilp2));
 	copystat_add_opt_costs(costs_ilp2); /*TODO ADAPT */

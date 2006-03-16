@@ -3,17 +3,10 @@
  * Date:		28.02.2006
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * $Id$
  *
  * Common stuff used by all ILP fomulations.
  *
  */
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifdef WITH_ILP
 
 #include "becopyilp_t.h"
 #include "beifg_t.h"
@@ -76,7 +69,11 @@ void sr_remove(size_red_t *sr) {
 	while (redo) {
 		redo = 0;
 		be_ifg_foreach_node(ifg, iter, irn) {
-			if (!sr_is_removed(sr, irn) && !co_is_optimizable_root(sr->co, irn) && !co_is_optimizable_arg(sr->co, irn)) {
+			arch_register_req_t req;
+
+			arch_get_register_req(sr->co->aenv, &req, irn, -1);
+
+			if (!arch_register_req_is(&req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
           	 	if (sr_is_simplicial(sr, irn)) {
 					coloring_suffix_t *cs = obstack_alloc(&sr->ob, sizeof(*cs));
 
@@ -137,6 +134,8 @@ void free_size_red(size_red_t *sr) {
 
  *****************************************************************************/
 
+#include <stdio.h>
+
 ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env) {
 	ilp_env_t *res = malloc(sizeof(*res));
 	assert(res);
@@ -151,6 +150,9 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 }
 
 lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
+	FILE *f;
+	char buf[256];
+
 	sr_remove(ienv->sr);
 
 	ienv->build(ienv);
@@ -160,6 +162,11 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
 #else
 	lpp_solve_cplex(ienv->lp);
 #endif
+
+	snprintf(buf, sizeof(buf), "%s.ilp", ienv->co->name);
+	f = fopen(buf, "wt");
+	lpp_dump_plain(ienv->lp, f);
+	fclose(f);
 
 	ienv->apply(ienv);
 
@@ -173,10 +180,3 @@ void free_ilp_env(ilp_env_t *ienv) {
 	free_lpp(ienv->lp);
 	free(ienv);
 }
-
-#else /* WITH_ILP */
-
-static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
-}
-
-#endif /* WITH_ILP */
