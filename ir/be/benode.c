@@ -126,7 +126,7 @@ ir_op *op_be_StackParam;
 ir_op *op_be_FrameAddr;
 ir_op *op_be_FrameLoad;
 ir_op *op_be_FrameStore;
-ir_op *op_be_Epilogue;
+ir_op *op_be_Barrier;
 
 static int beo_base = -1;
 
@@ -170,7 +170,7 @@ void be_node_init(void) {
 	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "FrameAddr",  op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_frame_attr_t), &be_node_op_ops);
 	op_be_FrameLoad  = new_ir_op(beo_base + beo_FrameLoad,  "FrameLoad",  op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t), &be_node_op_ops);
 	op_be_FrameStore = new_ir_op(beo_base + beo_FrameStore, "FrameStore", op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t), &be_node_op_ops);
-	op_be_Epilogue   = new_ir_op(beo_base + beo_Epilogue,   "Epilogue",   op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_node_attr_t),  &be_node_op_ops);
+	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "Barrier",    op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_node_attr_t),  &be_node_op_ops);
 
 	set_op_tag(op_be_Spill,      &be_node_tag);
 	set_op_tag(op_be_Reload,     &be_node_tag);
@@ -188,7 +188,7 @@ void be_node_init(void) {
 	set_op_tag(op_be_FrameLoad,  &be_node_tag);
 	set_op_tag(op_be_FrameStore, &be_node_tag);
 	set_op_tag(op_be_FrameAddr,  &be_node_tag);
-	set_op_tag(op_be_Epilogue,   &be_node_tag);
+	set_op_tag(op_be_Barrier,   &be_node_tag);
 }
 
 static void *init_node_attr(ir_node* irn, int max_reg_data)
@@ -545,11 +545,11 @@ ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_graph *irg,
 	return be_new_CopyKeep(cls, irg, bl, src, 1, in, mode);
 }
 
-ir_node *be_new_Epilogue(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
 	ir_node *irn;
 
-	irn = new_ir_node(NULL, irg, bl, op_be_Epilogue, mode_T, n, in);
+	irn = new_ir_node(NULL, irg, bl, op_be_Barrier, mode_T, n, in);
 	init_node_attr(irn, n);
 	return irn;
 }
@@ -569,7 +569,7 @@ int be_is_StackParam    (const ir_node *irn) { return be_get_irn_opcode(irn) == 
 int be_is_FrameAddr     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameAddr      ; }
 int be_is_FrameLoad     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameLoad      ; }
 int be_is_FrameStore    (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameStore     ; }
-int be_is_Epilogue        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Epilogue         ; }
+int be_is_Barrier       (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Barrier        ; }
 
 int be_has_frame_entity(const ir_node *irn)
 {
@@ -984,27 +984,31 @@ const arch_irn_handler_t be_node_irn_handler = {
 };
 
 
-static void dump_node_req(FILE *f, be_req_t *req)
+static void dump_node_req(FILE *f, int idx, be_req_t *req)
 {
 	unsigned i;
 	int did_something = 0;
-	const char *suffix = "";
+	char buf[16];
+	const char *prefix = buf;
+
+	snprintf(buf, sizeof(buf), "#%d ", idx);
 
 	if(req->flags != arch_irn_flags_none) {
-		fprintf(f, "flags: ");
+		fprintf(f, "%sflags: ", prefix);
+		prefix = "";
 		for(i = arch_irn_flags_none; i <= log2_ceil(arch_irn_flags_last); ++i) {
 			if(req->flags & (1 << i)) {
-				fprintf(f, "%s%s", suffix, arch_irn_flag_str(1 << i));
-				suffix = "|";
+				fprintf(f, "%s%s", prefix, arch_irn_flag_str(1 << i));
+				prefix = "|";
 			}
 		}
-		suffix = ", ";
+		prefix = ", ";
 		did_something = 1;
 	}
 
 	if(req->req.cls != 0) {
 		char tmp[256];
-		fprintf(f, suffix);
+		fprintf(f, prefix);
 		arch_register_req_format(tmp, sizeof(tmp), &req->req);
 		fprintf(f, "%s", tmp);
 		did_something = 1;
@@ -1028,12 +1032,12 @@ static void dump_node_reqs(FILE *f, ir_node *irn)
 
 	fprintf(f, "in requirements\n");
 	for(i = 0; i < a->max_reg_data; ++i) {
-		dump_node_req(f, &a->reg_data[i].in_req);
+		dump_node_req(f, i, &a->reg_data[i].in_req);
 	}
 
 	fprintf(f, "\nout requirements\n");
 	for(i = 0; i < a->max_reg_data; ++i) {
-		dump_node_req(f, &a->reg_data[i].req);
+		dump_node_req(f, i, &a->reg_data[i].req);
 	}
 }
 

@@ -42,8 +42,7 @@ extern ir_op *op_be_StackParam;
 extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_FrameLoad;
 extern ir_op *op_be_FrameStore;
-extern ir_op *op_be_Epilogue;
-extern ir_op *op_be_Prologue;
+extern ir_op *op_be_Barrier;
 
 typedef enum {
 	beo_NoBeOp = 0,
@@ -63,8 +62,7 @@ typedef enum {
 	beo_FrameLoad,
 	beo_FrameStore,
 	beo_FrameAddr,
-	beo_Epilogue,
-	beo_Prologue,
+	beo_Barrier,
 	beo_Last
 } be_opcode_t;
 
@@ -174,8 +172,7 @@ ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 
-ir_node *be_new_Epilogue(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
-ir_node *be_new_Prologue(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn,ir_node *spill_ctx);
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *reloader, ir_mode *mode, ir_node *spill);
