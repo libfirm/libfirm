@@ -939,11 +939,11 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 
 	/* Insert copies for constraints */
 	handle_constraints(&raenv);
-	dump_ir_block_graph_sched(irg, "-extern-constr");
+	be_dump(irg, "-extern-constr", dump_ir_block_graph_sched);
 
 	/* SSA destruction respectively transformation into "Conventional SSA" */
 	ssa_destr(&raenv);
-	dump_ir_block_graph_sched(irg, "-extern-ssadestr");
+	be_dump(irg, "-extern-ssadestr", dump_ir_block_graph_sched);
 
 	/* Mapping of SSA-Values <--> Variables */
 	phi_class_compute(irg);
@@ -971,7 +971,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 			done = read_and_apply_results(&raenv, in);
 
 			ir_snprintf(in, sizeof(in), "-extern-%s-round-%d", raenv.cls->name, round);
-			dump_ir_block_graph_sched(irg, in);
+			be_dump(irg, in, dump_ir_block_graph_sched);
 
 			round++;
 		} while (!done);
@@ -981,7 +981,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 		free(raenv.cls_vars);
 	}
 
-	dump_ir_block_graph_sched(irg, "-extern-alloc");
+	be_dump(irg, "-extern-alloc", dump_ir_block_graph_sched);
 
 	/* Clean up */
 	set_foreach(raenv.vars, vi)

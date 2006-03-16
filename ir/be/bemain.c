@@ -204,7 +204,7 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
 				 void (*dumper)(ir_graph *, const char *))
 {
 	if(dump_flags & mask)
-		dumper(irg, suffix);
+		be_dump(irg, suffix, dumper);
 }
 
 static void prepare_graph(be_irg_t *birg)
@@ -292,6 +292,8 @@ static void be_main_loop(FILE *file_handle)
 
 		/* add Keeps for should_be_different constrained nodes */
 		assure_constraints(&birg);
+
+		dump(DUMP_PREPARED, irg, "-assured", dump_ir_block_graph);
 
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);

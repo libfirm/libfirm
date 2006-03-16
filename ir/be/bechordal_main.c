@@ -240,11 +240,11 @@ static void dump(unsigned mask, ir_graph *irg,
 		if(cls) {
 			char buf[256];
 			snprintf(buf, sizeof(buf), "-%s%s", cls->name, suffix);
-			dump_func(irg, buf);
+			be_dump(irg, buf, dump_func);
 		}
 
 		else
-			dump_func(irg, suffix);
+			be_dump(irg, suffix, dump_func);
 	}
 }
 

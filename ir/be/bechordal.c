@@ -801,7 +801,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
 		snprintf(buf, sizeof(buf), "-%s-constr", chordal_env->cls->name);
-		dump_ir_block_graph_sched(chordal_env->irg, buf);
+		be_dump(chordal_env->irg, buf, dump_ir_block_graph_sched);
 	}
 
 	be_numbering(irg);
