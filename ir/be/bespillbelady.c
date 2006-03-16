@@ -257,10 +257,12 @@ static int is_mem_phi(const ir_node *irn, void *data) {
 static INLINE unsigned get_distance(belady_env_t *bel, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
 {
 	arch_irn_flags_t fl = arch_irn_get_flags(bel->arch, def);
-	if((fl & (arch_irn_flags_ignore | arch_irn_flags_dont_spill)) != 0)
+	unsigned dist = be_get_next_use(bel->uses, from, from_step, def, skip_from_uses);
+
+	if(!USES_IS_INIFINITE(dist) && (fl & (arch_irn_flags_ignore | arch_irn_flags_dont_spill)) != 0)
 		return 0;
-	else
-		return be_get_next_use(bel->uses, from, from_step, def, skip_from_uses);
+
+	return dist;
 }
 
 /**
