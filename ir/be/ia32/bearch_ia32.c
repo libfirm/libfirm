@@ -678,7 +678,12 @@ static ia32_isa_t ia32_isa_template = {
 	&ia32_gp_regs[REG_EBP],  /* base pointer register */
 	-1,                      /* stack direction */
 	0,                       /* number of code generator objects so far */
-	NULL                     /* name obstack */
+	NULL,                    /* 16bit register names */
+	NULL,                    /* 8bit register names */
+#ifndef NDEBUG
+	NULL,                    /* name obstack */
+	0                        /* name obst size */
+#endif
 };
 
 /**
@@ -696,6 +701,12 @@ static void *ia32_init(void) {
 
 	ia32_register_init(isa);
 	ia32_create_opcodes();
+
+	isa->regs_16bit = pmap_create();
+	isa->regs_8bit  = pmap_create();
+
+	ia32_build_16bit_reg_map(isa->regs_16bit);
+	ia32_build_8bit_reg_map(isa->regs_8bit);
 
 #ifndef NDEBUG
 	isa->name_obst = xcalloc(1, sizeof(*(isa->name_obst)));
@@ -715,6 +726,9 @@ static void *ia32_init(void) {
  */
 static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
+
+	pmap_destroy(isa->regs_16bit);
+	pmap_destroy(isa->regs_8bit);
 
 #ifndef NDEBUG
 	//printf("name obst size = %d bytes\n", isa->name_obst_size);

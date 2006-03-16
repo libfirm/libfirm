@@ -34,10 +34,12 @@ typedef struct _ia32_code_gen_t {
 
 typedef struct _ia32_isa_t {
 	const arch_isa_if_t   *impl;
-	const arch_register_t *sp;            /** The stack pointer register. */
-	const arch_register_t *bp;            /** The base pointer register. */
-	const int              stack_dir;     /** -1 for decreasing, 1 for increasing. */
-	int                    num_codegens;
+	const arch_register_t *sp;            /**< The stack pointer register. */
+	const arch_register_t *bp;            /**< The base pointer register. */
+	const int              stack_dir;     /**< -1 for decreasing, 1 for increasing. */
+	int                    num_codegens;  /**< The number of code generator objects created so far */
+	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
+	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
 	unsigned long          name_obst_size;

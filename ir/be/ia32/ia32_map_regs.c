@@ -8,6 +8,8 @@
 
 #include <stdlib.h>
 
+#include "pmap.h"
+
 #include "ia32_map_regs.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
@@ -95,7 +97,31 @@ const arch_register_t *ia32_get_firm_reg(const ir_node *irn, set *reg_set) {
 	return assoc->reg;
 }
 
+void ia32_build_16bit_reg_map(pmap *reg_map) {
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EAX], "ax");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EBX], "bx");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_ECX], "cx");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EDX], "dx");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_ESI], "si");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EDI], "di");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EBP], "bp");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_ESP], "sp");
+}
 
+void ia32_build_8bit_reg_map(pmap *reg_map) {
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EAX], "al");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EBX], "bl");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_ECX], "cl");
+	pmap_insert(reg_map, &ia32_gp_regs[REG_EDX], "dl");
+}
+
+char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) {
+	pmap_entry *e = pmap_find(reg_map, (void *)reg);
+
+	assert(e && "missing map init?");
+
+	return e->value;
+}
 
 /**
  * Check all parameters and determine the maximum number of parameters
