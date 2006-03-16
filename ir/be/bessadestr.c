@@ -308,6 +308,8 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	dump_ir_block_graph_sched(irg, "-ssa_destr_perms_placed");
 #endif
 
+	be_liveness(irg);
+
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
 	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
 #ifdef DUMP_GRAPHS
