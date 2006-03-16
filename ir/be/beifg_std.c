@@ -235,7 +235,7 @@ static INLINE int get_next_clique(cliques_iter_t *it) {
 		int output_on_shrink = 0;
 		struct list_head *head = get_block_border_head(it->cenv, it->blocks[it->blk]);
 
-		/* on entry to a new block set the first border ...
+		/* on entry to a new block set the first border ... */
 		if (!it->bor)
 			it->bor = head->prev;
 
@@ -284,7 +284,7 @@ static int ifg_std_cliques_begin(const void *self, void *iter, ir_node **buf)
 {
 	const ifg_std_t *ifg = self;
 	cliques_iter_t *it = iter;
-	ir_node *start_bl = get_irg_start_block(it->cenv->irg);
+	ir_node *start_bl = get_irg_start_block(ifg->env->irg);
 
 	obstack_init(&it->ob);
 	dom_tree_walk(start_bl, get_blocks_dom_order, NULL, it);
