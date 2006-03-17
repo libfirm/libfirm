@@ -646,6 +646,11 @@ static void callee_ana_node(ir_node * node, eset * methods) {
   set_irn_link(node, MARK);
 
   switch (get_irn_opcode(node)) {
+  case iro_Const:
+    /* A direct address call. We tread this as an external
+       call and ignore it completely. */
+    eset_insert(methods, MARK); /* free method -> unknown */
+    break;
   case iro_SymConst:
     if (get_SymConst_kind(node) == symconst_addr_ent) {
       entity * ent = get_SymConst_entity(node);
@@ -767,8 +772,9 @@ static void callee_ana(void) {
   int i;
   /* Alle Graphen analysieren. */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    irg_walk_graph(get_irp_irg(i), callee_walker, remove_Tuples, NULL);
-    set_irg_callee_info_state(get_irp_irg(i), irg_callee_info_consistent);
+    ir_graph *irg = get_irp_irg(i);
+    irg_walk_graph(irg, callee_walker, remove_Tuples, NULL);
+    set_irg_callee_info_state(irg, irg_callee_info_consistent);
   }
   set_irp_callee_info_state(irg_callee_info_consistent);
 }
