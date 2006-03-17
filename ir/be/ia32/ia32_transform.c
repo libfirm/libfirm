@@ -1689,9 +1689,11 @@ void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		/* generate the add */
 		if (mode_is_float(tenv.mode)) {
 			res = new_rd_ia32_fAdd(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, mode_T);
+			set_ia32_am_support(res, ia32_am_Source);
 		}
 		else {
 			res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, mode_T);
+			set_ia32_am_support(res, ia32_am_Full);
 		}
 
 		SET_IA32_ORIG_NODE(res, get_old_node_name(&tenv));

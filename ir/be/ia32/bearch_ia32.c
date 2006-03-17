@@ -271,6 +271,9 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 
 		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_along);
 		store_bp = new_rd_ia32_Store(NULL, env->irg, bl, curr_sp, curr_no_reg, curr_bp, *mem, mode_T);
+		set_ia32_am_support(store_bp, ia32_am_Dest);
+		set_ia32_am_flavour(store_bp, ia32_B);
+		set_ia32_op_type(store_bp, ia32_AddrModeD);
 		*mem     = new_r_Proj(env->irg, bl, store_bp, mode_M, 0);
 		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
 		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
@@ -300,6 +303,9 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 		curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
 		load_bp = new_rd_ia32_Load(NULL, env->irg, bl, curr_sp, curr_no_reg, *mem, mode_T);
+		set_ia32_am_support(load_bp, ia32_am_Source);
+		set_ia32_am_flavour(load_bp, ia32_B);
+		set_ia32_op_type(load_bp, ia32_AddrModeS);
 		set_ia32_ls_mode(load_bp, mode_bp);
 		curr_bp = new_r_Proj(env->irg, bl, load_bp, mode_bp, 0);
 		*mem    = new_r_Proj(env->irg, bl, load_bp, mode_M, 1);
