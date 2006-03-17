@@ -796,11 +796,11 @@ void be_copy_entities_to_reloads(ir_graph *irg)
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 {
-	ir_node *bl    = get_nodes_block(irn);
-	ir_graph *irg  = get_irn_irg(bl);
-	ir_node *frame = get_irg_frame(irg);
+	ir_node *bl     = get_nodes_block(irn);
+	ir_graph *irg   = get_irn_irg(bl);
+	ir_node *frame  = get_irg_frame(irg);
+	ir_node *insert = bl;
 	ir_node *spill;
-	ir_node *insert;
 
 	const arch_register_class_t *cls       = arch_get_irn_reg_class(arch_env, irn, -1);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
@@ -812,20 +812,17 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 	 * directly after the phi, if there are some phis behind the one which
 	 * is spilled. Also, a spill of a Proj must be after all Projs of the
 	 * same tuple node.
-	 */
-	insert = sched_next(irn);
-	while((is_Phi(insert) || is_Proj(insert)) && !sched_is_end(insert))
-		insert = sched_next(insert);
-
-	/*
+	 *
 	 * Here's one special case:
 	 * If the spill is in the start block, the spill must be after the frame
-	 * pointer is set up. This is checked here and fixed.
-	 * If the insertion point is already the block, everything is fine, since
-	 * the Spill gets inserted at the end of the block.
+	 * pointer is set up. This is done by setting insert to the end of the block
+	 * which is its default initialization (see above).
 	 */
-	if(bl == get_irg_start_block(irg) && insert != bl && sched_comes_after(insert, frame))
-		insert = sched_next(frame);
+	if(bl != get_irg_start_block(irg)) {
+		insert = sched_next(irn);
+		while((is_Phi(insert) || is_Proj(insert)) && !sched_is_end(insert))
+			insert = sched_next(insert);
+	}
 
 	sched_add_before(insert, spill);
 	return spill;
@@ -1134,99 +1131,3 @@ static const ir_op_ops be_node_op_ops = {
 	dump_node,
 	NULL
 };
-
-pset *nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
-{
-	firm_dbg_module_t *dbg = firm_dbg_register("firm.be.node");
-	const ir_node *bl      = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_node *irn;
-	irn_live_t *li;
-
-	live_foreach(bl, li) {
-		ir_node *irn = (ir_node *) li->irn;
-		if(live_is_end(li) && arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
-			pset_insert_ptr(live, irn);
-	}
-
-	sched_foreach_reverse(bl, irn) {
-		int i, n;
-		ir_node *x;
-
-		/*
-		 * If we encounter the node we want to insert the Perm after,
-		* exit immediately, so that this node is still live
-		*/
-		if(irn == pos)
-			return live;
-
-		DBG((dbg, LEVEL_1, "%+F\n", irn));
-		for(x = pset_first(live); x; x = pset_next(live))
-			DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
-
-		if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
-			pset_remove_ptr(live, irn);
-
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			ir_node *op = get_irn_n(irn, i);
-
-			if(arch_irn_consider_in_reg_alloc(arch_env, cls, op))
-				pset_insert_ptr(live, op);
-		}
-	}
-
-	return live;
-}
-
-ir_node *insert_Perm_after(const arch_env_t *arch_env,
-						   const arch_register_class_t *cls,
-						   dom_front_info_t *dom_front,
-						   ir_node *pos)
-{
-	ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_graph *irg               = get_irn_irg(bl);
-	pset *live                  = pset_new_ptr_default();
-	firm_dbg_module_t *dbg      = firm_dbg_register("be.node");
-
-	ir_node *curr, *irn, *perm, **nodes;
-	int i, n;
-
-	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
-
-	if(!nodes_live_at(arch_env, cls, pos, live));
-
-	n = pset_count(live);
-
-	if(n == 0)
-		return NULL;
-
-	nodes = malloc(n * sizeof(nodes[0]));
-
-	DBG((dbg, LEVEL_1, "live:\n"));
-	for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++) {
-		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
-		nodes[i] = irn;
-	}
-
-	perm = be_new_Perm(cls, irg, bl, n, nodes);
-	sched_add_after(pos, perm);
-	free(nodes);
-
-	curr = perm;
-	for(i = 0; i < n; ++i) {
-		ir_node *copies[2];
-		ir_node *perm_op = get_irn_n(perm, i);
-		const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
-
-		ir_mode *mode = get_irn_mode(perm_op);
-		ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
-		arch_set_irn_register(arch_env, proj, reg);
-
-		sched_add_after(curr, proj);
-		curr = proj;
-
-		copies[0] = perm_op;
-		copies[1] = proj;
-		be_ssa_constr(dom_front, 2, copies);
-	}
-	return perm;
-}
