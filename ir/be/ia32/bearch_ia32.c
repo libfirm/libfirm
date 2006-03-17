@@ -824,7 +824,7 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	int       n         = get_method_n_params(method_type);
 	int       biggest_n = -1;
 	int       stack_idx = 0;
-	int       i, ignore;
+	int       i, ignore_1, ignore_2;
 	ir_mode **modes;
 	const arch_register_t *reg;
 	be_abi_call_flags_t call_flags;
@@ -851,7 +851,7 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 //	if (cc & cc_reg_param) {
 	if (1) {
 		/* determine the number of parameters passed via registers */
-		biggest_n = ia32_get_n_regparam_class(n, modes, &ignore, &ignore);
+		biggest_n = ia32_get_n_regparam_class(n, modes, &ignore_1, &ignore_2);
 
 		/* loop over all parameters and set the register requirements */
 		for (i = 0; i <= biggest_n; i++) {

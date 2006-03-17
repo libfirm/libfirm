@@ -136,8 +136,11 @@ char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) {
 int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float) {
 	int i, finished = 0;
 
+	*n_int   = 0;
+	*n_float = 0;
+
 	for (i = 0; i < n && !finished; i++) {
-		if (mode_is_int(modes[i])) {
+		if (mode_is_int(modes[i]) || mode_is_reference(modes[i])) {
 			*n_int = *n_int + 1;
 		}
 		else if (mode_is_float(modes[i])) {

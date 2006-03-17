@@ -240,6 +240,8 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 	/* verify that this function is never called on non-AM supporting operations */
 	assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
 
+#define PRODUCES_RESULT(n) !(is_ia32_St(n) || is_ia32_CondJmp(n) || is_ia32_fCondJmp(n) || is_ia32_SwitchJmp(n))
+
 	if (! buf) {
 		buf = xcalloc(1, SNPRINTF_BUF_LEN);
 	}
@@ -255,7 +257,7 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 			else {
 				const arch_register_t *in1 = get_in_reg(n, 2);
 				const arch_register_t *in2 = get_in_reg(n, 3);
-				const arch_register_t *out = get_ia32_n_res(n) > 0 ? get_out_reg(n, 0) : NULL;
+				const arch_register_t *out = PRODUCES_RESULT(n) ? get_out_reg(n, 0) : NULL;
 				const arch_register_t *in;
 
 				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
@@ -300,6 +302,8 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 		default:
 			assert(0 && "unsupported op type");
 	}
+
+#undef PRODUCES_RESULT
 
 	return buf;
 }
