@@ -481,9 +481,10 @@ static ir_node *belower_skip_proj(ir_node *irn) {
 }
 
 static void fix_in(ir_node *irn, ir_node *old, ir_node *nw) {
-	int i, n = get_irn_arity(irn);
+	int i, n;
 
 	irn = belower_skip_proj(irn);
+	n   = get_irn_arity(irn);
 
 	for (i = 0; i < n; i++) {
 		if (get_irn_n(irn, i) == old) {
@@ -517,9 +518,12 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 	in[0] = irn;
 	in[1] = cpy;
 
+	/* Let the irn use the copy instead of the old other_different */
+	fix_in(irn, other_different, cpy);
+
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
-	if (get_n_out_edges(other_different) == 1) {
+	if (get_n_out_edges(other_different) == 0) {
 		keep = be_new_Keep(cls, birg->irg, block, 2, in);
 	}
 	else {
@@ -529,9 +533,6 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 
 	/* after rerouting: let the copy point to the other_different irn */
 	set_irn_n(cpy, 0, other_different);
-
-	/* Let the irn use the copy instead of the old other_different */
-	fix_in(irn, other_different, cpy);
 
 	DBG((mod, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
 }
