@@ -1233,6 +1233,9 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	if (mode_is_float(env->mode)) {
 		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
 	}
+	else if (get_mode_size_bits(env->mode) == 8) {
+		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
+	}
 	else {
 		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
 	}
@@ -1618,6 +1621,9 @@ static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);
+	}
+	else if (get_mode_size_bits(mode) == 8) {
+		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);
 	}
 	else {
 		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);

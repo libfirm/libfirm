@@ -240,7 +240,12 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 	/* verify that this function is never called on non-AM supporting operations */
 	assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
 
-#define PRODUCES_RESULT(n) !(is_ia32_St(n) || is_ia32_CondJmp(n) || is_ia32_fCondJmp(n) || is_ia32_SwitchJmp(n))
+#define PRODUCES_RESULT(n)   \
+	(!(is_ia32_St(n)      || \
+	is_ia32_Store8Bit(n)  || \
+	is_ia32_CondJmp(n)    || \
+	is_ia32_fCondJmp(n)   || \
+	is_ia32_SwitchJmp(n)))
 
 	if (! buf) {
 		buf = xcalloc(1, SNPRINTF_BUF_LEN);
@@ -1128,7 +1133,7 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 	entity     *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_name(irg_ent);
 
-//	fprintf(F, "\t.text\n");
+	fprintf(F, "\tsection .text\n");
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, "global %s\n", irg_name);
 	}
@@ -1142,7 +1147,7 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 static void ia32_emit_func_epilog(FILE *F, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
-	fprintf(F, "\tret\n");
+	fprintf(F, "\tret\n\n");
 	//printf(F, "\t.size\t%s, .-%s\n\n", irg_name, irg_name);
 }
 

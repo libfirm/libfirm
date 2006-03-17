@@ -403,6 +403,15 @@ $comment_string = ';';
   "emit"      => '. mov %ia32_emit_binop ; Store(%A3) -> (%A1) '
 },
 
+"Store8Bit" => {
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
+  "emit"      => '. mov %ia32_emit_binop ; Store(%A3) -> (%A1)'
+},
+
 "Lea" => {
   "irn_flags" => "R",
   "comment"   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",

@@ -562,6 +562,9 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	if (mode_is_float(mode)) {
 		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
 	}
+	else if (get_mode_size_bits(mode) == 8) {
+		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+	}
 	else {
 		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
 	}
@@ -848,8 +851,8 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	}
 
 	/* set register parameters  */
-//	if (cc & cc_reg_param) {
-	if (1) {
+	if (cc & cc_reg_param) {
+//	if (1) {
 		/* determine the number of parameters passed via registers */
 		biggest_n = ia32_get_n_regparam_class(n, modes, &ignore_1, &ignore_2);
 
