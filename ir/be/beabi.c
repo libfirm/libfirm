@@ -1003,7 +1003,7 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
 {
 	ir_graph *irg = env->birg->irg;
-	int i, j, n;
+	int i, n;
 	int n_regs = pmap_count(regs);
 	ir_node *irn;
 	ir_node **in;
@@ -1061,6 +1061,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *end              = get_irg_end_block(irg);
 	ir_node *arg_tuple        = get_irg_args(irg);
 	ir_node *no_mem           = get_irg_no_mem(irg);
+	ir_node *mem              = get_irg_initial_mem(irg);
 	type *method_type         = get_entity_type(get_irg_entity(irg));
 	pset *dont_save           = pset_new_ptr(8);
 	pmap *reg_proj_map        = pmap_create();
@@ -1177,13 +1178,14 @@ static void modify_irg(be_abi_irg_t *env)
 	obstack_free(&env->obst, rm);
 
 	/* Generate the Prologue */
-	fp_reg = call->cb->prologue(env->cb, env->regs);
-	create_barrier(env, bl, NULL, env->regs, 0);
-	env->init_sp  = pmap_get(env->regs, (void *) sp);
+	fp_reg = call->cb->prologue(env->cb, &mem, env->regs);
+	create_barrier(env, bl, &mem, env->regs, 0);
+
+	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
 	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_along);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
-	pmap_insert(env->regs, (void *) sp, env->init_sp);
-	frame_pointer = pmap_get(env->regs, (void *) fp_reg);
+	be_abi_reg_map_set(env->regs, sp, env->init_sp);
+	frame_pointer = be_abi_reg_map_get(env->regs, sp);
 	set_irg_frame(irg, frame_pointer);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */

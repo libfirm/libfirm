@@ -61,12 +61,13 @@ struct _be_abi_callbacks_t {
 	/**
 	 * Generate the prologue.
 	 * @param self    The callback object.
+	 * @param mem     A pointer to the mem node. Update this if you define new memory.
 	 * @param reg_map A mapping mapping all callee_save/ignore/parameter registers to their defining nodes.
 	 * @return        The register which shall be used as a stack frame base.
 	 *
      * All nodes which define registers in @p reg_map must keep @p reg_map current.
 	 */
-	const arch_register_t *(*prologue)(void *self, pmap *reg_map);
+	const arch_register_t *(*prologue)(void *self, ir_node **mem, pmap *reg_map);
 
 	/**
 	 * Generate the epilogue.
@@ -116,5 +117,8 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env);
 void be_abi_free(be_abi_irg_t *abi);
 
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);
+
+#define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))
+#define be_abi_reg_map_set(map, reg, irn)  pmap_insert((map), (void *) (reg), (irn))
 
 #endif
