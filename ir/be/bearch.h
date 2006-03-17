@@ -122,6 +122,8 @@ typedef enum _arch_register_req_type_t {
   arch_register_req_type_should_be_different = 8,  /**< The register must be unequal
                                                         to some other at the node. */
 
+  arch_register_req_type_should_be_different_from_all = 16, /**< The register must be different from
+                                                        all in's at the node */
 } arch_register_req_type_t;
 
 /**

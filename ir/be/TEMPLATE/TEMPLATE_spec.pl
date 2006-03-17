@@ -6,6 +6,9 @@
 
 $arch = "TEMPLATE";
 
+# this string marks the beginning of a comment in emit
+$comment_string = "/*";
+
 # The node description is done as a perl hash initializer with the
 # following structure:
 #

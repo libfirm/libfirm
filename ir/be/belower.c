@@ -463,28 +463,101 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 
 
+static int get_n_out_edges(const ir_node *irn) {
+	const ir_edge_t *edge;
+	int cnt = 0;
+
+	foreach_out_edge(irn, edge) {
+		cnt++;
+	}
+
+	return cnt;
+}
+
+static ir_node *belower_skip_proj(ir_node *irn) {
+	while(is_Proj(irn))
+		irn = get_Proj_pred(irn);
+	return irn;
+}
+
+static void fix_in(ir_node *irn, ir_node *old, ir_node *nw) {
+	int i, n = get_irn_arity(irn);
+
+	irn = belower_skip_proj(irn);
+
+	for (i = 0; i < n; i++) {
+		if (get_irn_n(irn, i) == old) {
+			set_irn_n(irn, i, nw);
+			break;
+		}
+	}
+}
+
+static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *other_different) {
+	const arch_env_t          *arch_env = birg->main_env->arch_env;
+	ir_node                   *in[2], *keep, *cpy, *temp;
+	ir_node                   *block = get_nodes_block(irn);
+	firm_dbg_module_t         *mod   = firm_dbg_register("firm.be.lower");
+	const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, other_different, -1);
+
+	if (arch_irn_is_ignore(arch_env, other_different)) {
+		DBG((mod, LEVEL_1, "ignore constraint for %+F because other_irn is ignore\n", irn));
+		return;
+	}
+
+	/* Make a not spillable copy of the different node   */
+	/* this is needed because the different irn could be */
+	/* in block far far away                             */
+	/* The copy is optimized later if not needed         */
+
+	temp = new_rd_Unknown(birg->irg, get_irn_mode(other_different));
+	cpy = be_new_Copy(cls, birg->irg, block, temp);
+	be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
+
+	in[0] = irn;
+	in[1] = cpy;
+
+	/* Add the Keep resp. CopyKeep and reroute the users */
+	/* of the other_different irn in case of CopyKeep.   */
+	if (get_n_out_edges(other_different) == 1) {
+		keep = be_new_Keep(cls, birg->irg, block, 2, in);
+	}
+	else {
+		keep = be_new_CopyKeep(cls, birg->irg, block, cpy, 2, in, get_irn_mode(other_different));
+		edges_reroute(other_different, keep, birg->irg);
+	}
+
+	/* after rerouting: let the copy point to the other_different irn */
+	set_irn_n(cpy, 0, other_different);
+
+	/* Let the irn use the copy instead of the old other_different */
+	fix_in(irn, other_different, cpy);
+
+	DBG((mod, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
+}
+
 /**
  * Checks if node has a should_be_different constraint in output
  * and adds a Keep then to assure the constraint.
  */
-static void assure_different_constraint(ir_node *irn, be_irg_t *birg) {
+static void assure_different_constraints(ir_node *irn, be_irg_t *birg) {
 	const arch_env_t          *arch_env = birg->main_env->arch_env;
 	const arch_register_req_t *req;
 	arch_register_req_t        req_temp;
-	ir_node                   *in[2], *keep;
-	firm_dbg_module_t         *mod = firm_dbg_register("firm.be.lower");
+	int i, n;
 
 	req = arch_get_register_req(arch_env, &req_temp, irn, -1);
 
-	if (req && arch_register_req_is(req, should_be_different)) {
-		/* We found a should_be_different constraint. */
-		assert(req->other_different && "missing irn for constraint");
-
-		in[0] = irn;
-		in[1] = req->other_different;
-
-		keep = be_new_Keep(req->cls, birg->irg, get_nodes_block(irn), 2, in);
-		DBG((mod, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
+	if (req) {
+		if (arch_register_req_is(req, should_be_different)) {
+			gen_assure_different_pattern(irn, birg, req->other_different);
+		}
+		else if (arch_register_req_is(req, should_be_different_from_all)) {
+			n = get_irn_arity(belower_skip_proj(irn));
+			for (i = 0; i < n; i++) {
+				gen_assure_different_pattern(irn, birg, get_irn_n(belower_skip_proj(irn), i));
+			}
+		}
 	}
 }
 
@@ -501,7 +574,7 @@ static void assure_constraints_walker(ir_node *irn, void *walk_env) {
 		return;
 
 	if (mode_is_datab(get_irn_mode(irn)))
-		assure_different_constraint(irn, walk_env);
+		assure_different_constraints(irn, walk_env);
 
 	return;
 }

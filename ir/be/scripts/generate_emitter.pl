@@ -13,6 +13,7 @@ my $specfile   = $ARGV[0];
 my $target_dir = $ARGV[1];
 
 our $arch;
+our $comment_string;
 our %nodes;
 
 # include spec file
@@ -61,7 +62,7 @@ foreach my $op (keys(%nodes)) {
 			my $cnt = 0;
 			my $buf = 'cmd_buf';
 
-			foreach $template (split(/\/\*/, $fmt, 2)) {
+			foreach $template (split(/$comment_string/, $fmt, 2)) {
 				my @params;
 				my $res = "";
 				$cnt++;
@@ -70,8 +71,8 @@ foreach my $op (keys(%nodes)) {
 
 				if ($cnt == 2) {
 					# add the comment begin string
-					$res .= "/*";
-					$buf = "cmnt_buf";
+					$res .= $comment_string;
+					$buf  = "cmnt_buf";
 				}
 
 				# substitute all format parameter
