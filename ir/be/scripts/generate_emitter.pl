@@ -28,6 +28,8 @@ unless ($return = do $specfile) {
 }
 use strict "subs";
 
+my $comment_string_quoted = quotemeta($comment_string);
+
 my $target_c = $target_dir."/gen_".$arch."_emitter.c";
 my $target_h = $target_dir."/gen_".$arch."_emitter.h";
 
@@ -62,7 +64,7 @@ foreach my $op (keys(%nodes)) {
 			my $cnt = 0;
 			my $buf = 'cmd_buf';
 
-			foreach $template (split(/$comment_string/, $fmt, 2)) {
+			foreach $template (split(/$comment_string_quoted/, $fmt, 2)) {
 				my @params;
 				my $res = "";
 				$cnt++;
