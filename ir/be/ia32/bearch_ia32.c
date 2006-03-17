@@ -852,7 +852,6 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 
 	/* set register parameters  */
 	if (cc & cc_reg_param) {
-//	if (1) {
 		/* determine the number of parameters passed via registers */
 		biggest_n = ia32_get_n_regparam_class(n, modes, &ignore_1, &ignore_2);
 
@@ -932,7 +931,7 @@ list_sched_selector_t ia32_sched_selector;
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
 static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
-	memcpy(&ia32_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
+	memcpy(&ia32_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
 	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
 	return &ia32_sched_selector;
 }

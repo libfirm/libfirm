@@ -251,9 +251,9 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 			return 1;
 	}
 	else if (is_ia32_DivMod(pred)) {
-		if (nr == pn_DivMod_res_div || pn_Div_res)
+		if (nr == pn_DivMod_res_div || nr == pn_Div_res)
 			return 0;
-		if (nr == pn_DivMod_res_mod || pn_Mod_res)
+		if (nr == pn_DivMod_res_mod || nr == pn_Mod_res)
 			return 1;
 	}
 	else if (is_ia32_fDiv(pred)) {
