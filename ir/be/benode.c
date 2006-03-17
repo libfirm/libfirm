@@ -818,11 +818,13 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 	 * pointer is set up. This is done by setting insert to the end of the block
 	 * which is its default initialization (see above).
 	 */
-	if(bl != get_irg_start_block(irg)) {
-		insert = sched_next(irn);
-		while((is_Phi(insert) || is_Proj(insert)) && !sched_is_end(insert))
-			insert = sched_next(insert);
-	}
+
+	insert = sched_next(irn);
+	if(bl == get_irg_start_block(irg) && insert != bl && sched_get_time_step(frame) >= sched_get_time_step(insert))
+		insert = sched_next(frame);
+
+	while((is_Phi(insert) || is_Proj(insert)) && !sched_is_end(insert))
+		insert = sched_next(insert);
 
 	sched_add_before(insert, spill);
 	return spill;
