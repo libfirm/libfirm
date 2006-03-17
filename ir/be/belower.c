@@ -496,7 +496,7 @@ static void fix_in(ir_node *irn, ir_node *old, ir_node *nw) {
 
 static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *other_different) {
 	const arch_env_t          *arch_env = birg->main_env->arch_env;
-	ir_node                   *in[2], *keep, *cpy, *temp;
+	ir_node                   *in[1], *keep, *cpy, *temp;
 	ir_node                   *block = get_nodes_block(irn);
 	firm_dbg_module_t         *mod   = firm_dbg_register("firm.be.lower");
 	const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, other_different, -1);
@@ -527,7 +527,7 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 		keep = be_new_Keep(cls, birg->irg, block, 2, in);
 	}
 	else {
-		keep = be_new_CopyKeep(cls, birg->irg, block, cpy, 2, in, get_irn_mode(other_different));
+		keep = be_new_CopyKeep_single(cls, birg->irg, block, cpy, irn, get_irn_mode(other_different));
 		edges_reroute(other_different, keep, birg->irg);
 	}
 
