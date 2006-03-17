@@ -189,7 +189,7 @@ const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, un
 
 		/* loop over all parameters and determine whether its a int or float register parameter */
 		for (i = 0; i < nr && !done && (cc & cc_reg_param); i++) {
-			if (mode_is_int(modes[i]) && cur_gp_idx < maxnum_gpreg_args) {
+			if ((mode_is_int(modes[i]) || mode_is_reference(modes[i])) && cur_gp_idx < maxnum_gpreg_args) {
 				/* param can be passed in general purpose register and we have some registers left */
 				cur_gp_idx++;
 			}
@@ -201,7 +201,7 @@ const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, un
 		}
 
 		/* now: i == nr, that's the parameter requirement we want */
-		if (mode_is_int(modes[i]) && cur_gp_idx < maxnum_gpreg_args) {
+		if ((mode_is_int(modes[i]) || mode_is_reference(modes[i])) && cur_gp_idx < maxnum_gpreg_args) {
 			/* parameter #nr can be passed in general purpose register */
 			param_reg = current_gpreg_param_reg[i];
 		}
