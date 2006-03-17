@@ -251,10 +251,18 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 			return 1;
 	}
 	else if (is_ia32_DivMod(pred)) {
-		if (nr == pn_DivMod_res_div || nr == pn_Div_res)
+		if (nr == pn_DivMod_res_div)
 			return 0;
-		if (nr == pn_DivMod_res_mod || nr == pn_Mod_res)
+		if (nr == pn_DivMod_res_mod)
 			return 1;
+
+		switch(get_ia32_flavour(pred)) {
+			if (nr == pn_DivMod_res_div)
+				return 0;
+			if (nr == pn_DivMod_res_mod)
+				return 1;
+			assert(0 && "unsupported DivMod");
+		}
 	}
 	else if (is_ia32_fDiv(pred)) {
 		if (nr == pn_Quot_res)

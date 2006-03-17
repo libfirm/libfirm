@@ -807,7 +807,20 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
 
+static ir_node *get_proj_for_pn(const ir_node *irn, long pn) {
+	const ir_edge_t *edge;
+	ir_node   *proj;
+	assert(get_irn_mode(irn) == mode_T && "need mode_T");
 
+	foreach_out_edge(irn, edge) {
+		proj = get_edge_src_irn(edge);
+
+		if (get_Proj_proj(proj) == pn)
+			return proj;
+	}
+
+	return NULL;
+}
 
 /**
  * Generates an ia32 DivMod with additional infrastructure for the
@@ -832,13 +845,16 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 
 	switch (dm_flav) {
 		case flavour_Div:
-			mem = get_Div_mem(irn);
+			mem  = get_Div_mem(irn);
+			mode = get_irn_mode(get_proj_for_pn(irn, pn_Div_res));
 			break;
 		case flavour_Mod:
-			mem = get_Mod_mem(irn);
+			mem  = get_Mod_mem(irn);
+			mode = get_irn_mode(get_proj_for_pn(irn, pn_Mod_res));
 			break;
 		case flavour_DivMod:
-			mem = get_DivMod_mem(irn);
+			mem  = get_DivMod_mem(irn);
+			mode = get_irn_mode(get_proj_for_pn(irn, pn_DivMod_res_div));
 			break;
 		default:
 			assert(0);
