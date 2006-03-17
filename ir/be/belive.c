@@ -14,6 +14,9 @@
 
 #include "beutil.h"
 #include "belive_t.h"
+#include "besched_t.h"
+
+#define DBG_MODULE "firm.be.liveness"
 
 FIRM_IMPL2(is_live_in, int, const ir_node *, const ir_node *)
 FIRM_IMPL2(is_live_out, int, const ir_node *, const ir_node *)
@@ -266,4 +269,62 @@ static void dom_check(ir_node *irn, void *data)
 void be_check_dominance(ir_graph *irg)
 {
 	irg_walk_graph(irg, dom_check, NULL, NULL);
+}
+
+pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live)
+{
+	firm_dbg_module_t *dbg = firm_dbg_register(DBG_MODULE);
+	int i, n;
+	ir_node *x;
+
+	DBG((dbg, LEVEL_1, "%+F\n", irn));
+	for(x = pset_first(live); x; x = pset_next(live))
+		DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
+
+	if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
+		pset_remove_ptr(live, irn);
+
+	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		ir_node *op = get_irn_n(irn, i);
+
+		if(arch_irn_consider_in_reg_alloc(arch_env, cls, op))
+			pset_insert_ptr(live, op);
+	}
+
+	return live;
+}
+
+pset *be_liveness_end_of_block(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live)
+{
+	irn_live_t *li;
+
+	live_foreach(bl, li) {
+		ir_node *irn = (ir_node *) li->irn;
+		if(live_is_end(li) && arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
+			pset_insert_ptr(live, irn);
+	}
+
+	return live;
+}
+
+pset *be_liveness_nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
+{
+	firm_dbg_module_t *dbg = firm_dbg_register(DBG_MODULE);
+	const ir_node *bl      = is_Block(pos) ? pos : get_nodes_block(pos);
+	ir_node *irn;
+
+	be_liveness_end_of_block(arch_env, cls, bl, live);
+
+	sched_foreach_reverse(bl, irn) {
+		/*
+		 * If we encounter the node we want to insert the Perm after,
+		 * exit immediately, so that this node is still live
+		 */
+		if(irn == pos)
+			return live;
+
+		be_liveness_transfer(arch_env, cls, irn, live);
+	}
+
+	return live;
 }

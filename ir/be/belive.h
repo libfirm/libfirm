@@ -8,6 +8,9 @@
 #define _BELIVE_H
 
 #include "firm_types.h"
+#include "pset.h"
+#include "bearch_t.h"
+
 #include <stdio.h>
 
 /**
@@ -59,5 +62,38 @@ int (is_live_end)(const ir_node *block, const ir_node *irn);
  * @param irg The graph.
  */
 void be_check_dominance(ir_graph *irg);
+
+/**
+ * The liveness transfer function.
+ * Updates a live set over a single step from a given node to its predecessor.
+ * Everything defined at the node is removed from the set, the uses of the node get inserted.
+ * @param arch_env The architecture environment.
+ * @param cls      The register class to consider.
+ * @param irn      The node at which liveness should be computed.
+ * @param live     The set of nodes live before @p irn. This set gets modified by updating it to
+ *                 the nodes live after irn.
+ * @return live.
+ */
+pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live);
+
+/**
+ * Put all node live at the end of a block into a set.
+ * @param arch_env The architecture environment.
+ * @param cls      The register class to consider.
+ * @param bl       The block.
+ * @param live     The set to put them into.
+ * @return live.
+ */
+pset *be_liveness_end_of_block(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live);
+
+/**
+ * Compute a set of nodes which are live at another node.
+ * @param arch_env The architecture environment.
+ * @param cls      The register class to consider.
+ * @param pos      The node.
+ * @param live     The set to put them into.
+ * @return live.
+ */
+pset *be_liveness_nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
 
 #endif /* _BELIVE_H */
