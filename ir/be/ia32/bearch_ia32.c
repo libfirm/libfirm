@@ -256,14 +256,57 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 		pset_insert_ptr(s, env->isa->bp);
 }
 
-static const arch_register_t *ia32_abi_prologue(void *self, pmap *reg_map)
+static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t *env = self;
-	return env->isa->bp;
+	ia32_abi_env_t *env              = self;
+	const arch_register_t *frame_reg = env->isa->sp;
+
+	if(!env->flags.try_omit_fp) {
+		int reg_size         = get_mode_size_bytes(env->isa->bp->reg_class->mode);
+		ir_node *bl          = get_irg_start_block(env->irg);
+		ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
+		ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
+		ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_XXX]);
+		ir_node *store_bp;
+
+		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_along);
+		store_bp = new_rd_ia32_Store(NULL, env->irg, bl, curr_sp, curr_no_reg, curr_bp, *mem, mode_T);
+		*mem     = new_r_Proj(env->irg, bl, store_bp, mode_M, 0);
+		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
+		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
+		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
+
+		be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
+		be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
+	}
+
+	return frame_reg;
 }
 
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
+	ia32_abi_env_t *env = self;
+	ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
+	ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
+	ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_XXX]);
+
+	if(env->flags.try_omit_fp) {
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_against);
+	}
+
+	else {
+		ir_node *load_bp;
+		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
+
+		curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
+		load_bp = new_rd_ia32_Load(NULL, env->irg, bl, curr_sp, curr_no_reg, *mem, mode_T);
+		set_ia32_ls_mode(load_bp, mode_bp);
+		curr_bp = new_r_Proj(env->irg, bl, load_bp, mode_bp, 0);
+		*mem    = new_r_Proj(env->irg, bl, load_bp, mode_M, 1);
+	}
+
+	be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
+	be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
 }
 
 /**
@@ -799,7 +842,8 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 	}
 
 	/* set register parameters  */
-	if (cc & cc_reg_param) {
+//	if (cc & cc_reg_param) {
+	if (1) {
 		/* determine the number of parameters passed via registers */
 		biggest_n = ia32_get_n_regparam_class(n, modes, &ignore, &ignore);
 
