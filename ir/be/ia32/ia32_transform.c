@@ -557,7 +557,7 @@ static ir_node *gen_Mulh(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) 
 	ir_node *proj_EAX, *proj_EDX, *mulh;
 	ir_node *in[1];
 
-	assert(mode_is_float(env->mode) && "Mulh with float not supported");
+	assert(!mode_is_float(env->mode) && "Mulh with float not supported");
 	proj_EAX = gen_binop(env, op1, op2, new_rd_ia32_Mulh);
 	mulh     = get_Proj_pred(proj_EAX);
 	proj_EDX = new_rd_Proj(env->dbg, env->irg, env->block, mulh, env->mode, pn_EDX);
