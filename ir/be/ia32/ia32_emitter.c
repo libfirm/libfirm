@@ -238,7 +238,7 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 	static char *buf = NULL;
 
 	/* verify that this function is never called on non-AM supporting operations */
-	assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
+	//assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
 
 #define PRODUCES_RESULT(n)   \
 	(!(is_ia32_St(n)      || \
