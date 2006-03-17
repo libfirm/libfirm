@@ -58,7 +58,7 @@ static int apply_alternating_path(const bipartite_t *gr, int *matching,
 {
 	int left, right;
 	int done_something = 0;
-	bitset_t *tmp = bitset_malloc(gr->n_left);
+	bitset_t *tmp = bitset_alloca(gr->n_right);
 
 	for(left = 0; left < gr->n_left; ++left) {
 		bitset_t *left_adj = gr->adj[left];
@@ -114,8 +114,6 @@ static int apply_alternating_path(const bipartite_t *gr, int *matching,
 			done_something = 1;
 		}
 	}
-
-	bitset_free(tmp);
 
 	return done_something;
 }
