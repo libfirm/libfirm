@@ -86,10 +86,11 @@ alloc		::= node-nr reg-nr .
 #include "phiclass.h"
 
 #include "beraextern.h"
+#include "beabi.h"
 #include "bearch.h"
 #include "benode_t.h"
 #include "beirgmod.h"
-#include "besched.h"
+#include "besched_t.h"
 #include "beutil.h"
 #include "belive_t.h"
 
@@ -202,12 +203,10 @@ static void handle_constraints_walker(ir_node *irn, void *env) {
 	arch_get_register_req(raenv->aenv, &req, irn, -1);
 	if (arch_register_req_is(&req, limited)) {
 		ir_node *cpy = be_new_Copy(req.cls, raenv->irg, get_nodes_block(irn), irn);
-		const ir_edge_t *edge;
 
 		/* all users of the irn use the copy instead */
 		sched_add_after(irn, cpy);
-		foreach_out_edge(irn, edge)
-			set_irn_n(edge->src, edge->pos, cpy);
+		edges_reroute(irn, cpy, raenv->irg);
 	}
 
 
@@ -232,7 +231,7 @@ static void handle_constraints_walker(ir_node *irn, void *env) {
 }
 
 static void handle_constraints(be_raext_env_t *raenv) {
-	irg_block_walk_graph(raenv->irg, NULL, handle_constraints_walker, raenv);
+	irg_walk_graph(raenv->irg, NULL, handle_constraints_walker, raenv);
 }
 
 
@@ -288,9 +287,10 @@ static ir_node *insert_copies(be_raext_env_t *raenv, ir_node *start_phi, int pos
 	if (has_been_done(start_phi, pos))
 		return NULL;
 
-	/* In case this is a 'normal' phi we insert into
-	 * the schedule before the pred_blk irn */
-	last_cpy = pred_blk;
+	/* In case this is a 'normal' phi we insert at the
+	 * end of the pred block before cf nodes */
+	last_cpy = sched_skip(pred_blk, 0, sched_skip_cf_predicator, raenv->aenv);
+	last_cpy = sched_next(last_cpy);
 
 	/* If we detect a loop stop recursion. */
 	if (arg == start_phi) {
@@ -303,7 +303,7 @@ static ir_node *insert_copies(be_raext_env_t *raenv, ir_node *start_phi, int pos
 		/* At least 2 phis are involved */
 		/* Insert a loop breaking copy (an additional variable T) */
 		loop_breaker = be_new_Copy(raenv->cls, raenv->irg, pred_blk, start_phi);
-		sched_add_before(pred_blk, loop_breaker);
+		sched_add_before(last_cpy, loop_breaker);
 
 		arg = loop_breaker;
 	}
@@ -344,6 +344,9 @@ static void ssa_destr_simple_walker(ir_node *blk, void *env) {
 		sched_foreach(blk, phi) {
 			if (!is_Phi(phi))
 				break;
+
+			if (arch_irn_is_ignore(raenv->aenv, phi))
+				continue;
 
 			raenv->cls = arch_get_irn_reg_class(raenv->aenv, phi, -1);
 			insert_copies(raenv, phi, pos, phi);
@@ -616,7 +619,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 	int pos, max;
 	var_info_t *vi1, *vi2;
 
-	if (arch_get_irn_reg_class(raenv->aenv, irn, -1) == NULL || arch_irn_is_ignore(raenv->aenv, irn))
+	if (arch_get_irn_reg_class(raenv->aenv, irn, -1) != raenv->cls || arch_irn_is_ignore(raenv->aenv, irn))
 		return;
 
 	vi1 = get_var_info(irn);
@@ -929,6 +932,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	var_info_t *vi;
 
 	compute_doms(irg);
+	edges_assure(irg);
 
 	raenv.irg      = irg;
 	raenv.aenv     = env->arch_env;
@@ -969,6 +973,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 			dump_to_file(&raenv, out);
 			execute(callee, out, in);
 			done = read_and_apply_results(&raenv, in);
+			be_abi_fix_stack_nodes(bi->abi);
 
 			ir_snprintf(in, sizeof(in), "-extern-%s-round-%d", raenv.cls->name, round);
 			be_dump(irg, in, dump_ir_block_graph_sched);

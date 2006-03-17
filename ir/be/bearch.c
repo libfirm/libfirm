@@ -22,6 +22,7 @@
 
 #include "bearch.h"
 #include "ircons_t.h"
+#include "irnode_t.h"
 
 #include "bitset.h"
 #include "pset.h"

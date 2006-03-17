@@ -184,13 +184,15 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data) {
 	return is_Phi(irn);
 }
 
-extern ir_node *sched_skip(ir_node *from, int forward,
-    sched_predicator_t *predicator, void *data)
+extern ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data)
 {
-  const ir_node *bl = get_block(from);
-  ir_node *curr;
+	const ir_node *bl = get_block(from);
+	ir_node *curr;
 
-  for(curr = from; curr != bl && predicator(curr, data);
-      curr = forward ? sched_next(curr) : sched_prev(curr));
-  return curr;
+	if (is_Block(from))
+		from = forward ? sched_next(from) : sched_prev(from);
+
+	for(curr = from; curr != bl && predicator(curr, data); curr = forward ? sched_next(curr) : sched_prev(curr));
+
+	return curr;
 }
