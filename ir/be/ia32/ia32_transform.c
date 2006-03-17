@@ -1238,6 +1238,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *val   = get_Store_value(node);
 	ir_node *ptr   = get_Store_ptr(node);
 	ir_node *mem   = get_Store_mem(node);
+	ir_node *mode  = get_irn_mode(val);
 	ir_node *sval  = val;
 	ir_node *new_op;
 
@@ -1246,14 +1247,14 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 		sval = noreg;
 	}
 
-	if (mode_is_float(env->mode)) {
-		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
+	if (mode_is_float(mode)) {
+		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, mode_T);
 	}
-	else if (get_mode_size_bits(env->mode) == 8) {
-		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
+	else if (get_mode_size_bits(mode) == 8) {
+		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, mode_T);
 	}
 	else {
-		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, env->mode);
+		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, mode_T);
 	}
 
 	/* stored const is an attribute (saves a register) */

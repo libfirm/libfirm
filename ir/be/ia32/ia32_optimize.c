@@ -692,7 +692,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 	if ((res == irn) && (get_ia32_am_support(irn) != ia32_am_None) && !is_ia32_Lea(irn)) {
 		/* 1st: check for Load/Store -> LEA   */
-		if (is_ia32_Ld(irn) || is_ia32_St(irn)) {
+		if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn)) {
 			left = get_irn_n(irn, 0);
 
 			if (is_ia32_Lea(left)) {
@@ -703,7 +703,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				set_ia32_am_scale(irn, get_ia32_am_scale(left));
 				set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
 
-				set_ia32_op_type(irn, is_ia32_St(irn) ? ia32_AddrModeD : ia32_AddrModeS);
+				set_ia32_op_type(irn, is_ia32_Ld(irn) ? ia32_AddrModeS : ia32_AddrModeD);
 
 				/* set base and index */
 				set_irn_n(irn, 0, get_irn_n(left, 0));
