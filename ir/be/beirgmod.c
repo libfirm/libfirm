@@ -38,6 +38,20 @@
 #define DBG_MODULE firm_dbg_register("firm.be.irgmod")
 #define DBG_LEVEL SET_LEVEL_0
 
+/*
+  ____                  _
+ |  _ \  ___  _ __ ___ (_)_ __   __ _ _ __   ___ ___
+ | | | |/ _ \| '_ ` _ \| | '_ \ / _` | '_ \ / __/ _ \
+ | |_| | (_) | | | | | | | | | | (_| | | | | (_|  __/
+ |____/ \___/|_| |_| |_|_|_| |_|\__,_|_| |_|\___\___|
+ |  ___| __ ___  _ __ | |_(_) ___ _ __ ___
+ | |_ | '__/ _ \| '_ \| __| |/ _ \ '__/ __|
+ |  _|| | | (_) | | | | |_| |  __/ |  \__ \
+ |_|  |_|  \___/|_| |_|\__|_|\___|_|  |___/
+
+*/
+
+
 struct _dom_front_info_t {
   pmap *df_map;
 };
@@ -163,6 +177,20 @@ static void determine_phi_blocks(pset *copies, pset* copy_blocks, pset *phi_bloc
 
 	del_pdeq(worklist);
 }
+
+/*
+  ____ ____    _
+ / ___/ ___|  / \
+ \___ \___ \ / _ \
+  ___) |__) / ___ \
+ |____/____/_/   \_\
+   ____                _                   _   _
+  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_(_) ___  _ __
+ | |   / _ \| '_ \/ __| __| '__| | | |/ __| __| |/ _ \| '_ \
+ | |__| (_) | | | \__ \ |_| |  | |_| | (__| |_| | (_) | | | |
+  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|
+
+*/
 
 /**
  * Find the copy of the given original node whose value is 'active'
@@ -438,4 +466,67 @@ void be_ssa_constr_set(dom_front_info_t *info, pset *nodes)
 	pset *empty_set = be_empty_set();
 	assert(pset_count(empty_set) == 0);
 	be_ssa_constr_set_ignore(info, nodes, empty_set);
+}
+
+/*
+  ___                     _     ____
+ |_ _|_ __  ___  ___ _ __| |_  |  _ \ ___ _ __ _ __ ___
+  | || '_ \/ __|/ _ \ '__| __| | |_) / _ \ '__| '_ ` _ \
+  | || | | \__ \  __/ |  | |_  |  __/  __/ |  | | | | | |
+ |___|_| |_|___/\___|_|   \__| |_|   \___|_|  |_| |_| |_|
+
+*/
+
+ir_node *insert_Perm_after(const arch_env_t *arch_env,
+						   const arch_register_class_t *cls,
+						   dom_front_info_t *dom_front,
+						   ir_node *pos)
+{
+	ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
+	ir_graph *irg               = get_irn_irg(bl);
+	pset *live                  = pset_new_ptr_default();
+	firm_dbg_module_t *dbg      = firm_dbg_register("be.node");
+
+	ir_node *curr, *irn, *perm, **nodes;
+	int i, n;
+
+	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
+
+	if(!be_liveness_nodes_live_at(arch_env, cls, pos, live));
+
+	n = pset_count(live);
+
+	if(n == 0)
+		return NULL;
+
+	nodes = malloc(n * sizeof(nodes[0]));
+
+	DBG((dbg, LEVEL_1, "live:\n"));
+	for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++) {
+		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
+		nodes[i] = irn;
+	}
+
+	perm = be_new_Perm(cls, irg, bl, n, nodes);
+	sched_add_after(pos, perm);
+	free(nodes);
+
+	curr = perm;
+	for(i = 0; i < n; ++i) {
+		ir_node *copies[2];
+		ir_node *perm_op = get_irn_n(perm, i);
+		const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
+
+		ir_mode *mode = get_irn_mode(perm_op);
+		ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
+		arch_set_irn_register(arch_env, proj, reg);
+
+		sched_add_after(curr, proj);
+		curr = proj;
+
+		copies[0] = perm_op;
+		copies[1] = proj;
+		be_ssa_constr(dom_front, 2, copies);
+	}
+	return perm;
 }
