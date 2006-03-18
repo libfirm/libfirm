@@ -63,7 +63,7 @@ _set_extbb_visited(ir_extblk *blk, unsigned long visited) {
 static INLINE void
 _mark_extbb_visited(ir_extblk *blk) {
   assert(blk);
-  blk->visited = current_ir_graph->visited;
+  blk->visited = current_ir_graph->block_visited;
 }
 
 /**
@@ -73,7 +73,7 @@ _mark_extbb_visited(ir_extblk *blk) {
 static INLINE int
 _extbb_visited(const ir_extblk *blk) {
   assert(blk);
-  return blk->visited >= current_ir_graph->visited;
+  return blk->visited >= current_ir_graph->block_visited;
 }
 
 /**
@@ -83,7 +83,7 @@ _extbb_visited(const ir_extblk *blk) {
 static INLINE int
 _extbb_not_visited(const ir_extblk *blk) {
   assert(blk);
-  return blk->visited < current_ir_graph->visited;
+  return blk->visited < current_ir_graph->block_visited;
 }
 
 /**

@@ -20,6 +20,7 @@
 #include "irextbb_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "irgraph_t.h"
 #include "xmalloc.h"
 #include "irprintf.h"
 
@@ -68,7 +69,9 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
   int n = get_Block_n_cfgpreds(block);
   env_t *env = ctx;
 
-  if (n <= 0 || n > 1 || block == get_irg_start_block(current_ir_graph)) {
+  if (n <= 0 || n > 1 ||
+		  block == get_irg_start_block(current_ir_graph) ||
+			block == get_irg_end_block(current_ir_graph)) {
     /*
      * block is a JOIN-node ie the control flow from
      * many other blocks joins here. block is a leader.
@@ -137,6 +140,9 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
       if (get_Block_extbb(prev) != sentinel)
         break;
       set_Block_extbb(prev, extbb);
+			++extbb->visited;
+			set_irn_link(prev, extbb->link);
+			extbb->link = prev;
       prev = get_Block_cfgpred_block(prev, 0);
     }
   }
@@ -261,4 +267,74 @@ ir_node *(get_extbb_leader)(ir_extblk *blk) {
 /* Return the node number of an extended block. */
 long get_extbb_node_nr(ir_extblk *blk) {
   return get_irn_node_nr(get_extbb_leader(blk));
+}
+
+static void irg_extblock_walk_2(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env)
+{
+  int i;
+  ir_node *node;
+
+  if (extbb_not_visited(blk)) {
+    mark_extbb_visited(blk);
+
+    if (pre) pre(blk, env);
+
+    node = get_extbb_leader(blk);
+    for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
+      /* find the corresponding predecessor block. */
+      ir_node *pred = get_Block_cfgpred_block(node, i);
+      if (is_Block(pred)) {
+        /* recursion */
+        irg_extblock_walk_2(get_Block_extbb(pred), pre, post, env);
+      }
+      else {
+        assert(is_Bad(pred));
+      }
+    }
+
+    if (post) post(blk, env);
+  }
+}
+
+/* walks only over extended Block nodes in the graph.  Has it's own visited
+   flag, so that it can be interleaved with the other walker.         */
+void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env)
+{
+  ir_node *block, *pred;
+  int i;
+
+  assert(blk);
+  assert(!get_interprocedural_view());   /* interprocedural_view not implemented */
+  inc_irg_block_visited(current_ir_graph);
+  irg_extblock_walk_2(block, pre, post, env);
+
+  /* keepalive: the endless loops ... */
+  if (get_extbb_leader(blk) == get_irg_end_block(current_ir_graph)) {
+    ir_node *node = get_irg_end(current_ir_graph);
+    int arity = get_irn_arity(node);
+    for (i = 0; i < arity; i++) {
+      pred = get_irn_n(node, i);
+      if (is_Block(pred))
+        irg_extblock_walk_2(get_Block_extbb(pred), pre, post, env);
+      else if (is_Phi(pred)) {
+        /* Sometimes the blocks died, but are still reachable through Phis.
+         * Make sure the algorithms that try to remove these reach them. */
+        ir_node *block = get_nodes_block(pred);
+
+        if (! is_Bad(block))
+          irg_extblock_walk_2(get_Block_extbb(block), pre, post, env);
+      }
+    }
+  }
+}
+
+/* Walks only over reachable Extended Basic Block nodes in the graph. */
+void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre, extbb_walk_func *post, void *env)
+{
+  ir_node *end = get_irg_end(irg);
+  ir_extblk *blk = get_Block_extbb(end);
+  ir_graph *rem  = current_ir_graph;
+  current_ir_graph = irg;
+  irg_extblock_walk(blk, pre, post, env);
+  current_ir_graph = rem;
 }
