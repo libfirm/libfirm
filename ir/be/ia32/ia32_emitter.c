@@ -587,7 +587,35 @@ void emit_ia32_CondJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
 	CondJmp_emitter(irn, env);
 }
 
+/**
+ * Emits code for conditional test and jump.
+ */
+static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
+	FILE *F = env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
+	const arch_register_t *in1 = get_in_reg(irn, 0);
+	const arch_register_t *in2 = get_in_reg(irn, 1);
 
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %s, %s ", arch_register_get_name(in1), arch_register_get_name(in2));
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F", irn);
+	IA32_DO_EMIT;
+	finish_CondJmp(F, irn);
+}
+
+/**
+ * Emits code for conditional test and jump with two variables.
+ */
+static void emit_ia32_TestJmp(const ir_node *irn, ia32_emit_env_t *env) {
+	TestJmp_emitter(irn, env);
+}
+
+/**
+ * Emits code for conditional test and jump with immediate.
+ */
+static void emit_ia32_TestJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
+	TestJmp_emitter(irn, env);
+}
 
 /*********************************************************
  *                 _ _       _
@@ -1066,6 +1094,7 @@ static void ia32_register_emitters(void) {
 
 	/* other ia32 emitter functions */
 	IA32_EMIT(CondJmp);
+	IA32_EMIT(TestJmp);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
