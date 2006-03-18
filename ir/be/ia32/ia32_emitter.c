@@ -38,6 +38,8 @@
 # define obstack_chunk_free free
 #endif
 
+#define BLOCK_PREFIX(x) ".L" ## x
+
 extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 
 #define SNPRINTF_BUF_LEN 128
@@ -515,7 +517,7 @@ static const char *get_cmp_suffix(int cmp_code, int unsigned_cmp)
 static char *get_cfop_target(const ir_node *irn, char *buf) {
 	ir_node *bl = get_irn_link(irn);
 
-	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
+	snprintf(buf, SNPRINTF_BUF_LEN, BLOCK_PREFIX("%ld"), get_irn_node_nr(bl));
 	return buf;
 }
 
@@ -533,7 +535,7 @@ static void finish_CondJmp(FILE *F, const ir_node *irn) {
 	proj = get_edge_src_irn(edge);
 	assert(is_Proj(proj) && "CondJmp with a non-Proj");
 
-	if (get_Proj_proj(proj) == 1) {
+	if (get_Proj_proj(proj) == pn_Cmp_True) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
 					get_cmp_suffix(get_ia32_pncode(irn), !mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
 					get_cfop_target(proj, buf));
@@ -594,10 +596,13 @@ static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	FILE *F = env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
-	const arch_register_t *in1 = get_in_reg(irn, 0);
-	const arch_register_t *in2 = get_in_reg(irn, 1);
+	const char *op1 = arch_register_get_name(get_in_reg(irn, 0));
+  const char *op2 = get_ia32_cnst(irn);
 
-	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %s, %s ", arch_register_get_name(in1), arch_register_get_name(in2));
+  if (! op2)
+		op2 = arch_register_get_name(get_in_reg(irn, 1));
+
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %s, %s ", op1, op2);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F", irn);
 	IA32_DO_EMIT;
 	finish_CondJmp(F, irn);
@@ -1148,7 +1153,7 @@ static void ia32_gen_block(ir_node *block, void *env) {
 	if (! is_Block(block))
 		return;
 
-	fprintf(((ia32_emit_env_t *)env)->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
+	fprintf(((ia32_emit_env_t *)env)->out, BLOCK_PREFIX("%ld:\n"), get_irn_node_nr(block));
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
 	}
