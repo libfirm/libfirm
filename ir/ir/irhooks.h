@@ -34,6 +34,7 @@ typedef enum {
   HOOK_OPT_CONST_EVAL,  /**< constant evaluation */
   HOOK_OPT_ALGSIM,      /**< algebraic simplification */
   HOOK_OPT_PHI,         /**< Phi optmization */
+  HOOK_OPT_SYNC,        /**< Sync optmization */
   HOOK_OPT_WAW,         /**< Write-After-Write optimization */
   HOOK_OPT_WAR,         /**< Write-After-Read optimization */
   HOOK_OPT_RAW,         /**< Read-After-Write optimization */
