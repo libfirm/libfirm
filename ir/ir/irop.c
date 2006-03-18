@@ -67,6 +67,8 @@ ir_op *op_Shrs;        ir_op *get_op_Shrs      (void) { return op_Shrs;      }
 ir_op *op_Rot;         ir_op *get_op_Rot       (void) { return op_Rot;       }
 ir_op *op_Conv;        ir_op *get_op_Conv      (void) { return op_Conv;      }
 ir_op *op_Cast;        ir_op *get_op_Cast      (void) { return op_Cast;      }
+ir_op *op_Carry;       ir_op *get_op_Carry     (void) { return op_Carry;     }
+ir_op *op_Borrow;      ir_op *get_op_Borrow    (void) { return op_Borrow;    }
 
 ir_op *op_Phi;         ir_op *get_op_Phi       (void) { return op_Phi;       }
 
@@ -245,6 +247,8 @@ init_op(void)
   op_Rot       = new_ir_op(iro_Rot,       "Rot",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
   op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
   op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, N|H,     oparity_unary,     0, sizeof(cast_attr), NULL);
+  op_Carry     = new_ir_op(iro_Carry,     "Carry",     op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
+  op_Borrow    = new_ir_op(iro_Borrow,    "Borrow",    op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 
   op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, N,       oparity_variable, -1, sizeof(int), NULL);
 
@@ -321,6 +325,8 @@ void finish_op(void) {
   free_ir_op (op_Rot      ); op_Rot       = NULL;
   free_ir_op (op_Conv     ); op_Conv      = NULL;
   free_ir_op (op_Cast     ); op_Cast      = NULL;
+  free_ir_op (op_Carry    ); op_Carry     = NULL;
+  free_ir_op (op_Borrow   ); op_Borrow    = NULL;
 
   free_ir_op (op_Phi      ); op_Phi       = NULL;
 
