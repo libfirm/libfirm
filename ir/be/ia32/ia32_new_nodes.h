@@ -102,12 +102,12 @@ void set_ia32_Immop_tarval(ir_node *node, tarval *tv);
 /**
  * Return the sc attribute.
  */
-char *get_ia32_sc(const ir_node *node);
+const char *get_ia32_sc(const ir_node *node);
 
 /**
  * Sets the sc attribute.
  */
-void set_ia32_sc(ir_node *node, char *sc);
+void set_ia32_sc(ir_node *node, const char *sc);
 
 /**
  * Gets the string representation of the internal const (tv or symconst)

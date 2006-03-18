@@ -384,19 +384,23 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
  *                                       |___/
  ***************************************************************************************************/
 
- static char *copy_str(char *dst, const char *src) {
-	 dst = xcalloc(1, strlen(src) + 1);
-	 strncpy(dst, src, strlen(src) + 1);
+ static char *copy_str(const char *src) {
+	 size_t l = strlen(src) + 1;
+	 char *dst = xmalloc(l);
+	 strncpy(dst, src, l);
+	 dst[l - 1] = '\0';
 	 return dst;
  }
 
  static char *set_cnst_from_tv(char *cnst, tarval *tv) {
+	 int l = 64;
 	 if (cnst) {
 		 free(cnst);
 	 }
 
-	 cnst = xcalloc(1, 64);
-	 assert(tarval_snprintf(cnst, 63, tv));
+	 cnst = xmalloc(l);
+	 assert(tarval_snprintf(cnst, l, tv));
+	 cnst[l - 1] = 0;
 	 return cnst;
  }
 
@@ -470,13 +474,12 @@ char *get_ia32_am_offs(const ir_node *node) {
 	}
 
 	size = obstack_object_size(attr->am_offs);
-    if (size > 0) {
-		res    = xcalloc(1, size + 2);
+	if (size > 0) {
+		res    = xmalloc(size + 2);
 		res[0] = attr->data.offs_sign ? '-' : '+';
 		memcpy(&res[1], obstack_base(attr->am_offs), size);
-    }
-
-	res[size + 1] = '\0';
+		res[size + 1] = '\0';
+	}
 	return res;
 }
 
@@ -565,7 +568,7 @@ void set_ia32_Immop_tarval(ir_node *node, tarval *tv) {
 /**
  * Return the sc attribute.
  */
-char *get_ia32_sc(const ir_node *node) {
+const char *get_ia32_sc(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->sc;
 }
@@ -573,9 +576,9 @@ char *get_ia32_sc(const ir_node *node) {
 /**
  * Sets the sc attribute.
  */
-void set_ia32_sc(ir_node *node, char *sc) {
+void set_ia32_sc(ir_node *node, const char *sc) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->sc          = copy_str(attr->sc, sc);
+	attr->sc          = copy_str(sc);
 
 	if (attr->cnst) {
 		free(attr->cnst);
@@ -889,7 +892,7 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
 	na->tv = ca->tv;
 
 	if (ca->sc) {
-		na->sc   = copy_str(na->sc, ca->sc);
+		na->sc   = copy_str(ca->sc);
 		na->cnst = na->sc;
 	}
 	else {
@@ -915,7 +918,7 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 		case iro_SymConst:
 			attr->data.tp = ia32_SymConst;
 			attr->tv      = NULL;
-			attr->sc      = copy_str(attr->sc, get_sc_name(cnst));
+			attr->sc      = copy_str(get_sc_name(cnst));
 			attr->cnst    = attr->sc;
 			break;
 		case iro_Unknown:
