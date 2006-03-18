@@ -241,6 +241,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
         return get_mode_null(mode);
       }
       break;
+
     default:
       break;
   }
@@ -251,13 +252,12 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 /*
  *   public variables declared in tv.h
  */
-static tarval reserved_tv[5];
+static tarval reserved_tv[4];
 
 tarval *tarval_bad       = &reserved_tv[0];
 tarval *tarval_undefined = &reserved_tv[1];
 tarval *tarval_b_false   = &reserved_tv[2];
 tarval *tarval_b_true    = &reserved_tv[3];
-tarval *tarval_P_void    = &reserved_tv[4];
 
 /*
  *   public functions declared in tv.h
@@ -303,13 +303,12 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
       }
       return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
+    case irms_reference:
+      /* same as integer modes */
     case irms_int_number:
     case irms_character:
       sc_val_from_str(str, len, NULL, mode);
       return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
-
-    case irms_reference:
-      return get_tarval(str, len, mode);
   }
 
   assert(0);  /* can't be reached, can it? */
@@ -330,6 +329,8 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
       /* XXX C semantics ! */
       return l ? tarval_b_true : tarval_b_false ;
 
+    case irms_reference:
+      /* same as integer modes */
     case irms_int_number:
     case irms_character:
       sc_val_from_long(l, NULL);
@@ -337,9 +338,6 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
 
     case irms_float_number:
       return new_tarval_from_double((long double)l, mode);
-
-    case irms_reference:
-      return l ? tarval_bad : get_tarval(NULL, 0, mode);  /* null pointer or tarval_bad */
 
     default:
       assert(0 && "unsupported mode sort");
@@ -449,10 +447,6 @@ tarval *(get_tarval_b_true)(void) {
   return _get_tarval_b_true();
 }
 
-tarval *(get_tarval_P_void)(void) {
-  return _get_tarval_P_void();
-}
-
 tarval *get_tarval_max(ir_mode *mode)
 {
   ANNOUNCE();
@@ -543,6 +537,8 @@ tarval *get_tarval_min(ir_mode *mode)
   return tarval_bad;
 }
 
+static long _null_value;
+
 tarval *get_tarval_null(ir_mode *mode)
 {
   ANNOUNCE();
@@ -570,7 +566,7 @@ tarval *get_tarval_null(ir_mode *mode)
       return new_tarval_from_long(0l,  mode);
 
     case irms_reference:
-      return tarval_P_void;
+      return new_tarval_from_long(_null_value, mode);
   }
   return tarval_bad;
 }
@@ -949,13 +945,13 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
               break;
           }
           return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
-#if 0
+
         case irms_reference:
           /* allow 0 to be casted */
           if (src == get_mode_null(src->mode))
             return get_mode_null(m);
           break;
-#endif
+
         default:
           break;
       }
@@ -1524,7 +1520,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
       break;
 
     case irms_reference:
-      if (tv == tarval_P_void) return snprintf(buf, len, "NULL");
+      if (tv == tv->mode->null) return snprintf(buf, len, "NULL");
       if (tv->value != NULL){
       if (len > tv->length) {
         memcpy(buf, tv->value, tv->length);
@@ -1647,7 +1643,7 @@ const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode)
  * Identifying tarvals values for algebraic simplifications.
  *
  * Returns:
- *   - TV_CLASSIFY_NULL    for additive neutral,
+ *   - TV_CLASSIFY_NULL    for additive neutral or the NULL tarval for reference modes,
  *   - TV_CLASSIFY_ONE     for multiplicative neutral,
  *   - TV_CLASSIFY_ALL_ONE for bitwise-and neutral
  *   - TV_CLASSIFY_OTHER   else
@@ -1700,13 +1696,14 @@ static const tarval_mode_info reference_output = {
   ")",
 };
 
-
 /*
  * Initialization of the tarval module: called before init_mode()
  */
-void init_tarval_1(void)
+void init_tarval_1(long null_value)
 {
   ANNOUNCE();
+  _null_value = null_value;
+
   /* initialize the sets holding the tarvals with a comparison function and
    * an initial size, which is the expected number of constants */
   tarvals = new_set(memcmp, N_CONSTANTS);
@@ -1735,9 +1732,6 @@ void init_tarval_2(void)
 
   tarval_b_false->kind   = k_tarval;
   tarval_b_false->mode   = mode_b;
-
-  tarval_P_void->kind    = k_tarval;
-  tarval_P_void->mode    = mode_P;
 
   /*
    * assign output modes that are compatible with the

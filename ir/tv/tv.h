@@ -288,11 +288,6 @@ extern tarval *tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
 tarval *get_tarval_b_true(void);
 
-/** The 'void' pointer tarval. */
-extern tarval *tarval_P_void;
-/** Returns the 'void' pointer tarval. */
-tarval *get_tarval_P_void(void);
-
 /* These functions calculate and return a tarval representing the requested
  * value.
  * The functions get_mode_{Max,Min,...} return tarvals retrieved from these
@@ -305,7 +300,8 @@ tarval *get_tarval_max(ir_mode *mode);
 /** Returns the minimum value of a given mode. */
 tarval *get_tarval_min(ir_mode *mode);
 
-/** Returns the 0 value (additive neutral) of a given mode. */
+/** Returns the 0 value (additive neutral) of a given mode.
+    For reference modes, the NULL value is returned (old tarval_P_void) */
 tarval *get_tarval_null(ir_mode *mode);
 
 /** Returns the 1 value (multiplicative neutral) of a given mode. */
@@ -584,7 +580,7 @@ typedef enum _tarval_classification_t {
  * Identifying tarvals values for algebraic simplifications.
  * @param tv
  * @return
- *   - TV_CLASSIFY_NULL    for additive neutral,
+ *   - TV_CLASSIFY_NULL    for additive neutral or the NULL tarval for reference modes,
  *   - TV_CLASSIFY_ONE     for multiplicative neutral,
  *   - TV_CLASSIFY_ALL_ONE for bitwise-and neutral
  *   - TV_CLASSIFY_OTHER   else

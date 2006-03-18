@@ -24,8 +24,10 @@
  * Initialization of the tarval module.
  *
  * Call before init_mode().
+ *
+ * @param null_value  The reference mode NULL value, typical 0l
  */
-void init_tarval_1(void);
+void init_tarval_1(long null_value);
 
 /**
  * Initialization of the tarval module.
@@ -90,11 +92,6 @@ _get_tarval_b_false(void) {
 static INLINE tarval *
 _get_tarval_b_true(void) {
   return tarval_b_true;
-}
-
-static INLINE tarval *
-_get_tarval_P_void(void) {
-  return tarval_P_void;
 }
 
 #define get_tarval_mode(tv)     _get_tarval_mode(tv)
