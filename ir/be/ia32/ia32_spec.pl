@@ -345,6 +345,14 @@ $comment_string = ';';
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "none", "none" ] },
 },
 
+"TestJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "construct conditional jump: TEST A, B && JMPxx LABEL",
+  "reg_req"  => { "in" => [ "gp", "gp" ], "out" => [ "none" ] },
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+},
+
+
 "SwitchJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct switch",
