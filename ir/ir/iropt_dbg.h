@@ -153,7 +153,7 @@
   } while(0)
 
 /**
- * Merge the debuig info due to a Phi optimization.
+ * Merge the debug info due to a Phi optimization.
  * A Phi node was replaced by one of its input (the only meaningful)
  *
  * @param phi  the Phi node that will be replaced
@@ -163,6 +163,20 @@
   do {                                                          \
 	  hook_merge_nodes(&n, 1, &phi, 1, HOOK_OPT_PHI);	            \
 	  __dbg_info_merge_sets(&n, 1, &phi, 1, dbg_opt_ssa);         \
+  } while(0)
+
+
+/**
+ * Merge the debug info due to a Sync optimization.
+ * A Sync node was replaced by one of its input (the only meaningful)
+ *
+ * @param sync  the Sync node that will be replaced
+ * @param n     in Sync Input that will replace Sync
+ */
+#define DBG_OPT_SYNC(sync, n)                                   \
+  do {                                                          \
+	  hook_merge_nodes(&n, 1, &sync, 1, HOOK_OPT_SYNC);	          \
+	  __dbg_info_merge_sets(&n, 1, &sync, 1, dbg_opt_ssa);        \
   } while(0)
 
 
