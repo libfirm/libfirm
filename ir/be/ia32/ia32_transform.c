@@ -1275,8 +1275,24 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 			if (mode_is_int(get_irn_mode(expr))) {
 				if (classify_tarval(get_ia32_Immop_tarval(cnst)) == TV_CLASSIFY_NULL) {
 					/* a Cmp A, 0 */
-					res = new_rd_ia32_TestJmp(dbg, irg, block, expr, expr, mode_T);
+					ir_node *op1 = expr;
+					ir_node *op2 = expr;
+					ir_node *and = skip_Proj(expr);
+					char *cnst = NULL;
+
+					/* check, if expr is an only once used And operation */
+					if (get_irn_n_edges(expr) == 1 && is_ia32_And(and)) {
+						op1 = get_irn_n(and, 2);
+						op2 = get_irn_n(and, 3);
+
+						cnst = get_ia32_cnst(and);
+					}
+					res = new_rd_ia32_TestJmp(dbg, irg, block, op1, op2, mode_T);
 					set_ia32_pncode(res, get_Proj_proj(sel));
+
+					if (cnst) {
+						copy_ia32_Immop_attr(res, and);
+					}
 
 					SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 					return res;
