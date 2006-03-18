@@ -67,7 +67,7 @@ typedef ir_node *construct_unop_func(dbg_info *db, ir_graph *irg, ir_node *block
 									 ir_node *op, ir_node *mem, ir_mode *mode);
 
 typedef enum {
-	ia32_SSIGN, ia32_DSIGN, ia32_SABS, ia32_DABS
+	ia32_SSIGN, ia32_DSIGN, ia32_SABS, ia32_DABS, ia32_known_const_max
 } ia32_known_const_t;
 
 /****************************************************************************************************
@@ -80,66 +80,33 @@ typedef enum {
  *
  ****************************************************************************************************/
 
-struct tv_ent {
-	entity *ent;
-	tarval *tv;
-};
-
-/* Compares two (entity, tarval) combinations */
-static int cmp_tv_ent(const void *a, const void *b, size_t len) {
-	const struct tv_ent *e1 = a;
-	const struct tv_ent *e2 = b;
-
-	return !(e1->tv == e2->tv);
-}
-
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
-static char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
-	static set    *const_set = NULL;
-	struct tv_ent  key;
-	struct tv_ent *entry;
-	char          *tp_name;
-	char          *ent_name;
-	char          *cnst_str;
+static const char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
+	static const struct {
+		const char *tp_name;
+		const char *ent_name;
+		const char *cnst_str;
+	} names [ia32_known_const_max] = {
+		{ TP_SFP_SIGN, ENT_SFP_SIGN, SFP_SIGN },	/* ia32_SSIGN */
+		{ TP_DFP_SIGN, ENT_DFP_SIGN, DFP_SIGN },	/* ia32_DSIGN */
+		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS },		/* ia32_SABS */
+		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS }		/* ia32_DABS */
+	};
+	static struct entity *ent_cache[ia32_known_const_max];
+
+	const char    *tp_name, *ent_name, *cnst_str;
 	ir_type       *tp;
 	ir_node       *cnst;
 	ir_graph      *rem;
 	entity        *ent;
+	tarval        *tv;
 
-	if (! const_set) {
-		const_set = new_set(cmp_tv_ent, 10);
-	}
+  ent_name = names[kct].ent_name;
+	if (! ent_cache[kct]) {
+		tp_name  = names[kct].tp_name;
+		cnst_str = names[kct].cnst_str;
 
-	switch (kct) {
-		case ia32_SSIGN:
-			tp_name  = TP_SFP_SIGN;
-			ent_name = ENT_SFP_SIGN;
-			cnst_str = SFP_SIGN;
-			break;
-		case ia32_DSIGN:
-			tp_name  = TP_DFP_SIGN;
-			ent_name = ENT_DFP_SIGN;
-			cnst_str = DFP_SIGN;
-			break;
-		case ia32_SABS:
-			tp_name  = TP_SFP_ABS;
-			ent_name = ENT_SFP_ABS;
-			cnst_str = SFP_ABS;
-			break;
-		case ia32_DABS:
-			tp_name  = TP_DFP_ABS;
-			ent_name = ENT_DFP_ABS;
-			cnst_str = DFP_ABS;
-			break;
-	}
-
-
-	key.tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
-	key.ent = NULL;
-
-	entry = set_insert(const_set, &key, sizeof(key), HASH_PTR(key.tv));
-
-	if (! entry->ent) {
+		tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
 
@@ -152,15 +119,14 @@ static char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 		    const code irg */
 		rem = current_ir_graph;
 		current_ir_graph = get_const_code_irg();
-		cnst = new_Const(mode, key.tv);
+		cnst = new_Const(mode, tv);
 		current_ir_graph = rem;
 
 		set_atomic_ent_value(ent, cnst);
 
-		/* set the entry for hashmap */
-		entry->ent = ent;
+		/* cache the entry */
+		ent_cache[kct] = ent;
 	}
-
 	return ent_name;
 }
 
@@ -1079,7 +1045,7 @@ static ir_node *gen_Rot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
  * @return The created ia32 Minus node
  */
 static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
-	char    *name;
+	const char *name;
 	ir_node *new_op;
 	ir_node *noreg_gp = ia32_new_NoReg_gp(env->cg);
 	ir_node *noreg_fp = ia32_new_NoReg_fp(env->cg);
@@ -1148,7 +1114,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 	ir_node  *noreg_fp = ia32_new_NoReg_fp(env->cg);
 	ir_node  *nomem    = new_NoMem();
 	int       size;
-	char     *name;
+	const char *name;
 
 	if (mode_is_float(mode)) {
 		res = new_rd_ia32_fAnd(dbg,irg, block, noreg_gp, noreg_gp, op, noreg_fp, nomem, mode_T);
@@ -1238,7 +1204,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *val   = get_Store_value(node);
 	ir_node *ptr   = get_Store_ptr(node);
 	ir_node *mem   = get_Store_mem(node);
-	ir_node *mode  = get_irn_mode(val);
+	ir_mode *mode  = get_irn_mode(val);
 	ir_node *sval  = val;
 	ir_node *new_op;
 
@@ -1275,7 +1241,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 
 
 /**
- * Transforms a Cond -> Proj[b] -> Cmp into a CondJmp or CondJmp_i
+ * Transforms a Cond -> Proj[b] -> Cmp into a CondJmp, CondJmp_i or TestJmp
  *
  * @param env   The transformation environment
  * @return The transformed node.
@@ -1290,10 +1256,11 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 	ir_node  *res      = NULL;
 	ir_node  *pred     = NULL;
 	ir_node  *noreg    = ia32_new_NoReg_gp(env->cg);
-	ir_node  *nomem    = new_NoMem();
 	ir_node  *cmp_a, *cmp_b, *cnst, *expr;
 
 	if (is_Proj(sel) && sel_mode == mode_b) {
+		ir_node  *nomem = new_NoMem();
+
 		pred  = get_Proj_pred(sel);
 
 		/* get both compare operators */
@@ -1305,6 +1272,16 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		expr = get_expr_op(cmp_a, cmp_b);
 
 		if (cnst && expr) {
+			if (mode_is_int(get_irn_mode(expr))) {
+				if (classify_tarval(get_ia32_Immop_tarval(cnst)) == TV_CLASSIFY_NULL) {
+					/* a Cmp A, 0 */
+					res = new_rd_ia32_TestJmp(dbg, irg, block, expr, expr, mode_T);
+					set_ia32_pncode(res, get_Proj_proj(sel));
+
+					SET_IA32_ORIG_NODE(res, get_old_node_name(env));
+					return res;
+				}
+			}
 			res = new_rd_ia32_CondJmp(dbg, irg, block, noreg, noreg, expr, noreg, nomem, mode_T);
 			set_ia32_Immop_attr(res, cnst);
 		}
@@ -1321,7 +1298,6 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 	}
 
 	SET_IA32_ORIG_NODE(res, get_old_node_name(env));
-
 	return res;
 }
 
@@ -1744,7 +1720,7 @@ void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
  */
 void ia32_transform_node(ir_node *node, void *env) {
 	ia32_code_gen_t *cgenv = (ia32_code_gen_t *)env;
-	opcode  code           = get_irn_opcode(node);
+	opcode  code;
 	ir_node *asm_node      = NULL;
 	ia32_transform_env_t  tenv;
 
@@ -1777,6 +1753,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 
 	DBG((tenv.mod, LEVEL_1, "check %+F ... ", node));
 
+	code = get_irn_opcode(node);
 	switch (code) {
 		BINOP(Add);
 		BINOP(Sub);
