@@ -902,6 +902,27 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst) {
 }
 
 /**
+ * Copy the attributes from Immop to an Immop
+ */
+void copy_ia32_Immop_attr(ir_node *node, ir_node *src)
+{
+	ia32_attr_t *na = get_ia32_attr(node);
+	ia32_attr_t *ca = get_ia32_attr(src);
+
+	assert(get_ia32_cnst(src) != NULL);
+	na->tv = ca->tv;
+
+	if (ca->sc) {
+		na->sc   = copy_str(ca->sc);
+		na->cnst = na->sc;
+	}
+	else {
+		na->cnst = set_cnst_from_tv(na->cnst, na->tv);
+		na->sc   = NULL;
+	}
+}
+
+/**
  * Copy the attributes from a Const to an ia32_Const
  */
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {

@@ -315,6 +315,11 @@ void set_ia32_Const_type(ir_node *node, int type);
 void set_ia32_Immop_attr(ir_node *node, ir_node *cnst);
 
 /**
+ * Copy the attributes from Immop to an Immop
+ */
+void copy_ia32_Immop_attr(ir_node *node, ir_node *src);
+
+/**
  * Copy the attributes from a Const to an ia32_Const
  */
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
