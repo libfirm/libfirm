@@ -161,7 +161,7 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 /**
  * Transforms (all) Const's into ia32_Const and places them in the
  * block where they are used (or in the cfg-pred Block in case of Phi's).
- * Additionally all mode_P nodes are changed into mode_Is nodes.
+ * Additionally all reference nodes are changed into mode_Is nodes.
  */
 void ia32_place_consts_set_modes(ir_node *irn, void *env) {
 	ia32_code_gen_t      *cg = env;
@@ -176,10 +176,10 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env) {
 
 	mode = get_irn_mode(irn);
 
-	/* transform all mode_P nodes into mode_Is nodes */
-	if (mode == mode_P) {
-		set_irn_mode(irn, mode_Is);
+	/* transform all reference nodes into mode_Is nodes */
+	if (mode_is_reference(mode)) {
 		mode = mode_Is;
+		set_irn_mode(irn, mode);
 	}
 
 	tenv.block    = get_nodes_block(irn);
