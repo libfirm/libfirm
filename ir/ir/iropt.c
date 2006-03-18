@@ -107,6 +107,51 @@ static tarval *computed_value_Sub(ir_node *n)
 }
 
 /**
+ * return the value of a Carry
+ * Special : a op 0, 0 op b
+ */
+static tarval *computed_value_Carry(ir_node *n)
+{
+  ir_node *a = get_binop_left(n);
+  ir_node *b = get_binop_right(n);
+  ir_mode *m = get_irn_mode(n);
+
+  tarval *ta = value_of(a);
+  tarval *tb = value_of(b);
+
+  if ((ta != tarval_bad) && (tb != tarval_bad)) {
+    tarval_add(ta, tb);
+    return tarval_carry() ? get_mode_one(m) : get_mode_null(m);
+  } else {
+    if (   (classify_tarval(ta) == TV_CLASSIFY_NULL)
+        || (classify_tarval(tb) == TV_CLASSIFY_NULL))
+      return get_mode_null(m);
+  }
+  return tarval_bad;
+}
+
+/**
+ * return the value of a Borrow
+ * Special : a op 0
+ */
+static tarval *computed_value_Borrow(ir_node *n)
+{
+  ir_node *a = get_binop_left(n);
+  ir_node *b = get_binop_right(n);
+  ir_mode *m = get_irn_mode(n);
+
+  tarval *ta = value_of(a);
+  tarval *tb = value_of(b);
+
+  if ((ta != tarval_bad) && (tb != tarval_bad)) {
+    return tarval_cmp(ta, tb) == pn_Cmp_Lt ? get_mode_one(m) : get_mode_null(m);
+  } else if (classify_tarval(ta) == TV_CLASSIFY_NULL) {
+      return get_mode_null(m);
+  }
+  return tarval_bad;
+}
+
+/**
  * return the value of an unary Minus
  */
 static tarval *computed_value_Minus(ir_node *n)
@@ -631,6 +676,8 @@ static ir_op_ops *firm_set_default_computed_value(opcode code, ir_op_ops *ops)
   CASE(Shr);
   CASE(Shrs);
   CASE(Rot);
+  CASE(Carry);
+  CASE(Borrow);
   CASE(Conv);
   CASE(Proj);
   CASE(Mux);
@@ -1140,12 +1187,13 @@ static ir_node *equivalent_node_Cast(ir_node *n) {
   return n;
 }
 
-/* Several optimizations:
+/**
+  Several optimizations:
    - no Phi in start block.
    - remove Id operators that are inputs to Phi
    - fold Phi-nodes, iff they have only one predecessor except
            themselves.
-*/
+ */
 static ir_node *equivalent_node_Phi(ir_node *n)
 {
   int i, n_preds;
@@ -1153,7 +1201,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
   ir_node *oldn = n;
   ir_node *block = NULL;     /* to shutup gcc */
   ir_node *first_val = NULL; /* to shutup gcc */
-  ir_node *scnd_val = NULL;  /* to shutup gcc */
 
   if (!get_opt_normalize()) return n;
 
@@ -1190,12 +1237,10 @@ static ir_node *equivalent_node_Phi(ir_node *n)
     return new_Bad();
   }
 
-  scnd_val = NULL;
-
-  /* follow_Id () for rest of inputs, determine if any of these
+  /* search for rest of inputs, determine if any of these
      are non-self-referencing */
   while (++i < n_preds) {
-    scnd_val = get_Phi_pred(n, i);
+    ir_node *scnd_val = get_Phi_pred(n, i);
     if (   (scnd_val != n)
         && (scnd_val != first_val)
 #if 1
@@ -1210,10 +1255,57 @@ static ir_node *equivalent_node_Phi(ir_node *n)
     /* Fold, if no multiple distinct non-self-referencing inputs */
     n = first_val;
     DBG_OPT_PHI(oldn, n);
-  } else {
-    /* skip the remaining Ids (done in get_Phi_pred). */
-    /* superfluous, since we walk all to propagate Block's Bads.
-       while (++i < n_preds) get_Phi_pred(n, i);     */
+  }
+  return n;
+}
+
+/**
+  Several optimizations:
+   - no Sync in start block.
+   - fold Sync-nodes, iff they have only one predecessor except
+           themselves.
+  @fixme: are there loop's in Sync's
+ */
+static ir_node *equivalent_node_Sync(ir_node *n)
+{
+  int i, n_preds;
+
+  ir_node *oldn = n;
+  ir_node *first_val = NULL; /* to shutup gcc */
+
+  if (!get_opt_normalize()) return n;
+
+  n_preds = get_Sync_n_preds(n);
+
+  /* Find first non-self-referencing input */
+  for (i = 0; i < n_preds; ++i) {
+    first_val = get_Sync_pred(n, i);
+    if ((first_val != n)  /* not self pointer */ &&
+        (! is_Bad(first_val))
+       ) {            /* value not dead */
+      break;          /* then found first value. */
+    }
+  }
+
+  if (i >= n_preds)
+    /* A totally Bad or self-referencing Sync (we didn't break the above loop) */
+    return new_Bad();
+
+  /* search the rest of inputs, determine if any of these
+     are non-self-referencing */
+  while (++i < n_preds) {
+    ir_node *scnd_val = get_Sync_pred(n, i);
+    if ((scnd_val != n) &&
+        (scnd_val != first_val) &&
+        (! is_Bad(scnd_val))
+       )
+      break;
+  }
+
+  if (i >= n_preds) {
+    /* Fold, if no multiple distinct non-self-referencing inputs */
+    n = first_val;
+    DBG_OPT_SYNC(oldn, n);
   }
   return n;
 }
@@ -1521,6 +1613,7 @@ static ir_op_ops *firm_set_default_equivalent_node(opcode code, ir_op_ops *ops)
   CASE(Conv);
   CASE(Cast);
   CASE(Phi);
+  CASE(Sync);
   CASE(Proj);
   CASE(Id);
   CASE(Mux);
