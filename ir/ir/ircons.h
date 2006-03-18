@@ -280,6 +280,8 @@
  *    ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
  *    ir_node *new_Conv   (ir_node *op, ir_mode *mode);
  *    ir_node *new_Cast   (ir_node *op, ir_type *to_tp);
+ *    ir_node *new_Carry  (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Borrow (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Load   (ir_node *store, ir_node *addr, ir_mode *mode);
  *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
  *    ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
@@ -734,6 +736,18 @@
  *    ---------------------------------------------------------
  *
  *    Rotates the operand to the (right??) by k bits.
+ *
+ *    ir_node *new_Carry (ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    ------------------------------------------------------------
+ *
+ *    Calculates the Carry value for integer addition. Used only
+ *    in lowering code.
+ *
+ *    ir_node *new_Borrow (ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    ------------------------------------------------------------
+ *
+ *    Calculates the Borrow value for integer substraction. Used only
+ *    in lowering code.
  *
  *    ir_node *new_Conv (ir_node *op, ir_mode *mode)
  *    ---------------------------------------------
@@ -1566,6 +1580,30 @@ ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Cast   (dbg_info *db, ir_graph *irg, ir_node *block,
 			ir_node *op, ir_type *to_tp);
 
+/** Constructor for a Carry node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Carry  (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Borrow node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Borrow (dbg_info *db, ir_graph *irg, ir_node *block,
+			ir_node *op1, ir_node *op2, ir_mode *mode);
+
 /** Constructor for a Phi node.
  *
  * @param *db    A pointer for debug information.
@@ -2301,6 +2339,29 @@ ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
 ir_node *new_r_Cast   (ir_graph *irg, ir_node *block,
                ir_node *op, ir_type *to_tp);
 
+/** Constructor for a Carry node.
+ *
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_r_Carry  (ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/**
+ * Constructor for a Borrow node.
+ *
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the results.
+ */
+ir_node *new_r_Borrow (ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2, ir_mode *mode);
+
 /** Constructor for a Phi node.
  *
  * @param *irg   The ir graph the node  belongs to.
@@ -3022,7 +3083,7 @@ ir_node *new_d_Cmp    (dbg_info *db, ir_node *op1, ir_node *op2);
  */
 ir_node *new_d_Conv   (dbg_info *db, ir_node *op, ir_mode *mode);
 
-/**Constructor for a Cast node.
+/** Constructor for a Cast node.
  *
  * High level type cast
  * Adds the node to the block in current_ir_block.
@@ -3033,7 +3094,29 @@ ir_node *new_d_Conv   (dbg_info *db, ir_node *op, ir_mode *mode);
  */
 ir_node *new_d_Cast   (dbg_info *db, ir_node *op, ir_type *to_tp);
 
-/**Constructor for a Phi node.
+/** Constructor for a Carry node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_d_Carry  (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Borrow node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_d_Borrow (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Phi node.
  *
  * Adds the node to the block in current_ir_block.
  *
@@ -3518,18 +3601,18 @@ ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
 
 /** Constructor for a CallBegin node.
  *
- * Adds the node to the block in current_ir_block.
+ * CallBegin represents control flow depending of the pointer value
+ * representing the called method to the called methods.  The
+ * constructor copies the method pointer input from the passed Call
+ * node. Adds the node to the block in current_ir_block.
  *
  * @param   *callee A pointer to the called procedure.
  */
 ir_node *new_CallBegin(ir_node *callee);
 
-/**Constructor for a Add node.
+/** Constructor for a Add node.
  *
- * CallBegin represents control flow depending of the pointer value
- * representing the called method to the called methods.  The
- * constructor copies the method pointer input from the passed Call
- * node.Adds the node to the block in current_ir_block.
+ * Adds the node to the block in current_ir_block.
  *
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
@@ -3708,7 +3791,7 @@ ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
  */
 ir_node *new_Conv   (ir_node *op, ir_mode *mode);
 
-/**Constructor for a Cast node.
+/** Constructor for a Cast node.
  *
  * Adds the node to the block in current_ir_block.
  * High level type cast
@@ -3717,6 +3800,26 @@ ir_node *new_Conv   (ir_node *op, ir_mode *mode);
  * @param   *to_tp The type of this the operand muss be casted .
  */
 ir_node *new_Cast   (ir_node *op, ir_type *to_tp);
+
+/** Constructor for a Carry node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_Carry  (ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Borrow node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_Borrow (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Phi node.
  *
