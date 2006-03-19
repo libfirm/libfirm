@@ -21,7 +21,7 @@
 #include "irprog_t.h"
 #include "iredges_t.h"
 
-#include "../besched.h"
+#include "../besched_t.h"
 #include "../benode_t.h"
 
 #include "ia32_emitter.h"
@@ -512,10 +512,17 @@ static const char *get_cmp_suffix(int cmp_code, int unsigned_cmp)
 }
 
 /**
+ * Returns the target block for a control flow node.
+ */
+static ir_node *get_cfop_target_block(const ir_node *irn) {
+	return get_irn_link(irn);
+}
+
+/**
  * Returns the target label for a control flow node.
  */
 static char *get_cfop_target(const ir_node *irn, char *buf) {
-	ir_node *bl = get_irn_link(irn);
+	ir_node *bl = get_cfop_target_block(irn);
 
 	snprintf(buf, SNPRINTF_BUF_LEN, BLOCK_PREFIX("%ld"), get_irn_node_nr(bl));
 	return buf;
@@ -524,39 +531,65 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 /**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
-static void finish_CondJmp(FILE *F, const ir_node *irn) {
-	const ir_node   *proj;
+static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
+	const ir_node   *proj1, *proj2 = NULL;
+	const ir_node   *block, *next_bl = NULL;
 	const ir_edge_t *edge;
 	char buf[SNPRINTF_BUF_LEN];
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 
+	/* get both Proj's */
 	edge = get_irn_out_edge_first(irn);
-	proj = get_edge_src_irn(edge);
-	assert(is_Proj(proj) && "CondJmp with a non-Proj");
-
-	if (get_Proj_proj(proj) == pn_Cmp_True) {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
-					get_cmp_suffix(get_ia32_pncode(irn), !mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
-					get_cfop_target(proj, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; cmp(a, b) == TRUE");
-	}
-	else  {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jn%s %s",
-					get_cmp_suffix(get_ia32_pncode(irn), !mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
-					get_cfop_target(proj, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; cmp(a, b) == FALSE");
-	}
-
-	IA32_DO_EMIT;
+	proj1 = get_edge_src_irn(edge);
+	assert(is_Proj(proj1) && "CondJmp with a non-Proj");
 
 	edge = get_irn_out_edge_next(irn, edge);
 	if (edge) {
-		proj = get_edge_src_irn(edge);
-		assert(is_Proj(proj) && "CondJmp with a non-Proj");
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(proj, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; otherwise");
+		proj2 = get_edge_src_irn(edge);
+		assert(is_Proj(proj2) && "CondJmp with a non-Proj");
+  }
 
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(irn);
+	if (proj2 && sched_is_scheduled(block)) {
+		/* we have a block schedule */
+		next_bl = sched_next(block);
+
+		if (get_cfop_target_block(proj1) == next_bl) {
+			/* exchange both proj's so the second one can be omitted */
+			const ir_node *t = proj1;
+			proj1 = proj2;
+			proj2 = t;
+		}
+	}
+
+	/* the first Proj must always be created */
+	if (get_Proj_proj(proj1) == pn_Cond_true) {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
+					get_cmp_suffix(get_ia32_pncode(irn), !mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
+					get_cfop_target(proj1, buf));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; cmp(a, b) == TRUE");
+	}
+	else  {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
+					get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), mode),
+					!mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
+					get_cfop_target(proj1, buf));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; cmp(a, b) == FALSE");
+	}
+	IA32_DO_EMIT;
+
+	/* the second Proj might be a fallthrough */
+	if (proj2) {
+		if (get_cfop_target_block(proj2) != next_bl) {
+			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(proj2, buf));
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; otherwise");
+		}
+		else {
+			cmd_buf[0] = '\0';
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; fallthrogh %s", get_cfop_target(proj2, buf));
+		}
 		IA32_DO_EMIT;
 	}
 }
@@ -572,7 +605,7 @@ static void CondJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cmp %s", ia32_emit_binop(irn, env));
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F", irn);
 	IA32_DO_EMIT;
-	finish_CondJmp(F, irn);
+	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 2)));
 }
 
 /**
@@ -605,7 +638,7 @@ static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %s, %s ", op1, op2);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F", irn);
 	IA32_DO_EMIT;
-	finish_CondJmp(F, irn);
+	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 0)));
 }
 
 /**
@@ -807,11 +840,25 @@ void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
  * Emits code for a unconditional jump.
  */
 void emit_Jmp(const ir_node *irn, ia32_emit_env_t *env) {
+	ir_node *block, *next_bl = NULL;
 	FILE *F = env->out;
 	char buf[SNPRINTF_BUF_LEN], cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(irn, buf), get_irn_link(irn));
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F(%+F)", irn, get_irn_link(irn));
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(irn);
+	if (sched_is_scheduled(block)) {
+		/* we have a block schedule */
+		next_bl = sched_next(block);
+	}
+
+	if (get_cfop_target_block(irn) != next_bl) {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(irn, buf));
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F(%+F)", irn, get_cfop_target_block(irn));
+	}
+	else {
+		cmd_buf[0] = '\0';
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; fallthrough %s", get_cfop_target(irn, buf));
+	}
 	IA32_DO_EMIT;
 }
 
@@ -1159,7 +1206,6 @@ static void ia32_gen_block(ir_node *block, void *env) {
 	}
 }
 
-
 /**
  * Emits code for function start.
  */
@@ -1219,5 +1265,6 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 	irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
+
 	ia32_emit_func_epilog(F, irg);
 }
