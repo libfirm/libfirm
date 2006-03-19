@@ -30,7 +30,7 @@
 # ifndef _IRGWALK_H_
 # define _IRGWALK_H_
 
-# include "irnode.h"
+# include "firm_types.h"
 
 /* type of callback function for ir_graph walk */
 #ifndef _IRG_WALK_FUNC_TYPEDEF_
