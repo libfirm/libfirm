@@ -2530,7 +2530,32 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
             }
           }
         } /* mode_is_int */
-      }
+
+        /*
+         * optimization for AND:
+         * Optimize:
+         *   And(x, C) == C  ==>  And(x, C) != 0
+         *   And(x, C) != C  ==>  And(X, C) == 0
+         *
+         * if C is a single Bit constant.
+         */
+        if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) &&
+            (get_irn_op(left) == op_And)) {
+          if (is_single_bit_tarval(tv)) {
+            /* check for Constant's match. We have check hare the tarvals,
+               because our const might be changed */
+            ir_node *la = get_And_left(left);
+            ir_node *ra = get_And_right(left);
+            if ((is_Const(la) && get_Const_tarval(la) == tv) ||
+                (is_Const(ra) && get_Const_tarval(ra) == tv)) {
+              /* fine: do the transformation */
+              tv = get_mode_null(get_tarval_mode(tv));
+              proj_nr ^= pn_Cmp_Leg;
+              changed |= 2;
+            }
+          }
+        }
+      } /* tarval != bad */
     }
 
     if (changed) {
