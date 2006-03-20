@@ -192,9 +192,11 @@ static void ana_Call(ir_node *n, void *env) {
     ir_graph *callee = get_entity_irg(callee_e);
 
     if (callee) {
-      ana_entry buf = { callee, NULL, 0};
+      ana_entry buf = { NULL, NULL, 0};
       ana_entry *found;
       int depth;
+
+	  buf.irg = callee;
 
       pset_insert((pset *)callee->callers, irg, HASH_PTR(irg));
       found = pset_find((pset *)irg->callees, &buf, HASH_PTR(callee));
