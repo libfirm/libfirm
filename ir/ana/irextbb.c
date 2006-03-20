@@ -21,6 +21,8 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
+#include "iredges_t.h"
+#include "irouts.h"
 #include "xmalloc.h"
 #include "irprintf.h"
 
@@ -28,6 +30,10 @@ typedef struct _env {
   struct obstack *obst;   /**< the obstack where allocations took place */
   ir_extblk *head;        /**< head of the list of all extended blocks */
 } env_t;
+
+int (is_ir_extbb)(const void *thing) {
+	return _is_ir_extbb(thing);
+}
 
 /**
  * allocate a new extended block header.
@@ -60,6 +66,27 @@ static void addto_extblk(ir_extblk *extblk, ir_node *block)
   set_Block_extbb(block, extblk);
 }
 
+/**
+ * Returns the number of block successors.
+ * we are interested only in 1, 2 and >2.
+ */
+static int get_block_n_succs(ir_node *block) {
+#ifdef FIRM_EDGES_INPLACE
+  if (edges_activated(current_ir_graph)) {
+    const ir_edge_t *edge;
+
+    edge = get_block_succ_first(block);
+    if (! edge)
+      return 0;
+    edge = get_block_succ_next(block, edge);
+    if (! edge)
+      return 1;
+    edge = get_block_succ_next(block, edge);
+    return edge ? 3 : 2;
+  }
+#endif
+  return get_Block_n_cfg_outs(block);
+}
 
 /**
  * Pre block-walker. Calculates the extended block info.
@@ -70,8 +97,7 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
   env_t *env = ctx;
 
   if (n <= 0 || n > 1 ||
-		  block == get_irg_start_block(current_ir_graph) ||
-			block == get_irg_end_block(current_ir_graph)) {
+    block == get_irg_start_block(current_ir_graph)) {
     /*
      * block is a JOIN-node ie the control flow from
      * many other blocks joins here. block is a leader.
@@ -91,12 +117,35 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
        * Only one control flow predecessor. This block belongs
        * to the same extended basic block as its predecessor.
        */
-      set_Block_extbb(block, NULL);
+      ir_node *cf_op = skip_Proj(get_Block_cfgpred(block, 0));
+
+      if (irn_not_visited(cf_op)) {
+        ir_node *pred_bl = get_nodes_block(cf_op);
+        if (get_block_n_succs(pred_bl) > 2) {
+          /* More than two successors means we have a jump table.
+           * we cannot include a jump target into the current extended
+           * basic block, so create a new one here.
+           */
+          allocate_extblk(block, env);
+        }
+        else {
+          /* either the previous block has only one successor or
+           * this is the first successor after an if, include it.
+           */
+          set_Block_extbb(block, NULL);
+        }
+        mark_irn_visited(cf_op);
+      }
+      else {
+        /* already marked, so begin a new extended block here */
+        allocate_extblk(block, env);
+      }
     }
   }
 }
 
-static int _sentinel;
+/** A special extended block used as sentinel */
+static ir_extblk _sentinel = { k_ir_extblk, 0xFEA1DEAD };
 
 /**
  * Post block-walker. Calculates the extended block info.
@@ -107,7 +156,7 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
 {
   ir_extblk *extbb = get_Block_extbb(block);
   env_t *env = ctx;
-  ir_extblk *sentinel = (ir_extblk *)&_sentinel;
+  ir_extblk *sentinel = &_sentinel;
 
   if (! extbb) {
     ir_node *curr, *prev;
@@ -165,6 +214,17 @@ void compute_extbb(ir_graph *irg) {
   env.obst = irg->extbb_obst;
   env.head = NULL;
 
+#ifdef FIRM_EDGES_INPLACE
+  if (edges_activated(irg)) {
+    /* we have edges */
+  }
+  else
+#endif
+  if (get_irg_outs_state(irg) != outs_consistent)
+    compute_irg_outs(irg);
+
+	/* we must mark nodes, so increase the visited flag */
+	inc_irg_visited(irg);
   irg_block_walk_graph(irg, pre_walk_calc_extbb, post_walk_calc_extbb, &env);
 
   /*
@@ -300,13 +360,13 @@ static void irg_extblock_walk_2(ir_extblk *blk, extbb_walk_func *pre, extbb_walk
    flag, so that it can be interleaved with the other walker.         */
 void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env)
 {
-  ir_node *block, *pred;
+  ir_node *pred;
   int i;
 
   assert(blk);
   assert(!get_interprocedural_view());   /* interprocedural_view not implemented */
   inc_irg_block_visited(current_ir_graph);
-  irg_extblock_walk_2(block, pre, post, env);
+  irg_extblock_walk_2(blk, pre, post, env);
 
   /* keepalive: the endless loops ... */
   if (get_extbb_leader(blk) == get_irg_end_block(current_ir_graph)) {
