@@ -184,11 +184,11 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 	if (arch_isa_get_irn_handler(env->arch_env->isa))
 		arch_env_push_irn_handler(env->arch_env, arch_isa_get_irn_handler(env->arch_env->isa));
 
-		/*
-		* Register the node handler of the back end infrastructure.
-		* This irn handler takes care of the platform independent
-		* spill, reload and perm nodes.
-	*/
+	/*
+	 * Register the node handler of the back end infrastructure.
+	 * This irn handler takes care of the platform independent
+	 * spill, reload and perm nodes.
+	 */
 	arch_env_push_irn_handler(env->arch_env, &be_node_irn_handler);
 
 	return env;
@@ -207,6 +207,9 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
 		be_dump(irg, suffix, dumper);
 }
 
+/**
+ * Prepare a backend graph for code generation.
+ */
 static void prepare_graph(be_irg_t *birg)
 {
 	ir_graph *irg = birg->irg;
@@ -229,9 +232,13 @@ static void prepare_graph(be_irg_t *birg)
 
 	/* check, if the dominance property is fulfilled. */
 	be_check_dominance(irg);
-
 }
 
+/**
+ * The Firm backend main loop.
+ * Do architecture specific lowering for all graphs
+ * and call the architecture specific code generator.
+ */
 static void be_main_loop(FILE *file_handle)
 {
 	int i, n;
@@ -278,7 +285,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/*
 		 * Since the code generator made a lot of new nodes and skipped
-		 * a lot of old ones, we should do dead node elim here.
+		 * a lot of old ones, we should do dead node elimination here.
 		 * Note that this requires disabling the edges here.
 		 */
 		edges_deactivate(irg);
