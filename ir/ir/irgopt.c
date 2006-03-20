@@ -40,6 +40,7 @@
 #include "cgana.h"
 #include "trouts.h"
 
+
 #include "irflag_t.h"
 #include "irhooks.h"
 #include "iredges_t.h"
@@ -48,7 +49,7 @@
 /* Defined in iropt.c */
 pset *new_identities (void);
 void  del_identities (pset *value_table);
-void  add_identities   (pset *value_table, ir_node *node);
+void  add_identities (pset *value_table, ir_node *node);
 
 /*------------------------------------------------------------------*/
 /* apply optimizations of iropt to all nodes.                       */
@@ -96,8 +97,7 @@ static INLINE void do_local_optimize(ir_node *n) {
 
   if (get_opt_global_cse())
     set_irg_pinned(current_ir_graph, op_pin_state_floats);
-  if (get_irg_outs_state(current_ir_graph) == outs_consistent)
-    set_irg_outs_inconsistent(current_ir_graph);
+  set_irg_outs_inconsistent(current_ir_graph);
   set_irg_doms_inconsistent(current_ir_graph);
   set_irg_loopinfo_inconsistent(current_ir_graph);
 
@@ -894,8 +894,9 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
   assert(get_irg_pinned(current_ir_graph) == op_pin_state_pinned);
   assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
-  if (get_irg_outs_state(current_ir_graph) == outs_consistent)
-    set_irg_outs_inconsistent(current_ir_graph);
+  set_irg_outs_inconsistent(current_ir_graph);
+  set_irg_extblk_inconsistent(current_ir_graph);
+  set_irg_doms_inconsistent(current_ir_graph);
   set_irg_loopinfo_inconsistent(current_ir_graph);
   set_irg_callee_info_state(current_ir_graph, irg_callee_info_inconsistent);
 
@@ -2006,47 +2007,48 @@ void place_code(ir_graph *irg) {
  * Place an empty block to an edge between a blocks of multiple
  * predecessors and a block of multiple successors.
  *
- * @param n IR node
- * @param env Environment of walker. This field is unused and has
- *            the value NULL.
+ * @param n   IR node
+ * @param env Environment of walker. The changed field.
  */
 static void walk_critical_cf_edges(ir_node *n, void *env) {
   int arity, i;
-  ir_node *pre, *block, **in, *jmp;
+  ir_node *pre, *block, *jmp;
+  int *changed = env;
 
   /* Block has multiple predecessors */
-  if ((op_Block == get_irn_op(n)) &&
-      (get_irn_arity(n) > 1)) {
-    arity = get_irn_arity(n);
-
+  if (is_Block(n) && (get_irn_arity(n) > 1)) {
     if (n == get_irg_end_block(current_ir_graph))
       return;  /*  No use to add a block here.      */
 
+    arity = get_irn_arity(n);
     for (i=0; i<arity; i++) {
       pre = get_irn_n(n, i);
-      /* Predecessor has multiple successors. Insert new flow edge */
-      if ((NULL != pre) &&
-    (op_Proj == get_irn_op(pre)) &&
-    op_Raise != get_irn_op(skip_Proj(pre))) {
-
-    /* set predecessor array for new block */
-    in = NEW_ARR_D (ir_node *, current_ir_graph->obst, 1);
-    /* set predecessor of new block */
-    in[0] = pre;
-    block = new_Block(1, in);
-    /* insert new jmp node to new block */
-    set_cur_block(block);
-    jmp = new_Jmp();
-    set_cur_block(n);
-    /* set successor of new block */
-    set_irn_n(n, i, jmp);
-
+      /* Predecessor has multiple successors. Insert new control flow edge. */
+      if (op_Raise != get_irn_op(skip_Proj(pre))) {
+        /* set predecessor of new block */
+        block = new_Block(1, &pre);
+        /* insert new jmp node to new block */
+        set_cur_block(block);
+        jmp = new_Jmp();
+        set_cur_block(n);
+        /* set successor of new block */
+        set_irn_n(n, i, jmp);
+        *changed = 1;
       } /* predecessor has multiple successors */
     } /* for all predecessors */
   } /* n is a block */
 }
 
 void remove_critical_cf_edges(ir_graph *irg) {
-  if (get_opt_critical_edges())
-    irg_walk_graph(irg, NULL, walk_critical_cf_edges, NULL);
+  int changed = 0;
+  irg_walk_graph(irg, NULL, walk_critical_cf_edges, &changed);
+
+  if (changed) {
+    /* control flow changed */
+    set_irg_outs_inconsistent(irg);
+    set_irg_extblk_inconsistent(irg);
+    set_irg_doms_inconsistent(current_ir_graph);
+    set_irg_loopinfo_inconsistent(current_ir_graph);
+  }
+
 }

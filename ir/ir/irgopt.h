@@ -167,7 +167,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size);
 
 /** Code Placement.
  *
- * Pinns all floating nodes to a block where they
+ * Pins all floating nodes to a block where they
  * will be executed only if needed.   Depends on the flag opt_global_cse.
  * Graph may not be in phase_building.  Does not schedule control dead
  * code.  Uses dominator information which it computes if the irg is not
@@ -190,7 +190,6 @@ void place_code(ir_graph *irg);
  * A critical control flow edge is an edge from a block with several
  * control exits to a block with several control entries (See Muchnic
  * p. 407).
- * Is only executed if flag set_opt_critical_edges() is set.
  *
  * @param irg IR Graph
  */
