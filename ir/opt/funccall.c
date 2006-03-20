@@ -55,7 +55,7 @@ static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
         return;
       ++ctx->n_calls_removed_SymConst;
     }
-    else if (get_irn_op(ptr) == op_Sel &&
+    else if (is_Sel(ptr) &&
 	     get_irg_callee_info_state(current_ir_graph) == irg_callee_info_consistent) {
       /* If all possible callees are real functions, we can remove the memory edge. */
       int i, n_callees = get_Call_n_callees(call);
@@ -105,12 +105,15 @@ static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
     switch (get_Proj_proj(node)) {
     case pn_Call_M_regular: {
       ir_node *old_mem = get_irn_link(call);
-      if (old_mem)
+      if (old_mem) {
         exchange(node, old_mem);
+        ctx->changed = 1;
+      }
     } break;
     case pn_Call_X_except:
     case pn_Call_M_except:
       exchange(node, new_Bad());
+      ctx->changed = 1;
       break;
     default: ;
     }
@@ -208,8 +211,9 @@ void optimize_funccalls(int force_run)
         irg_walk_graph(irg, NULL, rem_mem_from_const_fkt_calls, &ctx);
 
         if (ctx.changed) {
-          /* changes were done */
+          /* changes were done including exception edges */
           set_irg_outs_inconsistent(irg);
+          set_irg_doms_inconsistent(irg);
           set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
         }
       }
