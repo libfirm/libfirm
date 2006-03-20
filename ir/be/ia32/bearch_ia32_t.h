@@ -16,6 +16,7 @@ typedef struct _ia32_optimize_t {
 	unsigned doam      : 1;   /**< do address mode optimizations */
 	unsigned placecnst : 1;   /**< place constants in the blocks where they are used */
 	unsigned immops    : 1;   /**< create operations with immediates */
+	unsigned extbb     : 1;   /**< do extended basic block scheduling */
 } ia32_optimize_t;
 
 typedef struct _ia32_code_gen_t {

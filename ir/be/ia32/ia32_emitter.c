@@ -44,7 +44,12 @@ extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 
 #define SNPRINTF_BUF_LEN 128
 
+/* global arch_env for lc_printf functions */
 static const arch_env_t *arch_env = NULL;
+
+/* indicates whether blocks are scheduled or not
+   (this variable is set automatically) */
+static int have_block_sched       = 0;
 
 /*************************************************************
  *             _       _    __   _          _
@@ -544,7 +549,6 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 	return buf;
 }
 
-static int have_block_sched = 0;
 /** Return the next block in Block schedule */
 static ir_node *next_blk_sched(const ir_node *block) {
 	return have_block_sched ? get_irn_link(block) : NULL;
@@ -670,12 +674,7 @@ static void emit_ia32_TestJmp(const ir_node *irn, ia32_emit_env_t *env) {
 	TestJmp_emitter(irn, env);
 }
 
-/**
- * Emits code for conditional test and jump with immediate.
- */
-static void emit_ia32_TestJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
-	TestJmp_emitter(irn, env);
-}
+
 
 /*********************************************************
  *                 _ _       _
@@ -825,7 +824,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 					snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default case */");
 					IA32_DO_EMIT;
 				}
-				snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[i].target, buf), last_value);
+				snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[i].target, buf));
 				snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */", last_value);
 				IA32_DO_EMIT;
 			}
@@ -1311,20 +1310,25 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
-#if 1
-	have_block_sched = 0;
-	irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
-#else
-	compute_extbb(irg);
+	if (cg->opt.extbb) {
+		/* schedule extended basic blocks */
 
-	list.start = NULL;
-	list.end   = NULL;
-	irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
+		compute_extbb(irg);
 
-	have_block_sched = 1;
-	for (block = list.start; block; block = get_irn_link(block))
-		ia32_gen_block(block, &emit_env);
-#endif
+		list.start = NULL;
+		list.end   = NULL;
+		irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
+
+		have_block_sched = 1;
+		for (block = list.start; block; block = get_irn_link(block))
+			ia32_gen_block(block, &emit_env);
+	}
+	else {
+		/* "normal" block schedule */
+
+		have_block_sched = 0;
+		irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
+	}
 
 	ia32_emit_func_epilog(F, irg);
 }

@@ -39,6 +39,7 @@ typedef enum {
 	ia32_am_B    = ia32_B,
 	ia32_am_I    = ia32_I,
 	ia32_am_IS   = ia32_I | ia32_S,
+	ia32_am_BI   = ia32_B | ia32_I,
 	ia32_am_OB   = ia32_O | ia32_B,
 	ia32_am_OI   = ia32_O | ia32_I,
 	ia32_am_OIS  = ia32_O | ia32_I | ia32_S,

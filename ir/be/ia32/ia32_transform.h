@@ -12,4 +12,10 @@ void ia32_transform_node(ir_node *node, void *env);
  */
 void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg);
 
+/**
+ * Transforms a LEA into an Add if possible
+ * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
+ */
+void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg);
+
 #endif /* _IA32_TRANSFORM_H_ */

@@ -135,16 +135,11 @@ static const char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
  * Prints the old node name on cg obst and returns a pointer to it.
  */
 const char *get_old_node_name(ia32_transform_env_t *env) {
-	static int name_cnt = 0;
 	ia32_isa_t *isa = (ia32_isa_t *)env->cg->arch_env->isa;
 
 	lc_eoprintf(firm_get_arg_env(), isa->name_obst, "%+F", env->irn);
 	obstack_1grow(isa->name_obst, 0);
 	isa->name_obst_size += obstack_object_size(isa->name_obst);
-	name_cnt++;
-	if (name_cnt % 1024 == 0) {
-		printf("name obst size reached %d bytes after %d nodes\n", isa->name_obst_size, name_cnt);
-	}
  	return obstack_finish(isa->name_obst);
 }
 #endif /* NDEBUG */
@@ -1725,6 +1720,120 @@ void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		/* exchange the add and the sub */
 		exchange(irn, res);
 	}
+}
+
+/**
+ * Transforms a LEA into an Add if possible
+ * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
+ */
+void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
+	ia32_am_flavour_t am_flav;
+	int               imm = 0;
+	ir_node          *res = NULL;
+	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
+	char             *offs;
+	ia32_transform_env_t tenv;
+	arch_register_t *out_reg, *base_reg, *index_reg;
+
+	/* must be a LEA */
+	if (! is_ia32_Lea(irn))
+		return;
+
+	am_flav = get_ia32_am_flavour(irn);
+
+	/* only some LEAs can be transformed to an Add */
+	if (am_flav != ia32_am_B && am_flav != ia32_am_OB && am_flav != ia32_am_OI && am_flav != ia32_am_BI)
+		return;
+
+	noreg = ia32_new_NoReg_gp(cg);
+	nomem = new_rd_NoMem(cg->irg);
+	op1   = noreg;
+	op2   = noreg;
+	base  = get_irn_n(irn, 0);
+	index = get_irn_n(irn,1);
+
+	offs  = get_ia32_am_offs(irn);
+
+	/* offset has a explicit sign -> we need to skip + */
+	if (offs && offs[0] == '+')
+		offs++;
+
+	out_reg   = arch_get_irn_register(cg->arch_env, irn);
+	base_reg  = arch_get_irn_register(cg->arch_env, base);
+	index_reg = arch_get_irn_register(cg->arch_env, index);
+
+	tenv.block = get_nodes_block(irn);
+	tenv.dbg   = get_irn_dbg_info(irn);
+	tenv.irg   = cg->irg;
+	tenv.irn   = irn;
+	tenv.mod   = cg->mod;
+	tenv.mode  = get_irn_mode(irn);
+	tenv.cg    = cg;
+
+	switch(get_ia32_am_flavour(irn)) {
+		case ia32_am_B:
+			/* out register must be same as base register */
+			if (! REGS_ARE_EQUAL(out_reg, base_reg))
+				return;
+
+			op1 = base;
+			break;
+		case ia32_am_OB:
+			/* out register must be same as base register */
+			if (! REGS_ARE_EQUAL(out_reg, base_reg))
+				return;
+
+			op1 = base;
+			imm = 1;
+			break;
+		case ia32_am_OI:
+			/* out register must be same as index register */
+			if (! REGS_ARE_EQUAL(out_reg, index_reg))
+				return;
+
+			op1 = index;
+			imm = 1;
+			break;
+		case ia32_am_BI:
+			/* out register must be same as one in register */
+			if (REGS_ARE_EQUAL(out_reg, base_reg)) {
+				op1 = base;
+				op2 = index;
+			}
+			else if (REGS_ARE_EQUAL(out_reg, index_reg)) {
+				op1 = index;
+				op2 = base;
+			}
+			else {
+				/* in registers a different from out -> no Add possible */
+				return;
+			}
+		default:
+			break;
+	}
+
+	res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, op1, op2, nomem, mode_T);
+	arch_set_irn_register(cg->arch_env, res, out_reg);
+	set_ia32_op_type(res, ia32_Normal);
+
+	if (imm)
+		set_ia32_cnst(res, offs);
+
+	SET_IA32_ORIG_NODE(res, get_old_node_name(&tenv));
+
+	/* add Add to schedule */
+	sched_add_before(irn, res);
+
+	res = new_rd_Proj(tenv.dbg, tenv.irg, tenv.block, res, tenv.mode, 0);
+
+	/* add result Proj to schedule */
+	sched_add_before(irn, res);
+
+	/* remove the old LEA */
+	sched_remove(irn);
+
+	/* exchange the Add and the LEA */
+	exchange(irn, res);
 }
 
 /**

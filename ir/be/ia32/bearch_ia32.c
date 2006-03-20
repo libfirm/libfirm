@@ -469,6 +469,9 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 
 	/* check if there is a sub which need to be transformed */
 	ia32_transform_sub_to_neg_add(irn, cg);
+
+	/* transform a LEA into an Add if possible */
+	ia32_transform_lea_to_add(irn, cg);
 }
 
 /**
@@ -688,6 +691,7 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->opt.doam      = 1;
 	cg->opt.placecnst = 1;
 	cg->opt.immops    = 1;
+	cg->opt.extbb     = 1;
 
 #ifndef NDEBUG
 	if (isa->name_obst_size) {
