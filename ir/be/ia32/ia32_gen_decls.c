@@ -570,6 +570,8 @@ void ia32_gen_decls(FILE *out) {
   obstack_init(&data);
   obstack_init(&comm);
 
+  fprintf(out, "\t.intel_syntax\n");
+
   ia32_dump_globals(&rodata, &data, &comm);
 
   size = obstack_object_size(&data);

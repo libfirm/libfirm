@@ -127,6 +127,9 @@ enum io_direction {
  */
 static const char *get_ia32_reg_name(ir_node *irn, int pos, enum io_direction in_out) {
 	const arch_register_t *reg;
+	const char            *name;
+	static char           *buf = NULL;
+	int                    len;
 
 	if (in_out == IN_REG) {
 		reg = get_in_reg(irn, pos);
@@ -140,7 +143,18 @@ static const char *get_ia32_reg_name(ir_node *irn, int pos, enum io_direction in
 		reg = get_out_reg(irn, pos);
 	}
 
-	return arch_register_get_name(reg);
+	name = arch_register_get_name(reg);
+
+	if (buf) {
+		free(buf);
+	}
+
+	len = strlen(name) + 2;
+	buf = xcalloc(1, len);
+
+	snprintf(buf, len, "%%%s", name);
+
+	return buf;
 }
 
 /**
@@ -154,11 +168,11 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 	int         nr = occ->width - 1;
 
 	if (!X)
-		return lc_arg_append(app, occ, "(null)", 6);
+		return lc_appendable_snadd(app, "(null)", 6);
 
 	buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
 
-	return lc_arg_append(app, occ, buf, strlen(buf));
+	return lc_appendable_snadd(app, buf, strlen(buf));
 }
 
 /**
@@ -180,7 +194,7 @@ static int ia32_const_to_str(lc_appendable_t *app,
 		buf = get_ia32_am_offs(X);
 	}
 
-	return buf ? lc_arg_append(app, occ, buf, strlen(buf)) : 0;
+	return buf ? lc_appendable_snadd(app, buf, strlen(buf)) : 0;
 }
 
 /**
@@ -203,7 +217,6 @@ static int ia32_get_mode_suffix(lc_appendable_t *app,
 		return lc_appendable_chadd(app, get_mode_size_bits(mode) == 32 ? 's' : 'd');
 	}
 	else {
-
 		return lc_appendable_chadd(app, mode_is_signed(mode) ? 's' : 'z');
 	}
 }
@@ -270,7 +283,7 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
 				out = out ? out : in1;
 
-				snprintf(buf, SNPRINTF_BUF_LEN, "%s, %s", \
+				snprintf(buf, SNPRINTF_BUF_LEN, "%%%s, %%%s", \
 					arch_register_get_name(out), arch_register_get_name(in));
 			}
 			break;
@@ -303,7 +316,7 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 						break;
 				}
 
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %s", ia32_emit_am(n, env), reg_name);
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %%%s", ia32_emit_am(n, env), reg_name);
 			}
 			break;
 		default:
@@ -369,10 +382,13 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	if (mode) {
 		switch (get_mode_size_bits(mode)) {
 			case 8:
-				obstack_printf(obst, "BYTE ");
+				obstack_printf(obst, "BYTE PTR ");
 				break;
 			case 16:
-				obstack_printf(obst, "WORD ");
+				obstack_printf(obst, "WORD PTR ");
+				break;
+			case 32:
+				obstack_printf(obst, "DWORD PTR ");
 				break;
 			default:
 				break;
@@ -482,22 +498,22 @@ static const struct cmp2conditon_t cmp2condition_s[] = {
  * positive conditions for unsigned compares
  */
 static const struct cmp2conditon_t cmp2condition_u[] = {
-  { NULL,              pn_Cmp_False },  /* always false */
-  { "e",               pn_Cmp_Eq },     /* == */
-  { "b",               pn_Cmp_Lt },     /* < */
-  { "be",              pn_Cmp_Le },     /* <= */
-  { "a",               pn_Cmp_Gt },     /* > */
-  { "ae",              pn_Cmp_Ge },     /* >= */
-  { "ne",              pn_Cmp_Lg },     /* != */
-  { "ordered",         pn_Cmp_Leg },    /* Floating point: ordered */
-  { "unordered",       pn_Cmp_Uo },     /* FLoting point: unordered */
-  { "unordered or ==", pn_Cmp_Ue },     /* Floating point: unordered or == */
-  { "unordered or <",  pn_Cmp_Ul },     /* Floating point: unordered or < */
-  { "unordered or <=", pn_Cmp_Ule },    /* Floating point: unordered or <= */
-  { "unordered or >",  pn_Cmp_Ug },     /* Floating point: unordered or > */
-  { "unordered or >=", pn_Cmp_Uge },    /* Floating point: unordered or >= */
-  { "unordered or !=", pn_Cmp_Ne },     /* Floating point: unordered or != */
-  { NULL,              pn_Cmp_True },   /* always true */
+	{ NULL,              pn_Cmp_False },  /* always false */
+	{ "e",               pn_Cmp_Eq },     /* == */
+	{ "b",               pn_Cmp_Lt },     /* < */
+	{	"be",              pn_Cmp_Le },     /* <= */
+	{ "a",               pn_Cmp_Gt },     /* > */
+	{ "ae",              pn_Cmp_Ge },     /* >= */
+	{ "ne",              pn_Cmp_Lg },     /* != */
+	{ "ordered",         pn_Cmp_Leg },    /* Floating point: ordered */
+	{ "unordered",       pn_Cmp_Uo },     /* FLoting point: unordered */
+	{ "unordered or ==", pn_Cmp_Ue },     /* Floating point: unordered or == */
+	{ "unordered or <",  pn_Cmp_Ul },     /* Floating point: unordered or < */
+	{ "unordered or <=", pn_Cmp_Ule },    /* Floating point: unordered or <= */
+	{ "unordered or >",  pn_Cmp_Ug },     /* Floating point: unordered or > */
+	{ "unordered or >=", pn_Cmp_Uge },    /* Floating point: unordered or >= */
+	{ "unordered or !=", pn_Cmp_Ne },     /* Floating point: unordered or != */
+	{ NULL,              pn_Cmp_True },   /* always true */
 };
 
 /*
@@ -531,7 +547,7 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 static int have_block_sched = 0;
 /** Return the next block in Block schedule */
 static ir_node *next_blk_sched(const ir_node *block) {
-  return have_block_sched ? get_irn_link(block) : NULL;
+	return have_block_sched ? get_irn_link(block) : NULL;
 }
 
 /**
@@ -554,7 +570,7 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	if (edge) {
 		proj2 = get_edge_src_irn(edge);
 		assert(is_Proj(proj2) && "CondJmp with a non-Proj");
-  }
+	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	block = get_nodes_block(irn);
@@ -575,14 +591,14 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
 					get_cmp_suffix(get_ia32_pncode(irn), !mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
 					get_cfop_target(proj1, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; cmp(a, b) == TRUE");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == TRUE */");
 	}
 	else  {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
 					get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), mode),
 					!mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
 					get_cfop_target(proj1, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; cmp(a, b) == FALSE");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == FALSE */");
 	}
 	IA32_DO_EMIT;
 
@@ -590,11 +606,11 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	if (proj2) {
 		if (get_cfop_target_block(proj2) != next_bl) {
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(proj2, buf));
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; otherwise");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* otherwise */");
 		}
 		else {
 			cmd_buf[0] = '\0';
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; fallthrogh %s", get_cfop_target(proj2, buf));
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrogh %s */", get_cfop_target(proj2, buf));
 		}
 		IA32_DO_EMIT;
 	}
@@ -609,7 +625,7 @@ static void CondJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cmp %s", ia32_emit_binop(irn, env));
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F", irn);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT;
 	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 2)));
 }
@@ -632,17 +648,17 @@ void emit_ia32_CondJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
  * Emits code for conditional test and jump.
  */
 static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
-	FILE *F = env->out;
-	char cmd_buf[SNPRINTF_BUF_LEN];
-	char cmnt_buf[SNPRINTF_BUF_LEN];
+	FILE       *F   = env->out;
 	const char *op1 = arch_register_get_name(get_in_reg(irn, 0));
-  const char *op2 = get_ia32_cnst(irn);
+	const char *op2 = get_ia32_cnst(irn);
+	char        cmd_buf[SNPRINTF_BUF_LEN];
+	char        cmnt_buf[SNPRINTF_BUF_LEN];
 
-  if (! op2)
+	if (! op2)
 		op2 = arch_register_get_name(get_in_reg(irn, 1));
 
-	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %s, %s ", op1, op2);
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F", irn);
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %%%s,%s%s ", op1, get_ia32_cnst(irn) ? " " : " %", op2);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT;
 	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 0)));
 }
@@ -771,26 +787,26 @@ void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		if (tbl.min_value != 0) {
 			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmpl %lu, -%d(%1S)",
 				interval, tbl.min_value, irn);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; first switch value is not 0");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* first switch value is not 0 */");
 
 			IA32_DO_EMIT;
 		}
 		else {
 			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmpl %lu, %1S", interval, irn);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; compare for switch");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* compare for switch */");
 
 			IA32_DO_EMIT;
 		}
 
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "ja %s", get_cfop_target(tbl.defProj, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; default jump if out of range ");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default jump if out of range  */");
 		IA32_DO_EMIT;
 
 		if (tbl.num_branches > 1) {
 			/* create table */
 
 			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "jmp [%1S*4+%s]", irn, tbl.label);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; get jump table entry as target");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* get jump table entry as target */");
 			IA32_DO_EMIT;
 
 			fprintf(F, "\t.section\t.rodata\n");
@@ -806,11 +822,11 @@ void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			for (i = 1; i < tbl.num_branches; ++i) {
 				while (++last_value < tbl.branches[i].value) {
 					snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.defProj, buf));
-					snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; default case");
+					snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default case */");
 					IA32_DO_EMIT;
 				}
 				snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[i].target, buf), last_value);
-				snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; case %d", last_value);
+				snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */", last_value);
 				IA32_DO_EMIT;
 			}
 
@@ -819,20 +835,20 @@ void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		else {
 			/* one jump is enough */
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(tbl.branches[0].target, buf));
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; only one case given");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* only one case given */");
 			IA32_DO_EMIT;
 		}
 	}
 	else { // no jump table
 		for (i = 0; i < tbl.num_branches; ++i) {
 			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmpl %d, %1S", tbl.branches[i].value, irn);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; case %d", i);
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */", i);
 			IA32_DO_EMIT;
 			fprintf(F, "\tje %s\n", get_cfop_target(tbl.branches[i].target, buf));
 		}
 
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(tbl.defProj, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; default case");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default case */");
 		IA32_DO_EMIT;
 	}
 
@@ -857,11 +873,11 @@ void emit_Jmp(const ir_node *irn, ia32_emit_env_t *env) {
 	next_bl = next_blk_sched(block);
 	if (get_cfop_target_block(irn) != next_bl) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(irn, buf));
-		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F(%+F)", irn, get_cfop_target_block(irn));
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%+F) */", irn, get_cfop_target_block(irn));
 	}
 	else {
 		cmd_buf[0] = '\0';
-		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; fallthrough %s", get_cfop_target(irn, buf));
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrough %s */", get_cfop_target(irn, buf));
 	}
 	IA32_DO_EMIT;
 }
@@ -920,18 +936,18 @@ static void emit_CopyB_prolog(FILE *F, int rem, int size) {
 	switch(rem) {
 		case 1:
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsb");
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; memcopy remainder 1");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy remainder 1 */");
 			break;
 		case 2:
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsw");
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; memcopy remainder 2");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy remainder 2 */");
 			break;
 		case 3:
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsb");
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; memcopy remainder 3");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy remainder 3 */");
 			IA32_DO_EMIT;
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsw");
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; memcopy remainder 3");
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy remainder 3 */");
 			break;
 	}
 
@@ -951,7 +967,7 @@ void emit_ia32_CopyB(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	emit_CopyB_prolog(F, rem, size);
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "rep movsd");
-	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; memcopy");
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy */");
 	IA32_DO_EMIT;
 }
 
@@ -969,7 +985,7 @@ void emit_ia32_CopyB_i(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	size >>= 2;
 	while (size--) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsd");
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "; memcopy unrolled");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy unrolled */");
 		IA32_DO_EMIT;
 	}
 }
@@ -1014,7 +1030,7 @@ static void emit_ia32_Conv(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	}
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cvt%s2%s %s", from, to, buf);
-	lc_esnprintf(env, cmnt_buf, SNPRINTF_BUF_LEN, "; %+F(%+F, %+F)", irn, src_mode, tgt_mode);
+	lc_esnprintf(env, cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%+F, %+F) */", irn, src_mode, tgt_mode);
 	IA32_DO_EMIT;
 }
 
@@ -1057,7 +1073,7 @@ void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "%1D", get_irn_n(irn, be_pos_Call_ptr));
 	}
 
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F (be_Call)", irn);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (be_Call) */", irn);
 
 	IA32_DO_EMIT;
 }
@@ -1074,11 +1090,11 @@ void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	if (offs) {
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S,%s%u", irn,
 			(dir == be_stack_dir_along) ? " -" : " ", offs);
-		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F (IncSP)", irn);
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (IncSP) */", irn);
 	}
 	else {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
-		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; omitted %+F (IncSP) with 0", irn);
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* omitted %+F (IncSP) with 0 */", irn);
 	}
 
 	IA32_DO_EMIT;
@@ -1092,7 +1108,7 @@ void emit_be_SetSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %3S", irn, irn);
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F (restore SP)", irn);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (restore SP) */", irn);
 	IA32_DO_EMIT;
 }
 
@@ -1104,7 +1120,7 @@ void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %1S", irn, irn);
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F", irn);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT;
 }
 
@@ -1116,7 +1132,7 @@ void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "xchg %1S, %2S", irn, irn);
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F(%1A, %2A)", irn, irn, irn);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%1A, %2A) */", irn, irn, irn);
 	IA32_DO_EMIT;
 }
 
@@ -1188,7 +1204,7 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 		(*emit)(irn, env);
 	}
 	else {
-		ir_fprintf(F, "\t%35s ; %+F \n", " ", irn);
+		ir_fprintf(F, "\t%35s /* %+F */\n", " ", irn);
 	}
 }
 
@@ -1212,11 +1228,11 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 	entity     *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_name(irg_ent);
 
-	fprintf(F, "\tsection .text\n");
+	fprintf(F, "\t.text\n");
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
-		fprintf(F, "global %s\n", irg_name);
+		fprintf(F, ".globl %s\n", irg_name);
 	}
-//	fprintf(F, "\t.type\t%s, @function\n", irg_name);
+	fprintf(F, "\t.type\t%s, @function\n", irg_name);
 	fprintf(F, "%s:\n", irg_name);
 }
 
@@ -1226,8 +1242,8 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 static void ia32_emit_func_epilog(FILE *F, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
-	fprintf(F, "\tret\n\n");
-	//printf(F, "\t.size\t%s, .-%s\n\n", irg_name, irg_name);
+	fprintf(F, "\tret\n");
+	fprintf(F, "\t.size\t%s, .-%s\n\n", irg_name, irg_name);
 }
 
 /**
@@ -1246,27 +1262,28 @@ static void ia32_gen_labels(ir_node *block, void *env) {
 }
 
 typedef struct {
-  ir_node *start;
-  ir_node *end;
+	ir_node *start;
+	ir_node *end;
 } anchor;
 
 /**
  * Ext-Block walker: create a block schedule
  */
 static void create_block_list(ir_extblk *blk, void *env) {
-  anchor *list = env;
-  int i, n;
+	anchor *list = env;
+	int i, n;
 
-  for (i = 0, n = get_extbb_n_blocks(blk); i < n; ++i) {
-    ir_node *block = get_extbb_block(blk, i);
+	for (i = 0, n = get_extbb_n_blocks(blk); i < n; ++i) {
+		ir_node *block = get_extbb_block(blk, i);
 
-    set_irn_link(block, NULL);
-    if (list->start)
-      set_irn_link(list->end, block);
-    else
-      list->start = block;
-    list->end = block;
-  }
+		set_irn_link(block, NULL);
+		if (list->start)
+			set_irn_link(list->end, block);
+		else
+			list->start = block;
+
+		list->end = block;
+	}
 }
 
 /**
@@ -1274,8 +1291,8 @@ static void create_block_list(ir_extblk *blk, void *env) {
  */
 void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_env_t emit_env;
-  anchor list;
-  ir_node *block;
+	anchor list;
+	ir_node *block;
 
 	emit_env.mod      = firm_dbg_register("ir.be.codegen.ia32");
 	emit_env.out      = F;
@@ -1292,18 +1309,18 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
 #if 0
-  have_block_sched = 0;
+	have_block_sched = 0;
 	irg_block_walk_graph(irg, NULL, ia32_gen_block, &emit_env);
 #else
-  compute_extbb(irg);
+	compute_extbb(irg);
 
-  list.start = NULL;
-  list.end   = NULL;
-  irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
+	list.start = NULL;
+	list.end   = NULL;
+	irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
 
-  have_block_sched = 1;
-  for (block = list.start; block; block = get_irn_link(block))
-    ia32_gen_block(block, &emit_env);
+	have_block_sched = 1;
+	for (block = list.start; block; block = get_irn_link(block))
+		ia32_gen_block(block, &emit_env);
 #endif
 
 	ia32_emit_func_epilog(F, irg);

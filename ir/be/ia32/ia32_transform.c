@@ -1208,8 +1208,8 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *sval  = val;
 	ir_node *new_op;
 
-	/* in case of storing a const -> make it an attribute */
-	if (is_ia32_Cnst(val)) {
+	/* in case of storing a const (but not a symconst) -> make it an attribute */
+	if (is_ia32_Const(val) && get_ia32_op_type(val) == ia32_Const) {
 		sval = noreg;
 	}
 
@@ -1224,7 +1224,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	}
 
 	/* stored const is an attribute (saves a register) */
-	if (is_ia32_Cnst(val)) {
+	if (is_ia32_Const(val) && get_ia32_op_type(val) == ia32_Const) {
 		set_ia32_Immop_attr(new_op, val);
 	}
 
