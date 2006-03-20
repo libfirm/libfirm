@@ -575,6 +575,7 @@ static list_tuple *construct_extblock_lists(ir_graph *irg) {
   lists->blk_list   = NEW_ARR_F(ir_node *, 0);
   lists->extbb_list = NEW_ARR_F(ir_extblk *, 0);
 
+  inc_irg_block_visited(irg);
   for (i = ARR_LEN(blk_list) - 1; i >= 0; --i) {
     ir_extblk *ext;
 
@@ -589,9 +590,9 @@ static list_tuple *construct_extblock_lists(ir_graph *irg) {
     else
       ARR_APP1(ir_node *, lists->blk_list, blk_list[i]);
   }
+  DEL_ARR_F(blk_list);
 
   current_ir_graph = rem;
-  DEL_ARR_F(blk_list);
   ird_set_irg_link(irg, lists);
   return lists;
 }
