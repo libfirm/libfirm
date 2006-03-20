@@ -1215,6 +1215,9 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 static void ia32_gen_block(ir_node *block, void *env) {
 	const ir_node *irn;
 
+	if (! is_Block(block))
+		return;
+
 	fprintf(((ia32_emit_env_t *)env)->out, BLOCK_PREFIX("%ld:\n"), get_irn_node_nr(block));
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
@@ -1294,7 +1297,7 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	anchor list;
 	ir_node *block;
 
-	emit_env.mod      = firm_dbg_register("ir.be.codegen.ia32");
+	emit_env.mod      = firm_dbg_register("firm.be.ia32.emitter");
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
 	emit_env.cg       = cg;
@@ -1308,9 +1311,9 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
-#if 0
+#if 1
 	have_block_sched = 0;
-	irg_block_walk_graph(irg, NULL, ia32_gen_block, &emit_env);
+	irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
 #else
 	compute_extbb(irg);
 
