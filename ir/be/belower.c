@@ -501,8 +501,8 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 	firm_dbg_module_t         *mod   = firm_dbg_register("firm.be.lower");
 	const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, other_different, -1);
 
-	if (arch_irn_is_ignore(arch_env, other_different)) {
-		DBG((mod, LEVEL_1, "ignore constraint for %+F because other_irn is ignore\n", irn));
+	if (arch_irn_is_ignore(arch_env, other_different) || ! mode_is_datab(get_irn_mode(other_different))) {
+		DBG((mod, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
 		return;
 	}
 
