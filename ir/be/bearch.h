@@ -393,7 +393,7 @@ extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node 
 	(arch_irn_has_reg_class(env, irn, -1, cls) && !arch_irn_is_ignore(env, irn))
 
 /**
- * Somebody who can be asked about nodes.
+ * Somebody who can be asked about IR nodes.
  */
 struct _arch_irn_handler_t {
 
@@ -405,15 +405,12 @@ struct _arch_irn_handler_t {
     */
   const void *(*get_irn_ops)(const arch_irn_handler_t *handler,
       const ir_node *irn);
-
 };
 
 /**
- * The code generator.
+ * The code generator interface.
  */
 struct _arch_code_generator_if_t {
-
-
 	/**
 	 * Initialize the code generator.
 	 * @param file The file to dump to.
@@ -452,9 +449,12 @@ struct _arch_code_generator_if_t {
 	 * The code generator must also be de-allocated here.
 	 */
 	void (*done)(void *self);
-
 };
 
+/**
+ * helper macro: call function func from the code generator
+ * if it's implemented.
+ */
 #define _arch_cg_call(cg, func) \
 do { \
 	if((cg)->impl->func) \
