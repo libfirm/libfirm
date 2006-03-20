@@ -526,8 +526,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 				if(proj > curr_res_proj)
 					curr_res_proj = proj;
-				if(arg->in_reg)
+				if(arg->in_reg) {
 					pset_remove_ptr(caller_save, arg->reg);
+					//pmap_insert(arg_regs, arg->reg, INT_TO_PTR(proj + 1))
+				}
 			}
 		}
 	}
@@ -553,7 +555,16 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int index = low_args[i];
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, index);
 		assert(arg->reg != NULL);
-		be_set_constr_single_reg(low_call, index, arg->reg);
+
+#if 0
+		if(pmap_contains(arg_regs, (void *) arg->reg)) {
+			int out_proj_num = PTR_TO_INT(be_abi_reg_map_get(arg_regs, arg->reg)) - 1;
+			be_node_set_must_be_same(low_call, out_proj_num, low_args[i]);
+		}
+
+		else
+#endif
+			be_set_constr_single_reg(low_call, index, arg->reg);
 	}
 
 	/* Set the register constraints of the results. */
@@ -1029,6 +1040,7 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 		const arch_register_t *reg = rm[n].reg;
 
 		proj = new_r_Proj(env->birg->irg, bl, irn, get_irn_mode(rm[i].irn), n);
+		be_node_set_reg_class(irn, n, reg->reg_class);
 		if(in_req)
 			be_set_constr_single_reg(irn, n, reg);
 		be_set_constr_single_reg(irn, pos, reg);
@@ -1132,7 +1144,7 @@ static void modify_irg(be_abi_irg_t *env)
 		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
 		for(j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = &cls->regs[j];
-			if(arch_register_type_is(reg, callee_save))
+			if(arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
 				pmap_insert(env->regs, (void *) reg, NULL);
 		}
 	}
@@ -1236,9 +1248,11 @@ static void modify_irg(be_abi_irg_t *env)
 			int n_res      = get_Return_n_ress(irn);
 			pmap *reg_map  = pmap_create();
 			ir_node *mem   = get_Return_mem(irn);
+			int in_max;
 			ir_node *ret;
 			int i, n;
 			ir_node **in;
+			const arch_register_t **regs;
 
 			pmap_insert(reg_map, (void *) sp, pmap_get(env->regs, (void *) sp));
 
@@ -1261,8 +1275,20 @@ static void modify_irg(be_abi_irg_t *env)
 			create_barrier(env, bl, &mem, reg_map, 1);
 			call->cb->epilogue(env->cb, bl, &mem, reg_map);
 
-			obstack_ptr_grow(&env->obst, mem);
-			obstack_ptr_grow(&env->obst, pmap_get(reg_map, (void *) sp));
+			/*
+				Maximum size of the in array for Return nodes is
+				return args + callee save/ignore registers + memory + stack pointer
+			*/
+			in_max = pmap_count(reg_map) + get_Return_n_ress(irn) + 2;
+
+			in   = obstack_alloc(&env->obst, in_max * sizeof(in[0]));
+			regs = obstack_alloc(&env->obst, in_max * sizeof(regs[0]));
+
+			in[0]   = mem;
+			in[1]   = be_abi_reg_map_get(reg_map, sp);
+			regs[0] = NULL;
+			regs[1] = sp;
+			n       = 2;
 
 			/* clear SP entry, since it has already been grown. */
 			pmap_insert(reg_map, (void *) sp, NULL);
@@ -1270,22 +1296,28 @@ static void modify_irg(be_abi_irg_t *env)
 				ir_node *res           = get_Return_res(irn, i);
 				be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
 
-				obstack_ptr_grow(&env->obst, pmap_get(reg_map, (void *) arg->reg));
+				in[n]     = be_abi_reg_map_get(reg_map, arg->reg);
+				regs[n++] = arg->reg;
 
 				/* Clear the map entry to mark the register as processed. */
-				pmap_insert(reg_map, (void *) arg->reg, NULL);
+				be_abi_reg_map_set(reg_map, arg->reg, NULL);
 			}
 
 			/* grow the rest of the stuff. */
 			pmap_foreach(reg_map, ent) {
-				if(ent->value)
-					obstack_ptr_grow(&env->obst, ent->value);
+				if(ent->value) {
+					in[n]     = ent->value;
+					regs[n++] = ent->key;
+				}
 			}
 
 			/* The in array for the new back end return is now ready. */
-			n   = obstack_object_size(&env->obst) / sizeof(in[0]);
-			in  = obstack_finish(&env->obst);
 			ret = be_new_Return(irg, bl, n, in);
+
+			/* Set the register classes of the return's parameter accordingly. */
+			for(i = 0; i < n; ++i)
+				if(regs[i])
+					be_node_set_reg_class(ret, i, regs[i]->reg_class);
 
 			/* Free the space of the Epilog's in array and the register <-> proj map. */
 			obstack_free(&env->obst, in);
