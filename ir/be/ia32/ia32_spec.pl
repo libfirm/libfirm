@@ -7,7 +7,7 @@
 $arch = "ia32";
 
 # this string marks the beginning of a comment in emit
-$comment_string = ';';
+$comment_string = "/*";
 
 # The node description is done as a perl hash initializer with the
 # following structure:
@@ -155,7 +155,7 @@ $comment_string = ';';
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. add %ia32_emit_binop\t\t\t ; Add(%A1, %A2) -> %D1 '
+  "emit"      => '. add %ia32_emit_binop /* Add(%A1, %A2) -> %D1 */'
 },
 
 "Mul" => {
@@ -163,7 +163,7 @@ $comment_string = ';';
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. imul %ia32_emit_binop ; Mul(%A1, %A2) -> %D1 '
+  "emit"      => '. imul %ia32_emit_binop /* Mul(%A1, %A2) -> %D1 */'
 },
 
 # Mulh is an exception from the 4 INs with AM because the target is always EAX:EDX
@@ -171,7 +171,7 @@ $comment_string = ';';
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx in_r4" ] },
-  "emit"      => '. imul %ia32_emit_unop ; Mulh(%A1, %A2) -> %D1  '
+  "emit"      => '. imul %ia32_emit_unop /* Mulh(%A1, %A2) -> %D1 */'
 },
 
 "And" => {
@@ -179,7 +179,7 @@ $comment_string = ';';
   "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. and %ia32_emit_binop ; And(%A1, %A2) -> %D1 '
+  "emit"      => '. and %ia32_emit_binop /* And(%A1, %A2) -> %D1 */'
 },
 
 "Or" => {
@@ -187,7 +187,7 @@ $comment_string = ';';
   "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. or %ia32_emit_binop ; Or(%A1, %A2) -> %D1 '
+  "emit"      => '. or %ia32_emit_binop /* Or(%A1, %A2) -> %D1 */'
 },
 
 "Eor" => {
@@ -195,7 +195,7 @@ $comment_string = ';';
   "comment"   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. xor %ia32_emit_binop ; Xor(%A1, %A2) -> %D1 '
+  "emit"      => '. xor %ia32_emit_binop /* Xor(%A1, %A2) -> %D1 */'
 },
 
 "Max" => {
@@ -203,12 +203,12 @@ $comment_string = ';';
   "comment"   => "construct Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
   "emit"      =>
-'2. cmp %S1, %S2 ; prepare Max (%S1 - %S2), (%A1, %A2)
+'2. cmp %S1, %S2 /* prepare Max (%S1 - %S2), (%A1, %A2) */
   if (mode_is_signed(get_irn_mode(n))) {
-4.  cmovl %D1, %S2 ; %S1 is less %S2
+4.  cmovl %D1, %S2 /* %S1 is less %S2 */
   }
   else {
-4.  cmovb %D1, %S2 ; %S1 is below %S2
+4.  cmovb %D1, %S2 /* %S1 is below %S2 */
   }
 '
 },
@@ -218,12 +218,12 @@ $comment_string = ';';
   "comment"   => "construct Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
   "emit"      =>
-'2. cmp %S1, %S2 ; prepare Min (%S1 - %S2), (%A1, %A2)
+'2. cmp %S1, %S2 /* prepare Min (%S1 - %S2), (%A1, %A2) */
   if (mode_is_signed(get_irn_mode(n))) {
-2.  cmovg %D1, %S2 ; %S1 is greater %S2
+2.  cmovg %D1, %S2 /* %S1 is greater %S2 */
   }
   else {
-2.  cmova %D1, %S2, %D1 ; %S1 is above %S2
+2.  cmova %D1, %S2, %D1 /* %S1 is above %S2 */
   }
 '
 },
@@ -233,8 +233,8 @@ $comment_string = ';';
   "comment"   => "construct Mux: Mux(sel, a, b) == sel ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "in_r2" ] },
   "emit"      =>
-'. cmp %S1, 0 ; compare Sel for CMov (%A2, %A3)
-. cmovne %D1, %S3 ; sel == true -> return %S3
+'. cmp %S1, 0 /* compare Sel for CMov (%A2, %A3) */
+. cmovne %D1, %S3 /* sel == true -> return %S3 */
 '
 },
 
@@ -245,7 +245,7 @@ $comment_string = ';';
   "comment"   => "construct Sub: Sub(a, b) = a - b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. sub %ia32_emit_binop ; Sub(%A1, %A2) -> %D1 '
+  "emit"      => '. sub %ia32_emit_binop /* Sub(%A1, %A2) -> %D1 */'
 },
 
 "DivMod" => {
@@ -254,10 +254,10 @@ $comment_string = ';';
   "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "eax in_r1", "edx in_r3" ] },
   "emit"     =>
 '  if (mode_is_signed(get_irn_mode(n))) {
-4.  idiv %S2 ; signed DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3)
+4.  idiv %S2 /* signed DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
   }
   else {
-4.  div %S2 ; unsigned DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3)
+4.  div %S2 /* unsigned DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
   }
 '
 },
@@ -267,7 +267,7 @@ $comment_string = ';';
   "comment"   => "construct Shl: Shl(a, b) = a << b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. shl %ia32_emit_binop ; Shl(%A1, %A2) -> %D1 '
+  "emit"      => '. shl %ia32_emit_binop /* Shl(%A1, %A2) -> %D1 */'
 },
 
 "Shr" => {
@@ -275,7 +275,7 @@ $comment_string = ';';
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. shr %ia32_emit_binop ; Shr(%A1, %A2) -> %D1 '
+  "emit"      => '. shr %ia32_emit_binop /* Shr(%A1, %A2) -> %D1 */'
 },
 
 "Shrs" => {
@@ -283,7 +283,7 @@ $comment_string = ';';
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. sar %ia32_emit_binop ; Shrs(%A1, %A2) -> %D1 '
+  "emit"      => '. sar %ia32_emit_binop /* Shrs(%A1, %A2) -> %D1 */'
 },
 
 "RotR" => {
@@ -291,7 +291,7 @@ $comment_string = ';';
   "comment"     => "construct RotR: RotR(a, b) = a ROTR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"     => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"        => '. ror %ia32_emit_binop ; RotR(%A1, %A2) -> %D1 '
+  "emit"        => '. ror %ia32_emit_binop /* RotR(%A1, %A2) -> %D1 */'
 },
 
 "RotL" => {
@@ -299,7 +299,7 @@ $comment_string = ';';
   "comment"   => "construct RotL: RotL(a, b) = a ROTL b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. rol %ia32_emit_binop ; RotL(%A1, %A2) -> %D1 '
+  "emit"      => '. rol %ia32_emit_binop /* RotL(%A1, %A2) -> %D1 */'
 },
 
 # unary operations
@@ -309,7 +309,7 @@ $comment_string = ';';
   "comment"   => "construct Minus: Minus(a) = -a",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. neg %ia32_emit_unop ; Neg(%A1) -> %D1, (%A1) '
+  "emit"      => '. neg %ia32_emit_unop /* Neg(%A1) -> %D1, (%A1) */'
 },
 
 "Inc" => {
@@ -317,7 +317,7 @@ $comment_string = ';';
   "comment"   => "construct Increment: Inc(a) = a++",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. inc %ia32_emit_unop ; Inc(%S1) -> %D1, (%A1) '
+  "emit"      => '. inc %ia32_emit_unop /* Inc(%S1) -> %D1, (%A1) */'
 },
 
 "Dec" => {
@@ -325,7 +325,7 @@ $comment_string = ';';
   "comment"   => "construct Decrement: Dec(a) = a--",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. dec %ia32_emit_unop ; Dec(%S1) -> %D1, (%A1) '
+  "emit"      => '. dec %ia32_emit_unop /* Dec(%S1) -> %D1, (%A1) */'
 },
 
 "Not" => {
@@ -333,7 +333,7 @@ $comment_string = ';';
   "comment"   => "construct Not: Not(a) = !a",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. not %ia32_emit_unop ; Not(%S1) -> %D1, (%A1) '
+  "emit"      => '. not %ia32_emit_unop /* Not(%S1) -> %D1, (%A1) */'
 },
 
 # other operations
@@ -352,7 +352,6 @@ $comment_string = ';';
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
 },
 
-
 "SwitchJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct switch",
@@ -368,10 +367,10 @@ $comment_string = ';';
   "reg_req"   => { "out" => [ "gp" ] },
   "emit"      =>
 '  if (get_ia32_Immop_tarval(n) == get_tarval_null(get_irn_mode(n))) {
-4.   sub %D1, %D1 ; optimized mov 0 to register
+4.   sub %D1, %D1 /* optimized mov 0 to register */
   }
   else {
-4.   mov %D1, %C ; Mov Const into register
+4.   mov %D1, %C /* Mov Const into register */
   }
 ',
 },
@@ -380,7 +379,7 @@ $comment_string = ';';
   "irn_flags" => "R",
   "comment"   => "construct CDQ: sign extend EAX -> EDX:EAX",
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "eax in_r1", "edx" ] },
-  "emit"      => '. cdq ; sign extend EAX -> EDX:EAX, (%A1) '
+  "emit"      => '. cdq /* sign extend EAX -> EDX:EAX, (%A1) */'
 },
 
 # Load / Store
@@ -394,10 +393,10 @@ $comment_string = ';';
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "gp" ] },
   "emit"      =>
 '  if (get_mode_size_bits(get_ia32_ls_mode(n)) < 32) {
-4.   mov%Mx %D1, %ia32_emit_am ; Load((%A1)) -> %D1
+4.   mov%Mx %D1, %ia32_emit_am /* Load((%A1)) -> %D1 */
   }
   else {
-4.   mov %D1, %ia32_emit_am ; Load((%A1)) -> %D1
+4.   mov %D1, %ia32_emit_am /* Load((%A1)) -> %D1 */
   }
 '
 },
@@ -408,7 +407,7 @@ $comment_string = ';';
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ] },
-  "emit"      => '. mov %ia32_emit_binop ; Store(%A3) -> (%A1) '
+  "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */'
 },
 
 "Store8Bit" => {
@@ -417,7 +416,7 @@ $comment_string = ';';
   "comment"   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
-  "emit"      => '. mov %ia32_emit_binop ; Store(%A3) -> (%A1)'
+  "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */'
 },
 
 "Lea" => {
@@ -425,7 +424,7 @@ $comment_string = ';';
   "comment"   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. lea %D1, %ia32_emit_am ; LEA(%A1, %A2) '
+  "emit"      => '. lea %D1, %ia32_emit_am /* LEA(%A1, %A2) */'
 },
 
 #--------------------------------------------------------#
@@ -444,7 +443,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. adds%M %ia32_emit_binop ; SSE Add(%A3, %A4) -> %D1 '
+  "emit"      => '. adds%M %ia32_emit_binop /* SSE Add(%A3, %A4) -> %D1 */'
 },
 
 "fMul" => {
@@ -452,7 +451,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. muls%M %ia32_emit_binop ; SSE Mul(%A3, %A4) -> %D1 '
+  "emit"      => '. muls%M %ia32_emit_binop /* SSE Mul(%A3, %A4) -> %D1 */'
 },
 
 "fMax" => {
@@ -460,7 +459,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. maxs%M %ia32_emit_binop ; SSE Max(%A3, %A4) -> %D1 '
+  "emit"      => '. maxs%M %ia32_emit_binop /* SSE Max(%A3, %A4) -> %D1 */'
 },
 
 "fMin" => {
@@ -468,7 +467,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. mins%M %ia32_emit_binop ; SSE Min(%A3, %A4) -> %D1 '
+  "emit"      => '. mins%M %ia32_emit_binop /* SSE Min(%A3, %A4) -> %D1 */'
 },
 
 "fAnd" => {
@@ -476,7 +475,7 @@ $comment_string = ';';
   "comment"   => "construct SSE And: And(a, b) = a AND b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. andp%M %ia32_emit_binop ; SSE And(%A3, %A4) -> %D1 '
+  "emit"      => '. andp%M %ia32_emit_binop /* SSE And(%A3, %A4) -> %D1 */'
 },
 
 "fOr" => {
@@ -484,7 +483,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Or: Or(a, b) = a OR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. orp%M %ia32_emit_binop ; SSE Or(%A3, %A4) -> %D1 '
+  "emit"      => '. orp%M %ia32_emit_binop /* SSE Or(%A3, %A4) -> %D1 */'
 },
 
 "fEor" => {
@@ -492,7 +491,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Eor: Eor(a, b) = a XOR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. xorp%M %ia32_emit_binop ; SSE Xor(%A3, %A4) -> %D1 '
+  "emit"      => '. xorp%M %ia32_emit_binop /* SSE Xor(%A3, %A4) -> %D1 */'
 },
 
 # not commutative operations
@@ -502,7 +501,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Sub: Sub(a, b) = a - b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. subs%M %ia32_emit_binop ; SSE Sub(%A1, %A2) -> %D1 '
+  "emit"      => '. subs%M %ia32_emit_binop /* SSE Sub(%A1, %A2) -> %D1 */'
 },
 
 "fDiv" => {
@@ -510,7 +509,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Div: Div(a, b) = a / b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. divs%M %ia32_emit_binop ; SSE Div(%A1, %A2) -> %D1 '
+  "emit"      => '. divs%M %ia32_emit_binop /* SSE Div(%A1, %A2) -> %D1 */'
 },
 
 # other operations
@@ -528,7 +527,7 @@ $comment_string = ';';
   "comment"   => "represents a SSE constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "fp" ] },
-  "emit"      => '. mov%M %D1, %C ; Load fConst into register ',
+  "emit"      => '. mov%M %D1, %C /* Load fConst into register */',
 },
 
 # Load / Store
@@ -540,7 +539,7 @@ $comment_string = ';';
   "comment"   => "construct SSE Load: Load(ptr, mem) = LD ptr",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "fp" ] },
-  "emit"      => '. movs%M %D1, %ia32_emit_am ; Load((%A1)) -> %D1 '
+  "emit"      => '. movs%M %D1, %ia32_emit_am /* Load((%A1)) -> %D1 */'
 },
 
 "fStore" => {
@@ -549,7 +548,7 @@ $comment_string = ';';
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ] },
-  "emit"     => '. movs%M %ia32_emit_am, %S3 ; Store(%S3) -> (%A1) '
+  "emit"     => '. movs%M %ia32_emit_am, %S3 /* Store(%S3) -> (%A1) */'
 },
 
 # CopyB
