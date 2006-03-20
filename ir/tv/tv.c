@@ -1664,7 +1664,33 @@ tarval_classification_t classify_tarval(tarval *tv)
   return TV_CLASSIFY_OTHER;
 }
 
-/**
+/*
+ * Returns non-zero if a given (integer) tarval has only one single bit
+ * set.
+ */
+int is_single_bit_tarval(tarval *tv) {
+  int i, l;
+  int bits;
+
+  if (!tv || tv == tarval_bad) return 0;
+  if (! mode_is_int(tv->mode)) return 0;
+
+  l = get_mode_size_bytes(tv->mode);
+  for (bits = 0, i = l - 1; i >= 0; --i) {
+    unsigned char v = get_tarval_sub_bits(tv, (unsigned)i);
+
+    /* check for more than one bit in these */
+    if (v) {
+      if (v & (v-1))
+        return 0;
+      if (++bits > 1)
+        return 0;
+    }
+  }
+  return bits;
+}
+
+/*
  * Sets the overflow mode for integer operations.
  */
 void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode) {

@@ -578,7 +578,9 @@ typedef enum _tarval_classification_t {
 
 /**
  * Identifying tarvals values for algebraic simplifications.
- * @param tv
+ *
+ * @param tv        the tarval
+ *
  * @return
  *   - TV_CLASSIFY_NULL    for additive neutral or the NULL tarval for reference modes,
  *   - TV_CLASSIFY_ONE     for multiplicative neutral,
@@ -586,6 +588,12 @@ typedef enum _tarval_classification_t {
  *   - TV_CLASSIFY_OTHER   else
  */
 tarval_classification_t classify_tarval(tarval *tv);
+
+/**
+ * Returns non-zero if a given (integer) tarval has only one single bit
+ * set.
+ */
+int is_single_bit_tarval(tarval *tv);
 
 /**
  * Output of tarvals to a buffer.
