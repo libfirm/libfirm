@@ -533,6 +533,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			}
 		}
 	}
+
 	curr_res_proj++;
 	obstack_ptr_grow(obst, NULL);
 	res_projs = obstack_finish(obst);
@@ -542,13 +543,14 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		obstack_ptr_grow(obst, get_Call_param(irn, low_args[i]));
 
 	in = obstack_finish(obst);
+
 	if(env->call->flags.bits.call_has_imm && get_irn_opcode(call_ptr) == iro_SymConst) {
-		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, curr_sp, curr_res_proj, n_low_args, in);
+		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, curr_sp, curr_res_proj + pset_count(caller_save), n_low_args, in);
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	}
 
 	else
-		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, call_ptr, curr_res_proj, n_low_args, in);
+		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, call_ptr, curr_res_proj + pset_count(caller_save), n_low_args, in);
 
 	/* Set the register classes and constraints of the Call parameters. */
 	for(i = 0; i < n_low_args; ++i) {
@@ -556,15 +558,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, index);
 		assert(arg->reg != NULL);
 
-#if 0
-		if(pmap_contains(arg_regs, (void *) arg->reg)) {
-			int out_proj_num = PTR_TO_INT(be_abi_reg_map_get(arg_regs, arg->reg)) - 1;
-			be_node_set_must_be_same(low_call, out_proj_num, low_args[i]);
-		}
-
-		else
-#endif
-			be_set_constr_single_reg(low_call, index, arg->reg);
+		be_set_constr_single_reg(low_call, index, arg->reg);
 	}
 
 	/* Set the register constraints of the results. */
@@ -593,11 +587,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int i, n;
 
 		for(reg = pset_first(caller_save), n = 0; reg; reg = pset_next(caller_save), ++n) {
-			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode, curr_res_proj++);
+			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
+			be_set_constr_single_reg(low_call, BE_OUT_POS(curr_res_proj), reg);
 			set_irn_link(proj, (void *) reg);
 			obstack_ptr_grow(obst, proj);
+			curr_res_proj++;
 		}
 
 		in   = (ir_node **) obstack_finish(obst);
