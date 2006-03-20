@@ -197,6 +197,66 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
   }
 }
 
+#ifdef NEED_SORT
+/**
+ * Walker for cf_dependent_on().
+ * This function searches a node tgt recursively from a given node
+ * but is restricted to the given extended basic block.
+ *
+ * @return 1 if tgt was reachable from curr, 0 if not.
+ */
+static int check_cf_dependence(ir_node *curr, ir_node *tgt, ir_extblk *extbb)
+{
+	int n, i;
+
+  /* Note: we did not include the leader in our serach, so
+     there could not be any loops here. */
+	if (get_Block_extbb(curr) != extbb)
+		return 0;
+
+	if (curr == tgt)
+		return 1;
+
+	for (i = 0, n = get_Block_n_cfgpreds(curr); i < n; ++i) {
+		if (check_cf_dependence(get_Block_cfgpred_block(curr, i), tgt, extbb))
+			return 1;
+	}
+	return 0;
+}
+
+/**
+ * Check if a block is control dependent on another one.
+ * Both blocks must be in the same extended basic block.
+ * @param blk1  The first block.
+ * @param blk2  The second block.
+ * @return 1, if blk1 is control dependent (transitively) on blk2, 0 if not.
+ */
+static int cf_dependent_on(ir_node *blk1, ir_node *blk2)
+{
+	ir_extblk *extbb = get_Block_extbb(blk1);
+	ir_graph *irg = get_irn_irg(blk1);
+
+	assert(extbb == get_Block_extbb(blk2));
+	return check_cf_dependence(blk1, blk2, extbb);
+}
+
+/**
+ * Compare two blocks for dependency.
+ *
+ * @return
+ *	0  if both blocks nodes are equal
+ *	1  block b1 depends on block b2
+ *	-1 block b2 depends on block d2
+ */
+static int block_order(const void *b1, const void *b2)
+{
+	ir_node *n1 = *(ir_node **)b1;
+	ir_node *n2 = *(ir_node **)b2;
+
+	return n1 == n2 ? 0 : (cf_dependent_on(n1, n2) ? -1 : 1);
+}
+#endif /* NEED_SORT */
+
 /*
  * Compute the extended basic blocks for a graph
  */
@@ -223,8 +283,8 @@ void compute_extbb(ir_graph *irg) {
   if (get_irg_outs_state(irg) != outs_consistent)
     compute_irg_outs(irg);
 
-	/* we must mark nodes, so increase the visited flag */
-	inc_irg_visited(irg);
+  /* we must mark nodes, so increase the visited flag */
+  inc_irg_visited(irg);
   irg_block_walk_graph(irg, pre_walk_calc_extbb, post_walk_calc_extbb, &env);
 
   /*
@@ -253,9 +313,20 @@ void compute_extbb(ir_graph *irg) {
 
     extbb->link    = NULL;
     extbb->visited = 0;
+
+#ifdef NEED_SORT
+    /* we want the blocks in scheduled order, so sort them */
+    /* FIXME: is this really needed? Or generates the algorithm automagically ordered ones? */
+    if (len > 1) {
+      /* temporary remove the leader from the extended block to break loops */
+      set_Block_extbb(extbb->blks[0], NULL);
+      qsort(&extbb->blks[1], len-1, sizeof(extbb->blks[0]), block_order);
+      set_Block_extbb(extbb->blks[0], extbb);
+    }
+#endif
   }
 
-  irg->extblk_state = ir_extblk_info_valid;
+  irg->extblk_state = extblk_valid;
 }
 
 /* free all extended block info. */
@@ -265,7 +336,7 @@ void free_extbb(ir_graph *irg) {
     xfree(irg->extbb_obst);
     irg->extbb_obst = NULL;
   }
-  irg->extblk_state = ir_extblk_info_none;
+  irg->extblk_state = extblk_none;
 }
 
 /* Return the extended block of a node. */
@@ -391,8 +462,8 @@ void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *po
 /* Walks only over reachable Extended Basic Block nodes in the graph. */
 void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre, extbb_walk_func *post, void *env)
 {
-  ir_node *end = get_irg_end(irg);
-  ir_extblk *blk = get_Block_extbb(end);
+  ir_node *endbl = get_irg_end_block(irg);
+  ir_extblk *blk = get_Block_extbb(endbl);
   ir_graph *rem  = current_ir_graph;
   current_ir_graph = irg;
   irg_extblock_walk(blk, pre, post, env);
