@@ -617,6 +617,16 @@ void
   _set_irg_outs_inconsistent(irg);
 }
 
+irg_extblk_state
+(get_irg_extblk_state)(const ir_graph *irg) {
+  return _get_irg_extblk_state(irg);
+}
+
+void
+(set_irg_extblk_inconsistent)(ir_graph *irg) {
+  _set_irg_extblk_inconsistent(irg);
+}
+
 irg_dom_state
 (get_irg_dom_state)(const ir_graph *irg) {
   return _get_irg_dom_state(irg);
