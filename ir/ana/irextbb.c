@@ -431,12 +431,18 @@ static void irg_extblock_walk_2(ir_extblk *blk, extbb_walk_func *pre, extbb_walk
    flag, so that it can be interleaved with the other walker.         */
 void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env)
 {
-  ir_node *pred;
+  ir_node *pred, *start_bl = get_irg_start_block(current_ir_graph);
+  ir_extblk *start_blk = get_Block_extbb(start_bl);
   int i;
 
   assert(blk);
   assert(!get_interprocedural_view());   /* interprocedural_view not implemented */
   inc_irg_block_visited(current_ir_graph);
+
+  /* assure the start block is the first one */
+  mark_extbb_visited(start_blk);
+  if (post)
+    post(start_blk, env);
   irg_extblock_walk_2(blk, pre, post, env);
 
   /* keepalive: the endless loops ... */
@@ -457,6 +463,9 @@ void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *po
       }
     }
   }
+
+  if (pre)
+    pre(start_blk, env);
 }
 
 /* Walks only over reachable Extended Basic Block nodes in the graph. */
