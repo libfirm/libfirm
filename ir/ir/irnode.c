@@ -631,12 +631,12 @@ get_Block_cfgpred_arr (ir_node *node)
 
 int
 (get_Block_n_cfgpreds)(ir_node *node) {
-  return get_Block_n_cfgpreds(node);
+  return _get_Block_n_cfgpreds(node);
 }
 
 ir_node *
 (get_Block_cfgpred)(ir_node *node, int pos) {
-  return get_Block_cfgpred(node, pos);
+  return _get_Block_cfgpred(node, pos);
 }
 
 void
@@ -749,20 +749,17 @@ int (is_Block_dead)(const ir_node *block) {
 }
 
 ir_extblk *get_Block_extbb(const ir_node *block) {
+	ir_extblk *res;
   assert(is_Block(block));
-  return block->attr.block.extblk;
+	res = block->attr.block.extblk;
+	assert(res == NULL || is_ir_extbb(res));
+  return res;
 }
 
 void set_Block_extbb(ir_node *block, ir_extblk *extblk) {
   assert(is_Block(block));
+	assert(extblk == NULL || is_ir_extbb(extblk));
   block->attr.block.extblk = extblk;
-}
-
-void
-set_Start_irg(ir_node *node, ir_graph *irg) {
-  assert(node->op == op_Start);
-  assert(is_ir_graph(irg));
-  assert(0 && " Why set irg? -- use set_irn_irg");
 }
 
 int
