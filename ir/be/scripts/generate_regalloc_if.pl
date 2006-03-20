@@ -385,6 +385,29 @@ sub generate_requirements {
 		if ($reqs[$idx] eq "none") {
 			$tmp .= "&$arch\_default_req_none\n";
 		}
+		elsif ($reqs[$idx] =~ /^new_reg_(.*)$/) {
+			if (is_reg_class($1)) {
+				$tmp  .=  "&_".$op."_reg_req_$inout\_$idx\n";
+				$tmp2 .= "{\n";
+				$tmp2 .= "  {\n";
+				$tmp2 .= "    arch_register_req_type_should_be_different_from_all,\n";
+				$tmp2 .= "    &$arch\_reg_classes[CLASS_$arch\_".$1."],\n";
+				$tmp2 .= "    NULL,        /* limit function */\n";
+				$tmp2 .= "    NULL,        /* limit environment */\n";
+				$tmp2 .= "    NULL,        /* same node */\n";
+				$tmp2 .= "    NULL         /* different node */\n";
+				$tmp2 .= "  },\n";
+				$tmp2 .= "  0,\n";
+				$tmp2 .= "  0\n";
+				$tmp2 .= "};\n";
+
+				push(@obst_req, $tmp2."\n");
+				push(@obst_header_all, "extern const $arch\_register_req_t _".$op."_reg_req_$inout\_$idx;\n");
+			}
+			else {
+				print STDERR "Invalid register class '$1' given in OUT requirement $idx for '$op'.\n";
+			}
+		}
 		elsif (is_reg_class($reqs[$idx])) {
 			$tmp .= "&$arch\_default_req_".$arch."_".$reqs[$idx]."\n";
 		}
