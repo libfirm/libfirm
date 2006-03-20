@@ -669,6 +669,12 @@ void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *c
 		r->req.type = arch_register_req_type_normal;
 }
 
+void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type)
+{
+	be_req_t *r = get_req(irn, pos);
+	r->req.type = type;
+}
+
 void be_set_IncSP_offset(ir_node *irn, unsigned offset)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
@@ -830,11 +836,11 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 	return spill;
 }
 
-ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *reloader, ir_mode *mode, ir_node *spill)
+ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill)
 {
 	ir_node *reload;
 
-	ir_node *bl    = is_Block(reloader) ? reloader : get_nodes_block(reloader);
+	ir_node *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
 	ir_graph *irg  = get_irn_irg(bl);
 	ir_node *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
@@ -843,7 +849,14 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 
 	reload = be_new_Reload(cls, cls_frame, irg, bl, frame, spill, mode);
 
-	sched_add_before(reloader, reload);
+	if(is_Block(insert)) {
+		insert = sched_skip(insert, 0, sched_skip_cf_predicator, (void *) arch_env);
+		sched_add_after(insert, reload);
+	}
+
+	else
+		sched_add_before(insert, reload);
+
 	return reload;
 }
 
