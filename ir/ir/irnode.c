@@ -159,16 +159,16 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 
 #if FIRM_EDGES_INPLACE
   {
-    int i, n;
-    int not_a_block = is_no_Block(res);
+    int i;
+    int is_bl = is_Block(res);
 
     INIT_LIST_HEAD(&res->edge_info.outs_head);
-    if(!not_a_block)
+    if(is_bl)
       INIT_LIST_HEAD(&res->attr.block.succ_head);
 
 
-    for (i = 0, n = arity + not_a_block; i < n; ++i)
-      edges_notify_edge(res, i - not_a_block, res->in[i], NULL, irg);
+    for (i = is_bl; i <= arity; ++i)
+      edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
   }
 #endif
 
