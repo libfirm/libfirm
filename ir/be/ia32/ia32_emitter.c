@@ -38,7 +38,7 @@
 # define obstack_chunk_free free
 #endif
 
-#define BLOCK_PREFIX(x) ".L" # x
+#define BLOCK_PREFIX(x) ".L" x
 
 extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 
