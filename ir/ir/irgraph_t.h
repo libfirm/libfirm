@@ -392,6 +392,17 @@ _set_irg_outs_inconsistent(ir_graph *irg) {
     irg->outs_state = outs_inconsistent;
 }
 
+static INLINE irg_extblk_state
+_get_irg_extblk_state(const ir_graph *irg) {
+  return irg->extblk_state;
+}
+
+static INLINE void
+_set_irg_extblk_inconsistent(ir_graph *irg) {
+  if (irg->extblk_state == extblk_valid)
+    irg->extblk_state = extblk_invalid;
+}
+
 static INLINE irg_dom_state
 _get_irg_dom_state(const ir_graph *irg) {
   return irg->dom_state;
@@ -553,6 +564,8 @@ _get_irg_estimated_node_cnt(const ir_graph *irg) {
 #define get_irg_pinned(irg)                   _get_irg_pinned(irg)
 #define get_irg_outs_state(irg)               _get_irg_outs_state(irg)
 #define set_irg_outs_inconsistent(irg)        _set_irg_outs_inconsistent(irg)
+#define get_irg_extblk_state(irg)              _get_irg_extblk_state(irg)
+#define set_irg_extblk_inconsistent(irg)       _set_irg_extblk_inconsistent(irg)
 #define get_irg_dom_state(irg)                _get_irg_dom_state(irg)
 #define get_irg_postdom_state(irg)            _get_irg_postdom_state(irg)
 #define set_irg_doms_inconsistent(irg)        _set_irg_doms_inconsistent(irg)

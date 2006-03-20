@@ -317,6 +317,15 @@ typedef enum {
 irg_outs_state get_irg_outs_state(const ir_graph *irg);
 void           set_irg_outs_inconsistent(ir_graph *irg);
 
+/** state:  extended basic block state. */
+typedef enum {
+  extblk_none    = 0,  /**< No extended basic block information is constructed. Default. */
+  extblk_valid   = 1,  /**< Extended basic block information is valid. */
+  extblk_invalid = 2   /**< Extended basic block information is constructed but invalid. */
+} irg_extblk_state;
+irg_extblk_state get_irg_extblk_state(const ir_graph *irg);
+void             set_irg_extblk_inconsistent(ir_graph *irg);
+
 /** state: dom_state
  * Signals the state of the dominator / post dominator information.
  */
