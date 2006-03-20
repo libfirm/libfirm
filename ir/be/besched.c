@@ -1,13 +1,16 @@
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 
 #include "impl.h"
 #include "irprintf.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "irgraph_t.h"
 #include "iredges_t.h"
 #include "debug.h"
 
@@ -25,6 +28,7 @@ FIRM_IMPL1(sched_first, ir_node *, const ir_node *)
 FIRM_IMPL1(sched_last, ir_node *, const ir_node *)
 FIRM_IMPL2(sched_add_after, ir_node *, ir_node *, ir_node *)
 FIRM_IMPL2(sched_add_before, ir_node *, ir_node *, ir_node *)
+FIRM_IMPL2(sched_comes_after, int, const ir_node *, const ir_node *)
 FIRM_IMPL1_VOID(sched_remove, ir_node *)
 
 size_t sched_irn_data_offset = 0;
@@ -41,11 +45,12 @@ static void block_sched_dumper(ir_node *block, void *env)
 	}
 }
 
-void be_sched_dump(FILE *f, const ir_graph *irg)
+void be_sched_dump(FILE *f, ir_graph *irg)
 {
-	irg_block_walk_graph((ir_graph *) irg, block_sched_dumper, NULL, f);
+	irg_block_walk_graph(irg, block_sched_dumper, NULL, f);
 }
 
+/* Init the scheduling stuff. */
 void be_sched_init(void)
 {
 	sched_irn_data_offset = register_additional_node_data(sizeof(sched_info_t));
@@ -65,7 +70,7 @@ void sched_renumber(const ir_node *block)
   }
 }
 
-
+/* Verify a schedule. */
 int sched_verify(const ir_node *block)
 {
   firm_dbg_module_t *dbg_sched = firm_dbg_register("be.sched");
@@ -87,8 +92,8 @@ int sched_verify(const ir_node *block)
   if(n <= 0)
     return 1;
 
-  save_time_step = malloc(n * sizeof(save_time_step[0]));
-  save_nodes = malloc(n * sizeof(save_nodes[0]));
+  save_time_step = xmalloc(n * sizeof(save_time_step[0]));
+  save_nodes = xmalloc(n * sizeof(save_nodes[0]));
 
   i = 0;
   sched_foreach(block, irn) {
@@ -156,23 +161,22 @@ int sched_verify(const ir_node *block)
   return res;
 }
 
-static void sched_verify_walker(ir_node *irn, void *data)
+/**
+ * Block-Walker: verify the current block and update the status
+ */
+static void sched_verify_walker(ir_node *block, void *data)
 {
   int *res = data;
-  *res &= sched_verify(irn);
+  *res &= sched_verify(block);
 }
 
+/* Verify the schedules in all blocks of the irg. */
 int sched_verify_irg(ir_graph *irg)
 {
   int res = 1;
   irg_block_walk_graph(irg, sched_verify_walker, NULL, &res);
 
   return res;
-}
-
-int (sched_comes_after)(const ir_node *n1, const ir_node *n2)
-{
-	return _sched_comes_after(n1, n2);
 }
 
 int sched_skip_cf_predicator(const ir_node *irn, void *data) {
@@ -184,7 +188,7 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data) {
 	return is_Phi(irn);
 }
 
-extern ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data)
+ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data)
 {
 	const ir_node *bl = get_block(from);
 	ir_node *curr;
