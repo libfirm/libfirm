@@ -123,6 +123,7 @@ void normalize_one_return(ir_graph *irg)
    */
   set_irg_doms_inconsistent(irg);
   set_irg_outs_inconsistent(irg);
+  set_irg_extblk_inconsistent(irg);
   set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
 }
 
