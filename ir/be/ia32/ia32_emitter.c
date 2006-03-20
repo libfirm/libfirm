@@ -528,6 +528,12 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 	return buf;
 }
 
+static int have_block_sched = 0;
+/** Return the next block in Block schedule */
+static ir_node *next_blk_sched(const ir_node *block) {
+  return have_block_sched ? get_irn_link(block) : NULL;
+}
+
 /**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
@@ -552,9 +558,9 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	block = get_nodes_block(irn);
-	if (proj2 && sched_is_scheduled(block)) {
+	if (proj2) {
 		/* we have a block schedule */
-		next_bl = sched_next(block);
+		next_bl = next_blk_sched(block);
 
 		if (get_cfop_target_block(proj1) == next_bl) {
 			/* exchange both proj's so the second one can be omitted */
@@ -840,17 +846,15 @@ void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
  * Emits code for a unconditional jump.
  */
 void emit_Jmp(const ir_node *irn, ia32_emit_env_t *env) {
-	ir_node *block, *next_bl = NULL;
+	ir_node *block, *next_bl;
 	FILE *F = env->out;
 	char buf[SNPRINTF_BUF_LEN], cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	block = get_nodes_block(irn);
-	if (sched_is_scheduled(block)) {
-		/* we have a block schedule */
-		next_bl = sched_next(block);
-	}
 
+	/* we have a block schedule */
+	next_bl = next_blk_sched(block);
 	if (get_cfop_target_block(irn) != next_bl) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(irn, buf));
 		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "; %+F(%+F)", irn, get_cfop_target_block(irn));
@@ -861,8 +865,6 @@ void emit_Jmp(const ir_node *irn, ia32_emit_env_t *env) {
 	}
 	IA32_DO_EMIT;
 }
-
-
 
 /****************************
  *                  _
@@ -1197,9 +1199,6 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 static void ia32_gen_block(ir_node *block, void *env) {
 	const ir_node *irn;
 
-	if (! is_Block(block))
-		return;
-
 	fprintf(((ia32_emit_env_t *)env)->out, BLOCK_PREFIX("%ld:\n"), get_irn_node_nr(block));
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
@@ -1232,6 +1231,7 @@ static void ia32_emit_func_epilog(FILE *F, ir_graph *irg) {
 }
 
 /**
+ * Block-walker:
  * Sets labels for control flow nodes (jump target)
  * TODO: Jump optimization
  */
@@ -1245,11 +1245,37 @@ static void ia32_gen_labels(ir_node *block, void *env) {
 	}
 }
 
+typedef struct {
+  ir_node *start;
+  ir_node *end;
+} anchor;
+
+/**
+ * Ext-Block walker: create a block schedule
+ */
+static void create_block_list(ir_extblk *blk, void *env) {
+  anchor *list = env;
+  int i, n;
+
+  for (i = 0, n = get_extbb_n_blocks(blk); i < n; ++i) {
+    ir_node *block = get_extbb_block(blk, i);
+
+    set_irn_link(block, NULL);
+    if (list->start)
+      set_irn_link(list->end, block);
+    else
+      list->start = block;
+    list->end = block;
+  }
+}
+
 /**
  * Main driver. Emits the code for one routine.
  */
 void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_env_t emit_env;
+  anchor list;
+  ir_node *block;
 
 	emit_env.mod      = firm_dbg_register("ir.be.codegen.ia32");
 	emit_env.out      = F;
@@ -1264,7 +1290,21 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 
 	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
-	irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
+
+#if 0
+  have_block_sched = 0;
+	irg_block_walk_graph(irg, NULL, ia32_gen_block, &emit_env);
+#else
+  compute_extbb(irg);
+
+  list.start = NULL;
+  list.end   = NULL;
+  irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
+
+  have_block_sched = 1;
+  for (block = list.start; block; block = get_irn_link(block))
+    ia32_gen_block(block, &emit_env);
+#endif
 
 	ia32_emit_func_epilog(F, irg);
 }
