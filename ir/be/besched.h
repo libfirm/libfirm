@@ -1,24 +1,32 @@
-
+/*
+ * Scheduling utilities for nodes in Blocks and Blocks.
+ *
+ * $Id$
+ */
 #ifndef _BESCHED_H
 #define _BESCHED_H
 
 #include <stdio.h>
 
-#include "irgraph.h"
-#include "irnode.h"
+#include "firm_types.h"
 
-void be_sched_dump(FILE *f, const ir_graph *irg);
+void be_sched_dump(FILE *f, ir_graph *irg);
 
-int (sched_get_time_step)(const ir_node *irn);
-int (sched_has_next)(const ir_node *irn);
-int (sched_has_prev)(const ir_node *irn);
-ir_node *(sched_next)(const ir_node *irn);
-ir_node *(sched_prev)(const ir_node *irn);
-ir_node *(sched_first)(const ir_node *block);
-ir_node *(sched_last)(const ir_node *block);
-ir_node *(sched_add_before)(ir_node *before, ir_node *irn);
-ir_node *(sched_add_after)(ir_node *before, ir_node *irn);
-void (sched_remove)(ir_node *irn);
+int     sched_get_time_step(const ir_node *irn);
+int     sched_has_next(const ir_node *irn);
+int     sched_has_prev(const ir_node *irn);
+ir_node *sched_next(const ir_node *irn);
+ir_node *sched_prev(const ir_node *irn);
+ir_node *sched_first(const ir_node *block);
+ir_node *sched_last(const ir_node *block);
+ir_node *sched_add_before(ir_node *before, ir_node *irn);
+ir_node *sched_add_after(ir_node *before, ir_node *irn);
+void    sched_remove(ir_node *irn);
+
+/**
+ * Returns the first block of a graphs block schedule.
+ */
+ir_node *sched_irg_first(const ir_graph *irg);
 
 #define sched_is_end(irn) is_Block(irn)
 #define sched_is_begin(irn) is_Block(irn)
@@ -45,4 +53,4 @@ void (sched_remove)(ir_node *irn);
 #define sched_foreach_reverse(block,irn) \
   sched_foreach_reverse_from(sched_last(block), irn)
 
-#endif
+#endif /* _BESCHED_H */
