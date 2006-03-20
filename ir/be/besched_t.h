@@ -17,6 +17,9 @@ extern size_t sched_irn_data_offset;
 
 /**
  * The schedule structure which is present at each ir node.
+ *
+ * Currently, only basic blocks are scheduled. The list head of
+ * every block schedule list is the Block list.
  */
 typedef struct _sched_info_t {
 	struct list_head list;         /**< The list head to list the nodes in a schedule. */
@@ -58,11 +61,11 @@ static INLINE int to_appear_in_schedule(const ir_node *irn)
 	switch(get_irn_opcode(irn)) {
 		case iro_Start:
 		case iro_Jmp:
+		case iro_Break:
 			return 1;
 		default:
 			return is_data_node(irn);
 	}
-
 }
 
 /**
@@ -291,16 +294,16 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data);
 extern ir_node *sched_skip(ir_node *from, int forward,
     sched_predicator_t *predicator, void *data);
 
-#define sched_get_time_step(irn)	    _sched_get_time_step(irn)
-#define sched_has_succ(irn) 			_sched_has_succ(irn)
-#define sched_has_prev(irn) 			_sched_has_prev(irn)
-#define sched_succ(irn) 				_sched_succ(irn)
-#define sched_prev(irn) 				_sched_prev(irn)
-#define sched_first(irn) 				_sched_first(irn)
-#define sched_last(irn) 				_sched_last(irn)
-#define sched_add_before(before, irn)	_sched_add_before(before, irn)
-#define sched_add_after(after, irn) 	_sched_add_after(after, irn)
-#define sched_remove(irn)            	_sched_remove(irn)
+#define sched_get_time_step(irn)        _sched_get_time_step(irn)
+#define sched_has_next(irn)             _sched_has_next(irn)
+#define sched_has_prev(irn)             _sched_has_prev(irn)
+#define sched_next(irn)                 _sched_next(irn)
+#define sched_prev(irn)                 _sched_prev(irn)
+#define sched_first(irn)                _sched_first(irn)
+#define sched_last(irn)                 _sched_last(irn)
+#define sched_add_before(before, irn)   _sched_add_before(before, irn)
+#define sched_add_after(after, irn)     _sched_add_after(after, irn)
+#define sched_remove(irn)               _sched_remove(irn)
 #define sched_is_scheduled(irn)         _sched_is_scheduled(irn)
 #define sched_comes_after(n1, n2)       _sched_comes_after(n1, n1)
 #define sched_cmp(a, b)                 _sched_cmp(a, b)
