@@ -94,7 +94,6 @@ void set_opt_control_flow(int value)
   set_opt_control_flow_straightening(value);
   set_opt_control_flow_weak_simplification(value);
   set_opt_control_flow_strong_simplification(value);
-  set_opt_critical_edges(value);
 }
 
 void set_firm_verbosity (int value) {

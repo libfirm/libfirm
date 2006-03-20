@@ -155,9 +155,6 @@ void set_opt_control_flow_weak_simplification(int value);
 /** Enables/Disables strong if and loop simplification (in optimize_cf). */
 void set_opt_control_flow_strong_simplification(int value);
 
-/** Enables/Disables removal of critical control flow edges. */
-void set_opt_critical_edges(int value);
-
 /** Enables/Disables reassociation.
  *
  * If opt_reassociation == 1 reassociation is performed.
