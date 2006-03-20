@@ -561,8 +561,10 @@ typedef struct _list_tuple {
   ir_extblk **extbb_list;
 } list_tuple;
 
-/** Construct lists to walk ir extended block-wise.
+/** Construct lists to walk IR extended block-wise.
  * Free the lists in the tuple with DEL_ARR_F().
+ * Sets the irg link field to NULL in all
+ * graphs not visited.
  */
 static list_tuple *construct_extblock_lists(ir_graph *irg) {
   ir_node **blk_list = construct_block_lists(irg);
@@ -1550,7 +1552,6 @@ dump_extblock_graph(FILE *F, ir_graph *irg) {
   ir_extblk **arr = ird_get_irg_link(irg);
   current_ir_graph = irg;
 
-  compute_extbb(irg);
   for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
     ir_extblk *extbb = arr[i];
     ir_node *leader = get_extbb_leader(extbb);
@@ -2323,7 +2324,8 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
   if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
 
-  compute_extbb(irg);
+  if (get_irg_extblk_state(irg) != extblk_valid)
+    compute_extbb(irg);
 
   if (get_interprocedural_view()) suffix1 = "-ip";
   else                            suffix1 = "";
