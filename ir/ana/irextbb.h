@@ -47,6 +47,12 @@ typedef void extbb_walk_func(ir_extblk *blk, void *env);
 #endif
 
 /**
+ * Checks whether a pointer points to a extended basic block.
+ * Intern version for libFirm.
+ */
+int is_ir_extbb(const void *thing);
+
+/**
  * Compute the extended basic blocks for a graph
  */
 void compute_extbb(ir_graph *irg);

@@ -35,6 +35,14 @@ struct _ir_extblk {
   void *link;            /**< private link field */
 };
 
+/**
+ * Checks whether a pointer points to a extended basic block.
+ * Intern version for libFirm.
+ */
+static INLINE int
+_is_ir_extbb (const void *thing) {
+  return (get_kind(thing) == k_ir_extblk);
+}
 
 /**
  * Gets the visited counter of an extended block.
@@ -134,9 +142,10 @@ _get_extbb_leader(ir_extblk *blk)
   return blk->blks[0];
 }
 
-#define get_extbb_visited(blk)		_get_extbb_visited(blk)
-#define set_extbb_visited(blk, v)	_set_extbb_visited(blk, v)
-#define mark_extbb_visited(blk)	  _mark_extbb_visited(blk)
+#define is_ir_extbb(thing)        _is_ir_extbb(thing)
+#define get_extbb_visited(blk)    _get_extbb_visited(blk)
+#define set_extbb_visited(blk, v) _set_extbb_visited(blk, v)
+#define mark_extbb_visited(blk)   _mark_extbb_visited(blk)
 #define extbb_visited(blk)        _extbb_visited(blk)
 #define extbb_not_visited(blk)    _extbb_not_visited(blk)
 #define get_extbb_link(blk)       _get_extbb_link(blk)
