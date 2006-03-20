@@ -188,6 +188,10 @@ static int firm_emit(lc_appendable_t *app,
       }
       add[0] = '\0';
       break;
+    case k_ir_extblk:
+      snprintf(buf, sizeof(buf), "ExtBlock");
+      snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(get_extbb_leader(X)));
+      break;
 
     default:
       snprintf(buf, sizeof(buf), "UNKWN");
