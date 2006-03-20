@@ -613,8 +613,9 @@ void optimize_cf(ir_graph *irg) {
 
   /* Handle graph state */
   assert(get_irg_phase_state(irg) != phase_building);
-  if (get_irg_outs_state(current_ir_graph) == outs_consistent)
-    set_irg_outs_inconsistent(current_ir_graph);
+  set_irg_outs_inconsistent(current_ir_graph);
+  set_irg_extblk_inconsistent(current_ir_graph);
+  set_irg_loopinfo_inconsistent(current_ir_graph);
   set_irg_doms_inconsistent(current_ir_graph);
 
   if (dom_state == dom_consistent && get_opt_optimize() && get_opt_unreachable_code()) {
