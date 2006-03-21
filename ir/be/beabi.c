@@ -558,7 +558,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, index);
 		assert(arg->reg != NULL);
 
-		be_set_constr_single_reg(low_call, index, arg->reg);
+		be_set_constr_single_reg(low_call, be_pos_Call_first_arg + index, arg->reg);
 	}
 
 	/* Set the register constraints of the results. */

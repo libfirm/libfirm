@@ -162,9 +162,10 @@ entity *be_Call_get_entity(const ir_node *call);
 void    be_Call_set_entity(ir_node *call, entity *ent);
 
 enum {
-	be_pos_Call_mem = 0,
-	be_pos_Call_sp  = 1,
-	be_pos_Call_ptr = 2
+	be_pos_Call_mem       = 0,
+	be_pos_Call_sp        = 1,
+	be_pos_Call_ptr       = 2,
+	be_pos_Call_first_arg = 3
 };
 
 ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
