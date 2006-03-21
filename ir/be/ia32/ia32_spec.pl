@@ -370,7 +370,12 @@ $comment_string = "/*";
 4.   sub %D1, %D1 /* optimized mov 0 to register */
   }
   else {
-4.   mov %D1, %C /* Mov Const into register */
+    if (get_ia32_sc(n)) {
+6.    lea %D1, %C /* Load address of SymConst into register */
+    }
+	else {
+6.    mov %D1, %C /* Mov Const into register */
+	}
   }
 ',
 },
