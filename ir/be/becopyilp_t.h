@@ -115,8 +115,6 @@ static INLINE int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) 
 
 #ifdef LPP_SOLVE_NET
 #  include <lpp/lpp_net.h>
-#  define LPP_HOST "i44pc52"
-#  define LPP_SOLVER "cplex"
 #else
 #  include <lpp/lpp_cplex.h>
 #endif

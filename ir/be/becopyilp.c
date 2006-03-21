@@ -152,13 +152,14 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
 	FILE *f;
 	char buf[256];
+	be_main_env_t *main_env = ienv->co->cenv->birg->main_env;
 
 	sr_remove(ienv->sr);
 
 	ienv->build(ienv);
 
 #ifdef LPP_SOLVE_NET
-	lpp_solve_net(ienv->lp, LPP_HOST, LPP_SOLVER);
+	lpp_solve_net(ienv->lp, main_env->options->ilp_server, main_env->options->ilp_solver);
 #else
 	lpp_solve_cplex(ienv->lp);
 #endif
