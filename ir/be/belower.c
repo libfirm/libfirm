@@ -409,16 +409,16 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 					int pidx = get_pairidx_for_regidx(pairs, n, cycle->elems[i]->index, 0);
 
 					/* create intermediate proj */
-					res2 = new_r_Proj(get_irn_irg(irn), block, cpyxchg, get_irn_mode(res1), 0);
+					res1 = new_r_Proj(get_irn_irg(irn), block, cpyxchg, get_irn_mode(res1), 0);
 
 					/* set as in for next Perm */
-					pairs[pidx].in_node = res2;
+					pairs[pidx].in_node = res1;
 				}
 				else {
-					sched_remove(res2);
+					sched_remove(res1);
 				}
 
-				sched_remove(res1);
+				sched_remove(res2);
 
 				set_Proj_pred(res2, cpyxchg);
 				set_Proj_proj(res2, 0);
@@ -430,6 +430,14 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 				arch_set_irn_register(arch_env, res2, cycle->elems[i + 1]);
 				arch_set_irn_register(arch_env, res1, cycle->elems[i]);
+
+				/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
+				sched_add_after(sched_point, cpyxchg);
+
+				DBG((mod, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
+
+				/* set the new scheduling point */
+				sched_point = res1;
 			}
 			else {
 				DBG((mod, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
@@ -443,14 +451,13 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 				/* exchange copy node and proj */
 				exchange(res2, cpyxchg);
+
+				/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
+				sched_add_after(sched_point, cpyxchg);
+
+				/* set the new scheduling point */
+				sched_point = cpyxchg;
 			}
-
-			/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
-			sched_add_after(sched_point, cpyxchg);
-			/* set the new scheduling point */
-			sched_point = cpyxchg;
-
-			DBG((mod, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 		}
 
 		free((void *) cycle->elems);
