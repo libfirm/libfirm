@@ -332,7 +332,7 @@ static void be_main_loop(FILE *file_handle)
 void be_main(FILE *file_handle)
 {
 	/* never build code for pseudo irgs */
-	set_visit_pseudo_irgs(0);
+  	set_visit_pseudo_irgs(0);
 
 	be_node_init();
 	be_main_loop(file_handle);

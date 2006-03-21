@@ -76,7 +76,7 @@ void free_copy_opt(copy_opt_t *co) {
 int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
 	arch_register_req_t req;
 
-	if (arch_irn_is_ignore(co->aenv, irn))
+	if (arch_irn_is(co->aenv, irn, ignore))
 		return 0;
 
 	if (is_Reg_Phi(irn) || is_Perm_Proj(co->aenv, irn) || is_2addr_code(co->aenv, irn, &req))
@@ -90,7 +90,7 @@ int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 
 	assert(0 && "Is buggy and obsolete. Do not use");
 
-	if (arch_irn_is_ignore(co->aenv, irn))
+	if (arch_irn_is(co->aenv, irn, ignore))
 		return 0;
 
 	foreach_out_edge(irn, edge) {
@@ -472,7 +472,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	int pos, max;
 	arch_register_req_t req;
 
-	if (!is_curr_reg_class(co, irn) || arch_irn_is_ignore(co->aenv, irn))
+	if (!is_curr_reg_class(co, irn) || arch_irn_is(co->aenv, irn, ignore))
 		return;
 
 	/* Phis */

@@ -384,13 +384,13 @@ extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *
  */
 extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn);
 
-#define arch_irn_is_ignore(env, irn) ((arch_irn_get_flags(env, irn) & arch_irn_flags_ignore) != 0)
+#define arch_irn_is(env, irn, flag) ((arch_irn_get_flags(env, irn) & arch_irn_flags_ ## flag) != 0)
 
 #define arch_irn_has_reg_class(env, irn, pos, cls) \
   ((cls) == arch_get_irn_reg_class(env, irn, pos))
 
 #define arch_irn_consider_in_reg_alloc(env, cls, irn) \
-	(arch_irn_has_reg_class(env, irn, -1, cls) && !arch_irn_is_ignore(env, irn))
+	(arch_irn_has_reg_class(env, irn, -1, cls) && !arch_irn_is(env, irn, ignore))
 
 /**
  * Somebody who can be asked about IR nodes.

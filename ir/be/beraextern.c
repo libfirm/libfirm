@@ -345,7 +345,7 @@ static void ssa_destr_simple_walker(ir_node *blk, void *env) {
 			if (!is_Phi(phi))
 				break;
 
-			if (arch_irn_is_ignore(raenv->aenv, phi))
+			if (arch_irn_is(raenv->aenv, phi, ignore))
 				continue;
 
 			raenv->cls = arch_get_irn_reg_class(raenv->aenv, phi, -1);
@@ -536,7 +536,7 @@ static INLINE int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi) {
 	int c_spills=0, c_reloads=0;
 
 	pset_foreach(vi->values, irn) {
-		if (arch_irn_is_ignore(raenv->aenv, irn) || be_is_Reload(irn)) {
+		if (arch_irn_is(raenv->aenv, irn, ignore) || be_is_Reload(irn)) {
 			pset_break(vi->values);
 			return UNSPILLABLE;
 		}
@@ -619,7 +619,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 	int pos, max;
 	var_info_t *vi1, *vi2;
 
-	if (arch_get_irn_reg_class(raenv->aenv, irn, -1) != raenv->cls || arch_irn_is_ignore(raenv->aenv, irn))
+	if (arch_get_irn_reg_class(raenv->aenv, irn, -1) != raenv->cls || arch_irn_is(raenv->aenv, irn, ignore))
 		return;
 
 	vi1 = get_var_info(irn);
@@ -628,7 +628,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 	if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy) {
 		ir_node *other = get_irn_n(irn, be_pos_Copy_orig);
 
-		if (! arch_irn_is_ignore(raenv->aenv, other)) {
+		if (! arch_irn_is(raenv->aenv, other, ignore)) {
 			vi2 = get_var_info(other);
 
 			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
@@ -640,7 +640,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 	for (pos = 0, max = get_irn_arity(irn); pos<max; ++pos) {
 		arch_get_register_req(raenv->aenv, &req, irn, pos);
 
-		if (arch_register_req_is(&req, should_be_same) && arch_irn_is_ignore(raenv->aenv, req.other_same)) {
+		if (arch_register_req_is(&req, should_be_same) && arch_irn_is(raenv->aenv, req.other_same, ignore)) {
 			vi2 = get_var_info(req.other_same);
 
 			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));

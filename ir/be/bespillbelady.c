@@ -614,17 +614,20 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 		ir_node *spill;
 		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
 
-		spill = get_irn_n(irn, be_pos_Reload_mem);
+		if (be_is_Reload(irn))
+			spill = get_irn_n(irn, be_pos_Reload_mem);
 
 		/* remove reload */
 		set_irn_n(irn, 0, new_Bad());
 		sched_remove(irn);
 
-		/* if spill not used anymore, remove it too
-		 * test of regclass is necessary since spill may be a phi-M */
-		if (get_irn_n_edges(spill) == 0 && bel->cls == arch_get_irn_reg_class(bel->arch, spill, -1)) {
-			set_irn_n(spill, 0, new_Bad());
-			sched_remove(spill);
+		if (be_is_Reload(irn)) {
+			/* if spill not used anymore, remove it too
+			 * test of regclass is necessary since spill may be a phi-M */
+			if (get_irn_n_edges(spill) == 0 && bel->cls == arch_get_irn_reg_class(bel->arch, spill, -1)) {
+				set_irn_n(spill, 0, new_Bad());
+				sched_remove(spill);
+			}
 		}
 	}
 }
