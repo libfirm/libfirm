@@ -1733,7 +1733,7 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
 	char             *offs;
 	ia32_transform_env_t tenv;
-	arch_register_t *out_reg, *base_reg, *index_reg;
+	const arch_register_t *out_reg, *base_reg, *index_reg;
 
 	/* must be a LEA */
 	if (! is_ia32_Lea(irn))
