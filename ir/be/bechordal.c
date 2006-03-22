@@ -209,9 +209,10 @@ typedef struct {
 #define insn_n_defs(insn) ((insn)->use_start)
 #define insn_n_uses(insn) ((insn)->n_ops - (insn)->use_start)
 
-static insn_t *scan_insn(be_chordal_env_t *env, ir_node *irn, struct obstack *obst)
+static insn_t *scan_insn(be_chordal_alloc_env_t *alloc_env, ir_node *irn, struct obstack *obst)
 {
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	const be_chordal_env_t *env = alloc_env->chordal_env;
+	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
 	operand_t o;
 	insn_t *insn;
 	int i, n;
@@ -285,8 +286,10 @@ static insn_t *scan_insn(be_chordal_env_t *env, ir_node *irn, struct obstack *ob
 		assert(op->req.cls == env->cls);
 		op->regs   = bitset_obstack_alloc(obst, env->cls->n_regs);
 
-		if(arch_register_req_is(&op->req, limited))
+		if(arch_register_req_is(&op->req, limited)) {
 			op->req.limited(op->req.limited_env, op->regs);
+			bitset_andnot(op->regs, alloc_env->ignore_regs);
+		}
 		else
 			arch_put_non_ignore_regs(env->birg->main_env->arch_env, env->cls, op->regs);
 	}
@@ -452,7 +455,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 		*/
 		be_liveness(env->irg);
 		obstack_free(&env->obst, insn);
-		*the_insn = insn = scan_insn(env, insn->irn, &env->obst);
+		*the_insn = insn = scan_insn(alloc_env, insn->irn, &env->obst);
 
 		/*
 			Copy the input constraints of the insn to the Perm as output
@@ -478,7 +481,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 {
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(&env->obst);
-	insn_t *insn           = scan_insn(env, irn, &env->obst);
+	insn_t *insn           = scan_insn(alloc_env, irn, &env->obst);
 	ir_node *res           = insn->next_insn;
 
 	if(insn->pre_colored) {
