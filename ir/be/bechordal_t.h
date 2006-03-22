@@ -81,6 +81,12 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 
 void be_ra_chordal_color(be_chordal_env_t *chordal_env);
 
+/**
+ * Check a register allocation obtained with the chordal register allocator.
+ * @param chordal_env The chordal environment.
+ */
+void be_ra_chordal_check(be_chordal_env_t *chordal_env);
+
 enum {
 	/* spill method */
 	BE_CH_SPILL_BELADY    = 1,
