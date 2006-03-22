@@ -588,6 +588,14 @@ CHECK_REQS: foreach (@regs) {
 		}
 	}
 
+	my @cur_class = @{ $reg_classes{"$class"} };
+	for (my $idx = 0; $idx <= $#cur_class; $idx++) {
+		if (defined($cur_class[$idx]{"type"}) && ($cur_class[$idx]{"type"} & 4)) {
+			push(@temp_obst, "  bitset_clear(bs, ".get_reg_index($cur_class[$idx]{"name"}).");");
+			push(@temp_obst, "         /* disallow ignore reg ".$cur_class[$idx]{"name"}." */\n");
+		}
+	}
+
 	if ($has_limit == 1) {
 		push(@obst_header_all, "void limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(void *_unused, bitset_t *bs);\n");
 
