@@ -286,10 +286,8 @@ static insn_t *scan_insn(be_chordal_alloc_env_t *alloc_env, ir_node *irn, struct
 		assert(op->req.cls == env->cls);
 		op->regs   = bitset_obstack_alloc(obst, env->cls->n_regs);
 
-		if(arch_register_req_is(&op->req, limited)) {
+		if(arch_register_req_is(&op->req, limited))
 			op->req.limited(op->req.limited_env, op->regs);
-			bitset_andnot(op->regs, alloc_env->ignore_regs);
-		}
 		else
 			arch_put_non_ignore_regs(env->birg->main_env->arch_env, env->cls, op->regs);
 	}
