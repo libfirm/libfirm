@@ -97,4 +97,18 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *info, pset *nodes, pset *ph
  */
 void be_ssa_constr_set_phis(dom_front_info_t *info, pset *nodes, pset *phis);
 
+/**
+ * Insert a Perm which permutates all (non-ignore) live values of a given register class
+ * after a certain instruction.
+ * @param arch_env  The architecture environment.
+ * @param cls       The register class.
+ * @param dom_front Dominance frontier information.
+ * @param irn       The node to insert the Perm after.
+ * @return          The Perm or NULL if nothing was live before @p irn.
+ */
+ir_node *insert_Perm_after(const arch_env_t *arch_env,
+						   const arch_register_class_t *cls,
+						   dom_front_info_t *dom_front,
+						   ir_node *irn);
+
 #endif /* _BEIRGMOD_H */
