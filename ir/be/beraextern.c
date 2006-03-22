@@ -58,10 +58,11 @@ alloc		::= node-nr reg-nr .
 #include "config.h"
 #endif
 
-#ifdef WIN32
-#include <malloc.h>
-#else
-#include <alloca.h>
+#ifdef HAVE_MALLOC_H
+ #include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+ #include <alloca.h>
 #endif
 
 #include <stdio.h>
@@ -497,7 +498,7 @@ static void extract_vars_of_cls(be_raext_env_t *raenv) {
 	int count = 0;
 	var_info_t *vi;
 
-	raenv->cls_vars = malloc(set_count(raenv->vars) * sizeof(*raenv->cls_vars));
+	raenv->cls_vars = xmalloc(set_count(raenv->vars) * sizeof(*raenv->cls_vars));
 	assert(raenv->cls_vars);
 
 	set_foreach(raenv->vars, vi)
