@@ -371,7 +371,7 @@ $comment_string = "/*";
   }
   else {
     if (get_ia32_sc(n)) {
-6.    lea %D1, %C /* Load address of SymConst into register */
+6.    mov %D1, OFFSET FLAT:%C /* Move address of SymConst into register */
     }
 	else {
 6.    mov %D1, %C /* Mov Const into register */
@@ -553,7 +553,7 @@ $comment_string = "/*";
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ] },
-  "emit"     => '. movs%M %ia32_emit_am, %S3 /* Store(%S3) -> (%A1) */'
+  "emit"     => '. movs%M %ia32_emit_binop /* Store(%S3) -> (%A1) */'
 },
 
 # CopyB

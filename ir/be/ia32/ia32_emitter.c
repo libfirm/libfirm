@@ -297,7 +297,10 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 			break;
 		case ia32_AddrModeD:
 			if (get_ia32_cnst(n)) {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %s", ia32_emit_am(n, env), get_ia32_cnst(n));
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s,%s%s",
+					ia32_emit_am(n, env),
+					get_ia32_sc(n) ? " OFFSET FLAT:" : " ",    /* In case of a symconst we must add OFFSET to */
+					get_ia32_cnst(n));                         /* tell the assembler to store it's address.   */
 			}
 			else {
 				const arch_register_t *in1 = get_in_reg(n, 2);
