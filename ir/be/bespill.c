@@ -21,10 +21,14 @@
 #include "irgwalk.h"
 #include "array.h"
 
-#include "besched.h"
+#include "belive_t.h"
+#include "besched_t.h"
 #include "bespill.h"
 #include "benode_t.h"
 #include "bechordal_t.h"
+
+/* This enables re-computation of values. Current state: Unfinished and buggy. */
+#undef BUGGY_REMAT
 
 typedef struct _reloader_t reloader_t;
 typedef struct _spill_info_t spill_info_t;
@@ -178,14 +182,92 @@ static void phi_walker(ir_node *irn, void *env) {
 	}
 }
 
+
+#ifdef BUGGY_REMAT
+
+static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *spilled, ir_node *reloader) {
+	int pos, max;
+
+	/* check for 'normal' spill and general remat condition */
+	if (!be_is_Spill(spill) || !arch_irn_is(senv->chordal_env->birg->main_env->arch_env, spilled, rematerializable))
+		return 0;
+
+	/* check availability of original arguments */
+	if (is_Block(reloader)) {
+
+		/* we want to remat at the end of a block.
+		 * thus all arguments must be alive at the end of the block
+		 */
+		for (pos=0, max=get_irn_arity(spilled); pos<max; ++pos) {
+			ir_node *arg = get_irn_n(spilled, pos);
+			if (!is_live_end(reloader, arg))
+				return 0;
+		}
+
+	} else {
+
+		/* we want to remat before the insn reloader
+		 * thus an arguments is alive if
+		 *   - it interferes with the reloaders result
+		 * or
+		 *   - or it is (last-) used by reloader itself
+		 */
+		for (pos=0, max=get_irn_arity(spilled); pos<max; ++pos) {
+			ir_node *arg = get_irn_n(spilled, pos);
+			int i, m;
+
+			if (values_interfere(reloader, arg))
+				goto is_alive;
+
+			for (i=0, m=get_irn_arity(reloader); i<m; ++i) {
+				ir_node *rel_arg = get_irn_n(reloader, i);
+				if (rel_arg == arg)
+					goto is_alive;
+			}
+
+			/* arg is not alive before reloader */
+			return 0;
+
+is_alive:	;
+
+		}
+
+	}
+
+	return 1;
+}
+
+static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
+	ir_node *res;
+	ir_node *bl = (is_Block(reloader)) ? reloader : get_nodes_block(reloader);
+
+	/* recompute the value */
+	res = new_ir_node(get_irn_dbg_info(spilled), senv->chordal_env->irg, bl,
+		get_irn_op(spilled),
+		get_irn_mode(spilled),
+		get_irn_arity(spilled),
+		get_irn_in(spilled));
+
+	DBG((senv->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
+
+	/* insert in schedule */
+	if (is_Block(reloader)) {
+		ir_node *insert = sched_skip(reloader, 0, sched_skip_cf_predicator, (void *) senv->chordal_env->birg->main_env->arch_env);
+		sched_add_after(insert, res);
+	} else {
+		sched_add_before(reloader, res);
+	}
+
+	return res;
+}
+
+#endif
+
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
 	ir_graph *irg          = senv->chordal_env->irg;
 	ir_node *irn;
 	spill_info_t *si;
-	struct obstack ob;
-
-	obstack_init(&ob);
 
 	/* get all special spilled phis */
 	DBG((senv->dbg, LEVEL_1, "Mem-phis:\n"));
@@ -212,35 +294,37 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	DBG((senv->dbg, LEVEL_1, "Insert spills and reloads:\n"));
 	for(si = set_first(senv->spills); si; si = set_next(senv->spills)) {
 		reloader_t *rld;
-		ir_node **reloads;
-		int n_reloads = 0;
 		ir_mode *mode = get_irn_mode(si->spilled_node);
+		pset *values = pset_new_ptr(16);
 
 		/* go through all reloads for this spill */
 		for(rld = si->reloaders; rld; rld = rld->next) {
+			ir_node *new_val;
+
 			/* the spill for this reloader */
 			ir_node *spill   = be_spill_node(senv, si->spilled_node);
 
-			/* the reload */
-			ir_node *reload  = be_reload(aenv, senv->cls, rld->reloader, mode, spill);
+#ifdef BUGGY_REMAT
+			if (check_remat_conditions(senv, spill, si->spilled_node, rld->reloader))
+				new_val = do_remat(senv, si->spilled_node, rld->reloader);
+			else
+#endif
+				/* do a reload */
+				new_val = be_reload(aenv, senv->cls, rld->reloader, mode, spill);
 
-			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", reload, si->spilled_node, rld->reloader));
+			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", new_val, si->spilled_node, rld->reloader));
+			pset_insert_ptr(values, new_val);
 			if(reload_set)
-				pset_insert_ptr(reload_set, reload);
-
-			/* remember the reload */
-			obstack_ptr_grow(&ob, reload);
-			n_reloads++;
+				pset_insert_ptr(reload_set, new_val);
 		}
 
-		assert(n_reloads > 0);
-		obstack_ptr_grow(&ob, si->spilled_node);
-		reloads = obstack_finish(&ob);
-		be_ssa_constr_ignore(senv->chordal_env->dom_front, n_reloads + 1, reloads, senv->mem_phis);
-		obstack_free(&ob, reloads);
-	}
+		/* introduce copies, rewire the uses */
+		assert(pset_count(values) > 0 && "???");
+		pset_insert_ptr(values, si->spilled_node);
+		be_ssa_constr_set_ignore(senv->chordal_env->dom_front, values, senv->mem_phis);
 
-	obstack_free(&ob, NULL);
+		del_pset(values);
+	}
 
 	for(irn = pset_first(senv->mem_phis); irn; irn = pset_next(senv->mem_phis)) {
 		int i, n;
