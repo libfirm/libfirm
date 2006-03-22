@@ -44,6 +44,7 @@
 #include "belive_t.h"
 #include "benode_t.h"
 #include "bearch.h"
+#include "beirgmod.h"
 #include "beifg.h"
 
 #include "bechordal_t.h"
@@ -65,6 +66,7 @@ typedef struct _be_chordal_alloc_env_t {
 	firm_dbg_module_t *constr_dbg;  /**< Debug output for the constraint handler. */
 	pset *pre_colored;              /**< Set of precolored nodes. */
 	bitset_t *live;				    /**< A liveness bitset. */
+	bitset_t *tmp_colors;           /**< An auxiliary bitset which is as long as the number of colors in the class. */
 	bitset_t *colors;			    /**< The color mask. */
 	bitset_t *in_colors;            /**< Colors used by live in values. */
 	bitset_t *ignore_regs;          /**< A bitset of all ignore registers in the current class. */
@@ -174,8 +176,10 @@ static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 
 static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *colors)
 {
-	bitset_or(colors, alloc_env->ignore_regs);
-	return bitset_next_clear(colors, 0);
+	bitset_t *tmp = alloc_env->tmp_colors;
+	bitset_copy(tmp, colors);
+	bitset_or(tmp, alloc_env->ignore_regs);
+	return bitset_next_clear(tmp, 0);
 }
 
 typedef struct _operand_t operand_t;
@@ -408,7 +412,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 	*/
 	for(i = insn->use_start; i < insn->n_ops; ++i) {
 		operand_t *op = &insn->ops[i];
-		if(op->has_constraints && values_interfere(op->carrier, insn->irn)) {
+		if(op->has_constraints && (values_interfere(op->carrier, insn->irn) || arch_irn_is(aenv, op->carrier, ignore))) {
 			bitset_copy(bs, op->regs);
 			bitset_and(bs, out_constr);
 
@@ -893,9 +897,10 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 	env.chordal_env   = chordal_env;
 	env.colors_n      = colors_n;
-	env.colors        = bitset_malloc(colors_n);
-	env.in_colors     = bitset_malloc(colors_n);
-	env.ignore_regs   = bitset_malloc(colors_n);
+	env.colors        = bitset_alloca(colors_n);
+	env.tmp_colors    = bitset_alloca(colors_n);
+	env.in_colors     = bitset_alloca(colors_n);
+	env.ignore_regs   = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
 	env.constr_dbg    = firm_dbg_register("firm.be.chordal.constr");
 
@@ -930,9 +935,5 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
     	plotter_free(plotter);
 	}
 
-	free(env.live);
-	free(env.colors);
-	free(env.in_colors);
-	free(env.ignore_regs);
 	del_pset(env.pre_colored);
 }
