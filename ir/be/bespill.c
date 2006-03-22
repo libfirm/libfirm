@@ -19,6 +19,7 @@
 #include "entity_t.h"
 #include "debug.h"
 #include "irgwalk.h"
+#include "array.h"
 
 #include "besched.h"
 #include "bespill.h"
@@ -72,7 +73,7 @@ spill_env_t *be_new_spill_env(firm_dbg_module_t *dbg,
 							  const be_chordal_env_t *chordal_env,
 							  decide_irn_t is_mem_phi, void *data) {
 
-	spill_env_t *env = malloc(sizeof(env[0]));
+	spill_env_t *env = xmalloc(sizeof(env[0]));
 	env->spill_ctxs  = new_set(cmp_spillctx, 1024);
 	env->spills      = new_set(cmp_spillinfo, 1024);
 	env->cls         = chordal_env->cls;
@@ -135,11 +136,10 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) 
 	/* if not found spill the phi */
 	if(!ctx->spill) {
 		/* build a new PhiM with dummy in-array */
-		ins  = malloc(n * sizeof(ins[0]));
+    NEW_ARR_A(ir_node *, ins, n);
 		for(i=0; i<n; ++i)
 			ins[i] = new_r_Unknown(irg, mode_M);
 		ctx->spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
-		free(ins);
 
 		/* re-wire the phiM */
 		for(i=0; i<n; ++i) {
