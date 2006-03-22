@@ -156,6 +156,8 @@ $comment_string = "/*";
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. add %ia32_emit_binop /* Add(%A1, %A2) -> %D1 */'
+#  "params"    => "int a_x, int a_y",
+#  "init"      => " attr.x = x; attr.y = y;"
 },
 
 "Mul" => {
@@ -574,6 +576,12 @@ $comment_string = "/*";
 },
 
 # Conversions
+
+"Conv_I2I" => {
+  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "gp", "none" ] },
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "comment"  => "construct Conv Int -> Int"
+},
 
 "Conv_I2FP" => {
   "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "fp", "none" ] },

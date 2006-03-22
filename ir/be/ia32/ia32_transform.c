@@ -1380,15 +1380,14 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
  *
  *  INT -> INT
  * ============
- *  1) n bit -> m bit   n < m    (upscale)
- *     always ignored
+ *  1) n bit -> m bit   n > m (downscale)
+ *     a) target is signed:    movsx
+ *     b) target is unsigned:  and with lower bits sets
  *  2) n bit -> m bit   n == m   (sign change)
  *     always ignored
- *  3) n bit -> m bit   n > m    (downscale)
- *     a) Un -> Um = AND Un, (1 << m) - 1
- *     b) Sn -> Um same as a)
- *     c) Un -> Sm same as a)
- *     d) Sn -> Sm = ASHL Sn, (n - m); ASHR Sn, (n - m)
+ *  3) n bit -> m bit   n < m (upscale)
+ *     a) source is signed:    movsx
+ *     b) source is unsigned:  and with lower bits sets
  *
  *  INT -> FLOAT
  * ==============
@@ -1404,39 +1403,35 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
  *  SSE(1/2) convert from float or double to double or float (cvtss/sd2sd/ss)
  */
 
-static ir_node *gen_int_downscale_conv(ia32_transform_env_t *env, ir_node *op,
-									   ir_mode *src_mode, ir_mode *tgt_mode)
-{
-	int       n     = get_mode_size_bits(src_mode);
-	int       m     = get_mode_size_bits(tgt_mode);
-	dbg_info *dbg   = env->dbg;
-	ir_graph *irg   = env->irg;
-	ir_node  *block = env->block;
-	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_node  *nomem = new_rd_NoMem(irg);
-	ir_node  *new_op, *proj;
-
-	assert(n > m && "downscale expected");
-
-	if (mode_is_signed(src_mode) && mode_is_signed(tgt_mode)) {
-		/* ASHL Sn, n - m */
-		new_op = new_rd_ia32_Shl(dbg, irg, block, noreg, noreg, op, noreg, nomem, mode_T);
-		proj   = new_rd_Proj(dbg, irg, block, new_op, src_mode, 0);
-		set_ia32_Immop_tarval(new_op, new_tarval_from_long(n - m, mode_Is));
-		set_ia32_am_support(new_op, ia32_am_Source);
-		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
-
-		/* ASHR Sn, n - m */
-		new_op = new_rd_ia32_Shrs(dbg, irg, block, noreg, noreg, proj, noreg, nomem, mode_T);
-		set_ia32_Immop_tarval(new_op, new_tarval_from_long(n - m, mode_Is));
-	}
-	else {
-		new_op = new_rd_ia32_And(dbg, irg, block, noreg, noreg, op, noreg, nomem, mode_T);
-		set_ia32_Immop_tarval(new_op, new_tarval_from_long((1 << m) - 1, mode_Is));
-	}
-
-	return new_op;
-}
+//static ir_node *gen_int_downscale_conv(ia32_transform_env_t *env, ir_node *op,
+//									   ir_mode *src_mode, ir_mode *tgt_mode)
+//{
+//	int       n     = get_mode_size_bits(src_mode);
+//	int       m     = get_mode_size_bits(tgt_mode);
+//	dbg_info *dbg   = env->dbg;
+//	ir_graph *irg   = env->irg;
+//	ir_node  *block = env->block;
+//	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
+//	ir_node  *nomem = new_rd_NoMem(irg);
+//	ir_node  *new_op, *proj;
+//	assert(n > m && "downscale expected");
+//	if (mode_is_signed(src_mode) && mode_is_signed(tgt_mode)) {
+//		/* ASHL Sn, n - m */
+//		new_op = new_rd_ia32_Shl(dbg, irg, block, noreg, noreg, op, noreg, nomem, mode_T);
+//		proj   = new_rd_Proj(dbg, irg, block, new_op, src_mode, 0);
+//		set_ia32_Immop_tarval(new_op, new_tarval_from_long(n - m, mode_Is));
+//		set_ia32_am_support(new_op, ia32_am_Source);
+//		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
+//		/* ASHR Sn, n - m */
+//		new_op = new_rd_ia32_Shrs(dbg, irg, block, noreg, noreg, proj, noreg, nomem, mode_T);
+//		set_ia32_Immop_tarval(new_op, new_tarval_from_long(n - m, mode_Is));
+//	}
+//	else {
+//		new_op = new_rd_ia32_And(dbg, irg, block, noreg, noreg, op, noreg, nomem, mode_T);
+//		set_ia32_Immop_tarval(new_op, new_tarval_from_long((1 << m) - 1, mode_Is));
+//	}
+//	return new_op;
+//}
 
 /**
  * Transforms a Conv node.
@@ -1480,7 +1475,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 				set_ia32_am_support(new_op, ia32_am_Source);
 
 				proj   = new_rd_Proj(dbg, irg, block, new_op, mode_Is, 0);
-				new_op = gen_int_downscale_conv(env, proj, src_mode, tgt_mode);
+				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, proj, nomem, mode_T);
 			}
 		}
 	}
@@ -1493,13 +1488,13 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 		}
 		else {
 			/* ... to int */
-			if (get_mode_size_bits(src_mode) <= get_mode_size_bits(tgt_mode)) {
-				DB((mod, LEVEL_1, "omitting upscale Conv(%+F, %+F) ...", src_mode, tgt_mode));
+			if (get_mode_size_bits(src_mode) == get_mode_size_bits(tgt_mode)) {
+				DB((mod, LEVEL_1, "omitting equal size Conv(%+F, %+F) ...", src_mode, tgt_mode));
 				edges_reroute(env->irn, op, irg);
 			}
 			else {
-				DB((mod, LEVEL_1, "create downscale Conv(%+F, %+F) ...", src_mode, tgt_mode));
-				new_op = gen_int_downscale_conv(env, op, src_mode, tgt_mode);
+				DB((mod, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
+				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 			}
 		}
 	}
