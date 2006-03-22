@@ -121,7 +121,7 @@ int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
 	int degree = be_ifg_degree(ifg, irn);
 	void *iter = be_ifg_neighbours_iter_alloca(ifg);
 
-	ir_node **neighbours = malloc(degree * sizeof(neighbours[0]));
+	ir_node **neighbours = xmalloc(degree * sizeof(neighbours[0]));
 
 	ir_node *curr;
 	int i, j;
