@@ -82,11 +82,16 @@ static ir_node *my_skip_proj(const ir_node *n) {
 static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
 	const ia32_register_req_t *irn_req;
 	long                       node_pos = pos == -1 ? 0 : pos;
-	ir_mode                   *mode     = get_irn_mode(irn);
+	ir_mode                   *mode     = is_Block(irn) ? NULL : get_irn_mode(irn);
 	firm_dbg_module_t         *mod      = firm_dbg_register(DEBUG_MODULE);
 
-	if (mode == mode_T || mode == mode_M) {
-		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
+	if (is_Block(irn) || mode == mode_M || mode == mode_X) {
+		DBG((mod, LEVEL_1, "ignoring Block, mode_M, mode_X node %+F\n", irn));
+		return NULL;
+	}
+
+	if (mode == mode_T && pos < 0) {
+		DBG((mod, LEVEL_1, "ignoring request OUT requirements for node %+F\n", irn));
 		return NULL;
 	}
 
@@ -156,6 +161,10 @@ static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register
 	int                   pos = 0;
 	const ia32_irn_ops_t *ops = self;
 
+	if (get_irn_mode(irn) == mode_X) {
+		return;
+	}
+
 	DBG((ops->cg->mod, LEVEL_1, "ia32 assigned register %s to node %+F\n", reg->name, irn));
 
 	if (is_Proj(irn)) {
@@ -179,6 +188,11 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 	const arch_register_t *reg = NULL;
 
 	if (is_Proj(irn)) {
+
+		if (get_irn_mode(irn) == mode_X) {
+			return NULL;
+		}
+
 		pos = ia32_translate_proj_pos(irn);
 		irn = my_skip_proj(irn);
 	}
