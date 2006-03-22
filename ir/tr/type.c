@@ -1947,8 +1947,8 @@ entity *frame_alloc_area(type *frame_type, int size, int alignment, int at_start
   static unsigned area_cnt = 0;
   static ir_type *a_byte = NULL;
 
-  assert(is_frame_type(tp));
-  assert(get_type_state(tp) == layout_fixed);
+  assert(is_frame_type(frame_type));
+  assert(get_type_state(frame_type) == layout_fixed);
 
   if (! a_byte)
     a_byte = new_type_primitive(new_id_from_chars("byte", 4), mode_Bu);
