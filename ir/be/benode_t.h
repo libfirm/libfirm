@@ -87,8 +87,6 @@ typedef enum {
 
 void be_node_init(void);
 
-const arch_irn_handler_t be_node_irn_handler;
-
 enum {
 	be_pos_Spill_frame = 0,
 	be_pos_Spill_val   = 1
@@ -262,15 +260,27 @@ void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags);
 void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls);
 
 /**
- * Insert a Perm node after a specific node in the schedule.
- * The Perm permutes over all values live at the given node.
- * This means that all liveness intervals are cut apart at this
- * location in the program.
+ * Make a new phi handler.
+ * @param env The architecture environment.
+ * @return A new phi handler.
  */
-ir_node *insert_Perm_after(const arch_env_t *env,
-						   const arch_register_class_t *cls,
-						   dom_front_info_t *dom_front,
-						   ir_node *pos);
+arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env);
 
+/**
+ * Free a phi handler.
+ * @param handler The handler to free.
+ */
+void be_phi_handler_free(arch_irn_handler_t *handler);
+
+/**
+ * Reset the register data in the phi handler.
+ * This should be called on each new graph and deletes the register information of the current graph.
+ */
+void be_phi_handler_reset(arch_irn_handler_t *handler);
+
+/**
+ * irn handler for common be nodes.
+ */
+extern const arch_irn_handler_t be_node_irn_handler;
 
 #endif /* _BENODE_T_H */

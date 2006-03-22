@@ -26,6 +26,7 @@
 #include "iredges_t.h"
 #include "irloop_t.h"
 #include "irtools.h"
+#include "return.h"
 
 #include "bearch.h"
 #include "firm/bearch_firm.h"
@@ -60,7 +61,7 @@
 #define DUMP_FINAL			(1 << 5)
 
 /* options visible for anyone */
-be_options_t be_options = {
+static be_options_t be_options = {
 	/* ilp server */
 	"i44pc52.info.uni-karlsruhe.de",
 
@@ -175,9 +176,10 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 {
 	memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
-	env->dbg = firm_dbg_register("be.main");
-
+	env->dbg      = firm_dbg_register("be.main");
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
+	env->options  = &be_options;
+
 	arch_env_init(env->arch_env, isa_if);
 
 	/* Register the irn handler of the architecture */
@@ -190,6 +192,8 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 	 * spill, reload and perm nodes.
 	 */
 	arch_env_push_irn_handler(env->arch_env, &be_node_irn_handler);
+	env->phi_handler = be_phi_handler_new(env->arch_env);
+	arch_env_push_irn_handler(env->arch_env, env->phi_handler);
 
 	return env;
 }
@@ -197,6 +201,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 static void be_done_env(be_main_env_t *env)
 {
 	env->arch_env->isa->impl->done(env->arch_env->isa);
+	be_phi_handler_free(env->phi_handler);
 	obstack_free(&env->obst, NULL);
 }
 
@@ -218,7 +223,7 @@ static void prepare_graph(be_irg_t *birg)
 	normalize_proj_nodes(irg);
 
 	/* Make just one return node. */
-	// normalize_one_return(irg);
+	normalize_one_return(irg);
 
 	/* Remove critical edges */
 	remove_critical_cf_edges(irg);
@@ -232,6 +237,9 @@ static void prepare_graph(be_irg_t *birg)
 
 	/* check, if the dominance property is fulfilled. */
 	be_check_dominance(irg);
+
+	/* reset the phi handler. */
+	be_phi_handler_reset(birg->main_env->phi_handler);
 }
 
 /**
@@ -298,8 +306,7 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
 		/* add Keeps for should_be_different constrained nodes */
-		assure_constraints(&birg);
-
+		// assure_constraints(&birg);
 		dump(DUMP_PREPARED, irg, "-assured", dump_ir_block_graph);
 
 		/* Schedule the graphs. */

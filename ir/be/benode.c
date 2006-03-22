@@ -23,6 +23,7 @@
 #include "util.h"
 #include "debug.h"
 #include "fourcc.h"
+#include "offset.h"
 #include "bitfiddle.h"
 
 #include "irop_t.h"
@@ -860,12 +861,29 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 	return reload;
 }
 
+/*
+  ____              ____
+ |  _ \ ___  __ _  |  _ \ ___  __ _ ___
+ | |_) / _ \/ _` | | |_) / _ \/ _` / __|
+ |  _ <  __/ (_| | |  _ <  __/ (_| \__ \
+ |_| \_\___|\__, | |_| \_\___|\__, |___/
+            |___/                |_|
+
+*/
+
+
 static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int out_pos)
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
 
-	if(out_pos < a->max_reg_data)
+	if(out_pos < a->max_reg_data) {
 		memcpy(req, &a->reg_data[out_pos].req, sizeof(req[0]));
+
+		if(be_is_Copy(irn)) {
+			req->type |= arch_register_req_type_should_be_same;
+			req->other_same = get_irn_n(irn, be_pos_Copy_orig);
+		}
+	}
 	else {
 		req->type = arch_register_req_type_none;
 		req->cls  = NULL;
@@ -970,6 +988,14 @@ static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
 	}
 }
 
+/*
+  ___ ____  _   _   _   _                 _ _
+ |_ _|  _ \| \ | | | | | | __ _ _ __   __| | | ___ _ __
+  | || |_) |  \| | | |_| |/ _` | '_ \ / _` | |/ _ \ '__|
+  | ||  _ <| |\  | |  _  | (_| | | | | (_| | |  __/ |
+ |___|_| \_\_| \_| |_| |_|\__,_|_| |_|\__,_|_|\___|_|
+
+*/
 
 static const arch_irn_ops_if_t be_node_irn_ops_if = {
 	be_node_get_irn_reg_req,
@@ -985,16 +1011,178 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	&be_node_irn_ops_if
 };
 
-const void *be_node_get_arch_ops(const arch_irn_handler_t *self, const ir_node *irn)
+const void *be_node_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn)
 {
 	redir_proj((const ir_node **) &irn, -1);
 	return is_be_node(irn) ? &be_node_irn_ops : NULL;
 }
 
 const arch_irn_handler_t be_node_irn_handler = {
-	be_node_get_arch_ops
+	be_node_get_irn_ops
 };
 
+/*
+  ____  _     _   ___ ____  _   _   _   _                 _ _
+ |  _ \| |__ (_) |_ _|  _ \| \ | | | | | | __ _ _ __   __| | | ___ _ __
+ | |_) | '_ \| |  | || |_) |  \| | | |_| |/ _` | '_ \ / _` | |/ _ \ '__|
+ |  __/| | | | |  | ||  _ <| |\  | |  _  | (_| | | | | (_| | |  __/ |
+ |_|   |_| |_|_| |___|_| \_\_| \_| |_| |_|\__,_|_| |_|\__,_|_|\___|_|
+
+*/
+
+typedef struct {
+	arch_irn_handler_t irn_handler;
+	arch_irn_ops_t     irn_ops;
+	const arch_env_t   *arch_env;
+	pmap               *regs;
+} phi_handler_t;
+
+#define get_phi_handler_from_handler(h)  container_of(h, phi_handler_t, irn_handler)
+#define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
+
+static const void *phi_get_irn_ops(const arch_irn_handler_t *handler, const ir_node *irn)
+{
+	const phi_handler_t *h = get_phi_handler_from_handler(handler);
+	return is_Phi(irn) && mode_is_datab(get_irn_mode(irn)) ? &h->irn_ops : NULL;
+}
+
+/**
+ * Get register class of a Phi.
+ *
+ */
+static const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t *h, arch_register_req_t *req, const ir_node *phi, pset **visited)
+{
+	int n = get_irn_arity(phi);
+	ir_node *op;
+	int done = 0;
+	int i;
+
+	if(*visited && pset_find_ptr(*visited, phi))
+		return NULL;
+
+	for(i = 0; i < n; ++i) {
+		op = get_irn_n(phi, i);
+		if(!is_Phi(op))
+			return arch_get_register_req(h->arch_env, req, op, BE_OUT_POS(0));
+	}
+
+	/*
+	The operands of that Phi were all Phis themselves.
+	We have to start a DFS for a non-Phi argument now.
+	*/
+	if(!*visited)
+		*visited = pset_new_ptr(16);
+
+	pset_insert_ptr(*visited, phi);
+
+	for(i = 0; i < n; ++i) {
+		op = get_irn_n(phi, i);
+		if(get_Phi_reg_req_recursive(h, req, op, visited))
+			return req;
+	}
+
+	return NULL;
+}
+
+static const arch_register_req_t *phi_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos)
+{
+	phi_handler_t *phi_handler = get_phi_handler_from_ops(self);
+	pset *visited              = NULL;
+
+	get_Phi_reg_req_recursive(phi_handler, req, irn, &visited);
+	/* Set the requirements type to normal, since an operand of the Phi could have had constraints. */
+	req->type = arch_register_req_type_normal;
+	if(visited)
+		del_pset(visited);
+
+	return req;
+}
+
+static void phi_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
+{
+	phi_handler_t *h = get_phi_handler_from_ops(self);
+	pmap_insert(h->regs, irn, (void *) reg);
+}
+
+static const arch_register_t *phi_get_irn_reg(const void *self, const ir_node *irn)
+{
+	phi_handler_t *h = get_phi_handler_from_ops(self);
+	return pmap_get(h->regs, (void *) irn);
+}
+
+static arch_irn_class_t phi_classify(const void *_self, const ir_node *irn)
+{
+	return arch_irn_class_normal;
+}
+
+static arch_irn_flags_t phi_get_flags(const void *_self, const ir_node *irn)
+{
+	return arch_irn_flags_none;
+}
+
+static entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
+{
+	return NULL;
+}
+
+static void phi_set_frame_offset(const void *_self, ir_node *irn, int bias)
+{
+}
+
+static const arch_irn_ops_if_t phi_irn_ops = {
+	phi_get_irn_reg_req,
+	phi_set_irn_reg,
+	phi_get_irn_reg,
+	phi_classify,
+	phi_get_flags,
+	phi_get_frame_entity,
+	phi_set_frame_offset
+};
+
+static const arch_irn_handler_t phi_irn_handler = {
+	phi_get_irn_ops
+};
+
+arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env)
+{
+	phi_handler_t *h           = xmalloc(sizeof(h[0]));
+	h->irn_handler.get_irn_ops = phi_get_irn_ops;
+	h->irn_ops.impl            = &phi_irn_ops;
+	h->arch_env                = arch_env;
+	h->regs                    = pmap_create();
+	return (arch_irn_handler_t *) h;
+}
+
+void be_phi_handler_free(arch_irn_handler_t *handler)
+{
+	phi_handler_t *h = (void *) handler;
+	pmap_destroy(h->regs);
+	free(handler);
+}
+
+const void *be_phi_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn)
+{
+	phi_handler_t *phi_handler = get_phi_handler_from_handler(self);
+	return is_Phi(irn) ? &phi_handler->irn_ops : NULL;
+}
+
+void be_phi_handler_reset(arch_irn_handler_t *handler)
+{
+	phi_handler_t *h = get_phi_handler_from_handler(handler);
+	if(h->regs)
+		pmap_destroy(h->regs);
+	h->regs = pmap_create();
+}
+
+
+/*
+  _   _           _        ____                        _
+ | \ | | ___   __| | ___  |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
+ |  \| |/ _ \ / _` |/ _ \ | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
+ | |\  | (_) | (_| |  __/ | |_| | |_| | | | | | | |_) | | | | | (_| |
+ |_| \_|\___/ \__,_|\___| |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
+                                                |_|            |___/
+*/
 
 static void dump_node_req(FILE *f, int idx, be_req_t *req)
 {
