@@ -148,7 +148,7 @@ be_uses_t *be_begin_uses(
     const arch_env_t *arch_env,
     const arch_register_class_t *cls)
 {
-  be_uses_t *uses = malloc(sizeof(uses[0]));
+  be_uses_t *uses = xmalloc(sizeof(uses[0]));
 
   edges_assure(irg);
 
