@@ -361,7 +361,7 @@ int get_type_alignment_bits(ir_type *tp) {
 void
 set_type_alignment_bits(ir_type *tp, int align) {
   assert(tp && tp->kind == k_type);
-  assert((align & (align - 1)) == 0 && "type alignment not power of two");
+  assert((align == -1 || (align & (align - 1)) == 0) && "type alignment not power of two");
   /* Methods don't have an alignment. */
   if (tp->type_op != type_method) {
     tp->align = align;
@@ -370,7 +370,11 @@ set_type_alignment_bits(ir_type *tp, int align) {
 
 void
 set_type_alignment_bytes(ir_type *tp, int align) {
-  set_type_alignment_bits(tp, 8*align);
+	if (align == -1) {
+		set_type_alignment_bits(tp, -1);
+	} else {
+		set_type_alignment_bits(tp, 8*align);
+	}
 }
 
 /* Returns a human readable string for the enum entry. */
