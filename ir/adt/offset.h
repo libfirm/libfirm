@@ -18,8 +18,7 @@
  * @param member The name of the member.
  * @return       The offset of member in type in bytes.
  */
-#define offset_of(type, member) \
-  ((char *) &(((type *) 0)->member) - (char *) 0)
+#define firm_offset_of(type, member)		((char *) &((type *) 0)->member - (char *) 0)
 
 /**
  * Make pointer to the struct from a pointer to a member of that struct.
@@ -28,7 +27,6 @@
  * @param member  The name of the member.
  * @return        A pointer to the struct member is in.
  */
-#define container_of(ptr, type, member) \
-	((type *) ((char *) (ptr) - offset_of(type, member)))
+#define firm_container_of(ptr, type, member)		((type *) ((char *) (ptr) - firm_offset_of(type, member)))
 
 #endif /* _OFFSET_H */
