@@ -134,7 +134,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			 * Create a new Perm with the arguments just collected
 			 * above in the arg_set and insert it into the schedule.
 			 */
-			in = malloc(n_projs * sizeof(in[0]));
+			in = xmalloc(n_projs * sizeof(in[0]));
 			for(pp = set_first(arg_set); pp; pp = set_next(arg_set))
 				in[pp->pos] = pp->arg;
 
