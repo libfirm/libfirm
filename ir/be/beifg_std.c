@@ -342,7 +342,7 @@ static const be_ifg_impl_t ifg_std_impl = {
 
 be_ifg_t *be_ifg_std_new(const be_chordal_env_t *env)
 {
-	ifg_std_t *ifg = malloc(sizeof(*ifg));
+	ifg_std_t *ifg = xmalloc(sizeof(*ifg));
 
 	ifg->impl = &ifg_std_impl;
 	ifg->env  = env;
