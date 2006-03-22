@@ -26,10 +26,11 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 
-#ifdef _WIN32
-#include <malloc.h>
-#else
-#include <alloca.h>
+#ifdef HAVE_MALLOC_H
+ #include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+ #include <alloca.h>
 #endif
 
 #undef is_Perm
