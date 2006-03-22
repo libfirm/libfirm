@@ -5,7 +5,7 @@
  *
  * Backend node support.
  *
- * This file provdies Perm, Copy, Spill and Reload nodes.
+ * This file provides Perm, Copy, Spill and Reload nodes.
  *
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
@@ -344,7 +344,7 @@ ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_n
 	ir_node *irn;
 	ir_node **real_in;
 
-	real_in = malloc(sizeof(real_in[0]) * (real_n));
+	real_in = xmalloc(sizeof(real_in[0]) * (real_n));
 
 	real_in[0] = mem;
 	real_in[1] = sp;
