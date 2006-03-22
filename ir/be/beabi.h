@@ -19,8 +19,7 @@ struct _be_abi_call_flags_bits_t {
 	unsigned try_omit_fp           : 1;  /**< Try to omit the frame pointer. */
 	unsigned fp_free               : 1;  /**< The function can use any register as frame pointer. */
 	unsigned call_has_imm          : 1;  /**< A call can take the callee's address as an immediate. */
-	unsigned irg_is_leaf           : 1;  /**< 1
-	, if the IRG is a leaf function. */
+	unsigned irg_is_leaf           : 1;  /**< 1, if the IRG is a leaf function. */
 };
 
 union _be_abi_call_flags_t {
@@ -32,11 +31,11 @@ struct _be_abi_callbacks_t {
 	/**
 	 * Initialize the callback object.
 	 * @param call The call object.
-	 * @param isa  The current ISA.
+	 * @param aenv The architecture environment.
 	 * @param irg  The graph with the method.
 	 * @return     Some pointer. This pointer is passed to all other callback functions as self object.
 	 */
-	void *(*init)(const be_abi_call_t *call, const arch_isa_t *isa, ir_graph *irg);
+	void *(*init)(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg);
 
 	/**
 	 * Destroy the callback object.
@@ -91,13 +90,13 @@ struct _be_abi_callbacks_t {
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const be_abi_callbacks_t *cb);
 
 
-void be_abi_call_param_stack(be_abi_call_t *call, int pos);
+void be_abi_call_param_stack(be_abi_call_t *call, int pos, unsigned alignment);
 void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 void be_abi_call_res_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 
 /**
  * Get the flags of a ABI call object.
- * Note that the flags must not be the same as set by be_abi_call_set_flags(). Alayses may have
+ * Note that the flags must not be the same as set by be_abi_call_set_flags(). Analyses may have
  * altered several flags, so getting them from the call object is always a good idea.
  * @param call The call object.
  * @return The flags.

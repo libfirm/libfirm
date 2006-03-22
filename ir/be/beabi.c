@@ -8,7 +8,9 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+
 #include "obst.h"
+#include "offset.h"
 
 #include "type.h"
 #include "irgopt.h"
@@ -40,6 +42,7 @@ typedef struct _be_abi_call_arg_t {
 	int pos;
 	const arch_register_t *reg;
 	entity *stack_ent;
+	unsigned alignment;
 } be_abi_call_arg_t;
 
 struct _be_abi_call_t {
@@ -96,10 +99,8 @@ struct _be_abi_irg_t {
 	arch_irn_ops_t     irn_ops;
 };
 
-#define abi_offset_of(type,member) ((char *) &(((type *) 0)->member) - (char *) 0)
-#define abi_get_relative(ptr, member) ((void *) ((char *) (ptr) - abi_offset_of(be_abi_irg_t, member)))
-#define get_abi_from_handler(ptr) abi_get_relative(ptr, irn_handler)
-#define get_abi_from_ops(ptr)     abi_get_relative(ptr, irn_ops)
+#define get_abi_from_handler(ptr) firm_container_of(ptr, be_abi_irg_t, irn_handler)
+#define get_abi_from_ops(ptr)     firm_container_of(ptr, be_abi_irg_t, irn_ops)
 
 /* Forward, since be need it in be_abi_introduce(). */
 static const arch_irn_ops_if_t abi_irn_ops;
@@ -149,10 +150,12 @@ void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const
 	call->cb           = cb;
 }
 
-void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos)
+void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, unsigned alignment)
 {
 	be_abi_call_arg_t *arg = get_or_set_call_arg(call, 0, arg_pos, 1);
-	arg->on_stack = 1;
+	arg->on_stack  = 1;
+	arg->alignment = alignment;
+	assert(alignment > 0 && "Alignment must be greater than 0");
 }
 
 void be_abi_call_param_reg(be_abi_call_t *call, int arg_pos, const arch_register_t *reg)
@@ -923,6 +926,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 		if(arg->on_stack) {
 			snprintf(buf, sizeof(buf), "param_%d", i);
 			arg->stack_ent = new_entity(res, new_id_from_str(buf), param_type);
+			ofs = round_up2(ofs, arg->alignment);
 			set_entity_offset_bytes(arg->stack_ent, ofs);
 			ofs += get_type_size_bytes(param_type);
 		}
@@ -1355,7 +1359,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->stack_phis       = pset_new_ptr(16);
 	env->init_sp = dummy  = new_r_Unknown(irg, env->isa->sp->reg_class->mode);
 
-	env->cb = env->call->cb->init(env->call, env->isa, irg);
+	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
 
 	obstack_init(&env->obst);
 
