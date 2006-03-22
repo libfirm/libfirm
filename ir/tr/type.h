@@ -1254,6 +1254,20 @@ void set_lowered_type(ir_type *tp, ir_type *lowered_type);
  */
 ir_type *get_associated_type(const ir_type *tp);
 
+/**
+ * Allocate an area of size bytes aligned at alignment
+ * at the start or the end of a frame type.
+ * The frame type must have already an fixed layout.
+ *
+ * @param frame_type a frame type
+ * @param size       the size of the entity
+ * @param alignment  the alignment of the entity
+ * @param at_start   if true, put the area at the frame type's start, else at end
+ *
+ * @return the entity representing the area
+ */
+entity *frame_alloc_area(type *frame_type, int size, int alignment, int at_start);
+
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
 /*-----------------------------------------------------------------*/

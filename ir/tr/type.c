@@ -361,6 +361,7 @@ int get_type_alignment_bits(ir_type *tp) {
 void
 set_type_alignment_bits(ir_type *tp, int align) {
   assert(tp && tp->kind == k_type);
+  assert((align & (align - 1)) == 0 && "type alignment not power of two");
   /* Methods don't have an alignment. */
   if (tp->type_op != type_method) {
     tp->align = align;
@@ -1929,4 +1930,61 @@ ir_type *get_associated_type(const ir_type *tp) {
 /* set the type size for the unknown and none ir_type */
 void set_default_size_bits(ir_type *tp, int size) {
   tp->size = size;
+}
+
+/*
+ * Allocate an area of size bytes aligned at alignment
+ * at the start or the end of a frame type.
+ * The frame type must have already an fixed layout.
+ */
+entity *frame_alloc_area(type *frame_type, int size, int alignment, int at_start)
+{
+  entity *area;
+  ir_type *tp;
+  ident *name;
+  char buf[32];
+  int frame_align, i, offset, frame_size;
+  static unsigned area_cnt = 0;
+  static ir_type *a_byte = NULL;
+
+  assert(is_frame_type(tp));
+  assert(get_type_state(tp) == layout_fixed);
+
+  if (! a_byte)
+    a_byte = new_type_primitive(new_id_from_chars("byte", 4), mode_Bu);
+
+  snprintf(buf, sizeof(buf), "area%u", area_cnt++);
+  name = new_id_from_str(buf);
+
+  /* align the size */
+  frame_align = get_type_alignment_bytes(frame_type);
+  size = (size + frame_align - 1) & -frame_align;
+
+  tp = new_type_array(mangle_u(get_type_ident(frame_type), name), 1, a_byte);
+  set_array_bounds_int(tp, 0, 0, size);
+  set_type_alignment_bytes(tp, alignment);
+
+  frame_size = get_type_size_bytes(frame_type);
+  if (at_start) {
+    /* fix all offsets so far */
+    for (i = get_class_n_members(frame_type) - 1; i >= 0; --i) {
+      entity *ent = get_class_member(frame_type, i);
+
+      set_entity_offset_bytes(ent, get_entity_offset_bytes(ent) + size);
+    }
+    /* calculate offset and new type size */
+    offset = 0;
+    frame_size += size;
+  }
+  else {
+    /* calculate offset and new type size */
+    offset = (frame_size + alignment - 1) & -alignment;
+    frame_size = offset + size;
+  }
+
+  area = new_entity(frame_type, name, tp);
+  set_entity_offset_bytes(area, offset);
+  set_type_size_bytes(frame_type, frame_size);
+
+  return area;
 }
