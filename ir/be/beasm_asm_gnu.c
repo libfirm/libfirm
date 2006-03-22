@@ -244,8 +244,8 @@ static void gnuasm_dump_segment_header(void *data) {
 
 assembler_t *gnuasm_create_assembler ( void ) {
 
-	gnuasm_privdata_t *priv_data = malloc ( sizeof(gnuasm_privdata_t ));
-	assembler_t *assembler = malloc ( sizeof( assembler_t ));
+	gnuasm_privdata_t *priv_data = xmalloc ( sizeof(gnuasm_privdata_t ));
+	assembler_t *assembler = xmalloc ( sizeof( assembler_t ));
 	memset(assembler, 0, sizeof( assembler_t ));
 	assembler->private_data = priv_data;
 
