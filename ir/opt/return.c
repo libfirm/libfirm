@@ -55,9 +55,9 @@ void normalize_one_return(ir_graph *irg)
   ir_node *endbl = get_irg_end_block(irg);
   int i, j, k, n, last_idx, n_rets, n_ret_vals = -1;
   unsigned char *returns;
-  ir_node **in, **retvals;
+  ir_node **in, **retvals, **endbl_in;
 
-  ir_node *block, *new_ret;
+  ir_node *block;
 
   /* look, if we have more than one return */
   n       = get_Block_n_cfgpreds(endbl);
@@ -82,12 +82,15 @@ void normalize_one_return(ir_graph *irg)
   if (n_rets <= 1)
     return;
 
-  in      = alloca(sizeof(*in) * IMAX(n_rets, n_ret_vals));
-  retvals = alloca(sizeof(*in) * n_rets * n_ret_vals);
+  in       = alloca(sizeof(*in)       * IMAX(n_rets, n_ret_vals));
+  retvals  = alloca(sizeof(*retvals)  * n_rets * n_ret_vals);
+  endbl_in = alloca(sizeof(*endbl_in) * n);
 
+  last_idx = 0;
   for (j = i = 0; i < n; ++i) {
+    ir_node *ret = get_Block_cfgpred(endbl, i);
+
     if (get_bit(i)) {
-      ir_node *ret  = get_Block_cfgpred(endbl, i);
       ir_node *block = get_nodes_block(ret);
 
       /* create a new Jmp for every Ret and place the in in */
@@ -97,11 +100,10 @@ void normalize_one_return(ir_graph *irg)
       for (k = 0; k < n_ret_vals; ++k)
         retvals[j + k*n_rets] = get_irn_n(ret, k);
 
-      set_Block_cfgpred(endbl, i, new_r_Bad(irg));
-      last_idx = i;
-
       ++j;
     }
+    else
+      endbl_in[last_idx++] = ret;
   }
 
   /* ok, create a new block with all created in's */
@@ -113,9 +115,9 @@ void normalize_one_return(ir_graph *irg)
     in[i] = new_r_Phi(irg, block, n_rets, &retvals[j], get_irn_mode(retvals[j]));
   }
 
-  new_ret = new_r_Return(irg, block, in[0], n_ret_vals-1, &in[1]);
+  endbl_in[last_idx++] = new_r_Return(irg, block, in[0], n_ret_vals-1, &in[1]);
 
-  set_Block_cfgpred(endbl, last_idx, new_ret);
+  set_irn_in(endbl, last_idx, endbl_in);
 
   /* invalidate analysis information:
    * a new Block was added, so dominator, outs and loop are inconsistent,
@@ -124,7 +126,7 @@ void normalize_one_return(ir_graph *irg)
   set_irg_doms_inconsistent(irg);
   set_irg_outs_inconsistent(irg);
   set_irg_extblk_inconsistent(irg);
-  set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
+  set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 }
 
 /**
