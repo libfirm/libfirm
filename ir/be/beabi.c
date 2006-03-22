@@ -176,7 +176,7 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
 
 be_abi_call_t *be_abi_call_new(void)
 {
-	be_abi_call_t *call = malloc(sizeof(call[0]));
+	be_abi_call_t *call = xmalloc(sizeof(call[0]));
 	call->flags.val  = 0;
 	call->params     = new_set(cmp_call_arg, 16);
 	call->cb         = NULL;
