@@ -258,7 +258,7 @@ static insn_t *scan_insn(be_chordal_env_t *env, ir_node *irn, struct obstack *ob
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if(arch_irn_has_reg_class(arch_env, irn, i, env->cls)) {
+		if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
 			arch_get_register_req(arch_env, &o.req, irn, i);
 			o.carrier = op;
 			o.irn     = irn;
@@ -455,13 +455,14 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 			constraints. Succeeding phases (coalescing will need that).
 		*/
 		for(i = insn->use_start; i < insn->n_ops; ++i) {
-			ir_node *proj = insn->ops[i].carrier;
+			operand_t *op = &insn->ops[i];
+			ir_node *proj = op->carrier;
 			/*
 				Note that the predecessor must not be a Proj of the Perm,
 				since ignore-nodes are not Perm'ed.
 			*/
-			if(is_Proj(proj) && get_Proj_pred(proj) == perm) {
-				be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(proj)), &insn->ops[i].req);
+			if(op->has_constraints &&  is_Proj(proj) && get_Proj_pred(proj) == perm) {
+				be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(proj)), &op->req);
 			}
 		}
 	}
