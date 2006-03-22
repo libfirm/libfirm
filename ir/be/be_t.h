@@ -17,8 +17,8 @@
 #include "beirgmod.h"
 
 struct _be_options_t {
-	char ilp_solver[128];
 	char ilp_server[128];
+	char ilp_solver[128];
 };
 
 struct _be_main_env_t {
@@ -27,6 +27,7 @@ struct _be_main_env_t {
   struct _arch_env_t *arch_env;
   struct _be_options_t *options;
   struct _arch_code_generator_t *cg;
+  struct _arch_irn_handler_t *phi_handler;
   firm_dbg_module_t *dbg;
 };
 
