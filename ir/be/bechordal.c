@@ -853,11 +853,10 @@ static void assign(ir_node *block, void *env_ptr)
 				col = get_next_free_reg(alloc_env, colors);
 				reg = arch_register_for_index(env->cls, col);
 				assert(arch_get_irn_register(arch_env, irn) == NULL && "This node must not have been assigned a register yet");
+				assert(!arch_register_type_is(reg, ignore) && "Must not assign ignore register");
 			}
 
 			bitset_set(colors, col);
-
-			assert(!arch_register_type_is(reg, ignore) && "Must not assign ignore register");
 			arch_set_irn_register(arch_env, irn, reg);
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n",
