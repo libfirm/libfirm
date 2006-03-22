@@ -555,6 +555,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	else
 		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, call_ptr, curr_res_proj + pset_count(caller_save), n_low_args, in);
 
+	/*
+		TODO:
+		Set the register class of the call address to the same as the stack pointer's.
+		That' probably buggy for some architectures.
+	*/
+	be_node_set_reg_class(low_call, be_pos_Call_ptr, sp->reg_class);
+
 	/* Set the register classes and constraints of the Call parameters. */
 	for(i = 0; i < n_low_args; ++i) {
 		int index = low_args[i];
