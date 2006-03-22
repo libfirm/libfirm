@@ -455,7 +455,7 @@ static INLINE qnode_t *new_qnode(const unit_t *ou, int color) {
 	qnode_t *qn = xmalloc(sizeof(*qn));
 	qn->ou = ou;
 	qn->color = color;
-	qn->mis = malloc(ou->node_count * sizeof(*qn->mis));
+	qn->mis = xmalloc(ou->node_count * sizeof(*qn->mis));
 	qn->conflicts = new_set(set_cmp_conflict_t, SLOTS_CONFLICTS);
 	qn->changed_nodes = new_set(set_cmp_node_stat_t, SLOTS_CHANGED_NODES);
 	return qn;
