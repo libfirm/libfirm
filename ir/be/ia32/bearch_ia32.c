@@ -74,6 +74,7 @@ static ir_node *my_skip_proj(const ir_node *n) {
 	return (ir_node *)n;
 }
 
+
 /**
  * Return register requirements for an ia32 node.
  * If the node returns a tuple (mode_T) then the proj's
@@ -253,13 +254,13 @@ typedef struct {
 	ir_graph *irg;
 } ia32_abi_env_t;
 
-static void *ia32_abi_init(const be_abi_call_t *call, const arch_isa_t *isa, ir_graph *irg)
+static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
 {
 	ia32_abi_env_t *env    = xmalloc(sizeof(env[0]));
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags = fl.bits;
 	env->irg   = irg;
-	env->isa   = isa;
+	env->isa   = aenv->isa;
 	return env;
 }
 
@@ -886,7 +887,7 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 
 	/* set stack parameters */
 	for (i = stack_idx; i < n; i++) {
-		be_abi_call_param_stack(abi, i);
+		be_abi_call_param_stack(abi, i, 1);
 	}
 
 
