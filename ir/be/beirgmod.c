@@ -4,10 +4,11 @@
 
 #include <stdlib.h>
 
-#ifdef WIN32
-#include <malloc.h>
-#else
-#include <alloca.h>
+#ifdef HAVE_MALLOC_H
+ #include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+ #include <alloca.h>
 #endif
 
 #include "hashptr.h"
@@ -108,7 +109,7 @@ static void compute_df(ir_node *n, pmap *df_map)
 
 dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 {
-  dom_front_info_t *info = malloc(sizeof(*info));
+  dom_front_info_t *info = xmalloc(sizeof(*info));
 
   edges_assure(irg);
   info->df_map = pmap_create();
@@ -499,7 +500,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 	if(n == 0)
 		return NULL;
 
-	nodes = malloc(n * sizeof(nodes[0]));
+	nodes = xmalloc(n * sizeof(nodes[0]));
 
 	DBG((dbg, LEVEL_1, "live:\n"));
 	for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++) {
