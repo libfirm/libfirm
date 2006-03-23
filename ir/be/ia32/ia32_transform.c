@@ -80,6 +80,24 @@ typedef enum {
  *
  ****************************************************************************************************/
 
+/**
+ * Gets the Proj with number pn from irn.
+ */
+static ir_node *get_proj_for_pn(const ir_node *irn, long pn) {
+	const ir_edge_t *edge;
+	ir_node   *proj;
+	assert(get_irn_mode(irn) == mode_T && "need mode_T");
+
+	foreach_out_edge(irn, edge) {
+		proj = get_edge_src_irn(edge);
+
+		if (get_Proj_proj(proj) == pn)
+			return proj;
+	}
+
+	return NULL;
+}
+
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
 static const char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 	static const struct {
@@ -101,7 +119,7 @@ static const char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 	entity        *ent;
 	tarval        *tv;
 
-  ent_name = names[kct].ent_name;
+	ent_name = names[kct].ent_name;
 	if (! ent_cache[kct]) {
 		tp_name  = names[kct].tp_name;
 		cnst_str = names[kct].cnst_str;
@@ -235,7 +253,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 		}
 	}
 
-  SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
+	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 	set_ia32_res_mode(new_op, mode);
 
@@ -768,20 +786,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 }
 
-static ir_node *get_proj_for_pn(const ir_node *irn, long pn) {
-	const ir_edge_t *edge;
-	ir_node   *proj;
-	assert(get_irn_mode(irn) == mode_T && "need mode_T");
 
-	foreach_out_edge(irn, edge) {
-		proj = get_edge_src_irn(edge);
-
-		if (get_Proj_proj(proj) == pn)
-			return proj;
-	}
-
-	return NULL;
-}
 
 /**
  * Generates an ia32 DivMod with additional infrastructure for the
@@ -903,7 +908,8 @@ static ir_node *gen_Quot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) 
 	ir_node *nomem = new_rd_NoMem(env->irg);
 	ir_node *new_op;
 
-	new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem, env->mode);
+	new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem, mode_T);
+	set_ia32_res_mode(new_op, get_irn_mode(get_proj_for_pn(env->irn, pn_Quot_res)));
 	set_ia32_am_support(new_op, ia32_am_Source);
 
 	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
@@ -1163,9 +1169,10 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 static ir_node *gen_Load(ia32_transform_env_t *env) {
 	ir_node *node  = env->irn;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_mode *mode  = get_Load_mode(node);
 	ir_node *new_op;
 
-	if (mode_is_float(env->mode)) {
+	if (mode_is_float(mode)) {
 		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
 	}
 	else {
@@ -1175,7 +1182,7 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	set_ia32_am_support(new_op, ia32_am_Source);
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, ia32_B);
-	set_ia32_ls_mode(new_op, get_Load_mode(node));
+	set_ia32_ls_mode(new_op, mode);
 
 	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
@@ -1293,11 +1300,22 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 					return res;
 				}
 			}
-			res = new_rd_ia32_CondJmp(dbg, irg, block, noreg, noreg, expr, noreg, nomem, mode_T);
+
+			if (mode_is_float(get_irn_mode(expr))) {
+				res = new_rd_ia32_fCondJmp(dbg, irg, block, noreg, noreg, expr, noreg, nomem, mode_T);
+			}
+			else {
+				res = new_rd_ia32_CondJmp(dbg, irg, block, noreg, noreg, expr, noreg, nomem, mode_T);
+			}
 			set_ia32_Immop_attr(res, cnst);
 		}
 		else {
-			res = new_rd_ia32_CondJmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem, mode_T);
+			if (mode_is_float(get_irn_mode(cmp_a))) {
+				res = new_rd_ia32_fCondJmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem, mode_T);
+			}
+			else {
+				res = new_rd_ia32_CondJmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem, mode_T);
+			}
 		}
 
 		set_ia32_pncode(res, get_Proj_proj(sel));

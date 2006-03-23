@@ -79,7 +79,12 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	ir_graph *irg   = env->irg;
 	ir_node  *block = env->block;
 
-	cnst = new_rd_ia32_Const(dbg, irg, block, mode);
+	if (mode_is_float(mode)) {
+		cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
+	}
+	else {
+		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
+	}
 	set_ia32_Const_attr(cnst, env->irn);
 	return cnst;
 }

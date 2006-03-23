@@ -258,11 +258,8 @@ static char *ia32_get_reg_name_for_mode(ia32_emit_env_t *env, ir_mode *mode, con
 			return ia32_get_mapped_reg_name(env->isa->regs_8bit, reg);
 		case 16:
 			return ia32_get_mapped_reg_name(env->isa->regs_16bit, reg);
-		case 32:
-			return (char *)arch_register_get_name(reg);
 		default:
-			assert(0 && "unsupported mode size");
-			return NULL;
+			return (char *)arch_register_get_name(reg);
 	}
 }
 
