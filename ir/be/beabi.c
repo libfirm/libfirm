@@ -43,6 +43,8 @@ typedef struct _be_abi_call_arg_t {
 	const arch_register_t *reg;
 	entity *stack_ent;
 	unsigned alignment;
+	unsigned space_before;
+	unsigned space_after;
 } be_abi_call_arg_t;
 
 struct _be_abi_call_t {
@@ -150,11 +152,13 @@ void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const
 	call->cb           = cb;
 }
 
-void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, unsigned alignment)
+void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, unsigned alignment, unsigned space_before, unsigned space_after)
 {
 	be_abi_call_arg_t *arg = get_or_set_call_arg(call, 0, arg_pos, 1);
-	arg->on_stack  = 1;
-	arg->alignment = alignment;
+	arg->on_stack     = 1;
+	arg->alignment    = alignment;
+	arg->space_before = space_before;
+	arg->space_after  = space_after;
 	assert(alignment > 0 && "Alignment must be greater than 0");
 }
 
@@ -374,6 +378,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_mode *mach_mode        = sp->reg_class->mode;
 	struct obstack *obst      = &env->obst;
 	ir_node *no_mem           = get_irg_no_mem(irg);
+	int no_alloc              = call->flags.bits.frame_is_setup_on_call;
 
 	ir_node *res_proj = NULL;
 	int curr_res_proj = pn_Call_max;
@@ -397,7 +402,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		assert(arg);
 		if(arg->on_stack) {
+			stack_size += arg->space_before;
+			stack_size =  round_up2(stack_size, arg->alignment);
 			stack_size += get_type_size_bytes(get_method_param_type(mt, i));
+			stack_size += arg->space_after;
 			obstack_int_grow(obst, i);
 			n_pos++;
 		}
@@ -417,7 +425,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* If there are some parameters which shall be passed on the stack. */
 	if(n_pos > 0) {
 		int curr_ofs      = 0;
-		int do_seq        = call->flags.bits.store_args_sequential;
+		int do_seq        = call->flags.bits.store_args_sequential && !no_alloc;
 
 		/* Reverse list of stack parameters if call arguments are from left to right */
 		if(call->flags.bits.left_to_right) {
@@ -431,21 +439,26 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		/*
 		 * If the stack is decreasing and we do not want to store sequentially,
+		 * or someone else allocated the call frame
 		 * we allocate as much space on the stack all parameters need, by
 		 * moving the stack pointer along the stack's direction.
 		 */
-		if(stack_dir < 0 && !do_seq) {
+		if(stack_dir < 0 && !do_seq && !no_alloc) {
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, stack_size, be_stack_dir_along);
 		}
 
 		assert(mode_is_reference(mach_mode) && "machine mode must be pointer");
 		for(i = 0; i < n_pos; ++i) {
-			int p            = pos[i];
-			ir_node *param   = get_Call_param(irn, p);
-			ir_node *addr    = curr_sp;
-			ir_node *mem     = NULL;
-			type *param_type = get_method_param_type(mt, p);
-			int param_size   = get_type_size_bytes(param_type);
+			int p                  = pos[i];
+			be_abi_call_arg_t *arg = get_call_arg(call, 0, p);
+			ir_node *param         = get_Call_param(irn, p);
+			ir_node *addr          = curr_sp;
+			ir_node *mem           = NULL;
+			type *param_type       = get_method_param_type(mt, p);
+			int param_size         = get_type_size_bytes(param_type) + arg->space_after;
+
+			curr_ofs += arg->space_before;
+			curr_ofs =  round_up2(curr_ofs, arg->alignment);
 
 			/* Make the expression to compute the argument's offset. */
 			if(curr_ofs > 0) {
@@ -459,7 +472,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				mem = new_r_Proj(irg, bl, mem, mode_M, pn_Store_M);
 			}
 
-			/* Make a memcopy for compound arguments. */
+			/* Make a mem copy for compound arguments. */
 			else {
 				assert(mode_is_reference(get_irn_mode(param)));
 				mem = new_r_CopyB(irg, bl, curr_mem, addr, param, param_type);
@@ -630,8 +643,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		if(!mem_proj)
 			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_Call_M);
 
-		/* Make a Proj for the stack pointer. */
-		curr_sp     = be_new_IncSP(sp, irg, bl, curr_sp, mem_proj, stack_size, be_stack_dir_against);
+		 /* Clean up the stack frame if we allocated it */
+		if(!no_alloc)
+			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, mem_proj, stack_size, be_stack_dir_against);
 	}
 
 	be_abi_call_free(call);
@@ -933,8 +947,10 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 		if(arg->on_stack) {
 			snprintf(buf, sizeof(buf), "param_%d", i);
 			arg->stack_ent = new_entity(res, new_id_from_str(buf), param_type);
+			ofs += arg->space_before;
 			ofs = round_up2(ofs, arg->alignment);
 			set_entity_offset_bytes(arg->stack_ent, ofs);
+			ofs += arg->space_after;
 			ofs += get_type_size_bytes(param_type);
 		}
 	}
@@ -1204,7 +1220,7 @@ static void modify_irg(be_abi_irg_t *env)
 	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_along);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
-	frame_pointer = be_abi_reg_map_get(env->regs, sp);
+	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */

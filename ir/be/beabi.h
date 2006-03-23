@@ -14,12 +14,13 @@
 #include "beabi_t.h"
 
 struct _be_abi_call_flags_bits_t {
-	unsigned left_to_right         : 1;  /**< Arguments are from left to right. */
-	unsigned store_args_sequential : 1;  /**< Use sequential stores for arguments. */
-	unsigned try_omit_fp           : 1;  /**< Try to omit the frame pointer. */
-	unsigned fp_free               : 1;  /**< The function can use any register as frame pointer. */
-	unsigned call_has_imm          : 1;  /**< A call can take the callee's address as an immediate. */
-	unsigned irg_is_leaf           : 1;  /**< 1, if the IRG is a leaf function. */
+	unsigned left_to_right          : 1;  /**< Arguments are from left to right. */
+	unsigned store_args_sequential  : 1;  /**< Use sequential stores for arguments. */
+	unsigned try_omit_fp            : 1;  /**< Try to omit the frame pointer. */
+	unsigned fp_free                : 1;  /**< The function can use any register as frame pointer. */
+	unsigned call_has_imm           : 1;  /**< A call can take the callee's address as an immediate. */
+	unsigned irg_is_leaf            : 1;  /**< 1, if the IRG is a leaf function. */
+	unsigned frame_is_setup_on_call : 1;  /**< Set to one, if there is already enough room on the stack for call args. */
 };
 
 union _be_abi_call_flags_t {
@@ -82,21 +83,21 @@ struct _be_abi_callbacks_t {
 
 /**
  * Set the flags for a call.
- * @param call  The call.
- * @param flags Some flags to be set.
- * @param cb    The call callbacks for that call.
- * @note        The ABI phase might change the flags due to analysis.
+ * @param call          The call.
+ * @param flags	        Some flags to be set.
+ * @param cb            The call callbacks for that call.
+ * @note                The ABI phase might change the flags due to analysis.
  */
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const be_abi_callbacks_t *cb);
 
 
-void be_abi_call_param_stack(be_abi_call_t *call, int pos, unsigned alignment);
+void be_abi_call_param_stack(be_abi_call_t *call, int pos, unsigned alignment, unsigned space_before, unsigned space_after);
 void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 void be_abi_call_res_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 
 /**
  * Get the flags of a ABI call object.
- * Note that the flags must not be the same as set by be_abi_call_set_flags(). Analyses may have
+ * Note that the flags must not be the same as set by be_abi_call_set_flags(). Analysis may have
  * altered several flags, so getting them from the call object is always a good idea.
  * @param call The call object.
  * @return The flags.
