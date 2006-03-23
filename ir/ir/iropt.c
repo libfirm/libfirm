@@ -619,6 +619,16 @@ static tarval *computed_value_Mux(ir_node *n)
 }
 
 /**
+ * Calculate the value of a Psi: can be evaluated, if a condition is true
+ * and all previous conditions are false. If all conditions are false
+ * we evaluate to the default one.
+ */
+static tarval *computed_value_Psi(ir_node *n)
+{
+  return tarval_bad;
+}
+
+/**
  * calculate the value of a Confirm: can be evaluated,
  * if it has the form Confirm(x, '=', Const).
  */
@@ -681,6 +691,7 @@ static ir_op_ops *firm_set_default_computed_value(opcode code, ir_op_ops *ops)
   CASE(Conv);
   CASE(Proj);
   CASE(Mux);
+  CASE(Psi);
   CASE(Confirm);
   default:
     /* leave NULL */;
@@ -689,25 +700,6 @@ static ir_op_ops *firm_set_default_computed_value(opcode code, ir_op_ops *ops)
   return ops;
 #undef CASE
 }
-
-#if 0
-/* returns 1 if the a and b are pointers to different locations. */
-static bool
-different_identity (ir_node *a, ir_node *b)
-{
-  assert (mode_is_reference(get_irn_mode (a))
-          && mode_is_reference(get_irn_mode (b)));
-
-  if (get_irn_op (a) == op_Proj && get_irn_op(b) == op_Proj) {
-    ir_node *a1 = get_Proj_pred (a);
-    ir_node *b1 = get_Proj_pred (b);
-    if (a1 != b1 && get_irn_op (a1) == op_Alloc
-                && get_irn_op (b1) == op_Alloc)
-      return 1;
-  }
-  return 0;
-}
-#endif
 
 /**
  * Returns a equivalent block for another block.
@@ -1342,7 +1334,7 @@ static ir_node *equivalent_node_Proj(ir_node *n)
         /* get the load/store address */
         ir_node *addr = get_irn_n(a, 1);
         if (value_not_null(addr)) {
-          /* this node may float */
+          /* this node may float if it did not depend on a Confirm */
           set_irn_pinned(a, op_pin_state_floats);
           DBG_OPT_EXC_REM(n);
           return new_Bad();
@@ -1442,6 +1434,15 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 }
 
 /**
+ * Returns a equivalent node of  a Psi: if a condition is true
+ * and all previous conditions are false we know its value.
+ * If all conditions are false its value is the default one.
+ */
+static ir_node *equivalent_node_Psi(ir_node *n) {
+  return n;
+}
+
+/**
  * Optimize -a CMP -b into b CMP a.
  * This works only for for modes where unary Minus
  * cannot Overflow.
@@ -1508,7 +1509,7 @@ static ir_node *equivalent_node_CopyB(ir_node *n)
     turn_into_tuple(n, pn_CopyB_max);
     set_Tuple_pred(n, pn_CopyB_M,        mem);
     set_Tuple_pred(n, pn_CopyB_X_except, new_Bad());        /* no exception */
-    set_Tuple_pred(n, pn_Call_M_except,  new_Bad());
+    set_Tuple_pred(n, pn_CopyB_M_except, new_Bad());
   }
   return n;
 }
@@ -1617,6 +1618,7 @@ static ir_op_ops *firm_set_default_equivalent_node(opcode code, ir_op_ops *ops)
   CASE(Proj);
   CASE(Id);
   CASE(Mux);
+  CASE(Psi);
   CASE(Cmp);
   CASE(Confirm);
   CASE(CopyB);
@@ -2222,18 +2224,22 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
     /* div(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
 
-    /* this node may float */
+    /* this node may float if it did not depend on a Confirm */
     set_irn_pinned(n, op_pin_state_floats);
 
     if (proj_nr == pn_Div_X_except) {
       /* we found an exception handler, remove it */
       DBG_OPT_EXC_REM(proj);
       return new_Bad();
-    } else if (proj_nr == pn_Div_M) {
-      /* the memory Proj can be removed */
+    }
+    else if (proj_nr == pn_Div_M) {
       ir_node *res = get_Div_mem(n);
-      set_Div_mem(n, get_irg_no_mem(current_ir_graph));
-
+      /* the memory Proj can only be removed if we divide by a
+         real constant, but the node never produce a new memory */
+      if (value_of(b) != tarval_bad) {
+        /* this is a Div by a const, we can remove the memory edge */
+        set_Div_mem(n, get_irg_no_mem(current_ir_graph));
+      }
       return res;
     }
   }
@@ -2254,7 +2260,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
     /* mod(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
 
-    /* this node may float */
+    /* this node may float if it did not depend on a Confirm */
     set_irn_pinned(n, op_pin_state_floats);
 
     if (proj_nr == pn_Mod_X_except) {
@@ -2262,10 +2268,13 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
       DBG_OPT_EXC_REM(proj);
       return new_Bad();
     } else if (proj_nr == pn_Mod_M) {
-      /* the memory Proj can be removed */
       ir_node *res = get_Mod_mem(n);
-      set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
-
+      /* the memory Proj can only be removed if we divide by a
+         real constant, but the node never produce a new memory */
+      if (value_of(b) != tarval_bad) {
+        /* this is a Mod by a const, we can remove the memory edge */
+        set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
+      }
       return res;
     }
     else if (proj_nr == pn_Mod_res && get_Mod_left(n) == b) {
@@ -2294,7 +2303,7 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
     /* DivMod(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
 
-    /* this node may float */
+    /* this node may float if it did not depend on a Confirm */
     set_irn_pinned(n, op_pin_state_floats);
 
     if (proj_nr == pn_DivMod_X_except) {
@@ -2303,10 +2312,13 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
       return new_Bad();
     }
     else if (proj_nr == pn_DivMod_M) {
-      /* the memory Proj can be removed */
       ir_node *res = get_DivMod_mem(n);
-      set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
-
+      /* the memory Proj can only be removed if we divide by a
+         real constant, but the node never produce a new memory */
+      if (value_of(b) != tarval_bad) {
+        /* this is a DivMod by a const, we can remove the memory edge */
+        set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
+      }
       return res;
     }
     else if (proj_nr == pn_DivMod_res_mod && get_DivMod_left(n) == b) {
@@ -3054,6 +3066,16 @@ static ir_node *transform_node_Mux(ir_node *n)
 }
 
 /**
+ * Optimize a Psi into some simpler cases.
+ */
+static ir_node *transform_node_Psi(ir_node *n) {
+  if (is_Mux(n))
+    return transform_node_Mux(n);
+
+  return n;
+}
+
+/**
  * Tries several [inplace] [optimizing] transformations and returns an
  * equivalent node.  The difference to equivalent_node() is that these
  * transformations _do_ generate new nodes, and thus the old node must
@@ -3102,6 +3124,7 @@ static ir_op_ops *firm_set_default_transform_node(opcode code, ir_op_ops *ops)
   CASE(Shl);
   CASE(End);
   CASE(Mux);
+  CASE(Psi);
   default:
     /* leave NULL */;
   }
