@@ -125,6 +125,12 @@ foreach my $op (keys(%nodes)) {
 				$arg_names      .= ", ".$href->{"name"};
 			}
 		}
+
+		# we have additional attribute arguements
+		if (exists($n{"attr"})) {
+			$complete_args .= ", ".$n{"attr"};
+		}
+
 		$complete_args = substr($complete_args, 2);
 		$temp .= ", $complete_args)";
 		push(@obst_constructor, $temp." {\n");
@@ -140,6 +146,7 @@ foreach my $op (keys(%nodes)) {
 			$temp  = "  ir_node *res;\n";
 			$temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
 			$temp .= "  int flags = 0;\n";
+			$temp .= "  $arch\_attr_t *attr;\n" if (exists($n{"init_attr"}));
 
 			undef my $in_req_var;
 			undef my $out_req_var;
@@ -182,9 +189,6 @@ foreach my $op (keys(%nodes)) {
 			for (my $i = 1; $i <= $arity; $i++) {
 				$temp .= "  in[".($i - 1)."] = op".$i.";\n";
 			}
-			$temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
-			$temp .= "  res = optimize_node(res);\n";
-			$temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
 			# set flags
 			if (exists($n{"irn_flags"})) {
@@ -226,8 +230,20 @@ foreach my $op (keys(%nodes)) {
 					$out_param = "NULL, 0";
 				}
 			}
+			$temp .= "\n  /* create node */\n";
+			$temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
+
 			$temp .= "\n  /* init node attributes */\n";
 			$temp .= "  init_$arch\_attributes(res, flags, $in_param, $out_param);\n";
+
+			if (exists($n{"init_attr"})) {
+				$temp .= "  attr = get_$arch\_attr(res);\n";
+				$temp .= $n{"init_attr"}."\n";
+			}
+
+			$temp .= "\n  /* optimize node */\n";
+			$temp .= "  res = optimize_node(res);\n";
+			$temp .= "  irn_vrfy_irg(res, irg);\n\n";
 
 			$temp .= "\n  return res;\n";
 
