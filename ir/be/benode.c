@@ -531,7 +531,7 @@ ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_nod
 	in[0] = src;
 	memcpy(&in[1], in_keep, n * sizeof(in[0]));
 	irn   = new_ir_node(NULL, irg, bl, op_be_CopyKeep, mode, n + 1, in);
-	init_node_attr(irn, n);
+	init_node_attr(irn, n + 1);
 	be_node_set_reg_class(irn, OUT_POS(0), cls);
 	be_node_set_reg_class(irn, 0, cls);
 
