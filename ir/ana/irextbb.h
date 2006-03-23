@@ -53,7 +53,7 @@ typedef void extbb_walk_func(ir_extblk *blk, void *env);
 int is_ir_extbb(const void *thing);
 
 /**
- * Compute the extended basic blocks for a graph
+ * Compute the extended basic blocks for a graph.
  */
 void compute_extbb(ir_graph *irg);
 
@@ -169,6 +169,8 @@ void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *po
 
 /**
  * Walks only over reachable Extended Basic Block nodes in the graph.
+ * Ensures, that the extended block containing the End node is visited last
+ * and the block containing Start visited first (in post order).
  *
  * @param irg  - the irg graph
  * @param pre  - walker function, executed before the predecessor of a block are visited
