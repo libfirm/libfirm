@@ -888,6 +888,9 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				/* set base and index */
 				set_irn_n(irn, 0, get_irn_n(left, 0));
 				set_irn_n(irn, 1, get_irn_n(left, 1));
+
+				/* clear remat flag */
+				set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
 			}
 		}
 		/* check if the node is an address mode candidate */
@@ -1020,6 +1023,9 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 						set_Proj_pred(mem_proj, irn);
 						set_Proj_proj(mem_proj, 1);
 
+						/* clear remat flag */
+						set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
+
 						DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
 					}
 				} /* if (store) */
@@ -1069,6 +1075,9 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				set_ia32_op_type(irn, ia32_AddrModeS);
 				set_ia32_frame_ent(irn, get_ia32_frame_ent(left));
 				set_ia32_ls_mode(irn, get_ia32_ls_mode(left));
+
+				/* clear remat flag */
+				set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
 
 				if (is_ia32_use_frame(left))
 					set_ia32_use_frame(irn);
