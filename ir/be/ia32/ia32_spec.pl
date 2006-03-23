@@ -157,9 +157,7 @@ $additional_opcodes = 0;
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. add %ia32_emit_binop /* Add(%A1, %A2) -> %D1 */'
-#  "params"    => "int a_x, int a_y",
-#  "init"      => " attr.x = x; attr.y = y;"
+  "emit"      => '. add %ia32_emit_binop /* Add(%A1, %A2) -> %D1 */',
 },
 
 "Mul" => {
