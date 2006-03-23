@@ -1080,6 +1080,10 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
   case iro_Phi:
     print_vcg_color(F, ird_color_green);
     break;
+  case iro_Mux:
+  case iro_Psi:
+    print_vcg_color(F, ird_color_gold);
+    break;
   case iro_Const:
   case iro_Proj:
   case iro_Filter:
