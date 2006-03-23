@@ -1947,30 +1947,101 @@ ir_node *get_Filter_cg_pred(ir_node *node, int pos) {
 
 /* Mux support */
 ir_node *get_Mux_sel   (ir_node *node) {
+  if (node->op == op_Psi) {
+    assert(get_irn_arity(node) == 3);
+    return get_Psi_cond(node, 0);
+  }
   assert(node->op == op_Mux);
   return node->in[1];
 }
 void     set_Mux_sel   (ir_node *node, ir_node *sel) {
-  assert(node->op == op_Mux);
-  node->in[1] = sel;
+  if (node->op == op_Psi) {
+    assert(get_irn_arity(node) == 3);
+    set_Psi_cond(node, 0, sel);
+  }
+  else {
+    assert(node->op == op_Mux);
+    node->in[1] = sel;
+  }
 }
 
 ir_node *get_Mux_false (ir_node *node) {
+  if (node->op == op_Psi) {
+    assert(get_irn_arity(node) == 3);
+    return get_Psi_default(node);
+  }
   assert(node->op == op_Mux);
   return node->in[2];
 }
 void     set_Mux_false (ir_node *node, ir_node *ir_false) {
-  assert(node->op == op_Mux);
-  node->in[2] = ir_false;
+  if (node->op == op_Psi) {
+    assert(get_irn_arity(node) == 3);
+    set_Psi_default(node, ir_false);
+  }
+  else {
+    assert(node->op == op_Mux);
+    node->in[2] = ir_false;
+  }
 }
 
 ir_node *get_Mux_true  (ir_node *node) {
+  if (node->op == op_Psi) {
+    assert(get_irn_arity(node) == 3);
+    return get_Psi_val(node, 0);
+  }
   assert(node->op == op_Mux);
   return node->in[3];
 }
 void     set_Mux_true  (ir_node *node, ir_node *ir_true) {
-  assert(node->op == op_Mux);
-  node->in[3] = ir_true;
+  if (node->op == op_Psi) {
+    assert(get_irn_arity(node) == 3);
+    set_Psi_val(node, 0, ir_true);
+  }
+  else {
+    assert(node->op == op_Mux);
+    node->in[3] = ir_true;
+  }
+}
+
+/* Psi support */
+ir_node *get_Psi_cond   (ir_node *node, int pos) {
+  int num_conds = get_irn_arity(node) >> 1;
+  assert(node->op == op_Psi);
+  assert(pos < num_conds);
+  return node->in[1 + 2 * pos];
+}
+
+void     set_Psi_cond   (ir_node *node, int pos, ir_node *cond) {
+  int num_conds = get_irn_arity(node) >> 1;
+  assert(node->op == op_Psi);
+  assert(pos < num_conds);
+  node->in[1 + 2 * pos] = cond;
+}
+
+ir_node *get_Psi_val    (ir_node *node, int pos) {
+  int num_vals = get_irn_arity(node) >> 1;
+  assert(node->op == op_Psi);
+  assert(pos < num_vals);
+  return node->in[1 + 2 * pos + 1];
+}
+
+void     set_Psi_val    (ir_node *node, int pos, ir_node *val) {
+  int num_vals = get_irn_arity(node) >> 1;
+  assert(node->op == op_Psi);
+  assert(pos < num_vals);
+  node->in[1 + 2 * pos + 1] = val;
+}
+
+ir_node *get_Psi_default(ir_node *node) {
+  int def_pos = get_irn_arity(node);
+  assert(node->op == op_Psi);
+  return node->in[def_pos];
+}
+
+void     set_Psi_default(ir_node *node, ir_node *val) {
+  int def_pos = get_irn_arity(node);
+  assert(node->op == op_Psi);
+  node->in[def_pos] = node;
 }
 
 /* CopyB support */

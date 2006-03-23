@@ -623,6 +623,16 @@ _is_Sel (const ir_node *node) {
 }
 
 static INLINE int
+_is_Mux (const ir_node *node) {
+  assert(node);
+  if (node) {
+    ir_op *op = _get_irn_op(node);
+    return (op == op_Mux || ((op == op_Psi) && _get_irn_arity(node) == 3));
+  }
+  return 0;
+}
+
+static INLINE int
 _is_no_Block(const ir_node *node) {
   assert(node && _is_ir_node(node));
   return (_get_irn_op(node) != op_Block);
@@ -791,6 +801,7 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 #define is_Return(node)                       _is_Return(node)
 #define is_Call(node)                         _is_Call(node)
 #define is_Sel(node)                          _is_Sel(node)
+#define is_Mux(node)                          _is_Mux(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)

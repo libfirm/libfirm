@@ -908,12 +908,23 @@ void     set_Confirm_bound (ir_node *node, ir_node *bound);
 pn_Cmp   get_Confirm_cmp   (ir_node *node);
 void     set_Confirm_cmp   (ir_node *node, pn_Cmp cmp);
 
+/*
+ * Mux Support: Note that Psi nodes with one condition can be handled
+ * like Mux nodes, and the access functions work as expected.
+ */
 ir_node *get_Mux_sel   (ir_node *node);
 void     set_Mux_sel   (ir_node *node, ir_node *sel);
 ir_node *get_Mux_false (ir_node *node);
 void     set_Mux_false (ir_node *node, ir_node *ir_false);
 ir_node *get_Mux_true  (ir_node *node);
 void     set_Mux_true  (ir_node *node, ir_node *ir_true);
+
+ir_node *get_Psi_cond   (ir_node *node, int pos);
+void     set_Psi_cond   (ir_node *node, int pos, ir_node *cond);
+ir_node *get_Psi_val    (ir_node *node, int pos);
+void     set_Psi_val    (ir_node *node, int pos, ir_node *val);
+ir_node *get_Psi_default(ir_node *node);
+void     set_Psi_default(ir_node *node, ir_node *val);
 
 /**
  * Projection numbers for result of CopyB node: use for Proj nodes!
@@ -1037,6 +1048,8 @@ int      is_Return (const ir_node *node);
 int      is_Call (const ir_node *node);
 /** returns true if node is a Sel node. */
 int      is_Sel (const ir_node *node);
+/** returns true if node is a Mux node or a Psi with only one condition. */
+int      is_Mux (const ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 int      is_Proj (const ir_node *node);
