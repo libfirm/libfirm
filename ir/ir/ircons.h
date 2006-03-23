@@ -291,6 +291,7 @@
  *    ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj);
  *    ir_node *new_NoMem  (void);
  *    ir_node *new_Mux    (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+ *    ir_node *new_Psi    (int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode);
  *    ir_node *new_CopyB  (ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
  *    ir_node *new_InstOf (ir_node *store, ir_node obj, ir_type *ent);
  *    ir_node *new_Raise  (ir_node *store, ir_node *obj);
@@ -818,6 +819,13 @@
  *    Creates a Mux node. This node implements the following semantic:
  *    If the sel node (which must be of mode_b) evaluates to true, its value is
  *    ir_true, else ir_false;
+ *
+ *
+ *    ir_node *new_Psi (int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode)
+ *    -----------------------------------------------------------------------------
+ *
+ *    Creates a Psi node. This node implements the following semantic:
+ *    Enter it here!!!
  *
  *
  *    OPERATIONS TO MANAGE MEMORY EXPLICITLY
@@ -1856,6 +1864,19 @@ ir_node *new_rd_NoMem  (ir_graph *irg);
 ir_node *new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
+/** Constructor for a Psi node.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *irg      The ir graph the node belong to.
+ * @param *block    The block the node belong to.
+ * @param *arity    The arity of the conditions
+ * @param *conds    The array of mode_b conditions, length must be equal arity
+ * @param *vals     The array of mode values, length must be equal arity + 1
+ * @param *mode     The mode of the node (must be the mode of all vals).
+ */
+ir_node *new_rd_Psi (dbg_info *db, ir_graph *irg, ir_node *block,
+                     int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode);
+
 /** Constructor for a CopyB node.
  *
  * @param *db         A pointer for debug information.
@@ -2611,6 +2632,18 @@ ir_node *new_r_NoMem  (ir_graph *irg);
 ir_node *new_r_Mux  (ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
+/** Constructor for a Psi node.
+ *
+ * @param *irg      The ir graph the node belong to.
+ * @param *block    The block the node belong to.
+ * @param *arity    The arity of the conditions
+ * @param *conds    The array of mode_b conditions, length must be equal arity
+ * @param *vals     The array of mode values, length must be equal arity + 1
+ * @param *mode     The mode of the node (must be the mode of all vals).
+ */
+ir_node *new_r_Psi (ir_graph *irg, ir_node *block,
+                    int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode);
+
 /** Constructor for a CopyB node.
  *
  * @param *irg        The ir graph the node belong to.
@@ -3352,6 +3385,17 @@ ir_node *new_d_NoMem  (void);
 ir_node *new_d_Mux  (dbg_info *db, ir_node *sel,
     ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
+/** Constructor for a Psi node.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *arity    The arity of the conditions
+ * @param *conds    The array of mode_b conditions, length must be equal arity
+ * @param *vals     The array of mode values, length must be equal arity + 1
+ * @param *mode     The mode of the node (must be the mode of all vals).
+ */
+ir_node *new_d_Psi (dbg_info *db,
+                    int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode);
+
 /** Constructor for a CopyB node.
  *
  * @param *db         A pointer for debug information.
@@ -3995,6 +4039,15 @@ ir_node *new_NoMem  (void);
  * @param *mode     The mode of the node (and it_true and ir_false).
  */
 ir_node *new_Mux  (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+
+/** Constructor for a Psi node.
+ *
+ * @param *arity    The arity of the conditions
+ * @param *conds    The array of mode_b conditions, length must be equal arity
+ * @param *vals     The array of mode values, length must be equal arity + 1
+ * @param *mode     The mode of the node (must be the mode of all vals).
+ */
+ir_node *new_Psi (int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode);
 
 /** Constructor for a CopyB node.
  *

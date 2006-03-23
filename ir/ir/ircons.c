@@ -761,6 +761,31 @@ new_bd_Mux  (dbg_info *db, ir_node *block,
 }
 
 static ir_node *
+new_bd_Psi (dbg_info *db, ir_node *block,
+    int arity, ir_node *cond[], ir_node *vals[], ir_mode *mode)
+{
+  ir_node  **in;
+  ir_node  *res;
+  ir_graph *irg = current_ir_graph;
+  int i;
+
+  NEW_ARR_A(ir_node *, in, 2 * arity + 1);
+
+  for (i = 0; i < arity; ++i) {
+    in[2 * i]     = cond[i];
+    in[2 * i + 1] = vals[i];
+  }
+  in[2 * i] = vals[i];
+
+  res = new_ir_node(db, irg, block, op_Psi, mode, 2 * arity + 1, in);
+  assert(res);
+
+  res = optimize_node(res);
+  IRN_VRFY_IRG(res, irg);
+  return res;
+}
+
+static ir_node *
 new_bd_CopyB  (dbg_info *db, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type)
 {
@@ -1360,6 +1385,20 @@ new_rd_Mux  (dbg_info *db, ir_graph *irg, ir_node *block,
   return res;
 }
 
+ir_node *
+new_rd_Psi (dbg_info *db, ir_graph *irg, ir_node *block,
+    int arity, ir_node *cond[], ir_node *vals[], ir_mode *mode)
+{
+  ir_node  *res;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  res = new_bd_Psi(db, block, arity, cond, vals, mode);
+  current_ir_graph = rem;
+
+  return res;
+}
+
 ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type)
 {
@@ -1622,6 +1661,10 @@ ir_node *new_r_NoMem  (ir_graph *irg) {
 ir_node *new_r_Mux (ir_graph *irg, ir_node *block,
     ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
   return new_rd_Mux(NULL, irg, block, sel, ir_false, ir_true, mode);
+}
+ir_node *new_r_Psi (ir_graph *irg, ir_node *block,
+    int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode) {
+  return new_rd_Psi(NULL, irg, block, arity, conds, vals, mode);
 }
 ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type) {
@@ -2876,6 +2919,12 @@ new_d_Mux (dbg_info *db, ir_node *sel, ir_node *ir_false,
       sel, ir_false, ir_true, mode);
 }
 
+ir_node *
+new_d_Psi (dbg_info *db,int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode) {
+  return new_bd_Psi (db, current_ir_graph->current_block,
+      arity, conds, vals, mode);
+}
+
 ir_node *new_d_CopyB(dbg_info *db,ir_node *store,
     ir_node *dst, ir_node *src, ir_type *data_type) {
   ir_node *res;
@@ -3249,6 +3298,9 @@ ir_node *new_NoMem  (void) {
 }
 ir_node *new_Mux (ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
   return new_d_Mux(NULL, sel, ir_false, ir_true, mode);
+}
+ir_node *new_Psi (int arity, ir_node *conds[], ir_node *vals[], ir_mode *mode) {
+  return new_d_Psi(NULL, arity, conds, vals, mode);
 }
 ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type) {
   return new_d_CopyB(NULL, store, dst, src, data_type);
