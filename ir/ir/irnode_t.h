@@ -773,6 +773,11 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
   node->attr.c.pred = pred;
 }
 
+static INLINE int _get_Psi_n_conds(ir_node *node) {
+  assert(_get_irn_op(node) == op_Psi);
+  return _get_irn_arity(node) >> 1;
+}
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
@@ -824,5 +829,6 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 #define is_irn_keep(node)                     _is_irn_keep(node)
 #define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
+#define get_Psi_n_conds(node)                 _get_Psi_n_conds(node)
 
 # endif /* _IRNODE_T_H_ */

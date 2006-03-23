@@ -925,6 +925,7 @@ ir_node *get_Psi_val    (ir_node *node, int pos);
 void     set_Psi_val    (ir_node *node, int pos, ir_node *val);
 ir_node *get_Psi_default(ir_node *node);
 void     set_Psi_default(ir_node *node, ir_node *val);
+int      get_Psi_n_conds(ir_node *node);
 
 /**
  * Projection numbers for result of CopyB node: use for Proj nodes!
