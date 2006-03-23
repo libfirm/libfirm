@@ -475,12 +475,13 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 	return perm;
 }
 
-static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *irn)
+static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *irn, int *silent)
 {
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(&env->obst);
 	insn_t *insn           = scan_insn(alloc_env, irn, &env->obst);
 	ir_node *res           = insn->next_insn;
+	int be_silent          = *silent;
 
 	if(insn->pre_colored) {
 		int i;
@@ -488,7 +489,17 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 			pset_insert_ptr(alloc_env->pre_colored, insn->ops[i].carrier);
 	}
 
-	if(be_is_Perm(irn) || be_is_RegParams(irn) || (be_is_Barrier(irn) && !insn->in_constraints))
+	/*
+		If the current node is a barrier toggle the silent flag.
+		If we are in the start block, we are ought to be silent at the beginning,
+		so the toggling activates the constraint handling but skips the barrier.
+		If we are in the end block we handle the in requirements of the barrier
+		and set the rest to silent.
+	*/
+	if(be_is_Barrier(irn))
+		*silent = !*silent;
+
+	if(be_silent)
 		goto end;
 
 	/*
@@ -646,20 +657,32 @@ end:
 
 /**
  * Handle constraint nodes in each basic block.
- * be_insert_constr_perms() inserts Perm nodes which perm
+ * handle_constraints() inserts Perm nodes which perm
  * over all values live at the constrained node right in front
  * of the constrained node. These Perms signal a constrained node.
- * For further comments, refer to handle_constraints_at_perm().
+ * For further comments, refer to handle_constraints().
  */
 static void constraints(ir_node *bl, void *data)
 {
-	firm_dbg_module_t *dbg      = firm_dbg_register("firm.be.chordal.constr");
 	be_chordal_alloc_env_t *env = data;
+	firm_dbg_module_t *dbg      = firm_dbg_register("firm.be.chordal.constr");
 	arch_env_t *arch_env        = env->chordal_env->birg->main_env->arch_env;
+
+	/*
+		Start silent in the start block.
+		The silence remains until the first barrier is seen.
+		Each other block is begun loud.
+	*/
+	int silent                  = bl == get_irg_start_block(get_irn_irg(bl));
 	ir_node *irn;
 
+	/*
+		If the block is the start block search the barrier and
+		start handling constraints from there.
+	*/
+
 	for(irn = sched_first(bl); !sched_is_end(irn);) {
-		irn = handle_constraints(env, irn);
+		irn = handle_constraints(env, irn, &silent);
 	}
 }
 
