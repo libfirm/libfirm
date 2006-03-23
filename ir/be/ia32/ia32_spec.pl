@@ -3,11 +3,13 @@
 # This is the specification for the ia32 assembler Firm-operations
 
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
-
 $arch = "ia32";
 
 # this string marks the beginning of a comment in emit
 $comment_string = "/*";
+
+# the number of additional opcodes you want to register
+$additional_opcodes = 0;
 
 # The node description is done as a perl hash initializer with the
 # following structure:

@@ -1102,5 +1102,9 @@ int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	return 1;
 }
 
+static void ia32_register_additional_opcodes(int n) {
+	/* we don't need any additional opcodes */
+}
+
 /* Include the generated constructor functions */
 #include "gen_ia32_new_nodes.c.inl"

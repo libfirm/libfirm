@@ -419,13 +419,13 @@ static void ia32_prepare_graph(void *self) {
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
-	edges_deactivate(cg->irg);
-	dead_node_elimination(cg->irg);
-	edges_activate(cg->irg);
-
 	cg->mod = old_mod;
 
 	if (cg->opt.doam) {
+		edges_deactivate(cg->irg);
+		//dead_node_elimination(cg->irg);
+		edges_activate(cg->irg);
+
 		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
 		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
 	}

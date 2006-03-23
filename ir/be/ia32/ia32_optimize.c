@@ -22,7 +22,7 @@
 #undef is_NoMem
 #define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
 
-typedef int *is_op_func_t(const ir_node *n);
+typedef int is_op_func_t(const ir_node *n);
 
 static int be_is_NoReg(be_abi_irg_t *babi, const ir_node *irn) {
 	if (be_abi_get_callee_save_irn(babi, &ia32_gp_regs[REG_XXX]) == irn ||
@@ -311,7 +311,6 @@ static int is_TestJmp_replacement(ir_node *cand, ir_node *irn) {
 	ir_node *in2       = get_irn_n(irn, 1);
 	int      i, n      = get_irn_arity(cand);
 	int      same_args = 0;
-	char    *c1, *c2;
 
 	for (i = 0; i < n - 1; i++) {
 		if (get_irn_n(cand, i)     == in1 &&
@@ -358,9 +357,8 @@ static int is_CondJmp_cand(const ir_node *irn) {
  * Checks if the arguments of cand are the same of irn.
  */
 static int is_CondJmp_replacement(ir_node *cand, ir_node *irn) {
-	int      i, n      = get_irn_arity(cand);
-	int      same_args = 0;
-	char    *c1, *c2;
+	int i, n      = get_irn_arity(cand);
+	int same_args = 0;
 
 	for (i = 0; i < n; i++) {
 		if (get_irn_n(cand, i) == get_irn_n(irn, i)) {

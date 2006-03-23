@@ -16,6 +16,7 @@ my $cur_op     = "";
 my $line_nr    = 0;
 
 our $arch;
+our $additional_opcodes;
 our %nodes;
 
 # include spec file
@@ -49,6 +50,9 @@ my $arity;
 my $cmp_attr_func;
 my $temp;
 my $n_opcodes = 2;    # we have two additional border opcodes (lowest/highest)
+
+# for registering additional opcodes
+$n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
@@ -313,7 +317,10 @@ void $arch\_create_opcodes(void) {
 ENDOFMAIN
 
 print OUT @obst_new_irop;
-print OUT "\n  $arch\_opcode_end = cur_opcode;\n";
+print OUT "\n  $arch\_register_additional_opcodes(cur_opcode);\n";
+print OUT "  $arch\_opcode_end = cur_opcode";
+print OUT " + $additional_opcodes" if (defined($additional_opcodes));
+print OUT ";\n";
 print OUT "}\n";
 
 close(OUT);
