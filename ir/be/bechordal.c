@@ -574,7 +574,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 				assert(is_Proj(proj));
 
-				if(values_interfere(proj, irn)) {
+				if(values_interfere(proj, irn) && !pmap_contains(partners, proj)) {
 					assert(n_alloc < n_regs);
 					alloc_nodes[n_alloc] = proj;
 					pmap_insert(partners, proj, NULL);
