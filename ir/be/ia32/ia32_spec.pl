@@ -344,14 +344,28 @@ $comment_string = "/*";
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: CMP A, B && JMPxx LABEL",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "none", "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ] },
 },
 
 "TestJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: TEST A, B && JMPxx LABEL",
-  "reg_req"  => { "in" => [ "gp", "gp" ], "out" => [ "none", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp" ] },
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+},
+
+"CJmpAM" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "construct conditional jump without CMP (replaces CondJmp): JMPxx LABEL",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "none", "none" ] },
+},
+
+"CJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "construct conditional jump without CMP (replaces TestJmp): JMPxx LABEL",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp" ] },
 },
 
 "SwitchJmp" => {

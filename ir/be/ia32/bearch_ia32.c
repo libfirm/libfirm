@@ -487,6 +487,9 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 
 	/* transform a LEA into an Add if possible */
 	ia32_transform_lea_to_add(irn, cg);
+
+	/* check for peephole optimization */
+	ia32_peephole_optimization(irn, cg);
 }
 
 /**

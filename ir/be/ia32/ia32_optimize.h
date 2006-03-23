@@ -16,4 +16,10 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env);
  */
 void ia32_optimize_am(ir_node *irn, void *env);
 
+/**
+ * Performs Peephole Optimizations
+ * This function is called by a walker.
+ */
+void ia32_peephole_optimization(ir_node *irn, void *env);
+
 #endif /* _IA32_OPTIMIZE_H_ */

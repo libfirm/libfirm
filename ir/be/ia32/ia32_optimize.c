@@ -22,6 +22,8 @@
 #undef is_NoMem
 #define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
 
+typedef int *is_op_func_t(const ir_node *n);
+
 static int be_is_NoReg(be_abi_irg_t *babi, const ir_node *irn) {
 	if (be_abi_get_callee_save_irn(babi, &ia32_gp_regs[REG_XXX]) == irn ||
 		be_abi_get_callee_save_irn(babi, &ia32_fp_regs[REG_XXXX]) == irn)
@@ -31,6 +33,18 @@ static int be_is_NoReg(be_abi_irg_t *babi, const ir_node *irn) {
 
 	return 0;
 }
+
+
+
+/*************************************************
+ *   _____                _              _
+ *  / ____|              | |            | |
+ * | |     ___  _ __  ___| |_ __ _ _ __ | |_ ___
+ * | |    / _ \| '_ \/ __| __/ _` | '_ \| __/ __|
+ * | |___| (_) | | | \__ \ || (_| | | | | |_\__ \
+ *  \_____\___/|_| |_|___/\__\__,_|_| |_|\__|___/
+ *
+ *************************************************/
 
 /**
  * creates a unique ident by adding a number to a tag
@@ -226,6 +240,169 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env) {
 }
 
 
+
+/********************************************************************************************************
+ *  _____                _           _         ____        _   _           _          _   _
+ * |  __ \              | |         | |       / __ \      | | (_)         (_)        | | (_)
+ * | |__) |__  ___ _ __ | |__   ___ | | ___  | |  | |_ __ | |_ _ _ __ ___  _ ______ _| |_ _  ___  _ __
+ * |  ___/ _ \/ _ \ '_ \| '_ \ / _ \| |/ _ \ | |  | | '_ \| __| | '_ ` _ \| |_  / _` | __| |/ _ \| '_ \
+ * | |  |  __/  __/ |_) | | | | (_) | |  __/ | |__| | |_) | |_| | | | | | | |/ / (_| | |_| | (_) | | | |
+ * |_|   \___|\___| .__/|_| |_|\___/|_|\___|  \____/| .__/ \__|_|_| |_| |_|_/___\__,_|\__|_|\___/|_| |_|
+ *                | |                               | |
+ *                |_|                               |_|
+ ********************************************************************************************************/
+
+/**
+ * NOTE: THESE PEEPHOLE OPTIMIZATIONS MUST BE CALLED AFTER SCHEDULING AND REGISTER ALLOCATION.
+ */
+
+static int ia32_cnst_compare(ir_node *n1, ir_node *n2) {
+	char *c1 = get_ia32_cnst(n1);
+	char *c2 = get_ia32_cnst(n2);
+
+	if (c1 && c2)                    /* both consts are set -> compare */
+		return strcmp(c1, c2) == 0;
+	else if (!c1 && !c2)             /* both consts are not set -> true */
+		return 1;
+
+	return 0;
+}
+
+/**
+ * Checks for potential CJmp/CJmpAM optimization candidates.
+ */
+static ir_node *ia32_determine_cjmp_cand(ir_node *irn, is_op_func_t *is_op_func) {
+	ir_node *cand = NULL;
+	ir_node *prev = sched_prev(irn);
+
+	if (is_Block(prev)) {
+		if (get_Block_n_cfgpreds(prev) == 1)
+			prev = get_Block_cfgpred(prev, 0);
+		else
+			prev = NULL;
+	}
+
+	/* The predecessor must be a ProjX. */
+	if (prev && is_Proj(prev) && get_irn_mode(prev) == mode_X) {
+		prev = get_Proj_pred(prev);
+
+		if (is_op_func(prev))
+			cand = prev;
+	}
+
+	return cand;
+}
+
+static int is_TestJmp_cand(const ir_node *irn) {
+	return is_ia32_TestJmp(irn) || is_ia32_And(irn);
+}
+
+/**
+ * Checks if two consecutive arguments of cand matches
+ * the two arguments of irn (TestJmp).
+ */
+static int is_TestJmp_replacement(ir_node *cand, ir_node *irn) {
+	ir_node *in1       = get_irn_n(irn, 0);
+	ir_node *in2       = get_irn_n(irn, 1);
+	int      i, n      = get_irn_arity(cand);
+	int      same_args = 0;
+	char    *c1, *c2;
+
+	for (i = 0; i < n - 1; i++) {
+		if (get_irn_n(cand, i)     == in1 &&
+			get_irn_n(cand, i + 1) == in2)
+		{
+			same_args = 1;
+			break;
+		}
+	}
+
+	if (same_args)
+		return ia32_cnst_compare(cand, irn);
+
+	return 0;
+}
+
+/**
+ * Tries to replace a TestJmp by a CJmp or CJmpAM (in case of And)
+ */
+static void ia32_optimize_TestJmp(ir_node *irn, ia32_code_gen_t *cg) {
+	ir_node *cand    = ia32_determine_cjmp_cand(irn, is_TestJmp_cand);
+	int      replace = 0;
+
+	/* we found a possible candidate */
+	replace = cand ? is_TestJmp_replacement(cand, irn) : 0;
+
+	if (replace) {
+		DBG((cg->mod, LEVEL_1, "replacing %+F by ", irn));
+
+		if (is_ia32_And(cand))
+			set_irn_op(irn, op_ia32_CJmpAM);
+		else
+			set_irn_op(irn, op_ia32_CJmp);
+
+		DB((cg->mod, LEVEL_1, "%+F\n", irn));
+	}
+}
+
+static int is_CondJmp_cand(const ir_node *irn) {
+	return is_ia32_CondJmp(irn) || is_ia32_Sub(irn);
+}
+
+/**
+ * Checks if the arguments of cand are the same of irn.
+ */
+static int is_CondJmp_replacement(ir_node *cand, ir_node *irn) {
+	int      i, n      = get_irn_arity(cand);
+	int      same_args = 0;
+	char    *c1, *c2;
+
+	for (i = 0; i < n; i++) {
+		if (get_irn_n(cand, i) == get_irn_n(irn, i)) {
+			same_args = 1;
+			break;
+		}
+	}
+
+	if (same_args)
+		return ia32_cnst_compare(cand, irn);
+
+	return 0;
+}
+
+/**
+ * Tries to replace a CondJmp by a CJmpAM
+ */
+static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
+	ir_node *cand    = ia32_determine_cjmp_cand(irn, is_CondJmp_cand);
+	int      replace = 0;
+
+	/* we found a possible candidate */
+	replace = cand ? is_CondJmp_replacement(cand, irn) : 0;
+
+	if (replace) {
+		DBG((cg->mod, LEVEL_1, "replacing %+F by ", irn));
+
+		set_irn_op(irn, op_ia32_CJmp);
+
+		DB((cg->mod, LEVEL_1, "%+F\n", irn));
+	}
+}
+
+/**
+ * Performs Peephole Optimizations
+ */
+void ia32_peephole_optimization(ir_node *irn, void *env) {
+	if (is_ia32_TestJmp(irn)) {
+		ia32_optimize_TestJmp(irn, env);
+	}
+	else if (is_ia32_CondJmp(irn)) {
+		ia32_optimize_CondJmp(irn, env);
+	}
+}
+
+
+
 /******************************************************************
  *              _     _                   __  __           _
  *     /\      | |   | |                 |  \/  |         | |
@@ -300,7 +477,7 @@ static ir_node *get_res_proj(const ir_node *irn) {
  * @param is_op_func The check-function
  * @return 1 if conditions are fulfilled, 0 otherwise
  */
-static int pred_is_specific_node(const ir_node *pred, int (*is_op_func)(const ir_node *n)) {
+static int pred_is_specific_node(const ir_node *pred, is_op_func_t *is_op_func) {
 	if (is_Proj(pred) && is_op_func(get_Proj_pred(pred))) {
 		return 1;
 	}

@@ -665,6 +665,7 @@ static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %%%s,%s%s ", op1, get_ia32_cnst(irn) ? " " : " %", op2);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
+
 	IA32_DO_EMIT;
 	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 0)));
 }
@@ -676,7 +677,27 @@ static void emit_ia32_TestJmp(const ir_node *irn, ia32_emit_env_t *env) {
 	TestJmp_emitter(irn, env);
 }
 
+static void emit_ia32_CJmp(const ir_node *irn, ia32_emit_env_t *env) {
+	FILE *F = env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
 
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test/cmp */", irn);
+	IA32_DO_EMIT;
+	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 0)));
+}
+
+static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
+	FILE *F = env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
+
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test/cmp */", irn);
+	IA32_DO_EMIT;
+	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 2)));
+}
 
 /*********************************************************
  *                 _ _       _
@@ -1238,6 +1259,8 @@ static void ia32_register_emitters(void) {
 	/* other ia32 emitter functions */
 	IA32_EMIT(CondJmp);
 	IA32_EMIT(TestJmp);
+	IA32_EMIT(CJmp);
+	IA32_EMIT(CJmpAM);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
