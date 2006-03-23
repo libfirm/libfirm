@@ -76,18 +76,21 @@ void co_free_ou_structure(copy_opt_t *co);
 
 /**
  * Solves the problem using a heuristic approach
+ * Uses the OU data structure
  */
 int co_solve_heuristic(copy_opt_t *co);
 
 /**
  * Returns the maximal costs possible, i.e. the costs if all
  * pairs would be assigned different registers.
+ * Uses the OU data structure
  */
 int co_get_max_copy_costs(const copy_opt_t *co);
 
 /**
  * Returns the inevitable costs, i.e. the costs of
  * all copy pairs which interfere.
+ * Uses the OU data structure
  */
 int co_get_inevit_copy_costs(const copy_opt_t *co);
 
@@ -95,6 +98,7 @@ int co_get_inevit_copy_costs(const copy_opt_t *co);
  * Returns the current costs the copies are causing.
  * The result includes inevitable costs and the costs
  * of the copies regarding the current register allocation
+ * Uses the OU data structure
  */
 int co_get_copy_costs(const copy_opt_t *co);
 
@@ -102,6 +106,7 @@ int co_get_copy_costs(const copy_opt_t *co);
  * Returns a lower bound for the costs of copies in this ou.
  * The result includes inevitable costs and the costs of a
  * minimal costs caused by the nodes of the ou.
+ * Uses the OU data structure
  */
 int co_get_lower_bound(const copy_opt_t *co);
 
@@ -123,18 +128,20 @@ void co_free_graph_structure(copy_opt_t *co);
 /**
  * Solves the problem using mixed integer programming
  * @returns 1 iff solution state was optimal
+ * NYI
  */
 int co_solve_ilp1(copy_opt_t *co, double time_limit);
 
 /**
  * Solves the problem using mixed integer programming
  * @returns 1 iff solution state was optimal
+ * Uses the OU and the GRAPH data structure
  */
 int co_solve_ilp2(copy_opt_t *co, double time_limit);
 
 /**
  * Checks if a node is optimizable, viz. has somthing to do with coalescing.
- * Uses the graph representation
+ * Uses the GRAPH data structure
  */
 int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn);
 

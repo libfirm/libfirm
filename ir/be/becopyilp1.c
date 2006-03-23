@@ -6,10 +6,7 @@
  * CVS-ID:      $Id$
  *
  * ILP formalization using:
- *  - 2 classes of vars: Nodes- and optimality variables.
- *  - Clique constraints
- *  - Path constraints
- *  - Clique path constraints
+ *   ????
  */
 
 #ifdef HAVE_CONFIG_H
@@ -23,13 +20,12 @@
 #define DEBUG_LVL 1
 
 typedef struct _my_env_t {
-	int foo;
+	int dummy;
 } my_env_t;
 
 
 static void ilp1_build(ilp_env_t *ienv) {
 	ienv->lp = new_lpp(ienv->co->name, lpp_minimize);
-
 }
 
 static void ilp1_apply(ilp_env_t *ienv) {
