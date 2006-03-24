@@ -1037,7 +1037,7 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
 {
 	ir_graph *irg = env->birg->irg;
-	int i, n;
+	int n;
 	int n_regs = pmap_count(regs);
 	ir_node *irn;
 	ir_node **in;
@@ -1045,8 +1045,8 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 
 	rm = reg_map_to_arr(&env->obst, regs);
 
-	for(i = 0, n = 0; i < n_regs; ++i, ++n)
-		obstack_ptr_grow(&env->obst, rm[i].irn);
+	for(n = 0; n < n_regs; ++n)
+		obstack_ptr_grow(&env->obst, rm[n].irn);
 
 	if(mem) {
 		obstack_ptr_grow(&env->obst, *mem);
@@ -1062,7 +1062,7 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 		ir_node *proj;
 		const arch_register_t *reg = rm[n].reg;
 
-		proj = new_r_Proj(env->birg->irg, bl, irn, get_irn_mode(rm[i].irn), n);
+		proj = new_r_Proj(env->birg->irg, bl, irn, get_irn_mode(rm[n].irn), n);
 		be_node_set_reg_class(irn, n, reg->reg_class);
 		if(in_req)
 			be_set_constr_single_reg(irn, n, reg);
@@ -1349,6 +1349,7 @@ static void modify_irg(be_abi_irg_t *env)
 		}
 	}
 
+	del_pset(dont_save);
 	obstack_free(&env->obst, args);
 }
 
