@@ -236,7 +236,7 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 		if(is_Primitive_type(t))
 			be_abi_call_param_reg(abi, i, &cls->regs[i]);
 		else
-			be_abi_call_param_stack(abi, i, 1);
+			be_abi_call_param_stack(abi, i, 1, 0, 0);
 	}
 
 	for(i = 0, n = get_method_n_ress(method_type); i < n; ++i) {

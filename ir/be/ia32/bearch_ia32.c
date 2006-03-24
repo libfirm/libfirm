@@ -890,7 +890,7 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 
 	/* set stack parameters */
 	for (i = stack_idx; i < n; i++) {
-		be_abi_call_param_stack(abi, i, 1);
+		be_abi_call_param_stack(abi, i, 1, 0, 0);
 	}
 
 
