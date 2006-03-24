@@ -111,8 +111,24 @@ void normalize_one_return(ir_graph *irg)
 
   /* now create the Phi nodes */
   for (j = i = 0; i < n_ret_vals; ++i, j += n_rets) {
+    int k;
+    ir_node *first;
     /* the return values are already shuffled */
-    in[i] = new_r_Phi(irg, block, n_rets, &retvals[j], get_irn_mode(retvals[j]));
+
+    /* Beware: normally the Phi constructor automatically replaces a Phi(a,...a) into a
+       but NOT, if a is Unknown. Here, we known that this case can be optimize also,
+       so do it here */
+    first = retvals[j + 0];
+    for (k = 1; k < n_rets; ++k) {
+      if (retvals[j + k] != first) {
+        first = NULL;
+        break;
+      }
+    }
+    if (first)
+      in[i] = first;
+    else
+      in[i] = new_r_Phi(irg, block, n_rets, &retvals[j], get_irn_mode(retvals[j]));
   }
 
   endbl_in[last_idx++] = new_r_Return(irg, block, in[0], n_ret_vals-1, &in[1]);
