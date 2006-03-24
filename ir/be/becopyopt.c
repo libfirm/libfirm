@@ -31,7 +31,7 @@
 #include "becopystat.h"
 
 
-#define QUICK_AND_DIRTY_HACK
+#undef QUICK_AND_DIRTY_HACK
 
 /******************************************************************************
     _____                           _
@@ -390,10 +390,12 @@ static int compare_ous(const void *k1, const void *k2) {
 		return u2_has_constr - u1_has_constr;
 
 	/* Now check, whether the two units are connected */
+#if 0
 	for (i=0; i<u1->node_count; ++i)
 		for (o=0; o<u2->node_count; ++o)
 			if (u1->nodes[i] == u2->nodes[o])
 				return 0;
+#endif
 
 	/* After all, the sort key decides. Greater keys come first. */
 	return u2->sort_key - u1->sort_key;
@@ -404,27 +406,38 @@ static int compare_ous(const void *k1, const void *k2) {
  * Sort the ou's according to constraints and their sort_key
  */
 static void co_sort_units(copy_opt_t *co) {
-	int i, count = 0;
-	unit_t *tmp, *ou, **ous;
+	int i, count = 0, costs;
+	unit_t *ou, **ous;
 
 	/* get the number of ous, remove them form the list and fill the array */
 	list_for_each_entry(unit_t, ou, &co->units, units)
 		count++;
 	ous = alloca(count * sizeof(*ous));
 
-	i = 0;
-	list_for_each_entry_safe(unit_t, ou, tmp, &co->units, units) {
-		ous[i++] = ou;
-		list_del(&ou->units);
-	}
+	costs = co_get_max_copy_costs(co);
 
-	assert(count == i);
+	i = 0;
+	list_for_each_entry(unit_t, ou, &co->units, units)
+		ous[i++] = ou;
+
+	INIT_LIST_HEAD(&co->units);
+
+	assert(count == i && list_empty(&co->units));
+
+	for (i=0; i<count; ++i)
+		ir_printf("%+F\n", ous[i]->nodes[0]);
 
 	qsort(ous, count, sizeof(*ous), compare_ous);
+
+	ir_printf("\n\n");
+	for (i=0; i<count; ++i)
+		ir_printf("%+F\n", ous[i]->nodes[0]);
 
 	/* reinsert into list in correct order */
 	for (i=0; i<count; ++i)
 		list_add_tail(&ous[i]->units, &co->units);
+
+	assert(costs == co_get_max_copy_costs(co));
 }
 #endif
 

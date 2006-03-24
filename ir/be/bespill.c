@@ -27,6 +27,7 @@
 #include "benode_t.h"
 #include "bechordal_t.h"
 
+#undef REMAT
 /* This enables re-computation of values. Current state: Unfinished and buggy. */
 #undef BUGGY_REMAT
 
@@ -182,6 +183,7 @@ static void phi_walker(ir_node *irn, void *env) {
 	}
 }
 
+#ifdef REMAT
 
 #ifdef BUGGY_REMAT
 
@@ -237,6 +239,18 @@ is_alive:	;
 	return 1;
 }
 
+#else /* BUGGY_REMAT */
+
+static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *spilled, ir_node *reloader) {
+	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
+
+	return get_irn_arity(spilled) == 0 &&
+		   be_is_Spill(spill) &&
+		   arch_irn_is(aenv, spilled, rematerializable);
+}
+
+#endif /* BUGGY_REMAT */
+
 static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
 	ir_node *res;
 	ir_node *bl = (is_Block(reloader)) ? reloader : get_nodes_block(reloader);
@@ -247,6 +261,7 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 		get_irn_mode(spilled),
 		get_irn_arity(spilled),
 		get_irn_in(spilled));
+	copy_node_attr(spilled, res);
 
 	DBG((senv->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
 
@@ -304,7 +319,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 			/* the spill for this reloader */
 			ir_node *spill   = be_spill_node(senv, si->spilled_node);
 
-#ifdef BUGGY_REMAT
+#ifdef REMAT
 			if (check_remat_conditions(senv, spill, si->spilled_node, rld->reloader))
 				new_val = do_remat(senv, si->spilled_node, rld->reloader);
 			else
