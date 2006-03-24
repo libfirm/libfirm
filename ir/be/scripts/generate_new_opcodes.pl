@@ -292,6 +292,14 @@ print OUT<<ENDOFISIRN;
 static opcode $arch\_opcode_start = -1;
 static opcode $arch\_opcode_end   = -1;
 
+opcode get_$arch\_opcode_first(void) {
+  return $arch\_opcode_start + 1;
+}
+
+opcode get_$arch\_opcode_last(void) {
+  return $arch\_opcode_end - 1;
+}
+
 int is_$arch\_irn(const ir_node *node) {
   opcode opc = get_irn_opcode(node);
 
@@ -343,7 +351,9 @@ close(OUT);
 
 open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
 
-print OUT "int is_$arch\_irn(const ir_node *node);\n";
+print OUT "int is_$arch\_irn(const ir_node *node);\n\n";
+print OUT "opcode get_$arch\_opcode_first(void);\n";
+print OUT "opcode get_$arch\_opcode_last(void);\n\n";
 print OUT @obst_header;
 
 close(OUT);
