@@ -2410,6 +2410,12 @@ int
   return _is_Sel(node);
 }
 
+/* returns true if node is a Mux node or a Psi with only one condition. */
+int
+(is_Mux)(const ir_node *node) {
+  return _is_Mux(node);
+}
+
 int
 is_Proj (const ir_node *node) {
   assert(node);
