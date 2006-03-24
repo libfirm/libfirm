@@ -592,7 +592,13 @@ $additional_opcodes = 0;
 # Conversions
 
 "Conv_I2I" => {
-  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "gp", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3", "none" ] },
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "comment"  => "construct Conv Int -> Int"
+},
+
+"Conv_I2I8Bit" => {
+  "reg_req"  => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ], "out" => [ "in_r3", "none" ] },
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Int -> Int"
 },

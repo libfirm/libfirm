@@ -1463,6 +1463,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 	ir_graph          *irg      = env->irg;
 	ir_mode           *src_mode = get_irn_mode(op);
 	ir_mode           *tgt_mode = env->mode;
+	int                tgt_bits = get_mode_size_bits(tgt_mode);
 	ir_node           *block    = env->block;
 	ir_node           *new_op   = NULL;
 	ir_node           *noreg    = ia32_new_NoReg_gp(env->cg);
@@ -1487,13 +1488,19 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 			DB((mod, LEVEL_1, "create Conv(float, int) ..."));
 			new_op = new_rd_ia32_Conv_FP2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 			/* if target mode is not int: add an additional downscale convert */
-			if (get_mode_size_bits(tgt_mode) < 32) {
+			if (tgt_bits < 32) {
 				SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 				set_ia32_res_mode(new_op, tgt_mode);
 				set_ia32_am_support(new_op, ia32_am_Source);
 
 				proj   = new_rd_Proj(dbg, irg, block, new_op, mode_Is, 0);
-				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, proj, nomem, mode_T);
+
+				if (tgt_bits == 8) {
+					new_op = new_rd_ia32_Conv_I2I8Bit(dbg, irg, block, noreg, noreg, proj, nomem, mode_T);
+				}
+				else {
+					new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, proj, nomem, mode_T);
+				}
 			}
 		}
 	}
@@ -1506,13 +1513,18 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 		}
 		else {
 			/* ... to int */
-			if (get_mode_size_bits(src_mode) == get_mode_size_bits(tgt_mode)) {
+			if (get_mode_size_bits(src_mode) == tgt_bits) {
 				DB((mod, LEVEL_1, "omitting equal size Conv(%+F, %+F) ...", src_mode, tgt_mode));
 				edges_reroute(env->irn, op, irg);
 			}
 			else {
 				DB((mod, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
-				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
+				if (tgt_bits == 8) {
+					new_op = new_rd_ia32_Conv_I2I8Bit(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
+				}
+				else {
+					new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
+				}
 			}
 		}
 	}
