@@ -33,7 +33,6 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
-#include "gen_ia32_new_nodes.h"
 
 #ifdef obstack_chunk_alloc
 # undef obstack_chunk_alloc
@@ -1060,7 +1059,8 @@ void alloc_ia32_reg_slots(ir_node *node, int num) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
 	if (num) {
-		attr->slots = xcalloc(num, sizeof(attr->slots[0]));
+		attr->slots = NEW_ARR_D(arch_register_t *, get_irg_obstack(get_irn_irg(node)), num);
+		memset(attr->slots, 0, sizeof(attr->slots[0]) * num);
 	}
 	else {
 		attr->slots = NULL;
@@ -1117,6 +1117,9 @@ static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
 	memcpy((void *)attr_new->slots, (void *)attr_old->slots, sizeof(attr_new->slots[0]) * n_res);
 }
 
+/**
+ * Registers the ia32_copy_attr function for all ia32 opcodes.
+ */
 void ia32_register_copy_attr_func(void) {
 	unsigned i, f = get_ia32_opcode_first(), l = get_ia32_opcode_last();
 

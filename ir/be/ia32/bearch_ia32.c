@@ -775,6 +775,7 @@ static void *ia32_init(void) {
 
 	ia32_register_init(isa);
 	ia32_create_opcodes();
+	ia32_register_copy_attr_func();
 
 	isa->regs_16bit = pmap_create();
 	isa->regs_8bit  = pmap_create();

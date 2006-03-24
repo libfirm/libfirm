@@ -1463,6 +1463,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 	ir_graph          *irg      = env->irg;
 	ir_mode           *src_mode = get_irn_mode(op);
 	ir_mode           *tgt_mode = env->mode;
+	int                src_bits = get_mode_size_bits(src_mode);
 	int                tgt_bits = get_mode_size_bits(tgt_mode);
 	ir_node           *block    = env->block;
 	ir_node           *new_op   = NULL;
@@ -1495,7 +1496,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 
 				proj   = new_rd_Proj(dbg, irg, block, new_op, mode_Is, 0);
 
-				if (tgt_bits == 8) {
+				if (tgt_bits == 8 || src_bits == 8) {
 					new_op = new_rd_ia32_Conv_I2I8Bit(dbg, irg, block, noreg, noreg, proj, nomem, mode_T);
 				}
 				else {
@@ -1519,7 +1520,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 			}
 			else {
 				DB((mod, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
-				if (tgt_bits == 8) {
+				if (tgt_bits == 8 || src_bits == 8) {
 					new_op = new_rd_ia32_Conv_I2I8Bit(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 				}
 				else {
