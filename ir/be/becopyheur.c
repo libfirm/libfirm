@@ -582,6 +582,8 @@ int co_solve_heuristic(copy_opt_t *co) {
 	unit_t *curr;
 	dbg = firm_dbg_register("ir.be.copyoptheur");
 
+	ASSERT_OU_AVAIL(co);
+
 	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
 	list_for_each_entry(unit_t, curr, &co->units, units)
 		if (curr->node_count > 1)

@@ -30,8 +30,6 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#ifdef WITH_ILP
-
 #include <bitset.h>
 #include "pdeq.h"
 
@@ -142,6 +140,12 @@ static void build_interference_cstr(ilp_env_t *ienv) {
 	}
 }
 
+
+/**
+ * TODO: Remove the dependency of the opt-units data structure
+ *       by walking over all affinity edges. Graph structure
+ *       does not provide this walker, yet.
+ */
 static void build_affinity_cstr(ilp_env_t *ienv) {
 	unit_t *curr;
 	int n_colors = arch_register_class_n_regs(ienv->co->cls);
@@ -249,7 +253,7 @@ static INLINE void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counte
  * At most 1 node of the clique can be colored equally with the external node.
  */
 static void build_clique_star_cstr(ilp_env_t *ienv) {
-	affinity_t *aff;
+	affinity_node_t *aff;
 
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff) {
@@ -358,7 +362,7 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, ir_node *irn) {
 	be_ifg_t *ifg = ienv->co->cenv->ifg;
 	int i, len;
 	ir_node **curr_path;
-	affinity_t *aff;
+	affinity_node_t *aff;
 	neighb_t *nbr;
 
 	/* do not walk backwards or in circles */
@@ -423,7 +427,7 @@ end:
  *  Then at least one of these affinity edges must break.
  */
 static void build_path_cstr(ilp_env_t *ienv) {
-	affinity_t *aff_info;
+	affinity_node_t *aff_info;
 
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff_info) {
@@ -500,6 +504,9 @@ int co_solve_ilp2(copy_opt_t *co, double time_limit) {
 	ilp_env_t *ienv;
 	local_env_t my;
 
+	ASSERT_OU_AVAIL(co); //See build_clique_st
+	ASSERT_GS_AVAIL(co);
+
 	my.time_limit  = time_limit;
 	my.first_x_var = -1;
 	my.last_x_var  = -1;
@@ -516,10 +523,3 @@ int co_solve_ilp2(copy_opt_t *co, double time_limit) {
 
 	return sol_state == lpp_optimal;
 }
-
-#else /* WITH_ILP */
-
-static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
-}
-
-#endif /* WITH_ILP */

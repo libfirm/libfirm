@@ -36,6 +36,9 @@ struct _copy_opt_t {
 };
 
 /* Helpers */
+#define ASSERT_OU_AVAIL(co)		assert((co)->units.next && "Representation as optimization-units not build")
+#define ASSERT_GS_AVAIL(co)		assert((co)->nodes && "Representation as graph not build")
+
 #define get_irn_col(co, irn)		arch_register_get_index(arch_get_irn_register((co)->aenv, irn))
 #define set_irn_col(co, irn, col)	arch_set_irn_register((co)->aenv, irn, arch_register_for_index((co)->cls, col))
 #define is_curr_reg_class(co, irn)	(arch_get_irn_reg_class((co)->aenv, irn, -1) == (co)->cls)
@@ -96,24 +99,26 @@ typedef struct _unit_t {
  ******************************************************************************/
 
 typedef struct _neighb_t neighb_t;
-typedef struct _affinity_t affinity_t;
+typedef struct _affinity_node_t affinity_node_t;
 
 
 struct _neighb_t {
 	neighb_t *next;			/** the next neighbour entry*/
 	ir_node *irn;			/** the neighbour itself */
-	int costs;				/** the costs of the edge (node_t->irn, neighb_t->irn) */
+	int costs;				/** the costs of the edge (affinity_node_t->irn, neighb_t->irn) */
 };
 
-struct _affinity_t {
+struct _affinity_node_t {
 	ir_node *irn;			/** a node with affinity edges */
-	int count;				/** number of affinity edges in the linked list below */
+	int degree;				/** number of affinity edges in the linked list below */
 	neighb_t *neighbours;	/** a linked list of all affinity neighbours */
 };
 
 
-static INLINE affinity_t *get_affinity_info(const copy_opt_t *co, ir_node *irn) {
-	affinity_t find;
+static INLINE affinity_node_t *get_affinity_info(const copy_opt_t *co, ir_node *irn) {
+	affinity_node_t find;
+
+	ASSERT_GS_AVAIL(co);
 
 	find.irn = irn;
 	return set_find(co->nodes, &find, sizeof(find), HASH_PTR(irn));
@@ -125,5 +130,7 @@ static INLINE affinity_t *get_affinity_info(const copy_opt_t *co, ir_node *irn) 
 #define co_gs_foreach_aff_node(co, aff_node)	for (aff_node = co_gs_nodes_begin(co); aff_node; aff_node = co_gs_nodes_next(co))
 
 #define co_gs_foreach_neighb(aff_node, neighb)	for (neighb = aff_node->neighbours; neighb; neighb = neighb->next)
+
+
 
 #endif
