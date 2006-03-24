@@ -1186,12 +1186,14 @@ void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE          *F    = emit_env->out;
 	unsigned       offs = be_get_IncSP_offset(irn);
-	be_stack_dir_t dir  = be_get_IncSP_direction(irn);
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (offs) {
-		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S,%s%u", irn,
-			(dir == be_stack_dir_along) ? " -" : " ", offs);
+		be_stack_dir_t dir = be_get_IncSP_direction(irn);
+		if (dir == be_stack_dir_along)
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1S, %u", irn, offs);
+		else
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S, %u", irn, offs);
 		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (IncSP) */", irn);
 	}
 	else {
