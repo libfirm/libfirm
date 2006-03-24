@@ -3500,8 +3500,15 @@ gigo (ir_node *node)
 
       if (is_Bad(pred))
         return new_Bad();
+#if 0
+      /* Propagating Unknowns here seems to be a bad idea, because
+         sometimes we need a node as a input and did not want that
+         it kills it's user.
+         However, i might be useful to move this into a later phase
+         (it you thing optimizing such code is useful). */
       if (is_Unknown(pred) && mode_is_data(get_irn_mode(node)))
         return new_Unknown(get_irn_mode(node));
+#endif
     }
   }
 #if 0
