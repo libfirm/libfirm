@@ -79,10 +79,12 @@ static int apply_alternating_path(const bipartite_t *gr, int *matching,
 
 			assert(right != -1);
 
-			/* We have to find another left node which has the old right
-			 * one as a neighbor. */
+			/*
+				We have to find another left node which has the old right one as a neighbor.
+				This node must not be part of a matching
+			*/
 			for(i = 0; i < gr->n_left; ++i)
-				if(i != left && bitset_is_set(gr->adj[i], old_right))
+				if(i != left && bitset_is_set(gr->adj[i], old_right) && !bitset_is_set(matched_left, i))
 					break;
 
 			/* If no such node can be found, exit. */
@@ -120,14 +122,11 @@ static int apply_alternating_path(const bipartite_t *gr, int *matching,
 
 void bipartite_matching(const bipartite_t *gr, int *matching)
 {
-	bitset_t *matched_left = bitset_malloc(gr->n_left);
-	bitset_t *matched_right = bitset_malloc(gr->n_right);
+	bitset_t *matched_left = bitset_alloca(gr->n_left);
+	bitset_t *matched_right = bitset_alloca(gr->n_right);
 
 	memset(matching, -1, gr->n_left * sizeof(int));
 	while(apply_alternating_path(gr, matching, matched_left, matched_right));
-
-	bitset_free(matched_left);
-	bitset_free(matched_right);
 }
 
 void bipartite_dump(FILE *f, const bipartite_t *gr)
