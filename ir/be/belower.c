@@ -536,6 +536,7 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 	}
 	else {
 		keep = be_new_CopyKeep_single(cls, birg->irg, block, cpy, irn, get_irn_mode(other_different));
+		be_node_set_reg_class(keep, 1, cls);
 		edges_reroute(other_different, keep, birg->irg);
 	}
 
