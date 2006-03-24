@@ -33,6 +33,7 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
+#include "gen_ia32_new_nodes.h"
 
 #ifdef obstack_chunk_alloc
 # undef obstack_chunk_alloc
@@ -1100,6 +1101,29 @@ int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	}
 
 	return 1;
+}
+
+/* copies the ia32 attributes */
+static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
+	ia32_attr_t    *attr_old = get_ia32_attr(old_node);
+	ia32_attr_t    *attr_new = get_ia32_attr(new_node);
+	int             n_res    = get_ia32_n_res(old_node);
+
+	/* copy the attributes */
+	memcpy(attr_new, attr_old, sizeof(*attr_new));
+
+	/* copy the register slots */
+	attr_new->slots = NEW_ARR_D(arch_register_t *, get_irg_obstack(get_irn_irg(new_node)), n_res);
+	memcpy((void *)attr_new->slots, (void *)attr_old->slots, sizeof(attr_new->slots[0]) * n_res);
+}
+
+void ia32_register_copy_attr_func(void) {
+	unsigned i, f = get_ia32_opcode_first(), l = get_ia32_opcode_last();
+
+	for (i = f; i < l; i++) {
+		ir_op *op = get_irp_opcode(i);
+		op->ops.copy_attr = ia32_copy_attr;
+	}
 }
 
 static void ia32_register_additional_opcodes(int n) {
