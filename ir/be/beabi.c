@@ -536,7 +536,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 					unspeakable Proj_T from the Call. Therefore, all real argument
 					Proj numbers must be increased by pn_Call_max
 				*/
-		   		proj += pn_Call_max;
+				proj += pn_Call_max;
 				set_Proj_proj(res, proj);
 				obstack_ptr_grow(obst, res);
 
@@ -565,8 +565,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	}
 
-	else
+  else
 		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, call_ptr, curr_res_proj + pset_count(caller_save), n_low_args, in);
+
+  set_irn_dbg_info(low_call, get_irn_dbg_info(irn));
 
 	/*
 		TODO:
