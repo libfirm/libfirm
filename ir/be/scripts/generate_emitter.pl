@@ -117,7 +117,7 @@ foreach my $op (keys(%nodes)) {
 		}
 	}
 
-	push(@obst_func, '  lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, n);'."\n");
+	push(@obst_func, '  lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);'."\n");
 	push(@obst_func, "}\n\n");
 }
 
