@@ -99,16 +99,16 @@ static unsigned get_next_use_bl(be_uses_t *uses, const ir_node *bl,
   return u->next_use;
 }
 
-unsigned be_get_next_use(be_uses_t *uses,
-    const ir_node *from, unsigned from_step, const ir_node *def,
-    int skip_from_uses)
+static unsigned get_next_use(be_uses_t *uses, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses, unsigned long visited_nr)
 {
 	unsigned next_use = USES_INFINITY;
-	unsigned step = from_step;
-	unsigned n = 0;
+	unsigned step     = from_step;
+	unsigned n        = 0;
+	ir_node *bl       = get_nodes_block(from);
 	const ir_node *irn;
-	const ir_node *bl = get_block(from);
 	const ir_edge_t *succ_edge;
+
+	set_irn_visited(bl, visited_nr);
 
 	sched_foreach_from(from, irn) {
 		int i, n;
@@ -130,23 +130,29 @@ unsigned be_get_next_use(be_uses_t *uses,
 
 	next_use = USES_INFINITY;
 	foreach_block_succ(bl, succ_edge) {
- 		const ir_node *succ_bl = succ_edge->src;
-		if(is_live_in(succ_bl, def) || (get_irn_arity(succ_bl) > 1 && is_live_end(bl, def))) {
+		const ir_node *succ_bl = succ_edge->src;
+		if(get_irn_visited(succ_bl) < visited_nr && (is_live_in(succ_bl, def) || (get_irn_arity(succ_bl) > 1 && is_live_end(bl, def)))) {
 			unsigned next = get_next_use_bl(uses, succ_bl, def);
 
 			DBG((uses->dbg, LEVEL_2, "\t\tnext use in succ %+F: %d\n", succ_bl, next));
 			next_use = MIN(next_use, next);
 			n++;
-	    }
+		}
 	}
 
 	return next_use + step;
 }
 
-be_uses_t *be_begin_uses(
-    ir_graph *irg,
-    const arch_env_t *arch_env,
-    const arch_register_class_t *cls)
+unsigned be_get_next_use(be_uses_t *uses, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
+{
+	unsigned long visited_nr = get_irg_visited(uses->irg) + 1;
+
+	set_irg_visited(uses->irg, visited_nr);
+	return get_next_use(uses, from, from_step, def, skip_from_uses, visited_nr);
+}
+
+
+be_uses_t *be_begin_uses(ir_graph *irg, const arch_env_t *arch_env, const arch_register_class_t *cls)
 {
   be_uses_t *uses = xmalloc(sizeof(uses[0]));
 
@@ -155,6 +161,7 @@ be_uses_t *be_begin_uses(
   uses->arch_env = arch_env;
   uses->uses     = new_set(cmp_use, 512);
   uses->dbg      = firm_dbg_register("be.uses");
+  uses->irg      = irg;
   firm_dbg_set_mask(uses->dbg, DBG_LEVEL);
 
   return uses;
