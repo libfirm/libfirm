@@ -8,15 +8,7 @@
  */
 
 #include "firm_config.h"
-
 #include "ia32_nodes_attr.h"
-
-/**
- * Returns the name of a firm symconst.
- */
-const char *get_sc_name(ir_node *symc);
-
-
 
 /***************************************************************************************************
  *        _   _                   _       __        _                    _   _               _
@@ -43,6 +35,16 @@ ia32_op_type_t get_ia32_op_type(const ir_node *node);
  * Sets the type of an ia32 node.
  */
 void set_ia32_op_type(ir_node *node, ia32_op_type_t tp);
+
+/**
+ * Gets the immediate op type of an ia32 node.
+ */
+ia32_immop_type_t get_ia32_immop_type(const ir_node *node);
+
+/**
+ * Sets the immediate op type of an ia32 node.
+ */
+void set_ia32_immop_type(ir_node *node, ia32_immop_type_t tp);
 
 /**
  * Gets the supported addrmode of an ia32 node
@@ -72,12 +74,12 @@ char *get_ia32_am_offs(const ir_node *node);
 /**
  * Adds an offset for addrmode.
  */
-void add_ia32_am_offs(ir_node *node, char *offset);
+void add_ia32_am_offs(ir_node *node, const char *offset);
 
 /**
  * Subs an offset for addrmode.
  */
-void sub_ia32_am_offs(ir_node *node, char *offset);
+void sub_ia32_am_offs(ir_node *node, const char *offset);
 
 /**
  * Gets the addr mode const.
@@ -102,22 +104,32 @@ void set_ia32_Immop_tarval(ir_node *node, tarval *tv);
 /**
  * Return the sc attribute.
  */
-const char *get_ia32_sc(const ir_node *node);
+ident *get_ia32_sc(const ir_node *node);
 
 /**
  * Sets the sc attribute.
  */
-void set_ia32_sc(ir_node *node, const char *sc);
+void set_ia32_sc(ir_node *node, ident *sc);
 
 /**
  * Gets the string representation of the internal const (tv or symconst)
  */
-char *get_ia32_cnst(const ir_node *node);
+const char *get_ia32_cnst(const ir_node *node);
 
 /**
  * Sets the string representation of the internal const.
  */
 void set_ia32_cnst(ir_node *node, char *cnst);
+
+/**
+ * Gets the ident representation of the internal const (tv or symconst)
+ */
+ident *get_ia32_id_cnst(const ir_node *node);
+
+/**
+ * Sets the ident representation of the internal const.
+ */
+void set_ia32_id_cnst(ir_node *node, ident *cnst);
 
 /**
  * Sets the uses_frame flag.
@@ -334,6 +346,16 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
  * @param direction The "direction" of AM ('S' source or 'D' destination)
  */
 void set_ia32_AddrMode(ir_node *node, char direction);
+
+/**
+ * Returns whether or not the node is an immediate operation with Const.
+ */
+int is_ia32_ImmConst(const ir_node *node);
+
+/**
+ * Returns whether or not the node is an immediate operation with SymConst.
+ */
+int is_ia32_ImmSymConst(const ir_node *node);
 
 /**
  * Returns whether or not the node is an AddrModeS node.

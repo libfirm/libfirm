@@ -99,7 +99,7 @@ static ir_node *get_proj_for_pn(const ir_node *irn, long pn) {
 }
 
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
-static const char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
+static ident *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 	static const struct {
 		const char *tp_name;
 		const char *ent_name;
@@ -145,7 +145,8 @@ static const char *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 		/* cache the entry */
 		ent_cache[kct] = ent;
 	}
-	return ent_name;
+
+	return get_entity_ident(ent_cache[kct]);
 }
 
 #ifndef NDEBUG
@@ -544,7 +545,7 @@ static ir_node *gen_Mulh(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) 
 	/* to be on the save side */
 	set_Proj_proj(proj_EAX, pn_EAX);
 
-	if (get_ia32_cnst(mulh)) {
+	if (is_ia32_ImmConst(mulh) || is_ia32_ImmSymConst(mulh)) {
 		/* Mulh with const cannot have AM */
 		set_ia32_am_support(mulh, ia32_am_None);
 	}
@@ -908,9 +909,16 @@ static ir_node *gen_Quot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) 
 	ir_node *nomem = new_rd_NoMem(env->irg);
 	ir_node *new_op;
 
-	new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem, mode_T);
+	if (is_ia32_fConst(op2)) {
+		new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, noreg, nomem, mode_T);
+		set_ia32_am_support(new_op, ia32_am_None);
+		set_ia32_Immop_attr(new_op, op2);
+	}
+	else {
+		new_op = new_rd_ia32_fDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem, mode_T);
+		set_ia32_am_support(new_op, ia32_am_Source);
+	}
 	set_ia32_res_mode(new_op, get_irn_mode(get_proj_for_pn(env->irn, pn_Quot_res)));
-	set_ia32_am_support(new_op, ia32_am_Source);
 
 	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
@@ -1046,7 +1054,7 @@ static ir_node *gen_Rot(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
  * @return The created ia32 Minus node
  */
 static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
-	const char *name;
+	ident   *name;
 	ir_node *new_op;
 	ir_node *noreg_gp = ia32_new_NoReg_gp(env->cg);
 	ir_node *noreg_fp = ia32_new_NoReg_fp(env->cg);
@@ -1064,6 +1072,7 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 		SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
 		set_ia32_res_mode(new_op, env->mode);
+		set_ia32_immop_type(new_op, ia32_ImmSymConst);
 
 		new_op = new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
 	}
@@ -1115,7 +1124,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 	ir_node  *noreg_fp = ia32_new_NoReg_fp(env->cg);
 	ir_node  *nomem    = new_NoMem();
 	int       size;
-	const char *name;
+	ident    *name;
 
 	if (mode_is_float(mode)) {
 		res = new_rd_ia32_fAnd(dbg,irg, block, noreg_gp, noreg_gp, op, noreg_fp, nomem, mode_T);
@@ -1128,6 +1137,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 		SET_IA32_ORIG_NODE(res, get_old_node_name(env));
 
 		set_ia32_res_mode(res, mode);
+		set_ia32_immop_type(res, ia32_ImmSymConst);
 
 		res = new_rd_Proj(dbg, irg, block, res, mode, 0);
 	}
@@ -1277,17 +1287,17 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 			if (mode_is_int(get_irn_mode(expr))) {
 				if (classify_tarval(get_ia32_Immop_tarval(cnst)) == TV_CLASSIFY_NULL) {
 					/* a Cmp A, 0 */
-					ir_node *op1 = expr;
-					ir_node *op2 = expr;
-					ir_node *and = skip_Proj(expr);
-					char *cnst = NULL;
+					ir_node    *op1  = expr;
+					ir_node    *op2  = expr;
+					ir_node    *and  = skip_Proj(expr);
+					const char *cnst = NULL;
 
 					/* check, if expr is an only once used And operation */
 					if (get_irn_n_edges(expr) == 1 && is_ia32_And(and)) {
 						op1 = get_irn_n(and, 2);
 						op2 = get_irn_n(and, 3);
 
-						cnst = get_ia32_cnst(and);
+						cnst = (is_ia32_ImmConst(and) || is_ia32_ImmSymConst(and)) ? get_ia32_cnst(and) : NULL;
 					}
 					res = new_rd_ia32_TestJmp(dbg, irg, block, op1, op2, mode_T);
 					set_ia32_pncode(res, get_Proj_proj(sel));
@@ -1367,6 +1377,7 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 	else {
 		res = new_rd_ia32_CopyB_i(dbg, irg, block, dst, src, mem, mode);
 		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
+		set_ia32_immop_type(res, ia32_ImmConst);
 	}
 
 	SET_IA32_ORIG_NODE(res, get_old_node_name(env));
@@ -1597,6 +1608,7 @@ static ir_node *gen_FrameAddr(ia32_transform_env_t *env) {
 	set_ia32_frame_ent(new_op, be_get_frame_entity(node));
 	set_ia32_am_support(new_op, ia32_am_Full);
 	set_ia32_use_frame(new_op);
+	set_ia32_immop_type(new_op, ia32_ImmConst);
 
 	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 
@@ -1842,8 +1854,10 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	arch_set_irn_register(cg->arch_env, res, out_reg);
 	set_ia32_op_type(res, ia32_Normal);
 
-	if (imm)
+	if (imm) {
 		set_ia32_cnst(res, offs);
+		set_ia32_immop_type(res, ia32_ImmConst);
+	}
 
 	SET_IA32_ORIG_NODE(res, get_old_node_name(&tenv));
 

@@ -288,7 +288,7 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 
 	switch(get_ia32_op_type(n)) {
 		case ia32_Normal:
-			if (get_ia32_cnst(n)) {
+			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
 				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
 			}
 			else {
@@ -308,11 +308,11 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n, env));
 			break;
 		case ia32_AddrModeD:
-			if (get_ia32_cnst(n)) {
+			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
 				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s,%s%s",
 					ia32_emit_am(n, env),
-					get_ia32_sc(n) ? " OFFSET FLAT:" : " ",    /* In case of a symconst we must add OFFSET to */
-					get_ia32_cnst(n));                         /* tell the assembler to store it's address.   */
+					is_ia32_ImmSymConst(n) ? " OFFSET FLAT:" : " ",  /* In case of a symconst we must add OFFSET to */
+					get_ia32_cnst(n));                               /* tell the assembler to store it's address.   */
 			}
 			else {
 				const arch_register_t *in1 = get_in_reg(n, 2);
@@ -657,20 +657,25 @@ void emit_ia32_CondJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
  * Emits code for conditional test and jump.
  */
 static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
+
+#define IA32_IS_IMMOP (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn))
+
 	FILE       *F   = env->out;
 	const char *op1 = arch_register_get_name(get_in_reg(irn, 0));
-	const char *op2 = get_ia32_cnst(irn);
+	const char *op2 = IA32_IS_IMMOP ? get_ia32_cnst(irn) : NULL;
 	char        cmd_buf[SNPRINTF_BUF_LEN];
 	char        cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (! op2)
 		op2 = arch_register_get_name(get_in_reg(irn, 1));
 
-	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %%%s,%s%s ", op1, get_ia32_cnst(irn) ? " " : " %", op2);
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "test %%%s,%s%s ", op1, IA32_IS_IMMOP ? " " : " %", op2);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 
 	IA32_DO_EMIT(irn);
 	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 0)));
+
+#undef IA32_IS_IMMOP
 }
 
 /**

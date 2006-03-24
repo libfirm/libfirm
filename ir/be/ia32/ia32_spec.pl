@@ -386,7 +386,7 @@ $additional_opcodes = 0;
 4.   sub %D1, %D1 /* optimized mov 0 to register */
   }
   else {
-    if (get_ia32_sc(n)) {
+    if (get_ia32_op_type(n) == ia32_SymConst) {
 6.    mov %D1, OFFSET FLAT:%C /* Move address of SymConst into register */
     }
 	else {

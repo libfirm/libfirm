@@ -262,15 +262,7 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env) {
  */
 
 static int ia32_cnst_compare(ir_node *n1, ir_node *n2) {
-	char *c1 = get_ia32_cnst(n1);
-	char *c2 = get_ia32_cnst(n2);
-
-	if (c1 && c2)                    /* both consts are set -> compare */
-		return strcmp(c1, c2) == 0;
-	else if (!c1 && !c2)             /* both consts are not set -> true */
-		return 1;
-
-	return 0;
+	return get_ia32_id_cnst(n1) == get_ia32_id_cnst(n2);
 }
 
 /**
@@ -584,7 +576,7 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 	ir_node  *block     = get_nodes_block(irn);
 	ir_node  *res       = irn;
 	char     *offs      = NULL;
-	char     *offs_cnst = NULL;
+	const char *offs_cnst = NULL;
 	char     *offs_lea  = NULL;
 	int       scale     = 0;
 	int       isadd     = 0;
@@ -636,7 +628,7 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 	am_flav = 0;
 
 	/* check if operand is either const */
-	if (get_ia32_cnst(irn)) {
+	if (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn)) {
 		DBG((mod, LEVEL_1, "\tfound op with imm"));
 
 		offs_cnst = get_ia32_cnst(irn);

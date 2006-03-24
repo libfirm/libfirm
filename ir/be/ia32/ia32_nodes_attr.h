@@ -10,7 +10,21 @@
 
 typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
 typedef enum { pn_EAX, pn_EDX } pn_ia32_Register;
-typedef enum { ia32_Normal, ia32_Const, ia32_SymConst, ia32_AddrModeD, ia32_AddrModeS } ia32_op_type_t;
+
+typedef enum {
+	ia32_Normal,
+	ia32_Const,
+	ia32_SymConst,
+	ia32_AddrModeD,
+	ia32_AddrModeS
+} ia32_op_type_t;
+
+typedef enum {
+	ia32_ImmNone,
+	ia32_ImmConst,
+	ia32_ImmSymConst
+} ia32_immop_type_t;
+
 typedef	enum {
 	ia32_am_None   = 0,   /**<< no addrmode support */
 	ia32_am_Dest   = 1,   /**<< addrmode for destination only */
@@ -55,6 +69,7 @@ typedef struct _ia32_register_req_t {
 typedef struct _ia32_attr_t {
 	struct {
 		unsigned tp:3;              /**< ia32 node type */
+		unsigned imm_tp:2;          /**< ia32 immop type */
 
 		unsigned am_support:2;      /**< indicates addrmode type supported by this node */
 		unsigned am_flavour:4;      /**< the concrete addrmode characteristics */
@@ -75,16 +90,19 @@ typedef struct _ia32_attr_t {
 
 	struct obstack *am_offs;    /**< offsets for AddrMode */
 
-	tarval *tv;   /**< tarval for immediate operations */
-	char   *sc;   /**< symconst name */
-	char   *cnst; /**< points to the string representation of the constant value (either tv or sc) */
+	union {
+		tarval *tv;     /**< tarval for immediate operations */
+		ident  *sc;     /**< the symconst ident */
+	} cnst_val;
 
-	ir_mode *ls_mode;  /**< the mode of the stored/loaded value */
-	ir_mode *res_mode; /**< the mode of the result */
+	ident *cnst;        /**< points to the string representation of the constant value (either tv or sc) */
 
-	entity *frame_ent; /**< the frame entity attached to this node */
+	ir_mode *ls_mode;   /**< the mode of the stored/loaded value */
+	ir_mode *res_mode;  /**< the mode of the result */
 
-	long pn_code;      /**< projnum "types" (e.g. indicate compare operators and argument numbers) */
+	entity *frame_ent;  /**< the frame entity attached to this node */
+
+	long pn_code;       /**< projnum "types" (e.g. indicate compare operators and argument numbers) */
 
 #ifndef NDEBUG
 	const char *orig_node;      /**< holds the name of the original ir node for debugging purposes */
