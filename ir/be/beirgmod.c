@@ -264,7 +264,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 				ir_node **ins = xmalloc(n_preds * sizeof(ins[0]));
 
 				for(i = 0; i < n_preds; ++i)
-					ins[i] = new_r_Unknown(irg, mode);
+					ins[i] = new_r_Bad(irg);
 
 				phi = new_r_Phi(irg, curr_bl, n_preds, ins, mode);
 				DBG((dbg, LEVEL_2, "\tcreating phi %+F in %+F\n", phi, curr_bl));
