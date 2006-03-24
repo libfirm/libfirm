@@ -336,11 +336,28 @@ static void be_main_loop(FILE *file_handle)
 	be_done_env(&env);
 }
 
+/* Main interface to the frontend. */
 void be_main(FILE *file_handle)
 {
 	/* never build code for pseudo irgs */
-  	set_visit_pseudo_irgs(0);
+	set_visit_pseudo_irgs(0);
 
 	be_node_init();
 	be_main_loop(file_handle);
+}
+
+/** The debug info retriever function. */
+static retrieve_dbg_func retrieve_dbg = NULL;
+
+/* Sets a debug info retriever. */
+void be_set_debug_retrieve(retrieve_dbg_func func) {
+	retrieve_dbg = func;
+}
+
+/* Retrieve the debug info. */
+const char *be_retrieve_dbg_info(const dbg_info *dbg, unsigned *line) {
+	if (retrieve_dbg)
+		return retrieve_dbg(dbg, line);
+	*line = 0;
+	return NULL;
 }
