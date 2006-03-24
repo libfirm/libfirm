@@ -103,30 +103,30 @@ unsigned be_get_next_use(be_uses_t *uses,
     const ir_node *from, unsigned from_step, const ir_node *def,
     int skip_from_uses)
 {
-  unsigned next_use = USES_INFINITY;
-  unsigned step = from_step;
-  unsigned n = 0;
-  const ir_node *irn;
-  const ir_node *bl = get_block(from);
-  const ir_edge_t *succ_edge;
+	unsigned next_use = USES_INFINITY;
+	unsigned step = from_step;
+	unsigned n = 0;
+	const ir_node *irn;
+	const ir_node *bl = get_block(from);
+	const ir_edge_t *succ_edge;
 
-  sched_foreach_from(from, irn) {
-    int i, n;
+	sched_foreach_from(from, irn) {
+		int i, n;
 
-	if(!skip_from_uses) {
-	    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-	      ir_node *operand = get_irn_n(irn, i);
+		if(!skip_from_uses) {
+			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+				ir_node *operand = get_irn_n(irn, i);
 
-	      if(operand == def) {
-	        DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, irn));
-	        return step;
-	      }
-	    }
+				if(operand == def) {
+					DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, irn));
+					return step;
+				}
+			}
+		}
+
+		skip_from_uses = 0;
+		step++;
 	}
-
-	skip_from_uses = 0;
-    step++;
-  }
 
 	next_use = USES_INFINITY;
 	foreach_block_succ(bl, succ_edge) {
