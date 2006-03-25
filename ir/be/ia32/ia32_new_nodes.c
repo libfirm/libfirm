@@ -933,7 +933,7 @@ void copy_ia32_Immop_attr(ir_node *dst, ir_node *src) {
 	ia32_attr_t *da = get_ia32_attr(dst);
 	ia32_attr_t *sa = get_ia32_attr(src);
 
-	switch(get_ia32_op_type(src)) {
+	switch(get_ia32_immop_type(src)) {
 		case ia32_ImmConst:
 			da->cnst_val.tv = sa->cnst_val.tv;
 			da->cnst        = sa->cnst;
