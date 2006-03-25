@@ -1278,7 +1278,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 				{
 					be_stack_attr_t *a = (be_stack_attr_t *) at;
 					fprintf(f, "offset: %u\n", a->offset);
-					fprintf(f, "direction: %s\n", a->dir == be_stack_dir_along ? "along" : "against");
+					fprintf(f, "direction: %s\n", a->dir == be_stack_dir_expand ? "expand" : "shrink");
 				}
 				break;
 			}
