@@ -444,7 +444,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		 * moving the stack pointer along the stack's direction.
 		 */
 		if(stack_dir < 0 && !do_seq && !no_alloc) {
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, stack_size, be_stack_dir_along);
+			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, stack_size, be_stack_dir_expand);
 		}
 
 		assert(mode_is_reference(mach_mode) && "machine mode must be pointer");
@@ -490,7 +490,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			*/
 			if(do_seq) {
 				curr_ofs = 0;
-				curr_sp  = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, param_size, be_stack_dir_along);
+				curr_sp  = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, param_size, be_stack_dir_expand);
 				curr_mem = mem;
 			}
 		}
@@ -647,7 +647,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		 /* Clean up the stack frame if we allocated it */
 		if(!no_alloc)
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, mem_proj, stack_size, be_stack_dir_against);
+			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, mem_proj, stack_size, be_stack_dir_shrink);
 	}
 
 	be_abi_call_free(call);
@@ -664,7 +664,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
  */
 static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp)
 {
-	if(get_Alloc_where(alloc) == stack_alloc) {
+	if (get_Alloc_where(alloc) == stack_alloc) {
 		ir_node *bl        = get_nodes_block(alloc);
 		ir_graph *irg      = get_irn_irg(bl);
 		ir_node *alloc_mem = NULL;
@@ -693,6 +693,9 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 			}
 		}
 
+    /* TODO: Beware: currently Alloc nodes without a result might happen,
+       only escape analysis kills them and this phase runs only for object
+       oriented source. So this must be fixed. */
 		assert(alloc_res != NULL);
 		exchange(alloc_res, env->isa->stack_dir < 0 ? new_alloc : curr_sp);
 
@@ -866,7 +869,7 @@ static ir_node *setup_frame(be_abi_irg_t *env)
 	int stack_nr       = get_Proj_proj(stack);
 
 	if(flags.try_omit_fp) {
-		stack = be_new_IncSP(sp, irg, bl, stack, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_along);
+		stack = be_new_IncSP(sp, irg, bl, stack, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
 		frame = stack;
 	}
 
@@ -880,7 +883,7 @@ static ir_node *setup_frame(be_abi_irg_t *env)
 			arch_set_irn_register(env->birg->main_env->arch_env, frame, bp);
 		}
 
-		stack = be_new_IncSP(sp, irg, bl, stack, frame, BE_STACK_FRAME_SIZE, be_stack_dir_along);
+		stack = be_new_IncSP(sp, irg, bl, stack, frame, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
 	}
 
 	be_node_set_flags(env->reg_params, -(stack_nr + 1), arch_irn_flags_ignore);
@@ -905,7 +908,7 @@ static void clearup_frame(be_abi_irg_t *env, ir_node *ret, pmap *reg_map, struct
 	pmap_entry *ent;
 
 	if(env->call->flags.bits.try_omit_fp) {
-		stack = be_new_IncSP(sp, irg, bl, stack, ret_mem, BE_STACK_FRAME_SIZE, be_stack_dir_against);
+		stack = be_new_IncSP(sp, irg, bl, stack, ret_mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
 	}
 
 	else {
@@ -1219,7 +1222,7 @@ static void modify_irg(be_abi_irg_t *env)
 	create_barrier(env, bl, &mem, env->regs, 0);
 
 	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
-	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_along);
+	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
@@ -1464,14 +1467,14 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 }
 
 /**
- * Translates a direction of an IncSP node (either be_stack_dir_against, or ...along)
+ * Translates a direction of an IncSP node (either be_stack_dir_shrink, or ...expand)
  * into -1 or 1, respectively.
  * @param irn The node.
  * @return 1, if the direction of the IncSP was along, -1 if against.
  */
 static int get_dir(ir_node *irn)
 {
-	return 1 - 2 * (be_get_IncSP_direction(irn) == be_stack_dir_against);
+	return 1 - 2 * (be_get_IncSP_direction(irn) == be_stack_dir_shrink);
 }
 
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
