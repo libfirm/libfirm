@@ -1190,7 +1190,7 @@ void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 
 	if (offs) {
 		be_stack_dir_t dir = be_get_IncSP_direction(irn);
-		if (dir == be_stack_dir_along)
+		if (dir == be_stack_dir_expand)
 			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1S, %u", irn, offs);
 		else
 			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S, %u", irn, offs);
