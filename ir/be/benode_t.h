@@ -68,8 +68,8 @@ typedef enum {
 
 /** Expresses the direction of the stack pointer increment of IncSP nodes. */
 typedef enum {
-	be_stack_dir_along = 0,
-	be_stack_dir_against = 1
+	be_stack_dir_expand = 0,
+	be_stack_dir_shrink = 1
 } be_stack_dir_t;
 
 /** Not used yet. */
