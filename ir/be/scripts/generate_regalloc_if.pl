@@ -59,7 +59,8 @@ sub translate_reg_type {
 }
 
 # stacks for output
-my @obst_regtypes;     # stack for the register type variables
+my @obst_regtypes_def; # stack for the register type variables definitions
+my @obst_regtypes_decl;# stack for the register type variables declarations
 my @obst_regclasses;   # stack for the register class variables
 my @obst_classdef;     # stack to define a name for a class index
 my @obst_regdef;       # stack to define a name for a register index
@@ -95,7 +96,7 @@ $tmp .= "};\n\n";
 push(@obst_req, $tmp);
 push(@obst_header_all, "extern const $arch\_register_req_t $arch\_default_req_none;\n");
 
-push(@obst_classdef, "#define N_CLASSES ".scalar(keys(%reg_classes))."\n");
+push(@obst_classdef, "enum reg_classes {\n");
 
 my $class_mode;
 
@@ -109,10 +110,10 @@ foreach my $class_name (keys(%reg_classes)) {
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 	$class_mode = pop(@class)->{"mode"};
 
-	push(@obst_regtypes, "#define $numregs ".($#class + 1)."\n");
-	push(@obst_regtypes, "arch_register_t ".$class_name."_regs[$numregs];\n\n");
+	push(@obst_regtypes_decl, "extern arch_register_t ".$class_name."_regs[$numregs];\n");
+	push(@obst_regtypes_def, "arch_register_t ".$class_name."_regs[$numregs];\n");
 
-	push(@obst_classdef, "#define CLASS_$class_name $class_idx\n");
+	push(@obst_classdef, "  CLASS_$class_name = $class_idx,\n");
 	push(@obst_regclasses, "{ \"$class_name\", $numregs, NULL, ".$class_name."_regs }");
 
 	# there is a default NORMAL requirement for each class
@@ -136,6 +137,7 @@ foreach my $class_name (keys(%reg_classes)) {
 	push(@obst_reginit, "  /* Init of all registers in class '$class_name' */\n\n");
 	push(@obst_reginit, "  /* set largest possible mode for '$class_name' */\n");
 	push(@obst_reginit, "  $arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n\n");
+	push(@obst_regdef, "enum reg_".$class_name."_values {\n");
 	foreach (@class) {
 		# For each class we build for each of it's member registers a limit function
 		# which limits the class to this particular register. We also build the
@@ -173,7 +175,7 @@ foreach my $class_name (keys(%reg_classes)) {
 		push(@obst_header_all,"extern const $arch\_register_req_t $arch\_default_req_$class_name\_".$_->{"name"}.";\n");
 
 		$reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
-		push(@obst_regdef, "#define REG_".uc($_->{"name"})." $idx\n");
+		push(@obst_regdef, "  REG_".uc($_->{"name"})." = $idx,\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"name"}."\";\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = $class_ptr;\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].index     = $idx;\n");
@@ -181,9 +183,14 @@ foreach my $class_name (keys(%reg_classes)) {
 		push(@obst_reginit, "\n");
 		$idx++;
 	}
+	push(@obst_regdef, "  $numregs = $idx\n");
+	push(@obst_regdef, "};\n\n");
 
 	$class_idx++;
 }
+
+push(@obst_classdef, "  N_CLASSES = ".scalar(keys(%reg_classes))."\n");
+push(@obst_classdef, "};\n\n");
 
 # generate node-register constraints
 foreach my $op (keys(%nodes)) {
@@ -263,7 +270,7 @@ print OUT @obst_regdef, "\n";
 
 print OUT @obst_classdef, "\n";
 
-print OUT @obst_regtypes, "\n";
+print OUT @obst_regtypes_decl, "\n";
 
 print OUT "extern arch_register_class_t $arch\_reg_classes[N_CLASSES];\n\n";
 
@@ -304,6 +311,8 @@ print OUT<<EOF;
 EOF
 
 print OUT "arch_register_class_t $arch\_reg_classes[] = {\n  ".join(",\n  ", @obst_regclasses)."\n};\n\n";
+
+print OUT @obst_regtypes_def, "\n";
 
 print OUT "void ".$arch."_register_init(void *isa_ptr) {\n";
 print OUT @obst_reginit;
