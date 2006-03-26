@@ -271,7 +271,7 @@ foreach my $op (keys(%nodes)) {
 
 	$n_opcodes++;
 	$temp  = "  op_$op = new_ir_op(cur_opcode++, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-	$temp .= ", ".translate_arity($arity).", 0, sizeof($arch\_attr_t), &ops);\n";
+	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t), &ops);\n";
 	push(@obst_new_irop, $temp);
 }
 
@@ -332,6 +332,7 @@ void $arch\_create_opcodes(void) {
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
 #define K   irop_flag_keep
+#define M   irop_flag_machine
 
   ir_op_ops ops;
   int cur_opcode = get_next_ir_opcodes($n_opcodes);
