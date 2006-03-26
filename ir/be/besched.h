@@ -53,4 +53,17 @@ ir_node *sched_irg_first(const ir_graph *irg);
 #define sched_foreach_reverse(block,irn) \
   sched_foreach_reverse_from(sched_last(block), irn)
 
+/**
+ * Calculates a block schedule. The schedule is returned as
+ * an array allocated on the irg's obstack.
+ *
+ * @param irg  the graph to be scheduled
+ *
+ * @return A list of all blocks in schedule order. This list is
+ *         allocated on irg's obstack and is freed if the graph is destroyed.
+ *
+ * This function implements a simple extended block scheduling algorithm.
+ */
+ir_node **sched_create_block_schedule(ir_graph *irg);
+
 #endif /* _BESCHED_H */

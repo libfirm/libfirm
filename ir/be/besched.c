@@ -188,6 +188,7 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data) {
 	return is_Phi(irn);
 }
 
+/* Skip nodes in a schedule. */
 ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data)
 {
 	const ir_node *bl = get_block(from);
@@ -199,4 +200,62 @@ ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, 
 	for(curr = from; curr != bl && predicator(curr, data); curr = forward ? sched_next(curr) : sched_prev(curr));
 
 	return curr;
+}
+
+/** A simple forward single linked list. */
+typedef struct {
+	ir_node *start;   /**< start of the list */
+	ir_node *end;     /**< last block in the list */
+	unsigned n_blks;  /**< number of blocks in the list */
+} anchor;
+
+/**
+ * Ext-Block walker: create a block schedule
+ */
+static void create_block_list(ir_extblk *blk, void *env) {
+	anchor *list = env;
+	int i, n;
+
+	for (i = 0, n = get_extbb_n_blocks(blk); i < n; ++i) {
+		ir_node *block = get_extbb_block(blk, i);
+
+		set_irn_link(block, NULL);
+		if (list->start)
+			set_irn_link(list->end, block);
+		else
+			list->start = block;
+
+		list->end = block;
+		++list->n_blks;
+	}
+}
+
+/*
+ * Calculates a block schedule. The schedule is stored as a linked
+ * list starting at the start_block of the irg.
+ */
+ir_node **sched_create_block_schedule(ir_graph *irg)
+{
+	anchor list;
+	ir_node **blk_list, *b, *n;
+	unsigned i;
+
+	/* schedule extended basic blocks */
+	compute_extbb(irg);
+
+	list.start  = NULL;
+	list.end    = NULL;
+	list.n_blks = 0;
+	irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
+
+	/** create an array, so we can go forward and backward */
+	blk_list = NEW_ARR_D(ir_node *, irg->obst,list.n_blks);
+
+	for (i = 0, b = list.start; b; b = n, ++i) {
+		n = get_irn_link(b);
+		set_irn_link(b, INT_TO_PTR(i));
+
+		blk_list[i] = b;
+	}
+	return blk_list;
 }
