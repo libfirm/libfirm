@@ -78,7 +78,7 @@ foreach my $op (keys(%nodes)) {
 				}
 
 				# substitute all format parameter
-				while ($template =~ /\%([ASD])(\d)|\%([COM])|\%(\w+)/) {
+				while ($template =~ /\%([ASDX])(\d)|\%([COM])|\%(\w+)/) {
 					$res  .= $`;      # get everything before the match
 
 					if ($1 && $1 eq "S") {
@@ -88,6 +88,10 @@ foreach my $op (keys(%nodes)) {
 					elsif ($1 && $1 eq "D") {
 						push(@params, "n");
 						$res .= "%".$2."D"; # substitute %Dx with %xD
+					}
+					elsif ($1 && $1 eq "X") {
+						push(@params, "n");
+						$res .= "%".$2."X"; # substitute %Xx with %xX
 					}
 					elsif ($1 && $1 eq "A") {
 						push(@params, "get_irn_n(n, ".($2 - 1).")");
