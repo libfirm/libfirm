@@ -48,10 +48,6 @@ extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 /* global arch_env for lc_printf functions */
 static const arch_env_t *arch_env = NULL;
 
-/* indicates whether blocks are scheduled or not
-   (this variable is set automatically) */
-static int have_block_sched       = 0;
-
 /*************************************************************
  *             _       _    __   _          _
  *            (_)     | |  / _| | |        | |
@@ -182,6 +178,25 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 }
 
 /**
+ * Get the x87 register name for a node.
+ */
+static int ia32_get_x87_name(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+{
+	const char *buf;
+	ir_node     *X  = arg->v_ptr;
+	int         nr = occ->width - 1;
+	ia32_attr_t *attr;
+
+	if (!X)
+		return lc_appendable_snadd(app, "(null)", 6);
+
+	attr = get_ia32_attr(X);
+	buf = attr->x87[nr]->name;
+	return lc_appendable_snadd(app, buf, strlen(buf));
+}
+
+/**
  * Returns the tarval, offset or scale of an ia32 as a string.
  */
 static int ia32_const_to_str(lc_appendable_t *app,
@@ -237,6 +252,7 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
 	static const lc_arg_handler_t ia32_reg_handler   = { ia32_get_arg_type, ia32_get_reg_name };
 	static const lc_arg_handler_t ia32_const_handler = { ia32_get_arg_type, ia32_const_to_str };
 	static const lc_arg_handler_t ia32_mode_handler  = { ia32_get_arg_type, ia32_get_mode_suffix };
+	static const lc_arg_handler_t ia32_x87_handler   = { ia32_get_arg_type, ia32_get_x87_name };
 
 	if(env == NULL) {
 		/* extend the firm printer */
@@ -247,6 +263,7 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
 		lc_arg_register(env, "ia32:cnst", 'C', &ia32_const_handler);
 		lc_arg_register(env, "ia32:offs", 'O', &ia32_const_handler);
 		lc_arg_register(env, "ia32:mode", 'M', &ia32_mode_handler);
+		lc_arg_register(env, "ia32:x87",  'X', &ia32_x87_handler);
 	}
 
 	return env;
@@ -434,7 +451,7 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	if (am_flav & ia32_O) {
 		s = get_ia32_am_offs(n);
 
-		/* omit exlicit + if there was no base or index */
+		/* omit explicit + if there was no base or index */
 		if (! had_output && s[0] == '+')
 			s++;
 
@@ -573,7 +590,7 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 
 /** Return the next block in Block schedule */
 static ir_node *next_blk_sched(const ir_node *block) {
-	return have_block_sched ? get_irn_link(block) : NULL;
+	return get_irn_link(block);
 }
 
 /**
@@ -1335,7 +1352,7 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 		(*emit)(irn, env);
 	}
 	else {
-		ir_fprintf(F, "\t%35s /* %+F */\n", " ", irn);
+		ir_fprintf(F, "\t%35s /* %+F (%+G) */\n", " ", irn, irn);
 	}
 }
 
@@ -1395,37 +1412,11 @@ static void ia32_gen_labels(ir_node *block, void *env) {
 	}
 }
 
-typedef struct {
-	ir_node *start;
-	ir_node *end;
-} anchor;
-
-/**
- * Ext-Block walker: create a block schedule
- */
-static void create_block_list(ir_extblk *blk, void *env) {
-	anchor *list = env;
-	int i, n;
-
-	for (i = 0, n = get_extbb_n_blocks(blk); i < n; ++i) {
-		ir_node *block = get_extbb_block(blk, i);
-
-		set_irn_link(block, NULL);
-		if (list->start)
-			set_irn_link(list->end, block);
-		else
-			list->start = block;
-
-		list->end = block;
-	}
-}
-
 /**
  * Main driver. Emits the code for one routine.
  */
 void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_env_t emit_env;
-	anchor list;
 	ir_node *block;
 
 	emit_env.mod      = firm_dbg_register("firm.be.ia32.emitter");
@@ -1442,23 +1433,25 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
-	if (cg->opt.extbb) {
-		/* schedule extended basic blocks */
+	if (cg->opt.extbb && cg->blk_sched) {
+		int i, n = ARR_LEN(cg->blk_sched);
 
-		compute_extbb(irg);
+		for (i = 0; i < n;) {
+			ir_node *next_bl;
 
-		list.start = NULL;
-		list.end   = NULL;
-		irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
+			block   = cg->blk_sched[i];
+			++i;
+			next_bl = i < n ? cg->blk_sched[i] : NULL;
 
-		have_block_sched = 1;
-		for (block = list.start; block; block = get_irn_link(block))
+			/* set here the link. the emitter expects to find the next block here */
+			set_irn_link(block, next_bl);
 			ia32_gen_block(block, &emit_env);
+		}
 	}
 	else {
-		/* "normal" block schedule */
-
-		have_block_sched = 0;
+		/* "normal" block schedule: Note the get_next_block() returns the NUMBER of the block
+		   in the block schedule. As this number should NEVER be equal the next block,
+		   we does not need a clear block link here. */
 		irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
 	}
 
