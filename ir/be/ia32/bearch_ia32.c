@@ -443,7 +443,7 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 	const arch_register_t      *out_reg, *in_reg;
 	int                         n_res, i;
 	ir_node                    *copy, *in_node, *block;
-	ia32_op_type_t             *op_tp;
+	ia32_op_type_t              op_tp;
 
 	if (! is_ia32_irn(irn))
 		return;
