@@ -284,7 +284,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_XXX]);
 		ir_node *store_bp;
 
-		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_along);
+		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_expand);
 		store_bp = new_rd_ia32_Store(NULL, env->irg, bl, curr_sp, curr_no_reg, curr_bp, *mem, mode_T);
 		set_ia32_am_support(store_bp, ia32_am_Dest);
 		set_ia32_am_flavour(store_bp, ia32_B);
@@ -309,7 +309,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_XXX]);
 
 	if(env->flags.try_omit_fp) {
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_against);
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
 	}
 
 	else {
@@ -443,12 +443,14 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 	const arch_register_t      *out_reg, *in_reg;
 	int                         n_res, i;
 	ir_node                    *copy, *in_node, *block;
+	ia32_op_type_t             *op_tp;
 
 	if (! is_ia32_irn(irn))
 		return;
 
-	/* nodes with destination address mode don't produce values */
-	if (get_ia32_op_type(irn) == ia32_AddrModeD)
+	/* AM Dest nodes don't produce any values  */
+	op_tp = get_ia32_op_type(irn);
+	if (op_tp == ia32_AddrModeD)
 		return;
 
 	reqs  = get_ia32_out_req_all(irn);
@@ -456,28 +458,34 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 	block = get_nodes_block(irn);
 
 	/* check all OUT requirements, if there is a should_be_same */
-	for (i = 0; i < n_res; i++) {
-		if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
-			/* get in and out register */
-			out_reg = get_ia32_out_reg(irn, i);
-			in_node = get_irn_n(irn, reqs[i]->same_pos);
-			in_reg  = arch_get_irn_register(cg->arch_env, in_node);
+	if (op_tp == ia32_Normal) {
+		for (i = 0; i < n_res; i++) {
+			if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
+				/* get in and out register */
+				out_reg = get_ia32_out_reg(irn, i);
+				in_node = get_irn_n(irn, reqs[i]->same_pos);
+				in_reg  = arch_get_irn_register(cg->arch_env, in_node);
 
-			/* check if in and out register are equal */
-			if (arch_register_get_index(out_reg) != arch_register_get_index(in_reg)) {
-				DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
+				/* don't copy ignore nodes */
+				if (arch_irn_is(cg->arch_env, in_node, ignore))
+					continue;
 
-				/* create copy from in register */
-				copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
+				/* check if in and out register are equal */
+				if (arch_register_get_index(out_reg) != arch_register_get_index(in_reg)) {
+					DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
 
-				/* destination is the out register */
-				arch_set_irn_register(cg->arch_env, copy, out_reg);
+					/* create copy from in register */
+					copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
 
-				/* insert copy before the node into the schedule */
-				sched_add_before(irn, copy);
+					/* destination is the out register */
+					arch_set_irn_register(cg->arch_env, copy, out_reg);
 
-				/* set copy as in */
-				set_irn_n(irn, reqs[i]->same_pos, copy);
+					/* insert copy before the node into the schedule */
+					sched_add_before(irn, copy);
+
+					/* set copy as in */
+					set_irn_n(irn, reqs[i]->same_pos, copy);
+				}
 			}
 		}
 	}

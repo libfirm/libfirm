@@ -353,7 +353,12 @@ char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
 
 	switch(get_ia32_op_type(n)) {
 		case ia32_Normal:
-			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
+			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%C", n);
+			}
+			else {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
+			}
 			break;
 		case ia32_am_Dest:
 			snprintf(buf, SNPRINTF_BUF_LEN, ia32_emit_am(n, env));
@@ -1162,6 +1167,14 @@ void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	IA32_DO_EMIT(irn);
 }
 
+/**
+ * Emits code for an 8Bit Int conversion.
+ */
+void emit_ia32_Conv_I2I8Bit(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	emit_ia32_Conv_I2I(irn, emit_env);
+}
+
+
 /*******************************************
  *  _                          _
  * | |                        | |
@@ -1198,14 +1211,12 @@ void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE          *F    = emit_env->out;
 	unsigned       offs = be_get_IncSP_offset(irn);
+	be_stack_dir_t dir  = be_get_IncSP_direction(irn);
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (offs) {
-		be_stack_dir_t dir = be_get_IncSP_direction(irn);
-		if (dir == be_stack_dir_expand)
-			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1S, %u", irn, offs);
-		else
-			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S, %u", irn, offs);
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S,%s%u", irn,
+			(dir == be_stack_dir_expand) ? " -" : " ", offs);
 		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (IncSP) */", irn);
 	}
 	else {
@@ -1290,6 +1301,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_FP2I);
 	IA32_EMIT(Conv_FP2FP);
 	IA32_EMIT(Conv_I2I);
+	IA32_EMIT(Conv_I2I8Bit);
 
 	/* benode emitter */
 	BE_EMIT(Call);
