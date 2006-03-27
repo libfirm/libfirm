@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "d:\work\libfirm\Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /I "../ir/lower" /I "s:/local/ipd/include" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x407 /d "NDEBUG"
 # ADD RSC /l 0x407 /d "NDEBUG"
@@ -54,7 +54,7 @@ LIB32=link.exe -lib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=Header install
-PostBuild_Cmds=cmd /c install.cmd .. s:\ipd\include\libfirm
+PostBuild_Cmds=cmd /c install.cmd .. s:\local\ipd\include\libfirm
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
@@ -70,7 +70,7 @@ PostBuild_Cmds=cmd /c install.cmd .. s:\ipd\include\libfirm
 # PROP Intermediate_Dir "d:\work\libfirm\Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /D /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /I "../ir/lower" /I "s:/local/ipd/include" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /D /GZ /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x407 /d "_DEBUG"
 # ADD RSC /l 0x407 /d "_DEBUG"
@@ -83,7 +83,7 @@ LIB32=link.exe -lib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=Header install
-PostBuild_Cmds=cmd /c install.cmd .. s:\ipd\include\libfirm
+PostBuild_Cmds=cmd /c install.cmd .. s:\local\ipd\include\libfirm
 # End Special Build Tool
 
 !ENDIF 
@@ -137,6 +137,14 @@ SOURCE=..\ir\adt\array.c
 # Begin Source File
 
 SOURCE=..\ir\adt\array.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\bipartite.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\bipartite.h
 # End Source File
 # Begin Source File
 
@@ -270,6 +278,14 @@ SOURCE=..\ir\ana\cgana.c
 # Begin Source File
 
 SOURCE=..\ir\ana\cgana.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\compute_loop_info.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\compute_loop_info.h
 # End Source File
 # Begin Source File
 
@@ -555,300 +571,993 @@ SOURCE=..\ir\arch\modeconv.h
 # Begin Group "be"
 
 # PROP Default_Filter ""
+# Begin Group "scripts"
+
+# PROP Default_Filter "pl"
+# Begin Source File
+
+SOURCE=..\ir\be\scripts\generate_emitter.pl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\scripts\generate_new_opcodes.pl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\scripts\generate_regalloc_if.pl
+# End Source File
+# End Group
+# Begin Group "ia32"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\bearch_ia32.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\bearch_ia32.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\bearch_ia32_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_new_nodes.c.inl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_regalloc_if.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_regalloc_if.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_regalloc_if_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_gen_decls.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_gen_decls.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_map_regs.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_map_regs.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_new_nodes.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_nodes_attr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_optimize.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_optimize.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_spec.pl
+
+!IF  "$(CFG)" == "libfirm - Win32 Release"
+
+USERDEP__IA32_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath=..\ir\be\ia32\ia32_spec.pl
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ia32 \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ia32 \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ia32 \
+	
+
+"..\ir\be\ia32\gen_ia32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
+
+USERDEP__IA32_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath=..\ir\be\ia32\ia32_spec.pl
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ia32 \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ia32 \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ia32 \
+	
+
+"..\ir\be\ia32\gen_ia32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_transform.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_transform.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_x87.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_x87.h
+# End Source File
+# End Group
+# Begin Group "arm"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_gen_decls.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_gen_decls.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_map_regs.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_map_regs.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_new_nodes.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_nodes_attr.h
+# End Source File
+# Begin Source File
+
+SOURCE="..\ir\be\arm\arm_spec.pl"
+
+!IF  "$(CFG)" == "libfirm - Win32 Release"
+
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl "	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath="..\ir\be\arm\arm_spec.pl"
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\arm \
+	
+
+"..\ir\be\arm\gen_arm_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
+
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl "	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath="..\ir\be\arm\arm_spec.pl"
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\arm \
+	
+
+"..\ir\be\arm\gen_arm_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_transform.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\arm_transform.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\bearch_arm.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\bearch_arm.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\bearch_arm_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_new_nodes.c.inl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_regalloc_if.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_regalloc_if.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_regalloc_if_t.h
+# End Source File
+# End Group
+# Begin Group "ppc32"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\bearch_ppc32.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\bearch_ppc32.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\bearch_ppc32_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_emitter.inl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_new_nodes.c.inl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_regalloc_if.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_regalloc_if.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_regalloc_if_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_gen_decls.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_gen_decls.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_map_regs.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_map_regs.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_new_nodes.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_nodes_attr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_spec.pl
+
+!IF  "$(CFG)" == "libfirm - Win32 Release"
+
+USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath=..\ir\be\ppc32\ppc32_spec.pl
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ppc32 \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ppc32 \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ppc32 \
+	
+
+"..\ir\be\ppc32\gen_ppc32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
+
+USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath=..\ir\be\ppc32\ppc32_spec.pl
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ppc32 \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ppc32 \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ppc32 \
+	
+
+"..\ir\be\ppc32\gen_ppc32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_transform.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_transform.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_transform_conv.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\ppc32_transform_conv.h
+# End Source File
+# End Group
+# Begin Group "mips"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\be\mips\bearch_mips.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\bearch_mips.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\bearch_mips_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_new_nodes.c.inl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_regalloc_if.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_regalloc_if.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_regalloc_if_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_emitter.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_gen_decls.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_gen_decls.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_map_regs.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_map_regs.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_new_nodes.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_new_nodes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_nodes_attr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_scheduler.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_scheduler.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_spec.pl
+
+!IF  "$(CFG)" == "libfirm - Win32 Release"
+
+USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath=..\ir\be\mips\mips_spec.pl
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\mips \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\mips \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\mips \
+	
+
+"..\ir\be\mips\gen_mips_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
+
+USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath=..\ir\be\mips\mips_spec.pl
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\mips \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\mips \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\mips \
+	
+
+"..\ir\be\mips\gen_mips_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_transform.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_transform.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\mips_util.h
+# End Source File
+# End Group
+# Begin Group "firmBE"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\be\firm\bearch_firm.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\firm\bearch_firm.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=..\ir\be\be.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\be_t.h
-# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beabi.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beabi.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beabi_t.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bearch.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bearch.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bearch_firm.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\bearch_firm.h
-# PROP Exclude_From_Build 1
+SOURCE=..\ir\be\bearch_t.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_asm_gnu.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_asm_gnu.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_dump_globals.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_dump_globals.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beasm_types.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal_draw.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal_draw.h
-# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bechordal_main.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordal_t.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bechordalspill.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyheur.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyilp.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyopt.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopyopt.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\becopyoptmain.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\becopyoptmain.h
-# PROP Exclude_From_Build 1
+SOURCE=..\ir\be\becopyopt_t.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopystat.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\becopystat.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bedupl.h
-# PROP Exclude_From_Build 1
+SOURCE=..\ir\be\beifg.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beifg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beifg_impl.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beifg_std.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beifg_t.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beirgmod.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beirgmod.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belistsched.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belistsched.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belive.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belive.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\belive_t.h
-# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\belower.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\belower.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bemain.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benode.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benode_t.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benumb.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benumb.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\benumb_t.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bera.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bera.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bera_t.h
-# PROP Exclude_From_Build 1
+SOURCE=..\ir\be\beraextern.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beraextern.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\besched.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\besched.h
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\besched_t.h
-# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespill.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespill.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillbelady.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillbelady.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillilp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillilp.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bessadestr.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\bessadestr.h
-# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beuses.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beuses.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beuses_t.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beutil.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beutil.h
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\lpp.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\lpp.h
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\lpp_local.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\lpp_local.h
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\lpp_remote.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\lpp_remote.h
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\mps.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\mps.h
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\sp_matrix.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\sp_matrix.h
-# PROP Exclude_From_Build 1
 # End Source File
 # End Group
 # Begin Group "common"
@@ -861,6 +1570,14 @@ SOURCE=..\ir\common\debug.c
 # Begin Source File
 
 SOURCE=..\ir\common\debug.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\common\error.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\common\error.h
 # End Source File
 # Begin Source File
 
@@ -905,14 +1622,6 @@ SOURCE=..\ir\common\irtools.h
 # Begin Source File
 
 SOURCE=..\ir\common\Makefile.in
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\common\panic.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\common\panic.h
 # End Source File
 # Begin Source File
 
@@ -1014,7 +1723,6 @@ SOURCE=..\ir\ir\irarch.h
 # Begin Source File
 
 SOURCE=..\ir\ir\irargs.c
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
@@ -1083,6 +1791,11 @@ SOURCE=..\ir\ir\irflag.c
 # Begin Source File
 
 SOURCE=..\ir\ir\irflag.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irflag_t.def
+# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
@@ -1270,6 +1983,14 @@ SOURCE=..\ir\opt\cfopt.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\opt\data_flow_scalar_replace.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\data_flow_scalar_replace.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\opt\escape_ana.c
 # End Source File
 # Begin Source File
@@ -1283,6 +2004,14 @@ SOURCE=..\ir\opt\funccall.c
 # Begin Source File
 
 SOURCE=..\ir\opt\funccall.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\gvn_pre.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\gvn_pre.h
 # End Source File
 # Begin Source File
 
@@ -1327,6 +2056,14 @@ SOURCE=..\ir\opt\opt_confirms.c
 # Begin Source File
 
 SOURCE=..\ir\opt\opt_confirms.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_frame.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_frame.h
 # End Source File
 # Begin Source File
 
