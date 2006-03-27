@@ -101,7 +101,6 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
-
 	if (is_Proj(irn)) {
 		if (pos == -1) {
 			node_pos = ia32_translate_proj_pos(irn);
@@ -655,6 +654,7 @@ static void ia32_after_ra_walker(ir_node *node, void *env) {
 		transform_to_Load(&tenv);
 	}
 	else if (be_is_Spill(node)) {
+		tenv.mode = get_irn_mode(be_get_Spill_context(node));
 		transform_to_Store(&tenv);
 	}
 }

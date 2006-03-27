@@ -1280,6 +1280,61 @@ static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	IA32_DO_EMIT(irn);
 }
 
+
+
+/**
+ * Emits code for an 8Bit Store.
+ */
+static void emit_ia32_Store8Bit(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+	const arch_register_t *in1 = get_in_reg(irn, 2);
+	ir_mode              *mode = get_ia32_ls_mode(irn);
+
+	/* In case an 8Bit SPill got transformed into an 8Bit Store, the */
+	/* register allocator had no chance to fulfill requirements.     */
+	/* Check if we have a valid 8Bit register, otherwise emit a      */
+	/* workaround.                                                   */
+	if (REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_EAX]) ||
+		REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_EBX]) ||
+		REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_ECX]) ||
+		REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_EDX]) ||
+		is_ia32_ImmConst(irn)                       ||
+		is_ia32_ImmSymConst(irn))
+	{
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %s", ia32_emit_binop(irn, emit_env));
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
+		IA32_DO_EMIT(irn);
+	}
+	else {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* begin 8Bit Spill workaround %+F */", irn);
+		IA32_DO_EMIT(irn);
+
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "push %%eax");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* save %%eax */");
+		IA32_DO_EMIT(irn);
+
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "mov %%eax, %%%s", arch_register_get_name(in1));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* copy 8Bit value into %%eax */");
+		IA32_DO_EMIT(irn);
+
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "mov %s, %%al", ia32_emit_am(irn, emit_env));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* store 8Bit value */");
+		IA32_DO_EMIT(irn);
+
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "pop %%eax", ia32_emit_am(irn, emit_env));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* restore %%eax */");
+		IA32_DO_EMIT(irn);
+
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
+		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* end of workaround %+F */", irn);
+		IA32_DO_EMIT(irn);
+	}
+}
+
+
+
 /***********************************************************************************
  *                  _          __                                             _
  *                 (_)        / _|                                           | |
@@ -1319,6 +1374,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_FP2FP);
 	IA32_EMIT(Conv_I2I);
 	IA32_EMIT(Conv_I2I8Bit);
+	IA32_EMIT(Store8Bit);
 
 	/* benode emitter */
 	BE_EMIT(Call);
