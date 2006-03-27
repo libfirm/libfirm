@@ -11,6 +11,9 @@
 
 /* some typedefs */
 
+/**
+ * Bitmask for the backend optimization settings.
+ */
 typedef struct _ia32_optimize_t {
 	unsigned incdec    : 1;   /**< optimize add/sub 1/-1 to inc/dec */
 	unsigned doam      : 1;   /**< do address mode optimizations */
@@ -19,6 +22,15 @@ typedef struct _ia32_optimize_t {
 	unsigned extbb     : 1;   /**< do extended basic block scheduling */
 } ia32_optimize_t;
 
+/** floating point support */
+typedef enum fp_support {
+  fp_x87,   /**< use x87 instructions */
+  fp_sse2   /**< use SSE2 instructions */
+} fp_support;
+
+/**
+ * IA32 code generator
+ */
 typedef struct _ia32_code_gen_t {
 	const arch_code_generator_if_t *impl;          /**< implementation */
 	ir_graph                       *irg;           /**< current irg */
@@ -30,7 +42,9 @@ typedef struct _ia32_code_gen_t {
 	pmap                           *types;         /**< A map of modes to primitive types */
 	pmap                           *tv_ent;        /**< A map of entities that store tarvals */
 	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
+	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	ia32_optimize_t                 opt;           /**< contains optimization information */
+	char                            fp_kind;       /**< floating point kind */
 } ia32_code_gen_t;
 
 typedef struct _ia32_isa_t {
@@ -41,6 +55,7 @@ typedef struct _ia32_isa_t {
 	int                    num_codegens;  /**< The number of code generator objects created so far */
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
+	char                   fp_kind;       /**< floating point kind */
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
 	unsigned long          name_obst_size;
