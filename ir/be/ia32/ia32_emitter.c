@@ -666,7 +666,7 @@ static void emit_ia32_CondJmp(const ir_node *irn, ia32_emit_env_t *env) {
 /**
  * Emits code for conditional jump with immediate.
  */
-void emit_ia32_CondJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
+static void emit_ia32_CondJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
 	CondJmp_emitter(irn, env);
 }
 
@@ -769,7 +769,7 @@ static int ia32_cmp_branch_t(const void *a, const void *b) {
  * possible otherwise a cmp-jmp cascade). Port from
  * cggg ia32 backend
  */
-void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	unsigned long       interval;
 	char                buf[SNPRINTF_BUF_LEN];
 	int                 last_value, i, pn, do_jmp_tbl = 1;
@@ -908,7 +908,7 @@ void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits code for a unconditional jump.
  */
-void emit_Jmp(const ir_node *irn, ia32_emit_env_t *env) {
+static void emit_Jmp(const ir_node *irn, ia32_emit_env_t *env) {
 	ir_node *block, *next_bl;
 	FILE *F = env->out;
 	char buf[SNPRINTF_BUF_LEN], cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
@@ -943,7 +943,7 @@ void emit_Jmp(const ir_node *irn, ia32_emit_env_t *env) {
 /**
  * Emits code for a proj -> node
  */
-void emit_Proj(const ir_node *irn, ia32_emit_env_t *env) {
+static void emit_Proj(const ir_node *irn, ia32_emit_env_t *env) {
 	ir_node *pred = get_Proj_pred(irn);
 
 	if (get_irn_op(pred) == op_Start) {
@@ -1004,7 +1004,7 @@ static void emit_CopyB_prolog(FILE *F, int rem, int size) {
 /**
  * Emit rep movsd instruction for memcopy.
  */
-void emit_ia32_CopyB(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_ia32_CopyB(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE   *F    = emit_env->out;
 	tarval *tv   = get_ia32_Immop_tarval(irn);
 	int     rem  = get_tarval_long(tv);
@@ -1021,7 +1021,7 @@ void emit_ia32_CopyB(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits unrolled memcopy.
  */
-void emit_ia32_CopyB_i(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_ia32_CopyB_i(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	tarval *tv   = get_ia32_Immop_tarval(irn);
 	int     size = get_tarval_long(tv);
 	FILE   *F    = emit_env->out;
@@ -1081,22 +1081,22 @@ static void emit_ia32_Conv_with_FP(const ir_node *irn, ia32_emit_env_t *emit_env
 	IA32_DO_EMIT(irn);
 }
 
-void emit_ia32_Conv_I2FP(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_ia32_Conv_I2FP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	emit_ia32_Conv_with_FP(irn, emit_env);
 }
 
-void emit_ia32_Conv_FP2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_ia32_Conv_FP2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	emit_ia32_Conv_with_FP(irn, emit_env);
 }
 
-void emit_ia32_Conv_FP2FP(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_ia32_Conv_FP2FP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	emit_ia32_Conv_with_FP(irn, emit_env);
 }
 
 /**
  * Emits code for an Int conversion.
  */
-void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE               *F    = emit_env->out;
 	const lc_arg_env_t *env  = ia32_get_arg_env();
 	char *move_cmd, *conv_cmd;
@@ -1188,7 +1188,7 @@ void emit_ia32_Conv_I2I8Bit(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits a backend call
  */
-void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	entity *ent = be_Call_get_entity(irn);
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
@@ -1208,7 +1208,7 @@ void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits code to increase stack pointer.
  */
-void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE          *F    = emit_env->out;
 	unsigned       offs = be_get_IncSP_offset(irn);
 	be_stack_dir_t dir  = be_get_IncSP_direction(irn);
@@ -1230,7 +1230,7 @@ void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits code to set stack pointer.
  */
-void emit_be_SetSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_be_SetSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
@@ -1242,7 +1242,7 @@ void emit_be_SetSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits code for Copy.
  */
-void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
@@ -1254,7 +1254,7 @@ void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits code for exchange.
  */
-void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
+static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
