@@ -24,14 +24,16 @@
 
 typedef int is_op_func_t(const ir_node *n);
 
-static int be_is_NoReg(be_abi_irg_t *babi, const ir_node *irn) {
-	if (be_abi_get_callee_save_irn(babi, &ia32_gp_regs[REG_XXX]) == irn ||
-		be_abi_get_callee_save_irn(babi, &ia32_fp_regs[REG_XXXX]) == irn)
-	{
-		return 1;
-	}
+/**
+ * checks if a node represents the NOREG value
+ */
+static int be_is_NoReg(ia32_code_gen_t *cg, const ir_node *irn) {
+  be_abi_irg_t *babi = cg->birg->abi;
+	const arch_register_t *fp_noreg = USE_SSE2(cg) ?
+		&ia32_xmm_regs[REG_XMM_NOREG] : &ia32_vfp_regs[REG_VFP_NOREG];
 
-	return 0;
+	return (be_abi_get_callee_save_irn(babi, &ia32_gp_regs[REG_GP_NOREG]) == irn) ||
+	       (be_abi_get_callee_save_irn(babi, fp_noreg) == irn);
 }
 
 
@@ -80,7 +82,10 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	ir_node  *block = env->block;
 
 	if (mode_is_float(mode)) {
-		cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
+		if (USE_SSE2(env->cg))
+			cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
+		else
+			cnst = new_rd_ia32_vfConst(dbg, irg, block, mode);
 	}
 	else {
 		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
@@ -162,6 +167,14 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 	ir_mode  *mode  = env->mode;
 
 	if (mode_is_float(mode)) {
+		if (! USE_SSE2(env->cg)) {
+			cnst_classify_t clss = classify_Const(node);
+
+			if (clss == CNST_NULL)
+				return new_rd_ia32_vfldz(dbg, irg, block, mode);
+			else if (clss == CNST_ONE)
+				return new_rd_ia32_vfld1(dbg, irg, block, mode);
+		}
 		sym.entity_p = get_entity_for_tv(env->cg, node);
 
 		cnst = new_rd_SymConst(dbg, irg, block, sym, symconst_addr_ent);
@@ -558,6 +571,7 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 	char   *loffs    = get_ia32_am_offs(load);
 	char   *soffs    = get_ia32_am_offs(store);
 
+
 	/* are both entities set and equal? */
 	if (lent || sent)
 		is_equal = lent && sent && (lent == sent);
@@ -577,7 +591,7 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 /**
  * Folds Add or Sub to LEA if possible
  */
-static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
+static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
 	ir_graph *irg       = get_irn_irg(irn);
 	dbg_info *dbg       = get_irn_dbg_info(irn);
 	ir_node  *block     = get_nodes_block(irn);
@@ -599,7 +613,7 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 	right = get_irn_n(irn, 3);
 
 	/* "normalize" arguments in case of add with two operands */
-	if  (isadd && ! be_is_NoReg(babi, right)) {
+	if  (isadd && ! be_is_NoReg(cg, right)) {
 		/* put LEA == ia32_am_O as right operand */
 		if (is_ia32_Lea(left) && get_ia32_am_flavour(left) == ia32_am_O) {
 			set_irn_n(irn, 2, right);
@@ -643,7 +657,7 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 	}
 
 	/* determine the operand which needs to be checked */
-	if (be_is_NoReg(babi, right)) {
+	if (be_is_NoReg(cg, right)) {
 		temp = left;
 	}
 	else {
@@ -687,7 +701,7 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 		}
 
 		/* fix base */
-		if (! be_is_NoReg(babi, index)) {
+		if (! be_is_NoReg(cg, index)) {
 			/* if we have index, but left == right -> no base */
 			if (left == right) {
 				base = noreg;
@@ -710,7 +724,7 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 		/* a new LEA.                                                   */
 		/* If the LEA contains already a frame_entity then we also      */
 		/* create a new one  otherwise we would loose it.               */
-		if ((isadd && !be_is_NoReg(babi, index) && (am_flav & ia32_am_I)) ||
+		if ((isadd && !be_is_NoReg(cg, index) && (am_flav & ia32_am_I)) ||
 			get_ia32_frame_ent(left))
 		{
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
@@ -771,10 +785,10 @@ static ir_node *fold_addr(be_abi_irg_t *babi, ir_node *irn, firm_dbg_module_t *m
 		if (offs || offs_cnst || offs_lea) {
 			am_flav |= ia32_O;
 		}
-		if (! be_is_NoReg(babi, base)) {
+		if (! be_is_NoReg(cg, base)) {
 			am_flav |= ia32_B;
 		}
-		if (! be_is_NoReg(babi, index)) {
+		if (! be_is_NoReg(cg, index)) {
 			am_flav |= ia32_I;
 		}
 		if (scale > 0) {
@@ -805,7 +819,6 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 	ia32_code_gen_t   *cg   = env;
 	firm_dbg_module_t *mod  = cg->mod;
 	ir_node           *res  = irn;
-	be_abi_irg_t      *babi = cg->birg->abi;
 	dbg_info          *dbg;
 	ir_mode           *mode;
 	ir_node           *block, *noreg_gp, *noreg_fp;
@@ -844,7 +857,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 		/* check is irn is a candidate for address calculation */
 		if (is_candidate(block, irn, 1)) {
 			DBG((mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
-			res = fold_addr(babi, irn, mod, noreg_gp);
+			res = fold_addr(cg, irn, mod, noreg_gp);
 
 			if (res == irn)
 				DB((mod, LEVEL_1, "transformed into %+F\n", res));
