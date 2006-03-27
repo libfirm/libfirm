@@ -483,7 +483,6 @@ char *get_ia32_am_offs(const ir_node *node) {
 		memcpy(&res[1], obstack_base(attr->am_offs), size);
 		res[size + 1] = '\0';
 	}
-
 	return res;
 }
 
@@ -1028,24 +1027,24 @@ int is_ia32_AddrModeD(const ir_node *node) {
 }
 
 /**
- * Checks if node is a Load or fLoad.
+ * Checks if node is a Load or fLoad/vfLoad.
  */
 int is_ia32_Ld(const ir_node *node) {
-	return is_ia32_Load(node) || is_ia32_fLoad(node);
+	return is_ia32_Load(node) || is_ia32_fLoad(node) || is_ia32_vfld(node);
 }
 
 /**
- * Checks if node is a Store or fStore.
+ * Checks if node is a Store or fStore/vfStore.
  */
 int is_ia32_St(const ir_node *node) {
-	return is_ia32_Store(node) || is_ia32_fStore(node);
+	return is_ia32_Store(node) || is_ia32_fStore(node) || is_ia32_vfst(node);
 }
 
 /**
- * Checks if node is a Const or fConst.
+ * Checks if node is a Const or fConst/vfConst.
  */
 int is_ia32_Cnst(const ir_node *node) {
-	return is_ia32_Const(node) || is_ia32_fConst(node);
+	return is_ia32_Const(node) || is_ia32_fConst(node) || is_ia32_vfConst(node);
 }
 
 /**
