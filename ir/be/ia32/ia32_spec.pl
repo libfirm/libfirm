@@ -30,6 +30,8 @@ $additional_opcodes = 0;
 #   "reg_req"   => { "in" => [ "reg_class|register" ], "out" => [ "reg_class|register|in_rX" ] },
 #   "cmp_attr"  => "c source code for comparing node attributes",
 #   "emit"      => "emit code with templates",
+#   "attr"      => "attitional attribute arguments for constructor"
+#   "init_attr" => "emit attribute initialization template"
 #   "rd_constructor" => "c source code which constructs an ir_node"
 # },
 #
@@ -101,10 +103,10 @@ $additional_opcodes = 0;
             { "name" => "edi", "type" => 2 },
             { "name" => "ebp", "type" => 2 },
             { "name" => "esp", "type" => 4 },
-            { "name" => "xxx", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "gp_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
 			{ "mode" => "mode_P" }
           ],
-  "fp" => [
+  "xmm" => [
             { "name" => "xmm0", "type" => 1 },
             { "name" => "xmm1", "type" => 1 },
             { "name" => "xmm2", "type" => 1 },
@@ -113,8 +115,32 @@ $additional_opcodes = 0;
             { "name" => "xmm5", "type" => 1 },
             { "name" => "xmm6", "type" => 1 },
             { "name" => "xmm7", "type" => 1 },
-            { "name" => "xxxx", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "xmm_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
 			{ "mode" => "mode_D" }
+          ],
+  "vfp" => [
+            { "name" => "vf0", "type" => 1 },
+            { "name" => "vf1", "type" => 1 },
+            { "name" => "vf2", "type" => 1 },
+            { "name" => "vf3", "type" => 1 },
+            { "name" => "vf4", "type" => 1 },
+            { "name" => "vf5", "type" => 1 },
+            { "name" => "vf6", "type" => 1 },
+            { "name" => "vf7", "type" => 4 },
+            { "name" => "vfp_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+			{ "mode" => "mode_E" }
+          ],
+  "st" => [
+            { "name" => "st0", "type" => 1 },
+            { "name" => "st1", "type" => 1 },
+            { "name" => "st2", "type" => 1 },
+            { "name" => "st3", "type" => 1 },
+            { "name" => "st4", "type" => 1 },
+            { "name" => "st5", "type" => 1 },
+            { "name" => "st6", "type" => 1 },
+            { "name" => "st7", "type" => 1 },
+            { "name" => "st_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+			{ "mode" => "mode_E" }
           ]
 ); # %reg_classes
 
@@ -463,7 +489,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. adds%M %ia32_emit_binop /* SSE Add(%A3, %A4) -> %D1 */'
 },
 
@@ -471,7 +497,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. muls%M %ia32_emit_binop /* SSE Mul(%A3, %A4) -> %D1 */'
 },
 
@@ -479,7 +505,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. maxs%M %ia32_emit_binop /* SSE Max(%A3, %A4) -> %D1 */'
 },
 
@@ -487,7 +513,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. mins%M %ia32_emit_binop /* SSE Min(%A3, %A4) -> %D1 */'
 },
 
@@ -495,7 +521,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE And: And(a, b) = a AND b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. andp%M %ia32_emit_binop /* SSE And(%A3, %A4) -> %D1 */'
 },
 
@@ -503,7 +529,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Or: Or(a, b) = a OR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. orp%M %ia32_emit_binop /* SSE Or(%A3, %A4) -> %D1 */'
 },
 
@@ -511,7 +537,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Eor: Eor(a, b) = a XOR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. xorp%M %ia32_emit_binop /* SSE Xor(%A3, %A4) -> %D1 */'
 },
 
@@ -521,7 +547,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Sub: Sub(a, b) = a - b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. subs%M %ia32_emit_binop /* SSE Sub(%A1, %A2) -> %D1 */'
 },
 
@@ -529,7 +555,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "construct SSE Div: Div(a, b) = a / b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. divs%M %ia32_emit_binop /* SSE Div(%A1, %A2) -> %D1 */'
 },
 
@@ -539,7 +565,7 @@ $additional_opcodes = 0;
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "fp", "fp", "none" ], "out" => [ "none", "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "none", "none" ] },
 },
 
 "fConst" => {
@@ -547,7 +573,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "represents a SSE constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "out" => [ "fp" ] },
+  "reg_req"   => { "out" => [ "xmm" ] },
   "emit"      => '. mov%M %D1, %C /* Load fConst into register */',
 },
 
@@ -559,7 +585,7 @@ $additional_opcodes = 0;
   "state"     => "exc_pinned",
   "comment"   => "construct SSE Load: Load(ptr, mem) = LD ptr",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "fp" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "xmm" ] },
   "emit"      => '. movs%M %D1, %ia32_emit_am /* Load((%A1)) -> %D1 */'
 },
 
@@ -568,7 +594,7 @@ $additional_opcodes = 0;
   "state"    => "exc_pinned",
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ] },
   "emit"     => '. movs%M %ia32_emit_binop /* Store(%S3) -> (%A1) */'
 },
 
@@ -604,21 +630,359 @@ $additional_opcodes = 0;
 },
 
 "Conv_I2FP" => {
-  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "fp", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "xmm", "none" ] },
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Int -> Floating Point"
 },
 
 "Conv_FP2I" => {
-  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ], "out" => [ "gp", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ], "out" => [ "gp", "none" ] },
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Floating Point -> Int"
 },
 
 "Conv_FP2FP" => {
-  "reg_req"  => { "in" => [ "gp", "gp", "fp", "none" ], "out" => [ "fp", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ], "out" => [ "xmm", "none" ] },
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Floating Point -> Floating Point",
 },
+
+#--------------------------------------------------------#
+#    __ _             _                     _            #
+#   / _| |           | |                   | |           #
+#  | |_| | ___   __ _| |_   _ __   ___   __| | ___  ___  #
+#  |  _| |/ _ \ / _` | __| | '_ \ / _ \ / _` |/ _ \/ __| #
+#  | | | | (_) | (_| | |_  | | | | (_) | (_| |  __/\__ \ #
+#  |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
+#--------------------------------------------------------#
+
+# virtual float nodes
+
+"vfadd" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Add: Add(a, b) = Add(b, a) = a + b",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
+},
+
+"vfmul" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Mul: Mul(a, b) = Mul(b, a) = a + b",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
+},
+
+"vfsub" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Sub: Sub(a, b) = a - b",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
+},
+
+"vfsubr" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp SubR: SubR(a, b) = b - a",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
+},
+
+"vfdiv" => {
+  "comment"   => "virtual fp Div: Div(a, b) = a / b",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
+},
+
+"vfdivr" => {
+  "comment"   => "virtual fp DivR: DivR(a, b) = b / a",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
+},
+
+"vfabs" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Abs: Abs(a) = |a|",
+  "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
+},
+
+"vfchs" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Chs: Chs(a) = -a",
+  "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
+},
+
+"vfsin" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Sin: Sin(a) = sin(a)",
+  "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
+},
+
+"vfcos" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Cos: Cos(a) = cos(a)",
+  "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
+},
+
+"vfsqrt" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Sqrt: Sqrt(a) = a ^ 0.5",
+  "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
+},
+
+# virtual Load and Store
+
+"vfld" => {
+  "op_flags"  => "L|F",
+  "irn_flags" => "R",
+  "state"     => "exc_pinned",
+  "comment"   => "virtual fp Load: Load(ptr, mem) = LD ptr -> reg",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "vfp" ] },
+},
+
+"vfst" => {
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "virtual fp Store: Store(ptr, val, mem) = ST ptr,val",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "none" ] },
+},
+
+# constants
+
+"vfldz" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Load 0.0: Ld 0.0 -> reg",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+"vfld1" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Load 1.0: Ld 1.0 -> reg",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+"vfldpi" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Load pi: Ld pi -> reg",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+"vfldln2" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Load ln 2: Ld ln 2 -> reg",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+"vfldlg2" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Load lg 2: Ld lg 2 -> reg",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+"vfldl2t" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Load ld 10: Ld ld 10 -> reg",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+"vfldl2e" => {
+  "irn_flags" => "R",
+  "comment"   => "virtual fp Load ld e: Ld ld e -> reg",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+"vfConst" => {
+  "op_flags"  => "c",
+  "irn_flags" => "R",
+  "comment"   => "represents a virtual floating point constant",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "out" => [ "vfp" ] },
+},
+
+#--------------------------------------------------------#
+#    __ _             _                     _            #
+#   / _| |           | |                   | |           #
+#  | |_| | ___   __ _| |_   _ __   ___   __| | ___  ___  #
+#  |  _| |/ _ \ / _` | __| | '_ \ / _ \ / _` |/ _ \/ __| #
+#  | | | | (_) | (_| | |_  | | | | (_) | (_| |  __/\__ \ #
+#  |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
+#--------------------------------------------------------#
+
+# x87 float nodes
+
+"fadd" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
+  "reg_req"   => { },
+#  "emit"      => '. fadd %ia32_emit_binop /* x87 fadd(%A1, %A2) -> %D1 */'
+  "emit"      => '. fadd %X1,%X3 /* x87 fadd(%X1, %X2) -> %X3 */'
+},
+
+"fmul" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
+  "reg_req"   => { },
+#  "emit"      => '. fmul %ia32_emit_binop /* x87 fmul(%A1, %A2) -> %D1 */'
+  "emit"      => '. fmul %X1,%X3 /* x87 fmul(%X1, %X2) -> %X3 */'
+},
+
+"fsub" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
+  "reg_req"   => { },
+  "emit"      => '. fsub %ia32_emit_binop /* x87 fsub(%A1, %A2) -> %D1 */'
+},
+
+"fsubr" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "irn_flags" => "R",
+  "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
+  "reg_req"   => { },
+  "emit"      => '. fsubr %ia32_emit_binop /* x87 fsubr(%A1, %A2) -> %D1 */'
+},
+
+"fdiv" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Div: Div(a, b) = a / b",
+  "reg_req"   => { },
+  "emit"      => '. fdiv %ia32_emit_binop /* x87 fdiv(%A1, %A2) -> %D1 */'
+},
+
+"fdivr" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
+  "reg_req"   => { },
+  "emit"      => '. fdivr %ia32_emit_binop /* x87 fdivr(%A1, %A2) -> %D1 */'
+},
+
+"fabs" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Abs: Abs(a) = |a|",
+  "reg_req"   => { },
+  "emit"      => '. fabs %D1, %S1 $ /* x87 fabs(%A1) -> %D1 */'
+},
+
+"fchs" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Chs: Chs(a) = -a",
+  "reg_req"   => { },
+  "emit"      => '. fchs %D1, %S1 $ /* x87 fchs(%A1) -> %D1 */'
+},
+
+"fsin" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Sin: Sin(a) = sin(a)",
+  "reg_req"   => { },
+  "emit"      => '. fsin %D1, %S1 $ /* x87 sin(%A1) -> %D1 */'
+},
+
+"fcos" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Cos: Cos(a) = cos(a)",
+  "reg_req"   => { },
+  "emit"      => '. fcos %D1, %S1 $ /* x87 cos(%A1) -> %D1 */'
+},
+
+"fsqrt" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Sqrt: Sqrt(a) = a ^ 0.5",
+  "reg_req"   => { },
+  "emit"      => '. fsqrt %X3, %X1 $ /* x87 sqrt(%A1) -> %D1 */'
+},
+
+# virtual Load and Store
+
+"fld" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "x87 fp Load: Load(ptr, mem) = LD ptr -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fld %D1, %ia32_emit_am /* Load((%A1)) -> %D1 */'
+},
+
+"fst" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
+  "reg_req"   => { },
+  "emit"      => '. fst %ia32_emit_binop /* Store(%A3) -> (%A1) */'
+},
+
+# constants
+
+"fldz" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fldz %X3 /* x87 0.0 -> %X3 */'
+},
+
+"fld1" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fld1 %X3 /* x87 1.0 -> %X3 */'
+},
+
+"fldpi" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Load pi: Ld pi -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fldpi %X3 /* x87 pi -> %X3 */'
+},
+
+"fldln2" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fldln2 %X3 /* x87 ln(2) -> %X3 */'
+},
+
+"fldlg2" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fldlg2 %X3 /* x87 log(2) -> %X3 */'
+},
+
+"fldl2t" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fldll2t %X3 /* x87 ld(10) -> %X3 */'
+},
+
+"fldl2e" => {
+  "rd_constructor" => "assert(0); return NULL;",
+  "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
+  "reg_req"   => { },
+  "emit"      => '. fldl2e %X3 /* x87 ld(e) -> %X3 */'
+},
+
+"fldConst" => {
+  "op_flags"  => "c",
+  "irn_flags" => "R",
+  "comment"   => "represents a x87 constant",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "out" => [ "st" ] },
+  "emit"      => '. fld%M %C /* Load fConst into register -> %X3 */',
+},
+
+# fxch and fpush
+
+"fxch" => {
+  "comment"   => "x87 stack exchange",
+  "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "emit"      => '. fxch %X1, %X3 /* x87 swap %X1, %X3 */',
+},
+
+"fpush" => {
+  "comment"   => "x87 stack push",
+  "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "emit"      => '. fld %X1 /* x87 push %X1 */',
+},
+
 
 ); # end of %nodes
