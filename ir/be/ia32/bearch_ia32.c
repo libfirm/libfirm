@@ -40,6 +40,7 @@
 #include "ia32_emitter.h"
 #include "ia32_map_regs.h"
 #include "ia32_optimize.h"
+#include "ia32_x87.h"
 
 #define DEBUG_MODULE "firm.be.ia32.isa"
 
@@ -50,11 +51,12 @@ static set *cur_reg_set = NULL;
 #define is_Start(irn) (get_irn_opcode(irn) == iro_Start)
 
 ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg) {
-	return be_abi_get_callee_save_irn(cg->birg->abi, &ia32_gp_regs[REG_XXX]);
+	return be_abi_get_callee_save_irn(cg->birg->abi, &ia32_gp_regs[REG_GP_NOREG]);
 }
 
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
-	return be_abi_get_callee_save_irn(cg->birg->abi, &ia32_fp_regs[REG_XXXX]);
+	return be_abi_get_callee_save_irn(cg->birg->abi,
+		USE_SSE2(cg) ? &ia32_xmm_regs[REG_XMM_NOREG] : &ia32_vfp_regs[REG_VFP_NOREG]);
 }
 
 /**************************************************
@@ -81,6 +83,7 @@ static ir_node *my_skip_proj(const ir_node *n) {
  * will be asked for this information.
  */
 static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
+	const ia32_irn_ops_t      *ops = self;
 	const ia32_register_req_t *irn_req;
 	long                       node_pos = pos == -1 ? 0 : pos;
 	ir_mode                   *mode     = is_Block(irn) ? NULL : get_irn_mode(irn);
@@ -138,8 +141,12 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 		/* treat Phi like Const with default requirements */
 		if (is_Phi(irn)) {
 			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
-			if (mode_is_float(mode))
-				memcpy(req, &(ia32_default_req_ia32_fp.req), sizeof(*req));
+			if (mode_is_float(mode)) {
+				if (USE_SSE2(ops->cg))
+					memcpy(req, &(ia32_default_req_ia32_xmm.req), sizeof(*req));
+				else
+					memcpy(req, &(ia32_default_req_ia32_vfp.req), sizeof(*req));
+			}
 			else if (mode_is_int(mode) || mode_is_reference(mode))
 				memcpy(req, &(ia32_default_req_ia32_gp.req), sizeof(*req));
 			else if (mode == mode_T || mode == mode_M) {
@@ -281,7 +288,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		ir_node *bl          = get_irg_start_block(env->irg);
 		ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
 		ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
-		ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_XXX]);
+		ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
 		ir_node *store_bp;
 
 		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_expand);
@@ -306,7 +313,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	ia32_abi_env_t *env = self;
 	ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
 	ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
-	ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_XXX]);
+	ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
 
 	if(env->flags.try_omit_fp) {
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
@@ -515,9 +522,16 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 static void ia32_before_sched(void *self) {
 }
 
+/**
+ * Called before the register allocator.
+ * Calculate a block schedule here. We need it for the x87
+ * simulator and the emitter.
+ */
 static void ia32_before_ra(void *self) {
-}
+	ia32_code_gen_t *cg = self;
 
+	cg->blk_sched = sched_create_block_schedule(cg->irg);
+}
 
 
 /**
@@ -652,6 +666,12 @@ static void ia32_after_ra_walker(ir_node *node, void *env) {
 static void ia32_after_ra(void *self) {
 	ia32_code_gen_t *cg = self;
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_after_ra_walker, self);
+
+	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
+	if (USE_x87(cg)) {
+		x87_simulate_graph(cg->arch_env, cg->irg, cg->blk_sched);
+		be_dump(cg->irg, "-x87", dump_ir_extblock_graph_sched);
+	}
 }
 
 
@@ -702,15 +722,17 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env->isa;
 	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
 
-	cg->impl     = &ia32_code_gen_if;
-	cg->irg      = birg->irg;
-	cg->reg_set  = new_set(ia32_cmp_irn_reg_assoc, 1024);
-	cg->mod      = firm_dbg_register("firm.be.ia32.cg");
-	cg->out      = F;
-	cg->arch_env = birg->main_env->arch_env;
-	cg->types    = pmap_create();
-	cg->tv_ent   = pmap_create();
-	cg->birg     = birg;
+	cg->impl      = &ia32_code_gen_if;
+	cg->irg       = birg->irg;
+	cg->reg_set   = new_set(ia32_cmp_irn_reg_assoc, 1024);
+	cg->mod       = firm_dbg_register("firm.be.ia32.cg");
+	cg->out       = F;
+	cg->arch_env  = birg->main_env->arch_env;
+	cg->types     = pmap_create();
+	cg->tv_ent    = pmap_create();
+	cg->birg      = birg;
+	cg->blk_sched = NULL;
+	cg->fp_kind   = isa->fp_kind;
 
 	/* set optimizations */
 	cg->opt.incdec    = 0;
@@ -762,6 +784,7 @@ static ia32_isa_t ia32_isa_template = {
 	0,                       /* number of code generator objects so far */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
+	fp_sse2,                 /* use SSE2 unit for fp operations */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
 	0                        /* name obst size */
@@ -787,6 +810,7 @@ static void *ia32_init(void) {
 
 	isa->regs_16bit = pmap_create();
 	isa->regs_8bit  = pmap_create();
+//	isa->fp_kind    = fp_x87;
 
 	ia32_build_16bit_reg_map(isa->regs_16bit);
 	ia32_build_8bit_reg_map(isa->regs_8bit);
@@ -822,14 +846,26 @@ static void ia32_done(void *self) {
 }
 
 
-
+/**
+ * Return the number of register classes for this architecture.
+ * We report always these:
+ *  - the general purpose registers
+ *  - the floating point register set (depending on the unit used for FP)
+ *  - MMX/SE registers (currently not supported)
+ */
 static int ia32_get_n_reg_class(const void *self) {
-	return N_CLASSES;
+	return 2;
 }
 
+/**
+ * Return the register class for index i.
+ */
 static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) {
-	assert(i >= 0 && i < N_CLASSES && "Invalid ia32 register class requested.");
-	return &ia32_reg_classes[i];
+	const ia32_isa_t *isa = self;
+	assert(i >= 0 && i < 2 && "Invalid ia32 register class requested.");
+	if (i == 0)
+		return &ia32_reg_classes[CLASS_ia32_gp];
+	return USE_SSE2(isa) ? &ia32_reg_classes[CLASS_ia32_xmm] : &ia32_reg_classes[CLASS_ia32_vfp];
 }
 
 /**
@@ -839,8 +875,10 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) 
  * @return A register class which can hold values of the given mode.
  */
 const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
-	if (mode_is_float(mode))
-		return &ia32_reg_classes[CLASS_ia32_fp];
+	const ia32_isa_t *isa = self;
+	if (mode_is_float(mode)) {
+		return USE_SSE2(isa) ? &ia32_reg_classes[CLASS_ia32_xmm] : &ia32_reg_classes[CLASS_ia32_vfp];
+	}
 	else
 		return &ia32_reg_classes[CLASS_ia32_gp];
 }
@@ -851,7 +889,8 @@ const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self, const
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+	const ia32_isa_t *isa = self;
 	ir_type  *tp;
 	ir_mode  *mode;
 	unsigned  cc        = get_method_calling_convention(method_type);
@@ -924,11 +963,17 @@ void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *ab
 		be_abi_call_res_reg(abi, 1, &ia32_gp_regs[REG_EDX]);
 	}
 	else if (n == 1) {
+		const arch_register_t *reg;
+
 		tp   = get_method_res_type(method_type, 0);
 		assert(is_atomic_type(tp));
 		mode = get_type_mode(tp);
 
-		be_abi_call_res_reg(abi, 0, mode_is_float(mode) ? &ia32_fp_regs[REG_XMM0] : &ia32_gp_regs[REG_EAX]);
+		reg = mode_is_float(mode) ?
+			(USE_SSE2(isa) ? &ia32_xmm_regs[REG_XMM0] : &ia32_vfp_regs[REG_VF0]) :
+			&ia32_gp_regs[REG_EAX];
+
+		be_abi_call_res_reg(abi, 0, reg);
 	}
 }
 
