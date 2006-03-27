@@ -462,8 +462,7 @@ $additional_opcodes = 0;
   "state"     => "exc_pinned",
   "comment"   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
-  "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] }
 },
 
 "Lea" => {
@@ -811,7 +810,7 @@ $additional_opcodes = 0;
 # x87 float nodes
 
 "fadd" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
 #  "emit"      => '. fadd %ia32_emit_binop /* x87 fadd(%A1, %A2) -> %D1 */'
@@ -819,7 +818,7 @@ $additional_opcodes = 0;
 },
 
 "fmul" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
 #  "emit"      => '. fmul %ia32_emit_binop /* x87 fmul(%A1, %A2) -> %D1 */'
@@ -827,14 +826,14 @@ $additional_opcodes = 0;
 },
 
 "fsub" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
   "emit"      => '. fsub %ia32_emit_binop /* x87 fsub(%A1, %A2) -> %D1 */'
 },
 
 "fsubr" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
@@ -842,49 +841,49 @@ $additional_opcodes = 0;
 },
 
 "fdiv" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
   "emit"      => '. fdiv %ia32_emit_binop /* x87 fdiv(%A1, %A2) -> %D1 */'
 },
 
 "fdivr" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
   "emit"      => '. fdivr %ia32_emit_binop /* x87 fdivr(%A1, %A2) -> %D1 */'
 },
 
 "fabs" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Abs: Abs(a) = |a|",
   "reg_req"   => { },
   "emit"      => '. fabs %D1, %S1 $ /* x87 fabs(%A1) -> %D1 */'
 },
 
 "fchs" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Chs: Chs(a) = -a",
   "reg_req"   => { },
   "emit"      => '. fchs %D1, %S1 $ /* x87 fchs(%A1) -> %D1 */'
 },
 
 "fsin" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sin: Sin(a) = sin(a)",
   "reg_req"   => { },
   "emit"      => '. fsin %D1, %S1 $ /* x87 sin(%A1) -> %D1 */'
 },
 
 "fcos" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Cos: Cos(a) = cos(a)",
   "reg_req"   => { },
   "emit"      => '. fcos %D1, %S1 $ /* x87 cos(%A1) -> %D1 */'
 },
 
 "fsqrt" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sqrt: Sqrt(a) = a ^ 0.5",
   "reg_req"   => { },
   "emit"      => '. fsqrt %X3, %X1 $ /* x87 sqrt(%A1) -> %D1 */'
@@ -893,7 +892,7 @@ $additional_opcodes = 0;
 # virtual Load and Store
 
 "fld" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Load: Load(ptr, mem) = LD ptr -> reg",
@@ -902,7 +901,7 @@ $additional_opcodes = 0;
 },
 
 "fst" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
@@ -913,49 +912,49 @@ $additional_opcodes = 0;
 # constants
 
 "fldz" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldz %X3 /* x87 0.0 -> %X3 */'
 },
 
 "fld1" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
   "reg_req"   => { },
   "emit"      => '. fld1 %X3 /* x87 1.0 -> %X3 */'
 },
 
 "fldpi" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load pi: Ld pi -> reg",
   "reg_req"   => { },
   "emit"      => '. fldpi %X3 /* x87 pi -> %X3 */'
 },
 
 "fldln2" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldln2 %X3 /* x87 ln(2) -> %X3 */'
 },
 
 "fldlg2" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldlg2 %X3 /* x87 log(2) -> %X3 */'
 },
 
 "fldl2t" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldll2t %X3 /* x87 ld(10) -> %X3 */'
 },
 
 "fldl2e" => {
-  "rd_constructor" => "assert(0); return NULL;",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
   "reg_req"   => { },
   "emit"      => '. fldl2e %X3 /* x87 ld(e) -> %X3 */'
