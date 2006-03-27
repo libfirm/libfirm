@@ -38,26 +38,26 @@ const arch_register_t *gpreg_param_reg_this[] = {
 };
 
 const arch_register_t *fpreg_param_reg_std[] = {
-	&ia32_fp_regs[REG_XMM0],
-	&ia32_fp_regs[REG_XMM1],
-	&ia32_fp_regs[REG_XMM2],
-	&ia32_fp_regs[REG_XMM3],
-	&ia32_fp_regs[REG_XMM4],
-	&ia32_fp_regs[REG_XMM5],
-	&ia32_fp_regs[REG_XMM6],
-	&ia32_fp_regs[REG_XMM7]
+	&ia32_xmm_regs[REG_XMM0],
+	&ia32_xmm_regs[REG_XMM1],
+	&ia32_xmm_regs[REG_XMM2],
+	&ia32_xmm_regs[REG_XMM3],
+	&ia32_xmm_regs[REG_XMM4],
+	&ia32_xmm_regs[REG_XMM5],
+	&ia32_xmm_regs[REG_XMM6],
+	&ia32_xmm_regs[REG_XMM7]
 };
 
 const arch_register_t *fpreg_param_reg_this[] = {
 	NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
-	&ia32_fp_regs[REG_XMM0],
-	&ia32_fp_regs[REG_XMM1],
-	&ia32_fp_regs[REG_XMM2],
-	&ia32_fp_regs[REG_XMM3],
-	&ia32_fp_regs[REG_XMM4],
-	&ia32_fp_regs[REG_XMM5],
-	&ia32_fp_regs[REG_XMM6],
-	&ia32_fp_regs[REG_XMM7]
+	&ia32_xmm_regs[REG_XMM0],
+	&ia32_xmm_regs[REG_XMM1],
+	&ia32_xmm_regs[REG_XMM2],
+	&ia32_xmm_regs[REG_XMM3],
+	&ia32_xmm_regs[REG_XMM4],
+	&ia32_xmm_regs[REG_XMM5],
+	&ia32_xmm_regs[REG_XMM6],
+	&ia32_xmm_regs[REG_XMM7]
 };
 
 
