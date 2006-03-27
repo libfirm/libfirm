@@ -305,7 +305,13 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 			}
 			break;
 		case ia32_AddrModeS:
-			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n, env));
+			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
+				assert(! PRODUCES_RESULT(n) && "Source AM with Const must not produce result");
+				snprintf(buf, SNPRINTF_BUF_LEN, "%s, %s", get_ia32_cnst(n), ia32_emit_am(n, env));
+			}
+			else {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n, env));
+			}
 			break;
 		case ia32_AddrModeD:
 			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
@@ -421,7 +427,13 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	}
 
 	if (am_flav & ia32_O) {
-		obstack_printf(obst, get_ia32_am_offs(n));
+		s = get_ia32_am_offs(n);
+
+		/* omit exlicit + if there was no base or index */
+		if (! had_output && s[0] == '+')
+			s++;
+
+		obstack_printf(obst, s);
 	}
 
 	obstack_printf(obst, "] ");

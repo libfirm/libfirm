@@ -1177,21 +1177,36 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
  * @return the created ia32 Load node
  */
 static ir_node *gen_Load(ia32_transform_env_t *env) {
-	ir_node *node  = env->irn;
-	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_mode *mode  = get_Load_mode(node);
+	ir_node    *node  = env->irn;
+	ir_node    *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node    *ptr   = get_Load_ptr(node);
+	ir_mode    *mode  = get_Load_mode(node);
+	const char *offs  = NULL;
 	ir_node *new_op;
+	ia32_am_flavour_t am_flav = ia32_B;
+
+	/* address might be a constant (symconst or absolute address) */
+	if (is_ia32_Const(ptr)) {
+		offs = get_ia32_cnst(ptr);
+		ptr  = noreg;
+	}
 
 	if (mode_is_float(mode)) {
-		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
+		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, get_Load_mem(node), env->mode);
 	}
 	else {
-		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, get_Load_ptr(node), noreg, get_Load_mem(node), env->mode);
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, get_Load_mem(node), env->mode);
+	}
+
+	/* base is an constant address */
+	if (offs) {
+		add_ia32_am_offs(new_op, offs);
+		am_flav = ia32_O;
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
 	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_am_flavour(new_op, am_flav);
 	set_ia32_ls_mode(new_op, mode);
 
 	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
@@ -1211,18 +1226,38 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
  * @return the created ia32 Store node
  */
 static ir_node *gen_Store(ia32_transform_env_t *env) {
-	ir_node *node  = env->irn;
-	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_node *val   = get_Store_value(node);
-	ir_node *ptr   = get_Store_ptr(node);
-	ir_node *mem   = get_Store_mem(node);
-	ir_mode *mode  = get_irn_mode(val);
-	ir_node *sval  = val;
+	ir_node    *node  = env->irn;
+	ir_node    *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node    *val   = get_Store_value(node);
+	ir_node    *ptr   = get_Store_ptr(node);
+	ir_node    *mem   = get_Store_mem(node);
+	ir_mode    *mode  = get_irn_mode(val);
+	ir_node    *sval  = val;
+	const char *offs  = NULL;
 	ir_node *new_op;
+	ia32_am_flavour_t am_flav = ia32_B;
+	ia32_immop_type_t immop   = ia32_ImmNone;
 
 	/* in case of storing a const (but not a symconst) -> make it an attribute */
-	if (is_ia32_Const(val)) {
+	if (is_ia32_Cnst(val)) {
+		switch (get_ia32_op_type(val)) {
+			case ia32_Const:
+				immop = ia32_ImmConst;
+				break;
+			case ia32_SymConst:
+				immop = ia32_ImmSymConst;
+				break;
+			default:
+				assert(0 && "unsupported Const type");
+		}
+
 		sval = noreg;
+	}
+
+	/* address might be a constant (symconst or absolute address) */
+	if (is_ia32_Const(ptr)) {
+		offs = get_ia32_cnst(ptr);
+		ptr  = noreg;
 	}
 
 	if (mode_is_float(mode)) {
@@ -1236,14 +1271,21 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	}
 
 	/* stored const is an attribute (saves a register) */
-	if (is_ia32_Const(val)) {
+	if (is_ia32_Cnst(val)) {
 		set_ia32_Immop_attr(new_op, val);
+	}
+
+	/* base is an constant address */
+	if (offs) {
+		add_ia32_am_offs(new_op, offs);
+		am_flav = ia32_O;
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Dest);
 	set_ia32_op_type(new_op, ia32_AddrModeD);
-	set_ia32_am_flavour(new_op, ia32_B);
+	set_ia32_am_flavour(new_op, am_flav);
 	set_ia32_ls_mode(new_op, get_irn_mode(val));
+	set_ia32_immop_type(new_op, immop);
 
 	SET_IA32_ORIG_NODE(new_op, get_old_node_name(env));
 

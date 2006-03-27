@@ -483,6 +483,7 @@ char *get_ia32_am_offs(const ir_node *node) {
 		memcpy(&res[1], obstack_base(attr->am_offs), size);
 		res[size + 1] = '\0';
 	}
+
 	return res;
 }
 

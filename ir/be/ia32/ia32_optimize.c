@@ -555,12 +555,19 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 	int     is_equal = (addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1));
 	entity *lent     = get_ia32_frame_ent(load);
 	entity *sent     = get_ia32_frame_ent(store);
+	char   *loffs    = get_ia32_am_offs(load);
+	char   *soffs    = get_ia32_am_offs(store);
 
 	/* are both entities set and equal? */
-	is_equal = lent && sent && (lent == sent);
+	if (lent || sent)
+		is_equal = lent && sent && (lent == sent);
 
 	/* are the load and the store of the same mode? */
 	is_equal = get_ia32_ls_mode(load) == get_ia32_ls_mode(store);
+
+	/* are offsets set and equal */
+	if (loffs || soffs)
+		is_equal = loffs && soffs && strcmp(loffs, soffs) == 0;
 
 	return is_equal;
 }
