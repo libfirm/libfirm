@@ -1487,6 +1487,8 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
  *  FLOAT -> FLOAT
  * ================
  *  SSE(1/2) convert from float or double to double or float (cvtss/sd2sd/ss)
+ *  x87 is mode_E internally, conversions happen only at load and store
+ *  in non-strict semantic
  */
 
 //static ir_node *gen_int_downscale_conv(ia32_transform_env_t *env, ir_node *op,
@@ -1549,8 +1551,14 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 		/* we convert from float ... */
 		if (mode_is_float(tgt_mode)) {
 			/* ... to float */
-			DB((mod, LEVEL_1, "create Conv(float, float) ..."));
-			new_op = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
+			if (USE_SSE2(env->cg)) {
+				DB((mod, LEVEL_1, "create Conv(float, float) ..."));
+				new_op = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
+			}
+			else {
+				DB((mod, LEVEL_1, "killed Conv(float, float) ..."));
+				edges_reroute(env->irn, op, irg);
+			}
 		}
 		else {
 			/* ... to int */
