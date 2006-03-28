@@ -750,10 +750,10 @@ void mips_gen_routine(FILE *F, ir_graph *irg, const mips_code_gen_t *cg)
 	mips_emit_env_t emit_env;
 	int i, n;
 
-	emit_env.mod      = firm_dbg_register("firm.be.mips.emit");
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
 	emit_env.cg       = cg;
+	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.mips.emit");
 
 	/* set the global arch_env (needed by print hooks) */
 	arch_env = cg->arch_env;

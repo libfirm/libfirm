@@ -69,7 +69,7 @@ static const arch_register_req_t *mips_get_irn_reg_req(const void *self, arch_re
 	const mips_register_req_t *irn_req;
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(irn);
-	firm_dbg_module_t *mod      = firm_dbg_register(DEBUG_MODULE);
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
 	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
@@ -523,11 +523,11 @@ static void *mips_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->impl     = &mips_code_gen_if;
 	cg->irg      = birg->irg;
 	cg->reg_set  = new_set(mips_cmp_irn_reg_assoc, 1024);
-	cg->mod      = firm_dbg_register("firm.be.mips.cg");
 	cg->out      = F;
 	cg->arch_env = birg->main_env->arch_env;
 	cg->birg     = birg;
 	cg->bl_list  = NULL;
+	FIRM_DBG_REGISTER(cg->mod, "firm.be.mips.cg");
 
 	isa->num_codegens++;
 
