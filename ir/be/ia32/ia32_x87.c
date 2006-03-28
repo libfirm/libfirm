@@ -1,6 +1,8 @@
 /**
  * This file implements the x87 support and virtual to stack
- * register translation.
+ * register translation for the ia32 backend.
+ *
+ * @author: Michael Beck
  *
  * $Id$
  */
@@ -10,13 +12,15 @@
 #include "irop_t.h"
 #include "irprog.h"
 #include "iredges_t.h"
+#include "irgmod.h"
 #include "obst.h"
 #include "pmap.h"
 #include "pdeq.h"
 #include "irprintf.h"
 
-#include "..\belive.h"
+#include "..\belive_t.h"
 #include "..\besched.h"
+#include "..\benode_t.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
@@ -31,6 +35,9 @@
 /* the unop index */
 #define UNOP_IDX  0
 
+/* the store val index */
+#define STORE_VAL_IDX 2
+
 #define MASK_TOS(x)		((x) & (N_x87_REGS - 1))
 
 /** the virtual floating point flag */
@@ -39,13 +46,15 @@
 /**
  * An exchange template.
  * Note that our virtual functions have the same inputs
- * ant attributes as the real ones, so we can simple exchange
+ * and attributes as the real ones, so we can simple exchange
  * their opcodes!
  * Further, x87 supports inverse instructions, so we can handle them.
  */
 typedef struct _exchange_tmpl {
-	ir_op *normal_op;		/**< the normal one */
-	ir_op *reverse_op;	/**< the reverse one if exists */
+	ir_op *normal_op;       /**< the normal one */
+	ir_op *reverse_op;      /**< the reverse one if exists */
+	ir_op *normal_pop_op;   /**< the normal one with tos pop */
+	ir_op *reverse_pop_op;  /**< the reverse one with tos pop */
 } exchange_tmpl;
 
 /**
@@ -112,13 +121,20 @@ static void x87_dump_stack(const x87_state *state) {
 }
 
 /**
+ * Set a virtual register to st(pos)
+ */
+static void x87_set_reg(x87_state *state, const arch_register_t *vreg, int pos) {
+	assert(0 < state->depth);
+	state->st[MASK_TOS(state->tos + pos)] = vreg;
+
+	printf("After SET_REG:\n "); x87_dump_stack(state);
+}
+
+/**
  * Set the tos virtual register
  */
 static void x87_set_tos_reg(x87_state *state, const arch_register_t *vreg) {
-	assert(0 < state->depth);
-	state->st[MASK_TOS(state->tos)] = vreg;
-
-	printf("After INSTR:\n "); x87_dump_stack(state);
+	x87_set_reg(state, vreg, 0);
 }
 
 /**
@@ -279,71 +295,220 @@ static void x87_create_fpush(const arch_env_t *env, x87_state *state, ir_node *n
 	printf("<<< %s %s, %s\n", get_irn_opname(fpush), attr->x87[0]->name, attr->x87[2]->name);
 }
 
+/* --------------------------------- liveness ------------------------------------------ */
+
+/**
+ * The liveness transfer function.
+ * Updates a live set over a single step from a given node to its predecessor.
+ * Everything defined at the node is removed from the set, the uses of the node get inserted.
+ * @param arch_env The architecture environment.
+ * @param irn      The node at which liveness should be computed.
+ * @param live     The bitset of registers live before @p irn. This set gets modified by updating it to
+ *                 the registers live after irn.
+ * @return live.
+ */
+static unsigned vfp_liveness_transfer(const arch_env_t *arch_env, ir_node *irn, unsigned live)
+{
+	int i, n;
+	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
+
+	if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
+			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
+			live &= ~(1 << reg->index);
+	}
+
+	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		ir_node *op = get_irn_n(irn, i);
+
+		if (arch_irn_consider_in_reg_alloc(arch_env, cls, op)) {
+			const arch_register_t *reg = arch_get_irn_register(arch_env, op);
+			live |= 1 << reg->index;
+		}
+	}
+
+	return live;
+}
+
+/**
+ * Put all live virtual registers at the end of a block into a bitset.
+ * @param arch_env The architecture environment.
+ * @param bl       The block.
+ * @return The live bitset.
+ */
+static unsigned vfp_liveness_end_of_block(const arch_env_t *arch_env, const ir_node *bl)
+{
+	irn_live_t *li;
+	unsigned live = 0;
+	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
+
+	live_foreach(bl, li) {
+		ir_node *irn = (ir_node *) li->irn;
+		if (live_is_end(li) && arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
+			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
+			live |= 1 << reg->index;
+		}
+	}
+
+	return live;
+}
+
+/**
+ * Compute a bitset of registers which are live at another node.
+ * @param arch_env The architecture environment.
+ * @param pos      The node.
+ * @return The live bitset.
+ */
+static unsigned vfp_liveness_nodes_live_at(const arch_env_t *arch_env, const ir_node *pos)
+{
+	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
+	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
+	ir_node *irn;
+	unsigned live;
+
+	live = vfp_liveness_end_of_block(arch_env, bl);
+
+	sched_foreach_reverse(bl, irn) {
+		/*
+		 * If we encounter the node we want to insert the Perm after,
+		 * exit immediately, so that this node is still live
+		 */
+		if (irn == pos)
+			return live;
+
+		live = vfp_liveness_transfer(arch_env, irn, live);
+	}
+
+	return live;
+}
+
+/**
+ * Returns true if a register is live in a set.
+ */
+static unsigned is_vfp_live(const arch_register_t *reg, unsigned live) {
+	return live & (1 << reg->index);
+}
+
+static vfp_dump_live(unsigned live) {
+	int i;
+
+	printf("Live registers here: \n");
+	for (i = 0; i < 8; ++i) {
+		if (live & (1 << i)) {
+			printf(" vf%d", i);
+		}
+	}
+	printf("\n");
+}
+
+/* --------------------------------- simulators ---------------------------------------- */
+
+#define XCHG(a, b) do { int t =(a); (a) = (b); (b) = t; } while (0)
+
 /**
  * Simulate a virtual binop
  */
 static void sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const exchange_tmpl *tmpl) {
 	int op1_idx, op2_idx = -1;
-	int out_idx;
+	int out_idx, do_pop =0;
+	ia32_attr_t *attr;
+	ir_op *dst;
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_1));
 	const arch_register_t *op2 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_2));
 	const arch_register_t *out = arch_get_irn_register(env, n);
-	ia32_attr_t *attr = get_ia32_attr(n);
+	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
 	printf(">>> %s %s, %s -> %s\n", get_irn_opname(n), op1->name, op2->name, out->name);
+  vfp_dump_live(live);
 
-	out_idx = x87_on_stack(state, out);
 	op1_idx = x87_on_stack(state, op1);
 
-	if (out_idx == op1_idx) {
-		/* good, first operands match, bring it to top */
-		if (out_idx != 0) {
-			x87_create_fxch(state, n, out_idx, BINOP_IDX_1);
-			op1_idx = 0;
-			out_idx = 0;
-		}
+	if (op2->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]) {
+		/* second operand is a vfp register */
+		op2_idx = x87_on_stack(state, op2);
 
-		if (op2->index != REG_VFP_NOREG) {
-			/* op2 is no address mode */
-			op2_idx = x87_on_stack(state, op2);
-		}
-		else
-			op2_idx = REG_ST_NOREG;
+		if (is_vfp_live(op1, live)) {
+			/* first operand is live */
 
-		n->op = tmpl->normal_op;
-	}
-	else {
-		if (op2->index != REG_VFP_NOREG) {
-			/* op2 is no address mode */
-			op2_idx = x87_on_stack(state, op2);
-		}
-
-		if (out_idx == op2_idx) {
-			/* good, second operands match, bring it to top */
-			if (out_idx != 0) {
-				x87_create_fxch(state, n, out_idx, BINOP_IDX_2);
-				op2_idx = 0;
-				out_idx = 0;
-
-				if (op1_idx == 0)
-					op1_idx = out_idx;
+			if (is_vfp_live(op2, live)) {
+				/* both operands are live: push the first one */
+				x87_create_fpush(env, state, n, op1_idx, BINOP_IDX_1);
+				out_idx = op1_idx = 0;
+				++op2_idx;
+				dst = tmpl->normal_op;
+				do_pop = 0;
 			}
-			n->op = tmpl->reverse_op;
+			else {
+				/* first live, second operand is dead here, bring it to tos */
+				if (op2_idx != 0) {
+					x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+					if (op1_idx == 0)
+						op1_idx = op2_idx;
+				}
+				op2_idx = out_idx = 0;
+				dst = tmpl->normal_op;
+				do_pop = 0;
+			}
 		}
 		else {
-			/* bad, both numbers did not match, push op1 */
-			x87_push(state, op1);
-			if (op2->index != REG_VFP_NOREG)
-				++op2_idx;
-			else
-				op2_idx = REG_ST_NOREG;
-			op1_idx = 0;
-			out_idx = 0;
-
-			n->op = tmpl->normal_op;
+			/* first operand is dead */
+			if (is_vfp_live(op2, live)) {
+				/* second operand is live: bring first to tos */
+				if (op1_idx != 0) {
+					x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+					if (op2_idx == 0)
+						op2_idx = op1_idx;
+				}
+				op1_idx = out_idx = 0;
+				dst = tmpl->normal_op;
+				do_pop = 0;
+			}
+			else {
+				/* both operands are dead here, pop them from the stack */
+				if (op1_idx == 0) {
+					out_idx = op2_idx;
+					XCHG(op1_idx, op2_idx);
+					dst = tmpl->reverse_pop_op;
+					do_pop = 1;
+				}
+				else if (op2_idx == 0) {
+					out_idx = op1_idx;
+					dst = tmpl->normal_pop_op;
+					do_pop = 1;
+				}
+				else {
+					/* bring the second on top */
+					x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+					op2_idx = 0;
+					out_idx = op1_idx;
+					dst = tmpl->normal_pop_op;
+					do_pop = 1;
+				}
+			}
 		}
 	}
-	x87_set_tos_reg(state, out);
+	else {
+		/* second operand is an address mode */
+		if (is_vfp_live(op1, live)) {
+			/* first operand is live: push it here */
+			x87_create_fpush(env, state, n, op1_idx, BINOP_IDX_1);
+		}
+		else {
+			/* first operand is dead: bring it to tos */
+			if (op1_idx != 0)
+				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+		}
+		op1_idx = out_idx = 0;
+		dst = tmpl->normal_op;
+		do_pop = 0;
+	}
+
+	x87_set_reg(state, out, out_idx);
+	if (do_pop)
+		x87_pop(state);
+
+	/* patch the operation */
+	n->op = dst;
+	attr = get_ia32_attr(n);
 	attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
 	attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
 	attr->x87[2] = out = &ia32_st_regs[out_idx];
@@ -358,50 +523,80 @@ static void sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 	int op1_idx, out_idx;
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, UNOP_IDX));
 	const arch_register_t *out = arch_get_irn_register(env, n);
-	ia32_attr_t *attr = get_ia32_attr(n);
+	ia32_attr_t *attr;
+	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
-	out_idx = x87_on_stack(state, out);
+	printf(">>> %s -> %s\n", get_irn_opname(n), out->name);
+  vfp_dump_live(live);
+
 	op1_idx = x87_on_stack(state, op1);
 
-	if (out_idx == op1_idx) {
-		/* good, operands match, bring it to top */
-		if (out_idx != 0) {
-			x87_create_fxch(state, n, out_idx, UNOP_IDX);
-			op1_idx = 0;
-			out_idx = 0;
-		}
+	if (is_vfp_live(op1, live)) {
+		/* push the operand here */
+		x87_create_fpush(env, state, n, op1_idx, UNOP_IDX);
 	}
 	else {
-		/* create a push or an exchange here */
-		if (1)
-			x87_create_fpush(env, state, n, op1_idx, UNOP_IDX);
-		else
+		/* operand is dead, bring it to tos */
+		if (op1_idx != 0)
 			x87_create_fxch(state, n, op1_idx, UNOP_IDX);
 	}
-	printf(">>> %s -> %s\n", get_irn_opname(n), out->name);
+
+	x87_set_tos_reg(state, out);
+	op1_idx = out_idx = 0;
 	n->op = op;
+	attr = get_ia32_attr(n);
 	attr->x87[0] = op1 = &ia32_st_regs[0];
 	attr->x87[2] = out = &ia32_st_regs[0];
 	printf("<<< %s -> %s\n", get_irn_opname(n), out->name);
 }
 
 /**
- * Simulate a virtual Load
+ * Simulate a virtual Load instructions
  */
 static void sim_load(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *op) {
 	const arch_register_t *out = arch_get_irn_register(env, n);
-	ia32_attr_t *attr = get_ia32_attr(n);
+	ia32_attr_t *attr;
 
 	printf(">>> %s -> %s\n", get_irn_opname(n), out->name);
 	x87_push(state, out);
 	n->op = op;
+	attr = get_ia32_attr(n);
 	attr->x87[2] = out = &ia32_st_regs[0];
 	printf("<<< %s -> %s\n", get_irn_opname(n), out->name);
 }
 
+/**
+ * Simulate a virtual Store
+ */
+static void sim_fst(x87_state *state, ir_node *n, const arch_env_t *env) {
+	int op2_idx;
+	const arch_register_t *op2 = arch_get_irn_register(env, get_irn_n(n, STORE_VAL_IDX));
+	ia32_attr_t *attr;
+	unsigned live = vfp_liveness_nodes_live_at(env, n);
+
+	op2_idx = x87_on_stack(state, op2);
+
+	printf(">>> %s %s ->\n", get_irn_opname(n), op2->name);
+
+	/* we can only store the tos to memory */
+	if (op2_idx != 0)
+		x87_create_fxch(state, n, op2_idx, STORE_VAL_IDX);
+
+	if (is_vfp_live(op2, live))
+		n->op = op_ia32_fst;
+	else {
+		x87_pop(state);
+		n->op = op_ia32_fstp;
+	}
+
+	attr = get_ia32_attr(n);
+	attr->x87[1] = op2 = &ia32_st_regs[0];
+	printf("<<< %s %s ->\n", get_irn_opname(n), op2->name);
+}
+
 #define _GEN_BINOP(op, rev) \
 static void sim_##op(x87_state *state, ir_node *n, const arch_env_t *env) { \
-	exchange_tmpl tmpl = { op_ia32_##op, op_ia32_##rev }; \
+	exchange_tmpl tmpl = { op_ia32_##op, op_ia32_##rev, op_ia32_##op##p, op_ia32_##rev##p }; \
 	sim_binop(state, n, env, &tmpl); \
 }
 
@@ -420,7 +615,7 @@ static void sim_##op(x87_state *state, ir_node *n, const arch_env_t *env) { \
 	sim_unop(state, n, env, op_ia32_##op); \
 }
 
-
+/* all stubs */
 GEN_BINOP(fadd)
 GEN_BINOPR(fsub)
 GEN_BINOP(fmul)
@@ -438,13 +633,58 @@ GEN_UNOP(fcos)
 GEN_UNOP(fsqrt)
 
 /**
+ * Simulate a virtual Copy
+ */
+static void sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
+	ir_mode *mode = get_irn_mode(n);
+
+	if (mode_is_float(mode)) {
+		const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, 0));
+		const arch_register_t *out = arch_get_irn_register(env, n);
+		ir_node *node, *next;
+		ia32_attr_t *attr;
+		int op1_idx;
+		unsigned live = vfp_liveness_nodes_live_at(env, n);
+
+		op1_idx = x87_on_stack(state, op1);
+
+		printf(">>> %s %s -> %s\n", get_irn_opname(n), op1->name, out->name);
+	  vfp_dump_live(live);
+
+		if (is_vfp_live(op1, live)) {
+			/* operand is still live,a real copy */
+			x87_push(state, out);
+
+			node = new_rd_ia32_fpush(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), get_irn_n(n, 0), mode);
+			arch_set_irn_register(env, node, out);
+
+			attr = get_ia32_attr(node);
+			attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
+			attr->x87[2] = out = &ia32_st_regs[0];
+
+			next = sched_next(n);
+			sched_remove(n);
+			exchange(n, node);
+			sched_add_before(next, node);
+			printf(">>> %s %s -> %s\n", get_irn_opname(node), op1->name, out->name);
+		}
+		else {
+			/* just a virtual copy */
+			x87_set_reg(state, out, op1_idx);
+			sched_remove(n);
+			printf(">>> KILLED %s\n", get_irn_opname(n));
+		}
+	}
+}
+
+/**
  * Run a simulation and fix all virtual instructions for a block.
  *
  * @return non-zero if simulation is complete,
  *         zero if the simulation must be rerun
  */
 static int x87_simulate_block(x87_simulator *sim, ir_node *block) {
-	ir_node *n;
+	ir_node *n, *next;
 	blk_state *bl_state = x87_get_bl_state(sim, block);
 	x87_state *state = bl_state->begin;
 	const ir_edge_t *edge;
@@ -456,9 +696,11 @@ static int x87_simulate_block(x87_simulator *sim, ir_node *block) {
 
 	assert(bl_state->end == NULL);
 
-	sched_foreach(block, n) {
+	/* beware, n might changed */
+	for (n = sched_first(block); !sched_is_end(n); n = next) {
 		ir_op *op = get_irn_op(n);
 
+		next = sched_next(n);
 		if (op->ops.generic) {
 			sim_func func = (sim_func)op->ops.generic;
 
@@ -515,7 +757,8 @@ static void x87_init_simulator(x87_simulator *sim, const arch_env_t *env) {
 
 	clear_irp_opcodes_generic_func();
 
-#define ASSOC(op)	(op_ia32_v ## op)->ops.generic = (op_func)(sim_##op)
+#define ASSOC(op)	    (op_ia32_v ## op)->ops.generic = (op_func)(sim_##op)
+#define ASSOC_BE(op)	(op_be_ ## op)->ops.generic = (op_func)(sim_##op)
 	ASSOC(fConst);
 	ASSOC(fld);
 	ASSOC(fld1);
@@ -530,6 +773,9 @@ static void x87_init_simulator(x87_simulator *sim, const arch_env_t *env) {
 	ASSOC(fsin);
 	ASSOC(fcos);
 	ASSOC(fsqrt);
+	ASSOC(fst);
+	ASSOC_BE(Copy);
+#undef ASSOC_BE
 #undef ASSOC
 }
 
