@@ -62,7 +62,7 @@ static const arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self, arc
 	const TEMPLATE_register_req_t *irn_req;
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(irn);
-	firm_dbg_module_t *mod      = firm_dbg_register(DEBUG_MODULE);
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
 	if (mode == mode_T || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
@@ -333,10 +333,10 @@ static void *TEMPLATE_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->impl     = &TEMPLATE_code_gen_if;
 	cg->irg      = birg->irg;
 	cg->reg_set  = new_set(TEMPLATE_cmp_irn_reg_assoc, 1024);
-	cg->mod      = firm_dbg_register("firm.be.TEMPLATE.cg");
 	cg->out      = F;
 	cg->arch_env = birg->main_env->arch_env;
 	cg->birg     = birg;
+	FIRM_DBG_REGISTER(cg->mod, "firm.be.TEMPLATE.cg");
 
 	isa->num_codegens++;
 
