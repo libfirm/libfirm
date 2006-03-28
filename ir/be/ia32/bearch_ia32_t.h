@@ -51,6 +51,7 @@ typedef struct _ia32_code_gen_t {
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	ia32_optimize_t                 opt;           /**< contains optimization information */
 	char                            fp_kind;       /**< floating point kind */
+	char                            used_x87;      /**< x87 floating point unit used in this graph */
 } ia32_code_gen_t;
 
 typedef struct _ia32_isa_t {

@@ -681,7 +681,7 @@ static void ia32_after_ra(void *self) {
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_after_ra_walker, self);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
-	if (USE_x87(cg)) {
+	if (cg->used_x87) {
 		x87_simulate_graph(cg->arch_env, cg->irg, cg->blk_sched);
 		be_dump(cg->irg, "-x87", dump_ir_extblock_graph_sched);
 	}
@@ -745,11 +745,13 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
 	cg->fp_kind   = isa->fp_kind;
+	cg->used_x87  = 0;
+
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.cg");
 
 	/* set optimizations */
 	cg->opt.incdec    = 0;
-	cg->opt.doam      = USE_SSE2(cg) ? 1 : 0;
+	cg->opt.doam      = 1;
 	cg->opt.placecnst = 1;
 	cg->opt.immops    = 1;
 	cg->opt.extbb     = 1;
