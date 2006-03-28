@@ -186,7 +186,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 		case dump_node_nodeattr_txt:
 			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
 				char *pref = is_ia32_ImmSymConst(n) ? "SymC" : "";
-				char *cnst = get_ia32_cnst(n);
+				const char *cnst = get_ia32_cnst(n);
 
 				fprintf(F, "[%s%s]", pref, cnst ? cnst : "NONE");
 			}
