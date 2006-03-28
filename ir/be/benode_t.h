@@ -167,7 +167,7 @@ enum {
 };
 
 ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
-ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 

@@ -92,7 +92,7 @@ typedef struct {
 typedef struct {
 	be_node_attr_t node_attr;
 	int offset;           /**< The offset by which the stack shall be increased/decreased. */
-	be_stack_dir_t dir;   /**< The direction in which the stack shall be modified (along or in the other direction). */
+	be_stack_dir_t dir;   /**< The direction in which the stack shall be modified (expand or shrink). */
 } be_stack_attr_t;
 
 typedef struct {
@@ -370,9 +370,9 @@ void    be_Call_set_entity(ir_node *call, entity *ent)
 	a->ent = ent;
 }
 
-ir_node *be_new_Return(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
-	ir_node *irn = new_ir_node(NULL, irg, bl, op_be_Return, mode_X, n, in);
+	ir_node *irn = new_ir_node(dbg, irg, bl, op_be_Return, mode_X, n, in);
 	init_node_attr(irn, n);
 
 	return irn;

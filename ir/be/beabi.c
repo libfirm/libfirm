@@ -1340,7 +1340,7 @@ static void modify_irg(be_abi_irg_t *env)
 			}
 
 			/* The in array for the new back end return is now ready. */
-			ret = be_new_Return(irg, bl, n, in);
+			ret = be_new_Return(get_irn_dbg_info(irn), irg, bl, n, in);
 
 			/* Set the register classes of the return's parameter accordingly. */
 			for(i = 0; i < n; ++i)
