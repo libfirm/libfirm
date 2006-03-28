@@ -1433,11 +1433,11 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_env_t emit_env;
 	ir_node *block;
 
-	emit_env.mod      = firm_dbg_register("firm.be.ia32.emitter");
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
 	emit_env.cg       = cg;
 	emit_env.isa      = (ia32_isa_t *)cg->arch_env->isa;
+	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.ia32.emitter");
 
 	/* set the global arch_env (needed by print hooks) */
 	arch_env = cg->arch_env;

@@ -87,7 +87,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 	const ia32_register_req_t *irn_req;
 	long                       node_pos = pos == -1 ? 0 : pos;
 	ir_mode                   *mode     = is_Block(irn) ? NULL : get_irn_mode(irn);
-	firm_dbg_module_t         *mod      = firm_dbg_register(DEBUG_MODULE);
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
 	if (is_Block(irn) || mode == mode_M || mode == mode_X) {
 		DBG((mod, LEVEL_1, "ignoring Block, mode_M, mode_X node %+F\n", irn));
@@ -421,7 +421,7 @@ static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
 	firm_dbg_module_t *old_mod = cg->mod;
 
-	cg->mod = firm_dbg_register("firm.be.ia32.transform");
+	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
@@ -738,7 +738,6 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->impl      = &ia32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ia32_cmp_irn_reg_assoc, 1024);
-	cg->mod       = firm_dbg_register("firm.be.ia32.cg");
 	cg->out       = F;
 	cg->arch_env  = birg->main_env->arch_env;
 	cg->types     = pmap_create();
@@ -746,10 +745,11 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
 	cg->fp_kind   = isa->fp_kind;
+	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.cg");
 
 	/* set optimizations */
 	cg->opt.incdec    = 0;
-	cg->opt.doam      = 1;
+	cg->opt.doam      = USE_SSE2(cg) ? 1 : 0;
 	cg->opt.placecnst = 1;
 	cg->opt.immops    = 1;
 	cg->opt.extbb     = 1;
