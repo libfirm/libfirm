@@ -697,10 +697,10 @@ void ppc32_gen_routine(FILE *F, ir_graph *irg, const ppc32_code_gen_t *cg) {
 	ir_node *block;
 	int i, n;
 
-	emit_env.mod      = firm_dbg_register("firm.be.ppc.emit");
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
 	emit_env.cg       = cg;
+	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.ppc.emit");
 
 	/* set the global arch_env (needed by print hooks) */
 	arch_env = cg->arch_env;

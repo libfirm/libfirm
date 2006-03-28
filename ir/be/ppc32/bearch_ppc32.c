@@ -69,7 +69,7 @@ static const arch_register_req_t *ppc32_get_irn_reg_req(const void *self, arch_r
 	const ppc32_register_req_t *irn_req;
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(irn);
-	firm_dbg_module_t *mod      = firm_dbg_register(DEBUG_MODULE);
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
 	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring block, mode_X or mode_M node %+F\n", irn));
@@ -615,7 +615,6 @@ static void *ppc32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->impl      = &ppc32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ppc32_cmp_irn_reg_assoc, 1024);
-	cg->mod       = firm_dbg_register("firm.be.ppc.cg");
 	cg->out       = F;
 	cg->arch_env  = birg->main_env->arch_env;
 	cg->birg      = birg;
@@ -623,6 +622,7 @@ static void *ppc32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->area      = NULL;
 	cg->start_succ_block = NULL;
 	cg->blk_sched = NULL;
+	FIRM_DBG_REGISTER(cg->mod, "firm.be.ppc.cg");
 
 	isa->num_codegens++;
 
