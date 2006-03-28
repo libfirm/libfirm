@@ -497,8 +497,10 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 
 	n = pset_count(live);
 
-	if(n == 0)
+	if(n == 0) {
+		del_pset(live);
 		return NULL;
+	}
 
 	nodes = xmalloc(n * sizeof(nodes[0]));
 
@@ -507,6 +509,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
 		nodes[i] = irn;
 	}
+	del_pset(live);
 
 	perm = be_new_Perm(cls, irg, bl, n, nodes);
 	sched_add_after(pos, perm);
