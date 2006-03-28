@@ -506,8 +506,8 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 	const arch_env_t          *arch_env = birg->main_env->arch_env;
 	ir_node                   *in[2], *keep, *cpy, *temp;
 	ir_node                   *block = get_nodes_block(irn);
-	firm_dbg_module_t         *mod   = firm_dbg_register("firm.be.lower");
 	const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, other_different, -1);
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower");
 
 	if (arch_irn_is(arch_env, other_different, ignore) || ! mode_is_datab(get_irn_mode(other_different))) {
 		DBG((mod, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
@@ -635,7 +635,7 @@ void lower_nodes_after_ra(be_chordal_env_t *chord_env, int do_copy) {
 
 	env.chord_env  = chord_env;
 	env.do_copy    = do_copy;
-	env.dbg_module = firm_dbg_register("firm.be.lower");
+	FIRM_DBG_REGISTER(env.dbg_module, "firm.be.lower");
 
 	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_after_ra_walker, &env);
 }

@@ -600,12 +600,12 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	INIT_LIST_HEAD(&info->list);
 
 	/* Initialize the block scheduling environment */
-	be.dbg               = firm_dbg_register("firm.be.sched");
 	be.block             = block;
 	be.curr_time         = 0;
 	be.ready_set         = new_pset(node_cmp_func, get_irn_n_edges(block));
 	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_edges(block));
 	be.selector          = selector;
+	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
 
 	if(selector->init_block)
 		be.selector_block_env = selector->init_block(env->selector_env, block);

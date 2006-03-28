@@ -31,6 +31,9 @@
 #include "bearch.h"
 #include "firm/bearch_firm.h"
 #include "ia32/bearch_ia32.h"
+#include "arm/bearch_arm.h"
+#include "ppc32/bearch_ppc32.h"
+#include "mips/bearch_mips.h"
 
 #include "be_t.h"
 #include "benumb_t.h"
@@ -53,12 +56,12 @@
 #include "beabi.h"
 #include "belower.h"
 
-#define DUMP_INITIAL		(1 << 0)
-#define DUMP_ABI    		(1 << 1)
-#define DUMP_SCHED			(1 << 2)
-#define DUMP_PREPARED		(1 << 3)
-#define DUMP_RA				(1 << 4)
-#define DUMP_FINAL			(1 << 5)
+#define DUMP_INITIAL    (1 << 0)
+#define DUMP_ABI        (1 << 1)
+#define DUMP_SCHED      (1 << 2)
+#define DUMP_PREPARED   (1 << 3)
+#define DUMP_RA         (1 << 4)
+#define DUMP_FINAL      (1 << 5)
 
 /* options visible for anyone */
 static be_options_t be_options = {
@@ -105,6 +108,9 @@ static const lc_opt_enum_const_ptr_items_t ra_items[] = {
 static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ "firm",    &firm_isa },
 	{ "ia32",    &ia32_isa_if },
+	{ "arm",     &arm_isa_if },
+	{ "ppc",     &ppc32_isa_if },
+	{ "mips",    &mips_isa_if },
 	{ NULL,      NULL }
 };
 
@@ -176,9 +182,9 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 {
 	memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
-	env->dbg      = firm_dbg_register("be.main");
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
 	env->options  = &be_options;
+	FIRM_DBG_REGISTER(env->dbg, "be.main");
 
 	arch_env_init(env->arch_env, isa_if);
 

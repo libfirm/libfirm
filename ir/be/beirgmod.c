@@ -36,7 +36,7 @@
 
 #include "beirgmod.h"
 
-#define DBG_MODULE firm_dbg_register("firm.be.irgmod")
+#define DBG_MODULE "firm.be.irgmod"
 #define DBG_LEVEL SET_LEVEL_0
 
 /*
@@ -139,7 +139,7 @@ static void determine_phi_blocks(pset *copies, pset* copy_blocks, pset *phi_bloc
 {
 	ir_node *bl;
 	pdeq *worklist = new_pdeq();
-	firm_dbg_module_t *dbg = DBG_MODULE;
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	/*
 	* Fill the worklist queue and the rest of the orig blocks array.
@@ -217,7 +217,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 {
 	ir_node *curr_bl;
 	ir_node *start_irn;
-	firm_dbg_module_t *dbg = DBG_MODULE;
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	curr_bl = get_nodes_block(usage);
 
@@ -297,8 +297,8 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 
 static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *phis, pset *ignore_uses)
 {
-	firm_dbg_module_t *dbg = DBG_MODULE;
-	int n_outs             = 0;
+	int n_outs = 0;
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	struct obstack obst;
 	ir_node *irn;
@@ -413,7 +413,7 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis
 	pset *phi_blocks       = pset_new_ptr(n);
 	int save_optimize      = get_optimize();
 	int save_normalize     = get_opt_normalize();
-	firm_dbg_module_t *dbg = DBG_MODULE;
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	ir_node *irn;
 
@@ -486,7 +486,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 	ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_graph *irg               = get_irn_irg(bl);
 	pset *live                  = pset_new_ptr_default();
-	firm_dbg_module_t *dbg      = firm_dbg_register("be.node");
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, "be.node");
 
 	ir_node *curr, *irn, *perm, **nodes;
 	int i, n;

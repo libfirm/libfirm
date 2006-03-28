@@ -665,8 +665,8 @@ end:
 static void constraints(ir_node *bl, void *data)
 {
 	be_chordal_alloc_env_t *env = data;
-	firm_dbg_module_t *dbg      = firm_dbg_register("firm.be.chordal.constr");
 	arch_env_t *arch_env        = env->chordal_env->birg->main_env->arch_env;
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, "firm.be.chordal.constr");
 
 	/*
 		Start silent in the start block.
@@ -925,7 +925,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.in_colors     = bitset_alloca(colors_n);
 	env.ignore_regs   = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
-	env.constr_dbg    = firm_dbg_register("firm.be.chordal.constr");
+	FIRM_DBG_REGISTER(env.constr_dbg, "firm.be.chordal.constr");
 
 	for(i = 0; i < colors_n; ++i)
 		if(arch_register_type_is(&chordal_env->cls->regs[i], ignore))

@@ -635,7 +635,6 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	memset(&si.stats, 0, sizeof(si.stats));
 	si.chordal_env     = chordal_env;
 	si.obst            = &obst;
-	si.dbg             = firm_dbg_register("be.ra.spillilp");
 	si.senv            = be_new_spill_env(si.dbg, chordal_env, is_mem_phi, &si);
 	si.cls             = chordal_env->cls;
 	si.lpp             = new_lpp(problem_name, lpp_minimize);
@@ -645,6 +644,7 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	si.edges           = NULL;
 	si.enable_remat    = 0;
 	si.enable_store    = 1;
+	FIRM_DBG_REGISTER(si.dbg, "be.ra.spillilp");
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
 	irg_block_walk_graph(chordal_env->irg, process_block, NULL, &si);

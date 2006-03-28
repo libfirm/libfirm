@@ -635,7 +635,7 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	belady_env_t bel;
 
-	dbg = firm_dbg_register("ir.be.spillbelady");
+	FIRM_DBG_REGISTER(dbg, "ir.be.spillbelady");
 
 	/* init belady env */
 	obstack_init(&bel.ob);

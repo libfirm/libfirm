@@ -1384,9 +1384,9 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	env->dce_survivor     = new_survive_dce();
 	env->birg             = birg;
-	env->dbg              = firm_dbg_register("firm.be.abi");
 	env->stack_phis       = pset_new_ptr(16);
 	env->init_sp = dummy  = new_r_Unknown(irg, env->isa->sp->reg_class->mode);
+	FIRM_DBG_REGISTER(env->dbg, "firm.be.abi");
 
 	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
 

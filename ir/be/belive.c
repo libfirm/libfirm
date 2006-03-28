@@ -296,9 +296,9 @@ void be_check_dominance(ir_graph *irg)
 
 pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live)
 {
-	firm_dbg_module_t *dbg = firm_dbg_register(DBG_MODULE);
 	int i, n;
 	ir_node *x;
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	DBG((dbg, LEVEL_1, "%+F\n", irn));
 	for(x = pset_first(live); x; x = pset_next(live))
@@ -332,12 +332,10 @@ pset *be_liveness_end_of_block(const arch_env_t *arch_env, const arch_register_c
 
 pset *be_liveness_nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
 {
-	firm_dbg_module_t *dbg = firm_dbg_register(DBG_MODULE);
-	const ir_node *bl      = is_Block(pos) ? pos : get_nodes_block(pos);
+	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
 
 	be_liveness_end_of_block(arch_env, cls, bl, live);
-
 	sched_foreach_reverse(bl, irn) {
 		/*
 		 * If we encounter the node we want to insert the Perm after,

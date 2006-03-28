@@ -580,7 +580,7 @@ static void ou_optimize(unit_t *ou) {
 
 int co_solve_heuristic(copy_opt_t *co) {
 	unit_t *curr;
-	dbg = firm_dbg_register("ir.be.copyoptheur");
+	FIRM_DBG_REGISTER(dbg, "ir.be.copyoptheur");
 
 	ASSERT_OU_AVAIL(co);
 

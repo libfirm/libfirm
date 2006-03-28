@@ -260,9 +260,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	chordal_env.opts         = &options;
 	chordal_env.irg          = irg;
-	chordal_env.dbg          = firm_dbg_register("firm.be.chordal");
-	chordal_env.birg		 = bi;
+	chordal_env.birg         = bi;
 	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
+	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
 	obstack_init(&chordal_env.obst);
 

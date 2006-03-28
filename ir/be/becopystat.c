@@ -100,7 +100,7 @@ static pset *all_copy_nodes;
 static ir_graph *last_irg;
 
 void copystat_init(void) {
-	dbg = firm_dbg_register("ir.be.copystat");
+	FIRM_DBG_REGISTER(dbg, "ir.be.copystat");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 
 	all_phi_nodes = pset_new_ptr_default();

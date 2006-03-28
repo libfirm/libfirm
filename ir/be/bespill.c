@@ -583,7 +583,7 @@ void be_compute_spill_offsets(be_chordal_env_t *cenv) {
 	ssenv.cenv  = cenv;
 	ssenv.slots = pmap_create();
 	ssenv.types = pmap_create();
-	ssenv.dbg   = firm_dbg_register("ir.be.spillslots");
+	FIRM_DBG_REGISTER(ssenv.dbg, "ir.be.spillslots");
 
 	/* Get initial spill slots */
 	irg_walk_graph(cenv->irg, NULL, compute_spill_slots_walker, &ssenv);

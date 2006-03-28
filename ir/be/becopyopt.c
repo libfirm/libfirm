@@ -53,7 +53,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node
 	int len;
 	copy_opt_t *co;
 
-	dbg = firm_dbg_register("ir.be.copyopt");
+	FIRM_DBG_REGISTER(dbg, "ir.be.copyopt");
 
 	co = xcalloc(1, sizeof(*co));
 	co->cenv      = chordal_env;

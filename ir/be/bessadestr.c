@@ -296,7 +296,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	pmap *perm_map = pmap_create();
 	ir_graph *irg = chordal_env->irg;
 
-	dbg = firm_dbg_register("ir.be.ssadestr");
+	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
 	/* create a map for fast lookup of perms: block --> perm */
 	chordal_env->data = perm_map;
