@@ -496,6 +496,16 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 		}
 	}
 
+	/* If we have a CondJmp with immediate, we need to    */
+	/* check if it's the right operand, otherwise we have */
+	/* to change it, as CMP doesn't support immediate as  */
+	/* left operands.                                     */
+	if (is_ia32_CondJmp(irn) && (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn)) && op_tp == ia32_AddrModeS) {
+		long pnc = get_negated_pnc(get_ia32_pncode(irn), get_ia32_res_mode(irn));
+		set_ia32_op_type(irn, ia32_AddrModeD);
+		set_ia32_pncode(irn, pnc);
+	}
+
 	/* check if there is a sub which need to be transformed */
 	ia32_transform_sub_to_neg_add(irn, cg);
 
@@ -579,8 +589,9 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	reg = arch_get_irn_register(env->cg->arch_env, irn);
 	arch_set_irn_register(env->cg->arch_env, new_op, reg);
 
-	exchange(irn, proj);
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env));
 
+	exchange(irn, proj);
 }
 
 /**
@@ -614,7 +625,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	set_ia32_am_support(new_op, ia32_am_Dest);
 	set_ia32_op_type(new_op, ia32_AddrModeD);
 	set_ia32_am_flavour(new_op, ia32_B);
-	set_ia32_ls_mode(new_op, get_irn_mode(val));
+	set_ia32_ls_mode(new_op, mode);
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
 
@@ -627,8 +638,9 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 		sched_remove(irn);
 	}
 
-	exchange(irn, proj);
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env));
 
+	exchange(irn, proj);
 }
 
 /**
@@ -654,7 +666,8 @@ static void ia32_after_ra_walker(ir_node *node, void *env) {
 		transform_to_Load(&tenv);
 	}
 	else if (be_is_Spill(node)) {
-		tenv.mode = get_irn_mode(be_get_Spill_context(node));
+		/* we always spill the whole register  */
+		tenv.mode = mode_is_float(get_irn_mode(be_get_Spill_context(node))) ? mode_D : mode_Is;
 		transform_to_Store(&tenv);
 	}
 }

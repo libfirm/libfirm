@@ -85,7 +85,9 @@ typedef struct _ia32_attr_t {
 
 		unsigned is_commutative:1;  /**< indicates whether op is commutative or not */
 
-		unsigned n_res:10;          /**< number of results produced by this node */
+		unsigned emit_cl:1;         /**< indicates whether we must emit cl instead of ecx (needed for shifts) */
+
+		unsigned n_res:9;           /**< number of results produced by this node */
 	} data;
 
 	struct obstack *am_offs;    /**< offsets for AddrMode */

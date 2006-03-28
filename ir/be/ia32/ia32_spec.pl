@@ -199,7 +199,7 @@ $additional_opcodes = 0;
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx in_r4" ] },
-  "emit"      => '. imul %ia32_emit_unop /* Mulh(%A1, %A2) -> %D1 */'
+  "emit"      => '. imul %ia32_emit_binop /* Mulh(%A1, %A2) -> %D1 */'
 },
 
 "And" => {
@@ -462,7 +462,8 @@ $additional_opcodes = 0;
   "state"     => "exc_pinned",
   "comment"   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] }
+  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
+  "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */'
 },
 
 "Lea" => {

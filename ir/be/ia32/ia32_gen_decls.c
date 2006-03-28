@@ -591,7 +591,7 @@ void ia32_gen_decls(FILE *out) {
   size = obstack_object_size(&comm);
   cp   = obstack_finish(&comm);
   if (size > 0) {
-    fprintf(out, "\t.common\n");
+    fprintf(out, "\t.text\n");
     fwrite(cp, 1, size, out);
   }
 

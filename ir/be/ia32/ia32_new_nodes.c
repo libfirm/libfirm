@@ -185,7 +185,7 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 
 		case dump_node_nodeattr_txt:
 			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
-				char *pref = is_ia32_ImmSymConst(n) ? "SymC" : "";
+				char       *pref = is_ia32_ImmSymConst(n) ? "SymC" : "";
 				const char *cnst = get_ia32_cnst(n);
 
 				fprintf(F, "[%s%s]", pref, cnst ? cnst : "NONE");
@@ -667,6 +667,30 @@ void clear_ia32_commutative(ir_node *node) {
 int is_ia32_commutative(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->data.is_commutative;
+}
+
+/**
+ * Sets node emit_cl.
+ */
+void set_ia32_emit_cl(ir_node *node) {
+	ia32_attr_t *attr  = get_ia32_attr(node);
+	attr->data.emit_cl = 1;
+}
+
+/**
+ * Clears node emit_cl.
+ */
+void clear_ia32_emit_cl(ir_node *node) {
+	ia32_attr_t *attr  = get_ia32_attr(node);
+	attr->data.emit_cl = 0;
+}
+
+/**
+ * Checks if node is commutative.
+ */
+int is_ia32_emit_cl(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->data.emit_cl;
 }
 
 /**

@@ -363,11 +363,11 @@ static int is_CondJmp_cand(const ir_node *irn) {
  */
 static int is_CondJmp_replacement(ir_node *cand, ir_node *irn) {
 	int i, n      = get_irn_arity(cand);
-	int same_args = 0;
+	int same_args = 1;
 
 	for (i = 0; i < n; i++) {
 		if (get_irn_n(cand, i) == get_irn_n(irn, i)) {
-			same_args = 1;
+			same_args = 0;
 			break;
 		}
 	}

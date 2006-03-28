@@ -162,6 +162,21 @@ void clear_ia32_commutative(ir_node *node);
 int is_ia32_commutative(const ir_node *node);
 
 /**
+ * Sets node emit_cl.
+ */
+void set_ia32_emit_cl(ir_node *node);
+
+/**
+ * Clears node emit_cl.
+ */
+void clear_ia32_emit_cl(ir_node *node);
+
+/**
+ * Checks if node is commutative.
+ */
+int is_ia32_emit_cl(const ir_node *node);
+
+/**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
  */
 ir_mode *get_ia32_ls_mode(const ir_node *node);

@@ -313,12 +313,18 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 				const arch_register_t *in2 = get_in_reg(n, 3);
 				const arch_register_t *out = PRODUCES_RESULT(n) ? get_out_reg(n, 0) : NULL;
 				const arch_register_t *in;
+				const char            *in_name;
 
-				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
-				out = out ? out : in1;
+				in      = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
+				out     = out ? out : in1;
+				in_name = arch_register_get_name(in);
 
-				snprintf(buf, SNPRINTF_BUF_LEN, "%%%s, %%%s", \
-					arch_register_get_name(out), arch_register_get_name(in));
+				if (is_ia32_emit_cl(n)) {
+					assert(REGS_ARE_EQUAL(&ia32_gp_regs[REG_ECX], in) && "shift operation needs ecx");
+					in_name = "cl";
+				}
+
+				snprintf(buf, SNPRINTF_BUF_LEN, "%%%s, %%%s", arch_register_get_name(out), in_name);
 			}
 			break;
 		case ia32_AddrModeS:
@@ -340,10 +346,17 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 			else {
 				const arch_register_t *in1 = get_in_reg(n, 2);
 				ir_mode              *mode = get_ia32_res_mode(n);
+				const char           *in_name;
 
-				mode = mode ? mode : get_ia32_ls_mode(n);
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %%%s",
-					ia32_emit_am(n, env), ia32_get_reg_name_for_mode(env, mode, in1));
+				mode    = mode ? mode : get_ia32_ls_mode(n);
+				in_name = ia32_get_reg_name_for_mode(env, mode, in1);
+
+				if (is_ia32_emit_cl(n)) {
+					assert(REGS_ARE_EQUAL(&ia32_gp_regs[REG_ECX], in1) && "shift operation needs ecx");
+					in_name = "cl";
+				}
+
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s, %%%s", ia32_emit_am(n, env), in_name);
 			}
 			break;
 		default:
@@ -545,7 +558,7 @@ static const struct cmp2conditon_t cmp2condition_u[] = {
 	{ NULL,              pn_Cmp_False },  /* always false */
 	{ "e",               pn_Cmp_Eq },     /* == */
 	{ "b",               pn_Cmp_Lt },     /* < */
-	{	"be",              pn_Cmp_Le },     /* <= */
+	{ "be",              pn_Cmp_Le },     /* <= */
 	{ "a",               pn_Cmp_Gt },     /* > */
 	{ "ae",              pn_Cmp_Ge },     /* >= */
 	{ "ne",              pn_Cmp_Lg },     /* != */
@@ -670,7 +683,7 @@ static void CondJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cmp %s", ia32_emit_binop(irn, env));
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 2)));
+	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
 }
 
 /**
@@ -707,7 +720,7 @@ static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 0)));
+	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
 
 #undef IA32_IS_IMMOP
 }
@@ -725,9 +738,9 @@ static void emit_ia32_CJmp(const ir_node *irn, ia32_emit_env_t *env) {
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test/cmp */", irn);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 0)));
+	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
 }
 
 static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
@@ -738,7 +751,7 @@ static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test/cmp */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_irn_mode(get_irn_n(irn, 2)));
+	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
 }
 
 /*********************************************************
@@ -1282,59 +1295,6 @@ static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 
 
 
-/**
- * Emits code for an 8Bit Store.
- */
-static void emit_ia32_Store8Bit(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE *F = emit_env->out;
-	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
-	const arch_register_t *in1 = get_in_reg(irn, 2);
-	ir_mode              *mode = get_ia32_ls_mode(irn);
-
-	/* In case an 8Bit SPill got transformed into an 8Bit Store, the */
-	/* register allocator had no chance to fulfill requirements.     */
-	/* Check if we have a valid 8Bit register, otherwise emit a      */
-	/* workaround.                                                   */
-	if (REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_EAX]) ||
-		REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_EBX]) ||
-		REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_ECX]) ||
-		REGS_ARE_EQUAL(in1, &ia32_gp_regs[REG_EDX]) ||
-		is_ia32_ImmConst(irn)                       ||
-		is_ia32_ImmSymConst(irn))
-	{
-		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %s", ia32_emit_binop(irn, emit_env));
-		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
-		IA32_DO_EMIT(irn);
-	}
-	else {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
-		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* begin 8Bit Spill workaround %+F */", irn);
-		IA32_DO_EMIT(irn);
-
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "push %%eax");
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* save %%eax */");
-		IA32_DO_EMIT(irn);
-
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "mov %%eax, %%%s", arch_register_get_name(in1));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* copy 8Bit value into %%eax */");
-		IA32_DO_EMIT(irn);
-
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "mov %s, %%al", ia32_emit_am(irn, emit_env));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* store 8Bit value */");
-		IA32_DO_EMIT(irn);
-
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "pop %%eax", ia32_emit_am(irn, emit_env));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* restore %%eax */");
-		IA32_DO_EMIT(irn);
-
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
-		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* end of workaround %+F */", irn);
-		IA32_DO_EMIT(irn);
-	}
-}
-
-
-
 /***********************************************************************************
  *                  _          __                                             _
  *                 (_)        / _|                                           | |
@@ -1374,7 +1334,6 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_FP2FP);
 	IA32_EMIT(Conv_I2I);
 	IA32_EMIT(Conv_I2I8Bit);
-	IA32_EMIT(Store8Bit);
 
 	/* benode emitter */
 	BE_EMIT(Call);
@@ -1435,7 +1394,6 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 	entity     *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_name(irg_ent);
 
-	fprintf(F, "\t.text\n");
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, ".globl %s\n", irg_name);
 	}
