@@ -17,6 +17,7 @@
 #include "pmap.h"
 #include "pdeq.h"
 #include "irprintf.h"
+#include "debug.h"
 
 #include "..\belive_t.h"
 #include "..\besched.h"
@@ -40,8 +41,8 @@
 
 #define MASK_TOS(x)		((x) & (N_x87_REGS - 1))
 
-/** the virtual floating point flag */
-#define irop_flag_vp   (irop_flag_machine << 1)
+/** the debug handle */
+static firm_dbg_module_t *dbg = NULL;
 
 /**
  * An exchange template.
@@ -107,6 +108,7 @@ static const arch_register_t *x87_get_reg(const x87_state *state, int pos) {
 	return state->st[MASK_TOS(state->tos + pos)];
 }
 
+#ifdef DEBUG_libfirm
 /**
  * Dump the stack for debugging.
  */
@@ -115,10 +117,11 @@ static void x87_dump_stack(const x87_state *state) {
 
 	for (i = state->depth - 1; i >= 0; --i) {
 		const arch_register_t *vreg = x87_get_reg(state, i);
-		ir_printf("%s ", vreg->name);
+		DB((dbg, LEVEL_2, "%s ", vreg->name));
 	}
-	ir_printf("<-- TOS\n");
+	DB((dbg, LEVEL_2, "<-- TOS\n"));
 }
+#endif /* DEBUG_libfirm */
 
 /**
  * Set a virtual register to st(pos)
@@ -127,7 +130,7 @@ static void x87_set_reg(x87_state *state, const arch_register_t *vreg, int pos) 
 	assert(0 < state->depth);
 	state->st[MASK_TOS(state->tos + pos)] = vreg;
 
-	printf("After SET_REG:\n "); x87_dump_stack(state);
+	DB((dbg, LEVEL_2, "After SET_REG:\n ")); DEBUG_ONLY(x87_dump_stack(state));
 }
 
 /**
@@ -156,7 +159,7 @@ static void x87_fxch(x87_state *state, int pos) {
 	state->st[MASK_TOS(state->tos + pos)] = state->st[MASK_TOS(state->tos)];
 	state->st[MASK_TOS(state->tos)] = vreg;
 
-	printf("After FXCH:\n "); x87_dump_stack(state);
+	DB((dbg, LEVEL_2, "After FXCH:\n ")); DEBUG_ONLY(x87_dump_stack(state));
 }
 
 /**
@@ -183,7 +186,7 @@ static void x87_push(x87_state *state, const arch_register_t *vreg) {
 	state->tos = MASK_TOS(state->tos - 1);
 	state->st[state->tos] = vreg;
 
-	printf("After PUSH:\n "); x87_dump_stack(state);
+	DB((dbg, LEVEL_2, "After PUSH:\n ")); DEBUG_ONLY(x87_dump_stack(state));
 }
 
 /**
@@ -195,7 +198,7 @@ static void x87_pop(x87_state *state) {
 	--state->depth;
 	state->tos = MASK_TOS(state->tos + 1);
 
-	printf("After POP:\n "); x87_dump_stack(state);
+	DB((dbg, LEVEL_2, "After POP:\n ")); DEBUG_ONLY(x87_dump_stack(state));
 }
 
 /**
@@ -244,14 +247,106 @@ static x87_state *x87_clone_state(x87_simulator *sim, const x87_state *src) {
 	return res;
 }
 
+/* -------------- x87 perm --------------- */
+
 /**
  * Calculate the necessary permutations to reach dst_state.
  */
 static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block, x87_state *state, const x87_state *dst_state) {
+	int i, n_rings, k, ri;
+	unsigned rings[4], all_mask;
+	char ring_idx[4][8];
+
 	assert(state->depth == dst_state->depth);
 
-	if (state == empty)
-		state = x87_clone_state(sim, state);
+	/* Some mathematics here:
+	   If we have a ring of lenght n that includes the tos,
+	   we need n-1 exchange operations.
+	   We can always add the tos and restore it, so we need
+	   n+1 exchange operations for a ring not containing the tos.
+	   So, the maximum of needed operations is for a ring of 7
+	   not including the tos == 8.
+	   This is so same number of ops we would need for store,
+	   so exchange is cheaper (we save the loads).
+	   On the other hand, we might need an additional exchange
+	   in the next block to bring one operand on top, so the
+	   number of ops in the first case is identical.
+		 Further, no more than 4 rings can exists.
+	*/
+	all_mask = (1 << (state->depth)) - 1;
+
+	for (n_rings = 0; all_mask; ++n_rings) {
+		int src_idx, dst_idx;
+
+		/* find the first free slot */
+		for (i = 0; i < state->depth; ++i) {
+			if (all_mask & (1 << i)) {
+				all_mask &= ~(1 << i);
+
+				/* check if there are differences here */
+				if (x87_get_reg(state, i) != x87_get_reg(dst_state, i))
+					break;
+			}
+		}
+
+		if (! all_mask) {
+			/* no more rings found */
+			break;
+		}
+
+		k = 0;
+		rings[n_rings] = (1 << i);
+		ring_idx[n_rings][k++] = i;
+		for (src_idx = i; ; src_idx = dst_idx) {
+			dst_idx = x87_on_stack(dst_state, x87_get_reg(state, src_idx));
+
+			if ((all_mask & (1 << dst_idx)) == 0)
+				break;
+
+			ring_idx[n_rings][k++] = dst_idx;
+			rings[n_rings] |=  (1 << dst_idx);
+			all_mask       &= ~(1 << dst_idx);
+		}
+		ring_idx[n_rings][k] = -1;
+	}
+
+	if (n_rings <= 0) {
+		/* no permutation needed */
+		return state;
+	}
+
+	/* Hmm: permutation needed */
+	DB((dbg, LEVEL_2, "\nNeed permutation: from\n"));
+	DEBUG_ONLY(x87_dump_stack(state));
+	DB((dbg, LEVEL_2, "                  to\n"));
+	DEBUG_ONLY(x87_dump_stack(dst_state));
+
+
+#ifdef DEBUG_libfirm
+	DB((dbg, LEVEL_2, "Need %d rings\n", n_rings));
+	for (ri = 0; ri < n_rings; ++ri) {
+		DB((dbg, LEVEL_2, " Ring %d:\n ", ri));
+		for (k = 0; ring_idx[ri][k] != -1; ++k)
+			DB((dbg, LEVEL_2, " st%d ->", ring_idx[ri][k]));
+		DB((dbg, LEVEL_2, "\n"));
+	}
+#endif
+
+	/* now do the permutations */
+	for (ri = 0; ri < n_rings; ++ri) {
+		if ((rings[ri] & 1) == 0) {
+			/* this ring does not include the tos */
+			x87_fxch(state, ring_idx[ri][0]);
+		}
+		for (k = 1; ring_idx[ri][k] != -1; ++k) {
+			x87_fxch(state, ring_idx[ri][k]);
+		}
+		if ((rings[ri] & 1) == 0) {
+			/* this ring does not include the tos */
+			x87_fxch(state, ring_idx[ri][0]);
+		}
+	}
+	assert(0);
 	return state;
 }
 
@@ -272,7 +367,7 @@ static void x87_create_fxch(x87_state *state, ir_node *n, int pos, int op_idx) {
 	set_irn_n(n, op_idx, fxch);
 
 	sched_add_before(n, fxch);
-	printf("<<< %s %s, %s\n", get_irn_opname(fxch), attr->x87[0]->name, attr->x87[2]->name);
+	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fxch), attr->x87[0]->name, attr->x87[2]->name));
 }
 
 /**
@@ -292,7 +387,7 @@ static void x87_create_fpush(const arch_env_t *env, x87_state *state, ir_node *n
 	set_irn_n(n, op_idx, fpush);
 
 	sched_add_before(n, fpush);
-	printf("<<< %s %s, %s\n", get_irn_opname(fpush), attr->x87[0]->name, attr->x87[2]->name);
+	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fpush), attr->x87[0]->name, attr->x87[2]->name));
 }
 
 /* --------------------------------- liveness ------------------------------------------ */
@@ -388,17 +483,22 @@ static unsigned is_vfp_live(const arch_register_t *reg, unsigned live) {
 	return live & (1 << reg->index);
 }
 
+#ifdef DEBUG_libfirm
+/**
+ * dump liveness info.
+ */
 static vfp_dump_live(unsigned live) {
 	int i;
 
-	printf("Live registers here: \n");
+	DB((dbg, LEVEL_2, "Live registers here: \n"));
 	for (i = 0; i < 8; ++i) {
 		if (live & (1 << i)) {
-			printf(" vf%d", i);
+			DB((dbg, LEVEL_2, " vf%d", i));
 		}
 	}
-	printf("\n");
+	DB((dbg, LEVEL_2, "\n"));
 }
+#endif /* DEBUG_libfirm */
 
 /* --------------------------------- simulators ---------------------------------------- */
 
@@ -417,8 +517,8 @@ static void sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const
 	const arch_register_t *out = arch_get_irn_register(env, n);
 	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
-	printf(">>> %s %s, %s -> %s\n", get_irn_opname(n), op1->name, op2->name, out->name);
-  vfp_dump_live(live);
+	DB((dbg, LEVEL_1, ">>> %s %s, %s -> %s\n", get_irn_opname(n), op1->name, op2->name, out->name));
+  DEBUG_ONLY(vfp_dump_live(live));
 
 	op1_idx = x87_on_stack(state, op1);
 
@@ -513,7 +613,7 @@ static void sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const
 	attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
 	attr->x87[2] = out = &ia32_st_regs[out_idx];
 
-	printf("<<< %s %s, %s -> %s\n", get_irn_opname(n), op1->name, op2->name, out->name);
+	DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n), op1->name, op2->name, out->name));
 }
 
 /**
@@ -526,8 +626,8 @@ static void sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 	ia32_attr_t *attr;
 	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
-	printf(">>> %s -> %s\n", get_irn_opname(n), out->name);
-  vfp_dump_live(live);
+	DB((dbg, LEVEL_1, ">>> %s -> %s\n", get_irn_opname(n), out->name));
+  DEBUG_ONLY(vfp_dump_live(live));
 
 	op1_idx = x87_on_stack(state, op1);
 
@@ -547,7 +647,7 @@ static void sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 	attr = get_ia32_attr(n);
 	attr->x87[0] = op1 = &ia32_st_regs[0];
 	attr->x87[2] = out = &ia32_st_regs[0];
-	printf("<<< %s -> %s\n", get_irn_opname(n), out->name);
+	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), out->name));
 }
 
 /**
@@ -557,12 +657,12 @@ static void sim_load(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 	const arch_register_t *out = arch_get_irn_register(env, n);
 	ia32_attr_t *attr;
 
-	printf(">>> %s -> %s\n", get_irn_opname(n), out->name);
+	DB((dbg, LEVEL_1, ">>> %s -> %s\n", get_irn_opname(n), out->name));
 	x87_push(state, out);
 	n->op = op;
 	attr = get_ia32_attr(n);
 	attr->x87[2] = out = &ia32_st_regs[0];
-	printf("<<< %s -> %s\n", get_irn_opname(n), out->name);
+	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), out->name));
 }
 
 /**
@@ -576,7 +676,7 @@ static void sim_fst(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 	op2_idx = x87_on_stack(state, op2);
 
-	printf(">>> %s %s ->\n", get_irn_opname(n), op2->name);
+	DB((dbg, LEVEL_1, ">>> %s %s ->\n", get_irn_opname(n), op2->name));
 
 	/* we can only store the tos to memory */
 	if (op2_idx != 0)
@@ -591,7 +691,7 @@ static void sim_fst(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 	attr = get_ia32_attr(n);
 	attr->x87[1] = op2 = &ia32_st_regs[0];
-	printf("<<< %s %s ->\n", get_irn_opname(n), op2->name);
+	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), op2->name));
 }
 
 #define _GEN_BINOP(op, rev) \
@@ -648,8 +748,8 @@ static void sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 		op1_idx = x87_on_stack(state, op1);
 
-		printf(">>> %s %s -> %s\n", get_irn_opname(n), op1->name, out->name);
-	  vfp_dump_live(live);
+		DB((dbg, LEVEL_1, ">>> %s %s -> %s\n", get_irn_opname(n), op1->name, out->name));
+	  DEBUG_ONLY(vfp_dump_live(live));
 
 		if (is_vfp_live(op1, live)) {
 			/* operand is still live,a real copy */
@@ -666,13 +766,13 @@ static void sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 			sched_remove(n);
 			exchange(n, node);
 			sched_add_before(next, node);
-			printf(">>> %s %s -> %s\n", get_irn_opname(node), op1->name, out->name);
+			DB((dbg, LEVEL_1, ">>> %s %s -> %s\n", get_irn_opname(node), op1->name, out->name));
 		}
 		else {
 			/* just a virtual copy */
 			x87_set_reg(state, out, op1_idx);
 			sched_remove(n);
-			printf(">>> KILLED %s\n", get_irn_opname(n));
+			DB((dbg, LEVEL_1, ">>> KILLED %s\n", get_irn_opname(n)));
 		}
 	}
 }
@@ -695,6 +795,8 @@ static int x87_simulate_block(x87_simulator *sim, ir_node *block) {
 		return 0;
 
 	assert(bl_state->end == NULL);
+
+	DB((dbg, LEVEL_1, "Simulate %+F\n", block));
 
 	/* beware, n might changed */
 	for (n = sched_first(block); !sched_is_end(n); n = next) {
@@ -755,6 +857,12 @@ static void x87_init_simulator(x87_simulator *sim, const arch_env_t *env) {
 	sim->blk_states = pmap_create();
 	sim->env        = env;
 
+  FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
+	firm_dbg_set_mask(dbg, SET_LEVEL_2);
+
+	DB((dbg, LEVEL_1, "x87 Simulator started\n"));
+
+  /* set the generic function pointer of instruction we must simulate */
 	clear_irp_opcodes_generic_func();
 
 #define ASSOC(op)	    (op_ia32_v ## op)->ops.generic = (op_func)(sim_##op)
@@ -785,6 +893,7 @@ static void x87_init_simulator(x87_simulator *sim, const arch_env_t *env) {
 static void x87_destroy_simulator(x87_simulator *sim) {
 	pmap_destroy(sim->blk_states);
 	obstack_free(&sim->obst, NULL);
+	DB((dbg, LEVEL_1, "x87 Simulator stopped\n"));
 }
 
 /**
@@ -799,9 +908,10 @@ void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list
 	x87_simulator sim;
 	int i;
 
+  /* we need liveness info for the current graph */
 	be_liveness(irg);
-	be_liveness_dumpto(irg, "-x87-live");
 
+  /* create the simulator */
 	x87_init_simulator(&sim, env);
 
 	start_block = get_irg_start_block(irg);
@@ -825,5 +935,6 @@ void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list
 		}
 	} while (! pdeq_empty(worklist));
 
+  /* kill it */
 	x87_destroy_simulator(&sim);
 }
