@@ -333,7 +333,7 @@ void edges_reroute(ir_node *from, ir_node *to, ir_graph *irg)
 	if(edges_activated(irg)) {
 		struct list_head *head = _get_irn_outs_head(from);
 
-		DBG((firm_dbg_register(DBG_EDGES), LEVEL_5,
+		DBG((dbg, LEVEL_5,
 					"reroute from %n to %n\n", from, to));
 
 		while(head != head->next) {
@@ -406,7 +406,7 @@ void edges_verify(ir_graph *irg)
 
 void init_edges(void)
 {
-	dbg = firm_dbg_register(DBG_EDGES);
+	FIRM_DBG_REGISTER(dbg, DBG_EDGES);
 	/* firm_dbg_set_mask(dbg, -1); */
 }
 
