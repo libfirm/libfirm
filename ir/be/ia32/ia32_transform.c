@@ -458,15 +458,35 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			/* No expr_op means, that we have two const - one symconst and */
 			/* one tarval or another symconst - because this case is not   */
 			/* covered by constant folding                                 */
+			/* We need to check for:                                       */
+			/*  1) symconst + const    -> becomes a LEA                    */
+			/*  2) symconst + symconst -> becomes a const + LEA as the elf */
+			/*        linker doesn't support two symconsts                 */
 
-			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
-			add_ia32_am_offs(new_op, get_ia32_cnst(op1));
-			add_ia32_am_offs(new_op, get_ia32_cnst(op2));
+			if (get_ia32_op_type(op1) == ia32_SymConst && get_ia32_op_type(op2) == ia32_SymConst) {
+				/* this is the 2nd case */
+				new_op = new_rd_ia32_Lea(dbg, irg, block, op1, noreg, mode);
+				set_ia32_am_sc(new_op, get_ia32_id_cnst(op2));
+				set_ia32_am_flavour(new_op, ia32_am_OB);
+			}
+			else {
+				/* this is the 1st case */
+				new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
+
+				if (get_ia32_op_type(op1) == ia32_SymConst) {
+					set_ia32_am_sc(new_op, get_ia32_id_cnst(op1));
+					add_ia32_am_offs(new_op, get_ia32_cnst(op2));
+				}
+				else {
+					add_ia32_am_offs(new_op, get_ia32_cnst(op1));
+					set_ia32_am_sc(new_op, get_ia32_id_cnst(op2));
+				}
+				set_ia32_am_flavour(new_op, ia32_am_O);
+			}
 
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
-			set_ia32_am_flavour(new_op, ia32_am_O);
 
 			/* Lea doesn't need a Proj */
 			return new_op;
@@ -743,15 +763,37 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 			/* No expr_op means, that we have two const - one symconst and */
 			/* one tarval or another symconst - because this case is not   */
 			/* covered by constant folding                                 */
+			/* We need to check for:                                       */
+			/*  1) symconst + const    -> becomes a LEA                    */
+			/*  2) symconst + symconst -> becomes a const + LEA as the elf */
+			/*        linker doesn't support two symconsts                 */
 
-			new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
-			add_ia32_am_offs(new_op, get_ia32_cnst(op1));
-			sub_ia32_am_offs(new_op, get_ia32_cnst(op2));
+			if (get_ia32_op_type(op1) == ia32_SymConst && get_ia32_op_type(op2) == ia32_SymConst) {
+				/* this is the 2nd case */
+				new_op = new_rd_ia32_Lea(dbg, irg, block, op1, noreg, mode);
+				set_ia32_am_sc(new_op, get_ia32_id_cnst(op2));
+				set_ia32_am_sc_sign(new_op);
+				set_ia32_am_flavour(new_op, ia32_am_OB);
+			}
+			else {
+				/* this is the 1st case */
+				new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
+
+				if (get_ia32_op_type(op1) == ia32_SymConst) {
+					set_ia32_am_sc(new_op, get_ia32_id_cnst(op1));
+					sub_ia32_am_offs(new_op, get_ia32_cnst(op2));
+				}
+				else {
+					add_ia32_am_offs(new_op, get_ia32_cnst(op1));
+					set_ia32_am_sc(new_op, get_ia32_id_cnst(op2));
+					set_ia32_am_sc_sign(new_op);
+				}
+				set_ia32_am_flavour(new_op, ia32_am_O);
+			}
 
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
-			set_ia32_am_flavour(new_op, ia32_am_O);
 
 			/* Lea doesn't need a Proj */
 			return new_op;

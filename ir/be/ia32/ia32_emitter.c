@@ -440,9 +440,15 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 		}
 	}
 
-	obstack_printf(obst, "[");
+	/* emit address mode symconst */
+	if (get_ia32_am_sc(n)) {
+		if (is_ia32_am_sc_sign(n))
+			obstack_printf(obst, "-");
+		obstack_printf(obst, "%s", get_id_str(get_ia32_am_sc(n)));
+	}
 
 	if (am_flav & ia32_B) {
+		obstack_printf(obst, "[");
 		lc_eoprintf(ia32_get_arg_env(), obst, "%1S", n);
 		had_output = 1;
 	}
@@ -450,6 +456,9 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	if (am_flav & ia32_I) {
 		if (had_output) {
 			obstack_printf(obst, "+");
+		}
+		else {
+			obstack_printf(obst, "[");
 		}
 
 		lc_eoprintf(ia32_get_arg_env(), obst, "%2S", n);
@@ -464,14 +473,21 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	if (am_flav & ia32_O) {
 		s = get_ia32_am_offs(n);
 
-		/* omit explicit + if there was no base or index */
-		if (! had_output && s[0] == '+')
-			s++;
+		if (s) {
+			/* omit explicit + if there was no base or index */
+			if (! had_output) {
+				obstack_printf(obst, "[");
+				if (s[0] == '+')
+					s++;
+			}
 
-		obstack_printf(obst, s);
+			obstack_printf(obst, s);
+			had_output = 1;
+		}
 	}
 
-	obstack_printf(obst, "] ");
+	if (had_output)
+		obstack_printf(obst, "] ");
 
 	size        = obstack_object_size(obst);
 	s           = obstack_finish(obst);

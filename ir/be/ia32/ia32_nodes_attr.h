@@ -76,6 +76,7 @@ typedef struct _ia32_attr_t {
 		unsigned am_scale:2;        /**< addrmode scale for index register */
 
 		unsigned offs_sign:1;       /**< sign bit of the first offset */
+		unsigned am_sc_sign:1;      /**< sign bit of the address mode symconst */
 
 		unsigned use_frame:1;       /**< indicates whether the operation uses the frame pointer or not */
 
@@ -87,10 +88,11 @@ typedef struct _ia32_attr_t {
 
 		unsigned emit_cl:1;         /**< indicates whether we must emit cl instead of ecx (needed for shifts) */
 
-		unsigned n_res:9;           /**< number of results produced by this node */
+		unsigned n_res:8;           /**< number of results produced by this node */
 	} data;
 
 	struct obstack *am_offs;    /**< offsets for AddrMode */
+	ident          *am_sc;      /**< SymConst for AddrMode */
 
 	union {
 		tarval *tv;     /**< tarval for immediate operations */

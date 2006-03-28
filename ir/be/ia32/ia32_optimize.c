@@ -421,7 +421,7 @@ void ia32_peephole_optimization(ir_node *irn, void *env) {
  *
  ******************************************************************/
 
-static int node_is_comm(const ir_node *irn) {
+static int node_is_ia32_comm(const ir_node *irn) {
 	return is_ia32_irn(irn) ? is_ia32_commutative(irn) : 0;
 }
 
@@ -568,20 +568,25 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 	int     is_equal = (addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1));
 	entity *lent     = get_ia32_frame_ent(load);
 	entity *sent     = get_ia32_frame_ent(store);
+	ident  *lid      = get_ia32_am_sc(load);
+	ident  *sid      = get_ia32_am_sc(store);
 	char   *loffs    = get_ia32_am_offs(load);
 	char   *soffs    = get_ia32_am_offs(store);
 
-
 	/* are both entities set and equal? */
-	if (lent || sent)
+	if (is_equal && (lent || sent))
 		is_equal = lent && sent && (lent == sent);
 
-	/* are the load and the store of the same mode? */
-	is_equal = get_ia32_ls_mode(load) == get_ia32_ls_mode(store);
+	/* are address mode idents set and equal? */
+	if (is_equal && (lid || sid))
+		is_equal = lid && sid && (lid == sid);
 
 	/* are offsets set and equal */
-	if (loffs || soffs)
+	if (is_equal && (loffs || soffs))
 		is_equal = loffs && soffs && strcmp(loffs, soffs) == 0;
+
+	/* are the load and the store of the same mode? */
+	is_equal = is_equal ? get_ia32_ls_mode(load) == get_ia32_ls_mode(store) : 0;
 
 	return is_equal;
 }
@@ -592,18 +597,22 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
  * Folds Add or Sub to LEA if possible
  */
 static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
-	ir_graph *irg       = get_irn_irg(irn);
-	dbg_info *dbg       = get_irn_dbg_info(irn);
-	ir_node  *block     = get_nodes_block(irn);
-	ir_node  *res       = irn;
-	char     *offs      = NULL;
-	const char *offs_cnst = NULL;
-	char     *offs_lea  = NULL;
-	int       scale     = 0;
-	int       isadd     = 0;
-	int       dolea     = 0;
-	ir_node  *left, *right, *temp;
-	ir_node  *base, *index;
+	ir_graph   *irg        = get_irn_irg(irn);
+	dbg_info   *dbg        = get_irn_dbg_info(irn);
+	ir_node    *block      = get_nodes_block(irn);
+	ir_node    *res        = irn;
+	char       *offs       = NULL;
+	const char *offs_cnst  = NULL;
+	char       *offs_lea   = NULL;
+	int         scale      = 0;
+	int         isadd      = 0;
+	int         dolea      = 0;
+	int         have_am_sc = 0;
+	int         am_sc_sign = 0;
+	ident      *am_sc_lea  = NULL;
+	ident      *am_sc      = NULL;
+	ir_node    *left, *right, *temp;
+	ir_node    *base, *index;
 	ia32_am_flavour_t am_flav;
 
 	if (is_ia32_Add(irn))
@@ -648,12 +657,20 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *
 	scale   = 0;
 	am_flav = 0;
 
-	/* check if operand is either const */
-	if (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn)) {
-		DBG((mod, LEVEL_1, "\tfound op with imm"));
+	/* check for operation with immediate */
+	if (is_ia32_ImmConst(irn)) {
+		DBG((mod, LEVEL_1, "\tfound op with imm const"));
 
 		offs_cnst = get_ia32_cnst(irn);
 		dolea     = 1;
+	}
+	else if (is_ia32_ImmSymConst(irn)) {
+		DBG((mod, LEVEL_1, "\tfound op with imm symconst"));
+
+		have_am_sc = 1;
+		dolea      = 1;
+		am_sc      = get_ia32_id_cnst(irn);
+		am_sc_sign = is_ia32_am_sc_sign(irn);
 	}
 
 	/* determine the operand which needs to be checked */
@@ -664,12 +681,17 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *
 		temp = right;
 	}
 
-	/* check if right operand is AMConst (LEA with ia32_am_O) */
-	if (is_ia32_Lea(temp) && get_ia32_am_flavour(temp) == ia32_am_O) {
+	/* check if right operand is AMConst (LEA with ia32_am_O)  */
+	/* but we can only eat it up if there is no other symconst */
+	/* because the linker won't accept two symconsts           */
+	if (! have_am_sc && is_ia32_Lea(temp) && get_ia32_am_flavour(temp) == ia32_am_O) {
 		DBG((mod, LEVEL_1, "\tgot op with LEA am_O"));
 
-		offs_lea = get_ia32_am_offs(temp);
-		dolea    = 1;
+		offs_lea   = get_ia32_am_offs(temp);
+		am_sc      = get_ia32_am_sc(temp);
+		am_sc_sign = is_ia32_am_sc_sign(temp);
+		have_am_sc = 1;
+		dolea      = 1;
 	}
 
 	if (isadd) {
@@ -724,17 +746,21 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *
 		/* a new LEA.                                                   */
 		/* If the LEA contains already a frame_entity then we also      */
 		/* create a new one  otherwise we would loose it.               */
-		if ((isadd && !be_is_NoReg(cg, index) && (am_flav & ia32_am_I)) ||
-			get_ia32_frame_ent(left))
+		if ((isadd && !be_is_NoReg(cg, index) && (am_flav & ia32_am_I)) || /* no new LEA if index already set */
+			get_ia32_frame_ent(left)                                    || /* no new LEA if stack access */
+			(have_am_sc && get_ia32_am_sc(left)))                          /* no new LEA if AM symconst already present */
 		{
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
 			DBG((mod, LEVEL_1, "\tgot LEA as left operand ... assimilating\n"));
-			offs  = get_ia32_am_offs(left);
-			base  = get_irn_n(left, 0);
-			index = get_irn_n(left, 1);
-			scale = get_ia32_am_scale(left);
+			offs       = get_ia32_am_offs(left);
+			am_sc      = have_am_sc ? am_sc : get_ia32_am_sc(left);
+			have_am_sc = am_sc ? 1 : 0;
+			am_sc_sign = is_ia32_am_sc_sign(left);
+			base       = get_irn_n(left, 0);
+			index      = get_irn_n(left, 1);
+			scale      = get_ia32_am_scale(left);
 		}
 	}
 
@@ -768,6 +794,13 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *
 			else {
 				sub_ia32_am_offs(res, offs_lea);
 			}
+		}
+
+		/* set the address mode symconst */
+		if (have_am_sc) {
+			set_ia32_am_sc(res, am_sc);
+			if (am_sc_sign)
+				set_ia32_am_sc_sign(res);
 		}
 
 		/* copy the frame entity (could be set in case of Add */
@@ -895,6 +928,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				set_ia32_am_scale(irn, get_ia32_am_scale(left));
 				set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
 
+				set_ia32_am_sc(irn, get_ia32_am_sc(left));
+				if (is_ia32_am_sc_sign(left))
+					set_ia32_am_sc_sign(irn);
+
 				set_ia32_op_type(irn, is_ia32_Ld(irn) ? ia32_AddrModeS : ia32_AddrModeD);
 
 				/* set base and index */
@@ -919,7 +956,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			}
 
 			/* normalize commutative ops */
-			if (node_is_comm(irn)) {
+			if (node_is_ia32_comm(irn)) {
 				/* Assure that right operand is always a Load if there is one    */
 				/* because non-commutative ops can only use Dest AM if the right */
 				/* operand is a load, so we only need to check right operand.    */
@@ -980,7 +1017,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 					/* Extra check for commutative ops with two Loads */
 					/* -> put the interesting Load right              */
-					if (node_is_comm(irn) &&
+					if (node_is_ia32_comm(irn) &&
 						pred_is_specific_nodeblock(block, left, is_ia32_Ld))
 					{
 						if ((addr_b == get_irn_n(get_Proj_pred(left), 0)) &&
@@ -1014,6 +1051,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 						set_ia32_op_type(irn, ia32_AddrModeD);
 						set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
 						set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
+
+						set_ia32_am_sc(irn, get_ia32_am_sc(load));
+						if (is_ia32_am_sc_sign(load))
+							set_ia32_am_sc_sign(irn);
 
 						if (is_ia32_use_frame(load))
 							set_ia32_use_frame(irn);
@@ -1052,7 +1093,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			}
 
 			/* normalize commutative ops */
-			if (node_is_comm(irn)) {
+			if (node_is_ia32_comm(irn)) {
 				/* Assure that left operand is always a Load if there is one */
 				/* because non-commutative ops can only use Source AM if the */
 				/* left operand is a Load, so we only need to check the left */
@@ -1087,6 +1128,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				set_ia32_op_type(irn, ia32_AddrModeS);
 				set_ia32_frame_ent(irn, get_ia32_frame_ent(left));
 				set_ia32_ls_mode(irn, get_ia32_ls_mode(left));
+
+				set_ia32_am_sc(irn, get_ia32_am_sc(left));
+				if (is_ia32_am_sc_sign(left))
+					set_ia32_am_sc_sign(irn);
 
 				/* clear remat flag */
 				set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);

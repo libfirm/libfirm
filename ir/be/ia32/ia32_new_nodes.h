@@ -82,6 +82,31 @@ void add_ia32_am_offs(ir_node *node, const char *offset);
 void sub_ia32_am_offs(ir_node *node, const char *offset);
 
 /**
+ * Returns the symconst ident associated to addrmode.
+ */
+ident *get_ia32_am_sc(const ir_node *node);
+
+/**
+ * Sets the symconst ident associated to addrmode.
+ */
+void set_ia32_am_sc(ir_node *node, ident *sc);
+
+/**
+ * Sets the sign bit for address mode symconst.
+ */
+void set_ia32_am_sc_sign(ir_node *node);
+
+/**
+ * Clears the sign bit for address mode symconst.
+ */
+void clear_ia32_am_sc_sign(ir_node *node);
+
+/**
+ * Returns the sign bit for address mode symconst.
+ */
+int is_ia32_am_sc_sign(const ir_node *node);
+
+/**
  * Gets the addr mode const.
  */
 int get_ia32_am_scale(const ir_node *node);
