@@ -30,16 +30,25 @@ void be_liveness_init(void)
   live_irg_data_offset = register_additional_graph_data(sizeof(irn_live_t));
 }
 
+/**
+ * Mark a node as live-in in a block.
+ */
 static INLINE void mark_live_in(ir_node *block, const ir_node *irn)
 {
   _get_or_set_live(block, irn, live_state_in);
 }
 
+/**
+ * Mark a node as live-out in a block.
+ */
 static INLINE void mark_live_out(ir_node *block, const ir_node *irn)
 {
   _get_or_set_live(block, irn, live_state_out | live_state_end);
 }
 
+/**
+ * Mark a node as live-end in a block.
+ */
 static INLINE void mark_live_end(ir_node *block, const ir_node *irn)
 {
   _get_or_set_live(block, irn, live_state_end);
@@ -146,6 +155,9 @@ static void liveness_for_node(ir_node *irn, void *env)
   del_pset(visited);
 }
 
+/**
+ * Compare two live entries.
+ */
 static int cmp_irn_live(const void *a, const void *b, size_t size)
 {
   const irn_live_t *p = a;
@@ -192,6 +204,7 @@ static int dump_block_func(ir_node *self, FILE *F, dump_reason_t reason)
 	return 0;
 }
 
+/* Compute the inter block liveness for a graph. */
 void be_liveness(ir_graph *irg)
 {
   irg_live_info_t *live_info = get_irg_live_info(irg);
@@ -205,6 +218,9 @@ void be_liveness(ir_graph *irg)
   op_Block->ops.dump_node = dump_block_func;
 }
 
+/**
+ * Pre-walker: dump liveness data to a file
+ */
 static void dump_liveness_walker(ir_node *bl, void *data)
 {
 	FILE *f = data;
@@ -228,11 +244,13 @@ static void dump_liveness_walker(ir_node *bl, void *data)
 	}
 }
 
+/* Dump the liveness information for a graph. */
 void be_liveness_dump(ir_graph *irg, FILE *f)
 {
 	irg_block_walk_graph(irg, dump_liveness_walker, NULL, f);
 }
 
+/* Dump the liveness information for a graph. */
 void be_liveness_dumpto(ir_graph *irg, const char *cls_name)
 {
 	FILE *f;
@@ -244,6 +262,10 @@ void be_liveness_dumpto(ir_graph *irg, const char *cls_name)
 	}
 }
 
+/**
+ * Walker: checks the every predecessors of a node dominate
+ * the note.
+ */
 static void dom_check(ir_node *irn, void *data)
 {
 	if(!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
@@ -266,6 +288,7 @@ static void dom_check(ir_node *irn, void *data)
 	}
 }
 
+/* Check, if the SSA dominance property is fulfilled. */
 void be_check_dominance(ir_graph *irg)
 {
 	irg_walk_graph(irg, dom_check, NULL, NULL);
