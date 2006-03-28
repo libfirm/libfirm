@@ -113,7 +113,7 @@ pset *get_phi_class(const ir_node *irn) {
 }
 
 void phi_class_init(void) {
-	dbg = firm_dbg_register("ir.ana.phiclass");
+	FIRM_DBG_REGISTER(dbg, "ir.ana.phiclass");
 	firm_dbg_set_mask(dbg, DEBUG_LVL);
 	phi_irn_data_offset = register_additional_node_data(sizeof(phi_info_t));
 }

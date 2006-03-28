@@ -974,7 +974,7 @@ void do_gvn_pre(ir_graph *irg)
   unsigned antic_iter, insert_iter;
 
   /* register a debug mask */
-  dbg = firm_dbg_register("firm.opt.gvn_pre");
+  FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
   firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
   obstack_init(&obst);

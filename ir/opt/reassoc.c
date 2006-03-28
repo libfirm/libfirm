@@ -424,5 +424,5 @@ ir_op_ops *firm_set_default_reassoc(opcode code, ir_op_ops *ops)
 /* initialize the reassociation by adding operations to some opcodes */
 void firm_init_reassociation(void)
 {
-  dbg = firm_dbg_register("firm.opt.reassoc");
+  FIRM_DBG_REGISTER(dbg, "firm.opt.reassoc");
 }
