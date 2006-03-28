@@ -46,19 +46,19 @@ extern firm_dbg_module_t *firm_dbg_register(const char *name);
 #include <stdio.h>
 
 enum firm_dbg_level_t {
-	LEVEL_DEFAULT = 0, /**< Prints always. Use with DBG(). */
-	LEVEL_1 = 1,
-	LEVEL_2 = 2,
-	LEVEL_3 = 4,
-	LEVEL_4 = 8,
-	LEVEL_5 = 16,
+  LEVEL_DEFAULT = 0, /**< Prints always. Use with DBG(). */
+  LEVEL_1 = 1,
+  LEVEL_2 = 2,
+  LEVEL_3 = 4,
+  LEVEL_4 = 8,
+  LEVEL_5 = 16,
 
   SET_LEVEL_0 = 0,   /**< use with firm_dbg_set_mask(). */
-	SET_LEVEL_1 = 1,
-	SET_LEVEL_2 = 3,
-	SET_LEVEL_3 = 7,
-	SET_LEVEL_4 = 15,
-	SET_LEVEL_5 = 31,
+  SET_LEVEL_1 = 1,
+  SET_LEVEL_2 = 3,
+  SET_LEVEL_3 = 7,
+  SET_LEVEL_4 = 15,
+  SET_LEVEL_5 = 31,
   SET_LEVEL_ALL = SET_LEVEL_5
 };
 
@@ -105,7 +105,7 @@ unsigned firm_dbg_get_mask(const firm_dbg_module_t *module);
 void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 
 #define _DBG_MAIN(func,args) \
-	_firm_dbg_print_msg(__FILE__, __LINE__, func, _firm_dbg_make_msg args)
+  _firm_dbg_print_msg(__FILE__, __LINE__, func, _firm_dbg_make_msg args)
 
 /* If we have C99 use the __func__ variable for calling functions name. */
 #if defined(__STD_VERSION__) && __STD_VERSION >= 199901L
@@ -114,13 +114,13 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 
 /* Else, check for gcc and use the proprietary __FUNCTION__ macro. */
 #ifdef __GNUC__
-#define _DBG(args)	_DBG_MAIN(__FUNCTION__, args)
+#define _DBG(args)  _DBG_MAIN(__FUNCTION__, args)
 #else
 
 /* Else go without the name of the calling function. */
-#define _DBG(args) 	_DBG_MAIN("", args)
+#define _DBG(args)  _DBG_MAIN("", args)
 #endif  /* __GNUC__ */
-#endif
+#endif /* __STD_VERSION__ ... */
 
 #define _DB(args) _firm_dbg_print args
 
@@ -129,8 +129,8 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
  * retail versions.
  * @see DBG()
  */
-#define DBG_RETAIL(args)		_DBG(args)
-#define DB_RETAIL(args)		  _DB(args)
+#define DBG_RETAIL(args)    _DBG(args)
+#define DB_RETAIL(args)     _DB(args)
 
 #ifdef DEBUG_libfirm
 
@@ -157,8 +157,8 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
  * DBG((my_mod, LEVEL_DEFAULT, "entity %e has type %t", ent, type))
  * @endcode
  */
-#define DBG(args) 					_DBG(args)
-#define DB(args) 		 			  _DB(args)
+#define DBG(args)           _DBG(args)
+#define DB(args)            _DB(args)
 
 #else
 #define DBG(args)
@@ -166,5 +166,17 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #endif /* DEBUG_libfirm */
 
 #endif /* WITH_LIBCORE */
+
+#ifdef DEBUG_libfirm
+
+/** create a debug handle in debug mode */
+#define FIRM_DBG_REGISTER(handle, name) handle = firm_dbg_register(name)
+
+#else
+
+/** create a debug handle in release mode */
+#define FIRM_DBG_REGISTER(handle, name)
+
+#endif /* DEBUG_libfirm */
 
 #endif /* _FIRM_DEBUG_H */
