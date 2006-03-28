@@ -126,7 +126,7 @@ $additional_opcodes = 0;
             { "name" => "vf4", "type" => 1 },
             { "name" => "vf5", "type" => 1 },
             { "name" => "vf6", "type" => 1 },
-            { "name" => "vf7", "type" => 4 },
+            { "name" => "vf7", "type" => 1 },
             { "name" => "vfp_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
 			{ "mode" => "mode_E" }
           ],
@@ -679,21 +679,8 @@ $additional_opcodes = 0;
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
 },
 
-"vfsubr" => {
-  "irn_flags" => "R",
-  "comment"   => "virtual fp SubR: SubR(a, b) = b - a",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
-},
-
 "vfdiv" => {
   "comment"   => "virtual fp Div: Div(a, b) = a / b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
-},
-
-"vfdivr" => {
-  "comment"   => "virtual fp DivR: DivR(a, b) = b / a",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
 },
