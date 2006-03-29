@@ -337,14 +337,15 @@ static ir_node *x87_fxch_shuffle(x87_state *state, int pos, ir_node *block, ir_n
 	attr->x87[0] = &ia32_st_regs[pos];
 	attr->x87[2] = &ia32_st_regs[0];
 
-	DB((dbg, LEVEL_2, "%+F replaced input %d of %+F\n", fxch, node_idx, user));
-
-	if (user)
+	if (user) {
+		DB((dbg, LEVEL_2, "%+F replaced input %d of %+F\n", fxch, node_idx, user));
 		set_irn_n(user, node_idx, fxch);
+	}
 	else {
-		/* This is a node from another block. Changing it's user might be wrong,
-		   sp just keep it alive.
-			 The "right" solution would require a new Phi, but we don't care here.
+		/*
+		 * This is a node from a dominator block. Changing it's user might be wrong,
+		 * so just keep it alive.
+		 * The "right" solution would require a new Phi, but we don't care here.
 		 */
 		keep_alive(fxch);
 	}
@@ -1009,7 +1010,7 @@ static int x87_simulate_block(x87_simulator *sim, ir_node *block) {
 /**
  * Create a new x87 simulator.
  */
-static void x87_init_simulator(x87_simulator *sim, const arch_env_t *env) {
+static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env_t *env) {
 	obstack_init(&sim->obst);
 	sim->blk_states = pmap_create();
 	sim->env        = env;
@@ -1017,7 +1018,8 @@ static void x87_init_simulator(x87_simulator *sim, const arch_env_t *env) {
   FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
 	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
-	DB((dbg, LEVEL_1, "x87 Simulator started\n"));
+	DB((dbg, LEVEL_1, "--------------------------------\n"
+		"x87 Simulator started for %+F\n", irg));
 
   /* set the generic function pointer of instruction we must simulate */
 	clear_irp_opcodes_generic_func();
@@ -1053,7 +1055,7 @@ static void x87_init_simulator(x87_simulator *sim, const arch_env_t *env) {
 static void x87_destroy_simulator(x87_simulator *sim) {
 	pmap_destroy(sim->blk_states);
 	obstack_free(&sim->obst, NULL);
-	DB((dbg, LEVEL_1, "x87 Simulator stopped\n"));
+	DB((dbg, LEVEL_1, "x87 Simulator stopped\n\n"));
 }
 
 /**
@@ -1072,7 +1074,7 @@ void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list
 	be_liveness(irg);
 
   /* create the simulator */
-	x87_init_simulator(&sim, env);
+	x87_init_simulator(&sim, irg, env);
 
 	start_block = get_irg_start_block(irg);
 	bl_state = x87_get_bl_state(&sim, start_block);
