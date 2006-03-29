@@ -15,8 +15,8 @@ srcdir = @srcdir@
 topdir = ../../..
 subdir := ir/be/ia32
 full_dir = $(top_srcdir)/ir/be
-full_dirbe = $(full_dir)/$(FIRMBE_ARCH)
-arch = $(FIRMBE_ARCH)
+full_dirbe = $(full_dir)/ia32
+arch = ia32
 
 SOURCES = Makefile.in $(arch)_new_nodes.c $(arch)_new_nodes.h gen_$(arch)_new_nodes.c.inl gen_$(arch)_new_nodes.h \
 		gen_$(arch)_emitter.c gen_$(arch)_emitter.h $(arch)_emitter.c $(arch)_emitter.h \
