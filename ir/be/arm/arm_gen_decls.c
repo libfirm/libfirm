@@ -20,6 +20,8 @@
 # define obstack_chunk_free free
 #endif
 
+extern int obstack_printf(struct obstack *obst, char *fmt, ...);
+
 #include "tv.h"
 #include "irnode.h"
 #include "entity.h"
