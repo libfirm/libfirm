@@ -59,6 +59,14 @@ static const arch_env_t *arch_env = NULL;
  * |_|                                       |_|
  *************************************************************/
 
+/**
+ * returns true if a node has x87 registers
+ */
+static int has_x87_register(const ir_node *n)
+{
+	return get_irn_op(n)->flags & (irop_flag_machine << 1);
+}
+
 /* We always pass the ir_node which is a pointer. */
 static int ia32_get_arg_type(const lc_arg_occ_t *occ) {
 	return lc_arg_type_ptr;
@@ -172,7 +180,16 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 	if (!X)
 		return lc_appendable_snadd(app, "(null)", 6);
 
-	buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
+	if (has_x87_register(X)) {
+		ia32_attr_t *attr = get_ia32_attr(X);
+
+		if (occ->conversion == 'S')
+			buf = arch_register_get_name(attr->x87[nr - 2]);
+		else
+			buf = arch_register_get_name(attr->x87[2 + nr]);
+	}
+	else
+		buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
 
 	return lc_appendable_snadd(app, buf, strlen(buf));
 }
@@ -369,6 +386,55 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 }
 
 /**
+ * Emits registers and/or address mode of a binary operation.
+ */
+char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
+	static char *buf = NULL;
+
+	/* verify that this function is never called on non-AM supporting operations */
+	//assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
+
+	if (! buf) {
+		buf = xcalloc(1, SNPRINTF_BUF_LEN);
+	}
+	else {
+		memset(buf, 0, SNPRINTF_BUF_LEN);
+	}
+
+	switch(get_ia32_op_type(n)) {
+		case ia32_Normal:
+			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
+			}
+			else {
+				ia32_attr_t *attr = get_ia32_attr(n);
+				const arch_register_t *in1 = attr->x87[0];
+				const arch_register_t *in2 = attr->x87[1];
+				const arch_register_t *out = attr->x87[2];
+				const arch_register_t *in;
+				const char            *in_name;
+
+				in      = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
+				out     = out ? out : in1;
+				in_name = arch_register_get_name(in);
+
+				snprintf(buf, SNPRINTF_BUF_LEN, "%%%s, %%%s", arch_register_get_name(out), in_name);
+			}
+			break;
+		case ia32_AddrModeS:
+		case ia32_AddrModeD:
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s", ia32_emit_am(n, env));
+			break;
+		default:
+			assert(0 && "unsupported op type");
+	}
+
+#undef PRODUCES_RESULT
+
+	return buf;
+}
+
+/**
  * Emits registers and/or address mode of a unary operation.
  */
 char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
@@ -434,6 +500,15 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 				break;
 			case 32:
 				obstack_printf(obst, "DWORD PTR ");
+				break;
+			case 64:
+				if (has_x87_register(n))
+					/* ARGHHH: x87 wants QWORD PTR but SSE must be WITHOUT */
+					obstack_printf(obst, "QWORD PTR ");
+				break;
+			case 80:
+			case 96:
+				obstack_printf(obst, "XWORD PTR ");
 				break;
 			default:
 				break;
@@ -1292,7 +1367,10 @@ static void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %1S", irn, irn);
+	if (mode_is_float(get_irn_mode(irn)))
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "movs%M %1D, %1S", irn, irn, irn);
+	else
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %1S", irn, irn);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
 }
