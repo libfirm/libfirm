@@ -818,7 +818,6 @@ $additional_opcodes = 0;
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
   "emit"      => '. fadd %ia32_emit_x87_binop /* x87 fadd(%A1, %A2) -> %D1 */'
-#  "emit"      => '. fadd %X1, %X2 /* x87 fadd(%X1, %X2) -> %X3 */'
 },
 
 "faddp" => {
@@ -827,7 +826,6 @@ $additional_opcodes = 0;
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
   "emit"      => '. faddp %ia32_emit_x87_binop /* x87 fadd(%A1, %A2) -> %D1 */'
-#  "emit"      => '. faddp %X1, %X2 /* x87 fadd(%X1, %X2) -> %X3 and pop */'
 },
 
 "fmul" => {
@@ -835,8 +833,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
-#  "emit"      => '. fmul %ia32_emit_binop /* x87 fmul(%A1, %A2) -> %D1 */'
-  "emit"      => '. fmul %X1, %X2 /* x87 fmul(%X1, %X2) -> %X3 */'
+  "emit"      => '. fmul %ia32_emit_x87_binop /* x87 fmul(%A1, %A2) -> %D1 */'
 },
 
 "fmulp" => {
@@ -844,8 +841,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
-#  "emit"      => '. fmulp %ia32_emit_binop /* x87 fmul(%A1, %A2) -> %D1 */'
-  "emit"      => '. fmulp %X1, %X2 /* x87 fmul(%X1, %X2) -> %X3 and pop */'
+  "emit"      => '. fmulp %ia32_emit_x87_binop /* x87 fmul(%A1, %A2) -> %D1 */'
 },
 
 "fsub" => {
@@ -853,8 +849,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
-#  "emit"      => '. fsub %ia32_emit_binop /* x87 fsub(%A1, %A2) -> %D1 */'
-  "emit"      => '. fsub %X1, %X2 /* x87 fsub(%X1, %X2) -> %X3 */'
+  "emit"      => '. fsub %ia32_emit_x87_binop /* x87 fsub(%A1, %A2) -> %D1 */'
 },
 
 "fsubp" => {
@@ -862,8 +857,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
-#  "emit"      => '. fsubp %ia32_emit_binop /* x87 fsub(%A1, %A2) -> %D1 */'
-  "emit"      => '. fsubp %X1, %X2 /* x87 fsub(%X1, %X2) -> %X3 and pop */'
+  "emit"      => '. fsubp %ia32_emit_x87_binop /* x87 fsub(%A1, %A2) -> %D1 */'
 },
 
 "fsubr" => {
@@ -872,8 +866,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
-#  "emit"      => '. fsubr %ia32_emit_binop /* x87 fsubr(%A1, %A2) -> %D1 */'
-  "emit"      => '. fsubr %X1, %X2 /* x87 fsubr(%X1, %X2) -> %X3 */'
+  "emit"      => '. fsubr %ia32_emit_x87_binop /* x87 fsubr(%A1, %A2) -> %D1 */'
 },
 
 "fsubrp" => {
@@ -882,8 +875,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
-#  "emit"      => '. fsubrp %ia32_emit_binop /* x87 fsubr(%A1, %A2) -> %D1 */'
-  "emit"      => '. fsubrp %X1, %X2 /* x87 fsubr(%X1, %X2) -> %X3 and pop */'
+  "emit"      => '. fsubrp %ia32_emit_x87_binop /* x87 fsubr(%A1, %A2) -> %D1 */'
 },
 
 "fdiv" => {
@@ -891,8 +883,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
-#  "emit"      => '. fdiv %ia32_emit_binop /* x87 fdiv(%A1, %A2) -> %D1 */'
-  "emit"      => '. fdiv %X1, %X2 /* x87 fdiv(%X1, %X2) -> %X3 */'
+  "emit"      => '. fdiv %ia32_emit_x87_binop /* x87 fdiv(%A1, %A2) -> %D1 */'
 },
 
 "fdivp" => {
@@ -900,8 +891,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
-#  "emit"      => '. fdivp %ia32_emit_binop /* x87 fdiv(%A1, %A2) -> %D1 */'
-  "emit"      => '. fdivp %X1, %X2 /* x87 fdiv(%X1, %X2) -> %X3 and pop */'
+  "emit"      => '. fdivp %ia32_emit_x87_binop /* x87 fdiv(%A1, %A2) -> %D1 */'
 },
 
 "fdivr" => {
@@ -909,8 +899,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
-#  "emit"      => '. fdivr %ia32_emit_binop /* x87 fdivr(%A1, %A2) -> %D1 */'
-  "emit"      => '. fdivr %X1, %X2 /* x87 fdivr(%X1, %X2) -> %X3 */'
+  "emit"      => '. fdivr %ia32_emit_x87_binop /* x87 fdivr(%A1, %A2) -> %D1 */'
 },
 
 "fdivrp" => {
@@ -918,8 +907,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
-#  "emit"      => '. fdivrp %ia32_emit_binop /* x87 fdivr(%A1, %A2) -> %D1 */'
-  "emit"      => '. fdivrp %X1, %X2 /* x87 fdivr(%X1, %X2) -> %X3 and pop */'
+  "emit"      => '. fdivrp %ia32_emit_x87_binop /* x87 fdivr(%A1, %A2) -> %D1 */'
 },
 
 "fabs" => {
@@ -927,7 +915,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Abs: Abs(a) = |a|",
   "reg_req"   => { },
-  "emit"      => '. fabs %X1 /* x87 fabs(%X1) -> %X3 */'
+  "emit"      => '. fabs /* x87 fabs(%S1) -> %D1 */'
 },
 
 "fchs" => {
@@ -935,7 +923,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Chs: Chs(a) = -a",
   "reg_req"   => { },
-  "emit"      => '. fchs %X1 /* x87 fchs(%X1) -> %X3 */'
+  "emit"      => '. fchs /* x87 fchs(%S1) -> %D1 */'
 },
 
 "fsin" => {
@@ -943,7 +931,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sin: Sin(a) = sin(a)",
   "reg_req"   => { },
-  "emit"      => '. fsin %X1 /* x87 sin(%X1) -> %X3 */'
+  "emit"      => '. fsin /* x87 sin(%S1) -> %D1 */'
 },
 
 "fcos" => {
@@ -951,7 +939,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Cos: Cos(a) = cos(a)",
   "reg_req"   => { },
-  "emit"      => '. fcos %X1 /* x87 cos(%X1) -> %X3 */'
+  "emit"      => '. fcos /* x87 cos(%S1) -> %D1 */'
 },
 
 "fsqrt" => {
@@ -959,7 +947,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sqrt: Sqrt(a) = a ^ 0.5",
   "reg_req"   => { },
-  "emit"      => '. fsqrt %X1 $ /* x87 sqrt(%X1) -> %X3 */'
+  "emit"      => '. fsqrt $ /* x87 sqrt(%S1) -> %D1 */'
 },
 
 # x87 Load and Store
@@ -971,7 +959,7 @@ $additional_opcodes = 0;
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { },
-  "emit"      => '. fld %ia32_emit_x87_binop /* Load((%A1)) -> %X3 */'
+  "emit"      => '. fld %ia32_emit_x87_binop /* Load((%A1)) -> %D1 */'
 },
 
 "fst" => {
@@ -981,7 +969,7 @@ $additional_opcodes = 0;
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fst %ia32_emit_x87_binop /* Store(%X2) -> (%A1) */'
+  "emit"      => '. fst %ia32_emit_x87_binop /* Store(%A3) -> (%A1) */'
 },
 
 "fstp" => {
@@ -991,7 +979,7 @@ $additional_opcodes = 0;
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fstp %ia32_emit_x87_binop /* Store(%X2) -> (%A1) and pop */'
+  "emit"      => '. fstp %ia32_emit_x87_binop /* Store(%A3) -> (%A1) and pop */'
 },
 
 # Conversions
@@ -1001,7 +989,7 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "comment"   => "x87 fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
   "reg_req"   => { },
-  "emit"      => '. fild %X3, %ia32_emit_am /* integer Load((%A1)) -> %X3 */'
+  "emit"      => '. fild %ia32_emit_am /* integer Load((%A1)) -> %D1 */'
 },
 
 "fist" => {
@@ -1009,7 +997,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fist %ia32_emit_binop /* integer Store(%X3) -> (%A1) */'
+  "emit"      => '. fist %ia32_emit_binop /* integer Store(%A3) -> (%A1) */'
 },
 
 "fistp" => {
@@ -1017,7 +1005,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fistp %ia32_emit_binop /* integer Store(%X3) -> (%A1) and pop */'
+  "emit"      => '. fistp %ia32_emit_binop /* integer Store(%A3) -> (%A1) and pop */'
 },
 
 # constants
@@ -1027,7 +1015,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldz /* x87 0.0 -> %X3 */'
+  "emit"      => '. fldz /* x87 0.0 -> %D1 */'
 },
 
 "fld1" => {
@@ -1035,7 +1023,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fld1 /* x87 1.0 -> %X3 */'
+  "emit"      => '. fld1 /* x87 1.0 -> %D1 */'
 },
 
 "fldpi" => {
@@ -1043,7 +1031,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load pi: Ld pi -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldpi /* x87 pi -> %X3 */'
+  "emit"      => '. fldpi /* x87 pi -> %D1 */'
 },
 
 "fldln2" => {
@@ -1051,7 +1039,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldln2 /* x87 ln(2) -> %X3 */'
+  "emit"      => '. fldln2 /* x87 ln(2) -> %D1 */'
 },
 
 "fldlg2" => {
@@ -1059,7 +1047,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldlg2 /* x87 log(2) -> %X3 */'
+  "emit"      => '. fldlg2 /* x87 log(2) -> %D1 */'
 },
 
 "fldl2t" => {
@@ -1067,7 +1055,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldll2t /* x87 ld(10) -> %X3 */'
+  "emit"      => '. fldll2t /* x87 ld(10) -> %D1 */'
 },
 
 "fldl2e" => {
@@ -1075,7 +1063,7 @@ $additional_opcodes = 0;
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldl2e /* x87 ld(e) -> %X3 */'
+  "emit"      => '. fldl2e /* x87 ld(e) -> %D1 */'
 },
 
 "fldConst" => {
@@ -1085,7 +1073,7 @@ $additional_opcodes = 0;
   "comment"   => "represents a x87 constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "st" ] },
-  "emit"      => '. fld%M %C /* Load fConst into register -> %X3 */',
+  "emit"      => '. fld%M %C /* Load fConst into register -> %D1 */',
 },
 
 # fxch, fpush
