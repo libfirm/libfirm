@@ -11,9 +11,8 @@
 #ifndef _BECOPYILP_T_H
 #define _BECOPYILP_T_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "firm_config.h"
+
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif

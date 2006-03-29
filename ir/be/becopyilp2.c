@@ -30,6 +30,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifdef WITH_ILP
+
 #include <bitset.h>
 #include "pdeq.h"
 
@@ -377,7 +379,7 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, ir_node *irn) {
 	/* check for forbidden interferences */
 	len = pdeq_len(path);
 	curr_path = alloca(len * sizeof(*curr_path));
-	pdeq_copyl(path, curr_path);
+	pdeq_copyl(path, (const void **)curr_path);
 
 	for (i=1; i<len; ++i)
 		if (be_ifg_connected(ifg, irn, curr_path[i]))
@@ -523,3 +525,10 @@ int co_solve_ilp2(copy_opt_t *co, double time_limit) {
 
 	return sol_state == lpp_optimal;
 }
+
+#else /* WITH_ILP */
+
+static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+}
+
+#endif /* WITH_ILP */

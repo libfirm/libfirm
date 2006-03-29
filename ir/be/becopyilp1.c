@@ -13,6 +13,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifdef WITH_ILP
+
 #include "becopyilp_t.h"
 
 #define DEBUG_LVL 1
@@ -33,3 +35,10 @@ static void ilp1_apply(ilp_env_t *ienv) {
 int co_solve_ilp1(copy_opt_t *co, double time_limit) {
 	return 1;
 }
+
+#else /* WITH_ILP */
+
+static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+}
+
+#endif /* WITH_ILP */
