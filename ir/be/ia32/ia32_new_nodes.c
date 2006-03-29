@@ -1098,14 +1098,14 @@ int is_ia32_AddrModeD(const ir_node *node) {
  * Checks if node is a Load or fLoad/vfLoad.
  */
 int is_ia32_Ld(const ir_node *node) {
-	return is_ia32_Load(node) || is_ia32_fLoad(node) || is_ia32_vfld(node);
+	return is_ia32_Load(node) || is_ia32_fLoad(node) || is_ia32_vfld(node) || is_ia32_fld(node);
 }
 
 /**
  * Checks if node is a Store or fStore/vfStore.
  */
 int is_ia32_St(const ir_node *node) {
-	return is_ia32_Store(node) || is_ia32_fStore(node) || is_ia32_vfst(node);
+	return is_ia32_Store(node) || is_ia32_fStore(node) || is_ia32_vfst(node) || is_ia32_fst(node) || is_ia32_fstp(node);
 }
 
 /**
