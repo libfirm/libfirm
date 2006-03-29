@@ -629,7 +629,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
 
-	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, 0);
+	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode_M, 0);
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);
