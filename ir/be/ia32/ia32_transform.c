@@ -1304,19 +1304,21 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ia32_am_flavour_t am_flav = ia32_B;
   ia32_immop_type_t immop   = ia32_ImmNone;
 
-	/* in case of storing a const (but not a symconst) -> make it an attribute */
-	if (is_ia32_Cnst(val)) {
-		switch (get_ia32_op_type(val)) {
-		case ia32_Const:
-			immop = ia32_ImmConst;
-			break;
-		case ia32_SymConst:
-			immop = ia32_ImmSymConst;
-			break;
-		default:
-			assert(0 && "unsupported Const type");
+	if (! mode_is_float(mode)) {
+		/* in case of storing a const (but not a symconst) -> make it an attribute */
+		if (is_ia32_Cnst(val)) {
+			switch (get_ia32_op_type(val)) {
+			case ia32_Const:
+				immop = ia32_ImmConst;
+				break;
+			case ia32_SymConst:
+				immop = ia32_ImmSymConst;
+				break;
+			default:
+				assert(0 && "unsupported Const type");
+			}
+			sval = noreg;
 		}
-		sval = noreg;
 	}
 
 	/* address might be a constant (symconst or absolute address) */
@@ -1341,7 +1343,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	}
 
 	/* stored const is an attribute (saves a register) */
-	if (is_ia32_Cnst(val)) {
+	if (! mode_is_float(mode) && is_ia32_Cnst(val)) {
 		set_ia32_Immop_attr(new_op, val);
 	}
 

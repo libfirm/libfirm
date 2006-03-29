@@ -813,22 +813,25 @@ $additional_opcodes = 0;
 # x87 float nodes
 
 "fadd" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
-#  "emit"      => '. fadd %ia32_emit_binop /* x87 fadd(%A1, %A2) -> %D1 */'
-  "emit"      => '. fadd %X1, %X2 /* x87 fadd(%X1, %X2) -> %X3 */'
+  "emit"      => '. fadd %ia32_emit_x87_binop /* x87 fadd(%A1, %A2) -> %D1 */'
+#  "emit"      => '. fadd %X1, %X2 /* x87 fadd(%X1, %X2) -> %X3 */'
 },
 
 "faddp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
-#  "emit"      => '. faddp %ia32_emit_binop /* x87 fadd(%A1, %A2) -> %D1 */'
-  "emit"      => '. faddp %X1, %X2 /* x87 fadd(%X1, %X2) -> %X3 and pop */'
+  "emit"      => '. faddp %ia32_emit_x87_binop /* x87 fadd(%A1, %A2) -> %D1 */'
+#  "emit"      => '. faddp %X1, %X2 /* x87 fadd(%X1, %X2) -> %X3 and pop */'
 },
 
 "fmul" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
@@ -837,6 +840,7 @@ $additional_opcodes = 0;
 },
 
 "fmulp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
@@ -845,6 +849,7 @@ $additional_opcodes = 0;
 },
 
 "fsub" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
@@ -853,6 +858,7 @@ $additional_opcodes = 0;
 },
 
 "fsubp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
@@ -861,6 +867,7 @@ $additional_opcodes = 0;
 },
 
 "fsubr" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
@@ -870,6 +877,7 @@ $additional_opcodes = 0;
 },
 
 "fsubrp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
@@ -879,6 +887,7 @@ $additional_opcodes = 0;
 },
 
 "fdiv" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
@@ -887,6 +896,7 @@ $additional_opcodes = 0;
 },
 
 "fdivp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
@@ -895,6 +905,7 @@ $additional_opcodes = 0;
 },
 
 "fdivr" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
@@ -903,6 +914,7 @@ $additional_opcodes = 0;
 },
 
 "fdivrp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
@@ -911,6 +923,7 @@ $additional_opcodes = 0;
 },
 
 "fabs" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Abs: Abs(a) = |a|",
   "reg_req"   => { },
@@ -918,6 +931,7 @@ $additional_opcodes = 0;
 },
 
 "fchs" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Chs: Chs(a) = -a",
   "reg_req"   => { },
@@ -925,6 +939,7 @@ $additional_opcodes = 0;
 },
 
 "fsin" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sin: Sin(a) = sin(a)",
   "reg_req"   => { },
@@ -932,6 +947,7 @@ $additional_opcodes = 0;
 },
 
 "fcos" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Cos: Cos(a) = cos(a)",
   "reg_req"   => { },
@@ -939,6 +955,7 @@ $additional_opcodes = 0;
 },
 
 "fsqrt" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sqrt: Sqrt(a) = a ^ 0.5",
   "reg_req"   => { },
@@ -948,35 +965,39 @@ $additional_opcodes = 0;
 # x87 Load and Store
 
 "fld" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { },
-  "emit"      => '. fld %X3, %ia32_emit_am /* Load((%A1)) -> %X3 */'
+  "emit"      => '. fld %ia32_emit_x87_binop /* Load((%A1)) -> %X3 */'
 },
 
 "fst" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fst %ia32_emit_binop /* Store(%X3) -> (%A1) */'
+  "emit"      => '. fst %ia32_emit_x87_binop /* Store(%X2) -> (%A1) */'
 },
 
 "fstp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fstp %ia32_emit_binop /* Store(%X3) -> (%A1) and pop */'
+  "emit"      => '. fstp %ia32_emit_x87_binop /* Store(%X2) -> (%A1) and pop */'
 },
 
 # Conversions
 
 "fild" => {
+  "op_flags"  => "R",
   "irn_flags" => "R",
   "comment"   => "x87 fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
   "reg_req"   => { },
@@ -984,6 +1005,7 @@ $additional_opcodes = 0;
 },
 
 "fist" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
@@ -991,6 +1013,7 @@ $additional_opcodes = 0;
 },
 
 "fistp" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
@@ -1000,55 +1023,63 @@ $additional_opcodes = 0;
 # constants
 
 "fldz" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldz %X3 /* x87 0.0 -> %X3 */'
+  "emit"      => '. fldz /* x87 0.0 -> %X3 */'
 },
 
 "fld1" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fld1 %X3 /* x87 1.0 -> %X3 */'
+  "emit"      => '. fld1 /* x87 1.0 -> %X3 */'
 },
 
 "fldpi" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load pi: Ld pi -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldpi %X3 /* x87 pi -> %X3 */'
+  "emit"      => '. fldpi /* x87 pi -> %X3 */'
 },
 
 "fldln2" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldln2 %X3 /* x87 ln(2) -> %X3 */'
+  "emit"      => '. fldln2 /* x87 ln(2) -> %X3 */'
 },
 
 "fldlg2" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldlg2 %X3 /* x87 log(2) -> %X3 */'
+  "emit"      => '. fldlg2 /* x87 log(2) -> %X3 */'
 },
 
 "fldl2t" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldll2t %X3 /* x87 ld(10) -> %X3 */'
+  "emit"      => '. fldll2t /* x87 ld(10) -> %X3 */'
 },
 
 "fldl2e" => {
+  "op_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
   "reg_req"   => { },
-  "emit"      => '. fldl2e %X3 /* x87 ld(e) -> %X3 */'
+  "emit"      => '. fldl2e /* x87 ld(e) -> %X3 */'
 },
 
 "fldConst" => {
+  "op_flags"  => "R",
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents a x87 constant",
@@ -1058,16 +1089,21 @@ $additional_opcodes = 0;
 },
 
 # fxch, fpush
+# Note that it is NEVER allowed to do CSE on these nodes
 
 "fxch" => {
+  "op_flags"  => "R|K",
   "comment"   => "x87 stack exchange",
   "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "cmp_attr"  => "  return 1;\n",
   "emit"      => '. fxch %X1, %X3 /* x87 swap %X1, %X3 */',
 },
 
 "fpush" => {
+  "op_flags"  => "R",
   "comment"   => "x87 stack push",
   "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "cmp_attr"  => "  return 1;\n",
   "emit"      => '. fld %X1 /* x87 push %X1 */',
 },
 
