@@ -333,6 +333,7 @@ void $arch\_create_opcodes(void) {
 #define c   irop_flag_constlike
 #define K   irop_flag_keep
 #define M   irop_flag_machine
+#define R   (irop_flag_machine<<1)
 
   ir_op_ops ops;
   int cur_opcode = get_next_ir_opcodes($n_opcodes);
