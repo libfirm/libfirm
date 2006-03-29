@@ -1241,32 +1241,39 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	ir_node    *node  = env->irn;
 	ir_node    *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node    *ptr   = get_Load_ptr(node);
+	ir_node    *lptr  = ptr;
 	ir_mode    *mode  = get_Load_mode(node);
-	const char *offs  = NULL;
+	int        is_imm = 0;
 	ir_node *new_op;
 	ia32_am_flavour_t am_flav = ia32_B;
 
 	/* address might be a constant (symconst or absolute address) */
 	if (is_ia32_Const(ptr)) {
-		offs = get_ia32_cnst(ptr);
-		ptr  = noreg;
+		lptr   = noreg;
+		is_imm = 1;
 	}
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, get_Load_mem(node), env->mode);
+			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node), env->mode);
 		else {
 			env->cg->used_x87 = 1;
-			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, get_Load_mem(node), env->mode);
+			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node), env->mode);
 		}
 	}
 	else {
-		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, get_Load_mem(node), env->mode);
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node), env->mode);
 	}
 
 	/* base is an constant address */
-	if (offs) {
-		add_ia32_am_offs(new_op, offs);
+	if (is_imm) {
+		if (get_ia32_immop_type(ptr) == ia32_ImmSymConst) {
+			set_ia32_am_sc(new_op, get_ia32_id_cnst(ptr));
+		}
+		else {
+			add_ia32_am_offs(new_op, get_ia32_cnst(ptr));
+		}
+
 		am_flav = ia32_O;
 	}
 
@@ -1296,13 +1303,14 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *noreg   = ia32_new_NoReg_gp(env->cg);
 	ir_node *val     = get_Store_value(node);
 	ir_node *ptr     = get_Store_ptr(node);
+	ir_node *sptr    = ptr;
 	ir_node *mem     = get_Store_mem(node);
 	ir_mode *mode    = get_irn_mode(val);
 	ir_node *sval    = val;
-	const char *offs = NULL;
+	int      is_imm  = 0;
 	ir_node *new_op;
 	ia32_am_flavour_t am_flav = ia32_B;
-  ia32_immop_type_t immop   = ia32_ImmNone;
+	ia32_immop_type_t immop   = ia32_ImmNone;
 
 	if (! mode_is_float(mode)) {
 		/* in case of storing a const (but not a symconst) -> make it an attribute */
@@ -1323,20 +1331,20 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 
 	/* address might be a constant (symconst or absolute address) */
 	if (is_ia32_Const(ptr)) {
-		offs = get_ia32_cnst(ptr);
-		ptr  = noreg;
+		sptr   = noreg;
+		is_imm = 0;
 	}
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, mode_T);
+			new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, sptr, noreg, sval, mem, mode_T);
 		else {
 			env->cg->used_x87 = 1;
-			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, mode_T);
+			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, sptr, noreg, sval, mem, mode_T);
 		}
 	}
 	else if (get_mode_size_bits(mode) == 8) {
-		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, mode_T);
+		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, sptr, noreg, sval, mem, mode_T);
 	}
 	else {
 		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, sval, mem, mode_T);
@@ -1348,8 +1356,14 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	}
 
 	/* base is an constant address */
-	if (offs) {
-		add_ia32_am_offs(new_op, offs);
+	if (is_imm) {
+		if (get_ia32_immop_type(ptr) == ia32_ImmSymConst) {
+			set_ia32_am_sc(new_op, get_ia32_id_cnst(ptr));
+		}
+		else {
+			add_ia32_am_offs(new_op, get_ia32_cnst(ptr));
+		}
+
 		am_flav = ia32_O;
 	}
 

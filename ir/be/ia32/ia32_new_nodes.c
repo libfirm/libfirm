@@ -1161,7 +1161,7 @@ void alloc_ia32_reg_slots(ir_node *node, int num) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
 	if (num) {
-		attr->slots = NEW_ARR_D(arch_register_t*, get_irg_obstack(get_irn_irg(node)), num);
+		attr->slots = (const arch_register_t **)NEW_ARR_D(arch_register_t*, get_irg_obstack(get_irn_irg(node)), num);
 		memset(attr->slots, 0, sizeof(attr->slots[0]) * num);
 	}
 	else {
@@ -1212,7 +1212,7 @@ static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
 	memcpy(attr_new, attr_old, sizeof(*attr_new));
 
 	/* copy the register slots */
-	attr_new->slots = NEW_ARR_D(arch_register_t*, get_irg_obstack(get_irn_irg(new_node)), n_res);
+	attr_new->slots = (const arch_register_t **)NEW_ARR_D(arch_register_t*, get_irg_obstack(get_irn_irg(new_node)), n_res);
 	memcpy((void *)attr_new->slots, (void *)attr_old->slots, sizeof(attr_new->slots[0]) * n_res);
 }
 

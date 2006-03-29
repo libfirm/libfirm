@@ -114,41 +114,6 @@ static void dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
 }
 
 /*
- * dump an arithmetic tarval
- */
-static void ia32_dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
-{
-  switch (bytes) {
-
-  case 1:
-    obstack_printf(obst, "\t.byte\t");
-    break;
-
-  case 2:
-    obstack_printf(obst, "\t.value\t");
-    break;
-
-  case 4:
-    obstack_printf(obst, "\t.long\t");
-    break;
-
-  case 8:
-    obstack_printf(obst, "\t.quad\t");
-    break;
-
-  case 10:
-  case 12:
-    break;
-
-  default:
-    fprintf(stderr, "Try to dump an tarval with %d bytes\n", bytes);
-    assert(0);
-  }
-  dump_arith_tarval(obst, tv, bytes);
-}
-
-
-/*
  * dump an atomic value
  */
 static void do_dump_atomic_init(struct obstack *obst, ir_node *init)

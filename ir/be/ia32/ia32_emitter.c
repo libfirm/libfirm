@@ -785,13 +785,6 @@ static void emit_ia32_CondJmp(const ir_node *irn, ia32_emit_env_t *env) {
 }
 
 /**
- * Emits code for conditional jump with immediate.
- */
-static void emit_ia32_CondJmp_i(const ir_node *irn, ia32_emit_env_t *env) {
-	CondJmp_emitter(irn, env);
-}
-
-/**
  * Emits code for conditional test and jump.
  */
 static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
@@ -1488,6 +1481,7 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 	entity     *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_name(irg_ent);
 
+	fprintf(F, "\t.section\t.text\n");
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, ".globl %s\n", irg_name);
 	}

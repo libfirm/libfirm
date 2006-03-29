@@ -6,6 +6,11 @@
  *
  * $Id$
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <assert.h>
 
 #include "irnode_t.h"
@@ -20,13 +25,19 @@
 #include "irprintf.h"
 #include "debug.h"
 
-#include "..\belive_t.h"
-#include "..\besched.h"
-#include "..\benode_t.h"
+#include "../belive_t.h"
+#include "../besched.h"
+#include "../benode_t.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_x87.h"
+
+#ifndef NDEBUG
+#define DEBUG_ONLY(x) x
+#else  /* NDEBUG */
+#define DEBUG_ONLY(x)
+#endif /* NDEBUG */
 
 #define N_x87_REGS 8
 
@@ -629,7 +640,7 @@ static unsigned is_vfp_live(const arch_register_t *reg, unsigned live) {
 /**
  * dump liveness info.
  */
-static vfp_dump_live(unsigned live) {
+static void vfp_dump_live(unsigned live) {
 	int i;
 
 	DB((dbg, LEVEL_2, "Live registers here: \n"));

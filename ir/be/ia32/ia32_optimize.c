@@ -609,7 +609,6 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *
 	int         dolea      = 0;
 	int         have_am_sc = 0;
 	int         am_sc_sign = 0;
-	ident      *am_sc_lea  = NULL;
 	ident      *am_sc      = NULL;
 	ir_node    *left, *right, *temp;
 	ir_node    *base, *index;
