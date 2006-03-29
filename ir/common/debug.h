@@ -167,15 +167,20 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 
 #endif /* WITH_LIBCORE */
 
+/* some more macros to handle often used cases */
 #ifdef DEBUG_libfirm
 
 /** create a debug handle in debug mode */
 #define FIRM_DBG_REGISTER(handle, name) handle = firm_dbg_register(name)
+#define DEBUG_ONLY(code)   code
+#define RELEASE_ONLY(code)
 
 #else
 
 /** create a debug handle in release mode */
 #define FIRM_DBG_REGISTER(handle, name)
+#define DEBUG_ONLY(code)
+#define RELEASE_ONLY(code) code
 
 #endif /* DEBUG_libfirm */
 
