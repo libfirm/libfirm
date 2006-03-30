@@ -33,12 +33,6 @@
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_x87.h"
 
-#ifndef NDEBUG
-#define DEBUG_ONLY(x) x
-#else  /* NDEBUG */
-#define DEBUG_ONLY(x)
-#endif /* NDEBUG */
-
 #define N_x87_REGS 8
 
 /* first and second binop index */
