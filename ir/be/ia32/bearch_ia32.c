@@ -563,7 +563,10 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	}
 
 	if (mode_is_float(mode)) {
-		new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+		if (USE_SSE2(env->cg))
+			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+		else
+			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
 	}
 	else {
 		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
@@ -613,7 +616,10 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	}
 
 	if (mode_is_float(mode)) {
-		new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+		if (USE_SSE2(env->cg))
+			new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+		else
+			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
 	}
 	else if (get_mode_size_bits(mode) == 8) {
 		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
