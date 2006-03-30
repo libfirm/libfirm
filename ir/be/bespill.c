@@ -74,6 +74,12 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size) {
 	return ! (xx->spilled_node == yy->spilled_node);
 }
 
+DEBUG_ONLY(
+void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t *dbg) {
+	env->dbg = dbg;
+}
+);
+
 spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env, decide_irn_t is_mem_phi, void *data) {
 	spill_env_t *env = xmalloc(sizeof(env[0]));
 	env->spill_ctxs  = new_set(cmp_spillctx, 1024);
