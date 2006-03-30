@@ -347,17 +347,14 @@ get_irn_modeident (const ir_node *node)
 }
 
 ir_op *
-(get_irn_op)(const ir_node *node)
-{
+(get_irn_op)(const ir_node *node) {
   return _get_irn_op(node);
 }
 
 /* should be private to the library: */
 void
-set_irn_op (ir_node *node, ir_op *op)
-{
-  assert (node);
-  node->op = op;
+(set_irn_op)(ir_node *node, ir_op *op) {
+	_set_irn_op(node, op);
 }
 
 opcode

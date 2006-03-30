@@ -355,6 +355,12 @@ _get_irn_op (const ir_node *node) {
   return node->op;
 }
 
+static INLINE void
+_set_irn_op (ir_node *node, ir_op *op) {
+  assert (node);
+  node->op = op;
+}
+
 /** Copies all attributes stored in the old node  to the new node.
     Assumes both have the same opcode and sufficient size. */
 static INLINE void
@@ -789,6 +795,7 @@ static INLINE int _get_Psi_n_conds(ir_node *node) {
 #define get_irn_mode(node)                    _get_irn_mode(node)
 #define set_irn_mode(node, mode)              _set_irn_mode(node, mode)
 #define get_irn_op(node)                      _get_irn_op(node)
+#define set_irn_op(node, op)                  _set_irn_op(node, op)
 #define get_irn_opcode(node)                  _get_irn_opcode(node)
 #define get_irn_visited(node)                 _get_irn_visited(node)
 #define set_irn_visited(node, v)              _set_irn_visited(node, v)
