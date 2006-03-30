@@ -85,6 +85,9 @@ typedef enum {
  */
 #define BE_STACK_FRAME_SIZE ((unsigned) -1)
 
+/**
+ * Create all BE specific opcodes.
+ */
 void be_node_init(void);
 
 enum {
@@ -156,17 +159,39 @@ unsigned be_get_IncSP_offset(const ir_node *irn);
 void           be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir);
 be_stack_dir_t be_get_IncSP_direction(const ir_node *irn);
 
-entity *be_Call_get_entity(const ir_node *call);
-void    be_Call_set_entity(ir_node *call, entity *ent);
+/** Gets the call entity or NULL if this is no static call. */
+entity  *be_Call_get_entity(const ir_node *call);
+/** Sets the call entity. */
+void     be_Call_set_entity(ir_node *call, entity *ent);
+/** Gets the call type. */
+ir_type *be_Call_get_type(ir_node *call);
+/** Sets the call type. */
+void     be_Call_set_type(ir_node *call, ir_type *call_tp);
 
 enum {
-	be_pos_Call_mem       = 0,
-	be_pos_Call_sp        = 1,
-	be_pos_Call_ptr       = 2,
-	be_pos_Call_first_arg = 3
+	be_pos_Call_mem       = 0,  /**< memory input of a be_Call node */
+	be_pos_Call_sp        = 1,  /**< stack pointer input of a be_Call node */
+	be_pos_Call_ptr       = 2,  /**< call pointer input of a be_Call node */
+	be_pos_Call_first_arg = 3   /**< first argument input of a be_Call node */
 };
 
-ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[]);
+/**
+ * Projection numbers for result of be_Call node: use for Proj nodes!
+ */
+typedef enum {
+	pn_be_Call_M_regular = pn_Call_M_regular,  /**< The memory result of a be_Call. */
+	pn_be_Call_first_res = pn_Call_max         /**< The first result proj number of a be_Call. */
+} pn_be_Call;
+
+/**
+ * Construct a new be_Call
+ */
+ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr,
+                     int n_outs, int n, ir_node *in[], ir_type *call_tp);
+
+/**
+ * Construct a new be_Return
+ */
 ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
