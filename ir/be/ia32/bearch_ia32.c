@@ -451,66 +451,65 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 	ir_node                    *copy, *in_node, *block;
 	ia32_op_type_t              op_tp;
 
-	if (! is_ia32_irn(irn))
-		return;
+	if (is_ia32_irn(irn)) {
+		/* AM Dest nodes don't produce any values  */
+		op_tp = get_ia32_op_type(irn);
+		if (op_tp == ia32_AddrModeD)
+			return;
 
-	/* AM Dest nodes don't produce any values  */
-	op_tp = get_ia32_op_type(irn);
-	if (op_tp == ia32_AddrModeD)
-		return;
+		reqs  = get_ia32_out_req_all(irn);
+		n_res = get_ia32_n_res(irn);
+		block = get_nodes_block(irn);
 
-	reqs  = get_ia32_out_req_all(irn);
-	n_res = get_ia32_n_res(irn);
-	block = get_nodes_block(irn);
+		/* check all OUT requirements, if there is a should_be_same */
+		if (op_tp == ia32_Normal) {
+			for (i = 0; i < n_res; i++) {
+				if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
+					/* get in and out register */
+					out_reg = get_ia32_out_reg(irn, i);
+					in_node = get_irn_n(irn, reqs[i]->same_pos);
+					in_reg  = arch_get_irn_register(cg->arch_env, in_node);
 
-	/* check all OUT requirements, if there is a should_be_same */
-	if (op_tp == ia32_Normal) {
-		for (i = 0; i < n_res; i++) {
-			if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
-				/* get in and out register */
-				out_reg = get_ia32_out_reg(irn, i);
-				in_node = get_irn_n(irn, reqs[i]->same_pos);
-				in_reg  = arch_get_irn_register(cg->arch_env, in_node);
+					/* don't copy ignore nodes */
+					if (arch_irn_is(cg->arch_env, in_node, ignore))
+						continue;
 
-				/* don't copy ignore nodes */
-				if (arch_irn_is(cg->arch_env, in_node, ignore))
-					continue;
+					/* check if in and out register are equal */
+					if (arch_register_get_index(out_reg) != arch_register_get_index(in_reg)) {
+						DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
 
-				/* check if in and out register are equal */
-				if (arch_register_get_index(out_reg) != arch_register_get_index(in_reg)) {
-					DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
+						/* create copy from in register */
+						copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
 
-					/* create copy from in register */
-					copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
+						/* destination is the out register */
+						arch_set_irn_register(cg->arch_env, copy, out_reg);
 
-					/* destination is the out register */
-					arch_set_irn_register(cg->arch_env, copy, out_reg);
+						/* insert copy before the node into the schedule */
+						sched_add_before(irn, copy);
 
-					/* insert copy before the node into the schedule */
-					sched_add_before(irn, copy);
-
-					/* set copy as in */
-					set_irn_n(irn, reqs[i]->same_pos, copy);
+						/* set copy as in */
+						set_irn_n(irn, reqs[i]->same_pos, copy);
+					}
 				}
 			}
 		}
+
+		/* If we have a CondJmp with immediate, we need to    */
+		/* check if it's the right operand, otherwise we have */
+		/* to change it, as CMP doesn't support immediate as  */
+		/* left operands.                                     */
+		if (is_ia32_CondJmp(irn) && (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn)) && op_tp == ia32_AddrModeS) {
+			long pnc = get_negated_pnc(get_ia32_pncode(irn), get_ia32_res_mode(irn));
+			set_ia32_op_type(irn, ia32_AddrModeD);
+			set_ia32_pncode(irn, pnc);
+		}
+
+		/* check if there is a sub which need to be transformed */
+		ia32_transform_sub_to_neg_add(irn, cg);
+
+		/* transform a LEA into an Add if possible */
+		ia32_transform_lea_to_add(irn, cg);
 	}
-
-	/* If we have a CondJmp with immediate, we need to    */
-	/* check if it's the right operand, otherwise we have */
-	/* to change it, as CMP doesn't support immediate as  */
-	/* left operands.                                     */
-	if (is_ia32_CondJmp(irn) && (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn)) && op_tp == ia32_AddrModeS) {
-		long pnc = get_negated_pnc(get_ia32_pncode(irn), get_ia32_res_mode(irn));
-		set_ia32_op_type(irn, ia32_AddrModeD);
-		set_ia32_pncode(irn, pnc);
-	}
-
-	/* check if there is a sub which need to be transformed */
-	ia32_transform_sub_to_neg_add(irn, cg);
-
-	/* transform a LEA into an Add if possible */
-	ia32_transform_lea_to_add(irn, cg);
 
 	/* check for peephole optimization */
 	ia32_peephole_optimization(irn, cg);
@@ -650,46 +649,68 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 }
 
 /**
- * Calls the transform functions for StackParam, Spill and Reload.
+ * Fix the mode of Spill/Reload
  */
-static void ia32_after_ra_walker(ir_node *node, void *env) {
+static ir_mode *fix_spill_mode(ia32_code_gen_t *cg, ir_mode *mode)
+{
+	if (mode_is_float(mode)) {
+		if (USE_SSE2(cg))
+			mode = mode_D;
+		else
+			mode = mode_E;
+	}
+	else
+		mode = mode_Is;
+	return mode;
+}
+
+/**
+ * Block-Walker: Calls the transform functions Spill and Reload.
+ */
+static void ia32_after_ra_walker(ir_node *block, void *env) {
+	ir_node *node, *prev;
 	ia32_code_gen_t *cg = env;
 	ia32_transform_env_t tenv;
 
-	if (is_Block(node))
-		return;
-
-	tenv.block = get_nodes_block(node);
-	tenv.dbg   = get_irn_dbg_info(node);
+	tenv.block = block;
 	tenv.irg   = current_ir_graph;
-	tenv.irn   = node;
-	DEBUG_ONLY(tenv.mod   = cg->mod;)
-	tenv.mode  = get_irn_mode(node);
 	tenv.cg    = cg;
+	DEBUG_ONLY(tenv.mod = cg->mod;)
 
-	/* be_is_StackParam(node) || */
-	if (be_is_Reload(node)) {
-		transform_to_Load(&tenv);
-	}
-	else if (be_is_Spill(node)) {
-		/* we always spill the whole register  */
-		tenv.mode = mode_is_float(get_irn_mode(be_get_Spill_context(node))) ? mode_D : mode_Is;
-		transform_to_Store(&tenv);
+	/* beware: the schedule is changed here */
+	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
+		prev = sched_prev(node);
+		if (be_is_Reload(node)) {
+			/* we always reload the whole register  */
+			tenv.dbg  = get_irn_dbg_info(node);
+			tenv.irn  = node;
+			tenv.mode = fix_spill_mode(cg, get_irn_mode(node));
+			transform_to_Load(&tenv);
+		}
+		else if (be_is_Spill(node)) {
+			/* we always spill the whole register  */
+			tenv.dbg  = get_irn_dbg_info(node);
+			tenv.irn  = node;
+			tenv.mode = fix_spill_mode(cg, get_irn_mode(be_get_Spill_context(node)));
+			transform_to_Store(&tenv);
+		}
 	}
 }
 
 /**
- * We transform StackParam, Spill and Reload here. This needs to be done before
+ * We transform Spill and Reload here. This needs to be done before
  * stack biasing otherwise we would miss the corrected offset for these nodes.
+ *
+ * If x87 instruction should be emitted, run the x87 simulator and patch
+ * the virtual instructions. This must obviously be done after register allocation.
  */
 static void ia32_after_ra(void *self) {
 	ia32_code_gen_t *cg = self;
-	irg_walk_blkwise_graph(cg->irg, NULL, ia32_after_ra_walker, self);
+	irg_block_walk_graph(cg->irg, NULL, ia32_after_ra_walker, self);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
 	if (cg->used_x87) {
 		x87_simulate_graph(cg->arch_env, cg->irg, cg->blk_sched);
-		be_dump(cg->irg, "-x87", dump_ir_extblock_graph_sched);
 	}
 }
 
