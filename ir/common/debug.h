@@ -13,8 +13,11 @@
 
 #ifdef WITH_LIBCORE
 
+#ifdef DEBUG_libfirm
+
 #define DBG(x) _LC_DBG(x)
 #define DB(x)  _LC_DB(x)
+
 #include <libcore/lc_debug.h>
 
 /* use the newer debug implementation in libcore */
@@ -40,7 +43,19 @@ extern firm_dbg_module_t *firm_dbg_register(const char *name);
 #define SET_LEVEL_5      LC_SET_LEVEL_5
 #define SET_LEVEL_ALL    LC_SET_LEVEL_ALL
 
-#else
+#else  /* DEBUG_libfirm */
+
+#define DBG(x)
+#define DB(x)
+
+#define firm_dbg_set_mask(module, mask)
+#define firm_dbg_get_mask(module)
+#define firm_dbg_set_file(module, file)
+
+#endif /* DEBUG_libfirm */
+
+
+#else /* WITH_LIBCORE */
 /* use the builtin debug implementation */
 
 #include <stdio.h>
@@ -133,7 +148,6 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #define DB_RETAIL(args)     _DB(args)
 
 #ifdef DEBUG_libfirm
-
 /**
  * Issue a debug message.
  * @param args The arguments.
