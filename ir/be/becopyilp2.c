@@ -513,8 +513,7 @@ int co_solve_ilp2(copy_opt_t *co, double time_limit) {
 	my.first_x_var = -1;
 	my.last_x_var  = -1;
 	my.nr_2_irn    = pmap_create();
-	FIRM_DBG_REGISTER(my.dbg, "ir.be.coilp2");
-	firm_dbg_set_mask(my.dbg, DEBUG_LVL);
+	FIRM_DBG_REGISTER(my.dbg, "firm.be.coilp2");
 
 	ienv = new_ilp_env(co, ilp2_build, ilp2_apply, &my);
 

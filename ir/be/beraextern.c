@@ -939,8 +939,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	raenv.aenv     = env->arch_env;
 	raenv.dom_info = be_compute_dominance_frontiers(irg);
 	raenv.vars     = new_set(compare_var_infos, 64);
-	FIRM_DBG_REGISTER(raenv.dbg, "ir.be.raextern");
-	firm_dbg_set_mask(raenv.dbg, DBG_LEVEL);
+	FIRM_DBG_REGISTER(raenv.dbg, "firm.be.raextern");
 
 	/* Insert copies for constraints */
 	handle_constraints(&raenv);

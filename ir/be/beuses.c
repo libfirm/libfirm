@@ -161,8 +161,7 @@ be_uses_t *be_begin_uses(ir_graph *irg, const arch_env_t *arch_env, const arch_r
   uses->arch_env = arch_env;
   uses->uses     = new_set(cmp_use, 512);
   uses->irg      = irg;
-  FIRM_DBG_REGISTER(uses->dbg, "be.uses");
-  firm_dbg_set_mask(uses->dbg, DBG_LEVEL);
+  FIRM_DBG_REGISTER(uses->dbg, "firm.be.uses");
 
   return uses;
 }

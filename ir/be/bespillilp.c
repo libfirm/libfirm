@@ -644,7 +644,7 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	si.edges           = NULL;
 	si.enable_remat    = 0;
 	si.enable_store    = 1;
-	FIRM_DBG_REGISTER(si.dbg, "be.ra.spillilp");
+	FIRM_DBG_REGISTER(si.dbg, "firm.be.ra.spillilp");
 
 	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
 	irg_block_walk_graph(chordal_env->irg, process_block, NULL, &si);
