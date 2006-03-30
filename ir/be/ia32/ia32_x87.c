@@ -207,7 +207,7 @@ static int x87_on_stack(const x87_state *state, int reg_idx) {
  * Push a virtual Register onto the stack.
  */
 static void x87_push(x87_state *state, int reg_idx, ir_node *node) {
-//	assert(x87_on_stack(state, reg_idx) == -1 && "double push");
+	assert(x87_on_stack(state, reg_idx) == -1 && "double push");
 	assert(state->depth < N_x87_REGS && "stack overrun");
 
 	++state->depth;
@@ -900,7 +900,7 @@ GEN_UNOP(fcos)
 GEN_UNOP(fsqrt)
 
 /**
- * Simulate a virtual Copy
+ * Simulate a be_Copy.
  */
 static void sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 	ir_mode *mode = get_irn_mode(n);
@@ -944,6 +944,50 @@ static void sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 			exchange(n, get_unop_op(n));
 		}
 	}
+}
+
+/**
+ * Simulate a be_Call
+ */
+static void sim_Call(x87_state *state, ir_node *n, const arch_env_t *env) {
+	ir_type *call_tp = be_Call_get_type(n);
+
+	/* at the begin of a call the x87 state should be empty */
+	assert(state->depth == 0 && "stack not empty before call");
+
+	/*
+	 * If the called function returns a float, it is returned in st(0).
+	 * This even happens if the return value is NOT used.
+	 * Moreover, only one return result is supported.
+	 */
+	if (get_method_n_ress(call_tp) > 0) {
+		ir_type *res_type = get_method_res_type(call_tp, 0);
+		ir_mode *mode     = get_type_mode(res_type);
+
+		if (mode && mode_is_float(mode)) {
+			/*
+			 * TODO: what to push here? The result might be unused and currently
+			 * we have no possibility to detect this :-(
+			 */
+			x87_push(state, 0, n);
+		}
+	}
+}
+
+/**
+ * Simulate a be_Spill.
+ */
+static void sim_Spill(x87_state *state, ir_node *n, const arch_env_t *env) {
+	assert(0 && "Spill not lowered");
+	sim_fst(state, n, env);
+}
+
+/**
+ * Simulate a be_Reload
+ */
+static void sim_Reload(x87_state *state, ir_node *n, const arch_env_t *env) {
+	assert(0 && "Reload not lowered");
+	sim_fld(state, n, env);
 }
 
 /**
@@ -1054,6 +1098,9 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	ASSOC_IA32(fsqrt);
 	ASSOC_IA32(fst);
 	ASSOC_BE(Copy);
+	ASSOC_BE(Call);
+	ASSOC_BE(Spill);
+	ASSOC_BE(Reload);
 	ASSOC(Phi);
 #undef ASSOC_BE
 #undef ASSOC_IA32
