@@ -838,6 +838,14 @@ static const list_sched_selector_t *ppc32_get_list_sched_selector(const void *se
 	return &ppc32_sched_selector;
 }
 
+/**
+ * Returns the necessary byte alignment for storing a register of given class.
+ */
+static int ppc32_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	ir_mode *mode = arch_register_class_mode(cls);
+	return get_mode_size_bytes(mode);
+}
+
 #ifdef WITH_LIBCORE
 static void ppc32_register_options(lc_opt_entry_t *ent)
 {
@@ -857,4 +865,5 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_irn_handler,
 	ppc32_get_code_generator_if,
 	ppc32_get_list_sched_selector,
+	ppc32_get_reg_class_alignment
 };

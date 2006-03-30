@@ -597,6 +597,14 @@ static const list_sched_selector_t *firm_get_list_sched_selector(const void *sel
 	return trivial_selector;
 }
 
+/**
+ * Returns the necessary byte alignment for storing a register of given class.
+ */
+static int firm_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	ir_mode *mode = arch_register_class_mode(cls);
+	return get_mode_size_bytes(mode);
+}
+
 #ifdef WITH_LIBCORE
 static void firm_register_options(lc_opt_entry_t *ent)
 {
@@ -615,5 +623,6 @@ const arch_isa_if_t firm_isa = {
 	firm_get_call_abi,
 	firm_get_irn_handler,
 	firm_get_code_generator_if,
-	firm_get_list_sched_selector
+	firm_get_list_sched_selector,
+	firm_get_reg_class_alignment
 };

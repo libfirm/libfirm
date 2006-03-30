@@ -955,6 +955,14 @@ static const list_sched_selector_t *arm_get_list_sched_selector(const void *self
 	return &arm_sched_selector;
 }
 
+/**
+ * Returns the necessary byte alignment for storing a register of given class.
+ */
+static int arm_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	ir_mode *mode = arch_register_class_mode(cls);
+	return get_mode_size_bytes(mode);
+}
+
 #ifdef WITH_LIBCORE
 static void arm_register_options(lc_opt_entry_t *ent)
 {
@@ -974,4 +982,5 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_irn_handler,
 	arm_get_code_generator_if,
 	arm_get_list_sched_selector,
+	arm_get_reg_class_alignment
 };

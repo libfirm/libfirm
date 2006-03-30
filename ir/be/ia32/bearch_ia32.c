@@ -1034,6 +1034,18 @@ static const list_sched_selector_t *ia32_get_list_sched_selector(const void *sel
 	return &ia32_sched_selector;
 }
 
+/**
+ * Returns the necessary byte alignment for storing a register of given class.
+ */
+static int ia32_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	ir_mode *mode = arch_register_class_mode(cls);
+	int bytes     = get_mode_size_bytes(mode);
+
+	if (mode_is_float(mode) && bytes > 8)
+		return 16;
+	return bytes;
+}
+
 #ifdef WITH_LIBCORE
 static void ia32_register_options(lc_opt_entry_t *ent)
 {
@@ -1052,5 +1064,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_call_abi,
 	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
-	ia32_get_list_sched_selector
+	ia32_get_list_sched_selector,
+	ia32_get_reg_class_alignment
 };

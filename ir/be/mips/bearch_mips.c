@@ -906,6 +906,14 @@ static const arch_code_generator_if_t *mips_get_code_generator_if(void *self) {
 	return &mips_code_gen_if;
 }
 
+/**
+ * Returns the necessary byte alignment for storing a register of given class.
+ */
+static int mips_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	ir_mode *mode = arch_register_class_mode(cls);
+	return get_mode_size_bytes(mode);
+}
+
 #ifdef WITH_LIBCORE
 static void mips_register_options(lc_opt_entry_t *ent)
 {
@@ -925,4 +933,5 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_irn_handler,
 	mips_get_code_generator_if,
 	mips_get_list_sched_selector,
+	mips_get_reg_class_alignment
 };
