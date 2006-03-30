@@ -22,7 +22,7 @@ SOURCES = Makefile.in $(arch)_new_nodes.c $(arch)_new_nodes.h gen_$(arch)_new_no
 		gen_$(arch)_emitter.c gen_$(arch)_emitter.h $(arch)_emitter.c $(arch)_emitter.h \
 		bearch_$(arch).c gen_$(arch)_regalloc_if_t.h gen_$(arch)_regalloc_if.h gen_$(arch)_regalloc_if.c \
 		$(arch)_transform.c $(arch)_transform.h $(arch)_gen_decls.c $(arch)_gen_decls.h \
-		$(arch)_map_regs.c $(arch)_map_regs.h
+		$(arch)_map_regs.c $(arch)_map_regs.h $(arch)_transform_conv.c $(arch)_transform_conv.h
 include $(topdir)/MakeRules
 
 CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
