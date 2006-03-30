@@ -1081,7 +1081,7 @@ $additional_opcodes = 0;
   "comment"   => "x87 stack exchange",
   "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
   "cmp_attr"  => "  return 1;\n",
-  "emit"      => '. fxch %X1, %X3 /* x87 swap %X1, %X3 */',
+  "emit"      => '. fxch %X1 /* x87 swap %X1, %X3 */',
 },
 
 "fpush" => {
