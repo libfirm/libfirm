@@ -13,7 +13,7 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
-#include "iredges.h "
+#include "iredges.h"
 #include "irdump.h"
 #include "irextbb.h"
 

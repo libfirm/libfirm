@@ -102,9 +102,9 @@ void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const mips_regi
         const mips_register_req_t **out_reqs, int n_res);
 
 /**
- * Initilize transform ops for the mips opcodes
+ * Initialize transform ops for the mips opcodes
  */
-void mips_init_opcode_transforms();
+void mips_init_opcode_transforms(void);
 
 
 /* Include the generated headers */

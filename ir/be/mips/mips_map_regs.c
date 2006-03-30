@@ -51,8 +51,5 @@ const arch_register_t *mips_get_firm_reg(const ir_node *irn, set *reg_set) {
  * requirements dependend on the predecessor.
  */
 long mips_translate_proj_pos(const ir_node *proj) {
-	ir_node *pred = get_Proj_pred(proj);
-	long nr       = get_Proj_proj(proj);
-
-	return nr;
+	return get_Proj_proj(proj);
 }

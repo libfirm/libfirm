@@ -53,15 +53,15 @@
 		return new_rd_mips_##mips_nodetype(env->dbg, env->irg, env->block, op1, op2, env->mode);\
 	}
 
-MIPS_GENBINFUNC(add);
-MIPS_GENBINFUNC(sub);
-MIPS_GENBINFUNC(div);
-MIPS_GENBINFUNC(and);
-MIPS_GENBINFUNC(or);
-MIPS_GENBINFUNC(xor);
-MIPS_GENBINFUNC(sl);
-MIPS_GENBINFUNC(sr);
-MIPS_GENBINFUNC(sra);
+MIPS_GENBINFUNC(add)
+MIPS_GENBINFUNC(sub)
+MIPS_GENBINFUNC(div)
+MIPS_GENBINFUNC(and)
+MIPS_GENBINFUNC(or)
+MIPS_GENBINFUNC(xor)
+MIPS_GENBINFUNC(sl)
+MIPS_GENBINFUNC(sr)
+MIPS_GENBINFUNC(sra)
 
 #define MIPS_GENUNFUNC(mips_nodetype)															\
 	static ir_node *mips_gen_##mips_nodetype(mips_transform_env_t *env, ir_node *op) {			\
@@ -71,7 +71,7 @@ MIPS_GENBINFUNC(sra);
 		return new_rd_mips_##mips_nodetype(env->dbg, env->irg, env->block, op, env->mode);		\
 	}
 
-MIPS_GENUNFUNC(not);
+MIPS_GENUNFUNC(not)
 
 static ir_node* mips_get_reg_node(mips_transform_env_t *env, const arch_register_t *reg) {
 	return be_abi_get_callee_save_irn(env->cg->birg->abi, reg);
@@ -128,7 +128,6 @@ static ir_node* exchange_node_for_Const(mips_transform_env_t *env, ir_node* pred
 	ir_node *node = env->irn;
 	dbg_info *dbg = get_irn_dbg_info(pred);
 	ir_graph *irg = get_irn_irg(node);
-	ir_mode* mode = get_irn_mode(pred);
 	ir_node *block;
 
 	if(get_irn_opcode(node) == iro_Phi) {
@@ -286,7 +285,6 @@ static ir_node *gen_node_for_Cond_Proj(mips_transform_env_t *env, ir_node* node,
 	// replaced by a mips_ compare node
 	ir_node *proj = get_Cond_selector(node);
 	ir_node *original_cmp = get_irn_n(proj, 0);
-	ir_node *result = NULL;
 	ir_node *cmp;
 	ir_node *condjmp;
 	ir_node *op1, *op2;
@@ -887,7 +885,6 @@ static void mips_transform_Reload(mips_transform_env_t* env) {
 	ir_node *node = env->irn;
 	ir_node *sched_point = NULL;
 	ir_node *load, *proj;
-	ir_node *nomem = new_rd_NoMem(env->irg);
 	ir_node *ptr   = get_irn_n(node, 0);
 	ir_node *mem   = get_irn_n(node, 1);
 	ir_mode *mode  = get_irn_mode(node);

@@ -462,23 +462,23 @@ ir_node *mips_transform_##srcnode(ir_node* node)				\
 	return node;												\
 }
 
-MIPS_MAKE_IFOLDING_TRANSFORM(add, addi, 1);
-MIPS_MAKE_IFOLDING_TRANSFORM(and, andi, 1);
-MIPS_MAKE_IFOLDING_TRANSFORM(or, ori, 1);
-MIPS_MAKE_IFOLDING_TRANSFORM(sra, srai, 0);
-MIPS_MAKE_IFOLDING_TRANSFORM(xor, xori, 1);
-MIPS_MAKE_IFOLDING_TRANSFORM(sl, sli, 0);
-MIPS_MAKE_IFOLDING_TRANSFORM(sr, sri, 0);
-MIPS_MAKE_IFOLDING_TRANSFORM(slt, slti, 0);
+MIPS_MAKE_IFOLDING_TRANSFORM(add, addi, 1)
+MIPS_MAKE_IFOLDING_TRANSFORM(and, andi, 1)
+MIPS_MAKE_IFOLDING_TRANSFORM(or, ori, 1)
+MIPS_MAKE_IFOLDING_TRANSFORM(sra, srai, 0)
+MIPS_MAKE_IFOLDING_TRANSFORM(xor, xori, 1)
+MIPS_MAKE_IFOLDING_TRANSFORM(sl, sli, 0)
+MIPS_MAKE_IFOLDING_TRANSFORM(sr, sri, 0)
+MIPS_MAKE_IFOLDING_TRANSFORM(slt, slti, 0)
 
-void mips_init_opcode_transforms() {
+void mips_init_opcode_transforms(void) {
 	op_mips_add->ops.transform_node = mips_transform_add;
 	op_mips_and->ops.transform_node = mips_transform_and;
-	op_mips_or->ops.transform_node = mips_transform_or;
+	op_mips_or->ops.transform_node  = mips_transform_or;
 	op_mips_sra->ops.transform_node = mips_transform_sra;
 	op_mips_xor->ops.transform_node = mips_transform_xor;
-	op_mips_sl->ops.transform_node = mips_transform_sl;
-	op_mips_sr->ops.transform_node = mips_transform_sr;
+	op_mips_sl->ops.transform_node  = mips_transform_sl;
+	op_mips_sr->ops.transform_node  = mips_transform_sr;
 	op_mips_slt->ops.transform_node = mips_transform_slt;
 }
 

@@ -97,10 +97,10 @@ static const char *node_const_to_str(ir_node *n)
 		assert(attr->tv != NULL);
 		if(get_mode_sign(get_tarval_mode(attr->tv))) {
 			long val = get_tarval_long(attr->tv);
-			snprintf(buf, sizeof(buf), "0x%04X", val & 0xffff);
+			snprintf(buf, sizeof(buf), "0x%04lX", val & 0xffff);
 		} else {
 			unsigned long val = get_tarval_long(attr->tv);
-			snprintf(buf, sizeof(buf), "0x%04X", val & 0xffff);
+			snprintf(buf, sizeof(buf), "0x%04lX", val & 0xffff);
 		}
 
 		return buf;
@@ -109,11 +109,11 @@ static const char *node_const_to_str(ir_node *n)
 		if(get_mode_sign(get_tarval_mode(attr->tv))) {
 			long val = get_tarval_long(attr->tv);
 			val = (val & 0xffff0000) >> 16;
-			snprintf(buf, sizeof(buf), "0x%04X", val & 0xffff);
+			snprintf(buf, sizeof(buf), "0x%04lX", val & 0xffff);
 		} else {
 			unsigned long val = get_tarval_long(attr->tv);
 			val = (val & 0xffff0000) >> 16;
-			snprintf(buf, sizeof(buf), "0x%04X", val & 0xffff);
+			snprintf(buf, sizeof(buf), "0x%04lX", val & 0xffff);
 		}
 
 		return buf;
@@ -345,13 +345,14 @@ static char *get_cfop_target(const ir_node *irn, char *buf)
 }
 
 /************************************************************************/
-/* ABI Handling
+/* ABI Handling                                                         */
 /************************************************************************/
 
 static void mips_emit_IncSP(const ir_node *node, mips_emit_env_t *env)
 {
-	FILE *F = env->out;
-	int offset = be_get_IncSP_offset(node);
+	FILE *F      = env->out;
+	int   offset = be_get_IncSP_offset(node);
+
 	if(offset == 0)
 		return;
 
@@ -385,7 +386,7 @@ static void mips_emit_nops(FILE* F, int n)
 
 static void mips_emit_Perm(const ir_node *node, mips_emit_env_t *env)
 {
-	FILE* F = env->out;
+	FILE *F = env->out;
 
 	assert(/*get_irn_n_outs(node) == 2 &&*/ get_irn_arity(node) == 2);
 
@@ -399,23 +400,22 @@ static void mips_emit_Perm(const ir_node *node, mips_emit_env_t *env)
 
 static void mips_emit_Spill(const ir_node* node, mips_emit_env_t *env)
 {
-	FILE* F = env->out;
+	FILE   *F   = env->out;
+	entity *ent = be_get_spill_entity(node);
 
-	ir_node* context = be_get_Spill_context(node);
-	entity* ent = be_get_spill_entity(node);
 	lc_efprintf(mips_get_arg_env(), F, "\tsw %1S, %d($fp)\n", node, get_entity_offset_bytes(ent));
 }
 
 static void mips_emit_Reload(const ir_node* node, mips_emit_env_t *env)
 {
-	FILE* F = env->out;
+	FILE   *F   = env->out;
+	entity *ent = be_get_spill_entity(node);
 
-	entity* ent = be_get_spill_entity(node);
 	lc_efprintf(mips_get_arg_env(), F, "\tlw %1D, %d($fp)\n", node, get_entity_offset_bytes(ent));
 }
 
 /************************************************************************/
-/* Calls
+/* Calls                                                                */
 /************************************************************************/
 
 static void mips_emit_Call(ir_node *node, mips_emit_env_t *env)
@@ -533,15 +533,11 @@ const char* mips_get_jumptbl_label(const ir_node* switchjmp)
  * possible otherwise a cmp-jmp cascade). Stolen from ia32
  */
 void emit_mips_jump_table(const ir_node *irn, FILE* F) {
-	int                 lastval, i, pn, do_jmp_tbl = 1;
-	jmp_tbl_t           tbl;
-	ir_node            *proj;
-	const ir_edge_t    *edge;
-	const lc_arg_env_t *env = mips_get_arg_env();
-	mips_attr_t *attr;
-	int i2;
-
-	attr = get_mips_attr(irn);
+	int              lastval, i, i2, pn;
+	jmp_tbl_t        tbl;
+	ir_node         *proj;
+	const ir_edge_t *edge;
+	mips_attr_t     *attr = get_mips_attr(irn);
 
 	/* fill the table structure */
 	tbl.label        = xmalloc(SNPRINTF_BUF_LEN);
