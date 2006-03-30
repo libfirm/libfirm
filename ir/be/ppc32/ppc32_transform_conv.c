@@ -56,21 +56,21 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
 {
 	ir_type *method_type;
 	entity  *method_ent;
-	ir_node *in[1] = {op};
+	ir_node *in[1];
 	ir_node *call, *callee, *call_results;
+
+	in[0] = op;
 
 	method_type = new_type_method(new_id_from_str("convert_call_type"), 1, 1);
 	set_method_param_type(method_type, 0, new_type_primitive(new_id_from_str("conv_param"), from_mode));
 	set_method_res_type(method_type, 0, new_type_primitive(new_id_from_str("conv_result"), to_mode));
 
-	method_ent = new_entity(get_glob_type(), new_id_from_str(funcname), method_type);
-
-	callee = new_rd_SymConst_addr_ent(env->dbg, env->irg, method_ent, method_type);
-
-	call = new_rd_Call(env->dbg, env->irg, env->block, memory, callee, 1, in, method_type);
-
+	method_ent   = new_entity(get_glob_type(), new_id_from_str(funcname), method_type);
+	callee       = new_rd_SymConst_addr_ent(env->dbg, env->irg, method_ent, method_type);
+	call         = new_rd_Call(env->dbg, env->irg, env->block, memory, callee, 1, in, method_type);
 	call_results = new_rd_Proj(env->dbg, env->irg, env->block, call, mode_T, pn_Call_T_result);
-	memory = new_rd_Proj(env->dbg, env->irg, env->block, call, mode_M, pn_Call_M_regular);
+	memory       = new_rd_Proj(env->dbg, env->irg, env->block, call, mode_M, pn_Call_M_regular);
+
 	return new_rd_Proj(env->dbg, env->irg, env->block, call_results, to_mode, 0);
 }
 
@@ -128,6 +128,8 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 				case irm_Is:
 				case irm_Iu:
 					return res;
+				default:
+					break;
 			}
 			break;
 		}
@@ -145,6 +147,9 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 			return own_gen_convert_call(env, op, (to_mode == mode_D) ? "conv_unsigned_int_to_double": "conv_unsigned_int_to_single", mode_Iu, to_mode);
 
 		case irm_P:
+			break;
+
+		default:
 			break;
 	}
 	fprintf(stderr, "Mode for Conv not supported: %s -> %s\n", get_mode_name(from_mode), get_mode_name(to_mode));
@@ -193,7 +198,7 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 
 	attr->convs = xmalloc(attr->conv_count * sizeof(ir_node *));
 
-	for (i=0, current_conv=attr->first_conv; i<attr->conv_count; i++, current_conv=current_conv->link)
+	for (i = 0, current_conv = attr->first_conv; i < attr->conv_count; i++, current_conv = current_conv->link)
 	{
 		attr->convs[i] = current_conv;
 	}
@@ -206,7 +211,7 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 	tenv.mod      = cgenv->mod;
 
 	memory = get_irg_no_mem(current_ir_graph);
-	for(i=0; i<attr->conv_count; i++)
+	for(i = 0; i < attr->conv_count; i++)
 	{
 		tenv.dbg      = get_irn_dbg_info(attr->convs[i]);
 		tenv.irn      = attr->convs[i];
@@ -216,13 +221,12 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 	}
 }
 
-void init_block()
+void init_block(void)
 {
-	cw_block_attr *attr;
-	attr = xmalloc(sizeof(cw_block_attr));
-	attr->first_conv = NULL;
-	attr->convs = NULL;			   	// attr->convs is set in finalize_block()
-	attr->conv_count = 0;
+	cw_block_attr *attr = xmalloc(sizeof(cw_block_attr));
+	attr->first_conv    = NULL;
+	attr->convs         = NULL; /* attr->convs is set in finalize_block() */
+	attr->conv_count    = 0;
 	current_block->link = attr;
 }
 
@@ -266,7 +270,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 
 	if(!entry->ent) {
 		char buf[80];
-		sprintf(buf, "const_%i", get_irn_node_nr(env->irn));
+		sprintf(buf, "const_%ld", get_irn_node_nr(env->irn));
 		ent = new_entity(get_glob_type(), new_id_from_str(buf), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
