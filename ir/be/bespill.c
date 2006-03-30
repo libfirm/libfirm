@@ -56,7 +56,7 @@ struct _spill_env_t {
 	struct obstack obst;
 	set *spill_ctxs;
 	set *spills;				/**< all spill_info_t's, which must be placed */
-	pset *mem_phis;				/**< set of all special spilled phis. allocated and freed seperately */
+	pset *mem_phis;				/**< set of all special spilled phis. allocated and freed separately */
 	decide_irn_t is_mem_phi;	/**< callback func to decide if a phi needs special spilling */
 	void *data;					/**< data passed to all callbacks */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
@@ -389,7 +389,9 @@ typedef struct _ss_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } ss_env_t;
 
-
+/**
+ * Walker: compute the spill slots
+ */
 static void compute_spill_slots_walker(ir_node *spill, void *env) {
 	ss_env_t *ssenv = env;
 	ir_node *ctx;
@@ -404,12 +406,18 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 	entry = pmap_find(ssenv->slots, ctx);
 
 	if (!entry) {
+		struct _arch_env_t *arch_env     = ssenv->cenv->birg->main_env->arch_env;
+		ir_node *spilled                 = get_irn_n(spill, be_pos_Spill_val);
+		const arch_register_t *reg       = arch_get_irn_register(arch_env, spilled);
+		const arch_register_class_t *cls = arch_register_get_class(reg);
+		ir_mode *largest_mode            = arch_register_class_mode(cls);
+
 		/* this is a new spill context */
 		ss = obstack_alloc(&ssenv->ob, sizeof(*ss));
-		ss->members = pset_new_ptr(8);
-		ss->largest_mode = get_irn_mode(get_irn_n(spill, be_pos_Spill_val));
-		ss->size = get_mode_size_bytes(ss->largest_mode);
-		ss->align = ss->size; /* TODO Assumed for now */
+		ss->members      = pset_new_ptr(8);
+		ss->largest_mode = largest_mode;
+		ss->size         = get_mode_size_bytes(ss->largest_mode);
+		ss->align        = arch_isa_get_reg_class_alignment(arch_env->isa, cls);
 		pmap_insert(ssenv->slots, ctx, ss);
 	} else {
 		ir_node *irn;
