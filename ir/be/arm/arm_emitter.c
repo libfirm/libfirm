@@ -61,10 +61,8 @@ int is_immediate_node(ir_node *irn) {
  */
 static const char *node_const_to_str(ir_node *n) {
 	char buffer[SNPRINTF_BUF_LEN];
-	ir_mode *mode = get_irn_mode(n);
 
 	if ( is_immediate_node(n) ) {
-		tarval *tv = get_arm_value(n);
 		long longvalue = get_tarval_long(get_arm_value(n));
 		char *str;
 		assert(longvalue < 0x1000 && "constant doesn't fit in shifter_operand");
@@ -385,9 +383,9 @@ static void emit_arm_CondJmp(ir_node *irn, void *env) {
  	}
 
 	if (proj_num == pn_Cmp_False) {
-		fprintf(out, "\tB BLOCK_%d\t\t\t/* false case */\n", get_irn_node_nr(false_block));
+		fprintf(out, "\tB BLOCK_%ld\t\t\t/* false case */\n", get_irn_node_nr(false_block));
 	} else if (proj_num == pn_Cmp_True) {
-		fprintf(out, "\tB BLOCK_%d\t\t\t/* true case */\n", get_irn_node_nr(true_block));
+		fprintf(out, "\tB BLOCK_%ld\t\t\t/* true case */\n", get_irn_node_nr(true_block));
 	} else {
 		if (mode_is_float(opmode)) {
 			suffix = "ICHWILLIMPLEMENTIERTWERDEN";
@@ -549,7 +547,7 @@ static void emit_arm_SwitchJmp(ir_node *irn, void *env) {
 		} else {
 			block = get_irn_link(projs[get_arm_default_proj_num(irn)]);
 		}
-		fprintf(out, "\t.word\tBLOCK_%d\n",get_irn_node_nr(block));
+		fprintf(out, "\t.word\tBLOCK_%ld\n",get_irn_node_nr(block));
 	}
 	fprintf(out, "\t.align 2\n");
 
@@ -683,7 +681,7 @@ static void emit_Jmp(ir_node *irn, void *env) {
 	FILE *out = emit_env->out;
 	const ir_edge_t *edge = get_irn_out_edge_first(irn);
 	ir_node *target_block = get_edge_src_irn(edge);
-	fprintf(out, "\tB BLOCK_%d\t\t\t/* unconditional Jump */\n", get_irn_node_nr(target_block));
+	fprintf(out, "\tB BLOCK_%ld\t\t\t/* unconditional Jump */\n", get_irn_node_nr(target_block));
 }
 
 static void emit_Proj(ir_node *irn, void *env) {
@@ -803,7 +801,6 @@ void arm_emit_start(FILE *F, ir_graph *irg) {
  * Emits code for function end
  */
 void arm_emit_end(FILE *F, ir_graph *irg) {
-	const char *irg_name = get_entity_name(get_irg_entity(irg));
 }
 
 /**

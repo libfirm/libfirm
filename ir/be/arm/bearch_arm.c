@@ -535,7 +535,7 @@ void arm_global_init(void) {
 
     map_Div->kind     = INTRINSIC_INSTR;
     map_Div->op       = op_Div;
-    map_Div->i_mapper = i_mapper_RuntimeCall;
+    map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
     map_Div->ctx      = &rt_Div;
   }
   {
@@ -558,7 +558,7 @@ void arm_global_init(void) {
 
     map_Div->kind     = INTRINSIC_INSTR;
     map_Div->op       = op_Div;
-    map_Div->i_mapper = i_mapper_RuntimeCall;
+    map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
     map_Div->ctx      = &rt_Div;
   }
   {
@@ -581,7 +581,7 @@ void arm_global_init(void) {
 
     map_Mod->kind     = INTRINSIC_INSTR;
     map_Mod->op       = op_Mod;
-    map_Mod->i_mapper = i_mapper_RuntimeCall;
+    map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
     map_Mod->ctx      = &rt_Mod;
   }
   {
@@ -604,7 +604,7 @@ void arm_global_init(void) {
 
     map_Mod->kind     = INTRINSIC_INSTR;
     map_Mod->op       = op_Mod;
-    map_Mod->i_mapper = i_mapper_RuntimeCall;
+    map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
     map_Mod->ctx      = &rt_Mod;
   }
 
@@ -887,13 +887,14 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 	ir_mode  *mode;
 	int       i;
 	int       n = get_method_n_params(method_type);
-//	const arch_register_t *reg;
 	be_abi_call_flags_t flags = {
-		0, /* store from left to right */
-		0, /* store arguments sequential */
-		1, /* try to omit the frame pointer */
-		1, /* the function can use any register as frame pointer */
-		1  /* a call can take the callee's address as an immediate */
+		{
+			0, /* store from left to right */
+			0, /* store arguments sequential */
+			1, /* try to omit the frame pointer */
+			1, /* the function can use any register as frame pointer */
+			1  /* a call can take the callee's address as an immediate */
+		}
 	};
 
 	/* set stack parameter passing style */

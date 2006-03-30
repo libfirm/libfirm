@@ -1,6 +1,6 @@
 #
 # Project:     libFIRM
-# File name:   ir/be/ia32/Makefile.in
+# File name:   ir/be/arm/Makefile.in
 # Purpose:
 # Author:      Boris Boesler, Till Riedel
 # Modified by:

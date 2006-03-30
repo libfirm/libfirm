@@ -43,19 +43,15 @@ extern ir_op *get_op_Mulh(void);
  *
  ****************************************************************************************************/
 
-
-
-
-
 typedef struct vals_ {
      int ops;
      unsigned char values[4];
      unsigned char shifts[4];
 } vals;
 
-static vals construct_vals() {
-     vals result = {0, {0, 0, 0, 0}, {0, 0, 0, 0}};
-     return result;
+static vals construct_vals(void) {
+	vals result = { 0, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
+    return result;
 }
 
 static vals gen_vals_from_word(unsigned int value)
@@ -78,9 +74,9 @@ static vals gen_vals_from_word(unsigned int value)
 }
 
 static ir_node *create_const_node(arm_transform_env_t *env, int value) {
-		ir_node *result = new_rd_arm_Const(env->dbg, env->irg, env->block, env->mode);
-		get_arm_attr(result)->value = new_tarval_from_long(value, env->mode);
-		return result;
+	ir_node *result = new_rd_arm_Const(env->dbg, env->irg, env->block, env->mode);
+	get_arm_attr(result)->value = new_tarval_from_long(value, env->mode);
+	return result;
 }
 
 #define NEW_BINOP_NODE(opname, env, op1, op2) new_rd_arm_##opname(env->dbg, env->irg, env->block, op1, op2, env->mode)
@@ -695,13 +691,13 @@ static ir_node *gen_Store(arm_transform_env_t *env) {
 
 
 static ir_node *gen_Cond(arm_transform_env_t *env) {
-	ir_node *result = NULL;
+	ir_node *result   = NULL;
 	ir_node *selector = get_Cond_selector(env->irn);
-	ir_node *irn = env->irn;
+	ir_node *irn      = env->irn;
+
 	if ( get_irn_mode(selector) == mode_b ) {
 		//CondJmp
 		ir_node *proj_node = get_Cond_selector(irn);
-		ir_mode *proj_mode = get_irn_mode(proj_node);
 		ir_node *cmp_node = get_Proj_pred(proj_node);
 		ir_node *op1 = get_Cmp_left(cmp_node);
 		ir_node *op2 = get_Cmp_right(cmp_node);
@@ -923,18 +919,22 @@ void arm_move_consts(ir_node *node, void *env) {
 /* move symbolic constants out of startblock                            */
 /************************************************************************/
 void arm_move_symconsts(ir_node *node, void *env) {
-	arm_code_gen_t *cgenv = (arm_code_gen_t *)env;
 	int i;
+
 	if (is_Block(node))
 		return;
-	for (i=0; i<get_irn_arity(node); i++) {
-		ir_node *pred = get_irn_n(node,i);
-		opcode pred_code = get_irn_opcode(pred);
+
+	for (i = 0; i  < get_irn_arity(node); i++) {
+		ir_node *pred      = get_irn_n(node,i);
+		opcode   pred_code = get_irn_opcode(pred);
+
 		if (pred_code == iro_SymConst) {
 			const char *str = get_sc_name(pred);
-			ir_node *symconst_node;
+			ir_node    *symconst_node;
+
 			symconst_node = new_rd_arm_SymConst(get_irn_dbg_info(pred),
 				current_ir_graph, get_nodes_block(node), get_irn_mode(pred));
+
 			set_arm_symconst_label(symconst_node, str);
 			set_irn_n(node, i, symconst_node);
 		}
