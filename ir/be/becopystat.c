@@ -29,7 +29,7 @@
 #define DO_ILP2
 
 #define DEBUG_LVL SET_LEVEL_1
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define MAX_ARITY 20
 #define MAX_CLS_SIZE 20

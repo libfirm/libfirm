@@ -74,7 +74,6 @@ struct _be_stack_slot_t {
 
 struct _be_abi_irg_t {
 	struct obstack       obst;
-	firm_dbg_module_t    *dbg;          /**< The debugging module. */
 	be_stack_frame_t     *frame;        /**< The stack frame model. */
 	const be_irg_t       *birg;         /**< The back end IRG. */
 	const arch_isa_t     *isa;          /**< The isa. */
@@ -99,6 +98,7 @@ struct _be_abi_irg_t {
 
 	arch_irn_handler_t irn_handler;
 	arch_irn_ops_t     irn_ops;
+	DEBUG_ONLY(firm_dbg_module_t    *dbg;)          /**< The debugging module. */
 };
 
 #define get_abi_from_handler(ptr) firm_container_of(ptr, be_abi_irg_t, irn_handler)
@@ -1134,7 +1134,6 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
  */
 static void modify_irg(be_abi_irg_t *env)
 {
-	firm_dbg_module_t *dbg    = env->dbg;
 	be_abi_call_t *call       = env->call;
 	const arch_isa_t *isa     = env->birg->main_env->arch_env->isa;
 	const arch_register_t *sp = arch_isa_sp(isa);
@@ -1148,6 +1147,7 @@ static void modify_irg(be_abi_irg_t *env)
 	pset *dont_save           = pset_new_ptr(8);
 	int n_params              = get_method_n_params(method_type);
 	int max_arg               = 0;
+	DEBUG_ONLY(firm_dbg_module_t *dbg    = env->dbg;)
 
 	int i, j, n;
 

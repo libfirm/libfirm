@@ -43,7 +43,7 @@
 
  ******************************************************************************/
 
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 void be_copy_opt_init(void) {
 }

@@ -44,10 +44,10 @@
 #define DEBUG_LVL 1
 
 typedef struct _local_env_t {
-	firm_dbg_module_t *dbg;
 	double time_limit;
 	int first_x_var, last_x_var;
 	pmap *nr_2_irn;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } local_env_t;
 
 static void build_coloring_cstr(ilp_env_t *ienv) {

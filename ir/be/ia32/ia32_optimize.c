@@ -217,7 +217,7 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env) {
 	tenv.block    = get_nodes_block(irn);
 	tenv.cg       = cg;
 	tenv.irg      = cg->irg;
-	tenv.mod      = cg->mod;
+	DEBUG_ONLY(tenv.mod      = cg->mod;)
 
 	/* Loop over all predecessors and check for Sym/Const nodes */
 	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
@@ -596,7 +596,7 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 /**
  * Folds Add or Sub to LEA if possible
  */
-static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *mod, ir_node *noreg) {
+static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	ir_graph   *irg        = get_irn_irg(irn);
 	dbg_info   *dbg        = get_irn_dbg_info(irn);
 	ir_node    *block      = get_nodes_block(irn);
@@ -613,6 +613,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *
 	ir_node    *left, *right, *temp;
 	ir_node    *base, *index;
 	ia32_am_flavour_t am_flav;
+	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
 	if (is_ia32_Add(irn))
 		isadd = 1;
@@ -849,7 +850,6 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, firm_dbg_module_t *
  */
 void ia32_optimize_am(ir_node *irn, void *env) {
 	ia32_code_gen_t   *cg   = env;
-	firm_dbg_module_t *mod  = cg->mod;
 	ir_node           *res  = irn;
 	dbg_info          *dbg;
 	ir_mode           *mode;
@@ -858,6 +858,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 	ir_node           *store, *load, *mem_proj;
 	ir_node           *succ, *addr_b, *addr_i;
 	int                check_am_src = 0;
+	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
 	if (! is_ia32_irn(irn))
 		return;
@@ -889,7 +890,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 		/* check is irn is a candidate for address calculation */
 		if (is_candidate(block, irn, 1)) {
 			DBG((mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
-			res = fold_addr(cg, irn, mod, noreg_gp);
+			res = fold_addr(cg, irn, noreg_gp);
 
 			if (res == irn)
 				DB((mod, LEVEL_1, "transformed into %+F\n", res));

@@ -821,7 +821,7 @@ static ir_node *gen_CopyB(arm_transform_env_t *env) {
 	const_env.dbg      = dbg;
 	const_env.irg      = irg;
 	const_env.irn      = node;
-	const_env.mod      = env->mod;
+	DEBUG_ONLY(const_env.mod      = env->mod;)
 	const_env.mode     = mode_Iu;
 
 	src_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_general_purpose], irg, block, src);
@@ -874,7 +874,7 @@ void arm_move_consts(ir_node *node, void *env) {
 				tenv.dbg      = get_irn_dbg_info(pred);
 				tenv.irg      = current_ir_graph;
 				tenv.irn      = pred;
-				tenv.mod      = cgenv->mod;
+				DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 				tenv.mode     = get_irn_mode(pred);
 				const_graph = create_const_graph(&tenv);
 				set_irn_n(node, i, const_graph);
@@ -899,7 +899,7 @@ void arm_move_consts(ir_node *node, void *env) {
 			tenv.dbg      = get_irn_dbg_info(pred);
 			tenv.irg      = current_ir_graph;
 			tenv.irn      = pred;
-			tenv.mod      = cgenv->mod;
+			DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 			tenv.mode     = get_irn_mode(pred);
 			const_graph = create_const_graph(&tenv);
 			set_irn_n(node, i, const_graph);
@@ -962,7 +962,7 @@ void arm_transform_node(ir_node *node, void *env) {
 	tenv.dbg      = get_irn_dbg_info(node);
 	tenv.irg      = current_ir_graph;
 	tenv.irn      = node;
-	tenv.mod      = cgenv->mod;
+	DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 	tenv.mode     = get_irn_mode(node);
 
 #define UNOP(a)        case iro_##a: asm_node = gen_##a(&tenv, get_##a##_op(node)); break

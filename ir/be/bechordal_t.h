@@ -54,7 +54,6 @@ typedef struct _border_t {
 struct _be_chordal_env_t {
 	struct obstack obst;              /**< An obstack for temporary storage. */
 	be_ra_chordal_opts_t *opts;       /**< A pointer to the chordal ra options. */
-	firm_dbg_module_t *dbg;           /**< Debug module for the chordal register allocator. */
 	const be_irg_t *birg;             /**< Back-end IRG session. */
 	dom_front_info_t *dom_front;      /**< Dominance frontiers. */
 	ir_graph *irg;                    /**< The graph under examination. */
@@ -62,6 +61,7 @@ struct _be_chordal_env_t {
 	pmap *border_heads;               /**< Maps blocks to border heads. */
 	be_ifg_t *ifg;                    /**< The interference graph. */
 	void *data;                       /**< Some pointer, to which different phases can attach data to. */
+	DEBUG_ONLY(firm_dbg_module_t *dbg;) /**< Debug module for the chordal register allocator. */
 };
 
 static INLINE struct list_head *_get_block_border_head(const be_chordal_env_t *inf, ir_node *bl) {

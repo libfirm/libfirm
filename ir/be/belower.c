@@ -43,7 +43,7 @@
 typedef struct _lower_env_t {
 	be_chordal_env_t  *chord_env;
 	int                do_copy;
-	firm_dbg_module_t *dbg_module;
+	DEBUG_ONLY(firm_dbg_module_t *dbg_module;)
 } lower_env_t;
 
 /* holds a perm register pair */
@@ -248,7 +248,6 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 static void lower_perm_node(ir_node *irn, void *walk_env) {
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
-	firm_dbg_module_t           *mod;
 	lower_env_t     *env = walk_env;
 	reg_pair_t      *pairs;
 	const ir_edge_t *edge;
@@ -257,10 +256,11 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_node         *sched_point, *block, *in[2];
 	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
+	DEBUG_ONLY(firm_dbg_module_t *mod;)
 
 	arch_env = env->chord_env->birg->main_env->arch_env;
 	do_copy  = env->do_copy;
-	mod      = env->dbg_module;
+	DEBUG_ONLY(mod = env->dbg_module;)
 	block    = get_nodes_block(irn);
 
 	/*

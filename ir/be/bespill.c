@@ -51,7 +51,6 @@ typedef struct _spill_ctx_t {
 } spill_ctx_t;
 
 struct _spill_env_t {
-	firm_dbg_module_t *dbg;
 	const arch_register_class_t *cls;
 	const be_chordal_env_t *chordal_env;
 	struct obstack obst;
@@ -60,6 +59,7 @@ struct _spill_env_t {
 	pset *mem_phis;				/**< set of all special spilled phis. allocated and freed seperately */
 	decide_irn_t is_mem_phi;	/**< callback func to decide if a phi needs special spilling */
 	void *data;					/**< data passed to all callbacks */
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 static int cmp_spillctx(const void *a, const void *b, size_t n) {
@@ -74,15 +74,11 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size) {
 	return ! (xx->spilled_node == yy->spilled_node);
 }
 
-spill_env_t *be_new_spill_env(firm_dbg_module_t *dbg,
-							  const be_chordal_env_t *chordal_env,
-							  decide_irn_t is_mem_phi, void *data) {
-
+spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env, decide_irn_t is_mem_phi, void *data) {
 	spill_env_t *env = xmalloc(sizeof(env[0]));
 	env->spill_ctxs  = new_set(cmp_spillctx, 1024);
 	env->spills      = new_set(cmp_spillinfo, 1024);
 	env->cls         = chordal_env->cls;
-	env->dbg         = dbg;
 	env->is_mem_phi  = is_mem_phi;
 	env->data        = data;
 	env->chordal_env = chordal_env;
@@ -386,11 +382,11 @@ typedef struct _spill_slot_t {
 } spill_slot_t;
 
 typedef struct _ss_env_t {
-	firm_dbg_module_t *dbg;
 	struct obstack ob;
 	be_chordal_env_t *cenv;
 	pmap *slots;		/* maps spill_contexts to spill_slots */
-  pmap *types;    /* maps modes to types */
+	pmap *types;    /* maps modes to types */
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } ss_env_t;
 
 

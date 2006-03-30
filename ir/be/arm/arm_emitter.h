@@ -10,10 +10,10 @@
 #include "bearch_arm_t.h"
 
 typedef struct _arm_emit_env_t {
-	firm_dbg_module_t         *mod;
 	FILE                      *out;
 	const arch_env_t          *arch_env;
 	const arm_code_gen_t *cg;
+	DEBUG_ONLY(firm_dbg_module_t         *mod;)
 } arm_emit_env_t;
 
 const lc_arg_env_t *arm_get_arg_env(void);

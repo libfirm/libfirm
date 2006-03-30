@@ -419,13 +419,13 @@ ia32_irn_ops_t ia32_irn_ops = {
  */
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
-	firm_dbg_module_t *old_mod = cg->mod;
+	DEBUG_ONLY(firm_dbg_module_t *old_mod = cg->mod;)
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
-	cg->mod = old_mod;
+	DEBUG_ONLY(cg->mod = old_mod;)
 
 	if (cg->opt.doam) {
 		edges_deactivate(cg->irg);
@@ -663,7 +663,7 @@ static void ia32_after_ra_walker(ir_node *node, void *env) {
 	tenv.dbg   = get_irn_dbg_info(node);
 	tenv.irg   = current_ir_graph;
 	tenv.irn   = node;
-	tenv.mod   = cg->mod;
+	DEBUG_ONLY(tenv.mod   = cg->mod;)
 	tenv.mode  = get_irn_mode(node);
 	tenv.cg    = cg;
 

@@ -184,11 +184,11 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 	dbg_info          *dbg      = env->dbg;
 	ir_graph          *irg      = env->irg;
 	ir_node           *block    = env->block;
-	firm_dbg_module_t *mod      = env->mod;
 	ir_node           *noreg_gp = ia32_new_NoReg_gp(env->cg);
 	ir_node           *noreg_fp = ia32_new_NoReg_fp(env->cg);
 	ir_node           *nomem    = new_NoMem();
 	ir_node           *expr_op, *imm_op;
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
@@ -275,11 +275,11 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 	dbg_info          *dbg    = env->dbg;
 	ir_graph          *irg    = env->irg;
 	ir_node           *block  = env->block;
-	firm_dbg_module_t *mod    = env->mod;
 	ir_node           *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node           *nomem  = new_NoMem();
 	ir_node           *expr_op, *imm_op;
 	tarval            *tv;
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	assert(! mode_is_float(mode) && "Shift/Rotate with float not supported");
 
@@ -345,11 +345,11 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 	ir_node           *new_op = NULL;
 	ir_mode           *mode   = env->mode;
 	dbg_info          *dbg    = env->dbg;
-	firm_dbg_module_t *mod    = env->mod;
 	ir_graph          *irg    = env->irg;
 	ir_node           *block  = env->block;
 	ir_node           *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node           *nomem  = new_NoMem();
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	new_op = func(dbg, irg, block, noreg, noreg, op, nomem, mode_T);
 
@@ -383,7 +383,6 @@ static ir_node *gen_unop(ia32_transform_env_t *env, ir_node *op, construct_unop_
 static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node *const_op) {
 	ir_node                *new_op     = NULL;
 	tarval                 *tv         = get_ia32_Immop_tarval(const_op);
-	firm_dbg_module_t      *mod        = env->mod;
 	dbg_info               *dbg        = env->dbg;
 	ir_graph               *irg        = env->irg;
 	ir_node                *block      = env->block;
@@ -391,6 +390,7 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	ir_node                *nomem      = new_NoMem();
 	int                     normal_add = 1;
 	tarval_classification_t class_tv, class_negtv;
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	/* try to optimize to inc/dec  */
 	if (env->cg->opt.incdec && tv) {
@@ -704,7 +704,6 @@ static ir_node *gen_Min(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 static ir_node *gen_imm_Sub(ia32_transform_env_t *env, ir_node *expr_op, ir_node *const_op) {
 	ir_node                *new_op     = NULL;
 	tarval                 *tv         = get_ia32_Immop_tarval(const_op);
-	firm_dbg_module_t      *mod        = env->mod;
 	dbg_info               *dbg        = env->dbg;
 	ir_graph               *irg        = env->irg;
 	ir_node                *block      = env->block;
@@ -712,6 +711,7 @@ static ir_node *gen_imm_Sub(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	ir_node                *nomem      = new_NoMem();
 	int                     normal_sub = 1;
 	tarval_classification_t class_tv, class_negtv;
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	/* try to optimize to inc/dec  */
 	if (env->cg->opt.incdec && tv) {
@@ -1626,8 +1626,8 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 	ir_node           *new_op   = NULL;
 	ir_node           *noreg    = ia32_new_NoReg_gp(env->cg);
 	ir_node           *nomem    = new_rd_NoMem(irg);
-	firm_dbg_module_t *mod      = env->mod;
 	ir_node           *proj;
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	if (src_mode == tgt_mode) {
 		/* this can happen when changing mode_P to mode_Is */
@@ -1894,7 +1894,7 @@ void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	tenv.dbg      = get_irn_dbg_info(irn);
 	tenv.irg      = cg->irg;
 	tenv.irn      = irn;
-	tenv.mod      = cg->mod;
+	DEBUG_ONLY(tenv.mod      = cg->mod;)
 	tenv.mode     = get_ia32_res_mode(irn);
 	tenv.cg       = cg;
 
@@ -1977,7 +1977,7 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	tenv.dbg   = get_irn_dbg_info(irn);
 	tenv.irg   = cg->irg;
 	tenv.irn   = irn;
-	tenv.mod   = cg->mod;
+	DEBUG_ONLY(tenv.mod   = cg->mod;)
 	tenv.mode  = get_irn_mode(irn);
 	tenv.cg    = cg;
 
@@ -2069,7 +2069,7 @@ void ia32_transform_node(ir_node *node, void *env) {
 	tenv.dbg      = get_irn_dbg_info(node);
 	tenv.irg      = current_ir_graph;
 	tenv.irn      = node;
-	tenv.mod      = cgenv->mod;
+	DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 	tenv.mode     = get_irn_mode(node);
 	tenv.cg       = cgenv;
 

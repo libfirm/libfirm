@@ -658,10 +658,10 @@ typedef void (*emit_func) (const ir_node *, mips_emit_env_t *);
  */
 static void mips_emit_node(ir_node *irn, mips_emit_env_t* env)
 {
-	mips_emit_env_t        *emit_env = env;
-	firm_dbg_module_t *mod      = emit_env->mod;
+	mips_emit_env_t   *emit_env = env;
 	FILE              *F        = emit_env->out;
 	ir_op             *op       = get_irn_op(irn);
+	DEBUG_ONLY(firm_dbg_module_t *mod = emit_env->mod;)
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 

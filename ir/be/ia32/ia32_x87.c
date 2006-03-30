@@ -48,7 +48,7 @@
 #define MASK_TOS(x)		((x) & (N_x87_REGS - 1))
 
 /** the debug handle */
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
  * An exchange template.

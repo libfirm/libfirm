@@ -103,7 +103,6 @@ typedef struct _var_info_t var_info_t;
  * Environment with all the needed stuff
  */
 typedef struct _be_raext_env_t {
-	firm_dbg_module_t *dbg;
 	arch_env_t *aenv;
 	const arch_register_class_t *cls;
 	ir_graph *irg;
@@ -113,6 +112,7 @@ typedef struct _be_raext_env_t {
 	set *vars;				/**< contains all var_info_t */
 	int n_cls_vars;			/**< length of the array cls_vars */
 	var_info_t **cls_vars;	/**< only the var_infos for current cls. needed for double iterating */
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } be_raext_env_t;
 
 

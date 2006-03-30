@@ -55,12 +55,12 @@
 
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
-	firm_dbg_module_t *dbg = chordal_env->dbg;
 	const arch_env_t *arch_env = chordal_env->birg->main_env->arch_env;
 	struct obstack ob;
 	pmap_entry *pme;
 	ir_node **nodes, *n1, *n2;
 	int i, o;
+	DEBUG_ONLY(firm_dbg_module_t *dbg = chordal_env->dbg;)
 
 	/* Collect all irns */
 	obstack_init(&ob);
@@ -98,13 +98,13 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 static void check_pressure_walker(ir_node *bl, void *data)
 {
 	be_chordal_env_t *env = data;
-	firm_dbg_module_t *dbg = env->dbg;
 	int n_regs = arch_register_class_n_regs(env->cls);
 
 	pset *live = pset_new_ptr_default();
 	int step = 0;
 	ir_node *irn;
 	irn_live_t *li;
+	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	live_foreach(bl, li) {
 		if(live_is_end(li) && chordal_has_class(env, li->irn)) {

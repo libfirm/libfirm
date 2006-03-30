@@ -29,7 +29,7 @@
 #include "benode_t.h"
 #include "besched_t.h"
 
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define DUMP_GRAPHS
 
 #define get_chordal_arch(ce) ((ce)->birg->main_env->arch_env)

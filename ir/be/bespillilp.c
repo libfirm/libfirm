@@ -86,7 +86,6 @@ typedef struct _spill_ilp_t {
 	spill_stat_t stats;
 	const arch_register_class_t *cls;
 	const be_chordal_env_t *chordal_env;
-	firm_dbg_module_t *dbg;
 	lpp_t *lpp;
 	set *irn_use_heads;
 	set *live_ranges;
@@ -96,6 +95,7 @@ typedef struct _spill_ilp_t {
 	struct obstack *obst;
 	int enable_store : 1;
 	int enable_remat : 1;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } spill_ilp_t;
 
 typedef struct _live_range_t live_range_t;
@@ -635,7 +635,8 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	memset(&si.stats, 0, sizeof(si.stats));
 	si.chordal_env     = chordal_env;
 	si.obst            = &obst;
-	si.senv            = be_new_spill_env(si.dbg, chordal_env, is_mem_phi, &si);
+	si.senv            = be_new_spill_env(chordal_env, is_mem_phi, &si);
+	DEBUG_ONLY(si.senv->dbg = si.dbg;)
 	si.cls             = chordal_env->cls;
 	si.lpp             = new_lpp(problem_name, lpp_minimize);
 	si.irn_use_heads   = new_set(cmp_irn_use_head, 4096);
@@ -646,7 +647,6 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	si.enable_store    = 1;
 	FIRM_DBG_REGISTER(si.dbg, "firm.be.ra.spillilp");
 
-	firm_dbg_set_mask(si.dbg, DBG_LEVEL);
 	irg_block_walk_graph(chordal_env->irg, process_block, NULL, &si);
 	if(si.enable_store)
 		add_store_costs(&si);

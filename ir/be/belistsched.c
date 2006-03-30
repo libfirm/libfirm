@@ -403,9 +403,9 @@ typedef struct _block_sched_env_t {
 	pset *ready_set;
 	pset *already_scheduled;
 	ir_node *block;
-	firm_dbg_module_t *dbg;
 	const list_sched_selector_t *selector;
 	void *selector_block_env;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } block_sched_env_t;
 
 /**

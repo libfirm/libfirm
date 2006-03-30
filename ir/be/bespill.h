@@ -22,11 +22,7 @@ typedef struct _spill_env_t spill_env_t;
 typedef int(*decide_irn_t)(const ir_node*, void*);
 
 
-spill_env_t *be_new_spill_env(
-		firm_dbg_module_t *dbg,
-		const be_chordal_env_t *chordal,
-		decide_irn_t is_mem_phi,
-		void *data);
+spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal, decide_irn_t is_mem_phi, void *data);
 
 void be_delete_spill_env(spill_env_t *senv);
 

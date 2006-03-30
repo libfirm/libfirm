@@ -10,10 +10,10 @@
 #include "bearch_mips_t.h"
 
 typedef struct _mips_emit_env_t {
-	firm_dbg_module_t         *mod;
 	FILE                      *out;
 	const arch_env_t          *arch_env;
 	const mips_code_gen_t *cg;
+	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } mips_emit_env_t;
 
 const lc_arg_env_t *mips_get_arg_env(void);

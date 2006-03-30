@@ -28,7 +28,7 @@ struct _be_main_env_t {
   struct _be_options_t *options;
   struct _arch_code_generator_t *cg;
   struct _arch_irn_handler_t *phi_handler;
-  firm_dbg_module_t *dbg;
+  DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 struct _be_irg_t {

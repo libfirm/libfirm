@@ -13,13 +13,13 @@ typedef struct _ppc32_code_gen_t {
 	FILE                           *out;              /**< output file */
 	const arch_env_t               *arch_env;         /**< the arch env */
 	set                            *reg_set;          /**< set to memorize registers for FIRM nodes (e.g. phi) */
-	firm_dbg_module_t              *mod;              /**< debugging module */
 	int                             emit_decls;       /**< flag indicating if decls were already emitted */
 	const be_irg_t                 *birg;             /**< The be-irg (contains additional information about the irg) */
 	unsigned                        area_size;        /**< size of call area for the current irg */
 	entity                         *area;             /**< the entity representing the call area or NULL for leaf functions */
 	ir_node                        *start_succ_block; /**< the block succeeding the start block in the cfg */
 	ir_node                        **blk_sched;       /**< an array containing the scheduled blocks */
+	DEBUG_ONLY(firm_dbg_module_t    *mod;)             /**< debugging module */
 } ppc32_code_gen_t;
 
 
@@ -41,12 +41,12 @@ typedef struct _ppc32_irn_ops_t {
 /** this is a struct to minimize the number of parameters
    for transformation walker */
 typedef struct _ppc32_transform_env_t {
-	firm_dbg_module_t *mod;      /**< The firm debugger */
 	dbg_info          *dbg;      /**< The node debug info */
 	ir_graph          *irg;      /**< The irg, the node should be created in */
 	ir_node           *block;    /**< The block, the node should belong to */
 	ir_node           *irn;      /**< The irn, to be transformed */
 	ir_mode           *mode;     /**< The mode of the irn */
+	DEBUG_ONLY(firm_dbg_module_t *mod;) /**< The firm debugger */
 } ppc32_transform_env_t;
 
 

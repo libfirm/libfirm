@@ -10,11 +10,11 @@
 #include "bearch_ia32_t.h"
 
 typedef struct _ia32_emit_env_t {
-	firm_dbg_module_t     *mod;
 	FILE                  *out;
 	const arch_env_t      *arch_env;
 	const ia32_code_gen_t *cg;
 	ia32_isa_t            *isa;
+	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } ia32_emit_env_t;
 
 const lc_arg_env_t *ia32_get_arg_env(void);

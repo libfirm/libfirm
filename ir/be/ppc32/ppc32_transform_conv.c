@@ -208,7 +208,7 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 
 	tenv.block    = current_block;
 	tenv.irg      = current_ir_graph;
-	tenv.mod      = cgenv->mod;
+	DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 
 	memory = get_irg_no_mem(current_ir_graph);
 	for(i = 0; i < attr->conv_count; i++)
@@ -360,7 +360,7 @@ void ppc32_conv_walk(ir_node *node, void *env) {
 	}
 
 	tenv.irg = current_ir_graph;
-	tenv.mod = cgenv->mod;
+	DEBUG_ONLY(tenv.mod = cgenv->mod;)
 
 	if (code == iro_Conv)
 	{
@@ -456,7 +456,7 @@ void ppc32_pretransform_walk(ir_node *node, void *env) {
 	}
 
 	tenv.irg = current_ir_graph;
-	tenv.mod = cgenv->mod;
+	DEBUG_ONLY(tenv.mod = cgenv->mod;)
 
 	if(code == iro_Const || code == iro_SymConst)
 	{

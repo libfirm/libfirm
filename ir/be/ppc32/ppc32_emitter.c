@@ -574,10 +574,10 @@ static void ppc32_register_emitters(void) {
  * Emits code for a node.
  */
 static void ppc32_emit_node(ir_node *irn, void *env) {
-	ppc32_emit_env_t *emit_env   = env;
-	firm_dbg_module_t *mod = emit_env->mod;
-	FILE              *F   = emit_env->out;
-	ir_op             *op = get_irn_op(irn);
+	ppc32_emit_env_t  *emit_env = env;
+	FILE              *F        = emit_env->out;
+	ir_op             *op       = get_irn_op(irn);
+	DEBUG_ONLY(firm_dbg_module_t *mod = emit_env->mod;)
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 

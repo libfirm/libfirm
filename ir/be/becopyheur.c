@@ -29,7 +29,7 @@
 #include "becopystat.h"
 #include "bitset.h"
 
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define SEARCH_FREE_COLORS
 

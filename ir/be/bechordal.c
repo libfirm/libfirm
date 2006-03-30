@@ -63,7 +63,6 @@
 typedef struct _be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
 
-	firm_dbg_module_t *constr_dbg;  /**< Debug output for the constraint handler. */
 	pset *pre_colored;              /**< Set of precolored nodes. */
 	bitset_t *live;				    /**< A liveness bitset. */
 	bitset_t *tmp_colors;           /**< An auxiliary bitset which is as long as the number of colors in the class. */
@@ -71,6 +70,7 @@ typedef struct _be_chordal_alloc_env_t {
 	bitset_t *in_colors;            /**< Colors used by live in values. */
 	bitset_t *ignore_regs;          /**< A bitset of all ignore registers in the current class. */
 	int colors_n;                   /**< The number of colors. */
+	DEBUG_ONLY(firm_dbg_module_t *constr_dbg;)  /**< Debug output for the constraint handler. */
 } be_chordal_alloc_env_t;
 
 #include "fourcc.h"
@@ -380,13 +380,13 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 {
 	be_chordal_env_t *env       = alloc_env->chordal_env;
 	const arch_env_t *aenv      = env->birg->main_env->arch_env;
-	firm_dbg_module_t *dbg      = alloc_env->constr_dbg;
 	insn_t *insn                = *the_insn;
 	ir_node *bl                 = get_nodes_block(insn->irn);
 	ir_node *copy               = NULL;
 	ir_node *perm               = NULL;
 	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
 	bitset_t *bs                = bitset_alloca(env->cls->n_regs);
+	DEBUG_ONLY(firm_dbg_module_t *dbg      = alloc_env->constr_dbg;)
 
 	int i;
 
@@ -504,7 +504,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		correctly precolored. These Perms arise during the ABI handling phase.
 	*/
 	if(insn->has_constraints) {
-		firm_dbg_module_t *dbg = alloc_env->constr_dbg;
 		const arch_env_t *aenv = env->birg->main_env->arch_env;
 		int n_regs             = env->cls->n_regs;
 		bitset_t *bs           = bitset_alloca(n_regs);
@@ -512,6 +511,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		bipartite_t *bp        = bipartite_new(n_regs, n_regs);
 		int *assignment        = alloca(n_regs * sizeof(assignment[0]));
 		pmap *partners         = pmap_create();
+		DEBUG_ONLY(firm_dbg_module_t *dbg = alloc_env->constr_dbg;)
 
 		int i, n_alloc;
 		long col;
@@ -699,8 +699,8 @@ static void pressure(ir_node *block, void *env_ptr)
 	be_chordal_alloc_env_t *alloc_env = env_ptr;
 	be_chordal_env_t *env             = alloc_env->chordal_env;
 	bitset_t *live                    = alloc_env->live;
-	firm_dbg_module_t *dbg            = env->dbg;
 	ir_node *irn;
+	DEBUG_ONLY(firm_dbg_module_t *dbg            = env->dbg;)
 
 	int i, n;
 	unsigned step = 0;
@@ -795,11 +795,11 @@ static void assign(ir_node *block, void *env_ptr)
 {
 	be_chordal_alloc_env_t *alloc_env = env_ptr;
 	be_chordal_env_t *env       = alloc_env->chordal_env;
-	firm_dbg_module_t *dbg      = env->dbg;
 	bitset_t *live              = alloc_env->live;
 	bitset_t *colors            = alloc_env->colors;
 	bitset_t *in_colors         = alloc_env->in_colors;
 	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
+	DEBUG_ONLY(firm_dbg_module_t *dbg      = env->dbg;)
 
 	const ir_node *irn;
 	border_t *b;

@@ -45,8 +45,8 @@ typedef struct _be_use_t {
 struct _be_uses_t {
   set *uses;
   ir_graph *irg;
-  firm_dbg_module_t *dbg;
   const arch_env_t *arch_env;
+  DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 

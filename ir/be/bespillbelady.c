@@ -47,7 +47,7 @@
 #define DBG_SLOTS  32
 #define DBG_TRACE  64
 #define DEBUG_LVL 0 //(DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -639,14 +639,15 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 
 	/* init belady env */
 	obstack_init(&bel.ob);
-	bel.arch    = chordal_env->birg->main_env->arch_env;
-	bel.cls     = chordal_env->cls;
-	bel.n_regs  = arch_register_class_n_regs(bel.cls);
-	bel.ws      = new_workset(&bel.ob, &bel);
-	bel.uses    = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, bel.cls);
-	bel.senv    = be_new_spill_env(dbg, chordal_env, is_mem_phi, NULL);
-	bel.reloads = pset_new_ptr_default();
-	bel.copies  = pset_new_ptr_default();
+	bel.arch      = chordal_env->birg->main_env->arch_env;
+	bel.cls       = chordal_env->cls;
+	bel.n_regs    = arch_register_class_n_regs(bel.cls);
+	bel.ws        = new_workset(&bel.ob, &bel);
+	bel.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, bel.cls);
+	bel.senv      = be_new_spill_env(chordal_env, is_mem_phi, NULL);
+	DEBUG_ONLY(bel.senv->dbg = dbg;)
+	bel.reloads   = pset_new_ptr_default();
+	bel.copies    = pset_new_ptr_default();
 
 	DBG((dbg, LEVEL_1, "running on register class: %s\n", bel.cls->name));
 

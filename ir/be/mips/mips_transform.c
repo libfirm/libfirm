@@ -986,7 +986,7 @@ void mips_transform_node(ir_node *node, void *env) {
 	tenv.dbg      = get_irn_dbg_info(node);
 	tenv.irg      = current_ir_graph;
 	tenv.irn      = node;
-	tenv.mod      = cgenv->mod;
+	DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 	tenv.mode     = get_irn_mode(node);
 	tenv.cg		  = cgenv;
 
@@ -1134,7 +1134,7 @@ void mips_pre_transform_node(ir_node *node, void *env) {
 	tenv.dbg      = get_irn_dbg_info(node);
 	tenv.irg      = current_ir_graph;
 	tenv.irn      = node;
-	tenv.mod      = cgenv->mod;
+	DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 	tenv.mode     = get_irn_mode(node);
 	tenv.cg		  = cgenv;
 
@@ -1173,7 +1173,7 @@ void mips_after_ra_walker(ir_node *node, void *env) {
 	tenv.dbg   = get_irn_dbg_info(node);
 	tenv.irg   = current_ir_graph;
 	tenv.irn   = node;
-	tenv.mod   = cg->mod;
+	DEBUG_ONLY(tenv.mod   = cg->mod;)
 	tenv.mode  = get_irn_mode(node);
 	tenv.cg    = cg;
 
