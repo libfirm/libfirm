@@ -11,9 +11,11 @@
 
 #include "firm_config.h"
 
-#ifdef WITH_LIBCORE
-
 #ifdef DEBUG_libfirm
+
+/* WITH DEBUG OUTPUT */
+
+#ifdef WITH_LIBCORE
 
 #define DBG(x) _LC_DBG(x)
 #define DB(x)  _LC_DB(x)
@@ -42,18 +44,6 @@ extern firm_dbg_module_t *firm_dbg_register(const char *name);
 #define SET_LEVEL_4      LC_SET_LEVEL_4
 #define SET_LEVEL_5      LC_SET_LEVEL_5
 #define SET_LEVEL_ALL    LC_SET_LEVEL_ALL
-
-#else  /* DEBUG_libfirm */
-
-#define DBG(x)
-#define DB(x)
-
-#define firm_dbg_set_mask(module, mask)
-#define firm_dbg_get_mask(module)
-#define firm_dbg_set_file(module, file)
-
-#endif /* DEBUG_libfirm */
-
 
 #else /* WITH_LIBCORE */
 /* use the builtin debug implementation */
@@ -147,7 +137,6 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #define DBG_RETAIL(args)    _DBG(args)
 #define DB_RETAIL(args)     _DB(args)
 
-#ifdef DEBUG_libfirm
 /**
  * Issue a debug message.
  * @param args The arguments.
@@ -174,27 +163,28 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #define DBG(args)           _DBG(args)
 #define DB(args)            _DB(args)
 
-#else
-#define DBG(args)
-#define DB(args)
-#endif /* DEBUG_libfirm */
-
 #endif /* WITH_LIBCORE */
-
-/* some more macros to handle often used cases */
-#ifdef DEBUG_libfirm
 
 /** create a debug handle in debug mode */
 #define FIRM_DBG_REGISTER(handle, name) handle = firm_dbg_register(name)
 #define DEBUG_ONLY(code)   code
 #define RELEASE_ONLY(code)
 
-#else
+#else /* ndef DEBUG_libfirm */
+
+/* DEBUG OUTPUT IS COMPLETELY DISABLED */
+
+#define DBG(x)
+#define DB(x)
 
 /** create a debug handle in release mode */
 #define FIRM_DBG_REGISTER(handle, name)
 #define DEBUG_ONLY(code)
 #define RELEASE_ONLY(code) code
+
+#define firm_dbg_set_mask(module, mask)
+#define firm_dbg_get_mask(module)
+#define firm_dbg_set_file(module, file)
 
 #endif /* DEBUG_libfirm */
 
