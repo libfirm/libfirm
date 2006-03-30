@@ -417,7 +417,6 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis
 
 	ir_node *irn;
 
-	firm_dbg_set_mask(dbg, DBG_LEVEL);
 	DBG((dbg, LEVEL_1, "Introducing following copies for:\n"));
 
 	/* Fill the sets. */
