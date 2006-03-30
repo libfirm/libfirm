@@ -137,12 +137,15 @@ enum io_direction {
  */
 static const char *get_ia32_reg_name(ir_node *irn, int pos, enum io_direction in_out) {
 	const arch_register_t *reg;
-	const char            *name;
-	static char           *buf = NULL;
-	int                    len;
 
 	if (in_out == IN_REG) {
 		reg = get_in_reg(irn, pos);
+
+		if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]) {
+			/* FIXME: works for binop only */
+			assert(2 <= pos && pos <= 3);
+			reg = get_ia32_attr(irn)->x87[pos - 2];
+		}
 	}
 	else {
 		/* destination address mode nodes don't have outputs */
@@ -151,20 +154,10 @@ static const char *get_ia32_reg_name(ir_node *irn, int pos, enum io_direction in
 		}
 
 		reg = get_out_reg(irn, pos);
+		if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_vfp])
+			reg = get_ia32_attr(irn)->x87[pos + 2];
 	}
-
-	name = arch_register_get_name(reg);
-
-	if (buf) {
-		free(buf);
-	}
-
-	len = strlen(name) + 2;
-	buf = xcalloc(1, len);
-
-	snprintf(buf, len, "%%%s", name);
-
-	return buf;
+	return arch_register_get_name(reg);
 }
 
 /**
@@ -180,17 +173,10 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 	if (!X)
 		return lc_appendable_snadd(app, "(null)", 6);
 
-	if (has_x87_register(X)) {
-		ia32_attr_t *attr = get_ia32_attr(X);
+	buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
 
-		if (occ->conversion == 'S')
-			buf = arch_register_get_name(attr->x87[nr - 2]);
-		else
-			buf = arch_register_get_name(attr->x87[2 + nr]);
-	}
-	else
-		buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
-
+	/* append the stupid % to register names */
+	lc_appendable_chadd(app, '%');
 	return lc_appendable_snadd(app, buf, strlen(buf));
 }
 
@@ -210,6 +196,7 @@ static int ia32_get_x87_name(lc_appendable_t *app,
 
 	attr = get_ia32_attr(X);
 	buf = attr->x87[nr]->name;
+	lc_appendable_chadd(app, '%');
 	return lc_appendable_snadd(app, buf, strlen(buf));
 }
 
@@ -503,7 +490,7 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 				break;
 			case 64:
 				if (has_x87_register(n))
-					/* ARGHHH: x87 wants QWORD PTR but SSE must be WITHOUT */
+					/* ARGHHH: stupid gas x87 wants QWORD PTR but SSE must be WITHOUT */
 					obstack_printf(obst, "QWORD PTR ");
 				break;
 			case 80:
