@@ -445,8 +445,8 @@ ia32_am_type_t get_ia32_am_support(const ir_node *node) {
  * Sets the supported addrmode of an ia32 node
  */
 void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.am_support  = am_tp;
+	ia32_attr_t *attr     = get_ia32_attr(node);
+	attr->data.am_support = am_tp;
 }
 
 /**
@@ -461,8 +461,8 @@ ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node) {
  * Sets the addrmode flavour of an ia32 node
  */
 void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.am_flavour  = am_flavour;
+	ia32_attr_t *attr     = get_ia32_attr(node);
+	attr->data.am_flavour = am_flavour;
 }
 
 /**
@@ -1196,7 +1196,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
 /* default compare operation to compare immediate ops */
 int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	if (a->data.tp == b->data.tp) {
-		return a->cnst == b->cnst;
+		return a->cnst != b->cnst;
 	}
 
 	return 1;

@@ -1198,9 +1198,10 @@ static void emit_ia32_Conv_FP2FP(const ir_node *irn, ia32_emit_env_t *emit_env) 
  * Emits code for an Int conversion.
  */
 static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE               *F    = emit_env->out;
-	const lc_arg_env_t *env  = ia32_get_arg_env();
-	char *move_cmd, *conv_cmd;
+	FILE               *F        = emit_env->out;
+	const lc_arg_env_t *env      = ia32_get_arg_env();
+	char               *move_cmd = "movzx";
+	char               *conv_cmd = NULL;
 	ir_mode *src_mode, *tgt_mode;
 	int n, m;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
@@ -1220,10 +1221,6 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			conv_cmd = "cwde";
 		else
 			assert(0 && "unsupported Conv_I2I");
-	}
-	else {
-		move_cmd = "movzx";
-		conv_cmd = NULL;
 	}
 
 	switch(get_ia32_op_type(irn)) {

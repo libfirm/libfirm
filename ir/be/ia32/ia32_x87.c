@@ -1064,8 +1064,10 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	sim->blk_states = pmap_create();
 	sim->env        = env;
 
-  FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
+	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
+#ifndef DEBUG_libfirm
 	firm_dbg_set_mask(dbg, SET_LEVEL_2);
+#endif /* DEBUG_libfirm */
 
 	DB((dbg, LEVEL_1, "--------------------------------\n"
 		"x87 Simulator started for %+F\n", irg));
@@ -1122,10 +1124,10 @@ void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list
 	x87_simulator sim;
 	int i;
 
-  /* we need liveness info for the current graph */
+	/* we need liveness info for the current graph */
 	be_liveness(irg);
 
-  /* create the simulator */
+	/* create the simulator */
 	x87_init_simulator(&sim, irg, env);
 
 	start_block = get_irg_start_block(irg);
@@ -1149,6 +1151,6 @@ void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list
 		}
 	} while (! pdeq_empty(worklist));
 
-  /* kill it */
+	/* kill it */
 	x87_destroy_simulator(&sim);
 }

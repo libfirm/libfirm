@@ -243,7 +243,7 @@ static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	char buf[64];
 	const ia32_irn_ops_t *ops = self;
 
-	if (is_ia32_use_frame(irn) && bias != 0) {
+	if (get_ia32_frame_ent(irn) && bias != 0) {
 		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
 
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
@@ -1028,7 +1028,8 @@ list_sched_selector_t ia32_sched_selector;
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
 static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
-	memcpy(&ia32_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
+//	memcpy(&ia32_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
+	memcpy(&ia32_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
 	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
 	return &ia32_sched_selector;
 }
