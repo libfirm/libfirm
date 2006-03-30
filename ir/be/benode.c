@@ -854,7 +854,7 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 	 */
 
 	insert = sched_next(irn);
-	if(bl == get_irg_start_block(irg) && insert != bl && sched_get_time_step(frame) >= sched_get_time_step(insert))
+	if(insert != bl && bl == get_irg_start_block(irg) && sched_get_time_step(frame) >= sched_get_time_step(insert))
 		insert = sched_next(frame);
 
 	while((is_Phi(insert) || is_Proj(insert)) && !sched_is_end(insert))
@@ -1295,8 +1295,11 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 
 			if(be_has_frame_entity(irn)) {
 				be_frame_attr_t *a = (be_frame_attr_t *) at;
-				if (a->ent)
-					ir_fprintf(f, "frame entity: %+F offset %x (%d)\n", a->ent, a->offset, a->offset);
+				if (a->ent) {
+					int bits = get_type_size_bits(get_entity_type(a->ent));
+					ir_fprintf(f, "frame entity: %+F offset 0x%x (%d) size 0x%x %d\n",
+					  a->ent, a->offset, a->offset, bits, bits);
+				}
 
 			}
 
