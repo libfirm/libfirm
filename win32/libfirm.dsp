@@ -811,9 +811,9 @@ SOURCE="..\ir\be\arm\arm_spec.pl"
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl "	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
 # Begin Custom Build - Translate Spec: $(InputPath)
-InputPath="..\ir\be\arm\arm_spec.pl"
+InputPath=..\ir\be\arm\arm_spec.pl
 
 BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\arm \
@@ -845,7 +845,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
-USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl "	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath="..\ir\be\arm\arm_spec.pl"
 
@@ -1322,26 +1322,6 @@ SOURCE=..\ir\be\bearch.h
 # Begin Source File
 
 SOURCE=..\ir\be\bearch_t.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\beasm_asm_gnu.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\beasm_asm_gnu.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\beasm_dump_globals.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\beasm_dump_globals.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\be\beasm_types.h
 # End Source File
 # Begin Source File
 
