@@ -645,7 +645,7 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	bel.ws        = new_workset(&bel.ob, &bel);
 	bel.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, bel.cls);
 	bel.senv      = be_new_spill_env(chordal_env, is_mem_phi, NULL);
-	DEBUG_ONLY(bel.senv->dbg = dbg;)
+	DEBUG_ONLY(be_set_spill_env_dbg_module(bel.senv, dbg);)
 	bel.reloads   = pset_new_ptr_default();
 	bel.copies    = pset_new_ptr_default();
 
