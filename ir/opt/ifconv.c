@@ -182,7 +182,7 @@ static const opt_if_conv_info_t default_info = {
 };
 
 /** The debugging module. */
-static firm_dbg_module_t *dbg;
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * A simple check for side effects upto an opcode of a ir node.
@@ -955,7 +955,7 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
   INIT_LIST_HEAD(&cwi.phi_head);
 
   /* Init the debug stuff. */
-  dbg = firm_dbg_register("firm.opt.ifconv");
+  FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 #if 0
   firm_dbg_set_mask(dbg, LEVEL_1|LEVEL_2|LEVEL_3);
 #endif

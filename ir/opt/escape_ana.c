@@ -48,7 +48,7 @@ typedef struct _walk_env {
 } walk_env_t;
 
 /** debug handle */
-firm_dbg_module_t *dbgHandle;
+DEBUG_ONLY(firm_dbg_module_t *dbgHandle;)
 
 /**
  * checks whether a Raise leaves a method
@@ -394,8 +394,7 @@ void escape_analysis(int run_scalar_replace)
     return;
   }
 
-  if (! dbgHandle)
-    FIRM_DBG_REGISTER(dbgHandle, "firm.opt.escape_ana");
+  FIRM_DBG_REGISTER(dbgHandle, "firm.opt.escape_ana");
 
   /*
    * We treat memory for speed: we first collect all info in a

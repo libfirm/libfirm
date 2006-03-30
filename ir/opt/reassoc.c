@@ -28,7 +28,7 @@
 # include "irloop.h"
 # include "debug.h"
 
-static firm_dbg_module_t *dbg;
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct _walker_t {
   int changes;          /* set, if a reassociation take place */

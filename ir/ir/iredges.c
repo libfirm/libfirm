@@ -24,7 +24,7 @@
 #include "debug.h"
 #include "set.h"
 
-static firm_dbg_module_t *dbg;
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 #if FIRM_EDGES_INPLACE
 

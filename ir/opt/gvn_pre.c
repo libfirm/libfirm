@@ -39,7 +39,7 @@
 #include "gvn_pre.h"
 
 /** The debug module handle. */
-static firm_dbg_module_t *dbg;
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 
 /** A value set. */

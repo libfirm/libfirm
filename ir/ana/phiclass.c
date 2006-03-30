@@ -16,8 +16,7 @@
 #include "iredges_t.h"
 #include "phiclass_t.h"
 
-#define DEBUG_LVL SET_LEVEL_0
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 size_t phi_irn_data_offset = 0;
 
@@ -114,6 +113,5 @@ pset *get_phi_class(const ir_node *irn) {
 
 void phi_class_init(void) {
 	FIRM_DBG_REGISTER(dbg, "ir.ana.phiclass");
-	firm_dbg_set_mask(dbg, DEBUG_LVL);
 	phi_irn_data_offset = register_additional_node_data(sizeof(phi_info_t));
 }

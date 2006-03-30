@@ -8,6 +8,8 @@
 #include "config.h"
 #endif
 
+#ifdef DEBUG_libfirm
+
 #include <stdarg.h>
 #include <string.h>
 
@@ -164,3 +166,10 @@ void _firm_dbg_print(const firm_dbg_module_t *mod, unsigned mask, const char *fm
 }
 
 #endif /* WITH_LIBCORE */
+
+#else /* DEBUG_libfirm */
+
+/* some picky compiler don't allow empty files */
+static int dummy;
+
+#endif /* DEBUG_libfirm */
