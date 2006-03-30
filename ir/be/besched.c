@@ -81,8 +81,6 @@ int sched_verify(const ir_node *block)
   pset *scheduled_nodes = pset_new_ptr_default();
   FIRM_DBG_REGISTER(firm_dbg_module_t *dbg_sched, "firm.be.sched");
 
-  firm_dbg_set_mask(dbg_sched, -1);
-
   /* Count the number of nodes in the schedule. */
   n = 0;
   sched_foreach(block, irn)
