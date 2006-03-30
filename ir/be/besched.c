@@ -53,7 +53,6 @@ void be_sched_dump(FILE *f, ir_graph *irg)
 /* Init the scheduling stuff. */
 void be_sched_init(void)
 {
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, "be.sched");
 	sched_irn_data_offset = register_additional_node_data(sizeof(sched_info_t));
 }
 
@@ -80,7 +79,7 @@ int sched_verify(const ir_node *block)
   const ir_node **save_nodes;
   const ir_edge_t *edge;
   pset *scheduled_nodes = pset_new_ptr_default();
-  FIRM_DBG_REGISTER(firm_dbg_module_t *dbg_sched, "be.sched");
+  FIRM_DBG_REGISTER(firm_dbg_module_t *dbg_sched, "firm.be.sched");
 
   firm_dbg_set_mask(dbg_sched, -1);
 

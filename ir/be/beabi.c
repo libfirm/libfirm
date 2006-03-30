@@ -1101,7 +1101,7 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 	}
 
 	in = (ir_node **) obstack_finish(&env->obst);
-	irn = be_new_Barrier(env->birg->irg, bl, n, in);
+	irn = be_new_Barrier(irg, bl, n, in);
 	obstack_free(&env->obst, in);
 
 	for(n = 0; n < n_regs; ++n) {
@@ -1109,7 +1109,7 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 		ir_node *proj;
 		const arch_register_t *reg = rm[n].reg;
 
-		proj = new_r_Proj(env->birg->irg, bl, irn, get_irn_mode(rm[n].irn), n);
+		proj = new_r_Proj(irg, bl, irn, get_irn_mode(rm[n].irn), n);
 		be_node_set_reg_class(irn, n, reg->reg_class);
 		if(in_req)
 			be_set_constr_single_reg(irn, n, reg);
@@ -1123,7 +1123,7 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 	}
 
 	if(mem) {
-		*mem = new_r_Proj(env->birg->irg, bl, irn, mode_M, n);
+		*mem = new_r_Proj(irg, bl, irn, mode_M, n);
 	}
 
 	obstack_free(&env->obst, rm);
@@ -1146,10 +1146,8 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *mem              = get_irg_initial_mem(irg);
 	type *method_type         = get_entity_type(get_irg_entity(irg));
 	pset *dont_save           = pset_new_ptr(8);
-	pmap *reg_proj_map        = pmap_create();
 	int n_params              = get_method_n_params(method_type);
 	int max_arg               = 0;
-	int arg_offset            = 0;
 
 	int i, j, n;
 
@@ -1178,10 +1176,11 @@ static void modify_irg(be_abi_irg_t *env)
 		int nr       = get_Proj_proj(irn);
 		max_arg      = MAX(max_arg, nr);
 	}
-	max_arg = MAX(max_arg + 1, n_params);
-	args        = obstack_alloc(&env->obst, max_arg * sizeof(args[0]));
-	memset(args, 0, max_arg * sizeof(args[0]));
+
 	used_proj_nr = bitset_alloca(1024);
+	max_arg      = MAX(max_arg + 1, n_params);
+	args         = obstack_alloc(&env->obst, max_arg * sizeof(args[0]));
+	memset(args, 0, max_arg * sizeof(args[0]));
 
 	/* Fill the argument vector */
 	foreach_out_edge(arg_tuple, edge) {
@@ -1522,9 +1521,8 @@ static int get_dir(ir_node *irn)
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 {
 	const arch_env_t *aenv = env->birg->main_env->arch_env;
+	int omit_fp            = env->call->flags.bits.try_omit_fp;
 	ir_node *irn;
-	int start_bias = bias;
-	int omit_fp    = env->call->flags.bits.try_omit_fp;
 
 	sched_foreach(bl, irn) {
 

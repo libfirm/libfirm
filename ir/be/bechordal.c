@@ -324,12 +324,9 @@ static bitset_t *get_decisive_partner_regs(bitset_t *bs, const operand_t *o1, co
 static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, insn_t *insn)
 {
 	const be_chordal_env_t *env = alloc_env->chordal_env;
-	const arch_env_t *aenv      = env->birg->main_env->arch_env;
-	firm_dbg_module_t *dbg      = alloc_env->constr_dbg;
 
 	int n_uses         = insn_n_uses(insn);
 	int n_defs         = insn_n_defs(insn);
-	int max_pairs      = MIN(n_uses, n_defs);
 	bitset_t *bs       = bitset_alloca(env->cls->n_regs);
 	bipartite_t *bp    = bipartite_new(n_defs, n_uses);
 	int *pairing       = alloca(MAX(n_defs, n_uses) * sizeof(pairing[0]));
@@ -511,7 +508,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		const arch_env_t *aenv = env->birg->main_env->arch_env;
 		int n_regs             = env->cls->n_regs;
 		bitset_t *bs           = bitset_alloca(n_regs);
-		bitset_t *non_ignore   = bitset_alloca(n_regs);
 		ir_node **alloc_nodes  = alloca(n_regs * sizeof(alloc_nodes[0]));
 		bipartite_t *bp        = bipartite_new(n_regs, n_regs);
 		int *assignment        = alloca(n_regs * sizeof(assignment[0]));
@@ -665,8 +661,6 @@ end:
 static void constraints(ir_node *bl, void *data)
 {
 	be_chordal_alloc_env_t *env = data;
-	arch_env_t *arch_env        = env->chordal_env->birg->main_env->arch_env;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, "firm.be.chordal.constr");
 
 	/*
 		Start silent in the start block.
@@ -704,7 +698,6 @@ static void pressure(ir_node *block, void *env_ptr)
 
 	be_chordal_alloc_env_t *alloc_env = env_ptr;
 	be_chordal_env_t *env             = alloc_env->chordal_env;
-	const arch_env_t *arch_env        = env->birg->main_env->arch_env;
 	bitset_t *live                    = alloc_env->live;
 	firm_dbg_module_t *dbg            = env->dbg;
 	ir_node *irn;

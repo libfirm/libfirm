@@ -319,7 +319,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_ssa_destruction(&chordal_env);
 		dump(BE_CH_DUMP_SSADESTR, irg, chordal_env.cls, "-ssadestr", dump_ir_block_graph_sched);
 		be_ssa_destruction_check(&chordal_env);
-//		be_ra_chordal_check(&chordal_env);
+		be_ra_chordal_check(&chordal_env);
 
 		copystat_dump(irg);
 

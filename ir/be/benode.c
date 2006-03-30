@@ -611,9 +611,9 @@ int be_has_frame_entity(const ir_node *irn)
 	case beo_FrameLoad:
 	case beo_FrameAddr:
 		return 1;
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 entity *be_get_frame_entity(const ir_node *irn)
@@ -787,8 +787,6 @@ static INLINE ir_node *find_a_spill(const ir_node *irn)
 
 entity *be_get_spill_entity(const ir_node *irn)
 {
-	int opc           = get_irn_opcode(irn);
-
 	switch(be_get_irn_opcode(irn)) {
 	case beo_Reload:
 		{
@@ -924,7 +922,6 @@ static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int o
 static void *put_in_reg_req(arch_register_req_t *req, const ir_node *irn, int pos)
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
-	int n                   = get_irn_arity(irn);
 
 	if(pos < get_irn_arity(irn) && pos < a->max_reg_data)
 		memcpy(req, &a->reg_data[pos].in_req, sizeof(req[0]));
@@ -1083,7 +1080,6 @@ static const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t 
 {
 	int n = get_irn_arity(phi);
 	ir_node *op;
-	int done = 0;
 	int i;
 
 	if(*visited && pset_find_ptr(*visited, phi))
@@ -1318,6 +1314,8 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 					fprintf(f, "offset: %u\n", a->offset);
 					fprintf(f, "direction: %s\n", a->dir == be_stack_dir_expand ? "expand" : "shrink");
 				}
+				break;
+			default:
 				break;
 			}
 	}
