@@ -223,7 +223,7 @@ $comment_string = "/*";
   "emit"      => '. addi    %D1, %S1, %C\t\t\t/* Addi(%S1, %C) -> %D1, (%A1, const) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -363,7 +363,7 @@ $comment_string = "/*";
   "emit"      => '. sraw    %D1, %S1, %C\t\t\t/* Sraw(%S1, %C) -> %D1, (%A1, const) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 
 },
@@ -382,7 +382,7 @@ $comment_string = "/*";
   "emit"      => '. rlwinm  %D1, %S1, %ppc32_rlwimi_emit_helper\t\t\t/* Rlwinm(%S1, %ppc32_rlwimi_emit_helper) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -446,7 +446,7 @@ $comment_string = "/*";
   "reg_req"   => { "out" => [ "general_purpose" ] },
   "cmp_attr"  =>
 '
-	return attr_a->constant_tarval!=attr_b->constant_tarval;
+	return attr_a->data.constant_tarval != attr_b->data.constant_tarval;
 '
 },
 
@@ -457,7 +457,7 @@ $comment_string = "/*";
   "reg_req"   => { "out" => [ "floating_point" ] },
   "cmp_attr"  =>
 '
-	return attr_a->constant_tarval!=attr_b->constant_tarval;
+	return attr_a->data.constant_tarval != attr_b->data.constant_tarval;
 '
 },
 
@@ -468,7 +468,7 @@ $comment_string = "/*";
   "reg_req"   => { "out" => [ "general_purpose" ] },
   "cmp_attr"  =>
 '
-	return attr_a->constant_tarval!=attr_b->constant_tarval;
+	return attr_a->data.constant_tarval != attr_b->data.constant_tarval;
 '
 },
 
@@ -516,7 +516,7 @@ $comment_string = "/*";
   "emit"      => '. addi    %D1, 0, %C\t\t\t/* lower 16 bit of %C (sign extended) -> %D1 */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -526,7 +526,7 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "condition" ], "out" => [ "none", "none" ] },
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -542,7 +542,7 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "condition" ], "out" => [ "none" ] },
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -558,16 +558,16 @@ $comment_string = "/*";
 	attr->offset_mode = om;
 	if (tv) {
 		attr->content_type = ppc32_ac_Const;
-		attr->constant_tarval = tv;
+		attr->data.constant_tarval = tv;
 	}
 	else if (id) {
 		attr->content_type = ppc32_ac_SymConst;
-		attr->symconst_ident = id;
+		attr->data.symconst_ident = id;
 	}
 ',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -579,7 +579,7 @@ $comment_string = "/*";
   "emit"      => '. ori     %D1, %S1, %C\t\t\t/* Ori(%S1,%C) -> %D1 */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -591,7 +591,7 @@ $comment_string = "/*";
   "emit"      => '. andi.   %D1, %S1,%C\t\t\t/* Andi(%S1,%C) -> %D1 (%D2 changed) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -609,7 +609,7 @@ $comment_string = "/*";
   "emit"      => '. cmpi    %D1, 0, %S1, %C\t\t\t/* Cmpi(%S1, %C) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -628,7 +628,7 @@ $comment_string = "/*";
   "emit"      => '. cmpli   %D1, 0, %S1, %C\t\t\t/* Cmpli(%S1, %C) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -644,7 +644,7 @@ $comment_string = "/*";
   "emit"      => '. lbz     %D1, %O(%S1)\t\t\t/* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -657,7 +657,7 @@ $comment_string = "/*";
   "emit"      => '. lhz     %D1, %O(%S1)\t\t\t/* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -670,7 +670,7 @@ $comment_string = "/*";
   "emit"      => '. lha     %D1, %O(%S1)\t\t\t/* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -683,7 +683,7 @@ $comment_string = "/*";
   "emit"      => '. lwz     %D1, %O(%S1)\t\t\t/* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -696,7 +696,7 @@ $comment_string = "/*";
   "emit"      => '. lwzu    %D1, %O(%S1)\t\t\t/* Load(%O(%S1)) -> %D1, %S1 += %O, (%A1) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -708,7 +708,7 @@ $comment_string = "/*";
   "emit"      => '. stb     %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -720,7 +720,7 @@ $comment_string = "/*";
   "emit"      => '. sth     %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -732,7 +732,7 @@ $comment_string = "/*";
   "emit"      => '. stw     %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -901,7 +901,7 @@ $comment_string = "/*";
   "emit"      => '. lfd     %D1, %O(%S1)\t\t\t/* Load(%O(%S1)) -> %D1 */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -914,7 +914,7 @@ $comment_string = "/*";
   "emit"      => '. lfs     %D1, %O(%S1)\t\t\t/* Load(%O(%S1)) -> %D1 */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -926,7 +926,7 @@ $comment_string = "/*";
   "emit"      => '. stfd    %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 
@@ -938,7 +938,7 @@ $comment_string = "/*";
   "emit"      => '. stfs    %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
-	return (attr_a->constant_tarval!=attr_b->constant_tarval);
+	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
 '
 },
 

@@ -45,7 +45,7 @@ typedef struct _ppc32_attr_t {
 		int proj_nr;
 		int offset;
 		void* empty;
-	};
+	} data;
 
 } ppc32_attr_t;
 

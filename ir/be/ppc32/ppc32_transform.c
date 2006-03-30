@@ -838,6 +838,8 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 			switch(to_mode)
 			{
 				case irm_D: SKIP;
+				default:
+					break;
 			}
 			break;
 
@@ -846,6 +848,8 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 			{
 				case irm_F:
 					return new_rd_ppc32_fRsp(env->dbg, env->irg, env->block, op, env->mode);
+				default:
+					break;
 			}
 			break;
 
@@ -864,6 +868,8 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 				case irm_Is:
 				case irm_Iu:
 					SKIP;
+				default:
+					break;
 			}
 			break;
 
@@ -883,6 +889,8 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 					return own_gen_Andi_dot_lo16(env, op, 0xff);
 				case irm_Hs:
 					return new_rd_ppc32_Extsh(env->dbg, env->irg, env->block, op, env->mode);
+				default:
+					break;
 			}
 			break;
 
@@ -900,10 +908,14 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 					SKIP;
 				case irm_Bs:
 					return new_rd_ppc32_Extsb(env->dbg, env->irg, env->block, op, env->mode);
+				default:
+					break;
 			}
 			break;
 		case irm_P:
 			if(to_mode==irm_Is || to_mode==irm_Iu) SKIP;
+			break;
+		default:
 			break;
 	}
 
@@ -928,14 +940,13 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
  */
 static ir_node *gen_Abs(ppc32_transform_env_t *env, ir_node *op) {
 	int shift = 7;
+	ir_node *n1,*n2;
+
 	switch(get_nice_modecode(env->mode))
 	{
 		case irm_F:
 		case irm_D:
 			return new_rd_ppc32_fAbs(env->dbg, env->irg, env->block, op, env->mode);
-
-		{
-			ir_node *n1,*n2;
 		case irm_Is:
 			shift += 16;
 		case irm_Hs:
@@ -946,7 +957,8 @@ static ir_node *gen_Abs(ppc32_transform_env_t *env, ir_node *op) {
 			set_ppc32_offset_mode(n1, ppc32_ao_None);
 			n2 = new_rd_ppc32_Add(env->dbg, env->irg, env->block, op, n1, env->mode);
 			return new_rd_ppc32_Xor(env->dbg, env->irg, env->block, n2, n1, env->mode);
-		}
+		default:
+			break;
 	}
 	fprintf(stderr, "Mode for Abs not supported: %s\n", get_mode_name(env->mode));
 	assert(0);
@@ -1492,7 +1504,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 
 	if(!entry->ent) {
 		char buf[80];
-		sprintf(buf, "const_%i", get_irn_node_nr(env->irn));
+		sprintf(buf, "const_%ld", get_irn_node_nr(env->irn));
 		ent = new_entity(get_glob_type(), new_id_from_str(buf), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
@@ -1511,7 +1523,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 
 		/* set the entry for hashmap */
 		entry->ent = ent;
-	}									   // TODO: Wird nicht richtig in global type gesteckt, ppc32_gen_decls.c findet ihn nicht
+	}				 // TODO: Wird nicht richtig in global type gesteckt, ppc32_gen_decls.c findet ihn nicht
 
 	symcnst = new_rd_ppc32_SymConst(env->dbg, env->irg, env->block, env->mode);
 	set_ppc32_frame_entity(symcnst, ent);
@@ -1723,24 +1735,23 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
  * @param env     the debug module
  */
 void ppc32_transform_const(ir_node *node, void *env) {
-	ppc32_code_gen_t *cgenv = (ppc32_code_gen_t *)env;
-	opcode  code               = get_irn_opcode(node);
-	ir_node *asm_node          = NULL;
+	ppc32_code_gen_t *cgenv    = (ppc32_code_gen_t *)env;
+	ir_node          *asm_node = NULL;
 	ppc32_transform_env_t tenv;
 
 	if (is_Block(node))
 		return;
 
-	tenv.block    = get_nodes_block(node);
-	tenv.dbg      = get_irn_dbg_info(node);
-	tenv.irg      = current_ir_graph;
-	tenv.irn      = node;
-	tenv.mod      = cgenv->mod;
-	tenv.mode     = get_irn_mode(node);
+	tenv.block = get_nodes_block(node);
+	tenv.dbg   = get_irn_dbg_info(node);
+	tenv.irg   = current_ir_graph;
+	tenv.irn   = node;
+	tenv.mod   = cgenv->mod;
+	tenv.mode  = get_irn_mode(node);
 
-#define OTHER_GEN(a)                                                       \
-	if (get_irn_op(node) == get_op_##a()) {                                \
-		asm_node = gen_##a(&tenv);                                         \
+#define OTHER_GEN(a)                        \
+	if (get_irn_op(node) == get_op_##a()) { \
+		asm_node = gen_##a(&tenv);          \
 	}
 
 	DBG((tenv.mod, LEVEL_1, "check %+F ... ", node));
@@ -1756,4 +1767,5 @@ void ppc32_transform_const(ir_node *node, void *env) {
 	else {
 		DB((tenv.mod, LEVEL_1, "ignored\n"));
 	}
+#undef OTHER_GEN
 }

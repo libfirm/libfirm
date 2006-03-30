@@ -462,10 +462,9 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 
 	if(be_is_Spill(node))
 	{
-		ir_node *store, *proj;
-		dbg_info *dbg = get_irn_dbg_info(node);
-		ir_node *block = get_nodes_block(node);
-		ir_mode *mode = get_irn_mode(node);
+		ir_node  *store, *proj;
+		dbg_info *dbg   = get_irn_dbg_info(node);
+		ir_node  *block = get_nodes_block(node);
 
 		const arch_register_class_t *regclass = arch_get_irn_reg_class(cgenv->arch_env, node, 1);
 
@@ -499,9 +498,9 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 	{
 		ir_node *load, *proj;
 		const arch_register_t *reg;
-		dbg_info *dbg = get_irn_dbg_info(node);
-		ir_node *block = get_nodes_block(node);
-		ir_mode *mode = get_irn_mode(node);
+		dbg_info *dbg   = get_irn_dbg_info(node);
+		ir_node  *block = get_nodes_block(node);
+		ir_mode  *mode  = get_irn_mode(node);
 
 		const arch_register_class_t *regclass = arch_get_irn_reg_class(cgenv->arch_env, node, -1);
 
@@ -584,8 +583,7 @@ int is_direct_entity(entity *ent);
  * @param env     the debug module
  */
 void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
-	ppc32_code_gen_t *cg = env;
-	if(get_irn_op(node)==op_SymConst)
+	if(get_irn_op(node) == op_SymConst)
 	{
 		entity *ent = get_SymConst_entity(node);
 		if(!is_direct_entity(ent))
@@ -741,7 +739,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	int		  fpregi = REG_F1;
 
 	const arch_register_t *reg;
-	be_abi_call_flags_t call_flags = { 0, 0, 1, 0, 0, 0, 1 };
+	be_abi_call_flags_t call_flags = { { 0, 0, 1, 0, 0, 0, 1 } };
 
 	if(get_type_visibility(method_type)!=visibility_external_allocated)
 		call_flags.bits.call_has_imm = 1;

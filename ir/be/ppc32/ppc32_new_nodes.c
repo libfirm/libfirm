@@ -393,7 +393,7 @@ ppc32_attr_content_type get_ppc32_type(const ir_node *node) {
 void set_ppc32_constant_tarval(const ir_node *node, tarval *const_tarval) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_Const;
-	attr->constant_tarval = const_tarval;
+	attr->data.constant_tarval = const_tarval;
 }
 
 /**
@@ -401,7 +401,7 @@ void set_ppc32_constant_tarval(const ir_node *node, tarval *const_tarval) {
  */
 tarval *get_ppc32_constant_tarval(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
-	return attr->constant_tarval;
+	return attr->data.constant_tarval;
 }
 
 /**
@@ -410,7 +410,7 @@ tarval *get_ppc32_constant_tarval(const ir_node *node) {
 void set_ppc32_symconst_ident(const ir_node *node, ident *symconst_ident) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_SymConst;
-	attr->symconst_ident = symconst_ident;
+	attr->data.symconst_ident = symconst_ident;
 }
 
 /**
@@ -418,7 +418,7 @@ void set_ppc32_symconst_ident(const ir_node *node, ident *symconst_ident) {
  */
 ident *get_ppc32_symconst_ident(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
-	return attr->symconst_ident;
+	return attr->data.symconst_ident;
 }
 
 
@@ -428,7 +428,7 @@ ident *get_ppc32_symconst_ident(const ir_node *node) {
 void set_ppc32_frame_entity(const ir_node *node, entity *ent) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_FrameEntity;
-	attr->frame_entity = ent;
+	attr->data.frame_entity = ent;
 }
 
 /**
@@ -436,7 +436,7 @@ void set_ppc32_frame_entity(const ir_node *node, entity *ent) {
  */
 entity *get_ppc32_frame_entity(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
-	return attr->frame_entity;
+	return attr->data.frame_entity;
 }
 
 /**
@@ -445,9 +445,9 @@ entity *get_ppc32_frame_entity(const ir_node *node) {
 void set_ppc32_rlwimi_const(const ir_node *node, unsigned shift, unsigned maskA, unsigned maskB) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_RlwimiConst;
-	attr->rlwimi_const.shift = shift;
-	attr->rlwimi_const.maskA = maskA;
-	attr->rlwimi_const.maskB = maskB;
+	attr->data.rlwimi_const.shift = shift;
+	attr->data.rlwimi_const.maskA = maskA;
+	attr->data.rlwimi_const.maskB = maskB;
 }
 
 /**
@@ -455,7 +455,7 @@ void set_ppc32_rlwimi_const(const ir_node *node, unsigned shift, unsigned maskA,
  */
 rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
-	return &attr->rlwimi_const;
+	return &attr->data.rlwimi_const;
 }
 
 /**
@@ -464,7 +464,7 @@ rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node) {
 void set_ppc32_proj_nr(const ir_node *node, int proj_nr) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_BranchProj;
-	attr->proj_nr = proj_nr;
+	attr->data.proj_nr = proj_nr;
 }
 
 /**
@@ -472,7 +472,7 @@ void set_ppc32_proj_nr(const ir_node *node, int proj_nr) {
  */
 int get_ppc32_proj_nr(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
-	return attr->proj_nr;
+	return attr->data.proj_nr;
 }
 
 /**
@@ -481,7 +481,7 @@ int get_ppc32_proj_nr(const ir_node *node) {
 void set_ppc32_offset(const ir_node *node, int offset) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_Offset;
-	attr->proj_nr = offset;
+	attr->data.offset  = offset;
 }
 
 /**
@@ -489,7 +489,7 @@ void set_ppc32_offset(const ir_node *node, int offset) {
  */
 int get_ppc32_offset(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
-	return attr->offset;
+	return attr->data.offset;
 }
 
 /**
@@ -516,20 +516,19 @@ void init_ppc32_attributes(ir_node *node, int flags,
 						 const ppc32_register_req_t **in_reqs, const ppc32_register_req_t **out_reqs, int n_res) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 
-	attr->flags = flags;
-	attr->in_req = in_reqs;
+	attr->flags   = flags;
+	attr->in_req  = in_reqs;
 	attr->out_req = out_reqs;
-	attr->n_res = n_res;
-
-	attr->slots = NULL;
+	attr->n_res   = n_res;
+	attr->slots   = NULL;
 
 	if (n_res) {
 		attr->slots = xcalloc(n_res, sizeof(attr->slots[0]));
 	}
 
 	attr->content_type = ppc32_ac_None;
-	attr->offset_mode = ppc32_ao_Illegal;
-	attr->empty = NULL;
+	attr->offset_mode  = ppc32_ao_Illegal;
+	attr->data.empty   = NULL;
 }
 
 /**

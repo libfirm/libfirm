@@ -612,15 +612,15 @@ static void ppc32_gen_block(ir_node *block, void *env) {
  * Emits code for function start.
  */
 void ppc32_emit_start(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
-	const char *irg_name = get_entity_ld_name(get_irg_entity(irg));
-	int framesize = get_type_size_bytes(get_irg_frame_type(env->cg->irg));
+	const char *irg_name  = get_entity_ld_name(get_irg_entity(irg));
+	int         framesize = get_type_size_bytes(get_irg_frame_type(env->cg->irg));
 
-	if(!strcmp(irg_name, "main"))						   // XXX: underscore hack
+	if(! strcmp(irg_name, "main"))						   // XXX: underscore hack
 	{
 		fprintf(F, "\t.text\n");
-		fprintf(F, "\t.globl _main\n", irg_name);
+		fprintf(F, "\t.globl _main\n");
 		fprintf(F, "\t.align 4\n");
-		fprintf(F, "_main:\n", irg_name);
+		fprintf(F, "_main:\n");
 	}
 	else
 	{
@@ -630,7 +630,7 @@ void ppc32_emit_start(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
 		fprintf(F, "%s:\n", irg_name);
 	}
 
-	if(framesize>24)
+	if(framesize > 24)
 	{
 		fprintf(F, "\tmflr    r0\n");
 		fprintf(F, "\tstw     r0, 8(r1)\n");
@@ -638,7 +638,7 @@ void ppc32_emit_start(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
 	}
 	else
 	{
-		fprintf(F, "\t\t\t\t\t/* set new frame omitted */\n", framesize);
+		fprintf(F, "\t\t\t\t\t/* set new frame (%d) omitted */\n", framesize);
 	}
 
 
@@ -655,7 +655,6 @@ void ppc32_emit_start(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
  * Emits code for function end
  */
 void ppc32_emit_end(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
-	const char *irg_name = get_entity_ld_name(get_irg_entity(irg));
 	int framesize = get_type_size_bytes(get_irg_frame_type(env->cg->irg));
 
 /*	if(!isleaf)
@@ -666,7 +665,7 @@ void ppc32_emit_end(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
 		fprintf(F, "\taddi    r1, r1, 4\n");
 		fprintf(F, "\tmtlr    r0\n");
 	}*/
-	if(framesize>24)
+	if(framesize > 24)
 	{
 		fprintf(F, "\tlwz     r1, 0(r1)\n");
 		fprintf(F, "\tlwz     r0, 8(r1)\n");
