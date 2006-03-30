@@ -84,28 +84,34 @@ typedef struct {
 	be_req_t              in_req;
 } be_reg_data_t;
 
+/** The generic be nodes attribute type. */
 typedef struct {
-	int                         max_reg_data;
-	be_reg_data_t               *reg_data;
+	int                   max_reg_data;
+	be_reg_data_t         *reg_data;
 } be_node_attr_t;
 
+/** The be_Stack attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;
 	int offset;           /**< The offset by which the stack shall be increased/decreased. */
 	be_stack_dir_t dir;   /**< The direction in which the stack shall be modified (expand or shrink). */
 } be_stack_attr_t;
 
+/** The be_Frame attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;
 	entity *ent;
 	int offset;
 } be_frame_attr_t;
 
+/** The be_Call attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;
-	entity *ent;
+	entity *ent;         /**< The called entity if this is a static call. */
+	ir_type *call_tp;    /**< The call type, copied from the original Call node. */
 } be_call_attr_t;
 
+/** The be_Spill attribute type. */
 typedef struct {
 	be_frame_attr_t frame_attr;
 	ir_node *spill_ctx;  /**< The node in whose context this spill was introduced. */
@@ -143,6 +149,8 @@ static const ir_op_ops be_node_op_ops;
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
 #define K   irop_flag_keep
+#define M   irop_flag_machine
+
 
 void be_node_init(void) {
 	static int inited = 0;
@@ -189,9 +197,12 @@ void be_node_init(void) {
 	set_op_tag(op_be_FrameLoad,  &be_node_tag);
 	set_op_tag(op_be_FrameStore, &be_node_tag);
 	set_op_tag(op_be_FrameAddr,  &be_node_tag);
-	set_op_tag(op_be_Barrier,   &be_node_tag);
+	set_op_tag(op_be_Barrier,    &be_node_tag);
 }
 
+/**
+ * Initializes the generic attribute of all be nodes and return ir.
+ */
 static void *init_node_attr(ir_node* irn, int max_reg_data)
 {
 	ir_graph *irg     = get_irn_irg(irn);
@@ -338,37 +349,55 @@ ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 	return irn;
 }
 
-ir_node *be_new_Call(ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[])
+ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr,
+                     int n_outs, int n, ir_node *in[], ir_type *call_tp)
 {
-	int real_n = 3 + n;
+	be_call_attr_t *a;
+	int real_n = be_pos_Call_first_arg + n;
 	ir_node *irn;
 	ir_node **real_in;
 
-	real_in = xmalloc(sizeof(real_in[0]) * (real_n));
-
-	real_in[0] = mem;
-	real_in[1] = sp;
-	real_in[2] = ptr;
-	memcpy(&real_in[3], in, n * sizeof(in[0]));
+	NEW_ARR_A(ir_node *, real_in, real_n);
+	real_in[be_pos_Call_mem] = mem;
+	real_in[be_pos_Call_sp]  = sp;
+	real_in[be_pos_Call_ptr] = ptr;
+	memcpy(&real_in[be_pos_Call_first_arg], in, n * sizeof(in[0]));
 
 	irn = new_ir_node(NULL, irg, bl, op_be_Call, mode_T, real_n, real_in);
-	init_node_attr(irn, (n_outs > real_n ? n_outs : real_n));
+	a = init_node_attr(irn, (n_outs > real_n ? n_outs : real_n));
+	a->ent     = NULL;
+	a->call_tp = call_tp;
 	return irn;
 }
 
-entity *be_Call_get_entity(const ir_node *call)
-{
+/* Gets the call entity or NULL if this is no static call. */
+entity *be_Call_get_entity(const ir_node *call) {
 	be_call_attr_t *a = get_irn_attr(call);
 	assert(be_is_Call(call));
 	return a->ent;
 }
 
-void    be_Call_set_entity(ir_node *call, entity *ent)
-{
+/* Sets the call entity. */
+void be_Call_set_entity(ir_node *call, entity *ent) {
 	be_call_attr_t *a = get_irn_attr(call);
 	assert(be_is_Call(call));
 	a->ent = ent;
 }
+
+/* Gets the call type. */
+ir_type *be_Call_get_type(ir_node *call) {
+	be_call_attr_t *a = get_irn_attr(call);
+	assert(be_is_Call(call));
+	return a->call_tp;
+}
+
+/* Sets the call type. */
+void be_Call_set_type(ir_node *call, ir_type *call_tp) {
+	be_call_attr_t *a = get_irn_attr(call);
+	assert(be_is_Call(call));
+	a->call_tp = call_tp;
+}
+
 
 ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
@@ -1184,6 +1213,9 @@ void be_phi_handler_reset(arch_irn_handler_t *handler)
                                                 |_|            |___/
 */
 
+/**
+ * Dumps a register requirement to a file.
+ */
 static void dump_node_req(FILE *f, int idx, be_req_t *req)
 {
 	unsigned i;
@@ -1218,6 +1250,9 @@ static void dump_node_req(FILE *f, int idx, be_req_t *req)
 		fprintf(f, "\n");
 }
 
+/**
+ * Dumps node register requirements to a file.
+ */
 static void dump_node_reqs(FILE *f, ir_node *irn)
 {
 	int i;
@@ -1241,6 +1276,9 @@ static void dump_node_reqs(FILE *f, ir_node *irn)
 	}
 }
 
+/**
+ * ir_op-Operation: dump a be node to file
+ */
 static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 {
 	be_node_attr_t *at = get_irn_attr(irn);
@@ -1282,13 +1320,13 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 				}
 				break;
 			}
-
 	}
 
 	return 0;
 }
 
 /**
+ * ir_op-Operation:
  * Copies the backend specific attributes from old node to new node.
  */
 static void copy_attr(const ir_node *old_node, ir_node *new_node)
