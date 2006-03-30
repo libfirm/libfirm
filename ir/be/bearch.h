@@ -26,7 +26,7 @@ typedef enum _arch_register_type_t {
   arch_register_type_callee_save  = 2, /**< The register must be saved by the caller
                                             upon a function call. It thus can be overwritten
                                             in the called function. */
-  arch_register_type_ignore = 4,       /**< Do not consider this register when allocating. */
+  arch_register_type_ignore       = 4, /**< Do not consider this register when allocating. */
 } arch_register_type_t;
 
 /**
@@ -36,7 +36,7 @@ typedef enum _arch_register_type_t {
  * @return      1, If register is of given kind, 0 if not.
  */
 #define arch_register_type_is(reg, kind) \
-	(((reg)->type & arch_register_type_ ## kind) != 0)
+  (((reg)->type & arch_register_type_ ## kind) != 0)
 
 /**
  * A register.
@@ -75,7 +75,11 @@ struct _arch_register_class_t {
   const arch_register_t *regs;    /**< The array of registers. */
 };
 
+/** return the number of registers in this register class */
 #define arch_register_class_n_regs(cls) ((cls)->n_regs)
+
+/** return the largest mode of this register class */
+#define arch_register_class_mode(cls) ((cls)->mode)
 
 /**
  * Put all registers in a class into a bitset.
@@ -559,14 +563,22 @@ struct _arch_isa_if_t {
    */
   const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
 
+  /**
+   * Get the necessary alignment for storing a register of given class.
+   * @param self  The isa object.
+   * @param cls   The register class.
+   * @return      The alignment in bytes.
+   */
+  int (*get_reg_class_alignment)(const void *self, const arch_register_class_t *cls);
 };
 
-#define arch_isa_get_n_reg_class(isa)                       ((isa)->impl->get_n_reg_class(isa))
-#define arch_isa_get_reg_class(isa,i)                       ((isa)->impl->get_reg_class(isa, i))
-#define arch_isa_get_irn_handler(isa)			            ((isa)->impl->get_irn_handler(isa))
-#define arch_isa_get_call_abi(isa,tp,abi)                   ((isa)->impl->get_call_abi((isa), (tp), (abi)))
-#define arch_isa_get_reg_class_for_mode(isa,mode)           ((isa)->impl->get_reg_class_for_mode((isa), (mode)))
-#define arch_isa_make_code_generator(isa,irg)               ((isa)->impl->make_code_generator(isa, irg))
+#define arch_isa_get_n_reg_class(isa)                ((isa)->impl->get_n_reg_class(isa))
+#define arch_isa_get_reg_class(isa,i)                ((isa)->impl->get_reg_class(isa, i))
+#define arch_isa_get_irn_handler(isa)                ((isa)->impl->get_irn_handler(isa))
+#define arch_isa_get_call_abi(isa,tp,abi)            ((isa)->impl->get_call_abi((isa), (tp), (abi)))
+#define arch_isa_get_reg_class_for_mode(isa,mode)    ((isa)->impl->get_reg_class_for_mode((isa), (mode)))
+#define arch_isa_make_code_generator(isa,irg)        ((isa)->impl->make_code_generator((isa), (irg)))
+#define arch_isa_get_reg_class_alignment(isa, cls)   ((isa)->impl->get_reg_class_alignment((isa), (cls)))
 
 #define ARCH_MAX_HANDLERS         8
 
