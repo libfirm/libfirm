@@ -119,12 +119,23 @@ static const arch_irn_handler_t abi_irn_handler;
   for a specific call type.
 */
 
+/**
+ * Set compare function: compares two ABI call object arguments.
+ */
 static int cmp_call_arg(const void *a, const void *b, size_t n)
 {
 	const be_abi_call_arg_t *p = a, *q = b;
 	return !(p->is_res == q->is_res && p->pos == q->pos);
 }
 
+/**
+ * Get or set an ABI call object argument.
+ *
+ * @param call      the abi call
+ * @param is_res    true for call results, false for call arguments
+ * @param pos       position of the argument
+ * @param do_insert true if the argument is set, false if it's retrieved
+ */
 static be_abi_call_arg_t *get_or_set_call_arg(be_abi_call_t *call, int is_res, int pos, int do_insert)
 {
 	be_abi_call_arg_t arg;
@@ -134,18 +145,26 @@ static be_abi_call_arg_t *get_or_set_call_arg(be_abi_call_t *call, int is_res, i
 	arg.is_res = is_res;
 	arg.pos    = pos;
 
-	hash = is_res * 100 + pos;
+	hash = is_res * 128 + pos;
 
 	return do_insert
 		? set_insert(call->params, &arg, sizeof(arg), hash)
 		: set_find(call->params, &arg, sizeof(arg), hash);
 }
 
+/**
+ * Retrieve an ABI call object argument.
+ *
+ * @param call      the ABI call object
+ * @param is_res    true for call results, false for call arguments
+ * @param pos       position of the argument
+ */
 static INLINE be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
 {
 	return get_or_set_call_arg(call, is_res, pos, 0);
 }
 
+/* Set the flags for a call. */
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const be_abi_callbacks_t *cb)
 {
 	call->flags        = flags;
@@ -176,12 +195,18 @@ void be_abi_call_res_reg(be_abi_call_t *call, int arg_pos, const arch_register_t
 	arg->reg = reg;
 }
 
+/* Get the flags of a ABI call object. */
 be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
 {
 	return call->flags;
 }
 
-be_abi_call_t *be_abi_call_new(void)
+/**
+ * Constructor for a new ABI call object.
+ *
+ * @return the new ABI call object
+ */
+static be_abi_call_t *be_abi_call_new(void)
 {
 	be_abi_call_t *call = xmalloc(sizeof(call[0]));
 	call->flags.val  = 0;
@@ -190,7 +215,10 @@ be_abi_call_t *be_abi_call_new(void)
 	return call;
 }
 
-void be_abi_call_free(be_abi_call_t *call)
+/**
+ * Destructor for an ABI call object.
+ */
+static void be_abi_call_free(be_abi_call_t *call)
 {
 	del_set(call->params);
 	free(call);
@@ -239,6 +267,9 @@ static int get_stack_entity_offset(be_stack_frame_t *frame, entity *ent, int bia
 	return ofs;
 }
 
+/**
+ * Retrieve the entity with given offset from a frame type.
+ */
 static entity *search_ent_with_offset(type *t, int offset)
 {
 	int i, n;
@@ -300,14 +331,12 @@ static void stack_frame_dump(FILE *file, be_stack_frame_t *frame)
 }
 
 /**
- * If irn is a Sel node computing the address of an entity
+ * If irn is a Sel node computes the address of an entity
  * on the frame type return the entity, else NULL.
  */
 static INLINE entity *get_sel_ent(ir_node *irn)
 {
-	if(get_irn_opcode(irn) == iro_Sel
-		&& get_Sel_ptr(irn) == get_irg_frame(get_irn_irg(irn))) {
-
+	if(is_Sel(irn) && get_Sel_ptr(irn) == get_irg_frame(get_irn_irg(irn))) {
 		return get_Sel_entity(irn);
 	}
 
@@ -330,12 +359,14 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 		ir_node *frame    = get_irg_frame(irg);
 
 		nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
-	}
-
-	if(nw != NULL)
 		exchange(irn, nw);
+	}
 }
 
+/**
+ * Returns non-zero if the call argument at given position
+ * is transfered on the stack.
+ */
 static INLINE int is_on_stack(be_abi_call_t *call, int pos)
 {
 	be_abi_call_arg_t *arg = get_call_arg(call, 0, pos);
@@ -484,10 +515,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			curr_ofs += param_size;
 
 			/*
-			* If we wanted to build the arguments sequentially,
-			* the stack pointer for the next must be incremented,
-			* and the memory value propagated.
-			*/
+			 * If we wanted to build the arguments sequentially,
+			 * the stack pointer for the next must be incremented,
+			 * and the memory value propagated.
+			 */
 			if(do_seq) {
 				curr_ofs = 0;
 				curr_sp  = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, param_size, be_stack_dir_expand);
@@ -515,11 +546,20 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 
 	/* search the greatest result proj number */
+
+	/* TODO: what if the result is NOT used? Currently there is
+	 * no way to detect this later, especially there is no way to
+	 * see this in the proj numbers.
+	 * While this is ok for the register allocator, it is bad for
+	 * backends which need to change the be_Call further (x87 simulator
+	 * for instance. However for this particular case the call_type is
+	 * sufficient.).
+	 */
 	foreach_out_edge(irn, edge) {
 		const ir_edge_t *res_edge;
 		ir_node *irn = get_edge_src_irn(edge);
 
-		if(is_Proj(irn) && get_irn_mode(irn) == mode_T) {
+		if(is_Proj(irn) && get_Proj_proj(irn) == pn_Call_T_result) {
 			res_proj = irn;
 			foreach_out_edge(irn, res_edge) {
 				int proj;
@@ -534,9 +574,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				/*
 					shift the proj number to the right, since we will drop the
 					unspeakable Proj_T from the Call. Therefore, all real argument
-					Proj numbers must be increased by pn_Call_max
+					Proj numbers must be increased by pn_be_Call_first_res
 				*/
-				proj += pn_Call_max;
+				proj += pn_be_Call_first_res;
 				set_Proj_proj(res, proj);
 				obstack_ptr_grow(obst, res);
 
@@ -561,14 +601,16 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	in = obstack_finish(obst);
 
 	if(env->call->flags.bits.call_has_imm && get_irn_opcode(call_ptr) == iro_SymConst) {
-		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, curr_sp, curr_res_proj + pset_count(caller_save), n_low_args, in);
+		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem, curr_sp, curr_sp,
+		                       curr_res_proj + pset_count(caller_save), n_low_args, in,
+		                       get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	}
 
   else
-		low_call = be_new_Call(irg, bl, curr_mem, curr_sp, call_ptr, curr_res_proj + pset_count(caller_save), n_low_args, in);
-
-  set_irn_dbg_info(low_call, get_irn_dbg_info(irn));
+		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem, curr_sp, call_ptr,
+		                       curr_res_proj + pset_count(caller_save), n_low_args, in,
+		                       get_Call_type(irn));
 
 	/*
 		TODO:
