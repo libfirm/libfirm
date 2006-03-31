@@ -405,17 +405,6 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 	ir_node *prev = be_get_IncSP_pred(irn);
 	int real_uses = get_irn_n_edges(prev);
 
-	if (real_uses != 1) {
-		/*
-		   This is a hack that should be removed if be_abi_fix_stack_nodes()
-		   is fixed. Currently it leaves some IncSP's outside the chain ...
-		   The previous IncSp is NOT our prev, but directly scheduled before ...
-			 Impossible in a bug-free implementation :-)
-		 */
-		prev = sched_prev(irn);
-		real_uses = 1;
-	}
-
 	if (be_is_IncSP(prev) && real_uses == 1) {
 		/* first IncSP has only one IncSP user, kill the first one */
 		unsigned       prev_offs = be_get_IncSP_offset(prev);
