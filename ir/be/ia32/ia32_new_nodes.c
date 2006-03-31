@@ -1227,11 +1227,17 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
 
 /* default compare operation to compare immediate ops */
 int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
+	int equ = 0;
+
 	if (a->data.tp == b->data.tp) {
-		return a->cnst != b->cnst;
+		equ = (a->cnst == b->cnst);
+		equ = equ ? (a->data.use_frame == b->data.use_frame) : 0;
+
+		if (equ && a->data.use_frame && b->data.use_frame)
+			equ = (a->frame_ent == b->frame_ent);
 	}
 
-	return 1;
+	return !equ;
 }
 
 /* copies the ia32 attributes */

@@ -452,9 +452,9 @@ static void ia32_prepare_graph(void *self) {
 static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 	ia32_code_gen_t            *cg = env;
 	const ia32_register_req_t **reqs;
-	const arch_register_t      *out_reg, *in_reg;
+	const arch_register_t      *out_reg, *in_reg, *in2_reg;
 	int                         n_res, i;
-	ir_node                    *copy, *in_node, *block;
+	ir_node                    *copy, *in_node, *block, *in2_node;
 	ia32_op_type_t              op_tp;
 
 	if (is_ia32_irn(irn)) {
@@ -472,9 +472,11 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 			for (i = 0; i < n_res; i++) {
 				if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
 					/* get in and out register */
-					out_reg = get_ia32_out_reg(irn, i);
-					in_node = get_irn_n(irn, reqs[i]->same_pos);
-					in_reg  = arch_get_irn_register(cg->arch_env, in_node);
+					out_reg  = get_ia32_out_reg(irn, i);
+					in_node  = get_irn_n(irn, reqs[i]->same_pos);
+					in_reg   = arch_get_irn_register(cg->arch_env, in_node);
+					in2_node = get_irn_n(irn, reqs[i]->same_pos ^ 1);
+					in2_reg  = arch_get_irn_register(cg->arch_env, in2_node);
 
 					/* don't copy ignore nodes */
 					if (arch_irn_is(cg->arch_env, in_node, ignore) && is_Proj(in_node))
@@ -483,12 +485,9 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 					/* check if in and out register are equal */
 					if (! REGS_ARE_EQUAL(out_reg, in_reg)) {
 						/* in case of a commutative op: just exchange the in's */
-						if (is_ia32_commutative(irn)) {
-							ir_node *in2 = get_irn_n(irn, reqs[i]->same_pos ^ 1);
-							if (REGS_ARE_EQUAL(out_reg, arch_get_irn_register(cg->arch_env, in2))) {
-								set_irn_n(irn, reqs[i]->same_pos, in2);
-								set_irn_n(irn, reqs[i]->same_pos ^ 1, in_node);
-							}
+						if (is_ia32_commutative(irn) && REGS_ARE_EQUAL(out_reg, in2_reg)) {
+							set_irn_n(irn, reqs[i]->same_pos, in2_node);
+							set_irn_n(irn, reqs[i]->same_pos ^ 1, in_node);
 						}
 						else {
 							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
@@ -606,7 +605,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	reg = arch_get_irn_register(env->cg->arch_env, irn);
 	arch_set_irn_register(env->cg->arch_env, new_op, reg);
 
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env));
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, new_op));
 
 	exchange(irn, proj);
 }
@@ -658,7 +657,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 		sched_remove(irn);
 	}
 
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env));
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, new_op));
 
 	exchange(irn, proj);
 }
@@ -793,7 +792,7 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 
 	/* set optimizations */
 	cg->opt.incdec    = 0;
-	cg->opt.doam      = 0;
+	cg->opt.doam      = 1;
 	cg->opt.placecnst = 1;
 	cg->opt.immops    = 1;
 	cg->opt.extbb     = 1;

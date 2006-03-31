@@ -2,6 +2,7 @@
 #define _IA32_TRANSFORM_H_
 
 #include "firm_config.h"
+#include "bearch_ia32_t.h"
 
 /**
  * Transforms the given Firm node into one or more appropriate ia32 nodes.
@@ -24,7 +25,7 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg);
 /**
  * Prints the old node name on cg obst and returns a pointer to it.
  */
-const char *ia32_get_old_node_name(ia32_transform_env_t *env);
+const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn);
 #endif /* NDEBUG */
 
 #endif /* _IA32_TRANSFORM_H_ */

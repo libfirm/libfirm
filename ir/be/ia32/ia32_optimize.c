@@ -18,6 +18,7 @@
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
+#include "ia32_transform.h"
 
 #undef is_NoMem
 #define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
@@ -653,7 +654,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	int         am_sc_sign = 0;
 	ident      *am_sc      = NULL;
 	ir_node    *left, *right, *temp;
-	ir_node    *base, *index;
+	ir_node    *base, *index, *orig_base, *orig_index;
 	ia32_am_flavour_t am_flav;
 	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
@@ -788,21 +789,38 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		/* a new LEA.                                                   */
 		/* If the LEA contains already a frame_entity then we also      */
 		/* create a new one  otherwise we would loose it.               */
-		if ((isadd && !be_is_NoReg(cg, index) && (am_flav & ia32_am_I)) || /* no new LEA if index already set */
+		if ((isadd && !be_is_NoReg(cg, index) && (am_flav & ia32_I)) || /* no new LEA if index already set */
 			get_ia32_frame_ent(left)                                    || /* no new LEA if stack access */
 			(have_am_sc && get_ia32_am_sc(left)))                          /* no new LEA if AM symconst already present */
 		{
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
+			ir_node *assim_lea_idx, *assim_lea_base;
+
 			DBG((mod, LEVEL_1, "\tgot LEA as left operand ... assimilating\n"));
 			offs       = get_ia32_am_offs(left);
 			am_sc      = have_am_sc ? am_sc : get_ia32_am_sc(left);
 			have_am_sc = am_sc ? 1 : 0;
 			am_sc_sign = is_ia32_am_sc_sign(left);
-			base       = get_irn_n(left, 0);
-			index      = get_irn_n(left, 1);
 			scale      = get_ia32_am_scale(left);
+
+			assim_lea_base = get_irn_n(left, 0);
+			assim_lea_idx  = get_irn_n(left, 1);
+
+			if (be_is_NoReg(cg, assim_lea_base) && ! be_is_NoReg(cg, assim_lea_idx)) {
+				/* assimilate index */
+				assert(be_is_NoReg(cg, index) && ! be_is_NoReg(cg, base) && "operand mismatch for LEA assimilation");
+				index = assim_lea_idx;
+			}
+			else if (! be_is_NoReg(cg, assim_lea_base) && be_is_NoReg(cg, assim_lea_idx)) {
+				/* assimilate base */
+				assert(! be_is_NoReg(cg, index) && (base == left) && "operand mismatch for LEA assimilation");
+				base = assim_lea_base;
+			}
+			else {
+				assert(0 && "operand mismatch for LEA assimilation");
+			}
 		}
 	}
 
@@ -872,6 +890,8 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		set_ia32_am_flavour(res, am_flav);
 
 		set_ia32_op_type(res, ia32_AddrModeS);
+
+		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
 
 		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %s]\n", base, index, scale, get_ia32_am_offs(res)));
 
