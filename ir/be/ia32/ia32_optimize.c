@@ -398,41 +398,57 @@ static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
 }
 
 /**
- * Performs Peephole Optimizations
+ * Tries to optimize two following IncSP.
+ */
+static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
+	ir_node *prev = be_get_IncSP_pred(irn);
+	int real_uses = get_irn_n_edges(prev);
+
+	if (real_uses != 1) {
+		/*
+		   This is a hack that should be removed if be_abi_fix_stack_nodes()
+		   is fixed. Currently it leaves some IncSP's outside the chain ...
+		   The previous IncSp is NOT our prev, but directly scheduled before ...
+			 Impossible in a bug-free implementation :-)
+		 */
+		prev = sched_prev(irn);
+		real_uses = 1;
+	}
+
+	if (be_is_IncSP(prev) && real_uses == 1) {
+		/* first IncSP has only one IncSP user, kill the first one */
+		unsigned       prev_offs = be_get_IncSP_offset(prev);
+		be_stack_dir_t prev_dir  = be_get_IncSP_direction(prev);
+		unsigned       curr_offs = be_get_IncSP_offset(irn);
+		be_stack_dir_t curr_dir  = be_get_IncSP_direction(irn);
+
+		int new_ofs = prev_offs * (prev_dir == be_stack_dir_expand ? -1 : +1) +
+			            curr_offs * (curr_dir == be_stack_dir_expand ? -1 : +1);
+
+		if (new_ofs < 0) {
+			new_ofs  = -new_ofs;
+			curr_dir = be_stack_dir_expand;
+		}
+		else
+			curr_dir = be_stack_dir_shrink;
+		be_set_IncSP_offset(prev, 0);
+		be_set_IncSP_offset(irn, (unsigned)new_ofs);
+		be_set_IncSP_direction(irn, curr_dir);
+	}
+}
+
+/**
+ * Performs Peephole Optimizations.
  */
 void ia32_peephole_optimization(ir_node *irn, void *env) {
-	if (is_ia32_TestJmp(irn)) {
-		ia32_optimize_TestJmp(irn, env);
-	}
-	else if (is_ia32_CondJmp(irn)) {
-		ia32_optimize_CondJmp(irn, env);
-	}
-#if 0
-	else if (be_is_IncSP(irn)) {
-		ir_node *prev = sched_prev(irn);
+	ia32_code_gen_t *cg = env;
 
-		if (be_is_IncSP(prev)) {
-			/* two scheduled IncSP one-after-one, kill the first one */
-			unsigned       prev_offs = be_get_IncSP_offset(prev);
-			be_stack_dir_t prev_dir  = be_get_IncSP_direction(prev);
-			unsigned       curr_offs = be_get_IncSP_offset(irn);
-			be_stack_dir_t curr_dir  = be_get_IncSP_direction(irn);
-
-			int new_ofs = prev_offs * (prev_dir == be_stack_dir_expand ? -1 : +1) +
-			              curr_offs * (curr_dir == be_stack_dir_expand ? -1 : +1);
-
-			if (new_ofs < 0) {
-				new_ofs  = -new_ofs;
-				curr_dir = be_stack_dir_expand;
-			}
-			else
-				curr_dir = be_stack_dir_shrink;
-			be_set_IncSP_offset(prev, 0);
-			be_set_IncSP_offset(irn, (unsigned)new_ofs);
-			be_set_IncSP_direction(irn, curr_dir);
-		}
-	}
-#endif
+	if (is_ia32_TestJmp(irn))
+		ia32_optimize_TestJmp(irn, cg);
+	else if (is_ia32_CondJmp(irn))
+		ia32_optimize_CondJmp(irn, cg);
+	else if (be_is_IncSP(irn))
+		ia32_optimize_IncSP(irn, cg);
 }
 
 
