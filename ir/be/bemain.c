@@ -312,7 +312,7 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
 		/* add Keeps for should_be_different constrained nodes */
-		// assure_constraints(&birg);
+		assure_constraints(&birg);
 		dump(DUMP_PREPARED, irg, "-assured", dump_ir_block_graph);
 
 		/* Schedule the graphs. */
