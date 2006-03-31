@@ -1,3 +1,4 @@
+#define SILENCER
 /* arm emitter */
 /* $Id$ */
 
@@ -684,7 +685,7 @@ static void emit_Jmp(ir_node *irn, void *env) {
 	fprintf(out, "\tB BLOCK_%ld\t\t\t/* unconditional Jump */\n", get_irn_node_nr(target_block));
 }
 
-static void emit_Proj(ir_node *irn, void *env) {
+static void emit_silence(ir_node *irn, void *env) {
 
 }
 
@@ -709,6 +710,7 @@ static void arm_register_emitters(void) {
 #define ARM_EMIT(a) op_arm_##a->ops.generic = (op_func)emit_arm_##a
 #define EMIT(a)      op_##a->ops.generic = (op_func)emit_##a
 #define BE_EMIT(a)   op_be_##a->ops.generic = (op_func)emit_be_##a
+#define SILENCE(a)   op_##a->ops.generic = (op_func)emit_silence
 
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
@@ -741,12 +743,14 @@ static void arm_register_emitters(void) {
 
 	/* noisy stuff */
 #ifdef SILENCER
- 	EMIT(Proj);
+ 	SILENCE(Proj);
+ 	SILENCE(Phi);
 #endif
 
 #undef ARM_EMIT
 #undef BE_EMIT
 #undef EMIT
+#undef SILENCE
 }
 
 /**
