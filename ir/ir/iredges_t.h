@@ -37,14 +37,14 @@
  * An edge.
  */
 struct _ir_edge_t {
-#ifdef DEBUG_libfirm
-  long src_nr;            /**< The node number of the source node. */
-#endif
   ir_node *src;           /**< The source node of the edge. */
   int pos;                /**< The position of the edge at @p src. */
   unsigned invalid : 1;   /**< edges that are removed are marked invalid. */
   unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
   struct list_head list;  /**< The list head to queue all out edges at a node. */
+#ifdef DEBUG_libfirm
+  long src_nr;            /**< The node number of the source node. */
+#endif
 };
 
 /**
@@ -197,8 +197,15 @@ void edges_reroute(ir_node *old, ir_node *nw, ir_graph *irg);
 
 void edges_init_graph(ir_graph *irg);
 
+/**
+ * Notify of a edge change.
+ * The edge from (src, pos) -> old_tgt is redirected to tgt
+ */
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg);
 
+/**
+ * A node is deleted.
+ */
 void edges_node_deleted(ir_node *old, ir_graph *irg);
 
 void edges_invalidate(ir_node *irn, ir_graph *irg);
