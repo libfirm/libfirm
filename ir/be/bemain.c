@@ -145,23 +145,39 @@ void be_opt_register(void)
 #ifdef WITH_LIBCORE
 	int i;
 	lc_opt_entry_t *be_grp_ra;
+	static int run_once = 0;
 
-	be_grp_root = lc_opt_get_grp(firm_opt_get_root(), "be");
-	be_grp_ra   = lc_opt_get_grp(be_grp_root, "ra");
+	if (! run_once) {
+		run_once    = 1;
+		be_grp_root = lc_opt_get_grp(firm_opt_get_root(), "be");
+		be_grp_ra   = lc_opt_get_grp(be_grp_root, "ra");
 
-	lc_opt_add_table(be_grp_root, be_main_options);
+		lc_opt_add_table(be_grp_root, be_main_options);
 
-	/* register allocator options */
-	for(i = 0; ra_items[i].name != NULL; ++i) {
-		const be_ra_t *ra = ra_items[i].value;
-		ra->register_options(be_grp_ra);
+		/* register allocator options */
+		for(i = 0; ra_items[i].name != NULL; ++i) {
+			const be_ra_t *ra = ra_items[i].value;
+			ra->register_options(be_grp_ra);
+		}
+
+		/* register isa options */
+		for(i = 0; isa_items[i].name != NULL; ++i) {
+			const arch_isa_if_t *isa = isa_items[i].value;
+			isa->register_options(be_grp_root);
+		}
 	}
+#endif /* WITH_LIBCORE */
+}
 
-	/* register isa options */
-	for(i = 0; isa_items[i].name != NULL; ++i) {
-		const arch_isa_if_t *isa = isa_items[i].value;
-		isa->register_options(be_grp_root);
-	}
+static int be_opt_error_handler(const char *prefix, const lc_opt_err_info_t *err)
+{
+
+}
+
+/* Parse one argument. */
+int be_parse_arg(const char *arg) {
+#ifdef WITH_LIBCORE
+	return lc_opt_from_single_arg(be_grp_root, NULL, arg, be_opt_error_handler);
 #endif /* WITH_LIBCORE */
 }
 
@@ -212,7 +228,7 @@ static void be_done_env(be_main_env_t *env)
 }
 
 static void dump(int mask, ir_graph *irg, const char *suffix,
-				 void (*dumper)(ir_graph *, const char *))
+                 void (*dumper)(ir_graph *, const char *))
 {
 	if(dump_flags & mask)
 		be_dump(irg, suffix, dumper);

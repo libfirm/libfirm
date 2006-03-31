@@ -2,6 +2,19 @@
 #ifndef _BE_MAIN_H
 #define _BE_MAIN_H
 
+/**
+ * Register the Firm backend command line options.
+ */
+void be_opt_register(void);
+
+/**
+ * Parse one backend argument.
+ */
+int be_parse_arg(const char *arg);
+
+/**
+ * Initialize the Firm backend. Must be run BEFORE init_firm()!
+ */
 void be_init(void);
 
 /**
