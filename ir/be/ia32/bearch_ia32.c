@@ -8,11 +8,18 @@
 #include "config.h"
 #endif
 
-#ifdef _WIN32
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
-#else
+#endif
+
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
+
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#endif /* WITH_LIBCORE */
 
 #include "pseudo_irg.h"
 #include "irgwalk.h"
@@ -840,7 +847,9 @@ static ia32_isa_t ia32_isa_template = {
 	0,                       /* number of code generator objects so far */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
-	fp_sse2,                 /* use SSE2 unit for fp operations */
+	arch_pentium_4,          /* instruction architecture */
+	arch_pentium_4,          /* optimize for architecture */
+	fp_sse2,                 /* use sse2 unit */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
 	0                        /* name obst size */
@@ -866,7 +875,6 @@ static void *ia32_init(void) {
 
 	isa->regs_16bit = pmap_create();
 	isa->regs_8bit  = pmap_create();
-//	isa->fp_kind    = fp_x87;
 
 	ia32_build_16bit_reg_map(isa->regs_16bit);
 	ia32_build_8bit_reg_map(isa->regs_8bit);
@@ -1082,8 +1090,64 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
 }
 
 #ifdef WITH_LIBCORE
+
+/* instruction set architectures. */
+static const lc_opt_enum_int_items_t arch_items[] = {
+	{ "386",        arch_i386, },
+	{ "486",        arch_i486, },
+	{ "pentium",    arch_pentium, },
+	{ "586",        arch_pentium, },
+	{ "pentiumpro", arch_pentium_pro, },
+	{ "686",        arch_pentium_pro, },
+	{ "pentiummmx", arch_pentium_mmx, },
+	{ "pentiummmx", arch_pentium_mmx, },
+	{ "pentium2",   arch_pentium_2, },
+	{ "p2",         arch_pentium_2, },
+	{ "pentium3",   arch_pentium_3, },
+	{ "p3",         arch_pentium_3, },
+	{ "pentium4",   arch_pentium_4, },
+	{ "p4",         arch_pentium_4, },
+	{ "pentiumm",   arch_pentium_m, },
+	{ "pm",         arch_pentium_m, },
+	{ "core",       arch_core, },
+	{ "k6",         arch_k6, },
+	{ "athlon",     arch_athlon, },
+	{ "athlon64",   arch_athlon_64, },
+	{ "opteron",    arch_opteron, },
+	{ NULL,         0 }
+};
+
+static lc_opt_enum_int_var_t arch_var = {
+	&ia32_isa_template.arch, arch_items
+};
+
+static lc_opt_enum_int_var_t opt_arch_var = {
+	&ia32_isa_template.opt_arch, arch_items
+};
+
+static const lc_opt_enum_int_items_t fp_unit_items[] = {
+	{ "x87" ,    fp_x87 },
+	{ "sse2",    fp_sse2 },
+	{ NULL,      0 }
+};
+
+static lc_opt_enum_int_var_t fp_unit_var = {
+	&ia32_isa_template.fp_kind, fp_unit_items
+};
+
+static const lc_opt_table_entry_t ia32_options[] = {
+	LC_OPT_ENT_ENUM_INT("arch",   "select the instruction architecture", &arch_var),
+	LC_OPT_ENT_ENUM_INT("opt",    "optimize for instruction architecture", &opt_arch_var),
+	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &fp_unit_var),
+	{ NULL }
+};
+
 static void ia32_register_options(lc_opt_entry_t *ent)
 {
+	lc_opt_entry_t *be_grp_ia32;
+
+	be_grp_ia32 = lc_opt_get_grp(ent, "ia32");
+	lc_opt_add_table(be_grp_ia32, ia32_options);
 }
 #endif /* WITH_LIBCORE */
 

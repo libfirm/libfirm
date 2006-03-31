@@ -24,9 +24,27 @@ typedef struct _ia32_optimize_t {
 	unsigned incdec    : 1;   /**< optimize add/sub 1/-1 to inc/dec */
 	unsigned doam      : 1;   /**< do address mode optimizations */
 	unsigned placecnst : 1;   /**< place constants in the blocks where they are used */
-	unsigned immops    : 1;   /**< create operations with immediates */
+	unsigned immops    : 1;   /**< create operations with immediate operands */
 	unsigned extbb     : 1;   /**< do extended basic block scheduling */
 } ia32_optimize_t;
+
+/** architectures */
+typedef enum cpu_support {
+  arch_i386,          /**< i386 */
+  arch_i486,          /**< i486 */
+  arch_pentium,       /**< Pentium */
+  arch_pentium_pro,   /**< Pentium Pro */
+  arch_pentium_mmx,   /**< Pentium MMX */
+  arch_pentium_2,     /**< Pentium II */
+  arch_pentium_3,     /**< Pentium III */
+  arch_pentium_4,     /**< Pentium IV */
+  arch_pentium_m,     /**< Pentium M */
+  arch_core,          /**< Core */
+  arch_k6,            /**< K6 */
+  arch_athlon,        /**< Athlon */
+  arch_athlon_64,     /**< Athlon64 */
+  arch_opteron,       /**< Opteron */
+} cpu_support;
 
 /** floating point support */
 typedef enum fp_support {
@@ -49,7 +67,9 @@ typedef struct _ia32_code_gen_t {
 	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	ia32_optimize_t                 opt;           /**< contains optimization information */
-	char                            fp_kind;       /**< floating point kind */
+	int                             arch;          /**< instruction architecture */
+	int                             opt_arch;      /**< optimize for architecture */
+	int                             fp_kind;       /**< floating point kind */
 	char                            used_x87;      /**< x87 floating point unit used in this graph */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)          /**< debugging module */
 } ia32_code_gen_t;
@@ -62,7 +82,9 @@ typedef struct _ia32_isa_t {
 	int                    num_codegens;  /**< The number of code generator objects created so far */
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
-	char                   fp_kind;       /**< floating point kind */
+	int                    arch;          /**< instruction architecture */
+	int                    opt_arch;      /**< optimize for architecture */
+	int                    fp_kind;       /**< floating point kind */
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
 	unsigned long          name_obst_size;
