@@ -156,22 +156,12 @@ $comment_string = "#";
 add => {
   op_flags  => "C",
   reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
-  emit      => '
-	if (mode_is_signed(get_irn_mode(n)))
-2.		add %D1, %S1, %S2
-	else
-2.		addu %D1, %S1, %S2
-'
+  emit      => '. addu %D1, %S1, %S2'
 },
 
 addi => {
   reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
-  emit      => '
-	if (mode_is_signed(get_irn_mode(n)))
-2.		addi %D1, %S1, %C
-	else
-2.		addiu %D1, %S1, %C
-',
+  emit      => '. addiu %D1, %S1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
 
@@ -191,7 +181,7 @@ div => {
   reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "none", "none", "none", "none" ] },
   emit      => '
 	mips_attr_t *attr = get_mips_attr(n);
-	if(attr->modes.original_mode->sign) {
+	if (attr->modes.original_mode->sign) {
 2.		div %S1, %S2
 	} else {
 2.		divu %S1, %S2
@@ -218,10 +208,7 @@ nor => {
 
 not => {
   reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
-  emit      => '
-  assert(get_mode_size_bits(get_irn_mode(n)) == 32);
-. nor %D1, %S1, $zero
-'
+  emit      => '. nor %D1, %S1, $zero'
 },
 
 or => {
@@ -296,11 +283,6 @@ sllv => {
 },
 
 sub => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
-  emit      => '. sub %D1, %S1, %S2'
-},
-
-subu => {
   reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
   emit      => '. subu %D1, %S1, %S2',
 },
