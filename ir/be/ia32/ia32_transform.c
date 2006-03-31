@@ -9,6 +9,8 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
+
 #include "irargs_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -1475,7 +1477,28 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		set_ia32_am_support(res, ia32_am_Source);
 	}
 	else {
-		res = new_rd_ia32_SwitchJmp(dbg, irg, block, sel, mode_T);
+		/* determine the smallest switch case value */
+		int switch_min = INT_MAX;
+		const ir_edge_t *edge;
+		char buf[64];
+
+		foreach_out_edge(node, edge) {
+			int pn = get_Proj_proj(get_edge_src_irn(edge));
+			switch_min = pn < switch_min ? pn : switch_min;
+		}
+
+		if (switch_min) {
+			/* if smallest switch case is not 0 we need an additional sub */
+			snprintf(buf, sizeof(buf), "%d", switch_min);
+			res = new_rd_ia32_Lea(dbg, irg, block, sel, noreg, mode_Is);
+			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, env->irn));
+			sub_ia32_am_offs(res, buf);
+			set_ia32_am_flavour(res, ia32_am_OB);
+			set_ia32_am_support(res, ia32_am_Source);
+			set_ia32_op_type(res, ia32_AddrModeS);
+		}
+
+		res = new_rd_ia32_SwitchJmp(dbg, irg, block, switch_min ? res : sel, mode_T);
 		set_ia32_pncode(res, get_Cond_defaultProj(node));
 		set_ia32_res_mode(res, get_irn_mode(sel));
 	}

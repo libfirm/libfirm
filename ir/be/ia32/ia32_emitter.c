@@ -921,19 +921,9 @@ static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	interval = tbl.max_value - tbl.min_value;
 
 	/* emit the table */
-	if (tbl.min_value != 0) {
-		lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "sub [%1S-%d], %u", irn, tbl.min_value * 4, interval);
-		lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmp DWORD PTR [%1S-%d], %u", irn, tbl.min_value * 4, interval);
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* first switch value is not 0 */");
-
-		IA32_DO_EMIT(irn);
-	}
-	else {
-		lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %u", irn, interval);
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* compare for switch */");
-
-		IA32_DO_EMIT(irn);
-	}
+	lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %u", irn, interval);
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* compare for switch */");
+	IA32_DO_EMIT(irn);
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "ja %s", get_cfop_target(tbl.defProj, buf));
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default jump if out of range  */");
@@ -952,7 +942,7 @@ static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		fprintf(F, "%s:\n", tbl.label);
 
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[0].target, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */\n",  tbl.branches[0].value);
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */",  tbl.branches[0].value);
 		IA32_DO_EMIT(irn);
 
 		last_value = tbl.branches[0].value;
@@ -967,7 +957,7 @@ static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			IA32_DO_EMIT(irn);
 		}
 
-		fprintf(F, "\t.text");
+		fprintf(F, "\n\t.text\n\n");
 	}
 	else {
 		/* one jump is enough */
