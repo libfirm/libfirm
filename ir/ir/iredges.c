@@ -99,17 +99,25 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos)
 	if(edges_activated(irg)) {
 		irg_edge_info_t *info = _get_irg_edge_info(irg);
 		size_t size           = EDGE_SIZE(src);
-		ir_edge_t *templ      = alloca(size);
+		ir_edge_t key;
 
-		memset(templ, 0, size);
-		templ->src = (ir_node *) src;
-		templ->pos = pos;
-		return set_find(info->edges, templ, size, edge_hash(templ));
+		key.src = (ir_node *) src;
+		key.pos = pos;
+		return set_find(info->edges, &key, size, edge_hash(&key));
 	}
 
 	return NULL;
 }
 
+/**
+ * Change the out count
+ */
+static INLINE void edge_change_cnt(ir_node *tgt, int ofs) {
+	irn_edge_info_t *info = _get_irn_edge_info(tgt);
+	info->out_count += ofs;
+}
+
+/* The edge from (src, pos) -> old_tgt is redirected to tgt */
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg)
 {
 	const char *msg = "";
@@ -130,7 +138,7 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 		ir_edge_t *edge;
 
 		/*
-		 * This is scray, but:
+		 * This is scary, but:
 		 * If two entries in a set do not have the same size, they are
 		 * treated as unequal, ignoring the comparison function.
 		 * So, edges from blocks have extra storage (they are
@@ -144,18 +152,16 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 
 		/* Initialize the edge template to search in the set. */
 		memset(templ, 0, size);
-#ifdef DEBUG_libfirm
-		templ->src_nr = get_irn_node_nr(src);
-#endif
 		templ->src = src;
 		templ->pos = pos;
 		templ->invalid = 0;
 		templ->present = 0;
+		DEBUG_ONLY(templ->src_nr = get_irn_node_nr(src));
 
 		/*
 		 * If the target is NULL, the edge shall be deleted.
 		 */
-		if(tgt == NULL) {
+		if (tgt == NULL) {
 			/* search the edge in the set. */
 			edge = set_find(edges, templ, size, edge_hash(templ));
 
@@ -173,8 +179,10 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 				 * If the edge is a cf edge, we delete it also
 				 * from the list of all block successor edges.
 				 */
-				if(is_block_edge)
+				if(is_block_edge) {
 					list_del(&block_edge->succ_list);
+					edge_change_cnt(old_tgt,  -1);
+				}
 			}
 
 			/* If the edge was not found issue a warning on the debug stream */
@@ -229,7 +237,7 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 				if(is_block_edge)
 					list_move(&block_edge->succ_list, succ_head);
 
-				_get_irn_edge_info(old_tgt)->out_count -= 1;
+				edge_change_cnt(old_tgt,  -1);
 			}
 
 			/* The old target was null, thus, the edge is newly created. */
@@ -245,7 +253,7 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 					list_add(&block_edge->succ_list, succ_head);
 			}
 
-			_get_irn_edge_info(tgt)->out_count += 1;
+			edge_change_cnt(tgt,  +1);
 		} /* else */
 	}
 
@@ -258,10 +266,8 @@ void edges_node_deleted(ir_node *old, ir_graph *irg)
 {
 	if(edges_activated(irg)) {
 		int not_a_block = !is_Block(old);
-		ir_edge_t templ;
 		int i, n;
 
-		templ.src = old;
 		DBG((dbg, LEVEL_5, "node deleted: %n\n", old));
 
 		/* Change to get_irn_n */
@@ -279,6 +285,9 @@ void edges_invalidate(ir_node *irn, ir_graph *irg)
 	edges_node_deleted(irn, irg);
 }
 
+/**
+ * Post-Walker: notify all edges
+ */
 static void build_edges_walker(ir_node *irn, void *data)
 {
 	ir_graph *irg = data;
@@ -289,11 +298,16 @@ static void build_edges_walker(ir_node *irn, void *data)
 		edges_notify_edge(irn, i, get_irn_n(irn, i), NULL, irg);
 }
 
+/**
+ * Pre-Walker: initializes the list-heads and set the out-count
+ * of all nodes to 0.
+ */
 static void init_lh_walker(ir_node *irn, void *data)
 {
 	INIT_LIST_HEAD(_get_irn_outs_head(irn));
 	if(is_Block(irn))
 		INIT_LIST_HEAD(_get_block_succ_head(irn));
+	_get_irn_edge_info(irn)->out_count = 0;
 }
 
 void edges_activate(ir_graph *irg)
@@ -353,10 +367,10 @@ static void verify_set_presence(ir_node *irn, void *data)
 	int i, n;
 
 	for(i = 0, n = get_irn_arity(irn) + not_a_block; i < n; ++i) {
-    ir_block_edge_t space;
+		ir_block_edge_t space;
 		ir_edge_t *templ = (ir_edge_t *) &space;
 		ir_edge_t *e;
-    size_t size = not_a_block ? sizeof(ir_edge_t) : sizeof(ir_block_edge_t);
+		size_t size = not_a_block ? sizeof(ir_edge_t) : sizeof(ir_block_edge_t);
 
 		templ->src = irn;
 		templ->pos = i - not_a_block;
@@ -433,7 +447,7 @@ int (get_edge_src_pos)(const ir_edge_t *edge)
 
 int (get_irn_n_edges)(const ir_node *irn)
 {
-  return _get_irn_n_edges(irn);
+	return _get_irn_n_edges(irn);
 }
 
 
