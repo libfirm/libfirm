@@ -346,7 +346,7 @@ extern int arch_reg_is_allocatable(const arch_env_t *env,
  * Get the register class of an operand of a node.
  * @param env The architecture environment.
  * @param irn The node.
- * @param pos The position of the operand.
+ * @param pos The position of the operand, -1 for the output.
  * @return    The register class of the operand or NULL, if
  *            operand is a non-register operand.
  */
