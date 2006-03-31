@@ -13,19 +13,22 @@
 #include "ircons.h"
 #include "iropt.h"
 #include "irgopt.h"
+#include "irtools.h"
 #include "irprintf.h"
 
 #include "beutil.h"
 #include "besched_t.h"
 #include "bearch.h"
 
+/* Get an always empty set. */
 pset *be_empty_set(void)
 {
 	static pset *empty_set = NULL;
 
 	if(!empty_set)
-		empty_set = pset_new_ptr_default();
+		empty_set = pset_new_ptr(1);
 
+	assert(pset_count(empty_set) == 0);
 	return empty_set;
 }
 
@@ -184,11 +187,6 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 
 
 
-static void clear_link(ir_node *irn, void *data)
-{
-  set_irn_link(irn, NULL);
-}
-
 static void collect_phis(ir_node *irn, void *data)
 {
   if(is_Phi(irn)) {
@@ -200,7 +198,7 @@ static void collect_phis(ir_node *irn, void *data)
 
 void be_clear_links(ir_graph *irg)
 {
-	irg_walk_graph(irg, clear_link, NULL, NULL);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 }
 
 void be_collect_phis(ir_graph *irg)
@@ -208,7 +206,7 @@ void be_collect_phis(ir_graph *irg)
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 }
 
-
+/* FIXME: not used. can be deleted? */
 ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive) {
 	ir_node *irn, *idom;
 
@@ -217,6 +215,9 @@ ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive) {
 		if (pset_find_ptr(accept, irn))
 			return irn;
 
+	/* FIXME: This is obviously buggy: after the first recursive call idom is a block
+	   and get_nodes_block will fail.
+		 Moreover, why not a simple iteration instead of recursion */
 	idom = get_Block_idom(get_nodes_block(start_point_exclusive));
 
 	if (idom)
