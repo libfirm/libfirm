@@ -1479,6 +1479,9 @@ void be_abi_free(be_abi_irg_t *env)
 
 */
 
+/**
+ * Walker. Collect all stack modifying nodes.
+ */
 static void collect_stack_nodes_walker(ir_node *irn, void *data)
 {
 	pset *s = data;
