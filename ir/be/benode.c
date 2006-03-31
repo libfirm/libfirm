@@ -335,6 +335,10 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 	return res;
 }
 
+ir_node *be_get_Copy_op(const ir_node *cpy) {
+	return get_irn_n(cpy, be_pos_Copy_op);
+}
+
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
 	int i;
@@ -913,7 +917,7 @@ static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int o
 
 		if(be_is_Copy(irn)) {
 			req->type |= arch_register_req_type_should_be_same;
-			req->other_same = get_irn_n(irn, be_pos_Copy_orig);
+			req->other_same = be_get_Copy_op(irn);
 		}
 	}
 	else {

@@ -627,7 +627,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 
 	/* copies have affinities */
 	if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy) {
-		ir_node *other = get_irn_n(irn, be_pos_Copy_orig);
+		ir_node *other = be_get_Copy_op(irn);
 
 		if (! arch_irn_is(raenv->aenv, other, ignore)) {
 			vi2 = get_var_info(other);

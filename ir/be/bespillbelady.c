@@ -597,7 +597,7 @@ static void remove_copies(belady_env_t *bel) {
 
 		user = get_irn_edge(get_irn_irg(irn), irn, 0)->src;
 
-		src = get_irn_n(irn, be_pos_Copy_orig);
+		src = be_get_Copy_op(irn);
 		set_irn_n(user, 0, src);
 	}
 }
