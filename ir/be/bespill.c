@@ -440,6 +440,9 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 	pset_insert_ptr(ss->members, spill);
 }
 
+/**
+ * qsort compare function, sort spill slots by size.
+ */
 static int ss_sorter(const void *v1, const void *v2) {
 	const spill_slot_t *ss1 = v1;
 	const spill_slot_t *ss2 = v2;
@@ -530,24 +533,41 @@ interf_detected: /*nothing*/ ;
 /**
  * Returns a spill type for a mode. Keep them in a map to reduce
  * the number of types.
+ *
+ * @param types  a map containing all created types
+ * @param ss     the spill slot
+ *
+ * Note that type types should are identical for every mode.
+ * This rule might break if two different register classes return the same
+ * mode but different alignments.
  */
-static ir_type *get_spill_type(pmap *types, ir_mode *mode) {
-  pmap_entry *e = pmap_find(types, mode);
+static ir_type *get_spill_type(pmap *types, spill_slot_t *ss) {
+  pmap_entry *e = pmap_find(types, ss->largest_mode);
   ir_type *res;
 
   if (! e) {
 		char buf[64];
-    snprintf(buf, sizeof(buf), "spill_slot_type_%s", get_mode_name(mode));
-    res = new_type_primitive(new_id_from_str(buf), mode);
-    pmap_insert(types, mode, res);
+    snprintf(buf, sizeof(buf), "spill_slot_type_%s", get_mode_name(ss->largest_mode));
+    res = new_type_primitive(new_id_from_str(buf), ss->largest_mode);
+		set_type_alignment_bytes(res, ss->align);
+    pmap_insert(types, ss->largest_mode, res);
   }
-  else
+  else {
     res = e->value;
+		assert(get_type_alignment_bytes(res) == (int)ss->align);
+	}
   return res;
 }
 
-static void assign_entities(ss_env_t *ssenv, int n, spill_slot_t **ss) {
-	int i, offset;
+/**
+ * Create spill slot entities on the frame type.
+ *
+ * @param ssenv   the spill environment
+ * @param n       number of spill slots
+ * @param ss      array of spill slots
+ */
+static void assign_entities(ss_env_t *ssenv, int n_slots, spill_slot_t *ss[]) {
+	int i, offset, frame_align;
 	ir_type *frame = get_irg_frame_type(ssenv->cenv->irg);
 
 	/* aligning by increasing frame size */
@@ -556,7 +576,7 @@ static void assign_entities(ss_env_t *ssenv, int n, spill_slot_t **ss) {
 	set_type_size_bytes(frame, -1);
 
 	/* create entities and assign offsets according to size and alignment*/
-	for (i=0; i<n; ++i) {
+	for (i = 0; i < n_slots; ++i) {
 		char buf[64];
 		ident *name;
 		entity *spill_ent;
@@ -566,21 +586,22 @@ static void assign_entities(ss_env_t *ssenv, int n, spill_slot_t **ss) {
 		snprintf(buf, sizeof(buf), "spill_slot_%d", i);
 		name = new_id_from_str(buf);
 
-		spill_ent = new_entity(frame, name, get_spill_type(ssenv->types, ss[i]->largest_mode));
+		spill_ent = new_entity(frame, name, get_spill_type(ssenv->types, ss[i]));
 
 		/* align */
 		offset = round_up2(offset, ss[i]->align);
 		/* set */
 		set_entity_offset_bytes(spill_ent, offset);
 		/* next possible offset */
-		offset += ss[i]->size;
+		offset += round_up2(ss[i]->size, ss[i]->align);
 
 		pset_foreach(ss[i]->members, irn)
 			be_set_Spill_entity(irn, spill_ent);
 	}
 
 	/* set final size of stack frame */
-	set_type_size_bytes(frame, offset);
+	frame_align = get_type_alignment_bytes(frame);
+	set_type_size_bytes(frame, round_up2(offset, frame_align));
 }
 
 void be_compute_spill_offsets(be_chordal_env_t *cenv) {
