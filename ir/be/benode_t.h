@@ -151,12 +151,19 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
  */
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, unsigned amount, be_stack_dir_t dir);
 
+/** Returns the previous node that computes the stack pointer. */
+ir_node *be_get_IncSP_pred(ir_node *incsp);
 
-
+/** Sets a new offset to a IncSP node. */
 void     be_set_IncSP_offset(ir_node *irn, unsigned offset);
+
+/** Gets the offset from a IncSP node. */
 unsigned be_get_IncSP_offset(const ir_node *irn);
 
+/** Sets a new direction to a IncSP node. */
 void           be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir);
+
+/** Gets the direction from a IncSP node. */
 be_stack_dir_t be_get_IncSP_direction(const ir_node *irn);
 
 /** Gets the call entity or NULL if this is no static call. */

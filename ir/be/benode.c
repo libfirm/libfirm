@@ -705,6 +705,11 @@ void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type)
 	r->req.type = type;
 }
 
+ir_node *be_get_IncSP_pred(ir_node *irn) {
+	assert(be_is_IncSP(irn));
+	return get_irn_n(irn, 0);
+}
+
 void be_set_IncSP_offset(ir_node *irn, unsigned offset)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
@@ -974,11 +979,12 @@ static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 	redir_proj((const ir_node **) &irn, -1);
 
 	switch(be_get_irn_opcode(irn)) {
-#define XXX(a,b) case beo_ ## a: return arch_irn_class_ ## b;
-		XXX(Spill, spill)
-		XXX(Reload, reload)
-		XXX(Perm, perm)
-		XXX(Copy, copy)
+#define XXX(a,b) case beo_ ## a: return arch_irn_class_ ## b
+		XXX(Spill, spill);
+		XXX(Reload, reload);
+		XXX(Perm, perm);
+		XXX(Copy, copy);
+		XXX(Return, branch);
 #undef XXX
 		default:
 		return 0;
