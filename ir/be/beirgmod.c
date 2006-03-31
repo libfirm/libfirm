@@ -135,38 +135,40 @@ pset *be_get_dominance_frontier(dom_front_info_t *info, ir_node *block)
   return pmap_get(info->df_map, block);
 }
 
-static void determine_phi_blocks(pset *copies, pset* copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
+static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
 {
 	ir_node *bl;
 	pdeq *worklist = new_pdeq();
 	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	/*
-	* Fill the worklist queue and the rest of the orig blocks array.
-	*/
+	 * Fill the worklist queue and the rest of the orig blocks array.
+	 */
 	for(bl = pset_first(copy_blocks); bl; bl = pset_next(copy_blocks)) {
 		pdeq_putr(worklist, bl);
 	}
 
-	while(!pdeq_empty(worklist)) {
+	while (!pdeq_empty(worklist)) {
 		ir_node *bl = pdeq_getl(worklist);
 		pset *df    = be_get_dominance_frontier(df_info, bl);
 
 		ir_node *y;
 
 		DBG((dbg, LEVEL_3, "dom front of %+F\n", bl));
-		for(y = pset_first(df); y; y = pset_next(df))
-			DBG((dbg, LEVEL_3, "\t%+F\n", y));
+		DEBUG_ONLY(
+			for (y = pset_first(df); y; y = pset_next(df))
+				DBG((dbg, LEVEL_3, "\t%+F\n", y))
+		);
 
 		for(y = pset_first(df); y; y = pset_next(df)) {
 			if(!pset_find_ptr(phi_blocks, y)) {
 				pset_insert_ptr(phi_blocks, y);
 
 				/*
-				* Clear the link field of a possible phi block, since
-				* the possibly created phi will be stored there. See,
-				* search_def()
-				*/
+				 * Clear the link field of a possible phi block, since
+				 * the possibly created phi will be stored there. See,
+				 * search_def()
+				 */
 				set_irn_link(y, NULL);
 
 				if(!pset_find_ptr(copy_blocks, y))
@@ -199,7 +201,7 @@ static void determine_phi_blocks(pset *copies, pset* copy_blocks, pset *phi_bloc
  *
  * The usage is given as a node and a position. Initially, the given operand
  * points to a node for which copies were introduced. We have to find
- * the valid copy for this usage. This is done by travering the
+ * the valid copy for this usage. This is done by traversing the
  * dominance tree upwards. If the usage is a phi function, we start
  * traversing from the predecessor block which corresponds to the phi
  * usage.
@@ -298,28 +300,27 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *phis, pset *ignore_uses)
 {
 	int n_outs = 0;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
-
 	struct obstack obst;
 	ir_node *irn;
 	int i;
-
 	struct out {
 		ir_node *irn;
 		int pos;
 	} *outs;
 
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
+
 	obstack_init(&obst);
 
 	/*
- 	* Put all outs into an array.
- 	* This is necessary, since the outs would be modified while
- 	* iterating on them what could bring the outs module in trouble.
-	*/
-	for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
+ 	 * Put all outs into an array.
+ 	 * This is necessary, since the outs would be modified while
+ 	 * iterating on them what could bring the outs module in trouble.
+	 */
+	for (irn = pset_first(copies); irn; irn = pset_next(copies)) {
 		const ir_edge_t *edge;
 		foreach_out_edge(irn, edge) {
-			if(!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
+			if (!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
 				struct out tmp;
 				tmp.irn = get_edge_src_irn(edge);
 				tmp.pos = get_edge_src_pos(edge);
@@ -402,7 +403,6 @@ void be_ssa_constr_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset 
 void be_ssa_constr(dom_front_info_t *info, int n, ir_node *nodes[])
 {
 	pset *empty_set = be_empty_set();
-	assert(pset_count(empty_set) == 0);
 	be_ssa_constr_ignore(info, n, nodes, empty_set);
 }
 
@@ -427,15 +427,15 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis
 	}
 
 	/*
-	* Disable optimization so that the phi functions do not
-	* disappear.
-	*/
+	 * Disable optimization so that the phi functions do not
+	 * disappear.
+	 */
 	set_optimize(0);
 	set_opt_normalize(0);
 
 	/*
-	* Place the phi functions and reroute the usages.
-	*/
+	 * Place the phi functions and reroute the usages.
+	 */
 	determine_phi_blocks(nodes, blocks, phi_blocks, df);
 	fix_usages(nodes, blocks, phi_blocks, phis, ignore_uses);
 
@@ -451,9 +451,7 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis
 void be_ssa_constr_set_phis(dom_front_info_t *df, pset *nodes, pset *phis)
 {
 	pset *empty_set = be_empty_set();
-	assert(pset_count(empty_set) == 0);
-
-	be_ssa_constr_set_phis_ignore(df, nodes,phis, empty_set);
+	be_ssa_constr_set_phis_ignore(df, nodes, phis, empty_set);
 }
 
 void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_uses)
@@ -464,7 +462,6 @@ void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_us
 void be_ssa_constr_set(dom_front_info_t *info, pset *nodes)
 {
 	pset *empty_set = be_empty_set();
-	assert(pset_count(empty_set) == 0);
 	be_ssa_constr_set_ignore(info, nodes, empty_set);
 }
 
