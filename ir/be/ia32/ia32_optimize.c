@@ -654,7 +654,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	int         am_sc_sign = 0;
 	ident      *am_sc      = NULL;
 	ir_node    *left, *right, *temp;
-	ir_node    *base, *index, *orig_base, *orig_index;
+	ir_node    *base, *index;
 	ia32_am_flavour_t am_flav;
 	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
@@ -782,31 +782,33 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 	/* Try to assimilate a LEA as left operand */
 	if (is_ia32_Lea(left) && (get_ia32_am_flavour(left) != ia32_am_O)) {
-		am_flav = get_ia32_am_flavour(left);
+		ir_node *assim_lea_idx, *assim_lea_base;
+
+		am_flav        = get_ia32_am_flavour(left);
+		assim_lea_base = get_irn_n(left, 0);
+		assim_lea_idx  = get_irn_n(left, 1);
+
 
 		/* If we have an Add with a real right operand (not NoReg) and  */
 		/* the LEA contains already an index calculation then we create */
 		/* a new LEA.                                                   */
 		/* If the LEA contains already a frame_entity then we also      */
 		/* create a new one  otherwise we would loose it.               */
-		if ((isadd && !be_is_NoReg(cg, index) && (am_flav & ia32_I)) || /* no new LEA if index already set */
-			get_ia32_frame_ent(left)                                    || /* no new LEA if stack access */
-			(have_am_sc && get_ia32_am_sc(left)))                          /* no new LEA if AM symconst already present */
+		if ((isadd && ! be_is_NoReg(cg, index) && (am_flav & ia32_I)) || /* no new LEA if index already set */
+			get_ia32_frame_ent(left)                                  || /* no new LEA if stack access */
+			(have_am_sc && get_ia32_am_sc(left))                      || /* no new LEA if AM symconst already present */
+			/* at least on of the LEA operands must be NOREG */
+			(!be_is_NoReg(cg, assim_lea_base) && !be_is_NoReg(cg, assim_lea_idx)))
 		{
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
-			ir_node *assim_lea_idx, *assim_lea_base;
-
 			DBG((mod, LEVEL_1, "\tgot LEA as left operand ... assimilating\n"));
 			offs       = get_ia32_am_offs(left);
 			am_sc      = have_am_sc ? am_sc : get_ia32_am_sc(left);
 			have_am_sc = am_sc ? 1 : 0;
 			am_sc_sign = is_ia32_am_sc_sign(left);
 			scale      = get_ia32_am_scale(left);
-
-			assim_lea_base = get_irn_n(left, 0);
-			assim_lea_idx  = get_irn_n(left, 1);
 
 			if (be_is_NoReg(cg, assim_lea_base) && ! be_is_NoReg(cg, assim_lea_idx)) {
 				/* assimilate index */
@@ -817,9 +819,6 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 				/* assimilate base */
 				assert(! be_is_NoReg(cg, index) && (base == left) && "operand mismatch for LEA assimilation");
 				base = assim_lea_base;
-			}
-			else {
-				assert(0 && "operand mismatch for LEA assimilation");
 			}
 		}
 	}
