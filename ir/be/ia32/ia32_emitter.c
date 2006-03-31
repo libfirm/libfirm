@@ -873,7 +873,7 @@ static int ia32_cmp_branch_t(const void *a, const void *b) {
 static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	unsigned long       interval;
 	char                buf[SNPRINTF_BUF_LEN];
-	int                 last_value, i, pn, do_jmp_tbl = 1;
+	int                 last_value, i, pn;
 	jmp_tbl_t           tbl;
 	ir_node            *proj;
 	const ir_edge_t    *edge;
@@ -920,83 +920,59 @@ static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	/* two-complement's magic make this work without overflow */
 	interval = tbl.max_value - tbl.min_value;
 
-	/* check value interval */
-	if (interval > 16 * 1024) {
-		do_jmp_tbl = 0;
+	/* emit the table */
+	if (tbl.min_value != 0) {
+		lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "sub [%1S-%d], %u", irn, tbl.min_value * 4, interval);
+		lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmp DWORD PTR [%1S-%d], %u", irn, tbl.min_value * 4, interval);
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* first switch value is not 0 */");
+
+		IA32_DO_EMIT(irn);
+	}
+	else {
+		lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %u", irn, interval);
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* compare for switch */");
+
+		IA32_DO_EMIT(irn);
 	}
 
-	/* check ratio of value interval to number of branches */
-	if ((float)(interval + 1) / (float)tbl.num_branches > 8.0) {
-		do_jmp_tbl = 0;
-	}
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "ja %s", get_cfop_target(tbl.defProj, buf));
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default jump if out of range  */");
+	IA32_DO_EMIT(irn);
 
-	if (do_jmp_tbl) {
-		/* emit the table */
-		if (tbl.min_value != 0) {
-			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmpl %lu, -%d(%1S)",
-				interval, tbl.min_value, irn);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* first switch value is not 0 */");
+	if (tbl.num_branches > 1) {
+		/* create table */
 
-			IA32_DO_EMIT(irn);
-		}
-		else {
-			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmpl %lu, %1S", interval, irn);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* compare for switch */");
-
-			IA32_DO_EMIT(irn);
-		}
-
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "ja %s", get_cfop_target(tbl.defProj, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default jump if out of range  */");
+		lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "jmp %s[%1S*4]", tbl.label, irn);
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* get jump table entry as target */");
 		IA32_DO_EMIT(irn);
 
-		if (tbl.num_branches > 1) {
-			/* create table */
+		fprintf(F, "\t.section\t.rodata\n");
+		fprintf(F, "\t.align 4\n");
 
-			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "jmp [%1S*4+%s]", irn, tbl.label);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* get jump table entry as target */");
-			IA32_DO_EMIT(irn);
+		fprintf(F, "%s:\n", tbl.label);
 
-			fprintf(F, "\t.section\t.rodata\n");
-			fprintf(F, "\t.align 4\n");
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[0].target, buf));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */\n",  tbl.branches[0].value);
+		IA32_DO_EMIT(irn);
 
-			fprintf(F, "%s:\n", tbl.label);
-
-			snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[0].target, buf));
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */\n",  tbl.branches[0].value);
-			IA32_DO_EMIT(irn);
-
-			last_value = tbl.branches[0].value;
-			for (i = 1; i < tbl.num_branches; ++i) {
-				while (++last_value < tbl.branches[i].value) {
-					snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.defProj, buf));
-					snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default case */");
-					IA32_DO_EMIT(irn);
-				}
-				snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[i].target, buf));
-				snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */", last_value);
+		last_value = tbl.branches[0].value;
+		for (i = 1; i < tbl.num_branches; ++i) {
+			while (++last_value < tbl.branches[i].value) {
+				snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.defProj, buf));
+				snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default case */");
 				IA32_DO_EMIT(irn);
 			}
-
-			fprintf(F, "\t.text");
-		}
-		else {
-			/* one jump is enough */
-			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(tbl.branches[0].target, buf));
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* only one case given */");
+			snprintf(cmd_buf, SNPRINTF_BUF_LEN, ".long %s", get_cfop_target(tbl.branches[i].target, buf));
+			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */", last_value);
 			IA32_DO_EMIT(irn);
 		}
+
+		fprintf(F, "\t.text");
 	}
-	else { // no jump table
-		for (i = 0; i < tbl.num_branches; ++i) {
-			lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "cmpl %d, %1S", tbl.branches[i].value, irn);
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */", i);
-			IA32_DO_EMIT(irn);
-			fprintf(F, "\tje %s\n", get_cfop_target(tbl.branches[i].target, buf));
-		}
-
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(tbl.defProj, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* default case */");
+	else {
+		/* one jump is enough */
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(tbl.branches[0].target, buf));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* only one case given */");
 		IA32_DO_EMIT(irn);
 	}
 
