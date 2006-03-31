@@ -75,11 +75,17 @@ static int cmp_usage(const void *a, const void *b)
 }
 #endif
 
+/**
+ * The trivial selector:
+ * Just assure that branches are executed last, otherwise select
+ * the first node ready.
+ */
 static ir_node *trivial_select(void *block_env, pset *ready_set)
 {
 	const arch_env_t *arch_env = block_env;
 	ir_node *irn = NULL;
 
+	/* assure that branches are executed last */
 	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set)) {
 		if(arch_irn_classify(arch_env, irn) != arch_irn_class_branch) {
 			pset_break(ready_set);
