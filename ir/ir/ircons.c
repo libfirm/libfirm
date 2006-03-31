@@ -164,7 +164,7 @@ new_d_##instr (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {     \
 #define NEW_D_UNOP(instr)                                                     \
 ir_node *                                                                     \
 new_d_##instr (dbg_info *db, ir_node *op, ir_mode *mode) {                    \
-  return new_bd_Minus(db, current_ir_graph->current_block, op, mode);         \
+  return new_bd_##instr(db, current_ir_graph->current_block, op, mode);         \
 }
 
 
