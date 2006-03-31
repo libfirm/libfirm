@@ -243,14 +243,20 @@ static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	char buf[64];
 	const ia32_irn_ops_t *ops = self;
 
-	if (get_ia32_frame_ent(irn) && bias != 0) {
+	if (get_ia32_frame_ent(irn)) {
 		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
 
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
 		snprintf(buf, sizeof(buf), "%d", bias);
-		add_ia32_am_offs(irn, buf);
-		am_flav |= ia32_O;
-		set_ia32_am_flavour(irn, am_flav);
+
+		if (get_ia32_op_type(irn) == ia32_Normal) {
+			set_ia32_cnst(irn, buf);
+		}
+		else {
+			add_ia32_am_offs(irn, buf);
+			am_flav |= ia32_O;
+			set_ia32_am_flavour(irn, am_flav);
+		}
 	}
 }
 
@@ -471,24 +477,33 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 					in_reg  = arch_get_irn_register(cg->arch_env, in_node);
 
 					/* don't copy ignore nodes */
-					if (arch_irn_is(cg->arch_env, in_node, ignore))
+					if (arch_irn_is(cg->arch_env, in_node, ignore) && is_Proj(in_node))
 						continue;
 
 					/* check if in and out register are equal */
-					if (arch_register_get_index(out_reg) != arch_register_get_index(in_reg)) {
-						DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
+					if (! REGS_ARE_EQUAL(out_reg, in_reg)) {
+						/* in case of a commutative op: just exchange the in's */
+						if (is_ia32_commutative(irn)) {
+							ir_node *in2 = get_irn_n(irn, reqs[i]->same_pos ^ 1);
+							if (REGS_ARE_EQUAL(out_reg, arch_get_irn_register(cg->arch_env, in2))) {
+								set_irn_n(irn, reqs[i]->same_pos, in2);
+								set_irn_n(irn, reqs[i]->same_pos ^ 1, in_node);
+							}
+						}
+						else {
+							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
+							/* create copy from in register */
+							copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
 
-						/* create copy from in register */
-						copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
+							/* destination is the out register */
+							arch_set_irn_register(cg->arch_env, copy, out_reg);
 
-						/* destination is the out register */
-						arch_set_irn_register(cg->arch_env, copy, out_reg);
+							/* insert copy before the node into the schedule */
+							sched_add_before(irn, copy);
 
-						/* insert copy before the node into the schedule */
-						sched_add_before(irn, copy);
-
-						/* set copy as in */
-						set_irn_n(irn, reqs[i]->same_pos, copy);
+							/* set copy as in */
+							set_irn_n(irn, reqs[i]->same_pos, copy);
+						}
 					}
 				}
 			}
@@ -778,7 +793,7 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 
 	/* set optimizations */
 	cg->opt.incdec    = 0;
-	cg->opt.doam      = 1;
+	cg->opt.doam      = 0;
 	cg->opt.placecnst = 1;
 	cg->opt.immops    = 1;
 	cg->opt.extbb     = 1;

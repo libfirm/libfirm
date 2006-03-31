@@ -1338,7 +1338,11 @@ static void emit_be_SetSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
  */
 static void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
+	const arch_env_t *aenv = emit_env->arch_env;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+
+	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, irn), arch_get_irn_register(aenv, be_get_Copy_op(irn))))
+		return;
 
 	if (mode_is_float(get_irn_mode(irn)))
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "movs%M %1D, %1S", irn, irn, irn);
