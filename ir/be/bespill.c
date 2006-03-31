@@ -395,6 +395,7 @@ typedef struct _ss_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } ss_env_t;
 
+
 /**
  * Walker: compute the spill slots
  */
@@ -413,9 +414,7 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 
 	if (!entry) {
 		struct _arch_env_t *arch_env     = ssenv->cenv->birg->main_env->arch_env;
-		ir_node *spilled                 = get_irn_n(spill, be_pos_Spill_val);
-		const arch_register_t *reg       = arch_get_irn_register(arch_env, spilled);
-		const arch_register_class_t *cls = arch_register_get_class(reg);
+		const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, spill, be_pos_Spill_val);
 		ir_mode *largest_mode            = arch_register_class_mode(cls);
 
 		/* this is a new spill context */
@@ -426,15 +425,24 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 		ss->align        = arch_isa_get_reg_class_alignment(arch_env->isa, cls);
 		pmap_insert(ssenv->slots, ctx, ss);
 	} else {
-		ir_node *irn;
 		/* values with the same spill_ctx must go into the same spill slot */
 		ss = entry->value;
-		assert(ss->size == (unsigned)get_mode_size_bytes(get_irn_mode(get_irn_n(spill, be_pos_Spill_val))) && "Different sizes for the same spill slot are not allowed yet.");
-		for (irn = pset_first(ss->members); irn; irn = pset_next(ss->members)) {
-			/* use values_interfere here, because it uses the dominance check,
-			   which does work for values in memory */
-			assert(!values_interfere(spill, irn) && "Spills for the same spill slot must not interfere!");
+
+#ifndef NDEBUG
+		/* ugly mega assert :-) */
+		{
+			ir_node *irn;
+			struct _arch_env_t *arch_env     = ssenv->cenv->birg->main_env->arch_env;
+			const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, spill, be_pos_Spill_val);
+			int size = get_mode_size_bytes(arch_register_class_mode(cls));
+			assert(ss->size == size && "Different sizes for the same spill slot are not allowed.");
+			for (irn = pset_first(ss->members); irn; irn = pset_next(ss->members)) {
+				/* use values_interfere here, because it uses the dominance check,
+					 which does work for values in memory */
+				assert(!values_interfere(spill, irn) && "Spills for the same spill slot must not interfere!");
+			}
 		}
+#endif /* NDEBUG */
 	}
 
 	pset_insert_ptr(ss->members, spill);
