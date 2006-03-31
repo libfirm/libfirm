@@ -1654,10 +1654,11 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 			/* if target mode is not int: add an additional downscale convert */
 			if (tgt_bits < 32) {
 				SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env));
-				set_ia32_res_mode(new_op, tgt_mode);
 				set_ia32_am_support(new_op, ia32_am_Source);
+				set_ia32_tgt_mode(new_op, tgt_mode);
+				set_ia32_src_mode(new_op, src_mode);
 
-				proj   = new_rd_Proj(dbg, irg, block, new_op, mode_Is, 0);
+				proj = new_rd_Proj(dbg, irg, block, new_op, mode_Is, 0);
 
 				if (tgt_bits == 8 || src_bits == 8) {
 					new_op = new_rd_ia32_Conv_I2I8Bit(dbg, irg, block, noreg, noreg, proj, nomem, mode_T);
@@ -1695,7 +1696,8 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *op) {
 
 	if (new_op) {
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env));
-		set_ia32_res_mode(new_op, tgt_mode);
+		set_ia32_tgt_mode(new_op, tgt_mode);
+		set_ia32_src_mode(new_op, src_mode);
 
 		set_ia32_am_support(new_op, ia32_am_Source);
 

@@ -103,6 +103,8 @@ typedef struct _ia32_attr_t {
 
 	ir_mode *ls_mode;   /**< the mode of the stored/loaded value */
 	ir_mode *res_mode;  /**< the mode of the result */
+	ir_mode *src_mode;  /**< source mode for conversion */
+	ir_mode *tgt_mode;  /**< target mode for conversion */
 
 	entity *frame_ent;  /**< the frame entity attached to this node */
 

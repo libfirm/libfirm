@@ -1154,14 +1154,12 @@ static void emit_ia32_CopyB_i(const ir_node *irn, ia32_emit_env_t *emit_env) {
  * Emit code for conversions (I, FP), (FP, I) and (FP, FP).
  */
 static void emit_ia32_Conv_with_FP(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE               *F    = emit_env->out;
-	const lc_arg_env_t *env  = ia32_get_arg_env();
+	FILE               *F        = emit_env->out;
+	const lc_arg_env_t *env      = ia32_get_arg_env();
+	ir_mode	           *src_mode = get_ia32_src_mode(irn);
+	ir_mode            *tgt_mode = get_ia32_tgt_mode(irn);
 	char               *from, *to, buf[64];
-	ir_mode *src_mode, *tgt_mode;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
-
-	src_mode = is_ia32_AddrModeS(irn) ? get_ia32_ls_mode(irn) : get_irn_mode(get_irn_n(irn, 2));
-	tgt_mode = get_ia32_res_mode(irn);
 
 	from = mode_is_float(src_mode) ? (get_mode_size_bits(src_mode) == 32 ? "ss" : "sd") : "si";
 	to   = mode_is_float(tgt_mode) ? (get_mode_size_bits(tgt_mode) == 32 ? "ss" : "sd") : "si";
@@ -1202,13 +1200,11 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	const lc_arg_env_t *env      = ia32_get_arg_env();
 	char               *move_cmd = "movzx";
 	char               *conv_cmd = NULL;
-	ir_mode *src_mode, *tgt_mode;
+	ir_mode	           *src_mode = get_ia32_src_mode(irn);
+	ir_mode            *tgt_mode = get_ia32_tgt_mode(irn);
 	int n, m;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 	const arch_register_t *in_reg, *out_reg;
-
-	src_mode = is_ia32_AddrModeS(irn) ? get_ia32_ls_mode(irn) : get_irn_mode(get_irn_n(irn, 2));
-	tgt_mode = get_ia32_res_mode(irn);
 
 	n = get_mode_size_bits(src_mode);
 	m = get_mode_size_bits(tgt_mode);

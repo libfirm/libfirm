@@ -222,6 +222,26 @@ ir_mode *get_ia32_res_mode(const ir_node *node);
 void set_ia32_res_mode(ir_node *node, ir_mode *mode);
 
 /**
+ * Gets the source mode of conversion.
+ */
+ir_mode *get_ia32_src_mode(const ir_node *node);
+
+/**
+ * Sets the source mode of conversion.
+ */
+void set_ia32_src_mode(ir_node *node, ir_mode *mode);
+
+/**
+ * Gets the target mode of conversion.
+ */
+ir_mode *get_ia32_tgt_mode(const ir_node *node);
+
+/**
+ * Sets the target mode of conversion.
+ */
+void set_ia32_tgt_mode(ir_node *node, ir_mode *mode);
+
+/**
  * Gets the frame entity assigned to this node;
  */
 entity *get_ia32_frame_ent(const ir_node *node);

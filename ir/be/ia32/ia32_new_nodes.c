@@ -766,6 +766,38 @@ void set_ia32_res_mode(ir_node *node, ir_mode *mode) {
 }
 
 /**
+ * Gets the source mode of conversion.
+ */
+ir_mode *get_ia32_src_mode(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->src_mode;
+}
+
+/**
+ * Sets the source mode of conversion.
+ */
+void set_ia32_src_mode(ir_node *node, ir_mode *mode) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->src_mode    = mode;
+}
+
+/**
+ * Gets the target mode of conversion.
+ */
+ir_mode *get_ia32_tgt_mode(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->tgt_mode;
+}
+
+/**
+ * Sets the target mode of conversion.
+ */
+void set_ia32_tgt_mode(ir_node *node, ir_mode *mode) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->tgt_mode    = mode;
+}
+
+/**
  * Gets the frame entity assigned to this node;
  */
 entity *get_ia32_frame_ent(const ir_node *node) {
