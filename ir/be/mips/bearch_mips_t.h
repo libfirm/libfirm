@@ -8,28 +8,29 @@
 #include "../be.h"
 #include "set.h"
 
+typedef struct _mips_isa_t mips_isa_t;
+
 struct _mips_code_gen_t {
 	const arch_code_generator_if_t *impl;           /**< implementation */
 	ir_graph                       *irg;            /**< current irg */
-	FILE                           *out;            /**< output file */
 	const arch_env_t               *arch_env;       /**< the arch env */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	int                             emit_decls;     /**< flag indicating if decls were already emitted */
+	mips_isa_t                     *isa;            /**< the isa instance */
 	const be_irg_t                 *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **bl_list;		/**< The block schedule list. */
 	survive_dce_t				   *bl_list_sdce;	/**< survive dce environment for the block schedule list */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)           /**< debugging module */
 };
 
-
-typedef struct _mips_isa_t {
+struct _mips_isa_t {
 	const arch_isa_if_t   *impl;
 	const arch_register_t *sp;            /**< The stack pointer register. */
 	const arch_register_t *fp;            /**< The base pointer register. */
 	const int              stack_dir;     /**< -1 for decreasing, 1 for increasing. */
-	int                  num_codegens;
-} mips_isa_t;
-
+	int                    num_codegens;
+  FILE                  *out;           /**< output file */
+};
 
 typedef struct _mips_irn_ops_t {
 	const arch_irn_ops_if_t *impl;

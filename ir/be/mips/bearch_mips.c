@@ -477,12 +477,12 @@ static void mips_after_ra(void* self) {
 static void mips_emit_and_done(void *self) {
 	mips_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->out;
+	FILE               *out = cg->isa->out;
 
 	mips_register_emitters();
 
 	if (cg->emit_decls) {
-		mips_gen_decls(cg->out);
+		mips_gen_decls(out);
 		cg->emit_decls = 0;
 	}
 
@@ -501,11 +501,11 @@ static void mips_emit_and_done(void *self) {
 	free(cg);
 }
 
-static void *mips_cg_init(FILE *F, const be_irg_t *birg);
+static void *mips_cg_init(const be_irg_t *birg);
 
 static const arch_code_generator_if_t mips_code_gen_if = {
 	mips_cg_init,
-	NULL,				 /* before abi introduce */
+	NULL,                /* before abi introduce */
 	mips_prepare_graph,
 	mips_before_sched,   /* before scheduling hook */
 	mips_before_ra,      /* before register allocation hook */
@@ -516,15 +516,15 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *mips_cg_init(FILE *F, const be_irg_t *birg) {
+static void *mips_cg_init(const be_irg_t *birg) {
 	mips_isa_t      *isa = (mips_isa_t *)birg->main_env->arch_env->isa;
 	mips_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
 	cg->impl     = &mips_code_gen_if;
 	cg->irg      = birg->irg;
 	cg->reg_set  = new_set(mips_cmp_irn_reg_assoc, 1024);
-	cg->out      = F;
 	cg->arch_env = birg->main_env->arch_env;
+	cg->isa      = isa;
 	cg->birg     = birg;
 	cg->bl_list  = NULL;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.mips.cg");
@@ -559,13 +559,14 @@ static mips_isa_t mips_isa_template = {
 	&mips_general_purpose_regs[REG_SP],
 	&mips_general_purpose_regs[REG_FP],
 	-1,		// stack direction
-	0		// num codegens?!? TODO what is this?
+	0,		// num codegens?!? TODO what is this?
+	NULL
 };
 
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *mips_init(void) {
+static void *mips_init(FILE *file_handle) {
 	static int inited = 0;
 	mips_isa_t *isa;
 
@@ -574,6 +575,8 @@ static void *mips_init(void) {
 
 	isa = xcalloc(1, sizeof(*isa));
 	memcpy(isa, &mips_isa_template, sizeof(*isa));
+
+	isa->out = file_handle;
 
 	mips_register_init(isa);
 	mips_create_opcodes();
