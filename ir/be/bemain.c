@@ -169,15 +169,10 @@ void be_opt_register(void)
 #endif /* WITH_LIBCORE */
 }
 
-static int be_opt_error_handler(const char *prefix, const lc_opt_err_info_t *err)
-{
-
-}
-
 /* Parse one argument. */
 int be_parse_arg(const char *arg) {
 #ifdef WITH_LIBCORE
-	return lc_opt_from_single_arg(be_grp_root, NULL, arg, be_opt_error_handler);
+	return lc_opt_from_single_arg(be_grp_root, NULL, arg, NULL);
 #endif /* WITH_LIBCORE */
 }
 
@@ -280,7 +275,7 @@ static void be_main_loop(FILE *file_handle)
 	isa = arch_env_get_isa(env.arch_env);
 
 	/* For all graphs */
-	for(i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		const arch_code_generator_if_t *cg_if;
 		be_irg_t birg;
