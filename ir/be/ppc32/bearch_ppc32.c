@@ -853,9 +853,6 @@ static void ppc32_register_options(lc_opt_entry_t *ent)
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t ppc32_isa_if = {
-#ifdef WITH_LIBCORE
-	ppc32_register_options,
-#endif
 	ppc32_init,
 	ppc32_done,
 	ppc32_get_n_reg_class,
@@ -865,5 +862,8 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_irn_handler,
 	ppc32_get_code_generator_if,
 	ppc32_get_list_sched_selector,
-	ppc32_get_reg_class_alignment
+	ppc32_get_reg_class_alignment,
+#ifdef WITH_LIBCORE
+	ppc32_register_options
+#endif
 };
