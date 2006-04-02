@@ -120,7 +120,7 @@ static ir_type *get_prim_type(pmap *types, ir_mode *mode)
 static entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 {
 	tarval *tv    = get_Const_tarval(cnst);
-	pmap_entry *e = pmap_find(cg->tv_ent, tv);
+	pmap_entry *e = pmap_find(cg->isa->tv_ent, tv);
 	entity *res;
 	ir_graph *rem;
 
@@ -128,7 +128,7 @@ static entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 		ir_mode *mode = get_irn_mode(cnst);
 		ir_type *tp = get_Const_type(cnst);
 		if (tp == firm_unknown_type)
-			tp = get_prim_type(cg->types, mode);
+			tp = get_prim_type(cg->isa->types, mode);
 
 		res = new_entity(get_glob_type(), unique_id("ia32FloatCnst_%u"), tp);
 
@@ -143,6 +143,8 @@ static entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 		current_ir_graph = get_const_code_irg();
 		set_atomic_ent_value(res, new_Const_type(tv, tp));
 		current_ir_graph = rem;
+
+		pmap_insert(cg->isa->tv_ent, tv, res);
 	}
 	else
 		res = e->value;

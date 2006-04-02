@@ -448,12 +448,11 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	assert((expr_op || imm_op) && "invalid operands");
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			return gen_binop(env, op1, op2, new_rd_ia32_fAdd);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			return gen_binop(env, op1, op2, new_rd_ia32_vfadd);
-		}
 	}
 	else {
 		/* integer ADD */
@@ -533,12 +532,11 @@ static ir_node *gen_Mul(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_node *new_op;
 
 	if (mode_is_float(env->mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = gen_binop(env, op1, op2, new_rd_ia32_fMul);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			new_op = gen_binop(env, op1, op2, new_rd_ia32_vfmul);
-		}
 	}
 	else {
 		new_op = gen_binop(env, op1, op2, new_rd_ia32_Mul);
@@ -647,10 +645,10 @@ static ir_node *gen_Max(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_node *new_op;
 
 	if (mode_is_float(env->mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = gen_binop(env, op1, op2, new_rd_ia32_fMax);
 		else {
-			env->cg->used_x87 = 1;
 			assert(0);
 		}
 	}
@@ -677,10 +675,10 @@ static ir_node *gen_Min(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	ir_node *new_op;
 
 	if (mode_is_float(env->mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = gen_binop(env, op1, op2, new_rd_ia32_fMin);
 		else {
-			env->cg->used_x87 = 1;
 			assert(0);
 		}
 	}
@@ -767,12 +765,11 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	assert((expr_op || imm_op) && "invalid operands");
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			return gen_binop(env, op1, op2, new_rd_ia32_fSub);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			return gen_binop(env, op1, op2, new_rd_ia32_vfsub);
-		}
 	}
 	else {
 		/* integer SUB */
@@ -1119,6 +1116,7 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 	int      size;
 
 	if (mode_is_float(env->mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg)) {
 			new_op = new_rd_ia32_fEor(env->dbg, env->irg, env->block, noreg_gp, noreg_gp, op, noreg_fp, nomem, mode_T);
 
@@ -1135,7 +1133,6 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *op) {
 			new_op = new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, 0);
 		}
 		else {
-			env->cg->used_x87 = 1;
 			new_op = new_rd_ia32_vfchs(env->dbg, env->irg, env->block, op, env->mode);
 			SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 		}
@@ -1183,6 +1180,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 	ident    *name;
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg)) {
 			res = new_rd_ia32_fAnd(dbg,irg, block, noreg_gp, noreg_gp, op, noreg_fp, nomem, mode_T);
 
@@ -1199,7 +1197,6 @@ static ir_node *gen_Abs(ia32_transform_env_t *env, ir_node *op) {
 			res = new_rd_Proj(dbg, irg, block, res, mode, 0);
 		}
 		else {
-			env->cg->used_x87 = 1;
 			res = new_rd_ia32_vfabs(dbg, irg, block, op, mode);
 			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, env->irn));
 		}
@@ -1256,12 +1253,11 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	}
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node), env->mode);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node), env->mode);
-		}
 	}
 	else {
 		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node), env->mode);
@@ -1338,12 +1334,11 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	}
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, sptr, noreg, sval, mem, mode_T);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, sptr, noreg, sval, mem, mode_T);
-		}
 	}
 	else if (get_mode_size_bits(mode) == 8) {
 		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, sptr, noreg, sval, mem, mode_T);
@@ -1445,10 +1440,10 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 			}
 
 			if (mode_is_float(get_irn_mode(expr))) {
+				FP_USED(env->cg);
 				if (USE_SSE2(env->cg))
 					res = new_rd_ia32_fCondJmp(dbg, irg, block, noreg, noreg, expr, noreg, nomem, mode_T);
 				else {
-					env->cg->used_x87 = 1;
 					assert(0);
 				}
 			}
@@ -1460,10 +1455,10 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		}
 		else {
 			if (mode_is_float(get_irn_mode(cmp_a))) {
+				FP_USED(env->cg);
 				if (USE_SSE2(env->cg))
 					res = new_rd_ia32_fCondJmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem, mode_T);
 				else {
-					env->cg->used_x87 = 1;
 					assert(0);
 				}
 			}
@@ -1758,12 +1753,11 @@ static ir_node *gen_StackParam(ia32_transform_env_t *env) {
 //	}
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
-		}
 	}
 	else {
 		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
@@ -1816,16 +1810,14 @@ static ir_node *gen_FrameLoad(ia32_transform_env_t *env) {
 	ir_mode *mode   = get_type_mode(get_entity_type(ent));
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
-		}
 	}
-	else {
+	else
 		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
-	}
 
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
@@ -1855,12 +1847,11 @@ static ir_node *gen_FrameStore(ia32_transform_env_t *env) {
 	ir_mode *mode   = get_irn_mode(val);
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);
-		else {
-			env->cg->used_x87 = 1;
+		else
 			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);
-		}
 	}
 	else if (get_mode_size_bits(mode) == 8) {
 		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, mem, mode_T);

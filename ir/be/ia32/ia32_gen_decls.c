@@ -308,6 +308,11 @@ struct arr_info {
   int size;
 };
 
+static void dump_object_size(struct obstack *obst, char *name, int size) {
+  obstack_printf(obst, "\t.type\t%s,@object\n", name);
+  obstack_printf(obst, "\t.size\t%s,%d\n", name, size);
+}
+
 /*
  * Dumps the initialization of global variables that are not
  * "uninitialized".
@@ -331,13 +336,12 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
       obst = rdata_obstack;
     }
 
-    /* check, wether it is initialized, if yes create data */
+    /* check, whether it is initialized, if yes create data */
     if (variability != variability_uninitialized) {
       if (visibility == visibility_external_visible) {
         obstack_printf(obst, ".globl\t%s\n", ld_name);
       }
-      obstack_printf(obst, "\t.type\t%s,@object\n", ld_name);
-      obstack_printf(obst, "\t.size\t%s,%d\n", ld_name, (get_type_size_bits(ty) + 7) >> 3);
+      dump_object_size(obst, ld_name, (get_type_size_bits(ty) + 7) >> 3);
 
       align = get_type_alignment_bytes(ty);
       ia32_dump_align(obst, align);
@@ -345,20 +349,20 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
       obstack_printf(obst, "%s:\n", ld_name);
 
       if (is_atomic_type(ty)) {
-	if (get_entity_visibility(ent) != visibility_external_allocated)
+        if (get_entity_visibility(ent) != visibility_external_allocated)
           dump_atomic_init(obst, get_atomic_ent_value(ent));
       }
       else {
-      	int i, size = 0;
+        int i, size = 0;
 
-      	if (ent_is_string_const(ent)) {
-      	  dump_string_cst(obst, ent);
-      	}
-      	else if (is_Array_type(ty)) {
+        if (ent_is_string_const(ent)) {
+          dump_string_cst(obst, ent);
+        }
+        else if (is_Array_type(ty)) {
           int filler;
 
           /* potential spare values should be already included! */
-       	  for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+          for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
             entity *step = get_compound_ent_value_member(ent, i);
             ir_type *stype = get_entity_type(step);
 
@@ -522,8 +526,6 @@ void ia32_gen_decls(FILE *out) {
   obstack_init(&rodata);
   obstack_init(&data);
   obstack_init(&comm);
-
-  fprintf(out, "\t.intel_syntax\n");
 
   ia32_dump_globals(&rodata, &data, &comm);
 

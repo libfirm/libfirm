@@ -4,6 +4,7 @@
 #include "pset.h"
 #include "../bearch.h"
 
+#define FP_USED(cg)  ((cg)->used_fp = (cg)->fp_kind)
 #define USE_SSE2(cg) ((cg)->fp_kind == fp_sse2)
 #define USE_x87(cg)  ((cg)->fp_kind == fp_x87)
 

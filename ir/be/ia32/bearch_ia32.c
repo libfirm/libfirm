@@ -57,10 +57,12 @@ static set *cur_reg_set = NULL;
 #undef is_Start
 #define is_Start(irn) (get_irn_opcode(irn) == iro_Start)
 
+/* Creates the unique per irg GP NoReg node. */
 ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg) {
 	return be_abi_get_callee_save_irn(cg->birg->abi, &ia32_gp_regs[REG_GP_NOREG]);
 }
 
+/* Creates the unique per irg FP NoReg node. */
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
 	return be_abi_get_callee_save_irn(cg->birg->abi,
 		USE_SSE2(cg) ? &ia32_xmm_regs[REG_XMM_NOREG] : &ia32_vfp_regs[REG_VFP_NOREG]);
@@ -730,7 +732,7 @@ static void ia32_after_ra(void *self) {
 	irg_block_walk_graph(cg->irg, NULL, ia32_after_ra_walker, self);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
-	if (cg->used_x87) {
+	if (cg->used_fp == fp_x87) {
 		x87_simulate_graph(cg->arch_env, cg->irg, cg->blk_sched);
 	}
 }
@@ -743,28 +745,23 @@ static void ia32_after_ra(void *self) {
 static void ia32_codegen(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
-	FILE            *out = cg->out;
-
-	if (cg->emit_decls) {
-		ia32_gen_decls(cg->out);
-		cg->emit_decls = 0;
-	}
 
 	ia32_finish_irg(irg, cg);
 	be_dump(irg, "-finished", dump_ir_block_graph_sched);
-	ia32_gen_routine(out, irg, cg);
+	ia32_gen_routine(cg->isa->out, irg, cg);
 
 	cur_reg_set = NULL;
 
-	pmap_destroy(cg->tv_ent);
-	pmap_destroy(cg->types);
+	/* remove it from the isa */
+	cg->isa->cg = NULL;
 
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
 	free(self);
+
 }
 
-static void *ia32_cg_init(FILE *F, const be_irg_t *birg);
+static void *ia32_cg_init(const be_irg_t *birg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
@@ -777,23 +774,21 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 };
 
 /**
- * Initializes the code generator.
+ * Initializes a IA32 code generator.
  */
-static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
+static void *ia32_cg_init(const be_irg_t *birg) {
 	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env->isa;
 	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
 
 	cg->impl      = &ia32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ia32_cmp_irn_reg_assoc, 1024);
-	cg->out       = F;
 	cg->arch_env  = birg->main_env->arch_env;
-	cg->types     = pmap_create();
-	cg->tv_ent    = pmap_create();
+	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
 	cg->fp_kind   = isa->fp_kind;
-	cg->used_x87  = 0;
+	cg->used_fp   = fp_none;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.cg");
 
@@ -803,6 +798,9 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->opt.placecnst = 1;
 	cg->opt.immops    = 1;
 	cg->opt.extbb     = 1;
+
+	/* enter it */
+	isa->cg = cg;
 
 #ifndef NDEBUG
 	if (isa->name_obst_size) {
@@ -839,6 +837,11 @@ static void *ia32_cg_init(FILE *F, const be_irg_t *birg) {
  *
  *****************************************************************/
 
+/**
+ * The template that generates a new ISA object.
+ * Note that this template can be changed by command line
+ * arguments.
+ */
 static ia32_isa_t ia32_isa_template = {
 	&ia32_isa_if,            /* isa interface implementation */
 	&ia32_gp_regs[REG_ESP],  /* stack pointer register */
@@ -847,9 +850,12 @@ static ia32_isa_t ia32_isa_template = {
 	0,                       /* number of code generator objects so far */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
+	NULL,                    /* types */
+	NULL,                    /* tv_ents */
 	arch_pentium_4,          /* instruction architecture */
 	arch_pentium_4,          /* optimize for architecture */
 	fp_sse2,                 /* use sse2 unit */
+	NULL,                    /* current code generator */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
 	0                        /* name obst size */
@@ -859,14 +865,14 @@ static ia32_isa_t ia32_isa_template = {
 /**
  * Initializes the backend ISA.
  */
-static void *ia32_init(void) {
+static void *ia32_init(FILE *file_handle) {
 	static int inited = 0;
 	ia32_isa_t *isa;
 
-	if(inited)
+	if (inited)
 		return NULL;
 
-	isa = xcalloc(1, sizeof(*isa));
+	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
 
 	ia32_register_init(isa);
@@ -875,15 +881,32 @@ static void *ia32_init(void) {
 
 	isa->regs_16bit = pmap_create();
 	isa->regs_8bit  = pmap_create();
+	isa->types      = pmap_create();
+	isa->tv_ent     = pmap_create();
+	isa->out        = file_handle;
 
 	ia32_build_16bit_reg_map(isa->regs_16bit);
 	ia32_build_8bit_reg_map(isa->regs_8bit);
 
+	/* patch regigter names of x87 registers */
+	if (USE_x87(isa)) {
+	  ia32_st_regs[0].name = "st";
+	  ia32_st_regs[1].name = "st(1)";
+	  ia32_st_regs[2].name = "st(2)";
+	  ia32_st_regs[3].name = "st(3)";
+	  ia32_st_regs[4].name = "st(4)";
+	  ia32_st_regs[5].name = "st(5)";
+	  ia32_st_regs[6].name = "st(6)";
+	  ia32_st_regs[7].name = "st(7)";
+	}
+
 #ifndef NDEBUG
-	isa->name_obst = xcalloc(1, sizeof(*(isa->name_obst)));
+	isa->name_obst = xmalloc(sizeof(*isa->name_obst));
 	obstack_init(isa->name_obst);
 	isa->name_obst_size = 0;
 #endif /* NDEBUG */
+
+  fprintf(isa->out, "\t.intel_syntax\n");
 
 	inited = 1;
 
@@ -898,8 +921,13 @@ static void *ia32_init(void) {
 static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
+	/* emit now all global declarations */
+	ia32_gen_decls(isa->out);
+
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
+	pmap_destroy(isa->tv_ent);
+	pmap_destroy(isa->types);
 
 #ifndef NDEBUG
 	//printf("name obst size = %d bytes\n", isa->name_obst_size);
@@ -915,7 +943,7 @@ static void ia32_done(void *self) {
  * We report always these:
  *  - the general purpose registers
  *  - the floating point register set (depending on the unit used for FP)
- *  - MMX/SE registers (currently not supported)
+ *  - MMX/SSE registers (currently not supported)
  */
 static int ia32_get_n_reg_class(const void *self) {
 	return 2;
