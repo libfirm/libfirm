@@ -921,9 +921,6 @@ static void mips_register_options(lc_opt_entry_t *ent)
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t mips_isa_if = {
-#ifdef WITH_LIBCORE
-	mips_register_options,
-#endif
 	mips_init,
 	mips_done,
 	mips_get_n_reg_class,
@@ -933,5 +930,8 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_irn_handler,
 	mips_get_code_generator_if,
 	mips_get_list_sched_selector,
-	mips_get_reg_class_alignment
+	mips_get_reg_class_alignment,
+#ifdef WITH_LIBCORE
+	mips_register_options
+#endif
 };
