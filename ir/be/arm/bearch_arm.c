@@ -306,10 +306,10 @@ static void arm_before_ra(void *self) {
 static void arm_emit_and_done(void *self) {
 	arm_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->out;
+	FILE               *out = cg->isa->out;
 
 	if (cg->emit_decls) {
-		arm_gen_decls(cg->out);
+		arm_gen_decls(out);
 		cg->emit_decls = 0;
 	}
 
@@ -451,11 +451,11 @@ static void arm_before_abi(void *self) {
 	irg_walk_graph(cg->irg, NULL, handle_calls, cg);
 }
 
-static void *arm_cg_init(FILE *F, const be_irg_t *birg);
+static void *arm_cg_init(const be_irg_t *birg);
 
 static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_cg_init,
-	arm_before_abi,		/* before abi introduce */
+	arm_before_abi,     /* before abi introduce */
 	arm_prepare_graph,
 	arm_before_sched,   /* before scheduling hook */
 	arm_before_ra,      /* before register allocation hook */
@@ -466,7 +466,7 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *arm_cg_init(FILE *F, const be_irg_t *birg) {
+static void *arm_cg_init(const be_irg_t *birg) {
 	static ir_type *int_tp = NULL;
 	arm_isa_t      *isa = (arm_isa_t *)birg->main_env->arch_env->isa;
 	arm_code_gen_t *cg;
@@ -480,11 +480,12 @@ static void *arm_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->impl     = &arm_code_gen_if;
 	cg->irg      = birg->irg;
 	cg->reg_set  = new_set(arm_cmp_irn_reg_assoc, 1024);
-	cg->out      = F;
 	cg->arch_env = birg->main_env->arch_env;
+	cg->isa      = isa;
 	cg->birg     = birg;
 	cg->int_tp   = int_tp;
 	cg->have_fp  = 0;
+
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
 
 	isa->num_codegens++;
@@ -638,13 +639,14 @@ static arm_isa_t arm_isa_template = {
 	-1,                    /* stack direction */
 	0,                     /* number of codegenerator objects */
 	0,                     /* use generic register names instead of SP, LR, PC */
-	NULL                   /* current code generator */
+	NULL,                  /* current code generator */
+	NULL,                  /* output file */
 };
 
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *arm_init(void) {
+static void *arm_init(FILE *file_handle) {
 	static int inited = 0;
 	arm_isa_t *isa;
 
