@@ -665,7 +665,8 @@ static void *arm_init(FILE *file_handle) {
 		arm_gp_regs[REG_PC].name  = "r15";
 	}
 
-	isa->cg = NULL;
+	isa->cg  = NULL;
+	isa->out = file_handle;
 
 	arm_create_opcodes();
 	arm_global_init();
