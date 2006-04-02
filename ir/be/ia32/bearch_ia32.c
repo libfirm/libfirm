@@ -1142,19 +1142,23 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	{ NULL }
 };
 
+/**
+ * Register command line options for the ia32 backend.
+ *
+ * Options so far:
+ *
+ * ia32-arch=arch    create instruction for arch
+ * ia32-opt=arch     optimize for run on arch
+ * ia32-fpunit=unit  select floating point unit (x87 or SSE2)
+ */
 static void ia32_register_options(lc_opt_entry_t *ent)
 {
-	lc_opt_entry_t *be_grp_ia32;
-
-	be_grp_ia32 = lc_opt_get_grp(ent, "ia32");
+	lc_opt_entry_t *be_grp_ia32 = lc_opt_get_grp(ent, "ia32");
 	lc_opt_add_table(be_grp_ia32, ia32_options);
 }
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t ia32_isa_if = {
-#ifdef WITH_LIBCORE
-	ia32_register_options,
-#endif
 	ia32_init,
 	ia32_done,
 	ia32_get_n_reg_class,
@@ -1164,5 +1168,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector,
-	ia32_get_reg_class_alignment
+	ia32_get_reg_class_alignment,
+#ifdef WITH_LIBCORE
+	ia32_register_options
+#endif
 };
