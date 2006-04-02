@@ -5,8 +5,8 @@
 
 typedef struct _ppc32_register_req_t {
 	const arch_register_req_t req;
-	int same_pos;        /**<< in case of "should be same" we need to remember the pos to get the irn */
-	int different_pos;   /**<< in case of "should be different" we need to remember the pos to get the irn */
+	int same_pos;        /**< in case of "should be same" we need to remember the pos to get the irn */
+	int different_pos;   /**< in case of "should be different" we need to remember the pos to get the irn */
 } ppc32_register_req_t;
 
 typedef struct
@@ -18,7 +18,12 @@ typedef struct
 
 
 typedef enum {
-	ppc32_ac_None, ppc32_ac_Const, ppc32_ac_SymConst, ppc32_ac_FrameEntity, ppc32_ac_RlwimiConst, ppc32_ac_BranchProj,
+	ppc32_ac_None,
+	ppc32_ac_Const,
+	ppc32_ac_SymConst,
+	ppc32_ac_FrameEntity,
+	ppc32_ac_RlwimiConst,
+	ppc32_ac_BranchProj,
 	ppc32_ac_Offset
 } ppc32_attr_content_type;
 
@@ -27,13 +32,13 @@ typedef enum {
 } ppc32_attr_offset_mode;
 
 typedef struct _ppc32_attr_t {
-	arch_irn_flags_t flags;     /**<< indicating if spillable, rematerializeable ... etc. */
-	int              n_res;     /**<< number of results for this node */
+	arch_irn_flags_t flags;     /**< indicating if spillable, rematerializeable ... etc. */
+	int              n_res;     /**< number of results for this node */
 
-	const ppc32_register_req_t **in_req;  /**<< register requirements for arguments */
-	const ppc32_register_req_t **out_req; /**<< register requirements for results */
+	const ppc32_register_req_t **in_req;  /**< register requirements for arguments */
+	const ppc32_register_req_t **out_req; /**< register requirements for results */
 
-	const arch_register_t **slots;          /**<< register slots for assigned registers */
+	const arch_register_t **slots;          /**< register slots for assigned registers */
 
 	ppc32_attr_content_type content_type;
 	ppc32_attr_offset_mode offset_mode;
