@@ -42,6 +42,7 @@ my @obst_opvar;       # stack for the "ir_op *op_<arch>_<op-name> = NULL;" state
 my @obst_get_opvar;   # stack for the get_op_<arch>_<op-name>() functions
 my @obst_constructor; # stack for node constructor functions
 my @obst_new_irop;    # stack for the new_ir_op calls
+my @obst_enum_op;     # stack for creating the <arch>_opcode enum
 my @obst_header;      # stack for function prototypes
 my @obst_is_archirn;  # stack for the is_$arch_irn() function
 my @obst_cmp_attr;    # stack for the compare attribute functions
@@ -49,13 +50,14 @@ my $orig_op;
 my $arity;
 my $cmp_attr_func;
 my $temp;
-my $n_opcodes = 2;    # we have two additional border opcodes (lowest/highest)
+my $n_opcodes = 0;    # number of opcodes
 
 # for registering additional opcodes
 $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
+push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
 	my %n = %{ $nodes{"$op"} };
 
@@ -194,7 +196,7 @@ foreach my $op (keys(%nodes)) {
 			if (exists($n{"irn_flags"})) {
 				foreach my $flag (split(/\|/, $n{"irn_flags"})) {
 					if ($flag eq "R") {
-						$temp .= "  flags |= arch_irn_flags_rematerializable;   /* op can be easily recalulated */\n";
+						$temp .= "  flags |= arch_irn_flags_rematerializable;   /* op can be easily recalculated */\n";
 					}
 					elsif ($flag eq "N") {
 						$temp .= "  flags |= arch_irn_flags_dont_spill;         /* op is NOT spillable */\n";
@@ -270,10 +272,15 @@ foreach my $op (keys(%nodes)) {
 	}
 
 	$n_opcodes++;
-	$temp  = "  op_$op = new_ir_op(cur_opcode++, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
+	$temp  = "  op_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
 	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t), &ops);\n";
 	push(@obst_new_irop, $temp);
+	push(@obst_enum_op, "  iro_$op,\n");
 }
+push(@obst_enum_op, "  iro_$arch\_last_generated,\n");
+push(@obst_enum_op, "  iro_$arch\_last = iro_$arch\_last_generated");
+push(@obst_enum_op, " + $additional_opcodes") if (defined($additional_opcodes));
+push(@obst_enum_op, "\n} $arch\_opcodes;\n\n");
 
 # emit the code
 
@@ -289,27 +296,35 @@ print OUT "\n";
 
 print OUT<<ENDOFISIRN;
 
-static opcode $arch\_opcode_start = -1;
-static opcode $arch\_opcode_end   = -1;
+static int $arch\_opcode_start = -1;
+static int $arch\_opcode_end   = -1;
 
-opcode get_$arch\_opcode_first(void) {
-  return $arch\_opcode_start + 1;
+/** Return the opcode number of the first $arch opcode. */
+int get_$arch\_opcode_first(void) {
+  return $arch\_opcode_start;
 }
 
-opcode get_$arch\_opcode_last(void) {
-  return $arch\_opcode_end - 1;
+/** Return the opcode number of the last $arch opcode + 1. */
+int get_$arch\_opcode_last(void) {
+  return $arch\_opcode_end;
 }
 
+/** Return non-zero if the given node is a $arch machine node. */
 int is_$arch\_irn(const ir_node *node) {
-  opcode opc = get_irn_opcode(node);
+  unsigned opc = (unsigned)get_irn_opcode(node);
 
   assert($arch\_opcode_start > 0 && "missing opcode init");
   assert($arch\_opcode_end > 0 && "missing opcode init");
 
-  if (opc > $arch\_opcode_start && opc < $arch\_opcode_end)
+  if (opc - (unsigned)$arch\_opcode_start < (unsigned)($arch\_opcode_end - $arch\_opcode_start))
     return 1;
 
   return 0;
+}
+
+int get_$arch\_irn_opcode(const ir_node *node) {
+  assert(is_$arch\_irn(node));
+  return get_irn_opcode(node) - $arch\_opcode_start;
 }
 
 ENDOFISIRN
@@ -318,7 +333,7 @@ print OUT @obst_constructor;
 
 print OUT<<ENDOFMAIN;
 /**
- * Creates the $arch specific firm operations
+ * Creates the $arch specific Firm machine operations
  * needed for the assembler irgs.
  */
 void $arch\_create_opcodes(void) {
@@ -336,15 +351,15 @@ void $arch\_create_opcodes(void) {
 #define R   (irop_flag_machine<<1)
 
   ir_op_ops ops;
-  int cur_opcode = get_next_ir_opcodes($n_opcodes);
+  int cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 
-  $arch\_opcode_start = cur_opcode++;
-
+  $arch\_opcode_start = cur_opcode;
 ENDOFMAIN
 
 print OUT @obst_new_irop;
-print OUT "\n  $arch\_register_additional_opcodes(cur_opcode);\n";
-print OUT "  $arch\_opcode_end = cur_opcode";
+print OUT "\n";
+print OUT "  $arch\_register_additional_opcodes(cur_opcode);\n" if (defined($additional_opcodes));
+print OUT "  $arch\_opcode_end = cur_opcode + iro_$arch\_last";
 print OUT " + $additional_opcodes" if (defined($additional_opcodes));
 print OUT ";\n";
 print OUT "}\n";
@@ -353,10 +368,15 @@ close(OUT);
 
 open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
 
+print OUT "#ifndef __GEN_$arch\_NEW_NODES_H__\n";
+print OUT "#define __GEN_$arch\_NEW_NODES_H__\n\n";
+print OUT @obst_enum_op;
 print OUT "int is_$arch\_irn(const ir_node *node);\n\n";
-print OUT "opcode get_$arch\_opcode_first(void);\n";
-print OUT "opcode get_$arch\_opcode_last(void);\n\n";
+print OUT "int get_$arch\_opcode_first(void);\n";
+print OUT "int get_$arch\_opcode_last(void);\n";
+print OUT "int get_$arch\_irn_opcode(const ir_node *node);\n";
 print OUT @obst_header;
+print OUT "\n#endif /* __GEN_$arch\_NEW_NODES_H__ */\n";
 
 close(OUT);
 
