@@ -294,10 +294,10 @@ static void TEMPLATE_after_ra(void *self) {
 static void TEMPLATE_emit_and_done(void *self) {
 	TEMPLATE_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->out;
+	FILE               *out = cg->isa->out;
 
 	if (cg->emit_decls) {
-		TEMPLATE_gen_decls(cg->out);
+		TEMPLATE_gen_decls(out);
 		cg->emit_decls = 0;
 	}
 
@@ -312,7 +312,7 @@ static void TEMPLATE_emit_and_done(void *self) {
 	free(self);
 }
 
-static void *TEMPLATE_cg_init(FILE *F, const be_irg_t *birg);
+static void *TEMPLATE_cg_init(const be_irg_t *birg);
 
 static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_cg_init,
@@ -326,15 +326,15 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *TEMPLATE_cg_init(FILE *F, const be_irg_t *birg) {
+static void *TEMPLATE_cg_init(const be_irg_t *birg) {
 	TEMPLATE_isa_t      *isa = (TEMPLATE_isa_t *)birg->main_env->arch_env->isa;
 	TEMPLATE_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
 	cg->impl     = &TEMPLATE_code_gen_if;
 	cg->irg      = birg->irg;
 	cg->reg_set  = new_set(TEMPLATE_cmp_irn_reg_assoc, 1024);
-	cg->out      = F;
 	cg->arch_env = birg->main_env->arch_env;
+	cg->isa      = isa;
 	cg->birg     = birg;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.TEMPLATE.cg");
 
@@ -375,7 +375,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *TEMPLATE_init(void) {
+static void *TEMPLATE_init(FILE *outfile) {
 	static int inited = 0;
 	TEMPLATE_isa_t *isa;
 
@@ -384,6 +384,8 @@ static void *TEMPLATE_init(void) {
 
 	isa = xcalloc(1, sizeof(*isa));
 	memcpy(isa, &TEMPLATE_isa_template, sizeof(*isa));
+
+	isa->out = outfile;
 
 	TEMPLATE_register_init(isa);
 	TEMPLATE_create_opcodes();
@@ -489,7 +491,7 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t
 		/* be_abi_call_param_reg(abi, i, reg); */
 
 		/* default: all parameters on stack */
-		be_abi_call_param_stack(abi, i);
+		be_abi_call_param_stack(abi, i, 4, 0, 0);
 	}
 
 	/* TODO: set correct return register */
@@ -537,6 +539,14 @@ static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(const void 
 	return &TEMPLATE_sched_selector;
 }
 
+/**
+ * Returns the necessary byte alignment for storing a register of given class.
+ */
+static int TEMPLATE_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	ir_mode *mode = arch_register_class_mode(cls);
+	return get_mode_size_bytes(mode);
+}
+
 #ifdef WITH_LIBCORE
 static void TEMPLATE_register_options(lc_opt_entry_t *ent)
 {
@@ -544,9 +554,6 @@ static void TEMPLATE_register_options(lc_opt_entry_t *ent)
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t TEMPLATE_isa_if = {
-#ifdef WITH_LIBCORE
-	TEMPLATE_register_options,
-#endif
 	TEMPLATE_init,
 	TEMPLATE_done,
 	TEMPLATE_get_n_reg_class,
@@ -556,4 +563,8 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_irn_handler,
 	TEMPLATE_get_code_generator_if,
 	TEMPLATE_get_list_sched_selector,
+	TEMPLATE_get_reg_class_alignment,
+#ifdef WITH_LIBCORE
+	TEMPLATE_register_options
+#endif
 };

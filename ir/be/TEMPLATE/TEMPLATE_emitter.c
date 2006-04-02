@@ -15,6 +15,7 @@
 #include "irprintf.h"
 #include "irop_t.h"
 #include "irargs_t.h"
+#include "irprog.h"
 
 #include "../besched.h"
 
@@ -296,10 +297,10 @@ static void TEMPLATE_register_emitters(void) {
  * Emits code for a node.
  */
 void TEMPLATE_emit_node(ir_node *irn, void *env) {
-	emit_env_t        *emit_env = env;
-	FILE              *F        = emit_env->out;
-	ir_op             *op       = get_irn_op(irn);
-	DEBUG_ONLY(firm_dbg_module_t *mod      = emit_env->mod;)
+	TEMPLATE_emit_env_t *emit_env = env;
+	FILE                *F        = emit_env->out;
+	ir_op               *op       = get_irn_op(irn);
+	DEBUG_ONLY(firm_dbg_module_t *mod = emit_env->mod;)
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 
@@ -317,12 +318,13 @@ void TEMPLATE_emit_node(ir_node *irn, void *env) {
  * and emits code for each node.
  */
 void TEMPLATE_gen_block(ir_node *block, void *env) {
+	TEMPLATE_emit_env_t *emit_env = env;
 	ir_node *irn;
 
 	if (! is_Block(block))
 		return;
 
-	fprintf(((emit_env_t *)env)->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
+	fprintf(emit_env->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
 	sched_foreach(block, irn) {
 		TEMPLATE_emit_node(irn, env);
 	}
@@ -365,7 +367,7 @@ void TEMPLATE_gen_labels(ir_node *block, void *env) {
  * Main driver
  */
 void TEMPLATE_gen_routine(FILE *F, ir_graph *irg, const TEMPLATE_code_gen_t *cg) {
-	emit_env_t emit_env;
+	TEMPLATE_emit_env_t emit_env;
 
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
