@@ -126,10 +126,10 @@ static void *firm_init(void)
 {
   static struct obstack obst;
   static int inited = 0;
-	arch_isa_t *isa = xmalloc(sizeof(*isa));
+  arch_isa_t *isa = xmalloc(sizeof(*isa));
   int k;
 
-	isa->impl = &firm_isa;
+  isa->impl = &firm_isa;
 
   if(inited)
     return NULL;
@@ -141,7 +141,7 @@ static void *firm_init(void)
     arch_register_class_t *cls = &reg_classes[k];
     int i;
 
-	cls->mode = mode_Is;
+    cls->mode = mode_Is;
     for(i = 0; i < cls->n_regs; ++i) {
       int n;
       char buf[8];
@@ -612,9 +612,6 @@ static void firm_register_options(lc_opt_entry_t *ent)
 #endif
 
 const arch_isa_if_t firm_isa = {
-#ifdef WITH_LIBCORE
-	firm_register_options,
-#endif
 	firm_init,
 	firm_done,
 	firm_get_n_reg_class,
@@ -624,5 +621,8 @@ const arch_isa_if_t firm_isa = {
 	firm_get_irn_handler,
 	firm_get_code_generator_if,
 	firm_get_list_sched_selector,
-	firm_get_reg_class_alignment
+	firm_get_reg_class_alignment,
+#ifdef WITH_LIBCORE
+	firm_register_options,
+#endif
 };
