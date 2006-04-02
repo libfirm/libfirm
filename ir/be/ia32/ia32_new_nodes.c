@@ -9,9 +9,11 @@
 #include "config.h"
 #endif
 
-#ifdef _WIN32
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
-#else
+#endif
+
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
 
@@ -33,16 +35,6 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
-
-#ifdef obstack_chunk_alloc
-# undef obstack_chunk_alloc
-# define obstack_chunk_alloc xmalloc
-#else
-# define obstack_chunk_alloc xmalloc
-# define obstack_chunk_free free
-#endif
-
-extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 
 /**
  * Returns the ident of a SymConst.
@@ -1264,10 +1256,6 @@ void ia32_register_copy_attr_func(void) {
 		ir_op *op = get_irp_opcode(i);
 		op->ops.copy_attr = ia32_copy_attr;
 	}
-}
-
-static void ia32_register_additional_opcodes(int n) {
-	/* we don't need any additional opcodes */
 }
 
 /* Include the generated constructor functions */
