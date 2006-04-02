@@ -32,6 +32,7 @@ extern ir_op *op_be_Reload;
 extern ir_op *op_be_Perm;
 extern ir_op *op_be_Copy;
 extern ir_op *op_be_Keep;
+extern ir_op *op_be_CopyKeep;
 extern ir_op *op_be_Call;
 extern ir_op *op_be_Return;
 extern ir_op *op_be_IncSP;
