@@ -1,5 +1,5 @@
-#ifndef _arm_NEW_NODES_H_
-#define _arm_NEW_NODES_H_
+#ifndef _ARM_NEW_NODES_H_
+#define _ARM_NEW_NODES_H_
 
 /**
  * Function prototypes for the assembler ir node constructors.
@@ -100,8 +100,11 @@ void set_arm_n_res(ir_node *node, int n_res);
  */
 int get_arm_n_res(const ir_node *node);
 
+/**
+ * Set the ARM machine node attributes to default values.
+ */
 void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** in_reqs,
-						 const arm_register_req_t ** out_reqs, int n_res);
+                         const arm_register_req_t ** out_reqs, int n_res);
 
 ir_node *arm_new_NoReg_gp(arm_code_gen_t *cg);
 ir_node *arm_new_NoReg_fp(arm_code_gen_t *cg);
@@ -152,8 +155,17 @@ long get_arm_default_proj_num(ir_node *node);
  */
 void set_arm_default_proj_num(ir_node *node, long default_proj_num);
 
+/**
+ * Gets the shift modifier attribute.
+ */
+arm_shift_modifier get_arm_shift_modifier(ir_node *node);
+
+/**
+ * Decode an immediate with shifter operand
+ */
+unsigned int arm_decode_imm_w_shift(tarval *tv);
 
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 
-#endif /* _arm_NEW_NODES_H_ */
+#endif /* _ARM_NEW_NODES_H_ */

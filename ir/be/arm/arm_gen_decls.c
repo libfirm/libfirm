@@ -9,23 +9,14 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "xmalloc.h"
-#include <obstack.h>
-
-#ifdef obstack_chunk_alloc
-# undef obstack_chunk_alloc
-# define obstack_chunk_alloc xmalloc
-#else
-# define obstack_chunk_alloc xmalloc
-# define obstack_chunk_free free
-#endif
-
-extern int obstack_printf(struct obstack *obst, char *fmt, ...);
+#include "obst.h"
 
 #include "tv.h"
 #include "irnode.h"
 #include "entity.h"
 #include "irprog.h"
+
+#include "arm_emitter.h"
 
 #include "arm_gen_decls.h"
 
@@ -574,21 +565,21 @@ void arm_gen_decls(FILE *out) {
   size = obstack_object_size(&data);
   cp   = obstack_finish(&data);
   if (size > 0) {
-    fprintf(out, "\t.data\n");
+		arm_switch_section(out, SECTION_DATA);
     fwrite(cp, 1, size, out);
   }
 
   size = obstack_object_size(&rodata);
   cp   = obstack_finish(&rodata);
   if (size > 0) {
-    fprintf(out, "\t.section\t.rodata\n");
+		arm_switch_section(out, SECTION_RODATA);
     fwrite(cp, 1, size, out);
   }
 
   size = obstack_object_size(&comm);
   cp   = obstack_finish(&comm);
   if (size > 0) {
-    fprintf(out, "\t.common\n");
+		arm_switch_section(out, SECTION_COMMON);
     fwrite(cp, 1, size, out);
   }
 

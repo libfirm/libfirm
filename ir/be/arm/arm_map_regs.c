@@ -15,10 +15,10 @@
 
 
 static const arch_register_t *gpreg_param_reg_std[] = {
-	&arm_general_purpose_regs[REG_R0],
-	&arm_general_purpose_regs[REG_R1],
-	&arm_general_purpose_regs[REG_R2],
-	&arm_general_purpose_regs[REG_R3],
+	&arm_gp_regs[REG_R0],
+	&arm_gp_regs[REG_R1],
+	&arm_gp_regs[REG_R2],
+	&arm_gp_regs[REG_R3],
 };
 
 const arch_register_t *arm_get_RegParam_reg(int n) {
@@ -71,12 +71,12 @@ long arm_translate_proj_pos(const ir_node *proj) {
 	ir_node *pred = get_Proj_pred(proj);
 	long nr       = get_Proj_proj(proj);
 
-	if (is_arm_Load(pred) || is_arm_fLoadd(pred) || is_arm_fLoads(pred)) {
+	if (is_arm_Load(pred) || is_arm_fLoad(pred)) {
 		if (nr == pn_Load_res)
 			return 0;
 		assert(0 && "unsupported Proj(Load) number");
 	}
-	else if (is_arm_Store(pred) || is_arm_fStores(pred) || is_arm_fStored(pred)) {
+	else if (is_arm_Store(pred) || is_arm_fStore(pred)) {
 		return 0;
 	}
 	else if (is_arm_fDiv(pred)) {

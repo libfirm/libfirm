@@ -33,6 +33,30 @@
 
 static const arch_env_t *arch_env = NULL;
 
+/**
+ * Switch to a new section
+ */
+void arm_switch_section(FILE *f, sections sec) {
+	static sections curr_sec = NO_SECTION;
+
+	if (curr_sec == sec)
+		return;
+
+	curr_sec = sec;
+	switch (sec) {
+
+	case NO_SECTION:
+		break;
+
+	case SECTION_TEXT:
+		fprintf(f, "\t.text\n");
+		break;
+
+	case SECTION_DATA:
+		fprintf(f, "\t.data\n");
+		break;
+	}
+}
 
 /*************************************************************
  *             _       _    __   _          _
@@ -45,80 +69,51 @@ static const arch_env_t *arch_env = NULL;
  * |_|                                       |_|
  *************************************************************/
 
+/**
+ * Returns non-zero if a mode has a Immediate attribute.
+ */
 int is_immediate_node(ir_node *irn) {
-	if (is_arm_Add_i(irn) || is_arm_Sub_i(irn))
-		return 1;
-	if (is_arm_Shr_i(irn) || is_arm_Shr_i(irn) || is_arm_Shl_i(irn))
-		return 1;
-	if (is_arm_And_i(irn) || is_arm_Or_i(irn) || is_arm_Eor_i(irn))
-		return 1;
-	if (is_arm_Or_Shl_i(irn))
-		return 1;
-	return 0;
+	arm_attr_t *attr = get_arm_attr(irn);
+	return ARM_GET_SHF_MOD(attr) == ARM_SHF_IMM;
 }
 
 /**
- * Return a const or symconst as string.
+ * Return a const or SymConst as string.
  */
-static const char *node_const_to_str(ir_node *n) {
-	char buffer[SNPRINTF_BUF_LEN];
-
-	if ( is_immediate_node(n) ) {
-		long longvalue = get_tarval_long(get_arm_value(n));
-		char *str;
-		assert(longvalue < 0x1000 && "constant doesn't fit in shifter_operand");
-		snprintf(buffer, SNPRINTF_BUF_LEN - 1, "#%ld << %ld", longvalue & 0xff, (longvalue >> 8) << 1 );
-		str = xmalloc(strlen(buffer) * sizeof(char));
-		strcpy(str, buffer);
-		return str;
+static const char *node_const_to_str(ir_node *n, char *buf, int buflen) {
+	if (is_immediate_node(n)) {
+		snprintf(buf, buflen, "#0x%X", arm_decode_imm_w_shift(get_arm_value(n)));
+		return buf;
 	}
-	if ( is_arm_Const(n) || is_arm_Const_Neg(n) ) {
-		tarval *tv = get_arm_value(n);
-		if ( mode_is_int(get_tarval_mode(tv)) ) {
-			long longvalue = get_tarval_long(get_arm_value(n));
-			char *str;
-			assert(longvalue < 0x1000 && "constant doesn't fit in shifter_operand");
-			snprintf(buffer, SNPRINTF_BUF_LEN - 1, "#%ld << %ld", longvalue & 0xff, (longvalue >> 8) << 1 );
-			str = xmalloc(strlen(buffer) * sizeof(char));
-			strcpy(str, buffer);
-			return str;
-		} else {
-			return "found something else in arm_const";
-		}
-	} else if ( is_arm_SymConst(n) ) {
+	else if (is_arm_SymConst(n))
 		return get_arm_symconst_label(n);
-	} else {
-		assert( 0 && "das ist gar keine Konstante");
-		return NULL;
-	}
 
+	assert( 0 && "das ist gar keine Konstante");
+	return NULL;
 }
 
 /**
  * Returns node's offset as string.
  */
-static char *node_offset_to_str(ir_node *n) {
-	char buffer[SNPRINTF_BUF_LEN];
-	char *result;
+static const char *node_offset_to_str(ir_node *n, char *buf, int buflen) {
 	int offset = 0;
 	ir_op *irn_op = get_irn_op(n);
+
 	if (irn_op == op_be_StackParam) {
 		entity *ent = be_get_frame_entity(n);
 		offset = get_entity_offset_bytes(ent);
-	} else if (irn_op==op_be_Reload || irn_op==op_be_Spill) {
+	} else if (irn_op == op_be_Reload || irn_op == op_be_Spill) {
 		entity * ent = be_get_spill_entity(n);
 		offset = get_entity_offset_bytes(ent);
-	} else if (irn_op==op_be_IncSP) {
+	} else if (irn_op == op_be_IncSP) {
 		int offs = be_get_IncSP_offset(n);
 		be_stack_dir_t dir  = be_get_IncSP_direction(n);
 		offset = (dir == be_stack_dir_expand) ? -offs : offs;
 	} else {
 		return "node_offset_to_str will fuer diesen Knotentyp noch implementiert werden";
 	}
-	snprintf(buffer, SNPRINTF_BUF_LEN, "%d", offset);
-	result = xmalloc(sizeof(char)*(strlen(buffer) + 1));
-	strcpy(result, buffer);
-	return result;
+	snprintf(buf, buflen, "%d", offset);
+	return buf;
 }
 
 /* We always pass the ir_node which is a pointer. */
@@ -141,12 +136,6 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 	op = get_irn_n(irn, pos);
 
 	reg = arch_get_irn_register(arch_env, op);
-
-	/* ONLY TEMPORARY WORK-AROUND */
-// 	if (!reg) {
-// 		printf("FIXME\n");
-// 		reg = &arm_general_purpose_regs[REG_MURX];
-// 	}
 
 	assert(reg && "no in register found");
 	return reg;
@@ -251,6 +240,7 @@ static int arm_get_reg_name(lc_appendable_t *app,
 static int arm_const_to_str(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
+	char buffer[SNPRINTF_BUF_LEN];
 	const char *buf;
 	ir_node    *X = arg->v_ptr;
 
@@ -258,17 +248,40 @@ static int arm_const_to_str(lc_appendable_t *app,
 		return lc_appendable_snadd(app, "(null)", 6);
 
 	if (occ->conversion == 'C') {
-		buf = node_const_to_str(X);
+		buf = node_const_to_str(X, buffer, sizeof(buffer));
 	}
 	else { /* 'O' */
-		buf = node_offset_to_str(X);
+		buf = node_offset_to_str(X, buffer, sizeof(buffer));
 	}
 
 	return lc_appendable_snadd(app, buf, strlen(buf));
 }
 
 /**
- * Determines the SSE suffix depending on the mode.
+ * Returns the tarval or offset of an arm node as a string.
+ */
+static int arm_shift_str(lc_appendable_t *app,
+    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+{
+	char buffer[SNPRINTF_BUF_LEN];
+	ir_node            *X = arg->v_ptr;
+	arm_shift_modifier mod;
+
+	if (!X)
+		return lc_appendable_snadd(app, "(null)", 6);
+
+	mod = get_arm_shift_modifier(X);
+	if (ARM_HAS_SHIFT(mod)) {
+		long v = get_tarval_long(get_arm_value(X));
+
+		snprintf(buffer, sizeof(buffer), " %s #%ld", arm_shf_mod_name(mod), v);
+		return lc_appendable_snadd(app, buffer, strlen(buffer));
+	}
+	return 0;
+}
+
+/**
+ * Determines the instruction suffix depending on the mode.
  */
 static int arm_get_mode_suffix(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
@@ -294,8 +307,9 @@ const lc_arg_env_t *arm_get_arg_env(void) {
 	static const lc_arg_handler_t arm_reg_handler   = { arm_get_arg_type, arm_get_reg_name };
 	static const lc_arg_handler_t arm_const_handler = { arm_get_arg_type, arm_const_to_str };
 	static const lc_arg_handler_t arm_mode_handler  = { arm_get_arg_type, arm_get_mode_suffix };
+	static const lc_arg_handler_t arm_shf_handler   = { arm_get_arg_type, arm_shift_str };
 
-	if(env == NULL) {
+	if (env == NULL) {
 		/* extend the firm printer */
 		env = firm_get_arg_env();
 			//lc_arg_new_env();
@@ -305,6 +319,7 @@ const lc_arg_env_t *arm_get_arg_env(void) {
 		lc_arg_register(env, "arm:cnst", 'C', &arm_const_handler);
 		lc_arg_register(env, "arm:offs", 'O', &arm_const_handler);
 		lc_arg_register(env, "arm:mode", 'M', &arm_mode_handler);
+		lc_arg_register(env, "arm:shf",  'X', &arm_shf_handler);
 	}
 
 	return env;
@@ -314,7 +329,7 @@ const lc_arg_env_t *arm_get_arg_env(void) {
  * Formated print of commands and comments.
  */
 static void arm_fprintf_format(FILE *F, char *cmd_buf, char *cmnt_buf, ir_node *irn) {
-	lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
+	lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F (%G) */\n", cmd_buf, cmnt_buf, irn, irn);
 }
 
 /*
@@ -357,6 +372,16 @@ static void emit_arm_SymConst(ir_node *irn, void *env) {
 	lc_efprintf(arm_get_arg_env(), out, "\tLDR %1D, %s\t\t\t/* end of indirect SymConst */\n", irn, indi_label);
 }
 
+/**
+ * Returns the next block in a block schedule.
+ */
+static ir_node *sched_next_block(ir_node *block) {
+    return get_irn_link(block);
+}
+
+/**
+ * Emit a conditional jump.
+ */
 static void emit_arm_CondJmp(ir_node *irn, void *env) {
 	arm_emit_env_t *emit_env = env;
 	FILE *out = emit_env->out;
@@ -370,9 +395,9 @@ static void emit_arm_CondJmp(ir_node *irn, void *env) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 
- 	foreach_out_edge(irn, edge) {
- 		ir_node* proj = get_edge_src_irn(edge);
- 		long nr = get_Proj_proj(proj);
+	foreach_out_edge(irn, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long nr = get_Proj_proj(proj);
 		ir_node *block = get_irn_link(proj);
 		if ( nr == pn_Cond_true) {
 			true_block = block;
@@ -381,13 +406,17 @@ static void emit_arm_CondJmp(ir_node *irn, void *env) {
 		} else {
 			assert(0 && "tertium non datur! (CondJmp)");
 		}
- 	}
+	}
 
 	if (proj_num == pn_Cmp_False) {
+		/* always false: should not happen */
 		fprintf(out, "\tB BLOCK_%ld\t\t\t/* false case */\n", get_irn_node_nr(false_block));
 	} else if (proj_num == pn_Cmp_True) {
+		/* always true: should not happen */
 		fprintf(out, "\tB BLOCK_%ld\t\t\t/* true case */\n", get_irn_node_nr(true_block));
 	} else {
+		ir_node *block = get_nodes_block(irn);
+
 		if (mode_is_float(opmode)) {
 			suffix = "ICHWILLIMPLEMENTIERTWERDEN";
 
@@ -398,15 +427,11 @@ static void emit_arm_CondJmp(ir_node *irn, void *env) {
 			lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "FMSTAT", irn, irn);
 			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* FCSPR -> CPSR */");
 			arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
-
-			lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "B%s BLOCK_%d", suffix, get_irn_node_nr(true_block));
-			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* true case */");
-			arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
-
-			lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "B BLOCK_%d", get_irn_node_nr(false_block));
-			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* false case */");
-			arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
 		} else {
+			if (true_block == sched_next_block(block)) {
+				/* negate it */
+				proj_num = get_negated_pnc(proj_num, opmode);
+			}
 			switch(proj_num) {
 				case pn_Cmp_Eq:  suffix = "EQ"; break;
 				case pn_Cmp_Lt:  suffix = "LT"; break;
@@ -415,21 +440,37 @@ static void emit_arm_CondJmp(ir_node *irn, void *env) {
 				case pn_Cmp_Ge:  suffix = "GE"; break;
 				case pn_Cmp_Lg:  suffix = "NE"; break;
 				case pn_Cmp_Leg: suffix = "AL"; break;
-			default: assert(0 && "komische Dinge geschehen");
+			default: assert(0 && "komische Dinge geschehen"); suffix = "AL";
 			}
 
 			lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "CMP %1S, %2S", irn, irn);
 			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* Compare(%1S, %2S) -> CPSR */", irn, irn );
 			arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
+		}
 
+		if (true_block == sched_next_block(block)) {
+			lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "B%s BLOCK_%d", suffix, get_irn_node_nr(true_block));
+			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* false case */");
+			arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
+
+			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrough BLOCK_%d */", get_irn_node_nr(false_block));
+			arm_fprintf_format(out, "", cmnt_buf, irn);
+		}
+		else {
 			lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "B%s BLOCK_%d", suffix, get_irn_node_nr(true_block));
 			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* true case */");
 			arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
 
-			lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "B BLOCK_%d", get_irn_node_nr(false_block));
-			lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* false case */");
-			arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
-		}
+            if (false_block == sched_next_block(block)) {
+                lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrough BLOCK_%d */", get_irn_node_nr(false_block));
+                arm_fprintf_format(out, "", cmnt_buf, irn);
+            }
+            else {
+			    lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "B BLOCK_%d", get_irn_node_nr(false_block));
+			    lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* false case */");
+			    arm_fprintf_format(out, cmd_buf, cmnt_buf, irn);
+            }
+        }
 	}
 }
 
@@ -561,12 +602,19 @@ static void emit_arm_SwitchJmp(ir_node *irn, void *env) {
 
 static void emit_be_Call(ir_node *irn, void *env) {
 	arm_emit_env_t *emit_env = env;
-	FILE *out = emit_env->out;
-	entity *target_entity = be_Call_get_entity(irn);
-	const char *target_name = get_entity_name(target_entity);
-	fprintf(out, "\tBL %s\t\t\t\t/* Call */\n", target_name);
+	FILE *F = emit_env->out;
+	entity *ent = be_Call_get_entity(irn);
+    char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+
+    if (ent)
+	    lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "BL %s", get_entity_ld_name(ent));
+    else
+        lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "%1D", get_irn_n(irn, be_pos_Call_ptr));
+    lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (be_Call) */", irn);
+    lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %G */\n", cmd_buf, cmnt_buf, irn);
 }
 
+/** Emit an IncSP node */
 static void emit_be_IncSP(const ir_node *irn, arm_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	unsigned offs = be_get_IncSP_offset(irn);
@@ -576,10 +624,9 @@ static void emit_be_IncSP(const ir_node *irn, arm_emit_env_t *emit_env) {
 		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* IncSP(%O) */", irn);
 		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
 	} else {
-		char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
-		lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "");
+		char cmnt_buf[SNPRINTF_BUF_LEN];
 		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* omitted IncSP(%O) */", irn);
-		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
+		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", "", cmnt_buf, irn);
 	}
 }
 
@@ -597,27 +644,26 @@ static void emit_be_Copy(const ir_node *irn, arm_emit_env_t *emit_env) {
 	assert( (mode != mode_E) && "IEEE Extended FP not supported");
 
 	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
-		char cmd_buf[256], cmnt_buf[256];
-		lc_esnprintf(arm_get_arg_env(), cmd_buf, 256, "");
-		lc_esnprintf(arm_get_arg_env(), cmnt_buf, 256, "/* omitted Copy: %1S -> %1D */", irn, irn);
-		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
+		char cmnt_buf[SNPRINTF_BUF_LEN];
+		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* omitted Copy: %1S -> %1D */", irn, irn);
+		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", "", cmnt_buf, irn);
 		return;
 	}
 
 	if (mode == mode_F) {
-		char cmd_buf[256], cmnt_buf[256];
-		lc_esnprintf(arm_get_arg_env(), cmd_buf, 256, "FCPYS %1D, %1S", irn, irn);
-		lc_esnprintf(arm_get_arg_env(), cmnt_buf, 256, "/* Copy: %1S -> %1D */", irn, irn);
+		char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+		lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "FCPYS %1D, %1S", irn, irn);
+		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* Copy: %1S -> %1D */", irn, irn);
 		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
 	} else if (mode == mode_D) {
-		char cmd_buf[256], cmnt_buf[256];
-		lc_esnprintf(arm_get_arg_env(), cmd_buf, 256, "FCPYD %1D, %1S", irn, irn);
-		lc_esnprintf(arm_get_arg_env(), cmnt_buf, 256, "/* Copy: %1S -> %1D */", irn, irn);
+		char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+		lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "FCPYD %1D, %1S", irn, irn);
+		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* Copy: %1S -> %1D */", irn, irn);
 		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
 	} else if (mode_is_numP(mode)) {
-		char cmd_buf[256], cmnt_buf[256];
-		lc_esnprintf(arm_get_arg_env(), cmd_buf, 256, "MOV %1D, %1S", irn, irn);
-		lc_esnprintf(arm_get_arg_env(), cmnt_buf, 256, "/* Copy: %1S -> %1D */", irn, irn);
+		char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+		lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "MOV %1D, %1S", irn, irn);
+		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* Copy: %1S -> %1D */", irn, irn);
 		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
 	} else {
 		assert(0 && "move not supported for this mode");
@@ -630,9 +676,9 @@ static void emit_be_Spill(const ir_node *irn, arm_emit_env_t *emit_env) {
 	ir_mode *mode = get_irn_mode(irn);
 	assert( (mode != mode_E) && "IEEE Extended FP not supported");
 	if (mode_is_dataM(mode)) {
-		char cmd_buf[256], cmnt_buf[256];
-		lc_esnprintf(arm_get_arg_env(), cmd_buf, 256, "STR %2S, [%1S, #%O]", irn, irn, irn );
-		lc_esnprintf(arm_get_arg_env(), cmnt_buf, 256, "/* Spill(%2S) -> (%1S) */", irn, irn);
+		char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+		lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "STR %2S, [%1S, #%O]", irn, irn, irn );
+		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* Spill(%2S) -> (%1S) */", irn, irn);
 		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
 	} else {
 		assert(0 && "spill not supported for this mode");
@@ -644,9 +690,9 @@ static void emit_be_Reload(const ir_node* irn, arm_emit_env_t *emit_env) {
 	ir_mode *mode = get_irn_mode(irn);
 	assert( (mode != mode_E) && "IEEE Extended FP not supported");
 	if (mode_is_dataM(mode)) {
-		char cmd_buf[256], cmnt_buf[256];
-		lc_esnprintf(arm_get_arg_env(), cmd_buf, 256, "LDR %1D, [%1S, #%O]", irn, irn, irn );
-		lc_esnprintf(arm_get_arg_env(), cmnt_buf, 256, "/* Reload(%1S) -> (%1D) */", irn, irn);
+		char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+		lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "LDR %1D, [%1S, #%O]", irn, irn, irn );
+		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* Reload(%1S) -> (%1D) */", irn, irn);
 		lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
 	} else {
 		assert(0 && "reload not supported for this mode");
@@ -665,11 +711,11 @@ static void emit_be_Perm(const ir_node* irn, arm_emit_env_t *emit_env) {
 static void emit_be_StackParam(const ir_node *irn, arm_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	ir_mode *mode = get_irn_mode(irn);
-	char cmd_buf[256], cmnt_buf[256];
+	char cmd_buf[256], cmnt_buf[SNPRINTF_BUF_LEN];
 	assert( (mode != mode_E) && "IEEE Extended FP not supported");
 
-	lc_esnprintf(arm_get_arg_env(), cmd_buf, 256, "LDR %1D, [%1S, #%O]", irn, irn, irn );
-	lc_esnprintf(arm_get_arg_env(), cmnt_buf, 256, "/* StackParam: (%1S + %O) -> %1D */",irn , irn, irn, get_irn_n(irn, 0));
+	lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "LDR %1D, [%1S, #%O]", irn, irn, irn );
+	lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* StackParam: (%1S + %O) -> %1D */",irn , irn, irn, get_irn_n(irn, 0));
 	lc_efprintf(arm_get_arg_env(), F, "\t%-35s %-60s /* %+F */\n", cmd_buf, cmnt_buf, irn);
 }
 
@@ -707,7 +753,7 @@ static void emit_silence(ir_node *irn, void *env) {
  */
 static void arm_register_emitters(void) {
 
-#define ARM_EMIT(a) op_arm_##a->ops.generic = (op_func)emit_arm_##a
+#define ARM_EMIT(a)  op_arm_##a->ops.generic = (op_func)emit_arm_##a
 #define EMIT(a)      op_##a->ops.generic = (op_func)emit_##a
 #define BE_EMIT(a)   op_be_##a->ops.generic = (op_func)emit_be_##a
 #define SILENCE(a)   op_##a->ops.generic = (op_func)emit_silence
@@ -719,9 +765,8 @@ static void arm_register_emitters(void) {
 	arm_register_spec_emitters();
 
 	/* other emitter functions */
- 	ARM_EMIT(CondJmp);
-// 	ARM_EMIT(SwitchJmp);
- 	ARM_EMIT(CopyB);
+	ARM_EMIT(CondJmp);
+	ARM_EMIT(CopyB);
 // 	ARM_EMIT(CopyB_i);
 //	ARM_EMIT(Const);
 	ARM_EMIT(SymConst);
@@ -738,13 +783,14 @@ static void arm_register_emitters(void) {
 	BE_EMIT(StackParam);
 
 	/* firm emitter */
- 	EMIT(Jmp);
-
+	EMIT(Jmp);
 
 	/* noisy stuff */
 #ifdef SILENCER
- 	SILENCE(Proj);
- 	SILENCE(Phi);
+	SILENCE(Proj);
+	SILENCE(Phi);
+	SILENCE(be_Keep);
+	SILENCE(be_CopyKeep);
 #endif
 
 #undef ARM_EMIT
@@ -753,23 +799,25 @@ static void arm_register_emitters(void) {
 #undef SILENCE
 }
 
+typedef void (node_emitter)(const ir_node *, void *);
+
 /**
  * Emits code for a node.
  */
 static void arm_emit_node(const ir_node *irn, void *env) {
-	arm_emit_env_t        *emit_env = env;
-	FILE              *F        = emit_env->out;
-	ir_op             *op       = get_irn_op(irn);
-	DEBUG_ONLY(firm_dbg_module_t *mod      = emit_env->mod;)
+	arm_emit_env_t *emit_env = env;
+	FILE           *F        = emit_env->out;
+	ir_op          *op       = get_irn_op(irn);
+	DEBUG_ONLY(firm_dbg_module_t *mod = emit_env->mod;)
 
 	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
 
 	if (op->ops.generic) {
-		void (*emit)(const ir_node *, void *) = (void (*)(const ir_node *, void *))op->ops.generic;
-		(*emit)(irn, env);
+		node_emitter *emit = (node_emitter *)op->ops.generic;
+		emit(irn, env);
 	}
 	else {
-		ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
+		ir_fprintf(F, "\t%-35s /* %+F %G */\n", "", irn, irn);
 	}
 }
 
@@ -779,9 +827,6 @@ static void arm_emit_node(const ir_node *irn, void *env) {
  */
 void arm_gen_block(ir_node *block, void *env) {
 	ir_node *irn;
-
-	if (! is_Block(block))
-		return;
 
 	fprintf(((arm_emit_env_t *)env)->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
 	sched_foreach(block, irn) {
@@ -794,10 +839,13 @@ void arm_gen_block(ir_node *block, void *env) {
  * Emits code for function start.
  */
 void arm_emit_start(FILE *F, ir_graph *irg) {
-	const char *irg_name = get_entity_name(get_irg_entity(irg));
-	fprintf(F, "\t.text\n");
+	entity *ent = get_irg_entity(irg);
+	const char *irg_name = get_entity_ld_name(ent);
+	arm_switch_section(F, SECTION_TEXT);
 	fprintf(F, "\t.align  2\n");
-	fprintf(F, "\t.global %s\n", irg_name);
+
+	if (get_entity_visibility(ent) == visibility_external_visible)
+		fprintf(F, "\t.global %s\n", irg_name);
 	fprintf(F, "%s:\n", irg_name);
 }
 
@@ -823,10 +871,12 @@ void arm_gen_labels(ir_node *block, void *env) {
 
 
 /**
- * Main driver
+* Main driver. Emits the code for one routine.
  */
 void arm_gen_routine(FILE *F, ir_graph *irg, const arm_code_gen_t *cg) {
 	arm_emit_env_t emit_env;
+    ir_node **blk_sched;
+    int i, n;
 
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
@@ -838,8 +888,24 @@ void arm_gen_routine(FILE *F, ir_graph *irg, const arm_code_gen_t *cg) {
 
 	arm_register_emitters();
 
+	/* create the block schedule. For now, we don't need it earlier. */
+	blk_sched = sched_create_block_schedule(cg->irg);
+
 	arm_emit_start(F, irg);
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, &emit_env);
-	irg_walk_blkwise_graph(irg, NULL, arm_gen_block, &emit_env);
+
+	n = ARR_LEN(blk_sched);
+	for (i = 0; i < n;) {
+		ir_node *block, *next_bl;
+
+		block   = blk_sched[i];
+		++i;
+		next_bl = i < n ? blk_sched[i] : NULL;
+
+		/* set here the link. the emitter expects to find the next block here */
+		set_irn_link(block, next_bl);
+		arm_gen_block(block, &emit_env);
+	}
+
 	arm_emit_end(F, irg);
 }

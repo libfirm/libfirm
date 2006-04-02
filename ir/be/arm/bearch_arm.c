@@ -122,10 +122,10 @@ static const arch_register_req_t *arm_get_irn_reg_req(const void *self, arch_reg
 			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
 
 			if (mode_is_float(mode)) {
-				memcpy(req, &(arm_default_req_arm_floating_point.req), sizeof(*req));
+				memcpy(req, &(arm_default_req_arm_fp.req), sizeof(*req));
 			}
 			else if (mode_is_int(mode) || mode_is_reference(mode)) {
-				memcpy(req, &(arm_default_req_arm_general_purpose.req), sizeof(*req));
+				memcpy(req, &(arm_default_req_arm_gp.req), sizeof(*req));
 			}
 			else if (mode == mode_T || mode == mode_M) {
 				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
@@ -265,12 +265,13 @@ arm_irn_ops_t arm_irn_ops = {
  **************************************************/
 
 /**
- * Transforms the standard firm graph into
- * a ARM firm graph
+ * Transforms the standard Firm graph into
+ * a ARM firm graph.
  */
 static void arm_prepare_graph(void *self) {
 	arm_code_gen_t *cg = self;
 
+	arm_register_transformers();
 	irg_walk_blkwise_graph(cg->irg, arm_move_consts, arm_transform_node, cg);
 }
 
@@ -470,7 +471,7 @@ static void *arm_cg_init(FILE *F, const be_irg_t *birg) {
 	arm_isa_t      *isa = (arm_isa_t *)birg->main_env->arch_env->isa;
 	arm_code_gen_t *cg;
 
-    if (! int_tp) {
+	if (! int_tp) {
 		/* create an integer type with machine size */
 		int_tp = new_type_primitive(new_id_from_chars("int", 3), mode_Is);
 	}
@@ -483,6 +484,7 @@ static void *arm_cg_init(FILE *F, const be_irg_t *birg) {
 	cg->arch_env = birg->main_env->arch_env;
 	cg->birg     = birg;
 	cg->int_tp   = int_tp;
+	cg->have_fp  = 0;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
 
 	isa->num_codegens++;
@@ -496,6 +498,9 @@ static void *arm_cg_init(FILE *F, const be_irg_t *birg) {
 
 	arm_irn_ops.cg = cg;
 
+	/* enter the current code generator */
+	isa->cg = cg;
+
 	return (arch_code_generator_t *)cg;
 }
 
@@ -505,7 +510,7 @@ static void *arm_cg_init(FILE *F, const be_irg_t *birg) {
  * and map all instructions the backend did not support
  * to runtime calls.
  */
-void arm_global_init(void) {
+static void arm_global_init(void) {
   ir_type *tp, *int_tp, *uint_tp;
   i_record records[8];
   int n_records = 0;
@@ -515,6 +520,7 @@ void arm_global_init(void) {
   int_tp  = new_type_primitive(ID("int"), mode_Is);
   uint_tp = new_type_primitive(ID("uint"), mode_Iu);
 
+	/* ARM has neither a signed div instruction ... */
   {
     runtime_rt rt_Div;
     i_instr_record *map_Div = &records[n_records++].i_instr;
@@ -538,6 +544,7 @@ void arm_global_init(void) {
     map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
     map_Div->ctx      = &rt_Div;
   }
+	/* ... nor a signed div instruction ... */
   {
     runtime_rt rt_Div;
     i_instr_record *map_Div = &records[n_records++].i_instr;
@@ -561,6 +568,7 @@ void arm_global_init(void) {
     map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
     map_Div->ctx      = &rt_Div;
   }
+	/* ... nor a signed mod instruction ... */
   {
     runtime_rt rt_Mod;
     i_instr_record *map_Mod = &records[n_records++].i_instr;
@@ -584,6 +592,7 @@ void arm_global_init(void) {
     map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
     map_Mod->ctx      = &rt_Mod;
   }
+	/* ... nor a unsigned mod. */
   {
     runtime_rt rt_Mod;
     i_instr_record *map_Mod = &records[n_records++].i_instr;
@@ -623,11 +632,13 @@ void arm_global_init(void) {
  *****************************************************************/
 
 static arm_isa_t arm_isa_template = {
-	&arm_isa_if,                        /* isa interface */
-	&arm_general_purpose_regs[REG_R13], /* stack pointer */
-	&arm_general_purpose_regs[REG_R11], /* base pointer */
-	-1,                                 /* stack direction */
-	0                                   /* number of codegenerator objects */
+	&arm_isa_if,           /* isa interface */
+	&arm_gp_regs[REG_SP],  /* stack pointer */
+	&arm_gp_regs[REG_R11], /* base pointer */
+	-1,                    /* stack direction */
+	0,                     /* number of codegenerator objects */
+	0,                     /* use generic register names instead of SP, LR, PC */
+	NULL                   /* current code generator */
 };
 
 /**
@@ -640,38 +651,56 @@ static void *arm_init(void) {
 	if(inited)
 		return NULL;
 
-	isa = xcalloc(1, sizeof(*isa));
+	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &arm_isa_template, sizeof(*isa));
 
 	arm_register_init(isa);
+	if (isa->gen_reg_names) {
+		/* patch register names */
+		arm_gp_regs[REG_R11].name = "r11";
+		arm_gp_regs[REG_SP].name  = "r13";
+		arm_gp_regs[REG_LR].name  = "r14";
+		arm_gp_regs[REG_PC].name  = "r15";
+	}
+
+	isa->cg = NULL;
+
 	arm_create_opcodes();
+	arm_global_init();
+	arm_switch_section(NULL, NO_SECTION);
 
 	inited = 1;
-
 	return isa;
 }
 
 
 
 /**
- * Closes the output file and frees the ISA structure.
+ * frees the ISA structure.
  */
 static void arm_done(void *self) {
 	free(self);
 }
 
 
-
+/**
+ * Report the number of register classes.
+ * If we don't have fp instructions, report only GP
+ * here to speed up register allocation (and makes dumps
+ * smaller and more readable).
+ */
 static int arm_get_n_reg_class(const void *self) {
-	return N_CLASSES;
+	const arm_isa_t *isa = self;
+
+	return isa->cg->have_fp ? 2 : 1;
 }
 
+/**
+ * Return the register class with requested index.
+ */
 static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
-	assert(i >= 0 && i < N_CLASSES && "Invalid arm register class requested.");
-	return &arm_reg_classes[i];
+	return i == 0 ? &arm_reg_classes[CLASS_arm_gp] : &arm_reg_classes[CLASS_arm_fp];
 }
-
-
 
 /**
  * Get the register class which shall be used to store a value of a given mode.
@@ -681,12 +710,10 @@ static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
  */
 const arch_register_class_t *arm_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
 	if (mode_is_float(mode))
-		return &arm_reg_classes[CLASS_arm_floating_point];
+		return &arm_reg_classes[CLASS_arm_fp];
 	else
-		return &arm_reg_classes[CLASS_arm_general_purpose];
+		return &arm_reg_classes[CLASS_arm_gp];
 }
-
-
 
 /**
  * Produces the type which sits between the stack args and the locals on the stack.
@@ -715,12 +742,6 @@ static ir_type *arm_get_between_type(void *self) {
 }
 
 
-
-
-
-
-
-
 typedef struct {
 	be_abi_call_flags_bits_t flags;
 	const arch_env_t *arch_env;
@@ -730,7 +751,7 @@ typedef struct {
 
 static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
 {
-	arm_abi_env_t *env    = xmalloc(sizeof(env[0]));
+	arm_abi_env_t *env     = xmalloc(sizeof(env[0]));
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags    = fl.bits;
 	env->irg      = irg;
@@ -758,37 +779,37 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	ir_node *block = get_irg_start_block(irg);
 //	ir_node *regs[16];
 //	int n_regs = 0;
-	arch_register_class_t *gp = &arm_reg_classes[CLASS_arm_general_purpose];
+	arch_register_class_t *gp = &arm_reg_classes[CLASS_arm_gp];
 	static const arm_register_req_t *fp_req[] = {
-		&arm_default_req_arm_general_purpose_r11
+		&arm_default_req_arm_gp_r11
 	};
 
 	ir_node *fp = be_abi_reg_map_get(reg_map, env->isa->bp);
-	ir_node *ip = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R12]);
+	ir_node *ip = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R12]);
 	ir_node *sp = be_abi_reg_map_get(reg_map, env->isa->sp);
-	ir_node *lr = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R14]);
-	ir_node *pc = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R15]);
-// 	ir_node *r0 = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R0]);
-// 	ir_node *r1 = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R1]);
-// 	ir_node *r2 = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R2]);
-// 	ir_node *r3 = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R3]);
+	ir_node *lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
+	ir_node *pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
+// 	ir_node *r0 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R0]);
+// 	ir_node *r1 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R1]);
+// 	ir_node *r2 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R2]);
+// 	ir_node *r3 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R3]);
 
 	if(env->flags.try_omit_fp)
 		return env->isa->sp;
 
 	ip = be_new_Copy(gp, irg, block, sp );
-		arch_set_irn_register(env->arch_env, ip, &arm_general_purpose_regs[REG_R12]);
-		be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_general_purpose_regs[REG_R12] );
+		arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
+		be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
 //	if (r0) regs[n_regs++] = r0;
 //	if (r1) regs[n_regs++] = r1;
 //	if (r2) regs[n_regs++] = r2;
 //	if (r3) regs[n_regs++] = r3;
 //	sp = new_r_arm_StoreStackMInc(irg, block, *mem, sp, n_regs, regs, get_irn_mode(sp));
-//		set_arm_req_out(sp, &arm_default_req_arm_general_purpose_r13, 0);
+//		set_arm_req_out(sp, &arm_default_req_arm_gp_sp, 0);
 //		arch_set_irn_register(env->arch_env, sp, env->isa->sp);
 	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem, mode_T);
-		set_arm_req_out(store, &arm_default_req_arm_general_purpose_r13, 0);
+		set_arm_req_out(store, &arm_default_req_arm_gp_sp, 0);
 //		arch_set_irn_register(env->arch_env, store, env->isa->sp);
 
 	sp = new_r_Proj(irg, block, store, env->isa->sp->reg_class->mode, 0);
@@ -797,24 +818,24 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 
 	keep = be_new_CopyKeep_single(gp, irg, block, ip, sp, get_irn_mode(ip));
 		be_node_set_reg_class(keep, 1, gp);
-		arch_set_irn_register(env->arch_env, keep, &arm_general_purpose_regs[REG_R12]);
-		be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_general_purpose_regs[REG_R12] );
+		arch_set_irn_register(env->arch_env, keep, &arm_gp_regs[REG_R12]);
+		be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
-	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp) );
-		set_arm_value(fp, new_tarval_from_long(4, mode_Iu));
+	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp),
+	                      new_tarval_from_long(4, get_irn_mode(fp)));
 		set_arm_req_out_all(fp, fp_req);
-		//set_arm_req_out(fp, &arm_default_req_arm_general_purpose_r11, 0);
+		//set_arm_req_out(fp, &arm_default_req_arm_gp_r11, 0);
 		arch_set_irn_register(env->arch_env, fp, env->isa->bp);
 
-// 	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R0], r0);
-// 	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R1], r1);
-// 	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R2], r2);
-// 	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R3], r3);
+// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R0], r0);
+// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R1], r1);
+// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R2], r2);
+// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R3], r3);
 	be_abi_reg_map_set(reg_map, env->isa->bp, fp);
-	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R12], keep);
+	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R12], keep);
 	be_abi_reg_map_set(reg_map, env->isa->sp, sp);
-	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R14], lr);
-	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R15], pc);
+	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_LR], lr);
+	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_PC], pc);
 
 	return env->isa->bp;
 }
@@ -823,47 +844,47 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 	arm_abi_env_t *env = self;
 	ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
 	ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
-	ir_node *curr_pc = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R15]);
-	ir_node	*curr_lr = be_abi_reg_map_get(reg_map, &arm_general_purpose_regs[REG_R14]);
+	ir_node *curr_pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
+	ir_node	*curr_lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
 	static const arm_register_req_t *sub12_req[] = {
-		&arm_default_req_arm_general_purpose_r13
+		&arm_default_req_arm_gp_sp
 	};
 
 //	TODO: Activate Omit fp in epilogue
 	if(env->flags.try_omit_fp) {
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
 
-		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_general_purpose], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
-		be_node_set_reg_class(curr_lr, 1, &arm_reg_classes[CLASS_arm_general_purpose]);
-		arch_set_irn_register(env->arch_env, curr_lr, &arm_general_purpose_regs[REG_R14]);
-		be_set_constr_single_reg(curr_lr, BE_OUT_POS(0), &arm_general_purpose_regs[REG_R14] );
+		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
+		be_node_set_reg_class(curr_lr, 1, &arm_reg_classes[CLASS_arm_gp]);
+		arch_set_irn_register(env->arch_env, curr_lr, &arm_gp_regs[REG_LR]);
+		be_set_constr_single_reg(curr_lr, BE_OUT_POS(0), &arm_gp_regs[REG_LR] );
 
-		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_general_purpose], env->irg, bl, curr_lr );
-		arch_set_irn_register(env->arch_env, curr_pc, &arm_general_purpose_regs[REG_R15]);
-		be_set_constr_single_reg(curr_pc, BE_OUT_POS(0), &arm_general_purpose_regs[REG_R15] );
+		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr );
+		arch_set_irn_register(env->arch_env, curr_pc, &arm_gp_regs[REG_PC]);
+		be_set_constr_single_reg(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC] );
 	} else {
 		ir_node *sub12_node;
 		ir_node *load_node;
-		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu );
-		set_arm_value(sub12_node, new_tarval_from_long(12,mode_Iu));
+		tarval *tv = new_tarval_from_long(12,mode_Iu);
+		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, tv);
 		set_arm_req_out_all(sub12_node, sub12_req);
 		arch_set_irn_register(env->arch_env, sub12_node, env->isa->sp);
 		load_node = new_rd_arm_LoadStackM3( NULL, env->irg, bl, sub12_node, *mem, mode_T );
-		set_arm_req_out(load_node, &arm_default_req_arm_general_purpose_r11, 0);
-		set_arm_req_out(load_node, &arm_default_req_arm_general_purpose_r13, 1);
-		set_arm_req_out(load_node, &arm_default_req_arm_general_purpose_r15, 2);
+		set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
+		set_arm_req_out(load_node, &arm_default_req_arm_gp_sp, 1);
+		set_arm_req_out(load_node, &arm_default_req_arm_gp_pc, 2);
 		curr_bp = new_r_Proj(env->irg, bl, load_node, env->isa->bp->reg_class->mode, 0);
 		curr_sp = new_r_Proj(env->irg, bl, load_node, env->isa->sp->reg_class->mode, 1);
 		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, 2);
 		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, 3);
 		arch_set_irn_register(env->arch_env, curr_bp, env->isa->bp);
 		arch_set_irn_register(env->arch_env, curr_sp, env->isa->sp);
-		arch_set_irn_register(env->arch_env, curr_pc, &arm_general_purpose_regs[REG_R15]);
+		arch_set_irn_register(env->arch_env, curr_pc, &arm_gp_regs[REG_PC]);
 	}
 	be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
 	be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
-	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R14], curr_lr);
-	be_abi_reg_map_set(reg_map, &arm_general_purpose_regs[REG_R15], curr_pc);
+	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_LR], curr_lr);
+	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_PC], curr_pc);
 }
 
 static const be_abi_callbacks_t arm_abi_callbacks = {
@@ -917,7 +938,7 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &arm_floating_point_regs[REG_F0] : &arm_general_purpose_regs[REG_R0]);
+			mode_is_float(mode) ? &arm_fp_regs[REG_F0] : &arm_gp_regs[REG_R0]);
 	}
 }
 
@@ -964,15 +985,26 @@ static int arm_get_reg_class_alignment(const void *self, const arch_register_cla
 }
 
 #ifdef WITH_LIBCORE
+static const lc_opt_table_entry_t arm_options[] = {
+	LC_OPT_ENT_BOOL("gen_reg_names", "use generic register names", &arm_isa_template.gen_reg_names),
+	{ NULL }
+};
+
+/**
+ * Register command line options for the ARM backend.
+ *
+ * Options so far:
+ *
+ * arm-gen_reg_names    use generic register names instead of SP, LR, PC
+ */
 static void arm_register_options(lc_opt_entry_t *ent)
 {
+	lc_opt_entry_t *be_grp_arm = lc_opt_get_grp(ent, "arm");
+	lc_opt_add_table(be_grp_arm, arm_options);
 }
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t arm_isa_if = {
-#ifdef WITH_LIBCORE
-	arm_register_options,
-#endif
 	arm_init,
 	arm_done,
 	arm_get_n_reg_class,
@@ -982,5 +1014,8 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_irn_handler,
 	arm_get_code_generator_if,
 	arm_get_list_sched_selector,
-	arm_get_reg_class_alignment
+	arm_get_reg_class_alignment,
+#ifdef WITH_LIBCORE
+	arm_register_options
+#endif
 };

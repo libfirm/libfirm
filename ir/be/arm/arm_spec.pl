@@ -10,7 +10,7 @@ $arch = "arm";
 $comment_string = '/*';
 
 # the number of additional opcodes you want to register
-$additional_opcodes = 0;
+#$additional_opcodes = 0;
 
 # The node description is done as a perl hash initializer with the
 # following structure:
@@ -93,7 +93,7 @@ $additional_opcodes = 0;
 #   4 - ignore (do not assign this register)
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
-  "general_purpose" => [
+  "gp" => [
                          { "name" => "r0", "type" => 1 },
                          { "name" => "r1", "type" => 1 },
                          { "name" => "r2", "type" => 1 },
@@ -107,14 +107,13 @@ $additional_opcodes = 0;
                          { "name" => "r10", "type" => 2 },
                          { "name" => "r11", "type" => 2 },
                          { "name" => "r12", "type" => 6 }, # reserved for linker
-                         { "name" => "r13", "type" => 6 }, # this is our stack pointer
-                         { "name" => "r14", "type" => 3 }, # this is our return address
-                         { "name" => "r15", "type" => 6 }, # this is our program counter
-						 { "name" => "rxx", "type" => 6 }, # dummy register for no_mem
-						 { "name" => "MURX", "type" => 6 }, # this is our workaround-register
-                         { "mode" => "mode_P" }
+                         { "name" => "sp", "type" => 6 }, # this is our stack pointer
+                         { "name" => "lr", "type" => 3 }, # this is our return address
+                         { "name" => "pc", "type" => 6 }, # this is our program counter
+                         { "name" => "rxx", "type" => 6 }, # dummy register for no_mem
+                         { "mode" => "mode_Iu" }
                        ],
-  "floating_point"  => [
+  "fp"  => [
                          { "name" => "f0", "type" => 1 },
                          { "name" => "f1", "type" => 1 },
                          { "name" => "f2", "type" => 1 },
@@ -123,7 +122,7 @@ $additional_opcodes = 0;
                          { "name" => "f5", "type" => 2 },
                          { "name" => "f6", "type" => 2 },
                          { "name" => "f7", "type" => 2 },
-						 { "name" => "fxx", "type" => 6 }, # dummy register for no_mem
+                         { "name" => "fxx", "type" => 6 }, # dummy register for no_mem
                          { "mode" => "mode_D" }
                        ]
 ); # %reg_classes
@@ -158,290 +157,254 @@ $additional_opcodes = 0;
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. ADD %D1, %S1, %S2\t\t\t/* Add(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. ADD %D1, %S1, %S2%X0 /* Add(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Add_i" => {
   "irn_flags" => "R",
   "comment"   => "construct Add: Add(a, const) = Add(const, a) = a + const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. ADD %D1, %S1, %C\t\t\t/* Add(%C, %S1) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. ADD %D1, %S1, %C /* Add(%C, %S1) -> %D1, (%A1, const) */'
 },
 
 "Mul" => {
   #"op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "!in_r1" ] },
-  "emit"      =>'. MUL %D1, %S1, %S2\t\t\t/* Mul(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "!in_r1" ] },
+  "emit"      =>'. MUL %D1, %S1, %S2 /* Mul(%S1, %S2) -> %D1, (%A1, %A2) */'
+},
+
+"Mla" => {
+  #"op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct Mla: Mla(a, b, c) = a * b + c",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "!in_r1" ] },
+  "emit"      =>'. MLA %D1, %S1, %S2, %S3 /* Mla(%S1, %S2, %S3) -> %D1, (%A1, %A2, %A3) */'
 },
 
 "And" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. AND %D1, %S1, %S2\t\t/* And(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. AND %D1, %S1, %S2%X0 /* And(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "And_i" => {
   "irn_flags" => "R",
   "comment"   => "construct And: And(a, const) = And(const, a) = a AND const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. AND %D1, %S1, %C\t\t\t/* And(%C, %S1) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. AND %D1, %S1, %C /* And(%C, %S1) -> %D1, (%A1, const) */',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
 "Or" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. ORR %D1, %S1, %S2\t\t/* Or(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. ORR %D1, %S1, %S2%X0 /* Or(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Or_i" => {
   "irn_flags" => "R",
   "comment"   => "construct Or: Or(a, const) = Or(const, a) = a OR const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. ORR %D1, %S1, %C\t\t\t/* Or(%C, %S1) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
-},
-
-"Or_Shl_i" => {
-  "irn_flags" => "R",
-  "comment"   => "construct Or with immediate shifter operand",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. ORR %D1, %S1, %S2 LSL %C\t\t\t/* Or_Shl_i(%S1, %S2 << %C) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;',
+  "emit"      => '. ORR %D1, %S1, %C /* Or(%C, %S1) -> %D1, (%A1, const) */'
 },
 
 "Eor" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. EOR %D1, %S1, %S2\t\t\t/* Xor(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. EOR %D1, %S1, %S2%X0 /* Xor(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Eor_i" => {
   "irn_flags" => "R",
   "comment"   => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. EOR %D1, %S1, %C\t\t\t/* Xor(%C, %S1) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;',
+  "emit"      => '. EOR %D1, %S1, %C /* Xor(%C, %S1) -> %D1, (%A1, const) */'
 },
 
 # not commutative operations
 
+"Bic" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Bic: Bic(a, b) = a AND ~b",
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. BIC %D1, %S1, %S2%X0 /* AndNot(%S1, %S2) -> %D1, (%A1, %A2) */'
+},
+
+"Bic_i" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Bic: Bic(a, const) = a AND ~const",
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. BIC %D1, %S1, %C /* AndNot(%C, %S1) -> %D1, (%A1, const) */',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;'
+},
+
 "Sub" => {
   "irn_flags" => "R",
   "comment"   => "construct Sub: Sub(a, b) = a - b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. SUB %D1, %S1, %S2\t\t\t/* Sub(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. SUB %D1, %S1, %S2%X0 /* Sub(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Sub_i" => {
   "irn_flags" => "R",
   "comment"   => "construct Sub: Sub(a, const) = a - const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. SUB %D1, %S1, %C\t\t\t/* Sub(%S1, %C) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. SUB %D1, %S1, %C /* Sub(%S1, %C) -> %D1, (%A1, const) */',
+},
 
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+"Rsb" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Rsb: Rsb(a, b) = b - a",
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. RSB %D1, %S1, %S2%X0 /* Rsb(%S1, %S2) -> %D1, (%A1, %A2) */'
+},
+
+"Rsb_i" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Rsb: Rsb(a, const) = const - a",
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. RSB %D1, %S1, %C /* Rsb(%S1, %C) -> %D1, (%A1, const) */',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
 "Shl" => {
   "irn_flags" => "R",
   "comment"   => "construct Shl: Shl(a, b) = a << b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
   "emit"      => '. MOV %D1, %S1, LSL %S2\t/* Shl(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Shl_i" => {
-  "irn_flags" => "R",
-  "comment"   => "construct Shl: Shl(a, const) = a << const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. MOV %D1, %S1, LSL %C\t\t\t/* Shl(%S1, %C) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
 },
 
 "Shr" => {
   "irn_flags" => "R",
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"      => '. MOV %D1, %S1, LSR %S2\t\t\t/* Shr(%S1, %S2) -> %D1, (%A1, %A2) */'
-},
-
-"Shr_i" => {
-  "irn_flags" => "R",
-  "comment"   => "construct Shr: Shr(a, const) = a >> const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. MOV %D1, %S1, LSR %C\t\t\t/* Shr(%S1, %C) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
+  "emit"      => '. MOV %D1, %S1, LSR %S2 /* Shr(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Shrs" => {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "in_r1" ] },
-  "emit"      => '. MOV %D1, %S1, ASR %S2\t\t\t\t\t/* Shrs(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
+  "emit"      => '. MOV %D1, %S1, ASR %S2\t\t /* Shrs(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
-
-"Shrs_i" => {
-  "irn_flags" => "R",
-  "comment"   => "construct Shrs: Shrs(a, const) = a >> const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. MOV %D1, %S1, ASR %C\t\t\t/* Shrs(%S1, %C) -> %D1, (%A1, const) */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
-},
-
-#"Div" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct Div: Div(a, b) = a / b",
-#  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      =>'. div %S1, %S2, %D1\t\t\t/* div(%S1, %S2) -> %D1, (%A1, %A2) */'
-#},
-#
-#"Div_i" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct Div: Div(a, const) = a / const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. div %S1, %C, %D1\t\t\t/* signed div(%C, %S1) -> %D1, (%A1, const) */'
-#},
-#
-#"Mod" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct Mod: Mod(a, b) = a % b",
-#  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      =>'. mod %S1, %S2, %D1\t\t\t/* mod(%S1, %S2) -> %D1, (%A1, %A2) */'
-#},
-#
-#"Mod_i" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct mod: Mod(a, const) = a % const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. mod %S1, %C, %D1\t\t\t/* mod(%C, %S1) -> %D1, (%A1, const) */'
-#},
-#
-#"DivMod" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct DivMod: DivMod(a, b) = a / b",
-#  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      =>'. div %S1, %S2, %D1\t\t\t/* div(%S1, %S2) -> %D1, (%A1, %A2) */'
-#},
-#
-#"Div_i" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct DivMod: DivMod(a, const) = a / const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. div %S1, %C, %D1\t\t\t/* signed div(%C, %S1) -> %D1, (%A1, const) */'
-#},
 
 #"RotR" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct RotR: RotR(a, b) = a ROTR b",
-#  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. MOV %D1, %S1, ROR %S2\t\t\t/* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
-##  "emit"      => '. ror %S1, %S2, %D1\t\t\t/* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
+#  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. MOV %D1, %S1, ROR %S2 /* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
+##  "emit"      => '. ror %S1, %S2, %D1 /* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
 #},
 
 #"RotL" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct RotL: RotL(a, b) = a ROTL b",
-#  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. rol %S1, %S2, %D1\t\t\t/* RotL(%S1, %S2) -> %D1, (%A1, %A2) */'
+#  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. rol %S1, %S2, %D1 /* RotL(%S1, %S2) -> %D1, (%A1, %A2) */'
 #},
 
 #"RotL_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct RotL: RotL(a, const) = a ROTL const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. rol %S1, %C, %D1\t\t\t/* RotL(%S1, %C) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. rol %S1, %C, %D1 /* RotL(%S1, %C) -> %D1, (%A1, const) */'
 #},
 
-"Minus" => {
+"Mov" => {
   "irn_flags" => "R",
-  "comment"   => "construct Minus: Minus(a) = -a",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. RSB %D1, %S1, #0\t\t\t/* Neg(%S1) -> %D1, (%A1) */'
+  "comment"   => "construct Mov: a = b",
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. MOV %D1, %S1%X0\t/* Mov(%S1%X0) -> %D1, (%A1) */'
 },
 
-#"Inc" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct Increment: Inc(a) = a++",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. inc %S1, %D1\t\t\t/* Inc(%S1) -> %D1, (%A1) */'
-#},
-#
-#"Dec" => {
-#  "irn_flags" => "R",
-#  "comment"   => "construct Decrement: Dec(a) = a--",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. dec %S1, %D1\t\t\t/* Dec(%S1) -> %D1, (%A1) */'
-#},
+"Mov_i" => {
+  "irn_flags" => "R",
+  "comment"   => "represents an integer constant",
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "reg_req"   => { "out" => [ "gp" ] },
+  "emit"      => '. MOV %D1, %C   /* Mov Const into register */',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;'
+},
 
-"Not" => {
-  "arity"       => 1,
-#  "remat"       => 1,
-  "irn_flags"   => "R",
-  "comment"     => "construct Not: Not(a) = !a",
-  "reg_req"     => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"        => '. MVN %D1, %S1\t\t\t/* Not(%S1) -> %D1, (%A1) */'
+"Mvn" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Not: Not(a) = !a",
+  "attr"      => "arm_shift_modifier mod, tarval *shf",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
+  "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. MVN %D1, %S1%X0 /* ~(%S1%X0) -> %D1, (%A1) */'
+},
+
+"Mvn_i" => {
+  "irn_flags" => "R",
+  "comment"   => "represents a negated integer constant",
+  "attr"      => "tarval *tv",
+  "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;',
+  "reg_req"   => { "out" => [ "gp" ] },
+  "emit"      => '. MVN %D1, %C   /* Mov ~Const into register */',
 },
 
 "Abs" => {
   "irn_flags" => "R",
   "comment"   => "construct Abs: Abs(a) = |a|",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "emit"      =>
-'. MOVS %S1, %S1, #0\t\t\t/* set condition flag */\n
-. RSBMI %D1, %S1, #0\t\t\t/* Neg(%S1) -> %D1, (%A1) */'
+'. MOVS %S1, %S1, #0 /* set condition flag */\n
+. RSBMI %D1, %S1, #0 /* Neg(%S1) -> %D1, (%A1) */'
 },
 
 # other operations
@@ -449,75 +412,48 @@ $additional_opcodes = 0;
 "EmptyReg" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
-  "comment"  => "just to get an emptz register for calculations",
-  "reg_req"  => { "out" => [ "general_purpose" ] },
+  "comment"  => "just to get an empty register for calculations",
+  "reg_req"  => { "out" => [ "gp" ] },
   "emit"      => '. /* %D1 now available for calculations */',
   "cmp_attr"  => 'return 1;'
 },
 
 "Copy" => {
   "comment"  => "implements a register copy",
-  "reg_req"  => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"  => { "in" => [ "gp" ], "out" => [ "gp" ] },
 },
 
 "CopyB" => {
   "op_flags" => "F|H",
   "state"    => "pinned",
   "comment"  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
-  "reg_req"  => { "in" => [ "!r13", "!r13", "general_purpose", "general_purpose", "general_purpose", "none" ], "out" => [ "none" ] },
-},
-
-"Const" => {
-  "irn_flags" => "R",
-  "comment"   => "represents an integer constant",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
-  "emit"      => '. MOV %D1, %C  \t\t\t/* Mov Const into register */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
-},
-
-"Const_Neg" => {
-  "irn_flags" => "R",
-  "comment"   => "represents a negated integer constant",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
-  "emit"      => '. MVN %D1, %C  \t\t\t/* Mov negated Const into register */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+  "reg_req"  => { "in" => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
 },
 
 "SymConst" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents a symbolic constant",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
-#  "emit"      => '. LDR %D1, %C\t\t\t/* Mov Const into register */',
+  "attr"      => "const char *label",
+  "init_attr" => '  attr->symconst_label = label;',
+  "reg_req"   => { "out" => [ "gp" ] },
+#  "emit"      => '. LDR %D1, %C /* Mov Const into register */',
   "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-    return get_tarval_long(attr_a->value) != get_tarval_long(attr_b->value);
-'
+'  /* should be identical but ...*/
+   return strcmp(attr_a->symconst_label, attr_b->symconst_label);'
 },
 
 "CondJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: CMP A, B && JMPxx LABEL",
   "cmp_attr"  => "  return arm_comp_condJmp(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "none", "none"] },
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "none", "none"] },
 },
 
 "SwitchJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct switch",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "none" ] },
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "none" ] },
   "cmp_attr"  => "  return 0;\n",
 },
 
@@ -528,9 +464,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. LDR %D1, [%S1, #0]\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDR %D1, %S1, %O\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
+  "emit"      => '. LDR %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
+#  "emit"      => '. LDR %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
 },
 
 "Loadb" => {
@@ -538,9 +474,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. LDRB %D1, [%S1, #0]\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRB %D1, %S1, %O\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
+  "emit"      => '. LDRB %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
+#  "emit"      => '. LDRB %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
 },
 
 "Loadbs" => {
@@ -548,9 +484,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. LDRSB %D1, [%S1, #0]\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRSB %D1, %S1, %O\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
+  "emit"      => '. LDRSB %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
+#  "emit"      => '. LDRSB %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
 },
 
 "Loadh" => {
@@ -558,9 +494,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. LDRH %D1, [%S1, #0]\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRH %D1, %S1, %O\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
+  "emit"      => '. LDRH %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
+#  "emit"      => '. LDRH %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
 },
 
 "Loadhs" => {
@@ -568,9 +504,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "general_purpose", "none" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. LDRSH %D1, [%S1, #0]\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRSH %D1, %S1, %O\t\t\t/* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
+  "emit"      => '. LDRSH %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
+#  "emit"      => '. LDRSH %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
 },
 
 "Storeb" => {
@@ -578,9 +514,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"      => '. STRB %S2, [%S1, #0]\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
+  "emit"      => '. STRB %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "Storebs" => {
@@ -588,9 +524,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"      => '. STRSB %S2, [%S1, #0]\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
+  "emit"      => '. STRSB %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "Storeh" => {
@@ -598,9 +534,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"      => '. STRH %S2, [%S1, #0]\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
+  "emit"      => '. STRH %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "Storehs" => {
@@ -608,9 +544,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"      => '. STRSH%S2, [%S1, #0]\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
+  "emit"      => '. STRSH%S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "Store" => {
@@ -618,9 +554,9 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "none" ] },
-  "emit"      => '. STR %S2, [%S1, #0]\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1)\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
+  "emit"      => '. STR %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 "StoreStackM4Inc" => {
@@ -628,8 +564,8 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "r13", "general_purpose", "general_purpose", "general_purpose", "general_purpose", "none" ], "out" => [ "general_purpose", "none" ] },
-  "emit"      => '. STMFD %S1!, {%S2, %S3, %S4, %S5}\t\t\t/* Store multiple on Stack*/'
+  "reg_req"   => { "in" => [ "sp", "gp", "gp", "gp", "gp", "none" ], "out" => [ "gp", "none" ] },
+  "emit"      => '. STMFD %S1!, {%S2, %S3, %S4, %S5} /* Store multiple on Stack*/'
 },
 
 "LoadStackM3" => {
@@ -637,8 +573,8 @@ $additional_opcodes = 0;
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "r13", "none" ], "out" => [ "general_purpose", "general_purpose", "general_purpose", "none" ] },
-  "emit"      => '. LDMFD %S1, {%D1, %D2, %D3}\t\t\t/* Load multiple from Stack */'
+  "reg_req"   => { "in" => [ "sp", "none" ], "out" => [ "gp", "gp", "gp", "none" ] },
+  "emit"      => '. LDMFD %S1, {%D1, %D2, %D3} /* Load multiple from Stack */'
 },
 
 
@@ -659,105 +595,64 @@ $additional_opcodes = 0;
 
 # commutative operations
 
-"fAddd" => {
+"fAdd" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
-  "comment"   => "construct DP FP Add: Add(a, b) = Add(b, a) = a + b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FADDD %D1, %S1, %S2\t\t\t/* FP Add(%S1, %S2) -> %D1 */'
+  "comment"   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. FADD%Mx %D1, %S1, %S2 /* FP Add(%S1, %S2) -> %D1 */'
 },
 
-"fAdds" => {
-  "op_flags"  => "C",
-  "irn_flags" => "R",
-  "comment"   => "construct SP FP Add: Add(a, b) = Add(b, a) = a + b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FADDS %D1, %S1, %S2\t\t\t/* FP Add(%S1, %S2) -> %D1 */'
-},
-
-"fMuls" => {
+"fMul" => {
   "op_flags"  => "C",
   "comment"   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      =>'. FMULS %D1, %S1, %S2\t\t\t/* FP Mul(%S1, %S2) -> %D1 */'
-},
-
-"fMuld" => {
-  "op_flags"  => "C",
-  "comment"   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      =>'. FMULD %D1, %S1, %S2\t\t\t/* FP Mul(%S1, %S2) -> %D1 */'
-},
-
-"fDivs" => {
-  "comment"   => "construct FP Div: Div(a, b) = a / b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      =>'. FDIVS %D1, %S1, %S2\t\t\t/* FP Div(%S1, %S2) -> %D1 */'
-},
-
-"fDivd" => {
-  "comment"   => "construct FP Div: Div(a, b) = a / b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      =>'. FDIVD %D1, %S1, %S2\t\t\t/* FP Div(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      =>'. FMUL%Mx %D1, %S1, %S2 /* FP Mul(%S1, %S2) -> %D1 */'
 },
 
 "fDiv" => {
   "comment"   => "construct FP Div: Div(a, b) = a / b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      =>'. FDIV %D1, %S1, %S2\t\t\t/* FP Div(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      =>'. FDIV%Mx %D1, %S1, %S2 /* FP Div(%S1, %S2) -> %D1 */'
 },
 
 "fMax" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct FP Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      =>'. fmax %S1, %S2, %D1\t\t\t/* FP Max(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      =>'. fmax %S1, %S2, %D1 /* FP Max(%S1, %S2) -> %D1 */'
 },
 
 "fMin" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct FP Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      =>'. fmin %S1, %S2, %D1\t\t\t/* FP Min(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      =>'. fmin %S1, %S2, %D1 /* FP Min(%S1, %S2) -> %D1 */'
 },
 
 # not commutative operations
 
-"fSubs" => {
+"fSub" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Sub: Sub(a, b) = a - b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FSUBS %D1, %S1, %S2\t\t\t/* FP Sub(%S1, %S2) -> %D1 */'
-},
-
-"fSubd" => {
-  "irn_flags" => "R",
-  "comment"   => "construct FP Sub: Sub(a, b) = a - b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FSUBD %D1, %S1, %S2\t\t\t/* FP Sub(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. FSUB%Mx %D1, %S1, %S2 /* FP Sub(%S1, %S2) -> %D1 */'
 },
 
 "fMinus" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Minus: Minus(a) = -a",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fneg %S1, %D1\t\t\t/* FP Minus(%S1) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fneg %S1, %D1 /* FP Minus(%S1) -> %D1 */'
 },
 
-"fAbss" => {
-  "irn_flags" => "R",
-  "comment"   => "construct FP Absolute value: fAbss(a) = |a|",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FABSS %D1, %S1\t\t\t/* FP Abss(%S1) -> %D1 */'
-},
-
-"fAbsd" => {
+"fAbs" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Absolute value: fAbsd(a) = |a|",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FABSD %D1, %S1\t\t\t/* FP Absd(%S1) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. FABS%Mx %D1, %S1 /* FP Absd(%S1) -> %D1 */'
 },
 
 # other operations
@@ -766,68 +661,44 @@ $additional_opcodes = 0;
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents a FP constant",
-  "reg_req"   => { "out" => [ "floating_point" ] },
-  "emit"      => '. FMOV %D1, %C\t\t\t/* Mov fConst into register */',
-  "cmp_attr"  =>
-'    if (attr_a->value == NULL || attr_b->value == NULL)
-	    return 1;
-
-	return get_tarval_double(attr_a->value) != get_tarval_double(attr_b->value);'
+  "reg_req"   => { "out" => [ "fp" ] },
+  "emit"      => '. FMOV %D1, %C /* Mov fConst into register */',
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
 "fConvD2S" => {
   "irn_flags" => "R",
   "comment"   => "convert double to single",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FCVTSD %D1, %S1\t\t\t/* Convert double to single */',
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. FCVTSD %D1, %S1 /* Convert double to single */',
 },
 
 "fConvS2D" => {
   "irn_flags" => "R",
   "comment"   => "convert single to double",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FCVTDS %D1, %S1\t\t\t/* Convert single to double */',
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. FCVTDS %D1, %S1 /* Convert single to double */',
 },
 
 
 # Load / Store
 
-"fLoads" => {
+"fLoad" => {
   "op_flags"  => "L|F",
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct FP Load: Load(ptr, mem) = LD ptr",
-  "reg_req"   => { "in" => [ "general_purpose", "none" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FLDS %D1, %S1\t\t\t/* Load((%S1)) -> %D1 */'
-#  "emit"      => '. fmov %O(%S1), %D1\t\t\t/* Load((%S1)) -> %D1 */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "fp" ] },
+  "emit"      => '. FLD%Mx %D1, %S1 /* Load((%S1)) -> %D1 */'
 },
 
-"fLoadd" => {
-  "op_flags"  => "L|F",
-  "irn_flags" => "R",
-  "state"     => "exc_pinned",
-  "comment"   => "construct FP Load: Load(ptr, mem) = LD ptr",
-  "reg_req"   => { "in" => [ "general_purpose", "none" ], "out" => [ "floating_point" ] },
-  "emit"      => '. FLDD %D1, %S1\t\t\t/* Load((%S1)) -> %D1 */'
-#  "emit"      => '. fmov %O(%S1), %D1\t\t\t/* Load((%S1)) -> %D1 */'
-},
-
-"fStores" => {
+"fStore" => {
   "op_flags"  => "L|F",
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "general_purpose", "floating_point", "none" ] },
-  "emit"      => '. FSTS %S2, %S1\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
-},
-
-"fStored" => {
-  "op_flags"  => "L|F",
-  "irn_flags" => "R",
-  "state"     => "exc_pinned",
-  "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "general_purpose", "floating_point", "none" ] },
-  "emit"      => '. FSTD %S2, %S1\t\t\t/* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "fp", "none" ] },
+  "emit"      => '. FST%Mx %S2, %S1 /* Store(%S2) -> (%S1), (%A1, %A2) */'
 },
 
 ); # end of %nodes

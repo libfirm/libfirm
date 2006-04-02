@@ -1,15 +1,17 @@
 /**
- * This file implements the creation of the achitecture specific firm opcodes
- * and the coresponding node constructors for the arm assembler irg.
+ * This file implements the creation of the architecture specific firm opcodes
+ * and the corresponding node constructors for the arm assembler irg.
  * $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#ifdef _WIN32
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
-#else
+#endif
+
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
 
@@ -35,6 +37,13 @@
 #include "../beabi.h"
 #include "bearch_arm_t.h"
 
+/**
+ * Returns the shift modifier string.
+ */
+const char *arm_shf_mod_name(arm_shift_modifier mod) {
+  static const char *names[] = { NULL, NULL, "ASR", "LSL", "LSR", "ROR", "RRX" };
+	return names[mod];
+}
 
 /***********************************************************************************
  *      _                                   _       _             __
@@ -131,12 +140,13 @@ static void dump_reg_req(FILE *F, ir_node *n, const arm_register_req_t **reqs, i
  * @return 0 on success or != 0 on failure
  */
 static int dump_node_arm(ir_node *n, FILE *F, dump_reason_t reason) {
-  	ir_mode     *mode = NULL;
+	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i;
-	arm_attr_t *attr;
+	arm_attr_t  *attr = get_arm_attr(n);
 	const arm_register_req_t **reqs;
 	const arch_register_t     **slots;
+	arm_shift_modifier        mod;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
@@ -155,14 +165,17 @@ static int dump_node_arm(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_nodeattr_txt:
-
-			/* TODO: dump some attributes which should show up */
-			/* in node name in dump (e.g. consts or the like)  */
-
+			mod = ARM_GET_SHF_MOD(attr);
+			if (ARM_HAS_SHIFT(mod)) {
+				fprintf(F, "[%s #%ld]", arm_shf_mod_name(mod), get_tarval_long(attr->value));
+			}
+			else if (mod == ARM_SHF_IMM) {
+				/* immediate */
+				fprintf(F, "[#0x%X]", arm_decode_imm_w_shift(attr->value));
+			}
 			break;
 
 		case dump_node_info_txt:
-			attr = get_arm_attr(n);
 			fprintf(F, "=== arm attr begin ===\n");
 
 			/* dump IN requirements */
@@ -237,8 +250,6 @@ static int dump_node_arm(ir_node *n, FILE *F, dump_reason_t reason) {
 			/* end of: case dump_node_info_txt */
 			break;
 	}
-
-
 	return bad;
 }
 
@@ -479,20 +490,28 @@ void set_arm_default_proj_num(ir_node *node, long default_proj_num) {
 	attr->default_proj_num = default_proj_num;
 }
 
+/**
+ * Gets the shift modifier attribute.
+ */
+arm_shift_modifier get_arm_shift_modifier(ir_node *node) {
+	arm_attr_t *attr = get_arm_attr(node);
+	return ARM_GET_SHF_MOD(attr);
+}
 
-
+/* Set the ARM machine node attributes to default values. */
 void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** in_reqs,
 						 const arm_register_req_t ** out_reqs, int n_res) {
 	arm_attr_t *attr = get_arm_attr(node);
-	attr->in_req = in_reqs;
-	attr->out_req = out_reqs;
-	attr->n_res = n_res;
-	attr->flags = flags;
-	attr->slots = xcalloc(n_res, sizeof(attr->slots[0]));
-	attr->value = NULL;
-	attr->proj_num = -42;
-	attr->symconst_label = NULL;
-	attr->n_projs = 0;
+	attr->in_req           = in_reqs;
+	attr->out_req          = out_reqs;
+	attr->n_res            = n_res;
+	attr->flags            = flags;
+	attr->slots            = xcalloc(n_res, sizeof(attr->slots[0]));
+	attr->instr_fl         = (ARM_COND_AL << 3) | ARM_SHF_NONE;
+	attr->value            = NULL;
+	attr->proj_num         = -42;
+	attr->symconst_label   = NULL;
+	attr->n_projs          = 0;
 	attr->default_proj_num = 0;
 }
 
@@ -501,11 +520,11 @@ static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {
 }
 
 ir_node *arm_new_NoReg_gp(arm_code_gen_t *cg) {
-	return be_abi_get_callee_save_irn(cg->birg->abi, &arm_general_purpose_regs[REG_RXX]);
+	return be_abi_get_callee_save_irn(cg->birg->abi, &arm_gp_regs[REG_RXX]);
 }
 
 ir_node *arm_new_NoReg_fp(arm_code_gen_t *cg) {
-	return be_abi_get_callee_save_irn(cg->birg->abi, &arm_floating_point_regs[REG_FXX]);
+	return be_abi_get_callee_save_irn(cg->birg->abi, &arm_fp_regs[REG_FXX]);
 }
 
 
@@ -529,13 +548,12 @@ static void limit_reg_arm_StoreStackM4Inc_sp(void *_unused, bitset_t *bs) {
   bitset_clear(bs, 14);         /* disallow ignore reg r13 */
   bitset_clear(bs, 15);         /* disallow ignore reg r15 */
   bitset_clear(bs, 16);         /* disallow ignore reg rxx */
-  bitset_clear(bs, 17);         /* disallow ignore reg MURX */
 }
 
 static const arm_register_req_t _arm_req_sp = {
   {
     arch_register_req_type_limited,
-    &arm_reg_classes[CLASS_arm_general_purpose],
+    &arm_reg_classes[CLASS_arm_gp],
     limit_reg_arm_StoreStackM4Inc_sp,
     NULL,        /* limit environment */
     NULL,        /* same node */
@@ -555,20 +573,20 @@ ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, i
   {
 	&arm_default_req_none,
     &_arm_req_sp,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
-    &arm_default_req_arm_general_purpose,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
+    &arm_default_req_arm_gp,
   };
 
   assert(n_regs <= 15);
@@ -588,10 +606,52 @@ ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, i
   return res;
 }
 
-/**
- * Register additional opcodes here.
- */
-static void arm_register_additional_opcodes(int cur_opcode) {
+/************************************************
+ *   ___        _   _           _               *
+ *  / _ \ _ __ | |_(_)_ __ ___ (_)_______ _ __  *
+ * | | | | '_ \| __| | '_ ` _ \| |_  / _ \ '__| *
+ * | |_| | |_) | |_| | | | | | | |/ /  __/ |    *
+ *  \___/| .__/ \__|_|_| |_| |_|_/___\___|_|    *
+ *       |_|                                    *
+ ************************************************/
+
+typedef struct _opt_tuple {
+	ir_op *op_imm_left;		/**< immediate is left */
+	ir_op *op_imm_right;	/**< immediate is right */
+	ir_op *op_shf_left;		/**< shift operand on left */
+	ir_op *op_shf_right;	/**< shift operand on right */
+} opt_tuple;
+
+static const opt_tuple *opt_ops[iro_arm_last];
+
+void arm_set_optimizers(void) {
+	/*
+#define STD(op)		p_##op = { op_arm_##op##_i, op_arm_##op##_i, op_arm_##op, op_arm_##op }
+#define LEFT(op)	p_##op = { op_arm_##op##_i, NULL, op_arm_##op, NULL }
+#define SET(op)   opt_ops[iro_arm_##op] = &p_##op;
+
+	static const opt_tuple
+		STD(Add),
+		STD(And),
+		STD(Or),
+		STD(Eor),
+		LEFT(Bic),
+		LEFT(Shl),
+		LEFT(Shr),
+		LEFT(Shrs),
+		p_Sub = { op_arm_Sub_i, op_arm_Rsb_i, op_arm_Sub, op_arm_Rsb },
+
+	memset(opt_ops, 0, sizeof(opt_ops));
+	SET(Add);
+	SET(And);
+	SET(Or);
+	SET(Eor);
+	SET(Sub);
+	SET(Bic);
+	SET(Shl);
+	SET(Shr);
+	SET(Shrs);
+	*/
 }
 
 
