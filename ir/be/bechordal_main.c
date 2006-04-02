@@ -332,7 +332,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-spilloff", dump_ir_block_graph_sched);
 
-	lower_nodes_after_ra(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0);
+	lower_nodes_after_ra(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0, 1);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&chordal_env.obst, NULL);
