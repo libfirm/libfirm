@@ -189,7 +189,7 @@ void be_init(void)
 	phi_class_init();
 }
 
-static be_main_env_t *be_init_env(be_main_env_t *env)
+static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 {
 	memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
@@ -197,7 +197,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env)
 	env->options  = &be_options;
 	FIRM_DBG_REGISTER(env->dbg, "be.main");
 
-	arch_env_init(env->arch_env, isa_if);
+	arch_env_init(env->arch_env, isa_if, file_handle);
 
 	/* Register the irn handler of the architecture */
 	if (arch_isa_get_irn_handler(env->arch_env->isa))
@@ -270,7 +270,7 @@ static void be_main_loop(FILE *file_handle)
 	arch_isa_t *isa;
 	be_main_env_t env;
 
-	be_init_env(&env);
+	be_init_env(&env, file_handle);
 
 	isa = arch_env_get_isa(env.arch_env);
 
@@ -293,7 +293,7 @@ static void be_main_loop(FILE *file_handle)
 		cg_if = isa->impl->get_code_generator_if(isa);
 
 		/* get a code generator for this graph. */
-		birg.cg = cg_if->init(file_handle, &birg);
+		birg.cg = cg_if->init(&birg);
 
 		/* create the code generator and generate code. */
 		prepare_graph(&birg);

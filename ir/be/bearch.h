@@ -19,7 +19,7 @@
 struct _be_node_factory_t;
 
 typedef enum _arch_register_type_t {
-  arch_register_type_none = 0,
+  arch_register_type_none         = 0,
   arch_register_type_caller_save  = 1, /**< The register must be saved by the caller
                                             upon a function call. It thus can be overwritten
                                             in the called function. */
@@ -417,11 +417,10 @@ struct _arch_irn_handler_t {
 struct _arch_code_generator_if_t {
 	/**
 	 * Initialize the code generator.
-	 * @param file The file to dump to.
 	 * @param birg A backend IRG session.
 	 * @return     A newly created code generator.
 	 */
-	void *(*init)(FILE *file, const be_irg_t *birg);
+	void *(*init)(const be_irg_t *birg);
 
 	/**
 	 * Called before abi introduce.
@@ -500,8 +499,10 @@ struct _arch_isa_if_t {
 
   /**
    * Initialize the isa interface.
+	 * @param file_handle  the file handle to write the output to
+	 * @return a new isa instance
    */
-  void *(*init)(void);
+  void *(*init)(FILE *file_handle);
 
   /**
    * Free the isa instance.
@@ -610,10 +611,11 @@ struct _arch_env_t {
 
 /**
  * Initialize the architecture environment struct.
- * @param isa The isa which shall be put into the environment.
+ * @param isa           The isa which shall be put into the environment.
+ * @param file_handle   The file handle
  * @return The environment.
  */
-extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa);
+extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa, FILE *file_handle);
 
 /**
  * Add a node handler to the environment.

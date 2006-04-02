@@ -30,10 +30,11 @@
 
 #include "irprintf.h"
 
-arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if)
+/* Initialize the architecture environment struct. */
+arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if, FILE *file_handle)
 {
   memset(env, 0, sizeof(*env));
-  env->isa = isa_if->init();
+  env->isa = isa_if->init(file_handle);
   return env;
 }
 
