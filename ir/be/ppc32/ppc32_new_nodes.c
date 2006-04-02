@@ -531,20 +531,6 @@ void init_ppc32_attributes(ir_node *node, int flags,
 	attr->data.empty   = NULL;
 }
 
-/**
- * Hook to create additional opcodes.
- */
-void ppc32_register_additional_opcodes(int opcode_num){
-}
-
-
-
-
-
-
-
-
-
 
 /***************************************************************************************
  *                  _                            _                   _
