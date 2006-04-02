@@ -10,19 +10,7 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "xmalloc.h"
-#include <obstack.h>
-
-#ifdef obstack_chunk_alloc
-# undef obstack_chunk_alloc
-# define obstack_chunk_alloc xmalloc
-#else
-# define obstack_chunk_alloc xmalloc
-# define obstack_chunk_free free
-#endif
-
-extern int obstack_printf(struct obstack *obst, char *fmt, ...);
-
+#include "obst.h"
 #include "tv.h"
 #include "irnode.h"
 #include "entity.h"
