@@ -550,10 +550,10 @@ static void ppc32_after_ra(void *self) {
 static void ppc32_emit_and_done(void *self) {
 	ppc32_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->out;
+	FILE               *out = cg->isa->out;
 
 	if (cg->emit_decls) {
-		ppc32_gen_decls(cg->out);
+		ppc32_gen_decls(out);
 		cg->emit_decls = 0;
 	}
 
@@ -591,7 +591,7 @@ void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 	}
 }
 
-static void *ppc32_cg_init(FILE *F, const be_irg_t *birg);
+static void *ppc32_cg_init(const be_irg_t *birg);
 
 static const arch_code_generator_if_t ppc32_code_gen_if = {
 	ppc32_cg_init,
@@ -606,15 +606,15 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *ppc32_cg_init(FILE *F, const be_irg_t *birg) {
+static void *ppc32_cg_init(const be_irg_t *birg) {
 	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env->isa;
 	ppc32_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
 	cg->impl      = &ppc32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ppc32_cmp_irn_reg_assoc, 1024);
-	cg->out       = F;
 	cg->arch_env  = birg->main_env->arch_env;
+	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->area_size = 0;
 	cg->area      = NULL;
@@ -660,24 +660,27 @@ static void *ppc32_cg_init(FILE *F, const be_irg_t *birg) {
 
 static ppc32_isa_t ppc32_isa_template = {
 	&ppc32_isa_if,
-	&ppc32_general_purpose_regs[REG_R1],	// stack pointer
-	&ppc32_general_purpose_regs[REG_R31],	// base pointer
-	-1,								    // stack is decreasing
-	0									// num codegens... ??
+	&ppc32_general_purpose_regs[REG_R1],  // stack pointer
+	&ppc32_general_purpose_regs[REG_R31], // base pointer
+	-1,                                   // stack is decreasing
+	0,                                    // num codegens... ??
+	NULL
 };
 
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *ppc32_init(void) {
+static void *ppc32_init(FILE *file_handle) {
 	static int inited = 0;
 	ppc32_isa_t *isa;
 
 	if(inited)
 		return NULL;
 
-	isa = xcalloc(1, sizeof(*isa));
+	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &ppc32_isa_template, sizeof(*isa));
+
+	isa->out = file_handle;
 
 	ppc32_register_init(isa);
 	ppc32_create_opcodes();

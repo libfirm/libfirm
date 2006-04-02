@@ -7,13 +7,15 @@
 #include "../be.h"
 #include "set.h"
 
+typedef struct _ppc32_isa_t ppc32_isa_t;
+
 typedef struct _ppc32_code_gen_t {
 	const arch_code_generator_if_t *impl;             /**< implementation */
 	ir_graph                       *irg;              /**< current irg */
-	FILE                           *out;              /**< output file */
 	const arch_env_t               *arch_env;         /**< the arch env */
 	set                            *reg_set;          /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	int                             emit_decls;       /**< flag indicating if decls were already emitted */
+	ppc32_isa_t                    *isa;              /**< the isa instance */
 	const be_irg_t                 *birg;             /**< The be-irg (contains additional information about the irg) */
 	unsigned                        area_size;        /**< size of call area for the current irg */
 	entity                         *area;             /**< the entity representing the call area or NULL for leaf functions */
@@ -23,13 +25,14 @@ typedef struct _ppc32_code_gen_t {
 } ppc32_code_gen_t;
 
 
-typedef struct _ppc32_isa_t {
+struct _ppc32_isa_t {
 	const arch_isa_if_t   *impl;
 	const arch_register_t *sp;            /**< The stack pointer register. */
 	const arch_register_t *bp;            /**< The base pointer register. */
 	const int              stack_dir;     /**< -1 for decreasing, 1 for increasing. */
-	int                  num_codegens;
-} ppc32_isa_t;
+	int                    num_codegens;
+	FILE                   *out;          /**< output file */
+};
 
 
 typedef struct _ppc32_irn_ops_t {
