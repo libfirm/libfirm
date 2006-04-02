@@ -492,9 +492,5 @@ void mips_init_opcode_transforms(void) {
  *
  ***************************************************************************************/
 
-static void mips_register_additional_opcodes(int n) {
-	/* we don't need any additional opcodes */
-}
-
 /* Include the generated constructor functions */
 #include "gen_mips_new_nodes.c.inl"
