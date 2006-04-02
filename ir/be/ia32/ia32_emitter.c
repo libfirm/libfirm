@@ -31,17 +31,7 @@
 #include "ia32_new_nodes.h"
 #include "ia32_map_regs.h"
 
-#ifdef obstack_chunk_alloc
-# undef obstack_chunk_alloc
-# define obstack_chunk_alloc xmalloc
-#else
-# define obstack_chunk_alloc xmalloc
-# define obstack_chunk_free free
-#endif
-
 #define BLOCK_PREFIX(x) ".L" x
-
-extern int obstack_printf(struct obstack *obst, char *fmt, ...);
 
 #define SNPRINTF_BUF_LEN 128
 
@@ -1254,7 +1244,7 @@ static void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (ent) {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "call %s", get_entity_name(ent));
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "call %s", get_entity_ld_name(ent));
 	}
 	else {
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "%1D", get_irn_n(irn, be_pos_Call_ptr));
@@ -1275,8 +1265,10 @@ static void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (offs) {
-		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S,%s%u", irn,
-			(dir == be_stack_dir_expand) ? " -" : " ", offs);
+		if (dir == be_stack_dir_expand)
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1S, %u", irn, offs);
+		else
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1S, %u", irn, offs);
 		lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (IncSP) */", irn);
 	}
 	else {
