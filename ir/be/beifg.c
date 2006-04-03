@@ -126,6 +126,7 @@ int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
 	ir_node *curr;
 	int i, j;
 
+	i = 0;
 	be_ifg_foreach_neighbour(ifg, iter, irn, curr)
 		neighbours[i++] = curr;
 
