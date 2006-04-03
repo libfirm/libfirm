@@ -115,7 +115,7 @@ static int mips_scheduler_node_allowed(mips_sched_env_t *sched_env, ir_node* nod
 	return 1;
 }
 
-static ir_node *mips_scheduler_select(void *block_env, pset *ready_set)
+static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set)
 {
 	mips_sched_env_t *sched_env = (mips_sched_env_t*) block_env;
 	const arch_env_t *arch_env = (const arch_env_t*) sched_env->arch_env;
@@ -127,22 +127,22 @@ static ir_node *mips_scheduler_select(void *block_env, pset *ready_set)
 
 	// test all nodes in the ready set and take the first non-branch that
 	// is allowed
-	for(node = pset_first(ready_set); node != NULL; node = pset_next(ready_set)) {
-		if(arch_irn_classify(arch_env, node) == arch_irn_class_branch) {
-			if(is_irn_forking(node))
+	for (node = nodeset_first(ready_set); node != NULL; node = nodeset_next(ready_set)) {
+		if (arch_irn_classify(arch_env, node) == arch_irn_class_branch) {
+			if (is_irn_forking(node))
 				condjmp = node;
 			continue;
 		}
 
 		have_non_branch_nodes = 1;
 
-		if(mips_scheduler_node_allowed(sched_env, node))
+		if (mips_scheduler_node_allowed(sched_env, node))
 		{
-			pset_break(ready_set);
+			nodeset_break(ready_set);
 
 			// TODO update busy_registers
 
-			if(is_mips_div(node) || is_mips_mult(node)) {
+			if (is_mips_div(node) || is_mips_mult(node)) {
 				mips_collect_mflohis(sched_env->div_set, node);
 			} else if(is_mips_mflo(node) || is_mips_mfhi(node)) {
 				pset_remove_ptr(sched_env->div_set, node);
@@ -160,9 +160,9 @@ static ir_node *mips_scheduler_select(void *block_env, pset *ready_set)
 		if(condjmp != NULL) {
 			return condjmp;
 		}
-		node = pset_first(ready_set);
+		node = nodeset_first(ready_set);
 		assert(arch_irn_classify(arch_env, node) == arch_irn_class_branch);
-		pset_break(ready_set);
+		nodeset_break(ready_set);
 		return node;
 	}
 
