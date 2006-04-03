@@ -711,7 +711,7 @@ static void update_node_stat_2(ir_node *node, void *env)
   graph_entry_t *graph = env;
 
   /* check for properties that depends on calls like recursion/leaf/indirect call */
-  if (get_irn_op(node) == op_Call)
+  if (is_Call(node))
     stat_update_call_2(node, graph);
 }
 
@@ -1608,11 +1608,12 @@ void stat_dump_snapshot(const char *name, const char *phase)
 static hook_entry_t stat_hooks[hook_last];
 
 /* initialize the statistics module. */
-void init_stat(unsigned enable_options)
+void firm_init_stat(unsigned enable_options)
 {
 #define X(a)  a, sizeof(a)-1
 #define HOOK(h, fkt) \
   stat_hooks[h].hook._##h = fkt; register_hook(h, &stat_hooks[h])
+  unsigned num = 0;
 
   if (! (enable_options & FIRMSTAT_ENABLED))
     return;
@@ -1656,25 +1657,26 @@ void init_stat(unsigned enable_options)
 
   if (enable_options & FIRMSTAT_COUNT_STRONG_OP) {
     /* build the pseudo-ops */
-    _op_Phi0.code    = get_next_ir_opcode();
+
+    _op_Phi0.code    = --num;
     _op_Phi0.name    = new_id_from_chars(X("Phi0"));
 
-    _op_PhiM.code    = get_next_ir_opcode();
+    _op_PhiM.code    = --num;
     _op_PhiM.name    = new_id_from_chars(X("PhiM"));
 
-    _op_ProjM.code   = get_next_ir_opcode();
+    _op_ProjM.code   = --num;
     _op_ProjM.name   = new_id_from_chars(X("ProjM"));
 
-    _op_MulC.code    = get_next_ir_opcode();
+    _op_MulC.code    = --num;
     _op_MulC.name    = new_id_from_chars(X("MulC"));
 
-    _op_DivC.code    = get_next_ir_opcode();
+    _op_DivC.code    = --num;
     _op_DivC.name    = new_id_from_chars(X("DivC"));
 
-    _op_ModC.code    = get_next_ir_opcode();
+    _op_ModC.code    = --num;
     _op_ModC.name    = new_id_from_chars(X("ModC"));
 
-    _op_DivModC.code = get_next_ir_opcode();
+    _op_DivModC.code = --num;
     _op_DivModC.name = new_id_from_chars(X("DivModC"));
 
     status->op_Phi0    = &_op_Phi0;
@@ -1696,10 +1698,10 @@ void init_stat(unsigned enable_options)
   }
 
   if (enable_options & FIRMSTAT_COUNT_SELS) {
-    _op_SelSel.code    = get_next_ir_opcode();
+    _op_SelSel.code    = --num;
     _op_SelSel.name    = new_id_from_chars(X("Sel(Sel)"));
 
-    _op_SelSelSel.code = get_next_ir_opcode();
+    _op_SelSelSel.code = --num;
     _op_SelSelSel.name = new_id_from_chars(X("Sel(Sel(Sel))"));
 
     status->op_SelSel    = &_op_SelSel;
@@ -1738,7 +1740,7 @@ void stat_term(void) {
 #else
 
 /* initialize the statistics module. */
-void init_stat(unsigned enable_options) {}
+void firm_init_stat(unsigned enable_options) {}
 
 /* Dumps a statistics snapshot */
 void stat_dump_snapshot(const char *name, const char *phase) {}

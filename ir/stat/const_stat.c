@@ -77,6 +77,7 @@ const char *stat_fc_name(float_classify_t classification)
 /**
  * update info on Consts
  *
+ * @param status statistic status
  * @param node   The Const node
  * @param graph  The graph entry containing the call
  */

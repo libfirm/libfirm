@@ -65,6 +65,7 @@ enum firmstat_optimizations_t {
   FS_OPT_MUX_TO_MAX,                        /**< Mux(a > b, a, b) = Max(a,b) */
   FS_OPT_MUX_TO_ABS,                        /**< Mux(a > b, a, b) = Abs(a,b) */
   FS_OPT_MUX_TO_SHR,                        /**< Mux(a > b, a, b) = a >> b */
+  FS_BE_IA32_LEA,                           /**< Lea was created */
   FS_OPT_MAX
 };
 
@@ -82,7 +83,7 @@ void stat_dump_snapshot(const char *name, const char *phase);
  *
  * @param enable_options  a bitmask containing the statistic options
  */
-void init_stat(unsigned enable_options);
+void firm_init_stat(unsigned enable_options);
 
 /**
  * terminates the statistics module, frees all memory

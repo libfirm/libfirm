@@ -28,6 +28,7 @@ static const struct {
   { HOOK_OPT_CONST_EVAL,   "constant evaluation" },
   { HOOK_OPT_ALGSIM,       "algebraic simplification" },
   { HOOK_OPT_PHI,          "Phi optmization" },
+  { HOOK_OPT_SYNC,         "Sync optmization" },
   { HOOK_OPT_WAW,          "Write-After-Write optimization" },
   { HOOK_OPT_WAR,          "Write-After-Read optimization" },
   { HOOK_OPT_RAW,          "Read-After-Write optimization" },
@@ -45,7 +46,9 @@ static const struct {
   { HOOK_OPT_CONFIRM,      "Confirm-based optimization: replacement" },
   { HOOK_OPT_CONFIRM_C,    "Confirm-based optimization: replaced by const" },
   { HOOK_OPT_CONFIRM_E,    "Confirm-based optimization: evaluated" },
+  { HOOK_OPT_EXC_REM,      "a exception edge was removed due to a Confirmation prove" },
   { HOOK_LOWERED,          "Lowered" },
+  { HOOK_BACKEND,          "Backend transformation" },
   { FS_OPT_NEUTRAL_0,      "algebraic simplification: a op 0 = 0 op a = a" },
   { FS_OPT_NEUTRAL_1,      "algebraic simplification: a op 1 = 1 op a = a" },
   { FS_OPT_ADD_A_A,        "algebraic simplification: a + a = a * 2" },
@@ -73,6 +76,7 @@ static const struct {
   { FS_OPT_MUX_TO_MAX,     "algebraic simplification: Mux(a > b, a, b) = Max(a,b)" },
   { FS_OPT_MUX_TO_ABS,     "algebraic simplification: Mux(a > b, a, b) = Abs(a,b)" },
   { FS_OPT_MUX_TO_SHR,     "algebraic simplification: Mux(a > b, a, b) = a >> b" },
+  { FS_BE_IA32_LEA,        "Backend transformation: Lea was created" },
 };
 
 static const char *if_conv_names[IF_RESULT_LAST] = {
@@ -258,7 +262,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 	      b_entry->cnt_edges.cnt[0],
 	      b_entry->cnt_in_edges.cnt[0],
 	      b_entry->cnt_out_edges.cnt[0],
-              b_entry->cnt_phi_data.cnt[0],
+        b_entry->cnt_phi_data.cnt[0],
 	      (double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
       );
     }
