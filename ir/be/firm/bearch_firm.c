@@ -122,7 +122,7 @@ static int dump_node_Imm(ir_node *n, FILE *F, dump_reason_t reason) {
   return bad;
 }
 
-static void *firm_init(void)
+static void *firm_init(FILE *outfile)
 {
   static struct obstack obst;
   static int inited = 0;
@@ -567,7 +567,7 @@ static void firm_codegen_done(void *self)
 	free(self);
 }
 
-static void *firm_cg_init(FILE *file_handle, const be_irg_t *birg);
+static void *firm_cg_init(const be_irg_t *birg);
 
 static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_cg_init,
@@ -579,7 +579,7 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_codegen_done
 };
 
-static void *firm_cg_init(FILE *file_handle, const be_irg_t *birg)
+static void *firm_cg_init(const be_irg_t *birg)
 {
 	firm_code_gen_t *cg = xmalloc(sizeof(*cg));
 	cg->impl = &firm_code_gen_if;
