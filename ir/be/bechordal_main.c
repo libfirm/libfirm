@@ -161,7 +161,7 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_SPILL_BELADY,
 	BE_CH_COPYMIN_HEUR,
 	BE_CH_IFG_STD,
-	BE_CH_LOWER_PERM_SWAP | BE_CH_LOWER_PERM_STAT,
+	BE_CH_LOWER_PERM_SWAP,
 };
 
 #ifdef WITH_LIBCORE
@@ -234,14 +234,13 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_MASK("spill", "spill method (belady or ilp)", &spill_var),
 	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (heur or ilp)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR("ifg", "interference graph flavour (std or fast)", &ifg_flavor_var),
-	LC_OPT_ENT_ENUM_MASK("lowerperm", "perm lowering options (copy, swap, stat)", &lower_perm_var),
+	LC_OPT_ENT_ENUM_MASK("perm", "perm lowering options (copy, swap, stat)", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump", "select dump phases", &dump_var),
 	{ NULL }
 };
 
 static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 {
-	int i;
 	static int run_once = 0;
 	lc_opt_entry_t *chordal_grp;
 
@@ -356,8 +355,8 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-spilloff", dump_ir_block_graph_sched);
 
 	lower_nodes_after_ra(&chordal_env,
-		options.lower_perm_opt & BE_CH_LOWER_PERM_COPY,
-		options.lower_perm_opt & BE_CH_LOWER_PERM_STAT);
+		options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0,
+		options.lower_perm_opt & BE_CH_LOWER_PERM_STAT ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&chordal_env.obst, NULL);
