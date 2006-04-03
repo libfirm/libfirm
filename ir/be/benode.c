@@ -1324,10 +1324,20 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			case beo_IncSP:
 				{
 					be_stack_attr_t *a = (be_stack_attr_t *) at;
-					fprintf(f, "offset: %u\n", a->offset);
+					if (a->offset == BE_STACK_FRAME_SIZE)
+						fprintf(f, "offset: FRAME_SIZE\n");
+					else
+						fprintf(f, "offset: %u\n", a->offset);
 					fprintf(f, "direction: %s\n", a->dir == be_stack_dir_expand ? "expand" : "shrink");
 				}
 				break;
+			case beo_Call:
+				{
+					be_call_attr_t *a = (be_call_attr_t *) at;
+
+					if (a->ent)
+						fprintf(f, "\ncalling: %s\n", get_entity_name(a->ent));
+				}
 			default:
 				break;
 			}
