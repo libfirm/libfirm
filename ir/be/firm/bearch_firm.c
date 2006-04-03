@@ -20,6 +20,7 @@
 #include "ircons_t.h"
 #include "irgwalk.h"
 #include "type.h"
+#include "irtools.h"
 
 #include "../be_t.h"
 #include "../bearch.h"
@@ -508,16 +509,11 @@ typedef struct _firm_code_gen_t {
 } firm_code_gen_t;
 
 
-static void clear_link(ir_node *irn, void *data)
-{
-	set_irn_link(irn, NULL);
-}
-
 static void firm_prepare_graph(void *self)
 {
 	firm_code_gen_t *cg = self;
 
-	irg_walk_graph(cg->irg, clear_link, localize_const_walker, NULL);
+	irg_walk_graph(cg->irg, firm_clear_link, localize_const_walker, NULL);
 	irg_walk_graph(cg->irg, NULL, prepare_walker, NULL);
 }
 
