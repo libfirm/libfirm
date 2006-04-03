@@ -272,6 +272,7 @@ static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 typedef struct {
 	be_abi_call_flags_bits_t flags;
 	const arch_isa_t *isa;
+	const arch_env_t *aenv;
 	ir_graph *irg;
 } ia32_abi_env_t;
 
@@ -281,6 +282,7 @@ static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags = fl.bits;
 	env->irg   = irg;
+	env->aenv  = aenv;
 	env->isa   = aenv->isa;
 	return env;
 }
@@ -292,12 +294,20 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 		pset_insert_ptr(s, env->isa->bp);
 }
 
+/**
+ * Generate the prologue.
+ * @param self    The callback object.
+ * @param mem     A pointer to the mem node. Update this if you define new memory.
+ * @param reg_map A mapping mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @return        The register which shall be used as a stack frame base.
+ *
+ * All nodes which define registers in @p reg_map must keep @p reg_map current.
+ */
 static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map)
 {
 	ia32_abi_env_t *env              = self;
-	const arch_register_t *frame_reg = env->isa->sp;
 
-	if(!env->flags.try_omit_fp) {
+	if (!env->flags.try_omit_fp) {
 		int reg_size         = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 		ir_node *bl          = get_irg_start_block(env->irg);
 		ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
@@ -305,39 +315,51 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
 		ir_node *store_bp;
 
+		/* push ebp */
 		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_expand);
 		store_bp = new_rd_ia32_Store(NULL, env->irg, bl, curr_sp, curr_no_reg, curr_bp, *mem, mode_T);
 		set_ia32_am_support(store_bp, ia32_am_Dest);
 		set_ia32_am_flavour(store_bp, ia32_B);
 		set_ia32_op_type(store_bp, ia32_AddrModeD);
+		set_ia32_ls_mode(store_bp, env->isa->bp->reg_class->mode);
 		*mem     = new_r_Proj(env->irg, bl, store_bp, mode_M, 0);
+
+		/* move esp to ebp */
 		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
 		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
-		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
+		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
+		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_dont_spill);
 
 		be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
 		be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
+
+		return env->isa->bp;
 	}
 
-	return frame_reg;
+	return env->isa->sp;
 }
 
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t *env = self;
+	ia32_abi_env_t *env  = self;
 	ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
 	ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
 	ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
 
-	if(env->flags.try_omit_fp) {
+	if (env->flags.try_omit_fp) {
+		/* simply remove the stack frame here */
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
 	}
 
 	else {
 		ir_node *load_bp;
 		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
+		int reg_size     = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 
+		/* copy ebp to esp */
 		curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
+
+		/* pop ebp */
 		load_bp = new_rd_ia32_Load(NULL, env->irg, bl, curr_sp, curr_no_reg, *mem, mode_T);
 		set_ia32_am_support(load_bp, ia32_am_Source);
 		set_ia32_am_flavour(load_bp, ia32_B);
@@ -345,6 +367,9 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		set_ia32_ls_mode(load_bp, mode_bp);
 		curr_bp = new_r_Proj(env->irg, bl, load_bp, mode_bp, 0);
 		*mem    = new_r_Proj(env->irg, bl, load_bp, mode_M, 1);
+		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
+
+		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_shrink);
 	}
 
 	be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
@@ -992,14 +1017,14 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	int       i, ignore_1, ignore_2;
 	ir_mode **modes;
 	const arch_register_t *reg;
-	be_abi_call_flags_t call_flags;
+	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
 	/* set abi flags for calls */
-	call_flags.bits.left_to_right         = 0;
-	call_flags.bits.store_args_sequential = 0;
-	call_flags.bits.try_omit_fp           = 1;
-	call_flags.bits.fp_free               = 0;
-	call_flags.bits.call_has_imm          = 1;
+	call_flags.bits.left_to_right         = 0;  /* always last arg first on stack */
+	call_flags.bits.store_args_sequential = 0;  /* use stores instead of push */
+	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
+	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
+	call_flags.bits.call_has_imm          = 1;  /* IA32 calls can have immediate address */
 
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
