@@ -189,6 +189,7 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 	ir_mode  *mode  = env->mode;
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (! USE_SSE2(env->cg)) {
 			cnst_classify_t clss = classify_Const(node);
 
