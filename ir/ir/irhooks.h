@@ -54,6 +54,7 @@ typedef enum {
   HOOK_OPT_CONFIRM_E,   /**< a value was evaluated due to a Confirm */
   HOOK_OPT_EXC_REM,     /**< a exception edge was removed due to a Confirmation prove */
   HOOK_LOWERED,         /**< lowered */
+  HOOK_BACKEND,         /**< a backend transformation */
   HOOK_OPT_LAST
 } hook_opt_kind;
 
@@ -276,6 +277,6 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_new_type(tp)                 hook_exec(hook_new_type, (ctx, tp))
 
 /* the initializer, move to hooks_t.h some day */
-int init_hooks(void);
+int firm_init_hooks(void);
 
 #endif /* __IRHOOKS_H__ */

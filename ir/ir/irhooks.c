@@ -29,7 +29,7 @@ hook_entry_t *hooks[hook_last];
 
 /* register a hook */
 void register_hook(hook_type_t hook, hook_entry_t *entry) {
-  /* check if a hook function is specifyed. It's a union, so no matter which one */
+  /* check if a hook function is specified. It's a union, so no matter which one */
   if (! entry->hook._hook_turn_into_id)
     return;
 
@@ -63,6 +63,9 @@ void unregister_hook(hook_type_t hook, hook_entry_t *entry) {}
 
 #endif /* FIRM_ENABLE_HOOKS */
 
-int init_hooks(void) {
+int firm_init_hooks(void) {
+  /* this strange code assures that both functions are available
+     in a shared library even if none of them is called.
+     Meanwhile not needed anymore but ... */
   return (int)register_hook + (int)unregister_hook;
 }
