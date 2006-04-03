@@ -81,9 +81,9 @@ init_firm(const firm_parameter_t *param)
   /* initialize all ident stuff */
   init_ident(def_params.id_if, 1024);
   /* initialize Firm hooks */
-  init_hooks();
+  firm_init_hooks();
   /* enhanced statistics, need idents and hooks */
-  init_stat(def_params.enable_statistics);
+  firm_init_stat(def_params.enable_statistics);
   /* Edges need hooks. */
   init_edges();
   /* create the type kinds. */
