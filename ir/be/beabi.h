@@ -15,6 +15,9 @@
 #include "bearch.h"
 #include "beabi_t.h"
 
+/** Flag: if set, try to omit the frame pointer if alled by the backend */
+extern int be_omit_fp;
+
 struct _be_abi_call_flags_bits_t {
 	unsigned left_to_right          : 1;  /**< Arguments are from left to right. */
 	unsigned store_args_sequential  : 1;  /**< Use sequential stores for arguments. */
@@ -67,7 +70,7 @@ struct _be_abi_callbacks_t {
 	 * @param reg_map A mapping mapping all callee_save/ignore/parameter registers to their defining nodes.
 	 * @return        The register which shall be used as a stack frame base.
 	 *
-     * All nodes which define registers in @p reg_map must keep @p reg_map current.
+	 * All nodes which define registers in @p reg_map must keep @p reg_map current.
 	 */
 	const arch_register_t *(*prologue)(void *self, ir_node **mem, pmap *reg_map);
 

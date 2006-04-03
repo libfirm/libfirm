@@ -108,6 +108,9 @@ struct _be_abi_irg_t {
 static const arch_irn_ops_if_t abi_irn_ops;
 static const arch_irn_handler_t abi_irn_handler;
 
+/* Flag: if set, try to omit the frame pointer if alled by the backend */
+int be_omit_fp = 0;
+
 /*
      _    ____ ___    ____      _ _ _                _
     / \  | __ )_ _|  / ___|__ _| | | |__   __ _  ___| | _____
@@ -206,12 +209,14 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
  *
  * @return the new ABI call object
  */
-static be_abi_call_t *be_abi_call_new(void)
+static be_abi_call_t *be_abi_call_new()
 {
 	be_abi_call_t *call = xmalloc(sizeof(call[0]));
 	call->flags.val  = 0;
 	call->params     = new_set(cmp_call_arg, 16);
 	call->cb         = NULL;
+
+	call->flags.bits.try_omit_fp = be_omit_fp;
 	return call;
 }
 
@@ -715,10 +720,6 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		const ir_edge_t *edge;
 		ir_node *new_alloc;
 
-		env->call->flags.bits.try_omit_fp = 0;
-
-		new_alloc = be_new_AddSP(env->isa->sp, irg, bl, curr_sp, get_Alloc_size(alloc));
-
 		foreach_out_edge(alloc, edge) {
 			ir_node *irn = get_edge_src_irn(edge);
 
@@ -735,10 +736,19 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 			}
 		}
 
-    /* TODO: Beware: currently Alloc nodes without a result might happen,
-       only escape analysis kills them and this phase runs only for object
-       oriented source. So this must be fixed. */
-		assert(alloc_res != NULL);
+		/* Beware: currently Alloc nodes without a result might happen,
+		   only escape analysis kills them and this phase runs only for object
+		   oriented source. We kill the Alloc here. */
+		if (alloc_res == NULL) {
+			exchange(alloc_mem, get_Alloc_mem(alloc));
+			return curr_sp;
+		}
+
+		/* The stack pointer will be modified in an unknown manner.
+		   We cannot omit it. */
+		env->call->flags.bits.try_omit_fp = 0;
+		new_alloc = be_new_AddSP(env->isa->sp, irg, bl, curr_sp, get_Alloc_size(alloc));
+
 		exchange(alloc_res, env->isa->stack_dir < 0 ? new_alloc : curr_sp);
 
 		if(alloc_mem != NULL)
@@ -895,6 +905,7 @@ static void collect_return_walker(ir_node *irn, void *data)
 	}
 }
 
+#if 0 /*
 static ir_node *setup_frame(be_abi_irg_t *env)
 {
 	const arch_isa_t *isa = env->birg->main_env->arch_env->isa;
@@ -971,6 +982,8 @@ static void clearup_frame(be_abi_irg_t *env, ir_node *ret, pmap *reg_map, struct
 			obstack_ptr_grow(obst, irn);
 	}
 }
+*/
+#endif
 
 static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type)
 {
@@ -1081,7 +1094,7 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 	return res;
 }
 
-static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
+static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
 {
 	ir_graph *irg = env->birg->irg;
 	int n;
@@ -1127,6 +1140,7 @@ static void create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *
 	}
 
 	obstack_free(&env->obst, rm);
+	return irn;
 }
 
 /**
@@ -1147,13 +1161,13 @@ static void modify_irg(be_abi_irg_t *env)
 	pset *dont_save           = pset_new_ptr(8);
 	int n_params              = get_method_n_params(method_type);
 	int max_arg               = 0;
-	DEBUG_ONLY(firm_dbg_module_t *dbg    = env->dbg;)
 
 	int i, j, n;
 
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
 	ir_node *frame_pointer;
+	ir_node *barrier;
 	ir_node *reg_params_bl;
 	ir_node **args;
 	const ir_edge_t *edge;
@@ -1161,6 +1175,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	pmap_entry *ent;
 	bitset_t *used_proj_nr;
+	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
@@ -1259,8 +1274,8 @@ static void modify_irg(be_abi_irg_t *env)
 	obstack_free(&env->obst, rm);
 
 	/* Generate the Prologue */
-	fp_reg = call->cb->prologue(env->cb, &mem, env->regs);
-	create_barrier(env, bl, &mem, env->regs, 0);
+	fp_reg  = call->cb->prologue(env->cb, &mem, env->regs);
+	barrier = create_barrier(env, bl, &mem, env->regs, 0);
 
 	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
 	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
@@ -1268,6 +1283,9 @@ static void modify_irg(be_abi_irg_t *env)
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
+
+	assert(is_Proj(frame_pointer));
+	be_node_set_flags(barrier, BE_OUT_POS(get_Proj_proj(frame_pointer)), arch_irn_flags_ignore);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
 	for(i = 0; i < max_arg; ++i) {

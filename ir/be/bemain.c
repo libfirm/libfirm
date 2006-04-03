@@ -130,6 +130,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump", "dump irg on several occasions", &dump_var),
 	LC_OPT_ENT_ENUM_PTR("ra", "register allocator", &ra_var),
 	LC_OPT_ENT_ENUM_PTR("isa", "the instruction set architecture", &isa_var),
+	LC_OPT_ENT_BOOL("omitfp", "omit frame pointer", &be_omit_fp),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
