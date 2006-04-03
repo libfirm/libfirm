@@ -20,6 +20,25 @@
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
 #include "ia32_transform.h"
 
+/*----*/
+
+#include "irhooks.h"
+#include "dbginfo_t.h"
+#include "firmstat.h"
+
+/**
+ * Merge the debug info due to a LEA creation.
+ *
+ * @param oldn  the node
+ * @param n     the new constant holding the value
+ */
+#define DBG_OPT_LEA(oldn, n)                                \
+  do {                                                     	\
+	  hook_merge_nodes(&n, 1, &oldn, 1, FS_BE_IA32_LEA);  	  \
+    __dbg_info_merge_pair(n, oldn, dbg_backend);	          \
+  } while(0)
+
+
 #undef is_NoMem
 #define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
 
@@ -884,6 +903,9 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
 
 		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %s]\n", base, index, scale, get_ia32_am_offs(res)));
+
+		/* we will exchange it, report here before the Proj is created */
+		DBG_OPT_LEA(irn, res);
 
 		/* get the result Proj of the Add/Sub */
 		irn = get_res_proj(irn);
