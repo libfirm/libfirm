@@ -9,10 +9,7 @@
 
 #include "firm_types.h"
 
-#include "pset.h"
-#include "pmap.h"
-#include "list.h"
-
+#include "benodesets.h"
 #include "bearch_t.h"
 
 typedef struct _list_sched_selector_t list_sched_selector_t;
@@ -53,7 +50,7 @@ struct _list_sched_selector_t {
 	 * nodes.
 	 * @return The chosen node.
 	 */
-	ir_node *(*select)(void *block_env, pset *ready_set);
+	ir_node *(*select)(void *block_env, nodeset *ready_set);
 
 	/**
 	 * This function decides, if a node should appear in a schedule.

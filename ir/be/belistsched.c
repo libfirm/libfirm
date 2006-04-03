@@ -41,10 +41,10 @@
  * Scheduling environment for the whole graph.
  */
 typedef struct _sched_env_t {
-    const list_sched_selector_t *selector;      /**< The node selector. */
+	const list_sched_selector_t *selector;      /**< The node selector. */
 	const arch_env_t *arch_env;                 /**< The architecture enviromnent. */
 	const ir_graph *irg;                        /**< The graph to schedule. */
-    void *selector_env;                         /**< A pointer to give to the selector. */
+	void *selector_env;                         /**< A pointer to give to the selector. */
 } sched_env_t;
 
 #if 0
@@ -80,21 +80,21 @@ static int cmp_usage(const void *a, const void *b)
  * Just assure that branches are executed last, otherwise select
  * the first node ready.
  */
-static ir_node *trivial_select(void *block_env, pset *ready_set)
+static ir_node *trivial_select(void *block_env, nodeset *ready_set)
 {
 	const arch_env_t *arch_env = block_env;
 	ir_node *irn = NULL;
 
 	/* assure that branches are executed last */
-	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set)) {
-		if(arch_irn_classify(arch_env, irn) != arch_irn_class_branch) {
-			pset_break(ready_set);
+	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
+		if (arch_irn_classify(arch_env, irn) != arch_irn_class_branch) {
+			nodeset_break(ready_set);
 			return irn;
 		}
 	}
 
-	irn = pset_first(ready_set);
-	pset_break(ready_set);
+	irn = nodeset_first(ready_set);
+	nodeset_break(ready_set);
 
 	return irn;
 }
@@ -148,7 +148,7 @@ typedef struct {
 	struct obstack obst;
 	const reg_pressure_main_env_t *main_env;
 	usage_stats_t *root;
-	pset *already_scheduled;
+	nodeset *already_scheduled;
 } reg_pressure_selector_env_t;
 
 static INLINE usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
@@ -189,7 +189,7 @@ static int max_hops_walker(reg_pressure_selector_env_t *env, ir_node *irn, ir_no
 	 * If the node is in the current block but not
 	 * yet scheduled, we keep on searching from that node.
 	 */
-	if(!pset_find_ptr(env->already_scheduled, irn)) {
+	if(!nodeset_find(env->already_scheduled, irn)) {
 		int i, n;
 		int res = 0;
 		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
@@ -253,7 +253,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	reg_pressure_selector_env_t *env  = xmalloc(sizeof(env[0]));
 
 	obstack_init(&env->obst);
-	env->already_scheduled = pset_new_ptr(32);
+	env->already_scheduled = new_nodeset(32);
 	env->root              = NULL;
 	env->main_env          = graph_env;
 
@@ -289,7 +289,7 @@ static void reg_pressure_block_free(void *block_env)
 		set_irn_link(us->irn, NULL);
 
 	obstack_free(&env->obst, NULL);
-	del_pset(env->already_scheduled);
+	del_nodeset(env->already_scheduled);
 	free(env);
 }
 
@@ -327,22 +327,22 @@ static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 	return sum;
 }
 
-static ir_node *reg_pressure_select(void *block_env, pset *ready_set)
+static ir_node *reg_pressure_select(void *block_env, nodeset *ready_set)
 {
 	reg_pressure_selector_env_t *env = block_env;
 	ir_node *irn, *res     = NULL;
 	int curr_cost          = INT_MAX;
 
-	assert(pset_count(ready_set) > 0);
+	assert(nodeset_count(ready_set) > 0);
 
-	for(irn = pset_first(ready_set); irn; irn = pset_next(ready_set)) {
+	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
 		/*
 			Ignore branch instructions for the time being.
 			They should only be scheduled if there is nothing else.
 		*/
-		if(arch_irn_classify(env->main_env->arch_env, irn) != arch_irn_class_branch) {
+		if (arch_irn_classify(env->main_env->arch_env, irn) != arch_irn_class_branch) {
 			int costs = reg_pr_costs(env, irn);
-			if(costs <= curr_cost) {
+			if (costs <= curr_cost) {
 				res       = irn;
 				curr_cost = costs;
 			}
@@ -355,13 +355,13 @@ static ir_node *reg_pressure_select(void *block_env, pset *ready_set)
 	*/
 
 	if(!res) {
-		res = pset_first(ready_set);
-		pset_break(ready_set);
+		res = nodeset_first(ready_set);
+		nodeset_break(ready_set);
 
 		assert(res && "There must be a node scheduled.");
 	}
 
-	pset_insert_ptr(env->already_scheduled, res);
+	nodeset_insert(env->already_scheduled, res);
 	return res;
 }
 
@@ -406,8 +406,8 @@ void list_sched(const arch_env_t *arch_env, ir_graph *irg)
  */
 typedef struct _block_sched_env_t {
 	int curr_time;
-	pset *ready_set;
-	pset *already_scheduled;
+	nodeset *ready_set;
+	nodeset *already_scheduled;
 	ir_node *block;
 	const list_sched_selector_t *selector;
 	void *selector_block_env;
@@ -440,12 +440,12 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
 
         /* If the operand is local to the scheduled block and not yet
          * scheduled, this nodes cannot be made ready, so exit. */
-        if(!pset_find_ptr(env->already_scheduled, op) && get_nodes_block(op) == env->block)
+        if(!nodeset_find(env->already_scheduled, op) && get_nodes_block(op) == env->block)
             return 0;
     }
 
     DBG((env->dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
-    pset_insert_ptr(env->ready_set, irn);
+    nodeset_insert(env->ready_set, irn);
 
     return 1;
 }
@@ -457,7 +457,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
  * @return 1 if the node was ready, 0 if not.
  */
 #define is_ready(env,irn) \
-  (pset_find_ptr((env)->ready_set, irn) != NULL)
+  (nodeset_find((env)->ready_set, irn) != NULL)
 
 /**
  * Check, if a node has already been schedules.
@@ -466,7 +466,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
  * @return 1 if the node was already scheduled, 0 if not.
  */
 #define is_scheduled(env,irn) \
-  (pset_find_ptr((env)->already_scheduled, irn) != NULL)
+  (nodeset_find((env)->already_scheduled, irn) != NULL)
 
 /**
  * Try, to make all users of a node ready.
@@ -517,11 +517,11 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
     }
 
     /* Insert the node in the set of all already scheduled nodes. */
-    pset_insert_ptr(env->already_scheduled, irn);
+    nodeset_insert(env->already_scheduled, irn);
 
     /* Remove the node from the ready set */
-    if(pset_find_ptr(env->ready_set, irn))
-        pset_remove_ptr(env->ready_set, irn);
+    if(nodeset_find(env->ready_set, irn))
+        nodeset_remove(env->ready_set, irn);
 
     return irn;
 }
@@ -568,9 +568,9 @@ static ir_node *select_node(block_sched_env_t *be)
 {
 	ir_node *irn;
 
-	for(irn = pset_first(be->ready_set); irn; irn = pset_next(be->ready_set)) {
-		if(be_is_Keep(irn)) {
-			pset_break(be->ready_set);
+	for (irn = nodeset_first(be->ready_set); irn; irn = nodeset_next(be->ready_set)) {
+		if (be_is_Keep(irn)) {
+			nodeset_break(be->ready_set);
 			return irn;
 		}
 	}
@@ -608,8 +608,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	/* Initialize the block scheduling environment */
 	be.block             = block;
 	be.curr_time         = 0;
-	be.ready_set         = new_pset(node_cmp_func, get_irn_n_edges(block));
-	be.already_scheduled = new_pset(node_cmp_func, get_irn_n_edges(block));
+	be.ready_set         = new_nodeset(get_irn_n_edges(block));
+	be.already_scheduled = new_nodeset(get_irn_n_edges(block));
 	be.selector          = selector;
 	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
 
@@ -667,7 +667,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	/* Increase the time, if some phi functions have been scheduled */
 	be.curr_time += phi_seen;
 
-	while(pset_count(be.ready_set) > 0) {
+	while (nodeset_count(be.ready_set) > 0) {
 		/* select a node to be scheduled and check if it was ready */
 		irn = select_node(&be);
 
@@ -685,13 +685,13 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		be.curr_time += 1;
 
 		/* remove the scheduled node from the ready list. */
-		if(pset_find_ptr(be.ready_set, irn))
-			pset_remove_ptr(be.ready_set, irn);
+		if (nodeset_find(be.ready_set, irn))
+			nodeset_remove(be.ready_set, irn);
 	}
 
 	if(selector->finish_block)
 		selector->finish_block(be.selector_block_env);
 
-	del_pset(be.ready_set);
-	del_pset(be.already_scheduled);
+	del_nodeset(be.ready_set);
+	del_nodeset(be.already_scheduled);
 }

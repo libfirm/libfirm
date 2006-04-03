@@ -1572,6 +1572,9 @@ struct bias_walk {
 	int start_block_bias;  /**< The bias at the end of the start block. */
 };
 
+/**
+ * Block-Walker: fix all stack offsets
+ */
 static void stack_bias_walker(ir_node *bl, void *data)
 {
 	if(bl != get_irg_start_block(get_irn_irg(bl))) {
@@ -1588,7 +1591,7 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	stack_frame_compute_initial_offset(env->frame);
 	// stack_frame_dump(stdout, env->frame);
 
-	/* Determine the stack bias at the and of the start block. */
+	/* Determine the stack bias at the end of the start block. */
 	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg), 0);
 
 	/* fix the bias is all other blocks */

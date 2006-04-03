@@ -349,7 +349,7 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
 		be_abi_free(birg.abi);
 
-		free_ir_graph(irg);
+//		free_ir_graph(irg);
 	}
 
 	be_done_env(&env);

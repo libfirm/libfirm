@@ -6,8 +6,10 @@
 #ifndef _BEABI_H
 #define _BEABI_H
 
-#include "pset.h"
 #include "firm_types.h"
+
+#include "pset.h"
+#include "pmap.h"
 
 #include "be.h"
 #include "bearch.h"
