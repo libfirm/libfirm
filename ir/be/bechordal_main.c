@@ -161,7 +161,7 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_SPILL_BELADY,
 	BE_CH_COPYMIN_HEUR,
 	BE_CH_IFG_STD,
-	BE_CH_LOWER_PERM_SWAP
+	BE_CH_LOWER_PERM_SWAP | BE_CH_LOWER_PERM_STAT,
 };
 
 #ifdef WITH_LIBCORE
@@ -188,8 +188,13 @@ static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
 };
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
-	{ "swap", BE_CH_LOWER_PERM_SWAP },
 	{ "copy", BE_CH_LOWER_PERM_COPY },
+	{ "swap", BE_CH_LOWER_PERM_SWAP },
+	{ "stat", BE_CH_LOWER_PERM_STAT },
+	{ NULL, 0 }
+};
+
+static const lc_opt_enum_int_items_t lower_perm_stat_items[] = {
 	{ NULL, 0 }
 };
 
@@ -218,16 +223,34 @@ static lc_opt_enum_int_var_t ifg_flavor_var = {
 };
 
 static lc_opt_enum_int_var_t lower_perm_var = {
-	&options.lower_perm_method, lower_perm_items
+	&options.lower_perm_opt, lower_perm_items
 };
 
 static lc_opt_enum_int_var_t dump_var = {
 	&options.dump_flags, dump_items
 };
 
+static const lc_opt_table_entry_t be_chordal_options[] = {
+	LC_OPT_ENT_ENUM_MASK("spill", "spill method (belady or ilp)", &spill_var),
+	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (heur or ilp)", &copymin_var),
+	LC_OPT_ENT_ENUM_PTR("ifg", "interference graph flavour (std or fast)", &ifg_flavor_var),
+	LC_OPT_ENT_ENUM_MASK("lowerperm", "perm lowering options (copy, swap, stat)", &lower_perm_var),
+	LC_OPT_ENT_ENUM_MASK("dump", "select dump phases", &dump_var),
+	{ NULL }
+};
+
 static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 {
-	grp = lc_opt_get_grp(grp, "chordal");
+	int i;
+	static int run_once = 0;
+	lc_opt_entry_t *chordal_grp;
+
+	if (! run_once) {
+		run_once    = 1;
+		chordal_grp = lc_opt_get_grp(grp, "chordal");
+
+		lc_opt_add_table(chordal_grp, be_chordal_options);
+	}
 }
 #endif
 
@@ -332,7 +355,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-spilloff", dump_ir_block_graph_sched);
 
-	lower_nodes_after_ra(&chordal_env, options.lower_perm_method == BE_CH_LOWER_PERM_COPY ? 1 : 0, 1);
+	lower_nodes_after_ra(&chordal_env,
+		options.lower_perm_opt & BE_CH_LOWER_PERM_COPY,
+		options.lower_perm_opt & BE_CH_LOWER_PERM_STAT);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&chordal_env.obst, NULL);
