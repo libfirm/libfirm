@@ -109,7 +109,7 @@ static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ "firm",    &firm_isa },
 	{ "ia32",    &ia32_isa_if },
 	{ "arm",     &arm_isa_if },
-	{ "ppc",     &ppc32_isa_if },
+	{ "ppc32",   &ppc32_isa_if },
 	{ "mips",    &mips_isa_if },
 	{ NULL,      NULL }
 };
