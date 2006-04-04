@@ -465,16 +465,18 @@ static void ia32_prepare_graph(void *self) {
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
-	DEBUG_ONLY(cg->mod = old_mod;)
-
 	if (cg->opt.doam) {
 		edges_deactivate(cg->irg);
 		//dead_node_elimination(cg->irg);
 		edges_activate(cg->irg);
 
+		FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
+
 		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
 		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
 	}
+
+	DEBUG_ONLY(cg->mod = old_mod;)
 }
 
 
@@ -923,7 +925,7 @@ static void *ia32_init(FILE *file_handle) {
 	ia32_build_16bit_reg_map(isa->regs_16bit);
 	ia32_build_8bit_reg_map(isa->regs_8bit);
 
-	/* patch regigter names of x87 registers */
+	/* patch register names of x87 registers */
 	if (USE_x87(isa)) {
 	  ia32_st_regs[0].name = "st";
 	  ia32_st_regs[1].name = "st(1)";
@@ -941,7 +943,7 @@ static void *ia32_init(FILE *file_handle) {
 	isa->name_obst_size = 0;
 #endif /* NDEBUG */
 
-  fprintf(isa->out, "\t.intel_syntax\n");
+	fprintf(isa->out, "\t.intel_syntax\n");
 
 	inited = 1;
 
@@ -1162,7 +1164,6 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "586",        arch_pentium, },
 	{ "pentiumpro", arch_pentium_pro, },
 	{ "686",        arch_pentium_pro, },
-	{ "pentiummmx", arch_pentium_mmx, },
 	{ "pentiummmx", arch_pentium_mmx, },
 	{ "pentium2",   arch_pentium_2, },
 	{ "p2",         arch_pentium_2, },
