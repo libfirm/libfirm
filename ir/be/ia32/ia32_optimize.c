@@ -538,6 +538,9 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 		be_set_IncSP_offset(prev, 0);
 		be_set_IncSP_offset(irn, (unsigned)new_ofs);
 		be_set_IncSP_direction(irn, curr_dir);
+
+		/* Omit the optimized IncSP */
+		be_set_IncSP_pred(irn, be_get_IncSP_pred(prev));
 	}
 }
 
