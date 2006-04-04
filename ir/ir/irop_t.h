@@ -111,6 +111,11 @@ static INLINE int is_op_machine(const ir_op *op) {
   return op->flags & irop_flag_machine;
 }
 
+/** Returns non-zero if operation is a machine operand */
+static INLINE int is_op_machine_operand(const ir_op *op) {
+  return op->flags & irop_flag_machine_op;
+}
+
 /** Returns non-zero if operation is a machine user op number n */
 static INLINE int is_op_machine_user(const ir_op *op, unsigned n) {
   return op->flags & (irop_flag_user << n);

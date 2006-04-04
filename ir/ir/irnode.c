@@ -2498,6 +2498,22 @@ int (is_irn_keep)(const ir_node *node) {
   return _is_irn_keep(node);
 }
 
+/* Returns non-zero for nodes that are machine operations. */
+int (is_irn_machine_op)(const ir_node *node) {
+	return _is_irn_machine_op(node);
+}
+
+/* Returns non-zero for nodes that are machine operands. */
+int (is_irn_machine_operand)(const ir_node *node) {
+	return _is_irn_machine_operand(node);
+}
+
+/* Returns non-zero for nodes that have the n'th user machine flag set. */
+int (is_irn_machine_user)(const ir_node *node, unsigned n) {
+	return _is_irn_machine_user(node, n);
+}
+
+
 /* Gets the string representation of the jump prediction .*/
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
 {

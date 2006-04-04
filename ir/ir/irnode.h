@@ -1094,6 +1094,21 @@ int is_irn_constlike(const ir_node *node);
 int is_irn_keep(const ir_node *node);
 
 /**
+ * Returns non-zero for nodes that are machine operations.
+ */
+int is_irn_machine_op(const ir_node *node);
+
+/**
+ * Returns non-zero for nodes that are machine operands.
+ */
+int is_irn_machine_operand(const ir_node *node);
+
+/**
+ * Returns non-zero for nodes that have the n'th user machine flag set.
+ */
+int is_irn_machine_user(const ir_node *node, unsigned n);
+
+/**
  * A type to express conditional jump predictions.
  */
 typedef enum {
