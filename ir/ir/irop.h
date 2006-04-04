@@ -60,7 +60,9 @@ typedef enum {
   irop_flag_constlike   = 0x00000080, /**< the operation has no arguments and is some
                                            kind of a constant */
   irop_flag_keep        = 0x00000100, /**< this operation can be kept in End's keep-alive list */
-  irop_flag_machine     = 0x00000200  /**< this operation is a machine operation, all higher flags are machine flags */
+  irop_flag_machine     = 0x00000200, /**< this operation is a machine operation */
+  irop_flag_machine_op  = 0x00000400, /**< this operation is a machine operand */
+  irop_flag_user        = 0x00000800  /**< this flag and all higher one are free for machine user */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */

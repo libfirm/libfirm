@@ -20,16 +20,16 @@
 
 /** The type of an ir_op. */
 struct ir_op {
-  opcode code;            /**< the unique opcode of the op */
-  ident *name;            /**< the name of the op */
-  size_t attr_size;       /**< Space needed in memory for private attributes */
-  op_pin_state op_pin_state_pinned; /**< How to deal with the node in cse, pre. */
-  op_arity opar;          /**< arity of operator. */
-  int op_index;           /**< the index of the first data operand, 0 for most cases, 1 for Div etc. */
-  unsigned flags;         /**< flags describing the behavior of the ir_op, a bitmaks of irop_flags */
+  opcode code;            /**< The unique opcode of the op. */
+  ident *name;            /**< The name of the op. */
+  size_t attr_size;       /**< Space needed in memory for private attributes. */
+  op_pin_state op_pin_state_pinned; /**< How to deal with the node in CSE, PRE. */
+  op_arity opar;          /**< The arity of operator. */
+  int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
+  unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */
   void *tag;              /**< Some custom pointer the op's creator can attach stuff to. */
 
-  ir_op_ops ops;          /**< the operations of the this op. */
+  ir_op_ops ops;          /**< The operations of the this op. */
 };
 
 /**
@@ -104,6 +104,16 @@ static INLINE int is_op_constlike(const ir_op *op) {
 /** Returns non-zero if operation is a keep-like op */
 static INLINE int is_op_keep(const ir_op *op) {
   return op->flags & irop_flag_keep;
+}
+
+/** Returns non-zero if operation is a machine operation */
+static INLINE int is_op_machine(const ir_op *op) {
+  return op->flags & irop_flag_machine;
+}
+
+/** Returns non-zero if operation is a machine user op number n */
+static INLINE int is_op_machine_user(const ir_op *op, unsigned n) {
+  return op->flags & (irop_flag_user << n);
 }
 
 static INLINE opcode _get_op_code(const ir_op *op) {
