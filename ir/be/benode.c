@@ -714,6 +714,11 @@ ir_node *be_get_IncSP_pred(ir_node *irn) {
 	return get_irn_n(irn, 0);
 }
 
+ir_node *be_get_IncSP_mem(ir_node *irn) {
+	assert(be_is_IncSP(irn));
+	return get_irn_n(irn, 1);
+}
+
 void be_set_IncSP_offset(ir_node *irn, unsigned offset)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
