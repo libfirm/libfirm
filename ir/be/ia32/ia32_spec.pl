@@ -1018,7 +1018,7 @@ $comment_string = "/*";
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fist %ia32_emit_binop /* integer Store(%A3) -> (%A1) */'
+  "emit"      => '. fist %ia32_emit_am /* integer Store(%A3) -> (%A1) */'
 },
 
 "fistp" => {
@@ -1026,7 +1026,7 @@ $comment_string = "/*";
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fistp %ia32_emit_binop /* integer Store(%A3) -> (%A1) and pop */'
+  "emit"      => '. fistp %ia32_emit_am /* integer Store(%A3) -> (%A1) and pop */'
 },
 
 # constants
