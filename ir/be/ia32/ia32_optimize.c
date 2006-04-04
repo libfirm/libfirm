@@ -19,25 +19,7 @@
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
 #include "ia32_transform.h"
-
-/*----*/
-
-#include "irhooks.h"
-#include "dbginfo_t.h"
-#include "firmstat.h"
-
-/**
- * Merge the debug info due to a LEA creation.
- *
- * @param oldn  the node
- * @param n     the new constant holding the value
- */
-#define DBG_OPT_LEA(oldn, n)                                \
-  do {                                                     	\
-	  hook_merge_nodes(&n, 1, &oldn, 1, FS_BE_IA32_LEA);  	  \
-    __dbg_info_merge_pair(n, oldn, dbg_backend);	          \
-  } while(0)
-
+#include "ia32_dbg_stat.h"
 
 #undef is_NoMem
 #define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
@@ -432,7 +414,7 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 		return;
 
 	if (arch_get_irn_register(cg->arch_env, get_irn_n(irn, 1)) !=
-	    &ia32_gp_regs[REG_GP_NOREG])
+		&ia32_gp_regs[REG_GP_NOREG])
 		return;
 
 	val = get_irn_n(irn, 2);
@@ -440,11 +422,11 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 		return;
 
 	if (be_get_IncSP_direction(sp) != be_stack_dir_expand ||
-		  be_get_IncSP_offset(sp) != get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
+		be_get_IncSP_offset(sp) != get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
 		return;
 
 	/* ok, translate into Push */
-  edge = get_irn_out_edge_first(irn);
+	edge = get_irn_out_edge_first(irn);
 	old_proj_M = get_edge_src_irn(edge);
 
 	next = sched_next(irn);
@@ -453,7 +435,7 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 
 	bl   = get_nodes_block(irn);
 	push = new_rd_ia32_Push(NULL, current_ir_graph, bl,
-	                        be_get_IncSP_pred(sp), val, be_get_IncSP_mem(sp), mode_T);
+		be_get_IncSP_pred(sp), val, be_get_IncSP_mem(sp), mode_T);
 	proj_res = new_r_Proj(current_ir_graph, bl, push, get_irn_mode(sp), 0);
 	proj_M   = new_r_Proj(current_ir_graph, bl, push, mode_M, 1);
 
@@ -481,7 +463,7 @@ static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
 		return;
 
 	if (arch_get_irn_register(cg->arch_env, get_irn_n(load, 1)) !=
-	    &ia32_gp_regs[REG_GP_NOREG])
+		&ia32_gp_regs[REG_GP_NOREG])
 		return;
 	if (arch_get_irn_register(cg->arch_env, get_irn_n(load, 0)) != cg->isa->sp)
 		return;
@@ -496,7 +478,7 @@ static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
 	}
 	if (! old_proj_res) {
 		assert(0);
-		return;	/* should not happen */
+		return; /* should not happen */
 	}
 
 	bl = get_nodes_block(load);
@@ -528,6 +510,8 @@ static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
 }
 
 /**
+
+/**
  * Tries to optimize two following IncSP.
  */
 static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
@@ -554,8 +538,6 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 		be_set_IncSP_offset(irn, (unsigned)new_ofs);
 		be_set_IncSP_direction(irn, curr_dir);
 	}
-	else
-		ia32_create_Pop(irn, cg);
 }
 
 /**
@@ -570,8 +552,6 @@ void ia32_peephole_optimization(ir_node *irn, void *env) {
 		ia32_optimize_CondJmp(irn, cg);
 	else if (be_is_IncSP(irn))
 		ia32_optimize_IncSP(irn, cg);
- 	else if (is_ia32_Store(irn))
- 		ia32_create_Push(irn, cg);
 }
 
 
@@ -756,6 +736,112 @@ static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 	return is_equal;
 }
 
+typedef enum _ia32_take_lea_attr {
+	IA32_LEA_ATTR_NONE  = 0,
+	IA32_LEA_ATTR_BASE  = (1 << 0),
+	IA32_LEA_ATTR_INDEX = (1 << 1),
+	IA32_LEA_ATTR_OFFS  = (1 << 2),
+	IA32_LEA_ATTR_SCALE = (1 << 3),
+	IA32_LEA_ATTR_AMSC  = (1 << 4),
+	IA32_LEA_ATTR_FENT  = (1 << 5)
+} ia32_take_lea_attr;
+
+/**
+ * Decides if we have to keep the LEA operand or if we can assimilate it.
+ */
+static int do_new_lea(ir_node *irn, ir_node *base, ir_node *index, ir_node *lea,
+		int have_am_sc, ia32_code_gen_t *cg)
+{
+	ir_node *lea_base = get_irn_n(lea, 0);
+	ir_node *lea_idx  = get_irn_n(lea, 1);
+	entity  *irn_ent  = get_ia32_frame_ent(irn);
+	entity  *lea_ent  = get_ia32_frame_ent(lea);
+	int      ret_val  = 0;
+	int      is_noreg_base  = be_is_NoReg(cg, base);
+	int      is_noreg_index = be_is_NoReg(cg, index);
+	ia32_am_flavour_t am_flav = get_ia32_am_flavour(lea);
+
+	/* If the Add and the LEA both have a different frame entity set: keep */
+	if (irn_ent && lea_ent && (irn_ent != lea_ent))
+		return IA32_LEA_ATTR_NONE;
+	else if (! irn_ent && lea_ent)
+		ret_val |= IA32_LEA_ATTR_FENT;
+
+	/* If the Add and the LEA both have already an address mode symconst: keep */
+	if (have_am_sc && get_ia32_am_sc(lea))
+		return IA32_LEA_ATTR_NONE;
+	else if (get_ia32_am_sc(lea))
+		ret_val |= IA32_LEA_ATTR_AMSC;
+
+	/* Check the different base-index combinations */
+
+	if (! is_noreg_base && ! is_noreg_index) {
+		/* Assimilate if base is the lea and the LEA is just a Base + Offset calculation */
+		if ((base == lea) && ! (am_flav & ia32_I ? 1 : 0)) {
+			if (am_flav & ia32_O)
+				ret_val |= IA32_LEA_ATTR_OFFS;
+
+			ret_val |= IA32_LEA_ATTR_BASE;
+		}
+		else
+			return IA32_LEA_ATTR_NONE;
+	}
+	else if (! is_noreg_base && is_noreg_index) {
+		/* Base is set but index not */
+		if (base == lea) {
+			/* Base points to LEA: assimilate everything */
+			if (am_flav & ia32_O)
+				ret_val |= IA32_LEA_ATTR_OFFS;
+			if (am_flav & ia32_S)
+				ret_val |= IA32_LEA_ATTR_SCALE;
+			if (am_flav & ia32_I)
+				ret_val |= IA32_LEA_ATTR_INDEX;
+
+			ret_val |= IA32_LEA_ATTR_BASE;
+		}
+		else if (am_flav & ia32_B ? 0 : 1) {
+			/* Base is not the LEA but the LEA is an index only calculation: assimilate */
+			if (am_flav & ia32_O)
+				ret_val |= IA32_LEA_ATTR_OFFS;
+			if (am_flav & ia32_S)
+				ret_val |= IA32_LEA_ATTR_SCALE;
+
+			ret_val |= IA32_LEA_ATTR_INDEX;
+		}
+		else
+			return IA32_LEA_ATTR_NONE;
+	}
+	else if (is_noreg_base && ! is_noreg_index) {
+		/* Index is set but not base */
+		if (index == lea) {
+			/* Index points to LEA: assimilate everything */
+			if (am_flav & ia32_O)
+				ret_val |= IA32_LEA_ATTR_OFFS;
+			if (am_flav & ia32_S)
+				ret_val |= IA32_LEA_ATTR_SCALE;
+			if (am_flav & ia32_B)
+				ret_val |= IA32_LEA_ATTR_BASE;
+
+			ret_val |= IA32_LEA_ATTR_INDEX;
+		}
+		else if (am_flav & ia32_I ? 0 : 1) {
+			/* Index is not the LEA but the LEA is a base only calculation: assimilate */
+			if (am_flav & ia32_O)
+				ret_val |= IA32_LEA_ATTR_OFFS;
+			if (am_flav & ia32_S)
+				ret_val |= IA32_LEA_ATTR_SCALE;
+
+			ret_val |= IA32_LEA_ATTR_BASE;
+		}
+		else
+			return IA32_LEA_ATTR_NONE;
+	}
+	else {
+		assert(0 && "There must have been set base or index");
+	}
+
+	return ret_val;
+}
 
 
 /**
@@ -766,6 +852,9 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	dbg_info   *dbg        = get_irn_dbg_info(irn);
 	ir_node    *block      = get_nodes_block(irn);
 	ir_node    *res        = irn;
+	ir_node    *shift      = NULL;
+	ir_node    *lea_o      = NULL;
+	ir_node    *lea        = NULL;
 	char       *offs       = NULL;
 	const char *offs_cnst  = NULL;
 	char       *offs_lea   = NULL;
@@ -775,6 +864,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	int         have_am_sc = 0;
 	int         am_sc_sign = 0;
 	ident      *am_sc      = NULL;
+	entity     *lea_ent    = NULL;
 	ir_node    *left, *right, *temp;
 	ir_node    *base, *index;
 	ia32_am_flavour_t am_flav;
@@ -857,6 +947,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		am_sc_sign = is_ia32_am_sc_sign(temp);
 		have_am_sc = 1;
 		dolea      = 1;
+		lea_o      = temp;
 	}
 
 	if (isadd) {
@@ -874,7 +965,8 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 		/* check for SHL 1,2,3 */
 		if (pred_is_specific_node(temp, is_ia32_Shl)) {
-			temp = get_Proj_pred(temp);
+			temp  = get_Proj_pred(temp);
+			shift = temp;
 
 			if (get_ia32_Immop_tarval(temp)) {
 				scale = get_tarval_long(get_ia32_Immop_tarval(temp));
@@ -883,6 +975,10 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 					index = get_irn_n(temp, 2);
 
 					DBG((mod, LEVEL_1, "\tgot scaled index %+F\n", index));
+				}
+				else {
+					scale = 0;
+					shift = NULL;
 				}
 			}
 		}
@@ -904,44 +1000,36 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 	/* Try to assimilate a LEA as left operand */
 	if (is_ia32_Lea(left) && (get_ia32_am_flavour(left) != ia32_am_O)) {
-		ir_node *assim_lea_idx, *assim_lea_base;
+		/* check if we can assimilate the LEA */
+		int take_attr = do_new_lea(irn, base, index, left, have_am_sc, cg);
 
-		am_flav        = get_ia32_am_flavour(left);
-		assim_lea_base = get_irn_n(left, 0);
-		assim_lea_idx  = get_irn_n(left, 1);
-
-
-		/* If we have an Add with a real right operand (not NoReg) and  */
-		/* the LEA contains already an index calculation then we create */
-		/* a new LEA.                                                   */
-		/* If the LEA contains already a frame_entity then we also      */
-		/* create a new one  otherwise we would loose it.               */
-		if ((isadd && ! be_is_NoReg(cg, index) && (am_flav & ia32_I)) || /* no new LEA if index already set */
-			get_ia32_frame_ent(left)                                  || /* no new LEA if stack access */
-			(have_am_sc && get_ia32_am_sc(left))                      || /* no new LEA if AM symconst already present */
-			/* at least on of the LEA operands must be NOREG */
-			(!be_is_NoReg(cg, assim_lea_base) && !be_is_NoReg(cg, assim_lea_idx)))
-		{
+		if (take_attr == IA32_LEA_ATTR_NONE) {
 			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
 			DBG((mod, LEVEL_1, "\tgot LEA as left operand ... assimilating\n"));
-			offs       = get_ia32_am_offs(left);
-			am_sc      = have_am_sc ? am_sc : get_ia32_am_sc(left);
-			have_am_sc = am_sc ? 1 : 0;
-			am_sc_sign = is_ia32_am_sc_sign(left);
-			scale      = get_ia32_am_scale(left);
+			lea = left; /* for statistics */
 
-			if (be_is_NoReg(cg, assim_lea_base) && ! be_is_NoReg(cg, assim_lea_idx)) {
-				/* assimilate index */
-				assert(be_is_NoReg(cg, index) && ! be_is_NoReg(cg, base) && "operand mismatch for LEA assimilation");
-				index = assim_lea_idx;
+			if (take_attr & IA32_LEA_ATTR_OFFS)
+				offs = get_ia32_am_offs(left);
+
+			if (take_attr & IA32_LEA_ATTR_AMSC) {
+				am_sc      = get_ia32_am_sc(left);
+				have_am_sc = 1;
+				am_sc_sign = is_ia32_am_sc_sign(left);
 			}
-			else if (! be_is_NoReg(cg, assim_lea_base) && be_is_NoReg(cg, assim_lea_idx)) {
-				/* assimilate base */
-				assert(! be_is_NoReg(cg, index) && (base == left) && "operand mismatch for LEA assimilation");
-				base = assim_lea_base;
-			}
+
+			if (take_attr & IA32_LEA_ATTR_SCALE)
+				scale = get_ia32_am_scale(left);
+
+			if (take_attr & IA32_LEA_ATTR_BASE)
+				base = get_irn_n(left, 0);
+
+			if (take_attr & IA32_LEA_ATTR_INDEX)
+				index = get_irn_n(left, 1);
+
+			if (take_attr & IA32_LEA_ATTR_FENT)
+				lea_ent = get_ia32_frame_ent(left);
 		}
 	}
 
@@ -986,9 +1074,12 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 		/* copy the frame entity (could be set in case of Add */
 		/* which was a FrameAddr) */
-		set_ia32_frame_ent(res, get_ia32_frame_ent(irn));
+		if (lea_ent)
+			set_ia32_frame_ent(res, lea_ent);
+		else
+			set_ia32_frame_ent(res, get_ia32_frame_ent(irn));
 
-		if (is_ia32_use_frame(irn))
+		if (get_ia32_frame_ent(res))
 			set_ia32_use_frame(res);
 
 		/* set scale */
@@ -1017,7 +1108,22 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %s]\n", base, index, scale, get_ia32_am_offs(res)));
 
 		/* we will exchange it, report here before the Proj is created */
-		DBG_OPT_LEA(irn, res);
+		if (shift && lea && lea_o)
+			DBG_OPT_LEA4(irn, lea_o, lea, shift, res);
+		else if (shift && lea)
+			DBG_OPT_LEA3(irn, lea, shift, res);
+		else if (shift && lea_o)
+			DBG_OPT_LEA3(irn, lea_o, shift, res);
+		else if (lea && lea_o)
+			DBG_OPT_LEA3(irn, lea_o, lea, res);
+		else if (shift)
+			DBG_OPT_LEA2(irn, shift, res);
+		else if (lea)
+			DBG_OPT_LEA2(irn, lea, res);
+		else if (lea_o)
+			DBG_OPT_LEA2(irn, lea_o, res);
+		else
+			DBG_OPT_LEA1(irn, res);
 
 		/* get the result Proj of the Add/Sub */
 		irn = get_res_proj(irn);
@@ -1029,6 +1135,49 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	}
 
 	return res;
+}
+
+
+/**
+ * Merges a Load/Store node with a LEA.
+ * @param irn The Load/Store node
+ * @param lea The LEA
+ */
+static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
+	entity *irn_ent = get_ia32_frame_ent(irn);
+	entity *lea_ent = get_ia32_frame_ent(lea);
+
+	/* If the irn and the LEA both have a different frame entity set: do not merge */
+	if (irn_ent && lea_ent && (irn_ent != lea_ent))
+		return;
+	else if (! irn_ent && lea_ent) {
+		set_ia32_frame_ent(irn, lea_ent);
+		set_ia32_use_frame(irn);
+	}
+
+	/* get the AM attributes from the LEA */
+	add_ia32_am_offs(irn, get_ia32_am_offs(lea));
+	set_ia32_am_scale(irn, get_ia32_am_scale(lea));
+	set_ia32_am_flavour(irn, get_ia32_am_flavour(lea));
+
+	set_ia32_am_sc(irn, get_ia32_am_sc(lea));
+	if (is_ia32_am_sc_sign(lea))
+		set_ia32_am_sc_sign(irn);
+
+	set_ia32_op_type(irn, is_ia32_Ld(irn) ? ia32_AddrModeS : ia32_AddrModeD);
+
+	/* set base and index */
+	set_irn_n(irn, 0, get_irn_n(lea, 0));
+	set_irn_n(irn, 1, get_irn_n(lea, 1));
+
+	/* clear remat flag */
+	set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
+
+	if (is_ia32_Ld(irn))
+		DBG_OPT_LOAD_LEA(lea, irn);
+	else
+		DBG_OPT_STORE_LEA(lea, irn);
+
 }
 
 /**
@@ -1107,25 +1256,18 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			left = get_irn_n(irn, 0);
 
 			if (is_ia32_Lea(left)) {
-				DBG((mod, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
+				const ir_edge_t *edge, *ne;
+				ir_node *src;
 
-				/* get the AM attributes from the LEA */
-				add_ia32_am_offs(irn, get_ia32_am_offs(left));
-				set_ia32_am_scale(irn, get_ia32_am_scale(left));
-				set_ia32_am_flavour(irn, get_ia32_am_flavour(left));
+				/* merge all Loads/Stores connected to this LEA with the LEA */
+				foreach_out_edge_safe(left, edge, ne) {
+					src = get_edge_src_irn(edge);
 
-				set_ia32_am_sc(irn, get_ia32_am_sc(left));
-				if (is_ia32_am_sc_sign(left))
-					set_ia32_am_sc_sign(irn);
-
-				set_ia32_op_type(irn, is_ia32_Ld(irn) ? ia32_AddrModeS : ia32_AddrModeD);
-
-				/* set base and index */
-				set_irn_n(irn, 0, get_irn_n(left, 0));
-				set_irn_n(irn, 1, get_irn_n(left, 1));
-
-				/* clear remat flag */
-				set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
+					if (src && (is_ia32_Ld(src) || is_ia32_St(src) || is_ia32_Store8Bit(src))) {
+						DBG((mod, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
+						merge_loadstore_lea(src, left);
+					}
+				}
 			}
 		}
 		/* check if the node is an address mode candidate */
@@ -1184,17 +1326,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					if (is_ia32_fStore(succ) || is_ia32_Store(succ)) {
 						store  = succ;
 						addr_b = get_irn_n(store, 0);
-
-						/* Could be that the Store is connected to the address    */
-						/* calculating LEA while the Load is already transformed. */
-						if (is_ia32_Lea(addr_b)) {
-							succ   = addr_b;
-							addr_b = get_irn_n(succ, 0);
-							addr_i = get_irn_n(succ, 1);
-						}
-						else {
-							addr_i = noreg_gp;
-						}
+						addr_i = get_irn_n(store, 1);
 					}
 				}
 
@@ -1264,6 +1396,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 						/* clear remat flag */
 						set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
+
+						DBG_OPT_AM_D(load, store, irn);
 
 						DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
 					}
@@ -1337,6 +1471,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 
 				/* disconnect from Load */
 				set_irn_n(irn, 2, noreg_gp);
+
+				DBG_OPT_AM_S(left, irn);
 
 				/* If Load has a memory Proj, connect it to the op */
 				mem_proj = get_mem_proj(left);
