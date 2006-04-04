@@ -506,6 +506,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *op1, ir_node *op2) {
 
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Full);
+			set_ia32_commutative(new_op);
 		}
 	}
 
@@ -1869,6 +1870,7 @@ static ir_node *gen_FrameAddr(ia32_transform_env_t *env) {
 	set_ia32_am_support(new_op, ia32_am_Full);
 	set_ia32_use_frame(new_op);
 	set_ia32_immop_type(new_op, ia32_ImmConst);
+	set_ia32_commutative(new_op);
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
@@ -2009,6 +2011,7 @@ void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		else {
 			res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, mode_T);
 			set_ia32_am_support(res, ia32_am_Full);
+			set_ia32_commutative(res);
 		}
 
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(tenv.cg, irn));
@@ -2120,6 +2123,7 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, op1, op2, nomem, mode_T);
 	arch_set_irn_register(cg->arch_env, res, out_reg);
 	set_ia32_op_type(res, ia32_Normal);
+	set_ia32_commutative(res);
 
 	if (imm) {
 		set_ia32_cnst(res, offs);
