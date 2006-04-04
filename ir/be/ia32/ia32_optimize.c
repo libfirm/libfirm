@@ -395,6 +395,7 @@ static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
 
 	if (replace) {
 		DBG((cg->mod, LEVEL_1, "replacing %+F by ", irn));
+		DBG_OPT_CJMP(irn);
 
 		set_irn_op(irn, op_ia32_CJmp);
 

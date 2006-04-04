@@ -18,12 +18,23 @@
  * @param oldn  the node
  * @param n     the new lea
  */
-#define DBG_OPT_LEA1(oldn, n)                                \
+#define DBG_OPT_LEA1(oldn, n)                               \
 	do {                                                    \
 		hook_merge_nodes(&n, 1, &oldn, 1, FS_BE_IA32_LEA);  \
 		__dbg_info_merge_pair(n, oldn, dbg_backend);        \
 	} while(0)
 
+/**
+ * Merge the debug info due to a LEA creation.
+ *
+ * @param oldn  the node
+ * @param n     the new lea
+ */
+#define DBG_OPT_LEA1(oldn, n)                               \
+	do {                                                    \
+		hook_merge_nodes(&n, 1, &oldn, 1, FS_BE_IA32_LEA);  \
+		__dbg_info_merge_pair(n, oldn, dbg_backend);        \
+	} while(0)
 
 /**
  * Merge the debug info due to a LEA creation.
@@ -130,5 +141,16 @@
 		hook_merge_nodes(&n, 1, ons, SIZ(ons), FS_BE_IA32_AM_D);   \
 		__dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_backend);  \
 	} while(0)
+
+/**
+ * A CJmp was created to save a cmp
+ *
+ * @param oldn  the old node
+ */
+#define DBG_OPT_CJMP(oldn)                                    \
+	do {                                                      \
+		hook_merge_nodes(NULL, 0, &oldn, 1, FS_BE_IA32_CJMP); \
+	} while(0)
+
 
 #endif /* _IA32_DBG_STAT_H_ */
