@@ -817,7 +817,7 @@ static void sim_load(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 /**
  * Simulate a virtual Store
  */
-static void sim_fst(x87_state *state, ir_node *n, const arch_env_t *env) {
+static void sim_store(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *op, ir_op *op_p) {
 	int op2_idx;
 	const arch_register_t *op2 = arch_get_irn_register(env, get_irn_n(n, STORE_VAL_IDX));
 	ia32_attr_t *attr;
@@ -832,10 +832,10 @@ static void sim_fst(x87_state *state, ir_node *n, const arch_env_t *env) {
 		x87_create_fxch(state, n, op2_idx, STORE_VAL_IDX);
 
 	if (is_vfp_live(op2, live))
-		x87_patch_insn(n, op_ia32_fst);
+		x87_patch_insn(n, op);
 	else {
 		x87_pop(state);
-		x87_patch_insn(n, op_ia32_fstp);
+		x87_patch_insn(n, op_p);
 	}
 
 	attr = get_ia32_attr(n);
@@ -876,22 +876,32 @@ static void sim_##op(x87_state *state, ir_node *n, const arch_env_t *env) { \
 	sim_unop(state, n, env, op_ia32_##op); \
 }
 
+#define GEN_STORE(op) \
+static void sim_##op(x87_state *state, ir_node *n, const arch_env_t *env) { \
+	sim_store(state, n, env, op_ia32_##op, op_ia32_##op##p); \
+}
+
 /* all stubs */
 GEN_BINOP(fadd)
 GEN_BINOPR(fsub)
 GEN_BINOP(fmul)
 GEN_BINOPR(fdiv)
 
-GEN_LOAD(fld)
-GEN_LOAD(fldz)
-GEN_LOAD(fld1)
-GEN_LOAD2(fConst, fldConst)
-
 GEN_UNOP(fabs)
 GEN_UNOP(fchs)
 GEN_UNOP(fsin)
 GEN_UNOP(fcos)
 GEN_UNOP(fsqrt)
+
+GEN_LOAD(fld)
+GEN_LOAD(fild)
+GEN_LOAD(fldz)
+GEN_LOAD(fld1)
+GEN_LOAD2(fConst, fldConst)
+
+GEN_STORE(fst)
+GEN_STORE(fist)
+
 
 /**
  * Simulate a be_Copy.
@@ -1065,9 +1075,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	sim->env        = env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
-#ifndef DEBUG_libfirm
 	firm_dbg_set_mask(dbg, SET_LEVEL_2);
-#endif /* DEBUG_libfirm */
 
 	DB((dbg, LEVEL_1, "--------------------------------\n"
 		"x87 Simulator started for %+F\n", irg));
@@ -1080,6 +1088,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 #define ASSOC_BE(op)    (op_be_ ## op)->ops.generic = (op_func)(sim_##op)
 	ASSOC_IA32(fConst);
 	ASSOC_IA32(fld);
+	ASSOC_IA32(fild);
 	ASSOC_IA32(fld1);
 	ASSOC_IA32(fldz);
 	ASSOC_IA32(fadd);
@@ -1092,6 +1101,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	ASSOC_IA32(fsin);
 	ASSOC_IA32(fcos);
 	ASSOC_IA32(fsqrt);
+	ASSOC_IA32(fist);
 	ASSOC_IA32(fst);
 	ASSOC_BE(Copy);
 	ASSOC_BE(Call);
