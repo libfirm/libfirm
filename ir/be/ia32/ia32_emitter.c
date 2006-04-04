@@ -52,9 +52,8 @@ static const arch_env_t *arch_env = NULL;
 /**
  * returns true if a node has x87 registers
  */
-static int has_x87_register(const ir_node *n)
-{
-	return get_irn_op(n)->flags & (irop_flag_machine << 1);
+static int has_x87_register(const ir_node *n) {
+	return is_irn_machine_user(n, 0);
 }
 
 /* We always pass the ir_node which is a pointer. */
