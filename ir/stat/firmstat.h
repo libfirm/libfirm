@@ -66,6 +66,11 @@ enum firmstat_optimizations_t {
   FS_OPT_MUX_TO_ABS,                        /**< Mux(a > b, a, b) = Abs(a,b) */
   FS_OPT_MUX_TO_SHR,                        /**< Mux(a > b, a, b) = a >> b */
   FS_BE_IA32_LEA,                           /**< Lea was created */
+  FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
+  FS_BE_IA32_STORE_LEA,                     /**< Store merged with a Lea */
+  FS_BE_IA32_AM_S,                          /**< Source address mode node created */
+  FS_BE_IA32_AM_D,                          /**< Destination address mode node created */
+  FS_BE_IA32_CJMP,                          /**< CJmp created to save a cmp/test */
   FS_OPT_MAX
 };
 

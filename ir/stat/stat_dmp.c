@@ -76,7 +76,12 @@ static const struct {
   { FS_OPT_MUX_TO_MAX,     "algebraic simplification: Mux(a > b, a, b) = Max(a,b)" },
   { FS_OPT_MUX_TO_ABS,     "algebraic simplification: Mux(a > b, a, b) = Abs(a,b)" },
   { FS_OPT_MUX_TO_SHR,     "algebraic simplification: Mux(a > b, a, b) = a >> b" },
-  { FS_BE_IA32_LEA,        "Backend transformation: Lea was created" },
+  { FS_BE_IA32_LEA,        "ia32 Backend transformation: Lea was created" },
+  { FS_BE_IA32_LOAD_LEA,   "ia32 Backend transformation: Load merged with a Lea" },
+  { FS_BE_IA32_STORE_LEA,  "ia32 Backend transformation: Store merged with a Lea" },
+  { FS_BE_IA32_AM_S,       "ia32 Backend transformation: Source address mode node created" },
+  { FS_BE_IA32_AM_D,       "ia32 Backend transformation: Destination address mode node created" },
+  { FS_BE_IA32_CJMP,       "ia32 Backend transformation: CJmp created to save a cmp/test" },
 };
 
 static const char *if_conv_names[IF_RESULT_LAST] = {
