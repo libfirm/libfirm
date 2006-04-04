@@ -483,7 +483,7 @@ static void ia32_prepare_graph(void *self) {
  * is not fulfilled.
  * Transform Sub into Neg -- Add if IN2 == OUT
  */
-static void ia32_finish_irg_walker(ir_node *irn, void *env) {
+static void ia32_finish_node(ir_node *irn, void *env) {
 	ia32_code_gen_t            *cg = env;
 	const ia32_register_req_t **reqs;
 	const arch_register_t      *out_reg, *in_reg, *in2_reg;
@@ -495,7 +495,7 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 		/* AM Dest nodes don't produce any values  */
 		op_tp = get_ia32_op_type(irn);
 		if (op_tp == ia32_AddrModeD)
-			return;
+			goto end;
 
 		reqs  = get_ia32_out_req_all(irn);
 		n_res = get_ia32_n_res(irn);
@@ -558,16 +558,26 @@ static void ia32_finish_irg_walker(ir_node *irn, void *env) {
 		/* transform a LEA into an Add if possible */
 		ia32_transform_lea_to_add(irn, cg);
 	}
+end:
 
 	/* check for peephole optimization */
 	ia32_peephole_optimization(irn, cg);
+}
+
+static void ia32_finish_irg_walker(ir_node *block, void *env) {
+	ir_node *irn, *next;
+
+	for (irn = sched_first(block); !sched_is_end(irn); irn = next) {
+		next = sched_next(irn);
+		ia32_finish_node(irn, env);
+	}
 }
 
 /**
  * Add Copy nodes for not fulfilled should_be_equal constraints
  */
 static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
-	irg_walk_blkwise_graph(irg, NULL, ia32_finish_irg_walker, cg);
+	irg_block_walk_graph(irg, NULL, ia32_finish_irg_walker, cg);
 }
 
 
