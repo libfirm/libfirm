@@ -463,9 +463,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int curr_ofs      = 0;
 		int do_seq        = call->flags.bits.store_args_sequential && !no_alloc;
 
-		/* Reverse list of stack parameters if call arguments are from left to right */
-		if(call->flags.bits.left_to_right) {
-			for(i = 0; i < n_pos / 2; ++i) {
+		/*
+		 * Reverse list of stack parameters if call arguments are from left to right.
+		 * We must them reverse again in they are pushed (not stored) and the stack
+		 * direction is downwards.
+		 */
+		if (call->flags.bits.left_to_right ^ (do_seq && stack_dir < 0)) {
+			for(i = 0; i < n_pos >> 1; ++i) {
 				int other  = n_pos - i - 1;
 				int tmp    = pos[i];
 				pos[i]     = pos[other];
@@ -526,7 +530,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			 */
 			if(do_seq) {
 				curr_ofs = 0;
-				curr_sp  = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, param_size, be_stack_dir_expand);
+				curr_sp  = be_new_IncSP(sp, irg, bl, curr_sp, curr_mem, param_size, be_stack_dir_expand);
 				curr_mem = mem;
 			}
 		}
@@ -1284,8 +1288,8 @@ static void modify_irg(be_abi_irg_t *env)
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
 
-	assert(is_Proj(frame_pointer));
-	be_node_set_flags(barrier, BE_OUT_POS(get_Proj_proj(frame_pointer)), arch_irn_flags_ignore);
+	if (is_Proj(frame_pointer) && get_Proj_pred(frame_pointer) == barrier)
+		be_node_set_flags(barrier, BE_OUT_POS(get_Proj_proj(frame_pointer)), arch_irn_flags_ignore);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
 	for(i = 0; i < max_arg; ++i) {
