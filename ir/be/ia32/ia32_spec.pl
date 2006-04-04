@@ -474,6 +474,30 @@ $comment_string = "/*";
   "emit"      => '. lea %D1, %ia32_emit_am /* LEA(%A1, %A2) */'
 },
 
+"Push" => {
+  "comment"   => "push a gp register on the stack",
+  "reg_req"   => { "in" => [ "esp", "gp", "none" ], "out" => [ "gp" ] },
+  "emit"      => '. push %S2 /* Push(%A2) */'
+},
+
+"Pop" => {
+  "comment"   => "pop a gp register from the stack",
+  "reg_req"   => { "in" => [ "esp", "none" ], "out" => [ "gp", "esp" ] },
+  "emit"      => '. pop %D1 /* Pop -> %D1 */'
+},
+
+"Enter" => {
+  "comment"   => "create stack frame",
+  "reg_req"   => { "in" => [ "esp" ], "out" => [ "ebp", "esp" ] },
+  "emit"      => '. enter /* Enter */'
+},
+
+"Leave" => {
+  "comment"   => "destroy stack frame",
+  "reg_req"   => { "in" => [ "esp", "ebp" ], "out" => [ "esp" ] },
+  "emit"      => '. leave /* Enter */'
+},
+
 #-----------------------------------------------------------------------------#
 #   _____ _____ ______    __ _             _                     _            #
 #  / ____/ ____|  ____|  / _| |           | |                   | |           #
