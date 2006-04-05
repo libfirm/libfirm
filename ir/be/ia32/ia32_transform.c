@@ -888,9 +888,8 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 		set_ia32_Immop_tarval(edx_node, get_tarval_null(mode_Iu));
 	}
 
-	res = new_rd_ia32_DivMod(dbg, irg, block, dividend, divisor, edx_node, mem, mode_T);
+	res = new_rd_ia32_DivMod(dbg, irg, block, dividend, divisor, edx_node, mem, mode_T, dm_flav);
 
-	set_ia32_flavour(res, dm_flav);
 	set_ia32_n_res(res, 2);
 
 	/* Only one proj is used -> We must add a second proj and */

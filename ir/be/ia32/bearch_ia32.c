@@ -513,8 +513,6 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 					out_reg  = get_ia32_out_reg(irn, i);
 					in_node  = get_irn_n(irn, reqs[i]->same_pos);
 					in_reg   = arch_get_irn_register(cg->arch_env, in_node);
-					in2_node = get_irn_n(irn, reqs[i]->same_pos ^ 1);
-					in2_reg  = arch_get_irn_register(cg->arch_env, in2_node);
 
 					/* don't copy ignore nodes */
 					if (arch_irn_is(cg->arch_env, in_node, ignore) && is_Proj(in_node))
@@ -523,11 +521,21 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 					/* check if in and out register are equal */
 					if (! REGS_ARE_EQUAL(out_reg, in_reg)) {
 						/* in case of a commutative op: just exchange the in's */
-						if (is_ia32_commutative(irn) && REGS_ARE_EQUAL(out_reg, in2_reg)) {
-							set_irn_n(irn, reqs[i]->same_pos, in2_node);
-							set_irn_n(irn, reqs[i]->same_pos ^ 1, in_node);
+						/* beware: the current op could be everything, so test for ia32 */
+						/*         commutativity first before getting the second in     */
+						if (is_ia32_commutative(irn)) {
+							in2_node = get_irn_n(irn, reqs[i]->same_pos ^ 1);
+							in2_reg  = arch_get_irn_register(cg->arch_env, in2_node);
+
+							if (REGS_ARE_EQUAL(out_reg, in2_reg)) {
+								set_irn_n(irn, reqs[i]->same_pos, in2_node);
+								set_irn_n(irn, reqs[i]->same_pos ^ 1, in_node);
+							}
+							else
+								goto insert_copy;
 						}
 						else {
+insert_copy:
 							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
 							/* create copy from in register */
 							copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);

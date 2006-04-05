@@ -277,10 +277,13 @@ $comment_string = "/*";
 },
 
 "DivMod" => {
-  "op_flags" => "F|L",
-  "state"    => "exc_pinned",
-  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "eax in_r1", "edx in_r3" ] },
-  "emit"     =>
+  "op_flags"  => "F|L",
+  "state"     => "exc_pinned",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "eax in_r1", "edx in_r3" ] },
+  "attr"      => "ia32_op_flavour_t dm_flav",
+  "init_attr" => "  attr->data.op_flav = dm_flav;",
+  "cmp_attr"  => "  return attr_a->data.op_flav != attr_b->data.op_flav;\n",
+  "emit"      =>
 '  if (mode_is_signed(get_irn_mode(n))) {
 4.  idiv %S2 /* signed DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
   }
