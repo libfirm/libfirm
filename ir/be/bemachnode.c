@@ -1,8 +1,6 @@
 #include "bemachnode.h"
 #include "irnode_t.h"
 
-typedef ir_node *** mirn_handle;
-
 /** Helper: fills in the array for machine ops */
 static int fill_arr(ir_node *op, mirn_handle res) {
 	ir_node **ins = get_irn_in(op);
