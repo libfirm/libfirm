@@ -68,7 +68,6 @@ typedef struct _be_chordal_alloc_env_t {
 	bitset_t *tmp_colors;           /**< An auxiliary bitset which is as long as the number of colors in the class. */
 	bitset_t *colors;			    /**< The color mask. */
 	bitset_t *in_colors;            /**< Colors used by live in values. */
-	bitset_t *ignore_regs;          /**< A bitset of all ignore registers in the current class. */
 	int colors_n;                   /**< The number of colors. */
 	DEBUG_ONLY(firm_dbg_module_t *constr_dbg;)  /**< Debug output for the constraint handler. */
 } be_chordal_alloc_env_t;
@@ -178,7 +177,7 @@ static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *
 {
 	bitset_t *tmp = alloc_env->tmp_colors;
 	bitset_copy(tmp, colors);
-	bitset_or(tmp, alloc_env->ignore_regs);
+	bitset_or(tmp, alloc_env->chordal_env->ignore_colors);
 	return bitset_next_clear(tmp, 0);
 }
 
@@ -902,7 +901,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 {
 	be_chordal_alloc_env_t env;
 	char buf[256];
-	int i;
 
 	int colors_n          = arch_register_class_n_regs(chordal_env->cls);
 	ir_graph *irg         = chordal_env->irg;
@@ -916,13 +914,9 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.colors        = bitset_alloca(colors_n);
 	env.tmp_colors    = bitset_alloca(colors_n);
 	env.in_colors     = bitset_alloca(colors_n);
-	env.ignore_regs   = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
 	FIRM_DBG_REGISTER(env.constr_dbg, "firm.be.chordal.constr");
 
-	for(i = 0; i < colors_n; ++i)
-		if(arch_register_type_is(&chordal_env->cls->regs[i], ignore))
-			bitset_set(env.ignore_regs, i);
 
 	/* Handle register targeting constraints */
 	dom_tree_walk_irg(irg, constraints, NULL, &env);

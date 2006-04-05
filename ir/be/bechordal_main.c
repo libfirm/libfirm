@@ -33,6 +33,7 @@
 #include "xmalloc.h"
 
 #include "bechordal_t.h"
+#include "beabi.h"
 #include "beutil.h"
 #include "besched.h"
 #include "benumb_t.h"
@@ -270,28 +271,45 @@ static void dump(unsigned mask, ir_graph *irg,
 	}
 }
 
+static void put_ignore_colors(be_chordal_env_t *chordal_env)
+{
+	int n_colors = chordal_env->cls->n_regs;
+	int i;
+
+	bitset_clear_all(chordal_env->ignore_colors);
+	be_abi_put_ignore_regs(chordal_env->birg->abi, chordal_env->cls, chordal_env->ignore_colors);
+	for(i = 0; i < n_colors; ++i)
+		if(arch_register_type_is(&chordal_env->cls->regs[i], ignore))
+			bitset_set(chordal_env->ignore_colors, i);
+}
+
 static void be_ra_chordal_main(const be_irg_t *bi)
 {
+	const be_main_env_t *main_env = bi->main_env;
+	const arch_isa_t *isa         = arch_env_get_isa(main_env->arch_env);
+	ir_graph *irg                 = bi->irg;
+
 	int j, m;
 	be_chordal_env_t chordal_env;
-	ir_graph *irg = bi->irg;
-	const be_main_env_t *main_env = bi->main_env;
-	const arch_isa_t *isa = arch_env_get_isa(main_env->arch_env);
 
 	compute_doms(irg);
 
-	chordal_env.opts         = &options;
-	chordal_env.irg          = irg;
-	chordal_env.birg         = bi;
-	chordal_env.dom_front    = be_compute_dominance_frontiers(irg);
+	chordal_env.opts          = &options;
+	chordal_env.irg           = irg;
+	chordal_env.birg          = bi;
+	chordal_env.dom_front     = be_compute_dominance_frontiers(irg);
 	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
 	obstack_init(&chordal_env.obst);
 
 	/* Perform the following for each register class. */
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
-		chordal_env.cls          = arch_isa_get_reg_class(isa, j);
-		chordal_env.border_heads = pmap_create();
+		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
+		chordal_env.border_heads  = pmap_create();
+		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
+
+		/* put all ignore registers into the ignore register set. */
+		put_ignore_colors(&chordal_env);
 
 		be_liveness(irg);
 		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
@@ -322,17 +340,19 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		chordal_env.ifg = be_ifg_std_new(&chordal_env);
 		be_ifg_check(chordal_env.ifg);
 
+#if 1
 		/* copy minimization */
 #ifdef COPYOPT_STAT
 		co_compare_solvers(&chordal_env);
 #else
 		{
-		copy_opt_t *co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
-		co_build_ou_structure(co);
-		co_solve_heuristic(co);
-		co_free_ou_structure(co);
-		free_copy_opt(co);
+			copy_opt_t *co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
+			co_build_ou_structure(co);
+			co_solve_heuristic(co);
+			co_free_ou_structure(co);
+			free_copy_opt(co);
 		}
+#endif
 #endif
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 		be_ra_chordal_check(&chordal_env);
@@ -346,8 +366,8 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		copystat_dump(irg);
 
 		be_ifg_free(chordal_env.ifg);
-
 		pmap_destroy(chordal_env.border_heads);
+		bitset_free(chordal_env.ignore_colors);
 	}
 
 	be_compute_spill_offsets(&chordal_env);

@@ -247,7 +247,8 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		int free_col;
 
 		/* Get all possible colors */
-		arch_put_non_ignore_regs(arch_env, cls, free_cols);
+		bitset_copy(free_cols, co->cenv->ignore_colors);
+		bitset_flip_all(free_cols);
 
 		/* Exclude colors not assignable to the irn */
 		arch_get_register_req(arch_env, &req, irn, -1);
@@ -510,7 +511,6 @@ static void ou_optimize(unit_t *ou) {
 	const arch_env_t *aenv = ou->co->aenv;
 	const arch_register_class_t *cls = ou->co->cls;
 	bitset_t *pos_regs = bitset_alloca(cls->n_regs);
-	bitset_t *ign_regs = bitset_alloca(cls->n_regs);
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
 	for (i=0; i<ou->node_count; ++i)
@@ -522,8 +522,7 @@ static void ou_optimize(unit_t *ou) {
 	arch_get_allocatable_regs(aenv, ou->nodes[0], -1, pos_regs);
 
 	/* exclude ingore colors */
-	arch_put_non_ignore_regs(aenv, cls, ign_regs);
-	bitset_and(pos_regs, ign_regs);
+	bitset_andnot(pos_regs, ou->co->cenv->ignore_colors);
 
 	assert(bitset_popcnt(pos_regs) != 0 && "No register is allowed for this node !!?");
 

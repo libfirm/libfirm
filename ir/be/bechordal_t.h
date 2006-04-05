@@ -52,15 +52,16 @@ typedef struct _border_t {
  * Environment for each of the chordal register allocator phases
  */
 struct _be_chordal_env_t {
-	struct obstack obst;              /**< An obstack for temporary storage. */
-	be_ra_chordal_opts_t *opts;       /**< A pointer to the chordal ra options. */
-	const be_irg_t *birg;             /**< Back-end IRG session. */
-	dom_front_info_t *dom_front;      /**< Dominance frontiers. */
-	ir_graph *irg;                    /**< The graph under examination. */
-	const arch_register_class_t *cls; /**< The current register class. */
-	pmap *border_heads;               /**< Maps blocks to border heads. */
-	be_ifg_t *ifg;                    /**< The interference graph. */
-	void *data;                       /**< Some pointer, to which different phases can attach data to. */
+	struct obstack obst;                /**< An obstack for temporary storage. */
+	be_ra_chordal_opts_t *opts;         /**< A pointer to the chordal ra options. */
+	const be_irg_t *birg;               /**< Back-end IRG session. */
+	dom_front_info_t *dom_front;        /**< Dominance frontiers. */
+	ir_graph *irg;                      /**< The graph under examination. */
+	const arch_register_class_t *cls;   /**< The current register class. */
+	pmap *border_heads;                 /**< Maps blocks to border heads. */
+	be_ifg_t *ifg;                      /**< The interference graph. */
+	void *data;                         /**< Some pointer, to which different phases can attach data to. */
+	bitset_t *ignore_colors;            /**< A set of colors which shall be ignored in register allocation. */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;) /**< Debug module for the chordal register allocator. */
 };
 

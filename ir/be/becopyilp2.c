@@ -74,8 +74,10 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 			/* get assignable colors */
 			if (arch_register_req_is(&req, limited))
 				req.limited(req.limited_env, colors);
-			else
-				arch_put_non_ignore_regs(ienv->co->aenv, req.cls, colors);
+			else {
+				arch_register_class_put(req.cls, colors);
+				// bitset_andnot(colors, ienv->co->cenv->ignore_colors);
+			}
 
 			/* add the coloring constraint */
 			cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 1.0);
