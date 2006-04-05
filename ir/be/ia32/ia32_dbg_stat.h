@@ -152,5 +152,38 @@
 		hook_merge_nodes(NULL, 0, &oldn, 1, FS_BE_IA32_CJMP); \
 	} while(0)
 
+/**
+ * A Copy was created to fullfill two address code constraints
+ *
+ * @param cpy  the copy
+ */
+#define DBG_OPT_2ADDRCPY(cpy)                                    \
+	do {                                                         \
+		hook_merge_nodes(NULL, 0, &cpy, 1, FS_BE_IA32_2ADDRCPY); \
+	} while(0)
+
+/**
+ * A Store was created for a Spill
+ *
+ * @param spill  the Spill
+ * @param store  the Store
+ */
+#define DBG_OPT_SPILL2ST(spill, store)                               \
+	do {                                                             \
+		hook_merge_nodes(&store, 1, &spill, 1, FS_BE_IA32_SPILL2ST); \
+		__dbg_info_merge_pair(store, spill, dbg_backend);            \
+	} while(0)
+
+/**
+ * A Load was created for a Reload
+ *
+ * @param rload  the Reload
+ * @param load   the Load
+ */
+#define DBG_OPT_RELOAD2LD(rload, load)                               \
+	do {                                                             \
+		hook_merge_nodes(&load, 1, &rload, 1, FS_BE_IA32_RELOAD2LD); \
+		__dbg_info_merge_pair(load, rload, dbg_backend);             \
+	} while(0)
 
 #endif /* _IA32_DBG_STAT_H_ */

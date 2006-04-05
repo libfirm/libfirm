@@ -195,7 +195,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
-	if (! env->cg->opt.immops) {
+	if (! (env->cg->opt & IA32_OPT_IMMOPS)) {
 		expr_op = op1;
 		imm_op  = NULL;
 	}
@@ -288,7 +288,7 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
-	imm_op  = env->cg->opt.immops ? get_immediate_op(NULL, op2) : NULL;
+	imm_op  = (env->cg->opt & IA32_OPT_IMMOPS) ? get_immediate_op(NULL, op2) : NULL;
 	expr_op = get_expr_op(op1, op2);
 
 	assert((expr_op || imm_op) && "invalid operands");
@@ -396,7 +396,7 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	/* try to optimize to inc/dec  */
-	if (env->cg->opt.incdec && tv) {
+	if ((env->cg->opt & IA32_OPT_INCDEC) && tv) {
 		/* optimize tarvals */
 		class_tv    = classify_tarval(tv);
 		class_negtv = classify_tarval(tarval_neg(tv));
@@ -441,7 +441,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env) {
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
-	imm_op  = env->cg->opt.immops ? get_immediate_op(op1, op2) : NULL;
+	imm_op  = (env->cg->opt & IA32_OPT_IMMOPS) ? get_immediate_op(op1, op2) : NULL;
 	expr_op = get_expr_op(op1, op2);
 
 	assert((expr_op || imm_op) && "invalid operands");
@@ -715,7 +715,7 @@ static ir_node *gen_imm_Sub(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	/* try to optimize to inc/dec  */
-	if (env->cg->opt.incdec && tv) {
+	if ((env->cg->opt & IA32_OPT_INCDEC) && tv) {
 		/* optimize tarvals */
 		class_tv    = classify_tarval(tv);
 		class_negtv = classify_tarval(tarval_neg(tv));
@@ -760,7 +760,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env) {
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
-	imm_op  = env->cg->opt.immops ? get_immediate_op(NULL, op2) : NULL;
+	imm_op  = (env->cg->opt & IA32_OPT_IMMOPS) ? get_immediate_op(NULL, op2) : NULL;
 	expr_op = get_expr_op(op1, op2);
 
 	assert((expr_op || imm_op) && "invalid operands");
@@ -1403,7 +1403,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		cmp_b = get_Cmp_right(pred);
 
 		/* check if we can use a CondJmp with immediate */
-		cnst = env->cg->opt.immops ? get_immediate_op(cmp_a, cmp_b) : NULL;
+		cnst = (env->cg->opt & IA32_OPT_IMMOPS) ? get_immediate_op(cmp_a, cmp_b) : NULL;
 		expr = get_expr_op(cmp_a, cmp_b);
 
 		if (cnst && expr) {
@@ -1703,7 +1703,7 @@ static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_mode *src_mode) {
 static ir_node *gen_Conv(ia32_transform_env_t *env) {
 	dbg_info          *dbg      = env->dbg;
 	ir_graph          *irg      = env->irg;
-  ir_node           *op       = get_Conv_op(env->irn);
+	ir_node           *op       = get_Conv_op(env->irn);
 	ir_mode           *src_mode = get_irn_mode(op);
 	ir_mode           *tgt_mode = env->mode;
 	int                src_bits = get_mode_size_bits(src_mode);

@@ -48,6 +48,7 @@
 #include "ia32_map_regs.h"
 #include "ia32_optimize.h"
 #include "ia32_x87.h"
+#include "ia32_dbg_stat.h"
 
 #define DEBUG_MODULE "firm.be.ia32.isa"
 
@@ -466,7 +467,7 @@ static void ia32_prepare_graph(void *self) {
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
-	if (cg->opt.doam) {
+	if (cg->opt & IA32_OPT_DOAM) {
 		edges_deactivate(cg->irg);
 		//dead_node_elimination(cg->irg);
 		edges_activate(cg->irg);
@@ -505,7 +506,7 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 		block = get_nodes_block(irn);
 
 		/* check all OUT requirements, if there is a should_be_same */
-		if (op_tp == ia32_Normal) {
+		if (op_tp == ia32_Normal && ! is_ia32_Lea(irn)) {
 			for (i = 0; i < n_res; i++) {
 				if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
 					/* get in and out register */
@@ -530,6 +531,8 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
 							/* create copy from in register */
 							copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
+
+							DBG_OPT_2ADDRCPY(copy);
 
 							/* destination is the out register */
 							arch_set_irn_register(cg->arch_env, copy, out_reg);
@@ -639,6 +642,8 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
 
+	DBG_OPT_RELOAD2LD(irn, new_op);
+
 	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, pn_Load_res);
 
 	if (sched_point) {
@@ -694,6 +699,8 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	set_ia32_ls_mode(new_op, mode);
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
+
+	DBG_OPT_SPILL2ST(irn, new_op);
 
 	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode_M, 0);
 
@@ -832,12 +839,8 @@ static void *ia32_cg_init(const be_irg_t *birg) {
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.cg");
 
-	/* set optimizations */
-	cg->opt.incdec    = 0;
-	cg->opt.doam      = 1;
-	cg->opt.placecnst = 1;
-	cg->opt.immops    = 1;
-	cg->opt.extbb     = 1;
+	/* copy optimizations from isa for easier access */
+	cg->opt = isa->opt;
 
 	/* enter it */
 	isa->cg = cg;
@@ -892,6 +895,11 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* 8bit register names */
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
+	(0 |
+	IA32_OPT_DOAM      |     /* optimize address mode                            default: on  */
+	IA32_OPT_PLACECNST |     /* place constants immediately before instructions, default: on  */
+	IA32_OPT_IMMOPS    |     /* operations can use immediates,                   default: on  */
+	IA32_OPT_EXTBB),         /* use extended basic block scheduling,             default: on  */
 	arch_pentium_4,          /* instruction architecture */
 	arch_pentium_4,          /* optimize for architecture */
 	fp_sse2,                 /* use sse2 unit */
@@ -1206,6 +1214,11 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("arch",   "select the instruction architecture", &arch_var),
 	LC_OPT_ENT_ENUM_INT("opt",    "optimize for instruction architecture", &opt_arch_var),
 	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &fp_unit_var),
+	LC_OPT_ENT_BIT("incdec", "optimize for inc/dec", &ia32_isa_template.opt, IA32_OPT_INCDEC),
+	LC_OPT_ENT_NEGBIT("noaddrmode", "do not use address mode", &ia32_isa_template.opt, IA32_OPT_DOAM),
+	LC_OPT_ENT_NEGBIT("noplacecnst", "do not place constants", &ia32_isa_template.opt, IA32_OPT_PLACECNST),
+	LC_OPT_ENT_NEGBIT("noimmop", "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
+	LC_OPT_ENT_NEGBIT("noextbb", "do not use extended basic block scheduling", &ia32_isa_template.opt, IA32_OPT_EXTBB),
 	{ NULL }
 };
 
@@ -1217,6 +1230,11 @@ static const lc_opt_table_entry_t ia32_options[] = {
  * ia32-arch=arch    create instruction for arch
  * ia32-opt=arch     optimize for run on arch
  * ia32-fpunit=unit  select floating point unit (x87 or SSE2)
+ * ia32-incdec       optimize for inc/dec
+ * ia32-noaddrmode   do not use address mode
+ * ia32-noplacecnst  do not place constants,
+ * ia32-noimmop      no operations with immediates
+ * ia32-noextbb      do not use extended basic block scheduling
  */
 static void ia32_register_options(lc_opt_entry_t *ent)
 {

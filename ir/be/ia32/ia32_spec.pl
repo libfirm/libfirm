@@ -470,7 +470,7 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "comment"   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
   "emit"      => '. lea %D1, %ia32_emit_am /* LEA(%A1, %A2) */'
 },
 

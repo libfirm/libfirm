@@ -21,12 +21,12 @@
 /**
  * Bitmask for the backend optimization settings.
  */
-typedef struct _ia32_optimize_t {
-	unsigned incdec    : 1;   /**< optimize add/sub 1/-1 to inc/dec */
-	unsigned doam      : 1;   /**< do address mode optimizations */
-	unsigned placecnst : 1;   /**< place constants in the blocks where they are used */
-	unsigned immops    : 1;   /**< create operations with immediate operands */
-	unsigned extbb     : 1;   /**< do extended basic block scheduling */
+typedef enum _ia32_optimize_t {
+	IA32_OPT_INCDEC    = 1,   /**< optimize add/sub 1/-1 to inc/dec */
+	IA32_OPT_DOAM      = 2,   /**< do address mode optimizations */
+	IA32_OPT_PLACECNST = 4,   /**< place constants in the blocks where they are used */
+	IA32_OPT_IMMOPS    = 8,   /**< create operations with immediate operands */
+	IA32_OPT_EXTBB     = 16,  /**< do extended basic block scheduling */
 } ia32_optimize_t;
 
 /** architectures */
@@ -91,6 +91,7 @@ struct _ia32_isa_t {
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
 	pmap                  *types;         /**< A map of modes to primitive types */
 	pmap                  *tv_ent;        /**< A map of entities that store const tarvals */
+	ia32_optimize_t        opt;           /**< contains optimization information */
 	int                    arch;          /**< instruction architecture */
 	int                    opt_arch;      /**< optimize for architecture */
 	int                    fp_kind;       /**< floating point kind */

@@ -1476,7 +1476,7 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_func_prolog(F, irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
-	if (cg->opt.extbb && cg->blk_sched) {
+	if ((cg->opt & IA32_OPT_EXTBB) && cg->blk_sched) {
 		int i, n = ARR_LEN(cg->blk_sched);
 
 		for (i = 0; i < n;) {

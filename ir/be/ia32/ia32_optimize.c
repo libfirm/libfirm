@@ -240,7 +240,7 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env) {
 		}
 
 		/* put the const into the block where the original const was */
-		if (! cg->opt.placecnst) {
+		if (! (cg->opt & IA32_OPT_PLACECNST)) {
 			tenv.block = get_nodes_block(pred);
 		}
 
