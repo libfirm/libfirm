@@ -329,7 +329,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
 		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
 		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
-		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_dont_spill);
+		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 		be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
 		be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
