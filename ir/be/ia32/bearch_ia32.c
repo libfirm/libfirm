@@ -462,6 +462,7 @@ static void ia32_prepare_graph(void *self) {
 	DEBUG_ONLY(firm_dbg_module_t *old_mod = cg->mod;)
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
+	ia32_register_transformers();
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
@@ -824,6 +825,8 @@ static void *ia32_cg_init(const be_irg_t *birg) {
 	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
+	cg->fp_to_gp  = NULL;
+	cg->gp_to_fp  = NULL;
 	cg->fp_kind   = isa->fp_kind;
 	cg->used_fp   = fp_none;
 

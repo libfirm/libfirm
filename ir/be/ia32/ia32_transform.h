@@ -5,6 +5,11 @@
 #include "bearch_ia32_t.h"
 
 /**
+ * Enters all transform functions into the generic pointer
+ */
+void ia32_register_transformers(void);
+
+/**
  * Transforms the given Firm node into one or more appropriate ia32 nodes.
  */
 void ia32_transform_node(ir_node *node, void *env);
