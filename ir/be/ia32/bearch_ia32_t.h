@@ -69,6 +69,8 @@ typedef struct _ia32_code_gen_t {
 	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	ia32_optimize_t                 opt;           /**< contains optimization information */
+	entity                         *fp_to_gp;      /**< allocated entity for fp to gp conversion */
+	entity                         *gp_to_fp;      /**< allocated entity for gp to fp conversion */
 	int                             arch;          /**< instruction architecture */
 	int                             opt_arch;      /**< optimize for architecture */
 	int                             fp_kind;       /**< floating point kind */
