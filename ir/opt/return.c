@@ -60,8 +60,13 @@ void normalize_one_return(ir_graph *irg)
   ir_node *block;
 
   /* look, if we have more than one return */
-  n       = get_Block_n_cfgpreds(endbl);
-  assert(n > 0);
+  n = get_Block_n_cfgpreds(endbl);
+  if (n <= 0) {
+    /* The end block has no predecessors, we have an endless
+       loop. In that case, no returns exists. */
+    return;
+  }
+
   returns = alloca((n + 7) >> 3);
   memset(returns, 0, (n + 7) >> 3);
 
