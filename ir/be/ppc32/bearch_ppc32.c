@@ -422,6 +422,7 @@ static void ppc32_prepare_graph(void *self) {
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_pretransform_walk, cg);
 	be_dump(cg->irg, "-pretransformed", dump_ir_block_graph);
 
+	ppc32_register_transformers();
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph);
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_const, cg);
