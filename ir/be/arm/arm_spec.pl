@@ -641,11 +641,11 @@ $comment_string = '/*';
   "emit"      => '. FSUB%Mx %D1, %S1, %S2 /* FP Sub(%S1, %S2) -> %D1 */'
 },
 
-"fMinus" => {
+"fNeg" => {
   "irn_flags" => "R",
-  "comment"   => "construct FP Minus: Minus(a) = -a",
+  "comment"   => "construct FP Neg: Neg(a) = -a",
   "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
-  "emit"      => '. fneg %S1, %D1 /* FP Minus(%S1) -> %D1 */'
+  "emit"      => '. fneg %S1, %D1 /* FP Neg(%S1) -> %D1 */'
 },
 
 "fAbs" => {
@@ -661,6 +661,8 @@ $comment_string = '/*';
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents a FP constant",
+  "attr"      => "tarval *val",
+  "init_attr" => 'attr->value = val;',
   "reg_req"   => { "out" => [ "fp" ] },
   "emit"      => '. FMOV %D1, %C /* Mov fConst into register */',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;'
