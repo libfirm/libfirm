@@ -71,6 +71,9 @@ enum firmstat_optimizations_t {
   FS_BE_IA32_AM_S,                          /**< Source address mode node created */
   FS_BE_IA32_AM_D,                          /**< Destination address mode node created */
   FS_BE_IA32_CJMP,                          /**< CJmp created to save a cmp/test */
+  FS_BE_IA32_2ADDRCPY,                      /**< Copy created due to 2-Addresscode constraints */
+  FS_BE_IA32_SPILL2ST,                      /**< Created Store for a Spill */
+  FS_BE_IA32_RELOAD2LD,                     /**< Created Load for a Reload */
   FS_OPT_MAX
 };
 

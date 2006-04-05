@@ -82,6 +82,9 @@ static const struct {
   { FS_BE_IA32_AM_S,       "ia32 Backend transformation: Source address mode node created" },
   { FS_BE_IA32_AM_D,       "ia32 Backend transformation: Destination address mode node created" },
   { FS_BE_IA32_CJMP,       "ia32 Backend transformation: CJmp created to save a cmp/test" },
+  { FS_BE_IA32_2ADDRCPY,   "ia32 Backend transformation: Copy created due to 2-Addresscode constraints" },
+  { FS_BE_IA32_SPILL2ST,   "ia32 Backend transformation: Created Store for a Spill" },
+  { FS_BE_IA32_RELOAD2LD,  "ia32 Backend transformation: Created Load for a Reload" },
 };
 
 static const char *if_conv_names[IF_RESULT_LAST] = {
@@ -209,27 +212,27 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
     }
 
     fprintf(dmp->f, " %swalked %u over blocks %u:\n"
-                    " was inlined               : %u\n"
-		    " got inlined               : %u\n"
-		    " strength red              : %u\n"
-		    " leaf function             : %s\n"
-		    " calls only leaf functions : %s\n"
-		    " recursive                 : %s\n"
-		    " chain call                : %s\n"
+		" was inlined               : %u\n"
+		" got inlined               : %u\n"
+		" strength red              : %u\n"
+		" leaf function             : %s\n"
+		" calls only leaf functions : %s\n"
+		" recursive                 : %s\n"
+		" chain call                : %s\n"
         " calls                     : %u\n"
         " indirect calls            : %u\n",
         entry->is_deleted ? "DELETED " : "",
         entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
         entry->cnt_was_inlined.cnt[0],
         entry->cnt_got_inlined.cnt[0],
-	      entry->cnt_strength_red.cnt[0],
-	      entry->is_leaf ? "YES" : "NO",
-	      entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
-	      entry->is_recursive ? "YES" : "NO",
-	      entry->is_chain_call ? "YES" : "NO",
+		entry->cnt_strength_red.cnt[0],
+		entry->is_leaf ? "YES" : "NO",
+		entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
+		entry->is_recursive ? "YES" : "NO",
+		entry->is_chain_call ? "YES" : "NO",
         entry->cnt_all_calls.cnt[0],
         entry->cnt_indirect_calls.cnt[0]
-    );
+	);
 
     for (i = 0; i < sizeof(entry->cnt_if_conv)/sizeof(entry->cnt_if_conv[0]); ++i) {
       fprintf(dmp->f, " %s : %u\n", if_conv_names[i], entry->cnt_if_conv[i].cnt[0]);
