@@ -43,17 +43,4 @@ typedef struct _arm_irn_ops_t {
 } arm_irn_ops_t;
 
 
-/* this is a struct to minimize the number of parameters
-   for transformation walker */
-typedef struct _arm_transform_env_t {
-	arm_code_gen_t    *cg;       /**< current code generator */
-	dbg_info          *dbg;      /**< The node debug info */
-	ir_graph          *irg;      /**< The irg, the node should be created in */
-	ir_node           *block;    /**< The block, the node should belong to */
-	ir_node           *irn;      /**< The irn, to be transformed */
-	ir_mode           *mode;     /**< The mode of the irn */
-	DEBUG_ONLY(firm_dbg_module_t *mod;)      /**< The firm debugger */
-} arm_transform_env_t;
-
-
 #endif /* _BEARCH_ARM_T_H_ */

@@ -45,18 +45,20 @@ extern ir_op *get_op_Mulh(void);
  *
  ****************************************************************************************************/
 
-/** Execute ROL. */
-static unsigned do_rol(unsigned v, unsigned rol)
-{
-	return (v << rol) | (v >> (32 - rol));
-}
-
 typedef struct vals_ {
 	int ops;
 	unsigned char values[4];
 	unsigned char shifts[4];
 } vals;
 
+/** Execute ROL. */
+static unsigned do_rol(unsigned v, unsigned rol) {
+	return (v << rol) | (v >> (32 - rol));
+}
+
+/**
+ * construct 8bit values und rot amounts for a value
+ */
 static void gen_vals_from_word(unsigned int value, vals *result)
 {
 	int initial = 0;
@@ -98,20 +100,22 @@ static void gen_vals_from_word(unsigned int value, vals *result)
 /**
  * Creates a arm_Const node.
  */
-static ir_node *create_const_node(arm_transform_env_t *env, long value) {
-    tarval *tv = new_tarval_from_long(value, mode_Iu);
-	return new_rd_arm_Mov_i(env->dbg, env->irg, env->block, env->mode, tv);
+static ir_node *create_const_node(ir_node *irn, ir_node *block, long value) {
+	tarval *tv = new_tarval_from_long(value, mode_Iu);
+	dbg_info *dbg = get_irn_dbg_info(irn);
+	return new_rd_arm_Mov_i(dbg, current_ir_graph, block, get_irn_mode(irn), tv);
 }
 
 /**
  * Creates a arm_Const_Neg node.
  */
-static ir_node *create_const_neg_node(arm_transform_env_t *env, long value) {
-    tarval *tv = new_tarval_from_long(value, mode_Iu);
-	return new_rd_arm_Mvn_i(env->dbg, env->irg, env->block, env->mode, tv);
+static ir_node *create_const_neg_node(ir_node *irn, ir_node *block, long value) {
+	tarval *tv = new_tarval_from_long(value, mode_Iu);
+	dbg_info *dbg = get_irn_dbg_info(irn);
+	return new_rd_arm_Mvn_i(dbg, current_ir_graph, block, get_irn_mode(irn), tv);
 }
 
-#define NEW_BINOP_NODE(opname, env, op1, op2) new_rd_arm_##opname(env->dbg, env->irg, env->block, op1, op2, env->mode)
+#define NEW_BINOP_NODE(opname, env, op1, op2) new_rd_arm_##opname(env->dbg, current_ir_graph, env->block, op1, op2, env->mode)
 
 /**
  * Encodes an immediate with shifter operand
@@ -133,73 +137,87 @@ unsigned int arm_decode_imm_w_shift(tarval *tv) {
 /**
  * Creates a possible DAG for an constant.
  */
-static ir_node *create_const_graph_value(arm_transform_env_t *env, unsigned int value) {
+static ir_node *create_const_graph_value(ir_node *irn, ir_node *block, unsigned int value) {
 	ir_node *result;
 	int negate = 0;
 	vals v, vn;
 	int cnt;
+	ir_mode *mode = get_irn_mode(irn);
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	gen_vals_from_word(value, &v);
 	gen_vals_from_word(~value, &vn);
 
 	if (vn.ops < v.ops) {
 		/* remove bits */
-		result = create_const_neg_node(env, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
+		result = create_const_neg_node(irn, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
 
 		for (cnt = 1; cnt < vn.ops; ++cnt) {
 			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]), mode_Iu);
-			ir_node *bic_i_node = new_rd_arm_Bic_i(env->dbg, env->irg, env->block, result, env->mode, tv);
+			ir_node *bic_i_node = new_rd_arm_Bic_i(dbg, current_ir_graph, block, result, mode, tv);
 			result = bic_i_node;
 		}
 	}
 	else {
 		/* add bits */
-		result = create_const_node(env, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
+		result = create_const_node(irn, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
 
 		for (cnt = 1; cnt < v.ops; ++cnt) {
 			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]), mode_Iu);
-			ir_node *orr_i_node = new_rd_arm_Or_i(env->dbg, env->irg, env->block, result, env->mode, tv);
+			ir_node *orr_i_node = new_rd_arm_Or_i(dbg, current_ir_graph, block, result, mode, tv);
 			result = orr_i_node;
 		}
 	}
 	return result;
 }
 
-static ir_node *create_const_graph(arm_transform_env_t *env) {
-	int value = get_tarval_long(get_Const_tarval(env->irn));
-	return create_const_graph_value(env, value);
+/**
+ * Create a DAG constructing a given Const.
+ *
+ * @param irn  a Firm const
+ */
+static ir_node *create_const_graph(ir_node *irn, ir_node *block) {
+	int value = get_tarval_long(get_Const_tarval(irn));
+	return create_const_graph_value(irn, block, value);
 }
 
 
 
-static ir_node *gen_Const(arm_transform_env_t *env) {
+static ir_node *gen_Const(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *result;
-	assert(env->mode != mode_E && "IEEE Extended FP not supported");
-	if (env->mode == mode_F) {
-		result = new_rd_arm_fConst(env->dbg, env->irg, env->block, env->mode);
-		get_arm_attr(result)->value = get_Const_tarval(env->irn);
-	} else if (env->mode == mode_D) {
-		result = new_rd_arm_fConst(env->dbg, env->irg, env->block, env->mode);
-		get_arm_attr(result)->value = get_Const_tarval(env->irn);
-	} else if (env->mode == mode_P) {
-		return env->irn;
-	} else {
-		result = create_const_graph(env);
-	}
+	ir_graph *irg = current_ir_graph;
+	ir_node *block = get_nodes_block(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	dbg_info *dbg = get_irn_dbg_info(irn);
+
+	assert(mode != mode_E && "IEEE Extended FP not supported");
+	if (mode == mode_F)
+		result = new_rd_arm_fConst(dbg, irg, block, mode, get_Const_tarval(irn));
+	else if (mode == mode_D)
+		result = new_rd_arm_fConst(dbg, irg, block, mode, get_Const_tarval(irn));
+	else if (mode == mode_P)
+		return irn;
+	else
+		result = create_const_graph(irn, block);
 	return result;
 }
 
-static ir_node *gen_mask(arm_transform_env_t *env, ir_node *op, int result_bits) {
+static ir_node *gen_mask(ir_node *irn, ir_node *op, int result_bits) {
+	ir_node *block = get_nodes_block(irn);
 	unsigned mask_bits = (1 << result_bits) - 1;
-	ir_node *mask_node = create_const_graph_value(env, mask_bits);
-	return new_rd_arm_And(env->dbg, env->irg, env->block, op, mask_node, get_irn_mode(env->irn), ARM_SHF_NONE, NULL);
+	ir_node *mask_node = create_const_graph_value(irn, block, mask_bits);
+	dbg_info *dbg = get_irn_dbg_info(irn);
+	return new_rd_arm_And(dbg, current_ir_graph, block, op, mask_node, get_irn_mode(irn), ARM_SHF_NONE, NULL);
 }
 
-static ir_node *gen_sign_extension(arm_transform_env_t *env, ir_node *op, int result_bits) {
+static ir_node *gen_sign_extension(ir_node *irn, ir_node *op, int result_bits) {
+	ir_node *block = get_nodes_block(irn);
 	int shift_width = 32 - result_bits;
-	ir_node *shift_const_node = create_const_graph_value(env, shift_width);
-	ir_node *lshift_node = new_rd_arm_Shl(env->dbg, env->irg, env->block, op, shift_const_node, get_irn_mode(op));
-	ir_node *rshift_node = new_rd_arm_Shrs(env->dbg, env->irg, env->block, lshift_node, shift_const_node, get_irn_mode(env->irn));
+	ir_graph *irg = current_ir_graph;
+	ir_node *shift_const_node = create_const_graph_value(irn, block, shift_width);
+	dbg_info *dbg = get_irn_dbg_info(irn);
+	ir_node *lshift_node = new_rd_arm_Shl(dbg, irg, block, op, shift_const_node, get_irn_mode(op));
+	ir_node *rshift_node = new_rd_arm_Shrs(dbg, irg, block, lshift_node, shift_const_node, get_irn_mode(irn));
 	return rshift_node;
 }
 
@@ -209,10 +227,13 @@ static ir_node *gen_sign_extension(arm_transform_env_t *env, ir_node *op, int re
  * @param env   The transformation environment
  * @return the created arm Conv node
  */
-static ir_node *gen_Conv(arm_transform_env_t *env) {
-	ir_node *op      = get_Conv_op(env->irn);
+static ir_node *gen_Conv(ir_node *irn, arm_code_gen_t *cg) {
+	ir_graph *irg = current_ir_graph;
+	ir_node *block   = get_nodes_block(irn);
+	ir_node *op      = get_Conv_op(irn);
 	ir_mode *in_mode = get_irn_mode(op);
-	ir_mode *out_mode = env->mode;
+	ir_mode *out_mode = get_irn_mode(irn);
+	dbg_info *dbg    = get_irn_dbg_info(irn);
 
 	assert( in_mode != mode_E && "");
 	assert( in_mode != mode_Ls && "");
@@ -247,9 +268,9 @@ static ir_node *gen_Conv(arm_transform_env_t *env) {
 				// NOP
 		if (in_bits == out_bits && out_bits < 32) {
 			if (in_sign && !out_sign) {
-				return gen_mask(env, op, out_bits);
+				return gen_mask(irn, op, out_bits);
 			} else {
-				return gen_sign_extension(env, op, out_bits);
+				return gen_sign_extension(irn, op, out_bits);
 			}
 		}
 
@@ -264,7 +285,7 @@ static ir_node *gen_Conv(arm_transform_env_t *env) {
 				// sign extension (31:16)=(15)
 		if (in_bits < out_bits) {
 			if (in_sign) {
-				return gen_sign_extension(env, op, out_bits);
+				return gen_sign_extension(irn, op, out_bits);
 			} else {
 				return op;
 			}
@@ -281,26 +302,26 @@ static ir_node *gen_Conv(arm_transform_env_t *env) {
 				// sign extension (erledigt auch maskieren) (31:16)=(15)
 		if (in_bits > out_bits) {
 			if (in_sign && out_sign) {
-				return gen_sign_extension(env, op, out_bits);
+				return gen_sign_extension(irn, op, out_bits);
 			} else {
-				return gen_mask(env, op, out_bits);
+				return gen_mask(irn, op, out_bits);
 			}
 		}
 		assert(0 && "recheck integer conversion logic!");
-		return env->irn;
+		return irn;
 	} else if (in_mode == mode_D && out_mode == mode_F) {
-		return new_rd_arm_fConvD2S(env->dbg, env->irg, env->block, op, env->mode);
+		return new_rd_arm_fConvD2S(dbg, irg, block, op, out_mode);
 	} else if (in_mode == mode_F && out_mode == mode_D) {
-		return new_rd_arm_fConvS2D(env->dbg, env->irg, env->block, op, env->mode);
+		return new_rd_arm_fConvS2D(dbg, irg, block, op, out_mode);
 	} else if (mode_is_int(in_mode) && mode_is_float(out_mode)) {
-		env->cg->have_fp = 1;
-		return env->irn; /* TODO: implement int->float conversion*/
+		cg->have_fp = 1;
+		return irn; /* TODO: implement int->float conversion*/
 	} else if (mode_is_float(in_mode) && mode_is_int(out_mode)) {
-		env->cg->have_fp = 1;
-		return env->irn; /* TODO: implement float->int conversion*/
+		cg->have_fp = 1;
+		return irn; /* TODO: implement float->int conversion*/
 	} else {
 		assert(0 && "not implemented conversion");
-		return env->irn;
+		return irn;
 	}
 }
 
@@ -328,27 +349,28 @@ static int is_shifter_operand(ir_node *n, arm_shift_modifier *pmod) {
  * @param env   The transformation environment
  * @return the created arm Add node
  */
-static ir_node *gen_Add(arm_transform_env_t *env) {
-	ir_node *irn = env->irn;
+static ir_node *gen_Add(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
 	ir_node *op1 = get_Add_left(irn);
 	ir_node *op2 = get_Add_right(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	ir_graph *irg = current_ir_graph;
 	ir_node *op3;
 	int v;
 	arm_shift_modifier mod;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(env->mode != mode_E && "IEEE Extended FP not supported");
+	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	if (mode_is_float(env->mode)) {
-		env->cg->have_fp = 1;
-		return new_rd_arm_fAdd(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	if (mode_is_float(mode)) {
+		cg->have_fp = 1;
+		return new_rd_arm_fAdd(dbg, irg, block, op1, op2, mode);
 	}
-	if (mode_is_numP(env->mode)) {
+	if (mode_is_numP(mode)) {
 		if (is_arm_Mov_i(op1))
-			return new_rd_arm_Add_i(env->dbg, env->irg, env->block, op2, env->mode,
-			                        get_arm_value(op1));
+			return new_rd_arm_Add_i(dbg, irg, block, op2, mode, get_arm_value(op1));
 		if (is_arm_Mov_i(op2))
-			return new_rd_arm_Add_i(env->dbg, env->irg, env->block, op1, env->mode,
-			                        get_arm_value(op2));
+			return new_rd_arm_Add_i(dbg, irg, block, op1, mode, get_arm_value(op2));
 
 		/* check for MLA */
 		if (is_arm_Mul(op1) && get_irn_n_edges(op1) == 1) {
@@ -356,33 +378,31 @@ static ir_node *gen_Add(arm_transform_env_t *env) {
 			op2 = get_irn_n(op1, 1);
 			op1 = get_irn_n(op1, 0);
 
-			return new_rd_arm_Mla(env->dbg, env->irg, env->block, op1, op2, op3, env->mode);
+			return new_rd_arm_Mla(dbg, irg, block, op1, op2, op3, mode);
 		}
 		if (is_arm_Mul(op2) && get_irn_n_edges(op2) == 1) {
 			op3 = op1;
 			op1 = get_irn_n(op2, 0);
 			op2 = get_irn_n(op2, 1);
 
-			return new_rd_arm_Mla(env->dbg, env->irg, env->block, op1, op2, op3, env->mode);
+			return new_rd_arm_Mla(dbg, irg, block, op1, op2, op3, mode);
 		}
 
 		/* is the first a shifter */
 		v = is_shifter_operand(op1, &mod);
 		if (v) {
 			op1 = get_irn_n(op1, 0);
-			return new_rd_arm_Add(env->dbg, env->irg, env->block, op2, op1, env->mode,
-			                      mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Add(dbg, irg, block, op2, op1, mode, mod, new_tarval_from_long(v, mode_Iu));
 		}
 		/* is the second a shifter */
 		v = is_shifter_operand(op2, &mod);
 		if (v) {
 			op2 = get_irn_n(op2, 0);
-			return new_rd_arm_Add(env->dbg, env->irg, env->block, op1, op2, env->mode,
-			                      mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Add(dbg, irg, block, op1, op2, mode, mod, new_tarval_from_long(v, mode_Iu));
 		}
 
 		/* normal ADD */
-		return new_rd_arm_Add(env->dbg, env->irg, env->block, op1, op2, env->mode, ARM_SHF_NONE, NULL);
+		return new_rd_arm_Add(dbg, irg, block, op1, op2, mode, ARM_SHF_NONE, NULL);
 	}
 
 	assert(0 && "unknown mode for add");
@@ -395,18 +415,21 @@ static ir_node *gen_Add(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm Mul node
  */
-static ir_node *gen_Mul(arm_transform_env_t *env) {
-	ir_node *irn = env->irn;
+static ir_node *gen_Mul(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
 	ir_node *op1 = get_Mul_left(irn);
 	ir_node *op2 = get_Mul_right(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	ir_graph *irg = current_ir_graph;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(env->mode != mode_E && "IEEE Extended FP not supported");
+	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	if (mode_is_float(env->mode)) {
-		env->cg->have_fp = 1;
-		return new_rd_arm_fMul(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	if (mode_is_float(mode)) {
+		cg->have_fp = 1;
+		return new_rd_arm_fMul(dbg, irg, block, op1, op2, mode);
 	}
-	return new_rd_arm_Mul(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_rd_arm_Mul(dbg, irg, block, op1, op2, mode);
 }
 
 /**
@@ -415,47 +438,47 @@ static ir_node *gen_Mul(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm fDiv node
  */
-static ir_node *gen_Quot(arm_transform_env_t *env) {
-	ir_node *irn = env->irn;
+static ir_node *gen_Quot(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
 	ir_node *op1 = get_Quot_left(irn);
 	ir_node *op2 = get_Quot_right(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(mode_is_float(get_irn_mode(op1)));
-	assert(get_irn_mode(op1) != mode_E && "IEEE Extended FP not supported");
+	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	return new_rd_arm_fDiv(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_rd_arm_fDiv(dbg, current_ir_graph, block, op1, op2, mode);
 }
 
 #define GEN_INT_OP(op) \
-static ir_node *gen_ ## op(arm_transform_env_t *env) { \
-	ir_node *irn = env->irn; \
+static ir_node *gen_ ## op(ir_node *irn, arm_code_gen_t *cg) { \
+	ir_graph *irg = current_ir_graph; \
+	ir_node *block = get_nodes_block(irn); \
 	ir_node *op1 = get_ ## op ## _left(irn); \
 	ir_node *op2 = get_ ## op ## _right(irn); \
 	int v; \
 	arm_shift_modifier mod; \
+	ir_mode *mode = get_irn_mode(irn); \
+	dbg_info *dbg = get_irn_dbg_info(irn); \
  \
 	if (is_arm_Mov_i(op1)) \
-		return new_rd_arm_ ## op ## _i(env->dbg, env->irg, env->block, op2, env->mode, \
-		                        get_arm_value(op1)); \
+		return new_rd_arm_ ## op ## _i(dbg, irg, block, op2, mode, get_arm_value(op1)); \
 	if (is_arm_Mov_i(op2)) \
-		return new_rd_arm_ ## op ## _i(env->dbg, env->irg, env->block, op1, env->mode, \
-		                        get_arm_value(op2)); \
+		return new_rd_arm_ ## op ## _i(dbg, irg, block, op1, mode, get_arm_value(op2)); \
 	/* is the first a shifter */ \
 	v = is_shifter_operand(op1, &mod); \
 	if (v) { \
 		op1 = get_irn_n(op1, 0); \
-		return new_rd_arm_ ## op(env->dbg, env->irg, env->block, op2, op1, env->mode, \
-			                    mod, new_tarval_from_long(v, mode_Iu)); \
+		return new_rd_arm_ ## op(dbg, irg, block, op2, op1, mode, mod, new_tarval_from_long(v, mode_Iu)); \
 	} \
 	/* is the second a shifter */ \
 	v = is_shifter_operand(op2, &mod); \
 	if (v) { \
 		op2 = get_irn_n(op2, 0); \
-		return new_rd_arm_ ## op(env->dbg, env->irg, env->block, op1, op2, env->mode, \
-			                    mod, new_tarval_from_long(v, mode_Iu)); \
+		return new_rd_arm_ ## op(dbg, irg, block, op1, op2, mode, mod, new_tarval_from_long(v, mode_Iu)); \
 	} \
 	/* Normal op */ \
-	return new_rd_arm_ ## op(env->dbg, env->irg, env->block, op1, op2, env->mode, ARM_SHF_NONE, NULL); \
+	return new_rd_arm_ ## op(dbg, irg, block, op1, op2, mode, ARM_SHF_NONE, NULL); \
 }
 
 
@@ -465,7 +488,7 @@ static ir_node *gen_ ## op(arm_transform_env_t *env) { \
  * @param env   The transformation environment
  * @return the created arm And node
  */
-static ir_node *gen_And(arm_transform_env_t *env);
+static ir_node *gen_And(ir_node *irn, arm_code_gen_t *cg);
 GEN_INT_OP(And)
 
 /**
@@ -474,7 +497,7 @@ GEN_INT_OP(And)
  * @param env   The transformation environment
  * @return the created arm Or node
  */
-static ir_node *gen_Or(arm_transform_env_t *env);
+static ir_node *gen_Or(ir_node *irn, arm_code_gen_t *cg);
 GEN_INT_OP(Or)
 
 /**
@@ -483,7 +506,7 @@ GEN_INT_OP(Or)
  * @param env   The transformation environment
  * @return the created arm Eor node
  */
-static ir_node *gen_Eor(arm_transform_env_t *env);
+static ir_node *gen_Eor(ir_node *irn, arm_code_gen_t *cg);
 GEN_INT_OP(Eor)
 
 /**
@@ -492,43 +515,42 @@ GEN_INT_OP(Eor)
  * @param env   The transformation environment
  * @return the created arm Sub node
  */
-static ir_node *gen_Sub(arm_transform_env_t *env) {
-	ir_node *irn = env->irn;
+static ir_node *gen_Sub(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
 	ir_node *op1 = get_Sub_left(irn);
 	ir_node *op2 = get_Sub_right(irn);
 	int v;
 	arm_shift_modifier mod;
+	ir_mode *mode = get_irn_mode(irn);
+	ir_graph *irg = current_ir_graph;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(env->mode != mode_E && "IEEE Extended FP not supported");
+	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	if (mode_is_float(env->mode)) {
-		env->cg->have_fp = 1;
-		return new_rd_arm_fSub(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	if (mode_is_float(mode)) {
+		cg->have_fp = 1;
+		return new_rd_arm_fSub(dbg, irg, block, op1, op2, mode);
 	}
-	if (mode_is_numP(env->mode)) {
+	if (mode_is_numP(mode)) {
 		if (is_arm_Mov_i(op1))
-			return new_rd_arm_Rsb_i(env->dbg, env->irg, env->block, op2, env->mode,
-			                        get_arm_value(op1));
+			return new_rd_arm_Rsb_i(dbg, irg, block, op2, mode, get_arm_value(op1));
 		if (is_arm_Mov_i(op2))
-			return new_rd_arm_Sub_i(env->dbg, env->irg, env->block, op1, env->mode,
-			                        get_arm_value(op2));
+			return new_rd_arm_Sub_i(dbg, irg, block, op1, mode, get_arm_value(op2));
 
 		/* is the first a shifter */
 		v = is_shifter_operand(op1, &mod);
 		if (v) {
 			op1 = get_irn_n(op1, 0);
-			return new_rd_arm_Rsb(env->dbg, env->irg, env->block, op2, op1, env->mode,
-			                      mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Rsb(dbg, irg, block, op2, op1, mode, mod, new_tarval_from_long(v, mode_Iu));
 		}
 		/* is the second a shifter */
 		v = is_shifter_operand(op2, &mod);
 		if (v) {
 			op2 = get_irn_n(op2, 0);
-			return new_rd_arm_Sub(env->dbg, env->irg, env->block, op1, op2, env->mode,
-			                      mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Sub(dbg, irg, block, op1, op2, mode, mod, new_tarval_from_long(v, mode_Iu));
 		}
 		/* normal sub */
-		return new_rd_arm_Sub(env->dbg, env->irg, env->block, op1, op2, env->mode, ARM_SHF_NONE, NULL);
+		return new_rd_arm_Sub(dbg, irg, block, op1, op2, mode, ARM_SHF_NONE, NULL);
 	}
 	assert(0 && "unknown mode for sub");
 	return NULL;
@@ -540,17 +562,19 @@ static ir_node *gen_Sub(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm Shl node
  */
-static ir_node *gen_Shl(arm_transform_env_t *env) {
+static ir_node *gen_Shl(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *result;
-	ir_node *irn = env->irn;
+	ir_node *block = get_nodes_block(irn);
 	ir_node *op1 = get_Shl_left(irn);
 	ir_node *op2 = get_Shl_right(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	ir_graph *irg = current_ir_graph;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	if (is_arm_Mov_i(op2)) {
-		result = new_rd_arm_Mov(env->dbg, env->irg, env->block, op1, env->mode,
-		                        ARM_SHF_LSL, get_arm_value(op2));
+		result = new_rd_arm_Mov(dbg, irg, block, op1, mode, ARM_SHF_LSL, get_arm_value(op2));
 	} else {
-		result = new_rd_arm_Shl(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		result = new_rd_arm_Shl(dbg, irg, block, op1, op2, mode);
 	}
 	return result;
 }
@@ -561,17 +585,19 @@ static ir_node *gen_Shl(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm Shr node
  */
-static ir_node *gen_Shr(arm_transform_env_t *env) {
+static ir_node *gen_Shr(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *result;
-	ir_node *irn = env->irn;
+	ir_node *block = get_nodes_block(irn);
 	ir_node *op1 = get_Shr_left(irn);
 	ir_node *op2 = get_Shr_right(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	ir_graph *irg = current_ir_graph;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	if (is_arm_Mov_i(op2)) {
-		result = new_rd_arm_Mov(env->dbg, env->irg, env->block, op1, env->mode,
-		                        ARM_SHF_LSR, get_arm_value(op2));
+		result = new_rd_arm_Mov(dbg, irg, block, op1, mode, ARM_SHF_LSR, get_arm_value(op2));
 	} else {
-		result = new_rd_arm_Shr(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		result = new_rd_arm_Shr(dbg, irg, block, op1, op2, mode);
 	}
 	return result;
 }
@@ -582,17 +608,18 @@ static ir_node *gen_Shr(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm Shrs node
  */
-static ir_node *gen_Shrs(arm_transform_env_t *env) {
+static ir_node *gen_Shrs(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *result;
-	ir_node *irn = env->irn;
+	ir_node *block = get_nodes_block(irn);
 	ir_node *op1 = get_Shrs_left(irn);
 	ir_node *op2 = get_Shrs_right(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	if (is_arm_Mov_i(op2)) {
-		result = new_rd_arm_Mov(env->dbg, env->irg, env->block, op1, env->mode,
-		                        ARM_SHF_ASR, get_arm_value(op2));
+		result = new_rd_arm_Mov(dbg, current_ir_graph, block, op1, mode, ARM_SHF_ASR, get_arm_value(op2));
 	} else {
-		result = new_rd_arm_Shrs(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		result = new_rd_arm_Shrs(dbg, current_ir_graph, block, op1, op2, mode);
 	}
 	return result;
 }
@@ -603,18 +630,20 @@ static ir_node *gen_Shrs(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm Not node
  */
-static ir_node *gen_Not(arm_transform_env_t *env) {
-	ir_node *op = get_Not_op(env->irn);
+static ir_node *gen_Not(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
+	ir_node *op = get_Not_op(irn);
 	int v;
 	arm_shift_modifier mod = ARM_SHF_NONE;
 	tarval  *tv = NULL;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	v = is_shifter_operand(op, &mod);
 	if (v) {
 		op = get_irn_n(op, 0);
 		tv = new_tarval_from_long(v, mode_Iu);
 	}
-	return new_rd_arm_Mvn(env->dbg, env->irg, env->block, op, env->mode, mod, tv);
+	return new_rd_arm_Mvn(dbg, current_ir_graph, block, op, get_irn_mode(irn), mod, tv);
 }
 
 /**
@@ -623,17 +652,19 @@ static ir_node *gen_Not(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm Abs node
  */
-static ir_node *gen_Abs(arm_transform_env_t *env) {
-	ir_node *op = get_Abs_op(env->irn);
+static ir_node *gen_Abs(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
+	ir_node *op = get_Abs_op(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(env->mode != mode_E && "IEEE Extended FP not supported");
+	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	if (mode_is_float(env->mode)) {
-		env->cg->have_fp = 1;
-		return new_rd_arm_fAbs(env->dbg, env->irg, env->block, op, env->mode);
+	if (mode_is_float(mode)) {
+		cg->have_fp = 1;
+		return new_rd_arm_fAbs(dbg, current_ir_graph, block, op, mode);
 	}
-
-	return new_rd_arm_Abs(env->dbg, env->irg, env->block, op, env->mode);
+	return new_rd_arm_Abs(dbg, current_ir_graph, block, op, mode);
 }
 
 /**
@@ -642,13 +673,17 @@ static ir_node *gen_Abs(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created arm Minus node
  */
-static ir_node *gen_Minus(arm_transform_env_t *env) {
-	ir_node *op = get_Minus_op(env->irn);
+static ir_node *gen_Minus(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
+	ir_node *op = get_Minus_op(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	ir_graph *irg = current_ir_graph;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	if (mode_is_float(env->mode)) {
-		return new_rd_arm_fMinus(env->dbg, env->irg, env->block, op, env->mode);
+	if (mode_is_float(mode)) {
+		return new_rd_arm_fNeg(dbg, irg, block, op, mode);
 	}
-	return new_rd_arm_Rsb_i(env->dbg, env->irg, env->block, op, env->mode, get_mode_null(env->mode));
+	return new_rd_arm_Rsb_i(dbg, irg, block, op, mode, get_mode_null(mode));
 }
 
 /**
@@ -660,31 +695,33 @@ static ir_node *gen_Minus(arm_transform_env_t *env) {
  * @param mode    node mode
  * @return the created arm Load node
  */
-static ir_node *gen_Load(arm_transform_env_t *env) {
-	ir_node *node = env->irn;
-	ir_mode *mode = get_Load_mode(node);
+static ir_node *gen_Load(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
+	ir_mode *mode = get_Load_mode(irn);
+	ir_graph *irg = current_ir_graph;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	if (mode_is_float(mode)) {
-		env->cg->have_fp = 1;
+		cg->have_fp = 1;
 		/* FIXME: set the load mode */
-		return new_rd_arm_fLoad(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+		return new_rd_arm_fLoad(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
 	}
 	if (mode == mode_Bu) {
-		return new_rd_arm_Loadb(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+		return new_rd_arm_Loadb(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
 	}
 	if (mode == mode_Bs) {
-		return new_rd_arm_Loadbs(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+		return new_rd_arm_Loadbs(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
 	}
 	if (mode == mode_Hu) {
-		return new_rd_arm_Loadh(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+		return new_rd_arm_Loadh(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
 	}
 	if (mode == mode_Hs) {
-		return new_rd_arm_Loadhs(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+		return new_rd_arm_Loadhs(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
 	}
 	if (mode_is_reference(mode)) {
-		return new_rd_arm_Load(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+		return new_rd_arm_Load(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
 	}
-	return new_rd_arm_Load(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+	return new_rd_arm_Load(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
 }
 
 /**
@@ -696,36 +733,40 @@ static ir_node *gen_Load(arm_transform_env_t *env) {
  * @param mode    node mode
  * @return the created arm Store node
  */
-static ir_node *gen_Store(arm_transform_env_t *env) {
-	ir_node *node = env->irn;
-	ir_mode *mode = get_irn_mode(get_Store_value(node));
-	assert(env->mode != mode_E && "IEEE Extended FP not supported");
+static ir_node *gen_Store(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
+	ir_mode *mode = get_irn_mode(get_Store_value(irn));
+	ir_graph *irg = current_ir_graph;
+	dbg_info *dbg = get_irn_dbg_info(irn);
 
+	assert(mode != mode_E && "IEEE Extended FP not supported");
 	if (mode_is_float(mode)) {
-		env->cg->have_fp = 1;
+		cg->have_fp = 1;
 		/* FIXME: set the store mode */
-		return new_rd_arm_fStore(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+		return new_rd_arm_fStore(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
 	}
 	if (mode == mode_Bu) {
-		return new_rd_arm_Storeb(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+		return new_rd_arm_Storeb(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
 	}
 	if (mode == mode_Bs) {
-		return new_rd_arm_Storebs(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+		return new_rd_arm_Storebs(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
 	}
 	if (mode == mode_Hu) {
-		return new_rd_arm_Storeh(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+		return new_rd_arm_Storeh(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
 	}
 	if (mode == mode_Hs) {
-		return new_rd_arm_Storehs(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+		return new_rd_arm_Storehs(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
 	}
-	return new_rd_arm_Store(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+	return new_rd_arm_Store(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
 }
 
 
-static ir_node *gen_Cond(arm_transform_env_t *env) {
+static ir_node *gen_Cond(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *result   = NULL;
-	ir_node *selector = get_Cond_selector(env->irn);
-	ir_node *irn      = env->irn;
+	ir_node *selector = get_Cond_selector(irn);
+	ir_node *block    = get_nodes_block(irn);
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(irn);
 
 	if ( get_irn_mode(selector) == mode_b ) {
 		//CondJmp
@@ -733,11 +774,11 @@ static ir_node *gen_Cond(arm_transform_env_t *env) {
 		ir_node *cmp_node = get_Proj_pred(proj_node);
 		ir_node *op1 = get_Cmp_left(cmp_node);
 		ir_node *op2 = get_Cmp_right(cmp_node);
-		result = new_rd_arm_CondJmp(env->dbg, env->irg, env->block, op1, op2, mode_T);
+		result = new_rd_arm_CondJmp(dbg, irg, block, op1, op2, mode_T);
 		set_arm_proj_num(result, get_Proj_proj(proj_node));
 	} else {
 		//SwitchJmp
-		ir_node *op = get_irn_n(env->irn, 0);
+		ir_node *op = get_irn_n(irn, 0);
 		ir_node *const_graph;
 		ir_node *sub;
 		ir_node *const_node;
@@ -750,7 +791,6 @@ static ir_node *gen_Cond(arm_transform_env_t *env) {
 		int norm_max;
 		int norm_min;
 		int pn;
-		arm_transform_env_t const_env;
 		int n_projs;
 		ir_node **projs;
 
@@ -780,13 +820,10 @@ static ir_node *gen_Cond(arm_transform_env_t *env) {
 		}
 
 
-		const_node = new_rd_Const(env->dbg, env->irg, env->block, mode_Iu, new_tarval_from_long(translation, mode_Iu));
-		const_env = *env;
-		const_env.mode = mode_Is;
-		const_env.irn = const_node;
-		const_graph = gen_Const(&const_env);
-		sub = new_rd_arm_Sub(env->dbg, env->irg, env->block, op, const_graph, get_irn_mode(op), ARM_SHF_NONE, NULL);
-		result = new_rd_arm_SwitchJmp(env->dbg, env->irg, env->block, sub, mode_T);
+		const_node = new_rd_Const(dbg, irg, block, mode_Iu, new_tarval_from_long(translation, mode_Iu));
+		const_graph = gen_Const(const_node, cg);
+		sub = new_rd_arm_Sub(dbg, irg, block, op, const_graph, get_irn_mode(op), ARM_SHF_NONE, NULL);
+		result = new_rd_arm_SwitchJmp(dbg, irg, block, sub, mode_T);
 		set_arm_n_projs(result, n_projs);
 		set_arm_default_proj_num(result, get_Cond_defaultProj(irn)-translation);
 	}
@@ -816,9 +853,11 @@ const char *get_sc_name(ir_node *symc) {
 	return NULL;
 }
 
-static ir_node *gen_SymConst(arm_transform_env_t *env) {
-	return new_rd_arm_SymConst(env->dbg, env->irg, env->block,
-	                           env->mode, get_sc_name(env->irn));
+static ir_node *gen_SymConst(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block = get_nodes_block(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	dbg_info *dbg = get_irn_dbg_info(irn);
+	return new_rd_arm_SymConst(dbg, current_ir_graph, block, mode, get_sc_name(irn));
 }
 
 
@@ -829,27 +868,18 @@ static ir_node *gen_SymConst(arm_transform_env_t *env) {
  * @param env   The transformation environment
  * @return The transformed node.
  */
-static ir_node *gen_CopyB(arm_transform_env_t *env) {
+static ir_node *gen_CopyB(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node  *res   = NULL;
-	dbg_info *dbg   = env->dbg;
-	ir_graph *irg   = env->irg;
-	ir_mode  *mode  = env->mode;
-	ir_node  *block = env->block;
-	ir_node  *node  = env->irn;
-	ir_node  *src   = get_CopyB_src(node);
-	ir_node  *dst   = get_CopyB_dst(node);
-	ir_node  *mem   = get_CopyB_mem(node);
-	int       size  = get_type_size_bytes(get_CopyB_type(node));
+	dbg_info *dbg   = get_irn_dbg_info(irn);
+	ir_mode  *mode  = get_irn_mode(irn);
+	ir_node  *src   = get_CopyB_src(irn);
+	ir_node  *dst   = get_CopyB_dst(irn);
+	ir_node  *mem   = get_CopyB_mem(irn);
+	ir_node  *block = get_nodes_block(irn);
+	int       size  = get_type_size_bytes(get_CopyB_type(irn));
+	ir_graph *irg   = current_ir_graph;
 	ir_node *src_copy;
 	ir_node *dst_copy;
-
-	arm_transform_env_t const_env;
-	const_env.block    = block;
-	const_env.dbg      = dbg;
-	const_env.irg      = irg;
-	const_env.irn      = node;
-	DEBUG_ONLY(const_env.mod      = env->mod;)
-	const_env.mode     = mode_Iu;
 
 	src_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], irg, block, src);
 	dst_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], irg, block, dst);
@@ -891,14 +921,14 @@ static int get_sp_expand_offset(ir_node *inc_sp) {
 	return dir == be_stack_dir_expand ? (int)offset : -(int)offset;
 }
 
-static ir_node *gen_StackParam(arm_transform_env_t *env) {
+static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {
 #if 0
 	ir_node *new_op = NULL;
-	ir_node *node   = env->irn;
+	ir_node *block  = get_nodes_block(irn);
 	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node *mem    = new_rd_NoMem(env->irg);
-	ir_node *ptr    = get_irn_n(node, 0);
-	entity  *ent    = be_get_frame_entity(node);
+	ir_node *ptr    = get_irn_n(irn, 0);
+	entity  *ent    = be_get_frame_entity(irn);
 	ir_mode *mode   = env->mode;
 
 //	/* If the StackParam has only one user ->     */
@@ -909,14 +939,14 @@ static ir_node *gen_StackParam(arm_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, block, ptr, noreg, mem, mode_T);
 		else {
 			env->cg->used_x87 = 1;
-			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+			new_op = new_rd_ia32_vfld(env->dbg, env->irg, block, ptr, noreg, mem, mode_T);
 		}
 	}
 	else {
-		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, block, ptr, noreg, mem, mode_T);
 	}
 
 	set_ia32_frame_ent(new_op, ent);
@@ -929,56 +959,55 @@ static ir_node *gen_StackParam(arm_transform_env_t *env) {
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
-	return new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, 0);
+	return new_rd_Proj(env->dbg, env->irg, block, new_op, mode, 0);
 #endif
 }
 
 /**
  * Transforms a FrameAddr into an ia32 Add.
  */
-static ir_node *gen_be_FrameAddr(arm_transform_env_t *env) {
-	ir_node *node   = env->irn;
-	entity  *ent    = be_get_frame_entity(node);
+static ir_node *gen_be_FrameAddr(ir_node *irn, arm_code_gen_t *cg) {
+	ir_node *block  = get_nodes_block(irn);
+	entity  *ent    = be_get_frame_entity(irn);
 	int     offset  = get_entity_offset_bytes(ent);
-	ir_node *op     = get_irn_n(node, 0);
+	ir_node *op     = get_irn_n(irn, 0);
 	ir_node *cnst;
+	ir_mode *mode   = get_irn_mode(irn);
+	dbg_info *dbg   = get_irn_dbg_info(irn);
 
 	if (be_is_IncSP(op)) {
 		/* BEWARE: we get an offset which is absolute from an offset that
 		   is relative. Both must be merged */
 		offset += get_sp_expand_offset(op);
 	}
-	cnst = create_const_graph_value(env, (unsigned)offset);
-	if (is_arm_Mov_i(cnst)) {
-		return new_rd_arm_Add_i(env->dbg, env->irg, env->block, op, env->mode,
-		                        get_arm_value(cnst));
-	}
-	return new_rd_arm_Add(env->dbg, env->irg, env->block, op, cnst, env->mode, ARM_SHF_NONE, NULL);
+	cnst = create_const_graph_value(irn, block, (unsigned)offset);
+	if (is_arm_Mov_i(cnst))
+		return new_rd_arm_Add_i(dbg, current_ir_graph, block, op, mode, get_arm_value(cnst));
+	return new_rd_arm_Add(dbg, current_ir_graph, block, op, cnst, mode, ARM_SHF_NONE, NULL);
 }
 
 /**
  * Transforms a FrameLoad into an ia32 Load.
  */
-static ir_node *gen_FrameLoad(arm_transform_env_t *env) {
+static ir_node *gen_FrameLoad(ir_node *irn, arm_code_gen_t *cg) {
 #if 0
 	ir_node *new_op = NULL;
-	ir_node *node   = env->irn;
 	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = get_irn_n(node, 0);
-	ir_node *ptr    = get_irn_n(node, 1);
-	entity  *ent    = be_get_frame_entity(node);
+	ir_node *mem    = get_irn_n(irn, 0);
+	ir_node *ptr    = get_irn_n(irn, 1);
+	entity  *ent    = be_get_frame_entity(irn);
 	ir_mode *mode   = get_type_mode(get_entity_type(ent));
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+			new_op = new_rd_ia32_fLoad(env->dbg, current_ir_graph, env->block, ptr, noreg, mem, mode_T);
 		else {
 			env->cg->used_x87 = 1;
-			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+			new_op = new_rd_ia32_vfld(env->dbg, current_ir_graph, env->block, ptr, noreg, mem, mode_T);
 		}
 	}
 	else {
-		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+		new_op = new_rd_ia32_Load(env->dbg, current_ir_graph, env->block, ptr, noreg, mem, mode_T);
 	}
 
 	set_ia32_frame_ent(new_op, ent);
@@ -999,15 +1028,14 @@ static ir_node *gen_FrameLoad(arm_transform_env_t *env) {
 /**
  * Transforms a FrameStore into an ia32 Store.
  */
-static ir_node *gen_FrameStore(arm_transform_env_t *env) {
+static ir_node *gen_FrameStore(ir_node *irn, arm_code_gen_t *cg) {
 #if 0
 	ir_node *new_op = NULL;
-	ir_node *node   = env->irn;
 	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = get_irn_n(node, 0);
-	ir_node *ptr    = get_irn_n(node, 1);
-	ir_node *val    = get_irn_n(node, 2);
-	entity  *ent    = be_get_frame_entity(node);
+	ir_node *mem    = get_irn_n(irn, 0);
+	ir_node *ptr    = get_irn_n(irn, 1);
+	ir_node *val    = get_irn_n(irn, 2);
+	entity  *ent    = be_get_frame_entity(irn);
 	ir_mode *mode   = get_irn_mode(val);
 
 	if (mode_is_float(mode)) {
@@ -1040,7 +1068,7 @@ static ir_node *gen_FrameStore(arm_transform_env_t *env) {
 }
 
 
-// static ir_node *gen_be_Copy(arm_transform_env_t *env, ir_node *op) {
+// static ir_node *gen_be_Copy(ir_node *irn, arm_code_gen_t *cg) {
 // 	return new_rd_arm_Copy(env->dbg, env->irg, env->block, op, env->mode);
 // }
 
@@ -1059,14 +1087,10 @@ static ir_node *gen_FrameStore(arm_transform_env_t *env) {
 /************************************************************************/
 void arm_move_consts(ir_node *node, void *env) {
 	arm_code_gen_t *cgenv = (arm_code_gen_t *)env;
-	arm_transform_env_t tenv;
 	int i;
 
 	if (is_Block(node))
 		return;
-
-	tenv.irg = current_ir_graph;
-	DEBUG_ONLY(tenv.mod = cgenv->mod);
 
 	if (is_Phi(node)) {
 		for (i = 0; i < get_irn_arity(node); i++) {
@@ -1074,11 +1098,7 @@ void arm_move_consts(ir_node *node, void *env) {
 			opcode pred_code = get_irn_opcode(pred);
 			if (pred_code == iro_Const) {
 				ir_node *const_graph;
-				tenv.block    = get_nodes_block(get_irn_n(get_nodes_block(node),i));
-				tenv.dbg      = get_irn_dbg_info(pred);
-				tenv.irn      = pred;
-				tenv.mode     = get_irn_mode(pred);
-				const_graph = create_const_graph(&tenv);
+				const_graph = create_const_graph(pred, get_nodes_block(get_irn_n(get_nodes_block(node),i)));
 				set_irn_n(node, i, const_graph);
 			} else if (pred_code == iro_SymConst) {
 				const char *str = get_sc_name(pred);
@@ -1096,11 +1116,7 @@ void arm_move_consts(ir_node *node, void *env) {
 		opcode pred_code = get_irn_opcode(pred);
 		if (pred_code == iro_Const) {
 			ir_node *const_graph;
-			tenv.block  = get_nodes_block(node);
-			tenv.dbg    = get_irn_dbg_info(pred);
-			tenv.irn    = pred;
-			tenv.mode   = get_irn_mode(pred);
-			const_graph = create_const_graph(&tenv);
+			const_graph = create_const_graph(pred, get_nodes_block(node));
 			set_irn_n(node, i, const_graph);
 		} else if (pred_code == iro_SymConst) {
 			const char *str = get_sc_name(pred);
@@ -1141,8 +1157,8 @@ void arm_move_symconsts(ir_node *node, void *env) {
 /**
  * the BAD transformer.
  */
-static ir_node *bad_transform(arm_transform_env_t *env) {
-	ir_fprintf(stderr, "Not implemented: %+F\n", env->irn);
+static ir_node *bad_transform(ir_node *irn, arm_code_gen_t *cg) {
+	ir_fprintf(stderr, "Not implemented: %+F\n", irn);
 	assert(0);
 	return NULL;
 }
@@ -1243,7 +1259,7 @@ void arm_register_transformers(void) {
 #undef BAD
 }
 
-typedef ir_node *(transform_func)(arm_transform_env_t *env);
+typedef ir_node *(transform_func)(ir_node *irn, arm_code_gen_t *cg);
 
 /**
  * Transforms the given firm node (and maybe some other related nodes)
@@ -1263,18 +1279,9 @@ void arm_transform_node(ir_node *node, void *env) {
 	DBG((cg->mod, LEVEL_1, "check %+F ... ", node));
 
 	if (op->ops.generic) {
-		arm_transform_env_t tenv;
 		transform_func *transform = (transform_func *)op->ops.generic;
 
-		tenv.cg       = cg;
-		tenv.block    = get_nodes_block(node);
-		tenv.dbg      = get_irn_dbg_info(node);
-		tenv.irg      = current_ir_graph;
-		tenv.irn      = node;
-		tenv.mode     = get_irn_mode(node);
-		DEBUG_ONLY(tenv.mod = cg->mod);
-
-		asm_node = (*transform)(&tenv);
+		asm_node = (*transform)(node, cg);
 	}
 
 	if (asm_node) {
