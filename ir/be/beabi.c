@@ -108,8 +108,8 @@ struct _be_abi_irg_t {
 static const arch_irn_ops_if_t abi_irn_ops;
 static const arch_irn_handler_t abi_irn_handler;
 
-/* Flag: if set, try to omit the frame pointer if alled by the backend */
-int be_omit_fp = 0;
+/* Flag: if set, try to omit the frame pointer if called by the backend */
+int be_omit_fp = 1;
 
 /*
      _    ____ ___    ____      _ _ _                _
