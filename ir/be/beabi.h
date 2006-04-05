@@ -10,6 +10,7 @@
 
 #include "pset.h"
 #include "pmap.h"
+#include "bitset.h"
 
 #include "be.h"
 #include "bearch.h"
@@ -95,7 +96,6 @@ struct _be_abi_callbacks_t {
  */
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const be_abi_callbacks_t *cb);
 
-
 void be_abi_call_param_stack(be_abi_call_t *call, int pos, unsigned alignment, unsigned space_before, unsigned space_after);
 void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 void be_abi_call_res_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
@@ -121,6 +121,7 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env);
 void be_abi_fix_stack_nodes(be_abi_irg_t *env);
 void be_abi_free(be_abi_irg_t *abi);
 
+void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, bitset_t *bs);
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);
 
 #define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))

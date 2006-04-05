@@ -96,6 +96,9 @@ struct _be_abi_irg_t {
 
 	void                 *cb;           /**< ABI Callback self pointer. */
 
+	pmap                 *keep_map;     /**< mapping blocks to keep nodes. */
+	pset                 *ignore_regs;  /**< Additional registers which shall be ignored. */
+
 	arch_irn_handler_t irn_handler;
 	arch_irn_ops_t     irn_ops;
 	DEBUG_ONLY(firm_dbg_module_t    *dbg;)          /**< The debugging module. */
@@ -616,7 +619,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	}
 
-  else
+	else
 		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem, curr_sp, call_ptr,
 		                       curr_res_proj + pset_count(caller_save), n_low_args, in,
 		                       get_Call_type(irn));
@@ -856,6 +859,7 @@ static void process_calls_in_block(ir_node *bl, void *data)
 
 	/* If there were call nodes in the block. */
 	if(n > 0) {
+		ir_node *keep;
 		ir_node **nodes;
 		int i;
 
@@ -883,7 +887,8 @@ static void process_calls_in_block(ir_node *bl, void *data)
 
 		/* Keep the last stack state in the block by tying it to Keep node */
 		nodes[0] = curr_sp;
-		be_new_Keep(env->isa->sp->reg_class, get_irn_irg(bl), bl, 1, nodes);
+		keep     = be_new_Keep(env->isa->sp->reg_class, get_irn_irg(bl), bl, 1, nodes);
+		pmap_insert(env->keep_map, bl, keep);
 	}
 
 	set_irn_link(bl, curr_sp);
@@ -1133,7 +1138,9 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 		be_set_constr_single_reg(irn, pos, reg);
 		be_node_set_reg_class(irn, pos, reg->reg_class);
 		arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
-		if(arch_register_type_is(reg, ignore))
+
+		/* if the proj projects a ignore register or a node which is set to ignore, propagate this property. */
+		if(arch_register_type_is(reg, ignore) || arch_irn_is(env->birg->main_env->arch_env, in[n], ignore))
 			be_node_set_flags(irn, pos, arch_irn_flags_ignore);
 
 		pmap_insert(regs, (void *) reg, proj);
@@ -1287,9 +1294,7 @@ static void modify_irg(be_abi_irg_t *env)
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
-
-	if (is_Proj(frame_pointer) && get_Proj_pred(frame_pointer) == barrier)
-		be_node_set_flags(barrier, BE_OUT_POS(get_Proj_proj(frame_pointer)), arch_irn_flags_ignore);
+	pset_insert_ptr(env->ignore_regs, fp_reg);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
 	for(i = 0; i < max_arg; ++i) {
@@ -1339,13 +1344,23 @@ static void modify_irg(be_abi_irg_t *env)
 			int n_res      = get_Return_n_ress(irn);
 			pmap *reg_map  = pmap_create();
 			ir_node *mem   = get_Return_mem(irn);
+			ir_node *keep  = pmap_get(env->keep_map, bl);
 			int in_max;
 			ir_node *ret;
 			int i, n;
 			ir_node **in;
+			ir_node *stack;
 			const arch_register_t **regs;
 
-			pmap_insert(reg_map, (void *) sp, pmap_get(env->regs, (void *) sp));
+			/*
+				get the valid stack node in this block.
+				If we had a call in that block there is a Keep constructed by process_calls()
+				which points to the last stack modification in that block. we'll use
+				it then. Else we use the stack from the start block and let
+				the ssa construction fix the usage.
+			*/
+			stack = keep ? get_irn_n(keep, 0) : be_abi_reg_map_get(env->regs, sp);
+			be_abi_reg_map_set(reg_map, sp, stack);
 
 			/* Insert results for Return into the register map. */
 			for(i = 0; i < n_res; ++i) {
@@ -1440,11 +1455,15 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	pmap_entry *ent;
 	ir_node *dummy;
 
+	obstack_init(&env->obst);
+
 	env->isa           = birg->main_env->arch_env->isa;
 	env->method_type   = get_entity_type(get_irg_entity(irg));
 	env->call          = be_abi_call_new();
 	arch_isa_get_call_abi(env->isa, env->method_type, env->call);
 
+	env->ignore_regs      = pset_new_ptr_default();
+	env->keep_map         = pmap_create();
 	env->dce_survivor     = new_survive_dce();
 	env->birg             = birg;
 	env->stack_phis       = pset_new_ptr(16);
@@ -1452,8 +1471,6 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.abi");
 
 	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
-
-	obstack_init(&env->obst);
 
 	memcpy(&env->irn_handler, &abi_irn_handler, sizeof(abi_irn_handler));
 	env->irn_ops.impl = &abi_irn_ops;
@@ -1463,6 +1480,9 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	/* Process the IRG */
 	modify_irg(env);
+
+	/* We don't need the keep map anymore. */
+	pmap_destroy(env->keep_map);
 
 	/* reroute the stack origin of the calls to the true stack origin. */
 	edges_reroute(dummy, env->init_sp, irg);
@@ -1484,10 +1504,20 @@ void be_abi_free(be_abi_irg_t *env)
 {
 	free_survive_dce(env->dce_survivor);
 	del_pset(env->stack_phis);
+	del_pset(env->ignore_regs);
 	pmap_destroy(env->regs);
 	obstack_free(&env->obst, NULL);
 	arch_env_pop_irn_handler(env->birg->main_env->arch_env);
 	free(env);
+}
+
+void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, bitset_t *bs)
+{
+	arch_register_t *reg;
+
+	for(reg = pset_first(abi->ignore_regs); reg; reg = pset_next(abi->ignore_regs))
+		if(reg->reg_class == cls)
+			bitset_set(bs, reg->index);
 }
 
 
