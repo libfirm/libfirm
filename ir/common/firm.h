@@ -221,7 +221,7 @@ struct _firm_parameter_t {
 
 typedef struct _firm_parameter_t firm_parameter_t;
 
-#define libFirm_VERSION_MAJOR 0
+#define libFirm_VERSION_MAJOR 1
 #define libFirm_VERSION_MINOR 4
 
 /**
