@@ -30,12 +30,12 @@ void init_cons(uninitialized_local_variable_func_t *func);
 
 static INLINE ir_node *
 _new_d_Bad(void) {
-  return current_ir_graph->bad;
+  return current_ir_graph->anchors[anchor_bad];
 }
 
 static INLINE ir_node *
 _new_d_NoMem(void) {
-  return current_ir_graph->no_mem;
+  return current_ir_graph->anchors[anchor_no_mem];
 }
 
 

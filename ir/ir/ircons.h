@@ -1092,6 +1092,7 @@
 
 #include "firm_common.h"
 #include "irnode.h"
+#include "irgraph.h"
 #include "dbginfo.h"
 
 /*-------------------------------------------------------------------------*/
@@ -4177,7 +4178,7 @@ ir_type *get_cur_frame_type(void);
 /* --- initialize and finalize ir construction --- */
 
 /** Puts the graph into state "phase_high" */
-void irg_finalize_cons (ir_graph *irg);
+#define irg_finalize_cons(irg) set_irg_phase_state(irg, phase_high)
 
 /** Puts the program and all graphs into state phase_high.
  *
