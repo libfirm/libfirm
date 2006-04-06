@@ -61,9 +61,7 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg)
   else if (op == op_Proj) {
     old_irg = get_irn_irg(n);
 
-    if (n == get_irg_cstore(old_irg))
-      nn = get_irg_cstore(irg);
-    else if (n == get_irg_frame(old_irg))
+    if (n == get_irg_frame(old_irg))
       nn = get_irg_frame(irg);
     else if (n == get_irg_globals(old_irg))
       nn = get_irg_globals(irg);
