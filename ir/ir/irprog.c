@@ -18,13 +18,13 @@
 # include <string.h>
 #endif
 
-# include "irprog_t.h"
-# include "irgraph_t.h"
-# include "pseudo_irg.h"
-# include "array.h"
-# include "obst.h"
-# include "typegmod.h"
-# include "irop_t.h"
+#include "irprog_t.h"
+#include "irgraph_t.h"
+#include "pseudo_irg.h"
+#include "array.h"
+#include "obst.h"
+#include "typegmod.h"
+#include "irop_t.h"
 
 #define GLOBAL_TYPE_NAME "GlobalType"
 #define INITAL_PROG_NAME "no_name_set"
@@ -69,6 +69,7 @@ static ir_prog *complete_ir_prog(ir_prog *irp) {
 
   irp->const_code_irg   = new_const_code_irg();
 
+  irp->phase_state      = phase_building;
   irp->outs_state       = outs_none;
   irp->ip_outedges      = NULL;
   irp->trouts_state     = outs_none;
