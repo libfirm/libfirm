@@ -438,6 +438,12 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
     for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
         ir_node *op = get_irn_n(irn, i);
 
+        /* if irn is an End we have keep-alives and op might be a block, skip that */
+        if (is_Block(op)) {
+          assert(get_irn_op(irn) == op_End);
+          continue;
+        }
+
         /* If the operand is local to the scheduled block and not yet
          * scheduled, this nodes cannot be made ready, so exit. */
         if(!nodeset_find(env->already_scheduled, op) && get_nodes_block(op) == env->block)
