@@ -64,7 +64,6 @@ typedef struct _ia32_code_gen_t {
 	ir_graph                       *irg;           /**< current irg */
 	const arch_env_t               *arch_env;      /**< the arch env */
 	set                            *reg_set;       /**< set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
-	int                             emit_decls;    /**< flag indicating if decls were already emitted */
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
 	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
@@ -82,11 +81,7 @@ typedef struct _ia32_code_gen_t {
  * IA32 ISA object
  */
 struct _ia32_isa_t {
-	const arch_isa_if_t   *impl;
-	const arch_register_t *sp;            /**< The stack pointer register. */
-	const arch_register_t *bp;            /**< The base pointer register. */
-	const int              stack_dir;     /**< -1 for decreasing, 1 for increasing. */
-	int                    num_codegens;  /**< The number of code generator objects created so far */
+  arch_isa_t            arch_isa;       /**< must be derived from arch_isa_t */
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
 	pmap                  *types;         /**< A map of modes to primitive types */

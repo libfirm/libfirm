@@ -315,23 +315,27 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		ir_node *bl          = get_irg_start_block(env->irg);
 		ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
 		ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
-		ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
-		ir_node *store_bp;
+		ir_node *push;
 
 		/* push ebp */
-		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_expand);
-		store_bp = new_rd_ia32_Store(NULL, env->irg, bl, curr_sp, curr_no_reg, curr_bp, *mem, mode_T);
-		set_ia32_am_support(store_bp, ia32_am_Dest);
-		set_ia32_am_flavour(store_bp, ia32_B);
-		set_ia32_op_type(store_bp, ia32_AddrModeD);
-		set_ia32_ls_mode(store_bp, env->isa->bp->reg_class->mode);
-		*mem     = new_r_Proj(env->irg, bl, store_bp, mode_M, 0);
+		push    = new_rd_ia32_Push(NULL, env->irg, bl, curr_sp, curr_bp, *mem, mode_T);
+		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), 0);
+		*mem    = new_r_Proj(env->irg, bl, push, mode_M, 1);
+
+		/* the push must have SP out register */
+		 arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
 
 		/* move esp to ebp */
 		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
 		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
 		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
 		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
+
+		/* beware: the copy must be done before any other sp use */
+		curr_sp = be_new_CopyKeep_single(env->isa->sp->reg_class, env->irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
+		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), env->isa->sp);
+		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+		be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 		be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
 		be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
@@ -347,15 +351,13 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	ia32_abi_env_t *env  = self;
 	ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
 	ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
-	ir_node *curr_no_reg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
 	}
-
 	else {
-		ir_node *load_bp;
+		ir_node *pop;
 		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
 		int reg_size     = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 
@@ -363,16 +365,13 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
 
 		/* pop ebp */
-		load_bp = new_rd_ia32_Load(NULL, env->irg, bl, curr_sp, curr_no_reg, *mem, mode_T);
-		set_ia32_am_support(load_bp, ia32_am_Source);
-		set_ia32_am_flavour(load_bp, ia32_B);
-		set_ia32_op_type(load_bp, ia32_AddrModeS);
-		set_ia32_ls_mode(load_bp, mode_bp);
-		curr_bp = new_r_Proj(env->irg, bl, load_bp, mode_bp, 0);
-		*mem    = new_r_Proj(env->irg, bl, load_bp, mode_M, 1);
+		pop = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem, mode_T);
+		set_ia32_flags(pop, arch_irn_flags_ignore);
+		curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, 0);
+		curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), 1);
+		*mem    = new_r_Proj(current_ir_graph, bl, pop, mode_M, 2);
+		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
 		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
-
-		curr_sp  = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, reg_size, be_stack_dir_shrink);
 	}
 
 	be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
@@ -864,13 +863,6 @@ static void *ia32_cg_init(const be_irg_t *birg) {
 	}
 #endif /* NDEBUG */
 
-	isa->num_codegens++;
-
-	if (isa->num_codegens > 1)
-		cg->emit_decls = 0;
-	else
-		cg->emit_decls = 1;
-
 	cur_reg_set = cg->reg_set;
 
 	ia32_irn_ops.cg = cg;
@@ -896,11 +888,12 @@ static void *ia32_cg_init(const be_irg_t *birg) {
  * arguments.
  */
 static ia32_isa_t ia32_isa_template = {
-	&ia32_isa_if,            /* isa interface implementation */
-	&ia32_gp_regs[REG_ESP],  /* stack pointer register */
-	&ia32_gp_regs[REG_EBP],  /* base pointer register */
-	-1,                      /* stack direction */
-	0,                       /* number of code generator objects so far */
+  {
+	  &ia32_isa_if,            /* isa interface implementation */
+	  &ia32_gp_regs[REG_ESP],  /* stack pointer register */
+	  &ia32_gp_regs[REG_EBP],  /* base pointer register */
+	  -1,                      /* stack direction */
+  },
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
 	NULL,                    /* types */
