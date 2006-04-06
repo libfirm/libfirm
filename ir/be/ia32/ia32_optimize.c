@@ -84,6 +84,7 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	ir_node  *block = env->block;
 
 	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
 			cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
 		else
@@ -466,7 +467,7 @@ static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
 	if (arch_get_irn_register(cg->arch_env, get_irn_n(load, 1)) !=
 		&ia32_gp_regs[REG_GP_NOREG])
 		return;
-	if (arch_get_irn_register(cg->arch_env, get_irn_n(load, 0)) != cg->isa->sp)
+	if (arch_get_irn_register(cg->arch_env, get_irn_n(load, 0)) != cg->isa->arch_isa.sp)
 		return;
 
 	/* ok, translate into pop */
