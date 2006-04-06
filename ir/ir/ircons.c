@@ -250,7 +250,7 @@ new_bd_Phi (dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode
   /* Memory Phis in endless loops must be kept alive.
      As we can't distinguish these easily we keep all of them alive. */
   if ((res->op == op_Phi) && (mode == mode_M))
-    add_End_keepalive(irg->end, res);
+    add_End_keepalive(get_irg_end(irg), res);
   return res;
 }
 
@@ -260,7 +260,7 @@ new_bd_Const_type (dbg_info *db, ir_node *block, ir_mode *mode, tarval *con, ir_
   ir_node  *res;
   ir_graph *irg = current_ir_graph;
 
-  res = new_ir_node (db, irg, irg->start_block, op_Const, mode, 0, NULL);
+  res = new_ir_node (db, irg, get_irg_start_block(irg), op_Const, mode, 0, NULL);
   res->attr.con.tv = con;
   set_Const_type(res, tp);  /* Call method because of complex assertion. */
   res = optimize_node (res);
@@ -662,7 +662,7 @@ new_bd_Unknown (ir_mode *m)
   ir_node  *res;
   ir_graph *irg = current_ir_graph;
 
-  res = new_ir_node(NULL, irg, irg->start_block, op_Unknown, m, 0, NULL);
+  res = new_ir_node(NULL, irg, get_irg_start_block(irg), op_Unknown, m, 0, NULL);
   res = optimize_node(res);
   return res;
 }
@@ -690,7 +690,7 @@ new_bd_EndReg (dbg_info *db, ir_node *block)
   ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_EndReg, mode_T, -1, NULL);
-  irg->end_reg = res;
+  set_irg_end_reg(irg, res);
   IRN_VRFY_IRG(res, irg);
   return res;
 }
@@ -702,7 +702,7 @@ new_bd_EndExcept (dbg_info *db, ir_node *block)
   ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_EndExcept, mode_T, -1, NULL);
-  irg->end_except = res;
+  set_irg_end_except(irg, res);
   IRN_VRFY_IRG (res, irg);
   return res;
 }
@@ -1240,22 +1240,22 @@ new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block, symconst_symbol va
 ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp)
 {
   symconst_symbol sym = {(ir_type *)symbol};
-  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_addr_ent, tp);
+  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_addr_ent, tp);
 }
 
 ir_node *new_rd_SymConst_addr_name (dbg_info *db, ir_graph *irg, ident *symbol, ir_type *tp) {
   symconst_symbol sym = {(ir_type *)symbol};
-  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_addr_name, tp);
+  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_addr_name, tp);
 }
 
 ir_node *new_rd_SymConst_type_tag (dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp) {
   symconst_symbol sym = {symbol};
-  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_type_tag, tp);
+  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_type_tag, tp);
 }
 
 ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp) {
   symconst_symbol sym = {symbol};
-  return new_rd_SymConst_type(db, irg, irg->start_block, sym, symconst_size, tp);
+  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_size, tp);
 }
 
 ir_node *
@@ -1272,9 +1272,8 @@ new_rd_Sync (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **i
 }
 
 ir_node *
-new_rd_Bad (ir_graph *irg)
-{
-  return irg->bad;
+new_rd_Bad (ir_graph *irg) {
+  return get_irg_bad(irg);
 }
 
 ir_node *
@@ -1323,7 +1322,7 @@ new_rd_EndReg (dbg_info *db, ir_graph *irg, ir_node *block)
   ir_node *res;
 
   res = new_ir_node(db, irg, block, op_EndReg, mode_T, -1, NULL);
-  irg->end_reg = res;
+  set_irg_end_reg(irg, res);
   IRN_VRFY_IRG(res, irg);
   return res;
 }
@@ -1334,7 +1333,7 @@ new_rd_EndExcept (dbg_info *db, ir_graph *irg, ir_node *block)
   ir_node *res;
 
   res = new_ir_node(db, irg, block, op_EndExcept, mode_T, -1, NULL);
-  irg->end_except = res;
+  set_irg_end_except(irg, res);
   IRN_VRFY_IRG (res, irg);
   return res;
 }
@@ -1368,7 +1367,7 @@ new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mod
 
 ir_node *
 new_rd_NoMem (ir_graph *irg) {
-  return irg->no_mem;
+  return get_irg_no_mem(irg);
 }
 
 ir_node *
@@ -2177,7 +2176,7 @@ new_rd_Phi_in (ir_graph *irg, ir_node *block, ir_mode *mode,
     /* Memory Phis in endless loops must be kept alive.
        As we can't distinguish these easily we keep all of them alive. */
     if ((res->op == op_Phi) && (mode == mode_M))
-      add_End_keepalive(irg->end, res);
+      add_End_keepalive(get_irg_end(irg), res);
   }
 
   return res;
@@ -2582,19 +2581,19 @@ new_d_Phi (dbg_info *db, int arity, ir_node **in, ir_mode *mode)
 ir_node *
 new_d_Const (dbg_info *db, ir_mode *mode, tarval *con)
 {
-  return new_bd_Const(db, current_ir_graph->start_block, mode, con);
+  return new_bd_Const(db, get_irg_start_block(current_ir_graph), mode, con);
 }
 
 ir_node *
 new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 {
-  return new_bd_Const_long(db, current_ir_graph->start_block, mode, value);
+  return new_bd_Const_long(db, get_irg_start_block(current_ir_graph), mode, value);
 }
 
 ir_node *
 new_d_Const_type (dbg_info *db, ir_mode *mode, tarval *con, ir_type *tp)
 {
-  return new_bd_Const_type(db, current_ir_graph->start_block, mode, con, tp);
+  return new_bd_Const_type(db, get_irg_start_block(current_ir_graph), mode, con, tp);
 }
 
 
@@ -2833,14 +2832,14 @@ new_d_Sel (dbg_info *db, ir_node *store, ir_node *objptr, int n_index, ir_node *
 ir_node *
 new_d_SymConst_type (dbg_info *db, symconst_symbol value, symconst_kind kind, ir_type *tp)
 {
-  return new_bd_SymConst_type (db, current_ir_graph->start_block,
+  return new_bd_SymConst_type (db, get_irg_start_block(current_ir_graph),
                          value, kind, tp);
 }
 
 ir_node *
 new_d_SymConst (dbg_info *db, symconst_symbol value, symconst_kind kind)
 {
-  return new_bd_SymConst (db, current_ir_graph->start_block,
+  return new_bd_SymConst (db, get_irg_start_block(current_ir_graph),
                          value, kind);
 }
 
@@ -3081,7 +3080,7 @@ set_store (ir_node *store)
 
 void
 keep_alive (ir_node *ka) {
-  add_End_keepalive(current_ir_graph->end, ka);
+  add_End_keepalive(get_irg_end(current_ir_graph), ka);
 }
 
 /* --- Useful access routines --- */
@@ -3107,16 +3106,10 @@ init_cons(uninitialized_local_variable_func_t *func)
   default_initialize_local_variable = func;
 }
 
-/* call for each graph */
-void
-irg_finalize_cons (ir_graph *irg) {
-  irg->phase_state = phase_high;
-}
-
 void
 irp_finalize_cons (void) {
-  int i, n_irgs = get_irp_n_irgs();
-  for (i = 0; i < n_irgs; i++) {
+  int i;
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     irg_finalize_cons(get_irp_irg(i));
   }
   irp->phase_state = phase_high;
