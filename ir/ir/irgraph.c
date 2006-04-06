@@ -445,16 +445,6 @@ void     set_irg_end_except (ir_graph *irg, ir_node *node) {
 }
 
 ir_node *
-(get_irg_cstore)(const ir_graph *irg) {
-  return _get_irg_cstore(irg);
-}
-
-void
-(set_irg_cstore)(ir_graph *irg, ir_node *node) {
-  _set_irg_cstore(irg, node);
-}
-
-ir_node *
 (get_irg_frame)(const ir_graph *irg) {
   return _get_irg_frame(irg);
 }

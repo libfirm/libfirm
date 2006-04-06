@@ -210,12 +210,6 @@ void     set_irg_end_reg (ir_graph *irg, ir_node *node);
 ir_node *get_irg_end_except (const ir_graph *irg);
 void     set_irg_end_except (ir_graph *irg, ir_node *node);
 
-
-/* @@@ oblivious, no more supported. */
-ir_node *get_irg_cstore (const ir_graph *irg);
-void     set_irg_cstore (ir_graph *irg, ir_node *node);
-/* end oblivious */
-
 /** Returns the node that represents the frame pointer. */
 ir_node *get_irg_frame (const ir_graph *irg);
 /** Sets the node that represents the frame pointer. */

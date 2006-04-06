@@ -61,7 +61,6 @@ enum irg_anchors {
   anchor_end,             /**< end node of this ir_graph */
   anchor_end_reg,         /**< end node of this ir_graph */
   anchor_end_except,      /**< end node of this ir_graph */
-  anchor_cstore,          /**< constant store -- no more needed!! */
   anchor_frame,           /**< method's frame */
   anchor_globals,         /**< pointer to the data segment containing all
                                globals as well as global procedures. */
@@ -250,16 +249,6 @@ _get_irg_end_reg(const ir_graph *irg) {
 static INLINE ir_node *
 _get_irg_end_except (const ir_graph *irg) {
   return irg->anchors[anchor_end_except];
-}
-
-static INLINE ir_node *
-_get_irg_cstore(const ir_graph *irg) {
-  return irg->anchors[anchor_cstore];
-}
-
-static INLINE void
-_set_irg_cstore(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_cstore] = node;
 }
 
 static INLINE ir_node *
@@ -542,8 +531,6 @@ _get_irg_estimated_node_cnt(const ir_graph *irg) {
 #define set_irg_end(irg, node)                _set_irg_end(irg, node)
 #define get_irg_end_reg(irg)                  _get_irg_end_reg(irg)
 #define get_irg_end_except(irg)               _get_irg_end_except(irg)
-#define get_irg_cstore(irg)                   _get_irg_cstore(irg)
-#define set_irg_cstore(irg, node)             _set_irg_cstore(irg, node)
 #define get_irg_frame(irg)                    _get_irg_frame(irg)
 #define set_irg_frame(irg, node)              _set_irg_frame(irg, node)
 #define get_irg_globals(irg)                  _get_irg_globals(irg)
