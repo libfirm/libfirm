@@ -94,6 +94,7 @@ alloc		::= node-nr reg-nr .
 #include "besched_t.h"
 #include "beutil.h"
 #include "belive_t.h"
+#include "beinsn_t.h"
 
 #define DBG_LEVEL 2
 
@@ -193,14 +194,17 @@ static int get_loop_weight(ir_node *irn) {
                                                 |_|
  *****************************************************************************/
 
-static void handle_constraints_walker(ir_node *irn, void *env) {
-	be_raext_env_t *raenv = env;
+#if 0
+static void handle_constraints_insn(be_raext_env_t *raenv, be_insn_t *insn)
+{
 	arch_register_req_t req;
 	int pos, max;
 
 	/* handle output constraints
 	 * user -> irn    becomes    user -> cpy -> irn
 	 */
+	if(get_irn_mode(irn) == mode_T) {
+	}
 	arch_get_register_req(raenv->aenv, &req, irn, -1);
 	if (arch_register_req_is(&req, limited)) {
 		ir_node *cpy = be_new_Copy(req.cls, raenv->irg, get_nodes_block(irn), irn);
@@ -230,9 +234,67 @@ static void handle_constraints_walker(ir_node *irn, void *env) {
 		}
 	}
 }
+#endif
+
+static void handle_constraints_insn(be_raext_env_t *env, be_insn_t *insn)
+{
+	ir_node *bl = get_nodes_block(insn->irn);
+	int i;
+
+	for(i = 0; i < insn->use_start; ++i) {
+		be_operand_t *op = &insn->ops[i];
+
+		if(op->has_constraints) {
+			ir_node *cpy = be_new_Copy(op->req.cls, env->irg, bl, op->carrier);
+			sched_add_before(insn->next_insn, cpy);
+			edges_reroute(op->carrier, cpy, env->irg);
+		}
+	}
+
+	for(i = insn->use_start; i < insn->n_ops; ++i) {
+		be_operand_t *op = &insn->ops[i];
+
+		if(op->has_constraints) {
+			ir_node *cpy = be_new_Copy(op->req.cls, env->irg, bl, op->carrier);
+			sched_add_before(insn->irn, cpy);
+			set_irn_n(insn->irn, op->pos, cpy);
+			be_set_constr_limited(cpy, BE_OUT_POS(0), &op->req);
+		}
+	}
+}
+
+static void handle_constraints_block(ir_node *bl, void *data)
+{
+	be_raext_env_t *raenv = data;
+	int active            = bl != get_irg_start_block(raenv->irg);
+
+	ir_node *irn;
+	be_insn_env_t ie;
+	struct obstack obst;
+
+	ie.cls  = raenv->cls;
+	ie.aenv = raenv->aenv;
+	ie.obst = &obst;
+	ie.ignore_colors = NULL;
+	obstack_init(&obst);
+
+	irn = sched_first(bl);
+	while(!sched_is_end(irn)) {
+		be_insn_t *insn = be_scan_insn(&ie, irn);
+
+		if(insn->has_constraints)
+			handle_constraints_insn(raenv, insn);
+
+		if(be_is_Barrier(irn))
+			active = !active;
+
+		irn = insn->next_insn;
+		obstack_free(&obst, insn);
+	}
+}
 
 static void handle_constraints(be_raext_env_t *raenv) {
-	irg_walk_graph(raenv->irg, NULL, handle_constraints_walker, raenv);
+	irg_block_walk_graph(raenv->irg, NULL, handle_constraints_block, raenv);
 }
 
 

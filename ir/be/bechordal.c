@@ -46,6 +46,7 @@
 #include "bearch.h"
 #include "beirgmod.h"
 #include "beifg.h"
+#include "beinsn_t.h"
 
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
@@ -181,120 +182,7 @@ static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *
 	return bitset_next_clear(tmp, 0);
 }
 
-typedef struct _operand_t operand_t;
-
-struct _operand_t {
-	ir_node *irn;
-	ir_node *carrier;
-	operand_t *partner;
-	bitset_t *regs;
-	int pos;
-	arch_register_req_t req;
-	unsigned has_constraints : 1;
-};
-
-typedef struct {
-	operand_t *ops;
-	int n_ops;
-	int use_start;
-	ir_node *next_insn;
-	ir_node *irn;
-	unsigned in_constraints  : 1;
-	unsigned out_constraints : 1;
-	unsigned has_constraints : 1;
-	unsigned pre_colored     : 1;
-} insn_t;
-
-#define insn_n_defs(insn) ((insn)->use_start)
-#define insn_n_uses(insn) ((insn)->n_ops - (insn)->use_start)
-
-static insn_t *scan_insn(be_chordal_alloc_env_t *alloc_env, ir_node *irn, struct obstack *obst)
-{
-	const be_chordal_env_t *env = alloc_env->chordal_env;
-	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
-	operand_t o;
-	insn_t *insn;
-	int i, n;
-	int pre_colored = 0;
-
-	insn = obstack_alloc(obst, sizeof(insn[0]));
-	memset(insn, 0, sizeof(insn[0]));
-
-	insn->irn       = irn;
-	insn->next_insn = sched_next(irn);
-	if(get_irn_mode(irn) == mode_T) {
-		ir_node *p;
-
-		for(p = sched_next(irn); is_Proj(p); p = sched_next(p)) {
-			if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, p)) {
-				arch_get_register_req(arch_env, &o.req, p, -1);
-				o.carrier         = p;
-				o.irn             = irn;
-				o.pos             = -(get_Proj_proj(p) + 1);
-				o.partner         = NULL;
-				o.has_constraints = arch_register_req_is(&o.req, limited);
-				obstack_grow(obst, &o, sizeof(o));
-				insn->n_ops++;
-				insn->out_constraints |= o.has_constraints;
-				pre_colored += arch_get_irn_register(arch_env, p) != NULL;
-			}
-		}
-
-		insn->next_insn = p;
-	}
-
-	else if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
-		arch_get_register_req(arch_env, &o.req, irn, -1);
-		o.carrier = irn;
-		o.irn     = irn;
-		o.pos     = -1;
-		o.partner = NULL;
-		o.has_constraints = arch_register_req_is(&o.req, limited);
-		obstack_grow(obst, &o, sizeof(o));
-		insn->n_ops++;
-		insn->out_constraints |= o.has_constraints;
-		pre_colored += arch_get_irn_register(arch_env, irn) != NULL;
-	}
-
-	insn->pre_colored = pre_colored == insn->n_ops && insn->n_ops > 0;
-	insn->use_start   = insn->n_ops;
-
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-
-		if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
-			arch_get_register_req(arch_env, &o.req, irn, i);
-			o.carrier = op;
-			o.irn     = irn;
-			o.pos     = i;
-			o.partner = NULL;
-			o.has_constraints = arch_register_req_is(&o.req, limited);
-			obstack_grow(obst, &o, sizeof(o));
-			insn->n_ops++;
-			insn->in_constraints |= o.has_constraints;
-		}
-	}
-
-	insn->has_constraints = insn->in_constraints | insn->out_constraints;
-	insn->ops = obstack_finish(obst);
-
-	/* Compute the admissible registers bitsets. */
-	for(i = 0; i < insn->n_ops; ++i) {
-		operand_t *op = &insn->ops[i];
-
-		assert(op->req.cls == env->cls);
-		op->regs   = bitset_obstack_alloc(obst, env->cls->n_regs);
-
-		if(arch_register_req_is(&op->req, limited))
-			op->req.limited(op->req.limited_env, op->regs);
-		else
-			arch_put_non_ignore_regs(env->birg->main_env->arch_env, env->cls, op->regs);
-	}
-
-	return insn;
-}
-
-static bitset_t *get_decisive_partner_regs(bitset_t *bs, const operand_t *o1, const operand_t *o2)
+static bitset_t *get_decisive_partner_regs(bitset_t *bs, const be_operand_t *o1, const be_operand_t *o2)
 {
 	bitset_t *res = bs;
 
@@ -320,12 +208,23 @@ static bitset_t *get_decisive_partner_regs(bitset_t *bs, const operand_t *o1, co
 	return res;
 }
 
-static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, insn_t *insn)
+static be_insn_t *chordal_scan_insn(be_chordal_alloc_env_t *env, ir_node *irn)
+{
+	be_insn_env_t ie;
+
+	ie.ignore_colors = env->chordal_env->ignore_colors;
+	ie.aenv          = env->chordal_env->birg->main_env->arch_env;
+	ie.obst          = &env->chordal_env->obst;
+	ie.cls           = env->chordal_env->cls;
+	return be_scan_insn(&ie, irn);
+}
+
+static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t *insn)
 {
 	const be_chordal_env_t *env = alloc_env->chordal_env;
 
-	int n_uses         = insn_n_uses(insn);
-	int n_defs         = insn_n_defs(insn);
+	int n_uses         = be_insn_n_uses(insn);
+	int n_defs         = be_insn_n_defs(insn);
 	bitset_t *bs       = bitset_alloca(env->cls->n_regs);
 	bipartite_t *bp    = bipartite_new(n_defs, n_uses);
 	int *pairing       = alloca(MAX(n_defs, n_uses) * sizeof(pairing[0]));
@@ -337,11 +236,11 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, insn_t *in
 		same register as the out operand.
 	*/
 	for(j = 0; j < insn->use_start; ++j) {
-		operand_t *out_op = &insn->ops[j];
+		be_operand_t *out_op = &insn->ops[j];
 
 		/* Try to find an in operand which has ... */
 		for(i = insn->use_start; i < insn->n_ops; ++i) {
-			const operand_t *op = &insn->ops[i];
+			const be_operand_t *op = &insn->ops[i];
 
 			/*
 			The in operand can only be paired with a def, if the node defining the
@@ -375,11 +274,11 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, insn_t *in
 }
 
 
-static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_t **the_insn)
+static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_insn_t **the_insn)
 {
 	be_chordal_env_t *env       = alloc_env->chordal_env;
 	const arch_env_t *aenv      = env->birg->main_env->arch_env;
-	insn_t *insn                = *the_insn;
+	be_insn_t *insn             = *the_insn;
 	ir_node *bl                 = get_nodes_block(insn->irn);
 	ir_node *copy               = NULL;
 	ir_node *perm               = NULL;
@@ -398,7 +297,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 		be copied.
 	*/
 	for(i = 0; i < insn->use_start; ++i) {
-		operand_t *op = &insn->ops[i];
+		be_operand_t *op = &insn->ops[i];
 		if(op->has_constraints)
 			bitset_or(out_constr, op->regs);
 	}
@@ -408,7 +307,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 		constraints which are also output constraints.
 	*/
 	for(i = insn->use_start; i < insn->n_ops; ++i) {
-		operand_t *op = &insn->ops[i];
+		be_operand_t *op = &insn->ops[i];
 		if(op->has_constraints && (values_interfere(op->carrier, insn->irn) || arch_irn_is(aenv, op->carrier, ignore))) {
 			bitset_copy(bs, op->regs);
 			bitset_and(bs, out_constr);
@@ -449,14 +348,14 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, insn_
 		*/
 		be_liveness(env->irg);
 		obstack_free(&env->obst, insn);
-		*the_insn = insn = scan_insn(alloc_env, insn->irn, &env->obst);
+		*the_insn = insn = chordal_scan_insn(alloc_env, insn->irn);
 
 		/*
 			Copy the input constraints of the insn to the Perm as output
 			constraints. Succeeding phases (coalescing will need that).
 		*/
 		for(i = insn->use_start; i < insn->n_ops; ++i) {
-			operand_t *op = &insn->ops[i];
+			be_operand_t *op = &insn->ops[i];
 			ir_node *proj = op->carrier;
 			/*
 				Note that the predecessor must not be a Proj of the Perm,
@@ -475,7 +374,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 {
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(&env->obst);
-	insn_t *insn           = scan_insn(alloc_env, irn, &env->obst);
+	be_insn_t *insn        = chordal_scan_insn(alloc_env, irn);
 	ir_node *res           = insn->next_insn;
 	int be_silent          = *silent;
 
@@ -532,7 +431,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 			to a bipartite graph (left: nodes with partners, right: admissible colors).
 		*/
 		for(i = 0, n_alloc = 0; i < insn->n_ops; ++i) {
-			operand_t *op = &insn->ops[i];
+			be_operand_t *op = &insn->ops[i];
 
 			/*
 				If the operand has no partner or the partner has not been marked
