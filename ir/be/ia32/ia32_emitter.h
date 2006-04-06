@@ -30,4 +30,29 @@ const char *get_ia32_in_reg_name(ir_node *irn, int pos);
 
 void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg);
 
+/**
+ * Sections.
+ */
+typedef enum section_t {
+	NO_SECTION     = -1,  /**< no section selected yet. */
+	SECTION_TEXT   = 0,   /**< text section */
+	SECTION_DATA   = 1,   /**< data section */
+	SECTION_RODATA = 2,   /**< rodata section */
+	SECTION_COMMON = 3,   /**< common section */
+	SECTION_MAX    = 4
+} section_t;
+
+/**
+ * Switch to a new section.
+ */
+void ia32_switch_section(FILE *f, section_t sec);
+
+typedef enum asm_flavour_t {
+	ASM_LINUX_GAS = 0,  /**< Linux gas */
+	ASM_MINGW_GAS = 1,  /**< MinGW gas */
+	ASM_MAX       = 2
+} asm_flavour_t;
+
+extern asm_flavour_t asm_flavour;
+
 #endif /* _IA32_EMITTER_H_ */

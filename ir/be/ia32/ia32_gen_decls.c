@@ -16,6 +16,7 @@
 #include "entity.h"
 #include "irprog.h"
 
+#include "ia32_emitter.h"
 #include "ia32_gen_decls.h"
 
 /************************************************************************/
@@ -51,6 +52,17 @@ static unsigned highest_bit(unsigned v)
 		res += 1;
 
 	return res;
+}
+
+static void ia32_dump_comm(struct obstack *obst, const char *name, int size, int align) {
+	switch (asm_flavour) {
+	case ASM_LINUX_GAS:
+		obstack_printf(obst, "\t.comm\t%s,%d,%d\n", name, size, align);
+		break;
+	case ASM_MINGW_GAS:
+		obstack_printf(obst, "\t.comm\t%s,%d\n", name, size);
+		break;
+	}
 }
 
 /*
@@ -309,8 +321,12 @@ struct arr_info {
 };
 
 static void dump_object_size(struct obstack *obst, const char *name, int size) {
-	obstack_printf(obst, "\t.type\t%s,@object\n", name);
-	obstack_printf(obst, "\t.size\t%s,%d\n", name, size);
+	switch (asm_flavour) {
+	case ASM_LINUX_GAS:
+		obstack_printf(obst, "\t.type\t%s,@object\n", name);
+		obstack_printf(obst, "\t.size\t%s,%d\n", name, size);
+		break;
+	}
 }
 
 /*
@@ -499,7 +515,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 			if (align < 1)
 				align = 1;
 
-			obstack_printf(comm_obstack, "\t.comm\t%s,%d,%d\n", ld_name, (get_type_size_bits(ty) + 7) >> 3, align);
+			ia32_dump_comm(comm_obstack, ld_name, (get_type_size_bits(ty) + 7) >> 3, align);
 		}
 	}
 }
@@ -532,7 +548,7 @@ void ia32_gen_decls(FILE *out) {
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
 	if (size > 0) {
-		fprintf(out, "\t.data\n");
+		ia32_switch_section(out, SECTION_DATA);
 		fwrite(cp, 1, size, out);
 	}
 
@@ -546,7 +562,7 @@ void ia32_gen_decls(FILE *out) {
 	size = obstack_object_size(&comm);
 	cp   = obstack_finish(&comm);
 	if (size > 0) {
-		fprintf(out, "\t.text\n");
+		ia32_switch_section(out, SECTION_COMMON);
 		fwrite(cp, 1, size, out);
 	}
 

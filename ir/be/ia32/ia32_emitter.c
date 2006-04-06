@@ -38,6 +38,61 @@
 /* global arch_env for lc_printf functions */
 static const arch_env_t *arch_env = NULL;
 
+/** by default, we generate assembler code for the Linux gas */
+asm_flavour_t asm_flavour = ASM_LINUX_GAS;
+
+/**
+ * Switch to a new section
+ */
+void ia32_switch_section(FILE *F, section_t sec) {
+	static section_t curr_sec = NO_SECTION;
+  static const char *text[ASM_MAX][SECTION_MAX] = {
+		{
+			".section\t.text", ".section\t.data", ".section\t.rodata", ".section\t.text"
+		},
+		{
+			".section\t.text", ".section\t.data", ".section .rdata,\"dr\"", ".section\t.text"
+		}
+	};
+
+	if (curr_sec == sec)
+		return;
+
+	curr_sec = sec;
+	switch (sec) {
+
+	case NO_SECTION:
+		break;
+
+	case SECTION_TEXT:
+	case SECTION_DATA:
+	case SECTION_RODATA:
+	case SECTION_COMMON:
+		fprintf(F, "\t%s\n", text[asm_flavour][sec]);
+	}
+}
+
+static void ia32_dump_function_object(FILE *F, const char *name)
+{
+	switch (asm_flavour) {
+	case ASM_LINUX_GAS:
+		fprintf(F, "\t.type\t%s, @function\n", name);
+		break;
+	case ASM_MINGW_GAS:
+		fprintf(F, "\t.def\t%s;\t.scl\t2;\t.type\t32;\t.endef\n", name);
+		break;
+	}
+}
+
+static void ia32_dump_function_size(FILE *F, const char *name)
+{
+	switch (asm_flavour) {
+	case ASM_LINUX_GAS:
+		fprintf(F, "\t.size\t%s, .-%s\n", name, name);
+		break;
+	}
+}
+
 /*************************************************************
  *             _       _    __   _          _
  *            (_)     | |  / _| | |        | |
@@ -941,7 +996,7 @@ static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* get jump table entry as target */");
 		IA32_DO_EMIT(irn);
 
-		fprintf(F, "\t.section\t.rodata\n");
+		ia32_switch_section(F, SECTION_RODATA);
 		fprintf(F, "\t.align 4\n");
 
 		fprintf(F, "%s:\n", tbl.label);
@@ -961,8 +1016,7 @@ static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* case %d */", last_value);
 			IA32_DO_EMIT(irn);
 		}
-
-		fprintf(F, "\n\t.text\n\n");
+		ia32_switch_section(F, SECTION_TEXT);
 	}
 	else {
 		/* one jump is enough */
@@ -1441,13 +1495,14 @@ static void ia32_gen_block(ir_node *block, void *env) {
  */
 static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
 	entity     *irg_ent  = get_irg_entity(irg);
-	const char *irg_name = get_entity_name(irg_ent);
+	const char *irg_name = get_entity_ld_name(irg_ent);
 
-	fprintf(F, "\t.section\t.text\n");
+	fprintf(F, "\n");
+	ia32_switch_section(F, SECTION_TEXT);
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, ".globl %s\n", irg_name);
 	}
-	fprintf(F, "\t.type\t%s, @function\n", irg_name);
+	ia32_dump_function_object(F, irg_name);
 	fprintf(F, "%s:\n", irg_name);
 }
 
@@ -1455,10 +1510,11 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
  * Emits code for function end
  */
 static void ia32_emit_func_epilog(FILE *F, ir_graph *irg) {
-	const char *irg_name = get_entity_name(get_irg_entity(irg));
+	const char *irg_name = get_entity_ld_name(get_irg_entity(irg));
 
 	fprintf(F, "\tret\n");
-	fprintf(F, "\t.size\t%s, .-%s\n\n", irg_name, irg_name);
+	ia32_dump_function_size(F, irg_name);
+	fprintf(F, "\n");
 }
 
 /**
