@@ -270,12 +270,12 @@ long     get_irg_graph_nr(ir_graph *irg);
 
 /** The states of an ir graph.
  *
- * state phase values: phase_building, phase_high, phase_low.
+ * state phase values: phase_building, phase_high, phase_low, phase_backend.
  *
  * The graph is in phase_building during construction of the irgraph.
  * The construction is finished by a call to finalize_cons().
  *
- * Finalize_cons() sets the state to phase_high.  All Firm nodes are
+ * Finalize_cons() sets the state to phase_high.  All stadard Firm nodes are
  * allowed.
  *
  * To get the irgraph into phase_low all Sel nodes must be removed and
@@ -283,18 +283,23 @@ long     get_irg_graph_nr(ir_graph *irg);
  * type tag nodes must be removed (@@@ really?).  Initialization of
  * memory allocated by Alloc must be explicit.  @@@ More conditions?
  *
+ * phase_backend is set if architecture specific machine nodes are inserted
+ * (and probally most standard Firm are removed).
  */
 typedef enum {
   phase_building,
   phase_high,
-  phase_low
+  phase_low,
+	phase_backend
 } irg_phase_state;
 
 /** returns the phase_state of an IR graph. */
 irg_phase_state get_irg_phase_state (const ir_graph *irg);
 
 /** sets the phase state of an IR graph. */
-void set_irg_phase_low(ir_graph *irg);
+void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
+
+#define set_irg_phase_low(irg)	set_irg_phase_state(irg, phase_low)
 
 /** state: op_pin_state_pinned
    The graph is "op_pin_state_pinned" if all nodes are associated with a basic block.

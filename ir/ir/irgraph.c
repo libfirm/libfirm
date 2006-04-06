@@ -130,8 +130,8 @@ ir_graph *
 new_r_ir_graph (entity *ent, int n_loc)
 {
   ir_graph *res;
-  ir_node *first_block;
-  ir_node *projX;
+  ir_node  *first_block;
+  ir_node  *end, *start, *start_block, *initial_mem, *projX;
 
   res = alloc_graph();
   res->kind = k_ir_graph;
@@ -202,30 +202,35 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->frame_type = new_type_frame(mangle(get_entity_ident(ent), frame_type_suffix));
 
   /*-- Nodes needed in every graph --*/
-  res->end_block  = new_immBlock();
-  res->end        = new_End();
-  res->end_reg    = res->end;
-  res->end_except = res->end;
+  set_irg_end_block (res, new_immBlock());
+  end               = new_End();
+  set_irg_end       (res, end);
+  set_irg_end_reg   (res, end);
+  set_irg_end_except(res, end);
 
-  res->start_block = new_immBlock();
-  res->start   = new_Start();
-  res->bad     = new_ir_node(NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  res->no_mem  = new_ir_node(NULL, res, res->start_block, op_NoMem, mode_M, 0, NULL);
+  start_block = new_immBlock();
+  set_irg_start_block(res, start_block);
+  set_irg_bad        (res, new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL));
+  set_irg_no_mem     (res, new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
+  start = new_Start();
+  set_irg_start      (res, start);
 
   /* Proj results of start node */
-  projX            = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
-  res->frame       = new_Proj (res->start, mode_P_data, pn_Start_P_frame_base);
-  res->globals     = new_Proj (res->start, mode_P_data, pn_Start_P_globals);
-  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
-  res->args        = new_Proj (res->start, mode_T, pn_Start_T_args);
+  projX              = new_Proj(start, mode_X, pn_Start_X_initial_exec);
+  set_irg_frame      (res, new_Proj(start, mode_P_data, pn_Start_P_frame_base));
+  set_irg_globals    (res, new_Proj(start, mode_P_data, pn_Start_P_globals));
+  set_irg_args       (res, new_Proj(start, mode_T, pn_Start_T_args));
+  initial_mem        = new_Proj(start, mode_M, pn_Start_M);
+  set_irg_initial_mem(res, initial_mem);
+
+  add_immBlock_pred(start_block, projX);
+  set_store(initial_mem);
+
 #ifdef DEBUG_libfirm
   res->graph_nr    = get_irp_new_node_nr();
 #endif
   res->proj_args   = NULL;
 
-  set_store(res->initial_mem);
-
-  add_immBlock_pred(res->start_block, projX);
   /*
    * The code generation needs it. leave it in now.
    * Use of this edge is matter of discussion, unresolved. Also possible:
@@ -256,7 +261,7 @@ new_ir_graph (entity *ent, int n_loc)
    Must look like a correct irg, spare everything else. */
 ir_graph *new_const_code_irg(void) {
   ir_graph *res;
-  ir_node *projX;
+  ir_node  *end, *start_block, *start, *projX;
 
   res = alloc_graph();
 
@@ -264,9 +269,9 @@ ir_graph *new_const_code_irg(void) {
   hook_new_graph(res, NULL);
 
   current_ir_graph = res;
-  res->n_loc = 1;       /* Only the memory. */
-  res->visited = 0;     /* visited flag, for the ir walker */
-  res->block_visited=0; /* visited flag, for the 'block'-walker */
+  res->n_loc = 1;         /* Only the memory. */
+  res->visited = 0;       /* visited flag, for the ir walker */
+  res->block_visited = 0; /* visited flag, for the 'block'-walker */
 #if USE_EXPLICIT_PHI_IN_STACK
   res->Phi_in_stack = NULL;
 #endif
@@ -286,33 +291,37 @@ ir_graph *new_const_code_irg(void) {
   res->frame_type  = NULL;
 
   /* -- The end block -- */
-  res->end_block  = new_immBlock ();
-  res->end        = new_End ();
-  res->end_reg    = res->end;
-  res->end_except = res->end;
+  set_irg_end_block (res, new_immBlock());
+  end = new_End();
+  set_irg_end       (res, end);
+  set_irg_end_reg   (res, end);
+  set_irg_end_except(res, end);
   mature_immBlock(get_cur_block());  /* mature the end block */
 
   /* -- The start block -- */
-  res->start_block = new_immBlock ();
-  res->bad     = new_ir_node (NULL, res, res->start_block, op_Bad, mode_T, 0, NULL);
-  res->no_mem  = new_ir_node (NULL, res, res->start_block, op_NoMem, mode_M, 0, NULL);
-  res->start   = new_Start ();
-  /* Proj results of start node */
-  res->initial_mem = new_Proj (res->start, mode_M, pn_Start_M);
-  projX            = new_Proj (res->start, mode_X, pn_Start_X_initial_exec);
-  add_immBlock_pred (res->start_block, projX);
-  mature_immBlock   (res->start_block);  /* mature the start block */
+  start_block        = new_immBlock();
+  set_irg_start_block(res, start_block);
+  set_irg_bad        (res, new_ir_node (NULL, res, start_block, op_Bad, mode_T, 0, NULL));
+  set_irg_no_mem     (res, new_ir_node (NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
+  start              = new_Start();
+  set_irg_start      (res, start);
 
-  add_immBlock_pred (new_immBlock (), projX);
-  mature_immBlock   (get_cur_block());   /* mature the 'body' block for expressions */
+  /* Proj results of start node */
+  set_irg_initial_mem(res, new_Proj(start, mode_M, pn_Start_M));
+  projX = new_Proj(start, mode_X, pn_Start_X_initial_exec);
+  add_immBlock_pred(start_block, projX);
+  mature_immBlock  (start_block);  /* mature the start block */
+
+  add_immBlock_pred(new_immBlock(), projX);
+  mature_immBlock  (get_cur_block());   /* mature the 'body' block for expressions */
 
   /* Set the visited flag high enough that the blocks will never be visited. */
   set_irn_visited(get_cur_block(), -1);
   set_Block_block_visited(get_cur_block(), -1);
-  set_Block_block_visited(res->start_block, -1);
-  set_irn_visited(res->start_block, -1);
-  set_irn_visited(res->bad, -1);
-  set_irn_visited(res->no_mem, -1);
+  set_Block_block_visited(start_block, -1);
+  set_irn_visited(start_block, -1);
+  set_irn_visited(get_irg_bad(res), -1);
+  set_irn_visited(get_irg_no_mem(res), -1);
 
   res->phase_state = phase_high;
 
@@ -343,7 +352,7 @@ void free_ir_graph (ir_graph *irg) {
     set_entity_peculiarity (irg->ent, pec);
   }
 
-  free_End(irg->end);
+  free_End(get_irg_end(irg));
   obstack_free(irg->obst,NULL);
   free(irg->obst);
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -422,7 +431,7 @@ ir_node *
 
 void     set_irg_end_reg (ir_graph *irg, ir_node *node) {
   assert(get_irn_op(node) == op_EndReg || get_irn_op(node) == op_End);
-  irg->end_reg = node;
+  irg->anchors[anchor_end_reg] = node;
 }
 
 ir_node *
@@ -432,7 +441,7 @@ ir_node *
 
 void     set_irg_end_except (ir_graph *irg, ir_node *node) {
   assert(get_irn_op(node) == op_EndExcept || get_irn_op(node) == op_End);
-  irg->end_except = node;
+  irg->anchors[anchor_end_except] = node;
 }
 
 ir_node *
@@ -598,8 +607,8 @@ irg_phase_state
 }
 
 void
-(set_irg_phase_low)(ir_graph *irg) {
-  _set_irg_phase_low(irg);
+(set_irg_phase_state)(ir_graph *irg, irg_phase_state state) {
+  _set_irg_phase_state(irg, state);
 }
 
 op_pin_state
