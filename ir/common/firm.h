@@ -56,6 +56,7 @@ extern "C" {
 /* The representations */
 #include "firm_common.h"   /* common type tags. */
 #include "irprog.h"        /* control flow and data of a program */
+#include "irgraph.h"       /* graphs */
 #include "type.h"          /* type representation */
 #include "entity.h"        /* entity representation */
 #include "tv.h"            /* target values */
