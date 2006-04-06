@@ -1103,6 +1103,9 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 	return res;
 }
 
+/**
+ * Creates a barrier.
+ */
 static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
 {
 	ir_graph *irg = env->birg->irg;
@@ -1154,6 +1157,100 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 	return irn;
 }
 
+static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, ir_node *mem, int n_res) {
+	be_abi_call_t *call = env->call;
+	const arch_isa_t *isa = env->birg->main_env->arch_env->isa;
+
+	pmap *reg_map  = pmap_create();
+	ir_node *keep  = pmap_get(env->keep_map, bl);
+	int in_max;
+	ir_node *ret;
+	int i, n;
+	ir_node **in;
+	ir_node *stack;
+	const arch_register_t **regs;
+	pmap_entry *ent ;
+
+	/*
+		get the valid stack node in this block.
+		If we had a call in that block there is a Keep constructed by process_calls()
+		which points to the last stack modification in that block. we'll use
+		it then. Else we use the stack from the start block and let
+		the ssa construction fix the usage.
+	*/
+	stack = keep ? get_irn_n(keep, 0) : be_abi_reg_map_get(env->regs, isa->sp);
+	be_abi_reg_map_set(reg_map, isa->sp, stack);
+
+	/* Insert results for Return into the register map. */
+	for(i = 0; i < n_res; ++i) {
+		ir_node *res           = get_Return_res(irn, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
+		assert(arg->in_reg && "return value must be passed in register");
+		pmap_insert(reg_map, (void *) arg->reg, res);
+	}
+
+	/* Add uses of the callee save registers. */
+	pmap_foreach(env->regs, ent) {
+		const arch_register_t *reg = ent->key;
+		if(arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
+			pmap_insert(reg_map, ent->key, ent->value);
+	}
+
+	/* Make the Epilogue node and call the arch's epilogue maker. */
+	create_barrier(env, bl, &mem, reg_map, 1);
+	call->cb->epilogue(env->cb, bl, &mem, reg_map);
+
+	/*
+		Maximum size of the in array for Return nodes is
+		return args + callee save/ignore registers + memory + stack pointer
+	*/
+	in_max = pmap_count(reg_map) + n_res + 2;
+
+	in   = obstack_alloc(&env->obst, in_max * sizeof(in[0]));
+	regs = obstack_alloc(&env->obst, in_max * sizeof(regs[0]));
+
+	in[0]   = mem;
+	in[1]   = be_abi_reg_map_get(reg_map, isa->sp);
+	regs[0] = NULL;
+	regs[1] = isa->sp;
+	n       = 2;
+
+	/* clear SP entry, since it has already been grown. */
+	pmap_insert(reg_map, (void *) isa->sp, NULL);
+	for(i = 0; i < n_res; ++i) {
+		ir_node *res           = get_Return_res(irn, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
+
+		in[n]     = be_abi_reg_map_get(reg_map, arg->reg);
+		regs[n++] = arg->reg;
+
+		/* Clear the map entry to mark the register as processed. */
+		be_abi_reg_map_set(reg_map, arg->reg, NULL);
+	}
+
+	/* grow the rest of the stuff. */
+	pmap_foreach(reg_map, ent) {
+		if(ent->value) {
+			in[n]     = ent->value;
+			regs[n++] = ent->key;
+		}
+	}
+
+	/* The in array for the new back end return is now ready. */
+	ret = be_new_Return(irn ? get_irn_dbg_info(irn) : NULL, env->birg->irg, bl, n, in);
+
+	/* Set the register classes of the return's parameter accordingly. */
+	for(i = 0; i < n; ++i)
+		if(regs[i])
+			be_node_set_reg_class(ret, i, regs[i]->reg_class);
+
+	/* Free the space of the Epilog's in array and the register <-> proj map. */
+	obstack_free(&env->obst, in);
+	pmap_destroy(reg_map);
+
+	return ret;
+}
+
 /**
  * Modify the irg itself and the frame type.
  */
@@ -1184,7 +1281,6 @@ static void modify_irg(be_abi_irg_t *env)
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 
-	pmap_entry *ent;
 	bitset_t *used_proj_nr;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
@@ -1286,12 +1382,18 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* Generate the Prologue */
 	fp_reg  = call->cb->prologue(env->cb, &mem, env->regs);
+
+	/* do the stack allocation BEFORE the barrier, or spill code
+	   might be added before it */
+	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
+	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
+	be_abi_reg_map_set(env->regs, sp, env->init_sp);
+
 	barrier = create_barrier(env, bl, &mem, env->regs, 0);
 
 	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
-	env->init_sp  = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
-	be_abi_reg_map_set(env->regs, sp, env->init_sp);
+
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
 	pset_insert_ptr(env->ignore_regs, fp_reg);
@@ -1336,101 +1438,20 @@ static void modify_irg(be_abi_irg_t *env)
 	}
 
 	/* All Return nodes hang on the End node, so look for them there. */
-	for(i = 0, n = get_irn_arity(end); i < n; ++i) {
-		ir_node *irn = get_irn_n(end, i);
+	for (i = 0, n = get_Block_n_cfgpreds(end); i < n; ++i) {
+		ir_node *irn = get_Block_cfgpred(end, i);
 
-		if(get_irn_opcode(irn) == iro_Return) {
-			ir_node *bl    = get_nodes_block(irn);
-			int n_res      = get_Return_n_ress(irn);
-			pmap *reg_map  = pmap_create();
-			ir_node *mem   = get_Return_mem(irn);
-			ir_node *keep  = pmap_get(env->keep_map, bl);
-			int in_max;
-			ir_node *ret;
-			int i, n;
-			ir_node **in;
-			ir_node *stack;
-			const arch_register_t **regs;
-
-			/*
-				get the valid stack node in this block.
-				If we had a call in that block there is a Keep constructed by process_calls()
-				which points to the last stack modification in that block. we'll use
-				it then. Else we use the stack from the start block and let
-				the ssa construction fix the usage.
-			*/
-			stack = keep ? get_irn_n(keep, 0) : be_abi_reg_map_get(env->regs, sp);
-			be_abi_reg_map_set(reg_map, sp, stack);
-
-			/* Insert results for Return into the register map. */
-			for(i = 0; i < n_res; ++i) {
-				ir_node *res           = get_Return_res(irn, i);
-				be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
-				assert(arg->in_reg && "return value must be passed in register");
-				pmap_insert(reg_map, (void *) arg->reg, res);
-			}
-
-			/* Add uses of the callee save registers. */
-			pmap_foreach(env->regs, ent) {
-				const arch_register_t *reg = ent->key;
-				if(arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
-					pmap_insert(reg_map, ent->key, ent->value);
-			}
-
-			/* Make the Epilogue node and call the arch's epilogue maker. */
-			create_barrier(env, bl, &mem, reg_map, 1);
-			call->cb->epilogue(env->cb, bl, &mem, reg_map);
-
-			/*
-				Maximum size of the in array for Return nodes is
-				return args + callee save/ignore registers + memory + stack pointer
-			*/
-			in_max = pmap_count(reg_map) + get_Return_n_ress(irn) + 2;
-
-			in   = obstack_alloc(&env->obst, in_max * sizeof(in[0]));
-			regs = obstack_alloc(&env->obst, in_max * sizeof(regs[0]));
-
-			in[0]   = mem;
-			in[1]   = be_abi_reg_map_get(reg_map, sp);
-			regs[0] = NULL;
-			regs[1] = sp;
-			n       = 2;
-
-			/* clear SP entry, since it has already been grown. */
-			pmap_insert(reg_map, (void *) sp, NULL);
-			for(i = 0; i < n_res; ++i) {
-				ir_node *res           = get_Return_res(irn, i);
-				be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
-
-				in[n]     = be_abi_reg_map_get(reg_map, arg->reg);
-				regs[n++] = arg->reg;
-
-				/* Clear the map entry to mark the register as processed. */
-				be_abi_reg_map_set(reg_map, arg->reg, NULL);
-			}
-
-			/* grow the rest of the stuff. */
-			pmap_foreach(reg_map, ent) {
-				if(ent->value) {
-					in[n]     = ent->value;
-					regs[n++] = ent->key;
-				}
-			}
-
-			/* The in array for the new back end return is now ready. */
-			ret = be_new_Return(get_irn_dbg_info(irn), irg, bl, n, in);
-
-			/* Set the register classes of the return's parameter accordingly. */
-			for(i = 0; i < n; ++i)
-				if(regs[i])
-					be_node_set_reg_class(ret, i, regs[i]->reg_class);
-
-			/* Free the space of the Epilog's in array and the register <-> proj map. */
-			obstack_free(&env->obst, in);
-			exchange(irn, ret);
-			pmap_destroy(reg_map);
+		if (get_irn_opcode(irn) == iro_Return) {
+      ir_node *ret = create_be_return(env, irn, get_nodes_block(irn), get_Return_mem(irn), get_Return_n_ress(irn));
+    	exchange(irn, ret);
 		}
 	}
+
+  if (n <= 0) {
+    /* we have endless loops, add a dummy return without return vals */
+    ir_node *ret = create_be_return(env, NULL, end, get_irg_no_mem(irg), n);
+    add_End_keepalive(get_irg_end(irg), ret);
+  }
 
 	del_pset(dont_save);
 	obstack_free(&env->obst, args);
