@@ -98,7 +98,7 @@ static void collect_data(ir_node *node, void *env)
     /*
      * the first block has the initial exec as cfg predecessor
      */
-    if (node != current_ir_graph->start_block) {
+    if (node != get_irg_start_block(current_ir_graph)) {
       for (i = 0; i < n_pred; ++i) {
         if (get_Block_cfgpred(node, i) == data->proj_X) {
 	        data->block   = node;
@@ -213,9 +213,10 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 
   phis[0] = new_r_Phi(irg, block, n_tail_calls + 1, in, mode_M);
 
-  /* build the data phi's */
+  /* build the data Phi's */
   if (n_params > 0) {
     ir_node *calls;
+    ir_node *args;
 
     NEW_ARR_A(ir_node **, call_params, n_tail_calls);
 
@@ -225,11 +226,12 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
       ++i;
     }
 
-    /* build new projs and Phi's */
+    /* build new Proj's and Phi's */
+    args = get_irg_args(irg);
     for (i = 0; i < n_params; ++i) {
       ir_mode *mode = get_type_mode(get_method_param_type(method_tp, i));
 
-      in[0] = new_r_Proj(irg, block, irg->args, mode, i);
+      in[0] = new_r_Proj(irg, block, args, mode, i);
       for (j = 0; j < n_tail_calls; ++j)
         in[j + 1] = call_params[j][i];
 

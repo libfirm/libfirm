@@ -773,8 +773,8 @@ static ir_node *equivalent_node_Block(ir_node *n)
     }
   }
   else if (get_opt_unreachable_code() &&
-           (n != current_ir_graph->start_block) &&
-           (n != current_ir_graph->end_block)     ) {
+           (n != get_irg_start_block(current_ir_graph)) &&
+           (n != get_irg_end_block(current_ir_graph))    ) {
     int i;
 
     /* If all inputs are dead, this block is dead too, except if it is
@@ -1202,8 +1202,8 @@ static ir_node *equivalent_node_Phi(ir_node *n)
   /* @@@ fliegt 'raus, sollte aber doch immer wahr sein!!!
      assert(get_irn_arity(block) == n_preds && "phi in wrong block!"); */
   if ((is_Block_dead(block)) ||                  /* Control dead */
-      (block == current_ir_graph->start_block))  /* There should be no Phi nodes */
-    return new_Bad();                            /* in the Start Block. */
+      (block == get_irg_start_block(current_ir_graph)))  /* There should be no Phi nodes */
+    return new_Bad();                                    /* in the Start Block. */
 
   if (n_preds == 0) return n;           /* Phi of dead Region without predecessors. */
 
