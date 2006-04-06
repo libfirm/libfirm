@@ -1232,6 +1232,15 @@ int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	return !equ;
 }
 
+/* compare converts */
+int ia32_compare_conv_attr(ia32_attr_t *a, ia32_attr_t *b) {
+	int equ = ! ia32_compare_immop_attr(a, b);
+
+	equ = equ ? (a->src_mode == b->src_mode) && (a->tgt_mode == b->tgt_mode) : equ;
+
+	return !equ;
+}
+
 /* copies the ia32 attributes */
 static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
 	ia32_attr_t    *attr_old = get_ia32_attr(old_node);
