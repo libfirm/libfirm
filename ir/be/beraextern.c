@@ -194,48 +194,6 @@ static int get_loop_weight(ir_node *irn) {
                                                 |_|
  *****************************************************************************/
 
-#if 0
-static void handle_constraints_insn(be_raext_env_t *raenv, be_insn_t *insn)
-{
-	arch_register_req_t req;
-	int pos, max;
-
-	/* handle output constraints
-	 * user -> irn    becomes    user -> cpy -> irn
-	 */
-	if(get_irn_mode(irn) == mode_T) {
-	}
-	arch_get_register_req(raenv->aenv, &req, irn, -1);
-	if (arch_register_req_is(&req, limited)) {
-		ir_node *cpy = be_new_Copy(req.cls, raenv->irg, get_nodes_block(irn), irn);
-
-		/* all users of the irn use the copy instead */
-		sched_add_after(irn, cpy);
-		edges_reroute(irn, cpy, raenv->irg);
-	}
-
-
-	/* handle input constraints by converting them into output constraints
-	 * of copies of the former argument
-	 * irn -> arg   becomes  irn -> copy -> arg
-     */
-	for (pos = 0, max = get_irn_arity(irn); pos<max; ++pos) {
-		arch_get_register_req(raenv->aenv, &req, irn, pos);
-		if (arch_register_req_is(&req, limited)) {
-			ir_node *arg = get_irn_n(irn, pos);
-			ir_node *cpy = be_new_Copy(req.cls, raenv->irg, get_nodes_block(irn), arg);
-
-			/* use the copy instead */
-			sched_add_before(irn, cpy);
-			set_irn_n(irn, pos, cpy);
-
-			/* set an out constraint for the copy */
-			be_set_constr_limited(cpy, -1, &req);
-		}
-	}
-}
-#endif
-
 static void handle_constraints_insn(be_raext_env_t *env, be_insn_t *insn)
 {
 	ir_node *bl = get_nodes_block(insn->irn);
@@ -272,9 +230,9 @@ static void handle_constraints_block(ir_node *bl, void *data)
 	be_insn_env_t ie;
 	struct obstack obst;
 
-	ie.cls  = raenv->cls;
-	ie.aenv = raenv->aenv;
-	ie.obst = &obst;
+	ie.cls           = raenv->cls;
+	ie.aenv          = raenv->aenv;
+	ie.obst          = &obst;
 	ie.ignore_colors = NULL;
 	obstack_init(&obst);
 
@@ -1004,7 +962,11 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	FIRM_DBG_REGISTER(raenv.dbg, "firm.be.raextern");
 
 	/* Insert copies for constraints */
-	handle_constraints(&raenv);
+	for(clsnr = 0, clss = arch_isa_get_n_reg_class(raenv.aenv->isa); clsnr < clss; ++clsnr) {
+		raenv.cls = arch_isa_get_reg_class(raenv.aenv->isa, clsnr);
+		handle_constraints(&raenv);
+	}
+
 	be_dump(irg, "-extern-constr", dump_ir_block_graph_sched);
 
 	/* SSA destruction respectively transformation into "Conventional SSA" */
