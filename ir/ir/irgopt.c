@@ -344,8 +344,14 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
   ir_node *oe, *ne, *ob, *nb, *om, *nm; /* old end, new end, old bad, new bad, old NoMem, new NoMem */
   ir_node *ka;      /* keep alive */
   int i, irn_arity;
+  unsigned long vfl;
+
+  /* Some nodes must be copied by hand, sigh */
+  vfl = get_irg_visited(irg);
+  set_irg_visited(irg, vfl + 1);
 
   oe = get_irg_end(irg);
+  mark_irn_visited(oe);
   /* copy the end node by hand, allocate dynamic in array! */
   ne = new_ir_node(get_irn_dbg_info(oe),
            irg,
@@ -360,6 +366,7 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
 
   /* copy the Bad node */
   ob = get_irg_bad(irg);
+  mark_irn_visited(ob);
   nb = new_ir_node(get_irn_dbg_info(ob),
            irg,
            NULL,
@@ -367,10 +374,12 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
            mode_T,
            0,
            NULL);
+  copy_node_attr(ob, nb);
   set_new_node(ob, nb);
 
   /* copy the NoMem node */
   om = get_irg_no_mem(irg);
+  mark_irn_visited(om);
   nm = new_ir_node(get_irn_dbg_info(om),
            irg,
            NULL,
@@ -378,10 +387,25 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
            mode_M,
            0,
            NULL);
+  copy_node_attr(om, nm);
   set_new_node(om, nm);
 
   /* copy the live nodes */
+  set_irg_visited(irg, vfl);
   irg_walk(get_nodes_block(oe), copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
+
+  /* Note: from yet, the visited flag of the graph is equal to vfl + 1 */
+
+  /* visit the anchors as well */
+  for (i = anchor_max - 1; i >= 0; --i) {
+    ir_node *n = irg->anchors[i];
+
+    if (n && (get_irn_visited(n) <= vfl)) {
+      set_irg_visited(irg, vfl);
+      irg_walk(n, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
+    }
+  }
+
   /* copy_preds for the end node ... */
   set_nodes_block(ne, get_new_node(get_nodes_block(oe)));
 
@@ -392,9 +416,9 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
   for (i = 0; i < irn_arity; i++) {
     ka = get_irn_intra_n(oe, i);
     if (is_Block(ka) &&
-        (get_irn_visited(ka) < get_irg_visited(irg))) {
+        (get_irn_visited(ka) <= vfl)) {
       /* We must keep the block alive and copy everything reachable */
-      set_irg_visited(irg, get_irg_visited(irg)-1);
+      set_irg_visited(irg, vfl);
       irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       add_End_keepalive(ne, get_new_node(ka));
     }
@@ -405,9 +429,9 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
   for (i = 0; i < irn_arity; i++) {
     ka = get_irn_intra_n(oe, i);
     if (!is_Block(ka)) {
-      if (get_irn_visited(ka) < get_irg_visited(irg)) {
+      if (get_irn_visited(ka) <= vfl) {
         /* We didn't copy the node yet.  */
-        set_irg_visited(irg, get_irg_visited(irg)-1);
+        set_irg_visited(irg, vfl);
         irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
       }
       add_End_keepalive(ne, get_new_node(ka));
@@ -433,6 +457,11 @@ copy_graph_env (int copy_node_nr) {
   ir_node *old_end, *n;
   int i;
 
+  /* remove end_except and end_reg nodes */
+  old_end = get_irg_end(irg);
+  set_irg_end_except (irg, old_end);
+  set_irg_end_reg    (irg, old_end);
+
   /* Not all nodes remembered in irg might be reachable
      from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
@@ -448,50 +477,12 @@ copy_graph_env (int copy_node_nr) {
 
   /* fix the fields in irg */
   old_end = get_irg_end(irg);
-  set_irg_end        (irg, get_new_node(old_end));
-  set_irg_end_except (irg, get_irg_end(irg));
-  set_irg_end_reg    (irg, get_irg_end(irg));
+  for (i = anchor_max - 1; i >= 0; --i) {
+    n = irg->anchors[i];
+    if (n)
+      irg->anchors[i] = get_new_node(n);
+  }
   free_End(old_end);
-  set_irg_end_block  (irg, get_new_node(get_irg_end_block(irg)));
-
-  n = get_irg_frame(irg);
-  if (!has_new_node(n)) {
-    copy_node (n, INT_TO_PTR(copy_node_nr));
-    copy_preds(n, NULL);
-  }
-  n = get_irg_globals(irg);
-  if (!has_new_node(n)) {
-    copy_node (n, INT_TO_PTR(copy_node_nr));
-    copy_preds(n, NULL);
-  }
-  n = get_irg_initial_mem(irg);
-  if (!has_new_node(n)) {
-    copy_node (n, INT_TO_PTR(copy_node_nr));
-    copy_preds(n, NULL);
-  }
-  n = get_irg_args(irg);
-  if (!has_new_node(n)) {
-    copy_node (n, INT_TO_PTR(copy_node_nr));
-    copy_preds(n, NULL);
-  }
-  n = get_irg_bad(irg);
-  if (!has_new_node(n)) {
-    copy_node(n, INT_TO_PTR(copy_node_nr));
-    copy_preds(n, NULL);
-  }
-  n = get_irg_no_mem(irg);
-  if (!has_new_node(n)) {
-    copy_node(n, INT_TO_PTR(copy_node_nr));
-    copy_preds(n, NULL);
-  }
-  set_irg_start      (irg, get_new_node(get_irg_start(irg)));
-  set_irg_start_block(irg, get_new_node(get_irg_start_block(irg)));
-  set_irg_frame      (irg, get_new_node(get_irg_frame(irg)));
-  set_irg_globals    (irg, get_new_node(get_irg_globals(irg)));
-  set_irg_initial_mem(irg, get_new_node(get_irg_initial_mem(irg)));
-  set_irg_args       (irg, get_new_node(get_irg_args(irg)));
-  set_irg_bad        (irg, get_new_node(get_irg_bad(irg)));
-  set_irg_no_mem     (irg, get_new_node(get_irg_no_mem(irg)));
 }
 
 /**
@@ -696,7 +687,7 @@ static void dead_node_hook(void *context, ir_graph *irg, int start)
   survive_dce_t *sd = context;
 
   /* Create a new map before the dead node elimination is performed. */
-  if(start) {
+  if (start) {
     sd->new_places = pmap_create_ex(pmap_count(sd->places));
   }
 
@@ -708,13 +699,16 @@ static void dead_node_hook(void *context, ir_graph *irg, int start)
   }
 }
 
+/**
+ * Hook called when dead node elimination replaces old by nw.
+ */
 static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_node *nw)
 {
   survive_dce_t *sd = context;
   survive_dce_list_t *list = pmap_get(sd->places, old);
 
   /* If the node is to be patched back, write the new address to all registered locations. */
-  if(list) {
+  if (list) {
     survive_dce_list_t *p;
 
     for(p = list; p; p = p->next)
