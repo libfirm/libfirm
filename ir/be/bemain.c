@@ -315,7 +315,7 @@ static void be_main_loop(FILE *file_handle)
 		 * Note that this requires disabling the edges here.
 		 */
 		edges_deactivate(irg);
-		//dead_node_elimination(irg);
+		dead_node_elimination(irg);
 		edges_activate(irg);
 
 		/* Compute loop nesting information (for weighting copies) */
