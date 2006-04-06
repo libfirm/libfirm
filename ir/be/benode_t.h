@@ -158,7 +158,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 ir_node *be_get_IncSP_pred(ir_node *incsp);
 
 /** Sets the previous node that computes the stack pointer. */
-void *be_set_IncSP_pred(ir_node *incsp, ir_node *pred);
+void     be_set_IncSP_pred(ir_node *incsp, ir_node *pred);
 
 /** Returns the memory input of the IncSP. */
 ir_node *be_get_IncSP_mem(ir_node *irn);

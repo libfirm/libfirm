@@ -714,7 +714,7 @@ ir_node *be_get_IncSP_pred(ir_node *irn) {
 	return get_irn_n(irn, 0);
 }
 
-void *be_set_IncSP_pred(ir_node *incsp, ir_node *pred) {
+void be_set_IncSP_pred(ir_node *incsp, ir_node *pred) {
 	assert(be_is_IncSP(incsp));
 	set_irn_n(incsp, 0, pred);
 }
