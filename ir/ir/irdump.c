@@ -81,11 +81,14 @@ static int dump_keepalive = 0;
 /** An option to dump ld_names instead of names. */
 static int dump_ld_name = 1;
 /** Compiler options to dump analysis information in dump_ir_graph */
-int dump_out_edge_flag = 0;
+static int dump_out_edge_flag = 0;
+static int dump_loop_information_flag = 0;
+static int dump_backedge_information_flag = 1;
+static int dump_const_local = 0;
+/** An option to dump all graph anchors */
+static int dump_anchors = 0;
+
 int dump_dominator_information_flag = 0;
-int dump_loop_information_flag = 0;
-int dump_backedge_information_flag = 1;
-int dump_const_local = 0;
 int opt_dump_analysed_type_info = 1;
 int opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
 
@@ -125,7 +128,7 @@ void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook) {
   dump_edge_vcgattr_hook = hook;
 }
 
-INLINE int get_opt_dump_const_local(void) {
+int get_opt_dump_const_local(void) {
   if (!dump_out_edge_flag && !dump_loop_information_flag)
     return dump_const_local;
   else
@@ -199,6 +202,10 @@ void dump_pointer_values_to_info(int flag) {
 
 void dump_ld_names(int flag) {
   dump_ld_name = flag;
+}
+
+void dump_all_anchors(int flag) {
+  dump_anchors = flag;
 }
 
 /* -------------- some extended helper functions ----------------- */
@@ -495,6 +502,27 @@ static int node_floats(ir_node *n) {
 }
 
 /**
+ *  Walker that visits the anchors
+ */
+static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+  irg_walk_graph(irg, pre, post, env);
+
+  if (dump_anchors) {
+    int i;
+
+    for (i = anchor_max - 1; i >= 0; --i) {
+      ir_node *n = irg->anchors[i];
+
+      if (n) {
+        /* reset the visit flag: will be increase in the walker */
+        set_irg_visited(irg, get_irg_visited(irg) - 1);
+        irg_walk(n, pre, post, env);
+      }
+    }
+  }
+}
+
+/**
  * Walker, allocates an array for all blocks and puts it's nodes non-floating nodes into this array.
  */
 static void collect_node(ir_node * node, void *env) {
@@ -540,7 +568,7 @@ static ir_node **construct_block_lists(ir_graph *irg) {
   for (i = get_irp_n_irgs() - 1; i >= 0; --i)
     ird_set_irg_link(get_irp_irg(i), NULL);
 
-  irg_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
+  ird_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
 
   /* Collect also EndReg and EndExcept. We do not want to change the walker. */
   set_interprocedural_view(0);
@@ -2272,7 +2300,7 @@ dump_ir_graph (ir_graph *irg, const char *suffix )
 
   /* walk over the graph */
   /* dump_whole_node must be called in post visiting predecessors */
-  irg_walk(get_irg_end(irg), NULL, dump_whole_node, f);
+  ird_walk_graph(irg, NULL, dump_whole_node, f);
 
   /* dump the out edges in a separate walk */
   if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != outs_none)) {

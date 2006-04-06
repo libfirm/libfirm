@@ -644,4 +644,11 @@ void dump_pointer_values_to_info(int flag);
  */
 void dump_ld_names(int flag);
 
+/** Dumps all graph anchor nodes, even if they
+ * are dead.
+ *
+ * This option is off per default.
+ */
+void dump_all_anchors(int flag);
+
 # endif /* _IRDUMP_H_ */
