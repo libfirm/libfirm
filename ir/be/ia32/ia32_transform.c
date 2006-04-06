@@ -1949,6 +1949,30 @@ static ir_node *gen_be_FrameStore(ia32_transform_env_t *env) {
 	return new_op;
 }
 
+/**
+ * This function just sets the register for the Unknown node
+ * as this is not done during register allocation because Unknown
+ * is an "ignore" node.
+ */
+static ir_node *gen_Unknown(ia32_transform_env_t *env) {
+	ir_mode *mode = env->mode;
+	ir_node *irn  = env->irn;
+
+	if (mode_is_float(mode)) {
+		if (USE_SSE2(env->cg))
+			arch_set_irn_register(env->cg->arch_env, irn, &ia32_xmm_regs[REG_XMM_UKNWN]);
+		else
+			arch_set_irn_register(env->cg->arch_env, irn, &ia32_vfp_regs[REG_VFP_UKNWN]);
+	}
+	else if (mode_is_int(mode) || mode_is_reference(mode)) {
+		arch_set_irn_register(env->cg->arch_env, irn, &ia32_gp_regs[REG_GP_UKNWN]);
+	}
+	else {
+		assert(0 && "unsupported Unknown-Mode");
+	}
+
+	return NULL;
+}
 
 
 /*********************************************************
@@ -2207,7 +2231,6 @@ void ia32_register_transformers(void) {
 	IGN(IJmp);
 	IGN(Break);
 	IGN(Cmp);
-	IGN(Unknown);
 
 	/* constant transformation happens earlier */
 	IGN(Const);
@@ -2232,6 +2255,9 @@ void ia32_register_transformers(void) {
 	GEN(be_FrameLoad);
 	GEN(be_FrameStore);
 	GEN(be_StackParam);
+
+	/* set the register for all Unknown nodes */
+	GEN(Unknown);
 
 	op_Max = get_op_Max();
 	if (op_Max)

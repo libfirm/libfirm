@@ -103,7 +103,8 @@ $comment_string = "/*";
             { "name" => "edi", "type" => 2 },
             { "name" => "ebp", "type" => 2 },
             { "name" => "esp", "type" => 4 },
-            { "name" => "gp_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "gp_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
+            { "name" => "gp_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_P" }
           ],
   "xmm" => [
@@ -115,7 +116,8 @@ $comment_string = "/*";
             { "name" => "xmm5", "type" => 1 },
             { "name" => "xmm6", "type" => 1 },
             { "name" => "xmm7", "type" => 1 },
-            { "name" => "xmm_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "xmm_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
+            { "name" => "xmm_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_D" }
           ],
   "vfp" => [
@@ -127,7 +129,8 @@ $comment_string = "/*";
             { "name" => "vf5", "type" => 1 },
             { "name" => "vf6", "type" => 1 },
             { "name" => "vf7", "type" => 1 },
-            { "name" => "vfp_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "vfp_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
+            { "name" => "vfp_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_E" }
           ],
   "st" => [
@@ -139,7 +142,8 @@ $comment_string = "/*";
             { "name" => "st5", "type" => 1 },
             { "name" => "st6", "type" => 1 },
             { "name" => "st7", "type" => 1 },
-            { "name" => "st_NOREG", "type" => 6 },  # we need a dummy register for NoReg and Unknown nodes
+            { "name" => "st_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
+            { "name" => "st_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_E" }
           ]
 ); # %reg_classes

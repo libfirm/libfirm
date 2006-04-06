@@ -78,6 +78,17 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 	reg = arch_get_irn_register(arch_env, op);
 
 	assert(reg && "no in register found");
+
+	/* in case of unknown: just return a register */
+	if (REGS_ARE_EQUAL(reg, &ia32_gp_regs[REG_GP_UKNWN]))
+		reg = &ia32_gp_regs[REG_EAX];
+	else if (REGS_ARE_EQUAL(reg, &ia32_xmm_regs[REG_XMM_UKNWN]))
+		reg = &ia32_xmm_regs[REG_XMM0];
+	else if (REGS_ARE_EQUAL(reg, &ia32_vfp_regs[REG_VFP_UKNWN]))
+		reg = &ia32_vfp_regs[REG_VF0];
+	else if (REGS_ARE_EQUAL(reg, &ia32_st_regs[REG_ST_UKNWN]))
+		reg = &ia32_st_regs[REG_ST0];
+
 	return reg;
 }
 
@@ -326,7 +337,12 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 				snprintf(buf, SNPRINTF_BUF_LEN, "%s, %s", get_ia32_cnst(n), ia32_emit_am(n, env));
 			}
 			else {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, ia32_emit_am(n, env));
+				if (PRODUCES_RESULT(n)) {
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, ia32_emit_am(n, env));
+				}
+				else {
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n, env));
+				}
 			}
 			break;
 		case ia32_AddrModeD:
@@ -1061,11 +1077,16 @@ static void emit_CopyB_prolog(FILE *F, int rem, int size) {
  * Emit rep movsd instruction for memcopy.
  */
 static void emit_ia32_CopyB(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE   *F    = emit_env->out;
-	tarval *tv   = get_ia32_Immop_tarval(irn);
-	int     rem  = get_tarval_long(tv);
-	int     size = get_tarval_long(get_ia32_Immop_tarval(get_irn_n(irn, 2)));
+	FILE    *F         = emit_env->out;
+	tarval  *tv        = get_ia32_Immop_tarval(irn);
+	int      rem       = get_tarval_long(tv);
+	ir_node *size_node = get_irn_n(irn, 2);
+	int      size;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+
+	/* beware: size_node could be a be_Copy to fulfill constraints for ecx */
+	size_node = be_is_Copy(size_node) ? be_get_Copy_op(size_node) : size_node;
+	size      = get_tarval_long(get_ia32_Immop_tarval(size_node));
 
 	emit_CopyB_prolog(F, rem, size);
 

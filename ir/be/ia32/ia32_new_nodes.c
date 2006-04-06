@@ -176,8 +176,8 @@ static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_nodeattr_txt:
-			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
-				char       *pref = is_ia32_ImmSymConst(n) ? "SymC" : "";
+			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n) || is_ia32_Cnst(n)) {
+				char       *pref = is_ia32_ImmSymConst(n) || (get_ia32_op_type(n) == ia32_SymConst) ? "SymC" : "";
 				const char *cnst = get_ia32_cnst(n);
 
 				fprintf(F, "[%s%s]", pref, cnst ? cnst : "NONE");

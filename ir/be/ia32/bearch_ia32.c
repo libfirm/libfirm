@@ -147,23 +147,23 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 		}
 	}
 	else {
-		/* treat Phi like Const with default requirements */
-		if (is_Phi(irn)) {
-			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
+		/* treat Unknowns like Const with default requirements */
+		if (is_Unknown(irn)) {
+			DB((mod, LEVEL_1, "returning UKNWN reqs for %+F\n", irn));
 			if (mode_is_float(mode)) {
 				if (USE_SSE2(ops->cg))
-					memcpy(req, &(ia32_default_req_ia32_xmm.req), sizeof(*req));
+					memcpy(req, &(ia32_default_req_ia32_xmm_xmm_UKNWN), sizeof(*req));
 				else
-					memcpy(req, &(ia32_default_req_ia32_vfp.req), sizeof(*req));
+					memcpy(req, &(ia32_default_req_ia32_vfp_vfp_UKNWN), sizeof(*req));
 			}
 			else if (mode_is_int(mode) || mode_is_reference(mode))
-				memcpy(req, &(ia32_default_req_ia32_gp.req), sizeof(*req));
+				memcpy(req, &(ia32_default_req_ia32_gp_gp_UKNWN), sizeof(*req));
 			else if (mode == mode_T || mode == mode_M) {
-				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
+				DBG((mod, LEVEL_1, "ignoring Unknown node %+F\n", irn));
 				return NULL;
 			}
 			else
-				assert(0 && "unsupported Phi-Mode");
+				assert(0 && "unsupported Unknown-Mode");
 		}
 		else {
 			DB((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
@@ -241,6 +241,8 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
 	else {
+		if (is_Unknown(irn))
+			return arch_irn_flags_ignore;
 		return 0;
 	}
 }
