@@ -35,6 +35,7 @@ my $target_c = $target_dir."/gen_".$arch."_new_nodes.c.inl";
 my $target_h = $target_dir."/gen_".$arch."_new_nodes.h";
 
 #print Dumper(%nodes);
+#print Dumper(%operands);
 
 # create c code file from specs
 
@@ -46,6 +47,7 @@ my @obst_enum_op;     # stack for creating the <arch>_opcode enum
 my @obst_header;      # stack for function prototypes
 my @obst_is_archirn;  # stack for the is_$arch_irn() function
 my @obst_cmp_attr;    # stack for the compare attribute functions
+my @obst_proj;        # stack for the pn_ numbers
 my $orig_op;
 my $arity;
 my $cmp_attr_func;
@@ -60,6 +62,7 @@ push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
 	my %n = %{ $nodes{"$op"} };
+	my $tuple = 0;
 
 	# determine arity from in requirements
 	$arity = 0;
@@ -70,6 +73,17 @@ foreach my $op (keys(%nodes)) {
 	$orig_op = $op;
 	$op      = $arch."_".$op;
 	$temp    = "";
+
+	if (exists($n{"outs"})) {
+		undef my @outs;
+		@outs = @{ $n{"outs"} };
+		push(@obst_proj, "\nenum pn_$op {\n");
+		for (my $idx = 0; $idx <= $#outs; $idx++) {
+			push(@obst_proj, "  pn_$op\_".$outs[$idx]." = $idx,\n");
+		}
+		push(@obst_proj, "};\n");
+		$tuple = 1;
+	}
 
 	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
 	push(@obst_get_opvar, "ir_op *get_op_$op(void)         { return op_$op; }\n");
@@ -117,8 +131,10 @@ foreach my $op (keys(%nodes)) {
 				$complete_args .= ", ir_node *op".$i;
 				$arg_names     .= ", op".$i;
 			}
-			$complete_args .= ", ir_mode *mode";
-			$arg_names     .= ", mode";
+			if ($tuple == 0) {
+				$complete_args .= ", ir_mode *mode";
+				$arg_names     .= ", mode";
+			}
 		}
 		else { # user defined args
 			for my $href (@{ $n{"args"} }) {
@@ -133,8 +149,8 @@ foreach my $op (keys(%nodes)) {
 			$complete_args .= ", ".$n{"attr"};
 		}
 
-		$complete_args = substr($complete_args, 2);
-		$temp .= ", $complete_args)";
+		# $complete_args = substr($complete_args, 2);
+		$temp .= "$complete_args)";
 		push(@obst_constructor, $temp." {\n");
 		push(@obst_header, $temp.";\n");
 
@@ -233,7 +249,11 @@ foreach my $op (keys(%nodes)) {
 				}
 			}
 			$temp .= "\n  /* create node */\n";
-			$temp .= "  res = new_ir_node(db, irg, block, op_$op, mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
+			my $mode = "mode";
+			if ($tuple == 1) {
+				$mode = "mode_T";
+			}
+			$temp .= "  res = new_ir_node(db, irg, block, op_$op, $mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
 
 			$temp .= "\n  /* init node attributes */\n";
 			$temp .= "  init_$arch\_attributes(res, flags, $in_param, $out_param);\n";
@@ -377,6 +397,7 @@ print OUT "int get_$arch\_opcode_first(void);\n";
 print OUT "int get_$arch\_opcode_last(void);\n";
 print OUT "int get_$arch\_irn_opcode(const ir_node *node);\n";
 print OUT @obst_header;
+print OUT @obst_proj;
 print OUT "\n#endif /* __GEN_$arch\_NEW_NODES_H__ */\n";
 
 close(OUT);
