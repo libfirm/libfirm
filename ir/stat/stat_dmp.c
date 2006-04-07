@@ -85,6 +85,8 @@ static const struct {
   { FS_BE_IA32_2ADDRCPY,   "ia32 Backend transformation: Copy created due to 2-Addresscode constraints" },
   { FS_BE_IA32_SPILL2ST,   "ia32 Backend transformation: Created Store for a Spill" },
   { FS_BE_IA32_RELOAD2LD,  "ia32 Backend transformation: Created Load for a Reload" },
+  { FS_BE_IA32_SUB2NEGADD, "ia32 Backend transformation: Created Neg-Add for a Sub due to 2-Addresscode constraints" },
+  { FS_BE_IA32_LEA2ADD,    "ia32 Backend transformation: Transformed Lea back into Add" },
 };
 
 static const char *if_conv_names[IF_RESULT_LAST] = {
