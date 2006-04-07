@@ -84,15 +84,30 @@ static ir_node *trivial_select(void *block_env, nodeset *ready_set)
 {
 	const arch_env_t *arch_env = block_env;
 	ir_node *irn = NULL;
+	int const_last = 0;
 
-	/* assure that branches are executed last */
+	/* assure that branches and constants are executed last */
 	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
-		if (arch_irn_classify(arch_env, irn) != arch_irn_class_branch) {
+		arch_irn_class_t irn_class = arch_irn_classify(arch_env, irn);
+
+		if (irn_class != arch_irn_class_branch && (const_last ? (irn_class != arch_irn_class_const) : 1)) {
 			nodeset_break(ready_set);
 			return irn;
 		}
 	}
 
+	/* assure that constants are executed before branches */
+	if (const_last) {
+		for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
+			if (arch_irn_classify(arch_env, irn) != arch_irn_class_branch) {
+				nodeset_break(ready_set);
+				return irn;
+			}
+		}
+	}
+
+
+	/* at last: schedule branches */
 	irn = nodeset_first(ready_set);
 	nodeset_break(ready_set);
 
