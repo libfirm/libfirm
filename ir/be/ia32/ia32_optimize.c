@@ -86,7 +86,7 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
-			cnst = new_rd_ia32_fConst(dbg, irg, block, mode);
+			cnst = new_rd_ia32_xConst(dbg, irg, block, mode);
 		else
 			cnst = new_rd_ia32_vfConst(dbg, irg, block, mode);
 	}
@@ -1328,7 +1328,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				if (ia32_get_irn_n_edges(succ) == 1) {
 					succ = get_edge_src_irn(get_irn_out_edge_first(succ));
 
-					if (is_ia32_fStore(succ) || is_ia32_Store(succ)) {
+					if (is_ia32_xStore(succ) || is_ia32_Store(succ)) {
 						store  = succ;
 						addr_b = get_irn_n(store, 0);
 						addr_i = get_irn_n(store, 1);

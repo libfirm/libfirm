@@ -352,7 +352,7 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 	(!(is_ia32_St(n)      || \
 	is_ia32_Store8Bit(n)  || \
 	is_ia32_CondJmp(n)    || \
-	is_ia32_fCondJmp(n)   || \
+	is_ia32_xCondJmp(n)   || \
 	is_ia32_SwitchJmp(n)))
 
 	if (! buf) {

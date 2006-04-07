@@ -257,11 +257,11 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 			return 1;
 		assert(0 && "unsupported DivMod");
 	}
-	else if (is_ia32_fDiv(pred)) {
+	else if (is_ia32_xDiv(pred)) {
 		if (nr == pn_Quot_res)
 			return 0;
 		else
-			assert(0 && "there should be no more Projs for a fDiv");
+			assert(0 && "there should be no more Projs for a xDiv");
 	}
 	else if (get_irn_mode(proj) == mode_X && nr == pn_Start_X_initial_exec) {
 		return 0;

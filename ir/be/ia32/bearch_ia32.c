@@ -230,6 +230,8 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	irn = my_skip_proj(irn);
 	if (is_cfop(irn))
 		return arch_irn_class_branch;
+	else if (is_ia32_Cnst(irn))
+		return arch_irn_class_const;
 	else if (is_ia32_irn(irn))
 		return arch_irn_class_normal;
 	else
@@ -650,7 +652,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+			new_op = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
 		else
 			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
 	}
@@ -705,7 +707,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+			new_op = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
 		else
 			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
 	}

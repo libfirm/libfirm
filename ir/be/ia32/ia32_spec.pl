@@ -503,7 +503,7 @@ $comment_string = "/*";
 
 # commutative operations
 
-"fAdd" => {
+"xAdd" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -511,7 +511,7 @@ $comment_string = "/*";
   "emit"      => '. adds%M %ia32_emit_binop /* SSE Add(%A3, %A4) -> %D1 */'
 },
 
-"fMul" => {
+"xMul" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -519,7 +519,7 @@ $comment_string = "/*";
   "emit"      => '. muls%M %ia32_emit_binop /* SSE Mul(%A3, %A4) -> %D1 */'
 },
 
-"fMax" => {
+"xMax" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -527,7 +527,7 @@ $comment_string = "/*";
   "emit"      => '. maxs%M %ia32_emit_binop /* SSE Max(%A3, %A4) -> %D1 */'
 },
 
-"fMin" => {
+"xMin" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -535,7 +535,7 @@ $comment_string = "/*";
   "emit"      => '. mins%M %ia32_emit_binop /* SSE Min(%A3, %A4) -> %D1 */'
 },
 
-"fAnd" => {
+"xAnd" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE And: And(a, b) = a AND b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -543,7 +543,7 @@ $comment_string = "/*";
   "emit"      => '. andp%M %ia32_emit_binop /* SSE And(%A3, %A4) -> %D1 */'
 },
 
-"fOr" => {
+"xOr" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Or: Or(a, b) = a OR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -551,7 +551,7 @@ $comment_string = "/*";
   "emit"      => '. orp%M %ia32_emit_binop /* SSE Or(%A3, %A4) -> %D1 */'
 },
 
-"fEor" => {
+"xEor" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Eor: Eor(a, b) = a XOR b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -561,7 +561,7 @@ $comment_string = "/*";
 
 # not commutative operations
 
-"fSub" => {
+"xSub" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Sub: Sub(a, b) = a - b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -569,7 +569,7 @@ $comment_string = "/*";
   "emit"      => '. subs%M %ia32_emit_binop /* SSE Sub(%A1, %A2) -> %D1 */'
 },
 
-"fDiv" => {
+"xDiv" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Div: Div(a, b) = a / b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -579,14 +579,14 @@ $comment_string = "/*";
 
 # other operations
 
-"fCondJmp" => {
+"xCondJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "none", "none" ] },
 },
 
-"fConst" => {
+"xConst" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents a SSE constant",
@@ -597,7 +597,7 @@ $comment_string = "/*";
 
 # Load / Store
 
-"fLoad" => {
+"xLoad" => {
   "op_flags"  => "L|F",
   "irn_flags" => "R",
   "state"     => "exc_pinned",
@@ -607,7 +607,7 @@ $comment_string = "/*";
   "emit"      => '. movs%M %D1, %ia32_emit_am /* Load((%A1)) -> %D1 */'
 },
 
-"fStore" => {
+"xStore" => {
   "op_flags" => "L|F",
   "state"    => "exc_pinned",
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
