@@ -300,10 +300,10 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 }
 
 /**
- * Generate the prologue.
+ * Generate the routine prologue.
  * @param self    The callback object.
  * @param mem     A pointer to the mem node. Update this if you define new memory.
- * @param reg_map A mapping mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
  * @return        The register which shall be used as a stack frame base.
  *
  * All nodes which define registers in @p reg_map must keep @p reg_map current.
@@ -320,12 +320,13 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		ir_node *push;
 
 		/* push ebp */
-		push    = new_rd_ia32_Push(NULL, env->irg, bl, curr_sp, curr_bp, *mem, mode_T);
-		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), 0);
-		*mem    = new_r_Proj(env->irg, bl, push, mode_M, 1);
+		push    = new_rd_ia32_Push(NULL, env->irg, bl, curr_sp, curr_bp, *mem);
+		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
+		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
 
 		/* the push must have SP out register */
-		 arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+		set_ia32_flags(push, arch_irn_flags_ignore);
 
 		/* move esp to ebp */
 		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
@@ -348,6 +349,15 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 	return env->isa->sp;
 }
 
+/**
+ * Generate the routine epilogue.
+ * @param self    The callback object.
+ * @param mem     A pointer to the mem node. Update this if you define new memory.
+ * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @return        The register which shall be used as a stack frame base.
+ *
+ * All nodes which define registers in @p reg_map must keep @p reg_map current.
+ */
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
 	ia32_abi_env_t *env  = self;
@@ -363,15 +373,16 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
 		int reg_size     = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 
+		/* AMD processors prefer leave at the end of a routine */
     if (ARCH_AMD(isa->opt_arch)) {
 			ir_node *leave;
 
 			/* leave */
-			leave = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, *mem, mode_T);
+			leave = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, *mem);
 			set_ia32_flags(leave, arch_irn_flags_ignore);
-			curr_bp = new_r_Proj(current_ir_graph, bl, leave, mode_bp, 0);
-			curr_sp = new_r_Proj(current_ir_graph, bl, leave, get_irn_mode(curr_sp), 1);
-			*mem    = new_r_Proj(current_ir_graph, bl, leave, mode_M, 2);
+			curr_bp = new_r_Proj(current_ir_graph, bl, leave, mode_bp, pn_ia32_Leave_frame);
+			curr_sp = new_r_Proj(current_ir_graph, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
+			*mem    = new_r_Proj(current_ir_graph, bl, leave, mode_M, pn_ia32_Leave_M);
 		}
 		else {
 			ir_node *pop;
@@ -380,11 +391,11 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
 
 			/* pop ebp */
-			pop = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem, mode_T);
+			pop = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem);
 			set_ia32_flags(pop, arch_irn_flags_ignore);
-			curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, 0);
-			curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), 1);
-			*mem    = new_r_Proj(current_ir_graph, bl, pop, mode_M, 2);
+			curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, pn_ia32_Pop_res);
+			curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
+			*mem    = new_r_Proj(current_ir_graph, bl, pop, mode_M, pn_ia32_Pop_M);
 		}
 		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
 		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
@@ -652,12 +663,12 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+			new_op = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, ptr, noreg, mem);
 		else
-			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem);
 	}
 	else {
-		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem, mode_T);
+		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem);
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
@@ -707,15 +718,15 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+			new_op = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 		else
-			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 	}
 	else if (get_mode_size_bits(mode) == 8) {
-		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 	}
 	else {
-		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, nomem, mode_T);
+		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Dest);
@@ -727,7 +738,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 
 	DBG_OPT_SPILL2ST(irn, new_op);
 
-	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode_M, 0);
+	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode_M, pn_ia32_Store_M);
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);

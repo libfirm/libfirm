@@ -437,9 +437,9 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 
 	bl   = get_nodes_block(irn);
 	push = new_rd_ia32_Push(NULL, current_ir_graph, bl,
-		be_get_IncSP_pred(sp), val, be_get_IncSP_mem(sp), mode_T);
-	proj_res = new_r_Proj(current_ir_graph, bl, push, get_irn_mode(sp), 0);
-	proj_M   = new_r_Proj(current_ir_graph, bl, push, mode_M, 1);
+		be_get_IncSP_pred(sp), val, be_get_IncSP_mem(sp));
+	proj_res = new_r_Proj(current_ir_graph, bl, push, get_irn_mode(sp), pn_ia32_Push_stack);
+	proj_M   = new_r_Proj(current_ir_graph, bl, push, mode_M, pn_ia32_Push_M);
 
 	/* the push must have SP out register */
 	arch_set_irn_register(cg->arch_env, push, arch_get_irn_register(cg->arch_env, sp));
@@ -494,10 +494,10 @@ static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
 	reg = arch_get_irn_register(cg->arch_env, load);
 	sp  = arch_get_irn_register(cg->arch_env, irn);
 
-	pop      = new_rd_ia32_Pop(NULL, current_ir_graph, bl, get_irn_n(irn, 0), get_irn_n(load, 2), mode_T);
-	proj_res = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(old_proj_res), 0);
-	proj_sp  = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(irn), 1);
-	proj_M   = new_r_Proj(current_ir_graph, bl, pop, mode_M, 2);
+	pop      = new_rd_ia32_Pop(NULL, current_ir_graph, bl, get_irn_n(irn, 0), get_irn_n(load, 2));
+	proj_res = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(old_proj_res), pn_ia32_Pop_res);
+	proj_sp  = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(irn), pn_ia32_Pop_stack);
+	proj_M   = new_r_Proj(current_ir_graph, bl, pop, mode_M, pn_ia32_Pop_M);
 
 	exchange(old_proj_M, proj_M);
 	exchange(old_proj_res, proj_res);
