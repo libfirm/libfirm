@@ -92,6 +92,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   dump_node_opcode(F, n);
   fprintf(F, " %ld\n", get_irn_node_nr(n));
 
+  fprintf(F, "  index: %u\n", get_irn_idx(n));
   if (opt_dump_pointer_values_to_info)
     fprintf (F, "  addr:    %p \n", (void *)n);
   fprintf (F, "  mode:    %s\n", get_mode_name(get_irn_mode(n)));
@@ -544,6 +545,12 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
     if (is_Method_type(get_entity_type(ent))) {
       unsigned mask = get_entity_additional_properties(ent);
       unsigned cc   = get_method_calling_convention(get_entity_type(ent));
+      ir_graph *irg = get_entity_irg(ent);
+
+      if (irg) {
+        fprintf(F, "\n%s  estimated node count: %u", prefix, get_irg_estimated_node_cnt(irg));
+        fprintf(F, "\n%s  maximum node index:   %u", prefix, get_irg_last_idx(irg));
+      }
 
       if (mask) {
         fprintf(F, "\n%s  additional prop: ", prefix);

@@ -475,6 +475,9 @@ void *get_irg_loc_description(ir_graph *irg, int n);
  */
 unsigned get_irg_estimated_node_cnt(const ir_graph *irg);
 
+/** Returns the last irn index for this graph. */
+unsigned get_irg_last_idx(const ir_graph *irg);
+
 /**
  * Access custom graph data.
  * The data must have been registered with

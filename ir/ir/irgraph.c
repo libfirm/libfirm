@@ -834,6 +834,11 @@ unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg) {
   return _get_irg_estimated_node_cnt(irg);
 }
 
+/* Returns the last irn index for this graph. */
+unsigned get_irg_last_idx(const ir_graph *irg) {
+  return irg->last_node_idx;
+}
+
 /* register additional space in an IR graph */
 size_t register_additional_graph_data(size_t size)
 {
