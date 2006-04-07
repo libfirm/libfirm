@@ -531,6 +531,7 @@ dead_node_elimination(ir_graph *irg) {
     rebirth_obst = xmalloc (sizeof(*rebirth_obst));
     current_ir_graph->obst = rebirth_obst;
     obstack_init (current_ir_graph->obst);
+    current_ir_graph->last_node_idx = 0;
 
     /* We also need a new hash table for cse */
     del_identities (irg->value_table);
