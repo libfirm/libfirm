@@ -40,6 +40,7 @@ typedef pset hmap_node_entry_t;
 typedef pset hmap_graph_entry_t;
 typedef pset hmap_opt_entry_t;
 typedef pset hmap_block_entry_t;
+typedef pset hmap_be_block_entry_t;
 typedef pset hmap_reg_pressure_entry_t;
 typedef pset hmap_ir_op;
 typedef pset hmap_distrib_entry_t;
@@ -81,33 +82,33 @@ enum leaf_call_state_t {
  * An entry for ir_graphs. These numbers are calculated for every IR graph.
  */
 typedef struct _graph_entry_t {
-  struct obstack          recalc_cnts;                  /**< obstack containing the counters that are recalculated */
-  HASH_MAP(node_entry_t)  *opcode_hash;                 /**< hash map containing the opcode counter */
-  HASH_MAP(block_entry_t) *block_hash;                  /**< hash map containing the block counter */
-  HASH_MAP(block_entry_t) *extbb_hash;                  /**< hash map containing the extended block counter */
-  HASH_MAP(block_entry_t) *rp_block_hash;               /**< hash map containing the block reg pressure information */
-  counter_t               cnt_walked;	                /**< walker walked over the graph */
-  counter_t               cnt_walked_blocks;            /**< walker walked over the graph blocks */
-  counter_t               cnt_was_inlined;              /**< number of times other graph were inlined */
-  counter_t               cnt_got_inlined;              /**< number of times this graph was inlined */
-  counter_t               cnt_strength_red;             /**< number of times strength reduction was successful on this graph */
-  counter_t               cnt_edges;                    /**< number of DF edges in this graph */
-  counter_t               cnt_all_calls;                /**< number of all calls */
-  counter_t               cnt_call_with_cnst_arg;       /**< number of calls with const args */
-  counter_t               cnt_indirect_calls;           /**< number of indirect calls */
-  counter_t               cnt_if_conv[IF_RESULT_LAST];  /**< number of if conversions */
-  counter_t               cnt_real_func_call;           /**< number real function call optimization */
-  unsigned                num_tail_recursion;           /**< number of tail recursion optimizations */
-  HASH_MAP(opt_entry_t)   *opt_hash[FS_OPT_MAX];        /**< hash maps containing opcode counter for optimizations */
-  ir_graph                *irg;                         /**< the graph of this object */
-  entity                  *ent;                         /**< the entity of this graph if one exists */
-  set                     *address_mark;                /**< a set containing the address marks of the nodes */
-  unsigned                is_deleted:1;                 /**< set if this irg was deleted */
-  unsigned                is_leaf:1;                    /**< set, if this irg is a leaf function */
-  unsigned                is_leaf_call:2;               /**< set, if this irg calls only leaf functions */
-  unsigned                is_recursive:1;               /**< set, if this irg has recursive calls */
-  unsigned                is_chain_call:1;              /**< set, if this irg is a chain call */
-  unsigned                is_analyzed:1;                /**< helper: set, if this irg was already analysed */
+  struct obstack             recalc_cnts;                  /**< obstack containing the counters that are recalculated */
+  HASH_MAP(node_entry_t)     *opcode_hash;                 /**< hash map containing the opcode counter */
+  HASH_MAP(block_entry_t)    *block_hash;                  /**< hash map containing the block counter */
+  HASH_MAP(block_entry_t)    *extbb_hash;                  /**< hash map containing the extended block counter */
+  HASH_MAP(be_block_entry_t) *be_block_hash;               /**< hash map containing backend block information */
+  counter_t                  cnt_walked;                   /**< walker walked over the graph */
+  counter_t                  cnt_walked_blocks;            /**< walker walked over the graph blocks */
+  counter_t                  cnt_was_inlined;              /**< number of times other graph were inlined */
+  counter_t                  cnt_got_inlined;              /**< number of times this graph was inlined */
+  counter_t                  cnt_strength_red;             /**< number of times strength reduction was successful on this graph */
+  counter_t                  cnt_edges;                    /**< number of DF edges in this graph */
+  counter_t                  cnt_all_calls;                /**< number of all calls */
+  counter_t                  cnt_call_with_cnst_arg;       /**< number of calls with const args */
+  counter_t                  cnt_indirect_calls;           /**< number of indirect calls */
+  counter_t                  cnt_if_conv[IF_RESULT_LAST];  /**< number of if conversions */
+  counter_t                  cnt_real_func_call;           /**< number real function call optimization */
+  unsigned                   num_tail_recursion;           /**< number of tail recursion optimizations */
+  HASH_MAP(opt_entry_t)      *opt_hash[FS_OPT_MAX];        /**< hash maps containing opcode counter for optimizations */
+  ir_graph                   *irg;                         /**< the graph of this object */
+  entity                     *ent;                         /**< the entity of this graph if one exists */
+  set                        *address_mark;                /**< a set containing the address marks of the nodes */
+  unsigned                   is_deleted:1;                 /**< set if this irg was deleted */
+  unsigned                   is_leaf:1;                    /**< set, if this irg is a leaf function */
+  unsigned                   is_leaf_call:2;               /**< set, if this irg calls only leaf functions */
+  unsigned                   is_recursive:1;               /**< set, if this irg has recursive calls */
+  unsigned                   is_chain_call:1;              /**< set, if this irg is a chain call */
+  unsigned                   is_analyzed:1;                /**< helper: set, if this irg was already analysed */
 } graph_entry_t;
 
 /**
@@ -129,6 +130,15 @@ typedef struct _reg_pressure_entry_t {
 /**
  * An entry for a block or extended block in a ir-graph
  */
+typedef struct _be_block_entry_t {
+  long            block_nr;      /**< block nr */
+  /**< the highest register pressures for this block for each register class */
+  HASH_MAP(reg_pressure_entry_t) *reg_pressure;
+} be_block_entry_t;
+
+/**
+ * An entry for a block or extended block in a ir-graph
+ */
 typedef struct _block_entry_t {
   counter_t       cnt_nodes;     /**< the counter of nodes in this block */
   counter_t       cnt_edges;     /**< the counter of edges in this block */
@@ -136,8 +146,6 @@ typedef struct _block_entry_t {
   counter_t       cnt_out_edges; /**< the counter of edges outgoing from this block to other blocks */
   counter_t       cnt_phi_data;  /**< the counter of data Phi nodes in this block */
   long            block_nr;      /**< block nr */
-  /**< the highest register pressures for this block for each register class */
-  HASH_MAP(reg_pressure_entry_t) *reg_pressure;
 } block_entry_t;
 
 /** An entry for an extended block in a ir-graph */
@@ -204,6 +212,7 @@ typedef void (*dump_finish_FUNC)(dumper_t *dmp);
 typedef struct _statistic_info_t {
   unsigned                stat_options;	  /**< statistic options: field must be first */
   struct obstack          cnts;           /**< obstack containing the counters that are incremented */
+  struct obstack          be_data;        /**< obstack containing backend statistics data */
   HASH_MAP(graph_entry_t) *irg_hash;      /**< hash map containing the counter for irgs */
   HASH_MAP(ir_op)         *ir_op_hash;    /**< hash map containing all ir_ops (accessible by op_codes) */
   pdeq                    *wait_q;        /**< wait queue for leaf call decision */

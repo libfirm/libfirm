@@ -152,7 +152,7 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
  * dumps the register pressure for each block and for each register class
  */
 static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entry) {
-  block_entry_t *b_entry = pset_first(entry->rp_block_hash);
+  be_block_entry_t *b_entry = pset_first(entry->be_block_hash);
   reg_pressure_entry_t *rp_entry;
 
   /* return if no reg pressure information available */
@@ -173,7 +173,7 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
   /* print the reg pressure for all blocks and register classes */
   for (/* b_entry is already initialized */ ;
        b_entry;
-	   b_entry = pset_next(entry->rp_block_hash))
+	   b_entry = pset_next(entry->be_block_hash))
   {
 	fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
 	for (rp_entry = pset_first(b_entry->reg_pressure);

@@ -130,6 +130,17 @@ static int block_cmp(const void *elt, const void *key)
 }
 
 /**
+ * compare two elements of the be_block hash
+ */
+static int be_block_cmp(const void *elt, const void *key)
+{
+  const be_block_entry_t *e1 = elt;
+  const be_block_entry_t *e2 = key;
+
+  return e1->block_nr != e2->block_nr;
+}
+
+/**
  * compare two elements of the block/extbb hash
  */
 static int reg_pressure_cmp(const void *elt, const void *key)
@@ -278,8 +289,8 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
   elem->address_mark = new_set(address_mark_cmp, 5);
   elem->irg          = irg;
 
-  /* create hash map for reg pressure */
-  elem->rp_block_hash = new_pset(block_cmp, 5);
+  /* create hash map backend block information */
+  elem->be_block_hash = new_pset(be_block_cmp, 5);
 
   /* these hash tables are created on demand */
   elem->block_hash = NULL;
@@ -337,7 +348,6 @@ static void block_clear_entry(block_entry_t *elem)
   cnt_clr(&elem->cnt_in_edges);
   cnt_clr(&elem->cnt_out_edges);
   cnt_clr(&elem->cnt_phi_data);
-  elem->reg_pressure = new_pset(reg_pressure_cmp, 2);
 }
 
 /**
@@ -362,6 +372,45 @@ static block_entry_t *block_get_entry(struct obstack *obst, long block_nr, hmap_
 
   /* clear new counter */
   block_clear_entry(elem);
+
+  elem->block_nr = block_nr;
+
+  return pset_insert(hmap, elem, block_nr);
+}
+
+/**
+ * clears all sets in be_block_entry_t
+ */
+static void be_block_clear_entry(be_block_entry_t *elem)
+{
+	if (elem->reg_pressure)
+		del_pset(elem->reg_pressure);
+
+	elem->reg_pressure = new_pset(reg_pressure_cmp, 5);
+}
+
+/**
+ * Returns the associated be_block_entry_t for an block.
+ *
+ * @param block_nr  an IR  block number
+ * @param hmap      a hash map containing long -> be_block_entry_t
+ */
+static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr, hmap_be_block_entry_t *hmap)
+{
+  be_block_entry_t key;
+  be_block_entry_t *elem;
+
+  key.block_nr = block_nr;
+
+  elem = pset_find(hmap, &key, block_nr);
+  if (elem)
+    return elem;
+
+  elem = obstack_alloc(obst, sizeof(*elem));
+  memset(elem, 0, sizeof(*elem));
+
+  /* clear new counter */
+  be_block_clear_entry(elem);
 
   elem->block_nr = block_nr;
 
@@ -1514,15 +1563,15 @@ static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, 
   STAT_ENTER;
   {
     graph_entry_t        *graph = graph_get_entry(irg, status->irg_hash);
-    block_entry_t        *block_ent;
+    be_block_entry_t     *block_ent;
     reg_pressure_entry_t *rp_ent;
 
-    /* create new block counter */
-    if (! graph->rp_block_hash)
-      graph->rp_block_hash = new_pset(block_cmp, 5);
+    /* create new be_block hash */
+    if (! graph->be_block_hash)
+      graph->be_block_hash = new_pset(be_block_cmp, 5);
 
-    block_ent = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(block), graph->rp_block_hash);
-	rp_ent    = obstack_alloc(&status->cnts, sizeof(*rp_ent));
+    block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
+	rp_ent    = obstack_alloc(&status->be_data, sizeof(*rp_ent));
 	memset(rp_ent, 0, sizeof(*rp_ent));
 
 	rp_ent->id_name  = class_name;
@@ -1699,6 +1748,7 @@ void firm_init_stat(unsigned enable_options)
   HOOK(hook_be_block_regpressure,               stat_be_block_regpressure);
 
   obstack_init(&status->cnts);
+  obstack_init(&status->be_data);
 
   /* create the hash-tables */
   status->irg_hash   = new_pset(graph_cmp, 8);
@@ -1784,6 +1834,8 @@ void firm_init_stat(unsigned enable_options)
 /* terminates the statistics module, frees all memory */
 void stat_term(void) {
   if (status != (stat_info_t *)&status_disable) {
+    obstack_free(&status->be_data, NULL);
+	obstack_free(&status->cnts, NULL);
     xfree(status);
     status = (stat_info_t *)&status_disable;
   }
