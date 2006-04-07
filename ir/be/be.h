@@ -2,6 +2,9 @@
 #ifndef _BE_MAIN_H
 #define _BE_MAIN_H
 
+#include <stdio.h>
+#include "dbginfo.h"
+
 /**
  * Register the Firm backend command line options.
  */
