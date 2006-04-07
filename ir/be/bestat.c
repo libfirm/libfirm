@@ -48,7 +48,6 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 		}
 
 		hook_be_block_regpressure(block, birg->irg, max_live, new_id_from_str(cls->name));
-		ir_printf("max regpressure %+F: %d\n", block, max_live);
 	}
 }
 
