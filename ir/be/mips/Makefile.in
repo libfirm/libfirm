@@ -35,11 +35,11 @@ include $(top_srcdir)/MakeTargets
 
 $(full_dirbe)/$(arch)_new_nodes.c: $(full_dirbe)/gen_$(arch)_regalloc_if.h $(full_dirbe)/gen_$(arch)_new_nodes.c.inl
 
-$(full_dirbe)/$(arch)_new_nodes.h: $(full_dirbe)/gen_$(arch)_new_nodes.h.inl
+$(full_dirbe)/$(arch)_new_nodes.h: $(full_dirbe)/gen_$(arch)_new_nodes.h
 
 $(full_dirbe)/bearch_$(arch).c: $(full_dirbe)/gen_$(arch)_regalloc_if.h
 
-$(full_dirbe)/gen_$(arch)_new_nodes.c.inl $(full_dirbe)/gen_$(arch)_new_nodes.h.inl: $(full_dir)/scripts/generate_new_opcodes.pl $(full_dirbe)/$(arch)_spec.pl
+$(full_dirbe)/gen_$(arch)_new_nodes.c.inl $(full_dirbe)/gen_$(arch)_new_nodes.h: $(full_dir)/scripts/generate_new_opcodes.pl $(full_dirbe)/$(arch)_spec.pl
 	$(full_dir)/scripts/generate_new_opcodes.pl $(full_dirbe)/$(arch)_spec.pl $(full_dirbe)
 
 $(full_dirbe)/gen_$(arch)_emitter.c $(full_dirbe)/gen_$(arch)_emitter.h: $(full_dir)/scripts/generate_emitter.pl $(full_dirbe)/$(arch)_spec.pl
