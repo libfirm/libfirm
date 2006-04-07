@@ -414,19 +414,6 @@ $comment_string = "/*";
   "comment"   => "represents an integer constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "gp" ] },
-  "emit"      =>
-'  if (get_ia32_Immop_tarval(n) == get_tarval_null(get_irn_mode(n))) {
-4.   sub %D1, %D1 /* optimized mov 0 to register */
-  }
-  else {
-    if (get_ia32_op_type(n) == ia32_SymConst) {
-6.    mov %D1, OFFSET FLAT:%C /* Move address of SymConst into register */
-    }
-	else {
-6.    mov %D1, %C /* Mov Const into register */
-	}
-  }
-',
 },
 
 "Cdq" => {
@@ -501,8 +488,8 @@ $comment_string = "/*";
 
 "Leave" => {
   "comment"   => "destroy stack frame",
-  "reg_req"   => { "in" => [ "esp", "ebp" ], "out" => [ "esp" ] },
-  "emit"      => '. leave /* Enter */'
+  "reg_req"   => { "in" => [ "esp", "ebp" ], "out" => [ "ebp", "esp" ] },
+  "emit"      => '. leave /* Leave */'
 },
 
 #-----------------------------------------------------------------------------#

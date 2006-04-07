@@ -29,7 +29,10 @@ typedef enum _ia32_optimize_t {
 	IA32_OPT_EXTBB     = 16,  /**< do extended basic block scheduling */
 } ia32_optimize_t;
 
-/** architectures */
+/**
+ * Architectures. Clustered for easier macro implementation,
+ * do not change.
+ */
 typedef enum cpu_support {
 	arch_i386,          /**< i386 */
 	arch_i486,          /**< i486 */
@@ -47,12 +50,30 @@ typedef enum cpu_support {
 	arch_opteron,       /**< Opteron */
 } cpu_support;
 
+/** checks for l <= x <= h */
+#define _IN_RANGE(x, l, h)	((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
+
+/** returns true if it's Intel architecture */
+#define ARCH_INTEL(x)		_IN_RANGE((x), arch_i386, arch_core)
+
+/** returns true if it's AMD architecture */
+#define ARCH_AMD(x)			_IN_RANGE((x), arch_k6, arch_opteron)
+
 /** floating point support */
 typedef enum fp_support {
 	fp_none,  /**< no floating point instructions are used */
 	fp_x87,   /**< use x87 instructions */
 	fp_sse2   /**< use SSE2 instructions */
 } fp_support;
+
+/** Sets the used flag to the current floating point architecture. */
+#define FP_USED(cg)  ((cg)->used_fp = (cg)->fp_kind)
+
+/** Returns non-zero if the current floating point architecture is SSE2. */
+#define USE_SSE2(cg) ((cg)->fp_kind == fp_sse2)
+
+/** Returns non-zero if the current floating point architecture is x87. */
+#define USE_x87(cg)  ((cg)->fp_kind == fp_x87)
 
 typedef struct _ia32_isa_t ia32_isa_t;
 

@@ -357,19 +357,33 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
 	}
 	else {
-		ir_node *pop;
+		const ia32_isa_t *isa = (ia32_isa_t *)env->isa;
 		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
 		int reg_size     = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 
-		/* copy ebp to esp */
-		curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
+    if (ARCH_AMD(isa->opt_arch)) {
+			ir_node *leave;
 
-		/* pop ebp */
-		pop = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem, mode_T);
-		set_ia32_flags(pop, arch_irn_flags_ignore);
-		curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, 0);
-		curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), 1);
-		*mem    = new_r_Proj(current_ir_graph, bl, pop, mode_M, 2);
+			/* leave */
+			leave = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, *mem, mode_T);
+			set_ia32_flags(leave, arch_irn_flags_ignore);
+			curr_bp = new_r_Proj(current_ir_graph, bl, leave, mode_bp, 0);
+			curr_sp = new_r_Proj(current_ir_graph, bl, leave, get_irn_mode(curr_sp), 1);
+			*mem    = new_r_Proj(current_ir_graph, bl, leave, mode_M, 2);
+		}
+		else {
+			ir_node *pop;
+
+			/* copy ebp to esp */
+			curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
+
+			/* pop ebp */
+			pop = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem, mode_T);
+			set_ia32_flags(pop, arch_irn_flags_ignore);
+			curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, 0);
+			curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), 1);
+			*mem    = new_r_Proj(current_ir_graph, bl, pop, mode_M, 2);
+		}
 		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
 		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
 	}
@@ -899,6 +913,7 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	(0 |
+	IA32_OPT_INCDEC    |     /* optimize add 1, sub 1 into inc/dec               default: on  */
 	IA32_OPT_DOAM      |     /* optimize address mode                            default: on  */
 	IA32_OPT_PLACECNST |     /* place constants immediately before instructions, default: on  */
 	IA32_OPT_IMMOPS    |     /* operations can use immediates,                   default: on  */
@@ -929,6 +944,16 @@ static void *ia32_init(FILE *file_handle) {
 	ia32_register_init(isa);
 	ia32_create_opcodes();
 	ia32_register_copy_attr_func();
+
+	if ((ARCH_INTEL(isa->arch) && isa->arch < arch_pentium_4) ||
+	    (ARCH_AMD(isa->arch) && isa->arch < arch_athlon))
+		/* no SSE2 for these cpu's */
+		isa->fp_kind = fp_x87;
+
+	if (ARCH_INTEL(isa->opt_arch) && isa->opt_arch >= arch_pentium_4) {
+		/* Pentium 4 don't like inc and dec instructions */
+		isa->opt &= ~IA32_OPT_INCDEC;
+	}
 
 	isa->regs_16bit = pmap_create();
 	isa->regs_8bit  = pmap_create();
@@ -1217,7 +1242,6 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("arch",   "select the instruction architecture", &arch_var),
 	LC_OPT_ENT_ENUM_INT("opt",    "optimize for instruction architecture", &opt_arch_var),
 	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &fp_unit_var),
-	LC_OPT_ENT_BIT("incdec", "optimize for inc/dec", &ia32_isa_template.opt, IA32_OPT_INCDEC),
 	LC_OPT_ENT_NEGBIT("noaddrmode", "do not use address mode", &ia32_isa_template.opt, IA32_OPT_DOAM),
 	LC_OPT_ENT_NEGBIT("noplacecnst", "do not place constants", &ia32_isa_template.opt, IA32_OPT_PLACECNST),
 	LC_OPT_ENT_NEGBIT("noimmop", "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
