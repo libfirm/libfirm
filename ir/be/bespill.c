@@ -143,7 +143,7 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) 
 	/* if not found spill the phi */
 	if(!ctx->spill) {
 		/* build a new PhiM with dummy in-array */
-    NEW_ARR_A(ir_node *, ins, n);
+		NEW_ARR_A(ir_node *, ins, n);
 		for(i=0; i<n; ++i)
 			ins[i] = new_r_Unknown(irg, mode_M);
 		ctx->spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);

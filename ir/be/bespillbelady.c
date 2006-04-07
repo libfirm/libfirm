@@ -299,7 +299,6 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	}
 	DBG((dbg, DBG_DECIDE, "    demand = %d\n", demand));
 
-
 	/*
 	 * 2. Make room for at least 'demand' slots
 	 */
@@ -319,6 +318,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 		   before its first usage, remove it from start workset */
 		for (i=max_allowed; i<ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
+
 			if (!pset_find_ptr(bel->used, irn)) {
 				ir_node *curr_bb = get_nodes_block(bel->instr);
 				workset_t *ws_start = get_block_info(curr_bb)->ws_start;
