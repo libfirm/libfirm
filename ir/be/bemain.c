@@ -55,6 +55,7 @@
 #include "bessadestr.h"
 #include "beabi.h"
 #include "belower.h"
+#include "bestat.h"
 
 #define DUMP_INITIAL    (1 << 0)
 #define DUMP_ABI        (1 << 1)
@@ -337,6 +338,9 @@ static void be_main_loop(FILE *file_handle)
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
+
+		/* do some statistics */
+		be_do_stat_reg_pressure(&birg);
 
 		/* Do register allocation */
 		arch_code_generator_before_ra(birg.cg);
