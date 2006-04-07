@@ -137,11 +137,12 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   memset(p, 0, node_size);
 	res = (ir_node *) (p + firm_add_node_size);
 
-  res->kind    = k_ir_node;
-  res->op      = op;
-  res->mode    = mode;
-  res->visited = 0;
-  res->link    = NULL;
+  res->kind     = k_ir_node;
+  res->op       = op;
+  res->mode     = mode;
+  res->visited  = 0;
+  res->node_idx = get_irg_next_node_idx(irg);
+  res->link     = NULL;
   if (arity < 0) {
     res->in = NEW_ARR_F (ir_node *, 1);  /* 1: space for block */
   } else {
@@ -561,6 +562,11 @@ get_irn_except_attr (ir_node *node)
 void *
 get_irn_generic_attr (ir_node *node) {
   return &node->attr;
+}
+
+unsigned (get_irn_idx)(const ir_node *node) {
+  assert(is_ir_node(node));
+  return _get_irn_idx(node);
 }
 
 /** manipulate fields of individual nodes **/

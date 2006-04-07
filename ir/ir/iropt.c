@@ -3580,7 +3580,7 @@ optimize_node(ir_node *n)
         edges_node_deleted(n, current_ir_graph);
 
         /* evaluation was successful -- replace the node. */
-        obstack_free(current_ir_graph->obst, n);
+        irg_kill_node(current_ir_graph, n);
         nw = new_Const(get_tarval_mode (tv), tv);
 
         if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
@@ -3615,8 +3615,7 @@ optimize_node(ir_node *n)
     edges_node_deleted(oldn, current_ir_graph);
 
     /* We found an existing, better node, so we can deallocate the old node. */
-    obstack_free (current_ir_graph->obst, oldn);
-
+    irg_kill_node(current_ir_graph, oldn);
     return n;
   }
 

@@ -1162,6 +1162,12 @@ unsigned register_additional_node_data(unsigned size);
  */
 void *get_irn_generic_attr(ir_node *node);
 
+/**
+ * Returns the unique node index for the node in its graph.
+ * This index is used to access phase information for this node.
+ */
+unsigned get_irn_idx(const ir_node *node);
+
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
 /*-----------------------------------------------------------------*/

@@ -240,18 +240,19 @@ struct ir_node {
   ir_mode *mode;           /**< Mode of this node. */
   struct ir_node **in;     /**< array with predecessors / operands */
   unsigned long visited;   /**< visited counter for walks of the graph */
+  unsigned node_idx;       /**< the node index of this node in its graph */
   void *link;              /**< to attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
-			      during optimization to link to nodes that
-			      shall replace a node. */
+                              during optimization to link to nodes that
+                              shall replace a node. */
   /* ------- Fields for optimizations / analysis information ------- */
   struct ir_node **out;    /**< @deprecated array of out edges. */
   struct dbg_info* dbi;    /**< A pointer to information for debug support. */
   /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
-	int out_valid;
+  int out_valid;
   long node_nr;            /**< a unique node number for each node to make output
-			      readable. */
+                                   readable. */
 #endif
   /* ------- For analyses -------- */
   ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
@@ -796,6 +797,10 @@ static INLINE int _get_Psi_n_conds(ir_node *node) {
   return _get_irn_arity(node) >> 1;
 }
 
+static INLINE unsigned _get_irn_idx(const ir_node *node) {
+  return node->node_idx;
+}
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
@@ -852,5 +857,6 @@ static INLINE int _get_Psi_n_conds(ir_node *node) {
 #define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
 #define get_Psi_n_conds(node)                 _get_Psi_n_conds(node)
+#define get_irn_idx(node)                     _get_irn_idx(node)
 
 # endif /* _IRNODE_T_H_ */

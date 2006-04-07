@@ -238,7 +238,7 @@ static unsigned nodes_touched = 0;
  */
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-  assert(node  && node->kind==k_ir_node);
+  assert(is_ir_node(node));
 
   if (get_interprocedural_view()) {
     eset * irg_set = eset_create();

@@ -87,6 +87,8 @@ struct ir_graph {
   ir_node *current_block;        /**< block for newly gen_*()-erated ir_nodes */
   struct obstack *extbb_obst;    /**< obstack for extended basic block info */
 
+  unsigned last_node_idx;        /**< last IR node index for this graph */
+
   /* -- Fields for graph properties -- */
   irg_inline_property inline_property;     /**< How to handle inlineing. */
   unsigned additional_properties;          /**< additional graph properties. */
@@ -517,6 +519,25 @@ _inc_irg_block_visited(ir_graph *irg) {
 static INLINE unsigned
 _get_irg_estimated_node_cnt(const ir_graph *irg) {
   return irg->estimated_node_count;
+}
+
+/**
+ * Returns the next IR node index for the given graph.
+ */
+static INLINE unsigned
+get_irg_next_node_idx(ir_graph *irg) {
+  return irg->last_node_idx++;
+}
+
+/**
+ * Kill a node from the irg. BEWARE: this kills
+ * all later created nodes.
+ */
+static INLINE void
+irg_kill_node(ir_graph *irg, ir_node *n) {
+  if (get_irn_idx(n) + 1 == irg->last_node_idx)
+    --irg->last_node_idx;
+  obstack_free(irg->obst, n);
 }
 
 #define get_interprocedural_view()            _get_interprocedural_view()

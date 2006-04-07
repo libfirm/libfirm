@@ -173,6 +173,8 @@ new_r_ir_graph (entity *ent, int n_loc)
   obstack_init(res->obst);
   res->extbb_obst = NULL;
 
+  res->last_node_idx = 0;
+
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
                        iropt.c */
@@ -279,6 +281,8 @@ ir_graph *new_const_code_irg(void) {
   res->obst      = xmalloc (sizeof(*res->obst));
   obstack_init (res->obst);
   res->extbb_obst = NULL;
+
+  res->last_node_idx = 0;
 
   res->phase_state      = phase_building;
   res->irg_pinned_state = op_pin_state_pinned;

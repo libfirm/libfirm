@@ -30,8 +30,6 @@
 #define obstack_grow_str(obst,s) obstack_grow((obst), (s), strlen((s)))
 #define obstack_grow_str_const(obst,s) obstack_grow((obst), (s), sizeof((s)))
 
-extern int obstack_printf(struct obstack *obst, const char *fmt, ...);
-
 /**
  * Get the number of bits set in a word.
  */
