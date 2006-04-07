@@ -151,6 +151,9 @@ typedef struct hook_entry {
     /** This hook is called after a Div/Mod/DivMod by a constant value was replaced. */
     void (*_hook_arch_dep_replace_division_by_const)(void *context, ir_node *irn);
 
+	/** This hook is called while calculating the register pressure. */
+	void (*_hook_be_block_regpressure)(void *context, ir_node *block, ir_graph *irg, int pressure, ident *class_name);
+
     /** This hook is called after a new mode was registered. */
     void (*_hook_new_mode)(void *context, const ir_mode *tmpl, ir_mode *mode);
 
@@ -195,6 +198,7 @@ typedef enum {
   hook_func_call,
   hook_arch_dep_replace_mul_with_shifts,
   hook_arch_dep_replace_division_by_const,
+  hook_be_block_regpressure,
   hook_new_mode,
   hook_new_entity,
   hook_new_type,
@@ -272,6 +276,8 @@ extern hook_entry_t *hooks[hook_last];
   hook_exec(hook_arch_dep_replace_mul_with_shifts, (ctx, irn))
 #define hook_arch_dep_replace_division_by_const(irn) \
   hook_exec(hook_arch_dep_replace_division_by_const, (ctx, irn))
+#define hook_be_block_regpressure(block, irg, pressure, class_name) \
+  hook_exec(hook_be_block_regpressure, (ctx, block, irg, pressure, class_name))
 #define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (ctx, tmpl, mode))
 #define hook_new_entity(ent)              hook_exec(hook_new_entity, (ctx, ent))
 #define hook_new_type(tp)                 hook_exec(hook_new_type, (ctx, tp))
