@@ -149,6 +149,44 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 }
 
 /**
+ * dumps the register pressure for each block and for each register class
+ */
+static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entry) {
+  block_entry_t *b_entry = pset_first(entry->rp_block_hash);
+  reg_pressure_entry_t *rp_entry;
+
+  /* return if no reg pressure information available */
+  if (! b_entry)
+	  return;
+
+  /* print table head (register classes) */
+  fprintf(dmp->f, "\nREG PRESSURE:\n");
+  fprintf(dmp->f, "%12s", "Block Nr");
+  for (rp_entry = pset_first(b_entry->reg_pressure);
+       rp_entry;
+	   rp_entry = pset_next(b_entry->reg_pressure))
+  {
+    fprintf(dmp->f, "%15s", get_id_str(rp_entry->id_name));
+  }
+  fprintf(dmp->f, "\n");
+
+  /* print the reg pressure for all blocks and register classes */
+  for (/* b_entry is already initialized */ ;
+       b_entry;
+	   b_entry = pset_next(entry->rp_block_hash))
+  {
+	fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
+	for (rp_entry = pset_first(b_entry->reg_pressure);
+	     rp_entry;
+		 rp_entry = pset_next(b_entry->reg_pressure))
+	{
+      fprintf(dmp->f, "%15d", rp_entry->pressure);
+	}
+    fprintf(dmp->f, "\n");
+  }
+}
+
+/**
  * dumps the number of real_function_call optimization
  */
 static void simple_dump_real_func_calls(dumper_t *dmp, counter_t *cnt)
@@ -276,6 +314,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 	      (double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
       );
     }
+
+    /* dump block reg pressure */
+	simple_dump_be_block_reg_pressure(dmp, entry);
 
     if (dmp->status->stat_options & FIRMSTAT_COUNT_EXTBB) {
       /* dump extended block info */

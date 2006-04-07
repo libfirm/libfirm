@@ -25,6 +25,7 @@
 #include "irgwalk.h"
 #include "counter.h"
 #include "irhooks.h"
+#include "ident.h"
 
 /* some useful macro. */
 #define ARR_SIZE(a)   (sizeof(a)/sizeof((a)[0]))
@@ -39,6 +40,7 @@ typedef pset hmap_node_entry_t;
 typedef pset hmap_graph_entry_t;
 typedef pset hmap_opt_entry_t;
 typedef pset hmap_block_entry_t;
+typedef pset hmap_reg_pressure_entry_t;
 typedef pset hmap_ir_op;
 typedef pset hmap_distrib_entry_t;
 
@@ -83,7 +85,8 @@ typedef struct _graph_entry_t {
   HASH_MAP(node_entry_t)  *opcode_hash;                 /**< hash map containing the opcode counter */
   HASH_MAP(block_entry_t) *block_hash;                  /**< hash map containing the block counter */
   HASH_MAP(block_entry_t) *extbb_hash;                  /**< hash map containing the extended block counter */
-  counter_t               cnt_walked;	                  /**< walker walked over the graph */
+  HASH_MAP(block_entry_t) *rp_block_hash;               /**< hash map containing the block reg pressure information */
+  counter_t               cnt_walked;	                /**< walker walked over the graph */
   counter_t               cnt_walked_blocks;            /**< walker walked over the graph blocks */
   counter_t               cnt_was_inlined;              /**< number of times other graph were inlined */
   counter_t               cnt_got_inlined;              /**< number of times this graph was inlined */
@@ -116,15 +119,25 @@ typedef struct _opt_entry_t {
 } opt_entry_t;
 
 /**
+ * An entry for register pressure.
+ */
+typedef struct _reg_pressure_entry_t {
+  ident *id_name;    /**< name of the register class */
+  int    pressure;   /**< the register pressure for this class */
+} reg_pressure_entry_t;
+
+/**
  * An entry for a block or extended block in a ir-graph
  */
 typedef struct _block_entry_t {
-  counter_t  cnt_nodes;     /**< the counter of nodes in this block */
-  counter_t  cnt_edges;     /**< the counter of edges in this block */
-  counter_t  cnt_in_edges;  /**< the counter of edges incoming from other blocks to this block */
-  counter_t  cnt_out_edges; /**< the counter of edges outgoing from this block to other blocks */
-  counter_t  cnt_phi_data;  /**< the counter of data Phi nodes in this block */
-  long       block_nr;      /**< block nr */
+  counter_t       cnt_nodes;     /**< the counter of nodes in this block */
+  counter_t       cnt_edges;     /**< the counter of edges in this block */
+  counter_t       cnt_in_edges;  /**< the counter of edges incoming from other blocks to this block */
+  counter_t       cnt_out_edges; /**< the counter of edges outgoing from this block to other blocks */
+  counter_t       cnt_phi_data;  /**< the counter of data Phi nodes in this block */
+  long            block_nr;      /**< block nr */
+  /**< the highest register pressures for this block for each register class */
+  HASH_MAP(reg_pressure_entry_t) *reg_pressure;
 } block_entry_t;
 
 /** An entry for an extended block in a ir-graph */
@@ -232,8 +245,8 @@ ir_op *stat_get_op_from_opcode(opcode code);
  * An entry in a distribution table
  */
 typedef struct _distrib_entry_t {
-  counter_t	cnt;		/**< the current count */
-  const void	*object;	/**< the object which is counted */
+  counter_t	 cnt;       /**< the current count */
+  const void *object;   /**< the object which is counted */
 } distrib_entry_t;
 
 /** The type of the hash function for objects in distribution tables. */
@@ -243,10 +256,10 @@ typedef unsigned (*distrib_hash_fun)(const void *object);
  * The distribution table.
  */
 typedef struct _distrib_tbl_t {
-  struct obstack          	cnts;		/**< obstack containing the distrib_entry_t entries */
-  HASH_MAP(distrib_entry_t)	*hash_map;	/**< the hash map containing the distribution */
-  distrib_hash_fun          hash_func;	/**< the hash function for object in this distribution */
-  unsigned			int_dist;	/**< non-zero, if it's a integer distribution */
+  struct obstack          	cnts;       /**< obstack containing the distrib_entry_t entries */
+  HASH_MAP(distrib_entry_t)	*hash_map;  /**< the hash map containing the distribution */
+  distrib_hash_fun          hash_func;  /**< the hash function for object in this distribution */
+  unsigned                  int_dist;   /**< non-zero, if it's a integer distribution */
 } distrib_tbl_t;
 
 /* API for distribution tables */

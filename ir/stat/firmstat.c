@@ -130,6 +130,17 @@ static int block_cmp(const void *elt, const void *key)
 }
 
 /**
+ * compare two elements of the block/extbb hash
+ */
+static int reg_pressure_cmp(const void *elt, const void *key)
+{
+  const reg_pressure_entry_t *e1 = elt;
+  const reg_pressure_entry_t *e2 = key;
+
+  return e1->id_name != e2->id_name;
+}
+
+/**
  * compare two elements of the ir_op hash
  */
 static int opcode_cmp_2(const void *elt, const void *key)
@@ -267,6 +278,9 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
   elem->address_mark = new_set(address_mark_cmp, 5);
   elem->irg          = irg;
 
+  /* create hash map for reg pressure */
+  elem->rp_block_hash = new_pset(block_cmp, 5);
+
   /* these hash tables are created on demand */
   elem->block_hash = NULL;
   elem->extbb_hash = NULL;
@@ -323,6 +337,7 @@ static void block_clear_entry(block_entry_t *elem)
   cnt_clr(&elem->cnt_in_edges);
   cnt_clr(&elem->cnt_out_edges);
   cnt_clr(&elem->cnt_phi_data);
+  elem->reg_pressure = new_pset(reg_pressure_cmp, 2);
 }
 
 /**
@@ -1482,6 +1497,42 @@ static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node)
   STAT_LEAVE;
 }
 
+/**
+ * Update the register pressure of a block
+ *
+ * @param ctx        the hook context
+ * @param block      the block for which the reg pressure should be set
+ * @param irg        the irg containing the block
+ * @param pressure   the pressure
+ * @param class_name the ident name of the register class
+ */
+static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, int pressure, ident *class_name)
+{
+  if (! status->stat_options)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t        *graph = graph_get_entry(irg, status->irg_hash);
+    block_entry_t        *block_ent;
+    reg_pressure_entry_t *rp_ent;
+
+    /* create new block counter */
+    if (! graph->rp_block_hash)
+      graph->rp_block_hash = new_pset(block_cmp, 5);
+
+    block_ent = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(block), graph->rp_block_hash);
+	rp_ent    = obstack_alloc(&status->cnts, sizeof(*rp_ent));
+	memset(rp_ent, 0, sizeof(*rp_ent));
+
+	rp_ent->id_name  = class_name;
+    rp_ent->pressure = pressure;
+
+    pset_insert(block_ent->reg_pressure, rp_ent, HASH_PTR(class_name));
+  }
+  STAT_LEAVE;
+}
+
 /* Dumps a statistics snapshot */
 void stat_dump_snapshot(const char *name, const char *phase)
 {
@@ -1645,6 +1696,7 @@ void firm_init_stat(unsigned enable_options)
   HOOK(hook_func_call,                          stat_func_call);
   HOOK(hook_arch_dep_replace_mul_with_shifts,   stat_arch_dep_replace_mul_with_shifts);
   HOOK(hook_arch_dep_replace_division_by_const, stat_arch_dep_replace_division_by_const);
+  HOOK(hook_be_block_regpressure,               stat_be_block_regpressure);
 
   obstack_init(&status->cnts);
 
