@@ -65,6 +65,9 @@ $comment_string = "/*";
 #        for i = 1 .. arity: ir_node *op_i
 #        ir_mode *mode
 #
+# outs:  if a node defines more than one output, the names of the projections
+#        nodes having outs having automatically the mode mode_T
+#
 # comment: OPTIONAL comment for the node constructor
 #
 # rd_constructor: for every operation there will be a
