@@ -79,7 +79,7 @@ static ir_node* mips_get_reg_node(mips_transform_env_t *env, const arch_register
 
 static ir_node* gen_zero_node(mips_transform_env_t *env, dbg_info *ebg, ir_graph *irg, ir_node *block)
 {
-	ir_node *zero = be_abi_get_callee_save_irn(env->cg->birg->abi, &mips_general_purpose_regs[REG_ZERO]);
+	ir_node *zero = be_abi_get_callee_save_irn(env->cg->birg->abi, &mips_gp_regs[REG_ZERO]);
 	// TODO make zero nodes work
 	//ir_node *unknown = new_rd_mips_zero(dbg, irg, block, mode);
 
@@ -510,7 +510,7 @@ static ir_node *create_conv_store_load(mips_transform_env_t *env, ir_mode* srcmo
 	ptr_i32type = new_d_type_pointer(id, i32type, mode_P, env->dbg);
 	mem_entity = new_d_entity(get_irg_frame_type(env->irg), id, ptr_i32type, env->dbg);
 
-	sp = mips_get_reg_node(env, &mips_general_purpose_regs[REG_SP]);
+	sp = mips_get_reg_node(env, &mips_gp_regs[REG_SP]);
 	nomem = new_ir_node(env->dbg, env->irg, env->block, op_NoMem, mode_M, 0, NULL);
 
 	store = new_rd_mips_store_r(env->dbg, env->irg, env->block, nomem, sp, pred, mode_T);

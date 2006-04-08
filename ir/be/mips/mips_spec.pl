@@ -61,6 +61,9 @@ $comment_string = "#";
 #        for i = 1 .. arity: ir_node *op_i
 #        ir_mode *mode
 #
+# outs:  if a node defines more than one output, the names of the projections
+#        nodes having outs having automatically the mode mode_T
+#
 # comment: OPTIONAL comment for the node constructor
 #
 # rd_constructor: for every operation there will be a
@@ -86,7 +89,7 @@ $comment_string = "#";
 #   4 - ignore (do not assign this register)
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold\
 %reg_classes = (
-  "general_purpose" => [
+  "gp" => [
                          { name => "zero", type => 4+2 },  # always zero
                          { name => "at", type => 4 }, # reserved for assembler
                          { name => "v0", type => 1 }, # first return value
@@ -155,30 +158,30 @@ $comment_string = "#";
 
 add => {
   op_flags  => "C",
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. addu %D1, %S1, %S2'
 },
 
 addi => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. addiu %D1, %S1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
 
 and => {
   op_flags  => "C",
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. and %D1, %S1, %S2',
 },
 
 andi => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. andi %D1, %S1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
 
 div => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "none", "none", "none", "none" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "none", "none", "none", "none" ] },
   emit      => '
 	mips_attr_t *attr = get_mips_attr(n);
 	if (attr->modes.original_mode->sign) {
@@ -191,114 +194,126 @@ div => {
 
 mult => {
   op_flags  => "C",
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "none" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
   emit      => '
-	if (mode_is_signed(get_irn_mode(n)))
+	if (mode_is_signed(get_irn_mode(n))) {
 2.		mult %S1, %S2
-	else
+	}
+	else {
 2.		multu %S1, %S2
-'
+	}
+',
 },
 
 nor => {
   op_flags  => "C",
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. nor %D1, %S1, %S2'
 },
 
 not => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. nor %D1, %S1, $zero'
 },
 
 or => {
   op_flags  => "C",
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. or %D1, %S1, %S2'
 },
 
 ori => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. ori %D1, %S1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
 
 sl => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '
-	if (mode_is_signed(get_irn_mode(n)))
+	if (mode_is_signed(get_irn_mode(n))) {
 2.		sal %D1, %S1, %S2
-	else
-2.		sll %D1, %S1, %S2',
+	}
+	else {
+2.		sll %D1, %S1, %S2
+	}
+',
 },
 
 sli => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '
-	if (mode_is_signed(get_irn_mode(n)))
+	if (mode_is_signed(get_irn_mode(n))) {
 2.		sal %D1, %S1, %C
-	else
-2.		sll %D1, %S1, %C',
+	}
+	else {
+2.		sll %D1, %S1, %C
+	}
+',
 },
 
 sra => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. sra %D1, %S1, %S2',
 },
 
 srai => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. sra %D1, %S1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
 
 sr => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '
-	if (mode_is_signed(get_irn_mode(n)))
+	if (mode_is_signed(get_irn_mode(n))) {
 2.		sra %D1, %S1, %S2
-	else
+	}
+	else {
 2.		srl %D1, %S1, %S2
+	}
 ',
 },
 
 sri => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '
-	if (mode_is_signed(get_irn_mode(n)))
+	if (mode_is_signed(get_irn_mode(n))) {
 2.		sra %D1, %S1, %C
-	else
+	}
+	else {
 2.		srl %D1, %S1, %C
+	}
 ',
 },
 
 srlv => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. srlv %D1, %S1, %S2',
 },
 
 sllv => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. sllv %D1, %S1, %S2',
 },
 
 sub => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. subu %D1, %S1, %S2',
 },
 
 subuzero => {
-  reg_req	=> { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req	=> { in => [ "gp" ], out => [ "gp" ] },
   emit => '. subu %D1, $zero, %S1',
 },
 
 xor => {
-  reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   emit      => '. xor %D1, %S1, %S2'
 },
 
 xori => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. xori %D1, %S1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
@@ -313,7 +328,7 @@ xori => {
 # load upper imediate
 lui => {
   op_flags	=> "c",
-  reg_req   => { out => [ "general_purpose" ] },
+  reg_req   => { out => [ "gp" ] },
   emit      => '. lui %D1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
@@ -321,25 +336,25 @@ lui => {
 # load lower immediate
 lli => {
   op_flags	=> "c",
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. ori %D1, %S1, %C',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
 
 la => {
   op_flags	=> "c",
-  reg_req   => { out => [ "general_purpose" ] },
+  reg_req   => { out => [ "gp" ] },
   emit      => '. la %D1, %C',
   cmp_attr => 'return attr_a->symconst_id != attr_b->symconst_id;',
 },
 
 mflo => {
-  reg_req => { in => [ "none" ], out => [ "general_purpose" ] },
+  reg_req => { in => [ "none" ], out => [ "gp" ] },
   emit	  => '. mflo %D1'
 },
 
 mfhi => {
-  reg_req => { in => [ "none" ], out => [ "general_purpose" ] },
+  reg_req => { in => [ "none" ], out => [ "gp" ] },
   emit	  => '. mfhi %D1'
 },
 
@@ -358,22 +373,26 @@ zero => {
 #
 
 slt => {
-	reg_req => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit => '
-	if (mode_is_signed(get_irn_mode(n)))
+	if (mode_is_signed(get_irn_mode(n))) {
 2.		slt %D1, %S1, %S2
-	else
+	}
+	else {
 2.		sltu %D1, %S1, %S2
+	}
 ',
 },
 
 slti => {
-	reg_req => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req => { in => [ "gp" ], out => [ "gp" ] },
 	emit => '
-	if (mode_is_signed(get_irn_mode(n)))
+	if (mode_is_signed(get_irn_mode(n))) {
 2.		slti %D1, %S1, %C
-	else
+	}
+	else {
 2.		sltiu %D1, %S1, %C
+	}
 ',
   cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
@@ -381,7 +400,7 @@ slti => {
 beq => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
-	reg_req => { in => [ "general_purpose", "general_purpose" ], out => [ "in_r0", "none" ] },
+	reg_req => { in => [ "gp", "gp" ], out => [ "in_r0", "none" ] },
 	emit => '
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
@@ -393,7 +412,7 @@ beq => {
 bne => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
-	reg_req => { in => [ "general_purpose", "general_purpose" ], out => [ "in_r0", "none" ] },
+	reg_req => { in => [ "gp", "gp" ], out => [ "in_r0", "none" ] },
 	emit => '
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
@@ -405,7 +424,7 @@ bne => {
 bgtz => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
-	reg_req => { in => [ "general_purpose" ], out => [ "in_r0", "none" ] },
+	reg_req => { in => [ "gp" ], out => [ "in_r0", "none" ] },
 	emit => '
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
@@ -417,7 +436,7 @@ bgtz => {
 blez => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
-	reg_req => { in => [ "general_purpose" ], out => [ "in_r0", "none" ] },
+	reg_req => { in => [ "gp" ], out => [ "in_r0", "none" ] },
 	emit => '
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
@@ -428,7 +447,7 @@ blez => {
 
 j => {
   op_flags => "X",
-  reg_req => { in => [ "general_purpose" ] },
+  reg_req => { in => [ "gp" ] },
   emit => '. j %S1',
 },
 
@@ -454,7 +473,7 @@ fallthrough => {
 SwitchJump => {
   op_flags => "X",
   # -> X,X,...
-  reg_req => { in => [ "general_purpose" ], out => [ "none" ] },
+  reg_req => { in => [ "gp" ], out => [ "none" ] },
   emit => '. j %S1'
 },
 
@@ -466,7 +485,7 @@ SwitchJump => {
 #
 
 load_r => {
-  reg_req	=> { in => [ "none", "general_purpose" ], out => [ "none", "none", "general_purpose" ] },
+  reg_req	=> { in => [ "none", "gp" ], out => [ "none", "none", "gp" ] },
   emit		=> '
 	mips_attr_t* attr = get_mips_attr(n);
 	ir_mode *mode;
@@ -475,16 +494,20 @@ load_r => {
 
 	switch (get_mode_size_bits(mode)) {
 	case 8:
-		if (mode_is_signed(mode))
+		if (mode_is_signed(mode)) {
 3.			lb %D3, %C(%S2)
-		else
+		}
+		else {
 3.			lbu %D3, %C(%S2)
+		}
 		break;
 	case 16:
-		if (mode_is_signed(mode))
+		if (mode_is_signed(mode)) {
 3.			lh %D3, %C(%S2)
-		else
+		}
+		else {
 3.			lhu %D3, %C(%S2)
+		}
 		break;
 	case 32:
 2.		lw %D3, %C(%S2)
@@ -506,7 +529,7 @@ load_r => {
 #
 
 store_r => {
-  reg_req	=> { in => [ "none", "general_purpose", "general_purpose" ], out => [ "none", "none" ] },
+  reg_req	=> { in => [ "none", "gp", "gp" ], out => [ "none", "none" ] },
   emit		=> '
 	mips_attr_t* attr = get_mips_attr(n);
 	ir_mode* mode;
@@ -534,7 +557,7 @@ store_r => {
 },
 
 store_i => {
-  reg_req	=> { in => [ "none", "none", "general_purpose" ], out => [ "none", "none" ] },
+  reg_req	=> { in => [ "none", "none", "gp" ], out => [ "none", "none" ] },
   emit		=> '
 	mips_attr_t* attr = get_mips_attr(n);
 	ir_mode *mode;
@@ -562,7 +585,7 @@ store_i => {
 },
 
 move => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
   emit      => '. or %D1, $zero, %S1'
 },
 
@@ -571,7 +594,7 @@ move => {
 #
 
 reinterpret_conv => {
-  reg_req   => { in => [ "general_purpose" ], out => [ "in_r1" ] },
+  reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
   emit      => '. # reinterpret %S1 -> %D1',
 },
 

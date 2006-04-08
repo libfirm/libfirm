@@ -132,7 +132,7 @@ static const arch_register_req_t *mips_get_irn_reg_req(const void *self, arch_re
 				assert(0 && "floating point not supported (yet)");
 			}
 			else if (mode_is_int(mode) || mode_is_reference(mode)) {
-				memcpy(req, &(mips_default_req_mips_general_purpose.req), sizeof(*req));
+				memcpy(req, &(mips_default_req_mips_gp.req), sizeof(*req));
 			}
 			else if (mode == mode_T || mode == mode_M) {
 				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
@@ -556,8 +556,8 @@ static void *mips_cg_init(const be_irg_t *birg) {
 
 static mips_isa_t mips_isa_template = {
 	&mips_isa_if,
-	&mips_general_purpose_regs[REG_SP],
-	&mips_general_purpose_regs[REG_FP],
+	&mips_gp_regs[REG_SP],
+	&mips_gp_regs[REG_FP],
 	-1,		// stack direction
 	0,		// num codegens?!? TODO what is this?
 	NULL
@@ -613,7 +613,7 @@ static const arch_register_class_t *mips_get_reg_class(const void *self, int i) 
  */
 const arch_register_class_t *mips_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
 	ASSERT_NO_FLOAT(mode);
-	return &mips_reg_classes[CLASS_mips_general_purpose];
+	return &mips_reg_classes[CLASS_mips_gp];
 }
 
 typedef struct {
@@ -651,8 +651,8 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 	dbg_info *dbg = NULL; // TODO where can I get this from?
 	ir_node *block = get_irg_start_block(env->irg);
 	mips_attr_t *attr;
-	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_SP]);
-	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_FP]);
+	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_SP]);
+	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 	int initialstackframesize;
 
 	if(env->debug) {
@@ -670,13 +670,13 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		sp = new_rd_mips_addi(dbg, irg, block, sp, mode_Is);
 		attr = get_mips_attr(sp);
 		attr->tv = new_tarval_from_long(-initialstackframesize, mode_Is);
-		mips_set_irn_reg(NULL, sp, &mips_general_purpose_regs[REG_SP]);
-		//arch_set_irn_register(mips_get_arg_env(), sp, &mips_general_purpose_regs[REG_SP]);
+		mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
+		//arch_set_irn_register(mips_get_arg_env(), sp, &mips_gp_regs[REG_SP]);
 
 		/* TODO: where to get an edge with a0-a3
 		int i;
 		for(i = 0; i < 4; ++i) {
-			ir_node *reg = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_A0 + i]);
+			ir_node *reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_A0 + i]);
 			ir_node *store = new_rd_mips_store_r(dbg, irg, block, *mem, sp, reg, mode_T);
 			attr = get_mips_attr(store);
 			attr->load_store_mode = mode_Iu;
@@ -686,7 +686,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		}
 		*/
 
-		reg = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_FP]);
+		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 		store = new_rd_mips_store_r(dbg, irg, block, *mem, sp, reg, mode_T);
 		attr = get_mips_attr(store);
 		attr->modes.load_store_mode = mode_Iu;
@@ -694,7 +694,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 
 		mm[4] = new_r_Proj(irg, block, store, mode_M, pn_Store_M);
 
-		reg = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_RA]);
+		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_RA]);
 		store = new_rd_mips_store_r(dbg, irg, block, *mem, sp, reg, mode_T);
 		attr = get_mips_attr(store);
 		attr->modes.load_store_mode = mode_Iu;
@@ -713,10 +713,10 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		sp = new_rd_mips_addi(dbg, irg, block, sp, mode_Is);
 		attr = get_mips_attr(sp);
 		attr->tv = new_tarval_from_long(-initialstackframesize, mode_Is);
-		mips_set_irn_reg(NULL, sp, &mips_general_purpose_regs[REG_SP]);
-		//arch_set_irn_register(mips_get_arg_env(), sp, &mips_general_purpose_regs[REG_SP]);
+		mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
+		//arch_set_irn_register(mips_get_arg_env(), sp, &mips_gp_regs[REG_SP]);
 
-		reg = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_FP]);
+		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 		store = new_rd_mips_store_r(dbg, irg, block, *mem, sp, reg, mode_T);
 		attr = get_mips_attr(store);
 		attr->modes.load_store_mode = mode_Iu;
@@ -729,13 +729,13 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 	fp = new_rd_mips_addi(dbg, irg, block, sp, mode_Is);
 	attr = get_mips_attr(fp);
 	attr->tv = new_tarval_from_long(initialstackframesize, mode_Is);
-	mips_set_irn_reg(NULL, fp, &mips_general_purpose_regs[REG_FP]);
-	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_general_purpose_regs[REG_FP]);
+	mips_set_irn_reg(NULL, fp, &mips_gp_regs[REG_FP]);
+	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_gp_regs[REG_FP]);
 
-	be_abi_reg_map_set(reg_map, &mips_general_purpose_regs[REG_FP], fp);
-	be_abi_reg_map_set(reg_map, &mips_general_purpose_regs[REG_SP], sp);
+	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);
+	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_SP], sp);
 
-	return &mips_general_purpose_regs[REG_SP];
+	return &mips_gp_regs[REG_SP];
 }
 
 static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *reg_map)
@@ -744,19 +744,19 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	ir_graph *irg = env->irg;
 	dbg_info *dbg = NULL; // TODO where can I get this from?
 	mips_attr_t *attr;
-	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_SP]);
-	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_general_purpose_regs[REG_FP]);
+	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_SP]);
+	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 	ir_node *load;
 	int initial_frame_size = env->debug ? 24 : 4;
 	int fp_save_offset = env->debug ? 16 : 0;
 
 	// restore sp
-	//sp = be_new_IncSP(&mips_general_purpose_regs[REG_SP], irg, block, sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_against);
+	//sp = be_new_IncSP(&mips_gp_regs[REG_SP], irg, block, sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_against);
 
 	// copy fp to sp
 	sp = new_rd_mips_move(dbg, irg, block, fp, mode_Iu);
-	mips_set_irn_reg(NULL, sp, &mips_general_purpose_regs[REG_SP]);
-	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_general_purpose_regs[REG_SP]);
+	mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
+	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_gp_regs[REG_SP]);
 
 	// 1. restore fp
 	load = new_rd_mips_load_r(dbg, irg, block, *mem, sp, mode_T);
@@ -766,11 +766,11 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	attr->tv = new_tarval_from_long(fp_save_offset - initial_frame_size, mode_Is);
 
 	fp = new_r_Proj(irg, block, load, mode_Iu, pn_Load_res);
-	mips_set_irn_reg(NULL, fp, &mips_general_purpose_regs[REG_FP]);
-	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_general_purpose_regs[REG_FP]);
+	mips_set_irn_reg(NULL, fp, &mips_gp_regs[REG_FP]);
+	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_gp_regs[REG_FP]);
 
-	be_abi_reg_map_set(reg_map, &mips_general_purpose_regs[REG_FP], fp);
-	be_abi_reg_map_set(reg_map, &mips_general_purpose_regs[REG_SP], sp);
+	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);
+	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_SP], sp);
 }
 
 /**
@@ -867,7 +867,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	for (i = 0; i < n; i++) {
 		// first 4 params in $a0-$a3, the others on the stack
 		if(i < 4) {
-			reg = &mips_general_purpose_regs[REG_A0 + i];
+			reg = &mips_gp_regs[REG_A0 + i];
 			be_abi_call_param_reg(abi, i, reg);
 		} else {
 			/* default: all parameters on stack */
@@ -885,7 +885,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 		mode = get_type_mode(tp);
 		ASSERT_NO_FLOAT(mode);
 
-		reg = &mips_general_purpose_regs[REG_V0 + i];
+		reg = &mips_gp_regs[REG_V0 + i];
 		be_abi_call_res_reg(abi, i, reg);
 	}
 }

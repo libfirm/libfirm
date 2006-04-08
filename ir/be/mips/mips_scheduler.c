@@ -30,7 +30,7 @@ typedef struct {
 	 * have to pass before we can access that register again
 	 * (because mips will write the register value back in the WB phase of the pipeline)
 	 */
-	int busy_registers[N_mips_general_purpose_REGS];
+	int busy_registers[N_mips_gp_REGS];
 	/// current block
 	ir_node* block;
 	ir_node* last_nop;
