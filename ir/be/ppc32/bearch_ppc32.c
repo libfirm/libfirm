@@ -128,10 +128,10 @@ static const arch_register_req_t *ppc32_get_irn_reg_req(const void *self, arch_r
 			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
 
 			if (mode_is_float(mode)) {
-				memcpy(req, &(ppc32_default_req_ppc32_floating_point.req), sizeof(*req));
+				memcpy(req, &(ppc32_default_req_ppc32_fp.req), sizeof(*req));
 			}
 			else if (mode_is_int(mode) || mode_is_reference(mode)) {
-				memcpy(req, &(ppc32_default_req_ppc32_general_purpose.req), sizeof(*req));
+				memcpy(req, &(ppc32_default_req_ppc32_gp.req), sizeof(*req));
 			}
 			else if (mode == mode_T || mode == mode_M) {
 				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
@@ -323,9 +323,9 @@ static const arch_register_t *ppc32_abi_prologue(void *self, ir_node **mem, pmap
 	isleaf = flags.bits.irg_is_leaf;
 
 	if(flags.bits.try_omit_fp)
-		return &ppc32_general_purpose_regs[REG_R1];
+		return &ppc32_gp_regs[REG_R1];
 	else
-		return &ppc32_general_purpose_regs[REG_R31];
+		return &ppc32_gp_regs[REG_R31];
 }
 
 /**
@@ -469,15 +469,15 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 
 		const arch_register_class_t *regclass = arch_get_irn_reg_class(cgenv->arch_env, node, 1);
 
-		if (regclass == &ppc32_reg_classes[CLASS_ppc32_general_purpose])
+		if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
 		{
 			store = new_rd_ppc32_Stw(dbg, current_ir_graph, block,
-				get_irn_n(node, 0), get_irn_n(node, 1), new_rd_NoMem(current_ir_graph), mode_T);
+				get_irn_n(node, 0), get_irn_n(node, 1), new_rd_NoMem(current_ir_graph));
 		}
-		else if (regclass == &ppc32_reg_classes[CLASS_ppc32_floating_point])
+		else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp])
 		{
 			store = new_rd_ppc32_Stfd(dbg, current_ir_graph, block,
-				get_irn_n(node, 0), get_irn_n(node, 1), new_rd_NoMem(current_ir_graph), mode_T);
+				get_irn_n(node, 0), get_irn_n(node, 1), new_rd_NoMem(current_ir_graph));
 		}
 		else assert(0 && "Spill for register class not supported yet!");
 
@@ -505,15 +505,13 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 
 		const arch_register_class_t *regclass = arch_get_irn_reg_class(cgenv->arch_env, node, -1);
 
-		if (regclass == &ppc32_reg_classes[CLASS_ppc32_general_purpose])
+		if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
 		{
-			load = new_rd_ppc32_Lwz(dbg, current_ir_graph, block,
-				get_irn_n(node, 0), get_irn_n(node, 1), mode_T);
+			load = new_rd_ppc32_Lwz(dbg, current_ir_graph, block,	get_irn_n(node, 0), get_irn_n(node, 1));
 		}
-		else if (regclass == &ppc32_reg_classes[CLASS_ppc32_floating_point])
+		else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp])
 		{
-			load = new_rd_ppc32_Lfd(dbg, current_ir_graph, block,
-				get_irn_n(node, 0), get_irn_n(node, 1), mode_T);
+			load = new_rd_ppc32_Lfd(dbg, current_ir_graph, block,	get_irn_n(node, 0), get_irn_n(node, 1));
 		}
 		else assert(0 && "Reload for register class not supported yet!");
 
@@ -661,8 +659,8 @@ static void *ppc32_cg_init(const be_irg_t *birg) {
 
 static ppc32_isa_t ppc32_isa_template = {
 	&ppc32_isa_if,
-	&ppc32_general_purpose_regs[REG_R1],  // stack pointer
-	&ppc32_general_purpose_regs[REG_R31], // base pointer
+	&ppc32_gp_regs[REG_R1],  // stack pointer
+	&ppc32_gp_regs[REG_R31], // base pointer
 	-1,                                   // stack is decreasing
 	0,                                    // num codegens... ??
 	NULL
@@ -721,9 +719,9 @@ static const arch_register_class_t *ppc32_get_reg_class(const void *self, int i)
  */
 const arch_register_class_t *ppc32_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
 	if (mode_is_float(mode))
-		return &ppc32_reg_classes[CLASS_ppc32_floating_point];
+		return &ppc32_reg_classes[CLASS_ppc32_fp];
 	else
-		return &ppc32_reg_classes[CLASS_ppc32_general_purpose];
+		return &ppc32_reg_classes[CLASS_ppc32_gp];
 }
 
 
@@ -763,7 +761,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 				{
 					if(get_mode_size_bits(mode) == 32) gpregi++, stackparamsize=4;
 					else gpregi += 2, stackparamsize=8;								// mode == irm_D
-					reg = &ppc32_floating_point_regs[fpregi++];
+					reg = &ppc32_fp_regs[fpregi++];
 				}
 				else
 				{
@@ -775,7 +773,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 			else
 			{
 				if(gpregi <= REG_R10)
-					reg = &ppc32_general_purpose_regs[gpregi++];
+					reg = &ppc32_gp_regs[gpregi++];
 				else
 					reg = NULL;
 				stackparamsize=4;
@@ -804,7 +802,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &ppc32_floating_point_regs[REG_F1] : &ppc32_general_purpose_regs[REG_R3]);
+			mode_is_float(mode) ? &ppc32_fp_regs[REG_F1] : &ppc32_gp_regs[REG_R3]);
 	}
 }
 

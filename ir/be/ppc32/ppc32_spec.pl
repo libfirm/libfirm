@@ -64,6 +64,9 @@ $comment_string = "/*";
 #        for i = 1 .. arity: ir_node *op_i
 #        ir_mode *mode
 #
+# outs:  if a node defines more than one output, the names of the projections
+#        nodes having outs having automatically the mode mode_T
+#
 # comment: OPTIONAL comment for the node constructor
 #
 # rd_constructor: for every operation there will be a
@@ -89,7 +92,7 @@ $comment_string = "/*";
 #   4 - ignore (do not assign this register)
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
-  "general_purpose" => [
+  "gp" => [
                          { "name" => "r0", "type" => 1 },
                          { "name" => "r2", "type" => 1 },
                          { "name" => "r3", "type" => 1 },
@@ -124,7 +127,7 @@ $comment_string = "/*";
                          { "name" => "r1", "type" => 6 }, # this is our stackpointer
                          { "mode" => "mode_P" }
                        ],
-  "floating_point"  => [
+  "fp"  => [
 #                        { "name" => "f0", "type" => 1 }, # => reserved for FP Perm
                          { "name" => "f1", "type" => 1 },
                          { "name" => "f2", "type" => 1 },
@@ -159,25 +162,25 @@ $comment_string = "/*";
 #                        { "name" => "f31", "type" => 2 },
                          { "mode" => "mode_D" }
                        ],
-  "condition"		=> [
-						 { "name" => "cr0", "type" => 1 },
-						 { "name" => "cr1", "type" => 1 },
-						 { "name" => "cr2", "type" => 2 },
-						 { "name" => "cr3", "type" => 2 },
-						 { "name" => "cr4", "type" => 2 },
-						 { "name" => "cr5", "type" => 1 },
-						 { "name" => "cr6", "type" => 1 },
-#						 { "name" => "cr7", "type" => 1 }, # => reserved for Condition Perm
-						 { "mode" => "mode_P" } # real mode is 4 bit, but doesn't matter ...
-					   ],
-  "link"			=> [
-						 { "name" => "lr", "type" => 4 }, # 3
+  "condition" => [
+                         { "name" => "cr0", "type" => 1 },
+                         { "name" => "cr1", "type" => 1 },
+                         { "name" => "cr2", "type" => 2 },
+                         { "name" => "cr3", "type" => 2 },
+                         { "name" => "cr4", "type" => 2 },
+                         { "name" => "cr5", "type" => 1 },
+                         { "name" => "cr6", "type" => 1 },
+#                        { "name" => "cr7", "type" => 1 }, # => reserved for Condition Perm
+                         { "mode" => "mode_P" } # real mode is 4 bit, but doesn't matter ...
+                       ],
+  "link" => [
+                         { "name" => "lr", "type" => 4 }, # 3
                          { "mode" => "mode_P" }
-					   ],
-  "count"			=> [
-						 { "name" => "ctr", "type" => 1 },
+                       ],
+  "count" => [
+                         { "name" => "ctr", "type" => 1 },
                          { "mode" => "mode_P" }
-					   ]
+                       ]
 ); # %reg_classes
 
 #--------------------------------------------------#
@@ -210,21 +213,21 @@ $comment_string = "/*";
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. add     %D1, %S1, %S2 /* Add(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. add     %D1, %S1, %S2 /* Add(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Addi" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "construct Add: Addi(a, const) = Addi(const, a) = a + const",
-  "reg_req"   => { "in" => [ "!r0" ], "out" => [ "general_purpose" ] },
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "!r0" ], "out" => [ "gp" ] },
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "emit"      => '. addi    %D1, %S1, %C /* Addi(%S1, %C) -> %D1, (%A1, const) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 
@@ -232,77 +235,77 @@ $comment_string = "/*";
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Mul: Mullw(a, b) = Mullw(b, a) = lo32(a * b)",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. mullw   %D1, %S1, %S2 /* Mullw(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. mullw   %D1, %S1, %S2 /* Mullw(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Mulhw" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Mul: Mulhw(a, b) = Mulhw(b, a) = hi32(a * b)",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. mulhw   %D1, %S1, %S2 /* Mulhw(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. mulhw   %D1, %S1, %S2 /* Mulhw(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Mulhwu" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Mul: Mulhwu(a, b) = Mulhwu(b, a) = hi32(a * b)",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. mulhwu  %D1, %S1, %S2 /* Mulhwu(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. mulhwu  %D1, %S1, %S2 /* Mulhwu(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 #"Mul_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct Mul: Mul(a, const) = Mul(const, a) = a * const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. mul %S1, %C, %D1 /* signed Mul(%C, %S1) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. mul %S1, %C, %D1 /* signed Mul(%C, %S1) -> %D1, (%A1, const) */',
 #},
 
 "And" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. and     %D1, %S1, %S2 /* And(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. and     %D1, %S1, %S2 /* And(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 #"And_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct And: And(a, const) = And(const, a) = a AND const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. and %S1, %C, %D1 /* And(%C, %S1) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. and %S1, %C, %D1 /* And(%C, %S1) -> %D1, (%A1, const) */',
 #},
 
 "Or" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. or      %D1, %S1, %S2 /* Or(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. or      %D1, %S1, %S2 /* Or(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 #"Or_i" => {
 #  "op_flags"  => "C",
 #  "irn_flags" => "R",
 #  "comment"   => "construct Or: Or(a, const) = Or(const, a) = a OR const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. or %S1, %C, %D1 /* Or(%C, %S1) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. or %S1, %C, %D1 /* Or(%C, %S1) -> %D1, (%A1, const) */',
 #},
 
 "Xor" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct Xor: Xor(a, b) = Xor(b, a) = a XOR b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. xor     %D1, %S1, %S2 /* Xor(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. xor     %D1, %S1, %S2 /* Xor(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 #"Xor_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct Xor: Xor(a, const) = Xor(const, a) = a EOR const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. xor %S1, %C, %D1 /* Xor(%C, %S1) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. xor %S1, %C, %D1 /* Xor(%C, %S1) -> %D1, (%A1, const) */',
 #},
 
 # not commutative operations
@@ -310,130 +313,130 @@ $comment_string = "/*";
 "Sub" => {
   "irn_flags" => "R",
   "comment"   => "construct Sub: Sub(a, b) = a - b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. sub     %D1, %S1, %S2 /* Sub(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. sub     %D1, %S1, %S2 /* Sub(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 #"Sub_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct Sub: Sub(a, const) = a - const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. subl %S1, %C, %D1 /* Sub(%S1, %C) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. subl %S1, %C, %D1 /* Sub(%S1, %C) -> %D1, (%A1, const) */',
 #},
 
 "Slw" => {
   "irn_flags" => "R",
   "comment"   => "construct Shl: Shl(a, b) = a << b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. slw     %D1, %S1, %S2 /* Shl(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. slw     %D1, %S1, %S2 /* Shl(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 #"Shl_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct Shl: Shl(a, const) = a << const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. shl %S1, %C, %D1 /* Shl(%S1, %C) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. shl %S1, %C, %D1 /* Shl(%S1, %C) -> %D1, (%A1, const) */',
 #},
 
 "Srw" => {
   "irn_flags" => "R",
   "comment"   => "construct Shr: Srw(a, b): c = a >> b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. srw     %D1, %S1, %S2 /* Srw(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. srw     %D1, %S1, %S2 /* Srw(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 #"Shr_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct Shr: Shr(a, const) = a >> const",
-#  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-#  "emit"      => '. shr %S1, %C, %D1 /* Shr(%S1, %C) -> %D1, (%A1, const) */'
+#  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+#  "emit"      => '. shr %S1, %C, %D1 /* Shr(%S1, %C) -> %D1, (%A1, const) */',
 #},
 
 "Sraw" => {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Sraw(a, b): c = a >> b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. sraw    %D1, %S1, %S2 /* Sraw(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. sraw    %D1, %S1, %S2 /* Sraw(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Srawi" => {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Srawi(a, const): c = a >> const",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "emit"      => '. sraw    %D1, %S1, %C /* Sraw(%S1, %C) -> %D1, (%A1, const) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 
 },
 
 "Rlwnm" => {
   "irn_flags" => "R",
   "comment"   => "construct ???: Rlwnm(a, b): c = a ROTL b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. rlwnm   %D1, %S1, %S2 /* Rlwnm(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. rlwnm   %D1, %S1, %S2 /* Rlwnm(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Rlwinm" => {
   "irn_flags" => "R",
   "comment"   => "construct ???: Rlwinm(a, b_const, c_const, d_const): (m = MASK(c, d)) e = (a ROTL b) & m",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "emit"      => '. rlwinm  %D1, %S1, %ppc32_rlwimi_emit_helper /* Rlwinm(%S1, %ppc32_rlwimi_emit_helper) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 
 "Neg" => {
   "irn_flags" => "R",
   "comment"   => "construct Minus: Neg(a) = -a",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. neg     %D1, %S1 /* Neg(%S1) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. neg     %D1, %S1 /* Neg(%S1) -> %D1, (%A1) */',
 },
 
 "Not" => {
   "irn_flags" => "R",
   "comment"   => "construct Not: Not(a) = !a",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. nor     %D1, %S1, %S1 /* Not(%S1) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. nor     %D1, %S1, %S1 /* Not(%S1) -> %D1, (%A1) */',
 },
 
 "Extsb" => {
   "irn_flags" => "R",
   "comment"   => "construct Sign extension of byte: Extsb(char a) = (int) a",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. extsb   %D1, %S1 /* Extsb(%S1) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. extsb   %D1, %S1 /* Extsb(%S1) -> %D1, (%A1) */',
 },
 
 "Extsh" => {
   "irn_flags" => "R",
   "comment"   => "construct Sign extension of halfword: Extsh(char a) = (short) a",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. extsh   %D1, %S1 /* Extsh(%S1) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. extsh   %D1, %S1 /* Extsh(%S1) -> %D1, (%A1) */',
 },
 
 "Divw" => {
   "irn_flags" => "R",
   "comment"   => "construct Div (signed): Div(a, b) = a div b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. divw    %D1, %S1, %S2 /* Div(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. divw    %D1, %S1, %S2 /* Div(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Divwu" => {
   "irn_flags" => "R",
   "comment"   => "construct Div (unsigned): Div(a, b) = a div b",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "general_purpose" ] },
-  "emit"      => '. divwu   %D1, %S1, %S2 /* Div(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+  "emit"      => '. divwu   %D1, %S1, %S2 /* Div(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Mtctr" => {
   "irn_flags" => "R",
   "comment"   => "construct Mtctr: Ctr = a",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "count" ] },
-  "emit"      => '. mtctr   %S1 /* Mtctr(%S1) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "count" ] },
+  "emit"      => '. mtctr   %S1 /* Mtctr(%S1) -> %D1, (%A1) */',
 },
 
 
@@ -443,57 +446,57 @@ $comment_string = "/*";
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "Const (high-level node)",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
+  "reg_req"   => { "out" => [ "gp" ] },
   "cmp_attr"  =>
 '
 	return attr_a->data.constant_tarval != attr_b->data.constant_tarval;
-'
+',
 },
 
 "fConst" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "float Const (high-level node)",
-  "reg_req"   => { "out" => [ "floating_point" ] },
+  "reg_req"   => { "out" => [ "fp" ] },
   "cmp_attr"  =>
 '
 	return attr_a->data.constant_tarval != attr_b->data.constant_tarval;
-'
+',
 },
 
 "SymConst" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "SymConst (high-level node)",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
+  "reg_req"   => { "out" => [ "gp" ] },
   "cmp_attr"  =>
 '
 	return attr_a->data.constant_tarval != attr_b->data.constant_tarval;
-'
+',
 },
 
 "Unknown" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "construct unknown register",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
+  "reg_req"   => { "out" => [ "gp" ] },
   "emit"      => '. \t\t /* use %D1 as uninitialized value */',
   "cmp_attr"  =>
 '
 	return 1;
-'
+',
 },
 
 "fUnknown" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "construct unknown float register",
-  "reg_req"   => { "out" => [ "floating_point" ] },
+  "reg_req"   => { "out" => [ "fp" ] },
   "emit"      => '. \t\t /* use %D1 as uninitialized value */',
   "cmp_attr"  =>
 '
 	return 1;
-'
+',
 },
 
 "cUnknown" => {
@@ -505,19 +508,19 @@ $comment_string = "/*";
   "cmp_attr"  =>
 '
 	return 1;
-'
+',
 },
 
 "Addi_zero" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "load constant (16bit with sign extension)",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
+  "reg_req"   => { "out" => [ "gp" ] },
   "emit"      => '. addi    %D1, 0, %C /* lower 16 bit of %C (sign extended) -> %D1 */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 "Branch" => {
@@ -527,30 +530,30 @@ $comment_string = "/*";
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 "LoopCopy" => {
   "irn_flags" => "R",
   "comment"   => "construct LoopCopy(src, dest, count, mem): Copy count words from src to dest",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "count", "none" ], "out" => [ "none", "in_r1", "in_r2", "in_r3", "general_purpose" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "count", "none" ], "out" => [ "none", "in_r1", "in_r2", "in_r3", "gp" ] },
 },
 
 "Switch" => {
   "op_flags" => "L|X|Y",
   "comment"   => "construct Switch(selector): Jump to whatever",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose", "condition" ], "out" => [ "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "condition" ], "out" => [ "none" ] },
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 "Addis_zero" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "load the constant to higher 16 bit of register",
-  "reg_req"   => { "out" => [ "general_purpose" ] },
+  "reg_req"   => { "out" => [ "gp" ] },
   "emit"      => '. addis   %D1, 0, %C /* %C << 16 -> %D1 */',
   "attr"      => "ppc32_attr_offset_mode om, tarval *tv, ident *id",
   "init_attr" =>
@@ -568,68 +571,68 @@ $comment_string = "/*";
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 "Ori" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "ors constant with register",
-  "reg_req"   => { "in" => [ "general_purpose"], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "gp"], "out" => [ "gp" ] },
   "emit"      => '. ori     %D1, %S1, %C /* Ori(%S1,%C) -> %D1 */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 "Andi_dot" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "ands constant with register with cr0 update",
-  "reg_req"   => { "in" => [ "general_purpose"], "out" => [ "general_purpose", "cr0" ] },
+  "reg_req"   => { "in" => [ "gp"], "out" => [ "gp", "cr0" ] },
   "emit"      => '. andi.   %D1, %S1,%C /* Andi(%S1,%C) -> %D1 (%D2 changed) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 "Cmp" => {
   "irn_flags" => "R",
   "comment"   => "construct Cmp: Cmp(a, b) = Flags in crX",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "condition" ] },
-  "emit"      => '. cmp     %D1, 0, %S1, %S2 /* Cmp(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "condition" ] },
+  "emit"      => '. cmp     %D1, 0, %S1, %S2 /* Cmp(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Cmpi" => {
   "irn_flags" => "R",
   "comment"   => "construct Cmp immediate: Cmpi(a, const) = Flags in crX",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "condition" ] },
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "condition" ] },
   "emit"      => '. cmpi    %D1, 0, %S1, %C /* Cmpi(%S1, %C) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 
 "Cmpl" => {
   "irn_flags" => "R",
   "comment"   => "construct Cmp logical: Cmpl(a, b) = Flags in crX",
-  "reg_req"   => { "in" => [ "general_purpose", "general_purpose" ], "out" => [ "condition" ] },
-  "emit"      => '. cmpl    %D1, 0, %S1, %S2 /* Cmpl(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "condition" ] },
+  "emit"      => '. cmpl    %D1, 0, %S1, %S2 /* Cmpl(%S1, %S2) -> %D1, (%A1, %A2) */',
 },
 
 "Cmpli" => {
   "irn_flags" => "R",
   "comment"   => "construct Cmp logical immediate: Cmpli(a, const) = Flags in crX",
-  "reg_req"   => { "in" => [ "general_purpose" ], "out" => [ "condition" ] },
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "condition" ] },
   "emit"      => '. cmpli   %D1, 0, %S1, %C /* Cmpli(%S1, %C) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
 },
 
 
@@ -640,12 +643,13 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load (byte unsigned): Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "gp", "none" ] },
   "emit"      => '. lbz     %D1, %O(%S1) /* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "res", "M" ],
 },
 
 "Lhz" => {
@@ -653,12 +657,13 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load (halfword unsigned): Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "gp", "none" ] },
   "emit"      => '. lhz     %D1, %O(%S1) /* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "res", "M" ],
 },
 
 "Lha" => {
@@ -666,12 +671,13 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load (halfword signed): Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "gp", "none" ] },
   "emit"      => '. lha     %D1, %O(%S1) /* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "res", "M" ],
 },
 
 "Lwz" => {
@@ -679,12 +685,13 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load (word): Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "general_purpose" ] },
+  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "gp", "none" ] },
   "emit"      => '. lwz     %D1, %O(%S1) /* Load(%O(%S1)) -> %D1, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "res", "M" ],
 },
 
 "Lwzu" => {
@@ -692,48 +699,52 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load with update (word): Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "general_purpose", "in_r1"] },
+  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "gp", "in_r1", "none"] },
   "emit"      => '. lwzu    %D1, %O(%S1) /* Load(%O(%S1)) -> %D1, %S1 += %O, (%A1) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "res", "ptr", "M" ],
 },
 
 "Stb" => {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store (byte) (ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "general_purpose", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "gp", "none" ] },
   "emit"      => '. stb     %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "M" ],
 },
 
 "Sth" => {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store (halfword) (ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "general_purpose", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "gp", "none" ] },
   "emit"      => '. sth     %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "M" ],
 },
 
 "Stw" => {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store (word) (ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "general_purpose", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "gp", "none" ] },
   "emit"      => '. stw     %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "M" ],
 },
 
 #--------------------------------------------------------#
@@ -751,36 +762,36 @@ $comment_string = "/*";
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fadd    %D1, %S1, %S2 /* FP Add(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fadd    %D1, %S1, %S2 /* FP Add(%S1, %S2) -> %D1 */',
 },
 
 "fAdds" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct FP Add (single): Add(a, b) = Add(b, a) = a + b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fadds   %D1, %S1, %S2 /* FP Add(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fadds   %D1, %S1, %S2 /* FP Add(%S1, %S2) -> %D1 */',
 },
 
 "fMul" => {
   "op_flags"  => "C",
   "comment"   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fmul    %D1, %S1, %S2 /* FP Mul(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fmul    %D1, %S1, %S2 /* FP Mul(%S1, %S2) -> %D1 */',
 },
 
 "fMuls" => {
   "op_flags"  => "C",
   "comment"   => "construct FP Mul (single): Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fmuls   %D1, %S1, %S2 /* FP Mul(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fmuls   %D1, %S1, %S2 /* FP Mul(%S1, %S2) -> %D1 */',
 },
 
 "fNeg" => {
   "comment"   => "construct FP Negation: fNeg(a) = -a",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fneg    %D1, %S1 /* FP fNeg(%S1) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fneg    %D1, %S1 /* FP fNeg(%S1) -> %D1 */',
 },
 
 
@@ -788,16 +799,16 @@ $comment_string = "/*";
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct FP Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fmax    %S1, %S2, %D1 /* FP Max(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fmax    %S1, %S2, %D1 /* FP Max(%S1, %S2) -> %D1 */',
 },
 
 "fMin" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
   "comment"   => "construct FP Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fmin    %S1, %S2, %D1 /* FP Min(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fmin    %S1, %S2, %D1 /* FP Min(%S1, %S2) -> %D1 */',
 },
 
 # not commutative operations
@@ -805,62 +816,62 @@ $comment_string = "/*";
 "fSub" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Sub: Sub(a, b) = a - b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fsub    %D1, %S1, %S2 /* FP Sub(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fsub    %D1, %S1, %S2 /* FP Sub(%S1, %S2) -> %D1 */',
 },
 
 "fSubs" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Sub (single): Sub(a, b) = a - b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fsub    %D1, %S1, %S2 /* FP Sub(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fsub    %D1, %S1, %S2 /* FP Sub(%S1, %S2) -> %D1 */',
 },
 
 "fDiv" => {
   "comment"   => "construct FP Div: Div(a, b) = a / b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fdiv    %D1, %S1, %S2 /* FP Div(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fdiv    %D1, %S1, %S2 /* FP Div(%S1, %S2) -> %D1 */',
 },
 
 "fDivs" => {
   "comment"   => "construct FP Div (single): Div(a, b) = a / b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fdivs   %D1, %S1, %S2 /* FP Div(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fdivs   %D1, %S1, %S2 /* FP Div(%S1, %S2) -> %D1 */',
 },
 
 "fMinus" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Minus: fMinus(a) = -a",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fneg    %D1, %S1 /* FP fMinus(%S1) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fneg    %D1, %S1 /* FP fMinus(%S1) -> %D1 */',
 },
 
 "fCtiw" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Convert to integer word: fCtiw(a) = (int) a",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fctiw   %D1, %S1 /* FP fCtiw(%S1) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fctiw   %D1, %S1 /* FP fCtiw(%S1) -> %D1 */',
 },
 
 "fRsp" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Round to single: fRsp(a) = (float) a",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. frsp    %D1, %S1 /* FP fRsp(%S1) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. frsp    %D1, %S1 /* FP fRsp(%S1) -> %D1 */',
 },
 
 "fAbs" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Abs: fAbs(a) = |a|",
-  "reg_req"   => { "in" => [ "floating_point" ], "out" => [ "floating_point" ] },
-  "emit"      => '. fabs    %D1, %S1 /* FP fAbs(%S1) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
+  "emit"      => '. fabs    %D1, %S1 /* FP fAbs(%S1) -> %D1 */',
 },
 
 "fCmpu" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Cmp unordered: fCmpu(a, b) = a ? b",
-  "reg_req"   => { "in" => [ "floating_point", "floating_point" ], "out" => [ "condition" ] },
-  "emit"      => '. fcmpu   %D1, %S1, %S2 /* FP fCmpu(%S1, %S2) -> %D1 */'
+  "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "condition" ] },
+  "emit"      => '. fcmpu   %D1, %S1, %S2 /* FP fCmpu(%S1, %S2) -> %D1 */',
 },
 
 # other operations
@@ -869,25 +880,25 @@ $comment_string = "/*";
 #  "op_flags"  => "c",
 #  "irn_flags" => "R",
 #  "comment"   => "represents a FP constant",
-#  "reg_req"   => { "out" => [ "floating_point" ] },
+#  "reg_req"   => { "out" => [ "fp" ] },
 #  "emit"      => '. fmov %C, %D1 /* Mov fConst into register */',
 #  "cmp_attr"  =>
 #'
 #	/* TODO: compare fConst attributes */
 #	return 1;
-#'
+#',
 #},
 
 "fUnknown" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "construct unknown floating point register",
-  "reg_req"   => { "out" => [ "floating_point" ] },
+  "reg_req"   => { "out" => [ "fp" ] },
   "emit"      => '. \t\t /* use %D1 as uninitialized value */',
   "cmp_attr"  =>
 '
 	return 1;
-'
+',
 },
 
 # Load / Store
@@ -897,12 +908,13 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct FP Load (double): Load(ptr, mem) = LD ptr",
-  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "floating_point" ] },
+  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "fp", "none" ] },
   "emit"      => '. lfd     %D1, %O(%S1) /* Load(%O(%S1)) -> %D1 */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "res", "M" ],
 },
 
 "Lfs" => {
@@ -910,36 +922,39 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct FP Load (single): Load(ptr, mem) = LD ptr",
-  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "floating_point" ] },
+  "reg_req"   => { "in" => [ "!r0", "none" ], "out" => [ "fp","none" ] },
   "emit"      => '. lfs     %D1, %O(%S1) /* Load(%O(%S1)) -> %D1 */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "res", "M" ],
 },
 
 "Stfd" => {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store (double): Store(ptr, val, mem)  = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "floating_point", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "fp", "none" ] },
   "emit"      => '. stfd    %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "M" ],
 },
 
 "Stfs" => {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store (single): Store(ptr, val, mem)  = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "floating_point", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "fp", "none" ] },
   "emit"      => '. stfs    %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
   "cmp_attr"  =>
 '
 	return (attr_a->data.constant_tarval != attr_b->data.constant_tarval);
-'
+',
+  "outs"      => [ "M" ],
 },
 
 ); # end of %nodes

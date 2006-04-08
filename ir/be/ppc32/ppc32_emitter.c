@@ -454,11 +454,11 @@ static void emit_be_Copy(const ir_node *n, ppc32_emit_env_t *env) {
 	FILE *F = env->out;
 	const arch_register_class_t *regclass = arch_get_irn_reg_class(env->arch_env, n, 0);
 
-	if (regclass == &ppc32_reg_classes[CLASS_ppc32_general_purpose])
+	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
 	{
 		lc_efprintf(ppc32_get_arg_env(), F, "\tmr      %1D, %1S\t\t\t/* Move register */\n",n,n);
 	}
-	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_floating_point])
+	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp])
 	{
 		lc_efprintf(ppc32_get_arg_env(), F, "\tfmr     %1D, %1S\t\t\t/* Move register */\n",n,n);
 	}
@@ -476,13 +476,13 @@ static void emit_be_Perm(const ir_node *n, ppc32_emit_env_t *env) {
 	FILE *F = env->out;
 	const arch_register_class_t *regclass = arch_get_irn_reg_class(env->arch_env, n, 0);
 
-	if (regclass == &ppc32_reg_classes[CLASS_ppc32_general_purpose])
+	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
 	{
 		lc_efprintf(ppc32_get_arg_env(), F, "\txor     %1S, %1S, %2S\t\t\t/* Swap %1S, %2S with XOR */\n",n,n,n,n,n);
 		lc_efprintf(ppc32_get_arg_env(), F, "\txor     %2S, %1S, %2S\t\t\t/* (continued) */\n",n,n,n);
 		lc_efprintf(ppc32_get_arg_env(), F, "\txor     %1S, %1S, %2S\t\t\t/* (continued) */\n",n,n,n);
 	}
-	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_floating_point])
+	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp])
 	{
 		lc_efprintf(ppc32_get_arg_env(), F, "\tfmr     f0, %1S\t\t\t/* Swap %1S, %2S with moves */\n",n,n,n);
 		lc_efprintf(ppc32_get_arg_env(), F, "\tfmr     %1S, %2S\t\t\t/* (continued) */\n",n,n);

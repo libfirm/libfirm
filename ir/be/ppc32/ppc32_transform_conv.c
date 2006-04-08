@@ -101,10 +101,10 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 			{
 				ir_node *fctiw = new_rd_ppc32_fCtiw(env->dbg, env->irg, env->block, op, from_mode);
 				ir_node *stfd = new_rd_ppc32_Stfd(env->dbg, env->irg, env->block, get_irg_frame(env->irg),
-					fctiw, memory, mode_T);
+					fctiw, memory);
 				ir_node *storememproj = new_rd_Proj(env->dbg, env->irg, env->block, stfd, mode_M, pn_Store_M);
 				ir_node *lwz = new_rd_ppc32_Lwz(env->dbg, env->irg, env->block, get_irg_frame(env->irg),
-					storememproj, mode_T);
+					storememproj);
 				set_ppc32_frame_entity(stfd, memslot);
 				set_ppc32_offset_mode(stfd, ppc32_ao_Lo16);	// TODO: only allows a 16-bit offset on stack
 				set_ppc32_frame_entity(lwz, memslot);
