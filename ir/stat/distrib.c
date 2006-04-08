@@ -31,7 +31,6 @@ static unsigned addr_hash(const void *object)
 static unsigned int_hash(const void *object)
 {
   return (unsigned)PTR_TO_INT(object);
-//  return (unsigned)(object);
 }
 
 /**

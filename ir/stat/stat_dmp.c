@@ -186,11 +186,10 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
   }
 }
 
+/** prints a distribution entry */
 void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env) {
   FILE *dmp_f = env;
-  char buf[12];
-  snprintf(buf, sizeof(buf), "%d:%d", (int)entry->object, entry->cnt.cnt[0]);
-  fprintf(dmp_f, "%6s", buf);
+  fprintf(dmp_f, "%12d", entry->cnt.cnt[0]);
 }
 
 /**
@@ -198,19 +197,28 @@ void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env) {
  */
 static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry) {
   be_block_entry_t *b_entry = pset_first(entry->be_block_hash);
+  counter_t         cnt_0;
+  int               i;
 
   /* return if no reg pressure information available */
   if (! b_entry)
 	  return;
 
-  fprintf(dmp->f, "\nSCHED READY:\n");
+  cnt_clr(&cnt_0);
+
+  fprintf(dmp->f, "\nSCHEDULING: NUMBER OF READY NODES\n");
+  fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s %12s\n", "Block Nr", "1 node", "2 nodes", "3 nodes", "4 nodes", "5 or more", "mean value");
   for (/* b_entry is already initialized */ ;
        b_entry;
 	   b_entry = pset_next(entry->be_block_hash))
   {
+    /* this ensures that all keys from 1 to 5 are in the table*/
+	for (i = 1; i < 6; i++)
+	    stat_add_int_distrib_tbl(b_entry->sched_ready, i, &cnt_0);
+
     fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
     stat_iterate_distrib_tbl(b_entry->sched_ready, dump_block_sched_ready_distrib, dmp->f);
-    fprintf(dmp->f, "%6.2lf", stat_calc_mean_distrib_tbl(b_entry->sched_ready));
+    fprintf(dmp->f, "%12.2lf", stat_calc_mean_distrib_tbl(b_entry->sched_ready));
 	fprintf(dmp->f, "\n");
   }
 }
