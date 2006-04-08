@@ -186,6 +186,35 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
   }
 }
 
+void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env) {
+  FILE *dmp_f = env;
+  char buf[12];
+  snprintf(buf, sizeof(buf), "%d:%d", (int)entry->object, entry->cnt.cnt[0]);
+  fprintf(dmp_f, "%6s", buf);
+}
+
+/**
+ * dumps the distribution of the amount of ready nodes for each block
+ */
+static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry) {
+  be_block_entry_t *b_entry = pset_first(entry->be_block_hash);
+
+  /* return if no reg pressure information available */
+  if (! b_entry)
+	  return;
+
+  fprintf(dmp->f, "\nSCHED READY:\n");
+  for (/* b_entry is already initialized */ ;
+       b_entry;
+	   b_entry = pset_next(entry->be_block_hash))
+  {
+    fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
+    stat_iterate_distrib_tbl(b_entry->sched_ready, dump_block_sched_ready_distrib, dmp->f);
+    fprintf(dmp->f, "%6.2lf", stat_calc_mean_distrib_tbl(b_entry->sched_ready));
+	fprintf(dmp->f, "\n");
+  }
+}
+
 /**
  * dumps the number of real_function_call optimization
  */
@@ -317,6 +346,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
     /* dump block reg pressure */
 	simple_dump_be_block_reg_pressure(dmp, entry);
+
+    /* dump block ready nodes distribution */
+	simple_dump_be_block_sched_ready(dmp, entry);
 
     if (dmp->status->stat_options & FIRMSTAT_COUNT_EXTBB) {
       /* dump extended block info */

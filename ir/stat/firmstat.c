@@ -386,7 +386,11 @@ static void be_block_clear_entry(be_block_entry_t *elem)
 	if (elem->reg_pressure)
 		del_pset(elem->reg_pressure);
 
+	if (elem->sched_ready)
+		stat_delete_distrib_tbl(elem->sched_ready);
+
 	elem->reg_pressure = new_pset(reg_pressure_cmp, 5);
+	elem->sched_ready  = stat_new_int_distrib_tbl();
 }
 
 /**
@@ -1582,6 +1586,40 @@ static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, 
   STAT_LEAVE;
 }
 
+/**
+ * Update the distribution of ready nodes of a block
+ *
+ * @param ctx        the hook context
+ * @param block      the block for which the reg pressure should be set
+ * @param irg        the irg containing the block
+ * @param num_ready  the number of ready nodes
+ */
+static void stat_be_block_sched_ready(void *ctx, ir_node *block, ir_graph *irg, int num_ready)
+{
+  if (! status->stat_options)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t        *graph = graph_get_entry(irg, status->irg_hash);
+    be_block_entry_t     *block_ent;
+	counter_t             cnt_1;
+
+    /* create new be_block hash */
+    if (! graph->be_block_hash)
+      graph->be_block_hash = new_pset(be_block_cmp, 5);
+
+    block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
+
+    /* add 1 to the counter of orresponding number of ready nodes */
+    cnt_clr(&cnt_1);
+	cnt_inc(&cnt_1);
+	stat_add_int_distrib_tbl(block_ent->sched_ready, num_ready, &cnt_1);
+  }
+  STAT_LEAVE;
+}
+
+
 /* Dumps a statistics snapshot */
 void stat_dump_snapshot(const char *name, const char *phase)
 {
@@ -1746,6 +1784,7 @@ void firm_init_stat(unsigned enable_options)
   HOOK(hook_arch_dep_replace_mul_with_shifts,   stat_arch_dep_replace_mul_with_shifts);
   HOOK(hook_arch_dep_replace_division_by_const, stat_arch_dep_replace_division_by_const);
   HOOK(hook_be_block_regpressure,               stat_be_block_regpressure);
+  HOOK(hook_be_block_sched_ready,               stat_be_block_sched_ready);
 
   obstack_init(&status->cnts);
   obstack_init(&status->be_data);
