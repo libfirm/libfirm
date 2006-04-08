@@ -7,5 +7,5 @@
  * Use its node number
  */
 unsigned nodeset_hash(ir_node *n) {
-	return (unsigned)get_irn_node_nr(n);
+	return (unsigned)get_irn_idx(n);
 }
