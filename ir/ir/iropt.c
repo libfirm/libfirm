@@ -2398,7 +2398,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
       proj_nr = get_inversed_pnc(proj_nr);
       changed |= 1;
     }
-    else if (left > right) {
+    else if (get_irn_idx(left) > get_irn_idx(right)) {
       ir_node *t = left;
 
       left  = right;
@@ -3382,7 +3382,7 @@ identify (pset *value_table, ir_node *n)
       ir_node *r = get_binop_right(n);
 
       /* for commutative operators perform  a OP b == b OP a */
-      if (l > r) {
+      if (get_irn_idx(l) > get_irn_idx(r)) {
         set_binop_left(n, r);
         set_binop_right(n, l);
       }
