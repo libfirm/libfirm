@@ -46,6 +46,27 @@ typedef pset hmap_ir_op;
 typedef pset hmap_distrib_entry_t;
 
 /**
+ * An entry in a distribution table
+ */
+typedef struct _distrib_entry_t {
+  counter_t	 cnt;       /**< the current count */
+  const void *object;   /**< the object which is counted */
+} distrib_entry_t;
+
+/** The type of the hash function for objects in distribution tables. */
+typedef unsigned (*distrib_hash_fun)(const void *object);
+
+/**
+ * The distribution table.
+ */
+typedef struct _distrib_tbl_t {
+  struct obstack          	cnts;       /**< obstack containing the distrib_entry_t entries */
+  HASH_MAP(distrib_entry_t)	*hash_map;  /**< the hash map containing the distribution */
+  distrib_hash_fun          hash_func;  /**< the hash function for object in this distribution */
+  unsigned                  int_dist;   /**< non-zero, if it's a integer distribution */
+} distrib_tbl_t;
+
+/**
  * possible address marker values
  */
 enum adr_marker_t {
@@ -131,7 +152,8 @@ typedef struct _reg_pressure_entry_t {
  * An entry for a block or extended block in a ir-graph
  */
 typedef struct _be_block_entry_t {
-  long            block_nr;      /**< block nr */
+  long                           block_nr;      /**< block nr */
+  distrib_tbl_t                  *sched_ready;  /**< distribution of ready nodes per block */
   /**< the highest register pressures for this block for each register class */
   HASH_MAP(reg_pressure_entry_t) *reg_pressure;
 } be_block_entry_t;
@@ -250,27 +272,6 @@ struct _dumper_t {
  */
 ir_op *stat_get_op_from_opcode(opcode code);
 
-/**
- * An entry in a distribution table
- */
-typedef struct _distrib_entry_t {
-  counter_t	 cnt;       /**< the current count */
-  const void *object;   /**< the object which is counted */
-} distrib_entry_t;
-
-/** The type of the hash function for objects in distribution tables. */
-typedef unsigned (*distrib_hash_fun)(const void *object);
-
-/**
- * The distribution table.
- */
-typedef struct _distrib_tbl_t {
-  struct obstack          	cnts;       /**< obstack containing the distrib_entry_t entries */
-  HASH_MAP(distrib_entry_t)	*hash_map;  /**< the hash map containing the distribution */
-  distrib_hash_fun          hash_func;  /**< the hash function for object in this distribution */
-  unsigned                  int_dist;   /**< non-zero, if it's a integer distribution */
-} distrib_tbl_t;
-
 /* API for distribution tables */
 
 /**
@@ -307,12 +308,12 @@ void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt)
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl);
 
 /** evaluates each entry of a distribution table. */
-typedef void (*eval_distrib_entry_fun)(const distrib_entry_t *entry);
+typedef void (*eval_distrib_entry_fun)(const distrib_entry_t *entry, void *env);
 
 /**
  * iterates over all entries in a distribution table
  */
-void stat_iterate_distrib_tbl(distrib_tbl_t *tbl, eval_distrib_entry_fun eval);
+void stat_iterate_distrib_tbl(distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env);
 
 /**
  * update info on Consts.

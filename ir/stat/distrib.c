@@ -31,6 +31,7 @@ static unsigned addr_hash(const void *object)
 static unsigned int_hash(const void *object)
 {
   return (unsigned)PTR_TO_INT(object);
+//  return (unsigned)(object);
 }
 
 /**
@@ -38,10 +39,10 @@ static unsigned int_hash(const void *object)
  */
 static int int_cmp_fun(const void *elt, const void *key)
 {
-  int p1 = (int)elt;
-  int p2 = (int)key;
+  const distrib_entry_t *p1 = elt;
+  const distrib_entry_t *p2 = key;
 
-  return p1 - p2;
+  return (int)(p1->object) - (int)(p2->object);
 }
 
 /*
@@ -182,11 +183,11 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 /**
  * iterates over all entries in a distribution table
  */
-void stat_iterate_distrib_tbl(distrib_tbl_t *tbl, eval_distrib_entry_fun eval)
+void stat_iterate_distrib_tbl(distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env)
 {
   distrib_entry_t *entry;
 
   for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-    eval(entry);
+    eval(entry, env);
   }
 }
