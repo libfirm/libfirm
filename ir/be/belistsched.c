@@ -33,6 +33,7 @@
 #include "belive_t.h"
 #include "belistsched.h"
 #include "bearch.h"
+#include "bestat.h"
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -689,6 +690,9 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.curr_time += phi_seen;
 
 	while (nodeset_count(be.ready_set) > 0) {
+		/* collect statitics about amount of ready nodes */
+		be_do_stat_sched_ready(block, be.ready_set);
+
 		/* select a node to be scheduled and check if it was ready */
 		irn = select_node(&be);
 

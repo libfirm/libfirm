@@ -44,3 +44,10 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
 	/* Collect register pressure information for each block */
 	irg_block_walk_graph(birg->irg, stat_reg_pressure_block, NULL, birg);
 }
+
+/**
+ * Notify statistic module about amount of ready nodes.
+ */
+void be_do_stat_sched_ready(ir_node *block, nodeset *ready_set) {
+	hook_be_block_sched_ready(block, get_irn_irg(block), nodeset_count(ready_set));
+}
