@@ -11,17 +11,6 @@
 #include "besched.h"
 
 /**
- * Compare two live entries.
- */
-static int cmp_irn_live(const void *a, const void *b)
-{
-  const irn_live_t *p = a;
-  const irn_live_t *q = b;
-
-  return !(p->block == q->block && p->irn == q->irn);
-}
-
-/**
  * Collect reg pressure statistics per block and per class.
  */
 static void stat_reg_pressure_block(ir_node *block, void *env) {
@@ -32,7 +21,7 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 	for (i = 0; i < n; i++) {
 		const arch_register_class_t *cls = arch_isa_get_reg_class(aenv->isa, i);
 		ir_node  *irn;
-		pset     *live_nodes = new_pset(cmp_irn_live, 64);
+		pset     *live_nodes = pset_new_ptr(64);
 		int       max_live;
 
 		live_nodes = be_liveness_end_of_block(aenv, cls, block, live_nodes);
