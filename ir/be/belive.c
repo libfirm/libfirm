@@ -300,12 +300,16 @@ pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class
 	ir_node *x;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
-	DBG((dbg, LEVEL_1, "%+F\n", irn));
-	for(x = pset_first(live); x; x = pset_next(live))
-		DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
+	DEBUG_ONLY(
+		DBG((dbg, LEVEL_1, "%+F\n", irn));
+		for(x = pset_first(live); x; x = pset_next(live))
+			DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
+	)
 
-	if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
-		pset_remove_ptr(live, irn);
+	if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
+		ir_node *del = pset_remove_ptr(live, irn);
+		assert(irn == del);
+	}
 
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
