@@ -704,24 +704,24 @@ static ir_node *gen_Load(ir_node *irn, arm_code_gen_t *cg) {
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
 		/* FIXME: set the load mode */
-		return new_rd_arm_fLoad(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
+		return new_rd_arm_fLoad(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
 	}
 	if (mode == mode_Bu) {
-		return new_rd_arm_Loadb(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
+		return new_rd_arm_Loadb(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
 	}
 	if (mode == mode_Bs) {
-		return new_rd_arm_Loadbs(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
+		return new_rd_arm_Loadbs(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
 	}
 	if (mode == mode_Hu) {
-		return new_rd_arm_Loadh(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
+		return new_rd_arm_Loadh(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
 	}
 	if (mode == mode_Hs) {
-		return new_rd_arm_Loadhs(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
+		return new_rd_arm_Loadhs(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
 	}
 	if (mode_is_reference(mode)) {
-		return new_rd_arm_Load(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
+		return new_rd_arm_Load(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
 	}
-	return new_rd_arm_Load(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn), mode_T);
+	return new_rd_arm_Load(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
 }
 
 /**
@@ -743,21 +743,21 @@ static ir_node *gen_Store(ir_node *irn, arm_code_gen_t *cg) {
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
 		/* FIXME: set the store mode */
-		return new_rd_arm_fStore(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
+		return new_rd_arm_fStore(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
 	}
 	if (mode == mode_Bu) {
-		return new_rd_arm_Storeb(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
+		return new_rd_arm_Storeb(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
 	}
 	if (mode == mode_Bs) {
-		return new_rd_arm_Storebs(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
+		return new_rd_arm_Storebs(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
 	}
 	if (mode == mode_Hu) {
-		return new_rd_arm_Storeh(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
+		return new_rd_arm_Storeh(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
 	}
 	if (mode == mode_Hs) {
-		return new_rd_arm_Storehs(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
+		return new_rd_arm_Storehs(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
 	}
-	return new_rd_arm_Store(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn), mode_T);
+	return new_rd_arm_Store(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
 }
 
 

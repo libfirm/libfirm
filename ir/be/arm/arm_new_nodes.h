@@ -106,9 +106,6 @@ int get_arm_n_res(const ir_node *node);
 void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** in_reqs,
                          const arm_register_req_t ** out_reqs, int n_res);
 
-ir_node *arm_new_NoReg_gp(arm_code_gen_t *cg);
-ir_node *arm_new_NoReg_fp(arm_code_gen_t *cg);
-
 /**
  * Returns the tarval
  */

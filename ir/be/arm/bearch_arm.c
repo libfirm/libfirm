@@ -811,13 +811,13 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 //	sp = new_r_arm_StoreStackMInc(irg, block, *mem, sp, n_regs, regs, get_irn_mode(sp));
 //		set_arm_req_out(sp, &arm_default_req_arm_gp_sp, 0);
 //		arch_set_irn_register(env->arch_env, sp, env->isa->sp);
-	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem, mode_T);
+	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem);
 		set_arm_req_out(store, &arm_default_req_arm_gp_sp, 0);
 //		arch_set_irn_register(env->arch_env, store, env->isa->sp);
 
-	sp = new_r_Proj(irg, block, store, env->isa->sp->reg_class->mode, 0);
+	sp = new_r_Proj(irg, block, store, env->isa->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
 		arch_set_irn_register(env->arch_env, sp, env->isa->sp);
-	*mem = new_r_Proj(irg, block, store, mode_M, 1);
+	*mem = new_r_Proj(irg, block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
 	keep = be_new_CopyKeep_single(gp, irg, block, ip, sp, get_irn_mode(ip));
 		be_node_set_reg_class(keep, 1, gp);
@@ -872,14 +872,14 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, tv);
 		set_arm_req_out_all(sub12_node, sub12_req);
 		arch_set_irn_register(env->arch_env, sub12_node, env->isa->sp);
-		load_node = new_rd_arm_LoadStackM3( NULL, env->irg, bl, sub12_node, *mem, mode_T );
+		load_node = new_rd_arm_LoadStackM3( NULL, env->irg, bl, sub12_node, *mem );
 		set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
 		set_arm_req_out(load_node, &arm_default_req_arm_gp_sp, 1);
 		set_arm_req_out(load_node, &arm_default_req_arm_gp_pc, 2);
-		curr_bp = new_r_Proj(env->irg, bl, load_node, env->isa->bp->reg_class->mode, 0);
-		curr_sp = new_r_Proj(env->irg, bl, load_node, env->isa->sp->reg_class->mode, 1);
-		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, 2);
-		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, 3);
+		curr_bp = new_r_Proj(env->irg, bl, load_node, env->isa->bp->reg_class->mode, pn_arm_LoadStackM3_res0);
+		curr_sp = new_r_Proj(env->irg, bl, load_node, env->isa->sp->reg_class->mode, pn_arm_LoadStackM3_res1);
+		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, pn_arm_LoadStackM3_res2);
+		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, pn_arm_LoadStackM3_M);
 		arch_set_irn_register(env->arch_env, curr_bp, env->isa->bp);
 		arch_set_irn_register(env->arch_env, curr_sp, env->isa->sp);
 		arch_set_irn_register(env->arch_env, curr_pc, &arm_gp_regs[REG_PC]);

@@ -519,16 +519,6 @@ static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {
 	return 1;
 }
 
-ir_node *arm_new_NoReg_gp(arm_code_gen_t *cg) {
-	return be_abi_get_callee_save_irn(cg->birg->abi, &arm_gp_regs[REG_RXX]);
-}
-
-ir_node *arm_new_NoReg_fp(arm_code_gen_t *cg) {
-	return be_abi_get_callee_save_irn(cg->birg->abi, &arm_fp_regs[REG_FXX]);
-}
-
-
-
 
 /***************************************************************************************
  *                  _                            _                   _

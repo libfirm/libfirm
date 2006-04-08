@@ -68,6 +68,9 @@ $comment_string = '/*';
 #        for i = 1 .. arity: ir_node *op_i
 #        ir_mode *mode
 #
+# outs:  if a node defines more than one output, the names of the projections
+#        nodes having outs having automatically the mode mode_T
+#
 # comment: OPTIONAL comment for the node constructor
 #
 # rd_constructor: for every operation there will be a
@@ -110,7 +113,6 @@ $comment_string = '/*';
                          { "name" => "sp", "type" => 6 }, # this is our stack pointer
                          { "name" => "lr", "type" => 3 }, # this is our return address
                          { "name" => "pc", "type" => 6 }, # this is our program counter
-                         { "name" => "rxx", "type" => 6 }, # dummy register for no_mem
                          { "mode" => "mode_Iu" }
                        ],
   "fp"  => [
@@ -122,7 +124,6 @@ $comment_string = '/*';
                          { "name" => "f5", "type" => 2 },
                          { "name" => "f6", "type" => 2 },
                          { "name" => "f7", "type" => 2 },
-                         { "name" => "fxx", "type" => 6 }, # dummy register for no_mem
                          { "mode" => "mode_D" }
                        ]
 ); # %reg_classes
@@ -464,9 +465,10 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
-  "emit"      => '. LDR %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDR %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
+  "emit"      => '. LDR %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+#  "emit"      => '. LDR %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */',
+  "outs"      => [ "res", "M" ],
 },
 
 "Loadb" => {
@@ -474,9 +476,10 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
-  "emit"      => '. LDRB %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRB %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
+  "emit"      => '. LDRB %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+#  "emit"      => '. LDRB %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */',
+  "outs"      => [ "res", "M" ],
 },
 
 "Loadbs" => {
@@ -484,9 +487,10 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
-  "emit"      => '. LDRSB %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRSB %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
+  "emit"      => '. LDRSB %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+#  "emit"      => '. LDRSB %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */',
+  "outs"      => [ "res", "M" ],
 },
 
 "Loadh" => {
@@ -494,9 +498,10 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
-  "emit"      => '. LDRH %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRH %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
+  "emit"      => '. LDRH %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+#  "emit"      => '. LDRH %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */',
+  "outs"      => [ "res", "M" ],
 },
 
 "Loadhs" => {
@@ -504,9 +509,10 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp" ] },
-  "emit"      => '. LDRSH %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */'
-#  "emit"      => '. LDRSH %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
+  "emit"      => '. LDRSH %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+#  "emit"      => '. LDRSH %D1, %S1, %O /* Load((%S1)) -> %D1, (%A1) */',
+  "outs"      => [ "res", "M" ],
 },
 
 "Storeb" => {
@@ -515,8 +521,9 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. STRB %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"      => '. STRB %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "outs"      => [ "M" ],
 },
 
 "Storebs" => {
@@ -525,8 +532,9 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. STRSB %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"      => '. STRSB %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "outs"      => [ "M" ],
 },
 
 "Storeh" => {
@@ -535,8 +543,9 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. STRH %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"      => '. STRH %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "outs"      => [ "M" ],
 },
 
 "Storehs" => {
@@ -545,8 +554,9 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. STRSH%S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"      => '. STRSH%S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "outs"      => [ "M" ],
 },
 
 "Store" => {
@@ -555,8 +565,9 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. STR %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */'
-#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"      => '. STR %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+#  "emit"      => '. movl %S2, %O(%S1) /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "outs"      => [ "M" ],
 },
 
 "StoreStackM4Inc" => {
@@ -565,7 +576,8 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "sp", "gp", "gp", "gp", "gp", "none" ], "out" => [ "gp", "none" ] },
-  "emit"      => '. STMFD %S1!, {%S2, %S3, %S4, %S5} /* Store multiple on Stack*/'
+  "emit"      => '. STMFD %S1!, {%S2, %S3, %S4, %S5} /* Store multiple on Stack*/',
+  "outs"      => [ "ptr", "M" ],
 },
 
 "LoadStackM3" => {
@@ -574,7 +586,8 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { "in" => [ "sp", "none" ], "out" => [ "gp", "gp", "gp", "none" ] },
-  "emit"      => '. LDMFD %S1, {%D1, %D2, %D3} /* Load multiple from Stack */'
+  "emit"      => '. LDMFD %S1, {%D1, %D2, %D3} /* Load multiple from Stack */',
+  "outs"      => [ "res0", "res1", "res2", "M" ],
 },
 
 
@@ -600,20 +613,20 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "comment"   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
-  "emit"      => '. FADD%Mx %D1, %S1, %S2 /* FP Add(%S1, %S2) -> %D1 */'
+  "emit"      => '. FADD%Mx %D1, %S1, %S2 /* FP Add(%S1, %S2) -> %D1 */',
 },
 
 "fMul" => {
   "op_flags"  => "C",
   "comment"   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
-  "emit"      =>'. FMUL%Mx %D1, %S1, %S2 /* FP Mul(%S1, %S2) -> %D1 */'
+  "emit"      =>'. FMUL%Mx %D1, %S1, %S2 /* FP Mul(%S1, %S2) -> %D1 */',
 },
 
 "fDiv" => {
   "comment"   => "construct FP Div: Div(a, b) = a / b",
   "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
-  "emit"      =>'. FDIV%Mx %D1, %S1, %S2 /* FP Div(%S1, %S2) -> %D1 */'
+  "emit"      =>'. FDIV%Mx %D1, %S1, %S2 /* FP Div(%S1, %S2) -> %D1 */',
 },
 
 "fMax" => {
@@ -621,7 +634,7 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "comment"   => "construct FP Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
-  "emit"      =>'. fmax %S1, %S2, %D1 /* FP Max(%S1, %S2) -> %D1 */'
+  "emit"      =>'. fmax %S1, %S2, %D1 /* FP Max(%S1, %S2) -> %D1 */',
 },
 
 "fMin" => {
@@ -629,7 +642,7 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "comment"   => "construct FP Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "reg_req"   => { "in" => [ "fp", "fp" ], "out" => [ "fp" ] },
-  "emit"      =>'. fmin %S1, %S2, %D1 /* FP Min(%S1, %S2) -> %D1 */'
+  "emit"      =>'. fmin %S1, %S2, %D1 /* FP Min(%S1, %S2) -> %D1 */',
 },
 
 # not commutative operations
@@ -645,14 +658,14 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "comment"   => "construct FP Neg: Neg(a) = -a",
   "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
-  "emit"      => '. fneg %S1, %D1 /* FP Neg(%S1) -> %D1 */'
+  "emit"      => '. fneg %S1, %D1 /* FP Neg(%S1) -> %D1 */',
 },
 
 "fAbs" => {
   "irn_flags" => "R",
   "comment"   => "construct FP Absolute value: fAbsd(a) = |a|",
   "reg_req"   => { "in" => [ "fp" ], "out" => [ "fp" ] },
-  "emit"      => '. FABS%Mx %D1, %S1 /* FP Absd(%S1) -> %D1 */'
+  "emit"      => '. FABS%Mx %D1, %S1 /* FP Absd(%S1) -> %D1 */',
 },
 
 # other operations
@@ -665,7 +678,7 @@ $comment_string = '/*';
   "init_attr" => 'attr->value = val;',
   "reg_req"   => { "out" => [ "fp" ] },
   "emit"      => '. FMOV %D1, %C /* Mov fConst into register */',
-  "cmp_attr"  => 'return attr_a->value != attr_b->value;'
+  "cmp_attr"  => 'return attr_a->value != attr_b->value;',
 },
 
 "fConvD2S" => {
@@ -690,8 +703,9 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct FP Load: Load(ptr, mem) = LD ptr",
-  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "fp" ] },
-  "emit"      => '. FLD%Mx %D1, %S1 /* Load((%S1)) -> %D1 */'
+  "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "fp", "none" ] },
+  "emit"      => '. FLD%Mx %D1, %S1 /* Load((%S1)) -> %D1 */',
+  "outs"      => [ "res", "M" ],
 },
 
 "fStore" => {
@@ -700,7 +714,8 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "fp", "none" ] },
-  "emit"      => '. FST%Mx %S2, %S1 /* Store(%S2) -> (%S1), (%A1, %A2) */'
+  "emit"      => '. FST%Mx %S2, %S1 /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "outs"      => [ "M" ],
 },
 
 ); # end of %nodes
