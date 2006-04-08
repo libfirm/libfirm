@@ -64,6 +64,7 @@ foreach my $op (keys(%nodes)) {
 			my $cnt = 0;
 			my $buf = 'cmd_buf';
 
+			push(@obst_func, "  cmnt_buf[0] = '\\0';\n");
 			foreach $template (split(/$comment_string_quoted/, $fmt, 2)) {
 				my @params;
 				my $res = "";
