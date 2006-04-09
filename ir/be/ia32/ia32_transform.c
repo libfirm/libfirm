@@ -1457,7 +1457,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 				if (USE_SSE2(env->cg))
 					res = new_rd_ia32_xCondJmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
 				else {
-					assert(0);
+					res = new_rd_ia32_vfCondJmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
 				}
 			}
 			else {

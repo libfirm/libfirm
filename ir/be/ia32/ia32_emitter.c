@@ -735,7 +735,7 @@ static ir_node *get_cfop_target_block(const ir_node *irn) {
 static char *get_cfop_target(const ir_node *irn, char *buf) {
 	ir_node *bl = get_cfop_target_block(irn);
 
-	snprintf(buf, SNPRINTF_BUF_LEN, BLOCK_PREFIX("%ld"), get_irn_node_nr(bl));
+	snprintf(buf, SNPRINTF_BUF_LEN, BLOCK_PREFIX("%ld"), get_irn_idx(bl));
 	return buf;
 }
 
@@ -883,6 +883,55 @@ static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test/cmp */", irn);
 	IA32_DO_EMIT(irn);
 	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+}
+
+/**
+ * Emits code for conditional x87 floating point jump with two variables.
+ */
+static void emit_ia32_x87CondJmp(const ir_node *irn, ia32_emit_env_t *env) {
+	FILE *F = env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
+	ia32_attr_t *attr = get_ia32_attr(irn);
+	const char *reg = attr->x87[1]->name;
+	const char *instr = "fcom";
+	int reverse = 0;
+
+	switch (get_ia32_pncode(irn)) {
+	case iro_ia32_fcomrJmp:
+		reverse = 1;
+	case iro_ia32_fcomJmp:
+	default:
+		instr = "fucom";
+		break;
+	case iro_ia32_fcomrpJmp:
+		reverse = 1;
+	case iro_ia32_fcompJmp:
+		instr = "fucomp";
+		break;
+	case iro_ia32_fcomrppJmp:
+		reverse = 1;
+	case iro_ia32_fcomppJmp:
+		instr = "fucompp";
+		reg = "";
+		break;
+	}
+
+	if (reverse)
+		set_ia32_pncode(irn, get_negated_pnc(get_ia32_pncode(irn), mode_Is));
+
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %s", instr, reg);
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
+	IA32_DO_EMIT(irn);
+//	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "fnstsw %3D", irn);
+	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "fnstsw %%ax", irn);
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* Store x87 FPU Control Word */");
+	IA32_DO_EMIT(irn);
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "sahf");
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* Store ah into flags */");
+	IA32_DO_EMIT(irn);
+
+	finish_CondJmp(F, irn, mode_Is);
 }
 
 /*********************************************************
@@ -1444,9 +1493,10 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
  */
 static void ia32_register_emitters(void) {
 
-#define IA32_EMIT(a) op_ia32_##a->ops.generic = (op_func)emit_ia32_##a
-#define EMIT(a)      op_##a->ops.generic = (op_func)emit_##a
-#define BE_EMIT(a)   op_be_##a->ops.generic = (op_func)emit_be_##a
+#define IA32_EMIT2(a,b) op_ia32_##a->ops.generic = (op_func)emit_ia32_##b
+#define IA32_EMIT(a)    IA32_EMIT2(a,a)
+#define EMIT(a)         op_##a->ops.generic = (op_func)emit_##a
+#define BE_EMIT(a)      op_be_##a->ops.generic = (op_func)emit_be_##a
 
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
@@ -1468,6 +1518,12 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_I2I);
 	IA32_EMIT(Conv_I2I8Bit);
 	IA32_EMIT(Const);
+	IA32_EMIT2(fcomJmp, x87CondJmp);
+	IA32_EMIT2(fcompJmp, x87CondJmp);
+	IA32_EMIT2(fcomppJmp, x87CondJmp);
+	IA32_EMIT2(fcomrJmp, x87CondJmp);
+	IA32_EMIT2(fcomrpJmp, x87CondJmp);
+	IA32_EMIT2(fcomrppJmp, x87CondJmp);
 
 	/* benode emitter */
 	BE_EMIT(Call);
@@ -1480,9 +1536,10 @@ static void ia32_register_emitters(void) {
 	EMIT(Jmp);
 	EMIT(Proj);
 
-#undef IA32_EMIT
 #undef BE_EMIT
 #undef EMIT
+#undef IA32_EMIT2
+#undef IA32_EMIT
 }
 
 /**
@@ -1510,12 +1567,21 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
  * and emits code for each node.
  */
 static void ia32_gen_block(ir_node *block, void *env) {
+	ia32_emit_env_t *emit_env = env;
 	const ir_node *irn;
+	int need_label = block != get_irg_start_block(get_irn_irg(block));
 
 	if (! is_Block(block))
 		return;
 
-	fprintf(((ia32_emit_env_t *)env)->out, BLOCK_PREFIX("%ld:\n"), get_irn_node_nr(block));
+	if (need_label && (emit_env->cg->opt & IA32_OPT_EXTBB)) {
+		/* if the extended block scheduler is used, only leader blocks need
+		   labels. */
+		need_label = (block == get_extbb_leader(get_nodes_extbb(block)));
+	}
+
+	if (need_label)
+		fprintf(emit_env->out, BLOCK_PREFIX("%ld:\n"), get_irn_idx(block));
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
 	}

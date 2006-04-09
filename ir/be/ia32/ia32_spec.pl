@@ -198,7 +198,7 @@ $comment_string = "/*";
 },
 
 "Mul" => {
-  "irn_flags" => "A",
+  "irn_flags" => "R",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
@@ -881,6 +881,16 @@ $comment_string = "/*";
   "reg_req"   => { "out" => [ "vfp" ] },
 },
 
+# other
+
+"vfCondJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "represents a virtual floating point compare",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "none", "none", "eax" ] },
+  "outs"      => [ "false", "true", "temp_reg_eax" ],
+},
+
 #------------------------------------------------------------------------#
 #       ___ _____    __ _             _                     _            #
 # __  _( _ )___  |  / _| | ___   __ _| |_   _ __   ___   __| | ___  ___  #
@@ -1150,7 +1160,7 @@ $comment_string = "/*";
   "emit"      => '. fld%M %C /* Load fConst into register -> %D1 */',
 },
 
-# fxch, fpush
+# fxch, fpush, fpop
 # Note that it is NEVER allowed to do CSE on these nodes
 
 "fxch" => {
@@ -1167,6 +1177,58 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
   "cmp_attr"  => "  return 1;\n",
   "emit"      => '. fld %X1 /* x87 push %X1 */',
+},
+
+"fpop" => {
+  "op_flags"  => "R|K",
+  "comment"   => "x87 stack pop",
+  "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "cmp_attr"  => "  return 1;\n",
+  "emit"      => '. fstp %X1 /* x87 pop %X1 */',
+},
+
+# compare
+
+"fcomJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "floating point compare",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { },
+},
+
+"fcompJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "floating point compare and pop",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { },
+},
+
+"fcomppJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "floating point compare and pop twice",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { },
+},
+
+"fcomrJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "floating point compare reverse",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { },
+},
+
+"fcomrpJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "floating point compare reverse and pop",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { },
+},
+
+"fcomrppJmp" => {
+  "op_flags"  => "L|X|Y",
+  "comment"   => "floating point compare reverse and pop twice",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { },
 },
 
 ); # end of %nodes
