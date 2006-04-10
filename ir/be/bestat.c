@@ -1,3 +1,9 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef FIRM_STATISTICS
+
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
@@ -54,3 +60,10 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
 void be_do_stat_sched_ready(ir_node *block, nodeset *ready_set) {
 	hook_be_block_sched_ready(block, get_irn_irg(block), MIN(nodeset_count(ready_set), 5));
 }
+
+#else
+
+void (be_do_stat_reg_pressure)(be_irg_t *birg) {}
+void (be_do_stat_sched_ready)(ir_node *block, nodeset *ready_set) {}
+
+#endif /* FIRM_STATISTICS */
