@@ -114,4 +114,9 @@ unsigned nodeset_hash(ir_node *n);
  */
 #define nodeset_break(nset)  pset_break(nset)
 
+/**
+ * Iterate over a node set.
+ */
+#define foreach_nodeset(set, irn)	for (irn = nodeset_first(set); irn; irn = nodeset_next(set))
+
 #endif /* _BENODESETS_H */
