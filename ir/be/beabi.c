@@ -1181,7 +1181,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	stack = be_abi_reg_map_get(env->regs, isa->sp);
 	if (keep) {
 		stack = get_irn_n(keep, 0);
-		set_irn_n(keep, 0, new_r_Bad(env->birg->irg));
+		exchange(keep, new_r_Bad(env->birg->irg));
 	}
 	be_abi_reg_map_set(reg_map, isa->sp, stack);
 
@@ -1241,7 +1241,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	}
 
 	/* The in array for the new back end return is now ready. */
-	ret = be_new_Return(irn ? get_irn_dbg_info(irn) : NULL, env->birg->irg, bl, n, in);
+	ret = be_new_Return(irn ? get_irn_dbg_info(irn) : NULL, env->birg->irg, bl, n_res, n, in);
 
 	/* Set the register classes of the return's parameter accordingly. */
 	for(i = 0; i < n; ++i)

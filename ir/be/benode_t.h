@@ -13,7 +13,6 @@
 #define _BENODE_T_H
 
 #include "firm_config.h"
-#include "pmap.h"
 
 #include "irmode.h"
 #include "irnode.h"
@@ -91,24 +90,49 @@ typedef enum {
  */
 void be_node_init(void);
 
+/**
+ * Position numbers for the be_Spill inputs.
+ */
 enum {
 	be_pos_Spill_frame = 0,
 	be_pos_Spill_val   = 1
 };
+
+/**
+ * Make a new Spill node.
+ */
 ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *node_to_spill, ir_node *ctx);
 
+/**
+ * Position numbers for the be_Reload inputs.
+ */
 enum {
 	be_pos_Reload_frame = 0,
 	be_pos_Reload_mem   = 1
 };
+
+/**
+ * Make a new Reload node.
+ */
 ir_node *be_new_Reload(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *spill_node, ir_mode *mode);
 
+/**
+ * Position numbers for the be_Copy inputs.
+ */
 enum {
 	be_pos_Copy_op = 0
 };
+
+/**
+ * Make a new Copy node.
+ */
 ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *block, ir_node *in);
+/** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
 
+/**
+ * Make a new Perm node.
+ */
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 
@@ -118,6 +142,9 @@ ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_re
 						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, entity *ent);
 ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, entity *ent);
 
+/**
+ * Position numbers for the be_AddSP inputs
+ */
 enum {
 	be_pos_AddSP_old_sp = 0,
 	be_pos_AddSP_size   = 1,
@@ -184,6 +211,9 @@ ir_type *be_Call_get_type(ir_node *call);
 /** Sets the call type. */
 void     be_Call_set_type(ir_node *call, ir_type *call_tp);
 
+/**
+ * Position numbers for the be_Call inputs.
+ */
 enum {
 	be_pos_Call_mem       = 0,  /**< memory input of a be_Call node */
 	be_pos_Call_sp        = 1,  /**< stack pointer input of a be_Call node */
@@ -206,9 +236,30 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir
                      int n_outs, int n, ir_node *in[], ir_type *call_tp);
 
 /**
- * Construct a new be_Return
+ * Position numbers for the be_Return inputs.
  */
-ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+enum {
+	be_pos_Return_mem  = 0,     /**< memory input of a be_Return node */
+	be_pos_Return_sp   = 1,     /**< stack pointer input of a be_Return node */
+	be_pos_Return_val  = 2,     /**< first "real" return value if any */
+};
+
+/**
+ * Construct a new be_Return.
+ * @param irg    the graph where the new node will be placed
+ * @param bl     the block where the new node will be placed
+ * @param n_res  number of "real" results
+ * @param n      number of inputs
+ * @param in     input array
+ */
+ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n_res, int n, ir_node *in[]);
+
+/** Returns the number of real returns values */
+int be_Return_get_n_rets(ir_node *ret);
+
+/**
+ * Construct a new Stack Parameter node.
+ */
 ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 
