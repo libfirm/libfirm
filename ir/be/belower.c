@@ -14,7 +14,9 @@
 #include <stdlib.h>
 
 #include "ircons.h"
+#include "ident.h"
 #include "debug.h"
+#include "irhooks.h"
 
 #include "bearch.h"
 #include "belower.h"
@@ -261,15 +263,18 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 static void lower_perm_node(ir_node *irn, void *walk_env) {
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
-	lower_env_t     *env   = walk_env;
-	perm_stat_t    **pstat = env->pstat;
+	lower_env_t     *env         = walk_env;
+	perm_stat_t    **pstat       = env->pstat;
+	int              pstat_idx   = -1;
+	int              real_size   = 0;
+	int              n, i, pn, do_copy, j, n_ops;
 	reg_pair_t      *pairs;
 	const ir_edge_t *edge;
 	perm_cycle_t    *cycle;
-	int              n, i, pn, do_copy, j, pstat_idx = -1;
 	ir_node         *sched_point, *block, *in[2];
 	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
+	ident           *cls_id;
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 
 	arch_env = env->chord_env->birg->main_env->arch_env;
@@ -291,6 +296,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	assert(n == get_irn_n_edges(irn) && "perm's in and out numbers different");
 
 	reg_class = arch_get_irn_register(arch_env, get_irn_n(irn, 0))->reg_class;
+	cls_id    = new_id_from_str(reg_class->name);
 	pairs     = alloca(n * sizeof(pairs[0]));
 
 	if (env->do_stat) {
@@ -356,7 +362,10 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	if (env->do_stat && get_n_checked_pairs(pairs, n) < n) {
 		pstat[pstat_idx]->num_real_perms++;
 		pstat[pstat_idx]->real_perm_size_ar[n - 1]++;
+		real_size = n - get_n_checked_pairs(pairs, n);
 	}
+
+	hook_be_block_stat_perm(cls_id, reg_class->n_regs, irn, block, n, real_size);
 
 	/* check for cycles and chains */
 	while (get_n_checked_pairs(pairs, n) < n) {
@@ -405,6 +414,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			res1 = get_node_for_register(pairs, n, cycle->elems[i], 1);
 			res2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 1);
 
+			n_ops = 0;
 			/*
 				If we have a cycle and don't copy: we need to create exchange nodes
 				NOTE: An exchange node is a perm node with 2 INs and 2 OUTs
@@ -450,6 +460,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 					irn, res1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
 				cpyxchg = be_new_Perm(reg_class, env->chord_env->irg, block, 2, in);
+				n_ops++;
 
 				if (i > 0) {
 					/* cycle is not done yet */
@@ -492,6 +503,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 				cpyxchg = be_new_Copy(reg_class, env->chord_env->irg, block, arg1);
 				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
+				n_ops++;
 
 				/* remove the proj from the schedule */
 				sched_remove(res2);
@@ -505,11 +517,17 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				/* set the new scheduling point */
 				sched_point = cpyxchg;
 			}
+
+			if (env->do_stat) {
+				hook_be_block_stat_permcycle(cls_id, irn, block, cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
+			}
 		}
 
 		free((void *) cycle->elems);
 		free(cycle);
 	}
+
+
 
 	/* remove the perm from schedule */
 	sched_remove(irn);
