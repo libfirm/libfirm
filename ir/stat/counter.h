@@ -24,6 +24,25 @@ typedef struct _counter_t {
   unsigned cnt[STAT_CNT_NUM];
 } counter_t;
 
+static const counter_t _cnt_0 = { { 0 } };
+static const counter_t _cnt_1 = { { 1 } };
+
+/**
+ * returns a counter representing value 0
+ */
+static INLINE const counter_t *cnt_get_0()
+{
+  return &_cnt_0;
+}
+
+/**
+ * returns a counter representing value 1
+ */
+static INLINE const counter_t *cnt_get_1()
+{
+  return &_cnt_1;
+}
+
 /**
  * increase a counter
  */
