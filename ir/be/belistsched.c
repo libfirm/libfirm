@@ -26,6 +26,7 @@
 #include "irmode_t.h"
 #include "irdump.h"
 #include "irprintf_t.h"
+#include "array.h"
 #include "debug.h"
 
 #include "besched_t.h"
@@ -39,11 +40,22 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
 /**
+ * All scheduling info needed per node.
+ */
+typedef struct _sched_irn_t {
+	sched_timestep_t delay;     /**< The delay for this node if already calculated, else 0. */
+	sched_timestep_t etime;     /**< The earliest time of this node. */
+	unsigned already_sched : 1; /**< Set if this node is already scheduled */
+	unsigned is_root       : 1; /**< is a root node of a block */
+} sched_irn_t;
+
+/**
  * Scheduling environment for the whole graph.
  */
 typedef struct _sched_env_t {
+	sched_irn_t *sched_info;                    /**< scheduling info per node */
 	const list_sched_selector_t *selector;      /**< The node selector. */
-	const arch_env_t *arch_env;                 /**< The architecture enviromnent. */
+	const arch_env_t *arch_env;                 /**< The architecture environment. */
 	const ir_graph *irg;                        /**< The graph to schedule. */
 	void *selector_env;                         /**< A pointer to give to the selector. */
 } sched_env_t;
@@ -139,9 +151,11 @@ static const list_sched_selector_t trivial_selector_struct = {
 	trivial_init_graph,
 	trivial_init_block,
 	trivial_select,
-	NULL,
-	NULL,
-	NULL
+	NULL,                /* to_appear_in_schedule */
+	NULL,                /* exectime */
+	NULL,                /* latency */
+	NULL,                /* finish_block */
+	NULL                 /* finish_graph */
 };
 
 const list_sched_selector_t *trivial_selector = &trivial_selector_struct;
@@ -381,77 +395,160 @@ static ir_node *reg_pressure_select(void *block_env, nodeset *ready_set)
 	return res;
 }
 
-static const list_sched_selector_t reg_pressure_selector_struct = {
-	reg_pressure_graph_init,
-	reg_pressure_block_init,
-	reg_pressure_select,
-	NULL,
-	reg_pressure_block_free,
-	free
-};
-
-const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;
-
-static void list_sched_block(ir_node *block, void *env_ptr);
-
-void list_sched(const arch_env_t *arch_env, ir_graph *irg)
-{
-	sched_env_t env;
-
-	memset(&env, 0, sizeof(env));
-	env.selector = arch_env->isa->impl->get_list_sched_selector(arch_env->isa);
-	env.arch_env = arch_env;
-	env.irg      = irg;
-
-	if(env.selector->init_graph)
-		env.selector_env = env.selector->init_graph(env.selector, arch_env, irg);
-
-	/* Assure, that the out edges are computed */
-	edges_assure(irg);
-
-	/* Schedule each single block. */
-	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
-
-	if(env.selector->finish_graph)
-		env.selector->finish_graph(env.selector_env);
-}
-
-
 /**
  * Environment for a block scheduler.
  */
 typedef struct _block_sched_env_t {
-	int curr_time;
-	nodeset *ready_set;
-	nodeset *already_scheduled;
-	ir_node *block;
+	sched_irn_t *sched_info;                    /**< scheduling info per node, copied from the global scheduler object */
+	sched_timestep_t curr_time;                 /**< current time of the scheduler */
+	nodeset *cands;                             /**< the set of candidates */
+	ir_node *block;                             /**< the current block */
+	sched_env_t *sched_env;                     /**< the scheduler environment */
 	const list_sched_selector_t *selector;
 	void *selector_block_env;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } block_sched_env_t;
 
 /**
+ * Returns non-zero if the node is already scheduled
+ */
+static INLINE int is_already_scheduled(block_sched_env_t *env, ir_node *n)
+{
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	return env->sched_info[idx].already_sched;
+}
+
+/**
+ * Mark a node as already scheduled
+ */
+static INLINE void mark_already_scheduled(block_sched_env_t *env, ir_node *n)
+{
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	env->sched_info[idx].already_sched = 1;
+}
+
+/**
+ * Returns non-zero if the node is a root node
+ */
+static INLINE unsigned is_root_node(block_sched_env_t *env, ir_node *n)
+{
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	return env->sched_info[idx].is_root;
+}
+
+/**
+ * Mark a node as roto node
+ */
+static INLINE void mark_root_node(block_sched_env_t *env, ir_node *n)
+{
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	env->sched_info[idx].is_root = 1;
+}
+
+/**
+ * Get the current delay.
+ */
+static sched_timestep_t get_irn_delay(block_sched_env_t *env, ir_node *n) {
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	return env->sched_info[idx].delay;
+}
+
+/**
+ * Set the current delay.
+ */
+static void set_irn_delay(block_sched_env_t *env, ir_node *n, sched_timestep_t delay) {
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	env->sched_info[idx].delay = delay;
+}
+
+/**
+ * Get the current etime.
+ */
+static sched_timestep_t get_irn_etime(block_sched_env_t *env, ir_node *n) {
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	return env->sched_info[idx].etime;
+}
+
+/**
+ * Set the current etime.
+ */
+static void set_irn_etime(block_sched_env_t *env, ir_node *n, sched_timestep_t etime) {
+	int idx = get_irn_idx(n);
+
+	assert(idx < ARR_LEN(env->sched_info));
+	env->sched_info[idx].etime = etime;
+}
+
+/**
+ * returns the exec-time for node n.
+ */
+static sched_timestep_t exectime(sched_env_t *env, ir_node *n) {
+  if (be_is_Keep(n) || is_Proj(n))
+    return 0;
+	if (env->selector->exectime)
+		return env->selector->exectime(env->selector_env, n);
+	return 1;
+}
+
+/**
+ * Calculates the latency for between two ops
+ */
+static sched_timestep_t latency(sched_env_t *env, ir_node *pred, int pred_cycle, ir_node *curr, int curr_cycle) {
+	/* a Keep hides a root */
+  if (be_is_Keep(curr))
+		return exectime(env, pred);
+
+	/* Proj's are executed immediately */
+	if (is_Proj(curr))
+    return 0;
+
+	/* predecessors Proj's must be skipped */
+  if (is_Proj(pred))
+    pred = get_Proj_pred(pred);
+
+	if (env->selector->latency)
+		return env->selector->latency(env->selector_env, pred, pred_cycle, curr, curr_cycle);
+	return 1;
+}
+
+/**
  * Try to put a node in the ready set.
- * @param env The block scheduler environment.
- * @param irn The node to make ready.
+ * @param env   The block scheduler environment.
+ * @param pred  The previous scheduled node.
+ * @param irn   The node to make ready.
  * @return 1, if the node could be made ready, 0 else.
  */
-static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
+static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 {
     int i, n;
+		sched_timestep_t etime_p, etime;
 
     /* Blocks cannot be scheduled. */
-    if(is_Block(irn))
+    if (is_Block(irn))
         return 0;
 
     /*
      * Check, if the given ir node is in a different block as the
      * currently scheduled one. If that is so, don't make the node ready.
      */
-    if(env->block != get_nodes_block(irn))
+    if (env->block != get_nodes_block(irn))
         return 0;
 
-    for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+    for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
         ir_node *op = get_irn_n(irn, i);
 
         /* if irn is an End we have keep-alives and op might be a block, skip that */
@@ -462,33 +559,27 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *irn)
 
         /* If the operand is local to the scheduled block and not yet
          * scheduled, this nodes cannot be made ready, so exit. */
-        if(!nodeset_find(env->already_scheduled, op) && get_nodes_block(op) == env->block)
+        if (!is_already_scheduled(env, op) && get_nodes_block(op) == env->block)
             return 0;
     }
 
-    DBG((env->dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
-    nodeset_insert(env->ready_set, irn);
+    nodeset_insert(env->cands, irn);
+
+		/* calculate the etime of this node */
+		etime = env->curr_time;
+		if (pred) {
+			etime_p  = get_irn_etime(env, pred);
+			etime   += latency(env->sched_env, pred, 1, irn, 0);
+
+			etime = etime_p > etime ? etime_p : etime;
+		}
+
+		set_irn_etime(env, irn, etime);
+
+    DB((env->dbg, LEVEL_2, "\tmaking ready: %+F etime %u\n", irn, etime));
 
     return 1;
 }
-
-/**
- * Check, if a node is ready in a block schedule.
- * @param env The block schedule environment.
- * @param irn The node to check for.
- * @return 1 if the node was ready, 0 if not.
- */
-#define is_ready(env,irn) \
-  (nodeset_find((env)->ready_set, irn) != NULL)
-
-/**
- * Check, if a node has already been schedules.
- * @param env The block schedule environment.
- * @param irn The node to check for.
- * @return 1 if the node was already scheduled, 0 if not.
- */
-#define is_scheduled(env,irn) \
-  (nodeset_find((env)->already_scheduled, irn) != NULL)
 
 /**
  * Try, to make all users of a node ready.
@@ -504,7 +595,7 @@ static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 	foreach_out_edge(irn, edge) {
 		ir_node *user = edge->src;
 		if(!is_Phi(user))
-			make_ready(env, user);
+			make_ready(env, irn, user);
 	}
 }
 
@@ -539,11 +630,11 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
     }
 
     /* Insert the node in the set of all already scheduled nodes. */
-    nodeset_insert(env->already_scheduled, irn);
+    mark_already_scheduled(env, irn);
 
     /* Remove the node from the ready set */
-    if(nodeset_find(env->ready_set, irn))
-        nodeset_remove(env->ready_set, irn);
+    if(nodeset_find(env->cands, irn))
+        nodeset_remove(env->cands, irn);
 
     return irn;
 }
@@ -557,14 +648,6 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
  * values.
  *
  * @param irn The tuple-moded irn.
- * @param list The schedule list to append all the projs.
- * @param time The time step to which the irn and all its projs are
- * related to.
- * @param obst The obstack the scheduling data structures shall be
- * created upon.
- * @param ready_set The ready set of the list scheduler.
- * @param already_scheduled A set containing all nodes already
- * scheduled.
  */
 static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 {
@@ -577,7 +660,7 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 
 		assert(is_Proj(out) && "successor of a modeT node must be a proj");
 
-		if(get_irn_mode(out) == mode_T)
+		if (get_irn_mode(out) == mode_T)
 			add_tuple_projs(env, out);
 		else {
 			add_to_sched(env, out);
@@ -586,18 +669,72 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 	}
 }
 
-static ir_node *select_node(block_sched_env_t *be)
+/**
+ * Execute the heuristic function,
+ */
+static ir_node *select_node_heuristic(block_sched_env_t *be, nodeset *ns)
 {
 	ir_node *irn;
 
-	for (irn = nodeset_first(be->ready_set); irn; irn = nodeset_next(be->ready_set)) {
+	for (irn = nodeset_first(ns); irn; irn = nodeset_next(ns)) {
 		if (be_is_Keep(irn)) {
-			nodeset_break(be->ready_set);
+			nodeset_break(ns);
 			return irn;
 		}
 	}
 
-	return be->selector->select(be->selector_block_env, be->ready_set);
+	return be->selector->select(be->selector_block_env, ns);
+}
+
+/**
+ * Returns non-zero if root is a root in the block block.
+ */
+static int is_root(ir_node *root, ir_node *block) {
+	const ir_edge_t *edge;
+
+	foreach_out_edge(root, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+
+		if (is_Block(succ))
+			continue;
+		if (get_nodes_block(succ) == block)
+			return 0;
+	}
+	return 1;
+}
+
+/* we need a special mark */
+static char _mark;
+#define MARK	&_mark
+
+/**
+ * descent into a dag and create a pre-order list.
+ */
+static void descent(ir_node *root, ir_node *block, ir_node **list) {
+	int i;
+
+	if (! is_Phi(root)) {
+		/* Phi nodes always leave the block */
+		for (i = get_irn_arity(root) - 1; i >= 0; --i) {
+			ir_node *pred = get_irn_n(root, i);
+
+			/* Blocks may happen as predecessors of End nodes */
+			if (is_Block(pred))
+				continue;
+
+			/* already seen nodes are not marked */
+			if (get_irn_link(pred) != MARK)
+				continue;
+
+			/* don't leave our block */
+			if (get_nodes_block(pred) != block)
+				continue;
+
+			descent(pred, block, list);
+		}
+	}
+	set_irn_link(root, *list);
+	*list = root;
 }
 
 /**
@@ -616,7 +753,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	sched_env_t *env                      = env_ptr;
 	const list_sched_selector_t *selector = env->selector;
 	ir_node *start_node                   = get_irg_start(get_irn_irg(block));
-	int phi_seen                          = 0;
 	sched_info_t *info                    = get_irn_sched_info(block);
 
 	block_sched_env_t be;
@@ -624,99 +760,262 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	ir_node *irn;
 	int j, m;
 
+	ir_node *root = NULL, *preord = NULL;
+	ir_node *curr;
+
 	/* Initialize the block's list head that will hold the schedule. */
 	INIT_LIST_HEAD(&info->list);
 
 	/* Initialize the block scheduling environment */
+	be.sched_info        = env->sched_info;
 	be.block             = block;
 	be.curr_time         = 0;
-	be.ready_set         = new_nodeset(get_irn_n_edges(block));
-	be.already_scheduled = new_nodeset(get_irn_n_edges(block));
+	be.cands             = new_nodeset(get_irn_n_edges(block));
 	be.selector          = selector;
+	be.sched_env         = env;
 	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
 
-	if(selector->init_block)
+//	firm_dbg_set_mask(be.dbg, SET_LEVEL_3);
+
+	if (selector->init_block)
 		be.selector_block_env = selector->init_block(env->selector_env, block);
 
 	DBG((be.dbg, LEVEL_1, "scheduling %+F\n", block));
+
+	/* First step: Find the root set. */
+	foreach_out_edge(block, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+
+		if (is_root(succ, block)) {
+			mark_root_node(&be, succ);
+			set_irn_link(succ, root);
+			root = succ;
+		}
+		else
+			set_irn_link(succ, MARK);
+	}
+
+	/* Second step: calculate the pre-order list. */
+	preord = NULL;
+	for (curr = root; curr; curr = irn) {
+		irn = get_irn_link(curr);
+		descent(curr, block, &preord);
+	}
+	root = preord;
+
+	/* Third step: calculate the Delay. Note that our
+	 * list is now in pre-order, starting at root
+	 */
+	for (curr = root; curr; curr = get_irn_link(curr)) {
+		sched_timestep_t d;
+
+		if (arch_irn_classify(env->arch_env, curr) == arch_irn_class_branch) {
+			/* assure, that branches can be executed last */
+			d = 0;
+		}
+		else {
+			if (is_root_node(&be, curr))
+				d = exectime(env, curr);
+			else {
+				d = 0;
+				foreach_out_edge(curr, edge) {
+					ir_node *n = get_edge_src_irn(edge);
+
+					if (get_nodes_block(n) == block) {
+						sched_timestep_t ld;
+
+						ld = latency(env, curr, 1, n, 0) + get_irn_delay(&be, n);
+						d = ld > d ? ld : d;
+					}
+				}
+			}
+		}
+		set_irn_delay(&be, curr, d);
+		DB((be.dbg, LEVEL_2, "\t%+F delay %u\n", curr, d));
+
+		/* set the etime of all nodes to 0 */
+		set_irn_etime(&be, curr, 0);
+	}
+
 
 	/* Then one can add all nodes are ready to the set. */
 	foreach_out_edge(block, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
 
 		/* Skip the end node because of keepalive edges. */
-		if(get_irn_opcode(irn) == iro_End)
+		if (get_irn_opcode(irn) == iro_End)
 			continue;
 
-		/* Phi functions are scheduled immediately, since they only transfer
-		 * data flow from the predecessors to this block. */
-		if(is_Phi(irn)) {
+		if (is_Phi(irn)) {
+			/* Phi functions are scheduled immediately, since they only transfer
+			 * data flow from the predecessors to this block. */
+
+			/* Increase the time step. */
+			be.curr_time += get_irn_etime(&be, irn);
 			add_to_sched(&be, irn);
 			make_users_ready(&be, irn);
-			phi_seen = 1;
 		}
+		else if (irn == start_node) {
+			/* The start block will be scheduled as the first node */
+			be.curr_time += get_irn_etime(&be, irn);
 
-		/* The start block will be scheduled as the first node */
-		else if(irn == start_node) {
 			add_to_sched(&be, irn);
 			add_tuple_projs(&be, irn);
 		}
-
-
-		/* Other nodes must have all operands in other blocks to be made
-		 * ready */
 		else {
+			/* Other nodes must have all operands in other blocks to be made
+			 * ready */
 			int ready = 1;
 
 			/* Check, if the operands of a node are not local to this block */
-			for(j = 0, m = get_irn_arity(irn); j < m; ++j) {
+			for (j = 0, m = get_irn_arity(irn); j < m; ++j) {
 				ir_node *operand = get_irn_n(irn, j);
 
-				if(get_nodes_block(operand) == block) {
+				if (get_nodes_block(operand) == block) {
 					ready = 0;
 					break;
 				}
 			}
 
 			/* Make the node ready, if all operands live in a foreign block */
-			if(ready) {
+			if (ready) {
 				DBG((be.dbg, LEVEL_2, "\timmediately ready: %+F\n", irn));
-				make_ready(&be, irn);
+				make_ready(&be, NULL, irn);
 			}
 		}
 	}
 
-	/* Increase the time, if some phi functions have been scheduled */
-	be.curr_time += phi_seen;
+	while (nodeset_count(be.cands) > 0) {
+		nodeset *mcands;                            /**< the set of candidates with maximum delay time */
+		nodeset *ecands;                            /**< the set of nodes in mcands whose etime <= curr_time  */
+		sched_timestep_t max_delay = 0;
 
-	while (nodeset_count(be.ready_set) > 0) {
-		/* collect statitics about amount of ready nodes */
-		be_do_stat_sched_ready(block, be.ready_set);
+		/* collect statistics about amount of ready nodes */
+		be_do_stat_sched_ready(block, be.cands);
 
-		/* select a node to be scheduled and check if it was ready */
-		irn = select_node(&be);
+		/* calculate the max delay of all candidates */
+		foreach_nodeset(be.cands, irn) {
+			sched_timestep_t d = get_irn_delay(&be, irn);
 
-		DBG((be.dbg, LEVEL_3, "\tpicked node %+F\n", irn));
+			max_delay = d > max_delay ? d : max_delay;
+		}
+		mcands = new_nodeset(8);
+		ecands = new_nodeset(8);
+
+		/* calculate mcands and ecands */
+		foreach_nodeset(be.cands, irn) {
+      if (be_is_Keep(irn)) {
+        nodeset_break(be.cands);
+        break;
+      }
+			if (get_irn_delay(&be, irn) == max_delay) {
+				nodeset_insert(mcands, irn);
+				if (get_irn_etime(&be, irn) <= be.curr_time)
+					nodeset_insert(ecands, irn);
+			}
+		}
+
+    if (irn) {
+      /* Keeps must be immediately scheduled */
+    }
+    else {
+		  DB((be.dbg, LEVEL_2, "\tbe.curr_time = %u\n", be.curr_time));
+
+		  /* select a node to be scheduled and check if it was ready */
+		  if (nodeset_count(mcands) == 1) {
+			  DB((be.dbg, LEVEL_3, "\tmcand = 1, max_delay = %u\n", max_delay));
+			  irn = nodeset_first(mcands);
+		  }
+		  else {
+			  int cnt = nodeset_count(ecands);
+			  if (cnt == 1) {
+					arch_irn_class_t irn_class;
+
+				  irn = nodeset_first(ecands);
+					irn_class = arch_irn_classify(env->arch_env, irn);
+
+					if (irn_class == arch_irn_class_branch) {
+						/* BEWARE: don't select a JUMP if others are still possible */
+						goto force_mcands;
+					}
+				  DB((be.dbg, LEVEL_3, "\tecand = 1, max_delay = %u\n", max_delay));
+			  }
+			  else if (cnt > 1) {
+				  DB((be.dbg, LEVEL_3, "\tecand = %d, max_delay = %u\n", cnt, max_delay));
+				  irn = select_node_heuristic(&be, ecands);
+			  }
+			  else {
+force_mcands:
+				  DB((be.dbg, LEVEL_3, "\tmcand = %d\n", nodeset_count(mcands)));
+				  irn = select_node_heuristic(&be, mcands);
+			  }
+		  }
+    }
+		del_nodeset(mcands);
+		del_nodeset(ecands);
+
+		DB((be.dbg, LEVEL_2, "\tpicked node %+F\n", irn));
+
+		/* Increase the time step. */
+		be.curr_time += exectime(env, irn);
 
 		/* Add the node to the schedule. */
 		add_to_sched(&be, irn);
 
-		if(get_irn_mode(irn) == mode_T)
+		if (get_irn_mode(irn) == mode_T)
 			add_tuple_projs(&be, irn);
 		else
 			make_users_ready(&be, irn);
 
-		/* Increase the time step. */
-		be.curr_time += 1;
-
 		/* remove the scheduled node from the ready list. */
-		if (nodeset_find(be.ready_set, irn))
-			nodeset_remove(be.ready_set, irn);
+		if (nodeset_find(be.cands, irn))
+			nodeset_remove(be.cands, irn);
 	}
 
-	if(selector->finish_block)
+	if (selector->finish_block)
 		selector->finish_block(be.selector_block_env);
 
-	del_nodeset(be.ready_set);
-	del_nodeset(be.already_scheduled);
+	del_nodeset(be.cands);
+}
+
+static const list_sched_selector_t reg_pressure_selector_struct = {
+	reg_pressure_graph_init,
+	reg_pressure_block_init,
+	reg_pressure_select,
+	NULL,                    /* to_appear_in_schedule */
+	NULL,                    /* exectime */
+	NULL,                    /* latency */
+	reg_pressure_block_free,
+	free
+};
+
+const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;
+
+/* List schedule a graph. */
+void list_sched(const arch_env_t *arch_env, ir_graph *irg)
+{
+	sched_env_t env;
+	int num_nodes = get_irg_last_idx(irg);
+
+	memset(&env, 0, sizeof(env));
+	env.selector   = arch_env->isa->impl->get_list_sched_selector(arch_env->isa);
+	env.arch_env   = arch_env;
+	env.irg        = irg;
+	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
+
+	memset(env.sched_info, 0, num_nodes * sizeof(*env.sched_info));
+
+	if (env.selector->init_graph)
+		env.selector_env = env.selector->init_graph(env.selector, arch_env, irg);
+
+	/* Assure, that the out edges are computed */
+	edges_assure(irg);
+
+	/* Schedule each single block. */
+	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
+
+	if (env.selector->finish_graph)
+		env.selector->finish_graph(env.selector_env);
+
+	DEL_ARR_F(env.sched_info);
 }

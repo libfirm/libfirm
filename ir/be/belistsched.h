@@ -61,6 +61,23 @@ struct _list_sched_selector_t {
 	int (*to_appear_in_schedule)(void *block_env, const ir_node *irn);
 
 	/**
+	 * Returns the execution time of node irn.
+	 */
+	unsigned (*exectime)(void *block_env, const ir_node *irn);
+
+	/**
+	 * Calculates the latency of executing cycle curr_cycle of node curr in cycle pred_cycle
+	 * of node pred.
+	 *
+	 * @param block_env   The block environment.
+	 * @param pred        The previous node.
+	 * @param pred_cycle  The previous node execution cycle.
+	 * @param curr        The current node.
+	 * @param curr_cycle  The current node execution cycle.
+	 */
+	unsigned (*latency)(void *block_env, const ir_node *pred, int pred_cycle, const ir_node *curr, int curr_cycle);
+
+	/**
 	 * Called after a block has been scheduled.
 	 * @param env The environment.
 	 * @param block_env The per block environment as returned by init_block().
