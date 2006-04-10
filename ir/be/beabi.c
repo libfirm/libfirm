@@ -1181,7 +1181,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	stack = be_abi_reg_map_get(env->regs, isa->sp);
 	if (keep) {
 		stack = get_irn_n(keep, 0);
-		set_irn_n(keep, new_r_Bad(env->birg->irg));
+		set_irn_n(keep, 0, new_r_Bad(env->birg->irg));
 	}
 	be_abi_reg_map_set(reg_map, isa->sp, stack);
 
