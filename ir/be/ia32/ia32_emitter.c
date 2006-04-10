@@ -735,7 +735,7 @@ static ir_node *get_cfop_target_block(const ir_node *irn) {
 static char *get_cfop_target(const ir_node *irn, char *buf) {
 	ir_node *bl = get_cfop_target_block(irn);
 
-	snprintf(buf, SNPRINTF_BUF_LEN, BLOCK_PREFIX("%ld"), get_irn_idx(bl));
+	snprintf(buf, SNPRINTF_BUF_LEN, BLOCK_PREFIX("%ld"), get_irn_node_nr(bl));
 	return buf;
 }
 
@@ -1581,7 +1581,8 @@ static void ia32_gen_block(ir_node *block, void *env) {
 	}
 
 	if (need_label)
-		fprintf(emit_env->out, BLOCK_PREFIX("%ld:\n"), get_irn_idx(block));
+		fprintf(emit_env->out, BLOCK_PREFIX("%ld:\n"), get_irn_node_nr(block));
+
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
 	}
