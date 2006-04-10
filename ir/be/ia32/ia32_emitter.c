@@ -888,7 +888,7 @@ static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
 /**
  * Emits code for conditional x87 floating point jump with two variables.
  */
-static void emit_ia32_x87CondJmp(const ir_node *irn, ia32_emit_env_t *env) {
+static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	FILE *F = env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
@@ -918,7 +918,7 @@ static void emit_ia32_x87CondJmp(const ir_node *irn, ia32_emit_env_t *env) {
 	}
 
 	if (reverse)
-		set_ia32_pncode(irn, get_negated_pnc(get_ia32_pncode(irn), mode_Is));
+		set_ia32_pncode(irn, (long)get_negated_pnc(get_ia32_pncode(irn), mode_Is));
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %s", instr, reg);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
