@@ -1178,7 +1178,11 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 		it then. Else we use the stack from the start block and let
 		the ssa construction fix the usage.
 	*/
-	stack = keep ? get_irn_n(keep, 0) : be_abi_reg_map_get(env->regs, isa->sp);
+	stack = be_abi_reg_map_get(env->regs, isa->sp);
+	if (keep) {
+		stack = get_irn_n(keep, 0);
+		set_irn_n(keep, new_r_Bad(env->birg->irg));
+	}
 	be_abi_reg_map_set(reg_map, isa->sp, stack);
 
 	/* Insert results for Return into the register map. */
@@ -1442,16 +1446,16 @@ static void modify_irg(be_abi_irg_t *env)
 		ir_node *irn = get_Block_cfgpred(end, i);
 
 		if (get_irn_opcode(irn) == iro_Return) {
-      ir_node *ret = create_be_return(env, irn, get_nodes_block(irn), get_Return_mem(irn), get_Return_n_ress(irn));
-    	exchange(irn, ret);
+			ir_node *ret = create_be_return(env, irn, get_nodes_block(irn), get_Return_mem(irn), get_Return_n_ress(irn));
+			exchange(irn, ret);
 		}
 	}
 
-  if (n <= 0) {
-    /* we have endless loops, add a dummy return without return vals */
-    ir_node *ret = create_be_return(env, NULL, end, get_irg_no_mem(irg), n);
-    add_End_keepalive(get_irg_end(irg), ret);
-  }
+	if (n <= 0) {
+		/* we have endless loops, add a dummy return without return vals */
+		ir_node *ret = create_be_return(env, NULL, end, get_irg_no_mem(irg), n);
+		add_End_keepalive(get_irg_end(irg), ret);
+	}
 
 	del_pset(dont_save);
 	obstack_free(&env->obst, args);
