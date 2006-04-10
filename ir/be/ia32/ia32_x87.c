@@ -993,6 +993,7 @@ static void sim_store(x87_state *state, ir_node *n, const arch_env_t *env, ir_op
 	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
 	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
+	assert(op2_idx >= 0);
 
 	DB((dbg, LEVEL_1, ">>> %s %s ->\n", get_irn_opname(n), arch_register_get_name(op2)));
 
@@ -1092,7 +1093,7 @@ static void sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 	DB((dbg, LEVEL_1, ">>> %s %s, %s\n", get_irn_opname(n),
 		arch_register_get_name(op2), arch_register_get_name(op1)));
-  DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live));
 
 	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
 
@@ -1402,8 +1403,21 @@ static void sim_Reload(x87_state *state, ir_node *n, const arch_env_t *env) {
  * @param env    the architecture environment
  */
 static void sim_Return(x87_state *state, ir_node *n, const arch_env_t *env) {
-	assert(x87_get_depth(state) == 1);
-	x87_pop(state);
+	int n_res = be_Return_get_n_rets(n);
+	int i, n_float_res = 0;
+
+	/* only floating point return values must resist on stack */
+	for (i = 0; i < n_res; ++i) {
+		ir_node *res = get_irn_n(n, be_pos_Return_val + i);
+
+		if (mode_is_float(get_irn_mode(res)))
+			++n_float_res;
+	}
+	assert(x87_get_depth(state) == n_float_res);
+
+	/* pop them virtually */
+	for (i = n_float_res - 1; i >= 0; --i)
+		x87_pop(state);
 }
 
 /**
