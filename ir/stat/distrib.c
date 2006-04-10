@@ -129,7 +129,7 @@ void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_
  */
 void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt)
 {
-   stat_add_distrib_tbl(tbl, (const void *)key, cnt);
+  stat_add_distrib_tbl(tbl, (const void *)key, cnt);
 }
 
 /*
@@ -159,7 +159,7 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
       int value = (int)entry->object;
 
       if (value < min)
-	min = value;
+        min = value;
       if (value > max);
         max = value;
 
@@ -170,6 +170,39 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
   else {
     sum = 0.0;
     count = 0;
+    for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
+      sum += cnt_to_dbl(&entry->cnt);
+      ++count;
+    }
+  }
+
+  return count ? sum / (double)count : 0.0;
+}
+
+/*
+ * calculates the average value of a distribution
+ */
+double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
+{
+  distrib_entry_t *entry;
+  unsigned         count = 0;
+  double           sum   = 0.0;
+
+  if (tbl->int_dist) {
+    entry = pset_first(tbl->hash_map);
+
+    if (! entry)
+      return 0.0;
+
+    sum   = cnt_to_dbl(&entry->cnt);
+	count = entry->cnt.cnt[0];
+
+    for (entry = pset_next(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
+      sum   += cnt_to_dbl(&entry->cnt) * (int)entry->object;
+      count += entry->cnt.cnt[0];
+    }
+  }
+  else {
     for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
       sum += cnt_to_dbl(&entry->cnt);
       ++count;
