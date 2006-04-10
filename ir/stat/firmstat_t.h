@@ -42,6 +42,8 @@ typedef pset hmap_opt_entry_t;
 typedef pset hmap_block_entry_t;
 typedef pset hmap_be_block_entry_t;
 typedef pset hmap_reg_pressure_entry_t;
+typedef pset hmap_perm_stat_entry_t;
+typedef pset hmap_perm_class_entry_t;
 typedef pset hmap_ir_op;
 typedef pset hmap_distrib_entry_t;
 
@@ -149,13 +151,36 @@ typedef struct _reg_pressure_entry_t {
 } reg_pressure_entry_t;
 
 /**
+ * An entry for permutation statistics.
+ */
+typedef struct _perm_stat_entry_t {
+  ir_node       *perm;       /**< the perm node */
+  int            size;       /**< complete size */
+  int            real_size;  /**< number of pairs with different registers */
+  int            n_copies;   /**< number of copies created for lowering */
+  int            n_exchg;    /**< number of exchanges created for lowering */
+  distrib_tbl_t *cycles;     /**< distribution of cycle lengths */
+  distrib_tbl_t *chains;     /**< distribution of chain lengths */
+} perm_stat_entry_t;
+
+/**
+ * An entry for permutation statistics per class.
+ */
+typedef struct _perm_class_entry_t {
+  ident                       *id_name;    /**< name of the register class */
+  int                          n_regs;     /**< number of register in this class */
+  HASH_MAP(perm_stat_entry_t) *perm_stat;  /**< statistics about all perm nodes of this class */
+} perm_class_entry_t;
+
+/**
  * An entry for a block or extended block in a ir-graph
  */
 typedef struct _be_block_entry_t {
-  long                           block_nr;      /**< block nr */
-  distrib_tbl_t                  *sched_ready;  /**< distribution of ready nodes per block */
+  long                           block_nr;         /**< block nr */
+  distrib_tbl_t                  *sched_ready;     /**< distribution of ready nodes per block */
   /**< the highest register pressures for this block for each register class */
   HASH_MAP(reg_pressure_entry_t) *reg_pressure;
+  HASH_MAP(perm_class_entry_t)   *perm_class_stat; /**< statistics about perm nodes for each register class */
 } be_block_entry_t;
 
 /**

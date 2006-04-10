@@ -141,12 +141,34 @@ static int be_block_cmp(const void *elt, const void *key)
 }
 
 /**
- * compare two elements of the block/extbb hash
+ * compare two elements of reg pressure hash
  */
 static int reg_pressure_cmp(const void *elt, const void *key)
 {
   const reg_pressure_entry_t *e1 = elt;
   const reg_pressure_entry_t *e2 = key;
+
+  return e1->id_name != e2->id_name;
+}
+
+/**
+ * compare two elements of the perm_stat hash
+ */
+static int perm_stat_cmp(const void *elt, const void *key)
+{
+  const perm_stat_entry_t *e1 = elt;
+  const perm_stat_entry_t *e2 = key;
+
+  return e1->perm != e2->perm;
+}
+
+/**
+ * compare two elements of the perm_class hash
+ */
+static int perm_class_cmp(const void *elt, const void *key)
+{
+  const perm_class_entry_t *e1 = elt;
+  const perm_class_entry_t *e2 = key;
 
   return e1->id_name != e2->id_name;
 }
@@ -273,8 +295,14 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
   key.irg = irg;
 
   elem = pset_find(hmap, &key, HASH_PTR(irg));
-  if (elem)
+
+  if (elem) {
+    /* create hash map backend block information */
+    if (! elem->be_block_hash)
+      elem->be_block_hash = new_pset(be_block_cmp, 5);
+
     return elem;
+  }
 
   /* allocate a new one */
   elem = obstack_alloc(&status->cnts, sizeof(*elem));
@@ -288,9 +316,6 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
   elem->opcode_hash  = new_pset(opcode_cmp, 5);
   elem->address_mark = new_set(address_mark_cmp, 5);
   elem->irg          = irg;
-
-  /* create hash map backend block information */
-  elem->be_block_hash = new_pset(be_block_cmp, 5);
 
   /* these hash tables are created on demand */
   elem->block_hash = NULL;
@@ -389,8 +414,12 @@ static void be_block_clear_entry(be_block_entry_t *elem)
 	if (elem->sched_ready)
 		stat_delete_distrib_tbl(elem->sched_ready);
 
-	elem->reg_pressure = new_pset(reg_pressure_cmp, 5);
-	elem->sched_ready  = stat_new_int_distrib_tbl();
+	if (elem->perm_class_stat)
+		del_pset(elem->perm_class_stat);
+
+	elem->reg_pressure    = new_pset(reg_pressure_cmp, 5);
+	elem->sched_ready     = stat_new_int_distrib_tbl();
+	elem->perm_class_stat = new_pset(perm_class_cmp, 5);
 }
 
 /**
@@ -421,6 +450,85 @@ static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr,
   return pset_insert(hmap, elem, block_nr);
 }
 
+/**
+ * clears all sets in perm_class_entry_t
+ */
+static void perm_class_clear_entry(perm_class_entry_t *elem) {
+	if (elem->perm_stat)
+		del_pset(elem->perm_stat);
+
+	elem->perm_stat = new_pset(perm_stat_cmp, 5);
+}
+
+/**
+ * Returns the associated perm_class entry for a register class.
+ *
+ * @param cls_id    the register class ident
+ * @param hmap      a hash map containing class_name -> perm_class_entry_t
+ */
+static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, ident *cls_id, hmap_perm_class_entry_t *hmap)
+{
+  perm_class_entry_t key;
+  perm_class_entry_t *elem;
+
+  key.id_name = cls_id;
+
+  elem = pset_find(hmap, &key, HASH_PTR(cls_id));
+  if (elem)
+    return elem;
+
+  elem = obstack_alloc(obst, sizeof(*elem));
+  memset(elem, 0, sizeof(*elem));
+
+  /* clear new counter */
+  perm_class_clear_entry(elem);
+
+  elem->id_name = cls_id;
+
+  return pset_insert(hmap, elem, HASH_PTR(cls_id));
+}
+
+/**
+ * clears all sets in perm_stat_entry_t
+ */
+static void perm_stat_clear_entry(perm_stat_entry_t *elem) {
+	if (elem->chains)
+		stat_delete_distrib_tbl(elem->chains);
+
+	if (elem->cycles)
+		stat_delete_distrib_tbl(elem->cycles);
+
+	elem->chains = stat_new_int_distrib_tbl();
+	elem->cycles = stat_new_int_distrib_tbl();
+}
+
+/**
+ * Returns the associated perm_stat entry for a perm.
+ *
+ * @param perm      the perm node
+ * @param hmap      a hash map containing perm -> perm_stat_entry_t
+ */
+static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *perm, hmap_perm_stat_entry_t *hmap)
+{
+  perm_stat_entry_t key;
+  perm_stat_entry_t *elem;
+
+  key.perm = perm;
+
+  elem = pset_find(hmap, &key, HASH_PTR(perm));
+  if (elem)
+    return elem;
+
+  elem = obstack_alloc(obst, sizeof(*elem));
+  memset(elem, 0, sizeof(*elem));
+
+  /* clear new counter */
+  perm_stat_clear_entry(elem);
+
+  elem->perm = perm;
+
+  return pset_insert(hmap, elem, HASH_PTR(perm));
+}
 
 /**
  * Returns the ir_op for an IR-node,
@@ -1570,10 +1678,6 @@ static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, 
     be_block_entry_t     *block_ent;
     reg_pressure_entry_t *rp_ent;
 
-    /* create new be_block hash */
-    if (! graph->be_block_hash)
-      graph->be_block_hash = new_pset(be_block_cmp, 5);
-
     block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
 	rp_ent    = obstack_alloc(&status->be_data, sizeof(*rp_ent));
 	memset(rp_ent, 0, sizeof(*rp_ent));
@@ -1601,24 +1705,93 @@ static void stat_be_block_sched_ready(void *ctx, ir_node *block, ir_graph *irg, 
 
   STAT_ENTER;
   {
-    graph_entry_t        *graph = graph_get_entry(irg, status->irg_hash);
-    be_block_entry_t     *block_ent;
-	counter_t             cnt_1;
-
-    /* create new be_block hash */
-    if (! graph->be_block_hash)
-      graph->be_block_hash = new_pset(be_block_cmp, 5);
+    graph_entry_t    *graph = graph_get_entry(irg, status->irg_hash);
+    be_block_entry_t *block_ent;
+	const counter_t  *cnt_1 = cnt_get_1();
 
     block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
 
-    /* add 1 to the counter of orresponding number of ready nodes */
-    cnt_clr(&cnt_1);
-	cnt_inc(&cnt_1);
-	stat_add_int_distrib_tbl(block_ent->sched_ready, num_ready, &cnt_1);
+    /* add 1 to the counter of corresponding number of ready nodes */
+	stat_add_int_distrib_tbl(block_ent->sched_ready, num_ready, cnt_1);
   }
   STAT_LEAVE;
 }
 
+/**
+ * Update the permutation statistic of a block
+ *
+ * @param ctx        the hook context
+ * @param class_name the ident name of the register class
+ * @param perm       the perm node
+ * @param block      the block containing the perm
+ * @param size       the size of the perm
+ * @param real_size  number of pairs with different registers
+ */
+void stat_be_block_stat_perm(void *ctx, ident *class_name, int n_regs, ir_node *perm, ir_node *block,
+                             int size, int real_size)
+{
+  if (! status->stat_options)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t      *graph = graph_get_entry(get_irn_irg(block), status->irg_hash);
+    be_block_entry_t   *block_ent;
+    perm_class_entry_t *pc_ent;
+    perm_stat_entry_t  *ps_ent;
+
+    block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
+    pc_ent    = perm_class_get_entry(&status->be_data, class_name, block_ent->perm_class_stat);
+    ps_ent    = perm_stat_get_entry(&status->be_data, perm, pc_ent->perm_stat);
+
+	pc_ent->n_regs = n_regs;
+
+    /* update information */
+    ps_ent->size      = size;
+    ps_ent->real_size = real_size;
+  }
+  STAT_LEAVE;
+}
+
+/**
+ * Update the permutation statistic of a single perm
+ *
+ * @param ctx        the hook context
+ * @param class_name the ident name of the register class
+ * @param perm       the perm node
+ * @param block      the block containing the perm
+ * @param is_chain   1 if chain, 0 if cycle
+ * @param n_ops      the number of ops representing this cycle/chain after lowering
+ */
+void stat_be_block_stat_permcycle(void *ctx, ident *class_name, ir_node *perm, ir_node *block,
+                                  int is_chain, int size, int n_ops)
+{
+  if (! status->stat_options)
+    return;
+
+  STAT_ENTER;
+  {
+    graph_entry_t      *graph = graph_get_entry(get_irn_irg(block), status->irg_hash);
+	const counter_t    *cnt_1 = cnt_get_1();
+    be_block_entry_t   *block_ent;
+    perm_class_entry_t *pc_ent;
+    perm_stat_entry_t  *ps_ent;
+
+    block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
+    pc_ent    = perm_class_get_entry(&status->be_data, class_name, block_ent->perm_class_stat);
+    ps_ent    = perm_stat_get_entry(&status->be_data, perm, pc_ent->perm_stat);
+
+    if (is_chain) {
+      ps_ent->n_copies += n_ops;
+      stat_add_int_distrib_tbl(ps_ent->chains, size, cnt_1);
+    }
+    else {
+      ps_ent->n_exchg += n_ops;
+      stat_add_int_distrib_tbl(ps_ent->cycles, size, cnt_1);
+    }
+  }
+  STAT_LEAVE;
+}
 
 /* Dumps a statistics snapshot */
 void stat_dump_snapshot(const char *name, const char *phase)
@@ -1785,6 +1958,8 @@ void firm_init_stat(unsigned enable_options)
   HOOK(hook_arch_dep_replace_division_by_const, stat_arch_dep_replace_division_by_const);
   HOOK(hook_be_block_regpressure,               stat_be_block_regpressure);
   HOOK(hook_be_block_sched_ready,               stat_be_block_sched_ready);
+  HOOK(hook_be_block_stat_perm,                 stat_be_block_stat_perm);
+  HOOK(hook_be_block_stat_permcycle,            stat_be_block_stat_permcycle);
 
   obstack_init(&status->cnts);
   obstack_init(&status->be_data);

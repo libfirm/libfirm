@@ -151,11 +151,12 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 /**
  * dumps the register pressure for each block and for each register class
  */
-static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entry) {
+static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entry)
+{
 	be_block_entry_t     *b_entry = pset_first(entry->be_block_hash);
 	reg_pressure_entry_t *rp_entry;
 
-	/* return if no reg pressure information available */
+	/* return if no be statistic information available */
 	if (! b_entry)
 		return;
 
@@ -189,7 +190,8 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 }
 
 /** prints a distribution entry */
-void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env) {
+void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env)
+{
 	FILE *dmp_f = env;
 	fprintf(dmp_f, "%12d", entry->cnt.cnt[0]);
 }
@@ -197,16 +199,15 @@ void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env) {
 /**
  * dumps the distribution of the amount of ready nodes for each block
  */
-static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry) {
+static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry)
+{
 	be_block_entry_t *b_entry = pset_first(entry->be_block_hash);
-	counter_t         cnt_0;
+	const counter_t  *cnt_0   = cnt_get_0();
 	int               i;
 
-	/* return if no reg pressure information available */
+	/* return if no be statistic information available */
 	if (! b_entry)
 		return;
-
-	cnt_clr(&cnt_0);
 
 	fprintf(dmp->f, "\nSCHEDULING: NUMBER OF READY NODES\n");
 	fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s %12s\n",
@@ -216,15 +217,66 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 	     b_entry;
 	     b_entry = pset_next(entry->be_block_hash))
 	{
-		/* this ensures that all keys from 1 to 5 are in the table*/
+		/* this ensures that all keys from 1 to 5 are in the table */
 		for (i = 1; i < 6; i++)
-			stat_add_int_distrib_tbl(b_entry->sched_ready, i, &cnt_0);
+			stat_add_int_distrib_tbl(b_entry->sched_ready, i, cnt_0);
 
 		fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
 		stat_iterate_distrib_tbl(b_entry->sched_ready, dump_block_sched_ready_distrib, dmp->f);
 		fprintf(dmp->f, "%12.2lf", stat_calc_avg_distrib_tbl(b_entry->sched_ready));
 		fprintf(dmp->f, "\n");
 	}
+}
+
+/**
+ * dumps permutation statistics for one and block and one class
+ */
+static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_t *entry)
+{
+	perm_stat_entry_t *ps_ent;
+
+	fprintf(dmp->f, "%12s %12s\n", "size", "real size");
+	for (ps_ent = pset_first(entry->perm_stat);
+	     ps_ent;
+	     ps_ent = pset_next(entry->perm_stat))
+	{
+		fprintf(dmp->f, "%12d %12d\n", ps_ent->size, ps_ent->real_size);
+	}
+}
+
+/**
+ * dumps statistics about perms
+ */
+static void simple_dump_be_block_permstat(dumper_t *dmp, graph_entry_t *entry)
+{
+	be_block_entry_t *b_entry = pset_first(entry->be_block_hash);
+
+	/* return if no be statistic information available */
+	if (! b_entry)
+		return;
+
+	fprintf(dmp->f, "\nPERMUTATION STATISTICS BEGIN:\n");
+	for (/* b_entry is already initialized */ ;
+	     b_entry;
+	     b_entry = pset_next(entry->be_block_hash))
+	{
+		perm_class_entry_t *pc_ent;
+
+		fprintf(dmp->f, "BLOCK %ld:\n", b_entry->block_nr);
+
+		if (! b_entry->perm_class_stat)
+			continue;
+
+		for (pc_ent = pset_first(b_entry->perm_class_stat);
+		     pc_ent;
+		     pc_ent = pset_next(b_entry->perm_class_stat))
+		{
+			fprintf(dmp->f, "register class %s:\n", get_id_str(pc_ent->id_name));
+			simple_dump_be_block_permstat_class(dmp, pc_ent);
+		}
+	}
+
+	fprintf(dmp->f, "PERMUTATION STATISTICS END\n");
 }
 
 /**
@@ -361,6 +413,9 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		/* dump block ready nodes distribution */
 		simple_dump_be_block_sched_ready(dmp, entry);
+
+		/* dump block permutation statistics */
+		simple_dump_be_block_permstat(dmp, entry);
 
 		if (dmp->status->stat_options & FIRMSTAT_COUNT_EXTBB) {
 			/* dump extended block info */
