@@ -43,9 +43,6 @@ struct _copy_opt_t {
 #define set_irn_col(co, irn, col)	arch_set_irn_register((co)->aenv, irn, arch_register_for_index((co)->cls, col))
 #define is_curr_reg_class(co, irn)	(arch_get_irn_reg_class((co)->aenv, irn, -1) == (co)->cls)
 
-#define MIN(a,b) ((a<b)?(a):(b))
-#define MAX(a,b) ((a<b)?(b):(a))
-
 #define list_entry_units(lh) list_entry(lh, unit_t, units)
 
 #define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
