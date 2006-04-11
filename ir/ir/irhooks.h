@@ -151,18 +151,11 @@ typedef struct hook_entry {
     /** This hook is called after a Div/Mod/DivMod by a constant value was replaced. */
     void (*_hook_arch_dep_replace_division_by_const)(void *context, ir_node *irn);
 
-	/** This hook is called while calculating the register pressure. */
-    void (*_hook_be_block_regpressure)(void *context, ir_node *block, ir_graph *irg, int pressure,
-                                       const char *class_name);
-
-	/** This hook is called during scheduling to get distribution of ready nodes */
-    void (*_hook_be_block_sched_ready)(void *context, ir_node *block, ir_graph *irg, int num_ready);
-
-	/** This hook is called during permutation lowering once for each permutation. */
+    /** This hook is called during permutation lowering once for each permutation. */
     void (*_hook_be_block_stat_perm)(void *context, const char *class_name, int n_regs, ir_node *perm,
                                      ir_node *block, int size, int real_size);
 
-	/** This hook is called during permutation lowering for each cycle/chain in a permutation. */
+    /** This hook is called during permutation lowering for each cycle/chain in a permutation. */
     void (*_hook_be_block_stat_permcycle)(void *context, const char *class_name, ir_node *perm, ir_node *block,
                                           int is_chain, int size, int n_ops);
 
@@ -210,8 +203,6 @@ typedef enum {
   hook_func_call,
   hook_arch_dep_replace_mul_with_shifts,
   hook_arch_dep_replace_division_by_const,
-  hook_be_block_regpressure,
-  hook_be_block_sched_ready,
   hook_be_block_stat_perm,
   hook_be_block_stat_permcycle,
   hook_new_mode,
@@ -291,10 +282,6 @@ extern hook_entry_t *hooks[hook_last];
   hook_exec(hook_arch_dep_replace_mul_with_shifts, (ctx, irn))
 #define hook_arch_dep_replace_division_by_const(irn) \
   hook_exec(hook_arch_dep_replace_division_by_const, (ctx, irn))
-#define hook_be_block_regpressure(block, irg, pressure, class_name) \
-  hook_exec(hook_be_block_regpressure, (ctx, block, irg, pressure, class_name))
-#define hook_be_block_sched_ready(block, irg, num_ready) \
-  hook_exec(hook_be_block_sched_ready, (ctx, block, irg, num_ready))
 #define hook_be_block_stat_perm(class_name, n_regs, perm, block, size, real_size) \
   hook_exec(hook_be_block_stat_perm, (ctx, class_name, n_regs, perm, block, size, real_size))
 #define hook_be_block_stat_permcycle(class_name, perm, block, is_chain, size, n_ops) \
