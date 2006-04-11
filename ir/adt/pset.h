@@ -30,7 +30,7 @@ int pset_default_ptr_cmp(const void *x, const void *y);
  * The abstract type of a pset (Set of pointers).
  *
  * This kind of sets stores only pointer to elements, the elements itself
- * must be stored somewere else.
+ * must be stored somewhere else.
  *
  * @see set
  */
@@ -182,6 +182,14 @@ void *pset_next (pset *pset);
  * @param pset  the pset
  */
 void pset_break (pset *pset);
+
+/**
+ * Iterates oven an pset.
+ *
+ * @param pset   the pset
+ * @param entry  the iterator
+ */
+#define foreach_pset(pset, entry) for (entry = pset_first(pset); entry; entry = pset_next(set))
 
 /**
  * Inserts all elements of the pointer set src into
