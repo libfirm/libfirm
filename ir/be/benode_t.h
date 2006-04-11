@@ -268,6 +268,9 @@ ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *spill_ctx);
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *reloader, ir_mode *mode, ir_node *spill);
 
+enum {
+	be_pos_CopyKeep_op = 0
+};
 ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode);
 ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode);
 

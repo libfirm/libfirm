@@ -607,6 +607,7 @@ ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 int be_is_Spill         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Spill          ; }
 int be_is_Reload        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Reload         ; }
 int be_is_Copy          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Copy           ; }
+int be_is_CopyKeep      (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_CopyKeep       ; }
 int be_is_Perm          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Perm           ; }
 int be_is_Keep          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Keep           ; }
 int be_is_Call          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Call           ; }
