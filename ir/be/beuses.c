@@ -49,9 +49,6 @@ struct _be_uses_t {
   DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
-
-#define MIN(a, b)                ((a) < (b) ? (a) : (b))
-
 static INLINE unsigned sadd(unsigned a, unsigned b)
 {
   return a + b;
