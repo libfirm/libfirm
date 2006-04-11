@@ -9,7 +9,7 @@
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "dbginfo_t.h"
-#include "firmstat.h"
+#include "firmstat_t.h"
 #include "ident.h"
 
 #include "bestat.h"
@@ -45,7 +45,7 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 			max_live = cnt < max_live ? max_live : cnt;
 		}
 
-		hook_be_block_regpressure(block, birg->irg, max_live, new_id_from_str(cls->name));
+		stat_be_block_regpressure(birg->irg, block, max_live, new_id_from_str(cls->name));
 	}
 }
 
@@ -58,7 +58,7 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
  * Notify statistic module about amount of ready nodes.
  */
 void be_do_stat_sched_ready(ir_node *block, nodeset *ready_set) {
-	hook_be_block_sched_ready(block, get_irn_irg(block), MIN(nodeset_count(ready_set), 5));
+	stat_be_block_sched_ready(get_irn_irg(block), block, nodeset_count(ready_set));
 }
 
 #else
