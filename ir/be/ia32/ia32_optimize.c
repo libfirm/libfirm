@@ -440,6 +440,10 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 	proj_res = new_r_Proj(current_ir_graph, bl, push, get_irn_mode(sp), pn_ia32_Push_stack);
 	proj_M   = new_r_Proj(current_ir_graph, bl, push, mode_M, pn_ia32_Push_M);
 
+	/* copy a possible constant from the store */
+	set_ia32_id_cnst(push, get_ia32_id_cnst(irn));
+	set_ia32_immop_type(push, get_ia32_immop_type(irn));
+
 	/* the push must have SP out register */
 	arch_set_irn_register(cg->arch_env, push, arch_get_irn_register(cg->arch_env, sp));
 
@@ -554,6 +558,8 @@ void ia32_peephole_optimization(ir_node *irn, void *env) {
 		ia32_optimize_CondJmp(irn, cg);
 	else if (be_is_IncSP(irn))
 		ia32_optimize_IncSP(irn, cg);
+	else if (is_ia32_Store(irn))
+		ia32_create_Push(irn, cg);
 }
 
 

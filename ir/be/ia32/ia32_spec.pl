@@ -501,7 +501,18 @@ $comment_string = "/*";
 "Push" => {
   "comment"   => "push a gp register on the stack",
   "reg_req"   => { "in" => [ "esp", "gp", "none" ], "out" => [ "esp" ] },
-  "emit"      => '. push %S2 /* Push(%A2) */',
+  "emit"      => '
+if (get_ia32_id_cnst(n)) {
+	if (get_ia32_immop_type(n) == ia32_ImmConst) {
+. push %C /* Push(%A2) */
+	} else {
+. push OFFSET FLAT:%C /* Push(%A2) */
+	}
+}
+else {
+. push %S2 /* Push(%A2) */
+}
+',
   "outs"      => [ "stack", "M" ],
 },
 
