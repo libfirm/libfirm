@@ -20,6 +20,11 @@
 lc_opt_entry_t *firm_opt_get_root(void);
 #endif
 
+#undef MIN
+#undef MAX
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+
 /**
  * convert an integer into pointer
  */
