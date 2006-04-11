@@ -397,7 +397,7 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	/* try to optimize to inc/dec  */
-	if ((env->cg->opt & IA32_OPT_INCDEC) && tv) {
+	if ((env->cg->opt & IA32_OPT_INCDEC) && (get_ia32_op_type(const_op) == ia32_Const)) {
 		/* optimize tarvals */
 		class_tv    = classify_tarval(tv);
 		class_negtv = classify_tarval(tarval_neg(tv));
