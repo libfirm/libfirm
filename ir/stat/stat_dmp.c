@@ -187,7 +187,7 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 }
 
 /** prints a distribution entry */
-void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env)
+static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env)
 {
 	FILE *dmp_f = env;
 	fprintf(dmp_f, "%12d", cnt_to_uint(&entry->cnt));
@@ -212,11 +212,20 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 				stat_insert_int_distrib_tbl(b_entry->sched_ready, i);
 
 			fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
-			stat_iterate_distrib_tbl(b_entry->sched_ready, dump_block_sched_ready_distrib, dmp->f);
+			stat_iterate_distrib_tbl(b_entry->sched_ready, simple_dump_distrib_entry, dmp->f);
 			fprintf(dmp->f, "%12.2lf", stat_calc_avg_distrib_tbl(b_entry->sched_ready));
 			fprintf(dmp->f, "\n");
 		}
 	}
+}
+
+/**
+ * Adds the counter for given entry to another distribution table.
+ */
+static void add_distrib_entry(const distrib_entry_t *entry, void *env) {
+	distrib_tbl_t *sum_tbl = env;
+
+	stat_add_int_distrib_tbl(sum_tbl, (int)(entry->object), &entry->cnt);
 }
 
 /**
@@ -225,16 +234,67 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_t *entry)
 {
 	perm_stat_entry_t *ps_ent;
+	distrib_tbl_t     *sum_chains = stat_new_int_distrib_tbl();
+	distrib_tbl_t     *sum_cycles = stat_new_int_distrib_tbl();
+	char              buf[16];
+	int               i;
 
-	fprintf(dmp->f, "%12s %12s %12s %12s\n", "size", "real size", "# chains", "# cycles");
+	fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s\n",
+		"size",
+		"real size",
+		"# chains",
+		"# cycles",
+		"# copies",
+		"# exchanges"
+	);
+
 	foreach_pset(entry->perm_stat, ps_ent) {
-		fprintf(dmp->f, "%12d %12d %12d %12d\n",
+		fprintf(dmp->f, "%12d %12d %12d %12d %12d %12d\n",
 			ps_ent->size,
 			ps_ent->real_size,
 			stat_get_count_distrib_tbl(ps_ent->chains),
-			stat_get_count_distrib_tbl(ps_ent->cycles)
+			stat_get_count_distrib_tbl(ps_ent->cycles),
+			ps_ent->n_copies,
+			ps_ent->n_exchg
 		);
+
+		/* sum up distribution table for chains */
+		stat_iterate_distrib_tbl(ps_ent->chains, add_distrib_entry, sum_chains);
+
+		/* sum up distribution table for cycles */
+		stat_iterate_distrib_tbl(ps_ent->cycles, add_distrib_entry, sum_cycles);
 	}
+
+	/* print chain distribution for all perms of this class in this block */
+	fprintf(dmp->f, "chain distribution:\n");
+
+	/* add all missing entries to chain distribution table */
+	for (i = 0; i < entry->n_regs; i++) {
+		snprintf(buf, sizeof(buf), "length %d", i);
+		fprintf(dmp->f, "%12s", buf);
+		stat_insert_int_distrib_tbl(sum_chains, i);
+	}
+	fprintf(dmp->f, "\n");
+	stat_iterate_distrib_tbl(sum_chains, simple_dump_distrib_entry, dmp->f);
+	fprintf(dmp->f, "\n");
+
+	/* print cycle distribution for all perms of this class in this block */
+	fprintf(dmp->f, "cycle distribution:\n");
+
+	/* add all missing entries to cycle distribution table */
+	for (i = 0; i < entry->n_regs; i++) {
+		snprintf(buf, sizeof(buf), "length %d", i);
+		fprintf(dmp->f, "%12s", buf);
+		stat_insert_int_distrib_tbl(sum_cycles, i);
+	}
+	fprintf(dmp->f, "\n");
+	stat_iterate_distrib_tbl(sum_cycles, simple_dump_distrib_entry, dmp->f);
+	fprintf(dmp->f, "\n");
+
+	/* delete temporary sum distribution tables */
+	stat_delete_distrib_tbl(sum_chains);
+	stat_delete_distrib_tbl(sum_cycles);
+
 }
 
 /**
