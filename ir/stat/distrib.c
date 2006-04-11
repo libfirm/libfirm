@@ -17,6 +17,8 @@
 #include "xmalloc.h"
 #include "firmstat_t.h"
 
+static const counter_t _cnt_0 = { { 0 } };
+
 /**
  * calculates a hash value for an address
  */
@@ -124,12 +126,51 @@ void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_
   cnt_add(&elem->cnt, cnt);
 }
 
-/**
+/*
  * adds a new key count into the integer distribution table
  */
 void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt)
 {
   stat_add_distrib_tbl(tbl, (const void *)key, cnt);
+}
+
+/*
+ * increases object count by one
+ */
+void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object)
+{
+  distrib_entry_t *elem = distrib_get_entry(tbl, object);
+
+  cnt_inc(&elem->cnt);
+}
+
+/*
+ * increases key count by one
+ */
+void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
+{
+  stat_inc_distrib_tbl(tbl, (const void *)key);
+}
+
+
+/*
+ * inserts a new object with count 0 into the distribution table
+ * if object is already present, nothing happens
+ */
+void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
+{
+  distrib_entry_t *elem = distrib_get_entry(tbl, object);
+
+  cnt_add(&elem->cnt, &_cnt_0);
+}
+
+/*
+ * inserts a new key with count 0 into the integer distribution table
+ * if key is already present, nothing happens
+ */
+void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
+{
+  stat_insert_distrib_tbl(tbl, (const void *)key);
 }
 
 /*

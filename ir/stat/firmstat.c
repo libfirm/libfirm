@@ -1708,12 +1708,11 @@ static void stat_be_block_sched_ready(void *ctx, ir_node *block, ir_graph *irg, 
   {
     graph_entry_t    *graph = graph_get_entry(irg, status->irg_hash);
     be_block_entry_t *block_ent;
-	const counter_t  *cnt_1 = cnt_get_1();
 
     block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
 
-    /* add 1 to the counter of corresponding number of ready nodes */
-	stat_add_int_distrib_tbl(block_ent->sched_ready, num_ready, cnt_1);
+    /* increase the counter of corresponding number of ready nodes */
+	stat_inc_int_distrib_tbl(block_ent->sched_ready, num_ready);
   }
   STAT_LEAVE;
 }
@@ -1773,7 +1772,6 @@ void stat_be_block_stat_permcycle(void *ctx, const char *class_name, ir_node *pe
   STAT_ENTER;
   {
     graph_entry_t      *graph = graph_get_entry(get_irn_irg(block), status->irg_hash);
-	const counter_t    *cnt_1 = cnt_get_1();
     be_block_entry_t   *block_ent;
     perm_class_entry_t *pc_ent;
     perm_stat_entry_t  *ps_ent;
@@ -1784,11 +1782,11 @@ void stat_be_block_stat_permcycle(void *ctx, const char *class_name, ir_node *pe
 
     if (is_chain) {
       ps_ent->n_copies += n_ops;
-      stat_add_int_distrib_tbl(ps_ent->chains, size, cnt_1);
+      stat_inc_int_distrib_tbl(ps_ent->chains, size);
     }
     else {
       ps_ent->n_exchg += n_ops;
-      stat_add_int_distrib_tbl(ps_ent->cycles, size, cnt_1);
+      stat_inc_int_distrib_tbl(ps_ent->cycles, size);
     }
   }
   STAT_LEAVE;

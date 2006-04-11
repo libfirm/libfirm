@@ -202,7 +202,6 @@ void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env)
 static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry)
 {
 	be_block_entry_t *b_entry = pset_first(entry->be_block_hash);
-	const counter_t  *cnt_0   = cnt_get_0();
 	int               i;
 
 	/* return if no be statistic information available */
@@ -219,7 +218,7 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 	{
 		/* this ensures that all keys from 1 to 5 are in the table */
 		for (i = 1; i < 6; i++)
-			stat_add_int_distrib_tbl(b_entry->sched_ready, i, cnt_0);
+			stat_insert_int_distrib_tbl(b_entry->sched_ready, i);
 
 		fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
 		stat_iterate_distrib_tbl(b_entry->sched_ready, dump_block_sched_ready_distrib, dmp->f);
@@ -235,12 +234,17 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 {
 	perm_stat_entry_t *ps_ent;
 
-	fprintf(dmp->f, "%12s %12s\n", "size", "real size");
+	fprintf(dmp->f, "%12s %12s %12s %12s\n", "size", "real size", "# chains", "# cycles");
 	for (ps_ent = pset_first(entry->perm_stat);
 	     ps_ent;
 	     ps_ent = pset_next(entry->perm_stat))
 	{
-		fprintf(dmp->f, "%12d %12d\n", ps_ent->size, ps_ent->real_size);
+		fprintf(dmp->f, "%12d %12d %12d %12d\n",
+			ps_ent->size,
+			ps_ent->real_size,
+			pset_count(ps_ent->chains),
+			pset_count(ps_ent->cycles)
+		);
 	}
 }
 

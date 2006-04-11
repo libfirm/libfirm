@@ -327,6 +327,28 @@ void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_
 void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt);
 
 /**
+ * increases object count by one
+ */
+void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object);
+
+/**
+ * increases key count by one
+ */
+void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key);
+
+/**
+ * inserts a new object with count 0 into the distribution table
+ * if object is already present, nothing happens
+ */
+void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object);
+
+/**
+ * inserts a new key with count 0 into the integer distribution table
+ * if key is already present, nothing happens
+ */
+void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key);
+
+/**
  * calculates the mean value of a distribution.
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl);
