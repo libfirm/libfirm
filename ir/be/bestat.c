@@ -1,3 +1,8 @@
+/**
+ * This file calls the corresponding statistic functions for
+ * some backend statistics.
+ * $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -10,7 +15,6 @@
 #include "irhooks.h"
 #include "dbginfo_t.h"
 #include "firmstat_t.h"
-#include "ident.h"
 
 #include "bestat.h"
 #include "belive_t.h"
@@ -45,7 +49,7 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 			max_live = cnt < max_live ? max_live : cnt;
 		}
 
-		stat_be_block_regpressure(birg->irg, block, max_live, new_id_from_str(cls->name));
+		stat_be_block_regpressure(birg->irg, block, max_live, cls->name);
 	}
 }
 
