@@ -178,6 +178,10 @@ void be_opt_register(void)
 /* Parse one argument. */
 int be_parse_arg(const char *arg) {
 #ifdef WITH_LIBCORE
+	if (strcmp(arg, "help") == 0 || (arg[0] == '?' && arg[1] == '\0')) {
+		lc_opt_print_help(be_grp_root, stdout);
+		return -1;
+	}
 	return lc_opt_from_single_arg(be_grp_root, NULL, arg, NULL);
 #endif /* WITH_LIBCORE */
 }
@@ -280,6 +284,9 @@ static void be_main_loop(FILE *file_handle)
 
 	isa = arch_env_get_isa(env.arch_env);
 
+	// /* for debugging, anchors helps */
+	// dump_all_anchors(1);
+
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
@@ -342,7 +349,7 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
 
 		/* Verify the schedule */
-		sched_verify_irg(irg);
+		assert(sched_verify_irg(irg));
 
 		/* do some statistics */
 		be_do_stat_reg_pressure(&birg);
@@ -361,7 +368,6 @@ static void be_main_loop(FILE *file_handle)
 
 //		free_ir_graph(irg);
 	}
-
 	be_done_env(&env);
 }
 
