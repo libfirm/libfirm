@@ -1466,6 +1466,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 			}
 			else {
 				res = new_rd_ia32_CondJmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
+				set_ia32_commutative(res);
 			}
 			set_ia32_res_mode(res, get_irn_mode(cmp_a));
 		}

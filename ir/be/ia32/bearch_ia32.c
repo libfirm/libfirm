@@ -591,9 +591,8 @@ insert_copy:
 		/* to change it, as CMP doesn't support immediate as  */
 		/* left operands.                                     */
 		if (is_ia32_CondJmp(irn) && (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn)) && op_tp == ia32_AddrModeS) {
-			long pnc = get_negated_pnc(get_ia32_pncode(irn), get_ia32_res_mode(irn));
 			set_ia32_op_type(irn, ia32_AddrModeD);
-			set_ia32_pncode(irn, pnc);
+			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 		}
 
 		/* check if there is a sub which need to be transformed */

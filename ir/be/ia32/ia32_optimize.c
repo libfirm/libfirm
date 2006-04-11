@@ -371,7 +371,7 @@ static int is_CondJmp_replacement(ir_node *cand, ir_node *irn) {
 	int same_args = 1;
 
 	for (i = 0; i < n; i++) {
-		if (get_irn_n(cand, i) == get_irn_n(irn, i)) {
+		if (get_irn_n(cand, i) != get_irn_n(irn, i)) {
 			same_args = 0;
 			break;
 		}
@@ -397,7 +397,7 @@ static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
 		DBG((cg->mod, LEVEL_1, "replacing %+F by ", irn));
 		DBG_OPT_CJMP(irn);
 
-		set_irn_op(irn, op_ia32_CJmp);
+		set_irn_op(irn, op_ia32_CJmpAM);
 
 		DB((cg->mod, LEVEL_1, "%+F\n", irn));
 	}
@@ -1298,6 +1298,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					temp  = left;
 					left  = right;
 					right = temp;
+
+					/* this is only needed for Compares, but currently ALL nodes
+					 * have this attribute :-) */
+					set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 				}
 			}
 
@@ -1351,6 +1355,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 							temp  = left;
 							left  = right;
 							right = temp;
+
+							/* this is only needed for Compares, but currently ALL nodes
+							 * have this attribute :-) */
+							set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 						}
 					}
 
@@ -1427,6 +1435,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 					temp  = left;
 					left  = right;
 					right = temp;
+
+					/* this is only needed for Compares, but currently ALL nodes
+					 * have this attribute :-) */
+					set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 				}
 			}
 
@@ -1465,6 +1477,10 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				if (get_irn_arity(irn) == 5) {
 					/* binary AMop */
 					set_irn_n(irn, 4, get_irn_n(left, 2));
+
+					/* this is only needed for Compares, but currently ALL nodes
+					 * have this attribute :-) */
+					set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 
 					/* disconnect from Load */
 					/* (make second op -> first, set second in to noreg) */
