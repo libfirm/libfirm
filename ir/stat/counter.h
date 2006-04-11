@@ -140,13 +140,13 @@ static INLINE double cnt_to_dbl(const counter_t *a)
 /**
  * convert a counter into an int
  */
-static INLINE int cnt_to_int(const counter_t *a)
+static INLINE unsigned cnt_to_int(const counter_t *a)
 {
   int i;
 
   for (i = 1; i < STAT_CNT_NUM; ++i)
     if (a->cnt[i])
-		return INT_MAX;
+		return UINT_MAX;
 
   return a->cnt[0];
 }
