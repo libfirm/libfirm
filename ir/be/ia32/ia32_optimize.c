@@ -1183,6 +1183,25 @@ static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
 }
 
 /**
+ * Sets new_right index of irn to right and new_left index to left.
+ * Also exchange left and right
+ */
+static void exchange_left_right(ir_node *irn, ir_node **left, ir_node **right, int new_left, int new_right) {
+	ir_node *temp;
+
+	set_irn_n(irn, new_right, *right);
+	set_irn_n(irn, new_left, *left);
+
+	temp   = *left;
+	*left  = *right;
+	*right = temp;
+
+	/* this is only needed for Compares, but currently ALL nodes
+	 * have this attribute :-) */
+	set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
+}
+
+/**
  * Optimizes a pattern around irn to address mode if possible.
  */
 void ia32_optimize_am(ir_node *irn, void *env) {
@@ -1194,7 +1213,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 	ir_node           *left, *right, *temp;
 	ir_node           *store, *load, *mem_proj;
 	ir_node           *succ, *addr_b, *addr_i;
-	int                check_am_src = 0;
+	int               check_am_src = 0;
+	int               need_exchange_on_fail = 0;
 	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
 	if (! is_ia32_irn(irn))
@@ -1292,16 +1312,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				/* operand is a load, so we only need to check right operand.    */
 				if (pred_is_specific_nodeblock(block, left, is_ia32_Ld))
 				{
-					set_irn_n(irn, 2, right);
-					set_irn_n(irn, 3, left);
-
-					temp  = left;
-					left  = right;
-					right = temp;
-
-					/* this is only needed for Compares, but currently ALL nodes
-					 * have this attribute :-) */
-					set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
+					exchange_left_right(irn, &left, &right, 3, 2);
+					need_exchange_on_fail = 1;
 				}
 			}
 
@@ -1422,6 +1434,12 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				check_am_src = 1;
 			}
 
+			/* was exchanged but optimize failed: exchange back */
+			if (check_am_src && need_exchange_on_fail)
+				exchange_left_right(irn, &left, &right, 3, 2);
+
+			need_exchange_on_fail = 0;
+
 			/* normalize commutative ops */
 			if (check_am_src && node_is_ia32_comm(irn)) {
 				/* Assure that left operand is always a Load if there is one */
@@ -1429,16 +1447,8 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				/* left operand is a Load, so we only need to check the left */
 				/* operand afterwards.                                       */
 				if (pred_is_specific_nodeblock(block, right, is_ia32_Ld))	{
-					set_irn_n(irn, 2, right);
-					set_irn_n(irn, 3, left);
-
-					temp  = left;
-					left  = right;
-					right = temp;
-
-					/* this is only needed for Compares, but currently ALL nodes
-					 * have this attribute :-) */
-					set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
+					exchange_left_right(irn, &left, &right, 3, 2);
+					need_exchange_on_fail = 1;
 				}
 			}
 
@@ -1505,6 +1515,11 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				}
 
 				DB((mod, LEVEL_1, "merged with %+F into source AM\n", left));
+			}
+			else {
+				/* was exchanged but optimize failed: exchange back */
+				if (need_exchange_on_fail)
+					exchange_left_right(irn, &left, &right, 3, 2);
 			}
 		}
 	}
