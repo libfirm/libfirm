@@ -1563,6 +1563,68 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 }
 
 /**
+ * Emits gas alignment directives for Functions dependend on cpu architecture.
+ */
+static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
+	/* gcc doesn't emit alignment for p4 ?*/
+    if (cpu == arch_pentium4)
+		return;
+
+	fprintf(F, "\t.p2align ");
+
+	switch (cpu) {
+		case arch_i386:
+			/* align 4 bytes, maximum skip 3 bytes */
+			fprintf(F, "2,,3");
+			break;
+		case arch_i486:
+			/* align 16 bytes, maximum skip 15 bytes */
+			fprintf(F, "4,,15");
+			break;
+		case arch_k6:
+			/* align 32 bytes, maximum skip 31 bytes */
+			fprintf(F, "5,,31");
+			break;
+		default:
+			/* align 16 bytes, maximum skip 15 bytes */
+			fprintf(F, "4,,15");
+	}
+
+	fprintf(F, "\n");
+}
+
+/**
+ * Emits gas alignment directives for Labels dependend on cpu architecture.
+ */
+static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
+	/* gcc doesn't emit alignment for p4 ?*/
+    if (cpu == arch_pentium4)
+		return;
+
+	fprintf(F, "\t.p2align ");
+
+	switch (cpu) {
+		case arch_i386:
+			/* align 4 bytes, maximum skip 3 bytes */
+			fprintf(F, "2,,3");
+			break;
+		case arch_i486:
+			/* align 16 bytes, maximum skip 15 bytes */
+			fprintf(F, "4,,15");
+			break;
+		case arch_k6:
+			/* align 32 bytes, maximum skip 7 bytes */
+			fprintf(F, "5,,7");
+			break;
+		default:
+			/* align 16 bytes, maximum skip 7 bytes */
+			fprintf(F, "4,,7");
+	}
+
+	fprintf(F, "\n");
+}
+
+/**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
@@ -1580,8 +1642,10 @@ static void ia32_gen_block(ir_node *block, void *env) {
 		need_label = (block == get_extbb_leader(get_nodes_extbb(block)));
 	}
 
-	if (need_label)
+	if (need_label) {
+		ia32_emit_align_label(emit_env->out, emit_env->isa->opt_arch);
 		fprintf(emit_env->out, BLOCK_PREFIX("%ld:\n"), get_irn_node_nr(block));
+	}
 
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
@@ -1591,12 +1655,13 @@ static void ia32_gen_block(ir_node *block, void *env) {
 /**
  * Emits code for function start.
  */
-static void ia32_emit_func_prolog(FILE *F, ir_graph *irg) {
+static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, cpu_support cpu) {
 	entity     *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(irg_ent);
 
 	fprintf(F, "\n");
 	ia32_switch_section(F, SECTION_TEXT);
+	ia32_emit_align_func(F, cpu);
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, ".globl %s\n", irg_name);
 	}
@@ -1648,7 +1713,7 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 
 	ia32_register_emitters();
 
-	ia32_emit_func_prolog(F, irg);
+	ia32_emit_func_prolog(F, irg, emit_env.isa->opt_arch);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
 	if ((cg->opt & IA32_OPT_EXTBB) && cg->blk_sched) {
