@@ -417,6 +417,7 @@ static ir_node *gen_imm_Add(ia32_transform_env_t *env, ir_node *expr_op, ir_node
 	if (normal_add) {
 		new_op = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, expr_op, noreg, nomem);
 		set_ia32_Immop_attr(new_op, const_op);
+		set_ia32_commutative(new_op);
 	}
 
 	return new_op;
@@ -499,7 +500,6 @@ static ir_node *gen_Add(ia32_transform_env_t *env) {
 
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Dest);
-			set_ia32_commutative(new_op);
 		}
 		else {
 			/* This is a normal add */
