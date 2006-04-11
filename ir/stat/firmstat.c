@@ -1659,47 +1659,45 @@ static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node)
   STAT_LEAVE;
 }
 
-/**
+/*
  * Update the register pressure of a block
  *
- * @param ctx        the hook context
- * @param block      the block for which the reg pressure should be set
  * @param irg        the irg containing the block
+ * @param block      the block for which the reg pressure should be set
  * @param pressure   the pressure
  * @param class_name the name of the register class
  */
-static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, int pressure, const char *class_name)
+void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, const char *class_name)
 {
-  if (! status->stat_options)
-    return;
+	if (! status->stat_options)
+		return;
 
-  STAT_ENTER;
-  {
-    graph_entry_t        *graph = graph_get_entry(irg, status->irg_hash);
-    be_block_entry_t     *block_ent;
-    reg_pressure_entry_t *rp_ent;
+	STAT_ENTER;
+	{
+		graph_entry_t        *graph = graph_get_entry(irg, status->irg_hash);
+		be_block_entry_t     *block_ent;
+		reg_pressure_entry_t *rp_ent;
 
-    block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
-	rp_ent    = obstack_alloc(&status->be_data, sizeof(*rp_ent));
-	memset(rp_ent, 0, sizeof(*rp_ent));
+		block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
+		rp_ent    = obstack_alloc(&status->be_data, sizeof(*rp_ent));
+		memset(rp_ent, 0, sizeof(*rp_ent));
 
-	rp_ent->class_name = class_name;
-    rp_ent->pressure   = pressure;
+		rp_ent->class_name = class_name;
+		rp_ent->pressure   = pressure;
 
-    pset_insert(block_ent->reg_pressure, rp_ent, HASH_PTR(class_name));
-  }
-  STAT_LEAVE;
+		pset_insert(block_ent->reg_pressure, rp_ent, HASH_PTR(class_name));
+	}
+	STAT_LEAVE;
 }
 
 /**
  * Update the distribution of ready nodes of a block
  *
- * @param ctx        the hook context
- * @param block      the block for which the reg pressure should be set
  * @param irg        the irg containing the block
+ * @param block      the block for which the reg pressure should be set
  * @param num_ready  the number of ready nodes
  */
-static void stat_be_block_sched_ready(void *ctx, ir_node *block, ir_graph *irg, int num_ready)
+void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready)
 {
   if (! status->stat_options)
     return;
@@ -1955,8 +1953,6 @@ void firm_init_stat(unsigned enable_options)
   HOOK(hook_func_call,                          stat_func_call);
   HOOK(hook_arch_dep_replace_mul_with_shifts,   stat_arch_dep_replace_mul_with_shifts);
   HOOK(hook_arch_dep_replace_division_by_const, stat_arch_dep_replace_division_by_const);
-  HOOK(hook_be_block_regpressure,               stat_be_block_regpressure);
-  HOOK(hook_be_block_sched_ready,               stat_be_block_sched_ready);
   HOOK(hook_be_block_stat_perm,                 stat_be_block_stat_perm);
   HOOK(hook_be_block_stat_permcycle,            stat_be_block_stat_permcycle);
 

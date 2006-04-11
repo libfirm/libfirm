@@ -394,4 +394,23 @@ void stat_init_const_cnt(stat_info_t *status);
  */
 const char *stat_fc_name(float_classify_t classification);
 
+/**
+ * Update the register pressure of a block
+ *
+ * @param irg        the irg containing the block
+ * @param block      the block for which the reg pressure should be set
+ * @param pressure   the pressure
+ * @param class_name the name of the register class
+ */
+void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, const char *class_name);
+
+/**
+ * Update the distribution of ready nodes of a block
+ *
+ * @param irg        the irg containing the block
+ * @param block      the block for which the reg pressure should be set
+ * @param num_ready  the number of ready nodes
+ */
+void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready);
+
 #endif /* _FIRMSTAT_T_H_ */
