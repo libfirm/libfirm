@@ -189,7 +189,7 @@ void pset_break (pset *pset);
  * @param pset   the pset
  * @param entry  the iterator
  */
-#define foreach_pset(pset, entry) for (entry = pset_first(pset); entry; entry = pset_next(set))
+#define foreach_pset(pset, entry) for (entry = pset_first(pset); entry; entry = pset_next(pset))
 
 /**
  * Inserts all elements of the pointer set src into
