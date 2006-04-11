@@ -29,7 +29,7 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	bessadestr.c beifg_std.c bespill.c bespillbelady.c bespillilp.c beuses.c \
 	belower.c belower.h beraextern.c beabi.c beabi.h beabi_t.h \
 	benodesets.c benodesets.h bemachnode.c bemachnode.h beinsn.c \
-	bestat.h bestat.c
+	bestat.h bestat.c beschedmris.h beschedmris.c
 
 
 include $(topdir)/MakeRules
