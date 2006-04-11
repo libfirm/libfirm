@@ -9,8 +9,7 @@
 
 #include <limits.h>
 
-#include "misc.h"
-#include "obstack.h"
+#include "obst.h"
 #include "debug.h"
 
 #include "irgraph_t.h"
@@ -384,7 +383,6 @@ static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 	{
 		const arch_register_class_t *cls;
 		ir_node *op    = NULL;
-		int i, n;
 
 		if(get_irn_arity(start) == 0)
 			return 0;
@@ -474,7 +472,7 @@ static void cleanup_inserted(mris_env_t *env)
 {
 	ir_node *irn;
 
-	for(irn = nodeset_first(env->inserted); irn; irn = nodeset_next(env->inserted)) {
+	foreach_nodeset(env->inserted, irn) {
 		int i, n;
 		ir_node *tgt;
 
@@ -483,7 +481,8 @@ static void cleanup_inserted(mris_env_t *env)
 
 		/* reroute the edges, remove from schedule and make it invisible. */
 		edges_reroute(irn, tgt, env->irg);
-		sched_remove(irn);
+		if (sched_is_scheduled(irn))
+			sched_remove(irn);
 		for(i = -1, n = get_irn_arity(irn); i < n; ++i)
 			set_irn_n(irn, i, new_r_Bad(env->irg));
 	}
