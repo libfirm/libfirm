@@ -500,17 +500,29 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			type *param_type       = get_method_param_type(mt, p);
 			int param_size         = get_type_size_bytes(param_type) + arg->space_after;
 
-			curr_ofs += arg->space_before;
-			curr_ofs =  round_up2(curr_ofs, arg->alignment);
+			/*
+			 * If we wanted to build the arguments sequentially,
+			 * the stack pointer for the next must be incremented,
+			 * and the memory value propagated.
+			 */
+			if (do_seq) {
+				curr_ofs = 0;
+				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, curr_mem,
+					param_size + arg->space_before, be_stack_dir_expand);
+			}
+			else {
+				curr_ofs += arg->space_before;
+				curr_ofs =  round_up2(curr_ofs, arg->alignment);
 
-			/* Make the expression to compute the argument's offset. */
-			if(curr_ofs > 0) {
-				addr = new_r_Const_long(irg, bl, mode_Is, curr_ofs);
-				addr = new_r_Add(irg, bl, curr_sp, addr, mach_mode);
+				/* Make the expression to compute the argument's offset. */
+				if(curr_ofs > 0) {
+					addr = new_r_Const_long(irg, bl, mode_Is, curr_ofs);
+					addr = new_r_Add(irg, bl, curr_sp, addr, mach_mode);
+				}
 			}
 
 			/* Insert a store for primitive arguments. */
-			if(is_atomic_type(param_type)) {
+			if (is_atomic_type(param_type)) {
 				mem = new_r_Store(irg, bl, curr_mem, addr, param);
 				mem = new_r_Proj(irg, bl, mem, mode_M, pn_Store_M);
 			}
@@ -522,20 +534,12 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				mem = new_r_Proj(irg, bl, mem, mode_M, pn_CopyB_M_regular);
 			}
 
-			obstack_ptr_grow(obst, mem);
-
 			curr_ofs += param_size;
 
-			/*
-			 * If we wanted to build the arguments sequentially,
-			 * the stack pointer for the next must be incremented,
-			 * and the memory value propagated.
-			 */
-			if(do_seq) {
-				curr_ofs = 0;
-				curr_sp  = be_new_IncSP(sp, irg, bl, curr_sp, curr_mem, param_size, be_stack_dir_expand);
+			if (do_seq)
 				curr_mem = mem;
-			}
+			else
+				obstack_ptr_grow(obst, mem);
 		}
 
 		in = (ir_node **) obstack_finish(obst);
