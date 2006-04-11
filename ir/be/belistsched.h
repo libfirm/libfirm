@@ -109,9 +109,8 @@ extern const list_sched_selector_t *reg_pressure_selector;
  * Each block in the graph gets a list head to its link field being the
  * head of the schedule. You can walk this list using the functions in
  * list.h.
- * @param arch_env The architecture environment.
- * @param irg      The graph to schedule.
+ * @param birg The backend irg.
  */
-void list_sched(const arch_env_t *arch_env, ir_graph *irg);
+void list_sched(const be_irg_t *birg, int disable_mris);
 
 #endif /* _FIRM_LIST_SCHED */

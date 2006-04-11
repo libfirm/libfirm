@@ -33,6 +33,7 @@
 #include "beutil.h"
 #include "belive_t.h"
 #include "belistsched.h"
+#include "beschedmris.h"
 #include "bearch.h"
 #include "bestat.h"
 
@@ -992,10 +993,22 @@ static const list_sched_selector_t reg_pressure_selector_struct = {
 const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;
 
 /* List schedule a graph. */
-void list_sched(const arch_env_t *arch_env, ir_graph *irg)
+void list_sched(const be_irg_t *birg, int disable_mris)
 {
+	const arch_env_t *arch_env = birg->main_env->arch_env;
+	ir_graph *irg              = birg->irg;
+
+	int num_nodes;
 	sched_env_t env;
-	int num_nodes = get_irg_last_idx(irg);
+	mris_env_t *mris;
+
+	/* Assure, that the out edges are computed */
+	edges_assure(irg);
+
+	if(!disable_mris)
+		mris = be_sched_mris_preprocess(birg);
+
+	num_nodes = get_irg_last_idx(irg);
 
 	memset(&env, 0, sizeof(env));
 	env.selector   = arch_env->isa->impl->get_list_sched_selector(arch_env->isa);
@@ -1008,14 +1021,14 @@ void list_sched(const arch_env_t *arch_env, ir_graph *irg)
 	if (env.selector->init_graph)
 		env.selector_env = env.selector->init_graph(env.selector, arch_env, irg);
 
-	/* Assure, that the out edges are computed */
-	edges_assure(irg);
-
 	/* Schedule each single block. */
 	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
 
 	if (env.selector->finish_graph)
 		env.selector->finish_graph(env.selector_env);
+
+	if(!disable_mris)
+		be_sched_mris_free(mris);
 
 	DEL_ARR_F(env.sched_info);
 }
