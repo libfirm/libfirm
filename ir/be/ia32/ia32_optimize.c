@@ -86,13 +86,12 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
-			cnst = new_rd_ia32_xConst(dbg, irg, block, mode);
+			cnst = new_rd_ia32_xConst(dbg, irg, block, get_irg_no_mem(irg), mode);
 		else
-			cnst = new_rd_ia32_vfConst(dbg, irg, block, mode);
+			cnst = new_rd_ia32_vfConst(dbg, irg, block, get_irg_no_mem(irg), mode);
 	}
-	else {
-		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
-	}
+	else
+		cnst = new_rd_ia32_Const(dbg, irg, block, get_irg_no_mem(irg), mode);
 	set_ia32_Const_attr(cnst, env->irn);
 	return cnst;
 }
@@ -188,7 +187,7 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 		cnst = gen_SymConst(env);
 	}
 	else {
-		cnst = new_rd_ia32_Const(dbg, irg, block, get_irn_mode(node));
+		cnst = new_rd_ia32_Const(dbg, irg, block, get_irg_no_mem(irg), get_irn_mode(node));
 		set_ia32_Const_attr(cnst, node);
 	}
 	return cnst;

@@ -1581,7 +1581,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	sim->env        = env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
-	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
 	DB((dbg, LEVEL_1, "--------------------------------\n"
 		"x87 Simulator started for %+F\n", irg));

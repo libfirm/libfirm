@@ -439,7 +439,7 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "comment"   => "represents an integer constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "out" => [ "gp" ] },
+  "reg_req"   => { "in" => [ "none" ], "out" => [ "gp" ] },
 },
 
 "Cdq" => {
@@ -635,7 +635,7 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "comment"   => "represents a SSE constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "out" => [ "xmm" ] },
+  "reg_req"   => { "in" => [ "none" ], "out" => [ "xmm" ] },
   "emit"      => '. mov%M %D1, %C /* Load fConst into register */',
 },
 
@@ -878,7 +878,7 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "comment"   => "represents a virtual floating point constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { "in" => [ "none" ], "out" => [ "vfp" ] },
 },
 
 # other

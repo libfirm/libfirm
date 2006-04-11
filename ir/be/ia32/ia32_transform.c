@@ -884,7 +884,7 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 		edx_node = new_rd_Proj(dbg, irg, block, cltd, mode_Is, pn_ia32_Cdq_EDX);
 	}
 	else {
-		edx_node = new_rd_ia32_Const(dbg, irg, block, mode_Iu);
+		edx_node = new_rd_ia32_Const(dbg, irg, block, get_irg_no_mem(irg), mode_Iu);
 		set_ia32_Const_type(edx_node, ia32_Const);
 		set_ia32_Immop_tarval(edx_node, get_tarval_null(mode_Iu));
 	}
@@ -1530,7 +1530,7 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 		rem = size & 0x3; /* size % 4 */
 		size >>= 2;
 
-		res = new_rd_ia32_Const(dbg, irg, block, mode_Is);
+		res = new_rd_ia32_Const(dbg, irg, block, get_irg_no_mem(irg), mode_Is);
 		set_ia32_op_type(res, ia32_Const);
 		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
 
