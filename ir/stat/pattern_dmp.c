@@ -106,7 +106,7 @@ static void vcg_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
   /** add a pseudo node */
   fprintf(priv->f,
     "     node: {title: \"c%u\" label: \"cnt: %u\" color:red }\n",
-    ++nr, cnt->cnt[0]
+    ++nr, cnt_to_int(cnt)
   );
 }
 
@@ -194,7 +194,7 @@ static void stdout_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 {
   FILE *f = self->data;
 
-  fprintf(f, "%8u ", cnt->cnt[0]);
+  fprintf(f, "%8u ", cnt_to_int(cnt));
 }
 
 

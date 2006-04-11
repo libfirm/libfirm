@@ -12,6 +12,7 @@
 #define _COUNTER_H_
 
 #include <string.h>
+#include <limits.h>
 
 /*
  * 32 bit should be enough for most cases
@@ -125,7 +126,7 @@ static INLINE double cnt_to_dbl(const counter_t *a)
   int i;
   double res = 0.0, scale = 1.0, tmp;
 
-  i = (1 << (sizeof(a->cnt[i]) * 4));
+  i = (1 << (sizeof(a->cnt[0]) * 4));
   tmp = ((double)i) * ((double)i);
 
   for (i = 0; i < STAT_CNT_NUM; ++i) {
@@ -134,6 +135,20 @@ static INLINE double cnt_to_dbl(const counter_t *a)
     scale *= tmp;
   }
   return res;
+}
+
+/**
+ * convert a counter into an int
+ */
+static INLINE int cnt_to_int(const counter_t *a)
+{
+  int i;
+
+  for (i = 1; i < STAT_CNT_NUM; ++i)
+    if (a->cnt[i])
+		return INT_MAX;
+
+  return a->cnt[0];
 }
 
 /**

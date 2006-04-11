@@ -115,7 +115,11 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 	fprintf(dmp->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id");
 	for (entry = pset_first(set); entry; entry = pset_next(set)) {
 		fprintf(dmp->f, "%-16s %8u %8u %8u\n",
-			get_id_str(entry->op->name), entry->cnt_alive.cnt[0], entry->new_node.cnt[0], entry->into_Id.cnt[0]);
+			get_id_str(entry->op->name),
+			cnt_to_int(&entry->cnt_alive),
+			cnt_to_int(&entry->new_node),
+			cnt_to_int(&entry->into_Id)
+		);
 
 		cnt_add(&f_alive,    &entry->cnt_alive);
 		cnt_add(&f_new_node, &entry->new_node);
@@ -123,9 +127,10 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 	}
 	fprintf(dmp->f, "-------------------------------------------\n");
 	fprintf(dmp->f, "%-16s %8u %8u %8u\n", "Sum",
-		f_alive.cnt[0],
-		f_new_node.cnt[0],
-		f_Id.cnt[0]);
+		cnt_to_int(&f_alive),
+		cnt_to_int(&f_new_node),
+		cnt_to_int(&f_Id)
+	);
 }
 
 /**
@@ -143,7 +148,7 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 
 		for (; entry; entry = pset_next(set)) {
 			fprintf(dmp->f, "%-16s %8u\n",
-				get_id_str(entry->op->name), entry->count.cnt[0]);
+				get_id_str(entry->op->name), cnt_to_int(&entry->count));
 		}
 	}
 }
@@ -193,7 +198,7 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 void dump_block_sched_ready_distrib(const distrib_entry_t *entry, void *env)
 {
 	FILE *dmp_f = env;
-	fprintf(dmp_f, "%12d", entry->cnt.cnt[0]);
+	fprintf(dmp_f, "%12d", cnt_to_int(&entry->cnt));
 }
 
 /**
@@ -242,8 +247,8 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 		fprintf(dmp->f, "%12d %12d %12d %12d\n",
 			ps_ent->size,
 			ps_ent->real_size,
-			pset_count(ps_ent->chains),
-			pset_count(ps_ent->cycles)
+			stat_get_count_distrib_tbl(ps_ent->chains),
+			stat_get_count_distrib_tbl(ps_ent->cycles)
 		);
 	}
 }
@@ -293,7 +298,7 @@ static void simple_dump_real_func_calls(dumper_t *dmp, counter_t *cnt)
 
 	if (! cnt_eq(cnt, 0)) {
 		fprintf(dmp->f, "\nReal Function Calls optimized:\n");
-		fprintf(dmp->f, "%-16s %8u\n", "Call", cnt->cnt[0]);
+		fprintf(dmp->f, "%-16s %8u\n", "Call", cnt_to_int(cnt));
 	}
 }
 
@@ -319,7 +324,7 @@ static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
 	if (! dmp->f)
 		return;
 
-	fprintf(dmp->f, "%-16s %8d\n", "Edges", cnt->cnt[0]);
+	fprintf(dmp->f, "%-16s %8d\n", "Edges", cnt_to_int(cnt));
 }
 
 /**
@@ -358,20 +363,20 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			" calls                     : %u\n"
 			" indirect calls            : %u\n",
 			entry->is_deleted ? "DELETED " : "",
-			entry->cnt_walked.cnt[0], entry->cnt_walked_blocks.cnt[0],
-			entry->cnt_was_inlined.cnt[0],
-			entry->cnt_got_inlined.cnt[0],
-			entry->cnt_strength_red.cnt[0],
+			cnt_to_int(&entry->cnt_walked), cnt_to_int(&entry->cnt_walked_blocks),
+			cnt_to_int(&entry->cnt_was_inlined),
+			cnt_to_int(&entry->cnt_got_inlined),
+			cnt_to_int(&entry->cnt_strength_red),
 			entry->is_leaf ? "YES" : "NO",
 			entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
 			entry->is_recursive ? "YES" : "NO",
 			entry->is_chain_call ? "YES" : "NO",
-			entry->cnt_all_calls.cnt[0],
-			entry->cnt_indirect_calls.cnt[0]
+			cnt_to_int(&entry->cnt_all_calls),
+			cnt_to_int(&entry->cnt_indirect_calls)
 		);
 
 		for (i = 0; i < sizeof(entry->cnt_if_conv)/sizeof(entry->cnt_if_conv[0]); ++i) {
-			fprintf(dmp->f, " %s : %u\n", if_conv_names[i], entry->cnt_if_conv[i].cnt[0]);
+			fprintf(dmp->f, " %s : %u\n", if_conv_names[i], cnt_to_int(&entry->cnt_if_conv[i]));
 		}
 
 	}
@@ -403,12 +408,12 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		{
 			fprintf(dmp->f, "BLK   %6ld %12u %12u %12u %12u %12u %4.8f\n",
 				b_entry->block_nr,
-				b_entry->cnt_nodes.cnt[0],
-				b_entry->cnt_edges.cnt[0],
-				b_entry->cnt_in_edges.cnt[0],
-				b_entry->cnt_out_edges.cnt[0],
-				b_entry->cnt_phi_data.cnt[0],
-				(double)b_entry->cnt_edges.cnt[0] / (double)b_entry->cnt_nodes.cnt[0]
+				cnt_to_int(&b_entry->cnt_nodes),
+				cnt_to_int(&b_entry->cnt_edges),
+				cnt_to_int(&b_entry->cnt_in_edges),
+				cnt_to_int(&b_entry->cnt_out_edges),
+				cnt_to_int(&b_entry->cnt_phi_data),
+				cnt_to_dbl(&b_entry->cnt_edges) / cnt_to_dbl(&b_entry->cnt_nodes)
 			);
 		}
 
@@ -430,12 +435,12 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			{
 				fprintf(dmp->f, "ExtBB %6ld %12u %12u %12u %12u %12u %4.8f\n",
 					eb_entry->block_nr,
-					eb_entry->cnt_nodes.cnt[0],
-					eb_entry->cnt_edges.cnt[0],
-					eb_entry->cnt_in_edges.cnt[0],
-					eb_entry->cnt_out_edges.cnt[0],
-					eb_entry->cnt_phi_data.cnt[0],
-					(double)eb_entry->cnt_edges.cnt[0] / (double)eb_entry->cnt_nodes.cnt[0]
+					cnt_to_int(&eb_entry->cnt_nodes),
+					cnt_to_int(&eb_entry->cnt_edges),
+					cnt_to_int(&eb_entry->cnt_in_edges),
+					cnt_to_int(&eb_entry->cnt_out_edges),
+					cnt_to_int(&eb_entry->cnt_phi_data),
+					cnt_to_dbl(&eb_entry->cnt_edges) / cnt_to_dbl(&eb_entry->cnt_nodes)
 				);
 			}
 		}
@@ -462,7 +467,7 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 	fprintf(dmp->f, "-------------------------------\n");
 
 	for (i = 0; i < ARR_SIZE(tbl->int_bits_count); ++i) {
-		fprintf(dmp->f, "%5d %12u\n", i + 1, tbl->int_bits_count[i].cnt[0]);
+		fprintf(dmp->f, "%5d %12u\n", i + 1, cnt_to_int(&tbl->int_bits_count[i]));
 		cnt_add(&sum, &tbl->int_bits_count[i]);
 	}
 	fprintf(dmp->f, "-------------------------------\n");
@@ -470,16 +475,16 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 	fprintf(dmp->f, "\nFloating point constants classification\n");
 	fprintf(dmp->f, "--------------------------------------\n");
 	for (i = 0; i < ARR_SIZE(tbl->floats); ++i) {
-		fprintf(dmp->f, "%-10s %12u\n", stat_fc_name(i), tbl->floats[i].cnt[0]);
+		fprintf(dmp->f, "%-10s %12u\n", stat_fc_name(i), cnt_to_int(&tbl->floats[i]));
 		cnt_add(&sum, &tbl->floats[i]);
 	}
 	fprintf(dmp->f, "--------------------------------------\n");
 
-	fprintf(dmp->f, "other %12u\n", tbl->others.cnt[0]);
+	fprintf(dmp->f, "other %12u\n", cnt_to_int(&tbl->others));
 	cnt_add(&sum, &tbl->others);
 	fprintf(dmp->f, "-------------------------------\n");
 
-	fprintf(dmp->f, "sum   %12u\n", sum.cnt[0]);
+	fprintf(dmp->f, "sum   %12u\n", cnt_to_int(&sum));
 }
 
 /**
@@ -587,10 +592,10 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		fprintf(dmp->f, "%-40s, %p, %d, %d, %d, %d\n",
 			name,
 			(void *)entry->irg,
-			cnt[0].cnt[0],
-			cnt[1].cnt[0],
-			cnt[2].cnt[0],
-			cnt[3].cnt[0]
+			cnt_to_int(&cnt[0]),
+			cnt_to_int(&cnt[1]),
+			cnt_to_int(&cnt[2]),
+			cnt_to_int(&cnt[3])
 		);
 	}
 }
