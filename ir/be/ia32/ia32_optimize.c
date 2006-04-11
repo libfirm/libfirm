@@ -511,8 +511,6 @@ static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
 }
 
 /**
-
-/**
  * Tries to optimize two following IncSP.
  */
 static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
@@ -1417,7 +1415,7 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 			}
 
 			/* normalize commutative ops */
-			if (node_is_ia32_comm(irn)) {
+			if (check_am_src && node_is_ia32_comm(irn)) {
 				/* Assure that left operand is always a Load if there is one */
 				/* because non-commutative ops can only use Source AM if the */
 				/* left operand is a Load, so we only need to check the left */
