@@ -174,6 +174,21 @@ void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 }
 
 /*
+ * returns the sum over all counters in a distribution table
+ */
+int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
+{
+  distrib_entry_t *entry;
+  int sum = 0;
+
+  for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
+    sum += cnt_to_int(&entry->cnt);
+  }
+
+  return sum;
+}
+
+/*
  * calculates the mean value of a distribution
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
@@ -236,11 +251,11 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
       return 0.0;
 
     sum   = cnt_to_dbl(&entry->cnt);
-	count = entry->cnt.cnt[0];
+	count = cnt_to_int(&entry->cnt);
 
     for (entry = pset_next(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
       sum   += cnt_to_dbl(&entry->cnt) * (int)entry->object;
-      count += entry->cnt.cnt[0];
+      count += cnt_to_int(&entry->cnt);
     }
   }
   else {

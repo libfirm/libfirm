@@ -349,6 +349,11 @@ void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object);
 void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key);
 
 /**
+ * returns the sum over all counters in a distribution table
+ */
+int stat_get_count_distrib_tbl(distrib_tbl_t *tbl);
+
+/**
  * calculates the mean value of a distribution.
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl);
