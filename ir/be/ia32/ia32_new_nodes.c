@@ -1186,7 +1186,7 @@ void alloc_ia32_reg_slots(ir_node *node, int num) {
 
 	if (num) {
 		attr->slots = (const arch_register_t **)NEW_ARR_D(arch_register_t*, get_irg_obstack(get_irn_irg(node)), num);
-		memset(attr->slots, 0, sizeof(attr->slots[0]) * num);
+		memset((void *) attr->slots, 0, sizeof(attr->slots[0]) * num);
 	}
 	else {
 		attr->slots = NULL;
