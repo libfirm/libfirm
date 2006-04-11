@@ -274,7 +274,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_node         *sched_point, *block, *in[2];
 	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
-	ident           *cls_id;
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 
 	arch_env = env->chord_env->birg->main_env->arch_env;
@@ -296,10 +295,11 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	assert(n == get_irn_n_edges(irn) && "perm's in and out numbers different");
 
 	reg_class = arch_get_irn_register(arch_env, get_irn_n(irn, 0))->reg_class;
-	cls_id    = new_id_from_str(reg_class->name);
 	pairs     = alloca(n * sizeof(pairs[0]));
 
 	if (env->do_stat) {
+		unsigned i;
+
 		/* determine index in statistics */
 		for (i = 0; i < env->pstat_n; i++) {
 			if (strcmp(pstat[i]->cls->name, reg_class->name) == 0) {
@@ -365,7 +365,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		real_size = n - get_n_checked_pairs(pairs, n);
 	}
 
-	hook_be_block_stat_perm(cls_id, reg_class->n_regs, irn, block, n, real_size);
+	hook_be_block_stat_perm(reg_class->name, reg_class->n_regs, irn, block, n, real_size);
 
 	/* check for cycles and chains */
 	while (get_n_checked_pairs(pairs, n) < n) {
@@ -519,7 +519,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			}
 
 			if (env->do_stat) {
-				hook_be_block_stat_permcycle(cls_id, irn, block, cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
+				hook_be_block_stat_permcycle(reg_class->name, irn, block, cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
 			}
 		}
 
@@ -686,7 +686,8 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 }
 
 static void lower_print_perm_stat(lower_env_t *env) {
-	int i, j, total_len_chain, total_len_cycle, total_size_perm, total_size_real_perm;
+	int j, total_len_chain, total_len_cycle, total_size_perm, total_size_real_perm;
+	unsigned i;
 
 	printf("=== IRG: %s ===\n", get_entity_name(get_irg_entity(env->chord_env->irg)));
 	for (i = 0; i < env->pstat_n; i++) {
