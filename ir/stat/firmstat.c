@@ -148,7 +148,7 @@ static int reg_pressure_cmp(const void *elt, const void *key)
   const reg_pressure_entry_t *e1 = elt;
   const reg_pressure_entry_t *e2 = key;
 
-  return e1->id_name != e2->id_name;
+  return e1->class_name != e2->class_name;
 }
 
 /**
@@ -170,7 +170,7 @@ static int perm_class_cmp(const void *elt, const void *key)
   const perm_class_entry_t *e1 = elt;
   const perm_class_entry_t *e2 = key;
 
-  return e1->id_name != e2->id_name;
+  return e1->class_name != e2->class_name;
 }
 
 /**
@@ -463,17 +463,18 @@ static void perm_class_clear_entry(perm_class_entry_t *elem) {
 /**
  * Returns the associated perm_class entry for a register class.
  *
- * @param cls_id    the register class ident
- * @param hmap      a hash map containing class_name -> perm_class_entry_t
+ * @param class_name  the register class name
+ * @param hmap        a hash map containing class_name -> perm_class_entry_t
  */
-static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, ident *cls_id, hmap_perm_class_entry_t *hmap)
+static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, const char *class_name,
+                                                hmap_perm_class_entry_t *hmap)
 {
   perm_class_entry_t key;
   perm_class_entry_t *elem;
 
-  key.id_name = cls_id;
+  key.class_name = class_name;
 
-  elem = pset_find(hmap, &key, HASH_PTR(cls_id));
+  elem = pset_find(hmap, &key, HASH_PTR(class_name));
   if (elem)
     return elem;
 
@@ -483,9 +484,9 @@ static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, ident *cls
   /* clear new counter */
   perm_class_clear_entry(elem);
 
-  elem->id_name = cls_id;
+  elem->class_name = class_name;
 
-  return pset_insert(hmap, elem, HASH_PTR(cls_id));
+  return pset_insert(hmap, elem, HASH_PTR(class_name));
 }
 
 /**
@@ -1665,9 +1666,9 @@ static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node)
  * @param block      the block for which the reg pressure should be set
  * @param irg        the irg containing the block
  * @param pressure   the pressure
- * @param class_name the ident name of the register class
+ * @param class_name the name of the register class
  */
-static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, int pressure, ident *class_name)
+static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, int pressure, const char *class_name)
 {
   if (! status->stat_options)
     return;
@@ -1682,8 +1683,8 @@ static void stat_be_block_regpressure(void *ctx, ir_node *block, ir_graph *irg, 
 	rp_ent    = obstack_alloc(&status->be_data, sizeof(*rp_ent));
 	memset(rp_ent, 0, sizeof(*rp_ent));
 
-	rp_ent->id_name  = class_name;
-    rp_ent->pressure = pressure;
+	rp_ent->class_name = class_name;
+    rp_ent->pressure   = pressure;
 
     pset_insert(block_ent->reg_pressure, rp_ent, HASH_PTR(class_name));
   }
@@ -1721,13 +1722,13 @@ static void stat_be_block_sched_ready(void *ctx, ir_node *block, ir_graph *irg, 
  * Update the permutation statistic of a block
  *
  * @param ctx        the hook context
- * @param class_name the ident name of the register class
+ * @param class_name the name of the register class
  * @param perm       the perm node
  * @param block      the block containing the perm
  * @param size       the size of the perm
  * @param real_size  number of pairs with different registers
  */
-void stat_be_block_stat_perm(void *ctx, ident *class_name, int n_regs, ir_node *perm, ir_node *block,
+void stat_be_block_stat_perm(void *ctx, const char *class_name, int n_regs, ir_node *perm, ir_node *block,
                              int size, int real_size)
 {
   if (! status->stat_options)
@@ -1757,13 +1758,13 @@ void stat_be_block_stat_perm(void *ctx, ident *class_name, int n_regs, ir_node *
  * Update the permutation statistic of a single perm
  *
  * @param ctx        the hook context
- * @param class_name the ident name of the register class
+ * @param class_name the name of the register class
  * @param perm       the perm node
  * @param block      the block containing the perm
  * @param is_chain   1 if chain, 0 if cycle
  * @param n_ops      the number of ops representing this cycle/chain after lowering
  */
-void stat_be_block_stat_permcycle(void *ctx, ident *class_name, ir_node *perm, ir_node *block,
+void stat_be_block_stat_permcycle(void *ctx, const char *class_name, ir_node *perm, ir_node *block,
                                   int is_chain, int size, int n_ops)
 {
   if (! status->stat_options)

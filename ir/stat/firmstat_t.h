@@ -25,7 +25,6 @@
 #include "irgwalk.h"
 #include "counter.h"
 #include "irhooks.h"
-#include "ident.h"
 
 /* some useful macro. */
 #define ARR_SIZE(a)   (sizeof(a)/sizeof((a)[0]))
@@ -146,8 +145,8 @@ typedef struct _opt_entry_t {
  * An entry for register pressure.
  */
 typedef struct _reg_pressure_entry_t {
-  ident *id_name;    /**< name of the register class */
-  int    pressure;   /**< the register pressure for this class */
+  const char *class_name; /**< name of the register class */
+  int         pressure;   /**< the register pressure for this class */
 } reg_pressure_entry_t;
 
 /**
@@ -167,7 +166,7 @@ typedef struct _perm_stat_entry_t {
  * An entry for permutation statistics per class.
  */
 typedef struct _perm_class_entry_t {
-  ident                       *id_name;    /**< name of the register class */
+  const char                  *class_name; /**< name of the register class */
   int                          n_regs;     /**< number of register in this class */
   HASH_MAP(perm_stat_entry_t) *perm_stat;  /**< statistics about all perm nodes of this class */
 } perm_class_entry_t;

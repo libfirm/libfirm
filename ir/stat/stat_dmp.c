@@ -168,7 +168,7 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 	     rp_entry;
 	     rp_entry = pset_next(b_entry->reg_pressure))
 	{
-		fprintf(dmp->f, "%15s", get_id_str(rp_entry->id_name));
+		fprintf(dmp->f, "%15s", rp_entry->class_name);
 	}
 	fprintf(dmp->f, "\n");
 
@@ -271,7 +271,7 @@ static void simple_dump_be_block_permstat(dumper_t *dmp, graph_entry_t *entry)
 		     pc_ent;
 		     pc_ent = pset_next(b_entry->perm_class_stat))
 		{
-			fprintf(dmp->f, "register class %s:\n", get_id_str(pc_ent->id_name));
+			fprintf(dmp->f, "register class %s:\n", pc_ent->class_name);
 			simple_dump_be_block_permstat_class(dmp, pc_ent);
 		}
 	}

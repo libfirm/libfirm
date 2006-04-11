@@ -152,17 +152,18 @@ typedef struct hook_entry {
     void (*_hook_arch_dep_replace_division_by_const)(void *context, ir_node *irn);
 
 	/** This hook is called while calculating the register pressure. */
-    void (*_hook_be_block_regpressure)(void *context, ir_node *block, ir_graph *irg, int pressure, ident *class_name);
+    void (*_hook_be_block_regpressure)(void *context, ir_node *block, ir_graph *irg, int pressure,
+                                       const char *class_name);
 
 	/** This hook is called during scheduling to get distribution of ready nodes */
     void (*_hook_be_block_sched_ready)(void *context, ir_node *block, ir_graph *irg, int num_ready);
 
 	/** This hook is called during permutation lowering once for each permutation. */
-    void (*_hook_be_block_stat_perm)(void *context, ident *class_name, int n_regs, ir_node *perm, ir_node *block,
-                                     int size, int real_size);
+    void (*_hook_be_block_stat_perm)(void *context, const char *class_name, int n_regs, ir_node *perm,
+                                     ir_node *block, int size, int real_size);
 
 	/** This hook is called during permutation lowering for each cycle/chain in a permutation. */
-    void (*_hook_be_block_stat_permcycle)(void *context, ident *class_name, ir_node *perm, ir_node *block,
+    void (*_hook_be_block_stat_permcycle)(void *context, const char *class_name, ir_node *perm, ir_node *block,
                                           int is_chain, int size, int n_ops);
 
     /** This hook is called after a new mode was registered. */
