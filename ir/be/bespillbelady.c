@@ -49,8 +49,6 @@
 #define DEBUG_LVL 0 //(DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
 typedef struct _workset_t workset_t;
 
 typedef struct _belady_env_t {
