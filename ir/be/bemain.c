@@ -55,6 +55,7 @@
 #include "bessadestr.h"
 #include "beabi.h"
 #include "belower.h"
+#include "beschedmris.h"
 #include "bestat.h"
 
 #define DUMP_INITIAL    (1 << 0)
@@ -84,6 +85,8 @@ static const arch_isa_if_t *isa_if = &ia32_isa_if;
 #ifdef WITH_LIBCORE
 
 static lc_opt_entry_t *be_grp_root = NULL;
+
+static int be_disable_mris = 0;
 
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -128,10 +131,11 @@ static lc_opt_enum_const_ptr_var_t isa_var = {
 };
 
 static const lc_opt_table_entry_t be_main_options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump", "dump irg on several occasions", &dump_var),
-	LC_OPT_ENT_ENUM_PTR("ra", "register allocator", &ra_var),
-	LC_OPT_ENT_ENUM_PTR("isa", "the instruction set architecture", &isa_var),
-	LC_OPT_ENT_NEGBOOL("noomitfp", "do not omit frame pointer", &be_omit_fp),
+	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",     &dump_var),
+	LC_OPT_ENT_ENUM_PTR ("ra",       "register allocator",                &ra_var),
+	LC_OPT_ENT_ENUM_PTR ("isa",      "the instruction set architecture",  &isa_var),
+	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",         &be_omit_fp),
+	LC_OPT_ENT_NEGBOOL  ("nomris",   "disable mris schedule preparation", &be_disable_mris),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -330,11 +334,12 @@ static void be_main_loop(FILE *file_handle)
 
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
-		list_sched(env.arch_env, irg);
+		list_sched(&birg, be_disable_mris);
+		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_abi_fix_stack_nodes(birg.abi);
-		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
+		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
 
 		/* Verify the schedule */
 		sched_verify_irg(irg);
