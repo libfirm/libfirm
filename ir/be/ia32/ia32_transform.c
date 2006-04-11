@@ -1329,7 +1329,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	/* address might be a constant (symconst or absolute address) */
 	if (is_ia32_Const(ptr)) {
 		sptr   = noreg;
-		is_imm = 0;
+		is_imm = 1;
 	}
 
 	if (mode_is_float(mode)) {
@@ -1343,7 +1343,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, sptr, noreg, sval, mem);
 	}
 	else {
-		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, sval, mem);
+		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, sptr, noreg, sval, mem);
 	}
 
 	/* stored const is an attribute (saves a register) */
