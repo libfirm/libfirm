@@ -499,6 +499,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env) {
 
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Dest);
+			set_ia32_commutative(new_op);
 		}
 		else {
 			/* This is a normal add */
