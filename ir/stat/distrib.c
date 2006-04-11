@@ -24,7 +24,7 @@ static const counter_t _cnt_0 = { { 0 } };
  */
 static unsigned addr_hash(const void *object)
 {
-  return HASH_PTR(object);
+	return HASH_PTR(object);
 }
 
 /**
@@ -32,7 +32,7 @@ static unsigned addr_hash(const void *object)
  */
 static unsigned int_hash(const void *object)
 {
-  return (unsigned)PTR_TO_INT(object);
+	return (unsigned)PTR_TO_INT(object);
 }
 
 /**
@@ -40,10 +40,10 @@ static unsigned int_hash(const void *object)
  */
 static int int_cmp_fun(const void *elt, const void *key)
 {
-  const distrib_entry_t *p1 = elt;
-  const distrib_entry_t *p2 = key;
+	const distrib_entry_t *p1 = elt;
+	const distrib_entry_t *p2 = key;
 
-  return (int)(p1->object) - (int)(p2->object);
+	return (char *)p1->object - (char *)p2->object;
 }
 
 /*
@@ -51,18 +51,18 @@ static int int_cmp_fun(const void *elt, const void *key)
  */
 distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash_func)
 {
-  distrib_tbl_t *res;
+	distrib_tbl_t *res;
 
-  res = xmalloc(sizeof(*res));
+	res = xmalloc(sizeof(*res));
 
-  obstack_init(&res->cnts);
+	obstack_init(&res->cnts);
 
-  /* create the hash-table */
-  res->hash_map  = new_pset(cmp_func, 8);
-  res->hash_func = hash_func ? hash_func : addr_hash;
-  res->int_dist  = 0;
+	/* create the hash-table */
+	res->hash_map  = new_pset(cmp_func, 8);
+	res->hash_func = hash_func ? hash_func : addr_hash;
+	res->int_dist  = 0;
 
-  return res;
+	return res;
 }
 
 /*
@@ -70,12 +70,12 @@ distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash
  */
 distrib_tbl_t *stat_new_int_distrib_tbl(void)
 {
-  distrib_tbl_t *res = stat_new_distrib_tbl(int_cmp_fun, int_hash);
+	distrib_tbl_t *res = stat_new_distrib_tbl(int_cmp_fun, int_hash);
 
-  if (res)
-    res->int_dist = 1;
+	if (res)
+		res->int_dist = 1;
 
-  return res;
+	return res;
 }
 
 /*
@@ -83,13 +83,13 @@ distrib_tbl_t *stat_new_int_distrib_tbl(void)
  */
 void stat_delete_distrib_tbl(distrib_tbl_t *tbl)
 {
-  if (tbl) {
-    /* free all entries */
-    obstack_free(&tbl->cnts, NULL);
+	if (tbl) {
+		/* free all entries */
+		obstack_free(&tbl->cnts, NULL);
 
-    /* delete the hash table */
-    del_pset(tbl->hash_map);
-  }
+		/* delete the hash table */
+		del_pset(tbl->hash_map);
+	}
 }
 
 /**
@@ -97,23 +97,23 @@ void stat_delete_distrib_tbl(distrib_tbl_t *tbl)
  */
 static distrib_entry_t *distrib_get_entry(distrib_tbl_t *tbl, const void *object)
 {
-  distrib_entry_t key;
-  distrib_entry_t *elem;
+	distrib_entry_t key;
+	distrib_entry_t *elem;
 
-  key.object = object;
+	key.object = object;
 
-  elem = pset_find(tbl->hash_map, &key, tbl->hash_func(object));
-  if (elem)
-    return elem;
+	elem = pset_find(tbl->hash_map, &key, tbl->hash_func(object));
+	if (elem)
+		return elem;
 
-  elem = obstack_alloc(&tbl->cnts, sizeof(*elem));
+	elem = obstack_alloc(&tbl->cnts, sizeof(*elem));
 
-  /* clear counter */
-  cnt_clr(&elem->cnt);
+	/* clear counter */
+	cnt_clr(&elem->cnt);
 
-  elem->object = object;
+	elem->object = object;
 
-  return pset_insert(tbl->hash_map, elem, tbl->hash_func(object));
+	return pset_insert(tbl->hash_map, elem, tbl->hash_func(object));
 }
 
 /*
@@ -121,9 +121,9 @@ static distrib_entry_t *distrib_get_entry(distrib_tbl_t *tbl, const void *object
  */
 void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_t *cnt)
 {
-  distrib_entry_t *elem = distrib_get_entry(tbl, object);
+	distrib_entry_t *elem = distrib_get_entry(tbl, object);
 
-  cnt_add(&elem->cnt, cnt);
+	cnt_add(&elem->cnt, cnt);
 }
 
 /*
@@ -131,7 +131,7 @@ void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_
  */
 void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt)
 {
-  stat_add_distrib_tbl(tbl, (const void *)key, cnt);
+	stat_add_distrib_tbl(tbl, (const void *)key, cnt);
 }
 
 /*
@@ -139,9 +139,9 @@ void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt)
  */
 void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object)
 {
-  distrib_entry_t *elem = distrib_get_entry(tbl, object);
+	distrib_entry_t *elem = distrib_get_entry(tbl, object);
 
-  cnt_inc(&elem->cnt);
+	cnt_inc(&elem->cnt);
 }
 
 /*
@@ -149,7 +149,7 @@ void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object)
  */
 void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 {
-  stat_inc_distrib_tbl(tbl, (const void *)key);
+	stat_inc_distrib_tbl(tbl, (const void *)key);
 }
 
 
@@ -159,9 +159,9 @@ void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
  */
 void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
 {
-  distrib_entry_t *elem = distrib_get_entry(tbl, object);
+	distrib_entry_t *elem = distrib_get_entry(tbl, object);
 
-  cnt_add(&elem->cnt, &_cnt_0);
+	cnt_add(&elem->cnt, &_cnt_0);
 }
 
 /*
@@ -170,7 +170,7 @@ void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
  */
 void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 {
-  stat_insert_distrib_tbl(tbl, (const void *)key);
+	stat_insert_distrib_tbl(tbl, (const void *)key);
 }
 
 /*
@@ -178,14 +178,12 @@ void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
  */
 int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
 {
-  distrib_entry_t *entry;
-  int sum = 0;
+	distrib_entry_t *entry;
+	int sum = 0;
 
-  for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-    sum += cnt_to_int(&entry->cnt);
-  }
-
-  return sum;
+	foreach_pset(tbl->hash_map, entry)
+		sum += cnt_to_uint(&entry->cnt);
+	return sum;
 }
 
 /*
@@ -193,46 +191,46 @@ int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 {
-  distrib_entry_t *entry;
-  unsigned count;
-  double sum;
+	distrib_entry_t *entry;
+	unsigned count;
+	double sum;
 
-  if (tbl->int_dist) {
-    /* integer distribution, need min, max */
-    int min, max;
+	if (tbl->int_dist) {
+		/* integer distribution, need min, max */
+		int min, max;
 
-    entry = pset_first(tbl->hash_map);
+		entry = pset_first(tbl->hash_map);
 
-    if (! entry)
-      return 0.0;
+		if (! entry)
+			return 0.0;
 
-    min =
-    max = (int)entry->object;
-    sum = cnt_to_dbl(&entry->cnt);
+		min =
+		max = (int)entry->object;
+		sum = cnt_to_dbl(&entry->cnt);
 
 
-    for (entry = pset_next(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-      int value = (int)entry->object;
+		for (entry = pset_next(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
+			int value = (int)entry->object;
 
-      if (value < min)
-        min = value;
-      if (value > max);
-        max = value;
+			if (value < min)
+				min = value;
+			if (value > max);
+				max = value;
 
-      sum += cnt_to_dbl(&entry->cnt);
-    }
-    count = max - min + 1;
-  }
-  else {
-    sum = 0.0;
-    count = 0;
-    for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-      sum += cnt_to_dbl(&entry->cnt);
-      ++count;
-    }
-  }
+			sum += cnt_to_dbl(&entry->cnt);
+		}
+		count = max - min + 1;
+	}
+	else {
+		sum = 0.0;
+		count = 0;
+		foreach_pset(tbl->hash_map, entry) {
+			sum += cnt_to_dbl(&entry->cnt);
+			++count;
+		}
+	}
 
-  return count ? sum / (double)count : 0.0;
+	return count ? sum / (double)count : 0.0;
 }
 
 /*
@@ -240,32 +238,27 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
  */
 double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
 {
-  distrib_entry_t *entry;
-  unsigned         count = 0;
-  double           sum   = 0.0;
+	distrib_entry_t *entry;
+	unsigned        count = 0;
+	double          sum   = 0.0;
 
-  if (tbl->int_dist) {
-    entry = pset_first(tbl->hash_map);
+	if (tbl->int_dist) {
+		if (pset_count(tbl->hash_map) <= 0)
+			return 0.0;
 
-    if (! entry)
-      return 0.0;
+		foreach_pset(tbl->hash_map, entry) {
+			sum   += cnt_to_dbl(&entry->cnt) * (int)entry->object;
+			count += cnt_to_uint(&entry->cnt);
+		}
+	}
+	else {
+		foreach_pset(tbl->hash_map, entry) {
+			sum += cnt_to_dbl(&entry->cnt);
+			++count;
+		}
+	}
 
-    sum   = cnt_to_dbl(&entry->cnt);
-	count = cnt_to_int(&entry->cnt);
-
-    for (entry = pset_next(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-      sum   += cnt_to_dbl(&entry->cnt) * (int)entry->object;
-      count += cnt_to_int(&entry->cnt);
-    }
-  }
-  else {
-    for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-      sum += cnt_to_dbl(&entry->cnt);
-      ++count;
-    }
-  }
-
-  return count ? sum / (double)count : 0.0;
+	return count ? sum / (double)count : 0.0;
 }
 
 /**
@@ -273,9 +266,8 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
  */
 void stat_iterate_distrib_tbl(distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env)
 {
-  distrib_entry_t *entry;
+	distrib_entry_t *entry;
 
-  for (entry = pset_first(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-    eval(entry, env);
-  }
+	foreach_pset(tbl->hash_map, entry)
+		eval(entry, env);
 }

@@ -634,7 +634,7 @@ static void pattern_output(void)
 
   for (i = 0; i < count; ++i) {
     entry = pattern_arr[i];
-    if (cnt_to_int(&entry->count) < status->bound)
+    if (cnt_to_uint(&entry->count) < status->bound)
       continue;
 
     /* dump a pattern */

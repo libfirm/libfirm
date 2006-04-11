@@ -22,7 +22,7 @@
 #endif
 
 typedef struct _counter_t {
-  unsigned cnt[STAT_CNT_NUM];
+	unsigned cnt[STAT_CNT_NUM];
 } counter_t;
 
 /**
@@ -30,12 +30,12 @@ typedef struct _counter_t {
  */
 static INLINE void cnt_inc(counter_t *cnt)
 {
-  int i;
+	int i;
 
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    if (++cnt->cnt[i])
-      break;
-  }
+	for (i = 0; i < STAT_CNT_NUM; ++i) {
+		if (++cnt->cnt[i])
+			break;
+	}
 }
 
 /**
@@ -43,12 +43,12 @@ static INLINE void cnt_inc(counter_t *cnt)
  */
 static INLINE void cnt_dec(counter_t *cnt)
 {
-  int i;
+	int i;
 
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    if (--cnt->cnt[i] != -1)
-      break;
-  }
+	for (i = 0; i < STAT_CNT_NUM; ++i) {
+		if (--cnt->cnt[i] != -1)
+			break;
+	}
 }
 
 /**
@@ -56,7 +56,7 @@ static INLINE void cnt_dec(counter_t *cnt)
  */
 static INLINE void cnt_clr(counter_t *cnt)
 {
-  memset(cnt->cnt, 0, sizeof(cnt->cnt));
+	memset(cnt->cnt, 0, sizeof(cnt->cnt));
 }
 
 /**
@@ -64,17 +64,17 @@ static INLINE void cnt_clr(counter_t *cnt)
  */
 static INLINE void cnt_add(counter_t *dst, const counter_t *src)
 {
-  int i, carry = 0;
+	int i, carry = 0;
 
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    unsigned x = dst->cnt[i];
-    unsigned y = src->cnt[i];
-    unsigned a = x + y + carry;
+	for (i = 0; i < STAT_CNT_NUM; ++i) {
+		unsigned x = dst->cnt[i];
+		unsigned y = src->cnt[i];
+		unsigned a = x + y + carry;
 
-    carry = (int)((x & y) | ((x | y) & ~a)) < 0 ? 1 : 0;
+		carry = (int)((x & y) | ((x | y) & ~a)) < 0 ? 1 : 0;
 
-    dst->cnt[i] = a;
-  }
+		dst->cnt[i] = a;
+	}
 }
 
 /**
@@ -82,19 +82,19 @@ static INLINE void cnt_add(counter_t *dst, const counter_t *src)
  */
 static INLINE void cnt_add_i(counter_t *dst, int src)
 {
-  int i;
-  unsigned carry = src;
+	int i;
+	unsigned carry = src;
 
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    unsigned a = dst->cnt[i] + carry;
+	for (i = 0; i < STAT_CNT_NUM; ++i) {
+		unsigned a = dst->cnt[i] + carry;
 
-    carry = a < dst->cnt[i];
+		carry = a < dst->cnt[i];
 
-    dst->cnt[i] = a;
+		dst->cnt[i] = a;
 
-    if (! carry)
-      break;
-  }
+		if (! carry)
+			break;
+	}
 }
 
 /**
@@ -102,20 +102,20 @@ static INLINE void cnt_add_i(counter_t *dst, int src)
  */
 static INLINE int cnt_cmp(const counter_t *a, const counter_t *b)
 {
-  int i;
-  unsigned va, vb;
+	int i;
+	unsigned va, vb;
 
-  for (i = STAT_CNT_NUM - 1 ; i >= 0; --i) {
-    va = a->cnt[i];
-    vb = b->cnt[i];
+	for (i = STAT_CNT_NUM - 1 ; i >= 0; --i) {
+		va = a->cnt[i];
+		vb = b->cnt[i];
 
-    if (va != vb)
-      break;
-  }
+		if (va != vb)
+			break;
+	}
 
-  if (va != vb)
-    return va < vb ? -1 : 1;
-  return 0;
+	if (va != vb)
+		return va < vb ? -1 : 1;
+	return 0;
 }
 
 /**
@@ -123,32 +123,32 @@ static INLINE int cnt_cmp(const counter_t *a, const counter_t *b)
  */
 static INLINE double cnt_to_dbl(const counter_t *a)
 {
-  int i;
-  double res = 0.0, scale = 1.0, tmp;
+	int i;
+	double res = 0.0, scale = 1.0, tmp;
 
-  i = (1 << (sizeof(a->cnt[0]) * 4));
-  tmp = ((double)i) * ((double)i);
+	i = (1 << (sizeof(a->cnt[0]) * 4));
+	tmp = ((double)i) * ((double)i);
 
-  for (i = 0; i < STAT_CNT_NUM; ++i) {
-    res += scale * (double)a->cnt[i];
+	for (i = 0; i < STAT_CNT_NUM; ++i) {
+		res += scale * (double)a->cnt[i];
 
-    scale *= tmp;
-  }
-  return res;
+		scale *= tmp;
+	}
+	return res;
 }
 
 /**
- * convert a counter into an int
+ * convert a counter into an unsigned
  */
-static INLINE unsigned cnt_to_int(const counter_t *a)
+static INLINE unsigned cnt_to_uint(const counter_t *a)
 {
-  int i;
+	int i;
 
-  for (i = 1; i < STAT_CNT_NUM; ++i)
-    if (a->cnt[i])
-		return UINT_MAX;
+	for (i = 1; i < STAT_CNT_NUM; ++i)
+		if (a->cnt[i])
+			return UINT_MAX;
 
-  return a->cnt[0];
+	return a->cnt[0];
 }
 
 /**
@@ -156,13 +156,13 @@ static INLINE unsigned cnt_to_int(const counter_t *a)
  */
 static INLINE int cnt_eq(const counter_t *a, unsigned value)
 {
-  int i;
+	int i;
 
-  for (i = 1; i < STAT_CNT_NUM; ++i)
-    if (a->cnt[i])
-      return 0;
+	for (i = 1; i < STAT_CNT_NUM; ++i)
+		if (a->cnt[i])
+			return 0;
 
-  return a->cnt[0] == value;
+	return a->cnt[0] == value;
 }
 
 /**
@@ -170,14 +170,13 @@ static INLINE int cnt_eq(const counter_t *a, unsigned value)
  */
 static INLINE int cnt_gt(const counter_t *a, unsigned value)
 {
-  int i;
+	int i;
 
-  for (i = 1; i < STAT_CNT_NUM; ++i)
-    if (a->cnt[i])
-      return 1;
+	for (i = 1; i < STAT_CNT_NUM; ++i)
+		if (a->cnt[i])
+			return 1;
 
-  return a->cnt[0] > value;
+	return a->cnt[0] > value;
 }
-
 
 #endif /* _COUNTER_H_ */
