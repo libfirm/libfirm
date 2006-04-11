@@ -14,7 +14,6 @@
 #include <stdlib.h>
 
 #include "ircons.h"
-#include "ident.h"
 #include "debug.h"
 #include "irhooks.h"
 
@@ -369,7 +368,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 	/* check for cycles and chains */
 	while (get_n_checked_pairs(pairs, n) < n) {
-		i = 0;
+		i = n_ops = 0;
 
 		/* go to the first not-checked pair */
 		while (pairs[i].checked) i++;
@@ -413,8 +412,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 			res1 = get_node_for_register(pairs, n, cycle->elems[i], 1);
 			res2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 1);
-
-			n_ops = 0;
 			/*
 				If we have a cycle and don't copy: we need to create exchange nodes
 				NOTE: An exchange node is a perm node with 2 INs and 2 OUTs
@@ -517,10 +514,11 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				/* set the new scheduling point */
 				sched_point = cpyxchg;
 			}
+		}
 
-			if (env->do_stat) {
-				hook_be_block_stat_permcycle(reg_class->name, irn, block, cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
-			}
+		if (env->do_stat) {
+			hook_be_block_stat_permcycle(reg_class->name, irn, block, \
+				cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
 		}
 
 		free((void *) cycle->elems);
