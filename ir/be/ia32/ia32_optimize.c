@@ -92,7 +92,9 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	}
 	else
 		cnst = new_rd_ia32_Const(dbg, irg, block, get_irg_no_mem(irg), mode);
+
 	set_ia32_Const_attr(cnst, env->irn);
+
 	return cnst;
 }
 
