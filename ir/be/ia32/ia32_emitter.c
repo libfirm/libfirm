@@ -396,7 +396,7 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D, %s", n, ia32_emit_am(n, env));
 				}
 				else {
-					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S, %s", n, ia32_emit_am(n, env));
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, ia32_emit_am(n, env));
 				}
 			}
 			break;

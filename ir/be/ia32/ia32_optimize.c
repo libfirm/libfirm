@@ -1467,14 +1467,19 @@ void ia32_optimize_am(ir_node *irn, void *env) {
 				if (get_irn_arity(irn) == 5) {
 					/* binary AMop */
 					set_irn_n(irn, 4, get_irn_n(left, 2));
+
+					/* disconnect from Load */
+					/* (make second op -> first, set second in to noreg) */
+					set_irn_n(irn, 2, get_irn_n(irn, 3));
+					set_irn_n(irn, 3, noreg_gp);
 				}
 				else {
 					/* unary AMop */
 					set_irn_n(irn, 3, get_irn_n(left, 2));
-				}
 
-				/* disconnect from Load */
-				set_irn_n(irn, 2, noreg_gp);
+					/* disconnect from Load */
+					set_irn_n(irn, 2, noreg_gp);
+				}
 
 				DBG_OPT_AM_S(left, irn);
 
