@@ -18,7 +18,8 @@
 #include "irnode_t.h"
 #include "irphase_t.h"
 
-phase_t *phase_new(const char *name, ir_graph *irg, size_t data_size, unsigned growth_factor, phase_irn_data_init_t *data_init)
+phase_t *phase_new(const char *name, ir_graph *irg, size_t data_size, unsigned growth_factor,
+                   phase_irn_data_init_t *data_init, void *priv)
 {
 	phase_t *ph;
 
@@ -35,6 +36,7 @@ phase_t *phase_new(const char *name, ir_graph *irg, size_t data_size, unsigned g
 	ph->irg           = irg;
 	ph->n_data_ptr    = 0;
 	ph->data_ptr      = NULL;
+	ph->priv          = priv;
 
 	return ph;
 }
