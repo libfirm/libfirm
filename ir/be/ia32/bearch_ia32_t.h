@@ -51,13 +51,16 @@ typedef enum cpu_support {
 } cpu_support;
 
 /** checks for l <= x <= h */
-#define _IN_RANGE(x, l, h)	((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
+#define _IN_RANGE(x, l, h)  ((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
 
 /** returns true if it's Intel architecture */
-#define ARCH_INTEL(x)		_IN_RANGE((x), arch_i386, arch_core)
+#define ARCH_INTEL(x)       _IN_RANGE((x), arch_i386, arch_core)
 
 /** returns true if it's AMD architecture */
-#define ARCH_AMD(x)			_IN_RANGE((x), arch_k6, arch_opteron)
+#define ARCH_AMD(x)         _IN_RANGE((x), arch_k6, arch_opteron)
+
+#define IS_P6_ARCH(x)       (_IN_RANGE((x), arch_pentium_pro, arch_core) || \
+                             _IN_RANGE((x), arch_athlon, arch_opteron))
 
 /** floating point support */
 typedef enum fp_support {
