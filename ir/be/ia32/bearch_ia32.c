@@ -373,8 +373,8 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
 		int reg_size     = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 
-		/* AMD processors prefer leave at the end of a routine */
-    if (ARCH_AMD(isa->opt_arch)) {
+		/* gcc always emits a leave at the end of a routine */
+		if (1 || ARCH_AMD(isa->opt_arch)) {
 			ir_node *leave;
 
 			/* leave */
@@ -1084,9 +1084,11 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	const arch_register_t *reg;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
+	unsigned use_push = !IS_P6_ARCH(isa->opt_arch);
+
 	/* set abi flags for calls */
 	call_flags.bits.left_to_right         = 0;  /* always last arg first on stack */
-	call_flags.bits.store_args_sequential = 0;  /* use stores instead of push */
+	call_flags.bits.store_args_sequential = use_push;
 	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
 	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
 	call_flags.bits.call_has_imm          = 1;  /* IA32 calls can have immediate address */
