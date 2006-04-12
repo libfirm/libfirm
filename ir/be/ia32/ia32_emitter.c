@@ -30,6 +30,7 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "ia32_map_regs.h"
+#include "bearch_ia32_t.h"
 
 #define BLOCK_PREFIX(x) ".L" x
 
@@ -1567,7 +1568,7 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
  */
 static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
 	/* gcc doesn't emit alignment for p4 ?*/
-    if (cpu == arch_pentium4)
+    if (cpu == arch_pentium_4)
 		return;
 
 	fprintf(F, "\t.p2align ");
@@ -1598,7 +1599,7 @@ static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
  */
 static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 	/* gcc doesn't emit alignment for p4 ?*/
-    if (cpu == arch_pentium4)
+    if (cpu == arch_pentium_4)
 		return;
 
 	fprintf(F, "\t.p2align ");
