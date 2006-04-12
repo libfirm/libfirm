@@ -37,7 +37,7 @@ void exchange(int i,int j) {
  * Läßt a[k] im Feld aufsteigen.
  */
 void upheap(int k) {
-  while ((k > 1) && (a[k] < a[k / 2])) {
+  while ((k > 0) && (a[k] < a[k / 2])) {
     exchange(k, k / 2);
     k = k / 2;
   }
@@ -48,9 +48,9 @@ void upheap(int k) {
  * ein und erhöht N um 1
  */
 void insert(int v) {
-  N++;
   a[N] = v;
   upheap(N);
+  N++;
 }
 
 /**
@@ -75,9 +75,8 @@ void downheap(int k) {
  */
 int removeh(int k) {
   int v = a[k];
-  a[k] = a[N];
-  N--;
-  if ((k > 1) && (a[k] < a[k / 2]))
+  a[k] = a[--N];
+  if ((k > 0) && (a[k] < a[k / 2]))
     upheap(k);
   else
     downheap(k);
@@ -97,10 +96,11 @@ void heapaufbau1(void) {
 /**
  * Aufbau des Heaps durch insert.
  */
-void heapaufbau2(void) {
-  int k, m = N; N = 0;
-  for (k = 1;k <= m; k++)
-    insert(a[k]);
+void heapaufbau2(int *b, int len) {
+  int k;
+  N = 0;
+  for (k = 0; k < len; ++k)
+    insert(b[k]);
 }
 
 /**
@@ -112,19 +112,13 @@ int *heapsort(int *b, int len) {
   int *c;
 
   // Globale Variablen für die Heap-Methoden setzen
-  a = (void *)malloc(sizeof(*a) * (len + 1));
-  N = len;
+  a = (void *)malloc(sizeof(*a) * len);
+  heapaufbau2(b, len);
 
-  // Die Heap-Methoden arbeiten auf dem Bereich a[1],...,a[N],
-  // normale Java-Array belegen aber b[0],...,b[b.length-1].
-  for (i = 0; i < len; i++) {
-    a[i + 1] = b[i];
-  }
-  heapaufbau2();
   // Ergebnis in c kopieren
   c = (void *)malloc(sizeof(*c) * len);
   for (k = 0; k < len; k++)
-    c[k] = removeh(1);
+    c[k] = removeh(0);
   return c;
 }
 
@@ -145,19 +139,21 @@ int main (int argc, char *argv[]) {
   printf("Heap.c\n");
 
   len = argc - 1;
-  b = (void *)malloc(len * sizeof(*b));
-
-  for(i = 0; i < argc-1; i++) {
-    b[i] = atoi(argv[i+1]);
-    printf(" %d\n", b[i]);
-  }
 
   if (len < 1) {
+      static int _b[] = {3, 18, 5, 99, 104, 2};
       printf("Usage: HeapSort <list of numbers>\n");
       printf("Continuing with default input.\n");
-      // b = new int[] {3, 18, 5, 99, 104, 2};
-      b = (void *)malloc(sizeof(*b) * (len = 6));
-      b[0] = 3; b[1] = 18; b[2] = 5; b[3] = 99; b[4] = 104; b[5] = 2;
+      b = _b;
+      len = sizeof(_b)/sizeof(_b[0]);
+  }
+  else {
+    b = (void *)malloc(len * sizeof(*b));
+
+    for(i = 0; i < argc-1; i++) {
+      b[i] = atoi(argv[i+1]);
+      printf(" %d\n", b[i]);
+    }
   }
 
   // Ausgabe
