@@ -1564,65 +1564,62 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 }
 
 /**
- * Emits gas alignment directives for Functions dependend on cpu architecture.
+ * Emits gas alignment directives
  */
-static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
-	/* gcc doesn't emit alignment for p4 ?*/
-    if (cpu == arch_pentium_4)
-		return;
-
-	fprintf(F, "\t.p2align ");
-
-	switch (cpu) {
-		case arch_i386:
-			/* align 4 bytes, maximum skip 3 bytes */
-			fprintf(F, "2,,3");
-			break;
-		case arch_i486:
-			/* align 16 bytes, maximum skip 15 bytes */
-			fprintf(F, "4,,15");
-			break;
-		case arch_k6:
-			/* align 32 bytes, maximum skip 31 bytes */
-			fprintf(F, "5,,31");
-			break;
-		default:
-			/* align 16 bytes, maximum skip 15 bytes */
-			fprintf(F, "4,,15");
-	}
-
-	fprintf(F, "\n");
+static void ia32_emit_alignment(FILE *F, unsigned align, unsigned skip) {
+	fprintf(F, "\t.p2align %u,,%u\n", align, skip);
 }
 
 /**
- * Emits gas alignment directives for Labels dependend on cpu architecture.
+ * Emits gas alignment directives for Functions depended on cpu architecture.
  */
-static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
+static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
+	unsigned align; unsigned maximum_skip;
+
 	/* gcc doesn't emit alignment for p4 ?*/
     if (cpu == arch_pentium_4)
 		return;
 
-	fprintf(F, "\t.p2align ");
+	switch (cpu) {
+		case arch_i386:
+			align = 2; maximum_skip = 3;
+			break;
+		case arch_i486:
+			align = 4; maximum_skip = 15;
+			break;
+		case arch_k6:
+			align = 5; maximum_skip = 31;
+			break;
+		default:
+			align = 4; maximum_skip = 15;
+	}
+	ia32_emit_alignment(F, align, maximum_skip);
+}
+
+/**
+ * Emits gas alignment directives for Labels depended on cpu architecture.
+ */
+static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
+	unsigned align; unsigned maximum_skip;
+
+	/* gcc doesn't emit alignment for p4 ?*/
+    if (cpu == arch_pentium_4)
+		return;
 
 	switch (cpu) {
 		case arch_i386:
-			/* align 4 bytes, maximum skip 3 bytes */
-			fprintf(F, "2,,3");
+			align = 2; maximum_skip = 3;
 			break;
 		case arch_i486:
-			/* align 16 bytes, maximum skip 15 bytes */
-			fprintf(F, "4,,15");
+			align = 4; maximum_skip = 15;
 			break;
 		case arch_k6:
-			/* align 32 bytes, maximum skip 7 bytes */
-			fprintf(F, "5,,7");
+			align = 5; maximum_skip = 7;
 			break;
 		default:
-			/* align 16 bytes, maximum skip 7 bytes */
-			fprintf(F, "4,,7");
+			align = 4; maximum_skip = 7;
 	}
-
-	fprintf(F, "\n");
+	ia32_emit_alignment(F, align, maximum_skip);
 }
 
 /**
