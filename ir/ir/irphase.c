@@ -60,6 +60,6 @@ phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat)
 			stat->node_data_bytes += phase->data_size;
 		}
 	}
-	stat->overall_bytes = stat->node_map_bytes + obstack_memory_used(&phase->obst);
+	stat->overall_bytes = stat->node_map_bytes + obstack_memory_used(&((phase_t *)phase)->obst);
 	return stat;
 }
