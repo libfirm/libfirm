@@ -2039,6 +2039,7 @@ void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			set_ia32_am_support(res, ia32_am_Full);
 			set_ia32_commutative(res);
 		}
+	    set_ia32_res_mode(res, tenv.mode);
 
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(tenv.cg, irn));
 		/* copy register */
@@ -2152,6 +2153,7 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	arch_set_irn_register(cg->arch_env, res, out_reg);
 	set_ia32_op_type(res, ia32_Normal);
 	set_ia32_commutative(res);
+	set_ia32_res_mode(res, tenv.mode);
 
 	if (imm) {
 		set_ia32_cnst(res, offs);
