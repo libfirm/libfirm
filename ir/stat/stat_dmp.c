@@ -269,7 +269,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 	fprintf(dmp->f, "chain distribution:\n");
 
 	/* add all missing entries to chain distribution table */
-	for (i = 0; i < entry->n_regs; i++) {
+	for (i = 1; i <= entry->n_regs; i++) {
 		snprintf(buf, sizeof(buf), "length %d", i);
 		fprintf(dmp->f, "%12s", buf);
 		stat_insert_int_distrib_tbl(sum_chains, i);
@@ -282,7 +282,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 	fprintf(dmp->f, "cycle distribution:\n");
 
 	/* add all missing entries to cycle distribution table */
-	for (i = 0; i < entry->n_regs; i++) {
+	for (i = 1; i <= entry->n_regs; i++) {
 		snprintf(buf, sizeof(buf), "length %d", i);
 		fprintf(dmp->f, "%12s", buf);
 		stat_insert_int_distrib_tbl(sum_cycles, i);
