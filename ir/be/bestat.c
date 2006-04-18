@@ -15,13 +15,11 @@
 #include "irhooks.h"
 #include "dbginfo_t.h"
 #include "firmstat_t.h"
+#include "irtools.h"
 
 #include "bestat.h"
 #include "belive_t.h"
 #include "besched.h"
-
-#undef MIN
-#define MIN(a, b) (a < b ? a : b)
 
 /**
  * Collect reg pressure statistics per block and per class.
@@ -49,7 +47,7 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 			max_live = cnt < max_live ? max_live : cnt;
 		}
 
-		stat_be_block_regpressure(birg->irg, block, max_live, cls->name);
+		stat_be_block_regpressure(birg->irg, block, MIN(max_live, 5), cls->name);
 	}
 }
 

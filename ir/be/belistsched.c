@@ -28,6 +28,7 @@
 #include "irprintf_t.h"
 #include "array.h"
 #include "debug.h"
+#include "irtools.h"
 
 #include "besched_t.h"
 #include "beutil.h"
@@ -36,9 +37,6 @@
 #include "beschedmris.h"
 #include "bearch.h"
 #include "bestat.h"
-
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
-#define MIN(x,y) ((x) < (y) ? (x) : (y))
 
 /**
  * All scheduling info needed per node.
