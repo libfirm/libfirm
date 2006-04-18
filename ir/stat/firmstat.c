@@ -1759,6 +1759,7 @@ void stat_be_block_stat_perm(void *ctx, const char *class_name, int n_regs, ir_n
  * @param perm       the perm node
  * @param block      the block containing the perm
  * @param is_chain   1 if chain, 0 if cycle
+ * @param size       length of the cycle/chain
  * @param n_ops      the number of ops representing this cycle/chain after lowering
  */
 void stat_be_block_stat_permcycle(void *ctx, const char *class_name, ir_node *perm, ir_node *block,
