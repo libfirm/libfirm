@@ -175,6 +175,7 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 };
 
 static const lc_opt_enum_int_items_t copymin_items[] = {
+	{ "none", BE_CH_COPYMIN_NONE },
 	{ "heur", BE_CH_COPYMIN_HEUR },
 #ifdef WITH_ILP
 	{ "ilp",  BE_CH_COPYMIN_ILP },
@@ -191,7 +192,6 @@ static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
 	{ "copy", BE_CH_LOWER_PERM_COPY },
 	{ "swap", BE_CH_LOWER_PERM_SWAP },
-	{ "stat", BE_CH_LOWER_PERM_STAT },
 	{ NULL, 0 }
 };
 
@@ -233,9 +233,9 @@ static lc_opt_enum_int_var_t dump_var = {
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_MASK("spill", "spill method (belady or ilp)", &spill_var),
-	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (heur or ilp)", &copymin_var),
+	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (none, heur or ilp)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR("ifg", "interference graph flavour (std or fast)", &ifg_flavor_var),
-	LC_OPT_ENT_ENUM_MASK("perm", "perm lowering options (copy, swap, stat)", &lower_perm_var),
+	LC_OPT_ENT_ENUM_MASK("perm", "perm lowering options (copy, swap)", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump", "select dump phases", &dump_var),
 	{ NULL }
 };
@@ -340,11 +340,11 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		chordal_env.ifg = be_ifg_std_new(&chordal_env);
 		be_ifg_check(chordal_env.ifg);
 
-#if 1
 		/* copy minimization */
 #ifdef COPYOPT_STAT
 		co_compare_solvers(&chordal_env);
 #else
+		if (options.copymin_method != BE_CH_COPYMIN_NONE)
 		{
 			copy_opt_t *co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
 			co_build_ou_structure(co);
@@ -352,7 +352,6 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 			co_free_ou_structure(co);
 			free_copy_opt(co);
 		}
-#endif
 #endif
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 		be_ra_chordal_check(&chordal_env);

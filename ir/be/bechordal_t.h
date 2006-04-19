@@ -106,6 +106,7 @@ enum {
 	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_LOWER - 1,
 
 	/* copymin method */
+	BE_CH_COPYMIN_NONE    = 0,
 	BE_CH_COPYMIN_HEUR    = 1,
 	BE_CH_COPYMIN_ILP     = 2,
 
