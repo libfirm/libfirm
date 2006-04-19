@@ -18,14 +18,9 @@
 #include "irnode_t.h"
 #include "irphase_t.h"
 
-phase_t *phase_new(const char *name, ir_graph *irg, size_t data_size, unsigned growth_factor,
-                   phase_irn_data_init_t *data_init, void *priv)
+phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, size_t data_size, unsigned growth_factor, phase_irn_data_init_t *data_init)
 {
-	phase_t *ph;
-
 	assert(growth_factor >= 1.0 && "growth factor must greater or equal to 1.0");
-
-	ph = xmalloc(sizeof(ph[0]));
 
 	obstack_init(&ph->obst);
 
@@ -36,7 +31,6 @@ phase_t *phase_new(const char *name, ir_graph *irg, size_t data_size, unsigned g
 	ph->irg           = irg;
 	ph->n_data_ptr    = 0;
 	ph->data_ptr      = NULL;
-	ph->priv          = priv;
 
 	return ph;
 }
@@ -44,7 +38,8 @@ phase_t *phase_new(const char *name, ir_graph *irg, size_t data_size, unsigned g
 void phase_free(phase_t *phase)
 {
 	obstack_free(&phase->obst, NULL);
-	xfree(phase->data_ptr);
+	if(phase->data_ptr)
+		xfree(phase->data_ptr);
 }
 
 phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat)
@@ -62,4 +57,17 @@ phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat)
 	}
 	stat->overall_bytes = stat->node_map_bytes + obstack_memory_used(&((phase_t *)phase)->obst);
 	return stat;
+}
+
+void phase_reinit_irn_data(phase_t *phase)
+{
+	int i, n;
+
+	if(!phase->data_init)
+		return;
+
+	for(i = 0, n = phase->n_data_ptr; i < n; ++i) {
+		if(phase->data_ptr[i])
+			phase->data_init(phase, NULL, phase->data_ptr[i]);
+	}
 }
