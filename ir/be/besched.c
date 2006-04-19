@@ -58,104 +58,106 @@ void be_sched_init(void)
 
 void sched_renumber(const ir_node *block)
 {
-  ir_node *irn;
-  sched_info_t *inf;
-  sched_timestep_t step = 0;
+	ir_node *irn;
+	sched_info_t *inf;
+	sched_timestep_t step = 0;
 
-  sched_foreach(block, irn) {
-    inf = get_irn_sched_info(irn);
-    inf->time_step = step;
-    step += SCHED_INITIAL_GRANULARITY;
-  }
+	sched_foreach(block, irn) {
+		inf = get_irn_sched_info(irn);
+		inf->time_step = step;
+		step += SCHED_INITIAL_GRANULARITY;
+	}
 }
 
 /* Verify a schedule. */
 int sched_verify(const ir_node *block)
 {
-  int res = 1;
-  const ir_node *irn;
-  int i, n;
-  int *save_time_step;
-  const ir_node **save_nodes;
-  const ir_edge_t *edge;
-  pset *scheduled_nodes = pset_new_ptr_default();
-  FIRM_DBG_REGISTER(firm_dbg_module_t *dbg_sched, "firm.be.sched");
+	int res = 1;
+	const ir_node *irn;
+	int i, n;
+	int *save_time_step;
+	const ir_node **save_nodes;
+	const ir_edge_t *edge;
+	pset *scheduled_nodes = pset_new_ptr_default();
+	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg_sched, "firm.be.sched");
 
-  /* Count the number of nodes in the schedule. */
-  n = 0;
-  sched_foreach(block, irn)
-    n++;
+	/* Count the number of nodes in the schedule. */
+	n = 0;
+	sched_foreach(block, irn)
+		n++;
 
-  if(n <= 0)
-    return 1;
+	if(n <= 0)
+		return 1;
 
-  save_time_step = xmalloc(n * sizeof(save_time_step[0]));
-  save_nodes = xmalloc(n * sizeof(save_nodes[0]));
+	save_time_step = xmalloc(n * sizeof(save_time_step[0]));
+	save_nodes = xmalloc(n * sizeof(save_nodes[0]));
 
-  i = 0;
-  sched_foreach(block, irn) {
-    sched_info_t *info = get_irn_sched_info(irn);
-    save_time_step[i] = info->time_step;
-    save_nodes[i] = (ir_node *)irn;
-    info->time_step = i;
-    pset_insert_ptr(scheduled_nodes, irn);
+	i = 0;
+	sched_foreach(block, irn) {
+		sched_info_t *info = get_irn_sched_info(irn);
+		save_time_step[i] = info->time_step;
+		save_nodes[i] = (ir_node *)irn;
+		info->time_step = i;
+		pset_insert_ptr(scheduled_nodes, irn);
 
-    i += 1;
-  }
+		i += 1;
+	}
 
-  /*
-   * Check if each relevant operand of a node is scheduled before
-   * the node itself.
-   */
-  sched_foreach(block, irn) {
-    int i, n;
-    int step = sched_get_time_step(irn);
+	/*
+	 * Check if each relevant operand of a node is scheduled before
+	 * the node itself.
+	 */
+	sched_foreach(block, irn) {
+		int i, n;
+		int step = sched_get_time_step(irn);
 
-    for(i = 0, n = get_irn_arity(irn); i < n; i++) {
-      ir_node *op = get_irn_n(irn, i);
+		for(i = 0, n = get_irn_arity(irn); i < n; i++) {
+			ir_node *op = get_irn_n(irn, i);
 
-      if(to_appear_in_schedule(op)
-          && !is_Phi(irn)
-          && get_nodes_block(op) == block
-          && sched_get_time_step(op) > step) {
+			if(to_appear_in_schedule(op)
+				&& !is_Phi(irn)
+				&& get_nodes_block(op) == block
+				&& sched_get_time_step(op) > step) {
 
-          DBG((dbg_sched, LEVEL_DEFAULT,
-                "%+F: %+F is operand of %+F but scheduled after\n", block, op, irn));
-          res = 0;
-      }
-    }
-  }
+				DBG((dbg_sched, LEVEL_DEFAULT,
+					"%+F: %+F is operand of %+F but scheduled after\n", block, op, irn));
+				res = 0;
+			}
+		}
+	}
 
-  /* Check, if the time steps are correct */
-  for(i = 1; i < n; ++i) {
-    if(save_time_step[i] - save_time_step[i - 1] <= 0) {
-      DBG((dbg_sched, LEVEL_DEFAULT,
-            "%+F from %+F(%d) -> %+F(%d) step shrinks from %d -> %d\n",
-            block, save_nodes[i - 1], i - 1, save_nodes[i], i,
-            save_time_step[i - 1], save_time_step[i]));
-      res = 0;
-    }
-  }
+	/* Check, if the time steps are correct */
+	for(i = 1; i < n; ++i) {
+		if(save_time_step[i] - save_time_step[i - 1] <= 0) {
+			DBG((dbg_sched, LEVEL_DEFAULT,
+				"%+F from %+F(%d) -> %+F(%d) step shrinks from %d -> %d\n",
+				block, save_nodes[i - 1], i - 1, save_nodes[i], i,
+				save_time_step[i - 1], save_time_step[i]));
+			res = 0;
+		}
+	}
 
-  /* Restore the old time steps */
-  i = 0;
-  sched_foreach(block, irn) {
-    sched_info_t *info = get_irn_sched_info(irn);
-    info->time_step = save_time_step[i++];
-  }
+	/* Restore the old time steps */
+	i = 0;
+	sched_foreach(block, irn) {
+		sched_info_t *info = get_irn_sched_info(irn);
+		info->time_step = save_time_step[i++];
+	}
 
-  /* Check for all nodes in the block if they are scheduled. */
-  foreach_out_edge(block, edge) {
-    ir_node *irn = get_edge_src_irn(edge);
-    if(to_appear_in_schedule(irn) && !pset_find_ptr(scheduled_nodes, irn))
-      DBG((dbg_sched, LEVEL_DEFAULT,
-            "%+F: %+F is in block but not scheduled\n", block, irn));
-  }
+	/* Check for all nodes in the block if they are scheduled. */
+	foreach_out_edge(block, edge) {
+		ir_node *irn = get_edge_src_irn(edge);
+		if(to_appear_in_schedule(irn) && !pset_find_ptr(scheduled_nodes, irn)) {
+			DBG((dbg_sched, LEVEL_DEFAULT,
+				"%+F: %+F is in block but not scheduled\n", block, irn));
+			res = 0;
+		}
+	}
 
-  del_pset(scheduled_nodes);
-  free(save_time_step);
-  free((void *) save_nodes);
-  return res;
+	del_pset(scheduled_nodes);
+	free(save_time_step);
+	free((void *) save_nodes);
+	return res;
 }
 
 /**
@@ -163,22 +165,22 @@ int sched_verify(const ir_node *block)
  */
 static void sched_verify_walker(ir_node *block, void *data)
 {
-  int *res = data;
-  *res &= sched_verify(block);
+	int *res = data;
+	*res &= sched_verify(block);
 }
 
 /* Verify the schedules in all blocks of the irg. */
 int sched_verify_irg(ir_graph *irg)
 {
-  int res = 1;
-  irg_block_walk_graph(irg, sched_verify_walker, NULL, &res);
+	int res = 1;
+	irg_block_walk_graph(irg, sched_verify_walker, NULL, &res);
 
-  return res;
+	return res;
 }
 
 int sched_skip_cf_predicator(const ir_node *irn, void *data) {
-  arch_env_t *ae = data;
-  return arch_irn_classify(ae, irn) == arch_irn_class_branch;
+	arch_env_t *ae = data;
+	return arch_irn_classify(ae, irn) == arch_irn_class_branch;
 }
 
 int sched_skip_phi_predicator(const ir_node *irn, void *data) {

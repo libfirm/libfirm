@@ -11,7 +11,7 @@
 
 #include "benodesets.h"
 #include "bearch_t.h"
-#include "be_t.h"
+#include "be.h"
 
 typedef struct _list_sched_selector_t list_sched_selector_t;
 

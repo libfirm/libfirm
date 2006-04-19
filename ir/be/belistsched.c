@@ -696,6 +696,9 @@ static int is_root(ir_node *root, ir_node *block) {
 
 		if (is_Block(succ))
 			continue;
+		/* Phi nodes are always in "another block */
+		if (is_Phi(succ))
+			continue;
 		if (get_nodes_block(succ) == block)
 			return 0;
 	}
