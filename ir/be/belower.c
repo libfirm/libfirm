@@ -40,10 +40,10 @@
 /* collect static data about perms */
 typedef struct _perm_stat_t {
 	const arch_register_class_t *cls; /**< the current register class */
-    int  *perm_size_ar;       /**< the sizes of all perms in an irg */
-    int  *real_perm_size_ar;  /**< the sizes of all perms in an irg */
+	int  *perm_size_ar;       /**< the sizes of all perms in an irg */
+	int  *real_perm_size_ar;  /**< the sizes of all perms in an irg */
 	int  *chain_len_ar;       /**< the sizes of all chains for all perms */
-	int  *cycle_len_ar;       /**< the siyes of all cycles for all perms */
+	int  *cycle_len_ar;       /**< the sizes of all cycles for all perms */
 	int   num_perms;          /**< number of all perms */
 	int   num_real_perms;     /**< number of all perms */
 	int   num_chains;         /**< the number of all chains */
