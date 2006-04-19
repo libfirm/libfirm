@@ -47,7 +47,7 @@ asm_flavour_t asm_flavour = ASM_LINUX_GAS;
  */
 void ia32_switch_section(FILE *F, section_t sec) {
 	static section_t curr_sec = NO_SECTION;
-  static const char *text[ASM_MAX][SECTION_MAX] = {
+	static const char *text[ASM_MAX][SECTION_MAX] = {
 		{
 			".section\t.text", ".section\t.data", ".section\t.rodata", ".section\t.text"
 		},
@@ -142,8 +142,6 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 		reg = &ia32_xmm_regs[REG_XMM0];
 	else if (REGS_ARE_EQUAL(reg, &ia32_vfp_regs[REG_VFP_UKNWN]))
 		reg = &ia32_vfp_regs[REG_VF0];
-	else if (REGS_ARE_EQUAL(reg, &ia32_st_regs[REG_ST_UKNWN]))
-		reg = &ia32_st_regs[REG_ST0];
 
 	return reg;
 }
@@ -746,39 +744,55 @@ static ir_node *next_blk_sched(const ir_node *block) {
 }
 
 /**
+ * Returns the Proj with projection number proj and NOT mode_M
+ */
+static ir_node *get_proj(const ir_node *irn, long proj) {
+	const ir_edge_t *edge;
+	ir_node         *src;
+
+	assert(get_irn_mode(irn) == mode_T && "expected mode_T node");
+
+	foreach_out_edge(irn, edge) {
+		src = get_edge_src_irn(edge);
+
+		assert(is_Proj(src) && "Proj expected");
+		if (get_irn_mode(src) == mode_M)
+			continue;
+
+		if (get_Proj_proj(src) == proj)
+			return src;
+	}
+	return NULL;
+}
+
+/**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
 static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	const ir_node   *proj1, *proj2 = NULL;
 	const ir_node   *block, *next_bl = NULL;
-	const ir_edge_t *edge;
 	char buf[SNPRINTF_BUF_LEN];
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 
 	/* get both Proj's */
-	edge = get_irn_out_edge_first(irn);
-	proj1 = get_edge_src_irn(edge);
-	assert(is_Proj(proj1) && "CondJmp with a non-Proj");
+	proj1 = get_proj(irn, pn_Cond_true);
+	assert(proj1 && "CondJmp without true Proj");
 
-	edge = get_irn_out_edge_next(irn, edge);
-	if (edge) {
-		proj2 = get_edge_src_irn(edge);
-		assert(is_Proj(proj2) && "CondJmp with a non-Proj");
-	}
+	proj2 = get_proj(irn, pn_Cond_false);
+	assert(proj2 && "CondJmp without false Proj");
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	block = get_nodes_block(irn);
-	if (proj2) {
-		/* we have a block schedule */
-		next_bl = next_blk_sched(block);
 
-		if (get_cfop_target_block(proj1) == next_bl) {
-			/* exchange both proj's so the second one can be omitted */
-			const ir_node *t = proj1;
-			proj1 = proj2;
-			proj2 = t;
-		}
+	/* we have a block schedule */
+	next_bl = next_blk_sched(block);
+
+	if (get_cfop_target_block(proj1) == next_bl) {
+		/* exchange both proj's so the second one can be omitted */
+		const ir_node *t = proj1;
+		proj1 = proj2;
+		proj2 = t;
 	}
 
 	/* the first Proj must always be created */
@@ -798,17 +812,15 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	IA32_DO_EMIT(irn);
 
 	/* the second Proj might be a fallthrough */
-	if (proj2) {
-		if (get_cfop_target_block(proj2) != next_bl) {
-			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(proj2, buf));
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* otherwise */");
-		}
-		else {
-			cmd_buf[0] = '\0';
-			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrogh %s */", get_cfop_target(proj2, buf));
-		}
-		IA32_DO_EMIT(irn);
+	if (get_cfop_target_block(proj2) != next_bl) {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(proj2, buf));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* otherwise */");
 	}
+	else {
+		cmd_buf[0] = '\0';
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrough %s */", get_cfop_target(proj2, buf));
+	}
+	IA32_DO_EMIT(irn);
 }
 
 /**
