@@ -54,13 +54,18 @@ static unsigned highest_bit(unsigned v)
 	return res;
 }
 
-static void ia32_dump_comm(struct obstack *obst, const char *name, int size, int align) {
+static void ia32_dump_comm(struct obstack *obst, const char *name, visibility vis, int size, int align) {
 	switch (asm_flavour) {
 	case ASM_LINUX_GAS:
+		if (vis == visibility_local)
+			obstack_printf(obst, "\t.local\t%s\n", name);
 		obstack_printf(obst, "\t.comm\t%s,%d,%d\n", name, size, align);
 		break;
 	case ASM_MINGW_GAS:
-		obstack_printf(obst, "\t.comm\t%s,%d\n", name, size);
+		if (vis == visibility_local)
+			obstack_printf(obst, "\t.lcomm\t%s,%d\n", name, size);
+		else
+			obstack_printf(obst, "\t.comm\t%s,%d\n", name, size);
 		break;
 	}
 }
@@ -500,10 +505,6 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 			obstack_printf(obst, "\n");
 		}
 		else if (visibility != visibility_external_allocated) {
-			if (visibility == visibility_local) {
-				obstack_printf(comm_obstack, "\t.local\t%s\n", ld_name);
-			}
-
 			/* calculate the alignment */
 			align = get_type_alignment_bytes(ty);
 			h = highest_bit(align);
@@ -515,7 +516,8 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 			if (align < 1)
 				align = 1;
 
-			ia32_dump_comm(comm_obstack, ld_name, (get_type_size_bits(ty) + 7) >> 3, align);
+			ia32_dump_comm(comm_obstack, ld_name, visibility,
+				(get_type_size_bits(ty) + 7) >> 3, align);
 		}
 	}
 }
