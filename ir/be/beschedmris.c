@@ -16,6 +16,7 @@
 #include "irnode_t.h"
 #include "iredges_t.h"
 #include "ircons_t.h"
+#include "irphase_t.h"
 #include "irgwalk.h"
 #include "irtools.h"
 
@@ -24,6 +25,7 @@
 #include "beschedmris.h"
 
 struct _mris_env_t {
+	phase_t            ph;
 	firm_dbg_module_t *dbg;
 	const arch_env_t  *aenv;
 	ir_graph          *irg;
@@ -45,21 +47,15 @@ typedef struct _mris_irn_t {
 
 #define to_appear(env, irn) (to_appear_in_schedule(irn) && get_nodes_block(irn) == env->bl)
 
+#define get_mris_irn(env, irn)   ((mris_irn_t *) phase_get_or_set_irn_data(&env->ph, irn))
 #define get_irn_height(env, irn) (get_mris_irn(env, irn)->height)
 #define foreach_lineage(env, pos, tmp) list_for_each_entry_safe(mris_irn_t, pos, tmp, &(env)->lineage_head, lineage_list)
 
-static mris_irn_t *get_mris_irn(mris_env_t *env, ir_node *irn)
+static void mris_irn_data_init(const phase_t *ph, const ir_node *irn, void *data)
 {
-	mris_irn_t *mi = get_irn_link(irn);
-
-	if(!mi) {
-		mi = obstack_alloc(&env->obst, sizeof(mi[0]));
-		memset(mi, 0, sizeof(mi[0]));
-		set_irn_link(irn, mi);
-		INIT_LIST_HEAD(&mi->lineage_list);
-	}
-
-	return mi;
+	mris_irn_t *mi = data;
+	memset(data, 0, sizeof(mi[0]));
+	INIT_LIST_HEAD(&mi->lineage_list);
 }
 
 static int compute_height(mris_env_t *env, ir_node *irn, unsigned long visited)
@@ -455,6 +451,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 {
 	mris_env_t *env = xmalloc(sizeof(env[0]));
 
+	phase_init(&env->ph, "mris", birg->irg, sizeof(mris_irn_t), 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init);
 	env->aenv     = birg->main_env->arch_env;
 	env->irg      = birg->irg;
 	env->visited  = 0;
@@ -491,6 +488,7 @@ static void cleanup_inserted(mris_env_t *env)
 void be_sched_mris_free(mris_env_t *env)
 {
 	cleanup_inserted(env);
+	phase_free(&env->ph);
 	del_nodeset(env->inserted);
 	free(env);
 }
