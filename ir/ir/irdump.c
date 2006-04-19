@@ -23,6 +23,8 @@
 
 #include "firm_common_t.h"
 
+#include "list.h"
+
 #include "irnode.h"
 #include "irgraph.h"
 #include "irprog_t.h"
@@ -1123,6 +1125,49 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
   }
 }
 
+static struct list_head node_info_callbacks = { NULL };
+static int node_info_callbacks_inited       = 0;
+
+typedef struct _node_dump_cb_info_t {
+	struct list_head list;
+	dump_node_info_cb_t *cb;
+	void *data;
+} node_dump_cb_info_t;
+
+void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
+{
+	node_dump_cb_info_t *info = xmalloc(sizeof(info[0]));
+
+	if(!node_info_callbacks_inited) {
+		INIT_LIST_HEAD(&node_info_callbacks);
+		node_info_callbacks_inited = 1;
+	}
+
+	INIT_LIST_HEAD(&info->list);
+	info->cb   = cb;
+	info->data = data;
+	list_add(&info->list, &node_info_callbacks);
+	return info;
+}
+
+void dump_remv_node_info_callback(void *handle)
+{
+	node_dump_cb_info_t *info = handle;
+	list_del(&info->list);
+	xfree(info);
+}
+
+static void dump_node_info_call(FILE *f, const ir_node *n)
+{
+	node_dump_cb_info_t *pos;
+
+	if(!node_info_callbacks_inited)
+		return;
+
+	list_for_each_entry(node_dump_cb_info_t, pos, &node_info_callbacks, list) {
+		pos->cb(pos->data, f, n);
+	}
+}
 
 /**
  * Dump the node information of a node n to a file F.
@@ -1137,6 +1182,8 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
   /* call the dump_node operation if available */
   if (ops->dump_node)
     bad = ops->dump_node(n, F, dump_node_info_txt);
+
+  dump_node_info_call(F, n);
   fprintf(F, "\"\n");
 
   return bad;
