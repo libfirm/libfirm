@@ -413,4 +413,30 @@ void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, cons
  */
 void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready);
 
+/**
+ * Update the permutation statistic of a block
+ *
+ * @param class_name the name of the register class
+ * @param perm       the perm node
+ * @param block      the block containing the perm
+ * @param size       the size of the perm
+ * @param real_size  number of pairs with different registers
+ */
+void stat_be_block_stat_perm(const char *class_name, int n_regs, ir_node *perm, ir_node *block,
+                             int size, int real_size);
+
+/**
+ * Update the permutation statistic of a single perm
+ *
+ * @param class_name the name of the register class
+ * @param perm       the perm node
+ * @param block      the block containing the perm
+ * @param is_chain   1 if chain, 0 if cycle
+ * @param size       length of the cycle/chain
+ * @param n_ops      the number of ops representing this cycle/chain after lowering
+ */
+void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block,
+                                  int is_chain, int size, int n_ops);
+
+
 #endif /* _FIRMSTAT_T_H_ */

@@ -1718,14 +1718,14 @@ void stat_be_block_sched_ready(ir_graph *irg, ir_node *block, int num_ready)
 /**
  * Update the permutation statistic of a block
  *
- * @param ctx        the hook context
  * @param class_name the name of the register class
+ * @param n_regs     number of registers in the register class
  * @param perm       the perm node
  * @param block      the block containing the perm
  * @param size       the size of the perm
  * @param real_size  number of pairs with different registers
  */
-void stat_be_block_stat_perm(void *ctx, const char *class_name, int n_regs, ir_node *perm, ir_node *block,
+void stat_be_block_stat_perm(const char *class_name, int n_regs, ir_node *perm, ir_node *block,
                              int size, int real_size)
 {
   if (! status->stat_options)
@@ -1754,7 +1754,6 @@ void stat_be_block_stat_perm(void *ctx, const char *class_name, int n_regs, ir_n
 /**
  * Update the permutation statistic of a single perm
  *
- * @param ctx        the hook context
  * @param class_name the name of the register class
  * @param perm       the perm node
  * @param block      the block containing the perm
@@ -1762,7 +1761,7 @@ void stat_be_block_stat_perm(void *ctx, const char *class_name, int n_regs, ir_n
  * @param size       length of the cycle/chain
  * @param n_ops      the number of ops representing this cycle/chain after lowering
  */
-void stat_be_block_stat_permcycle(void *ctx, const char *class_name, ir_node *perm, ir_node *block,
+void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block,
                                   int is_chain, int size, int n_ops)
 {
   if (! status->stat_options)
@@ -1954,8 +1953,6 @@ void firm_init_stat(unsigned enable_options)
   HOOK(hook_func_call,                          stat_func_call);
   HOOK(hook_arch_dep_replace_mul_with_shifts,   stat_arch_dep_replace_mul_with_shifts);
   HOOK(hook_arch_dep_replace_division_by_const, stat_arch_dep_replace_division_by_const);
-  HOOK(hook_be_block_stat_perm,                 stat_be_block_stat_perm);
-  HOOK(hook_be_block_stat_permcycle,            stat_be_block_stat_permcycle);
 
   obstack_init(&status->cnts);
   obstack_init(&status->be_data);
