@@ -63,9 +63,24 @@ void be_do_stat_sched_ready(ir_node *block, nodeset *ready_set) {
 	stat_be_block_sched_ready(get_irn_irg(block), block, nodeset_count(ready_set));
 }
 
+/**
+ * Pass information about a perm to the statistic module.
+ */
+void be_do_stat_perm(const char *class_name, int n_regs, ir_node *perm, ir_node *block, int n, int real_size) {
+	stat_be_block_stat_perm(class_name, n_regs, perm, block, n, real_size);
+}
+
+/**
+ * Pass information about a cycle or chain in a perm to the statistic module.
+ */
+void be_do_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block, int is_chain, int n_elems, int n_ops) {
+	stat_be_block_stat_permcycle(class_name, perm, block, is_chain, n_elems, n_ops);
+}
+
 #else
 
 void (be_do_stat_reg_pressure)(be_irg_t *birg) {}
 void (be_do_stat_sched_ready)(ir_node *block, nodeset *ready_set) {}
+void (be_do_stat_perm)(const char *class_name, int n_regs, ir_node *perm, ir_node *block, int n, int real_size) {}
 
 #endif /* FIRM_STATISTICS */

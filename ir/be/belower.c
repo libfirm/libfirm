@@ -22,6 +22,7 @@
 #include "benode_t.h"
 #include "bechordal_t.h"
 #include "besched_t.h"
+#include "bestat.h"
 
 #include "irgmod.h"
 #include "iredges_t.h"
@@ -37,26 +38,10 @@
 #undef is_Perm
 #define is_Perm(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
 
-/* collect static data about perms */
-typedef struct _perm_stat_t {
-	const arch_register_class_t *cls; /**< the current register class */
-	int  *perm_size_ar;       /**< the sizes of all perms in an irg */
-	int  *real_perm_size_ar;  /**< the sizes of all perms in an irg */
-	int  *chain_len_ar;       /**< the sizes of all chains for all perms */
-	int  *cycle_len_ar;       /**< the sizes of all cycles for all perms */
-	int   num_perms;          /**< number of all perms */
-	int   num_real_perms;     /**< number of all perms */
-	int   num_chains;         /**< the number of all chains */
-	int   num_cycles;         /**< the number of all cycles */
-} perm_stat_t;
-
 /* lowering walker environment */
 typedef struct _lower_env_t {
 	be_chordal_env_t  *chord_env;
 	unsigned           do_copy:1;
-	unsigned           do_stat:1;
-	unsigned           pstat_n:30;
-	perm_stat_t      **pstat;
 	DEBUG_ONLY(firm_dbg_module_t *dbg_module;)
 } lower_env_t;
 
@@ -263,8 +248,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
 	lower_env_t     *env         = walk_env;
-	perm_stat_t    **pstat       = env->pstat;
-	int              pstat_idx   = -1;
 	int              real_size   = 0;
 	int              n, i, pn, do_copy, j, n_ops;
 	reg_pair_t      *pairs;
@@ -295,22 +278,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 	reg_class = arch_get_irn_register(arch_env, get_irn_n(irn, 0))->reg_class;
 	pairs     = alloca(n * sizeof(pairs[0]));
-
-	if (env->do_stat) {
-		unsigned i;
-
-		/* determine index in statistics */
-		for (i = 0; i < env->pstat_n; i++) {
-			if (strcmp(pstat[i]->cls->name, reg_class->name) == 0) {
-				pstat_idx = i;
-				break;
-			}
-		}
-		assert(pstat_idx >= 0 && "could not determine class index for statistics");
-
-		pstat[pstat_idx]->num_perms++;
-		pstat[pstat_idx]->perm_size_ar[n - 1]++;
-	}
 
 	/* build the list of register pairs (in, out) */
 	i = 0;
@@ -358,13 +325,9 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		do_copy = 0;
 	}
 
-	if (env->do_stat && get_n_checked_pairs(pairs, n) < n) {
-		pstat[pstat_idx]->num_real_perms++;
-		pstat[pstat_idx]->real_perm_size_ar[n - 1]++;
-		real_size = n - get_n_checked_pairs(pairs, n);
-	}
+	real_size = n - get_n_checked_pairs(pairs, n);
 
-	hook_be_block_stat_perm(reg_class->name, reg_class->n_regs, irn, block, n, real_size);
+	be_do_stat_perm(reg_class->name, reg_class->n_regs, irn, block, n, real_size);
 
 	/* check for cycles and chains */
 	while (get_n_checked_pairs(pairs, n) < n) {
@@ -380,19 +343,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			DB((mod, LEVEL_1, " %s", cycle->elems[j]->name));
 		}
 		DB((mod, LEVEL_1, "\n"));
-
-		/* statistics */
-		if (env->do_stat) {
-			int n_idx = cycle->n_elems - 1;
-			if (cycle->type == PERM_CHAIN) {
-				pstat[pstat_idx]->num_chains++;
-				pstat[pstat_idx]->chain_len_ar[n_idx]++;
-			}
-			else {
-				pstat[pstat_idx]->num_cycles++;
-				pstat[pstat_idx]->cycle_len_ar[n_idx]++;
-			}
-		}
 
 		/* We don't need to do anything if we have a Perm with two
 			elements which represents a cycle, because those nodes
@@ -516,10 +466,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			}
 		}
 
-		if (env->do_stat) {
-			hook_be_block_stat_permcycle(reg_class->name, irn, block, \
-				cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
-		}
+		be_do_stat_permcycle(reg_class->name, irn, block, cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
 
 		free((void *) cycle->elems);
 		free(cycle);
@@ -683,61 +630,6 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	return;
 }
 
-static void lower_print_perm_stat(lower_env_t *env) {
-	int j, total_len_chain, total_len_cycle, total_size_perm, total_size_real_perm;
-	unsigned i;
-
-	printf("=== IRG: %s ===\n", get_entity_name(get_irg_entity(env->chord_env->irg)));
-	for (i = 0; i < env->pstat_n; i++) {
-		if (env->pstat[i]->num_perms == 0)
-			continue;
-
-		printf("CLASS: %s\n", env->pstat[i]->cls->name);
-		printf("# total perms:      %d (size:num   -> 1:%d", env->pstat[i]->num_perms, env->pstat[i]->perm_size_ar[0]);
-
-		total_size_perm = env->pstat[i]->perm_size_ar[0];
-		for (j = 1; j < env->pstat[i]->cls->n_regs; j++) {
-			total_size_perm += (j + 1) * env->pstat[i]->perm_size_ar[j];
-			printf(", %d:%d", j + 1, env->pstat[i]->perm_size_ar[j]);
-		}
-		printf(")\n");
-		printf("avg perm size:      %.2f\n", env->pstat[i]->num_perms ? (float)total_size_perm / (float)env->pstat[i]->num_perms : 0);
-
-		printf("# real perms:       %d (size:num  -> 1:%d", env->pstat[i]->num_real_perms, env->pstat[i]->real_perm_size_ar[0]);
-
-		total_size_real_perm = env->pstat[i]->real_perm_size_ar[0];
-		for (j = 1; j < env->pstat[i]->cls->n_regs; j++) {
-			total_size_real_perm += (j + 1) * env->pstat[i]->real_perm_size_ar[j];
-			printf(", %d:%d", j + 1, env->pstat[i]->real_perm_size_ar[j]);
-		}
-		printf(")\n");
-		printf("avg real perm size: %.2f\n", env->pstat[i]->num_real_perms ? (float)total_size_real_perm / (float)env->pstat[i]->num_real_perms : 0);
-
-		printf("# total chains:     %d (lenght:num -> 1:%d", env->pstat[i]->num_chains, env->pstat[i]->chain_len_ar[0]);
-
-		total_len_chain = env->pstat[i]->chain_len_ar[0];
-
-		for (j = 1; j < env->pstat[i]->cls->n_regs; j++) {
-			total_len_chain += (j + 1) * env->pstat[i]->chain_len_ar[j];
-			printf(", %d:%d", j + 1, env->pstat[i]->chain_len_ar[j]);
-		}
-		printf(")\n");
-		printf("avg chain length:   %.2f\n", env->pstat[i]->num_chains ? (float)total_len_chain / (float)env->pstat[i]->num_chains : 0);
-		printf("avg chains/perm:    %.2f\n", env->pstat[i]->num_real_perms ? (float)env->pstat[i]->num_chains / (float)env->pstat[i]->num_real_perms : 0);
-
-		printf("# total cycles:     %d (length:num -> 1:%d", env->pstat[i]->num_cycles, env->pstat[i]->cycle_len_ar[0]);
-
-		total_len_cycle = env->pstat[i]->cycle_len_ar[0];
-		for (j = 1; j < env->pstat[i]->cls->n_regs; j++) {
-			total_len_cycle += (j + 1) * env->pstat[i]->cycle_len_ar[j];
-			printf(", %d:%d", j + 1, env->pstat[i]->cycle_len_ar[j]);
-		}
-		printf(")\n");
-		printf("avg cycle length:   %.2f\n", env->pstat[i]->num_cycles ? (float)total_len_cycle / (float)env->pstat[i]->num_cycles : 0);
-		printf("avg cycles/perm:    %.2f\n", env->pstat[i]->num_real_perms ? (float)env->pstat[i]->num_cycles / (float)env->pstat[i]->num_real_perms : 0);
-	}
-}
-
 /**
  * Walks over all blocks in an irg and performs lowering need to be
  * done after register allocation (e.g. perm lowering).
@@ -745,48 +637,14 @@ static void lower_print_perm_stat(lower_env_t *env) {
  * @param chord_env The chordal environment containing the irg
  * @param do_copy   1 == resolve cycles with a free reg if available
  */
-void lower_nodes_after_ra(be_chordal_env_t *chord_env, int do_copy, int do_stat) {
+void lower_nodes_after_ra(be_chordal_env_t *chord_env, int do_copy) {
 	lower_env_t env;
 
 	env.chord_env  = chord_env;
 	env.do_copy    = do_copy;
-	env.do_stat    = do_stat;
 	FIRM_DBG_REGISTER(env.dbg_module, "firm.be.lower");
 
-	/* if we want statistics: allocate memory for the data and initialize with 0 */
-	if (do_stat) {
-		const arch_isa_t *isa = chord_env->birg->main_env->arch_env->isa;
-		int i, n = arch_isa_get_n_reg_class(isa);
-
-		env.pstat   = alloca(n * sizeof(env.pstat[0]));
-		env.pstat_n = n;
-
-		for (i = 0; i < n; i++) {
-			const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
-			int                       n_regs = cls->n_regs;
-
-			env.pstat[i] = alloca(sizeof(*(env.pstat[0])));
-			memset(env.pstat[i], 0, sizeof(*(env.pstat[0])));
-
-			env.pstat[i]->perm_size_ar      = alloca(n_regs * sizeof(env.pstat[i]->perm_size_ar[0]));
-			env.pstat[i]->real_perm_size_ar = alloca(n_regs * sizeof(env.pstat[i]->real_perm_size_ar[0]));
-			env.pstat[i]->chain_len_ar      = alloca(n_regs * sizeof(env.pstat[i]->chain_len_ar[0]));
-			env.pstat[i]->cycle_len_ar      = alloca(n_regs * sizeof(env.pstat[i]->cycle_len_ar[0]));
-
-			memset(env.pstat[i]->perm_size_ar, 0, n_regs * sizeof(env.pstat[i]->perm_size_ar[0]));
-			memset(env.pstat[i]->real_perm_size_ar, 0, n_regs * sizeof(env.pstat[i]->real_perm_size_ar[0]));
-			memset(env.pstat[i]->chain_len_ar, 0, n_regs * sizeof(env.pstat[i]->chain_len_ar[0]));
-			memset(env.pstat[i]->cycle_len_ar, 0, n_regs * sizeof(env.pstat[i]->cycle_len_ar[0]));
-
-			env.pstat[i]->cls = cls;
-		}
-	}
-
 	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_after_ra_walker, &env);
-
-	if (do_stat) {
-		lower_print_perm_stat(&env);
-	}
 }
 
 #undef is_Perm
