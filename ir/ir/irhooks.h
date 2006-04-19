@@ -151,14 +151,6 @@ typedef struct hook_entry {
     /** This hook is called after a Div/Mod/DivMod by a constant value was replaced. */
     void (*_hook_arch_dep_replace_division_by_const)(void *context, ir_node *irn);
 
-    /** This hook is called during permutation lowering once for each permutation. */
-    void (*_hook_be_block_stat_perm)(void *context, const char *class_name, int n_regs, ir_node *perm,
-                                     ir_node *block, int size, int real_size);
-
-    /** This hook is called during permutation lowering for each cycle/chain in a permutation. */
-    void (*_hook_be_block_stat_permcycle)(void *context, const char *class_name, ir_node *perm, ir_node *block,
-                                          int is_chain, int size, int n_ops);
-
     /** This hook is called after a new mode was registered. */
     void (*_hook_new_mode)(void *context, const ir_mode *tmpl, ir_mode *mode);
 
@@ -203,8 +195,6 @@ typedef enum {
   hook_func_call,
   hook_arch_dep_replace_mul_with_shifts,
   hook_arch_dep_replace_division_by_const,
-  hook_be_block_stat_perm,
-  hook_be_block_stat_permcycle,
   hook_new_mode,
   hook_new_entity,
   hook_new_type,
@@ -282,10 +272,6 @@ extern hook_entry_t *hooks[hook_last];
   hook_exec(hook_arch_dep_replace_mul_with_shifts, (ctx, irn))
 #define hook_arch_dep_replace_division_by_const(irn) \
   hook_exec(hook_arch_dep_replace_division_by_const, (ctx, irn))
-#define hook_be_block_stat_perm(class_name, n_regs, perm, block, size, real_size) \
-  hook_exec(hook_be_block_stat_perm, (ctx, class_name, n_regs, perm, block, size, real_size))
-#define hook_be_block_stat_permcycle(class_name, perm, block, is_chain, size, n_ops) \
-  hook_exec(hook_be_block_stat_permcycle, (ctx, class_name, perm, block, is_chain, size, n_ops))
 #define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (ctx, tmpl, mode))
 #define hook_new_entity(ent)              hook_exec(hook_new_entity, (ctx, ent))
 #define hook_new_type(tp)                 hook_exec(hook_new_type, (ctx, tp))
