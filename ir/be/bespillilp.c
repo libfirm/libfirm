@@ -636,7 +636,7 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	si.chordal_env     = chordal_env;
 	si.obst            = &obst;
 	si.senv            = be_new_spill_env(chordal_env, is_mem_phi, &si);
-	DEBUG_ONLY(si.senv->dbg = si.dbg;)
+//	DEBUG_ONLY(si.senv->dbg = si.dbg;)
 	si.cls             = chordal_env->cls;
 	si.lpp             = new_lpp(problem_name, lpp_minimize);
 	si.irn_use_heads   = new_set(cmp_irn_use_head, 4096);
