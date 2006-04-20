@@ -1254,14 +1254,25 @@ static lc_opt_enum_int_var_t fp_unit_var = {
 	&ia32_isa_template.fp_kind, fp_unit_items
 };
 
+static const lc_opt_enum_int_items_t gas_items[] = {
+	{ "linux",   ASM_LINUX_GAS },
+	{ "mingw",   ASM_MINGW_GAS },
+	{ NULL,      0 }
+};
+
+static lc_opt_enum_int_var_t gas_var = {
+	&asm_flavour, gas_items
+};
+
 static const lc_opt_table_entry_t ia32_options[] = {
-	LC_OPT_ENT_ENUM_INT("arch",   "select the instruction architecture", &arch_var),
-	LC_OPT_ENT_ENUM_INT("opt",    "optimize for instruction architecture", &opt_arch_var),
-	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &fp_unit_var),
-	LC_OPT_ENT_NEGBIT("noaddrmode", "do not use address mode", &ia32_isa_template.opt, IA32_OPT_DOAM),
+	LC_OPT_ENT_ENUM_INT("arch",      "select the instruction architecture", &arch_var),
+	LC_OPT_ENT_ENUM_INT("opt",       "optimize for instruction architecture", &opt_arch_var),
+	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &fp_unit_var),
+	LC_OPT_ENT_NEGBIT("noaddrmode",  "do not use address mode", &ia32_isa_template.opt, IA32_OPT_DOAM),
 	LC_OPT_ENT_NEGBIT("noplacecnst", "do not place constants", &ia32_isa_template.opt, IA32_OPT_PLACECNST),
-	LC_OPT_ENT_NEGBIT("noimmop", "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
-	LC_OPT_ENT_NEGBIT("noextbb", "do not use extended basic block scheduling", &ia32_isa_template.opt, IA32_OPT_EXTBB),
+	LC_OPT_ENT_NEGBIT("noimmop",     "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
+	LC_OPT_ENT_NEGBIT("noextbb",     "do not use extended basic block scheduling", &ia32_isa_template.opt, IA32_OPT_EXTBB),
+	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
 	{ NULL }
 };
 
@@ -1278,6 +1289,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
  * ia32-noplacecnst  do not place constants,
  * ia32-noimmop      no operations with immediates
  * ia32-noextbb      do not use extended basic block scheduling
+ * ia32-gasmode      set the GAS compatibility mode
  */
 static void ia32_register_options(lc_opt_entry_t *ent)
 {
