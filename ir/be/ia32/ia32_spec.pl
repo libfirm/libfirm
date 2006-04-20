@@ -145,8 +145,6 @@ $comment_string = "/*";
             { "name" => "st5", "type" => 1 },
             { "name" => "st6", "type" => 1 },
             { "name" => "st7", "type" => 1 },
-            { "name" => "st_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
-            { "name" => "st_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_E" }
           ]
 ); # %reg_classes

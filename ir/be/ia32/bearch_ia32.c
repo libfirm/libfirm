@@ -292,6 +292,12 @@ static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir
 	return env;
 }
 
+/**
+ * Put all registers which are saved by the prologue/epilogue in a set.
+ *
+ * @param self  The callback object.
+ * @param s     The result set.
+ */
 static void ia32_abi_dont_save_regs(void *self, pset *s)
 {
 	ia32_abi_env_t *env = self;
@@ -301,9 +307,11 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 
 /**
  * Generate the routine prologue.
+ *
  * @param self    The callback object.
  * @param mem     A pointer to the mem node. Update this if you define new memory.
  * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+ *
  * @return        The register which shall be used as a stack frame base.
  *
  * All nodes which define registers in @p reg_map must keep @p reg_map current.
@@ -957,7 +965,6 @@ static void *ia32_init(FILE *file_handle) {
 
 	ia32_register_init(isa);
 	ia32_create_opcodes();
-	ia32_register_copy_attr_func();
 
 	if ((ARCH_INTEL(isa->arch) && isa->arch < arch_pentium_4) ||
 	    (ARCH_AMD(isa->arch) && isa->arch < arch_athlon))

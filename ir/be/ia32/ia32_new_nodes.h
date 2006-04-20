@@ -443,20 +443,10 @@ int is_ia32_St(const ir_node *node);
 int is_ia32_Cnst(const ir_node *node);
 
 /**
- * Allocates num register slots for node.
- */
-void alloc_ia32_reg_slots(ir_node *node, int num);
-
-/**
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs, \
 	const ia32_register_req_t **out_reqs, int n_res);
-
-/**
- * Registers the ia32_copy_attr function for all ia32 opcodes.
- */
-void ia32_register_copy_attr_func(void);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"
