@@ -108,7 +108,8 @@ enum {
 	/* copymin method */
 	BE_CH_COPYMIN_NONE    = 0,
 	BE_CH_COPYMIN_HEUR    = 1,
-	BE_CH_COPYMIN_ILP     = 2,
+	BE_CH_COPYMIN_ILP1    = 2,
+	BE_CH_COPYMIN_ILP2    = 3,
 
 	/* ifg flavor */
 	BE_CH_IFG_STD         = 1,
