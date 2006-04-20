@@ -63,6 +63,7 @@ push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
 	my %n = %{ $nodes{"$op"} };
 	my $tuple = 0;
+	my $n_res = 0;
 
 	# determine arity from in requirements
 	$arity = 0;
@@ -243,6 +244,7 @@ foreach my $op (keys(%nodes)) {
 
 				if (@out) {
 					$out_param = $out_req_var.", ".($#out + 1);
+					$n_res     = $#out;
 				}
 				else {
 					$out_param = "NULL, 0";
@@ -284,8 +286,9 @@ foreach my $op (keys(%nodes)) {
 	$n{"state"}    = "floats" if (! exists($n{"state"}));
 	$n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
 
+
 	push(@obst_new_irop, "\n  memset(&ops, 0, sizeof(ops));\n");
-	push(@obst_new_irop, "  ops.dump_node     = dump_node_$arch;\n");
+	push(@obst_new_irop, "  ops.dump_node     = $arch\_dump_node;\n");
 
 	if ($cmp_attr_func) {
 		push(@obst_new_irop, "  ops.node_cmp_attr = cmp_attr_$op;\n");
@@ -293,7 +296,7 @@ foreach my $op (keys(%nodes)) {
 
 	$n_opcodes++;
 	$temp  = "  op_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t), &ops);\n";
+	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t) + $n_res * sizeof(arch_register_t *), &ops);\n";
 	push(@obst_new_irop, $temp);
 	push(@obst_enum_op, "  iro_$op,\n");
 }

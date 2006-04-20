@@ -38,8 +38,6 @@ typedef struct _ppc32_attr_t {
 	const ppc32_register_req_t **in_req;  /**< register requirements for arguments */
 	const ppc32_register_req_t **out_req; /**< register requirements for results */
 
-	const arch_register_t **slots;          /**< register slots for assigned registers */
-
 	ppc32_attr_content_type content_type;
 	ppc32_attr_offset_mode offset_mode;
 	union {
@@ -52,6 +50,8 @@ typedef struct _ppc32_attr_t {
 		void* empty;
 	} data;
 
+	/* must be last, dynamically allocated */
+	const arch_register_t *slots[1];       /**< register slots for assigned registers */
 } ppc32_attr_t;
 
 #endif /* _PPC32_NODES_ATTR_H_ */

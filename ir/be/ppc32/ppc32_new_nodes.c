@@ -128,7 +128,7 @@ static void dump_reg_req(FILE *F, ir_node *n, const ppc32_register_req_t **reqs,
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static int dump_node_ppc32(ir_node *n, FILE *F, dump_reason_t reason) {
+static int ppc32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
   	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i;
@@ -520,15 +520,12 @@ void init_ppc32_attributes(ir_node *node, int flags,
 	attr->in_req  = in_reqs;
 	attr->out_req = out_reqs;
 	attr->n_res   = n_res;
-	attr->slots   = NULL;
-
-	if (n_res) {
-		attr->slots = xcalloc(n_res, sizeof(attr->slots[0]));
-	}
 
 	attr->content_type = ppc32_ac_None;
 	attr->offset_mode  = ppc32_ao_Illegal;
 	attr->data.empty   = NULL;
+
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 

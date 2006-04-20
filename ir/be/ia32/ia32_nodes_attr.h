@@ -117,8 +117,10 @@ typedef struct _ia32_attr_t {
 	const ia32_register_req_t **in_req;  /**< register requirements for arguments */
 	const ia32_register_req_t **out_req; /**< register requirements for results */
 
-	const arch_register_t **slots;       /**< register slots for assigned registers */
 	const arch_register_t *x87[3];       /**< register slots for x87 register */
+
+	/* must be last, dynamic */
+	const arch_register_t *slots[1];     /**< register slots for assigned registers */
 } ia32_attr_t;
 
 #endif /* _IA32_NODES_ATTR_H_ */

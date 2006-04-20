@@ -128,7 +128,7 @@ static void dump_reg_req(FILE *F, ir_node *n, const TEMPLATE_register_req_t **re
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static int dump_node_TEMPLATE(ir_node *n, FILE *F, dump_reason_t reason) {
+static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
   	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i;

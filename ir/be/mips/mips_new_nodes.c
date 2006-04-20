@@ -128,7 +128,7 @@ static void dump_reg_req(FILE *F, ir_node *n, const mips_register_req_t **reqs, 
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static int dump_node_mips(ir_node *n, FILE *F, dump_reason_t reason) {
+static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
   	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i;
@@ -395,12 +395,9 @@ void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const mips_regi
 	attr->out_req = out_reqs;
 
 	attr->n_res = n_res;
-	if(n_res) {
-		attr->slots = xcalloc(n_res, sizeof(attr->slots[0]));
-	} else {
-		attr->slots = NULL;
-	}
 	attr->in_req = in_reqs;
+
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 /************************************************************************

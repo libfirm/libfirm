@@ -69,8 +69,6 @@ typedef struct _arm_attr_t {
 	const arm_register_req_t **in_req;  /**< register requirements for arguments */
 	const arm_register_req_t **out_req; /**< register requirements for results */
 
-	const arch_register_t **slots;      /**< register slots for assigned registers */
-
 	ir_mode *op_mode;                   /**< operation mode */
 	unsigned instr_fl;                  /**< condition code, shift modifier */
 	tarval *value;                      /**< immediate */
@@ -78,6 +76,9 @@ typedef struct _arm_attr_t {
 	int proj_num;
 	int n_projs;
 	long default_proj_num;
+
+	/* must be last, dynamically allocated */
+	const arch_register_t *slots[1];    /**< register slots for assigned registers */
 } arm_attr_t;
 
 /**

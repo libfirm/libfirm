@@ -153,7 +153,7 @@ static void dump_reg_req(FILE *F, ir_node *n, const ia32_register_req_t **reqs, 
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static int dump_node_ia32(ir_node *n, FILE *F, dump_reason_t reason) {
+static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i, n_res, am_flav, flags;
@@ -1179,32 +1179,18 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
 }
 
 /**
- * Allocates num register slots for node.
- */
-void alloc_ia32_reg_slots(ir_node *node, int num) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-
-	if (num) {
-		attr->slots = (const arch_register_t **)NEW_ARR_D(arch_register_t*, get_irg_obstack(get_irn_irg(node)), num);
-		memset((void *) attr->slots, 0, sizeof(attr->slots[0]) * num);
-	}
-	else {
-		attr->slots = NULL;
-	}
-
-	attr->data.n_res = num;
-}
-
-/**
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs,
 						  const ia32_register_req_t **out_reqs, int n_res)
 {
+	ia32_attr_t *attr = get_ia32_attr(node);
 	set_ia32_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
 	set_ia32_out_req_all(node, out_reqs);
-	alloc_ia32_reg_slots(node, n_res);
+
+	attr->data.n_res = n_res;
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 /***************************************************************************************
@@ -1239,32 +1225,6 @@ int ia32_compare_conv_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	equ = equ ? (a->src_mode == b->src_mode) && (a->tgt_mode == b->tgt_mode) : equ;
 
 	return !equ;
-}
-
-/* copies the ia32 attributes */
-static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
-	ia32_attr_t    *attr_old = get_ia32_attr(old_node);
-	ia32_attr_t    *attr_new = get_ia32_attr(new_node);
-	int             n_res    = get_ia32_n_res(old_node);
-
-	/* copy the attributes */
-	memcpy(attr_new, attr_old, sizeof(*attr_new));
-
-	/* copy the register slots */
-	attr_new->slots = (const arch_register_t **)NEW_ARR_D(arch_register_t*, get_irg_obstack(get_irn_irg(new_node)), n_res);
-	memcpy((void *)attr_new->slots, (void *)attr_old->slots, sizeof(attr_new->slots[0]) * n_res);
-}
-
-/**
- * Registers the ia32_copy_attr function for all ia32 opcodes.
- */
-void ia32_register_copy_attr_func(void) {
-	unsigned i, f = get_ia32_opcode_first(), l = get_ia32_opcode_last();
-
-	for (i = f; i < l; i++) {
-		ir_op *op = get_irp_opcode(i);
-		op->ops.copy_attr = ia32_copy_attr;
-	}
 }
 
 /* Include the generated constructor functions */

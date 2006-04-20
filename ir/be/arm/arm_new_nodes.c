@@ -131,7 +131,6 @@ static void dump_reg_req(FILE *F, ir_node *n, const arm_register_req_t **reqs, i
 	}
 }
 
-
 /**
  * Dumper interface for dumping arm nodes in vcg.
  * @param n        the node to dump
@@ -139,7 +138,7 @@ static void dump_reg_req(FILE *F, ir_node *n, const arm_register_req_t **reqs, i
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static int dump_node_arm(ir_node *n, FILE *F, dump_reason_t reason) {
+static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i;
@@ -506,13 +505,14 @@ void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** i
 	attr->out_req          = out_reqs;
 	attr->n_res            = n_res;
 	attr->flags            = flags;
-	attr->slots            = xcalloc(n_res, sizeof(attr->slots[0]));
 	attr->instr_fl         = (ARM_COND_AL << 3) | ARM_SHF_NONE;
 	attr->value            = NULL;
 	attr->proj_num         = -42;
 	attr->symconst_label   = NULL;
 	attr->n_projs          = 0;
 	attr->default_proj_num = 0;
+
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {
