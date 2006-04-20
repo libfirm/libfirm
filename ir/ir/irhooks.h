@@ -159,6 +159,9 @@ typedef struct hook_entry {
 
     /** This hook is called after a new type was created. */
     void (*_hook_new_type)(void *context, ir_type *tp);
+
+    /** This hook is called at the end of the node info dumper to dump additional node info. */
+    void (*_hook_node_info)(void *context, FILE *f, const ir_node *n);
   } hook;
 
   /** the context for every hook */
@@ -198,6 +201,7 @@ typedef enum {
   hook_new_mode,
   hook_new_entity,
   hook_new_type,
+  hook_node_info,
   hook_last
 } hook_type_t;
 
@@ -275,6 +279,7 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (ctx, tmpl, mode))
 #define hook_new_entity(ent)              hook_exec(hook_new_entity, (ctx, ent))
 #define hook_new_type(tp)                 hook_exec(hook_new_type, (ctx, tp))
+#define hook_node_info(F, node)           hook_exec(hook_node_info, (ctx, F, node))
 
 /* the initializer, move to hooks_t.h some day */
 int firm_init_hooks(void);
