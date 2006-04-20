@@ -651,4 +651,28 @@ void dump_ld_names(int flag);
  */
 void dump_all_anchors(int flag);
 
+/** A node info dumper callback. */
+typedef void (dump_node_info_cb_t)(void *data, FILE *f, const ir_node *n);
+
+/**
+ * Adds a new node info dumper callback. It is possible to add an unlimited
+ * number of callbacks. The callbacks are called at the end of the default
+ * info dumper.
+ *
+ * @param cb    the callback function to be called
+ * @param data  a context parameter
+ *
+ * @return A callback handle.
+ *
+ * @note This functionality is only available, if Firm hooks are enabled (default).
+ */
+void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
+
+/**
+ * Remove a previously added info dumper callback.
+ *
+ * @param handle  the callback handle returned from dump_add_node_info_callback()
+ */
+void dump_remv_node_info_callback(void *handle);
+
 # endif /* _IRDUMP_H_ */
