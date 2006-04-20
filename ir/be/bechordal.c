@@ -620,7 +620,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * Make final uses of all values live out of the block.
 	 * They are necessary to build up real intervals.
 	 */
-	for(irn = pset_first(live_end); irn; irn = pset_next(live_end)) {
+	foreach_pset(live_end, irn) {
 		if(has_reg_class(env, irn)) {
 			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
 			bitset_set(live, get_irn_graph_nr(irn));
@@ -673,7 +673,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	/*
 	 * Add initial defs for all values live in.
 	 */
-	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
+	foreach_pset(live_in, irn) {
 		if(has_reg_class(env, irn)) {
 
 			/* Mark the value live in. */
@@ -684,9 +684,8 @@ static void pressure(ir_node *block, void *env_ptr)
 		}
 	}
 
-
-  del_pset(live_in);
-  del_pset(live_end);
+	del_pset(live_in);
+	del_pset(live_end);
 }
 
 static void assign(ir_node *block, void *env_ptr)
@@ -720,7 +719,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * Since their colors have already been assigned (The dominators were
 	 * allocated before), we have to mark their colors as used also.
 	 */
-	for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
+	foreach_pset(live_in, irn) {
 		if(has_reg_class(env, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
 			int col;
@@ -772,7 +771,7 @@ static void assign(ir_node *block, void *env_ptr)
 			arch_set_irn_register(arch_env, irn, reg);
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n",
-            arch_register_get_name(reg), col, irn));
+			arch_register_get_name(reg), col, irn));
 
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 			bitset_set(live, nr);
@@ -837,11 +836,11 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	be_numbering_done(irg);
 
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
-    	plotter_t *plotter;
+		plotter_t *plotter;
 		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", chordal_env->cls->name, irg);
-    	plotter = new_plotter_ps(buf);
-    	draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
-    	plotter_free(plotter);
+		plotter = new_plotter_ps(buf);
+		draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
+		plotter_free(plotter);
 	}
 
 	del_pset(env.pre_colored);
