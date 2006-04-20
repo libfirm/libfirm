@@ -64,26 +64,42 @@ const arch_register_t *arm_get_firm_reg(const ir_node *irn, set *reg_set) {
 
 
 /**
- * Translates the projnum into a "real" argument position for register
- * requirements dependend on the predecessor.
+ * Translates the proj number into a "real" argument position for register
+ * requirements depended on the predecessor.
  */
 long arm_translate_proj_pos(const ir_node *proj) {
 	ir_node *pred = get_Proj_pred(proj);
 	long nr       = get_Proj_proj(proj);
 
-	if (is_arm_Load(pred) || is_arm_fpaLdf(pred)) {
-		if (nr == pn_Load_res)
+	if (is_irn_machine_op(pred)) {
+		switch (get_arm_irn_opcode(pred)) {
+
+		case iro_arm_Loadb:
+		case iro_arm_Loadbs:
+		case iro_arm_Loadh:
+		case iro_arm_Loadhs:
+		case iro_arm_Load:
+		case iro_arm_fpaLdf:
+			if (nr == pn_Load_res)
+				return 0;
+			assert(0 && "unsupported Proj(Load) number");
+			break;
+		case iro_arm_Storeb:
+		case iro_arm_Storebs:
+		case iro_arm_Storeh:
+		case iro_arm_Storehs:
+		case iro_arm_Store:
+		case iro_arm_fpaStf:
 			return 0;
-		assert(0 && "unsupported Proj(Load) number");
-	}
-	else if (is_arm_Store(pred) || is_arm_fpaStf(pred)) {
-		return 0;
-	}
-	else if (is_arm_fpaDiv(pred) || is_arm_fpaRdv(pred)) {
-		if (nr == pn_Quot_res)
-			return 0;
-		else
+		case iro_arm_fpaDiv:
+		case iro_arm_fpaRdv:
+			if (nr == pn_Quot_res)
+				return 0;
 			assert(0 && "there should be no more Projs for a fDiv");
+			break;
+		default:
+			break;
+		}
 	}
 
 //	assert(0 && "unsupported Proj(X)");
