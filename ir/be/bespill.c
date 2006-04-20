@@ -20,6 +20,7 @@
 #include "debug.h"
 #include "irgwalk.h"
 #include "array.h"
+#include "pdeq.h"
 
 #include "belive_t.h"
 #include "besched_t.h"
@@ -27,9 +28,9 @@
 #include "benode_t.h"
 #include "bechordal_t.h"
 
-#undef REMAT
+#define REMAT
 /* This enables re-computation of values. Current state: Unfinished and buggy. */
-#undef BUGGY_REMAT
+#define BUGGY_REMAT
 
 typedef struct _reloader_t reloader_t;
 typedef struct _spill_info_t spill_info_t;
@@ -189,6 +190,14 @@ static void phi_walker(ir_node *irn, void *env) {
 
 #ifdef BUGGY_REMAT
 
+/**
+ * Check if a spilled node could be rematerialized.
+ *
+ * @param senv      the spill environment
+ * @param spill     the Spill node
+ * @param spilled   the node that was spilled
+ * @param reloader  a irn that requires a reload
+ */
 static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *spilled, ir_node *reloader) {
 	int pos, max;
 
@@ -243,6 +252,14 @@ is_alive:	;
 
 #else /* BUGGY_REMAT */
 
+/**
+ * A very simple rematerialization checker.
+ *
+ * @param senv      the spill environment
+ * @param spill     the Spill node
+ * @param spilled   the node that was spilled
+ * @param reloader  a irn that requires a reload
+ */
 static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *spilled, ir_node *reloader) {
 	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
 
@@ -253,6 +270,15 @@ static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *sp
 
 #endif /* BUGGY_REMAT */
 
+#endif /* REMAT */
+
+/**
+ * Rematerialize a node.
+ *
+ * @param senv      the spill environment
+ * @param spilled   the node that was spilled
+ * @param reloader  a irn that requires a reload
+ */
 static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
 	ir_node *res;
 	ir_node *bl = (is_Block(reloader)) ? reloader : get_nodes_block(reloader);
@@ -262,7 +288,7 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 		get_irn_op(spilled),
 		get_irn_mode(spilled),
 		get_irn_arity(spilled),
-		get_irn_in(spilled));
+		get_irn_in(spilled) + 1);
 	copy_node_attr(spilled, res);
 
 	DBG((senv->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
@@ -278,13 +304,12 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 	return res;
 }
 
-#endif
-
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
 	ir_graph *irg          = senv->chordal_env->irg;
 	ir_node *irn;
 	spill_info_t *si;
+	pdeq *possibly_dead;
 
 	/* get all special spilled phis */
 	DBG((senv->dbg, LEVEL_1, "Mem-phis:\n"));
@@ -309,6 +334,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 	/* process each spilled node */
 	DBG((senv->dbg, LEVEL_1, "Insert spills and reloads:\n"));
+	possibly_dead = new_pdeq();
 	for(si = set_first(senv->spills); si; si = set_next(senv->spills)) {
 		reloader_t *rld;
 		ir_mode *mode = get_irn_mode(si->spilled_node);
@@ -322,8 +348,10 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 			ir_node *spill   = be_spill_node(senv, si->spilled_node);
 
 #ifdef REMAT
-			if (check_remat_conditions(senv, spill, si->spilled_node, rld->reloader))
+			if (check_remat_conditions(senv, spill, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(senv, si->spilled_node, rld->reloader);
+				pdeq_putl(possibly_dead, spill);
+			}
 			else
 #endif
 				/* do a reload */
@@ -343,13 +371,30 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 		del_pset(values);
 	}
 
-	for(irn = pset_first(senv->mem_phis); irn; irn = pset_next(senv->mem_phis)) {
+	foreach_pset(senv->mem_phis, irn) {
 		int i, n;
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i)
+		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			pdeq_putl(possibly_dead, get_irn_n(irn, i));
 			set_irn_n(irn, i, new_r_Bad(senv->chordal_env->irg));
+		}
 		sched_remove(irn);
 	}
 
+	/* check if possibly dead nodes are really dead yet */
+	while (! pdeq_empty(possibly_dead)) {
+		ir_node *irn = pdeq_getr(possibly_dead);
+		const ir_edge_t *edge = get_irn_out_edge_first(irn);
+
+		if (! edge) {
+			int i;
+			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+				pdeq_putl(possibly_dead, get_irn_n(irn, i));
+				set_irn_n(irn, i, new_r_Bad(senv->chordal_env->irg));
+			}
+			sched_remove(irn);
+		}
+	}
+	del_pdeq(possibly_dead);
 	del_pset(senv->mem_phis);
 }
 
