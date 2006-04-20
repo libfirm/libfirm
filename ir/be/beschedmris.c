@@ -26,7 +26,6 @@
 
 struct _mris_env_t {
 	phase_t            ph;
-	firm_dbg_module_t *dbg;
 	const arch_env_t  *aenv;
 	ir_graph          *irg;
 	ir_node           *bl;
@@ -34,6 +33,7 @@ struct _mris_env_t {
 	int               visited;
 	struct list_head  lineage_head;
 	struct obstack    obst;
+DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 typedef struct _mris_irn_t {
