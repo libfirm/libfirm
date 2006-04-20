@@ -116,7 +116,10 @@ unsigned nodeset_hash(ir_node *n);
 
 /**
  * Iterate over a node set.
+ *
+ * @param nset  the nodeset
+ * @param irn   the iterator node
  */
-#define foreach_nodeset(set, irn)	for (irn = nodeset_first(set); irn; irn = nodeset_next(set))
+#define foreach_nodeset(nset, irn)	for (irn = nodeset_first(nset); irn; irn = nodeset_next(nset))
 
 #endif /* _BENODESETS_H */
