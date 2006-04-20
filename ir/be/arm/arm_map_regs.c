@@ -71,15 +71,15 @@ long arm_translate_proj_pos(const ir_node *proj) {
 	ir_node *pred = get_Proj_pred(proj);
 	long nr       = get_Proj_proj(proj);
 
-	if (is_arm_Load(pred) || is_arm_fLoad(pred)) {
+	if (is_arm_Load(pred) || is_arm_fpaLdf(pred)) {
 		if (nr == pn_Load_res)
 			return 0;
 		assert(0 && "unsupported Proj(Load) number");
 	}
-	else if (is_arm_Store(pred) || is_arm_fStore(pred)) {
+	else if (is_arm_Store(pred) || is_arm_fpaStf(pred)) {
 		return 0;
 	}
-	else if (is_arm_fDiv(pred)) {
+	else if (is_arm_fpaDiv(pred) || is_arm_fpaRdv(pred)) {
 		if (nr == pn_Quot_res)
 			return 0;
 		else

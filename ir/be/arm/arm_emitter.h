@@ -1,18 +1,32 @@
 #ifndef _ARM_EMITTER_H_
 #define _ARM_EMITTER_H_
 
-#include "irargs_t.h"  // this also inlucdes <libcore/lc_print.h>
-#include "irnode.h"
+#include "firm_types.h"
+#include "irargs_t.h"
 #include "debug.h"
 
 #include "../bearch.h"
 
 #include "bearch_arm_t.h"
 
+/**
+ * A SymConst entry.
+ */
+typedef struct _SymConstEntry {
+	unsigned label;              /**< a label number for this label */
+	ir_node  *symconst;          /**< the node holding this label */
+	struct _SymConstEntry *next; /**< links all entries */
+} SymConstEntry;
+
+/**
+ * The ARM emitter environment.
+ */
 typedef struct _arm_emit_env_t {
-	FILE                      *out;
-	const arch_env_t          *arch_env;
-	const arm_code_gen_t      *cg;
+	FILE                      *out;      /**< the output stream */
+	const arch_env_t          *arch_env; /**< the architecture environment */
+	const arm_code_gen_t      *cg;       /**< the code generator object */
+	struct obstack            obst;      /**< an temporary store for SymConstEntries */
+	SymConstEntry             *symbols;  /**< list containing all SymConstEntries */
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } arm_emit_env_t;
 
@@ -25,12 +39,15 @@ const char *get_arm_in_reg_name(ir_node *irn, int pos);
 
 void arm_gen_routine(FILE *F, ir_graph *irg, const arm_code_gen_t *cg);
 
+/**
+ * Sections.
+ */
 typedef enum sections {
-	NO_SECTION,			/**< no section selected yet. */
-	SECTION_TEXT,		/**< text section */
-	SECTION_DATA,		/**< data section */
-	SECTION_RODATA,	/**< rodata section */
-	SECTION_COMMON,	/**< common section */
+	NO_SECTION,      /**< no section selected yet. */
+	SECTION_TEXT,    /**< text section */
+	SECTION_DATA,    /**< data section */
+	SECTION_RODATA,  /**< rodata section */
+	SECTION_COMMON,  /**< common section */
 } sections;
 
 /**

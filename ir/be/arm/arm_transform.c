@@ -1,4 +1,4 @@
-/* The codegenrator (transform FIRM into arm FIRM */
+/* The codegenerator (transform FIRM into arm FIRM */
 /* $Id$ */
 
 #ifdef HAVE_CONFIG_H
@@ -182,24 +182,25 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block) {
 }
 
 
-
+/**
+ * Creates code for a Firm Const node.
+ */
 static ir_node *gen_Const(ir_node *irn, arm_code_gen_t *cg) {
-	ir_node *result;
 	ir_graph *irg = current_ir_graph;
 	ir_node *block = get_nodes_block(irn);
 	ir_mode *mode = get_irn_mode(irn);
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(mode != mode_E && "IEEE Extended FP not supported");
-	if (mode == mode_F)
-		result = new_rd_arm_fConst(dbg, irg, block, mode, get_Const_tarval(irn));
-	else if (mode == mode_D)
-		result = new_rd_arm_fConst(dbg, irg, block, mode, get_Const_tarval(irn));
-	else if (mode == mode_P)
+	if (mode_is_float(mode)) {
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaConst(dbg, irg, block, mode, get_Const_tarval(irn));
+		else if (USE_VFP(cg->isa))
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		assert(0 && "NYI");
+	}
+	else if (mode_is_reference(mode))
 		return irn;
-	else
-		result = create_const_graph(irn, block);
-	return result;
+	return create_const_graph(irn, block);
 }
 
 static ir_node *gen_mask(ir_node *irn, ir_node *op, int result_bits) {
@@ -235,21 +236,34 @@ static ir_node *gen_Conv(ir_node *irn, arm_code_gen_t *cg) {
 	ir_mode *out_mode = get_irn_mode(irn);
 	dbg_info *dbg    = get_irn_dbg_info(irn);
 
-	assert( in_mode != mode_E && "");
-	assert( in_mode != mode_Ls && "");
-	assert( in_mode != mode_Lu && "");
-	assert( out_mode != mode_E && "");
-	assert( out_mode != mode_Ls && "");
-	assert( out_mode != mode_Lu && "");
-
 	if (in_mode == out_mode)
 		return op;
 
-	if ((mode_is_int(in_mode) || mode_is_reference(in_mode))
-		&& (mode_is_reference(out_mode) || mode_is_int(out_mode))) {
-		int in_bits = get_mode_size_bits(in_mode);
+	if (mode_is_float(in_mode) || mode_is_float(out_mode)) {
+		cg->have_fp = 1;
+
+		if (USE_FPA(cg->isa)) {
+			if (mode_is_float(in_mode)) {
+				if (mode_is_float(out_mode)) {
+					/* from float to float */
+					return new_rd_arm_fpaMov(dbg, irg, block, op, out_mode);
+				}
+				else {
+					/* from float to int */
+					return new_rd_arm_fpaFix(dbg, irg, block, op, out_mode);
+				}
+			}
+			else {
+				/* from int to float */
+				return new_rd_arm_fpaFlt(dbg, irg, block, op, out_mode);
+			}
+		}
+		assert(0 && "NYI");
+	}
+	else { /* complete in gp registers */
+		int in_bits  = get_mode_size_bits(in_mode);
 		int out_bits = get_mode_size_bits(out_mode);
-		int in_sign = get_mode_sign(in_mode);
+		int in_sign  = get_mode_sign(in_mode);
 		int out_sign = get_mode_sign(out_mode);
 
 		// 32 -> 32
@@ -309,20 +323,8 @@ static ir_node *gen_Conv(ir_node *irn, arm_code_gen_t *cg) {
 		}
 		assert(0 && "recheck integer conversion logic!");
 		return irn;
-	} else if (in_mode == mode_D && out_mode == mode_F) {
-		return new_rd_arm_fConvD2S(dbg, irg, block, op, out_mode);
-	} else if (in_mode == mode_F && out_mode == mode_D) {
-		return new_rd_arm_fConvS2D(dbg, irg, block, op, out_mode);
-	} else if (mode_is_int(in_mode) && mode_is_float(out_mode)) {
-		cg->have_fp = 1;
-		return irn; /* TODO: implement int->float conversion*/
-	} else if (mode_is_float(in_mode) && mode_is_int(out_mode)) {
-		cg->have_fp = 1;
-		return irn; /* TODO: implement float->int conversion*/
-	} else {
-		assert(0 && "not implemented conversion");
-		return irn;
 	}
+	return NULL;
 }
 
 /**
@@ -360,11 +362,14 @@ static ir_node *gen_Add(ir_node *irn, arm_code_gen_t *cg) {
 	arm_shift_modifier mod;
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(mode != mode_E && "IEEE Extended FP not supported");
-
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
-		return new_rd_arm_fAdd(dbg, irg, block, op1, op2, mode);
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaAdd(dbg, irg, block, op1, op2, mode);
+		else if (USE_VFP(cg->isa)) {
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		}
+		assert(0 && "NYI");
 	}
 	if (mode_is_numP(mode)) {
 		if (is_arm_Mov_i(op1))
@@ -423,11 +428,14 @@ static ir_node *gen_Mul(ir_node *irn, arm_code_gen_t *cg) {
 	ir_graph *irg = current_ir_graph;
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(mode != mode_E && "IEEE Extended FP not supported");
-
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
-		return new_rd_arm_fMul(dbg, irg, block, op1, op2, mode);
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaMul(dbg, irg, block, op1, op2, mode);
+		else if (USE_VFP(cg->isa)) {
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		}
+		assert(0 && "NYI");
 	}
 	return new_rd_arm_Mul(dbg, irg, block, op1, op2, mode);
 }
@@ -447,7 +455,15 @@ static ir_node *gen_Quot(ir_node *irn, arm_code_gen_t *cg) {
 
 	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	return new_rd_arm_fDiv(dbg, current_ir_graph, block, op1, op2, mode);
+	cg->have_fp = 1;
+	if (USE_FPA(cg->isa))
+		return new_rd_arm_fpaDiv(dbg, current_ir_graph, block, op1, op2, mode);
+	else if (USE_VFP(cg->isa)) {
+		assert(mode != mode_E && "IEEE Extended FP not supported");
+	}
+	assert(0 && "NYI");
+
+	return NULL;
 }
 
 #define GEN_INT_OP(op) \
@@ -525,11 +541,14 @@ static ir_node *gen_Sub(ir_node *irn, arm_code_gen_t *cg) {
 	ir_graph *irg = current_ir_graph;
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(mode != mode_E && "IEEE Extended FP not supported");
-
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
-		return new_rd_arm_fSub(dbg, irg, block, op1, op2, mode);
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaSub(dbg, irg, block, op1, op2, mode);
+		else if (USE_VFP(cg->isa)) {
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		}
+		assert(0 && "NYI");
 	}
 	if (mode_is_numP(mode)) {
 		if (is_arm_Mov_i(op1))
@@ -658,11 +677,14 @@ static ir_node *gen_Abs(ir_node *irn, arm_code_gen_t *cg) {
 	ir_mode *mode = get_irn_mode(irn);
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	assert(mode != mode_E && "IEEE Extended FP not supported");
-
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
-		return new_rd_arm_fAbs(dbg, current_ir_graph, block, op, mode);
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaAbs(dbg, current_ir_graph, block, op, mode);
+		else if (USE_VFP(cg->isa)) {
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		}
+		assert(0 && "NYI");
 	}
 	return new_rd_arm_Abs(dbg, current_ir_graph, block, op, mode);
 }
@@ -681,7 +703,13 @@ static ir_node *gen_Minus(ir_node *irn, arm_code_gen_t *cg) {
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	if (mode_is_float(mode)) {
-		return new_rd_arm_fNeg(dbg, irg, block, op, mode);
+		cg->have_fp = 1;
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaMnv(dbg, irg, block, op, mode);
+		else if (USE_VFP(cg->isa)) {
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		}
+		assert(0 && "NYI");
 	}
 	return new_rd_arm_Rsb_i(dbg, irg, block, op, mode, get_mode_null(mode));
 }
@@ -703,8 +731,13 @@ static ir_node *gen_Load(ir_node *irn, arm_code_gen_t *cg) {
 
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
-		/* FIXME: set the load mode */
-		return new_rd_arm_fLoad(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaLdf(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn),
+				get_Load_mode(irn));
+		else if (USE_VFP(cg->isa)) {
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		}
+		assert(0 && "NYI");
 	}
 	if (mode == mode_Bu) {
 		return new_rd_arm_Loadb(dbg, irg, block, get_Load_ptr(irn), get_Load_mem(irn));
@@ -742,8 +775,13 @@ static ir_node *gen_Store(ir_node *irn, arm_code_gen_t *cg) {
 	assert(mode != mode_E && "IEEE Extended FP not supported");
 	if (mode_is_float(mode)) {
 		cg->have_fp = 1;
-		/* FIXME: set the store mode */
-		return new_rd_arm_fStore(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
+		if (USE_FPA(cg->isa))
+			return new_rd_arm_fpaStf(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn),
+				get_Store_mem(irn), get_irn_mode(get_Store_value(irn)));
+		else if (USE_VFP(cg->isa)) {
+			assert(mode != mode_E && "IEEE Extended FP not supported");
+		}
+		assert(0 && "NYI");
 	}
 	if (mode == mode_Bu) {
 		return new_rd_arm_Storeb(dbg, irg, block, get_Store_ptr(irn), get_Store_value(irn), get_Store_mem(irn));
@@ -1082,9 +1120,9 @@ static ir_node *gen_FrameStore(ir_node *irn, arm_code_gen_t *cg) {
  *
  *********************************************************/
 
-/************************************************************************/
-/* move constants out of startblock                                       */
-/************************************************************************/
+/**
+ * move constants out of the start block
+ */
 void arm_move_consts(ir_node *node, void *env) {
 	arm_code_gen_t *cgenv = (arm_code_gen_t *)env;
 	int i;
@@ -1093,14 +1131,18 @@ void arm_move_consts(ir_node *node, void *env) {
 		return;
 
 	if (is_Phi(node)) {
-		for (i = 0; i < get_irn_arity(node); i++) {
+		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(node,i);
 			opcode pred_code = get_irn_opcode(pred);
 			if (pred_code == iro_Const) {
 				ir_node *const_graph;
 				const_graph = create_const_graph(pred, get_nodes_block(get_irn_n(get_nodes_block(node),i)));
 				set_irn_n(node, i, const_graph);
-			} else if (pred_code == iro_SymConst) {
+			}
+			else if (pred_code == iro_SymConst) {
+				/* FIXME: in general, SymConst always require a load, so it
+				   might be better to place them into the first real block
+				   and let the spiller rematerialize them. */
 				const char *str = get_sc_name(pred);
 				ir_node *symconst_node;
 				symconst_node = new_rd_arm_SymConst(get_irn_dbg_info(pred),

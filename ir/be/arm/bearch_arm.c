@@ -5,6 +5,11 @@
 #include "config.h"
 #endif
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#endif /* WITH_LIBCORE */
+
 #include "pseudo_irg.h"
 #include "irgwalk.h"
 #include "irprog.h"
@@ -122,7 +127,7 @@ static const arch_register_req_t *arm_get_irn_reg_req(const void *self, arch_reg
 			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
 
 			if (mode_is_float(mode)) {
-				memcpy(req, &(arm_default_req_arm_fp.req), sizeof(*req));
+				memcpy(req, &(arm_default_req_arm_fpa.req), sizeof(*req));
 			}
 			else if (mode_is_int(mode) || mode_is_reference(mode)) {
 				memcpy(req, &(arm_default_req_arm_gp.req), sizeof(*req));
@@ -324,20 +329,84 @@ static void arm_emit_and_done(void *self) {
 	free(self);
 }
 
-enum convert_which { low, high };
+/**
+ * Move a double floating point value into an integer register.
+ * Place the move operation into block bl.
+ *
+ * Handle some special cases here:
+ * 1.) A constant: simply split into two
+ * 2.) A load: siply split into two
+ */
+static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
+                                   ir_node **resH, ir_node **resL) {
+	if (is_Const(arg)) {
+		tarval *tv = get_Const_tarval(arg);
+		unsigned v;
+
+		/* get the upper 32 bits */
+		v =            get_tarval_sub_bits(tv, 7);
+		v = (v << 8) | get_tarval_sub_bits(tv, 6);
+		v = (v << 8) | get_tarval_sub_bits(tv, 5);
+		v = (v << 8) | get_tarval_sub_bits(tv, 4);
+		*resH = new_Const_long(mode_Is, v);
+
+		/* get the lower 32 bits */
+		v =            get_tarval_sub_bits(tv, 3);
+		v = (v << 8) | get_tarval_sub_bits(tv, 2);
+		v = (v << 8) | get_tarval_sub_bits(tv, 1);
+		v = (v << 8) | get_tarval_sub_bits(tv, 0);
+		*resL = new_Const_long(mode_Is, v);
+	}
+	else if (get_irn_op(skip_Proj(arg)) == op_Load) {
+		/* FIXME: handling of low/high depends on LE/BE here */
+		assert(0);
+	}
+	else {
+		ir_graph *irg = current_ir_graph;
+		ir_node *conv;
+
+		conv = new_rd_arm_fpaDbl2GP(NULL, irg, bl, arg, mem);
+		/* move high/low */
+		*resL = new_r_Proj(irg, bl, conv, mode_Is, pn_arm_fpaDbl2GP_low);
+		*resH = new_r_Proj(irg, bl, conv, mode_Is, pn_arm_fpaDbl2GP_high);
+		mem   = new_r_Proj(irg, bl, conv, mode_M,  pn_arm_fpaDbl2GP_M);
+	}
+	return mem;
+}
 
 /**
- * Move an floating point value to a integer register.
+ * Move a single floating point value into an integer register.
  * Place the move operation into block bl.
+ *
+ * Handle some special cases here:
+ * 1.) A constant: simply move
+ * 2.) A load: siply load
  */
-static ir_node *convert_to_int(ir_node *bl, ir_node *arg, enum convert_which which) {
+static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg) {
+	if (is_Const(arg)) {
+		tarval *tv = get_Const_tarval(arg);
+		unsigned v;
+
+		/* get the lower 32 bits */
+		v =            get_tarval_sub_bits(tv, 3);
+		v = (v << 8) | get_tarval_sub_bits(tv, 2);
+		v = (v << 8) | get_tarval_sub_bits(tv, 1);
+		v = (v << 8) | get_tarval_sub_bits(tv, 0);
+		return new_Const_long(mode_Is, v);
+	}
+	else if (get_irn_op(skip_Proj(arg)) == op_Load) {
+		ir_node *load;
+
+		load = skip_Proj(arg);
+	}
+	assert(0);
 	return NULL;
 }
 
 /**
  * Convert the arguments of a call to support the
  * ARM calling convention of general purpose AND floating
- * point arguments
+ * point arguments.
  */
 static void handle_calls(ir_node *call, void *env)
 {
@@ -373,18 +442,20 @@ static void handle_calls(ir_node *call, void *env)
 
 			if (mode_is_float(mode)) {
 				if (get_mode_size_bits(mode) > 32) {
+					ir_node *mem = get_Call_mem(call);
+
+					/* Beware: ARM wants the high part first */
 					size += 2 * 4;
-					new_tp[idx] = cg->int_tp;
-					new_in[idx] = convert_to_int(bl, get_Call_param(call, i), low);
-					++idx;
-					new_tp[idx] = cg->int_tp;
-					new_in[idx] = convert_to_int(bl, get_Call_param(call, i), high);
-					++idx;
+					new_tp[idx]   = cg->int_tp;
+					new_tp[idx+1] = cg->int_tp;
+					mem = convert_dbl_to_int(bl, get_Call_param(call, i), mem, &new_in[idx], &new_in[idx+1]);
+					idx += 2;
+					set_Call_mem(call, mem);
 				}
 				else {
 					size += 4;
 					new_tp[idx] = cg->int_tp;
-					new_in[idx] = convert_to_int(bl, get_Call_param(call, i), low);
+					new_in[idx] = convert_sng_to_int(bl, get_Call_param(call, i));
 					++idx;
 				}
 				flag = 1;
@@ -443,7 +514,7 @@ static void handle_calls(ir_node *call, void *env)
 }
 
 /**
- * Handle graph transformations before the abi converter does it's work
+ * Handle graph transformations before the abi converter does its work.
  */
 static void arm_before_abi(void *self) {
 	arm_code_gen_t *cg = self;
@@ -459,7 +530,7 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_prepare_graph,
 	arm_before_sched,   /* before scheduling hook */
 	arm_before_ra,      /* before register allocation hook */
-	NULL, /* after register allocation */
+	NULL,               /* after register allocation */
 	arm_emit_and_done,
 };
 
@@ -641,6 +712,7 @@ static arm_isa_t arm_isa_template = {
 	0,                     /* use generic register names instead of SP, LR, PC */
 	NULL,                  /* current code generator */
 	NULL,                  /* output file */
+	ARM_FPU_ARCH_FPE,      /* FPU architecture */
 };
 
 /**
@@ -702,7 +774,7 @@ static int arm_get_n_reg_class(const void *self) {
  * Return the register class with requested index.
  */
 static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
-	return i == 0 ? &arm_reg_classes[CLASS_arm_gp] : &arm_reg_classes[CLASS_arm_fp];
+	return i == 0 ? &arm_reg_classes[CLASS_arm_gp] : &arm_reg_classes[CLASS_arm_fpa];
 }
 
 /**
@@ -713,7 +785,7 @@ static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
  */
 const arch_register_class_t *arm_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
 	if (mode_is_float(mode))
-		return &arm_reg_classes[CLASS_arm_fp];
+		return &arm_reg_classes[CLASS_arm_fpa];
 	else
 		return &arm_reg_classes[CLASS_arm_gp];
 }
@@ -766,7 +838,7 @@ static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env,
 static void arm_abi_dont_save_regs(void *self, pset *s)
 {
 	arm_abi_env_t *env = self;
-	if(env->flags.try_omit_fp)
+	if (env->flags.try_omit_fp)
 		pset_insert_ptr(s, env->isa->bp);
 }
 
@@ -941,7 +1013,7 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &arm_fp_regs[REG_F0] : &arm_gp_regs[REG_R0]);
+			mode_is_float(mode) ? &arm_fpa_regs[REG_F0] : &arm_gp_regs[REG_R0]);
 	}
 }
 
@@ -988,7 +1060,24 @@ static int arm_get_reg_class_alignment(const void *self, const arch_register_cla
 }
 
 #ifdef WITH_LIBCORE
+
+/* fpu set architectures. */
+static const lc_opt_enum_int_items_t arm_fpu_items[] = {
+	{ "softfloat", ARM_FPU_ARCH_SOFTFLOAT },
+	{ "fpe",       ARM_FPU_ARCH_FPE },
+	{ "fpa",       ARM_FPU_ARCH_FPA },
+	{ "vfp1xd",    ARM_FPU_ARCH_VFP_V1xD },
+	{ "vfp1",      ARM_FPU_ARCH_VFP_V1 },
+	{ "vfp2",      ARM_FPU_ARCH_VFP_V2 },
+	{ NULL,        0 }
+};
+
+static lc_opt_enum_int_var_t arch_fpu_var = {
+	&arm_isa_template.fpu_arch, arm_fpu_items
+};
+
 static const lc_opt_table_entry_t arm_options[] = {
+	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &arch_fpu_var),
 	LC_OPT_ENT_BOOL("gen_reg_names", "use generic register names", &arm_isa_template.gen_reg_names),
 	{ NULL }
 };
@@ -998,6 +1087,7 @@ static const lc_opt_table_entry_t arm_options[] = {
  *
  * Options so far:
  *
+ * arm-fpuunit=unit     select the floating point unit
  * arm-gen_reg_names    use generic register names instead of SP, LR, PC
  */
 static void arm_register_options(lc_opt_entry_t *ent)

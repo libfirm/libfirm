@@ -71,8 +71,9 @@ typedef struct _arm_attr_t {
 
 	const arch_register_t **slots;      /**< register slots for assigned registers */
 
-	unsigned instr_fl;									/**< condition code, shift modifier */
-	tarval *value;											/**< immediate */
+	ir_mode *op_mode;                   /**< operation mode */
+	unsigned instr_fl;                  /**< condition code, shift modifier */
+	tarval *value;                      /**< immediate */
 	const char *symconst_label;
 	int proj_num;
 	int n_projs;
