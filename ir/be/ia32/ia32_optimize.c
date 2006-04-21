@@ -1325,13 +1325,18 @@ static void optimize_lea(ir_node *irn, void *env) {
 			const ir_edge_t *edge, *ne;
 			ir_node *src;
 
+			if (get_irn_node_nr(irn) == 2324)
+				__asm int 3
+
 			/* merge all Loads/Stores connected to this LEA with the LEA */
 			foreach_out_edge_safe(left, edge, ne) {
 				src = get_edge_src_irn(edge);
 
 				if (src && (is_ia32_Ld(src) || is_ia32_St(src) || is_ia32_Store8Bit(src))) {
 					DBG((cg->mod, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
-					merge_loadstore_lea(src, left);
+					if (! is_ia32_got_lea(src))
+						merge_loadstore_lea(src, left);
+					set_ia32_got_lea(src);
 				}
 			}
 		}
