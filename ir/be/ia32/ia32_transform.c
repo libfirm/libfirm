@@ -1472,7 +1472,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		}
 
 		set_ia32_pncode(res, get_Proj_proj(sel));
-		set_ia32_am_support(res, ia32_am_Source);
+		//set_ia32_am_support(res, ia32_am_Source);
 	}
 	else {
 		/* determine the smallest switch case value */
