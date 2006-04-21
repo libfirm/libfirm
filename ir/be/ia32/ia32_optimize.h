@@ -10,11 +10,9 @@
 void ia32_place_consts_set_modes(ir_node *irn, void *env);
 
 /**
- * Checks for address mode patterns and performs the
- * necessary transformations.
- * This function is called by a walker.
+ * Performs address mode optimization.
  */
-void ia32_optimize_am(ir_node *irn, void *env);
+void ia32_optimize_addressmode(ia32_code_gen_t *cg);
 
 /**
  * Performs Peephole Optimizations
