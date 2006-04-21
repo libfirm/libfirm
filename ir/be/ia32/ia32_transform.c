@@ -901,10 +901,12 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 		proj = get_edge_src_irn(get_irn_out_edge_first(irn));
 		assert(is_Proj(proj) && "non-Proj to Div/Mod node");
 
-		if (get_Proj_proj(proj) == pn_DivMod_res_div) {
+		if (get_irn_op(irn) == op_Div) {
+			set_Proj_proj(proj, pn_DivMod_res_div);
 			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode_Is, pn_DivMod_res_mod);
 		}
 		else {
+			set_Proj_proj(proj, pn_DivMod_res_mod);
 			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode_Is, pn_DivMod_res_div);
 		}
 
