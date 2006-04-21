@@ -1,3 +1,13 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/be/ia32/ia32_optimize.c
+ * Purpose:     Implements several optimizations for IA32
+ * Author:      Christian Wuerdig
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2006 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -10,6 +20,7 @@
 #include "tv.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "height.h"
 
 #include "../be_t.h"
 #include "../beabi.h"
@@ -578,6 +589,11 @@ void ia32_peephole_optimization(ir_node *irn, void *env) {
  *
  ******************************************************************/
 
+typedef struct {
+	ia32_code_gen_t *cg;
+	heights_t       *h;
+} ia32_am_opt_env_t;
+
 static int node_is_ia32_comm(const ir_node *irn) {
 	return is_ia32_irn(irn) ? is_ia32_commutative(irn) : 0;
 }
@@ -672,45 +688,95 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
 	return 0;
 }
 
-
-
 /**
- * Checks if irn is a candidate for address calculation or address mode.
+ * Checks if irn is a candidate for address calculation.
  *
- * address calculation (AC):
  * - none of the operand must be a Load  within the same block OR
  * - all Loads must have more than one user                    OR
  * - the irn has a frame entity (it's a former FrameAddr)
+ *
+ * @param block   The block the Loads must/mustnot be in
+ * @param irn     The irn to check
+ * return 1 if irn is a candidate, 0 otherwise
+ */
+static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
+	ir_node *in, *load, *other, *left, *right;
+	int      n, is_cand = 1;
+
+	left  = get_irn_n(irn, 2);
+	right = get_irn_n(irn, 3);
+
+	in = left;
+
+	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
+		n         = ia32_get_irn_n_edges(in);
+		is_cand   = (n == 1) ? 0 : is_cand;  /* load with only one user: don't create LEA */
+	}
+
+	in = right;
+
+	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
+		n         = ia32_get_irn_n_edges(in);
+		is_cand   = (n == 1) ? 0 : is_cand;  /* load with only one user: don't create LEA */
+	}
+
+	is_cand = get_ia32_frame_ent(irn) ? 1 : is_cand;
+
+	return is_cand;
+}
+
+/**
+ * Checks if irn is a candidate for address mode.
  *
  * address mode (AM):
  * - at least one operand has to be a Load within the same block AND
  * - the load must not have other users than the irn             AND
  * - the irn must not have a frame entity set
  *
- * @param block       The block the Loads must/not be in
+ * @param h           The height information of the irg
+ * @param block       The block the Loads must/mustnot be in
  * @param irn         The irn to check
- * @param check_addr  1 if to check for address calculation, 0 otherwise
- * return 1 if irn is a candidate for AC or AM, 0 otherwise
+ * return 1 if irn is a candidate, 0 otherwise
  */
-static int is_candidate(const ir_node *block, const ir_node *irn, int check_addr) {
-	ir_node *in;
-	int      n, is_cand = check_addr;
+static int is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
+	ir_node *in, *load, *other, *left, *right;
+	int      n, is_cand = 0;
 
-	in = get_irn_n(irn, 2);
+	if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+		return 0;
+
+	left  = get_irn_n(irn, 2);
+	right = get_irn_n(irn, 3);
+
+	in = left;
 
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 		n         = ia32_get_irn_n_edges(in);
-		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
+		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
+
+		load  = get_Proj_pred(in);
+		other = right;
+
+		/* If there is a data dependency of other irn from load: cannot use AM */
+		if (get_nodes_block(other) == block)
+			is_cand = heights_reachable_in_block(h, load, other) ? 0 : is_cand;
 	}
 
-	in = get_irn_n(irn, 3);
+	in = right;
 
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 		n         = ia32_get_irn_n_edges(in);
-		is_cand   = check_addr ? (n == 1 ? 0 : is_cand) : (n == 1 ? 1 : is_cand);
+		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
+
+		load  = get_Proj_pred(in);
+		other = left;
+
+		/* If there is a data dependency of other irn from load: cannot use load */
+		if (get_nodes_block(other) == block)
+			is_cand = heights_reachable_in_block(h, load, other) ? 0 : is_cand;
 	}
 
-	is_cand = get_ia32_frame_ent(irn) ? (check_addr ? 1 : 0) : is_cand;
+	is_cand = get_ia32_frame_ent(irn) ? 0 : is_cand;
 
 	return is_cand;
 }
@@ -1240,7 +1306,7 @@ static int optimize_address_calculation(ir_node *irn, void *env) {
 
 	    /* Do not try to create a LEA if one of the operands is a Load. */
 		/* check is irn is a candidate for address calculation */
-		if (is_candidate(block, irn, 1)) {
+		if (is_addr_candidate(block, irn)) {
 			ir_node *res;
 
 			DBG((cg->mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
@@ -1285,23 +1351,20 @@ static int optimize_address_calculation(ir_node *irn, void *env) {
  * This function is called by a walker.
  */
 static void optimize_am(ir_node *irn, void *env) {
-	ia32_code_gen_t   *cg   = env;
-	ir_node           *res  = irn;
-	dbg_info          *dbg;
-	ir_mode           *mode;
+	ia32_am_opt_env_t *am_opt_env = env;
+	ia32_code_gen_t   *cg         = am_opt_env->cg;
+	heights_t         *h          = am_opt_env->h;
 	ir_node           *block, *noreg_gp, *noreg_fp;
 	ir_node           *left, *right, *temp;
 	ir_node           *store, *load, *mem_proj;
 	ir_node           *succ, *addr_b, *addr_i;
-	int               check_am_src = 0;
+	int               check_am_src          = 0;
 	int               need_exchange_on_fail = 0;
 	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
 	if (! is_ia32_irn(irn))
 		return;
 
-	dbg      = get_irn_dbg_info(irn);
-	mode     = get_irn_mode(irn);
 	block    = get_nodes_block(irn);
 	noreg_gp = ia32_new_NoReg_gp(cg);
 	noreg_fp = ia32_new_NoReg_fp(cg);
@@ -1322,7 +1385,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	/*     - the Load and Store are in the same block AND                               */
 	/*     - nobody else uses the result of the op                                      */
 
-	if ((get_ia32_am_support(irn) != ia32_am_None) && ! is_ia32_Lea(irn) && is_candidate(block, irn, 0)) {
+	if ((get_ia32_am_support(irn) != ia32_am_None) && ! is_ia32_Lea(irn) && is_am_candidate(h, block, irn)) {
 		DBG((mod, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
 
 		left  = get_irn_n(irn, 2);
@@ -1568,7 +1631,9 @@ static void optimize_lea(ir_node *irn, void *env) {
  * it performs address mode optimization.
  */
 static void optimize_all(ir_node *irn, void *env) {
-	if (! optimize_address_calculation(irn, env)) {
+	ia32_am_opt_env_t *am_opt_env = env;
+
+	if (! optimize_address_calculation(irn, am_opt_env->cg)) {
 		/* irn was not transformed into LEA: check for am */
 		optimize_am(irn, env);
 	}
@@ -1588,13 +1653,24 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 		return;
 	}
 
-	if ((cg->opt & IA32_OPT_DOAM) && (cg->opt & IA32_OPT_LEA)) {
-		/* optimize AM and LEA */
-		irg_walk_blkwise_graph(cg->irg, NULL, optimize_all, cg);
-	}
-	else if (cg->opt & IA32_OPT_DOAM) {
-		/* optimize AM only */
-		irg_walk_blkwise_graph(cg->irg, NULL, optimize_am, cg);
+	if ((cg->opt & IA32_OPT_DOAM)) {
+		/* we need height information for am optimization */
+		heights_t *h = heights_new(cg->irg);
+		ia32_am_opt_env_t env;
+
+		env.cg = cg;
+		env.h  = h;
+
+		if (cg->opt & IA32_OPT_LEA) {
+			/* optimize AM and LEA */
+			irg_walk_blkwise_graph(cg->irg, NULL, optimize_all, &env);
+		}
+		else {
+			/* optimize AM only */
+			irg_walk_blkwise_graph(cg->irg, NULL, optimize_am, &env);
+		}
+
+		heights_free(h);
 	}
 	else {
 		/* optimize LEA only */
