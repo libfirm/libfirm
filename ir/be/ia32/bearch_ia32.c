@@ -503,17 +503,9 @@ static void ia32_prepare_graph(void *self) {
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
-	if (cg->opt & IA32_OPT_DOAM) {
-		edges_deactivate(cg->irg);
-		//dead_node_elimination(cg->irg);
-		edges_activate(cg->irg);
-
-		FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
-
-		irg_walk_blkwise_graph(cg->irg, NULL, ia32_optimize_am, cg);
-		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
-	}
-
+	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
+	ia32_optimize_addressmode(cg);
+	be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
 	DEBUG_ONLY(cg->mod = old_mod;)
 }
 
@@ -924,19 +916,20 @@ static void *ia32_cg_init(const be_irg_t *birg) {
  * arguments.
  */
 static ia32_isa_t ia32_isa_template = {
-  {
-	  &ia32_isa_if,            /* isa interface implementation */
-	  &ia32_gp_regs[REG_ESP],  /* stack pointer register */
-	  &ia32_gp_regs[REG_EBP],  /* base pointer register */
-	  -1,                      /* stack direction */
-  },
+	{
+		&ia32_isa_if,            /* isa interface implementation */
+		&ia32_gp_regs[REG_ESP],  /* stack pointer register */
+		&ia32_gp_regs[REG_EBP],  /* base pointer register */
+		-1,                      /* stack direction */
+	},
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
-	(0 |
+	(0                 |
 	IA32_OPT_INCDEC    |     /* optimize add 1, sub 1 into inc/dec               default: on  */
 	IA32_OPT_DOAM      |     /* optimize address mode                            default: on  */
+	IA32_OPT_LEA       |     /* optimize for LEAs                                default: on  */
 	IA32_OPT_PLACECNST |     /* place constants immediately before instructions, default: on  */
 	IA32_OPT_IMMOPS    |     /* operations can use immediates,                   default: on  */
 	IA32_OPT_EXTBB),         /* use extended basic block scheduling,             default: on  */
@@ -1276,6 +1269,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("opt",       "optimize for instruction architecture", &opt_arch_var),
 	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &fp_unit_var),
 	LC_OPT_ENT_NEGBIT("noaddrmode",  "do not use address mode", &ia32_isa_template.opt, IA32_OPT_DOAM),
+	LC_OPT_ENT_NEGBIT("nolea",       "do not optimize for LEAs", &ia32_isa_template.opt, IA32_OPT_LEA),
 	LC_OPT_ENT_NEGBIT("noplacecnst", "do not place constants", &ia32_isa_template.opt, IA32_OPT_PLACECNST),
 	LC_OPT_ENT_NEGBIT("noimmop",     "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
 	LC_OPT_ENT_NEGBIT("noextbb",     "do not use extended basic block scheduling", &ia32_isa_template.opt, IA32_OPT_EXTBB),
@@ -1293,6 +1287,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
  * ia32-fpunit=unit  select floating point unit (x87 or SSE2)
  * ia32-incdec       optimize for inc/dec
  * ia32-noaddrmode   do not use address mode
+ * ia32-nolea        do not optimize for LEAs
  * ia32-noplacecnst  do not place constants,
  * ia32-noimmop      no operations with immediates
  * ia32-noextbb      do not use extended basic block scheduling

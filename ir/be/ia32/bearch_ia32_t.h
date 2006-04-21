@@ -24,9 +24,10 @@
 typedef enum _ia32_optimize_t {
 	IA32_OPT_INCDEC    = 1,   /**< optimize add/sub 1/-1 to inc/dec */
 	IA32_OPT_DOAM      = 2,   /**< do address mode optimizations */
-	IA32_OPT_PLACECNST = 4,   /**< place constants in the blocks where they are used */
-	IA32_OPT_IMMOPS    = 8,   /**< create operations with immediate operands */
-	IA32_OPT_EXTBB     = 16,  /**< do extended basic block scheduling */
+	IA32_OPT_LEA       = 4,   /**< optimize address caluclations into LEAs */
+	IA32_OPT_PLACECNST = 8,   /**< place constants in the blocks where they are used */
+	IA32_OPT_IMMOPS    = 16,  /**< create operations with immediate operands */
+	IA32_OPT_EXTBB     = 32,  /**< do extended basic block scheduling */
 } ia32_optimize_t;
 
 /**
