@@ -317,9 +317,10 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 				which also occur as output constraints, so insert a copy.
 			*/
 			if(bitset_popcnt(bs) > 0) {
-				copy                 = be_new_Copy(op->req.cls, env->irg, bl, op->carrier);
-				insn->ops[i].carrier = copy;
+				copy        = be_new_Copy(op->req.cls, env->irg, bl, op->carrier);
+				op->carrier = copy;
 				sched_add_before(insn->irn, copy);
+				set_irn_n(insn->irn, op->pos, op->carrier);
 
 				DBG((dbg, LEVEL_2, "adding copy for interfering and constrained op %+F\n", op->carrier));
 			}
