@@ -1,3 +1,14 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ana/height.c
+ * Purpose:     Compute heights of nodes inside basic blocks
+ * Author:      Sebastian Hack
+ * Modified by:
+ * Created:     19.04.2006
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2006 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
