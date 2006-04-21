@@ -7,10 +7,9 @@
 #ifndef _BE_T_H
 #define _BE_T_H
 
+#include "firm_types.h"
 #include "obst.h"
 #include "debug.h"
-
-#include "irgraph.h"
 
 #include "be.h"
 #include "bearch.h"
@@ -38,4 +37,4 @@ struct _be_irg_t {
 	struct _arch_code_generator_t *cg;
 };
 
-#endif
+#endif /* _BE_T_H */
