@@ -8,18 +8,20 @@
 
 struct _bipartite_t {
 	int n_left, n_right;
-	bitset_t **adj;
+	bitset_t *adj[1];
 };
 
 bipartite_t *bipartite_new(int n_left, int n_right)
 {
-	int i;
-	bipartite_t *gr = xmalloc(sizeof(*gr) + n_left * sizeof(void *));
+	int i, size;
+	bipartite_t *gr;
+
+	size = n_left > 0 ? n_left - 1 : 0;
+	gr = xmalloc(sizeof(*gr) + size * sizeof(void *));
 	memset(gr, 0, sizeof(*gr));
 
 	gr->n_left = n_left;
 	gr->n_right = n_right;
-	gr->adj = (bitset_t**)(gr + 1);
 
 	for(i = 0; i < n_left; ++i)
 		gr->adj[i] = bitset_malloc(n_right);
@@ -129,12 +131,21 @@ void bipartite_matching(const bipartite_t *gr, int *matching)
 	while(apply_alternating_path(gr, matching, matched_left, matched_right));
 }
 
-void bipartite_dump(FILE *f, const bipartite_t *gr)
+void bipartite_dump_f(FILE *f, const bipartite_t *gr)
 {
 	int i;
 
 	for(i = 0; i < gr->n_left; ++i) {
 		bitset_fprint(f, gr->adj[i]);
 		fprintf(f, "\n");
+	}
+}
+
+void bipartite_dump(const char *name, const bipartite_t *gr) {
+	FILE *f = fopen(name, "w");
+
+	if (f) {
+		bipartite_dump_f(f, gr);
+		fclose(f);
 	}
 }

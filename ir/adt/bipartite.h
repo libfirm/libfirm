@@ -21,6 +21,15 @@ void bipartite_add(bipartite_t *gr, int i, int j);
 void bipartite_remv(bipartite_t *gr, int i, int j);
 int bipartite_adj(const bipartite_t *gr, int i, int j);
 void bipartite_matching(const bipartite_t *gr, int *matching);
-void bipartite_dump(FILE *f, const bipartite_t *gr);
+
+/**
+ * Dumps a bipartite graph to a file stream.
+ */
+void bipartite_dump_f(FILE *f, const bipartite_t *gr);
+
+/**
+ * Dumps a bipartite graph to file name.
+ */
+void bipartite_dump(const char *name, const bipartite_t *gr);
 
 #endif /* _BIPARTITE_H */
