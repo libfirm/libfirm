@@ -41,7 +41,7 @@
  * Returns the shift modifier string.
  */
 const char *arm_shf_mod_name(arm_shift_modifier mod) {
-  static const char *names[] = { NULL, NULL, "ASR", "LSL", "LSR", "ROR", "RRX" };
+  static const char *names[] = { NULL, NULL, "asr", "lsl", "lsr", "ror", "rrx" };
 	return names[mod];
 }
 
