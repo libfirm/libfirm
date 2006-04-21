@@ -700,7 +700,7 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
  * return 1 if irn is a candidate, 0 otherwise
  */
 static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
-	ir_node *in, *load, *other, *left, *right;
+	ir_node *in, *left, *right;
 	int      n, is_cand = 1;
 
 	left  = get_irn_n(irn, 2);
@@ -1279,15 +1279,13 @@ static void exchange_left_right(ir_node *irn, ir_node **left, ir_node **right, i
 
 /**
  * Performs address calculation optimization (create LEAs if possible)
- * @return 1 if performed optimization, 0 otherwise
  */
-static int optimize_address_calculation(ir_node *irn, void *env) {
+static void optimize_lea(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg  = env;
-	int              ret = 0;
 	ir_node         *block, *noreg_gp, *left, *right;
 
 	if (! is_ia32_irn(irn))
-		return ret;
+		return;
 
 	/* Following cases can occur:                                  */
 	/* - Sub (l, imm) -> LEA [base - offset]                       */
@@ -1311,9 +1309,8 @@ static int optimize_address_calculation(ir_node *irn, void *env) {
 
 			DBG((cg->mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
 			res = fold_addr(cg, irn, noreg_gp);
-			ret = (res != irn);
 
-			if (ret)
+			if (res != irn)
 				DB((cg->mod, LEVEL_1, "transformed into %+F\n", res));
 			else
 				DB((cg->mod, LEVEL_1, "not transformed\n"));
@@ -1335,13 +1332,10 @@ static int optimize_address_calculation(ir_node *irn, void *env) {
 				if (src && (is_ia32_Ld(src) || is_ia32_St(src) || is_ia32_Store8Bit(src))) {
 					DBG((cg->mod, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
 					merge_loadstore_lea(src, left);
-					ret = 1;
 				}
 			}
 		}
 	}
-
-	return ret;
 }
 
 
@@ -1617,29 +1611,6 @@ static void optimize_am(ir_node *irn, void *env) {
 }
 
 /**
- * This function is called by a walker and performs LEA optimization only.
- * It's a wrapper for optimize_address_calculation because this one returns
- * the transformed irn (or NULL) which gives a type mismatch for walker
- * functions.
- */
-static void optimize_lea(ir_node *irn, void *env) {
-	(void)optimize_address_calculation(irn, env);
-}
-
-/**
- * This function first performs LEA optimization and if this failed
- * it performs address mode optimization.
- */
-static void optimize_all(ir_node *irn, void *env) {
-	ia32_am_opt_env_t *am_opt_env = env;
-
-	if (! optimize_address_calculation(irn, am_opt_env->cg)) {
-		/* irn was not transformed into LEA: check for am */
-		optimize_am(irn, env);
-	}
-}
-
-/**
  * Performs address mode optimization.
  */
 void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
@@ -1653,7 +1624,15 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 		return;
 	}
 
-	if ((cg->opt & IA32_OPT_DOAM)) {
+	/* beware: we cannot optimize LEA and AM in one run because */
+	/*         LEA optimization adds new nodes to the irg which */
+	/*         invalidates the phase data                       */
+
+	if (cg->opt & IA32_OPT_LEA) {
+		irg_walk_blkwise_graph(cg->irg, NULL, optimize_lea, cg);
+	}
+
+	if (cg->opt & IA32_OPT_DOAM) {
 		/* we need height information for am optimization */
 		heights_t *h = heights_new(cg->irg);
 		ia32_am_opt_env_t env;
@@ -1661,19 +1640,8 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 		env.cg = cg;
 		env.h  = h;
 
-		if (cg->opt & IA32_OPT_LEA) {
-			/* optimize AM and LEA */
-			irg_walk_blkwise_graph(cg->irg, NULL, optimize_all, &env);
-		}
-		else {
-			/* optimize AM only */
-			irg_walk_blkwise_graph(cg->irg, NULL, optimize_am, &env);
-		}
+		irg_walk_blkwise_graph(cg->irg, NULL, optimize_am, &env);
 
 		heights_free(h);
-	}
-	else {
-		/* optimize LEA only */
-		irg_walk_blkwise_graph(cg->irg, NULL, optimize_lea, cg);
 	}
 }
