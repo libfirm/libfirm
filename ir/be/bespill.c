@@ -30,7 +30,7 @@
 
 #define REMAT
 /* This enables re-computation of values. Current state: Unfinished and buggy. */
-#define BUGGY_REMAT
+#undef BUGGY_REMAT
 
 typedef struct _reloader_t reloader_t;
 typedef struct _spill_info_t spill_info_t;
@@ -63,24 +63,32 @@ struct _spill_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
+/**
+ * compare two spill contexts.
+ */
 static int cmp_spillctx(const void *a, const void *b, size_t n) {
 	const spill_ctx_t *p = a;
 	const spill_ctx_t *q = b;
-	return !(p->user == q->user && p->spilled == q->spilled);
+	return p->user != q->user || p->spilled != q->spilled;
 }
 
+/**
+ * Compare two spill infos.
+ */
 static int cmp_spillinfo(const void *x, const void *y, size_t size) {
 	const spill_info_t *xx = x;
 	const spill_info_t *yy = y;
-	return ! (xx->spilled_node == yy->spilled_node);
+	return xx->spilled_node != yy->spilled_node;
 }
 
 DEBUG_ONLY(
+/* Sets the debug module of a spill environment. */
 void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t *dbg) {
 	env->dbg = dbg;
 }
 )
 
+/* Creates a new spill environment. */
 spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env, decide_irn_t is_mem_phi, void *data) {
 	spill_env_t *env = xmalloc(sizeof(env[0]));
 	env->spill_ctxs  = new_set(cmp_spillctx, 1024);
@@ -93,6 +101,7 @@ spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env, decide_irn_t 
 	return env;
 }
 
+/* Deletes a spill environment. */
 void be_delete_spill_env(spill_env_t *senv) {
 	del_set(senv->spill_ctxs);
 	del_set(senv->spills);
@@ -100,6 +109,15 @@ void be_delete_spill_env(spill_env_t *senv) {
 	free(senv);
 }
 
+/**
+ * Returns a spill context. If the context did not exists, create one.
+ *
+ * @param sc        the set containing all spill contexts
+ * @param to_spill  the node that should be spilled
+ * @param ctx_irn   an user of the spilled node
+ *
+ * @return a spill context.
+ */
 static spill_ctx_t *be_get_spill_ctx(set *sc, ir_node *to_spill, ir_node *ctx_irn) {
 	spill_ctx_t templ;
 
@@ -110,6 +128,15 @@ static spill_ctx_t *be_get_spill_ctx(set *sc, ir_node *to_spill, ir_node *ctx_ir
 	return set_insert(sc, &templ, sizeof(templ), HASH_COMBINE(HASH_PTR(to_spill), HASH_PTR(ctx_irn)));
 }
 
+/**
+ * Creates a spill.
+ *
+ * @param senv      the spill environment
+ * @param irn       the node that should be spilled
+ * @param ctx_irn   an user of the spilled node
+ *
+ * @return a be_Spill node
+ */
 static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) {
 	spill_ctx_t *ctx;
 	DBG((senv->dbg, LEVEL_1, "%+F in ctx %+F\n", irn, ctx_irn));
@@ -124,10 +151,16 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 }
 
 /**
- * If the first usage of a phi result would be out of memory
+ * If the first usage of a Phi result would be out of memory
  * there is no sense in allocating a register for it.
  * Thus we spill it and all its operands to the same spill slot.
  * Therefore the phi/dataB becomes a phi/Memory
+ *
+ * @param senv      the spill environment
+ * @param phi       the Phi node that should be spilled
+ * @param ctx_irn   an user of the spilled node
+ *
+ * @return a be_Spill node
  */
 static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) {
 	int i, n = get_irn_arity(phi);
@@ -143,14 +176,9 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) 
 
 	/* if not found spill the phi */
 	if(!ctx->spill) {
-		/* build a new PhiM with dummy in-array */
+		/* build a new PhiM */
 		NEW_ARR_A(ir_node *, ins, n);
-		for(i=0; i<n; ++i)
-			ins[i] = new_r_Unknown(irg, mode_M);
-		ctx->spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
-
-		/* re-wire the phiM */
-		for(i=0; i<n; ++i) {
+		for (i=0; i<n; ++i) {
 			ir_node *arg = get_irn_n(phi, i);
 			ir_node *sub_res;
 
@@ -158,13 +186,22 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) 
 				sub_res = be_spill_phi(senv, arg, ctx_irn);
 			else
 				sub_res = be_spill_irn(senv, arg, ctx_irn);
-
-			set_irn_n(ctx->spill, i, sub_res);
+			ins[i] = sub_res;
 		}
+		ctx->spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
 	}
 	return ctx->spill;
 }
 
+/**
+ * Spill a node.
+ *
+ * @param senv      the spill environment
+ * @param irn       the node that should be spilled
+ * @param ctx_irn   an user of the spilled node
+ *
+ * @return a be_Spill node
+ */
 static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
 	ir_node *res;
 	if (pset_find_ptr(senv->mem_phis, to_spill))
@@ -173,17 +210,6 @@ static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
 		res = be_spill_irn(senv, to_spill, to_spill);
 
 	return res;
-}
-
-static void phi_walker(ir_node *irn, void *env) {
-	spill_env_t *senv = env;
-	const arch_env_t *arch = senv->chordal_env->birg->main_env->arch_env;
-
-	if (is_Phi(irn) && arch_irn_has_reg_class(arch, irn, 0, senv->cls)
-			&& senv->is_mem_phi(irn, senv->data)) {
-		DBG((senv->dbg, LEVEL_1, "  %+F\n", irn));
-		pset_insert_ptr(senv->mem_phis, irn);
-	}
 }
 
 #ifdef REMAT
@@ -273,7 +299,7 @@ static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *sp
 #endif /* REMAT */
 
 /**
- * Rematerialize a node.
+ * Re-materialize a node.
  *
  * @param senv      the spill environment
  * @param spilled   the node that was spilled
@@ -302,6 +328,23 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 	}
 
 	return res;
+}
+
+/**
+ * Walker: fills the mem_phis set by evaluating Phi nodes
+ * using the is_mem_phi() callback.
+ */
+static void phi_walker(ir_node *irn, void *env) {
+	spill_env_t *senv = env;
+
+	if (is_Phi(irn)) {
+		const arch_env_t *arch = senv->chordal_env->birg->main_env->arch_env;
+		if (arch_irn_has_reg_class(arch, irn, 0, senv->cls) &&
+			senv->is_mem_phi(irn, senv->data)) {
+			DBG((senv->dbg, LEVEL_1, "  %+F\n", irn));
+			pset_insert_ptr(senv->mem_phis, irn);
+		}
+	}
 }
 
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
@@ -497,9 +540,9 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
  * qsort compare function, sort spill slots by size.
  */
 static int ss_sorter(const void *v1, const void *v2) {
-	const spill_slot_t *ss1 = v1;
-	const spill_slot_t *ss2 = v2;
-	return ((int) ss2->size) - ((int) ss1->size);
+	const spill_slot_t **ss1 = v1;
+	const spill_slot_t **ss2 = v2;
+	return ((int) (*ss2)->size) - ((int) (*ss1)->size);
 }
 
 
@@ -514,7 +557,7 @@ static int ss_sorter(const void *v1, const void *v2) {
  *
  * @return An array of spill slots @p ass in specific order
  **/
-static void optimize_slots(ss_env_t *ssenv, int size, spill_slot_t **ass) {
+static void optimize_slots(ss_env_t *ssenv, int size, spill_slot_t *ass[]) {
 	int i, o, used_slots;
 	pmap_entry *entr;
 
