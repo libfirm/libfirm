@@ -321,28 +321,28 @@ $comment_string = '/*';
   "irn_flags" => "R",
   "comment"   => "construct Shl: Shl(a, b) = a << b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %S1, LSL %S2\t/* Shl(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. mov %D1, %S1, lsl %S2 /* Shl(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Shr" => {
   "irn_flags" => "R",
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
-  "emit"      => '. mov %D1, %S1, LSR %S2 /* Shr(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. mov %D1, %S1, lsr %S2 /* Shr(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 "Shrs" => {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
-  "emit"      => '. mov %D1, %S1, ASR %S2\t\t /* Shrs(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. mov %D1, %S1, asr %S2 /* Shrs(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
 #"RotR" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct RotR: RotR(a, b) = a ROTR b",
 #  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-#  "emit"      => '. mov %D1, %S1, ROR %S2 /* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
+#  "emit"      => '. mov %D1, %S1, ror %S2 /* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
 ##  "emit"      => '. ror %S1, %S2, %D1 /* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
 #},
 
@@ -367,7 +367,7 @@ $comment_string = '/*';
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %S1%X0\t/* Mov(%S1%X0) -> %D1, (%A1) */'
+  "emit"      => '. mov %D1, %S1%X0 /* Mov(%S1%X0) -> %D1, (%A1) */'
 },
 
 "Mov_i" => {
@@ -376,7 +376,7 @@ $comment_string = '/*';
   "attr"      => "tarval *tv",
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "reg_req"   => { "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %C   /* Mov Const into register */',
+  "emit"      => '. mov %D1, %C /* Mov Const into register */',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
@@ -397,7 +397,7 @@ $comment_string = '/*';
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;',
   "reg_req"   => { "out" => [ "gp" ] },
-  "emit"      => '. mvn %D1, %C   /* Mov ~Const into register */',
+  "emit"      => '. mvn %D1, %C /* Mov ~Const into register */',
 },
 
 "Abs" => {
@@ -414,7 +414,7 @@ $comment_string = '/*';
 "EmptyReg" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
-  "comment"  => "just to get an empty register for calculations",
+  "comment"  => "allocate an empty register for calculations",
   "reg_req"  => { "out" => [ "gp" ] },
   "emit"      => '. /* %D1 now available for calculations */',
   "cmp_attr"  => 'return 1;'
@@ -547,7 +547,7 @@ $comment_string = '/*';
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. strsh%S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "emit"      => '. strhs %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
   "outs"      => [ "M" ],
 },
 
