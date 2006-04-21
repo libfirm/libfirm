@@ -88,7 +88,9 @@ typedef struct _ia32_attr_t {
 
 		unsigned emit_cl:1;         /**< indicates whether we must emit cl instead of ecx (needed for shifts) */
 
-		unsigned n_res:8;           /**< number of results produced by this node */
+		unsigned got_lea:1;         /**< indicates whether or not this node already consumed a LEA */
+
+		unsigned n_res:7;           /**< number of results produced by this node */
 	} data;
 
 	struct obstack *am_offs;    /**< offsets for AddrMode */

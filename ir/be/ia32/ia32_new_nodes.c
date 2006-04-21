@@ -718,11 +718,35 @@ void clear_ia32_emit_cl(ir_node *node) {
 }
 
 /**
- * Checks if node is commutative.
+ * Checks if node needs %cl.
  */
 int is_ia32_emit_cl(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->data.emit_cl;
+}
+
+/**
+ * Sets node got_lea.
+ */
+void set_ia32_got_lea(ir_node *node) {
+	ia32_attr_t *attr  = get_ia32_attr(node);
+	attr->data.got_lea = 1;
+}
+
+/**
+ * Clears node got_lea.
+ */
+void clear_ia32_got_lea(ir_node *node) {
+	ia32_attr_t *attr  = get_ia32_attr(node);
+	attr->data.got_lea = 0;
+}
+
+/**
+ * Checks if node got lea.
+ */
+int is_ia32_got_lea(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->data.got_lea;
 }
 
 /**
