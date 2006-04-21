@@ -587,7 +587,7 @@ static void rescue_used_reloads(ir_node *irn, void *env) {
 static void remove_copies(belady_env_t *bel) {
 	ir_node *irn;
 
-	for (irn = pset_first(bel->copies); irn; irn = pset_next(bel->copies)) {
+	foreach_pset(bel->copies, irn) {
 		ir_node *src, *user;
 
 		assert(be_is_Copy(irn));
@@ -608,7 +608,7 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 	ir_node *irn;
 
 	irg_walk_graph(irg, rescue_used_reloads, NULL, bel->reloads);
-	for(irn = pset_first(bel->reloads); irn; irn = pset_next(bel->reloads)) {
+	foreach_pset(bel->reloads, irn) {
 		ir_node *spill;
 		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
 
