@@ -47,10 +47,18 @@ void     set_irn_out  (ir_node *node, int pos, ir_node *out);
 
 /* Methods to iterate through the control flow graph. Iterate from 0 to
    i < get_Block_cfg_outs(block). No order of successors guaranteed. */
-int             get_Block_n_cfg_outs (ir_node *node);
 
-/** Access predecessor n. */
+/** Return the number of control flow successors, ignore keep-alives. */
+int      get_Block_n_cfg_outs (ir_node *node);
+
+/** Return the number of control flow successors, honor keep-alives. */
+int      get_Block_n_cfg_outs_ka (ir_node *node);
+
+/** Access predecessor n, ignore keep-alives. */
 ir_node *get_Block_cfg_out  (ir_node *node, int pos);
+
+/** Access predecessor n, honor keep-alives. */
+ir_node *get_Block_cfg_out_ka  (ir_node *node, int pos);
 
 /** Walks over the graph starting at node.  Walks also if graph is in state
    "outs_inconsistent".  Assumes current_ir_graph is set properly. */

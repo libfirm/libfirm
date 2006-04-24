@@ -81,7 +81,7 @@ void set_irn_out      (ir_node *node, int pos, ir_node *out) {
   node->out[pos+1] = out;
 }
 
-
+/* Return the number of control flow successors, ignore keep-alives. */
 int get_Block_n_cfg_outs(ir_node *bl) {
   int i, n_cfg_outs = 0;
   assert(bl && is_Block(bl));
@@ -95,7 +95,26 @@ int get_Block_n_cfg_outs(ir_node *bl) {
   return n_cfg_outs;
 }
 
+/* Return the number of control flow successors, honor keep-alives. */
+int get_Block_n_cfg_outs_ka(ir_node *bl) {
+  int i, n_cfg_outs = 0;
+  assert(bl && is_Block(bl));
+#ifdef DEBUG_libfirm
+  assert (bl->out_valid);
+#endif /* defined DEBUG_libfirm */
+  for (i = 1; i <= PTR_TO_INT(bl->out[0]); i++)
+    if (get_irn_mode(bl->out[i]) == mode_X) {
+      /* ignore End if we are in the Endblock */
+      if (get_irn_op(bl->out[i]) == op_End &&
+          get_irn_n(bl->out[i], -1) == bl)
+        continue;
+      else
+        n_cfg_outs++;
+    }
+  return n_cfg_outs;
+}
 
+/* Access predecessor n, ignore keep-alives. */
 ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
   int i, out_pos = 0;
   assert(bl && is_Block(bl));
@@ -114,9 +133,34 @@ ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
   return NULL;
 }
 
+/* Access predecessor n, honor keep-alives. */
+ir_node *get_Block_cfg_out_ka(ir_node *bl, int pos) {
+  int i, out_pos = 0;
+  assert(bl && is_Block(bl));
+#ifdef DEBUG_libfirm
+  assert (bl->out_valid);
+#endif /* defined DEBUG_libfirm */
+  for (i = 1; i <= PTR_TO_INT(bl->out[0]); i++)
+    if (get_irn_mode(bl->out[i]) == mode_X) {
+      /* ignore End if we are in the Endblock */
+      if (get_irn_op(bl->out[i]) == op_End &&
+          get_irn_n(bl->out[i], -1) == bl)
+        continue;
+      if (out_pos == pos) {
+        ir_node *cfop = bl->out[i];
+        /* handle keep-alive here */
+        if (get_irn_op(cfop) == op_End)
+          return get_irn_n(cfop, -1);
+        return cfop->out[1];
+      } else
+        out_pos++;
+    }
+  return NULL;
+}
+
 static void irg_out_walk_2(ir_node *node,  irg_walk_func *pre,
             irg_walk_func *post, void *env) {
-  int i;
+  int i, n;
   ir_node *succ;
 
   assert(node);
@@ -126,7 +170,7 @@ static void irg_out_walk_2(ir_node *node,  irg_walk_func *pre,
 
   if (pre) pre(node, env);
 
-  for (i = 0; i < get_irn_n_outs(node); i++) {
+  for (i = 0, n = get_irn_n_outs(node); i < n; i++) {
     succ = get_irn_out(node, i);
     if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
       irg_out_walk_2(succ, pre, post, env);
@@ -151,25 +195,24 @@ void irg_out_walk(ir_node *node,
 static void irg_out_block_walk2(ir_node *bl,
             irg_walk_func *pre, irg_walk_func *post,
             void *env) {
-  int i;
+  int i, n;
 
-  if(get_Block_block_visited(bl) < get_irg_block_visited(current_ir_graph)) {
-    set_Block_block_visited(bl, get_irg_block_visited(current_ir_graph));
+  if (Block_not_block_visited(bl)) {
+    mark_Block_block_visited(bl);
 
-    if(pre)
+    if (pre)
       pre(bl, env);
 
-    for(i = 0; i < get_Block_n_cfg_outs(bl); i++) {
+    for (i = 0, n =  get_Block_n_cfg_outs(bl); i < n; i++) {
       /* find the corresponding predecessor block. */
       ir_node *pred = get_Block_cfg_out(bl, i);
       /* recursion */
       irg_out_block_walk2(pred, pre, post, env);
     }
 
-    if(post)
+    if (post)
       post(bl, env);
   }
-  return;
 }
 
 /* Walks only over Block nodes in the graph.  Has it's own visited
@@ -182,12 +225,10 @@ void irg_out_block_walk(ir_node *node,
 
   inc_irg_block_visited(current_ir_graph);
 
-  if (get_irn_mode(node) == mode_X) node = node->out[1];
+  if (get_irn_mode(node) == mode_X)
+    node = node->out[1];
 
   irg_out_block_walk2(node, pre, post, env);
-
-  return;
-
 }
 
 /*--------------------------------------------------------------------*/
