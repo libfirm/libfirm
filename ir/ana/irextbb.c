@@ -446,7 +446,7 @@ void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *po
   irg_extblock_walk_2(blk, pre, post, env);
 
   /* keepalive: the endless loops ... */
-  if (get_extbb_leader(blk) == get_irg_end_block(current_ir_graph)) {
+  if (blk == get_Block_extbb(get_irg_end_block(current_ir_graph))) {
     ir_node *node = get_irg_end(current_ir_graph);
     int arity = get_irn_arity(node);
     for (i = 0; i < arity; i++) {
