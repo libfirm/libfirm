@@ -33,6 +33,13 @@
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 
+typedef enum {
+	IA32_AM_CAND_NONE  = 0,
+	IA32_AM_CAND_LEFT  = 1,
+	IA32_AM_CAND_RIGHT = 2,
+	IA32_AM_CAND_BOTH  = 3
+} ia32_am_cand_t;
+
 #undef is_NoMem
 #define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
 
@@ -736,11 +743,11 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
  * @param h           The height information of the irg
  * @param block       The block the Loads must/mustnot be in
  * @param irn         The irn to check
- * return 1 if irn is a candidate, 0 otherwise
+ * return 0 if irn is no candidate, 1 if left load can be used, 2 if right one, 3 for both
  */
-static int is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
+static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
 	ir_node *in, *load, *other, *left, *right;
-	int      n, is_cand = 0;
+	int      n, is_cand = 0, cand;
 
 	if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
 		return 0;
@@ -759,10 +766,12 @@ static int is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
 
 		/* If there is a data dependency of other irn from load: cannot use AM */
 		if (get_nodes_block(other) == block)
-			is_cand = heights_reachable_in_block(h, load, other) ? 0 : is_cand;
+			is_cand = heights_reachable_in_block(h, get_Proj_pred(other), load) ? 0 : is_cand;
 	}
 
-	in = right;
+	cand    = is_cand ? IA32_AM_CAND_LEFT : IA32_AM_CAND_NONE;
+	in      = right;
+	is_cand = 0;
 
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 		n         = ia32_get_irn_n_edges(in);
@@ -773,12 +782,13 @@ static int is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
 
 		/* If there is a data dependency of other irn from load: cannot use load */
 		if (get_nodes_block(other) == block)
-			is_cand = heights_reachable_in_block(h, load, other) ? 0 : is_cand;
+			is_cand = heights_reachable_in_block(h, get_Proj_pred(other), load) ? 0 : is_cand;
 	}
 
-	is_cand = get_ia32_frame_ent(irn) ? 0 : is_cand;
+	cand = is_cand ? (cand | IA32_AM_CAND_RIGHT) : cand;
 
-	return is_cand;
+	/* if the irn has a frame entity: we do not use address mode */
+	return get_ia32_frame_ent(irn) ? IA32_AM_CAND_NONE : cand;
 }
 
 /**
@@ -1325,9 +1335,6 @@ static void optimize_lea(ir_node *irn, void *env) {
 			const ir_edge_t *edge, *ne;
 			ir_node *src;
 
-			if (get_irn_node_nr(irn) == 2324)
-				__asm int 3
-
 			/* merge all Loads/Stores connected to this LEA with the LEA */
 			foreach_out_edge_safe(left, edge, ne) {
 				src = get_edge_src_irn(edge);
@@ -1354,7 +1361,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	ia32_code_gen_t   *cg         = am_opt_env->cg;
 	heights_t         *h          = am_opt_env->h;
 	ir_node           *block, *noreg_gp, *noreg_fp;
-	ir_node           *left, *right, *temp;
+	ir_node           *left, *right;
 	ir_node           *store, *load, *mem_proj;
 	ir_node           *succ, *addr_b, *addr_i;
 	int               check_am_src          = 0;
@@ -1384,7 +1391,15 @@ static void optimize_am(ir_node *irn, void *env) {
 	/*     - the Load and Store are in the same block AND                               */
 	/*     - nobody else uses the result of the op                                      */
 
-	if ((get_ia32_am_support(irn) != ia32_am_None) && ! is_ia32_Lea(irn) && is_am_candidate(h, block, irn)) {
+	if ((get_ia32_am_support(irn) != ia32_am_None) && ! is_ia32_Lea(irn)) {
+		ia32_am_cand_t cand      = is_am_candidate(h, block, irn);
+		ia32_am_cand_t orig_cand = cand;
+
+		/* cand == 1: load is left;   cand == 2: load is right; */
+
+		if (cand == IA32_AM_CAND_NONE)
+			return;
+
 		DBG((mod, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
 
 		left  = get_irn_n(irn, 2);
@@ -1397,25 +1412,25 @@ static void optimize_am(ir_node *irn, void *env) {
 		}
 
 		/* normalize commutative ops */
-		if (node_is_ia32_comm(irn)) {
+		if (node_is_ia32_comm(irn) && (cand == IA32_AM_CAND_LEFT)) {
+
 			/* Assure that right operand is always a Load if there is one    */
 			/* because non-commutative ops can only use Dest AM if the right */
 			/* operand is a load, so we only need to check right operand.    */
-			if (pred_is_specific_nodeblock(block, left, is_ia32_Ld))
-			{
-				exchange_left_right(irn, &left, &right, 3, 2);
-				need_exchange_on_fail = 1;
-			}
+
+			exchange_left_right(irn, &left, &right, 3, 2);
+			need_exchange_on_fail = 1;
+
+			/* now: load is right */
+			cand = IA32_AM_CAND_RIGHT;
 		}
 
 		/* check for Store -> op -> Load */
 
 		/* Store -> op -> Load optimization is only possible if supported by op */
 		/* and if right operand is a Load                                       */
-		if ((get_ia32_am_support(irn) & ia32_am_Dest) &&
-			 pred_is_specific_nodeblock(block, right, is_ia32_Ld))
+		if ((get_ia32_am_support(irn) & ia32_am_Dest) && (cand & IA32_AM_CAND_RIGHT))
 		{
-
 			/* An address mode capable op always has a result Proj.                  */
 			/* If this Proj is used by more than one other node, we don't need to    */
 			/* check further, otherwise we check for Store and remember the address, */
@@ -1444,24 +1459,14 @@ static void optimize_am(ir_node *irn, void *env) {
 
 				/* Extra check for commutative ops with two Loads */
 				/* -> put the interesting Load right              */
-				if (node_is_ia32_comm(irn) &&
-					pred_is_specific_nodeblock(block, left, is_ia32_Ld))
-				{
+				if (node_is_ia32_comm(irn) && (cand == IA32_AM_CAND_BOTH)) {
 					if ((addr_b == get_irn_n(get_Proj_pred(left), 0)) &&
 						(addr_i == get_irn_n(get_Proj_pred(left), 1)))
 					{
 						/* We exchange left and right, so it's easier to kill     */
 						/* the correct Load later and to handle unary operations. */
-						set_irn_n(irn, 2, right);
-						set_irn_n(irn, 3, left);
-
-						temp  = left;
-						left  = right;
-						right = temp;
-
-						/* this is only needed for Compares, but currently ALL nodes
-						 * have this attribute :-) */
-						set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
+						exchange_left_right(irn, &left, &right, 3, 2);
+						need_exchange_on_fail ^= 1;
 					}
 				}
 
@@ -1526,27 +1531,32 @@ static void optimize_am(ir_node *irn, void *env) {
 		}
 
 		/* was exchanged but optimize failed: exchange back */
-		if (check_am_src && need_exchange_on_fail)
+		if (check_am_src && need_exchange_on_fail) {
 			exchange_left_right(irn, &left, &right, 3, 2);
+			cand = orig_cand;
+		}
 
 		need_exchange_on_fail = 0;
 
 		/* normalize commutative ops */
-		if (check_am_src && node_is_ia32_comm(irn)) {
+		if (check_am_src && node_is_ia32_comm(irn) && (cand == IA32_AM_CAND_RIGHT)) {
+
 			/* Assure that left operand is always a Load if there is one */
 			/* because non-commutative ops can only use Source AM if the */
 			/* left operand is a Load, so we only need to check the left */
 			/* operand afterwards.                                       */
-			if (pred_is_specific_nodeblock(block, right, is_ia32_Ld))	{
-				exchange_left_right(irn, &left, &right, 3, 2);
-				need_exchange_on_fail = 1;
-			}
+
+			exchange_left_right(irn, &left, &right, 3, 2);
+			need_exchange_on_fail = 1;
+
+			/* now: load is left */
+			cand = IA32_AM_CAND_LEFT;
 		}
 
 		/* optimize op -> Load iff Load is only used by this op   */
 		/* and left operand is a Load which only used by this irn */
-		if (check_am_src                                        &&
-			pred_is_specific_nodeblock(block, left, is_ia32_Ld) &&
+		if (check_am_src               &&
+			(cand & IA32_AM_CAND_LEFT) &&
 			(ia32_get_irn_n_edges(left) == 1))
 		{
 			left = get_Proj_pred(left);
