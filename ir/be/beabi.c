@@ -1161,6 +1161,15 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 	return irn;
 }
 
+/**
+ * Creates a be_Return for a Return node.
+ *
+ * @param @env    the abi environment
+ * @param irn     the Return node or NULL if there was none
+ * @param bl      the block where the be_Retun should be placed
+ * @param mem     the current memory
+ * @param n_res   number of return results
+ */
 static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, ir_node *mem, int n_res) {
 	be_abi_call_t *call = env->call;
 	const arch_isa_t *isa = env->birg->main_env->arch_env->isa;
@@ -1449,17 +1458,13 @@ static void modify_irg(be_abi_irg_t *env)
 	for (i = 0, n = get_Block_n_cfgpreds(end); i < n; ++i) {
 		ir_node *irn = get_Block_cfgpred(end, i);
 
-		if (get_irn_opcode(irn) == iro_Return) {
+		if (is_Return(irn)) {
 			ir_node *ret = create_be_return(env, irn, get_nodes_block(irn), get_Return_mem(irn), get_Return_n_ress(irn));
 			exchange(irn, ret);
 		}
 	}
-
-	if (n <= 0) {
-		/* we have endless loops, add a dummy return without return vals */
-		ir_node *ret = create_be_return(env, NULL, end, get_irg_no_mem(irg), n);
-		add_End_keepalive(get_irg_end(irg), ret);
-	}
+	/* if we have endless loops here, n might be <= 0. Do NOT create a be_Return than,
+	   the code is dead and will never be executed. */
 
 	del_pset(dont_save);
 	obstack_free(&env->obst, args);
