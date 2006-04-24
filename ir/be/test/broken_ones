@@ -31,6 +31,10 @@ edgcpfe: ../../../ir/be/bechordal.c:496: handle_constraints: Assertion `assignme
           ^
 
 /afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2:  6501 Segmentation fault      edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
+
+=== compiling biggest_prime.c ===
+edgcpfe: ../../../ir/ir/irnode.c:1803: get_Proj_pred: Assertion `is_Proj(node)' failed.
+/afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2: 12416 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
 === compiling bf_init.c ===
 edgcpfe: ../../../../ir/be/ia32/ia32_gen_decls.c:479: dump_global: Assertion `aipos >= 0 && "couldn't store entity"' failed.
 /afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2:  6541 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
@@ -55,6 +59,9 @@ rm: cannot remove `*.vcg': No such file or directory
 === compiling bitfield.c ===
 edgcpfe: ../../../../ir/be/ia32/ia32_gen_decls.c:479: dump_global: Assertion `aipos >= 0 && "couldn't store entity"' failed.
 /afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2:  6556 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
+=== compiling fbench.c ===
+edgcpfe: ../../../ir/ir/irnode.c:1803: get_Proj_pred: Assertion `is_Proj(node)' failed.
+/afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2: 12438 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
 === compiling ffbench.c ===
 "ffbench.c", line 239: warning: variable "fd" was declared but never referenced
   	Float *fdata, *fd;
@@ -66,6 +73,25 @@ edgcpfe: ../../../../ir/be/ia32/ia32_gen_decls.c:479: dump_global: Assertion `ai
 
 edgcpfe: ../../../ir/be/bechordal.c:496: handle_constraints: Assertion `assignment[i] >= 0 && "there must have been a register assigned"' failed.
 /afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2:  6645 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
+=== compiling harness.c ===
+"harness.c", line 39: warning: variable "writecount" was declared but never
+          referenced
+        int     writecount ;    /* Number of characters written */
+                ^
+
+"harness.c", line 225: warning: variable "N" was declared but never referenced
+  int N;
+      ^
+
+"harness.c", line 226: warning: variable "C" was declared but never referenced
+  char C;
+       ^
+
+edgcpfe: ../../../ir/be/bechordal.c:496: handle_constraints: Assertion `assignment[i] >= 0 && "there must have been a register assigned"' failed.
+/afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2: 12456 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
+=== compiling scanner.c ===
+edgcpfe: ../../../ir/be/bechordal.c:496: handle_constraints: Assertion `assignment[i] >= 0 && "there must have been a register assigned"' failed.
+/afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2: 12475 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
 === compiling sparam.c ===
 edgcpfe: ../../../../ir/be/ia32/ia32_emitter.c:136: get_in_reg: Assertion `reg && "no in register found"' failed.
 /afs/info.uni-karlsruhe.de/user/chriswue/local/bin/eccp: line 2:  6726 Aborted                 edgcpfe --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include/ $*
