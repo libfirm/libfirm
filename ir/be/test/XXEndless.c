@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     int i = 0;
 
     printf("XXEndless.c\n");
-    if (argc != 1) {
+    if (argc != 2) {
 	printf("\nUsage: Endless n, where n determines the loop.\n");
 	printf("Continuing with default input.\n");
     } else {
