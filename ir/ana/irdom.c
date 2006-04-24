@@ -448,6 +448,22 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
     assert(is_Block(pred));
     init_tmp_pdom_info(pred, tdi, tdi_list, used);
   }
+
+  /* Handle keep-alives. Note that the preprocessing
+     in init_construction() had already killed all
+     phantom keep-alive edges. All remaining block keep-alives
+     are really edges to endless loops.
+   */
+  if (bl == get_irg_end_block(current_ir_graph)) {
+    ir_node *end = get_irg_end(current_ir_graph);
+
+    for (i = get_irn_arity(end) - 1; i >= 0; --i) {
+      ir_node *pred = get_irn_n(end, i);
+
+      if (is_Block(pred))
+        init_tmp_pdom_info(pred, tdi, tdi_list, used);
+    }
+  }
 }
 
 static void dom_compress(tmp_dom_info *v)
@@ -717,9 +733,9 @@ void compute_postdoms(ir_graph *irg) {
     tmp_dom_info *v;
 
     /* Step 2 */
-    irn_arity = get_Block_n_cfg_outs(w->block);
+    irn_arity = get_Block_n_cfg_outs_ka(w->block);
     for (j = 0;  j < irn_arity;  j++) {
-      ir_node *succ = get_Block_cfg_out(w->block, j);
+      ir_node *succ = get_Block_cfg_out_ka(w->block, j);
       tmp_dom_info *u;
 
       if (get_Block_postdom_pre_num (succ) == -1)
