@@ -532,14 +532,14 @@ static int init_construction(ir_graph *irg, irg_walk_func *pre) {
 
   /* now visit the unreachable (from End) Blocks and remove unnecessary keep-alives */
   end   = get_irg_end(irg);
-  arity = get_irn_arity(end);
+  arity = get_End_n_keepalives(end);
   if (arity) {    /* we have keep-alives */
     ir_node **in;
     int i, j;
 
     NEW_ARR_A(ir_node *, in, arity);
     for (i = j = 0; i < arity; i++) {
-      ir_node *pred = get_irn_n(end, i);
+      ir_node *pred = get_End_keepalive(end, i);
 
       if (get_irn_op(pred) == op_Block) {
         if (Block_not_block_visited(pred)) {
@@ -554,7 +554,7 @@ static int init_construction(ir_graph *irg, irg_walk_func *pre) {
     }
     if (j != arity) {
       /* we kill some Block keep-alives */
-      set_irn_in(end, j, in);
+      set_End_keepalives(end, j, in);
       set_irg_outs_inconsistent(irg);
     }
   }

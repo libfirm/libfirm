@@ -242,17 +242,17 @@ set_irn_in (ir_node *node, int arity, ir_node **in) {
     arr = &node->in;
   }
 
-	for (i = 0; i < arity; i++) {
-		if (i < ARR_LEN(*arr)-1)
-    	edges_notify_edge(node, i, in[i], (*arr)[i+1], irg);
-		else
-	    edges_notify_edge(node, i, in[i], NULL,        irg);
+  for (i = 0; i < arity; i++) {
+    if (i < ARR_LEN(*arr)-1)
+      edges_notify_edge(node, i, in[i], (*arr)[i+1], irg);
+    else
+      edges_notify_edge(node, i, in[i], NULL,        irg);
   }
-	for(;i < ARR_LEN(*arr)-1; i++) {
-		edges_notify_edge(node, i, NULL, (*arr)[i+1], irg);
-	}
+  for(;i < ARR_LEN(*arr)-1; i++) {
+    edges_notify_edge(node, i, NULL, (*arr)[i+1], irg);
+  }
 
-	if (arity != ARR_LEN(*arr) - 1) {
+  if (arity != ARR_LEN(*arr) - 1) {
     ir_node * block = (*arr)[0];
     *arr = NEW_ARR_D(ir_node *, irg->obst, arity + 1);
     (*arr)[0] = block;
@@ -789,11 +789,28 @@ set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
   set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);
 }
 
+/* Set new keep-alives */
+void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
+  int i;
+  ir_graph *irg = get_irn_irg(end);
+
+  /* notify that edges are deleted */
+  for (i = END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in); ++i) {
+    edges_notify_edge(end, i, in[i], NULL, irg);
+  }
+  ARR_RESIZE(ir_node *, end->in, n + END_KEEPALIVE_OFFSET);
+
+  for (i = 0; i < n; ++i) {
+    end->in[END_KEEPALIVE_OFFSET + i] = in[i];
+    edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, NULL, end->in[END_KEEPALIVE_OFFSET + i], irg);
+  }
+}
+
 void
 free_End (ir_node *end) {
   assert (end->op == op_End);
   end->kind = k_BAD;
-  DEL_ARR_F(end->in);  /* GL @@@ tut nicht ! */
+  DEL_ARR_F(end->in);
   end->in = NULL;   /* @@@ make sure we get an error if we use the
                in array afterwards ... */
 }

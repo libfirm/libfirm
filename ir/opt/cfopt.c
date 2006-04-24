@@ -13,6 +13,13 @@
 # include "config.h"
 #endif
 
+#ifdef HAVE_MALLOC_H
+# include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
+
 #include <assert.h>
 
 #include "xmalloc.h"
@@ -600,7 +607,7 @@ static void optimize_blocks(ir_node *b, void *env) {
  * we will lose blocks and thereby generate memory leaks.
  */
 void optimize_cf(ir_graph *irg) {
-  int i, n;
+  int i, j, n;
   ir_node **in;
   ir_node *end = get_irg_end(irg);
   ir_graph *rem = current_ir_graph;
@@ -650,12 +657,13 @@ void optimize_cf(ir_graph *irg) {
 
   /* Walk all keep alives, optimize them if block, add to new in-array
      for end if useful. */
-  in = NEW_ARR_F (ir_node *, 1);
-  in[0] = get_nodes_block(end);
+  n  = get_End_n_keepalives(end);
+  if (n > 0)
+    NEW_ARR_A (ir_node *, in, n);
   inc_irg_visited(current_ir_graph);
 
   /* fix the keep alive */
-  for (i = 0, n = get_End_n_keepalives(end); i < n; i++) {
+  for (i = j = 0; i < n; i++) {
     ir_node *ka = get_End_keepalive(end, i);
 
     if (irn_not_visited(ka)) {
@@ -666,20 +674,20 @@ void optimize_cf(ir_graph *irg) {
               get_irg_block_visited(current_ir_graph)-1);
         irg_block_walk(ka, optimize_blocks, NULL, NULL);
         mark_irn_visited(ka);
-        ARR_APP1 (ir_node *, in, ka);
+        in[j++] = ka;
       } else if (op == op_Phi) {
         mark_irn_visited(ka);
         if (! is_Block_dead(get_nodes_block(ka)))
-          ARR_APP1 (ir_node *, in, ka);
+          in[j++] = ka;
       } else if (is_op_keep(op)) {
         mark_irn_visited(ka);
         if (! is_Block_dead(get_nodes_block(ka)))
-          ARR_APP1 (ir_node *, in, ka);
+          in[j++] = ka;
       }
     }
   }
-  DEL_ARR_F(end->in);
-  end->in = in;
+  if (j != n)
+    set_End_keepalives(end, j, in);
 
   /* the verifier doesn't work yet with floating nodes */
   if (get_irg_pinned(irg) == op_pin_state_pinned) {
