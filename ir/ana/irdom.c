@@ -14,6 +14,12 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -26,6 +32,7 @@
 #include "irgraph_t.h"   /* To access state field. */
 #include "irnode_t.h"
 #include "ircons_t.h"
+#include "array.h"
 
 
 #define get_dom_info(bl)  (&(bl)->attr.block.dom)
@@ -338,19 +345,6 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 /*--------------------------------------------------------------------*/
 
 /**
- * count the number of blocks and clears the dominance info
- */
-static void count_and_init_blocks_dom(ir_node *bl, void *env) {
-  int *n_blocks = (int *) env;
-  (*n_blocks) ++;
-
-	memset(get_dom_info(bl), 0, sizeof(dom_info));
-  set_Block_idom(bl, NULL);
-  set_Block_dom_pre_num(bl, -1);
-  set_Block_dom_depth(bl, -1);
-}
-
-/**
  * count the number of blocks and clears the post dominance info
  */
 static void count_and_init_blocks_pdom(ir_node *bl, void *env) {
@@ -414,8 +408,8 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
   tdi->block = bl;
 
   /* Iterate */
-  for (i = get_Block_n_cfg_outs(bl) - 1; i >= 0; --i) {
-    ir_node *pred = get_Block_cfg_out(bl, i);
+  for (i = get_Block_n_cfg_outs_ka(bl) - 1; i >= 0; --i) {
+    ir_node *pred = get_Block_cfg_out_ka(bl, i);
     assert(is_Block(pred));
     init_tmp_dom_info(pred, tdi, tdi_list, used);
   }
@@ -485,6 +479,75 @@ INLINE static void dom_link(tmp_dom_info *v, tmp_dom_info *w)
   w->ancestor = v;
 }
 
+/**
+ * Walker: count the number of blocks and clears the dominance info
+ */
+static void count_and_init_blocks_dom(ir_node *bl, void *env) {
+  int *n_blocks = (int *) env;
+  (*n_blocks) ++;
+
+  memset(get_dom_info(bl), 0, sizeof(dom_info));
+  set_Block_idom(bl, NULL);
+  set_Block_dom_pre_num(bl, -1);
+  set_Block_dom_depth(bl, -1);
+}
+
+/**
+ * Initialize the dominance/postdominance construction:
+ *
+ * - count the number of blocks
+ * - clear the dominance info
+ * - remove block-keepalives of live blocks to reduce
+ *   the number of "phantom" block edges
+ *
+ * @param irg  the graph
+ * @param pre  a walker function that will be called for every block in the graph
+ */
+static int init_construction(ir_graph *irg, irg_walk_func *pre) {
+  ir_graph *rem = current_ir_graph;
+  ir_node *end;
+  int arity;
+  int n_blocks = 0;
+
+  current_ir_graph = irg;
+
+  /* this visits only the reachable blocks */
+  irg_block_walk(get_irg_end_block(irg), pre, NULL, &n_blocks);
+
+  /* now visit the unreachable (from End) Blocks and remove unnecessary keep-alives */
+  end   = get_irg_end(irg);
+  arity = get_irn_arity(end);
+  if (arity) {    /* we have keep-alives */
+    ir_node **in;
+    int i, j;
+
+    NEW_ARR_A(ir_node *, in, arity);
+    for (i = j = 0; i < arity; i++) {
+      ir_node *pred = get_irn_n(end, i);
+
+      if (get_irn_op(pred) == op_Block) {
+        if (Block_not_block_visited(pred)) {
+          /* we found a endless loop */
+          dec_irg_block_visited(irg);
+          irg_block_walk(pred, pre, NULL, &n_blocks);
+        }
+        else
+          continue;
+      }
+      in[j++] = pred;
+    }
+    if (j != arity) {
+      /* we kill some Block keep-alives */
+      set_irn_in(end, j, in);
+      set_irg_outs_inconsistent(irg);
+    }
+  }
+
+  current_ir_graph = rem;
+  return n_blocks;
+}
+
+
 /* Computes the dominator trees.  Sets a flag in irg to "dom_consistent".
    If the control flow of the graph is changed this flag must be set to
    "dom_inconsistent".  */
@@ -496,25 +559,24 @@ void compute_doms(ir_graph *irg) {
   current_ir_graph = irg;
 
   /* Update graph state */
-  assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  current_ir_graph->dom_state = dom_consistent;
+  assert(get_irg_phase_state(irg) != phase_building);
+  irg->dom_state = dom_consistent;
 
   /* Count the number of blocks in the graph. */
-  n_blocks = 0;
-  irg_block_walk(get_irg_end(current_ir_graph), count_and_init_blocks_dom, NULL, &n_blocks);
+  n_blocks = init_construction(irg, count_and_init_blocks_dom);
 
   /* Memory for temporary information. */
   tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
 
   /* We need the out data structure. */
-  if (current_ir_graph->outs_state != outs_consistent)
-    compute_irg_outs(current_ir_graph);
+  if (irg->outs_state != outs_consistent)
+    compute_irg_outs(irg);
 
   /* this with a standard walker as passing the parent to the sons isn't
      simple. */
   used = 0;
-  inc_irg_block_visited(current_ir_graph);
-  init_tmp_dom_info(get_irg_start_block(current_ir_graph), NULL, tdi_list, &used);
+  inc_irg_block_visited(irg);
+  init_tmp_dom_info(get_irg_start_block(irg), NULL, tdi_list, &used);
   /* If not all blocks are reachable from Start by out edges this assertion
      fails.
      assert(used == n_blocks && "Precondition for dom construction violated"); */
@@ -538,6 +600,27 @@ void compute_doms(ir_graph *irg) {
       u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
       if (u->semi < w->semi) w->semi = u->semi;
     }
+
+    /* handle keep-alives if we are at the end block */
+    if (w->block == get_irg_end_block(irg)) {
+      ir_node *end = get_irg_end(irg);
+
+      irn_arity = get_irn_arity(end);
+      for (j = 0; j < irn_arity;  j++) {
+        ir_node *pred = get_irn_n(end, j);
+        tmp_dom_info *u;
+
+        if (is_no_Block(pred))
+          continue;
+
+        if (get_Block_dom_pre_num(pred) == -1)
+          continue;	/* control-dead */
+
+        u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
+        if (u->semi < w->semi) w->semi = u->semi;
+      }
+    }
+
     /* Add w to w->semi's bucket.  w is in exactly one bucket, so
        buckets can been implemented as linked lists. */
     w->bucket = w->semi->bucket;
@@ -604,25 +687,24 @@ void compute_postdoms(ir_graph *irg) {
   current_ir_graph = irg;
 
   /* Update graph state */
-  assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  current_ir_graph->pdom_state = dom_consistent;
+  assert(get_irg_phase_state(irg) != phase_building);
+  irg->pdom_state = dom_consistent;
 
   /* Count the number of blocks in the graph. */
-  n_blocks = 0;
-  irg_block_walk(get_irg_end(current_ir_graph), count_and_init_blocks_pdom, NULL, &n_blocks);
+  n_blocks = init_construction(irg, count_and_init_blocks_pdom);
 
   /* Memory for temporary information. */
   tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
 
   /* We need the out data structure. */
-  if (current_ir_graph->outs_state != outs_consistent)
-    compute_irg_outs(current_ir_graph);
+  if (irg->outs_state != outs_consistent)
+    compute_irg_outs(irg);
 
   /* this with a standard walker as passing the parent to the sons isn't
      simple. */
   used = 0;
-  inc_irg_block_visited(current_ir_graph);
-  init_tmp_pdom_info(get_irg_end_block(current_ir_graph), NULL, tdi_list, &used);
+  inc_irg_block_visited(irg);
+  init_tmp_pdom_info(get_irg_end_block(irg), NULL, tdi_list, &used);
   /* If not all blocks are reachable from End by cfg edges this assertion
      fails.
      assert(used == n_blocks && "Precondition for dom construction violated"); */
@@ -682,7 +764,7 @@ void compute_postdoms(ir_graph *irg) {
 
   /* clean up */
   free(tdi_list);
-  current_ir_graph = rem;
+  irg = rem;
 
   /* Do a walk over the tree and assign the tree pre orders. */
   {
