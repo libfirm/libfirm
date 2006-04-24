@@ -645,7 +645,7 @@ else {
   "comment"   => "represents a SSE constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "none" ], "out" => [ "xmm" ] },
-  "emit"      => '. mov%M %D1, %C /* Load fConst into register */',
+  "emit"      => '. movs%M %D1, %C /* Load fConst into register */',
 },
 
 # Load / Store
