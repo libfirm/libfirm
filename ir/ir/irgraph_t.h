@@ -516,6 +516,11 @@ _inc_irg_block_visited(ir_graph *irg) {
   ++irg->block_visited;
 }
 
+static INLINE void
+_dec_irg_block_visited(ir_graph *irg) {
+  --irg->block_visited;
+}
+
 static INLINE unsigned
 _get_irg_estimated_node_cnt(const ir_graph *irg) {
   return irg->estimated_node_count;
@@ -598,6 +603,7 @@ irg_kill_node(ir_graph *irg, ir_node *n) {
 #define get_irg_block_visited(irg)            _get_irg_block_visited(irg)
 #define set_irg_block_visited(irg, v)         _set_irg_block_visited(irg, v)
 #define inc_irg_block_visited(irg)            _inc_irg_block_visited(irg)
+#define dec_irg_block_visited(irg)            _dec_irg_block_visited(irg)
 #define get_irg_estimated_node_cnt(irg)       _get_irg_estimated_node_cnt(irg)
 
 # endif /* _IRGRAPH_T_H_ */
