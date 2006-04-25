@@ -795,15 +795,15 @@ static void sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const
 	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
 	DB((dbg, LEVEL_1, ">>> %s %s, %s -> %s\n", get_irn_opname(n),
-		arch_register_get_name(op2), arch_register_get_name(op1),
+		arch_register_get_name(op1), arch_register_get_name(op2),
 		arch_register_get_name(out)));
-  DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live));
 
+	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
 
-	if (op1->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]) {
-		/* first operand is a vfp register */
-		op1_idx = x87_on_stack(state, arch_register_get_index(op1));
+	if (op2->index != REG_VFP_NOREG) {
+		/* second operand is a vfp register */
 
 		if (is_vfp_live(op2->index, live)) {
 			/* Second operand is live. */
@@ -889,17 +889,17 @@ static void sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const
 		}
 	}
 	else {
-		/* first operand is an address mode */
-		if (is_vfp_live(op2->index, live)) {
-			/* second operand is live: push it here */
-			x87_create_fpush(env, state, n, op2_idx, BINOP_IDX_2);
+		/* second operand is an address mode */
+		if (is_vfp_live(op1->index, live)) {
+			/* first operand is live: push it here */
+			x87_create_fpush(env, state, n, op1_idx, BINOP_IDX_1);
 		}
 		else {
-			/* second operand is dead: bring it to tos */
-			if (op2_idx != 0)
-				x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+			/* first operand is dead: bring it to tos */
+			if (op1_idx != 0)
+				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
 		}
-		op2_idx = out_idx = 0;
+		op1_idx = out_idx = 0;
 		dst = tmpl->normal_op;
 		do_pop = 0;
 	}
@@ -910,14 +910,19 @@ static void sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const
 
 	/* patch the operation */
 	attr = get_ia32_attr(n);
-	if (op1_idx >= 0)
-		attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
-	attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
+	attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
+	if (op2_idx >= 0)
+		attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
 	attr->x87[2] = out = &ia32_st_regs[out_idx];
 
-	DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n),
-		arch_register_get_name(op2), arch_register_get_name(op1),
-		arch_register_get_name(out)));
+	if (op2_idx > 0)
+		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n),
+			arch_register_get_name(op1), arch_register_get_name(op2),
+			arch_register_get_name(out)));
+	else
+		DB((dbg, LEVEL_1, "<<< %s %s, [AM] -> %s\n", get_irn_opname(n),
+			arch_register_get_name(op1),
+			arch_register_get_name(out)));
 }
 
 /**
@@ -936,7 +941,7 @@ static void sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
 	DB((dbg, LEVEL_1, ">>> %s -> %s\n", get_irn_opname(n), out->name));
-  DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live));
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1092,15 +1097,15 @@ static void sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 	unsigned live = vfp_liveness_nodes_live_at(env, n);
 
 	DB((dbg, LEVEL_1, ">>> %s %s, %s\n", get_irn_opname(n),
-		arch_register_get_name(op2), arch_register_get_name(op1)));
+		arch_register_get_name(op1), arch_register_get_name(op2)));
 	DEBUG_ONLY(vfp_dump_live(live));
 
+	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
 
 	/* BEWARE: check for comp a,a cases, they might happen */
-	if (op1->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]) {
-		/* first operand is a vfp register */
-		op1_idx = x87_on_stack(state, arch_register_get_index(op1));
+	if (op2->index != REG_VFP_NOREG) {
+		/* second operand is a vfp register */
 
 		if (is_vfp_live(op2->index, live)) {
 			/* second operand is live */
@@ -1218,23 +1223,23 @@ static void sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 		}
 	}
 	else {
-		/* first operand is an address mode */
-		if (is_vfp_live(op2->index, live)) {
-			/* second operand is live: bring it to TOS */
-			if (op2_idx != 0) {
-				x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
-				op2_idx = 0;
+		/* second operand is an address mode */
+		if (is_vfp_live(op1->index, live)) {
+			/* first operand is live: bring it to TOS */
+			if (op1_idx != 0) {
+				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+				op1_idx = 0;
 			}
-			dst = op_ia32_fcomrJmp;
+			dst = op_ia32_fcomJmp;
 		}
 		else {
-			/* second operand is dead: bring it to tos */
-			if (op2_idx != 0) {
-				x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
-				op2_idx = 0;
+			/* first operand is dead: bring it to tos */
+			if (op1_idx != 0) {
+				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+				op1_idx = 0;
 			}
 		}
-		dst     = op_ia32_fcomrpJmp;
+		dst     = op_ia32_fcompJmp;
 		pop_cnt = 1;
 	}
 
@@ -1246,12 +1251,16 @@ static void sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 	/* patch the operation */
 	attr = get_ia32_attr(n);
-	if (op1_idx >= 0)
-		attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
-	attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
+	attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
+	if (op2_idx >= 0)
+		attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
 
-	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n),
-		arch_register_get_name(op2), arch_register_get_name(op1)));
+	if (op2_idx >= 0)
+		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n),
+			arch_register_get_name(op1), arch_register_get_name(op2)));
+	else
+		DB((dbg, LEVEL_1, "<<< %s %s, [AM]\n", get_irn_opname(n),
+			arch_register_get_name(op1)));
 }
 
 /**
