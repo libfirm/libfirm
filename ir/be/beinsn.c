@@ -5,6 +5,7 @@
 
 #include "besched_t.h"
 #include "beinsn_t.h"
+#include "beabi.h"
 
 be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 {
