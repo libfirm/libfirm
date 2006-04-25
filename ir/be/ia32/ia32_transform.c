@@ -229,6 +229,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 			new_op = func(dbg, irg, block, noreg_gp, noreg_gp, op1, op2, nomem);
 			set_ia32_am_support(new_op, ia32_am_Source);
 		}
+		set_ia32_ls_mode(new_op, mode);
 	}
 	else {
 		/* integer operations */

@@ -885,6 +885,7 @@ else {
 "vfConst" => {
   "op_flags"  => "c",
   "irn_flags" => "R",
+  "init_attr" => "  set_ia32_ls_mode(res, mode);",
   "comment"   => "represents a virtual floating point constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "none" ], "out" => [ "vfp" ] },
@@ -1080,6 +1081,7 @@ else {
 "fild" => {
   "op_flags"  => "R",
   "irn_flags" => "R",
+  "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
   "reg_req"   => { },
   "emit"      => '. fild %ia32_emit_am /* integer Load((%A1)) -> %D1 */',
@@ -1160,13 +1162,13 @@ else {
 },
 
 "fldConst" => {
-  "op_flags"  => "R",
-  "op_flags"  => "c",
+  "op_flags"  => "R|c",
   "irn_flags" => "R",
+  "rd_constructor" => "NONE",
   "comment"   => "represents a x87 constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "st" ] },
-  "emit"      => '. fld%M %C /* Load fConst into register -> %D1 */',
+  "emit"      => '. fld %ia32_emit_adr /* Load fConst into register -> %D1 */',
 },
 
 # fxch, fpush, fpop

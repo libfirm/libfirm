@@ -221,13 +221,13 @@ static int ia32_get_reg_name(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	const char *buf;
-	ir_node    *X  = arg->v_ptr;
+	ir_node    *irn = arg->v_ptr;
 	int         nr = occ->width - 1;
 
-	if (!X)
+	if (! irn)
 		return lc_appendable_snadd(app, "(null)", 6);
 
-	buf = get_ia32_reg_name(X, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
+	buf = get_ia32_reg_name(irn, nr, occ->conversion == 'S' ? IN_REG : OUT_REG);
 
 	/* append the stupid % to register names */
 	lc_appendable_chadd(app, '%');
@@ -241,14 +241,14 @@ static int ia32_get_x87_name(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	const char *buf;
-	ir_node     *X  = arg->v_ptr;
+	ir_node     *irn = arg->v_ptr;
 	int         nr = occ->width - 1;
 	ia32_attr_t *attr;
 
-	if (!X)
+	if (! irn)
 		return lc_appendable_snadd(app, "(null)", 6);
 
-	attr = get_ia32_attr(X);
+	attr = get_ia32_attr(irn);
 	buf = attr->x87[nr]->name;
 	lc_appendable_chadd(app, '%');
 	return lc_appendable_snadd(app, buf, strlen(buf));
@@ -261,16 +261,16 @@ static int ia32_const_to_str(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	const char *buf;
-	ir_node    *X = arg->v_ptr;
+	ir_node    *irn = arg->v_ptr;
 
-	if (!X)
+	if (! irn)
 		return lc_arg_append(app, occ, "(null)", 6);
 
 	if (occ->conversion == 'C') {
-		buf = get_ia32_cnst(X);
+		buf = get_ia32_cnst(irn);
 	}
 	else { /* 'O' */
-		buf = get_ia32_am_offs(X);
+		buf = get_ia32_am_offs(irn);
 	}
 
 	return buf ? lc_appendable_snadd(app, buf, strlen(buf)) : 0;
@@ -282,14 +282,14 @@ static int ia32_const_to_str(lc_appendable_t *app,
 static int ia32_get_mode_suffix(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
-	ir_node *X    = arg->v_ptr;
-	ir_mode *mode = get_irn_mode(X);
+	ir_node *irn  = arg->v_ptr;
+	ir_mode *mode = get_irn_mode(irn);
 
 	if (mode == mode_T) {
-		mode = (is_ia32_Ld(X) || is_ia32_St(X)) ? get_ia32_ls_mode(X) : get_ia32_res_mode(X);
+		mode = (is_ia32_Ld(irn) || is_ia32_St(irn)) ? get_ia32_ls_mode(irn) : get_ia32_res_mode(irn);
 	}
 
-	if (!X)
+	if (! irn)
 		return lc_arg_append(app, occ, "(null)", 6);
 
 	if (mode_is_float(mode)) {
@@ -341,7 +341,7 @@ static char *ia32_get_reg_name_for_mode(ia32_emit_env_t *env, ir_mode *mode, con
 /**
  * Emits registers and/or address mode of a binary operation.
  */
-char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
+const char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 	static char *buf = NULL;
 
 	/* verify that this function is never called on non-AM supporting operations */
@@ -432,9 +432,35 @@ char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 }
 
 /**
+ * Returns the xxx PTR string for a given mode
+ *
+ * @param mode      the mode
+ * @param x87_insn  if non-zero returns the string for a x87 instruction
+ *                  else for a SSE instruction
+ */
+static const char *pointer_size(ir_mode *mode, int x87_insn)
+{
+	if (mode) {
+		switch (get_mode_size_bits(mode)) {
+		case 8:  return "BYTE PTR";
+		case 16: return "WORD PTR";
+		case 32: return "DWORD PTR";
+		case 64:
+			if (x87_insn)
+				return "QWORD PTR";
+			return NULL;
+		case 80:
+		case 96: return "XWORD PTR";
+		default: return NULL;
+		}
+	}
+	return NULL;
+}
+
+/**
  * Emits registers and/or address mode of a binary operation.
  */
-char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
+const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
 	static char *buf = NULL;
 
 	/* verify that this function is never called on non-AM supporting operations */
@@ -450,7 +476,9 @@ char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
 	switch(get_ia32_op_type(n)) {
 		case ia32_Normal:
 			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
+				ir_mode *mode = get_ia32_ls_mode(n);
+				const char *p = pointer_size(mode, 1);
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s %s", p, get_ia32_cnst(n));
 			}
 			else {
 				ia32_attr_t *attr = get_ia32_attr(n);
@@ -483,7 +511,7 @@ char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
 /**
  * Emits registers and/or address mode of a unary operation.
  */
-char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
+const char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
 	static char *buf = NULL;
 
 	if (! buf) {
@@ -515,10 +543,11 @@ char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
 /**
  * Emits address mode.
  */
-char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
+const char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	ia32_am_flavour_t am_flav    = get_ia32_am_flavour(n);
 	int               had_output = 0;
-	char             *s;
+	char              *s;
+	const char        *p;
 	int               size;
 	static struct obstack *obst  = NULL;
 	ir_mode *mode = get_ia32_ls_mode(n);
@@ -536,30 +565,9 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	/* obstack_free with NULL results in an uninitialized obstack */
 	obstack_init(obst);
 
-	if (mode) {
-		switch (get_mode_size_bits(mode)) {
-			case 8:
-				obstack_printf(obst, "BYTE PTR ");
-				break;
-			case 16:
-				obstack_printf(obst, "WORD PTR ");
-				break;
-			case 32:
-				obstack_printf(obst, "DWORD PTR ");
-				break;
-			case 64:
-				if (has_x87_register(n))
-					/* ARGHHH: stupid gas x87 wants QWORD PTR but SSE must be WITHOUT */
-					obstack_printf(obst, "QWORD PTR ");
-				break;
-			case 80:
-			case 96:
-				obstack_printf(obst, "XWORD PTR ");
-				break;
-			default:
-				break;
-		}
-	}
+	p = pointer_size(mode, has_x87_register(n));
+	if (p)
+		obstack_printf(obst, "%s ", p);
 
 	/* emit address mode symconst */
 	if (get_ia32_am_sc(n)) {
@@ -617,7 +625,19 @@ char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	return s;
 }
 
+/**
+ * emit an address
+ */
+const char *ia32_emit_adr(const ir_node *irn, ia32_emit_env_t *env)
+{
+	static char buf[SNPRINTF_BUF_LEN];
+	ir_mode    *mode = get_ia32_ls_mode(irn);
+	const char *adr  = get_ia32_cnst(irn);
+	const char *pref = pointer_size(mode, has_x87_register(irn));
 
+	snprintf(buf, SNPRINTF_BUF_LEN, "%s %s", pref ? pref : "", adr);
+	return buf;
+}
 
 /**
  * Formated print of commands and comments.
@@ -1488,6 +1508,13 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
   lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);
 }
 
+static void emit_be_Return(const ir_node *n, ia32_emit_env_t *env) {
+  FILE *F = env->out;
+  const lc_arg_env_t *arg_env = ia32_get_arg_env();
+
+  lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", "ret", "/* be_Return */", n, n);
+}
+
 
 
 /***********************************************************************************
@@ -1544,6 +1571,7 @@ static void ia32_register_emitters(void) {
 	BE_EMIT(SetSP);
 	BE_EMIT(Copy);
 	BE_EMIT(Perm);
+	BE_EMIT(Return);
 
 	/* firm emitter */
 	EMIT(Jmp);
@@ -1685,7 +1713,6 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, cpu_support cpu) {
 static void ia32_emit_func_epilog(FILE *F, ir_graph *irg) {
 	const char *irg_name = get_entity_ld_name(get_irg_entity(irg));
 
-	fprintf(F, "\tret\n");
 	ia32_dump_function_size(F, irg_name);
 	fprintf(F, "\n");
 }

@@ -152,7 +152,7 @@ static entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 		if (tp == firm_unknown_type)
 			tp = get_prim_type(cg->isa->types, mode);
 
-		res = new_entity(get_glob_type(), unique_id("ia32FloatCnst_%u"), tp);
+		res = new_entity(get_glob_type(), unique_id(".LC%u"), tp);
 
 		set_entity_ld_ident(res, get_entity_ident(res));
 		set_entity_visibility(res, visibility_local);

@@ -19,11 +19,12 @@ typedef struct _ia32_emit_env_t {
 
 const lc_arg_env_t *ia32_get_arg_env(void);
 
-char *ia32_emit_binop(const ir_node *irn, ia32_emit_env_t *env);
-char *ia32_emit_unop(const ir_node *irn, ia32_emit_env_t *env);
-char *ia32_emit_am(const ir_node *irn, ia32_emit_env_t *env);
+const char *ia32_emit_binop(const ir_node *irn, ia32_emit_env_t *env);
+const char *ia32_emit_unop(const ir_node *irn, ia32_emit_env_t *env);
+const char *ia32_emit_am(const ir_node *irn, ia32_emit_env_t *env);
+const char *ia32_emit_adr(const ir_node *irn, ia32_emit_env_t *env);
 
-char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env);
+const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env);
 
 int get_ia32_reg_nr(ir_node *irn, int posi, int in_out);
 const char *get_ia32_in_reg_name(ir_node *irn, int pos);

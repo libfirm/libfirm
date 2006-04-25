@@ -360,6 +360,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 /**
  * Generate the routine epilogue.
  * @param self    The callback object.
+ * @param bl      The block for the epilog
  * @param mem     A pointer to the mem node. Update this if you define new memory.
  * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
  * @return        The register which shall be used as a stack frame base.
