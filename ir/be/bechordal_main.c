@@ -346,8 +346,12 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		co_compare_solvers(&chordal_env);
 #else /* COPYOPT_STAT */
 		{
-			copy_opt_t *co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
-			co_build_ou_structure(co);
+			copy_opt_t *co = NULL;
+
+			if (options.copymin_method != BE_CH_COPYMIN_NONE) {
+				co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
+				co_build_ou_structure(co);
+			}
 
 			switch(options.copymin_method) {
 				case BE_CH_COPYMIN_HEUR:
@@ -355,6 +359,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 					break;
 #ifdef WITH_ILP
 				case BE_CH_COPYMIN_ILP1:
+					printf("FIXME: %s:%d ILP1 not yet implemented!\n", __FILE__, __LINE__);
 					co_solve_ilp1(co, 60.0);
 					break;
 				case BE_CH_COPYMIN_ILP2:
@@ -368,8 +373,10 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 					break;
 			}
 
-			co_free_ou_structure(co);
-			free_copy_opt(co);
+			if (co) {
+				co_free_ou_structure(co);
+				free_copy_opt(co);
+			}
 		}
 #endif /* COPYOPT_STAT */
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
