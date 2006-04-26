@@ -472,10 +472,14 @@ static ir_node *gen_Add(ia32_transform_env_t *env) {
 				new_op = new_rd_ia32_Lea(dbg, irg, block, op1, noreg, mode);
 				set_ia32_am_sc(new_op, get_ia32_id_cnst(op2));
 				set_ia32_am_flavour(new_op, ia32_am_OB);
+
+				DBG_OPT_LEA1(op2, new_op);
 			}
 			else {
 				/* this is the 1st case */
 				new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
+
+				DBG_OPT_LEA2(op1, op2, new_op);
 
 				if (get_ia32_op_type(op1) == ia32_SymConst) {
 					set_ia32_am_sc(new_op, get_ia32_id_cnst(op1));
@@ -792,10 +796,14 @@ static ir_node *gen_Sub(ia32_transform_env_t *env) {
 				set_ia32_am_sc(new_op, get_ia32_id_cnst(op2));
 				set_ia32_am_sc_sign(new_op);
 				set_ia32_am_flavour(new_op, ia32_am_OB);
+
+				DBG_OPT_LEA1(op2, new_op);
 			}
 			else {
 				/* this is the 1st case */
 				new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
+
+				DBG_OPT_LEA2(op1, op2, new_op);
 
 				if (get_ia32_op_type(op1) == ia32_SymConst) {
 					set_ia32_am_sc(new_op, get_ia32_id_cnst(op1));
