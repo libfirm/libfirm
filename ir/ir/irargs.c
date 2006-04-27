@@ -226,7 +226,7 @@ static int firm_emit_indent(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	int i;
-	int amount = arg->v_int;
+	int amount = arg->v_int * (occ->width > 0 ? occ->width : 1);
 
 	for(i = 0; i < amount; ++i)
 		lc_appendable_chadd(app, ' ');
@@ -287,7 +287,7 @@ lc_arg_env_t *firm_get_arg_env(void)
       lc_arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
     lc_arg_register(env, "firm:ident", 'I', &ident_handler);
-    lc_arg_register(env, "firm:indent", 'D', &indent_handler);
+    lc_arg_register(env, "firm:indent", 'N', &indent_handler);
     lc_arg_register(env, "firm:pnc",      '=', &pnc_handler);
     lc_arg_register(env, "firm:dbg_info", 'G', &debug_handler);
     lc_arg_register(env, "firm:bitset", 'B', &bitset_handler);
