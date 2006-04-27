@@ -109,7 +109,7 @@ static int firm_emit(lc_appendable_t *app,
   ir_node *block;
   char add[64];
   char buf[256];
-  char tv[256];
+  char tv_buf[256];
   entity *ent;
 
   buf[0] = '\0';
@@ -149,9 +149,13 @@ static int firm_emit(lc_appendable_t *app,
         break;
       default:
         if (is_Const(X)) {
-          tarval_snprintf(tv, sizeof(tv), get_Const_tarval(X));
+          tarval *tv = get_Const_tarval(X);
+          if (tv)
+            tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
+          else
+            strncpy(tv_buf, "(NULL)", sizeof(tv_buf));
           snprintf(buf, sizeof(buf), "%s%s%s<%s>", A("irn"), get_irn_opname(X),
-            get_mode_name(get_irn_mode(X)), tv);
+            get_mode_name(get_irn_mode(X)), tv_buf);
         }
         else
           snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
@@ -163,8 +167,8 @@ static int firm_emit(lc_appendable_t *app,
       snprintf(buf, sizeof(buf), "%s%s", A("mode"), get_mode_name(X));
       break;
     case k_tarval:
-      tarval_snprintf(tv, sizeof(tv), X);
-      snprintf(buf, sizeof(buf), "%s%s", A("tv"), tv);
+      tarval_snprintf(tv_buf, sizeof(tv_buf), X);
+      snprintf(buf, sizeof(buf), "%s%s", A("tv"), tv_buf);
       break;
     case k_ir_loop:
       snprintf(buf, sizeof(buf), "ldepth[%d]", get_loop_depth(X));
