@@ -1522,6 +1522,8 @@ static void optimize_am(ir_node *irn, void *env) {
 					DBG_OPT_AM_D(load, store, irn);
 
 					DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
+
+					need_exchange_on_fail = 0;
 				}
 			} /* if (store) */
 			else if (get_ia32_am_support(irn) & ia32_am_Source) {
@@ -1535,7 +1537,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		}
 
 		/* was exchanged but optimize failed: exchange back */
-		if (check_am_src && need_exchange_on_fail) {
+		if (need_exchange_on_fail) {
 			exchange_left_right(irn, &left, &right, 3, 2);
 			cand = orig_cand;
 		}
