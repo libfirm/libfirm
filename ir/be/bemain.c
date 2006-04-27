@@ -335,14 +335,15 @@ static void be_main_loop(FILE *file_handle)
 
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
-		/* add Keeps for should_be_different constrained nodes */
-		assure_constraints(&birg);
-		dump(DUMP_PREPARED, irg, "-assured", dump_ir_block_graph);
-
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
 		list_sched(&birg, be_disable_mris);
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
+
+		/* add Keeps for should_be_different constrained nodes  */
+		/* beware: needs schedule due to usage of be_ssa_constr */
+		assure_constraints(&birg);
+		dump(DUMP_PREPARED, irg, "-assured", dump_ir_block_graph_sched);
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_abi_fix_stack_nodes(birg.abi);

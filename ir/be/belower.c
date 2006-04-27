@@ -38,6 +38,20 @@
 #undef is_Perm
 #define is_Perm(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
 
+/* associates op with it's copy and CopyKeep */
+typedef struct {
+	ir_node *op;         /* an irn which must be different */
+	pset    *copies;     /* all non-spillable copies of this irn */
+    pset    *copy_keeps; /* the CopyKeep's of this irn */
+} op_copy_assoc_t;
+
+/* environment for constraints */
+typedef struct {
+	be_irg_t       *birg;
+	pset           *op_set;
+	struct obstack obst;
+} constraint_env_t;
+
 /* lowering walker environment */
 typedef struct _lower_env_t {
 	be_chordal_env_t  *chord_env;
@@ -69,6 +83,14 @@ typedef struct _perm_cycle_t {
 	int                     n_elems;     /**< number of elements in the cycle */
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_cycle_t;
+
+/* Compare the two operands */
+static int cmp_op_copy_assoc(const void *a, const void *b) {
+	const op_copy_assoc_t *op1 = a;
+	const op_copy_assoc_t *op2 = b;
+
+	return op1->op != op2->op;
+}
 
 /* Compare the in registers of two register pairs */
 static int compare_reg_pair(const void *a, const void *b) {
@@ -511,11 +533,14 @@ static void fix_in(ir_node *irn, ir_node *old, ir_node *nw) {
 	}
 }
 
-static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *other_different) {
-	const arch_env_t          *arch_env = birg->main_env->arch_env;
-	ir_node                   *in[2], *keep, *cpy, *temp;
-	ir_node                   *block = get_nodes_block(irn);
-	const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, other_different, -1);
+static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
+	be_irg_t                    *birg     = env->birg;
+	pset                        *op_set   = env->op_set;
+	const arch_env_t            *arch_env = birg->main_env->arch_env;
+	ir_node                     *block    = get_nodes_block(irn);
+	const arch_register_class_t *cls      = arch_get_irn_reg_class(arch_env, other_different, -1);
+	ir_node                     *in[2], *keep, *cpy;
+	op_copy_assoc_t             key, *entry;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower");
 
 	if (arch_irn_is(arch_env, other_different, ignore) || ! mode_is_datab(get_irn_mode(other_different))) {
@@ -528,15 +553,11 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 	/* in block far far away                             */
 	/* The copy is optimized later if not needed         */
 
-	temp = new_rd_Unknown(birg->irg, get_irn_mode(other_different));
-	cpy = be_new_Copy(cls, birg->irg, block, temp);
+	cpy = be_new_Copy(cls, birg->irg, block, other_different);
 	be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
 
 	in[0] = irn;
 	in[1] = cpy;
-
-	/* Let the irn use the copy instead of the old other_different */
-	fix_in(irn, other_different, cpy);
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
@@ -546,11 +567,37 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
 	else {
 		keep = be_new_CopyKeep_single(cls, birg->irg, block, cpy, irn, get_irn_mode(other_different));
 		be_node_set_reg_class(keep, 1, cls);
-		edges_reroute(other_different, keep, birg->irg);
 	}
 
-	/* after rerouting: let the copy point to the other_different irn */
+	/* let the copy point to the other_different irn */
 	set_irn_n(cpy, 0, other_different);
+
+	/* insert copy and keep into schedule */
+	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
+	sched_add_before(belower_skip_proj(irn), cpy);
+	sched_add_after(irn, keep);
+
+	/* insert the other different and it's copies into the set */
+	key.op         = other_different;
+	key.copies     = NULL;
+	key.copy_keeps = NULL;
+	entry          = pset_find(op_set, &key, HASH_PTR(other_different));
+
+	if (! entry) {
+		entry             = obstack_alloc(&env->obst, sizeof(*entry));
+		entry->copies     = pset_new_ptr_default();
+		entry->copy_keeps = pset_new_ptr_default();
+		entry->op         = other_different;
+	}
+
+	/* insert copy */
+	pset_insert_ptr(entry->copies, cpy);
+
+	/* insert keep in case of CopyKeep */
+	if (be_is_CopyKeep(keep))
+		pset_insert_ptr(entry->copy_keeps, keep);
+
+	pset_insert(op_set, entry, HASH_PTR(other_different));
 
 	DBG((mod, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
 }
@@ -559,22 +606,20 @@ static void gen_assure_different_pattern(ir_node *irn, be_irg_t *birg, ir_node *
  * Checks if node has a should_be_different constraint in output
  * and adds a Keep then to assure the constraint.
  */
-static void assure_different_constraints(ir_node *irn, be_irg_t *birg) {
-	const arch_env_t          *arch_env = birg->main_env->arch_env;
+static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 	const arch_register_req_t *req;
-	arch_register_req_t        req_temp;
-	int i, n;
+	arch_register_req_t       req_temp;
 
-	req = arch_get_register_req(arch_env, &req_temp, irn, -1);
+	req = arch_get_register_req(env->birg->main_env->arch_env, &req_temp, irn, -1);
 
 	if (req) {
 		if (arch_register_req_is(req, should_be_different)) {
-			gen_assure_different_pattern(irn, birg, req->other_different);
+			gen_assure_different_pattern(irn, req->other_different, env);
 		}
 		else if (arch_register_req_is(req, should_be_different_from_all)) {
-			n = get_irn_arity(belower_skip_proj(irn));
+			int i, n = get_irn_arity(belower_skip_proj(irn));
 			for (i = 0; i < n; i++) {
-				gen_assure_different_pattern(irn, birg, get_irn_n(belower_skip_proj(irn), i));
+				gen_assure_different_pattern(irn, get_irn_n(belower_skip_proj(irn), i), env);
 			}
 		}
 	}
@@ -606,7 +651,80 @@ static void assure_constraints_walker(ir_node *irn, void *walk_env) {
  * @param birg  The birg structure containing the irg
  */
 void assure_constraints(be_irg_t *birg) {
-	irg_walk_blkwise_graph(birg->irg, NULL, assure_constraints_walker, birg);
+	constraint_env_t cenv;
+	op_copy_assoc_t  *entry;
+	dom_front_info_t *dom;
+	ir_node          **nodes;
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower");
+
+	cenv.birg   = birg;
+	cenv.op_set = new_pset(cmp_op_copy_assoc, 16);
+	obstack_init(&cenv.obst);
+
+	irg_walk_blkwise_graph(birg->irg, NULL, assure_constraints_walker, &cenv);
+
+	/* introduce copies needs dominance information */
+	dom = be_compute_dominance_frontiers(birg->irg);
+
+	/* for all */
+	foreach_pset(cenv.op_set, entry) {
+		int     n;
+		ir_node *cp;
+
+		n  = pset_count(entry->copies);
+		n += pset_count(entry->copy_keeps);
+
+		nodes = alloca((n + 1) * sizeof(nodes[0]));
+
+		/* put the node in an array */
+		n          = 0;
+		nodes[n++] = entry->op;
+		DBG((mod, LEVEL_1, "introduce copies for %+F ", entry->op));
+
+		/* collect all copies */
+		foreach_pset(entry->copies, cp) {
+			nodes[n++] = cp;
+			DB((mod, LEVEL_1, ", %+F ", cp));
+		}
+
+		/* collect all CopyKeeps */
+		foreach_pset(entry->copy_keeps, cp) {
+			nodes[n++] = cp;
+			DB((mod, LEVEL_1, ", %+F ", cp));
+		}
+
+		DB((mod, LEVEL_1, "\n"));
+
+		/* introduce the copies for the operand and it's copies */
+		be_ssa_constr(dom, n, nodes);
+
+
+		/* Could be that not all CopyKeeps are really needed, */
+		/* so we transform unnecessary ones into Keeps.       */
+		foreach_pset(entry->copy_keeps, cp) {
+			if (get_irn_n_edges(cp) < 1) {
+				ir_node *keep;
+				int     n = get_irn_arity(cp);
+
+				keep = be_new_Keep(arch_get_irn_reg_class(birg->main_env->arch_env, cp, -1),
+					birg->irg, get_nodes_block(cp), n, (ir_node **)&get_irn_in(cp)[1]);
+				sched_add_before(cp, keep);
+				sched_remove(cp);
+
+				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
+				while (--n >= -1)
+					set_irn_n(cp, n, get_irg_bad(birg->irg));
+			}
+		}
+
+		del_pset(entry->copies);
+		del_pset(entry->copy_keeps);
+	}
+
+	be_free_dominance_frontiers(dom);
+
+	del_pset(cenv.op_set);
+	obstack_free(&cenv.obst, NULL);
 }
 
 
