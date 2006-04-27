@@ -30,6 +30,8 @@ QuickSort.c
 RegallocBug.c
 Return.c
 SimpleExpr.c
+Sieve.c
+SieveBits.c
 Strings.c
 Swap.c
 Switcher.c
@@ -42,10 +44,12 @@ am_test.c
 andtest.c
 apfel.c
 array_type.c
+biggest_prime.c
 bsp.c
 callref.c
 calls.c
 cmp.c
+compress95.c
 conv.c
 convtest.c
 d.c
@@ -65,9 +69,11 @@ fehler6.c
 fehler7.c
 fehler8.c
 fehler9.c
+fbench.c
 ffbench.c
 func_arg.c
 gcd.c
+harness.c
 iabs.c
 if.c
 ll_call.c
