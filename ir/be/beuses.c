@@ -88,7 +88,7 @@ static unsigned get_next_use_bl(be_uses_t *uses, const ir_node *bl,
   be_use_t *u;
 
   u = get_or_set_use(uses, bl, def, 0);
-  if(!u->is_set) {
+  if (! u->is_set) {
 	u->is_set = 1;
 	u->next_use = USES_INFINITY;
 	u->next_use = be_get_next_use(uses, sched_first(bl), 0, def, 0);
@@ -110,11 +110,11 @@ static unsigned get_next_use(be_uses_t *uses, const ir_node *from, unsigned from
 	sched_foreach_from(from, irn) {
 		int i, n;
 
-		if(!skip_from_uses) {
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		if (! skip_from_uses) {
+			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *operand = get_irn_n(irn, i);
 
-				if(operand == def) {
+				if (operand == def) {
 					DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, irn));
 					return step;
 				}
@@ -124,6 +124,9 @@ static unsigned get_next_use(be_uses_t *uses, const ir_node *from, unsigned from
 		skip_from_uses = 0;
 		step++;
 	}
+
+	/* FIXME: quick and dirty hack to prevent ignore nodes (like stack pointer) from being spilled */
+	return is_live_end(bl, def) ? step : USES_INFINITY;
 
 	next_use = USES_INFINITY;
 	foreach_block_succ(bl, succ_edge) {
