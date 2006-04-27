@@ -100,4 +100,10 @@ void firm_init_stat(unsigned enable_options);
  */
 void stat_term(void);
 
+/**
+ * returns 1 if statistic module is active, 0 otherwise
+ */
+int stat_is_active(void);
+
+
 #endif /* _FIRMSTAT_H_ */

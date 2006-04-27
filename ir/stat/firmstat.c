@@ -2048,6 +2048,11 @@ void stat_term(void) {
   }
 }
 
+/* returns 1 if statistics were initialized, 0 otherwise */
+int stat_is_active(void) {
+  return status != (stat_info_t *)&status_disable;
+}
+
 #else
 
 /* initialize the statistics module. */
