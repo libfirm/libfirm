@@ -765,8 +765,10 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 		other = right;
 
 		/* If there is a data dependency of other irn from load: cannot use AM */
-		if (get_nodes_block(other) == block)
-			is_cand = heights_reachable_in_block(h, get_Proj_pred(other), load) ? 0 : is_cand;
+		if (get_nodes_block(other) == block) {
+			other   = skip_Proj(other);
+			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
+		}
 	}
 
 	cand    = is_cand ? IA32_AM_CAND_LEFT : IA32_AM_CAND_NONE;
@@ -781,8 +783,10 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 		other = left;
 
 		/* If there is a data dependency of other irn from load: cannot use load */
-		if (get_nodes_block(other) == block)
-			is_cand = heights_reachable_in_block(h, get_Proj_pred(other), load) ? 0 : is_cand;
+		if (get_nodes_block(other) == block) {
+			other   = skip_Proj(other);
+			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
+		}
 	}
 
 	cand = is_cand ? (cand | IA32_AM_CAND_RIGHT) : cand;
