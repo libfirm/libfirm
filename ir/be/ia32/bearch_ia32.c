@@ -600,7 +600,7 @@ insert_copy:
 		ia32_transform_sub_to_neg_add(irn, cg);
 
 		/* transform a LEA into an Add if possible */
-		ia32_transform_lea_to_add(irn, cg);
+		//ia32_transform_lea_to_add(irn, cg);
 	}
 end:
 
