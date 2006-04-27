@@ -52,6 +52,7 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 }
 
 void be_do_stat_reg_pressure(be_irg_t *birg) {
+	be_liveness(birg->irg);
 	/* Collect register pressure information for each block */
 	irg_block_walk_graph(birg->irg, stat_reg_pressure_block, NULL, birg);
 }
