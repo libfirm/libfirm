@@ -42,7 +42,6 @@
 typedef struct {
 	ir_node *op;         /* an irn which must be different */
 	pset    *copies;     /* all non-spillable copies of this irn */
-    pset    *copy_keeps; /* the CopyKeep's of this irn */
 } op_copy_assoc_t;
 
 /* environment for constraints */
@@ -580,14 +579,12 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* insert the other different and it's copies into the set */
 	key.op         = other_different;
 	key.copies     = NULL;
-	key.copy_keeps = NULL;
 	entry          = pset_find(op_set, &key, HASH_PTR(other_different));
 
 	if (! entry) {
-		entry             = obstack_alloc(&env->obst, sizeof(*entry));
-		entry->copies     = pset_new_ptr_default();
-		entry->copy_keeps = pset_new_ptr_default();
-		entry->op         = other_different;
+		entry         = obstack_alloc(&env->obst, sizeof(*entry));
+		entry->copies = pset_new_ptr_default();
+		entry->op     = other_different;
 	}
 
 	/* insert copy */
@@ -595,7 +592,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	/* insert keep in case of CopyKeep */
 	if (be_is_CopyKeep(keep))
-		pset_insert_ptr(entry->copy_keeps, keep);
+		pset_insert_ptr(entry->copies, keep);
 
 	pset_insert(op_set, entry, HASH_PTR(other_different));
 
@@ -671,9 +668,7 @@ void assure_constraints(be_irg_t *birg) {
 		int     n;
 		ir_node *cp;
 
-		n  = pset_count(entry->copies);
-		n += pset_count(entry->copy_keeps);
-
+		n     = pset_count(entry->copies);
 		nodes = alloca((n + 1) * sizeof(nodes[0]));
 
 		/* put the node in an array */
@@ -687,12 +682,6 @@ void assure_constraints(be_irg_t *birg) {
 			DB((mod, LEVEL_1, ", %+F ", cp));
 		}
 
-		/* collect all CopyKeeps */
-		foreach_pset(entry->copy_keeps, cp) {
-			nodes[n++] = cp;
-			DB((mod, LEVEL_1, ", %+F ", cp));
-		}
-
 		DB((mod, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and it's copies */
@@ -701,8 +690,8 @@ void assure_constraints(be_irg_t *birg) {
 
 		/* Could be that not all CopyKeeps are really needed, */
 		/* so we transform unnecessary ones into Keeps.       */
-		foreach_pset(entry->copy_keeps, cp) {
-			if (get_irn_n_edges(cp) < 1) {
+		foreach_pset(entry->copies, cp) {
+			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) < 1) {
 				ir_node *keep;
 				int     n = get_irn_arity(cp);
 
@@ -718,7 +707,6 @@ void assure_constraints(be_irg_t *birg) {
 		}
 
 		del_pset(entry->copies);
-		del_pset(entry->copy_keeps);
 	}
 
 	be_free_dominance_frontiers(dom);
