@@ -272,6 +272,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 		bitset_pos_t pos, int set)
 {
 	bitset_pos_t unit_number = pos / BS_UNIT_SIZE_BITS;
+	bitset_pos_t res;
 
 	if(pos >= bs->size)
 		return -1;
@@ -295,8 +296,10 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 			_bitset_inside_ntz_value((set ? curr_unit : ~curr_unit) & ~in_unit_mask);
 
 		/* If there is a bit set in the current unit, exit. */
-		if(next_in_this_unit < BS_UNIT_SIZE_BITS)
-			return next_in_this_unit + unit_number * BS_UNIT_SIZE_BITS;
+		if (next_in_this_unit < BS_UNIT_SIZE_BITS) {
+			res = next_in_this_unit + unit_number * BS_UNIT_SIZE_BITS;
+			return res < bs->size ? res : -1;
+		}
 
 		/* Else search for set bits in the next units. */
 		else {
@@ -306,8 +309,10 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 				bitset_pos_t first_set =
 					_bitset_inside_ntz_value(set ? data : ~data);
 
-				if(first_set < BS_UNIT_SIZE_BITS)
-					return first_set + i * BS_UNIT_SIZE_BITS;
+				if (first_set < BS_UNIT_SIZE_BITS) {
+					res = first_set + i * BS_UNIT_SIZE_BITS;
+					return res < bs->size ? res : -1;
+				}
 			}
 		}
 	}
