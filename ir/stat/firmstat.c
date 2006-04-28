@@ -863,7 +863,8 @@ static void update_node_stat(ir_node *node, void *env)
 
   /* count extended block edges */
   if (status->stat_options & FIRMSTAT_COUNT_EXTBB) {
-    undate_extbb_info(node, graph);
+    if (graph->irg != get_const_code_irg())
+      undate_extbb_info(node, graph);
   }
 
   /* handle statistics for special node types */
@@ -1006,16 +1007,17 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
   graph->block_hash = new_pset(block_cmp, 5);
 
   /* we need dominator info */
-  if (graph->irg != get_const_code_irg())
+  if (graph->irg != get_const_code_irg()) {
     if (get_irg_dom_state(graph->irg) != dom_consistent)
       compute_doms(graph->irg);
 
-  if (status->stat_options & FIRMSTAT_COUNT_EXTBB) {
-    /* we need extended basic blocks */
-    compute_extbb(graph->irg);
+    if (status->stat_options & FIRMSTAT_COUNT_EXTBB) {
+      /* we need extended basic blocks */
+      compute_extbb(graph->irg);
 
-    /* create new extbb counter */
-    graph->extbb_hash = new_pset(block_cmp, 5);
+      /* create new extbb counter */
+      graph->extbb_hash = new_pset(block_cmp, 5);
+    }
   }
 
   /* count the nodes in the graph */

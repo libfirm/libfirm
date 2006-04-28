@@ -455,7 +455,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		/* dump block permutation statistics */
 		simple_dump_be_block_permstat(dmp, entry);
 
-		if (dmp->status->stat_options & FIRMSTAT_COUNT_EXTBB) {
+		if (dmp->status->stat_options & FIRMSTAT_COUNT_EXTBB && entry->extbb_hash) {
 			/* dump extended block info */
 			fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s %12s\n", "Extbb Nr", "Nodes", "intern E", "incoming E", "outgoing E", "Phi", "quot");
 			foreach_pset(entry->extbb_hash, eb_entry) {
