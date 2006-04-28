@@ -1561,7 +1561,7 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env) {
 					ir_mode *mode = get_irn_mode(proj);
 					dbg_info *dbg;
 
-					if (mode = env->params->high_signed)
+					if (mode == env->params->high_signed)
 						mode = env->params->low_signed;
 					else
 						mode = env->params->low_unsigned;
