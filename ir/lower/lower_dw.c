@@ -1863,6 +1863,8 @@ void lower_dw_ops(const lwrdw_param_t *param)
 			if (lenv.flags & CF_CHANGED) {
 				/* control flow changed, dominance info is invalid */
 				set_irg_doms_inconsistent(irg);
+				set_irg_extblk_inconsistent(irg);
+				set_irg_loopinfo_inconsistent(irg);
 			}
 
 			dump_ir_block_graph(irg, "-dw");
