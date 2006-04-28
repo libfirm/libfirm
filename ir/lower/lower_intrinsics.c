@@ -28,6 +28,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
+#include "trouts.h"
 #include "lower_intrinsics.h"
 #include "pmap.h"
 
@@ -122,7 +123,11 @@ unsigned lower_intrinsics(i_record *list, int length) {
 
       /* exception control flow might have changed */
       set_irg_doms_inconsistent(irg);
+      set_irg_extblk_inconsistent(irg);
       set_irg_loopinfo_inconsistent(irg);
+
+      /* calls might be removed/added */
+      set_trouts_inconsistent();
 
       /* optimize it, tuple might be created */
       local_optimize_graph(irg);
