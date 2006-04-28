@@ -82,7 +82,7 @@ typedef struct _x87_state {
 } x87_state;
 
 /** An empty state, used for blocks without fp instructions. */
-static const x87_state _empty = { {0, NULL}, 0, 0 };
+static const x87_state _empty = { { {0, NULL}, }, 0, 0 };
 static x87_state *empty = (x87_state *)&_empty;
 
 /** The type of an instruction simulator */
