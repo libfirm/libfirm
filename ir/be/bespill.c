@@ -63,6 +63,21 @@ struct _spill_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
+/* associated Phi -> Spill*/
+typedef struct _phi_spill_assoc_t {
+	ir_node *phi;
+	ir_node *spill;
+} phi_spill_assoc_t;
+
+/**
+ * Compare two Phi->Spill associations.
+ */
+static int cmp_phi_spill_assoc(const void *a, const void *b) {
+	const phi_spill_assoc_t *p1 = a;
+	const phi_spill_assoc_t *p2 = b;
+	return p1->phi != p2->phi;
+}
+
 /**
  * compare two spill contexts.
  */
@@ -162,33 +177,63 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
  *
  * @return a be_Spill node
  */
-static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) {
-	int i, n = get_irn_arity(phi);
-	ir_node **ins, *bl = get_nodes_block(phi);
-	ir_graph *irg = senv->chordal_env->irg;
+static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, unsigned visited_nr, pset *already_visited_phis) {
+	int         i, n      = get_irn_arity(phi);
+	ir_graph    *irg      = senv->chordal_env->irg;
+	ir_mode     *phi_mode = get_irn_mode(phi);
+	ir_node     *bl       = get_nodes_block(phi);
+	ir_node     **ins, *phi_spill;
+	phi_spill_assoc_t key;
 	spill_ctx_t *ctx;
 
 	assert(is_Phi(phi));
 	DBG((senv->dbg, LEVEL_1, "%+F in ctx %+F\n", phi, ctx_irn));
 
+	if (get_irn_node_nr(phi) == 2219 || get_irn_node_nr(phi) == 2214)
+		__asm int 3
+
+	/* build a new PhiM */
+	NEW_ARR_A(ir_node *, ins, n);
+	for (i = 0; i < n; ++i) {
+		ins[i]    = new_rd_Unknown(irg, phi_mode);
+	}
+	phi_spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
+	key.phi   = phi;
+	key.spill = phi_spill;
+	pset_insert(already_visited_phis, &key, HASH_PTR(phi));
+
 	/* search an existing spill for this context */
 	ctx = be_get_spill_ctx(senv->spill_ctxs, phi, ctx_irn);
 
 	/* if not found spill the phi */
-	if(!ctx->spill) {
-		/* build a new PhiM */
-		NEW_ARR_A(ir_node *, ins, n);
-		for (i=0; i<n; ++i) {
+	if (! ctx->spill) {
+        set_irn_visited(phi, visited_nr);
+
+		/* collect all arguments of the phi */
+		for (i = 0; i < n; ++i) {
 			ir_node *arg = get_irn_n(phi, i);
 			ir_node *sub_res;
+			phi_spill_assoc_t *entry;
 
-			if(is_Phi(arg) && pset_find_ptr(senv->mem_phis, arg))
-				sub_res = be_spill_phi(senv, arg, ctx_irn);
+			if(is_Phi(arg) && pset_find_ptr(senv->mem_phis, arg)) {
+				if (get_irn_visited(arg) < visited_nr)
+					sub_res = be_spill_phi(senv, arg, ctx_irn, visited_nr, already_visited_phis);
+				else {
+					/* we already visited the argument phi: get it's spill */
+					key.phi   = arg;
+					key.spill = NULL;
+					entry     = pset_find(already_visited_phis, &key, HASH_PTR(arg));
+					assert(entry && "argument phi already visited, but no spill found?!?");
+					sub_res   = entry->spill;
+				}
+			}
 			else
 				sub_res = be_spill_irn(senv, arg, ctx_irn);
-			ins[i] = sub_res;
+
+			set_irn_n(phi_spill, i, sub_res);
 		}
-		ctx->spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
+
+		ctx->spill = phi_spill;
 	}
 	return ctx->spill;
 }
@@ -202,12 +247,30 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn) 
  *
  * @return a be_Spill node
  */
-static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
+static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill, unsigned visited_nr) {
+	ir_graph *irg                  = get_irn_irg(to_spill);
+	int      save_optimize         = get_optimize();
+	int      save_normalize        = get_opt_normalize();
+	pset     *already_visited_phis = new_pset(cmp_phi_spill_assoc, 10);
 	ir_node *res;
+
+	/*
+	 * Disable optimization so that the phi functions do not
+	 * disappear.
+	 */
+	set_optimize(0);
+	set_opt_normalize(0);
+
 	if (pset_find_ptr(senv->mem_phis, to_spill))
-		res = be_spill_phi(senv, to_spill, to_spill);
+		res = be_spill_phi(senv, to_spill, to_spill, visited_nr, already_visited_phis);
 	else
 		res = be_spill_irn(senv, to_spill, to_spill);
+
+	del_pset(already_visited_phis);
+
+	/* reset the optimizations */
+	set_optimize(save_optimize);
+	set_opt_normalize(save_normalize);
 
 	return res;
 }
@@ -350,6 +413,7 @@ static void phi_walker(ir_node *irn, void *env) {
 void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
 	ir_graph *irg          = senv->chordal_env->irg;
+	unsigned visited_nr;
 	ir_node *irn;
 	spill_info_t *si;
 	pdeq *possibly_dead;
@@ -375,6 +439,9 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 		}
 	}
 
+	visited_nr = get_irg_visited(irg) + 1;
+	set_irg_visited(irg, visited_nr);
+
 	/* process each spilled node */
 	DBG((senv->dbg, LEVEL_1, "Insert spills and reloads:\n"));
 	possibly_dead = new_pdeq();
@@ -388,7 +455,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 			ir_node *new_val;
 
 			/* the spill for this reloader */
-			ir_node *spill   = be_spill_node(senv, si->spilled_node);
+			ir_node *spill   = be_spill_node(senv, si->spilled_node, visited_nr);
 
 #ifdef REMAT
 			if (check_remat_conditions(senv, spill, si->spilled_node, rld->reloader)) {
