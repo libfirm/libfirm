@@ -305,7 +305,7 @@ extern ir_node *sched_skip(ir_node *from, int forward,
 #define sched_add_after(after, irn)     _sched_add_after(after, irn)
 #define sched_remove(irn)               _sched_remove(irn)
 #define sched_is_scheduled(irn)         _sched_is_scheduled(irn)
-#define sched_comes_after(n1, n2)       _sched_comes_after(n1, n1)
+#define sched_comes_after(n1, n2)       _sched_comes_after(n1, n2)
 #define sched_cmp(a, b)                 _sched_cmp(a, b)
 
 #endif
