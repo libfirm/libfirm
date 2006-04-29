@@ -82,7 +82,7 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg)
          op,
          get_irn_mode(n),
          get_irn_arity(n),
-         get_irn_in(n));
+         get_irn_in(n) + 1);
 
 
   /* Copy the attributes.  These might point to additional data.  If this
