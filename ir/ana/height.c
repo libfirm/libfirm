@@ -37,7 +37,7 @@ typedef struct {
 	struct list_head sink_list;
 } irn_height_t;
 
-static void irn_height_init(const phase_t *ph, const ir_node *irn, void *data)
+static void irn_height_init(phase_t *ph, const ir_node *irn, void *data)
 {
 	irn_height_t *h = data;
 	memset(h, 0, sizeof(h[0]));

@@ -31,7 +31,7 @@ typedef struct {
  */
 phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat);
 
-typedef void (phase_irn_data_init_t)(const phase_t *phase, const ir_node *irn, void *data);
+typedef void (phase_irn_data_init_t)(phase_t *phase, const ir_node *irn, void *data);
 
 /**
  * The default grow factor.
