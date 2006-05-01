@@ -518,20 +518,6 @@ static ir_node *belower_skip_proj(ir_node *irn) {
 	return irn;
 }
 
-static void fix_in(ir_node *irn, ir_node *old, ir_node *nw) {
-	int i, n;
-
-	irn = belower_skip_proj(irn);
-	n   = get_irn_arity(irn);
-
-	for (i = 0; i < n; i++) {
-		if (get_irn_n(irn, i) == old) {
-			set_irn_n(irn, i, nw);
-			break;
-		}
-	}
-}
-
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
 	be_irg_t                    *birg     = env->birg;
 	pset                        *op_set   = env->op_set;
