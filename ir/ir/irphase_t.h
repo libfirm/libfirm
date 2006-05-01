@@ -16,6 +16,7 @@
 #include "obstack.h"
 #include "irgraph_t.h"
 #include "irphase.h"
+#include "irtools.h"
 
 typedef struct {
 	unsigned node_slots;
