@@ -82,7 +82,7 @@ typedef struct {
 
 #define get_co2_irn(co2, irn)   ((co2_irn_t *) phase_get_or_set_irn_data(&co2->ph, irn))
 
-static void co2_irn_init(phase_t *ph, ir_node *irn, void *data)
+static void co2_irn_init(phase_t *ph, const ir_node *irn, void *data)
 {
 	co2_t *env    = (co2_t *) ph;
 	co2_irn_t *ci = data;
@@ -159,7 +159,7 @@ static col_t get_col(co2_t *env, ir_node *irn)
 	return ci->tmp_fixed ? ci->tmp_col : ci->orig_col;
 }
 
-static INLINE color_is_fix(co2_t *env, ir_node *irn)
+static INLINE int color_is_fix(co2_t *env, ir_node *irn)
 {
 	co2_irn_t *ci = get_co2_irn(env, irn);
 	return ci->fixed || ci->tmp_fixed;
