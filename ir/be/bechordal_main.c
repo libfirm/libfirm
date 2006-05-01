@@ -160,7 +160,7 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
 	BE_CH_SPILL_BELADY,
-	BE_CH_COPYMIN_HEUR,
+	BE_CH_COPYMIN_HEUR1,
 	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
 };
@@ -176,7 +176,8 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 
 static const lc_opt_enum_int_items_t copymin_items[] = {
 	{ "none", BE_CH_COPYMIN_NONE },
-	{ "heur", BE_CH_COPYMIN_HEUR },
+	{ "heur1", BE_CH_COPYMIN_HEUR1 },
+	{ "heur2", BE_CH_COPYMIN_HEUR2 },
 #ifdef WITH_ILP
 	{ "ilp1",  BE_CH_COPYMIN_ILP1 },
 	{ "ilp2",  BE_CH_COPYMIN_ILP2 },
@@ -234,9 +235,9 @@ static lc_opt_enum_int_var_t dump_var = {
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_MASK("spill", "spill method (belady or ilp)", &spill_var),
-	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (none, heur or ilp)", &copymin_var),
+	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (none, heur1, heur2, ilp1 or ilp2)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR("ifg", "interference graph flavour (std or fast)", &ifg_flavor_var),
-	LC_OPT_ENT_ENUM_MASK("perm", "perm lowering options (copy, swap)", &lower_perm_var),
+	LC_OPT_ENT_ENUM_MASK("perm", "perm lowering options (copy or swap)", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump", "select dump phases", &dump_var),
 	{ NULL }
 };
@@ -354,8 +355,11 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 			}
 
 			switch(options.copymin_method) {
-				case BE_CH_COPYMIN_HEUR:
+				case BE_CH_COPYMIN_HEUR1:
 					co_solve_heuristic(co);
+					break;
+				case BE_CH_COPYMIN_HEUR2:
+					co_solve_heuristic_new(co);
 					break;
 #ifdef WITH_ILP
 				case BE_CH_COPYMIN_ILP1:

@@ -107,9 +107,10 @@ enum {
 
 	/* copymin method */
 	BE_CH_COPYMIN_NONE    = 0,
-	BE_CH_COPYMIN_HEUR    = 1,
-	BE_CH_COPYMIN_ILP1    = 2,
-	BE_CH_COPYMIN_ILP2    = 3,
+	BE_CH_COPYMIN_HEUR1   = 1,
+	BE_CH_COPYMIN_HEUR2   = 2,
+	BE_CH_COPYMIN_ILP1    = 3,
+	BE_CH_COPYMIN_ILP2    = 4,
 
 	/* ifg flavor */
 	BE_CH_IFG_STD         = 1,
@@ -118,7 +119,6 @@ enum {
 	/* lower perm options */
 	BE_CH_LOWER_PERM_SWAP   = (1 << 0),
 	BE_CH_LOWER_PERM_COPY   = (1 << 1),
-	BE_CH_LOWER_PERM_STAT   = (1 << 2)
 };
 
 struct _be_ra_chordal_opts_t {
