@@ -20,12 +20,16 @@
 #include "irgwalk.h"
 #include "irtools.h"
 
+#include "height.h"
+
 #include "benode_t.h"
 #include "besched_t.h"
 #include "beschedmris.h"
 
 struct _mris_env_t {
 	phase_t            ph;
+	heights_t         *heights;
+	firm_dbg_module_t *dbg;
 	const arch_env_t  *aenv;
 	ir_graph          *irg;
 	ir_node           *bl;
@@ -38,7 +42,6 @@ DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
 typedef struct _mris_irn_t {
 	int visited;
-	int height;
 	ir_node *lineage_start;
 	ir_node *lineage_next;
 	ir_node *lineage_end;
@@ -48,7 +51,6 @@ typedef struct _mris_irn_t {
 #define to_appear(env, irn) (to_appear_in_schedule(irn) && get_nodes_block(irn) == env->bl)
 
 #define get_mris_irn(env, irn)   ((mris_irn_t *) phase_get_or_set_irn_data(&env->ph, irn))
-#define get_irn_height(env, irn) (get_mris_irn(env, irn)->height)
 #define foreach_lineage(env, pos, tmp) list_for_each_entry_safe(mris_irn_t, pos, tmp, &(env)->lineage_head, lineage_list)
 
 static void mris_irn_data_init(phase_t *ph, const ir_node *irn, void *data)
@@ -58,6 +60,7 @@ static void mris_irn_data_init(phase_t *ph, const ir_node *irn, void *data)
 	INIT_LIST_HEAD(&mi->lineage_list);
 }
 
+#if 0
 static int compute_height(mris_env_t *env, ir_node *irn, unsigned long visited)
 {
 	mris_irn_t *mi = get_mris_irn(env, irn);
@@ -103,6 +106,7 @@ static void compute_heights(mris_env_t *env)
 			compute_height(env, dep, visited);
 	}
 }
+#endif
 
 #define valid_node(env, dep) (to_appear(env, dep) && !nodeset_find(env->inserted, dep) && !be_is_Keep(dep))
 
@@ -146,14 +150,14 @@ static ir_node **all_descendants(mris_env_t *env, ir_node *irn)
 
 static ir_node *put_lowest_in_front(mris_env_t *env, ir_node **in)
 {
-	int lowest_index  = 0;
-	int lowest_height = INT_MAX;
+	int lowest_index       = 0;
+	unsigned lowest_height = INT_MAX;
 	int i;
 
 	for(i = 0; in[i]; ++i) {
-		mris_irn_t *mi = get_mris_irn(env, in[i]);
-		if(mi->height < lowest_height) {
-			lowest_height = mi->height;
+		unsigned height = get_irn_height(env->heights, in[i]);
+		if(height < lowest_height) {
+			lowest_height = height;
 			lowest_index  = i;
 		}
 	}
@@ -167,6 +171,7 @@ static ir_node *put_lowest_in_front(mris_env_t *env, ir_node **in)
 	return in[0];
 }
 
+#if 0
 static void reaches_walker(mris_env_t *env, ir_node *irn, ir_node *tgt, int *found, unsigned long visited)
 {
 	if(get_irn_visited(irn) < visited && get_nodes_block(irn) == env->bl) {
@@ -196,6 +201,7 @@ static int reaches(mris_env_t *env, ir_node *src, ir_node *tgt)
 	reaches_walker(env, src, tgt, &found, visited);
 	return found;
 }
+#endif
 
 static INLINE ir_node *skip_Projs(ir_node *irn)
 {
@@ -242,8 +248,6 @@ static void lineage_formation(mris_env_t *env)
 			nodeset_insert(nodes, irn);
 	}
 
-	compute_heights(env);
-
 	while(nodeset_count(nodes) > 0) {
 		mris_irn_t *mi;
 		ir_node *irn;
@@ -252,19 +256,19 @@ static void lineage_formation(mris_env_t *env)
 
 		ir_node **in;
 		int recompute_height  = 0;
-		int curr_height       = 0;
+		unsigned  curr_height = 0;
 
 		/* search the highest node which is not yet in a lineage. */
 		for(irn = nodeset_first(nodes); irn; irn = nodeset_next(nodes)) {
-			mris_irn_t *inf = get_mris_irn(env, irn);
-			if(inf->height > curr_height) {
+			unsigned height = get_irn_height(env->heights, irn);
+			if(height > curr_height) {
 				highest_node = irn;
-				curr_height  = inf->height;
+				curr_height  = height;
 			}
 		}
 
 		assert(highest_node);
-		DBG((dbg, LEVEL_2, "highest node is %+F height %d\n", highest_node, get_irn_height(env, highest_node)));
+		DBG((dbg, LEVEL_2, "highest node is %+F height %d\n", highest_node, get_irn_height(env->heights, highest_node)));
 
 		/* start a lineage beginning with highest_node. */
 		mi = get_mris_irn(env, highest_node);
@@ -291,7 +295,7 @@ static void lineage_formation(mris_env_t *env)
 
 			int n_desc;
 
-			DBG((dbg, LEVEL_2, "\tlowest descendant %+F height %d\n", lowest_desc, mi->height));
+			DBG((dbg, LEVEL_2, "\tlowest descendant %+F height %d\n", lowest_desc, get_irn_height(env->heights, lowest_desc)));
 
 			/* count the number of all descendants which are not the lowest descendant */
 			for(n_desc = 0; in[n_desc + 1]; ++n_desc);
@@ -349,7 +353,7 @@ static void lineage_formation(mris_env_t *env)
 
 		/* recompute the heights if desired. */
 		if(recompute_height)
-			compute_heights(env);
+			heights_recompute(env->heights);
 	}
 }
 
@@ -368,7 +372,7 @@ static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 	/* set lineage end of nodes in u to end of v. */
 	irn = last = u->lineage_start;
 	mi         = get_mris_irn(env, irn);
-	while(irn != u_end) {
+	while(irn && irn != u_end) {
 		mi = get_mris_irn(env, irn);
 		mi->lineage_end = v->lineage_end;
 		last = irn;
@@ -407,11 +411,13 @@ static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 
 	/* set lineage start of nodes in v to start of u. */
 	irn = v->lineage_start;
-	while(irn != v->lineage_end) {
+	while(irn && irn != v->lineage_end) {
 		mris_irn_t *mi = get_mris_irn(env, irn);
 		mi->lineage_start = u->lineage_start;
 		irn = mi->lineage_next;
 	}
+
+	heights_recompute(env->heights);
 
 	mi = get_mris_irn(env, v_start);
 	list_del(&mi->lineage_list);
@@ -427,12 +433,15 @@ static void fuse_lineages(mris_env_t *env)
 again:
 	foreach_lineage(env, u, tmp1) {
 		foreach_lineage(env, v, tmp2) {
-			if(u == v)
-				continue;
+			if(u != v && u->lineage_start && v->lineage_start && u->lineage_end && v->lineage_end
+				&& get_nodes_block(u->lineage_start) == get_nodes_block(v->lineage_start)) {
+				int uv = heights_reachable_in_block(env->heights, u->lineage_start, v->lineage_end);
+				int vu = heights_reachable_in_block(env->heights, v->lineage_start, u->lineage_end);
 
-			if(!reaches(env, u->lineage_start, v->lineage_end) && reaches(env, v->lineage_start, u->lineage_end)) {
-				if(fuse_two_lineages(env, u, v))
-					goto again;
+				if(uv && !vu) {
+					if(fuse_two_lineages(env, u, v))
+						goto again;
+				}
 			}
 		}
 	}
@@ -456,6 +465,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	env->irg      = birg->irg;
 	env->visited  = 0;
 	env->inserted = new_nodeset(128);
+	env->heights  = heights_new(birg->irg);
 	INIT_LIST_HEAD(&env->lineage_head);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.mris");
 	obstack_init(&env->obst);
@@ -490,5 +500,6 @@ void be_sched_mris_free(mris_env_t *env)
 	cleanup_inserted(env);
 	phase_free(&env->ph);
 	del_nodeset(env->inserted);
+	heights_free(env->heights);
 	free(env);
 }
