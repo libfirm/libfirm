@@ -440,7 +440,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	a->dir    = dir;
 	a->offset = offset;
 
-	be_node_set_flags(irn, -1, arch_irn_flags_ignore);
+	be_node_set_flags(irn, -1, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
 	/* Set output constraint to stack register. */
 	be_node_set_reg_class(irn, 0, sp->reg_class);
@@ -462,7 +462,7 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	irn      = new_ir_node(NULL, irg, bl, op_be_AddSP, mode_T, be_pos_AddSP_last, in);
 	a        = init_node_attr(irn, be_pos_AddSP_last);
 
-	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_ignore);
+	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, OUT_POS(0), sp);
@@ -482,7 +482,7 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	irn      = new_ir_node(NULL, irg, bl, op_be_SetSP, get_irn_mode(old_sp), 3, in);
 	a        = init_node_attr(irn, 3);
 
-	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_ignore);
+	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, OUT_POS(0), sp);
