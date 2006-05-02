@@ -208,6 +208,7 @@ extern const char *arch_irn_flag_str(arch_irn_flags_t fl)
 		XXX(dont_spill);
 		XXX(ignore);
 		XXX(rematerializable);
+		XXX(modify_sp);
 		XXX(none);
 #undef XXX
 	}

@@ -1113,8 +1113,8 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
 {
 	ir_graph *irg = env->birg->irg;
+	int n_regs    = pmap_count(regs);
 	int n;
-	int n_regs = pmap_count(regs);
 	ir_node *irn;
 	ir_node **in;
 	reg_node_map_t *rm;
@@ -1134,9 +1134,10 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 	obstack_free(&env->obst, in);
 
 	for(n = 0; n < n_regs; ++n) {
-		int pos = BE_OUT_POS(n);
-		ir_node *proj;
 		const arch_register_t *reg = rm[n].reg;
+		int flags                  = 0;
+		int pos                    = BE_OUT_POS(n);
+		ir_node *proj;
 
 		proj = new_r_Proj(irg, bl, irn, get_irn_mode(rm[n].irn), n);
 		be_node_set_reg_class(irn, n, reg->reg_class);
@@ -1148,7 +1149,12 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 
 		/* if the proj projects a ignore register or a node which is set to ignore, propagate this property. */
 		if(arch_register_type_is(reg, ignore) || arch_irn_is(env->birg->main_env->arch_env, in[n], ignore))
-			be_node_set_flags(irn, pos, arch_irn_flags_ignore);
+			flags |= arch_irn_flags_ignore;
+
+		if(arch_irn_is(env->birg->main_env->arch_env, in[n], modify_sp))
+			flags |= arch_irn_flags_modify_sp;
+
+		be_node_set_flags(irn, pos, flags);
 
 		pmap_insert(regs, (void *) reg, proj);
 	}
@@ -1193,10 +1199,12 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	*/
 	stack = be_abi_reg_map_get(env->regs, isa->sp);
 	if (keep) {
+		ir_node *bad = new_r_Bad(env->birg->irg);
 		stack = get_irn_n(keep, 0);
-		exchange(keep, new_r_Bad(env->birg->irg));
+		set_nodes_block(keep, bad);
+		set_irn_n(keep, 0, bad);
+		// exchange(keep, new_r_Bad(env->birg->irg));
 	}
-	be_abi_reg_map_set(reg_map, isa->sp, stack);
 
 	/* Insert results for Return into the register map. */
 	for(i = 0; i < n_res; ++i) {
@@ -1212,6 +1220,8 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 		if(arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
 			pmap_insert(reg_map, ent->key, ent->value);
 	}
+
+	be_abi_reg_map_set(reg_map, isa->sp, stack);
 
 	/* Make the Epilogue node and call the arch's epilogue maker. */
 	create_barrier(env, bl, &mem, reg_map, 1);
@@ -1374,10 +1384,12 @@ static void modify_irg(be_abi_irg_t *env)
 	for(i = 0, n = pmap_count(env->regs); i < n; ++i) {
 		arch_register_t *reg = (void *) rm[i].reg;
 		ir_node *arg_proj    = rm[i].irn;
-		ir_node *proj;
 		ir_mode *mode        = arg_proj ? get_irn_mode(arg_proj) : reg->reg_class->mode;
 		long nr              = i;
 		int pos              = BE_OUT_POS((int) nr);
+		int flags            = 0;
+
+		ir_node *proj;
 
 		assert(nr >= 0);
 		bitset_set(used_proj_nr, nr);
@@ -1391,7 +1403,12 @@ static void modify_irg(be_abi_irg_t *env)
 		 * The Proj for that register shall also be ignored during register allocation.
 		 */
 		if(arch_register_type_is(reg, ignore))
-			be_node_set_flags(env->reg_params, pos, arch_irn_flags_ignore);
+			flags |= arch_irn_flags_ignore;
+
+		if(reg == sp)
+			flags |= arch_irn_flags_modify_sp;
+
+		be_node_set_flags(env->reg_params, pos, flags);
 
 		DBG((dbg, LEVEL_2, "\tregister save proj #%d -> reg %s\n", nr, reg->name));
 	}
@@ -1565,27 +1582,35 @@ void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls,
 
 */
 
+struct fix_stack_walker_info {
+	nodeset *nodes;
+	const arch_env_t *aenv;
+};
+
 /**
  * Walker. Collect all stack modifying nodes.
  */
 static void collect_stack_nodes_walker(ir_node *irn, void *data)
 {
-	pset *s = data;
+	struct fix_stack_walker_info *info = data;
 
-	if(be_is_AddSP(irn)	|| be_is_IncSP(irn)	|| be_is_SetSP(irn))
-		pset_insert_ptr(s, irn);
+	if(arch_irn_is(info->aenv, irn, modify_sp))
+		pset_insert_ptr(info->nodes, irn);
 }
 
 void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 {
 	dom_front_info_t *df;
-	pset *stack_nodes;
+	pset *stack_nodes = pset_new_ptr(16);
+	struct fix_stack_walker_info info;
+
+	info.nodes = stack_nodes;
+	info.aenv  = env->birg->main_env->arch_env;
 
 	/* We need dominance frontiers for fix up */
 	df = be_compute_dominance_frontiers(env->birg->irg);
-	stack_nodes = pset_new_ptr(16);
+	irg_walk_graph(env->birg->irg, collect_stack_nodes_walker, NULL, &info);
 	pset_insert_ptr(stack_nodes, env->init_sp);
-	irg_walk_graph(env->birg->irg, collect_stack_nodes_walker, NULL, stack_nodes);
 	be_ssa_constr_set_phis(df, stack_nodes, env->stack_phis);
 	del_pset(stack_nodes);
 
@@ -1764,7 +1789,7 @@ static arch_irn_class_t abi_classify(const void *_self, const ir_node *irn)
 
 static arch_irn_flags_t abi_get_flags(const void *_self, const ir_node *irn)
 {
-	return arch_irn_flags_ignore;
+	return arch_irn_flags_ignore | arch_irn_flags_modify_sp;
 }
 
 static entity *abi_get_frame_entity(const void *_self, const ir_node *irn)
