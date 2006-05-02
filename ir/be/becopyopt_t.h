@@ -54,6 +54,7 @@ struct _copy_opt_t {
 #define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
 
 
+
 /******************************************************************************
    ____        _   _    _       _ _          _____ _
   / __ \      | | | |  | |     (_) |        / ____| |
@@ -109,6 +110,7 @@ struct _affinity_node_t {
 	ir_node *irn;			/** a node with affinity edges */
 	int degree;				/** number of affinity edges in the linked list below */
 	neighb_t *neighbours;	/** a linked list of all affinity neighbours */
+	void *data;             /** stuff that is attachable. */
 };
 
 
@@ -124,10 +126,9 @@ static INLINE affinity_node_t *get_affinity_info(const copy_opt_t *co, ir_node *
 #define co_gs_nodes_begin(co)			set_first((co)->nodes)
 #define co_gs_nodes_next(co)			set_next((co)->nodes)
 #define co_gs_nodes_break(co)			set_break((co)->nodes)
+
 #define co_gs_foreach_aff_node(co, aff_node)	for (aff_node = co_gs_nodes_begin(co); aff_node; aff_node = co_gs_nodes_next(co))
-
 #define co_gs_foreach_neighb(aff_node, neighb)	for (neighb = aff_node->neighbours; neighb; neighb = neighb->next)
-
 
 
 #endif

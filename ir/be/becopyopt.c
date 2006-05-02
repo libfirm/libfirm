@@ -637,3 +637,45 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
 	} else
 		return 0;
 }
+
+void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
+{
+	be_ifg_t *ifg = co->cenv->ifg;
+
+	ir_node *irn;
+	void *it, *nit;
+	int n;
+
+	it  = be_ifg_nodes_iter_alloca(ifg);
+	nit = be_ifg_neighbours_iter_alloca(ifg);
+
+	n = 0;
+	be_ifg_foreach_node(ifg, it, irn) {
+		set_irn_link(irn, INT_TO_PTR(n++));
+	}
+
+	fprintf(f, "%d %d\n", n, co->cls->n_regs);
+
+	be_ifg_foreach_node(ifg, it, irn) {
+		int idx            = PTR_TO_INT(get_irn_link(irn));
+		affinity_node_t *a = get_affinity_info(co, irn);
+
+		ir_node *adj;
+
+		be_ifg_foreach_neighbour(ifg, nit, irn, adj) {
+			int adj_idx = PTR_TO_INT(get_irn_link(adj));
+			if(idx < adj_idx)
+				fprintf(f, "%d %d -1\n", idx, adj_idx);
+		}
+
+		if(a) {
+			neighb_t *n;
+
+			co_gs_foreach_neighb(a, n) {
+				int n_idx = PTR_TO_INT(get_irn_link(n->irn));
+				if(idx < n_idx)
+					fprintf(f, "%d %d %d\n", idx, n_idx, n->costs);
+			}
+		}
+	}
+}

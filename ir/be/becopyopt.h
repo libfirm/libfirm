@@ -13,6 +13,8 @@
 #ifndef _BECOPYOPT_H
 #define _BECOPYOPT_H
 
+#include <stdio.h>
+
 #include "firm_types.h"
 #include "bechordal.h"
 
@@ -80,6 +82,9 @@ void co_free_ou_structure(copy_opt_t *co);
  */
 int co_solve_heuristic(copy_opt_t *co);
 
+void co_solve_heuristic_new(copy_opt_t *co);
+
+
 /**
  * Solves the copy minimization problem using another heuristic approach.
  * Uses the OU and the GRAPH data structure.
@@ -116,7 +121,14 @@ int co_get_copy_costs(const copy_opt_t *co);
  */
 int co_get_lower_bound(const copy_opt_t *co);
 
-
+/**
+ * Dump the interference graph according to the Appel/George coalescing contest file format.
+ * See: http://www.cs.princeton.edu/~appel/coalesce/format.html
+ * @note Requires graph structure.
+ * @param co The copy opt object.
+ * @param f  A file to dump to.
+ */
+void co_dump_appel_graph(const copy_opt_t *co, FILE *f);
 
 
 
