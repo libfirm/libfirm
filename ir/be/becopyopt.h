@@ -82,7 +82,7 @@ int co_solve_heuristic(copy_opt_t *co);
 
 /**
  * Solves the copy minimization problem using another heuristic approach.
- * Uses the OU data structure.
+ * Uses the OU and the GRAPH data structure.
  */
 void co_solve_heuristic_new(copy_opt_t *co);
 
