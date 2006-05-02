@@ -98,7 +98,7 @@ static void co2_irn_init(phase_t *ph, const ir_node *irn, void *data)
 	ci->irn          = irn;
 	ci->touched_next = env->touched;
 	ci->orig_col     = get_irn_col(env->co, irn);
-	ci->aff          = get_affinity_info(env->co, irn);
+	ci->aff          = get_affinity_info(env->co, (ir_node *)irn);
 	env->touched     = ci;
 }
 
