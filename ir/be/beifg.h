@@ -46,4 +46,24 @@ int      (be_ifg_degree)(const void *self, const ir_node *irn);
         *(count) != -1 ; \
         *(count) = be_ifg_cliques_next(self, iter))
 
+/*
+	 ____                        _
+	|  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
+	| | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
+	| |_| | |_| | | | | | | |_) | | | | | (_| |
+	|____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
+                          |_|            |___/
+*/
+
+typedef struct _be_ifg_dump_dot_cb_t {
+	int  (*is_dump_node)(void *self, ir_node *irn);
+	void (*graph_attr)(FILE *f, void *self);
+	void (*node_attr)(FILE *f, void *self, ir_node *irn);
+	void (*edge_attr)(FILE *f, void *self, ir_node *from, ir_node *to);
+	void (*at_begin)(FILE *file, void *self);
+	void (*at_end)(FILE *file, void *self);
+} be_ifg_dump_dot_cb_t;
+
+void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self);
+
 #endif /* _BEIFG_H */

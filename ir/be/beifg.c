@@ -21,6 +21,8 @@
 #include <alloca.h>
 #endif
 
+#include "bitset.h"
+
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "beifg_t.h"
@@ -156,4 +158,53 @@ void be_ifg_check(const be_ifg_t *ifg)
 			if(!be_ifg_connected(ifg, n, m))
 				ir_fprintf(stderr, "%+F is a neighbour of %+F but they are not connected!\n", n, m);
 	}
+}
+
+void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self)
+{
+	void *nodes_it  = be_ifg_nodes_iter_alloca(ifg);
+	void *neigh_it  = be_ifg_neighbours_iter_alloca(ifg);
+	bitset_t *nodes = bitset_malloc(get_irg_last_idx(irg));
+
+	ir_node *n, *m;
+
+	fprintf(file, "graph G {\n\tgraph [");
+	if(cb->graph_attr)
+		cb->graph_attr(file, self);
+	fprintf(file, "];\n");
+
+	if(cb->at_begin)
+		cb->at_begin(file, self);
+
+	be_ifg_foreach_node(ifg, nodes_it, n) {
+		if(cb->is_dump_node && cb->is_dump_node(self, n)) {
+			int idx = get_irn_idx(n);
+			bitset_set(nodes, idx);
+			fprintf(file, "\tnode [");
+			if(cb->node_attr)
+				cb->node_attr(file, self, n);
+			fprintf(file, "]; n%d;\n", idx);
+		}
+	}
+
+	/* Check, if all neighbours are indeed connected to the node. */
+	be_ifg_foreach_node(ifg, nodes_it, n) {
+		be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
+			int n_idx = get_irn_idx(n);
+			int m_idx = get_irn_idx(m);
+
+			if(n_idx < m_idx && bitset_is_set(nodes, n_idx) && bitset_is_set(nodes, m_idx)) {
+				fprintf(file, "\tn%d -- n%d [", n_idx, m_idx);
+				if(cb->edge_attr)
+					cb->edge_attr(file, self, n, m);
+				fprintf(file, "];\n");
+			}
+		}
+	}
+
+	if(cb->at_end)
+		cb->at_end(file, self);
+
+	fprintf(file, "}\n");
+	bitset_free(nodes);
 }
