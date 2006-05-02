@@ -605,8 +605,8 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
  * qsort compare function, sort spill slots by size.
  */
 static int ss_sorter(const void *v1, const void *v2) {
-	const spill_slot_t **ss1 = v1;
-	const spill_slot_t **ss2 = v2;
+	const spill_slot_t **ss1 = (const spill_slot_t **)v1;
+	const spill_slot_t **ss2 = (const spill_slot_t **)v2;
 	return ((int) (*ss2)->size) - ((int) (*ss1)->size);
 }
 
