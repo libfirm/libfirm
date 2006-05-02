@@ -167,8 +167,8 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
  */
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-	// return arch_irn_has_reg_class(env->main_env->arch_env, irn, -1, env->cls);
-	return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
+	return arch_irn_has_reg_class(env->birg->main_env->arch_env, irn, -1, env->cls);
+	// return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
 }
 
 #define has_limited_constr(req, irn) \
@@ -605,7 +605,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
-	pset *live_in = put_live_in(block, pset_new_ptr_default());
+	pset *live_in  = put_live_in(block, pset_new_ptr_default());
 	pset *live_end = put_live_end(block, pset_new_ptr_default());
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %+F\n", block));
@@ -623,8 +623,8 @@ static void pressure(ir_node *block, void *env_ptr)
 	 */
 	foreach_pset(live_end, irn) {
 		if(has_reg_class(env, irn)) {
-			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_graph_nr(irn)));
-			bitset_set(live, get_irn_graph_nr(irn));
+			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
+			bitset_set(live, get_irn_idx(irn));
 			border_use(irn, step, 0);
 		}
 	}
@@ -636,14 +636,14 @@ static void pressure(ir_node *block, void *env_ptr)
 	 */
 	sched_foreach_reverse(block, irn) {
 		DBG((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
-		DBG((dbg, LEVEL_2, "\tlive: %b\n", live));
+		DBG((dbg, LEVEL_2, "\tlive: %B\n", live));
 
 		/*
 		 * If the node defines some value, which can put into a
 		 * register of the current class, make a border for it.
 		 */
 		if(has_reg_class(env, irn)) {
-			int nr = get_irn_graph_nr(irn);
+			int nr = get_irn_idx(irn);
 
 			bitset_clear(live, nr);
 			border_def(irn, step, 1);
@@ -657,14 +657,16 @@ static void pressure(ir_node *block, void *env_ptr)
 				ir_node *op = get_irn_n(irn, i);
 
 				if(has_reg_class(env, op)) {
-					int nr = get_irn_graph_nr(op);
-
-					DBG((dbg, LEVEL_4, "\t\tpos: %d, use: %+F\n", i, op));
+					int nr = get_irn_idx(op);
+					const char *msg = "-";
 
 					if(!bitset_is_set(live, nr)) {
 						border_use(op, step, 1);
 						bitset_set(live, nr);
+						msg = "X";
 					}
+
+					DBG((dbg, LEVEL_4, "\t\t%s pos: %d, use: %+F\n", msg, i, op));
 				}
 			}
 		}
@@ -678,7 +680,7 @@ static void pressure(ir_node *block, void *env_ptr)
 		if(has_reg_class(env, irn)) {
 
 			/* Mark the value live in. */
-			bitset_set(live, get_irn_graph_nr(irn));
+			bitset_set(live, get_irn_idx(irn));
 
 			/* Add the def */
 			border_def(irn, step, 0);
@@ -697,12 +699,12 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *colors            = alloc_env->colors;
 	bitset_t *in_colors         = alloc_env->in_colors;
 	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
-	DEBUG_ONLY(firm_dbg_module_t *dbg      = env->dbg;)
+	struct list_head *head      = get_block_border_head(env, block);
+	pset *live_in               = put_live_in(block, pset_new_ptr_default());
 
 	const ir_node *irn;
 	border_t *b;
-	struct list_head *head = get_block_border_head(env, block);
-	pset *live_in = put_live_in(block, pset_new_ptr_default());
+	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	bitset_clear_all(colors);
 	bitset_clear_all(live);
@@ -712,7 +714,7 @@ static void assign(ir_node *block, void *env_ptr)
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
 	list_for_each_entry(border_t, b, head, list) {
 		DBG((dbg, LEVEL_4, "\t%s %+F/%d\n", b->is_def ? "def" : "use",
-					b->irn, get_irn_graph_nr(b->irn)));
+					b->irn, get_irn_idx(b->irn)));
 	}
 
 	/*
@@ -728,12 +730,14 @@ static void assign(ir_node *block, void *env_ptr)
 			assert(reg && "Node must have been assigned a register");
 			col = arch_register_get_index(reg);
 
+			DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
+
 			/* Mark the color of the live in value as used. */
 			bitset_set(colors, col);
 			bitset_set(in_colors, col);
 
 			/* Mark the value live in. */
-			bitset_set(live, get_irn_graph_nr(irn));
+			bitset_set(live, get_irn_idx(irn));
 		}
 	}
 
@@ -745,7 +749,8 @@ static void assign(ir_node *block, void *env_ptr)
 	 */
 	list_for_each_entry_reverse(border_t, b, head, list) {
 		ir_node *irn = b->irn;
-		int nr = get_irn_graph_nr(irn);
+		int nr       = get_irn_idx(irn);
+		int ignore   = arch_irn_is(arch_env, irn, ignore);
 
 		/*
 		 * Assign a color, if it is a local def. Global defs already have a
@@ -755,7 +760,7 @@ static void assign(ir_node *block, void *env_ptr)
 			const arch_register_t *reg;
 			int col = NO_COLOR;
 
-			if(pset_find_ptr(alloc_env->pre_colored, irn)) {
+			if(pset_find_ptr(alloc_env->pre_colored, irn) || ignore) {
 				reg = arch_get_irn_register(arch_env, irn);
 				col = reg->index;
 				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
@@ -771,8 +776,7 @@ static void assign(ir_node *block, void *env_ptr)
 			bitset_set(colors, col);
 			arch_set_irn_register(arch_env, irn, reg);
 
-			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n",
-			arch_register_get_name(reg), col, irn));
+			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_register_get_name(reg), col, irn));
 
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 			bitset_set(live, nr);
@@ -826,7 +830,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	}
 
 	be_numbering(irg);
-	env.live = bitset_malloc(get_graph_node_count(chordal_env->irg));
+	env.live = bitset_malloc(get_irg_last_idx(chordal_env->irg));
 
 	/* First, determine the pressure */
 	dom_tree_walk_irg(irg, pressure, NULL, &env);

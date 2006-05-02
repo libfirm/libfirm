@@ -133,5 +133,13 @@ struct _be_ra_chordal_opts_t {
 	char ilp_solver[128];
 };
 
+/**
+ * Open a file whose name is composed from the graph's name and the current register class.
+ * @note The name of the file will be prefix(ifg_name)_(reg_class_name).suffix
+ * @param prefix The file name's prefix.
+ * @param suffix The file name's ending (the . is inserted automatically).
+ * @return       A text file opened for writing.
+ */
+FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const char *suffix);
 
 #endif /* _BECHORDAL_T_H */
