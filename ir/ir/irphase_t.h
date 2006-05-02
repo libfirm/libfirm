@@ -15,6 +15,7 @@
 
 #include "obstack.h"
 #include "irgraph_t.h"
+#include "irtools.h"
 #include "irphase.h"
 #include "irtools.h"
 
@@ -31,7 +32,7 @@ typedef struct {
  */
 phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat);
 
-typedef void (phase_irn_data_init_t)(phase_t *phase, const ir_node *irn, void *data);
+typedef void (phase_irn_data_init_t)(phase_t *phase, ir_node *irn, void *data);
 
 /**
  * The default grow factor.
@@ -152,7 +153,7 @@ static INLINE void *_phase_get_irn_data(phase_t *ph, const ir_node *irn)
 	return idx < ph->n_data_ptr ? ph->data_ptr[idx] : NULL;
 }
 
-static INLINE void *_phase_get_or_set_irn_data(phase_t *ph, const ir_node *irn)
+static INLINE void *_phase_get_or_set_irn_data(phase_t *ph, ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
 	void *res;
