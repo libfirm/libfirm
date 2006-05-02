@@ -29,7 +29,6 @@
 struct _mris_env_t {
 	phase_t            ph;
 	heights_t         *heights;
-	firm_dbg_module_t *dbg;
 	const arch_env_t  *aenv;
 	ir_graph          *irg;
 	ir_node           *bl;
