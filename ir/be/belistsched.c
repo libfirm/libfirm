@@ -654,6 +654,9 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 
 	assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
 
+	if(is_Bad(irn))
+		return;
+
 	foreach_out_edge(irn, edge) {
 		ir_node *out = edge->src;
 
