@@ -55,41 +55,13 @@ void  add_identities (pset *value_table, ir_node *node);
 /* apply optimizations of iropt to all nodes.                       */
 /*------------------------------------------------------------------*/
 
-static void init_link (ir_node *n, void *env) {
-  set_irn_link(n, NULL);
-}
-
-#if 0   /* Old version. Avoids Ids.
-           This is not necessary:  we do a post walk, and get_irn_n
-           removes ids anyways.  So it's much cheaper to call the
-           optimization less often and use the exchange() algorithm. */
-static void
-optimize_in_place_wrapper (ir_node *n, void *env) {
-  int i, irn_arity;
-  ir_node *optimized, *old;
-
-  irn_arity = get_irn_arity(n);
-  for (i = 0; i < irn_arity; i++) {
-    /* get_irn_n skips Id nodes, so comparison old != optimized does not
-       show all optimizations. Therefore always set new predecessor. */
-    old = get_irn_intra_n(n, i);
-    optimized = optimize_in_place_2(old);
-    set_irn_n(n, i, optimized);
-  }
-
-  if (get_irn_op(n) == op_Block) {
-    optimized = optimize_in_place_2(n);
-    if (optimized != n) exchange (n, optimized);
-  }
-}
-#else
-static void
-optimize_in_place_wrapper (ir_node *n, void *env) {
+/**
+ * A wrapper around optimize_inplace_2() to be called from a walker.
+ */
+static void optimize_in_place_wrapper (ir_node *n, void *env) {
   ir_node *optimized = optimize_in_place_2(n);
   if (optimized != n) exchange (n, optimized);
 }
-#endif
-
 
 static INLINE void do_local_optimize(ir_node *n) {
   /* Handle graph state */
@@ -106,7 +78,7 @@ static INLINE void do_local_optimize(ir_node *n) {
   current_ir_graph->value_table = new_identities();
 
   /* walk over the graph */
-  irg_walk(n, init_link, optimize_in_place_wrapper, NULL);
+  irg_walk(n, firm_clear_link, optimize_in_place_wrapper, NULL);
 }
 
 void local_optimize_node(ir_node *n) {
@@ -142,6 +114,68 @@ local_optimize_graph (ir_graph *irg) {
   do_local_optimize(get_irg_end(irg));
 
   current_ir_graph = rem;
+}
+
+/**
+ * Data flow optimization walker.
+ */
+static void opt_walker(ir_node *n, void *env) {
+  pdeq *waitq = env;
+  ir_node *optimized;
+
+  optimized = optimize_in_place_2(n);
+  set_irn_link(optimized, NULL);
+
+  if (optimized != n) {
+    const ir_edge_t *edge;
+
+    exchange(n, optimized);
+    foreach_out_edge(optimized, edge) {
+      ir_node *succ = get_edge_src_irn(edge);
+
+      if (get_irn_link(succ) != waitq) {
+        pdeq_putr(waitq, succ);
+        set_irn_link(succ, waitq);
+      }
+    }
+  }
+}
+
+void optimize_graph_df(ir_graph *irg) {
+  pdeq *waitq = new_pdeq();
+  int  state = edges_activated(irg);
+
+  if (! state)
+    edges_activate(irg);
+
+  if (get_opt_global_cse())
+    set_irg_pinned(current_ir_graph, op_pin_state_floats);
+
+  /* Clean the value_table in irg for the CSE. */
+  del_identities(irg->value_table);
+  irg->value_table = new_identities();
+
+  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
+    irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
+
+  /* invalidate info */
+  set_irg_outs_inconsistent(irg);
+  set_irg_doms_inconsistent(irg);
+  set_irg_loopinfo_inconsistent(irg);
+
+  /* walk over the graph */
+  irg_walk_graph(irg, NULL, opt_walker, waitq);
+
+  /* finish the wait queue */
+  while (! pdeq_empty(waitq)) {
+    ir_node *n = pdeq_getl(waitq);
+    opt_walker(n, waitq);
+  }
+
+  del_pdeq(waitq);
+
+  if (! state)
+    edges_deactivate(irg);
 }
 
 
@@ -657,7 +691,7 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
  * changes).
  */
 void remove_bad_predecessors(ir_graph *irg) {
-  irg_walk_graph(irg, init_link, relink_bad_predecessors, NULL);
+  irg_walk_graph(irg, firm_clear_link, relink_bad_predecessors, NULL);
 }
 
 

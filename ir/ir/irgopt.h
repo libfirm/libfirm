@@ -38,12 +38,23 @@ void local_optimize_node(ir_node *n);
  */
 void local_optimize_graph (ir_graph *irg);
 
+/** Applies local optimizations (see iropt.h) to all nodes in the graph.
+ *
+ * @param irg  The graph to be optimized.
+ *
+ * After applying local_optimize_graph() to a IR-graph, Bad nodes
+ * only occure as predecessor of Block and Phi nodes.
+ *
+ * This version used a fixpoint iteration.
+ */
+void optimize_graph_df(ir_graph *irg);
+
 /** Performs dead node elimination by copying the ir graph to a new obstack.
  *
  *  The major intention of this pass is to free memory occupied by
- *  dead nodes and outdated analyses information.  Further this
- *  function removes Bad predecesors from Blocks and the corresponding
- *  inputs to Phi nodes.  This opens optmization potential for other
+ *  dead nodes and outdated analyzes information.  Further this
+ *  function removes Bad predecessors from Blocks and the corresponding
+ *  inputs to Phi nodes.  This opens optimization potential for other
  *  optimizations.  Further this phase reduces dead Block<->Jmp
  *  self-cycles to Bad nodes.
  *
@@ -80,9 +91,9 @@ void free_survive_dce(survive_dce_t *sd);
  */
 void survive_dce_register_irn(survive_dce_t *sd, ir_node **place);
 
-/**  Cleans the control flow from Bad predecesors.
+/**  Cleans the control flow from Bad predecessors.
  *
- * Removes Bad predecesors from Blocks and the corresponding
+ * Removes Bad predecessors from Blocks and the corresponding
  * inputs to Phi nodes as in dead_node_elimination but without
  * copying the graph.
  *
