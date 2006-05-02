@@ -11,7 +11,9 @@
 #include "list.h"
 #include "pdeq.h"
 #include "bitset.h"
+
 #include "debug.h"
+#include "bitfiddle.h"
 
 #include "irphase_t.h"
 #include "irgraph_t.h"
@@ -24,7 +26,9 @@
 #include "becopyopt_t.h"
 #include "bechordal_t.h"
 
-#define INFEASIBLE(col) ((col) > (INT_MAX - 10))
+#define INFEASIBLE(cost) ((cost) == INT_MAX)
+
+static be_ifg_dump_dot_cb_t ifg_dot_cb;
 
 typedef unsigned col_t;
 
@@ -37,6 +41,7 @@ typedef struct {
 	bitset_t *ignore_regs;
 	co2_irn_t *touched;
 	int visited;
+	struct list_head cloud_head;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } co2_t;
 
@@ -133,12 +138,7 @@ static int col_cost_pair_lt(const void *a, const void *b)
 	int c = p->costs;
 	int d = q->costs;
 
-	if(c > d)
-		return 1;
-	if(c < d)
-		return -1;
-
-	return 0;
+	return (c > d) - (c < d);
 }
 
 const char *flag_str(unsigned int fl)
@@ -201,7 +201,7 @@ static void incur_constraint_costs(co2_t *env, ir_node *irn, col_cost_pair_t *co
 		req.limited(req.limited_env, aux);
 		n_constr = bitset_popcnt(aux);
 		bitset_foreach(aux, elm) {
-			col_costs[elm].costs += costs / n_constr;
+			col_costs[elm].costs  = add_saturated(col_costs[elm].costs, costs / n_constr);
 			col_costs[elm].flags |= NEIGHBOR_CONSTR;
 		}
 	}
@@ -250,7 +250,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 		co_gs_foreach_neighb(a, n) {
 			if(color_is_fix(env, n->irn)) {
 				col_t col = get_col(env, n->irn);
-				col_costs[col].costs -= 100 * n->costs;
+				col_costs[col].costs = add_saturated(col_costs[col].costs, -n->costs * 128);
 			}
 
 			incur_constraint_costs(env, n->irn, col_costs, -n->costs);
@@ -266,7 +266,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 		}
 		else {
 			incur_constraint_costs(env, pos, col_costs, INT_MAX);
-			col_costs[col].costs += 10 * be_ifg_degree(ifg, pos);
+			col_costs[col].costs = add_saturated(col_costs[col].costs, 8 * be_ifg_degree(ifg, pos));
 		}
 	}
 
@@ -384,11 +384,11 @@ static int recolor(co2_t *env, ir_node *irn, col_cost_pair_t *col_list, struct l
 		ir_node *n;
 		void *it;
 
-		DBG((env->dbg, LEVEL_3, "\t\t%2Ntrying color %d(%d) on %+F\n", depth, tgt_col, costs, irn));
+		DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}trying color %d(%d) on %+F\n", depth, tgt_col, costs, irn));
 
 		/* If the costs for that color (and all successive) are infinite, bail out we won't make it anyway. */
 		if(INFEASIBLE(costs)) {
-			DB((env->dbg, LEVEL_4, "\t\t%2Ncolor %d infeasible due to %s\n", depth, tgt_col, flag_str(col_list[i].flags)));
+			DB((env->dbg, LEVEL_4, "\t\t%2{firm:indent}color %d infeasible due to %s\n", depth, tgt_col, flag_str(col_list[i].flags)));
 			ci->tmp_fixed = 0;
 			return 0;
 		}
@@ -430,7 +430,7 @@ static int recolor(co2_t *env, ir_node *irn, col_cost_pair_t *col_list, struct l
 		of the current node, every thing was ok and we can return safely.
 		*/
 		if(neigh_ok) {
-			DBG((env->dbg, LEVEL_3, "\t\t%2Ncolor %d(%d) was ok\n", depth, tgt_col, costs));
+			DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}color %d(%d) was ok\n", depth, tgt_col, costs));
 			list_splice(&changed, parent_changed);
 			res = 1;
 			break;
@@ -453,7 +453,7 @@ static int change_color_not(co2_t *env, ir_node *irn, col_t not_col, struct list
 	int res       = 0;
 	col_t col     = get_col(env, irn);
 
-	DBG((env->dbg, LEVEL_3, "\t\t%2Nclearing %+F(%d) of color %d\n", depth, irn, col, not_col));
+	DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}clearing %+F(%d) of color %d\n", depth, irn, col, not_col));
 
 	/* the node does not have to forbidden color. That's fine, mark it as visited and return. */
 	if(col != not_col) {
@@ -494,7 +494,7 @@ static int change_color_single(co2_t *env, ir_node *irn, col_t tgt_col, struct l
 	col_t col     = get_col(env, irn);
 	int res       = 0;
 
-	DBG((env->dbg, LEVEL_3, "\t\t%2Ntrying to set %+F(%d) to color %d\n", depth, irn, col, tgt_col));
+	DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}trying to set %+F(%d) to color %d\n", depth, irn, col, tgt_col));
 
 	/* If the color is already fix, bail out. */
 	if(color_is_fix(env, irn))
@@ -572,7 +572,6 @@ static void try_color(co2_t *env, co2_irn_t *ci, col_t col, struct list_head *pa
 	}
 }
 
-
 static void process_cloud(co2_t *env, co2_cloud_t *cloud)
 {
 	int n_regs            = env->co->cls->n_regs;
@@ -632,6 +631,16 @@ static void process_cloud(co2_t *env, co2_cloud_t *cloud)
 		ci->fixed = 1;
 	}
 
+	{
+		char buf[256];
+		FILE *f;
+
+		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_cloud_%F.dot", env->co->irg, env->co->cls->name, cloud->master);
+		if(f = fopen(buf, "wt")) {
+			be_ifg_dump_dot(env->co->cenv->ifg, env->co->irg, f, &ifg_dot_cb, env);
+			fclose(f);
+		}
+	}
 }
 
 static void try_affinity_node(co2_t *env, co2_irn_t *ci, col_t preferred, struct list_head *parent_changed)
@@ -724,23 +733,36 @@ static int color_change_balance(co2_t *env, co2_irn_t *ci, bitset_t *tried_color
 	return balance;
 }
 
-static void keep_sensible_colors(co2_t *env, co2_irn_t *ci, col_cost_pair_t *seq)
+static void adjust_start_colors(co2_t *env, co2_cloud_t *cloud, col_cost_pair_t *seq)
 {
-	bitset_t *fixed_cols = bitset_alloca(env->co->cls->n_regs);
-	int all_fixed = 1;
-	neighb_t *n;
+	int n_regs    = env->co->cls->n_regs;
+	bitset_t *adm = bitset_alloca(n_regs);
+	bitset_pos_t col;
+	int i;
 
-	co_gs_foreach_neighb(ci->aff, n) {
-		all_fixed &= color_is_fix(env, n->irn);
-		bitset_set(fixed_cols, get_col(env, n->irn));
+	for(i = 0; i < cloud->n_memb; ++i) {
+		co2_irn_t *ci = cloud->seq[i];
+		int n_constr;
+
+		/* Prefer precolored neighbors. */
+		bitset_clear_all(adm);
+		admissible_colors(env, ci, adm);
+		n_constr = bitset_popcnt(adm);
+
+		bitset_foreach(adm, col) {
+			seq[col].costs = add_saturated(seq[col].costs, -128 * (n_regs - n_constr));
+		}
+
+		bitset_foreach_clear(adm, col) {
+			seq[col].costs = add_saturated(seq[col].costs, 128);
+		}
 	}
 
-	if(all_fixed) {
-		bitset_pos_t i;
-		bitset_flip_all(fixed_cols);
-		bitset_foreach(fixed_cols, i)
-			seq[i].costs = INT_MAX;
-	}
+	admissible_colors(env, cloud->master, adm);
+	bitset_flip_all(adm);
+
+	bitset_foreach(adm, col)
+		seq[col].costs = INT_MAX;
 }
 
 static int process_node(co2_t *env, co2_cloud_t *cloud, int index)
@@ -759,7 +781,10 @@ static int process_node(co2_t *env, co2_cloud_t *cloud, int index)
 		int i;
 
 		determine_color_costs(env, ci, seq);
+		if(index == 0)
+			adjust_start_colors(env, cloud, seq);
 
+#if 0
 		if(index == 0) {
 			col_t col     = get_col(env, ci->irn);
 			int min_costs = INT_MAX;
@@ -770,8 +795,8 @@ static int process_node(co2_t *env, co2_cloud_t *cloud, int index)
 
 			seq[col].costs = min_costs - 1;
 		}
+#endif
 
-		//keep_sensible_colors(env, ci, seq);
 		qsort(seq, n_regs, sizeof(seq[0]), col_cost_pair_lt);
 
 #if 0
@@ -794,16 +819,16 @@ static int process_node(co2_t *env, co2_cloud_t *cloud, int index)
 				all other colors do no good.
 			*/
 
-			DB((env->dbg, LEVEL_2, "\t%2Ntrying %+F index %d for color %d\n", index, ci->irn, index, col));
+			DB((env->dbg, LEVEL_2, "\t%2{firm:indent}trying %+F index %d for color %d\n", index, ci->irn, index, col));
 			if(INFEASIBLE(costs)) {
-				DBG((env->dbg, LEVEL_2, "\t%2N-> color is infeasible due to %s\n", index, flag_str(seq[i].flags)));
+				DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}-> color is infeasible due to %s\n", index, flag_str(seq[i].flags)));
 				break;
 			}
 
 			bitset_set(cols_tried, col);
 			INIT_LIST_HEAD(&changed);
 			ok = change_color_single(env, ci->irn, col, &changed, 0);
-			DB((env->dbg, LEVEL_2, "\t%2N-> %s\n", index, ok ? "ok" : "failed"));
+			DB((env->dbg, LEVEL_2, "\t%2{firm:indent}-> %s\n", index, ok ? "ok" : "failed"));
 
 			/* if we succeeded changing the color, we will figure out the next node. */
 			if(ok) {
@@ -818,7 +843,7 @@ static int process_node(co2_t *env, co2_cloud_t *cloud, int index)
 				/* if this is the last node in the coloring sequence, examine the coloring */
 				if(index == cloud->n_memb - 1) {
 					examine_cloud_coloring(env, cloud);
-					DB((env->dbg, LEVEL_2, "\t%2N-> current best coloring %d\n", index, cloud->best_costs));
+					DB((env->dbg, LEVEL_2, "\t%2{firm:indent}-> current best coloring %d\n", index, cloud->best_costs));
 					if(cloud->best_costs == cloud->inevit) {
 						done = 1;
 						res  = 1;
@@ -941,7 +966,7 @@ static void init_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a)
 	determine_coloring_sequence(env, cloud);
 }
 
-static void process_cloud(co2_t *env, co2_cloud_t *cloud)
+static void process_cloud(co2_t *env, co2_cloud_t *cloud, int nr)
 {
 	struct list_head changed;
 	int i;
@@ -984,12 +1009,23 @@ static void process_cloud(co2_t *env, co2_cloud_t *cloud)
 		}
 		assert(!some_fixed);
 	}
+
+	{
+		char buf[256];
+		FILE *f;
+
+		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_cloud_%d.dot", env->co->irg, env->co->cls->name, nr);
+		if(f = fopen(buf, "wt")) {
+			be_ifg_dump_dot(env->co->cenv->ifg, env->co->irg, f, &ifg_dot_cb, env);
+			fclose(f);
+		}
+	}
+
 }
 
 static void process(co2_t *env)
 {
 	affinity_node_t *a;
-	struct list_head cloud_head;
 	co2_cloud_t *pos;
 	co2_cloud_t **clouds;
 	int n_clouds;
@@ -999,8 +1035,6 @@ static void process(co2_t *env)
 	int final_costs = 0;
 
 
-	INIT_LIST_HEAD(&cloud_head);
-
 	n_clouds = 0;
 	co_gs_foreach_aff_node(env->co, a) {
 		co2_irn_t *ci = get_co2_irn(env, a->irn);
@@ -1009,20 +1043,20 @@ static void process(co2_t *env)
 			co2_cloud_t *cloud = new_cloud(env);
 
 			init_cloud(env, cloud, a);
-			list_add(&cloud->list, &cloud_head);
+			list_add(&cloud->list, &env->cloud_head);
 			n_clouds++;
 		}
 	}
 
 	i = 0;
 	clouds = xmalloc(n_clouds * sizeof(clouds[0]));
-	list_for_each_entry(co2_cloud_t, pos, &cloud_head, list)
+	list_for_each_entry(co2_cloud_t, pos, &env->cloud_head, list)
 		clouds[i++] = pos;
 	qsort(clouds, n_clouds, sizeof(clouds[0]), cmp_clouds);
 
 	for(i = 0; i < n_clouds; ++i) {
 		init_costs  += cloud_costs(env, clouds[i]);
-		process_cloud(env, clouds[i]);
+		process_cloud(env, clouds[i], i);
 		all_costs   += clouds[i]->costs;
 		final_costs += clouds[i]->best_costs;
 	}
@@ -1043,9 +1077,125 @@ static void writeback_colors(co2_t *env)
 	}
 }
 
+/*
+  ___ _____ ____   ____   ___ _____   ____                        _
+ |_ _|  ___/ ___| |  _ \ / _ \_   _| |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
+  | || |_ | |  _  | | | | | | || |   | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
+  | ||  _|| |_| | | |_| | |_| || |   | |_| | |_| | | | | | | |_) | | | | | (_| |
+ |___|_|   \____| |____/ \___/ |_|   |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
+                                                           |_|            |___/
+*/
+
+static const char *get_dot_color_name(int col)
+{
+	static const char *names[] = {
+		"blue",
+		"red",
+		"green",
+		"yellow",
+		"cyan",
+		"magenta",
+		"orange",
+		"chocolate",
+		"beige",
+		"navy",
+		"darkgreen",
+		"darkred",
+		"lightPink",
+		"chartreuse",
+		"lightskyblue",
+		"linen",
+		"pink",
+		"lightslateblue",
+		"mintcream",
+		"red",
+		"darkolivegreen",
+		"mediumblue",
+		"mistyrose",
+		"salmon",
+		"darkseagreen",
+		"mediumslateblue"
+		"moccasin",
+		"tomato",
+		"forestgreen",
+		"darkturquoise",
+		"palevioletred"
+	};
+
+	return col < sizeof(names)/sizeof(names[0]) ? names[col] : "white";
+}
+
+static const char *get_dot_shape_name(co2_t *env, co2_irn_t *ci)
+{
+	arch_register_req_t req;
+
+	arch_get_register_req(env->co->aenv, &req, ci->irn, BE_OUT_POS(0));
+	if(arch_register_req_is(&req, limited))
+		return "diamond";
+
+	if(ci->fixed)
+		return "rectangle";
+
+	if(ci->tmp_fixed)
+		return "hexagon";
+
+	return "ellipse";
+}
+
+static void ifg_dump_graph_attr(FILE *f, void *self)
+{
+	fprintf(f, "overlay=false");
+}
+
+static int ifg_is_dump_node(void *self, ir_node *irn)
+{
+	co2_t *env = self;
+	return !arch_irn_is(env->co->aenv, irn, ignore);
+}
+
+static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
+{
+	co2_t *env    = self;
+	co2_irn_t *ci = get_co2_irn(env, irn);
+
+	ir_fprintf(f, "label=\"%+F,%d\" style=filled color=%s shape=%s", irn, ci->costs,
+		get_dot_color_name(get_col(env, irn)), get_dot_shape_name(env, ci));
+}
+
+static void ifg_dump_at_end(FILE *file, void *self)
+{
+	co2_t *env = self;
+	affinity_node_t *a;
+
+	co_gs_foreach_aff_node(env->co, a) {
+		int idx = get_irn_idx(a->irn);
+		neighb_t *n;
+
+		co_gs_foreach_neighb(a, n) {
+			int nidx = get_irn_idx(n->irn);
+
+			if(idx < nidx) {
+				const char *style = get_col(env, a->irn) == get_col(env, n->irn) ? "dashed" : "dotted";
+				fprintf(file, "\tn%d -- n%d [label=\"%d\" style=%s weight=0.01];\n", idx, nidx, n->costs, style);
+			}
+		}
+	}
+
+}
+
+static be_ifg_dump_dot_cb_t ifg_dot_cb = {
+	ifg_is_dump_node,
+	ifg_dump_graph_attr,
+	ifg_dump_node_attr,
+	NULL,
+	NULL,
+	ifg_dump_at_end
+};
+
 void co_solve_heuristic_new(copy_opt_t *co)
 {
 	co2_t env;
+	FILE *f;
 
 	phase_init(&env.ph, "co2", co->cenv->birg->irg, sizeof(co2_irn_t), PHASE_DEFAULT_GROWTH, co2_irn_init);
 	env.touched     = NULL;
@@ -1056,8 +1206,20 @@ void co_solve_heuristic_new(copy_opt_t *co)
 	bitset_flip_all(env.ignore_regs);
 	be_abi_put_ignore_regs(co->cenv->birg->abi, co->cls, env.ignore_regs);
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.co2");
+	INIT_LIST_HEAD(&env.cloud_head);
+
+	if(f = be_chordal_open(co->cenv, "ifg_before_", "dot")) {
+		be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
+		fclose(f);
+	}
 
 	process(&env);
+
+	if(f = be_chordal_open(co->cenv, "ifg_after_", "dot")) {
+		be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
+		fclose(f);
+	}
+
 	writeback_colors(&env);
 	phase_free(&env.ph);
 }
