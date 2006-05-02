@@ -72,7 +72,7 @@ typedef struct _phi_spill_assoc_t {
 /**
  * Compare two Phi->Spill associations.
  */
-static int cmp_phi_spill_assoc(const void *a, const void *b) {
+static int cmp_phi_spill_assoc(const void *a, const void *b, size_t n) {
 	const phi_spill_assoc_t *p1 = a;
 	const phi_spill_assoc_t *p2 = b;
 	return p1->phi != p2->phi;
@@ -249,7 +249,7 @@ static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill, unsigned vis
 	ir_graph *irg                  = get_irn_irg(to_spill);
 	int      save_optimize         = get_optimize();
 	int      save_normalize        = get_opt_normalize();
-	pset     *already_visited_phis = new_set(cmp_phi_spill_assoc, 10);
+	set      *already_visited_phis = new_set(cmp_phi_spill_assoc, 10);
 	ir_node *res;
 
 	/*
