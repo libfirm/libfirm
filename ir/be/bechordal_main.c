@@ -175,9 +175,10 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 };
 
 static const lc_opt_enum_int_items_t copymin_items[] = {
-	{ "none", BE_CH_COPYMIN_NONE },
+	{ "none",  BE_CH_COPYMIN_NONE },
 	{ "heur1", BE_CH_COPYMIN_HEUR1 },
 	{ "heur2", BE_CH_COPYMIN_HEUR2 },
+	{ "stat",  BE_CH_COPYMIN_STAT  },
 #ifdef WITH_ILP
 	{ "ilp1",  BE_CH_COPYMIN_ILP1 },
 	{ "ilp2",  BE_CH_COPYMIN_ILP2 },
@@ -288,8 +289,9 @@ static void put_ignore_colors(be_chordal_env_t *chordal_env)
 static void be_ra_chordal_main(const be_irg_t *bi)
 {
 	const be_main_env_t *main_env = bi->main_env;
-	const arch_isa_t *isa         = arch_env_get_isa(main_env->arch_env);
-	ir_graph *irg                 = bi->irg;
+	const arch_isa_t    *isa      = arch_env_get_isa(main_env->arch_env);
+	ir_graph            *irg      = bi->irg;
+	copy_opt_t          *co       = NULL;
 
 	int j, m;
 	be_chordal_env_t chordal_env;
@@ -343,46 +345,42 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_ifg_check(chordal_env.ifg);
 
 		/* copy minimization */
-#ifdef COPYOPT_STAT
-		co_compare_solvers(&chordal_env);
-#else /* COPYOPT_STAT */
-		{
-			copy_opt_t *co = NULL;
-
-			if (options.copymin_method != BE_CH_COPYMIN_NONE) {
-				co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
-				co_build_ou_structure(co);
-			}
-
-			switch(options.copymin_method) {
-				case BE_CH_COPYMIN_HEUR1:
-					co_solve_heuristic(co);
-					break;
-				case BE_CH_COPYMIN_HEUR2:
-					co_solve_heuristic_new(co);
-					break;
-#ifdef WITH_ILP
-				case BE_CH_COPYMIN_ILP1:
-					printf("FIXME: %s:%d ILP1 not yet implemented!\n", __FILE__, __LINE__);
-					co_solve_ilp1(co, 60.0);
-					break;
-				case BE_CH_COPYMIN_ILP2:
-					co_build_graph_structure(co);
-					co_solve_ilp2(co, 60.0);
-					co_free_graph_structure(co);
-					break;
-#endif /* WITH_ILP */
-				case BE_CH_COPYMIN_NONE:
-				default:
-					break;
-			}
-
-			if (co) {
-				co_free_ou_structure(co);
-				free_copy_opt(co);
-			}
+		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
+			co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
+			co_build_ou_structure(co);
 		}
-#endif /* COPYOPT_STAT */
+
+		switch(options.copymin_method) {
+			case BE_CH_COPYMIN_HEUR1:
+				co_solve_heuristic(co);
+				break;
+			case BE_CH_COPYMIN_HEUR2:
+				co_solve_heuristic_new(co);
+				break;
+			case BE_CH_COPYMIN_STAT:
+				co_compare_solvers(&chordal_env);
+				break;
+#ifdef WITH_ILP
+			case BE_CH_COPYMIN_ILP1:
+				printf("FIXME: %s:%d ILP1 not yet implemented!\n", __FILE__, __LINE__);
+				co_solve_ilp1(co, 60.0);
+				break;
+			case BE_CH_COPYMIN_ILP2:
+				co_build_graph_structure(co);
+				co_solve_ilp2(co, 60.0);
+				co_free_graph_structure(co);
+				break;
+#endif /* WITH_ILP */
+			case BE_CH_COPYMIN_NONE:
+			default:
+				break;
+		}
+
+		if (co) {
+			co_free_ou_structure(co);
+			free_copy_opt(co);
+		}
+
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 		be_ra_chordal_check(&chordal_env);
 

@@ -109,8 +109,9 @@ enum {
 	BE_CH_COPYMIN_NONE    = 0,
 	BE_CH_COPYMIN_HEUR1   = 1,
 	BE_CH_COPYMIN_HEUR2   = 2,
-	BE_CH_COPYMIN_ILP1    = 3,
-	BE_CH_COPYMIN_ILP2    = 4,
+	BE_CH_COPYMIN_STAT    = 3,
+	BE_CH_COPYMIN_ILP1    = 4,
+	BE_CH_COPYMIN_ILP2    = 5,
 
 	/* ifg flavor */
 	BE_CH_IFG_STD         = 1,

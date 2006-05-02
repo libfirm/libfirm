@@ -81,6 +81,12 @@ void co_free_ou_structure(copy_opt_t *co);
 int co_solve_heuristic(copy_opt_t *co);
 
 /**
+ * Solves the copy minimization problem using another heuristic approach.
+ * Uses the OU data structure.
+ */
+void co_solve_heuristic_new(copy_opt_t *co);
+
+/**
  * Returns the maximal costs possible, i.e. the costs if all
  * pairs would be assigned different registers.
  * Uses the OU data structure

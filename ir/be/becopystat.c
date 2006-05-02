@@ -22,12 +22,6 @@
 #include "becopyopt_t.h"
 #include "becopystat.h"
 
-#ifdef COPYOPT_STAT
-
-#define DO_HEUR
-#undef DO_ILP1
-#define DO_ILP2
-
 #define DEBUG_LVL SET_LEVEL_1
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -102,9 +96,9 @@ static ir_graph *last_irg;
 void copystat_init(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.be.copystat");
 
-	all_phi_nodes = pset_new_ptr_default();
+	all_phi_nodes   = pset_new_ptr_default();
 	all_phi_classes = pset_new_ptr_default();
-	all_copy_nodes = pset_new_ptr_default();
+	all_copy_nodes  = pset_new_ptr_default();
 }
 
 void copystat_reset(void) {
@@ -331,6 +325,9 @@ void copystat_add_opt_costs(int costs) {
 void copystat_add_heur_time(int time) {
 	curr_vals[I_HEUR_TIME] += time;
 }
+
+#ifdef WITH_ILP
+
 void copystat_add_ilp_time(int time) {
 	curr_vals[I_ILP_TIME] += time;
 }
@@ -343,6 +340,8 @@ void copystat_add_ilp_csts(int csts) {
 void copystat_add_ilp_iter(int iters) {
 	curr_vals[I_ILP_ITER] += iters;
 }
+
+#endif /* WITH_ILP */
 
 void copystat_dump(ir_graph *irg) {
 	int i;
@@ -455,7 +454,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	copy_opt_t *co;
 	lc_timer_t *timer;
 	color_save_t saver;
-	int costs_inevit, costs_init, costs_heur, costs_ilp1, costs_ilp2, lower_bound;
+	int costs_inevit, costs_init, costs_solved, lower_bound;
 
 	phi_class_compute(chordal_env->irg);
 	copystat_collect_cls(chordal_env);
@@ -466,8 +465,8 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
 
 	/* save colors */
-	saver.arch_env = chordal_env->birg->main_env->arch_env;
-	saver.chordal_env = chordal_env;
+	saver.arch_env     = chordal_env->birg->main_env->arch_env;
+	saver.chordal_env  = chordal_env;
 	saver.saved_colors = pmap_create();
 	save_colors(&saver);
 	be_ra_chordal_check(co->cenv);
@@ -486,8 +485,8 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	copystat_add_max_costs(co_get_max_copy_costs(co));
 
 
-#ifdef DO_HEUR
-	timer = lc_timer_register("heur", NULL);
+	/* heuristic 1 (Daniel Grund) */
+	timer = lc_timer_register("heur1", NULL);
 	lc_timer_reset_and_start(timer);
 
 	co_solve_heuristic(co);
@@ -495,43 +494,58 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	lc_timer_stop(timer);
 
 	be_ra_chordal_check(co->cenv);
-	costs_heur = co_get_copy_costs(co);
-	DBG((dbg, LEVEL_1, "HEUR costs: %3d\n", costs_heur));
+	costs_solved = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "HEUR1 costs: %3d\n", costs_solved));
 	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
-	copystat_add_heur_costs(costs_heur);
-	assert(lower_bound <= costs_heur);
-#endif /* DO_HEUR */
+	copystat_add_heur_costs(costs_solved);
+	assert(lower_bound <= costs_solved);
+
+	/* heuristic 2 (Sebastian Hack) */
+	timer = lc_timer_register("heur2", NULL);
+	lc_timer_reset_and_start(timer);
+
+	co_solve_heuristic_new(co);
+
+	lc_timer_stop(timer);
+
+	be_ra_chordal_check(co->cenv);
+	costs_solved = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "HEUR2 costs: %3d\n", costs_solved));
+	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_costs(costs_solved);
+	assert(lower_bound <= costs_solved);
 
 
-#ifdef DO_ILP1
+#ifdef WITH_ILP
+
+	/* ILP 1 is not yet implemented, so it makes no sense to compare */
+#if 0
 	load_colors(&saver);
 
 	co_solve_ilp1(co, 60.0);
 
-	costs_ilp1 = co_get_copy_costs(co);
-	DBG((dbg, LEVEL_1, "ILP1 costs: %3d\n", costs_ilp1));
-	copystat_add_opt_costs(costs_ilp1); /*TODO ADAPT */
-	assert(lower_bound <= costs_ilp1);
-#endif /* DO_ILP1 */
+	costs_solved = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "ILP1 costs: %3d\n", costs_solved));
+	copystat_add_opt_costs(costs_solved); /* TODO: ADAPT */
+	assert(lower_bound <= costs_solved);
+#endif /* 0 */
 
-
-#ifdef DO_ILP2
+	/* ILP 2 */
 	load_colors(&saver);
 
 	co_solve_ilp2(co, 60.0);
 
 	be_ra_chordal_check(co->cenv);
-	costs_ilp2 = co_get_copy_costs(co);
-	DBG((dbg, LEVEL_1, "ILP2 costs: %3d\n", costs_ilp2));
-	copystat_add_opt_costs(costs_ilp2); /*TODO ADAPT */
-	assert(lower_bound <= costs_ilp2);
-#endif /* DO_ILP2 */
+	costs_solved = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "ILP2 costs: %3d\n", costs_solved));
+	copystat_add_opt_costs(costs_solved); /* TODO: ADAPT */
+	assert(lower_bound <= costs_solved);
 
+#endif /* WITH_ILP */
+
+	/* free memory for statistic structures */
 	pmap_destroy(saver.saved_colors);
 	co_free_graph_structure(co);
 	co_free_ou_structure(co);
 	free_copy_opt(co);
 }
-
-
-#endif /* COPYOPT_STAT */
