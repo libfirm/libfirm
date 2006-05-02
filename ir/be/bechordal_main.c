@@ -286,6 +286,14 @@ static void put_ignore_colors(be_chordal_env_t *chordal_env)
 			bitset_set(chordal_env->ignore_colors, i);
 }
 
+FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const char *suffix)
+{
+	char buf[1024];
+
+	ir_snprintf(buf, sizeof(buf), "%s%F_%s.%s", prefix, env->irg, env->cls->name, suffix);
+	return fopen(buf, "wt");
+}
+
 static void be_ra_chordal_main(const be_irg_t *bi)
 {
 	const be_main_env_t *main_env = bi->main_env;
@@ -333,6 +341,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 			be_spill_belady(&chordal_env);
 		}
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
+		be_abi_fix_stack_nodes(bi->abi);
 		be_liveness(irg);
 		be_check_pressure(&chordal_env);
 
