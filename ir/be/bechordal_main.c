@@ -236,7 +236,7 @@ static lc_opt_enum_int_var_t dump_var = {
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_MASK("spill", "spill method (belady or ilp)", &spill_var),
-	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (none, heur1, heur2, ilp1 or ilp2)", &copymin_var),
+	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR("ifg", "interference graph flavour (std or fast)", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_MASK("perm", "perm lowering options (copy or swap)", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump", "select dump phases", &dump_var),
@@ -291,7 +291,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 	const be_main_env_t *main_env = bi->main_env;
 	const arch_isa_t    *isa      = arch_env_get_isa(main_env->arch_env);
 	ir_graph            *irg      = bi->irg;
-	copy_opt_t          *co       = NULL;
+	copy_opt_t          *co;
 
 	int j, m;
 	be_chordal_env_t chordal_env;
@@ -345,6 +345,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_ifg_check(chordal_env.ifg);
 
 		/* copy minimization */
+		co = NULL;
 		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
 			co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
 			co_build_ou_structure(co);
@@ -355,7 +356,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 				co_solve_heuristic(co);
 				break;
 			case BE_CH_COPYMIN_HEUR2:
+				co_build_graph_structure(co);
 				co_solve_heuristic_new(co);
+				co_free_graph_structure(co);
 				break;
 			case BE_CH_COPYMIN_STAT:
 				co_compare_solvers(&chordal_env);
