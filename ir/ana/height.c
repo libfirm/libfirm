@@ -123,7 +123,7 @@ int heights_reachable_in_block(heights_t *h, const ir_node *n, const ir_node *m)
  * @param irn The node.
  * @param bl  The block.
  */
-static unsigned compute_height(heights_t *h, const ir_node *irn, const ir_node *bl)
+static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 {
 	irn_height_t *ih = phase_get_or_set_irn_data(&h->ph, irn);
 	int is_sink;
