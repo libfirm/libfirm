@@ -200,6 +200,9 @@ void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  */
 void compute_doms(ir_graph *irg);
 
+/** Computes the dominator trees on demand */
+void assure_doms(ir_graph *irg);
+
 /** Computes the post dominator trees.
  *
  * Sets a flag in irg to "dom_consistent".
@@ -216,6 +219,9 @@ void compute_doms(ir_graph *irg);
  * the run does not free the outs information.
  */
 void compute_postdoms(ir_graph *irg);
+
+/** Computes the dominator trees on demand */
+void assure_postdoms(ir_graph *irg);
 
 /** Frees the dominator data structures.  Sets the flag in irg to "dom_none". */
 void free_dom(ir_graph *irg);

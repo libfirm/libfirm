@@ -281,7 +281,7 @@ void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 	/* The root of the dominator tree should be the End block. */
 	ir_node *root = get_irg_end_block(irg);
 
-  assert(irg->pdom_state == dom_consistent
+	assert(irg->pdom_state == dom_consistent
 			&& "The dominators of the irg must be consistent");
 	assert(root && "The end block of the graph is NULL?");
 	assert(get_pdom_info(root)->idom == NULL
@@ -348,13 +348,13 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
  * count the number of blocks and clears the post dominance info
  */
 static void count_and_init_blocks_pdom(ir_node *bl, void *env) {
-  int *n_blocks = (int *) env;
-  (*n_blocks) ++;
+	int *n_blocks = (int *) env;
+	(*n_blocks) ++;
 
 	memset(get_pdom_info(bl), 0, sizeof(dom_info));
-  set_Block_ipostdom(bl, NULL);
-  set_Block_postdom_pre_num(bl, -1);
-  set_Block_postdom_depth(bl, -1);
+	set_Block_ipostdom(bl, NULL);
+	set_Block_postdom_pre_num(bl, -1);
+	set_Block_postdom_depth(bl, -1);
 }
 
 /** temporary type used while constructing the dominator / post dominator tree. */
@@ -387,7 +387,7 @@ typedef struct {
  * Start block misses control dead blocks.
  */
 static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
-			      tmp_dom_info *tdi_list, int* used) {
+                              tmp_dom_info *tdi_list, int *used) {
   tmp_dom_info *tdi;
   int i;
 
@@ -420,7 +420,7 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
  * End block misses blocks in endless loops.
  */
 static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
-			      tmp_dom_info *tdi_list, int* used) {
+                               tmp_dom_info *tdi_list, int* used) {
   tmp_dom_info *tdi;
   int i;
 
@@ -513,7 +513,7 @@ static void count_and_init_blocks_dom(ir_node *bl, void *env) {
  *
  * - count the number of blocks
  * - clear the dominance info
- * - remove block-keepalives of live blocks to reduce
+ * - remove Block-keepalives of live blocks to reduce
  *   the number of "phantom" block edges
  *
  * @param irg  the graph
@@ -585,8 +585,7 @@ void compute_doms(ir_graph *irg) {
   tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
 
   /* We need the out data structure. */
-  if (irg->outs_state != outs_consistent)
-    compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   /* this with a standard walker as passing the parent to the sons isn't
      simple. */
@@ -683,6 +682,11 @@ void compute_doms(ir_graph *irg) {
   }
 }
 
+void assure_doms(ir_graph *irg) {
+  if (get_irg_dom_state(irg) != dom_consistent)
+    compute_doms(irg);
+}
+
 void free_dom(ir_graph *irg) {
   /* Update graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
@@ -713,8 +717,7 @@ void compute_postdoms(ir_graph *irg) {
   tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
 
   /* We need the out data structure. */
-  if (irg->outs_state != outs_consistent)
-    compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   /* this with a standard walker as passing the parent to the sons isn't
      simple. */
@@ -788,6 +791,11 @@ void compute_postdoms(ir_graph *irg) {
     postdom_tree_walk_irg(irg, assign_tree_postdom_pre_order,
       assign_tree_postdom_pre_order_max, &tree_pre_order);
   }
+}
+
+void assure_postdoms(ir_graph *irg) {
+  if (get_irg_postdom_state(irg) != dom_consistent)
+    compute_postdoms(irg);
 }
 
 void free_postdom(ir_graph *irg) {
