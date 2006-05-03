@@ -9,6 +9,538 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+#if 1
+
+#include <assert.h>
+#include <stdlib.h>
+#include "cdep.h"
+#include "ircons.h"
+#include "ifconv.h"
+#include "irdom.h"
+#include "irgmod.h"
+#include "irgopt.h"
+#include "irgwalk.h"
+#include "irtools.h"
+#include "return.h"
+
+// debug
+#include "irdump.h"
+#include "irprintf.h"
+
+
+static ir_node* walk_to_projx(ir_node* start)
+{
+	ir_node* pred;
+	ir_node* cdep;
+
+	pred = get_nodes_block(start);
+	cdep = get_unique_cdep(pred);
+	if (cdep == NULL) return NULL;
+
+	assert(get_irn_arity(pred) == 1);
+	pred = get_irn_n(pred, 0);
+	if (get_irn_op(pred) == op_Proj) {
+		assert(get_irn_mode(pred) == mode_X);
+		return pred;
+	} else {
+		return NULL;
+	}
+}
+
+
+typedef struct block_info {
+	ir_node* phi;
+	int evil;
+} block_info;
+
+
+static int can_empty_block(ir_node* block)
+{
+	return !((block_info*)get_irn_link(block))->evil;
+}
+
+
+/*
+ * Copies the DAG starting at node to the ith predecessor block of src_block
+ * -if the node isn't in the src_block, this is a nop and the node is returned
+ * -if the node is a phi in the src_block, the ith predecessor of the phi is
+ *   returned
+ * otherwise returns the copy of the passed node
+ */
+static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
+{
+	ir_node* dst_block;
+	ir_node* copy;
+	int arity;
+	int j;
+
+	if (get_nodes_block(node) != src_block) return node;
+	if (get_irn_op(node) == op_Phi) return get_irn_n(node, i);
+
+	copy_irn_to_irg(node, current_ir_graph);
+	copy = get_irn_link(node);
+	dst_block = get_nodes_block(get_irn_n(src_block, i));
+	set_nodes_block(copy, dst_block);
+
+	ir_fprintf(stderr, "Copying node %+F to block %+F, copy is %+F\n",
+		node, dst_block, copy
+	);
+
+	arity = get_irn_arity(node);
+	for (j = 0; j < arity; ++j) {
+		set_irn_n(copy, j, copy_to(get_irn_n(node, j), src_block, i));
+		ir_fprintf(stderr, "-- pred %d is %+F\n", j, get_irn_n(copy, j));
+	}
+	return copy;
+}
+
+
+/*
+ * Duplicate and move the contents of ith block predecessor into its
+ * predecessors if the block has multiple control dependencies and only one
+ * successor.
+ * Also bail out if the block contains non-movable nodes, because later
+ * if-conversion would be pointless.
+ */
+static int fission_block(ir_node* block, int i)
+{
+	ir_node* pred = get_irn_n(block, i);
+	ir_node* pred_block;
+	block_info* info;
+	ir_node* phi;
+	int pred_arity;
+	int arity;
+	ir_node** ins;
+	int j;
+
+	if (get_irn_op(pred) != op_Jmp) return 0;
+	pred_block = get_nodes_block(pred);
+
+	if (!has_multiple_cdep(pred_block)) return 0;
+	if (!can_empty_block(pred_block)) return 0;
+
+	ir_fprintf(stderr, "Fissioning block %+F\n", pred_block);
+
+	pred_arity = get_irn_arity(pred_block);
+	arity = get_irn_arity(block);
+	info = get_irn_link(block);
+	ins = malloc(sizeof(*ins) * (arity + pred_arity - 1));
+	for (phi = info->phi; phi != NULL; phi = get_irn_link(phi)) {
+		for (j = 0; j < i; ++j) ins[j] = get_irn_n(phi, j);
+		for (j = 0; j < pred_arity; ++j) {
+			ins[i + j] = copy_to(get_irn_n(phi, i), pred_block, j);
+		}
+		for (j = i + 1; j < arity; ++j) {
+			ins[pred_arity - 1 + j] = get_irn_n(phi, j);
+		}
+		set_irn_in(phi, arity + pred_arity - 1, ins);
+	}
+	for (j = 0; j < i; ++j) ins[j] = get_irn_n(block, j);
+	for (j = 0; j < pred_arity; ++j) ins[i + j] = get_irn_n(pred_block, j);
+	for (j = i + 1; j < arity; ++j) ins[pred_arity - 1 + j] = get_irn_n(block, j);
+	set_irn_in(block, arity + pred_arity - 1, ins);
+	free(ins);
+
+	/* Kill all Phis in the fissioned block
+	 * This is to make sure they're not kept alive
+	 */
+	info = get_irn_link(pred_block);
+	phi = info->phi;
+	while (phi != NULL) {
+		ir_node* next = get_irn_link(phi);
+		exchange(phi, new_Bad());
+		phi = next;
+	}
+	return 1;
+}
+
+
+static void if_conv_walker(ir_node* block, void* env)
+{
+	ir_node* phi;
+	int arity;
+	int i;
+
+	// Bail out, if there are no Phis at all
+	if (((block_info*)get_irn_link(block))->phi == NULL) return;
+
+restart:
+	arity = get_irn_arity(block);
+	for (i = 0; i < arity; ++i) {
+		if (fission_block(block, i)) goto restart;
+	}
+	//return;
+
+	arity = get_irn_arity(block);
+	for (i = 0; i < arity; ++i) {
+		ir_node* pred;
+		ir_node* cond;
+		ir_node* projx0;
+		int j;
+
+		projx0 = walk_to_projx(get_irn_n(block, i));
+		if (projx0 == NULL) return;
+		pred = get_Proj_pred(projx0);
+		if (get_irn_op(pred) != op_Cond || get_irn_mode(get_Cond_selector(pred)) != mode_b) continue;
+		cond = pred;
+
+		if (!can_empty_block(get_nodes_block(get_irn_n(block, i)))) {
+			ir_fprintf(stderr, "Cannot empty block %+F\n",
+				get_nodes_block(get_irn_n(block, i))
+			);
+			continue;
+		}
+
+		for (j = i + 1; j < arity; ++j) {
+			ir_node* projx1;
+			ir_node* psi_block;
+			ir_node* conds[1];
+			ir_node* vals[2];
+			ir_node* psi;
+
+			projx1 = walk_to_projx(get_irn_n(block, j));
+			if (projx1 == NULL) continue;
+			pred = get_Proj_pred(projx1);
+			if (get_irn_op(pred) != op_Cond || get_irn_mode(get_Cond_selector(pred)) != mode_b) continue;
+			if (pred != cond) continue;
+			ir_fprintf(stderr, "Found Cond %+F with proj %+F and %+F\n", cond, projx0, projx1);
+
+			if (!can_empty_block(get_nodes_block(get_irn_n(block, j)))) {
+				ir_fprintf(stderr, "Cannot empty block %+F\n",
+					get_nodes_block(get_irn_n(block, j))
+				);
+				continue;
+			}
+
+			conds[0] = get_Cond_selector(cond);
+
+			psi_block = get_nodes_block(cond);
+			phi = ((block_info*)get_irn_link(block))->phi;
+			do {
+				// Don't generate PsiMs
+				if (get_irn_mode(phi) == mode_M) {
+					/* Something is very fishy if to predecessors of a PhiM point into the
+					 * block but not at the same memory node
+					 */
+					assert(get_irn_n(phi, i) == get_irn_n(phi, j));
+					// fake memory Psi
+					psi = get_irn_n(phi, i);
+					ir_fprintf(stderr, "Handling memory Phi %+F\n", phi);
+				} else {
+					if (get_Proj_proj(projx0) == pn_Cond_true) {
+						vals[0] = get_irn_n(phi, i);
+						vals[1] = get_irn_n(phi, j);
+					} else {
+						vals[0] = get_irn_n(phi, j);
+						vals[1] = get_irn_n(phi, i);
+					}
+					psi = new_r_Psi(
+						current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
+					);
+					ir_fprintf(stderr, "Generating %+F for %+F\n", psi, phi);
+				}
+
+				if (arity == 2) {
+					exchange(phi, psi);
+				} else {
+					ir_node** ins = malloc(sizeof(*ins) * (arity - 1));
+					int k;
+					int l;
+
+					l = 0;
+					for (k = 0; k < i; ++k) ins[l++] = get_irn_n(phi, k);
+					for (++k; k < j; ++k) ins[l++] = get_irn_n(phi, k);
+					for (++k; k < arity; ++k) ins[l++] = get_irn_n(phi, k);
+					ins[l++] = psi;
+					assert(l == arity - 1);
+					set_irn_in(phi, l, ins);
+
+					free(ins);
+				}
+
+				phi = get_irn_link(phi);
+			} while (phi != NULL && get_irn_op(phi) == op_Phi);
+
+			exchange(get_nodes_block(get_irn_n(block, i)), psi_block);
+			exchange(get_nodes_block(get_irn_n(block, j)), psi_block);
+
+			if (arity == 2) {
+				ir_fprintf(stderr, "Welding block %+F to %+F\n", block, psi_block);
+				((block_info*)get_irn_link(psi_block))->evil |=
+					((block_info*)get_irn_link(block))->evil;
+				exchange(block, psi_block);
+				return;
+			} else {
+				ir_node** ins = malloc(sizeof(*ins) * (arity - 1));
+				int k;
+				int l;
+
+				l = 0;
+				for (k = 0; k < i; ++k) ins[l++] = get_irn_n(block, k);
+				for (++k; k < j; ++k) ins[l++] = get_irn_n(block, k);
+				for (++k; k < arity; ++k) ins[l++] = get_irn_n(block, k);
+				ins[l++] = new_r_Jmp(current_ir_graph, psi_block);
+				assert(l == arity - 1);
+				set_irn_in(block, l, ins);
+
+				free(ins);
+				goto restart;
+			}
+		}
+	}
+}
+
+
+static void init_block_link(ir_node* block, void* env)
+{
+	block_info* bi = malloc(sizeof(*bi));
+
+	bi->phi = NULL;
+	bi->evil = 0;
+	set_irn_link(block, bi);
+}
+
+
+/* Daisy-chain all phis in a block
+ * If a non-movable node is encountered set the evil flag
+ */
+static void collect_phis(ir_node* node, void* env)
+{
+	ir_node* block;
+	block_info* bi;
+
+	if (get_irn_op(node) == op_Block) return;
+
+	block = get_nodes_block(node);
+	bi = get_irn_link(block);
+
+	if (get_irn_op(node) == op_Phi) {
+		set_irn_link(node, bi->phi);
+		bi->phi = node;
+	} else {
+#if 1
+		if (get_irn_op(node) == op_Call ||
+				get_irn_op(node) == op_Store ||
+				get_irn_op(node) == op_Load) {
+			ir_fprintf(stderr, "Node %+F in block %+F is unmovable\n", node, block);
+			bi->evil = 1;
+		}
+#else
+		if (get_irn_op(node) != op_Jmp &&
+				get_irn_op(node) != op_Proj &&
+				get_irn_op(node) != op_Cond &&
+				get_irn_op(node) != op_Cmp &&
+		    !mode_is_datab(get_irn_mode(node))) {
+    	ir_fprintf(stderr, "Node %+F in block %+F is unmovable\n", node, block);
+			bi->evil = 1;
+		}
+#endif
+	}
+}
+
+
+/*
+ * Transform multiple cascaded Psis into one Psi
+ */
+static ir_node* fold_psi(ir_node* psi)
+{
+	int arity = get_Psi_n_conds(psi);
+	int new_arity = 0;
+	int i;
+	ir_node* n;
+	ir_node** conds;
+	ir_node** vals;
+	int j;
+	int k;
+	int a;
+	ir_node* new_psi;
+
+	for (i = 0; i < arity; ++i) {
+		n = get_Psi_val(psi, i);
+		if (get_irn_op(n) == op_Psi) {
+			new_arity += get_Psi_n_conds(n) + 1;
+		} else {
+			++new_arity;
+		}
+	}
+	n = get_Psi_default(psi);
+	if (get_irn_op(n) == op_Psi) {
+		new_arity += get_Psi_n_conds(n);
+	}
+
+	if (arity == new_arity) return psi; // no attached Psis found
+	ir_fprintf(stderr, "Folding %+F from %d to %d conds\n", psi, arity, new_arity);
+
+	conds = malloc(new_arity * sizeof(*conds));
+	vals = malloc((new_arity + 1) * sizeof(*vals));
+	j = 0;
+	for (i = 0; i < arity; ++i) {
+		ir_node* c = get_Psi_cond(psi, i);
+
+		n = get_Psi_val(psi, i);
+		if (get_irn_op(n) == op_Psi) {
+			a = get_Psi_n_conds(n);
+			for (k = 0; k < a; ++k) {
+				conds[j] = new_r_And(
+					current_ir_graph, get_nodes_block(psi),
+					c, get_Psi_cond(n, k), mode_b
+				);
+				vals[j] = get_Psi_val(n, k);
+				++j;
+			}
+			conds[j] = c;
+			vals[j] = get_Psi_default(n);
+		} else {
+			conds[j] = c;
+			vals[j] = n;
+		}
+		++j;
+	}
+	n = get_Psi_default(psi);
+	if (get_irn_op(n) == op_Psi) {
+		a = get_Psi_n_conds(n);
+		for (k = 0; k < a; ++k) {
+			conds[j] = get_Psi_cond(n, k);
+			vals[j] = get_Psi_val(n, k);
+			++j;
+		}
+		vals[j] = get_Psi_default(n);
+	} else {
+		vals[j] = n;
+	}
+	assert(j == new_arity);
+	new_psi = new_r_Psi(
+		current_ir_graph, get_nodes_block(psi),
+		new_arity, conds, vals, get_irn_mode(psi)
+	);
+	ir_fprintf(stderr, "Folded %+F into new %+F\n", psi, new_psi);
+	exchange(psi, new_psi);
+	free(vals);
+	free(conds);
+	return new_psi;
+}
+
+
+/*
+ * Merge consecutive psi inputs if the data inputs are the same
+ */
+static void meld_psi(ir_node* psi)
+{
+	int arity = get_Psi_n_conds(psi);
+	int new_arity;
+	ir_node** conds;
+	ir_node** vals;
+	ir_node* cond;
+	ir_node* val;
+	int i;
+	int j;
+	ir_node* new_psi;
+
+	new_arity = 1;
+	val = get_Psi_val(psi, 0);
+	ir_fprintf(stderr, "Pred  0 of %+F is %+F\n", psi, val);
+	for (i = 1; i < arity; ++i) {
+		ir_node* v = get_Psi_val(psi, i);
+		ir_fprintf(stderr, "Pred %2d of %+F is %+F\n", i, psi, v);
+		if (val != v) {
+			val = v;
+			++new_arity;
+		}
+	}
+	ir_fprintf(stderr, "Default of %+F is %+F\n", psi, get_Psi_default(psi));
+	if (val == get_Psi_default(psi)) --new_arity;
+
+	ir_fprintf(stderr, "Melding Psi %+F from %d conds to %d\n",
+		psi, arity, new_arity
+	);
+
+	if (new_arity == arity) return;
+
+	// If all data inputs of the Psi are equal, exchange the Psi with that value
+	if (new_arity == 0) {
+		exchange(psi, val);
+		return;
+	}
+
+	conds = malloc(sizeof(*conds) * new_arity);
+	vals = malloc(sizeof(*vals) * (new_arity + 1));
+	cond = get_Psi_cond(psi, 0);
+	val = get_Psi_val(psi, 0);
+	j = 0;
+	for (i = 1; i < arity; ++i) {
+		ir_node* v = get_Psi_val(psi, i);
+
+		if (v == val) {
+			cond = new_r_Or(
+				current_ir_graph, get_nodes_block(psi),
+				cond, get_Psi_cond(psi, i), mode_b
+			);
+		} else {
+			conds[j] = cond;
+			vals[j] = val;
+			++j;
+			val = v;
+		}
+	}
+	if (val != get_Psi_default(psi)) {
+		conds[j] = cond;
+		vals[j] = val;
+		++j;
+	}
+	vals[j] = get_Psi_default(psi);
+	assert(j == new_arity);
+	new_psi = new_r_Psi(
+		current_ir_graph, get_nodes_block(psi),
+		new_arity, conds, vals, get_irn_mode(psi)
+	);
+	ir_fprintf(stderr, "Molded %+F into %+F\n", psi, new_psi);
+	exchange(psi, new_psi);
+}
+
+
+static void optimise_psis(ir_node* node, void* env)
+{
+	if (get_irn_op(node) != op_Psi) return;
+#if 1
+	node = fold_psi(node);
+#endif
+#if 1
+	meld_psi(node);
+#endif
+}
+
+
+void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
+{
+	ir_fprintf(stderr, "Running if-conversion on %+F\n", irg);
+
+	dump_ir_block_graph(irg, "_00_pre");
+
+	normalize_one_return(irg);
+	remove_critical_cf_edges(irg);
+
+	dump_ir_block_graph(irg, "_01_normal");
+
+	compute_cdep(irg);
+	compute_doms(irg);
+
+	irg_block_walk_graph(irg, init_block_link, NULL, NULL);
+	irg_walk_graph(irg, collect_phis, NULL, NULL);
+	irg_block_walk_graph(irg, NULL, if_conv_walker, NULL);
+
+	dump_ir_block_graph(irg, "_02_ifconv");
+
+	local_optimize_graph(irg);
+	irg_walk_graph(irg, NULL, optimise_psis, NULL);
+
+	dump_ir_block_graph(irg, "_03_postifconv");
+
+	free_dom(irg);
+	free_cdep(irg);
+}
+
+#else
+
 /**
  * @file ifconv.c
  * If conversion.
@@ -995,4 +1527,8 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
   DBG((dbg, LEVEL_1, "muxes made: %d\n", muxes_made));
 
   obstack_free(&obst, NULL);
+
+	dump_ir_block_graph(irg, "_ifconv_hack");
 }
+
+#endif
