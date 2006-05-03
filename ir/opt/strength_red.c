@@ -664,9 +664,9 @@ void reduce_strength(ir_graph *irg) {
   /* Call algorithm that computes the backedges */
   construct_cf_backedges(irg);
   /* Call algorithm that computes the dominator trees. */
-  compute_doms(irg);
+  assure_doms(irg);
   /* Call algorithm that computes the out edges */
-  compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   /* -- Search expressions that can be optimized -- */
   irg_walk_graph(irg, NULL, reduce_itervar, NULL);

@@ -240,10 +240,8 @@ void construct_confirms(ir_graph *irg)
   env_t env;
   int edges_active = edges_activated(irg);
 
-  if (get_irg_dom_state(irg) != dom_consistent) {
-    /* we need dominance info */
-    compute_doms(irg);
-  }
+  /* we need dominance info */
+  assure_doms(irg);
 
   assert(get_irg_pinned(irg) == op_pin_state_pinned &&
     "Nodes must be placed to insert Confirms");
