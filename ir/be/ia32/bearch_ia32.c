@@ -536,7 +536,8 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 
 		/* check all OUT requirements, if there is a should_be_same */
 		if ((op_tp == ia32_Normal || op_tp == ia32_AddrModeS) &&
-			! is_ia32_Lea(irn) && ! is_ia32_Conv_I2I(irn) && ! is_ia32_Conv_I2I8Bit(irn))
+			! is_ia32_Lea(irn) && ! is_ia32_Conv_I2I(irn) && ! is_ia32_Conv_I2I8Bit(irn) &&
+			! is_ia32_CMov(irn))
 		{
 			for (i = 0; i < n_res; i++) {
 				if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
