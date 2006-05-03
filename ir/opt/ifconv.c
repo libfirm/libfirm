@@ -22,6 +22,7 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "return.h"
+#include "xmalloc.h"
 
 // debug
 #include "irdump.h"
@@ -53,14 +54,15 @@ typedef struct block_info {
 	int evil;
 } block_info;
 
+#define get_block_blockinfo(block) ((block_info*)get_irn_link(block))
 
 static int can_empty_block(ir_node* block)
 {
-	return !((block_info*)get_irn_link(block))->evil;
+	return !get_block_blockinfo(block)->evil;
 }
 
 
-/*
+/**
  * Copies the DAG starting at node to the ith predecessor block of src_block
  * -if the node isn't in the src_block, this is a nop and the node is returned
  * -if the node is a phi in the src_block, the ith predecessor of the phi is
@@ -95,7 +97,7 @@ static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
 }
 
 
-/*
+/**
  * Duplicate and move the contents of ith block predecessor into its
  * predecessors if the block has multiple control dependencies and only one
  * successor.
@@ -124,7 +126,7 @@ static int fission_block(ir_node* block, int i)
 	pred_arity = get_irn_arity(pred_block);
 	arity = get_irn_arity(block);
 	info = get_irn_link(block);
-	ins = malloc(sizeof(*ins) * (arity + pred_arity - 1));
+	ins = xmalloc(sizeof(*ins) * (arity + pred_arity - 1));
 	for (phi = info->phi; phi != NULL; phi = get_irn_link(phi)) {
 		for (j = 0; j < i; ++j) ins[j] = get_irn_n(phi, j);
 		for (j = 0; j < pred_arity; ++j) {
@@ -139,7 +141,7 @@ static int fission_block(ir_node* block, int i)
 	for (j = 0; j < pred_arity; ++j) ins[i + j] = get_irn_n(pred_block, j);
 	for (j = i + 1; j < arity; ++j) ins[pred_arity - 1 + j] = get_irn_n(block, j);
 	set_irn_in(block, arity + pred_arity - 1, ins);
-	free(ins);
+	xfree(ins);
 
 	/* Kill all Phis in the fissioned block
 	 * This is to make sure they're not kept alive
@@ -162,7 +164,7 @@ static void if_conv_walker(ir_node* block, void* env)
 	int i;
 
 	// Bail out, if there are no Phis at all
-	if (((block_info*)get_irn_link(block))->phi == NULL) return;
+	if (get_block_blockinfo(block)->phi == NULL) return;
 
 restart:
 	arity = get_irn_arity(block);
@@ -215,7 +217,7 @@ restart:
 			conds[0] = get_Cond_selector(cond);
 
 			psi_block = get_nodes_block(cond);
-			phi = ((block_info*)get_irn_link(block))->phi;
+			phi = get_block_blockinfo(block)->phi;
 			do {
 				// Don't generate PsiMs
 				if (get_irn_mode(phi) == mode_M) {
@@ -243,7 +245,7 @@ restart:
 				if (arity == 2) {
 					exchange(phi, psi);
 				} else {
-					ir_node** ins = malloc(sizeof(*ins) * (arity - 1));
+					ir_node** ins = xmalloc(sizeof(*ins) * (arity - 1));
 					int k;
 					int l;
 
@@ -255,7 +257,7 @@ restart:
 					assert(l == arity - 1);
 					set_irn_in(phi, l, ins);
 
-					free(ins);
+					xfree(ins);
 				}
 
 				phi = get_irn_link(phi);
@@ -266,12 +268,11 @@ restart:
 
 			if (arity == 2) {
 				ir_fprintf(stderr, "Welding block %+F to %+F\n", block, psi_block);
-				((block_info*)get_irn_link(psi_block))->evil |=
-					((block_info*)get_irn_link(block))->evil;
+				get_block_blockinfo(psi_block)->evil |=	get_block_blockinfo(block)->evil;
 				exchange(block, psi_block);
 				return;
 			} else {
-				ir_node** ins = malloc(sizeof(*ins) * (arity - 1));
+				ir_node** ins = xmalloc(sizeof(*ins) * (arity - 1));
 				int k;
 				int l;
 
@@ -283,7 +284,7 @@ restart:
 				assert(l == arity - 1);
 				set_irn_in(block, l, ins);
 
-				free(ins);
+				xfree(ins);
 				goto restart;
 			}
 		}
@@ -293,7 +294,7 @@ restart:
 
 static void init_block_link(ir_node* block, void* env)
 {
-	block_info* bi = malloc(sizeof(*bi));
+	block_info* bi = xmalloc(sizeof(*bi));
 
 	bi->phi = NULL;
 	bi->evil = 0;
@@ -371,8 +372,8 @@ static ir_node* fold_psi(ir_node* psi)
 	if (arity == new_arity) return psi; // no attached Psis found
 	ir_fprintf(stderr, "Folding %+F from %d to %d conds\n", psi, arity, new_arity);
 
-	conds = malloc(new_arity * sizeof(*conds));
-	vals = malloc((new_arity + 1) * sizeof(*vals));
+	conds = xmalloc(new_arity * sizeof(*conds));
+	vals = xmalloc((new_arity + 1) * sizeof(*vals));
 	j = 0;
 	for (i = 0; i < arity; ++i) {
 		ir_node* c = get_Psi_cond(psi, i);
@@ -415,8 +416,8 @@ static ir_node* fold_psi(ir_node* psi)
 	);
 	ir_fprintf(stderr, "Folded %+F into new %+F\n", psi, new_psi);
 	exchange(psi, new_psi);
-	free(vals);
-	free(conds);
+	xfree(vals);
+	xfree(conds);
 	return new_psi;
 }
 
@@ -462,8 +463,8 @@ static void meld_psi(ir_node* psi)
 		return;
 	}
 
-	conds = malloc(sizeof(*conds) * new_arity);
-	vals = malloc(sizeof(*vals) * (new_arity + 1));
+	conds = xmalloc(sizeof(*conds) * new_arity);
+	vals = xmalloc(sizeof(*vals) * (new_arity + 1));
 	cond = get_Psi_cond(psi, 0);
 	val = get_Psi_val(psi, 0);
 	j = 0;
@@ -561,8 +562,8 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
+#ifdef HAVE_xmalloc_H
+#include <xmalloc.h>
 #endif
 
 #include "irgraph_t.h"
@@ -1372,7 +1373,7 @@ static void annotate_cond_info_post(ir_node *irn, void *data)
 
       /*
        * Add this cond info to the list of all cond infos
-       * in this graph. This is just done to free the
+       * in this graph. This is just done to xfree the
        * set easier afterwards (we save an irg_walk_graph).
        */
       list_add(&cwi->cond_info_head, &ci->list);
@@ -1496,7 +1497,7 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
   normalize_one_return(irg);
 
   /* Ensure, that the dominators are computed. */
-  compute_doms(irg);
+  assure_doms(irg);
 
   DBG((dbg, LEVEL_1, "if conversion for irg %s(%p)\n",
         get_entity_name(get_irg_entity(irg)), irg));
