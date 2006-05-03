@@ -273,11 +273,7 @@ $comment_string = "/*";
 "CMov" => {
   "irn_flags" => "R",
   "comment"   => "construct Mux: Mux(sel, a, b) == sel ? a : b",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "in_r2" ] },
-  "emit"      =>
-'. cmp %S1, 0 /* compare Sel for CMov (%A2, %A3) */
-. cmovne %D1, %S3 /* sel == true -> return %S3 */
-'
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "in_r4" ] }
 },
 
 # not commutative operations

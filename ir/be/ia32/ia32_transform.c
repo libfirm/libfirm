@@ -1570,9 +1570,41 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
  * @return The transformed node.
  */
 static ir_node *gen_Mux(ia32_transform_env_t *env) {
+#if 0
 	ir_node *node   = env->irn;
 	ir_node *new_op = new_rd_ia32_CMov(env->dbg, env->irg, env->block, \
 		get_Mux_sel(node), get_Mux_false(node), get_Mux_true(node), env->mode);
+
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
+
+	return new_op;
+#endif
+	return NULL;
+}
+
+
+/**
+ * Transforms a Psi node into CMov.
+ *
+ * @param env   The transformation environment
+ * @return The transformed node.
+ */
+static ir_node *gen_Psi(ia32_transform_env_t *env) {
+	ir_node *node     = env->irn;
+	ir_node *cmp_proj = get_Mux_sel(node);
+	ir_node *cmp, *cmp_a, *cmp_b, *new_op;
+
+	assert(get_irn_mode(cmp_proj) == mode_b && "Condition for Psi must have mode_b");
+
+	cmp   = get_Proj_pred(cmp_proj);
+	cmp_a = get_Cmp_left(cmp);
+	cmp_b = get_Cmp_right(cmp);
+
+
+	new_op = new_rd_ia32_CMov(env->dbg, env->irg, env->block, \
+		cmp_a, cmp_b, get_Psi_val(node, 0), get_Psi_default(node), env->mode);
+
+	set_ia32_pncode(new_op, get_Proj_proj(cmp_proj));
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
@@ -2241,6 +2273,7 @@ void ia32_register_transformers(void) {
 
 	GEN(CopyB);
 	GEN(Mux);
+	GEN(Psi);
 
 	IGN(Call);
 	IGN(Alloc);

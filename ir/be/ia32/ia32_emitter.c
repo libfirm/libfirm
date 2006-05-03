@@ -967,6 +967,23 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	finish_CondJmp(F, irn, mode_Is);
 }
 
+static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
+	FILE *F = env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
+	const lc_arg_env_t *arg_env = ia32_get_arg_env();
+
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* Psi condition */" );
+	IA32_DO_EMIT(irn);
+
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmov%s %1D, %3S",
+		get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
+		irn, irn);
+	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* condition is true case */" );
+	IA32_DO_EMIT(irn);
+}
+
 /*********************************************************
  *                 _ _       _
  *                (_) |     (_)
@@ -1549,6 +1566,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(TestJmp);
 	IA32_EMIT(CJmp);
 	IA32_EMIT(CJmpAM);
+	IA32_EMIT(CMov);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
