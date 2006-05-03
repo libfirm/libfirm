@@ -105,10 +105,17 @@ static void ia32_dump_function_size(FILE *F, const char *name)
  * |_|                                       |_|
  *************************************************************/
 
+static INLINE int be_is_unknown_reg(const arch_register_t *reg) {
+	return \
+		REGS_ARE_EQUAL(reg, &ia32_gp_regs[REG_GP_UKNWN])   || \
+		REGS_ARE_EQUAL(reg, &ia32_xmm_regs[REG_XMM_UKNWN]) || \
+		REGS_ARE_EQUAL(reg, &ia32_vfp_regs[REG_VFP_UKNWN]);
+}
+
 /**
  * returns true if a node has x87 registers
  */
-static int has_x87_register(const ir_node *n) {
+static INLINE int has_x87_register(const ir_node *n) {
 	return is_irn_machine_user(n, 0);
 }
 
@@ -968,18 +975,42 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 }
 
 static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
-	FILE *F = env->out;
+	FILE               *F       = env->out;
+	const lc_arg_env_t *arg_env = ia32_get_arg_env();
+	char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
-	const lc_arg_env_t *arg_env = ia32_get_arg_env();
+	const arch_register_t *in1, *in2, *out;
+
+	out = arch_get_irn_register(env->arch_env, irn);
+	in1 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 2));
+	in2 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 3));
+
+	if (REGS_ARE_EQUAL(out, in2)) {
+		/* best case: default in == out -> do nothing */
+	}
+	else if (REGS_ARE_EQUAL(out, in1)) {
+		/* true in == out -> need complement compare and exchange true and default in */
+		ir_node *t = get_irn_n(irn, 2);
+		set_irn_n(irn, 2, get_irn_n(irn, 3));
+		set_irn_n(irn, 3, t);
+
+		cmp_suffix = get_cmp_suffix(get_inversed_pnc(get_ia32_pncode(irn)), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+
+	}
+	else {
+		/* out is different from in: need copy default -> out */
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %4S", irn, irn);
+		lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* copy default -> out */" );
+		IA32_DO_EMIT(irn);
+	}
 
 	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
 	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* Psi condition */" );
 	IA32_DO_EMIT(irn);
 
-	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmov%s %1D, %3S",
-		get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
-		irn, irn);
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmov%s %1D, %3S", cmp_suffix, irn, irn);
 	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* condition is true case */" );
 	IA32_DO_EMIT(irn);
 }
@@ -1472,7 +1503,8 @@ static void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	const arch_env_t *aenv = emit_env->arch_env;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, irn), arch_get_irn_register(aenv, be_get_Copy_op(irn))))
+	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, irn), arch_get_irn_register(aenv, be_get_Copy_op(irn))) ||
+		be_is_unknown_reg(arch_get_irn_register(aenv, be_get_Copy_op(irn))))
 		return;
 
 	if (mode_is_float(get_irn_mode(irn)))
