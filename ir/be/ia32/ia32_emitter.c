@@ -977,7 +977,7 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
-	char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
 
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
@@ -986,6 +986,12 @@ static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
 	out = arch_get_irn_register(env->arch_env, irn);
 	in1 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 2));
 	in2 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 3));
+
+	/* we have to emit the cmp first, because the destination register */
+	/* could be one of the compare registers                           */
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* Psi condition */" );
+	IA32_DO_EMIT(irn);
 
 	if (REGS_ARE_EQUAL(out, in2)) {
 		/* best case: default in == out -> do nothing */
@@ -1006,12 +1012,40 @@ static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
 		IA32_DO_EMIT(irn);
 	}
 
-	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
-	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* Psi condition */" );
-	IA32_DO_EMIT(irn);
-
 	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmov%s %1D, %3S", cmp_suffix, irn, irn);
 	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* condition is true case */" );
+	IA32_DO_EMIT(irn);
+}
+
+static void emit_ia32_Set(ir_node *irn, ia32_emit_env_t *env) {
+	FILE               *F       = env->out;
+	const lc_arg_env_t *arg_env = ia32_get_arg_env();
+	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+	const char *instr      = "xor";
+	const char *reg8bit;
+
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
+	const arch_register_t *out;
+
+	out     = arch_get_irn_register(env->arch_env, irn);
+	reg8bit = ia32_get_mapped_reg_name(env->isa->regs_8bit, out);
+
+	if (env->isa->opt_arch == arch_pentium_4) {
+		/* P4 prefers sub r, r, others xor r, r */
+		instr = "sub";
+	}
+
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "%s %1D, %1D", instr, irn, irn);
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* clear target as set modifies only lower 8 bit */");
+	IA32_DO_EMIT(irn);
+
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* calculate Psi condition */" );
+	IA32_DO_EMIT(irn);
+
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "set%s %%%s", cmp_suffix, reg8bit);
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* set 1 iff true, 0 otherweise */" );
 	IA32_DO_EMIT(irn);
 }
 
@@ -1599,6 +1633,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(CJmp);
 	IA32_EMIT(CJmpAM);
 	IA32_EMIT(CMov);
+	IA32_EMIT(Set);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
