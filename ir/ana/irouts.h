@@ -83,6 +83,9 @@ void irg_out_block_walk(ir_node *node,
    "op_pin_state_floats".   Optimizes Tuple nodes. */
 void compute_irg_outs(ir_graph *irg);
 void compute_irp_outs(void);
+
+void assure_irg_outs(ir_graph *irg);
+
 /** Computes the out edges in interprocedural view */
 void compute_ip_outs(void);
 /** Frees the out datastructures.  Sets the flag in irg to "outs_none". */

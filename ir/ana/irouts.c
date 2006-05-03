@@ -417,7 +417,6 @@ void compute_irg_outs(ir_graph *irg) {
 
   if (current_ir_graph->outs_state != outs_none)
     free_irg_outs(current_ir_graph);
-  current_ir_graph->outs_state = outs_consistent;
 
   /* This first iteration counts the overall number of out edges and the
      number of out edges for each node. */
@@ -441,7 +440,13 @@ void compute_irg_outs(ir_graph *irg) {
      the out block walker. */
   fix_start_proj(irg);
 
+  current_ir_graph->outs_state = outs_consistent;
   current_ir_graph = rem;
+}
+
+void assure_irg_outs(ir_graph *irg) {
+  if (get_irg_outs_state(irg) != outs_consistent)
+    compute_irg_outs(irg);
 }
 
 void compute_irp_outs(void) {
