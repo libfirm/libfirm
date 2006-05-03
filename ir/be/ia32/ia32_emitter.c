@@ -334,7 +334,7 @@ const lc_arg_env_t *ia32_get_arg_env(void) {
 	return env;
 }
 
-static char *ia32_get_reg_name_for_mode(ia32_emit_env_t *env, ir_mode *mode, const arch_register_t *reg) {
+static const char *ia32_get_reg_name_for_mode(ia32_emit_env_t *env, ir_mode *mode, const arch_register_t *reg) {
 	switch(get_mode_size_bits(mode)) {
 		case 8:
 			return ia32_get_mapped_reg_name(env->isa->regs_8bit, reg);
@@ -1049,6 +1049,47 @@ static void emit_ia32_Set(ir_node *irn, ia32_emit_env_t *env) {
 	IA32_DO_EMIT(irn);
 }
 
+static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
+	FILE               *F       = env->out;
+	const lc_arg_env_t *arg_env = ia32_get_arg_env();
+	int                sse_pnc  = -1;
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
+
+	switch (get_ia32_pncode(irn)) {
+		case pn_Cmp_Leg: /* odered */
+			sse_pnc = 7;
+			break;
+		case pn_Cmp_Uo:  /* unordered */
+			sse_pnc = 3;
+			break;
+		case pn_Cmp_Ue:  /* == */
+			sse_pnc = 0;
+			break;
+		case pn_Cmp_Ul:  /* < */
+			sse_pnc = 1;
+			break;
+		case pn_Cmp_Ule: /* <= */
+			sse_pnc = 2;
+			break;
+		case pn_Cmp_Ug:  /* > */
+			sse_pnc = 6;
+			break;
+		case pn_Cmp_Uge: /* >= */
+			sse_pnc = 5;
+			break;
+		case pn_Cmp_Ne:  /* != */
+			sse_pnc = 4;
+			break;
+	}
+
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmps%M %s, %d", irn, ia32_emit_binop(irn, env), sse_pnc);
+	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* SSE compare with result in %1D */", irn);
+	IA32_DO_EMIT(irn);
+
+	assert(sse_pnc >= 0 && "unsupported floating point compare");
+}
+
 /*********************************************************
  *                 _ _       _
  *                (_) |     (_)
@@ -1643,6 +1684,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_I2I);
 	IA32_EMIT(Conv_I2I8Bit);
 	IA32_EMIT(Const);
+	IA32_EMIT(xCmp);
 	IA32_EMIT2(fcomJmp, x87CondJmp);
 	IA32_EMIT2(fcompJmp, x87CondJmp);
 	IA32_EMIT2(fcomppJmp, x87CondJmp);

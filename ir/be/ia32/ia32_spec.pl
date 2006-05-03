@@ -635,6 +635,15 @@ else {
 
 # not commutative operations
 
+"xAndNot" => {
+  "irn_flags" => "R",
+  "comment"   => "construct SSE AndNot: AndNot(a, b) = a AND NOT b",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "emit"      => '. andnp%M %ia32_emit_binop /* SSE AndNot(%A3, %A4) -> %D1 */',
+  "outs"      => [ "res", "M" ],
+},
+
 "xSub" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Sub: Sub(a, b) = a - b",
@@ -654,6 +663,13 @@ else {
 },
 
 # other operations
+
+"xCmp" => {
+  "irn_flags" => "R",
+  "comment"   => "construct SSE Compare: Cmp(a, b) == a = a cmp b",
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "outs"      => [ "res", "M" ],
+},
 
 "xCondJmp" => {
   "op_flags"  => "L|X|Y",

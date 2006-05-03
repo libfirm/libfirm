@@ -1622,44 +1622,79 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
  * @return The transformed node.
  */
 static ir_node *gen_Psi(ia32_transform_env_t *env) {
-	ir_node *node     = env->irn;
-	ir_node *cmp_proj = get_Mux_sel(node);
-	ir_node *cmp, *cmp_a, *cmp_b, *new_op = NULL;
+	dbg_info *dbg         = env->dbg;
+	ir_graph *irg         = env->irg;
+	ir_mode  *mode        = env->mode;
+	ir_node  *block       = env->block;
+	ir_node  *node        = env->irn;
+	ir_node  *cmp_proj    = get_Mux_sel(node);
+	ir_node  *psi_true    = get_Psi_val(node, 0);
+	ir_node  *psi_default = get_Psi_default(node);
+	ir_node  *noreg_fp    = ia32_new_NoReg_fp(env->cg);
+	ir_node  *nomem       = new_rd_NoMem(irg);
+	ir_node  *cmp, *cmp_a, *cmp_b, *and1, *and2, *new_op = NULL;
+
 
 	assert(get_irn_mode(cmp_proj) == mode_b && "Condition for Psi must have mode_b");
 
-	if (mode_is_float(env->mode)) {
+	cmp   = get_Proj_pred(cmp_proj);
+	cmp_a = get_Cmp_left(cmp);
+	cmp_b = get_Cmp_right(cmp);
+
+	if (mode_is_float(mode)) {
 		/* floating point psi */
 
 		if (USE_SSE2(env->cg)) {
-			/* unfortunately there is no conditional move for SSE */
+			/* psi(cmp(a, b), t, f) can be done as: */
+			/* tmp = cmp a, b                       */
+			/* tmp2 = t and tmp                     */
+			/* tmp3 = f and not tmp                 */
+			/* res  = tmp2 or tmp3                  */
+
+			new_op = new_rd_ia32_xCmp(dbg, irg, block, noreg_fp, noreg_fp, cmp_a, cmp_b, nomem);
+			set_ia32_pncode(new_op, get_Proj_proj(cmp_proj));
+			set_ia32_am_support(new_op, ia32_am_Source);
+			set_ia32_res_mode(new_op, mode);
+			SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, node));
+			new_op = new_rd_Proj(dbg, irg, block, new_op, mode, 0);
+
+			and1 = new_rd_ia32_xAnd(dbg, irg, block, noreg_fp, noreg_fp, psi_true, new_op, nomem);
+			set_ia32_am_support(and1, ia32_am_Source);
+			set_ia32_res_mode(and1, mode);
+			SET_IA32_ORIG_NODE(and1, ia32_get_old_node_name(env->cg, node));
+			and1 = new_rd_Proj(dbg, irg, block, and1, mode, 0);
+
+			and2 = new_rd_ia32_xAndNot(dbg, irg, block, noreg_fp, noreg_fp, psi_default, new_op, nomem);
+			set_ia32_am_support(and2, ia32_am_Source);
+			set_ia32_res_mode(and2, mode);
+			SET_IA32_ORIG_NODE(and2, ia32_get_old_node_name(env->cg, node));
+			and2 = new_rd_Proj(dbg, irg, block, and2, mode, 0);
+
+			new_op = new_rd_ia32_xOr(dbg, irg, block, noreg_fp, noreg_fp, and1, and2, nomem);
+			set_ia32_am_support(new_op, ia32_am_Source);
+			set_ia32_res_mode(new_op, mode);
+			SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, node));
+			new_op = new_rd_Proj(dbg, irg, block, new_op, mode, 0);
 		}
 		else {
 		}
 	}
 	else {
-		ir_node *psi_true    = get_Psi_val(node, 0);
-		ir_node *psi_default = get_Psi_default(node);
-
 		/* integer psi */
-		cmp   = get_Proj_pred(cmp_proj);
-		cmp_a = get_Cmp_left(cmp);
-		cmp_b = get_Cmp_right(cmp);
-
 		if (is_ia32_Const_1(psi_true) && is_ia32_Const_0(psi_default)) {
 			/* first case for SETcc: default is 0, set to 1 iff condition is true */
-			new_op = new_rd_ia32_Set(env->dbg, env->irg, env->block, cmp_a, cmp_b, env->mode);
+			new_op = new_rd_ia32_Set(dbg, irg, block, cmp_a, cmp_b, mode);
 			set_ia32_pncode(new_op, get_Proj_proj(cmp_proj));
 		}
 		else if (is_ia32_Const_0(psi_true) && is_ia32_Const_1(psi_default)) {
 			/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 			/*                        we invert condition and set default to 0      */
-			new_op = new_rd_ia32_Set(env->dbg, env->irg, env->block, cmp_a, cmp_b, env->mode);
+			new_op = new_rd_ia32_Set(dbg, irg, block, cmp_a, cmp_b, mode);
 			set_ia32_pncode(new_op, get_inversed_pnc(get_Proj_proj(cmp_proj)));
 		}
 		else {
 			/* otherwise: use CMOVcc */
-			new_op = new_rd_ia32_CMov(env->dbg, env->irg, env->block, cmp_a, cmp_b, psi_true, psi_default, env->mode);
+			new_op = new_rd_ia32_CMov(dbg, irg, block, cmp_a, cmp_b, psi_true, psi_default, mode);
 			set_ia32_pncode(new_op, get_Proj_proj(cmp_proj));
 		}
 
