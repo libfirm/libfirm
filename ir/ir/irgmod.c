@@ -40,8 +40,10 @@ turn_into_tuple (ir_node *node, int arity)
   } else {
     /* Allocate new array, don't free old in_array, it's on the obstack. */
     ir_node *block = get_nodes_block(node);
-    node->in = NEW_ARR_D (ir_node *, current_ir_graph->obst, arity+1);
-		edges_invalidate(node, current_ir_graph);
+    edges_invalidate(node, current_ir_graph);
+    node->in = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity+1);
+    /* clear the new in array, else edge_notify tries to delete garbage */
+    memset(node->in, 0, (arity+1) * sizeof(node->in[0]));
     set_nodes_block(node, block);
   }
 }
