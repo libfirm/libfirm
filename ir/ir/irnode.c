@@ -2028,40 +2028,40 @@ ir_node *get_Psi_cond   (ir_node *node, int pos) {
   int num_conds = get_Psi_n_conds(node);
   assert(node->op == op_Psi);
   assert(pos < num_conds);
-  return node->in[1 + 2 * pos];
+	return get_irn_n(node, 2 * pos);
 }
 
 void     set_Psi_cond   (ir_node *node, int pos, ir_node *cond) {
   int num_conds = get_Psi_n_conds(node);
   assert(node->op == op_Psi);
   assert(pos < num_conds);
-  node->in[1 + 2 * pos] = cond;
+	set_irn_n(node, 2 * pos, cond);
 }
 
 ir_node *get_Psi_val    (ir_node *node, int pos) {
   int num_vals = get_Psi_n_conds(node);
   assert(node->op == op_Psi);
   assert(pos < num_vals);
-  return node->in[1 + 2 * pos + 1];
+	return get_irn_n(node, 2 * pos + 1);
 }
 
 void     set_Psi_val    (ir_node *node, int pos, ir_node *val) {
   int num_vals = get_Psi_n_conds(node);
   assert(node->op == op_Psi);
   assert(pos < num_vals);
-  node->in[1 + 2 * pos + 1] = val;
+	set_irn_n(node, 2 * pos + 1, val);
 }
 
 ir_node *get_Psi_default(ir_node *node) {
-  int def_pos = get_irn_arity(node);
+  int def_pos = get_irn_arity(node) - 1;
   assert(node->op == op_Psi);
-  return node->in[def_pos];
+	return get_irn_n(node, def_pos);
 }
 
 void     set_Psi_default(ir_node *node, ir_node *val) {
   int def_pos = get_irn_arity(node);
   assert(node->op == op_Psi);
-  node->in[def_pos] = node;
+	set_irn_n(node, def_pos, val);
 }
 
 int (get_Psi_n_conds)(ir_node *node) {
