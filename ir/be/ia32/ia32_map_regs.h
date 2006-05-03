@@ -45,7 +45,7 @@ void ia32_build_8bit_reg_map(pmap *reg_map);
 /**
  * Returns the corresponding mapped name for a register.
  */
-char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
+const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
 
 /**
  * Check all parameters and determine the maximum number of parameters
