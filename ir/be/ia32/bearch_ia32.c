@@ -510,6 +510,14 @@ static void ia32_prepare_graph(void *self) {
 	DEBUG_ONLY(cg->mod = old_mod;)
 }
 
+static INLINE int need_constraint_copy(ir_node *irn) {
+	return \
+		! is_ia32_Lea(irn)          && \
+		! is_ia32_Conv_I2I(irn)     && \
+		! is_ia32_Conv_I2I8Bit(irn) && \
+		! is_ia32_CMov(irn)         && \
+		! is_ia32_Set(irn);
+}
 
 /**
  * Insert copies for all ia32 nodes where the should_be_same requirement
@@ -535,9 +543,7 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 		block = get_nodes_block(irn);
 
 		/* check all OUT requirements, if there is a should_be_same */
-		if ((op_tp == ia32_Normal || op_tp == ia32_AddrModeS) &&
-			! is_ia32_Lea(irn) && ! is_ia32_Conv_I2I(irn) && ! is_ia32_Conv_I2I8Bit(irn) &&
-			! is_ia32_CMov(irn))
+		if ((op_tp == ia32_Normal || op_tp == ia32_AddrModeS) && need_constraint_copy(irn))
 		{
 			for (i = 0; i < n_res; i++) {
 				if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
