@@ -111,6 +111,19 @@ DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void)
 }
 
 
+static DUMP_NODE_EDGE_FUNC dump_block_edge_hook = NULL;
+
+void set_dump_block_edge_hook(DUMP_NODE_EDGE_FUNC func)
+{
+  dump_block_edge_hook = func;
+}
+
+DUMP_NODE_EDGE_FUNC get_dump_block_edge_hook(void)
+{
+  return dump_node_edge_hook;
+}
+
+
 /** The vcg node attribute hook. */
 static DUMP_IR_GRAPH_FUNC dump_ir_graph_hook = NULL;
 /** The vcg node attribute hook. */
@@ -1523,6 +1536,9 @@ dump_whole_block(FILE *F, ir_node *block) {
 
   /* dump the blocks edges */
   dump_ir_data_edges(F, block);
+
+  if (dump_block_edge_hook)
+    dump_block_edge_hook(F, block);
 
   /* dump the nodes that go into the block */
   for (node = ird_get_irn_link(block); node; node = ird_get_irn_link(node)) {

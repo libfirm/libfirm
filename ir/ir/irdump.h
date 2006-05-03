@@ -151,6 +151,18 @@ void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func);
  */
 DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void);
 
+/**
+ * Set the hook to be called to dump additional edges to a block.
+ * @param func The hook to be called.
+ */
+void set_dump_block_edge_hook(DUMP_NODE_EDGE_FUNC func);
+
+/**
+ * Get the additional block edge dump hook.
+ * @return The current additional block edge dump hook.
+ */
+DUMP_NODE_EDGE_FUNC get_dump_block_edge_hook(void);
+
 /** Dump a firm graph.
  *
  *  @param irg     The firm graph to be dumped.
