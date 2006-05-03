@@ -1269,7 +1269,7 @@ static const lc_opt_enum_int_items_t gas_items[] = {
 };
 
 static lc_opt_enum_int_var_t gas_var = {
-	&asm_flavour, gas_items
+	(int *)&asm_flavour, gas_items
 };
 
 static const lc_opt_table_entry_t ia32_options[] = {
