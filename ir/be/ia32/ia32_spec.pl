@@ -104,6 +104,28 @@ $comment_string = "/*";
             { "name" => "ecx", "type" => 1 },
             { "name" => "esi", "type" => 2 },
             { "name" => "edi", "type" => 2 },
+#            { "name" => "r11", "type" => 1 },
+#            { "name" => "r12", "type" => 1 },
+#            { "name" => "r13", "type" => 1 },
+#            { "name" => "r14", "type" => 1 },
+#            { "name" => "r15", "type" => 1 },
+#            { "name" => "r16", "type" => 1 },
+#            { "name" => "r17", "type" => 1 },
+#            { "name" => "r18", "type" => 1 },
+#            { "name" => "r19", "type" => 1 },
+#            { "name" => "r20", "type" => 1 },
+#            { "name" => "r21", "type" => 1 },
+#            { "name" => "r22", "type" => 1 },
+#            { "name" => "r23", "type" => 1 },
+#            { "name" => "r24", "type" => 1 },
+#            { "name" => "r25", "type" => 1 },
+#            { "name" => "r26", "type" => 1 },
+#            { "name" => "r27", "type" => 1 },
+#            { "name" => "r28", "type" => 1 },
+#            { "name" => "r29", "type" => 1 },
+#            { "name" => "r30", "type" => 1 },
+#            { "name" => "r31", "type" => 1 },
+#            { "name" => "r32", "type" => 1 },
             { "name" => "ebp", "type" => 2 },
             { "name" => "esp", "type" => 4 },
             { "name" => "gp_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
@@ -272,8 +294,14 @@ $comment_string = "/*";
 
 "CMov" => {
   "irn_flags" => "R",
-  "comment"   => "construct Mux: Mux(sel, a, b) == sel ? a : b",
+  "comment"   => "construct Conditional Move: CMov(sel, a, b) == sel ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "in_r4" ] }
+},
+
+"Set" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Set: Set(sel) == sel ? 1 : 0",
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "eax ebx ecx edx" ] },
 },
 
 # not commutative operations

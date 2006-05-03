@@ -79,6 +79,20 @@ typedef enum {
  ****************************************************************************************************/
 
 /**
+ * Returns 1 if irn is a Const representing 0, 0 otherwise
+ */
+static INLINE int is_ia32_Const_0(ir_node *irn) {
+	return is_ia32_Const(irn) ? classify_tarval(get_ia32_Immop_tarval(irn)) == TV_CLASSIFY_NULL : 0;
+}
+
+/**
+ * Returns 1 if irn is a Const representing 1, 0 otherwise
+ */
+static INLINE int is_ia32_Const_1(ir_node *irn) {
+	return is_ia32_Const(irn) ? classify_tarval(get_ia32_Immop_tarval(irn)) == TV_CLASSIFY_ONE : 0;
+}
+
+/**
  * Returns the Proj representing the UNKNOWN register for given mode.
  */
 static ir_node *be_get_unknown_for_mode(ia32_code_gen_t *cg, ir_mode *mode) {
@@ -1610,21 +1624,47 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 static ir_node *gen_Psi(ia32_transform_env_t *env) {
 	ir_node *node     = env->irn;
 	ir_node *cmp_proj = get_Mux_sel(node);
-	ir_node *cmp, *cmp_a, *cmp_b, *new_op;
+	ir_node *cmp, *cmp_a, *cmp_b, *new_op = NULL;
 
 	assert(get_irn_mode(cmp_proj) == mode_b && "Condition for Psi must have mode_b");
 
-	cmp   = get_Proj_pred(cmp_proj);
-	cmp_a = get_Cmp_left(cmp);
-	cmp_b = get_Cmp_right(cmp);
+	if (mode_is_float(env->mode)) {
+		/* floating point psi */
 
+		if (USE_SSE2(env->cg)) {
+			/* unfortunately there is no conditional move for SSE */
+		}
+		else {
+		}
+	}
+	else {
+		ir_node *psi_true    = get_Psi_val(node, 0);
+		ir_node *psi_default = get_Psi_default(node);
 
-	new_op = new_rd_ia32_CMov(env->dbg, env->irg, env->block, \
-		cmp_a, cmp_b, get_Psi_val(node, 0), get_Psi_default(node), env->mode);
+		/* integer psi */
+		cmp   = get_Proj_pred(cmp_proj);
+		cmp_a = get_Cmp_left(cmp);
+		cmp_b = get_Cmp_right(cmp);
 
-	set_ia32_pncode(new_op, get_Proj_proj(cmp_proj));
+		if (is_ia32_Const_1(psi_true) && is_ia32_Const_0(psi_default)) {
+			/* first case for SETcc: default is 0, set to 1 iff condition is true */
+			new_op = new_rd_ia32_Set(env->dbg, env->irg, env->block, cmp_a, cmp_b, env->mode);
+			set_ia32_pncode(new_op, get_Proj_proj(cmp_proj));
+		}
+		else if (is_ia32_Const_0(psi_true) && is_ia32_Const_1(psi_default)) {
+			/* second case for SETcc: default is 1, set to 0 iff condition is true: */
+			/*                        we invert condition and set default to 0      */
+			new_op = new_rd_ia32_Set(env->dbg, env->irg, env->block, cmp_a, cmp_b, env->mode);
+			set_ia32_pncode(new_op, get_inversed_pnc(get_Proj_proj(cmp_proj)));
+		}
+		else {
+			/* otherwise: use CMOVcc */
+			new_op = new_rd_ia32_CMov(env->dbg, env->irg, env->block, cmp_a, cmp_b, psi_true, psi_default, env->mode);
+			set_ia32_pncode(new_op, get_Proj_proj(cmp_proj));
+		}
 
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
+		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
+	}
 
 	return new_op;
 }
