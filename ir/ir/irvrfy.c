@@ -1273,7 +1273,7 @@ static int verify_node_Logic(ir_node *n, ir_graph *irg) {
 
   ASSERT_AND_RET_DBG(
     /* And or Or or Eor: BB x int x int --> int */
-    mode_is_int(mymode) &&
+    (mode_is_int(mymode) || mymode == mode_b) &&
     op2mode == op1mode &&
     mymode == op2mode,
     "And, Or or Eor node", 0,
