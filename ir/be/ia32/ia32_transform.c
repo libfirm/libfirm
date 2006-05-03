@@ -28,6 +28,7 @@
 
 #include "../benode_t.h"
 #include "../besched.h"
+#include "../beabi.h"
 
 #include "bearch_ia32_t.h"
 
@@ -76,6 +77,23 @@ typedef enum {
  * |_| |_|\___/ \__,_|\___|  \__|_|  \__,_|_| |_|___/_| \___/|_|  |_| |_| |_|\__,_|\__|_|\___/|_| |_|
  *
  ****************************************************************************************************/
+
+/**
+ * Returns the Proj representing the UNKNOWN register for given mode.
+ */
+static ir_node *be_get_unknown_for_mode(ia32_code_gen_t *cg, ir_mode *mode) {
+	be_abi_irg_t          *babi       = cg->birg->abi;
+	const arch_register_t *unknwn_reg = NULL;
+
+	if (mode_is_float(mode)) {
+		unknwn_reg = USE_SSE2(cg) ? &ia32_xmm_regs[REG_XMM_UKNWN] : &ia32_vfp_regs[REG_VFP_UKNWN];
+	}
+	else {
+		unknwn_reg = &ia32_gp_regs[REG_GP_UKNWN];
+	}
+
+	return be_abi_get_callee_save_irn(babi, unknwn_reg);
+}
 
 /**
  * Gets the Proj with number pn from irn.
@@ -2343,9 +2361,16 @@ void ia32_transform_node(ir_node *node, void *env) {
 	ia32_code_gen_t *cg = (ia32_code_gen_t *)env;
 	ir_op *op           = get_irn_op(node);
 	ir_node *asm_node   = NULL;
+	int i;
 
 	if (is_Block(node))
 		return;
+
+	/* link arguments pointing to Unknown to the UNKNOWN Proj */
+	for (i = get_irn_arity(node) - 1; i >= 0; i--) {
+		if (is_Unknown(get_irn_n(node, i)))
+			set_irn_n(node, i, be_get_unknown_for_mode(cg, get_irn_mode(get_irn_n(node, i))));
+	}
 
 	DBG((cg->mod, LEVEL_1, "check %+F ... ", node));
 	if (op->ops.generic) {
