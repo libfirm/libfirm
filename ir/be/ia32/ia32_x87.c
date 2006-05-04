@@ -1285,7 +1285,7 @@ static void sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 		DB((dbg, LEVEL_1, ">>> %s %s -> %s\n", get_irn_opname(n),
 			arch_register_get_name(op1), arch_register_get_name(out)));
-	  DEBUG_ONLY(vfp_dump_live(live));
+		DEBUG_ONLY(vfp_dump_live(live));
 
 		if (is_vfp_live(op1->index, live)) {
 			/* operand is still live,a real copy */
