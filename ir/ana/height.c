@@ -37,11 +37,12 @@ typedef struct {
 	struct list_head sink_list;
 } irn_height_t;
 
-static void irn_height_init(phase_t *ph, const ir_node *irn, void *data)
+static void *irn_height_init(phase_t *ph, ir_node *irn, void *data)
 {
-	irn_height_t *h = data;
+	irn_height_t *h = data ? data : phase_alloc(ph, sizeof(h[0]));
 	memset(h, 0, sizeof(h[0]));
 	INIT_LIST_HEAD(&h->sink_list);
+	return h;
 }
 
 static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
@@ -190,7 +191,7 @@ void heights_recompute(heights_t *h)
 heights_t *heights_new(ir_graph *irg)
 {
 	heights_t *res = xmalloc(sizeof(res[0]));
-	phase_init(&res->ph, "heights", irg, sizeof(irn_height_t), PHASE_DEFAULT_GROWTH, irn_height_init);
+	phase_init(&res->ph, "heights", irg, PHASE_DEFAULT_GROWTH, irn_height_init);
 	res->dump_handle = dump_add_node_info_callback(height_dump_cb, res);
 	heights_recompute(res);
 
