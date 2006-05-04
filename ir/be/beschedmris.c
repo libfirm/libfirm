@@ -36,7 +36,7 @@ struct _mris_env_t {
 	int               visited;
 	struct list_head  lineage_head;
 	struct obstack    obst;
-DEBUG_ONLY(firm_dbg_module_t *dbg;)
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 typedef struct _mris_irn_t {
@@ -52,11 +52,12 @@ typedef struct _mris_irn_t {
 #define get_mris_irn(env, irn)   ((mris_irn_t *) phase_get_or_set_irn_data(&env->ph, irn))
 #define foreach_lineage(env, pos, tmp) list_for_each_entry_safe(mris_irn_t, pos, tmp, &(env)->lineage_head, lineage_list)
 
-static void mris_irn_data_init(phase_t *ph, const ir_node *irn, void *data)
+static void *mris_irn_data_init(phase_t *ph, const ir_node *irn, void *data)
 {
-	mris_irn_t *mi = data;
+	mris_irn_t *mi = data ? data : phase_alloc(ph, sizeof(mi[0]));
 	memset(data, 0, sizeof(mi[0]));
 	INIT_LIST_HEAD(&mi->lineage_list);
+	return mi;
 }
 
 #if 0
@@ -459,7 +460,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 {
 	mris_env_t *env = xmalloc(sizeof(env[0]));
 
-	phase_init(&env->ph, "mris", birg->irg, sizeof(mris_irn_t), 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init);
+	phase_init(&env->ph, "mris", birg->irg, 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init);
 	env->aenv     = birg->main_env->arch_env;
 	env->irg      = birg->irg;
 	env->visited  = 0;
