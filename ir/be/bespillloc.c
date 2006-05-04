@@ -1,9 +1,3 @@
-/**
- * spill location scheduling
- * @author Sven Polk
- * @date 1.4.2006
- */
-
 #include "obst.h"
 #include "set.h"
 #include "pset.h"
@@ -16,7 +10,7 @@
 #include "ircons_t.h"
 #include "irprintf.h"
 
-
+#include "obst.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "bitset.h"
@@ -76,18 +70,24 @@ typedef struct _spilloc_env_t{
 
 typedef struct Edge {
 	int nodenumber;
-	entity *ent;
 	struct Edge *next;
 } edge;
 
-typedef struct {int count; edge *link;} vertex;
+typedef struct {
+	int count;
+	int nodenumber;
+	entity *ent;
+	edge *link;
+} vertex;
+
 typedef struct {int wt_vif; int wt_cif;} wheights;
 
 
-void get_them_all()
+void get_ents_all()
 {
 	// create new elements in graph representing data structure
-
+	//block_info_t *res = obstack_alloc(ob, sizeof(*res));
+	//obstack_grow(&spi.ob, &loc, sizeof(loc));
 }
 
 void be_spill_loc(const be_chordal_env_t *chordal_env)
@@ -97,9 +97,11 @@ void be_spill_loc(const be_chordal_env_t *chordal_env)
 
 	obstack_init(&spi.ob);
 
+	//obstack_grow(&spi.ob, &loc, sizeof(loc));
+
 	// create initial in graph representing data structure
 
-	walk_types_entities(get_irg_frame_type(chordal_env->irg), &get_them_all , &chordal_env);
+	walk_types_entities(get_irg_frame_type(chordal_env->irg), &get_ents_all , &spi);
 
 	get_irg_entity(chordal_env->irg);
 	get_irg_frame_type(chordal_env->irg);
