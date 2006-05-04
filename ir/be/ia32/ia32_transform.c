@@ -1748,7 +1748,7 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 			/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 			/*                        we invert condition and set default to 0      */
 			new_op = set_func(dbg, irg, block, cmp_a, cmp_b, mode);
-			set_ia32_pncode(new_op, get_inversed_pnc(pnc));
+			set_ia32_pncode(new_op, get_negated_pnc(pnc));
 		}
 		else {
 			/* otherwise: use CMOVcc */
