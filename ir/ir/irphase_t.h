@@ -32,7 +32,7 @@ typedef struct {
  */
 phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat);
 
-typedef void (phase_irn_data_init_t)(phase_t *phase, ir_node *irn, void *data);
+typedef void *(phase_irn_data_init_t)(phase_t *phase, ir_node *irn, void *old);
 
 /**
  * The default grow factor.
@@ -49,7 +49,6 @@ struct _phase_t {
 	ir_graph              *irg;            /**< The irg this phase will we applied to. */
 	unsigned               growth_factor;  /**< factor to leave room for add. nodes. 256 means 1.0. */
 	void                  *priv;           /**< Some pointer private to the user of the phase. */
-	size_t                 data_size;      /**< The amount of bytes which shall be allocated for each irn. */
 	size_t                 n_data_ptr;     /**< The length of the data_ptr array. */
 	void                 **data_ptr;       /**< Map node indexes to irn data on the obstack. */
 	phase_irn_data_init_t *data_init;      /**< A callback that is called to initialize newly created node data. */
@@ -59,14 +58,13 @@ struct _phase_t {
  * Initialize a phase object.
  * @param name          The name of the phase.
  * @param irg           The graph the phase will run on.
- * @param data_size     The amount of extra storage in bytes that should be allocated for each node.
  * @param growth_factor A factor denoting how many node slots will be additionally allocated,
  *                      if the node => data is full. 256 means 1.0.
  * @param irn_data_init A callback that is called to initialize newly created node data.
  * @param priv          Some private pointer which is kept in the phase and can be retrieved with phase_get_private().
  * @return              A new phase object.
  */
-phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, size_t data_size, unsigned growth_factor, phase_irn_data_init_t *data_init);
+phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init);
 
 /**
  * Free the phase and all node data associated with it.
@@ -166,11 +164,10 @@ static INLINE void *_phase_get_or_set_irn_data(phase_t *ph, ir_node *irn)
 	/* If there has no irn data allocated yet, do that now. */
 	if(!res) {
 		phase_irn_data_init_t *data_init = ph->data_init;
-		ph->data_ptr[idx] = res = phase_alloc(ph, ph->data_size);
 
-		/* Call the irn data callback, if there is one. */
-		if(data_init)
-			data_init(ph, irn, res);
+		/* call the node data structure allocator/constructor. */
+		res = ph->data_ptr[idx] = data_init(ph, irn, NULL);
+
 	}
 	return res;
 }

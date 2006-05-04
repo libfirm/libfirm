@@ -18,16 +18,16 @@
 #include "irnode_t.h"
 #include "irphase_t.h"
 
-phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, size_t data_size, unsigned growth_factor, phase_irn_data_init_t *data_init)
+phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init)
 {
 	assert(growth_factor >= 1.0 && "growth factor must greater or equal to 1.0");
+	assert(data_init && "You must provide a data constructor");
 
 	obstack_init(&ph->obst);
 
 	ph->name          = name;
 	ph->growth_factor = growth_factor;
 	ph->data_init     = data_init;
-	ph->data_size     = data_size;
 	ph->irg           = irg;
 	ph->n_data_ptr    = 0;
 	ph->data_ptr      = NULL;
@@ -52,7 +52,6 @@ phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat)
 	for(i = 0, n = phase->n_data_ptr; i < n; ++i) {
 		if(phase->data_ptr[i] != NULL) {
 			stat->node_slots_used++;
-			stat->node_data_bytes += phase->data_size;
 		}
 	}
 	stat->overall_bytes = stat->node_map_bytes + obstack_memory_used(&((phase_t *)phase)->obst);
