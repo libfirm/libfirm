@@ -974,7 +974,7 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	finish_CondJmp(F, irn, mode_Is);
 }
 
-static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
+static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
@@ -989,7 +989,15 @@ static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
 
 	/* we have to emit the cmp first, because the destination register */
 	/* could be one of the compare registers                           */
-	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	if (is_ia32_CMov(irn)) {
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	}
+	else if (is_ia32_xCmpCMov(irn)) {
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %1S, %2S", get_irn_n(irn, 0), irn, irn);
+	}
+	else {
+		assert(0 && "unsupported CMov");
+	}
 	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* Psi condition */" );
 	IA32_DO_EMIT(irn);
 
@@ -1017,7 +1025,15 @@ static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
 	IA32_DO_EMIT(irn);
 }
 
-static void emit_ia32_Set(ir_node *irn, ia32_emit_env_t *env) {
+static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
+	CMov_emitter(irn, env);
+}
+
+static void emit_ia32_xCmpCMov(ir_node *irn, ia32_emit_env_t *env) {
+	CMov_emitter(irn, env);
+}
+
+static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
@@ -1040,13 +1056,29 @@ static void emit_ia32_Set(ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* clear target as set modifies only lower 8 bit */");
 	IA32_DO_EMIT(irn);
 
-	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	if (is_ia32_Set(irn)) {
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	}
+	else if (is_ia32_xCmpSet(irn)) {
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %1S, %2S", get_irn_n(irn, 0), irn, irn);
+	}
+	else {
+		assert(0 && "unsupported Set");
+	}
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* calculate Psi condition */" );
 	IA32_DO_EMIT(irn);
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "set%s %%%s", cmp_suffix, reg8bit);
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* set 1 iff true, 0 otherweise */" );
 	IA32_DO_EMIT(irn);
+}
+
+static void emit_ia32_Set(ir_node *irn, ia32_emit_env_t *env) {
+	Set_emitter(irn, env);
+}
+
+static void emit_ia32_xCmpSet(ir_node *irn, ia32_emit_env_t *env) {
+	Set_emitter(irn, env);
 }
 
 static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
@@ -1083,11 +1115,11 @@ static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
 			break;
 	}
 
+	assert(sse_pnc >= 0 && "unsupported floating point compare");
+
 	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmps%M %s, %d", irn, ia32_emit_binop(irn, env), sse_pnc);
 	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* SSE compare with result in %1D */", irn);
 	IA32_DO_EMIT(irn);
-
-	assert(sse_pnc >= 0 && "unsupported floating point compare");
 }
 
 /*********************************************************
@@ -1685,6 +1717,8 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_I2I8Bit);
 	IA32_EMIT(Const);
 	IA32_EMIT(xCmp);
+	IA32_EMIT(xCmpSet);
+	IA32_EMIT(xCmpCMov);
 	IA32_EMIT2(fcomJmp, x87CondJmp);
 	IA32_EMIT2(fcompJmp, x87CondJmp);
 	IA32_EMIT2(fcomppJmp, x87CondJmp);

@@ -298,10 +298,34 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "in_r4" ] }
 },
 
+"xCmpCMov" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Conditional Move: SSE Compare + int CMov ",
+  "reg_req"   => { "in" => [ "xmm", "xmm", "gp", "gp" ], "out" => [ "in_r4" ] }
+},
+
+"vfCmpCMov" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Conditional Move: x87 Compare + int CMov",
+  "reg_req"   => { "in" => [ "vfp", "vfp", "gp", "gp" ], "out" => [ "in_r4" ] }
+},
+
 "Set" => {
   "irn_flags" => "R",
   "comment"   => "construct Set: Set(sel) == sel ? 1 : 0",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "eax ebx ecx edx" ] },
+},
+
+"xCmpSet" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Set: SSE Compare + int Set",
+  "reg_req"   => { "in" => [ "xmm", "xmm" ], "out" => [ "eax ebx ecx edx" ] },
+},
+
+"vfCmpSet" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Set: x87 Compare + int Set",
+  "reg_req"   => { "in" => [ "vfp", "vfp" ], "out" => [ "eax ebx ecx edx" ] },
 },
 
 # not commutative operations
