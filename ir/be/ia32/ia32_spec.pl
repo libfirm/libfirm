@@ -759,6 +759,12 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "in_r4" ] }
 },
 
+"PsiCondCMov" => {
+  "irn_flags" => "R",
+  "comment"   => "check if Psi condition tree evaluates to true and move result accordingly",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "in_r3" ] }
+},
+
 "xCmpCMov" => {
   "irn_flags" => "R",
   "comment"   => "construct Conditional Move: SSE Compare + int CMov ",
@@ -776,6 +782,12 @@ else {
   "comment"   => "construct Set: Set(sel) == sel ? 1 : 0",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
   "outs"      => [ "res", "M" ],
+},
+
+"PsiCondSet" => {
+  "irn_flags" => "R",
+  "comment"   => "check if Psi condition tree evaluates to true and set result accordingly",
+  "reg_req"   => { "in" => [ "gp" ], "out" => [ "eax ebx ecx edx" ] },
 },
 
 "xCmpSet" => {

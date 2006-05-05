@@ -996,10 +996,14 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	else if (is_ia32_xCmpCMov(irn)) {
 		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %1S, %2S", get_irn_n(irn, 0), irn, irn);
 	}
+	else if (is_ia32_PsiCondCMov(irn)) {
+		/* omit compare because flags are already set by And/Or */
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
+	}
 	else {
 		assert(0 && "unsupported CMov");
 	}
-	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* Psi condition */" );
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* Psi condition */" );
 	IA32_DO_EMIT(irn);
 
 	if (REGS_ARE_EQUAL(out, in2)) {
@@ -1030,6 +1034,10 @@ static void emit_ia32_CmpCMov(ir_node *irn, ia32_emit_env_t *env) {
 	CMov_emitter(irn, env);
 }
 
+static void emit_ia32_PsiCondCMov(ir_node *irn, ia32_emit_env_t *env) {
+	CMov_emitter(irn, env);
+}
+
 static void emit_ia32_xCmpCMov(ir_node *irn, ia32_emit_env_t *env) {
 	CMov_emitter(irn, env);
 }
@@ -1053,7 +1061,14 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 		instr = "sub";
 	}
 
-	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %%%s, %%%s", instr, arch_register_get_name(out), arch_register_get_name(out));
+	/* in case of a PsiCondSet use mov because it doesn't affect the eflags */
+	if (is_ia32_PsiCondSet(irn)) {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "mov %%%s, 0", arch_register_get_name(out));
+	}
+	else {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %%%s, %%%s", instr, arch_register_get_name(out), arch_register_get_name(out));
+	}
+
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* clear target as set modifies only lower 8 bit */");
 	IA32_DO_EMIT(irn);
 
@@ -1062,6 +1077,10 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	}
 	else if (is_ia32_xCmpSet(irn)) {
 		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %s", get_irn_n(irn, 0), ia32_emit_binop(irn, env));
+	}
+	else if (is_ia32_PsiCondSet(irn)) {
+		/* omit compare because flags are already set by And/Or */
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
 	}
 	else {
 		assert(0 && "unsupported Set");
@@ -1075,6 +1094,10 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 }
 
 static void emit_ia32_CmpSet(ir_node *irn, ia32_emit_env_t *env) {
+	Set_emitter(irn, env);
+}
+
+static void emit_ia32_PsiCondSet(ir_node *irn, ia32_emit_env_t *env) {
 	Set_emitter(irn, env);
 }
 
@@ -1707,7 +1730,9 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(CJmp);
 	IA32_EMIT(CJmpAM);
 	IA32_EMIT(CmpCMov);
+	IA32_EMIT(PsiCondCMov);
 	IA32_EMIT(CmpSet);
+	IA32_EMIT(PsiCondSet);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
