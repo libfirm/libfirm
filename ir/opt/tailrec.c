@@ -70,25 +70,25 @@ static void collect_data(ir_node *node, void *env)
 
       if (get_irn_op(start) == op_Start) {
         if (get_Proj_proj(pred) == pn_Start_T_args) {
-	        /* found Proj(ProjT(Start)) */
-	        set_irn_link(node, data->proj_data);
-	        data->proj_data = node;
+          /* found Proj(ProjT(Start)) */
+          set_irn_link(node, data->proj_data);
+          data->proj_data = node;
         }
       }
     }
     else if (op == op_Start) {
       switch (get_Proj_proj(node)) {
-        case pn_Start_M:
-          /* found ProjM(Start) */
-	      set_irn_link(node, data->proj_m);
-	      data->proj_m = node;
-	      break;
-	    case pn_Start_X_initial_exec:
-	      /* found ProjX(Start) */
-	      data->proj_X = node;
-	      break;
-	    default:
-	      break;
+      case pn_Start_M:
+        /* found ProjM(Start) */
+        set_irn_link(node, data->proj_m);
+        data->proj_m = node;
+        break;
+      case pn_Start_X_initial_exec:
+        /* found ProjX(Start) */
+        data->proj_X = node;
+        break;
+      default:
+        break;
       }
     }
     break;
@@ -101,9 +101,9 @@ static void collect_data(ir_node *node, void *env)
     if (node != get_irg_start_block(current_ir_graph)) {
       for (i = 0; i < n_pred; ++i) {
         if (get_Block_cfgpred(node, i) == data->proj_X) {
-	        data->block   = node;
-	        data->blk_idx = i;
-	        break;
+          data->block   = node;
+          data->blk_idx = i;
+          break;
         }
       }
     }
@@ -128,7 +128,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   ir_node **in;
   ir_node **phis;
   ir_node ***call_params;
-  ir_node *p;
+  ir_node *p, *n;
   int i, j, n_params;
   collect_t data;
   int rem            = get_optimize();
@@ -176,14 +176,13 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   in[0] = data.proj_X;
 
   /* turn Return's into Jmp's */
-  for (i = 1, p = rets; p; p = get_irn_link(p)) {
-    ir_node *jmp;
+  for (i = 1, p = rets; p; p = n) {
     ir_node *block = get_nodes_block(p);
 
-    jmp = new_r_Jmp(irg, block);
+    n = get_irn_link(p);
+    in[i++] = new_r_Jmp(irg, block);
 
     exchange(p, new_r_Bad(irg));
-    in[i++] = jmp;
 
     /* we might generate an endless loop, so add
      * the block to the keep-alive list */
@@ -217,6 +216,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   if (n_params > 0) {
     ir_node *calls;
     ir_node *args;
+    ir_node *args_bl;
 
     NEW_ARR_A(ir_node **, call_params, n_tail_calls);
 
@@ -227,11 +227,12 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
     }
 
     /* build new Proj's and Phi's */
-    args = get_irg_args(irg);
+    args    = get_irg_args(irg);
+    args_bl = get_nodes_block(args);
     for (i = 0; i < n_params; ++i) {
       ir_mode *mode = get_type_mode(get_method_param_type(method_tp, i));
 
-      in[0] = new_r_Proj(irg, block, args, mode, i);
+      in[0] = new_r_Proj(irg, args_bl, args, mode, i);
       for (j = 0; j < n_tail_calls; ++j)
         in[j + 1] = call_params[j][i];
 
@@ -243,13 +244,15 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
    * ok, we are here, so we have build and collected all needed Phi's
    * now exchange all Projs into links to Phi
    */
-  for (p = data.proj_m; p; p = get_irn_link(p)) {
+  for (p = data.proj_m; p; p = n) {
+    n = get_irn_link(p);
     exchange(p, phis[0]);
   }
-  for (p = data.proj_data; p; p = get_irn_link(p)) {
+  for (p = data.proj_data; p; p = n) {
     long proj = get_Proj_proj(p);
 
     assert(0 <= proj && proj < n_params);
+    n = get_irn_link(p);
     exchange(p, phis[proj + 1]);
   }
 
@@ -350,8 +353,8 @@ int opt_tail_rec_irg(ir_graph *irg)
       ir_node *irn = skip_Proj(skip_Proj(ress[j]));
 
       if (irn != call) {
-	      /* not routed to a call */
-	      break;
+        /* not routed to a call */
+        break;
       }
     }
     if (j >= 0)
@@ -394,7 +397,7 @@ int opt_tail_rec_irg(ir_graph *irg)
 
   if (get_opt_tail_recursion_verbose() && get_firm_verbosity() > 1)
     printf("  Performing tail recursion for graph %s and %d Calls\n",
-	   get_entity_ld_name(get_irg_entity(irg)), n_tail_calls);
+       get_entity_ld_name(get_irg_entity(irg)), n_tail_calls);
 
   hook_tail_rec(irg, n_tail_calls);
   do_opt_tail_rec(irg, rets, n_tail_calls);
