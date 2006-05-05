@@ -1750,12 +1750,14 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 			/* first case for SETcc: default is 0, set to 1 iff condition is true */
 			new_op = gen_binop(env, cmp_a, cmp_b, set_func);
 			set_ia32_pncode(get_Proj_pred(new_op), pnc);
+			set_ia32_am_support(get_Proj_pred(new_op), ia32_am_Source);
 		}
 		else if (is_ia32_Const_0(psi_true) && is_ia32_Const_1(psi_default)) {
 			/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 			/*                        we invert condition and set default to 0      */
 			new_op = gen_binop(env, cmp_a, cmp_b, set_func);
 			set_ia32_pncode(get_Proj_pred(new_op), get_negated_pnc(pnc, mode));
+			set_ia32_am_support(get_Proj_pred(new_op), ia32_am_Source);
 		}
 		else {
 			/* otherwise: use CMOVcc */
@@ -2037,11 +2039,11 @@ static ir_node *gen_be_StackParam(ia32_transform_env_t *env) {
 	entity  *ent    = be_get_frame_entity(node);
 	ir_mode *mode   = env->mode;
 
-//	/* If the StackParam has only one user ->     */
-//	/* put it in the Block where the user resides */
-//	if (get_irn_n_edges(node) == 1) {
-//		env->block = get_nodes_block(get_edge_src_irn(get_irn_out_edge_first(node)));
-//	}
+	/* If the StackParam has only one user ->     */
+	/* put it in the Block where the user resides */
+	if (get_irn_n_edges(node) == 1) {
+		env->block = get_nodes_block(get_edge_src_irn(get_irn_out_edge_first(node)));
+	}
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
@@ -2628,6 +2630,7 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
 
 				new_op = gen_binop(&tenv, cmp_a, cmp_b, set_func);
 				set_ia32_pncode(get_Proj_pred(new_op), pnc);
+				set_ia32_am_support(get_Proj_pred(new_op), ia32_am_Source);
 			}
 
 			/* exchange with old compare */

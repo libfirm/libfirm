@@ -600,11 +600,14 @@ insert_copy:
 			}
 		}
 
-		/* If we have a CondJmp with immediate, we need to    */
+		/* If we have a CondJmp/CmpSet/xCmpSet with immediate, we need to    */
 		/* check if it's the right operand, otherwise we have */
 		/* to change it, as CMP doesn't support immediate as  */
 		/* left operands.                                     */
-		if (is_ia32_CondJmp(irn) && (is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn)) && op_tp == ia32_AddrModeS) {
+		if ((is_ia32_CondJmp(irn) || is_ia32_CmpSet(irn) || is_ia32_xCmpSet(irn)) &&
+			(is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn))                   &&
+			op_tp == ia32_AddrModeS)
+		{
 			set_ia32_op_type(irn, ia32_AddrModeD);
 			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 		}

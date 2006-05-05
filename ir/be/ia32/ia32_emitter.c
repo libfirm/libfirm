@@ -359,6 +359,8 @@ const char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 	is_ia32_Store8Bit(n)  || \
 	is_ia32_CondJmp(n)    || \
 	is_ia32_xCondJmp(n)   || \
+	is_ia32_CmpSet(n)     || \
+	is_ia32_xCmpSet(n)    || \
 	is_ia32_SwitchJmp(n)))
 
 	if (! buf) {
@@ -1051,7 +1053,7 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 		instr = "sub";
 	}
 
-	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "%s %1D, %1D", instr, irn, irn);
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %%%s, %%%s", instr, arch_register_get_name(out), arch_register_get_name(out));
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* clear target as set modifies only lower 8 bit */");
 	IA32_DO_EMIT(irn);
 
