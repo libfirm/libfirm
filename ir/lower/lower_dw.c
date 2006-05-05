@@ -44,6 +44,7 @@
 #include "set.h"
 #include "pmap.h"
 #include "pdeq.h"
+#include "irdump.h"
 
 /** A map from ir_op to Intrinsic functions entities. */
 static set *intrinsic_fkt;
