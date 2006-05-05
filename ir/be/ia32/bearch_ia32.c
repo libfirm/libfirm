@@ -500,10 +500,16 @@ static void ia32_prepare_graph(void *self) {
 	DEBUG_ONLY(firm_dbg_module_t *old_mod = cg->mod;)
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
+
+	/* 1st: transform psi condition trees */
+	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_psi_cond_tree, cg);
+
+	/* 2nd: transform all remaining nodes */
 	ia32_register_transformers();
 	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
+	/* 3rd: optimize address mode */
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
 	ia32_optimize_addressmode(cg);
 	be_dump(cg->irg, "-am", dump_ir_block_graph_sched);

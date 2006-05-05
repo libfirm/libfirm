@@ -127,6 +127,24 @@ static ir_node *get_proj_for_pn(const ir_node *irn, long pn) {
 	return NULL;
 }
 
+/**
+ * SSE convert of an integer node into a floating point node.
+ */
+static ir_node *gen_sse_conv_int2float(ia32_code_gen_t *cg, dbg_info *dbg, ir_graph *irg, ir_node *block,
+                                       ir_node *in, ir_node *old_node, ir_mode *tgt_mode)
+{
+	ir_node *noreg = ia32_new_NoReg_gp(cg);
+	ir_node *nomem = new_rd_NoMem(irg);
+
+	ir_node *conv = new_rd_ia32_Conv_I2FP(dbg, irg, block, noreg, noreg, in, nomem);
+	set_ia32_src_mode(conv, get_irn_mode(in));
+	set_ia32_tgt_mode(conv, tgt_mode);
+	set_ia32_am_support(conv, ia32_am_Source);
+	SET_IA32_ORIG_NODE(conv, ia32_get_old_node_name(cg, old_node));
+
+	return new_rd_Proj(dbg, irg, block, conv, tgt_mode, pn_ia32_Conv_I2FP_res);
+}
+
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
 static ident *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 	static const struct {
@@ -1636,9 +1654,8 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 	ir_node  *psi_default = get_Psi_default(node);
 	ir_node  *noreg       = ia32_new_NoReg_gp(cg);
 	ir_node  *nomem       = new_rd_NoMem(irg);
-	ir_node  *cmp, *cmp_a, *cmp_b, *and1, *and2, *new_op, *c1, *c2 = NULL;
+	ir_node  *cmp, *cmp_a, *cmp_b, *and1, *and2, *new_op = NULL;
 	int      pnc;
-
 
 	assert(get_irn_mode(cmp_proj) == mode_b && "Condition for Psi must have mode_b");
 
@@ -1661,19 +1678,8 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 
 			/* in case the compare operands are int, we move them into xmm register */
 			if (! mode_is_float(get_irn_mode(cmp_a))) {
-				c1 = new_rd_ia32_Conv_I2FP(dbg, irg, block, noreg, noreg, cmp_a, nomem);
-				set_ia32_src_mode(c1, get_irn_mode(cmp_a));
-				set_ia32_tgt_mode(c1, mode_D);
-				set_ia32_am_support(c1, ia32_am_Source);
-				SET_IA32_ORIG_NODE(c1, ia32_get_old_node_name(cg, node));
-				c2 = new_rd_ia32_Conv_I2FP(dbg, irg, block, noreg, noreg, cmp_b, nomem);
-				set_ia32_src_mode(c2, get_irn_mode(cmp_b));
-				set_ia32_tgt_mode(c2, mode_D);
-				set_ia32_am_support(c2, ia32_am_Source);
-				SET_IA32_ORIG_NODE(c2, ia32_get_old_node_name(cg, node));
-
-				cmp_a = new_rd_Proj(dbg, irg, block, c1, mode_D, pn_ia32_Conv_I2FP_res);
-				cmp_b = new_rd_Proj(dbg, irg, block, c2, mode_D, pn_ia32_Conv_I2FP_res);
+				cmp_a = gen_sse_conv_int2float(cg, dbg, irg, block, cmp_a, node, mode_D);
+				cmp_b = gen_sse_conv_int2float(cg, dbg, irg, block, cmp_b, node, mode_D);
 
 				pnc += pn_Cmp_Uo;  /* transform integer compare to fp compare */
 			}
@@ -1747,7 +1753,7 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 			/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 			/*                        we invert condition and set default to 0      */
 			new_op = set_func(dbg, irg, block, cmp_a, cmp_b, mode);
-			set_ia32_pncode(new_op, get_negated_pnc(pnc, mode));
+			set_ia32_pncode(new_op, get_negated_pnc(pnc, get_irn_mode(cmp_a)));
 		}
 		else {
 			/* otherwise: use CMOVcc */
@@ -2538,4 +2544,105 @@ void ia32_transform_node(ir_node *node, void *env) {
 	else {
 		DB((cg->mod, LEVEL_1, "ignored\n"));
 	}
+}
+
+/**
+ * Transforms a psi condition.
+ */
+static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg) {
+	int i;
+
+	assert(get_irn_mode(cond) == mode_b && "logical operator for condition must be mode_b");
+	set_irn_mode(cond, mode);
+
+	for (i = get_irn_arity(cond) - 1; i >= 0; i--) {
+		ir_node *in = get_irn_n(cond, i);
+
+		/* if in is a compare: transform into Set/xCmp */
+		if (is_Proj(in)) {
+			ir_node  *new_op = NULL;
+			ir_node  *cmp    = get_Proj_pred(in);
+			ir_node  *cmp_a  = get_Cmp_left(cmp);
+			ir_node  *cmp_b  = get_Cmp_right(cmp);
+			dbg_info *dbg    = get_irn_dbg_info(cmp);
+			ir_graph *irg    = get_irn_irg(cmp);
+			ir_node  *block  = get_nodes_block(cmp);
+			ir_node  *noreg  = ia32_new_NoReg_gp(cg);
+			ir_node  *nomem  = new_rd_NoMem(irg);
+			int      pnc     = get_Proj_proj(in);
+
+			/* this is a compare */
+			if (mode_is_float(mode)) {
+				/* Psi is float, we need a floating point compare */
+
+				if (USE_SSE2(cg)) {
+					/* SSE FPU */
+					if (! mode_is_float(get_irn_mode(cmp_a))) {
+						cmp_a = gen_sse_conv_int2float(cg, dbg, irg, block, cmp_a, cmp_a, mode);
+						cmp_b = gen_sse_conv_int2float(cg, dbg, irg, block, cmp_b, cmp_b, mode);
+						pnc  += pn_Cmp_Uo;
+					}
+
+					new_op = new_rd_ia32_xCmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
+					set_ia32_pncode(new_op, pnc);
+					SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, cmp));
+				}
+				else {
+					/* x87 FPU */
+					assert(0);
+				}
+			}
+			else {
+				/* integer Psi */
+				new_op = new_rd_ia32_Set(dbg, irg, block, cmp_a, cmp_b, mode);
+				set_ia32_pncode(new_op, pnc);
+				SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, cmp));
+			}
+
+			/* exchange with old compare */
+			exchange(in, new_op);
+		}
+		else {
+			/* another complex condition */
+			transform_psi_cond(in, mode, cg);
+		}
+	}
+}
+
+/**
+ * The Psi selector can be a tree of compares combined with "And"s and "Or"s.
+ * We create a Set node, respectively a xCmp in case the Psi is a float, for each
+ * compare, which causes the compare result to be stores in a register.  The
+ * "And"s and "Or"s are transformed later, we just have to set their mode right.
+ */
+void ia32_transform_psi_cond_tree(ir_node *node, void *env) {
+	ia32_code_gen_t *cg      = (ia32_code_gen_t *)env;
+	ir_node         *psi_sel, *new_cmp, *block;
+	ir_graph        *irg;
+	ir_mode         *mode;
+
+	/* check for Psi */
+	if (get_irn_opcode(node) != iro_Psi)
+		return;
+
+	psi_sel = get_Psi_cond(node, 0);
+
+	/* if psi_cond is a cmp: do nothing, this case is covered by gen_Psi */
+	if (is_Proj(psi_sel))
+		return;
+
+	mode = get_irn_mode(node);
+
+	transform_psi_cond(psi_sel, mode, cg);
+
+	irg   = get_irn_irg(node);
+	block = get_nodes_block(node);
+
+	/* we need to compare the evaluated condition tree with 0 */
+
+	/* BEWARE: new_r_Const_long works for floating point as well */
+	new_cmp = new_r_Cmp(irg, block, psi_sel, new_r_Const_long(irg, block, mode, 0));
+	new_cmp = new_r_Proj(irg, block, new_cmp, mode_b, pn_Cmp_Ne + (mode_is_float(mode) ? pn_Cmp_Uo : 0));
+
+	set_Psi_cond(node, 0, new_cmp);
 }
