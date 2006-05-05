@@ -21,6 +21,11 @@ typedef const struct _ident ident;
 typedef struct ir_node ir_node;
 #endif
 
+#ifndef _IR_OP_TYPEDEF_
+#define _IR_OP_TYPEDEF_
+typedef struct ir_op ir_op;
+#endif
+
 #ifndef _IR_MODE_TYPEDEF_
 #define _IR_MODE_TYPEDEF_
 typedef struct ir_mode ir_mode;
