@@ -1632,7 +1632,6 @@ static ir_node *gen_Mux(ia32_transform_env_t *env) {
 	return NULL;
 }
 
-typedef ir_node *set_func_t(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *cmp_a, ir_node *cmp_b, ir_mode *mode);
 typedef ir_node *cmov_func_t(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *cmp_a, ir_node *cmp_b, \
                              ir_node *psi_true, ir_node *psi_default, ir_mode *mode);
 
@@ -1718,8 +1717,8 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 	}
 	else {
 		/* integer psi */
-		set_func_t  *set_func  = NULL;
-		cmov_func_t *cmov_func = NULL;
+		construct_binop_func *set_func  = NULL;
+		cmov_func_t          *cmov_func = NULL;
 
 		if (mode_is_float(get_irn_mode(cmp_a))) {
 			/* 1st case: compare operands are floats */
@@ -1735,33 +1734,34 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 				set_func  = new_rd_ia32_vfCmpSet;
 				cmov_func = new_rd_ia32_vfCmpCMov;
 			}
+
+			pnc -= pn_Cmp_Uo; /* fp compare -> int compare */
 		}
 		else {
 			/* 2nd case: compare operand are integer too */
-			set_func  = new_rd_ia32_Set;
-			cmov_func = new_rd_ia32_CMov;
+			set_func  = new_rd_ia32_CmpSet;
+			cmov_func = new_rd_ia32_CmpCMov;
 		}
 
 		/* create the nodes */
-
+		env->irn = cmp;
 		if (is_ia32_Const_1(psi_true) && is_ia32_Const_0(psi_default)) {
 			/* first case for SETcc: default is 0, set to 1 iff condition is true */
-			new_op = set_func(dbg, irg, block, cmp_a, cmp_b, mode);
-			set_ia32_pncode(new_op, pnc);
+			new_op = gen_binop(env, cmp_a, cmp_b, set_func);
+			set_ia32_pncode(get_Proj_pred(new_op), pnc);
 		}
 		else if (is_ia32_Const_0(psi_true) && is_ia32_Const_1(psi_default)) {
 			/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 			/*                        we invert condition and set default to 0      */
-			new_op = set_func(dbg, irg, block, cmp_a, cmp_b, mode);
-			set_ia32_pncode(new_op, get_negated_pnc(pnc, get_irn_mode(cmp_a)));
+			new_op = gen_binop(env, cmp_a, cmp_b, set_func);
+			set_ia32_pncode(get_Proj_pred(new_op), get_negated_pnc(pnc, mode));
 		}
 		else {
 			/* otherwise: use CMOVcc */
 			new_op = cmov_func(dbg, irg, block, cmp_a, cmp_b, psi_true, psi_default, mode);
 			set_ia32_pncode(new_op, pnc);
+			SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 		}
-
-		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 	}
 
 	return new_op;
@@ -2594,9 +2594,18 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
 			}
 			else {
 				/* integer Psi */
-				new_op = new_rd_ia32_Set(dbg, irg, block, cmp_a, cmp_b, mode);
-				set_ia32_pncode(new_op, pnc);
-				SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, cmp));
+				ia32_transform_env_t tenv;
+
+				tenv.block = block;
+				tenv.cg    = cg;
+				tenv.dbg   = dbg;
+				tenv.irg   = irg;
+				tenv.irn   = cmp;
+				tenv.mode  = mode;
+				tenv.mod   = cg->mod;
+
+				new_op = gen_binop(&tenv, cmp_a, cmp_b, new_rd_ia32_CmpSet);
+				set_ia32_pncode(get_Proj_pred(new_op), pnc);
 			}
 
 			/* exchange with old compare */
@@ -2642,6 +2651,8 @@ void ia32_transform_psi_cond_tree(ir_node *node, void *env) {
 
 	/* BEWARE: new_r_Const_long works for floating point as well */
 	new_cmp = new_r_Cmp(irg, block, psi_sel, new_r_Const_long(irg, block, mode, 0));
+	/* transform the const */
+	ia32_place_consts_set_modes(new_cmp, cg);
 	new_cmp = new_r_Proj(irg, block, new_cmp, mode_b, pn_Cmp_Ne + (mode_is_float(mode) ? pn_Cmp_Uo : 0));
 
 	set_Psi_cond(node, 0, new_cmp);

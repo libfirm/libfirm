@@ -753,7 +753,7 @@ else {
   "outs"      => [ "res", "M" ],
 },
 
-"CMov" => {
+"CmpCMov" => {
   "irn_flags" => "R",
   "comment"   => "construct Conditional Move: CMov(sel, a, b) == sel ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "in_r4" ] }
@@ -771,22 +771,25 @@ else {
   "reg_req"   => { "in" => [ "vfp", "vfp", "gp", "gp" ], "out" => [ "in_r4" ] }
 },
 
-"Set" => {
+"CmpSet" => {
   "irn_flags" => "R",
   "comment"   => "construct Set: Set(sel) == sel ? 1 : 0",
-  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "eax ebx ecx edx" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
+  "outs"      => [ "res", "M" ],
 },
 
 "xCmpSet" => {
   "irn_flags" => "R",
   "comment"   => "construct Set: SSE Compare + int Set",
-  "reg_req"   => { "in" => [ "xmm", "xmm" ], "out" => [ "eax ebx ecx edx" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
+  "outs"      => [ "res", "M" ],
 },
 
 "vfCmpSet" => {
   "irn_flags" => "R",
   "comment"   => "construct Set: x87 Compare + int Set",
-  "reg_req"   => { "in" => [ "vfp", "vfp" ], "out" => [ "eax ebx ecx edx" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
+  "outs"      => [ "res", "M" ],
 },
 
 "vfCMov" => {

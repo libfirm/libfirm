@@ -501,12 +501,12 @@ static void ia32_prepare_graph(void *self) {
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
 
-	/* 1st: transform psi condition trees */
-	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_psi_cond_tree, cg);
+	/* 1st: transform constants and psi condition trees */
+	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_psi_cond_tree, cg);
 
 	/* 2nd: transform all remaining nodes */
 	ia32_register_transformers();
-	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_node, cg);
+	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
 	/* 3rd: optimize address mode */
@@ -521,8 +521,8 @@ static INLINE int need_constraint_copy(ir_node *irn) {
 		! is_ia32_Lea(irn)          && \
 		! is_ia32_Conv_I2I(irn)     && \
 		! is_ia32_Conv_I2I8Bit(irn) && \
-		! is_ia32_CMov(irn)         && \
-		! is_ia32_Set(irn);
+		! is_ia32_CmpCMov(irn)      && \
+		! is_ia32_CmpSet(irn);
 }
 
 /**

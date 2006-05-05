@@ -963,7 +963,6 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %s", instr, reg);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
-//	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "fnstsw %3D", irn);
 	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "fnstsw %%ax", irn);
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* Store x87 FPU Control Word */");
 	IA32_DO_EMIT(irn);
@@ -989,7 +988,7 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 
 	/* we have to emit the cmp first, because the destination register */
 	/* could be one of the compare registers                           */
-	if (is_ia32_CMov(irn)) {
+	if (is_ia32_CmpCMov(irn)) {
 		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
 	}
 	else if (is_ia32_xCmpCMov(irn)) {
@@ -1025,7 +1024,7 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	IA32_DO_EMIT(irn);
 }
 
-static void emit_ia32_CMov(ir_node *irn, ia32_emit_env_t *env) {
+static void emit_ia32_CmpCMov(ir_node *irn, ia32_emit_env_t *env) {
 	CMov_emitter(irn, env);
 }
 
@@ -1056,11 +1055,11 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* clear target as set modifies only lower 8 bit */");
 	IA32_DO_EMIT(irn);
 
-	if (is_ia32_Set(irn)) {
-		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, %2S", irn, irn);
+	if (is_ia32_CmpSet(irn)) {
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %s", ia32_emit_binop(irn, env));
 	}
 	else if (is_ia32_xCmpSet(irn)) {
-		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %1S, %2S", get_irn_n(irn, 0), irn, irn);
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %s", get_irn_n(irn, 0), ia32_emit_binop(irn, env));
 	}
 	else {
 		assert(0 && "unsupported Set");
@@ -1073,7 +1072,7 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	IA32_DO_EMIT(irn);
 }
 
-static void emit_ia32_Set(ir_node *irn, ia32_emit_env_t *env) {
+static void emit_ia32_CmpSet(ir_node *irn, ia32_emit_env_t *env) {
 	Set_emitter(irn, env);
 }
 
@@ -1705,8 +1704,8 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(TestJmp);
 	IA32_EMIT(CJmp);
 	IA32_EMIT(CJmpAM);
-	IA32_EMIT(CMov);
-	IA32_EMIT(Set);
+	IA32_EMIT(CmpCMov);
+	IA32_EMIT(CmpSet);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
