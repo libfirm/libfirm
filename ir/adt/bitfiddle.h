@@ -40,7 +40,7 @@ static INLINE int add_saturated(int x, int y)
 		Make a mask of the sign bit of x and y (they are the same if an overflow occurred).
 		INT_MIN == ~INT_MAX, so if the sign was negative, INT_MAX becomes INT_MIN.
 	*/
-	int inf      = (x >> sizeof(x) * 8 - 1) ^ INT_MAX;
+	int inf      = (x >> (sizeof(x) * 8 - 1)) ^ INT_MAX;
 
 	return overflow < 0 ? inf : sum;
 }
@@ -60,9 +60,9 @@ static INLINE unsigned popcnt(unsigned x) {
 }
 
 /**
- * Compute the number of leading zeroes in a word.
+ * Compute the number of leading zeros in a word.
  * @param x The word.
- * @return The number of leading (from the most significant bit) zeroes.
+ * @return The number of leading (from the most significant bit) zeros.
  */
 static INLINE unsigned nlz(unsigned x) {
   x |= x >> 1;
@@ -74,9 +74,9 @@ static INLINE unsigned nlz(unsigned x) {
 }
 
 /**
- * Compute the number of trailing zeroes in a word.
+ * Compute the number of trailing zeros in a word.
  * @param x The word.
- * @return The number of trailing zeroes.
+ * @return The number of trailing zeros.
  */
 #define ntz(x) (HACKDEL_WORDSIZE - nlz(~(x) & ((x) - 1)))
 
