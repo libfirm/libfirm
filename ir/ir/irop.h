@@ -84,7 +84,10 @@ typedef enum {
   iro_MaxOpcode
 } opcode;
 
+#ifndef _IR_OP_TYPEDEF_
+#define _IR_OP_TYPEDEF_
 typedef struct ir_op ir_op;
+#endif
 
 extern ir_op *op_Block;           ir_op *get_op_Block     (void);
 
@@ -314,7 +317,7 @@ typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
  * io_op Operations.
  */
 typedef struct {
-  computed_value_func	  computed_value;   /**< evaluates a node into a tarval if possible. */
+  computed_value_func   computed_value;   /**< evaluates a node into a tarval if possible. */
   equivalent_node_func  equivalent_node;  /**< optimizes the node by returning an equivalent one. */
   transform_node_func   transform_node;   /**< optimizes the node by transforming it. */
   node_cmp_attr_func    node_cmp_attr;    /**< compares two node attributes. */
