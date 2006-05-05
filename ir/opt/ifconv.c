@@ -32,13 +32,13 @@
 static ir_node* walk_to_projx(ir_node* start)
 {
 	ir_node* pred;
-	ir_node* cdep;
 
 	pred = get_nodes_block(start);
-	cdep = get_unique_cdep(pred);
-	if (cdep == NULL) return NULL;
 
-	assert(get_irn_arity(pred) == 1);
+	/* if there are multiple control flow predecessors nothing sensible can be
+	 * done */
+	if (get_irn_arity(pred) > 1) return NULL;
+
 	pred = get_irn_n(pred, 0);
 	if (get_irn_op(pred) == op_Proj) {
 		assert(get_irn_mode(pred) == mode_X);
@@ -157,6 +157,28 @@ static int fission_block(ir_node* block, int i)
 }
 
 
+/**
+ * Remove predecessors i and j from node and add predecessor new_pred
+ */
+static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
+{
+	int arity = get_irn_arity(node);
+	ir_node** ins = xmalloc(sizeof(*ins) * (arity - 1));
+	int k;
+	int l;
+
+	l = 0;
+	for (k = 0; k < i; ++k) ins[l++] = get_irn_n(node, k);
+	for (++k; k < j; ++k) ins[l++] = get_irn_n(node, k);
+	for (++k; k < arity; ++k) ins[l++] = get_irn_n(node, k);
+	ins[l++] = new_pred;
+	assert(l == arity - 1);
+	set_irn_in(node, l, ins);
+
+	xfree(ins);
+}
+
+
 static void if_conv_walker(ir_node* block, void* env)
 {
 	ir_node* phi;
@@ -229,39 +251,35 @@ restart:
 					psi = get_irn_n(phi, i);
 					ir_fprintf(stderr, "Handling memory Phi %+F\n", phi);
 				} else {
-					if (get_Proj_proj(projx0) == pn_Cond_true) {
-						vals[0] = get_irn_n(phi, i);
-						vals[1] = get_irn_n(phi, j);
+					ir_node* val_i = get_irn_n(phi, i);
+					ir_node* val_j = get_irn_n(phi, j);
+
+					if (val_i == val_j) {
+						psi = val_i;
+						ir_fprintf(stderr, "Generating no psi, because both values are equal\n");
 					} else {
-						vals[0] = get_irn_n(phi, j);
-						vals[1] = get_irn_n(phi, i);
+						if (get_Proj_proj(projx0) == pn_Cond_true) {
+							vals[0] = val_i;
+							vals[1] = val_j;
+						} else {
+							vals[0] = val_j;
+							vals[1] = val_i;
+						}
+						psi = new_r_Psi(
+							current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
+						);
+						ir_fprintf(stderr, "Generating %+F for %+F\n", psi, phi);
 					}
-					psi = new_r_Psi(
-						current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
-					);
-					ir_fprintf(stderr, "Generating %+F for %+F\n", psi, phi);
 				}
 
 				if (arity == 2) {
 					exchange(phi, psi);
 				} else {
-					ir_node** ins = xmalloc(sizeof(*ins) * (arity - 1));
-					int k;
-					int l;
-
-					l = 0;
-					for (k = 0; k < i; ++k) ins[l++] = get_irn_n(phi, k);
-					for (++k; k < j; ++k) ins[l++] = get_irn_n(phi, k);
-					for (++k; k < arity; ++k) ins[l++] = get_irn_n(phi, k);
-					ins[l++] = psi;
-					assert(l == arity - 1);
-					set_irn_in(phi, l, ins);
-
-					xfree(ins);
+					rewire(phi, i, j, psi);
 				}
 
 				phi = get_irn_link(phi);
-			} while (phi != NULL && get_irn_op(phi) == op_Phi);
+			} while (phi != NULL);
 
 			exchange(get_nodes_block(get_irn_n(block, i)), psi_block);
 			exchange(get_nodes_block(get_irn_n(block, j)), psi_block);
@@ -272,19 +290,7 @@ restart:
 				exchange(block, psi_block);
 				return;
 			} else {
-				ir_node** ins = xmalloc(sizeof(*ins) * (arity - 1));
-				int k;
-				int l;
-
-				l = 0;
-				for (k = 0; k < i; ++k) ins[l++] = get_irn_n(block, k);
-				for (++k; k < j; ++k) ins[l++] = get_irn_n(block, k);
-				for (++k; k < arity; ++k) ins[l++] = get_irn_n(block, k);
-				ins[l++] = new_r_Jmp(current_ir_graph, psi_block);
-				assert(l == arity - 1);
-				set_irn_in(block, l, ins);
-
-				xfree(ins);
+				rewire(block, i, j, new_r_Jmp(current_ir_graph, psi_block));
 				goto restart;
 			}
 		}
@@ -529,9 +535,9 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 	irg_block_walk_graph(irg, NULL, if_conv_walker, NULL);
 
+	local_optimize_graph(irg);
 	dump_ir_block_graph(irg, "_02_ifconv");
 
-	local_optimize_graph(irg);
 	irg_walk_graph(irg, NULL, optimise_psis, NULL);
 
 	dump_ir_block_graph(irg, "_03_postifconv");
