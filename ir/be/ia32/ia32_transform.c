@@ -30,14 +30,15 @@
 #include "../besched.h"
 #include "../beabi.h"
 
-#include "bearch_ia32_t.h"
-
-#include "ia32_nodes_attr.h"
 #include "../arch/archop.h"     /* we need this for Min and Max nodes */
+
+#include "bearch_ia32_t.h"
+#include "ia32_nodes_attr.h"
 #include "ia32_transform.h"
 #include "ia32_new_nodes.h"
 #include "ia32_map_regs.h"
 #include "ia32_dbg_stat.h"
+#include "ia32_optimize.h"
 
 #include "gen_ia32_regalloc_if.h"
 
@@ -2595,6 +2596,27 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
 			else {
 				/* integer Psi */
 				ia32_transform_env_t tenv;
+				construct_binop_func *set_func  = NULL;
+
+				if (mode_is_float(get_irn_mode(cmp_a))) {
+					/* 1st case: compare operands are floats */
+					FP_USED(cg);
+
+					if (USE_SSE2(cg)) {
+						/* SSE FPU */
+						set_func  = new_rd_ia32_xCmpSet;
+					}
+					else {
+						/* x87 FPU */
+						set_func  = new_rd_ia32_vfCmpSet;
+					}
+
+					pnc -= pn_Cmp_Uo; /* fp compare -> int compare */
+				}
+				else {
+					/* 2nd case: compare operand are integer too */
+					set_func  = new_rd_ia32_CmpSet;
+				}
 
 				tenv.block = block;
 				tenv.cg    = cg;
@@ -2604,7 +2626,7 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
 				tenv.mode  = mode;
 				tenv.mod   = cg->mod;
 
-				new_op = gen_binop(&tenv, cmp_a, cmp_b, new_rd_ia32_CmpSet);
+				new_op = gen_binop(&tenv, cmp_a, cmp_b, set_func);
 				set_ia32_pncode(get_Proj_pred(new_op), pnc);
 			}
 
