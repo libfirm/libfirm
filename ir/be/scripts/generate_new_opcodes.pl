@@ -153,6 +153,7 @@ foreach my $op (keys(%nodes)) {
 		# $complete_args = substr($complete_args, 2);
 		$temp .= "$complete_args)";
 		push(@obst_constructor, $temp." {\n");
+		push(@obst_header, $n{"comment"});
 		push(@obst_header, $temp.";\n");
 
 		# emit constructor code
@@ -279,7 +280,6 @@ foreach my $op (keys(%nodes)) {
 
 		# close constructor function
 		push(@obst_constructor, "}\n\n");
-
 	} # constructor creation
 
 	# set default values for state and flags if not given
@@ -299,6 +299,8 @@ foreach my $op (keys(%nodes)) {
 	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t) + $n_res * sizeof(arch_register_t *), &ops);\n";
 	push(@obst_new_irop, $temp);
 	push(@obst_enum_op, "  iro_$op,\n");
+
+	push(@obst_header, "\n");
 }
 push(@obst_enum_op, "  iro_$arch\_last_generated,\n");
 push(@obst_enum_op, "  iro_$arch\_last = iro_$arch\_last_generated");
