@@ -809,8 +809,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	ir_graph *irg         = chordal_env->irg;
 
 
-	if(get_irg_dom_state(irg) != dom_consistent)
-		compute_doms(irg);
+	assure_doms(irg);
 
 	env.chordal_env   = chordal_env;
 	env.colors_n      = colors_n;
