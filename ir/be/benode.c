@@ -431,7 +431,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 {
 	be_stack_attr_t *a;
 	ir_node *irn;
-	ir_node *in[1];
+	ir_node *in[2];
 
 	in[0]     = old_sp;
 	in[1]     = mem;
