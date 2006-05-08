@@ -260,9 +260,7 @@ struct ir_node {
   struct abstval *av;      /**< the abstract value of this node */
   struct section *sec;
 #endif
-#if FIRM_EDGES_INPLACE
   irn_edge_info_t edge_info;  /**< everlasting out edges */
-#endif
   /* ------- Opcode depending fields -------- */
   attr attr;               /**< attribute of this node. Depends on opcode.
                               Must be last field of struct ir_node. */

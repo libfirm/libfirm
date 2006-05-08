@@ -112,16 +112,13 @@ struct ir_graph {
 #endif
   int n_loc;                         /**< number of local variable in this
                                           procedure including procedure parameters. */
-  void **loc_descriptions;           /**< storage for local variable desriptions */
+  void **loc_descriptions;           /**< storage for local variable descriptions */
 
   /* -- Fields for optimizations / analysis information -- */
   pset *value_table;                 /**< hash table for global value numbering (cse)
                     for optimizing use in iropt.c */
   ir_node **outs;                    /**< Space for the out arrays. */
 
-#ifdef DEBUG_libfirm
-  int             n_outs;            /**< Size wasted for outs */
-#endif /* defined DEBUG_libfirm */
   ir_loop *loop;                     /**< The outermost loop */
   void *link;                        /**< A void* field to link any information to
                     the node. */
@@ -144,10 +141,10 @@ struct ir_graph {
   unsigned long block_visited;       /**< same as visited, for a complete block */
   unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
                                           updated after every walk */
-#if FIRM_EDGES_INPLACE
   irg_edge_info_t edge_info;  /**< edge info for automatic outs */
-#endif
+
 #ifdef DEBUG_libfirm
+  int             n_outs;            /**< Size wasted for outs */
   long graph_nr;              /**< a unique graph number for each graph to make output
                    readable. */
 #endif

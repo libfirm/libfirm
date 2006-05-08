@@ -71,7 +71,6 @@ static void addto_extblk(ir_extblk *extblk, ir_node *block)
  * we are interested only in 1, 2 and >2.
  */
 static int get_block_n_succs(ir_node *block) {
-#ifdef FIRM_EDGES_INPLACE
   if (edges_activated(current_ir_graph)) {
     const ir_edge_t *edge;
 
@@ -84,7 +83,6 @@ static int get_block_n_succs(ir_node *block) {
     edge = get_block_succ_next(block, edge);
     return edge ? 3 : 2;
   }
-#endif
   return get_Block_n_cfg_outs(block);
 }
 
@@ -274,14 +272,10 @@ void compute_extbb(ir_graph *irg) {
   env.obst = irg->extbb_obst;
   env.head = NULL;
 
-#ifdef FIRM_EDGES_INPLACE
-  if (edges_activated(irg)) {
-    /* we have edges */
+  if (! edges_activated(irg)) {
+    /* we don't have edges */
+    assure_irg_outs(irg);
   }
-  else
-#endif
-  if (get_irg_outs_state(irg) != outs_consistent)
-    compute_irg_outs(irg);
 
   /* we must mark nodes, so increase the visited flag */
   inc_irg_visited(irg);

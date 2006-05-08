@@ -130,12 +130,13 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 {
   ir_node *res;
   size_t node_size = offsetof(ir_node, attr) + op->attr_size + firm_add_node_size;
-	char *p;
+  char *p;
+  int i, is_bl;
 
   assert(irg && op && mode);
   p = obstack_alloc (irg->obst, node_size);
   memset(p, 0, node_size);
-	res = (ir_node *) (p + firm_add_node_size);
+  res = (ir_node *) (p + firm_add_node_size);
 
   res->kind     = k_ir_node;
   res->op       = op;
@@ -158,20 +159,14 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res->node_nr = get_irp_new_node_nr();
 #endif
 
-#if FIRM_EDGES_INPLACE
-  {
-    int i;
-    int is_bl = is_Block(res);
-
-    INIT_LIST_HEAD(&res->edge_info.outs_head);
-    if(is_bl)
-      INIT_LIST_HEAD(&res->attr.block.succ_head);
+  INIT_LIST_HEAD(&res->edge_info.outs_head);
+  is_bl = is_Block(res);
+  if (is_bl)
+    INIT_LIST_HEAD(&res->attr.block.succ_head);
 
 
-    for (i = is_bl; i <= arity; ++i)
-      edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
-  }
-#endif
+  for (i = is_bl; i <= arity; ++i)
+    edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
 
   hook_new_node(irg, res);
 
@@ -795,8 +790,8 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
   ir_graph *irg = get_irn_irg(end);
 
   /* notify that edges are deleted */
-  for (i = END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in); ++i) {
-    edges_notify_edge(end, i, in[i], NULL, irg);
+  for (i = 1 + END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in); ++i) {
+    edges_notify_edge(end, i, end->in[i], NULL, irg);
   }
   ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
 

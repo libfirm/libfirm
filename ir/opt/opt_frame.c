@@ -48,7 +48,6 @@ void opt_frame_irg(ir_graph *irg) {
   /* look for uses */
   frame = get_irg_frame(irg);
 
-#ifdef FIRM_EDGES_INPLACE
   if (edges_activated(irg)) { /* use inplace edges */
     const ir_edge_t *edge;
 
@@ -59,9 +58,7 @@ void opt_frame_irg(ir_graph *irg) {
       set_entity_link(ent, ent);
     }
   }
-  else
-#endif /* FIRM_EDGES_INPLACE */
-  {
+  else {
     /* use traditionally out edges */
     if (get_irg_outs_state(irg) != outs_consistent)
       compute_irg_outs(irg);

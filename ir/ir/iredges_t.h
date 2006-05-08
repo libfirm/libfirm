@@ -29,9 +29,7 @@
 
 #include "iredges.h"
 
-#if FIRM_EDGES_INPLACE
-
-#define DBG_EDGES  "edges"
+#define DBG_EDGES  "firm.ir.edges"
 
 /**
  * An edge.
@@ -251,24 +249,5 @@ extern void init_edges(void);
 #define get_edge_private_data(edge,ofs)  _get_edge_private_data(edge,ofs)
 #define edges_activated(irg)             _edges_activated(irg)
 #define edges_assure(irg)                _edges_assure(irg)
-
-#else
-/* new edges are disabled */
-
-#define init_edges()
-#define edges_reroute(old, nw, irg)
-#define edges_init_graph(irg);
-#define edges_notify_edge(src, pos, tgt, old_tgt, irg)
-#define edges_node_deleted(old, irg)
-#define edges_invalidate(irn, irg)
-#define get_irn_out_edge_first(irn)       NULL
-#define get_irn_out_edge_next(irn,last)   NULL
-#define get_edge_src_irn(edge)            NULL
-#define get_edge_src_pos(edge)            -1
-#define get_edge_private_data(edge,ofs)   NULL
-#define edges_activated(irg)              0
-#define edges_assure(irg)
-
-#endif /* FIRM_EDGES_INPLACE */
 
 #endif /* _FIRM_EDGES_T_H */

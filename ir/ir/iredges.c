@@ -26,8 +26,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-#if FIRM_EDGES_INPLACE
-
 /**
  * This flag is set to 1, if the edges get initialized for an irg.
  * Then register additional data is forbidden.
@@ -121,6 +119,7 @@ static INLINE void edge_change_cnt(ir_node *tgt, int ofs) {
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg)
 {
 	const char *msg = "";
+	int is_tgt_bad = tgt && is_Bad(tgt);
 
 	if(!edges_activated(irg))
 		return;
@@ -218,39 +217,60 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 					"target list head must have been initialized");
 
 			/*
-			 * insert the edge, if it is not yet in the set or return
-			 * the instance in the set.
+			 * Do NOT add edges that point to Bad nodes.
 			 */
-			edge = set_insert(edges, templ, size, edge_hash(templ));
-			block_edge = (ir_block_edge_t *) edge;
+#if 0
+			if (is_tgt_bad) {
+				if(old_tgt) {
+					edge = set_find(edges, templ, size, edge_hash(templ));
+					block_edge = (ir_block_edge_t *) edge;
+
+					assert(edge);
+					list_del(&edge->list);
+					if(is_block_edge) {
+						list_del(&block_edge->succ_list);
+					}
+				}
+			}
+			else
+#endif
+			{
+				/*
+				 * insert the edge, if it is not yet in the set or return
+				 * the instance in the set.
+				 */
+				edge = set_insert(edges, templ, size, edge_hash(templ));
+				block_edge = (ir_block_edge_t *) edge;
 
 #ifdef DEBUG_libfirm
-			assert(!edge->invalid && "Invalid edge encountered");
+				assert(!edge->invalid && "Invalid edge encountered");
 #endif
 
-			/* If the old target is not null, the edge is moved. */
-			if(old_tgt) {
-				msg = "redirecting";
-				list_move(&edge->list, head);
+				/* If the old target is not null, the edge is moved. */
+				if(old_tgt) {
+					msg = "redirecting";
 
-				/* If the edge is a cf edge, move it from the successor list. */
-				if(is_block_edge)
-					list_move(&block_edge->succ_list, succ_head);
+					list_move(&edge->list, head);
 
-				edge_change_cnt(old_tgt,  -1);
-			}
+					/* If the edge is a cf edge, move it from the successor list. */
+					if(is_block_edge)
+						list_move(&block_edge->succ_list, succ_head);
 
-			/* The old target was null, thus, the edge is newly created. */
-			else {
-				msg = "adding";
-				list_add(&edge->list, head);
+					edge_change_cnt(old_tgt,  -1);
+				}
 
-				/*
-				 * If the edge is cf edge, enter it into the successor list
-				 * of the target node's block.
-				 */
-				if(is_block_edge)
-					list_add(&block_edge->succ_list, succ_head);
+				/* The old target was null, thus, the edge is newly created. */
+				else {
+					msg = "adding";
+					list_add(&edge->list, head);
+
+					/*
+					 * If the edge is cf edge, enter it into the successor list
+					 * of the target node's block.
+					 */
+					if(is_block_edge)
+						list_add(&block_edge->succ_list, succ_head);
+				}
 			}
 
 			edge_change_cnt(tgt,  +1);
@@ -258,8 +278,8 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 	}
 
 	/* If the target and the old target are equal, nothing is done. */
-	DBG((dbg, LEVEL_5, "announce out edge: %n[%p] %d-> %n[%p](%n[%p]): %s\n",
-				src, src, pos, tgt, tgt, old_tgt, old_tgt, msg));
+	DBG((dbg, LEVEL_5, "announce out edge: %+F %d-> %+F(%+F): %s\n",
+				src, pos, tgt, old_tgt, msg));
 }
 
 void edges_node_deleted(ir_node *old, ir_graph *irg)
@@ -268,12 +288,12 @@ void edges_node_deleted(ir_node *old, ir_graph *irg)
 		int not_a_block = !is_Block(old);
 		int i, n;
 
-		DBG((dbg, LEVEL_5, "node deleted: %n\n", old));
+		DBG((dbg, LEVEL_5, "node deleted: %+F\n", old));
 
 		/* Change to get_irn_n */
 		for(i = -not_a_block, n = get_irn_arity(old); i < n; ++i) {
 			ir_node *old_tgt = get_irn_n(old, i);
-			DBG((dbg, LEVEL_5, "\tdelete to old target %n\n", old_tgt));
+			DBG((dbg, LEVEL_5, "\tdelete to old target %+F\n", old_tgt));
 			edges_notify_edge(old, i, NULL, old_tgt, irg);
 		}
 
@@ -348,7 +368,7 @@ void edges_reroute(ir_node *from, ir_node *to, ir_graph *irg)
 		struct list_head *head = _get_irn_outs_head(from);
 
 		DBG((dbg, LEVEL_5,
-					"reroute from %n to %n\n", from, to));
+					"reroute from %+F to %+F\n", from, to));
 
 		while(head != head->next) {
 			ir_edge_t *edge = list_entry(head->next, ir_edge_t, list);
@@ -379,7 +399,7 @@ static void verify_set_presence(ir_node *irn, void *data)
 		if(e != NULL)
 			e->present = 1;
 		else
-			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is missing\n", irn, templ->pos));
+			DBG((dbg, LEVEL_DEFAULT, "edge %+F,%d is missing\n", irn, templ->pos));
 	}
 }
 
@@ -390,7 +410,7 @@ static void verify_list_presence(ir_node *irn, void *data)
 	foreach_out_edge(irn, e) {
 		ir_node *tgt = get_irn_n(e->src, e->pos);
 		if(irn != tgt)
-			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is no out edge of %n but of %n\n",
+			DBG((dbg, LEVEL_DEFAULT, "edge %+F,%d is no out edge of %+F but of %+F\n",
 					e->src, e->pos, irn, tgt));
 	}
 
@@ -414,7 +434,7 @@ void edges_verify(ir_graph *irg)
 	 */
 	for(e = set_first(edges); e; e = set_next(edges)) {
 		if(!e->invalid && !e->present)
-			DBG((dbg, LEVEL_DEFAULT, "edge %n,%d is superfluous\n", e->src, e->pos));
+			DBG((dbg, LEVEL_DEFAULT, "edge %+F,%d is superfluous\n", e->src, e->pos));
 	}
 }
 
@@ -449,6 +469,3 @@ int (get_irn_n_edges)(const ir_node *irn)
 {
 	return _get_irn_n_edges(irn);
 }
-
-
-#endif /* FIRM_EDGES_INPLACE */
