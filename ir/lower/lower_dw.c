@@ -46,8 +46,14 @@
 #include "pdeq.h"
 #include "irdump.h"
 
-/** A map from ir_op to Intrinsic functions entities. */
+/** A map from mode to a primitive type. */
+static pmap *prim_types;
+
+/** A map from (op, imode, omode) to Intrinsic functions entities. */
 static set *intrinsic_fkt;
+
+/** A map from (imode, omode) to conv function types. */
+static set *conv_types;
 
 /** A map from a method type to its lowered type. */
 static pmap *lowered_type;
@@ -59,13 +65,23 @@ static ir_type *binop_tp_u, *binop_tp_s, *unop_tp_u, *unop_tp_s, *tp_s, *tp_u;
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
- * An entry in the (op, mode) -> entity map.
+ * An entry in the (op, imode, omode) -> entity map.
  */
 typedef struct _op_mode_entry {
 	const ir_op   *op;    /**< the op */
-	const ir_mode *mode;  /**< the mode */
-	entity        *ent;   /**< the associated entity of this (op, mode) pair */
+	const ir_mode *imode; /**< the input mode */
+	const ir_mode *omode; /**< the output mode */
+	entity        *ent;   /**< the associated entity of this (op, imode, omode) triple */
 } op_mode_entry_t;
+
+/**
+ * An entry in the (imode, omode) -> tp map.
+ */
+typedef struct _conv_tp_entry {
+	const ir_mode *imode; /**< the input mode */
+	const ir_mode *omode; /**< the output mode */
+	ir_type       *mtd;   /**< the associated method type of this (imode, omode) pair */
+} conv_tp_entry_t;
 
 /**
  * Every double word node will be replaced,
@@ -94,6 +110,85 @@ typedef struct _lower_env_t {
 	unsigned flags;               /**< some flags */
 	int      n_entries;           /**< number of entries */
 } lower_env_t;
+
+/**
+ * Get a primitive mode for a mode.
+ */
+static ir_type *get_primitive_type(ir_mode *mode) {
+	pmap_entry *entry = pmap_find(prim_types, mode);
+	ir_type *tp;
+	char buf[64];
+
+	if (entry)
+		return entry->value;
+
+	snprintf(buf, sizeof(buf), "_prim_%s", get_mode_name(mode));
+	tp = new_type_primitive(new_id_from_str(buf), mode);
+
+	pmap_insert(prim_types, mode, tp);
+	return tp;
+}
+
+/**
+ * Create a method type for a Conv emulation from imode to omode.
+ */
+static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env) {
+	conv_tp_entry_t key, *entry;
+	ir_type *mtd;
+
+	key.imode = imode;
+	key.omode = omode;
+	key.mtd   = NULL;
+
+	entry = set_insert(conv_types, &key, sizeof(key), HASH_PTR(imode) ^ HASH_PTR(omode));
+	if (! entry->mtd) {
+		int n_param = 1, n_res = 1;
+		char buf[64];
+
+		if (imode == env->params->high_signed || imode == env->params->high_unsigned)
+			n_param = 2;
+		if (omode == env->params->high_signed || omode == env->params->high_unsigned)
+			n_res = 2;
+
+		/* create a new one */
+		snprintf(buf, sizeof(buf), "LConv%s%s", get_mode_name(imode), get_mode_name(omode));
+		mtd = new_type_method(new_id_from_str(buf), n_param, n_res);
+
+		/* set param types and result types */
+		n_param = 0;
+		if (imode == env->params->high_signed) {
+			set_method_param_type(mtd, n_param++, tp_s);
+			set_method_param_type(mtd, n_param++, tp_s);
+		}
+		else if (imode == env->params->high_unsigned) {
+			set_method_param_type(mtd, n_param++, tp_u);
+			set_method_param_type(mtd, n_param++, tp_u);
+		}
+		else {
+			ir_type *tp = get_primitive_type(imode);
+			set_method_param_type(mtd, n_param++, tp);
+		}
+
+		n_res = 0;
+		if (omode == env->params->high_signed) {
+			set_method_res_type(mtd, n_res++, tp_s);
+			set_method_res_type(mtd, n_res++, tp_s);
+		}
+		else if (omode == env->params->high_unsigned) {
+			set_method_res_type(mtd, n_res++, tp_u);
+			set_method_res_type(mtd, n_res++, tp_u);
+		}
+		else {
+			ir_type *tp = get_primitive_type(omode);
+			set_method_res_type(mtd, n_res++, tp);
+		}
+
+		entry->mtd = mtd;
+	}
+	else
+		mtd = entry->mtd;
+	return mtd;
+}
 
 /**
  * Add an additional control flow input to a block.
@@ -400,20 +495,31 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 /**
  * Return a node containing the address of the intrinsic emulation function.
+ *
+ * @param method  the method type of the emulation function
+ * @param op      the emulated ir_op
+ * @param imode   the input mode of the emulated opcode
+ * @param omode   the output mode of the emulated opcode
+ * @param block   where the new mode is created
+ * @param env     the lower environment
  */
-static ir_node *get_intrinsic_address(ir_type *method, ir_op *op, ir_mode *mode, ir_node *block, lower_env_t *env) {
+static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
+                                      ir_mode *imode, ir_mode *omode,
+                                      ir_node *block, lower_env_t *env) {
 	symconst_symbol sym;
 	entity *ent;
 	op_mode_entry_t key, *entry;
 
-	key.op   = op;
-	key.mode = mode;
-	key.ent  = NULL;
+	key.op    = op;
+	key.imode = imode;
+	key.omode = omode;
+	key.ent   = NULL;
 
-	entry = set_insert(intrinsic_fkt, &key, sizeof(key), HASH_PTR(op) ^ HASH_PTR(mode));
+	entry = set_insert(intrinsic_fkt, &key, sizeof(key),
+				HASH_PTR(op) ^ HASH_PTR(imode) ^ (HASH_PTR(omode) << 8));
 	if (! entry->ent) {
 		/* create a new one */
-		ent = env->params->create_intrinsic(method, op, mode, env->params->ctx);
+		ent = env->params->create_intrinsic(method, op, imode, omode, env->params->ctx);
 
 		assert(ent && "Intrinsic creator must return an entity");
 		entry->ent = ent;
@@ -433,6 +539,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op, ir_mode *mode,
 static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	ir_node  *block, *irn, *call, *proj;
 	ir_node  *in[4];
+	ir_mode  *opmode;
 	dbg_info *dbg;
 	ir_type  *mtp;
 	int      idx;
@@ -468,7 +575,8 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	block = get_nodes_block(node);
 
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
-	irn = get_intrinsic_address(mtp, get_irn_op(node), get_irn_op_mode(node), block, env);
+	opmode = get_irn_op_mode(node);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, block, env);
 	call = new_rd_Call(dbg, current_ir_graph, block, get_Div_mem(node),
 		irn, 4, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
@@ -509,6 +617,7 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env) {
 static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	ir_node  *block, *proj, *irn, *call;
 	ir_node  *in[4];
+	ir_mode  *opmode;
 	dbg_info *dbg;
 	ir_type  *mtp;
 	int      idx;
@@ -544,7 +653,8 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	block = get_nodes_block(node);
 
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
-	irn = get_intrinsic_address(mtp, get_irn_op(node), get_irn_op_mode(node), block, env);
+	opmode = get_irn_op_mode(node);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, block, env);
 	call = new_rd_Call(dbg, current_ir_graph, block, get_Mod_mem(node),
 		irn, 4, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
@@ -585,6 +695,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	ir_node  *block, *proj, *irn, *mem, *callDiv, *callMod, *resDiv, *resMod;
 	ir_node  *in[4];
+	ir_mode  *opmode;
 	dbg_info *dbg;
 	ir_type  *mtp;
 	int      idx;
@@ -634,7 +745,8 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	callDiv = callMod = NULL;
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
 	if (flags & 1) {
-		irn = get_intrinsic_address(mtp, op_Div, get_irn_op_mode(node), block, env);
+		opmode = get_irn_op_mode(node);
+		irn = get_intrinsic_address(mtp, op_Div, opmode, opmode, block, env);
 		callDiv = new_rd_Call(dbg, current_ir_graph, block, mem,
 			irn, 4, in, mtp);
 		set_irn_pinned(callDiv, get_irn_pinned(node));
@@ -643,7 +755,8 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	if (flags & 2) {
 		if (flags & 1)
 			mem = new_r_Proj(current_ir_graph, block, callDiv, mode_M, pn_Call_M);
-		irn = get_intrinsic_address(mtp, op_Mod, get_irn_op_mode(node), block, env);
+		opmode = get_irn_op_mode(node);
+		irn = get_intrinsic_address(mtp, op_Mod, opmode, opmode, block, env);
 		callMod = new_rd_Call(dbg, current_ir_graph, block, mem,
 			irn, 4, in, mtp);
 		set_irn_pinned(callMod, get_irn_pinned(node));
@@ -725,7 +838,7 @@ static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	block = get_nodes_block(node);
 
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
-	irn = get_intrinsic_address(mtp, get_irn_op(node), get_irn_mode(node), block, env);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, block, env);
 	irn = new_rd_Call(dbg, current_ir_graph, block, get_irg_no_mem(current_ir_graph),
 		irn, 4, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
@@ -767,7 +880,7 @@ static void lower_Unop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	block = get_nodes_block(node);
 
 	mtp = mode_is_signed(mode) ? unop_tp_s : unop_tp_u;
-	irn = get_intrinsic_address(mtp, get_irn_op(node), get_irn_mode(node), block, env);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, block, env);
 	irn = new_rd_Call(dbg, current_ir_graph, block, get_irg_no_mem(current_ir_graph),
 		irn, 2, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
@@ -827,6 +940,7 @@ static void lower_Binop_logical(ir_node *node, ir_mode *mode, lower_env_t *env,
 	env->entries[idx]->high_word = constr_rd(dbg, current_ir_graph, block, lop_h, rop_h, mode);
 }
 
+/** create a logical operation tranformation */
 #define lower_logical(op)                                                \
 static void lower_##op(ir_node *node, ir_mode *mode, lower_env_t *env) { \
 	lower_Binop_logical(node, mode, env, new_rd_##op);                   \
@@ -1085,20 +1199,19 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Translate a Conv to higher_signed
  */
 static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
-	ir_node *op    = get_Conv_op(node);
-	ir_mode *mode  = get_irn_mode(op);
+	ir_node  *op    = get_Conv_op(node);
+	ir_mode  *imode = get_irn_mode(op);
+	ir_mode  *dst_mode = env->params->low_signed;
+	int      idx = get_irn_idx(node);
+	ir_graph *irg = current_ir_graph;
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbg = get_irn_dbg_info(node);
 
-	if (mode_is_int(mode) || mode_is_reference(mode)) {
-		ir_node  *block = get_nodes_block(node);
-		dbg_info *dbg = get_irn_dbg_info(node);
-		int      idx = get_irn_idx(node);
-		ir_graph *irg = current_ir_graph;
-		ir_mode  *dst_mode = env->params->low_signed;
+	assert(idx < env->n_entries);
 
-		assert(idx < env->n_entries);
-
+	if (mode_is_int(imode) || mode_is_reference(imode)) {
 		/* simple case: create a high word */
-		if (mode != dst_mode)
+		if (imode != dst_mode)
 			op = new_rd_Conv(dbg, irg, block, op, dst_mode);
 
 		env->entries[idx]->low_word  = op;
@@ -1106,7 +1219,17 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
 			new_Const_long(mode_Iu, get_mode_size_bits(dst_mode) - 1), dst_mode);
 	}
 	else {
-		assert(0);
+		ir_node *irn, *call;
+		ir_mode *omode = env->params->high_signed;
+		ir_type *mtp = get_conv_type(imode, omode, env);
+
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		call = new_rd_Call(dbg, irg, block, get_irg_no_mem(irg), irn, 1, &op, mtp);
+		set_irn_pinned(call, get_irn_pinned(node));
+		irn = new_r_Proj(irg, block, call, mode_T, pn_Call_T_result);
+
+		env->entries[idx]->low_word  = new_r_Proj(irg, block, irn, dst_mode, 0);
+		env->entries[idx]->high_word = new_r_Proj(irg, block, irn, dst_mode, 1);
 	}
 }
 
@@ -1114,27 +1237,36 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
  * Translate a Conv to higher_unsigned
  */
 static void lower_Conv_to_Lu(ir_node *node, lower_env_t *env) {
-	ir_node *op    = get_Conv_op(node);
-	ir_mode *mode  = get_irn_mode(op);
+	ir_node  *op    = get_Conv_op(node);
+	ir_mode  *imode  = get_irn_mode(op);
+	ir_mode  *dst_mode = env->params->low_unsigned;
+	int      idx = get_irn_idx(node);
+	ir_graph *irg = current_ir_graph;
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbg = get_irn_dbg_info(node);
 
-	if (mode_is_int(mode) || mode_is_reference(mode)) {
-		ir_node  *block = get_nodes_block(node);
-		dbg_info *dbg = get_irn_dbg_info(node);
-		int      idx = get_irn_idx(node);
-		ir_graph *irg = current_ir_graph;
-		ir_mode  *dst_mode = env->params->low_unsigned;
+	assert(idx < env->n_entries);
 
-		assert(idx < env->n_entries);
-
+	if (mode_is_int(imode) || mode_is_reference(imode)) {
 		/* simple case: create a high word */
-		if (mode != env->params->low_unsigned)
+		if (imode != dst_mode)
 			op = new_rd_Conv(dbg, irg, block, op, dst_mode);
 
 		env->entries[idx]->low_word  = op;
 		env->entries[idx]->high_word = new_Const(dst_mode, get_mode_null(dst_mode));
 	}
 	else {
-		assert(0);
+		ir_node *irn, *call;
+		ir_mode *omode = env->params->high_unsigned;
+		ir_type *mtp = get_conv_type(imode, omode, env);
+
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		call = new_rd_Call(dbg, irg, block, get_irg_no_mem(irg), irn, 1, &op, mtp);
+		set_irn_pinned(call, get_irn_pinned(node));
+		irn = new_r_Proj(irg, block, call, mode_T, pn_Call_T_result);
+
+		env->entries[idx]->low_word  = new_r_Proj(irg, block, irn, dst_mode, 0);
+		env->entries[idx]->high_word = new_r_Proj(irg, block, irn, dst_mode, 1);
 	}
 }
 
@@ -1142,26 +1274,38 @@ static void lower_Conv_to_Lu(ir_node *node, lower_env_t *env) {
  * Translate a Conv from higher_signed
  */
 static void lower_Conv_from_Ls(ir_node *node, lower_env_t *env) {
-	ir_node *op    = get_Conv_op(node);
-	ir_mode *mode  = get_irn_mode(node);
+	ir_node  *op    = get_Conv_op(node);
+	ir_mode  *omode = get_irn_mode(node);
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbg = get_irn_dbg_info(node);
+	int      idx = get_irn_idx(op);
+	ir_graph *irg = current_ir_graph;
 
-	if (mode_is_int(mode) || mode_is_reference(mode)) {
-		ir_node  *block = get_nodes_block(node);
-		dbg_info *dbg = get_irn_dbg_info(node);
-		int      idx = get_irn_idx(op);
-		ir_graph *irg = current_ir_graph;
+	assert(idx < env->n_entries);
 
-		assert(idx < env->n_entries);
+	if (mode_is_int(omode) || mode_is_reference(omode)) {
 		op = env->entries[idx]->low_word;
 
 		/* simple case: create a high word */
-		if (mode != env->params->low_signed)
-			op = new_rd_Conv(dbg, irg, block, op, mode);
+		if (omode != env->params->low_signed)
+			op = new_rd_Conv(dbg, irg, block, op, omode);
 
 		set_Conv_op(node, op);
 	}
 	else {
-		assert(0);
+		ir_node *irn, *call, *in[2];
+		ir_mode *imode = env->params->high_signed;
+		ir_type *mtp = get_conv_type(imode, omode, env);
+
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		in[0] = env->entries[idx]->low_word;
+		in[1] = env->entries[idx]->high_word;
+
+		call = new_rd_Call(dbg, irg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
+		set_irn_pinned(call, get_irn_pinned(node));
+		irn = new_r_Proj(irg, block, call, mode_T, pn_Call_T_result);
+
+		exchange(node, new_r_Proj(irg, block, irn, omode, 0));
 	}
 }
 
@@ -1169,26 +1313,38 @@ static void lower_Conv_from_Ls(ir_node *node, lower_env_t *env) {
  * Translate a Conv from higher_unsigned
  */
 static void lower_Conv_from_Lu(ir_node *node, lower_env_t *env) {
-	ir_node *op    = get_Conv_op(node);
-	ir_mode *mode  = get_irn_mode(node);
+	ir_node  *op    = get_Conv_op(node);
+	ir_mode  *omode = get_irn_mode(node);
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbg = get_irn_dbg_info(node);
+	int      idx = get_irn_idx(op);
+	ir_graph *irg = current_ir_graph;
 
-	if (mode_is_int(mode) || mode_is_reference(mode)) {
-		ir_node  *block = get_nodes_block(node);
-		dbg_info *dbg = get_irn_dbg_info(node);
-		int      idx = get_irn_idx(op);
-		ir_graph *irg = current_ir_graph;
+	assert(idx < env->n_entries);
 
-		assert(idx < env->n_entries);
+	if (mode_is_int(omode) || mode_is_reference(omode)) {
 		op = env->entries[idx]->low_word;
 
 		/* simple case: create a high word */
-		if (mode != env->params->low_unsigned)
-			op = new_rd_Conv(dbg, irg, block, op, mode);
+		if (omode != env->params->low_unsigned)
+			op = new_rd_Conv(dbg, irg, block, op, omode);
 
 		set_Conv_op(node, op);
 	}
 	else {
-		assert(0);
+		ir_node *irn, *call, *in[2];
+		ir_mode *imode = env->params->high_unsigned;
+		ir_type *mtp = get_conv_type(imode, omode, env);
+
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		in[0] = env->entries[idx]->low_word;
+		in[1] = env->entries[idx]->high_word;
+
+		call = new_rd_Call(dbg, irg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
+		set_irn_pinned(call, get_irn_pinned(node));
+		irn = new_r_Proj(irg, block, call, mode_T, pn_Call_T_result);
+
+		exchange(node, new_r_Proj(irg, block, irn, omode, 0));
 	}
 }
 
@@ -1713,7 +1869,17 @@ static int cmp_op_mode(const void *elt, const void *key, size_t size) {
 	const op_mode_entry_t *e1 = elt;
 	const op_mode_entry_t *e2 = key;
 
-	return (e1->op - e2->op) | (e1->mode - e2->mode);
+	return (e1->op - e2->op) | (e1->imode - e2->imode) | (e1->omode - e2->omode);
+}
+
+/**
+ * Compare two conv_tp_entry_t's.
+ */
+static int cmp_conv_tp(const void *elt, const void *key, size_t size) {
+	const conv_tp_entry_t *e1 = elt;
+	const conv_tp_entry_t *e2 = key;
+
+	return (e1->imode - e2->imode) | (e1->omode - e2->omode);
 }
 
 /*
@@ -1737,15 +1903,20 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	assert(2 * get_mode_size_bits(param->low_unsigned) == get_mode_size_bits(param->high_unsigned));
 	assert(get_mode_size_bits(param->low_signed) == get_mode_size_bits(param->low_unsigned));
 
+	if (! prim_types)
+		prim_types = pmap_create();
 	if (! intrinsic_fkt)
 		intrinsic_fkt = new_set(cmp_op_mode, iro_MaxOpcode);
+	if (! conv_types)
+		conv_types = new_set(cmp_conv_tp, 16);
 	if (! lowered_type)
 		lowered_type = pmap_create();
 
 	if (! tp_u)
-		tp_u = new_type_primitive(IDENT("_i_uint"), param->low_unsigned);
+		tp_u = get_primitive_type(param->low_unsigned);
 	if (! tp_s)
-		tp_s = new_type_primitive(IDENT("_i_int"), param->low_signed);
+		tp_s = get_primitive_type(param->low_signed);
+
 
 	if (! binop_tp_u) {
 		binop_tp_u = new_type_method(IDENT("binop_u_intrinsic"), 4, 2);
@@ -1878,13 +2049,23 @@ void lower_dw_ops(const lwrdw_param_t *param)
 }
 
 /* Default implementation. */
-entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op, const ir_mode *mode, void *context)
+entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                 const ir_mode *imode, const ir_mode *omode,
+                                 void *context)
 {
 	char buf[64];
 	ident *id;
+	entity *ent;
 
-	snprintf(buf, sizeof(buf), "__l%s%s", get_op_name(op), get_mode_name(mode));
+	if (imode == omode)
+		snprintf(buf, sizeof(buf), "__l%s%s", get_op_name(op), get_mode_name(imode));
+	else
+		snprintf(buf, sizeof(buf), "__l%s%s%s", get_op_name(op),
+			get_mode_name(imode), get_mode_name(omode));
 	id = new_id_from_str(buf);
 
-	return new_entity(get_glob_type(), id, method);
+	ent = new_entity(get_glob_type(), id, method);
+	set_entity_ld_ident(ent, get_entity_ident(ent));
+	set_entity_visibility(ent, visibility_external_allocated);
+	return ent;
 }

@@ -13,9 +13,21 @@
 #include "firm_types.h"
 
 /**
- * A callback type for creating an intrinsic entity for a given opcode. */
-typedef entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op, const ir_mode *mode, void *context);
+ * A callback type for creating an intrinsic entity for a given opcode.
+ *
+ * @param method   the method type of the emulation function entity
+ * @param op       the emulated ir_op
+ * @param imode    the input mode of the emulated opcode
+ * @param omode    the output mode of the emulated opcode
+ * @param context  the context parameter
+ */
+typedef entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
+                                       const ir_mode *imode, const ir_mode *omode,
+                                       void *context);
 
+/**
+ * The lowering parameter description.
+ */
 typedef struct _lwrdw_param_t {
 	int enable;                   /**< if true lowering is enabled */
 	int little_endian;            /**< if true should be lowered for little endian, else big endian */
@@ -35,8 +47,10 @@ typedef struct _lwrdw_param_t {
 void lower_dw_ops(const lwrdw_param_t *param);
 
 /**
- * Default implementation.
+ * Default implementation. Context is unused.
  */
-entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op, const ir_mode *mode, void *context);
+entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                 const ir_mode *imode, const ir_mode *omode,
+                                 void *context);
 
 #endif /* _FIRM_LOWER_DW_H */
