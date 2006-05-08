@@ -2,6 +2,7 @@
  * Inverse operations
  * @author Adam Szalkowski
  * @date 2006-05-08
+ * @cvs-id $Id$
  */
 
 #ifndef BE_INVERSE_H_
