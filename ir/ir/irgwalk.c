@@ -501,6 +501,22 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
   current_ir_graph = rem;
 }
 
+/*
+ * Additionally walk over all anchors. Do NOT increase the visit flag.
+ */
+void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+  int i;
+  ir_graph * rem = current_ir_graph;
+  current_ir_graph = irg;
+
+  for (i = 0; i < anchor_max; ++i) {
+    ir_node *anchor = irg->anchors[i];
+
+    irg_walk_2(anchor, pre, post, env);
+  }
+  current_ir_graph = rem;
+}
+
 /********************************************************************/
 
 typedef struct walk_env {

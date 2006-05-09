@@ -163,4 +163,16 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env);
  */
 void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
+/**
+ * Additionally walk over all anchors. Do NOT increase the visit flag.
+ * This function visits all anchor nodes that otherwise might not been visited in a
+ * walk, for instance the Bad() node.
+ *
+ * @param irg  - the irg graph
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passed to pre and post
+ */
+void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+
 # endif /* _IRGWALK_H_ */
