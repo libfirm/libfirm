@@ -46,11 +46,6 @@
 #include "iredges_t.h"
 #include "irtools.h"
 
-/* Defined in iropt.c */
-pset *new_identities (void);
-void  del_identities (pset *value_table);
-void  add_identities (pset *value_table, ir_node *node);
-
 /*------------------------------------------------------------------*/
 /* apply optimizations of iropt to all nodes.                       */
 /*------------------------------------------------------------------*/
@@ -63,6 +58,14 @@ static void optimize_in_place_wrapper (ir_node *n, void *env) {
   if (optimized != n) exchange (n, optimized);
 }
 
+/**
+ * Do local optimizations for a node.
+ *
+ * @param n  the IR-node where to start. Typically the End node
+ *           of a graph
+ *
+ * @note current_ir_graph must be set
+ */
 static INLINE void do_local_optimize(ir_node *n) {
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
@@ -81,6 +84,7 @@ static INLINE void do_local_optimize(ir_node *n) {
   irg_walk(n, firm_clear_link, optimize_in_place_wrapper, NULL);
 }
 
+/* Applies local optimizations (see iropt.h) to all nodes reachable from node n */
 void local_optimize_node(ir_node *n) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = get_irn_irg(n);
@@ -95,12 +99,13 @@ void local_optimize_node(ir_node *n) {
  */
 static void kill_dead_blocks(ir_node *block, void *env)
 {
-  if (get_Block_dom_depth(block) < 0)
-    if (block != get_irg_end_block(current_ir_graph)) {
-      /* we don't want that the end block of graphs with
-         endless loops is marked bad (although it is of course */
-      set_Block_dead(block);
-    }
+  if (get_Block_dom_depth(block) < 0) {
+    /*
+     * Note that the new dominance code correctly handles
+     * the End block, i.e. it is always reachable from Start
+     */
+    set_Block_dead(block);
+  }
 }
 
 void
@@ -108,7 +113,7 @@ local_optimize_graph (ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
-  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
+  if (get_irg_dom_state(irg) == dom_consistent)
     irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 
   do_local_optimize(get_irg_end(irg));
@@ -129,8 +134,7 @@ static void opt_walker(ir_node *n, void *env) {
   if (optimized != n) {
     const ir_edge_t *edge;
 
-    exchange(n, optimized);
-    foreach_out_edge(optimized, edge) {
+    foreach_out_edge(n, edge) {
       ir_node *succ = get_edge_src_irn(edge);
 
       if (get_irn_link(succ) != waitq) {
@@ -138,12 +142,16 @@ static void opt_walker(ir_node *n, void *env) {
         set_irn_link(succ, waitq);
       }
     }
+    exchange(n, optimized);
   }
 }
 
 void optimize_graph_df(ir_graph *irg) {
-  pdeq *waitq = new_pdeq();
-  int  state = edges_activated(irg);
+  pdeq     *waitq = new_pdeq();
+  int      state = edges_activated(irg);
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
 
   if (! state)
     edges_activate(irg);
@@ -176,6 +184,8 @@ void optimize_graph_df(ir_graph *irg) {
 
   if (! state)
     edges_deactivate(irg);
+
+  current_ir_graph = rem;
 }
 
 
@@ -562,14 +572,14 @@ dead_node_elimination(ir_graph *irg) {
     graveyard_obst = irg->obst;
 
     /* A new obstack, where the reachable nodes will be copied to. */
-    rebirth_obst = xmalloc (sizeof(*rebirth_obst));
+    rebirth_obst = xmalloc(sizeof(*rebirth_obst));
     current_ir_graph->obst = rebirth_obst;
     obstack_init (current_ir_graph->obst);
     current_ir_graph->last_node_idx = 0;
 
-    /* We also need a new hash table for cse */
-    del_identities (irg->value_table);
-    irg->value_table = new_identities ();
+    /* We also need a new value table for CSE */
+    del_identities(irg->value_table);
+    irg->value_table = new_identities();
 
     /* Copy the graph from the old to the new obstack */
     copy_graph_env(1);
