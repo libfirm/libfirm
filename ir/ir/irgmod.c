@@ -97,32 +97,30 @@ exchange (ir_node *old, ir_node *nw)
 /*  Functionality for collect_phis                                    */
 /*--------------------------------------------------------------------*/
 
-static void
-collect (ir_node *n, void *env) {
+/**
+ * Walker: links all Phi nodes to their Blocks and
+ *         all Proj nodes to there predecessors
+ */
+static void collect(ir_node *n, void *env) {
   ir_node *pred;
-  if (get_irn_op(n) == op_Phi) {
+
+  if (is_Phi(n)) {
     set_irn_link(n, get_irn_link(get_nodes_block(n)));
     set_irn_link(get_nodes_block(n), n);
   }
-  if (get_irn_op(n) == op_Proj) {
+  else if (is_Proj(n)) {
     pred = n;
-    while (get_irn_op(pred) == op_Proj)
+    do {
       pred = get_Proj_pred(pred);
+    } while (is_Proj(pred));
+
     set_irn_link(n, get_irn_link(pred));
     set_irn_link(pred, n);
   }
 }
 
 void collect_phiprojs(ir_graph *irg) {
-  ir_graph *rem;
-
-  /* Remember external state of current_ir_graph. */
-  rem = current_ir_graph;
-  current_ir_graph = irg;
-
-  irg_walk(get_irg_end(current_ir_graph), firm_clear_link, collect, NULL);
-
-  current_ir_graph = rem;
+  irg_walk_graph(irg, firm_clear_link, collect, NULL);
 }
 
 
@@ -146,7 +144,7 @@ static void move (ir_node *node, ir_node *from_bl, ir_node *to_bl) {
     proj = get_irn_link(node);
     while (proj) {
       if (get_nodes_block(proj) == from_bl)
-	set_nodes_block(proj, to_bl);
+        set_nodes_block(proj, to_bl);
       proj = get_irn_link(proj);
     }
   }
