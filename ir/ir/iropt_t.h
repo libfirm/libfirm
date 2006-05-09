@@ -3,7 +3,7 @@
  * File name:   ir/ir/iropt_t.h
  * Purpose:     iropt --- optimizations intertwined with IR construction -- private header.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
@@ -11,36 +11,50 @@
  */
 
 /**
-* @file iropt_t.h
-*
-* Declarations for optimizations intertwined with IR construction.
-*
-* @author Martin Trapp, Christian Schaefer
-*/
+ * @file iropt_t.h
+ *
+ * Declarations for optimizations intertwined with IR construction.
+ *
+ * @author Martin Trapp, Christian Schaefer
+ */
 
-# ifndef _IROPT_T_H_
-# define _IROPT_T_H_
+#ifndef _IROPT_T_H_
+#define _IROPT_T_H_
 
-# include "pset.h"
-# include "iropt.h"
-# include "tv.h"
+#include "iropt.h"
+#include "irnode_t.h"
+#include "pset.h"
+#include "tv.h"
 
-ir_node *equivalent_node (ir_node *n);
+ir_node *equivalent_node(ir_node *n);
 
-/*@{*/
+/**
+ * Calculate a hash value of a node.
+ * The hash value is calculated from the nodes predecessors.
+ * Special handling for Const and SymConst nodes (these don't have predecessors).
+ *
+ * @param node  The IR-node
+ */
+unsigned ir_node_hash(ir_node *node);
 
-/** For cse */
-pset *new_identities (void);
-void  del_identities (pset *value_table);
-void  add_identities (pset *value_table, ir_node *node);
-/*@}*/
+/**
+ * Creates a new value table used for storing CSE identities.
+ * The value table is used to identify common expressions.
+ *
+ */
+pset *new_identities(void);
 
-ir_node *optimize_node (ir_node *n);
+/**
+ * Deletes a identities value table.
+ *
+ * @param value_table  the identity set
+ */
+void  del_identities(pset *value_table);
 
-ir_node *optimize_in_place_2 (ir_node *n);
-
-/** Calculate a hash value of a node. */
-unsigned ir_node_hash (ir_node *node);
+/**
+ * Add a node to the identities value table.
+ */
+void  add_identities(pset *value_table, ir_node *node);
 
 /**
  * Compare function for two nodes in the hash table. Gets two
@@ -55,6 +69,13 @@ int identities_cmp(const void *elt, const void *key);
  */
 ir_node *identify_remember(pset *value_table, ir_node *n);
 
+/** Visit each node in the value table of a graph. */
+void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env);
+
+ir_node *optimize_node(ir_node *n);
+
+ir_node *optimize_in_place_2(ir_node *n);
+
 /**
  * Returns the tarval of a Const node or tarval_bad for all other nodes.
  */
@@ -67,7 +88,7 @@ value_of(ir_node *n) {
 }
 
 /**
- * Sets the default operation for an ir_op_ops.
+ * Sets the default operations for an ir_op_ops.
  *
  * @param code   the opcode for the default operation
  * @param ops    the operations initialized
@@ -77,4 +98,4 @@ value_of(ir_node *n) {
  */
 ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops);
 
-# endif /* _IROPT_T_H_ */
+#endif /* _IROPT_T_H_ */

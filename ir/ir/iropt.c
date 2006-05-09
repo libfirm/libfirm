@@ -557,7 +557,6 @@ static tarval *computed_value_Proj_Cmp(ir_node *n)
         return new_tarval_from_long(proj_nr & pn_Cmp_Ne, mode_b);
     }
   }
-
   return computed_value_Cmp_Confirm(a, aa, ab, proj_nr);
 }
 
@@ -625,6 +624,8 @@ static tarval *computed_value_Mux(ir_node *n)
  */
 static tarval *computed_value_Psi(ir_node *n)
 {
+  if (is_Mux(n))
+    return computed_value_Mux(n);
   return tarval_bad;
 }
 
@@ -805,7 +806,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
 
 /**
  * Returns a equivalent node for a Jmp, a Bad :-)
- * Of course this only happens if the Block of the Jmp is Bad.
+ * Of course this only happens if the Block of the Jmp is dead.
  */
 static ir_node *equivalent_node_Jmp(ir_node *n)
 {
@@ -816,7 +817,7 @@ static ir_node *equivalent_node_Jmp(ir_node *n)
   return n;
 }
 
-/* Same for op_Raise */
+/** Raise is handled in the same way as Jmp. */
 #define equivalent_node_Raise   equivalent_node_Jmp
 
 
@@ -864,6 +865,9 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
   return n;
 }
 
+/**
+ * Eor is commutative and has neutral 0.
+ */
 #define equivalent_node_Eor  equivalent_node_neutral_zero
 
 /*
@@ -1008,10 +1012,10 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n)
   return n;
 }
 
-/* Not(Not(x)) == x */
+/** Not(Not(x)) == x */
 #define equivalent_node_Not    equivalent_node_idempotent_unop
 
-/* --x == x */  /* ??? Is this possible or can --x raise an
+/** --x == x       ??? Is this possible or can --x raise an
                        out of bounds exception if min =! max? */
 #define equivalent_node_Minus  equivalent_node_idempotent_unop
 
@@ -1434,11 +1438,13 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 }
 
 /**
- * Returns a equivalent node of  a Psi: if a condition is true
+ * Returns a equivalent node of a Psi: if a condition is true
  * and all previous conditions are false we know its value.
  * If all conditions are false its value is the default one.
  */
 static ir_node *equivalent_node_Psi(ir_node *n) {
+  if (is_Mux(n))
+    return equivalent_node_Mux(n);
   return n;
 }
 
@@ -1538,16 +1544,16 @@ static ir_node *equivalent_node_Bound(ir_node *n)
        * lower <= pred_lower && pred_upper <= upper.
        */
       ir_node *upper = get_Bound_upper(n);
-       if (get_Bound_lower(pred) == lower &&
-           get_Bound_upper(pred) == upper) {
-         /*
-          * One could expect that we simple return the previous
-          * Bound here. However, this would be wrong, as we could
-          * add an exception Proj to a new location than.
-          * So, we must turn in into a tuple
-          */
-         ret_tuple = 1;
-       }
+      if (get_Bound_lower(pred) == lower &&
+          get_Bound_upper(pred) == upper) {
+        /*
+         * One could expect that we simply return the previous
+         * Bound here. However, this would be wrong, as we could
+         * add an exception Proj to a new location than.
+         * So, we must turn in into a tuple
+         */
+        ret_tuple = 1;
+      }
     }
   }
   if (ret_tuple) {
@@ -3369,8 +3375,7 @@ del_identities(pset *value_table) {
  * nodes are extremely time critical because of their frequent use in
  * constant string arrays.
  */
-static INLINE ir_node *
-identify (pset *value_table, ir_node *n)
+static INLINE ir_node *identify(pset *value_table, ir_node *n)
 {
   ir_node *o = NULL;
 
@@ -3389,7 +3394,7 @@ identify (pset *value_table, ir_node *n)
     }
   }
 
-  o = pset_find (value_table, n, ir_node_hash (n));
+  o = pset_find(value_table, n, ir_node_hash (n));
   if (!o) return n;
 
   DBG_OPT_CSE(n, o);
@@ -3402,8 +3407,7 @@ identify (pset *value_table, ir_node *n)
  * optimization is performed.  The flag turning on procedure global cse could
  * be changed between two allocations.  This way we are safe.
  */
-static INLINE ir_node *
-identify_cons (pset *value_table, ir_node *n) {
+static INLINE ir_node *identify_cons(pset *value_table, ir_node *n) {
   ir_node *old = n;
 
   n = identify(value_table, n);
@@ -3417,8 +3421,7 @@ identify_cons (pset *value_table, ir_node *n) {
  * Looks up the node in a hash table, enters it in the table
  * if it isn't there yet.
  */
-ir_node *
-identify_remember (pset *value_table, ir_node *n)
+ir_node *identify_remember(pset *value_table, ir_node *n)
 {
   ir_node *o = NULL;
 
@@ -3447,18 +3450,28 @@ identify_remember (pset *value_table, ir_node *n)
   return o;
 }
 
-void
-add_identities (pset *value_table, ir_node *node) {
-  if (get_opt_cse() && (get_irn_opcode(node) != iro_Block))
-    identify_remember (value_table, node);
+/* Add a node to the identities value table. */
+void add_identities(pset *value_table, ir_node *node) {
+  if (get_opt_cse() && is_no_Block(node))
+    identify_remember(value_table, node);
+}
+
+/* Visit each node in the value table of a graph. */
+void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env) {
+  ir_node *node;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
+  foreach_pset(irg->value_table, node)
+    visit(node, env);
+  current_ir_graph = rem;
 }
 
 /**
  * garbage in, garbage out. If a node has a dead input, i.e., the
  * Bad node is input to the node, return the Bad node.
  */
-static INLINE ir_node *
-gigo (ir_node *node)
+static INLINE ir_node *gigo(ir_node *node)
 {
   int i, irn_arity;
   ir_op *op = get_irn_op(node);
@@ -3527,7 +3540,6 @@ gigo (ir_node *node)
   return node;
 }
 
-
 /**
  * These optimizations deallocate nodes from the obstack.
  * It can only be called if it is guaranteed that no other nodes
@@ -3535,8 +3547,7 @@ gigo (ir_node *node)
  *
  * current_ir_graph must be set to the graph of the node!
  */
-ir_node *
-optimize_node(ir_node *n)
+ir_node *optimize_node(ir_node *n)
 {
   tarval *tv;
   ir_node *oldn = n;
@@ -3646,8 +3657,7 @@ optimize_node(ir_node *n)
  * nodes lying on the obstack.  Remove these by a dead node elimination,
  * i.e., a copying garbage collection.
  */
-ir_node *
-optimize_in_place_2 (ir_node *n)
+ir_node *optimize_in_place_2(ir_node *n)
 {
   tarval *tv;
   ir_node *oldn = n;
@@ -3729,8 +3739,7 @@ optimize_in_place_2 (ir_node *n)
 /**
  * Wrapper for external use, set proper status bits after optimization.
  */
-ir_node *
-optimize_in_place (ir_node *n)
+ir_node *optimize_in_place(ir_node *n)
 {
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
