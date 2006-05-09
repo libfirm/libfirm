@@ -265,8 +265,27 @@ ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 
 ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 
+/**
+ * Make a spill node and insert it into the schedule.
+ *
+ * @param arch_env  The architecture environment.
+ * @param irn       The node to be spilled.
+ * @param spill_ctx The context in which the spill is introduced (This is mostly == irn up to the case of Phis).
+ * @return          The new spill node.
+ */
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *spill_ctx);
-ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *reloader, ir_mode *mode, ir_node *spill);
+
+/**
+ * Make a reload and insert it into the schedule.
+ *
+ * @param arch_env The architecture environment.
+ * @param cls      The register class of the reloaded value.
+ * @param insert   The node in the schedule in front of which the reload is inserted.
+ * @param mode     The mode of the original (spilled) value.
+ * @param spill    The spill node corresponding to this reload.
+ * @return         A freshly made reload.
+ */
+ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill);
 
 enum {
 	be_pos_CopyKeep_op = 0
