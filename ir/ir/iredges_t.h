@@ -59,10 +59,10 @@ struct _ir_block_edge_t {
 };
 
 /** Accessor for private irn info. */
-#define _get_irn_edge_info(irn) ((irn_edge_info_t *) &(irn)->edge_info)
+#define _get_irn_edge_info(irn) (&(irn)->edge_info)
 
 /** Accessor for private irg info. */
-#define _get_irg_edge_info(irg) ((irg_edge_info_t *) &(irg)->edge_info)
+#define _get_irg_edge_info(irg) (&(irg)->edge_info)
 
 /**
  * Convenience macro to get the outs_head from a irn_edge_info_t
@@ -85,7 +85,7 @@ struct _ir_block_edge_t {
  */
 static INLINE const ir_edge_t *_get_irn_out_edge_first(const ir_node *irn)
 {
-  struct list_head *head = _get_irn_outs_head(irn);
+  const struct list_head *head = _get_irn_outs_head(irn);
   return list_empty(head) ? NULL : list_entry(head->next, ir_edge_t, list);
 }
 

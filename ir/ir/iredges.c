@@ -1,3 +1,15 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/ir/iredges.c
+ * Purpose:     Always available outs.
+ * Author:      Sebastian Hack
+ * Modified by: Michael Beck
+ * Created:     14.1.2005
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 /**
  * Always available outs.
  * @author Sebastian Hack
@@ -16,6 +28,7 @@
 #endif
 
 #include "irnode_t.h"
+#include "iropt_t.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irdump_t.h"
@@ -61,7 +74,7 @@ static int edge_cmp(const void *p1, const void *p2, size_t len)
 
 /**
  * Initialize the out information for a graph.
- * @note Dead node elim can call this on an already initialized graph.
+ * @note Dead node elimination can call this on an already initialized graph.
  */
 void edges_init_graph(ir_graph *irg)
 {
@@ -119,7 +132,6 @@ static INLINE void edge_change_cnt(ir_node *tgt, int ofs) {
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg)
 {
 	const char *msg = "";
-	int is_tgt_bad = tgt && is_Bad(tgt);
 
 	if(!edges_activated(irg))
 		return;
@@ -217,60 +229,40 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 					"target list head must have been initialized");
 
 			/*
-			 * Do NOT add edges that point to Bad nodes.
+			 * insert the edge, if it is not yet in the set or return
+			 * the instance in the set.
 			 */
-#if 0
-			if (is_tgt_bad) {
-				if(old_tgt) {
-					edge = set_find(edges, templ, size, edge_hash(templ));
-					block_edge = (ir_block_edge_t *) edge;
-
-					assert(edge);
-					list_del(&edge->list);
-					if(is_block_edge) {
-						list_del(&block_edge->succ_list);
-					}
-				}
-			}
-			else
-#endif
-			{
-				/*
-				 * insert the edge, if it is not yet in the set or return
-				 * the instance in the set.
-				 */
-				edge = set_insert(edges, templ, size, edge_hash(templ));
-				block_edge = (ir_block_edge_t *) edge;
+			edge = set_insert(edges, templ, size, edge_hash(templ));
+			block_edge = (ir_block_edge_t *) edge;
 
 #ifdef DEBUG_libfirm
-				assert(!edge->invalid && "Invalid edge encountered");
+			assert(!edge->invalid && "Invalid edge encountered");
 #endif
 
-				/* If the old target is not null, the edge is moved. */
-				if(old_tgt) {
-					msg = "redirecting";
+			/* If the old target is not null, the edge is moved. */
+			if(old_tgt) {
+				msg = "redirecting";
 
-					list_move(&edge->list, head);
+				list_move(&edge->list, head);
 
-					/* If the edge is a cf edge, move it from the successor list. */
-					if(is_block_edge)
-						list_move(&block_edge->succ_list, succ_head);
+				/* If the edge is a cf edge, move it from the successor list. */
+				if(is_block_edge)
+					list_move(&block_edge->succ_list, succ_head);
 
-					edge_change_cnt(old_tgt,  -1);
-				}
+				edge_change_cnt(old_tgt,  -1);
+			}
 
-				/* The old target was null, thus, the edge is newly created. */
-				else {
-					msg = "adding";
-					list_add(&edge->list, head);
+			/* The old target was null, thus, the edge is newly created. */
+			else {
+				msg = "adding";
+				list_add(&edge->list, head);
 
-					/*
-					 * If the edge is cf edge, enter it into the successor list
-					 * of the target node's block.
-					 */
-					if(is_block_edge)
-						list_add(&block_edge->succ_list, succ_head);
-				}
+				/*
+				 * If the edge is cf edge, enter it into the successor list
+				 * of the target node's block.
+				 */
+				if(is_block_edge)
+					list_add(&block_edge->succ_list, succ_head);
 			}
 
 			edge_change_cnt(tgt,  +1);
@@ -300,21 +292,19 @@ void edges_node_deleted(ir_node *old, ir_graph *irg)
 	}
 }
 
-void edges_invalidate(ir_node *irn, ir_graph *irg)
-{
+void edges_invalidate(ir_node *irn, ir_graph *irg) {
 	edges_node_deleted(irn, irg);
 }
 
 /**
  * Post-Walker: notify all edges
  */
-static void build_edges_walker(ir_node *irn, void *data)
-{
+static void build_edges_walker(ir_node *irn, void *data) {
 	ir_graph *irg = data;
 	int not_a_block = !is_Block(irn);
 	int i, n;
 
-	for(i = -not_a_block, n = get_irn_arity(irn); i < n; ++i)
+	for (i = -not_a_block, n = get_irn_arity(irn); i < n; ++i)
 		edges_notify_edge(irn, i, get_irn_n(irn, i), NULL, irg);
 }
 
@@ -322,14 +312,46 @@ static void build_edges_walker(ir_node *irn, void *data)
  * Pre-Walker: initializes the list-heads and set the out-count
  * of all nodes to 0.
  */
-static void init_lh_walker(ir_node *irn, void *data)
-{
+static void init_lh_walker(ir_node *irn, void *data) {
 	INIT_LIST_HEAD(_get_irn_outs_head(irn));
-	if(is_Block(irn))
+	if (is_Block(irn))
 		INIT_LIST_HEAD(_get_block_succ_head(irn));
 	_get_irn_edge_info(irn)->out_count = 0;
 }
 
+/**
+ * Visitor: initializes the list-heads and set the out-count
+ * of all nodes to 0 of nodes that are not seen so far.
+ */
+static void visitor(ir_node *irn, void *data) {
+	if (irn_not_visited(irn)) {
+		mark_irn_visited(irn);
+		init_lh_walker(irn, data);
+	}
+}
+
+/*
+ * Build the initial edge set.
+ * Beware, this is not a simple task because it suffers from two
+ * difficulties:
+ * - the anchor set allows access to Nodes that may not be reachable from
+ *   the End node
+ * - the identities add nodes to the "root set" that are not yet reachable
+ *   from End. However, after some transformations, the CSE may revival these
+ *   nodes
+ *
+ * These problems can be fixed using different strategies:
+ * - Add an age flag to every node. Whenever the edge of a node is older
+ *   then the current edge, invalidate the edges of this node.
+ *   While this would help for revivaled nodes, it increases memory and runtime.
+ * - Delete the identities set.
+ *   Solves the revival problem, but may increase the memory consumption, as
+ *   nodes cannot be revivaled at all.
+ * - Manually iterate over the identities root set. This did not consume more memory
+ *   but increase the computation time because the |identies| >= |V|
+ *
+ * Currently, we use the last option.
+ */
 void edges_activate(ir_graph *irg)
 {
 	irg_edge_info_t *info = _get_irg_edge_info(irg);
@@ -337,6 +359,8 @@ void edges_activate(ir_graph *irg)
 	info->activated = 1;
 	edges_init_graph(irg);
 	irg_walk_graph(irg, init_lh_walker, build_edges_walker, irg);
+	irg_walk_anchors(irg, init_lh_walker, build_edges_walker, irg);
+	visit_all_identities(irg, visitor, irg);
 }
 
 void edges_deactivate(ir_graph *irg)
@@ -344,10 +368,10 @@ void edges_deactivate(ir_graph *irg)
 	irg_edge_info_t *info = _get_irg_edge_info(irg);
 
 	info->activated = 0;
-	if(info->edges) {
+	if (info->edges) {
 		del_set(info->edges);
-    info->edges = NULL;
-  }
+		info->edges = NULL;
+	}
 }
 
 int (edges_activated)(const ir_graph *irg)
