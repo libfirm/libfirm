@@ -1519,6 +1519,7 @@ void free_array_attrs (ir_type *array) {
   assert(array && (array->type_op == type_array));
   free(array->attr.aa.lower_bound);
   free(array->attr.aa.upper_bound);
+  free(array->attr.aa.order);
 }
 
 /* manipulate private fields of array ir_type */
