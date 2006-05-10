@@ -130,6 +130,28 @@ ir_node *get_Block_dominated_next(const ir_node *dom);
 int block_dominates(const ir_node *a, const ir_node *b);
 
 /**
+ * Returns the smallest common dominator block of two nodes.
+ * @param a A node.
+ * @param b Another node.
+ * @return The first block dominating @p a and @p b
+ */
+ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
+
+/**
+ * Returns the smallest common dominator block of all users of a node
+ * BEWARE: @p irn must not be a block
+ * If on or more users are Phi nodes, one can request special handling
+ * with @p handle_phi = 1.  In this case the cfg predecessor block
+ * corresponding to the position of the irn in the argument list of the
+ * Phi is determined and treated as user.
+ *
+ * @param irn        A node.
+ * @param handle_phi 1 if Phis should be handled different
+ * @return The first block dominating all users of @irn
+ */
+ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi);
+
+/**
  * Check, if a block post dominates another block.
  * @param a The first block.
  * @param b The second block.

@@ -33,6 +33,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "array.h"
+#include "iredges.h"
 
 
 #define get_dom_info(bl)  (&(bl)->attr.block.dom)
@@ -179,6 +180,88 @@ int block_dominates(const ir_node *a, const ir_node *b)
 
 	return 0;
 }
+
+/* Returns the smallest common dominator block of two nodes. */
+ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b) {
+	ir_node *bl_a   = is_Block(a) ? a : get_nodes_block(a);
+	ir_node *bl_b   = is_Block(b) ? b : get_nodes_block(b);
+	ir_node *dom_bl = NULL;
+
+	/* Check if block of a dominates block of b */
+	if (block_dominates(bl_a, bl_b))
+		dom_bl = bl_a;
+	/* Check if block of b dominates block of a */
+	else if (block_dominates(bl_b, bl_a))
+		dom_bl = bl_b;
+	else {
+		/* walk up dominator tree and search for first block dominating a and b */
+		while (! dom_bl) {
+			bl_a = get_Block_idom(bl_a);
+
+			assert(! is_Bad(bl_a) && "block is dead?");
+
+			if (block_dominates(bl_a, bl_b))
+				dom_bl = bl_a;
+		}
+	}
+
+	return dom_bl;
+}
+
+/* Returns the smallest common dominator block of all users of a node. */
+ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi) {
+	int n, j, i = 0, success;
+	ir_node **user_blocks, *dom_bl;
+	const ir_edge_t *edge;
+
+	assert(! is_Block(irn) && "WRONG USAGE of node_users_smallest_common_dominator");
+	assert(edges_activated(get_irn_irg(irn)) && "need edges activated");
+
+	n = get_irn_n_edges(irn);
+
+	/* get array to hold all block of the node users */
+	NEW_ARR_A(ir_node *, user_blocks, n);
+	foreach_out_edge(irn, edge) {
+		ir_node *src = get_edge_src_irn(edge);
+
+		if (is_Phi(src) && handle_phi) {
+			/* get the corresponding cfg predecessor block if phi handling requested */
+			j  = get_irn_pred_pos(src, irn);
+			assert(j >= 0 && "kaputt");
+			user_blocks[i++] = get_nodes_block(get_Block_cfgpred_block(get_nodes_block(src), j));
+		}
+		else
+			user_blocks[i++] = is_Block(src) ? src : get_nodes_block(src);
+	}
+
+	/* in case of only one user: return the block of the user */
+	if (n == 1)
+		return user_blocks[0];
+
+	i = 0;
+	/* search the smallest block dominating all user blocks */
+	do {
+		dom_bl  = node_smallest_common_dominator(user_blocks[i], user_blocks[i + 1]);
+		success = 1;
+
+		/* check if this block dominates all remaining blocks as well */
+		for (j = i + 2; j < n; j++) {
+			if (! block_dominates(dom_bl, user_blocks[j]))
+				success = 0;
+		}
+
+		if (success)
+			break;
+
+		/* inherit the dominator block of the first (i + 1) users */
+		user_blocks[++i] = dom_bl;
+	} while (i < n - 1);
+
+	assert(success && "no block found dominating all users");
+
+	return dom_bl;
+}
+
 
 /* Get the first node in the list of nodes dominated by a given block. */
 ir_node *get_Block_dominated_first(const ir_node *bl)
