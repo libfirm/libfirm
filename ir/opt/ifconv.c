@@ -557,6 +557,9 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 {
 	struct obstack obst;
 
+	if (!get_opt_if_conversion())
+		return;
+
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
 	DB((dbg, LEVEL_1, "Running if-conversion on %+F\n", irg));
