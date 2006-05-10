@@ -397,7 +397,7 @@ void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const mips_regi
 	attr->n_res = n_res;
 	attr->in_req = in_reqs;
 
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 /************************************************************************

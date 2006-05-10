@@ -525,7 +525,7 @@ void init_ppc32_attributes(ir_node *node, int flags,
 	attr->offset_mode  = ppc32_ao_Illegal;
 	attr->data.empty   = NULL;
 
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 

@@ -512,7 +512,7 @@ void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** i
 	attr->n_projs          = 0;
 	attr->default_proj_num = 0;
 
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {
