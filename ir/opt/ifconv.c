@@ -11,8 +11,20 @@
 
 #if 1
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+
 #include <assert.h>
-#include <stdlib.h>
+
+#include "obst.h"
+#include "irnode_t.h"
 #include "cdep.h"
 #include "ircons.h"
 #include "ifconv.h"
@@ -22,12 +34,13 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "return.h"
-#include "xmalloc.h"
+#include "array.h"
 
 // debug
 #include "irdump.h"
-#include "irprintf.h"
+#include "debug.h"
 
+DEBUG_ONLY(firm_dbg_module_t *dbg);
 
 static ir_node* walk_to_projx(ir_node* start)
 {
@@ -48,17 +61,22 @@ static ir_node* walk_to_projx(ir_node* start)
 	}
 }
 
-
+/**
+ * Additional block info.
+ */
 typedef struct block_info {
-	ir_node* phi;
-	int evil;
+	ir_node *phi;   /**< head of the Phi list */
+	int has_pinned; /**< set if the block contains instructions that cannot be moved */
 } block_info;
 
-#define get_block_blockinfo(block) ((block_info*)get_irn_link(block))
+#define get_block_blockinfo(block) ((block_info *)get_irn_link(block))
 
-static int can_empty_block(ir_node* block)
+/**
+ * Returns non-zero if a Block can be emptied.
+ */
+static int can_empty_block(ir_node *block)
 {
-	return !get_block_blockinfo(block)->evil;
+	return !get_block_blockinfo(block)->has_pinned;
 }
 
 
@@ -84,14 +102,13 @@ static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
 	dst_block = get_nodes_block(get_irn_n(src_block, i));
 	set_nodes_block(copy, dst_block);
 
-	ir_fprintf(stderr, "Copying node %+F to block %+F, copy is %+F\n",
-		node, dst_block, copy
-	);
+	DB((dbg, LEVEL_1, "Copying node %+F to block %+F, copy is %+F\n",
+		node, dst_block, copy));
 
 	arity = get_irn_arity(node);
 	for (j = 0; j < arity; ++j) {
 		set_irn_n(copy, j, copy_to(get_irn_n(node, j), src_block, i));
-		ir_fprintf(stderr, "-- pred %d is %+F\n", j, get_irn_n(copy, j));
+		DB((dbg, LEVEL_2, "-- pred %d is %+F\n", j, get_irn_n(copy, j)));
 	}
 	return copy;
 }
@@ -121,12 +138,12 @@ static int fission_block(ir_node* block, int i)
 	if (!has_multiple_cdep(pred_block)) return 0;
 	if (!can_empty_block(pred_block)) return 0;
 
-	ir_fprintf(stderr, "Fissioning block %+F\n", pred_block);
+	DB((dbg, LEVEL_1, "Fissioning block %+F\n", pred_block));
 
 	pred_arity = get_irn_arity(pred_block);
 	arity = get_irn_arity(block);
-	info = get_irn_link(block);
-	ins = xmalloc(sizeof(*ins) * (arity + pred_arity - 1));
+	info = get_block_blockinfo(block);
+	NEW_ARR_A(ir_node *, ins, arity + pred_arity - 1);
 	for (phi = info->phi; phi != NULL; phi = get_irn_link(phi)) {
 		for (j = 0; j < i; ++j) ins[j] = get_irn_n(phi, j);
 		for (j = 0; j < pred_arity; ++j) {
@@ -141,12 +158,11 @@ static int fission_block(ir_node* block, int i)
 	for (j = 0; j < pred_arity; ++j) ins[i + j] = get_irn_n(pred_block, j);
 	for (j = i + 1; j < arity; ++j) ins[pred_arity - 1 + j] = get_irn_n(block, j);
 	set_irn_in(block, arity + pred_arity - 1, ins);
-	xfree(ins);
 
 	/* Kill all Phis in the fissioned block
 	 * This is to make sure they're not kept alive
 	 */
-	info = get_irn_link(pred_block);
+	info = get_block_blockinfo(pred_block);
 	phi = info->phi;
 	while (phi != NULL) {
 		ir_node* next = get_irn_link(phi);
@@ -163,9 +179,11 @@ static int fission_block(ir_node* block, int i)
 static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
 {
 	int arity = get_irn_arity(node);
-	ir_node** ins = xmalloc(sizeof(*ins) * (arity - 1));
+	ir_node **ins;
 	int k;
 	int l;
+
+	NEW_ARR_A(ir_node *, ins, arity - 1);
 
 	l = 0;
 	for (k = 0; k < i; ++k) ins[l++] = get_irn_n(node, k);
@@ -174,8 +192,6 @@ static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
 	ins[l++] = new_pred;
 	assert(l == arity - 1);
 	set_irn_in(node, l, ins);
-
-	xfree(ins);
 }
 
 
@@ -185,7 +201,7 @@ static void if_conv_walker(ir_node* block, void* env)
 	int arity;
 	int i;
 
-	// Bail out, if there are no Phis at all
+	/* Bail out, if there are no Phis at all */
 	if (get_block_blockinfo(block)->phi == NULL) return;
 
 restart:
@@ -209,9 +225,9 @@ restart:
 		cond = pred;
 
 		if (!can_empty_block(get_nodes_block(get_irn_n(block, i)))) {
-			ir_fprintf(stderr, "Cannot empty block %+F\n",
+			DB((dbg, LEVEL_1, "Cannot empty block %+F\n",
 				get_nodes_block(get_irn_n(block, i))
-			);
+			));
 			continue;
 		}
 
@@ -227,12 +243,10 @@ restart:
 			pred = get_Proj_pred(projx1);
 			if (get_irn_op(pred) != op_Cond || get_irn_mode(get_Cond_selector(pred)) != mode_b) continue;
 			if (pred != cond) continue;
-			ir_fprintf(stderr, "Found Cond %+F with proj %+F and %+F\n", cond, projx0, projx1);
+			DB((dbg, LEVEL_1, "Found Cond %+F with proj %+F and %+F\n", cond, projx0, projx1));
 
 			if (!can_empty_block(get_nodes_block(get_irn_n(block, j)))) {
-				ir_fprintf(stderr, "Cannot empty block %+F\n",
-					get_nodes_block(get_irn_n(block, j))
-				);
+				DB((dbg, LEVEL_1, "Cannot empty %+F\n",	get_nodes_block(get_irn_n(block, j))));
 				continue;
 			}
 
@@ -249,14 +263,14 @@ restart:
 					assert(get_irn_n(phi, i) == get_irn_n(phi, j));
 					// fake memory Psi
 					psi = get_irn_n(phi, i);
-					ir_fprintf(stderr, "Handling memory Phi %+F\n", phi);
+					DB((dbg, LEVEL_2, "Handling memory Phi %+F\n", phi));
 				} else {
 					ir_node* val_i = get_irn_n(phi, i);
 					ir_node* val_j = get_irn_n(phi, j);
 
 					if (val_i == val_j) {
 						psi = val_i;
-						ir_fprintf(stderr, "Generating no psi, because both values are equal\n");
+						DB((dbg, LEVEL_2,  "Generating no psi, because both values are equal\n"));
 					} else {
 						if (get_Proj_proj(projx0) == pn_Cond_true) {
 							vals[0] = val_i;
@@ -268,7 +282,7 @@ restart:
 						psi = new_r_Psi(
 							current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
 						);
-						ir_fprintf(stderr, "Generating %+F for %+F\n", psi, phi);
+						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
 					}
 				}
 
@@ -285,8 +299,8 @@ restart:
 			exchange(get_nodes_block(get_irn_n(block, j)), psi_block);
 
 			if (arity == 2) {
-				ir_fprintf(stderr, "Welding block %+F to %+F\n", block, psi_block);
-				get_block_blockinfo(psi_block)->evil |=	get_block_blockinfo(block)->evil;
+				DB((dbg, LEVEL_1,  "Welding block %+F to %+F\n", block, psi_block));
+				get_block_blockinfo(psi_block)->has_pinned |=	get_block_blockinfo(block)->has_pinned;
 				exchange(block, psi_block);
 				return;
 			} else {
@@ -297,51 +311,47 @@ restart:
 	}
 }
 
-
-static void init_block_link(ir_node* block, void* env)
+/**
+ * Block walker: add additional data
+ */
+static void init_block_link(ir_node *block, void *env)
 {
-	block_info* bi = xmalloc(sizeof(*bi));
+	struct obstack *obst = env;
+	block_info *bi = obstack_alloc(obst, sizeof(*bi));
 
 	bi->phi = NULL;
-	bi->evil = 0;
+	bi->has_pinned = 0;
 	set_irn_link(block, bi);
 }
 
 
-/* Daisy-chain all phis in a block
- * If a non-movable node is encountered set the evil flag
+/**
+ * Daisy-chain all phis in a block
+ * If a non-movable node is encountered set the has_pinned flag
  */
-static void collect_phis(ir_node* node, void* env)
+static void collect_phis(ir_node *node, void *env)
 {
-	ir_node* block;
-	block_info* bi;
+	if (is_Phi(node)) {
+		ir_node *block = get_nodes_block(node);
+		block_info *bi = get_block_blockinfo(block);
 
-	if (get_irn_op(node) == op_Block) return;
-
-	block = get_nodes_block(node);
-	bi = get_irn_link(block);
-
-	if (get_irn_op(node) == op_Phi) {
 		set_irn_link(node, bi->phi);
 		bi->phi = node;
-	} else {
-#if 1
-		if (get_irn_op(node) == op_Call ||
-				get_irn_op(node) == op_Store ||
-				get_irn_op(node) == op_Load) {
-			ir_fprintf(stderr, "Node %+F in block %+F is unmovable\n", node, block);
-			bi->evil = 1;
+	}
+	else {
+		if (is_no_Block(node) && get_irn_pinned(node) == op_pin_state_pinned) {
+			/*
+			 * Ignore control flow nodes, these will be removed.
+			 * This ignores Raise. That is surely bad. FIXME.
+			 */
+			if (! is_cfop(node)) {
+				ir_node *block = get_nodes_block(node);
+				block_info *bi = get_block_blockinfo(block);
+
+				DB((dbg, LEVEL_2, "Node %+F in block %+F is unmovable\n", node, block));
+				bi->has_pinned = 1;
+			}
 		}
-#else
-		if (get_irn_op(node) != op_Jmp &&
-				get_irn_op(node) != op_Proj &&
-				get_irn_op(node) != op_Cond &&
-				get_irn_op(node) != op_Cmp &&
-		    !mode_is_datab(get_irn_mode(node))) {
-    	ir_fprintf(stderr, "Node %+F in block %+F is unmovable\n", node, block);
-			bi->evil = 1;
-		}
-#endif
 	}
 }
 
@@ -376,10 +386,10 @@ static ir_node* fold_psi(ir_node* psi)
 	}
 
 	if (arity == new_arity) return psi; // no attached Psis found
-	ir_fprintf(stderr, "Folding %+F from %d to %d conds\n", psi, arity, new_arity);
+	DB((dbg, LEVEL_1, "Folding %+F from %d to %d conds\n", psi, arity, new_arity));
 
-	conds = xmalloc(new_arity * sizeof(*conds));
-	vals = xmalloc((new_arity + 1) * sizeof(*vals));
+	NEW_ARR_A(ir_node *, conds, new_arity);
+	NEW_ARR_A(ir_node *, vals, new_arity + 1);
 	j = 0;
 	for (i = 0; i < arity; ++i) {
 		ir_node* c = get_Psi_cond(psi, i);
@@ -420,10 +430,8 @@ static ir_node* fold_psi(ir_node* psi)
 		current_ir_graph, get_nodes_block(psi),
 		new_arity, conds, vals, get_irn_mode(psi)
 	);
-	ir_fprintf(stderr, "Folded %+F into new %+F\n", psi, new_psi);
+	DB((dbg, LEVEL_1, "Folded %+F into new %+F\n", psi, new_psi));
 	exchange(psi, new_psi);
-	xfree(vals);
-	xfree(conds);
 	return new_psi;
 }
 
@@ -445,32 +453,30 @@ static void meld_psi(ir_node* psi)
 
 	new_arity = 1;
 	val = get_Psi_val(psi, 0);
-	ir_fprintf(stderr, "Pred  0 of %+F is %+F\n", psi, val);
+	DB((dbg, LEVEL_1, "Pred  0 of %+F is %+F\n", psi, val));
 	for (i = 1; i < arity; ++i) {
 		ir_node* v = get_Psi_val(psi, i);
-		ir_fprintf(stderr, "Pred %2d of %+F is %+F\n", i, psi, v);
+		DB((dbg, LEVEL_1, "Pred %2d of %+F is %+F\n", i, psi, v));
 		if (val != v) {
 			val = v;
 			++new_arity;
 		}
 	}
-	ir_fprintf(stderr, "Default of %+F is %+F\n", psi, get_Psi_default(psi));
+	DB((dbg, LEVEL_1, "Default of %+F is %+F\n", psi, get_Psi_default(psi)));
 	if (val == get_Psi_default(psi)) --new_arity;
 
-	ir_fprintf(stderr, "Melding Psi %+F from %d conds to %d\n",
-		psi, arity, new_arity
-	);
+	DB((dbg, LEVEL_1, "Melding Psi %+F from %d conds to %d\n", psi, arity, new_arity));
 
 	if (new_arity == arity) return;
 
-	// If all data inputs of the Psi are equal, exchange the Psi with that value
+	/* If all data inputs of the Psi are equal, exchange the Psi with that value */
 	if (new_arity == 0) {
 		exchange(psi, val);
 		return;
 	}
 
-	conds = xmalloc(sizeof(*conds) * new_arity);
-	vals = xmalloc(sizeof(*vals) * (new_arity + 1));
+	NEW_ARR_A(ir_node *, conds, new_arity);
+	NEW_ARR_A(ir_node *, vals, new_arity + 1);
 	cond = get_Psi_cond(psi, 0);
 	val = get_Psi_val(psi, 0);
 	j = 0;
@@ -500,7 +506,7 @@ static void meld_psi(ir_node* psi)
 		current_ir_graph, get_nodes_block(psi),
 		new_arity, conds, vals, get_irn_mode(psi)
 	);
-	ir_fprintf(stderr, "Molded %+F into %+F\n", psi, new_psi);
+	DB((dbg, LEVEL_1, "Molded %+F into %+F\n", psi, new_psi));
 	exchange(psi, new_psi);
 }
 
@@ -519,7 +525,11 @@ static void optimise_psis(ir_node* node, void* env)
 
 void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 {
-	ir_fprintf(stderr, "Running if-conversion on %+F\n", irg);
+	struct obstack obst;
+
+	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
+
+	DB((dbg, LEVEL_1, "Running if-conversion on %+F\n", irg));
 
 	dump_ir_block_graph(irg, "_00_pre");
 
@@ -529,9 +539,10 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 	dump_ir_block_graph(irg, "_01_normal");
 
 	compute_cdep(irg);
-	compute_doms(irg);
+	assure_doms(irg);
 
-	irg_block_walk_graph(irg, init_block_link, NULL, NULL);
+	obstack_init(&obst);
+	irg_block_walk_graph(irg, init_block_link, NULL, &obst);
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 	irg_block_walk_graph(irg, NULL, if_conv_walker, NULL);
 
@@ -541,6 +552,8 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 	irg_walk_graph(irg, NULL, optimise_psis, NULL);
 
 	dump_ir_block_graph(irg, "_03_postifconv");
+
+	obstack_free(&obst, NULL);
 
 	free_dom(irg);
 	free_cdep(irg);
@@ -567,9 +580,6 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 #endif
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
-#endif
-#ifdef HAVE_xmalloc_H
-#include <xmalloc.h>
 #endif
 
 #include "irgraph_t.h"
