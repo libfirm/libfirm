@@ -160,7 +160,7 @@ static int firm_emit(lc_appendable_t *app,
         else
           snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
             get_mode_name(get_irn_mode(X)));
-        snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(X));
+        snprintf(add, sizeof(add), "[%ld:%d]", get_irn_node_nr(X), get_irn_idx(X));
       }
       break;
     case k_ir_mode:
@@ -290,11 +290,10 @@ lc_arg_env_t *firm_get_arg_env(void)
     for (i = 0; i < sizeof(args)/sizeof(args[0]); ++i)
       lc_arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
-    lc_arg_register(env, "firm:ident", 'I', &ident_handler);
-    lc_arg_register(env, "firm:indent", '>', &indent_handler);
-    lc_arg_register(env, "firm:pnc",      '=', &pnc_handler);
+    lc_arg_register(env, "firm:ident",    'I', &ident_handler);
+    lc_arg_register(env, "firm:indent",   '>', &indent_handler);
     lc_arg_register(env, "firm:dbg_info", 'G', &debug_handler);
-    lc_arg_register(env, "firm:bitset", 'B', &bitset_handler);
+    lc_arg_register(env, "firm:bitset",   'B', &bitset_handler);
   }
 
   return env;
