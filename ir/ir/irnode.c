@@ -142,7 +142,7 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res->op       = op;
   res->mode     = mode;
   res->visited  = 0;
-  res->node_idx = get_irg_next_node_idx(irg);
+  res->node_idx = irg_register_node_idx(irg, res);
   res->link     = NULL;
   if (arity < 0) {
     res->in = NEW_ARR_F (ir_node *, 1);  /* 1: space for block */

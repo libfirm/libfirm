@@ -37,6 +37,8 @@
 #include "iredges_t.h"
 #include "type_t.h"
 
+#define INITIAL_IDX_IRN_MAP_SIZE 1024
+
 /**
  * Indicates, whether additional data can be registered to graphs.
  * If set to 1, this is not possible anymore.
@@ -137,6 +139,10 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->kind = k_ir_graph;
 
   edges_init_graph(res);
+
+  /* initialize the idx->node map. */
+  res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);
+  memset(res->idx_irn_map, 0, INITIAL_IDX_IRN_MAP_SIZE * sizeof(res->idx_irn_map[0]));
 
   /* inform statistics here, as blocks will be already build on this graph */
   hook_new_graph(res, ent);
@@ -266,6 +272,10 @@ ir_graph *new_const_code_irg(void) {
   ir_node  *end, *start_block, *start, *projX;
 
   res = alloc_graph();
+
+  /* initialize the idx->node map. */
+  res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);
+  memset(res->idx_irn_map, 0, INITIAL_IDX_IRN_MAP_SIZE * sizeof(res->idx_irn_map[0]));
 
   /* inform statistics here, as blocks will be already build on this graph */
   hook_new_graph(res, NULL);

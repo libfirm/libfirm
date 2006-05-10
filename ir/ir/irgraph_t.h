@@ -141,7 +141,8 @@ struct ir_graph {
   unsigned long block_visited;       /**< same as visited, for a complete block */
   unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
                                           updated after every walk */
-  irg_edge_info_t edge_info;  /**< edge info for automatic outs */
+  irg_edge_info_t edge_info;         /**< edge info for automatic outs */
+  ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 #ifdef DEBUG_libfirm
   int             n_outs;            /**< Size wasted for outs */
@@ -524,11 +525,20 @@ _get_irg_estimated_node_cnt(const ir_graph *irg) {
 }
 
 /**
- * Returns the next IR node index for the given graph.
+ * Allocates a new idx in the irg for the node and adds the irn to the idx -> irn map.
+ * @param irg The graph.
+ * @param irn The node.
+ * @return    The index allocated for the node.
  */
 static INLINE unsigned
-get_irg_next_node_idx(ir_graph *irg) {
-  return irg->last_node_idx++;
+irg_register_node_idx(ir_graph *irg, ir_node *irn)
+{
+	unsigned idx = irg->last_node_idx++;
+	if(idx >= (unsigned) ARR_LEN(irg->idx_irn_map))
+		ARR_RESIZE(ir_node *, irg->idx_irn_map, idx + 1);
+
+	irg->idx_irn_map[idx] = irn;
+	return idx;
 }
 
 /**
@@ -537,9 +547,24 @@ get_irg_next_node_idx(ir_graph *irg) {
  */
 static INLINE void
 irg_kill_node(ir_graph *irg, ir_node *n) {
-  if (get_irn_idx(n) + 1 == irg->last_node_idx)
-    --irg->last_node_idx;
-  obstack_free(irg->obst, n);
+	unsigned idx = get_irn_idx(n);
+	if (idx + 1 == irg->last_node_idx)
+		--irg->last_node_idx;
+	irg->idx_irn_map[idx] = NULL;
+	obstack_free(irg->obst, n);
+}
+
+/**
+ * Get the node for an index.
+ * @param irg The graph.
+ * @param idx The index you want the node for.
+ * @return    The node with that index or NULL, if there is no node with that index.
+ * @note      The node you got might be dead.
+ */
+static INLINE ir_node *
+get_idx_irn(ir_graph *irg, unsigned idx) {
+	assert(idx < (unsigned) ARR_LEN(irg->idx_irn_map));
+	return irg->idx_irn_map[idx];
 }
 
 #define get_interprocedural_view()            _get_interprocedural_view()
