@@ -2063,11 +2063,13 @@ static ir_node *gen_be_StackParam(ia32_transform_env_t *env) {
 	entity  *ent    = be_get_frame_entity(node);
 	ir_mode *mode   = env->mode;
 
+#if 0
 	/* If the StackParam has only one user ->     */
 	/* put it in the Block where the user resides */
 	if (get_irn_n_edges(node) == 1) {
 		env->block = get_nodes_block(get_edge_src_irn(get_irn_out_edge_first(node)));
 	}
+#endif
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
