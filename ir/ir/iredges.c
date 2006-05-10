@@ -359,7 +359,7 @@ void edges_activate(ir_graph *irg)
 	info->activated = 1;
 	edges_init_graph(irg);
 	irg_walk_graph(irg, init_lh_walker, build_edges_walker, irg);
-	irg_walk_anchors(irg, init_lh_walker, build_edges_walker, irg);
+	irg_walk_anchors(irg, init_lh_walker, NULL, irg);
 	visit_all_identities(irg, visitor, irg);
 }
 
