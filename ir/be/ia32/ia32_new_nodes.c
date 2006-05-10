@@ -1214,7 +1214,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
 	set_ia32_out_req_all(node, out_reqs);
 
 	attr->data.n_res = n_res;
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 /***************************************************************************************
