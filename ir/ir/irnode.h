@@ -132,6 +132,8 @@ opcode        get_irn_opcode        (const ir_node *node);
 const char   *get_irn_opname        (const ir_node *node);
 /** Get the ident for a string representation of the opcode. */
 ident        *get_irn_opident       (const ir_node *node);
+/** If arg is an argument of the node, returns it's position, -1 otherwise */
+int           get_irn_pred_pos      (ir_node *node, ir_node *arg);
 /** Gets the visited counter of a node. */
 unsigned long get_irn_visited (const ir_node *node);
 /** Sets the visited counter of a node. */
