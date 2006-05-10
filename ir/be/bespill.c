@@ -180,7 +180,6 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, unsigned visited_nr, set *already_visited_phis) {
 	int         i, n      = get_irn_arity(phi);
 	ir_graph    *irg      = senv->chordal_env->irg;
-	ir_mode     *phi_mode = get_irn_mode(phi);
 	ir_node     *bl       = get_nodes_block(phi);
 	ir_node     **ins, *phi_spill;
 	phi_spill_assoc_t key;
@@ -192,7 +191,7 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, 
 	/* build a new PhiM */
 	NEW_ARR_A(ir_node *, ins, n);
 	for (i = 0; i < n; ++i) {
-		ins[i]    = new_rd_Unknown(irg, phi_mode);
+		ins[i]    = new_r_Bad(irg);
 	}
 	phi_spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
 	key.phi   = phi;
