@@ -188,6 +188,19 @@ typedef enum _arch_irn_class_t {
 } arch_irn_class_t;
 
 /**
+ * An inverse operation returned by the backend
+ */
+typedef struct _arch_inverse_t {
+  int        n; /**< count of nodes returned in nodes array */
+  int        costs; /**< costs of this remat */
+
+  /**> nodes for this inverse operation. shall be in
+   *  schedule order. last element is the target value
+   */
+  ir_node  **nodes;
+} arch_inverse_t;
+
+/**
  * Some flags describing a node in more detail.
  */
 typedef enum _arch_irn_flags_t {
@@ -271,6 +284,19 @@ struct _arch_irn_ops_if_t {
    * @param offset The offset of the node's stack frame entity.
    */
   void (*set_frame_offset)(const void *self, ir_node *irn, int offset);
+
+  /**
+   * Returns an inverse operation which yields the i-th argument
+   * of the given node as result.
+   *
+   * @param irn       The original operation
+   * @param i         Index of the argument we want the inverse oparation to yield
+   * @param inverse   struct to be filled with the resulting inverse op
+   * @param obstack   The obstack to use for allocation of the returned nodes array
+   * @return          The inverse operation or NULL if operation invertible
+   */
+  arch_inverse_t *(*get_inverse)(const void *self, const ir_node * irn, int i, arch_inverse_t * inverse, struct obstack * obstack);
+
 };
 
 /**
@@ -283,6 +309,8 @@ struct _arch_irn_ops_t {
 extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias);
 
 extern entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);
+
+extern arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node * irn, int i, arch_inverse_t * inverse, struct obstack * obstack);
 
 /**
  * Get the register requirements for a node.
