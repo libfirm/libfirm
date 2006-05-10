@@ -255,35 +255,28 @@ restart:
 			psi_block = get_nodes_block(cond);
 			phi = get_block_blockinfo(block)->phi;
 			do {
-				// Don't generate PsiMs
-				if (get_irn_mode(phi) == mode_M) {
-					/* Something is very fishy if to predecessors of a PhiM point into the
-					 * block but not at the same memory node
-					 */
-					assert(get_irn_n(phi, i) == get_irn_n(phi, j));
-					// fake memory Psi
-					psi = get_irn_n(phi, i);
-					DB((dbg, LEVEL_2, "Handling memory Phi %+F\n", phi));
-				} else {
-					ir_node* val_i = get_irn_n(phi, i);
-					ir_node* val_j = get_irn_n(phi, j);
+				ir_node* val_i = get_irn_n(phi, i);
+				ir_node* val_j = get_irn_n(phi, j);
 
-					if (val_i == val_j) {
-						psi = val_i;
-						DB((dbg, LEVEL_2,  "Generating no psi, because both values are equal\n"));
+				if (val_i == val_j) {
+					psi = val_i;
+					DB((dbg, LEVEL_2,  "Generating no psi, because both values are equal\n"));
+				} else {
+					/* Something is very fishy if two predecessors of a PhiM point into
+					 * one block, but not at the same memory node
+					 */
+					assert(get_irn_mode(phi) != mode_M);
+					if (get_Proj_proj(projx0) == pn_Cond_true) {
+						vals[0] = val_i;
+						vals[1] = val_j;
 					} else {
-						if (get_Proj_proj(projx0) == pn_Cond_true) {
-							vals[0] = val_i;
-							vals[1] = val_j;
-						} else {
-							vals[0] = val_j;
-							vals[1] = val_i;
-						}
-						psi = new_r_Psi(
-							current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
-						);
-						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
+						vals[0] = val_j;
+						vals[1] = val_i;
 					}
+					psi = new_r_Psi(
+						current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
+					);
+					DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
 				}
 
 				if (arity == 2) {
@@ -439,7 +432,7 @@ static ir_node* fold_psi(ir_node* psi)
 /*
  * Merge consecutive psi inputs if the data inputs are the same
  */
-static void meld_psi(ir_node* psi)
+static ir_node* meld_psi(ir_node* psi)
 {
 	int arity = get_Psi_n_conds(psi);
 	int new_arity;
@@ -467,12 +460,12 @@ static void meld_psi(ir_node* psi)
 
 	DB((dbg, LEVEL_1, "Melding Psi %+F from %d conds to %d\n", psi, arity, new_arity));
 
-	if (new_arity == arity) return;
+	if (new_arity == arity) return psi;
 
 	/* If all data inputs of the Psi are equal, exchange the Psi with that value */
 	if (new_arity == 0) {
 		exchange(psi, val);
-		return;
+		return val;
 	}
 
 	NEW_ARR_A(ir_node *, conds, new_arity);
@@ -508,6 +501,40 @@ static void meld_psi(ir_node* psi)
 	);
 	DB((dbg, LEVEL_1, "Molded %+F into %+F\n", psi, new_psi));
 	exchange(psi, new_psi);
+	return new_psi;
+}
+
+
+/**
+ * Split a Psi with multiple conditions into multiple Psis with one condtition
+ * each
+ */
+static ir_node* split_psi(ir_node* psi)
+{
+	int arity = get_Psi_n_conds(psi);
+	ir_mode* mode;
+	ir_node* block;
+	ir_node* rval;
+	int i;
+
+	if (arity == 1) return psi;
+
+	mode = get_irn_mode(psi);
+	block = get_nodes_block(psi);
+	rval = get_Psi_default(psi);
+	for (i = arity - 1; i >= 0; --i) {
+		ir_node* conds[1];
+		ir_node* vals[2];
+
+		conds[0] = get_Psi_cond(psi, i);
+		vals[0] = get_Psi_val(psi, i);
+		vals[1] = rval;
+		rval = new_r_Psi(
+			current_ir_graph, block, 1, conds, vals, mode
+		);
+	}
+	exchange(psi, rval);
+	return rval;
 }
 
 
@@ -518,7 +545,10 @@ static void optimise_psis(ir_node* node, void* env)
 	node = fold_psi(node);
 #endif
 #if 1
-	meld_psi(node);
+	node = meld_psi(node);
+#endif
+#if 1
+	node = split_psi(node);
 #endif
 }
 
