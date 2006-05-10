@@ -497,6 +497,7 @@ ia32_irn_ops_t ia32_irn_ops = {
  */
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
+	dom_front_info_t *dom;
 	DEBUG_ONLY(firm_dbg_module_t *old_mod = cg->mod;)
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
@@ -506,7 +507,9 @@ static void ia32_prepare_graph(void *self) {
 
 	/* 2nd: transform all remaining nodes */
 	ia32_register_transformers();
+	dom = be_compute_dominance_frontiers(cg->irg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
+	be_free_dominance_frontiers(dom);
 	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
 	/* 3rd: optimize address mode */
@@ -616,7 +619,7 @@ insert_copy:
 		ia32_transform_sub_to_neg_add(irn, cg);
 
 		/* transform a LEA into an Add if possible */
-		//ia32_transform_lea_to_add(irn, cg);
+		ia32_transform_lea_to_add(irn, cg);
 	}
 end:
 
