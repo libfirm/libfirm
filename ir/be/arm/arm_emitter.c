@@ -736,9 +736,17 @@ static void emit_be_Perm(const ir_node* irn, arm_emit_env_t *emit_env) {
 	const lc_arg_env_t *arm_env = arm_get_arg_env();
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	lc_efprintf(arm_env, F, "\teor %1S, %1S, %2S\t\t\t/* begin Perm(%1S, %2S) */\n", irn, irn, irn, irn, irn);
-	lc_efprintf(arm_env, F, "\teor %2S, %1S, %2S\n", irn, irn, irn);
-	lc_efprintf(arm_env, F, "\teor %1S, %1S, %2S\t\t\t/* end Perm(%1S, %2S) */\n", irn, irn, irn, irn, irn);
+	lc_esnprintf(arm_env, cmd_buf, SNPRINTF_BUF_LEN, "eor %1S, %1S, %2S", irn, irn, irn);
+	lc_esnprintf(arm_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* begin Perm(%1S, %2S) */", irn, irn);
+	arm_fprintf_format(F, cmd_buf, cmnt_buf, irn);
+
+	lc_esnprintf(arm_env, cmd_buf, SNPRINTF_BUF_LEN, "eor %2S, %1S, %2S", irn, irn, irn);
+	lc_esnprintf(arm_env, cmnt_buf, SNPRINTF_BUF_LEN, " ");
+	arm_fprintf_format(F, cmd_buf, cmnt_buf, irn);
+
+	lc_esnprintf(arm_env, cmd_buf, SNPRINTF_BUF_LEN, "eor %1S, %1S, %2S", irn, irn, irn);
+	lc_esnprintf(arm_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* end Perm(%1S, %2S) */", irn, irn);
+	arm_fprintf_format(F, cmd_buf, cmnt_buf, irn);
 }
 
 static void emit_be_StackParam(const ir_node *irn, arm_emit_env_t *emit_env) {
