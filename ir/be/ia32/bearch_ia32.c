@@ -462,7 +462,115 @@ static ir_type *ia32_abi_get_between_type(void *self)
  * @return          The inverse operation or NULL if operation invertible
  */
 static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obst) {
-	return NULL;
+	ir_graph *irg;
+	ir_mode  *mode;
+	ir_node  *block, *noreg, *nomem;
+	int      pnc;
+
+	/* we cannot invert non-ia32 irns */
+	if (! is_ia32_irn(irn))
+		return NULL;
+
+	/* operand must always be a real operand (not base, index or mem) */
+	if (i != 2 && i != 3)
+		return NULL;
+
+	/* we don't invert address mode operations */
+	if (get_ia32_op_type(irn) != ia32_Normal)
+		return NULL;
+
+	irg   = get_irn_irg(irn);
+	block = get_nodes_block(irn);
+	mode  = get_ia32_res_mode(irn);
+	noreg = get_irn_n(irn, 0);
+	nomem = new_r_NoMem(irg);
+
+	/* initialize structure */
+	inverse->nodes = obstack_alloc(obst, sizeof(inverse->nodes[0]));
+	inverse->costs = 0;
+	inverse->n     = 2;
+
+	switch (get_irn_opcode(irn)) {
+		case iro_ia32_Add:
+			if (get_ia32_immop_type(irn) == ia32_ImmConst) {
+				/* we have an add with a const here */
+				/* invers == add with negated const */
+				inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				pnc               = pn_ia32_Add_res;
+				inverse->costs   += 1;
+				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
+				set_ia32_Immop_tarval(inverse->nodes[0], tarval_neg(get_ia32_Immop_tarval(irn)));
+				set_ia32_commutative(inverse->nodes[0]);
+			}
+			else if (get_ia32_immop_type(irn) == ia32_ImmSymConst) {
+				/* we have an add with a symconst here */
+				/* invers == sub with const */
+				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				pnc               = pn_ia32_Sub_res;
+				inverse->costs   += 5;
+				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
+			}
+			else {
+				/* normal add: inverse == sub */
+				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, i ^ 1), nomem);
+				pnc               = pn_ia32_Sub_res;
+				inverse->costs   += 5;
+			}
+			break;
+		case iro_ia32_Sub:
+			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
+				/* we have a sub with a const/symconst here */
+				/* invers == add with this const */
+				inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				pnc               = pn_ia32_Add_res;
+				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
+				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
+			}
+			else {
+				/* normal sub */
+				if (i == 2) {
+					inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, 3), nomem);
+				}
+				else {
+					inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, get_irn_n(irn, 2), (ir_node *)irn, nomem);
+				}
+				pnc             = pn_ia32_Sub_res;
+				inverse->costs += 1;
+			}
+			break;
+		case iro_ia32_Eor:
+			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
+				/* xor with const: inverse = xor */
+				inverse->nodes[0] = new_rd_ia32_Eor(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				pnc               = pn_ia32_Eor_res;
+				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
+				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
+			}
+			else {
+				/* normal xor */
+				inverse->nodes[0] = new_rd_ia32_Eor(NULL, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, i), nomem);
+				pnc               = pn_ia32_Eor_res;
+				inverse->costs   += 1;
+			}
+			break;
+		case iro_ia32_Not:
+			inverse->nodes[0] = new_rd_ia32_Not(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), nomem);
+			pnc = pn_ia32_Not_res;
+			inverse->costs   += 1;
+			break;
+		case iro_ia32_Minus:
+			inverse->nodes[0] = new_rd_ia32_Minus(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), nomem);
+			pnc = pn_ia32_Minus_res;
+			inverse->costs   += 1;
+			break;
+		default:
+			/* inverse operation not supported */
+			return NULL;
+	}
+
+	inverse->nodes[1] = new_r_Proj(irg, block, inverse->nodes[0], mode, pnc);
+
+	return inverse;
 }
 
 static const be_abi_callbacks_t ia32_abi_callbacks = {
