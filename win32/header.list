@@ -122,5 +122,8 @@ ir\arch\archop.h
 
 ir\lower\lower_intrinsics.h
 ir\lower\lower_calls.h
+ir\lower\lower_dw.h
+
+ir\be\be.h
 
 win32\firm_config.h
