@@ -1138,6 +1138,8 @@ static void *ia32_init(FILE *file_handle) {
 	isa->name_obst_size = 0;
 #endif /* NDEBUG */
 
+	ia32_handle_intrinsics();
+	ia32_switch_section(NULL, NO_SECTION);
 	fprintf(isa->out, "\t.intel_syntax\n");
 
 	inited = 1;
