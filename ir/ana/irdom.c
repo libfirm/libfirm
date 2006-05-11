@@ -228,7 +228,7 @@ ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi) {
 			/* get the corresponding cfg predecessor block if phi handling requested */
 			j  = get_irn_pred_pos(src, irn);
 			assert(j >= 0 && "kaputt");
-			user_blocks[i++] = get_nodes_block(get_Block_cfgpred_block(get_nodes_block(src), j));
+			user_blocks[i++] = get_Block_cfgpred_block(get_nodes_block(src), j);
 		}
 		else
 			user_blocks[i++] = is_Block(src) ? src : get_nodes_block(src);
