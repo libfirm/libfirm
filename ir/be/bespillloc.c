@@ -1,5 +1,4 @@
 #include "obst.h"
-#include "set.h"
 #include "pset.h"
 #include "irprintf_t.h"
 #include "irgraph.h"
@@ -11,8 +10,6 @@
 #include "irprintf.h"
 
 #include "obst.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include "bitset.h"
 
 #include "irprog.h"
@@ -53,58 +50,154 @@
 #include "beabi.h"
 #include "belower.h"
 #include "bestat.h"
-
 #include "typewalk.h"
+#include "error.h"
 
 
-typedef struct _spilloc_env_t{
 
+typedef struct _spilloc_env_t {
 	struct obstack ob;
+	pset *ents;
+	int entcnt;
 	ir_graph *irg;
-
-	pset *adjlst;
-	spill_env_t *senv;
-
+	pmap *nodents;
+	pmap *afgraph;
 } spilloc_env_t;
 
 
-typedef struct Edge {
-	int nodenumber;
-	struct Edge *next;
-} edge;
-
-typedef struct {
-	int count;
-	int nodenumber;
+typedef struct _vertex {
 	entity *ent;
-	edge *link;
+	int node_nr;
+	pset *edges;
 } vertex;
 
-typedef struct {int wt_vif; int wt_cif;} wheights;
 
 
-void get_ents_all()
-{
-	// create new elements in graph representing data structure
-	//block_info_t *res = obstack_alloc(ob, sizeof(*res));
-	//obstack_grow(&spi.ob, &loc, sizeof(loc));
+typedef struct _edge {
+	entity *ent;
+	unsigned int wt_val_interfere;
+	unsigned int wt_con_interfere;
+	struct edge *next;
+} edge;
+
+
+#define STRUCTSIZE sizeof(vertex)
+#define NIL (-1)
+#define ABSENT (-2)
+
+static void add_ent(entity *ent, void *env) {
+	spilloc_env_t *spi = env;
+	entity *e = obstack_alloc(&spi->ob, sizeof(*e));
+
+	e = ent;
+	pset_insert_ptr(spi->ents, e);
+	spi->entcnt++;
 }
 
-void be_spill_loc(const be_chordal_env_t *chordal_env)
-{
+static void data_init(spilloc_env_t *env) {
+	pset *ps = pset_new_ptr_default();
+	entity *e;
+
+	foreach_pset(env->ents, e) {
+		pmap_insert(env->nodents, e, ps);
+	}
+}
+
+static void get_entity_nodes(ir_node *irn, void *env) {
+	entity *e, *ent;
+	spilloc_env_t *spi = env;
+
+	e = get_irn_entity_attr(irn);
+	//get_entity_additional_properties();
+	if (e)
+	{
+		foreach_pset(spi->ents, ent) {
+
+ 			if ((ent->nr == e->nr) && (ent->ld_name == e->ld_name) )
+			{
+				pset *ps = pmap_get(spi->nodents, ent);
+				if (ps && (!pset_find_ptr(pmap_get(spi->nodents, ent),irn))) {
+					pset_insert_ptr(pmap_get(spi->nodents, ent), irn);
+				}
+			}
+		}
+	}
+}
+
+pset *get_entity_irn(entity *ent, void *env) {
+	spilloc_env_t *spi = env;
+
+	pset *pirn = pmap_get(spi->nodents, ent);
+	if (pirn)
+	{
+		return pirn;
+	}
+	return NULL;
+}
+
+int entities_interfere(entity *e1, entity *e2, void *env) {
+	spilloc_env_t *spi = env;
+	ir_node *n1, *n2;
+
+	pset *pe1 = pmap_get(spi->nodents, e1);
+	pset *pe2 = pmap_get(spi->nodents, e2);
+
+	foreach_pset(pe1, n1) {
+		foreach_pset(pe2, n2) {
+			if (values_interfere(n1, n2)) return 1;
+		}
+	}
+	return 0;
+}
+
+static void set_aff_graph(void *env) {
+	spilloc_env_t *spi = env;
+	entity *e, *cmp;
+	vertex *v;
+	int i = 1;
+
+	foreach_pset(spi->ents, e) {
+		vertex *ver = obstack_alloc(&spi->ob, sizeof(*ver));
+		ver->edges = pset_new_ptr_default();
+		ver->ent = e;
+		ver->node_nr = i;
+		pmap_insert(spi->afgraph, e, ver);
+		i++;
+	}
+
+	foreach_pset(spi->ents, e) {
+		foreach_pset(spi->ents, cmp) {
+			if (entities_interfere(e, cmp, &spi) == 1) {
+				v = pmap_get(spi->afgraph, e);
+				pset_insert_ptr(v->edges, cmp);
+			}
+		}
+	}
+}
+
+void be_spill_loc(const be_chordal_env_t *chordal_env) {
 
 	spilloc_env_t spi;
 
+	// create initial graph representing data structure
 	obstack_init(&spi.ob);
+	spi.ents = pset_new_ptr_default();
+	spi.entcnt = 0;
+	spi.irg = chordal_env->irg;
+	spi.nodents = pmap_create();
+	spi.afgraph = pmap_create();
 
-	//obstack_grow(&spi.ob, &loc, sizeof(loc));
 
-	// create initial in graph representing data structure
+	/* Walks over all entities in the type */
+	walk_types_entities(get_irg_frame_type(chordal_env->irg), add_ent, &spi);
 
-	walk_types_entities(get_irg_frame_type(chordal_env->irg), &get_ents_all , &spi);
+	data_init(&spi);
+	irg_walk_blkwise_graph(chordal_env->irg, NULL, get_entity_nodes, &spi);
 
-	get_irg_entity(chordal_env->irg);
-	get_irg_frame_type(chordal_env->irg);
 
+	/*clean*/
+	del_pset(spi.ents);
+	pmap_destroy(spi.nodents);
+	pmap_destroy(spi.afgraph);
 	obstack_free(&spi.ob, NULL);
 }
