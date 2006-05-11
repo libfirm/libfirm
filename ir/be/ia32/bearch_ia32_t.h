@@ -150,4 +150,24 @@ ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg);
  */
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg);
 
+/**
+ * Maps all intrinsic calls that the backend support
+ * and map all instructions the backend did not support
+ * to runtime calls.
+ */
+void ia32_handle_intrinsics(void);
+
+/**
+ * Ia32 implementation.
+ *
+ * @param method   the method type of the emulation function entity
+ * @param op       the emulated ir_op
+ * @param imode    the input mode of the emulated opcode
+ * @param omode    the output mode of the emulated opcode
+ * @param context  the context parameter
+ */
+entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                  const ir_mode *imode, const ir_mode *omode,
+                                  void *context);
+
 #endif /* _BEARCH_IA32_T_H_ */

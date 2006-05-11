@@ -1353,6 +1353,29 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
 	return bytes;
 }
 
+/**
+ * Returns the libFirm configuration parameter for this backend.
+ */
+static const backend_params *ia32_get_libfirm_params(void) {
+	static const arch_dep_params_t ad = {
+		1, /* also use subs */
+		4, /* maximum shifts */
+		31, /* maximum shift amount */
+
+		1, /* allow Mulhs */
+		1, /* allow Mulus */
+		32  /* Mulh allowed up to 32 bit */
+	};
+	static backend_params p = {
+		NULL,  /* no additional opcodes */
+		NULL,  /* will be set later */
+		1,     /* need dword lowering */
+		ia32_create_intrinsic_fkt,
+	};
+
+	p.dep_param = &ad;
+	return &p;
+}
 #ifdef WITH_LIBCORE
 
 /* instruction set architectures. */
@@ -1455,6 +1478,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector,
 	ia32_get_reg_class_alignment,
+	ia32_get_libfirm_params,
 #ifdef WITH_LIBCORE
 	ia32_register_options
 #endif

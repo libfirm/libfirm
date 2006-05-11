@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include "irgmod.h"
 #include "irop.h"
 #include "irnode_t.h"
 #include "ircons.h"
@@ -17,7 +18,7 @@ static i_record *intrinsics;
 /** An array to cache all entities */
 static entity *i_ents[iro_MaxOpcode];
 
-/**
+/*
  * Maps all intrinsic calls that the backend support
  * and map all instructions the backend did not support
  * to runtime calls.
@@ -92,15 +93,7 @@ static int map_Sub(ir_node *call, void *ctx) {
 	return 1;
 }
 
-/**
- * Ia32 implementation.
- *
- * @param method   the method type of the emulation function entity
- * @param op       the emulated ir_op
- * @param imode    the input mode of the emulated opcode
- * @param omode    the output mode of the emulated opcode
- * @param context  the context parameter
- */
+/* Ia32 implementation. */
 entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                   const ir_mode *imode, const ir_mode *omode,
                                   void *context)
