@@ -40,10 +40,10 @@ static int map_Add(ir_node *call, void *ctx) {
 	ir_node *block = get_nodes_block(call);
 	ir_node **params = get_Call_param_arr(call);
 	ir_node *l_res, *h_res, *res, *in[2];
-	ir_node *a_l = params[0];
-	ir_node *a_h = params[1];
-	ir_node *b_l = params[2];
-	ir_node *b_h = params[3];
+	ir_node *a_l = params[BINOP_Left_Low];
+	ir_node *a_h = params[BINOP_Left_High];
+	ir_node *b_l = params[BINOP_Right_Low];
+	ir_node *b_h = params[BINOP_Right_High];
 
 	/* l_res = a_l + b_l */
 	/* h_res = a_h + b_h + carry */
@@ -70,10 +70,10 @@ static int map_Sub(ir_node *call, void *ctx) {
 	ir_node *block = get_nodes_block(call);
 	ir_node **params = get_Call_param_arr(call);
 	ir_node *l_res, *h_res, *res, *in[2];
-	ir_node *a_l = params[0];
-	ir_node *a_h = params[1];
-	ir_node *b_l = params[2];
-	ir_node *b_h = params[3];
+	ir_node *a_l = params[BINOP_Left_Low];
+	ir_node *a_h = params[BINOP_Left_High];
+	ir_node *b_l = params[BINOP_Right_Low];
+	ir_node *b_h = params[BINOP_Right_High];
 
 	/* l_res = a_l - b_l */
 	/* h_res = a_h - b_h - carry */
