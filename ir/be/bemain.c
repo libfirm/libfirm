@@ -186,8 +186,16 @@ int be_parse_arg(const char *arg) {
 #endif /* WITH_LIBCORE */
 }
 
+/** The be parameters returned by default, all off. */
+const static backend_params be_params = {
+	NULL,
+	NULL,
+	0,
+	NULL,
+};
 
-void be_init(void)
+/* Initialize the Firm backend. Must be run BEFORE init_firm()! */
+const backend_params *be_init(void)
 {
 	be_opt_register();
 
@@ -197,6 +205,10 @@ void be_init(void)
 	be_copy_opt_init();
 	copystat_init();
 	phi_class_init();
+
+	if (isa_if->get_params)
+		return isa_if->get_params();
+	return &be_params;
 }
 
 static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
@@ -364,7 +376,7 @@ static void be_main_loop(FILE *file_handle)
 		be_abi_fix_stack_bias(birg.abi);
 
 		arch_code_generator_done(birg.cg);
-		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
+		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
 		be_abi_free(birg.abi);
 
 //		free_ir_graph(irg);

@@ -3,7 +3,28 @@
 #define _BE_MAIN_H
 
 #include <stdio.h>
+#include "irarch.h"
+#include "archop.h"
+#include "lower_dw.h"
 #include "dbginfo.h"
+
+/**
+ * This structure contains parameters that should be
+ * propagated to the libFirm parameter set.
+ */
+typedef struct backend_params {
+	/** Additional opcodes settings. */
+	const arch_ops_info *arch_op_settings;
+
+	/** Settings for architecture dependent optimizations */
+	const arch_dep_params_t *dep_param;
+
+	/** if set, the backend cannot handle DWORD access */
+	unsigned do_dw_lowering;
+
+	/** the architecture specific intrinsic function creator */
+	create_intrinsic_fkt *arch_create_intrinsic_fkt;
+} backend_params;
 
 /**
  * Register the Firm backend command line options.
@@ -17,8 +38,11 @@ int be_parse_arg(const char *arg);
 
 /**
  * Initialize the Firm backend. Must be run BEFORE init_firm()!
+ *
+ * @return libFirm configuration parameters for the selected
+ *         backend
  */
-void be_init(void);
+const backend_params *be_init(void);
 
 /**
  * Main interface to the frontend.

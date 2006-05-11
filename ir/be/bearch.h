@@ -598,11 +598,17 @@ struct _arch_isa_if_t {
    */
   int (*get_reg_class_alignment)(const void *self, const arch_register_class_t *cls);
 
+  /**
+   * A "static" function, returns the frontend settings
+   * needed for this backend.
+   */
+  const backend_params *(*get_params)(void);
+
 #ifdef WITH_LIBCORE
-	/**
-	 * Register command line options for this backend.
-	 * @param grp  The root group.
-	 */
+  /**
+   * Register command line options for this backend.
+   * @param grp  The root group.
+   */
   void (*register_options)(lc_opt_entry_t *grp);
 #endif
 };
