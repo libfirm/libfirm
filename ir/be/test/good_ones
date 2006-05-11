@@ -11,6 +11,7 @@ DivBug.c
 Do.c
 Doit.c
 Empty.c
+EmptyFor.c
 Field.c
 Float.c
 ForTest.c
@@ -38,6 +39,8 @@ Switcher.c
 Test.c
 Thilo.c
 While.c
+XXEndless.c
+adam_putt.c
 addr_test.c
 alloca.c
 am_test.c
