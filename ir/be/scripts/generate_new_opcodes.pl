@@ -88,7 +88,7 @@ foreach my $op (keys(%nodes)) {
 
 	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
 	push(@obst_get_opvar, "ir_op *get_op_$op(void)         { return op_$op; }\n");
-	push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_irn_opcode(n) == iro_$op; }\n\n");
+	push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_$arch\_irn_opcode(n) == iro_$op; }\n\n");
 
 	push(@obst_is_archirn, "is_$op(node)");
 
@@ -348,8 +348,9 @@ int is_$arch\_irn(const ir_node *node) {
 }
 
 int get_$arch\_irn_opcode(const ir_node *node) {
-  assert(is_$arch\_irn(node));
-  return get_irn_opcode(node) - $arch\_opcode_start;
+  if (is_$arch\_irn(node))
+	return get_irn_opcode(node) - $arch\_opcode_start;
+  return -1;
 }
 
 ENDOFISIRN
