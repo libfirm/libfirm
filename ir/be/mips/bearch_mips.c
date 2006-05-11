@@ -257,7 +257,8 @@ static const arch_irn_ops_if_t mips_irn_ops_if = {
 	mips_classify,
 	mips_get_flags,
 	mips_get_frame_entity,
-	mips_set_frame_offset
+	mips_set_frame_offset,
+	NULL
 };
 
 mips_irn_ops_t mips_irn_ops = {

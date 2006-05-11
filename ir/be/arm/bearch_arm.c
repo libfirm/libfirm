@@ -248,7 +248,8 @@ static const arch_irn_ops_if_t arm_irn_ops_if = {
 	arm_classify,
 	arm_get_flags,
 	arm_get_frame_entity,
-	arm_set_stack_bias
+	arm_set_stack_bias,
+	NULL
 };
 
 arm_irn_ops_t arm_irn_ops = {

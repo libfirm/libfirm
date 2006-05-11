@@ -359,7 +359,8 @@ static const arch_irn_ops_if_t ppc32_irn_ops_if = {
 	ppc32_classify,
 	ppc32_get_flags,
 	ppc32_get_frame_entity,
-	ppc32_set_stack_bias
+	ppc32_set_stack_bias,
+	NULL
 };
 
 ppc32_irn_ops_t ppc32_irn_ops = {
