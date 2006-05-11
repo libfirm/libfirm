@@ -1,6 +1,6 @@
 /**
  * This is the main ia32 firm backend driver.
- *
+ * @author Christian Wuerdig
  * $Id$
  */
 
@@ -452,6 +452,19 @@ static ir_type *ia32_abi_get_between_type(void *self)
 	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
 }
 
+/**
+ * Returns the inverse operation if @p irn, recalculating the argument at position @p i.
+ *
+ * @param irn       The original operation
+ * @param i         Index of the argument we want the inverse operation to yield
+ * @param inverse   struct to be filled with the resulting inverse op
+ * @param obstack   The obstack to use for allocation of the returned nodes array
+ * @return          The inverse operation or NULL if operation invertible
+ */
+static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obst) {
+	return NULL;
+}
+
 static const be_abi_callbacks_t ia32_abi_callbacks = {
 	ia32_abi_init,
 	free,
@@ -470,7 +483,8 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_classify,
 	ia32_get_flags,
 	ia32_get_frame_entity,
-	ia32_set_stack_bias
+	ia32_set_stack_bias,
+	ia32_get_inverse
 };
 
 ia32_irn_ops_t ia32_irn_ops = {
