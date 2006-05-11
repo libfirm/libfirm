@@ -849,6 +849,29 @@ static int ppc32_get_reg_class_alignment(const void *self, const arch_register_c
 	return get_mode_size_bytes(mode);
 }
 
+/**
+ * Returns the libFirm configuration parameter for this backend.
+ */
+static const backend_params *ppc32_get_libfirm_params(void) {
+	static arch_dep_params_t ad = {
+		1,  /* allow subs */
+		0,	/* Muls are fast enough on ARM */
+		31, /* shift would be ok */
+		0,  /* SMUL is needed, only in Arch M*/
+		0,  /* UMUL is needed, only in Arch M */
+		32, /* SMUL & UMUL available for 32 bit */
+	};
+	static backend_params p = {
+		NULL,  /* no additional opcodes */
+		NULL,  /* will be set later */
+		1,     /* need dword lowering */
+		NULL,  /* but yet no creator function */
+	};
+
+	p.dep_param = &ad;
+	return &p;
+}
+
 #ifdef WITH_LIBCORE
 static void ppc32_register_options(lc_opt_entry_t *ent)
 {
@@ -866,6 +889,7 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_code_generator_if,
 	ppc32_get_list_sched_selector,
 	ppc32_get_reg_class_alignment,
+	ppc32_get_libfirm_params,
 #ifdef WITH_LIBCORE
 	ppc32_register_options
 #endif

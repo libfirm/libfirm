@@ -583,7 +583,7 @@ static void *arm_cg_init(const be_irg_t *birg) {
  * and map all instructions the backend did not support
  * to runtime calls.
  */
-static void arm_global_init(void) {
+static void arm_handle_intrinsics(void) {
   ir_type *tp, *int_tp, *uint_tp;
   i_record records[8];
   int n_records = 0;
@@ -742,7 +742,7 @@ static void *arm_init(FILE *file_handle) {
 	isa->out = file_handle;
 
 	arm_create_opcodes();
-	arm_global_init();
+	arm_handle_intrinsics();
 	arm_switch_section(NULL, NO_SECTION);
 
 	inited = 1;
@@ -874,8 +874,8 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 		return env->isa->sp;
 
 	ip = be_new_Copy(gp, irg, block, sp );
-		arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
-		be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
+	arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
+	be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
 //	if (r0) regs[n_regs++] = r0;
 //	if (r1) regs[n_regs++] = r1;
@@ -1060,6 +1060,29 @@ static int arm_get_reg_class_alignment(const void *self, const arch_register_cla
 	return get_mode_size_bytes(mode);
 }
 
+/**
+ * Returns the libFirm configuration parameter for this backend.
+ */
+static const backend_params *arm_get_libfirm_params(void) {
+	static arch_dep_params_t ad = {
+		1,  /* allow subs */
+		0,	/* Muls are fast enough on ARM */
+		31, /* shift would be ok */
+		0,  /* SMUL is needed, only in Arch M*/
+		0,  /* UMUL is needed, only in Arch M */
+		32, /* SMUL & UMUL available for 32 bit */
+	};
+	static backend_params p = {
+		NULL,  /* no additional opcodes */
+		NULL,  /* will be set later */
+		1,     /* need dword lowering */
+		NULL,  /* but yet no creator function */
+	};
+
+	p.dep_param = &ad;
+	return &p;
+}
+
 #ifdef WITH_LIBCORE
 
 /* fpu set architectures. */
@@ -1109,6 +1132,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_code_generator_if,
 	arm_get_list_sched_selector,
 	arm_get_reg_class_alignment,
+	arm_get_libfirm_params,
 #ifdef WITH_LIBCORE
 	arm_register_options
 #endif

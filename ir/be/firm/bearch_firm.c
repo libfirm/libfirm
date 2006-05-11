@@ -601,6 +601,29 @@ static int firm_get_reg_class_alignment(const void *self, const arch_register_cl
 	return get_mode_size_bytes(mode);
 }
 
+/**
+ * Returns the libFirm configuration parameter for this backend.
+ */
+static const backend_params *firm_get_libfirm_params(void) {
+	static arch_dep_params_t ad = {
+		1,  /* allow subs */
+		0,	/* Muls are fast enough on Firm */
+		31, /* shift would be ok */
+		0,  /* no Mulhs */
+		0,  /* no Mulhu */
+		0,  /* no Mulh */
+	};
+	static backend_params p = {
+		NULL,  /* no additional opcodes */
+		NULL,  /* will be set later */
+		0,     /* no dword lowering */
+		NULL,  /* no creator function */
+	};
+
+	p.dep_param = &ad;
+	return &p;
+}
+
 #ifdef WITH_LIBCORE
 static void firm_register_options(lc_opt_entry_t *ent)
 {
@@ -618,6 +641,7 @@ const arch_isa_if_t firm_isa = {
 	firm_get_code_generator_if,
 	firm_get_list_sched_selector,
 	firm_get_reg_class_alignment,
+	firm_get_libfirm_params,
 #ifdef WITH_LIBCORE
 	firm_register_options,
 #endif

@@ -918,6 +918,29 @@ static int mips_get_reg_class_alignment(const void *self, const arch_register_cl
 	return get_mode_size_bytes(mode);
 }
 
+/**
+ * Returns the libFirm configuration parameter for this backend.
+ */
+static const backend_params *mips_get_libfirm_params(void) {
+	static arch_dep_params_t ad = {
+		1,  /* allow subs */
+		0,	/* Muls are fast enough on Mips */
+		31, /* shift would be ok */
+		0,  /* no Mulhs */
+		0,  /* no Mulhu */
+		32, /* Mulhs & Mulhu available for 32 bit */
+	};
+	static backend_params p = {
+		NULL,  /* no additional opcodes */
+		NULL,  /* will be set later */
+		1,     /* need dword lowering */
+		NULL,  /* but yet no creator function */
+	};
+
+	p.dep_param = &ad;
+	return &p;
+}
+
 #ifdef WITH_LIBCORE
 static void mips_register_options(lc_opt_entry_t *ent)
 {
@@ -935,6 +958,7 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_code_generator_if,
 	mips_get_list_sched_selector,
 	mips_get_reg_class_alignment,
+	mips_get_libfirm_params,
 #ifdef WITH_LIBCORE
 	mips_register_options
 #endif
