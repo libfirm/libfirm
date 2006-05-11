@@ -486,11 +486,11 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 	nomem = new_r_NoMem(irg);
 
 	/* initialize structure */
-	inverse->nodes = obstack_alloc(obst, sizeof(inverse->nodes[0]));
+	inverse->nodes = obstack_alloc(obst, 2 * sizeof(inverse->nodes[0]));
 	inverse->costs = 0;
 	inverse->n     = 2;
 
-	switch (get_irn_opcode(irn)) {
+	switch (get_ia32_irn_opcode(irn)) {
 		case iro_ia32_Add:
 			if (get_ia32_immop_type(irn) == ia32_ImmConst) {
 				/* we have an add with a const here */
