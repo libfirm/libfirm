@@ -1,3 +1,9 @@
+/**
+ * Function prototypes for Firm into ia32-Firm transformations.
+ * @author Christian Wuerdig
+ * $Id$
+ */
+
 #ifndef _IA32_TRANSFORM_H_
 #define _IA32_TRANSFORM_H_
 

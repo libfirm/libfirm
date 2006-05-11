@@ -1,5 +1,7 @@
 /**
  * Register mapping for firm nodes. Stolen from bearch_firm :)
+ * Calculate requirements for register parameter.
+ * @author Christian Wuerdig
  * $Id$
  */
 #ifdef HAVE_CONFIG_H

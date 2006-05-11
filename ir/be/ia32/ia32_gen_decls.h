@@ -1,3 +1,9 @@
+/**
+ * Header for ia32 assembler declarations dumper.
+ * @author Christian Wuerdig
+ * $Id$
+ */
+
 #ifndef _IA32_GEN_DECLS_H_
 #define _IA32_GEN_DECLS_H_
 

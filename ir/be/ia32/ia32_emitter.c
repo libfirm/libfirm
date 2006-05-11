@@ -1,6 +1,6 @@
 /**
  * This file implements the node emitter.
- *
+ * @author Christian Wuerdig
  * $Id$
  */
 

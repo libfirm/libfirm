@@ -1,3 +1,9 @@
+/**
+ * General reqister mapping stuff.
+ * @author Christian Wuerdig
+ * $Id$
+ */
+
 #ifndef _IA32_MAP_REGS_H_
 #define _IA32_MAP_REGS_H_
 

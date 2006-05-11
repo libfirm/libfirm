@@ -1,11 +1,11 @@
-#ifndef _IA32_NEW_NODES_H_
-#define _IA32_NEW_NODES_H_
-
 /**
  * Function prototypes for the assembler ir node constructors.
  * @author Christian Wuerdig
  * $Id$
  */
+
+#ifndef _IA32_NEW_NODES_H_
+#define _IA32_NEW_NODES_H_
 
 #include "firm_config.h"
 #include "ia32_nodes_attr.h"

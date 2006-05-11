@@ -1,4 +1,4 @@
-/*
+/**
  * Project:     libFIRM
  * File name:   ir/be/ia32/ia32_optimize.c
  * Purpose:     Implements several optimizations for IA32

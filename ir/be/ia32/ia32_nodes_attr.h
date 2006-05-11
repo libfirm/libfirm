@@ -1,3 +1,9 @@
+/**
+ * Type definitions for ia32 node attributes.
+ * @author Christian Wuerdig
+ * $Id$
+ */
+
 #ifndef _IA32_NODES_ATTR_H_
 #define _IA32_NODES_ATTR_H_
 

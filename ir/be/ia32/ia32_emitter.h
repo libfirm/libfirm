@@ -1,3 +1,9 @@
+/**
+ * Header file for ia32 emitter, containing some function definitions and types.
+ * @author Christian Wuerdig
+ * $Id$
+ */
+
 #ifndef _IA32_EMITTER_H_
 #define _IA32_EMITTER_H_
 

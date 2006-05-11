@@ -1,3 +1,9 @@
+/**
+ * Function prototypes for ia32 optimizations
+ * @author Christian Wuerdig
+ * $Id$
+ */
+
 #ifndef _IA32_OPTIMIZE_H_
 #define _IA32_OPTIMIZE_H_
 

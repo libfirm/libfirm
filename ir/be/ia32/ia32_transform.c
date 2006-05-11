@@ -1,7 +1,6 @@
 /**
- * This file implements the IR transformation from firm into
- * ia32-Firm.
- *
+ * This file implements the IR transformation from firm into ia32-Firm.
+ * @author Christian Wuerdig
  * $Id$
  */
 

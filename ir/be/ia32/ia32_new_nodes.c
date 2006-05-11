@@ -1,6 +1,6 @@
 /**
  * This file implements the creation of the achitecture specific firm opcodes
- * and the coresponding node constructors for the $arch assembler irg.
+ * and the coresponding node constructors for the ia32 assembler irg.
  * @author Christian Wuerdig
  * $Id$
  */
