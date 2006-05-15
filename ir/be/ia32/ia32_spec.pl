@@ -213,8 +213,29 @@ $comment_string = "/*";
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. add %ia32_emit_binop /* Add(%A1, %A2) -> %D1 */',
+  "emit"      => '. add %ia32_emit_binop /* Add(%A3, %A4) -> %D1 */',
   "outs"      => [ "res", "M" ],
+},
+
+"AddC" => {
+  "comment"   => "construct Add with Carry: AddC(a, b) = Add(b, a) = a + b + carry",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. adc %ia32_emit_binop /* AddC(%A3, %A4) -> %D1 */',
+  "outs"      => [ "res", "M" ],
+},
+
+"l_Add" => {
+  "op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct lowered Add: Add(a, b) = Add(b, a) = a + b",
+  "arity"     => 2,
+},
+
+"l_AddC" => {
+  "op_flags"  => "C",
+  "comment"   => "construct lowered Add with Carry: AddC(a, b) = Add(b, a) = a + b + carry",
+  "arity"     => 2,
 },
 
 "Mul" => {
@@ -299,8 +320,27 @@ $comment_string = "/*";
   "comment"   => "construct Sub: Sub(a, b) = a - b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
-  "emit"      => '. sub %ia32_emit_binop /* Sub(%A1, %A2) -> %D1 */',
+  "emit"      => '. sub %ia32_emit_binop /* Sub(%A3, %A4) -> %D1 */',
   "outs"      => [ "res", "M" ],
+},
+
+"SubC" => {
+  "comment"   => "construct Sub with Carry: SubC(a, b) = a - b - carry",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
+  "emit"      => '. sbb %ia32_emit_binop /* SubC(%A3, %A4) -> %D1 */',
+  "outs"      => [ "res", "M" ],
+},
+
+"l_Sub" => {
+  "irn_flags" => "R",
+  "comment"   => "construct lowered Sub: Sub(a, b) = a - b",
+  "arity"     => 2,
+},
+
+"l_SubC" => {
+  "comment"   => "construct lowered Sub with Carry: SubC(a, b) = a - b - carry",
+  "arity"     => 2,
 },
 
 "DivMod" => {

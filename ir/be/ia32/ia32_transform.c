@@ -574,6 +574,26 @@ static ir_node *gen_Add(ia32_transform_env_t *env) {
 	return new_rd_Proj(dbg, irg, block, new_op, mode, pn_ia32_Add_res);
 }
 
+/**
+ * Transforms an ia32_l_AddC (created in intrinsic lowering) into a "real" AddC
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 Add node
+ */
+static ir_node *gen_ia32_l_AddC(ia32_transform_env_t *env) {
+	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_AddC);
+}
+
+/**
+ * Transforms an ia32_l_Add (created in intrinsic lowering) into a "real" Add
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 Add node
+ */
+static ir_node *gen_ia32_l_Add(ia32_transform_env_t *env) {
+	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_Add);
+}
+
 
 
 /**
@@ -896,6 +916,26 @@ static ir_node *gen_Sub(ia32_transform_env_t *env) {
 	set_ia32_res_mode(new_op, mode);
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, pn_ia32_Sub_res);
+}
+
+/**
+ * Transforms an ia32_l_SubC (created in intrinsic lowering) into a "real" SubC
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 SubC node
+ */
+static ir_node *gen_ia32_l_SubC(ia32_transform_env_t *env) {
+	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_SubC);
+}
+
+/**
+ * Transforms an ia32_l_Sub (created in intrinsic lowering) into a "real" Sub
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 Sub node
+ */
+static ir_node *gen_ia32_l_Sub(ia32_transform_env_t *env) {
+	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_Sub);
 }
 
 
@@ -2468,7 +2508,11 @@ void ia32_register_transformers(void) {
 #define IGN(a)
 
 	GEN(Add);
+	GEN(ia32_l_Add);
+	GEN(ia32_l_AddC);
 	GEN(Sub);
+	GEN(ia32_l_Sub);
+	GEN(ia32_l_SubC);
 	GEN(Mul);
 	GEN(And);
 	GEN(Or);
