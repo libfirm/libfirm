@@ -191,13 +191,8 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
           case TV_OVERFLOW_WRAP:
             {
               char *temp = alloca(sc_get_buffer_length());
-              char *diff = alloca(sc_get_buffer_length());
-              sc_sub(get_mode_max(mode)->value, get_mode_min(mode)->value, diff);
-              sc_val_from_ulong(1, temp);
-              sc_add(diff, temp, diff);
-              sc_sub(value, diff, temp);
-              while (sc_comp(temp, get_mode_max(mode)->value) == 1)
-                sc_sub(temp, diff, temp);
+              sc_val_from_ulong(-1, temp);
+              sc_and(temp, value, temp);
               return get_tarval(temp, length, mode);
             }
           case TV_OVERFLOW_BAD:
@@ -213,13 +208,8 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
           case TV_OVERFLOW_WRAP:
             {
               char *temp = alloca(sc_get_buffer_length());
-              char *diff = alloca(sc_get_buffer_length());
-              sc_sub(get_mode_max(mode)->value, get_mode_min(mode)->value, diff);
-              sc_val_from_ulong(1, temp);
-              sc_add(diff, temp, diff);
-              sc_add(value, diff, temp);
-              while (sc_comp(temp, get_mode_max(mode)->value) == 1)
-                sc_add(temp, diff, temp);
+              sc_val_from_ulong(-1, temp);
+              sc_and(temp, value, temp);
               return get_tarval(temp, length, mode);
             }
           case TV_OVERFLOW_BAD:
@@ -1521,20 +1511,20 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 
     case irms_reference:
       if (tv == tv->mode->null) return snprintf(buf, len, "NULL");
-      if (tv->value != NULL){
-      if (len > tv->length) {
-        memcpy(buf, tv->value, tv->length);
-        buf[tv->length] = '\0';
+      if (tv->value != NULL) {
+        if (len > tv->length) {
+          memcpy(buf, tv->value, tv->length);
+          buf[tv->length] = '\0';
+        }
+        else {
+          /* truncated */
+          memcpy(buf, tv->value, len-1);
+          buf[len-1] = '\0';
+        }
+        return tv->length;
       }
-      else {
-        /* truncated */
-        memcpy(buf, tv->value, len-1);
-        buf[len-1] = '\0';
-      }
-      return tv->length;
-         }
       else
-    return snprintf(buf, len, "void");
+        return snprintf(buf, len, "void");
 
     case irms_internal_boolean:
       switch (mode_info->mode_output) {
