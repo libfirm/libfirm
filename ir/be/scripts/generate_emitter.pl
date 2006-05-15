@@ -79,31 +79,34 @@ foreach my $op (keys(%nodes)) {
 				}
 
 				# substitute all format parameter
-				while ($template =~ /\%([ASDX])(\d)|\%([COM])|\%(\w+)/) {
+				while ($template =~ /(\%\%)|\%([ASDX])(\d)|\%([COM])|\%(\w+)/) {
 					$res  .= $`;      # get everything before the match
 
-					if ($1 && $1 eq "S") {
-						push(@params, "n");
-						$res .= "%".$2."S"; # substitute %Sx with %xS
+					if ($1) {
+						$res .= "%%";
 					}
-					elsif ($1 && $1 eq "D") {
+					elsif ($2 && $2 eq "S") {
 						push(@params, "n");
-						$res .= "%".$2."D"; # substitute %Dx with %xD
+						$res .= "%".$3."S"; # substitute %Sx with %xS
 					}
-					elsif ($1 && $1 eq "X") {
+					elsif ($2 && $2 eq "D") {
 						push(@params, "n");
-						$res .= "%".$2."X"; # substitute %Xx with %xX
+						$res .= "%".$3."D"; # substitute %Dx with %xD
 					}
-					elsif ($1 && $1 eq "A") {
-						push(@params, "get_irn_n(n, ".($2 - 1).")");
+					elsif ($2 && $2 eq "X") {
+						push(@params, "n");
+						$res .= "%".$3."X"; # substitute %Xx with %xX
+					}
+					elsif ($2 && $2 eq "A") {
+						push(@params, "get_irn_n(n, ".($3 - 1).")");
 						$res .= "%+F";
 					}
-					elsif ($3) {
+					elsif ($4) {
 						push(@params, "n");
-						$res .= "%".$3;
+						$res .= "%".$4;
 					}
-					elsif ($4) {  # backend provided function to call, has to return a string
-						push(@params, $4."(n, env)");
+					elsif ($5) {  # backend provided function to call, has to return a string
+						push(@params, $5."(n, env)");
 						$res .= "\%s";
 					}
 
