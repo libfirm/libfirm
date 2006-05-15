@@ -103,7 +103,8 @@ enum lower_flags {
 typedef struct _lower_env_t {
 	node_entry_t **entries;       /**< entries per node */
 	struct obstack obst;          /**< an obstack holding the temporary data */
-	tarval   *tv_mode_bytes;      /**< a tarval containing the number of bits in the lowered modes */
+	tarval   *tv_mode_bytes;      /**< a tarval containing the number of bytes in the lowered modes */
+	tarval   *tv_mode_bits;       /**< a tarval containing the number of bits in the lowered modes */
 	pdeq     *waitq;              /**< a wait queue of all nodes that must be handled later */
 	pmap     *proj_2_block;       /**< a map from ProjX to its destination blocks */
 	const lwrdw_param_t *params;  /**< transformation parameter */
@@ -345,7 +346,7 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	tv_l = tarval_convert_to(tv, mode);
 	low  = new_rd_Const(dbg, current_ir_graph, block, mode, tv_l);
 
-	tv_h = tarval_convert_to(tarval_shrs(tv, env->tv_mode_bytes), mode);
+	tv_h = tarval_convert_to(tarval_shrs(tv, env->tv_mode_bits), mode);
 	high = new_rd_Const(dbg, current_ir_graph, block, mode, tv_h);
 
 	idx = get_irn_idx(node);
@@ -1434,6 +1435,8 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 				else
 					set_method_param_type(res, n_param++, tp);
 			}
+			else
+				set_method_param_type(res, n_param++, tp);
 		}
 		for (i = n_res = 0; i < r; ++i) {
 			ir_type *tp = get_method_res_type(mtp, i);
@@ -1452,6 +1455,8 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 				else
 					set_method_res_type(res, n_res++, tp);
 			}
+			else
+				set_method_res_type(res, n_res++, tp);
 		}
 		set_lowered_type(mtp, res);
 		pmap_insert(lowered_type, mtp, res);
@@ -1953,6 +1958,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	}
 
 	lenv.tv_mode_bytes = new_tarval_from_long(get_mode_size_bytes(param->low_unsigned), mode_Iu);
+	lenv.tv_mode_bits  = new_tarval_from_long(get_mode_size_bits(param->low_unsigned), mode_Iu);
 	lenv.waitq         = new_pdeq();
 	lenv.params        = param;
 
