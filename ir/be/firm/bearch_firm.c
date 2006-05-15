@@ -618,6 +618,7 @@ static const backend_params *firm_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		0,     /* no dword lowering */
 		NULL,  /* no creator function */
+		NULL,  /* context for create_intrinsic_fkt */
 	};
 
 	p.dep_param = &ad;
