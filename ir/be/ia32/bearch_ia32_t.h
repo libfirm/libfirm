@@ -141,12 +141,12 @@ typedef struct _ia32_transform_env_t {
 } ia32_transform_env_t;
 
 /**
- * Creates the unique per irg GP NoReg node.
+ * Returns the unique per irg GP NoReg node.
  */
 ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg);
 
 /**
- * Creates the unique per irg FP NoReg node.
+ * Returns the unique per irg FP NoReg node.
  */
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg);
 
