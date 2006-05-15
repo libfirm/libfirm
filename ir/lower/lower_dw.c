@@ -1902,7 +1902,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		return;
 
 	FIRM_DBG_REGISTER(dbg, "firm.lower.dw");
-	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
 	assert(2 * get_mode_size_bits(param->low_signed)   == get_mode_size_bits(param->high_signed));
 	assert(2 * get_mode_size_bits(param->low_unsigned) == get_mode_size_bits(param->high_unsigned));
