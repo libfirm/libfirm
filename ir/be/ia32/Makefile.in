@@ -23,7 +23,7 @@ SOURCES = Makefile.in $(arch)_new_nodes.c $(arch)_new_nodes.h gen_$(arch)_new_no
 		bearch_$(arch).c gen_$(arch)_regalloc_if_t.h gen_$(arch)_regalloc_if.h gen_$(arch)_regalloc_if.c \
 		$(arch)_transform.c $(arch)_transform.h $(arch)_gen_decls.c $(arch)_gen_decls.h \
 		$(arch)_map_regs.c $(arch)_map_regs.h $(arch)_optimize.c $(arch)_optimize.h \
-		$(arch)_x87.c $(arch)_x87.h
+		$(arch)_x87.c $(arch)_x87.h $(arch)_intrinsics.c
 
 include $(topdir)/MakeRules
 
