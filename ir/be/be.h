@@ -24,6 +24,10 @@ typedef struct backend_params {
 
 	/** the architecture specific intrinsic function creator */
 	create_intrinsic_fkt *arch_create_intrinsic_fkt;
+
+	/** the context parameter for the create intrinsic function */
+	void *create_intrinsic_ctx;
+
 } backend_params;
 
 /**
