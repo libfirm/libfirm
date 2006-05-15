@@ -1,3 +1,10 @@
+/**
+ * This file implements the mapping of 64Bit intrinsic functions to
+ * code or library calls.
+ * @author Michael Beck
+ * $Id$
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -11,6 +18,8 @@
 #include "lower_dw.h"
 #include "mangle.h"
 #include "array.h"
+
+#include "ia32_new_nodes.h"
 
 /** The array of all intrinsics that must be mapped. */
 static i_record *intrinsics;
@@ -33,21 +42,8 @@ void ia32_handle_intrinsics(void) {
 #define BINOP_Right_Low  2
 #define BINOP_Right_High 3
 
-/**
- * Map an Add (a_l, a_h, b_l, b_h)
- */
-static int map_Add(ir_node *call, void *ctx) {
-	ir_graph *irg = current_ir_graph;
-	ir_node *block = get_nodes_block(call);
-	ir_node **params = get_Call_param_arr(call);
-	ir_node *l_res, *h_res, *res, *in[2];
-	ir_node *a_l = params[BINOP_Left_Low];
-	ir_node *a_h = params[BINOP_Left_High];
-	ir_node *b_l = params[BINOP_Right_Low];
-	ir_node *b_h = params[BINOP_Right_High];
-
-	/* l_res = a_l + b_l */
-	/* h_res = a_h + b_h + carry */
+static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph *irg, ir_node *block) {
+	ir_node *res, *in[2];
 
 	in[0] = l_res;
 	in[1] = h_res;
@@ -59,7 +55,32 @@ static int map_Add(ir_node *call, void *ctx) {
 	set_Tuple_pred(call, pn_Call_T_result,         res);
 	set_Tuple_pred(call, pn_Call_M_except,         get_irg_bad(irg));
 	set_Tuple_pred(call, pn_Call_P_value_res_base, get_irg_bad(irg));
+}
 
+/**
+ * Map an Add (a_l, a_h, b_l, b_h)
+ */
+static int map_Add(ir_node *call, void *ctx) {
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *b_l        = params[BINOP_Right_Low];
+	ir_node  *b_h        = params[BINOP_Right_High];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res;
+
+	/* l_res = a_l + b_l */
+	l_res = new_rd_ia32_l_Add(dbg, irg, block, a_l, b_l, l_res_mode);
+
+	/* h_res = a_h + b_h + carry */
+	h_res = new_rd_ia32_l_AddC(dbg, irg, block, a_h, b_h, h_res_mode);
+
+	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
 }
 
@@ -67,33 +88,31 @@ static int map_Add(ir_node *call, void *ctx) {
  * Map a Sub (a_l, a_h, b_l, b_h)
  */
 static int map_Sub(ir_node *call, void *ctx) {
-	ir_graph *irg = current_ir_graph;
-	ir_node *block = get_nodes_block(call);
-	ir_node **params = get_Call_param_arr(call);
-	ir_node *l_res, *h_res, *res, *in[2];
-	ir_node *a_l = params[BINOP_Left_Low];
-	ir_node *a_h = params[BINOP_Left_High];
-	ir_node *b_l = params[BINOP_Right_Low];
-	ir_node *b_h = params[BINOP_Right_High];
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *b_l        = params[BINOP_Right_Low];
+	ir_node  *b_h        = params[BINOP_Right_High];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res;
 
 	/* l_res = a_l - b_l */
+	l_res = new_rd_ia32_l_Sub(dbg, irg, block, a_l, b_l, l_res_mode);
+
 	/* h_res = a_h - b_h - carry */
+	h_res = new_rd_ia32_l_SubC(dbg, irg, block, a_h, b_h, h_res_mode);
 
-	in[0] = l_res;
-	in[1] = h_res;
-	res = new_r_Tuple(irg, block, 2, in);
-
-	turn_into_tuple(call, pn_Call_max);
-	set_Tuple_pred(call, pn_Call_M_regular,        get_irg_no_mem(irg));
-	set_Tuple_pred(call, pn_Call_X_except,         get_irg_bad(irg));
-	set_Tuple_pred(call, pn_Call_T_result,         res);
-	set_Tuple_pred(call, pn_Call_M_except,         get_irg_bad(irg));
-	set_Tuple_pred(call, pn_Call_P_value_res_base, get_irg_bad(irg));
+	resolve_call(call, l_res, h_res, irg, block);
 
 	return 1;
 }
 
-/* Ia32 implementation. */
+/* Ia32 implementation of intrinsic mapping. */
 entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                   const ir_mode *imode, const ir_mode *omode,
                                   void *context)
@@ -115,6 +134,7 @@ entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 		mapper = map_Sub;
 		break;
 	default:
+		ir_fprintf(stderr, "FIXME: unhandled op for ia32 intrinsic function %+O\n", op);
 		return def_create_intrinsic_fkt(method, op, imode, omode, context);
 	}
 
@@ -128,7 +148,7 @@ entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	elt.i_call.kind     = INTRINSIC_CALL;
 	elt.i_call.i_ent    = *ent;
 	elt.i_call.i_mapper = mapper;
-	elt.i_call.ctx      = NULL;
+	elt.i_call.ctx      = context;
 	elt.i_call.link     = NULL;
 
 	ARR_APP1(i_record, intrinsics, elt);
