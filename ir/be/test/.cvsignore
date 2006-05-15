@@ -1,1 +1,10 @@
-*.[^ch]
+*.dot
+*.s
+*.gcc
+*.vcg
+*.stat
+*.ilp
+*.txt
+*.sh
+*.out
+OUT.*
