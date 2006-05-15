@@ -1371,6 +1371,7 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		1,     /* need dword lowering */
 		ia32_create_intrinsic_fkt,
+		NULL,  /* context for ia32_create_intrinsic_fkt */
 	};
 
 	p.dep_param = &ad;
