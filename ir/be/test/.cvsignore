@@ -1,7 +1,1 @@
-*.vcg
-*.ilp
-*.ra*
-*.stat
-*.s
-*.txt
-*.dot
+*.[^ch]
