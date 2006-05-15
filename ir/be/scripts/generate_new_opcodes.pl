@@ -66,7 +66,7 @@ foreach my $op (keys(%nodes)) {
 	my $n_res = 0;
 
 	# determine arity from in requirements
-	$arity = 0;
+	$arity = exists($n{"arity"}) ? $n{"arity"} : 0;
 	if (exists($n{"reg_req"}) && exists($n{"reg_req"}{"in"})) {
 		$arity = scalar(@{ $n{"reg_req"}{"in"} });
 	}
@@ -250,6 +250,10 @@ foreach my $op (keys(%nodes)) {
 				else {
 					$out_param = "NULL, 0";
 				}
+			}
+			else {
+				$in_param = "NULL";
+				$out_param = "NULL, 0";
 			}
 			$temp .= "\n  /* create node */\n";
 			my $mode = "mode";
