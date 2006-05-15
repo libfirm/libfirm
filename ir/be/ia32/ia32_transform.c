@@ -25,12 +25,11 @@
 #include "irprintf.h"
 #include "debug.h"
 #include "irdom.h"
+#include "archop.h"     /* we need this for Min and Max nodes */
 
 #include "../benode_t.h"
 #include "../besched.h"
 #include "../beabi.h"
-
-#include "../arch/archop.h"     /* we need this for Min and Max nodes */
 
 #include "bearch_ia32_t.h"
 #include "ia32_nodes_attr.h"
