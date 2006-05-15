@@ -134,7 +134,7 @@ entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 		mapper = map_Sub;
 		break;
 	default:
-		ir_fprintf(stderr, "FIXME: unhandled op for ia32 intrinsic function %+O\n", op);
+		fprintf(stderr, "FIXME: unhandled op for ia32 intrinsic function %s\n", get_id_str(op->name));
 		return def_create_intrinsic_fkt(method, op, imode, omode, context);
 	}
 
