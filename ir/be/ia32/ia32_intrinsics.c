@@ -112,6 +112,127 @@ static int map_Sub(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/**
+ * Map a Shl (a_l, a_h, count)
+ */
+static int map_Shl(ir_node *call, void *ctx) {
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *cnt        = params[BINOP_Right_Low];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res;
+
+	/* h_res = SHLD a_h, a_l, cnt */
+	l_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_res_mode);
+
+	/* l_res = SHL a_l, cnt */
+	h_res = new_rd_ia32_l_Shl(dbg, irg, block, a_l, cnt, h_res_mode);
+
+	resolve_call(call, l_res, h_res, irg, block);
+
+	return 1;
+}
+
+/**
+ * Map a Shr (a_l, a_h, count)
+ */
+static int map_Shr(ir_node *call, void *ctx) {
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *cnt        = params[BINOP_Right_Low];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res;
+
+	/* l_res = SHRD a_l, a_h, cnt */
+	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_res_mode);
+
+	/* h_res = SHR a_h, cnt */
+	h_res = new_rd_ia32_l_Shr(dbg, irg, block, a_h, cnt, h_res_mode);
+
+	resolve_call(call, l_res, h_res, irg, block);
+
+	return 1;
+}
+
+/**
+ * Map a Shrs (a_l, a_h, count)
+ */
+static int map_Shrs(ir_node *call, void *ctx) {
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *cnt        = params[BINOP_Right_Low];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res;
+
+	/* l_res = SHRD a_l, a_h, cnt */
+	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_res_mode);
+
+	/* h_res = SAR a_h, cnt */
+	h_res = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, cnt, h_res_mode);
+
+	resolve_call(call, l_res, h_res, irg, block);
+
+	return 1;
+}
+
+/**
+ * Map a Mul (a_l, a_h, b_l, b_h)
+ */
+static int map_Mul(ir_node *call, void *ctx) {
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *b_l        = params[BINOP_Right_Low];
+	ir_node  *b_h        = params[BINOP_Right_High];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res, *mul, *pEDX, *add;
+
+	/*
+		EDX:EAX = a_l * b_l
+		l_res   = EAX
+
+		t1 = b_l * a_h
+		t2 = t1 + EDX
+		t3 = a_l * b_h
+		h_res = t2 + t3
+	*/
+	mul   = new_rd_ia32_l_MulS(dbg, irg, block, a_l, b_l);
+	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EDX);
+	l_res = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EAX);
+
+	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_h, b_l, h_res_mode);
+	add   = new_rd_ia32_l_Add(dbg, irg, block, mul, pEDX, h_res_mode);
+	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_h, h_res_mode);
+	h_res = new_rd_ia32_l_Add(dbg, irg, block, add, mul, h_res_mode);
+
+	resolve_call(call, l_res, h_res, irg, block);
+
+	return 1;
+}
+
 /* Ia32 implementation of intrinsic mapping. */
 entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                   const ir_mode *imode, const ir_mode *omode,
@@ -132,6 +253,22 @@ entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	case iro_Sub:
 		ent    = &i_ents[iro_Sub];
 		mapper = map_Sub;
+		break;
+	case iro_Shl:
+		ent    = &i_ents[iro_Shl];
+		mapper = map_Shl;
+		break;
+	case iro_Shr:
+		ent    = &i_ents[iro_Shr];
+		mapper = map_Shr;
+		break;
+	case iro_Shrs:
+		ent    = &i_ents[iro_Shrs];
+		mapper = map_Shrs;
+		break;
+	case iro_Mul:
+		ent    = &i_ents[iro_Mul];
+		mapper = map_Mul;
 		break;
 	default:
 		fprintf(stderr, "FIXME: unhandled op for ia32 intrinsic function %s\n", get_id_str(op->name));
