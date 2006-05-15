@@ -238,6 +238,21 @@ $comment_string = "/*";
   "arity"     => 2,
 },
 
+"MulS" => {
+  "comment"   => "construct MulS: MulS(a, b) = MulS(b, a) = a * b",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx in_r4" ] },
+  "emit"      => '. mul %ia32_emit_binop /* Mul(%A1, %A2) -> %D1 */',
+  "outs"      => [ "EAX", "EDX", "M" ],
+},
+
+"l_MulS" => {
+  "op_flags"  => "C",
+  "comment"   => "construct lowered MulS: MulS(a, b) = MulS(b, a) = a * b",
+  "outs"      => [ "EAX", "EDX", "M" ],
+  "arity"     => 2
+},
+
 "Mul" => {
   "irn_flags" => "R",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
@@ -245,6 +260,12 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. imul %ia32_emit_binop /* Mul(%A1, %A2) -> %D1 */',
   "outs"      => [ "res", "M" ],
+},
+
+"l_Mul" => {
+  "op_flags"  => "C",
+  "comment"   => "construct lowered Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "arity"     => 2
 },
 
 # Mulh is an exception from the 4 INs with AM because the target is always EAX:EDX
@@ -370,6 +391,43 @@ $comment_string = "/*";
   "outs"      => [ "res", "M" ],
 },
 
+"l_Shl" => {
+  "comment"   => "construct lowered Shl: Shl(a, b) = a << b",
+  "arity"     => 2
+},
+
+"ShlD" => {
+  "irn_flags" => "R",
+  "comment"   => "construct ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r5" ] },
+  "emit"      =>
+'
+if (get_ia32_immop_type(n) == ia32_ImmNone) {
+  if (get_ia32_op_type(n) == ia32_AddrModeD) {
+4. shld %ia32_emit_am, %S4, %%cl /* ShlD(%A3, %A4, %A5) -> %D1 */
+  }
+  else {
+4. shld %S3, %S4, %%cl /* ShlD(%A3, %A4, %A5) -> %D1 */
+  }
+}
+else {
+  if (get_ia32_op_type(n) == ia32_AddrModeD) {
+4. shld %ia32_emit_am, %S4, %C /* ShlD(%A3, %A4, %A5) -> %D1 */
+  }
+  else {
+4. shld %S3, %S4, %C /* ShlD(%A3, %A4, %A5) -> %D1 */
+  }
+}
+',
+  "outs"      => [ "res", "M" ],
+},
+
+"l_ShlD" => {
+  "comment"   => "construct lowered ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
+  "arity"     => 3
+},
+
 "Shr" => {
   "irn_flags" => "R",
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
@@ -379,6 +437,43 @@ $comment_string = "/*";
   "outs"      => [ "res", "M" ],
 },
 
+"l_Shr" => {
+  "comment"   => "construct lowered Shr: Shr(a, b) = a << b",
+  "arity"     => 2
+},
+
+"ShrD" => {
+  "irn_flags" => "R",
+  "comment"   => "construct ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r5" ] },
+  "emit"      =>
+'
+if (get_ia32_immop_type(n) == ia32_ImmNone) {
+  if (get_ia32_op_type(n) == ia32_AddrModeD) {
+4. shrd %ia32_emit_am, %S4, %%cl /* ShrD(%A3, %A4, %A5) -> %D1 */
+  }
+  else {
+4. shrd %S3, %S4, %%cl /* ShrD(%A3, %A4, %A5) -> %D1 */
+  }
+}
+else {
+  if (get_ia32_op_type(n) == ia32_AddrModeD) {
+4. shrd %ia32_emit_am, %S4, %C /* ShrD(%A3, %A4, %A5) -> %D1 */
+  }
+  else {
+4. shrd %S3, %S4, %C /* ShrD(%A3, %A4, %A5) -> %D1 */
+  }
+}
+',
+  "outs"      => [ "res", "M" ],
+},
+
+"l_ShrD" => {
+  "comment"   => "construct lowered ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
+  "arity"     => 3
+},
+
 "Shrs" => {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
@@ -386,6 +481,11 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sar %ia32_emit_binop /* Shrs(%A1, %A2) -> %D1 */',
   "outs"      => [ "res", "M" ],
+},
+
+"l_Shrs" => {
+  "comment"   => "construct lowered Shrs: Shrs(a, b) = a << b",
+  "arity"     => 2
 },
 
 "RotR" => {
