@@ -565,7 +565,8 @@ static void show_commands(void) {
     ".bp                    show all breakpoints\n"
     ".enable nr             enable breakpoint nr\n"
     ".disable nr            disable breakpoint nr\n"
-    ".setmask name lvl      sets the debug module name to level lvl\n"
+    ".setmask name msk      sets the debug module name to mask msk\n"
+    ".setlvl  name lvl      sets the debug module name to level lvl\n"
     ".setoutfile name file  redirects debug output of module name to file\n"
     ".help                  list all commands\n"
   );
@@ -693,6 +694,8 @@ void firm_debug(const char *cmd) {
     bp_activate(bp, 0);
   else if (sscanf(cmd, ".setmask %s %u\n", name, &lvl) == 2)
     set_dbg_level(name, lvl);
+  else if (sscanf(cmd, ".setlvl %s %u\n", name, &lvl) == 2)
+    set_dbg_level(name, (1 << lvl) - 1);
   else if (sscanf(cmd, ".setoutfile %s %s\n", name, fname) == 2)
     set_dbg_outfile(name, fname);
   else {
@@ -794,7 +797,11 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  *
  * Disables breakpoint nr.
  *
- * @b .setmask name lvl
+ * @b .setmask name msk
+ *
+ * Sets the debug module name to mask msk.
+ *
+ * @b .setlvl name lvl
  *
  * Sets the debug module name to level lvl.
  *
