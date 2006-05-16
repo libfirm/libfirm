@@ -679,3 +679,8 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 		}
 	}
 }
+
+void co_solve_park_moon(copy_opt_t *opt)
+{
+
+}

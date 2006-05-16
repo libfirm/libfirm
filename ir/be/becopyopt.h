@@ -86,6 +86,12 @@ void co_solve_heuristic_new(copy_opt_t *co);
 
 
 /**
+ * Apply Park/Moon coalescing to the graph.
+ * @param co The copy optimization data structure.
+ */
+void co_solve_park_moon(copy_opt_t *co);
+
+/**
  * Solves the copy minimization problem using another heuristic approach.
  * Uses the OU and the GRAPH data structure.
  */
