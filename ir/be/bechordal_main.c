@@ -29,6 +29,7 @@
 #include "irgwalk.h"
 #include "irdump.h"
 #include "irdom.h"
+#include "irbitset.h"
 #include "debug.h"
 #include "xmalloc.h"
 
@@ -99,45 +100,46 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 static void check_pressure_walker(ir_node *bl, void *data)
 {
 	be_chordal_env_t *env = data;
-	int n_regs = arch_register_class_n_regs(env->cls);
-
-	pset *live = pset_new_ptr_default();
-	int step = 0;
+	int n_regs            = arch_register_class_n_regs(env->cls);
+	bitset_t *live        = bitset_irg_malloc(env->irg);
+	int step              = 0;
 	ir_node *irn;
+	bitset_pos_t elm;
 	irn_live_t *li;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
-	live_foreach(bl, li) {
-		if(live_is_end(li) && chordal_has_class(env, li->irn)) {
-			ir_node *irn = (ir_node *) li->irn;
-			pset_insert_ptr(live, irn);
-		}
-	}
+	live_foreach(bl, li)
+		if(live_is_end(li) && chordal_has_class(env, li->irn))
+			bitset_add_irn(live, li->irn);
 
 	DBG((dbg, LEVEL_1, "end set for %+F\n", bl));
-	for(irn = pset_first(live); irn; irn = pset_next(live))
+	bitset_foreach_irn(env->irg, live, elm, irn)
 		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
 
 	sched_foreach_reverse(bl, irn) {
+		int pressure = bitset_popcnt(live);
+		int idx      = get_irn_idx(irn);
 		int i, n;
-		int pressure = pset_count(live);
 
 		DBG((dbg, LEVEL_1, "%+10F@%+10F: pressure %d\n", bl, irn, pressure));
 
 		if(pressure > n_regs) {
 			ir_node *x;
 			ir_printf("%+10F@%+10F: pressure to high: %d\n", bl, irn, pressure);
-			for(x = pset_first(live); x; x = pset_next(live))
-				ir_printf("\t%+10F\n", x);
+			bitset_foreach_irn(env->irg, live, elm, x)
+				ir_fprintf(stderr, "\t%+10F\n", x);
 		}
 
-		if(chordal_has_class(env, irn))
-			pset_remove_ptr(live, irn);
+		if(chordal_has_class(env, irn)) {
+			if(!bitset_is_set(live, idx))
+				ir_fprintf(stderr, "%+F is defined but was not live\n", irn);
+			bitset_remv_irn(live, irn);
+		}
 
 		for(i = 0, n = get_irn_arity(irn); i < n; i++) {
 			ir_node *op = get_irn_n(irn, i);
 			if(chordal_has_class(env, op) && !is_Phi(irn))
-				pset_insert_ptr(live, op);
+				bitset_add_irn(live, op);
 		}
 		step++;
 	}
@@ -235,11 +237,11 @@ static lc_opt_enum_int_var_t dump_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_MASK("spill", "spill method (belady or ilp)", &spill_var),
-	LC_OPT_ENT_ENUM_PTR("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
-	LC_OPT_ENT_ENUM_PTR("ifg", "interference graph flavour (std or fast)", &ifg_flavor_var),
-	LC_OPT_ENT_ENUM_MASK("perm", "perm lowering options (copy or swap)", &lower_perm_var),
-	LC_OPT_ENT_ENUM_MASK("dump", "select dump phases", &dump_var),
+	LC_OPT_ENT_ENUM_MASK("spill",   "spill method (belady or ilp)", &spill_var),
+	LC_OPT_ENT_ENUM_PTR ("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
+	LC_OPT_ENT_ENUM_PTR ("ifg",     "interference graph flavour (std or fast)", &ifg_flavor_var),
+	LC_OPT_ENT_ENUM_MASK("perm",    "perm lowering options (copy or swap)", &lower_perm_var),
+	LC_OPT_ENT_ENUM_MASK("dump",    "select dump phases", &dump_var),
 	{ NULL }
 };
 
@@ -358,6 +360,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
 			co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
 			co_build_ou_structure(co);
+			co_build_graph_structure(co);
 		}
 
 		switch(options.copymin_method) {
@@ -365,9 +368,10 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 				co_solve_heuristic(co);
 				break;
 			case BE_CH_COPYMIN_HEUR2:
-				co_build_graph_structure(co);
 				co_solve_heuristic_new(co);
-				co_free_graph_structure(co);
+				break;
+			case BE_CH_COPYMIN_PARK_MOON:
+				co_solve_park_moon(co);
 				break;
 			case BE_CH_COPYMIN_STAT:
 				co_compare_solvers(&chordal_env);
@@ -378,9 +382,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 				co_solve_ilp1(co, 60.0);
 				break;
 			case BE_CH_COPYMIN_ILP2:
-				co_build_graph_structure(co);
 				co_solve_ilp2(co, 60.0);
-				co_free_graph_structure(co);
 				break;
 #endif /* WITH_ILP */
 			case BE_CH_COPYMIN_NONE:
@@ -389,6 +391,7 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		}
 
 		if (co) {
+			co_free_graph_structure(co);
 			co_free_ou_structure(co);
 			free_copy_opt(co);
 		}
