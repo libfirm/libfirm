@@ -75,7 +75,7 @@ static be_options_t be_options = {
 };
 
 /* dump flags */
-static unsigned dump_flags = 2 * DUMP_FINAL - 1;
+static unsigned dump_flags = 0;
 
 /* register allocator to use. */
 static const be_ra_t *ra = &be_ra_chordal_allocator;
@@ -112,9 +112,11 @@ static const lc_opt_enum_const_ptr_items_t ra_items[] = {
 static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ "firm",    &firm_isa },
 	{ "ia32",    &ia32_isa_if },
+#if 0
 	{ "arm",     &arm_isa_if },
 	{ "ppc32",   &ppc32_isa_if },
 	{ "mips",    &mips_isa_if },
+#endif
 	{ NULL,      NULL }
 };
 
@@ -355,7 +357,7 @@ static void be_main_loop(FILE *file_handle)
 		/* add Keeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */
 		assure_constraints(&birg);
-		dump(DUMP_PREPARED, irg, "-assured", dump_ir_block_graph_sched);
+		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_abi_fix_stack_nodes(birg.abi);
