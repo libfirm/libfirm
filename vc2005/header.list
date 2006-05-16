@@ -1,0 +1,129 @@
+#
+# The list of all files to be installed
+#
+# every line contains one file and an optional subdirectory
+
+ir\adt\pset.h		adt
+ir\adt\set.h		adt
+ir\adt\pmap.h		adt
+ir\adt\eset.h		adt
+ir\adt\hashptr.h		adt
+ir\adt\array.h		adt
+ir\adt\pdeq.h		adt
+ir\adt\iterator.h		adt
+ir\adt\align.h		adt
+ir\adt\fourcc.h		adt
+ir\adt\util.h		adt
+ir\adt\plist.h		adt
+ir\adt\xmalloc.h		adt
+
+ir\debug\dbginfo.h
+ir\debug\seqnumbers.h
+
+ir\common\firm_types.h
+ir\common\firm_common.h
+ir\common\firm.h
+ir\common\firmwalk.h
+ir\common\statistics.h
+ir\common\debug.h
+
+ir\ident\ident.h
+
+ir\ir\irprog.h
+ir\ir\irgraph.h
+ir\ir\irnode.h
+ir\ir\irmode.h
+ir\ir\irop.h
+ir\ir\ircons.h
+ir\ir\irflag.h
+ir\ir\irvrfy.h
+ir\ir\irgwalk.h
+ir\ir\irgmod.h
+ir\ir\iropt.h
+ir\ir\irdump.h
+ir\ir\irgopt.h
+ir\ir\ircgcons.h
+ir\ir\ircgopt.h
+ir\ir\irreflect.h
+ir\ir\irarch.h
+ir\ir\irprintf.h
+ir\ir\pseudo_irg.h
+ir\ir\irhooks.h
+ir\ir\iredges.h
+
+ir\ana\irouts.h
+ir\ana\trouts.h
+ir\ana\irdom.h
+ir\ana\cgana.h
+ir\ana\compute_loop_info.h
+ir\ana\irloop.h
+ir\ana\irtypeinfo.h
+ir\ana\irsimpletype.h
+ir\ana\callgraph.h
+ir\ana\rta.h
+ir\ana\interval_analysis.h
+ir\ana\field_temperature.h
+ir\ana\execution_frequency.h
+ir\ana\irextbb.h
+ir\ana\irconsconfirm.h
+ir\ana\analyze_irg_args.h
+
+ir\opt\cfopt.h
+ir\opt\gvn_pre.h
+ir\opt\tailrec.h
+ir\opt\ldstopt.h
+ir\opt\strength_red.h
+ir\opt\reassoc.h
+ir\opt\loop_unrolling.h
+ir\opt\funccall.h
+ir\opt\opt_polymorphy.h
+ir\opt\ifconv.h
+ir\opt\return.h
+ir\opt\tropt.h
+ir\opt\scalar_replace.h
+ir\opt\escape_ana.h
+ir\opt\proc_cloning.h
+ir\opt\opt_branches.h
+ir\opt\opt_confirms.h
+ir\opt\opt_frame.h
+
+ir\tr\entity.h
+ir\tr\mangle.h
+ir\tr\tpop.h
+ir\tr\type.h
+ir\tr\typewalk.h
+ir\tr\type_or_entity.h
+ir\tr\typegmod.h
+ir\tr\trvrfy.h
+ir\tr\type_identify.h
+ir\tr\tr_inheritance.h
+
+ir\tv\tv.h
+
+ir\stat\firmstat.h
+
+ir\ana2\ecg.h
+ir\ana2\irmemwalk.h
+ir\ana2\lset.h
+ir\ana2\typalise.h
+ir\ana2\pto.h
+ir\ana2\pto_comp.h
+ir\ana2\pto_ctx.h
+ir\ana2\pto_debug.h
+ir\ana2\pto_init.h
+ir\ana2\pto_name.h
+ir\ana2\pto_util.h
+ir\ana2\pto_mod.h
+ir\ana2\qset.h
+ir\ana2\gnu_ext.h
+
+ir\arch\modeconv.h
+ir\arch\archop.h
+
+ir\lower\lower_intrinsics.h
+ir\lower\lower_calls.h
+ir\lower\lower_dw.h
+
+ir\be\be.h
+
+win32\firm_config.h

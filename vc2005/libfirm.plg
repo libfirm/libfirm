@@ -1,0 +1,26 @@
+<html>
+<body>
+<pre>
+<h1>Erstellungsprotokoll</h1>
+<h3>
+--------------------Konfiguration: libfirm - Win32 Debug--------------------
+</h3>
+<h3>Befehlszeilen</h3>
+Erstellen der temporären Datei  "C:\DOKUME~1\chriswue\LOKALE~1\Temp\RSP402.bat" mit Inhalten
+[
+@echo off
+..\ir\be\scripts\generate_emitter.pl ..\ir\be\ia32\ia32_spec.pl ..\ir\be\ia32
+..\ir\be\scripts\generate_new_opcodes.pl ..\ir\be\ia32\ia32_spec.pl ..\ir\be\ia32
+..\ir\be\scripts\generate_regalloc_if.pl ..\ir\be\ia32\ia32_spec.pl ..\ir\be\ia32
+]
+Erstellen der Befehlzeile "C:\DOKUME~1\chriswue\LOKALE~1\Temp\RSP402.bat"
+<h3>Ausgabefenster</h3>
+Translate Spec: ..\ir\be\ia32\ia32_spec.pl
+
+
+
+<h3>Ergebnisse</h3>
+gen_ia32_emitter.c - 0 Fehler, 0 Warnung(en)
+</pre>
+</body>
+</html>
