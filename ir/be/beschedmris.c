@@ -55,7 +55,7 @@ typedef struct _mris_irn_t {
 static void *mris_irn_data_init(phase_t *ph, const ir_node *irn, void *data)
 {
 	mris_irn_t *mi = data ? data : phase_alloc(ph, sizeof(mi[0]));
-	memset(data, 0, sizeof(mi[0]));
+	memset(mi, 0, sizeof(mi[0]));
 	INIT_LIST_HEAD(&mi->lineage_list);
 	return mi;
 }
