@@ -118,7 +118,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../obstack,../win32,../ir/adt,../ir/ana,../ir/common,../ir/debug,../ir/ident,../ir/ir,../ir/opt,../ir/st,../ir/stat,../ir/tr,../ir/tv,../ir/arch,../ir/lower,s:/local/ipd/include"
+				AdditionalIncludeDirectories="../../obstack,../vc2005,../ir/adt,../ir/ana,../ir/common,../ir/debug,../ir/ident,../ir/ir,../ir/opt,../ir/st,../ir/stat,../ir/tr,../ir/tv,../ir/arch,../ir/lower,s:/local/ipd/include"
 				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;HAVE_CONFIG_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
