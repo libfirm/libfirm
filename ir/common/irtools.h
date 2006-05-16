@@ -63,4 +63,15 @@ void firm_clear_link(ir_node *n, void *env);
  */
 void copy_irn_to_irg(ir_node *n, ir_graph *irg);
 
+/**
+ * Creates an exact copy of a node.
+ * The copy resists on the sane graph in the same block.
+ *
+ * @param n   the node to copy
+ *
+ * @note If the copy is not changed, the next CSE operation will
+ *       replace it by the original, so beware.
+ */
+ir_node *exact_copy(ir_node *n);
+
 #endif /* _IRTOOLS_H_ */

@@ -23,12 +23,9 @@ void firm_clear_link(ir_node *n, void *env) {
   set_irn_link(n, NULL);
 }
 
-/**
+/*
  * Copies a node to a new irg. The Ins of the new node point to
  * the predecessors on the old irg.  n->link points to the new node.
- *
- * @param n    The node to be copied
- * @param irg  the new irg
  *
  * Does NOT copy standard nodes like Start, End etc that are fixed
  * in an irg. Instead, the corresponding nodes of the new irg are returned.
@@ -95,4 +92,32 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg)
   /* fix the irg for blocks */
   if (is_Block(nn))
     nn->attr.block.irg = irg;
+}
+
+/*
+ * Creates an exact copy of a node.
+ * The copy resists on the sane graph in the same block.
+ */
+ir_node *exact_copy(ir_node *n) {
+  ir_graph *irg = get_irn_irg(n);
+  ir_node *res, *block = NULL;
+
+  if (is_no_Block(n))
+    block = get_irn_n(n, -1);
+
+  res = new_ir_node(get_irn_dbg_info(n),
+                    irg,
+                    block,
+                    get_irn_op(n),
+                    get_irn_mode(n),
+                    get_irn_arity(n),
+                    get_irn_in(n) + 1);
+
+
+  /* Copy the attributes.  These might point to additional data.  If this
+     was allocated on the old obstack the pointers now are dangling.  This
+     frees e.g. the memory of the graph_arr allocated in new_immBlock. */
+  copy_node_attr(n, res);
+  new_backedge_info(res);
+  return res;
 }
