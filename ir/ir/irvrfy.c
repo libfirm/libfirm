@@ -1718,6 +1718,11 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
       show_node_on_graph(irg, n);
     );
     assert(get_irn_irg(n) == irg);
+	{
+		unsigned idx           = get_irn_idx(n);
+		ir_node *node_from_map = get_idx_irn(irg, idx);
+		ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0, ir_printf("node %+F node in map %+F(%p)", n, node_from_map, node_from_map));
+	}
   }
 
   op = get_irn_op(n);
