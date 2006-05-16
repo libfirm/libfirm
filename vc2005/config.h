@@ -124,10 +124,17 @@
 #define INLINE
 #endif
 
+#ifdef _MSC_VER
+
 /* disable warning "unreferenced inline function has been removed" */
 /* zu deutsch: "Nichtreferenzierte Inline-Funktion wurde entfernt" :) */
-#ifdef _MSC_VER
 #pragma warning( disable : 4514 )
+
+/* disable warning: 'foo' was declared deprecated, use 'bla' instead */
+/* of course MS had to make 'bla' incompatible to 'foo', so a simple */
+/* define will not work :-((( */
+#pragma warning( disable : 4996 )
+
 #endif /* _MSC_VER */
 
 /* map some non-POSIX names for Win32 */
