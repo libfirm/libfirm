@@ -517,6 +517,11 @@ else {
   "outs"      => [ "res", "M" ],
 },
 
+"l_Minus" => {
+  "comment"   => "construct lowered Minus: Minus(a) = -a",
+  "arity"     => 1,
+},
+
 "Inc" => {
   "irn_flags" => "R",
   "comment"   => "construct Increment: Inc(a) = a++",

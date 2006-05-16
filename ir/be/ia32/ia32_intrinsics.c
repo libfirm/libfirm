@@ -233,6 +233,35 @@ static int map_Mul(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/**
+ * Map a Minus (a_l, a_h)
+ */
+static int map_Minus(ir_node *call, void *ctx) {
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res, *cnst;
+
+	/* l_res = 0 - a_l */
+	l_res = new_rd_ia32_l_Minus(dbg, irg, block, a_l, l_res_mode);
+
+	/* h_res = 0 - a_h - carry */
+
+	/* too bad: we need 0 in a register here */
+	cnst  = new_Const_long(h_res_mode, 0);
+	h_res = new_rd_ia32_l_SubC(dbg, irg, block, cnst, a_h, h_res_mode);
+
+	resolve_call(call, l_res, h_res, irg, block);
+
+	return 1;
+}
+
 /* Ia32 implementation of intrinsic mapping. */
 entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                   const ir_mode *imode, const ir_mode *omode,

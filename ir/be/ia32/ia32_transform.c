@@ -2264,12 +2264,17 @@ static ir_node *gen_Unknown(ia32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ia32 XXX node
  */
-#define GEN_LOWERED_OP(op) \
+#define GEN_LOWERED_OP(op)                                                                            \
 	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {                                      \
 		return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_##op); \
 	}                                                                                                 \
 
-#define GEN_LOWERED_SHIFT_OP(op) \
+#define GEN_LOWERED_UNOP(op)                                           \
+	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {       \
+		return gen_unop(env, get_unop_op(env->irn), new_rd_ia32_##op); \
+	}                                                                  \
+
+#define GEN_LOWERED_SHIFT_OP(op)                                                                            \
 	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {                                            \
 		return gen_shift_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_##op); \
 	}                                                                                                       \
@@ -2279,6 +2284,8 @@ GEN_LOWERED_OP(Add)
 GEN_LOWERED_OP(SubC)
 GEN_LOWERED_OP(Sub)
 GEN_LOWERED_OP(Mul)
+
+GEN_LOWERED_UNOP(Minus)
 
 /**
  * Transforms a l_MulS into a "real" MulS node.
@@ -2633,6 +2640,7 @@ void ia32_register_transformers(void) {
 	GEN(ia32_l_AddC);
 	GEN(ia32_l_Sub);
 	GEN(ia32_l_SubC);
+	GEN(ia32_l_Minus);
 	GEN(ia32_l_Mul);
 	GEN(ia32_l_MulS);
 	GEN(ia32_l_Shl);
