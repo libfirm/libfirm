@@ -356,6 +356,7 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 
 		if (tv) {
 			tv = tarval_mod(tv, new_tarval_from_long(32, mode_Iu));
+			set_ia32_Immop_tarval(imm_op, tv);
 		}
 		else {
 			imm_op = NULL;
@@ -571,26 +572,6 @@ static ir_node *gen_Add(ia32_transform_env_t *env) {
 	set_ia32_res_mode(new_op, mode);
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, pn_ia32_Add_res);
-}
-
-/**
- * Transforms an ia32_l_AddC (created in intrinsic lowering) into a "real" AddC
- *
- * @param env   The transformation environment
- * @return the created ia32 Add node
- */
-static ir_node *gen_ia32_l_AddC(ia32_transform_env_t *env) {
-	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_AddC);
-}
-
-/**
- * Transforms an ia32_l_Add (created in intrinsic lowering) into a "real" Add
- *
- * @param env   The transformation environment
- * @return the created ia32 Add node
- */
-static ir_node *gen_ia32_l_Add(ia32_transform_env_t *env) {
-	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_Add);
 }
 
 
@@ -915,26 +896,6 @@ static ir_node *gen_Sub(ia32_transform_env_t *env) {
 	set_ia32_res_mode(new_op, mode);
 
 	return new_rd_Proj(dbg, irg, block, new_op, mode, pn_ia32_Sub_res);
-}
-
-/**
- * Transforms an ia32_l_SubC (created in intrinsic lowering) into a "real" SubC
- *
- * @param env   The transformation environment
- * @return the created ia32 SubC node
- */
-static ir_node *gen_ia32_l_SubC(ia32_transform_env_t *env) {
-	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_SubC);
-}
-
-/**
- * Transforms an ia32_l_Sub (created in intrinsic lowering) into a "real" Sub
- *
- * @param env   The transformation environment
- * @return the created ia32 Sub node
- */
-static ir_node *gen_ia32_l_Sub(ia32_transform_env_t *env) {
-	return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_Sub);
 }
 
 
@@ -2285,6 +2246,137 @@ static ir_node *gen_Unknown(ia32_transform_env_t *env) {
 	return NULL;
 }
 
+/**********************************************************************
+ *  _                                _                   _
+ * | |                              | |                 | |
+ * | | _____      _____ _ __ ___  __| |  _ __   ___   __| | ___  ___
+ * | |/ _ \ \ /\ / / _ \ '__/ _ \/ _` | | '_ \ / _ \ / _` |/ _ \/ __|
+ * | | (_) \ V  V /  __/ | |  __/ (_| | | | | | (_) | (_| |  __/\__ \
+ * |_|\___/ \_/\_/ \___|_|  \___|\__,_| |_| |_|\___/ \__,_|\___||___/
+ *
+ **********************************************************************/
+
+/* These nodes are created in intrinsic lowering (64bit -> 32bit) */
+
+/**
+ * Transforms an ia32_l_XXX into a "real" XXX node
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 XXX node
+ */
+#define GEN_LOWERED_OP(op) \
+	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {                                      \
+		return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_##op); \
+	}                                                                                                 \
+
+#define GEN_LOWERED_SHIFT_OP(op) \
+	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {                                            \
+		return gen_shift_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_##op); \
+	}                                                                                                       \
+
+GEN_LOWERED_OP(AddC)
+GEN_LOWERED_OP(Add)
+GEN_LOWERED_OP(SubC)
+GEN_LOWERED_OP(Sub)
+GEN_LOWERED_OP(Mul)
+
+/**
+ * Transforms a l_MulS into a "real" MulS node.
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 MulS node
+ */
+static ir_node *gen_ia32_l_MulS(ia32_transform_env_t *env) {
+
+	/* l_MulS is already a mode_T node, so we create the MulS in the normal way   */
+	/* and then skip the result Proj, because all needed Projs are already there. */
+
+	ir_node *new_op = gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_MulS);
+	return get_Proj_pred(new_op);
+}
+
+GEN_LOWERED_SHIFT_OP(Shl)
+GEN_LOWERED_SHIFT_OP(Shr)
+GEN_LOWERED_SHIFT_OP(Shrs)
+
+/**
+ * Transforms a l_ShlD/l_ShrD into a ShlD/ShrD. Those nodes have 3 data inputs:
+ * op1 - target to be shifted
+ * op2 - contains bits to be shifted into target
+ * op3 - shift count
+ * Only op3 can be an immediate.
+ */
+static ir_node *gen_lowered_64bit_shifts(ia32_transform_env_t *env, ir_node *op1, ir_node *op2, ir_node *count) {
+	ir_node           *new_op = NULL;
+	ir_mode           *mode   = env->mode;
+	dbg_info          *dbg    = env->dbg;
+	ir_graph          *irg    = env->irg;
+	ir_node           *block  = env->block;
+	ir_node           *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node           *nomem  = new_NoMem();
+	ir_node           *imm_op;
+	tarval            *tv;
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
+
+	assert(! mode_is_float(mode) && "Shift/Rotate with float not supported");
+
+	/* Check if immediate optimization is on and */
+	/* if it's an operation with immediate.      */
+	imm_op  = (env->cg->opt & IA32_OPT_IMMOPS) ? get_immediate_op(NULL, count) : NULL;
+
+	/* Limit imm_op within range imm8 */
+	if (imm_op) {
+		tv = get_ia32_Immop_tarval(imm_op);
+
+		if (tv) {
+			tv = tarval_mod(tv, new_tarval_from_long(32, mode_Iu));
+			set_ia32_Immop_tarval(imm_op, tv);
+		}
+		else {
+			imm_op = NULL;
+		}
+	}
+
+	/* integer operations */
+	if (imm_op) {
+		/* This is ShiftD with const */
+		DB((mod, LEVEL_1, "ShiftD with immediate ..."));
+
+		if (is_ia32_l_ShlD(env->irn))
+			new_op = new_rd_ia32_ShlD(dbg, irg, block, noreg, noreg, op1, op2, noreg, nomem);
+		else
+			new_op = new_rd_ia32_ShrD(dbg, irg, block, noreg, noreg, op1, op2, noreg, nomem);
+		set_ia32_Immop_attr(new_op, imm_op);
+	}
+	else {
+		/* This is a normal ShiftD */
+		DB((mod, LEVEL_1, "ShiftD binop ..."));
+		if (is_ia32_l_ShlD(env->irn))
+			new_op = new_rd_ia32_ShlD(dbg, irg, block, noreg, noreg, op1, op2, count, nomem);
+		else
+			new_op = new_rd_ia32_ShrD(dbg, irg, block, noreg, noreg, op1, op2, count, nomem);
+	}
+
+	/* set AM support */
+	set_ia32_am_support(new_op, ia32_am_Dest);
+
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
+
+	set_ia32_res_mode(new_op, mode);
+	set_ia32_emit_cl(new_op);
+
+	return new_rd_Proj(dbg, irg, block, new_op, mode, 0);
+}
+
+static ir_node *gen_ia32_l_ShlD(ia32_transform_env_t *env) {
+	return gen_lowered_64bit_shifts(env, get_irn_n(env->irn, 0), get_irn_n(env->irn, 1), get_irn_n(env->irn, 2));
+}
+
+static ir_node *gen_ia32_l_ShrD(ia32_transform_env_t *env) {
+	return gen_lowered_64bit_shifts(env, get_irn_n(env->irn, 0), get_irn_n(env->irn, 1), get_irn_n(env->irn, 2));
+}
+
+
 
 /*********************************************************
  *                  _             _      _
@@ -2507,11 +2599,7 @@ void ia32_register_transformers(void) {
 #define IGN(a)
 
 	GEN(Add);
-	GEN(ia32_l_Add);
-	GEN(ia32_l_AddC);
 	GEN(Sub);
-	GEN(ia32_l_Sub);
-	GEN(ia32_l_SubC);
 	GEN(Mul);
 	GEN(And);
 	GEN(Or);
@@ -2540,6 +2628,18 @@ void ia32_register_transformers(void) {
 	GEN(CopyB);
 	GEN(Mux);
 	GEN(Psi);
+
+	GEN(ia32_l_Add);
+	GEN(ia32_l_AddC);
+	GEN(ia32_l_Sub);
+	GEN(ia32_l_SubC);
+	GEN(ia32_l_Mul);
+	GEN(ia32_l_MulS);
+	GEN(ia32_l_Shl);
+	GEN(ia32_l_Shr);
+	GEN(ia32_l_Shrs);
+	GEN(ia32_l_ShlD);
+	GEN(ia32_l_ShrD);
 
 	IGN(Call);
 	IGN(Alloc);
