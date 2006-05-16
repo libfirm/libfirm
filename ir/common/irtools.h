@@ -26,6 +26,15 @@ lc_opt_entry_t *firm_opt_get_root(void);
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 /**
+ * Three valued compare as demanded by e.g. qsort(3)
+ * @param c A number.
+ * @param d Another number.
+ * @return 0 if c == d, -1 if c < d, 1 if c > d.
+ */
+#define CMP(c, d) (((c) > (d)) - ((c) < (d)))
+
+
+/**
  * convert an integer into pointer
  */
 #define INT_TO_PTR(v)   ((void *)((char *)0 + (v)))
