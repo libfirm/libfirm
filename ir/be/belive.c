@@ -11,6 +11,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf_t.h"
+#include "irbitset.h"
 
 #include "beutil.h"
 #include "belive_t.h"
@@ -64,31 +65,29 @@ static INLINE void mark_live_end(ir_node *block, const ir_node *irn)
  * @param is_true_out Is the node real out there or only live at the end
  * of the block.
  */
-static void live_end_at_block(ir_node *def, ir_node *block,
-    pset *visited, int is_true_out)
+static void live_end_at_block(ir_node *def, ir_node *block, bitset_t *visited, int is_true_out)
 {
-  mark_live_end(block, def);
-  if(is_true_out)
-    mark_live_out(block, def);
+	mark_live_end(block, def);
+	if(is_true_out)
+		mark_live_out(block, def);
 
-  if(!pset_find_ptr(visited, block)) {
+	if(!bitset_contains_irn(visited, block)) {
+		bitset_add_irn(visited, block);
 
-    pset_insert_ptr(visited, block);
+		/*
+		* If this block is not the definition block, we have to go up
+		* further.
+		*/
+		if(get_nodes_block(def) != block) {
+			int i, n;
 
-    /*
-     * If this block is not the definition block, we have to go up
-     * further.
-     */
-    if(get_nodes_block(def) != block) {
-      int i, n;
+			mark_live_in(block, def);
 
-      mark_live_in(block, def);
+			for(i = 0, n = get_Block_n_cfgpreds(block); i < n; ++i)
+				live_end_at_block(def, get_Block_cfgpred_block(block, i), visited, 1);
+		}
 
-      for(i = 0, n = get_irn_arity(block); i < n; ++i)
-        live_end_at_block(def, get_Block_cfgpred_block(block, i), visited, 1);
-    }
-
-  }
+	}
 }
 
 /**
@@ -98,61 +97,59 @@ static void live_end_at_block(ir_node *def, ir_node *block,
  * @param irn The node (value).
  * @param env Ignored.
  */
-static void liveness_for_node(ir_node *irn, void *env)
+static void liveness_for_node(ir_node *irn, void *data)
 {
-  const ir_edge_t *edge;
-  ir_node *def_block;
-  pset *visited;
+	bitset_t *visited = data;
+	const ir_edge_t *edge;
+	ir_node *def_block;
 
-  /* Don't compute liveness information for non-data nodes. */
-  if(!is_data_node(irn))
-    return;
+	/* Don't compute liveness information for non-data nodes. */
+	if(!is_data_node(irn))
+		return;
 
-  visited = pset_new_ptr(512);
-  def_block = get_nodes_block(irn);
+	bitset_clear_all(visited);
+	def_block = get_nodes_block(irn);
 
-  /* Go over all uses of the value */
-  foreach_out_edge(irn, edge) {
-    ir_node *use = edge->src;
-    ir_node *use_block;
+	/* Go over all uses of the value */
+	foreach_out_edge(irn, edge) {
+		ir_node *use = edge->src;
+		ir_node *use_block;
 
-    /*
-     * If the usage is no data node, skip this use, since it does not
-     * affect the liveness of the node.
-     */
-    if(!is_data_node(use))
-      continue;
+		/*
+		* If the usage is no data node, skip this use, since it does not
+		* affect the liveness of the node.
+		*/
+		if(!is_data_node(use))
+			continue;
 
-    /* Get the block where the usage is in. */
-    use_block = get_nodes_block(use);
+		/* Get the block where the usage is in. */
+		use_block = get_nodes_block(use);
 
-    /*
-     * If the use is a phi function, determine the corresponding block
-     * through which the value reaches the phi function and mark the
-     * value as live out of that block.
-     */
-    if(is_Phi(use)) {
+		/*
+		* If the use is a phi function, determine the corresponding block
+		* through which the value reaches the phi function and mark the
+		* value as live out of that block.
+		*/
+		if(is_Phi(use)) {
 			ir_node *pred_block = get_Block_cfgpred_block(use_block, edge->pos);
 			live_end_at_block(irn, pred_block, visited, 0);
-    }
+		}
 
-    /*
-     * Else, the value is live in at this block. Mark it and call live
-     * out on the predecessors.
-     */
-    else if(def_block != use_block) {
-      int i, n;
+		/*
+		* Else, the value is live in at this block. Mark it and call live
+		* out on the predecessors.
+		*/
+		else if(def_block != use_block) {
+			int i, n;
 
-      mark_live_in(use_block, irn);
+			mark_live_in(use_block, irn);
 
-      for(i = 0, n = get_irn_arity(use_block); i < n; ++i) {
-        ir_node *pred_block = get_nodes_block(get_irn_n(use_block, i));
-        live_end_at_block(irn, pred_block, visited, 1);
-      }
-    }
-  }
-
-  del_pset(visited);
+			for(i = 0, n = get_Block_n_cfgpreds(use_block); i < n; ++i) {
+				ir_node *pred_block = get_Block_cfgpred_block(use_block, i);
+				live_end_at_block(irn, pred_block, visited, 1);
+			}
+		}
+	}
 }
 
 /**
@@ -207,15 +204,19 @@ static int dump_block_func(ir_node *self, FILE *F, dump_reason_t reason)
 /* Compute the inter block liveness for a graph. */
 void be_liveness(ir_graph *irg)
 {
-  irg_live_info_t *live_info = get_irg_live_info(irg);
-  if(live_info->live)
-    del_set(live_info->live);
+	bitset_t *visited = bitset_irg_malloc(irg);
 
-  live_info->live = new_set(cmp_irn_live, 8192);
-  irg_walk_graph(irg, liveness_for_node, NULL, NULL);
+	irg_live_info_t *live_info = get_irg_live_info(irg);
+	if(live_info->live)
+		del_set(live_info->live);
 
-  old_dump_block_func     = op_Block->ops.dump_node;
-  op_Block->ops.dump_node = dump_block_func;
+	live_info->live = new_set(cmp_irn_live, 8192);
+	irg_walk_graph(irg, liveness_for_node, NULL, visited);
+
+	old_dump_block_func     = op_Block->ops.dump_node;
+	op_Block->ops.dump_node = dump_block_func;
+
+	bitset_free(visited);
 }
 
 /**

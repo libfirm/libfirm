@@ -44,12 +44,11 @@ extern size_t live_irg_data_offset;
 #define live_is_end(live) (((live)->state & live_state_end) != 0)
 #define live_is_out(live) (((live)->state & live_state_out) != 0)
 
-static INLINE irn_live_t *_get_or_set_live(const ir_node *block,
-    const ir_node *irn, int state)
+static INLINE irn_live_t *_get_or_set_live(const ir_node *block, const ir_node *irn, int state)
 {
   irg_live_info_t *live_info = get_irg_live_info(get_irn_irg(block));
-  irn_live_t *live, templ;
   unsigned hash = HASH_PTR(block) + 37 * HASH_PTR(irn);
+  irn_live_t *live, templ;
 
   templ.block = block;
   templ.irn = irn;
@@ -61,7 +60,7 @@ static INLINE irn_live_t *_get_or_set_live(const ir_node *block,
 
     if(!is_Block(irn)) {
       irn_live_t *bl_live = _get_or_set_live(block, block, live_state_block);
-      live->next = bl_live->next;
+      live->next    = bl_live->next;
       bl_live->next = live;
     }
 
