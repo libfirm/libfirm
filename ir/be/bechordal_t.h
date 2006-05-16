@@ -106,12 +106,13 @@ enum {
 	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_LOWER - 1,
 
 	/* copymin method */
-	BE_CH_COPYMIN_NONE    = 0,
-	BE_CH_COPYMIN_HEUR1   = 1,
-	BE_CH_COPYMIN_HEUR2   = 2,
-	BE_CH_COPYMIN_STAT    = 3,
-	BE_CH_COPYMIN_ILP1    = 4,
-	BE_CH_COPYMIN_ILP2    = 5,
+	BE_CH_COPYMIN_NONE      = 0,
+	BE_CH_COPYMIN_HEUR1     = 1,
+	BE_CH_COPYMIN_HEUR2     = 2,
+	BE_CH_COPYMIN_STAT      = 3,
+	BE_CH_COPYMIN_ILP1      = 4,
+	BE_CH_COPYMIN_ILP2      = 5,
+	BE_CH_COPYMIN_PARK_MOON = 6,
 
 	/* ifg flavor */
 	BE_CH_IFG_STD         = 1,
