@@ -489,7 +489,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	timer = lc_timer_register("heur1", NULL);
 	lc_timer_reset_and_start(timer);
 
-	co_solve_heuristic(co);
+	co_solve_heuristic_new(co);
 
 	lc_timer_stop(timer);
 

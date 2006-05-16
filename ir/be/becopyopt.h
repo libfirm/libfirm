@@ -18,6 +18,11 @@
 #include "firm_types.h"
 #include "bechordal.h"
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+extern void co_register_options(lc_opt_entry_t *grp);
+#endif
+
 /**
  * Has to be called during the firm init phase
  */

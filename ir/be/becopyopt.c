@@ -31,6 +31,18 @@
 #include "becopystat.h"
 
 
+#ifdef WITH_LIBCORE
+
+/* Insert additional options registration functions here. */
+extern void be_co2_register_options(lc_opt_entry_t *grp);
+
+void co_register_options(lc_opt_entry_t *grp)
+{
+	be_co2_register_options(grp);
+}
+#endif
+
+
 #undef QUICK_AND_DIRTY_HACK
 
 /******************************************************************************
