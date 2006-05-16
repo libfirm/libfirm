@@ -276,7 +276,6 @@ lc_arg_env_t *firm_get_arg_env(void)
     X("irn_nr",    'N'),
     X("mode",      'm'),
     X("block",     'B'),
-    X("pnc",       '='),
     X("cg_path",   'P'),
   };
 
@@ -294,6 +293,7 @@ lc_arg_env_t *firm_get_arg_env(void)
     lc_arg_register(env, "firm:indent",   '>', &indent_handler);
     lc_arg_register(env, "firm:dbg_info", 'G', &debug_handler);
     lc_arg_register(env, "firm:bitset",   'B', &bitset_handler);
+    lc_arg_register(env, "firm:pnc",      '=', &pnc_handler);
   }
 
   return env;
