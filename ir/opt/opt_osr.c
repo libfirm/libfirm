@@ -30,6 +30,7 @@
 #include "irgmod.h"
 #include "irflag_t.h"
 #include "irgwalk.h"
+#include "irouts.h"
 #include "debug.h"
 #include "obst.h"
 #include "set.h"
@@ -127,7 +128,11 @@ static void LFTR_add(ir_node *src, ir_node *dst, opcode code, ir_node *rc, iv_en
 	key.code = code;
 	key.rc   = rc;
 
-	assert(LFTR_find(src, env) == NULL);
+	/*
+	 * There might be more than one edge here. This is rather bad
+	 * because we currently store only one.
+	 */
+//	assert(LFTR_find(src, env) == NULL);
 	set_insert(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
 }
 
@@ -148,6 +153,9 @@ static node_entry *get_irn_ne(ir_node *irn, iv_env *env) {
 /**
  * Check if irn is an IV.
  *
+ * @param irn  the node to check
+ * @param env  the environment
+ *
  * @returns the header if it is one, NULL else
  */
 static ir_node *is_iv(ir_node *irn, iv_env *env) {
@@ -156,11 +164,15 @@ static ir_node *is_iv(ir_node *irn, iv_env *env) {
 
 /**
  * Check if irn is a region constant.
+ * The block or irn must strictly dominate the header block.
+ *
+ * @param irn           the node to check
+ * @param header_block  the header block of the induction variable
  */
 static int is_rc(ir_node *irn, ir_node *header_block) {
 	ir_node *block = get_nodes_block(irn);
 
-	return block_dominates(block, header_block);
+	return (block != header_block) && block_dominates(block, header_block);
 }
 
 /**
@@ -175,12 +187,19 @@ static int quad_cmp(const void *e1, const void *e2, size_t size) {
 
 /**
  * Check if an reduced operation was already calculated.
+ *
+ * @param code  the opcode of the operation
+ * @param op1   the first operand of the operation
+ * @param op2   the second operand of the operation
+ * @param env   the environment
+ *
+ * @return the already reduced node or NULL if this operation is not yet reduced
  */
 static ir_node *search(opcode code, ir_node *op1, ir_node *op2, iv_env *env) {
 	quad_t key, *entry;
 
 	key.code = code;
-	key.op1 = op2;
+	key.op1 = op1;
 	key.op2 = op2;
 
 	entry = set_find(env->quad_map, &key, sizeof(key),
@@ -191,13 +210,19 @@ static ir_node *search(opcode code, ir_node *op1, ir_node *op2, iv_env *env) {
 }
 
 /**
- * Add an reduced operation was already calculated.
+ * Add an reduced operation.
+ *
+ * @param code    the opcode of the operation
+ * @param op1     the first operand of the operation
+ * @param op2     the second operand of the operation
+ * @param result  the result of the reduced operation
+ * @param env     the environment
  */
 static void add(opcode code, ir_node *op1, ir_node *op2, ir_node *result, iv_env *env) {
 	quad_t key;
 
 	key.code = code;
-	key.op1  = op2;
+	key.op1  = op1;
 	key.op2  = op2;
 	key.res  = result;
 
@@ -209,19 +234,30 @@ static void add(opcode code, ir_node *op1, ir_node *op2, ir_node *result, iv_env
  * Find a location where to place a bin-op whose operands are in
  * block1 and block2.
  *
+ * @param block1  the block of the first operand
+ * @param block2  the block of the second operand
+ *
  * Note that we know here that such a place must exists. Moreover, this means
  * that either block1 dominates block2 or vice versa. So, just return
  * the "smaller" one.
  */
 static ir_node *find_location(ir_node *block1, ir_node *block2) {
 	if (block_dominates(block1, block2))
-		return block1;
+		return block2;
 	assert(block_dominates(block2, block1));
-	return block2;
+	return block1;
 }
 
 /**
- * create an op1 code op1 operation.
+ * Create a node that executes an op1 code op1 operation.
+ *
+ * @param code   the opcode to execute
+ * @param db     debug info to add to the new node
+ * @param op1    the first operand
+ * @param op2    the second operand
+ * @param mode   the mode of the new operation
+ *
+ * @return the newly created node
  */
 static ir_node *do_apply(opcode code, dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {
 	ir_graph *irg = current_ir_graph;
@@ -247,6 +283,14 @@ static ir_node *do_apply(opcode code, dbg_info *db, ir_node *op1, ir_node *op2, 
 
 /**
  * The Apply operation.
+ *
+ * @param orig   the node that represent the original operation and determines
+ *               the opcode, debug-info and mode of a newly created one
+ * @param op1    the first operand
+ * @param op2    the second operand
+ * @param env     the environment
+ *
+ * @return the newly created node
  */
 static ir_node *apply(ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env) {
 	opcode code = get_irn_opcode(orig);
@@ -273,6 +317,14 @@ static ir_node *apply(ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env) {
 
 /**
  * The Reduce operation.
+ *
+ * @param orig   the node that represent the original operation and determines
+ *               the opcode, debug-info and mode of a newly created one
+ * @param iv     the induction variable
+ * @param rc     the region constant
+ * @param env    the environment
+ *
+ * @return the reduced node
  */
 static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 	opcode code = get_irn_opcode(orig);
@@ -319,11 +371,15 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 			set_irn_n(result, i, o);
 		}
 	}
+	else {
+		DB((dbg, LEVEL_3, "   Already Created %+F for %+F (%s %+F)\n", result, iv,
+			get_irn_opname(orig), rc));
+	}
 	return result;
 }
 
 /**
- * Do the replacement operation.
+ * The Replace operation.
  *
  * @param irn   the node that will be replaced
  * @param iv    the induction variable
@@ -336,7 +392,7 @@ static void replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 	DB((dbg, LEVEL_2, "  Replacing %+F\n", irn));
 
 	result = reduce(irn, iv, rc, env);
-	if (result && result != irn) {
+	if (result != irn) {
 		node_entry *e, *iv_e;
 
 		exchange(irn, result);
@@ -347,7 +403,12 @@ static void replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 }
 
 /**
- * check if a node can be replaced.
+ * Check if a node can be replaced (+, -, *).
+ *
+ * @param irn   the node to check
+ * @param env   the environment
+ *
+ * @return non-zero if irn should be Replace'd
  */
 static int check_replace(ir_node *irn, iv_env *env) {
 	ir_node *left, *right, *iv, *rc;
@@ -369,8 +430,8 @@ static int check_replace(ir_node *irn, iv_env *env) {
 		if (liv && is_rc(right, liv)) {
 			iv = left; rc = right;
 		}
-		else if (is_op_commutative(op) &&
-			riv && is_rc(left, riv)) {
+		else if (riv && is_op_commutative(op) &&
+			            is_rc(left, riv)) {
 			iv = right; rc = left;
 		}
 
@@ -385,7 +446,10 @@ static int check_replace(ir_node *irn, iv_env *env) {
 }
 
 /**
- * check which SCC's are induction variables
+ * Check which SCC's are induction variables.
+ *
+ * @param pscc  a SCC
+ * @param env   the environment
  */
 static void classify_iv(scc *pscc, iv_env *env) {
 	ir_node *irn, *next, *header = NULL;
@@ -440,14 +504,16 @@ static void classify_iv(scc *pscc, iv_env *env) {
 		}
 	}
 	/* found an induction variable */
-	DB((dbg, LEVEL_2, "  Found an induction variable in %+F\n", pscc->head));
+	DB((dbg, LEVEL_2, "  Found an induction variable:\n  "));
 
 	/* set the header for every node in this scc */
 	for (irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 		e->header = header;
 		next = e->next;
+		DB((dbg, LEVEL_2, " %+F,", irn));
 	}
+	DB((dbg, LEVEL_2, "\n"));
 	return;
 
 fail:
@@ -461,7 +527,10 @@ fail:
 }
 
 /**
- * Process a SCC given as a list.
+ * Process a SCC.
+ *
+ * @param pscc  the SCC
+ * @param env   the environment
  */
 static void process_scc(scc *pscc, iv_env *env) {
 	ir_node *head = pscc->head;
@@ -494,6 +563,9 @@ static void process_scc(scc *pscc, iv_env *env) {
 
 /**
  * Push a node onto the stack.
+ *
+ * @param env   the environment
+ * @param n     the node to push
  */
 static void push(iv_env *env, ir_node *n) {
 	node_entry *e;
@@ -510,6 +582,8 @@ static void push(iv_env *env, ir_node *n) {
 /**
  * pop a node from the stack
  *
+ * @param env   the environment
+ *
  * @return  The topmost node
  */
 static ir_node *pop(iv_env *env)
@@ -522,7 +596,7 @@ static ir_node *pop(iv_env *env)
 }
 
 /**
- * Do Tarjan's SCC algorithm and drive OSR
+ * Do Tarjan's SCC algorithm and drive OSR.
  *
  * @param irn  start at this node
  * @param env  the environment
@@ -588,7 +662,10 @@ static void dfs(ir_node *irn, iv_env *env)
 }
 
 /**
- * Do the DFS by starting end the End node
+ * Do the DFS by starting at the End node of a graph.
+ *
+ * @param irg  the graph to process
+ * @param env  the environment
  */
 static void do_dfs(ir_graph *irg, iv_env *env) {
 	ir_graph *rem = current_ir_graph;
@@ -624,10 +701,14 @@ static void assign_po(ir_node *block, void *ctx) {
 }
 
 /**
- * follows the LFTR edges and return the last node in the chain.
+ * Follows the LFTR edges and return the last node in the chain.
  *
  * @param irn  the node that should be followed
  * @param env  the IV environment
+ *
+ * @note
+ * In the current implementation only the last edge is stored, so
+ * only one chain exists. That's why we might miss some opportunities.
  */
 static ir_node *followEdges(ir_node *irn, iv_env *env) {
 	for (;;) {
@@ -647,6 +728,13 @@ static ir_node *followEdges(ir_node *irn, iv_env *env) {
  * @param rc   the IV node that should be translated
  * @param e    the LFTR edge
  * @param env  the IV environment
+ *
+ * @return the translated region constant or NULL
+ *         if the translation was not possible
+ *
+ * @note
+ * In the current implementation only the last edge is stored, so
+ * only one chain exists. That's why we might miss some opportunities.
  */
 static ir_node *applyOneEdge(ir_node *rc, LFTR_edge *e, iv_env *env) {
 	if (env->flags & osr_flag_lftr_with_ov_check) {
@@ -702,6 +790,9 @@ static ir_node *applyOneEdge(ir_node *rc, LFTR_edge *e, iv_env *env) {
  * @param iv   the IV node that starts the LFTR edge chain
  * @param rc   the region constant that should be translated
  * @param env  the IV environment
+ *
+ * @return the translated region constant or NULL
+ *         if the translation was not possible
  */
 static ir_node *applyEdges(ir_node *iv, ir_node *rc, iv_env *env) {
 	ir_node *irn = iv;
@@ -729,7 +820,8 @@ static ir_node *applyEdges(ir_node *iv, ir_node *rc, iv_env *env) {
 }
 
 /**
- * Walker; find Cmp(iv, rc) or Cmp(rc, iv)
+ * Walker, finds Cmp(iv, rc) or Cmp(rc, iv)
+ * and tries to optimize them.
  */
 static void do_lftr(ir_node *cmp, void *ctx) {
 	iv_env *env = ctx;
@@ -772,9 +864,26 @@ static void do_lftr(ir_node *cmp, void *ctx) {
 
 /**
  * do linear function test replacement.
+ *
+ * @param irg   the graph that should be optimized
+ * @param env   the IV environment
  */
 static void lftr(ir_graph *irg, iv_env *env) {
 	irg_walk_graph(irg, NULL, do_lftr, env);
+}
+
+/**
+ * Pre-walker: set all node links to NULL and fix the
+ * block of Proj nodes.
+ */
+static void clear_and_fix(ir_node *irn, void *env)
+{
+	set_irn_link(irn, NULL);
+
+	if (is_Proj(irn)) {
+		ir_node *pred = get_Proj_pred(irn);
+		set_irn_n(irn, -1, get_irn_n(pred, -1));
+	}
 }
 
 /* Performs Operator Strength Reduction for the passed graph. */
@@ -786,9 +895,6 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
 //	firm_dbg_set_mask(dbg, SET_LEVEL_3);
-
-	/* and dominance as well */
-	assure_doms(irg);
 
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
@@ -803,13 +909,20 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	env.lftr_replaced = 0;
 	env.flags         = flags;
 
-	/* clear all links */
-	irg_walk_graph(irg, NULL, firm_clear_link, NULL);
+	/* Clear all links and move Proj nodes into the
+	   the same block as it's predecessors.
+	   This can improve the placement of new nodes.
+	 */
+	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
 
-	/* calculate the post order number */
-	irg_block_walk_graph(irg, NULL, assign_po, &env);
+	/* we need dominance */
+	assure_doms(irg);
+	assure_irg_outs(irg);
 
-	/* calculate the SCC's and drive OSR */
+	/* calculate the post order number for blocks. */
+	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
+
+	/* calculate the SCC's and drive OSR. */
 	do_dfs(irg, &env);
 
 	if (env.replaced) {
@@ -818,8 +931,9 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 
 		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
+
+		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
 	}
-	DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
 
 	del_set(env.lftr_edges);
 	del_set(env.quad_map);
