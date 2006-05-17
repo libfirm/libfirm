@@ -177,10 +177,11 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 };
 
 static const lc_opt_enum_int_items_t copymin_items[] = {
-	{ "none",  BE_CH_COPYMIN_NONE },
-	{ "heur1", BE_CH_COPYMIN_HEUR1 },
-	{ "heur2", BE_CH_COPYMIN_HEUR2 },
-	{ "stat",  BE_CH_COPYMIN_STAT  },
+	{ "none",  BE_CH_COPYMIN_NONE      },
+	{ "heur1", BE_CH_COPYMIN_HEUR1     },
+	{ "heur2", BE_CH_COPYMIN_HEUR2     },
+	{ "stat",  BE_CH_COPYMIN_STAT      },
+	{ "park",  BE_CH_COPYMIN_PARK_MOON },
 #ifdef WITH_ILP
 	{ "ilp1",  BE_CH_COPYMIN_ILP1 },
 	{ "ilp2",  BE_CH_COPYMIN_ILP2 },
