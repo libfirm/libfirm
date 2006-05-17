@@ -262,6 +262,46 @@ static int map_Minus(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/**
+ * Map a Abs (a_l, a_h)
+ */
+static int map_Abs(ir_node *call, void *ctx) {
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_node  *l_res, *h_res, *sign, *sub_l, *sub_h;
+
+	/*
+		Code inspired by gcc output :) (although gcc doubles the
+		operation for t1 as t2 and uses t1 for operations with low part
+		and t2 for operations with high part which is actually unnecessary
+		because t1 and t2 represent the same value)
+
+		t1    = SHRS a_h, 31
+		t2    = a_l ^ t1
+		t3    = a_h ^ t1
+		l_res = t2 - t1
+		h_res = t3 - t1 - carry
+
+	*/
+
+	sign  = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, new_Const_long(h_res_mode, 31), h_res_mode);
+	sub_l = new_rd_ia32_l_Eor(dbg, irg, block, a_l, sign, l_res_mode);
+	sub_h = new_rd_ia32_l_Eor(dbg, irg, block, a_h, sign, h_res_mode);
+	l_res = new_rd_ia32_l_Sub(dbg, irg, block, sub_l, sign, l_res_mode);
+	h_res = new_rd_ia32_l_SubC(dbg, irg, block, sub_h, sign, l_res_mode);
+
+	resolve_call(call, l_res, h_res, irg, block);
+
+	return 1;
+}
+
 /* Ia32 implementation of intrinsic mapping. */
 entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                   const ir_mode *imode, const ir_mode *omode,
@@ -298,6 +338,14 @@ entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	case iro_Mul:
 		ent    = &i_ents[iro_Mul];
 		mapper = map_Mul;
+		break;
+	case iro_Minus:
+		ent    = &i_ents[iro_Minus];
+		mapper = map_Minus;
+		break;
+	case iro_Abs:
+		ent    = &i_ents[iro_Abs];
+		mapper = map_Abs;
 		break;
 	default:
 		fprintf(stderr, "FIXME: unhandled op for ia32 intrinsic function %s\n", get_id_str(op->name));

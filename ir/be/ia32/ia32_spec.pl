@@ -304,6 +304,12 @@ $comment_string = "/*";
   "outs"      => [ "res", "M" ],
 },
 
+"l_Eor" => {
+  "op_flags"  => "C",
+  "comment"   => "construct lowered Eor: Eor(a, b) = Eor(b, a) = a EOR b",
+  "arity"     => 2
+},
+
 "Max" => {
   "irn_flags" => "R",
   "comment"   => "construct Max: Max(a, b) = Max(b, a) = a > b ? a : b",

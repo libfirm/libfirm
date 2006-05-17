@@ -2284,6 +2284,7 @@ GEN_LOWERED_OP(Add)
 GEN_LOWERED_OP(SubC)
 GEN_LOWERED_OP(Sub)
 GEN_LOWERED_OP(Mul)
+GEN_LOWERED_OP(Eor)
 
 GEN_LOWERED_UNOP(Minus)
 
@@ -2636,12 +2637,14 @@ void ia32_register_transformers(void) {
 	GEN(Mux);
 	GEN(Psi);
 
+	/* transform ops from intrinsic lowering */
 	GEN(ia32_l_Add);
 	GEN(ia32_l_AddC);
 	GEN(ia32_l_Sub);
 	GEN(ia32_l_SubC);
 	GEN(ia32_l_Minus);
 	GEN(ia32_l_Mul);
+	GEN(ia32_l_Eor);
 	GEN(ia32_l_MulS);
 	GEN(ia32_l_Shl);
 	GEN(ia32_l_Shr);
