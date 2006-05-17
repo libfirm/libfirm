@@ -59,7 +59,7 @@ static set *conv_types;
 static pmap *lowered_type;
 
 /** The types for the binop and unop intrinsics. */
-static ir_type *binop_tp_u, *binop_tp_s, *unop_tp_u, *unop_tp_s, *tp_s, *tp_u;
+static ir_type *binop_tp_u, *binop_tp_s, *unop_tp_u, *unop_tp_s, *shiftop_tp_u, *shiftop_tp_s, *tp_s, *tp_u;
 
 /** the debug handle */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -842,6 +842,51 @@ static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, block, env);
 	irn = new_rd_Call(dbg, current_ir_graph, block, get_irg_no_mem(current_ir_graph),
 		irn, 4, in, mtp);
+	set_irn_pinned(irn, get_irn_pinned(node));
+	irn = new_r_Proj(current_ir_graph, block, irn, mode_T, pn_Call_T_result);
+
+	idx = get_irn_idx(node);
+	assert(idx < env->n_entries);
+	env->entries[idx]->low_word  = new_r_Proj(current_ir_graph, block, irn, mode, 0);
+	env->entries[idx]->high_word = new_r_Proj(current_ir_graph, block, irn, mode, 1);
+}
+
+/**
+ * Translate a Shiftop.
+ *
+ * Create an intrinsic Call.
+ */
+static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_node  *block, *irn;
+	ir_node  *in[3];
+	dbg_info *dbg;
+	ir_type  *mtp;
+	int      idx;
+	node_entry_t *entry;
+
+	irn   = get_binop_left(node);
+	entry = env->entries[get_irn_idx(irn)];
+	assert(entry);
+
+	if (! entry->low_word) {
+		/* not ready yet, wait */
+		pdeq_putr(env->waitq, node);
+		return;
+	}
+
+	in[0] = entry->low_word;
+	in[1] = entry->high_word;
+
+	/* The shift count is always mode_Iu in firm, so there is no need for lowering */
+	in[2] = get_binop_right(node);
+
+	dbg   = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+
+	mtp = mode_is_signed(mode) ? shiftop_tp_s : shiftop_tp_u;
+	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, block, env);
+	irn = new_rd_Call(dbg, current_ir_graph, block, get_irg_no_mem(current_ir_graph),
+		irn, 3, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
 	irn = new_r_Proj(current_ir_graph, block, irn, mode_T, pn_Call_T_result);
 
@@ -1924,7 +1969,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 
 	if (! binop_tp_u) {
 		binop_tp_u = new_type_method(IDENT("binop_u_intrinsic"), 4, 2);
-
 		set_method_param_type(binop_tp_u, 0, tp_u);
 		set_method_param_type(binop_tp_u, 1, tp_u);
 		set_method_param_type(binop_tp_u, 2, tp_u);
@@ -1940,6 +1984,23 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		set_method_param_type(binop_tp_s, 3, tp_s);
 		set_method_res_type(binop_tp_s, 0, tp_s);
 		set_method_res_type(binop_tp_s, 1, tp_s);
+	}
+	if (! shiftop_tp_u) {
+		shiftop_tp_u = new_type_method(IDENT("shiftop_u_intrinsic"), 3, 2);
+		set_method_param_type(shiftop_tp_u, 0, tp_u);
+		set_method_param_type(shiftop_tp_u, 1, tp_u);
+		set_method_param_type(shiftop_tp_u, 2, tp_u);
+		set_method_res_type(shiftop_tp_u, 0, tp_u);
+		set_method_res_type(shiftop_tp_u, 1, tp_u);
+	}
+	if (! shiftop_tp_s) {
+		shiftop_tp_s = new_type_method(IDENT("shiftop_s_intrinsic"), 3, 2);
+		set_method_param_type(shiftop_tp_s, 0, tp_s);
+		set_method_param_type(shiftop_tp_s, 1, tp_s);
+		/* beware: shift count is always mode_Iu */
+		set_method_param_type(shiftop_tp_s, 2, tp_u);
+		set_method_res_type(shiftop_tp_s, 0, tp_s);
+		set_method_res_type(shiftop_tp_s, 1, tp_s);
 	}
 	if (! unop_tp_u) {
 		unop_tp_u = new_type_method(IDENT("unop_u_intrinsic"), 2, 2);
@@ -1967,6 +2028,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 #define LOWER2(op, fkt)   op_##op->ops.generic = (op_func)fkt
 #define LOWER(op)         LOWER2(op, lower_##op)
 #define LOWER_BIN(op)     LOWER2(op, lower_Binop)
+#define LOWER_SHIFT(op)   LOWER2(op, lower_Shiftop)
 #define LOWER_UN(op)      LOWER2(op, lower_Unop)
 
 	LOWER(Load);
@@ -1986,10 +2048,10 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER_BIN(Add);
 	LOWER_BIN(Sub);
 	LOWER_BIN(Mul);
-	LOWER_BIN(Shl);
-	LOWER_BIN(Shr);
-	LOWER_BIN(Shrs);
-	LOWER_BIN(Rot);
+	LOWER_SHIFT(Shl);
+	LOWER_SHIFT(Shr);
+	LOWER_SHIFT(Shrs);
+	LOWER_SHIFT(Rot);
 	LOWER_UN(Minus);
 	LOWER(DivMod);
 	LOWER(Div);
