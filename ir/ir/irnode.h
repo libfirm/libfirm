@@ -105,9 +105,19 @@ void          set_irn_in            (ir_node *node, int arity, ir_node *in[]);
 /**
  * Get the n-th predecessor of a node.
  * This function removes Id predecessors.
+ * This function automatically handles intra- and interprocedural views.
  */
 ir_node      *get_irn_n             (const ir_node *node, int n);
+
+/**
+ * Get the n-th predecessor of a node in intraprocedural view.
+ * Can be used always if it's know that node is not a split one.
+ */
 ir_node      *get_irn_intra_n       (const ir_node *node, int n);
+
+/**
+ * Get the n-th predecessor of a node in interprocedural view.
+ */
 ir_node      *get_irn_inter_n       (const ir_node *node, int n);
 
 /** Replace the n-th predecessor of a node with a new one. */
