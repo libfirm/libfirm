@@ -346,7 +346,7 @@ static void firm_emit(char *buf, int buflen, char conversion,
         else
           snprintf(buf, buflen, "%s%s%s", A("irn"), get_irn_opname(X),
             get_mode_name(get_irn_mode(X)));
-        snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(X));
+        snprintf(add, sizeof(add), "[%ld:%d]", get_irn_node_nr(X), get_irn_idx(X));
       }
       break;
     case k_ir_mode:
@@ -357,7 +357,7 @@ static void firm_emit(char *buf, int buflen, char conversion,
       snprintf(buf, buflen, "%s%s", A("tv"), tv_buf);
       break;
     case k_ir_loop:
-      snprintf(buf, buflen, "ldepth[%d]", get_loop_depth(X));
+      snprintf(buf, sizeof(buf), "loop[%d:%d]", get_loop_loop_nr(X), get_loop_depth(X));
       break;
     case k_ir_op:
       snprintf(buf, buflen, "%s%s", A("op"), get_op_name(X));
