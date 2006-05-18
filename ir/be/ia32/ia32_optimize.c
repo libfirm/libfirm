@@ -1179,7 +1179,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 		am_flav = ia32_am_N;
 		/* determine new am flavour */
-		if (offs || offs_cnst || offs_lea) {
+		if (offs || offs_cnst || offs_lea || have_am_sc) {
 			am_flav |= ia32_O;
 		}
 		if (! be_is_NoReg(cg, base)) {
