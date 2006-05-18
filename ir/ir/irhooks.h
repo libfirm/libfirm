@@ -130,8 +130,8 @@ typedef struct hook_entry {
     /** This hook is called, before tail recursion is applied to a graph. */
     void (*_hook_tail_rec)(void *context, ir_graph *irg, int n_calls);
 
-    /** UNUSED YET */
-    void (*_hook_strength_red)(void *context, ir_graph *irg, ir_node *strong, ir_node *cmp);
+    /** This hook is called, before a node is replaced due to strength reduction */
+    void (*_hook_strength_red)(void *context, ir_graph *irg, ir_node *node);
 
     /** This hook is called, when dead node elimination is started/stopped. */
     void (*_hook_dead_node_elim)(void *context, ir_graph *irg, int start);
@@ -263,8 +263,8 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_lower(node)                  hook_exec(hook_lower, (ctx, node))
 #define hook_inline(call, irg)            hook_exec(hook_inline, (ctx, call, irg))
 #define hook_tail_rec(irg, n_calls)       hook_exec(hook_tail_rec, (ctx, irg, n_calls))
-#define hook_strength_red(irg, strong, cmp) \
-  hook_exec(hook_strength_red, (ctx, irg, strong, cmp))
+#define hook_strength_red(irg, node) \
+  hook_exec(hook_strength_red, (ctx, irg, node))
 #define hook_dead_node_elim(irg, start)   hook_exec(hook_dead_node_elim, (ctx, irg, start))
 #define hook_dead_node_elim_subst(irg, old, nw) \
    hook_exec(hook_dead_node_elim_subst, (ctx, irg, old, nw))
