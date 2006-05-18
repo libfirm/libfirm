@@ -171,7 +171,7 @@ static int firm_emit(lc_appendable_t *app,
       snprintf(buf, sizeof(buf), "%s%s", A("tv"), tv_buf);
       break;
     case k_ir_loop:
-      snprintf(buf, sizeof(buf), "ldepth[%d]", get_loop_depth(X));
+      snprintf(buf, sizeof(buf), "loop[%d:%d]", get_loop_loop_nr(X), get_loop_depth(X));
       break;
     case k_ir_op:
       snprintf(buf, sizeof(buf), "%s%s", A("op"), get_op_name(X));
