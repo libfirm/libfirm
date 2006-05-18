@@ -588,7 +588,7 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_code_generator_if,
 	TEMPLATE_get_list_sched_selector,
 	TEMPLATE_get_reg_class_alignment,
-        TEMPLETE_get_libfirm_params,
+    TEMPLATE_get_libfirm_params,
 #ifdef WITH_LIBCORE
 	TEMPLATE_register_options
 #endif
