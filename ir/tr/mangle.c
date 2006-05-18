@@ -30,7 +30,7 @@ static struct obstack mangle_obst;
 
 /** returned a mangled type name, currently no mangling */
 static INLINE ident *
-mangle_type (type *tp)
+mangle_type (ir_type *tp)
 {
   assert (tp->kind == k_type);
   return tp->name;
@@ -71,7 +71,7 @@ ident *mangle (ident *first, ident *scnd) {
   return res;
 }
 
-/* Returns a new ident that represents 'prefixscndsuffix'. */
+/** Returns a new ident that represents 'prefixscndsuffix'. */
 static ident *mangle3(const char *prefix, ident *scnd, const char *suffix) {
   char *cp;
   int len;
@@ -87,14 +87,14 @@ static ident *mangle3(const char *prefix, ident *scnd, const char *suffix) {
   return res;
 }
 
-/* Returns a new ident that represents first_scnd. */
-ident *mangle_u (ident *first, ident* scnd) {
+/** Returns a new ident that represents first<c>scnd. */
+static ident *mangle_3(ident *first, char c, ident* scnd) {
   char *cp;
   int len;
   ident *res;
 
   obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
-  obstack_1grow(&mangle_obst,'_');
+  obstack_1grow(&mangle_obst, c);
   obstack_grow(&mangle_obst,get_id_str(scnd),get_id_strlen(scnd));
   len = obstack_object_size (&mangle_obst);
   cp = obstack_finish (&mangle_obst);
@@ -103,9 +103,19 @@ ident *mangle_u (ident *first, ident* scnd) {
   return res;
 }
 
+/* Returns a new ident that represents first_scnd. */
+ident *mangle_u (ident *first, ident* scnd) {
+  return mangle_3(first, '_', scnd);
+}
+
+/* Returns a new ident that represents first.scnd. */
+ident *mangle_dot (ident *first, ident* scnd) {
+  return mangle_3(first, '.', scnd);
+}
+
 /* returns a mangled name for a Win32 function using it's calling convention */
 ident *decorate_win32_c_fkt(entity *ent) {
-  type *tp         = get_entity_type(ent);
+  ir_type *tp      = get_entity_type(ent);
   unsigned cc_mask = get_method_calling_convention(tp);
   char buf[16];
   int size, i;
