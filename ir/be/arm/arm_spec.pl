@@ -184,6 +184,24 @@ $comment_string = '/*';
   "emit"      =>'. mul %D1, %S1, %S2 /* Mul(%S1, %S2) -> %D1, (%A1, %A2) */'
 },
 
+"Smull" => {
+  #"op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct signed 64bit Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp", "gp" ] },
+  "emit"      =>'. smull %D1, %D2, %S1, %S2 /* SMull(%S1, %S2) -> %D1, %D2, (%A1, %A2) */',
+  "outs"      => [ "low", "high" ],
+},
+
+"Umull" => {
+  #"op_flags"  => "C",
+  "irn_flags" => "R",
+  "comment"   => "construct unsigned 64bit Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp", "gp" ] },
+  "emit"      =>'. umull %D1, %D2, %S1, %S2 /* UMull(%S1, %S2) -> %D1, %D2, (%A1, %A2) */',
+  "outs"      => [ "low", "high" ],
+},
+
 "Mla" => {
   #"op_flags"  => "C",
   "irn_flags" => "R",
