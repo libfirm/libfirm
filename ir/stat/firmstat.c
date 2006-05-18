@@ -1557,7 +1557,7 @@ static void stat_tail_rec(void *ctx, ir_graph *irg, int n_calls)
  *
  * @param ctx  the hook context
  */
-static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong, ir_node *cmp)
+static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong)
 {
   if (! status->stat_options)
     return;
