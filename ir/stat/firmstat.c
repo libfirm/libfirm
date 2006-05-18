@@ -1008,8 +1008,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 
   /* we need dominator info */
   if (graph->irg != get_const_code_irg()) {
-    if (get_irg_dom_state(graph->irg) != dom_consistent)
-      compute_doms(graph->irg);
+    assure_doms(graph->irg);
 
     if (status->stat_options & FIRMSTAT_COUNT_EXTBB) {
       /* we need extended basic blocks */
