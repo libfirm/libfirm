@@ -8,25 +8,24 @@
  * Copyright:   (c) 1998-2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+#include "config.h"
 #endif
 
-# include "irnode_t.h"
-# include "irgraph_t.h"
-# include "irmode_t.h"
-# include "iropt_t.h"
-# include "ircons_t.h"
-# include "irgmod.h"
-# include "dbginfo.h"
-# include "iropt_dbg.h"
-# include "irflag_t.h"
-# include "irgwalk.h"
-# include "reassoc_t.h"
-# include "irhooks.h"
-# include "irloop.h"
-# include "debug.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "iropt_t.h"
+#include "ircons_t.h"
+#include "irgmod.h"
+#include "dbginfo.h"
+#include "iropt_dbg.h"
+#include "irflag_t.h"
+#include "irgwalk.h"
+#include "reassoc_t.h"
+#include "irhooks.h"
+#include "irloop.h"
+#include "debug.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -37,13 +36,13 @@ typedef struct _walker_t {
 typedef enum {
   NO_CONSTANT   = 0,    /**< node is not constant */
   REAL_CONSTANT = 1,    /**< node is a Const that is suitable for constant folding */
-  CONST_EXPR    = 4     /**< node is a constant expression in the current context,
+  REGION_CONST  = 4     /**< node is a constant expression in the current context,
                              use 4 here to simplify implementation of get_comm_Binop_ops() */
 } const_class_t;
 
 /**
  * returns whether a node is constant ie is a constant or
- * is loop invariant
+ * is loop invariant (called region constant)
  *
  * @param n     the node to be checked for constant
  * @param block a block that might be in a loop
@@ -54,25 +53,28 @@ static const_class_t get_const_class(ir_node *n, ir_node *block)
 
   if (op == op_Const)
     return REAL_CONSTANT;
+
+  /* although SymConst's are of course real constant, we cannot
+     fold them, so handle them like region constants */
   if (op == op_SymConst)
-    return CONST_EXPR;
+    return REGION_CONST;
 
   /*
    * Beware: Bad nodes are always loop-invariant, but
-   * cannot handled in later code, so filter them here
+   * cannot handled in later code, so filter them here.
    */
   if (! is_Bad(n) && is_loop_invariant(n, block))
-    return CONST_EXPR;
+    return REGION_CONST;
 
   return NO_CONSTANT;
 }
 
 /**
  * returns the operands of a commutative bin-op, if one operand is
- * a constant in the current context, it is returned as the second one.
+ * a region constant, it is returned as the second one.
  *
  * Beware: Real constants must be returned with higher priority than
- * constant expression, because they might be folded.
+ * region constants, because they might be folded.
  */
 static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 {
@@ -87,8 +89,8 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
   switch (class_a + 2*class_b) {
     case REAL_CONSTANT + 2*NO_CONSTANT:
     case REAL_CONSTANT + 2*REAL_CONSTANT:
-    case REAL_CONSTANT + 2*CONST_EXPR:
-    case CONST_EXPR    + 2*NO_CONSTANT:
+    case REAL_CONSTANT + 2*REGION_CONST:
+    case REGION_CONST  + 2*NO_CONSTANT:
       *a = op_b;
       *c = op_a;
       break;
@@ -132,7 +134,7 @@ static int reassoc_Sub(ir_node **in)
         irn = optimize_in_place(n);
         if (irn != n) {
           exchange(n, irn);
-					*in = irn;
+          *in = irn;
           return 1;
         }
         return 0;
@@ -152,7 +154,7 @@ static int reassoc_Sub(ir_node **in)
         get_Sub_left(n), c, get_Sub_left(n), c));
 
     exchange(n, irn);
-		*in = irn;
+    *in = irn;
 
     return 1;
   }
@@ -183,7 +185,7 @@ static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
  * reassociate a commutative Binop
  *
  * BEWARE: this rule leads to a potential loop, if
- * two operands are are constant expressions and the third is a
+ * two operands are region constants and the third is a
  * constant, so avoid this situation.
  */
 static int reassoc_commutative(ir_node **node)
@@ -210,7 +212,7 @@ static int reassoc_commutative(ir_node **node)
     c_t2 = get_const_class(t2, block);
 
     if ( ((c_c1 > NO_CONSTANT) & (c_t2 > NO_CONSTANT)) &&
-         ((((c_c1 ^ c_c2 ^ c_t2) & CONST_EXPR) == 0) || ((c_c1 & c_c2 & c_t2) == CONST_EXPR)) ) {
+         ((((c_c1 ^ c_c2 ^ c_t2) & REGION_CONST) == 0) || ((c_c1 & c_c2 & c_t2) == REGION_CONST)) ) {
       /* All three are constant and either all are constant expressions or two of them are:
        * then applying this rule would lead into a cycle
        *
@@ -258,7 +260,7 @@ static int reassoc_commutative(ir_node **node)
 
       DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => (%n .%s. %n) .%s. %n\n",
           c1, get_irn_opname(n), c2, get_irn_opname(n),
-					t2, c1, get_irn_opname(n), c2, get_irn_opname(n), t2));
+          t2, c1, get_irn_opname(n), c2, get_irn_opname(n), t2));
       /*
        * In some rare cases it can really happen that we get the same node back.
        * This might be happen in dead loops, were the Phi nodes are already gone away.
@@ -266,7 +268,7 @@ static int reassoc_commutative(ir_node **node)
        */
       if (n != irn) {
         exchange(n, irn);
-				*node = irn;
+        *node = irn;
         return 1;
       }
     }
@@ -316,7 +318,7 @@ static int reassoc_Mul(ir_node **node)
        * (x - 1) * y == x * y - y
        * will be transformed back by simpler optimization
        * We could switch simple optimizations off, but this only happens iff y
-       * is a loop-invariant expreassion and that it is not clear if the new form
+       * is a loop-invariant expression and that it is not clear if the new form
        * is better.
        * So, we let the old one.
        */
@@ -324,7 +326,7 @@ static int reassoc_Mul(ir_node **node)
         DBG((dbg, LEVEL_5, "Applied: (%n .%s. %n) %n %n => (%n %n %n) .%s. (%n %n %n)\n",
             t1, get_op_name(op), t2, n, c, t1, n, c, get_op_name(op), t2, n, c));
         exchange(n, irn);
-		    *node = irn;
+        *node = irn;
 
         return 1;
       }
@@ -354,7 +356,7 @@ static void do_reassociation(ir_node *n, void *env)
     if (op->ops.reassociate && (mode_is_int(mode) || mode_is_reference(mode))) {
       res = op->ops.reassociate(&n);
 
-			wenv->changes |= res;
+      wenv->changes |= res;
     }
   } while (res == 1);
 
@@ -395,8 +397,7 @@ void optimize_reassociation(ir_graph *irg)
 
   /* Handle graph state */
   if (env.changes) {
-    if (get_irg_outs_state(irg) == outs_consistent)
-      set_irg_outs_inconsistent(irg);
+    set_irg_outs_inconsistent(irg);
     set_irg_loopinfo_inconsistent(irg);
   }
 }
