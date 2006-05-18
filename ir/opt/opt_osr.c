@@ -38,6 +38,7 @@
 #include "hashptr.h"
 #include "irtools.h"
 #include "array.h"
+#include "firmstat.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -395,6 +396,7 @@ static void replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 	if (result != irn) {
 		node_entry *e, *iv_e;
 
+		hook_strength_red(current_ir_graph, irn);
 		exchange(irn, result);
 		e = get_irn_ne(result, env);
 		iv_e = get_irn_ne(iv, env);
