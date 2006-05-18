@@ -2474,7 +2474,6 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	ir_node          *res = NULL;
 	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
 	char             *offs;
-	ident            *am_sc;
 	ia32_transform_env_t tenv;
 	const arch_register_t *out_reg, *base_reg, *index_reg;
 
