@@ -1,7 +1,7 @@
 /**
  * @file irarch.c
  * @date 28.9.2004
- * @author Sebastian Hack
+ * @author Sebastian Hack, Michael Beck
  * @brief Machine dependent firm optimizations.
  *
  * $Id$
