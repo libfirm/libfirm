@@ -979,14 +979,15 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+	int is_PsiCondCMov     = is_ia32_PsiCondCMov(irn);
 
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 	const arch_register_t *in1, *in2, *out;
 
 	out = arch_get_irn_register(env->arch_env, irn);
-	in1 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 2));
-	in2 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 3));
+	in1 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 2 - is_PsiCondCMov));
+	in2 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 3 - is_PsiCondCMov));
 
 	/* we have to emit the cmp first, because the destination register */
 	/* could be one of the compare registers                           */
@@ -996,7 +997,7 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	else if (is_ia32_xCmpCMov(irn)) {
 		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %1S, %2S", get_irn_n(irn, 0), irn, irn);
 	}
-	else if (is_ia32_PsiCondCMov(irn)) {
+	else if (is_PsiCondCMov) {
 		/* omit compare because flags are already set by And/Or */
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
 	}
