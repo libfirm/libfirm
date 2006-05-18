@@ -25,7 +25,7 @@
 typedef enum add_hidden_params {
   ADD_HIDDEN_ALWAYS_IN_FRONT = 0,   /**< always add hidden parameters in front (default). */
   ADD_HIDDEN_ALWAYS_LAST     = 1,   /**< always add hidden parameters last, did not work for variadic functions. */
-  ADD_HIDDEN_SMART           = 2,   /**< add hidden parameters last for non-variadic and first for variadic functions. */
+  ADD_HIDDEN_SMART           = 2    /**< add hidden parameters last for non-variadic and first for variadic functions. */
 } add_hidden;
 
 /**
