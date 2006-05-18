@@ -2474,6 +2474,7 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	ir_node          *res = NULL;
 	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
 	char             *offs;
+	ident            *am_sc;
 	ia32_transform_env_t tenv;
 	const arch_register_t *out_reg, *base_reg, *index_reg;
 
@@ -2482,6 +2483,9 @@ void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 		return;
 
 	am_flav = get_ia32_am_flavour(irn);
+
+	if (get_ia32_am_sc(irn))
+		return;
 
 	/* only some LEAs can be transformed to an Add */
 	if (am_flav != ia32_am_B && am_flav != ia32_am_OB && am_flav != ia32_am_OI && am_flav != ia32_am_BI)
@@ -2763,7 +2767,12 @@ void ia32_transform_node(ir_node *node, void *env) {
 static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg) {
 	int i;
 
+	/* if the mode is target mode, we have already seen this part of the tree */
+	if (get_irn_mode(cond) == mode)
+		return;
+
 	assert(get_irn_mode(cond) == mode_b && "logical operator for condition must be mode_b");
+
 	set_irn_mode(cond, mode);
 
 	for (i = get_irn_arity(cond) - 1; i >= 0; i--) {
@@ -2841,8 +2850,8 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
 				set_ia32_am_support(get_Proj_pred(new_op), ia32_am_Source);
 			}
 
-			/* exchange with old compare */
-			exchange(in, new_op);
+			/* the the new compare as in */
+			set_irn_n(cond, i, new_op);
 		}
 		else {
 			/* another complex condition */
