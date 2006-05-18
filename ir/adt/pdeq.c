@@ -186,7 +186,7 @@ int pdeq_empty(pdeq *dq)
   return dq->l_end->n == 0;
 }
 
-/* Returns the lenght of a double ended pointer list. */
+/* Returns the length of a double ended pointer list. */
 int pdeq_len(pdeq *dq)
 {
   int n;

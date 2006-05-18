@@ -3,7 +3,7 @@
  * File name:   ir/adt/pdeq.h
  * Purpose:     Declarations for pdeq.
  * Author:      Christian von Roques
- * Modified by:
+ * Modified by: Michael Beck
  * Created:     1999 by getting from fiasco
  * CVS-ID:      $Id$
  * Copyright:   (c) 1995, 1996 Christian von Roques
@@ -168,5 +168,48 @@ void *pdeq_getr(pdeq *dq);
 #define PDEQ_VRFY(deq) _pdeq_vrfy ((deq))
 void _pdeq_vrfy(pdeq *dq);
 #endif
+
+/**
+ * The pdeq is often used as a wait queue. A helper
+ * type to support this.
+ */
+typedef pdeq waitq;
+
+/**
+ * Creates a new pointer wait queue (fifo).
+ *
+ * @return A new queue.
+ */
+#define new_waitq()  new_pdeq()
+
+/**
+ * Retrieve a pointer from the wait queue (fifo).
+ *
+ * @param wq   The wait queue.
+ *
+ * @return The pointer element.
+ *
+ * @remark This function will fail if the queue is empty.
+ */
+#define waitq_get(wq)  pdeq_getl(wq)
+
+/**
+ * Add a pointer to the wait queue (fifo).
+ *
+ * @param wq  The wait queue
+ * @param x   The pointer element to be added
+ *
+ * @return The wait queue.
+ */
+#define waitq_put(wq, x) pdeq_putr((wq), (x))
+
+/**
+ * Checks if a wait queue is empty.
+ *
+ * @param wq   The wait queue.
+ *
+ * @return  non-zero if the queue is empty.
+ */
+#define waitq_empty(wq) pdeq_empty(wq)
 
 #endif /* _PDEQ_H_ */
