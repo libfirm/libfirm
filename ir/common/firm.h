@@ -74,7 +74,8 @@ extern "C" {
 #include "cfopt.h"          /* optimize control flow */
 #include "tailrec.h"        /* optimize tail-recursion calls */
 #include "ircgopt.h"        /* Optimizations based on interprocedural graph */
-#include "strength_red.h"   /* Strength reduction */
+#include "opt_osr.h"        /* Operator Strength Reduction */
+#include "strength_red.h"   /* Old (and buggy) Strength reduction */
 #include "loop_unrolling.h" /* Do loop unrolling */
 #include "ifconv.h"         /* if conversion */
 #include "funccall.h"       /* real function call optimization */
@@ -182,7 +183,7 @@ struct _firm_parameter_t {
    * The architecture dependent opcode settings.
    * If not set, no architecture dependent operations will be used.
    */
-  arch_ops_info *arch_op_settings;
+  const arch_ops_info *arch_op_settings;
 
   /**
    * The default calling convention.
@@ -194,30 +195,30 @@ struct _firm_parameter_t {
    */
   dbg_info *builtin_dbg;
 
-	/**
-	 * Prefix for the command line options.
-	 * example: if the option is -ffirm-opt-bla, then the prefix is "-f"
-	 * @note Only active, if libfirm is compiled with libcore.
-	 */
-	const char *arg_prefix;
+  /**
+   * Prefix for the command line options.
+   * example: if the option is -ffirm-opt-bla, then the prefix is "-f"
+   * @note Only active, if libfirm is compiled with libcore.
+   */
+  const char *arg_prefix;
 
-	/**
-	 * Number of arguments in the "command line".
-	 * @note Only active, if libfirm is compiled with libcore.
-	 */
-	int argc;
+  /**
+   * Number of arguments in the "command line".
+   * @note Only active, if libfirm is compiled with libcore.
+   */
+  int argc;
 
-	/**
-	 * Array of arguments.
-	 * @note Only active, if libfirm is compiled with libcore.
-	 */
-	const char **argv;
+  /**
+   * Array of arguments.
+   * @note Only active, if libfirm is compiled with libcore.
+   */
+  const char **argv;
 
-	/**
-	 * Name of ini file which is initially read.
-	 * @note Only active, if libfirm is compiled with libcore.
-	 */
-	const char *ini_file;
+  /**
+   * Name of ini file which is initially read.
+   * @note Only active, if libfirm is compiled with libcore.
+   */
+  const char *ini_file;
 };
 
 typedef struct _firm_parameter_t firm_parameter_t;
