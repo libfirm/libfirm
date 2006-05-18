@@ -949,10 +949,10 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
   // construct_cf_backedges(irg);
 
   /* Call algorithm that computes the dominator trees. */
-  compute_doms(irg);
+  assure_doms(irg);
 
   /* Call algorithm that computes the out edges */
-  compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   collect_phiprojs(irg);
 
