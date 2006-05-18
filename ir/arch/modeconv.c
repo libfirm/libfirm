@@ -36,10 +36,10 @@
 # include "firmstat.h"
 
 typedef struct _walker_t {
-  int bits;
-  ir_mode *s_mode;              /**< signed mode */
-  ir_mode *u_mode;              /**< unsigned mode */
-  int changes;
+  int bits;                     /**< number of bits in the destination mode */
+  ir_mode *s_mode;              /**< signed destination mode */
+  ir_mode *u_mode;              /**< unsigned destination mode */
+  int changes;                  /**< non-zero if the graph was changed */
 } walker_t;
 
 /**
@@ -49,7 +49,9 @@ static ir_node *fix_irn_output(ir_node *node, ir_mode *mode)
 {
   switch (get_irn_opcode(node)) {
     case iro_Proj:
+      /* Args, Load, Div, Mod */
     case iro_Conv:
+      /* Hmm, maybe the Conv should be replaced */
     case iro_Rot: {
       ir_node *block = get_nodes_block(node);
 
@@ -99,7 +101,7 @@ static void fix_mode(ir_node *n, ir_mode *mode)
     code = get_irn_opcode(get_Proj_pred(n));
   }
 
-  switch (code){
+  switch (code) {
   case iro_Return:
   case iro_Load:
   case iro_Proj:
@@ -125,7 +127,7 @@ static void do_mode_conv(ir_node *n, void *env)
   set_irn_link(n, mode);
 
   /* special case: fix the Return */
-  if (get_irn_op(n) == op_Return) {
+  if (is_Return(n)) {
     entity *ent = get_irg_entity(current_ir_graph);
     ir_type *mt = get_entity_type(ent);
     int i, n_ress = get_method_n_ress(mt);
@@ -161,9 +163,6 @@ static void do_mode_conv(ir_node *n, void *env)
        * So, the expression before the conv must have modeA. */
       ir_node *pred = get_Conv_op(n);
       ir_mode *modeA = get_irn_link(pred);
-
-      if (get_irn_node_nr(n) == 171)
-        printf("HAllo\n");
 
       if (modeA != get_irn_mode(pred)) {
         pred = new_r_Conv(current_ir_graph, get_nodes_block(pred), pred, modeA);
@@ -240,13 +239,12 @@ void arch_mode_conversion(ir_graph *irg, ir_mode *mode)
   env.bits    = get_mode_size_bits(mode);
   env.changes = 0;
 
-  assert(env.s_mode && env.u_mode && "Cpould not find modes");
+  assert(env.s_mode && env.u_mode && "Could not find modes");
 
   irg_walk_graph(irg, NULL, do_mode_conv, &env);
 
-  /* Handle graph state */
+  /* Handle graph state. We never change control flow. */
   if (env.changes) {
-    if (get_irg_outs_state(current_ir_graph) == outs_consistent)
-      set_irg_outs_inconsistent(current_ir_graph);
+    set_irg_outs_inconsistent(current_ir_graph);
   }
 }
