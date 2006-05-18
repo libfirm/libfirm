@@ -796,7 +796,7 @@ typedef enum {
                                          its return values solely from its parameters.
                                          GCC: __attribute__((const)). */
   mtp_property_pure      = 0x00000002, /**< This method did NOT write to memory and calculates
-                                         its return values solely form its parameters and
+                                         its return values solely from its parameters and
                                          the memory they points to (or global vars).
                                          GCC: __attribute__((pure)). */
   mtp_property_noreturn  = 0x00000004, /**< This method did not return due to an aborting system
@@ -810,7 +810,7 @@ typedef enum {
                                          GCC: __attribute__((malloc)). */
   mtp_property_intrinsic = 0x00000040, /**< This method is intrinsic. It is expected that
                                          a lowering phase will remove all calls to it. */
-  mtp_property_inherited = 0x40000000  /**< used only in irg's, means property is inherited
+  mtp_property_inherited = (1<<31)     /**< used only in irg's, means property is inherited
                                          from type. */
 } mtp_additional_property;
 
