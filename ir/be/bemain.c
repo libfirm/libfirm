@@ -82,11 +82,12 @@ static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;
+
+static int be_disable_mris = 0;
+
 #ifdef WITH_LIBCORE
 
 static lc_opt_entry_t *be_grp_root = NULL;
-
-static int be_disable_mris = 0;
 
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
