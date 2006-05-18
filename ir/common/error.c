@@ -28,5 +28,5 @@ NORETURN panic(const char *fmt, ...)
   vfprintf(stderr, fmt, ap);
   va_end(ap);
   putc('\n', stderr);
-  exit(EXIT_FAILURE);
+  abort();
 }
