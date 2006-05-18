@@ -14,9 +14,6 @@
 /**
  * @file firmstat.h
  */
-#include "irop.h"
-#include "irnode.h"
-#include "irgraph.h"
 #include "irhooks.h"
 
 /**
