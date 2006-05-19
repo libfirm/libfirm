@@ -456,8 +456,8 @@ static entity *clone_method(quad_t *q)
   current_ir_graph = rem;
 
   /* The "new_entity" don't have this information. */
-  new_entity->param_access = NULL;
-  new_entity->param_weight = NULL;
+  new_entity->attr.mtd_attr.param_access = NULL;
+  new_entity->attr.mtd_attr.param_weight = NULL;
 
   return new_entity;
 }
