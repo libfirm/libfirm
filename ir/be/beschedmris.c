@@ -6,6 +6,9 @@
  * @author Sebastian Hack
  * @date   04.04.2006
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <limits.h>
 
