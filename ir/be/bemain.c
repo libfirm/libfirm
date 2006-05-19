@@ -314,6 +314,9 @@ static void be_main_loop(FILE *file_handle)
 		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
 		dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
 
+		be_stat_init_irg(env.arch_env, irg);
+		be_do_stat_nodes(irg, "01 Begin");
+
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = birg.irg;
 
@@ -333,8 +336,12 @@ static void be_main_loop(FILE *file_handle)
 		birg.abi = be_abi_introduce(&birg);
 		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
 
+		be_do_stat_nodes(irg, "02 Abi");
+
 		/* generate code */
 		arch_code_generator_prepare_graph(birg.cg);
+
+		be_do_stat_nodes(irg, "03 Prepare");
 
 		/*
 		 * Since the code generator made a lot of new nodes and skipped
@@ -355,10 +362,14 @@ static void be_main_loop(FILE *file_handle)
 		list_sched(&birg, be_disable_mris);
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
+		be_do_stat_nodes(irg, "04 Schedule");
+
 		/* add Keeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */
 		assure_constraints(&birg);
 		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
+
+		be_do_stat_nodes(irg, "05 Constraints");
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_abi_fix_stack_nodes(birg.abi);
@@ -375,12 +386,16 @@ static void be_main_loop(FILE *file_handle)
 		ra->allocate(&birg);
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
+		be_do_stat_nodes(irg, "06 Register Allocation");
+
 		arch_code_generator_after_ra(birg.cg);
 		be_abi_fix_stack_bias(birg.abi);
 
 		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
 		be_abi_free(birg.abi);
+
+		be_do_stat_nodes(irg, "07 Final");
 
 //		free_ir_graph(irg);
 	}
