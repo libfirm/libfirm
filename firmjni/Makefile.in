@@ -79,21 +79,91 @@ MEMBERS=$(subst .h,.m,$(shell echo $(FIRM_HEADERS)|$(SHELL_TOUPPER)))
 MEMBERS += $(IMPL_MEMBERS)
 
 # How to pass function pointers? Therefore removed.
-# irgwalk.h typewalk.h
+# irgwalk.h typewalk.h firmwalk.h
 
 # How to pass function pointers? Or how to obtain them?
 #      Irgwalk.m Typewalk.m
 #
-FIRM_PATH_HEADERS=common/firm_types.h common/firm.h common/firm_common.h \
-	ident/ident.h tv/tv.h \
-	tr/type.h tr/entity.h tr/type_or_entity.h tr/tpop.h tr/mangle.h \
-	tr/type_identify.h					\
-	ir/irprog.h ir/irgraph.h ir/irnode.h ir/irmode.h ir/irop.h \
-	ir/ircons.h ir/ircgcons.h ir/irflag.h ir/irvrfy.h ir/irdump.h \
-	ir/iropt.h ir/irgopt.h ir/ircgopt.h \
-	ana/irouts.h ana/irdom.h ana/irloop.h ana/cgana.h \
-	ir/irgmod.h tr/typegmod.h opt/tailrec.h arch/archop.h \
-	ana/irextbb.h
+
+# common/debug.h requieres libcore
+# ir/irprintf.h crecoder cannot handle va_list
+#
+FIRM_PATH_HEADERS= \
+	common/firm_types.h \
+	common/firm_common.h \
+	common/firm.h \
+	\
+	ident/ident.h \
+	\
+	ana/irouts.h \
+	ana/trouts.h \
+	ana/irdom.h \
+	ana/cgana.h \
+	ana/irloop.h \
+	ana/irtypeinfo.h \
+	ana/irsimpletype.h \
+	ana/callgraph.h \
+	ana/rta.h \
+	ana/interval_analysis.h \
+	ana/field_temperature.h \
+	ana/execution_frequency.h \
+	ana/irextbb.h \
+	ana/irconsconfirm.h \
+	ana/analyze_irg_args.h \
+	\
+	ir/irprog.h \
+	ir/irgraph.h \
+	ir/irnode.h \
+	ir/irmode.h \
+	ir/irop.h \
+	ir/ircons.h \
+	ir/irflag.h \
+	ir/irvrfy.h \
+	ir/irgmod.h \
+	ir/iropt.h \
+	ir/irdump.h \
+	ir/irgopt.h \
+	ir/ircgcons.h \
+	ir/ircgopt.h \
+	ir/irhooks.h \
+	ir/irarch.h \
+	ir/pseudo_irg.h \
+	ir/iredges.h \
+	\
+	opt/cfopt.h \
+	opt/gvn_pre.h \
+	opt/tailrec.h \
+	opt/ldstopt.h \
+	opt/reassoc.h \
+	opt/loop_unrolling.h \
+	opt/funccall.h \
+	opt/opt_polymorphy.h \
+	opt/ifconv.h \
+	opt/return.h \
+	opt/tropt.h \
+	opt/scalar_replace.h \
+	opt/escape_ana.h \
+	opt/proc_cloning.h \
+	opt/opt_confirms.h \
+	opt/opt_frame.h \
+	opt/opt_osr.h \
+	\
+	tr/entity.h \
+	tr/mangle.h \
+	tr/tpop.h \
+	tr/type.h \
+	tr/type_or_entity.h \
+	tr/typegmod.h \
+	tr/type_identify.h \
+	tr/tr_inheritance.h \
+	\
+	arch/archop.h \
+	\
+	tv/tv.h \
+	\
+	lower/lower_intrinsics.h \
+	lower/lower_calls.h \
+	lower/lower_dw.h
 
 FIRM_SOURCE_DIR_HEADERS=$(addprefix $(SOURCE_DIR)/,$(FIRM_HEADERS))
 
@@ -215,6 +285,6 @@ H_FROM_JAVA=$(subst .java,.h,$(shell echo $@|$(SHELL_TOLOWER)))
 
 %.java: $(FIRM_SOURCE_DIR_HEADERS) $(SOURCE_DIR)/firm_typedefs.h
 	$(CC) $(CPPFLAGS) -E -C -P $(SOURCE_DIR)/$(H_FROM_JAVA) -o $(H_FROM_JAVA)
-	env CLASSPATH=$(FIRM_JNI_TOOLS_DIR)/crecoder.jar:$$CLASSPATH java crecoder/tools/jniBuilder/BuildJNI $(H_FROM_JAVA);\
+	env CLASSPATH=$(FIRM_JNI_TOOLS_DIR)/crecoder.jar:$$CLASSPATH java crecoder/tools/jniBuilder/BuildJNI $(H_FROM_JAVA) ;\
 	rm $(H_FROM_JAVA);
 # remove the patched header so that further compilation finds the proper firm headers
