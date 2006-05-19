@@ -6,14 +6,13 @@
  *
  * $Id$
  */
-
-#ifndef _FIRM_REFLECT_H
-#define _FIRM_REFLECT_H
+#ifndef _FIRM_IR_REFLECT_H_
+#define _FIRM_IR_REFLECT_H_
 
 #include <limits.h>
 
+#include "firm_types.h"
 #include "irop.h"
-#include "irnode.h"
 
 #define RFLCT_MC(m) rflct_ms_ ## m
 typedef enum {
@@ -218,4 +217,4 @@ int rflct_signature_set_arg(rflct_sig_t *sig, int is_use, int num,
 int rflct_signature_get_index(const rflct_sig_t *sig, int is_use, int num);
 
 
-#endif /* _FIRM_REFLECT_H */
+#endif /* _FIRM_IR_REFLECT_H_ */

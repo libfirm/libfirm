@@ -31,8 +31,8 @@
  * 4. Verification flag
  *    This one controls the behavior of node and type verifications
  */
-#ifndef _IRFLAG_H_
-#define _IRFLAG_H_
+#ifndef _FIRM_IR_IRFLAG_H_
+#define _FIRM_IR_IRFLAG_H_
 
 #include "firm_types.h"
 
@@ -358,4 +358,4 @@ typedef enum _firm_verification_t {
  */
 void do_node_verification(firm_verification_t mode);
 
-#endif /* _IRFLAG_H_ */
+#endif /* _FIRM_IR_IRFLAG_H_ */

@@ -1087,8 +1087,8 @@
  *   node.
  *
  */
-#ifndef _IRCONS_H_
-#define _IRCONS_H_
+#ifndef _FIRM_IR_IRCONS_H_
+#define _FIRM_IR_IRCONS_H_
 
 #include "firm_common.h"
 #include "irnode.h"
@@ -4205,4 +4205,4 @@ void irp_finalize_cons(void);
  */
 typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mode, int pos);
 
-#endif /* _IRCONS_H_ */
+#endif /* _FIRM_IR_IRCONS_H_ */

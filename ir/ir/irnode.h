@@ -9,8 +9,8 @@
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-#ifndef _IRNODE_H_
-#define _IRNODE_H_
+#ifndef _FIRM_IR_IRNODE_H_
+#define _FIRM_IR_IRNODE_H_
 
 #include <stddef.h>
 
@@ -1245,4 +1245,4 @@ int dump_node_opcode(FILE *F, ir_node *n);
 }
 #endif
 
-#endif /* _IRNODE_H_ */
+#endif /* _FIRM_IR_IRNODE_H_ */

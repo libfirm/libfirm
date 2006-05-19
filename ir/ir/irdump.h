@@ -10,7 +10,6 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-
 /**
  * @file irdump.h
  *
@@ -28,14 +27,12 @@
  * Most routines use the name of the passed entity as the name of the
  * file dumped to.
  */
+#ifndef _FIRM_IR_IRDUMP_H_
+#define _FIRM_IR_IRDUMP_H_
 
-
-# ifndef _IRDUMP_H_
-# define _IRDUMP_H_
-
-# include "irnode.h"
-# include "irgraph.h"
-# include "irloop.h"
+#include "irnode.h"
+#include "irgraph.h"
+#include "irloop.h"
 
 /**
  * Names of the 32 supported colors
@@ -687,4 +684,4 @@ void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
  */
 void dump_remv_node_info_callback(void *handle);
 
-# endif /* _IRDUMP_H_ */
+#endif /* _FIRM_IR_IRDUMP_H_ */

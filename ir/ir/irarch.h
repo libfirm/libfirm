@@ -7,10 +7,10 @@
  * $Id$
  */
 
-#ifndef _FIRM_IRARCH_H
-#define _FIRM_IRARCH_H
+#ifndef _FIRM_IR_IRARCH_H_
+#define _FIRM_IR_IRARCH_H_
 
-#include "irnode.h"
+#include "firm_types.h"
 
 /**
  * A parameter structure that drives the machine dependent Firm
@@ -136,4 +136,4 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn);
  */
 void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn);
 
-#endif /* _FIRM_IRARCH_H */
+#endif /* _FIRM_IR_IRARCH_H_ */

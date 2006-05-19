@@ -17,8 +17,8 @@
  *
  * @author Christian Schaefer
  */
-#ifndef _IRVRFY_H_
-#define _IRVRFY_H_
+#ifndef _FIRM_IR_IRVRFY_H_
+#define _FIRM_IR_IRVRFY_H_
 
 #include "firm_types.h"
 
@@ -26,7 +26,7 @@
  * Tests the modes of checknode and its predecessors.
  * checknode must be in current_ir_graph.
  *
- * \return
+ * @return
  * 	NON-zero on success
  */
 int irn_vrfy(ir_node *checknode);
@@ -35,7 +35,7 @@ int irn_vrfy(ir_node *checknode);
  * Tests the modes of checknode and its predecessors.
  * checknode must be in given ir_graph.
  *
- * \return
+ * @return
  * 	NON-zero on success
  */
 int irn_vrfy_irg(ir_node *checknode, ir_graph *irg);
@@ -43,7 +43,7 @@ int irn_vrfy_irg(ir_node *checknode, ir_graph *irg);
 /**
  * Same as irn_vrfy_irg, but temporary sets verification mode to
  * NODE_VERIFICATION_ERROR_ONLY.
- * \return
+ * @return
  * 	NON-zero on success
  */
 int irn_vrfy_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string);
@@ -60,7 +60,7 @@ typedef enum _irg_verify_flags_t {
  * Calls irn_vrfy() for each node in irg.
  * Graph must be in state "op_pin_state_pinned".
  *
- * \return
+ * @return
  * 	NON-zero on success.
  */
 int irg_verify(ir_graph *irg, unsigned flags);
@@ -97,4 +97,4 @@ int irg_vrfy_bads(ir_graph *irg, int flags);
  */
 void vrfy_enable_entity_tests(int enable);
 
-# endif /* _IRVRFY_H_ */
+#endif /* _FIRM_IR_IRVRFY_H_ */

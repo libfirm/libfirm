@@ -16,9 +16,8 @@
  * @author Sebastian Hack
  * @date 29.11.2004
  */
-
-#ifndef _IRPRINTF_H
-#define _IRPRINTF_H
+#ifndef _FIRM_IR_IRPRINTF_H_
+#define _FIRM_IR_IRPRINTF_H_
 
 #include "firm_config.h"
 
@@ -147,4 +146,4 @@ void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args);
 #include <libcore/lc_printf.h>
 #endif /* WITH_LIBCORE */
 
-#endif /* _IRPRINTF_H */
+#endif /* _FIRM_IR_IRPRINTF_H_ */

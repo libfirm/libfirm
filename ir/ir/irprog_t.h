@@ -14,8 +14,8 @@
  * @file irprog_t.h
  */
 
-#ifndef _IRPROG_T_H_
-#define _IRPROG_T_H_
+#ifndef _FIRM_IR_IRPROG_T_H_
+#define _FIRM_IR_IRPROG_T_H_
 
 #ifdef HAVE_CONFIG_H
 #include "firm_config.h"
@@ -182,4 +182,4 @@ void init_irprog_2(void);
 #define get_const_code_irg()   _get_const_code_irg()
 #define get_glob_type()        _get_glob_type()
 
-#endif /* ifndef _IRPROG_T_H_ */
+#endif /* ifndef _FIRM_IR_IRPROG_T_H_ */

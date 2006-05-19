@@ -10,8 +10,8 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-#ifndef _TYPE_T_H_
-#define _TYPE_T_H_
+#ifndef _FIRM_TR_TYPE_T_H_
+#define _FIRM_TR_TYPE_T_H_
 
 #include "firm_config.h"
 #include "type.h"
@@ -494,4 +494,4 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define get_method_calling_convention(method)           _get_method_calling_convention(method)
 #define set_method_calling_convention(method, cc_mask)  _set_method_calling_convention(method, cc_mask)
 
-#endif /* _TYPE_T_H_ */
+#endif /* _FIRM_TR_TYPE_T_H_ */

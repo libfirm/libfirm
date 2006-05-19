@@ -16,8 +16,8 @@
  *
  * @author Michael Beck
  */
-#ifndef __IRHOOKS_H__
-#define __IRHOOKS_H__
+#ifndef _FIRM_IR_IRHOOKS_H_
+#define _FIRM_IR_IRHOOKS_H_
 
 #include "firm_config.h"
 #include "irop.h"
@@ -284,4 +284,4 @@ extern hook_entry_t *hooks[hook_last];
 /* the initializer, move to hooks_t.h some day */
 int firm_init_hooks(void);
 
-#endif /* __IRHOOKS_H__ */
+#endif /* _FIRM_IR_IRHOOKS_H_ */

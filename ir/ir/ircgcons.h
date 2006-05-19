@@ -10,13 +10,10 @@
  * Copyright:   (c) 2002-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifndef _FIRM_IR_ICGCONS_H_
+#define _FIRM_IR_ICGCONS_H_
 
-
-#ifndef _CONSTRUCT_H_
-#define _CONSTRUCT_H_
-
-
-#include "entity.h"
+#include "firm_types.h"
 
 /** The state of the interprocedural view.
  *
@@ -52,5 +49,4 @@ void cg_construct(int arr_len, entity *free_methods_arr[]);
     the ir. Sets ip_view_no in irp. */
 void cg_destruct(void);
 
-
-#endif /* _CONSTRUCT_H_ */
+#endif /* _FIRM_IR_ICGCONS_H_ */

@@ -17,8 +17,8 @@
  *
  * @author Martin Trapp, Christian Schaefer
  */
-#ifndef _IRGRAPH_H_
-#define _IRGRAPH_H_
+#ifndef _FIRM_IR_IRGRAPH_H_
+#define _FIRM_IR_IRGRAPH_H_
 
 #include <stddef.h>
 
@@ -508,4 +508,4 @@ unsigned get_irg_last_idx(const ir_graph *irg);
  */
 size_t register_additional_graph_data(size_t size);
 
-# endif /* _IRGRAPH_H_ */
+#endif /* _FIRM_IR_IRGRAPH_H_ */

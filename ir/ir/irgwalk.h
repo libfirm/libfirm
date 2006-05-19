@@ -25,12 +25,10 @@
  * Uses current_ir_graph (from irgraph.h)!!! Set it to the proper
  * graph before starting the walker.
  */
+#ifndef _FIRM_IR_IRGWALK_H_
+#define _FIRM_IR_IRGWALK_H_
 
-
-# ifndef _IRGWALK_H_
-# define _IRGWALK_H_
-
-# include "firm_types.h"
+#include "firm_types.h"
 
 /* type of callback function for ir_graph walk */
 #ifndef _IRG_WALK_FUNC_TYPEDEF_
@@ -175,4 +173,4 @@ void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *po
  */
 void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
-# endif /* _IRGWALK_H_ */
+#endif /* _FIRM_IR_IRGWALK_H_ */

@@ -18,12 +18,10 @@
  *
  * @author Martin Trapp, Christian Schaefer
  */
+#ifndef _FIRM_IR_IRGMOD_H_
+#define _FIRM_IR_IRGMOD_H_
 
-
-# ifndef _IRGMOD_H_
-# define _IRGMOD_H_
-
-# include "irnode.h"
+#include "firm_types.h"
 
 /** Exchanges two nodes by conserving edges leaving old (i.e.,
    pointers pointing to old).  Turns the old node into an Id. */
@@ -70,4 +68,4 @@ void collect_phiprojs(ir_graph *irg);
  */
 void part_block(ir_node *node);
 
-#endif /* ifndef _IRGMOD_H_ */
+#endif /* ifndef _FIRM_IR_IRGMOD_H_ */

@@ -12,12 +12,10 @@
  * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-#ifndef __PSEUDO_IRG_H__
-#define __PSEUDO_IRG_H__
+#ifndef _FIRM_IR_PSEUDO_IRG_H_
+#define _FIRM_IR_PSEUDO_IRG_H_
 
-#include "entity.h"
-#include "irgraph.h"
-
+#include "firm_types.h"
 
 /** Create a new ir graph to build a pseudo representation of a procedure.
  *
@@ -43,4 +41,4 @@ ir_graph *get_irp_pseudo_irg(int pos);
 void set_visit_pseudo_irgs(int x);
 int  get_visit_pseudo_irgs(void);
 
-#endif
+#endif /* _FIRM_IR_PSEUDO_IRG_H_ */

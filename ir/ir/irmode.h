@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef _IRMODE_H_
-#define _IRMODE_H_
+#ifndef _FIRM_IR_IRMODE_H_
+#define _FIRM_IR_IRMODE_H_
 
 #include "firm_types.h"
 #include "ident.h"
@@ -471,4 +471,4 @@ int mode_overflow_on_unary_Minus(const ir_mode *mode);
  */
 int mode_wrap_around(const ir_mode *mode);
 
-#endif /* _IRMODE_H_ */
+#endif /* _FIRM_IR_IRMODE_H_ */

@@ -21,8 +21,8 @@
  *  definition is close to the operations specified in UKA Tech-Report
  *  1999-14
  */
-#ifndef _IROP_H_
-#define _IROP_H_
+#ifndef _FIRM_IR_IROP_H_
+#define _FIRM_IR_IROP_H_
 
 #include "firm_types.h"
 
@@ -37,10 +37,10 @@ typedef enum {
   oparity_trinary,            /**< an trinary operator  -- considering 'numeric' arguments.*/
   oparity_zero,               /**< no operators, as e.g. Const. */
   oparity_variable,           /**< arity not fixed by opcode, but statically
-				                           known.  E.g., number of arguments to call. */
+                                   known.  E.g., number of arguments to call. */
   oparity_dynamic,            /**< arity depends on state of firm representation.
-			                             Can change by optimizations...
-			                             We must allocate a dynamic in array for the node! */
+                                   Can change by optimizations...
+                                   We must allocate a dynamic in array for the node! */
   oparity_any                 /**< other arity */
 } op_arity;
 
@@ -48,11 +48,11 @@ typedef enum {
 /** The irop flags */
 typedef enum {
   irop_flag_none        = 0x00000000, /**< nothing */
-  irop_flag_labeled     = 0x00000001,	/**< if set, Output edge labels on in-edges in vcg graph */
-  irop_flag_commutative = 0x00000002,	/**< operation is commutative */
+  irop_flag_labeled     = 0x00000001, /**< if set, Output edge labels on in-edges in vcg graph */
+  irop_flag_commutative = 0x00000002, /**< operation is commutative */
   irop_flag_cfopcode    = 0x00000004, /**< is a control flow operation */
-  irop_flag_ip_cfopcode = 0x00000008,	/**< operation manipulates interprocedural control flow */
-  irop_flag_fragile     = 0x00000010,	/**< set if the operation can change the control flow because
+  irop_flag_ip_cfopcode = 0x00000008, /**< operation manipulates interprocedural control flow */
+  irop_flag_fragile     = 0x00000010, /**< set if the operation can change the control flow because
                                              of an exception */
   irop_flag_forking     = 0x00000020, /**< the operation is a forking control flow */
   irop_flag_highlevel   = 0x00000040, /**< the operation is a pure high-level one and can be
@@ -357,4 +357,4 @@ ir_op * new_ir_op(opcode code, const char *name, op_pin_state p,
 /** Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *get_op_ops(const ir_op *op);
 
-#endif /* _IROP_H_ */
+#endif /* _FIRM_IR_IROP_H_ */

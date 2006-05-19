@@ -17,11 +17,10 @@
  *
  * @author Christian Schaefer, Goetz Lindenmaier
  */
+#ifndef _FIRM_IR_IRGOPT_H_
+#define _FIRM_IR_IRGOPT_H_
 
-# ifndef _IRGOPT_H_
-# define _IRGOPT_H_
-
-# include "irgraph.h"
+#include "firm_types.h"
 
 /** Applies local optimizations (see iropt.h) to all nodes reachable from node n.
  *
@@ -206,4 +205,4 @@ void place_code(ir_graph *irg);
  */
 void remove_critical_cf_edges(ir_graph *irg);
 
-# endif /* _IRGOPT_H_ */
+#endif /* _FIRM_IR_IRGOPT_H_ */

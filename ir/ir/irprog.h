@@ -11,33 +11,33 @@
  */
 
 /**
-* @file irprog.h
-*
-* ir representation of a program.
-*
-* @author Goetz Lindenmaier
-*
-* This file defines a construct that keeps all information about a
-* program:
-*   - A reference point to the method to be executed on program start.
-*   - A list of all procedures.
-*   - A list of all types.
-*   - A global type that contais all global variables and procedures that do
-*     not belong to a class.  This type represents the data segment of the
-*     program.  It is not the base class of
-*     all classes in a class hierarchy (as, e.g., "object" in java).
-*   - A degenerated graph that contains constant expressions.
-*   - interprocedural outs state.
-*   - a flag indicating validity of the interprocedural representation.
-*   - the output file name
-*/
+ * @file irprog.h
+ *
+ * ir representation of a program.
+ *
+ * @author Goetz Lindenmaier
+ *
+ * This file defines a construct that keeps all information about a
+ * program:
+ *   - A reference point to the method to be executed on program start.
+ *   - A list of all procedures.
+ *   - A list of all types.
+ *   - A global type that contais all global variables and procedures that do
+ *     not belong to a class.  This type represents the data segment of the
+ *     program.  It is not the base class of
+ *     all classes in a class hierarchy (as, e.g., "object" in java).
+ *   - A degenerated graph that contains constant expressions.
+ *   - interprocedural outs state.
+ *   - a flag indicating validity of the interprocedural representation.
+ *   - the output file name
+ */
 
-# ifndef _IRPROG_H_
-# define _IRPROG_H_
+#ifndef _FIRM_IR_IRPROG_H_
+#define _FIRM_IR_IRPROG_H_
 
-# include "irnode.h"
-# include "type.h"
-# include "irgraph.h"
+#include "irnode.h"
+#include "type.h"
+#include "irgraph.h"
 
 
 /**
@@ -206,4 +206,4 @@ void           set_irp_ip_outs_inconsistent(void);
 irg_callee_info_state get_irp_callee_info_state(void);
 void                  set_irp_callee_info_state(irg_callee_info_state s);
 
-#endif /* ifndef _IRPROG_H_ */
+#endif /* ifndef _FIRM_IR_IRPROG_H_ */

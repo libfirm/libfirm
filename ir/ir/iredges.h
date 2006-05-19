@@ -15,8 +15,8 @@
  * @date 3.2.2005
  */
 
-#ifndef _FIRM_EDGES_H
-#define _FIRM_EDGES_H
+#ifndef _FIRM_IR_EDGES_H
+#define _FIRM_IR_EDGES_H
 
 #include "firm_types.h"
 
@@ -134,4 +134,4 @@ extern void edges_activate(ir_graph *irg);
  */
 extern void edges_deactivate(ir_graph *irg);
 
-#endif /* _FIRM_EDGES_H */
+#endif /* _FIRM_IR_EDGES_H */
