@@ -86,6 +86,11 @@ typedef enum {
 #define BE_STACK_FRAME_SIZE ((unsigned) -1)
 
 /**
+ * Determines if irn is a be_node.
+ */
+int is_be_node(const ir_node *irn);
+
+/**
  * Create all BE specific opcodes.
  */
 void be_node_init(void);
@@ -129,6 +134,8 @@ enum {
 ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *block, ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
+/** Sets the Copy Argument. */
+void be_set_Copy_op(ir_node *cpy, ir_node *op);
 
 /**
  * Make a new Perm node.

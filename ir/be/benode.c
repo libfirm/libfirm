@@ -232,7 +232,7 @@ static void *init_node_attr(ir_node* irn, int max_reg_data)
 	return a;
 }
 
-static INLINE int is_be_node(const ir_node *irn)
+int is_be_node(const ir_node *irn)
 {
 	return get_op_tag(get_irn_op(irn)) == &be_node_tag;
 }
@@ -343,6 +343,10 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 
 ir_node *be_get_Copy_op(const ir_node *cpy) {
 	return get_irn_n(cpy, be_pos_Copy_op);
+}
+
+void be_set_Copy_op(ir_node *cpy, ir_node *op) {
+	set_irn_n(cpy, be_pos_Copy_op, op);
 }
 
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
@@ -1016,6 +1020,7 @@ static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 		XXX(Perm, perm);
 		XXX(Copy, copy);
 		XXX(Return, branch);
+		XXX(StackParam, stackparam);
 #undef XXX
 		default:
 		return 0;
