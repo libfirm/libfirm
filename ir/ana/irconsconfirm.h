@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     6.2005
  * CVS-ID:      $Id$
- * Copyright:   (C) 2002-2005 Universität Karlsruhe
+ * Copyright:   (C) 2002-2005 University of Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -17,8 +17,8 @@
  *
  *  @author Michael Beck
  */
-#ifndef _IRCONSCONFIRM_H_
-#define _IRCONSCONFIRM_H_
+#ifndef _FIRM_ANA_IRCONSCONFIRM_H_
+#define _FIRM_ANA_IRCONSCONFIRM_H_
 
 #include "irgraph.h"
 
@@ -52,4 +52,4 @@ void construct_confirms(ir_graph *irg);
  */
 void remove_confirms(ir_graph *irg);
 
-#endif /* _IRCONSCONFIRM_H_ */
+#endif /* _FIRM_ANA_IRCONSCONFIRM_H_ */
