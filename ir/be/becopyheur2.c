@@ -39,8 +39,10 @@
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
 #define DUMP_CLOUD  4
+#define DUMP_ALL    2 * DUMP_CLOUD - 1
 
-static int dump_flags = 0;
+static int    dump_flags      = 0;
+static double stop_percentage = 1.0;
 
 /* Options using libcore */
 #ifdef WITH_LIBCORE
@@ -49,7 +51,7 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
     { "after",   DUMP_AFTER  },
     { "cloud",   DUMP_CLOUD  },
-	{ "all",     2 * DUMP_CLOUD - 1 },
+	{ "all",     DUMP_ALL    },
 	{ NULL,      0 }
 };
 
@@ -58,7 +60,8 @@ static lc_opt_enum_mask_var_t dump_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud", &dump_var),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",                     &dump_var),
+	LC_OPT_ENT_DBL      ("stop", "stop optimizing cloud at given percentage of total cloud costs", &stop_percentage),
 	{ NULL }
 };
 
@@ -111,6 +114,7 @@ struct _co2_irn_t {
 	col_t            tmp_col;
 	col_t            orig_col;
 	int				 last_color_change;
+	bitset_t        *adm_cache;
 	unsigned         fixed     : 1;
 	unsigned         tmp_fixed : 1;
 	struct list_head changed_list;
@@ -128,6 +132,7 @@ struct _co2_cloud_irn_t {
 	int               *col_costs;
 	int                costs;
 	int               *fronts;
+	int               *color_badness;
 	col_cost_pair_t   *tmp_coloring;
 	struct list_head   cloud_list;
 	struct list_head   mst_list;
@@ -186,7 +191,7 @@ static int cmp_clouds_gt(const void *a, const void *b)
 	const co2_cloud_t **q = b;
 	int c = (*p)->costs;
 	int d = (*q)->costs;
-	return CMP(d, c);
+	return QSORT_CMP(d, c);
 }
 
 /**
@@ -199,7 +204,7 @@ static int col_cost_pair_lt(const void *a, const void *b)
 	const col_cost_pair_t *q = b;
 	int c = p->costs;
 	int d = q->costs;
-	return CMP(c, d);
+	return QSORT_CMP(c, d);
 }
 
 static col_t get_col(co2_t *env, ir_node *irn)
@@ -214,25 +219,32 @@ static INLINE int color_is_fix(co2_t *env, ir_node *irn)
 	return ci->fixed || ci->tmp_fixed;
 }
 
-static bitset_t *admissible_colors(co2_t *env, co2_irn_t *ci, bitset_t *bs)
+static INLINE bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 {
-	arch_register_req_t req;
-
-	arch_get_register_req(env->co->aenv, &req, ci->irn, BE_OUT_POS(0));
-	if(arch_register_req_is(&req, limited))
-		req.limited(req.limited_env, bs);
-	else {
-		bitset_copy(bs, env->ignore_regs);
-		bitset_flip_all(bs);
+	if(!ci->adm_cache) {
+		arch_register_req_t req;
+		ci->adm_cache = bitset_obstack_alloc(phase_obst(&env->ph), env->n_regs);
+		arch_get_register_req(env->co->aenv, &req, ci->irn, BE_OUT_POS(0));
+		if(arch_register_req_is(&req, limited))
+			req.limited(req.limited_env, ci->adm_cache);
+		else {
+			bitset_copy(ci->adm_cache, env->ignore_regs);
+			bitset_flip_all(ci->adm_cache);
+		}
 	}
 
+	return ci->adm_cache;
+}
+
+static bitset_t *admissible_colors(co2_t *env, co2_irn_t *ci, bitset_t *bs)
+{
+	bitset_copy(bs, get_adm(env, ci));
 	return bs;
 }
 
 static int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
 {
-	bitset_t *bs = bitset_alloca(env->co->cls->n_regs);
-	admissible_colors(env, ci, bs);
+	bitset_t *bs = get_adm(env, ci);
 	return bitset_is_set(bs, col);
 }
 
@@ -271,7 +283,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	be_ifg_t *ifg      = env->co->cenv->ifg;
 	int n_regs         = env->co->cls->n_regs;
 	bitset_t *forb     = bitset_alloca(n_regs);
-	affinity_node_t *a = get_affinity_info(env->co, irn);
+	affinity_node_t *a = ci->aff;
 
 	bitset_pos_t elm;
 	ir_node *pos;
@@ -319,7 +331,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 
 }
 
-static void single_color_cost(co2_t *env, col_t col, col_cost_pair_t *seq)
+static void single_color_cost(co2_t *env, co2_irn_t *ci, col_t col, col_cost_pair_t *seq)
 {
 	int n_regs = env->co->cls->n_regs;
 	int i;
@@ -329,6 +341,7 @@ static void single_color_cost(co2_t *env, col_t col, col_cost_pair_t *seq)
 		seq[i].costs = INT_MAX;
 	}
 
+	assert(is_color_admissible(env, ci, col));
 	seq[col].col = 0;
 	seq[0].col   = col;
 	seq[0].costs = 0;
@@ -515,23 +528,24 @@ static int change_color_single(co2_t *env, ir_node *irn, col_t tgt_col, struct l
 			list_add(&ci->changed_list, parent_changed);
 		}
 
-		DB((env->dbg, LEVEL_3, "\t\t%2{firm:indent}ok\n", depth));
-		return 1;
+		res = 1;
+		goto end;
 	}
 
-	if(!color_is_fix(env, irn)) {
+	if(!color_is_fix(env, irn) && is_color_admissible(env, ci, tgt_col)) {
 		int n_regs           = env->co->cls->n_regs;
 		col_cost_pair_t *seq = alloca(n_regs * sizeof(seq[0]));
 
 		/* Get the costs for giving the node a specific color. */
-		single_color_cost(env, tgt_col, seq);
+		single_color_cost(env, ci, tgt_col, seq);
 
 		/* Try recoloring the node using the color list. */
 		res = recolor(env, irn, seq, parent_changed, depth);
 
-		DB((env->dbg, LEVEL_3, "\t\t%2{firm:indent}color %d %s for %+F\n", depth, tgt_col, res ? "was ok" : "failed", irn));
 	}
 
+end:
+	DB((env->dbg, LEVEL_3, "\t\t%2{firm:indent}color %d %s for %+F\n", depth, tgt_col, res ? "was ok" : "failed", irn));
 	return res;
 }
 
@@ -550,7 +564,7 @@ int cmp_edges(const void *a, const void *b)
 {
 	const edge_t *p = a;
 	const edge_t *q = b;
-	return CMP(p->costs, q->costs);
+	return QSORT_CMP(p->costs, q->costs);
 }
 
 static co2_cloud_irn_t *find_mst_root(co2_cloud_irn_t *ci)
@@ -565,7 +579,7 @@ static int cmp_parent(const void *a, const void *b)
 {
 	const co2_cloud_irn_t *p = a;
 	const co2_cloud_irn_t *q = b;
-	return CMP(q->mst_costs, p->mst_costs);
+	return QSORT_CMP(q->mst_costs, p->mst_costs);
 }
 
 static void fill_tmp_coloring(co2_cloud_irn_t *ci, col_t col)
@@ -708,12 +722,12 @@ static int examine_subtree_coloring(co2_cloud_irn_t *ci, col_t col)
 
 static int cloud_mst_build_colorings(co2_cloud_irn_t *ci, int depth)
 {
-	co2_t *env               = ci->cloud->env;
-	int n_regs               = env->n_regs;
-	col_cost_pair_t *seq     = alloca(n_regs * sizeof(seq[0]));
-	int *front               = alloca(ci->mst_n_childs * sizeof(front[0]));
-	int best_col             = -1;
-	int best_cost            = INT_MAX;
+	co2_t *env           = ci->cloud->env;
+	int n_regs           = env->n_regs;
+	col_cost_pair_t *seq = alloca(n_regs * sizeof(seq[0]));
+	int *front           = alloca(ci->mst_n_childs * sizeof(front[0]));
+	int best_col         = -1;
+	int best_cost        = INT_MAX;
 
 
 	int i;
@@ -797,6 +811,144 @@ static int cloud_mst_build_colorings(co2_cloud_irn_t *ci, int depth)
 	return best_col;
 }
 
+
+static void determine_color_badness(co2_cloud_irn_t *ci, int depth)
+{
+	co2_t *env     = ci->cloud->env;
+	int n_regs     = env->n_regs;
+	be_ifg_t *ifg  = env->co->cenv->ifg;
+	co2_irn_t *ir  = &ci->inh;
+	bitset_t *bs   = bitset_alloca(n_regs);
+
+	bitset_pos_t elm;
+	ir_node *irn;
+	int i, j;
+	void *it;
+
+	admissible_colors(env, &ci->inh, bs);
+	bitset_flip_all(bs);
+	bitset_foreach(bs, elm)
+		ci->color_badness[elm] = n_regs * ci->costs;
+
+	/* Use constrained/fixed interfering neighbors to influence the color badness */
+	it = be_ifg_neighbours_iter_alloca(ifg);
+	be_ifg_foreach_neighbour(ifg, it, ir->irn, irn) {
+		co2_irn_t *ni = get_co2_irn(env, irn);
+		int n_adm;
+
+		admissible_colors(env, ni, bs);
+		n_adm = bitset_popcnt(bs);
+		bitset_foreach(bs, elm)
+			ci->color_badness[elm] += n_regs - n_adm;
+
+		if(ni->fixed) {
+			col_t c = get_col(env, ni->irn);
+			ci->color_badness[c] += n_regs * ci->costs;
+		}
+	}
+
+	/* Collect the color badness for the whole subtree */
+	for(i = 0; i < ci->mst_n_childs; ++i) {
+		co2_cloud_irn_t *child = ci->mst_childs[i];
+		determine_color_badness(child, depth + 1);
+
+		for(j = 0; j < n_regs; ++j)
+			ci->color_badness[j] += child->color_badness[j];
+	}
+
+	for(j = 0; j < n_regs; ++j)
+		DBG((env->dbg, LEVEL_2, "%2{firm:indent}%+F col %d badness %d\n", depth, ci->inh.irn, j, ci->color_badness[j]));
+}
+
+static void apply_coloring(co2_cloud_irn_t *ci, col_t col, struct list_head *changed, int depth);
+
+
+static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, struct list_head *parent_changed, int depth)
+{
+	co2_t *env           = ci->cloud->env;
+	col_cost_pair_t *seq = alloca(env->n_regs * sizeof(seq[0]));
+	int is_root          = ci->mst_parent == ci;
+	col_t parent_col     = is_root ? -1 : get_col(env, ci->mst_parent->inh.irn);
+	int min_badness      = INT_MAX;
+	int best_col_costs   = INT_MAX;
+	int best_col         = -1;
+
+	struct list_head changed;
+	int ok, i, j;
+
+	for(i = 0; i < env->n_regs; ++i) {
+		int badness = ci->color_badness[i];
+
+		seq[i].col   = i;
+		seq[i].costs = is_color_admissible(env, &ci->inh, i) ? ci->color_badness[i] : INT_MAX;
+
+		min_badness = MIN(min_badness, badness);
+	}
+
+	/* If we are not the root and the parent's color is allowed for this node give it top prio. */
+	if(!is_root && is_color_admissible(env, &ci->inh, parent_col))
+		seq[parent_col].costs = min_badness - 1;
+
+	qsort(seq, env->n_regs, sizeof(seq[0]), col_cost_pair_lt);
+
+	INIT_LIST_HEAD(&changed);
+	for(i = 0; i < env->n_regs; ++i) {
+		col_t col    = seq[i].col;
+		int costs    = seq[i].costs;
+		int add_cost = !is_root && col != parent_col ? ci->mst_costs : 0;
+
+		int subtree_costs, sum_costs;
+
+		DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}%+F trying color %d\n", depth, ci->inh.irn, col));
+		INIT_LIST_HEAD(&changed);
+		ok = change_color_single(env, ci->inh.irn, col, &changed, depth);
+
+		for(j = 0; ok && j < ci->mst_n_childs; ++j) {
+			ok = coalesce_top_down(ci->mst_childs[j], j, &changed, depth + 1) >= 0;
+		}
+
+		/* If the subtree could not be colored, we have to try another color. */
+		if (!ok) {
+			reject_coloring(&changed);
+			continue;
+		}
+
+		subtree_costs      = examine_subtree_coloring(ci, col);
+		sum_costs          = subtree_costs + add_cost;
+		DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}-> %+F costing %d + %d is ok.\n", depth, ci->inh.irn, subtree_costs, add_cost));
+
+		if(sum_costs < best_col_costs) {
+			best_col           = col;
+			best_col_costs     = sum_costs;
+			ci->col_costs[col] = subtree_costs;
+		}
+
+		reject_coloring(&changed);
+
+		if(sum_costs == 0)
+			break;
+
+		/* If we are at the root and we achieved an acceptable amount of optimization, we finish. */
+#if 0
+		if(is_root && (ci->cloud->mst_costs * stop_percentage < ci->cloud->mst_costs - sum_costs)) {
+			assert(best_col != -1);
+			break;
+		}
+#endif
+	}
+
+	if(!is_root) {
+		int *front = FRONT_BASE(ci->mst_parent, parent_col);
+		front[child_nr] = best_col;
+	}
+
+	if(best_col >= 0) {
+		DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}applying best color %d for %+F\n", depth, best_col, ci->inh.irn));
+		apply_coloring(ci, best_col, parent_changed, depth);
+	}
+
+	return best_col;
+}
 
 static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, int curr_costs)
 {
@@ -885,7 +1037,7 @@ static void apply_coloring(co2_cloud_irn_t *ci, col_t col, struct list_head *cha
 	ok = change_color_single(ci->cloud->env, irn, col, changed, depth);
 	assert(ok && "Color changing may not fail while committing the coloring");
 
-	for(i = 0; i < ci->mst_n_childs; ++i) {
+ 	for(i = 0; i < ci->mst_n_childs; ++i) {
 		apply_coloring(ci->mst_childs[i], front[i], changed, depth + 1);
 	}
 }
@@ -929,6 +1081,17 @@ static void process_cloud(co2_cloud_t *cloud)
 		co2_cloud_irn_t *p_tgt = find_mst_root(e->tgt);
 
 		if(p_src != p_tgt) {
+
+			/*
+				Bring the more costly nodes near to the root of the MST.
+				Thus, tgt shall always be the more expensive node.
+			*/
+			if(p_src->costs > p_tgt->costs) {
+				void *tmp = p_src;
+				p_src = p_tgt;
+				p_tgt = tmp;
+			}
+
 			p_tgt->mst_n_childs++;
 			p_src->mst_parent = p_tgt;
 			p_src->mst_costs  = e->costs;
@@ -940,13 +1103,20 @@ static void process_cloud(co2_cloud_t *cloud)
 
 	for(i = 0; i < cloud->n_memb; ++i) {
 		co2_cloud_irn_t *ci = cloud->seq[i];
+		int j;
+
 		ci->mst_childs      = obstack_alloc(&cloud->obst, ci->mst_n_childs * sizeof(ci->mst_childs));
 		ci->col_costs       = obstack_alloc(&cloud->obst, env->n_regs * sizeof(ci->col_costs[0]));
 		ci->tmp_coloring    = obstack_alloc(&cloud->obst, env->n_regs * sizeof(ci->tmp_coloring[0]));
 		ci->fronts          = obstack_alloc(&cloud->obst, env->n_regs * ci->mst_n_childs * sizeof(ci->fronts[0]));
+		ci->color_badness   = obstack_alloc(&cloud->obst, env->n_regs * sizeof(ci->fronts[0]));
+		memset(ci->color_badness, 0, env->n_regs * sizeof(ci->color_badness[0]));
 		memset(ci->col_costs, 0, env->n_regs * sizeof(ci->col_costs[0]));
 		memset(ci->tmp_coloring, 0, env->n_regs * sizeof(ci->tmp_coloring[0]));
 		memset(ci->fronts, 0, env->n_regs * ci->mst_n_childs * sizeof(ci->fronts[0]));
+
+		for(j = 0; j < env->n_regs; j++)
+			ci->col_costs[j] = INT_MAX;
 
 		ci->mst_n_childs    = 0;
 	}
@@ -963,21 +1133,22 @@ static void process_cloud(co2_cloud_t *cloud)
 	}
 
 	/* Compute the "best" colorings. */
-	best_col = cloud_mst_build_colorings(cloud->mst_root, 0);
+	// best_col = cloud_mst_build_colorings(cloud->mst_root, 0);
 
-	for(i = 0; i < env->n_regs; ++i) {
-		int c;
-		c = examine_subtree_coloring(cloud->mst_root, i);
-		DBG((env->dbg, LEVEL_2, "color %d costs %d\n", i, c));
-	}
-
-	/* Apply the coloring for the best color in the root node and fix all nodes in this cloud */
+	determine_color_badness(cloud->mst_root, 0);
 	INIT_LIST_HEAD(&changed);
-	apply_coloring(cloud->mst_root, best_col, &changed, 0);
+	best_col = coalesce_top_down(cloud->mst_root, -1, &changed, 0);
+
+	/* The coloring should represent the one with the best costs. */
 	materialize_coloring(&changed);
+	DBG((env->dbg, LEVEL_2, "\tbest coloring for root %+F was %d costing %d\n",
+		cloud->mst_root->inh.irn, best_col, examine_subtree_coloring(cloud->mst_root, best_col)));
+
+	/* Fix all nodes in the cloud. */
 	for(i = 0; i < cloud->n_memb; ++i)
 		cloud->seq[i]->inh.fixed = 1;
 
+	/* Free all space used while optimizing this cloud. */
 	obstack_free(&cloud->obst, NULL);
 }
 
