@@ -185,6 +185,9 @@ typedef enum _arch_irn_class_t {
   arch_irn_class_branch,
   arch_irn_class_call,
   arch_irn_class_const,
+  arch_irn_class_load,
+  arch_irn_class_store,
+  arch_irn_class_stackparam,
 } arch_irn_class_t;
 
 /**
