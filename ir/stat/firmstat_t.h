@@ -289,6 +289,8 @@ struct _dumper_t {
   FILE                    *f;             /**< the file to dump to */
   stat_info_t             *status;        /**< access to the global status */
   dumper_t                *next;          /**< link to the next dumper */
+  pset                    *func_map;      /**< pset containing all registered functions */
+  unsigned                tag;            /**< the id tag of the dumper */
 };
 
 /**
@@ -438,5 +440,12 @@ void stat_be_block_stat_perm(const char *class_name, int n_regs, ir_node *perm, 
 void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block,
                                   int is_chain, int size, int n_ops);
 
+/**
+ * Register an additional function for all dumper.  This function
+ * is called in dump_snapshot once for each graph_entry and dumper.
+ *
+ * @param func  the dump function to register
+ */
+void stat_register_dumper_func(dump_graph_FUNC func);
 
 #endif /* _FIRMSTAT_T_H_ */

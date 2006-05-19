@@ -313,9 +313,9 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
   graph_clear_entry(elem, 1);
 
   /* new hash table for opcodes here  */
-  elem->opcode_hash  = new_pset(opcode_cmp, 5);
-  elem->address_mark = new_set(address_mark_cmp, 5);
-  elem->irg          = irg;
+  elem->opcode_hash   = new_pset(opcode_cmp, 5);
+  elem->address_mark  = new_set(address_mark_cmp, 5);
+  elem->irg           = irg;
 
   /* these hash tables are created on demand */
   elem->block_hash = NULL;
@@ -1115,7 +1115,7 @@ static void stat_register_dumper(const dumper_t *dumper)
   dumper_t *p = xmalloc(sizeof(*p));
 
   if (p) {
-    *p = *dumper;
+    memcpy(p, dumper, sizeof(*p));
 
     p->next        = status->dumper;
     p->status      = status;
@@ -1136,6 +1136,23 @@ static void stat_dump_graph(graph_entry_t *entry)
     if (dumper->dump_graph)
       dumper->dump_graph(dumper, entry);
   }
+}
+
+/**
+ * calls all registered functions.
+ */
+static void stat_dump_registered(graph_entry_t *entry)
+{
+	dumper_t *dumper;
+
+	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+		if (dumper->func_map) {
+			dump_graph_FUNC func;
+
+			foreach_pset(dumper->func_map, func)
+				func(dumper, entry);
+		}
+	}
 }
 
 /**
@@ -1174,6 +1191,19 @@ static void stat_dump_finish(void)
   for (dumper = status->dumper; dumper; dumper = dumper->next) {
     if (dumper->finish)
       dumper->finish(dumper);
+  }
+}
+
+/**
+ * register an additional function for all dumper
+ */
+void stat_register_dumper_func(dump_graph_FUNC func) {
+  dumper_t *dumper;
+
+  for (dumper = status->dumper; dumper; dumper = dumper->next) {
+    if (! dumper->func_map)
+      dumper->func_map = pset_new_ptr(3);
+    pset_insert_ptr(dumper->func_map, func);
   }
 }
 
@@ -1880,6 +1910,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
       if (! entry->is_deleted || status->stat_options & FIRMSTAT_COUNT_DELETED) {
         stat_dump_graph(entry);
+		stat_dump_registered(entry);
       }
 
       if (! entry->is_deleted) {
@@ -2039,11 +2070,31 @@ void firm_init_stat(unsigned enable_options)
 #undef X
 }
 
+/**
+ * Frees all dumper structures;
+ */
+static void stat_term_dumper() {
+	dumper_t *dumper, *next_dumper;
+
+	for (dumper = status->dumper; dumper; /* iteration done in loop body */ ) {
+		if (dumper->func_map)
+			del_pset(dumper->func_map);
+
+		next_dumper = dumper->next;
+		free(dumper);
+		dumper = next_dumper;
+	}
+}
+
+
 /* terminates the statistics module, frees all memory */
 void stat_term(void) {
   if (status != (stat_info_t *)&status_disable) {
     obstack_free(&status->be_data, NULL);
 	obstack_free(&status->cnts, NULL);
+
+	stat_term_dumper();
+
     xfree(status);
     status = (stat_info_t *)&status_disable;
   }
