@@ -123,15 +123,21 @@ new_rd_entity (dbg_info *db, ir_type *owner, ident *name, ir_type *type)
     res->value              = new_SymConst(sym, symconst_addr_ent);
     current_ir_graph        = rem;
     res->variability        = variability_constant;
-    res->irg_add_properties = mtp_property_inherited;
-    res->param_access       = NULL;
-    res->param_weight       = NULL;
+    res->attr.mtd_attr.irg_add_properties = mtp_property_inherited;
+    res->attr.mtd_attr.vtable_number      = VTABLE_NUM_NOT_SET;
+    res->attr.mtd_attr.param_access       = NULL;
+    res->attr.mtd_attr.param_weight       = NULL;
+    res->attr.mtd_attr.irg                = NULL;
+  }
+  else if (is_compound_type(type)) {
+    res->variability = variability_uninitialized;
+    res->value       = NULL;
+    res->attr.cmpd_attr.values    = NULL;
+    res->attr.cmpd_attr.val_paths = NULL;
   }
   else {
     res->variability = variability_uninitialized;
     res->value       = NULL;
-    res->values      = NULL;
-    res->val_paths   = NULL;
   }
 
   if (is_Class_type(owner)) {
@@ -141,7 +147,6 @@ new_rd_entity (dbg_info *db, ir_type *owner, ident *name, ir_type *type)
     res->overwrites    = NULL;
     res->overwrittenby = NULL;
   }
-  res->irg = NULL;
 
 #ifdef DEBUG_libfirm
   res->nr = get_irp_new_node_nr();
@@ -171,9 +176,11 @@ new_entity (ir_type *owner, ident *name, ir_type *type) {
   return new_d_entity(owner, name, type, NULL);
 }
 
-
-
-
+/**
+ * Free entity attributes.
+ *
+ * @param ent  the entity
+ */
 static void free_entity_attrs(entity *ent) {
   int i;
   if (get_type_tpop(get_entity_owner(ent)) == type_class) {
@@ -183,25 +190,28 @@ static void free_entity_attrs(entity *ent) {
     assert(ent->overwrites == NULL);
     assert(ent->overwrittenby == NULL);
   }
-  /* if (ent->values) DEL_ARR_F(ent->values); *//* @@@ warum nich? */
-  if (ent->val_paths) {
-    if (is_compound_entity(ent))
+  if (is_compound_entity(ent)) {
+    if (ent->attr.cmpd_attr.val_paths) {
       for (i = 0; i < get_compound_ent_n_values(ent); i++)
-        if (ent->val_paths[i]) ;
-        /* free_compound_graph_path(ent->val_paths[i]) ;  * @@@ warum nich? */
-        /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-        /* DEL_ARR_F(ent->val_paths); */
+        if (ent->attr.cmpd_attr.val_paths[i]) {
+          /* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
+          /* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
+          /* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
+        }
+      ent->attr.cmpd_attr.val_paths = NULL;
+    }
+    /* if (ent->attr.cmpd_attr.values) DEL_ARR_F(ent->attr.cmpd_attr.values); *//* @@@ warum nich? */
+    ent->attr.cmpd_attr.values = NULL;
   }
-  ent->val_paths = NULL;
-  ent->values = NULL;
-
-  if (ent->param_access) {
-    DEL_ARR_F(ent->param_access);
-    ent->param_access = NULL;
-  }
-  if (ent->param_weight) {
-    DEL_ARR_F(ent->param_weight);
-    ent->param_weight = NULL;
+  else if (is_method_entity(ent)) {
+    if (ent->attr.mtd_attr.param_access) {
+      DEL_ARR_F(ent->attr.mtd_attr.param_access);
+      ent->attr.mtd_attr.param_access = NULL;
+    }
+    if (ent->attr.mtd_attr.param_weight) {
+      DEL_ARR_F(ent->attr.mtd_attr.param_weight);
+      ent->attr.mtd_attr.param_weight = NULL;
+    }
   }
 }
 
@@ -396,8 +406,8 @@ set_entity_variability (entity *ent, ent_variability var)
   if ((is_compound_type(ent->type)) &&
       (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
     /* Allocate data structures for constant values */
-    ent->values    = NEW_ARR_F(ir_node *, 0);
-    ent->val_paths = NEW_ARR_F(compound_graph_path *, 0);
+    ent->attr.cmpd_attr.values    = NEW_ARR_F(ir_node *, 0);
+    ent->attr.cmpd_attr.val_paths = NEW_ARR_F(compound_graph_path *, 0);
   }
   if ((is_atomic_type(ent->type)) &&
       (ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
@@ -408,13 +418,13 @@ set_entity_variability (entity *ent, ent_variability var)
   if ((is_compound_type(ent->type)) &&
       (var == variability_uninitialized) && (ent->variability != variability_uninitialized)) {
     /* Free data structures for constant values */
-    DEL_ARR_F(ent->values);    ent->values    = NULL;
-    DEL_ARR_F(ent->val_paths); ent->val_paths = NULL;
+    DEL_ARR_F(ent->attr.cmpd_attr.values);    ent->attr.cmpd_attr.values    = NULL;
+    DEL_ARR_F(ent->attr.cmpd_attr.val_paths); ent->attr.cmpd_attr.val_paths = NULL;
   }
   ent->variability = var;
 }
 
-/* return the name of the variablity */
+/* return the name of the variability */
 const char *get_variability_name(ent_variability var)
 {
 #define X(a)    case a: return #a
@@ -673,33 +683,33 @@ set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index)
 void
 add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  ARR_APP1 (ir_node *, ent->values, val);
-  ARR_APP1 (compound_graph_path *, ent->val_paths, path);
+  ARR_APP1 (ir_node *, ent->attr.cmpd_attr.values, val);
+  ARR_APP1 (compound_graph_path *, ent->attr.cmpd_attr.val_paths, path);
 }
 
 void
 set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  ent->values[pos] = val;
-  ent->val_paths[pos] = path;
+  ent->attr.cmpd_attr.values[pos] = val;
+  ent->attr.cmpd_attr.val_paths[pos] = path;
 }
 
 int
 get_compound_ent_n_values(entity *ent) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  return (ARR_LEN (ent->values));
+  return (ARR_LEN (ent->attr.cmpd_attr.values));
 }
 
 ir_node  *
 get_compound_ent_value(entity *ent, int pos) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  return ent->values[pos];
+  return ent->attr.cmpd_attr.values[pos];
 }
 
 compound_graph_path *
 get_compound_ent_value_path(entity *ent, int pos) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  return ent->val_paths[pos];
+  return ent->attr.cmpd_attr.val_paths[pos];
 }
 
 /**
@@ -778,15 +788,15 @@ void
 remove_compound_ent_value(entity *ent, entity *value_ent) {
   int i;
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  for (i = 0; i < (ARR_LEN (ent->val_paths)); i++) {
-    compound_graph_path *path = ent->val_paths[i];
+  for (i = 0; i < (ARR_LEN (ent->attr.cmpd_attr.val_paths)); i++) {
+    compound_graph_path *path = ent->attr.cmpd_attr.val_paths[i];
     if (path->list[path->len-1].node == value_ent) {
-      for(; i < (ARR_LEN (ent->val_paths))-1; i++) {
-        ent->val_paths[i] = ent->val_paths[i+1];
-        ent->values[i]    = ent->values[i+1];
+      for(; i < (ARR_LEN (ent->attr.cmpd_attr.val_paths))-1; i++) {
+        ent->attr.cmpd_attr.val_paths[i] = ent->attr.cmpd_attr.val_paths[i+1];
+        ent->attr.cmpd_attr.values[i]    = ent->attr.cmpd_attr.values[i+1];
       }
-      ARR_SETLEN(entity*,  ent->val_paths, ARR_LEN(ent->val_paths) - 1);
-      ARR_SETLEN(ir_node*, ent->values,    ARR_LEN(ent->values)    - 1);
+      ARR_SETLEN(entity*,  ent->attr.cmpd_attr.val_paths, ARR_LEN(ent->attr.cmpd_attr.val_paths) - 1);
+      ARR_SETLEN(ir_node*, ent->attr.cmpd_attr.values,    ARR_LEN(ent->attr.cmpd_attr.values)    - 1);
       break;
     }
   }
@@ -1100,10 +1110,10 @@ void sort_compound_ent_values(entity *ent) {
   }
   free(permutation);
 
-  DEL_ARR_F(ent->values);
-  ent->values = my_values;
-  DEL_ARR_F(ent->val_paths);
-  ent->val_paths = my_paths;
+  DEL_ARR_F(ent->attr.cmpd_attr.values);
+  ent->attr.cmpd_attr.values = my_values;
+  DEL_ARR_F(ent->attr.cmpd_attr.val_paths);
+  ent->attr.cmpd_attr.val_paths = my_paths;
 }
 
 int
@@ -1253,7 +1263,7 @@ set_entity_irg(entity *ent, ir_graph *irg) {
 	  && (ent -> visibility == visibility_external_allocated)) ||
          (!irg && ent->peculiarity == peculiarity_description) ||
          (!irg && ent->peculiarity == peculiarity_inherited));
-  ent->irg = irg;
+  ent->attr.mtd_attr.irg = irg;
 }
 
 int
@@ -1273,6 +1283,12 @@ int is_compound_entity(entity *ent) {
   assert(ent && ent->kind == k_entity);
   return (is_Class_type(t) || is_Struct_type(t) ||
       is_Array_type(t) || is_Union_type(t));
+}
+
+int is_method_entity(entity *ent) {
+  ir_type *t = get_entity_type(ent);
+  assert(ent && ent->kind == k_entity);
+  return (is_Method_type(t));
 }
 
 /**
@@ -1308,7 +1324,7 @@ int (entity_not_visited)(entity *ent) {
 unsigned get_entity_additional_properties(entity *ent) {
   ir_graph *irg;
 
-  assert(is_Method_type(get_entity_type(ent)));
+  assert(is_method_entity(ent));
 
   /* first check, if the graph has additional properties */
   irg = get_entity_irg(ent);
@@ -1316,10 +1332,10 @@ unsigned get_entity_additional_properties(entity *ent) {
   if (irg)
     return get_irg_additional_properties(irg);
 
-  if (ent->irg_add_properties & mtp_property_inherited)
+  if (ent->attr.mtd_attr.irg_add_properties & mtp_property_inherited)
     return get_method_additional_properties(get_entity_type(ent));
 
-  return ent->irg_add_properties;
+  return ent->attr.mtd_attr.irg_add_properties;
 }
 
 /* Sets the mask of the additional graph properties. */
@@ -1327,7 +1343,7 @@ void set_entity_additional_properties(entity *ent, unsigned property_mask)
 {
   ir_graph *irg;
 
-  assert(is_Method_type(get_entity_type(ent)));
+  assert(is_method_entity(ent));
 
   /* first check, if the graph exists */
   irg = get_entity_irg(ent);
@@ -1336,7 +1352,7 @@ void set_entity_additional_properties(entity *ent, unsigned property_mask)
   else {
     /* do not allow to set the mtp_property_inherited flag or
      * the automatic inheritance of flags will not work */
-    ent->irg_add_properties = property_mask & ~mtp_property_inherited;
+    ent->attr.mtd_attr.irg_add_properties = property_mask & ~mtp_property_inherited;
   }
 }
 
@@ -1345,35 +1361,37 @@ void set_entity_additional_property(entity *ent, mtp_additional_property flag)
 {
   ir_graph *irg;
 
-  assert(is_Method_type(get_entity_type(ent)));
+  assert(is_method_entity(ent));
 
   /* first check, if the graph exists */
   irg = get_entity_irg(ent);
   if (irg)
     set_irg_additional_property(irg, flag);
   else {
-    unsigned mask = ent->irg_add_properties;
+    unsigned mask = ent->attr.mtd_attr.irg_add_properties;
 
     if (mask & mtp_property_inherited)
       mask = get_method_additional_properties(get_entity_type(ent));
 
     /* do not allow to set the mtp_property_inherited flag or
      * the automatic inheritance of flags will not work */
-    ent->irg_add_properties = mask | (flag & ~mtp_property_inherited);
+    ent->attr.mtd_attr.irg_add_properties = mask | (flag & ~mtp_property_inherited);
   }
 }
 
+/* Initialize entity module. */
 void firm_init_entity(void)
 {
   symconst_symbol sym;
 
   assert(firm_unknown_type && "Call init_type() before firm_init_entity()!");
   assert(!unknown_entity && "Call firm_init_entity() only once!");
+
   unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
   set_entity_visibility(unknown_entity, visibility_external_allocated);
   set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
 
-  sym.entity_p = unknown_entity;
-  current_ir_graph = get_const_code_irg();
+  current_ir_graph      = get_const_code_irg();
+  sym.entity_p          = unknown_entity;
   unknown_entity->value = new_SymConst(sym, symconst_addr_ent);
 }

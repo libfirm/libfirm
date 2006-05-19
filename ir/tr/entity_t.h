@@ -35,8 +35,8 @@
  *  enclosing procedure.
  */
 
-# ifndef _ENTITY_T_H_
-# define _ENTITY_T_H_
+#ifndef _FIRM_TR_ENTITY_T_H_
+#define _FIRM_TR_ENTITY_T_H_
 
 #include "firm_common_t.h"
 #include "firm_config.h"
@@ -55,73 +55,90 @@ struct compound_graph_path {
   struct tuple {
     int    index;       /**< Array index.  To compute position of array elements */
     entity *node;       /**< entity */
-  } list[1];            /**< List of entitiy/index tuple of length len to express the
+  } list[1];            /**< List of entity/index tuple of length len to express the
                              access path. */
 };
 
-/** the type of an entity */
-struct entity {
-  firm_kind kind;       /**< dynamic type tag for entity. */
-  ident *name;          /**< name of this entity */
-  ident *ld_name;       /**< Unique name of this entity, i.e., the mangled
-                           name.  If the field is read before written a default
-                           mangling is applies.  The name of the owner is prepended
-                           to the name of the entity, separated by a underscore.
-                           E.g.,  for a class `A' with field `a' this
-                           is the ident for `A_a'. */
-  ir_type *type;        /**< The type of this entity, e.g., a method type, a
-                           basic type of the language or a class itself */
-  ir_type *owner;       /**< The compound type (e.g. class type) this entity belongs to. */
-  ent_allocation allocation;  /**< Distinguishes static and dynamically allocated
-                 entities and some further cases. */
-  visibility visibility;  /**< Specifies visibility to external program
-                 fragments */
-  ent_variability variability;  /**< Specifies variability of entities content */
-  ent_volatility volatility;    /**< Specifies volatility of entities content */
-  ent_stickyness stickyness;    /**< Specifies whether this entity is sticky  */
-  int  offset;                  /**< Offset in bits for this entity.  Fixed when layout
-               of owner is determined.  */
-  peculiarity peculiarity;      /**< peculiarity of this entity */
-  unsigned long visit;  /**< visited counter for walks of the type information */
-  struct dbg_info *dbi;    /**< A pointer to information for debug support. */
-  void *link;                   /**< To store some intermediate information */
-
-  /* ------------- fields for atomic entities  ---------------*/
-
+/** attributes for atomic entities */
+typedef struct atomic_ent_attr {
   ir_node *value;            /**< value if entity is not of variability uninitialized.
                                Only for atomic entities. */
+} atomic_ent_attr;
 
-  /* ------------- fields for compound entities ---------------*/
-
+/** attributes for compound entities */
+typedef struct compound_ent_attr {
   ir_node **values;     /**< constant values of compound entities. Only available if
-               variability not uninitialized.  Must be set for variability constant
-                           */
+                             variability not uninitialized.  Must be set for variability constant. */
   compound_graph_path **val_paths; /**< paths corresponding to constant values. Only available if
-                      variability not uninitialized.  Must be set for variability constant */
+                                        variability not uninitialized.  Must be set for variability constant. */
+} compound_ent_attr;
+
+/** a reserved value for "not yet set" */
+#define VTABLE_NUM_NOT_SET ((unsigned)(-1))
+
+/** attributes for methods */
+typedef struct method_ent_attr {
+  ir_graph *irg;        /**< The corresponding irg if known.
+                             The ir_graph constructor automatically sets this field. */
+  unsigned irg_add_properties;   /**< Additional graph properties can be
+                                      stored in a entity if no irg is available. */
+
+  unsigned vtable_number;        /**< For a dynamically called method, the number assigned
+                                      in the virtual function table. */
+
+  ptr_access_kind *param_access; /**< the parameter access */
+  float *param_weight; /**< The weight of method's parameters. Parameters
+                          with a high weight are good for procedure cloning. */
+} method_ent_attr;
+
+
+/** the type of an entity */
+struct entity {
+  firm_kind kind;       /**< The dynamic type tag for entity. */
+  ident *name;          /**< The name of this entity. */
+  ident *ld_name;       /**< Unique name of this entity, i.e., the mangled
+                             name.  If the field is read before written a default
+                             mangling is applies.  The name of the owner is prepended
+                             to the name of the entity, separated by a underscore.
+                             E.g.,  for a class `A' with field `a' this
+                             is the ident for `A_a'. */
+  ir_type *type;        /**< The type of this entity, e.g., a method type, a
+                             basic type of the language or a class itself. */
+  ir_type *owner;              /**< The compound type (e.g. class type) this entity belongs to. */
+  ent_allocation allocation;   /**< Distinguishes static and dynamically allocated
+                                    entities and some further cases. */
+  visibility visibility;       /**< Specifies visibility to external program
+                                    fragments. */
+  ent_variability variability; /**< Specifies variability of entities content. */
+  ent_volatility volatility;   /**< Specifies volatility of entities content. */
+  ent_stickyness stickyness;   /**< Specifies whether this entity is sticky.  */
+  int  offset;                 /**< Offset in bits for this entity.  Fixed when layout
+                                    of owner is determined. */
+  peculiarity peculiarity;     /**< The peculiarity of this entity. */
+  unsigned long visit;         /**< visited counter for walks of the type information. */
+  struct dbg_info *dbi;        /**< A pointer to information for debug support. */
+  void *link;                  /**< To store some intermediate information. */
 
   /* ------------- fields for entities owned by a class type ---------------*/
 
   entity **overwrites;     /**< A list of entities this entity overwrites. */
   entity **overwrittenby;  /**< A list of entities that overwrite this entity.  */
 
-  /* ------------- fields for methods ---------------*/
-
-  ir_graph *irg;        /**< If (type == method_type) this is the corresponding irg.
-               The ir_graph constructor automatically sets this field.
-               Yes, it must be here. */
-  unsigned irg_add_properties;   /**< Additional graph properties can be
-               stored in a entity if no irg is available. */
-
-  ptr_access_kind *param_access;  /**< the parameter access */
-  float *param_weight; /**< The weight of method's parameters. Parameters
-                          with a high weight are good for procedure cloning.*/
+  /* ------------- fields for atomic entities  --------------- */
+  ir_node *value;          /**< value if entity is not of variability uninitialized.
+                                Only for atomic entities. */
+  union {
+    /* ------------- fields for compound entities -------------- */
+    compound_ent_attr cmpd_attr;
+    /* ------------- fields for method entities ---------------- */
+    method_ent_attr   mtd_attr;
+  } attr; /**< type specific attributes */
 
   /* ------------- fields for analyses ---------------*/
 
-
 #ifdef DEBUG_libfirm
-  long nr;             /**< a unique node number for each node to make output
-                           readable. */
+  long nr;             /**< A unique node number for each node to make output
+                            readable. */
 # endif /* DEBUG_libfirm */
 };
 
@@ -298,9 +315,10 @@ static INLINE ir_graph *
 _get_entity_irg(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   assert(ent == unknown_entity || is_Method_type(ent->type));
-  if (!get_visit_pseudo_irgs() && ent->irg && is_pseudo_ir_graph(ent->irg))
+  if (!get_visit_pseudo_irgs() && ent->attr.mtd_attr.irg
+      && is_pseudo_ir_graph(ent->attr.mtd_attr.irg))
     return NULL;
-  return ent->irg;
+  return ent->attr.mtd_attr.irg;
 }
 
 static INLINE unsigned long
@@ -363,4 +381,4 @@ _entity_not_visited(entity *ent) {
 #define entity_visited(ent)                      _entity_visited(ent)
 #define entity_not_visited(ent)                  _entity_not_visited(ent)
 
-# endif /* _ENTITY_T_H_ */
+#endif /* _FIRM_TR_ENTITY_T_H_ */
