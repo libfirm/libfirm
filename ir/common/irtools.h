@@ -6,11 +6,11 @@
  * Modified by:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2005 Universität Karlsruhe
+ * Copyright:   (c) 1999-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-#ifndef _IRTOOLS_H_
-#define _IRTOOLS_H_
+#ifndef _FIRM_COMMON_IRTOOLS_H_
+#define _FIRM_COMMON_IRTOOLS_H_
 
 #include "firm_config.h"
 #include "firm_types.h"
@@ -31,7 +31,7 @@ lc_opt_entry_t *firm_opt_get_root(void);
  * @param d Another number.
  * @return 0 if c == d, -1 if c < d, 1 if c > d.
  */
-#define CMP(c, d) (((c) > (d)) - ((c) < (d)))
+#define QSORT_CMP(c, d) (((c) > (d)) - ((c) < (d)))
 
 
 /**
@@ -74,4 +74,4 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg);
  */
 ir_node *exact_copy(ir_node *n);
 
-#endif /* _IRTOOLS_H_ */
+#endif /* _FIRM_COMMON_IRTOOLS_H_ */
