@@ -302,6 +302,7 @@ foreach my $op (keys(%nodes)) {
 	$temp  = "  op_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
 	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t) + $n_res * sizeof(arch_register_t *), &ops);\n";
 	push(@obst_new_irop, $temp);
+	push(@obst_new_irop, "  set_op_tag(op_$op, &$arch\_op_tag);\n");
 	push(@obst_enum_op, "  iro_$op,\n");
 
 	push(@obst_header, "\n");
@@ -323,10 +324,36 @@ print OUT "\n";
 print OUT @obst_get_opvar;
 print OUT "\n";
 
-print OUT<<ENDOFISIRN;
+print OUT<<EOF;
 
 static int $arch\_opcode_start = -1;
 static int $arch\_opcode_end   = -1;
+
+EOF
+
+# build the FOURCC arguments from $arch
+
+my ($a, $b, $c, $d) = ('\0', '\0', '\0', '\0');
+
+if (length($arch) >= 1) {
+	$a = uc(substr($arch, 0, 1));
+}
+
+if (length($arch) >= 2) {
+	$b = uc(substr($arch, 1, 1));
+}
+
+if (length($arch) >= 3) {
+	$c = uc(substr($arch, 2, 1));
+}
+
+if (length($arch) >= 4) {
+	$d = uc(substr($arch, 3, 1));
+}
+
+print OUT "static unsigned $arch\_op_tag = FOURCC('$a', '$b', '$c', '$d');\n";
+
+print OUT<<ENDOFISIRN;
 
 /** Return the opcode number of the first $arch opcode. */
 int get_$arch\_opcode_first(void) {
@@ -338,17 +365,9 @@ int get_$arch\_opcode_last(void) {
   return $arch\_opcode_end;
 }
 
-/** Return non-zero if the given node is a $arch machine node. */
+/** Return 1 if the given node is a $arch machine node, 0 otherwise */
 int is_$arch\_irn(const ir_node *node) {
-  unsigned opc = (unsigned)get_irn_opcode(node);
-
-  assert($arch\_opcode_start > 0 && "missing opcode init");
-  assert($arch\_opcode_end > 0 && "missing opcode init");
-
-  if (opc - (unsigned)$arch\_opcode_start < (unsigned)($arch\_opcode_end - $arch\_opcode_start))
-    return 1;
-
-  return 0;
+  return get_op_tag(get_irn_op(node)) == &$arch\_op_tag;
 }
 
 int get_$arch\_irn_opcode(const ir_node *node) {
