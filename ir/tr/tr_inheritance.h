@@ -24,9 +24,8 @@
  *
  *  @see  type.h entity.h
  */
-
-#ifndef _TR_INHERITANCE_H_
-#define _TR_INHERITANCE_H_
+#ifndef _FIRM_TR_INHERITANCE_H_
+#define _FIRM_TR_INHERITANCE_H_
 
 #include "firm_types.h"
 #include "type.h"
@@ -88,16 +87,16 @@ entity *resolve_ent_polymorphy(ir_type *dynamic_class, entity* static_ent);
  *
  *  Returns an ident that consists of the name of type followed by an
  *  underscore and the name (not ld_name) of the entity. */
-ident *default_mangle_inherited_name(entity *super, ir_type *clss);
+ident *default_mangle_inherited_name(entity *ent, ir_type *clss);
 
 /** Type of argument functions for inheritance resolver.
  *
- * @param super   The entity in the super type that will be overwritten
+ * @param ent     The entity in the super type that will be overwritten
  *                by the newly generated entity, for which this name is
  *                used.
  * @param clss    The class type in which the new entity will be placed.
  */
-typedef ident *mangle_inherited_name_func(entity *super, ir_type *clss);
+typedef ident *mangle_inherited_name_func(entity *ent, ir_type *clss);
 
 /** Resolve implicit inheritance.
  *
@@ -235,4 +234,4 @@ ir_class_cast_state get_irp_class_cast_state(void);
  *  and firm verbosity is set.
  */
 void verify_irg_class_cast_state(ir_graph *irg);
-#endif  /* _TR_INHERITANCE_H_ */
+#endif  /* _FIRM_TR_INHERITANCE_H_ */
