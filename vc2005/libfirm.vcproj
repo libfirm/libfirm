@@ -4,6 +4,7 @@
 	Version="8,00"
 	Name="libfirm"
 	ProjectGUID="{DC7052A2-E740-4629-9F56-DB118AAB725B}"
+	RootNamespace="libfirm"
 	>
 	<Platforms>
 		<Platform
@@ -67,7 +68,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="S:\local\ipd\lib\libfirm.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -87,13 +87,13 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Header install"
-				CommandLine="cmd /c install.cmd .. s:\local\ipd\include\libfirm"
+				CommandLine="cmd /c install.cmd .. $(SolutionDir)include"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="c:\work\libfirm\Debug"
-			IntermediateDirectory="c:\work\libfirm\Debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
@@ -118,15 +118,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../obstack,../vc2005,../ir/adt,../ir/ana,../ir/common,../ir/debug,../ir/ident,../ir/ir,../ir/opt,../ir/st,../ir/stat,../ir/tr,../ir/tv,../ir/arch,../ir/lower,s:/local/ipd/include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;HAVE_CONFIG_H"
+				AdditionalIncludeDirectories="../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/st;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;&quot;$(SolutionDir)include&quot;;$(NOINHERIT)"
+				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				PrecompiledHeaderFile="c:\work\libfirm\Debug/libfirm.pch"
-				AssemblerListingLocation="c:\work\libfirm\Debug/"
-				ObjectFile="c:\work\libfirm\Debug/"
-				ProgramDataBaseFileName="c:\work\libfirm\Debug/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
@@ -144,7 +140,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="S:\local\ipd\lib\libfirm_g.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -156,7 +151,6 @@
 			<Tool
 				Name="VCBscMakeTool"
 				SuppressStartupBanner="true"
-				OutputFile="c:\work\libfirm\Debug/libfirm.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -164,7 +158,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Header install"
-				CommandLine="cmd /c install.cmd .. s:\local\ipd\include\libfirm"
+				CommandLine="cmd /c install.cmd .. $(SolutionDir)include\libfirm"
 			/>
 		</Configuration>
 	</Configurations>
@@ -175,11 +169,6 @@
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{72D63AD0-A584-4317-88BF-680B3C0FDB4D}"
-			RelativePathToProject="..\..\..\obstack\vc2005\obstack.vcproj"
-		/>
-		<ProjectReference
-			ReferencedProjectIdentifier="{B5BEF349-DA77-4811-B414-D6745BEB252A}"
-			RelativePathToProject="..\..\..\firmlower\vc2005\firmlower.vcproj"
 		/>
 	</References>
 	<Files>
@@ -5078,6 +5067,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\opt\opt_frame.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\opt\opt_osr.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\opt\opt_osr.h"
 					>
 				</File>
 				<File
