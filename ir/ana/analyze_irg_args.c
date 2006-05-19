@@ -195,7 +195,7 @@ static void analyze_ent_args(entity *ent)
   mtp     = get_entity_type(ent);
   nparams = get_method_n_params(mtp);
 
-  ent->param_access = NEW_ARR_F(ptr_access_kind, nparams);
+  ent->attr.mtd_attr.param_access = NEW_ARR_F(ptr_access_kind, nparams);
 
   /* If the method haven't parameters we have
    * nothing to do.
@@ -207,7 +207,7 @@ static void analyze_ent_args(entity *ent)
 
   /* we have not yet analyzed the graph, set ALL access for pointer args */
   for (i = nparams - 1; i >= 0; --i)
-    ent->param_access[i] =
+    ent->attr.mtd_attr.param_access[i] =
       is_Pointer_type(get_method_param_type(mtp, i)) ? ptr_access_all : ptr_access_none;
 
   if (! irg) {
@@ -215,9 +215,7 @@ static void analyze_ent_args(entity *ent)
     return;
   }
 
-  /* Call algorithm that computes the out edges */
-  if (get_irg_outs_state(irg) != outs_consistent)
-    compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   irg_args = get_irg_args(irg);
 
@@ -241,19 +239,20 @@ static void analyze_ent_args(entity *ent)
   }
 
   /* copy the temporary info */
-  memcpy(ent->param_access, rw_info, nparams * sizeof(ent->param_access[0]));
+  memcpy(ent->attr.mtd_attr.param_access, rw_info,
+    nparams * sizeof(ent->attr.mtd_attr.param_access[0]));
 
 #if 0
   printf("\n%s:\n", get_entity_name(ent));
   for (i = 0; i < nparams; ++i) {
     if (is_Pointer_type(get_method_param_type(mtp, i)))
-      if (ent->param_access[i] != ptr_access_none) {
+      if (ent->attr.mtd_attr.param_access[i] != ptr_access_none) {
         printf("  Pointer Arg %d access: ", i);
-        if (ent->param_access[i] & ptr_access_read)
+        if (ent->attr.mtd_attr.param_access[i] & ptr_access_read)
           printf("READ ");
-        if (ent->param_access[i] & ptr_access_write)
+        if (ent->attr.mtd_attr.param_access[i] & ptr_access_write)
           printf("WRITE ");
-        if (ent->param_access[i] & ptr_access_store)
+        if (ent->attr.mtd_attr.param_access[i] & ptr_access_store)
           printf("STORE ");
         printf("\n");
       }
@@ -278,7 +277,7 @@ void analyze_irg_args(ir_graph *irg)
   if (! ent)
     return;
 
-  if (! ent->param_access)
+  if (! ent->attr.mtd_attr.param_access)
     analyze_ent_args(ent);
 }
 
@@ -293,17 +292,17 @@ ptr_access_kind get_method_param_access(entity *ent, int pos)
 
   assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
 
-  if (ent->param_access) {
-    if (pos < ARR_LEN(ent->param_access))
-      return ent->param_access[pos];
+  if (ent->attr.mtd_attr.param_access) {
+    if (pos < ARR_LEN(ent->attr.mtd_attr.param_access))
+      return ent->attr.mtd_attr.param_access[pos];
     else
       return ptr_access_all;
   }
 
   analyze_ent_args(ent);
 
-  if (pos < ARR_LEN(ent->param_access))
-    return ent->param_access[pos];
+  if (pos < ARR_LEN(ent->attr.mtd_attr.param_access))
+    return ent->attr.mtd_attr.param_access[pos];
   else
     return ptr_access_all;
 }
@@ -401,7 +400,7 @@ static void analyze_method_params_weight(entity *ent)
   nparams  = get_method_n_params(mtp);
 
   /* allocate a new array. currently used as 'analysed' flag */
-  ent->param_weight = NEW_ARR_F(float, nparams);
+  ent->attr.mtd_attr.param_weight = NEW_ARR_F(float, nparams);
 
   /* If the method haven't parameters we have
    * nothing to do.
@@ -413,7 +412,7 @@ static void analyze_method_params_weight(entity *ent)
 
   /* First we initialize the parameter weight with 0. */
   for (i = nparams - 1; i >= 0; i--)
-    ent->param_weight[i] = null_weight;
+    ent->attr.mtd_attr.param_weight[i] = null_weight;
 
   if (! irg) {
     /* no graph, no better info */
@@ -421,15 +420,14 @@ static void analyze_method_params_weight(entity *ent)
   }
 
   /* Call algorithm that computes the out edges */
-  if (get_irg_outs_state(irg) != outs_consistent)
-    compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   irg_args = get_irg_args(irg);
 
   for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
-    arg                          = get_irn_out(irg_args, i);
-    proj_nr                      = get_Proj_proj(arg);
-    ent->param_weight[proj_nr]  += calc_method_param_weight(arg);
+    arg     = get_irn_out(irg_args, i);
+    proj_nr = get_Proj_proj(arg);
+    ent->attr.mtd_attr.param_weight[proj_nr]  += calc_method_param_weight(arg);
   }
 
 #if 0
@@ -450,17 +448,17 @@ float get_method_param_weight(entity *ent, int pos)
 
   assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
 
-  if (ent->param_weight) {
-    if (pos < ARR_LEN(ent->param_weight))
-      return ent->param_weight[pos];
+  if (ent->attr.mtd_attr.param_weight) {
+    if (pos < ARR_LEN(ent->attr.mtd_attr.param_weight))
+      return ent->attr.mtd_attr.param_weight[pos];
     else
       return 0.0f;
   }
 
   analyze_method_params_weight(ent);
 
-  if (pos < ARR_LEN(ent->param_weight))
-    return ent->param_weight[pos];
+  if (pos < ARR_LEN(ent->attr.mtd_attr.param_weight))
+    return ent->attr.mtd_attr.param_weight[pos];
   else
     return 0.0f;
 }
@@ -480,6 +478,6 @@ void analyze_irg_args_weight(ir_graph *irg)
   if (! ent)
     return;
 
-  if (! ent->param_weight)
+  if (! ent->attr.mtd_attr.param_weight)
     analyze_method_params_weight(ent);
 }
