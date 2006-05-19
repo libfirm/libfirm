@@ -8,8 +8,11 @@
  * Copyright:   (c) 1998-2005 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-#ifndef _ARCHOP_H_
-#define _ARCHOP_H_
+#ifndef _FIRM_ARCH_ARCHOP_H_
+#define _FIRM_ARCH_ARCHOP_H_
+
+#include "firm_types.h"
+#include "dbginfo.h"
 
 /**
  * Mask defining which architecture depend
@@ -64,4 +67,4 @@ ir_node *arch_transform_node_Mux(ir_node *mux);
  */
 void firm_archops_init(const arch_ops_info *info);
 
-#endif /* _ARCHOP_H_ */
+#endif /* _FIRM_ARCH_ARCHOP_H_ */
