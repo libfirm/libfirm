@@ -90,13 +90,13 @@ foreach $line (@lines) {
         } else {
           $multiline = 0;
         }
-    } elsif ($openbracket == 1) {
+    } elsif ($openbracket >= 1) {
 	print TDF "$line";
-	if ((index($line, "}") > -1)) {
-	    $openbracket = 0;
-	    if (($guardedtypedef == 1)) {
-		print TDF "#endif\n";
-		$guardedtypedef = 0;
+	$openbracket += num_brackets($line);
+        if ($openbracket == 0) {
+ 	    if (($guardedtypedef == 1)) {
+	        print TDF "#endif\n";
+	        $guardedtypedef = 0;
 	    }
 	}
 	$lastline = "";
@@ -109,16 +109,10 @@ foreach $line (@lines) {
 	    print TDF "$lastline"; 	$lastline = "";
 	}
 	print TDF "$line";
-	if ((index($line, "{") > -1)) {
-	    $openbracket = 1;
-	} elsif (($guardedtypedef == 1)) {
-	    print TDF "#endif\n";
-	    $guardedtypedef = 0;
-	}
-	if ((index($line, "}") > -1)) {
-	    $openbracket = 0;
+	$openbracket += num_brackets($line);
+        if ($openbracket == 0) {
 	    if (($guardedtypedef == 1)) {
-		print TDF "#endif\n";
+	        print TDF "#endif\n";
 		$guardedtypedef = 0;
 	    }
 	}
@@ -132,3 +126,44 @@ foreach $line (@lines) {
 
 close(TDF);
 close(OUT);
+
+# count the bracket ballance
+sub num_brackets {
+  my $line = shift;
+  my $lastpos;
+  my $cnt = 0;
+
+  $lastpos = -1;
+  while(1) {
+    $lastpos = index($line, "{", $lastpos+1);
+    if ($lastpos < 0) {
+      last;
+    }
+    $cnt++;
+  }
+  $lastpos = -1;
+  while(1) {
+    $lastpos = index($line, "(", $lastpos+1);
+    if ($lastpos < 0) {
+      last;
+    }
+    $cnt++;
+  }
+  $lastpos = -1;
+  while(1) {
+    $lastpos = index($line, "}", $lastpos+1);
+    if ($lastpos < 0) {
+      last;
+    }
+    $cnt--;
+  }
+  $lastpos = -1;
+  while(1) {
+    $lastpos = index($line, ")", $lastpos+1);
+    if ($lastpos < 0) {
+      last;
+    }
+    $cnt--;
+  }
+  return $cnt;
+}
