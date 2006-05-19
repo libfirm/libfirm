@@ -32,16 +32,13 @@
  *  @see  tpop.h
  */
 
-# ifndef _TYPE_H_
-# define _TYPE_H_
+#ifndef _FIRM_TR_TYPE_H_
+#define _FIRM_TR_TYPE_H_
 
-# include "firm_types.h"
-# include "tpop.h"
-# include "firm_common.h"
-# include "ident.h"
-# include "irmode.h"
-# include "dbginfo.h"
-# include "tr_inheritance.h"
+#include "firm_types.h"
+#include "tpop.h"
+#include "firm_common.h"
+#include "dbginfo.h"
 
 /**
  *  An abstract data type to represent types.
@@ -1279,5 +1276,4 @@ entity *frame_alloc_area(type *frame_type, int size, int alignment, int at_start
  */
 long get_type_nr(const ir_type *tp);
 
-
-# endif /* _TYPE_H_ */
+#endif /* _FIRM_TR_TYPE_H_ */
