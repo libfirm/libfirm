@@ -99,8 +99,9 @@ typedef struct _ia32_attr_t {
 		unsigned n_res:7;           /**< number of results produced by this node */
 	} data;
 
-	struct obstack *am_offs;    /**< offsets for AddrMode */
-	ident          *am_sc;      /**< SymConst for AddrMode */
+	struct obstack *am_offs;     /**< offsets for AddrMode */
+	struct obstack *plain_offs;  /**< obstack for plain am_offs */
+	ident          *am_sc;       /**< SymConst for AddrMode */
 
 	union {
 		tarval *tv;     /**< tarval for immediate operations */

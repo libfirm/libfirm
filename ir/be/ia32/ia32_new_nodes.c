@@ -469,12 +469,20 @@ char *get_ia32_am_offs(const ir_node *node) {
 		return NULL;
 	}
 
+	if (! attr->plain_offs)
+		attr->plain_offs = (struct obstack *)_new_arr_d(get_irg_obstack(get_irn_irg(node)), 1, sizeof(*(attr->plain_offs)));
+	else
+		obstack_free(attr->plain_offs, NULL);
+
+	obstack_init(attr->plain_offs);
+
 	size = obstack_object_size(attr->am_offs);
 	if (size > 0) {
-		res    = xmalloc(size + 2);
+		res = obstack_alloc(attr->plain_offs, size + 2);
 		res[0] = attr->data.offs_sign ? '-' : '+';
 		memcpy(&res[1], obstack_base(attr->am_offs), size);
 		res[size + 1] = '\0';
+		res = obstack_finish(attr->plain_offs);
 	}
 
 	return res;
@@ -502,7 +510,7 @@ static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 
 	if (! attr->am_offs) {
 		/* obstack is not initialized */
-		attr->am_offs = xcalloc(1, sizeof(*(attr->am_offs)));
+		attr->am_offs = (struct obstack *)_new_arr_d(get_irg_obstack(get_irn_irg(node)), 1, sizeof(*(attr->am_offs)));
 		obstack_init(attr->am_offs);
 
 		attr->data.offs_sign = (op == '-') ? 1 : 0;
