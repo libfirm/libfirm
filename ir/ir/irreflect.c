@@ -24,6 +24,7 @@
 
 #include "obst.h"
 
+#include "irnode_t.h"
 #include "irmode.h"
 #include "irreflect.h"
 
