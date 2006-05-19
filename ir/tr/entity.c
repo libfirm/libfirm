@@ -1252,7 +1252,7 @@ ir_graph *
 
 void
 set_entity_irg(entity *ent, ir_graph *irg) {
-  assert(ent && is_Method_type(get_entity_type(ent)));
+  assert(ent && is_method_entity(ent));
   /* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
    * Methode selbst nicht mehr aufgerufen werden kann, die Entität
    * aber erhalten bleiben soll?  Wandle die Entitaet in description oder
@@ -1264,6 +1264,16 @@ set_entity_irg(entity *ent, ir_graph *irg) {
          (!irg && ent->peculiarity == peculiarity_description) ||
          (!irg && ent->peculiarity == peculiarity_inherited));
   ent->attr.mtd_attr.irg = irg;
+}
+
+unsigned get_entity_vtable_number(entity *ent) {
+  assert(ent && is_method_entity(ent));
+  return ent->attr.mtd_attr.vtable_number;
+}
+
+void set_entity_vtable_number(entity *ent, unsigned vtable_number) {
+  assert(ent && is_method_entity(ent));
+  ent->attr.mtd_attr.vtable_number = vtable_number;
 }
 
 int

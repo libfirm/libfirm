@@ -35,33 +35,34 @@ typedef struct {
   ir_type **supertypes;/**< direct supertypes */
   peculiarity peculiarity;  /**< peculiarity of this class */
   entity  *type_info;  /**< a entity representing this class, used for type info */
+  unsigned vtable_size;/**< size of the vtable */
   unsigned final;      /**< non-zero if this is a final class */
   int dfn;             /**< number used for 'instanceof' operator */
 } cls_attr;
 
 /** struct attributes */
 typedef struct {
-  entity **members;    /**< fields of this struct. No method entities allowed. */
+  entity **members;    /**< Fields of this struct. No method entities allowed. */
 } stc_attr;
 
 /** A (type, entity) pair */
 typedef struct {
-  ir_type *tp;         /**< a type */
-  entity  *ent;        /**< an entity */
+  ir_type *tp;         /**< A type. */
+  entity  *ent;        /**< An entity. */
 } tp_ent_pair;
 
 /** method attributes */
 typedef struct {
-  int n_params;                   /**< number of parameters */
-  tp_ent_pair *param_type;        /**< array of parameter type/value entities pairs */
+  int n_params;                   /**< Number of parameters. */
+  tp_ent_pair *param_type;        /**< Array of parameter type/value entities pairs. */
   ir_type *value_params;          /**< A type whose entities represent copied value arguments. */
-  int n_res;                      /**< number of results */
-  tp_ent_pair *res_type;          /**< array of result type/value entity pairs */
+  int n_res;                      /**< Number of results. */
+  tp_ent_pair *res_type;          /**< Array of result type/value entity pairs. */
   ir_type *value_ress;            /**< A type whose entities represent copied value results. */
   variadicity variadicity;        /**< variadicity of the method. */
-  int first_variadic_param;       /**< index of the first variadic param or -1 if non-variadic .*/
+  int first_variadic_param;       /**< index of the first variadic parameter or -1 if non-variadic .*/
   unsigned additional_properties; /**< Set of additional method properties. */
-  unsigned irg_calling_conv;      /**< this is a set of calling convention flags. */
+  unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
 
 /** union attributes */
@@ -343,6 +344,18 @@ _get_class_member   (const ir_type *clss, int pos) {
   return clss->attr.ca.members[pos];
 }
 
+static INLINE unsigned
+_get_class_vtable_size(const ir_type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.vtable_size;
+}
+
+static INLINE void
+_set_class_vtable_size(ir_type *clss, unsigned vtable_size) {
+  assert(clss && (clss->type_op == type_class));
+  clss->attr.ca.vtable_size = vtable_size;
+}
+
 static INLINE int
 _is_class_final   (const ir_type *clss) {
   assert(clss && (clss->type_op == type_class));
@@ -476,6 +489,8 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define is_Class_type(clss)               _is_class_type(clss)
 #define get_class_n_members(clss)         _get_class_n_members(clss)
 #define get_class_member(clss, pos)       _get_class_member(clss, pos)
+#define get_class_vtable_size(clss)       _get_class_vtable_size(clss)
+#define set_class_vtable_size(clss, size) _set_class_vtable_size(clss, size)
 #define is_class_final(clss)              _is_class_final(clss)
 #define set_class_final(clss, final)      _set_class_final(clss, final)
 #define is_Struct_type(strct)             _is_struct_type(strct)

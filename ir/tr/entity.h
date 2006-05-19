@@ -60,8 +60,8 @@
  *                   If (type != method_type) access of this field will cause
  *                   an assertion.
  */
-#ifndef _ENTITY_H_
-#define _ENTITY_H_
+#ifndef _FIRM_TR_ENTITY_H_
+#define _FIRM_TR_ENTITY_H_
 
 #include "firm_types.h"
 #include "dbginfo.h"
@@ -315,6 +315,12 @@ void    set_entity_link(entity *ent, void *l);
    else the field is fixed to NULL.  (Get returns NULL, set asserts.) */
 ir_graph *get_entity_irg(const entity *ent);
 void      set_entity_irg(entity *ent, ir_graph *irg);
+
+/** Gets the entity vtable number. */
+unsigned get_entity_vtable_number(entity *ent);
+
+/** Sets the entity vtable number. */
+void     set_entity_vtable_number(entity *ent, unsigned vtable_number);
 
 /** Return the peculiarity of an entity. */
 peculiarity get_entity_peculiarity (const entity *ent);
@@ -604,4 +610,4 @@ typedef enum acc_bits {
 #define IS_WRITTEN(a)  ((a) & ptr_access_write)
 #define IS_STORED(a)   ((a) & ptr_access_store)
 
-#endif /* _ENTITY_H_ */
+#endif /* _FIRM_TR_ENTITY_H_ */

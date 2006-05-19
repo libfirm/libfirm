@@ -1,16 +1,17 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/tr/type.h
+ * Purpose:     Representation of types.
+ * Author:      Goetz Lindenmaier
+ * Modified by: Michael Beck
+ * Created:
+ * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * CVS-ID:      $Id$
+ */
+
 /**
  * @file type.h
- *
- * Project:     libFIRM                                                   <br>
- * File name:   ir/tr/type.h                                              <br>
- * Purpose:     Representation of types.                                  <br>
- * Author:      Goetz Lindenmaier                                         <br>
- * Modified by:                                                           <br>
- * Created:                                                               <br>
- * Copyright:   (c) 2001-2003 Universität Karlsruhe                       <br>
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE. <br>
- * CVS-ID:      $Id$
- *
  *
  *  Datastructure to hold type information.
  *
@@ -31,7 +32,6 @@
  *
  *  @see  tpop.h
  */
-
 #ifndef _FIRM_TR_TYPE_H_
 #define _FIRM_TR_TYPE_H_
 
@@ -435,6 +435,9 @@ int smaller_type (ir_type *st, ir_type *lt);
  *                 representing this type.  This information is useful for lowering
  *                 of InstOf and TypeChk nodes.  Default: NULL
  *
+ *  - vtable_size: The size of this class vritual function table.
+ *                 Default:  0
+ *
  *  - final:       A final class is always a leaf in the class hierarchy.  Final
  *                 classes cannot be super classes of other ones.  As this information
  *                 can only be computed in whole world compilations, we allow to
@@ -590,6 +593,12 @@ entity *get_class_type_info(const ir_type *clss);
 
 /** Set a type info entity for the class. */
 void set_class_type_info(ir_type *clss, entity *ent);
+
+/** Returns the size of the virtual function table. */
+unsigned get_class_vtable_size(const ir_type *clss);
+
+/** Sets a new size of the virtual function table. */
+void set_class_vtable_size(ir_type *clss, unsigned size);
 
 /** Returns non-zero if a class is final. */
 int is_class_final(const ir_type *clss);

@@ -770,6 +770,7 @@ ir_type *new_d_type_class (ident *name, dbg_info *db) {
   res->attr.ca.supertypes  = NEW_ARR_F (ir_type *, 0);
   res->attr.ca.peculiarity = peculiarity_existent;
   res->attr.ca.type_info   = NULL;
+  res->attr.ca.vtable_size = 0;
   res->attr.ca.final       = 0;
   res->attr.ca.dfn         = 0;
   hook_new_type(res);
@@ -976,10 +977,22 @@ void        set_class_peculiarity (ir_type *clss, peculiarity pec) {
   clss->attr.ca.peculiarity = pec;
 }
 
+/* Returns the size of the virtual function table. */
+unsigned (get_class_vtable_size)(const ir_type *clss) {
+  return _get_class_vtable_size(clss);
+}
+
+/* Sets a new size of the virtual function table. */
+void (set_class_vtable_size)(ir_type *clss, unsigned size) {
+  _set_class_vtable_size(clss, size);
+}
+
+/* Returns non-zero if a class is final. */
 int (is_class_final)(const ir_type *clss) {
   return _is_class_final(clss);
 }
 
+/* Sets if a class is final. */
 void (set_class_final)(ir_type *clss, int final) {
   _set_class_final(clss, final);
 }
