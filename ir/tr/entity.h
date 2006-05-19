@@ -503,6 +503,8 @@ int is_atomic_entity(entity *ent);
 /** Returns true if the type of the entity is a class, structure,
    array or union type. */
 int is_compound_entity(entity *ent);
+/** Returns true if the type of the entity is a Method type. */
+int is_method_entity(entity *ent);
 
 /** Returns non-zero if ent1 and ent2 have are equal except for their owner.
    Two entities are equal if
