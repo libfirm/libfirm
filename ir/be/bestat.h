@@ -1,3 +1,9 @@
+/**
+ * Provides several statistic functions for the backend.
+ * @author Christian Wuerdig
+ * $Id$
+ */
+
 #ifndef _BESTAT_H_
 #define _BESTAT_H_
 
@@ -44,8 +50,23 @@ void be_do_stat_perm(const char *class_name, int n_regs, ir_node *perm, ir_node 
  */
 void be_do_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block, int is_chain, int n_elems, int n_ops);
 
+/**
+ * Collects node statistics.
+ *
+ * @param irg      the to do statistics for
+ * @param phase    the phase to collect the statistic for
+ */
+void be_do_stat_nodes(ir_graph *irg, const char *phase);
+
+/**
+ * Performs initialization for be node statistics.
+ */
+void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg);
+
 #else
 
+#define be_stat_init_irg(arch_env, irg)
+#define be_do_stat_nodes(irg, phase)
 #define be_do_stat_reg_pressure(birg)
 #define be_do_stat_sched_ready(block, ready_set)
 #define be_do_stat_perm(class_name, n_regs, perm, block, n, real_size)
