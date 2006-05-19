@@ -232,6 +232,10 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 		return arch_irn_class_branch;
 	else if (is_ia32_Cnst(irn))
 		return arch_irn_class_const;
+	else if (is_ia32_Ld(irn))
+		return arch_irn_class_load;
+	else if (is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+		return arch_irn_class_store;
 	else if (is_ia32_irn(irn))
 		return arch_irn_class_normal;
 	else
@@ -836,7 +840,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	reg = arch_get_irn_register(env->cg->arch_env, irn);
 	arch_set_irn_register(env->cg->arch_env, new_op, reg);
 
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, new_op));
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, irn));
 
 	exchange(irn, proj);
 }
@@ -890,7 +894,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 		sched_remove(irn);
 	}
 
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, new_op));
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, irn));
 
 	exchange(irn, proj);
 }
