@@ -97,8 +97,7 @@ static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
 	if (get_nodes_block(node) != src_block) return node;
 	if (get_irn_op(node) == op_Phi) return get_irn_n(node, i);
 
-	copy_irn_to_irg(node, current_ir_graph);
-	copy = get_irn_link(node);
+	copy = exact_copy(node);
 	dst_block = get_nodes_block(get_irn_n(src_block, i));
 	set_nodes_block(copy, dst_block);
 
