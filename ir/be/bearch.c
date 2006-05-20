@@ -117,6 +117,25 @@ arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int 
   }
 }
 
+int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  if(ops->impl->get_op_estimated_cost) {
+    return ops->impl->get_op_estimated_cost(ops, irn);
+  } else {
+    return 1;
+  }
+}
+
+int arch_is_possible_memory_operand(const arch_env_t *env, const ir_node *irn, int i)
+{
+  const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+  if(ops->impl->possible_memory_operand) {
+    return ops->impl->possible_memory_operand(ops, irn, i);
+  } else {
+    return 0;
+  }
+}
 
 int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs)
 {

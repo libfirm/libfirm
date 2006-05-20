@@ -292,6 +292,7 @@ struct _arch_irn_ops_if_t {
    * Returns an inverse operation which yields the i-th argument
    * of the given node as result.
    *
+   * @param self      The this pointer.
    * @param irn       The original operation
    * @param i         Index of the argument we want the inverse operation to yield
    * @param inverse   struct to be filled with the resulting inverse op
@@ -299,6 +300,27 @@ struct _arch_irn_ops_if_t {
    * @return          The inverse operation or NULL if operation invertible
    */
   arch_inverse_t *(*get_inverse)(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
+
+  /**
+   * Get the estimated cycle count for @p irn.
+   *
+   * @param self The this pointer.
+   * @param irn  The node.
+   *
+   * @return     The estimated cycle count for this operation
+   */
+  int (*get_op_estimated_cost)(const void *self, const ir_node *irn);
+
+  /**
+   * Asks the backend whether operand @p i of @p irn can be loaded form memory internally
+   *
+   * @param self The this pointer.
+   * @param irn  The node.
+   * @param i    Index of the argument we would like to know whether @p irn can load it form memory internally
+   *
+   * @return     nonzero if argument can be loaded or zero otherwise
+   */
+  int (*possible_memory_operand)(const void *self, const ir_node *irn, unsigned int i);
 
 };
 
