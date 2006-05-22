@@ -86,6 +86,7 @@ ir\opt\proc_cloning.h
 ir\opt\opt_branches.h
 ir\opt\opt_confirms.h
 ir\opt\opt_frame.h
+ir\opt\opt_osr.h
 
 ir\tr\entity.h
 ir\tr\mangle.h
