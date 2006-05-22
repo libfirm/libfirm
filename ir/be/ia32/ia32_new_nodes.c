@@ -482,7 +482,6 @@ char *get_ia32_am_offs(const ir_node *node) {
 		res[0] = attr->data.offs_sign ? '-' : '+';
 		memcpy(&res[1], obstack_base(attr->am_offs), size);
 		res[size + 1] = '\0';
-		res = obstack_finish(attr->plain_offs);
 	}
 
 	return res;
