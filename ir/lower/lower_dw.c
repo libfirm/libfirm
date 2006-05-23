@@ -897,6 +897,117 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 }
 
 /**
+ * Translate a Shr and handle special cases.
+ */
+static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_node *right = get_Shr_right(node);
+
+	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
+		tarval *tv = get_Const_tarval(right);
+
+		if (tarval_is_long(tv) &&
+			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			ir_node *block = get_nodes_block(node);
+			ir_node *left = get_Shr_left(node);
+			int idx = get_irn_idx(left);
+
+			left = env->entries[idx]->high_word;
+			idx = get_irn_idx(node);
+
+			env->entries[idx]->low_word  = left;
+			env->entries[idx]->high_word = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+
+			return;
+		}
+	}
+	lower_Shiftop(node, mode, env);
+}
+
+/**
+ * Translate a Shl and handle special cases.
+ */
+static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_node *right = get_Shl_right(node);
+
+	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
+		tarval *tv = get_Const_tarval(right);
+
+		if (tarval_is_long(tv) &&
+			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			ir_node *block = get_nodes_block(node);
+			ir_node *left = get_Shl_left(node);
+			int idx = get_irn_idx(left);
+
+			left = env->entries[idx]->low_word;
+			idx = get_irn_idx(node);
+
+			env->entries[idx]->low_word  = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+			env->entries[idx]->high_word = left;
+
+			return;
+		}
+	}
+	lower_Shiftop(node, mode, env);
+}
+
+/**
+ * Translate a Shrs and handle special cases.
+ */
+static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_node *right = get_Shrs_right(node);
+
+	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
+		tarval *tv = get_Const_tarval(right);
+
+		if (tarval_is_long(tv) &&
+			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			ir_node *block = get_nodes_block(node);
+			ir_node *left = get_Shrs_left(node);
+			ir_node *c;
+			int idx = get_irn_idx(left);
+
+			left = env->entries[idx]->high_word;
+			idx = get_irn_idx(node);
+
+			c = new_r_Const_long(current_ir_graph, block, mode_Iu, get_mode_size_bits(mode) - 1);
+			env->entries[idx]->low_word  = left;
+			env->entries[idx]->high_word = new_r_Shrs(current_ir_graph, block, left, c, mode);
+
+			return;
+		}
+	}
+	lower_Shiftop(node, mode, env);
+}
+
+/**
+ * Translate a Rot and handle special cases.
+ */
+static void lower_Rot(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_node *right = get_Rot_right(node);
+
+	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
+		tarval *tv = get_Const_tarval(right);
+
+		if (tarval_is_long(tv) &&
+			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			ir_node *block = get_nodes_block(node);
+			ir_node *left = get_Rot_left(node);
+			ir_node *h, *l;
+			int idx = get_irn_idx(left);
+
+			l = env->entries[idx]->low_word;
+			h = env->entries[idx]->high_word;
+			idx = get_irn_idx(node);
+
+			env->entries[idx]->low_word  = h;
+			env->entries[idx]->high_word = l;
+
+			return;
+		}
+	}
+	lower_Shiftop(node, mode, env);
+}
+/**
  * Translate an Unop.
  *
  * Create an intrinsic Call.
@@ -1642,7 +1753,7 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			if (mode == env->params->high_signed)
 				mode = env->params->low_signed;
 			else
-				mode = env->params->high_signed;
+				mode = env->params->low_unsigned;
 
 			dbg = get_irn_dbg_info(proj);
 			env->entries[idx]->low_word  =
@@ -2028,7 +2139,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 #define LOWER2(op, fkt)   op_##op->ops.generic = (op_func)fkt
 #define LOWER(op)         LOWER2(op, lower_##op)
 #define LOWER_BIN(op)     LOWER2(op, lower_Binop)
-#define LOWER_SHIFT(op)   LOWER2(op, lower_Shiftop)
 #define LOWER_UN(op)      LOWER2(op, lower_Unop)
 
 	LOWER(Load);
@@ -2048,10 +2158,10 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER_BIN(Add);
 	LOWER_BIN(Sub);
 	LOWER_BIN(Mul);
-	LOWER_SHIFT(Shl);
-	LOWER_SHIFT(Shr);
-	LOWER_SHIFT(Shrs);
-	LOWER_SHIFT(Rot);
+	LOWER(Shl);
+	LOWER(Shr);
+	LOWER(Shrs);
+	LOWER(Rot);
 	LOWER_UN(Minus);
 	LOWER(DivMod);
 	LOWER(Div);
