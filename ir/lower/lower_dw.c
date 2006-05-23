@@ -906,15 +906,22 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			get_tarval_long(tv) >= get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shr_left(node);
+			ir_node *c;
+			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
 			int idx = get_irn_idx(left);
 
 			left = env->entries[idx]->high_word;
 			idx = get_irn_idx(node);
 
-			env->entries[idx]->low_word  = left;
+			if (shf_cnt > 0) {
+				c = new_r_Const_long(current_ir_graph, block, mode_Iu, shf_cnt);
+				env->entries[idx]->low_word = new_r_Shr(current_ir_graph, block, left, c, mode);
+			}
+			else
+				env->entries[idx]->low_word = left;
 			env->entries[idx]->high_word = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
 
 			return;
@@ -933,16 +940,23 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			get_tarval_long(tv) >= get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shl_left(node);
+			ir_node *c;
+			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
 			int idx = get_irn_idx(left);
 
 			left = env->entries[idx]->low_word;
 			idx = get_irn_idx(node);
 
+			if (shf_cnt > 0) {
+				c = new_r_Const_long(current_ir_graph, block, mode_Iu, shf_cnt);
+				env->entries[idx]->high_word = new_r_Shl(current_ir_graph, block, left, c, mode);
+			}
+			else
+				env->entries[idx]->high_word = left;
 			env->entries[idx]->low_word  = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-			env->entries[idx]->high_word = left;
 
 			return;
 		}
@@ -960,17 +974,24 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			get_tarval_long(tv) >= get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shrs_left(node);
+			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
 			ir_node *c;
 			int idx = get_irn_idx(left);
 
 			left = env->entries[idx]->high_word;
 			idx = get_irn_idx(node);
 
+			if (shf_cnt > 0) {
+				c = new_r_Const_long(current_ir_graph, block, mode_Iu, shf_cnt);
+				env->entries[idx]->low_word = new_r_Shrs(current_ir_graph, block, left, c, mode);
+			}
+			else
+				env->entries[idx]->low_word = left;
+
 			c = new_r_Const_long(current_ir_graph, block, mode_Iu, get_mode_size_bits(mode) - 1);
-			env->entries[idx]->low_word  = left;
 			env->entries[idx]->high_word = new_r_Shrs(current_ir_graph, block, left, c, mode);
 
 			return;
@@ -989,7 +1010,7 @@ static void lower_Rot(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) == get_mode_size_bits(env->params->low_signed)) {
+			get_tarval_long(tv) == get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Rot_left(node);
 			ir_node *h, *l;
