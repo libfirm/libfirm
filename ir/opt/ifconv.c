@@ -75,14 +75,14 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 	arity = get_irn_arity(start);
 	for (i = 0; i < arity; ++i) {
 		ir_node* pred = get_irn_n(start, i);
-		ir_node* pred_block;
+		ir_node* pred_block = get_nodes_block(pred);
 
-		if (is_Proj(pred)) {
+		if (pred_block == dependency) {
+			assert(is_Proj(pred));
 			assert(get_irn_mode(pred) == mode_X);
 			return pred;
 		}
 
-		pred_block = get_nodes_block(pred);
 		if (is_cdep_on(pred_block, dependency)) {
 			return walk_to_projx(pred_block, dependency);
 		}
@@ -321,9 +321,17 @@ restart:
 				exchange(get_nodes_block(get_irn_n(block, j)), psi_block);
 
 				if (arity == 2) {
+#if 1
+					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, psi_block));
+					get_block_blockinfo(block)->has_pinned |=	get_block_blockinfo(psi_block)->has_pinned;
+					set_irn_in(block, get_irn_arity(psi_block), get_irn_in(psi_block) + 1);
+					exchange_cdep(psi_block, block);
+					exchange(psi_block, block);
+#else
 					DB((dbg, LEVEL_1,  "Welding block %+F to %+F\n", block, psi_block));
 					get_block_blockinfo(psi_block)->has_pinned |=	get_block_blockinfo(block)->has_pinned;
 					exchange(block, psi_block);
+#endif
 					return;
 				} else {
 					rewire(block, i, j, new_r_Jmp(current_ir_graph, psi_block));
