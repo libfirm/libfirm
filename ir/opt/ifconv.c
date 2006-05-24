@@ -83,6 +83,11 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 			return pred;
 		}
 
+		if (is_Proj(pred)) {
+			assert(get_irn_mode(pred) == mode_X);
+			return NULL;
+		}
+
 		if (is_cdep_on(pred_block, dependency)) {
 			return walk_to_projx(pred_block, dependency);
 		}
