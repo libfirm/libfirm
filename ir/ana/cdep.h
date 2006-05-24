@@ -14,6 +14,8 @@ void free_cdep(ir_graph*);
 
 cdep* find_cdep(const ir_node* block);
 
+void exchange_cdep(ir_node* old, const ir_node* new);
+
 int is_cdep_on(const ir_node* dependee, const ir_node* candidate);
 
 int is_iterated_cdep_on(ir_node* dependee, ir_node* candidate);

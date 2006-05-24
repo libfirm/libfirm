@@ -18,6 +18,14 @@ cdep* find_cdep(const ir_node* block)
 }
 
 
+void exchange_cdep(ir_node* old, const ir_node* new)
+{
+	cdep* cdep = find_cdep(new);
+
+	pmap_insert(cdep_map, old, cdep);
+}
+
+
 static void add_cdep(ir_node* node, ir_node* dep_on)
 {
   cdep* dep = find_cdep(node);
