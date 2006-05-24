@@ -165,15 +165,16 @@ static INLINE int _get_edge_src_pos(const ir_edge_t *edge)
  */
 static INLINE int _get_irn_n_edges(const ir_node *irn)
 {
-/* Perhaps out_count was buggy. This code does it more safely.
-
+/* Perhaps out_count was buggy. This code does it more safely. */
+#if 1
 	int res = 0;
 	struct list_head *pos, *head = _get_irn_outs_head(irn);
 	list_for_each(pos, head)
 		res++;
 	return res;
-*/
+#else
 	return _get_irn_edge_info(irn)->out_count;
+#endif
 }
 
 static INLINE int _edges_activated(const ir_graph *irg)
