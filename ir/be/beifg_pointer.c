@@ -1,13 +1,12 @@
 /**
  * @file   beifg_pointer.c
- * @date   20.03.2006
+ * @date   18.11.2005
  * @author Sebastian Hack
  *
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
 
-#if 0
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -16,370 +15,602 @@
 
 #include "belive_t.h"
 #include "list.h"
+#include "irphase.h"
+#include "irphase_t.h"
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irbitset.h"
 
 #include "be_t.h"
 #include "bera.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
 
-typedef struct _cli_head_t {
-  struct list_head list;
-	struct _cli_head_t *next_cli_head;
-	ir_node *min;
-	ir_node *max;
-} cli_head_t;
+typedef struct _ptr_element_t ptr_element_t;
+
+typedef union element_content {
+	ir_node *irn;
+	ptr_element_t *element;
+} element_content;
+
+struct _ptr_element_t {
+	int kind; /* kind = 8888 ..> both are ir_nodes, = 3101 ..> first is another element, second an ir_node */
+	element_content content_first; /* could be a ptr_element or ir_node */
+	element_content content_second; /* could be a ptr_element or ir_node */
+};
+
+typedef struct _ptr_head_t {
+	struct list_head list;
+	ptr_element_t *element;
+} ptr_head_t;
 
 typedef struct _ifg_pointer_t {
 	const be_ifg_impl_t *impl;
 	const be_chordal_env_t *env;
-	cli_head_t *cli_root;
+	phase_t ph;
 	struct obstack obst;
+	ptr_head_t *curr_ptr_head;
+	ptr_element_t *curr_element;
+	pmap *node_map;
+	bitset_t *visited_neighbours;
 } ifg_pointer_t;
 
-typedef struct _cli_element_t {
-	ir_node *irn;
-	struct list_head list;
-} cli_element_t;
-
-typedef struct _cli_iter_t {
-	ifg_pointer_t *ifg;
-	cli_head_t *curr_cli_head;
-	cli_element_t *curr_cli_element;
-	unsigned long curr_irg_visited;
-	const ir_node *curr_irn;
-} cli_iter_t;
+typedef struct _ptr_iter_t {
+	const ifg_pointer_t *ifg;
+	const ir_node *irn;
+	ptr_head_t *curr_ptr_head;
+	ptr_head_t *first_head;
+	ptr_element_t *curr_element_t;
+	ir_node *curr_irn;
+	int get_first;
+	int sub_call;
+} ptr_iter_t;
 
 /* PRIVATE FUNCTIONS */
-static cli_head_t *get_new_cli_head(void *data)
+
+static void *ptr_irn_data_init(phase_t *ph, const ir_node *irn, void *data)
 {
-	cli_iter_t *it = data;
-	cli_head_t *cli_head;
-	cli_head_t *new_cli_head;
-
-	if (it->ifg->cli_root == NULL)
-	{
-	new_cli_head = obstack_alloc(&it->ifg->obst, sizeof(*new_cli_head));
-	INIT_LIST_HEAD(&new_cli_head->list);
-
-	new_cli_head->next_cli_head = NULL;
-	it->ifg->cli_root = new_cli_head;
-	it->curr_cli_head = new_cli_head;
-	}
-	else
-	{
-		cli_head = it->ifg->cli_root;
-		while(!(cli_head->next_cli_head == NULL))
-		{
-			cli_head = cli_head->next_cli_head;
-		}
-		new_cli_head = obstack_alloc(&it->ifg->obst, sizeof(*new_cli_head));
-		INIT_LIST_HEAD(&new_cli_head->list);
-		cli_head->next_cli_head = new_cli_head;
-		it->curr_cli_head = new_cli_head;
-	}
-
-	cli_head->min = NULL;
-	cli_head->max = NULL;
-
-	return new_cli_head;
+	ptr_head_t *head = phase_alloc(ph, sizeof(*head));
+	INIT_LIST_HEAD(&head->list);
+	return head;
 }
 
-static cli_head_t *get_first_cli_head(void *data)
+static ptr_element_t *ptr_get_new_element(ifg_pointer_t *ifg)
 {
-	cli_iter_t *it = data;
-
-	return it->ifg->cli_root;
+	ptr_element_t *new_element = obstack_alloc(&ifg->obst, sizeof(ptr_element_t));
+	memset(new_element, 0, sizeof(*new_element));
+	return new_element;
 }
 
-static void write_clique(pset *live_set, void *data)
+static ptr_head_t *ptr_get_new_head(ifg_pointer_t *ifg)
+{
+	ptr_head_t *new_element = obstack_alloc(&ifg->obst, sizeof(*new_element));
+	INIT_LIST_HEAD(&new_element->list);
+	return new_element;
+}
+
+static void write_pointers(bitset_t *live, ifg_pointer_t *ifg)
 {
 	ir_node *live_irn;
-	ir_node *test_node;
-	int test_int = 0;
-	ir_node *max_node;
-	ir_node *min_node;
-	cli_iter_t *it = data;
-	pset *live = live_set;
-	cli_element_t *element;
-	int is_element = 0;
+	bitset_pos_t elm;
 
-	cli_head_t *cli_head = get_new_cli_head(it);
-
-	for(live_irn = pset_first(live); live_irn; live_irn = pset_next(live))
+	bitset_foreach_irn(ifg->env->irg, live, elm, live_irn)
 	{
-		/* test if node is max or min dominator*/
-		test_node = live_irn;
-		if (max_node == NULL)
-		{
-			max_node = test_node;
-			min_node = test_node;
-		}
-		else
-		{
-			test_int = value_dominates(test_node, max_node);
-			if (test_int == 1)
-			{
-				max_node = test_node;
-			}
-			test_int = value_dominates(min_node, test_node);
-			if (test_int == 1)
-			{
-				min_node = test_node;
-			}
-		}
+		ptr_head_t *head = phase_get_or_set_irn_data(&ifg->ph, live_irn);
+		ptr_head_t *element = ptr_get_new_head(ifg);
+		ir_node *irn = NULL;
 
-		list_for_each_entry(cli_element_t, element, &cli_head->list, list){
-			if(element->irn == live_irn){
-				is_element = 1;
-				break;
-			}
-		}
-		if (!is_element){
-			element->irn = live_irn;
-			list_add(&element->list, &cli_head->list) ;
-		}
+		if (live_irn->node_nr == 1883 || live_irn->node_nr == 1858)
+			irn = NULL;
+
+		element->element = ifg->curr_element; /* write current highest sub-clique for each node */
+		list_add(&element->list, &head->list);
+
+		/* the following code is to find all nodes, it should be replaced by a "keywalker" of irphase */
+		irn = pmap_get(ifg->node_map, live_irn);
+		if (!irn)
+			pmap_insert(ifg->node_map, live_irn, live_irn);
 	}
-	cli_head->min = min_node;
-	cli_head->max = max_node;
 }
 
-static void find_nodes(const void *self, void *iter)
+static ptr_element_t *get_last_sub_clique(ifg_pointer_t *ifg, bitset_t *live, bitset_t *my_live, ir_node *irn)
 {
-	const ifg_clique_t *ifg	 = self;
-	cli_iter_t *it = iter;
-	cli_element_t *element = NULL;
-	cli_head_t *cli_head = get_first_cli_head(it);
+	ptr_element_t *element = ifg->curr_element;
+	ptr_element_t *res = NULL;
 
-	assert((cli_head == NULL) && "There is no node to work on!");
-
-	it->curr_cli_head = cli_head;
-	it->curr_cli_element = element;
-
-	element = list_entry(cli_head->list.next, cli_element_t, list);
-
-	inc_irg_visited(get_irn_irg(element->irn));
-	it->curr_irg_visited = get_irg_visited(get_irn_irg(element->irn));
-
-	return;
-}
-
-static ir_node *get_next_node(void *iter)
-{
-	cli_iter_t *it = iter;
-	cli_head_t *cli_head = NULL;
-	cli_element_t *element = it->curr_cli_element;
-	unsigned long irn_visited = get_irn_visited(element->irn);
-
-	ir_node *irn;
-
-	if (!(element == it->curr_cli_element))
+	/* search the last sub-clique before the sub-clique that contains the node irn */
+	if (element && element->kind == 8888
+		&& (element->content_first.irn == irn
+		|| element->content_second.irn == irn)) /* contains the node we search and there is no other sub-clique before */
 	{
-		irn = element->irn;
-		element = list_entry(cli_head->list.next, cli_element_t, list);
-		it->curr_cli_element = element;
+		if (bitset_is_set(live, get_irn_idx(element->content_first.irn)) && element->content_first.irn != irn) /* irn is still alive and not the node we search a sub-clique for */
+		{
+			bitset_set(my_live, get_irn_idx(element->content_first.irn));
+		}
+
+		if (bitset_is_set(live, get_irn_idx(element->content_second.irn))&& element->content_second.irn != irn) /* irn is still alive and not the node we search a sub-clique for */
+		{
+			bitset_set(my_live, get_irn_idx(element->content_second.irn));
+		}
+		res = NULL;
 	}
 	else
 	{
-		cli_head = it->curr_cli_head;
-		if (!(cli_head->next_cli_head == NULL))
+		if (element && element->kind == 8889)
+		{ /* this was a "single-node-clique" */
+			res = NULL;
+		}
+
+		if (element && (element->kind == 3101)
+			&& (element->content_second.irn == irn)) /* sub-clique contains node, return previous sub-clique */
 		{
-			irn = element->irn;
-			cli_head = cli_head->next_cli_head;
-			it->curr_cli_head = cli_head;
-			element = list_entry(cli_head->list.next, cli_element_t, list);
-			it->curr_cli_element = element;
+			res = element->content_first.element;
 		}
 		else
 		{
-			return NULL;
+			if (element && element->kind == 3101) /* look at previous sub-cliques if the contain the node you are searching for*/
+			{
+				if (bitset_is_set(live, get_irn_idx(element->content_second.irn))) /* irn is still alive */
+				{
+					bitset_set(my_live, get_irn_idx(element->content_second.irn));
+				}
+				ifg->curr_element = element->content_first.element;
+				res = get_last_sub_clique(ifg, live, my_live, irn);
+			}
+			else
+			{
+				res = NULL;
+			}
 		}
 	}
-
-	if (irn_visited == it->curr_irg_visited)
-	{
-		irn = get_next_node(it);
-	}
-
-	set_irn_visited(irn, it->curr_irg_visited);
-	return irn;
+	return res;
 }
 
 static void find_neighbour_walker(ir_node *bl, void *data)
 {
-	cli_iter_t *it          = data;
-	struct list_head *head  = get_block_border_head(it->ifg->env, bl);
+	ifg_pointer_t *ifg      = data;
+	struct list_head *head  = get_block_border_head(ifg->env, bl);
 	border_t *b;
+	bitset_t *live = bitset_malloc(get_irg_last_idx(ifg->env->irg));
+	bitset_t *my_live;
+	bitset_pos_t my_elm;
+	ir_node *my_irn;
+	element_content last_irn;
+	element_content last_element;
 	int was_def = 0;
+	ir_node *first = NULL;
+	int was_first = 0;
 
-	pset *live = put_live_in(bl, pset_new_ptr_default());
+	last_irn.irn = NULL;
+	last_element.element = NULL;
 
 	assert(is_Block(bl) && "There is no block to work on.");
 
-	list_for_each_entry_reverse(border_t, b, head, list)
+	foreach_border_head(head, b) /* follow the borders of the block */
 	{
 		ir_node *irn = b->irn;
+		ptr_element_t *element = NULL;
+		int i = 0;
 
-		if (!(pset_find_ptr(live, irn)) && (b->is_def))
-		{
-			pset_insert_ptr(live, irn);
-			was_def = 1;
-		}
+		if (irn->node_nr == 1883 || irn->node_nr == 1858)
+			i=1;
 
-		else if (!(b->is_def) && (was_def == 1))
+		if (b->is_def) /* b is a new node */
 		{
-			if (was_def == 1)
+			bitset_set(live, get_irn_idx(irn));
+			if (last_element.element)
 			{
-				write_clique(live, it);
-				was_def = 0;
-			}
-			pset_remove_ptr(live, irn);
-		}
-	}
-	del_pset(live);
-}
+				element = ptr_get_new_element(ifg);
+				element->content_first.element = last_element.element;
+				element->content_second.irn = b->irn;
+				element->kind = 3101; /* first is an element, second an ir_node */
 
-static ifg_clique_t *build_neighbours(const be_chordal_env_t *env)
-{
-	ifg_clique_t *ifg = NULL;
-	cli_iter_t *it = NULL;
-
-	it->ifg       			= ifg;
-	it->curr_cli_head 		= NULL;
-	it->curr_cli_element 	= NULL;
-	it->curr_irg_visited 	= get_irg_visited(env->irg);
-
-	obstack_init(&it->ifg->obst);
-	dom_tree_walk_irg(env->irg, find_neighbour_walker, NULL, it);
-
-	return ifg;
-}
-
-static void find_first_neighbour(const void *self, void *iter, const ir_node *irn)
-{
-	const ifg_clique_t *ifg = self;
-	cli_iter_t *it = iter;
-
-	cli_head_t *cli_head = ifg->cli_root;
-	cli_element_t *element;
-
-	int is_dominated_by_max = 0;
-	int dominates_min = 0;
-
-	assert(!cli_head && "There is no root entry for a cli_head.");
-
-	while(!(cli_head->next_cli_head == NULL))
-	{
-		is_dominated_by_max = value_dominates(cli_head->max, irn);
-		dominates_min = value_dominates(irn, cli_head->min);
-
-		if ((is_dominated_by_max && dominates_min) /* node is in clique */
-				|| (irn == cli_head->max)
-				|| (irn == cli_head->min))
-		{
-			element = list_entry(cli_head->list.next, cli_element_t, list);
-
-			it->curr_cli_element = element;
-			it->curr_cli_head = cli_head;
-			break;
-		}
-		else
-		{
-			cli_head = cli_head->next_cli_head;
-		}
-	}
-	it->curr_irn = irn;
-
-	inc_irg_visited(get_irn_irg(irn));
-	it->curr_irg_visited = get_irg_visited(get_irn_irg(irn));
-	return;
-}
-
-static ir_node *get_next_neighbour(cli_iter_t *it)
-{
-	ir_node *res = NULL;
-	cli_element_t *element = NULL;
-	cli_head_t *cli_head = NULL;
-	int is_dominated_by_max;
-	int dominates_min;
-	const ir_node *irn = it->curr_irn;
-	unsigned long irn_visited = 0;
-
-	res = it->curr_cli_element->irn;
-
-	/* get next element */
-
-	element = list_entry(it->curr_cli_element->list.next, cli_element_t, list);
-	irn_visited = get_irn_visited(element->irn);
-
-	if ((cli_head_t *)element == it->curr_cli_head) /* end of clique, search next one */
-	{
-		cli_head = cli_head->next_cli_head;
-		while(!(cli_head->next_cli_head == NULL))
-		{
-			is_dominated_by_max = value_dominates(cli_head->max, irn);
-			dominates_min = value_dominates(irn, cli_head->min);
-
-			if ((is_dominated_by_max && dominates_min) /* node is in clique */
-					|| (irn == cli_head->max)
-					|| (irn == cli_head->min))
-			{
-				element = list_entry(cli_head->list.next, cli_element_t, list);
-
-				it->curr_cli_element = element;
-				it->curr_cli_head = cli_head;
-				break;
+				last_element.element = element;
+				ifg->curr_element = element;
 			}
 			else
 			{
-				cli_head = cli_head->next_cli_head;
+				if (last_irn.irn)	/* create new sub-clique */
+				{
+					element = ptr_get_new_element(ifg);
+					element->content_first.irn = last_irn.irn;
+					element->content_second.irn = b->irn;
+					element->kind = 8888; /* both are ir_nodes */
+
+					if (irn->node_nr == 1883 || irn->node_nr == 1858 || irn->node_nr == 1936)
+						i=1;
+
+
+					last_element.element = element;
+					ifg->curr_element = element;
+					last_irn.irn = NULL;
+				}
+				else
+				{
+					last_irn.irn = b->irn;	/* needed to create first sub-clique */
+					last_element.element = NULL;
+				}
+			}
+
+			was_def = 1;
+		}
+		else
+		{
+			if (was_def == 1) /* if there is a USE after a DEF... */
+			{
+				if (!last_element.element)
+				{ /* there was only one element in the clique */
+					element = ptr_get_new_element(ifg);
+					element->kind = 8889; /* first is a node, second is NULL, because this is a "single-node-clique" */
+					element->content_first.irn = last_irn.irn;
+					last_irn.irn = NULL;
+					element = NULL;
+					ifg->curr_element = NULL;
+				}
+
+
+				write_pointers(live, ifg); /* ...write a pointer to the highest sub-clique for each living node. */
+				was_def = 0;
+			}
+
+			my_live = bitset_malloc(get_irg_last_idx(ifg->env->irg));
+			last_element.element = get_last_sub_clique(ifg, live, my_live, irn);
+
+			/* check and add still living nodes */
+			//bitset_remv_irn(my_live, irn);
+			if (bitset_popcnt(my_live) > 1)
+			{
+				if (last_element.element)
+				{
+					bitset_foreach_irn(ifg->env->irg, my_live, my_elm, my_irn)
+					{
+						ptr_element_t *my_element = ptr_get_new_element(ifg);
+						my_element->content_first.element = last_element.element;
+						my_element->content_second.irn = my_irn;
+						my_element->kind = 3101; /* first is an element, second an ir_node */
+
+						last_element.element = my_element;
+						ifg->curr_element = my_element;
+					}
+				}
+				else
+				{
+					bitset_foreach_irn(ifg->env->irg, my_live, my_elm, my_irn)
+					{
+						ptr_element_t *my_element = NULL;
+						if (!first && !was_first)
+						{
+							first = my_irn;
+							was_first = 1;
+						}
+						else
+						{
+							if (first && was_first)
+							{
+								my_element = ptr_get_new_element(ifg);
+								my_element->content_first.irn = first;
+								my_element->content_second.irn = my_irn;
+								my_element->kind = 8888; /* both are ir_nodes */
+								last_element.element = my_element;
+								ifg->curr_element = my_element;
+
+								if (my_irn->node_nr == 1883 || my_irn->node_nr == 1858 || my_irn->node_nr == 1936)
+									i=1;
+
+
+								first = NULL;
+							}
+							else
+							{
+								my_element = ptr_get_new_element(ifg);
+								my_element->content_first.element = last_element.element;
+								my_element->content_second.irn = my_irn;
+								my_element->kind = 3101; /* first is an element, second an ir_node */
+								last_element.element = my_element;
+								ifg->curr_element = my_element;
+							}
+						}
+					}
+					was_first = 0;
+				}
+			}
+			else
+			{
+				if (bitset_popcnt(my_live) == 1) /* there is only one node left */
+				{
+					if (last_element.element)
+					{
+						bitset_foreach_irn(ifg->env->irg, my_live, my_elm, my_irn)
+						{
+							ptr_element_t *my_element = ptr_get_new_element(ifg);
+							my_element->content_first.element = last_element.element;
+							my_element->content_second.irn = my_irn;
+							my_element->kind = 3101; /* first is an element, second an ir_node */
+
+							last_element.element = my_element;
+							ifg->curr_element = my_element;
+						}
+					}
+					else
+					{
+						bitset_foreach_irn(ifg->env->irg, my_live, my_elm, my_irn);
+						{
+							ptr_element_t *my_element = ptr_get_new_element(ifg);
+							my_element->content_first.irn = my_irn;
+							my_element->content_second.irn = NULL;
+							my_element->kind = 8889;
+							last_element.element =  my_element;
+							ifg->curr_element = my_element;
+						}
+					}
+				}
+			}
+			bitset_free(my_live);
+			bitset_remv_irn(live, irn);
+		}
+	}
+	bitset_free(live);
+}
+
+static ir_node *get_first_irn(const ifg_pointer_t *ifg, ptr_iter_t *it)
+{
+	/* this should be replaced using a keywalker of the irphase &ifg.ph */
+	ir_node *irn;
+	pmap_entry *entry;
+
+	it->ifg = ifg;
+	entry = pmap_first(ifg->node_map);
+
+	if (!entry)
+		return NULL;
+
+	irn =  entry->value;
+	it->curr_irn = irn;
+
+	return irn;
+}
+
+static ir_node *get_next_irn(ptr_iter_t *it)
+{
+	/* this should be replaced using a keywalker of the irphase &ifg.ph */
+	ir_node *irn;
+	pmap_entry *entry;
+
+	irn = it->curr_irn;
+	entry = pmap_next(it->ifg->node_map);
+
+	if (!entry)
+		return NULL;
+
+	it->curr_irn = entry->value;
+
+	return entry->value;
+}
+
+static ir_node *get_next_neighbour(ptr_iter_t *it)
+{
+	ir_node *res;
+	ptr_head_t *head;
+	ptr_element_t *element;
+	static int i = 0;
+
+	element = it->curr_element_t;
+
+	if (element == NULL)
+	{
+		if (it->irn->node_nr == 1883 || it->irn->node_nr == 1858)
+			i=1;
+
+		if (it->curr_ptr_head->list.next != &it->first_head->list)
+		{
+			head = list_entry(it->curr_ptr_head->list.next, ptr_head_t, list);
+			it->curr_ptr_head = head;
+			element = head->element;
+		}
+		else
+			return NULL; /* there are no more neighbours */
+	}
+
+	if (element && element->kind == 8889) /* node has no neighbours */
+	{
+		res = element->content_first.irn;
+		it->curr_element_t = NULL;
+	}
+	else
+	{
+		if (element && element->kind == 8888) /* node has only one more neighbour */
+		{
+			if (it->get_first)
+			{
+				if (element->content_first.irn != it->irn)
+				{
+					res = element->content_first.irn;
+					it->get_first = 0;
+					it->curr_element_t = NULL;
+				}
+				else
+				{
+					it->get_first = 0;
+					it->curr_element_t = NULL;
+					it->sub_call++;
+					res = get_next_neighbour(it);
+					it->sub_call--;
+				}
+			}
+			else
+			{
+				if (element->content_second.irn != it->irn)
+				{
+					res = element->content_second.irn;
+					it->get_first = 1;
+					it->curr_element_t = element;
+				}
+				else
+				{
+					it->get_first = 1;
+					it->curr_element_t = element;
+					it->sub_call++;
+					res = get_next_neighbour(it);
+					it->sub_call--;
+				}
+			}
+		}
+		else
+		{
+			if (element && element->kind == 3101)
+			{
+				it->curr_element_t = element->content_first.element;
+				res = element->content_second.irn;
+			}
+			else
+			{ /* element is only an ir_node */// TODO
+				it->curr_element_t = NULL;
+				return NULL;
 			}
 		}
 	}
-	else /* get next element of this clique */
-	{
-		it->curr_cli_element = element;
-	}
 
-	if (irn_visited == it->curr_irg_visited)
+	if (res && !it->sub_call)
 	{
-		irn = get_next_neighbour(it);
+		if (bitset_contains_irn(it->ifg->visited_neighbours, res) || res == it->irn)
+		{
+			res = get_next_neighbour(it);
+		}
+		else
+		{
+			bitset_set(it->ifg->visited_neighbours, get_irn_idx(res));
+		}
 	}
-
-	set_irn_visited(res, it->curr_irg_visited);
 
 	return res;
 }
+
+static ir_node *get_first_neighbour(const ifg_pointer_t *ifg, ptr_iter_t *it, const ir_node *irn)
+{
+	ir_node *res;
+	ptr_head_t *head;
+	ptr_element_t *element;
+
+	it->ifg = ifg;
+	it->irn = irn;
+	it->get_first = 0;
+	it->sub_call = 0;
+	bitset_clear_all(it->ifg->visited_neighbours);
+
+	head = phase_get_irn_data(&ifg->ph, irn);
+	if (!head)
+		return NULL;
+	else
+	{
+		it->first_head = head;
+		head = list_entry(it->first_head->list.next, ptr_head_t, list); /* because first element is NULL */
+		it->curr_ptr_head = head;
+		element = head->element;
+	}
+
+	if (element && element->kind == 8889) /* node has no neighbours */
+	{
+		res = element->content_first.irn;
+		it->curr_element_t = NULL;
+	}
+	else
+	{
+		if (element && element->kind == 8888) /* node has only one neighbour */
+		{
+			if (it->get_first)
+			{
+				if (element->content_first.irn != it->irn)
+				{
+					res = element->content_first.irn;
+					it->get_first = 0;
+					it->curr_element_t = NULL;
+				}
+				else
+				{
+					it->get_first = 0;
+					it->curr_element_t = NULL;
+					it->sub_call++;
+					res = get_next_neighbour(it);
+					it->sub_call--;
+				}
+			}
+			else
+			{
+				if (element->content_second.irn != it->irn)
+				{
+					res = element->content_second.irn;
+					it->curr_element_t = element;
+					it->get_first = 1;
+				}
+				else
+				{
+					it->get_first = 1;
+					it->curr_element_t = element;
+					it->sub_call++;
+					res = get_next_neighbour(it);
+					it->sub_call--;
+				}
+			}
+		}
+		else
+			if (element && element->kind == 3101)
+			{
+				it->curr_element_t = element->content_first.element;
+				res = element->content_second.irn;
+			}
+			else
+			{ /* element is only an ir_node */
+				it->curr_element_t = NULL;
+				return NULL;
+			}
+	}
+
+	if (res && !it->sub_call)
+	{
+		if (bitset_contains_irn(it->ifg->visited_neighbours, res) || res == it->irn)
+		{
+			res = get_next_neighbour(it);
+		}
+		else
+		{
+			bitset_set(it->ifg->visited_neighbours, get_irn_idx(res));
+		}
+	}
+
+	return res;
+}
+
 
 
 /* PUBLIC FUNCTIONS */
 
 static void ifg_pointer_free(void *self)
 {
-	ifg_clique_t *ifg = self;
+	ifg_pointer_t *ifg = self;
+	obstack_free(&ifg->obst, NULL);
+	phase_free(&ifg->ph);
 
 	free(self);
 }
 
-static int ifg_pointer_connected(const void *self, const ir_node *a, const ir_node *b)
+static int ifg_pointer_connected(const ifg_pointer_t *ifg, const ir_node *a, const ir_node *b)
 {
-	cli_iter_t *it = NULL;
 	int connected = -1;
+	ptr_iter_t it;
 	ir_node *irn = NULL;
 
-	find_first_neighbour(self, it, a);
+	irn = get_first_neighbour(ifg, &it, a);
 	connected = 0;
-	irn = get_next_neighbour(it);
 	while (irn != NULL)
 	{
 		if (irn == b)
 		{
 			connected = 1;
+			break;
 		}
-		irn = get_next_neighbour(it);
+		irn = get_next_neighbour(&it);
 	}
 
 	return connected;
@@ -387,8 +618,7 @@ static int ifg_pointer_connected(const void *self, const ir_node *a, const ir_no
 
 static ir_node *ifg_pointer_neighbours_begin(const void *self, void *iter, const ir_node *irn)
 {
-	find_first_neighbour(self, iter, irn);
-	return get_next_neighbour(iter);
+	return get_first_neighbour(self, iter, irn);
 }
 
 static ir_node *ifg_pointer_neighbours_next(const void *self, void *iter)
@@ -403,13 +633,12 @@ static void ifg_pointer_neighbours_break(const void *self, void *iter)
 
 static ir_node *ifg_pointer_nodes_begin(const void *self, void *iter)
 {
-	find_nodes(self, iter);
-	return get_next_node(iter);
+	return get_first_irn(self, iter);
 }
 
 static ir_node *ifg_pointer_nodes_next(const void *self, void *iter)
 {
-	return get_next_node(iter);
+	return get_next_irn(iter);
 }
 
 static void ifg_pointer_nodes_break(const void *self, void *iter)
@@ -420,23 +649,22 @@ static void ifg_pointer_nodes_break(const void *self, void *iter)
 static int ifg_pointer_degree(const void *self, const ir_node *irn)
 {
 	int degree = -1;
-	cli_iter_t *it = NULL;
+	ptr_iter_t it;
 
-	find_first_neighbour(self, it, irn);
+	irn = get_first_neighbour(self, &it, irn);
 	degree = 0;
-	irn = get_next_neighbour(it);
 	while (irn != NULL)
 	{
 		degree++;
-		irn = get_next_neighbour(it);
+		irn = get_next_neighbour(&it);
 	}
 
 	return degree;
 }
 
 static const be_ifg_impl_t ifg_pointer_impl = {
-	sizeof(cli_iter_t),
-	0,
+	sizeof(ptr_iter_t),
+	sizeof(ptr_iter_t),
 	0,
 	ifg_pointer_free,
 	ifg_pointer_connected,
@@ -454,15 +682,19 @@ static const be_ifg_impl_t ifg_pointer_impl = {
 
 be_ifg_t *be_ifg_pointer_new(const be_chordal_env_t *env)
 {
-	ifg_pointer_t *ifg	= malloc(sizeof(*ifg));
+	ifg_pointer_t *ifg	= xmalloc(sizeof(*ifg));
+	bitset_t *bitsetvisited_neighbours = bitset_malloc(get_irg_last_idx(env->irg));
 	ifg->impl     		= &ifg_pointer_impl;
+	ifg->env			= env;
+	ifg->visited_neighbours = bitsetvisited_neighbours;
 
-	ifg->cli_root		= NULL;
-	ifg->env		 	= env;
+	ifg->node_map 		= pmap_create(); /* to find all nodes, should be replaced by a "keywalker" of irphase */
 
-	ifg = build_neighbours(env);
+	phase_init(&ifg->ph, "ptr_map", env->irg, PHASE_DEFAULT_GROWTH, ptr_irn_data_init);
+	obstack_init(&ifg->obst);
 
+	dom_tree_walk_irg(env->irg, find_neighbour_walker, NULL, ifg);
+
+	obstack_finish(&ifg->obst);
 	return (be_ifg_t *) ifg;
 }
-
-#endif
