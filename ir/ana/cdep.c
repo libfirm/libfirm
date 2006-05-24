@@ -134,6 +134,17 @@ void free_cdep(ir_graph* irg)
 }
 
 
+int is_cdep_on(const ir_node* dependee, const ir_node* candidate)
+{
+	const cdep* dep;
+
+	for (dep = find_cdep(dependee); dep != NULL; dep = dep->next) {
+		if (dep->node == candidate) return 1;
+	}
+	return 0;
+}
+
+
 int is_iterated_cdep_on(ir_node* dependee, ir_node* candidate)
 {
 	const cdep* dep;
