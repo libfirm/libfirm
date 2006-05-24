@@ -42,8 +42,8 @@
 #define DUMP_ALL    2 * DUMP_CLOUD - 1
 
 static int    dump_flags      = 0;
-static double stop_percentage = 1.0;
 static int    subtree_iter    = 4;
+static double constr_factor   = 0.5;
 
 /* Options using libcore */
 #ifdef WITH_LIBCORE
@@ -61,9 +61,9 @@ static lc_opt_enum_mask_var_t dump_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",                     &dump_var),
-	LC_OPT_ENT_INT      ("iter", "iterations for subtree nodes (standard: 3)",                     &subtree_iter),
-	LC_OPT_ENT_DBL      ("stop", "stop optimizing cloud at given percentage of total cloud costs", &stop_percentage),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",             &dump_var),
+	LC_OPT_ENT_INT      ("iter", "iterations for subtree nodes (standard: 3)",             &subtree_iter),
+	LC_OPT_ENT_DBL      ("cf",   "factor of constraint importance (between 0.0 and 1.0)",  &constr_factor),
 	{ NULL }
 };
 
@@ -149,8 +149,10 @@ struct _co2_cloud_t {
 	int               inevit;
 	int               best_costs;
 	int               n_memb;
+	int               n_constr;
 	int               max_degree;
 	int			      ticks;
+	double            freedom;
 	co2_cloud_irn_t  *master;
 	co2_cloud_irn_t  *mst_root;
 	co2_cloud_irn_t **seq;
@@ -187,13 +189,14 @@ static void *co2_irn_init(phase_t *ph, ir_node *irn, void *data)
 	return ci;
 }
 
+#define CLOUD_WEIGHT(c) ((1 - constr_factor) * (c)->costs + constr_factor * (c)->freedom)
 
 static int cmp_clouds_gt(const void *a, const void *b)
 {
 	const co2_cloud_t **p = a;
 	const co2_cloud_t **q = b;
-	int c = (*p)->costs;
-	int d = (*q)->costs;
+	double c = CLOUD_WEIGHT(*p);
+	double d = CLOUD_WEIGHT(*q);
 	return QSORT_CMP(d, c);
 }
 
@@ -920,7 +923,7 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 		int badness = ci->color_badness[i];
 
 		seq[i].col   = i;
-		seq[i].costs = is_color_admissible(env, &ci->inh, i) ? ci->color_badness[i] : INT_MAX;
+		seq[i].costs = is_color_admissible(env, &ci->inh, i) ? badness : INT_MAX;
 
 		min_badness = MIN(min_badness, badness);
 	}
@@ -994,12 +997,6 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 		front[child_nr] = best_col;
 	}
 
-	if(best_col >= 0) {
-		DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}applying best color %d for %+F\n", depth, best_col, ci->inh.irn));
-		//change_color_single(env, ci->inh.irn, best_col, parent_changed, depth);
-		// apply_coloring(ci, best_col, parent_changed, depth);
-	}
-
 	return best_col;
 }
 
@@ -1010,15 +1007,14 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	int costs           = 0;
 	neighb_t *n;
 
-	if(ci->visited >= env->visited)
+	if(ci->cloud)
 		return;
 
 	/* mark the node as visited and add it to the cloud. */
-	ci->visited = env->visited;
 	ci->cloud   = cloud;
 	list_add(&ci->cloud_list, &cloud->members_head);
 
-	DB((env->dbg, LEVEL_3, "\t%+F\n", ci->inh.irn));
+	DB((env->dbg, LEVEL_2, "\t%+F\n", ci->inh.irn));
 
 	/* determine the nodes costs */
 	co_gs_foreach_neighb(a, n) {
@@ -1031,6 +1027,8 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	/* add the node's cost to the total costs of the cloud. */
 	ci->costs          = costs;
 	cloud->costs      += costs;
+	cloud->n_constr   += is_constrained(env, &ci->inh);
+	cloud->freedom    += bitset_popcnt(get_adm(env, &ci->inh));
 	cloud->max_degree  = MAX(cloud->max_degree, ci->inh.aff->degree);
 	cloud->n_memb++;
 
@@ -1063,6 +1061,7 @@ static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 	cloud->env = env;
 	env->visited++;
 	populate_cloud(env, cloud, a, 0);
+	cloud->freedom = (cloud->n_memb * env->n_regs) / cloud->freedom;
 
 	/* Allocate space for the best colors array, where the best coloring is saved. */
 	// cloud->best_cols = phase_alloc(&env->ph, cloud->n_memb * sizeof(cloud->best_cols[0]));
@@ -1075,7 +1074,7 @@ static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 		ci->index       = i;
 		cloud->seq[i++] = ci;
 	}
-	DBG((env->dbg, LEVEL_2, "cloud cost %d\n", cloud->costs));
+	DBG((env->dbg, LEVEL_2, "cloud cost %d, freedom %f\n", cloud->costs, cloud->freedom));
 
 	return cloud;
 }
@@ -1102,12 +1101,17 @@ static void apply_coloring(co2_cloud_irn_t *ci, col_t col, int depth)
 static void process_cloud(co2_cloud_t *cloud)
 {
 	co2_t *env  = cloud->env;
+	int n_regs  = env->n_regs;
 	int n_edges = 0;
+	int *mst_edges = malloc(cloud->n_memb * cloud->n_memb * sizeof(mst_edges[0]));
+	pdeq *q;
 
 	struct list_head changed;
 	edge_t *edges;
 	int i;
 	int best_col;
+
+	memset(mst_edges, 0, cloud->n_memb * cloud->n_memb * sizeof(mst_edges[0]));
 
 	/* Collect all edges in the cloud on an obstack and sort the increasingly */
 	obstack_init(&cloud->obst);
@@ -1134,64 +1138,85 @@ static void process_cloud(co2_cloud_t *cloud)
 	DBG((env->dbg, LEVEL_2, "computing spanning tree of cloud with master %+F\n", cloud->master->inh.irn));
 	for(i = 0; i < n_edges; ++i) {
 		edge_t *e        = &edges[i];
-		co2_cloud_irn_t *src = e->src;
-		co2_cloud_irn_t *tgt = e->tgt;
+		co2_cloud_irn_t *rs = find_mst_root(e->src);
+		co2_cloud_irn_t *rt = find_mst_root(e->tgt);
 
-		/* If both nodes are not in the same subtree, they can be unified. */
-		if(find_mst_root(src) != find_mst_root(tgt)) {
+		/* if the union/find roots are different */
+		if(rs != rt) {
+			int si = e->src->index;
+			int ti = e->tgt->index;
 
-			/*
-				Bring the more costly nodes near to the root of the MST.
-				Thus, tgt shall always be the more expensive node.
-			*/
-			if(src->costs > tgt->costs) {
-				void *t = src;
-				src = tgt;
-				tgt = t;
-			}
+			/* unify the sets */
+			rs->mst_parent = rt;
+			DBG((env->dbg, LEVEL_2, "\tadding edge %+F -- %+F cost %d\n", rs->inh.irn, rt->inh.irn, e->costs));
 
-			tgt->mst_n_childs++;
-			src->mst_parent = tgt;
-			src->mst_costs  = e->costs;
-
-			DBG((env->dbg, LEVEL_2, "\tadding edge %+F -- %+F cost %d\n", src->inh.irn, tgt->inh.irn, e->costs));
+			/* this edge is in the MST, so set it in the bitset. */
+			mst_edges[si * cloud->n_memb + ti] = e->costs;
+			mst_edges[ti * cloud->n_memb + si] = e->costs;
 		}
 	}
 	obstack_free(&cloud->obst, edges);
 
+	cloud->master->mst_parent = cloud->master;
+	cloud->mst_root = cloud->master;
+	q = new_pdeq1(cloud->master);
+	while(!pdeq_empty(q)) {
+		co2_cloud_irn_t *ci = pdeq_getl(q);
+		int ofs    = ci->index * cloud->n_memb;
+		int end    = ofs + cloud->n_memb;
+		int i;
+
+		ci->mst_n_childs = 0;
+		for(i = ofs; i < end; ++i) {
+			if(mst_edges[i] != 0) {
+				int other = i - ofs;
+				co2_cloud_irn_t *child = cloud->seq[i - ofs];
+
+				/* put the child to the worklist */
+				pdeq_putr(q, child);
+
+				/* make ci the parent of the child and add the child to the children array of the parent */
+				child->mst_parent = ci;
+				child->mst_costs  = mst_edges[i];
+				ci->mst_n_childs++;
+				obstack_ptr_grow(&cloud->obst, child);
+
+				mst_edges[other * cloud->n_memb + ci->index] = 0;
+				mst_edges[i] = 0;
+			}
+		}
+
+		obstack_ptr_grow(&cloud->obst, NULL);
+		ci->mst_childs = obstack_finish(&cloud->obst);
+	}
+	del_pdeq(q);
+	free(mst_edges);
+
+
+	DBG((env->dbg, LEVEL_3, "mst:\n"));
 	for(i = 0; i < cloud->n_memb; ++i) {
 		co2_cloud_irn_t *ci = cloud->seq[i];
+		DBG((env->dbg, LEVEL_3, "\t%+F -> %+F\n", ci->inh.irn, ci->mst_parent->inh.irn));
+	}
+
+	for(i = 0; i < cloud->n_memb; ++i) {
+		co2_cloud_irn_t *ci = cloud->seq[i];
+		int n_childs = ci->mst_n_childs;
 		int j;
 
-		ci->mst_childs      = obstack_alloc(&cloud->obst, ci->mst_n_childs * sizeof(ci->mst_childs));
-		ci->col_costs       = obstack_alloc(&cloud->obst, env->n_regs * sizeof(ci->col_costs[0]));
-		ci->tmp_coloring    = obstack_alloc(&cloud->obst, env->n_regs * sizeof(ci->tmp_coloring[0]));
-		ci->fronts          = obstack_alloc(&cloud->obst, env->n_regs * ci->mst_n_childs * sizeof(ci->fronts[0]));
-		ci->color_badness   = obstack_alloc(&cloud->obst, env->n_regs * sizeof(ci->fronts[0]));
-		memset(ci->color_badness, 0, env->n_regs * sizeof(ci->color_badness[0]));
-		memset(ci->col_costs, 0, env->n_regs * sizeof(ci->col_costs[0]));
-		memset(ci->tmp_coloring, 0, env->n_regs * sizeof(ci->tmp_coloring[0]));
-		memset(ci->fronts, 0, env->n_regs * ci->mst_n_childs * sizeof(ci->fronts[0]));
+		ci->col_costs       = obstack_alloc(&cloud->obst, n_regs * sizeof(ci->col_costs[0]));
+		ci->tmp_coloring    = obstack_alloc(&cloud->obst, n_regs * sizeof(ci->tmp_coloring[0]));
+		ci->fronts          = obstack_alloc(&cloud->obst, n_regs * n_childs * sizeof(ci->fronts[0]));
+		ci->color_badness   = obstack_alloc(&cloud->obst, n_regs * sizeof(ci->fronts[0]));
+		memset(ci->color_badness, 0, n_regs * sizeof(ci->color_badness[0]));
+		memset(ci->col_costs,     0, n_regs * sizeof(ci->col_costs[0]));
+		memset(ci->tmp_coloring,  0, n_regs * sizeof(ci->tmp_coloring[0]));
+		memset(ci->fronts,        0, n_regs * n_childs * sizeof(ci->fronts[0]));
 
 		for(j = 0; j < env->n_regs; j++)
 			ci->col_costs[j] = INT_MAX;
 
-		ci->mst_n_childs    = 0;
 	}
-
-	/* build the child arrays in the nodes */
-	for(i = 0; i < cloud->n_memb; ++i) {
-		co2_cloud_irn_t *ci = cloud->seq[i];
-		if(ci->mst_parent != ci)
-			ci->mst_parent->mst_childs[ci->mst_parent->mst_n_childs++] = ci;
-		else {
-			cloud->mst_root  = ci;
-			cloud->mst_costs = 0;
-		}
-	}
-
-	/* Compute the "best" colorings. */
-	// best_col = cloud_mst_build_colorings(cloud->mst_root, 0);
 
 	determine_color_badness(cloud->mst_root, 0);
 	best_col = coalesce_top_down(cloud->mst_root, -1, 0);
@@ -1393,10 +1418,26 @@ static void ifg_dump_at_end(FILE *file, void *self)
 	co2_t *env = self;
 	affinity_node_t *a;
 
+#if 0
+	co2_cloud_t *pos;
+
+	list_for_each_entry(co2_cloud_t, pos, &env->cloud_head, list) {
+		int i;
+
+		for(i = 0; i < pos->n_memb - 1; ++i) {
+			fprintf(file, "\tn%d -- n%d [style=dotted color=green];\n", get_irn_idx(pos->seq[i]->inh.irn), get_irn_idx(pos->seq[i+1]->inh.irn));
+		}
+	}
+#endif
+
+
 	co_gs_foreach_aff_node(env->co, a) {
 		co2_cloud_irn_t *ai = get_co2_cloud_irn(env, a->irn);
 		int idx = get_irn_idx(a->irn);
 		neighb_t *n;
+
+		if(ai->mst_parent != ai)
+			fprintf(file, "\tn%d -- n%d [style=dotted color=blue arrowhead=normal];\n", idx, get_irn_idx(ai->mst_parent->inh.irn));
 
 		co_gs_foreach_neighb(a, n) {
 			int nidx = get_irn_idx(n->irn);
@@ -1448,7 +1489,7 @@ void co_solve_heuristic_new(copy_opt_t *co)
 
 	if(dump_flags & DUMP_BEFORE) {
 		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_before.dot", co->irg, co->cls->name);
-		if(f = fopen(buf, "rt")) {
+		if(f = fopen(buf, "wt")) {
 			be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
 			fclose(f);
 		}
@@ -1458,7 +1499,7 @@ void co_solve_heuristic_new(copy_opt_t *co)
 
 	if(dump_flags & DUMP_AFTER) {
 		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_after.dot", co->irg, co->cls->name);
-		if(f = fopen(buf, "rt")) {
+		if(f = fopen(buf, "wt")) {
 			be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
 			fclose(f);
 		}
