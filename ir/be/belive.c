@@ -307,6 +307,9 @@ pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class
 			DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
 	)
 
+	/* You should better break out of your loop when hitting the first phi function. */
+	assert(!is_Phi(irn) && "liveness_transfer produces invalid results for phi nodes");
+
 	if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
 		ir_node *del = pset_remove_ptr(live, irn);
 		assert(irn == del);

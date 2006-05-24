@@ -45,6 +45,7 @@
 #include "beifg_impl.h"
 
 #include "bespillbelady.h"
+#include "bespillmorgan.h"
 #include "belower.h"
 
 #ifdef WITH_ILP
@@ -54,6 +55,7 @@
 #include "becopystat.h"
 #include "becopyopt.h"
 #include "bessadestr.h"
+#include "beverify.h"
 
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
@@ -97,59 +99,6 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 	obstack_free(&ob, NULL);
 }
 
-static void check_pressure_walker(ir_node *bl, void *data)
-{
-	be_chordal_env_t *env = data;
-	int n_regs            = arch_register_class_n_regs(env->cls);
-	bitset_t *live        = bitset_irg_malloc(env->irg);
-	int step              = 0;
-	ir_node *irn;
-	bitset_pos_t elm;
-	irn_live_t *li;
-	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
-
-	live_foreach(bl, li)
-		if(live_is_end(li) && chordal_has_class(env, li->irn))
-			bitset_add_irn(live, li->irn);
-
-	DBG((dbg, LEVEL_1, "end set for %+F\n", bl));
-	bitset_foreach_irn(env->irg, live, elm, irn)
-		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
-
-	sched_foreach_reverse(bl, irn) {
-		int pressure = bitset_popcnt(live);
-		int idx      = get_irn_idx(irn);
-		int i, n;
-
-		DBG((dbg, LEVEL_1, "%+10F@%+10F: pressure %d\n", bl, irn, pressure));
-
-		if(pressure > n_regs) {
-			ir_node *x;
-			ir_printf("%+10F@%+10F: pressure to high: %d\n", bl, irn, pressure);
-			bitset_foreach_irn(env->irg, live, elm, x)
-				ir_fprintf(stderr, "\t%+10F\n", x);
-		}
-
-		if(chordal_has_class(env, irn)) {
-			if(!bitset_is_set(live, idx))
-				ir_fprintf(stderr, "%+F is defined but was not live\n", irn);
-			bitset_remv_irn(live, irn);
-		}
-
-		for(i = 0, n = get_irn_arity(irn); i < n; i++) {
-			ir_node *op = get_irn_n(irn, i);
-			if(chordal_has_class(env, op) && !is_Phi(irn))
-				bitset_add_irn(live, op);
-		}
-		step++;
-	}
-}
-
-void be_check_pressure(const be_chordal_env_t *env)
-{
-	irg_block_walk_graph(env->irg, check_pressure_walker, NULL, (void *) env);
-}
-
 int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {
 	if(env->ifg)
@@ -161,7 +110,7 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
-	BE_CH_SPILL_BELADY,
+	BE_CH_SPILL_MORGAN,
 	BE_CH_COPYMIN_HEUR1,
 	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
@@ -169,6 +118,7 @@ static be_ra_chordal_opts_t options = {
 
 #ifdef WITH_LIBCORE
 static const lc_opt_enum_int_items_t spill_items[] = {
+	{ "morgan", BE_CH_SPILL_MORGAN },
 	{ "belady", BE_CH_SPILL_BELADY },
 #ifdef WITH_ILP
 	{ "ilp",	BE_CH_SPILL_ILP },
@@ -333,6 +283,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 		/* spilling */
 		switch(options.spill_method) {
+		case BE_CH_SPILL_MORGAN:
+			be_spill_morgan(&chordal_env);
+			break;
 		case BE_CH_SPILL_BELADY:
 			be_spill_belady(&chordal_env);
 			break;
@@ -347,10 +300,12 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		}
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 		be_abi_fix_stack_nodes(bi->abi);
-		be_liveness(irg);
-		be_check_pressure(&chordal_env);
+
+		DEBUG_ONLY(be_verify_schedule(irg);)
+		DEBUG_ONLY(be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg);)
 
 		/* Color the graph. */
+		be_liveness(irg);
 		be_ra_chordal_color(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 

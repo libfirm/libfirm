@@ -387,6 +387,15 @@ extern int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, 
 extern void arch_put_non_ignore_regs(const arch_env_t *env, const arch_register_class_t *cls, bitset_t *bs);
 
 /**
+ * Return the number of registers in a register class which should not be
+ * ignored by the register allocator.
+ * @param env The architecture environment.
+ * @param cls The register class to consider
+ * @return	  The number of non-ignore registers in the register class
+ */
+extern int arch_count_non_ignore_regs(const arch_env_t *env, const arch_register_class_t *cls);
+
+/**
  * Check, if a register is assignable to an operand of a node.
  * @param env The architecture environment.
  * @param irn The node.

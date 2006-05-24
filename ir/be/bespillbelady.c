@@ -46,6 +46,7 @@
 #define DBG_START  16
 #define DBG_SLOTS  32
 #define DBG_TRACE  64
+#define DBG_WORKSET 128
 #define DEBUG_LVL 0 //(DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -64,7 +65,7 @@ typedef struct _belady_env_t {
 	pset *used;			/**< holds the values used (so far) in the current BB */
 	pset *copies;		/**< holds all copies placed due to phi-spilling */
 
-	spill_env_t *senv;	/* see bespill.h */
+	spill_env_t *senv;	/**< see bespill.h */
 	pset *reloads;		/**< all reload nodes placed */
 } belady_env_t;
 
@@ -132,7 +133,7 @@ static INLINE void workset_insert(workset_t *ws, ir_node *val) {
 	int i;
 	/* check for current regclass */
 	if (arch_get_irn_reg_class(ws->bel->arch, val, -1) != ws->bel->cls) {
-		DBG((dbg, DBG_DECIDE, "Dropped %+F\n", val));
+		DBG((dbg, DBG_WORKSET, "Dropped %+F\n", val));
 		return;
 	}
 
@@ -292,8 +293,9 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 			to_insert[demand++] = val;
 			if (is_usage)
 				be_add_reload(bel->senv, val, bel->instr);
-		} else
+		} else {
 			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
+		}
 	}
 	DBG((dbg, DBG_DECIDE, "    demand = %d\n", demand));
 
@@ -302,6 +304,8 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	 */
 	len = workset_get_length(ws);
 	max_allowed = bel->n_regs - demand;
+
+	DBG((dbg, DBG_DECIDE, "    disposing %d values\n", ws->len - max_allowed));
 
 	/* Only make more free room if we do not have enough */
 	if (len > max_allowed) {
@@ -323,8 +327,9 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 				workset_remove(ws_start, irn);
 
 				DBG((dbg, DBG_DECIDE, "    dispose %+F dumb\n", irn));
-			} else
+			} else {
 				DBG((dbg, DBG_DECIDE, "    dispose %+F\n", irn));
+			}
 		}
 
 		/* kill the last 'demand' entries in the array */
@@ -371,7 +376,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *env) {
 	DBG((dbg, DBG_START, "Living at start of %+F:\n", blk));
 	first = sched_first(blk);
 	count = 0;
-	sched_foreach(blk, irn)
+	sched_foreach(blk, irn) {
 		if (is_Phi(irn) && arch_get_irn_reg_class(bel->arch, irn, -1) == bel->cls) {
 			loc.irn = irn;
 			loc.time = get_distance(bel, first, 0, irn, 0);
@@ -380,15 +385,17 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *env) {
 			count++;
 		} else
 			break;
+	}
 
-	live_foreach(blk, li)
+	live_foreach(blk, li) {
 		if (live_is_in(li) && arch_get_irn_reg_class(bel->arch, li->irn, -1) == bel->cls) {
 			loc.irn = (ir_node *)li->irn;
 			loc.time = get_distance(bel, first, 0, li->irn, 0);
 			obstack_grow(&ob, &loc, sizeof(loc));
-			DBG((dbg, DBG_START, "    %+F:\n", irn));
+			DBG((dbg, DBG_START, "    %+F:\n", li->irn));
 			count++;
 		}
+	}
 
 	starters = obstack_finish(&ob);
 	qsort(starters, count, sizeof(starters[0]), loc_compare);
@@ -557,9 +564,10 @@ static void fix_block_borders(ir_node *blk, void *env) {
 				continue;
 
 			/* check if irnb is in a register at end of pred */
-			workset_foreach(wsp, irnp, iter2)
+			workset_foreach(wsp, irnp, iter2) {
 				if (irnb == irnp)
 					goto next_value;
+			}
 
 			/* irnb is in memory at the end of pred, so we have to reload it */
 			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
@@ -631,6 +639,10 @@ static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
 }
 
 void be_spill_belady(const be_chordal_env_t *chordal_env) {
+	be_spill_belady_spill_env(chordal_env, NULL);
+}
+
+void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t *spill_env) {
 	belady_env_t bel;
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
@@ -642,7 +654,11 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	bel.n_regs    = arch_register_class_n_regs(bel.cls);
 	bel.ws        = new_workset(&bel.ob, &bel);
 	bel.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, bel.cls);
-	bel.senv      = be_new_spill_env(chordal_env, is_mem_phi, NULL);
+	if(spill_env == NULL) {
+		bel.senv = be_new_spill_env(chordal_env, is_mem_phi, NULL);
+	} else {
+		bel.senv = spill_env;
+	}
 	DEBUG_ONLY(be_set_spill_env_dbg_module(bel.senv, dbg);)
 	bel.reloads   = pset_new_ptr_default();
 	bel.copies    = pset_new_ptr_default();
@@ -659,7 +675,8 @@ void be_spill_belady(const be_chordal_env_t *chordal_env) {
 
 	/* clean up */
 	del_pset(bel.reloads);
-	be_delete_spill_env(bel.senv);
+	if(spill_env == NULL)
+		be_delete_spill_env(bel.senv);
 	be_end_uses(bel.uses);
 	obstack_free(&bel.ob, NULL);
 }

@@ -49,6 +49,6 @@ struct _be_insn_env_t {
 
 be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn);
 
-be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, be_irg_t *birg, const arch_register_class_t *cls, struct obstack *obst);
+be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, const be_irg_t *birg, const arch_register_class_t *cls, struct obstack *obst);
 
 #endif /* _BEINSN_T_H */

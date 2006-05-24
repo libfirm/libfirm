@@ -154,14 +154,22 @@ static spill_ctx_t *be_get_spill_ctx(set *sc, ir_node *to_spill, ir_node *ctx_ir
  */
 static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) {
 	spill_ctx_t *ctx;
+	const be_main_env_t *env = senv->chordal_env->birg->main_env;
 	DBG((senv->dbg, LEVEL_1, "%+F in ctx %+F\n", irn, ctx_irn));
 
+	// Has the value already been spilled?
 	ctx = be_get_spill_ctx(senv->spill_ctxs, irn, ctx_irn);
-	if(!ctx->spill) {
-		const be_main_env_t *env = senv->chordal_env->birg->main_env;
-		ctx->spill = be_spill(env->arch_env, irn, ctx_irn);
+	if(ctx->spill)
+		return ctx->spill;
+
+	/* Trying to spill an already spilled value, no need for a new spill
+	 * node then, we can simply connect to the same one for this reload
+	 */
+	if(be_is_Reload(irn)) {
+		return get_irn_n(irn, be_pos_Reload_mem);
 	}
 
+	ctx->spill = be_spill(env->arch_env, irn, ctx_irn);
 	return ctx->spill;
 }
 
@@ -239,8 +247,7 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, 
  * Spill a node.
  *
  * @param senv      the spill environment
- * @param irn       the node that should be spilled
- * @param ctx_irn   an user of the spilled node
+ * @param to_spill  the node that should be spilled
  *
  * @return a be_Spill node
  */
@@ -443,8 +450,10 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	DBG((senv->dbg, LEVEL_1, "Insert spills and reloads:\n"));
 	possibly_dead = new_pdeq();
 	for(si = set_first(senv->spills); si; si = set_next(senv->spills)) {
+		int i;
 		reloader_t *rld;
 		ir_mode *mode = get_irn_mode(si->spilled_node);
+		ir_node *value;
 		pset *values = pset_new_ptr(16);
 
 		/* go through all reloads for this spill */
@@ -475,6 +484,42 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 		pset_insert_ptr(values, si->spilled_node);
 		be_ssa_constr_set_ignore(senv->chordal_env->dom_front, values, senv->mem_phis);
 
+		/* Remove reloads which are not used by anyone */
+		/* TODO: Better call a general garbage collection routine here... this here gets clunky
+		 * and doesn't handle all cases (like memphis)
+		 */
+		foreach_pset(values, value) {
+			if(get_irn_n_edges(value) == 0) {
+				sched_remove(value);
+				// remove the node from preds
+				if(be_is_Reload(value)) {
+					ir_node* spill = get_irn_n(value, be_pos_Reload_mem);
+					if(be_is_Spill(spill)) {
+						assert(be_is_Spill(spill));
+
+						set_irn_n(value, be_pos_Reload_mem, new_r_Bad(irg));
+						set_irn_n(value, be_pos_Reload_frame, new_r_Bad(irg));
+
+						// maybe the spill is not used anymoe too now?
+						if(get_irn_n_edges(spill) == 0) {
+							sched_remove(spill);
+							set_irn_n(spill, be_pos_Spill_val, new_r_Bad(irg));
+							set_irn_n(spill, be_pos_Spill_frame, new_r_Bad(irg));
+						}
+					} else if(is_Phi(spill)) {
+						// TODO memphi
+					} else {
+						assert(0 && "Only spill or mem-phi expected here");
+					}
+				} else if(is_Phi(value)) {
+					for(i = 0; i < get_Phi_n_preds(value); ++i)
+						set_irn_n(value, i, new_r_Bad(irg));
+				} else {
+					assert(0);
+				}
+			}
+		}
+
 		del_pset(values);
 	}
 
@@ -503,6 +548,10 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	}
 	del_pdeq(possibly_dead);
 	del_pset(senv->mem_phis);
+
+	// reloads are placed now, but we might reuse the spill environment for further spilling decisions
+	del_set(senv->spills);
+	senv->spills = new_set(cmp_spillinfo, 1024);
 }
 
 void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before) {

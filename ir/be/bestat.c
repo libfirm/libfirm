@@ -108,6 +108,9 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 		sched_foreach_reverse(block, irn) {
 			int cnt;
 
+			if(is_Phi(irn))
+				break;
+
 			live_nodes = be_liveness_transfer(aenv, cls, irn, live_nodes);
 			cnt        = pset_count(live_nodes);
 

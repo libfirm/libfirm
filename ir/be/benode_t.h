@@ -340,6 +340,10 @@ entity *be_get_spill_entity(const ir_node *irn);
 
 ir_node *be_get_Spill_context(const ir_node *irn);
 
+
+ir_node* be_get_Reload_mem(const ir_node *irn);
+ir_node* be_get_Reload_frame(const ir_node* irn);
+
 /**
  * Set the entities of a Reload to the ones of the Spill it is pointing to.
  * @param irg The graph.

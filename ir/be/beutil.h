@@ -116,12 +116,11 @@ void dump_ir_extblock_graph_sched(ir_graph *irg, const char *suffix);
  */
 void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const char *));
 
-
-#endif /* _BEUTIL_H */
-
 /**
  * Search for an irn in @p accept.
  * The search is started at @p start_point_exclusive and continues upwards the dom-tree
  * @return The first node out of accept if found. Else NULL is returned.
  */
 ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive);
+
+#endif /* _BEUTIL_H */

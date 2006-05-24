@@ -39,7 +39,6 @@ typedef struct _be_use_t {
 	const ir_node *bl;
 	const ir_node *irn;
 	unsigned next_use;
-	int is_set;
 } be_use_t;
 
 struct _be_uses_t {
@@ -67,16 +66,18 @@ static int cmp_use(const void *a, const void *b, size_t n)
 }
 
 static INLINE be_use_t *get_or_set_use(be_uses_t *uses,
-    const ir_node *bl, const ir_node *irn, unsigned next_use)
+    const ir_node *bl, const ir_node *def, unsigned next_use)
 {
-  unsigned hash = HASH_COMBINE(HASH_PTR(bl), HASH_PTR(irn));
+  unsigned hash = HASH_COMBINE(HASH_PTR(bl), HASH_PTR(def));
   be_use_t templ;
+  be_use_t* result;
 
   templ.bl = bl;
-  templ.irn = irn;
-  templ.next_use = next_use;
-  templ.is_set = 0;
-  return set_insert(uses->uses, &templ, sizeof(templ), hash);
+  templ.irn = def;
+  templ.next_use = be_get_next_use(uses, sched_first(bl), 0, def, 0);
+  result = set_insert(uses->uses, &templ, sizeof(templ), hash);
+
+  return result;
 }
 
 unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
@@ -85,14 +86,8 @@ unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
 static unsigned get_next_use_bl(be_uses_t *uses, const ir_node *bl,
     const ir_node *def)
 {
-  be_use_t *u;
+  be_use_t *u = get_or_set_use(uses, bl, def, 0);
 
-  u = get_or_set_use(uses, bl, def, 0);
-  if (! u->is_set) {
-	u->is_set = 1;
-	u->next_use = USES_INFINITY;
-	u->next_use = be_get_next_use(uses, sched_first(bl), 0, def, 0);
-  }
   return u->next_use;
 }
 
