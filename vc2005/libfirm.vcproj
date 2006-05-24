@@ -5462,10 +5462,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\stat\Makefile.in"
-					>
-				</File>
-				<File
 					RelativePath="..\ir\stat\pattern.c"
 					>
 					<FileConfiguration
