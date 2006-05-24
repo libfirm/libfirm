@@ -110,7 +110,7 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
-	BE_CH_SPILL_MORGAN,
+	BE_CH_SPILL_BELADY,
 	BE_CH_COPYMIN_HEUR1,
 	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
