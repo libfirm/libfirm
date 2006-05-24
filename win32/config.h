@@ -109,9 +109,6 @@
 /* Define to 1 if Firm hooks are activated */
 #define FIRM_ENABLE_HOOKS 1
 
-/* Define to 1 if Firm inplace edges are activated */
-#define FIRM_EDGES_INPLACE 1
-
 /* Define the right volatile token */
 /* #undef volatile */
 

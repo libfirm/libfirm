@@ -58,11 +58,6 @@
 #define FIRM_ENABLE_HOOKS 1
 #endif
 
-/* Define to 1 if Firm inplace edges are activated */
-#ifndef FIRM_EDGES_INPLACE
-#define FIRM_EDGES_INPLACE 1
-#endif
-
 #ifdef USE_INLINING
 #ifndef INLINE
 #define INLINE  __inline

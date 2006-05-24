@@ -107,9 +107,6 @@
 /* undef to disable inlining */
 #undef USE_INLINING
 
-/* Define to 1 if Firm inplace edges are activated */
-#undef FIRM_EDGES_INPLACE
-
 /* Define to 1 if Firm hooks are activated */
 #undef FIRM_ENABLE_HOOKS
 
