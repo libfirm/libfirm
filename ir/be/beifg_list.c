@@ -64,6 +64,7 @@ static adj_head_t *get_or_set_adj_head(ifg_list_t *ifg, ir_node *irn)
 	if(!adj_head){
 		adj_head = obstack_alloc(&ifg->obst, sizeof(*adj_head));
 		adj_head->irn = irn;
+		adj_head->degree = 0;
 		INIT_LIST_HEAD(&adj_head->list);
 		pmap_insert(ifg->list_map, irn, adj_head);
 	}
@@ -331,7 +332,7 @@ static int ifg_list_degree(const void *self, const ir_node *irn)
 	adj_head_t *adj_head;
 
 	adj_head = pmap_get(ifg->list_map, (void *) irn);
-	assert(!adj_head && "There is no entry for this node.");
+	assert(adj_head && "There is no entry for this node.");
 
 	return adj_head->degree;
 }
