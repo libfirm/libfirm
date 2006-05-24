@@ -18,6 +18,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irbitset.h"
 
 #include "be_t.h"
 #include "bera.h"
@@ -220,7 +221,7 @@ static cli_element_t *get_next_element(const ir_node *irn, cli_iter_t *it) /* ..
 			element = get_next_element(irn, it);
 		}
 
-		if (element != NULL && element->irn == irn) /* the node you are searching neighbors for */
+		if (element && element->irn == irn) /* the node you are searching neighbors for */
 		{
 			it->curr_cli_element = element;
 			element = get_next_element(irn, it);
@@ -389,7 +390,6 @@ static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const 
 static ir_node *get_next_neighbour(cli_iter_t *it)
 {
 	ir_node *res = NULL;
-	cli_element_t *element;
 	cli_head_t *cli_head = it->curr_cli_head;
 	const ir_node *irn = it->curr_irn;
 
@@ -398,26 +398,13 @@ static ir_node *get_next_neighbour(cli_iter_t *it)
 	else
 		return NULL;
 
-	element = get_next_element(irn, it);
+	it->curr_cli_element = get_next_element(irn, it);
 
-	if (element == NULL) /* no more elements in this clique */
+	if (res)
 	{
-		it->curr_cli_element = NULL;
-	}
-	else
-	{
-		it->curr_cli_element = element;
-	}
-
-	if (!(res == NULL))
-	{
-		if (bitset_is_set(it->ifg->visited_neighbours, get_irn_idx(res)))
+		if (bitset_contains_irn(it->ifg->visited_neighbours, res))
 		{
 			res = get_next_neighbour(it);
-// 			if (res == NULL) /* there are no more neighbours to return */
-// 			{
-// 				return NULL;
-// 			}
 		}
 		else
 		{
@@ -496,15 +483,15 @@ static void ifg_clique_nodes_break(const void *self, void *iter)
 static int ifg_clique_degree(const void *self, const ir_node *irn)
 {
 	int degree = -1;
-	cli_iter_t *it = NULL;
+	cli_iter_t it;
 
-	find_first_neighbour(self, it, irn);
+	find_first_neighbour(self, &it, irn);
 	degree = 0;
-	irn = get_next_neighbour(it);
+	irn = get_next_neighbour(&it);
 	while (irn != NULL)
 	{
 		degree++;
-		irn = get_next_neighbour(it);
+		irn = get_next_neighbour(&it);
 	}
 
 	return degree;
