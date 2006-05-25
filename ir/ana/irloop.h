@@ -39,30 +39,31 @@
  */
 /* ------------------------------------------------------------------- */
 
-/** Returns true if the predesessor pos is a backedge. */
+/** Returns true if the predecessor pos is a backedge in the interprozeduralem view. */
 int  is_inter_backedge(ir_node *n, int pos);
+/** Returns true if the predecessor pos is a backedge in the intraprocedural view. */
 int  is_intra_backedge(ir_node *n, int pos);
 /** Returns non-zero if the predecessor pos is a backedge. */
 int is_backedge (ir_node *n, int pos);
-/** Remarks that edge pos is a backedge. */
+/** Marks edge pos as a backedge. */
 void set_backedge (ir_node *n, int pos);
-/** Remarks that edge pos is not a backedge. */
+/** Marks edge pos as a non-backedge. */
 void set_not_backedge (ir_node *n, int pos);
 /** Returns non-zero if n has backedges. */
 int has_backedges (ir_node *n);
-/** Sets backedge information to zero. */
+/** Clears all backedge information. */
 void clear_backedges (ir_node *n);
 
 /* ------------------------------------------------------------------- */
 /**
- * The loops datastructure.
+ * The loops data structure.
  *
- * The loops datastructure represents circles in the intermediate
+ * The loops data structure represents circles in the intermediate
  * representation.  It does not represent loops in the terms of a
  * source program.
- * Each ir_graph can contain one outermost loop datastructure.
+ * Each ir_graph can contain one outermost loop data structure.
  * loop is the entry point to the nested loops.
- * The loop datastructure contains a field indicating the depth of
+ * The loop data structure contains a field indicating the depth of
  * the loop within the nesting.  Further it contains a list of the
  * loops with nesting depth -1.  Finally it contains a list of all
  * nodes in the loop.
