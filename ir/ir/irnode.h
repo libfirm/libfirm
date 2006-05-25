@@ -892,6 +892,7 @@ ir_node **get_Sync_preds_arr (ir_node *node);
 int       get_Sync_n_preds (ir_node *node);
 ir_node  *get_Sync_pred (ir_node *node, int pos);
 void      set_Sync_pred (ir_node *node, int pos, ir_node *pred);
+void      add_Sync_pred (ir_node *node, ir_node *pred);
 
 /** Returns the source language type of a Proj node.
  * Must be an atomic type.  Mode of type must be mode of node.
@@ -1066,6 +1067,12 @@ int      is_Call (const ir_node *node);
 int      is_Sel (const ir_node *node);
 /** returns true if node is a Mux node or a Psi with only one condition. */
 int      is_Mux (const ir_node *node);
+/** returns true if node is a Load node. */
+int      is_Load (const ir_node *node);
+/** returns true if node is a Sync node. */
+int      is_Sync (const ir_node *node);
+/** returns true if node is a Confirm node. */
+int      is_Confirm (const ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 int      is_Proj (const ir_node *node);

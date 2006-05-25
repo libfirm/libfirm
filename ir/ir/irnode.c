@@ -783,8 +783,13 @@ get_End_keepalive(ir_node *end, int pos) {
 
 void
 add_End_keepalive (ir_node *end, ir_node *ka) {
-  assert (end->op == op_End);
-  ARR_APP1 (ir_node *, end->in, ka);
+  int l;
+  ir_graph *irg = get_irn_irg(end);
+
+  assert(end->op == op_End);
+  l = ARR_LEN(end->in);
+  ARR_APP1(ir_node *, end->in, ka);
+  edges_notify_edge(end, l, end->in[l], NULL, irg);
 }
 
 void
@@ -1756,35 +1761,41 @@ set_Free_where (ir_node *node, where_alloc where) {
   node->attr.f.where = where;
 }
 
-ir_node **
-get_Sync_preds_arr (ir_node *node) {
+ir_node **get_Sync_preds_arr (ir_node *node) {
   assert (node->op == op_Sync);
   return (ir_node **)&(get_irn_in(node)[1]);
 }
 
-int
-get_Sync_n_preds (ir_node *node) {
-  assert (node->op == op_Sync);
+int get_Sync_n_preds (ir_node *node) {
+  assert(node->op == op_Sync);
   return (get_irn_arity(node));
 }
 
 /*
-void
-set_Sync_n_preds (ir_node *node, int n_preds) {
+void set_Sync_n_preds (ir_node *node, int n_preds) {
   assert (node->op == op_Sync);
 }
 */
 
-ir_node *
-get_Sync_pred (ir_node *node, int pos) {
-  assert (node->op == op_Sync);
+ir_node *get_Sync_pred (ir_node *node, int pos) {
+  assert(node->op == op_Sync);
   return get_irn_n(node, pos);
 }
 
-void
-set_Sync_pred (ir_node *node, int pos, ir_node *pred) {
-  assert (node->op == op_Sync);
+void set_Sync_pred (ir_node *node, int pos, ir_node *pred) {
+  assert(node->op == op_Sync);
   set_irn_n(node, pos, pred);
+}
+
+/* Add a new Sync predecessor */
+void add_Sync_pred (ir_node *node, ir_node *pred) {
+  int l;
+  ir_graph *irg = get_irn_irg(node);
+
+  assert(node->op == op_Sync);
+  l = ARR_LEN(node->in);
+  ARR_APP1(ir_node *, node->in, pred);
+  edges_notify_edge(node, l, node->in[l], NULL, irg);
 }
 
 ir_type *get_Proj_type(ir_node *n)
@@ -2438,6 +2449,24 @@ int
 int
 (is_Mux)(const ir_node *node) {
   return _is_Mux(node);
+}
+
+/* returns true if node is a Load node. */
+int
+(is_Load)(const ir_node *node) {
+  return _is_Load(node);
+}
+
+/* returns true if node is a Sync node. */
+int
+(is_Sync)(const ir_node *node) {
+  return _is_Sync(node);
+}
+
+/* returns true if node is a Confirm node. */
+int
+(is_Confirm)(const ir_node *node) {
+  return _is_Confirm(node);
 }
 
 int
