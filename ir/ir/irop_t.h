@@ -56,7 +56,7 @@ void default_copy_attr(const ir_node *old_node, ir_node *new_node);
  * Returns the attribute size of nodes of this opcode.
  * @note Use not encouraged, internal feature.
  */
-static INLINE int get_op_attr_size (const ir_op *op) {
+static INLINE size_t get_op_attr_size (const ir_op *op) {
   return op->attr_size;
 }
 
