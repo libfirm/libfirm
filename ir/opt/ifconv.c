@@ -262,7 +262,7 @@ restart:
 
 			for (j = i + 1; j < arity; ++j) {
 				ir_node* projx1;
-				ir_node* conds[0];
+				ir_node* conds[1];
 				ir_node* vals[2];
 				ir_node* psi;
 				ir_node* psi_block;
