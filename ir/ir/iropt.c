@@ -1671,6 +1671,18 @@ optimize_preds(ir_node *n) {
 }
 
 /**
+ * Returns non-zero if all Phi predecessors are constants
+ */
+static int is_const_Phi(ir_node *phi) {
+  int i;
+
+  for (i = get_irn_arity(phi) - 1; i >= 0; --i)
+    if (! is_Const(get_irn_n(phi, i)))
+      return 0;
+  return 1;
+}
+
+/**
  * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
  * SubP(P, ConvIs(Iu)), SubP(P, ConvIu(Is)).
  * If possible, remove the Conv's.
@@ -2628,6 +2640,42 @@ static ir_node *transform_node_Proj(ir_node *proj)
 }
 
 /**
+ * Move Confirms down through Phi nodes.
+ */
+static ir_node *transform_node_Phi(ir_node *phi) {
+  int i, n;
+  ir_mode *mode = get_irn_mode(phi);
+
+  if (mode_is_reference(mode)) {
+    n = get_irn_arity(phi);
+
+    /* Beware of Phi0 */
+    if (n > 0) {
+      ir_node *pred = get_irn_n(phi, 0);
+      ir_node *bound;
+      pn_Cmp  pnc;
+
+      if (! is_Confirm(pred))
+        return phi;
+
+      bound = get_Confirm_bound(pred);
+      pnc   = get_Confirm_cmp(pred);
+
+      for (i = 1; i < n; ++i) {
+        pred = get_irn_n(phi, i);
+
+        if (! is_Confirm(pred) ||
+            get_Confirm_bound(pred) != bound ||
+            get_Confirm_cmp(pred) != pnc)
+          return phi;
+      }
+      return new_r_Confirm(current_ir_graph, get_irn_n(phi, -1), phi, bound, pnc);
+    }
+  }
+  return phi;
+}
+
+/**
  * returns the operands of a commutative bin-op, if one operand is
  * a const, it is returned as the second one.
  */
@@ -3123,6 +3171,7 @@ static ir_op_ops *firm_set_default_transform_node(opcode code, ir_op_ops *ops)
   CASE(Not);
   CASE(Cast);
   CASE(Proj);
+  CASE(Phi);
   CASE(Sel);
   CASE(Or);
   CASE(Shr);
