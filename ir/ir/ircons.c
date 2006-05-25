@@ -629,13 +629,13 @@ new_bd_SymConst (dbg_info *db, ir_node *block, symconst_symbol value,
 }
 
 static ir_node *
-new_bd_Sync (dbg_info *db, ir_node *block, int arity, ir_node **in)
+new_bd_Sync (dbg_info *db, ir_node *block)
 {
   ir_node  *res;
   ir_graph *irg = current_ir_graph;
 
-  res = new_ir_node(db, irg, block, op_Sync, mode_M, arity, in);
-  res = optimize_node(res);
+  res = new_ir_node(db, irg, block, op_Sync, mode_M, -1, NULL);
+  /* no need to call optimize node here, Sync are always created with no predecessors */
   IRN_VRFY_IRG(res, irg);
   return res;
 }
@@ -1259,14 +1259,17 @@ ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, ir_type *symbol, ir_
 }
 
 ir_node *
-new_rd_Sync (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in)
+new_rd_Sync (dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node *in[])
 {
   ir_node  *res;
   ir_graph *rem = current_ir_graph;
+  int      i;
 
   current_ir_graph = irg;
-  res = new_bd_Sync(db, block, arity, in);
+  res = new_bd_Sync(db, block);
   current_ir_graph = rem;
+
+  for (i = 0; i < arity; ++i) add_Sync_pred(res, in[i]);
 
   return res;
 }
@@ -1610,7 +1613,7 @@ ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
                ir_node *ptr, ir_node *size, ir_type *free_type, where_alloc where) {
   return new_rd_Free(NULL, irg, block, store, ptr, size, free_type, where);
 }
-ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node **in) {
+ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node *in[]) {
   return new_rd_Sync(NULL, irg, block, arity, in);
 }
 ir_node *new_r_Proj   (ir_graph *irg, ir_node *block, ir_node *arg,
@@ -1980,8 +1983,8 @@ phi_merge (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
 
   /* Now we now the value for "pos" and can enter it in the array with
      all known local variables.  Attention: this might be a pointer to
-     a node, that later will be allocated!!! See new_rd_Phi_in.
-     If this is called in mature, after some set_value in the same block,
+     a node, that later will be allocated!!! See new_rd_Phi_in().
+     If this is called in mature, after some set_value() in the same block,
      the proper value must not be overwritten:
      The call order
        get_value    (makes Phi0, put's it into graph_arr)
@@ -2287,8 +2290,8 @@ get_r_frag_value_internal (ir_node *block, ir_node *cfOp, int pos, ir_mode *mode
   res = frag_arr[pos];
   if (!res) {
     if (block->attr.block.graph_arr[pos]) {
-      /* There was a set_value after the cfOp and no get_value before that
-         set_value.  We must build a Phi node now. */
+      /* There was a set_value() after the cfOp and no get_value before that
+         set_value().  We must build a Phi node now. */
       if (block->attr.block.matured) {
         int ins = get_irn_arity(block);
         ir_node **nin;
@@ -2844,9 +2847,9 @@ new_d_SymConst (dbg_info *db, symconst_symbol value, symconst_kind kind)
 }
 
 ir_node *
-new_d_Sync (dbg_info *db, int arity, ir_node** in)
+new_d_Sync (dbg_info *db, int arity, ir_node *in[])
 {
-  return new_bd_Sync (db, current_ir_graph->current_block, arity, in);
+  return new_rd_Sync (db, current_ir_graph, current_ir_graph->current_block, arity, in);
 }
 
 
@@ -3069,12 +3072,36 @@ get_store (void)
   return get_r_value_internal (current_ir_graph->current_block, 0, mode_M);
 }
 
-/* set the current store */
+/* set the current store: handles automatic Sync construction for Load nodes */
 void
 set_store (ir_node *store)
 {
-  /* GL: one could call set_value instead */
+  ir_node *load, *pload, *pred, *in[2];
+
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
+
+  /* handle non-volatile Load nodes by automatically creating Sync's */
+  load = skip_Proj(store);
+  if (is_Load(load) && get_Load_volatility(load) == volatility_non_volatile) {
+    pred = get_Load_mem(load);
+
+    if (is_Sync(pred)) {
+      /* a Load after a Sync: move it up */
+      set_Load_mem(load, get_Sync_pred(pred, 0));
+      store = pred;
+    }
+    else {
+      pload = skip_Proj(pred);
+      if (is_Load(pload) && get_Load_volatility(pload) == volatility_non_volatile) {
+        /* a Load after a Load: create a new Sync */
+        set_Load_mem(load, get_Load_mem(pload));
+
+        in[0] = pred;
+        in[1] = store;
+        store = new_Sync(2, in);
+      }
+    }
+  }
   current_ir_graph->current_block->attr.block.graph_arr[0] = store;
 }
 
@@ -3247,7 +3274,7 @@ ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
              ir_type *free_type, where_alloc where) {
   return new_d_Free(NULL, store, ptr, size, free_type, where);
 }
-ir_node *new_Sync   (int arity, ir_node **in) {
+ir_node *new_Sync   (int arity, ir_node *in[]) {
   return new_d_Sync(NULL, arity, in);
 }
 ir_node *new_Proj   (ir_node *arg, ir_mode *mode, long proj) {

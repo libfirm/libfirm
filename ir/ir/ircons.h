@@ -2447,7 +2447,7 @@ ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
 ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
                ir_node *ptr, ir_node *size, ir_type *free_type, where_alloc where);
 
-/** Constructor for a  Sync node.
+/** Constructor for a Sync node.
  *
  * Merges several memory values.  The node assumes that a variable
  * either occurs only in one of the memories, or it contains the same
@@ -2459,7 +2459,7 @@ ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
  * @param  *in[]    An array of pointers to nodes that produce an output of  type memory.
  *                  The constructor copies this array.
  */
-ir_node *new_r_Sync   (ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
+ir_node *new_r_Sync (ir_graph *irg, ir_node *block, int arity, ir_node *in[]);
 
 /** Constructor for a Proj node.
  *
@@ -3920,7 +3920,7 @@ ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
 		     ir_type *free_type, where_alloc where);
 
-/** Constructor for a  Sync node.
+/** Constructor for a Sync node.
  *
  * Merges several memory values.  The node assumes that a variable
  * either occurs only in one of the memories, or it contains the same
