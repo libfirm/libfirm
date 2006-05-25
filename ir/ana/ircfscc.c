@@ -792,7 +792,7 @@ void free_cfloop_information(ir_graph *irg) {
   if (get_irg_loop(irg))
     loop_reset_backedges(get_irg_loop(irg));
   set_irg_loop(irg, NULL);
-  set_irg_loopinfo_state(current_ir_graph, loopinfo_none);
+  set_irg_loopinfo_state(irg, loopinfo_none);
   /* We cannot free the cfloop nodes, they are on the obstack. */
 }
 
