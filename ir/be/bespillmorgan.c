@@ -560,7 +560,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	// reduce register pressure to number of available registers
 	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
 
-	be_insert_spills_reloads(env.senv, NULL);
+	be_insert_spills_reloads(env.senv);
 	DEBUG_ONLY(be_verify_schedule(env.irg);)
 
 	// cleanup

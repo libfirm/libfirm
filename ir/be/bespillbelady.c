@@ -66,7 +66,6 @@ typedef struct _belady_env_t {
 	pset *copies;		/**< holds all copies placed due to phi-spilling */
 
 	spill_env_t *senv;	/**< see bespill.h */
-	pset *reloads;		/**< all reload nodes placed */
 } belady_env_t;
 
 struct _workset_t {
@@ -580,60 +579,26 @@ next_value:
 }
 
 /**
- * Removes all used reloads from bel->reloads.
- * The remaining nodes in bel->reloads will be removed from the graph.
- */
-static void rescue_used_reloads(ir_node *irn, void *env) {
-	pset *rlds = (pset *)env;
-	if (pset_find_ptr(rlds, irn))
-		pset_remove_ptr(rlds, irn);
-}
-
-/**
  * Removes all copies introduced for phi-spills
  */
 static void remove_copies(belady_env_t *bel) {
 	ir_node *irn;
 
 	foreach_pset(bel->copies, irn) {
-		ir_node *src, *user;
+		ir_node *src;
+		const ir_edge_t *edge;
 
 		assert(be_is_Copy(irn));
-		assert(get_irn_n_edges(irn) == 1 && "This is not a copy introduced in 'compute_block_start_info()'. Who created it?");
-
-		user = get_irn_edge(get_irn_irg(irn), irn, 0)->src;
 
 		src = be_get_Copy_op(irn);
-		set_irn_n(user, 0, src);
-	}
-}
+		foreach_out_edge(irn, edge) {
+			ir_node* user = get_edge_src_irn(edge);
+			int user_pos = get_edge_src_pos(edge);
 
-/**
- * Finds all unused reloads and remove them from the schedule
- * Also removes spills if they are not used anymore after removing reloads
- */
-static void remove_unused_reloads(ir_graph *irg, belady_env_t *bel) {
-	ir_node *irn;
-
-	irg_walk_graph(irg, rescue_used_reloads, NULL, bel->reloads);
-	foreach_pset(bel->reloads, irn) {
-		ir_node *spill;
-		DBG((dbg, DBG_SPILL, "Removing %+F before %+F in %+F\n", irn, sched_next(irn), get_nodes_block(irn)));
-
-		if (be_is_Reload(irn))
-			spill = get_irn_n(irn, be_pos_Reload_mem);
-
-		/* remove reload */
-		set_irn_n(irn, 0, new_Bad());
-		sched_remove(irn);
-
-		if (be_is_Reload(irn)) {
-			/* if spill not used anymore, remove it too
-			 * test of regclass is necessary since spill may be a phi-M */
-			if (get_irn_n_edges(spill) == 0 && bel->cls == arch_get_irn_reg_class(bel->arch, spill, -1)) {
-				set_irn_n(spill, 0, new_Bad());
-				sched_remove(spill);
-			}
+			// is this normal?
+			if(user == NULL)
+				break;
+			set_irn_n(user, user_pos, src);
 		}
 	}
 }
@@ -661,7 +626,6 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 		be_set_is_spilled_phi(bel.senv, is_mem_phi, NULL);
 	}
 	DEBUG_ONLY(be_set_spill_env_dbg_module(bel.senv, dbg);)
-	bel.reloads   = pset_new_ptr_default();
 	bel.copies    = pset_new_ptr_default();
 
 	DBG((dbg, LEVEL_1, "running on register class: %s\n", bel.cls->name));
@@ -670,12 +634,12 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	be_clear_links(chordal_env->irg);
 	irg_block_walk_graph(chordal_env->irg, NULL, belady, &bel);
 	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &bel);
-	be_insert_spills_reloads(bel.senv, bel.reloads);
-	remove_unused_reloads(chordal_env->irg, &bel);
+	be_insert_spills_reloads(bel.senv);
 	remove_copies(&bel);
 
+	be_remove_dead_nodes_from_schedule(chordal_env->irg);
+
 	/* clean up */
-	del_pset(bel.reloads);
 	if(spill_env == NULL)
 		be_delete_spill_env(bel.senv);
 	be_end_uses(bel.uses);

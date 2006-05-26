@@ -419,7 +419,7 @@ static void phi_walker(ir_node *irn, void *env) {
 	}
 }
 
-void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
+void be_insert_spills_reloads(spill_env_t *senv) {
 	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
 	ir_graph *irg          = senv->chordal_env->irg;
 	unsigned visited_nr;
@@ -477,8 +477,6 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", new_val, si->spilled_node, rld->reloader));
 			pset_insert_ptr(values, new_val);
-			if(reload_set)
-				pset_insert_ptr(reload_set, new_val);
 		}
 
 		/* introduce copies, rewire the uses */
@@ -490,8 +488,6 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	}
 
 	del_pset(senv->mem_phis);
-
-	be_remove_dead_nodes_from_schedule(senv->chordal_env->irg);
 
 	// reloads are placed now, but we might reuse the spill environment for further spilling decisions
 	del_set(senv->spills);
