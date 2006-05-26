@@ -446,7 +446,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *env) {
 			ir_node *cpy = be_new_Copy(bel->cls, irg, pred_block, arg);
 			pset_insert_ptr(bel->copies, cpy);
 			DBG((dbg, DBG_START, "    place a %+F of %+F in %+F\n", cpy, arg, pred_block));
-			sched_add_before(pred_block, cpy);
+			sched_add_before(sched_last(pred_block), cpy);
 			set_irn_n(irn, o, cpy);
 		}
 	}
