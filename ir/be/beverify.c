@@ -26,6 +26,17 @@ typedef struct be_verify_register_pressure_env_t_ {
 	int problem_found;
 } be_verify_register_pressure_env_t;
 
+static void print_living_values(pset *live_nodes)
+{
+	ir_node *node;
+
+	ir_printf("\t");
+	foreach_pset(live_nodes, node) {
+		ir_printf("%+F ", node);
+	}
+	ir_printf("\n");
+}
+
 static void verify_liveness_walker(ir_node *bl, void *data)
 {
 	be_verify_register_pressure_env_t *env = (be_verify_register_pressure_env_t*) data;
@@ -37,8 +48,9 @@ static void verify_liveness_walker(ir_node *bl, void *data)
 	be_liveness_end_of_block(env->arch_env, env->cls, bl, live_nodes);
 	pressure = pset_count(live_nodes);
 	if(pressure > env->registers_available) {
-		ir_printf("Verify Warning: Register pressure too high at end of block %+F (%d/%d).\n",
+		ir_printf("Verify Warning: Register pressure too high at end of block %+F (%d/%d):\n",
 			bl, pressure, env->registers_available);
+		print_living_values(live_nodes);
 		env->problem_found = 1;
 	}
 	sched_foreach_reverse(bl, irn) {
@@ -53,6 +65,7 @@ static void verify_liveness_walker(ir_node *bl, void *data)
 		if(pressure > env->registers_available) {
 			ir_printf("Verify Warning: Register pressure too high before %+F (in block %+F) (%d/%d).\n",
 				irn, bl, pressure, env->registers_available);
+			print_living_values(live_nodes);
 			env->problem_found = 1;
 		}
 	}

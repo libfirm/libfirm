@@ -58,7 +58,7 @@ struct _spill_env_t {
 	set *spill_ctxs;
 	set *spills;				/**< all spill_info_t's, which must be placed */
 	pset *mem_phis;				/**< set of all special spilled phis. allocated and freed separately */
-	decide_irn_t is_mem_phi;	/**< callback func to decide if a phi needs special spilling */
+	decide_irn_t is_spilled_phi;/**< callback func to decide if a phi needs special spilling */
 	void *data;					/**< data passed to all callbacks */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
@@ -104,16 +104,21 @@ void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t *dbg) {
 )
 
 /* Creates a new spill environment. */
-spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env, decide_irn_t is_mem_phi, void *data) {
-	spill_env_t *env = xmalloc(sizeof(env[0]));
-	env->spill_ctxs  = new_set(cmp_spillctx, 1024);
-	env->spills      = new_set(cmp_spillinfo, 1024);
-	env->cls         = chordal_env->cls;
-	env->is_mem_phi  = is_mem_phi;
-	env->data        = data;
-	env->chordal_env = chordal_env;
+spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env, decide_irn_t is_spilled_phi, void *data) {
+	spill_env_t *env	= xmalloc(sizeof(env[0]));
+	env->spill_ctxs		= new_set(cmp_spillctx, 1024);
+	env->spills			= new_set(cmp_spillinfo, 1024);
+	env->cls			= chordal_env->cls;
+	env->is_spilled_phi	= is_spilled_phi;
+	env->data			= data;
+	env->chordal_env	= chordal_env;
 	obstack_init(&env->obst);
 	return env;
+}
+
+void be_set_is_spilled_phi(spill_env_t *env, decide_irn_t is_spilled_phi, void *data) {
+	env->is_spilled_phi	= is_spilled_phi;
+	env->data			= data;
 }
 
 /* Deletes a spill environment. */
@@ -399,7 +404,7 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 
 /**
  * Walker: fills the mem_phis set by evaluating Phi nodes
- * using the is_mem_phi() callback.
+ * using the is_spilled_phi() callback.
  */
 static void phi_walker(ir_node *irn, void *env) {
 	spill_env_t *senv = env;
@@ -407,7 +412,7 @@ static void phi_walker(ir_node *irn, void *env) {
 	if (is_Phi(irn)) {
 		const arch_env_t *arch = senv->chordal_env->birg->main_env->arch_env;
 		if (arch_irn_has_reg_class(arch, irn, 0, senv->cls) &&
-			senv->is_mem_phi(irn, senv->data)) {
+			senv->is_spilled_phi(irn, senv->data)) {
 			DBG((senv->dbg, LEVEL_1, "  %+F\n", irn));
 			pset_insert_ptr(senv->mem_phis, irn);
 		}
@@ -420,7 +425,6 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 	unsigned visited_nr;
 	ir_node *irn;
 	spill_info_t *si;
-	pdeq *possibly_dead;
 
 	/* get all special spilled phis */
 	DBG((senv->dbg, LEVEL_1, "Mem-phis:\n"));
@@ -448,12 +452,10 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 
 	/* process each spilled node */
 	DBG((senv->dbg, LEVEL_1, "Insert spills and reloads:\n"));
-	possibly_dead = new_pdeq();
 	for(si = set_first(senv->spills); si; si = set_next(senv->spills)) {
-		int i;
 		reloader_t *rld;
 		ir_mode *mode = get_irn_mode(si->spilled_node);
-		ir_node *value;
+		//ir_node *value;
 		pset *values = pset_new_ptr(16);
 
 		/* go through all reloads for this spill */
@@ -466,7 +468,7 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 #ifdef REMAT
 			if (check_remat_conditions(senv, spill, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(senv, si->spilled_node, rld->reloader);
-				pdeq_putl(possibly_dead, spill);
+				//pdeq_putl(possibly_dead, spill);
 			}
 			else
 #endif
@@ -484,70 +486,12 @@ void be_insert_spills_reloads(spill_env_t *senv, pset *reload_set) {
 		pset_insert_ptr(values, si->spilled_node);
 		be_ssa_constr_set_ignore(senv->chordal_env->dom_front, values, senv->mem_phis);
 
-		/* Remove reloads which are not used by anyone */
-		/* TODO: Better call a general garbage collection routine here... this here gets clunky
-		 * and doesn't handle all cases (like memphis)
-		 */
-		foreach_pset(values, value) {
-			if(get_irn_n_edges(value) == 0) {
-				sched_remove(value);
-				// remove the node from preds
-				if(be_is_Reload(value)) {
-					ir_node* spill = get_irn_n(value, be_pos_Reload_mem);
-					if(be_is_Spill(spill)) {
-						assert(be_is_Spill(spill));
-
-						set_irn_n(value, be_pos_Reload_mem, new_r_Bad(irg));
-						set_irn_n(value, be_pos_Reload_frame, new_r_Bad(irg));
-
-						// maybe the spill is not used anymoe too now?
-						if(get_irn_n_edges(spill) == 0) {
-							sched_remove(spill);
-							set_irn_n(spill, be_pos_Spill_val, new_r_Bad(irg));
-							set_irn_n(spill, be_pos_Spill_frame, new_r_Bad(irg));
-						}
-					} else if(is_Phi(spill)) {
-						// TODO memphi
-					} else {
-						assert(0 && "Only spill or mem-phi expected here");
-					}
-				} else if(is_Phi(value)) {
-					for(i = 0; i < get_Phi_n_preds(value); ++i)
-						set_irn_n(value, i, new_r_Bad(irg));
-				} else {
-					assert(0);
-				}
-			}
-		}
-
 		del_pset(values);
 	}
 
-	foreach_pset(senv->mem_phis, irn) {
-		int i, n;
-		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			pdeq_putl(possibly_dead, get_irn_n(irn, i));
-			set_irn_n(irn, i, new_r_Bad(senv->chordal_env->irg));
-		}
-		sched_remove(irn);
-	}
-
-	/* check if possibly dead nodes are really dead yet */
-	while (! pdeq_empty(possibly_dead)) {
-		ir_node *irn = pdeq_getr(possibly_dead);
-		const ir_edge_t *edge = get_irn_out_edge_first(irn);
-
-		if (! edge) {
-			int i;
-			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-				pdeq_putl(possibly_dead, get_irn_n(irn, i));
-				set_irn_n(irn, i, new_r_Bad(senv->chordal_env->irg));
-			}
-			sched_remove(irn);
-		}
-	}
-	del_pdeq(possibly_dead);
 	del_pset(senv->mem_phis);
+
+	be_remove_dead_nodes_from_schedule(senv->chordal_env->irg);
 
 	// reloads are placed now, but we might reuse the spill environment for further spilling decisions
 	del_set(senv->spills);
@@ -636,7 +580,7 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 			struct _arch_env_t *arch_env     = ssenv->cenv->birg->main_env->arch_env;
 			const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, spill, be_pos_Spill_val);
 			int size = get_mode_size_bytes(arch_register_class_mode(cls));
-			assert(ss->size == size && "Different sizes for the same spill slot are not allowed.");
+			assert((int) ss->size == size && "Different sizes for the same spill slot are not allowed.");
 			for (irn = pset_first(ss->members); irn; irn = pset_next(ss->members)) {
 				/* use values_interfere here, because it uses the dominance check,
 					 which does work for values in memory */

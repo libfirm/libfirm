@@ -14,6 +14,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "iredges_t.h"
+#include "ircons.h"
 #include "debug.h"
 
 #include "bearch.h"
@@ -259,4 +260,52 @@ ir_node **sched_create_block_schedule(ir_graph *irg)
 		blk_list[i] = b;
 	}
 	return blk_list;
+}
+
+typedef struct remove_dead_nodes_env_t_ {
+	ir_graph *irg;
+	bitset_t *reachable;
+} remove_dead_nodes_env_t;
+
+static void mark_dead_nodes_walker(ir_node *node, void *data)
+{
+	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;
+	bitset_set(env->reachable, get_irn_idx(node));
+}
+
+static void remove_dead_nodes_walker(ir_node *block, void *data)
+{
+	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;
+	ir_node *node;
+
+	for(node = sched_first(block); !sched_is_end(node); ) {
+		// get next node now, as after calling sched_remove it will be invalid
+		ir_node* next = sched_next(node);
+		int i, arity;
+
+		if(bitset_is_set(env->reachable, get_irn_idx(node))) {
+			node = next;
+			continue;
+		}
+
+		sched_remove(node);
+		arity = get_irn_arity(node);
+		for(i = 0; i < arity; ++i)
+			set_irn_n(node, i, new_r_Bad(env->irg));
+
+		node = next;
+	}
+}
+
+void be_remove_dead_nodes_from_schedule(ir_graph *irg)
+{
+	remove_dead_nodes_env_t env;
+	env.irg = irg;
+	env.reachable = bitset_alloca(get_irg_last_idx(irg));
+
+	// mark all reachable nodes
+	irg_walk_graph(irg, mark_dead_nodes_walker, NULL, &env);
+
+	// walk schedule and remove non-marked nodes
+	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
 }

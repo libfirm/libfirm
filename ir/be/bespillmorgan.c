@@ -30,8 +30,8 @@
 #include "irphase_t.h"
 #include "irprintf.h"
 
-// remove me later
 #include "bespillbelady.h"
+#include "beverify.h"
 
 #define DBG_LIVE		1
 #define DBG_PRESSURE	2
@@ -448,6 +448,7 @@ typedef struct _liveness_dump_env_t {
 	FILE *f;
 } liveness_dump_env_t;
 
+#if 0
 /**
  * Pre-walker: dump liveness data to a file
  */
@@ -519,7 +520,7 @@ static void dump_liveness_info(const be_chordal_env_t *chordal_env, const char* 
 	irg_block_walk_graph(chordal_env->irg, dump_liveness_walker, NULL, &env);
 	fclose(env.f);
 }
-
+#endif
 
 void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	morgan_env_t env;
@@ -560,6 +561,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
 
 	be_insert_spills_reloads(env.senv, NULL);
+	DEBUG_ONLY(be_verify_schedule(env.irg);)
 
 	// cleanup
 	be_end_uses(env.uses);
@@ -567,14 +569,9 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	del_set(env.loop_attr_set);
 	del_set(env.block_attr_set);
 
-	be_liveness(env.irg);
-	dump_liveness_info(chordal_env, "spillmorgan");
-
 	// fix the remaining places with too high register pressure with beladies algorithm
-	be_spill_belady_spill_env(chordal_env, env.senv);
-
 	be_liveness(env.irg);
-	dump_liveness_info(chordal_env, "spillcomplete");
+	be_spill_belady_spill_env(chordal_env, env.senv);
 
 	be_delete_spill_env(env.senv);
 	phase_free(&env.phase);

@@ -66,4 +66,10 @@ ir_node *sched_irg_first(const ir_graph *irg);
  */
 ir_node **sched_create_block_schedule(ir_graph *irg);
 
+/**
+ * Removes dead nodes from schedule
+ * @param irg  the graph
+ */
+void be_remove_dead_nodes_from_schedule(ir_graph *irg);
+
 #endif /* _BESCHED_H */
