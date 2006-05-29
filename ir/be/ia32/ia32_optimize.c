@@ -749,7 +749,7 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 	ir_node *in, *load, *other, *left, *right;
 	int      n, is_cand = 0, cand;
 
-	if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+	if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn) || is_ia32_vfild(irn) || is_ia32_vfist(irn))
 		return 0;
 
 	left  = get_irn_n(irn, 2);
