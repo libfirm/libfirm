@@ -20,6 +20,8 @@
 #include "array.h"
 
 #include "ia32_new_nodes.h"
+#include "bearch_ia32_t.h"
+#include "gen_ia32_regalloc_if.h"
 
 /** The array of all intrinsics that must be mapped. */
 static i_record *intrinsics;
@@ -47,7 +49,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 
 	in[0] = l_res;
 	in[1] = h_res;
-	res = new_r_Tuple(irg, block, 2, in);
+	res = new_r_Tuple(irg, block, h_res == NULL ? 1 : 2, in);
 
 	turn_into_tuple(call, pn_Call_max);
 	set_Tuple_pred(call, pn_Call_M_regular,        get_irg_no_mem(irg));
@@ -302,6 +304,283 @@ static int map_Abs(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/**
+ * Maps a Div/Mod (a_l, a_h, b_l, b_h)
+ */
+static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
+	ia32_intrinsic_env_t *env = ctx;
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *b_l        = params[BINOP_Right_Low];
+	ir_node  *b_h        = params[BINOP_Right_High];
+	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	int      mode_bytes  = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
+	entity   *ent_a      = env->ll_div_op1;
+	entity   *ent_b      = env->ll_div_op2;
+	ir_node  *l_res, *h_res, *frame;
+	ir_node  *store_l, *store_h;
+	ir_node  *op_mem[2], *mem, *fa_mem, *fb_mem;
+	ir_node  *fa, *fb, *fres;
+	char     buf[3];
+
+	/* allocate memory on frame to store args */
+
+	if (! ent_a) {
+		ent_a = env->ll_div_op1 =
+			frame_alloc_area(get_irg_frame_type(irg), 2 * mode_bytes, 16, 0);
+	}
+
+	if (! ent_b) {
+		ent_b = env->ll_div_op2 =
+			frame_alloc_area(get_irg_frame_type(irg), 2 * mode_bytes, 16, 0);
+	}
+
+	snprintf(buf, sizeof(buf), "%d", mode_bytes);
+	frame = get_irg_frame(irg);
+
+	/* store first arg */
+	store_l   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_l, get_irg_no_mem(irg));
+	set_ia32_frame_ent(store_l, ent_a);
+	set_ia32_use_frame(store_l);
+	set_ia32_ls_mode(store_l, get_irn_mode(a_l));
+	op_mem[0] = new_r_Proj(irg, block, store_l, mode_M, pn_ia32_l_Store_M);
+
+	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
+	set_ia32_frame_ent(store_h, ent_a);
+	add_ia32_am_offs(store_h, buf);
+	set_ia32_use_frame(store_h);
+	set_ia32_ls_mode(store_h, get_irn_mode(a_h));
+	op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
+
+	mem = new_r_Sync(irg, block, 2, op_mem);
+
+	/* load first arg into FPU */
+	fa = new_rd_ia32_l_vfild(dbg, irg, block, frame, mem);
+	set_ia32_frame_ent(fa, ent_a);
+	set_ia32_use_frame(fa);
+	set_ia32_ls_mode(fa, mode_D);
+	fa_mem = new_r_Proj(irg, block, fa, mode_M, pn_ia32_l_vfild_M);
+	fa     = new_r_Proj(irg, block, fa, mode_D, pn_ia32_l_vfild_res);
+
+	/* store second arg */
+	store_l   = new_rd_ia32_l_Store(dbg, irg, block, frame, b_l, get_irg_no_mem(irg));
+	set_ia32_frame_ent(store_l, ent_b);
+	set_ia32_use_frame(store_l);
+	set_ia32_ls_mode(store_l, get_irn_mode(b_l));
+	op_mem[0] = new_r_Proj(irg, block, store_l, mode_M, pn_ia32_l_Store_M);
+
+	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, b_h, get_irg_no_mem(irg));
+	set_ia32_frame_ent(store_h, ent_b);
+	add_ia32_am_offs(store_h, buf);
+	set_ia32_use_frame(store_h);
+	set_ia32_ls_mode(store_h, get_irn_mode(b_h));
+	op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
+
+	mem = new_r_Sync(irg, block, 2, op_mem);
+
+	/* load second arg into FPU */
+	fb = new_rd_ia32_l_vfild(dbg, irg, block, frame, mem);
+	set_ia32_frame_ent(fb, ent_b);
+	set_ia32_use_frame(fb);
+	set_ia32_ls_mode(fb, mode_D);
+	fb_mem = new_r_Proj(irg, block, fb, mode_M, pn_ia32_l_vfild_M);
+	fb     = new_r_Proj(irg, block, fb, mode_D, pn_ia32_l_vfild_res);
+
+	op_mem[0] = fa_mem;
+	op_mem[1] = fb_mem;
+
+	mem = new_r_Sync(irg, block, 2, op_mem);
+
+	/* perform division */
+	fres = new_rd_ia32_l_vfdiv(dbg, irg, block, fa, fb, mode_D);
+
+	if (need_mod) {
+		/* we need modulo: mod = a - b * res */
+
+		fres = new_rd_ia32_l_vfmul(dbg, irg, block, fb, fres, mode_D);
+		fres = new_rd_ia32_l_vfsub(dbg, irg, block, fa, fres, mode_D);
+	}
+
+	/* store back result, we use ent_a here */
+	fres = new_rd_ia32_l_vfist(dbg, irg, block, frame, fres, mem);
+	set_ia32_frame_ent(fres, ent_a);
+	set_ia32_use_frame(fres);
+	set_ia32_ls_mode(fres, mode_D);
+	mem = new_r_Proj(irg, block, fres, mode_M, pn_ia32_l_vfist_M);
+
+	/* load low part of the result */
+	l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
+	set_ia32_frame_ent(l_res, ent_a);
+	set_ia32_use_frame(l_res);
+	set_ia32_ls_mode(l_res, l_res_mode);
+	l_res = new_r_Proj(irg, block, l_res, l_res_mode, pn_ia32_l_Load_res);
+
+	/* load hight part of the result */
+	h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
+	set_ia32_frame_ent(h_res, ent_a);
+	add_ia32_am_offs(h_res, buf);
+	set_ia32_use_frame(h_res);
+	set_ia32_ls_mode(h_res, h_res_mode);
+	h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
+
+	/* lower the call */
+	resolve_call(call, l_res, h_res, irg, block);
+
+	return 1;
+}
+
+static int map_Div(ir_node *call, void *ctx) {
+	return DivMod_mapper(call, ctx, 0);
+}
+
+static int map_Mod(ir_node *call, void *ctx) {
+	return DivMod_mapper(call, ctx, 1);
+}
+
+/**
+ * Maps a Conv (a_l, a_h)
+ */
+static int map_Conv(ir_node *call, void *ctx) {
+	ia32_intrinsic_env_t *env = ctx;
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	int      n           = get_Call_n_params(call);
+	int      gp_bytes    = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
+	entity   *ent;
+	ir_node  *l_res, *h_res, *frame, *fres;
+	ir_node  *store_l, *store_h;
+	ir_node  *op_mem[2], *mem;
+	char     buf[3];
+
+	if (n == 1) {
+		/* We have a Conv float -> long long here */
+		ir_node *a_f        = params[0];
+		ir_mode *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+		ir_mode *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+
+		assert(mode_is_float(get_irn_mode(a_f)) && "unexpected Conv call");
+
+		/* allocate memory on frame to store args */
+		ent = env->d_ll_conv;
+		if (! ent) {
+			ent = env->d_ll_conv = frame_alloc_area(get_irg_frame_type(irg), 2 * gp_bytes, 16, 0);
+		}
+
+		/* Store arg */
+		snprintf(buf, sizeof(buf), "%d", gp_bytes);
+		frame = get_irg_frame(irg);
+
+		/*
+			Now we create a node to move the value from a XMM register into
+			x87 FPU because it is unknown here, which FPU is used.
+			This node is killed in transformation phase when not needed.
+			Otherwise it is split up into a movsd + fld
+		*/
+		a_f = new_rd_ia32_l_SSEtoX87(dbg, irg, block, frame, a_f, get_irg_no_mem(irg), mode_D);
+		set_ia32_frame_ent(a_f, ent);
+		set_ia32_use_frame(a_f);
+		set_ia32_ls_mode(a_f, mode_D);
+
+		/* store from FPU as Int */
+		a_f = new_rd_ia32_l_vfist(dbg, irg, block, frame, a_f, get_irg_no_mem(irg));
+		set_ia32_frame_ent(a_f, ent);
+		set_ia32_use_frame(a_f);
+		set_ia32_ls_mode(a_f, mode_D);
+		mem = new_r_Proj(irg, block, a_f, mode_M, pn_ia32_l_vfist_M);
+
+		/* load low part of the result */
+		l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
+		set_ia32_frame_ent(l_res, ent);
+		set_ia32_use_frame(l_res);
+		set_ia32_ls_mode(l_res, l_res_mode);
+		l_res = new_r_Proj(irg, block, l_res, l_res_mode, pn_ia32_l_Load_res);
+
+		/* load hight part of the result */
+		h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
+		set_ia32_frame_ent(h_res, ent);
+		add_ia32_am_offs(h_res, buf);
+		set_ia32_use_frame(h_res);
+		set_ia32_ls_mode(h_res, h_res_mode);
+		h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
+
+		/* lower the call */
+		resolve_call(call, l_res, h_res, irg, block);
+	}
+	else if (n == 2) {
+		/* We have a Conv long long -> float here */
+		ir_node *a_l       = params[BINOP_Left_Low];
+		ir_node *a_h       = params[BINOP_Left_High];
+		ir_mode *mode_a_l  = get_irn_mode(a_l);
+		ir_mode *mode_a_h  = get_irn_mode(a_h);
+		ir_mode *fres_mode = get_type_mode(get_method_res_type(method, 0));
+
+		assert(! mode_is_float(mode_a_l) && ! mode_is_float(mode_a_h) && "unexpected Conv call");
+
+		/* allocate memory on frame to store args */
+		ent = env->ll_d_conv;
+		if (! ent) {
+			ent = env->ll_d_conv = frame_alloc_area(get_irg_frame_type(irg), 2 * gp_bytes, 16, 0);
+		}
+
+		/* Store arg */
+		snprintf(buf, sizeof(buf), "%d", gp_bytes);
+		frame = get_irg_frame(irg);
+
+		/* store first arg (low part) */
+		store_l   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_l, get_irg_no_mem(irg));
+		set_ia32_frame_ent(store_l, ent);
+		set_ia32_use_frame(store_l);
+		set_ia32_ls_mode(store_l, get_irn_mode(a_l));
+		op_mem[0] = new_r_Proj(irg, block, store_l, mode_M, pn_ia32_l_Store_M);
+
+		/* store second arg (high part) */
+		store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
+		set_ia32_frame_ent(store_h, ent);
+		add_ia32_am_offs(store_h, buf);
+		set_ia32_use_frame(store_h);
+		set_ia32_ls_mode(store_h, get_irn_mode(a_h));
+		op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
+
+		mem = new_r_Sync(irg, block, 2, op_mem);
+
+		/* Load arg into x87 FPU (implicit convert) */
+		fres = new_rd_ia32_l_vfild(dbg, irg, block, frame, mem);
+		set_ia32_frame_ent(fres, ent);
+		set_ia32_use_frame(fres);
+		set_ia32_ls_mode(fres, mode_D);
+		mem  = new_r_Proj(irg, block, fres, mode_M, pn_ia32_l_vfild_M);
+		fres = new_r_Proj(irg, block, fres, fres_mode, pn_ia32_l_vfild_res);
+
+		/*
+			Now we create a node to move the loaded value into a XMM
+			register because it is unknown here, which FPU is used.
+			This node is killed in transformation phase when not needed.
+			Otherwise it is split up into a fst + movsd
+		*/
+		fres = new_rd_ia32_l_X87toSSE(dbg, irg, block, frame, fres, mem, fres_mode);
+		set_ia32_frame_ent(fres, ent);
+		set_ia32_use_frame(fres);
+		set_ia32_ls_mode(fres, fres_mode);
+
+		/* lower the call */
+		resolve_call(call, fres, NULL, irg, block);
+	}
+	else {
+		assert(0 && "unexpected Conv call");
+	}
+
+	return 1;
+}
+
 /* Ia32 implementation of intrinsic mapping. */
 entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                   const ir_mode *imode, const ir_mode *omode,
@@ -346,6 +625,18 @@ entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	case iro_Abs:
 		ent    = &i_ents[iro_Abs];
 		mapper = map_Abs;
+		break;
+	case iro_Div:
+		ent    = &i_ents[iro_Div];
+		mapper = map_Div;
+		break;
+	case iro_Mod:
+		ent    = &i_ents[iro_Mod];
+		mapper = map_Mod;
+		break;
+	case iro_Conv:
+		ent    = &i_ents[iro_Conv];
+		mapper = map_Conv;
 		break;
 	default:
 		fprintf(stderr, "FIXME: unhandled op for ia32 intrinsic function %s\n", get_id_str(op->name));
