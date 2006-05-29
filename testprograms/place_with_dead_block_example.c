@@ -90,7 +90,7 @@ int main(int argc, char **argv)
   /* Generate the two constants. A SymConst can not be constant evaluated. */
   sym.type_p = new_type_class(new_id_from_str("SomeClass"));
   a = new_Const (mode_Is, new_tarval_from_long (0, mode_Is));
-  b = new_SymConst (sym, symconst_size);
+  b = new_SymConst (sym, symconst_type_size);
 
   /* Generate the Conv with Bad as block */
   a = new_Conv(b, mode_Ls);

@@ -297,7 +297,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
     atp  = get_Alloc_type(alloc);
 
     tp = NULL;
-    if (get_irn_op(size) == op_SymConst && get_SymConst_kind(size) == symconst_size)  {
+    if (get_irn_op(size) == op_SymConst && get_SymConst_kind(size) == symconst_type_size)  {
       /* if the size is a type size and the types matched */
       assert(atp == get_SymConst_type(size));
       tp = atp;

@@ -1,5 +1,6 @@
 /* -*- c -*- */
 
+
 /*
  * Project:     libFIRM
  * File name:   ir/external/read.c
@@ -1179,7 +1180,7 @@ static void create_abstract_alloc(ir_graph *irg, proc_t *proc, eff_t *eff)
   ftype = xtype -> f_tp;
 
   sym.type_p = ftype;
-  alloc = new_Alloc(get_store(), new_SymConst(sym, symconst_size), ftype,
+  alloc = new_Alloc(get_store(), new_SymConst(sym, symconst_type_size), ftype,
             heap_alloc);
   set_store(new_Proj(alloc, mode_M, 0));
   eff -> firmnode = new_Proj(alloc, mode_P, 2);
@@ -1683,8 +1684,8 @@ void free_abstraction(void) {
 
 /*
  * $Log$
- * Revision 1.23  2005/11/18 09:46:50  beck
- * removed depency of bool type and stdbool.h (not C89)
+ * Revision 1.24  2006/05/29 13:34:49  beck
+ * renamed symconst_size to symconst_type_size
  *
  * Revision 1.22  2005/08/16 10:18:35  beck
  * create_abstraction() now returns an error code if the file could not
