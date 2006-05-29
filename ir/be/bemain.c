@@ -186,6 +186,8 @@ int be_parse_arg(const char *arg) {
 		return -1;
 	}
 	return lc_opt_from_single_arg(be_grp_root, NULL, arg, NULL);
+#else
+	return 0;
 #endif /* WITH_LIBCORE */
 }
 
