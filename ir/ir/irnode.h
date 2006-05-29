@@ -435,28 +435,36 @@ void     set_Const_type   (ir_node *node, ir_type *tp);
      this flag. */
 typedef enum {
   symconst_type_tag,    /**< The SymConst is a type tag for the given type.
-			   Type_or_id_p is type *. */
-  symconst_size,        /**< The SymConst is the size of the given type.
-			   Type_or_id_p is type *. */
+			   symconst_symbol is type *. */
+  symconst_type_size,   /**< The SymConst is the size of the given type.
+			   symconst_symbol is type *. */
+  symconst_type_align,  /**< The SymConst is the alignment of the given type.
+			   symconst_symbol is type *. */
   symconst_addr_name,   /**< The SymConst is a symbolic pointer to be filled in
 			   by the linker.  The pointer is represented by a string.
-			   Type_or_id_p is ident *. */
+			   symconst_symbol is ident *. */
   symconst_addr_ent     /**< The SymConst is a symbolic pointer to be filled in
 			   by the linker.  The pointer is represented by an entity.
-			   Type_or_id_p is entity *. */
+			   symconst_symbol is entity *. */
 } symconst_kind;
+
+/** Returns non-zero if s symconst kind has a type attribute */
+#define SYMCONST_HAS_TYPE(kind) ((kind) <= symconst_type_align)
+
+/** Returns non-zero if s symconst kind has an ident attribute */
+#define SYMCONST_HAS_ID(kind) ((kind) == symconst_addr_name)
+
+/** Returns non-zero if s symconst kind has an entity attribute */
+#define SYMCONST_HAS_ENT(kind) ((kind) == symconst_addr_ent)
 
 /** SymConst attribute.
  *
  *  This union contains the symbolic information represented by the node.  */
-union symconst_symbol {
+typedef union symconst_symbol {
   ir_type *type_p;
   ident   *ident_p;
   entity  *entity_p;
-};
-
-typedef union symconst_symbol symconst_symbol;
-
+} symconst_symbol;
 
 /** Get the kind of the SymConst. */
 symconst_kind get_SymConst_kind (const ir_node *node);

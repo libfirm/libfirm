@@ -289,8 +289,13 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
       fprintf(F, "  type: ");
       dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
       break;
-    case symconst_size:
+    case symconst_type_size:
       fprintf(F, "  kind: size\n");
+      fprintf(F, "  type: ");
+      dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
+      break;
+    case symconst_type_align:
+      fprintf(F, "  kind: alignment\n");
       fprintf(F, "  type: ");
       dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
       break;

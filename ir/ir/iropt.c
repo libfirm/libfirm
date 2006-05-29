@@ -59,9 +59,22 @@ static tarval *computed_value_Const(ir_node *n)
  */
 static tarval *computed_value_SymConst(ir_node *n)
 {
-  if ((get_SymConst_kind(n) == symconst_size) &&
-      (get_type_state(get_SymConst_type(n))) == layout_fixed)
-    return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(n)), get_irn_mode(n));
+  ir_type *type;
+
+  switch (get_SymConst_kind(n)) {
+  case symconst_type_size:
+    type = get_SymConst_type(n);
+    if (get_type_state(type) == layout_fixed)
+      return new_tarval_from_long(get_type_size_bytes(type), get_irn_mode(n));
+    break;
+  case symconst_type_align:
+    type = get_SymConst_type(n);
+    if (get_type_state(type) == layout_fixed)
+      return new_tarval_from_long(get_type_alignment_bytes(type), get_irn_mode(n));
+    break;
+  default:
+    break;
+  }
   return tarval_bad;
 }
 

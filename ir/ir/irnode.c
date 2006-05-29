@@ -995,17 +995,15 @@ set_SymConst_kind (ir_node *node, symconst_kind num) {
 
 ir_type *
 get_SymConst_type (ir_node *node) {
-  assert (   (node->op == op_SymConst)
-          && (   get_SymConst_kind(node) == symconst_type_tag
-              || get_SymConst_kind(node) == symconst_size));
+  assert(   (node->op == op_SymConst)
+         && (SYMCONST_HAS_TYPE(get_SymConst_kind(node))));
   return node->attr.i.sym.type_p = skip_tid(node->attr.i.sym.type_p);
 }
 
 void
 set_SymConst_type (ir_node *node, ir_type *tp) {
-  assert (   (node->op == op_SymConst)
-          && (   get_SymConst_kind(node) == symconst_type_tag
-              || get_SymConst_kind(node) == symconst_size));
+  assert(   (node->op == op_SymConst)
+         && (SYMCONST_HAS_TYPE(get_SymConst_kind(node))));
   node->attr.i.sym.type_p = tp;
 }
 
@@ -2616,7 +2614,7 @@ ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops)
 /** Return the attribute type of a SymConst node if exists */
 static ir_type *get_SymConst_attr_type(ir_node *self) {
   symconst_kind kind = get_SymConst_kind(self);
-  if (kind == symconst_type_tag || kind == symconst_size)
+  if (SYMCONST_HAS_TYPE(kind))
     return get_SymConst_type(self);
   return NULL;
 }
@@ -2624,7 +2622,7 @@ static ir_type *get_SymConst_attr_type(ir_node *self) {
 /** Return the attribute entity of a SymConst node if exists */
 static entity *get_SymConst_attr_entity(ir_node *self) {
   symconst_kind kind = get_SymConst_kind(self);
-  if (kind == symconst_addr_ent)
+  if (SYMCONST_HAS_ENT(kind))
     return get_SymConst_entity(self);
   return NULL;
 }

@@ -328,8 +328,11 @@ static void firm_emit(char *buf, int buflen, char conversion,
           case symconst_type_tag:    /* type tag */
             snprintf(tv_buf, sizeof(tv_buf), "<ID:%s>", get_type_name(get_SymConst_type(X)));
             break;
-          case symconst_size:        /* type size */
+          case symconst_type_size:   /* type size */
             snprintf(tv_buf, sizeof(tv_buf), "<SIZE:%s>", get_type_name(get_SymConst_type(X)));
+            break;
+          case symconst_type_align:  /* type alignment */
+            snprintf(tv_buf, sizeof(tv_buf), "<ALIGN:%s>", get_type_name(get_SymConst_type(X)));
             break;
           case symconst_addr_name:   /* linker name */
             snprintf(tv_buf, sizeof(tv_buf), "<EXT:%s>", get_id_str(get_SymConst_name(X)));

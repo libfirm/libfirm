@@ -1255,7 +1255,12 @@ ir_node *new_rd_SymConst_type_tag (dbg_info *db, ir_graph *irg, ir_type *symbol,
 
 ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp) {
   symconst_symbol sym = {symbol};
-  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_size, tp);
+  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_type_size, tp);
+}
+
+ir_node *new_rd_SymConst_align (dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp) {
+  symconst_symbol sym = {symbol};
+  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_type_align, tp);
 }
 
 ir_node *

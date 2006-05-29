@@ -522,15 +522,18 @@
  *    ---------------------------------------------------------------------------
  *
  *    There are three kinds of symbolic constants:
- *     symconst_type_tag  The symbolic constant represents a type tag.
- *     symconst_size      The symbolic constant represents the size of a class.
- *     symconst_addr_name Information for the linker, e.g. the name of a global
- *                variable.
+ *     symconst_type_tag   The symbolic constant represents a type tag.
+ *     symconst_type_size  The symbolic constant represents the size of a type.
+ *     symconst_type_align The symbolic constant represents the alignment of a type.
+ *     symconst_addr_name  Information for the linker, e.g. the name of a global
+ *                         variable.
+ *     symconst_addr_name  The symbolic constant represents the address of an entity.
+ *
  *    To represent a pointer to an entity that is represented by an entity
  *    datastructure don't use
  *      new_SymConst((type_or_id*)get_entity_ld_ident(ent), symconst_addr_name);.
  *    Use a real const instead:
- *      new_SymConst(mode_P_mach, tarval_p_from_entity(ent));
+ *      new_SymConst(ent, symconst_addr_ent);
  *    This makes the Constant independent of name changes of the entity due to
  *    mangling.
  *
@@ -548,9 +551,13 @@
  *    Attributes:
  *      attr.i.num       The symconst_addr_ent, i.e. one of
  *                        -symconst_type_tag
- *                        -symconst_size
- *                - symconst_addr_name
- *        If the attr.i.num is symconst_type_tag or symconst_size, the node contains an attribute
+ *                        -symconst_type_size
+ *                        -symconst_type_align
+ *                        -symconst_addr_name
+ *
+ *    If the attr.i.num is symconst_type_tag, symconst_type_size or symconst_type_align,
+ *    the node contains an attribute:
+ *
  *      attr.i.*type,    a pointer to a type_class.  The mode of the node is mode_Is.
  *        if it is linkage_ptr_info it contains
  *      attr.i.*ptrinfo,  an ident holding information for the linker.  The mode
@@ -1231,17 +1238,20 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
  *
  *  This is the constructor for a symbolic constant.
  *    There are four kinds of symbolic constants:
- *    - type_tag  The symbolic constant represents a type tag.  The type the
- *                tag stands for is given explicitly.
- *    - size      The symbolic constant represents the size of a type.  The
- *                type of which the constant represents the size is given
- *                explicitly.
- *    - addr_name The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is indicated by a name
- *                that is valid for linking.
+ *    - type_tag   The symbolic constant represents a type tag.  The type the
+ *                 tag stands for is given explicitly.
+ *    - type_size  The symbolic constant represents the size of a type.  The
+ *                 type of which the constant represents the size is given
+ *                 explicitly.
+ *    - type_align The symbolic constant represents the alignment of a type.  The
+ *                 type of which the constant represents the size is given
+ *                 explicitly.
+ *    - addr_name  The symbolic constant represents the address of an entity
+ *                 (variable or method).  The variable is indicated by a name
+ *                 that is valid for linking.
  *    - addr_ent   The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is given explicitly by
- *                a firm entity.
+ *                 (variable or method).  The variable is given explicitly by
+ *                 a firm entity.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
@@ -1291,9 +1301,16 @@ ir_node *new_rd_SymConst_type_tag (dbg_info *db, ir_graph *irg, ir_type *symbol,
 /** Constructor for a SymConst size node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
- * symconst_addr_ent.
+ * symconst_type_size.
  * Adds the SymConst to the start block of irg. */
 ir_node *new_rd_SymConst_size (dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp);
+
+/** Constructor for a SymConst size node.
+ *
+ * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * symconst_type_align.
+ * Adds the SymConst to the start block of irg. */
+ir_node *new_rd_SymConst_align (dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp);
 
 /** Constructor for a simpleSel node.
  *
@@ -2850,8 +2867,8 @@ ir_node *new_d_Const  (dbg_info *db, ir_mode *mode, tarval *con);
  *
  * @param *db     A pointer for debug information.
  * @param value   A type, entity or ident depending on the SymConst kind.
- * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_size
- *                or symconst_addr_name.
+ * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_type_size,
+ *                symconst_type_align, symconst_addr_name or symconst_addr_ent.
  * @param tp      The source type of the constant.
  */
 ir_node *new_d_SymConst_type (dbg_info *db, union symconst_symbol value, symconst_kind kind, ir_type *tp);
@@ -3593,7 +3610,8 @@ ir_node *new_Const_type(tarval *con, ir_type *tp);
  *      An unsigned integer (I_u) or a pointer (P).
  *
  * @param value   A type or a ident depending on the SymConst kind.
- * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_size or symconst_addr_name.
+ * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_type_size
+ *                symconst_type_align, symconst_addr_name or symconst_addr_ent.
  */
 ir_node *new_SymConst (union symconst_symbol value, symconst_kind kind);
 

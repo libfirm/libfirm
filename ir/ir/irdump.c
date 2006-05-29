@@ -1676,11 +1676,8 @@ static void dump_node2type_edges(ir_node *n, void *env)
     /* @@@ some consts have an entity */
     break;
   case iro_SymConst:
-    if (   (get_SymConst_kind(n) ==symconst_type_tag)
-       || (get_SymConst_kind(n) ==symconst_size))
-      {
-        print_node_type_edge(F,n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
-      }
+    if (SYMCONST_HAS_TYPE(get_SymConst_kind(n)))
+      print_node_type_edge(F,n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
     break;
   case iro_Sel: {
       print_node_ent_edge(F,n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
