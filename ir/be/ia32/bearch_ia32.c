@@ -960,7 +960,7 @@ static void ia32_after_ra(void *self) {
 	irg_block_walk_graph(cg->irg, NULL, ia32_after_ra_walker, self);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
-	if (cg->used_fp == fp_x87) {
+	if (cg->used_fp == fp_x87 || cg->force_sim) {
 		x87_simulate_graph(cg->arch_env, cg->irg, cg->blk_sched);
 	}
 }
@@ -1180,11 +1180,11 @@ static void ia32_done(void *self) {
  * Return the number of register classes for this architecture.
  * We report always these:
  *  - the general purpose registers
- *  - the floating point register set (depending on the unit used for FP)
- *  - MMX/SSE registers (currently not supported)
+ *  - the SSE floating point register set
+ *  - the virtual floating point registers
  */
 static int ia32_get_n_reg_class(const void *self) {
-	return 2;
+	return 3;
 }
 
 /**
@@ -1192,10 +1192,13 @@ static int ia32_get_n_reg_class(const void *self) {
  */
 static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) {
 	const ia32_isa_t *isa = self;
-	assert(i >= 0 && i < 2 && "Invalid ia32 register class requested.");
+	assert(i >= 0 && i < 3 && "Invalid ia32 register class requested.");
 	if (i == 0)
 		return &ia32_reg_classes[CLASS_ia32_gp];
-	return USE_SSE2(isa) ? &ia32_reg_classes[CLASS_ia32_xmm] : &ia32_reg_classes[CLASS_ia32_vfp];
+	else if (i == 1)
+		return &ia32_reg_classes[CLASS_ia32_xmm];
+	else
+		return &ia32_reg_classes[CLASS_ia32_vfp];
 }
 
 /**
@@ -1357,6 +1360,8 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
 	return bytes;
 }
 
+static ia32_intrinsic_env_t intrinsic_env = { NULL, NULL };
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -1375,7 +1380,7 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		1,     /* need dword lowering */
 		ia32_create_intrinsic_fkt,
-		NULL,  /* context for ia32_create_intrinsic_fkt */
+		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
 	};
 
 	p.dep_param = &ad;
