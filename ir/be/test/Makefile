@@ -33,7 +33,7 @@ compare: $(COMPARES)
 
 gcc/%.result: gcc/%.exe
 	@test -z gcc || mkdir -p gcc
-	gcc/$*.exe >& $@
+	gcc/$*.exe >& $@ || true
 
 firm/%.result: firm/%.exe
 	@test -z firm || mkdir -p firm
