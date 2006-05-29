@@ -49,7 +49,7 @@ gcc/%.exe: %.c
 firm/%.s: %.c
 	@test -z firm || mkdir -p firm
 	cd firm ; $(EDG) $(EDG_CFLAGS) ../$*.c || echo "$*.c" >> ../compile_failed.txt
-	mv $*.s firm
+	mv $*.s firm || echo "" > firm/$*.s
 
 firm/%.exe: firm/%.s
 	$(GCC) firm/$*.s -o $@ || echo "$*.c" >> link_failed.txt
