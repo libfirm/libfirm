@@ -177,8 +177,12 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
       obstack_printf(obst, "%s", get_entity_ld_name(get_SymConst_entity(init)));
       break;
 
-    case symconst_size:
+    case symconst_type_size:
       obstack_printf(obst, "%d", get_type_size_bytes(get_SymConst_type(init)));
+      break;
+
+    case symconst_type_align:
+      obstack_printf(obst, "%d", get_type_alignment_bytes(get_SymConst_type(init)));
       break;
 
     default:
