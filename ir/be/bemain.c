@@ -309,6 +309,7 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *irg = get_irp_irg(i);
 		const arch_code_generator_if_t *cg_if;
 		be_irg_t birg;
+		int save_optimize, save_normalize;
 
 		birg.irg      = irg;
 		birg.main_env = &env;
@@ -368,6 +369,12 @@ static void be_main_loop(FILE *file_handle)
 
 		be_do_stat_nodes(irg, "04 Schedule");
 
+		/* we switch off optimizations here, because they might cause trouble */
+		save_optimize  = get_optimize();
+		save_normalize = get_opt_normalize();
+		set_optimize(0);
+		set_opt_normalize(0);
+
 		/* add Keeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */
 		assure_constraints(&birg);
@@ -403,7 +410,12 @@ static void be_main_loop(FILE *file_handle)
 
 		be_do_stat_nodes(irg, "07 Final");
 
-//		free_ir_graph(irg);
+		/* reset the optimizations */
+		set_optimize(save_optimize);
+		set_opt_normalize(save_normalize);
+
+		/* switched of due to statistics (statistic module needs all irgs) */
+		//		free_ir_graph(irg);
 	}
 	be_done_env(&env);
 }
