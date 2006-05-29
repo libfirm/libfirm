@@ -2258,6 +2258,93 @@ static ir_node *gen_Unknown(ia32_transform_env_t *env) {
 
 /* These nodes are created in intrinsic lowering (64bit -> 32bit) */
 
+typedef ir_node *construct_load_func(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, \
+                                     ir_node *mem);
+
+typedef ir_node *construct_store_func(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, \
+                                      ir_node *val, ir_node *mem);
+
+/**
+ * Transforms a lowered Load into a "real" one.
+ */
+static ir_node *gen_lowered_Load(ia32_transform_env_t *env, construct_load_func func, char fp_unit) {
+	ir_node *node  = env->irn;
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_mode *mode  = get_ia32_ls_mode(node);
+	ir_node *new_op;
+	char    *am_offs;
+	ia32_am_flavour_t am_flav = ia32_B;
+
+	/*
+		Could be that we have SSE2 unit, but due to 64Bit Div/Conv
+		lowering we have x87 nodes, so we need to enforce simulation.
+	*/
+	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
+		if (fp_unit == fp_x87)
+			FORCE_x87(env->cg);
+	}
+
+	new_op = func(env->dbg, env->irg, env->block, get_irn_n(node, 0), noreg, get_irn_n(node, 1));
+
+	if (am_offs = get_ia32_am_offs(node)) {
+		am_flav |= ia32_O;
+		add_ia32_am_offs(new_op, am_offs);
+	}
+
+	set_ia32_am_support(new_op, ia32_am_Source);
+	set_ia32_op_type(new_op, ia32_AddrModeS);
+	set_ia32_am_flavour(new_op, am_flav);
+	set_ia32_ls_mode(new_op, mode);
+	set_ia32_frame_ent(new_op, get_ia32_frame_ent(node));
+	set_ia32_use_frame(new_op);
+
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, node));
+
+	return new_op;
+}
+
+/**
+* Transforms a lowered Store into a "real" one.
+*/
+static ir_node *gen_lowered_Store(ia32_transform_env_t *env, construct_store_func func, char fp_unit) {
+	ir_node *node  = env->irn;
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_mode *mode  = get_ia32_ls_mode(node);
+	ir_node *new_op;
+	char    *am_offs;
+	ia32_am_flavour_t am_flav = ia32_B;
+
+	/*
+		Could be that we have SSE2 unit, but due to 64Bit Div/Conv
+		lowering we have x87 nodes, so we need to enforce simulation.
+	*/
+	if (mode_is_float(mode)) {
+		FP_USED(env->cg);
+		if (fp_unit == fp_x87)
+			FORCE_x87(env->cg);
+	}
+
+	new_op = func(env->dbg, env->irg, env->block, get_irn_n(node, 0), noreg, get_irn_n(node, 1), get_irn_n(node, 2));
+
+	if (am_offs = get_ia32_am_offs(node)) {
+		am_flav |= ia32_O;
+		add_ia32_am_offs(new_op, am_offs);
+	}
+
+	set_ia32_am_support(new_op, ia32_am_Dest);
+	set_ia32_op_type(new_op, ia32_AddrModeD);
+	set_ia32_am_flavour(new_op, am_flav);
+	set_ia32_ls_mode(new_op, mode);
+	set_ia32_frame_ent(new_op, get_ia32_frame_ent(node));
+	set_ia32_use_frame(new_op);
+
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, node));
+
+	return new_op;
+}
+
+
 /**
  * Transforms an ia32_l_XXX into a "real" XXX node
  *
@@ -2266,18 +2353,39 @@ static ir_node *gen_Unknown(ia32_transform_env_t *env) {
  */
 #define GEN_LOWERED_OP(op)                                                                            \
 	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {                                      \
+		if (mode_is_float(env->mode))                                                                 \
+			FP_USED(env->cg);                                                                         \
 		return gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_##op); \
-	}                                                                                                 \
+	}
+
+#define GEN_LOWERED_x87_OP(op)                                                                          \
+	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {                                        \
+		ir_node *new_op;                                                                                \
+		FORCE_x87(env->cg);                                                                             \
+		new_op = gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_##op); \
+		set_ia32_am_support(get_Proj_pred(new_op), ia32_am_None);                                       \
+		return new_op;                                                                                  \
+	}
 
 #define GEN_LOWERED_UNOP(op)                                           \
 	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {       \
 		return gen_unop(env, get_unop_op(env->irn), new_rd_ia32_##op); \
-	}                                                                  \
+	}
 
 #define GEN_LOWERED_SHIFT_OP(op)                                                                            \
 	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) {                                            \
 		return gen_shift_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_##op); \
-	}                                                                                                       \
+	}
+
+#define GEN_LOWERED_LOAD(op, fp_unit)                            \
+	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) { \
+		return gen_lowered_Load(env, new_rd_ia32_##op, fp_unit); \
+	}
+
+#define GEN_LOWERED_STORE(op, fp_unit)                           \
+	static ir_node *gen_ia32_l_##op(ia32_transform_env_t *env) { \
+	return gen_lowered_Store(env, new_rd_ia32_##op, fp_unit);    \
+}
 
 GEN_LOWERED_OP(AddC)
 GEN_LOWERED_OP(Add)
@@ -2285,8 +2393,16 @@ GEN_LOWERED_OP(SubC)
 GEN_LOWERED_OP(Sub)
 GEN_LOWERED_OP(Mul)
 GEN_LOWERED_OP(Eor)
+GEN_LOWERED_x87_OP(vfdiv)
+GEN_LOWERED_x87_OP(vfmul)
+GEN_LOWERED_x87_OP(vfsub)
 
 GEN_LOWERED_UNOP(Minus)
+
+GEN_LOWERED_LOAD(vfild, fp_x87)
+GEN_LOWERED_LOAD(Load, fp_none)
+GEN_LOWERED_STORE(vfist, fp_x87)
+GEN_LOWERED_STORE(Store, fp_none)
 
 /**
  * Transforms a l_MulS into a "real" MulS node.
@@ -2384,7 +2500,91 @@ static ir_node *gen_ia32_l_ShrD(ia32_transform_env_t *env) {
 	return gen_lowered_64bit_shifts(env, get_irn_n(env->irn, 0), get_irn_n(env->irn, 1), get_irn_n(env->irn, 2));
 }
 
+/**
+ * In case SSE Unit is used, the node is transformed into a vfst + xLoad.
+ */
+static ir_node *gen_ia32_l_X87toSSE(ia32_transform_env_t *env) {
+	ia32_code_gen_t *cg  = env->cg;
+	ir_node         *res = NULL;
+	ir_node         *ptr = get_irn_n(env->irn, 0);
+	ir_node         *val = get_irn_n(env->irn, 1);
+	ir_node         *mem = get_irn_n(env->irn, 2);
 
+	if (USE_SSE2(cg)) {
+		ir_node *noreg = ia32_new_NoReg_gp(cg);
+
+		/* Store x87 -> MEM */
+		res = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
+		set_ia32_frame_ent(res, get_ia32_frame_ent(env->irn));
+		set_ia32_use_frame(res);
+		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
+		set_ia32_am_support(res, ia32_am_Dest);
+		set_ia32_am_flavour(res, ia32_B);
+		res = new_rd_Proj(env->dbg, env->irg, env->block, res, mode_M, pn_ia32_vfst_M);
+
+		/* Load MEM -> SSE */
+		res = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, ptr, noreg, res);
+		set_ia32_frame_ent(res, get_ia32_frame_ent(env->irn));
+		set_ia32_use_frame(res);
+		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
+		set_ia32_am_support(res, ia32_am_Source);
+		set_ia32_am_flavour(res, ia32_B);
+		res = new_rd_Proj(env->dbg, env->irg, env->block, res, get_ia32_ls_mode(env->irn), pn_ia32_xLoad_res);
+	}
+	else {
+		/* SSE unit is not used -> skip this node. */
+		int i;
+
+		edges_reroute(env->irn, val, env->irg);
+		for (i = get_irn_arity(env->irn) - 1; i >= 0; i--)
+			set_irn_n(env->irn, i, get_irg_bad(env->irg));
+	}
+
+	return res;
+}
+
+/**
+ * In case SSE Unit is used, the node is transformed into a xStore + vfld.
+ */
+static ir_node *gen_ia32_l_SSEtoX87(ia32_transform_env_t *env) {
+	ia32_code_gen_t *cg  = env->cg;
+	ir_node         *res = NULL;
+	ir_node         *ptr = get_irn_n(env->irn, 0);
+	ir_node         *val = get_irn_n(env->irn, 1);
+	ir_node         *mem = get_irn_n(env->irn, 2);
+
+	if (USE_SSE2(cg)) {
+		ir_node *noreg = ia32_new_NoReg_gp(cg);
+
+		/* Store SSE -> MEM */
+		res = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
+		set_ia32_frame_ent(res, get_ia32_frame_ent(env->irn));
+		set_ia32_use_frame(res);
+		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
+		set_ia32_am_support(res, ia32_am_Dest);
+		set_ia32_am_flavour(res, ia32_B);
+		res = new_rd_Proj(env->dbg, env->irg, env->block, res, mode_M, pn_ia32_xStore_M);
+
+		/* Load MEM -> x87 */
+		res = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem);
+		set_ia32_frame_ent(res, get_ia32_frame_ent(env->irn));
+		set_ia32_use_frame(res);
+		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
+		set_ia32_am_support(res, ia32_am_Source);
+		set_ia32_am_flavour(res, ia32_B);
+		res = new_rd_Proj(env->dbg, env->irg, env->block, res, get_ia32_ls_mode(env->irn), pn_ia32_vfld_res);
+	}
+	else {
+		/* SSE unit is not used -> skip this node. */
+		int i;
+
+		edges_reroute(env->irn, val, env->irg);
+		for (i = get_irn_arity(env->irn) - 1; i >= 0; i--)
+			set_irn_n(env->irn, i, get_irg_bad(env->irg));
+	}
+
+	return res;
+}
 
 /*********************************************************
  *                  _             _      _
@@ -2654,6 +2854,15 @@ void ia32_register_transformers(void) {
 	GEN(ia32_l_Shrs);
 	GEN(ia32_l_ShlD);
 	GEN(ia32_l_ShrD);
+	GEN(ia32_l_vfdiv);
+	GEN(ia32_l_vfmul);
+	GEN(ia32_l_vfsub);
+	GEN(ia32_l_vfild);
+	GEN(ia32_l_Load);
+	GEN(ia32_l_vfist);
+	GEN(ia32_l_Store);
+	GEN(ia32_l_X87toSSE);
+	GEN(ia32_l_SSEtoX87);
 
 	IGN(Call);
 	IGN(Alloc);
