@@ -301,8 +301,8 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 		be_abi_fix_stack_nodes(bi->abi);
 
-		DEBUG_ONLY(be_verify_schedule(irg);)
-		DEBUG_ONLY(be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg);)
+		assert(be_verify_schedule(irg));
+		assert(be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg));
 
 		/* Color the graph. */
 		be_liveness(irg);

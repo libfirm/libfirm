@@ -20,6 +20,7 @@
 #include "irdump_t.h"
 
 typedef struct be_verify_register_pressure_env_t_ {
+	ir_graph *irg;
 	const arch_env_t *arch_env;
 	const arch_register_class_t *cls;
 	int registers_available;
@@ -48,8 +49,8 @@ static void verify_liveness_walker(ir_node *bl, void *data)
 	be_liveness_end_of_block(env->arch_env, env->cls, bl, live_nodes);
 	pressure = pset_count(live_nodes);
 	if(pressure > env->registers_available) {
-		ir_printf("Verify Warning: Register pressure too high at end of block %+F (%d/%d):\n",
-			bl, pressure, env->registers_available);
+		ir_printf("Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
+			bl, get_irg_dump_name(env->irg), pressure, env->registers_available);
 		print_living_values(live_nodes);
 		env->problem_found = 1;
 	}
@@ -63,8 +64,8 @@ static void verify_liveness_walker(ir_node *bl, void *data)
 		pressure = pset_count(live_nodes);
 
 		if(pressure > env->registers_available) {
-			ir_printf("Verify Warning: Register pressure too high before %+F (in block %+F) (%d/%d).\n",
-				irn, bl, pressure, env->registers_available);
+			ir_printf("Verify Warning: Register pressure too high before %+F (in block %+F(%s) (%d/%d).\n",
+				irn, bl, get_irg_dump_name(env->irg), pressure, env->registers_available);
 			print_living_values(live_nodes);
 			env->problem_found = 1;
 		}
@@ -72,20 +73,19 @@ static void verify_liveness_walker(ir_node *bl, void *data)
 	del_pset(live_nodes);
 }
 
-void be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_graph *irg)
+int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_graph *irg)
 {
 	be_verify_register_pressure_env_t env;
 
 	be_liveness(irg);
 
+	env.irg = irg;
 	env.arch_env = arch_env;
 	env.cls = cls;
 	env.registers_available = arch_count_non_ignore_regs(arch_env, cls);
 	env.problem_found = 0;
 
-	irg_block_walk_graph(irg, verify_liveness_walker, NULL, &env);
-
-	assert(env.problem_found == 0);
+	return !env.problem_found;
 }
 
 typedef struct be_verify_schedule_env_t_ {
@@ -98,11 +98,13 @@ static void verify_schedule_walker(ir_node *bl, void *data)
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
 	ir_node *irn;
 	int non_phi_found = 0;
-	int first_cfchange_found = 0;
+	int cfchange_found = 0;
+	// TODO ask ABI about delay branches
+	int delay_branches = 0;
 
 	/*
 	 * Make sure that all phi nodes are scheduled at the beginning of the block, and that there
-	 * are no nodes scheduled after a control flow changing node
+	 * is 1 or no control flow changing node scheduled as last operation
 	 */
 	sched_foreach(bl, irn) {
 		if(is_Phi(irn)) {
@@ -113,22 +115,34 @@ static void verify_schedule_walker(ir_node *bl, void *data)
 			}
 			continue;
 		}
-
 		non_phi_found = 1;
+
 		if(is_cfop(irn) && get_irn_opcode(irn) != iro_Start) {
-			first_cfchange_found = 1;
-		} else {
-			if(first_cfchange_found) {
-				ir_printf("Verify Warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
+			if(cfchange_found == 1) {
+				ir_printf("Verify Warning: More than 1 control flow changing node (%+F) scheduled in block %+F (%s)\n",
 					irn, bl, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 			}
+			cfchange_found = 1;
+		} else if(cfchange_found) {
+			if(delay_branches == 0) {
+				ir_printf("Verify Warning: Node %+F scheduled after control flow changing node (+delay branches) in block %+F (%s)\n",
+					irn, bl, get_irg_dump_name(env->irg));
+				env->problem_found = 1;
+			} else {
+				delay_branches--;
+			}
 		}
+	}
+
+	if(cfchange_found && delay_branches != 0) {
+		ir_printf("Not all delay slots filled after jump (%d/%d) in block %+F (%s)\n",
+			bl, get_irg_dump_name(env->irg));
+		env->problem_found = 1;
 	}
 }
 
-
-void be_verify_schedule(ir_graph *irg)
+int be_verify_schedule(ir_graph *irg)
 {
 	be_verify_schedule_env_t env;
 
@@ -137,5 +151,5 @@ void be_verify_schedule(ir_graph *irg)
 
 	irg_block_walk_graph(irg, verify_schedule_walker, NULL, &env);
 
-	assert(env.problem_found == 0);
+	return !env.problem_found;
 }

@@ -443,90 +443,10 @@ static void *init_phase_data(phase_t *phase, ir_node *irn, void *old) {
 	return old;
 }
 
-typedef struct _liveness_dump_env_t {
-	const be_chordal_env_t *chordal_env;
-	FILE *f;
-} liveness_dump_env_t;
-
-#if 0
-/**
- * Pre-walker: dump liveness data to a file
- */
-static void dump_liveness_walker(ir_node *bl, void *data)
-{
-	liveness_dump_env_t *env = (liveness_dump_env_t*) data;
-	FILE *f = env->f;
-	const irn_live_t *li;
-	ir_node* irn;
-	int in = 0, end = 0, out = 0;
-	int max_pressure = 0;
-	pset *live_nodes;
-
-	// collect some statistics
-	live_foreach(bl, li) {
-		const ir_node* irn = li->irn;
-		if(!arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->chordal_env->cls, irn))
-			continue;
-
-		if(live_is_in(li))
-			in++;
-		if(live_is_end(li))
-			end++;
-		if(live_is_out(li))
-			out++;
-	}
-
-	// collect register pressure info
-	live_nodes = pset_new_ptr_default();
-	be_liveness_end_of_block(env->chordal_env->birg->main_env->arch_env, env->chordal_env->cls, bl, live_nodes);
-	max_pressure = pset_count(live_nodes);
-	sched_foreach_reverse(bl, irn) {
-		int pressure;
-
-		if(is_Phi(irn))
-			break;
-
-		be_liveness_transfer(env->chordal_env->birg->main_env->arch_env, env->chordal_env->cls, irn, live_nodes);
-		pressure = pset_count(live_nodes);
-		if(pressure > max_pressure)
-			max_pressure = pressure;
-	}
-	del_pset(live_nodes);
-
-	ir_fprintf(f, "%+20F (%d in) (%d end) (%d out) (max_pressure %d)\n", bl, in, end, out, max_pressure);
-	live_foreach(bl, li) {
-		const ir_node* irn = li->irn;
-		if(!arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->chordal_env->cls, irn))
-			continue;
-
-		ir_fprintf(f, "\t%+30F %4s %4s %4s\n",
-			irn,
-			live_is_in(li) ? "in" : "",
-			live_is_end(li) ? "end" : "",
-			live_is_out(li) ? "out" : "");
-	}
-}
-
-static void dump_liveness_info(const be_chordal_env_t *chordal_env, const char* name) {
-	char buf[128];
-	liveness_dump_env_t env;
-
-	env.chordal_env = chordal_env;
-	ir_snprintf(buf, sizeof(buf), "%F_%s_%s-live.txt", chordal_env->irg, chordal_env->cls->name, name);
-	env.f = fopen(buf, "wt");
-	if(env.f == NULL)
-		return;
-
-	irg_block_walk_graph(chordal_env->irg, dump_liveness_walker, NULL, &env);
-	fclose(env.f);
-}
-#endif
-
 void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	morgan_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
-	//firm_dbg_set_mask(dbg, DBG_LIVE | DBG_PRESSURE);
 
 	env.arch = chordal_env->birg->main_env->arch_env;
 	env.irg = chordal_env->irg;
@@ -544,7 +464,6 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	env.loop_attr_set = new_set(loop_attr_cmp, 5);
 	env.block_attr_set = new_set(block_attr_cmp, 20);
 
-
 	/*-- Part1: Analysis --*/
 	be_liveness(env.irg);
 
@@ -561,7 +480,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
 
 	be_insert_spills_reloads(env.senv);
-	DEBUG_ONLY(be_verify_schedule(env.irg);)
+	assert(be_verify_schedule(env.irg));
 
 	// cleanup
 	be_end_uses(env.uses);
@@ -570,6 +489,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	del_set(env.block_attr_set);
 
 	// fix the remaining places with too high register pressure with beladies algorithm
+	be_remove_dead_nodes_from_schedule(env.irg);
 	be_liveness(env.irg);
 	be_spill_belady_spill_env(chordal_env, env.senv);
 

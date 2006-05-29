@@ -365,7 +365,7 @@ static void be_main_loop(FILE *file_handle)
 		list_sched(&birg, be_disable_mris);
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
-		DEBUG_ONLY(be_verify_schedule(birg.irg);)
+		assert(be_verify_schedule(birg.irg));
 
 		be_do_stat_nodes(irg, "04 Schedule");
 
@@ -402,7 +402,7 @@ static void be_main_loop(FILE *file_handle)
 		arch_code_generator_after_ra(birg.cg);
 		be_abi_fix_stack_bias(birg.abi);
 
-		DEBUG_ONLY(be_verify_schedule(birg.irg);)
+		assert(be_verify_schedule(birg.irg));
 
 		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);

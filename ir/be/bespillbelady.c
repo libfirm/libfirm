@@ -445,6 +445,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *env) {
 			ir_node *cpy = be_new_Copy(bel->cls, irg, pred_block, arg);
 			pset_insert_ptr(bel->copies, cpy);
 			DBG((dbg, DBG_START, "    place a %+F of %+F in %+F\n", cpy, arg, pred_block));
+			/* TODO: Place copies before jumps! */
 			sched_add_before(sched_last(pred_block), cpy);
 			set_irn_n(irn, o, cpy);
 		}
@@ -584,6 +585,8 @@ next_value:
 static void remove_copies(belady_env_t *bel) {
 	ir_node *irn;
 
+	edges_deactivate(current_ir_graph);
+	edges_activate(current_ir_graph);
 	foreach_pset(bel->copies, irn) {
 		ir_node *src;
 		const ir_edge_t *edge;
@@ -592,12 +595,14 @@ static void remove_copies(belady_env_t *bel) {
 
 		src = be_get_Copy_op(irn);
 		foreach_out_edge(irn, edge) {
-			ir_node* user = get_edge_src_irn(edge);
+			ir_node *user = get_edge_src_irn(edge);
 			int user_pos = get_edge_src_pos(edge);
 
+#if 0
 			// is this normal?
 			if(user == NULL)
 				break;
+#endif
 			set_irn_n(user, user_pos, src);
 		}
 	}
