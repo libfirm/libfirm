@@ -363,11 +363,8 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 			else if (is_Phi(result))
 				o = apply(orig, o, rc, env);
 			else {
-				switch (code) {
-				case iro_Mul:
+				if (code == iro_Mul)
 					o = apply(orig, o, rc, env);
-					break;
-				}
 			}
 			set_irn_n(result, i, o);
 		}
@@ -442,6 +439,8 @@ static int check_replace(ir_node *irn, iv_env *env) {
 			++env->replaced;
 			return 1;
 		}
+		break;
+	default:
 		break;
 	}
 	return 0;
