@@ -24,7 +24,7 @@
 typedef enum _ia32_optimize_t {
 	IA32_OPT_INCDEC    = 1,   /**< optimize add/sub 1/-1 to inc/dec */
 	IA32_OPT_DOAM      = 2,   /**< do address mode optimizations */
-	IA32_OPT_LEA       = 4,   /**< optimize address caluclations into LEAs */
+	IA32_OPT_LEA       = 4,   /**< optimize address calculations into LEAs */
 	IA32_OPT_PLACECNST = 8,   /**< place constants in the blocks where they are used */
 	IA32_OPT_IMMOPS    = 16,  /**< create operations with immediate operands */
 	IA32_OPT_EXTBB     = 32,  /**< do extended basic block scheduling */
@@ -79,6 +79,9 @@ typedef enum fp_support {
 /** Returns non-zero if the current floating point architecture is x87. */
 #define USE_x87(cg)  ((cg)->fp_kind == fp_x87)
 
+/** Sets the flag to enforce x87 simulation. */
+#define FORCE_x87(cg) ((cg)->force_sim = 1)
+
 typedef struct _ia32_isa_t ia32_isa_t;
 
 /**
@@ -92,13 +95,14 @@ typedef struct _ia32_code_gen_t {
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
 	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
-	ia32_optimize_t                 opt;           /**< contains optimization information */
+	ia32_optimize_t                opt;            /**< contains optimization information */
 	entity                         *fp_to_gp;      /**< allocated entity for fp to gp conversion */
 	entity                         *gp_to_fp;      /**< allocated entity for gp to fp conversion */
-	int                             arch;          /**< instruction architecture */
-	int                             opt_arch;      /**< optimize for architecture */
-	int                             fp_kind;       /**< floating point kind */
-	char                            used_fp;       /**< which floating point unit used in this graph */
+	int                            arch;           /**< instruction architecture */
+	int                            opt_arch;       /**< optimize for architecture */
+	char                           fp_kind;        /**< floating point kind */
+	char                           used_fp;        /**< which floating point unit used in this graph */
+	char                           force_sim;      /**< set to 1 if x87 simulation should be enforced */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)          /**< debugging module */
 } ia32_code_gen_t;
 
@@ -106,20 +110,20 @@ typedef struct _ia32_code_gen_t {
  * IA32 ISA object
  */
 struct _ia32_isa_t {
-  arch_isa_t            arch_isa;       /**< must be derived from arch_isa_t */
+	arch_isa_t            arch_isa;       /**< must be derived from arch_isa_t */
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
 	pmap                  *types;         /**< A map of modes to primitive types */
 	pmap                  *tv_ent;        /**< A map of entities that store const tarvals */
-	ia32_optimize_t        opt;           /**< contains optimization information */
-	int                    arch;          /**< instruction architecture */
-	int                    opt_arch;      /**< optimize for architecture */
-	int                    fp_kind;       /**< floating point kind */
+	ia32_optimize_t       opt;            /**< contains optimization information */
+	int                   arch;           /**< instruction architecture */
+	int                   opt_arch;       /**< optimize for architecture */
+	int                   fp_kind;        /**< floating point kind */
 	ia32_code_gen_t       *cg;            /**< the current code generator */
 	FILE                  *out;           /**< output file */
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
-	unsigned long          name_obst_size;
+	unsigned long         name_obst_size;
 #endif /* NDEBUG */
 };
 
@@ -139,6 +143,13 @@ typedef struct _ia32_transform_env_t {
 	ia32_code_gen_t   *cg;         /**< The code generator */
 	DEBUG_ONLY(firm_dbg_module_t *mod;) /**< The firm debugger */
 } ia32_transform_env_t;
+
+typedef struct _ia32_intrinsic_env_t {
+	entity *ll_div_op1;    /**< entity for first div operand (move into FPU) */
+	entity *ll_div_op2;    /**< entity for second div operand (move into FPU) */
+	entity *ll_d_conv;     /**< entity for converts ll -> d */
+	entity *d_ll_conv;     /**< entity for converts d -> ll */
+} ia32_intrinsic_env_t;
 
 /**
  * Returns the unique per irg GP NoReg node.
