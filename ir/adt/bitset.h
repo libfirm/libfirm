@@ -8,19 +8,21 @@
 #ifndef __FIRM_BITSET_H
 #define __FIRM_BITSET_H
 
+#include "firm_config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-
-#include "firm_config.h"
-#include "bitfiddle.h"
 
 #ifdef _WIN32
 #include <malloc.h>
 #else
 #include <alloca.h>
 #endif
+
+#include "xmalloc.h"
+#include "bitfiddle.h"
 
 typedef unsigned int bitset_pos_t;
 
@@ -34,7 +36,7 @@ typedef unsigned int bitset_pos_t;
 
 typedef struct _bitset_t {
 	bitset_pos_t units;
-  bitset_pos_t size;
+	bitset_pos_t size;
 	bitset_unit_t *data;
 } bitset_t;
 
@@ -107,7 +109,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @return A pointer to an empty initialized bitset.
  */
 #define bitset_obstack_alloc(obst,size) \
-  _bitset_prepare(obstack_alloc(obst, _bitset_overall_size(sizeof(bitset_t), size)), size)
+	_bitset_prepare(obstack_alloc(obst, _bitset_overall_size(sizeof(bitset_t), size)), size)
 
 /**
  * Allocate a bitset via malloc.
@@ -142,7 +144,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
 static INLINE bitset_unit_t *_bitset_get_unit(const bitset_t *bs, bitset_pos_t bit)
 {
 	/* assert(bit < bs->units * BS_UNIT_SIZE_BITS && "Bit too large"); */
-  assert(bit <= bs->size && "Bit to large");
+	assert(bit <= bs->size && "Bit to large");
 	return bs->data + bit / BS_UNIT_SIZE_BITS;
 }
 
@@ -329,11 +331,11 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
  * @param elm A unsigned long variable.
  */
 #define bitset_foreach(bitset,elm) \
-  for(elm = bitset_next_set(bitset,0); elm != -1; elm = bitset_next_set(bitset,elm+1))
+	for(elm = bitset_next_set(bitset,0); elm != -1; elm = bitset_next_set(bitset,elm+1))
 
 
 #define bitset_foreach_clear(bitset,elm) \
-  for(elm = bitset_next_clear(bitset,0); elm != -1; elm = bitset_next_clear(bitset,elm+1))
+	for(elm = bitset_next_clear(bitset,0); elm != -1; elm = bitset_next_clear(bitset,elm+1))
 
 /**
  * Count the bits set.
@@ -360,7 +362,7 @@ static INLINE bitset_pos_t bitset_popcnt(const bitset_t *bs)
 static INLINE bitset_t *bitset_clear_all(bitset_t *bs)
 {
 	memset(bs->data, 0, BS_UNIT_SIZE * bs->units);
-  return bs;
+	return bs;
 }
 
 /**
@@ -371,7 +373,7 @@ static INLINE bitset_t *bitset_clear_all(bitset_t *bs)
 static INLINE bitset_t *bitset_set_all(bitset_t *bs)
 {
 	memset(bs->data, -1, bs->units * BS_UNIT_SIZE);
-  return _bitset_mask_highest(bs);
+	return _bitset_mask_highest(bs);
 }
 
 /**
@@ -417,23 +419,23 @@ static INLINE void bitset_minus1(bitset_t *bs)
 {
 #define _SH (sizeof(bitset_unit_t) * 8 - 1)
 
-  bitset_pos_t i;
+	bitset_pos_t i;
 
-  for(i = 0; i < bs->units; ++i) {
-    bitset_unit_t unit = bs->data[i];
-    bitset_unit_t um1  = unit - 1;
+	for(i = 0; i < bs->units; ++i) {
+		bitset_unit_t unit = bs->data[i];
+		bitset_unit_t um1  = unit - 1;
 
-    bs->data[i] = um1;
+		bs->data[i] = um1;
 
-    if(((unit >> _SH) ^ (um1 >> _SH)) == 0)
-      break;
-  }
+		if(((unit >> _SH) ^ (um1 >> _SH)) == 0)
+			break;
+	}
 #undef _SH
 }
 
 /**
  * Print a bitset to a stream.
- * The bitset is printed as a comma seperated list of bits set.
+ * The bitset is printed as a comma separated list of bits set.
  * @param file The stream.
  * @param bs The bitset.
  */
