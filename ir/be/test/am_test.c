@@ -10,3 +10,9 @@ void am_test_func(int a, int b) {
 
 	ar[1] = a * b + i;
 }
+
+int main()
+{
+    am_test_func(0, 0);
+    return 0;
+}

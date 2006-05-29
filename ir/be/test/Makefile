@@ -5,7 +5,9 @@ GCC=gcc
 GCC_CFLAGS=-O3 -g
 EDG_CFLAGS=-b nomris -f win32 -b ra-chordal-spill=morgan --c -Ic:\\devstudio\\include
 
-SOURCES=$(wildcard *.c)
+EXCLUDE=bf_localinit.c bf_store.c calls.c compress95.c convtest.c \
+	fe_bug.c gnu_def.c harness.c if.c psi_test.c
+SOURCES=$(filter-out $(EXCLUDE), $(wildcard *.c))
 GCCEXES=$(addprefix gcc/, $(addsuffix .exe, $(basename $(SOURCES))))
 FIRMEXES=$(addprefix firm/, $(addsuffix .exe, $(basename $(SOURCES))))
 FIRMASSEMBLERS=$(addprefix firm/, $(addsuffix .s, $(basename $(SOURCES))))
@@ -35,7 +37,7 @@ gcc/%.result: gcc/%.exe
 
 firm/%.result: firm/%.exe
 	@test -z firm || mkdir -p firm
-	firm/$*.exe >& $@ || echo "$*.c" >> doesntrun
+	firm/$*.exe >& $@ || echo "$*.c" >> doesntrun.txt
 
 compare_%.c: gcc/%.exe firm/%.exe gcc/%.result firm/%.result
 	diff -u gcc/$*.result firm/$*.result || echo "$*.c" >> broken.txt
