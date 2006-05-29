@@ -228,12 +228,14 @@ $comment_string = "/*";
 "l_Add" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Add: Add(a, b) = Add(b, a) = a + b",
   "arity"     => 2,
 },
 
 "l_AddC" => {
   "op_flags"  => "C",
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Add with Carry: AddC(a, b) = Add(b, a) = a + b + carry",
   "arity"     => 2,
 },
@@ -248,6 +250,7 @@ $comment_string = "/*";
 
 "l_MulS" => {
   "op_flags"  => "C",
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered MulS: MulS(a, b) = MulS(b, a) = a * b",
   "outs"      => [ "EAX", "EDX", "M" ],
   "arity"     => 2
@@ -264,6 +267,7 @@ $comment_string = "/*";
 
 "l_Mul" => {
   "op_flags"  => "C",
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Mul: Mul(a, b) = Mul(b, a) = a * b",
   "arity"     => 2
 },
@@ -306,6 +310,7 @@ $comment_string = "/*";
 
 "l_Eor" => {
   "op_flags"  => "C",
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Eor: Eor(a, b) = Eor(b, a) = a EOR b",
   "arity"     => 2
 },
@@ -361,11 +366,13 @@ $comment_string = "/*";
 
 "l_Sub" => {
   "irn_flags" => "R",
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Sub: Sub(a, b) = a - b",
   "arity"     => 2,
 },
 
 "l_SubC" => {
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Sub with Carry: SubC(a, b) = a - b - carry",
   "arity"     => 2,
 },
@@ -398,6 +405,7 @@ $comment_string = "/*";
 },
 
 "l_Shl" => {
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Shl: Shl(a, b) = a << b",
   "arity"     => 2
 },
@@ -430,6 +438,7 @@ else {
 },
 
 "l_ShlD" => {
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
   "arity"     => 3
 },
@@ -444,6 +453,7 @@ else {
 },
 
 "l_Shr" => {
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Shr: Shr(a, b) = a << b",
   "arity"     => 2
 },
@@ -476,6 +486,7 @@ else {
 },
 
 "l_ShrD" => {
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
   "arity"     => 3
 },
@@ -490,6 +501,7 @@ else {
 },
 
 "l_Shrs" => {
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Shrs: Shrs(a, b) = a << b",
   "arity"     => 2
 },
@@ -524,6 +536,7 @@ else {
 },
 
 "l_Minus" => {
+  "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered Minus: Minus(a) = -a",
   "arity"     => 1,
 },
@@ -629,6 +642,23 @@ else {
   }
 ',
   "outs"      => [ "res", "M" ],
+},
+
+"l_Load" => {
+  "op_flags"  => "L|F",
+  "cmp_attr"  => "  return 1;\n",
+  "comment"   => "construct lowered Load: Load(ptr, mem) = LD ptr -> reg",
+  "outs"      => [ "res", "M" ],
+  "arity"     => 2,
+},
+
+"l_Store" => {
+  "op_flags"  => "L|F",
+  "cmp_attr"  => "  return 1;\n",
+  "state"     => "exc_pinned",
+  "comment"   => "construct lowered Store: Store(ptr, val, mem) = ST ptr,val",
+  "arity"     => 3,
+  "outs"      => [ "M" ],
 },
 
 "Store" => {
@@ -850,6 +880,20 @@ else {
   "outs"      => [ "M" ],
 },
 
+"l_X87toSSE" => {
+  "op_flags" => "L|F",
+  "comment"  => "construct: transfer a value from x87 FPU into a SSE register",
+  "cmp_attr" => "  return 1;\n",
+  "arity"    => 3,
+},
+
+"l_SSEtoX87" => {
+  "op_flags" => "L|F",
+  "comment"  => "construct: transfer a value from SSE register to x87 FPU",
+  "cmp_attr" => "  return 1;\n",
+  "arity"    => 3,
+},
+
 # CopyB
 
 "CopyB" => {
@@ -985,10 +1029,17 @@ else {
 
 "vfmul" => {
   "irn_flags" => "R",
-  "comment"   => "virtual fp Mul: Mul(a, b) = Mul(b, a) = a + b",
+  "comment"   => "virtual fp Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "outs"      => [ "res", "M" ],
+},
+
+"l_vfmul" => {
+  "op_flags"  => "C",
+  "cmp_attr"  => "  return 1;\n",
+  "comment"   => "lowered virtual fp Mul: Mul(a, b) = Mul(b, a) = a * b",
+  "arity"     => 2,
 },
 
 "vfsub" => {
@@ -999,11 +1050,23 @@ else {
   "outs"      => [ "res", "M" ],
 },
 
+"l_vfsub" => {
+  "cmp_attr"  => "  return 1;\n",
+  "comment"   => "lowered virtual fp Sub: Sub(a, b) = a - b",
+  "arity"     => 2,
+},
+
 "vfdiv" => {
   "comment"   => "virtual fp Div: Div(a, b) = a / b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "outs"      => [ "res", "M" ],
+},
+
+"l_vfdiv" => {
+  "cmp_attr"  => "  return 1;\n",
+  "comment"   => "lowered virtual fp Div: Div(a, b) = a / b",
+  "arity"     => 2,
 },
 
 "vfabs" => {
@@ -1067,12 +1130,27 @@ else {
   "outs"      => [ "res", "M" ],
 },
 
+"l_vfild" => {
+  "cmp_attr"  => "  return 1;\n",
+  "comment"   => "lowered virtual fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
+  "outs"      => [ "res", "M" ],
+  "arity"     => 2,
+},
+
 "vfist" => {
   "comment"   => "virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "none" ] },
   "outs"      => [ "M" ],
 },
+
+"l_vfist" => {
+  "cmp_attr"  => "  return 1;\n",
+  "comment"   => "lowered virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
+  "outs"      => [ "M" ],
+  "arity"     => 3,
+},
+
 
 # constants
 
