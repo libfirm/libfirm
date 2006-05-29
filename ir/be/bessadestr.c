@@ -222,8 +222,13 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				 * insert it into schedule,
 				 * pin it
 				 */
-				ir_node *dupl = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
-				assert(get_irn_mode(phi) == get_irn_mode(dupl));
+				ir_node *dupl  = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
+				ir_mode *m_phi = get_irn_mode(phi), *m_dupl = get_irn_mode(dupl);
+
+				assert(((mode_is_int(m_phi) && mode_is_int(m_dupl)) ||
+					(mode_is_float(m_phi) && mode_is_float(m_dupl))) &&
+					(get_mode_size_bits(m_phi) == get_mode_size_bits(m_dupl)));
+
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
 				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, chordal_env->birg->main_env->arch_env), dupl);
