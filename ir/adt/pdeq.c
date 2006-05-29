@@ -9,18 +9,21 @@
  * Copyright:   (c) 1995, 1996 Christian von Roques
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
+#ifdef HAVE_STDIO_H
+# include <stdio.h>
+#endif
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-# ifdef HAVE_STRING_H
-#  include <string.h>
-# endif
 
 #include "fourcc.h"
 #include "pdeq.h"
@@ -51,13 +54,13 @@
  */
 struct pdeq {
 #ifndef NDEBUG
-  unsigned magic;		/**< debug magic */
+  unsigned magic;       /**< debug magic */
 #endif
-  pdeq *l_end, *r_end;		/**< left and right ends of the deque */
-  pdeq *l, *r;			/**< left and right neighbour */
-  int n;			/**< number of elements in the current chunk */
-  int p;			/**< the read/write pointer */
-  const void *data[1];		/**< storage for elements */
+  pdeq *l_end, *r_end;  /**< left and right ends of the queue */
+  pdeq *l, *r;          /**< left and right neighbor */
+  int n;                /**< number of elements in the current chunk */
+  int p;                /**< the read/write pointer */
+  const void *data[1];  /**< storage for elements */
 };
 
 
@@ -65,12 +68,12 @@ struct pdeq {
  * cache of unused, pdeq blocks to speed up new_pdeq and del_pdeq.
  * +1 for compilers that can't grok empty arrays
  */
-pdeq *pdeq_block_cache[TUNE_NSAVED_PDEQS+1];
+static pdeq *pdeq_block_cache[TUNE_NSAVED_PDEQS+1];
 
 /**
  * Number of pdeqs in pdeq_store.
  */
-unsigned pdeqs_cached;
+static unsigned pdeqs_cached;
 
 /**
  * Free a pdeq chunk, put in into the cache if possible.
@@ -100,7 +103,7 @@ static INLINE pdeq *alloc_pdeq_block (void)
   if (TUNE_NSAVED_PDEQS && pdeqs_cached) {
     p = pdeq_block_cache[--pdeqs_cached];
   } else {
-    p = xmalloc (PREF_MALLOC_SIZE);
+    p = xmalloc(PREF_MALLOC_SIZE);
   }
   return p;
 }
@@ -115,7 +118,6 @@ static INLINE pdeq *alloc_pdeq_block (void)
 void _pdeq_vrfy(pdeq *dq)
 {
   pdeq *q;
-
 
   assert (   dq
 	  && (dq->magic == PDEQ_MAGIC1)
@@ -205,7 +207,7 @@ int pdeq_len(pdeq *dq)
 }
 
 /* Add a pointer to the right site of a double ended pointer list. */
-pdeq * pdeq_putr(pdeq *dq, const void *x)
+pdeq *pdeq_putr(pdeq *dq, const void *x)
 {
   pdeq *rdq;
   int n;
