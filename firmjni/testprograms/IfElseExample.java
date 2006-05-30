@@ -121,7 +121,7 @@ class IfElseExample {
 	Ircons.matureImmBlock (Irgraph.getIrgEndBlock(irg));
 
 	Irvrfy.irgVerify(irg, Irvrfy.VRFY_NORMAL);
-	Ircons.irgFinalizeCons (irg);
+	Irgraph.setIrgPhaseState (irg, Irgraph.phase_high);
 
 	System.out.println("Done building the graph.  Optimizing it.");
 	Irgopt.localOptimizeGraph(irg);
