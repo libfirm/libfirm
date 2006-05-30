@@ -512,8 +512,6 @@ const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
 			assert(0 && "unsupported op type");
 	}
 
-#undef PRODUCES_RESULT
-
 	return buf;
 }
 
@@ -962,7 +960,7 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	if (reverse)
 		set_ia32_pncode(irn, (long)get_negated_pnc(get_ia32_pncode(irn), mode_Is));
 
-	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %s", instr, reg);
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %%%s", instr, reg);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
 	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "fnstsw %%ax", irn);
