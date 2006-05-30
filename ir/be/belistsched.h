@@ -110,8 +110,10 @@ extern const list_sched_selector_t *reg_pressure_selector;
  * Each block in the graph gets a list head to its link field being the
  * head of the schedule. You can walk this list using the functions in
  * list.h.
- * @param birg The backend irg.
+ *
+ * @param birg        The backend irg.
+ * @param enable_mris Flag indicating if mris preparation should be done
  */
-void list_sched(const be_irg_t *birg, int disable_mris);
+void list_sched(const be_irg_t *birg, int enable_mris);
 
 #endif /* _FIRM_LIST_SCHED */

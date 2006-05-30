@@ -997,7 +997,7 @@ static const list_sched_selector_t reg_pressure_selector_struct = {
 const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;
 
 /* List schedule a graph. */
-void list_sched(const be_irg_t *birg, int disable_mris)
+void list_sched(const be_irg_t *birg, int enable_mris)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
 	ir_graph *irg              = birg->irg;
@@ -1009,7 +1009,7 @@ void list_sched(const be_irg_t *birg, int disable_mris)
 	/* Assure, that the out edges are computed */
 	edges_assure(irg);
 
-	if(!disable_mris)
+	if(enable_mris)
 		mris = be_sched_mris_preprocess(birg);
 
 	num_nodes = get_irg_last_idx(irg);
@@ -1031,7 +1031,7 @@ void list_sched(const be_irg_t *birg, int disable_mris)
 	if (env.selector->finish_graph)
 		env.selector->finish_graph(env.selector_env);
 
-	if(!disable_mris)
+	if(enable_mris)
 		be_sched_mris_free(mris);
 
 	DEL_ARR_F(env.sched_info);
