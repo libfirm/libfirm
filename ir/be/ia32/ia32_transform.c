@@ -1851,7 +1851,7 @@ static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_mode *tgt_mode) {
 	set_ia32_am_support(fist, ia32_am_Dest);
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	set_ia32_am_flavour(fist, ia32_B);
-	set_ia32_ls_mode(fist, mode_E);
+	set_ia32_ls_mode(fist, mode_F);
 
 	mem  = new_r_Proj(irg, block, fist, mode_M, pn_ia32_vfist_M);
 
@@ -1920,9 +1920,9 @@ static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_mode *src_mode) {
 	set_ia32_am_support(fild, ia32_am_Source);
 	set_ia32_op_type(fild, ia32_AddrModeS);
 	set_ia32_am_flavour(fild, ia32_B);
-	set_ia32_ls_mode(fild, mode_E);
+	set_ia32_ls_mode(fild, mode_F);
 
-	return new_r_Proj(irg, block, fild, mode_E, 0);
+	return new_r_Proj(irg, block, fild, mode_F, 0);
 }
 
 /**
