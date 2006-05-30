@@ -534,7 +534,12 @@ const char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
 				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%C", n);
 			}
 			else {
-				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
+				if (is_ia32_MulS(n) || is_ia32_Mulh(n)) {
+					/* MulS and Mulh implicitly multiply by EAX */
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S", n);
+				}
+				else
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
 			}
 			break;
 		case ia32_AddrModeD:
@@ -825,14 +830,14 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	/* the first Proj must always be created */
 	if (get_Proj_proj(proj1) == pn_Cond_true) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
-					get_cmp_suffix(get_ia32_pncode(irn), !mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
+					get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
 					get_cfop_target(proj1, buf));
 		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == TRUE */");
 	}
 	else  {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
 					get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), mode),
-					!mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
+					! mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
 					get_cfop_target(proj1, buf));
 		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == FALSE */");
 	}
@@ -923,6 +928,21 @@ static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test/cmp */", irn);
 	IA32_DO_EMIT(irn);
 	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+}
+
+/**
+ * Emits code for conditional SSE floating point jump with two variables.
+ */
+static void emit_ia32_xCondJmp(ir_node *irn, ia32_emit_env_t *env) {
+	FILE *F = env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN];
+	char cmnt_buf[SNPRINTF_BUF_LEN];
+
+	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %s", irn, ia32_emit_binop(irn, env));
+	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
+	IA32_DO_EMIT(irn);
+	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+
 }
 
 /**
@@ -1744,6 +1764,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(xCmp);
 	IA32_EMIT(xCmpSet);
 	IA32_EMIT(xCmpCMov);
+	IA32_EMIT(xCondJmp);
 	IA32_EMIT2(fcomJmp, x87CondJmp);
 	IA32_EMIT2(fcompJmp, x87CondJmp);
 	IA32_EMIT2(fcomppJmp, x87CondJmp);
