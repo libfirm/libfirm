@@ -85,10 +85,12 @@ extern "C" {
 #include "opt_confirms.h"   /* Confirm based optimizations */
 #include "gvn_pre.h"        /* global value numbering and partial redundancy elimination */
 #include "opt_frame.h"      /* frame type optimization */
+#include "tropt.h"          /* optimize the type representation */
 
 /* Lowering */
 #include "lower_calls.h"      /* lowering of different calls */
 #include "lower_intrinsics.h" /* lowering of intrinsic calls */
+#include "lower_dw.h"         /* double word types lowering */
 
 /* Analyses */
 #include "irouts.h"         /* Graph reversal / out edges. */
@@ -100,6 +102,7 @@ extern "C" {
 #include "callgraph.h"      /* Callgraph construction */
 #include "irconsconfirm.h"  /* Confirm nodes */
 #include "analyze_irg_args.h" /* Simple pointer parameter analysis */
+#include "irtypeinfo.h"       /* type information for nodes */
 #include "interval_analysis.h"
 #include "field_temperature.h"
 #include "execution_frequency.h"
