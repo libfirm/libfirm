@@ -58,7 +58,8 @@
 #define COLLECT_REMATS
 #define REMAT_WHILE_LIVE
 #define NO_ENLARGE_L1V3N355
-//#define  EXECFREQ_LOOPDEPH
+#define EXECFREQ_LOOPDEPH
+#define MAY_DIE_AT_PRE_REMAT
 
 #define  SOLVE
 #undef  SOLVE_LOCAL
@@ -86,7 +87,9 @@ typedef struct _spill_ilp_t {
 	ir_node                      *keep;
 #endif
 	set                          *values; /**< for collecting all definitions of values before running ssa-construction */
+#ifndef EXECFREQ_LOOPDEPH
 	set                          *execfreqs;
+#endif
 	DEBUG_ONLY(firm_dbg_module_t * dbg);
 } spill_ilp_t;
 
@@ -1346,6 +1349,7 @@ luke_blockwalker(ir_node * bb, void * data)
 					}
 				}
 
+#ifdef MAY_DIE_AT_PRE_REMAT
 				if(cst == ILP_UNDEF) {
 					foreach_pre_remat(si, irn, remat) {
 						int          i,
@@ -1368,9 +1372,9 @@ luke_blockwalker(ir_node * bb, void * data)
 							}
 							/* TODO check afterwards whether lr dies after a pre-remat (should not happen) */
 						}
-
 					}
 				}
+#endif
 
 fertig:
 				if(prev_lr != ILP_UNDEF) {
@@ -2789,7 +2793,9 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.lpp = new_lpp(problem_name, lpp_minimize);
 	si.remat_info = new_set(cmp_remat_info, 4096);
 	si.all_possible_remats = pset_new_ptr_default();
+#ifndef EXECFREQ_LOOPDEPH
 	si.execfreqs = compute_execfreq(chordal_env->irg);
+#endif
 #ifdef KEEPALIVE
 	si.keep = NULL;
 #endif
@@ -2897,7 +2903,9 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	free_dom(chordal_env->irg);
 	del_pset(si.all_possible_remats);
+#ifndef EXECFREQ_LOOPDEPH
 	del_set(si.execfreqs);
+#endif
 	free_lpp(si.lpp);
 	obstack_free(&obst, NULL);
 //	exit(0);
