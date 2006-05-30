@@ -241,16 +241,7 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 			return 0;
 		assert(0 && "unsupported Proj(Load) number");
 	}
-	else if (is_ia32_St(pred)) {
-		return 0;
-	}
-	else if (is_ia32_CondJmp(pred)) {
-		return 0;
-	}
-	else if (is_ia32_SwitchJmp(pred)) {
-		return 0;
-	}
-	else if (is_ia32_Cdq(pred) || is_ia32_Mulh(pred)) {
+	else if (is_ia32_Cdq(pred) || is_ia32_MulS(pred) || is_ia32_Mulh(pred)) {
 		if (nr == pn_EAX)
 			return 0;
 		if (nr == pn_EDX)
@@ -263,22 +254,10 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 			return 1;
 		assert(0 && "unsupported DivMod");
 	}
-	else if (is_ia32_xDiv(pred)) {
-		if (nr == pn_Quot_res)
-			return 0;
-		else
-			assert(0 && "there should be no more Projs for a xDiv");
-	}
-	else if (get_irn_mode(proj) == mode_X && nr == pn_Start_X_initial_exec) {
-		return 0;
-	}
-	else if (is_Proj(pred)) {
-		return nr;
-	}
 	else if (get_irn_opcode(pred) == iro_Start) {
 		return nr;
 	}
 
 //	assert(0 && "unsupported Proj(X)");
-	return nr;
+	return 0;
 }
