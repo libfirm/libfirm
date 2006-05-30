@@ -114,6 +114,7 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_COPYMIN_HEUR1,
 	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
+	BE_CH_VRFY_WARN,
 };
 
 #ifdef WITH_LIBCORE
@@ -156,14 +157,22 @@ static const lc_opt_enum_int_items_t lower_perm_stat_items[] = {
 };
 
 static const lc_opt_enum_int_items_t dump_items[] = {
-	{ "spill",    BE_CH_DUMP_SPILL },
-	{ "live",     BE_CH_DUMP_LIVE },
-	{ "color",    BE_CH_DUMP_COLOR },
-	{ "copymin",  BE_CH_DUMP_COPYMIN },
-	{ "ssadestr", BE_CH_DUMP_SSADESTR },
+	{ "spill",    BE_CH_DUMP_SPILL     },
+	{ "live",     BE_CH_DUMP_LIVE      },
+	{ "color",    BE_CH_DUMP_COLOR     },
+	{ "copymin",  BE_CH_DUMP_COPYMIN   },
+	{ "ssadestr", BE_CH_DUMP_SSADESTR  },
 	{ "tree",     BE_CH_DUMP_TREE_INTV },
-	{ "constr",   BE_CH_DUMP_CONSTR },
-	{ "lower",    BE_CH_DUMP_LOWER },
+	{ "constr",   BE_CH_DUMP_CONSTR    },
+	{ "lower",    BE_CH_DUMP_LOWER     },
+	{ "all",      BE_CH_DUMP_ALL       },
+	{ NULL, 0 }
+};
+
+static const lc_opt_enum_int_items_t be_ch_vrfy_items[] = {
+	{ "off",    BE_CH_VRFY_OFF    },
+	{ "warn",   BE_CH_VRFY_WARN   },
+	{ "assert", BE_CH_VRFY_ASSERT },
 	{ NULL, 0 }
 };
 
@@ -187,12 +196,17 @@ static lc_opt_enum_int_var_t dump_var = {
 	&options.dump_flags, dump_items
 };
 
+static lc_opt_enum_int_var_t be_ch_vrfy_var = {
+	&options.vrfy_option, be_ch_vrfy_items
+};
+
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_MASK("spill",   "spill method (belady or ilp)", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",     "interference graph flavour (std or fast)", &ifg_flavor_var),
-	LC_OPT_ENT_ENUM_MASK("perm",    "perm lowering options (copy or swap)", &lower_perm_var),
+	LC_OPT_ENT_ENUM_PTR ("perm",    "perm lowering options (copy or swap)", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",    "select dump phases", &dump_var),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",    "verify options (off, warn, assert)", &be_ch_vrfy_var),
 	{ NULL }
 };
 
@@ -210,20 +224,19 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 
 	co_register_options(chordal_grp);
 }
-#endif
+#endif /* WITH_LIBCORE */
 
 static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
 				 const char *suffix,
 				 void (*dump_func)(ir_graph *, const char *))
 {
-	if(1 || ((options.dump_flags & mask) == mask)) {
-		if(cls) {
+	if((options.dump_flags & mask) == mask) {
+		if (cls) {
 			char buf[256];
 			snprintf(buf, sizeof(buf), "-%s%s", cls->name, suffix);
 			be_dump(irg, buf, dump_func);
 		}
-
 		else
 			be_dump(irg, suffix, dump_func);
 	}
@@ -301,8 +314,16 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 		be_abi_fix_stack_nodes(bi->abi);
 
-		assert(be_verify_schedule(irg));
-		assert(be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg));
+		/* verify schedule and register pressure */
+		if (options.vrfy_option == BE_CH_VRFY_WARN) {
+			be_verify_schedule(irg);
+			be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg);
+		}
+		else if (options.vrfy_option == BE_CH_VRFY_ASSERT) {
+			assert(be_verify_schedule(irg) && "Schedule verification failed");
+			assert(be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg)
+				&& "Register pressure verification failed");
+		}
 
 		/* Color the graph. */
 		be_liveness(irg);

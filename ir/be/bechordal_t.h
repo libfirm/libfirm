@@ -122,6 +122,11 @@ enum {
 	/* lower perm options */
 	BE_CH_LOWER_PERM_SWAP   = (1 << 0),
 	BE_CH_LOWER_PERM_COPY   = (1 << 1),
+
+	/* verify options */
+	BE_CH_VRFY_OFF    = 1,
+	BE_CH_VRFY_WARN   = 2,
+	BE_CH_VRFY_ASSERT = 3,
 };
 
 struct _be_ra_chordal_opts_t {
@@ -130,6 +135,7 @@ struct _be_ra_chordal_opts_t {
 	int copymin_method;
 	int ifg_flavor;
 	int lower_perm_opt;
+	int vrfy_option;
 
 	char ilp_server[128];
 	char ilp_solver[128];
