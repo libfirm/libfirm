@@ -246,7 +246,11 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
-	if (! (env->cg->opt & IA32_OPT_IMMOPS)) {
+	/* MulS and Mulh don't support immediates    */
+	if (! (env->cg->opt & IA32_OPT_IMMOPS) ||
+		func == new_rd_ia32_Mulh           ||
+		func == new_rd_ia32_MulS)
+	{
 		expr_op = op1;
 		imm_op  = NULL;
 	}
