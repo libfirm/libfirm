@@ -297,7 +297,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 	return NULL;
 }
 
-static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *phis, pset *ignore_uses)
+static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *phis, pset *ignore_uses, pset *uses)
 {
 	int n_outs = 0;
 	struct obstack obst;
@@ -320,12 +320,14 @@ static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *
 	for (irn = pset_first(copies); irn; irn = pset_next(copies)) {
 		const ir_edge_t *edge;
 		foreach_out_edge(irn, edge) {
-			if (!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
-				struct out tmp;
-				tmp.irn = get_edge_src_irn(edge);
-				tmp.pos = get_edge_src_pos(edge);
-				obstack_grow(&obst, &tmp, sizeof(tmp));
-				n_outs++;
+			if(!uses || pset_find_ptr(uses, get_edge_src_irn(edge))) {
+				if (!pset_find_ptr(ignore_uses, get_edge_src_irn(edge)) ) {
+					struct out tmp;
+					tmp.irn = get_edge_src_irn(edge);
+					tmp.pos = get_edge_src_pos(edge);
+					obstack_grow(&obst, &tmp, sizeof(tmp));
+					n_outs++;
+				}
 			}
 		}
 	}
@@ -384,20 +386,20 @@ static void remove_odd_phis(pset *copies, pset *unused_copies)
 	}
 }
 
-void be_ssa_constr_phis_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
+void be_ssa_constr_phis_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *phis, pset *ignore_uses, pset *uses)
 {
 	pset *irns = pset_new_ptr(n);
 	int i;
 
 	for(i = 0; i < n; ++i)
 		pset_insert_ptr(irns, nodes[i]);
-	be_ssa_constr_set_phis_ignore(info, irns, phis, ignore_uses);
+	be_ssa_constr_set_phis_ignore(info, irns, phis, ignore_uses, uses);
 	del_pset(irns);
 }
 
 void be_ssa_constr_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *ignore_uses)
 {
-	be_ssa_constr_phis_ignore(info, n, nodes, NULL, ignore_uses);
+	be_ssa_constr_phis_ignore(info, n, nodes, NULL, ignore_uses, NULL);
 }
 
 void be_ssa_constr(dom_front_info_t *info, int n, ir_node *nodes[])
@@ -406,7 +408,7 @@ void be_ssa_constr(dom_front_info_t *info, int n, ir_node *nodes[])
 	be_ssa_constr_ignore(info, n, nodes, empty_set);
 }
 
-void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis, pset *ignore_uses)
+void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis, pset *ignore_uses, pset *uses)
 {
 	int n                  = pset_count(nodes);
 	pset *blocks           = pset_new_ptr(n);
@@ -437,7 +439,7 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis
 	 * Place the phi functions and reroute the usages.
 	 */
 	determine_phi_blocks(nodes, blocks, phi_blocks, df);
-	fix_usages(nodes, blocks, phi_blocks, phis, ignore_uses);
+	fix_usages(nodes, blocks, phi_blocks, phis, ignore_uses, uses);
 
 	/* reset the optimizations */
 	set_optimize(save_optimize);
@@ -451,18 +453,24 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis
 void be_ssa_constr_set_phis(dom_front_info_t *df, pset *nodes, pset *phis)
 {
 	pset *empty_set = be_empty_set();
-	be_ssa_constr_set_phis_ignore(df, nodes, phis, empty_set);
+	be_ssa_constr_set_phis_ignore(df, nodes, phis, empty_set, NULL);
 }
 
 void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_uses)
 {
-	be_ssa_constr_set_phis_ignore(df, nodes, NULL, ignore_uses);
+	be_ssa_constr_set_phis_ignore(df, nodes, NULL, ignore_uses, NULL);
 }
 
 void be_ssa_constr_set(dom_front_info_t *info, pset *nodes)
 {
 	pset *empty_set = be_empty_set();
 	be_ssa_constr_set_ignore(info, nodes, empty_set);
+}
+
+void be_ssa_constr_set_uses(dom_front_info_t *info, pset *nodes, pset *uses)
+{
+	pset *empty_set = be_empty_set();
+	be_ssa_constr_set_phis_ignore(info, nodes, NULL, empty_set, uses);
 }
 
 /*

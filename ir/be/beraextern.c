@@ -96,9 +96,9 @@ alloc		::= node-nr reg-nr .
 #include "belive_t.h"
 #include "beinsn_t.h"
 
-#define DBG_LEVEL 2
+#include "bessadestrsimple.h"
 
-typedef struct _var_info_t var_info_t;
+#define DBG_LEVEL 2
 
 /**
  * Environment with all the needed stuff
@@ -110,9 +110,9 @@ typedef struct _be_raext_env_t {
 	dom_front_info_t *dom_info;
 
 	FILE *f;				/**< file handle used for out- and input file */
-	set *vars;				/**< contains all var_info_t */
+	set *vars;				/**< contains all be_var_info_t */
 	int n_cls_vars;			/**< length of the array cls_vars */
-	var_info_t **cls_vars;	/**< only the var_infos for current cls. needed for double iterating */
+	be_var_info_t **cls_vars;	/**< only the var_infos for current cls. needed for double iterating */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } be_raext_env_t;
 
@@ -256,250 +256,6 @@ static void handle_constraints(be_raext_env_t *raenv) {
 }
 
 
-/******************************************************************************
-     _____ _____              _____            _
-    / ____/ ____|  /\        |  __ \          | |
-   | (___| (___   /  \ ______| |  | | ___  ___| |_ _ __
-    \___ \\___ \ / /\ \______| |  | |/ _ \/ __| __| '__|
-    ____) |___) / ____ \     | |__| |  __/\__ \ |_| |
-   |_____/_____/_/    \_\    |_____/ \___||___/\__|_|
-
- *****************************************************************************/
-
-#define mark_as_done(irn, pos)			set_irn_link(irn, INT_TO_PTR(pos+1))
-#define has_been_done(irn, pos)			(PTR_TO_INT(get_irn_link(irn)) > pos)
-
-/**
- * Insert a copy for the argument of @p start_phi found at position @p pos.
- * Also searches a phi-loop of arbitrary length to detect and resolve
- *   the class of phi-swap-problems. To search for a loop recursion is used.
- *
- * 1) Simplest case (phi with a non-phi arg):
- *     A single copy is inserted.
- *
- * 2) Phi chain (phi (with phi-arg)* with non=phi arg):
- *     Several copies are placed, each after returning from recursion.
- *
- * 3) Phi-loop:
- *     On detection a loop breaker is inserted, which is a copy of the start_phi.
- *     This copy then pretends beeing the argumnent of the last phi.
- *     Now case 2) can be used.
- *
- * The values of @p start_phi and @p pos never change during recursion.
- *
- * @p raenv      Environment with all the stuff needed
- * @p start_phi  Phi node to process
- * @p pos        Argument position to insert copy/copies for
- * @p curr_phi   Phi node currently processed during recursion. Equals start_phi on initial call
- *
- * @return NULL  If no copy is necessary
- *         NULL  If the phi has already been processed at this pos
- *               Link field is used to keep track of processed positions
- *         In all other cases the ir_node *copy which was placed is returned.
- */
-static ir_node *insert_copies(be_raext_env_t *raenv, ir_node *start_phi, int pos, ir_node *curr_phi) {
-	ir_node *arg = get_irn_n(curr_phi, pos);
-	ir_node *arg_blk = get_nodes_block(arg);
-	ir_node *pred_blk = get_Block_cfgpred_block(get_nodes_block(curr_phi), pos);
-	ir_node *curr_cpy, *last_cpy;
-
-	assert(is_Phi(start_phi) && is_Phi(curr_phi));
-
-	if (has_been_done(start_phi, pos))
-		return NULL;
-
-	/* In case this is a 'normal' phi we insert at the
-	 * end of the pred block before cf nodes */
-	last_cpy = sched_skip(pred_blk, 0, sched_skip_cf_predicator, raenv->aenv);
-	last_cpy = sched_next(last_cpy);
-
-	/* If we detect a loop stop recursion. */
-	if (arg == start_phi) {
-		ir_node *loop_breaker;
-		if (start_phi == curr_phi) {
-			/* Phi directly uses itself. No copy necessary */
-			return NULL;
-		}
-
-		/* At least 2 phis are involved */
-		/* Insert a loop breaking copy (an additional variable T) */
-		loop_breaker = be_new_Copy(raenv->cls, raenv->irg, pred_blk, start_phi);
-		sched_add_before(last_cpy, loop_breaker);
-
-		arg = loop_breaker;
-	}
-
-	/* If arg is a phi in the same block we have to continue search */
-	if (is_Phi(arg) && arg_blk == get_nodes_block(start_phi))
-		last_cpy = insert_copies(raenv, start_phi, pos, arg);
-
-	/* Insert copy of argument (may be the loop-breaker) */
-	curr_cpy = be_new_Copy(raenv->cls, raenv->irg, pred_blk, arg);
-	set_irn_n(curr_phi, pos, curr_cpy);
-	mark_as_done(curr_phi, pos);
-	sched_add_before(last_cpy, curr_cpy);
-	return curr_cpy;
-}
-
-
-/**
- * Perform simple SSA-destruction with copies.
- * The order of processing _must_ be
- *  for all positions {
- *    for all phis {
- *      doit
- *    }
- *  }
- * else the magic to keep track of processed phi-positions will fail in
- * function 'insert_copies'
- */
-static void ssa_destr_simple_walker(ir_node *blk, void *env) {
-	be_raext_env_t *raenv = env;
-	int pos, max;
-	ir_node *phi;
-
-	/* for all argument positions of the phis */
-	for (pos=0, max=get_irn_arity(blk); pos<max; ++pos) {
-
-		/* for all phi nodes (which are scheduled first) */
-		sched_foreach(blk, phi) {
-			if (!is_Phi(phi))
-				break;
-
-			if (arch_irn_is(raenv->aenv, phi, ignore))
-				continue;
-
-			raenv->cls = arch_get_irn_reg_class(raenv->aenv, phi, -1);
-			insert_copies(raenv, phi, pos, phi);
-		}
-	}
-}
-
-
-static void ssa_destr_simple(be_raext_env_t *raenv) {
-	be_clear_links(raenv->irg);
-	irg_block_walk_graph(raenv->irg, ssa_destr_simple_walker, NULL, raenv);
-}
-
-
-static void ssa_destr_rastello(be_raext_env_t *raenv) {
-	assert(0 && "NYI");
-	exit(0xDeadBeef);
-	/*
-	phi_class_compute(raenv->irg);
-	irg_block_walk_graph(irg, ssa_destr_rastello, NULL, &raenv);
-	*/
-}
-
-/******************************************************************************
-   __      __   _       ___   __      __
-   \ \    / /  | |     |__ \  \ \    / /
-    \ \  / /_ _| |___     ) |  \ \  / /_ _ _ __ ___
-     \ \/ / _` | / __|   / /    \ \/ / _` | '__/ __|
-      \  / (_| | \__ \  / /_     \  / (_| | |  \__ \
-       \/ \__,_|_|___/ |____|     \/ \__,_|_|  |___/
- *****************************************************************************/
-
-/**
- * This struct maps a variable (nr) to the values belonging to this variable
- */
-struct _var_info_t {
-	int var_nr;		/* the key */
-	pset *values;	/* the ssa-values belonging to this variable */
-};
-
-#define SET_REMOVED -1
-
-/**
- * The link field of an irn points to the var_info struct
- * representing the corresponding variable.
- */
-#define set_var_info(irn, vi)				set_irn_link(irn, vi)
-#define get_var_info(irn)					((var_info_t *)get_irn_link(irn))
-
-#define HASH_VAR_NR(var_nr) var_nr
-
-static int compare_var_infos(const void *e1, const void *e2, size_t size) {
-	const var_info_t *v1 = e1;
-	const var_info_t *v2 = e2;
-
-	if (v1->var_nr == SET_REMOVED || v2->var_nr == SET_REMOVED)
-		return 1;
-
-	return v1->var_nr != v2->var_nr;
-}
-
-static INLINE var_info_t *var_find(set *vars, int var_nr) {
-	var_info_t vi;
-	vi.var_nr = var_nr;
-
-	return set_find(vars, &vi, sizeof(vi), HASH_VAR_NR(var_nr));
-}
-
-static INLINE var_info_t *var_find_or_insert(set *vars, int var_nr) {
-	var_info_t vi, *found;
-	memset(&vi, 0, sizeof(vi));
-	vi.var_nr = var_nr;
-
-	found = set_insert(vars, &vi, sizeof(vi), HASH_VAR_NR(var_nr));
-
-	if (!found->values)
-		found->values  = pset_new_ptr(1);
-
-	return found;
-}
-
-/**
- * Adds a value to a variable. Sets all pointers accordingly.
- */
-static INLINE var_info_t *var_add_value(be_raext_env_t *raenv, int var_nr, ir_node *irn) {
-	var_info_t *vi = var_find_or_insert(raenv->vars, var_nr);
-
-	/* var 2 value mapping */
-	pset_insert_ptr(vi->values, irn);
-
-	/* value 2 var mapping */
-	set_var_info(irn, vi);
-
-	return vi;
-}
-
-static INLINE pset *get_var_values(be_raext_env_t *raenv, int var_nr) {
-	var_info_t *vi = var_find(raenv->vars, var_nr);
-	assert(vi && "Variable does not exist");
-	return vi->values;
-}
-
-/**
- * Define variables (numbers) for all SSA-values.
- * All values in a phi class get assigned the same variable name.
- * The link field maps values to the var-name
- */
-static void values_to_vars(ir_node *irn, void *env) {
-	be_raext_env_t *raenv = env;
-	int nr;
-	pset *vals;
-
-	if(arch_get_irn_reg_class(raenv->aenv, irn, -1) == NULL)
-		return;
-
-	vals = get_phi_class(irn);
-
-	if (vals) {
-		nr = get_irn_node_nr(get_first_phi(vals));
-	} else {
-		/* not a phi class member, value == var */
-		nr = get_irn_node_nr(irn);
-		vals = pset_new_ptr(1);
-		pset_insert_ptr(vals, irn);
-	}
-
-	/* values <--> var mapping */
-	pset_foreach(vals, irn) {
-		DBG((raenv->dbg, 0, "Var %d contains %+F\n", nr, irn));
-		var_add_value(raenv, nr, irn);
-	}
-}
 
 
 /******************************************************************************
@@ -516,7 +272,7 @@ static void values_to_vars(ir_node *irn, void *env) {
 
 static void extract_vars_of_cls(be_raext_env_t *raenv) {
 	int count = 0;
-	var_info_t *vi;
+	be_var_info_t *vi;
 
 	raenv->cls_vars = xmalloc(set_count(raenv->vars) * sizeof(*raenv->cls_vars));
 	assert(raenv->cls_vars);
@@ -552,7 +308,7 @@ static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos)
 
 #define UNSPILLABLE -1
 
-static INLINE int get_spill_costs(be_raext_env_t *raenv, var_info_t *vi) {
+static INLINE int get_spill_costs(be_raext_env_t *raenv, be_var_info_t *vi) {
 	ir_node *irn;
 	int c_spills=0, c_reloads=0;
 
@@ -584,7 +340,7 @@ static void dump_nodes(be_raext_env_t *raenv) {
 	fprintf(f, "\nnodes {\n");
 
 	for (i=0; i<raenv->n_cls_vars; ++i) {
-		var_info_t *vi = raenv->cls_vars[i];
+		be_var_info_t *vi = raenv->cls_vars[i];
 
 		if (vi->var_nr == SET_REMOVED)
 			continue;
@@ -601,7 +357,7 @@ static void dump_nodes(be_raext_env_t *raenv) {
 
 static void dump_interferences(be_raext_env_t *raenv) {
 	int i,o;
-	var_info_t *vi1, *vi2;
+	be_var_info_t *vi1, *vi2;
 	ir_node *irn1, *irn2;
 	FILE *f = raenv->f;
 
@@ -638,19 +394,19 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 	be_raext_env_t *raenv = env;
 	arch_register_req_t req;
 	int pos, max;
-	var_info_t *vi1, *vi2;
+	be_var_info_t *vi1, *vi2;
 
 	if (arch_get_irn_reg_class(raenv->aenv, irn, -1) != raenv->cls || arch_irn_is(raenv->aenv, irn, ignore))
 		return;
 
-	vi1 = get_var_info(irn);
+	vi1 = be_get_var_info(irn);
 
 	/* copies have affinities */
 	if (arch_irn_classify(raenv->aenv, irn) == arch_irn_class_copy) {
 		ir_node *other = be_get_Copy_op(irn);
 
 		if (! arch_irn_is(raenv->aenv, other, ignore)) {
-			vi2 = get_var_info(other);
+			vi2 = be_get_var_info(other);
 
 			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
 		}
@@ -662,7 +418,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 		arch_get_register_req(raenv->aenv, &req, irn, pos);
 
 		if (arch_register_req_is(&req, should_be_same) && arch_irn_is(raenv->aenv, req.other_same, ignore)) {
-			vi2 = get_var_info(req.other_same);
+			vi2 = be_get_var_info(req.other_same);
 
 			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
 		}
@@ -740,7 +496,7 @@ static void execute(char *prog_to_call, char *out_file, char *result_file) {
  * Spill a variable and add reloads before all uses.
  */
 static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr) {
-	var_info_t *vi = var_find(raenv->vars, var_nr);
+	be_var_info_t *vi = be_var_find(raenv->vars, var_nr);
 	ir_node *spill=NULL, *ctx, *irn;
 	ir_mode *mode;
 	const ir_edge_t *edge, *ne;
@@ -821,14 +577,14 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 		/* ...add new vars for each non-phi-member */
 		pset_foreach(spills, irn) {
 			ir_node *spilled = get_irn_n(irn, be_pos_Spill_val);
-			raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(spilled), spilled);
+			raenv->cls_vars[raenv->n_cls_vars++] = be_var_add_value(raenv->vars, get_irn_node_nr(spilled), spilled);
 		}
 	}
 
 	/* add new variables for all reloads */
 	pset_foreach(reloads, irn) {
 		assert(get_irn_node_nr(irn) != 1089);
-		raenv->cls_vars[raenv->n_cls_vars++] = var_add_value(raenv, get_irn_node_nr(irn), irn);
+		raenv->cls_vars[raenv->n_cls_vars++] = be_var_add_value(raenv->vars, get_irn_node_nr(irn), irn);
 	}
 
 	del_pset(spills);
@@ -874,7 +630,7 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 		is_allocation = 1;
 		while (fscanf(f, " %d %d ", &var_nr, &reg_nr) == 2) {
 			ir_node *irn;
-			pset *vals = get_var_values(raenv, var_nr);
+			pset *vals = be_get_var_values(raenv->vars, var_nr);
 
 			assert(vals && "Variable nr does not exist!");
 			pset_foreach(vals, irn)
@@ -895,13 +651,13 @@ static void check_allocation(be_raext_env_t *raenv) {
 	int i, o;
 
 	for (i=0; i<raenv->n_cls_vars; ++i) {
-		var_info_t *vi1 = raenv->cls_vars[i];
+		be_var_info_t *vi1 = raenv->cls_vars[i];
 
 		if (vi1->var_nr == SET_REMOVED)
 			continue;
 
 		for (o=0; o<i; ++o) {
-			var_info_t *vi2 = raenv->cls_vars[o];
+			be_var_info_t *vi2 = raenv->cls_vars[o];
 			ir_node *irn1, *irn2;
 
 			if (vi2->var_nr == SET_REMOVED)
@@ -930,7 +686,7 @@ static void check_allocation(be_raext_env_t *raenv) {
 /**
  * Default values for options
  */
-static void (*ssa_destr)(be_raext_env_t*) = ssa_destr_simple;
+static set* (*ssa_destr)(ir_graph*,const arch_env_t*) = be_ssa_destr_simple;
 static char callee[128] = "\"E:/user/kimohoff/public/register allocator\"";
 //static char callee[128] = "/ben/kimohoff/ipd-registerallocator/register_allocator";
 
@@ -950,7 +706,6 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 
  	be_raext_env_t raenv;
 	int clsnr, clss;
-	var_info_t *vi;
 
 	compute_doms(irg);
 	edges_assure(irg);
@@ -958,7 +713,6 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	raenv.irg      = irg;
 	raenv.aenv     = env->arch_env;
 	raenv.dom_info = be_compute_dominance_frontiers(irg);
-	raenv.vars     = new_set(compare_var_infos, 64);
 	FIRM_DBG_REGISTER(raenv.dbg, "firm.be.raextern");
 
 	/* Insert copies for constraints */
@@ -970,13 +724,8 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	be_dump(irg, "-extern-constr", dump_ir_block_graph_sched);
 
 	/* SSA destruction respectively transformation into "Conventional SSA" */
-	ssa_destr(&raenv);
+	raenv.vars = be_ssa_destr_simple(irg, env->arch_env);
 	be_dump(irg, "-extern-ssadestr", dump_ir_block_graph_sched);
-
-	/* Mapping of SSA-Values <--> Variables */
-	phi_class_compute(irg);
-	be_clear_links(irg);
-	irg_walk_graph(irg, values_to_vars, NULL, &raenv);
 
 
 	/* For all register classes */
@@ -1013,9 +762,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	be_dump(irg, "-extern-alloc", dump_ir_block_graph_sched);
 
 	/* Clean up */
-	set_foreach(raenv.vars, vi)
-		del_pset(vi->values);
-	del_set(raenv.vars);
+	free_ssa_destr_simple(raenv.vars);
 	be_free_dominance_frontiers(raenv.dom_info);
 }
 
@@ -1034,8 +781,7 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 
 
 static const lc_opt_enum_func_ptr_items_t ssa_destr_items[] = {
-	{ "simple",     (int (*)()) ssa_destr_simple }, /* TODO make (void*) casts nicer */
-	{ "rastello",   (int (*)()) ssa_destr_rastello },
+	{ "simple",     (int (*)()) be_ssa_destr_simple }, /* TODO make (void*) casts nicer */
 	{ NULL,      NULL }
 };
 

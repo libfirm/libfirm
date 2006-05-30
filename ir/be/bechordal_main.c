@@ -50,6 +50,8 @@
 
 #ifdef WITH_ILP
 #include "bespillilp.h"
+#include "bespillremat.h"
+#include "bespillappel.h"
 #endif /* WITH_ILP */
 
 #include "becopystat.h"
@@ -122,7 +124,9 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "morgan", BE_CH_SPILL_MORGAN },
 	{ "belady", BE_CH_SPILL_BELADY },
 #ifdef WITH_ILP
-	{ "ilp",	BE_CH_SPILL_ILP },
+	{ "ilp",    BE_CH_SPILL_ILP },
+        { "remat",  BE_CH_SPILL_REMAT },
+        { "appel",  BE_CH_SPILL_APPEL },
 #endif
 	{ NULL, 0 }
 };
@@ -185,7 +189,7 @@ static lc_opt_enum_int_var_t copymin_var = {
 };
 
 static lc_opt_enum_int_var_t ifg_flavor_var = {
-	&options.spill_method, ifg_flavor_items
+	&options.ifg_flavor, ifg_flavor_items
 };
 
 static lc_opt_enum_int_var_t lower_perm_var = {
@@ -201,7 +205,7 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_MASK("spill",   "spill method (belady or ilp)", &spill_var),
+	LC_OPT_ENT_ENUM_MASK("spill",	"spill method (belady, ilp, remat or appel)", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",     "interference graph flavour (std or fast)", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",    "perm lowering options (copy or swap)", &lower_perm_var),
@@ -305,6 +309,12 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 #ifdef WITH_ILP
 		case BE_CH_SPILL_ILP:
 			be_spill_ilp(&chordal_env);
+			break;
+                case BE_CH_SPILL_REMAT:
+                        be_spill_remat(&chordal_env);
+                        break;
+		case BE_CH_SPILL_APPEL:
+			be_spill_appel(&chordal_env);
 			break;
 #endif /* WITH_ILP */
 		default:

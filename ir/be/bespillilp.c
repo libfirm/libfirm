@@ -619,7 +619,7 @@ static void writeback_results(spill_ilp_t *si)
 		}
 	}
 
-	be_insert_spills_reloads(si->senv, NULL);
+	be_insert_spills_reloads(si->senv);
 }
 
 void be_spill_ilp(const be_chordal_env_t *chordal_env)
@@ -695,6 +695,7 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 #endif
 
 	writeback_results(&si);
+	be_remove_dead_nodes_from_schedule(chordal_env->irg);
 
 #ifdef DUMP_STATS
 	{
