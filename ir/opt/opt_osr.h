@@ -15,7 +15,8 @@
 
 #include "firm_types.h"
 
-enum osr_flags {
+/** Possible flags for the Operator Scalar Replacement. */
+typedef enum osr_flags {
 	osr_flag_none               = 0,  /**< no additional flags */
 	osr_flag_lftr_with_ov_check = 1,  /**< do only linear function test replacement
 	                                       if no overflow occurs. */
