@@ -78,9 +78,11 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 		ir_node* pred_block = get_nodes_block(pred);
 
 		if (pred_block == dependency) {
-			assert(is_Proj(pred));
-			assert(get_irn_mode(pred) == mode_X);
-			return pred;
+			if (is_Proj(pred)) {
+				assert(get_irn_mode(pred) == mode_X);
+				return pred;
+			}
+			return NULL;
 		}
 
 		if (is_Proj(pred)) {
