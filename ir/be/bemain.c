@@ -2,6 +2,7 @@
  * Backend driver.
  * @author Sebastian Hack
  * @date 25.11.2004
+ * $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -66,6 +67,12 @@
 #define DUMP_RA         (1 << 4)
 #define DUMP_FINAL      (1 << 5)
 
+enum {
+	BE_VRFY_OFF,
+	BE_VRFY_WARN,
+	BE_VRFY_ASSERT
+};
+
 /* options visible for anyone */
 static be_options_t be_options = {
 	/* ilp server */
@@ -78,13 +85,17 @@ static be_options_t be_options = {
 /* dump flags */
 static unsigned dump_flags = 0;
 
+/* verify options */
+static unsigned vrfy_option = BE_VRFY_WARN;
+
 /* register allocator to use. */
 static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;
 
-static int be_disable_mris = 0;
+/* mris option */
+static int be_enable_mris = 0;
 
 #ifdef WITH_LIBCORE
 
@@ -121,6 +132,13 @@ static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ NULL,      NULL }
 };
 
+/* verify options. */
+static const lc_opt_enum_int_items_t vrfy_items[] = {
+	{ "off",    BE_VRFY_OFF    },
+	{ "warn",   BE_VRFY_WARN   },
+	{ "assert", BE_VRFY_ASSERT },
+	{ NULL,     NULL }
+};
 static lc_opt_enum_mask_var_t dump_var = {
 	&dump_flags, dump_items
 };
@@ -133,12 +151,17 @@ static lc_opt_enum_const_ptr_var_t isa_var = {
 	(const void **) &isa_if, isa_items
 };
 
+static lc_opt_enum_int_var_t vrfy_var = {
+	&vrfy_option, vrfy_items
+};
+
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",     &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("ra",       "register allocator",                &ra_var),
 	LC_OPT_ENT_ENUM_PTR ("isa",      "the instruction set architecture",  &isa_var),
 	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",         &be_omit_fp),
-	LC_OPT_ENT_NEGBOOL  ("nomris",   "disable mris schedule preparation", &be_disable_mris),
+	LC_OPT_ENT_BOOL     ("mris",     "enable mris schedule preparation",  &be_enable_mris),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg (off, warn, assert)",  &vrfy_var),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -198,6 +221,16 @@ const static backend_params be_params = {
 	0,
 	NULL,
 };
+
+/* Perform schedule verification if requested. */
+static void be_sched_vrfy(ir_graph *irg, int vrfy_opt) {
+	if (vrfy_opt == BE_VRFY_WARN) {
+		be_verify_schedule(irg);
+	}
+	else if (vrfy_opt == BE_VRFY_ASSERT) {
+		assert(be_verify_schedule(irg) && "Schedule verification failed.");
+	}
+}
 
 /* Initialize the Firm backend. Must be run BEFORE init_firm()! */
 const backend_params *be_init(void)
@@ -309,7 +342,7 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *irg = get_irp_irg(i);
 		const arch_code_generator_if_t *cg_if;
 		be_irg_t birg;
-		int save_optimize, save_normalize;
+		int save_optimize, save_normalize, status;
 
 		birg.irg      = irg;
 		birg.main_env = &env;
@@ -362,10 +395,11 @@ static void be_main_loop(FILE *file_handle)
 
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
-		list_sched(&birg, be_disable_mris);
+		list_sched(&birg, be_enable_mris);
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
-		assert(be_verify_schedule(birg.irg));
+		/* check schedule */
+		be_sched_vrfy(birg.irg, vrfy_option);
 
 		be_do_stat_nodes(irg, "04 Schedule");
 
@@ -386,8 +420,8 @@ static void be_main_loop(FILE *file_handle)
 		be_abi_fix_stack_nodes(birg.abi);
 		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
 
-		/* Verify the schedule */
-		assert(sched_verify_irg(irg));
+		/* check schedule */
+		be_sched_vrfy(birg.irg, vrfy_option);
 
 		/* do some statistics */
 		be_do_stat_reg_pressure(&birg);
@@ -402,7 +436,8 @@ static void be_main_loop(FILE *file_handle)
 		arch_code_generator_after_ra(birg.cg);
 		be_abi_fix_stack_bias(birg.abi);
 
-		assert(be_verify_schedule(birg.irg));
+		/* check schedule */
+		be_sched_vrfy(birg.irg, vrfy_option);
 
 		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
@@ -414,7 +449,7 @@ static void be_main_loop(FILE *file_handle)
 		set_optimize(save_optimize);
 		set_opt_normalize(save_normalize);
 
-		/* switched of due to statistics (statistic module needs all irgs) */
+		/* switched off due to statistics (statistic module needs all irgs) */
 		//		free_ir_graph(irg);
 	}
 	be_done_env(&env);
