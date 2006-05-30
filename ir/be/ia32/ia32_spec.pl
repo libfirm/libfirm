@@ -243,8 +243,8 @@ $comment_string = "/*";
 "MulS" => {
   "comment"   => "construct MulS: MulS(a, b) = MulS(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx in_r4" ] },
-  "emit"      => '. mul %ia32_emit_binop /* Mul(%A1, %A2) -> %D1 */',
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx" ] },
+  "emit"      => '. mul %ia32_emit_unop /* Mul(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
 },
 
@@ -276,8 +276,8 @@ $comment_string = "/*";
 "Mulh" => {
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx in_r4" ] },
-  "emit"      => '. imul %ia32_emit_binop /* Mulh(%A1, %A2) -> %D1 */',
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx" ] },
+  "emit"      => '. imul %ia32_emit_unop /* Mulh(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
 },
 
