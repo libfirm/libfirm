@@ -229,7 +229,7 @@ compute_execfreq(ir_graph * irg)
 #else
     freq->freq = ZERO(x[idx]) ? 0.0 : x[idx];
 #endif
-    ir_fprintf(stderr, "execfreq %+F: %f\n", bb, freq->freq);
+//    ir_fprintf(stderr, "execfreq %+F: %f\n", bb, freq->freq);
   }
 
 #ifdef USE_GSL
