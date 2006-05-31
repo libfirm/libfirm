@@ -19,7 +19,7 @@ INSTALL_HEADERS = irouts.h trouts.h irdom.h cgana.h irloop.h irtypeinfo.h irsimp
 		callgraph.h rta.h interval_analysis.h					\
 		field_temperature.h execution_frequency.h irextbb.h irconsconfirm.h \
 		analyze_irg_args.h height.h \
-		cdep.h
+		cdep.h execfreq.h
 
 SOURCES = $(INSTALL_HEADERS)
 
@@ -30,7 +30,7 @@ SOURCES += Makefile.in \
 		callgraph.c field_temperature.c execution_frequency.c phiclass.c \
 		irextbb.c irextbb_t.h irconsconfirm.c analyze_irg_args.c \
 		compute_loop_info.c compute_loop_info.h height.c \
-		cdep.c
+		cdep.c execfreq.c
 
 include $(topdir)/MakeRules
 
@@ -38,7 +38,7 @@ CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/comm
 		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/tv \
 		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
 		-I$(top_srcdir)/ir/opt -I$(top_srcdir)/ir/stat -I$(top_srcdir)/ir/external \
-		-I$(topdir)/ir/config -I$(top_srcdir)/ir/arch
+		-I$(topdir)/ir/config -I$(top_srcdir)/ir/arch -I$(HOME)/local/include
 
 include $(top_srcdir)/MakeTargets
 
