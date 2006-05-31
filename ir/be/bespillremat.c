@@ -285,14 +285,14 @@ cmp_keyval(const void *a, const void *b, size_t size)
 	return !(p->key == q->key);
 }
 
-static float
+static double
 execution_frequency(const spill_ilp_t * si, const ir_node * irn)
 {
 #ifdef EXECFREQ_LOOPDEPH
 	if(is_Block(irn))
-		return expf((float)get_loop_depth(get_irn_loop(irn)) * logf(10));
+		return exp(get_loop_depth(get_irn_loop(irn)) * log(10));
 	else
-		return expf((float)get_loop_depth(get_irn_loop(get_nodes_block(irn))) * logf(10));
+		return exp(get_loop_depth(get_irn_loop(get_nodes_block(irn))) * log(10));
 #else
 	if(is_Block(irn)) {
 		return get_block_execfreq(si->execfreqs, irn);
@@ -2057,11 +2057,11 @@ walker_pressure_annotator(ir_node * bb, void * data)
 		}
 	}
 
-	set_irn_link(bb, (void*)pset_count(live));
+	set_irn_link(bb, INT_TO_PTR(pset_count(live)));
 
 	sched_foreach_reverse(bb, irn) {
 		if(is_Phi(irn)) {
-			set_irn_link(irn, (void*)pset_count(live));
+			set_irn_link(irn, INT_TO_PTR(pset_count(live)));
 			continue;
 		}
 
@@ -2077,7 +2077,7 @@ walker_pressure_annotator(ir_node * bb, void * data)
 
 			if(has_reg_class(si, arg)) pset_insert_ptr(live, arg);
 		}
-		set_irn_link(irn, (void*)pset_count(live)+projs);
+		set_irn_link(irn, INT_TO_PTR(pset_count(live)+projs));
 	}
 
 	del_pset(live);
@@ -2731,12 +2731,12 @@ static void
 walker_reload_mover(ir_node * bb, void * data)
 {
 	spill_ilp_t   *si = data;
-	ir_node		  *irn;
+	ir_node		  *tmp;
 
-	sched_foreach(bb, irn) {
-		if(be_is_Reload(irn) && has_reg_class(si, irn)) {
-			ir_node       *reload = irn;
-			ir_node       *irn = irn;
+	sched_foreach(bb, tmp) {
+		if(be_is_Reload(tmp) && has_reg_class(si, tmp)) {
+			ir_node       *reload = tmp;
+			ir_node       *irn = tmp;
 
 			/* move reload upwards */
 
@@ -2750,7 +2750,7 @@ walker_reload_mover(ir_node * bb, void * data)
 				while(pressure < si->n_regs) {
 					if(sched_is_end(irn) || (be_is_Reload(irn) && has_reg_class(si, irn))) break;
 
-					set_irn_link(irn, (void*)(pressure+1));
+					set_irn_link(irn, INT_TO_PTR(pressure+1));
 					DBG((si->dbg, LEVEL_5, "new regpressure before %+F: %d\n", irn, pressure+1));
 					irn = sched_prev(irn);
 
