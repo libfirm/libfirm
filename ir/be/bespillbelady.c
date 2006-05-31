@@ -589,20 +589,15 @@ static void remove_copies(belady_env_t *bel) {
 	edges_activate(current_ir_graph);
 	foreach_pset(bel->copies, irn) {
 		ir_node *src;
-		const ir_edge_t *edge;
+		const ir_edge_t *edge, *ne;
 
 		assert(be_is_Copy(irn));
 
 		src = be_get_Copy_op(irn);
-		foreach_out_edge(irn, edge) {
+		foreach_out_edge_safe(irn, edge, ne) {
 			ir_node *user = get_edge_src_irn(edge);
 			int user_pos = get_edge_src_pos(edge);
 
-#if 0
-			// is this normal?
-			if(user == NULL)
-				break;
-#endif
 			set_irn_n(user, user_pos, src);
 		}
 	}

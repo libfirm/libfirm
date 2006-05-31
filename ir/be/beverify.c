@@ -109,8 +109,8 @@ static void verify_schedule_walker(ir_node *bl, void *data)
 	int delay_branches = 0;
 
 	/*
-		Make sure that all phi nodes are scheduled at the beginning of the block, and that there
-		is 1 or no control flow changing node scheduled as last operation
+	 * Make sure that all phi nodes are scheduled at the beginning of the block, and that there
+	 * is 1 or no control flow changing node scheduled and exactly delay_branches operations after it.
 	 */
 	sched_foreach(bl, irn) {
 		if (is_Phi(irn)) {
