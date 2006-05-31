@@ -572,6 +572,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			return NULL;
 	}
 
+	set_ia32_res_mode(inverse->nodes[0], mode);
 	inverse->nodes[1] = new_r_Proj(irg, block, inverse->nodes[0], mode, pnc);
 
 	return inverse;
