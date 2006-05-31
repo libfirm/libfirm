@@ -137,7 +137,7 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 	{ "off",    BE_VRFY_OFF    },
 	{ "warn",   BE_VRFY_WARN   },
 	{ "assert", BE_VRFY_ASSERT },
-	{ NULL,     NULL }
+	{ NULL,     0 }
 };
 static lc_opt_enum_mask_var_t dump_var = {
 	&dump_flags, dump_items
@@ -342,7 +342,7 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *irg = get_irp_irg(i);
 		const arch_code_generator_if_t *cg_if;
 		be_irg_t birg;
-		int save_optimize, save_normalize, status;
+		int save_optimize, save_normalize;
 
 		birg.irg      = irg;
 		birg.main_env = &env;
