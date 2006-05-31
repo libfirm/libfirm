@@ -65,5 +65,6 @@ typedef struct _be_ifg_dump_dot_cb_t {
 } be_ifg_dump_dot_cb_t;
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self);
+void be_ifg_check_sorted(const be_ifg_t *ifg, FILE *f);
 
 #endif /* _BEIFG_H */
