@@ -1761,7 +1761,7 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 				/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 				/*                        we invert condition and set default to 0      */
 				new_op = new_rd_ia32_PsiCondSet(dbg, irg, block, cmp_a, mode);
-				set_ia32_pncode(new_op, get_negated_pnc(pnc, mode));
+				set_ia32_pncode(new_op, get_inversed_pnc(pnc));
 			}
 			else {
 				/* otherwise: use CMOVcc */
@@ -1783,7 +1783,7 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 				/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 				/*                        we invert condition and set default to 0      */
 				new_op = gen_binop(env, cmp_a, cmp_b, set_func);
-				set_ia32_pncode(get_Proj_pred(new_op), get_negated_pnc(pnc, mode));
+				set_ia32_pncode(get_Proj_pred(new_op), get_inversed_pnc(pnc));
 				set_ia32_am_support(get_Proj_pred(new_op), ia32_am_Source);
 			}
 			else {
