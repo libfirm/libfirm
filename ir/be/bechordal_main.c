@@ -17,10 +17,12 @@
 #include "list.h"
 #include "bitset.h"
 #include "iterator.h"
+#include "firm_config.h"
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
 #endif /* WITH_LIBCORE */
 
 #include "irmode_t.h"
@@ -266,6 +268,33 @@ FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const cha
 	return fopen(buf, "wt");
 }
 
+void check_ifg_implementations(be_chordal_env_t *chordal_env)
+{
+	FILE *f;
+
+	f = be_chordal_open(chordal_env, "std", "log");
+	chordal_env->ifg = be_ifg_std_new(chordal_env);
+	be_ifg_check_sorted(chordal_env->ifg, f);
+	fclose(f);
+
+	f = be_chordal_open(chordal_env, "list", "log");
+	chordal_env->ifg = be_ifg_list_new(chordal_env);
+	be_ifg_check_sorted(chordal_env->ifg, f);
+	fclose(f);
+
+	f = be_chordal_open(chordal_env, "clique", "log");
+	chordal_env->ifg = be_ifg_clique_new(chordal_env);
+	be_ifg_check_sorted(chordal_env->ifg, f);
+	fclose(f);
+
+	f = be_chordal_open(chordal_env, "pointer", "log");
+	chordal_env->ifg = be_ifg_pointer_new(chordal_env);
+	be_ifg_check_sorted(chordal_env->ifg, f);
+	fclose(f);
+
+	chordal_env->ifg = NULL;
+};
+
 static void be_ra_chordal_main(const be_irg_t *bi)
 {
 	const be_main_env_t *main_env = bi->main_env;
@@ -275,6 +304,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	int j, m;
 	be_chordal_env_t chordal_env;
+
+	//lc_timer_t *timer = lc_timer_register("getTime","get Time of copy minimization using the ifg");
+	//unsigned long elapsed_milisec = 0;
 
 	compute_doms(irg);
 
@@ -340,9 +372,17 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_ra_chordal_color(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 
+		/* Check the implementations of the ifg */
+		//check_ifg_implementations(&chordal_env);
+
 		/* Build the interference graph. */
 		chordal_env.ifg = be_ifg_std_new(&chordal_env);
-		be_ifg_check(chordal_env.ifg);
+		//be_ifg_check(chordal_env.ifg);
+		//be_ifg_check_sorted(chordal_env.ifg);
+
+
+		/* start timer */
+		//lc_timer_reset_and_start(timer);
 
 		/* copy minimization */
 		co = NULL;
@@ -351,6 +391,12 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 		}
+
+		/* stop timer */
+		//lc_timer_stop(timer);
+		//elapsed_milisec = lc_timer_elapsed_msec(timer);
+
+		//ir_printf("%u\n", elapsed_milisec);
 
 		switch(options.copymin_method) {
 			case BE_CH_COPYMIN_HEUR1:
