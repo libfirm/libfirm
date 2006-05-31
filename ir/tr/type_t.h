@@ -28,16 +28,24 @@
  * @see  type.h tpop_t.h tpop.h
  */
 
-/** class attributes */
+/** Class flags. */
+enum class_flags {
+  cf_none            = 0,  /**< No flags. */
+  cf_final_class     = 1,  /**< Set if a class is an final class */
+  cf_interface_class = 2,  /**< Set if a class is an "interface" */
+  cf_absctract_class = 4,  /**< Set if a class is "abstract" */
+};
+
+/** Class attributes. */
 typedef struct {
-  entity  **members;   /**< fields and methods of this class */
-  ir_type **subtypes;  /**< direct subtypes */
-  ir_type **supertypes;/**< direct supertypes */
-  peculiarity peculiarity;  /**< peculiarity of this class */
-  entity  *type_info;  /**< a entity representing this class, used for type info */
-  unsigned vtable_size;/**< size of the vtable */
-  unsigned final;      /**< non-zero if this is a final class */
-  int dfn;             /**< number used for 'instanceof' operator */
+  entity  **members;        /**< Array containing the fields and methods of this class. */
+  ir_type **subtypes;       /**< Array containing the direct subtypes. */
+  ir_type **supertypes;     /**< Array containing the direct supertypes */
+  peculiarity peculiarity;  /**< The peculiarity of this class. */
+  entity  *type_info;       /**< An entity representing this class, used for type info. */
+  int     dfn;              /**< A number that can be used for 'instanceof' operator. */
+  unsigned vtable_size;     /**< The size of the vtable for this class. */
+  unsigned clss_flags;      /**< Additional class flags. */
 } cls_attr;
 
 /** struct attributes */
@@ -59,15 +67,15 @@ typedef struct {
   int n_res;                      /**< Number of results. */
   tp_ent_pair *res_type;          /**< Array of result type/value entity pairs. */
   ir_type *value_ress;            /**< A type whose entities represent copied value results. */
-  variadicity variadicity;        /**< variadicity of the method. */
-  int first_variadic_param;       /**< index of the first variadic parameter or -1 if non-variadic .*/
+  variadicity variadicity;        /**< The variadicity of the method. */
+  int first_variadic_param;       /**< The index of the first variadic parameter or -1 if non-variadic .*/
   unsigned additional_properties; /**< Set of additional method properties. */
   unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
 
 /** union attributes */
 typedef struct {
-  entity **members;    /**< fields of this union. No method entities allowed. */
+  entity **members;    /**< Fields of this union. No method entities allowed. */
 } uni_attr;
 
 /** array attributes */
@@ -87,7 +95,7 @@ typedef struct {
   tarval **enumer;     /**< Contains all constants that represent a member
                           of the enum -- enumerators. */
   ident  **enum_nameid;/**< Contains the names of the enum fields as specified by
-                          the source program */
+                          the source program. */
 } enm_attr;
 
 /** pointer attributes */
@@ -107,20 +115,21 @@ typedef struct {        * No private attr, must be smaller than others! *
 
 /** General type attributes. */
 typedef union {
-  cls_attr ca;      /**< attributes of a class type */
-  stc_attr sa;      /**< attributes of a struct type */
-  mtd_attr ma;      /**< attributes of a method type */
-  uni_attr ua;      /**< attributes of an union type */
-  arr_attr aa;      /**< attributes of an array type */
-  enm_attr ea;      /**< attributes of an enumeration type */
-  ptr_attr pa;      /**< attributes of a pointer type */
+  cls_attr ca;      /**< Attributes of a class type */
+  stc_attr sa;      /**< Attributes of a struct type */
+  mtd_attr ma;      /**< Attributes of a method type */
+  uni_attr ua;      /**< Attributes of an union type */
+  arr_attr aa;      /**< Attributes of an array type */
+  enm_attr ea;      /**< Attributes of an enumeration type */
+  ptr_attr pa;      /**< Attributes of a pointer type */
 } tp_attr;
 
+/** Additional type flags. */
 enum type_flags {
-  tf_none         = 0,  /**< No flags. */
-  tf_frame_type   = 1,  /**< Set if this is a frame type. */
-  tf_lowered_type = 2,  /**< Set if this is a lowered type. */
-  tf_layout_fixed = 4   /**< set if the layout of a type is fixed */
+  tf_none            = 0,  /**< No flags. */
+  tf_frame_type      = 1,  /**< Set if this is a frame type. */
+  tf_lowered_type    = 2,  /**< Set if this is a lowered type. */
+  tf_layout_fixed    = 4   /**< Set if the layout of a type is fixed */
 };
 
 /** the structure of a type */
@@ -146,11 +155,11 @@ struct ir_type {
   /* ------------- fields for analyses ---------------*/
 
 #ifdef DEBUG_libfirm
-  long nr;              /**< a unique node number for each node to make output
-                           readable. */
+  long nr;                 /**< An unique node number for each node to make output
+                                readable. */
 #endif
-  tp_attr attr;            /* type kind specific fields. This must be the last
-                  entry in this struct!  Varying size! */
+  tp_attr attr;            /**< Type kind specific fields. This must be the last
+                                entry in this struct!  Varying size! */
 };
 
 /**
@@ -357,15 +366,48 @@ _set_class_vtable_size(ir_type *clss, unsigned vtable_size) {
 }
 
 static INLINE int
-_is_class_final   (const ir_type *clss) {
+_is_class_final(const ir_type *clss) {
   assert(clss && (clss->type_op == type_class));
-  return clss->attr.ca.final;
+  return clss->attr.ca.clss_flags & cf_final_class;
 }
 
 static INLINE void
-_set_class_final   (ir_type *clss, int final) {
+_set_class_final(ir_type *clss, int final) {
   assert(clss && (clss->type_op == type_class));
-  clss->attr.ca.final = final;
+  if (final)
+    clss->attr.ca.clss_flags |= cf_final_class;
+  else
+    clss->attr.ca.clss_flags &= ~cf_final_class;
+}
+
+static INLINE int
+_is_class_interface(const ir_type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.clss_flags & cf_interface_class;
+}
+
+static INLINE void
+_set_class_interface(ir_type *clss, int final) {
+  assert(clss && (clss->type_op == type_class));
+  if (final)
+    clss->attr.ca.clss_flags |= cf_interface_class;
+  else
+    clss->attr.ca.clss_flags &= ~cf_interface_class;
+}
+
+static INLINE int
+_is_class_abstract(const ir_type *clss) {
+  assert(clss && (clss->type_op == type_class));
+  return clss->attr.ca.clss_flags & cf_absctract_class;
+}
+
+static INLINE void
+_set_class_abstract(ir_type *clss, int final) {
+  assert(clss && (clss->type_op == type_class));
+  if (final)
+    clss->attr.ca.clss_flags |= cf_absctract_class;
+  else
+    clss->attr.ca.clss_flags &= ~cf_absctract_class;
 }
 
 static INLINE int
@@ -492,7 +534,11 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define get_class_vtable_size(clss)       _get_class_vtable_size(clss)
 #define set_class_vtable_size(clss, size) _set_class_vtable_size(clss, size)
 #define is_class_final(clss)              _is_class_final(clss)
-#define set_class_final(clss, final)      _set_class_final(clss, final)
+#define set_class_final(clss, flag)       _set_class_final(clss, flag)
+#define is_class_interface(clss)          _is_class_interface(clss)
+#define set_class_interface(clss, flag)   _set_class_interface(clss, flag)
+#define is_class_abstract(clss)           _is_class_abstract(clss)
+#define set_class_abstract(clss, flag)    _set_class_abstract(clss, flag)
 #define is_Struct_type(strct)             _is_struct_type(strct)
 #define is_Method_type(method)            _is_method_type(method)
 #define is_Union_type(uni)                _is_union_type(uni)

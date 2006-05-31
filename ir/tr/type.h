@@ -406,7 +406,7 @@ int smaller_type (ir_type *st, ir_type *lt);
  *  If the type opcode is set to type_class the type represents class
  *  types.  A list of fields and methods is associated with a class.
  *  Further a class can inherit from and bequest to other classes.
- *  @@@ value class???
+ *
  *  The following attributes are private to this type kind:
  *  - member:     All entities belonging to this class.  This are method entities
  *                which have type_method or fields that can have any of the
@@ -435,7 +435,7 @@ int smaller_type (ir_type *st, ir_type *lt);
  *                 representing this type.  This information is useful for lowering
  *                 of InstOf and TypeChk nodes.  Default: NULL
  *
- *  - vtable_size: The size of this class vritual function table.
+ *  - vtable_size: The size of this class virtual function table.
  *                 Default:  0
  *
  *  - final:       A final class is always a leaf in the class hierarchy.  Final
@@ -443,6 +443,16 @@ int smaller_type (ir_type *st, ir_type *lt);
  *                 can only be computed in whole world compilations, we allow to
  *                 set this flag.  It is used in optimizations if get_opt_closed_world()
  *                 is false.  Default:  false
+ *
+ *  - interface:   The class represents an interface.  This flag can be set to distinguish
+ *                 between interfaces, abstract classes and other classes that all may
+ *                 have the peculiarity peculiarity_description.  Depending on this flag
+ *                 the lowering might do different actions.  Default:  false
+ *
+ *  - abstract :   The class represents an abstract class.  This flag can be set to distinguish
+ *                 between interfaces, abstract classes and other classes that all may
+ *                 have the peculiarity peculiarity_description.  Depending on this flag
+ *                 the lowering might do different actions.  Default:  false
  */
 
 /** Creates a new class type. */
@@ -581,6 +591,8 @@ typedef enum peculiarity {
                     @@@ eventually rename to 'real' i.e., 'echt'
                         This serves better as opposition to description _and_ inherited.*/
 } peculiarity;
+
+/** Returns a human readable string for a peculiarity. */
 const char *get_peculiarity_string(peculiarity p);
 
 /** Returns the peculiarity of the class. */
@@ -603,10 +615,22 @@ void set_class_vtable_size(ir_type *clss, unsigned size);
 /** Returns non-zero if a class is final. */
 int is_class_final(const ir_type *clss);
 
-/** Sets if a class is final. */
+/** Sets the class final flag. */
 void set_class_final(ir_type *clss, int flag);
 
-/* Set and get a class' dfn --
+/** Return non-zero if a class is an interface */
+int is_class_interface(const ir_type *clss);
+
+/** Sets the class interface flag. */
+void set_class_interface(ir_type *clss, int flag);
+
+/** Return non-zero if a class is an abstract class. */
+int is_class_abstract(const ir_type *clss);
+
+/** Sets the class abstract flag. */
+void set_class_abstract(ir_type *clss, int flag);
+
+/** Set and get a class' dfn --
    @todo This is an undocumented field, subject to change! */
 void set_class_dfn (ir_type *clss, int dfn);
 int  get_class_dfn (const ir_type *clss);
@@ -617,8 +641,9 @@ int is_Class_type(const ir_type *clss);
 /**
  *  @page struct_type   Representation of a struct type
  *
- *  Type_strct represents aggregate types that consist of a list
+ *  A struct type represents aggregate types that consist of a list
  *  of fields.
+ *
  *  The following attributes are private to this type kind:
  *  - member:  All entities belonging to this class.  This are the fields
  *             that can have any of the following types:  type_class,
@@ -792,9 +817,9 @@ int get_method_first_variadic_param_index(const ir_type *method);
 void set_method_first_variadic_param_index(ir_type *method, int index);
 
 /**
- * additional method type properties:
- *  Tell about special properties of a method type. Some
- *  of these may be discovered by analyses.
+ * Additional method type properties:
+ * Tell about special properties of a method type. Some
+ * of these may be discovered by analyses.
  */
 typedef enum {
   mtp_no_property        = 0x00000000, /**< no additional properties, default */
@@ -816,8 +841,8 @@ typedef enum {
                                          GCC: __attribute__((malloc)). */
   mtp_property_intrinsic = 0x00000040, /**< This method is intrinsic. It is expected that
                                          a lowering phase will remove all calls to it. */
-  mtp_property_inherited = (1<<31)     /**< used only in irg's, means property is inherited
-                                         from type. */
+  mtp_property_inherited = (1<<31)     /**< Internal. Used only in irg's, means property is
+                                         inherited from type. */
 } mtp_additional_property;
 
 /** Returns the mask of the additional graph properties. */
@@ -830,26 +855,28 @@ void set_method_additional_properties(ir_type *method, unsigned property_mask);
 void set_method_additional_property(ir_type *method, mtp_additional_property flag);
 
 /**
- * calling conventions: lower 24 bits are the number of register parameters,
- * upper 8 encode the calling conventions
+ * Calling conventions: lower 24 bits are the number of register parameters,
+ * upper 8 encode the calling conventions.
  */
 typedef enum {
   cc_reg_param        = 0x01000000, /**< Transmit parameters in registers, else the stack is used.
                                          This flag may be set as default on some architectures. */
   cc_last_on_top      = 0x02000000, /**< The last non-register parameter is transmitted on top of
-                                             the stack. This is equivalent to the stdcall or pascal
-                                             calling convention. If this flag is not set, the first
-                                             non-register parameter is used (cdecl calling convention) */
+                                         the stack. This is equivalent to the pascal
+                                         calling convention. If this flag is not set, the first
+                                         non-register parameter is used (stdcall or cdecl
+                                         calling convention) */
   cc_callee_clear_stk = 0x04000000, /**< The callee clears the stack. This forbids variadic
                                          function calls (stdcall). */
   cc_this_call        = 0x08000000, /**< The first parameter is a this pointer and is transmitted
                                          in a special way. */
 
-
   cc_bits             = (0xFF << 24)  /**< the calling convention bits */
 } calling_convention;
 
-/* some often used cases: made as defines for firmjni */
+/* some often used cases: made as defines because firmjni cannot handle two
+   equal enum values. */
+
 /** cdecl calling convention */
 #define cc_cdecl_set    (0)
 /** stdcall calling convention */
@@ -857,7 +884,7 @@ typedef enum {
 /** fastcall calling convention */
 #define cc_fastcall_set (cc_reg_param|cc_callee_clear_stk)
 
-/** return the default calling convention for method types */
+/** Returns the default calling convention for method types. */
 unsigned get_default_cc_mask(void);
 
 /**
@@ -876,17 +903,17 @@ unsigned get_default_cc_mask(void);
 #define IS_FASTCALL(cc_mask)  (((cc_mask) & cc_bits) == cc_fastcall_set)
 
 /**
- * set the CDECL convention bits
+ * Sets the CDECL convention bits.
  */
 #define SET_CDECL(cc_mask)    (((cc_mask) & ~cc_bits) | cc_cdecl_set)
 
 /**
- * set the STDCALL convention bits
+ * Set. the STDCALL convention bits.
  */
 #define SET_STDCALL(cc_mask)  (((cc_mask) & ~cc_bits) | cc_stdcall_set)
 
 /**
- * set the FASTCALL convention bits
+ * Sets the FASTCALL convention bits.
  */
 #define SET_FASTCALL(cc_mask) (((cc_mask) & ~cc_bits) | cc_fastcall_set)
 
@@ -908,7 +935,10 @@ int   is_Method_type     (const ir_type *method);
 /**
  *   @page union_type   Representation of a union (variant) type.
  *
- *   The union type represents union types.
+ *   The union type represents union types.  Note that this representation
+ *   resembles the C union type.  For tagged variant types like in Pascal or Modula
+ *   a combination of a struct and a union type must be used.
+ *
  *   - n_types:     Number of unioned types.
  *   - members:     Entities for unioned types.  Fixed length array.
  *                  This is a dynamic list that can be grown with an "add_" function,
@@ -989,7 +1019,7 @@ ir_type *new_d_type_array         (ident *name, int n_dimensions,
 int   get_array_n_dimensions (const ir_type *array);
 
 /**
- * Allocates Const nodes of mode_I for one array dimension.
+ * Allocates Const nodes of mode_Is for one array dimension.
  * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
 void  set_array_bounds_int   (ir_type *array, int dimension, int lower_bound,
@@ -1003,14 +1033,14 @@ void  set_array_bounds       (ir_type *array, int dimension, ir_node *lower_boun
 /** Sets the lower bound for one array dimension, i.e. [lower,upper[ */
 void  set_array_lower_bound  (ir_type *array, int dimension, ir_node *lower_bound);
 
-/** Allocates Const nodes of mode_I for the lower bound of an array
+/** Allocates Const nodes of mode_Is for the lower bound of an array
     dimension, i.e. [lower,upper[ */
 void  set_array_lower_bound_int (ir_type *array, int dimension, int lower_bound);
 
 /** Sets the upper bound for one array dimension, i.e. [lower,upper[ */
 void  set_array_upper_bound  (ir_type *array, int dimension, ir_node *upper_bound);
 
-/** Allocates Const nodes of mode_I for the upper bound of an array
+/** Allocates Const nodes of mode_Is for the upper bound of an array
     dimension, i.e. [lower,upper[. */
 void  set_array_upper_bound_int (ir_type *array, int dimension, int upper_bound);
 
@@ -1067,7 +1097,7 @@ int    is_Array_type(const ir_type *array);
 ir_type   *new_type_enumeration    (ident *name, int n_enums);
 
 /** Create a new type enumeration with debug information -- set the enumerators independently. */
-ir_type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info* db);
+ir_type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info *db);
 
 /* --- manipulate fields of enumeration type. --- */
 
@@ -1126,8 +1156,8 @@ ir_type *find_pointer_type_to_type (ir_type *tp);
 /**
  * @page primitive_type Representation of a primitive type
  *
- * Primitive types are types that represent indivisible data values that
- * map directly to modes.  They don't have a private attribute.  The
+ * Primitive types are types that represent atomic data values that
+ * map directly to modes.  They don't have private attributes.  The
  * important information they carry is held in the common mode field.
  */
 /** Creates a new primitive type. */
@@ -1159,7 +1189,8 @@ int  is_Primitive_type  (const ir_type *primitive);
  */
 /** A variable that contains the only none type. */
 extern ir_type *firm_none_type;
-/** Returns the none type */
+
+/** Returns the none type. */
 ir_type *get_none_type(void);
 
 /**
@@ -1181,7 +1212,8 @@ ir_type *get_none_type(void);
  */
 /** A variable that contains the only unknown type. */
 extern ir_type *firm_unknown_type;
-/** Returns the unknown type */
+
+/** Returns the unknown type. */
 ir_type *get_unknown_type(void);
 
 
@@ -1195,7 +1227,7 @@ int is_atomic_type(const ir_type *tp);
 /* --- Support for compound types --- */
 
 /**
- * Gets the number of elements in a firm compound type.
+ * Gets the number of elements in a Firm compound type.
  *
  * This is just a comfortability function, because structs and
  * classes can often be treated be the same code, but they have
@@ -1208,7 +1240,7 @@ int is_atomic_type(const ir_type *tp);
 int get_compound_n_members(const ir_type *tp);
 
 /**
- * Gets the member of a firm compound type at position pos.
+ * Gets the member of a Firm compound type at position pos.
  *
  * @param tp  The type (must be struct, union or class).
  * @param pos The number of the member.
@@ -1223,7 +1255,7 @@ entity *get_compound_member(const ir_type *tp, int pos);
 int     get_compound_member_index(const ir_type *tp, entity *member);
 
 /**
- * Checks whether a type is compound.
+ * Checks whether a type is a compound type.
  *
  * @param tp - any type
  *
@@ -1246,11 +1278,11 @@ int is_lowered_type(const ir_type *tp);
  * so all class access functions work.
  * Frame types are not in the global list of types.
  */
-ir_type   *new_type_frame(ident *name);
+ir_type *new_type_frame(ident *name);
 
 /**
  * Sets a lowered type for a type. This sets both associations
- * and marks lowered type as a "lowered" one.
+ * and marks lowered_type as a "lowered" one.
  */
 void set_lowered_type(ir_type *tp, ir_type *lowered_type);
 
@@ -1263,7 +1295,7 @@ ir_type *get_associated_type(const ir_type *tp);
 /**
  * Allocate an area of size bytes aligned at alignment
  * at the start or the end of a frame type.
- * The frame type must have already an fixed layout.
+ * The frame type must already have a fixed layout.
  *
  * @param frame_type a frame type
  * @param size       the size of the entity

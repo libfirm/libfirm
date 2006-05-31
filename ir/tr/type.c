@@ -771,7 +771,7 @@ ir_type *new_d_type_class (ident *name, dbg_info *db) {
   res->attr.ca.peculiarity = peculiarity_existent;
   res->attr.ca.type_info   = NULL;
   res->attr.ca.vtable_size = 0;
-  res->attr.ca.final       = 0;
+  res->attr.ca.clss_flags  = cf_none;
   res->attr.ca.dfn         = 0;
   hook_new_type(res);
   return res;
@@ -993,8 +993,28 @@ int (is_class_final)(const ir_type *clss) {
 }
 
 /* Sets if a class is final. */
-void (set_class_final)(ir_type *clss, int final) {
-  _set_class_final(clss, final);
+void (set_class_final)(ir_type *clss, int flag) {
+  _set_class_final(clss, flag);
+}
+
+/* Returns non-zero if a class is an interface. */
+int (is_class_interface)(const ir_type *clss) {
+  return _is_class_interface(clss);
+}
+
+/* Sets the class interface flag. */
+void (set_class_interface)(ir_type *clss, int flag) {
+  _set_class_interface(clss, flag);
+}
+
+/* Returns non-zero if a class is abstract. */
+int (is_class_abstract)(const ir_type *clss) {
+  return _is_class_abstract(clss);
+}
+
+/* Sets the class abstract flag. */
+void (set_class_abstract)(ir_type *clss, int final) {
+  _set_class_abstract(clss, final);
 }
 
 void set_class_dfn (ir_type *clss, int dfn) {
