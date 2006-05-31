@@ -3597,6 +3597,9 @@ ir_node *new_Const_type(tarval *con, ir_type *tp);
  *    -# size      The symbolic constant represents the size of a type.  The
  *                 type of which the constant represents the size is given
  *                 explicitly.
+ *    -# align     The symbolic constant represents the alignment of a type.  The
+ *                 type of which the constant represents the size is given
+ *                 explicitly.
  *    -# addr_name The symbolic constant represents the address of an entity
  *                 (variable or method).  The variable is indicated by a name
  *                 that is valid for linking.
