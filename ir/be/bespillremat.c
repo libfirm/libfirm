@@ -31,6 +31,7 @@
 #include "irloop_t.h"
 #include "phiclass.h"
 #include "iredges.h"
+#include "execfreq.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
@@ -59,7 +60,7 @@
 #define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
 #define REMAT_WHILE_LIVE /* only remat values that are live */
 //#define NO_ENLARGE_L1V3N355 /* do not remat after the death of some operand */
-#define EXECFREQ_LOOPDEPH /* compute execution frequency from loop depth only */
+//#define EXECFREQ_LOOPDEPH /* compute execution frequency from loop depth only */
 //#define MAY_DIE_AT_PRE_REMAT /* allow values to die after a pre remat */
 //#define CHECK_POST_REMAT /* check pressure after post remats (conservative but otherwise we can temporarily exceed the register pressure) */
 #define NO_SINGLE_USE_REMATS /* do not repair schedule */
@@ -69,15 +70,11 @@
 #define LPP_SERVER "i44pc52"
 #define LPP_SOLVER "cplex"
 
-#ifndef EXECFREQ_LOOPDEPH
-#include "execfreq.h"
-#endif
-
 #define COST_LOAD      10
 #define COST_STORE     50
 #define COST_REMAT     1
 
-#define ILP_TIMEOUT    20
+#define ILP_TIMEOUT    30
 
 #define ILP_UNDEF		-1
 
@@ -95,9 +92,7 @@ typedef struct _spill_ilp_t {
 	ir_node                      *keep;
 #endif
 	set                          *values; /**< for collecting all definitions of values before running ssa-construction */
-#ifndef EXECFREQ_LOOPDEPH
 	set                          *execfreqs;
-#endif
 	DEBUG_ONLY(firm_dbg_module_t * dbg);
 } spill_ilp_t;
 
@@ -288,18 +283,18 @@ cmp_keyval(const void *a, const void *b, size_t size)
 static double
 execution_frequency(const spill_ilp_t * si, const ir_node * irn)
 {
-#ifdef EXECFREQ_LOOPDEPH
-	if(is_Block(irn))
-		return exp(get_loop_depth(get_irn_loop(irn)) * log(10));
-	else
-		return exp(get_loop_depth(get_irn_loop(get_nodes_block(irn))) * log(10));
-#else
-	if(is_Block(irn)) {
-		return get_block_execfreq(si->execfreqs, irn);
+	if(si->execfreqs) {
+		if(is_Block(irn)) {
+			return get_block_execfreq(si->execfreqs, irn);
+		} else {
+			return get_block_execfreq(si->execfreqs, get_nodes_block(irn));
+		}
 	} else {
-		return get_block_execfreq(si->execfreqs, get_nodes_block(irn));
+		if(is_Block(irn))
+			return exp(get_loop_depth(get_irn_loop(irn)) * log(10));
+		else
+			return exp(get_loop_depth(get_irn_loop(get_nodes_block(irn))) * log(10));
 	}
-#endif
 }
 
 /**
@@ -353,7 +348,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 
 		remat = obstack_alloc(si->obst, sizeof(*remat));
 		remat->op = op;
-		remat->cost = COST_REMAT; /* TODO ask backend for real cost */
+		remat->cost = arch_get_op_estimated_cost(si->chordal_env->birg->main_env->arch_env, op);
 		remat->value = dest_value;
 		remat->proj = proj;
 		remat->inverse = 0;
@@ -2799,6 +2794,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.inverse_ops = pset_new_ptr_default();
 #ifndef EXECFREQ_LOOPDEPH
 	si.execfreqs = compute_execfreq(chordal_env->irg);
+#else
+	si.execfreqs = NULL;
 #endif
 #ifdef KEEPALIVE
 	si.keep = NULL;
@@ -2908,7 +2905,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	del_pset(si.inverse_ops);
 	del_pset(si.all_possible_remats);
 #ifndef EXECFREQ_LOOPDEPH
-	del_set(si.execfreqs);
+	free_execfreq(si.execfreqs);
 #endif
 	free_lpp(si.lpp);
 	obstack_free(&obst, NULL);
