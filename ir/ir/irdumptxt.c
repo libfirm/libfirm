@@ -464,7 +464,6 @@ static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
   fprintf(F, "\n");
 }
 
-#define X(a)    case a: fprintf(F, #a); break
 void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity) {
   int i, j;
   ir_type *owner, *type;
@@ -524,28 +523,9 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       }
     }
 
-    fprintf(F, "%s  allocation:  ", prefix);
-    switch (get_entity_allocation(ent)) {
-      X(allocation_dynamic);
-      X(allocation_automatic);
-      X(allocation_static);
-      X(allocation_parameter);
-    }
-
-    fprintf(F, "\n%s  visibility:  ", prefix);
-    switch (get_entity_visibility(ent)) {
-      X(visibility_local);
-      X(visibility_external_visible);
-      X(visibility_external_allocated);
-    }
-
-    fprintf(F, "\n%s  variability: ", prefix);
-    switch (get_entity_variability(ent)) {
-      X(variability_uninitialized);
-      X(variability_initialized);
-      X(variability_part_constant);
-      X(variability_constant);
-    }
+    fprintf(F, "%s  allocation:  %s", prefix, get_allocation_name(get_entity_allocation(ent)));
+    fprintf(F, "\n%s  visibility:  %s", prefix, get_visibility_name(get_entity_visibility(ent)));
+    fprintf(F, "\n%s  variability: %s", prefix, get_variability_name(get_entity_variability(ent)));
 
     if (is_Method_type(get_entity_type(ent))) {
       unsigned mask = get_entity_additional_properties(ent);
@@ -622,13 +602,8 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
   }
 
   if (verbosity & dump_verbosity_entattrs) {
-    fprintf(F, "%s  volatility:  ", prefix);
-    switch (get_entity_volatility(ent)) {
-      X(volatility_non_volatile);
-      X(volatility_is_volatile);
-    }
-
-    fprintf(F, "\n%s  peculiarity: %s", prefix, get_peculiarity_string(get_entity_peculiarity(ent)));
+    fprintf(F, "%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
+    fprintf(F, "\n%s  peculiarity: %s", prefix, get_peculiarity_name(get_entity_peculiarity(ent)));
     fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
     fprintf(F, "\n%s  offset:  %d bits, %d bytes", prefix, get_entity_offset_bits(ent), get_entity_offset_bytes(ent));
     if (is_Method_type(get_entity_type(ent))) {
@@ -768,7 +743,6 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
   }
 
 }
-#undef X
 
 void    dump_entity_to_file (FILE *F, entity *ent, unsigned verbosity) {
   dump_entity_to_file_prefix (F, ent, "", verbosity);
@@ -1023,8 +997,15 @@ void dump_type_to_file (FILE *F, ir_type *tp, dump_verbosity verbosity) {
         }
       }
 
-      fprintf(F, "\n  peculiarity: %s\n", get_peculiarity_string(get_class_peculiarity(tp)));
-
+      fprintf(F, "\n  peculiarity: %s\n", get_peculiarity_name(get_class_peculiarity(tp)));
+      fprintf(F, "\n  flags:       ");
+      if (is_class_final(tp))
+        fprintf(F, "final, ");
+      if (is_class_interface(tp))
+        fprintf(F, "interface, ");
+      if (is_class_abstract(tp))
+        fprintf(F, "abstract, ");
+      fprintf(F, "\n");
     }
     break;
 
