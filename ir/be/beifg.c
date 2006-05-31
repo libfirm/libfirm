@@ -25,6 +25,7 @@
 
 #include "irnode_t.h"
 #include "irprintf.h"
+#include "irtools.h"
 #include "beifg_t.h"
 
 size_t (be_ifg_nodes_iter_size)(const void *self)
@@ -151,13 +152,112 @@ void be_ifg_check(const be_ifg_t *ifg)
 	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
 
 	ir_node *n, *m;
+	int node_count = 0;
+	int neighbours_count = 0;
+	int degree = 0;
+
+	/* count all nodes */
+	ir_printf("\n\nFound the following nodes in the graph %+F:\n\n", current_ir_graph);
+	be_ifg_foreach_node(ifg,iter1,n)
+	{
+		node_count++;
+		degree = be_ifg_degree(ifg, n);
+		ir_printf("%d. %+F with degree: %d\n", node_count, n, degree);
+	}
+
+	ir_printf("\n\nNumber of nodes: %d\n\n", node_count);
 
 	/* Check, if all neighbours are indeed connected to the node. */
-	be_ifg_foreach_node(ifg, iter1, n) {
+	be_ifg_foreach_node(ifg, iter1, n)
+	{
+		ir_printf("\n%+F; ", n);
 		be_ifg_foreach_neighbour(ifg, iter2, n, m)
+		{
+			ir_printf("%+F; ", m);
+			neighbours_count++;
 			if(!be_ifg_connected(ifg, n, m))
 				ir_fprintf(stderr, "%+F is a neighbour of %+F but they are not connected!\n", n, m);
+		}
 	}
+	ir_printf("\n\nFound %d nodes in the 'check neighbour section'\n", neighbours_count);
+}
+
+int be_ifg_check_get_node_count(const be_ifg_t *ifg)
+{
+	void *iter = be_ifg_nodes_iter_alloca(ifg);
+	int node_count = 0;
+	ir_node *n;
+
+	be_ifg_foreach_node(ifg, iter, n)
+	{
+		node_count++;
+	}
+
+	return node_count;
+}
+
+static int be_ifg_check_cmp_nodes(const void *a, const void *b)
+{
+	const ir_node *node_a = *(ir_node **)a;
+	const ir_node *node_b = *(ir_node **)b;
+
+	int nr_a = node_a->node_nr;
+	int nr_b = node_b->node_nr;
+
+	return QSORT_CMP(nr_a, nr_b);
+}
+
+void be_ifg_check_sorted(const be_ifg_t *ifg, FILE *f)
+{
+	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
+	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
+
+	ir_node *n, *m;
+	const int node_count = be_ifg_check_get_node_count(ifg);
+	int neighbours_count = 0;
+	int i = 0;
+
+	ir_node **all_nodes = xmalloc(node_count * sizeof(all_nodes[0]));
+
+	be_ifg_foreach_node(ifg, iter1, n)
+	{
+		all_nodes[i] = n;
+		i++;
+	}
+
+	qsort(all_nodes, node_count, sizeof(all_nodes[0]), be_ifg_check_cmp_nodes);
+
+	for (i = 0; i < node_count; i++)
+	{
+		ir_node **neighbours = xmalloc(node_count * sizeof(neighbours[0]));
+		int j = 0;
+		int k = 0;
+		int degree = 0;
+
+		degree = be_ifg_degree(ifg, all_nodes[i]);
+
+		be_ifg_foreach_neighbour(ifg, iter2, all_nodes[i], m)
+		{
+			neighbours[j] = m;
+			j++;
+		}
+
+		qsort(neighbours, j, sizeof(neighbours[0]), be_ifg_check_cmp_nodes);
+
+		ir_fprintf(f, "%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
+
+		for(k = 0; k < j; k++)
+		{
+			ir_fprintf(f, "%+F, ", neighbours[k]);
+		}
+
+		ir_fprintf(f, "\n");
+
+		free(neighbours);
+	}
+
+	free(all_nodes);
+
 }
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self)
