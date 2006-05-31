@@ -328,9 +328,6 @@ peculiarity get_entity_peculiarity (const entity *ent);
 /** Sets the peculiarity of an entity. */
 void        set_entity_peculiarity (entity *ent, peculiarity pec);
 
-/** Return the name of the peculiarity. */
-const char *get_peculiarity_name(peculiarity var);
-
 /* -- Representation of constant values of entities -- */
 /** Returns true if the the node is representable as code on
  *  const_code_irg. */

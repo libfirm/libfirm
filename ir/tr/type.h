@@ -593,7 +593,7 @@ typedef enum peculiarity {
 } peculiarity;
 
 /** Returns a human readable string for a peculiarity. */
-const char *get_peculiarity_string(peculiarity p);
+const char *get_peculiarity_name(peculiarity p);
 
 /** Returns the peculiarity of the class. */
 peculiarity get_class_peculiarity (const ir_type *clss);

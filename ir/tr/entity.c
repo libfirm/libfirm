@@ -470,19 +470,6 @@ void
   _set_entity_peculiarity(ent, pec);
 }
 
-/* return the name of the peculiarity */
-const char *get_peculiarity_name(peculiarity var)
-{
-#define X(a)    case a: return #a
-  switch (var) {
-    X(peculiarity_description);
-    X(peculiarity_inherited);
-    X(peculiarity_existent);
-    default: return "BAD VALUE";
-  }
-#undef X
-}
-
 /* Get the entity's stickyness */
 ent_stickyness
 (get_entity_stickyness)(const entity *ent) {

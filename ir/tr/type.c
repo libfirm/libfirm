@@ -955,7 +955,7 @@ void set_class_type_info(ir_type *clss, entity *ent) {
   clss->attr.ca.type_info = ent;
 }
 
-const char *get_peculiarity_string(peculiarity p) {
+const char *get_peculiarity_name(peculiarity p) {
 #define X(a)    case a: return #a
   switch (p) {
     X(peculiarity_description);
