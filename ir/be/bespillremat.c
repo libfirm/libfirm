@@ -29,8 +29,8 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irloop_t.h"
-#include "execfreq.h"
 #include "phiclass.h"
+#include "iredges.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
@@ -54,17 +54,24 @@
 
 #define DUMP_SOLUTION
 #define DUMP_ILP
-#define KEEPALIVE
-#define COLLECT_REMATS
-#define REMAT_WHILE_LIVE
-#define NO_ENLARGE_L1V3N355
-#define EXECFREQ_LOOPDEPH
-#define MAY_DIE_AT_PRE_REMAT
+#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
+#define COLLECT_REMATS /* enable rematerialization */
+#define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
+#define REMAT_WHILE_LIVE /* only remat values that are live */
+//#define NO_ENLARGE_L1V3N355 /* do not remat after the death of some operand */
+#define EXECFREQ_LOOPDEPH /* compute execution frequency from loop depth only */
+//#define MAY_DIE_AT_PRE_REMAT /* allow values to die after a pre remat */
+//#define CHECK_POST_REMAT /* check pressure after post remats (conservative but otherwise we can temporarily exceed the register pressure) */
+#define NO_SINGLE_USE_REMATS /* do not repair schedule */
 
 #define  SOLVE
 #undef  SOLVE_LOCAL
 #define LPP_SERVER "i44pc52"
 #define LPP_SOLVER "cplex"
+
+#ifndef EXECFREQ_LOOPDEPH
+#include "execfreq.h"
+#endif
 
 #define COST_LOAD      10
 #define COST_STORE     50
@@ -83,6 +90,7 @@ typedef struct _spill_ilp_t {
 	struct obstack               *obst;
 	set                          *remat_info;
 	pset                         *all_possible_remats;
+	pset                         *inverse_ops;
 #ifdef KEEPALIVE
 	ir_node                      *keep;
 #endif
@@ -107,6 +115,7 @@ typedef struct _remat_t {
 	const ir_node        *proj; /**< not NULL if the above op produces a tuple */
 	const ir_node        *value; /**< the value which is being recomputed by this remat */
 	int                   cost; /**< cost of this remat */
+	int                   inverse; /**< nonzero if this is an inverse remat */
 } remat_t;
 
 /**
@@ -347,6 +356,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 		remat->cost = COST_REMAT; /* TODO ask backend for real cost */
 		remat->value = dest_value;
 		remat->proj = proj;
+		remat->inverse = 0;
 	} else {
 		arch_inverse_t     inverse;
 		int                i,
@@ -364,9 +374,15 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 
 		/* else ask the backend to give an inverse op */
 		if(arch_get_inverse(si->chordal_env->birg->main_env->arch_env, op, i, &inverse, si->obst)) {
+			int   i;
+
 			DBG((si->dbg, LEVEL_4, "\t  backend gave us an inverse op with %d nodes and cost %d\n", inverse.n, inverse.costs));
 
 			assert(inverse.n > 0 && "inverse op should have at least one node");
+
+			for(i=0; i<inverse.n; ++i) {
+				pset_insert_ptr(si->inverse_ops, inverse.nodes[i]);
+			}
 
 			if(inverse.n <= 2) {
 				remat = obstack_alloc(si->obst, sizeof(*remat));
@@ -374,10 +390,11 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 				remat->cost = inverse.costs;
 				remat->value = dest_value;
 				remat->proj = (inverse.n==2)?inverse.nodes[1]:NULL;
+				remat->inverse = 1;
 
 				assert(is_Proj(remat->proj));
 			} else {
-				DBG((si->dbg, LEVEL_1, "\t  I can not handle remats with %d nodes\n", inverse.n));
+				assert(0 && "I can not handle remats with more than 2 nodes");
 			}
 		}
 	}
@@ -430,6 +447,22 @@ add_remat(const spill_ilp_t * si, const remat_t * remat)
 	}
 }
 
+static int
+get_irn_n_nonremat_edges(const spill_ilp_t * si, const ir_node * irn)
+{
+	const ir_edge_t   *edge = get_irn_out_edge_first(irn);
+	int                i = 0;
+
+	while(edge) {
+		if(!pset_find_ptr(si->inverse_ops, edge->src)) {
+			++i;
+		}
+		edge = get_irn_out_edge_next(irn, edge);
+	}
+
+	return i;
+}
+
 static INLINE void
 get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 {
@@ -437,13 +470,18 @@ get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 		      n;
 	remat_t *remat;
 
+#ifdef NO_SINGLE_USE_REMATS
+	if(has_reg_class(si, op) && (get_irn_n_nonremat_edges(si, op) > 1)) {
+#else
 	if(has_reg_class(si, op)) {
+#endif
 		remat = get_remat_from_op(si, op, op);
 		if(remat) {
 			add_remat(si, remat);
 		}
 	}
 
+#ifdef COLLECT_INVERSE_REMATS
 	/* repeat the whole stuff for each remat retrieved by get_remat_from_op(op, arg)
 	   for each arg */
 	for (i = 0, n = get_irn_arity(op); i < n; ++i) {
@@ -457,6 +495,7 @@ get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 			}
 		}
 	}
+#endif
 
 }
 
@@ -480,6 +519,8 @@ value_is_defined_before(const spill_ilp_t * si, const ir_node * pos, const ir_no
 	/* else if this is a normal operation */
 	block = get_nodes_block(pos);
 	if(block == def_block) {
+		if(!sched_is_scheduled(val)) return 1;
+
 		ret = sched_comes_after(val, pos);
 //		ir_fprintf(stderr, "(def(same block)=%d) ",ret);
 		return ret;
@@ -939,20 +980,14 @@ walker_remat_insertor(ir_node * bb, void * data)
 			if(remat_info && remat_info->remats) {
 				pset_foreach(remat_info->remats, remat) {
 					DBG((si->dbg, LEVEL_4, "\t  considering remat %+F at end of block %+F\n", remat->op, bb));
-#ifdef REMAT_WHILE_LIVE
-					if(is_live_end(bb, remat->value)) {
-						insert_remat_before(si, remat, bb, NULL); //TODO
-					}
-#else
+
 					insert_remat_before(si, remat, bb, NULL);
-#endif
 				}
 			}
 		}
 
-
 		/* add remat2s at beginning of block */
-		if ((live_is_in(li) || is_Phi(value)) && has_reg_class(si, value)) {
+		if ((live_is_in(li) || (is_Phi(value) && get_nodes_block(value)==bb)) && has_reg_class(si, value)) {
 			remat_info_t   *remat_info,
 						    query;
 			remat_t        *remat;
@@ -962,6 +997,25 @@ walker_remat_insertor(ir_node * bb, void * data)
 			query.remats_by_operand = NULL;
 			remat_info = set_find(si->remat_info, &query, sizeof(query), HASH_PTR(value));
 
+			if(remat_info && remat_info->remats) {
+				pset_foreach(remat_info->remats, remat) {
+					DBG((si->dbg, LEVEL_4, "\t  considering remat %+F at beginning of block %+F\n", remat->op, bb));
+
+					/* put the remat here if all its args are available */
+					insert_remat_after(si, remat, bb, NULL);
+
+#if 0
+					for(i=0, n=get_irn_arity(remat->op); i<n; ++i) {
+						ir_node   *remat_arg = get_irn_n(remat->op, i);
+
+						if(has_reg_class(si, remat_arg) && is_live_in(bb, remat_arg)) {
+							insert_remat_after(si, remat, bb, NULL);
+							break;
+						}
+					}
+#endif
+
+#if 0
 			if(remat_info && remat_info->remats_by_operand) {
 				pset_foreach(remat_info->remats_by_operand, remat) {
 					DBG((si->dbg, LEVEL_4, "\t  considering remat %+F at beginning of block %+F\n", remat->op, bb));
@@ -971,6 +1025,7 @@ walker_remat_insertor(ir_node * bb, void * data)
 					}
 #else
 					insert_remat_after(si, remat, bb, NULL);
+#endif
 #endif
 				}
 			}
@@ -1265,8 +1320,10 @@ luke_blockwalker(ir_node * bb, void * data)
 					k,
 					d = 0;
 		ilp_cst_t	check_pre,
-					check_post,
-					check_post_remat;
+					check_post;
+#ifdef CHECK_POST_REMAT
+		ilp_cst_t	check_post_remat;
+#endif
 		set        *args = new_set(cmp_keyval, get_irn_arity(irn));
 		keyval_t   *keyval;
 
@@ -1291,6 +1348,7 @@ luke_blockwalker(ir_node * bb, void * data)
 			}
 		}
 
+#ifdef CHECK_POST_REMAT
 		/* check the register pressure after the epilog */
 		ir_snprintf(buf, sizeof(buf), "check_post_remat_%N", irn);
 		check_post_remat = lpp_add_cst(si->lpp, buf, lpp_less, si->n_regs);
@@ -1312,12 +1370,17 @@ luke_blockwalker(ir_node * bb, void * data)
 
 			assert(remat_op->is_remat && !remat_op->attr.remat.pre);
 
-			/* values that are defined by remats are not counted */
-			/* TODO assert(val_op->attr.live_range.ilp)) */
+			/* values that are defined by remat2s are not counted */
+#ifdef REMAT_WHILE_LIVE
+			assert(val_op->attr.live_range.ilp);
+			lpp_set_factor_fast(si->lpp, check_post_remat, val_op->attr.live_range.ilp, 0.0);
+#else
 			if(val_op->attr.live_range.ilp != ILP_UNDEF) {
 				lpp_set_factor_fast(si->lpp, check_post_remat, val_op->attr.live_range.ilp, 0.0);
 			}
+#endif /* REMAT_WHILE_LIVE */
 		}
+#endif /* CHECK_POST_REMAT */
 
 
 		/* new live ranges for values from L\U defined by remat2s or used by remats */
@@ -1393,7 +1456,9 @@ fertig:
 			while(is_Proj(proj)) {
 				if(has_reg_class(si, proj)) {
 					++d;
+#ifdef CHECK_POST_REMAT
 					lpp_set_factor_fast(si->lpp, check_post_remat, proj_op->attr.live_range.ilp, 1.0);
+#endif
 				}
 				proj = sched_next(proj);
 				proj_op = get_irn_link(proj);
@@ -1401,7 +1466,9 @@ fertig:
 		} else {
 			if(has_reg_class(si, irn)) {
 				 d = 1;
+#ifdef CHECK_POST_REMAT
 				 lpp_set_factor_fast(si->lpp, check_post_remat, op->attr.live_range.ilp, 1.0);
+#endif
 			}
 		}
 		DBG((si->dbg, LEVEL_4, "\t   %+F produces %d values in my register class\n", irn, d));
@@ -1473,7 +1540,9 @@ fertig:
 				lpp_set_factor_fast(si->lpp, cst, post_use, -1.0);
 				lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
 
+#ifdef CHECK_POST_REMAT
 				lpp_set_factor_fast(si->lpp, check_post_remat, arg_op->attr.live_range.ilp, 1.0);
+#endif
 			}
 
 			/*forall remat2 which use arg add a similar cst*/
@@ -1617,6 +1686,7 @@ fertig:
 			}
 		}
 
+#ifdef CHECK_POST_REMAT
 		/* iterate over following remats and add them to check_post_remat */
 		foreach_post_remat(irn, tmp) {
 			op_t           *remat_op = get_irn_link(tmp);
@@ -1625,6 +1695,8 @@ fertig:
 
 			lpp_set_factor_fast(si->lpp, check_post_remat, remat_op->attr.remat.ilp, 1.0);
 		}
+#endif
+
 
 
 		DBG((si->dbg, LEVEL_4, "\t   %d values live at %+F\n", pset_count(live), irn));
@@ -1723,54 +1795,28 @@ fertig:
 	}
 
 	/* mem_in/reg_in for live_in values, especially phis and their arguments */
-//	if(get_Block_n_cfgpreds(bb) > 1) {
-		pset_foreach(live, irn) {
-			int          p = 0,
-						 i,
-						 n;
+	pset_foreach(live, irn) {
+		int          p = 0,
+					 i,
+					 n;
 
-			spill = set_find_spill(spill_bb->ilp, irn);
-			assert(spill && spill->irn == irn);
+		spill = set_find_spill(spill_bb->ilp, irn);
+		assert(spill && spill->irn == irn);
 
-			if(is_Phi(irn) && get_nodes_block(irn) == bb) {
-				for (i = 0, n = get_Phi_n_preds(irn); i < n; ++i) {
-					ilp_cst_t       mem_in,
-									reg_in;
-					ir_node        *phi_arg = get_Phi_pred(irn, i);
-					ir_node        *bb_p = get_Block_cfgpred_block(bb, i);
-					spill_bb_t     *spill_bb_p = get_irn_link(bb_p);
-					spill_t        *spill_p;
+		if(is_Phi(irn) && get_nodes_block(irn) == bb) {
+			for (i = 0, n = get_Phi_n_preds(irn); i < n; ++i) {
+				ilp_cst_t       mem_in,
+								reg_in;
+				ir_node        *phi_arg = get_Phi_pred(irn, i);
+				ir_node        *bb_p = get_Block_cfgpred_block(bb, i);
+				spill_bb_t     *spill_bb_p = get_irn_link(bb_p);
+				spill_t        *spill_p;
 
-					/* although the phi is in the right regclass one or more of
-					 * its arguments can be in a different one or at least to
-					 * ignore
-					 */
-					if(has_reg_class(si, phi_arg)) {
-						ir_snprintf(buf, sizeof(buf), "mem_in_%N_%N-%d", irn, bb, p);
-						mem_in = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
-						ir_snprintf(buf, sizeof(buf), "reg_in_%N_%N-%d", irn, bb, p++);
-						reg_in = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
-
-						lpp_set_factor_fast(si->lpp, mem_in, spill->mem_in, 1.0);
-						lpp_set_factor_fast(si->lpp, reg_in, spill->reg_in, 1.0);
-
-						spill_p = set_find_spill(spill_bb_p->ilp, phi_arg);
-						assert(spill_p);
-
-						lpp_set_factor_fast(si->lpp, mem_in, spill_p->mem_out, -1.0);
-						lpp_set_factor_fast(si->lpp, reg_in, spill_p->reg_out, -1.0);
-					}
-				}
-			} else {
-				/* else assure the value arrives on all paths in the same resource */
-
-				for (i = 0, n = get_Block_n_cfgpreds(bb); i < n; ++i) {
-					ilp_cst_t       mem_in,
-									reg_in;
-					ir_node        *bb_p = get_Block_cfgpred_block(bb, i);
-					spill_bb_t     *spill_bb_p = get_irn_link(bb_p);
-					spill_t        *spill_p;
-
+				/* although the phi is in the right regclass one or more of
+				 * its arguments can be in a different one or at least to
+				 * ignore
+				 */
+				if(has_reg_class(si, phi_arg)) {
 					ir_snprintf(buf, sizeof(buf), "mem_in_%N_%N-%d", irn, bb, p);
 					mem_in = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 					ir_snprintf(buf, sizeof(buf), "reg_in_%N_%N-%d", irn, bb, p++);
@@ -1779,15 +1825,39 @@ fertig:
 					lpp_set_factor_fast(si->lpp, mem_in, spill->mem_in, 1.0);
 					lpp_set_factor_fast(si->lpp, reg_in, spill->reg_in, 1.0);
 
-					spill_p = set_find_spill(spill_bb_p->ilp, irn);
+					spill_p = set_find_spill(spill_bb_p->ilp, phi_arg);
 					assert(spill_p);
 
 					lpp_set_factor_fast(si->lpp, mem_in, spill_p->mem_out, -1.0);
 					lpp_set_factor_fast(si->lpp, reg_in, spill_p->reg_out, -1.0);
 				}
 			}
+		} else {
+			/* else assure the value arrives on all paths in the same resource */
+
+			for (i = 0, n = get_Block_n_cfgpreds(bb); i < n; ++i) {
+				ilp_cst_t       mem_in,
+								reg_in;
+				ir_node        *bb_p = get_Block_cfgpred_block(bb, i);
+				spill_bb_t     *spill_bb_p = get_irn_link(bb_p);
+				spill_t        *spill_p;
+
+				ir_snprintf(buf, sizeof(buf), "mem_in_%N_%N-%d", irn, bb, p);
+				mem_in = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+				ir_snprintf(buf, sizeof(buf), "reg_in_%N_%N-%d", irn, bb, p++);
+				reg_in = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+
+				lpp_set_factor_fast(si->lpp, mem_in, spill->mem_in, 1.0);
+				lpp_set_factor_fast(si->lpp, reg_in, spill->reg_in, 1.0);
+
+				spill_p = set_find_spill(spill_bb_p->ilp, irn);
+				assert(spill_p);
+
+				lpp_set_factor_fast(si->lpp, mem_in, spill_p->mem_out, -1.0);
+				lpp_set_factor_fast(si->lpp, reg_in, spill_p->reg_out, -1.0);
+			}
 		}
-//	}
+	}
 
 	/* first live ranges from reg_ins */
 	pset_foreach(live, irn) {
@@ -1865,89 +1935,15 @@ fertig:
 	 */
 
 
-/*	ir_snprintf(buf, sizeof(buf), "next_lr_%N_%N", value, irn);
-	cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
-	lpp_set_factor_fast(si->lpp, cst, value_op->attr.live_range.ilp, 1.0);
-*/
-
-#if 0
-	ir_snprintf(buf, sizeof(buf), "ce2_%N_%N_%d", op, irn, i);
-	cst = lpp_add_cst(si->lpp, buf, lpp_less, n_operands);
-	lpp_set_factor_fast(si->lpp, cst, op_lr->in_mem_var, -1.0);
-	op_lr->is_remat_var = lpp_add_var(si->lpp, buf, lpp_binary, COST_REMAT);
-#endif
-
 	del_pset(live);
 }
 
 
 #if 0
-static void
-process_block(ir_node * block, void *data)
-{
-	spill_ilp_t    *si = data;
-	int             step = 0;
-	int             n_regs = arch_register_class_n_regs(si->cls);
-	int             n_preds = get_irn_arity(block);
-	irn_live_t     *li;
-	ir_node        *irn;
-
-	DBG((si->dbg, LEVEL_3, "\nProcessing %+F\n", block));
-
-	/*
-	 * compute all possible remats, sorted by operands *and* resulting
-	 * values
-	 */
-	ir_node        *new_r_Tuple(ir_graph * irg, ir_node * block, int arity, ir_node * in[]);
-	ir_node        *new_r_Proj(ir_graph * irg, ir_node * block, ir_node * arg, ir_mode * mode, long proj);
-	void           *get_irn_link(const ir_node * node);
-	void            set_irn_link(ir_node * node, void *link);
-
-	int             block_dominates(const ir_node * a, const ir_node * b);
-
-
-	void            compute_doms(ir_graph * irg);
-	void            free_dom(ir_graph * irg);
-
-
-	/*
-	 * nochmal: - laufe in dominatorreihenfolge die bloecke ab -
-	 * sammle dabei moeglichkeiten zur rematerialisierung von werten
-	 * (auch inverse etc.) - mehrere listen: fuer zielwert und fuer
-	 * jeden operanden (get_remats_with_operand) - ignoriere projs
-	 * (und phis?) und andere registerklassen - wenn ich nun auf eine
-	 * op treffe füge ich für alle operanden mögliche remats ein
-	 * (keine reloads und spills) in den schedule direkt vor der op
-	 * ein (in der Hoffnung, dass diese nicht wegoptimiert werden...).
-	 * - dann überspringe ich die folgenden projs - nach den projs
-	 * wird der epilog eingefügt (nur remats, keine spills) -
-	 * lebendigkeit neu berechnen
-	 *
-	 * -durchlaufe den ganzen mist nochmal und emittiere dabei das ILP:
-	 *
-	 *
-	 * datenhaltung: - remat merkt sich die zugehörige ilp_var und op
-	 * - op merkt sich (zugehörige remats) - block merkt sich ilp_vars
-	 * für spills
-	 *
-	 * nachbearbeitung: - durchlaufe alle instruktionen, dabei entferne
-	 * nicht benötigte remats und füge benötigte reloads ein - wenn
-	 * spill in Grundblock eingesetzt werden soll durchlaufen wir den
-	 * Block von oben runter und setzen das spill an der letzten
-	 * möglichen Stelle vor der ersten Benutzung/Reload ein. -
 	 * Speicherkopienminimierung: teste Speicherwerte auf Interferenz
 	 * und weise Spillkontexte zu. Sorge bei Phis dafuer, dass gleiche
 	 * Kontexte zusammenfliessen (Operanden und Ergebnis hat gleichen
 	 * Kontext)
-	 *
-	 * nachoptimierung: - laufe wieder von oben nach unten durch jeden
-	 * block - wenn ich ein reload finde, dann schiebe es hoch solange
-	 * es der Registerdruck erlaubt (wenn ich es über sein
-	 * zugehöriges spill schiebe ist das ein bug, oder?)
-	 *
-	 */
-
-}
 #endif
 
 static INLINE int
@@ -1980,13 +1976,26 @@ static int mark_remat_nodes_hook(FILE *F, ir_node *n, ir_node *l)
 		op_t   *op = (op_t*)get_irn_link(n);
 		assert(op && op->is_remat);
 
-		if(op->attr.remat.pre) {
-			ir_fprintf(F, "color:red info3:\"remat value: %+F\"", op->attr.remat.remat->value);
-		} else {
-			ir_fprintf(F, "color:orange info3:\"remat2 value: %+F\"", op->attr.remat.remat->value);
-		}
+		if(!op->attr.remat.remat->inverse) {
+			if(op->attr.remat.pre) {
+				ir_fprintf(F, "color:red info3:\"remat value: %+F\"", op->attr.remat.remat->value);
+			} else {
+				ir_fprintf(F, "color:orange info3:\"remat2 value: %+F\"", op->attr.remat.remat->value);
+			}
 
-		return 1;
+			return 1;
+		} else {
+			op_t   *op = (op_t*)get_irn_link(n);
+			assert(op && op->is_remat);
+
+			if(op->attr.remat.pre) {
+				ir_fprintf(F, "color:cyan info3:\"remat inverse value: %+F\"", op->attr.remat.remat->value);
+			} else {
+				ir_fprintf(F, "color:lightcyan info3:\"remat2 inverse value: %+F\"", op->attr.remat.remat->value);
+			}
+
+			return 1;
+		}
 	}
 
 	return 0;
@@ -2214,10 +2223,18 @@ delete_unnecessary_remats(spill_ilp_t * si)
 				/* TODO check whether reload is preferred over remat (could be bug) */
 				delete_remat(si, keep_arg);
 			} else {
-				if(arg_op->attr.remat.pre) {
-					DBG((si->dbg, LEVEL_2, "\t**remat kept: %+F\n", keep_arg));
+				if(!arg_op->attr.remat.remat->inverse) {
+					if(arg_op->attr.remat.pre) {
+						DBG((si->dbg, LEVEL_2, "\t**remat kept: %+F\n", keep_arg));
+					} else {
+						DBG((si->dbg, LEVEL_2, "\t%%%%remat2 kept: %+F\n", keep_arg));
+					}
 				} else {
-					DBG((si->dbg, LEVEL_2, "\t%%%%remat2 kept: %+F\n", keep_arg));
+					if(arg_op->attr.remat.pre) {
+						DBG((si->dbg, LEVEL_2, "\t**INVERSE remat kept: %+F\n", keep_arg));
+					} else {
+						DBG((si->dbg, LEVEL_2, "\t%%%%INVERSE remat2 kept: %+F\n", keep_arg));
+					}
 				}
 			}
 
@@ -2710,17 +2727,6 @@ get_n_regs(spill_ilp_t * si)
 	return free;
 }
 
-#if 0
-#define  enqueue(r) if(reloads[ins_pos]) put(); \
-	                assert(reloads[ins_pos]==NULL); \
-                    reload[ins_pos] = (r); \
-                    ins_pos = (ins_pos+1)%si->n_regs; \
-                    ++count
-#define  put() if(reloads[del_pos]) sched_put_before(irn, reloads[del_pos]); \
-               reloads[del_pos] = NULL; \
-               del_pos = (del_pos+1)%si->n_regs; \
-               --count;
-#endif
 static void
 walker_reload_mover(ir_node * bb, void * data)
 {
@@ -2753,9 +2759,6 @@ walker_reload_mover(ir_node * bb, void * data)
 
 				DBG((si->dbg, LEVEL_3, "putting reload %+F after %+F\n", reload, irn));
 				sched_put_after(irn, reload);
-//				sched_add_after(irn, reload);
-//				pressure = (int)get_irn_link(sched_next(reload));
-//				set_irn_link(reload, (void*)(pressure-1));
 			}
 		}
 	}
@@ -2780,7 +2783,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", chordal_env->irg, chordal_env->cls->name);
 	ir_snprintf(dump_suffix, sizeof(dump_suffix), "-%s-remats", chordal_env->cls->name);
 	ir_snprintf(dump_suffix2, sizeof(dump_suffix2), "-%s-pressure", chordal_env->cls->name);
-	ir_snprintf(dump_suffix2, sizeof(dump_suffix3), "-%s-reloads_moved", chordal_env->cls->name);
+	ir_snprintf(dump_suffix3, sizeof(dump_suffix3), "-%s-reloads_moved", chordal_env->cls->name);
 
 	FIRM_DBG_REGISTER(si.dbg, "firm.be.ra.spillremat");
 	DBG((si.dbg, LEVEL_1, "\n\n\t\t===== Processing %s =====\n\n", problem_name));
@@ -2793,6 +2796,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.lpp = new_lpp(problem_name, lpp_minimize);
 	si.remat_info = new_set(cmp_remat_info, 4096);
 	si.all_possible_remats = pset_new_ptr_default();
+	si.inverse_ops = pset_new_ptr_default();
 #ifndef EXECFREQ_LOOPDEPH
 	si.execfreqs = compute_execfreq(chordal_env->irg);
 #endif
@@ -2805,7 +2809,6 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	compute_doms(chordal_env->irg);
 
 #ifdef COLLECT_REMATS
-//	irg_block_walk_graph(chordal_env->irg, process_block, NULL, &si);
 	/* collect remats */
 	DBG((si.dbg, LEVEL_1, "Collecting remats\n"));
 	irg_walk_graph(chordal_env->irg, walker_remat_collector, NULL, &si);
@@ -2902,6 +2905,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	dump_pressure_graph(&si, dump_suffix3);
 
 	free_dom(chordal_env->irg);
+	del_pset(si.inverse_ops);
 	del_pset(si.all_possible_remats);
 #ifndef EXECFREQ_LOOPDEPH
 	del_set(si.execfreqs);
