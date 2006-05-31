@@ -457,6 +457,54 @@ static ir_type *ia32_abi_get_between_type(void *self)
 }
 
 /**
+ * Get the estimated cycle count for @p irn.
+ *
+ * @param self The this pointer.
+ * @param irn  The node.
+ *
+ * @return     The estimated cycle count for this operation
+ */
+static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
+{
+  int cost;
+  switch (get_ia32_irn_opcode(irn)) {
+    case iro_ia32_xDiv:
+    case iro_ia32_DivMod:
+      cost = 8;
+      break;
+
+    case iro_ia32_xLoad:
+    case iro_ia32_l_Load:
+    case iro_ia32_Load:
+    case iro_ia32_Push:
+    case iro_ia32_Pop:
+      cost = 10;
+      break;
+
+    case iro_ia32_xStore:
+    case iro_ia32_l_Store:
+    case iro_ia32_Store:
+    case iro_ia32_Store8Bit:
+      cost = 50;
+      break;
+
+    case iro_ia32_MulS:
+    case iro_ia32_Mul:
+    case iro_ia32_Mulh:
+    case iro_ia32_xMul:
+    case iro_ia32_l_MulS:
+    case iro_ia32_l_Mul:
+      cost = 2;
+      break;
+
+    default:
+      cost = 1;
+  }
+
+  return cost;
+}
+
+/**
  * Returns the inverse operation if @p irn, recalculating the argument at position @p i.
  *
  * @param irn       The original operation
@@ -597,7 +645,8 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_get_flags,
 	ia32_get_frame_entity,
 	ia32_set_stack_bias,
-	ia32_get_inverse
+	ia32_get_inverse,
+	ia32_get_op_estimated_cost
 };
 
 ia32_irn_ops_t ia32_irn_ops = {
