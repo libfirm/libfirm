@@ -938,7 +938,6 @@ static const pns_lookup_t bound_lut[] = {
   X(M),
   X(X_except),
   X(res),
-  X(M_except)
 #undef X
 };
 

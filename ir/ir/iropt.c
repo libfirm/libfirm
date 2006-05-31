@@ -1573,10 +1573,9 @@ static ir_node *equivalent_node_Bound(ir_node *n)
     /* Turn Bound into a tuple (mem, bad, idx) */
     ir_node *mem = get_Bound_mem(n);
     turn_into_tuple(n, pn_Bound_max);
-    set_Tuple_pred(n, pn_Bound_M_regular, mem);
-    set_Tuple_pred(n, pn_Bound_X_except,  new_Bad());       /* no exception */
-    set_Tuple_pred(n, pn_Bound_res,       idx);
-    set_Tuple_pred(n, pn_Bound_M_except,  mem);
+    set_Tuple_pred(n, pn_Bound_M,        mem);
+    set_Tuple_pred(n, pn_Bound_X_except, new_Bad());       /* no exception */
+    set_Tuple_pred(n, pn_Bound_res,      idx);
   }
   return n;
 }

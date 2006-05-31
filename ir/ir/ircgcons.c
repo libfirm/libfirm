@@ -377,8 +377,6 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
         in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, pn_Raise_M);
       } else if (op == op_CopyB) {
         in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, pn_CopyB_M_except);
-      } else if (op == op_Bound) {
-        in[i] = new_r_Proj(irg, get_nodes_block(node), node, mode_M, pn_Bound_M_except);
       } else {
         assert(is_fragile_op(node));
         /* We rely that all cfops have the memory output at the same position. */

@@ -1011,14 +1011,11 @@ void     set_Raise_exo_ptr (ir_node *node, ir_node *exoptr);
  * Projection numbers for result of Bound node: use for Proj nodes!
  */
 typedef enum {
-  pn_Bound_M_regular = 0,   /**< The memory result. */
+  pn_Bound_M = 0,           /**< The memory result. */
   pn_Bound_X_except = 1,    /**< The control flow result branching to the exception handler */
   pn_Bound_res = 2,         /**< The checked index. */
-  pn_Bound_M_except = 3,    /**< The memory result in case the runtime function terminated with
-                                 an exception */
-  pn_Bound_max = 4          /**< number of projections from a Bound */
+  pn_Bound_max = 3          /**< number of projections from a Bound */
 } pn_Bound;
-#define pn_Bound_M pn_Bound_M_regular
 
 /** Returns the memory input of a Bound operation. */
 ir_node *get_Bound_mem(ir_node *bound);

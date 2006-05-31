@@ -2221,15 +2221,14 @@ static INLINE ir_node ** new_frag_arr (ir_node *n)
     arr[0] = new_Proj(n, mode_M, pn_Call_M_except);
   else if (get_irn_op(n) == op_CopyB)
     arr[0] = new_Proj(n, mode_M, pn_CopyB_M_except);
-  else if (get_irn_op(n) == op_Bound)
-    arr[0] = new_Proj(n, mode_M, pn_Bound_M_except);
   else {
     assert((pn_Quot_M == pn_DivMod_M) &&
        (pn_Quot_M == pn_Div_M)    &&
        (pn_Quot_M == pn_Mod_M)    &&
        (pn_Quot_M == pn_Load_M)   &&
        (pn_Quot_M == pn_Store_M)  &&
-       (pn_Quot_M == pn_Alloc_M)    );
+       (pn_Quot_M == pn_Alloc_M)  &&
+       (pn_Quot_M == pn_Bound_M));
     arr[0] = new_Proj(n, mode_M, pn_Alloc_M);
   }
   set_optimize(opt);
