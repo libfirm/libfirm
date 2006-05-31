@@ -585,8 +585,6 @@ next_value:
 static void remove_copies(belady_env_t *bel) {
 	ir_node *irn;
 
-	edges_deactivate(current_ir_graph);
-	edges_activate(current_ir_graph);
 	foreach_pset(bel->copies, irn) {
 		ir_node *src;
 		const ir_edge_t *edge, *ne;
