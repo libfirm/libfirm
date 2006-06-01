@@ -1021,12 +1021,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	}
 
 	/* determine the operand which needs to be checked */
-	if (be_is_NoReg(cg, right)) {
-		temp = left;
-	}
-	else {
-		temp = right;
-	}
+	temp = be_is_NoReg(cg, right) ? left : right;
 
 	/* check if right operand is AMConst (LEA with ia32_am_O)  */
 	/* but we can only eat it up if there is no other symconst */
@@ -1040,6 +1035,9 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		have_am_sc = 1;
 		dolea      = 1;
 		lea_o      = temp;
+
+		if (temp == base)
+			base = noreg;
 	}
 
 	if (isadd) {
@@ -1085,7 +1083,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 				/* index != right -> we found a good Shl           */
 				/* left  != LEA   -> this Shl was the left operand */
 				/* -> base is right operand                        */
-				base = right;
+				base = (right == lea_o) ? noreg : right;
 			}
 		}
 	}
