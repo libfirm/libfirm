@@ -118,8 +118,12 @@ enum {
 	BE_CH_COPYMIN_PARK_MOON = 6,
 
 	/* ifg flavor */
-	BE_CH_IFG_STD         = 1,
-	BE_CH_IFG_FAST        = 2,
+	BE_CH_IFG_STD     = 1,
+	BE_CH_IFG_FAST    = 2,
+	BE_CH_IFG_CLIQUE  = 3,
+	BE_CH_IFG_POINTER = 4,
+	BE_CH_IFG_LIST    = 5,
+	BE_CH_IFG_CHECK   = 6,
 
 	/* lower perm options */
 	BE_CH_LOWER_PERM_SWAP   = (1 << 0),

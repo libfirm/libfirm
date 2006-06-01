@@ -126,10 +126,10 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "morgan", BE_CH_SPILL_MORGAN },
 	{ "belady", BE_CH_SPILL_BELADY },
 #ifdef WITH_ILP
-	{ "ilp",    BE_CH_SPILL_ILP },
-        { "remat",  BE_CH_SPILL_REMAT },
-        { "appel",  BE_CH_SPILL_APPEL },
-#endif
+	{ "ilp",    BE_CH_SPILL_ILP    },
+	{ "remat",  BE_CH_SPILL_REMAT  },
+	{ "appel",  BE_CH_SPILL_APPEL  },
+#endif /* WITH_ILP */
 	{ NULL, 0 }
 };
 
@@ -142,14 +142,18 @@ static const lc_opt_enum_int_items_t copymin_items[] = {
 #ifdef WITH_ILP
 	{ "ilp1",  BE_CH_COPYMIN_ILP1 },
 	{ "ilp2",  BE_CH_COPYMIN_ILP2 },
-#endif
+#endif /* WITH_ILP */
 	{ NULL, 0 }
 };
 
 static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
-	{ "std",  BE_CH_IFG_STD },
-	{ "fast", BE_CH_IFG_FAST },
-	{ NULL, 0 }
+	{ "std",     BE_CH_IFG_STD     },
+	{ "fast",    BE_CH_IFG_FAST    },
+	{ "clique",  BE_CH_IFG_CLIQUE  },
+	{ "pointer", BE_CH_IFG_POINTER },
+	{ "list",    BE_CH_IFG_LIST    },
+	{ "check",   BE_CH_IFG_CHECK   },
+	{ NULL,      0                 }
 };
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
@@ -209,7 +213,7 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_MASK("spill",	"spill method (belady, ilp, remat or appel)", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
-	LC_OPT_ENT_ENUM_PTR ("ifg",     "interference graph flavour (std or fast)", &ifg_flavor_var),
+	LC_OPT_ENT_ENUM_PTR ("ifg",     "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",    "perm lowering options (copy or swap)", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",    "select dump phases", &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",    "verify options (off, warn, assert)", &be_ch_vrfy_var),
@@ -373,13 +377,31 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 
 		/* Check the implementations of the ifg */
-		//check_ifg_implementations(&chordal_env);
 
-		/* Build the interference graph. */
-		chordal_env.ifg = be_ifg_std_new(&chordal_env);
-		//be_ifg_check(chordal_env.ifg);
-		//be_ifg_check_sorted(chordal_env.ifg);
-
+		switch (options.ifg_flavor) {
+			default:
+				fprintf(stderr, "no valid ifg flavour selected. falling back to std\n");
+			case BE_CH_IFG_STD:
+			case BE_CH_IFG_FAST:
+				chordal_env.ifg = be_ifg_std_new(&chordal_env);
+				break;
+			case BE_CH_IFG_CLIQUE:
+				chordal_env.ifg = be_ifg_clique_new(&chordal_env);
+				break;
+			case BE_CH_IFG_POINTER:
+				chordal_env.ifg = be_ifg_pointer_new(&chordal_env);
+				break;
+			case BE_CH_IFG_LIST:
+				chordal_env.ifg = be_ifg_list_new(&chordal_env);
+				break;
+			case BE_CH_IFG_CHECK:
+				check_ifg_implementations(&chordal_env);
+				/* Build the interference graph. */
+				chordal_env.ifg = be_ifg_std_new(&chordal_env);
+				//be_ifg_check(chordal_env.ifg);
+				//be_ifg_check_sorted(chordal_env.ifg);
+				break;
+		}
 
 		/* start timer */
 		//lc_timer_reset_and_start(timer);
