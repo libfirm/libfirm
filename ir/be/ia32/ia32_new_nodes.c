@@ -1077,6 +1077,7 @@ void copy_ia32_Immop_attr(ir_node *dst, ir_node *src) {
  */
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 	ia32_attr_t *attr = get_ia32_attr(ia32_cnst);
+	ir_mode *mode;
 
 	assert(is_ia32_Cnst(ia32_cnst) && "Need ia32_Const to set Const attr");
 
@@ -1084,6 +1085,10 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 		case iro_Const:
 			attr->data.tp     = ia32_Const;
 			attr->cnst_val.tv = get_Const_tarval(cnst);
+			mode = get_tarval_mode(attr->cnst_val.tv);
+			if (mode_is_reference(mode) &&
+			    get_mode_null(mode) == attr->cnst_val.tv)
+				attr->cnst_val.tv = get_mode_null(mode_Is);
 			attr->cnst        = get_ident_for_tv(attr->cnst_val.tv);
 			break;
 		case iro_SymConst:
