@@ -3,7 +3,7 @@ EDG=edg
 GCC=gcc
 
 GCC_CFLAGS=-O3 -g
-EDG_CFLAGS=-b nomris -f win32 -b ra-chordal-spill=morgan --c -Ic:\\devstudio\\include
+EDG_CFLAGS=-f win32 -b ra-chordal-spill=morgan --c -Ic:\\devstudio\\include
 
 EXCLUDE=bf_localinit.c bf_store.c calls.c compress95.c convtest.c \
 	fe_bug.c gnu_def.c harness.c if.c psi_test.c

@@ -44,29 +44,38 @@ static void print_living_values(FILE *F, pset *live_nodes)
 /**
  * Check if number of live nodes never exceeds the number of available registers.
  */
-static void verify_liveness_walker(ir_node *bl, void *data)
+static void verify_liveness_walker(ir_node *block, void *data)
 {
 	be_verify_register_pressure_env_t *env = (be_verify_register_pressure_env_t *)data;
 	pset    *live_nodes = pset_new_ptr_default();
 	ir_node *irn;
+	int pressure;
 
 	/* collect register pressure info, start with end of a block */
-	be_liveness_end_of_block(env->arch_env, env->cls, bl, live_nodes);
+	be_liveness_end_of_block(env->arch_env, env->cls, block, live_nodes);
 
-	sched_foreach_reverse(bl, irn) {
-		int pressure = pset_count(live_nodes);
+	pressure = pset_count(live_nodes);
+	if(pressure > env->registers_available) {
+		ir_fprintf(stderr, "Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
+			block, get_irg_dump_name(env->irg), pressure, env->registers_available);
+		print_living_values(stderr, live_nodes);
+		env->problem_found = 1;
+	}
 
+	sched_foreach_reverse(block, irn) {
 		if (is_Phi(irn))
 			break;
 
+		be_liveness_transfer(env->arch_env, env->cls, irn, live_nodes);
+
+		pressure = pset_count(live_nodes);
+
 		if(pressure > env->registers_available) {
-			ir_fprintf(stderr, "Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
-				bl, get_irg_dump_name(env->irg), pressure, env->registers_available);
+			ir_fprintf(stderr, "Verify Warning: Register pressure too high before node %+F in %+F(%s) (%d/%d):\n",
+				irn, block, get_irg_dump_name(env->irg), pressure, env->registers_available);
 			print_living_values(stderr, live_nodes);
 			env->problem_found = 1;
 		}
-
-		be_liveness_transfer(env->arch_env, env->cls, irn, live_nodes);
 	}
 	del_pset(live_nodes);
 }
@@ -99,35 +108,42 @@ typedef struct be_verify_schedule_env_t_ {
 /**
  * Simple schedule checker.
  */
-static void verify_schedule_walker(ir_node *bl, void *data)
+static void verify_schedule_walker(ir_node *block, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
-	ir_node *irn;
+	ir_node *node;
 	int non_phi_found  = 0;
 	int cfchange_found = 0;
 	// TODO ask ABI about delay branches
 	int delay_branches = 0;
+	pset *uses = pset_new_ptr_default();
 
 	/*
-	 * Make sure that all phi nodes are scheduled at the beginning of the block, and that there
-	 * is 1 or no control flow changing node scheduled and exactly delay_branches operations after it.
+	 * Tests for the following things:
+	 *   1. Make sure that all phi nodes are scheduled at the beginning of the block
+	 *   2. There is 1 or no control flow changing node scheduled and exactly delay_branches operations after it.
+	 *   3. No value is defined after it has been used
 	 */
-	sched_foreach(bl, irn) {
-		if (is_Phi(irn)) {
+	sched_foreach(block, node) {
+		int i, arity;
+
+		// 1. Check for phis
+		if (is_Phi(node)) {
 			if (non_phi_found) {
 				ir_fprintf(stderr, "Verify Warning: Phi node %+F scheduled after non-Phi nodes in block %+F (%s)\n",
-					irn, bl, get_irg_dump_name(env->irg));
+					node, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 			}
 			continue;
 		}
 		non_phi_found = 1;
 
-		if (is_cfop(irn) && get_irn_opcode(irn) != iro_Start) {
+		// 2. Check for control flow changing nodes
+		if (is_cfop(node) && get_irn_opcode(node) != iro_Start) {
 			/* check, that only one CF operation is scheduled */
 			if (cfchange_found == 1) {
 				ir_fprintf(stderr, "Verify Warning: More than 1 control flow changing node (%+F) scheduled in block %+F (%s)\n",
-					irn, bl, get_irg_dump_name(env->irg));
+					node, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 			}
 			cfchange_found = 1;
@@ -135,18 +151,29 @@ static void verify_schedule_walker(ir_node *bl, void *data)
 			/* check for delay branches */
 			if (delay_branches == 0) {
 				ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node (+delay branches) in block %+F (%s)\n",
-					irn, bl, get_irg_dump_name(env->irg));
+					node, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 			} else {
 				delay_branches--;
 			}
 		}
+
+		// 3. Check for uses
+		if(pset_find_ptr(uses, node)) {
+			ir_fprintf(stderr, "Verify Warning: Value %+F used before it was defined in block %+F (%s)\n",
+				node, block, get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+		}
+		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			pset_insert_ptr(uses, get_irn_n(node, i));
+		}
 	}
+	del_pset(uses);
 
 	/* check that all delay branches are used (at least with NOPs) */
 	if (cfchange_found && delay_branches != 0) {
 		ir_fprintf(stderr, "Not all delay slots filled after jump (%d/%d) in block %+F (%s)\n",
-			bl, get_irg_dump_name(env->irg));
+			block, get_irg_dump_name(env->irg));
 		env->problem_found = 1;
 	}
 }

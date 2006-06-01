@@ -25,15 +25,15 @@
  * @param arch_env   An architecture environment
  * @param cls        The register class to check
  * @param irg        The irg to check
- * @return 1 on success, 0 otherwise
+ * @return			 1 if the pressure is valid, 0 otherwise
  */
 int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_class_t* cls, ir_graph *irg);
 
 /**
  * Does some sanity checks on the schedule.
  *
- * @param irg  The irg to check
- * @return 1 on success, 0 otherwise
+ * @param irg	The irg to check
+ * @return		1 if the schedule is valid, 0 otherwise
  */
 int be_verify_schedule(ir_graph *irg);
 
