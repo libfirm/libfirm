@@ -449,7 +449,7 @@ set_type_state(ir_type *tp, type_state state) {
   if (state == layout_fixed)
     tp->flags |= tf_layout_fixed;
   else
-    tp->flags &= tf_layout_fixed;
+    tp->flags &= ~tf_layout_fixed;
 }
 
 unsigned long (get_type_visited)(const ir_type *tp) {
