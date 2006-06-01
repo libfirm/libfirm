@@ -12,4 +12,3 @@ GCCEXES=$(addprefix gcc/, $(addsuffix .exe, $(basename $(SOURCES))))
 FIRMEXES=$(addprefix firm/, $(addsuffix .exe, $(basename $(SOURCES))))
 FIRMASSEMBLERS=$(addprefix firm/, $(addsuffix .s, $(basename $(SOURCES))))
 DONTCOMPARE = XXEndless.c
-C
