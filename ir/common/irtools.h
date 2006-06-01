@@ -65,7 +65,7 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg);
 
 /**
  * Creates an exact copy of a node.
- * The copy resists on the sane graph in the same block.
+ * The copy resists on the same graph in the same block.
  *
  * @param n   the node to copy
  *
