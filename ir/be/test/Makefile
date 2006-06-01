@@ -1,17 +1,5 @@
-# Configuration section
-EDG=edg
-GCC=gcc
+include Makefile.config
 
-GCC_CFLAGS=-O3 -g
-EDG_CFLAGS=-f win32 -b ra-chordal-spill=morgan --c -Ic:\\devstudio\\include
-
-EXCLUDE=bf_localinit.c bf_store.c calls.c compress95.c convtest.c \
-	fe_bug.c gnu_def.c harness.c if.c psi_test.c
-SOURCES=$(filter-out $(EXCLUDE), $(wildcard *.c))
-GCCEXES=$(addprefix gcc/, $(addsuffix .exe, $(basename $(SOURCES))))
-FIRMEXES=$(addprefix firm/, $(addsuffix .exe, $(basename $(SOURCES))))
-FIRMASSEMBLERS=$(addprefix firm/, $(addsuffix .s, $(basename $(SOURCES))))
-DONTCOMPARE = XXEndless.c
 COMPARES = $(addprefix compare_, $(filter-out $(DONTCOMPARE), $(SOURCES)))
 
 .PHONY: all clean firm gcc compare

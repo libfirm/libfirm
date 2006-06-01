@@ -10,3 +10,4 @@
 OUT.*
 gcc
 firm
+Makefile.config
