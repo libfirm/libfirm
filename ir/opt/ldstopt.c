@@ -2,7 +2,7 @@
  * Project:     libFIRM
  * File name:   ir/opt/ldstopt.c
  * Purpose:     load store optimizations
- * Author:
+ * Author:      Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2004 Universität Karlsruhe
@@ -395,13 +395,143 @@ static compound_graph_path *get_accessed_path(ir_node *ptr) {
 }
 
 /**
+ * Follow the memory chain as long as there are only Loads
+ * and try to replace current Load or Store by a previous one.
+ * Note that in unreachable loops it might happen that we reach
+ * load again, as well as we can fall into a cycle.
+ * We break such cycles using a special visited flag.
+ *
+ * INC_MASTER() must be called before dive into
+ */
+static unsigned follow_Load_chain(ir_node *load, ir_node *curr) {
+  unsigned res = 0;
+  ldst_info_t *info = get_irn_link(load);
+  ir_node *pred;
+  ir_node *ptr       = get_Load_ptr(load);
+  ir_node *mem       = get_Load_mem(load);
+  ir_mode *load_mode = get_Load_mode(load);
+
+  for (pred = curr; load != pred; pred = skip_Proj(get_Load_mem(pred))) {
+    ldst_info_t *pred_info = get_irn_link(pred);
+
+    /*
+     * BEWARE: one might think that checking the modes is useless, because
+     * if the pointers are identical, they refer to the same object.
+     * This is only true in strong typed languages, not in C were the following
+     * is possible a = *(ir_type1 *)p; b = *(ir_type2 *)p ...
+     */
+
+    if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
+        get_irn_mode(get_Store_value(pred)) == load_mode) {
+      /*
+       * a Load immediately after a Store -- a read after write.
+       * We may remove the Load, if both Load & Store does not have an exception handler
+       * OR they are in the same block. In the latter case the Load cannot
+       * throw an exception when the previous Store was quiet.
+       *
+       * Why we need to check for Store Exception? If the Store cannot
+       * be executed (ROM) the exception handler might simply jump into
+       * the load block :-(
+       * We could make it a little bit better if we would know that the exception
+       * handler of the Store jumps directly to the end...
+       */
+      if ((!pred_info->projs[pn_Store_X_except] && !info->projs[pn_Load_X_except]) ||
+          get_nodes_block(load) == get_nodes_block(pred)) {
+        ir_node *value = get_Store_value(pred);
+
+        DBG_OPT_RAW(load, value);
+        if (info->projs[pn_Load_M])
+          exchange(info->projs[pn_Load_M], mem);
+
+        /* no exception */
+        if (info->projs[pn_Load_X_except]) {
+          exchange( info->projs[pn_Load_X_except], new_Bad());
+          res |= CF_CHANGED;
+        }
+
+        if (info->projs[pn_Load_res])
+          exchange(info->projs[pn_Load_res], value);
+
+        return res | DF_CHANGED;
+      }
+    }
+    else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
+             get_Load_mode(pred) == load_mode) {
+      /*
+       * a Load after a Load -- a read after read.
+       * We may remove the second Load, if it does not have an exception handler
+       * OR they are in the same block. In the later case the Load cannot
+       * throw an exception when the previous Load was quiet.
+       *
+       * Here, there is no need to check if the previous Load has an exception
+       * hander because they would have exact the same exception...
+       */
+      if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
+        DBG_OPT_RAR(load, pred);
+
+        if (pred_info->projs[pn_Load_res]) {
+          /* we need a data proj from the previous load for this optimization */
+          if (info->projs[pn_Load_res])
+            exchange(info->projs[pn_Load_res], pred_info->projs[pn_Load_res]);
+
+          if (info->projs[pn_Load_M])
+            exchange(info->projs[pn_Load_M], mem);
+        }
+        else {
+          if (info->projs[pn_Load_res]) {
+            set_Proj_pred(info->projs[pn_Load_res], pred);
+            set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
+            pred_info->projs[pn_Load_res] = info->projs[pn_Load_res];
+          }
+          if (info->projs[pn_Load_M]) {
+            /* Actually, this if should not be necessary.  Construct the Loads
+               properly!!! */
+            exchange(info->projs[pn_Load_M], mem);
+          }
+        }
+
+        /* no exception */
+        if (info->projs[pn_Load_X_except]) {
+          exchange(info->projs[pn_Load_X_except], new_Bad());
+          res |= CF_CHANGED;
+        }
+
+        return res |= DF_CHANGED;
+      }
+    }
+
+    /* follow only Load chains */
+    if (get_irn_op(pred) != op_Load)
+      break;
+
+    /* check for cycles */
+    if (NODE_VISITED(pred_info))
+      break;
+    MARK_NODE(pred_info);
+  }
+
+  if (get_irn_op(pred) == op_Sync) {
+    int i;
+
+    /* handle all Sync predecessors */
+    for (i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
+      res |= follow_Load_chain(load, skip_Proj(get_Sync_pred(pred, i)));
+      if (res)
+        break;
+    }
+  }
+
+  return res;
+}
+
+/**
  * optimize a Load
  */
 static unsigned optimize_load(ir_node *load)
 {
   ldst_info_t *info = get_irn_link(load);
   ir_mode *load_mode = get_Load_mode(load);
-  ir_node *pred, *mem, *ptr, *new_node;
+  ir_node *mem, *ptr, *new_node;
   entity *ent;
   unsigned res = 0;
 
@@ -583,144 +713,34 @@ static unsigned optimize_load(ir_node *load)
    * We break such cycles using a special visited flag.
    */
   INC_MASTER();
-  for (pred = skip_Proj(mem); load != pred; pred = skip_Proj(get_Load_mem(pred))) {
+  res = follow_Load_chain(load, skip_Proj(mem));
+  return res;
+}
+
+/**
+ * follow the memory chain as long as there are only Loads.
+ *
+ * INC_MASTER() must be called before dive into
+ */
+static unsigned follow_Load_chain_for_Store(ir_node *store, ir_node *curr) {
+  unsigned res = 0;
+  ldst_info_t *info = get_irn_link(store);
+  ir_node *pred;
+  ir_node *ptr = get_Store_ptr(store);
+  ir_node *mem = get_Store_mem(store);
+  ir_node *value = get_Store_value(store);
+  ir_mode *mode  = get_irn_mode(value);
+  ir_node *block = get_nodes_block(store);
+
+  for (pred = curr; pred != store; pred = skip_Proj(get_Load_mem(pred))) {
     ldst_info_t *pred_info = get_irn_link(pred);
 
     /*
      * BEWARE: one might think that checking the modes is useless, because
      * if the pointers are identical, they refer to the same object.
-     * This is only true in strong typed languages, not in C were the following
-     * is possible a = *(ir_type1 *)p; b = *(ir_type2 *)p ...
+     * This is only true in strong typed languages, not is C were the following
+     * is possible *(ir_type1 *)p = a; *(ir_type2 *)p = b ...
      */
-
-    if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
-        get_irn_mode(get_Store_value(pred)) == load_mode) {
-      /*
-       * a Load immediately after a Store -- a read after write.
-       * We may remove the Load, if both Load & Store does not have an exception handler
-       * OR they are in the same block. In the latter case the Load cannot
-       * throw an exception when the previous Store was quiet.
-       *
-       * Why we need to check for Store Exception? If the Store cannot
-       * be executed (ROM) the exception handler might simply jump into
-       * the load block :-(
-       * We could make it a little bit better if we would know that the exception
-       * handler of the Store jumps directly to the end...
-       */
-      if ((!pred_info->projs[pn_Store_X_except] && !info->projs[pn_Load_X_except]) ||
-          get_nodes_block(load) == get_nodes_block(pred)) {
-        ir_node *value = get_Store_value(pred);
-
-        DBG_OPT_RAW(load, value);
-        if (info->projs[pn_Load_M])
-          exchange(info->projs[pn_Load_M], mem);
-
-        /* no exception */
-        if (info->projs[pn_Load_X_except]) {
-          exchange( info->projs[pn_Load_X_except], new_Bad());
-          res |= CF_CHANGED;
-        }
-
-        if (info->projs[pn_Load_res])
-          exchange(info->projs[pn_Load_res], value);
-
-        return res | DF_CHANGED;
-      }
-    }
-    else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
-             get_Load_mode(pred) == load_mode) {
-      /*
-       * a Load after a Load -- a read after read.
-       * We may remove the second Load, if it does not have an exception handler
-       * OR they are in the same block. In the later case the Load cannot
-       * throw an exception when the previous Load was quiet.
-       *
-       * Here, there is no need to check if the previous Load has an exception
-       * hander because they would have exact the same exception...
-       */
-      if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
-        DBG_OPT_RAR(load, pred);
-
-        if (pred_info->projs[pn_Load_res]) {
-          /* we need a data proj from the previous load for this optimization */
-          if (info->projs[pn_Load_res])
-            exchange(info->projs[pn_Load_res], pred_info->projs[pn_Load_res]);
-
-          if (info->projs[pn_Load_M])
-            exchange(info->projs[pn_Load_M], mem);
-        }
-        else {
-          if (info->projs[pn_Load_res]) {
-            set_Proj_pred(info->projs[pn_Load_res], pred);
-            set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
-            pred_info->projs[pn_Load_res] = info->projs[pn_Load_res];
-          }
-          if (info->projs[pn_Load_M]) {
-            /* Actually, this if should not be necessary.  Construct the Loads
-               properly!!! */
-            exchange(info->projs[pn_Load_M], mem);
-          }
-        }
-
-        /* no exception */
-        if (info->projs[pn_Load_X_except]) {
-          exchange(info->projs[pn_Load_X_except], new_Bad());
-          res |= CF_CHANGED;
-        }
-
-        return res |= DF_CHANGED;
-      }
-    }
-
-    /* follow only Load chains */
-    if (get_irn_op(pred) != op_Load)
-      break;
-
-    /* check for cycles */
-    if (NODE_VISITED(pred_info))
-      break;
-    MARK_NODE(pred_info);
-  }
-  return res;
-}
-
-/**
- * optimize a Store
- */
-static unsigned optimize_store(ir_node *store)
-{
-  ldst_info_t *info = get_irn_link(store);
-  ir_node *pred, *mem, *ptr, *value, *block;
-  ir_mode *mode;
-  unsigned res = 0;
-
-  if (get_Store_volatility(store) == volatility_is_volatile)
-    return 0;
-
-  /*
-   * BEWARE: one might think that checking the modes is useless, because
-   * if the pointers are identical, they refer to the same object.
-   * This is only true in strong typed languages, not is C were the following
-   * is possible *(ir_type1 *)p = a; *(ir_type2 *)p = b ...
-   */
-
-  ptr   = get_Store_ptr(store);
-
-  /* Check, if the address of this load is used more than once.
-   * If not, this load cannot be removed in any case. */
-  if (get_irn_out_n(ptr) <= 1)
-    return 0;
-
-  block = get_nodes_block(store);
-  mem   = get_Store_mem(store);
-  value = get_Store_value(store);
-  mode  = get_irn_mode(value);
-
-  /* follow the memory chain as long as there are only Loads */
-  INC_MASTER();
-  for (pred = skip_Proj(mem); pred != store; pred = skip_Proj(get_Load_mem(pred))) {
-    ldst_info_t *pred_info = get_irn_link(pred);
-
     if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
         get_nodes_block(pred) == block && get_irn_mode(get_Store_value(pred)) == mode) {
       /*
@@ -757,7 +777,43 @@ static unsigned optimize_store(ir_node *store)
       break;
     MARK_NODE(pred_info);
   }
+
+  if (get_irn_op(pred) == op_Sync) {
+    int i;
+
+    /* handle all Sync predecessors */
+    for (i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
+      res |= follow_Load_chain_for_Store(store, skip_Proj(get_Sync_pred(pred, i)));
+      if (res)
+        break;
+    }
+  }
   return res;
+}
+
+/**
+ * optimize a Store
+ */
+static unsigned optimize_store(ir_node *store)
+{
+  ldst_info_t *info = get_irn_link(store);
+  ir_node *ptr, *mem;
+
+  if (get_Store_volatility(store) == volatility_is_volatile)
+    return 0;
+
+  ptr = get_Store_ptr(store);
+
+  /* Check, if the address of this load is used more than once.
+   * If not, this load cannot be removed in any case. */
+  if (get_irn_out_n(ptr) <= 1)
+    return 0;
+
+  mem = get_Store_mem(store);
+
+  /* follow the memory chain as long as there are only Loads */
+  INC_MASTER();
+  return follow_Load_chain_for_Store(store, skip_Proj(mem));
 }
 
 /**
