@@ -80,9 +80,12 @@ set_insert_freq(set * set, const ir_node * irn)
 double
 get_block_execfreq(set * freqs, const ir_node * irn)
 {
+  freq_t *freq;
+
   assert(is_Block(irn));
 
-  freq_t *freq = set_find_freq(freqs, irn);
+  freq = set_find_freq(freqs, irn);
+
   assert(freq);
 
   return freq->freq;
@@ -136,30 +139,21 @@ solve_lgs(double * A, double * b, size_t size)
 #endif
 
 static double
-get_cf_probability(const ir_node * bb, int pos)
+get_cf_probability(ir_node *bb, int pos)
 {
 #define LOOP_WEIGHT 9.0
 
-  double    sum = 0.0;
-  double    cur = 0.0;
-  int       i,
-	    n;
-  ir_node  *pred = get_Block_cfgpred_block(bb, pos);
+  double  sum = 0.0;
+  double  cur = 0.0;
+  int     i, n;
+  ir_node *pred = get_Block_cfgpred_block(bb, pos);
 
-  if(get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred))) {
-    cur = 1.0;
-  } else {
-    cur = LOOP_WEIGHT;
-  }
+  cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : LOOP_WEIGHT;
 
   for(i = 0, n = get_Block_n_cfg_outs(pred); i < n; ++i) {
     ir_node *succ = get_Block_cfg_out(pred, i);
 
-    if(get_loop_depth(get_irn_loop(succ)) < get_loop_depth(get_irn_loop(pred))) {
-      sum += 1.0;
-    } else {
-      sum += LOOP_WEIGHT;
-    }
+    sum += get_loop_depth(get_irn_loop(succ)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : LOOP_WEIGHT;
   }
 
   return cur/sum;
@@ -195,22 +189,22 @@ compute_execfreq(ir_graph * irg)
   memset(rhs, 0, size*sizeof(*rhs));
 
   set_foreach(freqs, freq) {
-    const ir_node  *bb = freq->irn;
-    size_t    idx = (int)get_irn_link(bb);
+    ir_node *bb = (ir_node *)freq->irn;
+    size_t  idx = (int)get_irn_link(bb);
 
-    matrix[idx*(size+1)] = -1.0;
+    matrix[idx * (size + 1)] = -1.0;
 
-    if(bb == get_irg_start_block(irg)) {
+    if (bb == get_irg_start_block(irg)) {
       rhs[(int)get_irn_link(bb)] = -1.0;
       continue;
     }
 
-    for(i = 0; i < get_Block_n_cfgpreds(bb); ++i) {
-      ir_node   *pred = get_Block_cfgpred_block(bb, i);
-      size_t     pred_idx = (int)get_irn_link(pred);
+    for(i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
+      ir_node *pred    = get_Block_cfgpred_block(bb, i);
+      size_t  pred_idx = (int)get_irn_link(pred);
 
 //      matrix[pred_idx + idx*size] += 1.0/(double)get_Block_n_cfg_outs(pred);
-      matrix[pred_idx + idx*size] += get_cf_probability(bb, i);
+      matrix[pred_idx + idx * size] += get_cf_probability(bb, i);
     }
   }
 
@@ -221,8 +215,8 @@ compute_execfreq(ir_graph * irg)
   }
 
   set_foreach(freqs, freq) {
-    const ir_node  *bb = freq->irn;
-    size_t          idx = PTR_TO_INT(get_irn_link(bb));
+    const ir_node *bb = freq->irn;
+    size_t        idx = PTR_TO_INT(get_irn_link(bb));
 
 #ifdef USE_GSL
     freq->freq = ZERO(gsl_vector_get(x, idx)) ? 0.0 : gsl_vector_get(x, idx);
