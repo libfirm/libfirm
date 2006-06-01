@@ -194,7 +194,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 	ir_node *phi;
 
 	/* Consider all phis of this block */
-	for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+	for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
 		int i, max;
 		ir_node *arg, *phi_block, *arg_block;
 		const arch_register_t *phi_reg, *arg_reg;
@@ -203,28 +203,34 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 		assert(is_Phi(phi) && "Can only handle phi-destruction :)");
 
 		phi_block = get_nodes_block(phi);
-		phi_reg = get_reg(phi);
-		cls = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, -1);
+		phi_reg   = get_reg(phi);
+		cls       = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, -1);
 
 		/* process all arguments of the phi */
-		for(i=0, max=get_irn_arity(phi); i<max; ++i) {
-			arg = get_irn_n(phi, i);
+		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
+			arg       = get_irn_n(phi, i);
 			arg_block = get_Block_cfgpred_block(phi_block, i);
-			arg_reg = get_reg(arg);
+			arg_reg   = get_reg(arg);
+
 			assert(arg_reg && "Register must be set while placing perms");
 
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
 			if(nodes_interfere(chordal_env, phi, arg)) {
-				/* Insert a duplicate in arguments block,
-				 * make it the new phi arg,
-				 * set its register,
-				 * insert it into schedule,
-				 * pin it
-				 */
+				/*
+					Insert a duplicate in arguments block,
+					make it the new phi arg,
+					set its register,
+					insert it into schedule,
+					pin it
+				*/
 				ir_node *dupl  = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
 				ir_mode *m_phi = get_irn_mode(phi), *m_dupl = get_irn_mode(dupl);
 
+				/*
+					Conv signed <-> unsigned is killed on ia32
+					check for: (both int OR both float) AND equal mode sizes
+				*/
 				assert(((mode_is_int(m_phi) && mode_is_int(m_dupl)) ||
 					(mode_is_float(m_phi) && mode_is_float(m_dupl))) &&
 					(get_mode_size_bits(m_phi) == get_mode_size_bits(m_dupl)));
@@ -238,9 +244,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 			}
 
 			if (phi_reg == arg_reg) {
-				/* Phi and arg have the same register,
-				 * so pin and continue
-				 */
+				/* Phi and arg have the same register, so pin and continue */
 				pin_irn(arg, phi_block);
 				DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, get_reg(arg)->name));
 				continue;
@@ -249,18 +253,24 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 			DBG((dbg, LEVEL_1, "    they do not interfere\n"));
 			assert(is_Proj(arg));
 			/*
-			 * First check if there is an other phi
-			 * - in the same block
-			 * - having arg at the current pos in its arg-list
-			 * - having the same color as arg
-			 *
-			 * If found, then pin the arg (for that phi)
-			 */
-			if (!is_pinned(arg)) {
+				First check if there is an other phi
+				- in the same block
+				- having arg at the current pos in its arg-list
+				- having the same color as arg
+
+				If found, then pin the arg (for that phi)
+			*/
+			if (! is_pinned(arg)) {
 				ir_node *other_phi;
+
 				DBG((dbg, LEVEL_1, "      searching for phi with same arg having args register\n"));
+
 				for(other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
-					assert(is_Phi(other_phi) && get_nodes_block(phi) == get_nodes_block(other_phi) && "link fields are screwed up");
+
+					assert(is_Phi(other_phi)                               &&
+						get_nodes_block(phi) == get_nodes_block(other_phi) &&
+						"link fields are screwed up");
+
 					if (get_irn_n(other_phi, i) == arg && get_reg(other_phi) == arg_reg) {
 						DBG((dbg, LEVEL_1, "        found %+F(%s)\n", other_phi, get_reg(other_phi)->name));
 						pin_irn(arg, phi_block);
@@ -270,25 +280,37 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 			}
 
 			if (is_pinned(arg)) {
-				/* Insert a duplicate of the original value in arguments block,
-				 * make it the new phi arg,
-				 * set its register,
-				 * insert it into schedule,
-				 * pin it
-				 */
-				ir_node *perm = get_Proj_pred(arg);
+				/*
+					Insert a duplicate of the original value in arguments block,
+					make it the new phi arg,
+					set its register,
+					insert it into schedule,
+					pin it
+				*/
+				ir_node *perm     = get_Proj_pred(arg);
 				ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
-				ir_node *dupl = be_new_Copy(cls, chordal_env->irg, arg_block, orig_val);
-				assert(get_irn_mode(phi) == get_irn_mode(dupl));
+				ir_node *dupl     = be_new_Copy(cls, chordal_env->irg, arg_block, orig_val);
+				ir_mode *m_phi    = get_irn_mode(phi);
+				ir_mode *m_dupl   = get_irn_mode(dupl);
+
+				/*
+					Conv signed <-> unsigned is killed on ia32
+					check for: (both int OR both float) AND equal mode sizes
+				*/
+				assert(((mode_is_int(m_phi) && mode_is_int(m_dupl)) ||
+					(mode_is_float(m_phi) && mode_is_float(m_dupl))) &&
+					(get_mode_size_bits(m_phi) == get_mode_size_bits(m_dupl)));
+
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
 				sched_add_before(perm, dupl);
 				pin_irn(dupl, phi_block);
 				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 			} else {
-				/* No other phi has the same color (else arg would have been pinned),
-				 * so just set the register and pin
-				 */
+				/*
+					No other phi has the same color (else arg would have been pinned),
+					so just set the register and pin
+				*/
 				set_reg(arg, phi_reg);
 				pin_irn(arg, phi_block);
 				DBG((dbg, LEVEL_1, "      arg is not pinned: so pin %+F(%s)\n", arg, get_reg(arg)->name));
@@ -299,7 +321,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	pmap *perm_map = pmap_create();
-	ir_graph *irg = chordal_env->irg;
+	ir_graph *irg  = chordal_env->irg;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
@@ -329,19 +351,22 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data) {
 	ir_node *phi;
 	int i, max;
 
-	for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+	for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
 		const arch_register_t *phi_reg, *arg_reg;
 
 		phi_reg = get_reg(phi);
 		/* iterate over all args of phi */
-		for(i=0, max=get_irn_arity(phi); i<max; ++i) {
+		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
 			ir_node *arg = get_irn_n(phi, i);
+
 			arg_reg = get_reg(arg);
-			if(phi_reg != arg_reg) {
+
+			if (phi_reg != arg_reg) {
 				DBG((dbg, 0, "Error: Registers of %+F and %+F differ: %s %s\n", phi, arg, phi_reg->name, arg_reg->name));
 				assert(0);
 			}
-			if(!is_pinned(arg)) {
+
+			if (! is_pinned(arg)) {
 				DBG((dbg, 0, "Warning: Phi argument %+F is not pinned.\n", arg));
 				assert(0);
 			}
