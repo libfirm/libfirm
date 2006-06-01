@@ -216,7 +216,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
-			if(nodes_interfere(chordal_env, phi, arg)) {
+			if(values_interfere(phi, arg)) {
 				/*
 					Insert a duplicate in arguments block,
 					make it the new phi arg,
