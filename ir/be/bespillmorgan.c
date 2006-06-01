@@ -480,7 +480,10 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
 
 	be_insert_spills_reloads(env.senv);
-	assert(be_verify_schedule(env.irg));
+	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN)
+		be_verify_schedule(env.irg);
+	else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT)
+		assert(be_verify_schedule(env.irg));
 
 	// cleanup
 	be_end_uses(env.uses);
