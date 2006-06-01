@@ -702,8 +702,9 @@ static int verify_node_Proj_CopyB(ir_node *n, ir_node *p) {
   long proj     = get_Proj_proj(p);
 
   ASSERT_AND_RET_DBG(
-    ((proj == pn_CopyB_M        && mode == mode_M) ||
-     (proj == pn_CopyB_X_except && mode == mode_X)),
+    ((proj == pn_CopyB_M_regular && mode == mode_M) ||
+     (proj == pn_CopyB_X_except  && mode == mode_X) ||
+     (proj == pn_CopyB_M_except  && mode == mode_M)),
     "wrong Proj from CopyB", 0,
     show_proj_failure(p);
   );
