@@ -1,8 +1,8 @@
 /**
  * Backend driver.
  * @author Sebastian Hack
- * @date 25.11.2004
- * $Id$
+ * @date   25.11.2004
+ * @cvsid  $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
