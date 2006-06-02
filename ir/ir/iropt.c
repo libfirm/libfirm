@@ -42,6 +42,7 @@
 #include "archop.h"
 #include "opt_polymorphy.h"
 #include "opt_confirms.h"
+#include "irtools.h"
 
 /* Make types visible to allow most efficient access */
 # include "entity_t.h"
@@ -2664,7 +2665,7 @@ static ir_node *transform_node_Phi(ir_node *phi) {
     /* Beware of Phi0 */
     if (n > 0) {
       ir_node *pred = get_irn_n(phi, 0);
-      ir_node *bound;
+      ir_node *bound, *new_Phi, *block, **in;
       pn_Cmp  pnc;
 
       if (! is_Confirm(pred))
@@ -2673,6 +2674,9 @@ static ir_node *transform_node_Phi(ir_node *phi) {
       bound = get_Confirm_bound(pred);
       pnc   = get_Confirm_cmp(pred);
 
+      NEW_ARR_A(ir_node *, in, n);
+      in[0] = get_Confirm_value(pred);
+
       for (i = 1; i < n; ++i) {
         pred = get_irn_n(phi, i);
 
@@ -2680,8 +2684,12 @@ static ir_node *transform_node_Phi(ir_node *phi) {
             get_Confirm_bound(pred) != bound ||
             get_Confirm_cmp(pred) != pnc)
           return phi;
+        in[i] = get_Confirm_value(pred);
       }
-      return new_r_Confirm(current_ir_graph, get_irn_n(phi, -1), phi, bound, pnc);
+      /* move the Confirm nodes "behind" the Phi */
+      block = get_irn_n(phi, -1);
+      new_Phi = new_r_Phi(current_ir_graph, block, n, in, get_irn_mode(phi));
+      return new_r_Confirm(current_ir_graph, block, new_Phi, bound, pnc);
     }
   }
   return phi;
