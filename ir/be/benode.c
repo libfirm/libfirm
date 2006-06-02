@@ -605,6 +605,14 @@ ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_graph *irg,
 	return be_new_CopyKeep(cls, irg, bl, src, 1, in, mode);
 }
 
+ir_node *be_get_CopyKeep_op(const ir_node *cpy) {
+	return get_irn_n(cpy, be_pos_CopyKeep_op);
+}
+
+void be_set_CopyKeep_op(ir_node *cpy, ir_node *op) {
+	set_irn_n(cpy, be_pos_CopyKeep_op, op);
+}
+
 ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
 	ir_node *irn;
