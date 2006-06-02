@@ -2,7 +2,8 @@
  * ABI lowering.
  *
  * @author Sebastian Hack
- * @date 7.3.2005
+ * @date   7.3.2005
+ * @cvsid  $Id$
  */
 
 #ifdef HAVE_CONFIG_H
@@ -353,18 +354,18 @@ static INLINE entity *get_sel_ent(ir_node *irn)
 
 /**
  * Walker: Replaces Loads, Stores and Sels of frame type entities
- * by FrameLoad, FrameStore and FrameAdress.
+ * by FrameLoad, FrameStore and FrameAddress.
  */
 static void lower_frame_sels_walker(ir_node *irn, void *data)
 {
 	ir_node *nw  = NULL;
-	entity *ent = get_sel_ent(irn);
+	entity  *ent = get_sel_ent(irn);
 
-	if(ent != NULL) {
-		be_abi_irg_t *env = data;
-		ir_node *bl       = get_nodes_block(irn);
-		ir_graph *irg     = get_irn_irg(bl);
-		ir_node *frame    = get_irg_frame(irg);
+	if (ent != NULL) {
+		be_abi_irg_t *env   = data;
+		ir_node      *bl    = get_nodes_block(irn);
+		ir_graph     *irg   = get_irn_irg(bl);
+		ir_node      *frame = get_irg_frame(irg);
 
 		nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
 		exchange(irn, nw);
