@@ -133,7 +133,10 @@ static int firm_emit(lc_appendable_t *app,
       snprintf(add, sizeof(add), "[%ld]", get_type_nr(X));
       break;
     case k_ir_graph:
-      snprintf(buf, sizeof(buf), "%s%s", A("irg"), get_entity_name(get_irg_entity(X)));
+      if (irg == get_const_code_irg())
+        snprintf(buf, sizeof(buf), "%s<ConstCodeIrg>", A("irg"), get_entity_name(get_irg_entity(X)));
+      else
+        snprintf(buf, sizeof(buf), "%s%s", A("irg"), get_entity_name(get_irg_entity(X)));
       snprintf(add, sizeof(add), "[%ld]", get_irg_graph_nr(X));
       break;
     case k_ir_node:
