@@ -1646,15 +1646,15 @@ static void emit_be_SetSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 }
 
 /**
- * Emits code for Copy.
+ * Emits code for Copy/CopyKeep.
  */
-static void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE *F = emit_env->out;
+static void Copy_emitter(const ir_node *irn, ir_node *op, ia32_emit_env_t *emit_env) {
+	FILE             *F    = emit_env->out;
 	const arch_env_t *aenv = emit_env->arch_env;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, irn), arch_get_irn_register(aenv, be_get_Copy_op(irn))) ||
-		be_is_unknown_reg(arch_get_irn_register(aenv, be_get_Copy_op(irn))))
+	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, irn), arch_get_irn_register(aenv, op)) ||
+		be_is_unknown_reg(arch_get_irn_register(aenv, op)))
 		return;
 
 	if (mode_is_float(get_irn_mode(irn)))
@@ -1663,6 +1663,14 @@ static void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %1S", irn, irn);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
+}
+
+static void emit_be_Copy(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	Copy_emitter(irn, be_get_Copy_op(irn), emit_env);
+}
+
+static void emit_be_CopyKeep(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	Copy_emitter(irn, be_get_CopyKeep_op(irn), emit_env);
 }
 
 /**
@@ -1777,6 +1785,7 @@ static void ia32_register_emitters(void) {
 	BE_EMIT(IncSP);
 	BE_EMIT(SetSP);
 	BE_EMIT(Copy);
+	BE_EMIT(CopyKeep);
 	BE_EMIT(Perm);
 	BE_EMIT(Return);
 
