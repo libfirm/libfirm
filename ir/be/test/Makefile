@@ -25,23 +25,29 @@ gcc/%.result: gcc/%.exe
 
 firm/%.result: firm/%.exe
 	@test -z firm || mkdir -p firm
-	firm/$*.exe >& $@ || echo "$*.c" >> doesntrun.txt
+	@test -z $(RESDIR) || mkdir -p $(RESDIR)
+	firm/$*.exe >& $@ || echo "$*.c" >> $(RESDIR)/run_failed.txt
 
 compare_%.c: gcc/%.exe firm/%.exe gcc/%.result firm/%.result
-	diff -u gcc/$*.result firm/$*.result || echo "$*.c" >> broken.txt
+	@test -z $(RESDIR) || mkdir -p $(RESDIR)
+	diff -u gcc/$*.result firm/$*.result || echo "$*.c" >> $(RESDIR)/compare_failed.txt
 
 gcc/%.exe: %.c
 	@test -z gcc || mkdir -p gcc
+	@test -z $(RESDIR) || mkdir -p $(RESDIR)
 	$(GCC) $(GCC_CFLAGS) $*.c -o $@
 
 firm/%.s: %.c
 	@test -z firm || mkdir -p firm
-	cd firm ; $(EDG) $(EDG_CFLAGS) ../$*.c || echo "$*.c" >> ../compile_failed.txt
+	@test -z $(RESDIR) || mkdir -p $(RESDIR)
+	cd firm ; $(EDG) $(EDG_CFLAGS) ../$*.c || echo "$*.c" >> ../$(RESDIR)/compile_failed.txt
 	mv $*.s firm || echo "" > firm/$*.s
 
 firm/%.exe: firm/%.s
-	$(GCC) firm/$*.s -o $@ || echo "$*.c" >> link_failed.txt
+	@test -z $(RESDIR) || mkdir -p $(RESDIR)
+	$(GCC) firm/$*.s -o $@ || echo "$*.c" >> $(RESDIR)/link_failed.txt
 
 clean:
 	rm -f gcc/*
 	rm -f firm/*
+	rm -f $(RESDIR)/*
