@@ -431,24 +431,39 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 	ir_node *sp  = get_irn_n(irn, 0);
 	ir_node *val, *next, *push, *bl, *proj_M, *proj_res, *old_proj_M;
 	const ir_edge_t *edge;
+	heights_t *h;
 
-	if (get_ia32_am_offs(irn) || !be_is_IncSP(sp))
+	/* do not create push if store has already an offset assigned or base is not a IncSP */
+	if (get_ia32_am_offs(irn) || ! be_is_IncSP(sp))
 		return;
 
+	/* do not create push if index is not NOREG */
 	if (arch_get_irn_register(cg->arch_env, get_irn_n(irn, 1)) !=
 		&ia32_gp_regs[REG_GP_NOREG])
 		return;
 
+	/* do not create push for floating point */
 	val = get_irn_n(irn, 2);
 	if (mode_is_float(get_irn_mode(val)))
 		return;
 
+	/* do not create push if IncSp doesn't expand stack or expand size is different from register size */
 	if (be_get_IncSP_direction(sp) != be_stack_dir_expand ||
 		be_get_IncSP_offset(sp) != get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
 		return;
 
+	/* do not create push, if there is a path (inside the block) from the push value to IncSP */
+	h = heights_new(cg->irg);
+	if (get_nodes_block(val) == get_nodes_block(sp) &&
+		heights_reachable_in_block(h, val, sp))
+	{
+		heights_free(h);
+		return;
+	}
+	heights_free(h);
+
 	/* ok, translate into Push */
-	edge = get_irn_out_edge_first(irn);
+	edge       = get_irn_out_edge_first(irn);
 	old_proj_M = get_edge_src_irn(edge);
 
 	next = sched_next(irn);
