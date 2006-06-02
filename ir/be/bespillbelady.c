@@ -634,7 +634,7 @@ static void remove_copies(belady_env_t *env) {
 		src = be_get_Copy_op(node);
 		foreach_out_edge_safe(node, edge, ne) {
 			ir_node *user = get_edge_src_irn(edge);
-			int user_pos = get_edge_src_pos(edge);
+			int user_pos  = get_edge_src_pos(edge);
 
 			set_irn_n(user, user_pos, src);
 		}
