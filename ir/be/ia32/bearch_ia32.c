@@ -559,14 +559,17 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				/* invers == sub with const */
 				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
 				pnc               = pn_ia32_Sub_res;
-				inverse->costs   += 5;
+				inverse->costs   += 2;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal add: inverse == sub */
-				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, i ^ 1), nomem);
+				ir_node  *proj = get_irn_out_edge_first(irn)->src;
+				assert(proj && is_Proj(proj));
+
+				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, proj, get_irn_n(irn, i ^ 1), nomem);
 				pnc               = pn_ia32_Sub_res;
-				inverse->costs   += 5;
+				inverse->costs   += 2;
 			}
 			break;
 		case iro_ia32_Sub:
@@ -580,11 +583,14 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			}
 			else {
 				/* normal sub */
+				ir_node  *proj = get_irn_out_edge_first(irn)->src;
+				assert(proj && is_Proj(proj));
+
 				if (i == 2) {
-					inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, 3), nomem);
+					inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, proj, get_irn_n(irn, 3), nomem);
 				}
 				else {
-					inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, get_irn_n(irn, 2), (ir_node *)irn, nomem);
+					inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, get_irn_n(irn, 2), proj, nomem);
 				}
 				pnc             = pn_ia32_Sub_res;
 				inverse->costs += 1;
