@@ -286,6 +286,17 @@ void set_opt_ldst_only_null_ptr_exceptions(int value);
  */
 void set_opt_sel_based_null_check_elim(int value);
 
+/**
+ * Enable/Disable Automatic construction of Sync nodes during
+ * Firm construction.
+ *
+ * If this flags is set, sequential non-volatile Loads are automatically
+ * rearranged so that they can be executed in parallel by creating Sync nodes.
+ *
+ * This flags should be set for Java style languages.
+ */
+void set_opt_auto_create_sync(int value);
+
 /** Enable/Disable normalizations of the firm representation.
  *
  *  This flag guards transformations that normalize the Firm representation

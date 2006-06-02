@@ -16,29 +16,30 @@
 #endif
 
 #ifdef HAVE_ALLOCA_H
-#include <alloca.h>
+# include <alloca.h>
 #endif
 #ifdef HAVE_MALLOC_H
-#include <malloc.h>
+# include <malloc.h>
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h>
+# include <string.h>
 #endif
 
-# include "irprog_t.h"
-# include "irgraph_t.h"
-# include "irnode_t.h"
-# include "irmode_t.h"
-# include "ircons_t.h"
-# include "firm_common_t.h"
-# include "irvrfy.h"
-# include "irop_t.h"
-# include "iropt_t.h"
-# include "irgmod.h"
-# include "array.h"
-# include "irbackedge_t.h"
-# include "irflag_t.h"
-# include "iredges_t.h"
+#include "irprog_t.h"
+#include "irgraph_t.h"
+#include "irnode_t.h"
+#include "irmode_t.h"
+#include "ircons_t.h"
+#include "firm_common_t.h"
+#include "irvrfy.h"
+#include "irop_t.h"
+#include "iropt_t.h"
+#include "irgmod.h"
+#include "array.h"
+#include "irbackedge_t.h"
+#include "irflag_t.h"
+#include "iredges_t.h"
+#include "irflag_t.h"
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor
@@ -3084,25 +3085,30 @@ set_store (ir_node *store)
 
   assert(get_irg_phase_state (current_ir_graph) == phase_building);
 
-  /* handle non-volatile Load nodes by automatically creating Sync's */
-  load = skip_Proj(store);
-  if (is_Load(load) && get_Load_volatility(load) == volatility_non_volatile) {
-    pred = get_Load_mem(load);
+  if (get_opt_auto_create_sync()) {
+    /* handle non-volatile Load nodes by automatically creating Sync's */
+    load = skip_Proj(store);
+    if (is_Load(load) && get_Load_volatility(load) == volatility_non_volatile) {
+      pred = get_Load_mem(load);
 
-    if (is_Sync(pred)) {
-      /* a Load after a Sync: move it up */
-      set_Load_mem(load, get_Sync_pred(pred, 0));
-      store = pred;
-    }
-    else {
-      pload = skip_Proj(pred);
-      if (is_Load(pload) && get_Load_volatility(pload) == volatility_non_volatile) {
-        /* a Load after a Load: create a new Sync */
-        set_Load_mem(load, get_Load_mem(pload));
+      if (is_Sync(pred)) {
+        /* a Load after a Sync: move it up */
+        ir_node *mem = skip_Proj(get_Sync_pred(pred, 0));
 
-        in[0] = pred;
-        in[1] = store;
-        store = new_Sync(2, in);
+        set_Load_mem(load, get_memop_mem(mem));
+        add_Sync_pred(pred, store);
+        store = pred;
+      }
+      else {
+        pload = skip_Proj(pred);
+        if (is_Load(pload) && get_Load_volatility(pload) == volatility_non_volatile) {
+          /* a Load after a Load: create a new Sync */
+          set_Load_mem(load, get_Load_mem(pload));
+
+          in[0] = pred;
+          in[1] = store;
+          store = new_Sync(2, in);
+        }
       }
     }
   }
