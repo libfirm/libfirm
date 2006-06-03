@@ -131,9 +131,17 @@ int       get_irp_n_allirgs(void);
  pseudo graphs).  Visits first graphs, then pseudo graphs. */
 ir_graph *get_irp_allirg(int pos);
 
-
-/** Returns the "global" type of the irp. */
+/**
+ * Returns the "global" type of the irp.
+ * Upon creation this is an empty class type.
+ */
 ir_type *get_glob_type(void);
+
+/**
+ * Returns the "thread local storage" type of the irp.
+ * Upon creation this is an empty struct type.
+ */
+ir_type *get_tls_type(void);
 
 /** Adds type to the list of types in irp. */
 void  add_irp_type(ir_type *typ);

@@ -592,8 +592,7 @@ set_nodes_block (ir_node *node, ir_node *block) {
 /* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
 ir_type *is_frame_pointer(ir_node *n) {
-  if ((get_irn_op(n) == op_Proj) &&
-      (get_Proj_proj(n) == pn_Start_P_frame_base)) {
+  if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_frame_base)) {
     ir_node *start = get_Proj_pred(n);
     if (get_irn_op(start) == op_Start) {
       return get_irg_frame_type(get_irn_irg(start));
@@ -605,12 +604,23 @@ ir_type *is_frame_pointer(ir_node *n) {
 /* Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
  * from Start.  If so returns global type, else Null. */
 ir_type *is_globals_pointer(ir_node *n) {
-  if ((get_irn_op(n) == op_Proj) &&
-      (get_Proj_proj(n) == pn_Start_P_globals)) {
+  if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_globals)) {
     ir_node *start = get_Proj_pred(n);
     if (get_irn_op(start) == op_Start) {
       return get_glob_type();
     }
+  }
+  return NULL;
+}
+
+/* Test whether arbitrary node is tls pointer, i.e. Proj(pn_Start_P_tls)
+ * from Start.  If so returns tls type, else Null. */
+ir_type *is_tls_pointer(ir_node *n) {
+  if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_globals)) {
+      ir_node *start = get_Proj_pred(n);
+      if (get_irn_op(start) == op_Start) {
+        return get_tls_type();
+      }
   }
   return NULL;
 }

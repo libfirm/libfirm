@@ -245,13 +245,15 @@ typedef enum {
   pn_Start_M,                /**< Projection on the initial memory. */
   pn_Start_P_frame_base,     /**< Projection on the frame base pointer. */
   pn_Start_P_globals,        /**< Projection on the pointer to the data segment
-                                  containing _all_ global entities. */
+                                  containing _all_ global entities.  Use for
+                                  position independent data/code access. */
+  pn_Start_P_tls,            /**< Projection on the pointer to the thread local store
+                                  segment containing _all_thread local variables. */
   pn_Start_T_args,           /**< Projection on all arguments. */
   pn_Start_P_value_arg_base, /**< Pointer to region of compound value arguments as defined by
                                   type of this method. */
   pn_Start_max               /**< number of projections from a Start */
 } pn_Start; /* Projection numbers for Start. */
-
 
 /** Test whether arbitrary node is frame pointer.
  *
@@ -264,6 +266,12 @@ ir_type *is_frame_pointer(ir_node *n);
  * Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
  * from Start.  If so returns global type, else Null. */
 ir_type *is_globals_pointer(ir_node *n);
+
+/** Test whether arbitrary node is tls pointer.
+ *
+ * Test whether arbitrary node is tls pointer, i.e. Proj(pn_Start_P_tls)
+ * from Start.  If so returns tls type, else Null. */
+ir_type *is_tls_pointer(ir_node *n);
 
 /** Test whether arbitrary node is value arg base.
  *

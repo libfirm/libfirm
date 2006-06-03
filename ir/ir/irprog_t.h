@@ -48,8 +48,10 @@ struct ir_prog {
                                        to allocate nodes the represent values
                                        of constant entities. It is not meant as
                                        a procedure.  */
-  ir_type   *glob_type;           /**< global type.  Must be a class as it can
+  ir_type   *glob_type;           /**< The global type.  Must be a class as it can
                                        have fields and procedures.  */
+  ir_type   *tls_type;            /**< The thread local storage type.  Must be a struct as it can
+                                       only have fields.  */
   ir_type  **types;               /**< all types in the ir */
   ir_mode  **modes;               /**< all modes in the ir */
   ir_op    **opcodes;             /**< all opcodes in the ir */
@@ -94,6 +96,12 @@ static INLINE ir_type *
 _get_glob_type(void) {
   assert(irp);
   return irp->glob_type = skip_tid(irp->glob_type);
+}
+
+static INLINE ir_type *
+_get_tls_type(void) {
+  assert(irp);
+  return irp->tls_type = skip_tid(irp->tls_type);
 }
 
 static INLINE int
@@ -181,5 +189,6 @@ void init_irprog_2(void);
 #define get_irp_opcode(pos)    _get_irp_opcode(pos)
 #define get_const_code_irg()   _get_const_code_irg()
 #define get_glob_type()        _get_glob_type()
+#define get_tls_type()         _get_tls_type()
 
 #endif /* ifndef _FIRM_IR_IRPROG_T_H_ */

@@ -56,22 +56,26 @@
  *      *frame           The ir_node producing the pointer to the stack frame of
  *                       the procedure as output.  This is the Proj node on the
  *                       third output of the start node.  This output of the start
- *                      node is tagged as pns_frame_base.  In FIRM most local
+ *                       node is tagged as pns_frame_base.  In FIRM most local
  *                       variables are modeled as data flow edges.  Static
  *                       allocated arrays can not be represented as data flow
  *                       edges. Therefore FIRM has to represent them in the stack
  *                       frame.
  *
  *      *globals         This models a pointer to a space in the memory where
- *               _all_ global things are held.  Select from this pointer
- *               with a Sel node the pointer to a global variable /
- *               procedure / compiler known function... .
+ *                       _all_ global things are held.  Select from this pointer
+ *                       with a Sel node the pointer to a global variable /
+ *                       procedure / compiler known function... .
  *
- *      *args        The ir_node that produces the arguments of the method as
- *               it's result.  This is a Proj node on the fourth output of
- *               the start node.  This output is tagged as pn_Start_T_args.
+ *      *tls             This models a pointer to a space in the memory where
+ *                       thread local things are held.  Select from this pointer
+ *                       with a Sel node the pointer to a thread local variable.
  *
- *      *proj_args        The proj nodes of the args node.
+ *      *args            The ir_node that produces the arguments of the method as
+ *                       it's result.  This is a Proj node on the fourth output of
+ *                       the start node.  This output is tagged as pn_Start_T_args.
+ *
+ *      *proj_args       The proj nodes of the args node.
  *
  *      *bad             The Bad node is an auxiliary node. It is needed only once,
  *                       so there is this globally reachable node.
@@ -89,14 +93,14 @@
  *                       Only needed for ir construction.
  *
  *      params/n_loc     An int giving the number of local variables in this
- *               procedure.  This is needed for ir construction. Name will
- *               be changed.
+ *                       procedure.  This is needed for ir construction. Name will
+ *                       be changed.
  *
  *      *value_table     This hash table (pset) is used for global value numbering
- *               for optimizing use in iropt.c.
+ *                       for optimizing use in iropt.c.
  *
  *      *Phi_in_stack;   a stack needed for automatic Phi construction, needed only
- *               during ir construction.
+ *                       during ir construction.
  *
  *      visited          A int used as flag to traverse the ir_graph.
  *
@@ -137,7 +141,7 @@ void set_interprocedural_view(int state);
  * procedure:
  *
  * - The start block containing a start node and Proj nodes for it's
- *   five results (X, M, P, P, T).
+ *   seven results (X, M, P, P, P, T, P).
  * - The end block containing an end node. This block is not matured
  *   after executing new_ir_graph() as predecessors need to be added to it.
  *   (Maturing a block means fixing it's number of predecessors.)
@@ -219,6 +223,11 @@ void     set_irg_frame (ir_graph *irg, ir_node *node);
 ir_node *get_irg_globals (const ir_graph *irg);
 /** Sets the node that represents the global pointer. */
 void     set_irg_globals (ir_graph *irg, ir_node *node);
+
+/** Returns the node that represents the tls pointer. */
+ir_node *get_irg_tls (const ir_graph *irg);
+/** Sets the node that represents the tls pointer. */
+void     set_irg_tls (ir_graph *irg, ir_node *node);
 
 /** Returns the node that represents the initial memory. */
 ir_node *get_irg_initial_mem (const ir_graph *irg);

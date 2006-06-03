@@ -64,6 +64,8 @@ enum irg_anchors {
   anchor_frame,           /**< method's frame */
   anchor_globals,         /**< pointer to the data segment containing all
                                globals as well as global procedures. */
+  anchor_tls,             /**< pointer to the thread local storage containing all
+                               thread local data. */
   anchor_initial_mem,     /**< initial memory of this graph */
   anchor_args,            /**< methods arguments */
   anchor_bad,             /**< bad node of this ir_graph, the one and
@@ -269,6 +271,16 @@ _get_irg_globals(const ir_graph *irg) {
 static INLINE void
 _set_irg_globals(ir_graph *irg, ir_node *node) {
   irg->anchors[anchor_globals] = node;
+}
+
+static INLINE ir_node *
+_get_irg_tls(const ir_graph *irg) {
+  return irg->anchors[anchor_tls];
+}
+
+static INLINE void
+_set_irg_tls(ir_graph *irg, ir_node *node) {
+  irg->anchors[anchor_tls] = node;
 }
 
 static INLINE ir_node *
@@ -583,6 +595,8 @@ get_idx_irn(ir_graph *irg, unsigned idx) {
 #define set_irg_frame(irg, node)              _set_irg_frame(irg, node)
 #define get_irg_globals(irg)                  _get_irg_globals(irg)
 #define set_irg_globals(irg, node)            _set_irg_globals(irg, node)
+#define get_irg_tls(irg)                      _get_irg_tls(irg)
+#define set_irg_tls(irg, node)                _set_irg_tls(irg, node)
 #define get_irg_initial_mem(irg)              _get_irg_initial_mem(irg)
 #define set_irg_initial_mem(irg, node)        _set_irg_initial_mem(irg, node)
 #define get_irg_args(irg)                     _get_irg_args(irg)

@@ -26,7 +26,11 @@
 #include "typegmod.h"
 #include "irop_t.h"
 
+/** The name of the Global Type. */
 #define GLOBAL_TYPE_NAME "GlobalType"
+/** The name of the Thread Local STorage Type. */
+#define TLS_TYPE_NAME "TLS"
+/** The initial name of the irp program. */
 #define INITAL_PROG_NAME "no_name_set"
 
 /* A variable from where everything in the ir can be accessed. */
@@ -39,7 +43,7 @@ ir_prog *get_irp(void) { return irp; }
 static ir_prog *new_incomplete_ir_prog (void) {
   ir_prog *res;
 
-  res = xmalloc (sizeof(*res));
+  res = xmalloc(sizeof(*res));
   memset(res, 0, sizeof(*res));
   irp = res;
 
@@ -59,13 +63,15 @@ static ir_prog *new_incomplete_ir_prog (void) {
 
 /** Completes an incomplete irprog. */
 static ir_prog *complete_ir_prog(ir_prog *irp) {
+#define X(s) s, sizeof(s)-1
+  irp->name      = new_id_from_chars(X(INITAL_PROG_NAME));
 
-  irp->name      = new_id_from_str(INITAL_PROG_NAME);
-
-  irp->glob_type = new_type_class(new_id_from_str (GLOBAL_TYPE_NAME));
-  /* Remove type from type list.  Must be treated differently than
+  irp->glob_type = new_type_class(new_id_from_chars(X(GLOBAL_TYPE_NAME)));
+  irp->tls_type  = new_type_struct(new_id_from_chars(X(TLS_TYPE_NAME)));
+  /* Remove these types from type list.  Must be treated differently than
      other types. */
   remove_irp_type(irp->glob_type);
+  remove_irp_type(irp->tls_type);
 
   irp->const_code_irg   = new_const_code_irg();
 
@@ -99,6 +105,8 @@ ir_prog *new_ir_prog (void) {
 void     free_ir_prog(void) {
   if (irp->glob_type)
     free_type(irp->glob_type);
+  if (irp->tls_type)
+    free_type(irp->tls_type);
 
   /* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
   DEL_ARR_F(irp->graphs);
@@ -128,6 +136,10 @@ void set_irp_main_irg(ir_graph *main_irg) {
 
 ir_type *(get_glob_type)(void) {
   return _get_glob_type();
+}
+
+ir_type *(get_tls_type)(void) {
+  return _get_tls_type();
 }
 
 /* Adds irg to the list of ir graphs in irp. */
@@ -186,7 +198,7 @@ void set_irp_irg(int pos, ir_graph *irg) {
 }
 
 /* Gets the number of graphs _and_ pseudo graphs. */
-int       get_irp_n_allirgs(void) {
+int get_irp_n_allirgs(void) {
   /* We can not call get_irp_n_irgs, as we end up in a recursion ... */
   return ARR_LEN(irp->graphs) + get_irp_n_pseudo_irgs();
 }

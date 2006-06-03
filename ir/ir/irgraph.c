@@ -227,6 +227,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   projX              = new_Proj(start, mode_X, pn_Start_X_initial_exec);
   set_irg_frame      (res, new_Proj(start, mode_P_data, pn_Start_P_frame_base));
   set_irg_globals    (res, new_Proj(start, mode_P_data, pn_Start_P_globals));
+  set_irg_tls        (res, new_Proj(start, mode_P_data, pn_Start_P_tls));
   set_irg_args       (res, new_Proj(start, mode_T, pn_Start_T_args));
   initial_mem        = new_Proj(start, mode_M, pn_Start_M);
   set_irg_initial_mem(res, initial_mem);
@@ -244,11 +245,11 @@ new_r_ir_graph (entity *ent, int n_loc)
    * Use of this edge is matter of discussion, unresolved. Also possible:
    * add_immBlock_pred(res->start_block, res->start_block), but invalid typed.
    */
-  mature_immBlock (res->current_block);
+  mature_immBlock(res->current_block);
 
   /*-- Make a block to start with --*/
   first_block = new_immBlock();
-  add_immBlock_pred (first_block, projX);
+  add_immBlock_pred(first_block, projX);
 
   res->method_execution_frequency = -1;
   res->estimated_node_count       = 0;
@@ -258,9 +259,9 @@ new_r_ir_graph (entity *ent, int n_loc)
 
 
 ir_graph *
-new_ir_graph (entity *ent, int n_loc)
+new_ir_graph(entity *ent, int n_loc)
 {
-  ir_graph *res = new_r_ir_graph (ent, n_loc);
+  ir_graph *res = new_r_ir_graph(ent, n_loc);
   add_irp_irg(res);          /* remember this graph global. */
   return res;
 }
@@ -476,6 +477,16 @@ ir_node *
 void
 (set_irg_globals)(ir_graph *irg, ir_node *node) {
   _set_irg_globals(irg, node);
+}
+
+ir_node *
+(get_irg_tls)(const ir_graph *irg) {
+  return _get_irg_tls(irg);
+}
+
+void
+(set_irg_tls)(ir_graph *irg, ir_node *node) {
+  _set_irg_tls(irg, node);
 }
 
 ir_node *
