@@ -346,9 +346,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		case BE_CH_SPILL_ILP:
 			be_spill_ilp(&chordal_env);
 			break;
-                case BE_CH_SPILL_REMAT:
-                        be_spill_remat(&chordal_env);
-                        break;
+		case BE_CH_SPILL_REMAT:
+			be_spill_remat(&chordal_env);
+			break;
 		case BE_CH_SPILL_APPEL:
 			be_spill_appel(&chordal_env);
 			break;
