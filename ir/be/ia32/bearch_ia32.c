@@ -945,8 +945,6 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);
-		sched_add_after(new_op, proj);
-
 		sched_remove(irn);
 	}
 
