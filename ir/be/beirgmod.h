@@ -59,10 +59,8 @@ void be_free_dominance_frontiers(dom_front_info_t *info);
  * @param phis        A set to which all inserted Phis are added.
  * @param ignore_uses A set of nodes probably using one of the nodes in @p nodes.
  *                    Their usage will not adjusted. They remain untouched by this function.
- * @param uses        A set of nodes that are only considered for adjusting. Set to NULL
-                      to consider all uses except @p ignore_uses.
  */
-void be_ssa_constr_phis_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *phis, pset *ignore_uses, pset *uses);
+void be_ssa_constr_phis_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *phis, pset *ignore_uses);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without the ignore set.
@@ -90,14 +88,9 @@ void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_us
 void be_ssa_constr_set(dom_front_info_t *info, pset *nodes);
 
 /**
- * Same as be_ssa_constr_set() but with uses.
- */
-void be_ssa_constr_set_uses(dom_front_info_t *info, pset *nodes, pset *uses);
-
-/**
  * Same as be_ssa_constr_phis_ignore() but with set instead of array.
  */
-void be_ssa_constr_set_phis_ignore(dom_front_info_t *info, pset *nodes, pset *phis, pset *ignore, pset *uses);
+void be_ssa_constr_set_phis_ignore(dom_front_info_t *info, pset *nodes, pset *phis, pset *ignore);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without ignore set.
