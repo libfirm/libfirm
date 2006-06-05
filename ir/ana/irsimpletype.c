@@ -78,6 +78,10 @@ static ir_type *find_pointer_type_to (ir_type *tp) {
 
 static ir_type *compute_irn_type(ir_node *n);
 
+/**
+ * Try to determine a type for a Proj node.
+ * If a type cannot be determined, return @p firm_none_type.
+ */
 static ir_type *find_type_for_Proj(ir_node *n) {
   ir_type *tp;
 
@@ -112,15 +116,22 @@ static ir_type *find_type_for_Proj(ir_node *n) {
     }
   } break;
   case iro_Start: {
-    /* globals and frame pointer */
-    if (get_Proj_proj(n) ==  pn_Start_P_frame_base)
+    /* frame pointer, globals and tls */
+    switch (get_Proj_proj(n)) {
+    case pn_Start_P_frame_base:
       tp = find_pointer_type_to(get_irg_frame_type(get_irn_irg(pred)));
-    else if (get_Proj_proj(n) == pn_Start_P_globals)
+      break;
+    case pn_Start_P_globals:
       tp = find_pointer_type_to(get_glob_type());
-    else  if (get_Proj_proj(n) == pn_Start_P_value_arg_base) {
+      break;
+    case pn_Start_P_tls:
+      tp = find_pointer_type_to(get_tls_type());
+      break;
+    case pn_Start_P_value_arg_base:
       VERBOSE_UNKNOWN_TYPE(("Value arg base proj %ld from Start: unknown type\n", get_irn_node_nr(n)));
       tp =  firm_unknown_type; /* find_pointer_type_to(get....(get_entity_type(get_irg_entity(get_irn_irg(pred))))); */
-    } else {
+      break;
+    default:
       VERBOSE_UNKNOWN_TYPE(("Proj %ld %ld from Start: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
       tp = firm_unknown_type;
     }
@@ -150,7 +161,7 @@ static ir_type *find_type_for_Proj(ir_node *n) {
  * If a type cannot be determined, return @p firm_none_type.
  */
 static ir_type *find_type_for_node(ir_node *n) {
-  ir_type *tp = NULL;
+  ir_type *tp = firm_unknown_type;
   ir_type *tp1 = NULL, *tp2 = NULL;
   ir_node *a = NULL, *b = NULL;
 
@@ -167,7 +178,7 @@ static ir_type *find_type_for_node(ir_node *n) {
     tp2 = compute_irn_type(b);
   }
 
-  switch(get_irn_opcode(n)) {
+  switch (get_irn_opcode(n)) {
 
   case iro_InstOf: {
     assert(0 && "op_InstOf not supported");
@@ -208,7 +219,7 @@ static ir_type *find_type_for_node(ir_node *n) {
   case iro_CallBegin:
   case iro_EndReg:
   case iro_EndExcept:
-    tp = firm_none_type; break;
+    break;
 
   /* compute the type */
   case iro_Const:  tp = get_Const_type(n); break;
@@ -228,7 +239,8 @@ static ir_type *find_type_for_node(ir_node *n) {
     int i;
     int n_preds = get_Phi_n_preds(n);
 
-    if (n_preds == 0)  {tp = firm_none_type; break; }
+    if (n_preds == 0)
+      break;
 
     /* initialize this Phi */
     set_irn_typeinfo_type(n, phi_cycle_type);
@@ -268,10 +280,10 @@ static ir_type *find_type_for_node(ir_node *n) {
       tp = get_entity_type(get_Sel_entity(a));
     else if (is_Pointer_type(compute_irn_type(a))) {
       tp = get_pointer_points_to_type(get_irn_typeinfo_type(a));
-      if (is_Array_type(tp)) tp = get_array_element_type(tp);
+      if (is_Array_type(tp))
+        tp = get_array_element_type(tp);
     } else {
       VERBOSE_UNKNOWN_TYPE(("Load %ld with typeless address. result: unknown type\n", get_irn_node_nr(n)));
-      tp = firm_unknown_type;
     }
   } break;
   case iro_Alloc:
@@ -321,15 +333,35 @@ static ir_type *find_type_for_node(ir_node *n) {
     tp2 = compute_irn_type(b);
     if (tp1 == tp2)
       tp = tp1;
-    else
-      tp = firm_unknown_type;
   } break;
+  case iro_Psi: {
+    int i, n_conds = get_Psi_n_conds(n);
+    tp1 = compute_irn_type(get_Psi_default(n));
+
+    for (i = 0; i < n_conds; ++i) {
+      tp2 = compute_irn_type(get_Psi_val(n, i));
+      if (tp2 != tp1)
+        break;
+    }
+    if (tp1 == tp2)
+      tp = tp1;
+  } break;
+  case iro_Bound:
+    tp = compute_irn_type(get_Bound_index(n));
+    break;
+  case iro_Confirm:
+    tp = compute_irn_type(get_Confirm_value(n));
+    break;
+  case iro_Conv:
+    /* Conv is a unop, but changing the mode implies
+       changing the type. */
+    break;
 
   default:
 default_code: {
 
     if (is_unop(n)) {
-      /* Is is proper to walk past a Conv??? */
+      /* It's not proper to walk past a Conv, so this case is handled above. */
       tp = tp1;
       break;
     }
@@ -360,7 +392,7 @@ default_code: {
   return tp;
 }
 
-
+/** Compute the type of an IR node. */
 static ir_type *compute_irn_type(ir_node *n) {
   ir_type *tp = get_irn_typeinfo_type(n);
 
@@ -374,6 +406,12 @@ static ir_type *compute_irn_type(ir_node *n) {
   return tp;
 }
 
+/**
+ * Post-Walker: computes the type for every node
+ * and store it into a map.
+ * Post-walking ensures that the types for all predecessor
+ * nodes are already computed.
+ */
 static void compute_type(ir_node *n, void *env) {
 
   ir_type *tp = get_irn_typeinfo_type(n);
@@ -381,15 +419,21 @@ static void compute_type(ir_node *n, void *env) {
     /* printf(" recomputing for phi_cycle_type "); DDMN(n); */
     set_irn_typeinfo_type(n, initial_type);
   }
-
   compute_irn_type(n);
 }
 
+/**
+ * Compute the types for all nodes of a graph.
+ */
 static void analyse_irg (ir_graph *irg) {
   set_irg_typeinfo_state(irg, ir_typeinfo_consistent);
   irg_walk_graph(irg, NULL, compute_type, NULL);
 }
 
+/**
+ * Initialize the analysis by creating a phi_cycle_type and
+ * computing pointer types for all class and struct types.
+ */
 static void init_irsimpletype(void) {
   init_irtypeinfo();
   if (!phi_cycle_type)
@@ -397,12 +441,13 @@ static void init_irsimpletype(void) {
   precompute_pointer_types();
 }
 
+/* Computes type information for each node in all ir graphs. */
 void simple_analyse_types(void) {
   int i;
   init_irsimpletype();
   for (i = 0; i < get_irp_n_irgs(); i++) {
-    current_ir_graph = get_irp_irg(i);
-    analyse_irg(current_ir_graph);
+    ir_graph *irg = get_irp_irg(i);
+    analyse_irg(irg);
   }
   set_irp_typeinfo_state(ir_typeinfo_consistent);
 }
