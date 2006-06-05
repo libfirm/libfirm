@@ -984,14 +984,15 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   post_bl = get_nodes_block(call);
   set_irg_current_block(current_ir_graph, post_bl);
   /* XxMxPxPxPxT of Start + parameter of Call */
-  in[pn_Start_X_initial_exec] = new_Jmp();
-  in[pn_Start_M]              = get_Call_mem(call);
-  in[pn_Start_P_frame_base]   = get_irg_frame(current_ir_graph);
-  in[pn_Start_P_globals]      = get_irg_globals(current_ir_graph);
-  in[pn_Start_P_tls]          = get_irg_tls(current_ir_graph);
-  in[pn_Start_T_args]         = new_Tuple(get_Call_n_params(call), get_Call_param_arr(call));
+  in[pn_Start_X_initial_exec]   = new_Jmp();
+  in[pn_Start_M]                = get_Call_mem(call);
+  in[pn_Start_P_frame_base]     = get_irg_frame(current_ir_graph);
+  in[pn_Start_P_globals]        = get_irg_globals(current_ir_graph);
+  in[pn_Start_P_tls]            = get_irg_tls(current_ir_graph);
+  in[pn_Start_T_args]           = new_Tuple(get_Call_n_params(call), get_Call_param_arr(call));
   /* in[pn_Start_P_value_arg_base] = ??? */
-  pre_call = new_Tuple(pn_Start_max, in);
+  assert(pn_Start_P_value_arg_base == pn_Start_max - 1 && "pn_Start_P_value_arg_base not supported, fix");
+  pre_call = new_Tuple(pn_Start_max - 1, in);
   post_call = call;
 
   /* --
