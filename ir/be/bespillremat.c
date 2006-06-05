@@ -1533,7 +1533,7 @@ fertig:
 			assert(i<n);
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", arg, irn);
-			op->attr.live_range.reloads[i] = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, irn));
+			op->attr.live_range.reloads[i] = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
 
 			/* reload <= mem_out */
 			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
