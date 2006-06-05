@@ -66,7 +66,7 @@
 #define NO_SINGLE_USE_REMATS /* do not repair schedule */
 //#define KEEPALIVE_SPILLS
 //#define KEEPALIVE_RELOADS
-//#define GOODWIN_REDUCTION
+#define GOODWIN_REDUCTION
 
 #define  SOLVE
 //#define  SOLVE_LOCAL
@@ -1919,7 +1919,7 @@ fertig:
 	if(get_Block_n_cfgpreds(bb) == 1 && get_block_n_succs(get_Block_cfgpred_block(bb,0)) > 1) {
 #endif
 		pset_foreach(live, irn) {
-			ir_snprintf(buf, sizeof(buf), "req_spill_%N_%N", spill->irn, bb);
+			ir_snprintf(buf, sizeof(buf), "req_spill_%N_%N", irn, bb);
 			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 
 			spill = set_find_spill(spill_bb->ilp, irn);
