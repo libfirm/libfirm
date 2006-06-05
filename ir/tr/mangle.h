@@ -35,6 +35,9 @@ ident *mangle_entity (entity *ent);
 /** mangle underscore: Returns a new ident that represents first_scnd. */
 ident *mangle_u (ident *first, ident* scnd);
 
+/** mangle dot: Returns a new ident that represents first.scnd. */
+ident *mangle_dot (ident *first, ident* scnd);
+
 /** mangle: Returns a new ident that represents firstscnd. */
 ident *mangle   (ident *first, ident* scnd);
 
