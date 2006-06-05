@@ -60,7 +60,7 @@ ir_type *initial_type = NULL;
  *  in the order of MIN(<calls to set_irn_type>, #irnodes).
  */
 void init_irtypeinfo(void) {
-  int i;
+  int i, n;
 
   if (!initial_type)
     initial_type = new_type_class(new_id_from_str("initial_type"));
@@ -69,12 +69,13 @@ void init_irtypeinfo(void) {
   if (type_node_map) pmap_destroy(type_node_map);
   type_node_map = pmap_create();
 
-  for (i = 0; i < get_irp_n_irgs(); ++i)
+  n = get_irp_n_irgs();
+  for (i = 0; i < n; ++i)
     set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 
 void free_irtypeinfo(void) {
-  int i;
+  int i, n;
 
   if (initial_type) {
     free_type(initial_type);
@@ -88,7 +89,8 @@ void free_irtypeinfo(void) {
   }
   //else assert(0 && "call init_type_info before freeing");
 
-  for (i = 0; i < get_irp_n_irgs(); ++i)
+  n = get_irp_n_irgs();
+  for (i = 0; i < n; ++i)
     set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 
@@ -137,11 +139,13 @@ void set_irp_typeinfo_inconsistent(void) {
  */
 ir_type *get_irn_typeinfo_type(ir_node *n) {
   ir_type *res = initial_type;
+  pmap_entry *entry;
   assert(get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
 	 get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  );
 
-  if (pmap_contains(type_node_map, (void *)n))
-    res = (ir_type *) pmap_get(type_node_map, (void *)n);
+  entry = pmap_find(type_node_map, n);
+  if (entry)
+    res = entry->value;
 
   return res;
 }
