@@ -30,6 +30,10 @@ static pmap *type_cast_map = NULL;
 static pmap *type_pointertype_map = NULL;
 static pmap *type_arraytype_map = NULL;
 
+/**
+ * Return a flexible array containing all IR-nodes
+ * that access a given entity.
+ */
 static ir_node **get_entity_access_array(entity *ent) {
   ir_node **res;
   if (!entity_access_map) entity_access_map = pmap_create();
@@ -49,6 +53,10 @@ void set_entity_access_array(entity *ent, ir_node **accs) {
     pmap_insert(entity_access_map, (void *)ent, (void *)accs);
 }
 
+/**
+ * Return a flexible array containing all IR-nodes
+ * that reference a given entity.
+ */
 static ir_node **get_entity_reference_array(entity *ent) {
   ir_node **res;
   if (!entity_reference_map) entity_reference_map = pmap_create();
@@ -68,6 +76,10 @@ void set_entity_reference_array(entity *ent, ir_node **refs) {
     pmap_insert(entity_reference_map, (void *)ent, (void *)refs);
 }
 
+/**
+ * Return a flexible array containing all IR-nodes
+ * that allocate a given type.
+ */
 static ir_node **get_type_alloc_array(ir_type *tp) {
   ir_node **res;
   if (!type_alloc_map) type_alloc_map = pmap_create();
@@ -87,6 +99,10 @@ void set_type_alloc_array(ir_type *tp, ir_node **alls) {
     pmap_insert(type_alloc_map, (void *)tp, (void *)alls);
 }
 
+/**
+ * Return a flexible array containing all Cast-nodes
+ * that "create" a given type.
+ */
 static ir_node **get_type_cast_array(ir_type *tp) {
   ir_node **res;
   if (!type_cast_map) type_cast_map = pmap_create();
@@ -97,15 +113,19 @@ static ir_node **get_type_cast_array(ir_type *tp) {
     res = NEW_ARR_F(ir_node *, 0);
     pmap_insert(type_cast_map, (void *)tp, (void *)res);
   }
-
   return res;
 }
+
 void set_type_cast_array(ir_type *tp, ir_node **alls) {
   ir_node **old = pmap_get(type_cast_map, (void *)tp);
   if (old != alls)
     pmap_insert(type_cast_map, (void *)tp, (void *)alls);
 }
 
+/**
+ * Return a flexible array containing all pointer
+ * types that points-to a given type.
+ */
 static ir_type **get_type_pointertype_array(ir_type *tp) {
   ir_type **res;
   if (!type_pointertype_map) type_pointertype_map = pmap_create();
@@ -125,6 +145,10 @@ void set_type_pointertype_array(ir_type *tp, ir_type **pts) {
     pmap_insert(type_pointertype_map, (void *)tp, (void *)pts);
 }
 
+/**
+ * Return a flexible array containing all array
+ * types that have a given type as element type.
+ */
 static ir_type **get_type_arraytype_array(ir_type *tp) {
   ir_type **res;
   if (!type_arraytype_map) type_arraytype_map = pmap_create();
@@ -433,16 +457,17 @@ static void init_trouts(void) {
 
 }
 
-/* The entities that can be accessed by this Sel node. */
+/** The number of entities that can be accessed by this Sel node. */
 static int get_Sel_n_accessed_entities(ir_node *sel) {
   return 1;
 }
 
+/** The entity that cat be accessed by this Sel node. */
 static entity *get_Sel_accessed_entity(ir_node *sel) {
   return get_Sel_entity(sel);
 }
 
-/* An addr node is a SymConst or a Sel. */
+/** An addr node is a SymConst or a Sel. */
 static int get_addr_n_entities(ir_node *addr) {
   int n_ents;
 
@@ -464,8 +489,8 @@ static int get_addr_n_entities(ir_node *addr) {
   return n_ents;
 }
 
-/* An addr node is a SymConst or a Sel.
-   If Sel follow to outermost of compound. */
+/** An addr node is a SymConst or a Sel.
+    If Sel follow to outermost of compound. */
 static entity *get_addr_entity(ir_node *addr, int pos) {
   entity *ent;
 
@@ -559,9 +584,8 @@ void compute_trouts(void) {
   init_trouts();
 
   /* Compute outs for irnodes. */
-  for (i=0; i < n_irgs; i++) {
-    current_ir_graph = get_irp_irg(i);
-    irg_walk_graph(current_ir_graph, NULL, chain_accesses, NULL);
+  for (i = 0; i < n_irgs; i++) {
+    irg_walk_graph(get_irp_irg(i), NULL, chain_accesses, NULL);
   }
   walk_const_code(NULL, chain_accesses, NULL);
 
