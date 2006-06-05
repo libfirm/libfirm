@@ -149,7 +149,7 @@ _get_tpop_ident(const tp_op *op){
   return op->name;
 }
 
-static INLINE int
+static INLINE size_t
 _get_tpop_attr_size(const tp_op *op) {
   return op->attr_size;
 }
