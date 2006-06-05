@@ -86,6 +86,13 @@ static ir_graph *get_implementing_graph (entity *method)
 #endif
 }
 
+/**
+ * Add a graph to the set of live graphs.
+ *
+ * @param graph  the graph to add
+ * @return non-zero if the graph was added, zero
+ *         if it was already in the live set
+ */
 static int add_graph (ir_graph *graph)
 {
   if (!eset_contains (_live_graphs, graph)) {
@@ -101,6 +108,13 @@ static int add_graph (ir_graph *graph)
   return (FALSE);
 }
 
+/**
+ * Add a class to the set of live classes.
+ *
+ * @param clazz   the class to add
+ * @return non-zero if the graph was added, zero
+ *         if it was already in the live set
+ */
 static int add_class (ir_type *clazz)
 {
   if (!eset_contains (_live_classes, clazz)) {
@@ -159,7 +173,6 @@ static int add_implementing_graphs (entity *method)
 static void rta_act (ir_node *node, void *env)
 {
   int *change = (int*) env;
-
   opcode op = get_irn_opcode (node);
 
   if (iro_Call == op) {         /* CALL */
@@ -214,12 +227,8 @@ static void rta_act (ir_node *node, void *env)
 static int rta_fill_graph (ir_graph* graph)
 {
   int change = FALSE;
-
-  current_ir_graph = graph;
-
   irg_walk_graph (graph, rta_act, NULL, &change);
-
-  return (change);
+  return change;
 }
 
 /** Traverse all graphs to collect method accesses and object allocations.
@@ -348,7 +357,8 @@ static void force_description (entity *ent, entity *addr)
 */
 static void init_tables (void)
 {
-  int i, n_globs = get_class_n_members(get_glob_type());
+  ir_type *tp;
+  int i, n;
 
   _live_classes = eset_create ();
   _live_graphs  = eset_create ();
@@ -358,8 +368,18 @@ static void init_tables (void)
   }
 
   /* Find static allocated classes */
-  for (i = 0; i < n_globs; ++i) {
-    ir_type *member_type = get_entity_type(get_class_member(get_glob_type(), i));
+  tp = get_glob_type();
+  n = get_class_n_members(tp);
+  for (i = 0; i < n; ++i) {
+    ir_type *member_type = get_entity_type(get_class_member(tp, i));
+    if (is_Class_type(member_type))
+      eset_insert(_live_classes, member_type);
+  }
+
+  tp = get_tls_type();
+  n = get_struct_n_members(tp);
+  for (i = 0; i < n; ++i) {
+    ir_type *member_type = get_entity_type(get_struct_member(tp, i));
     if (is_Class_type(member_type))
       eset_insert(_live_classes, member_type);
   }
@@ -371,13 +391,14 @@ static void init_tables (void)
  */
 void rta_init (int do_verbose)
 {
-  int i, n_runs = 0;
+  int i, n, n_runs = 0;
 
   int rem_vpi = get_visit_pseudo_irgs();
   set_visit_pseudo_irgs(1);
 
 # ifdef DEBUG_libfirm
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  n = get_irp_n_irgs();
+  for (i = 0; i < n; i++) {
     irg_vrfy (get_irp_irg(i));
   }
   tr_vrfy ();
@@ -398,7 +419,7 @@ void rta_init (int do_verbose)
   }
 
 # ifdef DEBUG_libfirm
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  for (i = 0; i < n; i++) {
     irg_vrfy (get_irp_irg(i));
   }
   tr_vrfy ();
@@ -534,6 +555,10 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.36  2006/06/05 15:58:12  beck
+ * added support for Thread local storage
+ * added more doxygen docu
+ *
  * Revision 1.35  2006/01/13 21:51:59  beck
  * renamed all types 'type' to 'ir_type'
  *
