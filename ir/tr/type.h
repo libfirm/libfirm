@@ -59,31 +59,33 @@
  *
  *  The common fields are:
  *
- *  - firm_kind: A firm_kind tag containing k_type.  This is useful
- *               for dynamically checking whether a node is a type node.
- *  - type_op:   A tp_op specifying the kind of the type.
- *  - mode:      The mode to be used to represent the type on a machine.
- *  - name:      An identifier specifying the name of the type.  To be
- *               set by the frontend.
- *  - size:      The size of the type, i.e. an entity of this type will
- *               occupy size bits in memory.  In several cases this is
- *               determined when fixing the layout of this type (class,
- *               struct, union, array, enumeration).
- *  - alignment  The alignment of the type, i.e. an entity of this type will
- *               be allocated an an address in memory with this alignment.
- *               In several cases this is determined when fixing the layout
- *               of this type (class, struct, union, array)
- *  - state:     The state of the type.  The state represents whether the
- *               layout of the type is undefined or fixed (values: layout_undefined
- *               or layout_fixed).  Compound types can have an undefined
- *               layout.  The layout of the basic types primitive and pointer
- *               is always layout_fixed.  If the layout of
- *               compound types is fixed all entities must have an offset
- *               and the size of the type must be set.
- *               A fixed layout for enumeration types means that each enumeration
- *               is associated with an implementation value.
- *  - visit:     A counter for walks of the type information.
- *  - link:      A void* to associate some additional information with the type.
+ *  - firm_kind:   A firm_kind tag containing k_type.  This is useful
+ *                 for dynamically checking whether a node is a type node.
+ *  - type_op:     A tp_op specifying the kind of the type.
+ *  - name:        An identifier specifying the name of the type.  To be
+ *                 set by the frontend.
+ *  - visibility:  The visibility of this type.
+ *  - size:        The size of the type, i.e. an entity of this type will
+ *                 occupy size bits in memory.  In several cases this is
+ *                 determined when fixing the layout of this type (class,
+ *                 struct, union, array, enumeration).
+ *  - alignment    The alignment of the type, i.e. an entity of this type will
+ *                 be allocated an an address in memory with this alignment.
+ *                 In several cases this is determined when fixing the layout
+ *                 of this type (class, struct, union, array)
+ *  - mode:        The mode to be used to represent the type on a machine.
+ *  - state:       The state of the type.  The state represents whether the
+ *                 layout of the type is undefined or fixed (values: layout_undefined
+ *                 or layout_fixed).  Compound types can have an undefined
+ *                 layout.  The layout of the basic types primitive and pointer
+ *                 is always layout_fixed.  If the layout of
+ *                 compound types is fixed all entities must have an offset
+ *                 and the size of the type must be set.
+ *                 A fixed layout for enumeration types means that each enumeration
+ *                 is associated with an implementation value.
+ *  - assoc_type:  The associated lowered/upper type.
+ *  - visit:       A counter for walks of the type information.
+ *  - link:        A void* to associate some additional information with the type.
  *
  *  These fields can only be accessed via access functions.
  *
@@ -107,10 +109,10 @@ typedef struct ir_type ir_type;
 
 # include "type_or_entity.h"
 
-/** frees all entities associated with a type.
-    Does not free array entity.
-    Warning: make sure these entities are not referenced anywhere else.
-*/
+/** Frees all entities associated with a type.
+ *  Does not free the array entity.
+ *  Warning: ensure these entities are not referenced anywhere else.
+ */
 void        free_type_entities(ir_type *tp);
 
 /** Frees the memory used by the type.
@@ -139,21 +141,21 @@ const char* get_type_name(const ir_type *tp);
  */
 typedef enum {
   visibility_local,              /**< The entity is only visible locally.  This is the default for
-				      entities.
-				      The type is only visible locally.  All instances are allocated
-				      locally, and no pointer to entities of this type are passed
-				      out of this compilation unit. */
+                                      entities.
+                                      The type is only visible locally.  All instances are allocated
+                                      locally, and no pointer to entities of this type are passed
+                                      out of this compilation unit. */
   visibility_external_visible,   /**< The entity is visible to other external program parts, but
-				      it is defined here.  It may not be optimized away.  The entity must
-				      be static_allocated.
-				      For types:  entities of this type can be accessed externally.  No
-				      instances of this type are allocated externally.  */
+                                      it is defined here.  It may not be optimized away.  The entity must
+                                      be static_allocated.
+                                      For types:  entities of this type can be accessed externally.  No
+                                      instances of this type are allocated externally.  */
   visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
-  				      must not allocate memory for this entity. The entity must
-				      be static_allocated.  This can also be an external defined
-				      method.
-				      For types:  entities of this type are allocated and accessed from
-				      external code.  Default for types.  */
+                                      must not allocate memory for this entity. The entity must
+                                      be static_allocated.  This can also be an external defined
+                                      method.
+                                      For types:  entities of this type are allocated and accessed from
+                                      external code.  Default for types.  */
 } visibility;
 
 /** The visibility of a type.
@@ -202,15 +204,15 @@ void       set_type_visibility (ir_type *tp, visibility v);
 /** The state of the type layout. */
 typedef enum {
   layout_undefined,    /**< The layout of this type is not defined.
-              Address computation to access fields is not
-              possible, fields must be accessed by Sel
-              nodes.  This is the default value except for
-              pointer, primitive and method types. */
+                            Address computation to access fields is not
+                            possible, fields must be accessed by Sel
+                            nodes.  This is the default value except for
+                            pointer, primitive and method types. */
   layout_fixed         /**< The layout is fixed, all component/member entities
-              have an offset assigned.  Size of the type is known.
-              Arrays can be accessed by explicit address
-              computation. Default for pointer, primitive and method
-              types.  */
+                            have an offset assigned.  Size of the type is known.
+                            Arrays can be accessed by explicit address
+                            computation. Default for pointer, primitive and method
+                            types.  */
 } type_state;
 
 /** Returns a human readable string for the enum entry. */
@@ -287,11 +289,15 @@ void        set_type_alignment_bytes(ir_type *tp, int size);
  */
 void        set_type_alignment_bits(ir_type *tp, int size);
 
+/** Returns the visited count of a type. */
 unsigned long get_type_visited(const ir_type *tp);
+/** Sets the visited count of a type to num. */
 void          set_type_visited(ir_type *tp, unsigned long num);
-/* Sets visited field in type to type_visited. */
+/** Sets visited field in type to type_visited. */
 void          mark_type_visited(ir_type *tp);
+/** Returns non-zero if the type is already visited */
 int           type_visited(const ir_type *tp);
+/** Returns non-zero if the type is not yet visited */
 int           type_not_visited(const ir_type *tp);
 
 /** Returns the associated link field of a type. */
