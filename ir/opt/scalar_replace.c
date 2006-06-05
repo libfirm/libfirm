@@ -273,6 +273,17 @@ static int find_possible_replacements(ir_graph *irg)
       if (get_entity_link(ent) == ADDRESS_TAKEN)
         continue;
 
+      /*
+       * Beware: in rare cases even entities on the frame might be
+       * volatile. This might happen if the entity serves as a store
+       * to a value that must survive a exception. Do not optimize
+       * such entities away.
+       */
+      if (get_entity_volatility(ent) == volatility_is_volatile) {
+        set_entity_link(ent, ADDRESS_TAKEN);
+        continue;
+      }
+
       ent_type = get_entity_type(ent);
 
       /* we can handle arrays, structs and atomic types yet */
