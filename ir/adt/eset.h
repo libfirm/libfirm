@@ -55,7 +55,7 @@ void *eset_first(eset *s);
  */
 void *eset_next(eset *s);
 
-/** Inserts all elements of source into target (union). Did NOT work if NULL is contained in source. */
+/** Inserts all elements of source into target (union).  Does NOT work if NULL is contained in source. */
 void eset_insert_all(eset *target, eset *source);
 
 #endif /* _ESET_H_ */
