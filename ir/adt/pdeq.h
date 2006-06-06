@@ -183,6 +183,13 @@ typedef pdeq waitq;
 #define new_waitq()  new_pdeq()
 
 /**
+ * Delete a wait queue (fifo)
+ *
+ * @param wq   The wait queue.
+ */
+#define del_waitq(wq) del_pdeq(wq)
+
+/**
  * Retrieve a pointer from the wait queue (fifo).
  *
  * @param wq   The wait queue.
