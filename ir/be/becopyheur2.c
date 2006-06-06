@@ -859,7 +859,7 @@ static void process_cloud(co2_cloud_t *cloud)
 	co2_t *env  = cloud->env;
 	int n_regs  = env->n_regs;
 	int n_edges = 0;
-	int *mst_edges = malloc(cloud->n_memb * cloud->n_memb * sizeof(mst_edges[0]));
+	int *mst_edges = xmalloc(cloud->n_memb * cloud->n_memb * sizeof(mst_edges[0]));
 	pdeq *q;
 
 	struct list_head changed;
