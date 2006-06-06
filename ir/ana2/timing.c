@@ -69,10 +69,10 @@ timeval_subtract (struct timeval *x, struct timeval *y)
 timing_t *
 start_timing (void)
 {
-  timing_t *t = (timing_t*) malloc (sizeof (timing_t));
+  timing_t *t = (timing_t*) xmalloc (sizeof (timing_t));
 
-  t->start = (struct timeval*) malloc (sizeof (struct timeval));
-  t->end   = (struct timeval*) malloc (sizeof (struct timeval));
+  t->start = (struct timeval*) xmalloc (sizeof (struct timeval));
+  t->end   = (struct timeval*) xmalloc (sizeof (struct timeval));
 
   gettimeofday (t->start, NULL);
 
@@ -104,6 +104,9 @@ end_timing (timing_t *t)
 
 /*
   $Log$
+  Revision 1.4  2006/06/06 12:06:27  beck
+  use xmalloc instead of malloc
+
   Revision 1.3  2005/01/05 14:25:38  beck
   added Win32 "support"
 

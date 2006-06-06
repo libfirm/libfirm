@@ -57,7 +57,7 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
   if (!suffix3) suffix3 = ".txt";
 
   /* open file for vcg graph */
-  fname = malloc (strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for excapes. */
+  fname = xmalloc (strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for excapes. */
 
   j = 0;
   for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */

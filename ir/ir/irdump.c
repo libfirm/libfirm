@@ -2217,7 +2217,7 @@ FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2) {
   if (!suffix2) suffix2 = "";
 
   /* open file for vcg graph */
-  fname = malloc (len * 2 + strlen(suffix1) + strlen(suffix2) + 5);
+  fname = xmalloc (len * 2 + strlen(suffix1) + strlen(suffix2) + 5);
 
   /* strncpy (fname, nm, len); */     /* copy the filename */
   j = 0;

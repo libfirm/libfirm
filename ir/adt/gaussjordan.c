@@ -33,8 +33,13 @@
 /* returns -1 if ill-conditioned matrix                 */
 /*------------------------------------------------------*/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <math.h>
 #include <stdlib.h>
+#include "xmalloc.h"
 
 #define SMALL 0.00001
 
@@ -42,8 +47,8 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
 {
   int i, j, row, col, col2, biggest_r, biggest_c;
   double big, temp, sum;
-  double *x = malloc(nsize * sizeof(double));
-  double *scramvec = malloc(nsize * sizeof(double));
+  double *x = xmalloc(nsize * sizeof(double));
+  double *scramvec = xmalloc(nsize * sizeof(double));
 
 #define _A(row,col) A[(row)*nsize + (col)]
   /* init x[] */

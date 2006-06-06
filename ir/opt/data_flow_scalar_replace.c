@@ -1140,7 +1140,7 @@ static void sync_mem_edges(env_t *env) {
       vnum_state++;
 
   /* We allocate the memory, that we need for the predecessors of the sync.*/
-  in     = malloc(sizeof(ir_node*) *vnum_state);
+  in     = xmalloc(sizeof(ir_node*) *vnum_state);
 
   /* The global memory edge is the first predecessor of this sync node.*/
   if(val_arr[env->gl_mem_vnum].mem_edge_state == NULL) {

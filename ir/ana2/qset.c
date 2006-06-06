@@ -63,7 +63,7 @@ static void *mix_malloc (struct obstack *obst, size_t size)
   if (NULL != obst) {
     return (obstack_alloc (obst, size));
   } else {
-    return (malloc (size));
+    return (xmalloc (size));
   }
 }
 
@@ -730,6 +730,9 @@ int qset_test_main (int argc, char **argv)
 
 /*
   $Log$
+  Revision 1.12  2006/06/06 12:06:27  beck
+  use xmalloc instead of malloc
+
   Revision 1.11  2005/06/22 09:34:11  beck
   typo fixed
 

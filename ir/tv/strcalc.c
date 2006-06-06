@@ -1604,11 +1604,6 @@ void init_strcalc(int precision)
     calc_buffer   = xmalloc(calc_buffer_size+1 * sizeof(char));
     output_buffer = xmalloc(bit_pattern_size+1 * sizeof(char));
 
-    if (calc_buffer == NULL || output_buffer == NULL) {
-      assert(0 && "malloc failed");
-      exit(-1);
-    }
-
     DEBUGPRINTF(("init strcalc: \n\tPRECISION: %d\n\tCALC_BUFFER_SIZE = %d\n\tMAX_VALUE_SIZE = %d\n\tbuffer pointer: %p\n", precision, calc_buffer_size, max_value_size, calc_buffer));
   }
 }
