@@ -183,9 +183,9 @@ compute_execfreq(ir_graph * irg)
   irg_block_walk_graph(irg, block_walker, NULL, &wd);
 
   size = set_count(freqs);
-  matrix = malloc(size*size*sizeof(*matrix));
+  matrix = xmalloc(size*size*sizeof(*matrix));
   memset(matrix, 0, size*size*sizeof(*matrix));
-  rhs = malloc(size*sizeof(*rhs));
+  rhs = xmalloc(size*sizeof(*rhs));
   memset(rhs, 0, size*sizeof(*rhs));
 
   set_foreach(freqs, freq) {

@@ -5,6 +5,7 @@
 #include "irgwalk.h"
 #include "irnode.h"
 #include "pmap.h"
+#include "xmalloc.h"
 #include "cdep.h"
 #include "irprintf.h"
 
@@ -34,7 +35,7 @@ static void add_cdep(ir_node* node, ir_node* dep_on)
 #endif
 
   if (dep == NULL) {
-    cdep* newdep = malloc(sizeof(*newdep));
+    cdep* newdep = xmalloc(sizeof(*newdep));
 
     newdep->node = dep_on;
     newdep->next = NULL;
@@ -47,7 +48,7 @@ static void add_cdep(ir_node* node, ir_node* dep_on)
       if (dep->next == NULL) break;
       dep = dep->next;
     }
-    newdep = malloc(sizeof(*newdep));
+    newdep = xmalloc(sizeof(*newdep));
     newdep->node = dep_on;
     newdep->next = NULL;
     dep->next = newdep;
