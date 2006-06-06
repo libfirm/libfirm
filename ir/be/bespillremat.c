@@ -77,7 +77,7 @@
 #define COST_STORE     50
 #define COST_REMAT     1
 
-#define ILP_TIMEOUT    90
+#define ILP_TIMEOUT    120
 
 #define ILP_UNDEF		-1
 
@@ -288,18 +288,32 @@ cmp_keyval(const void *a, const void *b, size_t size)
 static double
 execution_frequency(const spill_ilp_t * si, const ir_node * irn)
 {
+#define FUDGE 0.001
 	if(si->execfreqs) {
 		if(is_Block(irn)) {
-			return get_block_execfreq(si->execfreqs, irn);
+			return get_block_execfreq(si->execfreqs, irn) + FUDGE;
 		} else {
-			return get_block_execfreq(si->execfreqs, get_nodes_block(irn));
+			return get_block_execfreq(si->execfreqs, get_nodes_block(irn)) + FUDGE;
 		}
 	} else {
 		if(is_Block(irn))
-			return exp(get_loop_depth(get_irn_loop(irn)) * log(10));
+			return exp(get_loop_depth(get_irn_loop(irn)) * log(10)) + FUDGE;
 		else
-			return exp(get_loop_depth(get_irn_loop(get_nodes_block(irn))) * log(10));
+			return exp(get_loop_depth(get_irn_loop(get_nodes_block(irn))) * log(10)) + FUDGE;
 	}
+}
+
+static double
+get_cost(const spill_ilp_t * si, const ir_node * irn)
+{
+	if(be_is_Spill(irn)) {
+		return COST_STORE;
+	} else if(be_is_Reload(irn)){
+		return COST_LOAD;
+	} else {
+		return arch_get_op_estimated_cost(si->chordal_env->birg->main_env->arch_env, irn);
+	}
+
 }
 
 /**
@@ -353,7 +367,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 
 		remat = obstack_alloc(si->obst, sizeof(*remat));
 		remat->op = op;
-		remat->cost = arch_get_op_estimated_cost(si->chordal_env->birg->main_env->arch_env, op);
+		remat->cost = get_cost(si, op);
 		remat->value = dest_value;
 		remat->proj = proj;
 		remat->inverse = 0;
@@ -1020,9 +1034,8 @@ walker_remat_insertor(ir_node * bb, void * data)
 					}
 				}
 			}
-
 		}
-		if(is_diverge_edge(bb) > 1) {
+		if(is_diverge_edge(bb)) {
 			/* add remat2s at beginning of block */
 			if ((live_is_in(li) || (is_Phi(value) && get_nodes_block(value)==bb)) && has_reg_class(si, value)) {
 				remat_info_t   *remat_info,
@@ -1117,12 +1130,8 @@ luke_endwalker(ir_node * bb, void * data)
 			ir_snprintf(buf, sizeof(buf), "mem_out_%N_%N", irn, bb);
 			spill->mem_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
 
-			if(is_diverge_edge(bb)) {
-				ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-				spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, COST_STORE*execution_frequency(si, bb));
-			} else {
-				spill->spill = ILP_UNDEF;
-			}
+			ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
+			spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, COST_STORE*execution_frequency(si, bb));
 
 			spill->reg_in = ILP_UNDEF;
 			spill->mem_in = ILP_UNDEF;
@@ -1248,12 +1257,8 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 		ir_snprintf(buf, sizeof(buf), "mem_out_%N_%N", irn, bb);
 		spill->mem_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
 
-		if(is_diverge_edge(bb)) {
-			ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-			spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, COST_STORE*execution_frequency(si, bb));
-		} else {
-			spill->spill = ILP_UNDEF;
-		}
+		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
+		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, COST_STORE*execution_frequency(si, bb));
 	}
 
 	return spill;
@@ -1761,9 +1766,7 @@ fertig:
 		cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 
 		lpp_set_factor_fast(si->lpp, cst, spill->mem_out, 1.0);
-		if(spill->spill != ILP_UNDEF) {
-			lpp_set_factor_fast(si->lpp, cst, spill->spill, -1.0);
-		}
+		lpp_set_factor_fast(si->lpp, cst, spill->spill, -1.0);
 
 		if(pset_find_ptr(live, spill->irn)) {
 			DBG((si->dbg, LEVEL_5, "\t     %+F live at beginning of block %+F\n", spill->irn, bb));
@@ -1913,46 +1916,45 @@ fertig:
 
 	/* walk forward now and compute constraints for placing spills */
 	/* this must only be done for values that are not defined in this block */
-	if(is_diverge_edge(bb)) {
-		pset_foreach(live, irn) {
-			ir_snprintf(buf, sizeof(buf), "req_spill_%N_%N", irn, bb);
-			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+	/* TODO are these values at start of block? if yes, just check whether this is a diverge edge and skip the loop */
+	pset_foreach(live, irn) {
+		spill = set_find_spill(spill_bb->ilp, irn);
+		assert(spill);
 
-			spill = set_find_spill(spill_bb->ilp, irn);
-			assert(spill);
+		ir_snprintf(buf, sizeof(buf), "req_spill_%N_%N", irn, bb);
+		cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 
-			lpp_set_factor_fast(si->lpp, cst, spill->spill, 1.0);
-			lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
+		lpp_set_factor_fast(si->lpp, cst, spill->spill, 1.0);
+		if(is_diverge_edge(bb)) lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
 
-			sched_foreach_op(bb, tmp) {
-				op_t   *op = get_irn_link(tmp);
+		sched_foreach_op(bb, tmp) {
+			op_t   *op = get_irn_link(tmp);
 
-				if(is_Phi(tmp)) continue;
-				assert(!is_Proj(tmp));
+			if(is_Phi(tmp)) continue;
+			assert(!is_Proj(tmp));
 
-				if(op->is_remat) {
-					ir_node   *value = op->attr.remat.remat->value;
+			if(op->is_remat) {
+				ir_node   *value = op->attr.remat.remat->value;
 
-					if(value == irn) {
-						/* only collect remats up to the first use of a value */
-						lpp_set_factor_fast(si->lpp, cst, op->attr.remat.ilp, -1.0);
-					}
-				} else {
-					int i,
-						n;
-
-					for (i = 0, n = get_irn_arity(tmp); i < n; ++i) {
-						ir_node    *arg = get_irn_n(tmp, i);
-
-						if(arg == irn) {
-							/* if a value is used stop collecting remats */
-							cst = ILP_UNDEF;
-						}
-						break;
-					}
+				if(value == irn) {
+					/* only collect remats up to the first use of a value */
+					lpp_set_factor_fast(si->lpp, cst, op->attr.remat.ilp, -1.0);
 				}
-				if(cst == ILP_UNDEF) break;
+			} else {
+				int i,
+					n;
+
+				for (i = 0, n = get_irn_arity(tmp); i < n; ++i) {
+					ir_node    *arg = get_irn_n(tmp, i);
+
+					if(arg == irn) {
+						/* if a value is used stop collecting remats */
+						cst = ILP_UNDEF;
+					}
+					break;
+				}
 			}
+			if(cst == ILP_UNDEF) break;
 		}
 	}
 
@@ -2402,6 +2404,8 @@ insert_mem_phi(spill_ilp_t * si, const ir_node * phi)
 	set_irn_link(mem_phi, defs->spills);
 	defs->spills = mem_phi;
 
+	sched_add_after(phi, mem_phi);
+
 #ifdef KEEPALIVE_SPILLS
 	pset_insert_ptr(si->spills, mem_phi);
 #endif
@@ -2549,18 +2553,16 @@ walker_spill_placer(ir_node * bb, void * data) {
 			}
 		}
 
-		if(spill->spill != ILP_UNDEF) {
-			name = si->lpp->vars[spill->spill];
-			if(!is_zero(name->value)) {
-				if(spill->reg_in > 0) {
-					name = si->lpp->vars[spill->reg_in];
-					if(!is_zero(name->value)) {
-						insert_spill(si, spill->irn, spill->irn, bb);
-						continue;
-					}
+		name = si->lpp->vars[spill->spill];
+		if(!is_zero(name->value)) {
+			if(spill->reg_in > 0) {
+				name = si->lpp->vars[spill->reg_in];
+				if(!is_zero(name->value)) {
+					insert_spill(si, spill->irn, spill->irn, bb);
+					continue;
 				}
-				pset_insert_ptr(spills_to_do, spill->irn);
 			}
+			pset_insert_ptr(spills_to_do, spill->irn);
 		}
 	}
 	DBG((si->dbg, LEVEL_3, "\t  %d spills to do in block %+F\n", pset_count(spills_to_do), bb));
@@ -2600,12 +2602,22 @@ phim_fixer(spill_ilp_t *si) {
 
 	set_foreach(si->values, defs) {
 		const ir_node  *phi = defs->value;
-		ir_node  *phi_m = defs->spills;
+		ir_node  *phi_m = NULL;
+		ir_node  *next = defs->spills;
 		int       i,
 				  n;
 
 		if(!is_Phi(phi)) continue;
-		if(!phi_m || !is_Phi(phi_m) || get_irn_mode(phi_m) != mode_M) continue;
+
+		while(next) {
+			if(is_Phi(next) && get_irn_mode(next) == mode_M) {
+				phi_m = next;
+				break;
+			} else {
+				next = get_irn_link(next);
+			}
+		}
+		if(!phi_m) continue;
 
 		for(i=0,n=get_irn_arity(phi); i<n; ++i) {
 			const ir_node  *value = get_irn_n(phi, i);
@@ -2652,16 +2664,26 @@ walker_reload_placer(ir_node * bb, void * data) {
 					if(!is_zero(name->value)) {
 						ir_node    *reload;
 						ir_node    *insert_pos = irn;
-						ir_node    *prev = sched_prev(insert_pos);
-						op_t       *prev_op = get_irn_link(prev);
+						ir_node    *prev = insert_pos;
+						op_t       *prev_op;
+
+						do {
+							prev = sched_prev(prev);
+						} while(be_is_Spill(prev));
+
+						prev_op = get_irn_link(prev);
 
 						/* insert reload before pre-remats */
-						while(!sched_is_end(prev) && !be_is_Reload(prev) && !be_is_Spill(prev)
+						while(!sched_is_end(prev) && !be_is_Reload(prev) && !is_Phi(prev)
 								&& prev_op->is_remat && prev_op->attr.remat.pre) {
 							insert_pos = prev;
 
-							prev = sched_prev(insert_pos);
+							do {
+								prev = sched_prev(prev);
+							} while(be_is_Spill(prev));
+
 							prev_op = get_irn_link(prev);
+
 						}
 
 						reload = insert_reload(si, arg, insert_pos);
@@ -2724,12 +2746,17 @@ walker_collect_used(ir_node * irn, void * data)
 	lc_bitset_set(used, get_irn_idx(irn));
 }
 
+struct kill_helper {
+	lc_bitset_t  *used;
+	spill_ilp_t  *si;
+};
+
 static void
 walker_kill_unused(ir_node * bb, void * data)
 {
-	lc_bitset_t     *used = data;
-	const ir_node   *bad = get_irg_bad(get_irn_irg(bb));
-	ir_node         *irn;
+	struct kill_helper *kh = data;
+	const ir_node      *bad = get_irg_bad(get_irn_irg(bb));
+	ir_node            *irn;
 
 
 	for(irn=sched_first(bb); !sched_is_end(irn);) {
@@ -2737,8 +2764,11 @@ walker_kill_unused(ir_node * bb, void * data)
 		int          i,
 					 n;
 
-		if(!lc_bitset_is_set(used, get_irn_idx(irn))) {
-			assert(!be_is_Spill(irn) && !be_is_Reload(irn) && "something is fishy, spill or remat is unused");
+		if(!lc_bitset_is_set(kh->used, get_irn_idx(irn))) {
+			if(be_is_Spill(irn) || be_is_Reload(irn)) {
+				DBG((kh->si->dbg, LEVEL_1, "\t SUBOPTIMAL! %+F IS UNUSED (cost: %g)\n", irn, get_cost(kh->si, irn)*execution_frequency(kh->si, bb)));
+				assert(lpp_get_sol_state(kh->si->lpp) != lpp_optimal && "optimal solution is suboptimal?");
+			}
 
 			sched_remove(irn);
 
@@ -2754,12 +2784,15 @@ walker_kill_unused(ir_node * bb, void * data)
 static void
 kill_all_unused_values_in_schedule(spill_ilp_t * si)
 {
-	lc_bitset_t   *used = lc_bitset_malloc(get_irg_last_idx(si->chordal_env->irg));
+	struct kill_helper kh;
 
-	irg_walk_graph(si->chordal_env->irg, walker_collect_used, NULL, used);
-	irg_block_walk_graph(si->chordal_env->irg, walker_kill_unused, NULL, used);
+	kh.used = lc_bitset_malloc(get_irg_last_idx(si->chordal_env->irg));
+	kh.si = si;
 
-	lc_bitset_free(used);
+	irg_walk_graph(si->chordal_env->irg, walker_collect_used, NULL, kh.used);
+	irg_block_walk_graph(si->chordal_env->irg, walker_kill_unused, NULL, &kh);
+
+	lc_bitset_free(kh.used);
 }
 
 static void
@@ -2777,6 +2810,9 @@ rewire_uses(spill_ilp_t * si)
 {
 	dom_front_info_t     *dfi = be_compute_dominance_frontiers(si->chordal_env->irg);
 	defs_t               *defs;
+	pset                 *ignore = pset_new_ptr(1);
+
+	pset_insert_ptr(ignore, get_irg_end(si->chordal_env->irg));
 
 	/* then fix uses of spills */
 	set_foreach(si->values, defs) {
@@ -2803,7 +2839,7 @@ rewire_uses(spill_ilp_t * si)
 			//				print_irn_pset(spills);
 			//				print_irn_pset(reloads);
 
-			be_ssa_constr_set(dfi, spills);
+			be_ssa_constr_set_ignore(dfi, spills, ignore);
 		}
 
 		del_pset(reloads);
@@ -3010,7 +3046,9 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 #ifdef SOLVE
 	DBG((si.dbg, LEVEL_1, "\tSolving %F\n", chordal_env->irg));
+#ifdef ILP_TIMEOUT
 	lpp_set_time_limit(si.lpp, ILP_TIMEOUT);
+#endif
 
 #ifdef SOLVE_LOCAL
 	lpp_solve_cplex(si.lpp);
