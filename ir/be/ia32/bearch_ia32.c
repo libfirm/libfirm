@@ -31,6 +31,7 @@
 #include "irgopt.h"
 
 #include "bitset.h"
+#include "pdeq.h"
 #include "debug.h"
 
 #include "../beabi.h"                 /* the general register allocator interface */
@@ -818,11 +819,26 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	}
 }
 
+static void ia32_push_on_queue_walker(ir_node *block, void *env) {
+	waitq *wq = env;
+	waitq_put(wq, block);
+}
+
+
 /**
  * Add Copy nodes for not fulfilled should_be_equal constraints
  */
 static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
-	irg_block_walk_graph(irg, NULL, ia32_finish_irg_walker, cg);
+	waitq *wq = new_waitq();
+
+	/* Push the blocks on the waitq because ia32_finish_irg_walker starts more walks ... */
+	irg_block_walk_graph(irg, NULL, ia32_push_on_queue_walker, wq);
+
+	while (! waitq_empty(wq)) {
+		ir_node *block = waitq_get(wq);
+		ia32_finish_irg_walker(block, cg);
+	}
+	del_waitq(wq);
 }
 
 
