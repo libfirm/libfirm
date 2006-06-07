@@ -1073,10 +1073,6 @@ void optimize_load_store(ir_graph *irg)
 {
   walk_env_t env;
 
-  /* must set current it graph here, because new nodes are
-     constructed in the fixpoint iteration */
-  current_ir_graph = irg;
-
   assert(get_irg_phase_state(irg) != phase_building);
   assert(get_irg_pinned(irg) != op_pin_state_floats &&
     "LoadStore optimization needs pinned graph");
@@ -1098,12 +1094,13 @@ void optimize_load_store(ir_graph *irg)
 
   /* Handle graph state */
   if (env.changes) {
-    if (get_irg_outs_state(current_ir_graph) == outs_consistent)
-      set_irg_outs_inconsistent(current_ir_graph);
+    if (get_irg_outs_state(irg) == outs_consistent)
+      set_irg_outs_inconsistent(irg);
   }
 
   if (env.changes & CF_CHANGED) {
-    /* is this really needed: Yes, control flow changed, block might get Bad. */
-    set_irg_doms_inconsistent(current_ir_graph);
+    /* is this really needed: Yes, control flow changed, block might
+       have Bad() predecessors. */
+    set_irg_doms_inconsistent(irg);
   }
 }
