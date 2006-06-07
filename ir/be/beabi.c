@@ -832,6 +832,9 @@ static int cmp_call_dependecy(const void *c1, const void *c2)
 	return n1 == n2 ? 0 : (dependent_on(n1, n2) ? -1 : 1);
 }
 
+/**
+ * Walker: links all Call nodes to the Block they are contained.
+ */
 static void link_calls_in_block_walker(ir_node *irn, void *data)
 {
 	if(is_Call(irn)) {
@@ -847,9 +850,10 @@ static void link_calls_in_block_walker(ir_node *irn, void *data)
 }
 
 /**
- * Process all call nodes inside a basic block.
+ * Block-walker:
+ * Process all Call nodes inside a basic block.
  * Note that the link field of the block must contain a linked list of all
- * Call nodes inside the block. We first order this list according to data dependency
+ * Call nodes inside the Block. We first order this list according to data dependency
  * and that connect the calls together.
  */
 static void process_calls_in_block(ir_node *bl, void *data)
@@ -1506,6 +1510,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	pmap_entry *ent;
 	ir_node *dummy;
+	optimization_state_t state;
 
 	obstack_init(&env->obst);
 
@@ -1519,7 +1524,12 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->dce_survivor     = new_survive_dce();
 	env->birg             = birg;
 	env->stack_phis       = pset_new_ptr(16);
+	/* Beware: later we replace this node by the real one, ensure it is not CSE'd
+	   to another Unknown or the stack pointer gets used */
+	save_optimization_state(&state);
+	set_optimize(0);
 	env->init_sp = dummy  = new_r_Unknown(irg, env->isa->sp->reg_class->mode);
+	restore_optimization_state(&state);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.abi");
 
 	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
