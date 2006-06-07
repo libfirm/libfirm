@@ -126,10 +126,11 @@ typedef union {
 
 /** Additional type flags. */
 enum type_flags {
-  tf_none            = 0,  /**< No flags. */
-  tf_frame_type      = 1,  /**< Set if this is a frame type. */
-  tf_lowered_type    = 2,  /**< Set if this is a lowered type. */
-  tf_layout_fixed    = 4   /**< Set if the layout of a type is fixed */
+  tf_none             = 0,  /**< No flags. */
+  tf_frame_type       = 1,  /**< Set if this is a frame type. */
+  tf_value_param_type = 2,  /**< Set if this is a value param type. */
+  tf_lowered_type     = 4,  /**< Set if this is a lowered type. */
+  tf_layout_fixed     = 8   /**< Set if the layout of a type is fixed */
 };
 
 /** the structure of a type */

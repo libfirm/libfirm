@@ -1153,6 +1153,7 @@ static INLINE ir_type *
 build_value_type(ident *name, int len, tp_ent_pair *tps) {
   int i;
   ir_type *res = new_type_struct(name);
+  res->flags |= tf_value_param_type;
   /* Remove type from type list.  Must be treated differently than other types. */
   remove_irp_type(res);
   for (i = 0; i < len; i++) {
@@ -1160,6 +1161,7 @@ build_value_type(ident *name, int len, tp_ent_pair *tps) {
     ir_type *elt_type = tps[i].tp ? tps[i].tp : res;
 
     tps[i].ent = new_entity(res, mangle_u(name, get_type_ident(elt_type)), elt_type);
+    set_entity_allocation(tps[i].ent, allocation_parameter);
   }
   return res;
 }
@@ -1926,12 +1928,17 @@ int is_compound_type(const ir_type *tp) {
   return tp->type_op->flags & TP_OP_FLAG_COMPOUND;
 }
 
-/* Checks, whether a type is a frame ir_type */
+/* Checks, whether a type is a frame type */
 int is_frame_type(const ir_type *tp) {
   return tp->flags & tf_frame_type;
 }
 
-/* Checks, whether a type is a lowered ir_type */
+/* Checks, whether a type is a value parameter type */
+int is_value_param_type(const ir_type *tp) {
+  return tp->flags & tf_value_param_type;
+}
+
+/* Checks, whether a type is a lowered type */
 int is_lowered_type(const ir_type *tp) {
   return tp->flags & tf_lowered_type;
 }

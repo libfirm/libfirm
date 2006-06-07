@@ -1275,6 +1275,11 @@ int is_compound_type(const ir_type *tp);
 int is_frame_type(const ir_type *tp);
 
 /**
+ * Checks, whether a type is a value parameter type.
+ */
+int is_value_param_type(const ir_type *tp);
+
+/**
  * Checks, whether a type is a lowered type.
  */
 int is_lowered_type(const ir_type *tp);
