@@ -249,6 +249,12 @@ const backend_params *be_init(void)
 	return &be_params;
 }
 
+/**
+ * Initializes the main environment for the backend.
+ *
+ * @param env          an empty environment
+ * @param file_handle  the file handle where the output will be written to
+ */
 static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 {
 	memset(env, 0, sizeof(*env));
@@ -282,6 +288,15 @@ static void be_done_env(be_main_env_t *env)
 	obstack_free(&env->obst, NULL);
 }
 
+/**
+ * A wrapper around a firm dumper. Dumps only, if
+ * flags are enabled.
+ *
+ * @param mask    a bitmask containing the reason what will be dumped
+ * @param irg     the IR graph to dump
+ * @param suffix  the suffix for the dumper
+ * @param dumper  the dumper to be called
+ */
 static void dump(int mask, ir_graph *irg, const char *suffix,
                  void (*dumper)(ir_graph *, const char *))
 {
@@ -323,6 +338,8 @@ static void prepare_graph(be_irg_t *birg)
  * The Firm backend main loop.
  * Do architecture specific lowering for all graphs
  * and call the architecture specific code generator.
+ *
+ * @param file_handle   the file handle the output will be written to
  */
 static void be_main_loop(FILE *file_handle)
 {
@@ -334,7 +351,7 @@ static void be_main_loop(FILE *file_handle)
 
 	isa = arch_env_get_isa(env.arch_env);
 
-	// /* for debugging, anchors helps */
+	/* for debugging, anchors helps */
 	// dump_all_anchors(1);
 
 	/* For all graphs */
@@ -342,7 +359,7 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *irg = get_irp_irg(i);
 		const arch_code_generator_if_t *cg_if;
 		be_irg_t birg;
-		int save_optimize, save_normalize;
+		optimization_state_t state;
 
 		birg.irg      = irg;
 		birg.main_env = &env;
@@ -404,8 +421,7 @@ static void be_main_loop(FILE *file_handle)
 		be_do_stat_nodes(irg, "04 Schedule");
 
 		/* we switch off optimizations here, because they might cause trouble */
-		save_optimize  = get_optimize();
-		save_normalize = get_opt_normalize();
+		save_optimization_state(&state);
 		set_optimize(0);
 		set_opt_normalize(0);
 
@@ -445,9 +461,7 @@ static void be_main_loop(FILE *file_handle)
 
 		be_do_stat_nodes(irg, "07 Final");
 
-		/* reset the optimizations */
-		set_optimize(save_optimize);
-		set_opt_normalize(save_normalize);
+		restore_optimization_state(&state);
 
 		/* switched off due to statistics (statistic module needs all irgs) */
 		//		free_ir_graph(irg);
