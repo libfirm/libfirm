@@ -240,6 +240,15 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env) {
 		set_irn_mode(irn, mode);
 	}
 
+	/*
+		Annotate mode of stored value to link field of the Store
+		as floating point converts might be optimized and we would
+		loose the mode.
+	*/
+	if (get_irn_opcode(irn) == iro_Store) {
+		set_irn_link(irn, get_irn_mode(get_Store_value(irn)));
+	}
+
 	tenv.block    = get_nodes_block(irn);
 	tenv.cg       = cg;
 	tenv.irg      = cg->irg;

@@ -1368,7 +1368,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *ptr     = get_Store_ptr(node);
 	ir_node *sptr    = ptr;
 	ir_node *mem     = get_Store_mem(node);
-	ir_mode *mode    = get_irn_mode(val);
+	ir_mode *mode    = get_irn_link(node);
 	ir_node *sval    = val;
 	int      is_imm  = 0;
 	ir_node *new_op;
@@ -1432,7 +1432,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	set_ia32_am_support(new_op, ia32_am_Dest);
 	set_ia32_op_type(new_op, ia32_AddrModeD);
 	set_ia32_am_flavour(new_op, am_flav);
-	set_ia32_ls_mode(new_op, get_irn_mode(val));
+	set_ia32_ls_mode(new_op, mode);
 	set_ia32_immop_type(new_op, immop);
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
