@@ -63,7 +63,6 @@ typedef struct _belady_env_t {
 	ir_node *instr;		/**< current instruction */
 	unsigned instr_nr;	/**< current instruction number (relative to block start) */
 	pset *used;			/**< holds the values used (so far) in the current BB */
-	ir_node **copies;	/**< holds all copies placed due to phi-spilling */
 
 	spill_env_t *senv;	/**< see bespill.h */
 } belady_env_t;
@@ -334,48 +333,6 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 static void belady(ir_node *blk, void *env);
 
 /**
- * Inserts a copy (needed for spilled phi handling) of a value at the earliest
- * possible location in a block. That is after the last use/def of the value or at
- * the beginning of the block if there is no use/def.
- */
-static ir_node *insert_copy(belady_env_t *env, ir_node *block, ir_node *value) {
-	ir_node* node;
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *copy = be_new_Copy(env->cls, irg, block, value);
-
-	ARR_APP1(ir_node*, env->copies, copy);
-
-	// walk schedule backwards until we find a use/def, or until we have reached the first phi
-	// TODO we could also do this by iterating over all uses and checking the
-	// sched_get_time_step value. Need benchmarks to decide this...
-	sched_foreach_reverse(block, node) {
-		int i, arity;
-
-		if(is_Phi(node)) {
-			sched_add_after(node, copy);
-			goto placed;
-		}
-		if(value == node) {
-			sched_add_after(node, copy);
-			goto placed;
-		}
-		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *arg = get_irn_n(node, i);
-			if(arg == value) {
-				sched_add_after(node, copy);
-				goto placed;
-			}
-		}
-	}
-	// we didn't find a use or a phi yet, so place the copy at the beginning of the block
-	sched_add_before(sched_first(block), copy);
-
-placed:
-
-	return copy;
-}
-
-/**
  * Collects all values live-in at block @p blk and all phi results in this block.
  * Then it adds the best values (at most n_regs) to the blocks start_workset.
  * The phis among the remaining values get spilled: Introduce psudo-copies of
@@ -598,29 +555,6 @@ next_value:
 	}
 }
 
-/**
- * Removes all copies introduced for phi-spills
- */
-static void remove_copies(belady_env_t *env) {
-	int i;
-
-	for(i = 0; i < ARR_LEN(env->copies); ++i) {
-		ir_node *node = env->copies[i];
-		ir_node *src;
-		const ir_edge_t *edge, *ne;
-
-		assert(be_is_Copy(node));
-
-		src = be_get_Copy_op(node);
-		foreach_out_edge_safe(node, edge, ne) {
-			ir_node *user = get_edge_src_irn(edge);
-			int user_pos  = get_edge_src_pos(edge);
-
-			set_irn_n(user, user_pos, src);
-		}
-	}
-}
-
 void be_spill_belady(const be_chordal_env_t *chordal_env) {
 	be_spill_belady_spill_env(chordal_env, NULL);
 }
@@ -643,7 +577,6 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 		bel.senv = spill_env;
 	}
 	DEBUG_ONLY(be_set_spill_env_dbg_module(bel.senv, dbg);)
-	bel.copies    = NEW_ARR_F(ir_node*, 0);
 
 	DBG((dbg, LEVEL_1, "running on register class: %s\n", bel.cls->name));
 
@@ -652,8 +585,6 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	irg_block_walk_graph(chordal_env->irg, NULL, belady, &bel);
 	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &bel);
 	be_insert_spills_reloads(bel.senv);
-	remove_copies(&bel);
-	DEL_ARR_F(bel.copies);
 
 	be_remove_dead_nodes_from_schedule(chordal_env->irg);
 
