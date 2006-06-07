@@ -22,22 +22,22 @@
 # include <string.h>
 #endif
 
-# include "irnode_t.h"
-# include "irgraph_t.h"
-# include "irmode_t.h"
-# include "iropt_t.h"
-# include "ircons_t.h"
-# include "irgmod.h"
-# include "irgwalk.h"
-# include "irvrfy.h"
-# include "tv_t.h"
-# include "dbginfo_t.h"
-# include "iropt_dbg.h"
-# include "irflag_t.h"
-# include "array.h"
-# include "irhooks.h"
-# include "irtools.h"
-# include "opt_polymorphy.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "iropt_t.h"
+#include "ircons_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irvrfy.h"
+#include "tv_t.h"
+#include "dbginfo_t.h"
+#include "iropt_dbg.h"
+#include "irflag_t.h"
+#include "array.h"
+#include "irhooks.h"
+#include "irtools.h"
+#include "opt_polymorphy.h"
 
 #ifdef DO_CACHEOPT
 #include "cacheopt/cachesim.h"
@@ -57,7 +57,7 @@ enum changes_t {
  * walker environment
  */
 typedef struct _walk_env_t {
-  struct obstack obst;		/**< list of all stores */
+  struct obstack obst;          /**< list of all stores */
   unsigned changes;             /**< a bitmask of graph changes */
 } walk_env_t;
 
@@ -68,9 +68,7 @@ enum ldst_flags_t {
   LDST_VISITED = 1              /**< if set, this Load/Store is already visited */
 };
 
-/**
- * a Load/Store info
- */
+/** A Load/Store info. */
 typedef struct _ldst_info_t {
   ir_node  *projs[MAX_PROJ];    /**< list of Proj's of this node */
   ir_node  *exc_block;          /**< the exception block if available */
@@ -80,7 +78,7 @@ typedef struct _ldst_info_t {
 } ldst_info_t;
 
 /**
- * flags for control flow
+ * flags for control flow.
  */
 enum block_flags_t {
   BLOCK_HAS_COND = 1,      /**< Block has conditional control flow */
@@ -88,7 +86,7 @@ enum block_flags_t {
 };
 
 /**
- * a Block info
+ * a Block info.
  */
 typedef struct _block_info_t {
   unsigned flags;               /**< flags for the block */
@@ -104,8 +102,7 @@ static unsigned master_visited = 0;
 /**
  * get the Load/Store info of a node
  */
-static ldst_info_t *get_ldst_info(ir_node *node, walk_env_t *env)
-{
+static ldst_info_t *get_ldst_info(ir_node *node, walk_env_t *env) {
   ldst_info_t *info = get_irn_link(node);
 
   if (! info) {
@@ -171,8 +168,10 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
   return 0;
 }
 
-#define get_irn_out_n(node)     (unsigned)PTR_TO_INT(get_irn_link(node))
-#define set_irn_out_n(node, n)  set_irn_link(adr, INT_TO_PTR(n))
+/** Return the number of uses of an address node */
+#define get_irn_n_uses(adr)     (unsigned)PTR_TO_INT(get_irn_link(adr))
+/** Sets the number of uses of an address node */
+#define set_irn_n_uses(adr, n)  set_irn_link(adr, INT_TO_PTR(n))
 
 /**
  * walker, collects all Load/Store/Proj nodes
@@ -200,7 +199,7 @@ static void collect_nodes(ir_node *node, void *env)
 
       if ((ldst_info->flags & LDST_VISITED) == 0) {
         adr = get_Load_ptr(pred);
-        set_irn_out_n(adr, get_irn_out_n(adr) + 1);
+        set_irn_n_uses(adr, get_irn_n_uses(adr) + 1);
 
         ldst_info->flags |= LDST_VISITED;
       }
@@ -225,7 +224,7 @@ static void collect_nodes(ir_node *node, void *env)
 
       if ((ldst_info->flags & LDST_VISITED) == 0) {
         adr = get_Store_ptr(pred);
-        set_irn_out_n(adr, get_irn_out_n(adr) + 1);
+        set_irn_n_uses(adr, get_irn_n_uses(adr) + 1);
 
         ldst_info->flags |= LDST_VISITED;
       }
@@ -394,6 +393,56 @@ static compound_graph_path *get_accessed_path(ir_node *ptr) {
   return rec_get_accessed_path(ptr, 0);
 }
 
+/* forward */
+static void reduce_adr_usage(ir_node *ptr);
+
+/**
+ * Update a Load that may lost it's usage.
+ */
+static void handle_load_update(ir_node *load) {
+  ldst_info_t *info = get_irn_link(load);
+
+  /* do NOT touch volatile loads for now */
+  if (get_Load_volatility(load) == volatility_is_volatile)
+    return;
+
+  if (! info->projs[pn_Load_res] && ! info->projs[pn_Load_X_except]) {
+    ir_node *ptr = get_Load_ptr(load);
+    ir_node *mem = get_Load_mem(load);
+
+    /* a Load which value is neither used nor exception checked, remove it */
+    exchange(info->projs[pn_Load_M], mem);
+    reduce_adr_usage(ptr);
+  }
+}
+
+/**
+ * A Use of an address node is vanished. Check if this was a Proj
+ * node and update the counters.
+ */
+static void reduce_adr_usage(ir_node *ptr) {
+  int use_count = get_irn_n_uses(ptr);
+  --use_count;
+  assert(use_count >= 0);
+  set_irn_n_uses(ptr, use_count);
+
+  if (is_Proj(ptr)) {
+    if (use_count <= 0) {
+      /* this Proj is now dead, update the Load/Store info */
+      ir_node *pred = get_Proj_pred(ptr);
+      opcode code = get_irn_opcode(pred);
+
+      if (code == iro_Load) {
+        ldst_info_t *info = get_irn_link(pred);
+        info->projs[get_Proj_proj(ptr)] = NULL;
+
+        /* this node lost it's result proj, handle that */
+        handle_load_update(pred);
+      }
+    }
+  }
+}
+
 /**
  * Follow the memory chain as long as there are only Loads
  * and try to replace current Load or Store by a previous one.
@@ -452,6 +501,7 @@ static unsigned follow_Load_chain(ir_node *load, ir_node *curr) {
         if (info->projs[pn_Load_res])
           exchange(info->projs[pn_Load_res], value);
 
+        reduce_adr_usage(ptr);
         return res | DF_CHANGED;
       }
     }
@@ -496,6 +546,7 @@ static unsigned follow_Load_chain(ir_node *load, ir_node *curr) {
           res |= CF_CHANGED;
         }
 
+        reduce_adr_usage(ptr);
         return res |= DF_CHANGED;
       }
     }
@@ -590,6 +641,7 @@ static unsigned optimize_load(ir_node *load)
     /* a Load which value is neither used nor exception checked, remove it */
     exchange(info->projs[pn_Load_M], mem);
 
+    reduce_adr_usage(ptr);
     return res | DF_CHANGED;
   }
 
@@ -607,6 +659,8 @@ static unsigned optimize_load(ir_node *load)
     }
     if (info->projs[pn_Load_res])
       exchange(info->projs[pn_Load_res], new_node);
+
+    reduce_adr_usage(ptr);
     return res | DF_CHANGED;
   }
 
@@ -640,7 +694,6 @@ static unsigned optimize_load(ir_node *load)
           exchange(info->projs[pn_Load_M], mem);
           res |= DF_CHANGED;
         }
-
         /* no result :-) */
         if (info->projs[pn_Load_res]) {
           if (is_atomic_entity(ent)) {
@@ -648,9 +701,11 @@ static unsigned optimize_load(ir_node *load)
 
             DBG_OPT_RC(load, c);
             exchange(info->projs[pn_Load_res], c);
-            return DF_CHANGED | res;
+            res |= DF_CHANGED;
           }
         }
+        reduce_adr_usage(ptr);
+        return res;
       }
       else if (variability_constant == get_entity_variability(ent)) {
         compound_graph_path *path = get_accessed_path(ptr);
@@ -683,8 +738,10 @@ static unsigned optimize_load(ir_node *load)
           }
           if (info->projs[pn_Load_res]) {
             exchange(info->projs[pn_Load_res], copy_const_value(get_irn_dbg_info(load), c));
-            return res | DF_CHANGED;
+            res |= DF_CHANGED;
           }
+          reduce_adr_usage(ptr);
+          return res;
         }
         else {
           /*  We can not determine a correct access path.  E.g., in jack, we load
@@ -702,7 +759,7 @@ static unsigned optimize_load(ir_node *load)
 
   /* Check, if the address of this load is used more than once.
    * If not, this load cannot be removed in any case. */
-  if (get_irn_out_n(ptr) <= 1)
+  if (get_irn_n_uses(ptr) <= 1)
     return res;
 
   /*
@@ -752,6 +809,7 @@ static unsigned follow_Load_chain_for_Store(ir_node *store, ir_node *curr) {
       if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
         DBG_OPT_WAW(pred, store);
         exchange( pred_info->projs[pn_Store_M], get_Store_mem(pred) );
+        reduce_adr_usage(ptr);
         return DF_CHANGED;
       }
     }
@@ -764,6 +822,7 @@ static unsigned follow_Load_chain_for_Store(ir_node *store, ir_node *curr) {
       if (! info->projs[pn_Store_X_except]) {
         DBG_OPT_WAR(store, pred);
         exchange( info->projs[pn_Store_M], mem );
+        reduce_adr_usage(ptr);
         return DF_CHANGED;
       }
     }
@@ -806,7 +865,7 @@ static unsigned optimize_store(ir_node *store)
 
   /* Check, if the address of this load is used more than once.
    * If not, this load cannot be removed in any case. */
-  if (get_irn_out_n(ptr) <= 1)
+  if (get_irn_n_uses(ptr) <= 1)
     return 0;
 
   mem = get_Store_mem(store);
@@ -835,9 +894,8 @@ static unsigned optimize_store(ir_node *store)
  *
  * This is only possible if the predecessor blocks have only one successor.
  */
-static unsigned optimize_phi(ir_node *phi, void *env)
+static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 {
-  walk_env_t *wenv = env;
   int i, n;
   ir_node *store, *old_store, *ptr, *block, *phiM, *phiD, *exc, *projM;
   ir_mode *mode;
@@ -930,6 +988,12 @@ static unsigned optimize_phi(ir_node *phi, void *env)
     inM[i] = get_Store_mem(pred);
     inD[i] = get_Store_value(pred);
     idx[i] = info->exc_idx;
+
+    /* Should we here replace the Proj after the Store by
+     * the Store's memory? Would be save but should not be needed,
+     * because we checked that all pred blocks have only one
+     * control flow successor.
+     */
   }
   block = get_nodes_block(phi);
 
@@ -944,6 +1008,8 @@ static unsigned optimize_phi(ir_node *phi, void *env)
 #ifdef DO_CACHEOPT
   co_set_irn_name(store, co_get_irn_ident(old_store));
 #endif
+  /* we replaced n uses by 1 */
+  set_irn_n_uses(ptr, get_irn_n_uses(ptr) - n + 1);
 
   projM = new_rd_Proj(NULL, current_ir_graph, block, store, mode_M, pn_Store_M);
 
@@ -993,7 +1059,7 @@ static void do_load_store_optimize(ir_node *n, void *env)
     break;
 
   case iro_Phi:
-    wenv->changes |= optimize_phi(n, env);
+    wenv->changes |= optimize_phi(n, wenv);
 
   default:
     ;
@@ -1006,6 +1072,10 @@ static void do_load_store_optimize(ir_node *n, void *env)
 void optimize_load_store(ir_graph *irg)
 {
   walk_env_t env;
+
+  /* must set current it graph here, because new nodes are
+     constructed in the fixpoint iteration */
+  current_ir_graph = irg;
 
   assert(get_irg_phase_state(irg) != phase_building);
   assert(get_irg_pinned(irg) != op_pin_state_floats &&
