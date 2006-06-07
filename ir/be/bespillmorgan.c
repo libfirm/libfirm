@@ -19,8 +19,6 @@
 #include "irgwalk.h"
 #include "besched.h"
 #include "beutil.h"
-#include "beuses.h"
-#include "interval_analysis.h"
 #include "irloop.h"
 #include "irloop_t.h"
 #include "irgraph.h"
@@ -45,7 +43,6 @@ typedef struct _morgan_env_t {
 	int registers_available;
 
 	spill_env_t *senv;
-	be_uses_t *uses;
 
 	set *loop_attr_set;
 	set *block_attr_set;
@@ -185,7 +182,7 @@ static void show_nodebitset(ir_graph* irg, bitset_t* bitset) {
 }
 
 /**
- * Construct the livethrough unused information for a block
+ * Construct the livethrough unused set for a block
  */
 static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, ir_node* block) {
 	block_attr_t *block_attr = get_block_attr(env, block);
@@ -223,6 +220,9 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, ir_node* 
 	return block_attr->livethrough_unused;
 }
 
+/**
+ * Construct the livethrough unused set for a loop (and all its subloops+blocks)
+ */
 static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, ir_loop *loop) {
 	int i;
 	loop_attr_t* loop_attr = get_loop_attr(env, loop);
@@ -455,7 +455,6 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	env.cls = chordal_env->cls;
 	env.senv = be_new_spill_env(chordal_env);
 	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
-	env.uses = be_begin_uses(env.irg, env.arch, env.cls);
 
 	phase_init(&env.phase, "spillmorgan", env.irg, PHASE_DEFAULT_GROWTH, init_phase_data);
 
@@ -487,7 +486,6 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	}
 
 	// cleanup
-	be_end_uses(env.uses);
 	be_dump(env.irg, "-spillmorgan", dump_ir_block_graph_sched);
 	free_loop_out_edges(&env);
 	del_set(env.loop_attr_set);
