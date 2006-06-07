@@ -813,7 +813,7 @@ end:
 static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	ir_node *irn, *next;
 
-	for (irn = sched_first(block); !sched_is_end(irn); irn = next) {
+	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
 		next = sched_next(irn);
 		ia32_finish_node(irn, env);
 	}
