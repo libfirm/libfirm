@@ -257,14 +257,16 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, 
  */
 static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
 	ir_graph *irg                  = get_irn_irg(to_spill);
-	set      *already_visited_phis = new_set(cmp_phi_spill_assoc, 10);
 	ir_node  *res;
-	bitset_t *bs = bitset_alloca(get_irg_last_idx(irg));
 
-	if (pset_find_ptr(senv->mem_phis, to_spill))
+	if (pset_find_ptr(senv->mem_phis, to_spill)) {
+		set *already_visited_phis = new_set(cmp_phi_spill_assoc, 10);
+		bitset_t *bs = bitset_alloca(get_irg_last_idx(irg));
 		res = be_spill_phi(senv, to_spill, to_spill, already_visited_phis, bs);
-	else
+		del_set(already_visited_phis);
+	} else {
 		res = be_spill_irn(senv, to_spill, to_spill);
+	}
 
 	return res;
 }
@@ -406,7 +408,6 @@ static void phi_walker(ir_node *irn, void *env) {
 
 void be_insert_spills_reloads(spill_env_t *senv) {
 	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
-	ir_graph *irg          = senv->chordal_env->irg;
 	ir_node *irn;
 	spill_info_t *si;
 

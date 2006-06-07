@@ -139,8 +139,9 @@ static INLINE block_attr_t *get_block_attr(morgan_env_t *env, ir_node *block) {
 	return res;
 }
 
-static int is_mem_phi(const ir_node *irn, void *data) {
+static int is_mem_phi(const ir_node *node, void *data) {
 	// TODO what is this for?
+
 	return 0;
 }
 
@@ -168,6 +169,14 @@ static INLINE void construct_loop_out_edges(ir_node* block, void* e) {
 			edge.pos = i;
 			set_insert(outedges->out_edges, &edge, sizeof(edge), loop_out_edge_hash(&edge));
 		}
+	}
+}
+
+static void free_loop_out_edges(morgan_env_t *env) {
+	loop_attr_t *l_attr;
+
+	for(l_attr = set_first(env->loop_attr_set); l_attr != NULL; l_attr = set_next(env->loop_attr_set)) {
+		del_set(l_attr->out_edges);
 	}
 }
 
@@ -488,6 +497,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	// cleanup
 	be_end_uses(env.uses);
 	be_dump(env.irg, "-spillmorgan", dump_ir_block_graph_sched);
+	free_loop_out_edges(&env);
 	del_set(env.loop_attr_set);
 	del_set(env.block_attr_set);
 

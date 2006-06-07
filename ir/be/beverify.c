@@ -114,7 +114,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 	ir_node *node;
 	int non_phi_found  = 0;
 	int cfchange_found = 0;
-	// TODO ask ABI about delay branches
+	// TODO ask arch about delay branches
 	int delay_branches = 0;
 	pset *uses = pset_new_ptr_default();
 
@@ -134,9 +134,9 @@ static void verify_schedule_walker(ir_node *block, void *data)
 					node, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 			}
-			continue;
-		}
-		non_phi_found = 1;
+		} else {
+                    non_phi_found = 1;
+                }
 
 		// 2. Check for control flow changing nodes
 		if (is_cfop(node) && get_irn_opcode(node) != iro_Start) {
