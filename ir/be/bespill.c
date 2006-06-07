@@ -58,8 +58,7 @@ struct _spill_env_t {
 	set *spill_ctxs;
 	set *spills;				/**< all spill_info_t's, which must be placed */
 	pset *mem_phis;				/**< set of all special spilled phis. allocated and freed separately */
-	decide_irn_t is_spilled_phi;/**< callback func to decide if a phi needs special spilling */
-	void *data;					/**< data passed to all callbacks */
+	ir_node **copies;			/**< set of copies placed because of phi spills */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
@@ -104,29 +103,26 @@ void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t *dbg) {
 )
 
 /* Creates a new spill environment. */
-spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env, decide_irn_t is_spilled_phi, void *data) {
+spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env) {
 	spill_env_t *env	= xmalloc(sizeof(env[0]));
 	env->spill_ctxs		= new_set(cmp_spillctx, 1024);
 	env->spills			= new_set(cmp_spillinfo, 1024);
 	env->cls			= chordal_env->cls;
-	env->is_spilled_phi	= is_spilled_phi;
-	env->data			= data;
 	env->chordal_env	= chordal_env;
+	env->mem_phis		= pset_new_ptr_default();
+	env->copies			= NEW_ARR_F(ir_node*, 0);
 	obstack_init(&env->obst);
 	return env;
 }
 
-void be_set_is_spilled_phi(spill_env_t *env, decide_irn_t is_spilled_phi, void *data) {
-	env->is_spilled_phi	= is_spilled_phi;
-	env->data			= data;
-}
-
 /* Deletes a spill environment. */
-void be_delete_spill_env(spill_env_t *senv) {
-	del_set(senv->spill_ctxs);
-	del_set(senv->spills);
-	obstack_free(&senv->obst, NULL);
-	free(senv);
+void be_delete_spill_env(spill_env_t *env) {
+	del_set(env->spill_ctxs);
+	del_set(env->spills);
+	del_pset(env->mem_phis);
+	DEL_ARR_F(env->copies);
+	obstack_free(&env->obst, NULL);
+	free(env);
 }
 
 /**
@@ -175,7 +171,75 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 	}
 
 	ctx->spill = be_spill(env->arch_env, irn, ctx_irn);
+
 	return ctx->spill;
+}
+
+/**
+ * Removes all copies introduced for phi-spills
+ */
+static void remove_copies(spill_env_t *env) {
+	int i;
+
+	for(i = 0; i < ARR_LEN(env->copies); ++i) {
+		ir_node *node = env->copies[i];
+		ir_node *src;
+		const ir_edge_t *edge, *ne;
+
+		assert(be_is_Copy(node));
+
+		src = be_get_Copy_op(node);
+		foreach_out_edge_safe(node, edge, ne) {
+			ir_node *user = get_edge_src_irn(edge);
+			int user_pos  = get_edge_src_pos(edge);
+
+			set_irn_n(user, user_pos, src);
+		}
+	}
+
+	ARR_SETLEN(ir_node*, env->copies, 0);
+}
+
+/**
+ * Inserts a copy (needed for spilled phi handling) of a value at the earliest
+ * possible location in a block. That is after the last use/def of the value or at
+ * the beginning of the block if there is no use/def.
+ */
+static ir_node *insert_copy(spill_env_t *env, ir_node *block, ir_node *value) {
+	ir_node* node;
+	ir_graph *irg = get_irn_irg(block);
+	ir_node *copy = be_new_Copy(env->cls, irg, block, value);
+
+	ARR_APP1(ir_node*, env->copies, copy);
+
+	// walk schedule backwards until we find a use/def, or until we have reached the first phi
+	// TODO we could also do this by iterating over all uses and checking the
+	// sched_get_time_step value. Need benchmarks to decide this...
+	sched_foreach_reverse(block, node) {
+		int i, arity;
+
+		if(is_Phi(node)) {
+			sched_add_after(node, copy);
+			goto placed;
+		}
+		if(value == node) {
+			sched_add_after(node, copy);
+			goto placed;
+		}
+		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			ir_node *arg = get_irn_n(node, i);
+			if(arg == value) {
+				sched_add_after(node, copy);
+				goto placed;
+			}
+		}
+	}
+	// we didn't find a use or a phi yet, so place the copy at the beginning of the block
+	sched_add_before(sched_first(block), copy);
+
+placed:
+
+	return copy;
 }
 
 /**
@@ -190,8 +254,9 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
  *
  * @return a be_Spill node
  */
-static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, set *already_visited_phis, bitset_t *bs) {
-	int         i, n      = get_irn_arity(phi);
+static ir_node *spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, set *already_visited_phis, bitset_t *bs) {
+	int         i;
+	int arity = get_irn_arity(phi);
 	ir_graph    *irg      = senv->chordal_env->irg;
 	ir_node     *bl       = get_nodes_block(phi);
 	ir_node     **ins, *phi_spill;
@@ -202,11 +267,11 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, 
 	DBG((senv->dbg, LEVEL_1, "%+F in ctx %+F\n", phi, ctx_irn));
 
 	/* build a new PhiM */
-	NEW_ARR_A(ir_node *, ins, n);
-	for (i = 0; i < n; ++i) {
+	NEW_ARR_A(ir_node *, ins, arity);
+	for (i = 0; i < arity; ++i) {
 		ins[i] = new_r_Bad(irg);
 	}
-	phi_spill = new_r_Phi(senv->chordal_env->irg, bl, n, ins, mode_M);
+	phi_spill = new_r_Phi(senv->chordal_env->irg, bl, arity, ins, mode_M);
 	key.phi   = phi;
 	key.spill = phi_spill;
 	set_insert(already_visited_phis, &key, sizeof(key), HASH_PTR(phi));
@@ -218,14 +283,14 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, 
 	/* if not found spill the phi */
 	if (! ctx->spill) {
 		/* collect all arguments of the phi */
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *arg = get_irn_n(phi, i);
 			ir_node *sub_res;
 			phi_spill_assoc_t *entry;
 
 			if(is_Phi(arg) && pset_find_ptr(senv->mem_phis, arg)) {
 				if (! bitset_is_set(bs, get_irn_idx(arg)))
-					sub_res = be_spill_phi(senv, arg, ctx_irn, already_visited_phis, bs);
+					sub_res = spill_phi(senv, arg, ctx_irn, already_visited_phis, bs);
 				else {
 					/* we already visited the argument phi: get it's spill */
 					key.phi   = arg;
@@ -256,13 +321,13 @@ static ir_node *be_spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, 
  * @return a be_Spill node
  */
 static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
-	ir_graph *irg                  = get_irn_irg(to_spill);
+	ir_graph *irg = get_irn_irg(to_spill);
 	ir_node  *res;
 
 	if (pset_find_ptr(senv->mem_phis, to_spill)) {
 		set *already_visited_phis = new_set(cmp_phi_spill_assoc, 10);
 		bitset_t *bs = bitset_alloca(get_irg_last_idx(irg));
-		res = be_spill_phi(senv, to_spill, to_spill, already_visited_phis, bs);
+		res = spill_phi(senv, to_spill, to_spill, already_visited_phis, bs);
 		del_set(already_visited_phis);
 	} else {
 		res = be_spill_irn(senv, to_spill, to_spill);
@@ -389,52 +454,49 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 	return res;
 }
 
-/**
- * Walker: fills the mem_phis set by evaluating Phi nodes
- * using the is_spilled_phi() callback.
- */
-static void phi_walker(ir_node *irn, void *env) {
-	spill_env_t *senv = env;
+void be_spill_phi(spill_env_t *env, ir_node *node) {
+	assert(is_Phi(node));
 
-	if (is_Phi(irn)) {
-		const arch_env_t *arch = senv->chordal_env->birg->main_env->arch_env;
-		if (arch_irn_has_reg_class(arch, irn, 0, senv->cls) &&
-			senv->is_spilled_phi(irn, senv->data)) {
-			DBG((senv->dbg, LEVEL_1, "  %+F\n", irn));
-			pset_insert_ptr(senv->mem_phis, irn);
-		}
-	}
+	pset_insert_ptr(env->mem_phis, node);
 }
 
-void be_insert_spills_reloads(spill_env_t *senv) {
-	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
-	ir_node *irn;
+void be_insert_spills_reloads(spill_env_t *env) {
+	const arch_env_t *arch_env = env->chordal_env->birg->main_env->arch_env;
+	ir_node *node;
 	spill_info_t *si;
 
-	/* get all special spilled phis */
-	DBG((senv->dbg, LEVEL_1, "Mem-phis:\n"));
-	senv->mem_phis = pset_new_ptr_default();
-	irg_walk_graph(senv->chordal_env->irg, phi_walker, NULL, senv);
-
-	/* Add reloads for mem_phis */
-	/* BETTER: These reloads (1) should only be inserted, if they are really needed */
-	DBG((senv->dbg, LEVEL_1, "Reloads for mem-phis:\n"));
-	for(irn = pset_first(senv->mem_phis); irn; irn = pset_next(senv->mem_phis)) {
+	DBG((env->dbg, LEVEL_1, "Reloads for mem-phis:\n"));
+	foreach_pset(env->mem_phis, node) {
 		const ir_edge_t *e;
-		DBG((senv->dbg, LEVEL_1, " Mem-phi %+F\n", irn));
-		foreach_out_edge(irn, e) {
+		int i, arity;
+
+		/* We have to place copy nodes in the predecessor blocks to temporarily
+		* produce new values that get separate spill slots
+		*/
+		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(node), i);
+			ir_node *arg = get_irn_n(node, i);
+			ir_node* copy = insert_copy(env, pred_block, arg);
+
+			set_irn_n(node, i, copy);
+		}
+
+		/* Add reloads for mem_phis */
+		/* BETTER: These reloads (1) should only be inserted, if they are really needed */
+		DBG((env->dbg, LEVEL_1, " Mem-phi %+F\n", node));
+		foreach_out_edge(node, e) {
 			ir_node *user = e->src;
-			if (is_Phi(user) && !pset_find_ptr(senv->mem_phis, user)) {
-					ir_node *use_bl = get_nodes_block(user);
-					DBG((senv->dbg, LEVEL_1, " non-mem-phi user %+F\n", user));
-					be_add_reload_on_edge(senv, irn, use_bl, e->pos); /* (1) */
+			if (is_Phi(user) && !pset_find_ptr(env->mem_phis, user)) {
+				ir_node *use_bl = get_nodes_block(user);
+				DBG((env->dbg, LEVEL_1, " non-mem-phi user %+F\n", user));
+				be_add_reload_on_edge(env, node, use_bl, e->pos); /* (1) */
 			}
 		}
 	}
 
 	/* process each spilled node */
-	DBG((senv->dbg, LEVEL_1, "Insert spills and reloads:\n"));
-	for(si = set_first(senv->spills); si; si = set_next(senv->spills)) {
+	DBG((env->dbg, LEVEL_1, "Insert spills and reloads:\n"));
+	for(si = set_first(env->spills); si; si = set_next(env->spills)) {
 		reloader_t *rld;
 		ir_mode *mode = get_irn_mode(si->spilled_node);
 		//ir_node *value;
@@ -445,54 +507,56 @@ void be_insert_spills_reloads(spill_env_t *senv) {
 			ir_node *new_val;
 
 			/* the spill for this reloader */
-			ir_node *spill   = be_spill_node(senv, si->spilled_node);
+			ir_node *spill   = be_spill_node(env, si->spilled_node);
 
 #ifdef REMAT
-			if (check_remat_conditions(senv, spill, si->spilled_node, rld->reloader)) {
-				new_val = do_remat(senv, si->spilled_node, rld->reloader);
+			if (check_remat_conditions(env, spill, si->spilled_node, rld->reloader)) {
+				new_val = do_remat(env, si->spilled_node, rld->reloader);
 				//pdeq_putl(possibly_dead, spill);
 			}
 			else
 #endif
 				/* do a reload */
-				new_val = be_reload(aenv, senv->cls, rld->reloader, mode, spill);
+				new_val = be_reload(arch_env, env->cls, rld->reloader, mode, spill);
 
-			DBG((senv->dbg, LEVEL_1, " %+F of %+F before %+F\n", new_val, si->spilled_node, rld->reloader));
+			DBG((env->dbg, LEVEL_1, " %+F of %+F before %+F\n", new_val, si->spilled_node, rld->reloader));
 			pset_insert_ptr(values, new_val);
 		}
 
 		/* introduce copies, rewire the uses */
 		assert(pset_count(values) > 0 && "???");
 		pset_insert_ptr(values, si->spilled_node);
-		be_ssa_constr_set_ignore(senv->chordal_env->dom_front, values, senv->mem_phis);
+		be_ssa_constr_set_ignore(env->chordal_env->dom_front, values, env->mem_phis);
 
 		del_pset(values);
 	}
 
-	del_pset(senv->mem_phis);
+	remove_copies(env);
 
 	// reloads are placed now, but we might reuse the spill environment for further spilling decisions
-	del_set(senv->spills);
-	senv->spills = new_set(cmp_spillinfo, 1024);
+	del_set(env->spills);
+	env->spills = new_set(cmp_spillinfo, 1024);
 }
 
-void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before) {
+void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	spill_info_t templ, *res;
 	reloader_t *rel;
 
+	assert(arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->cls, to_spill));
+
 	templ.spilled_node = to_spill;
 	templ.reloaders    = NULL;
-	res = set_insert(senv->spills, &templ, sizeof(templ), HASH_PTR(to_spill));
+	res = set_insert(env->spills, &templ, sizeof(templ), HASH_PTR(to_spill));
 
-	rel           = obstack_alloc(&senv->obst, sizeof(rel[0]));
+	rel           = obstack_alloc(&env->obst, sizeof(rel[0]));
 	rel->reloader = before;
 	rel->next     = res->reloaders;
 	res->reloaders = rel;
 }
 
-void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos) {
+void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *bl, int pos) {
 	ir_node *insert_bl = get_irn_arity(bl) == 1 ? sched_first(bl) : get_Block_cfgpred_block(bl, pos);
-	be_add_reload(senv, to_spill, insert_bl);
+	be_add_reload(env, to_spill, insert_bl);
 }
 
 
@@ -729,6 +793,7 @@ static void assign_entities(ss_env_t *ssenv, int n_slots, spill_slot_t *ss[]) {
 		pset_foreach(ss[i]->members, irn)
 			be_set_Spill_entity(irn, spill_ent);
 	}
+
 
 	/* set final size of stack frame */
 	frame_align = get_type_alignment_bytes(frame);

@@ -16,7 +16,6 @@
 #include "bespill.h"
 #include "belive.h"
 #include "belive_t.h"
-#include "beinsn_t.h"
 #include "irgwalk.h"
 #include "besched.h"
 #include "beutil.h"
@@ -45,7 +44,6 @@ typedef struct _morgan_env_t {
 	// maximum safe register pressure
 	int registers_available;
 
-	be_insn_env_t insn_env;
 	spill_env_t *senv;
 	be_uses_t *uses;
 
@@ -139,12 +137,6 @@ static INLINE block_attr_t *get_block_attr(morgan_env_t *env, ir_node *block) {
 	return res;
 }
 
-static int is_mem_phi(const ir_node *node, void *data) {
-	// TODO what is this for?
-
-	return 0;
-}
-
 //---------------------------------------------------------------------------
 
 /**
@@ -181,22 +173,30 @@ static void free_loop_out_edges(morgan_env_t *env) {
 }
 
 /**
+ * Debugging help, shows all nodes in a (node-)bitset
+ */
+static void show_nodebitset(ir_graph* irg, bitset_t* bitset) {
+	int i;
+
+	bitset_foreach(bitset, i) {
+		ir_node* node = get_idx_irn(irg, i);
+		DBG((dbg, DBG_LIVE, "\t%+F\n", node));
+	}
+}
+
+/**
  * Construct the livethrough unused information for a block
  */
 static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, ir_node* block) {
-	int i;
-	int node_idx;
-	ir_node *irn;
 	block_attr_t *block_attr = get_block_attr(env, block);
-
-	/*
-	 * This is the first block in a sequence, all variables that are livethrough this block are potential
-	 * candidates for livethrough_unused
-	 */
 	irn_live_t *li;
+	ir_node *node;
 
+	DBG((dbg, DBG_LIVE, "Processing block %d\n", get_irn_node_nr(block)));
 	// copy all live-outs into the livethrough_unused set
 	live_foreach(block, li) {
+		int node_idx;
+
 		if(!live_is_in(li) || !live_is_out(li))
 			continue;
 		if(!arch_irn_consider_in_reg_alloc(env->arch, env->cls, li->irn))
@@ -210,29 +210,17 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, ir_node* 
 	 * All values that are used within the block are not unused (and therefore not
 	 * livethrough_unused)
 	 */
-	sched_foreach(block, irn) {
-		be_insn_t *insn = be_scan_insn(&env->insn_env, irn);
+	sched_foreach(block, node) {
+		int i, arity;
 
-		for(i = insn->use_start; i < insn->n_ops; ++i) {
-			const be_operand_t *op = &insn->ops[i];
-			int idx = get_irn_idx(op->irn);
+		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			int idx = get_irn_idx(get_irn_n(node, i));
 			bitset_clear(block_attr->livethrough_unused, idx);
 		}
 	}
 
+	show_nodebitset(env->irg, block_attr->livethrough_unused);
 	return block_attr->livethrough_unused;
-}
-
-/**
- * Debugging help, shows all nodes in a (node-)bitset
- */
-static void show_nodebitset(ir_graph* irg, bitset_t* bitset) {
-	int i;
-
-	bitset_foreach(bitset, i) {
-		ir_node* node = get_idx_irn(irg, i);
-		DBG((dbg, DBG_LIVE, "\t%+F\n", node));
-	}
 }
 
 static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, ir_loop *loop) {
@@ -271,6 +259,7 @@ static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, ir_loop *l
 			break;
 		}
     }
+	DBG((dbg, DBG_LIVE, "Done with loop %d\n", loop->loop_nr));
 
 	// remove all unused livethroughs that are remembered for this loop from child loops and blocks
 	for(i = 0; i < get_loop_n_elements(loop); ++i) {
@@ -438,6 +427,10 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, ir_loop *loop, in
 			ir_node *to_spill = get_idx_irn(env->irg, i);
 
 			for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
+				if(is_Phi(to_spill)) {
+					be_spill_phi(env->senv, to_spill);
+				}
+
 				be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos);
 			}
 		}
@@ -460,15 +453,13 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	env.arch = chordal_env->birg->main_env->arch_env;
 	env.irg = chordal_env->irg;
 	env.cls = chordal_env->cls;
-	env.senv = be_new_spill_env(chordal_env, is_mem_phi, NULL);
+	env.senv = be_new_spill_env(chordal_env);
 	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
 	env.uses = be_begin_uses(env.irg, env.arch, env.cls);
 
 	phase_init(&env.phase, "spillmorgan", env.irg, PHASE_DEFAULT_GROWTH, init_phase_data);
 
 	env.registers_available = arch_count_non_ignore_regs(env.arch, env.cls);
-
-	be_insn_env_init(&env.insn_env, chordal_env->birg, chordal_env->cls, &env.phase.obst);
 
 	env.loop_attr_set = new_set(loop_attr_cmp, 5);
 	env.block_attr_set = new_set(block_attr_cmp, 20);
@@ -489,10 +480,11 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
 
 	be_insert_spills_reloads(env.senv);
-	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN)
+	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 		be_verify_schedule(env.irg);
-	else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT)
+	} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 		assert(be_verify_schedule(env.irg));
+	}
 
 	// cleanup
 	be_end_uses(env.uses);
@@ -502,6 +494,8 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	del_set(env.block_attr_set);
 
 	// fix the remaining places with too high register pressure with beladies algorithm
+
+	// we have to remove dead nodes from schedule to not confuse liveness calculation
 	be_remove_dead_nodes_from_schedule(env.irg);
 	be_liveness(env.irg);
 	be_spill_belady_spill_env(chordal_env, env.senv);

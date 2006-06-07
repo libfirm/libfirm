@@ -237,21 +237,10 @@ static INLINE void *new_block_info(struct obstack *ob) {
 #define get_block_info(blk)			((block_info_t *)get_irn_link(blk))
 #define set_block_info(blk, info)	set_irn_link(blk, info)
 
-static int is_mem_phi(const ir_node *irn, void *data) {
-	workset_t *sws;
-	ir_node *blk = get_nodes_block(irn);
-
-	DBG((dbg, DBG_SPILL, "Is %+F a mem-phi?\n", irn));
-	sws = get_block_info(blk)->ws_start;
-	DBG((dbg, DBG_SPILL, "  %d\n", !workset_contains(sws, irn)));
-	return !workset_contains(sws, irn);
-}
-
 /**
  * @return The distance to the next use
  *         Or 0 if irn is an ignore node
  */
-
 static INLINE unsigned get_distance(belady_env_t *bel, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
 {
 	arch_irn_flags_t fl = arch_irn_get_flags(bel->arch, def);
@@ -260,7 +249,7 @@ static INLINE unsigned get_distance(belady_env_t *bel, const ir_node *from, unsi
 	if(!USES_IS_INIFINITE(dist) && (fl & (arch_irn_flags_ignore | arch_irn_flags_dont_spill)) != 0)
 		return 0;
 
-	return dist;
+	return dist + 1;
 }
 
 /**
@@ -293,6 +282,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 			if (is_usage)
 				be_add_reload(bel->senv, val, bel->instr);
 		} else {
+			assert(is_usage || "Defined value already in workset?!?");
 			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
 		}
 	}
@@ -344,9 +334,9 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 static void belady(ir_node *blk, void *env);
 
 /**
- * Inserts a spill of a value at the earliest possible location in a block.
- * That is after the last use of the value or at the beginning of the block if
- * there is no use
+ * Inserts a copy (needed for spilled phi handling) of a value at the earliest
+ * possible location in a block. That is after the last use/def of the value or at
+ * the beginning of the block if there is no use/def.
  */
 static ir_node *insert_copy(belady_env_t *env, ir_node *block, ir_node *value) {
 	ir_node* node;
@@ -355,8 +345,9 @@ static ir_node *insert_copy(belady_env_t *env, ir_node *block, ir_node *value) {
 
 	ARR_APP1(ir_node*, env->copies, copy);
 
-	// walk schedule backwards until we find a usage, or until we have reached the first phi
-	// TODO can we do this faster somehow? This makes insert_copy O(n) in block_size...
+	// walk schedule backwards until we find a use/def, or until we have reached the first phi
+	// TODO we could also do this by iterating over all uses and checking the
+	// sched_get_time_step value. Need benchmarks to decide this...
 	sched_foreach_reverse(block, node) {
 		int i, arity;
 
@@ -473,21 +464,11 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 	 * into the same spill slot.
 	 * After spilling these copies get deleted. */
 	for (i=workset_get_length(res->ws_start); i<count; ++i) {
-		int o, max;
-
 		irn = starters[i].irn;
 		if (!is_Phi(irn) || get_nodes_block(irn) != blk)
 			continue;
 
-		DBG((dbg, DBG_START, "For %+F:\n", irn));
-
-		for (max=get_irn_arity(irn), o=0; o<max; ++o) {
-			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(irn), o);
-			ir_node *arg = get_irn_n(irn, o);
-			ir_node* copy = insert_copy(env, pred_block, arg);
-
-			set_irn_n(irn, o, copy);
-		}
+		be_spill_phi(env->senv, irn);
 	}
 
 	obstack_free(&ob, NULL);
@@ -529,7 +510,6 @@ static void belady(ir_node *blk, void *env) {
 	new_vals = new_workset(&bel->ob, bel);
 	sched_foreach(blk, irn) {
 		assert(workset_get_length(bel->ws) <= bel->n_regs && "Too much values in workset!");
-
 
 		/* projs are handled with the tuple value.
 		 * Phis are no real instr (see insert_starters())
@@ -658,10 +638,9 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	bel.ws        = new_workset(&bel.ob, &bel);
 	bel.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, bel.cls);
 	if(spill_env == NULL) {
-		bel.senv = be_new_spill_env(chordal_env, is_mem_phi, NULL);
+		bel.senv = be_new_spill_env(chordal_env);
 	} else {
 		bel.senv = spill_env;
-		be_set_is_spilled_phi(bel.senv, is_mem_phi, NULL);
 	}
 	DEBUG_ONLY(be_set_spill_env_dbg_module(bel.senv, dbg);)
 	bel.copies    = NEW_ARR_F(ir_node*, 0);

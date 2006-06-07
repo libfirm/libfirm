@@ -48,16 +48,6 @@ struct _be_uses_t {
   DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
-static INLINE unsigned sadd(unsigned a, unsigned b)
-{
-  return a + b;
-}
-
-static INLINE unsigned sdiv(unsigned a, unsigned b)
-{
-  return a / b;
-}
-
 static int cmp_use(const void *a, const void *b, size_t n)
 {
   const be_use_t *p = a;

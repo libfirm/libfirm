@@ -19,7 +19,6 @@
 #include "bearch.h"
 
 typedef struct _spill_env_t spill_env_t;
-typedef int(*decide_irn_t)(const ir_node*, void*);
 
 /**
  * Creates a new spill environment.
@@ -28,12 +27,12 @@ typedef int(*decide_irn_t)(const ir_node*, void*);
  * @param is_spilled_phi	a function that evaluates a phi node and returns true if it is a spilled phi node
  * @param data				context parameter for the is_spilled_phi function
  */
-spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal, decide_irn_t is_spilled_phi, void *data);
+spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal);
 
 /**
- * (re-)sets the is_spilled_phi callback
+ * Marks a phi-node for spilling
  */
-void be_set_is_spilled_phi(spill_env_t *env, decide_irn_t is_spilled_phi, void *data);
+void be_spill_phi(spill_env_t *env, ir_node *node);
 
 /**
  * Deletes a spill environment.

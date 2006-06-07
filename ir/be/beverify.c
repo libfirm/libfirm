@@ -135,8 +135,8 @@ static void verify_schedule_walker(ir_node *block, void *data)
 				env->problem_found = 1;
 			}
 		} else {
-                    non_phi_found = 1;
-                }
+			non_phi_found = 1;
+		}
 
 		// 2. Check for control flow changing nodes
 		if (is_cfop(node) && get_irn_opcode(node) != iro_Start) {
@@ -170,7 +170,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 	}
 	del_pset(uses);
 
-	/* check that all delay branches are used (at least with NOPs) */
+	/* check that all delay branches are filled (at least with NOPs) */
 	if (cfchange_found && delay_branches != 0) {
 		ir_fprintf(stderr, "Not all delay slots filled after jump (%d/%d) in block %+F (%s)\n",
 			block, get_irg_dump_name(env->irg));

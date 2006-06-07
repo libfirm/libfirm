@@ -352,14 +352,6 @@ is_spilled(const spill_ilp_t * si, const live_range_t * lr)
 }
 #endif
 
-static int
-is_mem_phi(const ir_node * phi, void *data)
-{
-	spill_ilp_t    *si = data;
-//	return is_spilled(si, get_use_head(si, phi)->closest_use);
-	return 0;
-}
-
 void
 be_spill_appel(const be_chordal_env_t * chordal_env)
 {
@@ -372,7 +364,7 @@ be_spill_appel(const be_chordal_env_t * chordal_env)
 	obstack_init(&obst);
 	si.chordal_env = chordal_env;
 	si.obst = &obst;
-	si.senv = be_new_spill_env(chordal_env, is_mem_phi, &si);
+	si.senv = be_new_spill_env(chordal_env);
 	si.cls = chordal_env->cls;
 	si.lpp = new_lpp(problem_name, lpp_minimize);
 	FIRM_DBG_REGISTER(si.dbg, "firm.be.ra.spillappel");
