@@ -1380,22 +1380,24 @@ static void emit_Proj(const ir_node *irn, ia32_emit_env_t *env) {
 static void emit_CopyB_prolog(FILE *F, int rem, int size) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	fprintf(F, "\t/* memcopy %d bytes*/\n", size);
+	fprintf(F, "\t/* memcopy %d bytes */\n", size);
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cld");
-	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* copy direction forward*/");
-	IA32_DO_EMIT(NULL);
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* copy direction forward */");
 
 	switch(rem) {
 		case 1:
+			IA32_DO_EMIT(NULL);
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsb");
 			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy remainder 1 */");
 			break;
 		case 2:
+			IA32_DO_EMIT(NULL);
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsw");
 			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy remainder 2 */");
 			break;
 		case 3:
+			IA32_DO_EMIT(NULL);
 			snprintf(cmd_buf, SNPRINTF_BUF_LEN, "movsb");
 			snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy remainder 3 */");
 			IA32_DO_EMIT(NULL);
