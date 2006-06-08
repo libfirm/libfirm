@@ -364,6 +364,9 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, 
 			to_spill = get_idx_irn(env->irg, i);
 			foreach_block_succ(block, edge) {
 				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around block %+F\n", to_spill, block));
+				if(is_Phi(to_spill)) {
+					be_spill_phi(env->senv, to_spill);
+				}
 				be_add_reload_on_edge(env->senv, to_spill, edge->src, edge->pos);
 			}
 		}
@@ -485,6 +488,9 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 		assert(be_verify_schedule(env.irg));
 	}
 
+	// we have to remove dead nodes from schedule to not confuse liveness calculation
+	be_remove_dead_nodes_from_schedule(env.irg);
+
 	// cleanup
 	be_dump(env.irg, "-spillmorgan", dump_ir_block_graph_sched);
 	free_loop_out_edges(&env);
@@ -492,9 +498,6 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	del_set(env.block_attr_set);
 
 	// fix the remaining places with too high register pressure with beladies algorithm
-
-	// we have to remove dead nodes from schedule to not confuse liveness calculation
-	be_remove_dead_nodes_from_schedule(env.irg);
 	be_liveness(env.irg);
 	be_spill_belady_spill_env(chordal_env, env.senv);
 

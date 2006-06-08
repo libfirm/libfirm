@@ -476,7 +476,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(node), i);
 			ir_node *arg = get_irn_n(node, i);
-			ir_node* copy = insert_copy(env, pred_block, arg);
+			ir_node *copy = insert_copy(env, pred_block, arg);
 
 			set_irn_n(node, i, copy);
 		}

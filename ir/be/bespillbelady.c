@@ -70,7 +70,7 @@ typedef struct _belady_env_t {
 struct _workset_t {
 	belady_env_t *bel;
 	int len;			/**< current length */
-	loc_t vals[1];		/**< inlined array of the values/distances in this working set */
+	loc_t vals[0];		/**< inlined array of the values/distances in this working set */
 };
 
 void workset_print(const workset_t *w)
@@ -87,7 +87,7 @@ void workset_print(const workset_t *w)
  */
 static INLINE workset_t *new_workset(struct obstack *ob, belady_env_t *bel) {
 	workset_t *res;
-	size_t size = sizeof(*res) + (bel->n_regs-1)*sizeof(res->vals[0]);
+	size_t size = sizeof(*res) + (bel->n_regs)*sizeof(res->vals[0]);
 	res = obstack_alloc(ob, size);
 	memset(res, 0, size);
 	res->bel = bel;
@@ -99,7 +99,7 @@ static INLINE workset_t *new_workset(struct obstack *ob, belady_env_t *bel) {
  */
 static INLINE workset_t *workset_clone(struct obstack *ob, workset_t *ws) {
 	workset_t *res;
-	size_t size = sizeof(*res) + (ws->bel->n_regs-1)*sizeof(res->vals[0]);
+	size_t size = sizeof(*res) + (ws->bel->n_regs)*sizeof(res->vals[0]);
 	res = obstack_alloc(ob, size);
 	memcpy(res, ws, size);
 	return res;
@@ -110,7 +110,7 @@ static INLINE workset_t *workset_clone(struct obstack *ob, workset_t *ws) {
  * returns @param tgt for convinience
  */
 static INLINE workset_t *workset_copy(workset_t *tgt, workset_t *src) {
-	size_t size = sizeof(*src) + (src->bel->n_regs-1)*sizeof(src->vals[0]);
+	size_t size = sizeof(*src) + (src->bel->n_regs)*sizeof(src->vals[0]);
 	memcpy(tgt, src, size);
 	return tgt;
 }
@@ -130,7 +130,7 @@ static INLINE workset_t *workset_copy(workset_t *tgt, workset_t *src) {
 static INLINE void workset_insert(workset_t *ws, ir_node *val) {
 	int i;
 	/* check for current regclass */
-	if (arch_get_irn_reg_class(ws->bel->arch, val, -1) != ws->bel->cls) {
+	if (!arch_irn_consider_in_reg_alloc(ws->bel->arch, ws->bel->cls, val)) {
 		DBG((dbg, DBG_WORKSET, "Dropped %+F\n", val));
 		return;
 	}
@@ -146,40 +146,6 @@ static INLINE void workset_insert(workset_t *ws, ir_node *val) {
 }
 
 /**
- * Inserts all values in array @p vals of length @p cnt
- * into the workset. There must be enough space for the
- * entries.
- */
-static INLINE void workset_bulk_insert(workset_t *ws, int cnt, ir_node **vals) {
-	int i, o;
-
-	for(o=0; o<cnt; ++o) {
-		ir_node *val = vals[o];
-		DBG((dbg, DBG_TRACE, "Bulk insert %+F\n", val));
-		/* check for current regclass */
-		if (arch_get_irn_reg_class(ws->bel->arch, val, -1) != ws->bel->cls) {
-			DBG((dbg, DBG_TRACE, "Wrong reg class\n"));
-			goto no_insert;
-		}
-
-		/* check if val is already contained */
-		for(i=0; i<ws->len; ++i)
-			if (ws->vals[i].irn == val) {
-				DBG((dbg, DBG_TRACE, "Already contained\n"));
-				goto no_insert;
-			}
-
-		/* insert val */
-		assert(ws->len < ws->bel->n_regs && "Workset does not have enough room!");
-		ws->vals[ws->len++].irn = val;
-		DBG((dbg, DBG_TRACE, "Inserted\n"));
-
-no_insert:
-		/*epsilon statement :)*/;
-	}
-}
-
-/**
  * Removes all entries from this workset
  */
 #define workset_clear(ws) (ws)->len = 0;
@@ -189,18 +155,21 @@ no_insert:
  */
 static INLINE void workset_remove(workset_t *ws, ir_node *val) {
 	int i;
-	for(i=0; i<ws->len; ++i)
+	for(i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val) {
 			ws->vals[i] = ws->vals[--ws->len];
 			return;
 		}
+	}
 }
 
 static INLINE int workset_contains(const workset_t *ws, const ir_node *val) {
 	int i;
-	for(i=0; i<ws->len; ++i)
+	for(i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val)
 			return 1;
+	}
+
 	return 0;
 }
 
@@ -242,13 +211,11 @@ static INLINE void *new_block_info(struct obstack *ob) {
  */
 static INLINE unsigned get_distance(belady_env_t *bel, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
 {
-	arch_irn_flags_t fl = arch_irn_get_flags(bel->arch, def);
 	unsigned dist = be_get_next_use(bel->uses, from, from_step, def, skip_from_uses);
 
-	if(!USES_IS_INIFINITE(dist) && (fl & (arch_irn_flags_ignore | arch_irn_flags_dont_spill)) != 0)
-		return 0;
+	assert(! (arch_irn_get_flags(bel->arch, def) & (arch_irn_flags_ignore | arch_irn_flags_dont_spill)));
 
-	return dist + 1;
+	return dist;
 }
 
 /**
@@ -327,7 +294,8 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	/*
 	 * 3. Insert the new values into the workset
 	 */
-	workset_bulk_insert(bel->ws, demand, to_insert);
+	for(i = 0; i < demand; ++i)
+		workset_insert(bel->ws, to_insert[i]);
 }
 
 static void belady(ir_node *blk, void *env);
@@ -345,7 +313,6 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 	irn_live_t *li;
 	int i, count, ws_count;
 	loc_t loc, *starters;
-	ir_graph *irg = get_irn_irg(blk);
 	struct obstack ob;
 	block_info_t *res = get_block_info(blk);
 
@@ -357,7 +324,6 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 	res = new_block_info(&env->ob);
 	set_block_info(blk, res);
 
-
 	/* Get all values living at the block start sorted by next use*/
 	obstack_init(&ob);
 
@@ -365,24 +331,25 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 	first = sched_first(blk);
 	count = 0;
 	sched_foreach(blk, irn) {
-		if (is_Phi(irn) && arch_get_irn_reg_class(env->arch, irn, -1) == env->cls) {
-			loc.irn = irn;
-			loc.time = get_distance(env, first, 0, irn, 0);
-			obstack_grow(&ob, &loc, sizeof(loc));
-			DBG((dbg, DBG_START, "    %+F:\n", irn));
-			count++;
-		} else
+		if(!is_Phi(irn) || !arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn))
 			break;
+
+		loc.irn = irn;
+		loc.time = get_distance(env, first, 0, irn, 0);
+		obstack_grow(&ob, &loc, sizeof(loc));
+		DBG((dbg, DBG_START, "    %+F:\n", irn));
+		count++;
 	}
 
 	live_foreach(blk, li) {
-		if (live_is_in(li) && arch_get_irn_reg_class(env->arch, li->irn, -1) == env->cls) {
-			loc.irn = (ir_node *)li->irn;
-			loc.time = get_distance(env, first, 0, li->irn, 0);
-			obstack_grow(&ob, &loc, sizeof(loc));
-			DBG((dbg, DBG_START, "    %+F:\n", li->irn));
-			count++;
-		}
+		if (!live_is_in(li) || !arch_irn_consider_in_reg_alloc(env->arch, env->cls, li->irn))
+			continue;
+
+		loc.irn = (ir_node *)li->irn;
+		loc.time = get_distance(env, first, 0, li->irn, 0);
+		obstack_grow(&ob, &loc, sizeof(loc));
+		DBG((dbg, DBG_START, "    %+F:\n", li->irn));
+		count++;
 	}
 
 	starters = obstack_finish(&ob);
@@ -404,16 +371,13 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 		assert(pred_info->ws_end && "The recursive call (above) is supposed to compute an end_set");
 		res->ws_start = workset_clone(&env->ob, pred_info->ws_end);
 
-	} else
-
-	/* Else we want the start_set to be the values used 'the closest' */
-	{
+	} else {
+		/* Else we want the start_set to be the values used 'the closest' */
 		/* Copy the best ones from starters to start workset */
 		ws_count = MIN(count, env->n_regs);
 		res->ws_start = new_workset(&env->ob, env);
 		workset_bulk_fill(res->ws_start, ws_count, starters);
 	}
-
 
 
 	/* The phis of this block which are not in the start set have to be spilled later.
@@ -466,6 +430,7 @@ static void belady(ir_node *blk, void *env) {
 	bel->instr_nr = 0;
 	new_vals = new_workset(&bel->ob, bel);
 	sched_foreach(blk, irn) {
+		int i, arity;
 		assert(workset_get_length(bel->ws) <= bel->n_regs && "Too much values in workset!");
 
 		/* projs are handled with the tuple value.
@@ -482,7 +447,9 @@ static void belady(ir_node *blk, void *env) {
 
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
-		workset_bulk_insert(new_vals, get_irn_arity(irn)+1, get_irn_in(irn));
+		for(i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
+			workset_insert(new_vals, get_irn_n(irn, i));
+		}
 		displace(bel, new_vals, 1);
 
 		/* allocate all values _defined_ by this instruction */
@@ -545,7 +512,7 @@ static void fix_block_borders(ir_node *blk, void *env) {
 					goto next_value;
 			}
 
-			/* irnb is in memory at the end of pred, so we have to reload it */
+			/* irnb is not in memory at the end of pred, so we have to reload it */
 			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
 			be_add_reload_on_edge(bel->senv, irnb, blk, i);
 
@@ -568,7 +535,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	obstack_init(&bel.ob);
 	bel.arch      = chordal_env->birg->main_env->arch_env;
 	bel.cls       = chordal_env->cls;
-	bel.n_regs    = arch_register_class_n_regs(bel.cls);
+	bel.n_regs    = arch_count_non_ignore_regs(bel.arch, bel.cls);
 	bel.ws        = new_workset(&bel.ob, &bel);
 	bel.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, bel.cls);
 	if(spill_env == NULL) {

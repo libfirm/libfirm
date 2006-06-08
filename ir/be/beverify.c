@@ -164,8 +164,10 @@ static void verify_schedule_walker(ir_node *block, void *data)
 				node, block, get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 		}
-		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			pset_insert_ptr(uses, get_irn_n(node, i));
+		if(!is_Phi(node)) {
+			for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+				pset_insert_ptr(uses, get_irn_n(node, i));
+			}
 		}
 	}
 	del_pset(uses);
