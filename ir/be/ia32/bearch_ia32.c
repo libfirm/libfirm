@@ -426,6 +426,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
  */
 static ir_type *ia32_abi_get_between_type(void *self)
 {
+#define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
 	static ir_type *omit_fp_between_type = NULL;
 	static ir_type *between_type         = NULL;
 
@@ -436,25 +437,28 @@ static ir_type *ia32_abi_get_between_type(void *self)
 		entity *ret_addr_ent;
 		entity *omit_fp_ret_addr_ent;
 
-		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
-		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
+		ir_type *old_bp_type   = new_type_primitive(IDENT("bp"), mode_P);
+		ir_type *ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_P);
 
-		between_type           = new_type_class(new_id_from_str("ia32_between_type"));
-		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, new_id_from_str("ret_addr"), ret_addr_type);
+		between_type           = new_type_struct(IDENT("ia32_between_type"));
+		old_bp_ent             = new_entity(between_type, IDENT("old_bp"), old_bp_type);
+		ret_addr_ent           = new_entity(between_type, IDENT("ret_addr"), ret_addr_type);
 
 		set_entity_offset_bytes(old_bp_ent, 0);
 		set_entity_offset_bytes(ret_addr_ent, get_type_size_bytes(old_bp_type));
 		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
+		set_type_state(between_type, layout_fixed);
 
-		omit_fp_between_type   = new_type_class(new_id_from_str("ia32_between_type_omit_fp"));
-		omit_fp_ret_addr_ent   = new_entity(omit_fp_between_type, new_id_from_str("ret_addr"), ret_addr_type);
+		omit_fp_between_type   = new_type_struct(IDENT("ia32_between_type_omit_fp"));
+		omit_fp_ret_addr_ent   = new_entity(omit_fp_between_type, IDENT("ret_addr"), ret_addr_type);
 
 		set_entity_offset_bytes(omit_fp_ret_addr_ent, 0);
 		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
+		set_type_state(omit_fp_between_type, layout_fixed);
 	}
 
 	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
+#undef IDENT
 }
 
 /**
