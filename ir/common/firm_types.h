@@ -46,11 +46,6 @@ typedef struct _ir_block_edge_t ir_block_edge_t;
 typedef struct tarval tarval;
 #endif
 
-#ifndef _TYPE_TYPEDEF_
-#define _TYPE_TYPEDEF_
-typedef struct ir_type type;
-#endif
-
 #ifndef _IR_TYPE_TYPEDEF_
 #define _IR_TYPE_TYPEDEF_
 typedef struct ir_type ir_type;

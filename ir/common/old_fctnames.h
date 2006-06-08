@@ -99,6 +99,7 @@
 #define dont_dump_loop_information() dump_loop_information(0)
 
 /* type.h */
+typedef ir_type type;
 #define get_type_nameid(_t_)     get_type_ident(_t_)
 #define set_type_nameid(_t_,_i_) set_type_ident(_t_,_i_)
 #define get_class_n_member    get_class_n_members
