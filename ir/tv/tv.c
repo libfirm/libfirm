@@ -239,7 +239,6 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
   return get_tarval(value, length, mode);
 }
 
-
 /*
  *   public variables declared in tv.h
  */
@@ -1738,17 +1737,21 @@ void init_tarval_2(void)
 {
   ANNOUNCE();
 
-  tarval_bad->kind       = k_tarval;
-  tarval_bad->mode       = mode_BAD;
+  tarval_bad->kind        = k_tarval;
+  tarval_bad->mode        = mode_BAD;
+  tarval_bad->value       = INT_TO_PTR(resid_tarval_bad);
 
-  tarval_undefined->kind = k_tarval;
-  tarval_undefined->mode = mode_ANY;
+  tarval_undefined->kind  = k_tarval;
+  tarval_undefined->mode  = mode_ANY;
+  tarval_undefined->value = INT_TO_PTR(resid_tarval_undefined);
 
-  tarval_b_true->kind    = k_tarval;
-  tarval_b_true->mode    = mode_b;
+  tarval_b_true->kind     = k_tarval;
+  tarval_b_true->mode     = mode_b;
+  tarval_b_true->value    = INT_TO_PTR(resid_tarval_b_true);
 
-  tarval_b_false->kind   = k_tarval;
-  tarval_b_false->mode   = mode_b;
+  tarval_b_false->kind    = k_tarval;
+  tarval_b_false->mode    = mode_b;
+  tarval_b_false->value   = INT_TO_PTR(resid_tarval_b_false);
 
   /*
    * assign output modes that are compatible with the

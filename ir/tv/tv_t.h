@@ -20,6 +20,14 @@
 #include "irmode.h"
 #include "tv.h"
 
+/* debugging aid */
+enum reserved_id {
+  resid_tarval_bad       = 1,
+  resid_tarval_undefined = 2,
+  resid_tarval_b_false   = 3,
+  resid_tarval_b_true    = 4
+};
+
 /**
  * Initialization of the tarval module.
  *
