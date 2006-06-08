@@ -36,9 +36,9 @@
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 typedef struct _be_abi_call_arg_t {
-	unsigned is_res   : 1;
-	unsigned in_reg   : 1;
-	unsigned on_stack : 1;
+	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
+	unsigned in_reg   : 1;  /**< 1: this argument is transmitted in registers. */
+	unsigned on_stack : 1;	/**< 1: this argument is transmitted on the stack. */
 
 	int pos;
 	const arch_register_t *reg;
@@ -51,37 +51,40 @@ typedef struct _be_abi_call_arg_t {
 struct _be_abi_call_t {
 	be_abi_call_flags_t flags;
 	const be_abi_callbacks_t *cb;
-	type *between_type;
+	ir_type *between_type;
 	set *params;
 };
 
 #define N_FRAME_TYPES 3
 
-typedef struct _be_stack_frame_t {
-	type *arg_type;
-	type *between_type;
-	type *frame_type;
+/**
+ * This type describes the stack layout.
+ * The stack is divided into 3 parts:
+ * - arg_type:     A struct type describing the stack arguments and it's order.
+ * - between_type: A struct type describing the stack layout between arguments
+ *                 and frame type
+ * - frame_type:   A class type descibing the frame layout
+ */
+typedef struct _be_stack_layout_t {
+	ir_type *arg_type;                 /**< A type describing the stack argument layout. */
+	ir_type *between_type;             /**< A type describing the "between" layout. */
+	ir_type *frame_type;               /**< The frame type. */
 
-	type *order[N_FRAME_TYPES];        /**< arg, between and frame types ordered. */
+	ir_type *order[N_FRAME_TYPES];     /**< arg, between and frame types ordered. */
 
 	int initial_offset;
-	int stack_dir;
-} be_stack_frame_t;
-
-struct _be_stack_slot_t {
-	struct _be_stack_frame_t *frame;
-	entity *ent;
-};
+	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
+} be_stack_layout_t;
 
 struct _be_abi_irg_t {
 	struct obstack       obst;
-	be_stack_frame_t     *frame;        /**< The stack frame model. */
+	be_stack_layout_t    *frame;        /**< The stack frame model. */
 	const be_irg_t       *birg;         /**< The back end IRG. */
 	const arch_isa_t     *isa;          /**< The isa. */
 	survive_dce_t        *dce_survivor;
 
 	be_abi_call_t        *call;         /**< The ABI call information. */
-	type                 *method_type;  /**< The type of the method of the IRG. */
+	ir_type              *method_type;  /**< The type of the method of the IRG. */
 
 	ir_node              *init_sp;      /**< The node representing the stack pointer
 									     at the start of the function. */
@@ -250,10 +253,10 @@ static void be_abi_call_free(be_abi_call_t *call)
      and the spills.
 */
 
-static int get_stack_entity_offset(be_stack_frame_t *frame, entity *ent, int bias)
+static int get_stack_entity_offset(be_stack_layout_t *frame, entity *ent, int bias)
 {
-	type *t = get_entity_owner(ent);
-	int ofs = get_entity_offset_bytes(ent);
+	ir_type *t = get_entity_owner(ent);
+	int ofs    = get_entity_offset_bytes(ent);
 
 	int i, index;
 
@@ -279,12 +282,12 @@ static int get_stack_entity_offset(be_stack_frame_t *frame, entity *ent, int bia
 /**
  * Retrieve the entity with given offset from a frame type.
  */
-static entity *search_ent_with_offset(type *t, int offset)
+static entity *search_ent_with_offset(ir_type *t, int offset)
 {
 	int i, n;
 
-	for(i = 0, n = get_class_n_members(t); i < n; ++i) {
-		entity *ent = get_class_member(t, i);
+	for(i = 0, n = get_compound_n_members(t); i < n; ++i) {
+		entity *ent = get_compound_member(t, i);
 		if(get_entity_offset_bytes(ent) == offset)
 			return ent;
 	}
@@ -292,16 +295,28 @@ static entity *search_ent_with_offset(type *t, int offset)
 	return NULL;
 }
 
-static int stack_frame_compute_initial_offset(be_stack_frame_t *frame)
+static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 {
-	type   *base = frame->stack_dir < 0 ? frame->between_type : frame->frame_type;
-	entity *ent  = search_ent_with_offset(base, 0);
+	ir_type *base = frame->stack_dir < 0 ? frame->between_type : frame->frame_type;
+	entity *ent   = search_ent_with_offset(base, 0);
 	frame->initial_offset = 0;
 	frame->initial_offset = get_stack_entity_offset(frame, ent, 0);
 	return frame->initial_offset;
 }
 
-static be_stack_frame_t *stack_frame_init(be_stack_frame_t *frame, type *args, type *between, type *locals, int stack_dir)
+/**
+ * Initializes the frame layout from parts
+ *
+ * @param frame     the stack layout that will be initialized
+ * @param args      the stack argument layout type
+ * @param between   the between layout type
+ * @param locals    the method frame type
+ * @param stack_dir the stack direction
+ *
+ * @return the initialized stack layout
+ */
+static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *args,
+                                           ir_type *between, ir_type *locals, int stack_dir)
 {
 	frame->arg_type       = args;
 	frame->between_type   = between;
@@ -314,61 +329,50 @@ static be_stack_frame_t *stack_frame_init(be_stack_frame_t *frame, type *args, t
 		frame->order[0] = args;
 		frame->order[2] = locals;
 	}
-
 	else {
 		frame->order[0] = locals;
 		frame->order[2] = args;
 	}
-
 	return frame;
 }
 
-static void stack_frame_dump(FILE *file, be_stack_frame_t *frame)
+/** Dumps the stack layout to file. */
+static void stack_layout_dump(FILE *file, be_stack_layout_t *frame)
 {
 	int i, j, n;
 
 	ir_fprintf(file, "initial offset: %d\n", frame->initial_offset);
-	for(j = 0; j < N_FRAME_TYPES; ++j) {
-		type *t = frame->order[j];
+	for (j = 0; j < N_FRAME_TYPES; ++j) {
+		ir_type *t = frame->order[j];
 
-		ir_fprintf(file, "type %d: %Fm size: %d\n", j, t, get_type_size_bytes(t));
-		for(i = 0, n = get_class_n_members(t); i < n; ++i) {
-			entity *ent = get_class_member(t, i);
+		ir_fprintf(file, "type %d: %F size: %d\n", j, t, get_type_size_bytes(t));
+		for (i = 0, n = get_compound_n_members(t); i < n; ++i) {
+			entity *ent = get_compound_member(t, i);
 			ir_fprintf(file, "\t%F int ofs: %d glob ofs: %d\n", ent, get_entity_offset_bytes(ent), get_stack_entity_offset(frame, ent, 0));
 		}
 	}
 }
 
 /**
- * If irn is a Sel node computes the address of an entity
- * on the frame type return the entity, else NULL.
- */
-static INLINE entity *get_sel_ent(ir_node *irn)
-{
-	if(is_Sel(irn) && get_Sel_ptr(irn) == get_irg_frame(get_irn_irg(irn))) {
-		return get_Sel_entity(irn);
-	}
-
-	return NULL;
-}
-
-/**
- * Walker: Replaces Loads, Stores and Sels of frame type entities
- * by FrameLoad, FrameStore and FrameAddress.
+ * Walker: Replaces Sels of frame type and
+ * value param type entities by FrameAddress.
  */
 static void lower_frame_sels_walker(ir_node *irn, void *data)
 {
-	ir_node *nw  = NULL;
-	entity  *ent = get_sel_ent(irn);
+	if (is_Sel(irn)) {
+		be_abi_irg_t *env = data;
+		ir_graph *irg     = current_ir_graph;
+		ir_node  *frame   = get_irg_frame(irg);
+		ir_node  *ptr     = get_Sel_ptr(irn);
 
-	if (ent != NULL) {
-		be_abi_irg_t *env   = data;
-		ir_node      *bl    = get_nodes_block(irn);
-		ir_graph     *irg   = get_irn_irg(bl);
-		ir_node      *frame = get_irg_frame(irg);
+		if (ptr == frame || ptr == get_irg_value_param_base(irg)) {
+			entity       *ent   = get_Sel_entity(irn);
+			ir_node      *bl    = get_nodes_block(irn);
+			ir_node      *nw;
 
-		nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
-		exchange(irn, nw);
+			nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
+			exchange(irn, nw);
+		}
 	}
 }
 
@@ -498,7 +502,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			ir_node *param         = get_Call_param(irn, p);
 			ir_node *addr          = curr_sp;
 			ir_node *mem           = NULL;
-			type *param_type       = get_method_param_type(mt, p);
+			ir_type *param_type    = get_method_param_type(mt, p);
 			int param_size         = get_type_size_bytes(param_type) + arg->space_after;
 
 			/*
@@ -1003,6 +1007,17 @@ static void clearup_frame(be_abi_irg_t *env, ir_node *ret, pmap *reg_map, struct
 */
 #endif
 
+/**
+ * Computes the stack argument layout type.
+ * Changes a possibly allocated value param type by moving
+ * entities to the stack layout type.
+ *
+ * @param env          the ABI environment
+ * @param call         the current call ABI
+ * @param method_type  the method type
+ *
+ * @return the stack argument layout type
+ */
 static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type)
 {
 	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
@@ -1014,17 +1029,28 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 	char buf[128];
 	ir_type *res;
 	int i;
+	ir_type *val_param_tp = get_method_value_param_type(method_type);
+	ident *id = get_entity_ident(get_irg_entity(env->birg->irg));
 
-	snprintf(buf, sizeof(buf), "%s_arg_type", get_entity_name(get_irg_entity(env->birg->irg)));
-	res = new_type_class(new_id_from_str(buf));
-
-	for(i = 0; i < n; ++i, curr += inc) {
-		type *param_type       = get_method_param_type(method_type, curr);
+	res = new_type_struct(mangle_u(id, new_id_from_chars("arg_type", 8)));
+	for (i = 0; i < n; ++i, curr += inc) {
+		ir_type *param_type    = get_method_param_type(method_type, curr);
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, curr);
 
-		if(arg->on_stack) {
-			snprintf(buf, sizeof(buf), "param_%d", i);
-			arg->stack_ent = new_entity(res, new_id_from_str(buf), param_type);
+		if (arg->on_stack) {
+			if (val_param_tp) {
+				/* the entity was already created, move it to the param type */
+				arg->stack_ent = get_method_value_param_ent(method_type, i);
+				remove_struct_member(val_param_tp, arg->stack_ent);
+				set_entity_owner(arg->stack_ent, res);
+				add_struct_member(res, arg->stack_ent);
+				/* must be automatic to set a fixed layout */
+				set_entity_allocation(arg->stack_ent, allocation_automatic);
+			}
+			else {
+				snprintf(buf, sizeof(buf), "param_%d", i);
+				arg->stack_ent = new_entity(res, new_id_from_str(buf), param_type);
+			}
 			ofs += arg->space_before;
 			ofs = round_up2(ofs, arg->alignment);
 			set_entity_offset_bytes(arg->stack_ent, ofs);
@@ -1032,8 +1058,8 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 			ofs += get_type_size_bytes(param_type);
 		}
 	}
-
 	set_type_size_bytes(res, ofs);
+	set_type_state(res, layout_fixed);
 	return res;
 }
 
@@ -1294,13 +1320,11 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_graph *irg             = env->birg->irg;
 	ir_node *bl               = get_irg_start_block(irg);
 	ir_node *end              = get_irg_end_block(irg);
-	ir_node *arg_tuple        = get_irg_args(irg);
 	ir_node *no_mem           = get_irg_no_mem(irg);
 	ir_node *mem              = get_irg_initial_mem(irg);
-	type *method_type         = get_entity_type(get_irg_entity(irg));
+	ir_type *method_type      = get_entity_type(get_irg_entity(irg));
 	pset *dont_save           = pset_new_ptr(8);
 	int n_params              = get_method_n_params(method_type);
-	int max_arg               = 0;
 
 	int i, j, n;
 
@@ -1310,6 +1334,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *barrier;
 	ir_node *reg_params_bl;
 	ir_node **args;
+	ir_node *arg_tuple;
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 
@@ -1324,19 +1349,12 @@ static void modify_irg(be_abi_irg_t *env)
 	env->frame = obstack_alloc(&env->obst, sizeof(env->frame[0]));
 	env->regs  = pmap_create();
 
-	/* Find the maximum proj number of the argument tuple proj */
-	foreach_out_edge(arg_tuple, edge)  {
-		ir_node *irn = get_edge_src_irn(edge);
-		int nr       = get_Proj_proj(irn);
-		max_arg      = MAX(max_arg, nr);
-	}
-
 	used_proj_nr = bitset_alloca(1024);
-	max_arg      = MAX(max_arg + 1, n_params);
-	args         = obstack_alloc(&env->obst, max_arg * sizeof(args[0]));
-	memset(args, 0, max_arg * sizeof(args[0]));
+	args         = obstack_alloc(&env->obst, n_params * sizeof(args[0]));
+	memset(args, 0, n_params * sizeof(args[0]));
 
 	/* Fill the argument vector */
+	arg_tuple = get_irg_args(irg);
 	foreach_out_edge(arg_tuple, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
 		int nr       = get_Proj_proj(irn);
@@ -1438,7 +1456,7 @@ static void modify_irg(be_abi_irg_t *env)
 	pset_insert_ptr(env->ignore_regs, fp_reg);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
-	for(i = 0; i < max_arg; ++i) {
+	for(i = 0; i < n_params; ++i) {
 		ir_node *arg_proj = args[i];
 		ir_node *repl     = NULL;
 
@@ -1692,6 +1710,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 struct bias_walk {
 	be_abi_irg_t *env;     /**< The ABI irg environment. */
 	int start_block_bias;  /**< The bias at the end of the start block. */
+	ir_node *start_block;  /**< The start block of the current graph. */
 };
 
 /**
@@ -1699,8 +1718,8 @@ struct bias_walk {
  */
 static void stack_bias_walker(ir_node *bl, void *data)
 {
-	if(bl != get_irg_start_block(get_irn_irg(bl))) {
-		struct bias_walk *bw = data;
+	struct bias_walk *bw = data;
+	if (bl != bw->start_block) {
 		process_stack_bias(bw->env, bl, bw->start_block_bias);
 	}
 }
@@ -1711,13 +1730,14 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	struct bias_walk bw;
 
 	stack_frame_compute_initial_offset(env->frame);
-	// stack_frame_dump(stdout, env->frame);
+	// stack_layout_dump(stdout, env->frame);
 
 	/* Determine the stack bias at the end of the start block. */
 	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg), 0);
 
 	/* fix the bias is all other blocks */
 	bw.env = env;
+	bw.start_block = get_irg_start_block(irg);
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
 }
 

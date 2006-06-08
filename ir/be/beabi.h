@@ -128,4 +128,4 @@ ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *re
 #define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))
 #define be_abi_reg_map_set(map, reg, irn)  pmap_insert((map), (void *) (reg), (irn))
 
-#endif
+#endif /* _BEABI_H */
