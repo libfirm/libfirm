@@ -1658,11 +1658,13 @@ static int verify_node_Bound(ir_node *n, ir_graph *irg) {
   return 1;
 }
 
-/*
+/**
  * Check dominance.
  * For each usage of a node, it is checked, if the block of the
  * node dominates the block of the usage (for phis: the predecessor
  * block of the phi for the corresponding edge).
+ *
+ * @return non-zero on success, 0 on dominance error
  */
 static int check_dominance_for_node(ir_node *use)
 {
@@ -1832,7 +1834,7 @@ int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
   firm_vrfy_failure_msg = NULL;
   do_node_verification(FIRM_VERIFICATION_ERROR_ONLY);
   res = irn_vrfy_irg(n, irg);
-  if (! res && get_irg_dom_state(irg) == dom_consistent &&
+  if (res && get_irg_dom_state(irg) == dom_consistent &&
       get_irg_pinned(irg) == op_pin_state_pinned)
     res = check_dominance_for_node(n);
   do_node_verification(old);
