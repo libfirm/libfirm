@@ -314,7 +314,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 	belady_env_t *env = data;
 	ir_node *irn, *first;
 	irn_live_t *li;
-	int i, count, ws_count;
+	int count, ws_count;
 	loc_t loc, *starters;
 	struct obstack ob;
 	block_info_t *res = get_block_info(blk);
@@ -373,26 +373,29 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 		/* now we have an end_set of pred */
 		assert(pred_info->ws_end && "The recursive call (above) is supposed to compute an end_set");
 		res->ws_start = workset_clone(&env->ob, pred_info->ws_end);
-
 	} else {
+		//int i;
+
 		/* Else we want the start_set to be the values used 'the closest' */
 		/* Copy the best ones from starters to start workset */
 		ws_count = MIN(count, env->n_regs);
 		res->ws_start = new_workset(&env->ob, env);
 		workset_bulk_fill(res->ws_start, ws_count, starters);
-	}
 
+#if 0
+		/* The phis of this block which are not in the start set have to be spilled later.
+		 * Therefore we add temporary copies in the pred_blocks so the spills can spill
+		 * into the same spill slot.
+		 * After spilling these copies get deleted.
+		 */
+		for (i=workset_get_length(res->ws_start); i<count; ++i) {
+			irn = starters[i].irn;
+			if (!is_Phi(irn) || get_nodes_block(irn) != blk)
+				continue;
 
-	/* The phis of this block which are not in the start set have to be spilled later.
-	 * Therefore we add temporary copies in the pred_blocks so the spills can spill
-	 * into the same spill slot.
-	 * After spilling these copies get deleted. */
-	for (i=workset_get_length(res->ws_start); i<count; ++i) {
-		irn = starters[i].irn;
-		if (!is_Phi(irn) || get_nodes_block(irn) != blk)
-			continue;
-
-		//be_spill_phi(env->senv, irn);
+			be_spill_phi(env->senv, irn);
+		}
+#endif
 	}
 
 	obstack_free(&ob, NULL);

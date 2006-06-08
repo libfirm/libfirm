@@ -289,9 +289,12 @@ static ir_node *spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, set
 			phi_spill_assoc_t *entry;
 
 			if(is_Phi(arg) && pset_find_ptr(senv->mem_phis, arg)) {
-				if (! bitset_is_set(bs, get_irn_idx(arg)))
+				// looping edge?
+				if(arg == phi) {
+					sub_res = phi_spill;
+				} else if (! bitset_is_set(bs, get_irn_idx(arg))) {
 					sub_res = spill_phi(senv, arg, ctx_irn, already_visited_phis, bs);
-				else {
+				} else {
 					/* we already visited the argument phi: get it's spill */
 					key.phi   = arg;
 					key.spill = NULL;
@@ -470,13 +473,24 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		const ir_edge_t *e;
 		int i, arity;
 
+		assert(is_Phi(node));
+
 		/* We have to place copy nodes in the predecessor blocks to temporarily
-		* produce new values that get separate spill slots
-		*/
+		 * produce new values that get separate spill slots
+		 */
 		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *pred_block = get_Block_cfgpred_block(get_nodes_block(node), i);
-			ir_node *arg = get_irn_n(node, i);
-			ir_node *copy = insert_copy(env, pred_block, arg);
+			ir_node *pred_block, *arg, *copy;
+
+			/* Don't do anything for looping edges (there's no need
+			 * and placing copies here breaks stuff as it suddenly
+			 * generates new living values through the whole loop)
+			 */
+			arg = get_irn_n(node, i);
+			if(arg == node)
+				continue;
+
+			pred_block = get_Block_cfgpred_block(get_nodes_block(node), i);
+			copy = insert_copy(env, pred_block, arg);
 
 			set_irn_n(node, i, copy);
 		}
