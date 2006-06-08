@@ -75,7 +75,7 @@ static void find_irg_arg (ir_node *node, void *env)
 */
 ir_node **find_irg_args (ir_graph *graph)
 {
-  type *tp = get_entity_type (get_irg_entity (graph));
+  ir_type *tp = get_entity_type (get_irg_entity (graph));
   const int n_args = get_method_n_params (tp);
   ir_node **args = xcalloc (n_args + 1, sizeof (ir_node*));
   ir_node *arg = get_irg_args (graph);
@@ -154,6 +154,9 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.17  2006/06/08 10:49:07  beck
+  renamed type to ir_type
+
   Revision 1.16  2005/01/14 14:13:32  liekweg
   fix gnu extension
 

@@ -82,7 +82,7 @@ static alloc_pto_t *new_alloc_pto (ir_node *alloc, int n_ctxs)
 {
   int i;
   alloc_pto_t *alloc_pto = obstack_alloc (pto_obst, sizeof (alloc_pto_t));
-  type *tp;
+  ir_type *tp;
 
   assert (op_Alloc == get_irn_op(alloc));
 
@@ -144,7 +144,7 @@ static pto_t* new_symconst_pto (ir_node *symconst)
 static void clear_type_link (type_or_ent *thing, void *_unused)
 {
   if (is_type (thing)) {
-    type *tp = (type*) thing;
+    ir_type *tp = (ir_type*) thing;
 
     if (is_Class_type (tp)) {
       DBGPRINT (1, (stdout, "%s (\"%s\")\n",
@@ -238,7 +238,7 @@ static void init_pto (ir_node *node, void *env)
   case (iro_SymConst): {
     if (mode_is_reference (get_irn_mode (node))) {
       entity *ent = get_SymConst_entity (node);
-      type   *tp = get_entity_type (ent);
+      ir_type *tp = get_entity_type (ent);
       if (is_Class_type (tp) || is_Pointer_type (tp)) {
         pto_t *symconst_pto = new_symconst_pto (node);
         set_node_pto (node, symconst_pto);
@@ -255,7 +255,7 @@ static void init_pto (ir_node *node, void *env)
 
   case (iro_Alloc): {
     alloc_pto_t *alloc_pto = new_alloc_pto (node, n_ctxs);
-    type *tp;
+    ir_type *tp;
 
     set_alloc_pto (node, alloc_pto);
 
@@ -318,9 +318,9 @@ void fake_main_args (ir_graph *graph)
   /* HERE ("start"); */
 
   entity *ent = get_irg_entity (graph);
-  type *mtp = get_entity_type (ent);
+  ir_type *mtp = get_entity_type (ent);
   ir_node **args = find_irg_args (graph);
-  type *ctp = get_method_param_type (mtp, 1); /* ctp == char[]*[]* */
+  ir_type *ctp = get_method_param_type (mtp, 1); /* ctp == char[]*[]* */
   desc_t *arg_desc;
   pto_t *arg_pto;
 
@@ -436,6 +436,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.21  2006/06/08 10:49:07  beck
+  renamed type to ir_type
+
   Revision 1.20  2005/12/05 12:19:54  beck
   added missing include <assert.h> (not anymore included in libFirm)
 
