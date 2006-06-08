@@ -544,6 +544,10 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 
 	assert(arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->cls, to_spill));
 
+	if(is_Phi(to_spill)) {
+		be_spill_phi(env, to_spill);
+	}
+
 	templ.spilled_node = to_spill;
 	templ.reloaders    = NULL;
 	res = set_insert(env->spills, &templ, sizeof(templ), HASH_PTR(to_spill));

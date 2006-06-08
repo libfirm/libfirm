@@ -11,19 +11,14 @@
 
 #include "bespillmorgan.h"
 
-#include "bechordal.h"
 #include "bechordal_t.h"
 #include "bespill.h"
-#include "belive.h"
 #include "belive_t.h"
 #include "irgwalk.h"
 #include "besched.h"
 #include "beutil.h"
-#include "irloop.h"
 #include "irloop_t.h"
-#include "irgraph.h"
 #include "irgraph_t.h"
-#include "irphase.h"
 #include "irphase_t.h"
 #include "irprintf.h"
 
@@ -136,6 +131,13 @@ static INLINE block_attr_t *get_block_attr(morgan_env_t *env, ir_node *block) {
 
 //---------------------------------------------------------------------------
 
+static INLINE int consider_for_spilling(const arch_env_t *env, const arch_register_class_t *cls, const ir_node *node) {
+	if(!arch_irn_has_reg_class(env, node, -1, cls))
+		return 0;
+
+	return !(arch_irn_get_flags(env, node) & (arch_irn_flags_ignore | arch_irn_flags_dont_spill));
+}
+
 /**
  * Determine edges going out of a loop (= edges that go to a block that is not inside
  * the loop or one of its subloops)
@@ -196,7 +198,7 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, ir_node* 
 
 		if(!live_is_in(li) || !live_is_out(li))
 			continue;
-		if(!arch_irn_consider_in_reg_alloc(env->arch, env->cls, li->irn))
+		if(!consider_for_spilling(env->arch, env->cls, li->irn))
 			continue;
 
 		node_idx = get_irn_idx(li->irn);
@@ -364,9 +366,6 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, 
 			to_spill = get_idx_irn(env->irg, i);
 			foreach_block_succ(block, edge) {
 				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around block %+F\n", to_spill, block));
-				if(is_Phi(to_spill)) {
-					be_spill_phi(env->senv, to_spill);
-				}
 				be_add_reload_on_edge(env->senv, to_spill, edge->src, edge->pos);
 			}
 		}
@@ -430,10 +429,6 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, ir_loop *loop, in
 			ir_node *to_spill = get_idx_irn(env->irg, i);
 
 			for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
-				if(is_Phi(to_spill)) {
-					be_spill_phi(env->senv, to_spill);
-				}
-
 				be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos);
 			}
 		}

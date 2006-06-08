@@ -206,14 +206,17 @@ static INLINE void *new_block_info(struct obstack *ob) {
 #define set_block_info(blk, info)	set_irn_link(blk, info)
 
 /**
- * @return The distance to the next use
- *         Or 0 if irn is an ignore node
+ * @return The distance to the next use or 0 if irn has dont_spill flag set
  */
-static INLINE unsigned get_distance(belady_env_t *bel, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
+static INLINE unsigned get_distance(belady_env_t *env, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
 {
-	unsigned dist = be_get_next_use(bel->uses, from, from_step, def, skip_from_uses);
+	int flags = arch_irn_get_flags(env->arch, def);
+	unsigned dist = be_get_next_use(env->uses, from, from_step, def, skip_from_uses);
 
-	assert(! (arch_irn_get_flags(bel->arch, def) & (arch_irn_flags_ignore | arch_irn_flags_dont_spill)));
+	assert(! (flags & arch_irn_flags_ignore));
+	// we have to keep nonspillable nodes in the workingset
+	if(flags & arch_irn_flags_dont_spill)
+		return 0;
 
 	return dist;
 }
@@ -389,7 +392,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 		if (!is_Phi(irn) || get_nodes_block(irn) != blk)
 			continue;
 
-		be_spill_phi(env->senv, irn);
+		//be_spill_phi(env->senv, irn);
 	}
 
 	obstack_free(&ob, NULL);
