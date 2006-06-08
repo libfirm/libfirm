@@ -1982,7 +1982,7 @@ void set_default_size_bits(ir_type *tp, int size) {
  * at the start or the end of a frame type.
  * The frame type must have already an fixed layout.
  */
-entity *frame_alloc_area(type *frame_type, int size, int alignment, int at_start)
+entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start)
 {
   entity *area;
   ir_type *tp;

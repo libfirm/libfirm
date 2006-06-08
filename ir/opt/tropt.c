@@ -48,7 +48,7 @@ static int n_sels_concretized = 0;
 
 /* - Cast normalization. ------------------------------------- */
 
-static type *default_gen_pointer_type_to(type *tp);
+static ir_type *default_gen_pointer_type_to(ir_type *tp);
 
 #define PTR_TYPE_SUFFIX "cc_ptr_tp"  /* class cast pointer type. */
 static ident *ptr_type_suffix = NULL;
@@ -58,8 +58,8 @@ static gen_pointer_type_to_func gen_pointer_type_to = default_gen_pointer_type_t
  * Find a pointer type to a given type.
  * Uses and updates trouts if available.
  */
-static type *default_gen_pointer_type_to(type *tp) {
-  type *res = NULL;
+static ir_type *default_gen_pointer_type_to(ir_type *tp) {
+  ir_type *res = NULL;
   if (get_trouts_state() == outs_consistent) {
     if (get_type_n_pointertypes_to(tp) > 0) {
       res = get_type_pointertype_to(tp, 0);
@@ -81,7 +81,7 @@ static type *default_gen_pointer_type_to(type *tp) {
 }
 
 /** Return a type that is a depth times pointer to type. */
-static type *pointerize_type(type *tp, int depth) {
+static ir_type *pointerize_type(ir_type *tp, int depth) {
   for (; depth > 0; --depth) {
     tp = gen_pointer_type_to(tp);
   }
@@ -89,8 +89,8 @@ static type *pointerize_type(type *tp, int depth) {
 }
 
 
-static ir_node *normalize_values_type(type *totype, ir_node *pred) {
-  type *fromtype = get_irn_typeinfo_type(pred);
+static ir_node *normalize_values_type(ir_type *totype, ir_node *pred) {
+  ir_type *fromtype = get_irn_typeinfo_type(pred);
   ir_node *new_cast = pred;
   int ref_depth = 0;
 
@@ -117,11 +117,11 @@ static ir_node *normalize_values_type(type *totype, ir_node *pred) {
     /* downcast */
     while (get_class_subtype_index(fromtype, totype) == -1) {
       /* Insert a cast to a subtype of fromtype. */
-      type *new_type = NULL;
+      ir_type *new_type = NULL;
       ir_node *new_cast;
       int i, n_subtypes = get_class_n_subtypes(fromtype);
       for (i = 0; i < n_subtypes && !new_type; ++i) {
-        type *new_sub = get_class_subtype(fromtype, i);
+        ir_type *new_sub = get_class_subtype(fromtype, i);
         if (is_SuperClass_of(new_sub, totype))
           new_type = new_sub;
       }
@@ -140,10 +140,10 @@ static ir_node *normalize_values_type(type *totype, ir_node *pred) {
     /* upcast */
     while (get_class_supertype_index(fromtype, totype) == -1) {
       /* Insert a cast to a supertype of fromtype. */
-      type *new_type = NULL;
+      ir_type *new_type = NULL;
       int i, n_supertypes = get_class_n_supertypes(fromtype);
       for (i = 0; i < n_supertypes && !new_type; ++i) {
-	type *new_super = get_class_supertype(fromtype, i);
+	ir_type *new_super = get_class_supertype(fromtype, i);
 	if (is_SubClass_of(new_super, totype))
 	  new_type = new_super;
       }
@@ -165,12 +165,12 @@ static void normalize_irn_class_cast(ir_node *n, void *env) {
   ir_node *res;
   if (get_irn_op(n) == op_Cast) {
     ir_node *pred  = get_Cast_op(n);
-    type *totype   = get_Cast_type(n);
+    ir_type *totype   = get_Cast_type(n);
     res = normalize_values_type(totype, pred);
     set_Cast_op(n, res);
   } else if (get_irn_op(n) == op_Call) {
     int i, n_params = get_Call_n_params(n);
-    type *tp = get_Call_type(n);
+    ir_type *tp = get_Call_type(n);
     for (i = 0; i < n_params; ++i) {
       res = normalize_values_type(get_method_param_type(tp, i), get_Call_param(n, i));
       set_Call_param(n, i, res);
@@ -239,7 +239,7 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct) {
  */
 static void cancel_out_casts(ir_node *cast) {
   ir_node *orig, *pred = get_Cast_op(cast);
-  type *tp_cast, *tp_pred, *tp_orig;
+  ir_type *tp_cast, *tp_pred, *tp_orig;
   int ref_depth = 0;
 
   if (get_irn_op(pred) != op_Cast) return;
@@ -288,7 +288,7 @@ static void cancel_out_casts(ir_node *cast) {
 
 static void concretize_selected_entity(ir_node *sel) {
   ir_node *cast, *ptr = get_Sel_ptr(sel);
-  type *orig_tp, *cast_tp;
+  ir_type *orig_tp, *cast_tp;
   entity *new_ent, *sel_ent;
 
   sel_ent = get_Sel_entity(sel);
@@ -330,7 +330,7 @@ static void concretize_Phi_type(ir_node *phi) {
   int i, n_preds = get_Phi_n_preds(phi);
   ir_node **pred = alloca(n_preds * sizeof(ir_node *));
   ir_node *new;
-  type *totype, *fromtype;
+  ir_type *totype, *fromtype;
 
   if (n_preds == 0) return;
   pred[0] = get_Phi_pred(phi, 0);
@@ -362,7 +362,7 @@ static void concretize_Phi_type(ir_node *phi) {
 void remove_Cmp_Null_cast(ir_node *cmp) {
   ir_node *cast, *null, *new_null;
   int cast_pos, null_pos;
-  type *fromtype;
+  ir_type *fromtype;
 
   cast = get_Cmp_left(cmp);
   cast_pos = 0;

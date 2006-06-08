@@ -766,7 +766,8 @@ void  set_method_param_type(ir_type *method, int pos, ir_type *tp);
    for compounds passed by value. This information is constructed only on demand. */
 entity *get_method_value_param_ent(ir_type *method, int pos);
 /**
- * Returns a type that represents the copied value arguments.
+ * Returns a type that represents the copied value arguments if one
+ * was allocated, else NULL.
  */
 ir_type *get_method_value_param_type(const ir_type *method);
 
@@ -1315,7 +1316,7 @@ ir_type *get_associated_type(const ir_type *tp);
  *
  * @return the entity representing the area
  */
-entity *frame_alloc_area(type *frame_type, int size, int alignment, int at_start);
+entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/

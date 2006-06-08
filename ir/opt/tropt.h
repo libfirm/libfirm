@@ -19,13 +19,11 @@
 #ifndef _TROPT_H_
 #define _TROPT_H_
 
-#include "irnode.h"
-#include "irgraph.h"
-#include "type.h"
+#include "firm_types.h"
 
 /** This is the type for a method, that returns a pointer type to
  *  tp.  This is needed in the normalization. */
-typedef type *(*gen_pointer_type_to_func)(type *tp);
+typedef ir_type *(*gen_pointer_type_to_func)(ir_type *tp);
 
 /**  Insert Casts so that class type casts conform exactly with the type hierarchy.
  *
