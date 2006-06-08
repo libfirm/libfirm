@@ -224,12 +224,13 @@ new_r_ir_graph (entity *ent, int n_loc)
   set_irg_start      (res, start);
 
   /* Proj results of start node */
-  projX              = new_Proj(start, mode_X, pn_Start_X_initial_exec);
-  set_irg_frame      (res, new_Proj(start, mode_P_data, pn_Start_P_frame_base));
-  set_irg_globals    (res, new_Proj(start, mode_P_data, pn_Start_P_globals));
-  set_irg_tls        (res, new_Proj(start, mode_P_data, pn_Start_P_tls));
-  set_irg_args       (res, new_Proj(start, mode_T, pn_Start_T_args));
-  initial_mem        = new_Proj(start, mode_M, pn_Start_M);
+  projX                   = new_Proj(start, mode_X, pn_Start_X_initial_exec);
+  set_irg_frame           (res, new_Proj(start, mode_P_data, pn_Start_P_frame_base));
+  set_irg_globals         (res, new_Proj(start, mode_P_data, pn_Start_P_globals));
+  set_irg_tls             (res, new_Proj(start, mode_P_data, pn_Start_P_tls));
+  set_irg_args            (res, new_Proj(start, mode_T,      pn_Start_T_args));
+  set_irg_value_param_base(res, new_Proj(start, mode_P_data, pn_Start_P_value_arg_base));
+  initial_mem             = new_Proj(start, mode_M, pn_Start_M);
   set_irg_initial_mem(res, initial_mem);
 
   add_immBlock_pred(start_block, projX);
@@ -507,6 +508,16 @@ ir_node *
 void
 (set_irg_args)(ir_graph *irg, ir_node *node) {
   _set_irg_args(irg, node);
+}
+
+ir_node *
+(get_irg_value_param_base)(const ir_graph *irg) {
+  return _get_irg_value_param_base(irg);
+}
+
+void
+(set_irg_value_param_base)(ir_graph *irg, ir_node *node) {
+  _set_irg_value_param_base(irg, node);
 }
 
 ir_node **

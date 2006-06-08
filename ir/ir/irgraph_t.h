@@ -55,22 +55,23 @@ typedef struct _irg_edge_info_t {
  * Index constants for nodes that can be accessed through the graph itself.
  */
 enum irg_anchors {
-  anchor_start_block = 0, /**< block the start node will belong to */
-  anchor_start,           /**< start node of this ir_graph */
-  anchor_end_block,       /**< block the end node will belong to */
-  anchor_end,             /**< end node of this ir_graph */
-  anchor_end_reg,         /**< end node of this ir_graph */
-  anchor_end_except,      /**< end node of this ir_graph */
-  anchor_frame,           /**< method's frame */
-  anchor_globals,         /**< pointer to the data segment containing all
-                               globals as well as global procedures. */
-  anchor_tls,             /**< pointer to the thread local storage containing all
-                               thread local data. */
-  anchor_initial_mem,     /**< initial memory of this graph */
-  anchor_args,            /**< methods arguments */
-  anchor_bad,             /**< bad node of this ir_graph, the one and
-                               only in this graph */
-  anchor_no_mem,          /**< NoMem node of this ir_graph, the one and only in this graph */
+  anchor_start_block = 0,  /**< block the start node will belong to */
+  anchor_start,            /**< start node of this ir_graph */
+  anchor_end_block,        /**< block the end node will belong to */
+  anchor_end,              /**< end node of this ir_graph */
+  anchor_end_reg,          /**< end node of this ir_graph */
+  anchor_end_except,       /**< end node of this ir_graph */
+  anchor_frame,            /**< method's frame */
+  anchor_globals,          /**< pointer to the data segment containing all
+                                globals as well as global procedures. */
+  anchor_tls,              /**< pointer to the thread local storage containing all
+                                thread local data. */
+  anchor_initial_mem,      /**< initial memory of this graph */
+  anchor_args,             /**< methods arguments */
+  anchor_value_param_base, /**< method value param base */
+  anchor_bad,              /**< bad node of this ir_graph, the one and
+                                only in this graph */
+  anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */
   anchor_max
 };
 
@@ -301,6 +302,16 @@ _get_irg_args(const ir_graph *irg) {
 static INLINE void
 _set_irg_args(ir_graph *irg, ir_node *node) {
   irg->anchors[anchor_args] = node;
+}
+
+static INLINE ir_node *
+_get_irg_value_param_base(const ir_graph *irg) {
+  return irg->anchors[anchor_value_param_base];
+}
+
+static INLINE void
+_set_irg_value_param_base(ir_graph *irg, ir_node *node) {
+  irg->anchors[anchor_value_param_base] = node;
 }
 
 static INLINE ir_node **
@@ -601,6 +612,8 @@ get_idx_irn(ir_graph *irg, unsigned idx) {
 #define set_irg_initial_mem(irg, node)        _set_irg_initial_mem(irg, node)
 #define get_irg_args(irg)                     _get_irg_args(irg)
 #define set_irg_args(irg, node)               _set_irg_args(irg, node)
+#define get_irg_value_param_base(irg)         _get_irg_value_param_base(irg)
+#define set_irg_value_param_base(irg, node)   _set_irg_value_param_base(irg, node)
 #define get_irg_bad(irg)                      _get_irg_bad(irg)
 #define set_irg_bad(irg, node)                _set_irg_bad(irg, node)
 #define get_irg_no_mem(irg)                   _get_irg_no_mem(irg)
