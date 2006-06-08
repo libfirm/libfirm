@@ -1474,23 +1474,26 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
 
   switch (get_mode_sort(tv->mode))
   {
+    case irms_reference:
+      if (tv == tv->mode->null) return snprintf(buf, len, "NULL");
+      /* fall through */
     case irms_int_number:
     case irms_character:
       switch (mode_info->mode_output) {
 
       case TVO_DECIMAL:
         str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
-    break;
+        break;
 
       case TVO_OCTAL:
         str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT);
-    break;
+        break;
 
       case TVO_HEX:
       case TVO_NATIVE:
       default:
         str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
-    break;
+        break;
       }
       return snprintf(buf, len, "%s%s%s", prefix, str, suffix);
 
@@ -1508,23 +1511,6 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
           return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_DEC), suffix);
       }
       break;
-
-    case irms_reference:
-      if (tv == tv->mode->null) return snprintf(buf, len, "NULL");
-      if (tv->value != NULL) {
-        if (len > tv->length) {
-          memcpy(buf, tv->value, tv->length);
-          buf[tv->length] = '\0';
-        }
-        else {
-          /* truncated */
-          memcpy(buf, tv->value, len-1);
-          buf[len-1] = '\0';
-        }
-        return tv->length;
-      }
-      else
-        return snprintf(buf, len, "void");
 
     case irms_internal_boolean:
       switch (mode_info->mode_output) {
@@ -1703,15 +1689,6 @@ static const tarval_mode_info hex_output = {
   NULL,
 };
 
-/**
- * default mode_info for output as reference
- */
-static const tarval_mode_info reference_output = {
-  TVO_NATIVE,
-  "&(",
-  ")",
-};
-
 /*
  * Initialization of the tarval module: called before init_mode()
  */
@@ -1767,7 +1744,7 @@ void init_tarval_2(void)
   set_tarval_mode_output_option(mode_Iu, &hex_output);
   set_tarval_mode_output_option(mode_Ls, &hex_output);
   set_tarval_mode_output_option(mode_Lu, &hex_output);
-  set_tarval_mode_output_option(mode_P,  &reference_output);
+  set_tarval_mode_output_option(mode_P,  &hex_output);
 }
 
 /* free all memory occupied by tarval. */
