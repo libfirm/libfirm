@@ -269,7 +269,7 @@ static void find_allocations(ir_node *alloc, void *ctx)
 static void transform_allocs(ir_graph *irg, walk_env_t *env)
 {
   ir_node *alloc, *next, *mem, *sel, *size;
-  type *ftp, *atp, *tp;
+  ir_type *ftp, *atp, *tp;
   entity *ent;
   char name[128];
   unsigned nr = 0;
