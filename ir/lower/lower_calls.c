@@ -351,34 +351,32 @@ static void do_copy_return_opt(ir_node *n, void *ctx) {
  */
 static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_env *env)
 {
-  ir_node *sel;
+  entity *ent;
   pmap_entry *e;
 
   /* use a map the check if we already create such an entity */
   e = pmap_find(env->dummy_map, tp);
   if (e)
-    sel = e->value;
+    ent = e->value;
   else {
     ir_type *ft = get_irg_frame_type(irg);
-    entity *ent;
     char buf[16];
 
     snprintf(buf, sizeof(buf), "dummy.%u", env->dnr++);
     ent = new_entity(ft, new_id_from_str(buf), tp);
-    sel = new_r_simpleSel(
-      irg,
-      block,
-      get_irg_no_mem(irg),
-      get_irg_frame(irg),
-      ent);
-    pmap_insert(env->dummy_map, tp, sel);
+    pmap_insert(env->dummy_map, tp, ent);
 
     if (get_type_state(ft) == layout_fixed) {
       /* Fix the layout again */
       assert(0 && "Fixed layout not implemented");
     }
   }
-  return sel;
+  return new_r_simpleSel(
+    irg,
+    block,
+    get_irg_no_mem(irg),
+    get_irg_frame(irg),
+    ent);
 }
 
 /**
@@ -514,7 +512,7 @@ static void fix_call_list(ir_graph *irg, wlk_env *env) {
 static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 {
   entity *ent = get_irg_entity(irg);
-  ir_type *mtp, *lowered_mtp, *res_tp, *ft;
+  ir_type *mtp, *lowered_mtp, *tp, *ft;
   int i, j, k, n_ress, n_ret_com, n_cr_opt;
   ir_node **new_in, *ret, *endbl, *bl, *mem, *copy;
   cr_pair *cr_opt;
@@ -524,15 +522,15 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
   assert(ent && "Cannot tranform graph without an entity");
   assert(get_irg_phase_state(irg) == phase_high && "call lowering must be done in phase high");
 
-  mtp    = get_entity_type(ent);
+  mtp = get_entity_type(ent);
 
   if (lp->flags & LF_COMPOUND_RETURN) {
     /* calculate the number of compound returns */
     n_ress = get_method_n_ress(mtp);
     for (n_ret_com = i = 0; i < n_ress; ++i) {
-      res_tp = get_method_res_type(mtp, i);
+      tp = get_method_res_type(mtp, i);
 
-      if (is_compound_type(res_tp))
+      if (is_compound_type(tp))
         ++n_ret_com;
     }
   }
@@ -611,9 +609,9 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
     n_cr_opt = 0;
     for (j = 1, i = k = 0; i < n_ress; ++i) {
       ir_node *pred = get_Return_res(ret, i);
-      res_tp = get_method_res_type(mtp, i);
+      tp = get_method_res_type(mtp, i);
 
-      if (is_compound_type(res_tp)) {
+      if (is_compound_type(tp)) {
         ir_node *arg = get_irg_args(irg);
         arg = new_r_Proj(irg, get_nodes_block(arg), arg, mode_P_data, env.first_hidden + k);
         ++k;
@@ -630,7 +628,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
                   mem,
                   arg,
                   pred,
-                  res_tp
+                  tp
                  );
           mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
         }
