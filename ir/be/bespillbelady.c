@@ -374,7 +374,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 		assert(pred_info->ws_end && "The recursive call (above) is supposed to compute an end_set");
 		res->ws_start = workset_clone(&env->ob, pred_info->ws_end);
 	} else {
-		//int i;
+		int i;
 
 		/* Else we want the start_set to be the values used 'the closest' */
 		/* Copy the best ones from starters to start workset */
@@ -382,7 +382,6 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 		res->ws_start = new_workset(&env->ob, env);
 		workset_bulk_fill(res->ws_start, ws_count, starters);
 
-#if 0
 		/* The phis of this block which are not in the start set have to be spilled later.
 		 * Therefore we add temporary copies in the pred_blocks so the spills can spill
 		 * into the same spill slot.
@@ -395,7 +394,6 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 
 			be_spill_phi(env->senv, irn);
 		}
-#endif
 	}
 
 	obstack_free(&ob, NULL);

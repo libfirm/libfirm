@@ -11,7 +11,7 @@
 
 #include "beverify.h"
 #include "belive.h"
-#include "besched.h"
+#include "besched_t.h"
 
 #include "irnode.h"
 #include "irgraph.h"

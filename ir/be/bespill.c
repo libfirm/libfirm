@@ -212,9 +212,7 @@ static ir_node *insert_copy(spill_env_t *env, ir_node *block, ir_node *value) {
 
 	ARR_APP1(ir_node*, env->copies, copy);
 
-	// walk schedule backwards until we find a use/def, or until we have reached the first phi
-	// TODO we could also do this by iterating over all uses and checking the
-	// sched_get_time_step value. Need benchmarks to decide this...
+	// walk schedule backwards until we find a use, a def, or until we have reached the first phi
 	sched_foreach_reverse(block, node) {
 		int i, arity;
 
@@ -556,11 +554,8 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	spill_info_t templ, *res;
 	reloader_t *rel;
 
+	assert(sched_is_scheduled(before));
 	assert(arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->cls, to_spill));
-
-	if(is_Phi(to_spill)) {
-		be_spill_phi(env, to_spill);
-	}
 
 	templ.spilled_node = to_spill;
 	templ.reloaders    = NULL;
@@ -572,12 +567,27 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	res->reloaders = rel;
 }
 
-void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *bl, int pos) {
-	ir_node *insert_bl = get_irn_arity(bl) == 1 ? sched_first(bl) : get_Block_cfgpred_block(bl, pos);
-	be_add_reload(env, to_spill, insert_bl);
+void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
+	ir_node *predblock, *last;
+
+	/* simply add the reload to the beginning of the block if we only have 1 predecessor
+	 * (we don't need to check for phis as there can't be any in a block with only 1 pred)
+	 */
+	if(get_irn_arity(block) == 1) {
+		assert(!is_Phi(sched_first(block)));
+		be_add_reload(env, to_spill, sched_first(block));
+		return;
+	}
+
+	// We have to reload the value in pred-block
+	predblock = get_nodes_block(get_irn_n(block, pos));
+	last = sched_last(predblock);
+	// there should be exactly 1 jump at the end of the block
+	assert(is_cfop(last));
+
+	// add the reload before the (cond-)jump
+	be_add_reload(env, to_spill, last);
 }
-
-
 
 /****************************************
 
@@ -755,21 +765,21 @@ interf_detected: /*nothing*/ ;
  * mode but different alignments.
  */
 static ir_type *get_spill_type(pmap *types, spill_slot_t *ss) {
-  pmap_entry *e = pmap_find(types, ss->largest_mode);
-  ir_type *res;
+	pmap_entry *e = pmap_find(types, ss->largest_mode);
+	ir_type *res;
 
-  if (! e) {
+	if (! e) {
 		char buf[64];
-    snprintf(buf, sizeof(buf), "spill_slot_type_%s", get_mode_name(ss->largest_mode));
-    res = new_type_primitive(new_id_from_str(buf), ss->largest_mode);
+		snprintf(buf, sizeof(buf), "spill_slot_type_%s", get_mode_name(ss->largest_mode));
+		res = new_type_primitive(new_id_from_str(buf), ss->largest_mode);
 		set_type_alignment_bytes(res, ss->align);
-    pmap_insert(types, ss->largest_mode, res);
-  }
-  else {
-    res = e->value;
+		pmap_insert(types, ss->largest_mode, res);
+	} else {
+		res = e->value;
 		assert(get_type_alignment_bytes(res) == (int)ss->align);
 	}
-  return res;
+
+	return res;
 }
 
 /**
