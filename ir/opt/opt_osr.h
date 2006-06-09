@@ -20,9 +20,12 @@ typedef enum osr_flags {
 	osr_flag_none               = 0,  /**< no additional flags */
 	osr_flag_lftr_with_ov_check = 1,  /**< do only linear function test replacement
 	                                       if no overflow occurs. */
-	/** default setting */
-	osr_flag_default = osr_flag_lftr_with_ov_check
 } osr_flags;
+
+/* FirmJNI cannot handle identical enum values... */
+
+/** default setting */
+#define osr_flag_default osr_flag_lftr_with_ov_check
 
 /**
  * Do the Operator Scalar Replacement optimization and linear
