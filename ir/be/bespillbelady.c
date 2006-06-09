@@ -336,8 +336,10 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 	first = sched_first(blk);
 	count = 0;
 	sched_foreach(blk, irn) {
-		if(!is_Phi(irn) || !arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn))
+		if(!is_Phi(irn))
 			break;
+		if(!arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn))
+			continue;
 
 		loc.irn = irn;
 		loc.time = get_distance(env, first, 0, irn, 0);
@@ -389,7 +391,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 		 * into the same spill slot.
 		 * After spilling these copies get deleted.
 		 */
-		for (i=workset_get_length(res->ws_start); i<count; ++i) {
+		for (i = ws_count; i < count; ++i) {
 			irn = starters[i].irn;
 			if (!is_Phi(irn) || get_nodes_block(irn) != blk)
 				continue;
@@ -450,9 +452,6 @@ static void belady(ir_node *blk, void *env) {
 
 		/* set instruction in the workset */
 		bel->instr = irn;
-
-		if(get_irn_node_nr(irn) == 4588)
-			_asm int 3;
 
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
