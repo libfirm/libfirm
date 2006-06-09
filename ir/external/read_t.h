@@ -14,9 +14,7 @@
 #ifndef _READ_T_H_
 #define _READ_T_H_
 
-#include "type.h"
-#include "entity.h"
-#include "ident.h"
+#include "firm_types.h"
 
 /* first, the xml structures */
 
@@ -24,7 +22,7 @@ typedef struct type_str
 {
   const ident *type_ident;
   const ident *id;              /* id for references */
-  type *f_tp;                   /* firm type */
+  ir_type *f_tp;                /* firm type */
   struct type_str *prev;
 } type_t;
 
@@ -165,6 +163,9 @@ typedef struct mod_str
 
 /*
   $Log$
+  Revision 1.3  2006/06/09 11:26:35  firm
+  renamed type to ir_type
+
   Revision 1.2  2004/12/10 15:14:16  beck
   Removed unused header files
   move xml macros to read.c, freeing the header from libxml depency

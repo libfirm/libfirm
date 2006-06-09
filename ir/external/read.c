@@ -1058,7 +1058,7 @@ static void create_abstract_arg(ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_node *arg;
   entity *ent;
   ir_mode *mode;
-  type *typ;
+  ir_type *typ;
   int num;
 
   VERBOSE_PRINT((stdout, "create effect:arg %d in %s\n",
@@ -1167,7 +1167,7 @@ static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
 
 static void create_abstract_alloc(ir_graph *irg, proc_t *proc, eff_t *eff)
 {
-  type *ftype;
+  ir_type *ftype;
   ir_node *alloc;
   type_t *xtype;
   symconst_symbol sym;
@@ -1210,7 +1210,7 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
   eff_t *addr;
   ir_node **irns;
   int i, num;
-  type *mtype;
+  ir_type *mtype;
   int mik; /* is method somehow known? */
 
   VERBOSE_PRINT((stdout, "create call in %s\n",
@@ -1478,7 +1478,7 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
 {
   int i, num;
   type_t *typ;
-  type *type;
+  ir_type *type;
   entity *ent;
 
   VERBOSE_PRINT((stdout, "assign entity %s to typeid %s\n",
@@ -1512,7 +1512,7 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
 static void assign_firm_type(type_t *xmltype)
 {
   int i;
-  type *typ = NULL;
+  ir_type *typ = NULL;
   int num;
 
   VERBOSE_PRINT((stdout, "assign firm type to type %s\n",
@@ -1545,7 +1545,7 @@ static
 void create_abstract_proc_effect(module_t *module, proc_t *proc)
 {
   int i, num;
-  type *class_typ = NULL;
+  ir_type *class_typ = NULL;
   type_t *type;
   entity *fent;
 
@@ -1684,6 +1684,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.25  2006/06/09 11:26:35  firm
+ * renamed type to ir_type
+ *
  * Revision 1.24  2006/05/29 13:34:49  beck
  * renamed symconst_size to symconst_type_size
  *
