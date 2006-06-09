@@ -337,11 +337,12 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 		ir_mode *mode = get_irn_mode(orig);
 
 		result = exact_copy(iv);
-		if (mode_is_reference(mode)) {
-			/* bad case: we replace a reference mode calculation.
-			   assure that the new IV will be a reference one */
-			set_irn_mode(result, mode);
-		}
+
+		/* Beware: we must always create a new nduction variable with the same mode
+		   as the node we are replacing. Espicially this means the mode might be changed
+		   from P to I and back. This is always possible, because we have only Phi, Add
+		   and Sub nodes. */
+		set_irn_mode(result, mode);
 		add(code, iv, rc, result, env);
 		DB((dbg, LEVEL_3, "   Created new %+F for %+F (%s %+F)\n", result, iv,
 			get_irn_opname(orig), rc));
@@ -454,8 +455,9 @@ static int check_replace(ir_node *irn, iv_env *env) {
  */
 static void classify_iv(scc *pscc, iv_env *env) {
 	ir_node *irn, *next, *header = NULL;
-	node_entry *h, *b;
-	int j;
+	node_entry *b, *h = NULL;
+	int j, only_phi, num_outside;
+	ir_node *out_rc;
 
 	/* find the header block for this scc */
 	for (irn = pscc->head; irn; irn = next) {
@@ -478,6 +480,9 @@ static void classify_iv(scc *pscc, iv_env *env) {
 	}
 
 	/* check if this scc contains only Phi, Add or Sub nodes */
+	only_phi    = 1;
+	num_outside = 0;
+	out_rc      = NULL;
 	for (irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 
@@ -485,6 +490,8 @@ static void classify_iv(scc *pscc, iv_env *env) {
 		switch (get_irn_opcode(irn)) {
 		case iro_Add:
 		case iro_Sub:
+			only_phi = 0;
+			/* fall through */
 		case iro_Phi:
 			for (j = get_irn_arity(irn) - 1; j >= 0; --j) {
 				ir_node *pred  = get_irn_n(irn, j);
@@ -496,6 +503,12 @@ static void classify_iv(scc *pscc, iv_env *env) {
 						/* not an induction variable */
 						goto fail;
 					}
+					if (! out_rc) {
+						out_rc = pred;
+						++num_outside;
+					}
+					else if (out_rc != pred)
+						++num_outside;
 				}
 			}
 			break;
@@ -506,6 +519,9 @@ static void classify_iv(scc *pscc, iv_env *env) {
 	}
 	/* found an induction variable */
 	DB((dbg, LEVEL_2, "  Found an induction variable:\n  "));
+	if (only_phi && num_outside == 1) {
+		DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
+	}
 
 	/* set the header for every node in this scc */
 	for (irn = pscc->head; irn; irn = next) {
