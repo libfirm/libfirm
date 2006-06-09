@@ -48,6 +48,7 @@
 #include "beutil.h"
 #include "bespillremat.h"
 #include "bespill.h"
+#include "bepressurestat.h"
 
 #include "bechordal_t.h"
 
@@ -2999,6 +3000,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	set_irg_link(chordal_env->irg, &si);
 	compute_doms(chordal_env->irg);
 
+	be_analyze_regpressure(chordal_env, "-pre");
+
 #ifdef COLLECT_REMATS
 	/* collect remats */
 	DBG((si.dbg, LEVEL_1, "Collecting remats\n"));
@@ -3100,6 +3103,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	move_reloads_upward(&si);
 	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
 	dump_pressure_graph(&si, dump_suffix3);
+
+	be_analyze_regpressure(chordal_env, "-post");
 
 	free_dom(chordal_env->irg);
 	del_pset(si.inverse_ops);

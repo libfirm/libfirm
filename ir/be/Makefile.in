@@ -31,8 +31,9 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beabi.c beabi.h beabi_t.h benodesets.c benodesets.h \
 	bemachnode.c bemachnode.h beinsn.c bestat.h bestat.c \
 	beschedmris.h beschedmris.c bespillmorgan.c bespillmorgan.h \
-	beverify.h beverify.c bespillremat.c \
+	beverify.h beverify.c bespillremat.c bepressurestat.c bepressurestat.h \
 	bespillappel.c bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c
+
 
 
 include $(topdir)/MakeRules
