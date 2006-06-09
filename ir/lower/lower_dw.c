@@ -1011,7 +1011,6 @@ static void lower_Rot(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 		if (tarval_is_long(tv) &&
 			get_tarval_long(tv) == get_mode_size_bits(mode)) {
-			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Rot_left(node);
 			ir_node *h, *l;
 			int idx = get_irn_idx(left);
@@ -1952,7 +1951,7 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 
 			if (env->entries[idx]->low_word) {
 				set_Phi_pred(phil, i, env->entries[idx]->low_word);
-				set_Phi_pred(phil, i, env->entries[idx]->high_word);
+				set_Phi_pred(phih, i, env->entries[idx]->high_word);
 			}
 			else {
 				/* still not ready */
