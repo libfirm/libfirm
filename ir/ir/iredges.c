@@ -383,8 +383,9 @@ int (edges_activated)(const ir_graph *irg)
 /**
  * Reroute all use-edges from a node to another.
  * @param from The node whose use-edges shall be withdrawn.
- * @param to The node to which all the use-edges of @p from shall be
- * sent to.
+ * @param to   The node to which all the use-edges of @p from shall be
+ *             sent to.
+ * @param irg  The graph.
  */
 void edges_reroute(ir_node *from, ir_node *to, ir_graph *irg)
 {

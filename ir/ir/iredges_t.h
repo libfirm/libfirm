@@ -150,7 +150,7 @@ static INLINE  ir_node *_get_edge_src_irn(const ir_edge_t *edge)
 
 /**
  * Get the position of an edge.
- * @param edge.
+ * @param edge  The edge.
  * @return The position in the in array of that edges source.
  */
 static INLINE int _get_edge_src_pos(const ir_edge_t *edge)

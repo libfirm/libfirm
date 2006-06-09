@@ -65,7 +65,7 @@ void free_extbb(ir_graph *irg);
 /**
  * Return the extended block of a node.
  *
- * @param blk  the extended basic block
+ * @param node  the node
  */
 ir_extblk *get_nodes_extbb(ir_node *node);
 

@@ -1274,7 +1274,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
    - no Sync in start block.
    - fold Sync-nodes, iff they have only one predecessor except
            themselves.
-  @fixme: are there loop's in Sync's
  */
 static ir_node *equivalent_node_Sync(ir_node *n)
 {
