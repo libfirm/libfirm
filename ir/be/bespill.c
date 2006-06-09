@@ -573,14 +573,14 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, 
 	/* simply add the reload to the beginning of the block if we only have 1 predecessor
 	 * (we don't need to check for phis as there can't be any in a block with only 1 pred)
 	 */
-	if(get_irn_arity(block) == 1) {
+	if(get_Block_n_cfgpreds(block) == 1) {
 		assert(!is_Phi(sched_first(block)));
 		be_add_reload(env, to_spill, sched_first(block));
 		return;
 	}
 
 	// We have to reload the value in pred-block
-	predblock = get_nodes_block(get_irn_n(block, pos));
+	predblock = get_Block_cfgpred_block(block, pos);
 	last = sched_last(predblock);
 	// there should be exactly 1 jump at the end of the block
 	assert(is_cfop(last));

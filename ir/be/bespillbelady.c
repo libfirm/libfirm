@@ -230,11 +230,11 @@ static INLINE unsigned get_distance(belady_env_t *env, const ir_node *from, unsi
  * @p is_usage indicates that the values in new_vals are used (not defined)
  * In this case reloads must be performed
  */
-static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
+static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	ir_node *val;
 	int i, len, max_allowed, demand, iter;
-	workset_t *ws = bel->ws;
-	ir_node **to_insert = alloca(bel->n_regs * sizeof(*to_insert));
+	workset_t *ws = env->ws;
+	ir_node **to_insert = alloca(env->n_regs * sizeof(*to_insert));
 
 	/*
 	 * 1. Identify the number of needed slots and the values to reload
@@ -243,13 +243,13 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	workset_foreach(new_vals, val, iter) {
 		/* mark value as used */
 		if (is_usage)
-			pset_insert_ptr(bel->used, val);
+			pset_insert_ptr(env->used, val);
 
 		if (!workset_contains(ws, val)) {
 			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			to_insert[demand++] = val;
 			if (is_usage)
-				be_add_reload(bel->senv, val, bel->instr);
+				be_add_reload(env->senv, val, env->instr);
 		} else {
 			assert(is_usage || "Defined value already in workset?!?");
 			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
@@ -261,7 +261,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	 * 2. Make room for at least 'demand' slots
 	 */
 	len = workset_get_length(ws);
-	max_allowed = bel->n_regs - demand;
+	max_allowed = env->n_regs - demand;
 
 	DBG((dbg, DBG_DECIDE, "    disposing %d values\n", ws->len - max_allowed));
 
@@ -269,7 +269,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	if (len > max_allowed) {
 		/* get current next-use distance */
 		for (i=0; i<ws->len; ++i)
-			workset_set_time(ws, i, get_distance(bel, bel->instr, bel->instr_nr, workset_get_val(ws, i), !is_usage));
+			workset_set_time(ws, i, get_distance(env, env->instr, env->instr_nr, workset_get_val(ws, i), !is_usage));
 
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
@@ -279,10 +279,12 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 		for (i=max_allowed; i<ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
 
-			if (!pset_find_ptr(bel->used, irn)) {
-				ir_node *curr_bb = get_nodes_block(bel->instr);
+			if (!pset_find_ptr(env->used, irn)) {
+				ir_node *curr_bb = get_nodes_block(env->instr);
 				workset_t *ws_start = get_block_info(curr_bb)->ws_start;
 				workset_remove(ws_start, irn);
+				if(is_Phi(irn))
+					be_spill_phi(env->senv, irn);
 
 				DBG((dbg, DBG_DECIDE, "    dispose %+F dumb\n", irn));
 			} else {
@@ -298,7 +300,7 @@ static void displace(belady_env_t *bel, workset_t *new_vals, int is_usage) {
 	 * 3. Insert the new values into the workset
 	 */
 	for(i = 0; i < demand; ++i)
-		workset_insert(bel->ws, to_insert[i]);
+		workset_insert(env->ws, to_insert[i]);
 }
 
 static void belady(ir_node *blk, void *env);
@@ -448,6 +450,9 @@ static void belady(ir_node *blk, void *env) {
 
 		/* set instruction in the workset */
 		bel->instr = irn;
+
+		if(get_irn_node_nr(irn) == 4588)
+			_asm int 3;
 
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
