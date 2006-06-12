@@ -739,6 +739,7 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  * @section sec_cmd Supported commands
  *
  * The following commands are currently supported:
+ *
  * @b .init
  *
  * Break immediately after the debugger extension was initialized.
@@ -746,7 +747,6 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  * of a Firm compiler right after the initialization, like this:
  *
  * $export FIRMDBG=".init"
- *
  *
  * @b .create nr
  *
@@ -822,7 +822,7 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  * -# start gdb with your compiler
  * -# after gdb breaks, issue
  *
- * p firm_debug(".create 2101")
+ * call firm_debug(".create 2101")
  *
  * On the console the following text should be issued:
  *
@@ -837,7 +837,7 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  # define firm "cmd"  Firm debugger extension
  #
  define firm
- p firm_debug($arg0)
+ call firm_debug($arg0)
  end
  * @endcode
  *
@@ -845,5 +845,6 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  * console using the firm prefix, eg.:
  *
  * firm ".create 2101"
+ *
  * firm ".help"
  */
