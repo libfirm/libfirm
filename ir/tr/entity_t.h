@@ -164,7 +164,7 @@ _get_entity_ident(const entity *ent) {
   return ent->name;
 }
 
-static INLINE ident *
+static INLINE void
 _set_entity_ident(entity *ent, ident *id) {
   assert(ent && ent->kind == k_entity);
   ent->name = id;
