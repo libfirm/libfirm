@@ -177,7 +177,8 @@ void optimize_graph_df(ir_graph *irg) {
   /* finish the wait queue */
   while (! pdeq_empty(waitq)) {
     ir_node *n = pdeq_getl(waitq);
-    opt_walker(n, waitq);
+    if (! is_Bad(n))
+      opt_walker(n, waitq);
   }
 
   del_pdeq(waitq);
