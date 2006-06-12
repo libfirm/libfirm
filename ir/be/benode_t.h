@@ -273,7 +273,7 @@ ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 
 /**
- * Make a spill node and insert it into the schedule.
+ * Make a spill node.
  *
  * @param arch_env  The architecture environment.
  * @param irn       The node to be spilled.

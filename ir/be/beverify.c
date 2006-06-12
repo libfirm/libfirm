@@ -18,6 +18,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irdump_t.h"
+#include "benode_t.h"
 
 typedef struct be_verify_register_pressure_env_t_ {
 	ir_graph                    *irg;                 /**< the irg to verify */
@@ -148,13 +149,16 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			}
 			cfchange_found = 1;
 		} else if (cfchange_found) {
-			/* check for delay branches */
-			if (delay_branches == 0) {
-				ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node (+delay branches) in block %+F (%s)\n",
-					node, block, get_irg_dump_name(env->irg));
-				env->problem_found = 1;
-			} else {
-				delay_branches--;
+			// proj and keepany aren't real instructions...
+			if(!is_Proj(node) && !be_is_Keep(node)) {
+				/* check for delay branches */
+				if (delay_branches == 0) {
+					ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node (+delay branches) in block %+F (%s)\n",
+						node, block, get_irg_dump_name(env->irg));
+					env->problem_found = 1;
+				} else {
+					delay_branches--;
+				}
 			}
 		}
 

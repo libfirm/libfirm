@@ -145,6 +145,26 @@ static spill_ctx_t *be_get_spill_ctx(set *sc, ir_node *to_spill, ir_node *ctx_ir
 }
 
 /**
+ * Schedules a node after an instruction. (That is the place after all projs and phis
+ * that are scheduled after the instruction)
+ */
+static void sched_add_after_insn(ir_node *sched_after, ir_node *node) {
+	ir_node *next = sched_next(sched_after);
+	while(!sched_is_end(next)) {
+		if(!is_Proj(next) && !is_Phi(next))
+			break;
+		next = sched_next(next);
+	}
+
+	if(sched_is_end(next)) {
+		next = sched_last(get_nodes_block(sched_after));
+		sched_add_after(next, node);
+	} else {
+		sched_add_before(next, node);
+	}
+}
+
+/**
  * Creates a spill.
  *
  * @param senv      the spill environment
@@ -171,6 +191,7 @@ static ir_node *be_spill_irn(spill_env_t *senv, ir_node *irn, ir_node *ctx_irn) 
 	}
 
 	ctx->spill = be_spill(env->arch_env, irn, ctx_irn);
+	sched_add_after_insn(irn, ctx->spill);
 
 	return ctx->spill;
 }
@@ -200,9 +221,18 @@ static void remove_copies(spill_env_t *env) {
 	ARR_SETLEN(ir_node*, env->copies, 0);
 }
 
+static INLINE ir_node *skip_projs(ir_node *node) {
+	while(is_Proj(node)) {
+		node = sched_next(node);
+		assert(!sched_is_end(node));
+	}
+
+	return node;
+}
+
 /**
- * Searchs the schedule of a block backwards until we reach the first
- * use or def of a value or a phi.
+ * Searchs the schedule backwards until we reach the first use or def of a
+ * value or a phi.
  * Returns the node before this node (so that you can do sched_add_before)
  */
 static ir_node *find_last_use_def(spill_env_t *env, ir_node *block, ir_node *value) {
@@ -216,12 +246,12 @@ static ir_node *find_last_use_def(spill_env_t *env, ir_node *block, ir_node *val
 			return last;
 		}
 		if(value == node) {
-			return last;
+			return skip_projs(last);
 		}
 		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 			ir_node *arg = get_irn_n(node, i);
 			if(arg == value) {
-				return last;
+				return skip_projs(node);
 			}
 		}
 		last = node;
@@ -572,10 +602,15 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, 
 		return;
 	}
 
-	// We have to reload the value in pred-block
+	/* We have to reload the value in pred-block */
 	predblock = get_Block_cfgpred_block(block, pos);
 	last = sched_last(predblock);
-	// there should be exactly 1 jump at the end of the block
+
+	/* we might have projs and keepanys behind the jump... */
+	while(is_Proj(last) || be_is_Keep(last)) {
+		last = sched_prev(last);
+		assert(!sched_is_end(last));
+	}
 	assert(is_cfop(last));
 
 	// add the reload before the (cond-)jump

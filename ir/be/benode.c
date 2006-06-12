@@ -894,7 +894,9 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
 
 	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn, ctx);
+	return spill;
 
+#if 0
 	/*
 	 * search the right insertion point. a spill of a phi cannot be put
 	 * directly after the phi, if there are some phis behind the one which
@@ -916,6 +918,7 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
 
 	sched_add_before(insert, spill);
 	return spill;
+#endif
 }
 
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill)
