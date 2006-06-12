@@ -447,9 +447,35 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 }
 
 void be_spill_phi(spill_env_t *env, ir_node *node) {
+	int i, arity;
+
 	assert(is_Phi(node));
 
 	pset_insert_ptr(env->mem_phis, node);
+
+	/* We have to place copy nodes in the predecessor blocks to temporarily
+	 * produce new values that get separate spill slots
+	 */
+	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+		ir_node *pred_block, *arg, *copy, *insert_point;
+
+		/* Don't do anything for looping edges (there's no need
+		 * and placing copies here breaks stuff as it suddenly
+		 * generates new living values through the whole loop)
+		 */
+		arg = get_irn_n(node, i);
+		if(arg == node)
+			continue;
+
+		pred_block = get_Block_cfgpred_block(get_nodes_block(node), i);
+		copy = be_new_Copy(env->cls, get_irn_irg(arg), pred_block, arg);
+
+		ARR_APP1(ir_node*, env->copies, copy);
+		insert_point = find_last_use_def(env, pred_block, arg);
+		sched_add_before(insert_point, copy);
+
+		set_irn_n(node, i, copy);
+	}
 }
 
 void be_insert_spills_reloads(spill_env_t *env) {
@@ -460,33 +486,8 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	DBG((env->dbg, LEVEL_1, "Reloads for mem-phis:\n"));
 	foreach_pset(env->mem_phis, node) {
 		const ir_edge_t *e;
-		int i, arity;
 
 		assert(is_Phi(node));
-
-		/* We have to place copy nodes in the predecessor blocks to temporarily
-		 * produce new values that get separate spill slots
-		 */
-		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *pred_block, *arg, *copy, *insert_point;
-
-			/* Don't do anything for looping edges (there's no need
-			 * and placing copies here breaks stuff as it suddenly
-			 * generates new living values through the whole loop)
-			 */
-			arg = get_irn_n(node, i);
-			if(arg == node)
-				continue;
-
-			pred_block = get_Block_cfgpred_block(get_nodes_block(node), i);
-			copy = be_new_Copy(env->cls, get_irn_irg(arg), pred_block, arg);
-
-			ARR_APP1(ir_node*, env->copies, copy);
-			insert_point = find_last_use_def(env, pred_block, arg);
-			sched_add_before(insert_point, copy);
-
-			set_irn_n(node, i, copy);
-		}
 
 		/* Add reloads for mem_phis */
 		/* BETTER: These reloads (1) should only be inserted, if they are really needed */

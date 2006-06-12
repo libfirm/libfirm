@@ -30,6 +30,7 @@ spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal);
 /**
  * Marks a phi-node for spilling. So when reloading from this phi-node, not
  * only its value but the whole phi will be spilled.
+ * This might place be_Copy nodes in predecessor blocks.
  */
 void be_spill_phi(spill_env_t *env, ir_node *node);
 
