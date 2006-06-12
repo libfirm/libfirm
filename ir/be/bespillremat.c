@@ -112,10 +112,10 @@ typedef struct _spill_bb_t {
 } spill_bb_t;
 
 typedef struct _remat_t {
-	const ir_node        *op; /**< for copy_irn */
-	const ir_node        *proj; /**< not NULL if the above op produces a tuple */
-	const ir_node        *value; /**< the value which is being recomputed by this remat */
-	int                   cost; /**< cost of this remat */
+	const ir_node        *op;      /**< for copy_irn */
+	const ir_node        *value;   /**< the value which is being recomputed by this remat */
+	ir_node              *proj;    /**< not NULL if the above op produces a tuple */
+	int                   cost;    /**< cost of this remat */
 	int                   inverse; /**< nonzero if this is an inverse remat */
 } remat_t;
 
@@ -2354,7 +2354,7 @@ delete_unnecessary_remats(spill_ilp_t * si)
  */
 /* TODO set context properly */
 static ir_node *
-insert_spill(spill_ilp_t * si, const ir_node * irn, const ir_node * value, const ir_node * before)
+insert_spill(spill_ilp_t * si, ir_node * irn, ir_node * value, ir_node * before)
 {
 	defs_t   *defs;
 	ir_node  *spill;
@@ -2980,7 +2980,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	obstack_init(&obst);
 	si.chordal_env = chordal_env;
 	si.obst = &obst;
-	si.senv = be_new_spill_env(chordal_env, is_mem_phi, &si);
+	si.senv = be_new_spill_env(chordal_env);
 	si.cls = chordal_env->cls;
 	si.lpp = new_lpp(problem_name, lpp_minimize);
 	si.remat_info = new_set(cmp_remat_info, 4096);
