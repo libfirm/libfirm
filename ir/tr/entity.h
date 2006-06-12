@@ -178,6 +178,9 @@ const char *get_entity_name     (const entity *ent);
 /** Returns the ident of an entity. */
 ident      *get_entity_ident    (const entity *ent);
 
+/** Sets the ident of the entity. */
+void        set_entity_ident (entity *ent, ident *id);
+
 /** Returns the mangled name of the entity.
  *
  * If the mangled name is set it returns the existing name.

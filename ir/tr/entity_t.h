@@ -164,6 +164,12 @@ _get_entity_ident(const entity *ent) {
   return ent->name;
 }
 
+static INLINE ident *
+_set_entity_ident(entity *ent, ident *id) {
+  assert(ent && ent->kind == k_entity);
+  ent->name = id;
+}
+
 static INLINE ir_type *
 _get_entity_owner(entity *ent) {
   assert(ent && ent->kind == k_entity);
@@ -352,6 +358,7 @@ _entity_not_visited(entity *ent) {
 #define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
 #define get_entity_ident(ent)                    _get_entity_ident(ent)
+#define set_entity_ident(ent, id)                _set_entity_ident(ent, id)
 #define get_entity_owner(ent)                    _get_entity_owner(ent)
 #define get_entity_ld_ident(ent)                 _get_entity_ld_ident(ent)
 #define set_entity_ld_ident(ent, ld_ident)       _set_entity_ld_ident(ent, ld_ident)

@@ -288,7 +288,12 @@ const char *
 
 ident *
 (get_entity_ident)(const entity *ent) {
-  return get_entity_ident(ent);
+  return _get_entity_ident(ent);
+}
+
+void
+(set_entity_ident)(entity *ent, ident *id) {
+  _set_entity_ident(ent, id);
 }
 
 ir_type *
