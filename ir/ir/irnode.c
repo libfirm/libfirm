@@ -799,7 +799,7 @@ add_End_keepalive (ir_node *end, ir_node *ka) {
   assert(end->op == op_End);
   l = ARR_LEN(end->in);
   ARR_APP1(ir_node *, end->in, ka);
-  edges_notify_edge(end, l, end->in[l], NULL, irg);
+  edges_notify_edge(end, l - 1, end->in[l], NULL, irg);
 }
 
 void
@@ -821,7 +821,7 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
 
   for (i = 0; i < n; ++i) {
     end->in[1 + END_KEEPALIVE_OFFSET + i] = in[i];
-    edges_notify_edge(end, 1 + END_KEEPALIVE_OFFSET + i, NULL, end->in[1 + END_KEEPALIVE_OFFSET + i], irg);
+    edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, NULL, end->in[1 + END_KEEPALIVE_OFFSET + i], irg);
   }
 }
 
