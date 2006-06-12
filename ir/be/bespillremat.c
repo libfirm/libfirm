@@ -86,7 +86,6 @@ typedef struct _spill_ilp_t {
 	const arch_register_class_t  *cls;
 	int                           n_regs;
 	const be_chordal_env_t       *chordal_env;
-	spill_env_t                  *senv;
 	lpp_t                        *lpp;
 	struct obstack               *obst;
 	set                          *remat_info;
@@ -1118,9 +1117,12 @@ luke_endwalker(ir_node * bb, void * data)
 		if (live_is_end(li) && has_reg_class(si, irn) && !pset_find_ptr(si->all_possible_remats, irn)) {
 			spill_t     query,
 			           *spill;
+			double      spill_cost;
 
 			query.irn = irn;
 			spill = set_insert(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
+
+			spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
 
 			ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", irn, bb);
 			spill->reg_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
@@ -1132,7 +1134,7 @@ luke_endwalker(ir_node * bb, void * data)
 			spill->mem_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
 
 			ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-			spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, COST_STORE*execution_frequency(si, bb));
+			spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
 
 			spill->reg_in = ILP_UNDEF;
 			spill->mem_in = ILP_UNDEF;
@@ -1249,6 +1251,8 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 	query.irn = irn;
 	spill = set_find(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
 	if(!spill) {
+		double   spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
+
 		spill = set_insert(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
 
 		spill->reg_out = ILP_UNDEF;
@@ -1259,7 +1263,7 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 		spill->mem_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, COST_STORE*execution_frequency(si, bb));
+		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
 	}
 
 	return spill;
@@ -2980,7 +2984,6 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	obstack_init(&obst);
 	si.chordal_env = chordal_env;
 	si.obst = &obst;
-	si.senv = be_new_spill_env(chordal_env);
 	si.cls = chordal_env->cls;
 	si.lpp = new_lpp(problem_name, lpp_minimize);
 	si.remat_info = new_set(cmp_remat_info, 4096);
