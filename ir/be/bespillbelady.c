@@ -275,16 +275,19 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 		workset_sort(ws);
 
 		/* Logic for not needed live-ins: If a value is disposed
-		   before its first usage, remove it from start workset */
+		 * before its first usage, remove it from start workset
+		 * We don't do this for phis though
+		 */
 		for (i=max_allowed; i<ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
+
+                        if(is_Phi(irn))
+                            continue;
 
 			if (!pset_find_ptr(env->used, irn)) {
 				ir_node *curr_bb = get_nodes_block(env->instr);
 				workset_t *ws_start = get_block_info(curr_bb)->ws_start;
 				workset_remove(ws_start, irn);
-				if(is_Phi(irn))
-					be_spill_phi(env->senv, irn);
 
 				DBG((dbg, DBG_DECIDE, "    dispose %+F dumb\n", irn));
 			} else {
@@ -386,11 +389,7 @@ static block_info_t *compute_block_start_info(ir_node *blk, void *data) {
 		res->ws_start = new_workset(&env->ob, env);
 		workset_bulk_fill(res->ws_start, ws_count, starters);
 
-		/* The phis of this block which are not in the start set have to be spilled later.
-		 * Therefore we add temporary copies in the pred_blocks so the spills can spill
-		 * into the same spill slot.
-		 * After spilling these copies get deleted.
-		 */
+		/* The phis of this block which are not in the start set have to be spilled later. */
 		for (i = ws_count; i < count; ++i) {
 			irn = starters[i].irn;
 			if (!is_Phi(irn) || get_nodes_block(irn) != blk)

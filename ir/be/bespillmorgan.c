@@ -310,7 +310,7 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, 
 	 */
 	sched_foreach_reverse(block, irn) {
 		// do we need more spills than possible with unused libethroughs?
-		int spills_needed = pressure - unused_spills_possible - env->registers_available;
+		int spills_needed = pressure - env->registers_available - unused_spills_possible;
 		if(spills_needed > 0) {
 			DBG((dbg, DBG_PRESSURE, "\tWARNING %d more spills needed at %+F\n", spills_needed, irn));
 			// TODO further spills needed
@@ -327,13 +327,11 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, 
 			break;
 
 		// update pressure
-		{
-			int pressure_old = pressure;
-			be_liveness_transfer(env->arch, env->cls, irn, live_nodes);
-			pressure = pset_count(live_nodes);
-			DBG((dbg, DBG_PRESSURE, "\tPressure at %+F - before: %d after: %d\n", irn, pressure_old, pressure));
-		}
+		be_liveness_transfer(env->arch, env->cls, irn, live_nodes);
+		pressure = pset_count(live_nodes);
 	}
+
+	DBG((dbg, DBG_PRESSURE, "\tMax Pressure in %+F: %d\n", block, max_pressure));
 
 	/*
 	 * Calculate number of spills from loop_unused_spills_possible that we want to use,
@@ -368,6 +366,7 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, 
 				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around block %+F\n", to_spill, block));
 				be_add_reload_on_edge(env->senv, to_spill, edge->src, edge->pos);
 			}
+			spills++;
 		}
 	} else {
 		loop_unused_spills_needed = spills_needed;

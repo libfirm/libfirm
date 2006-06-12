@@ -201,43 +201,34 @@ static void remove_copies(spill_env_t *env) {
 }
 
 /**
- * Inserts a copy (needed for spilled phi handling) of a value at the earliest
- * possible location in a block. That is after the last use/def of the value or at
- * the beginning of the block if there is no use/def.
+ * Searchs the schedule of a block backwards until we reach the first
+ * use or def of a value or a phi.
+ * Returns the node before this node (so that you can do sched_add_before)
  */
-static ir_node *insert_copy(spill_env_t *env, ir_node *block, ir_node *value) {
-	ir_node* node;
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *copy = be_new_Copy(env->cls, irg, block, value);
+static ir_node *find_last_use_def(spill_env_t *env, ir_node *block, ir_node *value) {
+	ir_node *node, *last;
 
-	ARR_APP1(ir_node*, env->copies, copy);
-
-	// walk schedule backwards until we find a use, a def, or until we have reached the first phi
+	last = NULL;
 	sched_foreach_reverse(block, node) {
 		int i, arity;
 
 		if(is_Phi(node)) {
-			sched_add_after(node, copy);
-			goto placed;
+			return last;
 		}
 		if(value == node) {
-			sched_add_after(node, copy);
-			goto placed;
+			return last;
 		}
 		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 			ir_node *arg = get_irn_n(node, i);
 			if(arg == value) {
-				sched_add_after(node, copy);
-				goto placed;
+				return last;
 			}
 		}
+		last = node;
 	}
-	// we didn't find a use or a phi yet, so place the copy at the beginning of the block
-	sched_add_before(sched_first(block), copy);
 
-placed:
-
-	return copy;
+	// simply return first node if no def or use found
+	return sched_first(block);
 }
 
 /**
@@ -301,9 +292,9 @@ static ir_node *spill_phi(spill_env_t *senv, ir_node *phi, ir_node *ctx_irn, set
 					sub_res   = entry->spill;
 					assert(sub_res && "spill missing?!?");
 				}
-			}
-			else
+			} else {
 				sub_res = be_spill_irn(senv, arg, ctx_irn);
+			}
 
 			set_irn_n(phi_spill, i, sub_res);
 		}
@@ -477,7 +468,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		 * produce new values that get separate spill slots
 		 */
 		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *pred_block, *arg, *copy;
+			ir_node *pred_block, *arg, *copy, *insert_point;
 
 			/* Don't do anything for looping edges (there's no need
 			 * and placing copies here breaks stuff as it suddenly
@@ -488,7 +479,11 @@ void be_insert_spills_reloads(spill_env_t *env) {
 				continue;
 
 			pred_block = get_Block_cfgpred_block(get_nodes_block(node), i);
-			copy = insert_copy(env, pred_block, arg);
+			copy = be_new_Copy(env->cls, get_irn_irg(arg), pred_block, arg);
+
+			ARR_APP1(ir_node*, env->copies, copy);
+			insert_point = find_last_use_def(env, pred_block, arg);
+			sched_add_before(insert_point, copy);
 
 			set_irn_n(node, i, copy);
 		}
@@ -511,7 +506,6 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	for(si = set_first(env->spills); si; si = set_next(env->spills)) {
 		reloader_t *rld;
 		ir_mode *mode = get_irn_mode(si->spilled_node);
-		//ir_node *value;
 		pset *values = pset_new_ptr(16);
 
 		/* go through all reloads for this spill */
@@ -524,9 +518,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 #ifdef REMAT
 			if (check_remat_conditions(env, spill, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(env, si->spilled_node, rld->reloader);
-				//pdeq_putl(possibly_dead, spill);
-			}
-			else
+			} else
 #endif
 				/* do a reload */
 				new_val = be_reload(arch_env, env->cls, rld->reloader, mode, spill);

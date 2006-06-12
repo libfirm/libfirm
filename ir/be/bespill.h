@@ -24,13 +24,12 @@ typedef struct _spill_env_t spill_env_t;
  * Creates a new spill environment.
  *
  * @param chordal
- * @param is_spilled_phi	a function that evaluates a phi node and returns true if it is a spilled phi node
- * @param data				context parameter for the is_spilled_phi function
  */
 spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal);
 
 /**
- * Marks a phi-node for spilling
+ * Marks a phi-node for spilling. So when reloading from this phi-node, not
+ * only its value but the whole phi will be spilled.
  */
 void be_spill_phi(spill_env_t *env, ir_node *node);
 
