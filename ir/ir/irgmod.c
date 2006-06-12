@@ -62,6 +62,8 @@ exchange (ir_node *old, ir_node *nw)
    */
   if (edges_activated(current_ir_graph)) {
     edges_reroute(old, nw, current_ir_graph);
+    edges_node_deleted(old, current_ir_graph);
+    old->op = op_Bad;
   }
   else {
     /* Else, do it the old-fashioned way. */
