@@ -2,6 +2,7 @@
  * @file   bespillilp.c
  * @date   15.07.2005
  * @author Sebastian Hack
+ * @cvsid  $Id$
  *
  * ILP based spilling
  *
@@ -28,6 +29,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irloop_t.h"
+#include "irtools.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
@@ -46,8 +48,6 @@
 #include "bechordal_t.h"
 
 #define BIGM 100000.0
-
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 #define DBG_LEVEL SET_LEVEL_0 // 3
 
@@ -635,7 +635,7 @@ void be_spill_ilp(const be_chordal_env_t *chordal_env)
 	memset(&si.stats, 0, sizeof(si.stats));
 	si.chordal_env     = chordal_env;
 	si.obst            = &obst;
-	si.senv            = be_new_spill_env(chordal_env, is_mem_phi, &si);
+	si.senv            = be_new_spill_env(chordal_env);
 //	DEBUG_ONLY(si.senv->dbg = si.dbg;)
 	si.cls             = chordal_env->cls;
 	si.lpp             = new_lpp(problem_name, lpp_minimize);
