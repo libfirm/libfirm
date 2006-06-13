@@ -18,8 +18,8 @@
 /** Possible flags for the Operator Scalar Replacement. */
 typedef enum osr_flags {
 	osr_flag_none               = 0,  /**< no additional flags */
-	osr_flag_lftr_with_ov_check = 1,  /**< do only linear function test replacement
-	                                       if no overflow occurs. */
+	osr_flag_lftr_with_ov_check = 1,  /**< do linear function test replacement
+	                                       only if no overflow can occur. */
 } osr_flags;
 
 /* FirmJNI cannot handle identical enum values... */
@@ -37,7 +37,7 @@ typedef enum osr_flags {
  * The linear function replacement test is controlled by the flags.
  * If the osr_flag_lftr_with_ov_check is set, the replacement is only
  * done if do overflow can occur.
- * Otherwise it is ALWAYS done which might be unsure.
+ * Otherwise it is ALWAYS done which might be insecure.
  *
  * For instance:
  *
@@ -57,8 +57,31 @@ typedef enum osr_flags {
  *
  * because of overflow.
  *
+ * More bad cases:
+ *
+ * for (i = 0; i <= 0xF; ++i)
+ *
+ * will NOT be transformed into
+ *
+ * for (i = 0xFFFFFFF0; i <= 0xFFFFFFFF; ++i)
+ *
+ * although here is no direct overflow. The OV occurs when the ++i
+ * is executed (and would created an endless loop here!).
+ *
+ * For the same reason, a loop
+ *
+ * for (i = 0; i <= 9; i += x)
+ *
+ * will NOT be transformed because we cannot estimate whether an overflow
+ * might happen adding x.
+ *
  * Note that i < a + 400 is also not possible with the current implementation
  * although this might be allowed by other compilers...
+ *
+ * Note further that tests for equality can be handled some simplier (but are not
+ * implemented yet).
+ *
+ * This algorithm destoyes the link field of nodes.
  */
 void opt_osr(ir_graph *irg, unsigned flags);
 
