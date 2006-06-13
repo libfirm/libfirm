@@ -1,7 +1,7 @@
 /**
  * Project:     libFIRM
  * File name:   ir/opt/opt_osr.
- * Purpose:     Operator Strength Reduction,
+ * Purpose:     Operator Strength Reduction, based on
  *              Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick
  * Author:      Michael Beck
  * Modified by:
@@ -37,6 +37,7 @@
 #include "tv.h"
 #include "hashptr.h"
 #include "irtools.h"
+#include "irloop_t.h"
 #include "array.h"
 #include "firmstat.h"
 
@@ -310,8 +311,7 @@ static ir_node *apply(ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env) {
 		}
 		else {
 			result = do_apply(code, db, op1, op2, get_irn_mode(orig));
-			get_irn_ne(result, env)->header = NULL;
-		}
+			get_irn_ne(result, env)->header = NULL;		}
 	}
 	return result;
 }
@@ -385,21 +385,29 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
  * @param rc    the region constant
  * @param env   the environment
  */
-static void replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
+static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 	ir_node *result;
+	ir_loop *iv_loop  = get_irn_loop(get_nodes_block(iv));
+	ir_loop *irn_loop = get_irn_loop(get_nodes_block(irn));
 
-	DB((dbg, LEVEL_2, "  Replacing %+F\n", irn));
+	/* only replace nodes that are in the same (or deeper loops) */
+	if (get_loop_depth(irn_loop) >= get_loop_depth(iv_loop)) {
+		DB((dbg, LEVEL_2, "  Replacing %+F\n", irn));
 
-	result = reduce(irn, iv, rc, env);
-	if (result != irn) {
-		node_entry *e, *iv_e;
+		result = reduce(irn, iv, rc, env);
+		if (result != irn) {
+			node_entry *e, *iv_e;
 
-		hook_strength_red(current_ir_graph, irn);
-		exchange(irn, result);
-		e = get_irn_ne(result, env);
-		iv_e = get_irn_ne(iv, env);
-		e->header = iv_e->header;
+			hook_strength_red(current_ir_graph, irn);
+			exchange(irn, result);
+			e = get_irn_ne(result, env);
+			iv_e = get_irn_ne(iv, env);
+			e->header = iv_e->header;
+		}
+		++env->replaced;
+		return 1;
 	}
+	return 0;
 }
 
 /**
@@ -435,11 +443,8 @@ static int check_replace(ir_node *irn, iv_env *env) {
 			iv = right; rc = left;
 		}
 
-		if (iv) {
-			replace(irn, iv, rc, env);
-			++env->replaced;
-			return 1;
-		}
+		if (iv)
+			return replace(irn, iv, rc, env);
 		break;
 	default:
 		break;
@@ -605,11 +610,11 @@ static void push(iv_env *env, ir_node *n) {
  */
 static ir_node *pop(iv_env *env)
 {
-  ir_node *n = env->stack[--env->tos];
-  node_entry *e = get_irn_ne(n, env);
+	ir_node *n = env->stack[--env->tos];
+	node_entry *e = get_irn_ne(n, env);
 
-  e->in_stack = 0;
-  return n;
+	e->in_stack = 0;
+	return n;
 }
 
 /**
@@ -858,7 +863,7 @@ static void do_lftr(ir_node *cmp, void *ctx) {
 		iv = left; rc = right;
 
 		nright = applyEdges(iv, rc, env);
-		if (nright) {
+		if (nright && nright != rc) {
 			nleft = followEdges(iv, env);
 		}
 	}
@@ -866,7 +871,7 @@ static void do_lftr(ir_node *cmp, void *ctx) {
 		iv = right; rc = left;
 
 		nleft = applyEdges(iv, rc, env);
-		if (nleft) {
+		if (nleft && nleft != rc) {
 			nright = followEdges(iv, env);
 		}
 	}
@@ -926,6 +931,10 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	env.lftr_replaced = 0;
 	env.flags         = flags;
 
+	/* we need control flow loop information to decide whether
+	 * we should do a replacement or not. */
+	construct_cf_backedges(irg);
+
 	/* Clear all links and move Proj nodes into the
 	   the same block as it's predecessors.
 	   This can improve the placement of new nodes.
@@ -944,10 +953,10 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 
 	if (env.replaced) {
 		/* try linear function test replacements */
-		lftr(irg, &env);
+		//lftr(irg, &env);
 
 		set_irg_outs_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
+		/* cfg loop still valid */
 
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
 	}
