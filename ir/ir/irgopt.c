@@ -457,22 +457,23 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
   /*- ... and now the keep alives. -*/
   /* First pick the not marked block nodes and walk them.  We must pick these
      first as else we will oversee blocks reachable from Phis. */
-  irn_arity = get_irn_arity(oe);
+  irn_arity = get_End_n_keepalives(oe);
   for (i = 0; i < irn_arity; i++) {
-    ka = get_irn_intra_n(oe, i);
-    if (is_Block(ka) &&
-        (get_irn_visited(ka) <= vfl)) {
-      /* We must keep the block alive and copy everything reachable */
-      set_irg_visited(irg, vfl);
-      irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
+    ka = get_End_keepalive(oe, i);
+    if (is_Block(ka)) {
+      if (get_irn_visited(ka) <= vfl) {
+        /* We must keep the block alive and copy everything reachable */
+        set_irg_visited(irg, vfl);
+        irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
+      }
       add_End_keepalive(ne, get_new_node(ka));
     }
   }
 
   /* Now pick other nodes.  Here we will keep all! */
-  irn_arity = get_irn_arity(oe);
+  irn_arity = get_End_n_keepalives(oe);
   for (i = 0; i < irn_arity; i++) {
-    ka = get_irn_intra_n(oe, i);
+    ka = get_End_keepalive(oe, i);
     if (!is_Block(ka)) {
       if (get_irn_visited(ka) <= vfl) {
         /* We didn't copy the node yet.  */
@@ -583,7 +584,7 @@ dead_node_elimination(ir_graph *irg) {
     irg->value_table = new_identities();
 
     /* Copy the graph from the old to the new obstack */
-    copy_graph_env(1);
+    copy_graph_env(/*copy_node_nr=*/1);
 
     /* Free memory from old unoptimized obstack */
     obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
