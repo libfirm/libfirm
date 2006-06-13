@@ -11,15 +11,15 @@
  */
 
 /**
-* @file irloop.h
-*
-*  Computes backedges in the control and data flow.
-*
-*  @author Goetz Lindenmaier
-*
-*  Only Block and Phi/Filter nodes can have incoming backedges.
-*  Constructs loops data structure: indicates loop nesting.
-*/
+ * @file irloop.h
+ *
+ *  Computes backedges in the control and data flow.
+ *
+ *  @author Goetz Lindenmaier
+ *
+ *  Only Block and Phi/Filter nodes can have incoming backedges.
+ *  Constructs loops data structure: indicates loop nesting.
+ */
 
 # ifndef _IRLOOP_H_
 # define _IRLOOP_H_
@@ -93,16 +93,16 @@ void     set_irg_loop(ir_graph *irg, ir_loop *l);
 ir_loop *get_irg_loop(ir_graph *irg);
 
 /** Returns the loop n is contained in.  NULL if node is in no loop. */
-ir_loop *get_irn_loop(ir_node *n);
+ir_loop *get_irn_loop(const ir_node *n);
 
 /** Returns outer loop, itself if outermost. */
-ir_loop *get_loop_outer_loop (ir_loop *loop);
+ir_loop *get_loop_outer_loop (const ir_loop *loop);
 /** Returns nesting depth of this loop */
-int      get_loop_depth (ir_loop *loop);
+int      get_loop_depth (const ir_loop *loop);
 
 /* Sons are the inner loops contained in this loop. */
 /** Returns the number of inner loops */
-int      get_loop_n_sons (ir_loop *loop);
+int      get_loop_n_sons (const ir_loop *loop);
 
 /** Returns the pos`th son loop (inner loop) of a loop.
     Returns NULL if there is not a pos`th loop_node. */
@@ -146,6 +146,8 @@ void *get_loop_link (const ir_loop *loop);
  *  The resulting loop tree is a possible visiting order for dataflow
  *  analysis.
  *
+ *  This algorithm destoyes the link field of block nodes.
+ *
  *  @returns Maximal depth of loop tree.
  *
  *  @remark
@@ -183,7 +185,10 @@ int construct_ip_backedges(void);
  *  This algorithm computes only back edge information for Block nodes, not
  *  for Phi nodes.
  *
- * @returns Maximal depth of loop tree. */
+ *  This algorithm destoyes the link field of block nodes.
+ *
+ * @returns Maximal depth of loop tree.
+ */
 int construct_cf_backedges(ir_graph *irg);
 
 /** Construct interprocedural loop tree for control flow.
