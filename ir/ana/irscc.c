@@ -137,9 +137,8 @@ set_irn_loop (ir_node *n, ir_loop *loop) {
 }
 
 /* Uses temporary information to get the loop */
-ir_loop *
-get_irn_loop (ir_node *n) {
-  return n->loop;
+ir_loop *(get_irn_loop)(const ir_node *n) {
+  return _get_irn_loop(n);
 }
 
 
@@ -351,21 +350,18 @@ static void mature_loop (ir_loop *loop) {
 #endif
 
 /* Returns outer loop, itself if outermost. */
-ir_loop *get_loop_outer_loop (ir_loop *loop) {
-  assert(loop && loop->kind == k_ir_loop);
-  return loop->outer_loop;
+ir_loop *(get_loop_outer_loop)(const ir_loop *loop) {
+  return _get_loop_outer_loop(loop);
 }
 
 /* Returns nesting depth of this loop */
-int get_loop_depth (ir_loop *loop) {
-  assert(loop); assert(loop->kind == k_ir_loop);
-  return loop->depth;
+int (get_loop_depth)(const ir_loop *loop) {
+  return _get_loop_depth(loop);
 }
 
 /* Returns the number of inner loops */
-int      get_loop_n_sons (ir_loop *loop) {
-  assert(loop && loop->kind == k_ir_loop);
-  return(loop -> n_sons);
+int (get_loop_n_sons)(const ir_loop *loop) {
+  return _get_loop_n_sons(loop);
 }
 
 /* Returns the pos`th loop_node-child              *
