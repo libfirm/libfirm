@@ -21,12 +21,38 @@
 #include <alloca.h>
 #endif
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
+#endif /* WITH_LIBCORE */
+
 #include "bitset.h"
 
+#include "irgwalk.h"
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "irtools.h"
 #include "beifg_t.h"
+#include "beifg_impl.h"
+#include "irphase.h"
+#include "irphase_t.h"
+#include "bechordal.h"
+
+#include "becopystat.h"
+#include "becopyopt.h"
+
+/** Defines values for the ifg performance test */
+#define BE_CH_PERFORMANCETEST_MIN_NODES (50)
+#define BE_CH_PERFORMANCETEST_COUNT (10)
+
+typedef struct _coloring_t coloring_t;
+
+struct _coloring_t {
+	phase_t ph;
+	const arch_env_t *arch_env;
+	ir_graph *irg;
+};
 
 size_t (be_ifg_nodes_iter_size)(const void *self)
 {
@@ -44,6 +70,44 @@ size_t (be_ifg_cliques_iter_size)(const void *self)
 {
 	const be_ifg_t *ifg = self;
 	return ifg->impl->cliques_iter_size;
+}
+
+static void *regs_irn_data_init(phase_t *ph, ir_node *irn, void *data)
+{
+	coloring_t *coloring = (coloring_t *) ph;
+	return (void *) arch_get_irn_register(coloring->arch_env, irn);
+}
+
+coloring_t *coloring_init(coloring_t *c, ir_graph *irg, const arch_env_t *aenv)
+{
+	phase_init(&c->ph, "regs_map", irg, PHASE_DEFAULT_GROWTH, regs_irn_data_init);
+	c->arch_env = aenv;
+	c->irg = irg;
+	return c;
+}
+
+static void get_irn_color(ir_node *irn, void *c)
+{
+	coloring_t *coloring = c;
+	phase_get_or_set_irn_data(&coloring->ph, irn);
+}
+
+static void restore_irn_color(ir_node *irn, void *c)
+{
+	coloring_t *coloring = c;
+	const arch_register_t *reg = phase_get_irn_data(&coloring->ph, irn);
+	if(reg)
+		arch_set_irn_register(coloring->arch_env, irn, reg);
+}
+
+void coloring_save(coloring_t *c)
+{
+	irg_walk_graph(c->irg, NULL, get_irn_color, c);
+}
+
+void coloring_restore(coloring_t *c)
+{
+	irg_walk_graph(c->irg, NULL, restore_irn_color, c);
 }
 
 void (be_ifg_free)(void *self)
@@ -258,6 +322,268 @@ void be_ifg_check_sorted(const be_ifg_t *ifg, FILE *f)
 
 	free(all_nodes);
 
+}
+
+void be_ifg_check_performance(be_chordal_env_t *chordal_env)
+{
+	int tests = BE_CH_PERFORMANCETEST_COUNT;
+	coloring_t coloring;
+
+#ifdef linux
+	struct mallinfo minfo;
+	int used_memory = 0;
+#endif /* linux */
+
+	int i = 0;
+	int rt;
+	copy_opt_t *co;
+	be_ifg_t *old_if = chordal_env->ifg;
+
+	lc_timer_t *timer = lc_timer_register("getTime","get Time of copy minimization using the ifg");
+	unsigned long elapsed_usec = 0;
+
+	if ((int) get_irg_estimated_node_cnt >= BE_CH_PERFORMANCETEST_MIN_NODES)
+	{
+
+		coloring_init(&coloring, chordal_env->irg, chordal_env->birg->main_env->arch_env);
+		coloring_save(&coloring);
+
+		lc_timer_reset(timer);
+
+		for (i = 0; i<tests; i++) /* performance test with std */
+		{
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks;
+#endif /* linux */
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			chordal_env->ifg = be_ifg_std_new(chordal_env);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks - used_memory;
+#endif /* linux */
+
+			coloring_restore(&coloring);
+
+			co = NULL;
+			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
+			co_build_ou_structure(co);
+			co_build_graph_structure(co);
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			co_solve_heuristic_new(co);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+			co_free_graph_structure(co);
+			co_free_ou_structure(co);
+			free_copy_opt(co);
+			be_ifg_free(chordal_env->ifg);
+
+		}
+
+		elapsed_usec = lc_timer_elapsed_usec(timer);
+		/* calculating average */
+		elapsed_usec = elapsed_usec / tests;
+
+		ir_printf("\nstd:; %+F; ",current_ir_graph);
+#ifdef linux
+		ir_printf("%u; ", used_memory);
+#endif /* linux */
+		ir_printf("%u; ", elapsed_usec);
+
+		i=0;
+#ifdef linux
+		used_memory=0;
+#endif /* linux */
+		elapsed_usec=0;
+
+		for (i = 0; i<tests; i++)  /* performance test with clique */
+		{
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks;
+#endif /* linux */
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			chordal_env->ifg = be_ifg_clique_new(chordal_env);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks - used_memory;
+#endif /* linux */
+
+			coloring_restore(&coloring);
+
+			co = NULL;
+			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
+			co_build_ou_structure(co);
+			co_build_graph_structure(co);
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			co_solve_heuristic_new(co);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+			co_free_graph_structure(co);
+			co_free_ou_structure(co);
+			free_copy_opt(co);
+			be_ifg_free(chordal_env->ifg);
+
+		}
+
+		elapsed_usec = lc_timer_elapsed_usec(timer);
+		/* calculating average */
+		elapsed_usec = elapsed_usec / tests;
+
+		ir_printf("\nclique:; %+F; ",current_ir_graph);
+#ifdef linux
+		ir_printf("%u; ", used_memory);
+#endif /* linux */
+		ir_printf("%u; ", elapsed_usec);
+
+		i=0;
+#ifdef linux
+		used_memory=0;
+#endif /* linux */
+		elapsed_usec=0;
+
+		for (i = 0; i<tests; i++)  /* performance test with list */
+		{
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks;
+#endif /* linux */
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			chordal_env->ifg = be_ifg_list_new(chordal_env);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks - used_memory;
+#endif /* linux */
+
+			coloring_restore(&coloring);
+
+			co = NULL;
+			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
+			co_build_ou_structure(co);
+			co_build_graph_structure(co);
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			co_solve_heuristic_new(co);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+			co_free_graph_structure(co);
+			co_free_ou_structure(co);
+			free_copy_opt(co);
+			be_ifg_free(chordal_env->ifg);
+
+		}
+
+		elapsed_usec = lc_timer_elapsed_usec(timer);
+		/* calculating average */
+		elapsed_usec = elapsed_usec / tests;
+
+		ir_printf("\nlist:; %+F; ",current_ir_graph);
+#ifdef linux
+		ir_printf("%u; ", used_memory);
+#endif /* linux */
+		ir_printf("%u; ", elapsed_usec);
+
+		i=0;
+#ifdef linux
+		used_memory=0;
+#endif /* linux */
+		elapsed_usec=0;
+
+		for (i = 0; i<tests; i++)  /* performance test with pointer */
+		{
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks;
+#endif /* linux */
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			chordal_env->ifg = be_ifg_pointer_new(chordal_env);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+#ifdef linux
+			minfo = mallinfo();
+			used_memory = minfo.uordblks - used_memory;
+#endif /* linux */
+
+			coloring_restore(&coloring);
+
+			co = NULL;
+			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
+			co_build_ou_structure(co);
+			co_build_graph_structure(co);
+
+			rt = lc_timer_enter_high_priority();
+			lc_timer_start(timer);
+
+			co_solve_heuristic_new(co);
+
+			lc_timer_stop(timer);
+			rt = lc_timer_leave_high_priority();
+
+			co_free_graph_structure(co);
+			co_free_ou_structure(co);
+			free_copy_opt(co);
+			be_ifg_free(chordal_env->ifg);
+
+		}
+
+		elapsed_usec = lc_timer_elapsed_usec(timer);
+		/* calculating average */
+		elapsed_usec = elapsed_usec / tests;
+
+		ir_printf("\npointer:; %+F; ",current_ir_graph);
+#ifdef linux
+		ir_printf("%u; ", used_memory);
+#endif /* linux */
+		ir_printf("%u; ", elapsed_usec);
+
+		i=0;
+#ifdef linux
+		used_memory=0;
+#endif /* linux */
+		elapsed_usec=0;
+	}
+
+	chordal_env->ifg = old_if;
 }
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self)

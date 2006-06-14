@@ -10,6 +10,14 @@
 #ifndef _BEIFG_H
 #define _BEIFG_H
 
+#include "becopyopt.h"
+
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
+#endif /* WITH_LIBCORE */
+
 #include "firm_types.h"
 
 typedef struct _be_ifg_impl_t   be_ifg_impl_t;
@@ -66,5 +74,7 @@ typedef struct _be_ifg_dump_dot_cb_t {
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self);
 void be_ifg_check_sorted(const be_ifg_t *ifg, FILE *f);
+void be_ifg_check_performance(be_chordal_env_t *chordal_env);
+
 
 #endif /* _BEIFG_H */
