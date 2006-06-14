@@ -107,14 +107,15 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 static int reassoc_Sub(ir_node **in)
 {
   ir_node *n = *in;
-  ir_node *block = get_nodes_block(n);
   ir_node *right = get_Sub_right(n);
+  ir_mode *rmode = get_irn_mode(right);
+  ir_node *block;
 
-  /* FIXME: Do not apply this rule for unsigned Sub's because our code
-   * generation is currently buggy :-)
-   */
-  if (! mode_is_signed(get_irn_mode(n)))
-      return 0;
+  /* cannot handle SubIs(P, P) */
+  if (mode_is_reference(rmode))
+    return 0;
+
+  block = get_nodes_block(n);
 
   /* handles rule R6:
    * convert x - c => (-c) + x
@@ -124,9 +125,8 @@ static int reassoc_Sub(ir_node **in)
    * */
   if (get_const_class(right, block) == REAL_CONSTANT) {
     ir_node *left  = get_Sub_left(n);
-    ir_node *block = get_nodes_block(n);
-    ir_mode *mode  = get_irn_mode(n);
-    dbg_info *dbi  = get_irn_dbg_info(n);
+    ir_mode *mode;
+    dbg_info *dbi;
     ir_node *irn, *c;
 
     switch (get_const_class(left, block)) {
@@ -144,9 +144,12 @@ static int reassoc_Sub(ir_node **in)
         /* already constant, nothing to do */
         return 0;
     }
+    mode = get_irn_mode(n);
+    dbi  = get_irn_dbg_info(n);
 
-    c   = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-    irn = new_rd_Sub(dbi, current_ir_graph, block, c, right, mode);
+    /* Beware of SubP(P, Is) */
+    c   = new_r_Const(current_ir_graph, block, rmode, get_mode_null(rmode));
+    irn = new_rd_Sub(dbi, current_ir_graph, block, c, right, rmode);
 
     irn = new_rd_Add(dbi, current_ir_graph, block, left, irn, get_irn_mode(n));
 
