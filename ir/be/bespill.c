@@ -819,12 +819,17 @@ static ir_type *get_spill_type(pmap *types, spill_slot_t *ss) {
  */
 static void assign_entities(ss_env_t *ssenv, int n_slots, spill_slot_t *ss[]) {
 	int i, offset, frame_align;
-	ir_type *frame = get_irg_frame_type(ssenv->cenv->irg);
+	ir_type *frame;
+
+	/* do not align the frame if no spill slots are needed */
+	if (n_slots <= 0)
+		return;
+
+	frame = get_irg_frame_type(ssenv->cenv->irg);
 
 	/* aligning by increasing frame size */
-	offset = get_type_size_bits(frame) / 8;
+	offset = get_type_size_bytes(frame);
 	offset = round_up2(offset, ALIGN_SPILL_AREA);
-	set_type_size_bytes(frame, -1);
 
 	/* create entities and assign offsets according to size and alignment*/
 	for (i = 0; i < n_slots; ++i) {
