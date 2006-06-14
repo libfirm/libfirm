@@ -309,9 +309,6 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 	int j, m;
 	be_chordal_env_t chordal_env;
 
-	//lc_timer_t *timer = lc_timer_register("getTime","get Time of copy minimization using the ifg");
-	//unsigned long elapsed_milisec = 0;
-
 	compute_doms(irg);
 
 	chordal_env.opts          = &options;
@@ -376,8 +373,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		be_ra_chordal_color(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 
-		/* Check the implementations of the ifg */
+		//be_ifg_check_performance(&chordal_env);
 
+		/* Create the ifg with the selected flavor */
 		switch (options.ifg_flavor) {
 			default:
 				fprintf(stderr, "no valid ifg flavour selected. falling back to std\n");
@@ -403,9 +401,6 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 				break;
 		}
 
-		/* start timer */
-		//lc_timer_reset_and_start(timer);
-
 		/* copy minimization */
 		co = NULL;
 		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
@@ -413,12 +408,6 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 		}
-
-		/* stop timer */
-		//lc_timer_stop(timer);
-		//elapsed_milisec = lc_timer_elapsed_msec(timer);
-
-		//ir_printf("%u\n", elapsed_milisec);
 
 		switch(options.copymin_method) {
 			case BE_CH_COPYMIN_HEUR1:
