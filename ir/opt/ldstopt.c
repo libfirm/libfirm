@@ -36,6 +36,7 @@
 #include "irflag_t.h"
 #include "array.h"
 #include "irhooks.h"
+#include "iredges.h"
 #include "irtools.h"
 #include "opt_polymorphy.h"
 
@@ -169,9 +170,7 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
 }
 
 /** Return the number of uses of an address node */
-#define get_irn_n_uses(adr)     (unsigned)PTR_TO_INT(get_irn_link(adr))
-/** Sets the number of uses of an address node */
-#define set_irn_n_uses(adr, n)  set_irn_link(adr, INT_TO_PTR(n))
+#define get_irn_n_uses(adr)     get_irn_n_edges(adr)
 
 /**
  * walker, collects all Load/Store/Proj nodes
@@ -199,8 +198,6 @@ static void collect_nodes(ir_node *node, void *env)
 
       if ((ldst_info->flags & LDST_VISITED) == 0) {
         adr = get_Load_ptr(pred);
-        set_irn_n_uses(adr, get_irn_n_uses(adr) + 1);
-
         ldst_info->flags |= LDST_VISITED;
       }
 
@@ -224,8 +221,6 @@ static void collect_nodes(ir_node *node, void *env)
 
       if ((ldst_info->flags & LDST_VISITED) == 0) {
         adr = get_Store_ptr(pred);
-        set_irn_n_uses(adr, get_irn_n_uses(adr) + 1);
-
         ldst_info->flags |= LDST_VISITED;
       }
 
@@ -412,6 +407,7 @@ static void handle_load_update(ir_node *load) {
 
     /* a Load which value is neither used nor exception checked, remove it */
     exchange(info->projs[pn_Load_M], mem);
+    exchange(load, new_Bad());
     reduce_adr_usage(ptr);
   }
 }
@@ -421,14 +417,9 @@ static void handle_load_update(ir_node *load) {
  * node and update the counters.
  */
 static void reduce_adr_usage(ir_node *ptr) {
-  int use_count = get_irn_n_uses(ptr);
-  --use_count;
-  assert(use_count >= 0);
-  set_irn_n_uses(ptr, use_count);
-
   if (is_Proj(ptr)) {
-    if (use_count <= 0) {
-      /* this Proj is now dead, update the Load/Store info */
+    if (get_irn_n_edges(ptr) <= 0) {
+      /* this Proj is dead now */
       ir_node *pred = get_Proj_pred(ptr);
       opcode code = get_irn_opcode(pred);
 
@@ -501,6 +492,7 @@ static unsigned follow_Load_chain(ir_node *load, ir_node *curr) {
         if (info->projs[pn_Load_res])
           exchange(info->projs[pn_Load_res], value);
 
+        exchange(load, new_Bad());
         reduce_adr_usage(ptr);
         return res | DF_CHANGED;
       }
@@ -546,6 +538,7 @@ static unsigned follow_Load_chain(ir_node *load, ir_node *curr) {
           res |= CF_CHANGED;
         }
 
+        exchange(load, new_Bad());
         reduce_adr_usage(ptr);
         return res |= DF_CHANGED;
       }
@@ -641,6 +634,7 @@ static unsigned optimize_load(ir_node *load)
     /* a Load which value is neither used nor exception checked, remove it */
     exchange(info->projs[pn_Load_M], mem);
 
+    exchange(load, new_Bad());
     reduce_adr_usage(ptr);
     return res | DF_CHANGED;
   }
@@ -660,6 +654,7 @@ static unsigned optimize_load(ir_node *load)
     if (info->projs[pn_Load_res])
       exchange(info->projs[pn_Load_res], new_node);
 
+    exchange(load, new_Bad());
     reduce_adr_usage(ptr);
     return res | DF_CHANGED;
   }
@@ -704,6 +699,7 @@ static unsigned optimize_load(ir_node *load)
             res |= DF_CHANGED;
           }
         }
+        exchange(load, new_Bad());
         reduce_adr_usage(ptr);
         return res;
       }
@@ -740,6 +736,7 @@ static unsigned optimize_load(ir_node *load)
             exchange(info->projs[pn_Load_res], copy_const_value(get_irn_dbg_info(load), c));
             res |= DF_CHANGED;
           }
+          exchange(load, new_Bad());
           reduce_adr_usage(ptr);
           return res;
         }
@@ -809,6 +806,7 @@ static unsigned follow_Load_chain_for_Store(ir_node *store, ir_node *curr) {
       if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
         DBG_OPT_WAW(pred, store);
         exchange( pred_info->projs[pn_Store_M], get_Store_mem(pred) );
+        exchange(pred, new_Bad());
         reduce_adr_usage(ptr);
         return DF_CHANGED;
       }
@@ -822,6 +820,7 @@ static unsigned follow_Load_chain_for_Store(ir_node *store, ir_node *curr) {
       if (! info->projs[pn_Store_X_except]) {
         DBG_OPT_WAR(store, pred);
         exchange( info->projs[pn_Store_M], mem );
+        exchange(store, new_Bad());
         reduce_adr_usage(ptr);
         return DF_CHANGED;
       }
@@ -1008,8 +1007,6 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 #ifdef DO_CACHEOPT
   co_set_irn_name(store, co_get_irn_ident(old_store));
 #endif
-  /* we replaced n uses by 1 */
-  set_irn_n_uses(ptr, get_irn_n_uses(ptr) - n + 1);
 
   projM = new_rd_Proj(NULL, current_ir_graph, block, store, mode_M, pn_Store_M);
 
@@ -1072,6 +1069,7 @@ static void do_load_store_optimize(ir_node *n, void *env)
 void optimize_load_store(ir_graph *irg)
 {
   walk_env_t env;
+  int        was_activ;
 
   assert(get_irg_phase_state(irg) != phase_building);
   assert(get_irg_pinned(irg) != op_pin_state_floats &&
@@ -1079,6 +1077,13 @@ void optimize_load_store(ir_graph *irg)
 
   if (! get_opt_redundant_loadstore())
     return;
+
+  was_activ = edges_activated(irg);
+  if (was_activ) {
+    /* we need "fresh" edges */
+    edges_deactivate(irg);
+  }
+  edges_activate(irg);
 
   obstack_init(&env.obst);
   env.changes = 0;
@@ -1103,4 +1108,7 @@ void optimize_load_store(ir_graph *irg)
        have Bad() predecessors. */
     set_irg_doms_inconsistent(irg);
   }
+
+  if (! was_activ)
+    edges_deactivate(irg);
 }
