@@ -32,6 +32,7 @@
 #include "ircons_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
+#include "iropt_t.h"
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -158,6 +159,41 @@ static const ir_op_ops be_node_op_ops;
 #define M   irop_flag_machine
 
 
+/**
+ * Compare two node attributes.
+ *
+ * @return zero if both attributes are identically
+ */
+static int cmp_node_attr(be_node_attr_t *a, be_node_attr_t *b) {
+	if (a->max_reg_data == b->max_reg_data) {
+		int i;
+
+		for (i = 0; i < a->max_reg_data; ++i) {
+			if (a->reg_data[i].reg    != b->reg_data[i].reg ||
+			    memcmp(&a->reg_data[i].in_req, &b->reg_data[i].in_req, sizeof(b->reg_data[i].in_req)) ||
+			    memcmp(&a->reg_data[i].req,    &b->reg_data[i].req,    sizeof(a->reg_data[i].req)))
+				return 1;
+		}
+		return 0;
+	}
+	return 1;
+}
+
+/**
+ * Compare the attributes of two FrameAddr nodes.
+ *
+ * @return zero if both attributes are identically
+ */
+static int FrameAddr_cmp_attr(ir_node *a, ir_node *b) {
+	be_frame_attr_t *a_attr = get_irn_attr(a);
+	be_frame_attr_t *b_attr = get_irn_attr(b);
+
+	if (cmp_node_attr(&a_attr->node_attr, &b_attr->node_attr))
+		return 1;
+	return (a_attr->ent    != b_attr->ent ||
+	        a_attr->offset != b_attr->offset);
+}
+
 void be_node_init(void) {
 	static int inited = 0;
 
@@ -182,7 +218,7 @@ void be_node_init(void) {
 	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,      "be_IncSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),  &be_node_op_ops);
 	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams,  "be_RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),   &be_node_op_ops);
 	op_be_StackParam = new_ir_op(beo_base + beo_StackParam, "be_StackParam", op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),  &be_node_op_ops);
-	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_frame_attr_t),  &be_node_op_ops);
+	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),  &be_node_op_ops);
 	op_be_FrameLoad  = new_ir_op(beo_base + beo_FrameLoad,  "be_FrameLoad",  op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),  &be_node_op_ops);
 	op_be_FrameStore = new_ir_op(beo_base + beo_FrameStore, "be_FrameStore", op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),  &be_node_op_ops);
 	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_node_attr_t),   &be_node_op_ops);
@@ -204,6 +240,8 @@ void be_node_init(void) {
 	set_op_tag(op_be_FrameStore, &be_node_tag);
 	set_op_tag(op_be_FrameAddr,  &be_node_tag);
 	set_op_tag(op_be_Barrier,    &be_node_tag);
+
+	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
 }
 
 /**
@@ -579,7 +617,8 @@ ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg,
 	a->offset = 0;
 	be_node_set_reg_class(irn, 0, cls_frame);
 	be_node_set_reg_class(irn, OUT_POS(0), cls_frame);
-	return irn;
+
+	return optimize_node(irn);
 }
 
 ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
