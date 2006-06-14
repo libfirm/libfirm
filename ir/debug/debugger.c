@@ -620,9 +620,11 @@ static void set_dbg_level(const char *name, unsigned lvl)
 {
   firm_dbg_module_t *module = dbg_register(name);
 
-  firm_dbg_set_mask(module, lvl);
+  if (firm_dbg_get_mask(module) != lvl) {
+    firm_dbg_set_mask(module, lvl);
 
-  dbg_printf("Setting debug mask of module %s to %u\n", name, lvl);
+    dbg_printf("Setting debug mask of module %s to %u\n", name, lvl);
+  }
 }
 
 /**
