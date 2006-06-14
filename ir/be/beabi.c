@@ -354,29 +354,6 @@ static void stack_layout_dump(FILE *file, be_stack_layout_t *frame)
 }
 
 /**
- * Walker: Replaces Sels of frame type and
- * value param type entities by FrameAddress.
- */
-static void lower_frame_sels_walker(ir_node *irn, void *data)
-{
-	if (is_Sel(irn)) {
-		be_abi_irg_t *env = data;
-		ir_graph *irg     = current_ir_graph;
-		ir_node  *frame   = get_irg_frame(irg);
-		ir_node  *ptr     = get_Sel_ptr(irn);
-
-		if (ptr == frame || ptr == get_irg_value_param_base(irg)) {
-			entity       *ent   = get_Sel_entity(irn);
-			ir_node      *bl    = get_nodes_block(irn);
-			ir_node      *nw;
-
-			nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
-			exchange(irn, nw);
-		}
-	}
-}
-
-/**
  * Returns non-zero if the call argument at given position
  * is transfered on the stack.
  */
@@ -1309,6 +1286,149 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	return ret;
 }
 
+typedef struct lower_frame_sels_env_t {
+	be_abi_irg_t *env;
+	entity       *value_param_list;  /**< the list of all value param antities */
+} lower_frame_sels_env_t;
+
+/**
+ * Walker: Replaces Sels of frame type and
+ * value param type entities by FrameAddress.
+ */
+static void lower_frame_sels_walker(ir_node *irn, void *data)
+{
+	lower_frame_sels_env_t *ctx = data;
+
+	if (is_Sel(irn)) {
+		ir_graph *irg        = current_ir_graph;
+		ir_node  *frame      = get_irg_frame(irg);
+		ir_node  *param_base = get_irg_value_param_base(irg);
+		ir_node  *ptr        = get_Sel_ptr(irn);
+
+		if (ptr == frame || ptr == param_base) {
+			be_abi_irg_t *env = ctx->env;
+			entity       *ent = get_Sel_entity(irn);
+			ir_node      *bl  = get_nodes_block(irn);
+			ir_node      *nw;
+
+			nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
+			exchange(irn, nw);
+
+			if (ptr == param_base) {
+				set_entity_link(ent, ctx->value_param_list);
+				ctx->value_param_list = ent;
+			}
+		}
+	}
+}
+
+/**
+ * Check if a value parameter is transmitted as a register.
+ * This might happen if the address of an parameter is taken which is
+ * transmitted in registers.
+ *
+ * Note that on some architectures this case must be handled specially
+ * because the place of the backing store is determined by their ABI.
+ *
+ * In the default case we move the entity to the frame type and create
+ * a backing store into the first block.
+ */
+static void fix_address_of_parameter_access(be_abi_irg_t *env, entity *value_param_list) {
+	be_abi_call_t *call = env->call;
+	ir_graph *irg       = env->birg->irg;
+	entity *ent, *next_ent, *new_list;
+	ir_type *frame_tp;
+	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
+
+	new_list = NULL;
+	for (ent = value_param_list; ent; ent = next_ent) {
+		int i = get_struct_member_index(get_entity_owner(ent), ent);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
+
+		next_ent = get_entity_link(ent);
+		if (arg->in_reg) {
+			DBG((dbg, LEVEL_2, "\targ #%d need backing store\n", i));
+			set_entity_link(ent, new_list);
+			new_list = ent;
+		}
+	}
+	if (new_list) {
+		/* ok, change the graph */
+		ir_node *start_bl = get_irg_start_block(irg);
+		ir_node *first_bl = NULL;
+		ir_node *frame, *imem, *nmem, *store, *mem, *args, *args_bl;
+		const ir_edge_t *edge;
+		optimization_state_t state;
+		int offset;
+
+		foreach_block_succ(start_bl, edge) {
+			ir_node *succ = get_edge_src_irn(edge);
+			if (start_bl != succ) {
+				first_bl = succ;
+				break;
+			}
+		}
+		assert(first_bl);
+		/* we had already removed critical edges, so the following
+		   assertion should be always true. */
+		assert(get_Block_n_cfgpreds(first_bl) == 1);
+
+		/* now create backing stores */
+		frame = get_irg_frame(irg);
+		imem = get_irg_initial_mem(irg);
+
+		save_optimization_state(&state);
+		set_optimize(0);
+		nmem = new_r_Proj(irg, first_bl, get_irg_start(irg), mode_M, pn_Start_M);
+		restore_optimization_state(&state);
+
+		/* reroute all edges to the new memory source */
+		edges_reroute(imem, nmem, irg);
+
+		store   = NULL;
+		mem     = imem;
+		args    = get_irg_args(irg);
+		args_bl = get_nodes_block(args);
+		for (ent = new_list; ent; ent = get_entity_link(ent)) {
+			int     i     = get_struct_member_index(get_entity_owner(ent), ent);
+			ir_type *tp   = get_entity_type(ent);
+			ir_mode *mode = get_type_mode(tp);
+			ir_node *addr;
+
+			/* address for the backing store */
+			addr = be_new_FrameAddr(env->isa->sp->reg_class, irg, first_bl, frame, ent);
+
+			if (store)
+				mem = new_r_Proj(irg, first_bl, store, mode_M, pn_Store_M);
+
+			/* the backing store itself */
+			store = new_r_Store(irg, first_bl, mem, addr,
+			                    new_r_Proj(irg, args_bl, args, mode, i));
+		}
+		/* the new memory Proj gets the last Proj from store */
+		set_Proj_pred(nmem, store);
+		set_Proj_proj(nmem, pn_Store_M);
+
+		/* move all entities to the frame type */
+		frame_tp = get_irg_frame_type(irg);
+		offset   = get_type_size_bytes(frame_tp);
+		for (ent = new_list; ent; ent = get_entity_link(ent)) {
+			ir_type *tp = get_entity_type(ent);
+			int align = get_type_alignment_bytes(tp);
+
+			offset += align - 1;
+			offset &= -align;
+			set_entity_owner(ent, frame_tp);
+			add_class_member(frame_tp, ent);
+			/* must be automatic to set a fixed layout */
+			set_entity_allocation(ent, allocation_automatic);
+			set_entity_offset_bytes(ent, offset);
+			offset += get_type_size_bytes(tp);
+		}
+		set_type_size_bytes(frame_tp, offset);
+	}
+}
+
 /**
  * Modify the irg itself and the frame type.
  */
@@ -1324,8 +1444,8 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *mem              = get_irg_initial_mem(irg);
 	ir_type *method_type      = get_entity_type(get_irg_entity(irg));
 	pset *dont_save           = pset_new_ptr(8);
-	int n_params              = get_method_n_params(method_type);
 
+	int n_params;
 	int i, j, n;
 
 	reg_node_map_t *rm;
@@ -1337,6 +1457,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *arg_tuple;
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
+	lower_frame_sels_env_t ctx;
 
 	bitset_t *used_proj_nr;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
@@ -1344,14 +1465,29 @@ static void modify_irg(be_abi_irg_t *env)
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
 	/* Convert the Sel nodes in the irg to frame load/store/addr nodes. */
-	irg_walk_graph(irg, lower_frame_sels_walker, NULL, env);
+	ctx.env              = env;
+	ctx.value_param_list = NULL;
+	irg_walk_graph(irg, lower_frame_sels_walker, NULL, &ctx);
 
 	env->frame = obstack_alloc(&env->obst, sizeof(env->frame[0]));
 	env->regs  = pmap_create();
 
 	used_proj_nr = bitset_alloca(1024);
+	n_params     = get_method_n_params(method_type);
 	args         = obstack_alloc(&env->obst, n_params * sizeof(args[0]));
 	memset(args, 0, n_params * sizeof(args[0]));
+
+	/* Check if a value parameter is transmitted as a register.
+	 * This might happen if the address of an parameter is taken which is
+	 * transmitted in registers.
+	 *
+	 * Note that on some architectures this case must be handled specially
+	 * because the place of the backing store is determined by their ABI.
+	 *
+	 * In the default case we move the entity to the frame type and create
+	 * a backing store into the first block.
+	 */
+	fix_address_of_parameter_access(env, ctx.value_param_list);
 
 	/* Fill the argument vector */
 	arg_tuple = get_irg_args(irg);
