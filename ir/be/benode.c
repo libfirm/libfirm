@@ -188,10 +188,9 @@ static int FrameAddr_cmp_attr(ir_node *a, ir_node *b) {
 	be_frame_attr_t *a_attr = get_irn_attr(a);
 	be_frame_attr_t *b_attr = get_irn_attr(b);
 
-	if (cmp_node_attr(&a_attr->node_attr, &b_attr->node_attr))
-		return 1;
-	return (a_attr->ent    != b_attr->ent ||
-	        a_attr->offset != b_attr->offset);
+	if (a_attr->ent == b_attr->ent && a_attr->offset == b_attr->offset)
+		return cmp_node_attr(&a_attr->node_attr, &b_attr->node_attr);
+	return 1;
 }
 
 void be_node_init(void) {
