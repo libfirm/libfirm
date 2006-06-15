@@ -1379,6 +1379,8 @@ luke_blockwalker(ir_node * bb, void * data)
 			pset_remove_ptr(live, irn);
 		}
 
+		if(is_Proj(irn)) continue;
+
 		/* init set of irn's arguments */
 		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 			ir_node        *irn_arg = get_irn_n(irn, i);
@@ -3104,8 +3106,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	// move reloads upwards
 	move_reloads_upward(&si);
-	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
-	dump_pressure_graph(&si, dump_suffix3);
+	//irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
+	//dump_pressure_graph(&si, dump_suffix3);
 
 	be_analyze_regpressure(chordal_env, "-post");
 
@@ -3118,7 +3120,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 #endif
 	free_lpp(si.lpp);
 	obstack_free(&obst, NULL);
-//	exit(0);
+	DBG((si.dbg, LEVEL_1, "\tdone.\n"));
 }
 
 #else				/* WITH_ILP */
