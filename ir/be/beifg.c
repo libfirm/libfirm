@@ -17,6 +17,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef __linux__
+#include <malloc.h>
+#endif /* __linux__ */
+
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
