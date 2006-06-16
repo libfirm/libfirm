@@ -1806,9 +1806,10 @@ void add_Sync_pred (ir_node *node, ir_node *pred) {
   edges_notify_edge(node, l, node->in[l], NULL, irg);
 }
 
+/* Returns the source language type of a Proj node. */
 ir_type *get_Proj_type(ir_node *n)
 {
-  ir_type *tp   = NULL;
+  ir_type *tp   = firm_unknown_type;
   ir_node *pred = get_Proj_pred(n);
 
   switch (get_irn_opcode(pred)) {
