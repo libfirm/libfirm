@@ -271,7 +271,7 @@ static int be_ifg_check_cmp_nodes(const void *a, const void *b)
 	return QSORT_CMP(nr_a, nr_b);
 }
 
-void be_ifg_check_sorted(const be_ifg_t *ifg, FILE *f)
+void be_ifg_check_sorted(const be_ifg_t *ifg)
 {
 	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
 	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
@@ -285,6 +285,12 @@ void be_ifg_check_sorted(const be_ifg_t *ifg, FILE *f)
 
 	be_ifg_foreach_node(ifg, iter1, n)
 	{
+		if(!node_is_in_irgs_storage(ifg->env->irg, n))
+		{
+			printf ("+%F is in ifg but not in the current irg!",n);
+			assert (node_is_in_irgs_storage(ifg->env->irg, n));
+		}
+
 		all_nodes[i] = n;
 		i++;
 	}
@@ -308,14 +314,14 @@ void be_ifg_check_sorted(const be_ifg_t *ifg, FILE *f)
 
 		qsort(neighbours, j, sizeof(neighbours[0]), be_ifg_check_cmp_nodes);
 
-		ir_fprintf(f, "%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
+		ir_printf("%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
 
 		for(k = 0; k < j; k++)
 		{
-			ir_fprintf(f, "%+F, ", neighbours[k]);
+			ir_printf("%+F, ", neighbours[k]);
 		}
 
-		ir_fprintf(f, "\n");
+		ir_printf("\n");
 
 		free(neighbours);
 	}
@@ -329,10 +335,10 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	int tests = BE_CH_PERFORMANCETEST_COUNT;
 	coloring_t coloring;
 
-#ifdef linux
+#ifdef __linux__
 	struct mallinfo minfo;
 	int used_memory = 0;
-#endif /* linux */
+#endif /* __linux__ */
 
 	int i = 0;
 	int rt;
@@ -352,10 +358,10 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		for (i = 0; i<tests; i++) /* performance test with std */
 		{
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks;
-#endif /* linux */
+#endif /* __linux__ */
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -365,10 +371,10 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks - used_memory;
-#endif /* linux */
+#endif /* __linux__ */
 
 			coloring_restore(&coloring);
 
@@ -397,23 +403,23 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		elapsed_usec = elapsed_usec / tests;
 
 		ir_printf("\nstd:; %+F; ",current_ir_graph);
-#ifdef linux
+#ifdef __linux__
 		ir_printf("%u; ", used_memory);
-#endif /* linux */
+#endif /* __linux__ */
 		ir_printf("%u; ", elapsed_usec);
 
 		i=0;
-#ifdef linux
+#ifdef __linux__
 		used_memory=0;
-#endif /* linux */
+#endif /* __linux__ */
 		elapsed_usec=0;
 
 		for (i = 0; i<tests; i++)  /* performance test with clique */
 		{
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks;
-#endif /* linux */
+#endif /* __linux__ */
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -423,10 +429,10 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks - used_memory;
-#endif /* linux */
+#endif /* __linux__ */
 
 			coloring_restore(&coloring);
 
@@ -455,23 +461,23 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		elapsed_usec = elapsed_usec / tests;
 
 		ir_printf("\nclique:; %+F; ",current_ir_graph);
-#ifdef linux
+#ifdef __linux__
 		ir_printf("%u; ", used_memory);
-#endif /* linux */
+#endif /* __linux__ */
 		ir_printf("%u; ", elapsed_usec);
 
 		i=0;
-#ifdef linux
+#ifdef __linux__
 		used_memory=0;
-#endif /* linux */
+#endif /* __linux__ */
 		elapsed_usec=0;
 
 		for (i = 0; i<tests; i++)  /* performance test with list */
 		{
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks;
-#endif /* linux */
+#endif /* __linux__ */
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -481,10 +487,10 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks - used_memory;
-#endif /* linux */
+#endif /* __linux__ */
 
 			coloring_restore(&coloring);
 
@@ -513,23 +519,23 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		elapsed_usec = elapsed_usec / tests;
 
 		ir_printf("\nlist:; %+F; ",current_ir_graph);
-#ifdef linux
+#ifdef __linux__
 		ir_printf("%u; ", used_memory);
-#endif /* linux */
+#endif /* __linux__ */
 		ir_printf("%u; ", elapsed_usec);
 
 		i=0;
-#ifdef linux
+#ifdef __linux__
 		used_memory=0;
-#endif /* linux */
+#endif /* __linux__ */
 		elapsed_usec=0;
 
 		for (i = 0; i<tests; i++)  /* performance test with pointer */
 		{
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks;
-#endif /* linux */
+#endif /* __linux__ */
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -539,10 +545,10 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef linux
+#ifdef __linux__
 			minfo = mallinfo();
 			used_memory = minfo.uordblks - used_memory;
-#endif /* linux */
+#endif /* __linux__ */
 
 			coloring_restore(&coloring);
 
@@ -571,15 +577,15 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		elapsed_usec = elapsed_usec / tests;
 
 		ir_printf("\npointer:; %+F; ",current_ir_graph);
-#ifdef linux
+#ifdef __linux__
 		ir_printf("%u; ", used_memory);
-#endif /* linux */
+#endif /* __linux__ */
 		ir_printf("%u; ", elapsed_usec);
 
 		i=0;
-#ifdef linux
+#ifdef __linux__
 		used_memory=0;
-#endif /* linux */
+#endif /* __linux__ */
 		elapsed_usec=0;
 	}
 
