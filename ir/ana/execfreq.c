@@ -145,12 +145,12 @@ get_cf_probability(ir_node *bb, int pos)
 
   double  sum = 0.0;
   double  cur = 0.0;
-  int     i, n;
+  int     i;
   ir_node *pred = get_Block_cfgpred_block(bb, pos);
 
   cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : LOOP_WEIGHT;
 
-  for(i = 0, n = get_Block_n_cfg_outs(pred); i < n; ++i) {
+  for(i = get_Block_n_cfg_outs(pred) - 1; i >= 0; --i) {
     ir_node *succ = get_Block_cfg_out(pred, i);
 
     sum += get_loop_depth(get_irn_loop(succ)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : LOOP_WEIGHT;
@@ -166,7 +166,7 @@ compute_execfreq(ir_graph * irg)
   size_t        size;
   double       *matrix;
   double       *rhs;
-  size_t        i = 0;
+  int           i;
   freq_t       *freq;
   walkerdata_t  wd;
 #ifdef USE_GSL
