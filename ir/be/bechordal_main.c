@@ -274,6 +274,7 @@ FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const cha
 
 void check_ifg_implementations(be_chordal_env_t *chordal_env)
 {
+/*
 	FILE *f;
 
 	f = be_chordal_open(chordal_env, "std", "log");
@@ -295,7 +296,7 @@ void check_ifg_implementations(be_chordal_env_t *chordal_env)
 	chordal_env->ifg = be_ifg_pointer_new(chordal_env);
 	be_ifg_check_sorted(chordal_env->ifg, f);
 	fclose(f);
-
+*/
 	chordal_env->ifg = NULL;
 };
 
