@@ -423,6 +423,9 @@ static void ifg_clique_free(void *self)
 	ifg_clique_t *ifg = self;
 	obstack_free(&ifg->obst, NULL);
 
+	bitset_free(ifg->visited_neighbours);
+	bitset_free(ifg->visited_nodes);
+
 	free(self);
 }
 

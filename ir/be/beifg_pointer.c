@@ -592,6 +592,8 @@ static void ifg_pointer_free(void *self)
 	obstack_free(&ifg->obst, NULL);
 	phase_free(&ifg->ph);
 
+	bitset_free(ifg->visited_neighbours);
+
 	free(self);
 }
 
