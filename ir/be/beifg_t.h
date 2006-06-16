@@ -35,6 +35,7 @@ struct _be_ifg_impl_t {
 
 struct _be_ifg_t {
 	const be_ifg_impl_t *impl;
+	const be_chordal_env_t *env;
 };
 
 #ifdef _BE_IFG_USE_MACROS
