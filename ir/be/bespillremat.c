@@ -56,7 +56,7 @@
 
 #define DUMP_SOLUTION
 #define DUMP_ILP
-#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
+//#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
 #define COLLECT_REMATS /* enable rematerialization */
 #define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
 #define REMAT_WHILE_LIVE /* only remat values that are live */
@@ -851,6 +851,37 @@ is_diverge_edge(const ir_node * bb)
 #endif
 }
 
+static void
+walker_regclass_copy_insertor(ir_node * irn, void * data)
+{
+	spill_ilp_t    *si = data;
+
+	if(is_Phi(irn) && has_reg_class(si, irn)) {
+		int n;
+
+		for(n=get_irn_arity(irn)-1; n>=0; --n) {
+			ir_node  *phi_arg = get_irn_n(irn, n);
+			ir_node  *bb = get_Block_cfgpred_block(get_nodes_block(irn), n);
+
+			if(!has_reg_class(si, phi_arg)) {
+				ir_node   *copy = be_new_Copy(si->cls, si->chordal_env->irg, bb, phi_arg);
+				ir_node   *pos = sched_block_last_noncf(si, bb);
+				op_t      *op = obstack_alloc(si->obst, sizeof(*op));
+
+				DBG((si->dbg, LEVEL_2, "\t copy to my regclass for arg %+F of %+F\n", phi_arg, irn));
+				sched_add_after(pos, copy);
+				set_irn_n(irn, n, copy);
+
+				op->is_remat = 0;
+				op->attr.live_range.args.reloads = NULL;
+				op->attr.live_range.ilp = ILP_UNDEF;
+				set_irn_link(copy, op);
+			}
+		}
+	}
+}
+
+
 /**
  * Insert (so far unused) remats into the irg to
  * recompute the potential liveness of all values
@@ -1115,6 +1146,15 @@ luke_endwalker(ir_node * bb, void * data)
 
 	spill_bb->ilp = new_set(cmp_spill, pset_count(live)+pset_count(use_end));
 
+	/* if this is a merge edge we can reload at the end of this block */
+	if(is_merge_edge(bb)) {
+		spill_bb->reloads = new_set(cmp_keyval, pset_count(live)+pset_count(use_end));
+	} else if(pset_count(use_end)){
+		spill_bb->reloads = new_set(cmp_keyval, pset_count(use_end));
+	} else {
+		spill_bb->reloads = NULL;
+	}
+
 	pset_foreach(live,irn) {
 		spill_t     query,
 					*spill;
@@ -1139,6 +1179,20 @@ luke_endwalker(ir_node * bb, void * data)
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
 		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
 
+		if(is_merge_edge(bb)) {
+			ilp_var_t   reload;
+			ilp_cst_t   rel_cst;
+
+			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
+			reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
+			set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
+
+			/* reload <= mem_out */
+			rel_cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+			lpp_set_factor_fast(si->lpp, rel_cst, reload, 1.0);
+			lpp_set_factor_fast(si->lpp, rel_cst, spill->mem_out, -1.0);
+	}
+
 		spill->reg_in = ILP_UNDEF;
 		spill->mem_in = ILP_UNDEF;
 	}
@@ -1147,7 +1201,9 @@ luke_endwalker(ir_node * bb, void * data)
 		spill_t     query,
 					*spill;
 		double      spill_cost;
-		ilp_cst_t   end_use_req;
+		ilp_cst_t   end_use_req,
+					rel_cst;
+		ilp_var_t   reload;
 
 		query.irn = irn;
 		spill = set_insert(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
@@ -1164,6 +1220,15 @@ luke_endwalker(ir_node * bb, void * data)
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
 		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
+
+		ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
+		reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
+		set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
+
+		/* reload <= mem_out */
+		rel_cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+		lpp_set_factor_fast(si->lpp, rel_cst, reload, 1.0);
+		lpp_set_factor_fast(si->lpp, rel_cst, spill->mem_out, -1.0);
 
 		spill->reg_in = ILP_UNDEF;
 		spill->mem_in = ILP_UNDEF;
@@ -1343,31 +1408,19 @@ luke_blockwalker(ir_node * bb, void * data)
 	/* init live values at end of block */
 	get_live_end(si, bb, live);
 
-
-	/* if this is a merge edge we can reload at the end of this block */
-	if(is_merge_edge(bb)) {
-		spill_bb->reloads = new_set(cmp_keyval, pset_count(live));
-	} else {
-		spill_bb->reloads = NULL;
-	}
-
 	pset_foreach(live, irn) {
 		op_t           *op;
-		ilp_var_t       reload;
+		ilp_var_t       reload = ILP_UNDEF;
 
 		spill = set_find_spill(spill_bb->ilp, irn);
 		assert(spill);
 
 		if(spill_bb->reloads) {
-			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
-			reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
+			keyval_t *keyval = set_find_keyval(spill_bb->reloads, irn);
 
-			set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
-
-			/* reload <= mem_out */
-			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
-			lpp_set_factor_fast(si->lpp, cst, reload, 1.0);
-			lpp_set_factor_fast(si->lpp, cst, spill->mem_out, -1.0);
+			if(keyval) {
+				reload = PTR_TO_INT(keyval->val);
+			}
 		}
 
 		op = get_irn_link(irn);
@@ -1382,7 +1435,7 @@ luke_blockwalker(ir_node * bb, void * data)
 
 		/* reg_out - reload - remat - live_range <= 0 */
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
-		if(spill_bb->reloads) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
+		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
 		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, -1.0);
 		foreach_pre_remat(si, bb, tmp) {
 			op_t     *remat_op = get_irn_link(tmp);
@@ -1393,8 +1446,12 @@ luke_blockwalker(ir_node * bb, void * data)
 		/* maybe we should also assure that reg_out >= live_range etc. */
 	}
 
-	/* start new live ranges for values used by remats at end of block */
+	/*
+	 * start new live ranges for values used by remats at end of block
+	 * and assure the remat args are available
+	 */
 	foreach_pre_remat(si, bb, tmp) {
+		op_t     *remat_op = get_irn_link(tmp);
 		int       n;
 
 		for (n=get_irn_arity(tmp)-1; n>=0; --n) {
@@ -1406,7 +1463,7 @@ luke_blockwalker(ir_node * bb, void * data)
 
 			/* if value is becoming live through use by remat */
 			if(!pset_find_ptr(live, remat_arg)) {
-				ir_snprintf(buf, sizeof(buf), "lr_%N_begin%N", remat_arg, bb);
+				ir_snprintf(buf, sizeof(buf), "lr_%N_end%N", remat_arg, bb);
 				prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
 
 				arg_op->attr.live_range.ilp = prev_lr;
@@ -1417,9 +1474,26 @@ luke_blockwalker(ir_node * bb, void * data)
 				pset_insert_ptr(live, remat_arg);
 				add_to_spill_bb(si, bb, remat_arg);
 			}
+
+			/* remat <= live_rang(remat_arg) [ + reload(remat_arg) ] */
+			ir_snprintf(buf, sizeof(buf), "req_remat_%N_arg_%N", tmp, remat_arg);
+			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+
+			lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
+			lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, -1.0);
+
+			/* use reload placed for this argument */
+			if(spill_bb->reloads) {
+				keyval_t *keyval = set_find_keyval(spill_bb->reloads, remat_arg);
+
+				if(keyval) {
+					ilp_var_t       reload = PTR_TO_INT(keyval->val);
+
+					lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
+				}
+			}
 		}
 	}
-
 	DBG((si->dbg, LEVEL_4, "\t   %d values live at end of block %+F\n", pset_count(live), bb));
 
 
@@ -1934,11 +2008,11 @@ luke_blockwalker(ir_node * bb, void * data)
 
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_in, 1.0);
 
-		/* spill + reg_in <= 1 */
+		/* spill + mem_in <= 1 */
 		ir_snprintf(buf, sizeof(buf), "nospill_%N_%N", irn, bb);
 		nospill = lpp_add_cst(si->lpp, buf, lpp_less, 1);
 
-		lpp_set_factor_fast(si->lpp, nospill, spill->reg_in, 1.0);
+		lpp_set_factor_fast(si->lpp, nospill, spill->mem_in, 1.0);
 		lpp_set_factor_fast(si->lpp, nospill, spill->spill, 1.0);
 
 	}
@@ -1951,7 +2025,7 @@ luke_blockwalker(ir_node * bb, void * data)
 		lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
 	}
 
-	/* forall remat2 add requirements */
+	/* forall post remats add requirements */
 	foreach_post_remat(bb, tmp) {
 		int         n;
 
@@ -1964,7 +2038,7 @@ luke_blockwalker(ir_node * bb, void * data)
 			spill = set_find_spill(spill_bb->ilp, remat_arg);
 			assert(spill);
 
-			/* TODO verify this is placed correctly */
+			/* remat <= reg_in_argument */
 			ir_snprintf(buf, sizeof(buf), "req_remat2_%N_%N_arg_%N", tmp, bb, remat_arg);
 			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 			lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
@@ -2061,6 +2135,13 @@ luke_blockwalker(ir_node * bb, void * data)
 	/* this must only be done for values that are not defined in this block */
 	/* TODO are these values at start of block? if yes, just check whether this is a diverge edge and skip the loop */
 	pset_foreach(live, irn) {
+		/*
+		 * if value is defined in this block we can anways place the spill directly after the def
+		 *    -> no constraint necessary
+		 */
+		if(!is_Phi(irn) && get_nodes_block(irn) == bb) continue;
+
+
 		spill = set_find_spill(spill_bb->ilp, irn);
 		assert(spill);
 
@@ -2070,47 +2151,37 @@ luke_blockwalker(ir_node * bb, void * data)
 		lpp_set_factor_fast(si->lpp, cst, spill->spill, 1.0);
 		if(is_diverge_edge(bb)) lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
 
-		sched_foreach_op(bb, tmp) {
-			op_t   *op = get_irn_link(tmp);
+		if(!is_Phi(irn)) {
+			sched_foreach_op(bb, tmp) {
+				op_t   *op = get_irn_link(tmp);
 
-			if(is_Phi(tmp)) continue;
-			assert(!is_Proj(tmp));
+				if(is_Phi(tmp)) continue;
+				assert(!is_Proj(tmp));
 
-			if(op->is_remat) {
-				ir_node   *value = op->attr.remat.remat->value;
+				if(op->is_remat) {
+					ir_node   *value = op->attr.remat.remat->value;
 
-				if(value == irn) {
-					/* only collect remats up to the first use of a value */
-					lpp_set_factor_fast(si->lpp, cst, op->attr.remat.ilp, -1.0);
-				}
-			} else {
-				int   n;
-
-				for (n=get_irn_arity(tmp)-1; n>=0; --n) {
-					ir_node    *arg = get_irn_n(tmp, n);
-
-					if(arg == irn) {
-						/* if a value is used stop collecting remats */
-						cst = ILP_UNDEF;
+					if(value == irn) {
+						/* only collect remats up to the first use of a value */
+						lpp_set_factor_fast(si->lpp, cst, op->attr.remat.ilp, -1.0);
 					}
-					break;
+				} else {
+					int   n;
+
+					for (n=get_irn_arity(tmp)-1; n>=0; --n) {
+						ir_node    *arg = get_irn_n(tmp, n);
+
+						if(arg == irn) {
+							/* if a value is used stop collecting remats */
+							cst = ILP_UNDEF;
+						}
+						break;
+					}
 				}
+				if(cst == ILP_UNDEF) break;
 			}
-			if(cst == ILP_UNDEF) break;
 		}
 	}
-
-
-	/* if a value is used by a mem-phi, then mem_in of this value is 0 (has to be spilled again into a different slot)
-	   mem_in(phi) -> not mem_in(orig_value) TODO: how does this depend on a certain predecessor?
-	 */
-
-	/* mem_in of mem-phi has associated costs (but first one is free) */
-	/* define n_mem_copies as positive integer in each predecessor block,
-	   #mem_in into this block from predecessor block - 1 weighted with SPILL_COST*execfreq(predecessor)
-	   TODO
-	 */
-
 
 	del_pset(live);
 }
@@ -3013,6 +3084,13 @@ walker_spill_placer(ir_node * bb, void * data) {
 
 		name = si->lpp->vars[spill->spill];
 		if(!is_zero(name->value)) {
+			/* place spill directly after definition */
+			if(get_nodes_block(spill->irn) == bb) {
+				insert_spill(si, spill->irn, spill->irn, spill->irn);
+				continue;
+			}
+
+			/* place spill at bb start */
 			if(spill->reg_in > 0) {
 				name = si->lpp->vars[spill->reg_in];
 				if(!is_zero(name->value)) {
@@ -3020,6 +3098,7 @@ walker_spill_placer(ir_node * bb, void * data) {
 					continue;
 				}
 			}
+			/* place spill after a remat */
 			pset_insert_ptr(spills_to_do, spill->irn);
 		}
 	}
@@ -3098,6 +3177,41 @@ walker_reload_placer(ir_node * bb, void * data) {
 	int            i;
 	irn_live_t    *li;
 
+	/* reloads at end of block */
+	if(spill_bb->reloads) {
+		keyval_t    *keyval;
+
+		set_foreach(spill_bb->reloads, keyval) {
+			ir_node        *irn = (ir_node*)keyval->key;
+			ilp_var_t       reload = PTR_TO_INT(keyval->val);
+			lpp_name_t     *name;
+
+			name = si->lpp->vars[reload];
+			if(!is_zero(name->value)) {
+				ir_node    *reload;
+				ir_node    *insert_pos = bb;
+				ir_node    *prev = sched_block_last_noncf(si, bb);
+				op_t       *prev_op = get_irn_link(prev);
+
+				/* insert reload before pre-remats */
+				while(!sched_is_end(prev) && !be_is_Reload(prev) && !be_is_Spill(prev)
+						&& prev_op->is_remat && prev_op->attr.remat.pre) {
+					insert_pos = prev;
+
+					prev = sched_prev(insert_pos);
+					prev_op = get_irn_link(prev);
+				}
+
+				reload = insert_reload(si, irn, insert_pos);
+
+#ifdef KEEPALIVE_RELOADS
+				pset_insert_ptr(si->spills, reload);
+#endif
+			}
+		}
+	}
+
+	/* walk and insert more reloads and collect remats */
 	sched_foreach_reverse(bb, irn) {
 		op_t     *op = get_irn_link(irn);
 
@@ -3156,40 +3270,6 @@ walker_reload_placer(ir_node * bb, void * data) {
 		}
 	}
 
-	/* reloads at end of block */
-	if(spill_bb->reloads) {
-		keyval_t    *keyval;
-
-		set_foreach(spill_bb->reloads, keyval) {
-			ir_node        *irn = (ir_node*)keyval->key;
-			ilp_var_t       reload = PTR_TO_INT(keyval->val);
-			lpp_name_t     *name;
-
-			name = si->lpp->vars[reload];
-			if(!is_zero(name->value)) {
-				ir_node    *reload;
-				ir_node    *insert_pos = bb;
-				ir_node    *prev = sched_prev(insert_pos);
-				op_t       *prev_op = get_irn_link(prev);
-
-				/* insert reload before pre-remats */
-				while(!sched_is_end(prev) && !be_is_Reload(prev) && !be_is_Spill(prev)
-						&& prev_op->is_remat && prev_op->attr.remat.pre) {
-					insert_pos = prev;
-
-					prev = sched_prev(insert_pos);
-					prev_op = get_irn_link(prev);
-				}
-
-				reload = insert_reload(si, irn, insert_pos);
-
-#ifdef KEEPALIVE_RELOADS
-				pset_insert_ptr(si->spills, reload);
-#endif
-			}
-		}
-	}
-
 	del_set(spill_bb->ilp);
 	if(spill_bb->reloads) del_set(spill_bb->reloads);
 }
@@ -3222,7 +3302,7 @@ walker_kill_unused(ir_node * bb, void * data)
 		if(!lc_bitset_is_set(kh->used, get_irn_idx(irn))) {
 			if(be_is_Spill(irn) || be_is_Reload(irn)) {
 				DBG((kh->si->dbg, LEVEL_1, "\t SUBOPTIMAL! %+F IS UNUSED (cost: %g)\n", irn, get_cost(kh->si, irn)*execution_frequency(kh->si, bb)));
-#if !defined(KEEPALIVE_SPILLS) && !defined(KEEPALIVE_RELOADS)
+#if 0
 				assert(lpp_get_sol_state(kh->si->lpp) != lpp_optimal && "optimal solution is suboptimal?");
 #endif
 			}
@@ -3478,6 +3558,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	dump_graph_with_remats(chordal_env->irg, dump_suffix);
 #endif
 
+	/* insert copies for phi arguments not in my regclass */
+	irg_walk_graph(chordal_env->irg, walker_regclass_copy_insertor, NULL, &si);
 
 	/* recompute liveness */
 	DBG((si.dbg, LEVEL_1, "Recomputing liveness\n"));
