@@ -45,10 +45,10 @@
 
 int firm_gaussjordansolve(double *A, double *vec, int nsize)
 {
-  int i, j, row, col, col2, biggest_r, biggest_c;
+  int i, j, row, col, col2, biggest_r, biggest_c, t;
   double big, temp, sum;
-  double *x = xmalloc(nsize * sizeof(double));
-  double *scramvec = xmalloc(nsize * sizeof(double));
+  double *scramvec = xmalloc(nsize * sizeof(*scramvec));
+  int *x = xmalloc(nsize * sizeof(*x));
 
 #define _A(row,col) A[(row)*nsize + (col)]
   /* init x[] */
@@ -62,12 +62,12 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
     /* find the largest left in LRH box */
     for(row=col;row<nsize;row++) {
       for(col2=col;col2<nsize;col2++) {
-	temp = fabs(_A(row,col2));
-	if (temp > big) {
-	  biggest_r = row;
-	  biggest_c = col2;
-	  big = temp; /* largest element left */
-	}
+        temp = fabs(_A(row,col2));
+        if (temp > big) {
+          biggest_r = row;
+          biggest_c = col2;
+          big = temp; /* largest element left */
+        }
       }
     }
     if (big < SMALL) {
@@ -91,9 +91,9 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
       _A(i,biggest_c) = temp;
     }
     /* swap unknowns */
-    temp = x[col];
+    t = x[col];
     x[col] = x[biggest_c];
-    x[biggest_c] = temp;
+    x[biggest_c] = t;
 
     /* partially annihilate this col */
     /* zero columns below diag */
@@ -104,13 +104,13 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
 
       /* annihilates A[][] */
       for(i=col;i<nsize;i++)
-	_A(row,i) = _A(row,i) - temp * _A(col,i);
+        _A(row,i) = _A(row,i) - temp * _A(col,i);
 
       /* same op on vec */
       vec[row] = vec[row] - temp * vec[col];
     }
   }
-  /* back-solve, store solution in srcamvec */
+  /* back-solve, store solution in scramvec */
   scramvec[nsize - 1] = vec[nsize - 1] / _A(nsize - 1,nsize - 1);
 
   /* answer needs sorting */
