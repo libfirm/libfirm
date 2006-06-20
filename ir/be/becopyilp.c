@@ -54,6 +54,7 @@ static INLINE int sr_is_simplicial(size_red_t *sr, const ir_node *ifn) {
 	be_ifg_foreach_neighbour(ifg, iter, ifn, curr)
 		if (!sr_is_removed(sr, curr))
 			all[size++] = curr;
+	be_ifg_neighbours_break(ifg, iter);
 
 	/* check if these form a clique */
 	for (i=0; i<size; ++i)
@@ -70,7 +71,7 @@ void sr_remove(size_red_t *sr) {
 	int redo = 1;
 	int n_nodes = 0;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
-	void *iter = be_ifg_neighbours_iter_alloca(ifg);
+	void *iter = be_ifg_nodes_iter_alloca(ifg);
 
 	while (redo) {
 		redo = 0;
@@ -93,6 +94,7 @@ void sr_remove(size_red_t *sr) {
           	 	}
 			}
 		}
+		be_ifg_nodes_break(ifg, iter);
 	}
 }
 
@@ -115,6 +117,7 @@ void sr_reinsert(size_red_t *sr) {
 			if (!sr_is_removed(sr, other)) /* only inspect nodes which are in graph right now */
 				bitset_set(used_cols, get_irn_col(sr->co, other));
 		}
+		be_ifg_neighbours_break(ifg, iter);
 
 		/* now all bits not set are possible colors */
 		free_col = bitset_next_clear(used_cols, 0);
