@@ -48,7 +48,7 @@
 
 /** Defines values for the ifg performance test */
 #define BE_CH_PERFORMANCETEST_MIN_NODES (50)
-#define BE_CH_PERFORMANCETEST_COUNT (10)
+#define BE_CH_PERFORMANCETEST_COUNT (500)
 
 typedef struct _coloring_t coloring_t;
 
@@ -339,10 +339,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	int tests = BE_CH_PERFORMANCETEST_COUNT;
 	coloring_t coloring;
 
-#ifdef __linux__
-	struct mallinfo minfo;
-	int used_memory = 0;
-#endif /* __linux__ */
+	int used_memory;
 
 	int i = 0;
 	int rt;
@@ -354,7 +351,6 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 	if ((int) get_irg_estimated_node_cnt >= BE_CH_PERFORMANCETEST_MIN_NODES)
 	{
-
 		coloring_init(&coloring, chordal_env->irg, chordal_env->birg->main_env->arch_env);
 		coloring_save(&coloring);
 
@@ -362,10 +358,8 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		for (i = 0; i<tests; i++) /* performance test with std */
 		{
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks;
-#endif /* __linux__ */
+
+			used_memory = lc_get_heap_used_bytes();
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -375,10 +369,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks - used_memory;
-#endif /* __linux__ */
+			used_memory = lc_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -406,24 +397,15 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 
-		ir_printf("\nstd:; %+F; ",current_ir_graph);
-#ifdef __linux__
-		ir_printf("%u; ", used_memory);
-#endif /* __linux__ */
-		ir_printf("%u; ", elapsed_usec);
+		ir_printf("\nstd:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
 
 		i=0;
-#ifdef __linux__
 		used_memory=0;
-#endif /* __linux__ */
 		elapsed_usec=0;
 
 		for (i = 0; i<tests; i++)  /* performance test with clique */
 		{
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks;
-#endif /* __linux__ */
+			used_memory = lc_get_heap_used_bytes();
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -433,10 +415,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks - used_memory;
-#endif /* __linux__ */
+			used_memory = lc_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -464,24 +443,15 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 
-		ir_printf("\nclique:; %+F; ",current_ir_graph);
-#ifdef __linux__
-		ir_printf("%u; ", used_memory);
-#endif /* __linux__ */
-		ir_printf("%u; ", elapsed_usec);
+		ir_printf("\nclique:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
 
 		i=0;
-#ifdef __linux__
 		used_memory=0;
-#endif /* __linux__ */
 		elapsed_usec=0;
 
 		for (i = 0; i<tests; i++)  /* performance test with list */
 		{
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks;
-#endif /* __linux__ */
+			used_memory = lc_get_heap_used_bytes();
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -491,10 +461,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks - used_memory;
-#endif /* __linux__ */
+			used_memory = lc_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -522,24 +489,15 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 
-		ir_printf("\nlist:; %+F; ",current_ir_graph);
-#ifdef __linux__
-		ir_printf("%u; ", used_memory);
-#endif /* __linux__ */
-		ir_printf("%u; ", elapsed_usec);
+		ir_printf("\nlist:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
 
 		i=0;
-#ifdef __linux__
 		used_memory=0;
-#endif /* __linux__ */
 		elapsed_usec=0;
 
 		for (i = 0; i<tests; i++)  /* performance test with pointer */
 		{
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks;
-#endif /* __linux__ */
+			used_memory = lc_get_heap_used_bytes();
 
 			rt = lc_timer_enter_high_priority();
 			lc_timer_start(timer);
@@ -549,10 +507,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			lc_timer_stop(timer);
 			rt = lc_timer_leave_high_priority();
 
-#ifdef __linux__
-			minfo = mallinfo();
-			used_memory = minfo.uordblks - used_memory;
-#endif /* __linux__ */
+			used_memory = lc_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -580,16 +535,10 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 
-		ir_printf("\npointer:; %+F; ",current_ir_graph);
-#ifdef __linux__
-		ir_printf("%u; ", used_memory);
-#endif /* __linux__ */
-		ir_printf("%u; ", elapsed_usec);
+		ir_printf("\npointer:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
 
 		i=0;
-#ifdef __linux__
 		used_memory=0;
-#endif /* __linux__ */
 		elapsed_usec=0;
 	}
 
