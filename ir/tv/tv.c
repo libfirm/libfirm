@@ -137,13 +137,13 @@ INLINE static void tarval_verify(tarval *tv)
 }
 #endif /* NDEBUG */
 
-static int hash_tv(tarval *tv)
-{
+/** Hash a tarval. */
+static int hash_tv(tarval *tv) {
   return (PTR_TO_INT(tv->value) ^ PTR_TO_INT(tv->mode)) + tv->length;
 }
 
-static int hash_val(const void *value, unsigned int length)
-{
+/** Hash a value. Treat it as a byte array. */
+static int hash_val(const void *value, unsigned int length) {
   unsigned int i;
   unsigned int hash = 0;
 
@@ -922,6 +922,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
            * interpreted unsigned by fc_val_from_str, so this is a HACK */
           snprintf(buffer, 100, "%s",
                    sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC));
+          buffer[100 - 1] = '\0';
           switch (get_mode_size_bits(m))
           {
             case 32:
