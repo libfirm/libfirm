@@ -1317,6 +1317,7 @@ static void dump_node_req(FILE *f, int idx, be_req_t *req)
 	const char *prefix = buf;
 
 	snprintf(buf, sizeof(buf), "#%d ", idx);
+	buf[sizeof(buf) - 1] = '\0';
 
 	if(req->flags != arch_irn_flags_none) {
 		fprintf(f, "%sflags: ", prefix);

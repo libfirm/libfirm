@@ -87,6 +87,7 @@ static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) 
 	char buf[1024];
 
 	snprintf(buf, sizeof(buf), "%s.%s", base, ext);
+	buf[sizeof(buf) - 1] = '\0';
 	if (! (out = fopen(buf, mode))) {
 		fprintf(stderr, "Cannot open file %s in mode %s\n", buf, mode);
 		return NULL;

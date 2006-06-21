@@ -799,6 +799,7 @@ static ir_type *get_spill_type(pmap *types, spill_slot_t *ss) {
 	if (! e) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "spill_slot_type_%s", get_mode_name(ss->largest_mode));
+		buf[sizeof(buf) - 1] = '\0';
 		res = new_type_primitive(new_id_from_str(buf), ss->largest_mode);
 		set_type_alignment_bytes(res, ss->align);
 		pmap_insert(types, ss->largest_mode, res);
@@ -840,6 +841,7 @@ static void assign_entities(ss_env_t *ssenv, int n_slots, spill_slot_t *ss[]) {
 
 		/* build entity */
 		snprintf(buf, sizeof(buf), "spill_slot_%d", i);
+		buf[sizeof(buf) - 1] = '\0';
 		name = new_id_from_str(buf);
 
 		spill_ent = new_entity(frame, name, get_spill_type(ssenv->types, ss[i]));

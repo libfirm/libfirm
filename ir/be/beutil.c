@@ -182,6 +182,7 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 	}
 
 	snprintf(buf, sizeof(buf), "-%02d%s", nr++, suffix);
+	buf[sizeof(buf) - 1] = '\0';
 	dumper(irg, buf);
 }
 

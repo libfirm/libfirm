@@ -475,6 +475,7 @@ static void execute(char *prog_to_call, char *out_file, char *result_file) {
 	int ret_status;
 
 	snprintf(cmd_line, sizeof(cmd_line), "%s -i %s -o %s", prog_to_call, out_file, result_file);
+	cmd_line[sizeof(cmd_line) - 1] = '\0';
 
 	ret_status = system(cmd_line);
 	assert(ret_status != -1 && "Invokation of external register allocator failed");
