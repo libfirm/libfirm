@@ -486,7 +486,9 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	be_remove_dead_nodes_from_schedule(env.irg);
 
 	// cleanup
-	be_dump(env.irg, "-spillmorgan", dump_ir_block_graph_sched);
+	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPILL)
+		be_dump(env.irg, "-spillmorgan", dump_ir_block_graph_sched);
+
 	free_loop_out_edges(&env);
 	del_set(env.loop_attr_set);
 	del_set(env.block_attr_set);
