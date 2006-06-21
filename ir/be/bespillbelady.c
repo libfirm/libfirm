@@ -502,9 +502,9 @@ static void belady(ir_node *block, void *data) {
  * about the set of live-ins. Thus we must adapt the
  * live-outs to the live-ins at each block-border.
  */
-static void fix_block_borders(ir_node *blk, void *env) {
+static void fix_block_borders(ir_node *blk, void *data) {
+	belady_env_t *env = data;
 	workset_t *wsb;
-	belady_env_t *bel = env;
 	int i, max, iter, iter2;
 
 	DBG((dbg, DBG_FIX, "\n"));
@@ -522,8 +522,13 @@ static void fix_block_borders(ir_node *blk, void *env) {
 		workset_foreach(wsb, irnb, iter) {
 			/* if irnb is a phi of the current block we reload
 			 * the corresponding argument, else irnb itself */
-			if(is_Phi(irnb) && blk == get_nodes_block(irnb))
+			if(is_Phi(irnb) && blk == get_nodes_block(irnb)) {
 				irnb = get_irn_n(irnb, i);
+
+				// we might have unknowns as argument for the phi
+				if(!arch_irn_consider_in_reg_alloc(env->arch, env->cls, irnb))
+					continue;
+			}
 
 			/* Unknowns are available everywhere */
 			if(get_irn_opcode(irnb) == iro_Unknown)
@@ -537,7 +542,7 @@ static void fix_block_borders(ir_node *blk, void *env) {
 
 			/* irnb is not in memory at the end of pred, so we have to reload it */
 			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
-			be_add_reload_on_edge(bel->senv, irnb, blk, i);
+			be_add_reload_on_edge(env->senv, irnb, blk, i);
 
 next_value:
 			/*epsilon statement :)*/;
