@@ -1,4 +1,3 @@
-
 /**
  * Some convenience macros for node bitmaps.
  * @author Sebastian Hack
