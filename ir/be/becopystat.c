@@ -67,8 +67,8 @@ enum vals_t {
 	/* ilp values */
 	I_HEUR_TIME,		/* solving time in milli seconds */
 	I_ILP_TIME,			/* solving time in milli seconds */
-    I_ILP_VARS,
-    I_ILP_CSTR,
+	I_ILP_VARS,
+	I_ILP_CSTR,
 	I_ILP_ITER,			/* number of simplex iterations */
 
 	/* copy instructions */
@@ -120,14 +120,14 @@ static void irg_stat_walker(ir_node *node, void *env) {
 	arch_env_t *arch_env = env;
 	curr_vals[I_ALL_NODES]++; /* count all nodes */
 
- 	if (is_Block(node)) /* count all blocks */
- 		curr_vals[I_BLOCKS]++;
+	if (is_Block(node)) /* count all blocks */
+		curr_vals[I_BLOCKS]++;
 
- 	if (is_Reg_Phi(node)) /* collect phis */
- 		pset_insert_ptr(all_phi_nodes, node);
+	if (is_Reg_Phi(node)) /* collect phis */
+		pset_insert_ptr(all_phi_nodes, node);
 
- 	if (is_Perm_Proj(arch_env, node))
- 		pset_insert_ptr(all_copy_nodes, node);
+	if (is_Perm_Proj(arch_env, node))
+		pset_insert_ptr(all_copy_nodes, node);
 
 	/* TODO: Add 2-Addr-Code nodes */
 }
@@ -156,7 +156,7 @@ static INLINE int was_edge_critical(const ir_node *bl, int pos) {
 	if (get_irn_arity(bl_at_pos) != 1)
 		return 0;
 
-	/* Does the pred of the pred have several sucsecessors */
+	/* Does the pred of the pred have several successors */
 	bl_before = get_irn_n(bl_at_pos, 0);
 	edge = get_block_succ_first(bl_before);
 	return get_block_succ_next(bl_before, edge) ? 1 : 0;
@@ -349,6 +349,7 @@ void copystat_dump(ir_graph *irg) {
 	FILE *out;
 
 	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
+	buf[sizeof(buf) - 1] = '\0';
 	out = ffopen(buf, "stat", "wt");
 
 	fprintf(out, "%d\n", ASIZE);
@@ -363,7 +364,7 @@ void copystat_dump(ir_graph *irg) {
 			fprintf(out, "%i\n", curr_vals[i]);
 	}
 
-    fclose(out);
+	fclose(out);
 }
 
 void copystat_dump_pretty(ir_graph *irg) {
@@ -372,6 +373,7 @@ void copystat_dump_pretty(ir_graph *irg) {
 	FILE *out;
 
 	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
+	buf[sizeof(buf) - 1] = '\0';
 	out = ffopen(buf, "pstat", "wt");
 
 	fprintf(out, "Nodes     %4d\n", curr_vals[I_ALL_NODES]);
