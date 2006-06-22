@@ -542,6 +542,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 			}
 		}
 
+		bipartite_free(bp);
 		pmap_destroy(partners);
 	}
 
@@ -847,5 +848,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 		plotter_free(plotter);
 	}
 
+	bitset_free(env.live);
 	del_pset(env.pre_colored);
 }
