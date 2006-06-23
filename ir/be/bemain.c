@@ -13,6 +13,7 @@
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
 #endif /* WITH_LIBCORE */
 
 #include "obst.h"
@@ -60,26 +61,12 @@
 #include "bestat.h"
 #include "beverify.h"
 
-#define DUMP_INITIAL    (1 << 0)
-#define DUMP_ABI        (1 << 1)
-#define DUMP_SCHED      (1 << 2)
-#define DUMP_PREPARED   (1 << 3)
-#define DUMP_RA         (1 << 4)
-#define DUMP_FINAL      (1 << 5)
-
-enum {
-	BE_VRFY_OFF,
-	BE_VRFY_WARN,
-	BE_VRFY_ASSERT
-};
-
 /* options visible for anyone */
 static be_options_t be_options = {
-	/* ilp server */
-	"i44pc52.info.uni-karlsruhe.de",
-
-	/* ilp solver */
-	"cplex"
+	DUMP_NONE,                         /* dump options */
+	BE_TIME_OFF,                       /* no timing */
+	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
+	"cplex"                            /* ilp solver */
 };
 
 /* dump flags */
@@ -103,20 +90,21 @@ static lc_opt_entry_t *be_grp_root = NULL;
 
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
-	{ "none",       0 },
+	{ "none",       DUMP_NONE },
 	{ "initial",    DUMP_INITIAL },
 	{ "abi",        DUMP_ABI    },
 	{ "sched",      DUMP_SCHED  },
 	{ "prepared",   DUMP_PREPARED },
 	{ "regalloc",   DUMP_RA },
 	{ "final",      DUMP_FINAL },
-	{ "all",        2 * DUMP_FINAL - 1 },
+	{ "be",         DUMP_BE },
+	{ "all",        2 * DUMP_BE - 1 },
 	{ NULL,         0 }
 };
 
 /* register allocators */
 static const lc_opt_enum_const_ptr_items_t ra_items[] = {
-	{ "chordal", &be_ra_chordal_allocator },
+	{ "chordal",  &be_ra_chordal_allocator },
 	{ "external", &be_ra_external_allocator },
 	{ NULL,      NULL }
 };
@@ -139,6 +127,7 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 	{ "assert", BE_VRFY_ASSERT },
 	{ NULL,     0 }
 };
+
 static lc_opt_enum_mask_var_t dump_var = {
 	&dump_flags, dump_items
 };
@@ -162,6 +151,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",         &be_omit_fp),
 	LC_OPT_ENT_BOOL     ("mris",     "enable mris schedule preparation",  &be_enable_mris),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg (off, warn, assert)",  &vrfy_var),
+	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",     &be_options.timing),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -261,6 +251,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	obstack_init(&env->obst);
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
 	env->options  = &be_options;
+	env->options->dump_flags = dump_flags;
 	FIRM_DBG_REGISTER(env->dbg, "be.main");
 
 	arch_env_init(env->arch_env, isa_if, file_handle);
@@ -346,6 +337,30 @@ static void be_main_loop(FILE *file_handle)
 	int i, n;
 	arch_isa_t *isa;
 	be_main_env_t env;
+	unsigned num_nodes_b = 0;
+	unsigned num_nodes_a = 0;
+	unsigned num_nodes_r = 0;
+	unsigned ra_prolog   = 0;
+	unsigned ra_epilog   = 0;
+	unsigned ra_live     = 0;
+	unsigned ra_spill    = 0;
+	unsigned ra_color    = 0;
+	unsigned ra_ifg      = 0;
+	unsigned ra_copymin  = 0;
+	unsigned ra_ssa      = 0;
+	lc_timer_t *t_prolog, *t_abi, *t_codegen, *t_sched, *t_constr, *t_regalloc, *t_finish, *t_emit;
+	be_ra_timer_t *ra_timer;
+
+	if (be_options.timing == BE_TIME_ON) {
+		t_prolog   = lc_timer_register("prolog",   "prolog");
+		t_abi      = lc_timer_register("beabi",    "be abi introduction");
+		t_codegen  = lc_timer_register("codegen",  "codegeneration");
+		t_sched    = lc_timer_register("sched",    "scheduling");
+		t_constr   = lc_timer_register("constr",   "assure constraints");
+		t_regalloc = lc_timer_register("regalloc", "register allocation");
+		t_finish   = lc_timer_register("finish",   "graph finish");
+		t_emit     = lc_timer_register("emiter",   "code emiter");
+	}
 
 	be_init_env(&env, file_handle);
 
@@ -354,6 +369,10 @@ static void be_main_loop(FILE *file_handle)
 	/* for debugging, anchors helps */
 	// dump_all_anchors(1);
 
+#define BE_TIME_START(timer) if (be_options.timing == BE_TIME_ON) lc_timer_start(timer);
+#define BE_TIME_STOP(timer)  if (be_options.timing == BE_TIME_ON) lc_timer_stop(timer);
+#define BE_TIME_ONLY(code)   if (be_options.timing == BE_TIME_ON) { code; }
+
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
@@ -361,8 +380,24 @@ static void be_main_loop(FILE *file_handle)
 		be_irg_t birg;
 		optimization_state_t state;
 
+		/* stop and reset timers */
+		if (be_options.timing == BE_TIME_ON) {
+			LC_STOP_AND_RESET_TIMER(t_prolog);
+			LC_STOP_AND_RESET_TIMER(t_abi);
+			LC_STOP_AND_RESET_TIMER(t_codegen);
+			LC_STOP_AND_RESET_TIMER(t_sched);
+			LC_STOP_AND_RESET_TIMER(t_constr);
+			LC_STOP_AND_RESET_TIMER(t_regalloc);
+			LC_STOP_AND_RESET_TIMER(t_finish);
+			LC_STOP_AND_RESET_TIMER(t_emit);
+		}
+
+		BE_TIME_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
+
 		birg.irg      = irg;
 		birg.main_env = &env;
+
+		BE_TIME_START(t_prolog);
 
 		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
 		dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
@@ -385,11 +420,17 @@ static void be_main_loop(FILE *file_handle)
 		/* some transformations need to be done before abi introduce */
 		arch_code_generator_before_abi(birg.cg);
 
+		BE_TIME_STOP(t_prolog);
+		BE_TIME_START(t_abi);
+
 		/* implement the ABI conventions. */
 		birg.abi = be_abi_introduce(&birg);
 		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
 
 		be_do_stat_nodes(irg, "02 Abi");
+
+		BE_TIME_STOP(t_abi);
+		BE_TIME_START(t_codegen);
 
 		/* generate code */
 		arch_code_generator_prepare_graph(birg.cg);
@@ -410,6 +451,10 @@ static void be_main_loop(FILE *file_handle)
 
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
+		BE_TIME_STOP(t_codegen);
+		BE_TIME_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
+		BE_TIME_START(t_sched);
+
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
 		list_sched(&birg, be_enable_mris);
@@ -419,6 +464,9 @@ static void be_main_loop(FILE *file_handle)
 		be_sched_vrfy(birg.irg, vrfy_option);
 
 		be_do_stat_nodes(irg, "04 Schedule");
+
+		BE_TIME_STOP(t_sched);
+		BE_TIME_START(t_constr);
 
 		/* we switch off optimizations here, because they might cause trouble */
 		save_optimization_state(&state);
@@ -442,12 +490,31 @@ static void be_main_loop(FILE *file_handle)
 		/* do some statistics */
 		be_do_stat_reg_pressure(&birg);
 
-		/* Do register allocation */
+		/* stuff needs to bo done after scheduling but before register allocation */
 		arch_code_generator_before_ra(birg.cg);
-		ra->allocate(&birg);
+
+		BE_TIME_STOP(t_constr);
+		BE_TIME_START(t_regalloc);
+
+		/* Do register allocation */
+		ra_timer = ra->allocate(&birg);
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
+		if (be_options.timing == BE_TIME_ON && ra_timer) {
+			ra_prolog  = lc_timer_elapsed_msec(ra_timer->t_prolog);
+			ra_epilog  = lc_timer_elapsed_msec(ra_timer->t_epilog);
+			ra_live    = lc_timer_elapsed_msec(ra_timer->t_live);
+			ra_spill   = lc_timer_elapsed_msec(ra_timer->t_spill);
+			ra_color   = lc_timer_elapsed_msec(ra_timer->t_color);
+			ra_copymin = lc_timer_elapsed_msec(ra_timer->t_copymin);
+			ra_ssa     = lc_timer_elapsed_msec(ra_timer->t_ssa);
+			ra_ifg     = lc_timer_elapsed_msec(ra_timer->t_ifg);
+		}
+
 		be_do_stat_nodes(irg, "06 Register Allocation");
+
+		BE_TIME_STOP(t_regalloc);
+		BE_TIME_START(t_finish);
 
 		arch_code_generator_after_ra(birg.cg);
 		be_abi_fix_stack_bias(birg.abi);
@@ -455,28 +522,86 @@ static void be_main_loop(FILE *file_handle)
 		/* check schedule */
 		be_sched_vrfy(birg.irg, vrfy_option);
 
+		BE_TIME_STOP(t_finish);
+		BE_TIME_START(t_emit);
+
 		arch_code_generator_done(birg.cg);
 		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
 		be_abi_free(birg.abi);
 
 		be_do_stat_nodes(irg, "07 Final");
 
+		BE_TIME_STOP(t_emit);
+
 		restore_optimization_state(&state);
+
+		BE_TIME_ONLY(num_nodes_a = get_num_reachable_nodes(irg));
 
 		/* switched off due to statistics (statistic module needs all irgs) */
 		//		free_ir_graph(irg);
+#define LC_EMIT(timer)     printf("%10s: %u msec\n", lc_timer_get_name(timer), lc_timer_elapsed_msec(timer))
+#define EMIT_RA_TIME(n, t) printf("%20s: %u msec\n", n, t)
+		if (be_options.timing == BE_TIME_ON) {
+			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
+			printf("# nodes at begin:  %u\n", num_nodes_b);
+			printf("# nodes before ra: %u\n", num_nodes_r);
+			printf("# nodes at end:    %u\n\n", num_nodes_a);
+			LC_EMIT(t_prolog);
+			LC_EMIT(t_abi);
+			LC_EMIT(t_codegen);
+			LC_EMIT(t_sched);
+			LC_EMIT(t_constr);
+			LC_EMIT(t_regalloc);
+			EMIT_RA_TIME("prolog",    ra_prolog);
+			EMIT_RA_TIME("liveness",  ra_live);
+			EMIT_RA_TIME("spilling",  ra_spill);
+			EMIT_RA_TIME("coloring",  ra_color);
+			EMIT_RA_TIME("ifg build", ra_ifg);
+			EMIT_RA_TIME("copymin",   ra_copymin);
+			EMIT_RA_TIME("ssa destr", ra_ssa);
+			EMIT_RA_TIME("epilog",    ra_epilog);
+			LC_EMIT(t_finish);
+			LC_EMIT(t_emit);
+		}
+#undef LC_EMIT
 	}
 	be_done_env(&env);
+
+#undef BE_TIME_START
+#undef BE_TIME_STOP
+#undef BE_TIME_ONLY
 }
 
 /* Main interface to the frontend. */
 void be_main(FILE *file_handle)
 {
+#ifdef WITH_LIBCORE
+	lc_timer_t *t;
+
+	if (be_options.timing == BE_TIME_ON) {
+		t = lc_timer_register("bemain", "measure complete bemain loop");
+
+		if (lc_timer_enter_high_priority()) {
+			fprintf(stderr, "Warning: Could not enter high priority mode.\n");
+		}
+
+		lc_timer_reset_and_start(t);
+	}
+#endif /* WITH_LIBCORE */
+
 	/* never build code for pseudo irgs */
 	set_visit_pseudo_irgs(0);
 
 	be_node_init();
 	be_main_loop(file_handle);
+
+#ifdef WITH_LIBCORE
+	if (be_options.timing == BE_TIME_ON) {
+		lc_timer_stop(t);
+		lc_timer_leave_high_priority();
+		printf("BEMAINLOOP: %lu msec\n", lc_timer_elapsed_msec(t));
+	}
+#endif /* WITH_LIBCORE */
 }
 
 /** The debug info retriever function. */

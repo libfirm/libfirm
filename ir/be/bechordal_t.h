@@ -93,8 +93,8 @@ enum {
 	BE_CH_SPILL_BELADY    = 1,
 	BE_CH_SPILL_ILP       = 2,
 	BE_CH_SPILL_MORGAN    = 3,
-        BE_CH_SPILL_REMAT     = 4,
-        BE_CH_SPILL_APPEL     = 5,
+	BE_CH_SPILL_REMAT     = 4,
+	BE_CH_SPILL_APPEL     = 5,
 
 	/* Dump flags */
 	BE_CH_DUMP_NONE       = (1 << 0),
@@ -126,8 +126,8 @@ enum {
 	BE_CH_IFG_CHECK   = 6,
 
 	/* lower perm options */
-	BE_CH_LOWER_PERM_SWAP   = (1 << 0),
-	BE_CH_LOWER_PERM_COPY   = (1 << 1),
+	BE_CH_LOWER_PERM_SWAP   = 1,
+	BE_CH_LOWER_PERM_COPY   = 2,
 
 	/* verify options */
 	BE_CH_VRFY_OFF    = 1,

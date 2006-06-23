@@ -11,6 +11,7 @@
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
+#include <libcore/lc_timing.h>
 #endif
 
 #include "firm_types.h"
@@ -18,10 +19,21 @@
 #include "be.h"
 
 typedef struct {
+	lc_timer_t *t_prolog;
+	lc_timer_t *t_epilog;
+	lc_timer_t *t_live;
+	lc_timer_t *t_spill;
+	lc_timer_t *t_color;
+	lc_timer_t *t_ifg;
+	lc_timer_t *t_copymin;
+	lc_timer_t *t_ssa;
+} be_ra_timer_t;
+
+typedef struct {
 #ifdef WITH_LIBCORE
 	void (*register_options)(lc_opt_entry_t *grp);
 #endif
-	void (*allocate)(const be_irg_t *bi);
+	be_ra_timer_t *(*allocate)(const be_irg_t *bi);
 } be_ra_t;
 
 

@@ -121,6 +121,17 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_VRFY_WARN,
 };
 
+static be_ra_timer_t ra_timer = {
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+};
+
 #ifdef WITH_LIBCORE
 static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "morgan", BE_CH_SPILL_MORGAN },
@@ -300,15 +311,41 @@ void check_ifg_implementations(be_chordal_env_t *chordal_env)
 	chordal_env->ifg = NULL;
 };
 
-static void be_ra_chordal_main(const be_irg_t *bi)
+static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 {
-	const be_main_env_t *main_env = bi->main_env;
-	const arch_isa_t    *isa      = arch_env_get_isa(main_env->arch_env);
-	ir_graph            *irg      = bi->irg;
+	const be_main_env_t *main_env  = bi->main_env;
+	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
+	ir_graph            *irg       = bi->irg;
+	be_options_t        *main_opts = main_env->options;
 	copy_opt_t          *co;
 
 	int j, m;
 	be_chordal_env_t chordal_env;
+
+	if (main_opts->timing == BE_TIME_ON) {
+		ra_timer.t_prolog  = lc_timer_register("prolog",   "regalloc prolog");
+		ra_timer.t_epilog  = lc_timer_register("epilog",   "regalloc epilog");
+		ra_timer.t_live    = lc_timer_register("liveness", "be liveness");
+		ra_timer.t_spill   = lc_timer_register("spill",    "spiller");
+		ra_timer.t_color   = lc_timer_register("color",    "graph coloring");
+		ra_timer.t_ifg     = lc_timer_register("ifg",      "build interference graph");
+		ra_timer.t_copymin = lc_timer_register("copymin",  "copy minimization");
+		ra_timer.t_ssa     = lc_timer_register("ssadestr", "ssa destruction");
+
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_prolog);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_epilog);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_live);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_spill);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_color);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_ifg);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_copymin);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_ssa);
+	}
+
+#define BE_TIME_START(timer) if (main_opts->timing == BE_TIME_ON) lc_timer_start(timer)
+#define BE_TIME_STOP(timer)  if (main_opts->timing == BE_TIME_ON) lc_timer_stop(timer)
+
+	BE_TIME_START(ra_timer.t_prolog);
 
 	compute_doms(irg);
 
@@ -320,17 +357,24 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	obstack_init(&chordal_env.obst);
 
+	BE_TIME_STOP(ra_timer.t_prolog);
+
 	/* Perform the following for each register class. */
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
 		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
 
+		BE_TIME_START(ra_timer.t_live);
+
 		/* put all ignore registers into the ignore register set. */
 		put_ignore_colors(&chordal_env);
 
 		be_liveness(irg);
 		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
+
+		BE_TIME_STOP(ra_timer.t_live);
+		BE_TIME_START(ra_timer.t_spill);
 
 		/* spilling */
 		switch(options.spill_method) {
@@ -369,11 +413,18 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 				&& "Register pressure verification failed");
 		}
 
-		/* Color the graph. */
+		BE_TIME_STOP(ra_timer.t_spill);
+		BE_TIME_START(ra_timer.t_live);
 		be_liveness(irg);
+		BE_TIME_STOP(ra_timer.t_live);
+
+		/* Color the graph. */
+		BE_TIME_START(ra_timer.t_color);
 		be_ra_chordal_color(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 
+		BE_TIME_STOP(ra_timer.t_color);
+		BE_TIME_START(ra_timer.t_ifg);
 		//be_ifg_check_performance(&chordal_env);
 
 		/* Create the ifg with the selected flavor */
@@ -401,6 +452,9 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 				//be_ifg_check_sorted(chordal_env.ifg);
 				break;
 		}
+
+		BE_TIME_STOP(ra_timer.t_ifg);
+		BE_TIME_START(ra_timer.t_copymin);
 
 		/* copy minimization */
 		co = NULL;
@@ -444,20 +498,31 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 		}
 
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
-		be_ra_chordal_check(&chordal_env);
+		if (options.vrfy_option != BE_CH_VRFY_OFF)
+			be_ra_chordal_check(&chordal_env);
+
+		BE_TIME_STOP(ra_timer.t_copymin);
+		BE_TIME_START(ra_timer.t_ssa);
 
 		/* ssa destruction */
 		be_ssa_destruction(&chordal_env);
 		dump(BE_CH_DUMP_SSADESTR, irg, chordal_env.cls, "-ssadestr", dump_ir_block_graph_sched);
-		be_ssa_destruction_check(&chordal_env);
-		be_ra_chordal_check(&chordal_env);
+		if (options.vrfy_option != BE_CH_VRFY_OFF) {
+			be_ssa_destruction_check(&chordal_env);
+			be_ra_chordal_check(&chordal_env);
+		}
 
-		copystat_dump(irg);
+		if (options.copymin_method == BE_CH_COPYMIN_STAT)
+			copystat_dump(irg);
 
 		be_ifg_free(chordal_env.ifg);
 		pmap_destroy(chordal_env.border_heads);
 		bitset_free(chordal_env.ignore_colors);
+
+		BE_TIME_STOP(ra_timer.t_ssa);
 	}
+
+	BE_TIME_START(ra_timer.t_epilog);
 
 	be_compute_spill_offsets(&chordal_env);
 
@@ -468,6 +533,13 @@ static void be_ra_chordal_main(const be_irg_t *bi)
 
 	obstack_free(&chordal_env.obst, NULL);
 	be_free_dominance_frontiers(chordal_env.dom_front);
+
+	BE_TIME_STOP(ra_timer.t_epilog);
+
+	if (main_opts->timing == BE_TIME_ON)
+		return &ra_timer;
+	else
+		return NULL;
 }
 
 const be_ra_t be_ra_chordal_allocator = {

@@ -701,7 +701,7 @@ static char callee[128] = "\"E:/user/kimohoff/public/register allocator\"";
  * Read in results and apply them
  *
  */
-static void be_ra_extern_main(const be_irg_t *bi) {
+static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
 	be_main_env_t *env = bi->main_env;
 	ir_graph *irg = bi->irg;
 
@@ -765,6 +765,8 @@ static void be_ra_extern_main(const be_irg_t *bi) {
 	/* Clean up */
 	free_ssa_destr_simple(raenv.vars);
 	be_free_dominance_frontiers(raenv.dom_info);
+
+	return NULL;
 }
 
 /******************************************************************************
