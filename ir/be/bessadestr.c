@@ -30,7 +30,6 @@
 #include "besched_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-#define DUMP_GRAPHS
 
 #define get_chordal_arch(ce) ((ce)->birg->main_env->arch_env)
 #define get_reg(irn) arch_get_irn_register(get_chordal_arch(chordal_env), irn)
@@ -331,17 +330,17 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 
 	DBG((dbg, LEVEL_1, "Placing perms...\n"));
 	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
-#ifdef DUMP_GRAPHS
-	be_dump(irg, "-ssa_destr_perms_placed", dump_ir_block_graph_sched);
-#endif
+
+	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
+		be_dump(irg, "-ssa_destr_perms_placed", dump_ir_block_graph_sched);
 
 	be_liveness(irg);
 
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
 	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
-#ifdef DUMP_GRAPHS
-	be_dump(irg, "-ssa_destr_regs_set", dump_ir_block_graph_sched);
-#endif
+
+	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
+		be_dump(irg, "-ssa_destr_regs_set", dump_ir_block_graph_sched);
 
 	pmap_destroy(perm_map);
 }
