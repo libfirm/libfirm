@@ -138,12 +138,12 @@ static void *trivial_init_block(void *graph_env, ir_node *bl)
 
 static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
 {
-	int res = 0;
+	int res = -1;
 
 	if(sel->to_appear_in_schedule)
 		res = sel->to_appear_in_schedule(block_env, irn);
 
-	return res || to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_RegParams(irn);
+	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_RegParams(irn));
 }
 
 static const list_sched_selector_t trivial_selector_struct = {
