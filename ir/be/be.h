@@ -8,6 +8,8 @@
 #include "lower_dw.h"
 #include "dbginfo.h"
 
+#define LC_STOP_AND_RESET_TIMER(timer) lc_timer_stop(timer); lc_timer_reset(timer)
+
 /**
  * This structure contains parameters that should be
  * propagated to the libFirm parameter set.
