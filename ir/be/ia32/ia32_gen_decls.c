@@ -141,7 +141,7 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
 		tv = get_Const_tarval(init);
 
 		/* beware of old stuff */
-		assert(! mode_is_reference(mode));
+		//assert(! mode_is_reference(mode));
 
 		/* it's a arithmetic value */
 		dump_arith_tarval(obst, tv, bytes);

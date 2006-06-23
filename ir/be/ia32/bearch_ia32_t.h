@@ -103,6 +103,7 @@ typedef struct _ia32_code_gen_t {
 	char                           fp_kind;        /**< floating point kind */
 	char                           used_fp;        /**< which floating point unit used in this graph */
 	char                           force_sim;      /**< set to 1 if x87 simulation should be enforced */
+	char                           dump;           /**< set to 1 if graphs should be dumped */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)          /**< debugging module */
 } ia32_code_gen_t;
 

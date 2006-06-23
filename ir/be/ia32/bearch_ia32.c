@@ -697,12 +697,17 @@ static void ia32_prepare_graph(void *self) {
 	dom = be_compute_dominance_frontiers(cg->irg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
 	be_free_dominance_frontiers(dom);
-	be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
+
+	if (cg->dump)
+		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
 	/* 3rd: optimize address mode */
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
 	ia32_optimize_addressmode(cg);
-	be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
+
+	if (cg->dump)
+		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
+
 	DEBUG_ONLY(cg->mod = old_mod;)
 }
 
@@ -1049,7 +1054,8 @@ static void ia32_codegen(void *self) {
 	ir_graph        *irg = cg->irg;
 
 	ia32_finish_irg(irg, cg);
-	be_dump(irg, "-finished", dump_ir_block_graph_sched);
+	if (cg->dump)
+		be_dump(irg, "-finished", dump_ir_block_graph_sched);
 	ia32_gen_routine(cg->isa->out, irg, cg);
 
 	cur_reg_set = NULL;
@@ -1093,6 +1099,7 @@ static void *ia32_cg_init(const be_irg_t *birg) {
 	cg->gp_to_fp  = NULL;
 	cg->fp_kind   = isa->fp_kind;
 	cg->used_fp   = fp_none;
+	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.cg");
 
@@ -1399,8 +1406,30 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 	return &ia32_irn_handler;
 }
 
+/* returns the first Proj with given mode from mode_T node */
+static ir_node *get_proj_for_mode(ir_node *node, ir_mode *mode) {
+	const ir_edge_t *edge;
+
+	assert(get_irn_mode(node) == mode_T && "Need mode_T node.");
+
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (get_irn_mode(proj) == mode)
+			return proj;
+	}
+
+	return NULL;
+}
+
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
-	return is_ia32_irn(irn);
+#if 0
+	/* Loads with no user do not need to appear in schedule */
+	if (is_ia32_Ld(irn) && get_irn_n_edges(irn) == 1) {
+		/* only one user && user is not memory -> schedule */
+		return get_proj_for_mode(irn, mode_M) == NULL;
+	}
+#endif
+	return is_ia32_irn(irn) ? 1 : -1;
 }
 
 /**

@@ -1305,12 +1305,12 @@ static ir_node *gen_Abs(ia32_transform_env_t *env) {
  * @return the created ia32 Load node
  */
 static ir_node *gen_Load(ia32_transform_env_t *env) {
-	ir_node    *node  = env->irn;
-	ir_node    *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_node    *ptr   = get_Load_ptr(node);
-	ir_node    *lptr  = ptr;
-	ir_mode    *mode  = get_Load_mode(node);
-	int        is_imm = 0;
+	ir_node *node  = env->irn;
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *ptr   = get_Load_ptr(node);
+	ir_node *lptr  = ptr;
+	ir_mode *mode  = get_Load_mode(node);
+	int     is_imm = 0;
 	ir_node *new_op;
 	ia32_am_flavour_t am_flav = ia32_B;
 
@@ -1347,6 +1347,16 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, am_flav);
 	set_ia32_ls_mode(new_op, mode);
+
+	/*
+		check for special case: the loaded value might not be used (optimized, volatile, ...)
+		we add a Proj + Keep for volatile loads and ignore all other cases
+	*/
+	if (! get_proj_for_pn(node, pn_Load_res) && get_Load_volatility(node) == volatility_is_volatile) {
+		/* add a result proj and a Keep to produce a pseudo use */
+		ir_node *proj = new_r_Proj(env->irg, env->block, new_op, mode, pn_ia32_Load_res);
+		be_new_Keep(arch_get_irn_reg_class(env->cg->arch_env, proj, -1), env->irg, env->block, 1, &proj);
+	}
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
