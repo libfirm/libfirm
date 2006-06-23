@@ -1,3 +1,8 @@
+/**
+ * Contains some useful function for the backend.
+ * @author Sebastian Hack
+ * @cvsid  $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -205,6 +210,17 @@ void be_clear_links(ir_graph *irg)
 void be_collect_phis(ir_graph *irg)
 {
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
+}
+
+unsigned count_num_reachable_nodes(ir_node *irn, void *env) {
+	int *num = env;
+	(*num)++;
+}
+
+unsigned get_num_reachable_nodes(ir_graph *irg) {
+	int num = 0;
+	irg_walk_graph(irg, count_num_reachable_nodes, NULL, &num);
+	return num;
 }
 
 /* FIXME: not used. can be deleted? */

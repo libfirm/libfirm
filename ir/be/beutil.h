@@ -118,6 +118,13 @@ void dump_ir_extblock_graph_sched(ir_graph *irg, const char *suffix);
 void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const char *));
 
 /**
+ * Returns the number of reachable nodes in an irg.
+ * @param irg The irg.
+ * @return The number of reachable nodes.
+ */
+unsigned get_num_reachable_nodes(ir_graph *irg);
+
+/**
  * Search for an irn in @p accept.
  * The search is started at @p start_point_exclusive and continues upwards the dom-tree
  * @return The first node out of accept if found. Else NULL is returned.
