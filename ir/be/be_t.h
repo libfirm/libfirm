@@ -15,7 +15,29 @@
 #include "bearch.h"
 #include "beirgmod.h"
 
+#define DUMP_NONE       0
+#define DUMP_INITIAL    (1 << 0)
+#define DUMP_ABI        (1 << 1)
+#define DUMP_SCHED      (1 << 2)
+#define DUMP_PREPARED   (1 << 3)
+#define DUMP_RA         (1 << 4)
+#define DUMP_FINAL      (1 << 5)
+#define DUMP_BE         (1 << 6)
+
+enum {
+	BE_TIME_OFF,
+	BE_TIME_ON
+};
+
+enum {
+	BE_VRFY_OFF,
+	BE_VRFY_WARN,
+	BE_VRFY_ASSERT
+};
+
 struct _be_options_t {
+	int  dump_flags;
+	char timing;
 	char ilp_server[128];
 	char ilp_solver[128];
 };
