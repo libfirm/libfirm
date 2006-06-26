@@ -54,7 +54,6 @@ typedef struct _ifg_pointer_t {
 	ptr_head_t *curr_ptr_head;
 	ptr_element_t *curr_element;
 	pmap *node_map;
-	bitset_t *visited_neighbours;
 } ifg_pointer_t;
 
 typedef struct _ptr_iter_t {
@@ -66,6 +65,7 @@ typedef struct _ptr_iter_t {
 	ir_node *curr_irn;
 	int get_first;
 	int sub_call;
+	bitset_t *visited_neighbours;
 } ptr_iter_t;
 
 /* PRIVATE FUNCTIONS */
@@ -474,13 +474,13 @@ static ir_node *get_next_neighbour(ptr_iter_t *it)
 
 	if (res && !it->sub_call)
 	{
-		if (bitset_contains_irn(it->ifg->visited_neighbours, res) || res == it->irn)
+		if (bitset_contains_irn(it->visited_neighbours, res) || res == it->irn)
 		{
 			res = get_next_neighbour(it);
 		}
 		else
 		{
-			bitset_set(it->ifg->visited_neighbours, get_irn_idx(res));
+			bitset_set(it->visited_neighbours, get_irn_idx(res));
 		}
 	}
 
@@ -492,12 +492,14 @@ static ir_node *get_first_neighbour(const ifg_pointer_t *ifg, ptr_iter_t *it, co
 	ir_node *res;
 	ptr_head_t *head;
 	ptr_element_t *element;
+	bitset_t *bitsetvisited_neighbours = bitset_malloc(get_irg_last_idx(ifg->env->irg));
 
 	it->ifg = ifg;
 	it->irn = irn;
 	it->get_first = 0;
 	it->sub_call = 0;
-	bitset_clear_all(it->ifg->visited_neighbours);
+
+	it->visited_neighbours = bitsetvisited_neighbours;
 
 	head = phase_get_irn_data(&ifg->ph, irn);
 	if (!head)
@@ -569,13 +571,13 @@ static ir_node *get_first_neighbour(const ifg_pointer_t *ifg, ptr_iter_t *it, co
 
 	if (res && !it->sub_call)
 	{
-		if (bitset_contains_irn(it->ifg->visited_neighbours, res) || res == it->irn)
+		if (bitset_contains_irn(it->visited_neighbours, res) || res == it->irn)
 		{
 			res = get_next_neighbour(it);
 		}
 		else
 		{
-			bitset_set(it->ifg->visited_neighbours, get_irn_idx(res));
+			bitset_set(it->visited_neighbours, get_irn_idx(res));
 		}
 	}
 
@@ -591,8 +593,6 @@ static void ifg_pointer_free(void *self)
 	ifg_pointer_t *ifg = self;
 	obstack_free(&ifg->obst, NULL);
 	phase_free(&ifg->ph);
-
-	bitset_free(ifg->visited_neighbours);
 
 	free(self);
 }
@@ -630,6 +630,10 @@ static ir_node *ifg_pointer_neighbours_next(const void *self, void *iter)
 
 static void ifg_pointer_neighbours_break(const void *self, void *iter)
 {
+	ptr_iter_t *it = iter;
+
+	bitset_free(it->visited_neighbours);
+
 	return;
 }
 
@@ -685,10 +689,8 @@ static const be_ifg_impl_t ifg_pointer_impl = {
 be_ifg_t *be_ifg_pointer_new(const be_chordal_env_t *env)
 {
 	ifg_pointer_t *ifg	= xmalloc(sizeof(*ifg));
-	bitset_t *bitsetvisited_neighbours = bitset_malloc(get_irg_last_idx(env->irg));
 	ifg->impl     		= &ifg_pointer_impl;
 	ifg->env			= env;
-	ifg->visited_neighbours = bitsetvisited_neighbours;
 
 	ifg->node_map 		= pmap_create(); /* to find all nodes, should be replaced by a "keywalker" of irphase */
 
