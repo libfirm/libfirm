@@ -1487,7 +1487,9 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 			pn_Cmp pnc = get_Proj_proj(sel);
 
 			if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) && mode_is_int(get_irn_mode(expr))) {
-				if (classify_tarval(get_ia32_Immop_tarval(cnst)) == TV_CLASSIFY_NULL) {
+				if (get_ia32_op_type(cnst) == ia32_Const &&
+					classify_tarval(get_ia32_Immop_tarval(cnst)) == TV_CLASSIFY_NULL)
+				{
 					/* a Cmp A =/!= 0 */
 					ir_node    *op1  = expr;
 					ir_node    *op2  = expr;
