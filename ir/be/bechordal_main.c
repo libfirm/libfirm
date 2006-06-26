@@ -95,7 +95,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
 			n2_reg = arch_get_irn_register(arch_env, n2);
 			if (values_interfere(n1, n2) && n1_reg == n2_reg) {
-				DBG((dbg, 0, "Values %+F and %+F interfere and have the same register assigned\n", n1, n2));
+				DBG((dbg, 0, "Values %+F and %+F interfere and have the same register assigned: %s\n", n1, n2, n1_reg->name));
 				assert(0 && "Interfering values have the same color!");
 			}
 		}
@@ -115,21 +115,30 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
 	BE_CH_SPILL_BELADY,
-	BE_CH_COPYMIN_HEUR1,
+	BE_CH_COPYMIN_HEUR2,
 	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
 };
 
 static be_ra_timer_t ra_timer = {
+
 	NULL,
+
 	NULL,
+
 	NULL,
+
 	NULL,
+
 	NULL,
+
 	NULL,
+
 	NULL,
+
 	NULL,
+
 };
 
 #ifdef WITH_LIBCORE
@@ -285,29 +294,31 @@ FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const cha
 
 void check_ifg_implementations(be_chordal_env_t *chordal_env)
 {
-/*
 	FILE *f;
 
 	f = be_chordal_open(chordal_env, "std", "log");
 	chordal_env->ifg = be_ifg_std_new(chordal_env);
-	be_ifg_check_sorted(chordal_env->ifg, f);
+	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
 	fclose(f);
 
 	f = be_chordal_open(chordal_env, "list", "log");
+	be_ifg_free(chordal_env->ifg);
 	chordal_env->ifg = be_ifg_list_new(chordal_env);
-	be_ifg_check_sorted(chordal_env->ifg, f);
+	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
 	fclose(f);
 
 	f = be_chordal_open(chordal_env, "clique", "log");
+	be_ifg_free(chordal_env->ifg);
 	chordal_env->ifg = be_ifg_clique_new(chordal_env);
-	be_ifg_check_sorted(chordal_env->ifg, f);
+	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
 	fclose(f);
 
 	f = be_chordal_open(chordal_env, "pointer", "log");
+	be_ifg_free(chordal_env->ifg);
 	chordal_env->ifg = be_ifg_pointer_new(chordal_env);
-	be_ifg_check_sorted(chordal_env->ifg, f);
+	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
 	fclose(f);
-*/
+
 	chordal_env->ifg = NULL;
 };
 
@@ -361,6 +372,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	/* Perform the following for each register class. */
 	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
+		FILE *f;
 		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
@@ -452,6 +464,25 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 				//be_ifg_check_sorted(chordal_env.ifg);
 				break;
 		}
+
+
+#if 0
+		{
+			be_ifg_t *std = be_ifg_std_new(&chordal_env);
+			f = be_chordal_open(&chordal_env, "std", "csv");
+			be_ifg_check_sorted_to_file(std, f);
+			be_ifg_free(std);
+			fclose(f);
+		}
+
+		f = be_chordal_open(&chordal_env, "clique", "csv");
+		be_ifg_check_sorted_to_file(chordal_env.ifg, f);
+		fclose(f);
+#endif
+		if (options.vrfy_option != BE_CH_VRFY_OFF)
+			be_ra_chordal_check(&chordal_env);
+
+//		be_ifg_check_sorted(chordal_env.ifg);
 
 		BE_TIME_STOP(ra_timer.t_ifg);
 		BE_TIME_START(ra_timer.t_copymin);
