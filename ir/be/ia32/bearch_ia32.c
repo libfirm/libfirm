@@ -29,8 +29,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
-
-#include "bitset.h"
+#include "irbitset.h"
 #include "pdeq.h"
 #include "debug.h"
 
@@ -68,6 +67,21 @@ ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg) {
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
 	return be_abi_get_callee_save_irn(cg->birg->abi,
 		USE_SSE2(cg) ? &ia32_xmm_regs[REG_XMM_NOREG] : &ia32_vfp_regs[REG_VFP_NOREG]);
+}
+
+/* returns the first Proj with given mode from mode_T node */
+static ir_node *get_proj_for_mode(ir_node *node, ir_mode *mode) {
+	const ir_edge_t *edge;
+
+	assert(get_irn_mode(node) == mode_T && "Need mode_T node.");
+
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (get_irn_mode(proj) == mode)
+			return proj;
+	}
+
+	return NULL;
 }
 
 /**************************************************
@@ -858,15 +872,80 @@ static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 static void ia32_before_sched(void *self) {
 }
 
+static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
+	int i;
+	ir_mode *mode;
+	ir_node *mem_proj;
+
+	if (is_Block(irn))
+		return;
+
+	mode = get_irn_mode(irn);
+
+	/* check if we already saw this node or the node has more than one user */
+	if (bitset_contains_irn(already_visited, irn) || get_irn_n_edges(irn) > 1)
+		return;
+
+	/* mark irn visited */
+	bitset_add_irn(already_visited, irn);
+
+	/* non-Tuple nodes with one user: ok, return */
+	if (get_irn_n_edges(irn) >= 1 && mode != mode_T)
+		return;
+
+	/* tuple node has one user which is not the mem proj-> ok */
+	if (mode == mode_T && get_irn_n_edges(irn) == 1) {
+		mem_proj = get_proj_for_mode(irn, mode_M);
+		if (! mem_proj)
+			return;
+	}
+
+	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
+		ir_node *pred = get_irn_n(irn, i);
+
+		/* do not follow memory edges or we will accidentally remove stores */
+		if (is_Proj(pred) && get_irn_mode(pred) == mode_M)
+			continue;
+
+		set_irn_n(irn, i, new_Bad());
+
+		/*
+			The current node is about to be removed: if the predecessor
+			has only this node as user, it need to be removed as well.
+		*/
+		if (get_irn_n_edges(pred) <= 1)
+			remove_unused_nodes(pred, already_visited);
+	}
+
+	if (sched_is_scheduled(irn))
+		sched_remove(irn);
+}
+
+static void remove_unused_loads_walker(ir_node *irn, void *env) {
+	bitset_t *already_visited = env;
+	if (is_ia32_Ld(irn) && ! bitset_contains_irn(already_visited, irn))
+		remove_unused_nodes(irn, env);
+}
+
 /**
  * Called before the register allocator.
  * Calculate a block schedule here. We need it for the x87
  * simulator and the emitter.
  */
 static void ia32_before_ra(void *self) {
-	ia32_code_gen_t *cg = self;
+	ia32_code_gen_t *cg              = self;
+	bitset_t        *already_visited = bitset_irg_malloc(cg->irg);
 
 	cg->blk_sched = sched_create_block_schedule(cg->irg);
+
+	/*
+		Handle special case:
+		There are sometimes unused loads, only pinned by memory.
+		We need to remove those Loads and all other nodes which won't be used
+		after removing the Load from schedule.
+	*/
+	irg_walk_graph(cg->irg, remove_unused_loads_walker, NULL, already_visited);
+	bitset_free(already_visited);
 }
 
 
@@ -1207,14 +1286,14 @@ static void *ia32_init(FILE *file_handle) {
 
 	/* patch register names of x87 registers */
 	if (USE_x87(isa)) {
-	  ia32_st_regs[0].name = "st";
-	  ia32_st_regs[1].name = "st(1)";
-	  ia32_st_regs[2].name = "st(2)";
-	  ia32_st_regs[3].name = "st(3)";
-	  ia32_st_regs[4].name = "st(4)";
-	  ia32_st_regs[5].name = "st(5)";
-	  ia32_st_regs[6].name = "st(6)";
-	  ia32_st_regs[7].name = "st(7)";
+		ia32_st_regs[0].name = "st";
+		ia32_st_regs[1].name = "st(1)";
+		ia32_st_regs[2].name = "st(2)";
+		ia32_st_regs[3].name = "st(3)";
+		ia32_st_regs[4].name = "st(4)";
+		ia32_st_regs[5].name = "st(5)";
+		ia32_st_regs[6].name = "st(6)";
+		ia32_st_regs[7].name = "st(7)";
 	}
 
 #ifndef NDEBUG
@@ -1406,29 +1485,7 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 	return &ia32_irn_handler;
 }
 
-/* returns the first Proj with given mode from mode_T node */
-static ir_node *get_proj_for_mode(ir_node *node, ir_mode *mode) {
-	const ir_edge_t *edge;
-
-	assert(get_irn_mode(node) == mode_T && "Need mode_T node.");
-
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (get_irn_mode(proj) == mode)
-			return proj;
-	}
-
-	return NULL;
-}
-
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
-#if 0
-	/* Loads with no user do not need to appear in schedule */
-	if (is_ia32_Ld(irn) && get_irn_n_edges(irn) == 1) {
-		/* only one user && user is not memory -> schedule */
-		return get_proj_for_mode(irn, mode_M) == NULL;
-	}
-#endif
 	return is_ia32_irn(irn) ? 1 : -1;
 }
 
