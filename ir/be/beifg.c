@@ -334,6 +334,65 @@ void be_ifg_check_sorted(const be_ifg_t *ifg)
 
 }
 
+void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
+{
+	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
+	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
+
+	ir_node *n, *m;
+	const int node_count = be_ifg_check_get_node_count(ifg);
+	int neighbours_count = 0;
+	int i = 0;
+
+	ir_node **all_nodes = xmalloc(node_count * sizeof(all_nodes[0]));
+
+	be_ifg_foreach_node(ifg, iter1, n)
+	{
+		if(!node_is_in_irgs_storage(ifg->env->irg, n))
+		{
+			ir_fprintf (f,"+%F is in ifg but not in the current irg!",n);
+			assert (node_is_in_irgs_storage(ifg->env->irg, n));
+		}
+
+		all_nodes[i] = n;
+		i++;
+	}
+
+	qsort(all_nodes, node_count, sizeof(all_nodes[0]), be_ifg_check_cmp_nodes);
+
+	for (i = 0; i < node_count; i++)
+	{
+		ir_node **neighbours = xmalloc(node_count * sizeof(neighbours[0]));
+		int j = 0;
+		int k = 0;
+		int degree = 0;
+
+		degree = be_ifg_degree(ifg, all_nodes[i]);
+
+		be_ifg_foreach_neighbour(ifg, iter2, all_nodes[i], m)
+		{
+			neighbours[j] = m;
+			j++;
+		}
+
+		qsort(neighbours, j, sizeof(neighbours[0]), be_ifg_check_cmp_nodes);
+
+		ir_fprintf (f,"%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
+
+		for(k = 0; k < j; k++)
+		{
+			ir_fprintf (f,"%+F, ", neighbours[k]);
+		}
+
+		ir_fprintf (f,"\n");
+
+		free(neighbours);
+	}
+
+	free(all_nodes);
+
+}
+
 void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 {
 	int tests = BE_CH_PERFORMANCETEST_COUNT;

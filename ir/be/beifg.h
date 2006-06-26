@@ -74,6 +74,7 @@ typedef struct _be_ifg_dump_dot_cb_t {
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self);
 void be_ifg_check_sorted(const be_ifg_t *ifg);
+void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f);
 void be_ifg_check_performance(be_chordal_env_t *chordal_env);
 
 
