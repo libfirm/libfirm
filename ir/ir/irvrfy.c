@@ -1427,6 +1427,23 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
       );
   }
   ASSERT_AND_RET( mode_is_dataM(mymode), "Phi node", 0 );
+
+  if (mymode == mode_M) {
+    for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
+      int j;
+      ir_node *pred_i = get_Phi_pred(n, i);
+      for (j = i - 1; j >= 0; --j) {
+        ir_node *pred_j = get_Phi_pred(n, j);
+
+        ASSERT_AND_RET_DBG(
+          (pred_i == pred_j) || (get_irn_n(pred_i, -1) != get_irn_n(pred_j, -1)),
+          "At least two different PhiM predecessors are in the same block",
+          0,
+          ir_printf("%+F and %+F of %+F are in %+F\n", pred_i, pred_j, n, get_irn_n(pred_i, -1))
+        );
+      }
+    }
+  }
   return 1;
 }
 
