@@ -633,7 +633,12 @@ static void callee_ana_proj(ir_node * node, long n, eset * methods) {
   set_irn_link(node, NULL);
 }
 
-
+/**
+ * Analyse a Call address
+ *
+ * @param node    the node representing the call address
+ * @param methods the set of all 'free' methods
+ */
 static void callee_ana_node(ir_node * node, eset * methods) {
   int i;
 
@@ -678,7 +683,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     /* nothing */
     break;
 
-  case iro_Phi: /* Vereinigung */
+  case iro_Phi:
     for (i = get_Phi_n_preds(node) - 1; i >= 0; --i) {
       callee_ana_node(get_Phi_pred(node, i), methods);
     }
@@ -687,6 +692,13 @@ static void callee_ana_node(ir_node * node, eset * methods) {
   case iro_Mux:
     callee_ana_node(get_Mux_false(node), methods);
     callee_ana_node(get_Mux_true(node), methods);
+    break;
+
+  case iro_Psi:
+    for (i = get_Psi_n_conds(node) - 1; i >= 0; --i) {
+      callee_ana_node(get_Psi_val(node, i), methods);
+    }
+    callee_ana_node(get_Psi_default(node), methods);
     break;
 
   case iro_Id:
