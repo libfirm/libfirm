@@ -62,8 +62,7 @@
 #define REMAT_WHILE_LIVE /* only remat values that are live */
 //#define NO_ENLARGE_L1V3N355 /* do not remat after the death of some operand */
 //#define EXECFREQ_LOOPDEPH /* compute execution frequency from loop depth only */
-//#define MAY_DIE_AT_PRE_REMAT /* allow values to die after a pre remat */
-#define CHECK_POST_REMAT /* check pressure after post remats (conservative but otherwise we can temporarily exceed the register pressure) */
+#define MAY_DIE_AT_REMAT /* allow values to die after a pre remat */
 #define NO_SINGLE_USE_REMATS /* do not repair schedule */
 //#define KEEPALIVE_SPILLS
 //#define KEEPALIVE_RELOADS
@@ -326,8 +325,7 @@ get_cost(const spill_ilp_t * si, const ir_node * irn)
 static INLINE int
 is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 {
-	int             i,
-	                n;
+	int               n;
 	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
 	int               remat = (arch_irn_get_flags(arch_env, irn) & arch_irn_flags_rematerializable) != 0;
 
@@ -336,8 +334,8 @@ is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 		ir_fprintf(stderr, "  Node %+F is not rematerializable\n", irn);
 #endif
 
-	for (i = 0, n = get_irn_arity(irn); i < n && remat; ++i) {
-		ir_node        *op = get_irn_n(irn, i);
+	for (n = get_irn_arity(irn)-1; n>=0 && remat; --n) {
+		ir_node        *op = get_irn_n(irn, n);
 		remat &= has_reg_class(si, op) || arch_irn_get_flags(arch_env, op) & arch_irn_flags_ignore || (get_irn_op(op) == op_NoMem);
 
 //		if(!remat)
@@ -377,28 +375,27 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 		remat->inverse = 0;
 	} else {
 		arch_inverse_t     inverse;
-		int                i,
-						   n;
+		int                n;
 
 		/* get the index of the operand we want to retrieve by the inverse op */
-		for (i = 0, n = get_irn_arity(op); i < n; ++i) {
-			ir_node        *arg = get_irn_n(op, i);
+		for (n = get_irn_arity(op)-1; n>=0; --n) {
+			ir_node        *arg = get_irn_n(op, n);
 
 			if(arg == dest_value) break;
 		}
-		if(i == n) return NULL;
+		if(n<0) return NULL;
 
-		DBG((si->dbg, LEVEL_5, "\t  requesting inverse op for argument %d of op %+F\n", i, op));
+		DBG((si->dbg, LEVEL_5, "\t  requesting inverse op for argument %d of op %+F\n", n, op));
 
 		/* else ask the backend to give an inverse op */
-		if(arch_get_inverse(si->chordal_env->birg->main_env->arch_env, op, i, &inverse, si->obst)) {
+		if(arch_get_inverse(si->chordal_env->birg->main_env->arch_env, op, n, &inverse, si->obst)) {
 			int   i;
 
 			DBG((si->dbg, LEVEL_4, "\t  backend gave us an inverse op with %d nodes and cost %d\n", inverse.n, inverse.costs));
 
 			assert(inverse.n > 0 && "inverse op should have at least one node");
 
-			for(i=0; i<inverse.n; ++i) {
+			for(i=inverse.n-1; i>=0; --i) {
 				pset_insert_ptr(si->inverse_ops, inverse.nodes[i]);
 			}
 
@@ -433,8 +430,7 @@ add_remat(const spill_ilp_t * si, const remat_t * remat)
 {
 	remat_info_t    *remat_info,
                      query;
-	int              i,
-					 n;
+	int              n;
 
 	assert(remat->op);
 	assert(remat->value);
@@ -450,8 +446,8 @@ add_remat(const spill_ilp_t * si, const remat_t * remat)
 	pset_insert(remat_info->remats, remat, HASH_PTR(remat->op));
 
 	/* insert the remat into the remats_be_operand set of each argument of the remat op */
-	for (i = 0, n = get_irn_arity(remat->op); i < n; ++i) {
-		ir_node        *arg = get_irn_n(remat->op, i);
+	for (n = get_irn_arity(remat->op)-1; n>=0; --n) {
+		ir_node        *arg = get_irn_n(remat->op, n);
 
 		query.irn = arg;
 		query.remats = NULL;
@@ -484,8 +480,7 @@ get_irn_n_nonremat_edges(const spill_ilp_t * si, const ir_node * irn)
 static INLINE void
 get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 {
-	int       i,
-		      n;
+	int      n;
 	remat_t *remat;
 
 #ifdef NO_SINGLE_USE_REMATS
@@ -502,8 +497,8 @@ get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 #ifdef COLLECT_INVERSE_REMATS
 	/* repeat the whole stuff for each remat retrieved by get_remat_from_op(op, arg)
 	   for each arg */
-	for (i = 0, n = get_irn_arity(op); i < n; ++i) {
-		ir_node        *arg = get_irn_n(op, i);
+	for (n = get_irn_arity(op)-1; n>=0; --n) {
+		ir_node        *arg = get_irn_n(op, n);
 
 		if(has_reg_class(si, arg)) {
 			/* try to get an inverse remat */
@@ -637,8 +632,7 @@ can_remat_before(const spill_ilp_t * si, const remat_t * remat, const ir_node * 
 {
 	const ir_node   *op = remat->op;
 	const ir_node   *prev;
-	int        i,
-			   n,
+	int        n,
 			   res = 1;
 
 	if(is_Block(pos)) {
@@ -662,8 +656,8 @@ can_remat_before(const spill_ilp_t * si, const remat_t * remat, const ir_node * 
 	}
 #endif
 
-	for(i=0, n=get_irn_arity(op); i<n && res; ++i) {
-		const ir_node   *arg = get_irn_n(op, i);
+	for(n=get_irn_arity(op)-1; n>=0 && res; --n) {
+		const ir_node   *arg = get_irn_n(op, n);
 
 #ifdef NO_ENLARGE_L1V3N355
 		if(has_reg_class(si, arg) && live) {
@@ -747,7 +741,7 @@ insert_copy_after(const spill_ilp_t * si, const ir_node * irn, ir_node * pos)
 	return copy;
 }
 
-static void
+static ir_node *
 insert_remat_after(spill_ilp_t * si, const remat_t * remat, const ir_node * pos, const pset * live)
 {
 	char     buf[256];
@@ -779,10 +773,14 @@ insert_remat_after(spill_ilp_t * si, const remat_t * remat, const ir_node * pos,
 		} else {
 			proj_copy = NULL;
 		}
+
+		return copy;
 	}
+
+	return NULL;
 }
 
-static void
+static ir_node *
 insert_remat_before(spill_ilp_t * si, const remat_t * remat, const ir_node * pos, const pset * live)
 {
 	char     buf[256];
@@ -814,7 +812,11 @@ insert_remat_before(spill_ilp_t * si, const remat_t * remat, const ir_node * pos
 		} else {
 			proj_copy = NULL;
 		}
+
+		return copy;
 	}
+
+	return NULL;
 }
 
 static int
@@ -916,6 +918,7 @@ walker_remat_insertor(ir_node * bb, void * data)
 		op_t      *op;
 		pset      *args;
 		ir_node   *arg;
+		pset      *remat_args;
 
 		next = sched_prev(irn);
 
@@ -959,6 +962,63 @@ walker_remat_insertor(ir_node * bb, void * data)
 			if(has_reg_class(si, arg)) {
 				pset_insert_ptr(live, arg);
 			}
+		}
+
+		remat_args = pset_new_ptr_default();
+
+		/* insert all possible remats before irn */
+		pset_foreach(args, arg) {
+			remat_info_t   *remat_info,
+						    query;
+			remat_t        *remat;
+
+			/* continue if the operand has the wrong reg class
+			 */
+			if(!has_reg_class(si, arg))
+				continue;
+
+			query.irn = arg;
+			query.remats = NULL;
+			query.remats_by_operand = NULL;
+			remat_info = set_find(si->remat_info, &query, sizeof(query), HASH_PTR(arg));
+
+			if(!remat_info) {
+				continue;
+			}
+
+			if(remat_info->remats) {
+				pset_foreach(remat_info->remats, remat) {
+					ir_node  *remat_irn = NULL;
+
+					DBG((si->dbg, LEVEL_4, "\t  considering remat %+F for arg %+F\n", remat->op, arg));
+#ifdef REMAT_WHILE_LIVE
+					if(pset_find_ptr(live, remat->value)) {
+						remat_irn = insert_remat_before(si, remat, irn, live);
+					}
+#else
+					remat_irn = insert_remat_before(si, remat, irn, live);
+#endif
+					if(remat_irn) {
+						for(n=get_irn_arity(remat_irn)-1; n>=0; --n) {
+							ir_node  *remat_arg = get_irn_n(remat_irn, n);
+
+							if(!has_reg_class(si, remat_arg)) continue;
+
+							pset_insert_ptr(remat_args, remat_arg);
+						}
+					}
+				}
+			}
+		}
+
+		/* now we add remat args to op's args because they could also die at this op */
+		pset_foreach(args,arg) {
+			if(pset_find_ptr(remat_args, arg)) {
+				pset_remove_ptr(remat_args, arg);
+			}
+		}
+		pset_foreach(remat_args,arg) {
+			pset_insert_ptr(args, arg);
 		}
 
 		/* insert all possible remats after irn */
@@ -1005,40 +1065,7 @@ walker_remat_insertor(ir_node * bb, void * data)
 			pset_remove_ptr(live, irn);
 		}
 
-		/* insert all possible remats before irn */
-		pset_foreach(args, arg) {
-			remat_info_t   *remat_info,
-						    query;
-			remat_t        *remat;
-
-			/* continue if the operand has the wrong reg class
-			 */
-			if(!has_reg_class(si, arg))
-				continue;
-
-			query.irn = arg;
-			query.remats = NULL;
-			query.remats_by_operand = NULL;
-			remat_info = set_find(si->remat_info, &query, sizeof(query), HASH_PTR(arg));
-
-			if(!remat_info) {
-				continue;
-			}
-
-			if(remat_info->remats) {
-				pset_foreach(remat_info->remats, remat) {
-					DBG((si->dbg, LEVEL_4, "\t  considering remat %+F for arg %+F\n", remat->op, arg));
-#ifdef REMAT_WHILE_LIVE
-					if(pset_find_ptr(live, remat->value)) {
-						insert_remat_before(si, remat, irn, live);
-					}
-#else
-					insert_remat_before(si, remat, irn, live);
-#endif
-				}
-			}
-		}
-
+		del_pset(remat_args);
 		del_pset(args);
 		irn = next;
 	}
@@ -1391,10 +1418,8 @@ luke_blockwalker(ir_node * bb, void * data)
 	char            buf[256];
 	ilp_cst_t       cst;
 	spill_bb_t     *spill_bb = get_irn_link(bb);
-	int             i;
 	ir_node        *tmp;
 	spill_t        *spill;
-	irn_live_t     *li;
 	pset           *defs = pset_new_ptr_default();
 
 
@@ -1511,10 +1536,9 @@ luke_blockwalker(ir_node * bb, void * data)
 					d = 0;
 		ilp_cst_t	check_pre,
 					check_post;
-#ifdef CHECK_POST_REMAT
-		ilp_cst_t	check_post_remat;
-#endif
 		set        *args;
+		pset       *used;
+		pset       *remat_defs;
 		keyval_t   *keyval;
 
 		/* iterate only until first phi */
@@ -1534,20 +1558,40 @@ luke_blockwalker(ir_node * bb, void * data)
 		/* skip projs */
 		if(is_Proj(irn)) continue;
 
-#if 0
-		/* remove defined values from live set */
-		if(has_reg_class(si, irn)) {
-			assert(pset_find_ptr(live, irn));
-			pset_remove_ptr(live, irn);
-		}
-#endif
+		/*
+		 * init set of irn's arguments
+		 * and all possibly used values around this op
+		 * and values defined by post remats
+		 */
+		args =       new_set(cmp_keyval, get_irn_arity(irn));
+		used =       pset_new_ptr(pset_count(live) + get_irn_arity(irn));
+		remat_defs = pset_new_ptr(pset_count(live));
 
-		/* init set of irn's arguments */
-		args =  new_set(cmp_keyval, get_irn_arity(irn));
 		for (n=get_irn_arity(irn)-1; n>=0; --n) {
 			ir_node        *irn_arg = get_irn_n(irn, n);
 			if(has_reg_class(si, irn_arg)) {
 				set_insert_keyval(args, irn_arg, (void*)n);
+				pset_insert_ptr(used, irn_arg);
+			}
+		}
+		foreach_post_remat(irn, tmp) {
+			op_t    *remat_op = get_irn_link(tmp);
+
+			pset_insert_ptr(remat_defs, remat_op->attr.remat.remat->value);
+
+			for (n=get_irn_arity(tmp)-1; n>=0; --n) {
+				ir_node        *remat_arg = get_irn_n(tmp, n);
+				if(has_reg_class(si, remat_arg)) {
+					pset_insert_ptr(used, remat_arg);
+				}
+			}
+		}
+		foreach_pre_remat(si, irn, tmp) {
+			for (n=get_irn_arity(tmp)-1; n>=0; --n) {
+				ir_node        *remat_arg = get_irn_n(tmp, n);
+				if(has_reg_class(si, remat_arg)) {
+					pset_insert_ptr(used, remat_arg);
+				}
 			}
 		}
 
@@ -1555,45 +1599,79 @@ luke_blockwalker(ir_node * bb, void * data)
 		 *   I N  E P I L O G  O F  irn
 		 **********************************/
 
+		/* ensure each dying value is used by only one post remat */
+		pset_foreach(live, tmp) {
+			ir_node     *value = tmp;
+			op_t        *value_op = get_irn_link(value);
+			ir_node     *remat;
+			int          n_remats = 0;
+
+			cst = ILP_UNDEF;
+			foreach_post_remat(irn, remat) {
+				op_t  *remat_op = get_irn_link(remat);
+
+				for(n=get_irn_arity(remat)-1; n>=0; --n) {
+					ir_node   *remat_arg = get_irn_n(remat, n);
+
+					/* if value is used by this remat add it to constraint */
+					if(remat_arg == value) {
+						if(n_remats == 0) {
+							/* sum remat2s <= 1 + n_remats*live_range */
+							ir_snprintf(buf, sizeof(buf), "dying_lr_%N_%N", value, irn);
+							cst = lpp_add_cst(si->lpp, buf, lpp_less, 1.0);
+						}
+
+						n_remats++;
+						lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
+						break;
+					}
+				}
+			}
+
+			if(value_op->attr.live_range.ilp != ILP_UNDEF && cst != ILP_UNDEF) {
+				lpp_set_factor_fast(si->lpp, cst, value_op->attr.live_range.ilp, -n_remats);
+			}
+		}
+
+
+
 		/* new live ranges for values from L\U defined by post remats */
 		pset_foreach(live, tmp) {
-			ir_node     *value = tmp;//remat_op->attr.remat.remat->value;
+			ir_node     *value = tmp;
 			op_t        *value_op = get_irn_link(value);
 
 			if(!set_find_keyval(args, value) && !pset_find_ptr(defs, value)) {
 				ilp_var_t    prev_lr = ILP_UNDEF;
 				ir_node     *remat;
-				cst = ILP_UNDEF;
 
-				foreach_post_remat(irn, remat) {
-					op_t        *remat_op = get_irn_link(remat);
+				if(pset_find_ptr(remat_defs, value)) {
 
-					/* if value is being rematerialized by this remat */
-					if(value == remat_op->attr.remat.remat->value) {
-						if(cst == ILP_UNDEF) {
-							/* next_live_range <= prev_live_range + sum remat2s */
-							ir_snprintf(buf, sizeof(buf), "next_lr_%N_%N", value, irn);
-							cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+					/* next_live_range <= prev_live_range + sum remat2s */
+					ir_snprintf(buf, sizeof(buf), "next_lr_%N_%N", value, irn);
+					cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 
-							ir_snprintf(buf, sizeof(buf), "lr_%N_%N", value, irn);
-							prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+					ir_snprintf(buf, sizeof(buf), "lr_%N_%N", value, irn);
+					prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
 
-							lpp_set_factor_fast(si->lpp, cst, value_op->attr.live_range.ilp, 1.0);
-							lpp_set_factor_fast(si->lpp, cst, prev_lr, -1.0);
+					lpp_set_factor_fast(si->lpp, cst, value_op->attr.live_range.ilp, 1.0);
+					lpp_set_factor_fast(si->lpp, cst, prev_lr, -1.0);
+
+					foreach_post_remat(irn, remat) {
+						op_t        *remat_op = get_irn_link(remat);
+
+						/* if value is being rematerialized by this remat */
+						if(value == remat_op->attr.remat.remat->value) {
+							lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
 						}
-
-						lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
 					}
-				}
 
-				if(prev_lr != ILP_UNDEF) {
 					value_op->attr.live_range.ilp = prev_lr;
 					value_op->attr.live_range.op = irn;
 				}
 			}
 		}
 
-		/* requirements for post remats and start live ranges from L/U for values dying here */
+		/* requirements for post remats and start live ranges from L/U' for values dying here */
 		foreach_post_remat(irn, tmp) {
 			op_t        *remat_op = get_irn_link(tmp);
 			int          n;
@@ -1605,7 +1683,7 @@ luke_blockwalker(ir_node * bb, void * data)
 				if(!has_reg_class(si, remat_arg)) continue;
 
 				/* only for values in L\U (TODO and D?), the others are handled with post_use */
-				if(!set_find_keyval(args, remat_arg)) {
+				if(!pset_find_ptr(used, remat_arg)) {
 					/* remat <= live_rang(remat_arg) */
 					ir_snprintf(buf, sizeof(buf), "req_remat2_%N_arg_%N", tmp, remat_arg);
 					cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
@@ -1632,53 +1710,6 @@ luke_blockwalker(ir_node * bb, void * data)
 			}
 		}
 
-#ifdef CHECK_POST_REMAT
-		/* check the register pressure after the epilog */
-		ir_snprintf(buf, sizeof(buf), "check_post_remat_%N", irn);
-		check_post_remat = lpp_add_cst(si->lpp, buf, lpp_less, si->n_regs);
-
-		/* iterate over L\U */
-		pset_foreach(live, tmp) {
-			if(!set_find_keyval(args, tmp)) {
-				/* if a live value is not used by irn */
-				tmp_op = get_irn_link(tmp);
-				lpp_set_factor_fast(si->lpp, check_post_remat, tmp_op->attr.live_range.ilp, 1.0);
-			}
-		}
-		/* iterate over remats in epilog and remove possibly defined values again from check_post_remat */
-		foreach_post_remat(irn, tmp) {
-			op_t           *remat_op = get_irn_link(tmp);
-			const ir_node  *value = remat_op->attr.remat.remat->value;
-			op_t           *val_op = get_irn_link(value);
-
-			assert(remat_op->is_remat && !remat_op->attr.remat.pre);
-
-			/* values that are defined by remats are not counted */
-#ifdef REMAT_WHILE_LIVE
-			assert(val_op->attr.live_range.ilp);
-			lpp_set_factor_fast(si->lpp, check_post_remat, val_op->attr.live_range.ilp, 0.0);
-#else
-			if(val_op->attr.live_range.ilp != ILP_UNDEF) {
-				lpp_set_factor_fast(si->lpp, check_post_remat, val_op->attr.live_range.ilp, 0.0);
-			}
-#endif /* REMAT_WHILE_LIVE */
-
-			/* instead add these post remats to the check */
-			lpp_set_factor_fast(si->lpp, check_post_remat, remat_op->attr.remat.ilp, 1.0);
-		}
-
-#if 0 /* defs are still in live */
-		/* get count of values in my register class defined by irn */
-		/* also add defined values to check_post_remat; do this before iterating over args */
-		pset_foreach(defs,tmp) {
-			op_t     *def_op = get_irn_link(tmp);
-
-			lpp_set_factor_fast(si->lpp, check_post_remat, def_op->attr.live_range.ilp, 1.0);
-		}
-#endif
-#endif /* CHECK_POST_REMAT */
-
-
 		d = pset_count(defs);
 		DBG((si->dbg, LEVEL_4, "\t   %+F produces %d values in my register class\n", irn, d));
 
@@ -1687,13 +1718,13 @@ luke_blockwalker(ir_node * bb, void * data)
 
 
 		/* check the register pressure in the epilog */
-		/* sum_{L\U} lr + sum_{U} post_use <= k - |D| */
+		/* sum_{L\U'} lr + sum_{U'} post_use <= k - |D| */
 		ir_snprintf(buf, sizeof(buf), "check_post_%N", irn);
 		check_post = lpp_add_cst(si->lpp, buf, lpp_less, si->n_regs - d);
 
-		/* add L\U to check_post */
+		/* add L\U' to check_post */
 		pset_foreach(live, tmp) {
-			if(!set_find_keyval(args, tmp) && !pset_find_ptr(defs, tmp)) {
+			if(!pset_find_ptr(used, tmp) && !pset_find_ptr(defs, tmp)) {
 				/* if a live value is not used by irn */
 				tmp_op = get_irn_link(tmp);
 				lpp_set_factor_fast(si->lpp, check_post, tmp_op->attr.live_range.ilp, 1.0);
@@ -1701,25 +1732,24 @@ luke_blockwalker(ir_node * bb, void * data)
 		}
 
 		/***********************************************************
-		 *  I T E R A T I O N  O V E R  A R G S  F O R  E P I L O G
+		 *  I T E R A T I O N  O V E R  U S E S  F O R  E P I L O G
 		 **********************************************************/
 
 
-		set_foreach(args, keyval) {
-			ilp_var_t       next_lr;
+		pset_foreach(used, tmp) {
+			ilp_var_t       prev_lr;
 			ilp_var_t       post_use;
 			int             p = 0;
 			spill_t        *spill;
-			ir_node        *arg = keyval->key;
+			ir_node        *arg = tmp;
 			op_t           *arg_op = get_irn_link(arg);
+			ir_node        *remat;
 
 			spill = add_to_spill_bb(si, bb, arg);
 
-			/* new live range for each argument */
+			/* new live range for each used value */
 			ir_snprintf(buf, sizeof(buf), "lr_%N_%N", arg, irn);
-			next_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
-
-			i = (int)keyval->val;
+			prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
 
 			/* the epilog stuff - including post_use, check_post, check_post_remat */
 			ir_snprintf(buf, sizeof(buf), "post_use_%N_%N", arg, irn);
@@ -1731,24 +1761,42 @@ luke_blockwalker(ir_node * bb, void * data)
 			if(pset_find_ptr(live, arg)) {
 				DBG((si->dbg, LEVEL_3, "\t  arg %+F is possibly live in epilog of %+F\n", arg, irn));
 
+				/* post_use >= next_lr + remat */
 				ir_snprintf(buf, sizeof(buf), "post_use_%N_%N-%d", arg, irn, p++);
 				cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 				lpp_set_factor_fast(si->lpp, cst, post_use, -1.0);
 				lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
 
-#ifdef CHECK_POST_REMAT
-				//lpp_set_factor_fast(si->lpp, check_post_remat, arg_op->attr.live_range.ilp, 1.0);
-				lpp_set_factor_fast(si->lpp, check_post_remat, post_use, 1.0);
-#endif
 			}
 
-			/*forall remat2 which use arg add a similar cst*/
-			foreach_post_remat(irn, tmp) {
+			/* if value is not an arg of op and not possibly defined by post remat
+			 * then it may only die and not become live
+			 */
+			if(!set_find_keyval(args, arg)) {
+				/* post_use <= prev_lr */
+				ir_snprintf(buf, sizeof(buf), "req_post_use_%N_%N", arg, irn);
+				cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+				lpp_set_factor_fast(si->lpp, cst, post_use, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, prev_lr, -1.0);
+
+				if(!pset_find_ptr(remat_defs, arg) && pset_find_ptr(live, arg)) {
+					/* next_lr <= prev_lr */
+					ir_snprintf(buf, sizeof(buf), "next_lr_%N_%N", arg, irn);
+					cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+					lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
+					lpp_set_factor_fast(si->lpp, cst, prev_lr, -1.0);
+				}
+			}
+
+
+
+			/* forall post remat which use arg add a similar cst */
+			foreach_post_remat(irn, remat) {
 				int      n;
 
-				for (n=get_irn_arity(tmp)-1; n>=0; --n) {
-					ir_node    *remat_arg = get_irn_n(tmp, n);
-					op_t       *remat_op = get_irn_link(tmp);
+				for (n=get_irn_arity(remat)-1; n>=0; --n) {
+					ir_node    *remat_arg = get_irn_n(remat, n);
+					op_t       *remat_op = get_irn_link(remat);
 
 					if(remat_arg == arg) {
 						DBG((si->dbg, LEVEL_3, "\t  found remat with arg %+F in epilog of %+F\n", arg, irn));
@@ -1761,18 +1809,20 @@ luke_blockwalker(ir_node * bb, void * data)
 				}
 			}
 
-			/* new live range begins for each argument */
-			arg_op->attr.live_range.ilp = next_lr;
+			/* new live range begins for each used value */
+			arg_op->attr.live_range.ilp = prev_lr;
 			arg_op->attr.live_range.op = irn;
 
+			/*if(!pset_find_ptr(live, arg)) {
+				pset_insert_ptr(live, arg);
+				add_to_spill_bb(si, bb, arg);
+			}*/
 			pset_insert_ptr(live, arg);
+
 		}
 
 		/* just to be sure */
 		check_post = ILP_UNDEF;
-#ifdef CHECK_POST_REMAT
-		check_post_remat = ILP_UNDEF;
-#endif
 
 
 
@@ -1839,8 +1889,6 @@ luke_blockwalker(ir_node * bb, void * data)
 		}
 
 
-		/* TODO allow new live ranges even if value does not die after remat??? MAY_DIE_AT_PRE_REMAT */
-
 		/* requirements for remats */
 		/* start new live ranges for values used by remats */
 		foreach_pre_remat(si, irn, tmp) {
@@ -1853,20 +1901,6 @@ luke_blockwalker(ir_node * bb, void * data)
 				ilp_var_t       prev_lr;
 
 				if(!has_reg_class(si, remat_arg)) continue;
-
-				/* if value is becoming live through use by remat */
-				if(!pset_find_ptr(live, remat_arg)) {
-					ir_snprintf(buf, sizeof(buf), "lr_%N_%N", remat_arg, irn);
-					prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
-
-					arg_op->attr.live_range.ilp = prev_lr;
-					arg_op->attr.live_range.op = irn;
-
-					DBG((si->dbg, LEVEL_4, "  value %+F becoming live through use by remat %+F\n", remat_arg, tmp));
-
-					pset_insert_ptr(live, remat_arg);
-					add_to_spill_bb(si, bb, remat_arg);
-				}
 
 				/* remat <= live_rang(remat_arg) [ + reload(remat_arg) ] */
 				ir_snprintf(buf, sizeof(buf), "req_remat_%N_arg_%N", tmp, remat_arg);
@@ -1903,6 +1937,8 @@ luke_blockwalker(ir_node * bb, void * data)
 			assert(!find_post_remat(arg, irn) && "there should be no post remat for an argument of an op");
 		}
 
+		del_pset(remat_defs);
+		del_pset(used);
 		del_set(args);
 		del_pset(defs);
 		defs = pset_new_ptr_default();
@@ -2441,7 +2477,6 @@ memcopyhandler(spill_ilp_t * si)
 						cst;
 		const ir_node  *a  = interference->a;
 		const ir_node  *b  = interference->b;
-		struct list_head *pos;
 
 		/* any_interf <= \sum interf */
 		ir_snprintf(buf, sizeof(buf), "interfere_%N_%N", a, b);
@@ -3637,8 +3672,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	// move reloads upwards
 	be_liveness(chordal_env->irg);
-	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
-	move_reloads_upward(&si);
+	//irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
+	//move_reloads_upward(&si);
 
 	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
 
