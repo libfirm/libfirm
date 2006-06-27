@@ -898,7 +898,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
   int i, n;
   ir_node *store, *old_store, *ptr, *block, *phiM, *phiD, *exc, *projM;
   ir_mode *mode;
-  ir_node **inM, **inD;
+  ir_node **inM, **inD, **stores;
   int *idx;
   dbg_info *db = NULL;
   ldst_info_t *info;
@@ -976,12 +976,24 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
    */
 
   /* first step: collect all inputs */
+  NEW_ARR_A(ir_node *, stores, n);
   NEW_ARR_A(ir_node *, inM, n);
   NEW_ARR_A(ir_node *, inD, n);
   NEW_ARR_A(int, idx, n);
 
+  /* prepare: skip the memory proj: we need this in the case some stores
+     are cascaded */
   for (i = 0; i < n; ++i) {
     ir_node *pred = skip_Proj(get_Phi_pred(phi, i));
+    info = get_irn_link(pred);
+
+    stores[i] = pred;
+
+    exchange(info->projs[pn_Store_M], get_Store_mem(pred));
+  }
+
+  for (i = 0; i < n; ++i) {
+    ir_node *pred = stores[i];
     info = get_irn_link(pred);
 
     inM[i] = get_Store_mem(pred);
