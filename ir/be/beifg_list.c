@@ -76,7 +76,7 @@ static adj_head_t *get_or_set_adj_head(ifg_list_t *ifg, ir_node *irn)
 
 static list_element_t *get_new_list_element(ifg_list_t *ifg, ir_node *irn)
 {
-	list_element_t *element;
+	list_element_t *element = NULL;
 
 	element = obstack_alloc(&ifg->obst, sizeof(*element));
 	element->irn = irn;
@@ -87,9 +87,9 @@ static list_element_t *get_new_list_element(ifg_list_t *ifg, ir_node *irn)
 
 static void add_edge(ifg_list_t *ifg, ir_node *a, ir_node *b) /* add node B as a neighbour to A and vice versa */
 {
-	adj_head_t *adj_head;
-	list_element_t *new_element;
-	list_element_t *element;
+	adj_head_t *adj_head = NULL;
+	list_element_t *new_element = NULL;
+	list_element_t *element = NULL;
 	int is_element = 0;
 
 	adj_head = get_or_set_adj_head(ifg, a);
@@ -140,8 +140,8 @@ static void find_nodes(const ifg_list_t *ifg, adj_iter_t *it)
 
 static ir_node *get_next_node(adj_iter_t *it)
 {
-	adj_head_t *adj_head;
-	ir_node *irn;
+	adj_head_t *adj_head = NULL;
+	ir_node *irn = NULL;
 	unsigned int node_idx = it->curr_node_idx;
 
 	if (it->curr_adj_head == NULL)
@@ -176,11 +176,11 @@ static void find_neighbour_walker(ir_node *bl, void *data) /* find all adjacent 
 {
 	ifg_list_t *ifg = data;
 	struct list_head *head  = get_block_border_head(ifg->env, bl);
-	border_t *b;
+	border_t *b = NULL;
 	int delete_nodeset = 0;
 	nodeset *live = new_nodeset(ifg->env->cls->n_regs);
-	ir_node *live_irn;
-	adj_head_t *adj_head;
+	ir_node *live_irn = NULL;
+	adj_head_t *adj_head = NULL;
 
 	assert(is_Block(bl) && "There is no block to work on.");
 
@@ -211,7 +211,7 @@ static void find_neighbour_walker(ir_node *bl, void *data) /* find all adjacent 
 
 static void find_first_neighbour(const ifg_list_t *ifg, adj_iter_t *it, const ir_node *irn)
 {
-	list_element_t *element;
+	list_element_t *element = NULL;
 	adj_head_t *adj_head = ifg->adj_heads[irn->node_idx];
 
 	assert(adj_head && "There is no entry for this node.");
@@ -236,8 +236,8 @@ static void find_first_neighbour(const ifg_list_t *ifg, adj_iter_t *it, const ir
 
 static ir_node *get_next_neighbour(adj_iter_t *it)
 {
-	ir_node *res;
-	list_element_t *element;
+	ir_node *res = NULL;
+	list_element_t *element = NULL;
 	adj_head_t *adj_head = it->curr_adj_head;
 
 	if(it->irn != NULL) /* return the previous found neighbour */
@@ -287,8 +287,8 @@ static int ifg_list_connected(const void *self, const ir_node *a, const ir_node 
 	const ifg_list_t *ifg = self;
 	ir_node *node_a = (void *) a;
 	ir_node *node_b = (void *) b;
-	adj_head_t *adj_head;
-	list_element_t *element;
+	adj_head_t *adj_head = NULL;
+	list_element_t *element = NULL;
 	int is_element = 0;
 
 	adj_head = ifg->adj_heads[node_a->node_idx];
@@ -347,7 +347,7 @@ static void ifg_list_nodes_break(const void *self, adj_iter_t *it)
 static int ifg_list_degree(const void *self, const ir_node *irn)
 {
 	const ifg_list_t *ifg = self;
-	adj_head_t *adj_head;
+	adj_head_t *adj_head = NULL;
 
 	adj_head = ifg->adj_heads[irn->node_idx];
 	assert(adj_head && "There is no entry for this node.");
