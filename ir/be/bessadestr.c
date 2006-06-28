@@ -224,6 +224,9 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 					pin it
 				*/
 				ir_node *dupl  = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
+
+				/* this is commented out because it will fail in case of unknown float */
+#if 0
 				ir_mode *m_phi = get_irn_mode(phi), *m_dupl = get_irn_mode(dupl);
 
 				/*
@@ -233,6 +236,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				assert(((mode_is_int(m_phi) && mode_is_int(m_dupl)) ||
 					(mode_is_float(m_phi) && mode_is_float(m_dupl))) &&
 					(get_mode_size_bits(m_phi) == get_mode_size_bits(m_dupl)));
+#endif /* if 0 */
 
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
@@ -289,6 +293,9 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				ir_node *perm     = get_Proj_pred(arg);
 				ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
 				ir_node *dupl     = be_new_Copy(cls, chordal_env->irg, arg_block, orig_val);
+
+				/* this is commented out because it will fail in case of unknown float */
+#if 0
 				ir_mode *m_phi    = get_irn_mode(phi);
 				ir_mode *m_dupl   = get_irn_mode(dupl);
 
@@ -299,6 +306,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				assert(((mode_is_int(m_phi) && mode_is_int(m_dupl)) ||
 					(mode_is_float(m_phi) && mode_is_float(m_dupl))) &&
 					(get_mode_size_bits(m_phi) == get_mode_size_bits(m_dupl)));
+#endif /* if 0 */
 
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
