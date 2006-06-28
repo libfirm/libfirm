@@ -339,6 +339,7 @@ entity *be_get_frame_entity(const ir_node *irn);
 void   be_set_Spill_entity(ir_node *irn, entity *ent);
 entity *be_get_spill_entity(const ir_node *irn);
 
+void be_set_Spill_context(ir_node *irn, ir_node *ctx);
 ir_node *be_get_Spill_context(const ir_node *irn);
 
 
