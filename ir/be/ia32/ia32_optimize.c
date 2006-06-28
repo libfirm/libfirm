@@ -764,12 +764,13 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
  * - the load must not have other users than the irn             AND
  * - the irn must not have a frame entity set
  *
+ * @param cg          The ia32 code generator
  * @param h           The height information of the irg
  * @param block       The block the Loads must/mustnot be in
  * @param irn         The irn to check
  * return 0 if irn is no candidate, 1 if left load can be used, 2 if right one, 3 for both
  */
-static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
+static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const ir_node *block, ir_node *irn) {
 	ir_node *in, *load, *other, *left, *right;
 	int      n, is_cand = 0, cand;
 
@@ -814,6 +815,18 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 	}
 
 	cand = is_cand ? (cand | IA32_AM_CAND_RIGHT) : cand;
+
+	/* check some special cases */
+	if (USE_SSE2(cg) && is_ia32_Conv_I2FP(irn)) {
+		/* SSE Conv I -> FP cvtsi2s(s|d) can only load 32 bit values */
+		if (get_mode_size_bits(get_ia32_tgt_mode(irn)) != 32)
+			cand = IA32_AM_CAND_NONE;
+	}
+	else if (is_ia32_Conv_I2I(irn)) {
+		/* we cannot load an N bit value and implicitly convert it into an M bit value if N > M */
+		if (get_mode_size_bits(get_ia32_src_mode(irn)) > get_mode_size_bits(get_ia32_tgt_mode(irn)))
+			cand = IA32_AM_CAND_NONE;
+	}
 
 	/* if the irn has a frame entity: we do not use address mode */
 	return get_ia32_frame_ent(irn) ? IA32_AM_CAND_NONE : cand;
@@ -1418,7 +1431,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	/*     - nobody else uses the result of the op                                      */
 
 	if ((get_ia32_am_support(irn) != ia32_am_None) && ! is_ia32_Lea(irn)) {
-		ia32_am_cand_t cand      = is_am_candidate(h, block, irn);
+		ia32_am_cand_t cand      = is_am_candidate(cg, h, block, irn);
 		ia32_am_cand_t orig_cand = cand;
 
 		/* cand == 1: load is left;   cand == 2: load is right; */
