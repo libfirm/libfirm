@@ -43,6 +43,7 @@ enum firmstat_optimizations_t {
   FS_OPT_ADD_MUL_A_X_A,                     /**< a * x + a = a * (x + 1) */
   FS_OPT_SUB_0_A,                           /**< 0 - a = -a */
   FS_OPT_SUB_MUL_A_X_A,                     /**< a * x - a = a * (x - 1) */
+  FS_OPT_SUB_SUB_X_Y_Z,                     /**< (x - y) - z = x - (y + z) */
   FS_OPT_MUL_MINUS_1,                       /**< a * -1 = -a */
   FS_OPT_OR,                                /**< a | a = a | 0 = 0 | a = a */
   FS_OPT_AND,                               /**< a & 0b1...1 = 0b1...1 & a =  a & a = a */

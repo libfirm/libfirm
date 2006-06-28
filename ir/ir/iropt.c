@@ -1881,6 +1881,7 @@ static ir_node *transform_node_Add(ir_node *n)
  * Do the AddSub optimization, then Transform
  *   Sub(0,a)          -> Minus(a)
  *   Sub(Mul(a, x), a) -> Mul(a, x-1)
+ *   Sub(Sub(x, y), b) -> Sub(x, Add(y,b))
  */
 static ir_node *transform_node_Sub(ir_node *n)
 {
@@ -1937,6 +1938,37 @@ static ir_node *transform_node_Sub(ir_node *n)
         mode);
       DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
     }
+  }
+  else if (get_irn_op(a) == op_Sub) {
+    ir_node *x   = get_Sub_left(a);
+    ir_node *y   = get_Sub_right(a);
+    ir_node *blk = get_irn_n(n, -1);
+    ir_mode *m_b = get_irn_mode(b);
+    ir_mode *m_y = get_irn_mode(y);
+    ir_node *add;
+
+    /* Determine the right mode for the Add. */
+    if (m_b == m_y)
+      mode = m_b;
+    else if (mode_is_reference(m_b))
+      mode = m_b;
+    else if (mode_is_reference(m_y))
+      mode = m_y;
+    else {
+      /*
+       * Both modes are different but none is reference,
+       * happens for instance in SubP(SubP(P, Iu), Is).
+       * We have two possibilities here: Cast or ignore.
+       * Currently we ignore this case.
+       */
+      return n;
+    }
+
+    add = new_r_Add(current_ir_graph, blk, y, b, mode);
+
+    set_Sub_left(n, x);
+    set_Sub_right(n, add);
+    DBG_OPT_ALGSIM0(n, n, FS_OPT_SUB_SUB_X_Y_Z);
   }
 
   return n;
