@@ -755,7 +755,6 @@ insert_remat_after(spill_ilp_t * si, const remat_t * remat, const ir_node * pos,
 
 		copy = insert_copy_after(si, remat->op, pos);
 
-//		ir_snprintf(buf, sizeof(buf), "remat2_%N_%N", remat->value, pos);
 		ir_snprintf(buf, sizeof(buf), "remat2_%N_%N", copy, pos);
 		op = obstack_alloc(si->obst, sizeof(*op));
 		op->is_remat = 1;
@@ -794,7 +793,6 @@ insert_remat_before(spill_ilp_t * si, const remat_t * remat, const ir_node * pos
 
 		copy = insert_copy_before(si, remat->op, pos);
 
-//		ir_snprintf(buf, sizeof(buf), "remat_%N_%N", remat->value, pos);
 		ir_snprintf(buf, sizeof(buf), "remat_%N_%N", copy, pos);
 		op = obstack_alloc(si->obst, sizeof(*op));
 		op->is_remat = 1;
@@ -963,6 +961,11 @@ walker_remat_insertor(ir_node * bb, void * data)
 				pset_insert_ptr(live, arg);
 			}
 		}
+		/* delete defined value from live set */
+		if(has_reg_class(si, irn)) {
+			pset_remove_ptr(live, irn);
+		}
+
 
 		remat_args = pset_new_ptr_default();
 
@@ -1058,11 +1061,6 @@ walker_remat_insertor(ir_node * bb, void * data)
 					}
 				}
 			}
-		}
-
-		/* delete defined value from live set */
-		if(has_reg_class(si, irn)) {
-			pset_remove_ptr(live, irn);
 		}
 
 		del_pset(remat_args);
@@ -1407,6 +1405,106 @@ get_live_end(spill_ilp_t * si, ir_node * bb, pset * live)
 }
 
 /**
+ *  Inserts ILP-constraints and variables for memory copying before the given position
+ */
+static void
+insert_mem_copy_position(spill_ilp_t * si, pset * live, const ir_node * block)
+{
+	const ir_node    *succ;
+	const ir_edge_t  *edge;
+	spill_bb_t       *spill_bb = get_irn_link(block);
+	ir_node          *phi;
+	int               pos;
+	ilp_cst_t         cst;
+	ilp_var_t         copyreg;
+	char              buf[256];
+	ir_node          *tmp;
+
+
+	assert(edges_activated(current_ir_graph));
+
+	edge = get_block_succ_first(block);
+	if(!edge) return;
+
+	succ = edge->src;
+	pos = edge->pos;
+
+	edge = get_block_succ_next(block, edge);
+	/* next block can only contain phis, if this is a merge edge */
+	if(edge) return;
+
+	ir_snprintf(buf, sizeof(buf), "copyreg_%N", block);
+	copyreg = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+
+	ir_snprintf(buf, sizeof(buf), "check_copyreg_%N", block);
+	cst = lpp_add_cst(si->lpp, buf, lpp_less, si->n_regs);
+
+	pset_foreach(live, tmp) {
+		spill_t  *spill;
+#if 0
+		op_t  *op = get_irn_link(irn);
+		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, 1.0);
+#endif
+		spill = set_find_spill(spill_bb->ilp, tmp);
+		assert(spill);
+
+		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
+	}
+	lpp_set_factor_fast(si->lpp, cst, copyreg, 1.0);
+
+	sched_foreach(succ, phi) {
+		const ir_node  *to_copy;
+		op_t           *to_copy_op;
+		spill_t        *to_copy_spill;
+		op_t           *phi_op = get_irn_link(phi);
+		ilp_var_t       reload = ILP_UNDEF;
+
+
+		if(!is_Phi(phi)) break;
+		if(!has_reg_class(si, phi)) continue;
+
+		to_copy = get_irn_n(phi, pos);
+
+		to_copy_op = get_irn_link(to_copy);
+
+		to_copy_spill = set_find_spill(spill_bb->ilp, to_copy);
+		assert(to_copy_spill);
+
+		if(spill_bb->reloads) {
+			keyval_t *keyval = set_find_keyval(spill_bb->reloads, to_copy);
+
+			if(keyval) {
+				reload = PTR_TO_INT(keyval->val);
+			}
+		}
+
+		ir_snprintf(buf, sizeof(buf), "req_copy_%N_%N", block, to_copy);
+		cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+
+		/* copy - reg_out - reload - remat - live_range <= 0 */
+		lpp_set_factor_fast(si->lpp, cst, phi_op->attr.live_range.args.copies[pos], 1.0);
+		lpp_set_factor_fast(si->lpp, cst, to_copy_spill->reg_out, -1.0);
+		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
+		lpp_set_factor_fast(si->lpp, cst, to_copy_op->attr.live_range.ilp, -1.0);
+		foreach_pre_remat(si, block, tmp) {
+			op_t     *remat_op = get_irn_link(tmp);
+			if(remat_op->attr.remat.remat->value == to_copy) {
+				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
+			}
+		}
+
+		ir_snprintf(buf, sizeof(buf), "copyreq_%N_%N", block, to_copy);
+		cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+
+		/* copy - reg_out - copyreg <= 0 */
+		lpp_set_factor_fast(si->lpp, cst, phi_op->attr.live_range.args.copies[pos], 1.0);
+		lpp_set_factor_fast(si->lpp, cst, to_copy_spill->reg_out, -1.0);
+		lpp_set_factor_fast(si->lpp, cst, copyreg, -1.0);
+	}
+}
+
+
+/**
  * Walk all irg blocks and emit this ILP
  */
 static void
@@ -1470,6 +1568,10 @@ luke_blockwalker(ir_node * bb, void * data)
 		}
 		/* maybe we should also assure that reg_out >= live_range etc. */
 	}
+
+#ifndef NO_MEMCOPIES
+	insert_mem_copy_position(si, live, bb);
+#endif
 
 	/*
 	 * start new live ranges for values used by remats at end of block
@@ -2343,8 +2445,7 @@ luke_interferencewalker(ir_node * bb, void * data)
 				/* a and b are only interesting if they are in the same phi class */
 				if(has_reg_class(si, b) && get_phi_class(a) == get_phi_class(b)) {
 					if(values_interfere_in_block(bb, a, b)) {
-						//DBG((si->dbg, LEVEL_1, "\tvalues interfere in %+F: %+F, %+F\n", bb, a, b));
-						ir_fprintf(stderr, "\tvalues interfere in %+F: %+F, %+F\n", bb, a, b);
+						DBG((si->dbg, LEVEL_4, "\tvalues interfere in %+F: %+F, %+F\n", bb, a, b));
 						set_insert_interference(si, si->interferences, a, b, bb);
 					}
 				}
@@ -2913,6 +3014,48 @@ delete_unnecessary_remats(spill_ilp_t * si)
 #endif
 }
 
+static pset *
+get_spills_for_value(spill_ilp_t * si, ir_node * value)
+{
+	pset     *spills = pset_new_ptr_default();
+//	pset     *visited = pset_new_ptr_default();
+
+//	collect_spills(si, value, spills, visited);
+//	del_pset(visited);
+	ir_node  *next;
+	defs_t   *defs;
+
+	defs = set_find_def(si->values, value);
+
+	if(defs && defs->spills) {
+		for(next = defs->spills; next; next = get_irn_link(next)) {
+			pset_insert_ptr(spills, next);
+		}
+	}
+
+	return spills;
+}
+
+static pset *
+get_remats_for_value(spill_ilp_t * si, ir_node * value)
+{
+	pset     *remats = pset_new_ptr_default();
+
+	ir_node  *next;
+	defs_t   *defs;
+
+	defs = set_find_def(si->values, value);
+
+	if(defs && defs->remats) {
+		for(next = defs->remats; next; next = get_irn_link(next)) {
+			pset_insert_ptr(remats, next);
+		}
+	}
+
+	return remats;
+}
+
+
 /**
  * @param before   The node after which the spill will be placed in the schedule
  */
@@ -2942,6 +3085,50 @@ insert_spill(spill_ilp_t * si, ir_node * irn, ir_node * value, ir_node * before)
 	return spill;
 }
 
+static ir_node *
+insert_mem_copy(spill_ilp_t * si, const ir_node * bb, const ir_node * arg)
+{
+	ir_node          *prev = sched_block_last_noncf(si, bb);
+	ir_node          *insert_pos = sched_next(prev);
+	op_t             *prev_op = get_irn_link(prev);
+	pset             *remats = get_remats_for_value(si, arg);
+	ir_node          *spill;
+	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+
+	/* start from end of block and search a position for memcopy (spill) until block's last op begins */
+	while(be_is_Spill(prev)) {
+		prev = sched_prev(prev);
+	}
+
+	prev_op = get_irn_link(prev);
+
+	while(!sched_is_end(prev) && !is_Phi(prev)
+			&& prev_op->is_remat && prev_op->attr.remat.pre) {
+
+		insert_pos = prev;
+
+		if(pset_find_ptr(remats, prev)) {
+			insert_pos = sched_next(insert_pos);
+			break;
+		}
+
+		do {
+			prev = sched_prev(prev);
+		} while(be_is_Spill(prev));
+
+		prev_op = get_irn_link(prev);
+	}
+	insert_pos = sched_prev(insert_pos);
+
+	DBG((si->dbg, LEVEL_2, "\t  inserting mem copy for value %+F after %+F\n", arg, insert_pos));
+
+	spill = be_spill2(arch_env, arg, insert_pos, arg);
+
+	del_pset(remats);
+
+	return spill;
+}
+
 /**
  * @param before   The Phi node which has to be spilled
  */
@@ -2952,12 +3139,27 @@ insert_mem_phi(spill_ilp_t * si, const ir_node * phi)
 	ir_node  **ins;
 	defs_t    *defs;
 	int        n;
+	op_t      *op = get_irn_link(phi);
 
 	NEW_ARR_A(ir_node*, ins, get_irn_arity(phi));
 
+#ifndef NO_MEMCOPIES
+	for(n=get_irn_arity(phi)-1; n>=0; --n) {
+		ir_node    *arg = get_irn_n(phi, n);
+		ir_node    *bb = get_Block_cfgpred_block(get_nodes_block(phi), n);
+		lpp_name_t *name = si->lpp->vars[op->attr.live_range.args.copies[n]];
+
+		if(!is_zero(name->value)) {
+			ins[n] = insert_mem_copy(si, bb, arg);
+		} else {
+			ins[n] = si->m_unknown;
+		}
+	}
+#else
 	for(n=get_irn_arity(phi)-1; n>=0; --n) {
 		ins[n] = si->m_unknown;
 	}
+#endif
 
 	mem_phi =  new_r_Phi(si->chordal_env->irg, get_nodes_block(phi), get_irn_arity(phi), ins, mode_M);
 
@@ -2973,6 +3175,7 @@ insert_mem_phi(spill_ilp_t * si, const ir_node * phi)
 #ifdef KEEPALIVE_SPILLS
 	pset_insert_ptr(si->spills, mem_phi);
 #endif
+
 
 	return mem_phi;
 }
@@ -3027,28 +3230,6 @@ collect_spills(spill_ilp_t * si, ir_node * value, pset * spills, pset * visited)
 	}
 }
 #endif
-
-static pset *
-get_spills_for_value(spill_ilp_t * si, ir_node * value)
-{
-	pset     *spills = pset_new_ptr_default();
-//	pset     *visited = pset_new_ptr_default();
-
-//	collect_spills(si, value, spills, visited);
-//	del_pset(visited);
-	ir_node  *next;
-	defs_t   *defs;
-
-	defs = set_find_def(si->values, value);
-
-	if(defs && defs->spills) {
-		for(next = defs->spills; next; next = get_irn_link(next)) {
-			pset_insert_ptr(spills, next);
-		}
-	}
-
-	return spills;
-}
 
 /**
  * Add reload before operation and add to list of defs
@@ -3168,6 +3349,7 @@ walker_spill_placer(ir_node * bb, void * data) {
 	del_pset(spills_to_do);
 }
 
+
 static void
 phim_fixer(spill_ilp_t *si) {
 	defs_t  *defs;
@@ -3193,13 +3375,15 @@ phim_fixer(spill_ilp_t *si) {
 		for(n=get_irn_arity(phi)-1; n>=0; --n) {
 			const ir_node  *value = get_irn_n(phi, n);
 			defs_t         *val_defs = set_find_def(si->values, value);
+			ir_node        *arg = get_irn_n(phi_m, n);
 
 			/* get a spill of this value */
 			ir_node      *spill = val_defs->spills;
 
 			assert(spill && "no spill placed before PhiM");
 
-			set_irn_n(phi_m, n, spill);
+			if(is_Unknown(arg))
+				set_irn_n(phi_m, n, spill);
 		}
 	}
 }
@@ -3228,14 +3412,32 @@ walker_reload_placer(ir_node * bb, void * data) {
 				ir_node    *prev = sched_block_last_noncf(si, bb);
 				op_t       *prev_op = get_irn_link(prev);
 
+				while(be_is_Spill(prev)) {
+					prev = sched_prev(prev);
+				}
+
+				prev_op = get_irn_link(prev);
+
 				/* insert reload before pre-remats */
-				while(!sched_is_end(prev) && !be_is_Reload(prev) && !be_is_Spill(prev)
+				while(!sched_is_end(prev) && !be_is_Reload(prev) && !is_Phi(prev)
 						&& prev_op->is_remat && prev_op->attr.remat.pre) {
 					insert_pos = prev;
 
-					prev = sched_prev(insert_pos);
+					do {
+						prev = sched_prev(prev);
+					} while(be_is_Spill(prev));
+
 					prev_op = get_irn_link(prev);
+
 				}
+//				/* insert reload before pre-remats */
+//				while(!sched_is_end(prev) && !be_is_Reload(prev) //FIXME && !be_is_Spill(prev)
+//						&& !is_Phi(prev) && prev_op->is_remat && prev_op->attr.remat.pre) {
+//					insert_pos = prev;
+//
+//					prev = sched_prev(insert_pos);
+//					prev_op = get_irn_link(prev);
+//				}
 
 				reload = insert_reload(si, irn, insert_pos);
 
@@ -3270,12 +3472,12 @@ walker_reload_placer(ir_node * bb, void * data) {
 					if(!is_zero(name->value)) {
 						ir_node    *reload;
 						ir_node    *insert_pos = irn;
-						ir_node    *prev = insert_pos;
+						ir_node    *prev = sched_prev(insert_pos);
 						op_t       *prev_op;
 
-						do {
+						while(be_is_Spill(prev)) {
 							prev = sched_prev(prev);
-						} while(be_is_Spill(prev));
+						}
 
 						prev_op = get_irn_link(prev);
 
@@ -3446,6 +3648,7 @@ rewire_uses(spill_ilp_t * si)
 	be_free_dominance_frontiers(dfi);
 }
 
+
 static void
 writeback_results(spill_ilp_t * si)
 {
@@ -3530,6 +3733,75 @@ move_reloads_upward(spill_ilp_t * si)
 	irg_block_walk_graph(si->chordal_env->irg, walker_reload_mover, NULL, si);
 }
 
+
+/**
+ * Walk all irg blocks and check for interfering spills inside of phi classes
+ */
+static void
+luke_meminterferencechecker(ir_node * bb, void * data)
+{
+	spill_ilp_t    *si = (spill_ilp_t*)data;
+	irn_live_t     *li1,
+	               *li2;
+
+	live_foreach(bb, li1) {
+		ir_node        *a = (ir_node *) li1->irn;
+
+		if(!be_is_Spill(a) && (!is_Phi(a) || get_irn_mode(a) != mode_T)) continue;
+
+		/* a is only interesting if it is inside a phi class */
+		if (get_phi_class(a)) {
+			for(li2=li1->next; li2; li2 = li2->next) {
+				ir_node        *b = (ir_node *) li2->irn;
+
+				if(!be_is_Spill(b) && (!is_Phi(b) || get_irn_mode(b) != mode_T)) continue;
+
+				/* a and b are only interesting if they are in the same phi class */
+				if(get_phi_class(a) == get_phi_class(b)) {
+					if(values_interfere_in_block(bb, a, b)) {
+						ir_fprintf(stderr, "Spills interfere in %+F: %+F, %+F\n", bb, a, b);
+					}
+				}
+			}
+		}
+	}
+}
+
+static void
+verify_phiclasses(spill_ilp_t * si)
+{
+	/* analyze phi classes */
+	phi_class_compute(si->chordal_env->irg);
+
+	DBG((si->dbg, LEVEL_2, "\t calling memory interference checker\n"));
+	irg_block_walk_graph(si->chordal_env->irg, luke_meminterferencechecker, NULL, si);
+}
+
+static void
+walker_spillslotassigner(ir_node * irn, void * data)
+{
+	spill_ilp_t            *si = (spill_ilp_t*)data;
+	void                   *cls;
+
+	if(!be_is_Spill(irn)) return;
+
+	/* set spill context to phi class if it has one ;) */
+
+	cls = get_phi_class(irn);
+	if(cls)
+		be_set_Spill_context(irn, cls);
+	else
+		be_set_Spill_context(irn, irn);
+}
+
+
+static void
+assign_spillslots(spill_ilp_t * si)
+{
+	DBG((si->dbg, LEVEL_2, "\t calling spill slot assigner\n"));
+	irg_walk_graph(si->chordal_env->irg, walker_spillslotassigner, NULL, si);
+}
+
 void
 be_spill_remat(const be_chordal_env_t * chordal_env)
 {
@@ -3553,7 +3825,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.cls = chordal_env->cls;
 	si.lpp = new_lpp(problem_name, lpp_minimize);
 	si.remat_info = new_set(cmp_remat_info, 4096);
-	si.interferences = new_set(cmp_interference, 4096);
+	si.interferences = new_set(cmp_interference, 32);
 	si.all_possible_remats = pset_new_ptr_default();
 	si.spills = pset_new_ptr_default();
 	si.inverse_ops = pset_new_ptr_default();
@@ -3675,13 +3947,14 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	//irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
 	//move_reloads_upward(&si);
 
+#ifndef NO_MEMCOPIES
+	verify_phiclasses(&si);
+	assign_spillslots(&si);
+#endif
+
 	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
 
 	dump_pressure_graph(&si, dump_suffix2);
-
-	// TODO fix temporarily exceeded regpressure due to remat2s
-
-	// TODO insert copys to fix interferences in memory
 
 	be_analyze_regpressure(chordal_env, "-post");
 
