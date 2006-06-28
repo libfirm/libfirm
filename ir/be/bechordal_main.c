@@ -122,21 +122,13 @@ static be_ra_chordal_opts_t options = {
 };
 
 static be_ra_timer_t ra_timer = {
-
 	NULL,
-
 	NULL,
-
 	NULL,
-
 	NULL,
-
 	NULL,
-
 	NULL,
-
 	NULL,
-
 	NULL,
 
 };
@@ -231,7 +223,7 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_MASK("spill",	"spill method (belady, ilp, remat or appel)", &spill_var),
+	LC_OPT_ENT_ENUM_PTR ("spill",	"spill method (belady, ilp, remat or appel)", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",     "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",    "perm lowering options (copy or swap)", &lower_perm_var),

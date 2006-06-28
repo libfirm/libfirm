@@ -91,8 +91,8 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env);
 enum {
 	/* spill method */
 	BE_CH_SPILL_BELADY    = 1,
-	BE_CH_SPILL_ILP       = 2,
-	BE_CH_SPILL_MORGAN    = 3,
+	BE_CH_SPILL_MORGAN    = 2,
+	BE_CH_SPILL_ILP       = 3,
 	BE_CH_SPILL_REMAT     = 4,
 	BE_CH_SPILL_APPEL     = 5,
 
