@@ -29,7 +29,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irloop_t.h"
-#include "phiclass.h"
+#include "phiclass_t.h"
 #include "iredges.h"
 #include "execfreq.h"
 
@@ -67,7 +67,7 @@
 //#define KEEPALIVE_SPILLS
 //#define KEEPALIVE_RELOADS
 #define GOODWIN_REDUCTION
-#define NO_MEMCOPIES
+//#define NO_MEMCOPIES
 
 #define  SOLVE
 //#define  SOLVE_LOCAL
@@ -718,6 +718,8 @@ insert_copy_before(const spill_ilp_t * si, const ir_node * irn, ir_node * pos)
 
 	bb = is_Block(pos)?pos:get_nodes_block(pos);
 	copy = exact_copy(irn);
+
+	_set_phi_class(copy, NULL);
 	set_nodes_block(copy, bb);
 	sched_put_before(si, pos, copy);
 
@@ -735,6 +737,8 @@ insert_copy_after(const spill_ilp_t * si, const ir_node * irn, ir_node * pos)
 
 	bb = is_Block(pos)?pos:get_nodes_block(pos);
 	copy = exact_copy(irn);
+
+	_set_phi_class(copy, NULL);
 	set_nodes_block(copy, bb);
 	sched_put_after(pos, copy);
 
@@ -3018,10 +3022,7 @@ static pset *
 get_spills_for_value(spill_ilp_t * si, ir_node * value)
 {
 	pset     *spills = pset_new_ptr_default();
-//	pset     *visited = pset_new_ptr_default();
 
-//	collect_spills(si, value, spills, visited);
-//	del_pset(visited);
 	ir_node  *next;
 	defs_t   *defs;
 
@@ -3044,6 +3045,7 @@ get_remats_for_value(spill_ilp_t * si, ir_node * value)
 	ir_node  *next;
 	defs_t   *defs;
 
+	pset_insert_ptr(remats, value);
 	defs = set_find_def(si->values, value);
 
 	if(defs && defs->remats) {
@@ -3085,50 +3087,6 @@ insert_spill(spill_ilp_t * si, ir_node * irn, ir_node * value, ir_node * before)
 	return spill;
 }
 
-static ir_node *
-insert_mem_copy(spill_ilp_t * si, const ir_node * bb, const ir_node * arg)
-{
-	ir_node          *prev = sched_block_last_noncf(si, bb);
-	ir_node          *insert_pos = sched_next(prev);
-	op_t             *prev_op = get_irn_link(prev);
-	pset             *remats = get_remats_for_value(si, arg);
-	ir_node          *spill;
-	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
-
-	/* start from end of block and search a position for memcopy (spill) until block's last op begins */
-	while(be_is_Spill(prev)) {
-		prev = sched_prev(prev);
-	}
-
-	prev_op = get_irn_link(prev);
-
-	while(!sched_is_end(prev) && !is_Phi(prev)
-			&& prev_op->is_remat && prev_op->attr.remat.pre) {
-
-		insert_pos = prev;
-
-		if(pset_find_ptr(remats, prev)) {
-			insert_pos = sched_next(insert_pos);
-			break;
-		}
-
-		do {
-			prev = sched_prev(prev);
-		} while(be_is_Spill(prev));
-
-		prev_op = get_irn_link(prev);
-	}
-	insert_pos = sched_prev(insert_pos);
-
-	DBG((si->dbg, LEVEL_2, "\t  inserting mem copy for value %+F after %+F\n", arg, insert_pos));
-
-	spill = be_spill2(arch_env, arg, insert_pos, arg);
-
-	del_pset(remats);
-
-	return spill;
-}
-
 /**
  * @param before   The Phi node which has to be spilled
  */
@@ -3143,23 +3101,9 @@ insert_mem_phi(spill_ilp_t * si, const ir_node * phi)
 
 	NEW_ARR_A(ir_node*, ins, get_irn_arity(phi));
 
-#ifndef NO_MEMCOPIES
-	for(n=get_irn_arity(phi)-1; n>=0; --n) {
-		ir_node    *arg = get_irn_n(phi, n);
-		ir_node    *bb = get_Block_cfgpred_block(get_nodes_block(phi), n);
-		lpp_name_t *name = si->lpp->vars[op->attr.live_range.args.copies[n]];
-
-		if(!is_zero(name->value)) {
-			ins[n] = insert_mem_copy(si, bb, arg);
-		} else {
-			ins[n] = si->m_unknown;
-		}
-	}
-#else
 	for(n=get_irn_arity(phi)-1; n>=0; --n) {
 		ins[n] = si->m_unknown;
 	}
-#endif
 
 	mem_phi =  new_r_Phi(si->chordal_env->irg, get_nodes_block(phi), get_irn_arity(phi), ins, mode_M);
 
@@ -3199,37 +3143,6 @@ insert_remat(spill_ilp_t * si, ir_node * remat)
 	defs->remats = remat;
 }
 
-#if 0
-static void
-collect_spills(spill_ilp_t * si, ir_node * value, pset * spills, pset * visited)
-{
-	ir_node  *next;
-	defs_t   *defs;
-
-	defs = set_find_def(si->values, value);
-
-	if(defs && defs->spills) {
-		for(next = defs->spills; next; next = get_irn_link(next)) {
-			pset_insert_ptr(spills, next);
-		}
-	} else if (is_Phi(value)) {
-		/* recursion */
-		if(!pset_find_ptr(visited, value)) {
-			int    i,
-				   n;
-
-			pset_insert_ptr(visited, value);
-			for(i=0, n=get_irn_arity(value); i<n; ++i) {
-				ir_node    *arg = get_irn_n(value, i);
-
-				collect_spills(si, arg, spills, visited);
-			}
-		}
-	} else {
-//		assert(0 && "Phi operand not spilled");
-	}
-}
-#endif
 
 /**
  * Add reload before operation and add to list of defs
@@ -3245,25 +3158,7 @@ insert_reload(spill_ilp_t * si, const ir_node * value, const ir_node * after)
 	DBG((si->dbg, LEVEL_3, "\t  inserting reload for value %+F before %+F\n", value, after));
 
 	defs = set_find_def(si->values, value);
-	/* get a spill of this value */
-#if 0
-	if((!defs || !defs->spills) && is_Phi(value)) {
-		pset  *spills;
 
-		spills = get_spills_for_value(si, value);
-
-		spill = pset_first(spills);
-		del_pset(spills);
-
-		if(!defs) {
-			defs = set_insert_def(si->values, value);
-		}
-		defs->spills = spill;
-		set_irn_link(spill, NULL);
-	} else {
-		spill = defs->spills;
-	}
-#endif
 	spill = defs->spills;
 	assert(spill && "no spill placed before reload");
 
@@ -3349,6 +3244,40 @@ walker_spill_placer(ir_node * bb, void * data) {
 	del_pset(spills_to_do);
 }
 
+static ir_node *
+insert_mem_copy(spill_ilp_t * si, const ir_node * bb, const ir_node * value)
+{
+	ir_node          *insert_pos = bb;
+	ir_node          *spill;
+	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+
+	/* find last definition of arg value in block */
+	ir_node  *next;
+	defs_t   *defs;
+	int       last = 0;
+
+	defs = set_find_def(si->values, value);
+
+	if(defs && defs->remats) {
+		for(next = defs->remats; next; next = get_irn_link(next)) {
+			if(get_nodes_block(next) == bb && sched_get_time_step(next) > last) {
+				last = sched_get_time_step(next);
+				insert_pos = next;
+			}
+		}
+	}
+
+	if(get_nodes_block(value) == bb && sched_get_time_step(value) > last) {
+		last = sched_get_time_step(value);
+		insert_pos = value;
+	}
+
+	DBG((si->dbg, LEVEL_2, "\t  inserting mem copy for value %+F after %+F\n", value, insert_pos));
+
+	spill = be_spill2(arch_env, is_Block(insert_pos)?value:insert_pos, insert_pos, value);
+
+	return spill;
+}
 
 static void
 phim_fixer(spill_ilp_t *si) {
@@ -3356,9 +3285,10 @@ phim_fixer(spill_ilp_t *si) {
 
 	set_foreach(si->values, defs) {
 		const ir_node  *phi = defs->value;
-		ir_node  *phi_m = NULL;
-		ir_node  *next = defs->spills;
-		int       n;
+		op_t           *op = get_irn_link(phi);
+		ir_node        *phi_m = NULL;
+		ir_node        *next = defs->spills;
+		int             n;
 
 		if(!is_Phi(phi)) continue;
 
@@ -3380,10 +3310,20 @@ phim_fixer(spill_ilp_t *si) {
 			/* get a spill of this value */
 			ir_node      *spill = val_defs->spills;
 
-			assert(spill && "no spill placed before PhiM");
 
-			if(is_Unknown(arg))
-				set_irn_n(phi_m, n, spill);
+#ifndef NO_MEMCOPIES
+			ir_node    *pred = get_Block_cfgpred_block(get_nodes_block(phi), n);
+			lpp_name_t *name = si->lpp->vars[op->attr.live_range.args.copies[n]];
+
+			if(!is_zero(name->value)) {
+				spill = insert_mem_copy(si, pred, value);
+			} else {
+				assert(spill && "no spill placed before PhiM");
+			}
+#else
+			assert(spill && "no spill placed before PhiM");
+#endif
+			set_irn_n(phi_m, n, spill);
 		}
 	}
 }
@@ -3430,14 +3370,6 @@ walker_reload_placer(ir_node * bb, void * data) {
 					prev_op = get_irn_link(prev);
 
 				}
-//				/* insert reload before pre-remats */
-//				while(!sched_is_end(prev) && !be_is_Reload(prev) //FIXME && !be_is_Spill(prev)
-//						&& !is_Phi(prev) && prev_op->is_remat && prev_op->attr.remat.pre) {
-//					insert_pos = prev;
-//
-//					prev = sched_prev(insert_pos);
-//					prev_op = get_irn_link(prev);
-//				}
 
 				reload = insert_reload(si, irn, insert_pos);
 
@@ -3660,8 +3592,8 @@ writeback_results(spill_ilp_t * si)
 	delete_unnecessary_remats(si);
 	si->m_unknown = new_r_Unknown(si->chordal_env->irg, mode_M);
 	irg_block_walk_graph(si->chordal_env->irg, walker_spill_placer, NULL, si);
-	phim_fixer(si);
 	irg_block_walk_graph(si->chordal_env->irg, walker_reload_placer, NULL, si);
+	phim_fixer(si);
 
 	/* clean the remat info! there are still back-edges leading there! */
 	clean_remat_info(si);
@@ -3759,7 +3691,7 @@ luke_meminterferencechecker(ir_node * bb, void * data)
 				/* a and b are only interesting if they are in the same phi class */
 				if(get_phi_class(a) == get_phi_class(b)) {
 					if(values_interfere_in_block(bb, a, b)) {
-						ir_fprintf(stderr, "Spills interfere in %+F: %+F, %+F\n", bb, a, b);
+						ir_fprintf(stderr, "$$ Spills interfere in %+F: %+F, %+F \t$$\n", bb, a, b);
 					}
 				}
 			}
