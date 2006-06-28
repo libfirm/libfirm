@@ -1531,7 +1531,7 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			assert(0 && "unsupported Conv_I2I");
 	}
 
-	switch(get_ia32_op_type(irn)) {
+	 switch(get_ia32_op_type(irn)) {
 		case ia32_Normal:
 			in_reg  = get_in_reg(irn, 2);
 			out_reg = get_out_reg(irn, 0);
@@ -1603,7 +1603,7 @@ static void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "call %s", get_entity_ld_name(ent));
 	}
 	else {
-		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "%1D", get_irn_n(irn, be_pos_Call_ptr));
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "call %1D", get_irn_n(irn, be_pos_Call_ptr));
 	}
 
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F (be_Call) */", irn);
