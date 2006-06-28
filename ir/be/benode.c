@@ -832,6 +832,13 @@ void be_set_Spill_entity(ir_node *irn, entity *ent)
 	a->frame_attr.ent = ent;
 }
 
+void be_set_Spill_context(ir_node *irn, ir_node *ctx)
+{
+	be_spill_attr_t *a = get_irn_attr(irn);
+	assert(be_is_Spill(irn));
+	a->spill_ctx = ctx;
+}
+
 static ir_node *find_a_spill_walker(ir_node *irn, unsigned visited_nr)
 {
 	unsigned nr = get_irn_visited(irn);
