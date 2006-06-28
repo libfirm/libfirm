@@ -1432,9 +1432,14 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
     for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
       int j;
       ir_node *pred_i = get_Phi_pred(n, i);
+
+      if (is_Bad(pred_i))
+        continue;
       for (j = i - 1; j >= 0; --j) {
         ir_node *pred_j = get_Phi_pred(n, j);
 
+        if (is_Bad(pred_j))
+          continue;
         ASSERT_AND_RET_DBG(
           (pred_i == pred_j) || (get_irn_n(pred_i, -1) != get_irn_n(pred_j, -1)),
           "At least two different PhiM predecessors are in the same block",
