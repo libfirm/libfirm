@@ -87,8 +87,20 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
   assert(is_op_commutative(get_irn_op(binop)));
 
   switch (class_a + 2*class_b) {
-    case REAL_CONSTANT + 2*NO_CONSTANT:
     case REAL_CONSTANT + 2*REAL_CONSTANT:
+      /* if both are constants, one might be a
+       * pointer constant like NULL, return the other
+       */
+      if (mode_is_reference(get_irn_mode(op_a))) {
+        *a = op_a;
+        *c = op_b;
+      }
+      else {
+        *a = op_b;
+        *c = op_a;
+      }
+      break;
+    case REAL_CONSTANT + 2*NO_CONSTANT:
     case REAL_CONSTANT + 2*REGION_CONST:
     case REGION_CONST  + 2*NO_CONSTANT:
       *a = op_b;
