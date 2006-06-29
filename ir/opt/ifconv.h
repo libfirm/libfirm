@@ -41,9 +41,13 @@ typedef struct _opt_if_conv_info_t {
 
 /**
  * Perform If conversion on a graph.
+ *
  * @param irg The graph.
  * @param params The parameters for the if conversion.
+ *
+ * Cannot handle blocks with Bad control predecessors, so call it after control
+ * flow optimization.
  */
 void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params);
 
-#endif
+#endif /* _FIRM_IF_CONV_H */
