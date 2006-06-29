@@ -1377,10 +1377,10 @@ static void emit_Proj(const ir_node *irn, ia32_emit_env_t *env) {
 /**
  * Emit movsb/w instructions to make mov count divideable by 4
  */
-static void emit_CopyB_prolog(FILE *F, int rem, int size) {
+static void emit_CopyB_prolog(FILE *F, ir_node *irn, int rem) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	fprintf(F, "\t/* memcopy %d bytes */\n", size);
+	ir_fprintf(F, "\t/* memcopy prolog %+F */\n", irn);
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cld");
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* copy direction forward */");
@@ -1413,18 +1413,12 @@ static void emit_CopyB_prolog(FILE *F, int rem, int size) {
  * Emit rep movsd instruction for memcopy.
  */
 static void emit_ia32_CopyB(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE    *F         = emit_env->out;
-	tarval  *tv        = get_ia32_Immop_tarval(irn);
-	int      rem       = get_tarval_long(tv);
-	ir_node *size_node = get_irn_n(irn, 2);
-	int      size;
+	FILE   *F  = emit_env->out;
+	tarval *tv = get_ia32_Immop_tarval(irn);
+	int    rem = get_tarval_long(tv);
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	/* beware: size_node could be a be_Copy to fulfill constraints for ecx */
-	size_node = be_is_Copy(size_node) ? be_get_Copy_op(size_node) : size_node;
-	size      = get_tarval_long(get_ia32_Immop_tarval(size_node));
-
-	emit_CopyB_prolog(F, rem, size);
+	emit_CopyB_prolog(F, irn, rem);
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "rep movsd");
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* memcopy */");
@@ -1440,7 +1434,7 @@ static void emit_ia32_CopyB_i(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE   *F    = emit_env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	emit_CopyB_prolog(F, size & 0x3, size);
+	emit_CopyB_prolog(F, irn, size & 0x3);
 
 	size >>= 2;
 	while (size--) {
