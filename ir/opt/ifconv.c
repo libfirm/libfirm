@@ -330,7 +330,10 @@ restart:
 				if (arity == 2) {
 #if 1
 					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, psi_block));
-					get_block_blockinfo(block)->has_pinned |=	get_block_blockinfo(psi_block)->has_pinned;
+					/* copy the block-info from the Psi-block to the block before merging */
+					get_block_blockinfo(psi_block)->has_pinned |= get_block_blockinfo(block)->has_pinned;
+					set_irn_link(block, get_irn_link(psi_block));
+
 					set_irn_in(block, get_irn_arity(psi_block), get_irn_in(psi_block) + 1);
 					exchange_cdep(psi_block, block);
 					exchange(psi_block, block);
@@ -609,12 +612,8 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 
 	DB((dbg, LEVEL_1, "Running if-conversion on %+F\n", irg));
 
-	dump_ir_block_graph(irg, "_00_pre");
-
 	normalize_one_return(irg);
 	remove_critical_cf_edges(irg);
-
-	dump_ir_block_graph(irg, "_01_normal");
 
 	compute_cdep(irg);
 	assure_doms(irg);
@@ -624,13 +623,9 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 	irg_block_walk_graph(irg, NULL, if_conv_walker, NULL);
 
-	dump_ir_block_graph(irg, "_02_ifconv");
 	local_optimize_graph(irg);
-	dump_ir_block_graph(irg, "_03_postopt");
 
 	irg_walk_graph(irg, NULL, optimise_psis, NULL);
-
-	dump_ir_block_graph(irg, "_04_postifconv");
 
 	obstack_free(&obst, NULL);
 
@@ -1623,8 +1618,6 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
   DBG((dbg, LEVEL_1, "muxes made: %d\n", muxes_made));
 
   obstack_free(&obst, NULL);
-
-	dump_ir_block_graph(irg, "_ifconv_hack");
 }
 
 #endif
