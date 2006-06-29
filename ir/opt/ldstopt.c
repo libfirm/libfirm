@@ -238,7 +238,7 @@ static void collect_nodes(ir_node *node, void *env)
       }
     }
   }
-  else if (op == op_Block) { /* check, if it's an exception block */
+  else if (op == op_Block) {
     int i;
 
     for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
@@ -255,7 +255,7 @@ static void collect_nodes(ir_node *node, void *env)
       bl_info    = get_block_info(pred_block, wenv);
 
       if (is_fragile_op(pred))
-	      bl_info->flags |= BLOCK_HAS_EXC;
+        bl_info->flags |= BLOCK_HAS_EXC;
       else if (is_irn_forking(pred))
         bl_info->flags |= BLOCK_HAS_COND;
 
@@ -574,7 +574,6 @@ static unsigned follow_Load_chain(ir_node *load, ir_node *curr) {
 static unsigned optimize_load(ir_node *load)
 {
   ldst_info_t *info = get_irn_link(load);
-  ir_mode *load_mode = get_Load_mode(load);
   ir_node *mem, *ptr, *new_node;
   entity *ent;
   unsigned res = 0;
@@ -854,7 +853,6 @@ static unsigned follow_Load_chain_for_Store(ir_node *store, ir_node *curr) {
  */
 static unsigned optimize_store(ir_node *store)
 {
-  ldst_info_t *info = get_irn_link(store);
   ir_node *ptr, *mem;
 
   if (get_Store_volatility(store) == volatility_is_volatile)
@@ -881,10 +879,10 @@ static unsigned optimize_store(ir_node *store)
  *
  *   val1   val2   val3          val1  val2  val3
  *    |      |      |               \    |    /
- *   Str    Str    Str               \   |   /
+ *  Store  Store  Store              \   |   /
  *      \    |    /                   PhiData
  *       \   |   /                       |
- *        \  |  /                       Str
+ *        \  |  /                      Store
  *          PhiM
  *
  * @endverbatim
@@ -896,7 +894,7 @@ static unsigned optimize_store(ir_node *store)
 static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 {
   int i, n;
-  ir_node *store, *old_store, *ptr, *block, *phiM, *phiD, *exc, *projM;
+  ir_node *store, *old_store, *ptr, *block, *phi_block, *phiM, *phiD, *exc, *projM;
   ir_mode *mode;
   ir_node **inM, **inD, **stores;
   int *idx;
@@ -918,13 +916,20 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
   if (get_irn_op(store) != op_Store)
     return 0;
 
+  block = get_nodes_block(store);
+
   /* abort on dead blocks */
-  if (is_Block_dead(get_nodes_block(store)))
+  if (is_Block_dead(block))
     return 0;
 
-  /* check if the block has only one successor */
-  bl_info = get_irn_link(get_nodes_block(store));
-  if (bl_info->flags)
+  /* check if the block is post dominated by Phi-block
+     and has no exception exit */
+  bl_info = get_irn_link(block);
+  if (bl_info->flags & BLOCK_HAS_EXC)
+    return 0;
+
+  phi_block = get_nodes_block(phi);
+  if (! block_postdominates(phi_block, block))
     return 0;
 
   /* this is the address of the store */
@@ -949,12 +954,16 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
       return 0;
 
     /* abort on dead blocks */
-    if (is_Block_dead(get_nodes_block(store)))
+    block = get_nodes_block(pred);
+    if (is_Block_dead(block))
       return 0;
 
-    /* check if the block has only one successor */
-    bl_info = get_irn_link(get_nodes_block(store));
-    if (bl_info->flags)
+    /* check if the block is post dominated by Phi-block
+       and has no exception exit */
+    bl_info = get_irn_link(block);
+    if (bl_info->flags & BLOCK_HAS_EXC)
+      return 0;
+    if (! block_postdominates(phi_block, block))
       return 0;
   }
 
@@ -975,36 +984,42 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
    * Is only allowed if the predecessor blocks have only one successor.
    */
 
-  /* first step: collect all inputs */
   NEW_ARR_A(ir_node *, stores, n);
   NEW_ARR_A(ir_node *, inM, n);
   NEW_ARR_A(ir_node *, inD, n);
   NEW_ARR_A(int, idx, n);
 
-  /* prepare: skip the memory proj: we need this in the case some stores
-     are cascaded */
+  /* Prepare: Collect all Store nodes.  We must do this
+     first because we otherwise may loose a store when exchanging its
+     memory Proj.
+   */
+  for (i = 0; i < n; ++i)
+    stores[i] = skip_Proj(get_Phi_pred(phi, i));
+
+  /* Prepare: Skip the memory Proj: we need this in the case some stores
+     are cascaded.
+     Beware: One Store might be included more than once in the stores[]
+     list, so we must prevent to do the exchange more than once.
+   */
   for (i = 0; i < n; ++i) {
-    ir_node *pred = skip_Proj(get_Phi_pred(phi, i));
-    info = get_irn_link(pred);
+    ir_node *store = stores[i];
+    ir_node *proj_m;
 
-    stores[i] = pred;
+    info = get_irn_link(store);
+    proj_m = info->projs[pn_Store_M];
 
-    exchange(info->projs[pn_Store_M], get_Store_mem(pred));
+    if (is_Proj(proj_m) && get_Proj_pred(proj_m) == store)
+      exchange(proj_m, get_Store_mem(store));
   }
 
+  /* first step: collect all inputs */
   for (i = 0; i < n; ++i) {
-    ir_node *pred = stores[i];
-    info = get_irn_link(pred);
+    ir_node *store = stores[i];
+    info = get_irn_link(store);
 
-    inM[i] = get_Store_mem(pred);
-    inD[i] = get_Store_value(pred);
+    inM[i] = get_Store_mem(store);
+    inD[i] = get_Store_value(store);
     idx[i] = info->exc_idx;
-
-    /* Should we here replace the Proj after the Store by
-     * the Store's memory? Would be save but should not be needed,
-     * because we checked that all pred blocks have only one
-     * control flow successor.
-     */
   }
   block = get_nodes_block(phi);
 
@@ -1096,6 +1111,9 @@ void optimize_load_store(ir_graph *irg)
     edges_deactivate(irg);
   }
   edges_activate(irg);
+
+  /* for Phi optimization post-dominators are needed ... */
+  assure_postdoms(irg);
 
   obstack_init(&env.obst);
   env.changes = 0;
