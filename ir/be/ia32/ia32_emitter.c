@@ -1681,8 +1681,31 @@ static void emit_be_CopyKeep(const ir_node *irn, ia32_emit_env_t *emit_env) {
 static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+	const arch_register_t *in1, *in2;
+	const arch_register_class_t *cls1, *cls2;
 
-	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "xchg %1S, %2S", irn, irn);
+	in1 = arch_get_irn_register(emit_env->arch_env, get_irn_n(irn, 0));
+	in2 = arch_get_irn_register(emit_env->arch_env, get_irn_n(irn, 1));
+
+	cls1 = arch_register_get_class(in1);
+	cls2 = arch_register_get_class(in2);
+
+	assert(cls1 == cls2 && "Register class mismatch at Perm");
+
+	if (cls1 == &ia32_reg_classes[CLASS_ia32_gp]) {
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "xchg %1S, %2S", irn, irn);
+	}
+	else if (cls1 == &ia32_reg_classes[CLASS_ia32_xmm]) {
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN,
+			"pxor %1S, %2S\n\tpxor %2S, %1S\n\tpxor %1S, %2S", irn, irn, irn, irn, irn, irn);
+	}
+	else if (cls1 == &ia32_reg_classes[CLASS_ia32_vfp]) {
+		assert(0 && "Perm with vfp should not happen");
+	}
+	else if (cls1 == &ia32_reg_classes[CLASS_ia32_st]) {
+		assert(0 && "Perm with st(X) should not happen");
+	}
+
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%1A, %2A) */", irn, irn, irn);
 	IA32_DO_EMIT(irn);
 }
