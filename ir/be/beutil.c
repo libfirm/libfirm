@@ -212,7 +212,7 @@ void be_collect_phis(ir_graph *irg)
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 }
 
-unsigned count_num_reachable_nodes(ir_node *irn, void *env) {
+static void count_num_reachable_nodes(ir_node *irn, void *env) {
 	int *num = env;
 	(*num)++;
 }
