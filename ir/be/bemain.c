@@ -380,6 +380,10 @@ static void be_main_loop(FILE *file_handle)
 		be_irg_t birg;
 		optimization_state_t state;
 
+		/* do now create a body for graphs that are forced to have no one */
+		if (get_irg_inline_property(irg) == irg_inline_forced_no_body)
+			continue;
+
 		/* stop and reset timers */
 		if (be_options.timing == BE_TIME_ON) {
 			LC_STOP_AND_RESET_TIMER(t_prolog);
