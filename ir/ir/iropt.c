@@ -3188,8 +3188,8 @@ static ir_node *transform_node_shift(ir_node *n)
 static ir_node *transform_node_Shr(ir_node *n)
 {
   ir_node *c, *oldn = n;
-  ir_node *a = get_Shr_right(n);
-  ir_node *b = get_Shr_left(n);
+  ir_node *a = get_Shr_left(n);
+  ir_node *b = get_Shr_right(n);
 
   HANDLE_BINOP_PHI(tarval_shr, a, b, c);
   return transform_node_shift(n);
@@ -3201,8 +3201,8 @@ static ir_node *transform_node_Shr(ir_node *n)
 static ir_node *transform_node_Shrs(ir_node *n)
 {
   ir_node *c, *oldn = n;
-  ir_node *a = get_Shrs_right(n);
-  ir_node *b = get_Shrs_left(n);
+  ir_node *a = get_Shrs_left(n);
+  ir_node *b = get_Shrs_right(n);
 
   HANDLE_BINOP_PHI(tarval_shrs, a, b, c);
   return transform_node_shift(n);
@@ -3214,8 +3214,8 @@ static ir_node *transform_node_Shrs(ir_node *n)
 static ir_node *transform_node_Shl(ir_node *n)
 {
   ir_node *c, *oldn = n;
-  ir_node *a = get_Shl_right(n);
-  ir_node *b = get_Shl_left(n);
+  ir_node *a = get_Shl_left(n);
+  ir_node *b = get_Shl_right(n);
 
   HANDLE_BINOP_PHI(tarval_shl, a, b, c);
   return transform_node_shift(n);
