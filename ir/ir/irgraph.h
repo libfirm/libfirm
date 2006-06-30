@@ -429,10 +429,12 @@ void                  set_irg_callee_info_state(ir_graph *irg, irg_callee_info_s
  *  Tells how to handle an ir graph in inlineing.
  */
 typedef enum {
-  irg_inline_any,         /**< No restriction on inlineing. Default. */
-  irg_inline_forbidden,   /**< The graph may not be inlined. */
-  irg_inline_recomended,  /**< The graph should be inlined. */
-  irg_inline_forced       /**< The graph must be inlined. */
+  irg_inline_any,            /**< No restriction on inlineing. Default. */
+  irg_inline_forbidden,      /**< The graph may not be inlined. */
+  irg_inline_recomended,     /**< The graph should be inlined. */
+  irg_inline_forced,         /**< The graph must be inlined. */
+  irg_inline_forced_no_body  /**< The graph must be inlined. No body is allowed
+                                  to be emitted. */
 } irg_inline_property;
 
 /** Returns the inline property of a graph. */
