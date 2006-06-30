@@ -1683,15 +1683,111 @@ optimize_preds(ir_node *n) {
 }
 
 /**
- * Returns non-zero if all Phi predecessors are constants
+ * Returns non-zero if a node is a Phi node
+ * with all predecessors constant.
  */
-static int is_const_Phi(ir_node *phi) {
+static int is_const_Phi(ir_node *n) {
   int i;
 
-  for (i = get_irn_arity(phi) - 1; i >= 0; --i)
-    if (! is_Const(get_irn_n(phi, i)))
+  if (! is_Phi(n))
+    return 0;
+  for (i = get_irn_arity(n) - 1; i >= 0; --i)
+    if (! is_Const(get_irn_n(n, i)))
       return 0;
   return 1;
+}
+
+/**
+ * Apply an evaluator on a binop with a constant operators (and one Phi).
+ *
+ * @param phi    the Phi node
+ * @param other  the other operand
+ * @param eval   an evaluator function
+ * @param left   if non-zero, other is the left operand, else the right
+ *
+ * @return a new Phi node if the conversion was successful, NULL else
+ */
+static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(tarval *, tarval *), int left) {
+  tarval   *tv;
+  void     **res;
+  ir_node  *pred;
+  ir_mode  *mode;
+  ir_graph *irg;
+  int      i, n = get_irn_arity(phi);
+
+  NEW_ARR_A(void *, res, n);
+  if (left) {
+    for (i = 0; i < n; ++i) {
+      pred = get_irn_n(phi, i);
+      tv   = get_Const_tarval(pred);
+      tv   = eval(other, tv);
+
+      if (tv == tarval_bad) {
+        /* folding failed, bad */
+        return NULL;
+      }
+      res[i] = tv;
+    }
+  }
+  else {
+    for (i = 0; i < n; ++i) {
+      pred = get_irn_n(phi, i);
+      tv   = get_Const_tarval(pred);
+      tv   = eval(tv, other);
+
+      if (tv == tarval_bad) {
+        /* folding failed, bad */
+        return 0;
+      }
+      res[i] = tv;
+    }
+  }
+  mode = get_irn_mode(phi);
+  irg  = current_ir_graph;
+  for (i = 0; i < n; ++i) {
+    pred = get_irn_n(phi, i);
+    res[i] = new_r_Const_type(irg, get_nodes_block(pred),
+                            mode, res[i], get_Const_type(pred));
+  }
+  return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
+}
+
+/**
+ * Apply an evaluator on a unop with a constant operator (a Phi).
+ *
+ * @param phi    the Phi node
+ * @param eval   an evaluator function
+ *
+ * @return a new Phi node if the conversion was successful, NULL else
+ */
+static ir_node *apply_unop_on_phi(ir_node *phi, tarval *(*eval)(tarval *)) {
+  tarval   *tv;
+  void     **res;
+  ir_node  *pred;
+  ir_mode  *mode;
+  ir_graph *irg;
+  int      i, n = get_irn_arity(phi);
+
+  NEW_ARR_A(void *, res, n);
+  for (i = 0; i < n; ++i) {
+    pred = get_irn_n(phi, i);
+    tv   = get_Const_tarval(pred);
+    tv   = eval(tv);
+
+    if (tv == tarval_bad) {
+      /* folding failed, bad */
+      return 0;
+    }
+    res[i] = tv;
+  }
+  mode = get_irn_mode(phi);
+  irg  = current_ir_graph;
+  for (i = 0; i < n; ++i) {
+    pred = get_irn_n(phi, i);
+    res[i] = new_r_Const_type(irg, get_nodes_block(pred),
+                            mode, res[i], get_Const_type(pred));
+  }
+  return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
 }
 
 /**
@@ -1757,8 +1853,36 @@ static ir_node *transform_node_AddSub(ir_node *n)
   return n;
 }
 
+#define HANDLE_BINOP_PHI(op,a,b,c)                          \
+  c = NULL;                                                 \
+  if (is_Const(b) && is_const_Phi(a)) {                     \
+    /* check for Op(Phi, Const) */                          \
+    c = apply_binop_on_phi(a, get_Const_tarval(b), op, 0);  \
+  }                                                         \
+  else if (is_Const(a) && is_const_Phi(b)) {                \
+    /* check for Op(Const, Phi) */                          \
+    c = apply_binop_on_phi(b, get_Const_tarval(a), op, 1);  \
+  }                                                         \
+  if (c) {                                                  \
+    DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);             \
+    return c;                                               \
+  }
+
+#define HANDLE_UNOP_PHI(op,a,c)                 \
+  c = NULL;                                     \
+  if (is_const_Phi(a)) {                        \
+    /* check for Op(Phi) */                     \
+    c = apply_unop_on_phi(a, op);               \
+  }                                             \
+  if (c) {                                      \
+    DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI); \
+    return c;                                   \
+  }
+
+
 /**
  * Do the AddSub optimization, then Transform
+ *   Constant folding on Phi
  *   Add(a,a)          -> Mul(a, 2)
  *   Add(Mul(a, x), a) -> Mul(a, x+1)
  * if the mode is integer or float.
@@ -1768,15 +1892,17 @@ static ir_node *transform_node_AddSub(ir_node *n)
 static ir_node *transform_node_Add(ir_node *n)
 {
   ir_mode *mode;
-  ir_node *oldn = n;
+  ir_node *a, *b, *c, *oldn = n;
 
   n = transform_node_AddSub(n);
 
+  a = get_Add_left(n);
+  b = get_Add_right(n);
+
+  HANDLE_BINOP_PHI(tarval_add, a,b,c);
+
   mode = get_irn_mode(n);
   if (mode_is_num(mode)) {
-    ir_node *a = get_Add_left(n);
-    ir_node *b = get_Add_right(n);
-
     if (a == b) {
       ir_node *block = get_irn_n(n, -1);
 
@@ -1879,6 +2005,7 @@ static ir_node *transform_node_Add(ir_node *n)
 
 /**
  * Do the AddSub optimization, then Transform
+ *   Constant folding on Phi
  *   Sub(0,a)          -> Minus(a)
  *   Sub(Mul(a, x), a) -> Mul(a, x-1)
  *   Sub(Sub(x, y), b) -> Sub(x, Add(y,b))
@@ -1887,13 +2014,16 @@ static ir_node *transform_node_Sub(ir_node *n)
 {
   ir_mode *mode;
   ir_node *oldn = n;
-  ir_node *a, *b;
+  ir_node *a, *b, *c;
 
   n = transform_node_AddSub(n);
 
+  a = get_Sub_left(n);
+  b = get_Sub_right(n);
+
+  HANDLE_BINOP_PHI(tarval_sub, a,b,c);
+
   mode = get_irn_mode(n);
-  a    = get_Sub_left(n);
-  b    = get_Sub_right(n);
   if (mode_is_num(mode) && (classify_Const(a) == CNST_NULL)) {
     n = new_rd_Minus(
           get_irn_dbg_info(n),
@@ -1976,16 +2106,20 @@ static ir_node *transform_node_Sub(ir_node *n)
 
 /**
  * Transform Mul(a,-1) into -a.
+ * Do constant evaluation of Phi nodes.
  * Do architecture dependent optimizations on Mul nodes
  */
 static ir_node *transform_node_Mul(ir_node *n) {
-  ir_node *oldn = n;
-  ir_mode *mode = get_irn_mode(n);
+  ir_node *c, *oldn = n;
+  ir_node *a = get_Mul_left(n);
+  ir_node *b = get_Mul_right(n);
+  ir_mode *mode;
 
+  HANDLE_BINOP_PHI(tarval_mul, a,b,c);
+
+  mode = get_irn_mode(n);
   if (mode_is_signed(mode)) {
     ir_node *r = NULL;
-    ir_node *a = get_Mul_left(n);
-    ir_node *b = get_Mul_right(n);
 
     if (value_of(a) == get_mode_minus_one(mode))
       r = b;
@@ -2001,7 +2135,7 @@ static ir_node *transform_node_Mul(ir_node *n) {
 }
 
 /**
- * transform a Div Node
+ * Transform a Div Node.
  */
 static ir_node *transform_node_Div(ir_node *n)
 {
@@ -2031,7 +2165,7 @@ static ir_node *transform_node_Div(ir_node *n)
 }
 
 /**
- * transform a Mod node
+ * Transform a Mod node.
  */
 static ir_node *transform_node_Mod(ir_node *n)
 {
@@ -2061,7 +2195,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 }
 
 /**
- * transform a DivMod node
+ * Transform a DivMod node.
  */
 static ir_node *transform_node_DivMod(ir_node *n)
 {
@@ -2157,7 +2291,7 @@ static ir_node *transform_node_Abs(ir_node *n)
 }
 
 /**
- * transform a Cond node
+ * Transform a Cond node.
  */
 static ir_node *transform_node_Cond(ir_node *n)
 {
@@ -2192,14 +2326,29 @@ static ir_node *transform_node_Cond(ir_node *n)
 }
 
 /**
+ * Transform an And.
+ */
+static ir_node *transform_node_And(ir_node *n)
+{
+  ir_node *c, *oldn = n;
+  ir_node *a = get_And_left(n);
+  ir_node *b = get_And_right(n);
+
+  HANDLE_BINOP_PHI(tarval_and, a,b,c);
+  return n;
+}
+
+/**
  * Transform an Eor.
  */
 static ir_node *transform_node_Eor(ir_node *n)
 {
-  ir_node *oldn = n;
+  ir_node *c, *oldn = n;
   ir_node *a = get_Eor_left(n);
   ir_node *b = get_Eor_right(n);
   ir_mode *mode = get_irn_mode(n);
+
+  HANDLE_BINOP_PHI(tarval_eor, a,b,c);
 
   if (a == b) {
     /* a ^ a = 0 */
@@ -2231,13 +2380,16 @@ static ir_node *transform_node_Eor(ir_node *n)
 }
 
 /**
- * Transform a boolean Not.
+ * Transform a Not.
  */
 static ir_node *transform_node_Not(ir_node *n)
 {
-  ir_node *oldn = n;
+  ir_node *c, *oldn = n;
   ir_node *a = get_Not_op(n);
 
+  HANDLE_UNOP_PHI(tarval_not,a,c);
+
+  /* check for a boolean Not */
   if (   (get_irn_mode(n) == mode_b)
       && (get_irn_op(a) == op_Proj)
       && (get_irn_mode(a) == mode_b)
@@ -2247,7 +2399,18 @@ static ir_node *transform_node_Not(ir_node *n)
                    mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
     DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
   }
+  return n;
+}
 
+/**
+ * Transform a Minus.
+ */
+static ir_node *transform_node_Minus(ir_node *n)
+{
+  ir_node *c, *oldn = n;
+  ir_node *a = get_Minus_op(n);
+
+  HANDLE_UNOP_PHI(tarval_neg,a,c);
   return n;
 }
 
@@ -2939,15 +3102,22 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
 }
 
 /**
- * Optimize an Or
+ * Transform an Or.
  */
-static ir_node *transform_node_Or(ir_node *or)
+static ir_node *transform_node_Or(ir_node *n)
 {
-  or = transform_node_Or_bf_store(or);
-  or = transform_node_Or_Rot(or);
+  ir_node *c, *oldn = n;
+  ir_node *a = get_Or_left(n);
+  ir_node *b = get_Or_right(n);
 
-  return or;
+  HANDLE_BINOP_PHI(tarval_or, a,b,c);
+
+  n = transform_node_Or_bf_store(n);
+  n = transform_node_Or_Rot(n);
+
+  return n;
 }
+
 
 /* forward */
 static ir_node *transform_node(ir_node *n);
@@ -3012,9 +3182,44 @@ static ir_node *transform_node_shift(ir_node *n)
   return n;
 }
 
-#define transform_node_Shr  transform_node_shift
-#define transform_node_Shrs transform_node_shift
-#define transform_node_Shl  transform_node_shift
+/**
+ * Transform a Shr.
+ */
+static ir_node *transform_node_Shr(ir_node *n)
+{
+  ir_node *c, *oldn = n;
+  ir_node *a = get_Shr_right(n);
+  ir_node *b = get_Shr_left(n);
+
+  HANDLE_BINOP_PHI(tarval_shr, a, b, c);
+  return transform_node_shift(n);
+}
+
+/**
+ * Transform a Shrs.
+ */
+static ir_node *transform_node_Shrs(ir_node *n)
+{
+  ir_node *c, *oldn = n;
+  ir_node *a = get_Shrs_right(n);
+  ir_node *b = get_Shrs_left(n);
+
+  HANDLE_BINOP_PHI(tarval_shrs, a, b, c);
+  return transform_node_shift(n);
+}
+
+/**
+ * Transform a Shl.
+ */
+static ir_node *transform_node_Shl(ir_node *n)
+{
+  ir_node *c, *oldn = n;
+  ir_node *a = get_Shl_right(n);
+  ir_node *b = get_Shl_left(n);
+
+  HANDLE_BINOP_PHI(tarval_shl, a, b, c);
+  return transform_node_shift(n);
+}
 
 /**
  * Remove dead blocks and nodes in dead blocks
@@ -3218,13 +3423,15 @@ static ir_op_ops *firm_set_default_transform_node(opcode code, ir_op_ops *ops)
   CASE(DivMod);
   CASE(Abs);
   CASE(Cond);
+  CASE(And);
+  CASE(Or);
   CASE(Eor);
+  CASE(Minus);
   CASE(Not);
   CASE(Cast);
   CASE(Proj);
   CASE(Phi);
   CASE(Sel);
-  CASE(Or);
   CASE(Shr);
   CASE(Shrs);
   CASE(Shl);
@@ -3424,8 +3631,7 @@ int identities_cmp(const void *elt, const void *key)
 /*
  * Calculate a hash value of a node.
  */
-unsigned
-ir_node_hash (ir_node *node)
+unsigned ir_node_hash(ir_node *node)
 {
   unsigned h;
   int i, irn_arity;
@@ -3444,7 +3650,7 @@ ir_node_hash (ir_node *node)
     h = irn_arity = get_irn_intra_arity(node);
 
     /* consider all in nodes... except the block if not a control flow. */
-    for (i =  is_cfop(node) ? -1 : 0;  i < irn_arity;  i++) {
+    for (i = is_cfop(node) ? -1 : 0;  i < irn_arity;  i++) {
       h = 9*h + HASH_PTR(get_irn_intra_n(node, i));
     }
 
@@ -3457,13 +3663,11 @@ ir_node_hash (ir_node *node)
   return h;
 }
 
-pset *
-new_identities(void) {
+pset *new_identities(void) {
   return new_pset(identities_cmp, N_IR_NODES);
 }
 
-void
-del_identities(pset *value_table) {
+void del_identities(pset *value_table) {
   del_pset(value_table);
 }
 
@@ -3494,7 +3698,7 @@ static INLINE ir_node *identify(pset *value_table, ir_node *n)
     }
   }
 
-  o = pset_find(value_table, n, ir_node_hash (n));
+  o = pset_find(value_table, n, ir_node_hash(n));
   if (!o) return n;
 
   DBG_OPT_CSE(n, o);
@@ -3568,7 +3772,7 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env) {
 }
 
 /**
- * garbage in, garbage out. If a node has a dead input, i.e., the
+ * Garbage in, garbage out. If a node has a dead input, i.e., the
  * Bad node is input to the node, return the Bad node.
  */
 static INLINE ir_node *gigo(ir_node *node)
@@ -3598,7 +3802,7 @@ static INLINE ir_node *gigo(ir_node *node)
 
   /* Blocks, Phis and Tuples may have dead inputs, e.g., if one of the
      blocks predecessors is dead. */
-  if ( op != op_Block && op != op_Phi && op != op_Tuple) {
+  if (op != op_Block && op != op_Phi && op != op_Tuple) {
     irn_arity = get_irn_arity(node);
 
     /*
@@ -3617,8 +3821,8 @@ static INLINE ir_node *gigo(ir_node *node)
       /* Propagating Unknowns here seems to be a bad idea, because
          sometimes we need a node as a input and did not want that
          it kills it's user.
-         However, i might be useful to move this into a later phase
-         (it you thing optimizing such code is useful). */
+         However, it might be useful to move this into a later phase
+         (if you think that optimizing such code is useful). */
       if (is_Unknown(pred) && mode_is_data(get_irn_mode(node)))
         return new_Unknown(get_irn_mode(node));
 #endif
