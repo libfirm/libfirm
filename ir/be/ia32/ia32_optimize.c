@@ -475,6 +475,7 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 	/* ok, translate into Push */
 	edge       = get_irn_out_edge_first(irn);
 	old_proj_M = get_edge_src_irn(edge);
+	bl         = get_nodes_block(irn);
 
 	next = sched_next(irn);
 	sched_remove(irn);
@@ -496,7 +497,6 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 		mem   = new_r_Sync(irg, bl, 2, in);
 	}
 
-	bl   = get_nodes_block(irn);
 	push = new_rd_ia32_Push(NULL, irg, bl, be_get_IncSP_pred(sp), val, mem);
 	proj_res = new_r_Proj(irg, bl, push, get_irn_mode(sp), pn_ia32_Push_stack);
 	proj_M   = new_r_Proj(irg, bl, push, mode_M, pn_ia32_Push_M);
