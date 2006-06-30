@@ -912,7 +912,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   ir_type *called_frame;
   irg_inline_property prop = get_irg_inline_property(called_graph);
 
-  if ( (prop != irg_inline_forced) &&
+  if ( (prop < irg_inline_forced) &&
        (!get_opt_optimize() || !get_opt_inline() || (prop == irg_inline_forbidden))) return 0;
 
   /* Do not inline variadic functions. */
@@ -1356,7 +1356,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
       ir_graph *callee;
       callee = get_entity_irg(get_SymConst_entity(get_Call_ptr(env.calls[i])));
       if (((_obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst)) < size) ||
-        (get_irg_inline_property(callee) == irg_inline_forced)) {
+        (get_irg_inline_property(callee) >= irg_inline_forced)) {
         inline_method(env.calls[i], callee);
       }
     }
@@ -1539,7 +1539,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
 
       if (callee &&
           ((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
-           (get_irg_inline_property(callee) == irg_inline_forced))) {
+           (get_irg_inline_property(callee) >= irg_inline_forced))) {
         if (!phiproj_computed) {
             phiproj_computed = 1;
             collect_phiprojs(current_ir_graph);
