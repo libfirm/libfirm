@@ -1217,6 +1217,34 @@ static void *ia32_cg_init(const be_irg_t *birg) {
  *****************************************************************/
 
 /**
+ * Set output modes for GCC
+ */
+static const tarval_mode_info mo_integer = {
+	TVO_DECIMAL,
+	NULL,
+	NULL,
+};
+
+/*
+* set the tarval output mode to C-semantics
+*/
+static void set_tarval_output_modes(void)
+{
+	set_tarval_mode_output_option(get_modeLs(), &mo_integer);
+	set_tarval_mode_output_option(get_modeLu(), &mo_integer);
+	set_tarval_mode_output_option(get_modeIs(), &mo_integer);
+	set_tarval_mode_output_option(get_modeIu(), &mo_integer);
+	set_tarval_mode_output_option(get_modeHs(), &mo_integer);
+	set_tarval_mode_output_option(get_modeHu(), &mo_integer);
+	set_tarval_mode_output_option(get_modeBs(), &mo_integer);
+	set_tarval_mode_output_option(get_modeBu(), &mo_integer);
+	set_tarval_mode_output_option(get_modeC(),  &mo_integer);
+	set_tarval_mode_output_option(get_modeU(),  &mo_integer);
+	set_tarval_mode_output_option(get_modeIu(), &mo_integer);
+}
+
+
+/**
  * The template that generates a new ISA object.
  * Note that this template can be changed by command line
  * arguments.
@@ -1258,6 +1286,8 @@ static void *ia32_init(FILE *file_handle) {
 
 	if (inited)
 		return NULL;
+
+	set_tarval_output_modes();
 
 	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
