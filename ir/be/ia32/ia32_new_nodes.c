@@ -379,8 +379,8 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
  */
 static ident *get_ident_for_tv(tarval *tv) {
 	char buf[1024];
-
-	assert(tarval_snprintf(buf, sizeof(buf), tv));
+	int len = tarval_snprintf(buf, sizeof(buf), tv);
+	assert(len);
 	return new_id_from_str(buf);
 }
 
