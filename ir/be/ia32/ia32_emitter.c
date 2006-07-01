@@ -1708,37 +1708,37 @@ static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
  * Emits code for Constant loading.
  */
 static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
-  FILE *F = env->out;
-  char cmd_buf[256], cmnt_buf[256];
-  const lc_arg_env_t *arg_env = ia32_get_arg_env();
+	FILE *F = env->out;
+	char cmd_buf[256], cmnt_buf[256];
+	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 
-  if (get_ia32_Immop_tarval(n) == get_tarval_null(get_irn_mode(n))) {
+	if (get_ia32_Immop_tarval(n) == get_tarval_null(get_irn_mode(n))) {
 		const char *instr = "xor";
 		if (env->isa->opt_arch == arch_pentium_4) {
 			/* P4 prefers sub r, r, others xor r, r */
 			instr = "sub";
 		}
-    lc_esnprintf(arg_env, cmd_buf, 256, "%s %1D, %1D ", instr, n, n);
-    lc_esnprintf(arg_env, cmnt_buf, 256, "/* optimized mov 0 to register */");
-  }
-  else {
-    if (get_ia32_op_type(n) == ia32_SymConst) {
-      lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, OFFSET FLAT:%C ", n, n);
-      lc_esnprintf(arg_env, cmnt_buf, 256, "/* Move address of SymConst into register */");
-    }
-		else {
-				lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, %C ", n, n);
-				lc_esnprintf(arg_env, cmnt_buf, 256, "/* Mov Const into register */");
+		lc_esnprintf(arg_env, cmd_buf, 256, "%s %1D, %1D ", instr, n, n);
+		lc_esnprintf(arg_env, cmnt_buf, 256, "/* optimized mov 0 to register */");
+	}
+	else {
+		if (get_ia32_op_type(n) == ia32_SymConst) {
+			lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, OFFSET FLAT:%C ", n, n);
+			lc_esnprintf(arg_env, cmnt_buf, 256, "/* Move address of SymConst into register */");
 		}
-  }
-  lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);
+		else {
+			lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, %C ", n, n);
+			lc_esnprintf(arg_env, cmnt_buf, 256, "/* Mov Const into register */");
+		}
+	}
+	lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);
 }
 
 static void emit_be_Return(const ir_node *n, ia32_emit_env_t *env) {
-  FILE *F = env->out;
-  const lc_arg_env_t *arg_env = ia32_get_arg_env();
+	FILE *F = env->out;
+	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 
-  lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", "ret", "/* be_Return */", n, n);
+	lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", "ret", "/* be_Return */", n, n);
 }
 
 
