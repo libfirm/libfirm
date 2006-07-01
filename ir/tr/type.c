@@ -406,43 +406,40 @@ set_type_state(ir_type *tp, type_state state) {
     int i;
     switch (get_type_tpop_code(tp)) {
     case tpo_class:
-      {
-    assert(get_type_size_bits(tp) > -1);
-    if (tp != get_glob_type()) {
-      int n_mem = get_class_n_members(tp);
-      for (i = 0; i < n_mem; i++) {
-        if (get_entity_offset_bits(get_class_member(tp, i)) <= -1)
-          { DDMT(tp); DDME(get_class_member(tp, i)); }
-        assert(get_entity_offset_bits(get_class_member(tp, i)) > -1);
-            /* TR ??
-        assert(is_Method_type(get_entity_type(get_class_member(tp, i))) ||
-           (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
-                   */
-      }
-    }
-      } break;
-    case tpo_struct:
-      {
-        assert(get_type_size_bits(tp) > -1);
-        for (i = 0; i < get_struct_n_members(tp); i++) {
-          assert(get_entity_offset_bits(get_struct_member(tp, i)) > -1);
-          assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
+      assert(get_type_size_bits(tp) > -1);
+      if (tp != get_glob_type()) {
+        int n_mem = get_class_n_members(tp);
+        for (i = 0; i < n_mem; i++) {
+          if (get_entity_offset_bits(get_class_member(tp, i)) <= -1)
+            { DDMT(tp); DDME(get_class_member(tp, i)); }
+          assert(get_entity_offset_bits(get_class_member(tp, i)) > -1);
+              /* TR ??
+          assert(is_Method_type(get_entity_type(get_class_member(tp, i))) ||
+             (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
+                     */
         }
-      } break;
+      }
+      break;
+    case tpo_struct:
+      assert(get_type_size_bits(tp) > -1);
+      for (i = 0; i < get_struct_n_members(tp); i++) {
+        assert(get_entity_offset_bits(get_struct_member(tp, i)) > -1);
+        assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
+      }
+      break;
     case tpo_union:
-      { /* ?? */
-      } break;
+      /* ?? */
+      break;
     case tpo_array:
-      { /* ??
+      /* ??
          Check order?
          Assure that only innermost dimension is dynamic? */
-      } break;
+      break;
     case tpo_enumeration:
-      {
-        assert(get_type_mode != NULL);
-        for (i = 0; i < get_enumeration_n_enums(tp); i++)
-          assert(get_enumeration_enum(tp, i) != NULL);
-      } break;
+      assert(get_type_mode != NULL);
+      for (i = 0; i < get_enumeration_n_enums(tp); i++)
+        assert(get_enumeration_enum(tp, i) != NULL);
+      break;
     default: break;
     } /* switch (tp) */
   }
