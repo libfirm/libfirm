@@ -2,7 +2,7 @@
 
 /*
    Project:     libFIRM
-   File name:   ir/ana/gnu_ext.c
+   File name:   ir/ana/gnu_ext.h
    Purpose:     Provide some GNU CC extensions to the rest of the world
    Author:      Florian
    Modified by:
@@ -23,12 +23,14 @@
 /* Includes */
 
 /* Local Defines: */
-# if defined (__GNUC__)
-/* then we're all set */
-# else /* defined __GNUC__ */
-#  define __FUNCTION__  "::"
-#  define __PRETTY_FUNCTION__ ":::"
-# endif /* define __GNUC__ */
+# if !defined (__GNUC__)
+#  if !defined(__FUNCTION__)
+#    define __FUNCTION__  "::"
+#  endif
+#  if !defined(__PRETTY_FUNCTION__)
+#    define __PRETTY_FUNCTION__ ":::"
+#  endif
+# endif /* !define __GNUC__ */
 
 /* Local Data Types: */
 
@@ -47,6 +49,9 @@
 
 /*
   $Log$
+  Revision 1.2  2006/07/02 16:30:17  beck
+  Fixed warnings on newer VC
+
   Revision 1.1  2005/01/14 14:15:19  liekweg
   Support GNU extensions on non-GNU platforms
 
