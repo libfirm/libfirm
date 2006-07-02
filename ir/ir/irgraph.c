@@ -17,8 +17,9 @@
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
-
-#include <stddef.h>
+#ifdef HAVE_STDDEF_H
+# include <stddef.h>
+#endif
 
 #include "xmalloc.h"
 #include "ircons.h"
@@ -201,6 +202,7 @@ new_r_ir_graph (entity *ent, int n_loc)
   res->execfreq_state      = exec_freq_none;
   res->class_cast_state    = ir_class_casts_transitive;
   res->extblk_state        = ir_extblk_info_none;
+  res->fp_model            = fp_model_precise;
 
   /*-- Type information for the procedure of the graph --*/
   res->ent = ent;
@@ -267,7 +269,7 @@ new_ir_graph(entity *ent, int n_loc)
   return res;
 }
 
-/* Make a rudimentary ir graph for the constant code.
+/* Make a rudimentary IR graph for the constant code.
    Must look like a correct irg, spare everything else. */
 ir_graph *new_const_code_irg(void) {
   ir_graph *res;
@@ -299,6 +301,7 @@ ir_graph *new_const_code_irg(void) {
   res->phase_state      = phase_building;
   res->irg_pinned_state = op_pin_state_pinned;
   res->extblk_state     = ir_extblk_info_none;
+  res->fp_model         = fp_model_precise;
 
   res->value_table = new_identities (); /* value table for global value
                        numbering for optimizing use in
@@ -818,6 +821,15 @@ void
   _inc_irg_block_visited(irg);
 }
 
+/* Return the floating point model of this graph. */
+unsigned (get_irg_fp_model)(const ir_graph *irg) {
+  return _get_irg_fp_model(irg);
+}
+
+/* Sets the floating point model for this graph. */
+void set_irg_fp_model(ir_graph *irg, unsigned model) {
+  irg->fp_model = model;
+}
 
 /**
  * walker Start->End: places Proj nodes into the same block
@@ -826,8 +838,7 @@ void
  * @param n    the node
  * @param env  ignored
  */
-static void normalize_proj_walker(ir_node *n, void *env)
-{
+static void normalize_proj_walker(ir_node *n, void *env){
   if (is_Proj(n)) {
     ir_node *pred  = get_Proj_pred(n);
     ir_node *block = get_nodes_block(pred);
@@ -837,15 +848,13 @@ static void normalize_proj_walker(ir_node *n, void *env)
 }
 
 /* move Proj nodes into the same block as its predecessors */
-void normalize_proj_nodes(ir_graph *irg)
-{
+void normalize_proj_nodes(ir_graph *irg) {
   irg_walk_graph(irg, NULL, normalize_proj_walker, NULL);
   set_irg_outs_inconsistent(irg);
 }
 
 /* set a description for local value n */
-void set_irg_loc_description(ir_graph *irg, int n, void *description)
-{
+void set_irg_loc_description(ir_graph *irg, int n, void *description) {
   assert(0 <= n && n < irg->n_loc);
 
   if (! irg->loc_descriptions)
@@ -855,8 +864,7 @@ void set_irg_loc_description(ir_graph *irg, int n, void *description)
 }
 
 /* get the description for local value n */
-void *get_irg_loc_description(ir_graph *irg, int n)
-{
+void *get_irg_loc_description(ir_graph *irg, int n) {
   assert(0 <= n && n < irg->n_loc);
   return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
 }

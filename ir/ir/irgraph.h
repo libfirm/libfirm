@@ -24,6 +24,7 @@
 
 #include "firm_types.h"
 #include "irop.h"
+#include "iropt.h"
 #include "irextbb.h"
 #include "type.h"
 
@@ -283,7 +284,7 @@ long     get_irg_graph_nr(ir_graph *irg);
  * The graph is in phase_building during construction of the irgraph.
  * The construction is finished by a call to finalize_cons().
  *
- * Finalize_cons() sets the state to phase_high.  All stadard Firm nodes are
+ * Finalize_cons() sets the state to phase_high.  All standard Firm nodes are
  * allowed.
  *
  * To get the irgraph into phase_low all Sel nodes must be removed and
@@ -292,13 +293,13 @@ long     get_irg_graph_nr(ir_graph *irg);
  * memory allocated by Alloc must be explicit.  @@@ More conditions?
  *
  * phase_backend is set if architecture specific machine nodes are inserted
- * (and probally most standard Firm are removed).
+ * (and probably most standard Firm are removed).
  */
 typedef enum {
   phase_building,
   phase_high,
   phase_low,
-	phase_backend
+  phase_backend
 } irg_phase_state;
 
 /** returns the phase_state of an IR graph. */
@@ -493,6 +494,12 @@ unsigned get_irg_estimated_node_cnt(const ir_graph *irg);
 
 /** Returns the last irn index for this graph. */
 unsigned get_irg_last_idx(const ir_graph *irg);
+
+/** Returns the floating point model of this graph. */
+unsigned get_irg_fp_model(const ir_graph *irg);
+
+/** Sets a floating point model for this graph. */
+void set_irg_fp_model(ir_graph *irg, unsigned model);
 
 /**
  * Access custom graph data.

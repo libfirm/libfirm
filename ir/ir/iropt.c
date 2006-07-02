@@ -897,6 +897,11 @@ static ir_node *equivalent_node_Add(ir_node *n)
 {
   ir_node *oldn = n;
   ir_node *left, *right;
+  ir_mode *mode = get_irn_mode(n);
+
+  /* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+  if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+    return n;
 
   n = equivalent_node_neutral_zero(n);
   if (n != oldn)
@@ -910,7 +915,7 @@ static ir_node *equivalent_node_Add(ir_node *n)
       /* (a - x) + x */
 
       n = get_Sub_left(left);
-      if (get_irn_mode(oldn) == get_irn_mode(n)) {
+      if (mode == get_irn_mode(n)) {
         DBG_OPT_ALGSIM1(oldn, left, right, n, FS_OPT_ADD_SUB);
         return n;
       }
@@ -921,7 +926,7 @@ static ir_node *equivalent_node_Add(ir_node *n)
       /* x + (a - x) */
 
       n = get_Sub_left(right);
-      if (get_irn_mode(oldn) == get_irn_mode(n)) {
+      if (mode == get_irn_mode(n)) {
         DBG_OPT_ALGSIM1(oldn, left, right, n, FS_OPT_ADD_SUB);
         return n;
       }
@@ -967,40 +972,43 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
 static ir_node *equivalent_node_Sub(ir_node *n)
 {
   ir_node *oldn = n;
+  ir_node *a, *b;
+  ir_mode *mode = get_irn_mode(n);
 
-  ir_node *a = get_Sub_left(n);
-  ir_node *b = get_Sub_right(n);
+  /* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+  if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+    return n;
+
+  a = get_Sub_left(n);
+  b = get_Sub_right(n);
 
   /* Beware: modes might be different */
   if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
-    if (get_irn_mode(n) == get_irn_mode(a)) {
+    if (mode == get_irn_mode(a)) {
       n = a;
 
       DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
     }
   }
   else if (get_irn_op(a) == op_Add) {
-    ir_mode *mode = get_irn_mode(n);
-
     if (mode_wrap_around(mode)) {
       ir_node *left  = get_Add_left(a);
       ir_node *right = get_Add_right(a);
 
       if (left == b) {
-        if (get_irn_mode(n) == get_irn_mode(right)) {
+        if (mode == get_irn_mode(right)) {
           n = right;
           DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
         }
       }
       else if (right == b) {
-        if (get_irn_mode(n) == get_irn_mode(left)) {
+        if (mode == get_irn_mode(left)) {
           n = left;
           DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
         }
       }
     }
   }
-
   return n;
 }
 
@@ -1039,7 +1047,6 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n)
 static ir_node *equivalent_node_Mul(ir_node *n)
 {
   ir_node *oldn = n;
-
   ir_node *a = get_Mul_left(n);
   ir_node *b = get_Mul_right(n);
 
@@ -1070,6 +1077,25 @@ static ir_node *equivalent_node_Div(ir_node *n)
     set_Tuple_pred(n, pn_Div_M,        mem);
     set_Tuple_pred(n, pn_Div_X_except, new_Bad());        /* no exception */
     set_Tuple_pred(n, pn_Div_res,      a);
+  }
+  return n;
+}
+
+/**
+ * Optimize a / 1.0 = a.
+ */
+static ir_node *equivalent_node_Quot(ir_node *n) {
+  ir_node *a = get_Div_left(n);
+  ir_node *b = get_Div_right(n);
+
+  /* Div is not commutative. */
+  if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* Quot(x, 1) == x */
+    /* Turn Quot into a tuple (mem, bad, a) */
+    ir_node *mem = get_Quot_mem(n);
+    turn_into_tuple(n, pn_Quot_max);
+    set_Tuple_pred(n, pn_Quot_M,        mem);
+    set_Tuple_pred(n, pn_Quot_X_except, new_Bad());        /* no exception */
+    set_Tuple_pred(n, pn_Quot_res,      a);
   }
   return n;
 }
@@ -1157,6 +1183,9 @@ static ir_node *equivalent_node_Conv(ir_node *n)
   ir_mode *a_mode = get_irn_mode(a);
 
   if (n_mode == a_mode) { /* No Conv necessary */
+    /* leave strict floating point Conv's */
+    if (get_Conv_strict(n))
+      return n;
     n = a;
     DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
   } else if (get_irn_op(a) == op_Conv) { /* Conv(Conv(b)) */
@@ -1627,6 +1656,7 @@ static ir_op_ops *firm_set_default_equivalent_node(opcode code, ir_op_ops *ops)
   CASE(Minus);
   CASE(Mul);
   CASE(Div);
+  CASE(Quot);
   CASE(DivMod);
   CASE(And);
   CASE(Conv);
@@ -1902,6 +1932,11 @@ static ir_node *transform_node_Add(ir_node *n)
   HANDLE_BINOP_PHI(tarval_add, a,b,c);
 
   mode = get_irn_mode(n);
+
+  /* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+  if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+    return n;
+
   if (mode_is_num(mode)) {
     if (a == b) {
       ir_node *block = get_irn_n(n, -1);
@@ -2024,6 +2059,11 @@ static ir_node *transform_node_Sub(ir_node *n)
   HANDLE_BINOP_PHI(tarval_sub, a,b,c);
 
   mode = get_irn_mode(n);
+
+  /* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+  if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+    return n;
+
   if (mode_is_num(mode) && (classify_Const(a) == CNST_NULL)) {
     n = new_rd_Minus(
           get_irn_dbg_info(n),
@@ -3461,8 +3501,7 @@ static int node_cmp_attr_Const(ir_node *a, ir_node *b)
 }
 
 /** Compares the attributes of two Proj nodes. */
-static int node_cmp_attr_Proj(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Proj(ir_node *a, ir_node *b) {
   return get_irn_proj_attr (a) != get_irn_proj_attr (b);
 }
 
@@ -3495,8 +3534,7 @@ static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 }
 
 /** Compares the attributes of two Call nodes. */
-static int node_cmp_attr_Call(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Call(ir_node *a, ir_node *b) {
   return (get_irn_call_attr(a) != get_irn_call_attr(b));
 }
 
@@ -3511,14 +3549,17 @@ static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
 }
 
 /** Compares the attributes of two Phi nodes. */
-static int node_cmp_attr_Phi(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Phi(ir_node *a, ir_node *b) {
   return get_irn_phi_attr (a) != get_irn_phi_attr (b);
 }
 
+/** Compares the attributes of two Conv nodes. */
+static int node_cmp_attr_Conv(ir_node *a, ir_node *b) {
+  return get_Conv_strict(a) != get_Conv_strict(b);
+}
+
 /** Compares the attributes of two Cast nodes. */
-static int node_cmp_attr_Cast(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Cast(ir_node *a, ir_node *b) {
   return get_Cast_type(a) != get_Cast_type(b);
 }
 
@@ -3573,6 +3614,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(opcode code, ir_op_ops *ops)
   CASE(Call);
   CASE(Sel);
   CASE(Phi);
+  CASE(Conv);
   CASE(Cast);
   CASE(Load);
   CASE(Store);
@@ -3642,7 +3684,7 @@ unsigned ir_node_hash(ir_node *node)
     h = 9*h + HASH_PTR(get_irn_mode(node));
   } else if (node->op == op_SymConst) {
     /* special value for const, as they only differ in their symbol. */
-    h = HASH_PTR(node->attr.i.sym.type_p);
+    h = HASH_PTR(node->attr.symc.sym.type_p);
     h = 9*h + HASH_PTR(get_irn_mode(node));
   } else {
 

@@ -3,7 +3,7 @@
  * File name:   ir/ir/irgraph.c
  * Purpose:     Entry point to the representation of procedure code -- internal header.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
@@ -13,12 +13,8 @@
 /**
  * @file irgraph_t.h
  *
- * ir graph construction.
- *
- * @author Martin Trapp, Christian Schaefer
+ * IR graph construction.
  */
-
-
 #ifndef _IRGRAPH_T_H_
 #define _IRGRAPH_T_H_
 
@@ -41,14 +37,15 @@
 #include "pset.h"
 #include "set.h"
 
+/** Prefix that is added to every frame type. */
 #define FRAME_TP_SUFFIX "frame_tp"
 
 /**
  * Edge info to put into an irg.
  */
 typedef struct _irg_edge_info_t {
-	set *edges;
-	unsigned activated : 1;
+  set      *edges;         /**< a set containing all edges of a graph. */
+  unsigned activated : 1;  /**< set if edges are activated for the graph. */
 } irg_edge_info_t;
 
 /**
@@ -97,17 +94,18 @@ struct ir_graph {
   unsigned additional_properties;          /**< additional graph properties. */
 
   /* -- Fields indicating different states of irgraph -- */
-  irg_phase_state phase_state;       /**< compiler phase */
-  op_pin_state irg_pinned_state;     /**< Flag for status of nodes */
+  irg_phase_state phase_state;       /**< Compiler phase. */
+  op_pin_state irg_pinned_state;     /**< Flag for status of nodes. */
   irg_outs_state outs_state;         /**< Out edges. */
-  irg_dom_state dom_state;           /**< Dominator state information */
-  irg_dom_state pdom_state;          /**< Post Dominator state information */
-  ir_typeinfo_state typeinfo_state;        /**< Validity of type information */
-  irg_callee_info_state callee_info_state; /**< Validity of callee information */
-  irg_loopinfo_state loopinfo_state;       /**< state of loop information */
-  exec_freq_state   execfreq_state;        /**< state of execution frequency information */
-  ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
-  irg_extblk_info_state extblk_state;      /**< state of extended basic block info */
+  irg_dom_state dom_state;           /**< Dominator state information. */
+  irg_dom_state pdom_state;          /**< Post Dominator state information. */
+  ir_typeinfo_state typeinfo_state;        /**< Validity of type information. */
+  irg_callee_info_state callee_info_state; /**< Validity of callee information. */
+  irg_loopinfo_state loopinfo_state;       /**< State of loop information. */
+  exec_freq_state   execfreq_state;        /**< State of execution frequency information. */
+  ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
+  irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
+  unsigned fp_model;                       /**< floating point model of the graph. */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
@@ -547,6 +545,12 @@ _get_irg_estimated_node_cnt(const ir_graph *irg) {
   return irg->estimated_node_count;
 }
 
+/* Return the floating point model of this graph. */
+static INLINE unsigned
+_get_irg_fp_model(const ir_graph *irg) {
+	return irg->fp_model;
+}
+
 /**
  * Allocates a new idx in the irg for the node and adds the irn to the idx -> irn map.
  * @param irg The graph.
@@ -654,5 +658,6 @@ get_idx_irn(ir_graph *irg, unsigned idx) {
 #define inc_irg_block_visited(irg)            _inc_irg_block_visited(irg)
 #define dec_irg_block_visited(irg)            _dec_irg_block_visited(irg)
 #define get_irg_estimated_node_cnt(irg)       _get_irg_estimated_node_cnt(irg)
+#define get_irg_fp_model(irg)                 _get_irg_fp_model(irg)
 
 # endif /* _IRGRAPH_T_H_ */
