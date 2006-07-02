@@ -367,8 +367,11 @@ static void do_reassociation(ir_node *n, void *env)
 
     res = 0;
 
-    /* reassociation works only for integer or reference modes */
-    if (op->ops.reassociate && (mode_is_int(mode) || mode_is_reference(mode))) {
+    /* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+    if (mode_is_float(mode) && get_irg_fp_model(current_ir_graph) & fp_strict_algebraic)
+      break;
+
+    if (op->ops.reassociate) {
       res = op->ops.reassociate(&n);
 
       wenv->changes |= res;
