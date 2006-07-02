@@ -1377,7 +1377,7 @@ static void emit_Proj(const ir_node *irn, ia32_emit_env_t *env) {
 /**
  * Emit movsb/w instructions to make mov count divideable by 4
  */
-static void emit_CopyB_prolog(FILE *F, ir_node *irn, int rem) {
+static void emit_CopyB_prolog(FILE *F, const ir_node *irn, int rem) {
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	ir_fprintf(F, "\t/* memcopy prolog %+F */\n", irn);
