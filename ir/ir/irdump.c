@@ -733,6 +733,11 @@ int dump_node_opcode(FILE *F, ir_node *n)
   case iro_Block:
     fprintf (F, "%s%s", is_Block_dead(n) ? "Dead " : "", get_irn_opname(n));
     break;
+  case iro_Conv:
+    if (get_Conv_strict(n))
+      fprintf (F, "strict");
+    fprintf (F, "%s", get_irn_opname(n));
+    break;
 
   default:
 default_case:

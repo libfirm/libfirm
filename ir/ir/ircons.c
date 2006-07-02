@@ -328,19 +328,20 @@ new_bd_defaultProj (dbg_info *db, ir_node *block, ir_node *arg,
   ir_graph *irg = current_ir_graph;
 
   assert(arg->op == op_Cond);
-  arg->attr.c.kind = fragmentary;
-  arg->attr.c.default_proj = max_proj;
+  arg->attr.cond.kind = fragmentary;
+  arg->attr.cond.default_proj = max_proj;
   res = new_rd_Proj (db, irg, block, arg, mode_X, max_proj);
   return res;
 }
 
 static ir_node *
-new_bd_Conv (dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode)
+new_bd_Conv (dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode, int strict_flag)
 {
   ir_node  *res;
   ir_graph *irg = current_ir_graph;
 
   res = new_ir_node(db, irg, block, op_Conv, mode, 1, &op);
+  res->attr.conv.strict = strict_flag;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -441,9 +442,9 @@ new_bd_Cond (dbg_info *db, ir_node *block, ir_node *c)
   ir_graph *irg = current_ir_graph;
 
   res = new_ir_node (db, irg, block, op_Cond, mode_T, 1, &c);
-  res->attr.c.kind         = dense;
-  res->attr.c.default_proj = 0;
-  res->attr.c.pred         = COND_JMP_PRED_NONE;
+  res->attr.cond.kind         = dense;
+  res->attr.cond.default_proj = 0;
+  res->attr.cond.pred         = COND_JMP_PRED_NONE;
   res = optimize_node (res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -543,9 +544,9 @@ new_bd_Alloc (dbg_info *db, ir_node *block, ir_node *store,
   in[0] = store;
   in[1] = size;
   res = new_ir_node(db, irg, block, op_Alloc, mode_T, 2, in);
-  res->attr.a.exc.pin_state = op_pin_state_pinned;
-  res->attr.a.where         = where;
-  res->attr.a.type          = alloc_type;
+  res->attr.alloc.exc.pin_state = op_pin_state_pinned;
+  res->attr.alloc.where         = where;
+  res->attr.alloc.type          = alloc_type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -563,8 +564,8 @@ new_bd_Free (dbg_info *db, ir_node *block, ir_node *store,
   in[1] = ptr;
   in[2] = size;
   res = new_ir_node (db, irg, block, op_Free, mode_M, 3, in);
-  res->attr.f.where = where;
-  res->attr.f.type  = free_type;
+  res->attr.free.where = where;
+  res->attr.free.type  = free_type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -590,7 +591,7 @@ new_bd_Sel (dbg_info *db, ir_node *block, ir_node *store, ir_node *objptr,
    * FIXM: Sel's can select functions which should be of mode mode_P_code.
    */
   res = new_ir_node(db, irg, block, op_Sel, mode_P_data, r_arity, r_in);
-  res->attr.s.ent = ent;
+  res->attr.sel.ent = ent;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -610,9 +611,9 @@ new_bd_SymConst_type (dbg_info *db, ir_node *block, symconst_symbol value,
 
   res = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
 
-  res->attr.i.num = symkind;
-  res->attr.i.sym = value;
-  res->attr.i.tp  = tp;
+  res->attr.symc.num = symkind;
+  res->attr.symc.sym = value;
+  res->attr.symc.tp  = tp;
 
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
@@ -818,7 +819,7 @@ new_bd_InstOf (dbg_info *db, ir_node *block, ir_node *store,
   in[0] = store;
   in[1] = objptr;
   res = new_ir_node(db, irg, block, op_Sel, mode_T, 2, in);
-  res->attr.io.type = type;
+  res->attr.instof.type = type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -999,7 +1000,7 @@ new_rd_Conv (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *
   ir_graph *rem = current_ir_graph;
 
   current_ir_graph = irg;
-  res = new_bd_Conv(db, block, op, mode);
+  res = new_bd_Conv(db, block, op, mode, 0);
   current_ir_graph = rem;
 
   return res;
@@ -2247,7 +2248,7 @@ get_frag_arr (ir_node *n) {
   case iro_Call:
     return n->attr.call.exc.frag_arr;
   case iro_Alloc:
-    return n->attr.a.exc.frag_arr;
+    return n->attr.alloc.exc.frag_arr;
   case iro_Load:
     return n->attr.load.exc.frag_arr;
   case iro_Store:
@@ -2622,27 +2623,29 @@ new_d_defaultProj (dbg_info *db, ir_node *arg, long max_proj)
 {
   ir_node *res;
   assert(arg->op == op_Cond);
-  arg->attr.c.kind = fragmentary;
-  arg->attr.c.default_proj = max_proj;
+  arg->attr.cond.kind = fragmentary;
+  arg->attr.cond.default_proj = max_proj;
   res = new_Proj (arg, mode_X, max_proj);
   return res;
 }
 
 ir_node *
-new_d_Conv (dbg_info *db, ir_node *op, ir_mode *mode)
-{
-  return new_bd_Conv(db, current_ir_graph->current_block, op, mode);
+new_d_Conv (dbg_info *db, ir_node *op, ir_mode *mode) {
+  return new_bd_Conv(db, current_ir_graph->current_block, op, mode, 0);
 }
 
 ir_node *
-new_d_Cast (dbg_info *db, ir_node *op, ir_type *to_tp)
-{
+new_d_strictConv (dbg_info *db, ir_node *op, ir_mode *mode) {
+  return new_bd_Conv(db, current_ir_graph->current_block, op, mode, 1);
+}
+
+ir_node *
+new_d_Cast (dbg_info *db, ir_node *op, ir_type *to_tp) {
   return new_bd_Cast(db, current_ir_graph->current_block, op, to_tp);
 }
 
 ir_node *
-new_d_Tuple (dbg_info *db, int arity, ir_node **in)
-{
+new_d_Tuple (dbg_info *db, int arity, ir_node **in) {
   return new_bd_Tuple(db, current_ir_graph->current_block, arity, in);
 }
 
@@ -2807,7 +2810,7 @@ new_d_Alloc (dbg_info *db, ir_node *store, ir_node *size, ir_type *alloc_type,
   res = new_bd_Alloc (db, current_ir_graph->current_block,
               store, size, alloc_type, where);
 #if PRECISE_EXC_CONTEXT
-  allocate_frag_arr(res, op_Alloc, &res->attr.a.exc.frag_arr);  /* Could be optimized away. */
+  allocate_frag_arr(res, op_Alloc, &res->attr.alloc.exc.frag_arr);  /* Could be optimized away. */
 #endif
 
   return res;
@@ -3263,6 +3266,9 @@ ir_node *new_Cmp    (ir_node *op1, ir_node *op2) {
 }
 ir_node *new_Conv   (ir_node *op, ir_mode *mode) {
   return new_d_Conv(NULL, op, mode);
+}
+ir_node *new_strictConv   (ir_node *op, ir_mode *mode) {
+  return new_d_strictConv(NULL, op, mode);
 }
 ir_node *new_Cast   (ir_node *op, ir_type *to_tp) {
   return new_d_Cast(NULL, op, to_tp);

@@ -13,7 +13,7 @@
 
 /**
  @todo
- Ideas for imrovement:
+ Ideas for improvement:
  -# Handle construction of exceptions more comfortable:
     Add new constructors that pass the exception region (or better the
     Phi for the memories, the ex. region can be found from there) as parameter,
@@ -3134,6 +3134,16 @@ ir_node *new_d_Cmp    (dbg_info *db, ir_node *op1, ir_node *op2);
  */
 ir_node *new_d_Conv   (dbg_info *db, ir_node *op, ir_mode *mode);
 
+/** Constructor for a strict Conv node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *op    The operand.
+ * @param   *mode  The mode of this the operand muss be converted .
+ */
+ir_node *new_d_strictConv   (dbg_info *db, ir_node *op, ir_mode *mode);
+
 /** Constructor for a Cast node.
  *
  * High level type cast
@@ -3852,10 +3862,19 @@ ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
  *
  * Adds the node to the block in current_ir_block.
  *
- * @param   *op    The operand.
- * @param   *mode  The mode of this the operand muss be converted .
+ * @param   *op          The operand.
+ * @param   *mode        The mode of this the operand muss be converted.
  */
 ir_node *new_Conv   (ir_node *op, ir_mode *mode);
+
+/** Constructor for a strict Conv node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *op          The operand.
+ * @param   *mode        The mode of this the operand muss be converted.
+ */
+ir_node *new_strictConv   (ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.
  *

@@ -3,7 +3,7 @@
  * File name:   ir/ir/irnode.h
  * Purpose:     Representation of an intermediate operation.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
@@ -767,6 +767,8 @@ void     set_Rot_right (ir_node *node, ir_node *right);
 
 ir_node *get_Conv_op (ir_node *node);
 void     set_Conv_op (ir_node *node, ir_node *op);
+int      get_Conv_strict (ir_node *node);
+void     set_Conv_strict (ir_node *node, int flag);
 
 /* Does Cast need a mem operator?
  * Cast should only depend on the type, not on the state of an

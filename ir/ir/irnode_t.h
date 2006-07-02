@@ -71,37 +71,32 @@ typedef struct {
 
 } block_attr;
 
-/** Start attributes */
-typedef struct {
-  char dummy;
-  /*   ir_graph *irg;   @@@ now in block */
-} start_attr;
-
-/** Cond attributes */
+/** Cond attributes. */
 typedef struct {
   cond_kind kind;           /**< flavor of Cond */
   long default_proj;        /**< only for non-binary Conds: biggest Proj number, i.e. the one used for default. */
   cond_jmp_predicate pred;  /**< only for binary Conds: The jump predication. */
 } cond_attr;
 
-/** Const attributes */
+/** Const attributes. */
 typedef struct {
   tarval  *tv;       /**< the target value */
   ir_type *tp;       /**< the source type, for analyses. default: type_unknown. */
 } const_attr;
 
+/** SymConst attributes. */
 typedef struct {
   symconst_symbol sym;  // old tori
   symconst_kind num;
   ir_type *tp;       /**< the source type, for analyses. default: type_unknown. */
 } symconst_attr;
 
-/** Sel attributes */
+/** Sel attributes. */
 typedef struct {
   entity *ent;          /**< entity to select */
 } sel_attr;
 
-/** Exception attributes */
+/** Exception attributes. */
 typedef struct {
   op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
                                      If it's know that no exception will be generated, could be set to
@@ -111,33 +106,33 @@ typedef struct {
 #endif
 } except_attr;
 
-/** Call attributes */
+/** Call attributes. */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ir_type *cld_tp;              /**< type of called procedure */
   entity ** callee_arr;         /**< result of callee analysis */
 } call_attr;
 
-/** Alloc attributes */
+/** Alloc attributes. */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ir_type *type;                /**< Type of the allocated object.  */
   where_alloc where;            /**< stack, heap or other managed part of memory */
 } alloc_attr;
 
-/** Free attributes */
+/** Free attributes. */
 typedef struct {
   ir_type *type;                /**< Type of the allocated object.  */
   where_alloc where;            /**< stack, heap or other managed part of memory */
 } free_attr;
 
-/** InstOf attributes */
+/** InstOf attributes. */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ir_type *type;                /**< the type of which the object pointer must be */
 } io_attr;
 
-/** Filter attributes */
+/** Filter attributes. */
 typedef struct {
   long proj;                 /**< contains the result position to project (Proj) */
   ir_node ** in_cg;          /**< array with interprocedural predecessors (Phi) */
@@ -145,29 +140,29 @@ typedef struct {
                      @todo Ev. replace by bitfield! */
 } filter_attr;
 
-/** EndReg/EndExcept attributes */
+/** EndReg/EndExcept attributes. */
 typedef struct {
   char dummy;
 } end_attr;
 
-/** CallBegin attributes */
+/** CallBegin attributes. */
 typedef struct {
   ir_node * call;               /**< Associated Call-operation. */
 } callbegin_attr;
 
-/** Cast attributes */
+/** Cast attributes. */
 typedef struct {
   ir_type *totype;              /**< Type of the casted node. */
 } cast_attr;
 
-/** Load attributes */
+/** Load attributes. */
 typedef struct {
   except_attr    exc;           /**< The exception attribute. MUST be the first one. */
   ir_mode        *load_mode;    /**< The mode of this Load operation. */
   ent_volatility volatility;	  /**< The volatility of a Load/Store operation. */
 } load_attr;
 
-/** Store attributes */
+/** Store attributes. */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ent_volatility volatility;	  /**< the volatility of a Store operation */
@@ -175,16 +170,21 @@ typedef struct {
 
 typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
 
-/** CopyB attribute */
+/** CopyB attribute. */
 typedef struct {
   except_attr    exc;           /**< The exception attribute. MUST be the first one. */
   ir_type        *data_type;    /**< Type of the copied entity. */
 } copyb_attr;
 
-/** Bound attribute */
+/** Bound attribute. */
 typedef struct {
   except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 } bound_attr;
+
+/** Conv attribute. */
+typedef struct {
+  char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
+} conv_attr;
 
 /**
  * Edge info to put into an irn.
@@ -198,19 +198,18 @@ typedef struct _irn_edge_info_t {
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
-  start_attr     start; /**< For Start */
-  block_attr     block; /**< For Block: Fields needed to construct it */
-  cond_attr      c;     /**< For Cond. */
-  const_attr     con;   /**< For Const: contains the value of the constant and a type */
-  symconst_attr  i;     /**< For SymConst. */
-  sel_attr       s;     /**< For Sel. */
-  call_attr      call;  /**< For Call: pointer to the type of the method to call */
+  block_attr     block;   /**< For Block: Fields needed to construct it */
+  cond_attr      cond;    /**< For Cond. */
+  const_attr     con;     /**< For Const: contains the value of the constant and a type */
+  symconst_attr  symc;    /**< For SymConst. */
+  sel_attr       sel;     /**< For Sel. */
+  call_attr      call;    /**< For Call: pointer to the type of the method to call */
   callbegin_attr callbegin; /**< For CallBegin */
-  alloc_attr     a;    /**< For Alloc. */
-  free_attr      f;    /**< For Free. */
-  io_attr        io;    /**< For InstOf */
-  cast_attr      cast;  /**< For Cast. */
-  load_attr      load;  /**< For Load. */
+  alloc_attr     alloc;  /**< For Alloc. */
+  free_attr      free;   /**< For Free. */
+  io_attr        instof; /**< For InstOf */
+  cast_attr      cast;   /**< For Cast. */
+  load_attr      load;   /**< For Load. */
   store_attr     store;  /**< For Store. */
   int            phi0_pos;  /**< For Phi. Used to remember the value defined by
                    this Phi node.  Needed when the Phi is completed
@@ -228,6 +227,7 @@ typedef union {
   except_attr    except;        /**< For Phi node construction in case of exceptions */
   copyb_attr     copyb;         /**< For CopyB operation */
   bound_attr     bound;         /**< For Bound operation */
+  conv_attr      conv;          /**< For Conv operation */
 } attr;
 
 
@@ -800,12 +800,12 @@ static INLINE int _is_irn_machine_user(const ir_node *node, unsigned n) {
 
 static INLINE cond_jmp_predicate _get_Cond_jmp_pred(ir_node *node) {
   assert (_get_irn_op(node) == op_Cond);
-  return node->attr.c.pred;
+  return node->attr.cond.pred;
 }
 
 static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
   assert (_get_irn_op(node) == op_Cond);
-  node->attr.c.pred = pred;
+  node->attr.cond.pred = pred;
 }
 
 static INLINE int _get_Psi_n_conds(ir_node *node) {

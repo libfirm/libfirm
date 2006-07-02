@@ -215,7 +215,7 @@ init_op(void)
 
   op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr), NULL);
 
-  op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, sizeof(start_attr), NULL);
+  op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
   op_End       = new_ir_op(iro_End,       "End",       op_pin_state_pinned, X,       oparity_dynamic,  -1, 0, NULL);
   op_Jmp       = new_ir_op(iro_Jmp,       "Jmp",       op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
   op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X|K,     oparity_unary,    -1, 0, NULL);
@@ -246,7 +246,7 @@ init_op(void)
   op_Shr       = new_ir_op(iro_Shr,       "Shr",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
   op_Shrs      = new_ir_op(iro_Shrs,      "Shrs",      op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
   op_Rot       = new_ir_op(iro_Rot,       "Rot",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
-  op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
+  op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, sizeof(conv_attr), NULL);
   op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, N|H,     oparity_unary,     0, sizeof(cast_attr), NULL);
   op_Carry     = new_ir_op(iro_Carry,     "Carry",     op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
   op_Borrow    = new_ir_op(iro_Borrow,    "Borrow",    op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
