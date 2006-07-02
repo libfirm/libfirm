@@ -166,10 +166,10 @@ static int sels_cmp(const void *elt, const void *key, size_t size)
  */
 static int leave_cmp(const void *elt, const void *key)
 {
-  const ir_node *c1 = elt;
-  const ir_node *c2 = key;
+  ir_node *c1 = (ir_node *)elt;
+  ir_node *c2 = (ir_node *)key;
 
-  return c1->attr.s.ent != c2->attr.s.ent;
+  return get_Sel_entity(c1) != get_Sel_entity(c2);
 }
 
 /**
