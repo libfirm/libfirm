@@ -9,10 +9,10 @@ typedef struct _freq_t {
   double            freq;
 } freq_t;
 
-set *compute_execfreq(ir_graph * irg);
+void compute_execfreq(ir_graph * irg, double loop_weight);
 
-void free_execfreq(set * freqs);
+void free_execfreq();
 
-double get_block_execfreq(set * freqs, const ir_node * irn);
+double get_block_execfreq(const ir_node * irn);
 
 #endif

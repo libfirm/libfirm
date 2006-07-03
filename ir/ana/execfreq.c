@@ -42,6 +42,8 @@
 
 #include "execfreq.h"
 
+static set   *freqs = NULL;
+
 #define set_foreach(s,i) for((i)=set_first((s)); (i); (i)=set_next((s)))
 
 typedef struct _walkerdata_t {
@@ -78,7 +80,7 @@ set_insert_freq(set * set, const ir_node * irn)
 }
 
 double
-get_block_execfreq(set * freqs, const ir_node * irn)
+get_block_execfreq(const ir_node * irn)
 {
   freq_t *freq;
 
@@ -139,30 +141,27 @@ solve_lgs(double * A, double * b, size_t size)
 #endif
 
 static double
-get_cf_probability(ir_node *bb, int pos)
+get_cf_probability(ir_node *bb, int pos, double loop_weight)
 {
-#define LOOP_WEIGHT 9.0
-
   double  sum = 0.0;
   double  cur = 0.0;
   int     i;
   ir_node *pred = get_Block_cfgpred_block(bb, pos);
 
-  cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : LOOP_WEIGHT;
+  cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : loop_weight;
 
   for(i = get_Block_n_cfg_outs(pred) - 1; i >= 0; --i) {
     ir_node *succ = get_Block_cfg_out(pred, i);
 
-    sum += get_loop_depth(get_irn_loop(succ)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : LOOP_WEIGHT;
+    sum += get_loop_depth(get_irn_loop(succ)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : loop_weight;
   }
 
   return cur/sum;
 }
 
-set *
-compute_execfreq(ir_graph * irg)
+void
+compute_execfreq(ir_graph * irg, double loop_weight)
 {
-  set          *freqs = new_set(cmp_freq, 32);
   size_t        size;
   double       *matrix;
   double       *rhs;
@@ -174,6 +173,9 @@ compute_execfreq(ir_graph * irg)
 #else
   double       *x;
 #endif
+
+  free_execfreq();
+  freqs = new_set(cmp_freq, 32);
 
   construct_cf_backedges(irg);
 
@@ -204,14 +206,14 @@ compute_execfreq(ir_graph * irg)
       size_t  pred_idx = (int)get_irn_link(pred);
 
 //      matrix[pred_idx + idx*size] += 1.0/(double)get_Block_n_cfg_outs(pred);
-      matrix[pred_idx + idx * size] += get_cf_probability(bb, i);
+      matrix[pred_idx + idx * size] += get_cf_probability(bb, i, loop_weight);
     }
   }
 
   x = solve_lgs(matrix, rhs, size);
   if(x == NULL) {
     del_set(freqs);
-    return NULL;
+    return;
   }
 
   set_foreach(freqs, freq) {
@@ -231,11 +233,11 @@ compute_execfreq(ir_graph * irg)
 #endif
   free(matrix);
 
-  return freqs;
+  return;
 }
 
 void
-free_execfreq(set * freqs)
+free_execfreq()
 {
   if(freqs) del_set(freqs);
 }
