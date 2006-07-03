@@ -613,10 +613,13 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 void ia32_peephole_optimization(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg = env;
 
-	if (is_ia32_TestJmp(irn))
-		ia32_optimize_TestJmp(irn, cg);
-	else if (is_ia32_CondJmp(irn))
-		ia32_optimize_CondJmp(irn, cg);
+	/* AMD CPUs want explicit compare before conditional jump  */
+	if (! ARCH_AMD(cg->opt_arch)) {
+		if (is_ia32_TestJmp(irn))
+			ia32_optimize_TestJmp(irn, cg);
+		else if (is_ia32_CondJmp(irn))
+			ia32_optimize_CondJmp(irn, cg);
+	}
 	/* seems to be buggy when using Pushes */
 //	else if (be_is_IncSP(irn))
 //		ia32_optimize_IncSP(irn, cg);
