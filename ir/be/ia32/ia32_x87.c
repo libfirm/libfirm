@@ -252,7 +252,7 @@ static int x87_on_stack(const x87_state *state, int reg_idx) {
  * @param dbl_push  if != 0 double pushes are allowd
  */
 static void x87_push(x87_state *state, int reg_idx, ir_node *node, int dbl_push) {
-	assert(dbl_push || x87_on_stack(state, reg_idx) == -1 && "double push");
+	assert((dbl_push || x87_on_stack(state, reg_idx) == -1) && "double push");
 	assert(state->depth < N_x87_REGS && "stack overrun");
 
 	++state->depth;
