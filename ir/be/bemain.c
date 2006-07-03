@@ -348,7 +348,8 @@ static void be_main_loop(FILE *file_handle)
 	unsigned ra_ifg      = 0;
 	unsigned ra_copymin  = 0;
 	unsigned ra_ssa      = 0;
-	lc_timer_t *t_prolog, *t_abi, *t_codegen, *t_sched, *t_constr, *t_regalloc, *t_finish, *t_emit, *t_other;
+	unsigned ra_other    = 0;
+	lc_timer_t *t_prolog, *t_abi, *t_codegen, *t_sched, *t_constr, *t_regalloc, *t_finish, *t_emit, *t_other, *t_verify;
 	be_ra_timer_t *ra_timer;
 
 	if (be_options.timing == BE_TIME_ON) {
@@ -360,6 +361,7 @@ static void be_main_loop(FILE *file_handle)
 		t_regalloc = lc_timer_register("regalloc", "register allocation");
 		t_finish   = lc_timer_register("finish",   "graph finish");
 		t_emit     = lc_timer_register("emiter",   "code emiter");
+		t_verify   = lc_timer_register("verify",   "graph verification");
 		t_other    = lc_timer_register("other",    "other");
 	}
 
@@ -391,6 +393,7 @@ static void be_main_loop(FILE *file_handle)
 			LC_STOP_AND_RESET_TIMER(t_regalloc);
 			LC_STOP_AND_RESET_TIMER(t_finish);
 			LC_STOP_AND_RESET_TIMER(t_emit);
+			LC_STOP_AND_RESET_TIMER(t_verify);
 			LC_STOP_AND_RESET_TIMER(t_other);
 		}
 		BE_TIMER_PUSH(t_other);
@@ -456,12 +459,19 @@ static void be_main_loop(FILE *file_handle)
 
 		BE_TIMER_POP();
 		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
-		BE_TIMER_PUSH(t_sched);
+		BE_TIMER_PUSH(t_codegen);
 
 		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
+
+		BE_TIMER_POP();
+		BE_TIMER_PUSH(t_sched);
+
 		list_sched(&birg, be_enable_mris);
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
+
+		BE_TIMER_POP();
+		BE_TIMER_PUSH(t_verify);
 
 		/* check schedule */
 		be_sched_vrfy(birg.irg, vrfy_option);
@@ -485,11 +495,16 @@ static void be_main_loop(FILE *file_handle)
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_abi_fix_stack_nodes(birg.abi);
+		BE_TIMER_POP();
+
 		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
 
+		BE_TIMER_PUSH(t_verify);
 		/* check schedule */
 		be_sched_vrfy(birg.irg, vrfy_option);
+		BE_TIMER_POP();
 
+		BE_TIMER_PUSH(t_codegen);
 		/* do some statistics */
 		be_do_stat_reg_pressure(&birg);
 
@@ -497,45 +512,37 @@ static void be_main_loop(FILE *file_handle)
 		arch_code_generator_before_ra(birg.cg);
 
 		BE_TIMER_POP();
-		BE_TIMER_PUSH(t_regalloc);
+
+		lc_timer_start(t_regalloc);
 
 		/* Do register allocation */
 		ra_timer = ra->allocate(&birg);
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
-		if (be_options.timing == BE_TIME_ON && ra_timer) {
-			ra_prolog  = lc_timer_elapsed_msec(ra_timer->t_prolog);
-			ra_epilog  = lc_timer_elapsed_msec(ra_timer->t_epilog);
-			ra_live    = lc_timer_elapsed_msec(ra_timer->t_live);
-			ra_spill   = lc_timer_elapsed_msec(ra_timer->t_spill);
-			ra_color   = lc_timer_elapsed_msec(ra_timer->t_color);
-			ra_copymin = lc_timer_elapsed_msec(ra_timer->t_copymin);
-			ra_ssa     = lc_timer_elapsed_msec(ra_timer->t_ssa);
-			ra_ifg     = lc_timer_elapsed_msec(ra_timer->t_ifg);
-		}
+		lc_timer_stop(t_regalloc);
 
 		be_do_stat_nodes(irg, "06 Register Allocation");
 
-		BE_TIMER_POP();
 		BE_TIMER_PUSH(t_finish);
 
 		arch_code_generator_after_ra(birg.cg);
 		be_abi_fix_stack_bias(birg.abi);
+
+		BE_TIMER_POP();
+		BE_TIMER_PUSH(t_verify);
 
 		/* check schedule */
 		be_sched_vrfy(birg.irg, vrfy_option);
 
 		BE_TIMER_POP();
 		BE_TIMER_PUSH(t_emit);
-
 		arch_code_generator_done(birg.cg);
+		BE_TIMER_POP();
+
 		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
 		be_abi_free(birg.abi);
 
 		be_do_stat_nodes(irg, "07 Final");
-
-		BE_TIMER_POP();
-
 		restore_optimization_state(&state);
 
 		BE_TIMER_ONLY(num_nodes_a = get_num_reachable_nodes(irg));
@@ -544,8 +551,8 @@ static void be_main_loop(FILE *file_handle)
 		//		free_ir_graph(irg);
 		BE_TIMER_POP();
 
-#define LC_EMIT(timer)     printf("%-20s: %u msec\n", lc_timer_get_description(timer), lc_timer_elapsed_msec(timer))
-#define EMIT_RA_TIME(n, t) printf("%-20s: %u msec\n", n, t)
+#define LC_EMIT(timer)    printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
+#define LC_EMIT_RA(timer) printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
 		if (be_options.timing == BE_TIME_ON) {
 			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
 			printf("# nodes at begin:  %u\n", num_nodes_b);
@@ -557,25 +564,28 @@ static void be_main_loop(FILE *file_handle)
 			LC_EMIT(t_sched);
 			LC_EMIT(t_constr);
 			LC_EMIT(t_regalloc);
-			EMIT_RA_TIME("prolog",    ra_prolog);
-			EMIT_RA_TIME("liveness",  ra_live);
-			EMIT_RA_TIME("spilling",  ra_spill);
-			EMIT_RA_TIME("coloring",  ra_color);
-			EMIT_RA_TIME("ifg build", ra_ifg);
-			EMIT_RA_TIME("copymin",   ra_copymin);
-			EMIT_RA_TIME("ssa destr", ra_ssa);
-			EMIT_RA_TIME("epilog",    ra_epilog);
+			LC_EMIT_RA(ra_timer->t_prolog);
+			LC_EMIT_RA(ra_timer->t_live);
+			LC_EMIT_RA(ra_timer->t_spill);
+			LC_EMIT_RA(ra_timer->t_color);
+			LC_EMIT_RA(ra_timer->t_ifg);
+			LC_EMIT_RA(ra_timer->t_copymin);
+			LC_EMIT_RA(ra_timer->t_ssa);
+			LC_EMIT_RA(ra_timer->t_epilog);
+			LC_EMIT_RA(ra_timer->t_verify);
+			LC_EMIT_RA(ra_timer->t_other);
 			LC_EMIT(t_finish);
 			LC_EMIT(t_emit);
+			LC_EMIT(t_verify);
 			LC_EMIT(t_other);
 		}
 #undef LC_EMIT
 	}
 	be_done_env(&env);
 
-#undef BE_TIME_START
-#undef BE_TIME_STOP
-#undef BE_TIME_ONLY
+#undef BE_TIMER_POP
+#undef BE_TIMER_PUSH
+#undef BE_TIMER_ONLY
 }
 
 /* Main interface to the frontend. */

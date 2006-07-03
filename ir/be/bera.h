@@ -19,14 +19,16 @@
 #include "be.h"
 
 typedef struct {
-	lc_timer_t *t_prolog;
-	lc_timer_t *t_epilog;
-	lc_timer_t *t_live;
-	lc_timer_t *t_spill;
-	lc_timer_t *t_color;
-	lc_timer_t *t_ifg;
-	lc_timer_t *t_copymin;
-	lc_timer_t *t_ssa;
+	lc_timer_t *t_prolog;      /**< timer for prolog */
+	lc_timer_t *t_epilog;      /**< timer for epilog */
+	lc_timer_t *t_live;        /**< timer for liveness calculation */
+	lc_timer_t *t_spill;       /**< timer for spilling */
+	lc_timer_t *t_color;       /**< timer for graph coloring */
+	lc_timer_t *t_ifg;         /**< timer for building interference graph */
+	lc_timer_t *t_copymin;     /**< timer for copy minimization */
+	lc_timer_t *t_ssa;         /**< timer for ssa destruction */
+	lc_timer_t *t_verify;      /**< timer for verification runs */
+	lc_timer_t *t_other;       /**< timer for remaining stuff */
 } be_ra_timer_t;
 
 typedef struct {
