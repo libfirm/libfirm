@@ -2,7 +2,7 @@
  * Author:      Matthias Braun
  * Date:		05.05.2006
  * Copyright:   (c) Universitaet Karlsruhe
- * License:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifndef BESPILLMORGAN_H_
 #define BESPILLMORGAN_H_

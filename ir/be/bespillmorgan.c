@@ -2,7 +2,7 @@
  * Author:      Matthias Braun
  * Date:		05.05.2006
  * Copyright:   (c) Universitaet Karlsruhe
- * License:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
  */
 #ifdef HAVE_CONFIG_H
@@ -19,22 +19,23 @@
 #include "beutil.h"
 #include "irloop_t.h"
 #include "irgraph_t.h"
-#include "irphase_t.h"
 #include "irprintf.h"
+#include "obstack.h"
 
 #include "bespillbelady.h"
 #include "beverify.h"
 
 #define DBG_LIVE		1
-#define DBG_PRESSURE	2
+#define DBG_LOOPANA		2
+#define DBG_PRESSURE	4
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef struct _morgan_env_t {
+typedef struct morgan_env {
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	ir_graph *irg;
-	phase_t phase;
-	// maximum safe register pressure
+	struct obstack obst;
+	/** maximum safe register pressure */
 	int registers_available;
 
 	spill_env_t *senv;
@@ -43,40 +44,42 @@ typedef struct _morgan_env_t {
 	set *block_attr_set;
 } morgan_env_t;
 
-typedef struct _loop_out_edge_t {
+typedef struct loop_edge {
 	ir_node *block;
 	int pos;
-} loop_out_edge_t;
+} loop_edge_t;
 
-typedef struct _loop_attr_t {
-	ir_loop *loop;
+typedef struct loop_attr {
+	const ir_loop *loop;
 	set *out_edges;
-	/// The set of all values that live through the loop and are not used
+	set *in_edges;
+	/** The set of all values that are live in the loop but not used in the loop */
 	bitset_t *livethrough_unused;
 } loop_attr_t;
 
-typedef struct _block_attr_t {
-	ir_node *block;
+typedef struct block_attr {
+	const ir_node *block;
+	/** set of all values that are live in the block but not used in the block */
 	bitset_t *livethrough_unused;
 } block_attr_t;
 
 //---------------------------------------------------------------------------
 
-int loop_out_edge_cmp(const void* p1, const void* p2, size_t s) {
-	loop_out_edge_t *e1 = (loop_out_edge_t*) p1;
-	loop_out_edge_t *e2 = (loop_out_edge_t*) p2;
+static int loop_edge_cmp(const void* p1, const void* p2, size_t s) {
+	loop_edge_t *e1 = (loop_edge_t*) p1;
+	loop_edge_t *e2 = (loop_edge_t*) p2;
 
 	return e1->block != e2->block || e1->pos != e2->pos;
 }
 
-int loop_attr_cmp(const void *e1, const void *e2, size_t s) {
+static int loop_attr_cmp(const void *e1, const void *e2, size_t s) {
 	loop_attr_t *la1 = (loop_attr_t*) e1;
 	loop_attr_t *la2 = (loop_attr_t*) e2;
 
 	return la1->loop != la2->loop;
 }
 
-int block_attr_cmp(const void *e1, const void *e2, size_t s) {
+static int block_attr_cmp(const void *e1, const void *e2, size_t s) {
 	block_attr_t *b1 = (block_attr_t*) e1;
 	block_attr_t *b2 = (block_attr_t*) e2;
 
@@ -91,11 +94,11 @@ static INLINE int block_attr_hash(const block_attr_t *b) {
 	return HASH_PTR(b->block);
 }
 
-static INLINE int loop_out_edge_hash(const loop_out_edge_t *e) {
+static INLINE int loop_edge_hash(const loop_edge_t *e) {
 	return HASH_PTR(e->block) ^ (e->pos * 31);
 }
 
-static INLINE loop_attr_t *get_loop_attr(morgan_env_t *env, ir_loop *loop) {
+static INLINE loop_attr_t *get_loop_attr(morgan_env_t *env, const ir_loop *loop) {
 	loop_attr_t l_attr, *res;
 	int hash;
 	l_attr.loop = loop;
@@ -104,16 +107,17 @@ static INLINE loop_attr_t *get_loop_attr(morgan_env_t *env, ir_loop *loop) {
 	res = set_find(env->loop_attr_set, &l_attr, sizeof(l_attr), hash);
 
 	// create new loop_attr if none exists yet
-	if (!res) {
-		l_attr.out_edges = new_set(loop_out_edge_cmp, 1);
-		l_attr.livethrough_unused = bitset_obstack_alloc(&env->phase.obst, get_irg_last_idx(env->irg));
+	if (res == NULL) {
+		l_attr.out_edges = new_set(loop_edge_cmp, 1);
+		l_attr.in_edges = new_set(loop_edge_cmp, 1);
+		l_attr.livethrough_unused = bitset_obstack_alloc(&env->obst, get_irg_last_idx(env->irg));
 		res = set_insert(env->loop_attr_set, &l_attr, sizeof(l_attr), hash);
 	}
 
 	return res;
 }
 
-static INLINE block_attr_t *get_block_attr(morgan_env_t *env, ir_node *block) {
+static INLINE block_attr_t *get_block_attr(morgan_env_t *env, const ir_node *block) {
 	block_attr_t b_attr, *res;
 	int hash;
 	b_attr.block = block;
@@ -121,8 +125,8 @@ static INLINE block_attr_t *get_block_attr(morgan_env_t *env, ir_node *block) {
 	hash = block_attr_hash(&b_attr);
 	res = set_find(env->block_attr_set, &b_attr, sizeof(b_attr), hash);
 
-	if(!res) {
-		b_attr.livethrough_unused = bitset_obstack_alloc(&env->phase.obst, get_irg_last_idx(env->irg));
+	if(res == NULL) {
+		b_attr.livethrough_unused = bitset_obstack_alloc(&env->obst, get_irg_last_idx(env->irg));
 		res = set_insert(env->block_attr_set, &b_attr, sizeof(b_attr), hash);
 	}
 
@@ -142,11 +146,13 @@ static INLINE int consider_for_spilling(const arch_env_t *env, const arch_regist
  * Determine edges going out of a loop (= edges that go to a block that is not inside
  * the loop or one of its subloops)
  */
-static INLINE void construct_loop_out_edges(ir_node* block, void* e) {
+static INLINE void construct_loop_edges(ir_node* block, void* e) {
 	morgan_env_t *env = (morgan_env_t*) e;
 	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	int i;
 	ir_loop* loop = get_irn_loop(block);
+	loop_attr_t *loop_attr = get_loop_attr(env, loop);
+	DBG((dbg, DBG_LOOPANA, "Loop for %+F: %d (depth %d)\n", block, loop->loop_nr, loop->depth));
 
 	for(i = 0; i < n_cfgpreds; ++i) {
 		ir_node* cfgpred = get_Block_cfgpred(block, i);
@@ -154,27 +160,71 @@ static INLINE void construct_loop_out_edges(ir_node* block, void* e) {
 		ir_loop* cfgpred_loop = get_irn_loop(cfgpred_block);
 		loop_attr_t *outedges = get_loop_attr(env, cfgpred_loop);
 
-		if(cfgpred_loop != loop && get_loop_depth(cfgpred_loop) >= get_loop_depth(loop)) {
-			loop_out_edge_t edge;
+		if(cfgpred_loop == loop)
+			continue;
+
+		// is it an edge into the loop?
+		if(get_loop_depth(loop) > get_loop_depth(cfgpred_loop)) {
+			loop_edge_t edge;
 			edge.block = block;
 			edge.pos = i;
-			set_insert(outedges->out_edges, &edge, sizeof(edge), loop_out_edge_hash(&edge));
+			DBG((dbg, DBG_LOOPANA, "Loop in edge from %+F (loop %d) to %+F (loop %d)\n", cfgpred_block, get_loop_loop_nr(cfgpred_loop), block, get_loop_loop_nr(loop)));
+			set_insert(loop_attr->in_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
+		} else {
+			ir_loop *p_loop = cfgpred_loop;
+			while(get_loop_depth(p_loop) > get_loop_depth(loop)) {
+				p_loop = get_loop_outer_loop(p_loop);
+			}
+			if(p_loop != loop) {
+				loop_edge_t edge;
+				edge.block = block;
+				edge.pos = i;
+				DBG((dbg, DBG_LOOPANA, "Loop in edge from %+F (loop %d) to %+F (loop %d)\n", cfgpred_block, get_loop_loop_nr(cfgpred_loop), block, get_loop_loop_nr(loop)));
+				set_insert(loop_attr->in_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
+			}
+		}
+
+		// an edge out of the loop?
+		if(get_loop_depth(cfgpred_loop) >= get_loop_depth(loop)) {
+			loop_edge_t edge;
+			edge.block = block;
+			edge.pos = i;
+			DBG((dbg, DBG_LOOPANA, "Loop out edge from %+F (loop %d) to %+F\n", cfgpred_block, cfgpred_loop->loop_nr, block));
+			set_insert(outedges->out_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
+		} else {
+			ir_loop *o_loop = loop;
+
+			// we might jump in the middle of another inner loop which is not inside
+			// our loop (happens for irreducible graphs). This would be a
+			// real out edge then.
+			while(get_loop_depth(o_loop) > get_loop_depth(cfgpred_loop)) {
+				o_loop = get_loop_outer_loop(o_loop);
+			}
+
+			if(cfgpred_loop != o_loop) {
+				loop_edge_t edge;
+				edge.block = block;
+				edge.pos = i;
+				DBG((dbg, DBG_LOOPANA, "Loop out edge from %+F (loop %d) to %+F (into jump)\n", cfgpred_block, cfgpred_loop->loop_nr, block));
+				set_insert(outedges->out_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
+			}
 		}
 	}
 }
 
-static void free_loop_out_edges(morgan_env_t *env) {
+static void free_loop_edges(morgan_env_t *env) {
 	loop_attr_t *l_attr;
 
 	for(l_attr = set_first(env->loop_attr_set); l_attr != NULL; l_attr = set_next(env->loop_attr_set)) {
 		del_set(l_attr->out_edges);
+		del_set(l_attr->in_edges);
 	}
 }
 
 /**
  * Debugging help, shows all nodes in a (node-)bitset
  */
-static void show_nodebitset(ir_graph* irg, bitset_t* bitset) {
+static void show_nodebitset(ir_graph* irg, const bitset_t* bitset) {
 	int i;
 
 	bitset_foreach(bitset, i) {
@@ -186,7 +236,7 @@ static void show_nodebitset(ir_graph* irg, bitset_t* bitset) {
 /**
  * Construct the livethrough unused set for a block
  */
-static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, ir_node* block) {
+static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, const ir_node* block) {
 	block_attr_t *block_attr = get_block_attr(env, block);
 	irn_live_t *li;
 	ir_node *node;
@@ -225,7 +275,7 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, ir_node* 
 /**
  * Construct the livethrough unused set for a loop (and all its subloops+blocks)
  */
-static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, ir_loop *loop) {
+static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, const ir_loop *loop) {
 	int i;
 	loop_attr_t* loop_attr = get_loop_attr(env, loop);
 
@@ -287,9 +337,9 @@ static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, ir_loop *l
 	return loop_attr->livethrough_unused;
 }
 
-//---------------------------------------------------------------------------
+/*---------------------------------------------------------------------------*/
 
-static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, int loop_unused_spills_possible) {
+static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* block, int loop_unused_spills_possible) {
 	int pressure;
 	ir_node *irn;
 	int max_pressure = 0;
@@ -364,6 +414,12 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, 
 			to_spill = get_idx_irn(env->irg, i);
 			foreach_block_succ(block, edge) {
 				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around block %+F\n", to_spill, block));
+				/* We always spill the whole phis and not just their results,
+				 * this shouldn't do any harm but avoids trouble if belady
+				 * decides to spill a whole phi where we only spilled the value
+				 */
+				if(is_Phi(to_spill))
+					be_spill_phi(env->senv, to_spill);
 				be_add_reload_on_edge(env->senv, to_spill, edge->src, edge->pos);
 			}
 			spills++;
@@ -384,7 +440,7 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, ir_node* block, 
  * @param unused_spills_possible	Number of spills from livethrough_unused variables possible in outer loops
  * @return							Number of spills of livethrough_unused variables needed in outer loops
  */
-static int reduce_register_pressure_in_loop(morgan_env_t *env, ir_loop *loop, int outer_spills_possible) {
+static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *loop, int outer_spills_possible) {
 	int i;
 	loop_attr_t* loop_attr = get_loop_attr(env, loop);
 	int spills_needed = 0;
@@ -417,18 +473,31 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, ir_loop *loop, in
 		}
     }
 
-	// calculate number of spills needed in outer loop and spill
-	// unused livethrough nodes around this loop
+	/* calculate number of spills needed in outer loop and spill
+	 * unused livethrough nodes around this loop
+	 */
 	if(spills_needed > outer_spills_possible) {
+		int spills_to_place;
 		outer_spills_needed = outer_spills_possible;
 		spills_needed -= outer_spills_possible;
 
+		spills_to_place = spills_needed;
+
 		bitset_foreach(loop_attr->livethrough_unused, i) {
-			loop_out_edge_t *edge;
+			loop_edge_t *edge;
 			ir_node *to_spill = get_idx_irn(env->irg, i);
 
 			for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
+				/* we always spill whole phis (look at reduce_register_pressure_in_block for details) */
+				if(is_Phi(to_spill))
+					be_spill_phi(env->senv, to_spill);
 				be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos);
+
+			}
+
+			spills_to_place--;
+			if(spills_to_place <= 0) {
+				break;
 			}
 		}
 	} else {
@@ -438,14 +507,11 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, ir_loop *loop, in
 	return outer_spills_needed;
 }
 
-static void *init_phase_data(phase_t *phase, ir_node *irn, void *old) {
-	return old;
-}
-
 void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	morgan_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
+	//firm_dbg_set_mask(dbg, DBG_LOOPANA | DBG_PRESSURE);
 
 	env.arch = chordal_env->birg->main_env->arch_env;
 	env.irg = chordal_env->irg;
@@ -453,7 +519,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	env.senv = be_new_spill_env(chordal_env);
 	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
 
-	phase_init(&env.phase, "spillmorgan", env.irg, PHASE_DEFAULT_GROWTH, init_phase_data);
+	obstack_init(&env.obst);
 
 	env.registers_available = arch_count_non_ignore_regs(env.arch, env.cls);
 
@@ -463,40 +529,47 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	/*-- Part1: Analysis --*/
 	be_liveness(env.irg);
 
-	// construct control flow loop tree
+	/* construct control flow loop tree */
 	construct_cf_backedges(chordal_env->irg);
 
-	// construct loop out edges and livethrough_unused sets for loops and blocks
-	irg_block_walk_graph(chordal_env->irg, construct_loop_out_edges, NULL, &env);
+	/* construct loop out edges and livethrough_unused sets for loops and blocks */
+	irg_block_walk_graph(chordal_env->irg, NULL, construct_loop_edges, &env);
 	construct_loop_livethrough_unused(&env, get_irg_loop(env.irg));
 
 	/*-- Part2: Transformation --*/
 
-	// reduce register pressure to number of available registers
-	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
+	/* spill unused livethrough values around loops and blocks where
+	 * the pressure is too high
+	 */
 
+	/* Place copies for spilled phis */
+	be_place_copies(env.senv);
+	/* Insert real spill/reload nodes and fix usages */
 	be_insert_spills_reloads(env.senv);
+
+	/* Verify the result */
 	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 		be_verify_schedule(env.irg);
 	} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 		assert(be_verify_schedule(env.irg));
 	}
 
-	// we have to remove dead nodes from schedule to not confuse liveness calculation
-	be_remove_dead_nodes_from_schedule(env.irg);
-
-	// cleanup
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPILL)
 		be_dump(env.irg, "-spillmorgan", dump_ir_block_graph_sched);
 
-	free_loop_out_edges(&env);
+	/* cleanup */
+	free_loop_edges(&env);
 	del_set(env.loop_attr_set);
 	del_set(env.block_attr_set);
 
-	// fix the remaining places with too high register pressure with beladies algorithm
+	/* fix the remaining places with too high register pressure with beladies algorithm */
+
+	/* we have to remove dead nodes from schedule to not confuse liveness calculation */
+	be_remove_dead_nodes_from_schedule(env.irg);
 	be_liveness(env.irg);
+
 	be_spill_belady_spill_env(chordal_env, env.senv);
 
 	be_delete_spill_env(env.senv);
-	phase_free(&env.phase);
+	obstack_free(&env.obst, NULL);
 }
