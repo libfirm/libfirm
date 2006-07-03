@@ -28,13 +28,6 @@ typedef struct _spill_env_t spill_env_t;
 spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal);
 
 /**
- * Marks a phi-node for spilling. So when reloading from this phi-node, not
- * only its value but the whole phi will be spilled.
- * This might place be_Copy nodes in predecessor blocks.
- */
-void be_spill_phi(spill_env_t *env, ir_node *node);
-
-/**
  * Deletes a spill environment.
  */
 void be_delete_spill_env(spill_env_t *senv);
@@ -44,6 +37,20 @@ void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before);
 void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos);
 
 void be_insert_spills_reloads(spill_env_t *senv);
+
+/**
+ * Marks a phi-node for spilling. So when reloading from this phi-node, not
+ * only its value but the whole phi will be spilled.
+ * This might place be_Copy nodes in predecessor blocks.
+ */
+void be_spill_phi(spill_env_t *env, ir_node *node);
+
+/**
+ * Places the necessary copies for the spilled phis in the graph
+ * This has to be done once before be_insert_spill_reloads, after
+ * all phis to spill have been marked with be_spill_phi.
+ */
+void be_place_copies(spill_env_t *env);
 
 /**
  * Computes the spill offsets for all spill nodes in the irg

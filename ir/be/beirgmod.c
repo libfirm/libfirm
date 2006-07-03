@@ -173,7 +173,6 @@ static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_bloc
 
 				if(!pset_find_ptr(copy_blocks, y))
 					pdeq_putr(worklist, y);
-
 			}
 		}
 	}
@@ -225,9 +224,9 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 
 	DBG((dbg, LEVEL_1, "Searching valid def for use %+F at pos %d\n", usage, pos));
 	/*
-	* If the usage is in a phi node, search the copy in the
-	* predecessor denoted by pos.
-	*/
+	 * If the usage is in a phi node, search the copy in the
+	 * predecessor denoted by pos.
+	 */
 	if(is_Phi(usage)) {
 		curr_bl = get_Block_cfgpred_block(curr_bl, pos);
 		start_irn = sched_last(curr_bl);
@@ -489,7 +488,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
-	if(!be_liveness_nodes_live_at(arch_env, cls, pos, live));
+	be_liveness_nodes_live_at(arch_env, cls, pos, live);
 
 	n = pset_count(live);
 

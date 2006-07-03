@@ -575,11 +575,15 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 
 	DBG((dbg, LEVEL_1, "running on register class: %s\n", env.cls->name));
 
-	/* do the work */
 	be_clear_links(chordal_env->irg);
+	/* Decide which phi nodes will be spilled and place copies for them into the graph */
 	irg_block_walk_graph(chordal_env->irg, place_copy_walker, NULL, &env);
+	be_place_copies(env.senv);
+	/* Fix high register pressure with belady algorithm */
 	irg_block_walk_graph(chordal_env->irg, NULL, belady, &env);
+	/* belady was block-local, fix the global flow by adding reloads on the edges */
 	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &env);
+	/* Insert spill/reload nodes into the graph and fix usages */
 	be_insert_spills_reloads(env.senv);
 
 	be_remove_dead_nodes_from_schedule(chordal_env->irg);

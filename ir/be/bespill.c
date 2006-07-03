@@ -28,7 +28,6 @@
 #include "benode_t.h"
 #include "bechordal_t.h"
 
-#define REMAT
 /* This enables re-computation of values. Current state: Unfinished and buggy. */
 #undef BUGGY_REMAT
 
@@ -358,8 +357,6 @@ static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
 	return res;
 }
 
-#ifdef REMAT
-
 #ifdef BUGGY_REMAT
 
 /**
@@ -370,11 +367,11 @@ static ir_node *be_spill_node(spill_env_t *senv, ir_node *to_spill) {
  * @param spilled   the node that was spilled
  * @param reloader  a irn that requires a reload
  */
-static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *spilled, ir_node *reloader) {
+static int check_remat_conditions(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
 	int pos, max;
 
 	/* check for 'normal' spill and general remat condition */
-	if (!be_is_Spill(spill) || !arch_irn_is(senv->chordal_env->birg->main_env->arch_env, spilled, rematerializable))
+	if (!arch_irn_is(senv->chordal_env->birg->main_env->arch_env, spilled, rematerializable))
 		return 0;
 
 	/* check availability of original arguments */
@@ -432,17 +429,14 @@ is_alive:	;
  * @param spilled   the node that was spilled
  * @param reloader  a irn that requires a reload
  */
-static int check_remat_conditions(spill_env_t *senv, ir_node *spill, ir_node *spilled, ir_node *reloader) {
+static int check_remat_conditions(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
 	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
 
 	return get_irn_arity(spilled) == 0 &&
-		   be_is_Spill(spill) &&
 		   arch_irn_is(aenv, spilled, rematerializable);
 }
 
 #endif /* BUGGY_REMAT */
-
-#endif /* REMAT */
 
 /**
  * Re-materialize a node.
@@ -476,12 +470,10 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 	return res;
 }
 
-void be_spill_phi(spill_env_t *env, ir_node *node) {
+static place_copies_for_phi(spill_env_t *env, ir_node* node) {
 	int i, arity;
 
 	assert(is_Phi(node));
-
-	pset_insert_ptr(env->mem_phis, node);
 
 	/* We have to place copy nodes in the predecessor blocks to temporarily
 	 * produce new values that get separate spill slots
@@ -508,11 +500,28 @@ void be_spill_phi(spill_env_t *env, ir_node *node) {
 	}
 }
 
+void be_place_copies(spill_env_t *env) {
+	ir_node *node;
+
+	foreach_pset(env->mem_phis, node) {
+		place_copies_for_phi(env, node);
+	}
+}
+
+void be_spill_phi(spill_env_t *env, ir_node *node) {
+	assert(is_Phi(node));
+
+	pset_insert_ptr(env->mem_phis, node);
+}
+
 void be_insert_spills_reloads(spill_env_t *env) {
 	const arch_env_t *arch_env = env->chordal_env->birg->main_env->arch_env;
-	ir_node *node;
+	//ir_node *node;
 	spill_info_t *si;
 
+#if 0
+	// Matze: This should be pointless as beladies fix_block_borders
+	// should result in the same
 	DBG((env->dbg, LEVEL_1, "Reloads for mem-phis:\n"));
 	foreach_pset(env->mem_phis, node) {
 		const ir_edge_t *e;
@@ -531,6 +540,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 			}
 		}
 	}
+#endif
 
 	/* process each spilled node */
 	DBG((env->dbg, LEVEL_1, "Insert spills and reloads:\n"));
@@ -543,16 +553,15 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		for(rld = si->reloaders; rld; rld = rld->next) {
 			ir_node *new_val;
 
-			/* the spill for this reloader */
-			ir_node *spill   = be_spill_node(env, si->spilled_node);
-
-#ifdef REMAT
-			if (check_remat_conditions(env, spill, si->spilled_node, rld->reloader)) {
+			if (check_remat_conditions(env, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(env, si->spilled_node, rld->reloader);
-			} else
-#endif
+			} else {
+				/* the spill for this reloader */
+				ir_node *spill = be_spill_node(env, si->spilled_node);
+
 				/* do a reload */
 				new_val = be_reload(arch_env, env->cls, rld->reloader, mode, spill);
+			}
 
 			DBG((env->dbg, LEVEL_1, " %+F of %+F before %+F\n", new_val, si->spilled_node, rld->reloader));
 			pset_insert_ptr(values, new_val);
@@ -728,7 +737,8 @@ static void optimize_slots(ss_env_t *ssenv, int size, spill_slot_t *ass[]) {
 		- assign a new offset to this slot
 	    - xor find another slot to coalesce with */
 	used_slots = 0;
-	for (i=0; i<size; ++i) { /* for each spill slot */
+	for (i=0; i<size; ++i) {
+		/* for each spill slot */
 		ir_node *n1;
 		int tgt_slot = -1;
 
