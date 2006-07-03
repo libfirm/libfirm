@@ -385,7 +385,7 @@ $comment_string = "/*";
   "init_attr" => "  attr->data.op_flav = dm_flav;",
   "cmp_attr"  => "  return attr_a->data.op_flav != attr_b->data.op_flav;\n",
   "emit"      =>
-'  if (mode_is_signed(get_irn_mode(n))) {
+'  if (mode_is_signed(get_ia32_res_mode(n))) {
 4.  idiv %S2 /* signed DivMod(%S1, %S2) -> %D1, (%A1, %A2, %A3) */
   }
   else {

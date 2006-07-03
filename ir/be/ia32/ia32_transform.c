@@ -967,11 +967,11 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 
 		if (get_irn_op(irn) == op_Div) {
 			set_Proj_proj(proj, pn_DivMod_res_div);
-			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode_Is, pn_DivMod_res_mod);
+			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_DivMod_res_mod);
 		}
 		else {
 			set_Proj_proj(proj, pn_DivMod_res_mod);
-			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode_Is, pn_DivMod_res_div);
+			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_DivMod_res_div);
 		}
 
 		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
@@ -979,7 +979,7 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, env->irn));
 
-	set_ia32_res_mode(res, mode_Is);
+	set_ia32_res_mode(res, mode);
 
 	return res;
 }
@@ -2301,9 +2301,10 @@ static ir_node *gen_lowered_Load(ia32_transform_env_t *env, construct_load_func 
 			FORCE_x87(env->cg);
 	}
 
-	new_op = func(env->dbg, env->irg, env->block, get_irn_n(node, 0), noreg, get_irn_n(node, 1));
+	new_op  = func(env->dbg, env->irg, env->block, get_irn_n(node, 0), noreg, get_irn_n(node, 1));
+	am_offs = get_ia32_am_offs(node);
 
-	if (am_offs = get_ia32_am_offs(node)) {
+	if (am_offs) {
 		am_flav |= ia32_O;
 		add_ia32_am_offs(new_op, am_offs);
 	}
