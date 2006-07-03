@@ -541,6 +541,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	/* spill unused livethrough values around loops and blocks where
 	 * the pressure is too high
 	 */
+	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
 
 	/* Place copies for spilled phis */
 	be_place_copies(env.senv);
