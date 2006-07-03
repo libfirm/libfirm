@@ -17,9 +17,13 @@ int gcd(int a, int b)
     return a;
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
   int a = 49, b = 35;
+  if(argc > 2) {
+      a = atoi(argv[1]);
+      b = atoi(argv[2]);
+  }
 
   printf("gcd.c\n");
   printf("  GCD of %d and %d is %d\n", a, b, gcd(a,b));

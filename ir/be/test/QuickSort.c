@@ -62,49 +62,58 @@ static void quicksort(int *fld, int l, int r ) {
   }
 }
 
+int verify(int* fld, int count) {
+    int i;
+    int last = fld[0];
+    for(i = 1; i < count; ++i) {
+        if(fld[i] < last)
+            return 0;
+        last = fld[i];
+    }
+
+    return 1;
+}
+
 //------------------------------
 // Hauptfunktion des Programmes
 //------------------------------
 int main(int argc, char *argv[]) {
   int i, *fld;
-  int len = argc - 1;
+  int count, seed;
 
   printf("QuickSort.c\n");
 
-  if (len <= 0) {
-      printf("Usage: QuickSort <list of numbers>\n");
-      printf("Continuing with default input.\n");
-      // fld = new int[] {3, 18, 5, 99, 104, 2};
-      fld = (void *)malloc(sizeof(*fld) * (len = 6));
-      fld[0] = 3; fld[1] = 18; fld[2] = 5; fld[3] = 99; fld[4] = 104; fld[5] = 2;
-  }
-  else {
-    // Speicher fuer fld erzeugen
-    fld = (void *)malloc(sizeof(*fld) * len);
+  if(argc > 1)
+    count = atoi(argv[1]);
+  else
+    count = 10000;
 
-    // Feldelemente belegen
-    for( i = 0; i < len; i++ )
-      fld[i] = atoi(argv[i + 1]);
-  }
+  if(argc > 2)
+    seed = atoi(argv[2]);
+  else
+    seed = 123456;
 
-  printf("array:  ");
-  for(i = 0; i < len; i++) {
-    printf("%d, ", fld[i]);
-  }
+  srand(seed);
 
+  fld = (void*) malloc(sizeof(*fld) * count);
+  for(i = 0; i < count; ++i)
+      fld[i] = rand();
+
+  printf("Sorting %d random numbers (seed %d)\n",
+          count, seed);
   // Sortieren
   bewegungen = 0;
   vergleiche = 0;
-  quicksort( fld, 0, len - 1 );
+  quicksort(fld, 0, count-1);
 
   // Ausgabe
-  printf( "\nSorted: " );
+  printf("Sorted. (needed %d comparisons and %d moves.\n", vergleiche, bewegungen);
 
-  for( i = 0; i < len; i++ ) {
-    printf("%d, ", fld[i]);
-  }
-
-  printf("\nNeeded %d comparisons and %d moves.\n", vergleiche, bewegungen);
+  // TODO verify
+  if(verify(fld, count))
+      printf("Verify succeeded.\n");
+  else
+      printf("Verify failed.\n");
 
   return 0;
 }
