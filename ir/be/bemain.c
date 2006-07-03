@@ -513,13 +513,13 @@ static void be_main_loop(FILE *file_handle)
 
 		BE_TIMER_POP();
 
-		lc_timer_start(t_regalloc);
+		BE_TIMER_ONLY(lc_timer_start(t_regalloc));
 
 		/* Do register allocation */
 		ra_timer = ra->allocate(&birg);
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 
-		lc_timer_stop(t_regalloc);
+		BE_TIMER_ONLY(lc_timer_stop(t_regalloc));
 
 		be_do_stat_nodes(irg, "06 Register Allocation");
 
