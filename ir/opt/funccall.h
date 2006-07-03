@@ -49,6 +49,8 @@
  * If the fontend created external entities with irg_const_function
  * property set, the force_run parameter should be set, else
  * should be unset.
+ *
+ * @note This optimization destroys the link fields of nodes.
  */
 void optimize_funccalls(int force_run);
 

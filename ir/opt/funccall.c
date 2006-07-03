@@ -23,9 +23,10 @@
  * The walker environment for rem_mem_from_const_fkt_calls
  */
 typedef struct _env_t {
-  int  changed;                   /**< flag, is set if a graph was changed */
   int  n_calls_removed_SymConst;
   int  n_calls_removed_Sel;
+  ir_node *list;                  /**< The list of all Calls that will be changed. */
+  ir_node *proj_list;             /**< list of all potential Proj nones that must be fixed.*/
 } env_t;
 
 /**
@@ -39,14 +40,13 @@ typedef struct _env_t {
 static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
 {
   env_t *ctx = env;
-  ir_node *call, *ptr, *mem;
+  ir_node *call, *ptr;
   entity *ent;
 
   if (get_irn_op(node) == op_Call) {
     call = node;
 
     set_irn_link(call, NULL);
-
     ptr = get_Call_ptr(call);
     if (get_irn_op(ptr) == op_SymConst && get_SymConst_kind(ptr) == symconst_addr_ent) {
       ent = get_SymConst_entity(ptr);
@@ -78,45 +78,81 @@ static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
     else
       return;
 
-    /* ok, if we get here we found a call to a const function,
-     * route the NoMem node to the call */
-    mem   = get_Call_mem(call);
-
-    set_irn_link(call, mem);
-    set_Call_mem(call, new_r_NoMem(current_ir_graph));
-
-    /* finally, this call can float */
-    set_irn_pinned(call, op_pin_state_floats);
-
-    hook_func_call(current_ir_graph, call);
-
-    ctx->changed = 1;
+    /* ok, if we get here we found a call to a const function */
+    set_irn_link(call, ctx->list);
+    ctx->list = call;
   }
   else if (get_irn_op(node) == op_Proj) {
     /*
-     * Remove memory and exception Proj's from
-     * const function calls.
+     * Collect all memory and exception Proj's from
+     * calls.
      */
     call = get_Proj_pred(node);
-    if ((get_irn_op(call) != op_Call) ||
-        (get_irn_op(get_Call_mem(call)) != op_NoMem))
+    if (get_irn_op(call) != op_Call)
       return;
 
     switch (get_Proj_proj(node)) {
+    case pn_Call_M_regular:
+    case pn_Call_X_except:
+    case pn_Call_M_except:
+      set_irn_link(node, ctx->proj_list);
+      ctx->proj_list = node;
+      break;
+    default:
+      ;
+    }
+  }
+}
+
+/**
+ * Fix the list of collected Calls.
+ */
+static void fix_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list) {
+  ir_node *call, *next, *mem, *proj;
+  int exc_changed = 0;
+
+  /* fix all calls by removing it's memory input */
+  for (call = call_list; call; call = next) {
+    next = get_irn_link(call);
+    mem  = get_Call_mem(call);
+
+    set_irn_link(call, mem);
+    set_Call_mem(call, get_irg_no_mem(irg));
+
+    /* finally, this call can float */
+    set_irn_pinned(call, op_pin_state_floats);
+    hook_func_call(irg, call);
+  }
+
+  /* finally fix all Proj's */
+  for (proj = proj_list; proj; proj = next) {
+    next = get_irn_link(proj);
+    call = get_Proj_pred(proj);
+    mem  = get_irn_link(call);
+    if (! mem)
+      continue;
+
+    switch (get_Proj_proj(proj)) {
     case pn_Call_M_regular: {
-      ir_node *old_mem = get_irn_link(call);
-      if (old_mem) {
-        exchange(node, old_mem);
-        ctx->changed = 1;
-      }
+      exchange(proj, mem);
     } break;
     case pn_Call_X_except:
     case pn_Call_M_except:
-      exchange(node, new_Bad());
-      ctx->changed = 1;
+      exc_changed = 1;
+      exchange(proj, get_irg_bad(irg));
       break;
-    default: ;
+    default:
+      ;
     }
+  }
+
+  /* changes were done ... */
+  set_irg_outs_inconsistent(irg);
+  set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
+
+  if (exc_changed) {
+    /* ... including exception edges */
+    set_irg_doms_inconsistent(irg);
   }
 }
 
@@ -207,15 +243,12 @@ void optimize_funccalls(int force_run)
 
       /* no need to do this on const functions */
       if ((get_irg_additional_properties(irg) & mtp_property_const) == 0) {
-        ctx.changed = 0;
+        ctx.list      = NULL;
+        ctx.proj_list = NULL;
         irg_walk_graph(irg, NULL, rem_mem_from_const_fkt_calls, &ctx);
 
-        if (ctx.changed) {
-          /* changes were done including exception edges */
-          set_irg_outs_inconsistent(irg);
-          set_irg_doms_inconsistent(irg);
-          set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
-        }
+        if (ctx.list)
+          fix_call_list(irg, ctx.list, ctx.proj_list);
       }
     }
 
