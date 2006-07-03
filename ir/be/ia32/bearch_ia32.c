@@ -1183,7 +1183,9 @@ static void *ia32_cg_init(const be_irg_t *birg) {
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.cg");
 
 	/* copy optimizations from isa for easier access */
-	cg->opt = isa->opt;
+	cg->opt      = isa->opt;
+	cg->arch     = isa->arch;
+	cg->opt_arch = isa->opt_arch;
 
 	/* enter it */
 	isa->cg = cg;
