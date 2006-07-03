@@ -545,6 +545,14 @@ const char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
 		case ia32_AddrModeD:
 			snprintf(buf, SNPRINTF_BUF_LEN, "%s", ia32_emit_am(n, env));
 			break;
+		case ia32_AddrModeS:
+			/*
+				Mulh is emitted via emit_unop
+				imul [MEM]  means EDX:EAX <- EAX * [MEM]
+			*/
+			assert(is_ia32_Mulh(n) || is_ia32_MulS(n) && "Only MulS and Mulh can have AM source as unop");
+			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s", ia32_emit_am(n, env));
+			break;
 		default:
 			assert(0 && "unsupported op type");
 	}
@@ -1223,7 +1231,7 @@ static void emit_ia32_SwitchJmp(const ir_node *irn, ia32_emit_env_t *emit_env) {
 
 	/* fill the table structure */
 	tbl.label        = xmalloc(SNPRINTF_BUF_LEN);
-	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, "JMPTBL_");
+	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, ".TBL_");
 	tbl.defProj      = NULL;
 	tbl.num_branches = get_irn_n_edges(irn);
 	tbl.branches     = xcalloc(tbl.num_branches, sizeof(tbl.branches[0]));
