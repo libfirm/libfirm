@@ -372,8 +372,11 @@ const char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 
 	switch(get_ia32_op_type(n)) {
 		case ia32_Normal:
-			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
+			if (is_ia32_ImmConst(n)) {
 				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, %s", n, get_ia32_cnst(n));
+			}
+			else if (is_ia32_ImmSymConst(n)) {
+				lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S, OFFSET FLAT:%s", n, get_ia32_cnst(n));
 			}
 			else {
 				const arch_register_t *in1 = get_in_reg(n, 2);
@@ -550,7 +553,7 @@ const char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
 				Mulh is emitted via emit_unop
 				imul [MEM]  means EDX:EAX <- EAX * [MEM]
 			*/
-			assert(is_ia32_Mulh(n) || is_ia32_MulS(n) && "Only MulS and Mulh can have AM source as unop");
+			assert((is_ia32_Mulh(n) || is_ia32_MulS(n)) && "Only MulS and Mulh can have AM source as unop");
 			lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%s", ia32_emit_am(n, env));
 			break;
 		default:
