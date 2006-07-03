@@ -1085,8 +1085,8 @@ static ir_node *equivalent_node_Div(ir_node *n)
  * Optimize a / 1.0 = a.
  */
 static ir_node *equivalent_node_Quot(ir_node *n) {
-  ir_node *a = get_Div_left(n);
-  ir_node *b = get_Div_right(n);
+  ir_node *a = get_Quot_left(n);
+  ir_node *b = get_Quot_right(n);
 
   /* Div is not commutative. */
   if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* Quot(x, 1) == x */
