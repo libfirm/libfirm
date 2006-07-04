@@ -641,9 +641,8 @@ const char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	if (had_output)
 		obstack_printf(obst, "] ");
 
-	size        = obstack_object_size(obst);
-	s           = obstack_finish(obst);
-	s[size - 1] = '\0';
+	obstack_1grow(obst, '\0');
+	s = obstack_finish(obst);
 
 	return s;
 }
@@ -1091,17 +1090,6 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 		instr = "sub";
 	}
 
-	/* in case of a PsiCondSet use mov because it doesn't affect the eflags */
-	if (is_ia32_PsiCondSet(irn)) {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "mov %%%s, 0", arch_register_get_name(out));
-	}
-	else {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %%%s, %%%s", instr, arch_register_get_name(out), arch_register_get_name(out));
-	}
-
-	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* clear target as set modifies only lower 8 bit */");
-	IA32_DO_EMIT(irn);
-
 	if (is_ia32_CmpSet(irn)) {
 		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %s", ia32_emit_binop(irn, env));
 	}
@@ -1116,6 +1104,11 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 		assert(0 && "unsupported Set");
 	}
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* calculate Psi condition */" );
+	IA32_DO_EMIT(irn);
+
+	/* use mov to clear target because it doesn't affect the eflags */
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "mov %%%s, 0", arch_register_get_name(out));
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* clear target as set modifies only lower 8 bit */");
 	IA32_DO_EMIT(irn);
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "set%s %%%s", cmp_suffix, reg8bit);
