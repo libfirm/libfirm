@@ -99,6 +99,8 @@ ir_op *op_CopyB;       ir_op *get_op_CopyB     (void) { return op_CopyB;     }
 ir_op *op_Raise;       ir_op *get_op_Raise     (void) { return op_Raise;     }
 ir_op *op_Bound;       ir_op *get_op_Bound     (void) { return op_Bound;     }
 
+ir_op *op_Pin;         ir_op *get_op_Pin       (void) { return op_Pin;       }
+
 /*
  * Copies all attributes stored in the old node to the new node.
  * Assumes both have the same opcode and sufficient size.
@@ -113,25 +115,25 @@ void default_copy_attr(const ir_node *old_node, ir_node *new_node) {
     /* copy additional node data */
     memcpy(get_irn_data(new_node, void, size), get_irn_data(old_node, void, size), size);
   }
-}
+}  /* default_copy_attr */
 
 /**
- * Copies all attributes stored in the old node to the new node.
- * Assumes both have the same opcode and sufficient size.
+ * Copies all Call attributes stored in the old node to the new node.
  */
 static void
 call_copy_attr(const ir_node *old_node, ir_node *new_node) {
   default_copy_attr(old_node, new_node);
-
   remove_Call_callee_arr(new_node);
-}
+}  /* call_copy_attr */
 
+/**
+ * Copies all Block attributes stored in the old node to the new node.
+ */
 static void
-block_copy_attr(const ir_node *old_node, ir_node *new_node)
-{
+block_copy_attr(const ir_node *old_node, ir_node *new_node) {
   default_copy_attr(old_node, new_node);
   INIT_LIST_HEAD(&new_node->attr.block.succ_head);
-}
+}  /* block_copy_attr */
 
 /**
  * Sets the default copy_attr operation for an ir_ops
@@ -152,9 +154,8 @@ static ir_op_ops *firm_set_default_copy_attr(opcode code, ir_op_ops *ops) {
     if (! ops->copy_attr)
       ops->copy_attr = default_copy_attr;
   }
-
   return ops;
-}
+}  /* firm_set_default_copy_attr */
 
 /* Creates a new ir operation. */
 ir_op *
@@ -190,14 +191,14 @@ new_ir_op(opcode code, const char *name, op_pin_state p,
 
   hook_new_ir_op(res);
   return res;
-}
+}  /* new_ir_op */
 
 void free_ir_op(ir_op *code) {
   hook_free_ir_op(code);
 
   remove_irp_opcode(code);
   free(code);
-}
+}  /* free_ir_op */
 
 void
 init_op(void)
@@ -281,6 +282,8 @@ init_op(void)
   op_Raise     = new_ir_op(iro_Raise,     "Raise",     op_pin_state_pinned,     H|X, oparity_any,      -1, 0, NULL);
   op_Bound     = new_ir_op(iro_Bound,     "Bound",     op_pin_state_exc_pinned, F|H, oparity_trinary,  -1, sizeof(bound_attr), NULL);
 
+  op_Pin       = new_ir_op(iro_Pin,       "Pin",       op_pin_state_pinned, H,       oparity_unary,    -1, 0, NULL);
+
 #undef H
 #undef Y
 #undef F
@@ -288,7 +291,7 @@ init_op(void)
 #undef X
 #undef C
 #undef L
-}
+}  /* init_op */
 
 
 /* free memory used by irop module. */
@@ -359,20 +362,22 @@ void finish_op(void) {
   free_ir_op (op_InstOf   ); op_InstOf    = NULL;
   free_ir_op (op_Raise    ); op_Raise     = NULL;
   free_ir_op (op_Bound    ); op_Bound     = NULL;
+
+  free_ir_op (op_Pin      ); op_Pin       = NULL;
 }
 
 /* Returns the string for the opcode. */
 const char *get_op_name (const ir_op *op) {
   return get_id_str(op->name);
-}
+}  /* get_op_name */
 
 opcode (get_op_code)(const ir_op *op){
   return _get_op_code(op);
-}
+}  /* get_op_code */
 
 ident *(get_op_ident)(const ir_op *op){
   return _get_op_ident(op);
-}
+}  /* get_op_ident */
 
 const char *get_op_pin_state_name(op_pin_state s) {
   switch(s) {
@@ -383,43 +388,43 @@ const char *get_op_pin_state_name(op_pin_state s) {
   XXX(op_pin_state_mem_pinned);
 #undef XXX
   }
-	return "<none>";
-}
+  return "<none>";
+}  /* get_op_pin_state_name */
 
 op_pin_state (get_op_pinned)(const ir_op *op) {
   return _get_op_pinned(op);
-}
+}  /* get_op_pinned */
 
 /* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
    for Phi, Block and control flow nodes. */
-void      set_op_pinned(ir_op *op, op_pin_state op_pin_state_pinned) {
+void set_op_pinned(ir_op *op, op_pin_state op_pin_state_pinned) {
   if (op == op_Block || op == op_Phi || is_cfopcode(op)) return;
   op->op_pin_state_pinned = op_pin_state_pinned;
-}
+}  /* set_op_pinned */
 
 /* retrieve the next free opcode */
 unsigned get_next_ir_opcode(void) {
   return next_iro++;
-}
+}  /* get_next_ir_opcode */
 
 /* Returns the next free n IR opcode number, allows to register a bunch of user ops */
 unsigned get_next_ir_opcodes(unsigned num) {
   unsigned base = next_iro;
   next_iro += num;
   return base;
-}
+}  /* get_next_ir_opcodes */
 
 /* Returns the generic function pointer from an ir operation. */
 op_func (get_generic_function_ptr)(const ir_op *op) {
   return _get_generic_function_ptr(op);
-}
+}  /* get_generic_function_ptr */
 
 /* Store a generic function pointer into an ir operation. */
 void (set_generic_function_ptr)(ir_op *op, op_func func) {
   _set_generic_function_ptr(op, func);
-}
+}  /* set_generic_function_ptr */
 
 /* Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *(get_op_ops)(const ir_op *op) {
   return _get_op_ops(op);
-}
+}  /* get_op_ops */

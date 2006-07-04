@@ -53,16 +53,17 @@ typedef enum {
   irop_flag_cfopcode    = 0x00000004, /**< is a control flow operation */
   irop_flag_ip_cfopcode = 0x00000008, /**< operation manipulates interprocedural control flow */
   irop_flag_fragile     = 0x00000010, /**< set if the operation can change the control flow because
-                                             of an exception */
+                                           of an exception */
   irop_flag_forking     = 0x00000020, /**< the operation is a forking control flow */
   irop_flag_highlevel   = 0x00000040, /**< the operation is a pure high-level one and can be
                                            skipped in low-level optimizations */
   irop_flag_constlike   = 0x00000080, /**< the operation has no arguments and is some
                                            kind of a constant */
-  irop_flag_keep        = 0x00000100, /**< this operation can be kept in End's keep-alive list */
-  irop_flag_machine     = 0x00000200, /**< this operation is a machine operation */
-  irop_flag_machine_op  = 0x00000400, /**< this operation is a machine operand */
-  irop_flag_user        = 0x00000800  /**< this flag and all higher one are free for machine user */
+  irop_flag_always_opt  = 0x00000100, /**< this operation must always be optimized */
+  irop_flag_keep        = 0x00000200, /**< this operation can be kept in End's keep-alive list */
+  irop_flag_machine     = 0x00000400, /**< this operation is a machine operation */
+  irop_flag_machine_op  = 0x00000800, /**< this operation is a machine operand */
+  irop_flag_user        = 0x00001000  /**< this flag and all higher one are free for machine user */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */
@@ -81,6 +82,7 @@ typedef enum {
   iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
   iro_NoMem, iro_Mux, iro_Psi, iro_CopyB,
   iro_InstOf, iro_Raise, iro_Bound,
+  iro_Pin,
   iro_MaxOpcode
 } opcode;
 
@@ -156,6 +158,8 @@ extern ir_op *op_CopyB;           ir_op *get_op_CopyB     (void);
 extern ir_op *op_InstOf;          ir_op *get_op_InstOf    (void);
 extern ir_op *op_Raise;           ir_op *get_op_Raise     (void);
 extern ir_op *op_Bound;           ir_op *get_op_Bound     (void);
+
+extern ir_op *op_Pin;             ir_op *get_op_Pin       (void);
 
 /** Returns the ident for the opcode name */
 ident *get_op_ident(const ir_op *op);

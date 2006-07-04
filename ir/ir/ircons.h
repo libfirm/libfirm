@@ -296,6 +296,7 @@
  *    ir_node *new_InstOf (ir_node *store, ir_node obj, ir_type *ent);
  *    ir_node *new_Raise  (ir_node *store, ir_node *obj);
  *    ir_node *new_Bound  (ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+ *    ir_node *new_Pin    (ir_node *node);
  *
  *    void add_immBlock_pred (ir_node *block, ir_node *jmp);
  *    void mature_immBlock (ir_node *block);
@@ -1030,6 +1031,13 @@
  *    Describes a high level bounds check. Must be lowered to a Call to a runtime check
  *    function.
  *
+ *    ir_node *new_Pin  (ir_node *node);
+ *    -----------------------------------------------------------------------------------
+ *
+ *    Pin the value of the node node in the current block  No users of the Pin node can
+ *    float above the Block of the Pin. The node cannot float behind this block. Often
+ *    used to Pin the NoMem node.
+ *
  *
  *    COPING WITH DATA OBJECTS
  *    ========================
@@ -1044,7 +1052,7 @@
  *
  *    All values known in a Block are listed in the block's attribute,
  *    block.**graph_arr which is used to automatically insert Phi nodes.
- *    The following two funcions can be used to add a newly computed value
+ *    The following two functions can be used to add a newly computed value
  *    to the array, or to get the producer of a value, i.e., the current
  *    live value.
  *
@@ -1943,13 +1951,22 @@ ir_node *new_rd_Raise  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *db         A pointer for debug information.
  * @param *irg        The ir graph the node belong to.
  * @param *block      The block the node belong to.
- * @param *store      The current memory
+ * @param *store      The current memory.
  * @param *idx        The ir_node that represents an index.
  * @param *lower      The ir_node that represents the lower bound for the index.
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
 ir_node *new_rd_Bound(dbg_info *db, ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+
+/** Constructor for a Pin node.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *irg        The ir graph the node belong to.
+ * @param *block      The block the node belong to.
+ * @param *node       The node which value should be pinned.
+ */
+ir_node *new_rd_Pin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *node);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -2706,13 +2723,21 @@ ir_node *new_r_Raise  (ir_graph *irg, ir_node *block,
  *
  * @param *irg        The ir graph the node belong to.
  * @param *block      The block the node belong to.
- * @param *store      The current memory
+ * @param *store      The current memory.
  * @param *idx        The ir_node that represents an index.
  * @param *lower      The ir_node that represents the lower bound for the index.
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
 ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
     ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+
+/** Constructor for a Pin node.
+ *
+ * @param *irg        The ir graph the node belong to.
+ * @param *block      The block the node belong to.
+ * @param *node       The node which value should be pinned.
+ */
+ir_node *new_r_Pin(ir_graph *irg, ir_node *block, ir_node *node);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -3468,6 +3493,13 @@ ir_node *new_d_Raise  (dbg_info *db, ir_node *store, ir_node *obj);
  */
 ir_node *new_d_Bound(dbg_info *db, ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
+/** Constructor for a Pin node.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *node       The node which value should be pinned.
+ */
+ir_node *new_d_Pin(dbg_info *db, ir_node *node);
+
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
 /*-----------------------------------------------------------------------*/
@@ -4133,6 +4165,12 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj);
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
 ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+
+/** Constructor for a Pin node.
+ *
+ * @param *node       The node which value should be pinned.
+ */
+ir_node *new_Pin(ir_node *node);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

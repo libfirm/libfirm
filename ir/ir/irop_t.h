@@ -101,6 +101,11 @@ static INLINE int is_op_constlike(const ir_op *op) {
   return op->flags & irop_flag_constlike;
 }
 
+/** Returns non-zero if operation must always be optimized */
+static INLINE int is_op_always_opt(const ir_op *op) {
+  return op->flags & irop_flag_always_opt;
+}
+
 /** Returns non-zero if operation is a keep-like op */
 static INLINE int is_op_keep(const ir_op *op) {
   return op->flags & irop_flag_keep;
