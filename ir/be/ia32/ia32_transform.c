@@ -1312,7 +1312,7 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	ir_mode *mode  = get_Load_mode(node);
 	int     is_imm = 0;
 	ir_node *new_op;
-	ia32_am_flavour_t am_flav = ia32_B;
+	ia32_am_flavour_t am_flav = ia32_am_B;
 
 	/* address might be a constant (symconst or absolute address) */
 	if (is_ia32_Const(ptr)) {
@@ -1333,14 +1333,14 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 
 	/* base is an constant address */
 	if (is_imm) {
-		if (get_ia32_immop_type(ptr) == ia32_ImmSymConst) {
+		if (get_ia32_op_type(ptr) == ia32_SymConst) {
 			set_ia32_am_sc(new_op, get_ia32_id_cnst(ptr));
+			am_flav = ia32_am_N;
 		}
 		else {
 			add_ia32_am_offs(new_op, get_ia32_cnst(ptr));
+			am_flav = ia32_am_O;
 		}
-
-		am_flav = ia32_O;
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
@@ -1382,7 +1382,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *sval    = val;
 	int      is_imm  = 0;
 	ir_node *new_op;
-	ia32_am_flavour_t am_flav = ia32_B;
+	ia32_am_flavour_t am_flav = ia32_am_B;
 	ia32_immop_type_t immop   = ia32_ImmNone;
 
 	if (! mode_is_float(mode)) {
@@ -1431,12 +1431,12 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	if (is_imm) {
 		if (get_ia32_immop_type(ptr) == ia32_ImmSymConst) {
 			set_ia32_am_sc(new_op, get_ia32_id_cnst(ptr));
+			am_flav = ia32_am_N;
 		}
 		else {
 			add_ia32_am_offs(new_op, get_ia32_cnst(ptr));
+			am_flav = ia32_am_O;
 		}
-
-		am_flav = ia32_O;
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Dest);
