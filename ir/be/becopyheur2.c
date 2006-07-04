@@ -43,15 +43,16 @@
 
 static int    dump_flags      = 0;
 static int    subtree_iter    = 4;
-static double constr_factor   = 0.5;
+static int    max_depth       = 10;
+static double constr_factor   = 0.9;
 
 /* Options using libcore */
 #ifdef WITH_LIBCORE
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
-    { "after",   DUMP_AFTER  },
-    { "cloud",   DUMP_CLOUD  },
+	{ "after",   DUMP_AFTER  },
+	{ "cloud",   DUMP_CLOUD  },
 	{ "all",     DUMP_ALL    },
 	{ NULL,      0 }
 };
@@ -64,6 +65,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",             &dump_var),
 	LC_OPT_ENT_INT      ("iter", "iterations for subtree nodes (standard: 3)",             &subtree_iter),
 	LC_OPT_ENT_DBL      ("cf",   "factor of constraint importance (between 0.0 and 1.0)",  &constr_factor),
+	LC_OPT_ENT_INT      ("max",  "maximum recursion depth (default 20)",                   &max_depth),
 	{ NULL }
 };
 
@@ -404,6 +406,9 @@ static int recolor(co2_t *env, ir_node *irn, col_cost_pair_t *col_list, struct l
 	int n_aff          = 0;
 
 	int i;
+
+	if(depth >= max_depth)
+	  return 0;
 
 	for(i = 0; i < n_regs; ++i) {
 		col_t tgt_col  = col_list[i].col;
