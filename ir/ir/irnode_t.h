@@ -461,8 +461,7 @@ extern ir_node *(*_get_irn_n)(const ir_node *node, int n);
  * Intern version for libFirm.
  */
 static INLINE ir_mode *
-_get_irn_mode (const ir_node *node)
-{
+_get_irn_mode(const ir_node *node) {
   assert (node);
   return node->mode;
 }
@@ -472,8 +471,7 @@ _get_irn_mode (const ir_node *node)
  * Intern version of libFirm.
  */
 static INLINE void
-_set_irn_mode (ir_node *node, ir_mode *mode)
-{
+_set_irn_mode(ir_node *node, ir_mode *mode) {
   assert (node);
   node->mode = mode;
 }
@@ -483,8 +481,7 @@ _set_irn_mode (ir_node *node, ir_mode *mode)
  * Intern version for libFirm.
  */
 static INLINE unsigned long
-_get_irn_visited (const ir_node *node)
-{
+_get_irn_visited(const ir_node *node) {
   assert (node);
   return node->visited;
 }
@@ -494,8 +491,7 @@ _get_irn_visited (const ir_node *node)
  * Intern version for libFirm.
  */
 static INLINE void
-_set_irn_visited (ir_node *node, unsigned long visited)
-{
+_set_irn_visited(ir_node *node, unsigned long visited) {
   assert (node);
   node->visited = visited;
 }
@@ -505,7 +501,7 @@ _set_irn_visited (ir_node *node, unsigned long visited)
  * Intern version for libFirm.
  */
 static INLINE void
-_mark_irn_visited (ir_node *node) {
+_mark_irn_visited(ir_node *node) {
   assert (node);
   node->visited = current_ir_graph->visited;
 }
@@ -594,41 +590,41 @@ _is_binop(const ir_node *node) {
 static INLINE int
 _is_Bad(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Bad);
+  return (_get_irn_op(node) == op_Bad);
 }
 
 static INLINE int
 _is_Const(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Const);
+  return (_get_irn_op(node) == op_Const);
 }
 
 static INLINE int
-_is_Unknown (const ir_node *node) {
+_is_Unknown(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Unknown);
+  return (_get_irn_op(node) == op_Unknown);
 }
 
 static INLINE int
-_is_Return (const ir_node *node) {
+_is_Return(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Return);
+  return (_get_irn_op(node) == op_Return);
 }
 
 static INLINE int
-_is_Call (const ir_node *node) {
+_is_Call(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Call);
+  return (_get_irn_op(node) == op_Call);
 }
 
 static INLINE int
-_is_Sel (const ir_node *node) {
+_is_Sel(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Sel);
+  return (_get_irn_op(node) == op_Sel);
 }
 
 static INLINE int
-_is_Mux (const ir_node *node) {
+_is_Mux(const ir_node *node) {
   assert(node);
   if (node) {
     ir_op *op = _get_irn_op(node);
@@ -638,21 +634,21 @@ _is_Mux (const ir_node *node) {
 }
 
 static INLINE int
-_is_Load (const ir_node *node) {
+_is_Load(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Load);
+  return (_get_irn_op(node) == op_Load);
 }
 
 static INLINE int
-_is_Sync (const ir_node *node) {
+_is_Sync(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Sync);
+  return (_get_irn_op(node) == op_Sync);
 }
 
 static INLINE int
-_is_Confirm (const ir_node *node) {
+_is_Confirm(const ir_node *node) {
   assert(node);
-  return (node && _get_irn_op(node) == op_Confirm);
+  return (_get_irn_op(node) == op_Confirm);
 }
 
 static INLINE int
@@ -668,13 +664,13 @@ _is_Block(const ir_node *node) {
 }
 
 static INLINE int
-_get_Block_n_cfgpreds (ir_node *node) {
+_get_Block_n_cfgpreds(ir_node *node) {
   assert(_is_Block(node));
   return _get_irn_arity(node);
 }
 
 static INLINE ir_node *
-_get_Block_cfgpred (ir_node *node, int pos) {
+_get_Block_cfgpred(ir_node *node, int pos) {
   assert(0 <= pos && pos < get_irn_arity(node));
   assert(_is_Block(node));
   return _get_irn_n(node, pos);
@@ -700,20 +696,20 @@ _get_Block_cfgpred_block(ir_node *node, int pos) {
 }
 
 static INLINE unsigned long
-_get_Block_block_visited (ir_node *node) {
+_get_Block_block_visited(ir_node *node) {
   assert (node->op == op_Block);
   return node->attr.block.block_visited;
 }
 
 static INLINE void
-_set_Block_block_visited (ir_node *node, unsigned long visit) {
+_set_Block_block_visited(ir_node *node, unsigned long visit) {
   assert (node->op == op_Block);
   node->attr.block.block_visited = visit;
 }
 
 /* For this current_ir_graph must be set. */
 static INLINE void
-_mark_Block_block_visited (ir_node *node) {
+_mark_Block_block_visited(ir_node *node) {
   assert (node->op == op_Block);
   node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
 }
@@ -733,7 +729,7 @@ _set_Block_dead(ir_node *block) {
 
 static INLINE int
 _is_Block_dead(const ir_node *block) {
-  ir_op * op = _get_irn_op(block);
+  ir_op *op = _get_irn_op(block);
 
   if (op == op_Bad)
     return 1;
@@ -754,7 +750,7 @@ static INLINE cnst_classify_t _classify_Const(ir_node *node) {
 
   op = _get_irn_op(node);
 
-  if(op == op_Const)
+  if (op == op_Const)
     return classify_tarval(_get_Const_tarval(node));
   else if(op == op_SymConst)
     return CNST_SYMCONST;
@@ -780,6 +776,10 @@ static INLINE entity *_get_irn_entity_attr(ir_node *node) {
 
 static INLINE int _is_irn_constlike(const ir_node *node) {
   return is_op_constlike(_get_irn_op(node));
+}
+
+static INLINE int _is_irn_always_opt(const ir_node *node) {
+  return is_op_always_opt(_get_irn_op(node));
 }
 
 static INLINE int _is_irn_keep(const ir_node *node) {
@@ -869,6 +869,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define get_irn_type_attr(node)               _get_irn_type_attr(node)
 #define get_irn_entity_attr(node)             _get_irn_entity_attr(node)
 #define is_irn_constlike(node)                _is_irn_constlike(node)
+#define is_irn_always_opt(node)               _is_irn_always_opt(node)
 #define is_irn_keep(node)                     _is_irn_keep(node)
 #define is_irn_machine_op(node)               _is_irn_machine_op(node)
 #define is_irn_machine_operand(node)          _is_irn_machine_operand(node)
