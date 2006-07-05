@@ -36,6 +36,24 @@ typedef struct _env_t {
 } env_t;
 
 /**
+ * Return the effective use block of a node and it's predecessor on
+ * position pos.
+ *
+ * @param node  the node
+ * @param pos   the position of the used input
+ *
+ * This handles correctly Phi nodes.
+ */
+static ir_node *get_effective_use_block(ir_node *node, int pos)
+{
+  /* the effective use of a Phi is in its predecessor block */
+  if (is_Phi(node))
+    return get_nodes_block(get_irn_n(node, pos));
+  else
+    return get_nodes_block(node);
+}
+
+/**
  * Handle a CASE-branch.
  *
  * @param block   the block which is entered by the branch
@@ -48,7 +66,6 @@ typedef struct _env_t {
  */
 static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
 {
-  int pos;
   const ir_edge_t *edge, *next;
   ir_node *c = NULL;
 
@@ -57,7 +74,8 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
 
   for (edge = get_irn_out_edge_first(irn); edge; edge = next) {
     ir_node *succ = get_edge_src_irn(edge);
-    ir_node *blk = get_nodes_block(succ);
+    int     pos   = get_edge_src_pos(edge);
+    ir_node *blk  = get_effective_use_block(succ, pos);
 
     next = get_irn_out_edge_next(irn, edge);
 
@@ -76,7 +94,6 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
         c = new_r_Const_type(current_ir_graph, block, mode, tv, tp);
       }
 
-      pos = get_edge_src_pos(edge);
       set_irn_n(succ, pos, c);
       DBG_OPT_CONFIRM_C(irn, c);
 //      ir_printf("1 Replacing input %d of node %n with %n\n", pos, succ, c);
@@ -84,7 +101,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
       env->num_consts += 1;
     }
   }
-}
+}  /* handle_case */
 
 /**
  * Handle an IF-branch.
@@ -124,23 +141,21 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 
   /*
    * First case: both values are identical.
-   * replace the right one by the left one.
+   * replace the left one by the right (potentially const) one.
    */
   if (pnc == pn_Cmp_Eq) {
-    int pos;
-
     for (edge = get_irn_out_edge_first(left); edge; edge = next) {
       ir_node *succ = get_edge_src_irn(edge);
-      ir_node *blk = get_nodes_block(succ);
+      int     pos   = get_edge_src_pos(edge);
+      ir_node *blk  = get_effective_use_block(succ, pos);
 
       next = get_irn_out_edge_next(left, edge);
       if (block_dominates(block, blk)) {
         /*
-         * Ok, we found a user of right that is placed
-         * in a block dominated by the branch block.
+         * Ok, we found a usage of left in a block
+         * dominated by the branch block.
          * We can replace the input with right.
          */
-        pos = get_edge_src_pos(edge);
         set_irn_n(succ, pos, right);
         DBG_OPT_CONFIRM(left, right);
 
@@ -150,19 +165,19 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
       }
     }
   }
-  else { /* not == cases */
-    int pos;
+  else { /* not pn_Cmp_Eq cases */
     ir_node *c = NULL;
 
     for (edge = get_irn_out_edge_first(left); edge; edge = next) {
       ir_node *succ = get_edge_src_irn(edge);
-      ir_node *blk = get_nodes_block(succ);
+      int     pos   = get_edge_src_pos(edge);
+      ir_node *blk  = get_effective_use_block(succ, pos);
 
       next = get_irn_out_edge_next(left, edge);
       if (block_dominates(block, blk)) {
         /*
-         * Ok, we found a user of right that is placed
-         * in a block dominated by the branch block.
+         * Ok, we found a usage of left in a block
+         * dominated by the branch block.
          * We can replace the input with a Confirm(left, pnc, right).
          */
         if (! c)
@@ -176,7 +191,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
       }
     }
   }
-}
+}  /* handle_if */
 
 /**
  * Pre-walker: Called for every block to insert Confirm nodes
@@ -188,7 +203,7 @@ static void insert_Confirm(ir_node *block, void *env)
 
   /*
    * we can only handle blocks with only ONE control flow
-   * predecessor
+   * predecessor yet.
    */
   if (get_Block_n_cfgpreds(block) != 1)
     return;
@@ -235,7 +250,7 @@ static void insert_Confirm(ir_node *block, void *env)
 
     handle_case(block, get_Cond_selector(cond), proj_nr, env);
   }
-}
+}  /* insert_Confirm */
 
 /*
  * Construct Confirm nodes
@@ -280,7 +295,7 @@ void construct_confirms(ir_graph *irg)
   /* deactivate edges if they where off */
   if (! edges_active)
     edges_deactivate(irg);
-}
+}  /* construct_confirms */
 
 /**
  * Post-walker: Remove Confirm nodes
@@ -298,11 +313,11 @@ static void rem_Confirm(ir_node *n, void *env) {
       exchange(n, new_Bad());
     }
   }
-}
+}  /* rem_Confirm */
 
 /*
  * Remove all Confirm nodes from a graph.
  */
 void remove_confirms(ir_graph *irg) {
   irg_walk_graph(irg, NULL, rem_Confirm, NULL);
-}
+}  /* remove_confirms */
