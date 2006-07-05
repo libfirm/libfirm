@@ -20,7 +20,7 @@
 #ifndef _FIRM_ANA_IRCONSCONFIRM_H_
 #define _FIRM_ANA_IRCONSCONFIRM_H_
 
-#include "irgraph.h"
+#include "firm_types.h"
 
 /*
  * Inject Confirm nodes into a graph.
@@ -32,7 +32,7 @@
  * b.
  *
  * These allows to do some range dependent optimizations for Cmp,
- * Abs, Min, Max nodes as well as bounds checking removement.
+ * Abs, Min, Max nodes as well as bounds checking deletion.
  *
  * The heap analysis might profit also. On the other side, Confirm
  * nodes disturb local optimizations, because patterns are destroyed.
