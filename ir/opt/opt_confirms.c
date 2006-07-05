@@ -83,14 +83,15 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
  * This is a often needed case, so we handle here Confirm
  * nodes too.
  */
-int value_not_zero(ir_node *n)
+int value_not_zero(ir_node *n, ir_node **confirm)
 {
-#define RET_ON(x)  if (x) return 1; break
+#define RET_ON(x)  if (x) { *confirm = n; return 1; }; break
 
   tarval *tv;
   ir_mode *mode = get_irn_mode(n);
   pn_Cmp pnc;
 
+  *confirm = NULL;
   while (get_irn_op(n) == op_Confirm) {
     /*
      * Note: A Confirm is never after a Const. So,
@@ -101,7 +102,7 @@ int value_not_zero(ir_node *n)
     if (tv == tarval_bad)
       return 0;
 
-    pnc  = tarval_cmp(tv, get_mode_null(mode));
+    pnc = tarval_cmp(tv, get_mode_null(mode));
 
     /*
      * Beware: C might by a NaN. It is not clear, what we should do
@@ -142,7 +143,7 @@ int value_not_zero(ir_node *n)
   return (pnc != pn_Cmp_Eq) && (pnc != pn_Cmp_Uo);
 
 #undef RET_ON
-}
+}  /* value_not_zero */
 
 /*
  * Check, if the value of a node cannot represent a NULL pointer.
@@ -153,10 +154,11 @@ int value_not_zero(ir_node *n)
  * - A SymConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
-int value_not_null(ir_node *n)
+int value_not_null(ir_node *n, ir_node **confirm)
 {
   ir_op *op;
 
+  *confirm = NULL;
   n  = skip_Cast(n);
   op = get_irn_op(n);
   assert(mode_is_reference(get_irn_mode(n)));
@@ -169,31 +171,39 @@ int value_not_null(ir_node *n)
   }
   if (op == op_SymConst && get_SymConst_kind(n) == symconst_addr_ent)
     return 1;
-  if (op == op_Confirm) {
-    if (get_Confirm_cmp(n) == pn_Cmp_Lg &&
-        classify_Const(get_Confirm_bound(n)) == CNST_NULL)
+  if (op == op_Const) {
+    tarval *tv = get_Const_tarval(n);
+
+    if (tv != tarval_bad && classify_tarval(tv) != TV_CLASSIFY_NULL)
       return 1;
   }
+  else if (op == op_Confirm) {
+    if (get_Confirm_cmp(n) == pn_Cmp_Lg &&
+        classify_Const(get_Confirm_bound(n)) == CNST_NULL) {
+      *confirm = n;
+      return 1;
+    }
+  }
   return 0;
-}
+}  /* value_not_null */
 
 /*
  * Check, if the value of a node can be confirmed >= 0 or <= 0,
  * If the mode of the value did not honor signed zeros, else
  * check for >= 0 or < 0.
  */
-value_classify classify_value_sign(ir_node *n)
+value_classify_sign classify_value_sign(ir_node *n)
 {
   tarval *tv, *c;
   ir_mode *mode;
   pn_Cmp cmp, ncmp;
 
   if (get_irn_op(n) != op_Confirm)
-    return VALUE_UNKNOWN;
+    return value_classified_unknown;
 
   tv  = value_of(get_Confirm_bound(n));
   if (tv == tarval_bad)
-    return VALUE_UNKNOWN;
+    return value_classified_unknown;
 
   mode = get_irn_mode(n);
 
@@ -227,10 +237,10 @@ value_classify classify_value_sign(ir_node *n)
       ncmp = pn_Cmp_Le;
 
     if (cmp != (ncmp ^ pn_Cmp_Eq))
-      return VALUE_UNKNOWN;
+      return value_classified_unknown;
 
     /* yep, negative */
-    return VALUE_NEGATIVE;
+    return value_classified_negative;
 
   case pn_Cmp_Ge:
     /*
@@ -250,7 +260,7 @@ value_classify classify_value_sign(ir_node *n)
         ncmp = pn_Cmp_Ge;
 
       if (cmp != (ncmp ^ pn_Cmp_Eq))
-        return VALUE_UNKNOWN;
+        return value_classified_unknown;
     }
     else {
       c = get_mode_minus_one(mode);
@@ -258,16 +268,16 @@ value_classify classify_value_sign(ir_node *n)
       ncmp = tarval_cmp(tv, c);
 
       if (ncmp != pn_Cmp_Eq && ncmp != pn_Cmp_Gt)
-        return VALUE_UNKNOWN;
+        return value_classified_unknown;
     }
 
     /* yep, positive */
-    return VALUE_POSITIVE;
+    return value_classified_positive;
 
   default:
-    return VALUE_UNKNOWN;
+    return value_classified_unknown;
   }
-}
+}  /* classify_value_sign */
 
 /**
  * construct an interval from a value
@@ -312,7 +322,7 @@ static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv)
   iv->flags = MIN_INCLUDED | MAX_INCLUDED;
 
   return iv;
-}
+}  /* get_interval_from_tv */
 
 /**
  * construct an interval from a Confirm
@@ -414,7 +424,7 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
   if (iv->min != tarval_bad && iv->max != tarval_bad)
     return iv;
   return NULL;
-}
+}  /* get_interval */
 
 /**
  * Try to evaluate l_iv pnc r_iv.
@@ -547,14 +557,14 @@ static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_C
     return tarval_bad;
   }
   return tarval_bad;
-}
+}  /* compare_iv */
 
 /**
  * Returns non-zero, if a given relation is transitive.
  */
 static int is_transitive(pn_Cmp pnc) {
   return (pn_Cmp_False < pnc && pnc < pn_Cmp_Lg);
-}
+}  /* is_transitive */
 
 
 /**
@@ -727,7 +737,7 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
     DBG_EVAL_CONFIRM(cmp);
 
   return tv;
-}
+}  /* computed_value_Cmp_Confirm */
 
 #ifdef DEBUG_CONFIRM
 /**
@@ -756,7 +766,7 @@ static int iv_snprintf(char *buf, size_t len, const interval_t *iv) {
       return snprintf(buf, len, "%s", smin);
   }
   return snprintf(buf, len, "<UNKNOWN>");
-}
+}  /* iv_snprintf */
 
 /**
  * For debugging. Prints an interval compare.
@@ -773,7 +783,7 @@ static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp 
   iv_snprintf(sr, sizeof(sr), r_iv);
 
   ir_printf("%s %= %s", sl, pnc, sr);
-}
+}  /* print_iv_cmp */
 
 /**
  * For debugging. call *compare_iv() and prints inputs and result.
@@ -793,6 +803,6 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
   print_iv_cmp(l_iv, r_iv, pnc);
   ir_printf(" = %T\n", tv);
   return tv;
-}
+}  /* compare_iv_dbg */
 
 #endif /* DEBUG_CONFIRM */
