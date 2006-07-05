@@ -45,21 +45,19 @@
 #include "irtools.h"
 
 /* Make types visible to allow most efficient access */
-# include "entity_t.h"
+#include "entity_t.h"
 
 /**
- * return the value of a Constant
+ * Return the value of a Constant.
  */
-static tarval *computed_value_Const(ir_node *n)
-{
+static tarval *computed_value_Const(ir_node *n) {
   return get_Const_tarval(n);
-}
+}  /* computed_value_Const */
 
 /**
- * return the value of a 'sizeof' SymConst
+ * Return the value of a 'sizeof' or 'alignof' SymConst.
  */
-static tarval *computed_value_SymConst(ir_node *n)
-{
+static tarval *computed_value_SymConst(ir_node *n) {
   ir_type *type;
 
   switch (get_SymConst_kind(n)) {
@@ -77,13 +75,12 @@ static tarval *computed_value_SymConst(ir_node *n)
     break;
   }
   return tarval_bad;
-}
+}  /* computed_value_SymConst */
 
 /**
- * return the value of an Add
+ * Return the value of an Add.
  */
-static tarval *computed_value_Add(ir_node *n)
-{
+static tarval *computed_value_Add(ir_node *n) {
   ir_node *a = get_Add_left(n);
   ir_node *b = get_Add_right(n);
 
@@ -94,14 +91,13 @@ static tarval *computed_value_Add(ir_node *n)
     return tarval_add(ta, tb);
 
   return tarval_bad;
-}
+}  /* computed_value_Add */
 
 /**
- * return the value of a Sub
+ * Return the value of a Sub.
  * Special case: a - a
  */
-static tarval *computed_value_Sub(ir_node *n)
-{
+static tarval *computed_value_Sub(ir_node *n) {
   ir_node *a = get_Sub_left(n);
   ir_node *b = get_Sub_right(n);
   tarval *ta;
@@ -118,14 +114,13 @@ static tarval *computed_value_Sub(ir_node *n)
     return tarval_sub(ta, tb);
 
   return tarval_bad;
-}
+}  /* computed_value_Sub */
 
 /**
- * return the value of a Carry
+ * Return the value of a Carry.
  * Special : a op 0, 0 op b
  */
-static tarval *computed_value_Carry(ir_node *n)
-{
+static tarval *computed_value_Carry(ir_node *n) {
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);
   ir_mode *m = get_irn_mode(n);
@@ -142,14 +137,13 @@ static tarval *computed_value_Carry(ir_node *n)
       return get_mode_null(m);
   }
   return tarval_bad;
-}
+}  /* computed_value_Carry */
 
 /**
- * return the value of a Borrow
+ * Return the value of a Borrow.
  * Special : a op 0
  */
-static tarval *computed_value_Borrow(ir_node *n)
-{
+static tarval *computed_value_Borrow(ir_node *n) {
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);
   ir_mode *m = get_irn_mode(n);
@@ -163,13 +157,12 @@ static tarval *computed_value_Borrow(ir_node *n)
       return get_mode_null(m);
   }
   return tarval_bad;
-}
+}  /* computed_value_Borrow */
 
 /**
- * return the value of an unary Minus
+ * Return the value of an unary Minus.
  */
-static tarval *computed_value_Minus(ir_node *n)
-{
+static tarval *computed_value_Minus(ir_node *n) {
   ir_node *a = get_Minus_op(n);
   tarval *ta = value_of(a);
 
@@ -177,13 +170,12 @@ static tarval *computed_value_Minus(ir_node *n)
     return tarval_neg(ta);
 
   return tarval_bad;
-}
+}  /* computed_value_Minus */
 
 /**
- * return the value of a Mul
+ * Return the value of a Mul.
  */
-static tarval *computed_value_Mul(ir_node *n)
-{
+static tarval *computed_value_Mul(ir_node *n) {
   ir_node *a = get_Mul_left(n);
   ir_node *b = get_Mul_right(n);
 
@@ -202,13 +194,12 @@ static tarval *computed_value_Mul(ir_node *n)
       return tb;
   }
   return tarval_bad;
-}
+}  /* computed_value_Mul */
 
 /**
- * return the value of a floating point Quot
+ * Return the value of a floating point Quot.
  */
-static tarval *computed_value_Quot(ir_node *n)
-{
+static tarval *computed_value_Quot(ir_node *n) {
   ir_node *a = get_Quot_left(n);
   ir_node *b = get_Quot_right(n);
 
@@ -221,14 +212,13 @@ static tarval *computed_value_Quot(ir_node *n)
       return tarval_quo(ta, tb);
   }
   return tarval_bad;
-}
+}  /* computed_value_Quot */
 
 /**
- * calculate the value of an integer Div of two nodes
+ * Calculate the value of an integer Div of two nodes.
  * Special case: 0 / b
  */
-static tarval *do_computed_value_Div(ir_node *a, ir_node *b)
-{
+static tarval *do_computed_value_Div(ir_node *a, ir_node *b) {
   tarval *ta = value_of(a);
   tarval *tb = value_of(b);
 
@@ -240,22 +230,20 @@ static tarval *do_computed_value_Div(ir_node *a, ir_node *b)
       return ta;
   }
   return tarval_bad;
-}
+}  /* do_computed_value_Div */
 
 /**
- * return the value of an integer Div
+ * Return the value of an integer Div.
  */
-static tarval *computed_value_Div(ir_node *n)
-{
+static tarval *computed_value_Div(ir_node *n) {
   return do_computed_value_Div(get_Div_left(n), get_Div_right(n));
-}
+}  /* computed_value_Div */
 
 /**
- * calculate the value of an integer Mod of two nodes
+ * Calculate the value of an integer Mod of two nodes.
  * Special case: a % 1
  */
-static tarval *do_computed_value_Mod(ir_node *a, ir_node *b)
-{
+static tarval *do_computed_value_Mod(ir_node *a, ir_node *b) {
   tarval *ta = value_of(a);
   tarval *tb = value_of(b);
 
@@ -266,23 +254,20 @@ static tarval *do_computed_value_Mod(ir_node *a, ir_node *b)
     else if (tb == get_mode_one(get_tarval_mode(tb)))    /* x mod 1 == 0 */
       return get_mode_null(get_irn_mode(a));
   }
-
   return tarval_bad;
-}
+}  /* do_computed_value_Mod */
 
 /**
- * return the value of an integer Mod
+ * Return the value of an integer Mod.
  */
-static tarval *computed_value_Mod(ir_node *n)
-{
+static tarval *computed_value_Mod(ir_node *n) {
   return do_computed_value_Mod(get_Mod_left(n), get_Mod_right(n));
-}
+}  /* computed_value_Mod */
 
 /**
- * return the value of an Abs
+ * Return the value of an Abs.
  */
-static tarval *computed_value_Abs(ir_node *n)
-{
+static tarval *computed_value_Abs(ir_node *n) {
   ir_node *a = get_Abs_op(n);
   tarval *ta = value_of(a);
 
@@ -290,14 +275,13 @@ static tarval *computed_value_Abs(ir_node *n)
     return tarval_abs(ta);
 
   return tarval_bad;
-}
+}  /* computed_value_Abs */
 
 /**
- * return the value of an And
+ * Return the value of an And.
  * Special case: a & 0, 0 & b
  */
-static tarval *computed_value_And(ir_node *n)
-{
+static tarval *computed_value_And(ir_node *n) {
   ir_node *a = get_And_left(n);
   ir_node *b = get_And_right(n);
 
@@ -315,14 +299,13 @@ static tarval *computed_value_And(ir_node *n)
     }
   }
   return tarval_bad;
-}
+}  /* computed_value_And */
 
 /**
- * return the value of an Or
+ * Return the value of an Or.
  * Special case: a | 1...1, 1...1 | b
  */
-static tarval *computed_value_Or(ir_node *n)
-{
+static tarval *computed_value_Or(ir_node *n) {
   ir_node *a = get_Or_left(n);
   ir_node *b = get_Or_right(n);
 
@@ -339,13 +322,12 @@ static tarval *computed_value_Or(ir_node *n)
     }
   }
   return tarval_bad;
-}
+}  /* computed_value_Or */
 
 /**
- * return the value of an Eor
+ * Return the value of an Eor.
  */
-static tarval *computed_value_Eor(ir_node *n)
-{
+static tarval *computed_value_Eor(ir_node *n) {
   ir_node *a = get_Eor_left(n);
   ir_node *b = get_Eor_right(n);
 
@@ -361,13 +343,12 @@ static tarval *computed_value_Eor(ir_node *n)
     return tarval_eor (ta, tb);
   }
   return tarval_bad;
-}
+}  /* computed_value_Eor */
 
 /**
- * return the value of a Not
+ * Return the value of a Not.
  */
-static tarval *computed_value_Not(ir_node *n)
-{
+static tarval *computed_value_Not(ir_node *n) {
   ir_node *a = get_Not_op(n);
   tarval *ta = value_of(a);
 
@@ -375,13 +356,12 @@ static tarval *computed_value_Not(ir_node *n)
     return tarval_not(ta);
 
   return tarval_bad;
-}
+}  /* computed_value_Not */
 
 /**
- * return the value of a Shl
+ * Return the value of a Shl.
  */
-static tarval *computed_value_Shl(ir_node *n)
-{
+static tarval *computed_value_Shl(ir_node *n) {
   ir_node *a = get_Shl_left(n);
   ir_node *b = get_Shl_right(n);
 
@@ -392,13 +372,12 @@ static tarval *computed_value_Shl(ir_node *n)
     return tarval_shl (ta, tb);
   }
   return tarval_bad;
-}
+}  /* computed_value_Shl */
 
 /**
- * return the value of a Shr
+ * Return the value of a Shr.
  */
-static tarval *computed_value_Shr(ir_node *n)
-{
+static tarval *computed_value_Shr(ir_node *n) {
   ir_node *a = get_Shr_left(n);
   ir_node *b = get_Shr_right(n);
 
@@ -409,13 +388,12 @@ static tarval *computed_value_Shr(ir_node *n)
     return tarval_shr (ta, tb);
   }
   return tarval_bad;
-}
+}  /* computed_value_Shr */
 
 /**
- * return the value of a Shrs
+ * Return the value of a Shrs.
  */
-static tarval *computed_value_Shrs(ir_node *n)
-{
+static tarval *computed_value_Shrs(ir_node *n) {
   ir_node *a = get_Shrs_left(n);
   ir_node *b = get_Shrs_right(n);
 
@@ -426,10 +404,10 @@ static tarval *computed_value_Shrs(ir_node *n)
     return tarval_shrs (ta, tb);
   }
   return tarval_bad;
-}
+}  /* computed_value_Shrs */
 
 /**
- * return the value of a Rot
+ * Return the value of a Rot.
  */
 static tarval *computed_value_Rot(ir_node *n)
 {
@@ -443,10 +421,10 @@ static tarval *computed_value_Rot(ir_node *n)
     return tarval_rot (ta, tb);
   }
   return tarval_bad;
-}
+}  /* computed_value_Rot */
 
 /**
- * return the value of a Conv
+ * Return the value of a Conv.
  */
 static tarval *computed_value_Conv(ir_node *n)
 {
@@ -457,10 +435,10 @@ static tarval *computed_value_Conv(ir_node *n)
     return tarval_convert_to(ta, get_irn_mode(n));
 
   return tarval_bad;
-}
+}  /* computed_value_Conv */
 
 /**
- * return the value of a Proj(Cmp)
+ * Return the value of a Proj(Cmp).
  *
  * This performs a first step of unreachable code elimination.
  * Proj can not be computed, but folding a Cmp above the Proj here is
@@ -572,13 +550,12 @@ static tarval *computed_value_Proj_Cmp(ir_node *n)
     }
   }
   return computed_value_Cmp_Confirm(a, aa, ab, proj_nr);
-}
+}  /* computed_value_Proj_Cmp */
 
 /**
- * return the value of a Proj, handle Proj(Cmp), Proj(Div), Proj(Mod), Proj(DivMod)
+ * Return the value of a Proj, handle Proj(Cmp), Proj(Div), Proj(Mod), Proj(DivMod).
  */
-static tarval *computed_value_Proj(ir_node *n)
-{
+static tarval *computed_value_Proj(ir_node *n) {
   ir_node *a = get_Proj_pred(n);
   long proj_nr;
 
@@ -609,14 +586,13 @@ static tarval *computed_value_Proj(ir_node *n)
     return tarval_bad;
   }
   return tarval_bad;
-}
+}  /* computed_value_Proj */
 
 /**
- * calculate the value of a Mux: can be evaluated, if the
- * sel and the right input are known
+ * Calculate the value of a Mux: can be evaluated, if the
+ * sel and the right input are known.
  */
-static tarval *computed_value_Mux(ir_node *n)
-{
+static tarval *computed_value_Mux(ir_node *n) {
   ir_node *sel = get_Mux_sel(n);
   tarval *ts = value_of(sel);
 
@@ -629,29 +605,27 @@ static tarval *computed_value_Mux(ir_node *n)
     return value_of(v);
   }
   return tarval_bad;
-}
+}  /* computed_value_Mux */
 
 /**
  * Calculate the value of a Psi: can be evaluated, if a condition is true
  * and all previous conditions are false. If all conditions are false
  * we evaluate to the default one.
  */
-static tarval *computed_value_Psi(ir_node *n)
-{
+static tarval *computed_value_Psi(ir_node *n) {
   if (is_Mux(n))
     return computed_value_Mux(n);
   return tarval_bad;
-}
+}  /* computed_value_Psi */
 
 /**
- * calculate the value of a Confirm: can be evaluated,
+ * Calculate the value of a Confirm: can be evaluated,
  * if it has the form Confirm(x, '=', Const).
  */
-static tarval *computed_value_Confirm(ir_node *n)
-{
+static tarval *computed_value_Confirm(ir_node *n) {
   return get_Confirm_cmp(n) == pn_Cmp_Eq ?
     value_of(get_Confirm_bound(n)) : tarval_bad;
-}
+}  /* computed_value_Confirm */
 
 /**
  * If the parameter n can be computed, return its value, else tarval_bad.
@@ -659,15 +633,14 @@ static tarval *computed_value_Confirm(ir_node *n)
  *
  * @param n  The node this should be evaluated
  */
-tarval *computed_value(ir_node *n)
-{
+tarval *computed_value(ir_node *n) {
   if (n->op->ops.computed_value)
     return n->op->ops.computed_value(n);
   return tarval_bad;
-}
+}  /* computed_value */
 
 /**
- * set the default computed_value evaluator in an ir_op_ops.
+ * Set the default computed_value evaluator in an ir_op_ops.
  *
  * @param code   the opcode for the default operation
  * @param ops    the operations initialized
@@ -714,7 +687,7 @@ static ir_op_ops *firm_set_default_computed_value(opcode code, ir_op_ops *ops)
 
   return ops;
 #undef CASE
-}
+}  /* firm_set_default_computed_value */
 
 /**
  * Returns a equivalent block for another block.
@@ -816,20 +789,19 @@ static ir_node *equivalent_node_Block(ir_node *n)
   }
 
   return n;
-}
+}  /* equivalent_node_Block */
 
 /**
  * Returns a equivalent node for a Jmp, a Bad :-)
  * Of course this only happens if the Block of the Jmp is dead.
  */
-static ir_node *equivalent_node_Jmp(ir_node *n)
-{
+static ir_node *equivalent_node_Jmp(ir_node *n) {
   /* unreachable code elimination */
   if (is_Block_dead(get_nodes_block(n)))
     n = new_Bad();
 
   return n;
-}
+}  /* equivalent_node_Jmp */
 
 /** Raise is handled in the same way as Jmp. */
 #define equivalent_node_Raise   equivalent_node_Jmp
@@ -839,7 +811,7 @@ static ir_node *equivalent_node_Jmp(ir_node *n)
    See transform_node_Proj_Cond(). */
 
 /**
- * optimize operations that are commutative and have neutral 0,
+ * Optimize operations that are commutative and have neutral 0,
  * so a op 0 = 0 op a = a.
  */
 static ir_node *equivalent_node_neutral_zero(ir_node *n)
@@ -877,7 +849,7 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
   }
 
   return n;
-}
+}  /* equivalent_node_neutral_zero */
 
 /**
  * Eor is commutative and has neutral 0.
@@ -933,14 +905,13 @@ static ir_node *equivalent_node_Add(ir_node *n)
     }
   }
   return n;
-}
+}  /* equivalent_node_Add */
 
 /**
  * optimize operations that are not commutative but have neutral 0 on left,
  * so a op 0 = a.
  */
-static ir_node *equivalent_node_left_zero(ir_node *n)
-{
+static ir_node *equivalent_node_left_zero(ir_node *n) {
   ir_node *oldn = n;
 
   ir_node *a = get_binop_left(n);
@@ -951,9 +922,8 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
 
     DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
   }
-
   return n;
-}
+}  /* equivalent_node_left_zero */
 
 #define equivalent_node_Shl   equivalent_node_left_zero
 #define equivalent_node_Shr   equivalent_node_left_zero
@@ -1010,7 +980,7 @@ static ir_node *equivalent_node_Sub(ir_node *n)
     }
   }
   return n;
-}
+}  /* equivalent_node_Sub */
 
 
 /**
@@ -1032,9 +1002,9 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n)
     DBG_OPT_ALGSIM2(oldn, pred, n);
   }
   return n;
-}
+}  /* equivalent_node_idempotent_unop */
 
-/** Not(Not(x)) == x */
+/** Optimize Not(Not(x)) == x. */
 #define equivalent_node_Not    equivalent_node_idempotent_unop
 
 /** --x == x       ??? Is this possible or can --x raise an
@@ -1059,13 +1029,12 @@ static ir_node *equivalent_node_Mul(ir_node *n)
     DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
   }
   return n;
-}
+}  /* equivalent_node_Mul */
 
 /**
  * Optimize a / 1 = a.
  */
-static ir_node *equivalent_node_Div(ir_node *n)
-{
+static ir_node *equivalent_node_Div(ir_node *n) {
   ir_node *a = get_Div_left(n);
   ir_node *b = get_Div_right(n);
 
@@ -1079,7 +1048,7 @@ static ir_node *equivalent_node_Div(ir_node *n)
     set_Tuple_pred(n, pn_Div_res,      a);
   }
   return n;
-}
+}  /* equivalent_node_Div */
 
 /**
  * Optimize a / 1.0 = a.
@@ -1098,13 +1067,12 @@ static ir_node *equivalent_node_Quot(ir_node *n) {
     set_Tuple_pred(n, pn_Quot_res,      a);
   }
   return n;
-}
+}  /* equivalent_node_Quot */
 
 /**
  * Optimize a / 1 = a.
  */
-static ir_node *equivalent_node_DivMod(ir_node *n)
-{
+static ir_node *equivalent_node_DivMod(ir_node *n) {
   ir_node *a = get_DivMod_left(n);
   ir_node *b = get_DivMod_right(n);
 
@@ -1121,13 +1089,12 @@ static ir_node *equivalent_node_DivMod(ir_node *n)
     set_Tuple_pred(n, pn_DivMod_res_mod,  new_Const(mode, get_mode_null(mode)));
   }
   return n;
-}
+}  /* equivalent_node_DivMod */
 
 /**
  * Use algebraic simplification a | a = a | 0 = 0 | a = a.
  */
-static ir_node *equivalent_node_Or(ir_node *n)
-{
+static ir_node *equivalent_node_Or(ir_node *n) {
   ir_node *oldn = n;
 
   ir_node *a = get_Or_left(n);
@@ -1145,13 +1112,12 @@ static ir_node *equivalent_node_Or(ir_node *n)
   }
 
   return n;
-}
+}  /* equivalent_node_Or */
 
 /**
  * Optimize a & 0b1...1 = 0b1...1 & a =  a & a = a.
  */
-static ir_node *equivalent_node_And(ir_node *n)
-{
+static ir_node *equivalent_node_And(ir_node *n) {
   ir_node *oldn = n;
 
   ir_node *a = get_And_left(n);
@@ -1168,13 +1134,12 @@ static ir_node *equivalent_node_And(ir_node *n)
     DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
   }
   return n;
-}
+}  /* equivalent_node_And */
 
 /**
  * Try to remove useless Conv's:
  */
-static ir_node *equivalent_node_Conv(ir_node *n)
-{
+static ir_node *equivalent_node_Conv(ir_node *n) {
   ir_node *oldn = n;
   ir_node *a = get_Conv_op(n);
   ir_node *b;
@@ -1209,7 +1174,7 @@ static ir_node *equivalent_node_Conv(ir_node *n)
     }
   }
   return n;
-}
+}  /* equivalent_node_Conv */
 
 /**
  * A Cast may be removed if the type of the previous node
@@ -1224,14 +1189,14 @@ static ir_node *equivalent_node_Cast(ir_node *n) {
     DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CAST);
   }
   return n;
-}
+}  /* equivalent_node_Cast */
 
 /**
-  Several optimizations:
-   - no Phi in start block.
-   - remove Id operators that are inputs to Phi
-   - fold Phi-nodes, iff they have only one predecessor except
-           themselves.
+ * Several optimizations:
+ * - no Phi in start block.
+ * - remove Id operators that are inputs to Phi
+ * - fold Phi-nodes, iff they have only one predecessor except
+ *   themselves.
  */
 static ir_node *equivalent_node_Phi(ir_node *n)
 {
@@ -1296,13 +1261,13 @@ static ir_node *equivalent_node_Phi(ir_node *n)
     DBG_OPT_PHI(oldn, n);
   }
   return n;
-}
+}  /* equivalent_node_Phi */
 
 /**
-  Several optimizations:
-   - no Sync in start block.
-   - fold Sync-nodes, iff they have only one predecessor except
-           themselves.
+ * Several optimizations:
+ * - no Sync in start block.
+ * - fold Sync-nodes, iff they have only one predecessor except
+ *   themselves.
  */
 static ir_node *equivalent_node_Sync(ir_node *n)
 {
@@ -1346,11 +1311,11 @@ static ir_node *equivalent_node_Sync(ir_node *n)
     DBG_OPT_SYNC(oldn, n);
   }
   return n;
-}
+}  /* equivalent_node_Sync */
 
 /**
- * optimize Proj(Tuple) and gigo() for ProjX in Bad block,
- * ProjX(Load) and ProjX(Store)
+ * Optimize Proj(Tuple) and gigo() for ProjX in Bad block,
+ * ProjX(Load) and ProjX(Store).
  */
 static ir_node *equivalent_node_Proj(ir_node *n)
 {
@@ -1379,9 +1344,13 @@ static ir_node *equivalent_node_Proj(ir_node *n)
       if (op == op_Load || op == op_Store) {
         /* get the load/store address */
         ir_node *addr = get_irn_n(a, 1);
-        if (value_not_null(addr)) {
-          /* this node may float if it did not depend on a Confirm */
-          set_irn_pinned(a, op_pin_state_floats);
+        ir_node *confirm;
+
+        if (value_not_null(addr, &confirm)) {
+          if (confirm == NULL) {
+            /* this node may float if it did not depend on a Confirm */
+            set_irn_pinned(a, op_pin_state_floats);
+          }
           DBG_OPT_EXC_REM(n);
           return new_Bad();
         }
@@ -1390,13 +1359,12 @@ static ir_node *equivalent_node_Proj(ir_node *n)
   }
 
   return n;
-}
+}  /* equivalent_node_Proj */
 
 /**
  * Remove Id's.
  */
-static ir_node *equivalent_node_Id(ir_node *n)
-{
+static ir_node *equivalent_node_Id(ir_node *n) {
   ir_node *oldn = n;
 
   do {
@@ -1405,10 +1373,10 @@ static ir_node *equivalent_node_Id(ir_node *n)
 
   DBG_OPT_ID(oldn, n);
   return n;
-}
+}  /* equivalent_node_Id */
 
 /**
- * optimize a Mux
+ * Optimize a Mux.
  */
 static ir_node *equivalent_node_Mux(ir_node *n)
 {
@@ -1477,7 +1445,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
     }
   }
   return n;
-}
+}  /* equivalent_node_Mux */
 
 /**
  * Returns a equivalent node of a Psi: if a condition is true
@@ -1488,7 +1456,7 @@ static ir_node *equivalent_node_Psi(ir_node *n) {
   if (is_Mux(n))
     return equivalent_node_Mux(n);
   return n;
-}
+}  /* equivalent_node_Psi */
 
 /**
  * Optimize -a CMP -b into b CMP a.
@@ -1510,14 +1478,13 @@ static ir_node *equivalent_node_Cmp(ir_node *n)
     set_Cmp_right(n, left);
   }
   return n;
-}
+}  /* equivalent_node_Cmp */
 
 /**
  * Remove Confirm nodes if setting is on.
  * Replace Confirms(x, '=', Constlike) by Constlike.
  */
-static ir_node *equivalent_node_Confirm(ir_node *n)
-{
+static ir_node *equivalent_node_Confirm(ir_node *n) {
   ir_node *pred = get_Confirm_value(n);
   pn_Cmp  pnc   = get_Confirm_cmp(n);
 
@@ -1544,10 +1511,9 @@ static ir_node *equivalent_node_Confirm(ir_node *n)
 }
 
 /**
- * Optimize CopyB(mem, x, x) into a Nop
+ * Optimize CopyB(mem, x, x) into a Nop.
  */
-static ir_node *equivalent_node_CopyB(ir_node *n)
-{
+static ir_node *equivalent_node_CopyB(ir_node *n) {
   ir_node *a = get_CopyB_dst(n);
   ir_node *b = get_CopyB_src(n);
 
@@ -1560,13 +1526,12 @@ static ir_node *equivalent_node_CopyB(ir_node *n)
     set_Tuple_pred(n, pn_CopyB_M_except, new_Bad());
   }
   return n;
-}
+}  /* equivalent_node_CopyB */
 
 /**
  * Optimize Bounds(idx, idx, upper) into idx.
  */
-static ir_node *equivalent_node_Bound(ir_node *n)
-{
+static ir_node *equivalent_node_Bound(ir_node *n) {
   ir_node *idx   = get_Bound_index(n);
   ir_node *lower = get_Bound_lower(n);
   int ret_tuple = 0;
@@ -1607,7 +1572,7 @@ static ir_node *equivalent_node_Bound(ir_node *n)
     set_Tuple_pred(n, pn_Bound_res,      idx);
   }
   return n;
-}
+}  /* equivalent_node_Bound */
 
 /**
  * equivalent_node() returns a node equivalent to input n. It skips all nodes that
@@ -1616,16 +1581,14 @@ static ir_node *equivalent_node_Bound(ir_node *n)
  * If a node returns a Tuple we can not just skip it.  If the size of the
  * in array fits, we transform n into a tuple (e.g., Div).
  */
-ir_node *
-equivalent_node(ir_node *n)
-{
+ir_node *equivalent_node(ir_node *n) {
   if (n->op->ops.equivalent_node)
     return n->op->ops.equivalent_node(n);
   return n;
-}
+}  /* equivalent_node */
 
 /**
- * sets the default equivalent node operation for an ir_op_ops.
+ * Sets the default equivalent node operation for an ir_op_ops.
  *
  * @param code   the opcode for the default operation
  * @param ops    the operations initialized
@@ -1677,13 +1640,12 @@ static ir_op_ops *firm_set_default_equivalent_node(opcode code, ir_op_ops *ops)
 
   return ops;
 #undef CASE
-}
+}  /* firm_set_default_equivalent_node */
 
 /**
  * Do node specific optimizations of nodes predecessors.
  */
-static void
-optimize_preds(ir_node *n) {
+static void optimize_preds(ir_node *n) {
   ir_node *a = NULL, *b = NULL;
 
   /* get the operands we will work on for simple cases. */
@@ -1710,7 +1672,7 @@ optimize_preds(ir_node *n) {
 
   default: break;
   } /* end switch */
-}
+}  /* optimize_preds */
 
 /**
  * Returns non-zero if a node is a Phi node
@@ -1725,7 +1687,7 @@ static int is_const_Phi(ir_node *n) {
     if (! is_Const(get_irn_n(n, i)))
       return 0;
   return 1;
-}
+}  /* is_const_Phi */
 
 /**
  * Apply an evaluator on a binop with a constant operators (and one Phi).
@@ -1780,7 +1742,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
                             mode, res[i], get_Const_type(pred));
   }
   return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
-}
+}  /* apply_binop_on_phi */
 
 /**
  * Apply an evaluator on a unop with a constant operator (a Phi).
@@ -1818,7 +1780,7 @@ static ir_node *apply_unop_on_phi(ir_node *phi, tarval *(*eval)(tarval *)) {
                             mode, res[i], get_Const_type(pred));
   }
   return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
-}
+}  /* apply_unop_on_phi */
 
 /**
  * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
@@ -1881,7 +1843,7 @@ static ir_node *transform_node_AddSub(ir_node *n)
     }
   }
   return n;
-}
+}  /* transform_node_AddSub */
 
 #define HANDLE_BINOP_PHI(op,a,b,c)                          \
   c = NULL;                                                 \
@@ -2036,7 +1998,7 @@ static ir_node *transform_node_Add(ir_node *n)
     }
   }
   return n;
-}
+}  /* transform_node_Add */
 
 /**
  * Do the AddSub optimization, then Transform
@@ -2142,7 +2104,7 @@ static ir_node *transform_node_Sub(ir_node *n)
   }
 
   return n;
-}
+}  /* transform_node_Sub */
 
 /**
  * Transform Mul(a,-1) into -a.
@@ -2172,7 +2134,7 @@ static ir_node *transform_node_Mul(ir_node *n) {
     }
   }
   return arch_dep_replace_mul_with_shifts(n);
-}
+}  /* transform_node_Mul */
 
 /**
  * Transform a Div Node.
@@ -2202,7 +2164,7 @@ static ir_node *transform_node_Div(ir_node *n)
     set_Tuple_pred(n, pn_Div_res, value);
   }
   return n;
-}
+}  /* transform_node_Div */
 
 /**
  * Transform a Mod node.
@@ -2232,7 +2194,7 @@ static ir_node *transform_node_Mod(ir_node *n)
     set_Tuple_pred(n, pn_Mod_res, value);
   }
   return n;
-}
+}  /* transform_node_Mod */
 
 /**
  * Transform a DivMod node.
@@ -2293,7 +2255,7 @@ static ir_node *transform_node_DivMod(ir_node *n)
   }
 
   return n;
-}
+}  /* transform_node_DivMod */
 
 /**
  * Optimize Abs(x) into  x if x is Confirmed >= 0
@@ -2303,9 +2265,9 @@ static ir_node *transform_node_Abs(ir_node *n)
 {
   ir_node        *oldn = n;
   ir_node        *a = get_Abs_op(n);
-  value_classify sign = classify_value_sign(a);
+  value_classify_sign sign = classify_value_sign(a);
 
-  if (sign == VALUE_NEGATIVE) {
+  if (sign == value_classified_negative) {
     ir_mode *mode = get_irn_mode(n);
 
     /*
@@ -2320,7 +2282,7 @@ static ir_node *transform_node_Abs(ir_node *n)
 
     DBG_OPT_CONFIRM(oldn, n);
   }
-  else if (sign == VALUE_POSITIVE) {
+  else if (sign == value_classified_positive) {
     /* n is positive, Abs is not needed */
     n = a;
 
@@ -2328,7 +2290,7 @@ static ir_node *transform_node_Abs(ir_node *n)
   }
 
   return n;
-}
+}  /* transform_node_Abs */
 
 /**
  * Transform a Cond node.
@@ -2363,7 +2325,7 @@ static ir_node *transform_node_Cond(ir_node *n)
     add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_block(n));
   }
   return n;
-}
+}  /* transform_node_Cond */
 
 /**
  * Transform an And.
@@ -2376,7 +2338,7 @@ static ir_node *transform_node_And(ir_node *n)
 
   HANDLE_BINOP_PHI(tarval_and, a,b,c);
   return n;
-}
+}  /* transform_node_And */
 
 /**
  * Transform an Eor.
@@ -2417,7 +2379,7 @@ static ir_node *transform_node_Eor(ir_node *n)
   }
 
   return n;
-}
+}  /* transform_node_Eor */
 
 /**
  * Transform a Not.
@@ -2440,7 +2402,7 @@ static ir_node *transform_node_Not(ir_node *n)
     DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
   }
   return n;
-}
+}  /* transform_node_Not */
 
 /**
  * Transform a Minus.
@@ -2452,7 +2414,7 @@ static ir_node *transform_node_Minus(ir_node *n)
 
   HANDLE_UNOP_PHI(tarval_neg,a,c);
   return n;
-}
+}  /* transform_node_Minus */
 
 /**
  * Transform a Cast_type(Const) into a new Const_type
@@ -2473,7 +2435,7 @@ static ir_node *transform_node_Cast(ir_node *n) {
   }
 
   return n;
-}
+}  /* transform_node_Cast */
 
 /**
  * Transform a Proj(Div) with a non-zero value.
@@ -2483,15 +2445,12 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 {
   ir_node *n = get_Proj_pred(proj);
   ir_node *b = get_Div_right(n);
+  ir_node *confirm;
   long proj_nr;
 
-  if (value_not_zero(b)) {
+  if (value_not_zero(b, &confirm)) {
     /* div(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
-
-    /* this node may float if it did not depend on a Confirm */
-    set_irn_pinned(n, op_pin_state_floats);
-
     if (proj_nr == pn_Div_X_except) {
       /* we found an exception handler, remove it */
       DBG_OPT_EXC_REM(proj);
@@ -2499,17 +2458,20 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
     }
     else if (proj_nr == pn_Div_M) {
       ir_node *res = get_Div_mem(n);
-      /* the memory Proj can only be removed if we divide by a
-         real constant, but the node never produce a new memory */
-      if (value_of(b) != tarval_bad) {
-        /* this is a Div by a const, we can remove the memory edge */
-        set_Div_mem(n, get_irg_no_mem(current_ir_graph));
+      ir_node *new_mem = get_irg_no_mem(current_ir_graph);
+
+      if (confirm) {
+        /* This node can only float up to the Confirm block */
+        new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
       }
+      set_irn_pinned(n, op_pin_state_floats);
+      /* this is a Div without exception, we can remove the memory edge */
+      set_Div_mem(n, new_mem);
       return res;
     }
   }
   return proj;
-}
+}  /* transform_node_Proj_Div */
 
 /**
  * Transform a Proj(Mod) with a non-zero value.
@@ -2519,14 +2481,12 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 {
   ir_node *n = get_Proj_pred(proj);
   ir_node *b = get_Mod_right(n);
+  ir_node *confirm;
   long proj_nr;
 
-  if (value_not_zero(b)) {
+  if (value_not_zero(b, &confirm)) {
     /* mod(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
-
-    /* this node may float if it did not depend on a Confirm */
-    set_irn_pinned(n, op_pin_state_floats);
 
     if (proj_nr == pn_Mod_X_except) {
       /* we found an exception handler, remove it */
@@ -2534,12 +2494,15 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
       return new_Bad();
     } else if (proj_nr == pn_Mod_M) {
       ir_node *res = get_Mod_mem(n);
-      /* the memory Proj can only be removed if we divide by a
-         real constant, but the node never produce a new memory */
-      if (value_of(b) != tarval_bad) {
-        /* this is a Mod by a const, we can remove the memory edge */
-        set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
+      ir_node *new_mem = get_irg_no_mem(current_ir_graph);
+
+      if (confirm) {
+        /* This node can only float up to the Confirm block */
+        new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
       }
+      set_irn_pinned(n, op_pin_state_floats);
+      /* this is a Mod without exception, we can remove the memory edge */
+      set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
       return res;
     }
     else if (proj_nr == pn_Mod_res && get_Mod_left(n) == b) {
@@ -2552,7 +2515,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
     }
   }
   return proj;
-}
+}  /* transform_node_Proj_Mod */
 
 /**
  * Transform a Proj(DivMod) with a non-zero value.
@@ -2562,14 +2525,12 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
 {
   ir_node *n = get_Proj_pred(proj);
   ir_node *b = get_DivMod_right(n);
+  ir_node *confirm;
   long proj_nr;
 
-  if (value_not_zero(b)) {
+  if (value_not_zero(b, &confirm)) {
     /* DivMod(x, y) && y != 0 */
     proj_nr = get_Proj_proj(proj);
-
-    /* this node may float if it did not depend on a Confirm */
-    set_irn_pinned(n, op_pin_state_floats);
 
     if (proj_nr == pn_DivMod_X_except) {
       /* we found an exception handler, remove it */
@@ -2578,12 +2539,15 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
     }
     else if (proj_nr == pn_DivMod_M) {
       ir_node *res = get_DivMod_mem(n);
-      /* the memory Proj can only be removed if we divide by a
-         real constant, but the node never produce a new memory */
-      if (value_of(b) != tarval_bad) {
-        /* this is a DivMod by a const, we can remove the memory edge */
-        set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
+      ir_node *new_mem = get_irg_no_mem(current_ir_graph);
+
+      if (confirm) {
+        /* This node can only float up to the Confirm block */
+        new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
       }
+      set_irn_pinned(n, op_pin_state_floats);
+      /* this is a DivMod without exception, we can remove the memory edge */
+      set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
       return res;
     }
     else if (proj_nr == pn_DivMod_res_mod && get_DivMod_left(n) == b) {
@@ -2596,7 +2560,7 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
     }
   }
   return proj;
-}
+}  /* transform_node_Proj_DivMod */
 
 /**
  * Optimizes jump tables (CondIs or CondIu) by removing all impossible cases.
@@ -2629,7 +2593,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
     }
   }
   return proj;
-}
+}  /* transform_node_Proj_Cond */
 
 /**
  * Normalizes and optimizes Cmp nodes.
@@ -2850,7 +2814,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
     }
   }
   return proj;
-}
+}  /* transform_node_Proj_Cmp */
 
 /**
  * Does all optimizations on nodes that must be done on it's Proj's
@@ -2884,7 +2848,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
     /* do nothing */
     return proj;
   }
-}
+}  /* transform_node_Proj */
 
 /**
  * Move Confirms down through Phi nodes.
@@ -2927,10 +2891,10 @@ static ir_node *transform_node_Phi(ir_node *phi) {
     }
   }
   return phi;
-}
+}  /* transform_node_Phi */
 
 /**
- * returns the operands of a commutative bin-op, if one operand is
+ * Returns the operands of a commutative bin-op, if one operand is
  * a const, it is returned as the second one.
  */
 static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c)
@@ -2948,7 +2912,7 @@ static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c)
     *a = op_a;
     *c = op_b;
   }
-}
+}  /* get_comm_Binop_Ops */
 
 /**
  * Optimize a Or(And(Or(And(v,c4),c3),c2),c1) pattern if possible.
@@ -3028,7 +2992,7 @@ static ir_node *transform_node_Or_bf_store(ir_node *or)
 
   /* check for more */
   return transform_node_Or_bf_store(or);
-}
+}  /* transform_node_Or_bf_store */
 
 /**
  * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rot
@@ -3139,7 +3103,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or)
   }
 
   return or;
-}
+}  /* transform_node_Or_Rot */
 
 /**
  * Transform an Or.
@@ -3156,7 +3120,7 @@ static ir_node *transform_node_Or(ir_node *n)
   n = transform_node_Or_Rot(n);
 
   return n;
-}
+}  /* transform_node_Or */
 
 
 /* forward */
@@ -3220,7 +3184,7 @@ static ir_node *transform_node_shift(ir_node *n)
     return transform_node(irn);
   }
   return n;
-}
+}  /* transform_node_shift */
 
 /**
  * Transform a Shr.
@@ -3233,7 +3197,7 @@ static ir_node *transform_node_Shr(ir_node *n)
 
   HANDLE_BINOP_PHI(tarval_shr, a, b, c);
   return transform_node_shift(n);
-}
+}  /* transform_node_Shr */
 
 /**
  * Transform a Shrs.
@@ -3246,7 +3210,7 @@ static ir_node *transform_node_Shrs(ir_node *n)
 
   HANDLE_BINOP_PHI(tarval_shrs, a, b, c);
   return transform_node_shift(n);
-}
+}  /* transform_node_Shrs */
 
 /**
  * Transform a Shl.
@@ -3259,7 +3223,7 @@ static ir_node *transform_node_Shl(ir_node *n)
 
   HANDLE_BINOP_PHI(tarval_shl, a, b, c);
   return transform_node_shift(n);
-}
+}  /* transform_node_Shl */
 
 /**
  * Remove dead blocks and nodes in dead blocks
@@ -3279,7 +3243,7 @@ static ir_node *transform_node_End(ir_node *n) {
       set_End_keepalive(n, i, new_Bad());
   }
   return n;
-}
+}  /* transform_node_End */
 
 /**
  * Optimize a Mux into some simpler cases.
@@ -3413,7 +3377,7 @@ static ir_node *transform_node_Mux(ir_node *n)
     }
   }
   return arch_transform_node_Mux(n);
-}
+}  /* transform_node_Mux */
 
 /**
  * Optimize a Psi into some simpler cases.
@@ -3423,7 +3387,7 @@ static ir_node *transform_node_Psi(ir_node *n) {
     return transform_node_Mux(n);
 
   return n;
-}
+}  /* transform_node_Psi */
 
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
@@ -3436,7 +3400,7 @@ static ir_node *transform_node(ir_node *n)
   if (n->op->ops.transform_node)
     n = n->op->ops.transform_node(n);
   return n;
-}
+}  /* transform_node */
 
 /**
  * sSets the default transform node operation for an ir_op_ops.
@@ -3484,7 +3448,7 @@ static ir_op_ops *firm_set_default_transform_node(opcode code, ir_op_ops *ops)
 
   return ops;
 #undef CASE
-}
+}  /* firm_set_default_transform_node */
 
 
 /* **************** Common Subexpression Elimination **************** */
@@ -3494,99 +3458,90 @@ static ir_op_ops *firm_set_default_transform_node(opcode code, ir_op_ops *ops)
 #define N_IR_NODES 512
 
 /** Compares the attributes of two Const nodes. */
-static int node_cmp_attr_Const(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Const(ir_node *a, ir_node *b) {
   return (get_Const_tarval(a) != get_Const_tarval(b))
       || (get_Const_type(a) != get_Const_type(b));
-}
+}  /* node_cmp_attr_Const */
 
 /** Compares the attributes of two Proj nodes. */
 static int node_cmp_attr_Proj(ir_node *a, ir_node *b) {
   return get_irn_proj_attr (a) != get_irn_proj_attr (b);
-}
+}  /* node_cmp_attr_Proj */
 
 /** Compares the attributes of two Filter nodes. */
-static int node_cmp_attr_Filter(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Filter(ir_node *a, ir_node *b) {
   return get_Filter_proj(a) != get_Filter_proj(b);
-}
+}  /* node_cmp_attr_Filter */
 
 /** Compares the attributes of two Alloc nodes. */
-static int node_cmp_attr_Alloc(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Alloc(ir_node *a, ir_node *b) {
   return (get_irn_alloc_attr(a).where != get_irn_alloc_attr(b).where)
       || (get_irn_alloc_attr(a).type != get_irn_alloc_attr(b).type);
-}
+}  /* node_cmp_attr_Alloc */
 
 /** Compares the attributes of two Free nodes. */
-static int node_cmp_attr_Free(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Free(ir_node *a, ir_node *b) {
   return (get_irn_free_attr(a).where != get_irn_free_attr(b).where)
       || (get_irn_free_attr(a).type != get_irn_free_attr(b).type);
-}
+}  /* node_cmp_attr_Free */
 
 /** Compares the attributes of two SymConst nodes. */
-static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_SymConst(ir_node *a, ir_node *b) {
   return (get_irn_symconst_attr(a).num != get_irn_symconst_attr(b).num)
       || (get_irn_symconst_attr(a).sym.type_p != get_irn_symconst_attr(b).sym.type_p)
       || (get_irn_symconst_attr(a).tp != get_irn_symconst_attr(b).tp);
-}
+}  /* node_cmp_attr_SymConst */
 
 /** Compares the attributes of two Call nodes. */
 static int node_cmp_attr_Call(ir_node *a, ir_node *b) {
   return (get_irn_call_attr(a) != get_irn_call_attr(b));
-}
+}  /* node_cmp_attr_Call */
 
 /** Compares the attributes of two Sel nodes. */
-static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Sel(ir_node *a, ir_node *b) {
   return (get_irn_sel_attr(a).ent->kind  != get_irn_sel_attr(b).ent->kind)
       || (get_irn_sel_attr(a).ent->name    != get_irn_sel_attr(b).ent->name)
       || (get_irn_sel_attr(a).ent->owner   != get_irn_sel_attr(b).ent->owner)
       || (get_irn_sel_attr(a).ent->ld_name != get_irn_sel_attr(b).ent->ld_name)
       || (get_irn_sel_attr(a).ent->type    != get_irn_sel_attr(b).ent->type);
-}
+}  /* node_cmp_attr_Sel */
 
 /** Compares the attributes of two Phi nodes. */
 static int node_cmp_attr_Phi(ir_node *a, ir_node *b) {
   return get_irn_phi_attr (a) != get_irn_phi_attr (b);
-}
+}  /* node_cmp_attr_Phi */
 
 /** Compares the attributes of two Conv nodes. */
 static int node_cmp_attr_Conv(ir_node *a, ir_node *b) {
   return get_Conv_strict(a) != get_Conv_strict(b);
-}
+}  /* node_cmp_attr_Conv */
 
 /** Compares the attributes of two Cast nodes. */
 static int node_cmp_attr_Cast(ir_node *a, ir_node *b) {
   return get_Cast_type(a) != get_Cast_type(b);
-}
+}  /* node_cmp_attr_Cast */
 
 /** Compares the attributes of two Load nodes. */
-static int node_cmp_attr_Load(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Load(ir_node *a, ir_node *b) {
   if (get_Load_volatility(a) == volatility_is_volatile ||
       get_Load_volatility(b) == volatility_is_volatile)
     /* NEVER do CSE on volatile Loads */
     return 1;
 
   return get_Load_mode(a) != get_Load_mode(b);
-}
+}  /* node_cmp_attr_Load */
 
 /** Compares the attributes of two Store nodes. */
-static int node_cmp_attr_Store(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Store(ir_node *a, ir_node *b) {
   /* NEVER do CSE on volatile Stores */
   return (get_Store_volatility(a) == volatility_is_volatile ||
           get_Store_volatility(b) == volatility_is_volatile);
-}
+}  /* node_cmp_attr_Store */
 
 /** Compares the attributes of two Confirm nodes. */
-static int node_cmp_attr_Confirm(ir_node *a, ir_node *b)
-{
+static int node_cmp_attr_Confirm(ir_node *a, ir_node *b) {
   return (get_Confirm_cmp(a) != get_Confirm_cmp(b));
-}
+}  /* node_cmp_attr_Confirm */
 
 /**
  * Set the default node attribute compare operation for an ir_op_ops.
@@ -3625,7 +3580,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(opcode code, ir_op_ops *ops)
 
   return ops;
 #undef CASE
-}
+}  /* firm_set_default_node_cmp_attr */
 
 /*
  * Compare function for two nodes in the hash table. Gets two
@@ -3668,7 +3623,7 @@ int identities_cmp(const void *elt, const void *key)
     return a->op->ops.node_cmp_attr(a, b);
 
   return 0;
-}
+}  /* identities_cmp */
 
 /*
  * Calculate a hash value of a node.
@@ -3703,15 +3658,15 @@ unsigned ir_node_hash(ir_node *node)
   }
 
   return h;
-}
+}  /* ir_node_hash */
 
 pset *new_identities(void) {
   return new_pset(identities_cmp, N_IR_NODES);
-}
+}  /* new_identities */
 
 void del_identities(pset *value_table) {
   del_pset(value_table);
-}
+}  /* del_identities */
 
 /**
  * Return the canonical node computing the same value as n.
@@ -3746,7 +3701,7 @@ static INLINE ir_node *identify(pset *value_table, ir_node *n)
   DBG_OPT_CSE(n, o);
 
   return o;
-}
+}  /* identify */
 
 /**
  * During construction we set the op_pin_state_pinned flag in the graph right when the
@@ -3760,7 +3715,7 @@ static INLINE ir_node *identify_cons(pset *value_table, ir_node *n) {
   if (get_irn_n(old, -1) != get_irn_n(n, -1))
     set_irg_pinned(current_ir_graph, op_pin_state_floats);
   return n;
-}
+}  /* identify_cons */
 
 /*
  * Return the canonical node computing the same value as n.
@@ -3794,13 +3749,13 @@ ir_node *identify_remember(pset *value_table, ir_node *n)
   }
 
   return o;
-}
+}  /* identify_remember */
 
 /* Add a node to the identities value table. */
 void add_identities(pset *value_table, ir_node *node) {
   if (get_opt_cse() && is_no_Block(node))
     identify_remember(value_table, node);
-}
+}  /* add_identities */
 
 /* Visit each node in the value table of a graph. */
 void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env) {
@@ -3811,7 +3766,7 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env) {
   foreach_pset(irg->value_table, node)
     visit(node, env);
   current_ir_graph = rem;
-}
+}  /* visit_all_identities */
 
 /**
  * Garbage in, garbage out. If a node has a dead input, i.e., the
@@ -3884,7 +3839,7 @@ static INLINE ir_node *gigo(ir_node *node)
   }
 #endif
   return node;
-}
+}  /* gigo */
 
 /**
  * These optimizations deallocate nodes from the obstack.
@@ -3954,7 +3909,7 @@ ir_node *optimize_node(ir_node *n)
     (iro == iro_Id)   ||
     (iro == iro_Proj) ||
     (iro == iro_Block)  )  /* Flags tested local. */
-    n = equivalent_node (n);
+    n = equivalent_node(n);
 
   optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
 
@@ -3966,7 +3921,7 @@ ir_node *optimize_node(ir_node *n)
    * subexpressions within a block.
    */
   if (get_opt_cse())
-    n = identify_cons (current_ir_graph->value_table, n);
+    n = identify_cons(current_ir_graph->value_table, n);
 
   if (n != oldn) {
     edges_node_deleted(oldn, current_ir_graph);
@@ -3981,9 +3936,8 @@ ir_node *optimize_node(ir_node *n)
   iro = get_irn_opcode(n);
   if (get_opt_constant_folding() ||
     (iro == iro_Cond) ||
-    (iro == iro_Proj) ||
-    (iro == iro_Sel))     /* Flags tested local. */
-    n = transform_node (n);
+    (iro == iro_Proj))     /* Flags tested local. */
+    n = transform_node(n);
 
   /* Remove nodes with dead (Bad) input.
      Run always for transformation induced Bads. */
@@ -3991,11 +3945,11 @@ ir_node *optimize_node(ir_node *n)
 
   /* Now we have a legal, useful node. Enter it in hash table for CSE */
   if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
-    n = identify_remember (current_ir_graph->value_table, n);
+    n = identify_remember(current_ir_graph->value_table, n);
   }
 
   return n;
-}
+}  /* optimize_node */
 
 
 /**
@@ -4062,8 +4016,7 @@ ir_node *optimize_in_place_2(ir_node *n)
   iro = get_irn_opcode(n);
   if (get_opt_constant_folding() ||
       (iro == iro_Cond) ||
-      (iro == iro_Proj) ||
-      (iro == iro_Sel))     /* Flags tested local. */
+      (iro == iro_Proj))     /* Flags tested local. */
     n = transform_node(n);
 
   /* Remove nodes with dead (Bad) input.
@@ -4080,7 +4033,7 @@ ir_node *optimize_in_place_2(ir_node *n)
     n = identify_remember(current_ir_graph->value_table, n);
 
   return n;
-}
+}  /* optimize_in_place_2 */
 
 /**
  * Wrapper for external use, set proper status bits after optimization.
@@ -4099,7 +4052,7 @@ ir_node *optimize_in_place(ir_node *n)
      change the control graph. */
   set_irg_doms_inconsistent(current_ir_graph);
   return optimize_in_place_2 (n);
-}
+}  /* optimize_in_place */
 
 /*
  * Sets the default operation for an ir_ops.
@@ -4115,4 +4068,4 @@ ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops)
   ops = firm_set_default_get_entity_attr(code, ops);
 
   return ops;
-}
+}  /* firm_set_default_operations */
