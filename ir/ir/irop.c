@@ -264,7 +264,7 @@ init_op(void)
   op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,       oparity_variable, -1, 0, NULL);
   op_Id        = new_ir_op(iro_Id,        "Id",        op_pin_state_floats, N,       oparity_any,      -1, 0, NULL);
   op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F,     oparity_zero,     -1, 0, NULL);
-  op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_floats, H,       oparity_any,      -1, sizeof(confirm_attr), NULL);
+  op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_pinned, H,       oparity_any,      -1, sizeof(confirm_attr), NULL);
 
   op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_pinned, X|F,     oparity_zero,     -1, 0, NULL);
   op_Filter    = new_ir_op(iro_Filter,    "Filter",    op_pin_state_pinned, N,       oparity_variable, -1, sizeof(filter_attr), NULL);
