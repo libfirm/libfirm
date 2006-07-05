@@ -102,10 +102,14 @@ static void rem_mem_from_const_fkt_calls(ir_node *node, void *env)
       ;
     }
   }
-}
+}  /* rem_mem_from_const_fkt_calls */
 
 /**
  * Fix the list of collected Calls.
+ *
+ * @param irg        the graph that contained calls to pure functions
+ * @param call_list  the list of all call sites of pure functions
+ * @param proj_list  the list of all memory/exception Projs of this call sites
  */
 static void fix_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list) {
   ir_node *call, *next, *mem, *proj;
@@ -119,8 +123,23 @@ static void fix_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list)
     set_irn_link(call, mem);
     set_Call_mem(call, get_irg_no_mem(irg));
 
-    /* finally, this call can float */
-    set_irn_pinned(call, op_pin_state_floats);
+    /*
+     * Sorrily we cannot simply set the node to 'float'.
+     * There is a reason for that:
+     *
+     * - The call might be inside a loop/if that is NOT entered
+     *   and calls a endless function. Setting the call to float
+     *   would allow to move it out from the loop/if causing this
+     *   function be called even if the loop/if is not entered ...
+     *
+     * This could be fixed using post-dominators for calls and Pin nodes
+     * but need some more analyses to ensure that a call that potential
+     * never returns is not executed before some code that generates
+     * observable states...
+     */
+
+    /* finally, this call can float
+    set_irn_pinned(call, op_pin_state_floats); */
     hook_func_call(irg, call);
   }
 
@@ -154,7 +173,7 @@ static void fix_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list)
     /* ... including exception edges */
     set_irg_doms_inconsistent(irg);
   }
-}
+}  /* fix_call_list */
 
 /*
  * optimize function calls by handling const functions
@@ -263,4 +282,4 @@ void optimize_funccalls(int force_run)
       printf("No graphs without side effects detected\n");
     }
   }
-}
+}  /* optimize_funccalls */
