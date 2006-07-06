@@ -3,7 +3,7 @@
  * File name:   ir/ir/irnode_t.h
  * Purpose:     Representation of an intermediate operation -- private header.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
@@ -17,9 +17,8 @@
  *
  * @author Martin Trapp, Christian Schaefer
  */
-
-# ifndef _IRNODE_T_H_
-# define _IRNODE_T_H_
+#ifndef _IRNODE_T_H_
+#define _IRNODE_T_H_
 
 #include "firm_config.h"
 #include "irnode.h"
@@ -40,7 +39,7 @@
 #include "irextbb_t.h"
 
 
-/** ir node attributes **/
+/** IR node attributes **/
 
 /** Block attributes */
 typedef struct {
@@ -98,9 +97,6 @@ typedef struct {
 
 /** Exception attributes. */
 typedef struct {
-  op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
-                                     If it's know that no exception will be generated, could be set to
-                                     op_pin_state_floats. */
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
 #endif
@@ -238,10 +234,11 @@ struct ir_node {
   firm_kind kind;          /**< distinguishes this node from others */
   ir_op *op;               /**< Opcode of this node. */
   ir_mode *mode;           /**< Mode of this node. */
-  struct ir_node **in;     /**< array with predecessors / operands */
-  unsigned long visited;   /**< visited counter for walks of the graph */
-  unsigned node_idx;       /**< the node index of this node in its graph */
-  void *link;              /**< to attach additional information to the node, e.g.
+  struct ir_node **in;     /**< The array of predecessors / operands. */
+  unsigned long visited;   /**< Visited counter for walks of the graph. */
+  unsigned node_idx;       /**< The node index of this node in its graph. */
+  unsigned pinned : 1;     /**< A node is either pinned or not. */
+  void *link;              /**< To attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
                               during optimization to link to nodes that
                               shall replace a node. */
@@ -251,12 +248,12 @@ struct ir_node {
   /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
   int out_valid;
-  long node_nr;            /**< a unique node number for each node to make output
-                                   readable. */
+  long node_nr;            /**< A unique node number for each node to make output
+                                readable. */
 #endif
   /* ------- For analyses -------- */
   ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
-#ifdef  DO_HEAPANALYSIS
+#ifdef DO_HEAPANALYSIS
   struct abstval *av;      /**< the abstract value of this node */
   struct section *sec;
 #endif
@@ -340,7 +337,7 @@ ir_op_ops *firm_set_default_get_entity_attr(opcode code, ir_op_ops *ops);
  * Intern version for libFirm.
  */
 static INLINE int
-_is_ir_node (const void *thing) {
+_is_ir_node(const void *thing) {
   return (get_kind(thing) == k_ir_node);
 }
 
@@ -349,14 +346,14 @@ _is_ir_node (const void *thing) {
  * Intern version for libFirm.
  */
 static INLINE ir_op *
-_get_irn_op (const ir_node *node) {
-  assert (node);
+_get_irn_op(const ir_node *node) {
+  assert(node);
   return node->op;
 }
 
 static INLINE void
-_set_irn_op (ir_node *node, ir_op *op) {
-  assert (node);
+_set_irn_op(ir_node *node, ir_op *op) {
+  assert(node);
   node->op = op;
 }
 
@@ -375,9 +372,9 @@ copy_node_attr(const ir_node *old_node, ir_node *new_node) {
  * Intern version for libFirm.
  */
 static INLINE opcode
-_get_irn_opcode (const ir_node *node) {
-  assert (k_ir_node == get_kind(node));
-  assert (node->op);
+_get_irn_opcode(const ir_node *node) {
+  assert(k_ir_node == get_kind(node));
+  assert(node->op);
   return node->op->code;
 }
 
@@ -386,7 +383,7 @@ _get_irn_opcode (const ir_node *node) {
  * Intern version for libFirm.
  */
 static INLINE int
-_get_irn_intra_arity (const ir_node *node) {
+_get_irn_intra_arity(const ir_node *node) {
   assert(node);
   return ARR_LEN(node->in) - 1;
 }
@@ -396,7 +393,7 @@ _get_irn_intra_arity (const ir_node *node) {
  * Intern version for libFirm.
  */
 static INLINE int
-_get_irn_inter_arity (const ir_node *node) {
+_get_irn_inter_arity(const ir_node *node) {
   assert(node);
   if (_get_irn_op(node) == op_Filter) {
     assert(node->attr.filter.in_cg);
@@ -417,7 +414,7 @@ extern int (*_get_irn_arity)(const ir_node *node);
  * Intern version for libFirm.
  */
 static INLINE ir_node *
-_get_irn_intra_n (const ir_node *node, int n) {
+_get_irn_intra_n(const ir_node *node, int n) {
   ir_node *nn;
 
   assert(node); assert(-1 <= n && n < _get_irn_intra_arity(node));
@@ -432,7 +429,7 @@ _get_irn_intra_n (const ir_node *node, int n) {
  * Intern version for libFirm.
  */
 static INLINE ir_node*
-_get_irn_inter_n (const ir_node *node, int n) {
+_get_irn_inter_n(const ir_node *node, int n) {
   assert(node); assert(-1 <= n && n < _get_irn_inter_arity(node));
 
   /* handle Filter and Block specially */
@@ -443,7 +440,7 @@ _get_irn_inter_n (const ir_node *node, int n) {
     return (node->attr.block.in_cg[n + 1] = skip_Id(node->attr.block.in_cg[n + 1]));
   }
 
-  return _get_irn_intra_n (node, n);
+  return _get_irn_intra_n(node, n);
 }
 
 /**
@@ -462,7 +459,7 @@ extern ir_node *(*_get_irn_n)(const ir_node *node, int n);
  */
 static INLINE ir_mode *
 _get_irn_mode(const ir_node *node) {
-  assert (node);
+  assert(node);
   return node->mode;
 }
 
@@ -472,7 +469,7 @@ _get_irn_mode(const ir_node *node) {
  */
 static INLINE void
 _set_irn_mode(ir_node *node, ir_mode *mode) {
-  assert (node);
+  assert(node);
   node->mode = mode;
 }
 
@@ -482,7 +479,7 @@ _set_irn_mode(ir_node *node, ir_mode *mode) {
  */
 static INLINE unsigned long
 _get_irn_visited(const ir_node *node) {
-  assert (node);
+  assert(node);
   return node->visited;
 }
 
@@ -492,7 +489,7 @@ _get_irn_visited(const ir_node *node) {
  */
 static INLINE void
 _set_irn_visited(ir_node *node, unsigned long visited) {
-  assert (node);
+  assert(node);
   node->visited = visited;
 }
 
@@ -502,7 +499,7 @@ _set_irn_visited(ir_node *node, unsigned long visited) {
  */
 static INLINE void
 _mark_irn_visited(ir_node *node) {
-  assert (node);
+  assert(node);
   node->visited = current_ir_graph->visited;
 }
 
@@ -512,7 +509,7 @@ _mark_irn_visited(ir_node *node) {
  */
 static INLINE int
 _irn_visited(const ir_node *node) {
-  assert (node);
+  assert(node);
   return (node->visited >= current_ir_graph->visited);
 }
 
@@ -522,7 +519,7 @@ _irn_visited(const ir_node *node) {
  */
 static INLINE int
 _irn_not_visited(const ir_node *node) {
-  assert (node);
+  assert(node);
   return (node->visited < current_ir_graph->visited);
 }
 
@@ -532,7 +529,7 @@ _irn_not_visited(const ir_node *node) {
  */
 static INLINE void
 _set_irn_link(ir_node *node, void *link) {
-  assert (node);
+  assert(node);
   /* Link field is used for Phi construction and various optimizations
      in iropt. */
   assert(get_irg_phase_state(get_irn_irg(node)) != phase_building);
@@ -546,7 +543,7 @@ _set_irn_link(ir_node *node, void *link) {
  */
 static INLINE void *
 _get_irn_link(const ir_node *node) {
-  assert (node && _is_ir_node(node));
+  assert(node && _is_ir_node(node));
   return node->link;
 }
 
@@ -564,14 +561,14 @@ _get_irn_pinned(const ir_node *node) {
   state = _get_op_pinned(_get_irn_op(node));
 
   if (state >= op_pin_state_exc_pinned)
-    return get_opt_fragile_ops() ? node->attr.except.pin_state : op_pin_state_pinned;
-  return state;
+    return get_opt_fragile_ops() ? (op_pin_state)node->pinned : op_pin_state_pinned;
+  return (op_pin_state)node->pinned;
 }
 
 static INLINE op_pin_state
 _is_irn_pinned_in_irg(const ir_node *node) {
-  if (get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats)
-    return get_irn_pinned(node);
+  if (_get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats)
+    return _get_irn_pinned(node);
   return op_pin_state_pinned;
 }
 
@@ -697,26 +694,26 @@ _get_Block_cfgpred_block(ir_node *node, int pos) {
 
 static INLINE unsigned long
 _get_Block_block_visited(ir_node *node) {
-  assert (node->op == op_Block);
+  assert(node->op == op_Block);
   return node->attr.block.block_visited;
 }
 
 static INLINE void
 _set_Block_block_visited(ir_node *node, unsigned long visit) {
-  assert (node->op == op_Block);
+  assert(node->op == op_Block);
   node->attr.block.block_visited = visit;
 }
 
 /* For this current_ir_graph must be set. */
 static INLINE void
 _mark_Block_block_visited(ir_node *node) {
-  assert (node->op == op_Block);
+  assert(node->op == op_Block);
   node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
 }
 
 static INLINE int
 _Block_not_block_visited(ir_node *node) {
-  assert (node->op == op_Block);
+  assert(node->op == op_Block);
   return (node->attr.block.block_visited < get_irg_block_visited(current_ir_graph));
 }
 

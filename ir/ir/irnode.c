@@ -114,36 +114,40 @@ unsigned register_additional_node_data(unsigned size) {
 
 void
 init_irnode(void) {
-	/* Forbid the addition of new data to an ir node. */
-	forbid_new_data = 1;
+  /* Forbid the addition of new data to an ir node. */
+  forbid_new_data = 1;
 }
 
 /*
- * irnode constructor.
- * Create a new irnode in irg, with an op, mode, arity and
- * some incoming irnodes.
+ * IR node constructor.
+ * Create a new IR node in irg, with an op, mode, arity and
+ * some incoming IR nodes.
  * If arity is negative, a node with a dynamic array is created.
  */
 ir_node *
-new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
+new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
          int arity, ir_node **in)
 {
   ir_node *res;
   size_t node_size = offsetof(ir_node, attr) + op->attr_size + firm_add_node_size;
   char *p;
   int i, is_bl;
+  op_pin_state state;
 
   assert(irg && op && mode);
   p = obstack_alloc (irg->obst, node_size);
   memset(p, 0, node_size);
   res = (ir_node *) (p + firm_add_node_size);
 
-  res->kind     = k_ir_node;
-  res->op       = op;
-  res->mode     = mode;
-  res->visited  = 0;
-  res->node_idx = irg_register_node_idx(irg, res);
-  res->link     = NULL;
+  state = get_op_pinned(op);
+
+  res->kind      = k_ir_node;
+  res->op        = op;
+  res->mode      = mode;
+  res->visited   = 0;
+  res->node_idx  = irg_register_node_idx(irg, res);
+  res->pinned    = state != op_pin_state_floats;
+  res->link      = NULL;
   if (arity < 0) {
     res->in = NEW_ARR_F (ir_node *, 1);  /* 1: space for block */
   } else {
@@ -428,10 +432,16 @@ void set_irn_pinned(ir_node *node, op_pin_state state) {
   if (get_irn_op(node) == op_Tuple)
     return;
 
-  assert(node && get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned);
+  assert(node);
+  assert(
+    /* the node is exception/memory pinned OR */
+    (get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned) ||
+    /* a floating point node can be pinned if fp_exceptions are enabled */
+    (mode_is_float(get_irn_mode(node)) && get_irg_fp_model(get_irn_irg(node)) & fp_exceptions)
+  );
   assert(state == op_pin_state_pinned || state == op_pin_state_floats);
 
-  node->attr.except.pin_state = state;
+  node->pinned = state != op_pin_state_floats;
 }
 
 #ifdef DO_HEAPANALYSIS

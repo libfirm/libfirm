@@ -194,17 +194,17 @@ void set_irn_pinned(ir_node *node, op_pin_state state);
 op_pin_state is_irn_pinned_in_irg (const ir_node *node);
 
 /**
- * irnode constructor.
- * Create a new irnode in irg, with an op, mode, arity and
- * some incoming irnodes.
- * This constructor is used in every specified irnode constructor.
+ * IR node constructor.
+ * Create a new IR node in irg, with an op, mode, arity and
+ * some incoming IR nodes.
+ * This constructor is used in every specific IR node constructor.
  *
  * @param db    Debug info.
  * @param irg   IR-graph on with this new node should be constructed.
  * @param block The block the new node belongs to
  * @param op    The opcode of the new node.
  * @param mode  The mode of the new node.
- * @param arity The arity of the new node, may be <0 if yet.
+ * @param arity The arity of the new node, <0 if can be changed dynamically.
  * @param in    An array of arity predecessor nodes.
  */
 ir_node *
