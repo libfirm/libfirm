@@ -24,6 +24,7 @@
 #include "irgwalk.h"
 #include "irprintf_t.h"
 #include "irgopt.h"
+#include "irbitset.h"
 
 #include "be.h"
 #include "beabi.h"
@@ -617,6 +618,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	*/
 	be_node_set_reg_class(low_call, be_pos_Call_ptr, sp->reg_class);
 
+	DBG((env->dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
+
 	/* Set the register classes and constraints of the Call parameters. */
 	for(i = 0; i < n_low_args; ++i) {
 		int index = low_args[i];
@@ -759,22 +762,18 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
  * but is restricted to the given block.
  * @return 1 if tgt was reachable from curr, 0 if not.
  */
-static int check_dependence(ir_node *curr, ir_node *tgt, ir_node *bl, unsigned long visited_nr)
+static int check_dependence(ir_node *curr, ir_node *tgt, ir_node *bl)
 {
 	int n, i;
 
-	if(get_irn_visited(curr) >= visited_nr)
+	if (get_nodes_block(curr) != bl)
 		return 0;
 
-	set_irn_visited(curr, visited_nr);
-	if(get_nodes_block(curr) != bl)
-		return 0;
-
-	if(curr == tgt)
+	if (curr == tgt)
 		return 1;
 
 	/* Phi functions stop the recursion inside a basic block */
-	if(!is_Phi(curr)) {
+	if (! is_Phi(curr)) {
 		for(i = 0, n = get_irn_arity(curr); i < n; ++i) {
 			if(check_dependence(get_irn_n(curr, i), tgt, bl, visited_nr))
 				return 1;
@@ -795,11 +794,9 @@ static int dependent_on(ir_node *n1, ir_node *n2)
 {
 	ir_node *bl   = get_nodes_block(n1);
 	ir_graph *irg = get_irn_irg(bl);
-	long vis_nr   = get_irg_visited(irg) + 1;
 
 	assert(bl == get_nodes_block(n2));
-	set_irg_visited(irg, vis_nr);
-	return check_dependence(n1, n2, bl, vis_nr);
+	return check_dependence(n1, n2, bl);
 }
 
 static int cmp_call_dependecy(const void *c1, const void *c2)
@@ -813,7 +810,13 @@ static int cmp_call_dependecy(const void *c1, const void *c2)
 		1  if second is "smaller" that first
 		-1 if first is "smaller" that second
 	*/
-	return n1 == n2 ? 0 : (dependent_on(n1, n2) ? -1 : 1);
+	if (dependent_on(n1, n2))
+		return -1;
+
+	if (dependent_on(n2, n1))
+		return 1;
+
+	return 0;
 }
 
 /**
@@ -864,6 +867,7 @@ static void process_calls_in_block(ir_node *bl, void *data)
 		for(i = n - 1; i >= 0; --i) {
 			ir_node *irn = nodes[i];
 
+			DBG((env->dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
 			switch(get_irn_opcode(irn)) {
 			case iro_Call:
 				curr_sp = adjust_call(env, irn, curr_sp);
