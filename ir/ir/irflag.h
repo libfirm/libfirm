@@ -235,14 +235,14 @@ void set_opt_fragile_ops(int value);
 void set_opt_if_conversion(int value);
 
 /**
- * Enable/Disable real function call optimization.
+ * Enable/Disable function call optimization.
  *
- * Real function call optimization detects "real functions" and
- * allows the floating of Call nodes. A "real function" is one that
+ * Function call optimization detects const and pure functions and
+ * allows the CSE of Call nodes. A const function is one that
  * do only evaluate it's parameters and did not read or write memory
- * to compute its results.
+ * to compute its results. Pure functions are allowed to read global memory.
  */
-void set_opt_real_function_call(int value);
+void set_opt_function_call(int value);
 
 /**
  * Enable/Disable Confirm node removal during local optimization.

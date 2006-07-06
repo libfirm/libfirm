@@ -77,8 +77,8 @@ I_FLAG(fragile_ops                        , 19, OFF)
 /** If conversion. */
 I_FLAG(if_conversion                      , 20, OFF)
 
-/** Optimize real function calls. */
-I_FLAG(real_function_call                 , 21, ON)
+/** Optimize function calls. */
+I_FLAG(function_call                      , 21, ON)
 
 /** Optimize cast nodes. */
 E_FLAG(optimize_class_casts               , 22, ON)
