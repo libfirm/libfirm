@@ -712,6 +712,8 @@ static int is_root(ir_node *root, ir_node *block) {
 static char _mark;
 #define MARK	&_mark
 
+static firm_dbg_module_t *xxxdbg;
+
 /**
  * descent into a dag and create a pre-order list.
  */
@@ -723,6 +725,7 @@ static void descent(ir_node *root, ir_node *block, ir_node **list) {
 		for (i = get_irn_arity(root) - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(root, i);
 
+			DBG((xxxdbg, LEVEL_3, "   node %+F\n", pred));
 			/* Blocks may happen as predecessors of End nodes */
 			if (is_Block(pred))
 				continue;
@@ -734,6 +737,8 @@ static void descent(ir_node *root, ir_node *block, ir_node **list) {
 			/* don't leave our block */
 			if (get_nodes_block(pred) != block)
 				continue;
+
+	//		set_irn_link(pred, NULL);
 
 			descent(pred, block, list);
 		}
@@ -779,6 +784,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.selector          = selector;
 	be.sched_env         = env;
 	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
+	FIRM_DBG_REGISTER(xxxdbg, "firm.be.sched");
 
 //	firm_dbg_set_mask(be.dbg, SET_LEVEL_3);
 
@@ -804,6 +810,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	preord = NULL;
 	for (curr = root; curr; curr = irn) {
 		irn = get_irn_link(curr);
+		DBG((be.dbg, LEVEL_2, "   DAG root %+F\n", curr));
 		descent(curr, block, &preord);
 	}
 	root = preord;
