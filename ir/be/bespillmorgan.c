@@ -414,12 +414,6 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 			to_spill = get_idx_irn(env->irg, i);
 			foreach_block_succ(block, edge) {
 				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around block %+F\n", to_spill, block));
-				/* We always spill the whole phis and not just their results,
-				 * this shouldn't do any harm but avoids trouble if belady
-				 * decides to spill a whole phi where we only spilled the value
-				 */
-				if(is_Phi(to_spill))
-					be_spill_phi(env->senv, to_spill);
 				be_add_reload_on_edge(env->senv, to_spill, edge->src, edge->pos);
 			}
 			spills++;
@@ -488,11 +482,8 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 			ir_node *to_spill = get_idx_irn(env->irg, i);
 
 			for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
-				/* we always spill whole phis (look at reduce_register_pressure_in_block for details) */
-				if(is_Phi(to_spill))
-					be_spill_phi(env->senv, to_spill);
+				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around loop %d\n", to_spill, loop->loop_nr));
 				be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos);
-
 			}
 
 			spills_to_place--;

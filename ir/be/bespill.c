@@ -232,7 +232,7 @@ static INLINE ir_node *skip_projs(ir_node *node) {
 /**
  * Searchs the schedule backwards until we reach the first use or def of a
  * value or a phi.
- * Returns the node before this node (so that you can do sched_add_before)
+ * Returns the node after this node (so that you can do sched_add_before)
  */
 static ir_node *find_last_use_def(spill_env_t *env, ir_node *block, ir_node *value) {
 	ir_node *node, *last;
@@ -250,7 +250,7 @@ static ir_node *find_last_use_def(spill_env_t *env, ir_node *block, ir_node *val
 		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 			ir_node *arg = get_irn_n(node, i);
 			if(arg == value) {
-				return skip_projs(node);
+				return skip_projs(last);
 			}
 		}
 		last = node;
@@ -509,9 +509,17 @@ void be_place_copies(spill_env_t *env) {
 }
 
 void be_spill_phi(spill_env_t *env, ir_node *node) {
+	spill_ctx_t *spill_ctx;
+
 	assert(is_Phi(node));
 
 	pset_insert_ptr(env->mem_phis, node);
+
+	// remove spill context for this phi (if there was one)
+	spill_ctx = be_get_spill_ctx(env->spill_ctxs, node, node);
+	if(spill_ctx != NULL) {
+		spill_ctx->spill = NULL;
+	}
 }
 
 void be_insert_spills_reloads(spill_env_t *env) {

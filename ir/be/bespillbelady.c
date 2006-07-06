@@ -105,7 +105,7 @@ static INLINE workset_t *workset_clone(belady_env_t *env, struct obstack *ob, wo
 
 /**
  * Do NOT alloc anything. Make @param tgt equal to @param src.
- * returns @param tgt for convinience
+ * returns @param tgt for convenience
  */
 static INLINE workset_t *workset_copy(belady_env_t *env, workset_t *tgt, workset_t *src) {
 	size_t size = sizeof(*src) + (env->n_regs)*sizeof(src->vals[0]);
@@ -285,8 +285,8 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 		for (i=max_allowed; i<ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
 
-                        if(is_Phi(irn))
-                            continue;
+            if(is_Phi(irn))
+                continue;
 
 			if (!pset_find_ptr(env->used, irn)) {
 				ir_node *curr_bb = get_nodes_block(env->instr);
@@ -558,6 +558,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	belady_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
+	//firm_dbg_set_mask(dbg, DBG_WSETS);
 
 	/* init belady env */
 	obstack_init(&env.ob);
