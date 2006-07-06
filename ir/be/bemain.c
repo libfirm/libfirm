@@ -340,15 +340,6 @@ static void be_main_loop(FILE *file_handle)
 	unsigned num_nodes_b = 0;
 	unsigned num_nodes_a = 0;
 	unsigned num_nodes_r = 0;
-	unsigned ra_prolog   = 0;
-	unsigned ra_epilog   = 0;
-	unsigned ra_live     = 0;
-	unsigned ra_spill    = 0;
-	unsigned ra_color    = 0;
-	unsigned ra_ifg      = 0;
-	unsigned ra_copymin  = 0;
-	unsigned ra_ssa      = 0;
-	unsigned ra_other    = 0;
 	lc_timer_t *t_prolog, *t_abi, *t_codegen, *t_sched, *t_constr, *t_regalloc, *t_finish, *t_emit, *t_other, *t_verify;
 	be_ra_timer_t *ra_timer;
 
@@ -548,7 +539,8 @@ static void be_main_loop(FILE *file_handle)
 		BE_TIMER_ONLY(num_nodes_a = get_num_reachable_nodes(irg));
 
 		/* switched off due to statistics (statistic module needs all irgs) */
-		//		free_ir_graph(irg);
+		if (! stat_is_active())
+			free_ir_graph(irg);
 		BE_TIMER_POP();
 
 #define LC_EMIT(timer)    printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
