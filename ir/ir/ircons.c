@@ -64,7 +64,7 @@ typedef struct Phi_in_stack Phi_in_stack;
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
 /* creates a bd constructor for a binop */
-#define NEW_BD_BINOP(instr)                                     \
+#define NEW_BD_BINOP(instr, float_support)                      \
 static ir_node *                                                \
 new_bd_##instr(dbg_info *db, ir_node *block,                    \
        ir_node *op1, ir_node *op2, ir_mode *mode)               \
@@ -75,13 +75,16 @@ new_bd_##instr(dbg_info *db, ir_node *block,                    \
   in[0] = op1;                                                  \
   in[1] = op2;                                                  \
   res = new_ir_node(db, irg, block, op_##instr, mode, 2, in);   \
+  if (float_support && mode_is_float(mode) &&                   \
+      (get_irg_fp_model(irg) & fp_exceptions))                  \
+    res->pinned = 1;                                            \
   res = optimize_node(res);                                     \
   IRN_VRFY_IRG(res, irg);                                       \
   return res;                                                   \
 }
 
 /* creates a bd constructor for an unop */
-#define NEW_BD_UNOP(instr)                                      \
+#define NEW_BD_UNOP(instr, float_support)                       \
 static ir_node *                                                \
 new_bd_##instr(dbg_info *db, ir_node *block,                    \
               ir_node *op, ir_mode *mode)                       \
@@ -89,13 +92,16 @@ new_bd_##instr(dbg_info *db, ir_node *block,                    \
   ir_node  *res;                                                \
   ir_graph *irg = current_ir_graph;                             \
   res = new_ir_node(db, irg, block, op_##instr, mode, 1, &op);  \
+  if (float_support && mode_is_float(mode) &&                   \
+      (get_irg_fp_model(irg) & fp_exceptions))                  \
+    res->pinned = 1;                                            \
   res = optimize_node(res);                                     \
   IRN_VRFY_IRG(res, irg);                                       \
   return res;                                                   \
 }
 
 /* creates a bd constructor for an divop */
-#define NEW_BD_DIVOP(instr)                                     \
+#define NEW_BD_DIVOP(instr, float_support)                      \
 static ir_node *                                                \
 new_bd_##instr(dbg_info *db, ir_node *block,                    \
             ir_node *memop, ir_node *op1, ir_node *op2)         \
@@ -103,10 +109,14 @@ new_bd_##instr(dbg_info *db, ir_node *block,                    \
   ir_node  *in[3];                                              \
   ir_node  *res;                                                \
   ir_graph *irg = current_ir_graph;                             \
+  ir_mode  *mode = get_irn_mode(op1);                           \
   in[0] = memop;                                                \
   in[1] = op1;                                                  \
   in[2] = op2;                                                  \
   res = new_ir_node(db, irg, block, op_##instr, mode_T, 3, in); \
+  if (float_support && mode_is_float(mode) &&                   \
+      (get_irg_fp_model(irg) & fp_exceptions))                  \
+    res->pinned = 1;                                            \
   res = optimize_node(res);                                     \
   IRN_VRFY_IRG(res, irg);                                       \
   return res;                                                   \
@@ -346,6 +356,8 @@ new_bd_Conv(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode, int strict
 
   res = new_ir_node(db, irg, block, op_Conv, mode, 1, &op);
   res->attr.conv.strict = strict_flag;
+  if (mode_is_float(mode) && get_irg_fp_model(irg) & fp_exceptions)
+    res->pinned = 1;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -378,25 +390,28 @@ new_bd_Tuple(dbg_info *db, ir_node *block, int arity, ir_node **in)
   return res;
 }  /* new_bd_Tuple */
 
-NEW_BD_BINOP(Add)
-NEW_BD_BINOP(Sub)
-NEW_BD_UNOP(Minus)
-NEW_BD_BINOP(Mul)
-NEW_BD_DIVOP(Quot)
-NEW_BD_DIVOP(DivMod)
-NEW_BD_DIVOP(Div)
-NEW_BD_DIVOP(Mod)
-NEW_BD_BINOP(And)
-NEW_BD_BINOP(Or)
-NEW_BD_BINOP(Eor)
-NEW_BD_UNOP(Not)
-NEW_BD_BINOP(Shl)
-NEW_BD_BINOP(Shr)
-NEW_BD_BINOP(Shrs)
-NEW_BD_BINOP(Rot)
-NEW_BD_UNOP(Abs)
-NEW_BD_BINOP(Carry)
-NEW_BD_BINOP(Borrow)
+#define supports_float 1
+#define only_integer   0
+
+NEW_BD_BINOP(Add, supports_float)
+NEW_BD_BINOP(Sub, supports_float)
+NEW_BD_UNOP(Minus, supports_float)
+NEW_BD_BINOP(Mul, supports_float)
+NEW_BD_DIVOP(Quot, supports_float)
+NEW_BD_DIVOP(DivMod, only_integer)
+NEW_BD_DIVOP(Div, only_integer)
+NEW_BD_DIVOP(Mod, only_integer)
+NEW_BD_BINOP(And, only_integer)
+NEW_BD_BINOP(Or, only_integer)
+NEW_BD_BINOP(Eor, only_integer)
+NEW_BD_UNOP(Not, only_integer)
+NEW_BD_BINOP(Shl, only_integer)
+NEW_BD_BINOP(Shr, only_integer)
+NEW_BD_BINOP(Shrs, only_integer)
+NEW_BD_BINOP(Rot, only_integer)
+NEW_BD_UNOP(Abs, supports_float)
+NEW_BD_BINOP(Carry, only_integer)
+NEW_BD_BINOP(Borrow, only_integer)
 
 static ir_node *
 new_bd_Cmp(dbg_info *db, ir_node *block, ir_node *op1, ir_node *op2)
@@ -404,9 +419,12 @@ new_bd_Cmp(dbg_info *db, ir_node *block, ir_node *op1, ir_node *op2)
   ir_node  *in[2];
   ir_node  *res;
   ir_graph *irg = current_ir_graph;
+  ir_mode  *mode = get_irn_mode(op1);
   in[0] = op1;
   in[1] = op2;
   res = new_ir_node(db, irg, block, op_Cmp, mode_T, 2, in);
+  if (mode_is_float(mode) && get_irg_fp_model(irg) & fp_exceptions)
+    res->pinned = 1;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -473,8 +491,7 @@ new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
 
   assert((get_unknown_type() == tp) || is_Method_type(tp));
   set_Call_type(res, tp);
-  res->attr.call.exc.pin_state = op_pin_state_pinned;
-  res->attr.call.callee_arr    = NULL;
+  res->attr.call.callee_arr = NULL;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -510,9 +527,8 @@ new_bd_Load(dbg_info *db, ir_node *block,
   in[0] = store;
   in[1] = adr;
   res = new_ir_node(db, irg, block, op_Load, mode_T, 2, in);
-  res->attr.load.exc.pin_state = op_pin_state_pinned;
-  res->attr.load.load_mode     = mode;
-  res->attr.load.volatility    = volatility_non_volatile;
+  res->attr.load.load_mode  = mode;
+  res->attr.load.volatility = volatility_non_volatile;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -530,8 +546,7 @@ new_bd_Store(dbg_info *db, ir_node *block,
   in[1] = adr;
   in[2] = val;
   res = new_ir_node(db, irg, block, op_Store, mode_T, 3, in);
-  res->attr.store.exc.pin_state = op_pin_state_pinned;
-  res->attr.store.volatility    = volatility_non_volatile;
+  res->attr.store.volatility = volatility_non_volatile;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -548,9 +563,8 @@ new_bd_Alloc(dbg_info *db, ir_node *block, ir_node *store,
   in[0] = store;
   in[1] = size;
   res = new_ir_node(db, irg, block, op_Alloc, mode_T, 2, in);
-  res->attr.alloc.exc.pin_state = op_pin_state_pinned;
-  res->attr.alloc.where         = where;
-  res->attr.alloc.type          = alloc_type;
+  res->attr.alloc.where = where;
+  res->attr.alloc.type  = alloc_type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -647,7 +661,7 @@ new_bd_Sync(dbg_info *db, ir_node *block)
 }  /* new_bd_Sync */
 
 static ir_node *
-new_bd_Confirm (dbg_info *db, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp)
+new_bd_Confirm(dbg_info *db, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp)
 {
   ir_node  *in[2], *res;
   ir_graph *irg = current_ir_graph;
@@ -804,9 +818,7 @@ new_bd_CopyB(dbg_info *db, ir_node *block,
   in[2] = src;
 
   res = new_ir_node(db, irg, block, op_CopyB, mode_T, 3, in);
-
-  res->attr.copyb.exc.pin_state = op_pin_state_pinned;
-  res->attr.copyb.data_type     = data_type;
+  res->attr.copyb.data_type = data_type;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -857,7 +869,6 @@ new_bd_Bound(dbg_info *db, ir_node *block,
   in[2] = lower;
   in[3] = upper;
   res = new_ir_node(db, irg, block, op_Bound, mode_T, 4, in);
-  res->attr.bound.exc.pin_state = op_pin_state_pinned;
   res = optimize_node(res);
   IRN_VRFY_IRG(res, irg);
   return res;
@@ -2704,7 +2715,6 @@ ir_node *
 new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
   ir_node *res;
   res = new_bd_Quot (db, current_ir_graph->current_block, memop, op1, op2);
-  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Quot, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2716,7 +2726,6 @@ ir_node *
 new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
   ir_node *res;
   res = new_bd_DivMod (db, current_ir_graph->current_block, memop, op1, op2);
-  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2729,7 +2738,6 @@ new_d_Div (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
 {
   ir_node *res;
   res = new_bd_Div (db, current_ir_graph->current_block, memop, op1, op2);
-  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Div, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2741,7 +2749,6 @@ ir_node *
 new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
   ir_node *res;
   res = new_bd_Mod (db, current_ir_graph->current_block, memop, op1, op2);
-  res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Mod, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
