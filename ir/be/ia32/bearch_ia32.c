@@ -49,6 +49,7 @@
 #include "ia32_optimize.h"
 #include "ia32_x87.h"
 #include "ia32_dbg_stat.h"
+#include "ia32_finish.h"
 
 #define DEBUG_MODULE "firm.be.ia32.isa"
 
@@ -446,7 +447,7 @@ static ir_type *ia32_abi_get_between_type(void *self)
 
 	ia32_abi_env_t *env = self;
 
-	if(!between_type) {
+	if ( !between_type) {
 		entity *old_bp_ent;
 		entity *ret_addr_ent;
 		entity *omit_fp_ret_addr_ent;
@@ -463,8 +464,8 @@ static ir_type *ia32_abi_get_between_type(void *self)
 		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
 		set_type_state(between_type, layout_fixed);
 
-		omit_fp_between_type   = new_type_struct(IDENT("ia32_between_type_omit_fp"));
-		omit_fp_ret_addr_ent   = new_entity(omit_fp_between_type, IDENT("ret_addr"), ret_addr_type);
+		omit_fp_between_type = new_type_struct(IDENT("ia32_between_type_omit_fp"));
+		omit_fp_ret_addr_ent = new_entity(omit_fp_between_type, IDENT("ret_addr"), ret_addr_type);
 
 		set_entity_offset_bytes(omit_fp_ret_addr_ent, 0);
 		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
@@ -485,42 +486,42 @@ static ir_type *ia32_abi_get_between_type(void *self)
  */
 static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 {
-  int cost;
-  switch (get_ia32_irn_opcode(irn)) {
-    case iro_ia32_xDiv:
-    case iro_ia32_DivMod:
-      cost = 8;
-      break;
+	int cost;
+	switch (get_ia32_irn_opcode(irn)) {
+	case iro_ia32_xDiv:
+	case iro_ia32_DivMod:
+		cost = 8;
+		break;
 
-    case iro_ia32_xLoad:
-    case iro_ia32_l_Load:
-    case iro_ia32_Load:
-    case iro_ia32_Push:
-    case iro_ia32_Pop:
-      cost = 10;
-      break;
+	case iro_ia32_xLoad:
+	case iro_ia32_l_Load:
+	case iro_ia32_Load:
+	case iro_ia32_Push:
+	case iro_ia32_Pop:
+		cost = 10;
+		break;
 
-    case iro_ia32_xStore:
-    case iro_ia32_l_Store:
-    case iro_ia32_Store:
-    case iro_ia32_Store8Bit:
-      cost = 50;
-      break;
+	case iro_ia32_xStore:
+	case iro_ia32_l_Store:
+	case iro_ia32_Store:
+	case iro_ia32_Store8Bit:
+		cost = 50;
+		break;
 
-    case iro_ia32_MulS:
-    case iro_ia32_Mul:
-    case iro_ia32_Mulh:
-    case iro_ia32_xMul:
-    case iro_ia32_l_MulS:
-    case iro_ia32_l_Mul:
-      cost = 2;
-      break;
+	case iro_ia32_MulS:
+	case iro_ia32_Mul:
+	case iro_ia32_Mulh:
+	case iro_ia32_xMul:
+	case iro_ia32_l_MulS:
+	case iro_ia32_l_Mul:
+		cost = 2;
+		break;
 
-    default:
-      cost = 1;
-  }
+	default:
+		cost = 1;
+	}
 
-  return cost;
+	return cost;
 }
 
 /**
@@ -724,147 +725,6 @@ static void ia32_prepare_graph(void *self) {
 
 	DEBUG_ONLY(cg->mod = old_mod;)
 }
-
-static INLINE int need_constraint_copy(ir_node *irn) {
-	return \
-		! is_ia32_Lea(irn)          && \
-		! is_ia32_Conv_I2I(irn)     && \
-		! is_ia32_Conv_I2I8Bit(irn) && \
-		! is_ia32_CmpCMov(irn)      && \
-		! is_ia32_CmpSet(irn);
-}
-
-/**
- * Insert copies for all ia32 nodes where the should_be_same requirement
- * is not fulfilled.
- * Transform Sub into Neg -- Add if IN2 == OUT
- */
-static void ia32_finish_node(ir_node *irn, void *env) {
-	ia32_code_gen_t            *cg = env;
-	const ia32_register_req_t **reqs;
-	const arch_register_t      *out_reg, *in_reg, *in2_reg;
-	int                         n_res, i;
-	ir_node                    *copy, *in_node, *block, *in2_node;
-	ia32_op_type_t              op_tp;
-
-	if (is_ia32_irn(irn)) {
-		/* AM Dest nodes don't produce any values  */
-		op_tp = get_ia32_op_type(irn);
-		if (op_tp == ia32_AddrModeD)
-			goto end;
-
-		reqs  = get_ia32_out_req_all(irn);
-		n_res = get_ia32_n_res(irn);
-		block = get_nodes_block(irn);
-
-		/* check all OUT requirements, if there is a should_be_same */
-		if ((op_tp == ia32_Normal || op_tp == ia32_AddrModeS) && need_constraint_copy(irn))
-		{
-			for (i = 0; i < n_res; i++) {
-				if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
-					/* get in and out register */
-					out_reg  = get_ia32_out_reg(irn, i);
-					in_node  = get_irn_n(irn, reqs[i]->same_pos);
-					in_reg   = arch_get_irn_register(cg->arch_env, in_node);
-
-					/* don't copy ignore nodes */
-					if (arch_irn_is(cg->arch_env, in_node, ignore) && is_Proj(in_node))
-						continue;
-
-					/* check if in and out register are equal */
-					if (! REGS_ARE_EQUAL(out_reg, in_reg)) {
-						/* in case of a commutative op: just exchange the in's */
-						/* beware: the current op could be everything, so test for ia32 */
-						/*         commutativity first before getting the second in     */
-						if (is_ia32_commutative(irn)) {
-							in2_node = get_irn_n(irn, reqs[i]->same_pos ^ 1);
-							in2_reg  = arch_get_irn_register(cg->arch_env, in2_node);
-
-							if (REGS_ARE_EQUAL(out_reg, in2_reg)) {
-								set_irn_n(irn, reqs[i]->same_pos, in2_node);
-								set_irn_n(irn, reqs[i]->same_pos ^ 1, in_node);
-							}
-							else
-								goto insert_copy;
-						}
-						else {
-insert_copy:
-							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
-							/* create copy from in register */
-							copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
-
-							DBG_OPT_2ADDRCPY(copy);
-
-							/* destination is the out register */
-							arch_set_irn_register(cg->arch_env, copy, out_reg);
-
-							/* insert copy before the node into the schedule */
-							sched_add_before(irn, copy);
-
-							/* set copy as in */
-							set_irn_n(irn, reqs[i]->same_pos, copy);
-						}
-					}
-				}
-			}
-		}
-
-		/* If we have a CondJmp/CmpSet/xCmpSet with immediate, we need to    */
-		/* check if it's the right operand, otherwise we have */
-		/* to change it, as CMP doesn't support immediate as  */
-		/* left operands.                                     */
-		if ((is_ia32_CondJmp(irn) || is_ia32_CmpSet(irn) || is_ia32_xCmpSet(irn)) &&
-			(is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn))                   &&
-			op_tp == ia32_AddrModeS)
-		{
-			set_ia32_op_type(irn, ia32_AddrModeD);
-			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
-		}
-
-		/* check if there is a sub which need to be transformed */
-		ia32_transform_sub_to_neg_add(irn, cg);
-
-		/* transform a LEA into an Add if possible */
-		ia32_transform_lea_to_add(irn, cg);
-	}
-end:
-
-	/* check for peephole optimization */
-	ia32_peephole_optimization(irn, cg);
-}
-
-static void ia32_finish_irg_walker(ir_node *block, void *env) {
-	ir_node *irn, *next;
-
-	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
-		next = sched_next(irn);
-		ia32_finish_node(irn, env);
-	}
-}
-
-static void ia32_push_on_queue_walker(ir_node *block, void *env) {
-	waitq *wq = env;
-	waitq_put(wq, block);
-}
-
-
-/**
- * Add Copy nodes for not fulfilled should_be_equal constraints
- */
-static void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
-	waitq *wq = new_waitq();
-
-	/* Push the blocks on the waitq because ia32_finish_irg_walker starts more walks ... */
-	irg_block_walk_graph(irg, NULL, ia32_push_on_queue_walker, wq);
-
-	while (! waitq_empty(wq)) {
-		ir_node *block = waitq_get(wq);
-		ia32_finish_irg_walker(block, cg);
-	}
-	del_waitq(wq);
-}
-
-
 
 /**
  * Dummy functions for hooks we don't need but which must be filled.

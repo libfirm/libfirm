@@ -21,24 +21,21 @@ void ia32_register_transformers(void);
 void ia32_transform_node(ir_node *node, void *env);
 
 /**
- * Transforms a Sub or fSub into Neg--Add iff OUT_REG == SRC2_REG.
- * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
- */
-void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg);
-
-/**
- * Transforms a LEA into an Add if possible
- * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
- */
-void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg);
-
-/**
  * The Psi selector can be a tree of compares combined with "And"s and "Or"s.
  * We create a Set node, respectively a xCmp in case the Psi is a float, for each
  * compare, which causes the compare result to be stores in a register.  The
  * "And"s and "Or"s are transformed later, we only adjust their mode.
  */
 void ia32_transform_psi_cond_tree(ir_node *node, void *env);
+
+/**
+ * Transforms a Minus node.
+ *
+ * @param env   The transformation environment
+ * @param op    The Minus operand
+ * @return The created ia32 Minus node
+ */
+ir_node *gen_Minus_ex(ia32_transform_env_t *env, ir_node *op);
 
 #ifndef NDEBUG
 /**

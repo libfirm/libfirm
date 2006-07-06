@@ -419,9 +419,9 @@ const char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 					get_ia32_cnst(n));                               /* tell the assembler to store it's address.   */
 			}
 			else {
-				const arch_register_t *in1 = get_in_reg(n, 2);
-				ir_mode              *mode = get_ia32_res_mode(n);
-				const char           *in_name;
+				const arch_register_t *in1 = get_in_reg(n, get_irn_arity(n) == 5 ? 3 : 2);
+				ir_mode               *mode = get_ia32_res_mode(n);
+				const char            *in_name;
 
 				mode    = mode ? mode : get_ia32_ls_mode(n);
 				in_name = ia32_get_reg_name_for_mode(env, mode, in1);

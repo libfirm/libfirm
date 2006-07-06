@@ -1099,6 +1099,8 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 		if (temp == base)
 			base = noreg;
+		else if (temp == right)
+			right = noreg;
 	}
 
 	if (isadd) {
@@ -1402,7 +1404,7 @@ static void optimize_lea(ir_node *irn, void *env) {
 			foreach_out_edge_safe(left, edge, ne) {
 				src = get_edge_src_irn(edge);
 
-				if (src && (is_ia32_Ld(src) || is_ia32_St(src) || is_ia32_Store8Bit(src))) {
+				if (src && (get_edge_src_pos(edge) == 0) && (is_ia32_Ld(src) || is_ia32_St(src) || is_ia32_Store8Bit(src))) {
 					DBG((cg->mod, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
 					if (! is_ia32_got_lea(src))
 						merge_loadstore_lea(src, left);
@@ -1431,7 +1433,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	int               need_exchange_on_fail = 0;
 	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
-	if (! is_ia32_irn(irn))
+	if (! is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
 		return;
 
 	block    = get_nodes_block(irn);
@@ -1701,6 +1703,9 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 	if (cg->opt & IA32_OPT_LEA) {
 		irg_walk_blkwise_graph(cg->irg, NULL, optimize_lea, cg);
 	}
+
+	if (cg->dump)
+		be_dump(cg->irg, "-lea", dump_ir_block_graph_sched);
 
 	if (cg->opt & IA32_OPT_DOAM) {
 		/* we need height information for am optimization */
