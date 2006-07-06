@@ -775,7 +775,7 @@ static int check_dependence(ir_node *curr, ir_node *tgt, ir_node *bl)
 	/* Phi functions stop the recursion inside a basic block */
 	if (! is_Phi(curr)) {
 		for(i = 0, n = get_irn_arity(curr); i < n; ++i) {
-			if(check_dependence(get_irn_n(curr, i), tgt, bl, visited_nr))
+			if (check_dependence(get_irn_n(curr, i), tgt, bl))
 				return 1;
 		}
 	}
