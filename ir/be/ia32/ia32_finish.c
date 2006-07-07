@@ -21,6 +21,7 @@
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_optimize.h"
+#include "gen_ia32_regalloc_if.h"
 
 /**
  * Transforms a Sub or xSub into Neg--Add iff OUT_REG == SRC2_REG.
@@ -321,9 +322,112 @@ end:
 	ia32_peephole_optimization(irn, cg);
 }
 
+/**
+ * Following Problem:
+ * We have a source address mode node with base or index register equal to
+ * result register. The constraint handler will insert a copy from the
+ * remaining input operand to the result register -> base or index is
+ * broken then.
+ * Solution: Turn back this address mode into explicit Load + Operation.
+ */
+static void fix_am_source(ir_node *irn, void *env) {
+	ia32_code_gen_t *cg = env;
+	ir_node *base, *index;
+	const arch_register_t *reg_base, *reg_index;
+	const ia32_register_req_t **reqs;
+	int n_res, i;
+
+	/* check only ia32 nodes with source address mode */
+	if (! is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
+		return;
+
+	base  = get_irn_n(irn, 0);
+	index = get_irn_n(irn, 1);
+
+	reg_base  = arch_get_irn_register(cg->arch_env, base);
+	reg_index = arch_get_irn_register(cg->arch_env, index);
+	reqs      = get_ia32_out_req_all(irn);
+
+	n_res = get_ia32_n_res(irn);
+
+	for (i = 0; i < n_res; i++) {
+		if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
+			/* get in and out register */
+			const arch_register_t *out_reg  = get_ia32_out_reg(irn, i);
+
+			/*
+				there is a constraint for the remaining operand
+				and the result register is equal to base or index register
+			*/
+			if (reqs[i]->same_pos == 2 &&
+				(REGS_ARE_EQUAL(out_reg, reg_base) || REGS_ARE_EQUAL(out_reg, reg_index)))
+			{
+				/* turn back address mode */
+				ir_node               *in_node = get_irn_n(irn, 2);
+				const arch_register_t *in_reg  = arch_get_irn_register(cg->arch_env, in_node);
+				ir_node               *block   = get_nodes_block(irn);
+				ir_mode               *ls_mode = get_ia32_ls_mode(irn);
+				ir_node *load;
+				int pnres;
+
+				if (arch_register_get_class(in_reg) == &ia32_reg_classes[CLASS_ia32_gp]) {
+					load  = new_rd_ia32_Load(NULL, cg->irg, block, base, index, get_irn_n(irn, 4));
+					pnres = pn_ia32_Load_res;
+				}
+				else if (arch_register_get_class(in_reg) == &ia32_reg_classes[CLASS_ia32_xmm]) {
+					load  = new_rd_ia32_xLoad(NULL, cg->irg, block, base, index, get_irn_n(irn, 4));
+					pnres = pn_ia32_xLoad_res;
+				}
+				else {
+					assert(0 && "cannot turn back address mode for this register class");
+				}
+
+				/* copy address mode information to load */
+				set_ia32_ls_mode(load, ls_mode);
+				set_ia32_am_flavour(load, get_ia32_am_flavour(irn));
+				set_ia32_op_type(load, ia32_AddrModeS);
+				set_ia32_am_support(load, ia32_am_Source);
+				set_ia32_am_scale(load, get_ia32_am_scale(irn));
+				set_ia32_am_sc(load, get_ia32_am_sc(irn));
+				add_ia32_am_offs(load, get_ia32_am_offs(irn));
+				set_ia32_frame_ent(load, get_ia32_frame_ent(irn));
+
+				if (is_ia32_use_frame(irn))
+					set_ia32_use_frame(load);
+
+				/* insert the load into schedule */
+				sched_add_before(irn, load);
+
+				ir_printf("irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load);
+
+				load = new_r_Proj(cg->irg, block, load, ls_mode, pnres);
+				arch_set_irn_register(cg->arch_env, load, out_reg);
+
+				/* insert the load result proj into schedule */
+				sched_add_before(irn, load);
+
+				/* set the new input operand */
+				set_irn_n(irn, 3, load);
+
+				/* this is a normal node now */
+				set_ia32_op_type(irn, ia32_Normal);
+
+				break;
+			}
+		}
+	}
+}
+
 static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	ir_node *irn, *next;
 
+	/* first: turn back AM source if necessary */
+	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
+		next = sched_next(irn);
+		fix_am_source(irn, env);
+	}
+
+	/* second: insert copies and finish irg */
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
 		next = sched_next(irn);
 		ia32_finish_node(irn, env);
