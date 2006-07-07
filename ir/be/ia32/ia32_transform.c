@@ -38,6 +38,7 @@
 #include "ia32_map_regs.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_optimize.h"
+#include "ia32_util.h"
 
 #include "gen_ia32_regalloc_if.h"
 
@@ -924,6 +925,7 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 	ir_mode  *mode  = env->mode;
 	ir_node  *irn   = env->irn;
 	ir_node  *mem;
+	int      n;
 
 	switch (dm_flav) {
 		case flavour_Div:
@@ -961,9 +963,15 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 	/* Only one proj is used -> We must add a second proj and */
 	/* connect this one to a Keep node to eat up the second   */
 	/* destroyed register.                                    */
-	if (get_irn_n_edges(irn) == 1) {
-		proj = get_edge_src_irn(get_irn_out_edge_first(irn));
-		assert(is_Proj(proj) && "non-Proj to Div/Mod node");
+	n    = get_irn_n_edges(irn);
+	proj = NULL;
+	if (n == 2)
+		proj = ia32_get_proj_for_mode(irn, mode_M);
+
+	/* in case of two projs, one must be the memory proj */
+	if (n == 1 || (n == 2 && proj)) {
+		proj = ia32_get_res_proj(irn);
+		assert(proj && "Result proj expected");
 
 		if (get_irn_op(irn) == op_Div) {
 			set_Proj_proj(proj, pn_DivMod_res_div);
