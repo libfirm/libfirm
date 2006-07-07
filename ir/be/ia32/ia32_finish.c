@@ -398,7 +398,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 				/* insert the load into schedule */
 				sched_add_before(irn, load);
 
-				ir_printf("irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load);
+				DBG((cg->mod, LEVEL_3, "irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load));
 
 				load = new_r_Proj(cg->irg, block, load, ls_mode, pnres);
 				arch_set_irn_register(cg->arch_env, load, out_reg);
