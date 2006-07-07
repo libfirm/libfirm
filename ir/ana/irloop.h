@@ -116,19 +116,20 @@ int      get_loop_n_nodes (ir_loop *loop);
 ir_node *get_loop_node (ir_loop *loop, int pos);
 
 /** Returns the number of elements contained in loop.  */
-int      get_loop_n_elements (ir_loop *loop);
+int      get_loop_n_elements (const ir_loop *loop);
+
 /** Returns a loop element.  A loop element can be interpreted as a
     kind pointer, an ir_node* or an ir_loop*. */
-loop_element get_loop_element (ir_loop *loop, int pos);
+loop_element get_loop_element (const ir_loop *loop, int pos);
 
 /** Returns the element number of the loop son in loop.
  *  Returns -1 if not found. O(|elements|). */
-int get_loop_element_pos(ir_loop *loop, void *le);
+int get_loop_element_pos(const ir_loop *loop, void *le);
 
 /** Returns a unique node number for the loop node to make output
     readable. If libfirm_debug is not set it returns the loop cast to
     int. */
-int get_loop_loop_nr(ir_loop *loop);
+int get_loop_loop_nr(const ir_loop *loop);
 
 /** A field to connect additional information to a loop.  Only valid
     if libfirm_debug is set, else returns NULL.  */

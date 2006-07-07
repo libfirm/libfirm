@@ -9,7 +9,7 @@
  * Modified by:
  * Created:     7.2002
  * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Copyright:   (c) 2002-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -436,8 +436,8 @@ add_loop_node(ir_loop *loop, ir_node *n) {
   loop->n_nodes++;
 }
 
-/** Returns the number of elements contained in loop.  */
-int get_loop_n_elements (ir_loop *loop) {
+/* Returns the number of elements contained in loop.  */
+int get_loop_n_elements (const ir_loop *loop) {
   assert(loop && loop->kind == k_ir_loop);
   return(ARR_LEN(loop->children));
 }
@@ -449,22 +449,22 @@ int get_loop_n_elements (ir_loop *loop) {
  and then select the appropriate "loop_element.node" or "loop_element.son".
 */
 
-loop_element get_loop_element (ir_loop *loop, int pos) {
+loop_element get_loop_element(const ir_loop *loop, int pos) {
   assert(loop && loop->kind == k_ir_loop && pos < ARR_LEN(loop->children));
-
   return(loop -> children[pos]);
 }
 
-int get_loop_element_pos(ir_loop *loop, void *le) {
-  int i;
+int get_loop_element_pos(const ir_loop *loop, void *le) {
+  int i, n;
   assert(loop && loop->kind == k_ir_loop);
 
-  for (i = 0; i < get_loop_n_elements(loop); i++)
+  n = get_loop_n_elements(loop);
+  for (i = 0; i < n; i++)
     if (get_loop_element(loop, i).node == le) return i;
   return -1;
 }
 
-int get_loop_loop_nr(ir_loop *loop) {
+int get_loop_loop_nr(const ir_loop *loop) {
   assert(loop && loop->kind == k_ir_loop);
 #ifdef DEBUG_libfirm
   return loop->loop_nr;
