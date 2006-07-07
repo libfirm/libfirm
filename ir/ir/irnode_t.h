@@ -39,7 +39,7 @@
 #include "irextbb_t.h"
 
 
-/** IR node attributes **/
+/** ir node attributes **/
 
 /** Block attributes */
 typedef struct {
@@ -97,6 +97,9 @@ typedef struct {
 
 /** Exception attributes. */
 typedef struct {
+  op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
+                                     If it's know that no exception will be generated, could be set to
+                                     op_pin_state_floats. */
 #if PRECISE_EXC_CONTEXT
   struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
 #endif
@@ -237,7 +240,6 @@ struct ir_node {
   struct ir_node **in;     /**< The array of predecessors / operands. */
   unsigned long visited;   /**< Visited counter for walks of the graph. */
   unsigned node_idx;       /**< The node index of this node in its graph. */
-  unsigned pinned : 1;     /**< A node is either pinned or not. */
   void *link;              /**< To attach additional information to the node, e.g.
                               used while construction to link Phi0 nodes and
                               during optimization to link to nodes that
@@ -561,14 +563,14 @@ _get_irn_pinned(const ir_node *node) {
   state = _get_op_pinned(_get_irn_op(node));
 
   if (state >= op_pin_state_exc_pinned)
-    return get_opt_fragile_ops() ? (op_pin_state)node->pinned : op_pin_state_pinned;
-  return (op_pin_state)node->pinned;
+    return get_opt_fragile_ops() ? node->attr.except.pin_state : op_pin_state_pinned;
+  return state;
 }
 
 static INLINE op_pin_state
 _is_irn_pinned_in_irg(const ir_node *node) {
-  if (_get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats)
-    return _get_irn_pinned(node);
+  if (get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats)
+    return get_irn_pinned(node);
   return op_pin_state_pinned;
 }
 
@@ -736,8 +738,8 @@ _is_Block_dead(const ir_node *block) {
   }
 }
 
-static INLINE tarval *_get_Const_tarval (ir_node *node) {
-  assert (_get_irn_op(node) == op_Const);
+static INLINE tarval *_get_Const_tarval(ir_node *node) {
+  assert(_get_irn_op(node) == op_Const);
   return node->attr.con.tv;
 }
 
@@ -796,12 +798,12 @@ static INLINE int _is_irn_machine_user(const ir_node *node, unsigned n) {
 }
 
 static INLINE cond_jmp_predicate _get_Cond_jmp_pred(ir_node *node) {
-  assert (_get_irn_op(node) == op_Cond);
+  assert(_get_irn_op(node) == op_Cond);
   return node->attr.cond.pred;
 }
 
 static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
-  assert (_get_irn_op(node) == op_Cond);
+  assert(_get_irn_op(node) == op_Cond);
   node->attr.cond.pred = pred;
 }
 
@@ -876,4 +878,4 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define get_Psi_n_conds(node)                 _get_Psi_n_conds(node)
 #define get_irn_idx(node)                     _get_irn_idx(node)
 
-# endif /* _IRNODE_T_H_ */
+#endif /* _IRNODE_T_H_ */
