@@ -46,7 +46,7 @@ typedef struct _cli_element_t {
 } cli_element_t;
 
 typedef struct _cli_iter_t {
-	ifg_clique_t *ifg;
+	const ifg_clique_t *ifg;
 	cli_head_t *curr_cli_head;
 	cli_element_t *curr_cli_element;
 	const ir_node *curr_irn;

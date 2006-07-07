@@ -571,7 +571,6 @@ const char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	int               had_output = 0;
 	char              *s;
 	const char        *p;
-	int               size;
 	static struct obstack *obst  = NULL;
 	ir_mode *mode = get_ia32_ls_mode(n);
 
