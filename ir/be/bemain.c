@@ -29,6 +29,7 @@
 #include "irloop_t.h"
 #include "irtools.h"
 #include "return.h"
+#include "firmstat.h"
 
 #include "bearch.h"
 #include "firm/bearch_firm.h"
