@@ -1738,8 +1738,8 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
   irg  = current_ir_graph;
   for (i = 0; i < n; ++i) {
     pred = get_irn_n(phi, i);
-    res[i] = new_r_Const_type(irg, get_nodes_block(pred),
-                            mode, res[i], get_Const_type(pred));
+    res[i] = new_r_Const_type(irg, get_irg_start_block(irg),
+                              mode, res[i], get_Const_type(pred));
   }
   return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_binop_on_phi */
@@ -1776,8 +1776,8 @@ static ir_node *apply_unop_on_phi(ir_node *phi, tarval *(*eval)(tarval *)) {
   irg  = current_ir_graph;
   for (i = 0; i < n; ++i) {
     pred = get_irn_n(phi, i);
-    res[i] = new_r_Const_type(irg, get_nodes_block(pred),
-                            mode, res[i], get_Const_type(pred));
+    res[i] = new_r_Const_type(irg, get_irg_start_block(irg),
+                              mode, res[i], get_Const_type(pred));
   }
   return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_unop_on_phi */
