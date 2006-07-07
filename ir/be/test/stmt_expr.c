@@ -7,4 +7,6 @@ int main(int argc, char *argv[])
   int j = argc * argc;
 
   printf("max %d, %d = %d\n", i, j, maxint(i,j));
+
+  return 0;
 }

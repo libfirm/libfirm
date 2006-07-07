@@ -4,6 +4,7 @@ void b(void);
 int main(void) {
 	a();
 	printf("\n");
+	return 0;
 }
 
 void a(void) {

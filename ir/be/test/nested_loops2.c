@@ -25,4 +25,5 @@ send_via_write() {
 int main()
 {
   send_via_write();
+  return 0;
 }

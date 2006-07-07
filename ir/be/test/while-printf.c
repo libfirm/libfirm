@@ -1,5 +1,4 @@
-// #include<stdio.h>
-
+#include<stdio.h>
 
 int main()
 {
@@ -21,5 +20,6 @@ int main()
     }
   while(i < 10);
   printf("Cyklusvariable2: %d\n",i);
-  return 1;
+
+  return 0;
 };

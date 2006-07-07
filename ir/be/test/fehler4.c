@@ -8,4 +8,5 @@ int main(void) {
 	zahl = (int)f;
 	printf("%d \n", zahl );
 
+	return 0;
 }

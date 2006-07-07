@@ -24,4 +24,5 @@ char * foo(char *fmt, ...) {
 int main()
 {
   printf("<%s>\n", foo("bla", "blup"));
+  return 0;
 }

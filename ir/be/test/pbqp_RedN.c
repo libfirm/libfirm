@@ -2,7 +2,7 @@
 
 double M;
 
-void main(void)
+int main(void)
 {
   int j;
 #ifdef GAMMEL
@@ -16,4 +16,6 @@ void main(void)
       M = Me[j] + Me[j + 1] + Me[j + 2] + Ce[j] + Ce[j + 1] + Ce[j + 2];
 
 	printf("done.\n");
+
+    return 0;
 }

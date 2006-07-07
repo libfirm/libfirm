@@ -19,4 +19,6 @@ int main()
   printf("5 >>r>> 3 = %d\n", rotater3(5));
   printf("5 <<r<< 3 = %d\n", rotatel3(5));
   printf("5 >>r>> 4 = %d\n", rotater(5,4));
+
+  return 0;
 }

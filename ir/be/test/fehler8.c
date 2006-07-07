@@ -10,4 +10,5 @@ int main(void) {
 
 	printf("%f %f\n", a, c);
 
+	return 0;
 }

@@ -21,4 +21,5 @@ int main(void) {
   */
 	printf("\n%lld\n",fac(20));
 
+	return 0;
 }

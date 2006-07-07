@@ -48,5 +48,5 @@ int main (int argc, char *argv[]) {
     printf("ForTest.c\n");
 
     simpleloop(3, 10);
-    return;
+    return 0;
 }

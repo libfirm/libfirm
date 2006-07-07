@@ -63,3 +63,8 @@ int test9(int a, int b)
 	return a ? b : b;
 }
 #endif
+
+int main()
+{
+	return 0;
+}

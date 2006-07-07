@@ -6,6 +6,8 @@ int main(void) {
 	printf("%d\n", t);
 	xyz();
 	printf("%d\n", t);
+
+	return 0;
 }
 
 

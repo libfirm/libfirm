@@ -16,3 +16,7 @@ int convtest_func(char c, short s, int i, float f, double d) {
 
 	return bla(sc, ic, fc, dc, is, fs, ds, fi, di, df);
 }
+
+int main() {
+	return 0;
+}

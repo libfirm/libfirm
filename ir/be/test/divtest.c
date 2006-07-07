@@ -42,4 +42,6 @@ int main()
   printf("ModTest 1 = %d\n", modtest_1(17));
   printf("ModTest 2 = %d\n", modtest_2(-17));
   printf("ModTest 3 = %u\n", modtest_3(17));
+
+	return 0;
 }

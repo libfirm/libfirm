@@ -8,4 +8,5 @@ int truth(int a, int b, int c)
 int main()
 {
   printf("truth(%d, %d, %d) = %d\n", a, b, c, truth(a, b, c));
+  return 0;
 }

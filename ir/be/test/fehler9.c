@@ -14,6 +14,7 @@ int main(void) {
 	y = test();
 	printf("%d %d\n", y.a, y.b);
 
+	return 0;
 }
 
 X test(void) {

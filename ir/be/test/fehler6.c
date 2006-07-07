@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-void main()
+int main()
    {
    int i, n=3 , v, dig, set;
 
@@ -21,4 +21,6 @@ void main()
 	}
       printf ("\n");
       }
+
+	 return 0;
    }

@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int blubber(int a, int b, int c, int d) {
 	int *x = &a;
 	int *y = &b;
@@ -9,5 +11,6 @@ int blubber(int a, int b, int c, int d) {
 }
 
 int main(void) {
-	return blubber(2, 3, 22, 33);
+	printf("Result: %d\n", blubber(2, 3, 22, 33));
+	return 0;
 }

@@ -15,5 +15,5 @@ int main(void) {
 
   printf("%d %d \n",**zeiger, **(zeiger+1));
 
-
+	return 0;
 }
