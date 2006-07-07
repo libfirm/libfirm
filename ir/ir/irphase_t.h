@@ -145,7 +145,7 @@ static INLINE void _private_phase_enlarge(phase_t *phase, unsigned max_idx)
  */
 #define _private_phase_assure_capacity(ph, max_idx) ((max_idx) >= (ph)->n_data_ptr ? (_private_phase_enlarge((ph), (max_idx)), 1) : 1)
 
-static INLINE void *_phase_get_irn_data(phase_t *ph, const ir_node *irn)
+static INLINE void *_phase_get_irn_data(const phase_t *ph, const ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
 	return idx < ph->n_data_ptr ? ph->data_ptr[idx] : NULL;
