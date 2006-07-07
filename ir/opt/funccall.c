@@ -44,13 +44,14 @@ static void collect_calls(ir_node *node, void *env)
   if (get_irn_op(node) == op_Call) {
     call = node;
 
+    /* the link will be NULL for all non-const/pure calls */
     set_irn_link(call, NULL);
     ptr = get_Call_ptr(call);
     if (get_irn_op(ptr) == op_SymConst && get_SymConst_kind(ptr) == symconst_addr_ent) {
       ent = get_SymConst_entity(ptr);
 
       mode = get_entity_additional_properties(ent);
-      if (mode & (mtp_property_const|mtp_property_pure) == 0)
+      if ((mode & (mtp_property_const|mtp_property_pure)) == 0)
         return;
       ++ctx->n_calls_removed_SymConst;
     }
@@ -142,7 +143,7 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
      *   function be called even if the loop/if is not entered ...
      *
      * This could be fixed using post-dominators for calls and Pin nodes
-     * but need some more analyses to ensure that a call that potential
+     * but need some more analyzes to ensure that a call that potential
      * never returns is not executed before some code that generates
      * observable states...
      */
@@ -157,8 +158,11 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
     next = get_irn_link(proj);
     call = get_Proj_pred(proj);
     mem  = get_irn_link(call);
-    if (! mem)
+
+    /* beware of calls in the pure call list */
+    if (! mem || get_irn_op(mem) == op_Call)
       continue;
+    assert(get_irn_mode(mem) == mode_M);
 
     switch (get_Proj_proj(proj)) {
     case pn_Call_M_regular: {
