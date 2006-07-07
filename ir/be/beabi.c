@@ -25,6 +25,9 @@
 #include "irprintf_t.h"
 #include "irgopt.h"
 #include "irbitset.h"
+#include "height.h"
+#include "pdeq.h"
+#include "irtools.h"
 
 #include "be.h"
 #include "beabi.h"
@@ -32,9 +35,6 @@
 #include "benode_t.h"
 #include "belive_t.h"
 #include "besched_t.h"
-
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 typedef struct _be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
@@ -115,6 +115,7 @@ struct _be_abi_irg_t {
 /* Forward, since be need it in be_abi_introduce(). */
 static const arch_irn_ops_if_t abi_irn_ops;
 static const arch_irn_handler_t abi_irn_handler;
+static heights_t *ir_heights;
 
 /* Flag: if set, try to omit the frame pointer if called by the backend */
 int be_omit_fp = 1;
@@ -756,6 +757,8 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	return curr_sp;
 }
 
+/* the following function is replaced by the usage of the heights module */
+#if 0
 /**
  * Walker for dependent_on().
  * This function searches a node tgt recursively from a given node
@@ -782,6 +785,7 @@ static int check_dependence(ir_node *curr, ir_node *tgt, ir_node *bl)
 
 	return 0;
 }
+#endif /* if 0 */
 
 /**
  * Check if a node is somehow data dependent on another one.
@@ -796,7 +800,9 @@ static int dependent_on(ir_node *n1, ir_node *n2)
 	ir_graph *irg = get_irn_irg(bl);
 
 	assert(bl == get_nodes_block(n2));
-	return check_dependence(n1, n2, bl);
+
+	return heights_reachable_in_block(ir_heights, n1, n2);
+	//return check_dependence(n1, n2, bl);
 }
 
 static int cmp_call_dependecy(const void *c1, const void *c2)
@@ -900,7 +906,10 @@ static void process_calls(be_abi_irg_t *env)
 
 	env->call->flags.bits.irg_is_leaf = 1;
 	irg_walk_graph(irg, firm_clear_link, link_calls_in_block_walker, env);
+
+	ir_heights = heights_new(env->birg->irg);
 	irg_block_walk_graph(irg, NULL, process_calls_in_block, env);
+	heights_free(ir_heights);
 }
 
 static void collect_return_walker(ir_node *irn, void *data)
