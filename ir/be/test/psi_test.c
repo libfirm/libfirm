@@ -21,3 +21,8 @@ double func5(double a, double b, int c, int d) {
 int func6(double a, double b) {
 	return a == 0.0 && b + 1.0 < 10.0;
 }
+
+int main()
+{
+    return 0;
+}

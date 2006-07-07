@@ -2,5 +2,6 @@ int main(argc, argv)
   int argc;
   char **argv;
 {
-  return argv[0] == argv[argc-1];
+  printf("ARGV0: %s ARGC: %d", argv[0], argc);
+  return 0;
 }

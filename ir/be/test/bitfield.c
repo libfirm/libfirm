@@ -7,7 +7,7 @@ struct b {
 struct b B = { 1, 2, 3 };
 struct b C = { 1, 2, 3 };
 
-main()
+int main()
 {
   printf("sizeof(B) = %d\n", sizeof(B));
 
@@ -19,4 +19,6 @@ main()
 
   if (C.z)
     return 3;
+
+	return 0;
 }

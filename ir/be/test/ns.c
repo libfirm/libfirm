@@ -29,4 +29,6 @@ int main()
 	asm_instrs[i].op_type[2]
     );
   }
+
+  return 0;
 }

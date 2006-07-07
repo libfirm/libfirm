@@ -83,4 +83,6 @@ int main(int argc, char *argv[]) {
   //<< "Total #moves: " << p.moves << "\n";
   // hanoi(28) = 268435455
   printf(" number of moves : %d\n", moves);
+
+  return 0;
 }

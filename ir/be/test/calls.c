@@ -25,3 +25,9 @@ int test(int a, int b, int c)
 
   return d;
 }
+
+int main()
+{
+	printf("Result: %d\n", test(1,2,3));
+	return 0;
+}

@@ -24,4 +24,6 @@ int main() {
     maybe:
       curcmd = cmd;
     }
+
+    return 0;
 }

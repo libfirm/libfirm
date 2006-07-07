@@ -19,6 +19,7 @@ int main(void) {
 	for (i= 0; i<100; i++)
 	  summe++;
   */
-	printf("\n%lld\n",fac(50));
+    printf("\n%lld\n",fac(50));
 
+    return 0;
 }

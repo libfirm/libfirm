@@ -13,4 +13,6 @@ int main (int argc, char *argv[]) {
 	func(&i);
 
 	printf(" i = %d (should be 0)\n", i);
+
+	return 0;
 }

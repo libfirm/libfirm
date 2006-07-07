@@ -28,6 +28,8 @@ int main()
 
   printf("%d\n", t(A));
   printf("%d\n", z(B));
+
+  return 0;
 }
 
 int t(struct x x)

@@ -10,4 +10,6 @@ int I = 3;
 int main()
 {
   printf("test(%d, %d) = %d\n", A, I, test(A,I));
+
+	return 0;
 }

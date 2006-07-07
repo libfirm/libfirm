@@ -21,4 +21,6 @@ int main()
   tokentype Anchor;
 
   printf("%d\n", test(&CppObject, &Anchor));
+
+  return 0;
 }
