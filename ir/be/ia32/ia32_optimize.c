@@ -32,6 +32,7 @@
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
+#include "ia32_util.h"
 
 typedef enum {
 	IA32_AM_CAND_NONE  = 0,
@@ -665,48 +666,6 @@ static int ia32_get_irn_n_edges(const ir_node *irn) {
 }
 
 /**
- * Returns the first mode_M Proj connected to irn.
- */
-static ir_node *get_mem_proj(const ir_node *irn) {
-	const ir_edge_t *edge;
-	ir_node         *src;
-
-	assert(get_irn_mode(irn) == mode_T && "expected mode_T node");
-
-	foreach_out_edge(irn, edge) {
-		src = get_edge_src_irn(edge);
-
-		assert(is_Proj(src) && "Proj expected");
-
-		if (get_irn_mode(src) == mode_M)
-			return src;
-	}
-
-	return NULL;
-}
-
-/**
- * Returns the first Proj with mode != mode_M connected to irn.
- */
-static ir_node *get_res_proj(const ir_node *irn) {
-	const ir_edge_t *edge;
-	ir_node         *src;
-
-	assert(get_irn_mode(irn) == mode_T && "expected mode_T node");
-
-	foreach_out_edge(irn, edge) {
-		src = get_edge_src_irn(edge);
-
-		assert(is_Proj(src) && "Proj expected");
-
-		if (get_irn_mode(src) != mode_M)
-			return src;
-	}
-
-	return NULL;
-}
-
-/**
  * Determines if pred is a Proj and if is_op_func returns true for it's predecessor.
  *
  * @param pred       The node to be checked
@@ -1279,7 +1238,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 			DBG_OPT_LEA1(irn, res);
 
 		/* get the result Proj of the Add/Sub */
-		irn = get_res_proj(irn);
+		irn = ia32_get_res_proj(irn);
 
 		assert(irn && "Couldn't find result proj");
 
@@ -1501,7 +1460,7 @@ static void optimize_am(ir_node *irn, void *env) {
 			/* check further, otherwise we check for Store and remember the address, */
 			/* the Store points to. */
 
-			succ = get_res_proj(irn);
+			succ = ia32_get_res_proj(irn);
 			assert(succ && "Couldn't find result proj");
 
 			addr_b = NULL;
@@ -1574,7 +1533,7 @@ static void optimize_am(ir_node *irn, void *env) {
 					}
 
 					/* connect the memory Proj of the Store to the op */
-					mem_proj = get_mem_proj(store);
+					mem_proj = ia32_get_proj_for_mode(store, mode_M);
 					set_Proj_pred(mem_proj, irn);
 					set_Proj_proj(mem_proj, 1);
 
@@ -1666,7 +1625,7 @@ static void optimize_am(ir_node *irn, void *env) {
 			DBG_OPT_AM_S(right, irn);
 
 			/* If Load has a memory Proj, connect it to the op */
-			mem_proj = get_mem_proj(right);
+			mem_proj = ia32_get_proj_for_mode(right, mode_M);
 			if (mem_proj) {
 				set_Proj_pred(mem_proj, irn);
 				set_Proj_proj(mem_proj, 1);
