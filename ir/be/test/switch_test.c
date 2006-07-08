@@ -38,4 +38,6 @@ int main()
   printf(" on %d %d\n", 4, test(4));
   printf(" on %d %d\n", 5, test(5));
   printf(" on %d %d\n", 6, test(6));
+
+  return 0;
 }

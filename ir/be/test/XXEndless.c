@@ -5,6 +5,7 @@
 #define true	1
 
 static int loop = 2;
+static int quiet = 1;
 
 static void nop(void) {}
 
@@ -14,7 +15,8 @@ static int me1(int num) {
     if (num == 1) {
 	printf("Going into endless loop 1 \n .... \n ");
 	while(7 > 2) {
-	    printf("%d\n", i++);
+            if(!quiet)
+                printf("%d\n", i++);
 	}
     } else {
 	num ++;
@@ -30,7 +32,8 @@ static void me2(int num) {
     } else {
 	printf("Going into endless loop 2 \n .... \n ");
 	while(true) {
-	    printf("%d\n", i++);
+            if(!quiet)
+                printf("%d\n", i++);
 	}
     }
 }
@@ -40,19 +43,20 @@ static void me3(int num) {
 
     printf("Going into endless loop 3 \n .... \n ");
     while(true) {
-	printf("%d\n", i++);
+        if(!quiet)
+            printf("%d\n", i++);
     }
 }
 
 int main(int argc, char *argv[]) {
-    int i = 0;
-
     printf("XXEndless.c\n");
     if (argc != 2) {
 	printf("\nUsage: Endless n, where n determines the loop.\n");
 	printf("Continuing with default input.\n");
+        quiet = 1;
     } else {
 	loop = atoi(argv[1]);
+        quiet = 0;
     }
     me1(loop);
     me2(loop);

@@ -10,3 +10,11 @@ float kahanSum(const float A[], int n) {
 	}
 	return sum;
 }
+
+int main()
+{
+    float test[] = { 1,2,3,4,5,6,7,8,9};
+    printf("Result: %f\n", kahanSum(test, sizeof(test)/sizeof(float)));
+
+    return 0;
+}

@@ -1262,7 +1262,7 @@ char *argv[];
    return 0;
 Usage:
    fprintf(stderr,"Usage: scanner [-startx <num>] [-starty <num>] [-endx <num>] [-endy <num>] [-stride <num>] -scanfile <filename> -trainfile1 <filename> [-trainfile2 <filename>]\n");
-   exit(1);
+   exit(0);
 Version:
    fprintf(stderr,"Version 1.00 \n");
    exit(1);

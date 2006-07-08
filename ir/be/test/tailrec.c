@@ -17,4 +17,6 @@ int main(int argc, char *argv[])
   int x = 4;
 
   printf("%d! = %d\n", x, fak(x));
+
+  return 0;
 }

@@ -18,7 +18,7 @@ int main()
   B.y = C.z;
 
   if (C.z)
-    return 3;
+    return 0;
 
-	return 0;
+  return 42;
 }

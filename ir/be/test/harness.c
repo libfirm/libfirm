@@ -226,6 +226,9 @@ int N;
 char C;
 
 	printf("SPEC 129.compress harness\n");
+        // for now...
+        return 0;
+
 	scanf("%i	%c	%li", &count, &start_char, &seedi);
 	printf("Initial File Size:%i	Start character:%c\n", count, start_char, seedi);
 	fill_text_buffer(count, start_char, orig_text_buffer);
@@ -235,10 +238,10 @@ char C;
 	  count=new_count;
 	  oper=COMPRESS;
 	  printf("The starting size is: %d\n", count);
-	  comp_count=spec_select_action(orig_text_buffer, count, oper, comp_text_buffer);
+	  //comp_count=spec_select_action(orig_text_buffer, count, oper, comp_text_buffer);
 	  printf("The compressed size is: %d\n", comp_count);
 	  oper=UNCOMPRESS;
-	  new_count=spec_select_action(comp_text_buffer, comp_count, oper, new_text_buffer);
+	  //new_count=spec_select_action(comp_text_buffer, comp_count, oper, new_text_buffer);
 	  printf("The compressed/uncompressed size is: %d\n", new_count);
 	  compare_buffer(orig_text_buffer, count, new_text_buffer, new_count);
 	}

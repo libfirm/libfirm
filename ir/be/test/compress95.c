@@ -76,6 +76,9 @@ char_type magic_header[] = { "\037\235" };	/* 1F 9D */
  *
  * $Header$
  * $Log$
+ * Revision 1.1  2006/03/17 14:47:52  chriswue
+ * added addtional test file
+ *
  * Revision 1.3  90/07/18  20:22:34  mips
  * a few small changes for VMS, all of the ifdef VAX is gone.
  *
@@ -1163,4 +1166,9 @@ int n;
 
 	for( i=0; i<n; i++ )
 		*OutBuff++ = buf[i];
+}
+
+int main()
+{
+    return 0;
 }

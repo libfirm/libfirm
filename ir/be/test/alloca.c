@@ -18,4 +18,6 @@ int main(int argc, char *argv[])
   p->b = 3;
 
   t(p);
+
+  return 0;
 }
