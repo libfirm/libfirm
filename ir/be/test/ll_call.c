@@ -1,25 +1,23 @@
+#include <stdio.h>
+
+#ifdef __GNUC__
 long long fac(long long n)
 {
-  if (n==1) return n;
-  return (n*fac(n-1));
-}
+    if(n < 1)
+        return 1;
 
+    return (n*fac(n-1));
+}
 
 int main(void) {
-  /*
-  int i = 0;
-  int j = 0;
-  int k = 0;
-  int l = 0;
-  int summe = 0;
-  	printf("ello");
-	for( k = 0; k<100;k++)
-        for( l = 0; l<100;l++)
-	for( j = 0; j<100;j++)
-	for (i= 0; i<100; i++)
-	  summe++;
-  */
-    printf("\n%lld\n",fac(50));
+    printf("Result:%lld (should be 2432902008176640000)\n",fac(20));
 
+    return fac(20) != 2432902008176640000ULL;
+}
+
+#else
+int main()
+{
     return 0;
 }
+#endif
