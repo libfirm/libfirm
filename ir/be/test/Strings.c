@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
   char *s = "test";
 
   printf("Strings.c\n");
-  for(i = 0; i < argc; i++) {
+  for(i = 1; i < argc; i++) {
     print_String(argv[i]);
   }
   print_String(s);

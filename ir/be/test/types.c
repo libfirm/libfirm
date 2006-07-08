@@ -7,9 +7,9 @@ struct opcode {
 
 int main(void) {
   int i;
-  struct opcode oc;
+  struct opcode oc = { { 42 } };
 
-  i = oc.foo.imm16 & 0x8000;
-  printf("i: %d\n", i);
+  i = oc.foo.imm16 & 0x80f4;
+  printf("Result: %d (should be 32)\n", i);
   return 0;
 }
