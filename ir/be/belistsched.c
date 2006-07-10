@@ -738,7 +738,7 @@ static void descent(ir_node *root, ir_node *block, ir_node **list) {
 			if (get_nodes_block(pred) != block)
 				continue;
 
-	//		set_irn_link(pred, NULL);
+			set_irn_link(pred, NULL);
 
 			descent(pred, block, list);
 		}
