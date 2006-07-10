@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     2005
  * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2005 Universität Karlsruhe
+ * Copyright:   (c) 2001-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
@@ -39,6 +39,8 @@
 #include "irgraph_t.h"
 #include "entity_t.h"
 #include "irprintf.h"
+#include "typewalk.h"
+#include "irdump.h"
 #include "debug.h"
 
 #ifdef _WIN32
@@ -60,7 +62,7 @@ void firm_debug_break(void) {
 
 /** supported breakpoint kinds */
 typedef enum {
-  BP_NR  = 'n',   /**< break on node number. */
+  BP_NR    = 'n',   /**< break on node number. */
   BP_IDENT = 'i'    /**< break on ident. */
 } bp_kind;
 
@@ -92,16 +94,16 @@ typedef struct {
   long         nr;       /**< the node number */
 } bp_nr_t;
 
-/** calculate the hash value for a node breakpoint */
+/** Calculate the hash value for a node breakpoint. */
 #define HASH_NR_BP(key) (((key).nr << 2) ^ (key).bp.reason)
 
-/** A ident breakpoint. */
+/** An ident breakpoint. */
 typedef struct {
   breakpoint   bp;       /**< the breakpoint data */
   ident        *id;      /**< the ident */
 } bp_ident_t;
 
-/** calculate the hash value for an ident breakpoint */
+/** Calculate the hash value for an ident breakpoint. */
 #define HASH_IDENT_BP(key) (HASH_PTR((key).id) ^ (key).bp.reason)
 
 /** The set containing the breakpoints on node numbers. */
@@ -177,21 +179,21 @@ static const char *firm_debug_info_string =
  */
 int firm_debug_active(void) {
   return is_active;
-}
+}  /* firm_debug_active */
 
 /**
- * reset the debug text buffer
+ * Reset the debug text buffer.
  */
 static void reset_dbg_buf(void) {
   firm_dbg_msg_buf[0] = '\0';
-}
+}  /* reset_dbg_buf */
 
 /**
- * Add text to the debug text buffer
+ * Add text to the debug text buffer.
  */
 static void add_to_dbg_buf(const char *buf) {
   strncat(firm_dbg_msg_buf, buf, sizeof(firm_dbg_msg_buf));
-}
+}  /* add_to_dbg_buf */
 
 /**
  * Return the content of the debug text buffer.
@@ -199,8 +201,9 @@ static void add_to_dbg_buf(const char *buf) {
  * To be called from the debugger.
  */
 const char *firm_debug_text(void) {
+  firm_dbg_msg_buf[sizeof(firm_dbg_msg_buf) - 1] = '\0';
   return firm_dbg_msg_buf;
-}
+}  /* firm_debug_text */
 
 /**
  * debug output
@@ -224,7 +227,7 @@ static void dbg_printf(const char *fmt, ...)
     add_to_dbg_buf(buf);
   else
     puts(buf);
-}
+}  /* dbg_printf */
 
 /**
  * A new node is created.
@@ -245,7 +248,7 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
     dbg_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
     firm_debug_break();
   }
-}
+}  /* dbg_new_node */
 
 /**
  * A node is replaced.
@@ -266,7 +269,7 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
     dbg_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
     firm_debug_break();
   }
-}
+}  /* dbg_replace */
 
 /**
  * A new node is lowered.
@@ -286,7 +289,7 @@ static void dbg_lower(void *ctx, ir_node *node)
     dbg_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
     firm_debug_break();
   }
-}
+}  /* dbg_lower */
 
 /**
  * A graph will be deleted.
@@ -323,7 +326,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
       firm_debug_break();
     }
   }
-}
+}  /* dbg_free_graph */
 
 /**
  * An entity was created.
@@ -357,7 +360,7 @@ static void dbg_new_entity(void *ctx, entity *ent)
       firm_debug_break();
     }
   }
-}
+}  /* dbg_new_entity */
 
 /**
  * A type was created.
@@ -391,10 +394,10 @@ static void dbg_new_type(void *ctx, ir_type *tp)
       firm_debug_break();
     }
   }
-}
+}  /* dbg_new_type */
 
 /**
- * return the reason string.
+ * Return the reason string.
  */
 static const char *reason_str(bp_reasons_t reason)
 {
@@ -408,10 +411,10 @@ static const char *reason_str(bp_reasons_t reason)
   default:             assert(0);
   }
   return "unknown";
-}
+}  /* reason_str */
 
 /**
- * Compare two number breakpoints
+ * Compare two number breakpoints.
  */
 static int cmp_nr_bp(const void *elt, const void *key, size_t size)
 {
@@ -419,10 +422,10 @@ static int cmp_nr_bp(const void *elt, const void *key, size_t size)
   const bp_nr_t *e2 = key;
 
   return (e1->nr - e2->nr) | (e1->bp.reason - e2->bp.reason);
-}
+}  /* cmp_nr_bp */
 
 /**
- * Compare two ident breakpoints
+ * Compare two ident breakpoints.
  */
 static int cmp_ident_bp(const void *elt, const void *key, size_t size)
 {
@@ -430,10 +433,10 @@ static int cmp_ident_bp(const void *elt, const void *key, size_t size)
   const bp_ident_t *e2 = key;
 
   return (e1->id != e2->id) | (e1->bp.reason - e2->bp.reason);
-}
+}  /* cmp_ident_bp */
 
 /**
- * update the hooks
+ * Update the hooks.
  */
 static void update_hooks(breakpoint *bp)
 {
@@ -473,7 +476,7 @@ static void update_hooks(breakpoint *bp)
   }
 #undef CASE_ON
 #undef CASE_OFF
-}
+}  /* update_hooks */
 
 /**
  * Break if nr is reached.
@@ -500,7 +503,7 @@ static void break_on_nr(long nr, bp_reasons_t reason)
 
     update_hooks(&elem->bp);
   }
-}
+}  /* break_on_nr */
 
 /**
  * Break if ident name is reached.
@@ -526,7 +529,7 @@ static void break_on_ident(const char *name, bp_reasons_t reason) {
 
     update_hooks(&elem->bp);
   }
-}
+}  /* break_on_ident */
 
 /**
  * Sets/resets the active flag of breakpoint bp.
@@ -547,7 +550,7 @@ static void bp_activate(unsigned bp, int active)
     }
   }
   dbg_printf("Error: Firm BP %u not exists.\n", bp);
-}
+}  /* bp_activate */
 
 
 /**
@@ -565,12 +568,14 @@ static void show_commands(void) {
     ".bp                    show all breakpoints\n"
     ".enable nr             enable breakpoint nr\n"
     ".disable nr            disable breakpoint nr\n"
+    ".showtype nr|name      show content of the type nr or name\n"
+    ".showent nr|name       show content of the entity nr or name\n"
     ".setmask name msk      sets the debug module name to mask msk\n"
     ".setlvl  name lvl      sets the debug module name to level lvl\n"
     ".setoutfile name file  redirects debug output of module name to file\n"
     ".help                  list all commands\n"
   );
-}
+}  /* show_commands */
 
 /**
  * Shows all Firm breakpoints.
@@ -601,7 +606,7 @@ static void show_bp(void) {
     dbg_printf(p->active ? "+enabled" : "+disabled");
   }
   dbg_printf(have_one ? "+\n" : "+ NONE\n");
-}
+}  /* show_bp */
 
 /**
  * firm_dbg_register() expects that the name is stored persistent.
@@ -611,7 +616,7 @@ static firm_dbg_module_t *dbg_register(const char *name) {
   ident *id = new_id_from_str(name);
 
   return firm_dbg_register(get_id_str(id));
-}
+}  /* dbg_register */
 
 /**
  * Sets the debug mask of module name to lvl
@@ -625,7 +630,7 @@ static void set_dbg_level(const char *name, unsigned lvl)
 
     dbg_printf("Setting debug mask of module %s to %u\n", name, lvl);
   }
-}
+}  /* set_dbg_level */
 
 /**
  * Redirects the debug output of module name to fname
@@ -642,7 +647,130 @@ static void set_dbg_outfile(const char *name, const char *fname)
 
   firm_dbg_set_file(module, f);
   dbg_printf("Redirecting debug output of module %s to file %s\n", name, fname);
-}
+}  /* set_dbg_outfile */
+
+/**
+ * Show info about a firm thing.
+ */
+static void show_firm_object(void *firm_thing) {
+  FILE *f = stdout;
+
+  if (firm_thing == NULL) {
+    fprintf(f, "<NULL>\n");
+    return;
+  }
+  switch (get_kind(firm_thing)) {
+  case k_BAD:
+    fprintf(f, "BAD: (%p)\n", firm_thing);
+    break;
+  case k_entity:
+    dump_entity_to_file(f, firm_thing, dump_verbosity_max);
+    break;
+  case k_type:
+    dump_type_to_file(f, firm_thing, dump_verbosity_max);
+    break;
+  case k_ir_graph:
+  case k_ir_node:
+  case k_ir_mode:
+  case k_ir_op:
+  case k_tarval:
+  case k_ir_loop:
+  case k_ir_compound_graph_path:
+  case k_ir_extblk:
+  case k_ir_prog:
+    fprintf(f, "NIY\n");
+    break;
+  default:
+    fprintf(f, "Cannot identify thing at (%p).\n", firm_thing);
+  }
+}  /* show_firm_object */
+
+/**
+ * Find a firm type by its number.
+ */
+static ir_type *find_type_nr(long nr) {
+  int i, n = get_irp_n_types();
+
+  for (i = 0; i < n; ++i) {
+    ir_type *tp = get_irp_type(i);
+    if (get_type_nr(tp) == nr)
+      return tp;
+  }
+  return NULL;
+}  /* find_type_nr */
+
+/**
+ * Find a firm type by its name.
+ */
+static ir_type *find_type_name(const char *name) {
+  int i, n = get_irp_n_types();
+
+  for (i = 0; i < n; ++i) {
+    ir_type *tp = get_irp_type(i);
+    if (strcmp(get_type_name(tp), name) == 0)
+      return tp;
+  }
+  return NULL;
+}  /* find_type_name */
+
+/** The environment for the entity search functions. */
+typedef struct find_env {
+  union {
+    long        nr;   /**< the number that is searched for */
+    const char *name; /**< the name that is searched for */
+  } u;
+  entity *res;        /**< the result */
+} find_env_t;
+
+/**
+ * Type-walker: Find an entity with given number.
+ */
+static void check_ent_nr(type_or_ent *tore, void *ctx) {
+  entity *ent = (entity *)tore;
+  find_env_t *env = ctx;
+
+  if (is_entity(ent))
+    if (get_entity_nr(ent) == env->u.nr) {
+      env->res = ent;
+    }
+}  /* check_ent_nr */
+
+/**
+ * Type-walker: Find an entity with given name.
+ */
+static void check_ent_name(type_or_ent *tore, void *ctx) {
+  entity *ent = (entity *)tore;
+  find_env_t *env = ctx;
+
+  if (is_entity(ent))
+    if (strcmp(get_entity_name(ent), env->u.name) == 0) {
+      env->res = ent;
+    }
+}  /* check_ent_name */
+
+/**
+ * Find a firm entity by its number.
+ */
+static entity *find_entity_nr(long nr) {
+  find_env_t env;
+
+  env.u.nr = nr;
+  env.res  = NULL;
+  type_walk(check_ent_nr, NULL, &env);
+  return env.res;
+}  /* find_entity_nr */
+
+/**
+ * Find a firm entity by its name.
+ */
+static entity *find_entity_name(const char *name) {
+  find_env_t env;
+
+  env.u.name = name;
+  env.res    = NULL;
+  type_walk(check_ent_name, NULL, &env);
+  return env.res;
+}  /* find_entity_name */
 
 /**
  * High level function to use from debugger interface
@@ -686,6 +814,18 @@ void firm_debug(const char *cmd) {
   else if (sscanf(cmd, ".newtype %s\n", name) == 1) {
     break_on_ident(name, BP_ON_NEW_TYPE);
   }
+  else if (sscanf(cmd, ".showtype %ld\n", &nr) == 1) {
+    show_firm_object(find_type_nr(nr));
+  }
+  else if (sscanf(cmd, ".showtype %s\n", name) == 1) {
+    show_firm_object(find_type_name(name));
+  }
+  else if (sscanf(cmd, ".showent %ld\n", &nr) == 1) {
+    show_firm_object(find_entity_nr(nr));
+  }
+  else if (sscanf(cmd, ".showent %s\n", name) == 1) {
+    show_firm_object(find_entity_name(name));
+  }
   else if (strcmp(cmd, ".init") == 0)
     break_on_init = 1;
   else if (strcmp(cmd, ".bp") == 0)
@@ -703,7 +843,7 @@ void firm_debug(const char *cmd) {
   else {
     show_commands();
   }
-}
+}  /* firm_debug */
 
 /* creates the debugger tables */
 void firm_init_debugger(void)
@@ -722,7 +862,7 @@ void firm_init_debugger(void)
 
   if (break_on_init)
     firm_debug_break();
-}
+}  /* firm_init_debugger */
 
 #else
 
@@ -799,6 +939,22 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  *
  * Disables breakpoint nr.
  *
+ * @b .showent nr
+ *
+ * Show the content of entity nr.
+ *
+ * @b .showent name
+ *
+ * Show the content of entity name.
+ *
+ * @b .showtype nr
+ *
+ * Show the content of type nr.
+ *
+ * @b .showtype name
+ *
+ * Show the content of type name.
+ *
  * @b .setmask name msk
  *
  * Sets the debug module name to mask msk.
@@ -843,7 +999,7 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  end
  * @endcode
  *
- * Then, all Firm debugger extension commands can be access in the gdb
+ * Then, all Firm debugger extension commands can be accessed in the gdb
  * console using the firm prefix, eg.:
  *
  * firm ".create 2101"
