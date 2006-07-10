@@ -776,6 +776,8 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		if (get_nodes_block(other) == block) {
 			other   = skip_Proj(other);
 			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
+			/* this could happen in loops */
+			is_cand = heights_reachable_in_block(h, load, irn) ? 0 : is_cand;
 		}
 	}
 
@@ -794,6 +796,8 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		if (get_nodes_block(other) == block) {
 			other   = skip_Proj(other);
 			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
+			/* this could happen in loops */
+			is_cand = heights_reachable_in_block(h, load, irn) ? 0 : is_cand;
 		}
 	}
 
