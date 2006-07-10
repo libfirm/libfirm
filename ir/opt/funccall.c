@@ -5,7 +5,7 @@
  * Author:      Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universitï¿½t Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #include "irnode_t.h"
@@ -427,7 +427,7 @@ static int is_pure_function(ir_graph *irg) {
     }
     else {
       /* exception found. */
-      mode = follow_mem(irg, mem, mode);
+      mode = follow_mem(irg, node, mode);
       break;
     }
     if (mode == 0)
