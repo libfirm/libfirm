@@ -553,7 +553,8 @@ static tarval *computed_value_Proj_Cmp(ir_node *n)
 }  /* computed_value_Proj_Cmp */
 
 /**
- * Return the value of a Proj, handle Proj(Cmp), Proj(Div), Proj(Mod), Proj(DivMod).
+ * Return the value of a Proj, handle Proj(Cmp), Proj(Div), Proj(Mod),
+ * Proj(DivMod) and Proj(Quot).
  */
 static tarval *computed_value_Proj(ir_node *n) {
   ir_node *a = get_Proj_pred(n);
@@ -579,6 +580,11 @@ static tarval *computed_value_Proj(ir_node *n) {
 
   case iro_Mod:
     if (get_Proj_proj(n) == pn_Mod_res)
+      return computed_value(a);
+    break;
+
+  case iro_Quot:
+    if (get_Proj_proj(n) == pn_Quot_res)
       return computed_value(a);
     break;
 
