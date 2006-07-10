@@ -720,12 +720,12 @@ static const struct cmp2conditon_t cmp2condition_s[] = {
   { "ne",              pn_Cmp_Lg },     /* != */
   { "ordered",         pn_Cmp_Leg },    /* Floating point: ordered */
   { "unordered",       pn_Cmp_Uo },     /* FLoting point: unordered */
-  { "unordered or ==", pn_Cmp_Ue },     /* Floating point: unordered or == */
-  { "unordered or <",  pn_Cmp_Ul },     /* Floating point: unordered or < */
-  { "unordered or <=", pn_Cmp_Ule },    /* Floating point: unordered or <= */
-  { "unordered or >",  pn_Cmp_Ug },     /* Floating point: unordered or > */
-  { "unordered or >=", pn_Cmp_Uge },    /* Floating point: unordered or >= */
-  { "unordered or !=", pn_Cmp_Ne },     /* Floating point: unordered or != */
+  { "e",               pn_Cmp_Ue },     /* Floating point: unordered or == */
+  { "b",               pn_Cmp_Ul },     /* Floating point: unordered or < */
+  { "be",              pn_Cmp_Ule },    /* Floating point: unordered or <= */
+  { "a",               pn_Cmp_Ug },     /* Floating point: unordered or > */
+  { "ae",              pn_Cmp_Uge },    /* Floating point: unordered or >= */
+  { "ne",              pn_Cmp_Ne },     /* Floating point: unordered or != */
   { NULL,              pn_Cmp_True },   /* always true */
 };
 
@@ -742,12 +742,12 @@ static const struct cmp2conditon_t cmp2condition_u[] = {
 	{ "ne",              pn_Cmp_Lg },     /* != */
 	{ "ordered",         pn_Cmp_Leg },    /* Floating point: ordered */
 	{ "unordered",       pn_Cmp_Uo },     /* FLoting point: unordered */
-	{ "unordered or ==", pn_Cmp_Ue },     /* Floating point: unordered or == */
-	{ "unordered or <",  pn_Cmp_Ul },     /* Floating point: unordered or < */
-	{ "unordered or <=", pn_Cmp_Ule },    /* Floating point: unordered or <= */
-	{ "unordered or >",  pn_Cmp_Ug },     /* Floating point: unordered or > */
-	{ "unordered or >=", pn_Cmp_Uge },    /* Floating point: unordered or >= */
-	{ "unordered or !=", pn_Cmp_Ne },     /* Floating point: unordered or != */
+	{ "e",               pn_Cmp_Ue },     /* Floating point: unordered or == */
+	{ "b",               pn_Cmp_Ul },     /* Floating point: unordered or < */
+	{ "be",              pn_Cmp_Ule },    /* Floating point: unordered or <= */
+	{ "a",               pn_Cmp_Ug },     /* Floating point: unordered or > */
+	{ "ae",              pn_Cmp_Uge },    /* Floating point: unordered or >= */
+	{ "ne",              pn_Cmp_Ne },     /* Floating point: unordered or != */
 	{ NULL,              pn_Cmp_True },   /* always true */
 };
 
@@ -815,6 +815,7 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	char buf[SNPRINTF_BUF_LEN];
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
+	int is_unsigned;
 
 	/* get both Proj's */
 	proj1 = get_proj(irn, pn_Cond_true);
@@ -837,16 +838,16 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	}
 
 	/* the first Proj must always be created */
+	is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
 	if (get_Proj_proj(proj1) == pn_Cond_true) {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
-					get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
+					get_cmp_suffix(get_ia32_pncode(irn), is_unsigned),
 					get_cfop_target(proj1, buf));
 		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == TRUE */");
 	}
 	else  {
 		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
-					get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), mode),
-					! mode_is_signed(get_irn_mode(get_irn_n(irn, 0)))),
+					get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), mode), is_unsigned),
 					get_cfop_target(proj1, buf));
 		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == FALSE */");
 	}
@@ -1005,7 +1006,9 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
-	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+	ir_mode    *mode       = get_irn_mode(get_irn_n(irn, 0));
+	int        is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
+	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), is_unsigned);
 	int is_PsiCondCMov     = is_ia32_PsiCondCMov(irn);
 
 	char cmd_buf[SNPRINTF_BUF_LEN];
@@ -1043,7 +1046,7 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 		set_irn_n(irn, 2, get_irn_n(irn, 3));
 		set_irn_n(irn, 3, t);
 
-		cmp_suffix = get_cmp_suffix(get_inversed_pnc(get_ia32_pncode(irn)), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+		cmp_suffix  = get_cmp_suffix(get_inversed_pnc(get_ia32_pncode(irn)), is_unsigned);
 
 	}
 	else {
@@ -1073,7 +1076,9 @@ static void emit_ia32_xCmpCMov(ir_node *irn, ia32_emit_env_t *env) {
 static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
-	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), ! mode_is_signed(get_irn_mode(get_irn_n(irn, 0))));
+	ir_mode    *mode       = get_irn_mode(get_irn_n(irn, 0));
+	int        is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
+	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), is_unsigned);
 	const char *instr      = "xor";
 	const char *reg8bit;
 
