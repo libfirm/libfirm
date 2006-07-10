@@ -3,14 +3,12 @@
  * File name:   ir/common/firm_common.c
  * Purpose:
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -27,13 +25,11 @@
 #define POINTER_READ(p, size) (p)
 
 /* returns the kind of the thing */
-firm_kind
-get_kind (const void *firm_thing) {
+firm_kind get_kind(const void *firm_thing) {
   return POINTER_READ(firm_thing, sizeof(firm_kind)) ? *(firm_kind *)firm_thing : k_BAD;
-}
+}  /* get_kind */
 
-
-const char* print_firm_kind(void *firm_thing) {
+const char *print_firm_kind(void *firm_thing) {
   if (! firm_thing)
     return "(NULL)";
 
@@ -51,21 +47,19 @@ const char* print_firm_kind(void *firm_thing) {
   case k_ir_prog                : return "k_ir_prog";
   default: return "";
   }
-}
+}  /* print_firm_kind */
 
 /*
  * identify a firm thing
  */
 void firm_identify_thing(void *X)
 {
-  firm_kind *p = X;
-
-  if (! p) {
+  if (! X) {
     printf("(NULL)\n");
     return;
   }
 
-  switch (*p) {
+  switch (get_kind(X)) {
   case k_BAD:
     printf("BAD: (%p)\n", X);
     break;
@@ -105,4 +99,4 @@ void firm_identify_thing(void *X)
   default:
     printf("Cannot identify thing at (%p).\n", X);
   }
-}
+}  /* firm_identify_thing */
