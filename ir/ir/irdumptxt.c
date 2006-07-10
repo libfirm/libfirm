@@ -38,15 +38,17 @@
 
 #define MY_SIZE 1024     /* Size of an array that actually should be computed. */
 
-/* Just opens a file, mangling a file name.
+/**
+ * Just opens a file, mangling a file name.
  *
- * The name consists of the following parts:
+ * The file name results from the concatenation of the following parts:
  *
- * @arg basename  The basis of the name telling about the content.
- * @arg
- *
+ * @param basename  The basis of the name telling about the content.
+ * @param suffix1   The first suffix.
+ * @param suffix2   The second suffix.
+ * @param suffix3   The third suffix.
  */
-static FILE *text_open (const char *basename, const char * suffix1, const char *suffix2, const char *suffix3) {
+static FILE *text_open(const char *basename, const char * suffix1, const char *suffix2, const char *suffix3) {
   FILE *F;
   int len = strlen(basename), i, j;
   char *fname;  /* filename to put the vcg information in */
@@ -57,7 +59,7 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
   if (!suffix3) suffix3 = ".txt";
 
   /* open file for vcg graph */
-  fname = xmalloc (strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for excapes. */
+  fname = xmalloc(strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for escapes. */
 
   j = 0;
   for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */
@@ -70,12 +72,13 @@ static FILE *text_open (const char *basename, const char * suffix1, const char *
     }
   }
   fname[j] = '\0';
-  strcat (fname, suffix1);  /* append file suffix */
-  strcat (fname, suffix2);  /* append file suffix */
-  strcat (fname, suffix3);  /* append the .txt suffix */
+  strcat(fname, suffix1);  /* append file suffix */
+  strcat(fname, suffix2);  /* append file suffix */
+  strcat(fname, suffix3);  /* append the .txt suffix */
 
-  F = fopen (fname, "w");   /* open file for writing */
+  F = fopen(fname, "w");   /* open file for writing */
   if (!F) {
+    perror(fname);
     assert(0);
   }
   free(fname);
@@ -424,7 +427,7 @@ static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
   fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
   for (i = 0; i < n_nodes; ++i) {
     int rem;
-    if (i > 7 && !(i & 7)) { /* line break every eigth node. */
+    if (i > 7 && !(i & 7)) { /* line break every eight node. */
       fprintf(F, ",\n%s   ", prefix);
       comma = "";
     }
@@ -453,7 +456,7 @@ static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
 
   fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
   for (i = 0; i < n_nodes; ++i) {
-    if (i > 7 && !(i & 7)) { /* line break every eigth node. */
+    if (i > 7 && !(i & 7)) { /* line break every eight node. */
       fprintf(F, ",\n%s   ", prefix);
       comma = "";
     }
@@ -853,7 +856,7 @@ void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsig
   }
 }
 
-/* A fast hack to dump a csv. */
+/* A fast hack to dump a CSV-file. */
 void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const char *comma) {
   int i;
   char buf[1024 + 10];
