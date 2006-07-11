@@ -32,6 +32,7 @@
 #include "phiclass_t.h"
 #include "iredges.h"
 #include "execfreq.h"
+#include "irvrfy.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
@@ -311,7 +312,6 @@ get_cost(const spill_ilp_t * si, const ir_node * irn)
 	} else {
 		return arch_get_op_estimated_cost(si->chordal_env->birg->main_env->arch_env, irn);
 	}
-
 }
 
 /**
@@ -1701,7 +1701,7 @@ luke_blockwalker(ir_node * bb, void * data)
 		 **********************************/
 
 		/* ensure each dying value is used by only one post remat */
-		pset_foreach(live, tmp) {
+		pset_foreach(used, tmp) {
 			ir_node     *value = tmp;
 			op_t        *value_op = get_irn_link(value);
 			ir_node     *remat;
@@ -1729,12 +1729,45 @@ luke_blockwalker(ir_node * bb, void * data)
 				}
 			}
 
-			if(value_op->attr.live_range.ilp != ILP_UNDEF && cst != ILP_UNDEF) {
+            // value_op->attr.live_range.ilp != ILP_UNDEF
+			if(pset_find_ptr(live, value) && cst != ILP_UNDEF) {
 				lpp_set_factor_fast(si->lpp, cst, value_op->attr.live_range.ilp, -n_remats);
 			}
 		}
 
+        /* ensure at least one value dies at post remat */
+        foreach_post_remat(irn, tmp) {
+            op_t     *remat_op = get_irn_link(tmp);
+            pset     *remat_args = pset_new_ptr(get_irn_arity(tmp));
+            ir_node  *remat_arg;
 
+            for(n=get_irn_arity(tmp)-1; n>=0; --n) {
+                remat_arg = get_irn_n(tmp, n);
+
+                if(has_reg_class(si, remat_arg)) {
+
+                    /* does arg always die at this op? */
+                    if(!pset_find_ptr(live, remat_arg))
+                        goto skip_one_must_die;
+
+                    pset_insert_ptr(remat_args, remat_arg);
+                }
+            }
+
+            /* remat + \sum live_range(remat_arg) <= |args| */
+            ir_snprintf(buf, sizeof(buf), "one_must_die_%+F", tmp);
+            cst = lpp_add_cst(si->lpp, buf, lpp_less, pset_count(remat_args));
+            lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
+
+            pset_foreach(remat_args, remat_arg) {
+                op_t  *arg_op = get_irn_link(remat_arg);
+
+                lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
+            }
+
+skip_one_must_die:
+            del_pset(remat_args);
+        }
 
 		/* new live ranges for values from L\U defined by post remats */
 		pset_foreach(live, tmp) {
@@ -3717,7 +3750,6 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	char            problem_name[256];
 	char            dump_suffix[256];
 	char            dump_suffix2[256];
-	char            dump_suffix3[256];
 	struct obstack  obst;
 	spill_ilp_t     si;
 
@@ -3727,6 +3759,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	FIRM_DBG_REGISTER(si.dbg, "firm.be.ra.spillremat");
 	DBG((si.dbg, LEVEL_1, "\n\n\t\t===== Processing %s =====\n\n", problem_name));
+
+    be_check_dominance(chordal_env->irg);
 
 	obstack_init(&obst);
 	si.chordal_env = chordal_env;
@@ -3861,6 +3895,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	dump_pressure_graph(&si, dump_suffix2);
 
 	be_analyze_regpressure(chordal_env, "-post");
+
+	be_check_dominance(chordal_env->irg);
 
 	free_dom(chordal_env->irg);
 	del_set(si.interferences);
