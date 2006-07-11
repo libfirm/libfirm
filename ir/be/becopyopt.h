@@ -28,9 +28,9 @@ extern void co_register_options(lc_opt_entry_t *grp);
  */
 void be_copy_opt_init(void);
 
-typedef int(*cost_fct_t)(ir_node*, ir_node*, int);
-
 typedef struct _copy_opt_t copy_opt_t;
+
+typedef int(*cost_fct_t)(const copy_opt_t *, ir_node*, ir_node*, int);
 
 /**
  * Generate the problem. Collect all information and optimizable nodes.
@@ -56,16 +56,26 @@ int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn);
 
 /**
  * Computes the costs of a copy according to loop depth
- * @param pos:	the argument position of arg in the root arguments
+ * @param co   The copy opt object.
+ * @param pos	the argument position of arg in the root arguments
  * @return Must be >= 0 in all cases.
  */
-int co_get_costs_loop_depth(ir_node *root, ir_node* arg, int pos);
+int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
+
+/**
+ * Computes the costs of a copy according to execution frequency
+ * @param co   The copy opt object.
+ * @param pos	the argument position of arg in the root arguments
+ * @return Must be >= 0 in all cases.
+ */
+int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
 
 /**
  * All costs equal 1. Using this will reduce the _number_ of copies.
+ * @param co   The copy opt object.
  * @return Must be >= 0 in all cases.
  */
-int co_get_costs_all_one(ir_node *root, ir_node* arg, int pos);
+int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
 
 
 
@@ -141,7 +151,12 @@ int co_get_lower_bound(const copy_opt_t *co);
  */
 void co_dump_appel_graph(const copy_opt_t *co, FILE *f);
 
-
+/**
+ * Dumps the IFG of the program splitting after each instruction in the Appel format.
+ * @param co The copy opt object.
+ * @param f  The file to dump to.
+ */
+void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f);
 
 /**
  * Constructs another internal representation of the affinity edges
