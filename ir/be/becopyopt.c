@@ -14,6 +14,7 @@
 #include <malloc.h>
 #endif
 
+#include "execfreq.h"
 #include "xmalloc.h"
 #include "debug.h"
 #include "pmap.h"
@@ -23,13 +24,18 @@
 #include "irloop_t.h"
 #include "iredges_t.h"
 #include "phiclass.h"
+#include "irbitset.h"
+#include "irphase_t.h"
 
 #include "bearch.h"
+#include "benode_t.h"
 #include "beutil.h"
 #include "beifg_t.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
-
+#include "belive_t.h"
+#include "beinsn_t.h"
+#include "besched_t.h"
 
 #ifdef WITH_LIBCORE
 
@@ -60,7 +66,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 void be_copy_opt_init(void) {
 }
 
-copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, int (*get_costs)(ir_node*, ir_node*, int)) {
+copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
+{
 	const char *s1, *s2, *s3;
 	int len;
 	copy_opt_t *co;
@@ -137,7 +144,7 @@ int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 	return 0;
 }
 
-int co_get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
+int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
 	int cost = 0;
 	ir_loop *loop;
 	ir_node *root_block = get_nodes_block(root);
@@ -156,7 +163,14 @@ int co_get_costs_loop_depth(ir_node *root, ir_node* arg, int pos) {
 	return cost+1;
 }
 
-int co_get_costs_all_one(ir_node *root, ir_node* arg, int pos) {
+int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
+	ir_node *root_bl = get_nodes_block(root);
+	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
+	return (int) get_block_execfreq(co->cenv->exec_freq, copy_bl);
+}
+
+
+int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
 	return 1;
 }
 
@@ -293,7 +307,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 			if (arg == irn)
 				continue;
 			if (nodes_interfere(co->cenv, irn, arg)) {
-				unit->inevitable_costs += co->get_costs(irn, arg, i);
+				unit->inevitable_costs += co->get_costs(co, irn, arg, i);
 				continue;
 			}
 
@@ -311,11 +325,11 @@ static void co_collect_units(ir_node *irn, void *env) {
 			if (!arg_pos) { /* a new argument */
 				/* insert node, set costs */
 				unit->nodes[unit->node_count] = arg;
-				unit->costs[unit->node_count] = co->get_costs(irn, arg, i);
+				unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
 				unit->node_count++;
 			} else { /* arg has occured before in same phi */
 				/* increase costs for existing arg */
-				unit->costs[arg_pos] += co->get_costs(irn, arg, i);
+				unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
 			}
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
@@ -330,7 +344,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 		unit->node_count = 2;
 		unit->nodes[0] = irn;
 		unit->nodes[1] = get_Perm_src(irn);
-		unit->costs[1] = co->get_costs(irn, unit->nodes[1], -1);
+		unit->costs[1] = co->get_costs(co, irn, unit->nodes[1], -1);
 	} else
 
 	/* Src == Tgt of a 2-addr-code instruction */
@@ -342,7 +356,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 			unit->node_count = 2;
 			unit->nodes[0] = irn;
 			unit->nodes[1] = other;
-			unit->costs[1] = co->get_costs(irn, other, -1);
+			unit->costs[1] = co->get_costs(co, irn, other, -1);
 		}
 	} else
 		assert(0 && "This is not an optimizable node!");
@@ -606,18 +620,18 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	if (is_Reg_Phi(irn))
 		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
 			ir_node *arg = get_irn_n(irn, pos);
-			add_edges(co, irn, arg, co->get_costs(irn, arg, pos));
+			add_edges(co, irn, arg, co->get_costs(co, irn, arg, pos));
 		}
 
 	/* Perms */
 	else if (is_Perm_Proj(co->aenv, irn)) {
 		ir_node *arg = get_Perm_src(irn);
-		add_edges(co, irn, arg, co->get_costs(irn, arg, 0));
+		add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
 	}
 
 	/* 2-address code */
 	else if (is_2addr_code(co->aenv, irn, &req))
-		add_edges(co, irn, req.other_same, co->get_costs(irn, req.other_same, 0));
+		add_edges(co, irn, req.other_same, co->get_costs(co, irn, req.other_same, 0));
 }
 
 void co_build_graph_structure(copy_opt_t *co) {
@@ -652,45 +666,401 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
 
 void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 {
-	be_ifg_t *ifg = co->cenv->ifg;
+	be_ifg_t *ifg  = co->cenv->ifg;
+	int *color_map = alloca(co->cls->n_regs * sizeof(color_map[0]));
+	bitset_t *adm  = bitset_alloca(co->cls->n_regs);
 
 	ir_node *irn;
 	void *it, *nit;
-	int n;
+	int i, n, n_regs;
+
+	n_regs = 0;
+	for(i = 0; i < co->cls->n_regs; ++i) {
+		const arch_register_t *reg = &co->cls->regs[i];
+		color_map[i] = arch_register_type_is(reg, ignore) ? -1 : n_regs++;
+	}
+
+	/*
+	 * n contains the first node number.
+	 * the values below n are the pre-colored register nodes
+	 */
 
 	it  = be_ifg_nodes_iter_alloca(ifg);
 	nit = be_ifg_neighbours_iter_alloca(ifg);
 
-	n = 0;
+	n = n_regs;
 	be_ifg_foreach_node(ifg, it, irn) {
-		set_irn_link(irn, INT_TO_PTR(n++));
+		if(!arch_irn_is(co->aenv, irn, ignore))
+			set_irn_link(irn, INT_TO_PTR(n++));
 	}
 
-	fprintf(f, "%d %d\n", n, co->cls->n_regs);
+	fprintf(f, "%d %d\n", n, n_regs);
 
 	be_ifg_foreach_node(ifg, it, irn) {
-		int idx            = PTR_TO_INT(get_irn_link(irn));
-		affinity_node_t *a = get_affinity_info(co, irn);
+		if(!arch_irn_is(co->aenv, irn, ignore)) {
+			int idx            = PTR_TO_INT(get_irn_link(irn));
+			affinity_node_t *a = get_affinity_info(co, irn);
 
-		ir_node *adj;
+			arch_register_req_t req;
+			ir_node *adj;
 
-		be_ifg_foreach_neighbour(ifg, nit, irn, adj) {
-			int adj_idx = PTR_TO_INT(get_irn_link(adj));
-			if(idx < adj_idx)
-				fprintf(f, "%d %d -1\n", idx, adj_idx);
-		}
+			arch_get_register_req(co->aenv, &req, irn, BE_OUT_POS(0));
+			if(arch_register_req_is(&req, limited)) {
+				bitset_clear_all(adm);
+				req.limited(req.limited_env, adm);
+				for(i = 0; i < co->cls->n_regs; ++i)
+					if(!bitset_is_set(adm, i) && color_map[i] >= 0)
+						fprintf(f, "%d %d -1\n", color_map[i], idx);
 
-		if(a) {
-			neighb_t *n;
+			}
 
-			co_gs_foreach_neighb(a, n) {
-				int n_idx = PTR_TO_INT(get_irn_link(n->irn));
-				if(idx < n_idx)
-					fprintf(f, "%d %d %d\n", idx, n_idx, n->costs);
+
+			be_ifg_foreach_neighbour(ifg, nit, irn, adj) {
+				if(!arch_irn_is(co->aenv, adj, ignore)) {
+					int adj_idx = PTR_TO_INT(get_irn_link(adj));
+					if(idx < adj_idx)
+						fprintf(f, "%d %d -1\n", idx, adj_idx);
+				}
+			}
+
+			if(a) {
+				neighb_t *n;
+
+				co_gs_foreach_neighb(a, n) {
+					if(!arch_irn_is(co->aenv, n->irn, ignore)) {
+						int n_idx = PTR_TO_INT(get_irn_link(n->irn));
+						if(idx < n_idx)
+							fprintf(f, "%d %d %d\n", idx, n_idx, n->costs);
+					}
+				}
 			}
 		}
 	}
 }
+
+typedef struct _appel_clique_walker_t {
+	phase_t ph;
+	const copy_opt_t *co;
+	int curr_nr;
+	int node_count;
+	FILE *f;
+	int dumb;
+	int *color_map;
+	struct obstack obst;
+} appel_clique_walker_t;
+
+typedef struct _appel_block_info_t {
+	int *live_end_nr;
+	int *live_in_nr;
+	int *phi_nr;
+	ir_node **live_end;
+	ir_node **live_in;
+	ir_node **phi;
+	int n_live_end;
+	int n_live_in;
+	int n_phi;
+} appel_block_info_t;
+
+static int appel_aff_weight(const appel_clique_walker_t *env, ir_node *bl)
+{
+#if 0
+	double freq = get_block_execfreq(env->co->cenv->execfreq, bl);
+	int res = (int) freq;
+	return res == 0 ? 1 : res;
+#else
+	ir_loop *loop = get_irn_loop(bl);
+	if(loop) {
+		int d = get_loop_depth(loop);
+		return 1 + d * d;
+	}
+	return 1;
+#endif
+}
+
+static void *appel_clique_walker_irn_init(phase_t *phase, ir_node *irn, void *old)
+{
+	appel_block_info_t *res = NULL;
+
+	if(is_Block(irn)) {
+		appel_clique_walker_t *d = (void *) phase;
+		res = phase_alloc(phase, sizeof(res[0]));
+		res->phi_nr      = phase_alloc(phase, d->co->cls->n_regs * sizeof(res->live_end_nr));
+		res->live_end_nr = phase_alloc(phase, d->co->cls->n_regs * sizeof(res->live_end_nr));
+		res->live_in_nr  = phase_alloc(phase, d->co->cls->n_regs * sizeof(res->live_in_nr));
+		res->live_end    = phase_alloc(phase, d->co->cls->n_regs * sizeof(res->live_end));
+		res->live_in     = phase_alloc(phase, d->co->cls->n_regs * sizeof(res->live_in));
+		res->phi         = phase_alloc(phase, d->co->cls->n_regs * sizeof(res->live_in));
+	}
+
+	return res;
+}
+
+typedef struct _insn_list_t {
+	be_insn_t *insn;
+	struct list_head list;
+} insn_list_t;
+
+static int appel_get_live_end_nr(appel_clique_walker_t *env, ir_node *bl, ir_node *irn)
+{
+	appel_block_info_t *bli = phase_get_irn_data(&env->ph, bl);
+	int i;
+
+	for(i = 0; i < bli->n_live_end; ++i)
+		if(bli->live_end[i] == irn)
+			return bli->live_end_nr[i];
+
+	return -1;
+}
+
+static int appel_dump_clique(appel_clique_walker_t *env, pset *live, ir_node *bl, int curr_nr, int start_nr)
+{
+	ir_node **live_arr = alloca(env->co->cls->n_regs * sizeof(live_arr[0]));
+	ir_node *irn;
+	int n_live;
+	int j;
+
+	n_live = 0;
+	foreach_pset(live, irn)
+		live_arr[n_live++] = irn;
+
+	/* dump the live after clique */
+	if(!env->dumb) {
+		for(j = 0; j < n_live; ++j) {
+			int k;
+
+			for(k = j + 1; k < n_live; ++k) {
+				fprintf(env->f, "%d %d -1 ", curr_nr + j, curr_nr + k);
+			}
+			fprintf(env->f, "\n");
+		}
+	}
+
+	/* dump the affinities */
+	for(j = 0; !env->dumb && j < n_live; ++j) {
+		ir_node *irn = live_arr[j];
+		int old_nr = PTR_TO_INT(get_irn_link(irn));
+
+		/* if the node was already live in the last insn dump the affinity */
+		if(old_nr > start_nr) {
+			int weight = appel_aff_weight(env, bl);
+			fprintf(env->f, "%d %d %d\n", old_nr, curr_nr + j, weight);
+		}
+	}
+
+	/* set the current numbers into the link field. */
+	for(j = 0; j < n_live; ++j) {
+		ir_node *irn = live_arr[j];
+		set_irn_link(irn, INT_TO_PTR(curr_nr + j));
+	}
+
+	return curr_nr + n_live;
+}
+
+static void appel_walker(ir_node *bl, void *data)
+{
+	appel_clique_walker_t *env = data;
+	appel_block_info_t *bli    = phase_get_or_set_irn_data(&env->ph, bl);
+	struct obstack *obst       = &env->obst;
+	void *base                 = obstack_base(obst);
+	pset *live                 = pset_new_ptr_default();
+
+	int n_insns  = 0;
+	int n_nodes  = 0;
+	int start_nr = env->curr_nr;
+	int curr_nr  = start_nr;
+
+	be_insn_env_t insn_env;
+	int i, j;
+	ir_node *irn;
+	be_insn_t **insns;
+
+	insn_env.aenv = env->co->aenv;
+	insn_env.cls  = env->co->cls;
+	insn_env.obst = obst;
+	insn_env.ignore_colors = env->co->cenv->ignore_colors;
+
+	/* Guess how many insns will be in this block. */
+	sched_foreach(bl, irn)
+		n_nodes++;
+
+	bli->n_phi = 0;
+	insns = malloc(n_nodes * sizeof(insns[0]));
+
+	/* Put all insns in an array. */
+	irn = sched_first(bl);
+	while(!sched_is_end(irn)) {
+		be_insn_t *insn;
+		insn = be_scan_insn(&insn_env, irn);
+		insns[n_insns++] = insn;
+		irn = insn->next_insn;
+	}
+
+	DBG((env->co->cenv->dbg, LEVEL_2, "%+F\n", bl));
+	be_liveness_end_of_block(env->co->aenv, env->co->cls, bl, live);
+
+	/* Generate the bad and ugly. */
+	for(i = n_insns - 1; i >= 0; --i) {
+		be_insn_t *insn = insns[i];
+
+		/* The first live set has to be saved in the block border set. */
+		if(i == n_insns - 1) {
+			j = 0;
+			foreach_pset(live, irn) {
+				bli->live_end[j]    = irn;
+				bli->live_end_nr[j] = curr_nr + j;
+				++j;
+			}
+			bli->n_live_end = j;
+		}
+
+		if(!env->dumb) {
+			for(j = 0; j < insn->use_start; ++j) {
+				ir_node *op   = insn->ops[j].carrier;
+				bitset_t *adm = insn->ops[j].regs;
+				int k;
+				int nr;
+
+				if(!insn->ops[j].has_constraints)
+					continue;
+
+				nr = 0;
+				foreach_pset(live, irn) {
+					if(irn == op) {
+						pset_break(live);
+						break;
+					}
+					++nr;
+				}
+
+				assert(nr < pset_count(live));
+
+				for(k = 0; k < env->co->cls->n_regs; ++k) {
+					int mapped_col = env->color_map[k];
+					if(mapped_col >= 0 && !bitset_is_set(adm, k) && !bitset_is_set(env->co->cenv->ignore_colors, k))
+						fprintf(env->f, "%d %d -1\n", curr_nr + nr, mapped_col);
+				}
+			}
+		}
+
+		/* dump the clique and update the stuff. */
+		curr_nr = appel_dump_clique(env, live, bl, curr_nr, start_nr);
+
+		/* remove all defs. */
+		for(j = 0; j < insn->use_start; ++j)
+			pset_remove_ptr(live, insn->ops[j].carrier);
+
+		if(is_Phi(insn->irn) && arch_irn_consider_in_reg_alloc(env->co->aenv, env->co->cls, insn->irn)) {
+			bli->phi[bli->n_phi]    = insn->irn;
+			bli->phi_nr[bli->n_phi] = PTR_TO_INT(get_irn_link(insn->irn));
+			bli->n_phi++;
+		}
+
+		/* add all uses */
+		else
+			for(j = insn->use_start; j < insn->n_ops; ++j)
+				pset_insert_ptr(live, insn->ops[j].carrier);
+	}
+
+	/* print the start clique. */
+	curr_nr = appel_dump_clique(env, live, bl, curr_nr, start_nr);
+
+	i = 0;
+	foreach_pset(live, irn) {
+		bli->live_in[i]    = irn;
+		bli->live_in_nr[i] = PTR_TO_INT(get_irn_link(irn));
+		++i;
+	}
+	bli->n_live_in = i;
+
+	del_pset(live);
+	free(insns);
+	obstack_free(obst, base);
+	env->curr_nr = curr_nr;
+}
+
+static void appel_inter_block_aff(ir_node *bl, void *data)
+{
+	appel_clique_walker_t *env = data;
+	appel_block_info_t *bli    = phase_get_irn_data(&env->ph, bl);
+
+	int i, j, n;
+
+	for(i = 0; i < bli->n_live_in; ++i) {
+		ir_node *irn = bli->live_in[i];
+
+		for(j = 0, n = get_Block_n_cfgpreds(bl); j < n; ++j) {
+			ir_node *pred  = get_Block_cfgpred_block(bl, j);
+			appel_block_info_t *pred_bli = phase_get_irn_data(&env->ph, pred);
+
+			int nr = appel_get_live_end_nr(env, pred, irn);
+			assert(nr >= 0);
+			fprintf(env->f, "%d %d 1\n", bli->live_in_nr[i], nr);
+		}
+	}
+
+	for(i = 0; i < bli->n_phi; ++i) {
+		ir_node *irn = bli->phi[i];
+
+		for(j = 0, n = get_Block_n_cfgpreds(bl); j < n; ++j) {
+			ir_node *pred  = get_Block_cfgpred_block(bl, j);
+			appel_block_info_t *pred_bli = phase_get_irn_data(&env->ph, pred);
+			ir_node *op = get_irn_n(irn, j);
+
+			int nr = appel_get_live_end_nr(env, pred, op);
+			assert(nr >= 0);
+			fprintf(env->f, "%d %d 1\n", bli->phi_nr[i], nr);
+		}
+	}
+
+}
+
+void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
+{
+	int i;
+	int n_colors;
+	appel_clique_walker_t env;
+	bitset_t *adm = bitset_alloca(co->cls->n_regs);
+
+	be_liveness(co->irg);
+	obstack_init(&env.obst);
+	phase_init(&env.ph, "appel_clique_dumper", co->irg, PHASE_DEFAULT_GROWTH, appel_clique_walker_irn_init);
+	env.curr_nr = co->cls->n_regs;
+	env.co = co;
+	env.f = f;
+
+	bitset_copy(adm, co->cenv->ignore_colors);
+	bitset_flip_all(adm);
+
+	/* Make color map. */
+	env.color_map = alloca(co->cls->n_regs * sizeof(env.color_map[0]));
+	for(i = 0, n_colors = 0; i < co->cls->n_regs; ++i) {
+		const arch_register_t *reg = &co->cls->regs[i];
+		env.color_map[i] = arch_register_type_is(reg, ignore) ? -1 : n_colors++;
+	}
+
+	env.dumb = 1;
+	env.curr_nr = n_colors;
+	irg_block_walk_graph(co->irg, firm_clear_link, NULL, NULL);
+	irg_block_walk_graph(co->irg, appel_walker, NULL, &env);
+
+	fprintf(f, "%d %d\n", env.curr_nr, n_colors);
+
+	/* make the first k nodes interfere */
+	for(i = 0; i < n_colors; ++i) {
+		int j;
+		for(j = i + 1; j < n_colors; ++j)
+			fprintf(f, "%d %d -1 ", i, j);
+		fprintf(f, "\n");
+	}
+
+	env.dumb = 0;
+	env.curr_nr = n_colors;
+	irg_block_walk_graph(co->irg, firm_clear_link, NULL, NULL);
+	irg_block_walk_graph(co->irg, appel_walker, NULL, &env);
+	irg_block_walk_graph(co->irg, appel_inter_block_aff, NULL, &env);
+	obstack_free(&env.obst, NULL);
+}
+
 
 void co_solve_park_moon(copy_opt_t *opt)
 {
