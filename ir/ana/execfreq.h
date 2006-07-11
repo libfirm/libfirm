@@ -3,16 +3,14 @@
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
+#include "set.h"
 
-typedef struct _freq_t {
-  const ir_node    *irn;
-  double            freq;
-} freq_t;
+typedef struct _exec_freq_t exec_freq_t;
 
-void compute_execfreq(ir_graph * irg, double loop_weight);
+exec_freq_t * compute_execfreq(ir_graph *irg, double loop_weight);
 
-void free_execfreq();
+void free_execfreq(exec_freq_t *ef);
 
-double get_block_execfreq(const ir_node * irn);
+double get_block_execfreq(const exec_freq_t *ef, const ir_node * irn);
 
 #endif

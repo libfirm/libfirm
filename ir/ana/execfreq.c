@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #ifdef USE_GSL
 #include <gsl/gsl_linalg.h>
@@ -39,17 +40,28 @@
 #include "irgwalk.h"
 #include "irouts.h"
 #include "irprintf.h"
+#include "irhooks.h"
 
 #include "execfreq.h"
 
-static set   *freqs = NULL;
-
 #define set_foreach(s,i) for((i)=set_first((s)); (i); (i)=set_next((s)))
+
+typedef struct _freq_t {
+	const ir_node    *irn;
+	double            freq;
+} freq_t;
+
 
 typedef struct _walkerdata_t {
   set    *set;
   size_t  idx;
 } walkerdata_t;
+
+struct _exec_freq_t {
+  set *set;
+	hook_entry_t hook;
+	unsigned infeasible : 1;
+};
 
 static int
 cmp_freq(const void *a, const void *b, size_t size)
@@ -80,20 +92,21 @@ set_insert_freq(set * set, const ir_node * irn)
 }
 
 double
-get_block_execfreq(const ir_node * irn)
+get_block_execfreq(const exec_freq_t *ef, const ir_node * irn)
 {
-  freq_t *freq;
+	if(!ef->infeasible) {
+		set *freqs = ef->set;
+		freq_t *freq;
+		assert(is_Block(irn));
+		freq = set_find_freq(freqs, irn);
+		assert(freq);
+		return freq->freq;
+	}
 
-  assert(is_Block(irn));
-
-  freq = set_find_freq(freqs, irn);
-
-  assert(freq);
-
-  return freq->freq;
+	return 1.0;
 }
 
-#define ZERO(x)   (((x) > 0) ? ((x) < 0.0001) : ((x) > -0.0001))
+#define ZERO(x)   (fabs(x) < 0.0001)
 
 static void
 block_walker(ir_node * bb, void * data)
@@ -159,7 +172,15 @@ get_cf_probability(ir_node *bb, int pos, double loop_weight)
   return cur/sum;
 }
 
-void
+static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
+{
+	if(is_Block(irn)) {
+		exec_freq_t *ef = ctx;
+		fprintf(f, "execution frequency: %g\n", get_block_execfreq(ef, irn));
+	}
+}
+
+exec_freq_t *
 compute_execfreq(ir_graph * irg, double loop_weight)
 {
   size_t        size;
@@ -168,14 +189,17 @@ compute_execfreq(ir_graph * irg, double loop_weight)
   int           i;
   freq_t       *freq;
   walkerdata_t  wd;
+	exec_freq_t  *ef;
+	set          *freqs;
 #ifdef USE_GSL
   gsl_vector   *x;
 #else
   double       *x;
 #endif
 
-  free_execfreq();
-  freqs = new_set(cmp_freq, 32);
+	ef = xmalloc(sizeof(ef[0]));
+	memset(ef, 0, sizeof(ef[0]));
+  freqs = ef->set = new_set(cmp_freq, 32);
 
   construct_cf_backedges(irg);
 
@@ -212,8 +236,8 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 
   x = solve_lgs(matrix, rhs, size);
   if(x == NULL) {
-    del_set(freqs);
-    return;
+		ef->infeasible = 1;
+		return ef;
   }
 
   set_foreach(freqs, freq) {
@@ -233,13 +257,20 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 #endif
   free(matrix);
 
-  return;
+	memset(&ef->hook, 0, sizeof(ef->hook));
+	ef->hook.context = ef;
+	ef->hook.hook._hook_node_info = exec_freq_node_info;
+	register_hook(hook_node_info, &ef->hook);
+
+  return ef;
 }
 
 void
-free_execfreq()
+free_execfreq(exec_freq_t *ef)
 {
-  if(freqs) del_set(freqs);
+	del_set(ef->set);
+	unregister_hook(hook_node_info, &ef->hook);
+	free(ef);
 }
 
 #undef ELEM
