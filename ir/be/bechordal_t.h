@@ -20,6 +20,8 @@
 #include "pmap.h"
 #include "set.h"
 
+#include "execfreq.h"
+
 #include "be_t.h"
 #include "beifg.h"
 #include "bera.h"
@@ -58,6 +60,7 @@ struct _be_chordal_env_t {
 	dom_front_info_t *dom_front;        /**< Dominance frontiers. */
 	ir_graph *irg;                      /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
+	exec_freq_t *exec_freq;             /**< Adam's execution frequencies. */
 	pmap *border_heads;                 /**< Maps blocks to border heads. */
 	be_ifg_t *ifg;                      /**< The interference graph. */
 	void *data;                         /**< Some pointer, to which different phases can attach data to. */
