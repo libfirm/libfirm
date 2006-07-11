@@ -34,6 +34,7 @@
 #include "irbitset.h"
 #include "debug.h"
 #include "xmalloc.h"
+#include "execfreq.h"
 
 #include "bechordal_t.h"
 #include "beabi.h"
@@ -53,14 +54,12 @@
 #ifdef WITH_ILP
 #include "bespillilp.h"
 #include "bespillremat.h"
-#include "bespillappel.h"
 #endif /* WITH_ILP */
 
 #include "becopystat.h"
 #include "becopyopt.h"
 #include "bessadestr.h"
 #include "beverify.h"
-
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 	const arch_env_t *arch_env = chordal_env->birg->main_env->arch_env;
@@ -139,9 +138,8 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "morgan", BE_CH_SPILL_MORGAN },
 	{ "belady", BE_CH_SPILL_BELADY },
 #ifdef WITH_ILP
-	{ "ilp",    BE_CH_SPILL_ILP    },
-	{ "remat",  BE_CH_SPILL_REMAT  },
-	{ "appel",  BE_CH_SPILL_APPEL  },
+	{ "ilp",    BE_CH_SPILL_ILP },
+	{ "remat",  BE_CH_SPILL_REMAT },
 #endif /* WITH_ILP */
 	{ NULL, 0 }
 };
@@ -223,13 +221,20 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 	&options.vrfy_option, be_ch_vrfy_items
 };
 
+static int be_copymin_stats = 0;
+
+/** Assumed loop iteration count for execution frequency estimation. */
+static int be_loop_weight = 9;
+
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_PTR ("spill",	"spill method (belady, ilp, remat or appel)", &spill_var),
-	LC_OPT_ENT_ENUM_PTR ("copymin", "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
-	LC_OPT_ENT_ENUM_PTR ("ifg",     "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
-	LC_OPT_ENT_ENUM_PTR ("perm",    "perm lowering options (copy or swap)", &lower_perm_var),
-	LC_OPT_ENT_ENUM_MASK("dump",    "select dump phases", &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("vrfy",    "verify options (off, warn, assert)", &be_ch_vrfy_var),
+	LC_OPT_ENT_ENUM_INT ("spill",	        "spill method (belady, ilp, remat or appel)", &spill_var),
+	LC_OPT_ENT_ENUM_PTR ("copymin",       "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
+	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
+	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options (copy or swap)", &lower_perm_var),
+	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options (off, warn, assert)", &be_ch_vrfy_var),
+	LC_OPT_ENT_BOOL     ("copymin_stats", "dump statistics of copy minimization", &be_copymin_stats),
+	LC_OPT_ENT_INT      ("loop_weight",   "assumed amount of loop iterations for guessing the execution frequency", &be_loop_weight),
 	{ NULL }
 };
 
@@ -358,10 +363,11 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	compute_doms(irg);
 
-	chordal_env.opts          = &options;
-	chordal_env.irg           = irg;
-	chordal_env.birg          = bi;
-	chordal_env.dom_front     = be_compute_dominance_frontiers(irg);
+	chordal_env.opts      = &options;
+	chordal_env.irg       = irg;
+	chordal_env.birg      = bi;
+	chordal_env.dom_front = be_compute_dominance_frontiers(irg);
+	chordal_env.exec_freq = compute_execfreq(irg, be_loop_weight);
 	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
 	obstack_init(&chordal_env.obst);
@@ -403,9 +409,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		case BE_CH_SPILL_REMAT:
 			be_spill_remat(&chordal_env);
 			break;
-		case BE_CH_SPILL_APPEL:
-			be_spill_appel(&chordal_env);
-			break;
 #endif /* WITH_ILP */
 		default:
 			fprintf(stderr, "no valid spiller selected. falling back to belady\n");
@@ -444,7 +447,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 
 		BE_TIMER_PUSH(ra_timer.t_ifg);
-		//be_ifg_check_performance(&chordal_env);
 
 		/* Create the ifg with the selected flavor */
 		switch (options.ifg_flavor) {
@@ -467,8 +469,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 				check_ifg_implementations(&chordal_env);
 				/* Build the interference graph. */
 				chordal_env.ifg = be_ifg_std_new(&chordal_env);
-				//be_ifg_check(chordal_env.ifg);
-				//be_ifg_check_sorted(chordal_env.ifg);
 				break;
 		}
 
@@ -500,9 +500,26 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		/* copy minimization */
 		co = NULL;
 		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
+			FILE *f;
 			co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
+			if(be_copymin_stats) {
+				ir_printf("%40F %20s\n", current_ir_graph, chordal_env.cls->name);
+				printf("max copy costs:         %d\n", co_get_max_copy_costs(co));
+				printf("init copy costs:        %d\n", co_get_copy_costs(co));
+				printf("inevit copy costs:      %d\n", co_get_inevit_copy_costs(co));
+				printf("copy costs lower bound: %d\n", co_get_lower_bound(co));
+			}
+
+#if 0
+			f = be_chordal_open(&chordal_env, "appel-", "apl");
+			co_dump_appel_graph(co, f);
+			fclose(f);
+			f = be_chordal_open(&chordal_env, "appel-clique-", "p");
+			co_dump_appel_graph_cliques(co, f);
+			fclose(f);
+#endif
 		}
 
 		switch(options.copymin_method) {
@@ -533,6 +550,9 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		}
 
 		if (co) {
+			if(be_copymin_stats) {
+				printf("final copy costs      : %d\n", co_get_copy_costs(co));
+			}
 			co_free_graph_structure(co);
 			co_free_ou_structure(co);
 			free_copy_opt(co);
@@ -583,6 +603,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	obstack_free(&chordal_env.obst, NULL);
 	be_free_dominance_frontiers(chordal_env.dom_front);
+	free_execfreq(chordal_env.exec_freq);
 
 	BE_TIMER_POP();
 	BE_TIMER_POP();
