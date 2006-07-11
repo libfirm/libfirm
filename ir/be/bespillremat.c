@@ -78,8 +78,6 @@
 #define COST_STORE     50
 #define COST_REMAT     1
 
-#define LOOP_WEIGHT    12
-
 #define ILP_TIMEOUT    120
 
 #define ILP_UNDEF		-1
@@ -97,7 +95,6 @@ typedef struct _spill_ilp_t {
 	ir_node                      *keep;
 #endif
 	set                          *values; /**< for collecting all definitions of values before running ssa-construction */
-	set                          *execfreqs;
 	pset                         *spills;
 	set                          *interferences;
 	ir_node                      *m_unknown;
@@ -291,15 +288,11 @@ cmp_keyval(const void *a, const void *b, size_t size)
 }
 
 static double
-execution_frequency(const ir_node * irn)
+execution_frequency(const spill_ilp_t *si, const ir_node * irn)
 {
 #define FUDGE 0.001
 #ifndef EXECFREQ_LOOPDEPH
-	if(is_Block(irn)) {
-		return get_block_execfreq(irn) + FUDGE;
-	} else {
-		return get_block_execfreq(get_nodes_block(irn)) + FUDGE;
-	}
+	return get_block_execfreq(si->chordal_env->exec_freq, get_block(irn)) + FUDGE;
 #else
 	if(is_Block(irn))
 		return exp(get_loop_depth(get_irn_loop(irn)) * log(10)) + FUDGE;
@@ -766,7 +759,7 @@ insert_remat_after(spill_ilp_t * si, const remat_t * remat, const ir_node * pos,
 		op->is_remat = 1;
 		op->attr.remat.remat = remat;
 		op->attr.remat.pre = 0;
-		op->attr.remat.ilp = lpp_add_var(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(pos));
+		op->attr.remat.ilp = lpp_add_var(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(si, pos));
 
 		set_irn_link(copy, op);
 		pset_insert_ptr(si->all_possible_remats, copy);
@@ -804,7 +797,7 @@ insert_remat_before(spill_ilp_t * si, const remat_t * remat, const ir_node * pos
 		op->is_remat = 1;
 		op->attr.remat.remat = remat;
 		op->attr.remat.pre = 1;
-		op->attr.remat.ilp = lpp_add_var(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(pos));
+		op->attr.remat.ilp = lpp_add_var(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(si, pos));
 
 		set_irn_link(copy, op);
 		pset_insert_ptr(si->all_possible_remats, copy);
@@ -1198,7 +1191,7 @@ luke_endwalker(ir_node * bb, void * data)
 		query.irn = irn;
 		spill = set_insert(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
 
-		spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(bb);
+		spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", irn, bb);
 		spill->reg_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
@@ -1215,7 +1208,7 @@ luke_endwalker(ir_node * bb, void * data)
 			ilp_cst_t   rel_cst;
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
-			reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(bb));
+			reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
 			set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
 
 			/* reload <= mem_out */
@@ -1239,7 +1232,7 @@ luke_endwalker(ir_node * bb, void * data)
 		query.irn = irn;
 		spill = set_insert(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
 
-		spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(bb);
+		spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", irn, bb);
 		spill->reg_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
@@ -1253,7 +1246,7 @@ luke_endwalker(ir_node * bb, void * data)
 		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
 
 		ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
-		reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(bb));
+		reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
 		set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
 
 		/* reload <= mem_out */
@@ -1360,7 +1353,7 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 	query.irn = irn;
 	spill = set_find(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
 	if(!spill) {
-		double   spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(bb);
+		double   spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
 
 		spill = set_insert(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
 
@@ -1964,7 +1957,7 @@ luke_blockwalker(ir_node * bb, void * data)
 			assert(spill);
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", arg, irn);
-			op->attr.live_range.args.reloads[i] = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(bb));
+			op->attr.live_range.args.reloads[i] = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
 
 			/* reload <= mem_out */
 			ir_snprintf(buf, sizeof(buf), "req_reload_%N_%N", arg, irn);
@@ -2105,7 +2098,7 @@ luke_blockwalker(ir_node * bb, void * data)
 						const ir_node  *arg2 = get_irn_n(spill->irn, m);
 
 						if(arg==arg2) {
-							freq += execution_frequency(get_Block_cfgpred_block(bb, m));
+							freq += execution_frequency(si, get_Block_cfgpred_block(bb, m));
 						}
 					}
 
@@ -2722,26 +2715,14 @@ sched_pressure_edge_hook(FILE *F, ir_node *irn)
 	return 1;
 }
 
-static int
-sched_block_attr_hook(FILE *F, ir_node *node, ir_node *local)
-{
-    if(is_Block(node)) {
-        fprintf(F, " info3:\"execfreq %g\"", execution_frequency(node));
-    }
-
-    return 0;
-}
-
 static void
 dump_ir_block_graph_sched_pressure(ir_graph *irg, const char *suffix)
 {
 	DUMP_NODE_EDGE_FUNC old_edge_hook = get_dump_node_edge_hook();
 
 	dump_consts_local(0);
-    set_dump_node_vcgattr_hook(sched_block_attr_hook);
 	set_dump_node_edge_hook(sched_pressure_edge_hook);
 	dump_ir_block_graph(irg, suffix);
-    set_dump_node_vcgattr_hook(NULL);
 	set_dump_node_edge_hook(old_edge_hook);
 }
 
@@ -3466,7 +3447,7 @@ walker_kill_unused(ir_node * bb, void * data)
 
 		if(!lc_bitset_is_set(kh->used, get_irn_idx(irn))) {
 			if(be_is_Spill(irn) || be_is_Reload(irn)) {
-				DBG((kh->si->dbg, LEVEL_1, "\t SUBOPTIMAL! %+F IS UNUSED (cost: %g)\n", irn, get_cost(kh->si, irn)*execution_frequency(bb)));
+				DBG((kh->si->dbg, LEVEL_1, "\t SUBOPTIMAL! %+F IS UNUSED (cost: %g)\n", irn, get_cost(kh->si, irn)*execution_frequency(kh->si, bb)));
 #if 0
 				assert(lpp_get_sol_state(kh->si->lpp) != lpp_optimal && "optimal solution is suboptimal?");
 #endif
@@ -3757,11 +3738,6 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.all_possible_remats = pset_new_ptr_default();
 	si.spills = pset_new_ptr_default();
 	si.inverse_ops = pset_new_ptr_default();
-#ifndef EXECFREQ_LOOPDEPH
-	compute_execfreq(chordal_env->irg, LOOP_WEIGHT);
-#else
-	si.execfreqs = NULL;
-#endif
 #ifdef KEEPALIVE
 	si.keep = NULL;
 #endif
@@ -3891,9 +3867,6 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	del_pset(si.inverse_ops);
 	del_pset(si.all_possible_remats);
 	del_pset(si.spills);
-#ifndef EXECFREQ_LOOPDEPH
-	free_execfreq();
-#endif
 	free_lpp(si.lpp);
 	obstack_free(&obst, NULL);
 	DBG((si.dbg, LEVEL_1, "\tdone.\n"));
