@@ -678,6 +678,7 @@ void compute_doms(ir_graph *irg) {
   /* If not all blocks are reachable from Start by out edges this assertion
      fails.
      assert(used == n_blocks && "Precondition for dom construction violated"); */
+  assert(used <= n_blocks && "Precondition for dom construction violated");
   n_blocks = used;
 
 
@@ -708,10 +709,7 @@ void compute_doms(ir_graph *irg) {
         ir_node *pred = get_irn_n(end, j);
         tmp_dom_info *u;
 
-        if (is_no_Block(pred))
-          continue;
-
-        if (get_Block_dom_pre_num(pred) == -1)
+        if (is_no_Block(pred) || get_Block_dom_pre_num(pred) == -1)
           continue;	/* control-dead */
 
         u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
@@ -747,10 +745,19 @@ void compute_doms(ir_graph *irg) {
   set_Block_dom_depth(tdi_list[0].block, 1);
   for (i = 1; i < n_blocks;  i++) {
     tmp_dom_info *w = &tdi_list[i];
+    int depth;
+
+    if (! w->dom)
+      continue; /* control dead */
 
     if (w->dom != w->semi) w->dom = w->dom->dom;
     set_Block_idom(w->block, w->dom->block);
-    set_Block_dom_depth(w->block, get_Block_dom_depth(w->dom->block) + 1);
+
+    /* blocks dominated by dead one's are still dead */
+    depth = get_Block_dom_depth(w->dom->block);
+    if (depth > 0)
+      ++depth;
+    set_Block_dom_depth(w->block, depth);
   }
 
   /* clean up */
