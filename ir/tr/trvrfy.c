@@ -86,7 +86,7 @@ static void show_ent_not_supertp(entity *ent, entity *ovw)
 }
 
 /**
- * Show diagnostic if an entity owerwrites a wrong number of things.
+ * Show diagnostic if an entity overwrites a wrong number of things.
  */
 static void show_ent_overwrite_cnt(entity *ent)
 {
@@ -94,14 +94,15 @@ static void show_ent_overwrite_cnt(entity *ent)
   int i, j, k, found, show_stp = 0;
 
   fprintf(stderr, "Type verification error:\n");
-  ir_fprintf(stderr, "Entity %+F::%+e owerwrites\n", owner, ent);
+  ir_fprintf(stderr, "Entity %t::%e owerwrites\n", owner, ent);
   for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
     entity *ovw = get_entity_overwrites(ent, i);
     ir_type *ov_own = get_entity_owner(ovw);
 
+    ir_fprintf(stderr, "  %t::%e\n", ov_own, ovw);
     for (k = 0; k < i; ++k)
       if (ovw == get_entity_overwrites(ent, k)) {
-        ir_fprintf(stderr, "  %+F::%+e entered more than once\n", ov_own, ovw);
+        ir_fprintf(stderr, "  ->%t::%e entered more than once\n", ov_own, ovw);
         break;
       }
 
@@ -113,14 +114,14 @@ static void show_ent_overwrite_cnt(entity *ent)
       }
     }
     if (! found)
-      ir_fprintf(stderr, "  %+F::%+e not in super types of %t\n", ov_own, ovw, owner);
+      ir_fprintf(stderr, "  ->%t not in super types of %t\n", ov_own, owner);
   }
 
   if (show_stp) {
-    ir_fprintf(stderr, "Supertypes of %+F:\n", owner);
+    ir_fprintf(stderr, "Supertypes of %t:\n", owner);
     for (i = 0; i < get_class_n_supertypes(owner); ++i) {
       ir_type *super = get_class_supertype(owner, i);
-      ir_fprintf(stderr, " %+F:\n", super);
+      ir_fprintf(stderr, " %t:\n", super);
     }
   }
 }
