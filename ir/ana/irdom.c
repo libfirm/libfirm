@@ -182,7 +182,8 @@ int block_dominates(const ir_node *a, const ir_node *b)
 }
 
 /* Returns the smallest common dominator block of two nodes. */
-ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b) {
+ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
+{
 	ir_node *bl_a   = is_Block(a) ? a : get_nodes_block(a);
 	ir_node *bl_b   = is_Block(b) ? b : get_nodes_block(b);
 	ir_node *dom_bl = NULL;
@@ -209,7 +210,8 @@ ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b) {
 }
 
 /* Returns the smallest common dominator block of all users of a node. */
-ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi) {
+ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi)
+{
 	int n, j, i = 0, success;
 	ir_node **user_blocks, *dom_bl;
 	const ir_edge_t *edge;
@@ -233,6 +235,8 @@ ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi) {
 		else
 			user_blocks[i++] = is_Block(src) ? src : get_nodes_block(src);
 	}
+
+	assert(i == n && "get_irn_n_edges probably broken");
 
 	/* in case of only one user: return the block of the user */
 	if (n == 1)
