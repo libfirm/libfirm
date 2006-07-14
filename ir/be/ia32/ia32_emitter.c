@@ -951,7 +951,7 @@ static void emit_ia32_xCondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %s", irn, ia32_emit_binop(irn, env));
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+	finish_CondJmp(F, irn, mode_F);
 
 }
 
@@ -1073,13 +1073,11 @@ static void emit_ia32_xCmpCMov(ir_node *irn, ia32_emit_env_t *env) {
 	CMov_emitter(irn, env);
 }
 
-static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
+static void Set_emitter(ir_node *irn, ir_mode *mode, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
-	ir_mode    *mode       = get_irn_mode(get_irn_n(irn, 0));
 	int        is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
 	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), is_unsigned);
-	const char *instr      = "xor";
 	const char *reg8bit;
 
 	char cmd_buf[SNPRINTF_BUF_LEN];
@@ -1088,11 +1086,6 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 
 	out     = arch_get_irn_register(env->arch_env, irn);
 	reg8bit = ia32_get_mapped_reg_name(env->isa->regs_8bit, out);
-
-	if (env->isa->opt_arch == arch_pentium_4) {
-		/* P4 prefers sub r, r, others xor r, r */
-		instr = "sub";
-	}
 
 	if (is_ia32_CmpSet(irn)) {
 		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %s", ia32_emit_binop(irn, env));
@@ -1121,15 +1114,15 @@ static void Set_emitter(ir_node *irn, ia32_emit_env_t *env) {
 }
 
 static void emit_ia32_CmpSet(ir_node *irn, ia32_emit_env_t *env) {
-	Set_emitter(irn, env);
+	Set_emitter(irn, get_irn_mode(get_irn_n(irn, 2)), env);
 }
 
 static void emit_ia32_PsiCondSet(ir_node *irn, ia32_emit_env_t *env) {
-	Set_emitter(irn, env);
+	Set_emitter(irn, get_irn_mode(get_irn_n(irn, 0)), env);
 }
 
 static void emit_ia32_xCmpSet(ir_node *irn, ia32_emit_env_t *env) {
-	Set_emitter(irn, env);
+	Set_emitter(irn, get_irn_mode(get_irn_n(irn, 2)), env);
 }
 
 static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
