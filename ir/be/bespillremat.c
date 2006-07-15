@@ -57,7 +57,7 @@
 
 #define DUMP_SOLUTION
 #define DUMP_ILP
-//#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
+#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
 #define COLLECT_REMATS /* enable rematerialization */
 #define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
 #define REMAT_WHILE_LIVE /* only remat values that are live */
@@ -69,6 +69,7 @@
 //#define KEEPALIVE_RELOADS
 #define GOODWIN_REDUCTION
 //#define NO_MEMCOPIES
+//#define VERIFY_DOMINANCE
 
 #define  SOLVE
 //#define  SOLVE_LOCAL
@@ -2516,6 +2517,7 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 {
 	ir_edge_t *edge;
 	op_t      *op = get_irn_link(irn);
+    pset      *visited_users = pset_new_ptr_default();
 
 	if(op->is_remat) return;
 
@@ -2523,6 +2525,7 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 
 	if(is_Phi(irn)) {
 		int    n;
+        pset  *visited_operands = pset_new_ptr(get_irn_arity(irn));
 
 		/* visit all operands */
 		for(n=get_irn_arity(irn)-1; n>=0; --n) {
@@ -2530,19 +2533,21 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 			ilp_var_t  copy = op->attr.live_range.args.copies[n];
 
 			if(!has_reg_class(si, arg)) continue;
+            if(pset_find_ptr(visited_operands, arg)) continue;
+            pset_insert_ptr(visited_operands, arg);
 
 			if(arg == target) {
 				pset_insert(copies, INT_TO_PTR(copy), copy);
 				write_copy_path_cst(si, copies, any_interfere);
 				pset_remove(copies, INT_TO_PTR(copy), copy);
-			} else {
-				if(!pset_find_ptr(visited, arg)) {
-					pset_insert(copies, INT_TO_PTR(copy), copy);
-					find_copy_path(si, arg, target, any_interfere, copies, visited);
-					pset_remove(copies, INT_TO_PTR(copy), copy);
-				}
+			} else if(!pset_find_ptr(visited, arg)) {
+				pset_insert(copies, INT_TO_PTR(copy), copy);
+				find_copy_path(si, arg, target, any_interfere, copies, visited);
+				pset_remove(copies, INT_TO_PTR(copy), copy);
 			}
 		}
+
+        del_pset(visited_operands);
 	}
 
 	/* visit all uses which are phis */
@@ -2554,6 +2559,8 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 
 		if(!is_Phi(user)) continue;
 		if(!has_reg_class(si, user)) continue;
+        if(pset_find_ptr(visited_users, user)) continue;
+        pset_insert_ptr(visited_users, user);
 
 		copy = op->attr.live_range.args.copies[pos];
 
@@ -2561,15 +2568,14 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 			pset_insert(copies, INT_TO_PTR(copy), copy);
 			write_copy_path_cst(si, copies, any_interfere);
 			pset_remove(copies, INT_TO_PTR(copy), copy);
-		} else {
-			if(!pset_find_ptr(visited, user)) {
-				pset_insert(copies, INT_TO_PTR(copy), copy);
-				find_copy_path(si, user, target, any_interfere, copies, visited);
-				pset_remove(copies, INT_TO_PTR(copy), copy);
-			}
+		} else if(!pset_find_ptr(visited, user)) {
+			pset_insert(copies, INT_TO_PTR(copy), copy);
+			find_copy_path(si, user, target, any_interfere, copies, visited);
+			pset_remove(copies, INT_TO_PTR(copy), copy);
 		}
 	}
 
+    del_pset(visited_users);
 	pset_remove_ptr(visited, irn);
 }
 
@@ -3522,6 +3528,47 @@ print_irn_pset(pset * p)
 }
 
 static void
+dump_phi_class(spill_ilp_t * si, pset * phiclass, const char * file)
+{
+    FILE           *f = fopen(file, "w");
+    ir_node        *irn;
+    interference_t *interference;
+
+    pset_break(phiclass);
+    set_break(si->interferences);
+
+    ir_fprintf(f, "digraph phiclass {\n");
+
+    pset_foreach(phiclass, irn) {
+        if(is_Phi(irn))
+            ir_fprintf(f, "  %F%N [shape=box]\n",irn,irn);
+    }
+
+    pset_foreach(phiclass, irn) {
+        int n;
+
+        if(!is_Phi(irn)) continue;
+
+        for(n=get_irn_arity(irn)-1; n>=0; --n) {
+            ir_node  *arg = get_irn_n(irn, n);
+
+            ir_fprintf(f, "  %F%N -> %F%N\n",irn,irn,arg,arg);
+        }
+    }
+
+    set_foreach(si->interferences, interference) {
+        const ir_node  *a  = interference->a;
+        const ir_node  *b  = interference->b;
+        if(get_phi_class(a) == phiclass) {
+            ir_fprintf(f, "  %F%N -> %F%N [color=red,dir=none,style=bold]\n",a,a,b,b);
+        }
+    }
+
+    ir_fprintf(f, "}");
+    fclose(f);
+}
+
+static void
 rewire_uses(spill_ilp_t * si)
 {
 	dom_front_info_t     *dfi = be_compute_dominance_frontiers(si->chordal_env->irg);
@@ -3760,7 +3807,9 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	FIRM_DBG_REGISTER(si.dbg, "firm.be.ra.spillremat");
 	DBG((si.dbg, LEVEL_1, "\n\n\t\t===== Processing %s =====\n\n", problem_name));
 
+#ifdef VERIFY_DOMINANCE
     be_check_dominance(chordal_env->irg);
+#endif
 
 	obstack_init(&obst);
 	si.chordal_env = chordal_env;
@@ -3896,7 +3945,9 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	be_analyze_regpressure(chordal_env, "-post");
 
+#ifdef VERIFY_DOMINANCE
 	be_check_dominance(chordal_env->irg);
+#endif
 
 	free_dom(chordal_env->irg);
 	del_set(si.interferences);
