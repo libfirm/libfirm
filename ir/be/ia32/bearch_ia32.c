@@ -496,9 +496,12 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 	case iro_ia32_xLoad:
 	case iro_ia32_l_Load:
 	case iro_ia32_Load:
+		cost = 25;
+		break;
+
 	case iro_ia32_Push:
 	case iro_ia32_Pop:
-		cost = 10;
+		cost = 5;
 		break;
 
 	case iro_ia32_xStore:
