@@ -708,7 +708,7 @@ static void ia32_prepare_graph(void *self) {
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
 
 	/* 1st: transform constants and psi condition trees */
-	irg_walk_blkwise_graph(cg->irg, ia32_place_consts_set_modes, ia32_transform_psi_cond_tree, cg);
+	ia32_pre_transform_phase(cg);
 
 	/* 2nd: transform all remaining nodes */
 	ia32_register_transformers();
