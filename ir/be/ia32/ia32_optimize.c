@@ -21,6 +21,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "height.h"
+#include "irbitset.h"
 
 #include "../be_t.h"
 #include "../beabi.h"
@@ -33,6 +34,11 @@
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
+
+typedef struct _ia32_place_env_t {
+	ia32_code_gen_t *cg;
+	bitset_t        *visited;
+} ia32_place_env_t;
 
 typedef enum {
 	IA32_AM_CAND_NONE  = 0,
@@ -220,30 +226,74 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 	return cnst;
 }
 
-
-
 /**
  * Transforms (all) Const's into ia32_Const and places them in the
  * block where they are used (or in the cfg-pred Block in case of Phi's).
  * Additionally all reference nodes are changed into mode_Is nodes.
+ * NOTE: irn must be a firm constant!
  */
-void ia32_place_consts_set_modes(ir_node *irn, void *env) {
-	ia32_code_gen_t      *cg = env;
-	ia32_transform_env_t  tenv;
-	ir_mode              *mode;
-	ir_node              *pred, *cnst;
-	int                   i;
-	opcode                opc;
+static void ia32_transform_const(ir_node *irn, void *env) {
+	ia32_code_gen_t      *cg   = env;
+	ir_node              *cnst = NULL;
+	ia32_transform_env_t tenv;
 
+	tenv.cg   = cg;
+	tenv.irg  = cg->irg;
+	tenv.mode = get_irn_mode(irn);
+	tenv.dbg  = get_irn_dbg_info(irn);
+	tenv.irn  = irn;
+	DEBUG_ONLY(tenv.mod = cg->mod;)
+
+	/* place const either in the smallest dominator of all its users or the original block */
+	if (cg->opt & IA32_OPT_PLACECNST)
+		tenv.block = node_users_smallest_common_dominator(irn, 1);
+	else
+		tenv.block = get_nodes_block(irn);
+
+	switch (get_irn_opcode(irn)) {
+		case iro_Const:
+			cnst = gen_Const(&tenv);
+			break;
+		case iro_SymConst:
+			cnst = gen_SymConst(&tenv);
+			break;
+		default:
+			assert(0 && "Wrong usage of ia32_transform_const!");
+	}
+
+	assert(cnst && "Could not create ia32 Const");
+
+	/* set the new ia32 const */
+	exchange(irn, cnst);
+}
+
+/**
+ * Transform all firm consts and assure, we visit each const only once.
+ */
+static void ia32_place_consts_walker(ir_node *irn, void *env) {
+	ia32_place_env_t *penv = env;
+	opcode           opc   = get_irn_opcode(irn);
+
+	/* transform only firm consts which are not already visited */
+	if ((opc != iro_Const && opc != iro_SymConst) || bitset_is_set(penv->visited, get_irn_idx(irn)))
+		return;
+
+	/* mark const visited */
+	bitset_set(penv->visited, get_irn_idx(irn));
+
+	ia32_transform_const(irn, penv->cg);
+}
+
+/**
+ * Replace reference modes with mode_Iu and preserve store value modes.
+ */
+static void ia32_set_modes(ir_node *irn, void *env) {
 	if (is_Block(irn))
 		return;
 
-	mode = get_irn_mode(irn);
-
-	/* transform all reference nodes into mode_Is nodes */
-	if (mode_is_reference(mode)) {
-		mode = mode_Is;
-		set_irn_mode(irn, mode);
+	/* transform all reference nodes into mode_Iu nodes */
+	if (mode_is_reference(get_irn_mode(irn))) {
+		set_irn_mode(irn, mode_Iu);
 	}
 
 	/*
@@ -254,51 +304,33 @@ void ia32_place_consts_set_modes(ir_node *irn, void *env) {
 	if (get_irn_opcode(irn) == iro_Store) {
 		set_irn_link(irn, get_irn_mode(get_Store_value(irn)));
 	}
-
-	tenv.block    = get_nodes_block(irn);
-	tenv.cg       = cg;
-	tenv.irg      = cg->irg;
-	DEBUG_ONLY(tenv.mod = cg->mod;)
-
-	/* Loop over all predecessors and check for Sym/Const nodes */
-	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-		pred      = get_irn_n(irn, i);
-		cnst      = NULL;
-		opc       = get_irn_opcode(pred);
-		tenv.irn  = pred;
-		tenv.mode = get_irn_mode(pred);
-		tenv.dbg  = get_irn_dbg_info(pred);
-
-		/* If it's a Phi, then we need to create the */
-		/* new Const in it's predecessor block       */
-		if (is_Phi(irn)) {
-			tenv.block = get_Block_cfgpred_block(get_nodes_block(irn), i);
-		}
-
-		/* put the const into the block where the original const was */
-		if (! (cg->opt & IA32_OPT_PLACECNST)) {
-			tenv.block = get_nodes_block(pred);
-		}
-
-		switch (opc) {
-			case iro_Const:
-				cnst = gen_Const(&tenv);
-				break;
-			case iro_SymConst:
-				cnst = gen_SymConst(&tenv);
-				break;
-			default:
-				break;
-		}
-
-		/* if we found a const, then set it */
-		if (cnst) {
-			set_irn_n(irn, i, cnst);
-		}
-	}
 }
 
+/**
+ * Walks over the graph, transforms all firm consts into ia32 consts
+ * and places them into the "best" block.
+ * @param cg  The ia32 codegenerator object
+ */
+static void ia32_transform_all_firm_consts(ia32_code_gen_t *cg) {
+	ia32_place_env_t penv;
 
+	penv.cg      = cg;
+	penv.visited = bitset_irg_malloc(cg->irg);
+	irg_walk_graph(cg->irg, NULL, ia32_place_consts_walker, &penv);
+	bitset_free(penv.visited);
+}
+
+/* Place all consts and change pointer arithmetics into unsigned integer arithmetics. */
+void ia32_pre_transform_phase(ia32_code_gen_t *cg) {
+	/*
+		We need to transform the consts twice:
+		- the psi condition tree transformer needs existing constants to be ia32 constants
+		- the psi condition tree transformer inserts new firm constants which need to be transformed
+	*/
+	ia32_transform_all_firm_consts(cg);
+	irg_walk_graph(cg->irg, ia32_set_modes, ia32_transform_psi_cond_tree, cg);
+	ia32_transform_all_firm_consts(cg);
+}
 
 /********************************************************************************************************
  *  _____                _           _         ____        _   _           _          _   _
@@ -868,8 +900,6 @@ typedef enum _ia32_take_lea_attr {
 static int do_new_lea(ir_node *irn, ir_node *base, ir_node *index, ir_node *lea,
 		int have_am_sc, ia32_code_gen_t *cg)
 {
-	ir_node *lea_base = get_irn_n(lea, 0);
-	ir_node *lea_idx  = get_irn_n(lea, 1);
 	entity  *irn_ent  = get_ia32_frame_ent(irn);
 	entity  *lea_ent  = get_ia32_frame_ent(lea);
 	int      ret_val  = 0;

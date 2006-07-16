@@ -8,15 +8,15 @@
 #define _IA32_OPTIMIZE_H_
 
 /**
- * Transforms a Firm Const into an ia32 Const and places it
- * in the Block where it's used.
- * Additionally all mode_P nodes are changed into mode_Is nodes.
- * This function is called by a walker.
+ * Prepares irg for codegeneration. Places consts and transform reference mode
+ * nodes into mode_Iu nodes.
+ * @param cg  The ia32 codegenerator object
  */
-void ia32_place_consts_set_modes(ir_node *irn, void *env);
+void ia32_pre_transform_phase(ia32_code_gen_t *cg);
 
 /**
  * Performs address mode optimization.
+ * @param cg  The ia32 codegenerator object
  */
 void ia32_optimize_addressmode(ia32_code_gen_t *cg);
 
