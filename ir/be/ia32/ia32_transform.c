@@ -2352,7 +2352,7 @@ static ir_node *gen_lowered_Store(ia32_transform_env_t *env, construct_store_fun
 
 	new_op = func(env->dbg, env->irg, env->block, get_irn_n(node, 0), noreg, get_irn_n(node, 1), get_irn_n(node, 2));
 
-	if (am_offs = get_ia32_am_offs(node)) {
+	if ((am_offs = get_ia32_am_offs(node)) != NULL) {
 		am_flav |= ia32_O;
 		add_ia32_am_offs(new_op, am_offs);
 	}
@@ -2915,7 +2915,7 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
  * "And"s and "Or"s are transformed later, we just have to set their mode right.
  */
 void ia32_transform_psi_cond_tree(ir_node *node, void *env) {
-	ia32_code_gen_t *cg      = (ia32_code_gen_t *)env;
+	ia32_code_gen_t *cg = env;
 	ir_node         *psi_sel, *new_cmp, *block;
 	ir_graph        *irg;
 	ir_mode         *mode;
@@ -2941,8 +2941,6 @@ void ia32_transform_psi_cond_tree(ir_node *node, void *env) {
 
 	/* BEWARE: new_r_Const_long works for floating point as well */
 	new_cmp = new_r_Cmp(irg, block, psi_sel, new_r_Const_long(irg, block, mode, 0));
-	/* transform the const */
-	ia32_place_consts_set_modes(new_cmp, cg);
 	new_cmp = new_r_Proj(irg, block, new_cmp, mode_b, pn_Cmp_Ne + (mode_is_float(mode) ? pn_Cmp_Uo : 0));
 
 	set_Psi_cond(node, 0, new_cmp);
