@@ -95,9 +95,7 @@ enum {
 	/* spill method */
 	BE_CH_SPILL_BELADY    = 1,
 	BE_CH_SPILL_MORGAN    = 2,
-	BE_CH_SPILL_ILP       = 3,
-	BE_CH_SPILL_REMAT     = 4,
-	BE_CH_SPILL_APPEL     = 5,
+	BE_CH_SPILL_REMAT     = 3,
 
 	/* Dump flags */
 	BE_CH_DUMP_NONE       = (1 << 0),

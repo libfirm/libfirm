@@ -52,7 +52,6 @@
 #include "belower.h"
 
 #ifdef WITH_ILP
-#include "bespillilp.h"
 #include "bespillremat.h"
 #endif /* WITH_ILP */
 
@@ -138,7 +137,6 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "morgan", BE_CH_SPILL_MORGAN },
 	{ "belady", BE_CH_SPILL_BELADY },
 #ifdef WITH_ILP
-	{ "ilp",    BE_CH_SPILL_ILP },
 	{ "remat",  BE_CH_SPILL_REMAT },
 #endif /* WITH_ILP */
 	{ NULL, 0 }
@@ -227,7 +225,7 @@ static int be_copymin_stats = 0;
 static int be_loop_weight = 9;
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_INT ("spill",	        "spill method (belady, ilp, remat or appel)", &spill_var),
+	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method (belady, morgan or remat)", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("copymin",       "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options (copy or swap)", &lower_perm_var),
@@ -403,9 +401,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			be_spill_belady(&chordal_env);
 			break;
 #ifdef WITH_ILP
-		case BE_CH_SPILL_ILP:
-			be_spill_ilp(&chordal_env);
-			break;
 		case BE_CH_SPILL_REMAT:
 			be_spill_remat(&chordal_env);
 			break;
