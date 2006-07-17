@@ -634,13 +634,20 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				inverse->costs   += 1;
 			}
 			break;
-		case iro_ia32_Not:
-			inverse->nodes[0] = new_rd_ia32_Not(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), nomem);
+		case iro_ia32_Not: {
+			ir_node  *proj = get_irn_out_edge_first(irn)->src;
+			assert(proj && is_Proj(proj));
+
+			inverse->nodes[0] = new_rd_ia32_Not(NULL, irg, block, noreg, noreg, proj, nomem);
 			pnc = pn_ia32_Not_res;
 			inverse->costs   += 1;
 			break;
+		}
 		case iro_ia32_Minus:
-			inverse->nodes[0] = new_rd_ia32_Minus(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), nomem);
+			ir_node  *proj = get_irn_out_edge_first(irn)->src;
+			assert(proj && is_Proj(proj));
+
+			inverse->nodes[0] = new_rd_ia32_Minus(NULL, irg, block, noreg, noreg, proj, nomem);
 			pnc = pn_ia32_Minus_res;
 			inverse->costs   += 1;
 			break;
