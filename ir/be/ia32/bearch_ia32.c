@@ -50,6 +50,7 @@
 #include "ia32_x87.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_finish.h"
+#include "ia32_util.h"
 
 #define DEBUG_MODULE "firm.be.ia32.isa"
 
@@ -587,8 +588,8 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			}
 			else {
 				/* normal add: inverse == sub */
-				ir_node  *proj = get_irn_out_edge_first(irn)->src;
-				assert(proj && is_Proj(proj));
+				ir_node *proj = ia32_get_res_proj(irn);
+				assert(proj);
 
 				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, proj, get_irn_n(irn, i ^ 1), nomem);
 				pnc               = pn_ia32_Sub_res;
@@ -606,8 +607,8 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			}
 			else {
 				/* normal sub */
-				ir_node  *proj = get_irn_out_edge_first(irn)->src;
-				assert(proj && is_Proj(proj));
+				ir_node *proj = ia32_get_res_proj(irn);
+				assert(proj);
 
 				if (i == 2) {
 					inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, proj, get_irn_n(irn, 3), nomem);
@@ -635,22 +636,23 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			}
 			break;
 		case iro_ia32_Not: {
-			ir_node  *proj = get_irn_out_edge_first(irn)->src;
-			assert(proj && is_Proj(proj));
+			ir_node *proj = ia32_get_res_proj(irn);
+			assert(proj);
 
 			inverse->nodes[0] = new_rd_ia32_Not(NULL, irg, block, noreg, noreg, proj, nomem);
 			pnc = pn_ia32_Not_res;
 			inverse->costs   += 1;
 			break;
 		}
-		case iro_ia32_Minus:
-			ir_node  *proj = get_irn_out_edge_first(irn)->src;
-			assert(proj && is_Proj(proj));
+		case iro_ia32_Minus: {
+			ir_node *proj = ia32_get_res_proj(irn);
+			assert(proj);
 
 			inverse->nodes[0] = new_rd_ia32_Minus(NULL, irg, block, noreg, noreg, proj, nomem);
-			pnc = pn_ia32_Minus_res;
+			pnc               = pn_ia32_Minus_res;
 			inverse->costs   += 1;
 			break;
+		}
 		default:
 			/* inverse operation not supported */
 			return NULL;
