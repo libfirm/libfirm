@@ -57,7 +57,7 @@
 
 #define DUMP_SOLUTION
 #define DUMP_ILP
-#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
+//#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
 #define COLLECT_REMATS /* enable rematerialization */
 #define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
 #define REMAT_WHILE_LIVE /* only remat values that are live */
@@ -80,8 +80,8 @@
 #define COST_STORE     50
 #define COST_REMAT     1
 
-#define ILP_TIMEOUT    120
-
+#define ILP_TIMEOUT    300
+#define MAX_PATHS      16
 #define ILP_UNDEF		-1
 
 typedef struct _spill_ilp_t {
@@ -2333,7 +2333,7 @@ skip_one_must_die:
 					ir_node   *value = op->attr.remat.remat->value;
 
 					if(value == irn) {
-						/* only collect remats up to the first use of a value */
+						/* only collect remats up to the first real use of a value */
 						lpp_set_factor_fast(si->lpp, cst, op->attr.remat.ilp, -1.0);
 					}
 				} else {
@@ -2344,14 +2344,13 @@ skip_one_must_die:
 
 						if(arg == irn) {
 							/* if a value is used stop collecting remats */
-							cst = ILP_UNDEF;
+                            goto next_live;
 						}
-						break;
 					}
 				}
-				if(cst == ILP_UNDEF) break;
 			}
 		}
+next_live:
 	}
 
 	del_pset(live);
@@ -2512,12 +2511,13 @@ write_copy_path_cst(spill_ilp_t *si, pset * copies, ilp_var_t any_interfere)
  * @parameter copies   contains a path of copies which lead us to irn
  * @parameter visited  contains a set of nodes already visited on this path
  */
-static void
+static int
 find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_interfere, pset * copies, pset * visited)
 {
 	ir_edge_t *edge;
 	op_t      *op = get_irn_link(irn);
     pset      *visited_users = pset_new_ptr_default();
+	int        paths = 0;
 
 	if(op->is_remat) return;
 
@@ -2537,13 +2537,39 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
             pset_insert_ptr(visited_operands, arg);
 
 			if(arg == target) {
+				if(++paths > MAX_PATHS && pset_count(copies) != 0) {
+					del_pset(visited_operands);
+					del_pset(visited_users);
+					pset_remove_ptr(visited, irn);
+					return paths;
+				}
 				pset_insert(copies, INT_TO_PTR(copy), copy);
 				write_copy_path_cst(si, copies, any_interfere);
 				pset_remove(copies, INT_TO_PTR(copy), copy);
 			} else if(!pset_find_ptr(visited, arg)) {
 				pset_insert(copies, INT_TO_PTR(copy), copy);
-				find_copy_path(si, arg, target, any_interfere, copies, visited);
+				paths += find_copy_path(si, arg, target, any_interfere, copies, visited);
 				pset_remove(copies, INT_TO_PTR(copy), copy);
+
+                if(paths > MAX_PATHS) {
+                    if(pset_count(copies) == 0) {
+                        ilp_cst_t  cst;
+                        char       buf[256];
+
+                        ir_snprintf(buf, sizeof(buf), "always_copy-%d-%d", any_interfere, copy);
+                        cst = lpp_add_cst(si->lpp, buf, lpp_equal, 0);
+                        lpp_set_factor_fast(si->lpp, cst, any_interfere, -1.0);
+                        lpp_set_factor_fast(si->lpp, cst, copy, 1.0);
+                        DBG((si->dbg, LEVEL_1, "ALWAYS COPYING %d FOR INTERFERENCE %d\n", copy, any_interfere));
+
+                        paths = 0;
+                    } else {
+                        del_pset(visited_operands);
+                        del_pset(visited_users);
+                        pset_remove_ptr(visited, irn);
+                        return paths;
+                    }
+                }
 			}
 		}
 
@@ -2565,18 +2591,43 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 		copy = op->attr.live_range.args.copies[pos];
 
 		if(user == target) {
+			if(++paths > MAX_PATHS && pset_count(copies) != 0) {
+				del_pset(visited_users);
+				pset_remove_ptr(visited, irn);
+				return paths;
+			}
 			pset_insert(copies, INT_TO_PTR(copy), copy);
 			write_copy_path_cst(si, copies, any_interfere);
 			pset_remove(copies, INT_TO_PTR(copy), copy);
 		} else if(!pset_find_ptr(visited, user)) {
 			pset_insert(copies, INT_TO_PTR(copy), copy);
-			find_copy_path(si, user, target, any_interfere, copies, visited);
+			paths += find_copy_path(si, user, target, any_interfere, copies, visited);
 			pset_remove(copies, INT_TO_PTR(copy), copy);
+
+            if(paths > MAX_PATHS) {
+                if(pset_count(copies) == 0) {
+                    ilp_cst_t  cst;
+                    char       buf[256];
+
+                    ir_snprintf(buf, sizeof(buf), "always_copy-%d-%d", any_interfere, copy);
+                    cst = lpp_add_cst(si->lpp, buf, lpp_equal, 0);
+                    lpp_set_factor_fast(si->lpp, cst, any_interfere, -1.0);
+                    lpp_set_factor_fast(si->lpp, cst, copy, 1.0);
+                    DBG((si->dbg, LEVEL_1, "ALWAYS COPYING %d FOR INTERFERENCE %d\n", copy, any_interfere));
+
+                    paths = 0;
+                } else {
+                    del_pset(visited_users);
+                    pset_remove_ptr(visited, irn);
+                    return paths;
+                }
+            }
 		}
 	}
 
     del_pset(visited_users);
 	pset_remove_ptr(visited, irn);
+	return paths;
 }
 
 static void
@@ -2604,8 +2655,6 @@ memcopyhandler(spill_ilp_t * si)
 
 	DBG((si->dbg, LEVEL_2, "\t calling interferencewalker\n"));
 	irg_block_walk_graph(si->chordal_env->irg, luke_interferencewalker, NULL, si);
-
-//	phi_class_free(si->chordal_env->irg);
 
 	/* now lets emit the ILP unequations for the crap */
 	set_foreach(si->interferences, interference) {
@@ -3700,7 +3749,10 @@ walker_reload_mover(ir_node * bb, void * data)
 				pressure = (int)get_irn_link(irn);
 
 				while(pressure < si->n_regs) {
-					if(sched_is_end(irn) || (be_is_Reload(irn) && has_reg_class(si, irn))) break;
+					if( sched_is_end(irn) ||
+					   (be_is_Reload(irn) && has_reg_class(si, irn)) ||
+					   /* do not move reload before its spill */
+					   (irn == be_get_Reload_mem(reload)) ) break;
 
 					set_irn_link(irn, INT_TO_PTR(pressure+1));
 					DBG((si->dbg, LEVEL_5, "new regpressure before %+F: %d\n", irn, pressure+1));
@@ -3943,7 +3995,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	dump_pressure_graph(&si, dump_suffix2);
 
-	be_analyze_regpressure(chordal_env, "-post");
+	//be_analyze_regpressure(chordal_env, "-post");
 
 #ifdef VERIFY_DOMINANCE
 	be_check_dominance(chordal_env->irg);
