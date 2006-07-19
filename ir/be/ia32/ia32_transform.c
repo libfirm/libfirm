@@ -83,14 +83,16 @@ typedef enum {
  * Returns 1 if irn is a Const representing 0, 0 otherwise
  */
 static INLINE int is_ia32_Const_0(ir_node *irn) {
-	return is_ia32_Const(irn) ? classify_tarval(get_ia32_Immop_tarval(irn)) == TV_CLASSIFY_NULL : 0;
+	return (is_ia32_irn(irn) && get_ia32_op_type(irn) == ia32_Const) ?
+		classify_tarval(get_ia32_Immop_tarval(irn)) == TV_CLASSIFY_NULL : 0;
 }
 
 /**
  * Returns 1 if irn is a Const representing 1, 0 otherwise
  */
 static INLINE int is_ia32_Const_1(ir_node *irn) {
-	return is_ia32_Const(irn) ? classify_tarval(get_ia32_Immop_tarval(irn)) == TV_CLASSIFY_ONE : 0;
+	return (is_ia32_irn(irn) && get_ia32_op_type(irn) == ia32_Const) ?
+		classify_tarval(get_ia32_Immop_tarval(irn)) == TV_CLASSIFY_ONE : 0;
 }
 
 /**
@@ -529,13 +531,13 @@ static ir_node *gen_Add(ia32_transform_env_t *env) {
 				set_ia32_am_sc(new_op, get_ia32_id_cnst(op2));
 				set_ia32_am_flavour(new_op, ia32_am_OB);
 
-				DBG_OPT_LEA1(op2, new_op);
+				DBG_OPT_LEA3(op1, op2, env->irn, new_op);
 			}
 			else {
 				/* this is the 1st case */
 				new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
 
-				DBG_OPT_LEA2(op1, op2, new_op);
+				DBG_OPT_LEA3(op1, op2, env->irn, new_op);
 
 				if (get_ia32_op_type(op1) == ia32_SymConst) {
 					set_ia32_am_sc(new_op, get_ia32_id_cnst(op1));
@@ -837,13 +839,13 @@ static ir_node *gen_Sub(ia32_transform_env_t *env) {
 	}
 	else {
 		/* integer SUB */
-		if (!expr_op) {
+		if (! expr_op) {
 			/* No expr_op means, that we have two const - one symconst and */
 			/* one tarval or another symconst - because this case is not   */
 			/* covered by constant folding                                 */
 			/* We need to check for:                                       */
-			/*  1) symconst + const    -> becomes a LEA                    */
-			/*  2) symconst + symconst -> becomes a const + LEA as the elf */
+			/*  1) symconst - const    -> becomes a LEA                    */
+			/*  2) symconst - symconst -> becomes a const - LEA as the elf */
 			/*        linker doesn't support two symconsts                 */
 
 			if (get_ia32_op_type(op1) == ia32_SymConst && get_ia32_op_type(op2) == ia32_SymConst) {
@@ -853,13 +855,13 @@ static ir_node *gen_Sub(ia32_transform_env_t *env) {
 				set_ia32_am_sc_sign(new_op);
 				set_ia32_am_flavour(new_op, ia32_am_OB);
 
-				DBG_OPT_LEA1(op2, new_op);
+				DBG_OPT_LEA3(op1, op2, env->irn, new_op);
 			}
 			else {
 				/* this is the 1st case */
 				new_op = new_rd_ia32_Lea(dbg, irg, block, noreg, noreg, mode);
 
-				DBG_OPT_LEA2(op1, op2, new_op);
+				DBG_OPT_LEA3(op1, op2, env->irn, new_op);
 
 				if (get_ia32_op_type(op1) == ia32_SymConst) {
 					set_ia32_am_sc(new_op, get_ia32_id_cnst(op1));
