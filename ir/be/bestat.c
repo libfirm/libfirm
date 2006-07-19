@@ -113,11 +113,10 @@ static void stat_reg_pressure_block(ir_node *block, void *env) {
 
 			live_nodes = be_liveness_transfer(aenv, cls, irn, live_nodes);
 			cnt        = pset_count(live_nodes);
-
-			max_live = cnt < max_live ? max_live : cnt;
+			max_live   = cnt < max_live ? max_live : cnt;
 		}
 
-		stat_be_block_regpressure(birg->irg, block, MIN(max_live, 5), cls->name);
+		stat_be_block_regpressure(birg->irg, block, max_live, cls->name);
 	}
 }
 
@@ -134,7 +133,7 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
  */
 void be_do_stat_sched_ready(ir_node *block, nodeset *ready_set) {
 	if (stat_is_active()) {
-		stat_be_block_sched_ready(get_irn_irg(block), block, nodeset_count(ready_set));
+		stat_be_block_sched_ready(get_irn_irg(block), block, MIN(nodeset_count(ready_set), 5));
 	}
 }
 
@@ -179,7 +178,7 @@ static void do_nodes_stat(ir_node *irn, void *env) {
 		opc == iro_End)
 		return;
 
-	if (is_Proj(irn)) {
+	if (is_Proj(irn) && (mode != mode_X)) {
 		phase->num_proj++;
 		return;
 	}
@@ -187,7 +186,7 @@ static void do_nodes_stat(ir_node *irn, void *env) {
 		phase->num_phi++;
 		return;
 	}
-	else if (mode_is_datab(mode) || (mode == mode_T && ! is_be_node(irn)))
+	else if (mode_is_datab(mode) || ((mode == mode_T) && ! is_be_node(irn)) || (is_Proj(irn) && (mode == mode_X)))
 		phase->num_data++;
 
 	if (opc == iro_Load)
