@@ -363,8 +363,26 @@ static void be_main_loop(FILE *file_handle)
 	/* for debugging, anchors helps */
 	// dump_all_anchors(1);
 
-#define BE_TIMER_PUSH(timer)  if (be_options.timing == BE_TIME_ON) lc_timer_push(timer)
-#define BE_TIMER_POP()        if (be_options.timing == BE_TIME_ON) lc_timer_pop()
+#define BE_TIMER_PUSH(timer)                                                        \
+	if (be_options.timing == BE_TIME_ON) {                                          \
+		int res = lc_timer_push(timer);                                             \
+		if (vrfy_option == BE_VRFY_ASSERT)                                          \
+			assert(res && "Timer already on stack, cannot be pushed twice.");       \
+		else if (vrfy_option == BE_VRFY_WARN && ! res)                              \
+			fprintf(stderr, "Timer %s already on stack, cannot be pushed twice.\n", \
+				lc_timer_get_name(timer));                                          \
+	}
+#define BE_TIMER_POP(timer)                                                                    \
+	if (be_options.timing == BE_TIME_ON) {                                                     \
+		lc_timer_t *tmp = lc_timer_pop();                                                      \
+		if (vrfy_option == BE_VRFY_ASSERT)                                                     \
+			assert(tmp == timer && "Attempt to pop wrong timer.");                             \
+		else if (vrfy_option == BE_VRFY_WARN && tmp != timer)                                  \
+			fprintf(stderr, "Attempt to pop wrong timer. %s is on stack, trying to pop %s.\n", \
+				lc_timer_get_name(tmp), lc_timer_get_name(timer));                             \
+		timer = tmp;                                                                           \
+	}
+
 #define BE_TIMER_ONLY(code)   if (be_options.timing == BE_TIME_ON) do { code; } while(0)
 
 	/* For all graphs */
@@ -387,7 +405,7 @@ static void be_main_loop(FILE *file_handle)
 			LC_STOP_AND_RESET_TIMER(t_verify);
 			LC_STOP_AND_RESET_TIMER(t_other);
 		}
-		BE_TIMER_PUSH(t_other);
+		BE_TIMER_PUSH(t_other);   /* t_other */
 
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
 
@@ -414,23 +432,25 @@ static void be_main_loop(FILE *file_handle)
 		/* create the code generator and generate code. */
 		prepare_graph(&birg);
 
-		/* some transformations need to be done before abi introduce */
-		arch_code_generator_before_abi(birg.cg);
+		BE_TIMER_POP(t_prolog);
 
-		BE_TIMER_POP();
-		BE_TIMER_PUSH(t_abi);
+		/* some transformations need to be done before abi introduce */
+		BE_TIMER_PUSH(t_codegen);
+		arch_code_generator_before_abi(birg.cg);
+		BE_TIMER_POP(t_codegen);
 
 		/* implement the ABI conventions. */
+		BE_TIMER_PUSH(t_abi);
 		birg.abi = be_abi_introduce(&birg);
-		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
+		BE_TIMER_POP(t_abi);
 
+		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
 		be_do_stat_nodes(irg, "02 Abi");
 
-		BE_TIMER_POP();
-		BE_TIMER_PUSH(t_codegen);
-
 		/* generate code */
+		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_prepare_graph(birg.cg);
+		BE_TIMER_POP(t_codegen);
 
 		be_do_stat_nodes(irg, "03 Prepare");
 
@@ -445,33 +465,30 @@ static void be_main_loop(FILE *file_handle)
 
 		/* Compute loop nesting information (for weighting copies) */
 		construct_cf_backedges(irg);
-
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
-
-		BE_TIMER_POP();
 		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
+
+		/* let backend prepare scheduling */
 		BE_TIMER_PUSH(t_codegen);
-
-		/* Schedule the graphs. */
 		arch_code_generator_before_sched(birg.cg);
+		BE_TIMER_POP(t_codegen);
 
-		BE_TIMER_POP();
+		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
-
 		list_sched(&birg, be_enable_mris);
+		BE_TIMER_POP(t_sched);
+
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
-		BE_TIMER_POP();
-		BE_TIMER_PUSH(t_verify);
-
 		/* check schedule */
+		BE_TIMER_PUSH(t_verify);
 		be_sched_vrfy(birg.irg, vrfy_option);
+		BE_TIMER_POP(t_verify);
 
 		be_do_stat_nodes(irg, "04 Schedule");
 
-		BE_TIMER_POP();
+		/* introduce patterns to assure constraints */
 		BE_TIMER_PUSH(t_constr);
-
 		/* we switch off optimizations here, because they might cause trouble */
 		save_optimization_state(&state);
 		set_optimize(0);
@@ -480,58 +497,64 @@ static void be_main_loop(FILE *file_handle)
 		/* add Keeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */
 		assure_constraints(&birg);
-		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
+		BE_TIMER_POP(t_constr);
 
+		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "05 Constraints");
 
 		/* connect all stack modifying nodes together (see beabi.c) */
+		BE_TIMER_PUSH(t_abi);
 		be_abi_fix_stack_nodes(birg.abi);
-		BE_TIMER_POP();
+		BE_TIMER_POP(t_abi);
 
 		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
 
-		BE_TIMER_PUSH(t_verify);
 		/* check schedule */
+		BE_TIMER_PUSH(t_verify);
 		be_sched_vrfy(birg.irg, vrfy_option);
-		BE_TIMER_POP();
+		BE_TIMER_POP(t_verify);
 
-		BE_TIMER_PUSH(t_codegen);
 		/* do some statistics */
 		be_do_stat_reg_pressure(&birg);
 
 		/* stuff needs to be done after scheduling but before register allocation */
+		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_before_ra(birg.cg);
-
-		BE_TIMER_POP();
-
-		BE_TIMER_ONLY(lc_timer_start(t_regalloc));
+		BE_TIMER_POP(t_codegen);
 
 		/* Do register allocation */
+		BE_TIMER_ONLY(lc_timer_start(t_regalloc));
 		ra_timer = ra->allocate(&birg);
-		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
-
 		BE_TIMER_ONLY(lc_timer_stop(t_regalloc));
 
+		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "06 Register Allocation");
 
+		/* let the codegenerator prepare the graph for emitter */
 		BE_TIMER_PUSH(t_finish);
-
 		arch_code_generator_after_ra(birg.cg);
-		be_abi_fix_stack_bias(birg.abi);
+		BE_TIMER_POP(t_finish);
 
-		BE_TIMER_POP();
-		BE_TIMER_PUSH(t_verify);
+		/* fix stack offsets */
+		BE_TIMER_PUSH(t_abi);
+		be_abi_fix_stack_bias(birg.abi);
+		BE_TIMER_POP(t_abi);
 
 		/* check schedule */
+		BE_TIMER_PUSH(t_verify);
 		be_sched_vrfy(birg.irg, vrfy_option);
+		BE_TIMER_POP(t_verify);
 
-		BE_TIMER_POP();
+		/* emit assembler code */
 		BE_TIMER_PUSH(t_emit);
 		arch_code_generator_done(birg.cg);
-		BE_TIMER_POP();
+		BE_TIMER_POP(t_emit);
 
 		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
+
+		BE_TIMER_PUSH(t_abi);
 		be_abi_free(birg.abi);
+		BE_TIMER_POP(t_abi);
 
 		be_do_stat_nodes(irg, "07 Final");
 		restore_optimization_state(&state);
@@ -541,7 +564,8 @@ static void be_main_loop(FILE *file_handle)
 		/* switched off due to statistics (statistic module needs all irgs) */
 		if (! stat_is_active())
 			free_ir_graph(irg);
-		BE_TIMER_POP();
+
+		BE_TIMER_POP(t_other);
 
 #define LC_EMIT(timer)    printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
 #define LC_EMIT_RA(timer) printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)

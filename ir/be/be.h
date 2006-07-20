@@ -8,7 +8,7 @@
 #include "lower_dw.h"
 #include "dbginfo.h"
 
-#define LC_STOP_AND_RESET_TIMER(timer) lc_timer_stop(timer); lc_timer_reset(timer)
+#define LC_STOP_AND_RESET_TIMER(timer) do { lc_timer_stop(timer); lc_timer_reset(timer); } while(0)
 
 /**
  * This structure contains parameters that should be
