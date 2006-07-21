@@ -1196,12 +1196,13 @@ ir_node *gen_Minus_ex(ia32_transform_env_t *env, ir_node *op) {
 			size   = get_mode_size_bits(env->mode);
 			name   = gen_fp_known_const(env->mode, size == 32 ? ia32_SSIGN : ia32_DSIGN);
 
-			set_ia32_sc(new_op, name);
+			set_ia32_am_sc(new_op, name);
 
 			SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
 			set_ia32_res_mode(new_op, env->mode);
-			set_ia32_immop_type(new_op, ia32_ImmSymConst);
+			set_ia32_op_type(new_op, ia32_AddrModeS);
+			set_ia32_ls_mode(new_op, env->mode);
 
 			new_op = new_rd_Proj(env->dbg, env->irg, env->block, new_op, env->mode, pn_ia32_xEor_res);
 		}
@@ -1268,12 +1269,13 @@ static ir_node *gen_Abs(ia32_transform_env_t *env) {
 			size   = get_mode_size_bits(mode);
 			name   = gen_fp_known_const(mode, size == 32 ? ia32_SABS : ia32_DABS);
 
-			set_ia32_sc(res, name);
+			set_ia32_am_sc(res, name);
 
 			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, env->irn));
 
 			set_ia32_res_mode(res, mode);
-			set_ia32_immop_type(res, ia32_ImmSymConst);
+			set_ia32_op_type(res, ia32_AddrModeS);
+			set_ia32_ls_mode(res, env->mode);
 
 			res = new_rd_Proj(dbg, irg, block, res, mode, pn_ia32_xAnd_res);
 		}
@@ -1602,17 +1604,19 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
  * @return The transformed node.
  */
 static ir_node *gen_CopyB(ia32_transform_env_t *env) {
-	ir_node  *res   = NULL;
-	dbg_info *dbg   = env->dbg;
-	ir_graph *irg   = env->irg;
-	ir_mode  *mode  = env->mode;
-	ir_node  *block = env->block;
-	ir_node  *node  = env->irn;
-	ir_node  *src   = get_CopyB_src(node);
-	ir_node  *dst   = get_CopyB_dst(node);
-	ir_node  *mem   = get_CopyB_mem(node);
-	int       size  = get_type_size_bytes(get_CopyB_type(node));
-	int       rem;
+	ir_node  *res      = NULL;
+	dbg_info *dbg      = env->dbg;
+	ir_graph *irg      = env->irg;
+	ir_node  *block    = env->block;
+	ir_node  *node     = env->irn;
+	ir_node  *src      = get_CopyB_src(node);
+	ir_node  *dst      = get_CopyB_dst(node);
+	ir_node  *mem      = get_CopyB_mem(node);
+	int      size      = get_type_size_bytes(get_CopyB_type(node));
+	ir_mode  *dst_mode = get_irn_mode(dst);
+	ir_mode  *src_mode = get_irn_mode(src);
+	int      rem;
+	ir_node  *in[3], *tmp;
 
 	/* If we have to copy more than 16 bytes, we use REP MOVSx and */
 	/* then we need the size explicitly in ECX.                    */
@@ -1624,13 +1628,30 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 		set_ia32_op_type(res, ia32_Const);
 		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
 
-		res = new_rd_ia32_CopyB(dbg, irg, block, dst, src, res, mem, mode);
+		res = new_rd_ia32_CopyB(dbg, irg, block, dst, src, res, mem);
 		set_ia32_Immop_tarval(res, new_tarval_from_long(rem, mode_Is));
+
+		/* ok: now attach Proj's because rep movsd will destroy esi, edi and ecx */
+		in[0] = new_r_Proj(irg, block, res, dst_mode, pn_ia32_CopyB_DST);
+		in[1] = new_r_Proj(irg, block, res, src_mode, pn_ia32_CopyB_SRC);
+		in[2] = new_r_Proj(irg, block, res, mode_Is, pn_ia32_CopyB_CNT);
+		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 3, in);
+
+		tmp = ia32_get_proj_for_mode(node, mode_M);
+		set_Proj_proj(tmp, pn_ia32_CopyB_M);
 	}
 	else {
-		res = new_rd_ia32_CopyB_i(dbg, irg, block, dst, src, mem, mode);
+		res = new_rd_ia32_CopyB_i(dbg, irg, block, dst, src, mem);
 		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
 		set_ia32_immop_type(res, ia32_ImmConst);
+
+		/* ok: now attach Proj's because movsd will destroy esi and edi */
+		in[0] = new_r_Proj(irg, block, res, dst_mode, pn_ia32_CopyB_i_DST);
+		in[1] = new_r_Proj(irg, block, res, src_mode, pn_ia32_CopyB_i_SRC);
+		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 2, in);
+
+		tmp = ia32_get_proj_for_mode(node, mode_M);
+		set_Proj_proj(tmp, pn_ia32_CopyB_i_M);
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, env->irn));
