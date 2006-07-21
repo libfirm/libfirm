@@ -900,7 +900,8 @@ else {
   "op_flags" => "F|H",
   "state"    => "pinned",
   "comment"  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
-  "reg_req"  => { "in" => [ "edi", "esi", "ecx", "none" ], "out" => [ "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "edi in_r1", "esi in_r2", "ecx in_r3", "none" ] },
+  "outs"     => [ "DST", "SRC", "CNT", "M" ],
 },
 
 "CopyB_i" => {
@@ -908,7 +909,8 @@ else {
   "state"    => "pinned",
   "comment"  => "implements a memcopy: CopyB(dst, src, mem) == memcpy(dst, src, attr(size))",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"  => { "in" => [ "edi", "esi", "none" ], "out" => [ "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "none" ], "out" => [  "edi in_r1", "esi in_r2", "none" ] },
+  "outs"     => [ "DST", "SRC", "M" ],
 },
 
 # Conversions
