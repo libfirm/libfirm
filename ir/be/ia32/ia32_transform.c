@@ -236,26 +236,31 @@ static ir_node *get_expr_op(ir_node *op1, ir_node *op2) {
  * @return The constructed ia32 node.
  */
 static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2, construct_binop_func *func) {
-	ir_node           *new_op   = NULL;
-	ir_mode           *mode     = env->mode;
-	dbg_info          *dbg      = env->dbg;
-	ir_graph          *irg      = env->irg;
-	ir_node           *block    = env->block;
-	ir_node           *noreg_gp = ia32_new_NoReg_gp(env->cg);
-	ir_node           *noreg_fp = ia32_new_NoReg_fp(env->cg);
-	ir_node           *nomem    = new_NoMem();
-	ir_node           *expr_op, *imm_op;
+	ir_node  *new_op   = NULL;
+	ir_mode  *mode     = env->mode;
+	dbg_info *dbg      = env->dbg;
+	ir_graph *irg      = env->irg;
+	ir_node  *block    = env->block;
+	ir_node  *noreg_gp = ia32_new_NoReg_gp(env->cg);
+	ir_node  *noreg_fp = ia32_new_NoReg_fp(env->cg);
+	ir_node  *nomem    = new_NoMem();
+	int      is_mul    = 0;
+	ir_node  *expr_op, *imm_op;
 	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
-	/* MulS and Mulh don't support immediates    */
+	/* Mul/MulS/Mulh don't support immediates    */
 	if (! (env->cg->opt & IA32_OPT_IMMOPS) ||
+		func == new_rd_ia32_Mul            ||
 		func == new_rd_ia32_Mulh           ||
 		func == new_rd_ia32_MulS)
 	{
 		expr_op = op1;
 		imm_op  = NULL;
+		/* immediate operations are requested, but we are here: it a mul */
+		if (env->cg->opt & IA32_OPT_IMMOPS)
+			is_mul = 1;
 	}
 	else if (is_op_commutative(get_irn_op(env->irn))) {
 		imm_op  = get_immediate_op(op1, op2);
@@ -307,6 +312,10 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *op1, ir_node *op2,
 			/* set AM support */
 			set_ia32_am_support(new_op, ia32_am_Full);
 		}
+
+		/* Muls can only have AM source */
+		if (is_mul)
+			set_ia32_am_support(new_op, ia32_am_Source);
 	}
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
