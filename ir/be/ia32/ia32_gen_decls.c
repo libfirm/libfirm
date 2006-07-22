@@ -312,6 +312,7 @@ static void dump_string_cst(struct obstack *obst, entity *ent)
 		case '\n': obstack_printf(obst, "\\n"); break;
 		case '\r': obstack_printf(obst, "\\r"); break;
 		case '\t': obstack_printf(obst, "\\t"); break;
+		case '\\': obstack_printf(obst, "\\\\"); break;
 		default  :
 			if (isprint(c))
 				obstack_printf(obst, "%c", c);
