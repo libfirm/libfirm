@@ -804,8 +804,12 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		load  = get_Proj_pred(in);
 		other = right;
 
+		/* 8bit Loads are not supported, they cannot be used with every register */
+		if (get_mode_size_bits(get_ia32_ls_mode(load)) < 16)
+			is_cand = 0;
+
 		/* If there is a data dependency of other irn from load: cannot use AM */
-		if (get_nodes_block(other) == block) {
+		if (is_cand && get_nodes_block(other) == block) {
 			other   = skip_Proj(other);
 			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
 			/* this could happen in loops */
@@ -824,8 +828,12 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		load  = get_Proj_pred(in);
 		other = left;
 
+		/* 8bit Loads are not supported, they cannot be used with every register */
+		if (get_mode_size_bits(get_ia32_ls_mode(load)) < 16)
+			is_cand = 0;
+
 		/* If there is a data dependency of other irn from load: cannot use load */
-		if (get_nodes_block(other) == block) {
+		if (is_cand && get_nodes_block(other) == block) {
 			other   = skip_Proj(other);
 			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
 			/* this could happen in loops */
