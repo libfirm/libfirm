@@ -420,7 +420,7 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir
 	real_in[be_pos_Call_ptr] = ptr;
 	memcpy(&real_in[be_pos_Call_first_arg], in, n * sizeof(in[0]));
 
-	irn = new_ir_node(NULL, irg, bl, op_be_Call, mode_T, real_n, real_in);
+	irn = new_ir_node(dbg, irg, bl, op_be_Call, mode_T, real_n, real_in);
 	a = init_node_attr(irn, (n_outs > real_n ? n_outs : real_n));
 	a->ent     = NULL;
 	a->call_tp = call_tp;
