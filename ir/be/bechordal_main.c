@@ -2,6 +2,7 @@
  * @file   bechordal_main.c
  * @date   29.11.2005
  * @author Sebastian Hack
+ * @cvs-id $Id$
  *
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
@@ -318,13 +319,18 @@ void check_ifg_implementations(be_chordal_env_t *chordal_env)
 	chordal_env->ifg = NULL;
 };
 
+/**
+ * Performs chordal register allocation for each register class on given irg.
+ *
+ * @param bi  Backend irg object
+ * @return Structure containing timer for the single phases or NULL if no timing requested.
+ */
 static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 {
 	const be_main_env_t *main_env  = bi->main_env;
 	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
 	ir_graph            *irg       = bi->irg;
 	be_options_t        *main_opts = main_env->options;
-	copy_opt_t          *co;
 
 	int j, m;
 	be_chordal_env_t chordal_env;
@@ -390,8 +396,10 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	BE_TIMER_POP(ra_timer.t_prolog);
 
 	/* Perform the following for each register class. */
-	for(j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
+	for (j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
 		FILE *f;
+		copy_opt_t *co = NULL;
+
 		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
@@ -510,7 +518,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		BE_TIMER_PUSH(ra_timer.t_copymin);
 
 		/* copy minimization */
-		co = NULL;
 		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
 			FILE *f;
 			co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
