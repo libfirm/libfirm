@@ -1,7 +1,8 @@
 /**
  * Chordal register allocation.
  * @author Sebastian Hack
- * @date 8.12.2004
+ * @date   8.12.2004
+ * @cvs-id $Id$
  *
  * Copyright (C) Universitaet Karlsruhe
  * Released under the GPL
@@ -34,6 +35,7 @@
 #include "irgwalk.h"
 #include "irdump.h"
 #include "irdom.h"
+#include "irtools.h"
 #include "debug.h"
 #include "xmalloc.h"
 
@@ -55,9 +57,6 @@
 #define DBG_LEVEL_CHECK SET_LEVEL_0
 
 #define NO_COLOR (-1)
-
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define DUMP_INTERVALS
 
