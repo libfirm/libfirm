@@ -659,8 +659,8 @@ void ia32_peephole_optimization(ir_node *irn, void *env) {
 			ia32_optimize_CondJmp(irn, cg);
 	}
 	/* seems to be buggy when using Pushes */
-//	else if (be_is_IncSP(irn))
-//		ia32_optimize_IncSP(irn, cg);
+	else if (be_is_IncSP(irn))
+		ia32_optimize_IncSP(irn, cg);
 	else if (is_ia32_Store(irn))
 		ia32_create_Push(irn, cg);
 }
