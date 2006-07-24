@@ -997,6 +997,34 @@ static int do_new_lea(ir_node *irn, ir_node *base, ir_node *index, ir_node *lea,
 	return ret_val;
 }
 
+/**
+ * Adds res before irn into schedule if irn was scheduled.
+ * @param irn  The schedule point
+ * @param res  The node to be scheduled
+ */
+static INLINE void try_add_to_sched(ir_node *irn, ir_node *res) {
+	if (sched_is_scheduled(irn))
+		sched_add_before(irn, res);
+}
+
+/**
+ * Removes irn from schedule if it was scheduled. If irn is a mode_T node
+ * all it's Projs are removed as well.
+ * @param irn  The irn to be removed from schedule
+ */
+static INLINE void try_remove_from_sched(ir_node *irn) {
+	if (sched_is_scheduled(irn)) {
+		if (get_irn_mode(irn) == mode_T) {
+			const ir_edge_t *edge;
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+				if (sched_is_scheduled(proj))
+					sched_remove(proj);
+			}
+		}
+		sched_remove(irn);
+	}
+}
 
 /**
  * Folds Add or Sub to LEA if possible
@@ -1262,24 +1290,45 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %s]\n", base, index, scale, get_ia32_am_offs(res)));
 
 		/* we will exchange it, report here before the Proj is created */
-		if (shift && lea && lea_o)
+		if (shift && lea && lea_o) {
+			try_remove_from_sched(shift);
+			try_remove_from_sched(lea);
+			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA4(irn, lea_o, lea, shift, res);
-		else if (shift && lea)
+		}
+		else if (shift && lea) {
+			try_remove_from_sched(shift);
+			try_remove_from_sched(lea);
 			DBG_OPT_LEA3(irn, lea, shift, res);
-		else if (shift && lea_o)
+		}
+		else if (shift && lea_o) {
+			try_remove_from_sched(shift);
+			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA3(irn, lea_o, shift, res);
-		else if (lea && lea_o)
+		}
+		else if (lea && lea_o) {
+			try_remove_from_sched(lea);
+			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA3(irn, lea_o, lea, res);
-		else if (shift)
+		}
+		else if (shift) {
+			try_remove_from_sched(shift);
 			DBG_OPT_LEA2(irn, shift, res);
-		else if (lea)
+		}
+		else if (lea) {
+			try_remove_from_sched(lea);
 			DBG_OPT_LEA2(irn, lea, res);
-		else if (lea_o)
+		}
+		else if (lea_o) {
+			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA2(irn, lea_o, res);
+		}
 		else
 			DBG_OPT_LEA1(irn, res);
 
 		/* get the result Proj of the Add/Sub */
+		try_add_to_sched(irn, res);
+		try_remove_from_sched(irn);
 		irn = ia32_get_res_proj(irn);
 
 		assert(irn && "Couldn't find result proj");
@@ -1323,6 +1372,8 @@ static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
 	/* set base and index */
 	set_irn_n(irn, 0, get_irn_n(lea, 0));
 	set_irn_n(irn, 1, get_irn_n(lea, 1));
+
+	try_remove_from_sched(lea);
 
 	/* clear remat flag */
 	set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
@@ -1582,6 +1633,8 @@ static void optimize_am(ir_node *irn, void *env) {
 					/* clear remat flag */
 					set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
 
+					try_remove_from_sched(load);
+					try_remove_from_sched(store);
 					DBG_OPT_AM_D(load, store, irn);
 
 					DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
@@ -1672,6 +1725,8 @@ static void optimize_am(ir_node *irn, void *env) {
 				set_Proj_pred(mem_proj, irn);
 				set_Proj_proj(mem_proj, 1);
 			}
+
+			try_remove_from_sched(right);
 
 			DB((mod, LEVEL_1, "merged with %+F into source AM\n", right));
 		}
