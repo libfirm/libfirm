@@ -625,16 +625,6 @@ new_bd_SymConst_type(dbg_info *db, ir_node *block, symconst_symbol value,
 }  /* new_bd_SymConst_type */
 
 static ir_node *
-new_bd_SymConst(dbg_info *db, ir_node *block, symconst_symbol value,
-         symconst_kind symkind)
-{
-  ir_graph *irg = current_ir_graph;
-
-  ir_node *res = new_rd_SymConst_type(db, irg, block, value, symkind, firm_unknown_type);
-  return res;
-}  /* new_bd_SymConst */
-
-static ir_node *
 new_bd_Sync(dbg_info *db, ir_node *block)
 {
   ir_node  *res;
@@ -2873,8 +2863,8 @@ new_d_SymConst_type(dbg_info *db, symconst_symbol value, symconst_kind kind, ir_
 ir_node *
 new_d_SymConst(dbg_info *db, symconst_symbol value, symconst_kind kind)
 {
-  return new_bd_SymConst(db, get_irg_start_block(current_ir_graph),
-                         value, kind);
+  return new_bd_SymConst_type(db, get_irg_start_block(current_ir_graph),
+                         value, kind, firm_unknown_type);
 }  /* new_d_SymConst */
 
 ir_node *
@@ -3196,6 +3186,9 @@ ir_node *new_Const_type(tarval *con, ir_type *tp) {
   return new_d_Const_type(NULL, get_type_mode(tp), con, tp);
 }
 
+ir_node *new_SymConst_type (symconst_symbol value, symconst_kind kind, ir_type *type) {
+  return new_d_SymConst_type(NULL, value, kind, type);
+}
 ir_node *new_SymConst (symconst_symbol value, symconst_kind kind) {
   return new_d_SymConst(NULL, value, kind);
 }

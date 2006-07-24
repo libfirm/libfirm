@@ -3657,6 +3657,38 @@ ir_node *new_Const_type(tarval *con, ir_type *tp);
  * @param value   A type or a ident depending on the SymConst kind.
  * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_type_size
  *                symconst_type_align, symconst_addr_name or symconst_addr_ent.
+ * @param tp      The source type of the constant.
+ */
+ir_node *new_SymConst_type (union symconst_symbol value, symconst_kind kind, ir_type *tp);
+
+/** Constructor for a SymConst node.
+ *
+ * Adds the node to the block in current_ir_block.
+ * This is the constructor for a symbolic constant.
+ * There are four kinds of symbolic constants:
+ *    -# type_tag  The symbolic constant represents a type tag.  The type the
+ *                 tag stands for is given explicitly.
+ *    -# size      The symbolic constant represents the size of a type.  The
+ *                 type of which the constant represents the size is given
+ *                 explicitly.
+ *    -# align     The symbolic constant represents the alignment of a type.  The
+ *                 type of which the constant represents the size is given
+ *                 explicitly.
+ *    -# addr_name The symbolic constant represents the address of an entity
+ *                 (variable or method).  The variable is indicated by a name
+ *                 that is valid for linking.
+ *    -# addr_ent  The symbolic constant represents the address of an entity
+ *                 (variable or method).  The variable is given explicitly by
+ *                 a firm entity.
+ *
+ *    Inputs to the node:
+ *      No inputs except the block it belongs to.
+ *    Outputs of the node.
+ *      An unsigned integer (I_u) or a pointer (P).
+ *
+ * @param value   A type or a ident depending on the SymConst kind.
+ * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_type_size
+ *                symconst_type_align, symconst_addr_name or symconst_addr_ent.
  */
 ir_node *new_SymConst (union symconst_symbol value, symconst_kind kind);
 
