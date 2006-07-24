@@ -478,18 +478,27 @@ static void ir_common_vprintf(const appender_t *app, void *object,
 				case 'h':
 					len_str = "h";
 					len = len_short;
-					if((ch = fmt[++i]) == 'h') {
+					++i;
+					if((ch = fmt[i]) == 'h') {
 						len_str = "hh";
 						len = len_char;
+						++i;
 					}
 					break;
 
 				case 'l':
 					len_str = "l";
 					len = len_long;
-					if((ch = fmt[++i]) == 'l') {
+					++i;
+					if ((ch = fmt[i]) == 'l') {
 						len_str = "ll";
 						len = len_long_long;
+						++i;
+					}
+					else if ((ch = fmt[i]) == 'u') {
+						len_str = "lu";
+						len = len_long_long;
+						++i;
 					}
 					break;
 
