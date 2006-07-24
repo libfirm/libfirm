@@ -117,6 +117,24 @@ arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int 
   }
 }
 
+int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsigned int i) {
+	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	if(ops->impl->possible_memory_operand) {
+		return ops->impl->possible_memory_operand(ops, irn, i);
+	} else {
+		return 0;
+	}
+}
+
+extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *reload, unsigned int i) {
+	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	if(ops->impl->perform_memory_operand) {
+		ops->impl->perform_memory_operand(ops, irn, reload, i);
+	} else {
+		return;
+	}
+}
+
 int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);
