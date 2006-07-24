@@ -71,21 +71,6 @@ ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
 		USE_SSE2(cg) ? &ia32_xmm_regs[REG_XMM_NOREG] : &ia32_vfp_regs[REG_VFP_NOREG]);
 }
 
-/* returns the first Proj with given mode from mode_T node */
-static ir_node *get_proj_for_mode(ir_node *node, ir_mode *mode) {
-	const ir_edge_t *edge;
-
-	assert(get_irn_mode(node) == mode_T && "Need mode_T node.");
-
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (get_irn_mode(proj) == mode)
-			return proj;
-	}
-
-	return NULL;
-}
-
 /**************************************************
  *                         _ _              _  __
  *                        | | |            (_)/ _|
@@ -664,6 +649,57 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 	return inverse;
 }
 
+/**
+ * Check if irn can load it's operand at position i from memory (source addressmode).
+ * @param self   Pointer to irn ops itself
+ * @param irn    The irn to be checked
+ * @param i      The operands position
+ * @return Non-Zero if operand can be loaded
+ */
+static int ia32_possible_memory_operand(const void *self, const ir_node *irn, unsigned int i) {
+	if (! is_ia32_irn(irn)                            ||  /* must be an ia32 irn */
+		get_irn_arity(irn) != 5                       ||  /* must be a binary operation */
+		get_ia32_op_type(irn) != ia32_Normal          ||  /* must not already be a addressmode irn */
+		! (get_ia32_am_support(irn) & ia32_am_Source) ||  /* must be capable of source addressmode */
+        (i != 2 && i != 3)                            ||  /* a "real" operand position must be requested */
+		(i == 2 && ! is_ia32_commutative(irn))        ||  /* if first operand requested irn must be commutative */
+		is_ia32_use_frame(irn))                           /* must not already use frame */
+		return 0;
+
+	return 1;
+}
+
+static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node *reload, unsigned int i) {
+	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
+	assert(get_nodes_block(reload) == get_nodes_block(irn) && "Reload must be in same block as irn.");
+
+	if (get_irn_n_edges(reload) > 1)
+		return;
+
+	if (i == 2) {
+		ir_node *tmp = get_irn_n(irn, 3);
+		set_irn_n(irn, 3, get_irn_n(irn, 2));
+		set_irn_n(irn, 2, tmp);
+	}
+
+	set_ia32_am_support(irn, ia32_am_Source);
+	set_ia32_op_type(irn, ia32_AddrModeS);
+	set_ia32_am_flavour(irn, ia32_B);
+	set_ia32_ls_mode(irn, get_irn_mode(reload));
+	set_ia32_frame_ent(irn, be_get_frame_entity(reload));
+	set_ia32_use_frame(irn);
+
+	set_irn_n(irn, 0, be_get_Reload_frame(reload));
+	set_irn_n(irn, 4, be_get_Reload_mem(reload));
+
+	/*
+		Input at position one is index register, which is NoReg.
+		We would need cg object to get a real noreg, but we cannot
+		access it from here.
+	 */
+	set_irn_n(irn, 3, get_irn_n(irn, 1));
+}
+
 static const be_abi_callbacks_t ia32_abi_callbacks = {
 	ia32_abi_init,
 	free,
@@ -684,7 +720,9 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_get_frame_entity,
 	ia32_set_stack_bias,
 	ia32_get_inverse,
-	ia32_get_op_estimated_cost
+	ia32_get_op_estimated_cost,
+	ia32_possible_memory_operand,
+	ia32_perform_memory_operand,
 };
 
 ia32_irn_ops_t ia32_irn_ops = {
@@ -767,7 +805,7 @@ static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
 
 	/* tuple node has one user which is not the mem proj-> ok */
 	if (mode == mode_T && get_irn_n_edges(irn) == 1) {
-		mem_proj = get_proj_for_mode(irn, mode_M);
+		mem_proj = ia32_get_proj_for_mode(irn, mode_M);
 		if (! mem_proj)
 			return;
 	}
@@ -987,6 +1025,7 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
  */
 static void ia32_after_ra(void *self) {
 	ia32_code_gen_t *cg = self;
+
 	irg_block_walk_graph(cg->irg, NULL, ia32_after_ra_walker, self);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
