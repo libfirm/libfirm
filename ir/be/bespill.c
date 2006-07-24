@@ -660,21 +660,26 @@ typedef struct _ss_env_t {
  * Walker: compute the spill slots
  */
 static void compute_spill_slots_walker(ir_node *spill, void *env) {
-	ss_env_t *ssenv = env;
-	ir_node *ctx;
-	pmap_entry *entry;
+	ss_env_t     *ssenv    = env;
+	arch_env_t   *arch_env = ssenv->cenv->birg->main_env->arch_env;
+	ir_node      *ctx;
+	pmap_entry   *entry;
 	spill_slot_t *ss;
+	const arch_register_class_t *cls;
 
-	if (!be_is_Spill(spill))
+	if (! be_is_Spill(spill))
+		return;
+
+	cls = arch_get_irn_reg_class(arch_env, spill, be_pos_Spill_val);
+
+	if (cls != ssenv->cenv->cls)
 		return;
 
 	/* check, if this spill is for a context already known */
-	ctx = be_get_Spill_context(spill);
+	ctx   = be_get_Spill_context(spill);
 	entry = pmap_find(ssenv->slots, ctx);
 
-	if (!entry) {
-		struct _arch_env_t *arch_env     = ssenv->cenv->birg->main_env->arch_env;
-		const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, spill, be_pos_Spill_val);
+	if (! entry) {
 		ir_mode *largest_mode            = arch_register_class_mode(cls);
 
 		/* this is a new spill context */
@@ -891,7 +896,7 @@ void be_compute_spill_offsets(be_chordal_env_t *cenv) {
 	ssenv.cenv  = cenv;
 	ssenv.slots = pmap_create();
 	ssenv.types = pmap_create();
-	FIRM_DBG_REGISTER(ssenv.dbg, "ir.be.spillslots");
+	FIRM_DBG_REGISTER(ssenv.dbg, "firm.be.spillslots");
 
 	/* Get initial spill slots */
 	irg_walk_graph(cenv->irg, NULL, compute_spill_slots_walker, &ssenv);
