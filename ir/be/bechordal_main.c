@@ -320,6 +320,48 @@ void check_ifg_implementations(be_chordal_env_t *chordal_env)
 };
 
 /**
+ * Checks for every reload if it's user can perform the load on itself.
+ */
+static void memory_operand_walker(ir_node *irn, void *env) {
+	be_chordal_env_t *cenv = env;
+	const arch_env_t *aenv = cenv->birg->main_env->arch_env;
+	const ir_edge_t  *edge, *ne;
+	ir_node          *block;
+
+	if (! be_is_Reload(irn))
+		return;
+
+	block = get_nodes_block(irn);
+
+	foreach_out_edge_safe(irn, edge, ne) {
+		ir_node *src = get_edge_src_irn(edge);
+		int     pos  = get_edge_src_pos(edge);
+
+		if (! src)
+			continue;
+
+		if (get_nodes_block(src) == block && arch_possible_memory_operand(aenv, src, pos)) {
+			DBG((cenv->dbg, LEVEL_3, "performing memory operand %+F at %+F\n", irn, src));
+			arch_perform_memory_operand(aenv, src, irn, pos);
+		}
+	}
+
+	/* kill the Reload */
+	if (get_irn_n_edges(irn) == 0) {
+		sched_remove(irn);
+		set_irn_n(irn, 0, new_Bad());
+		set_irn_n(irn, 1, new_Bad());
+	}
+}
+
+/**
+ * Starts a walk for memory operands if supported by the backend.
+ */
+static INLINE void check_for_memory_operands(be_chordal_env_t *chordal_env) {
+	irg_walk_graph(chordal_env->irg, NULL, memory_operand_walker, chordal_env);
+}
+
+/**
  * Performs chordal register allocation for each register class on given irg.
  *
  * @param bi  Backend irg object
@@ -439,6 +481,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 		be_abi_fix_stack_nodes(bi->abi);
+		be_compute_spill_offsets(&chordal_env);
+		check_for_memory_operands(&chordal_env);
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
 
@@ -612,8 +656,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	}
 
 	BE_TIMER_PUSH(ra_timer.t_epilog);
-
-	be_compute_spill_offsets(&chordal_env);
 
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-spilloff", dump_ir_block_graph_sched);
 
