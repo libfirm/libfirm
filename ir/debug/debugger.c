@@ -690,12 +690,16 @@ static void show_firm_object(void *firm_thing) {
  */
 static ir_type *find_type_nr(long nr) {
   int i, n = get_irp_n_types();
+  ir_type *tp;
 
   for (i = 0; i < n; ++i) {
-    ir_type *tp = get_irp_type(i);
+    tp = get_irp_type(i);
     if (get_type_nr(tp) == nr)
       return tp;
   }
+  tp = get_glob_type();
+  if (get_type_nr(tp) == nr)
+    return tp;
   return NULL;
 }  /* find_type_nr */
 
@@ -704,12 +708,16 @@ static ir_type *find_type_nr(long nr) {
  */
 static ir_type *find_type_name(const char *name) {
   int i, n = get_irp_n_types();
+  ir_type *tp;
 
   for (i = 0; i < n; ++i) {
-    ir_type *tp = get_irp_type(i);
+    tp = get_irp_type(i);
     if (strcmp(get_type_name(tp), name) == 0)
       return tp;
   }
+  tp = get_glob_type();
+  if (strcmp(get_type_name(tp), name) == 0)
+    return tp;
   return NULL;
 }  /* find_type_name */
 
