@@ -15,7 +15,7 @@ typedef struct _java_coal_t java_coal_t;
 /**
  * Register libcore options.
  */
-void java_coal_register_options(lc_opt_entry_t *grp)
+void java_coal_register_options(lc_opt_entry_t *grp);
 
 #endif /* WITH_LIBCORE */
 
