@@ -698,6 +698,8 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 		access it from here.
 	 */
 	set_irn_n(irn, 3, get_irn_n(irn, 1));
+
+	DBG_OPT_AM_S(reload, irn);
 }
 
 static const be_abi_callbacks_t ia32_abi_callbacks = {
