@@ -109,7 +109,7 @@ init_firm(const firm_parameter_t *param)
   /* Builds a construct allowing to access all information to be constructed
      later. */
   init_irprog_2();
-  /* Initialize the type module and construct some idents needed. */
+  /* Initialize the type module ancd cr	d construct some idents needed. */
   firm_init_type(def_params.builtin_dbg, def_params.cc_mask);
   /* initialize the entity module */
   firm_init_entity();
@@ -130,18 +130,16 @@ init_firm(const firm_parameter_t *param)
 #endif
 
 #ifdef WITH_LIBCORE
-	/* Process command line and ini file. */
+  /* Process command line and ini file. */
+  {
+	  FILE *f = fopen("firm.ini", "rt");
+	  if(f) {
+		  lc_opt_from_file("firm.ini", f, NULL);
+		  fclose(f);
+	  }
 
-	if(def_params.ini_file) {
-		FILE *f = fopen(def_params.ini_file, "rt");
-		if(f) {
-			lc_opt_from_file(def_params.ini_file, f, NULL);
-			fclose(f);
-		}
-	}
-
-	lc_opt_from_argv(firm_opt_get_root(), def_params.arg_prefix,
-			def_params.argc, def_params.argv, NULL);
+	  lc_opt_from_argv(firm_opt_get_root(), def_params.arg_prefix, def_params.argc, def_params.argv, NULL);
+  }
 
 #endif
 }
