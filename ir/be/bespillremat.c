@@ -1478,7 +1478,7 @@ insert_mem_copy_position(spill_ilp_t * si, pset * live, const ir_node * block)
 			}
 		}
 
-		ir_snprintf(buf, sizeof(buf), "req_copy_%N_%N", block, to_copy);
+		ir_snprintf(buf, sizeof(buf), "req_copy_%N_%N_%N", block, phi, to_copy);
 		cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 
 		/* copy - reg_out - reload - remat - live_range <= 0 */
@@ -1493,7 +1493,7 @@ insert_mem_copy_position(spill_ilp_t * si, pset * live, const ir_node * block)
 			}
 		}
 
-		ir_snprintf(buf, sizeof(buf), "copyreg_%N_%N", block, to_copy);
+		ir_snprintf(buf, sizeof(buf), "copyreg_%N_%N_%N", block, phi, to_copy);
 		cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 
 		/* copy - reg_out - copyreg <= 0 */
@@ -2233,14 +2233,18 @@ skip_one_must_die:
 				ir_node        *bb_p = get_Block_cfgpred_block(bb, n);
 				spill_bb_t     *spill_bb_p = get_irn_link(bb_p);
 				spill_t        *spill_p;
+				op_t           *op = get_irn_link(irn);
 
 				/* although the phi is in the right regclass one or more of
 				 * its arguments can be in a different one or at least to
 				 * ignore
 				 */
 				if(has_reg_class(si, phi_arg)) {
+					/* mem_in < mem_out_arg + copy */
 					ir_snprintf(buf, sizeof(buf), "mem_in_%N_%N-%d", irn, bb, p);
 					mem_in = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+
+					/* reg_in < reg_out_arg */
 					ir_snprintf(buf, sizeof(buf), "reg_in_%N_%N-%d", irn, bb, p++);
 					reg_in = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
 
@@ -2251,6 +2255,7 @@ skip_one_must_die:
 					assert(spill_p);
 
 					lpp_set_factor_fast(si->lpp, mem_in, spill_p->mem_out, -1.0);
+					lpp_set_factor_fast(si->lpp, mem_in, op->attr.live_range.args.copies[n], -1.0);
 					lpp_set_factor_fast(si->lpp, reg_in, spill_p->reg_out, -1.0);
 				}
 			}
@@ -2551,7 +2556,7 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 				paths += find_copy_path(si, arg, target, any_interfere, copies, visited);
 				pset_remove(copies, INT_TO_PTR(copy), copy);
 
-                if(paths > MAX_PATHS) {
+                /*if(paths > MAX_PATHS) {
                     if(pset_count(copies) == 0) {
                         ilp_cst_t  cst;
                         char       buf[256];
@@ -2569,7 +2574,9 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
                         pset_remove_ptr(visited, irn);
                         return paths;
                     }
-                }
+                } else if(pset_count(copies) == 0) {
+					paths = 0;
+				}*/
 			}
 		}
 
@@ -2604,7 +2611,7 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 			paths += find_copy_path(si, user, target, any_interfere, copies, visited);
 			pset_remove(copies, INT_TO_PTR(copy), copy);
 
-            if(paths > MAX_PATHS) {
+            /*if(paths > MAX_PATHS) {
                 if(pset_count(copies) == 0) {
                     ilp_cst_t  cst;
                     char       buf[256];
@@ -2621,7 +2628,9 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
                     pset_remove_ptr(visited, irn);
                     return paths;
                 }
-            }
+            } else if(pset_count(copies) == 0) {
+				paths = 0;
+			}*/
 		}
 	}
 
@@ -3372,8 +3381,8 @@ phim_fixer(spill_ilp_t *si) {
 			defs_t         *val_defs = set_find_def(si->values, value);
 			ir_node        *arg = get_irn_n(phi_m, n);
 
-			/* get a spill of this value */
-			ir_node      *spill = val_defs->spills;
+			/* a spill of this value */
+			ir_node      *spill;
 
 
 #ifndef NO_MEMCOPIES
@@ -3383,11 +3392,12 @@ phim_fixer(spill_ilp_t *si) {
 			if(!is_zero(name->value)) {
 				spill = insert_mem_copy(si, pred, value);
 			} else {
-				assert(spill && "no spill placed before PhiM");
+				spill = val_defs->spills;
 			}
 #else
-			assert(spill && "no spill placed before PhiM");
+			spill = val_defs->spills;
 #endif
+			assert(spill && "no spill placed before PhiM");
 			set_irn_n(phi_m, n, spill);
 		}
 	}
@@ -3995,7 +4005,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	dump_pressure_graph(&si, dump_suffix2);
 
-	//be_analyze_regpressure(chordal_env, "-post");
+	be_analyze_regpressure(chordal_env, "-post");
 
 #ifdef VERIFY_DOMINANCE
 	be_check_dominance(chordal_env->irg);
