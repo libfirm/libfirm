@@ -344,6 +344,7 @@ extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias)
 
 extern entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);
 
+extern int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn);
 extern arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
 extern int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsigned int i);
 extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *reload, unsigned int i);
@@ -712,5 +713,6 @@ extern arch_env_t *arch_env_push_irn_handler(arch_env_t *env, const arch_irn_han
  * @return The popped handler.
  */
 extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
+
 
 #endif /* _FIRM_BEARCH_H */

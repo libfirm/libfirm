@@ -473,6 +473,10 @@ static ir_type *ia32_abi_get_between_type(void *self)
 static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 {
 	int cost;
+
+	if(is_Proj(irn))
+	  return 0;
+
 	switch (get_ia32_irn_opcode(irn)) {
 	case iro_ia32_xDiv:
 	case iro_ia32_DivMod:

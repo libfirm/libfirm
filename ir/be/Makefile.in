@@ -32,7 +32,8 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	bemachnode.c bemachnode.h beinsn.c bestat.h bestat.c \
 	beschedmris.h beschedmris.c bespillmorgan.c bespillmorgan.h \
 	beverify.h beverify.c bespillremat.c bepressurestat.c bepressurestat.h \
-	bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c
+	bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c \
+        bespillcost.c
 
 
 
