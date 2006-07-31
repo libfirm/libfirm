@@ -38,7 +38,14 @@
 #endif
 
 /* define to 1 to use the ILP solver */
-/* #undef WITH_ILP */
+#ifndef WITH_ILP
+#define WITH_ILP 1
+#endif
+
+/* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
+#ifndef WITH_JVM
+#define WITH_JVM 1
+#endif
 
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */

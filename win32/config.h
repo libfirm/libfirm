@@ -84,7 +84,10 @@
 #define WITH_LIBCORE 1
 
 /* define to 1 to use the ILP solver */
-#undef WITH_ILP
+#define WITH_ILP 1
+
+/* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
+/* #undef WITH_JVM */
 
 /* define to 1 to have wchar_t support for identifiers */
 #define FIRM_ENABLE_WCHAR 1
