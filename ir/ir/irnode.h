@@ -1054,6 +1054,11 @@ void     set_Bound_lower(ir_node *bound, ir_node *lower);
 ir_node *get_Bound_upper(ir_node *bound);
 void     set_Bound_upper(ir_node *bound, ir_node *upper);
 
+/** Return the operand of a Pin node. */
+ir_node *get_Pin_op(ir_node *pin);
+void    set_Pin_op(ir_node *pin, ir_node *node);
+
+
 /*
  *
  * NAME Auxiliary routines
