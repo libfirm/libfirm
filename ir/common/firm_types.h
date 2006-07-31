@@ -5,7 +5,7 @@
  * Author:      Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifndef _FIRM_TYPES_H_
@@ -44,6 +44,11 @@ typedef struct _ir_block_edge_t ir_block_edge_t;
 #ifndef _TARVAL_TYPEDEF_
 #define _TARVAL_TYPEDEF_
 typedef struct tarval tarval;
+#endif
+
+#ifndef _IR_ENUM_CONST_TYPEDEF_
+#define _IR_ENUM_CONST_TYPEDEF_
+typedef struct ir_enum_const ir_enum_const;
 #endif
 
 #ifndef _IR_TYPE_TYPEDEF_
