@@ -58,8 +58,9 @@ typedef struct _walkerdata_t {
 } walkerdata_t;
 
 struct _exec_freq_t {
-  set *set;
+	set *set;
 	hook_entry_t hook;
+	double min_non_zero;
 	unsigned infeasible : 1;
 };
 
@@ -104,6 +105,13 @@ get_block_execfreq(const exec_freq_t *ef, const ir_node * irn)
 	}
 
 	return 1.0;
+}
+
+unsigned long
+get_block_execfreq_ulong(const exec_freq_t *ef, const ir_node *bb)
+{
+	double f = get_block_execfreq(ef, bb);
+	return (unsigned long) (f / ef->min_non_zero);
 }
 
 #define ZERO(x)   (fabs(x) < 0.0001)
@@ -176,7 +184,7 @@ static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
 	if(is_Block(irn)) {
 		exec_freq_t *ef = ctx;
-		fprintf(f, "execution frequency: %g\n", get_block_execfreq(ef, irn));
+		fprintf(f, "execution frequency: %g/%lu\n", get_block_execfreq(ef, irn), get_block_execfreq_ulong(ef, irn));
 	}
 }
 
@@ -199,6 +207,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 
 	ef = xmalloc(sizeof(ef[0]));
 	memset(ef, 0, sizeof(ef[0]));
+	ef->min_non_zero = 1e50; /* initialize with a reasonable large number. */
   freqs = ef->set = new_set(cmp_freq, 32);
 
   construct_cf_backedges(irg);
@@ -249,7 +258,9 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 #else
     freq->freq = ZERO(x[idx]) ? 0.0 : x[idx];
 #endif
-//    ir_fprintf(stderr, "execfreq %+F: %f\n", bb, freq->freq);
+	/* Get the minimum non-zero execution frequency. */
+	if(freq->freq != 0.0)
+		ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
   }
 
 #ifdef USE_GSL
