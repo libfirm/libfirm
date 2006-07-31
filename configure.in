@@ -196,6 +196,16 @@ AC_ARG_ENABLE(ilp,
 fi])
 AC_SUBST(enable_ilp)
 
+dnl enable JVM calling from Firm
+dnl --------------------------------
+AC_ARG_ENABLE(jvm,
+[  --enable-jvm            enable to call the jvm],
+[if test "$enableval"=yes; then
+  AC_DEFINE(WITH_JVM)
+fi])
+AC_SUBST(enable_jvm)
+
+
 
 dnl enable wchar_t support for identifiers
 dnl --------------------------------
@@ -416,4 +426,11 @@ dnl ===============
 AC_OUTPUT($ac_output_file,[ touch stamp-h ])
 
 dnl snip the lower part of config.h and put it to ir/config/firm_config.h
+for i in $plugin_subdirs
+do
+	suffix=`echo $i | tr /a-z _A-Z`
+	echo "/* enabled plugin: $i */" >> config.h
+	echo "#define PLUGIN_$suffix 1" >> config.h
+done
+
 $AWK -f $CONF_DIR_NAME/filter.awk < config.h | sed -f $CONF_DIR_NAME/filter.sed > ir/config/firm_config.h
