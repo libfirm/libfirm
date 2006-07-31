@@ -102,7 +102,6 @@ struct ir_graph {
   ir_typeinfo_state typeinfo_state;        /**< Validity of type information. */
   irg_callee_info_state callee_info_state; /**< Validity of callee information. */
   irg_loopinfo_state loopinfo_state;       /**< State of loop information. */
-  exec_freq_state   execfreq_state;        /**< State of execution frequency information. */
   ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
   irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
   unsigned fp_model;                       /**< floating point model of the graph. */
