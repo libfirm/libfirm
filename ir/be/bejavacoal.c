@@ -19,10 +19,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-#ifdef WITH_JVM
-#include <jni.h>
-#endif
-
 #include "bejavacoal.h"
 
 /* Path to the jar file. A little OS dependent convenience. */
@@ -53,6 +49,8 @@ void java_coal_register_options(lc_opt_entry_t *grp)
 #endif
 
 #ifdef WITH_JVM
+#include <jni.h>
+
 typedef struct _jni_env_t {
 	JavaVM *jvm;
 	JNIEnv *jni;
