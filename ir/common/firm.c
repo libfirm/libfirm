@@ -9,20 +9,6 @@
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-/* Ini file in local directory */
-#define LOCAL_INI_FILE "firm.ini"
-
-/* Includes to determine user's home directory */
-#ifdef _WIN32
-#include <ShlObj.h>
-#define HOME_DIR_INI_FILE LOCAL_INI_FILE
-#else
-#include <sys/types.h>
-#include <pwd.h>
-#define HOME_DIR_INI_FILE ".firmrc"
-#endif
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -30,37 +16,40 @@
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
-
+#ifdef HAVE_STDIO_H
 # include <stdio.h>
-
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
 #endif
 
-# include "ident_t.h"
-# include "firm.h"
-# include "irflag_t.h"
-# include "mangle.h"
+#ifdef WITH_LIBCORE
+# include <libcore/lc_opts.h>
+# include <libcore/lc_init.h>
+#endif
+
+#include "ident_t.h"
+#include "firm.h"
+#include "irflag_t.h"
+#include "mangle.h"
 /* init functions are not public */
-# include "tv_t.h"
-# include "tpop_t.h"
-# include "irprog_t.h"
-# include "irnode_t.h"
-# include "irmode_t.h"
-# include "ircons_t.h"
-# include "irgraph_t.h"
-# include "type_t.h"
-# include "entity_t.h"
-# include "type_identify.h"
-# include "firmstat.h"
-# include "irreflect_t.h"
-# include "irarch.h"
-# include "reassoc_t.h"
-# include "irhooks.h"
-# include "iredges_t.h"
-# include "debugger.h"
+#include "tv_t.h"
+#include "tpop_t.h"
+#include "irprog_t.h"
+#include "irnode_t.h"
+#include "irmode_t.h"
+#include "ircons_t.h"
+#include "irgraph_t.h"
+#include "type_t.h"
+#include "entity_t.h"
+#include "type_identify.h"
+#include "firmstat.h"
+#include "irreflect_t.h"
+#include "irarch.h"
+#include "reassoc_t.h"
+#include "irhooks.h"
+#include "iredges_t.h"
+#include "debugger.h"
 
 #ifdef WITH_LIBCORE
+/* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)
 {
 	static lc_opt_entry_t *grp = NULL;
@@ -143,38 +132,8 @@ init_firm(const firm_parameter_t *param)
 #endif
 
 #ifdef WITH_LIBCORE
-  {
-	  FILE *f;
-
-#ifdef _WIN32
-	  char path[MAX_PATH];
-	  SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path);
-	  strncat(path, "\\", sizeof(path));
-#else
-	  char path[512];
-	  strcpy(path, getpwuid(getuid())->pw_dir);
-	  strncat(path, "/", sizeof(path));
-#endif
-
-	  strncat(path, HOME_DIR_INI_FILE, sizeof(path));
-
-	  /* Process ini file in user's home. */
-	  f = fopen(path, "rt");
-	  if(f) {
-		  lc_opt_from_file(path, f, NULL);
-		  fclose(f);
-	  }
-
-	  /* Process ini file in current directory. */
-	  f = fopen(LOCAL_INI_FILE, "rt");
-	  if(f) {
-		  lc_opt_from_file(LOCAL_INI_FILE, f, NULL);
-		  fclose(f);
-	  }
-
-	  /* process arguments from the command line */
-	  lc_opt_from_argv(firm_opt_get_root(), def_params.arg_prefix, def_params.argc, def_params.argv, NULL);
-  }
+  /* parse any init files for firm */
+  lc_init("firm", firm_opt_get_root(), def_params.arg_prefix, def_params.argc, def_params.argv);
 #endif
 }
 
