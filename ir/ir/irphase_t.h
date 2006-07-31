@@ -121,6 +121,15 @@ void phase_reinit_irn_data(phase_t *phase);
 #define phase_get_or_set_irn_data(ph, irn) _phase_get_or_set_irn_data((ph), (irn))
 
 /**
+ * Set the data for an irn.
+ * @param ph The phase.
+ * @param irn The node.
+ * @param data The data.
+ * @return The old data or NULL if there was none.
+ */
+#define phase_set_irn_data(ph, irn, data)  _phase_set_irn_data((ph), (irn), (data))
+
+/**
  * This is private and just here for performance reasons.
  */
 static INLINE void _private_phase_enlarge(phase_t *phase, unsigned max_idx)
@@ -150,6 +159,21 @@ static INLINE void *_phase_get_irn_data(const phase_t *ph, const ir_node *irn)
 	unsigned idx = get_irn_idx(irn);
 	return idx < ph->n_data_ptr ? ph->data_ptr[idx] : NULL;
 }
+
+static INLINE void *_phase_set_irn_data(phase_t *ph, const ir_node *irn, void *data)
+{
+	unsigned idx = get_irn_idx(irn);
+	void *res;
+
+	/* Assure that there's a sufficient amount of slots. */
+	_private_phase_assure_capacity(ph, idx);
+
+	res = ph->data_ptr[idx];
+	ph->data_ptr[idx] = data;
+
+	return res;
+}
+
 
 static INLINE void *_phase_get_or_set_irn_data(phase_t *ph, ir_node *irn)
 {
