@@ -898,8 +898,8 @@ walker_remat_insertor(ir_node * bb, void * data)
 
 	DBG((si->dbg, LEVEL_3, "\t Entering %+F\n\n", bb));
 
-	be_lv_foreach(si->chordal_env->lv, bb, be_lv_state_end, i) {
-		ir_node        *value = be_lv_get_irn(si->chordal_env->lv, bb, i);
+	be_lv_foreach(si->lv, bb, be_lv_state_end, i) {
+		ir_node        *value = be_lv_get_irn(si->lv, bb, i);
 
 		/* add remats at end of block */
 		if (has_reg_class(si, value)) {
@@ -1068,13 +1068,13 @@ walker_remat_insertor(ir_node * bb, void * data)
 		irn = next;
 	}
 
-	be_lv_foreach(si->chordal_env->lv, bb, be_lv_state_end | be_lv_state_in, i) {
-		ir_node        *value = be_lv_get_irn(si->chordal_env->lv, bb, i);
+	be_lv_foreach(si->lv, bb, be_lv_state_end | be_lv_state_in, i) {
+		ir_node        *value = be_lv_get_irn(si->lv, bb, i);
 
 		/* add remats at end if successor has multiple predecessors */
 		if(is_merge_edge(bb)) {
 			/* add remats at end of block */
-			if (be_is_live_end(si->chordal_env->lv, bb, value) && has_reg_class(si, value)) {
+			if (be_is_live_end(si->lv, bb, value) && has_reg_class(si, value)) {
 				remat_info_t   *remat_info,
 							   query;
 				remat_t        *remat;
@@ -1095,7 +1095,7 @@ walker_remat_insertor(ir_node * bb, void * data)
 		}
 		if(is_diverge_edge(bb)) {
 			/* add remat2s at beginning of block */
-			if ((be_is_live_in(si->chordal_env->lv, bb, value) || (is_Phi(value) && get_nodes_block(value)==bb)) && has_reg_class(si, value)) {
+			if ((be_is_live_in(si->lv, bb, value) || (is_Phi(value) && get_nodes_block(value)==bb)) && has_reg_class(si, value)) {
 				remat_info_t   *remat_info,
 							   query;
 				remat_t        *remat;
@@ -1138,8 +1138,8 @@ luke_endwalker(ir_node * bb, void * data)
 	live = pset_new_ptr_default();
 	use_end = pset_new_ptr_default();
 
-	be_lv_foreach(si->chordal_env->lv, bb, be_lv_state_end, i) {
-		irn = be_lv_get_irn(si->chordal_env->lv, bb, i);
+	be_lv_foreach(si->lv, bb, be_lv_state_end, i) {
+		irn = be_lv_get_irn(si->lv, bb, i);
 		if (has_reg_class(si, irn) && !pset_find_ptr(si->all_possible_remats, irn)) {
 			op_t      *op;
 
@@ -2420,7 +2420,7 @@ set_insert_interference(spill_ilp_t * si, set * set, ir_node * a, ir_node * b, i
 }
 
 static int
-values_interfere_in_block(ir_node * bb, ir_node * a, ir_node * b)
+values_interfere_in_block(const spill_ilp_t * si, ir_node * bb, ir_node * a, ir_node * b)
 {
 	const ir_edge_t *edge;
 
@@ -2440,7 +2440,7 @@ values_interfere_in_block(ir_node * bb, ir_node * a, ir_node * b)
 
 
 	/* the following code is stolen from bera.c */
-	if(is_live_end(bb, a))
+	if(be_is_live_end(si->lv, bb, a))
 		return 1;
 
 	foreach_out_edge(a, edge) {
@@ -2461,28 +2461,26 @@ values_interfere_in_block(ir_node * bb, ir_node * a, ir_node * b)
 static void
 luke_interferencewalker(ir_node * bb, void * data)
 {
-#if 0 /* rewrite! */
 	spill_ilp_t    *si = (spill_ilp_t*)data;
-	irn_live_t     *li1,
-	               *li2;
+	int             l1, l2;
 
-	be_lv_foreach(si->lv, bb, be_lv_state_end | be_lv_state_out | be_lv_state_in, i) {
-		ir_node        *a = be_lv_foreach(si->lv, bb, i);
+	be_lv_foreach(si->lv, bb, be_lv_state_end | be_lv_state_out | be_lv_state_in, l1) {
+		ir_node        *a = be_lv_get_irn(si->lv, bb, l1);
 		op_t           *a_op = get_irn_link(a);
 
 		if(a_op->is_remat) continue;
 
 		/* a is only interesting if it is in my register class and if it is inside a phi class */
 		if (has_reg_class(si, a) && get_phi_class(a)) {
-			for(li2=li1->next; li2; li2 = li2->next) {
-				ir_node        *b = (ir_node *) li2->irn;
+			for(l2=_be_lv_next_irn(si->lv, bb, 0xff, l1+1); l2>=0; l2=_be_lv_next_irn(si->lv, bb, 0xff, l2+1)) {
+				ir_node        *b = be_lv_get_irn(si->lv, bb, l2);
 				op_t           *b_op = get_irn_link(b);
 
 				if(b_op->is_remat) continue;
 
 				/* a and b are only interesting if they are in the same phi class */
 				if(has_reg_class(si, b) && get_phi_class(a) == get_phi_class(b)) {
-					if(values_interfere_in_block(bb, a, b)) {
+					if(values_interfere_in_block(si, bb, a, b)) {
 						DBG((si->dbg, LEVEL_4, "\tvalues interfere in %+F: %+F, %+F\n", bb, a, b));
 						set_insert_interference(si, si->interferences, a, b, bb);
 					}
@@ -2490,7 +2488,6 @@ luke_interferencewalker(ir_node * bb, void * data)
 			}
 		}
 	}
-#endif
 }
 
 static unsigned int copy_path_id = 0;
@@ -3661,7 +3658,7 @@ rewire_uses(spill_ilp_t * si)
 			//				print_irn_pset(spills);
 			//				print_irn_pset(reloads);
 
-			be_ssa_constr_set_ignore(dfi, spills, ignore);
+			be_ssa_constr_set_ignore(dfi, si->lv, spills, ignore);
 		}
 
 		del_pset(reloads);
@@ -3684,7 +3681,7 @@ rewire_uses(spill_ilp_t * si)
 
 			if(pset_count(nodes) > 1) {
 				DBG((si->dbg, LEVEL_4, "\t    %d new definitions for value %+F\n", pset_count(nodes)-1, defs->value));
-				be_ssa_constr_set(dfi, nodes);
+				be_ssa_constr_set(dfi, si->lv, nodes);
 			}
 
 			del_pset(nodes);
@@ -3792,24 +3789,23 @@ static void
 luke_meminterferencechecker(ir_node * bb, void * data)
 {
 	spill_ilp_t    *si = (spill_ilp_t*)data;
-	irn_live_t     *li1,
-	               *li2;
+	int             l1, l2;
 
-	live_foreach(bb, li1) {
-		ir_node        *a = (ir_node *) li1->irn;
+	be_lv_foreach(si->lv, bb, be_lv_state_end | be_lv_state_out | be_lv_state_in, l1) {
+		ir_node        *a = be_lv_get_irn(si->lv, bb, l1);
 
 		if(!be_is_Spill(a) && (!is_Phi(a) || get_irn_mode(a) != mode_T)) continue;
 
-		/* a is only interesting if it is inside a phi class */
-		if (get_phi_class(a)) {
-			for(li2=li1->next; li2; li2 = li2->next) {
-				ir_node        *b = (ir_node *) li2->irn;
+		/* a is only interesting if it is in my register class and if it is inside a phi class */
+		if (has_reg_class(si, a) && get_phi_class(a)) {
+			for(l2=_be_lv_next_irn(si->lv, bb, 0xff, l1+1); l2>=0; l2=_be_lv_next_irn(si->lv, bb, 0xff, l2+1)) {
+				ir_node        *b = be_lv_get_irn(si->lv, bb, l2);
 
 				if(!be_is_Spill(b) && (!is_Phi(b) || get_irn_mode(b) != mode_T)) continue;
 
 				/* a and b are only interesting if they are in the same phi class */
-				if(get_phi_class(a) == get_phi_class(b)) {
-					if(values_interfere_in_block(bb, a, b)) {
+				if(has_reg_class(si, b) && get_phi_class(a) == get_phi_class(b)) {
+					if(values_interfere_in_block(si, bb, a, b)) {
 						ir_fprintf(stderr, "$$ Spills interfere in %+F: %+F, %+F \t$$\n", bb, a, b);
 					}
 				}
@@ -3883,6 +3879,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.all_possible_remats = pset_new_ptr_default();
 	si.spills = pset_new_ptr_default();
 	si.inverse_ops = pset_new_ptr_default();
+	si.lv = chordal_env->lv;
 #ifdef KEEPALIVE
 	si.keep = NULL;
 #endif
@@ -3919,7 +3916,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	/* recompute liveness */
 	DBG((si.dbg, LEVEL_1, "Recomputing liveness\n"));
-	be_liveness(chordal_env->irg);
+	be_liveness_recompute(si.lv);
 
 	/* build the ILP */
 
@@ -3992,7 +3989,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 #endif
 
 	// move reloads upwards
-	be_liveness(chordal_env->irg);
+	be_liveness_recompute(si.lv);
 	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
 	move_reloads_upward(&si);
 

@@ -479,10 +479,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			break;
 #ifdef WITH_ILP
 		case BE_CH_SPILL_REMAT:
-			/*
 			be_spill_remat(&chordal_env);
 			break;
-			*/
 #endif /* WITH_ILP */
 		default:
 			fprintf(stderr, "no valid spiller selected. falling back to belady\n");
