@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS libfirm_conf_env plugin_subdirs XML2CONFIG enable_debug_libfirm enable_profile_libfirm enable_auto_documentation enable_firm_jni enable_heapanalysis disable_libiberty enable_statistics enable_libcore enable_ilp enable_wchar_support enable_external_effects CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT AWK LD ac_ct_LD libfirm_cv_prog_ld_r AR TAR RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S DOXYGEN DOT JAVAC JAVAH CPP EGREP LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS libfirm_conf_env plugin_subdirs XML2CONFIG enable_debug_libfirm enable_profile_libfirm enable_auto_documentation enable_firm_jni enable_heapanalysis disable_libiberty enable_statistics enable_libcore enable_ilp enable_jvm enable_wchar_support enable_external_effects CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT AWK LD ac_ct_LD libfirm_cv_prog_ld_r AR TAR RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S DOXYGEN DOT JAVAC JAVAH CPP EGREP LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -853,6 +853,7 @@ Optional Features:
   --enable-statistics     enable Firm statistics
   --enable-libcore        enable libcore debugging
   --enable-ilp            enable ilp solver
+  --enable-jvm            enable to call the jvm
   --enable-wchar-support  enable wchar_t support for identifiers (needed for java)
   --disable-external-effects  disable descriptions of external effects in XML
 
@@ -1580,6 +1581,19 @@ _ACEOF
 
 fi
 fi;
+
+
+# Check whether --enable-jvm or --disable-jvm was given.
+if test "${enable_jvm+set}" = set; then
+  enableval="$enable_jvm"
+  if test "$enableval"=yes; then
+  cat >>confdefs.h <<\_ACEOF
+#define WITH_JVM 1
+_ACEOF
+
+fi
+fi;
+
 
 
 
@@ -5911,6 +5925,7 @@ s,@disable_libiberty@,$disable_libiberty,;t t
 s,@enable_statistics@,$enable_statistics,;t t
 s,@enable_libcore@,$enable_libcore,;t t
 s,@enable_ilp@,$enable_ilp,;t t
+s,@enable_jvm@,$enable_jvm,;t t
 s,@enable_wchar_support@,$enable_wchar_support,;t t
 s,@enable_external_effects@,$enable_external_effects,;t t
 s,@CC@,$CC,;t t
@@ -6549,5 +6564,12 @@ if test "$no_create" != yes; then
   $ac_cs_success || { (exit 1); exit 1; }
 fi
 
+
+for i in $plugin_subdirs
+do
+	suffix=`echo $i | tr /a-z _A-Z`
+	echo "/* enabled plugin: $i */" >> config.h
+	echo "#define PLUGIN_$suffix 1" >> config.h
+done
 
 $AWK -f $CONF_DIR_NAME/filter.awk < config.h | sed -f $CONF_DIR_NAME/filter.sed > ir/config/firm_config.h
