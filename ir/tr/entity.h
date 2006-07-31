@@ -3,10 +3,10 @@
  * File name:   ir/tr/entity.h
  * Purpose:     Representation of all program known entities.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -222,7 +222,7 @@ typedef enum {
   allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
                  by an Alloc node. */
   allocation_static     /**< The entity is allocated statically.  We can use a
-                             Const as address of the entity. */
+                             Const as address of the entity.  This is the default for methods. */
 } ent_allocation;
 
 /** Returns the allocation type of an entity. */
