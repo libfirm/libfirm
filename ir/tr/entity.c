@@ -3,14 +3,14 @@
  * File name:   ir/tr/entity.c
  * Purpose:     Representation of all program known entities.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
 #ifdef HAVE_STRING_H
@@ -19,28 +19,28 @@
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
+#ifdef HAVE_STDDEF_H
 # include <stddef.h>
+#endif
 
 #include "firm_common_t.h"
 
-# include "xmalloc.h"
-# include "entity_t.h"
-# include "mangle.h"
-# include "typegmod.h"
-# include "array.h"
-# include "irtools.h"
-# include "irhooks.h"
+#include "xmalloc.h"
+#include "entity_t.h"
+#include "mangle.h"
+#include "typegmod.h"
+#include "array.h"
+#include "irtools.h"
+#include "irhooks.h"
+#include "irprintf.h"
 
 /* All this is needed to build the constant node for methods: */
-# include "irprog_t.h"
-# include "ircons.h"
-# include "tv_t.h"
+#include "irprog_t.h"
+#include "ircons.h"
+#include "tv_t.h"
+#include "irdump.h"  /* for output if errors occur. */
 
-#if DEBUG_libfirm
-# include "irdump.h"  /* for output if errors occur. */
-#endif
-
-# include "callgraph.h"  /* for dumping debug output */
+#include "callgraph.h"  /* for dumping debug output */
 
 /*******************************************************************/
 /** general                                                       **/
@@ -675,32 +675,37 @@ set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index)
 void
 add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  ARR_APP1 (ir_node *, ent->attr.cmpd_attr.values, val);
-  ARR_APP1 (compound_graph_path *, ent->attr.cmpd_attr.val_paths, path);
+  assert(is_compound_graph_path(path));
+  ARR_APP1(ir_node *, ent->attr.cmpd_attr.values, val);
+  ARR_APP1(compound_graph_path *, ent->attr.cmpd_attr.val_paths, path);
 }
 
 void
 set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  ent->attr.cmpd_attr.values[pos] = val;
+  assert(is_compound_graph_path(path));
+  assert(0 <= pos && pos < ARR_LEN(ent->attr.cmpd_attr.values));
+  ent->attr.cmpd_attr.values[pos]    = val;
   ent->attr.cmpd_attr.val_paths[pos] = path;
 }
 
 int
 get_compound_ent_n_values(entity *ent) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  return (ARR_LEN (ent->attr.cmpd_attr.values));
+  return ARR_LEN(ent->attr.cmpd_attr.values);
 }
 
-ir_node  *
+ir_node *
 get_compound_ent_value(entity *ent, int pos) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(0 <= pos && pos < ARR_LEN(ent->attr.cmpd_attr.values));
   return ent->attr.cmpd_attr.values[pos];
 }
 
 compound_graph_path *
 get_compound_ent_value_path(entity *ent, int pos) {
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+  assert(0 <= pos && pos < ARR_LEN(ent->attr.cmpd_attr.val_paths));
   return ent->attr.cmpd_attr.val_paths[pos];
 }
 
@@ -780,10 +785,10 @@ void
 remove_compound_ent_value(entity *ent, entity *value_ent) {
   int i;
   assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-  for (i = 0; i < (ARR_LEN (ent->attr.cmpd_attr.val_paths)); i++) {
+  for (i = 0; i < (ARR_LEN(ent->attr.cmpd_attr.val_paths)); ++i) {
     compound_graph_path *path = ent->attr.cmpd_attr.val_paths[i];
     if (path->list[path->len-1].node == value_ent) {
-      for(; i < (ARR_LEN (ent->attr.cmpd_attr.val_paths))-1; i++) {
+      for (; i < (ARR_LEN(ent->attr.cmpd_attr.val_paths))-1; ++i) {
         ent->attr.cmpd_attr.val_paths[i] = ent->attr.cmpd_attr.val_paths[i+1];
         ent->attr.cmpd_attr.values[i]    = ent->attr.cmpd_attr.values[i+1];
       }
