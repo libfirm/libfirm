@@ -362,6 +362,7 @@ int java_coal_get_color(java_coal_t *c, int n)
 java_coal_t *java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
 {
 	assert(0 && "use --enable-jvm");
+	return NULL;
 }
 
 void java_coal_destroy(java_coal_t *c)
@@ -403,7 +404,8 @@ void java_coal_dump(java_coal_t *c, const char *fn)
 int java_coal_get_color(java_coal_t *c, int n)
 {
 	assert(0 && "use --enable-jvm");
+	return -1;
 }
 
 
-#endif
+#endif /* WITH_JVM */
