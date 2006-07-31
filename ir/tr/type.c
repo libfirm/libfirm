@@ -437,8 +437,11 @@ set_type_state(ir_type *tp, type_state state) {
       break;
     case tpo_enumeration:
       assert(get_type_mode != NULL);
-      for (i = 0; i < get_enumeration_n_enums(tp); i++)
-        assert(get_enumeration_enum(tp, i) != NULL);
+      for (i = get_enumeration_n_enums(tp) - 1; i >= 0; --i) {
+        ir_enum_const *ec = get_enumeration_const(tp, i);
+        tarval        *tv = get_enumeration_value(ec);
+        assert(tv != NULL && tv != tarval_bad);
+      }
       break;
     default: break;
     } /* switch (tp) */
@@ -1694,18 +1697,16 @@ void set_array_size_bits(ir_type *tp, int size) {
 /*-----------------------------------------------------------------*/
 
 /* create a new type enumeration -- set the enumerators independently */
-ir_type *new_d_type_enumeration(ident *name, int n_enums, dbg_info *db) {
+ir_type *new_d_type_enumeration(ident *name, dbg_info *db) {
   ir_type *res = new_type(type_enumeration, NULL, name, db);
 
-  res->attr.ea.n_enums     = n_enums;
-  res->attr.ea.enumer      = xcalloc(n_enums, sizeof(res->attr.ea.enumer[0]));
-  res->attr.ea.enum_nameid = xcalloc(n_enums, sizeof(res->attr.ea.enum_nameid[0]));
+  res->attr.ea.enumer = NEW_ARR_F(ir_enum_const, 0);
   hook_new_type(res);
   return res;
 }
 
-ir_type *new_type_enumeration(ident *name, int n_enums) {
-  return new_d_type_enumeration(name, n_enums, NULL);
+ir_type *new_type_enumeration(ident *name) {
+  return new_d_type_enumeration(name, NULL);
 }
 
 void free_enumeration_entities(ir_type *enumeration) {
@@ -1713,39 +1714,51 @@ void free_enumeration_entities(ir_type *enumeration) {
 }
 void free_enumeration_attrs(ir_type *enumeration) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
-  free(enumeration->attr.ea.enumer);
-  free(enumeration->attr.ea.enum_nameid);
+  DEL_ARR_F(enumeration->attr.ea.enumer);
 }
 
 /* manipulate fields of enumeration type. */
-int     get_enumeration_n_enums (const ir_type *enumeration) {
+int     get_enumeration_n_enums(const ir_type *enumeration) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
-  return enumeration->attr.ea.n_enums;
+  return ARR_LEN(enumeration->attr.ea.enumer);
 }
-void    set_enumeration_enum    (ir_type *enumeration, int pos, tarval *con) {
+
+/* create a new constant */
+int add_enumeration_const(ir_type *enumeration, ident *nameid, tarval *con) {
+  ir_enum_const c;
+  int idx = ARR_LEN(enumeration->attr.ea.enumer);
+
+  c.nameid = nameid;
+  c.value  = con;
+  c.owner  = enumeration;
+
+  ARR_APP1(ir_enum_const, enumeration->attr.ea.enumer, c);
+  return idx;
+}
+
+ir_enum_const *get_enumeration_const(const ir_type *enumeration, int pos) {
   assert(enumeration && (enumeration->type_op == type_enumeration));
   assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
-  enumeration->attr.ea.enumer[pos] = con;
+  return &enumeration->attr.ea.enumer[pos];
 }
-tarval *get_enumeration_enum    (const ir_type *enumeration, int pos) {
-  assert(enumeration && (enumeration->type_op == type_enumeration));
-  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
-  return enumeration->attr.ea.enumer[pos];
+
+ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst) {
+  return enum_cnst->owner;
 }
-void    set_enumeration_nameid  (ir_type *enumeration, int pos, ident *id) {
-  assert(enumeration && (enumeration->type_op == type_enumeration));
-  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
-  enumeration->attr.ea.enum_nameid[pos] = id;
+void    set_enumeration_value(ir_enum_const *enum_cnst, tarval *con) {
+  enum_cnst->value = con;
 }
-ident  *get_enumeration_nameid  (const ir_type *enumeration, int pos) {
-  assert(enumeration && (enumeration->type_op == type_enumeration));
-  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
-  return enumeration->attr.ea.enum_nameid[pos];
+tarval *get_enumeration_value(const ir_enum_const *enum_cnst) {
+  return enum_cnst->value;
 }
-const char *get_enumeration_name(const ir_type *enumeration, int pos) {
-  assert(enumeration && (enumeration->type_op == type_enumeration));
-  assert(pos >= 0 && pos < get_enumeration_n_enums(enumeration));
-  return get_id_str(enumeration->attr.ea.enum_nameid[pos]);
+void    set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id) {
+  enum_cnst->nameid = id;
+}
+ident  *get_enumeration_nameid(const ir_enum_const *enum_cnst) {
+  return enum_cnst->nameid;
+}
+const char *get_enumeration_name(const ir_enum_const *enum_cnst) {
+  return get_id_str(enum_cnst->nameid);
 }
 
 /* typecheck */

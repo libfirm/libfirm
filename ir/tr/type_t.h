@@ -36,7 +36,7 @@ enum class_flags {
   cf_absctract_class = 4,  /**< Set if a class is "abstract" */
 };
 
-/** Class attributes. */
+/** Class type attributes. */
 typedef struct {
   entity  **members;        /**< Array containing the fields and methods of this class. */
   ir_type **subtypes;       /**< Array containing the direct subtypes. */
@@ -48,18 +48,18 @@ typedef struct {
   unsigned clss_flags;      /**< Additional class flags. */
 } cls_attr;
 
-/** struct attributes */
+/** Struct type attributes. */
 typedef struct {
   entity **members;    /**< Fields of this struct. No method entities allowed. */
 } stc_attr;
 
-/** A (type, entity) pair */
+/** A (type, entity) pair. */
 typedef struct {
   ir_type *tp;         /**< A type. */
   entity  *ent;        /**< An entity. */
 } tp_ent_pair;
 
-/** method attributes */
+/** Method type attributes. */
 typedef struct {
   int n_params;                   /**< Number of parameters. */
   tp_ent_pair *param_type;        /**< Array of parameter type/value entities pairs. */
@@ -73,32 +73,36 @@ typedef struct {
   unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
 
-/** union attributes */
+/** Union type attributes. */
 typedef struct {
   entity **members;    /**< Fields of this union. No method entities allowed. */
 } uni_attr;
 
-/** array attributes */
+/** Array type attributes. */
 typedef struct {
-  int   n_dimensions;     /**< Number of array dimensions.  */
+  int     n_dimensions;   /**< Number of array dimensions.  */
   ir_node **lower_bound;  /**< Lower bounds of dimensions.  Usually all 0. */
   ir_node **upper_bound;  /**< Upper bounds or dimensions. */
-  int *order;             /**< Ordering of dimensions. */
+  int     *order;         /**< Ordering of dimensions. */
   ir_type *element_type;  /**< The type of the array elements. */
-  entity *element_ent;    /**< Entity for the array elements, to be used for
-                               element selection with Sel. */
+  entity  *element_ent;   /**< Entity for the array elements, to be used for
+                               element selection with a Sel node. */
 } arr_attr;
 
-/** enum attributes */
+/** An enumerator constant. */
+struct ir_enum_const {
+  tarval  *value;     /**< The constants that represents this enumerator identifier. */
+  ident   *nameid;    /**< The name of the enumerator identifier. */
+  ir_type *owner;     /**< owner type of this enumerator constant. */
+};
+
+/** Enum type attributes. */
 typedef struct {
-  int      n_enums;    /**< Number of enumerators. */
-  tarval **enumer;     /**< Contains all constants that represent a member
-                          of the enum -- enumerators. */
-  ident  **enum_nameid;/**< Contains the names of the enum fields as specified by
-                          the source program. */
+  ir_enum_const *enumer;   /**< Contains all enumerator constants that represent a member
+                                of the enum -- enumerators. */
 } enm_attr;
 
-/** pointer attributes */
+/** Pointer type attributes. */
 typedef struct {
   ir_type *points_to;  /**< The type of the entity the pointer points to. */
 } ptr_attr;
@@ -133,7 +137,7 @@ enum type_flags {
   tf_layout_fixed     = 8   /**< Set if the layout of a type is fixed */
 };
 
-/** the structure of a type */
+/** The structure of a type. */
 struct ir_type {
   firm_kind kind;          /**< the firm kind, must be k_type */
   const tp_op *type_op;    /**< the type operation of the type */

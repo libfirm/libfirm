@@ -5,7 +5,7 @@
  * Author:      Goetz Lindenmaier
  * Modified by: Michael Beck
  * Created:
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Copyright:   (c) 2001-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  * CVS-ID:      $Id$
  */
@@ -206,13 +206,14 @@ typedef enum {
   layout_undefined,    /**< The layout of this type is not defined.
                             Address computation to access fields is not
                             possible, fields must be accessed by Sel
-                            nodes.  This is the default value except for
+                            nodes.  Enumeration constants might be undefined.
+                            This is the default value except for
                             pointer, primitive and method types. */
   layout_fixed         /**< The layout is fixed, all component/member entities
                             have an offset assigned.  Size of the type is known.
                             Arrays can be accessed by explicit address
-                            computation. Default for pointer, primitive and method
-                            types.  */
+                            computation.  Enumeration constants must be defined.
+                            Default for pointer, primitive and method types. */
 } type_state;
 
 /** Returns a human readable string for the enum entry. */
@@ -329,7 +330,7 @@ void          inc_master_type_visited(void);
  * @return
  *     true if the thing is a type, else false
  */
-int is_type  (const void *thing);
+int is_type(const void *thing);
 
 /**
  *   Checks whether two types are structurally equal.
@@ -404,7 +405,7 @@ int equal_type(ir_type *typ1, ir_type *typ2);
  *      @return smaller than the points_to type of lt.
  *
  */
-int smaller_type (ir_type *st, ir_type *lt);
+int smaller_type(ir_type *st, ir_type *lt);
 
 /**
  *  @page class_type    Representation of a class type
@@ -1094,40 +1095,49 @@ int    is_Array_type(const ir_type *array);
  * Enumeration types need not necessarily be represented explicitly
  * by Firm types, as the frontend can lower them to integer constants as
  * well.  For debugging purposes or similar tasks this information is useful.
+ * The type state layout_fixed is set, if all enumeration constant have
+ * there tarvals assigned.  Until then
  *
- * - *enum:         The target values representing the constants used to
+ * - *const:        The target values representing the constants used to
  *                  represent individual enumerations.
- * - *enum_nameid:  Idents containing the source program name of the enumeration
- *                  constants
  */
 /** Create a new type enumeration -- set the enumerators independently. */
-ir_type   *new_type_enumeration    (ident *name, int n_enums);
+ir_type   *new_type_enumeration(ident *name);
 
 /** Create a new type enumeration with debug information -- set the enumerators independently. */
-ir_type   *new_d_type_enumeration    (ident *name, int n_enums, dbg_info *db);
+ir_type   *new_d_type_enumeration(ident *name, dbg_info *db);
 
 /* --- manipulate fields of enumeration type. --- */
 
+/** Add a new enumeration constant to a enumeration type and return its position. */
+int add_enumeration_const(ir_type *enumeration, ident *nameid, tarval *con);
+
 /** Returns the number of enumeration values of this enumeration */
-int     get_enumeration_n_enums (const ir_type *enumeration);
+int     get_enumeration_n_enums(const ir_type *enumeration);
 
-/** Sets the enumeration value at a given position. */
-void    set_enumeration_enum    (ir_type *enumeration, int pos, tarval *con);
+/** Returns the enumeration constant at a given position. */
+ir_enum_const *get_enumeration_const(const ir_type *enumeration, int pos);
 
-/** Returns the enumeration value at a given position. */
-tarval *get_enumeration_enum    (const ir_type *enumeration, int pos);
+/** Returns the enumeration type owner of an enumeration constant. */
+ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst);
 
-/** Assign an ident to an enumeration value at a given position. */
-void    set_enumeration_nameid  (ir_type *enumeration, int pos, ident *id);
+/** Sets the enumeration constant value. */
+void    set_enumeration_value(ir_enum_const *enum_cnst, tarval *con);
 
-/** Returns the assigned ident of an enumeration value at a given position. */
-ident  *get_enumeration_nameid  (const ir_type *enumeration, int pos);
+/** Returns the enumeration constant value. */
+tarval *get_enumeration_value(const ir_enum_const *enum_cnst);
 
-/** Returns the assigned name of an enumeration value at a given position. */
-const char *get_enumeration_name(const ir_type *enumeration, int pos);
+/** Assign an ident to an enumeration constant. */
+void    set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id);
+
+/** Returns the assigned ident of an enumeration constant. */
+ident  *get_enumeration_nameid(const ir_enum_const *enum_cnst);
+
+/** Returns the assigned name of an enumeration constant. */
+const char *get_enumeration_name(const ir_enum_const *enum_cnst);
 
 /** Returns true if a type is a enumeration type. */
-int     is_Enumeration_type     (const ir_type *enumeration);
+int     is_Enumeration_type(const ir_type *enumeration);
 
 /**
  * @page pointer_type   Representation of a pointer type
