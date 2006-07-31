@@ -694,8 +694,7 @@ void scalar_replacement_opt(ir_graph *irg)
   rem = current_ir_graph;
 
   /* Call algorithm that computes the out edges */
-  if (get_irg_outs_state(irg) != outs_consistent)
-    compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   /* Find possible scalar replacements */
   if (find_possible_replacements(irg)) {
