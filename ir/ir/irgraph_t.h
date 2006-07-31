@@ -104,6 +104,7 @@ struct ir_graph {
   irg_loopinfo_state loopinfo_state;       /**< State of loop information. */
   ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
   irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
+  exec_freq_state execfreq_state;          /**< Execution frequency state. */
   unsigned fp_model;                       /**< floating point model of the graph. */
 
   /* -- Fields for construction -- */
