@@ -5,7 +5,7 @@
  * Author:      Sebastian Hack
  * Created:     29.11.2004
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -339,6 +339,9 @@ static void firm_emit(char *buf, int buflen, char conversion,
             break;
           case symconst_addr_ent:    /* entity name */
             snprintf(tv_buf, sizeof(tv_buf), "<%s>", get_entity_name(get_SymConst_entity(X)));
+            break;
+          case symconst_enum_const:  /* enumeration constant */
+            snprintf(tv_buf, sizeof(tv_buf), "<ENUM:%s>", get_enumeration_name(get_SymConst_enum(X)));
             break;
           default:
             tv_buf[0] = '\0';

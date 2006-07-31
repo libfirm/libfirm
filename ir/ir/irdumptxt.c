@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Hubert Schmidt
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
@@ -301,6 +301,10 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
       fprintf(F, "  kind: alignment\n");
       fprintf(F, "  type: ");
       dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
+      break;
+    case symconst_enum_const:
+      fprintf(F, "  kind: enumeration\n");
+      fprintf(F, "  name: %s\n", get_enumeration_name(get_SymConst_enum(n)));
       break;
     }
     fprintf(F, "  type of value: %s \n", get_type_name_ex(get_SymConst_value_type(n), &bad));

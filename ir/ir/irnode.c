@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -1043,6 +1043,18 @@ void     set_SymConst_entity (ir_node *node, entity *ent) {
   assert (   (node->op == op_SymConst)
           && (get_SymConst_kind(node) == symconst_addr_ent));
   node->attr.symc.sym.entity_p  = ent;
+}
+
+ir_enum_const *get_SymConst_enum (ir_node *node) {
+  assert (   (node->op == op_SymConst)
+          && (get_SymConst_kind (node) == symconst_enum_const));
+  return node->attr.symc.sym.enum_p;
+}
+
+void           set_SymConst_enum (ir_node *node, ir_enum_const *ec) {
+  assert (   (node->op == op_SymConst)
+          && (get_SymConst_kind(node) == symconst_enum_const));
+  node->attr.symc.sym.enum_p  = ec;
 }
 
 union symconst_symbol

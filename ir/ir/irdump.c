@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Hubert Schmidt
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universit�t Karlsruhe
+ * Copyright:   (c) 1998-2006 Universit�t Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
@@ -671,21 +671,26 @@ int dump_node_opcode(FILE *F, ir_node *n)
   } break;
 
   case iro_SymConst: {
-    if (get_SymConst_kind(n) == symconst_addr_name) {
+    switch (get_SymConst_kind(n)) {
+    case symconst_addr_name:
       /* don't use get_SymConst_ptr_info as it mangles the name. */
-      fprintf (F, "SymC %s", get_id_str(get_SymConst_name(n)));
-    } else if (get_SymConst_kind(n) == symconst_addr_ent) {
-      assert(get_SymConst_entity(n));
-      assert(is_entity(get_SymConst_entity(n)));
-      fprintf (F, "SymC &%s", get_entity_name(get_SymConst_entity(n)));
-    } else {
-      assert(get_kind(get_SymConst_type(n)) == k_type);
-      assert(get_type_ident(get_SymConst_type(n)));
-      fprintf (F, "SymC %s ", get_type_name_ex(get_SymConst_type(n), &bad));
-      if (get_SymConst_kind(n) == symconst_type_tag)
-        fprintf (F, "tag");
-      else
-        fprintf (F, "size");
+      fprintf(F, "SymC %s", get_id_str(get_SymConst_name(n)));
+      break;
+    case symconst_addr_ent:
+      fprintf(F, "SymC &%s", get_entity_name(get_SymConst_entity(n)));
+      break;
+    case symconst_type_tag:
+      fprintf(F, "SymC %s tag", get_type_name_ex(get_SymConst_type(n), &bad));
+      break;
+    case symconst_type_size:
+      fprintf(F, "SymC %s size", get_type_name_ex(get_SymConst_type(n), &bad));
+      break;
+    case symconst_type_align:
+      fprintf(F, "SymC %s align", get_type_name_ex(get_SymConst_type(n), &bad));
+      break;
+    case symconst_enum_const:
+      fprintf(F, "SymC %s enum", get_enumeration_name(get_SymConst_enum(n)));
+      break;
     }
   } break;
 
@@ -1842,16 +1847,20 @@ void dump_entity_node(FILE *F, entity *ent, int color)
 static void dump_enum_item(FILE *F, ir_type *tp, int pos)
 {
   char buf[1024];
-  ident *id  = get_enumeration_nameid(tp, pos);
-  tarval *tv = get_enumeration_enum(tp, pos);
+  ir_enum_const *ec = get_enumeration_const(tp, pos);
+  ident         *id = get_enumeration_nameid(ec);
+  tarval        *tv = get_enumeration_value(ec);
 
-  tarval_snprintf(buf, sizeof(buf), tv);
-  fprintf (F, "node: {title: \"");
+  if (tv)
+    tarval_snprintf(buf, sizeof(buf), tv);
+  else
+    strncpy(buf, "<not set>", sizeof(buf));
+  fprintf(F, "node: {title: \"");
   PRINT_ITEMID(tp, pos); fprintf(F, "\"");
-  fprintf (F, DEFAULT_ENUM_ITEM_ATTRIBUTE);
-  fprintf (F, "label: ");
-  fprintf (F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, get_id_str(id));
-  fprintf (F, "\n info1: \"value: %s\"}\n", buf);
+  fprintf(F, DEFAULT_ENUM_ITEM_ATTRIBUTE);
+  fprintf(F, "label: ");
+  fprintf(F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, get_id_str(id));
+  fprintf(F, "\n info1: \"value: %s\"}\n", buf);
 }
 
 /* dumps a type or entity and it's edges. */

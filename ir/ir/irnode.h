@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifndef _FIRM_IR_IRNODE_H_
@@ -451,9 +451,11 @@ typedef enum {
   symconst_addr_name,   /**< The SymConst is a symbolic pointer to be filled in
 			   by the linker.  The pointer is represented by a string.
 			   symconst_symbol is ident *. */
-  symconst_addr_ent     /**< The SymConst is a symbolic pointer to be filled in
+  symconst_addr_ent,    /**< The SymConst is a symbolic pointer to be filled in
 			   by the linker.  The pointer is represented by an entity.
 			   symconst_symbol is entity *. */
+  symconst_enum_const   /**< The SymConst is a enumeration constant of an
+               enumeration type. */
 } symconst_kind;
 
 /** Returns non-zero if s symconst kind has a type attribute */
@@ -465,13 +467,18 @@ typedef enum {
 /** Returns non-zero if s symconst kind has an entity attribute */
 #define SYMCONST_HAS_ENT(kind) ((kind) == symconst_addr_ent)
 
+/** Returns non-zero if s symconst kind has an enum_const attribute */
+#define SYMCONST_HAS_ENUM(kind) ((kind) == symconst_enum_const)
+
 /** SymConst attribute.
  *
- *  This union contains the symbolic information represented by the node.  */
+ *  This union contains the symbolic information represented by the node.
+ */
 typedef union symconst_symbol {
-  ir_type *type_p;
-  ident   *ident_p;
-  entity  *entity_p;
+  ir_type       *type_p;
+  ident         *ident_p;
+  entity        *entity_p;
+  ir_enum_const *enum_p;
 } symconst_symbol;
 
 /** Get the kind of the SymConst. */
@@ -490,6 +497,10 @@ void     set_SymConst_name (ir_node *node, ident *name);
 /** Only to access SymConst of kind addr_ent.  Else assertion: */
 entity  *get_SymConst_entity (ir_node *node);
 void     set_SymConst_entity (ir_node *node, entity *ent);
+
+/** Only to access SymConst of kind symconst_enum_const.  Else assertion: */
+ir_enum_const *get_SymConst_enum (ir_node *node);
+void           set_SymConst_enum (ir_node *node, ir_enum_const *ec);
 
 /** Sets both: type and ptrinfo.  Needed to treat the node independent of
    its semantics.  Does a memcpy for the memory sym points to. */

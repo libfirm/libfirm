@@ -3083,7 +3083,8 @@ set_store(ir_node *store)
 {
   ir_node *load, *pload, *pred, *in[2];
 
-  assert(get_irg_phase_state (current_ir_graph) == phase_building);
+  assert(get_irg_phase_state(current_ir_graph) == phase_building);
+  assert(get_irn_mode(store) == mode_M && "storing non-memory node");
 
   if (get_opt_auto_create_sync()) {
     /* handle non-volatile Load nodes by automatically creating Sync's */
