@@ -10,6 +10,19 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+/* Ini file in local directory */
+#define LOCAL_INI_FILE "firm.ini"
+
+/* Includes to determine user's home directory */
+#ifdef _WIN32
+#include <ShlObj.h>
+#define HOME_DIR_INI_FILE LOCAL_INI_FILE
+#else
+#include <sys/types.h>
+#include <pwd.h>
+#define HOME_DIR_INI_FILE ".firmrc"
+#endif
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -130,17 +143,38 @@ init_firm(const firm_parameter_t *param)
 #endif
 
 #ifdef WITH_LIBCORE
-  /* Process command line and ini file. */
   {
-	  FILE *f = fopen("firm.ini", "rt");
+	  FILE *f;
+
+#ifdef _WIN32
+	  char path[MAX_PATH];
+	  SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path);
+	  strncat(path, "\\", sizeof(path));
+#else
+	  char path[512];
+	  strcpy(path, getpwuid(getuid())->pw_dir);
+	  strncat(path, "/", sizeof(path));
+#endif
+
+	  strncat(path, HOME_DIR_INI_FILE, sizeof(path));
+
+	  /* Process ini file in user's home. */
+	  f = fopen(path, "rt");
 	  if(f) {
-		  lc_opt_from_file("firm.ini", f, NULL);
+		  lc_opt_from_file(path, f, NULL);
 		  fclose(f);
 	  }
 
+	  /* Process ini file in current directory. */
+	  f = fopen(LOCAL_INI_FILE, "rt");
+	  if(f) {
+		  lc_opt_from_file(LOCAL_INI_FILE, f, NULL);
+		  fclose(f);
+	  }
+
+	  /* process arguments from the command line */
 	  lc_opt_from_argv(firm_opt_get_root(), def_params.arg_prefix, def_params.argc, def_params.argv, NULL);
   }
-
 #endif
 }
 
