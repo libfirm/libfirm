@@ -86,7 +86,7 @@ typedef struct _x87_state {
 } x87_state;
 
 /** An empty state, used for blocks without fp instructions. */
-static const x87_state _empty = { { {0, NULL}, }, 0, 0 };
+static x87_state _empty = { { {0, NULL}, }, 0, 0 };
 static x87_state *empty = (x87_state *)&_empty;
 
 /** The type of an instruction simulator */
@@ -1821,6 +1821,7 @@ void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list
 
 	/* start with the empty state */
 	bl_state->begin = empty;
+	empty->sim      = &sim;
 
 	worklist = new_pdeq();
 
