@@ -11,138 +11,94 @@
 
 #include "irgraph_t.h"
 #include "iredges_t.h"
+#include "irphase_t.h"
+#include "irhooks.h"
 
-#include "belive.h"
 #include "pset.h"
 #include "set.h"
 #include "list.h"
 #include "hashptr.h"
+#include "bitset.h"
 
-typedef enum _live_state_t {
-    live_state_in = 1,
-    live_state_end = 2,
-    live_state_out = 4,
-    live_state_block = 8,
-} live_state_t;
+#include "belive.h"
 
-typedef struct _irn_live_t {
-    const ir_node *block;
-    const ir_node *irn;
-    unsigned state;
-    struct _irn_live_t *next;
-} irn_live_t;
+struct _be_lv_t {
+	phase_t ph;
+	ir_graph *irg;
+	bitset_t *nodes;
+	hook_entry_t hook_info;
+	firm_dbg_module_t *dbg;
+};
 
-typedef struct _irg_live_info_t {
-    set *live;
-} irg_live_info_t;
+struct _be_lv_info_node_t {
+	unsigned idx;
+	unsigned flags;
+};
 
-extern size_t live_irg_data_offset;
+struct _be_lv_info_head_t {
+	unsigned n_members;
+	unsigned n_size;
+};
 
-#define get_irg_live_info(irg) (get_irg_data(irg, irg_live_info_t, live_irg_data_offset))
+struct _be_lv_info_t {
+	union {
+		struct _be_lv_info_head_t head;
+		struct _be_lv_info_node_t node;
+	} u;
+};
 
-#define live_is_in(live) (((live)->state & live_state_in) != 0)
-#define live_is_end(live) (((live)->state & live_state_end) != 0)
-#define live_is_out(live) (((live)->state & live_state_out) != 0)
-
-static INLINE irn_live_t *_get_or_set_live(const ir_node *block, const ir_node *irn, int state)
+static INLINE int _be_lv_next_irn(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
 {
-  irg_live_info_t *live_info = get_irg_live_info(get_irn_irg(block));
-  unsigned hash = HASH_PTR(block) + 37 * HASH_PTR(irn);
-  irn_live_t *live, templ;
+	struct _be_lv_info_t *arr     = phase_get_irn_data(&lv->ph, bl);
+	if(arr) {
+		int n_members = (int) arr[0].u.head.n_members;
 
-  templ.block = block;
-  templ.irn = irn;
-  templ.state = -1;
-  templ.next = NULL;
+		while(i < n_members) {
+			if(arr[i + 1].u.node.flags & flags) {
+				return i;
+			}
+			++i;
+		}
+	}
 
-  live = set_insert(live_info->live, &templ, sizeof(templ), hash);
-  if(live->state == -1) {
-
-    if(!is_Block(irn)) {
-      irn_live_t *bl_live = _get_or_set_live(block, block, live_state_block);
-      live->next    = bl_live->next;
-      bl_live->next = live;
-    }
-
-    live->state = state;
-  }
-
-  live->state |= state;
-
-  return live;
+	return -1;
 }
 
-static INLINE int _is_live_in(const ir_node *block, const ir_node *irn)
+static INLINE ir_node * _be_lv_get_irn(const struct _be_lv_t *lv, const ir_node *bl, int i)
 {
-    return (_get_or_set_live(block, irn, 0)->state & live_state_in) != 0;
+	struct _be_lv_info_t *arr     = phase_get_irn_data(&lv->ph, bl);
+	return get_idx_irn(lv->irg, arr[i + 1].u.node.idx);
 }
 
-static INLINE int _is_live_out(const ir_node *block, const ir_node *irn)
+struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *bl, const ir_node *irn);
+
+static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *block, const ir_node *irn, unsigned flags)
 {
-    return (_get_or_set_live(block, irn, 0)->state & live_state_out) != 0;
+	struct _be_lv_info_node_t *info = be_lv_get(li, block, irn);
+	return info ? (info->flags & flags) != 0 : 0;
 }
 
-static INLINE int _is_live_end(const ir_node *block, const ir_node *irn)
+#define be_lv_foreach(lv, bl, flags, i) \
+	for(i = _be_lv_next_irn(lv, bl, flags, 0); i >= 0; i = _be_lv_next_irn(lv, bl, flags, i + 1))
+
+
+static INLINE pset *_be_lv_pset_put(struct _be_lv_t *lv, const ir_node *block, int state, pset *s)
 {
-    return (_get_or_set_live(block, irn, 0)->state & live_state_end) != 0;
+	int i;
+	be_lv_foreach(lv, block, state, i)
+		pset_insert_ptr(s, _be_lv_get_irn(lv, block, i));
+	return s;
 }
 
-#define live_foreach(block, live_info) \
-	for(live_info = _get_or_set_live(block, block, 0)->next; live_info; live_info = live_info->next)
+#define be_lv_get_irn(lv, bl, i)      _be_lv_get_irn(lv, bl, i)
+#define be_lv_pset_put_in(lv, bl, s)  _be_lv_pset_put(lv, bl, be_lv_state_in, s)
+#define be_lv_pset_put_out(lv, bl, s) _be_lv_pset_put(lv, bl, be_lv_state_out, s)
+#define be_lv_pset_put_end(lv, bl, s) _be_lv_pset_put(lv, bl, be_lv_state_end, s)
 
-static INLINE void _put_live(const ir_node *block, int state, pset *s)
-{
-    irn_live_t *live;
+#define be_is_live_in(lv, bl, irn)    _be_is_live_xxx(lv, bl, irn, be_lv_state_in)
+#define be_is_live_end(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_end)
+#define be_is_live_out(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_out)
 
-    live_foreach(block, live) {
-        if(live->state & state)
-            pset_insert_ptr(s, live->irn);
-    }
-}
-
-static INLINE pset *_put_live_in(const ir_node *block, pset *s)
-{
-    _put_live(block, live_state_in, s);
-    return s;
-}
-
-static INLINE pset *_put_live_out(const ir_node *block, pset *s)
-{
-    _put_live(block, live_state_out, s);
-    return s;
-}
-
-static INLINE pset *_put_live_end(const ir_node *block, pset *s)
-{
-    _put_live(block, live_state_end, s);
-    return s;
-}
-
-static INLINE int _is_phi_arg(const ir_node *irn)
-{
-  const ir_edge_t *edge;
-
-  assert(edges_activated(get_irn_irg(irn)) && "Please compute the out edges");
-  foreach_out_edge(irn, edge)
-    if(is_Phi(edge->src))
-      return 1;
-
-  return 0;
-}
-
-
-#define is_live_in(bl,irn) 			_is_live_in(bl, irn)
-#define is_live_out(bl,irn) 		_is_live_out(bl, irn)
-#define is_live_end(bl,irn) 		_is_live_end(bl, irn)
-#define put_live_in(bl,s)			  _put_live_in(bl, s)
-#define put_live_out(bl,s)			_put_live_out(bl, s)
-#define put_live_end(bl,s)			_put_live_end(bl, s)
-#define is_phi_arg(irn)         _is_phi_arg(irn)
-
-/**
- * Initialize the liveness module.
- * To be called from be_init().
- */
-void be_liveness_init(void);
+#define be_lv_has_info_about(lv, irn) bitset_is_set((lv)->nodes, get_irn_idx(irn))
 
 #endif

@@ -13,25 +13,73 @@
 
 #include <stdio.h>
 
+typedef enum {
+	be_lv_state_in  = 1,
+	be_lv_state_end = 2,
+	be_lv_state_out = 4,
+} be_lv_state_t;
+
+typedef struct _be_lv_t be_lv_t;
+
+typedef struct _be_lv_info_t be_lv_info_t;
+
+
 /**
  * Compute the inter block liveness for a graph.
  * @param irg The graph.
  */
-void be_liveness(ir_graph *irg);
+be_lv_t *be_liveness(ir_graph *irg);
+
+/**
+ * Check the given liveness information against a freshly computed one.
+ */
+void be_liveness_check(be_lv_t *lv);
+
+/**
+ * Free the liveness information.
+ */
+void be_liveness_free(be_lv_t *lv);
+
+/**
+ * Recompute the complete liveness information.
+ */
+void be_liveness_recompute(be_lv_t *lv);
+
+/**
+ * Update the liveness information for a single node.
+ * It is irrelevant if there is liveness information present for the node.
+ * The liveness information for the node is firstly deleted and then recompute.
+ * So, if the node is fresh and never recorded inf the liveness information
+ * before, it is more efficient to call be_liveness_introduce().
+ */
+void be_liveness_update(be_lv_t *lv, ir_node *irn);
+
+/**
+ * Remove a node from the liveness information.
+ */
+void be_liveness_remove(be_lv_t *lv, ir_node *irn);
+
+/**
+ * Introduce a new node to the liveness information.
+ * The new irn is not deleted from any block's liveness information, so it must be fresh!
+ * @param lv The liveness info.
+ * @param irn The node.
+ */
+void be_liveness_introduce(be_lv_t *lv, ir_node *irn);
 
 /**
  * Dump the liveness information for a graph.
  * @param f The output.
  * @param irg The graph.
  */
-void be_liveness_dump(ir_graph *irg, FILE *f);
+void be_liveness_dump(const be_lv_t *lv, FILE *f);
 
 /**
  * Dump the liveness information for a graph.
  * @param irg The graph.
  * @param cls_name A string used as substring in the filename.
  */
-void be_liveness_dumpto(ir_graph *irg, const char *cls_name);
+void be_liveness_dumpto(const be_lv_t *lv, const char *cls_name);
 
 /**
  * Check, if a node is live in at a block.
@@ -39,7 +87,7 @@ void be_liveness_dumpto(ir_graph *irg, const char *cls_name);
  * @param irn The node to check for.
  * @return 1, if @p irn is live at the entrance of @p block, 0 if not.
  */
-int (is_live_in)(const ir_node *block, const ir_node *irn);
+int (be_is_live_in)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
 
 /**
  * Check, if a node is live out at a block.
@@ -47,7 +95,7 @@ int (is_live_in)(const ir_node *block, const ir_node *irn);
  * @param irn The node to check for.
  * @return 1, if @p irn is live at the exit of @p block, 0 if not.
  */
-int (is_live_out)(const ir_node *block, const ir_node *irn);
+int (be_is_live_out)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
 
 /**
  * Check, if a node is live at the end of a block.
@@ -55,7 +103,7 @@ int (is_live_out)(const ir_node *block, const ir_node *irn);
  * @param irn The node to check for.
  * @return 1, if @p irn is live at the end of the block, 0 if not.
  */
-int (is_live_end)(const ir_node *block, const ir_node *irn);
+int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
 
 /**
  * Check, if the SSA dominance property is fulfilled.
@@ -84,7 +132,7 @@ pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class
  * @param live     The set to put them into.
  * @return live.
  */
-pset *be_liveness_end_of_block(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live);
+pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live);
 
 /**
  * Compute a set of nodes which are live at another node.
@@ -94,6 +142,6 @@ pset *be_liveness_end_of_block(const arch_env_t *arch_env, const arch_register_c
  * @param live     The set to put them into.
  * @return live.
  */
-pset *be_liveness_nodes_live_at(const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
+pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
 
 #endif /* _BELIVE_H */

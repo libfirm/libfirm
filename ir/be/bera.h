@@ -17,6 +17,7 @@
 #include "firm_types.h"
 
 #include "be.h"
+#include "belive.h"
 
 typedef struct {
 	lc_timer_t *t_prolog;      /**< timer for prolog */
@@ -42,11 +43,12 @@ typedef struct {
 
 /**
  * Check, if two values interfere.
+ * @param lv Liveness information.
  * @param a The first value.
  * @param b The second value.
  * @return 1, if @p a and @p b interfere, 0 if not.
  */
-int values_interfere(const ir_node *a, const ir_node *b);
+int values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b);
 
 /**
  * Check, if a value dominates the other one.

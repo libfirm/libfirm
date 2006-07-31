@@ -43,7 +43,7 @@
 
 static int    dump_flags      = 0;
 static int    subtree_iter    = 4;
-static int    max_depth       = 10;
+static int    max_depth       = 20;
 static double constr_factor   = 0.9;
 
 /* Options using libcore */
@@ -843,7 +843,7 @@ static void apply_coloring(co2_cloud_irn_t *ci, col_t col, int depth)
 
 	DBG((ci->cloud->env->dbg, LEVEL_2, "%2{firm:indent}setting %+F to %d\n", depth, irn, col));
 	ok = change_color_single(ci->cloud->env, irn, col, &changed, depth);
-	assert(ok && "Color changing may not fail while committing the coloring");
+	// assert(ok && "Color changing may not fail while committing the coloring");
 	materialize_coloring(&changed);
 
  	for(i = 0; i < ci->mst_n_childs; ++i) {

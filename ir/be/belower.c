@@ -671,7 +671,7 @@ void assure_constraints(be_irg_t *birg) {
 		DB((mod, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and it's copies */
-		be_ssa_constr(dom, n, nodes);
+		be_ssa_constr(dom, NULL, n, nodes);
 
 
 		/* Could be that not all CopyKeeps are really needed, */

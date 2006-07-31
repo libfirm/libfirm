@@ -39,6 +39,7 @@
 
 #include "bechordal_t.h"
 #include "beabi.h"
+#include "bejavacoal.h"
 #include "beutil.h"
 #include "besched.h"
 #include "benumb_t.h"
@@ -94,7 +95,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 		}
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
 			n2_reg = arch_get_irn_register(arch_env, n2);
-			if (values_interfere(n1, n2) && n1_reg == n2_reg) {
+			if (values_interfere(chordal_env->lv, n1, n2) && n1_reg == n2_reg) {
 				DBG((dbg, 0, "Values %+F and %+F interfere and have the same register assigned: %s\n", n1, n2, n1_reg->name));
 				assert(0 && "Interfering values have the same color!");
 			}
@@ -108,7 +109,7 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 	if(env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
-		return values_interfere(a, b);
+		return values_interfere(env->lv, a, b);
 }
 
 
@@ -148,11 +149,11 @@ static const lc_opt_enum_int_items_t copymin_items[] = {
 	{ "none",  BE_CH_COPYMIN_NONE      },
 	{ "heur1", BE_CH_COPYMIN_HEUR1     },
 	{ "heur2", BE_CH_COPYMIN_HEUR2     },
+	{ "heur3", BE_CH_COPYMIN_HEUR3     },
 	{ "stat",  BE_CH_COPYMIN_STAT      },
 	{ "park",  BE_CH_COPYMIN_PARK_MOON },
 #ifdef WITH_ILP
-	{ "ilp1",  BE_CH_COPYMIN_ILP1 },
-	{ "ilp2",  BE_CH_COPYMIN_ILP2 },
+	{ "ilp",   BE_CH_COPYMIN_ILP },
 #endif /* WITH_ILP */
 	{ NULL, 0 }
 };
@@ -186,6 +187,7 @@ static const lc_opt_enum_int_items_t dump_items[] = {
 	{ "tree",     BE_CH_DUMP_TREE_INTV },
 	{ "constr",   BE_CH_DUMP_CONSTR    },
 	{ "lower",    BE_CH_DUMP_LOWER     },
+	{ "appel",    BE_CH_DUMP_APPEL     },
 	{ "all",      BE_CH_DUMP_ALL       },
 	{ NULL, 0 }
 };
@@ -221,7 +223,11 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 	&options.vrfy_option, be_ch_vrfy_items
 };
 
+/** Dump copy minimization statistics. */
 static int be_copymin_stats = 0;
+
+/** Enable extreme live range splitting. */
+static int be_elr_split = 0;
 
 /** Assumed loop iteration count for execution frequency estimation. */
 static int be_loop_weight = 9;
@@ -234,6 +240,7 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options (off, warn, assert)", &be_ch_vrfy_var),
 	LC_OPT_ENT_BOOL     ("copymin_stats", "dump statistics of copy minimization", &be_copymin_stats),
+	LC_OPT_ENT_BOOL     ("elrsplit",      "enable extreme live range splitting", &be_elr_split),
 	LC_OPT_ENT_INT      ("loop_weight",   "assumed amount of loop iterations for guessing the execution frequency", &be_loop_weight),
 	{ NULL }
 };
@@ -251,6 +258,7 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 	}
 
 	co_register_options(chordal_grp);
+	java_coal_register_options(chordal_grp);
 }
 #endif /* WITH_LIBCORE */
 
@@ -374,6 +382,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
 	ir_graph            *irg       = bi->irg;
 	be_options_t        *main_opts = main_env->options;
+	int                  splitted  = 0;
+	copy_opt_t          *co;
 
 	int j, m;
 	be_chordal_env_t chordal_env;
@@ -432,6 +442,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	chordal_env.birg      = bi;
 	chordal_env.dom_front = be_compute_dominance_frontiers(irg);
 	chordal_env.exec_freq = compute_execfreq(irg, be_loop_weight);
+	chordal_env.lv        = be_liveness(irg);
 	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
 	obstack_init(&chordal_env.obst);
@@ -447,13 +458,11 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
 
-		BE_TIMER_PUSH(ra_timer.t_live);
-
 		/* put all ignore registers into the ignore register set. */
 		put_ignore_colors(&chordal_env);
 
-		be_liveness(irg);
-
+		BE_TIMER_PUSH(ra_timer.t_live);
+		be_liveness_recompute(chordal_env.lv);
 		BE_TIMER_POP(ra_timer.t_live);
 
 		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
@@ -470,8 +479,10 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			break;
 #ifdef WITH_ILP
 		case BE_CH_SPILL_REMAT:
+			/*
 			be_spill_remat(&chordal_env);
 			break;
+			*/
 #endif /* WITH_ILP */
 		default:
 			fprintf(stderr, "no valid spiller selected. falling back to belady\n");
@@ -487,7 +498,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		    );
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
-		be_abi_fix_stack_nodes(bi->abi);
+		be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
 		be_compute_spill_offsets(&chordal_env);
 		check_for_memory_operands(&chordal_env);
 
@@ -503,23 +514,23 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			assert(be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg)
 				&& "Register pressure verification failed");
 		}
-
 		BE_TIMER_POP(ra_timer.t_verify);
-		BE_TIMER_PUSH(ra_timer.t_live);
-		be_liveness(irg);
-		BE_TIMER_POP(ra_timer.t_live);
-		BE_TIMER_PUSH(ra_timer.t_color);
+
+		if(be_elr_split && !splitted) {
+			extreme_liverange_splitting(&chordal_env);
+			splitted = 1;
+		}
+
 
 		/* Color the graph. */
+		BE_TIMER_PUSH(ra_timer.t_color);
 		be_ra_chordal_color(&chordal_env);
-
 		BE_TIMER_POP(ra_timer.t_color);
 
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-color", dump_ir_block_graph_sched);
 
-		BE_TIMER_PUSH(ra_timer.t_ifg);
-
 		/* Create the ifg with the selected flavor */
+		BE_TIMER_PUSH(ra_timer.t_ifg);
 		switch (options.ifg_flavor) {
 			default:
 				fprintf(stderr, "no valid ifg flavour selected. falling back to std\n");
@@ -542,36 +553,19 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 				chordal_env.ifg = be_ifg_std_new(&chordal_env);
 				break;
 		}
-
-
-#if 0
-		{
-			be_ifg_t *std = be_ifg_std_new(&chordal_env);
-			f = be_chordal_open(&chordal_env, "std", "csv");
-			be_ifg_check_sorted_to_file(std, f);
-			be_ifg_free(std);
-			fclose(f);
-		}
-
-		f = be_chordal_open(&chordal_env, "clique", "csv");
-		be_ifg_check_sorted_to_file(chordal_env.ifg, f);
-		fclose(f);
-#endif
 		BE_TIMER_POP(ra_timer.t_ifg);
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
-
 		if (options.vrfy_option != BE_CH_VRFY_OFF)
 			be_ra_chordal_check(&chordal_env);
 
-//		be_ifg_check_sorted(chordal_env.ifg);
 		BE_TIMER_POP(ra_timer.t_verify);
-		BE_TIMER_PUSH(ra_timer.t_copymin);
 
 		/* copy minimization */
+		BE_TIMER_PUSH(ra_timer.t_copymin);
+		co = NULL;
 		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
-			FILE *f;
-			co = new_copy_opt(&chordal_env, co_get_costs_loop_depth);
+			co = new_copy_opt(&chordal_env, co_get_costs_exec_freq);
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 			if(be_copymin_stats) {
@@ -582,14 +576,12 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 				printf("copy costs lower bound: %d\n", co_get_lower_bound(co));
 			}
 
-#if 0
-			f = be_chordal_open(&chordal_env, "appel-", "apl");
-			co_dump_appel_graph(co, f);
-			fclose(f);
-			f = be_chordal_open(&chordal_env, "appel-clique-", "p");
-			co_dump_appel_graph_cliques(co, f);
-			fclose(f);
-#endif
+			/* Dump the interference graph in Appel's format. */
+			if(options.dump_flags & BE_CH_DUMP_APPEL) {
+				FILE *f = be_chordal_open(&chordal_env, "appel-", "apl");
+				co_dump_appel_graph(co, f);
+				fclose(f);
+			}
 		}
 
 		switch(options.copymin_method) {
@@ -599,6 +591,9 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			case BE_CH_COPYMIN_HEUR2:
 				co_solve_heuristic_new(co);
 				break;
+			case BE_CH_COPYMIN_HEUR3:
+				co_solve_heuristic_java(co);
+				break;
 			case BE_CH_COPYMIN_PARK_MOON:
 				co_solve_park_moon(co);
 				break;
@@ -606,11 +601,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 				co_compare_solvers(&chordal_env);
 				break;
 #ifdef WITH_ILP
-			case BE_CH_COPYMIN_ILP1:
-				printf("FIXME: %s:%d ILP1 not yet implemented!\n", __FILE__, __LINE__);
-				co_solve_ilp1(co, 60.0);
-				break;
-			case BE_CH_COPYMIN_ILP2:
+			case BE_CH_COPYMIN_ILP:
 				co_solve_ilp2(co, 60.0);
 				break;
 #endif /* WITH_ILP */
@@ -627,7 +618,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			co_free_ou_structure(co);
 			free_copy_opt(co);
 		}
-
 		BE_TIMER_POP(ra_timer.t_copymin);
 
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
@@ -671,6 +661,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	obstack_free(&chordal_env.obst, NULL);
 	be_free_dominance_frontiers(chordal_env.dom_front);
+	be_liveness_free(chordal_env.lv);
 	free_execfreq(chordal_env.exec_freq);
 
 	BE_TIMER_POP(ra_timer.t_epilog);

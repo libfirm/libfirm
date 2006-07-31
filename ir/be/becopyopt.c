@@ -41,10 +41,12 @@
 
 /* Insert additional options registration functions here. */
 extern void be_co2_register_options(lc_opt_entry_t *grp);
+extern void be_co3_register_options(lc_opt_entry_t *grp);
 
 void co_register_options(lc_opt_entry_t *grp)
 {
 	be_co2_register_options(grp);
+	be_co3_register_options(grp);
 }
 #endif
 
@@ -166,7 +168,8 @@ int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, i
 int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
 	ir_node *root_bl = get_nodes_block(root);
 	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-	return (int) get_block_execfreq(co->cenv->exec_freq, copy_bl);
+	unsigned long freq = get_block_execfreq_ulong(co->cenv->exec_freq, copy_bl);
+	return freq > 0 ? (int) freq : 1;
 }
 
 
@@ -896,7 +899,7 @@ static void appel_walker(ir_node *bl, void *data)
 	}
 
 	DBG((env->co->cenv->dbg, LEVEL_2, "%+F\n", bl));
-	be_liveness_end_of_block(env->co->aenv, env->co->cls, bl, live);
+	be_liveness_end_of_block(env->co->cenv->lv, env->co->aenv, env->co->cls, bl, live);
 
 	/* Generate the bad and ugly. */
 	for(i = n_insns - 1; i >= 0; --i) {
@@ -1021,7 +1024,7 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 	appel_clique_walker_t env;
 	bitset_t *adm = bitset_alloca(co->cls->n_regs);
 
-	be_liveness(co->irg);
+	be_liveness_recompute(co->cenv->lv);
 	obstack_init(&env.obst);
 	phase_init(&env.ph, "appel_clique_dumper", co->irg, PHASE_DEFAULT_GROWTH, appel_clique_walker_irn_init);
 	env.curr_nr = co->cls->n_regs;

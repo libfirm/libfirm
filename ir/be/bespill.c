@@ -578,7 +578,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		/* introduce copies, rewire the uses */
 		assert(pset_count(values) > 0 && "???");
 		pset_insert_ptr(values, si->spilled_node);
-		be_ssa_constr_set_ignore(env->chordal_env->dom_front, values, env->mem_phis);
+		be_ssa_constr_set_ignore(env->chordal_env->dom_front, env->chordal_env->lv, values, env->mem_phis);
 
 		del_pset(values);
 	}
@@ -605,6 +605,8 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	rel->reloader = before;
 	rel->next     = res->reloaders;
 	res->reloaders = rel;
+
+	be_liveness_add_missing(env->chordal_env->lv);
 }
 
 void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
@@ -704,7 +706,7 @@ static void compute_spill_slots_walker(ir_node *spill, void *env) {
 			for (irn = pset_first(ss->members); irn; irn = pset_next(ss->members)) {
 				/* use values_interfere here, because it uses the dominance check,
 					 which does work for values in memory */
-				assert(!values_interfere(spill, irn) && "Spills for the same spill slot must not interfere!");
+				assert(!values_interfere(ssenv->cenv->lv, spill, irn) && "Spills for the same spill slot must not interfere!");
 			}
 		}
 #endif /* NDEBUG */
@@ -765,7 +767,7 @@ static void optimize_slots(ss_env_t *ssenv, int size, spill_slot_t *ass[]) {
 			ir_node *n2;
 			for(n1 = pset_first(ass[i]->members); n1; n1 = pset_next(ass[i]->members))
 				for(n2 = pset_first(ass[o]->members); n2; n2 = pset_next(ass[o]->members))
-					if(values_interfere(n1, n2)) {
+					if(values_interfere(ssenv->cenv->lv, n1, n2)) {
 						pset_break(ass[i]->members);
 						pset_break(ass[o]->members);
 						DBG((ssenv->dbg, LEVEL_1, "    Interf %+F -- %+F\n", n1, n2));

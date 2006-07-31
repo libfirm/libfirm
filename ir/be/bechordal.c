@@ -251,7 +251,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 			of one are a subset of the other's. We record the operand whose constraints
 			count in the decisive array.
 			*/
-			if(!values_interfere(op->irn, op->carrier)) {
+			if(!values_interfere(env->lv, op->irn, op->carrier)) {
 				if(get_decisive_partner_regs(bs, out_op, op))
 					bipartite_add(bp, j, i - insn->use_start);
 			}
@@ -307,7 +307,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 	*/
 	for(i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
-		if(op->has_constraints && (values_interfere(op->carrier, insn->irn) || arch_irn_is(aenv, op->carrier, ignore))) {
+		if(op->has_constraints && (values_interfere(env->lv, op->carrier, insn->irn) || arch_irn_is(aenv, op->carrier, ignore))) {
 			bitset_copy(bs, op->regs);
 			bitset_and(bs, out_constr);
 
@@ -330,7 +330,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 		Make the Perm, recompute liveness and re-scan the insn since the
 		in operands are now the Projs of the Perm.
 	*/
-	perm = insert_Perm_after(aenv, env->cls, env->dom_front, sched_prev(insn->irn));
+	perm = insert_Perm_after(aenv, env->lv, env->cls, env->dom_front, sched_prev(insn->irn));
 
 	/* Registers are propagated by insert_Perm_after(). Clean them here! */
 	if(perm) {
@@ -346,7 +346,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 			the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
 			the live sets may change.
 		*/
-		be_liveness(env->irg);
+		// be_liveness_recompute(env->lv);
 		obstack_free(&env->obst, insn);
 		*the_insn = insn = chordal_scan_insn(alloc_env, insn->irn);
 
@@ -468,7 +468,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 				assert(is_Proj(proj));
 
-				if(values_interfere(proj, irn) && !pmap_contains(partners, proj)) {
+				if(values_interfere(env->lv, proj, irn) && !pmap_contains(partners, proj)) {
 					assert(n_alloc < n_regs);
 					alloc_nodes[n_alloc] = proj;
 					pmap_insert(partners, proj, NULL);
@@ -605,8 +605,8 @@ static void pressure(ir_node *block, void *env_ptr)
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
-	pset *live_in  = put_live_in(block, pset_new_ptr_default());
-	pset *live_end = put_live_end(block, pset_new_ptr_default());
+	pset *live_in  = be_lv_pset_put_in(env->lv, block, pset_new_ptr_default());
+	pset *live_end = be_lv_pset_put_end(env->lv, block, pset_new_ptr_default());
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %+F\n", block));
 	bitset_clear_all(live);
@@ -700,7 +700,7 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *in_colors         = alloc_env->in_colors;
 	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
 	struct list_head *head      = get_block_border_head(env, block);
-	pset *live_in               = put_live_in(block, pset_new_ptr_default());
+	pset *live_in               = be_lv_pset_put_in(env->lv, block, pset_new_ptr_default());
 
 	const ir_node *irn;
 	border_t *b;
@@ -756,7 +756,7 @@ static void assign(ir_node *block, void *env_ptr)
 		 * Assign a color, if it is a local def. Global defs already have a
 		 * color.
 		 */
-		if(b->is_def && !is_live_in(block, irn)) {
+		if(b->is_def && !be_is_live_in(env->lv, block, irn)) {
 			const arch_register_t *reg;
 			int col = NO_COLOR;
 

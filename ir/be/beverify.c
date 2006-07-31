@@ -22,6 +22,7 @@
 
 typedef struct be_verify_register_pressure_env_t_ {
 	ir_graph                    *irg;                 /**< the irg to verify */
+	 be_lv_t                    *lv;                  /**< Liveness information. */
 	const arch_env_t            *arch_env;            /**< an architecture environment */
 	const arch_register_class_t *cls;                 /**< the register class to check for */
 	int                         registers_available;  /**< number of available registers */
@@ -53,7 +54,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 	int pressure;
 
 	/* collect register pressure info, start with end of a block */
-	be_liveness_end_of_block(env->arch_env, env->cls, block, live_nodes);
+	be_liveness_end_of_block(env->lv, env->arch_env, env->cls, block, live_nodes);
 
 	pressure = pset_count(live_nodes);
 	if(pressure > env->registers_available) {
@@ -88,8 +89,7 @@ int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_
 {
 	be_verify_register_pressure_env_t env;
 
-	be_liveness(irg);
-
+	env.lv                  = be_liveness(irg);
 	env.irg                 = irg;
 	env.arch_env            = arch_env;
 	env.cls                 = cls;
@@ -97,6 +97,7 @@ int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_
 	env.problem_found       = 0;
 
 	irg_block_walk_graph(irg, verify_liveness_walker, NULL, &env);
+	be_liveness_free(env.lv);
 
 	return ! env.problem_found;
 }

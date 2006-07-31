@@ -106,6 +106,7 @@ alloc		::= node-nr reg-nr .
 typedef struct _be_raext_env_t {
 	arch_env_t *aenv;
 	const arch_register_class_t *cls;
+	be_lv_t *lv;
 	ir_graph *irg;
 	dom_front_info_t *dom_info;
 
@@ -377,7 +378,7 @@ static void dump_interferences(be_raext_env_t *raenv) {
 
 			pset_foreach(vi1->values, irn1)
 				pset_foreach(vi2->values, irn2)
-					if (values_interfere(irn1, irn2)) {
+					if (values_interfere(raenv->lv, irn1, irn2)) {
 						pset_break(vi1->values);
 						pset_break(vi2->values);
 						fprintf(f, "(%d, %d)\n", vi1->var_nr, vi2->var_nr);
@@ -554,7 +555,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 		}
 
 	/* correct the reload->spill pointers... */
-	be_ssa_constr_set(raenv->dom_info, spills);
+	be_ssa_constr_set(raenv->dom_info, raenv->lv, spills);
 
 
 	/****** correct the variable <--> values mapping: ******
@@ -666,9 +667,9 @@ static void check_allocation(be_raext_env_t *raenv) {
 
 			pset_foreach(vi1->values, irn1)
 				pset_foreach(vi2->values, irn2)
-					if (values_interfere(irn1, irn2) && arch_get_irn_register(raenv->aenv, irn1) == arch_get_irn_register(raenv->aenv, irn2)) {
+					if (values_interfere(raenv->lv, irn1, irn2) && arch_get_irn_register(raenv->aenv, irn1) == arch_get_irn_register(raenv->aenv, irn2)) {
 						dump_ir_block_graph_sched(raenv->irg, "ERROR");
-						ir_fprintf(stdout, "SSA values %+F and %+F interfere. They belong to varible %d and %d respectively.\n", irn1, irn2, vi1->var_nr, vi2->var_nr);
+						ir_fprintf(stdout, "SSA values %+F and %+F interfere. They belong to variable %d and %d respectively.\n", irn1, irn2, vi1->var_nr, vi2->var_nr);
 						assert(0 && "ERROR graph dumped");
 					}
 		}
@@ -711,6 +712,7 @@ static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
 	compute_doms(irg);
 	edges_assure(irg);
 
+	raenv.lv       = be_liveness(irg);
 	raenv.irg      = irg;
 	raenv.aenv     = env->arch_env;
 	raenv.dom_info = be_compute_dominance_frontiers(irg);
@@ -747,7 +749,7 @@ static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
 			dump_to_file(&raenv, out);
 			execute(callee, out, in);
 			done = read_and_apply_results(&raenv, in);
-			be_abi_fix_stack_nodes(bi->abi);
+			be_abi_fix_stack_nodes(bi->abi, raenv.lv);
 
 			ir_snprintf(in, sizeof(in), "-extern-%s-round-%d", raenv.cls->name, round);
 			be_dump(irg, in, dump_ir_block_graph_sched);
@@ -765,6 +767,7 @@ static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
 	/* Clean up */
 	free_ssa_destr_simple(raenv.vars);
 	be_free_dominance_frontiers(raenv.dom_info);
+	be_liveness_free(raenv.lv);
 
 	return NULL;
 }

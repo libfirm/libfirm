@@ -297,9 +297,11 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 				ir_node *op = get_irn_n(irn, i);
 				if(must_appear_in_schedule(env->main_env->vtab, env, irn)) {
 					usage_stats_t *us = get_or_set_usage_stats(env, irn);
+#if 0 /* Liveness is not computed here! */
 					if(is_live_end(bl, op))
 						us->uses_in_block = 99999;
 					else
+#endif
 						us->uses_in_block++;
 				}
 			}

@@ -13,6 +13,7 @@
 #define _BEUSES_H
 
 #include "bearch.h"
+#include "belive.h"
 
 #define USES_INFINITY                 1000000
 #define USES_IS_INIFINITE(x)          ((x) >= USES_INFINITY)
@@ -23,9 +24,7 @@ typedef struct _be_uses_t be_uses_t;
 unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
     unsigned from_step, const ir_node *def, int skip_from_uses);
 
-be_uses_t *be_begin_uses(ir_graph *irg,
-    const arch_env_t *arch_env,
-    const arch_register_class_t *cls);
+be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls);
 
 void be_end_uses(be_uses_t *uses);
 

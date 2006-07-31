@@ -118,7 +118,7 @@ ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
 
 be_abi_irg_t *be_abi_introduce(be_irg_t *bi);
 void be_abi_fix_stack_bias(be_abi_irg_t *env);
-void be_abi_fix_stack_nodes(be_abi_irg_t *env);
+void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv);
 void be_abi_free(be_abi_irg_t *abi);
 
 void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, bitset_t *bs);

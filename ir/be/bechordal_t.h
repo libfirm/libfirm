@@ -28,6 +28,7 @@
 #include "bearch.h"
 #include "bechordal.h"
 #include "beirgmod.h"
+#include "belive.h"
 
 typedef struct _be_ra_chordal_opts_t be_ra_chordal_opts_t;
 
@@ -61,6 +62,7 @@ struct _be_chordal_env_t {
 	ir_graph *irg;                      /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
 	exec_freq_t *exec_freq;             /**< Adam's execution frequencies. */
+	be_lv_t *lv;                        /**< Liveness information. */
 	pmap *border_heads;                 /**< Maps blocks to border heads. */
 	be_ifg_t *ifg;                      /**< The interference graph. */
 	void *data;                         /**< Some pointer, to which different phases can attach data to. */
@@ -107,15 +109,16 @@ enum {
 	BE_CH_DUMP_TREE_INTV  = (1 << 6),
 	BE_CH_DUMP_CONSTR     = (1 << 7),
 	BE_CH_DUMP_LOWER      = (1 << 8),
+	BE_CH_DUMP_APPEL      = (1 << 9),
 	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_LOWER - 1,
 
 	/* copymin method */
 	BE_CH_COPYMIN_NONE      = 0,
 	BE_CH_COPYMIN_HEUR1     = 1,
 	BE_CH_COPYMIN_HEUR2     = 2,
-	BE_CH_COPYMIN_STAT      = 3,
-	BE_CH_COPYMIN_ILP1      = 4,
-	BE_CH_COPYMIN_ILP2      = 5,
+	BE_CH_COPYMIN_HEUR3     = 3,
+	BE_CH_COPYMIN_STAT      = 4,
+	BE_CH_COPYMIN_ILP       = 5,
 	BE_CH_COPYMIN_PARK_MOON = 6,
 
 	/* ifg flavor */

@@ -50,6 +50,9 @@
 /** the debug handle */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+/* Forward declaration. */
+typedef struct _x87_simulator x87_simulator;
+
 /**
  * An exchange template.
  * Note that our virtual functions have the same inputs
@@ -79,6 +82,7 @@ typedef struct _x87_state {
 	st_entry st[N_x87_REGS];  /**< the register stack */
 	int depth;                /**< the current stack depth */
 	int tos;                  /**< position of the tos */
+	x87_simulator *sim;       /**< The simulator. */
 } x87_state;
 
 /** An empty state, used for blocks without fp instructions. */
@@ -101,11 +105,12 @@ typedef struct _blk_state {
 /**
  * The x87 simulator.
  */
-typedef struct _x87_simulator {
+struct _x87_simulator {
 	struct obstack obst;      /**< an obstack for fast allocating */
 	pmap *blk_states;         /**< map blocks to states */
-	const arch_env_t *env;		/**< architecture environment */
-} x87_simulator;
+	const arch_env_t *env;	  /**< architecture environment */
+	be_lv_t *lv;              /**< Liveness information. */
+};
 
 /**
  * Returns the stack depth.
@@ -306,6 +311,7 @@ static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block) {
  */
 static x87_state *x87_alloc_state(x87_simulator *sim) {
 	x87_state *res = obstack_alloc(&sim->obst, sizeof(*res));
+	res->sim = sim;
 	return res;
 }
 
@@ -719,16 +725,16 @@ static unsigned vfp_liveness_transfer(const arch_env_t *arch_env, ir_node *irn, 
  * @param bl       The block.
  * @return The live bitset.
  */
-static unsigned vfp_liveness_end_of_block(const arch_env_t *arch_env, const ir_node *bl)
+static unsigned vfp_liveness_end_of_block(x87_simulator *sim, const ir_node *bl)
 {
-	irn_live_t *li;
+	int i;
 	unsigned live = 0;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
 
-	live_foreach(bl, li) {
-		ir_node *irn = (ir_node *) li->irn;
-		if (live_is_end(li) && arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
-			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
+	be_lv_foreach(sim->lv, bl, be_lv_state_end, i) {
+		ir_node *irn = be_lv_get_irn(sim->lv, bl, i);
+		if (arch_irn_consider_in_reg_alloc(sim->env, cls, irn)) {
+			const arch_register_t *reg = arch_get_irn_register(sim->env, irn);
 			live |= 1 << reg->index;
 		}
 	}
@@ -742,14 +748,14 @@ static unsigned vfp_liveness_end_of_block(const arch_env_t *arch_env, const ir_n
  * @param pos      The node.
  * @return The live bitset.
  */
-static unsigned vfp_liveness_nodes_live_at(const arch_env_t *arch_env, const ir_node *pos)
+static unsigned vfp_liveness_nodes_live_at(x87_simulator *sim, const ir_node *pos)
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
 	ir_node *irn;
 	unsigned live;
 
-	live = vfp_liveness_end_of_block(arch_env, bl);
+	live = vfp_liveness_end_of_block(sim, bl);
 
 	sched_foreach_reverse(bl, irn) {
 		/*
@@ -759,7 +765,7 @@ static unsigned vfp_liveness_nodes_live_at(const arch_env_t *arch_env, const ir_
 		if (irn == pos)
 			return live;
 
-		live = vfp_liveness_transfer(arch_env, irn, live);
+		live = vfp_liveness_transfer(sim->env, irn, live);
 	}
 
 	return live;
@@ -814,7 +820,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_1));
 	const arch_register_t *op2 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_2));
 	const arch_register_t *out = arch_get_irn_register(env, n);
-	unsigned live = vfp_liveness_nodes_live_at(env, n);
+	unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
 
 	DB((dbg, LEVEL_1, ">>> %s %s, %s -> %s\n", get_irn_opname(n),
 		arch_register_get_name(op1), arch_register_get_name(op2),
@@ -962,7 +968,7 @@ static int sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, UNOP_IDX));
 	const arch_register_t *out = arch_get_irn_register(env, n);
 	ia32_attr_t *attr;
-	unsigned live = vfp_liveness_nodes_live_at(env, n);
+	unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
 
 	DB((dbg, LEVEL_1, ">>> %s -> %s\n", get_irn_opname(n), out->name));
 	DEBUG_ONLY(vfp_dump_live(live));
@@ -1050,7 +1056,7 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
 static int sim_store(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *op, ir_op *op_p) {
 	ir_node               *val = get_irn_n(n, STORE_VAL_IDX);
 	const arch_register_t *op2 = arch_get_irn_register(env, val);
-	unsigned              live = vfp_liveness_nodes_live_at(env, n);
+	unsigned              live = vfp_liveness_nodes_live_at(state->sim, n);
 	int                   insn = 0;
 	ia32_attr_t *attr;
 	int op2_idx, depth;
@@ -1225,7 +1231,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 	ir_op *dst;
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_1));
 	const arch_register_t *op2 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_2));
-	unsigned live = vfp_liveness_nodes_live_at(env, n);
+	unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
 
 	DB((dbg, LEVEL_1, ">>> %s %s, %s\n", get_irn_opname(n),
 		arch_register_get_name(op1), arch_register_get_name(op2)));
@@ -1412,7 +1418,7 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 		ir_node *node, *next;
 		ia32_attr_t *attr;
 		int op1_idx, out_idx;
-		unsigned live = vfp_liveness_nodes_live_at(env, n);
+		unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
 
 		op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1579,7 +1585,7 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 	x87_state *state = start_state;
 	ir_node *first_insn = sched_first(block);
 	ir_node *keep = NULL;
-	unsigned live = vfp_liveness_nodes_live_at(sim->env, block);
+	unsigned live = vfp_liveness_nodes_live_at(sim, block);
 	unsigned kill_mask;
 	int i, depth, num_pop;
 
@@ -1737,6 +1743,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	obstack_init(&sim->obst);
 	sim->blk_states = pmap_create();
 	sim->env        = env;
+	sim->lv         = be_liveness(irg);
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
 
@@ -1786,6 +1793,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 static void x87_destroy_simulator(x87_simulator *sim) {
 	pmap_destroy(sim->blk_states);
 	obstack_free(&sim->obst, NULL);
+	be_liveness_free(sim->lv);
 	DB((dbg, LEVEL_1, "x87 Simulator stopped\n\n"));
 }
 
@@ -1804,9 +1812,6 @@ void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list
 	blk_state *bl_state;
 	x87_simulator sim;
 	int i;
-
-	/* we need liveness info for the current graph */
-	be_liveness(irg);
 
 	/* create the simulator */
 	x87_init_simulator(&sim, irg, env);

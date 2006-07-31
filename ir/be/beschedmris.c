@@ -455,7 +455,7 @@ static void block_walker(ir_node *bl, void *data)
 	mris_env_t *env = data;
 	env->bl = bl;
 	lineage_formation(env);
-	fuse_lineages(env);
+	//fuse_lineages(env);
 }
 
 

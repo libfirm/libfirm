@@ -228,7 +228,6 @@ const backend_params *be_init(void)
 	be_opt_register();
 
 	be_sched_init();
-	be_liveness_init();
 	be_numbering_init();
 	be_copy_opt_init();
 	copystat_init();
@@ -504,7 +503,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		BE_TIMER_PUSH(t_abi);
-		be_abi_fix_stack_nodes(birg.abi);
+		be_abi_fix_stack_nodes(birg.abi, NULL);
 		BE_TIMER_POP(t_abi);
 
 		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);

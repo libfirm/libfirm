@@ -99,6 +99,7 @@ int co_solve_heuristic(copy_opt_t *co);
 
 void co_solve_heuristic_new(copy_opt_t *co);
 
+void co_solve_heuristic_java(copy_opt_t *co);
 
 /**
  * Apply Park/Moon coalescing to the graph.

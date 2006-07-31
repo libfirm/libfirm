@@ -41,7 +41,8 @@ static void ifg_std_free(void *self)
 
 static int ifg_std_connected(const void *self, const ir_node *a, const ir_node *b)
 {
-	return values_interfere(a, b);
+	const ifg_std_t *ifg = self;
+	return values_interfere(ifg->env->lv, a, b);
 }
 
 typedef struct _nodes_iter_t {
@@ -77,6 +78,7 @@ static void find_nodes(const void *self, void *iter) {
 	it->env   = ifg->env;
 
 	irg_block_walk_graph(ifg->env->irg, nodes_walker, NULL, iter);
+	obstack_ptr_grow(&it->obst, NULL);
 	it->nodes = obstack_finish(&it->obst);
 }
 
@@ -132,7 +134,7 @@ static void find_neighbour_walker(ir_node *block, void *data)
 	border_t *b;
 	int has_started = 0;
 
-	if(!is_live_in(block, it->irn) && block != get_nodes_block(it->irn))
+	if(!be_is_live_in(it->env->lv, block, it->irn) && block != get_nodes_block(it->irn))
 		return;
 
 	foreach_border_head(head, b) {

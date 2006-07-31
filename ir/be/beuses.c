@@ -44,6 +44,7 @@ typedef struct _be_use_t {
 struct _be_uses_t {
   set *uses;
   ir_graph *irg;
+  const be_lv_t *lv;
   const arch_env_t *arch_env;
   DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
@@ -111,12 +112,12 @@ static unsigned get_next_use(be_uses_t *uses, const ir_node *from, unsigned from
 	}
 
 	/* FIXME: quick and dirty hack to prevent ignore nodes (like stack pointer) from being spilled */
-	return is_live_end(bl, def) ? step : USES_INFINITY;
+	return be_is_live_end(uses->lv, bl, def) ? step : USES_INFINITY;
 
 	next_use = USES_INFINITY;
 	foreach_block_succ(bl, succ_edge) {
 		const ir_node *succ_bl = succ_edge->src;
-		if(get_irn_visited(succ_bl) < visited_nr && (is_live_in(succ_bl, def) || (get_irn_arity(succ_bl) > 1 && is_live_end(bl, def)))) {
+		if(get_irn_visited(succ_bl) < visited_nr && (be_is_live_in(uses->lv, succ_bl, def) || (get_irn_arity(succ_bl) > 1 && be_is_live_end(uses->lv, bl, def)))) {
 			unsigned next = get_next_use_bl(uses, succ_bl, def);
 
 			DBG((uses->dbg, LEVEL_2, "\t\tnext use in succ %+F: %d\n", succ_bl, next));
@@ -137,7 +138,7 @@ unsigned be_get_next_use(be_uses_t *uses, const ir_node *from, unsigned from_ste
 }
 
 
-be_uses_t *be_begin_uses(ir_graph *irg, const arch_env_t *arch_env, const arch_register_class_t *cls)
+be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls)
 {
   be_uses_t *uses = xmalloc(sizeof(uses[0]));
 
@@ -146,6 +147,7 @@ be_uses_t *be_begin_uses(ir_graph *irg, const arch_env_t *arch_env, const arch_r
   uses->arch_env = arch_env;
   uses->uses     = new_set(cmp_use, 512);
   uses->irg      = irg;
+  uses->lv       = lv;
   FIRM_DBG_REGISTER(uses->dbg, "firm.be.uses");
 
   return uses;

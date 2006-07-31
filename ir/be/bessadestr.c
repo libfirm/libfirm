@@ -121,7 +121,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			 * interferes with the phi and must thus not be member of a
 			 * Perm. A copy will be inserted for this argument alter on.
 			 */
-			if(!pp && !is_live_in(bl, arg)) {
+			if(!pp && !be_is_live_in(chordal_env->lv, bl, arg)) {
 				templ.pos = n_projs++;
 				set_insert(arg_set, &templ, sizeof(templ), hash);
 			}
@@ -215,7 +215,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
-			if(values_interfere(phi, arg)) {
+			if(values_interfere(chordal_env->lv, phi, arg)) {
 				/*
 					Insert a duplicate in arguments block,
 					make it the new phi arg,
@@ -342,7 +342,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		be_dump(irg, "-ssa_destr_perms_placed", dump_ir_block_graph_sched);
 
-	be_liveness(irg);
+	be_liveness_recompute(chordal_env->lv);
 
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
 	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);

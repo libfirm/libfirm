@@ -31,6 +31,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct morgan_env {
+	const be_chordal_env_t *cenv;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	ir_graph *irg;
@@ -238,20 +239,23 @@ static void show_nodebitset(ir_graph* irg, const bitset_t* bitset) {
  */
 static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, const ir_node* block) {
 	block_attr_t *block_attr = get_block_attr(env, block);
-	irn_live_t *li;
 	ir_node *node;
+	int i;
 
 	DBG((dbg, DBG_LIVE, "Processing block %d\n", get_irn_node_nr(block)));
 	// copy all live-outs into the livethrough_unused set
-	live_foreach(block, li) {
+	be_lv_foreach(env->cenv->lv, block, be_lv_state_in | be_lv_state_out, i) {
+		ir_node *irn = be_lv_get_irn(env->cenv->lv, block, i);
 		int node_idx;
 
+		/*
 		if(!live_is_in(li) || !live_is_out(li))
 			continue;
-		if(!consider_for_spilling(env->arch, env->cls, li->irn))
+		*/
+		if(!consider_for_spilling(env->arch, env->cls, irn))
 			continue;
 
-		node_idx = get_irn_idx(li->irn);
+		node_idx = get_irn_idx(irn);
 		bitset_set(block_attr->livethrough_unused, node_idx);
 	}
 
@@ -350,7 +354,7 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 	int unused_spills_possible = loop_unused_spills_possible + block_unused_spills_possible;
 	pset *live_nodes = pset_new_ptr_default();
 
-	be_liveness_end_of_block(env->arch, env->cls, block, live_nodes);
+	be_liveness_end_of_block(env->cenv->lv, env->arch, env->cls, block, live_nodes);
 	pressure = pset_count(live_nodes);
 
 	DBG((dbg, DBG_LIVE, "Reduce pressure to %d In Block %+F:\n", env->registers_available, block));
@@ -504,6 +508,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
 	//firm_dbg_set_mask(dbg, DBG_LOOPANA | DBG_PRESSURE);
 
+	env.cenv = chordal_env;
 	env.arch = chordal_env->birg->main_env->arch_env;
 	env.irg = chordal_env->irg;
 	env.cls = chordal_env->cls;
@@ -518,7 +523,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	env.block_attr_set = new_set(block_attr_cmp, 20);
 
 	/*-- Part1: Analysis --*/
-	be_liveness(env.irg);
+	be_liveness_recompute(chordal_env->lv);
 
 	/* construct control flow loop tree */
 	construct_cf_backedges(chordal_env->irg);
@@ -558,7 +563,7 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 
 	/* we have to remove dead nodes from schedule to not confuse liveness calculation */
 	be_remove_dead_nodes_from_schedule(env.irg);
-	be_liveness(env.irg);
+	be_liveness_recompute(chordal_env->lv);
 
 	be_spill_belady_spill_env(chordal_env, env.senv);
 

@@ -26,13 +26,17 @@
 #include "irdom_t.h"
 #include "iredges_t.h"
 #include "irgopt.h"
+#include "irprintf_t.h"
+#include "irgwalk.h"
 
 #include "be_t.h"
+#include "bechordal_t.h"
 #include "bearch.h"
 #include "besched_t.h"
 #include "belive_t.h"
 #include "benode_t.h"
 #include "beutil.h"
+#include "beinsn_t.h"
 
 #include "beirgmod.h"
 
@@ -383,38 +387,45 @@ static void remove_odd_phis(pset *copies, pset *unused_copies)
 	}
 }
 
-void be_ssa_constr_phis_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
+void be_ssa_constr_phis_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
 {
 	pset *irns = pset_new_ptr(n);
 	int i;
 
 	for(i = 0; i < n; ++i)
 		pset_insert_ptr(irns, nodes[i]);
-	be_ssa_constr_set_phis_ignore(info, irns, phis, ignore_uses);
+	be_ssa_constr_set_phis_ignore(info, lv, irns, phis, ignore_uses);
 	del_pset(irns);
 }
 
-void be_ssa_constr_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *ignore_uses)
+void be_ssa_constr_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *ignore_uses)
 {
-	be_ssa_constr_phis_ignore(info, n, nodes, NULL, ignore_uses);
+	be_ssa_constr_phis_ignore(info, lv, n, nodes, NULL, ignore_uses);
 }
 
-void be_ssa_constr(dom_front_info_t *info, int n, ir_node *nodes[])
+void be_ssa_constr(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[])
 {
 	pset *empty_set = be_empty_set();
-	be_ssa_constr_ignore(info, n, nodes, empty_set);
+	be_ssa_constr_ignore(info, lv, n, nodes, empty_set);
 }
 
-void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis, pset *ignore_uses)
+void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis, pset *ignore_uses)
 {
 	int n                  = pset_count(nodes);
 	pset *blocks           = pset_new_ptr(n);
 	pset *phi_blocks       = pset_new_ptr(n);
 	int save_optimize      = get_optimize();
 	int save_normalize     = get_opt_normalize();
+	int phis_set_created   = 0;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	ir_node *irn;
+
+	/* We need to collect the phi functions to compute their liveness. */
+	if(lv && !phis) {
+		phis_set_created = 1;
+		phis = pset_new_ptr_default();
+	}
 
 	DBG((dbg, LEVEL_1, "Introducing following copies for:\n"));
 
@@ -445,23 +456,40 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, pset *nodes, pset *phis
 	del_pset(phi_blocks);
 	del_pset(blocks);
 
+	/* Recompute the liveness (if wanted) of the original nodes, the copies and the inserted phis. */
+	if(lv) {
+#if 1
+		foreach_pset(nodes, irn)
+			be_liveness_update(lv, irn);
+
+		foreach_pset(phis, irn)
+			be_liveness_introduce(lv, irn);
+#else
+		be_liveness_recompute(lv);
+#endif
+	}
+
+	/* Free the phi set of we created it. */
+	if(phis_set_created)
+		del_pset(phis);
+
 }
 
-void be_ssa_constr_set_phis(dom_front_info_t *df, pset *nodes, pset *phis)
+void be_ssa_constr_set_phis(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis)
 {
 	pset *empty_set = be_empty_set();
-	be_ssa_constr_set_phis_ignore(df, nodes, phis, empty_set);
+	be_ssa_constr_set_phis_ignore(df, lv, nodes, phis, empty_set);
 }
 
-void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_uses)
+void be_ssa_constr_set_ignore(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *ignore_uses)
 {
-	be_ssa_constr_set_phis_ignore(df, nodes, NULL, ignore_uses);
+	be_ssa_constr_set_phis_ignore(df, lv, nodes, NULL, ignore_uses);
 }
 
-void be_ssa_constr_set(dom_front_info_t *info, pset *nodes)
+void be_ssa_constr_set(dom_front_info_t *info, be_lv_t *lv, pset *nodes)
 {
 	pset *empty_set = be_empty_set();
-	be_ssa_constr_set_ignore(info, nodes, empty_set);
+	be_ssa_constr_set_ignore(info, lv, nodes, empty_set);
 }
 
 /*
@@ -474,13 +502,14 @@ void be_ssa_constr_set(dom_front_info_t *info, pset *nodes)
 */
 
 ir_node *insert_Perm_after(const arch_env_t *arch_env,
+						   be_lv_t *lv,
 						   const arch_register_class_t *cls,
 						   dom_front_info_t *dom_front,
 						   ir_node *pos)
 {
-	ir_node *bl                 = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_graph *irg               = get_irn_irg(bl);
-	pset *live                  = pset_new_ptr_default();
+	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
+	ir_graph *irg   = get_irn_irg(bl);
+	pset *live      = pset_new_ptr_default();
 	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, "be.node");
 
 	ir_node *curr, *irn, *perm, **nodes;
@@ -488,7 +517,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
-	be_liveness_nodes_live_at(arch_env, cls, pos, live);
+	be_liveness_nodes_live_at(lv, arch_env, cls, pos, live);
 
 	n = pset_count(live);
 
@@ -525,7 +554,44 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 
 		copies[0] = perm_op;
 		copies[1] = proj;
-		be_ssa_constr(dom_front, 2, copies);
+
+		be_ssa_constr(dom_front, lv, 2, copies);
 	}
+
 	return perm;
+}
+
+struct _elr_closure_t {
+	struct obstack obst;
+	const be_chordal_env_t *cenv;
+};
+
+static void elr_split_walker(ir_node *bl, void *data)
+{
+	struct _elr_closure_t *c     = data;
+	const be_chordal_env_t *cenv = c->cenv;
+	const arch_env_t *aenv       = cenv->birg->main_env->arch_env;
+	be_insn_t *insn;
+	be_insn_env_t ie;
+
+	be_insn_env_init(&ie, cenv->birg, cenv->cls, &c->obst);
+
+	for(insn = be_scan_insn(&ie, sched_first(bl)); !is_Block(insn->irn); insn = be_scan_insn(&ie, insn->next_insn)) {
+		ir_node *pred = sched_prev(insn->irn);
+		ir_printf("curr: %+F next: %+F, prev: %+F\n", insn->irn, insn->next_insn, pred);
+		if(!is_Block(pred) && !is_Phi(insn->irn))
+			insert_Perm_after(aenv, cenv->lv, cenv->cls, cenv->dom_front, insn->irn);
+	}
+}
+
+void extreme_liverange_splitting(struct _be_chordal_env_t *cenv)
+{
+	struct _elr_closure_t c;
+
+	c.cenv = cenv;
+	obstack_init(&c.obst);
+	be_liveness_recompute(cenv->lv);
+	irg_block_walk_graph(cenv->irg, elr_split_walker, NULL, &c);
+	be_liveness_recompute(cenv->lv);
+	obstack_free(&c.obst, NULL);
 }

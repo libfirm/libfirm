@@ -13,6 +13,8 @@
 #include "firm_types.h"
 #include "pset.h"
 
+#include "belive.h"
+
 /*
  * Forward type declaration.
  */
@@ -54,61 +56,68 @@ void be_free_dominance_frontiers(dom_front_info_t *info);
  * corresponding dominance subtrees and creates Phi functions if necessary.
  *
  * @param info		  Dominance frontier information.
+ * @param lv          Liveness information to be updated. If NULL, liveness updating is simply ignored.
  * @param n           Length of nodes array.
  * @param nodes       The nodes which shall represent the same SSA value.
  * @param phis        A set to which all inserted Phis are added.
  * @param ignore_uses A set of nodes probably using one of the nodes in @p nodes.
  *                    Their usage will not adjusted. They remain untouched by this function.
  */
-void be_ssa_constr_phis_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *phis, pset *ignore_uses);
+void be_ssa_constr_phis_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without the ignore set.
  */
-void be_ssa_constr_phis(dom_front_info_t *info, int n, ir_node *nodes[], pset *phis);
+void be_ssa_constr_phis(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without the Phi set.
  */
-void be_ssa_constr_ignore(dom_front_info_t *info, int n, ir_node *nodes[], pset *ignore_uses);
+void be_ssa_constr_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *ignore_uses);
 
 /**
  * Same as be_ssa_constr_ignore() but with empty ignore set.
  */
-void be_ssa_constr(dom_front_info_t *info, int n, ir_node *nodes[]);
+void be_ssa_constr(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[]);
 
 /**
  * Same as be_ssa_constr_ignore() but with pset instead of array.
  */
-void be_ssa_constr_set_ignore(dom_front_info_t *df, pset *nodes, pset *ignore_uses);
+void be_ssa_constr_set_ignore(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *ignore_uses);
 
 /**
  * Same as be_ssa_constr() but with pset instead of array.
  */
-void be_ssa_constr_set(dom_front_info_t *info, pset *nodes);
+void be_ssa_constr_set(dom_front_info_t *info, be_lv_t *lv, pset *nodes);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but with set instead of array.
  */
-void be_ssa_constr_set_phis_ignore(dom_front_info_t *info, pset *nodes, pset *phis, pset *ignore);
+void be_ssa_constr_set_phis_ignore(dom_front_info_t *info, be_lv_t *lv, pset *nodes, pset *phis, pset *ignore);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without ignore set.
  */
-void be_ssa_constr_set_phis(dom_front_info_t *info, pset *nodes, pset *phis);
+void be_ssa_constr_set_phis(dom_front_info_t *info, be_lv_t *lv, pset *nodes, pset *phis);
 
 /**
- * Insert a Perm which permutates all (non-ignore) live values of a given register class
+ * Insert a Perm which permutes all (non-ignore) live values of a given register class
  * after a certain instruction.
  * @param arch_env  The architecture environment.
+ * @param lv        Liveness Information.
  * @param cls       The register class.
  * @param dom_front Dominance frontier information.
  * @param irn       The node to insert the Perm after.
  * @return          The Perm or NULL if nothing was live before @p irn.
  */
 ir_node *insert_Perm_after(const arch_env_t *arch_env,
+						   be_lv_t *lv,
 						   const arch_register_class_t *cls,
 						   dom_front_info_t *dom_front,
 						   ir_node *irn);
+
+struct _be_chordal_env_t;
+
+void extreme_liverange_splitting(struct _be_chordal_env_t *cenv);
 
 #endif /* _BEIRGMOD_H */

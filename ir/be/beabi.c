@@ -1728,7 +1728,6 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	arch_env_push_irn_handler(env->birg->main_env->arch_env, &env->irn_handler);
 
 	env->call->cb->done(env->cb);
-	be_liveness(irg);
 	return env;
 }
 
@@ -1779,7 +1778,7 @@ static void collect_stack_nodes_walker(ir_node *irn, void *data)
 		pset_insert_ptr(info->nodes, irn);
 }
 
-void be_abi_fix_stack_nodes(be_abi_irg_t *env)
+void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv)
 {
 	dom_front_info_t *df;
 	pset *stack_nodes = pset_new_ptr(16);
@@ -1792,11 +1791,8 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	df = be_compute_dominance_frontiers(env->birg->irg);
 	irg_walk_graph(env->birg->irg, collect_stack_nodes_walker, NULL, &info);
 	pset_insert_ptr(stack_nodes, env->init_sp);
-	be_ssa_constr_set_phis(df, stack_nodes, env->stack_phis);
+	be_ssa_constr_set_phis(df, lv, stack_nodes, env->stack_phis);
 	del_pset(stack_nodes);
-
-	/* Liveness could have changed due to Phi nodes. */
-	be_liveness(env->birg->irg);
 
 	/* free these dominance frontiers */
 	be_free_dominance_frontiers(df);

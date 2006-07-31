@@ -374,7 +374,7 @@ static void draw_block(ir_node *bl, void *data)
   static const color_t black = { 0, 0, 0 };
 
   const draw_chordal_env_t *env = data;
-  pset *live_in = put_live_in(bl, pset_new_ptr_default());
+  pset *live_in = be_lv_pset_put_in(env->chordal_env->lv, bl, pset_new_ptr_default());
   ir_node *irn;
   border_t *b;
 	struct list_head *head = get_block_border_head(env->chordal_env, bl);
@@ -396,7 +396,7 @@ static void draw_block(ir_node *bl, void *data)
     if(b->is_def) {
       const arch_register_t *reg = arch_get_irn_register(env->arch_env, b->irn);
       int col = arch_register_get_index(reg);
-      int live_out = is_live_out(bl, b->irn);
+      int live_out = be_is_live_out(env->chordal_env->lv, bl, b->irn);
       int x = (col + 1) * opts->h_inter_gap;
       int ystart = (b->step) * opts->v_inter_gap;
       int ystop = (b->other_end->step)

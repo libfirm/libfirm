@@ -486,12 +486,11 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	copystat_add_init_costs(costs_init);
 	copystat_add_max_costs(co_get_max_copy_costs(co));
 
-
 	/* heuristic 1 (Daniel Grund) */
 	timer = lc_timer_register("heur1", NULL);
 	lc_timer_reset_and_start(timer);
 
-	co_solve_heuristic_new(co);
+	co_solve_heuristic(co);
 
 	lc_timer_stop(timer);
 
@@ -513,6 +512,21 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	be_ra_chordal_check(co->cenv);
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "HEUR2 costs: %3d\n", costs_solved));
+	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_costs(costs_solved);
+	assert(lower_bound <= costs_solved);
+
+	/* Park & Moon register coalescing (Kimon Hoffmann) */
+	timer = lc_timer_register("park", NULL);
+	lc_timer_reset_and_start(timer);
+
+	co_solve_park_moon(co);
+
+	lc_timer_stop(timer);
+
+	be_ra_chordal_check(co->cenv);
+	costs_solved = co_get_copy_costs(co);
+	DBG((dbg, LEVEL_1, "Park/Moon costs: %3d\n", costs_solved));
 	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
 	copystat_add_heur_costs(costs_solved);
 	assert(lower_bound <= costs_solved);

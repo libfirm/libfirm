@@ -74,14 +74,12 @@ regpressureanawalker(ir_node * bb, void * data)
   regpressure_ana_t  *ra = data;
   pset               *live = pset_new_ptr_default();
   const ir_node      *irn;
-  irn_live_t         *li;
   unsigned int       *stat = ra->stat;
   int                 i;
 
-  live_foreach(bb, li) {
-    ir_node        *value = (ir_node *) li->irn;
-
-    if (live_is_end(li) && has_reg_class(ra, value)) {
+  be_lv_foreach(ra->chordal_env->lv, bb, be_lv_state_end, i) {
+    ir_node *value = be_lv_get_irn(ra->chordal_env->lv, bb, i);
+    if (has_reg_class(ra, value)) {
       pset_insert_ptr(live, value);
     }
   }

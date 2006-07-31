@@ -54,6 +54,7 @@ typedef struct _workset_t workset_t;
 
 typedef struct _belady_env_t {
 	struct obstack ob;
+	const be_chordal_env_t *cenv;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	int n_regs;			/** number of regs in this reg-class */
@@ -319,7 +320,6 @@ static void belady(ir_node *blk, void *env);
 static void place_copy_walker(ir_node *block, void *data) {
 	belady_env_t *env = data;
 	block_info_t *block_info;
-	irn_live_t *li;
 	ir_node *first, *irn;
 	loc_t loc, *starters;
 	int i, len, ws_count;
@@ -347,14 +347,15 @@ static void place_copy_walker(ir_node *block, void *data) {
 		DBG((dbg, DBG_START, "    %+F:\n", irn));
 	}
 
-	live_foreach(block, li) {
-		if (!live_is_in(li) || !arch_irn_consider_in_reg_alloc(env->arch, env->cls, li->irn))
+	be_lv_foreach(env->cenv->lv, block, be_lv_state_in, i) {
+		ir_node *irn = be_lv_get_irn(env->cenv->lv, block, i);
+		if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn))
 			continue;
 
-		loc.irn = (ir_node *)li->irn;
-		loc.time = get_distance(env, first, 0, li->irn, 0);
+		loc.irn = irn;
+		loc.time = get_distance(env, first, 0, irn, 0);
 		ARR_APP1(loc_t, starters, loc);
-		DBG((dbg, DBG_START, "    %+F:\n", li->irn));
+		DBG((dbg, DBG_START, "    %+F:\n", irn));
 	}
 
 	// Sort start values by first use
@@ -562,11 +563,12 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 
 	/* init belady env */
 	obstack_init(&env.ob);
+	env.cenv      = chordal_env;
 	env.arch      = chordal_env->birg->main_env->arch_env;
 	env.cls       = chordal_env->cls;
 	env.n_regs    = arch_count_non_ignore_regs(env.arch, env.cls);
 	env.ws        = new_workset(&env, &env.ob);
-	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->main_env->arch_env, env.cls);
+	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->lv, chordal_env->birg->main_env->arch_env, env.cls);
 	if(spill_env == NULL) {
 		env.senv = be_new_spill_env(chordal_env);
 	} else {
@@ -588,6 +590,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	be_insert_spills_reloads(env.senv);
 
 	be_remove_dead_nodes_from_schedule(chordal_env->irg);
+	be_liveness_recompute(chordal_env->lv);
 
 	/* clean up */
 	if(spill_env == NULL)
