@@ -1101,16 +1101,22 @@ int    is_Array_type(const ir_type *array);
  * - *const:        The target values representing the constants used to
  *                  represent individual enumerations.
  */
+
+#ifndef _IR_ENUM_CONST_TYPEDEF_
+#define _IR_ENUM_CONST_TYPEDEF_
+typedef struct ir_enum_const ir_enum_const;
+#endif
+
 /** Create a new type enumeration -- set the enumerators independently. */
-ir_type   *new_type_enumeration(ident *name);
+ir_type   *new_type_enumeration(ident *name, int n_enums);
 
 /** Create a new type enumeration with debug information -- set the enumerators independently. */
-ir_type   *new_d_type_enumeration(ident *name, dbg_info *db);
+ir_type   *new_d_type_enumeration(ident *name, int n_enums, dbg_info *db);
 
 /* --- manipulate fields of enumeration type. --- */
 
-/** Add a new enumeration constant to a enumeration type and return its position. */
-int add_enumeration_const(ir_type *enumeration, ident *nameid, tarval *con);
+/** Set an enumeration constant to a enumeration type at a given position. */
+void set_enumeration_const(ir_type *enumeration, int pos, ident *nameid, tarval *con);
 
 /** Returns the number of enumeration values of this enumeration */
 int     get_enumeration_n_enums(const ir_type *enumeration);

@@ -1697,16 +1697,18 @@ void set_array_size_bits(ir_type *tp, int size) {
 /*-----------------------------------------------------------------*/
 
 /* create a new type enumeration -- set the enumerators independently */
-ir_type *new_d_type_enumeration(ident *name, dbg_info *db) {
-  ir_type *res = new_type(type_enumeration, NULL, name, db);
+ir_type *new_d_type_enumeration(ident *name, int n_enums, dbg_info *db) {
+  ir_type *res;
 
-  res->attr.ea.enumer = NEW_ARR_F(ir_enum_const, 0);
+  assert(n_enums >= 0);
+  res = new_type(type_enumeration, NULL, name, db);
+  res->attr.ea.enumer = NEW_ARR_F(ir_enum_const, n_enums);
   hook_new_type(res);
   return res;
 }
 
-ir_type *new_type_enumeration(ident *name) {
-  return new_d_type_enumeration(name, NULL);
+ir_type *new_type_enumeration(ident *name, int n_enums) {
+  return new_d_type_enumeration(name, n_enums, NULL);
 }
 
 void free_enumeration_entities(ir_type *enumeration) {
@@ -1724,16 +1726,11 @@ int     get_enumeration_n_enums(const ir_type *enumeration) {
 }
 
 /* create a new constant */
-int add_enumeration_const(ir_type *enumeration, ident *nameid, tarval *con) {
-  ir_enum_const c;
-  int idx = ARR_LEN(enumeration->attr.ea.enumer);
-
-  c.nameid = nameid;
-  c.value  = con;
-  c.owner  = enumeration;
-
-  ARR_APP1(ir_enum_const, enumeration->attr.ea.enumer, c);
-  return idx;
+void set_enumeration_const(ir_type *enumeration, int pos, ident *nameid, tarval *con) {
+  assert(0 <= pos && pos < ARR_LEN(enumeration->attr.ea.enumer));
+  enumeration->attr.ea.enumer[pos].nameid = nameid;
+  enumeration->attr.ea.enumer[pos].value  = con;
+  enumeration->attr.ea.enumer[pos].owner  = enumeration;
 }
 
 ir_enum_const *get_enumeration_const(const ir_type *enumeration, int pos) {
