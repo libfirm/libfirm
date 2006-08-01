@@ -15,6 +15,7 @@
 #endif
 
 
+#include <signal.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -153,11 +154,28 @@ static void stop_vm(jni_env_t *env)
 
 static int jvm_inited = 0;
 static jni_env_t env;
+void (*old_int_handler)(int);
+void (*old_abrt_handler)(int);
 
-static void jvm_destroy_at_exit(void)
+static void sig_jvm_destroy_at_exit(int signal)
 {
 	if(jvm_inited)
 		stop_vm(&env);
+
+	switch(signal) {
+	case SIGABRT:
+		old_abrt_handler(signal);
+		break;
+	case SIGINT:
+		old_int_handler(signal);
+		break;
+	default:;
+	}
+}
+
+static void jvm_destroy_at_exit(void)
+{
+	sig_jvm_destroy_at_exit(0);
 }
 
 static jni_env_t *get_jvm(void)
@@ -178,6 +196,8 @@ static jni_env_t *get_jvm(void)
 		args[0] = cp_param;
 		start_vm(&env, sizeof(args) / sizeof(args[0]), args);
 		jvm_inited = 1;
+		old_int_handler  = signal(SIGINT,  sig_jvm_destroy_at_exit);
+		old_abrt_handler = signal(SIGABRT, sig_jvm_destroy_at_exit);
 		atexit(jvm_destroy_at_exit);
 	}
 

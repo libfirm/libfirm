@@ -26,6 +26,8 @@
 #include "phiclass.h"
 #include "irbitset.h"
 #include "irphase_t.h"
+#include "irprintf_t.h"
+
 
 #include "bearch.h"
 #include "benode_t.h"
@@ -1062,6 +1064,132 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 	irg_block_walk_graph(co->irg, appel_walker, NULL, &env);
 	irg_block_walk_graph(co->irg, appel_inter_block_aff, NULL, &env);
 	obstack_free(&env.obst, NULL);
+}
+
+/*
+___ _____ ____   ____   ___ _____   ____                        _
+|_ _|  ___/ ___| |  _ \ / _ \_   _| |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
+| || |_ | |  _  | | | | | | || |   | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
+| ||  _|| |_| | | |_| | |_| || |   | |_| | |_| | | | | | | |_) | | | | | (_| |
+|___|_|   \____| |____/ \___/ |_|   |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
+|_|            |___/
+*/
+
+static const char *get_dot_color_name(int col)
+{
+	static const char *names[] = {
+		"blue",
+		"red",
+		"green",
+		"yellow",
+		"cyan",
+		"magenta",
+		"orange",
+		"chocolate",
+		"beige",
+		"navy",
+		"darkgreen",
+		"darkred",
+		"lightPink",
+		"chartreuse",
+		"lightskyblue",
+		"linen",
+		"pink",
+		"lightslateblue",
+		"mintcream",
+		"red",
+		"darkolivegreen",
+		"mediumblue",
+		"mistyrose",
+		"salmon",
+		"darkseagreen",
+		"mediumslateblue"
+		"moccasin",
+		"tomato",
+		"forestgreen",
+		"darkturquoise",
+		"palevioletred"
+	};
+
+	return col < sizeof(names)/sizeof(names[0]) ? names[col] : "white";
+}
+
+typedef struct _co_ifg_dump_t {
+	const copy_opt_t *co;
+	unsigned flags;
+} co_ifg_dump_t;
+
+static const char *get_dot_shape_name(co_ifg_dump_t *cod, ir_node *irn)
+{
+	arch_register_req_t req;
+
+	arch_get_register_req(cod->co->aenv, &req, irn, BE_OUT_POS(0));
+	if(arch_register_req_is(&req, limited))
+		return "diamond";
+
+	return "ellipse";
+}
+
+static void ifg_dump_graph_attr(FILE *f, void *self)
+{
+	fprintf(f, "overlay=false");
+}
+
+static int ifg_is_dump_node(void *self, ir_node *irn)
+{
+	co_ifg_dump_t *cod = self;
+	return !arch_irn_is(cod->co->aenv, irn, ignore);
+}
+
+static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
+{
+	co_ifg_dump_t *env         = self;
+	const arch_register_t *reg = arch_get_irn_register(env->co->aenv, irn);
+
+	ir_fprintf(f, "label=\"%+F\" style=filled color=%s shape=%s", irn, get_dot_color_name(reg->index), get_dot_shape_name(env, irn));
+}
+
+static void ifg_dump_at_end(FILE *file, void *self)
+{
+	co_ifg_dump_t *env = self;
+	affinity_node_t *a;
+
+	co_gs_foreach_aff_node(env->co, a) {
+		const arch_register_t *ar = arch_get_irn_register(env->co->aenv, a->irn);
+		unsigned aidx = get_irn_idx(a->irn);
+		neighb_t *n;
+
+		co_gs_foreach_neighb(a, n) {
+			const arch_register_t *nr = arch_get_irn_register(env->co->aenv, n->irn);
+			int nidx = get_irn_idx(n->irn);
+
+			if(aidx < nidx) {
+				const char *color = nr == ar ? "blue" : "red";
+				fprintf(file, "\tn%d -- n%d [label=\"%d\" style=dashed color=%s];\n", aidx, nidx, n->costs, color);
+			}
+		}
+	}
+}
+
+
+static be_ifg_dump_dot_cb_t ifg_dot_cb = {
+	ifg_is_dump_node,
+	ifg_dump_graph_attr,
+	ifg_dump_node_attr,
+	NULL,
+	NULL,
+	ifg_dump_at_end
+};
+
+
+
+void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags)
+{
+	co_ifg_dump_t cod;
+
+	cod.co    = co;
+	cod.flags = flags;
+	be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &cod);
 }
 
 

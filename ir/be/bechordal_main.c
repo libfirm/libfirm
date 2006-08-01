@@ -30,6 +30,7 @@
 #include "irgraph_t.h"
 #include "irprintf_t.h"
 #include "irgwalk.h"
+#include "ircons.h"
 #include "irdump.h"
 #include "irdom.h"
 #include "ircons.h"
@@ -465,8 +466,10 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		BE_TIMER_PUSH(ra_timer.t_live);
 		be_liveness_recompute(chordal_env.lv);
 		BE_TIMER_POP(ra_timer.t_live);
-
 		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
+
+		be_pre_spill_prepare_constr(&chordal_env);
+		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-constr-pre", dump_ir_block_graph_sched);
 
 		BE_TIMER_PUSH(ra_timer.t_spill);
 
@@ -497,9 +500,9 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		    );
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
-		be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
 		be_compute_spill_offsets(&chordal_env);
 		check_for_memory_operands(&chordal_env);
+		be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
 
@@ -568,11 +571,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 			if(be_copymin_stats) {
-				ir_printf("%40F %20s\n", current_ir_graph, chordal_env.cls->name);
-				printf("max copy costs:         %d\n", co_get_max_copy_costs(co));
-				printf("init copy costs:        %d\n", co_get_copy_costs(co));
-				printf("inevit copy costs:      %d\n", co_get_inevit_copy_costs(co));
-				printf("copy costs lower bound: %d\n", co_get_lower_bound(co));
+				ir_printf("%30F %10s %7d%7d%7d%7d", current_ir_graph, chordal_env.cls->name,
+						co_get_max_copy_costs(co), co_get_copy_costs(co), co_get_inevit_copy_costs(co), co_get_lower_bound(co));
 			}
 
 			/* Dump the interference graph in Appel's format. */
@@ -611,7 +611,14 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		if (co) {
 			if(be_copymin_stats) {
-				printf("final copy costs      : %d\n", co_get_copy_costs(co));
+				int optimizable_costs = co_get_max_copy_costs(co) - co_get_lower_bound(co);
+				int remaining         = co_get_copy_costs(co);
+				int evitable          = remaining - co_get_lower_bound(co);
+
+				if(optimizable_costs > 0)
+					printf("%5d %5.2f\n", remaining, (evitable * 100.0) / optimizable_costs);
+				else
+					printf("%5d %5s\n", remaining, "-");
 			}
 			co_free_graph_structure(co);
 			co_free_ou_structure(co);

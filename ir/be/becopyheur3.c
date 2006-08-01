@@ -107,7 +107,6 @@ void co_solve_heuristic_java(copy_opt_t *co)
 	int *inv_node_map;
 
 	java_coal_t *coal;
-	ir_node *irn;
 	ir_node *n, *m;
 	int max_idx = 0;
 
@@ -183,6 +182,12 @@ void co_solve_heuristic_java(copy_opt_t *co)
 		}
 	}
 
+	if(dump_flags & DUMP_BEFORE) {
+		char fn[512];
+		ir_snprintf(fn, sizeof(fn), "%F-%s-before.dot", co->cenv->irg, co->cenv->cls->name);
+		java_coal_dump(coal, fn);
+	}
+
 	java_coal_coalesce(coal);
 
 	be_ifg_foreach_node(ifg, nodes_it, n) {
@@ -193,6 +198,12 @@ void co_solve_heuristic_java(copy_opt_t *co)
 			const arch_register_t *reg = &co->cls->regs[col];
 			arch_set_irn_register(co->aenv, n, reg);
 		}
+	}
+
+	if(dump_flags & DUMP_AFTER) {
+		char fn[512];
+		ir_snprintf(fn, sizeof(fn), "%F-%s-after.dot", co->cenv->irg, co->cenv->cls->name);
+		java_coal_dump(coal, fn);
 	}
 
 	java_coal_destroy(coal);

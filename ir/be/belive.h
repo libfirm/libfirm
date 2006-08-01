@@ -69,6 +69,13 @@ void be_liveness_remove(be_lv_t *lv, ir_node *irn);
 void be_liveness_introduce(be_lv_t *lv, ir_node *irn);
 
 /**
+ * Add all nodes which are missing in the current liveness data.
+ * The liveness data of the already existing nodes (in the liveness data) is not touched.
+ * @param The liveness info.
+ */
+void be_liveness_add_missing(be_lv_t *lv);
+
+/**
  * Dump the liveness information for a graph.
  * @param f The output.
  * @param irg The graph.

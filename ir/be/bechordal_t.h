@@ -160,4 +160,6 @@ struct _be_ra_chordal_opts_t {
  */
 FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const char *suffix);
 
+void be_pre_spill_prepare_constr(be_chordal_env_t *cenv);
+
 #endif /* _BECHORDAL_T_H */

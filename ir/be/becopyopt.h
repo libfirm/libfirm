@@ -159,6 +159,16 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f);
  */
 void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f);
 
+enum {
+	CO_IFG_DUMP_COLORS = 1,
+	CO_IFG_DUMP_LABELS = 2
+};
+
+/**
+ * Dump the interference graph with the affinity edges and the coloring.
+ */
+void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags);
+
 /**
  * Constructs another internal representation of the affinity edges
  */

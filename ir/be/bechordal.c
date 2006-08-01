@@ -207,15 +207,56 @@ static bitset_t *get_decisive_partner_regs(bitset_t *bs, const be_operand_t *o1,
 	return res;
 }
 
-static be_insn_t *chordal_scan_insn(be_chordal_alloc_env_t *env, ir_node *irn)
+static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 {
 	be_insn_env_t ie;
 
-	ie.ignore_colors = env->chordal_env->ignore_colors;
-	ie.aenv          = env->chordal_env->birg->main_env->arch_env;
-	ie.obst          = &env->chordal_env->obst;
-	ie.cls           = env->chordal_env->cls;
+	ie.ignore_colors = env->ignore_colors;
+	ie.aenv          = env->birg->main_env->arch_env;
+	ie.obst          = &env->obst;
+	ie.cls           = env->cls;
 	return be_scan_insn(&ie, irn);
+}
+
+static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
+{
+	be_insn_t *insn = chordal_scan_insn(env, irn);
+	int n_uses      = be_insn_n_uses(insn);
+	int n_defs      = be_insn_n_defs(insn);
+	int i;
+
+	if(!insn->has_constraints)
+		goto end;
+
+	for(i = insn->use_start; i < insn->n_ops; ++i) {
+		be_operand_t *op = &insn->ops[i];
+		if(op->has_constraints && values_interfere(env->lv, insn->irn, op->carrier)) {
+			ir_node *bl   = get_nodes_block(insn->irn);
+			ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+
+			sched_add_before(insn->irn, copy);
+			set_irn_n(insn->irn, op->pos, copy);
+			DBG((env->dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
+			be_liveness_update(env->lv, op->carrier);
+		}
+	}
+
+end:
+	obstack_free(&env->obst, insn);
+	return insn->next_insn;
+}
+
+static void pre_spill_prepare_constr_walker(ir_node *bl, void *data)
+{
+	be_chordal_env_t *env = data;
+	ir_node *irn;
+	for(irn = sched_first(bl); !sched_is_end(irn);) {
+		irn = prepare_constr_insn(env, irn);
+	}
+}
+
+void be_pre_spill_prepare_constr(be_chordal_env_t *cenv) {
+	irg_block_walk_graph(cenv->irg, pre_spill_prepare_constr_walker, NULL, (void *) cenv);
 }
 
 static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t *insn)
@@ -305,6 +346,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 		Now, figure out which input operand must be copied since it has input
 		constraints which are also output constraints.
 	*/
+#if 0
 	for(i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
 		if(op->has_constraints && (values_interfere(env->lv, op->carrier, insn->irn) || arch_irn_is(aenv, op->carrier, ignore))) {
@@ -325,6 +367,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 			}
 		}
 	}
+#endif
 
 	/*
 		Make the Perm, recompute liveness and re-scan the insn since the
@@ -348,7 +391,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 		*/
 		// be_liveness_recompute(env->lv);
 		obstack_free(&env->obst, insn);
-		*the_insn = insn = chordal_scan_insn(alloc_env, insn->irn);
+		*the_insn = insn = chordal_scan_insn(env, insn->irn);
 
 		/*
 			Copy the input constraints of the insn to the Perm as output
@@ -374,7 +417,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 {
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(&env->obst);
-	be_insn_t *insn        = chordal_scan_insn(alloc_env, irn);
+	be_insn_t *insn        = chordal_scan_insn(env, irn);
 	ir_node *res           = insn->next_insn;
 	int be_silent          = *silent;
 
