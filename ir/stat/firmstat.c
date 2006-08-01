@@ -2073,7 +2073,7 @@ void firm_init_stat(unsigned enable_options)
 /**
  * Frees all dumper structures;
  */
-static void stat_term_dumper() {
+static void stat_term_dumper(void) {
 	dumper_t *dumper, *next_dumper;
 
 	for (dumper = status->dumper; dumper; /* iteration done in loop body */ ) {
