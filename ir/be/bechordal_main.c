@@ -32,6 +32,7 @@
 #include "irgwalk.h"
 #include "irdump.h"
 #include "irdom.h"
+#include "ircons.h"
 #include "irbitset.h"
 #include "debug.h"
 #include "xmalloc.h"
@@ -48,6 +49,7 @@
 #include "bearch.h"
 #include "beifg_t.h"
 #include "beifg_impl.h"
+#include "benode_t.h"
 
 #include "bespillbelady.h"
 #include "bespillmorgan.h"
@@ -383,7 +385,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	ir_graph            *irg       = bi->irg;
 	be_options_t        *main_opts = main_env->options;
 	int                  splitted  = 0;
-	copy_opt_t          *co;
 
 	int j, m;
 	be_chordal_env_t chordal_env;
@@ -514,7 +515,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		}
 		BE_TIMER_POP(ra_timer.t_verify);
 
-		if(be_elr_split && !splitted) {
+		if (be_elr_split && ! splitted) {
 			extreme_liverange_splitting(&chordal_env);
 			splitted = 1;
 		}
