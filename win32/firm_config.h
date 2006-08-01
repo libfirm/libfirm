@@ -43,9 +43,7 @@
 #endif
 
 /* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
-#ifndef WITH_JVM
-#define WITH_JVM 1
-#endif
+/* #undef WITH_JVM */
 
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
