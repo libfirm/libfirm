@@ -120,7 +120,7 @@ typedef struct _spill_bb_t {
 typedef struct _remat_t {
 	const ir_node        *op;      /**< for copy_irn */
 	const ir_node        *value;   /**< the value which is being recomputed by this remat */
-	ir_node              *proj;    /**< not NULL if the above op produces a tuple */
+	const ir_node        *proj;    /**< not NULL if the above op produces a tuple */
 	int                   cost;    /**< cost of this remat */
 	int                   inverse; /**< nonzero if this is an inverse remat */
 } remat_t;
@@ -135,7 +135,7 @@ typedef struct _op_t {
 	union {
 		struct {
 			ilp_var_t       ilp;
-			remat_t        *remat; /** the remat this op belongs to */
+			const remat_t  *remat; /** the remat this op belongs to */
 			int             pre; /** 1, if this is a pressure-increasing remat */
 		} remat;
 		struct {
@@ -150,9 +150,9 @@ typedef struct _op_t {
 } op_t;
 
 typedef struct _defs_t {
-	ir_node   *value;
-	ir_node   *spills;  /**< points to the first spill for this value (linked by link field) */
-	ir_node   *remats;  /**< points to the first definition for this value (linked by link field) */
+	const ir_node   *value;
+	ir_node         *spills;  /**< points to the first spill for this value (linked by link field) */
+	ir_node         *remats;  /**< points to the first definition for this value (linked by link field) */
 } defs_t;
 
 typedef struct _remat_info_t {
@@ -167,17 +167,17 @@ typedef struct _keyval_t {
 } keyval_t;
 
 typedef struct _spill_t {
-	ir_node      *irn;
-	ilp_var_t     reg_in;
-	ilp_var_t     mem_in;
-	ilp_var_t     reg_out;
-	ilp_var_t     mem_out;
-	ilp_var_t     spill;
+	ir_node            *irn;
+	ilp_var_t           reg_in;
+	ilp_var_t           mem_in;
+	ilp_var_t           reg_out;
+	ilp_var_t           mem_out;
+	ilp_var_t           spill;
 } spill_t;
 
 #ifdef WITH_MEMOPERANDS
 typedef struct _memoperand_t {
-	const ir_node       *irn; /**< the irn */
+	ir_node             *irn; /**< the irn */
 	unsigned int         pos; /**< the position of the argument */
 	ilp_var_t            ilp; /**< the ilp var for this memory operand */
 } memoperand_t;
@@ -234,7 +234,7 @@ cmp_memoperands(const void *a, const void *b, size_t size)
 #endif
 
 static keyval_t *
-set_find_keyval(set * set, void * key)
+set_find_keyval(set * set, const void * key)
 {
 	keyval_t     query;
 
@@ -253,7 +253,7 @@ set_insert_keyval(set * set, void * key, void * val)
 }
 
 static defs_t *
-set_find_def(set * set, ir_node * value)
+set_find_def(set * set, const ir_node * value)
 {
 	defs_t     query;
 
@@ -262,7 +262,7 @@ set_find_def(set * set, ir_node * value)
 }
 
 static defs_t *
-set_insert_def(set * set, ir_node * value)
+set_insert_def(set * set, const ir_node * value)
 {
 	defs_t     query;
 
@@ -285,11 +285,11 @@ set_insert_memoperand(set * set, ir_node * irn, unsigned int pos, ilp_var_t ilp)
 }
 
 static memoperand_t *
-set_find_memoperand(set * set, ir_node * irn, unsigned int pos)
+set_find_memoperand(set * set, const ir_node * irn, unsigned int pos)
 {
 	memoperand_t     query;
 
-	query.irn = irn;
+	query.irn = (ir_node*)irn;
 	query.pos = pos;
 	return set_find(set, &query, sizeof(query), HASH_PTR(irn)+pos);
 }
@@ -297,11 +297,11 @@ set_find_memoperand(set * set, ir_node * irn, unsigned int pos)
 
 
 static spill_t *
-set_find_spill(set * set, ir_node * value)
+set_find_spill(set * set, const ir_node * value)
 {
 	spill_t     query;
 
-	query.irn = value;
+	query.irn = (ir_node*)value;
 	return set_find(set, &query, sizeof(query), HASH_PTR(value));
 }
 
@@ -791,7 +791,7 @@ insert_copy_after(const spill_ilp_t * si, const ir_node * irn, ir_node * pos)
 }
 
 static ir_node *
-insert_remat_after(spill_ilp_t * si, const remat_t * remat, const ir_node * pos, const pset * live)
+insert_remat_after(spill_ilp_t * si, const remat_t * remat, ir_node * pos, const pset * live)
 {
 	char     buf[256];
 
@@ -829,7 +829,7 @@ insert_remat_after(spill_ilp_t * si, const remat_t * remat, const ir_node * pos,
 }
 
 static ir_node *
-insert_remat_before(spill_ilp_t * si, const remat_t * remat, const ir_node * pos, const pset * live)
+insert_remat_before(spill_ilp_t * si, const remat_t * remat, ir_node * pos, const pset * live)
 {
 	char     buf[256];
 
@@ -1319,19 +1319,20 @@ static ir_node *
 next_post_remat(const ir_node * irn)
 {
 	op_t      *op;
+    ir_node   *next;
 
 	if(is_Block(irn)) {
-		irn = sched_block_first_nonphi(irn);
+		next = sched_block_first_nonphi(irn);
 	} else {
-		irn = sched_next_op(irn);
+		next = sched_next_op(irn);
 	}
 
-	if(sched_is_end(irn))
+	if(sched_is_end(next))
 		return NULL;
 
-	op = (op_t*)get_irn_link(irn);
+	op = get_irn_link(next);
 	if(op->is_remat && !op->attr.remat.pre) {
-		return irn;
+		return next;
 	}
 
 	return NULL;
@@ -2061,7 +2062,7 @@ skip_one_must_die:
 
 		set_foreach(args, keyval) {
 			spill_t          *spill;
-			ir_node          *arg = keyval->key;
+			const ir_node    *arg = keyval->key;
 			int               i = PTR_TO_INT(keyval->val);
 			op_t             *arg_op = get_irn_link(arg);
 			ilp_cst_t         requirements;
@@ -2145,7 +2146,6 @@ skip_one_must_die:
 			for (n=get_irn_arity(tmp)-1; n>=0; --n) {
 				ir_node        *remat_arg = get_irn_n(tmp, n);
 				op_t           *arg_op = get_irn_link(remat_arg);
-				ilp_var_t       prev_lr;
 
 				if(!has_reg_class(si, remat_arg)) continue;
 
@@ -2447,7 +2447,7 @@ skip_one_must_die:
 				assert(!is_Proj(tmp));
 
 				if(op->is_remat) {
-					ir_node   *value = op->attr.remat.remat->value;
+					const ir_node   *value = op->attr.remat.remat->value;
 
 					if(value == irn) {
 						/* only collect remats up to the first real use of a value */
@@ -2467,7 +2467,6 @@ skip_one_must_die:
 				}
 			}
 		}
-	/* if the semicolon is missing, the microsoft compiler complains */
 next_live: ;
 	}
 
@@ -2533,7 +2532,7 @@ set_insert_interference(spill_ilp_t * si, set * set, ir_node * a, ir_node * b, i
 }
 
 static int
-values_interfere_in_block(const spill_ilp_t * si, ir_node * bb, ir_node * a, ir_node * b)
+values_interfere_in_block(const spill_ilp_t * si, const ir_node * bb, const ir_node * a, const ir_node * b)
 {
 	const ir_edge_t *edge;
 
@@ -2629,14 +2628,14 @@ write_copy_path_cst(spill_ilp_t *si, pset * copies, ilp_var_t any_interfere)
  * @parameter visited  contains a set of nodes already visited on this path
  */
 static int
-find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_interfere, pset * copies, pset * visited)
+find_copy_path(spill_ilp_t * si, const ir_node * irn, const ir_node * target, ilp_var_t any_interfere, pset * copies, pset * visited)
 {
-	ir_edge_t *edge;
-	op_t      *op = get_irn_link(irn);
-    pset      *visited_users = pset_new_ptr_default();
-	int        paths = 0;
+	const ir_edge_t *edge;
+	op_t            *op = get_irn_link(irn);
+    pset            *visited_users = pset_new_ptr_default();
+	int              paths = 0;
 
-	if(op->is_remat) return;
+	if(op->is_remat) return 0;
 
 	pset_insert_ptr(visited, irn);
 
@@ -2752,7 +2751,7 @@ find_copy_path(spill_ilp_t * si, ir_node * irn, ir_node * target, ilp_var_t any_
 }
 
 static void
-gen_copy_constraints(spill_ilp_t * si, ir_node * a, ir_node * b, ilp_var_t any_interfere)
+gen_copy_constraints(spill_ilp_t * si, const ir_node * a, const ir_node * b, ilp_var_t any_interfere)
 {
 	pset * copies = pset_new_ptr_default();
 	pset * visited = pset_new_ptr_default();
@@ -2798,15 +2797,12 @@ memcopyhandler(spill_ilp_t * si)
 			const ir_node  *bb = irnlist->irn;
 			spill_bb_t     *spill_bb = get_irn_link(bb);
 			spill_t        *spilla,
-						   *spillb,
-						   query;
+						   *spillb;
 			char           buf[256];
 
-			query.irn = a;
 			spilla = set_find_spill(spill_bb->ilp, a);
 			assert(spilla);
 
-			query.irn = b;
 			spillb = set_find_spill(spill_bb->ilp, b);
 			assert(spillb);
 
@@ -3100,13 +3096,13 @@ clean_remat_info(spill_ilp_t * si)
 		pset_foreach(remat_info->remats, remat)
 		{
 			if(remat->proj && get_irn_n_edges(remat->proj) == 0) {
-				set_irn_n(remat->proj, -1, bad);
-				set_irn_n(remat->proj, 0, bad);
+				set_irn_n((ir_node*)remat->proj, -1, bad);
+				set_irn_n((ir_node*)remat->proj, 0, bad);
 			}
 
 			if(get_irn_n_edges(remat->op) == 0) {
 				for (n=get_irn_arity(remat->op)-1; n>=-1; --n) {
-					set_irn_n(remat->op, n, bad);
+					set_irn_n((ir_node*)remat->op, n, bad);
 				}
 			}
 		}
@@ -3204,12 +3200,12 @@ delete_unnecessary_remats(spill_ilp_t * si)
 }
 
 static pset *
-get_spills_for_value(spill_ilp_t * si, ir_node * value)
+get_spills_for_value(spill_ilp_t * si, const ir_node * value)
 {
 	pset     *spills = pset_new_ptr_default();
 
-	ir_node  *next;
-	defs_t   *defs;
+	const ir_node  *next;
+	defs_t         *defs;
 
 	defs = set_find_def(si->values, value);
 
@@ -3222,33 +3218,12 @@ get_spills_for_value(spill_ilp_t * si, ir_node * value)
 	return spills;
 }
 
-static pset *
-get_remats_for_value(spill_ilp_t * si, ir_node * value)
-{
-	pset     *remats = pset_new_ptr_default();
-
-	ir_node  *next;
-	defs_t   *defs;
-
-	pset_insert_ptr(remats, value);
-	defs = set_find_def(si->values, value);
-
-	if(defs && defs->remats) {
-		for(next = defs->remats; next; next = get_irn_link(next)) {
-			pset_insert_ptr(remats, next);
-		}
-	}
-
-	return remats;
-}
-
-
 /**
  * @param before   The node after which the spill will be placed in the schedule
  */
 /* TODO set context properly */
 static ir_node *
-insert_spill(spill_ilp_t * si, ir_node * irn, ir_node * value, ir_node * before)
+insert_spill(spill_ilp_t * si, ir_node * irn, const ir_node * value, ir_node * before)
 {
 	defs_t   *defs;
 	ir_node  *spill;
@@ -3276,13 +3251,12 @@ insert_spill(spill_ilp_t * si, ir_node * irn, ir_node * value, ir_node * before)
  * @param before   The Phi node which has to be spilled
  */
 static ir_node *
-insert_mem_phi(spill_ilp_t * si, const ir_node * phi)
+insert_mem_phi(spill_ilp_t * si, ir_node * phi)
 {
 	ir_node   *mem_phi;
 	ir_node  **ins;
 	defs_t    *defs;
 	int        n;
-	op_t      *op = get_irn_link(phi);
 
 	NEW_ARR_A(ir_node*, ins, get_irn_arity(phi));
 
@@ -3333,7 +3307,7 @@ insert_remat(spill_ilp_t * si, ir_node * remat)
  * Add reload before operation and add to list of defs
  */
 static ir_node *
-insert_reload(spill_ilp_t * si, const ir_node * value, const ir_node * after)
+insert_reload(spill_ilp_t * si, const ir_node * value, ir_node * after)
 {
 	defs_t   *defs;
 	ir_node  *reload,
@@ -3466,7 +3440,7 @@ walker_spill_placer(ir_node * bb, void * data) {
 }
 
 static ir_node *
-insert_mem_copy(spill_ilp_t * si, const ir_node * bb, const ir_node * value)
+insert_mem_copy(spill_ilp_t * si, ir_node * bb, ir_node * value)
 {
 	ir_node          *insert_pos = bb;
 	ir_node          *spill;
@@ -3524,9 +3498,8 @@ phim_fixer(spill_ilp_t *si) {
 		if(!phi_m) continue;
 
 		for(n=get_irn_arity(phi)-1; n>=0; --n) {
-			const ir_node  *value = get_irn_n(phi, n);
+			ir_node        *value = get_irn_n(phi, n);
 			defs_t         *val_defs = set_find_def(si->values, value);
-			ir_node        *arg = get_irn_n(phi_m, n);
 
 			/* a spill of this value */
 			ir_node      *spill;
@@ -3555,7 +3528,6 @@ walker_reload_placer(ir_node * bb, void * data) {
 	spill_ilp_t   *si = (spill_ilp_t*)data;
 	ir_node       *irn;
 	spill_bb_t    *spill_bb = get_irn_link(bb);
-	int            i;
 
 	/* reloads at end of block */
 	if(spill_bb->reloads) {
@@ -3681,7 +3653,7 @@ static void
 walker_kill_unused(ir_node * bb, void * data)
 {
 	struct kill_helper *kh = data;
-	const ir_node      *bad = get_irg_bad(get_irn_irg(bb));
+	ir_node            *bad = get_irg_bad(get_irn_irg(bb));
 	ir_node            *irn;
 
 
@@ -3784,9 +3756,9 @@ rewire_uses(spill_ilp_t * si)
 
 	/* then fix uses of spills */
 	set_foreach(si->values, defs) {
-		pset     *reloads;
-		pset     *spills;
-		ir_node  *next = defs->remats;
+		pset           *reloads;
+		pset           *spills;
+		const ir_node  *next = defs->remats;
 		int remats = 0;
 
 		reloads = pset_new_ptr_default();
@@ -3816,8 +3788,8 @@ rewire_uses(spill_ilp_t * si)
 
 	/* first fix uses of remats and reloads */
 	set_foreach(si->values, defs) {
-		pset     *nodes;
-		ir_node  *next = defs->remats;
+		pset           *nodes;
+		const ir_node  *next = defs->remats;
 
 		if(next) {
 			nodes = pset_new_ptr_default();
@@ -3911,7 +3883,9 @@ walker_reload_mover(ir_node * bb, void * data)
 					if( sched_is_end(irn) ||
 					   (be_is_Reload(irn) && has_reg_class(si, irn)) ||
 					   /* do not move reload before its spill */
-					   (irn == be_get_Reload_mem(reload)) ) break;
+					   (irn == be_get_Reload_mem(reload)) ||
+					   /* do not move before phi */
+					   is_Phi(irn)) break;
 
 					set_irn_link(irn, INT_TO_PTR(pressure+1));
 					DBG((si->dbg, LEVEL_5, "new regpressure before %+F: %d\n", irn, pressure+1));
@@ -3979,7 +3953,6 @@ verify_phiclasses(spill_ilp_t * si)
 static void
 walker_spillslotassigner(ir_node * irn, void * data)
 {
-	spill_ilp_t            *si = (spill_ilp_t*)data;
 	void                   *cls;
 
 	if(!be_is_Spill(irn)) return;
