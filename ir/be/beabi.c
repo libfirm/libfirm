@@ -797,7 +797,6 @@ static int check_dependence(ir_node *curr, ir_node *tgt, ir_node *bl)
 static int dependent_on(ir_node *n1, ir_node *n2)
 {
 	ir_node *bl   = get_nodes_block(n1);
-	ir_graph *irg = get_irn_irg(bl);
 
 	assert(bl == get_nodes_block(n2));
 
@@ -1269,7 +1268,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	/* clear SP entry, since it has already been grown. */
 	pmap_insert(reg_map, (void *) isa->sp, NULL);
 	for(i = 0; i < n_res; ++i) {
-		ir_node *res           = get_Return_res(irn, i);
 		be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
 
 		in[n]     = be_abi_reg_map_get(reg_map, arg->reg);

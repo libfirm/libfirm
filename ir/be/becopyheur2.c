@@ -403,7 +403,6 @@ static int recolor(co2_t *env, ir_node *irn, col_cost_pair_t *col_list, struct l
 	be_ifg_t *ifg      = env->co->cenv->ifg;
 	co2_irn_t *ci      = get_co2_irn(env, irn);
 	int res            = 0;
-	int n_aff          = 0;
 
 	int i;
 
@@ -703,7 +702,6 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 	INIT_LIST_HEAD(&changed);
 	for(i = 0; i < (best_col < 0 ? n_regs : n_iter); ++i) {
 		col_t col    = seq[i].col;
-		int costs    = seq[i].costs;
 		int add_cost = !is_root && col != parent_col ? ci->mst_costs : 0;
 
 		int subtree_costs, sum_costs;
@@ -867,7 +865,6 @@ static void process_cloud(co2_cloud_t *cloud)
 	int *mst_edges = xmalloc(cloud->n_memb * cloud->n_memb * sizeof(mst_edges[0]));
 	pdeq *q;
 
-	struct list_head changed;
 	edge_t *edges;
 	int i;
 	int best_col;
@@ -1240,7 +1237,8 @@ void co_solve_heuristic_new(copy_opt_t *co)
 
 	if(dump_flags & DUMP_BEFORE) {
 		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_before.dot", co->irg, co->cls->name);
-		if(f = fopen(buf, "wt")) {
+		f = fopen(buf, "wt");
+		if (f != NULL) {
 			be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
 			fclose(f);
 		}
@@ -1250,7 +1248,8 @@ void co_solve_heuristic_new(copy_opt_t *co)
 
 	if(dump_flags & DUMP_AFTER) {
 		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_after.dot", co->irg, co->cls->name);
-		if(f = fopen(buf, "wt")) {
+		f = fopen(buf, "wt");
+		if (f != NULL) {
 			be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
 			fclose(f);
 		}

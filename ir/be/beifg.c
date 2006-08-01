@@ -282,7 +282,6 @@ void be_ifg_check_sorted(const be_ifg_t *ifg)
 
 	ir_node *n, *m;
 	const int node_count = be_ifg_check_get_node_count(ifg);
-	int neighbours_count = 0;
 	int i = 0;
 
 	ir_node **all_nodes = xmalloc(node_count * sizeof(all_nodes[0]));
@@ -341,7 +340,6 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
 
 	ir_node *n, *m;
 	const int node_count = be_ifg_check_get_node_count(ifg);
-	int neighbours_count = 0;
 	int i = 0;
 
 	ir_node **all_nodes = xmalloc(node_count * sizeof(all_nodes[0]));

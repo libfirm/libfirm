@@ -751,7 +751,6 @@ static unsigned vfp_liveness_end_of_block(x87_simulator *sim, const ir_node *bl)
 static unsigned vfp_liveness_nodes_live_at(x87_simulator *sim, const ir_node *pos)
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
-	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
 	ir_node *irn;
 	unsigned live;
 

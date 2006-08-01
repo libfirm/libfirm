@@ -327,7 +327,6 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 	ia32_abi_env_t *env              = self;
 
 	if (!env->flags.try_omit_fp) {
-		int reg_size         = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 		ir_node *bl          = get_irg_start_block(env->irg);
 		ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
 		ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
@@ -386,7 +385,6 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	else {
 		const ia32_isa_t *isa = (ia32_isa_t *)env->isa;
 		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
-		int reg_size     = get_mode_size_bytes(env->isa->bp->reg_class->mode);
 
 		/* gcc always emits a leave at the end of a routine */
 		if (1 || ARCH_AMD(isa->opt_arch)) {
@@ -1300,7 +1298,6 @@ static int ia32_get_n_reg_class(const void *self) {
  * Return the register class for index i.
  */
 static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) {
-	const ia32_isa_t *isa = self;
 	assert(i >= 0 && i < 3 && "Invalid ia32 register class requested.");
 	if (i == 0)
 		return &ia32_reg_classes[CLASS_ia32_gp];

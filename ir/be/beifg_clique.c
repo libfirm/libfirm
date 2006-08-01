@@ -383,7 +383,6 @@ static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const 
 static ir_node *get_next_neighbour(cli_iter_t *it)
 {
 	ir_node *res = NULL;
-	cli_head_t *cli_head = it->curr_cli_head;
 	const ir_node *irn = it->curr_irn;
 
 	if (it->curr_cli_element != NULL)

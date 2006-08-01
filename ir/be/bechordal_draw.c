@@ -184,7 +184,6 @@ static void tikz_begin(plotter_t *_self, const rect_t *vis)
 
 static void tikz_setcolor(plotter_t *_self, const color_t *color)
 {
-  decl_self(tikz_plotter_t, _self);
   set_color(_self, color);
 }
 

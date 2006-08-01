@@ -69,7 +69,6 @@ static INLINE int sr_is_simplicial(size_red_t *sr, const ir_node *ifn) {
 void sr_remove(size_red_t *sr) {
 	ir_node *irn;
 	int redo = 1;
-	int n_nodes = 0;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
 	void *iter = be_ifg_nodes_iter_alloca(ifg);
 
