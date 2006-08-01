@@ -2467,7 +2467,8 @@ skip_one_must_die:
 				}
 			}
 		}
-next_live:
+	/* if the semicolon is missing, the microsoft compiler complains */
+next_live: ;
 	}
 
 	del_pset(live);
