@@ -1,7 +1,8 @@
 /**
  * Interblock liveness analysis.
  * @author Sebastian Hack
- * @date 6.12.2004
+ * @date   6.12.2004
+ * @cvs-id $Id$
  */
 
 #ifndef _BELIVE_H
@@ -143,5 +144,11 @@ pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, co
  * @return live.
  */
 pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
+
+
+/**
+ * FIXME: Need comment
+ */
+void be_liveness_add_missing(be_lv_t *lv);
 
 #endif /* _BELIVE_H */
