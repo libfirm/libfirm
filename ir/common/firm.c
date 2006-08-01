@@ -22,7 +22,6 @@
 
 #ifdef WITH_LIBCORE
 # include <libcore/lc_opts.h>
-# include <libcore/lc_init.h>
 #endif
 
 #include "ident_t.h"
@@ -133,7 +132,7 @@ init_firm(const firm_parameter_t *param)
 
 #ifdef WITH_LIBCORE
   /* parse any init files for firm */
-  lc_init("firm", firm_opt_get_root(), def_params.arg_prefix, def_params.argc, def_params.argv);
+  lc_opts_init("firm", firm_opt_get_root(), def_params.arg_prefix, def_params.argc, def_params.argv);
 #endif
 }
 
