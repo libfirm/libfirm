@@ -470,7 +470,7 @@ static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader)
 	return res;
 }
 
-static place_copies_for_phi(spill_env_t *env, ir_node* node) {
+static void place_copies_for_phi(spill_env_t *env, ir_node* node) {
 	int i, arity;
 
 	assert(is_Phi(node));
