@@ -60,7 +60,7 @@ void set_irn_dbg_info(ir_node *n, dbg_info *db);
 /**
  * Returns the debug information of an node.
  */
-dbg_info *get_irn_dbg_info(ir_node *n);
+dbg_info *get_irn_dbg_info(const ir_node *n);
 
 /**
  * Sets the debug information of an entity.

@@ -96,14 +96,14 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg)
 
 /*
  * Creates an exact copy of a node.
- * The copy resists on the sane graph in the same block.
+ * The copy resides in the same graph in the same block.
  */
-ir_node *exact_copy(ir_node *n) {
+ir_node *exact_copy(const ir_node *n) {
   ir_graph *irg = get_irn_irg(n);
   ir_node *res, *block = NULL;
 
   if (is_no_Block(n))
-    block = get_irn_n(n, -1);
+		block = get_nodes_block(n);
 
   res = new_ir_node(get_irn_dbg_info(n),
                     irg,

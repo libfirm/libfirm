@@ -50,7 +50,7 @@ set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
 }
 
 struct dbg_info *
-get_irn_dbg_info(ir_node *n) {
+get_irn_dbg_info(const ir_node *n) {
   return n->dbi;
 }
 

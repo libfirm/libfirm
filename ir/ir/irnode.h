@@ -282,7 +282,7 @@ int   is_value_arg_pointer(ir_node *n);
 
 /* @@@ no more supported  */
 ir_node **get_Block_cfgpred_arr (ir_node *node);
-int       get_Block_n_cfgpreds (ir_node *node);
+int       get_Block_n_cfgpreds (const ir_node *node);
 ir_node  *get_Block_cfgpred (ir_node *node, int pos);
 void      set_Block_cfgpred (ir_node *node, int pos, ir_node *pred);
 /** Get the predecessor block.

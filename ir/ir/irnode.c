@@ -647,7 +647,7 @@ get_Block_cfgpred_arr (ir_node *node)
 }
 
 int
-(get_Block_n_cfgpreds)(ir_node *node) {
+(get_Block_n_cfgpreds)(const ir_node *node) {
   return _get_Block_n_cfgpreds(node);
 }
 

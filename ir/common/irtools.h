@@ -72,6 +72,6 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg);
  * @note If the copy is not changed, the next CSE operation will
  *       replace it by the original, so beware.
  */
-ir_node *exact_copy(ir_node *n);
+ir_node *exact_copy(const ir_node *n);
 
 #endif /* _FIRM_COMMON_IRTOOLS_H_ */

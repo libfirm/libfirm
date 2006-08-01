@@ -663,7 +663,7 @@ _is_Block(const ir_node *node) {
 }
 
 static INLINE int
-_get_Block_n_cfgpreds(ir_node *node) {
+_get_Block_n_cfgpreds(const ir_node *node) {
   assert(_is_Block(node));
   return _get_irn_arity(node);
 }
