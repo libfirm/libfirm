@@ -14,6 +14,7 @@
 #include <dlfcn.h>
 #endif
 
+#define WITH_JVM
 
 #include <signal.h>
 #include <stdlib.h>
@@ -227,6 +228,7 @@ enum {
 	mth_forbid_color,
 	mth_coalesce,
 	mth_dump,
+	mth_finish,
 	mth_last
 };
 
@@ -243,6 +245,7 @@ static const struct _mth_info_t mthis[mth_last] = {
 	{ "forbidColor", "(II)V"                   }, /* public void forbidColor(int, int); */
 	{ "coalesce",    "()V"                     }, /* public void coalesce(); */
 	{ "dump",        "(Ljava/lang/String;)V"   }  /* public void dump(String); */
+	{ "finish",      "()V"                     }  /* public void finish(); */
 };
 
 /* public static coalescing.Extern createExtern(java.lang.String, int, int, int); */
@@ -331,6 +334,7 @@ java_coal_t *java_coal_init(const char *graph_name, int n_nodes, int n_regs, int
 
 void java_coal_destroy(java_coal_t *c) {
 	JNIEnv *jni = c->env->jni;
+	jc_call_void(c, mth_finish);
 	(*jni)->DeleteGlobalRef(jni, c->obj);
 	free(c);
 }
