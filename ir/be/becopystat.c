@@ -549,7 +549,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	/* ILP 2 */
 	load_colors(&saver);
 
-	co_solve_ilp2(co, 60.0);
+	co_solve_ilp2(co);
 
 	be_ra_chordal_check(co->cenv);
 	costs_solved = co_get_copy_costs(co);

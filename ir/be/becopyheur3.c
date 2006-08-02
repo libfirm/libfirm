@@ -91,7 +91,7 @@ static void set_admissible_regs(java_coal_t *coal, copy_opt_t *co, ir_node *irn,
 	}
 }
 
-void co_solve_heuristic_java(copy_opt_t *co)
+int co_solve_heuristic_java(copy_opt_t *co)
 {
 	be_ifg_t *ifg   = co->cenv->ifg;
 	void *nodes_it  = be_ifg_nodes_iter_alloca(ifg);
@@ -208,4 +208,5 @@ void co_solve_heuristic_java(copy_opt_t *co)
 
 	java_coal_destroy(coal);
 	bitset_free(nodes);
+	return 0;
 }

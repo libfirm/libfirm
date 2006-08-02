@@ -112,15 +112,6 @@ enum {
 	BE_CH_DUMP_APPEL      = (1 << 9),
 	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_LOWER - 1,
 
-	/* copymin method */
-	BE_CH_COPYMIN_NONE      = 0,
-	BE_CH_COPYMIN_HEUR1     = 1,
-	BE_CH_COPYMIN_HEUR2     = 2,
-	BE_CH_COPYMIN_HEUR3     = 3,
-	BE_CH_COPYMIN_STAT      = 4,
-	BE_CH_COPYMIN_ILP       = 5,
-	BE_CH_COPYMIN_PARK_MOON = 6,
-
 	/* ifg flavor */
 	BE_CH_IFG_STD     = 1,
 	BE_CH_IFG_FAST    = 2,
@@ -142,7 +133,6 @@ enum {
 struct _be_ra_chordal_opts_t {
 	int dump_flags;
 	int spill_method;
-	int copymin_method;
 	int ifg_flavor;
 	int lower_perm_opt;
 	int vrfy_option;

@@ -24,6 +24,31 @@ extern void co_register_options(lc_opt_entry_t *grp);
 #endif
 
 /**
+ * Flags for dumping the IFG.
+ */
+enum {
+	CO_IFG_DUMP_COLORS = 1, /**< Dump the graph colored. */
+	CO_IFG_DUMP_LABELS = 2, /**< Dump node/edge labels. */
+	CO_IFG_DUMP_SHAPE  = 4, /**< Give constrained nodes special shapes. */
+	CO_IFG_DUMP_CONSTR = 8  /**< Dump the node constraints in the label. */
+};
+
+/**
+ * Algorithms.
+ */
+enum {
+	CO_ALGO_NONE,
+	CO_ALGO_HEUR,
+	CO_ALGO_HEUR2,
+	CO_ALGO_HEUR3,
+	CO_ALGO_ILP,
+	CO_ALGO_LAST
+};
+
+/** The driver for copy minimization. */
+void co_driver(be_chordal_env_t *cenv);
+
+/**
  * Has to be called during the firm init phase
  */
 void be_copy_opt_init(void);
@@ -31,6 +56,9 @@ void be_copy_opt_init(void);
 typedef struct _copy_opt_t copy_opt_t;
 
 typedef int(*cost_fct_t)(const copy_opt_t *, ir_node*, ir_node*, int);
+
+/** A coalescing algorithm. */
+typedef int (co_algo_t)(copy_opt_t *);
 
 /**
  * Generate the problem. Collect all information and optimizable nodes.
@@ -97,10 +125,6 @@ void co_free_ou_structure(copy_opt_t *co);
  */
 int co_solve_heuristic(copy_opt_t *co);
 
-void co_solve_heuristic_new(copy_opt_t *co);
-
-void co_solve_heuristic_java(copy_opt_t *co);
-
 /**
  * Apply Park/Moon coalescing to the graph.
  * @param co The copy optimization data structure.
@@ -111,7 +135,14 @@ void co_solve_park_moon(copy_opt_t *co);
  * Solves the copy minimization problem using another heuristic approach.
  * Uses the OU and the GRAPH data structure.
  */
-void co_solve_heuristic_new(copy_opt_t *co);
+int  co_solve_heuristic_new(copy_opt_t *co);
+
+/**
+ * Solves the copy minimization problem using another heuristic approach implemented in Java.
+ * This function needs a JVM which is started to call the Java module.
+ * Uses the GRAPH data structure.
+ */
+int co_solve_heuristic_java(copy_opt_t *co);
 
 /**
  * Returns the maximal costs possible, i.e. the costs if all
@@ -158,14 +189,11 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f);
  * @param f  The file to dump to.
  */
 void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f);
-
-enum {
-	CO_IFG_DUMP_COLORS = 1,
-	CO_IFG_DUMP_LABELS = 2
-};
-
 /**
  * Dump the interference graph with the affinity edges and the coloring.
+ * @param co    The copy opt structure.
+ * @param f     The file to dump to.
+ * @param flags The dump flags (see enum above).
  */
 void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags);
 
@@ -193,7 +221,7 @@ int co_solve_ilp1(copy_opt_t *co, double time_limit);
  * Uses the OU and the GRAPH data structure
  * Dependency of the OU structure can be removed
  */
-int co_solve_ilp2(copy_opt_t *co, double time_limit);
+int co_solve_ilp2(copy_opt_t *co);
 
 /**
  * Checks if a node is optimizable, viz has something to do with coalescing.

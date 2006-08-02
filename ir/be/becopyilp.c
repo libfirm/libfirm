@@ -14,6 +14,41 @@
 
 #ifdef WITH_ILP
 
+#define DUMP_ILP 1
+#define DUMP_SOL 2
+
+static int time_limit = 60;
+static int solve_net  = 1;
+static int dump_flags = 0;
+
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+static const lc_opt_enum_mask_items_t dump_items[] = {
+	{ "ilp",   DUMP_ILP },
+	{ "sol",   DUMP_SOL },
+	{ NULL,    0 }
+};
+
+static lc_opt_enum_mask_var_t dump_var = {
+	&dump_flags, dump_items
+};
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_INT      ("limit", "time limit for solving in seconds (0 for unlimited, default 60)", &time_limit),
+	LC_OPT_ENT_BOOL     ("net",   "solve over the net (default: yes)", &solve_net),
+	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags (ilp, sol)",             &dump_var),
+	{ NULL }
+};
+
+void be_co_ilp_register_options(lc_opt_entry_t *grp)
+{
+	lc_opt_entry_t *ilp_grp = lc_opt_get_grp(grp, "ilp");
+	lc_opt_add_table(ilp_grp, options);
+}
+#endif
+
+
 #include "becopyilp_t.h"
 #include "beifg_t.h"
 
@@ -148,34 +183,38 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 	ilp_env_t *res = xmalloc(sizeof(*res));
 	assert(res);
 
-	res->co = co;
-	res->build = build;
-	res->apply = apply;
-	res->env = env;
-	res->sr = new_size_red(co);
+	res->co         = co;
+	res->build      = build;
+	res->apply      = apply;
+	res->env        = env;
+	res->sr         = new_size_red(co);
 
 	return res;
 }
 
 lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
-	FILE *f;
-	char buf[256];
 	be_main_env_t *main_env = ienv->co->cenv->birg->main_env;
 
 	sr_remove(ienv->sr);
 
 	ienv->build(ienv);
+	lpp_set_time_limit(ienv->lp, time_limit);
 
+	if(solve_net)
+		lpp_solve_net(ienv->lp, main_env->options->ilp_server, main_env->options->ilp_solver);
+	else {
 #ifdef LPP_SOLVE_NET
-	lpp_solve_net(ienv->lp, main_env->options->ilp_server, main_env->options->ilp_solver);
+		fprintf(stderr, "can only solve ilp over the net\n");
 #else
-	lpp_solve_cplex(ienv->lp);
+		lpp_solve_cplex(ienv->lp);
 #endif
+	}
 
-	snprintf(buf, sizeof(buf), "%s.ilp", ienv->co->name);
-	f = fopen(buf, "wt");
-	lpp_dump_plain(ienv->lp, f);
-	fclose(f);
+	if(dump_flags & DUMP_ILP) {
+		FILE *f = be_chordal_open(ienv->co->cenv, "", "-co.ilp");
+		lpp_dump_plain(ienv->lp, f);
+		fclose(f);
+	}
 
 	ienv->apply(ienv);
 

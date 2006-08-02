@@ -503,7 +503,7 @@ static void ilp2_apply(ilp_env_t *ienv) {
 #endif
 }
 
-int co_solve_ilp2(copy_opt_t *co, double time_limit) {
+int co_solve_ilp2(copy_opt_t *co) {
 	lpp_sol_state_t sol_state;
 	ilp_env_t *ienv;
 	local_env_t my;
@@ -511,7 +511,7 @@ int co_solve_ilp2(copy_opt_t *co, double time_limit) {
 	ASSERT_OU_AVAIL(co); //See build_clique_st
 	ASSERT_GS_AVAIL(co);
 
-	my.time_limit  = time_limit;
+	my.time_limit  = 0;
 	my.first_x_var = -1;
 	my.last_x_var  = -1;
 	my.nr_2_irn    = pmap_create();

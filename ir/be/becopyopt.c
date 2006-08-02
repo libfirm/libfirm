@@ -39,16 +39,92 @@
 #include "beinsn_t.h"
 #include "besched_t.h"
 
+#define DUMP_BEFORE 1
+#define DUMP_AFTER  2
+#define DUMP_APPEL  4
+#define DUMP_ALL    2 * DUMP_APPEL - 1
+
+#define COST_FUNC_FREQ     1
+#define COST_FUNC_LOOP     2
+#define COST_FUNC_ALL_ONE  3
+
+static int dump_flags         = 0;
+static int style_flags        = 0;
+static int do_stats           = 0;
+static cost_fct_t cost_func   = co_get_costs_exec_freq;
+static int algo               = CO_ALGO_HEUR2;
+
 #ifdef WITH_LIBCORE
+static const lc_opt_enum_mask_items_t dump_items[] = {
+	{ "before",  DUMP_BEFORE },
+	{ "after",   DUMP_AFTER  },
+	{ "appel",   DUMP_APPEL  },
+	{ "all",     DUMP_ALL    },
+	{ NULL,      0 }
+};
+
+static const lc_opt_enum_mask_items_t style_items[] = {
+	{ "color",   CO_IFG_DUMP_COLORS },
+	{ "labels",  CO_IFG_DUMP_LABELS },
+	{ "constr",  CO_IFG_DUMP_CONSTR },
+	{ "shape",   CO_IFG_DUMP_SHAPE  },
+	{ "full",    2 * CO_IFG_DUMP_SHAPE - 1 },
+	{ NULL,      0 }
+};
+
+static const lc_opt_enum_mask_items_t algo_items[] = {
+	{ "heur",   CO_ALGO_HEUR  },
+	{ "heur2",  CO_ALGO_HEUR2 },
+	{ "heur3",  CO_ALGO_HEUR3 },
+	{ "ilp",    CO_ALGO_ILP   },
+	{ NULL,     0 }
+};
+
+static const lc_opt_enum_func_ptr_items_t cost_func_items[] = {
+	{ "freq",   co_get_costs_exec_freq },
+	{ "loop",   co_get_costs_loop_depth },
+	{ "one",    co_get_costs_all_one },
+	{ NULL,     0 }
+};
+
+static lc_opt_enum_mask_var_t dump_var = {
+	&dump_flags, dump_items
+};
+
+static lc_opt_enum_mask_var_t style_var = {
+	&style_flags, style_items
+};
+
+static lc_opt_enum_mask_var_t algo_var = {
+	&algo, algo_items
+};
+
+static lc_opt_enum_func_ptr_var_t cost_func_var = {
+	&cost_func, cost_func_items
+};
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_ENUM_INT      ("algo",  "select copy optimization algo (heur, heur2, heur3, ilp)", &algo_var),
+	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",  "select a cost function (freq, loop, one)",    &cost_func_var),
+	LC_OPT_ENT_ENUM_MASK     ("dump",  "dump ifg before or after copy optimization",  &dump_var),
+	LC_OPT_ENT_ENUM_MASK     ("style", "dump style for ifg dumping",                  &style_var),
+	LC_OPT_ENT_BOOL          ("stats", "dump statistics after each optimization",     &do_stats),
+	{ NULL }
+};
 
 /* Insert additional options registration functions here. */
+extern void be_co_ilp_register_options(lc_opt_entry_t *grp);
 extern void be_co2_register_options(lc_opt_entry_t *grp);
 extern void be_co3_register_options(lc_opt_entry_t *grp);
 
 void co_register_options(lc_opt_entry_t *grp)
 {
-	be_co2_register_options(grp);
-	be_co3_register_options(grp);
+	lc_opt_entry_t *co_grp = lc_opt_get_grp(grp, "co");
+	lc_opt_add_table(co_grp, options);
+
+	be_co2_register_options(co_grp);
+	be_co3_register_options(co_grp);
+	be_co_ilp_register_options(co_grp);
 }
 #endif
 
@@ -1067,12 +1143,12 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 }
 
 /*
-___ _____ ____   ____   ___ _____   ____                        _
-|_ _|  ___/ ___| |  _ \ / _ \_   _| |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
-| || |_ | |  _  | | | | | | || |   | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
-| ||  _|| |_| | | |_| | |_| || |   | |_| | |_| | | | | | | |_) | | | | | (_| |
-|___|_|   \____| |____/ \___/ |_|   |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
-|_|            |___/
+	 ___ _____ ____   ____   ___ _____   ____                        _
+	|_ _|  ___/ ___| |  _ \ / _ \_   _| |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
+	 | || |_ | |  _  | | | | | | || |   | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
+	 | ||  _|| |_| | | |_| | |_| || |   | |_| | |_| | | | | | | |_) | | | | | (_| |
+	|___|_|   \____| |____/ \___/ |_|   |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
+	                                                          |_|            |___/
 */
 
 static const char *get_dot_color_name(int col)
@@ -1119,20 +1195,9 @@ typedef struct _co_ifg_dump_t {
 	unsigned flags;
 } co_ifg_dump_t;
 
-static const char *get_dot_shape_name(co_ifg_dump_t *cod, ir_node *irn)
-{
-	arch_register_req_t req;
-
-	arch_get_register_req(cod->co->aenv, &req, irn, BE_OUT_POS(0));
-	if(arch_register_req_is(&req, limited))
-		return "diamond";
-
-	return "ellipse";
-}
-
 static void ifg_dump_graph_attr(FILE *f, void *self)
 {
-	fprintf(f, "overlay=false");
+	fprintf(f, "overlap=scale");
 }
 
 static int ifg_is_dump_node(void *self, ir_node *irn)
@@ -1145,8 +1210,31 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 {
 	co_ifg_dump_t *env         = self;
 	const arch_register_t *reg = arch_get_irn_register(env->co->aenv, irn);
+	arch_register_req_t req;
+	int limited;
 
-	ir_fprintf(f, "label=\"%+F\" style=filled color=%s shape=%s", irn, get_dot_color_name(reg->index), get_dot_shape_name(env, irn));
+	arch_get_register_req(env->co->aenv, &req, irn, BE_OUT_POS(0));
+	limited = arch_register_req_is(&req, limited);
+
+	if(env->flags & CO_IFG_DUMP_LABELS) {
+		ir_fprintf(f, "label=\"%+F", irn);
+
+		if((env->flags & CO_IFG_DUMP_CONSTR) && limited) {
+			bitset_t *bs = bitset_alloca(env->co->cls->n_regs);
+			req.limited(req.limited_env, bs);
+			ir_fprintf(f, "\\n%B", bs);
+		}
+		ir_fprintf(f, "\" ");
+	}
+
+	else
+		fprintf(f, "label=\"\"" );
+
+	if(env->flags & CO_IFG_DUMP_SHAPE)
+		fprintf(f, "shape=%s ", limited ? "diamond" : "ellipse");
+
+	if(env->flags & CO_IFG_DUMP_COLORS)
+		fprintf(f, "style=filled color=%s ", get_dot_color_name(reg->index));
 }
 
 static void ifg_dump_at_end(FILE *file, void *self)
@@ -1165,7 +1253,14 @@ static void ifg_dump_at_end(FILE *file, void *self)
 
 			if(aidx < nidx) {
 				const char *color = nr == ar ? "blue" : "red";
-				fprintf(file, "\tn%d -- n%d [label=\"%d\" style=dashed color=%s];\n", aidx, nidx, n->costs, color);
+				fprintf(file, "\tn%d -- n%d [weight=0.01 ", aidx, nidx);
+				if(env->flags & CO_IFG_DUMP_LABELS)
+					fprintf(file, "label=\"%d\" ", n->costs);
+				if(env->flags & CO_IFG_DUMP_COLORS)
+					fprintf(file, "color=%s ", color);
+				else
+					fprintf(file, "style=dashed");
+				fprintf(file, "];\n");
 			}
 		}
 	}
@@ -1196,4 +1291,89 @@ void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags)
 void co_solve_park_moon(copy_opt_t *opt)
 {
 
+}
+
+static void void_algo(copy_opt_t *co)
+{
+}
+
+/*
+		_    _                  _ _   _
+	   / \  | | __ _  ___  _ __(_) |_| |__  _ __ ___  ___
+	  / _ \ | |/ _` |/ _ \| '__| | __| '_ \| '_ ` _ \/ __|
+	 / ___ \| | (_| | (_) | |  | | |_| | | | | | | | \__ \
+	/_/   \_\_|\__, |\___/|_|  |_|\__|_| |_|_| |_| |_|___/
+			   |___/
+*/
+
+static co_algo_t *algos[] = {
+	void_algo,
+	co_solve_heuristic,
+	co_solve_heuristic_new,
+	co_solve_heuristic_java,
+	co_solve_ilp2
+};
+
+/*
+    __  __       _         ____       _
+   |  \/  | __ _(_)_ __   |  _ \ _ __(_)_   _____ _ __
+   | |\/| |/ _` | | '_ \  | | | | '__| \ \ / / _ \ '__|
+   | |  | | (_| | | | | | | |_| | |  | |\ V /  __/ |
+   |_|  |_|\__,_|_|_| |_| |____/|_|  |_| \_/ \___|_|
+
+*/
+
+void co_driver(be_chordal_env_t *cenv)
+{
+	copy_opt_t *co;
+	co_algo_t  *algo_func;
+
+	if(algo < 0 || algo >= CO_ALGO_LAST)
+		return;
+
+	co = new_copy_opt(cenv, cost_func);
+	co_build_ou_structure(co);
+	co_build_graph_structure(co);
+	if(do_stats) {
+		ir_printf("%30F %10s %7d%7d%7d%7d", cenv->irg, cenv->cls->name,
+				co_get_max_copy_costs(co), co_get_copy_costs(co),
+				co_get_inevit_copy_costs(co), co_get_lower_bound(co));
+	}
+
+	/* Dump the interference graph in Appel's format. */
+	if(dump_flags & DUMP_APPEL) {
+		FILE *f = be_chordal_open(cenv, "", ".apl");
+		co_dump_appel_graph(co, f);
+		fclose(f);
+	}
+
+	if(dump_flags & DUMP_BEFORE) {
+		FILE *f = be_chordal_open(cenv, "", "-before.dot");
+		co_dump_ifg_dot(co, f, style_flags);
+		fclose(f);
+	}
+
+	algo_func = algos[algo];
+	algo_func(co);
+
+	if(dump_flags & DUMP_AFTER) {
+		FILE *f = be_chordal_open(cenv, "", "-after.dot");
+		co_dump_ifg_dot(co, f, style_flags);
+		fclose(f);
+	}
+
+	if(do_stats) {
+		int optimizable_costs = co_get_max_copy_costs(co) - co_get_lower_bound(co);
+		int remaining         = co_get_copy_costs(co);
+		int evitable          = remaining - co_get_lower_bound(co);
+
+		if(optimizable_costs > 0)
+			printf("%5d %5.2f\n", remaining, (evitable * 100.0) / optimizable_costs);
+		else
+			printf("%5d %5s\n", remaining, "-");
+	}
+
+	co_free_graph_structure(co);
+	co_free_ou_structure(co);
+	free_copy_opt(co);
 }

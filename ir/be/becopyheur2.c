@@ -1217,7 +1217,7 @@ static be_ifg_dump_dot_cb_t ifg_dot_cb = {
 };
 
 
-void co_solve_heuristic_new(copy_opt_t *co)
+int co_solve_heuristic_new(copy_opt_t *co)
 {
 	char buf[256];
 	co2_t env;
@@ -1257,4 +1257,5 @@ void co_solve_heuristic_new(copy_opt_t *co)
 
 	writeback_colors(&env);
 	phase_free(&env.ph);
+	return 0;
 }

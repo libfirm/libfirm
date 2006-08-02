@@ -589,6 +589,5 @@ int co_solve_heuristic(copy_opt_t *co) {
 			ou_optimize(curr);
 
 	del_pset(pinned_global);
-
 	return 0;
 }

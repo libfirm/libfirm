@@ -119,7 +119,6 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
 	BE_CH_SPILL_BELADY,
-	BE_CH_COPYMIN_HEUR2,
 	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
@@ -144,19 +143,6 @@ static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "belady", BE_CH_SPILL_BELADY },
 #ifdef WITH_ILP
 	{ "remat",  BE_CH_SPILL_REMAT },
-#endif /* WITH_ILP */
-	{ NULL, 0 }
-};
-
-static const lc_opt_enum_int_items_t copymin_items[] = {
-	{ "none",  BE_CH_COPYMIN_NONE      },
-	{ "heur1", BE_CH_COPYMIN_HEUR1     },
-	{ "heur2", BE_CH_COPYMIN_HEUR2     },
-	{ "heur3", BE_CH_COPYMIN_HEUR3     },
-	{ "stat",  BE_CH_COPYMIN_STAT      },
-	{ "park",  BE_CH_COPYMIN_PARK_MOON },
-#ifdef WITH_ILP
-	{ "ilp",   BE_CH_COPYMIN_ILP },
 #endif /* WITH_ILP */
 	{ NULL, 0 }
 };
@@ -206,10 +192,6 @@ static lc_opt_enum_int_var_t spill_var = {
 	&options.spill_method, spill_items
 };
 
-static lc_opt_enum_int_var_t copymin_var = {
-	&options.copymin_method, copymin_items
-};
-
 static lc_opt_enum_int_var_t ifg_flavor_var = {
 	&options.ifg_flavor, ifg_flavor_items
 };
@@ -226,9 +208,6 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 	&options.vrfy_option, be_ch_vrfy_items
 };
 
-/** Dump copy minimization statistics. */
-static int be_copymin_stats = 0;
-
 /** Enable extreme live range splitting. */
 static int be_elr_split = 0;
 
@@ -237,12 +216,10 @@ static int be_loop_weight = 9;
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method (belady, morgan or remat)", &spill_var),
-	LC_OPT_ENT_ENUM_PTR ("copymin",       "copymin method (none, heur1, heur2, ilp1, ilp2 or stat)", &copymin_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options (copy or swap)", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options (off, warn, assert)", &be_ch_vrfy_var),
-	LC_OPT_ENT_BOOL     ("copymin_stats", "dump statistics of copy minimization", &be_copymin_stats),
 	LC_OPT_ENT_BOOL     ("elrsplit",      "enable extreme live range splitting", &be_elr_split),
 	LC_OPT_ENT_INT      ("loop_weight",   "assumed amount of loop iterations for guessing the execution frequency", &be_loop_weight),
 	{ NULL }
@@ -297,7 +274,7 @@ FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const cha
 {
 	char buf[1024];
 
-	ir_snprintf(buf, sizeof(buf), "%s%F_%s.%s", prefix, env->irg, env->cls->name, suffix);
+	ir_snprintf(buf, sizeof(buf), "%s%F_%s%s", prefix, env->irg, env->cls->name, suffix);
 	return fopen(buf, "wt");
 }
 
@@ -305,24 +282,24 @@ void check_ifg_implementations(be_chordal_env_t *chordal_env)
 {
 	FILE *f;
 
-	f = be_chordal_open(chordal_env, "std", "log");
+	f = be_chordal_open(chordal_env, "std", ".log");
 	chordal_env->ifg = be_ifg_std_new(chordal_env);
 	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
 	fclose(f);
 
-	f = be_chordal_open(chordal_env, "list", "log");
+	f = be_chordal_open(chordal_env, "list", ".log");
 	be_ifg_free(chordal_env->ifg);
 	chordal_env->ifg = be_ifg_list_new(chordal_env);
 	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
 	fclose(f);
 
-	f = be_chordal_open(chordal_env, "clique", "log");
+	f = be_chordal_open(chordal_env, "clique", ".log");
 	be_ifg_free(chordal_env->ifg);
 	chordal_env->ifg = be_ifg_clique_new(chordal_env);
 	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
 	fclose(f);
 
-	f = be_chordal_open(chordal_env, "pointer", "log");
+	f = be_chordal_open(chordal_env, "pointer", ".log");
 	be_ifg_free(chordal_env->ifg);
 	chordal_env->ifg = be_ifg_pointer_new(chordal_env);
 	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
@@ -565,67 +542,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		/* copy minimization */
 		BE_TIMER_PUSH(ra_timer.t_copymin);
-		co = NULL;
-		if (options.copymin_method != BE_CH_COPYMIN_NONE && options.copymin_method != BE_CH_COPYMIN_STAT) {
-			co = new_copy_opt(&chordal_env, co_get_costs_exec_freq);
-			co_build_ou_structure(co);
-			co_build_graph_structure(co);
-			if(be_copymin_stats) {
-				ir_printf("%30F %10s %7d%7d%7d%7d", current_ir_graph, chordal_env.cls->name,
-						co_get_max_copy_costs(co), co_get_copy_costs(co), co_get_inevit_copy_costs(co), co_get_lower_bound(co));
-			}
-
-			/* Dump the interference graph in Appel's format. */
-			if(options.dump_flags & BE_CH_DUMP_APPEL) {
-				FILE *f = be_chordal_open(&chordal_env, "appel-", "apl");
-				co_dump_appel_graph(co, f);
-				fclose(f);
-			}
-		}
-
-		switch(options.copymin_method) {
-			case BE_CH_COPYMIN_HEUR1:
-				co_solve_heuristic(co);
-				break;
-			case BE_CH_COPYMIN_HEUR2:
-				co_solve_heuristic_new(co);
-				break;
-			case BE_CH_COPYMIN_HEUR3:
-				co_solve_heuristic_java(co);
-				break;
-			case BE_CH_COPYMIN_PARK_MOON:
-				co_solve_park_moon(co);
-				break;
-			case BE_CH_COPYMIN_STAT:
-				co_compare_solvers(&chordal_env);
-				break;
-#ifdef WITH_ILP
-			case BE_CH_COPYMIN_ILP:
-				co_solve_ilp2(co, 60.0);
-				break;
-#endif /* WITH_ILP */
-			case BE_CH_COPYMIN_NONE:
-			default:
-				break;
-		}
-
-		if (co) {
-			if(be_copymin_stats) {
-				int optimizable_costs = co_get_max_copy_costs(co) - co_get_lower_bound(co);
-				int remaining         = co_get_copy_costs(co);
-				int evitable          = remaining - co_get_lower_bound(co);
-
-				if(optimizable_costs > 0)
-					printf("%5d %5.2f\n", remaining, (evitable * 100.0) / optimizable_costs);
-				else
-					printf("%5d %5s\n", remaining, "-");
-			}
-			co_free_graph_structure(co);
-			co_free_ou_structure(co);
-			free_copy_opt(co);
-		}
+		co_driver(&chordal_env);
 		BE_TIMER_POP(ra_timer.t_copymin);
-
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
@@ -649,9 +567,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 			be_ra_chordal_check(&chordal_env);
 		}
 		BE_TIMER_POP(ra_timer.t_verify);
-
-		if (options.copymin_method == BE_CH_COPYMIN_STAT)
-			copystat_dump(irg);
 
 		be_ifg_free(chordal_env.ifg);
 		pmap_destroy(chordal_env.border_heads);
