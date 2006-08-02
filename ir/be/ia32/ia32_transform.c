@@ -2278,6 +2278,51 @@ static ir_node *gen_be_FrameStore(ia32_transform_env_t *env) {
 }
 
 /**
+ * In case SSE is used we need to copy the result from FPU TOS.
+ */
+static ir_node *gen_be_Call(ia32_transform_env_t *env) {
+	ir_node *call_res = get_proj_for_pn(env->irn, pn_be_Call_first_res);
+	ir_node *call_mem = get_proj_for_pn(env->irn, pn_be_Call_M_regular);
+	ir_mode *mode;
+
+	if (! call_res || ! USE_SSE2(env->cg))
+		return NULL;
+
+	mode = get_irn_mode(call_res);
+
+	if (mode_is_float(mode)) {
+		/* store st(0) onto stack */
+		ir_node *frame = get_irg_frame(env->irg);
+		ir_node *fstp  = new_rd_ia32_GetST0(env->dbg, env->irg, env->block, frame, call_mem);
+		ir_node *mproj = new_r_Proj(env->irg, env->block, fstp, mode_M, pn_ia32_GetST0_M);
+		entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
+		ir_node *sse_load;
+
+		set_ia32_ls_mode(fstp, mode);
+		set_ia32_op_type(fstp, ia32_AddrModeD);
+		set_ia32_use_frame(fstp);
+		set_ia32_frame_ent(fstp, ent);
+		set_ia32_am_flavour(fstp, ia32_B);
+		set_ia32_am_support(fstp, ia32_am_Dest);
+
+		/* load into SSE register */
+		sse_load = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, frame, ia32_new_NoReg_gp(env->cg), mproj);
+		set_ia32_ls_mode(sse_load, mode);
+		set_ia32_op_type(sse_load, ia32_AddrModeS);
+		set_ia32_use_frame(sse_load);
+		set_ia32_frame_ent(sse_load, ent);
+		set_ia32_am_flavour(sse_load, ia32_B);
+		set_ia32_am_support(sse_load, ia32_am_Source);
+		sse_load = new_r_Proj(env->irg, env->block, sse_load, mode, pn_ia32_xLoad_res);
+
+		/* reroute all users of the result proj to the sse load */
+		edges_reroute(call_res, sse_load, env->irg);
+	}
+
+	return NULL;
+}
+
+/**
  * This function just sets the register for the Unknown node
  * as this is not done during register allocation because Unknown
  * is an "ignore" node.
@@ -2754,6 +2799,7 @@ void ia32_register_transformers(void) {
 	IGN(SymConst);
 	IGN(Sync);
 
+	/* we should never see these nodes */
 	BAD(Raise);
 	BAD(Sel);
 	BAD(InstOf);
@@ -2768,7 +2814,9 @@ void ia32_register_transformers(void) {
 	BAD(EndReg);
 	BAD(EndExcept);
 
+	/* handle generic backend nodes */
 	GEN(be_FrameAddr);
+	GEN(be_Call);
 	GEN(be_FrameLoad);
 	GEN(be_FrameStore);
 	GEN(be_StackParam);
