@@ -43,7 +43,7 @@ static const lc_opt_table_entry_t options[] = {
 	{ NULL }
 };
 
-void java_coal_register_options(lc_opt_entry_t *grp)
+void be_java_coal_register_options(lc_opt_entry_t *grp)
 {
 	lc_opt_entry_t *jc_grp = lc_opt_get_grp(grp, "jc");
 	lc_opt_add_table(jc_grp, options);
@@ -140,8 +140,10 @@ static int start_vm(jni_env_t *env, int argc, char *argv[])
 
 	ret = create_func(&env->jvm, (void **) &env->jni, &args);
 	free(opts);
-	if(ret == JNI_ERR)
+	if(ret != JNI_OK) {
+		fprintf(stderr, "JNI_CreateJavaVM returned errrocode %d\n" , ret);
 		return 0;
+	}
 
 	return 1;
 }
@@ -195,7 +197,10 @@ static jni_env_t *get_jvm(void)
 
 		snprintf(cp_param, sizeof(cp_param), "-Djava.class.path=%s", jar_file);
 		args[0] = cp_param;
-		start_vm(&env, sizeof(args) / sizeof(args[0]), args);
+		if(!start_vm(&env, sizeof(args) / sizeof(args[0], args), args)) {
+			fprintf(stderr, "Couldn't initialize java VM\n");
+			abort();
+		}
 		jvm_inited = 1;
 		old_int_handler  = signal(SIGINT,  sig_jvm_destroy_at_exit);
 		old_abrt_handler = signal(SIGABRT, sig_jvm_destroy_at_exit);
@@ -214,7 +219,7 @@ static void check(jni_env_t *env, const char *file, int line)
 		(*jni)->ExceptionDescribe(jni);
 		(*jni)->ExceptionClear(jni);
 		stop_vm(env);
-		exit(1);
+		abort();
 	}
 }
 
@@ -244,7 +249,7 @@ static const struct _mth_info_t mthis[mth_last] = {
 	{ "getColor",    "(I)I"                    }, /* public int getColor(int); */
 	{ "forbidColor", "(II)V"                   }, /* public void forbidColor(int, int); */
 	{ "coalesce",    "()V"                     }, /* public void coalesce(); */
-	{ "dump",        "(Ljava/lang/String;)V"   }  /* public void dump(String); */
+	{ "dump",        "(Ljava/lang/String;)V"   }, /* public void dump(String); */
 	{ "finish",      "()V"                     }  /* public void finish(); */
 };
 
@@ -253,7 +258,7 @@ static const struct _mth_info_t mthi_factory = {
 	"createExtern", "(Ljava/lang/String;III)Lcoalescing/Extern;"
 };
 
-struct _java_coal_t {
+struct _be_java_coal_t {
 	jni_env_t *env;
 	jclass    cls;
 	jobject   obj;
@@ -261,7 +266,7 @@ struct _java_coal_t {
 	jmethodID mth_ids[mth_last];
 };
 
-static void jc_call_void(java_coal_t *c, int mth_index, ...)
+static void jc_call_void(be_java_coal_t *c, int mth_index, ...)
 {
 	JNIEnv *jni   = c->env->jni;
 	jmethodID mid = c->mth_ids[mth_index];
@@ -274,7 +279,7 @@ static void jc_call_void(java_coal_t *c, int mth_index, ...)
 	va_end(args);
 }
 
-static int jc_call_int(java_coal_t *c, int mth_index, ...)
+static int jc_call_int(be_java_coal_t *c, int mth_index, ...)
 {
 	JNIEnv *jni   = c->env->jni;
 	jmethodID mid = c->mth_ids[mth_index];
@@ -290,9 +295,9 @@ static int jc_call_int(java_coal_t *c, int mth_index, ...)
 	return res;
 }
 
-java_coal_t *java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
+be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
 {
-	java_coal_t *c;
+	be_java_coal_t *c;
 	jni_env_t *env = get_jvm();
 	JNIEnv *jni = env->jni;
 	jmethodID fact;
@@ -332,39 +337,39 @@ java_coal_t *java_coal_init(const char *graph_name, int n_nodes, int n_regs, int
 	return c;
 }
 
-void java_coal_destroy(java_coal_t *c) {
+void be_java_coal_destroy(be_java_coal_t *c) {
 	JNIEnv *jni = c->env->jni;
 	jc_call_void(c, mth_finish);
 	(*jni)->DeleteGlobalRef(jni, c->obj);
 	free(c);
 }
 
-void java_coal_add_int_edge(java_coal_t *c, int n, int m)
+void be_java_coal_add_int_edge(be_java_coal_t *c, int n, int m)
 {
 	jc_call_void(c, mth_add_int_edge, (jint) n, (jint) m);
 }
 
-void java_coal_add_aff_edge(java_coal_t *c, int n, int m, int weight)
+void be_java_coal_add_aff_edge(be_java_coal_t *c, int n, int m, int weight)
 {
 	jc_call_void(c, mth_add_aff_edge, (jint) n, (jint) m, (jint) weight);
 }
 
-void java_coal_set_color(java_coal_t *c, int n, int col)
+void be_java_coal_set_color(be_java_coal_t *c, int n, int col)
 {
 	jc_call_void(c, mth_set_color, (jint) n, (jint) col);
 }
 
-void java_coal_forbid_color(java_coal_t *c, int n, int col)
+void be_java_coal_forbid_color(be_java_coal_t *c, int n, int col)
 {
 	jc_call_void(c, mth_forbid_color, (jint) n, (jint) col);
 }
 
-void java_coal_coalesce(java_coal_t *c)
+void be_java_coal_coalesce(be_java_coal_t *c)
 {
 	jc_call_void(c, mth_coalesce);
 }
 
-void java_coal_dump(java_coal_t *c, const char *fn)
+void be_java_coal_dump(be_java_coal_t *c, const char *fn)
 {
 	JNIEnv *jni   = c->env->jni;
 	jmethodID mid = c->mth_ids[mth_dump];
@@ -376,56 +381,56 @@ void java_coal_dump(java_coal_t *c, const char *fn)
 	CHECK(c->env);
 }
 
-int java_coal_get_color(java_coal_t *c, int n)
+int be_java_coal_get_color(be_java_coal_t *c, int n)
 {
 	return jc_call_int(c, mth_get_color, (jint) n);
 }
 
 #else
 
-java_coal_t *java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
+be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
 {
 	assert(0 && "use --enable-jvm");
 	return NULL;
 }
 
-void java_coal_destroy(java_coal_t *c)
+void be_java_coal_destroy(be_java_coal_t *c)
 {
 	assert(0 && "use --enable-jvm");
 }
 
 
-void java_coal_add_int_edge(java_coal_t *c, int n, int m)
+void be_java_coal_add_int_edge(be_java_coal_t *c, int n, int m)
 {
 	assert(0 && "use --enable-jvm");
 }
 
-void java_coal_add_aff_edge(java_coal_t *c, int n, int m, int weight)
+void be_java_coal_add_aff_edge(be_java_coal_t *c, int n, int m, int weight)
 {
 	assert(0 && "use --enable-jvm");
 }
 
-void java_coal_set_color(java_coal_t *c, int n, int col)
+void be_java_coal_set_color(be_java_coal_t *c, int n, int col)
 {
 	assert(0 && "use --enable-jvm");
 }
 
-void java_coal_forbid_color(java_coal_t *c, int n, int col)
+void be_java_coal_forbid_color(be_java_coal_t *c, int n, int col)
 {
 	assert(0 && "use --enable-jvm");
 }
 
-void java_coal_coalesce(java_coal_t *c)
+void be_java_coal_coalesce(be_java_coal_t *c)
 {
 	assert(0 && "use --enable-jvm");
 }
 
-void java_coal_dump(java_coal_t *c, const char *fn)
+void be_java_coal_dump(be_java_coal_t *c, const char *fn)
 {
 	assert(0 && "use --enable-jvm");
 }
 
-int java_coal_get_color(java_coal_t *c, int n)
+int be_java_coal_get_color(be_java_coal_t *c, int n)
 {
 	assert(0 && "use --enable-jvm");
 	return -1;

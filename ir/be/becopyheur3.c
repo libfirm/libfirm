@@ -74,7 +74,7 @@ void be_co3_register_options(lc_opt_entry_t *grp)
 #endif
 
 
-static void set_admissible_regs(java_coal_t *coal, copy_opt_t *co, ir_node *irn, int t_idx, int *col_map)
+static void set_admissible_regs(be_java_coal_t *coal, copy_opt_t *co, ir_node *irn, int t_idx, int *col_map)
 {
 	unsigned i;
 	arch_register_req_t req;
@@ -87,7 +87,7 @@ static void set_admissible_regs(java_coal_t *coal, copy_opt_t *co, ir_node *irn,
 		req.limited(req.limited_env, adm);
 		for(i = 0; i < n_regs; ++i)
 			if(!bitset_is_set(adm, i) && col_map[i] >= 0)
-				java_coal_forbid_color(coal, t_idx, col_map[i]);
+				be_java_coal_forbid_color(coal, t_idx, col_map[i]);
 	}
 }
 
@@ -106,7 +106,7 @@ int co_solve_heuristic_java(copy_opt_t *co)
 	int *node_map;
 	int *inv_node_map;
 
-	java_coal_t *coal;
+	be_java_coal_t *coal;
 	ir_node *n, *m;
 	int max_idx = 0;
 
@@ -144,10 +144,10 @@ int co_solve_heuristic_java(copy_opt_t *co)
 		free(node_map);
 		free(inv_node_map);
 		bitset_free(nodes);
-		return;
+		return 0;
 	}
 
-	coal = java_coal_init("test", curr_idx, j, dbg_level);
+	coal = be_java_coal_init("test", curr_idx, j, dbg_level);
 
 	/* Check, if all neighbours are indeed connected to the node. */
 	be_ifg_foreach_node(ifg, nodes_it, n) {
@@ -157,14 +157,14 @@ int co_solve_heuristic_java(copy_opt_t *co)
 		if(bitset_is_set(nodes, n_idx)) {
 			affinity_node_t *an = get_affinity_info(co, n);
 
-			java_coal_set_color(coal, t_idx, col_map[arch_get_irn_register(co->aenv, n)->index]);
+			be_java_coal_set_color(coal, t_idx, col_map[arch_get_irn_register(co->aenv, n)->index]);
 			set_admissible_regs(coal, co, n, t_idx, col_map);
 			be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
 				int m_idx = get_irn_idx(m);
 				int s_idx = node_map[m_idx];
 
 				if(n_idx < m_idx && bitset_is_set(nodes, m_idx)) {
-					java_coal_add_int_edge(coal, s_idx, t_idx);
+					be_java_coal_add_int_edge(coal, s_idx, t_idx);
 				}
 			}
 
@@ -175,7 +175,7 @@ int co_solve_heuristic_java(copy_opt_t *co)
 					int s_idx = node_map[m_idx];
 
 					if(n_idx < m_idx && bitset_is_set(nodes, m_idx)) {
-						java_coal_add_aff_edge(coal, s_idx, t_idx, neigh->costs);
+						be_java_coal_add_aff_edge(coal, s_idx, t_idx, neigh->costs);
 					}
 				}
 			}
@@ -185,16 +185,16 @@ int co_solve_heuristic_java(copy_opt_t *co)
 	if(dump_flags & DUMP_BEFORE) {
 		char fn[512];
 		ir_snprintf(fn, sizeof(fn), "%F-%s-before.dot", co->cenv->irg, co->cenv->cls->name);
-		java_coal_dump(coal, fn);
+		be_java_coal_dump(coal, fn);
 	}
 
-	java_coal_coalesce(coal);
+	be_java_coal_coalesce(coal);
 
 	be_ifg_foreach_node(ifg, nodes_it, n) {
 		unsigned idx = get_irn_idx(n);
 		if(bitset_is_set(nodes, idx)) {
 			unsigned t_idx             = node_map[idx];
-			unsigned col               = inv_col_map[java_coal_get_color(coal, t_idx)];
+			unsigned col               = inv_col_map[be_java_coal_get_color(coal, t_idx)];
 			const arch_register_t *reg = &co->cls->regs[col];
 			arch_set_irn_register(co->aenv, n, reg);
 		}
@@ -203,10 +203,10 @@ int co_solve_heuristic_java(copy_opt_t *co)
 	if(dump_flags & DUMP_AFTER) {
 		char fn[512];
 		ir_snprintf(fn, sizeof(fn), "%F-%s-after.dot", co->cenv->irg, co->cenv->cls->name);
-		java_coal_dump(coal, fn);
+		be_java_coal_dump(coal, fn);
 	}
 
-	java_coal_destroy(coal);
+	be_java_coal_destroy(coal);
 	bitset_free(nodes);
 	return 0;
 }
