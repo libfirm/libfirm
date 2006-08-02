@@ -587,7 +587,7 @@ const char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	/* obstack_free with NULL results in an uninitialized obstack */
 	obstack_init(obst);
 
-	p = pointer_size(mode, has_x87_register(n));
+	p = pointer_size(mode, has_x87_register(n) || is_ia32_GetST0(n) || is_ia32_SetST0(n));
 	if (p)
 		obstack_printf(obst, "%s ", p);
 
