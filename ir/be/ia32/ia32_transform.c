@@ -2323,6 +2323,54 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 }
 
 /**
+ * In case SSE is used we need to copy the result from XMM0 to FPU TOS before return.
+ */
+static ir_node *gen_be_Return(ia32_transform_env_t *env) {
+	ir_node *ret_val = get_irn_n(env->irn, be_pos_Return_val);
+	ir_node *ret_mem = get_irn_n(env->irn, be_pos_Return_mem);
+	ir_mode *mode;
+
+	if (! ret_val || ! USE_SSE2(env->cg))
+		return NULL;
+
+	mode = get_irn_mode(ret_val);
+
+	if (mode_is_float(mode)) {
+		ir_node *frame = get_irg_frame(env->irg);
+		entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
+		ir_node *sse_store, *fld, *mproj;
+
+		/* store xmm0 onto stack */
+		sse_store = new_rd_ia32_xStoreSimple(env->dbg, env->irg, env->block, frame, ret_val, ret_mem);
+		set_ia32_ls_mode(sse_store, mode);
+		set_ia32_op_type(sse_store, ia32_AddrModeD);
+		set_ia32_use_frame(sse_store);
+		set_ia32_frame_ent(sse_store, ent);
+		set_ia32_am_flavour(sse_store, ia32_B);
+		set_ia32_am_support(sse_store, ia32_am_Dest);
+		sse_store = new_r_Proj(env->irg, env->block, sse_store, mode_M, pn_ia32_xStore_M);
+
+		/* load into st0 */
+		fld = new_rd_ia32_SetST0(env->dbg, env->irg, env->block, frame, sse_store);
+		set_ia32_ls_mode(fld, mode);
+		set_ia32_op_type(fld, ia32_AddrModeS);
+		set_ia32_use_frame(fld);
+		set_ia32_frame_ent(fld, ent);
+		set_ia32_am_flavour(fld, ia32_B);
+		set_ia32_am_support(fld, ia32_am_Source);
+		mproj = new_r_Proj(env->irg, env->block, fld, mode_M, pn_ia32_SetST0_M);
+		fld   = new_r_Proj(env->irg, env->block, fld, mode, pn_ia32_SetST0_res);
+
+		/* set new return value */
+		set_irn_n(env->irn, be_pos_Return_val, fld);
+		set_irn_n(env->irn, be_pos_Return_mem, mproj);
+	}
+
+	return NULL;
+}
+
+
+/**
  * This function just sets the register for the Unknown node
  * as this is not done during register allocation because Unknown
  * is an "ignore" node.
@@ -2817,6 +2865,7 @@ void ia32_register_transformers(void) {
 	/* handle generic backend nodes */
 	GEN(be_FrameAddr);
 	GEN(be_Call);
+	GEN(be_Return);
 	GEN(be_FrameLoad);
 	GEN(be_FrameStore);
 	GEN(be_StackParam);
