@@ -32,10 +32,6 @@
 #include "execfreq.h"
 #include "irvrfy.h"
 
-#include <lpp/lpp.h>
-#include <lpp/lpp_net.h>
-#include <lpp/lpp_cplex.h>
-//#include <lc_pset.h>
 #include <libcore/lc_bitset.h>
 
 #include "be_t.h"

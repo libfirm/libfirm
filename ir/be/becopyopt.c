@@ -124,7 +124,9 @@ void co_register_options(lc_opt_entry_t *grp)
 
 	be_co2_register_options(co_grp);
 	be_co3_register_options(co_grp);
+#ifdef WITH_ILP
 	be_co_ilp_register_options(co_grp);
+#endif
 }
 #endif
 
@@ -1249,7 +1251,7 @@ static void ifg_dump_at_end(FILE *file, void *self)
 
 		co_gs_foreach_neighb(a, n) {
 			const arch_register_t *nr = arch_get_irn_register(env->co->aenv, n->irn);
-			int nidx = get_irn_idx(n->irn);
+			unsigned nidx = get_irn_idx(n->irn);
 
 			if(aidx < nidx) {
 				const char *color = nr == ar ? "blue" : "red";
@@ -1293,8 +1295,9 @@ void co_solve_park_moon(copy_opt_t *opt)
 
 }
 
-static void void_algo(copy_opt_t *co)
+static int void_algo(copy_opt_t *co)
 {
+	return 0;
 }
 
 /*
@@ -1311,7 +1314,9 @@ static co_algo_t *algos[] = {
 	co_solve_heuristic,
 	co_solve_heuristic_new,
 	co_solve_heuristic_java,
+#ifdef WITH_ILP
 	co_solve_ilp2
+#endif
 };
 
 /*

@@ -108,6 +108,7 @@ static INLINE int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) 
 
  *****************************************************************************/
 
+#ifdef WITH_ILP
 #include <lpp/lpp.h>
 
 #define LPP_SOLVE_NET
@@ -145,5 +146,7 @@ void free_ilp_env(ilp_env_t *ienv);
 
 #define name_cdd_sorted(buf, char1, int1, int2) \
 			name_cdd(buf, char1, MIN(int1, int2), MAX(int1, int2))
+
+#endif // WITH_ILP
 
 #endif

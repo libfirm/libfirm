@@ -199,3 +199,8 @@ int be_verify_schedule(ir_graph *irg)
 
 	return ! env.problem_found;
 }
+
+/* Ideas for further verifiers:
+ *   - make sure that each use is dominated by its definition (except phi arguments)
+ *   - make sure that all spills attached to phims spill into the same slot...
+ */
