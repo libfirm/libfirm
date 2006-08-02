@@ -880,6 +880,16 @@ else {
   "outs"      => [ "M" ],
 },
 
+"xStoreSimple" => {
+  "op_flags" => "L|F",
+  "state"    => "exc_pinned",
+  "comment"  => "construct Store without index: Store(ptr, val, mem) = ST ptr,val",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"  => { "in" => [ "gp", "xmm", "none" ] },
+  "emit"     => '. movs%M %ia32_emit_am, %S2 /* store XMM0 onto stack */',
+  "outs"      => [ "M" ],
+},
+
 "l_X87toSSE" => {
   "op_flags" => "L|F",
   "comment"  => "construct: transfer a value from x87 FPU into a SSE register",
