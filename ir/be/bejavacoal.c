@@ -14,8 +14,6 @@
 #include <dlfcn.h>
 #endif
 
-#define WITH_JVM
-
 #include <signal.h>
 #include <stdlib.h>
 #include <assert.h>
