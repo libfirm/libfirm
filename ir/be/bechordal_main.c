@@ -35,6 +35,8 @@
 #include "irdom.h"
 #include "ircons.h"
 #include "irbitset.h"
+#include "irnode.h"
+#include "ircons.h"
 #include "debug.h"
 #include "xmalloc.h"
 #include "execfreq.h"
@@ -60,11 +62,14 @@
 #include "bespillremat.h"
 #endif /* WITH_ILP */
 
+#include "bejavacoal.h"
 #include "becopystat.h"
 #include "becopyopt.h"
 #include "bessadestr.h"
 #include "beverify.h"
+#include "bespillslots.h"
 #include "bespillcost.h"
+#include "benode_t.h"
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 	const arch_env_t *arch_env = chordal_env->birg->main_env->arch_env;
@@ -238,7 +243,7 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 	}
 
 	co_register_options(chordal_grp);
-	java_coal_register_options(chordal_grp);
+	be_java_coal_register_options(chordal_grp);
 }
 #endif /* WITH_LIBCORE */
 
@@ -430,7 +435,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	/* Perform the following for each register class. */
 	for (j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
-		FILE *f;
+		//FILE *f;
 		copy_opt_t *co = NULL;
 
 		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
@@ -478,6 +483,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 		be_compute_spill_offsets(&chordal_env);
+		//be_coalesce_spillslots(&chordal_env);
 		check_for_memory_operands(&chordal_env);
 		be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
 
