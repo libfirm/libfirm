@@ -894,6 +894,28 @@ else {
   "arity"    => 3,
 },
 
+"GetST0" => {
+  "op_flags" => "L|F",
+  "irn_flags" => "I",
+  "state"    => "exc_pinned",
+  "comment"  => "store ST0 onto stack",
+  "cmp_attr" => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"  => { "in" => [ "gp", "none" ] },
+  "emit"     => '. fstp %ia32_emit_am /* store ST0 onto stack */',
+  "outs"     => [ "M" ],
+},
+
+"SetST0" => {
+  "op_flags" => "L|F",
+  "irn_flags" => "I",
+  "state"    => "exc_pinned",
+  "comment"  => "load ST0 from stack",
+  "cmp_attr" => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"  => { "in" => [ "gp", "none" ], "out" => [ "st0", "none" ] },
+  "emit"     => '. fld %ia32_emit_am /* load ST0 from stack */',
+  "outs"     => [ "res", "M" ],
+},
+
 # CopyB
 
 "CopyB" => {
