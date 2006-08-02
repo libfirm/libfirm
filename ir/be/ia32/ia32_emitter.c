@@ -293,7 +293,9 @@ static int ia32_get_mode_suffix(lc_appendable_t *app,
 	ir_mode *mode = get_irn_mode(irn);
 
 	if (mode == mode_T) {
-		mode = (is_ia32_Ld(irn) || is_ia32_St(irn)) ? get_ia32_ls_mode(irn) : get_ia32_res_mode(irn);
+		mode = get_ia32_res_mode(irn);
+		if (! mode)
+			mode = get_ia32_ls_mode(irn);
 	}
 
 	if (! irn)
