@@ -53,13 +53,12 @@
 
 #include "bechordal_t.h"
 
-#define BIGM 100000.0
-
 #define DUMP_SOLUTION
 #define DUMP_ILP
 //#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
 #define COLLECT_REMATS /* enable rematerialization */
 #define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
+//#define ONLY_BRIGGS_REMATS /* only remats without parameters (or only with ignored params) */
 #define REMAT_WHILE_LIVE /* only remat values that are live */
 //#define NO_ENLARGE_L1V3N355 /* do not remat after the death of some operand */
 //#define EXECFREQ_LOOPDEPH /* compute execution frequency from loop depth only */
@@ -506,6 +505,7 @@ add_remat(const spill_ilp_t * si, const remat_t * remat)
 	}
 }
 
+#ifdef NO_SINGLE_USE_REMATS
 static int
 get_irn_n_nonremat_edges(const spill_ilp_t * si, const ir_node * irn)
 {
@@ -521,6 +521,22 @@ get_irn_n_nonremat_edges(const spill_ilp_t * si, const ir_node * irn)
 
 	return i;
 }
+#endif
+
+#ifdef ONLY_BRIGGS_REMATS
+static int
+get_irn_n_nonignore_args(const spill_ilp_t * si, const ir_node * irn)
+{
+	int n;
+	unsigned int ret = 0;
+
+	for(n=get_irn_arity(irn)-1; n>=0; --n) {
+		if(has_reg_class(si, irn)) ++ret;
+	}
+
+	return ret;
+}
+#endif
 
 static INLINE void
 get_remats_from_op(spill_ilp_t * si, const ir_node * op)
@@ -528,18 +544,21 @@ get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 	int      n;
 	remat_t *remat;
 
+	if( has_reg_class(si, op)
 #ifdef NO_SINGLE_USE_REMATS
-	if(has_reg_class(si, op) && (get_irn_n_nonremat_edges(si, op) > 1)) {
-#else
-	if(has_reg_class(si, op)) {
+	&& (get_irn_n_nonremat_edges(si, op) > 1)
 #endif
+#ifdef ONLY_BRIGGS_REMATS
+	&& (get_irn_n_nonignore_args(si, op) == 0)
+#endif
+	) {
 		remat = get_remat_from_op(si, op, op);
 		if(remat) {
 			add_remat(si, remat);
 		}
 	}
 
-#ifdef COLLECT_INVERSE_REMATS
+#if defined(COLLECT_INVERSE_REMATS) && !defined(ONLY_BRIGGS_REMATS)
 	/* repeat the whole stuff for each remat retrieved by get_remat_from_op(op, arg)
 	   for each arg */
 	for (n = get_irn_arity(op)-1; n>=0; --n) {
