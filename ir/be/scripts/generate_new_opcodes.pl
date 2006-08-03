@@ -102,6 +102,8 @@ foreach my $op (keys(%nodes)) {
 		push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
 		push(@obst_cmp_attr, "  $arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
 		push(@obst_cmp_attr, "  $arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
+		push(@obst_cmp_attr, "  (void) attr_a;\n");
+		push(@obst_cmp_attr, "  (void) attr_b;\n");
 		push(@obst_cmp_attr, $n{"cmp_attr"});
 		push(@obst_cmp_attr, "}\n\n");
 
