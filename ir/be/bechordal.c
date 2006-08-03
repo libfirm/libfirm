@@ -263,11 +263,10 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 {
 	const be_chordal_env_t *env = alloc_env->chordal_env;
 
-	int n_uses         = be_insn_n_uses(insn);
-	int n_defs         = be_insn_n_defs(insn);
-	bitset_t *bs       = bitset_alloca(env->cls->n_regs);
-	bipartite_t *bp    = bipartite_new(n_defs, n_uses);
-	int *pairing       = alloca(MAX(n_defs, n_uses) * sizeof(pairing[0]));
+	int n_uses   = be_insn_n_uses(insn);
+	int n_defs   = be_insn_n_defs(insn);
+	bitset_t *bs = bitset_alloca(env->cls->n_regs);
+	int *pairing = alloca(MAX(n_defs, n_uses) * sizeof(pairing[0]));
 
 	int i, j;
 
@@ -275,42 +274,35 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 		For each out operand, try to find an in operand which can be assigned the
 		same register as the out operand.
 	*/
-	for(j = 0; j < insn->use_start; ++j) {
+	for (j = 0; j < insn->use_start; ++j) {
+		int smallest         = -1;
+		int smallest_n_regs  = 2 * env->cls->n_regs + 1;
 		be_operand_t *out_op = &insn->ops[j];
 
 		/* Try to find an in operand which has ... */
 		for(i = insn->use_start; i < insn->n_ops; ++i) {
+			int n_total;
 			const be_operand_t *op = &insn->ops[i];
 
-			/*
-			The in operand can only be paired with a def, if the node defining the
-			operand's value does not interfere with the instruction itself. That
-			would mean, that it is live at the instruction, so no result of the instruction
-			can have the same register as the operand.
+			if (! values_interfere(env->lv, op->irn, op->carrier) && ! op->partner) {
+				bitset_clear_all(bs);
+				bitset_copy(bs, op->regs);
+				bitset_and(bs, out_op->regs);
+				n_total = bitset_popcnt(op->regs) + bitset_popcnt(out_op->regs);
 
-			Furthermore, tow operands can be paired, if the admissible registers
-			of one are a subset of the other's. We record the operand whose constraints
-			count in the decisive array.
-			*/
-			if(!values_interfere(env->lv, op->irn, op->carrier)) {
-				if(get_decisive_partner_regs(bs, out_op, op))
-					bipartite_add(bp, j, i - insn->use_start);
+				if (bitset_popcnt(bs) > 0 && n_total < smallest_n_regs) {
+					smallest = i;
+					smallest_n_regs = n_total;
+				}
 			}
 		}
-	}
 
-	/* Compute the pairing. */
-	bipartite_matching(bp, pairing);
-	for(i = 0; i < insn->use_start; ++i) {
-		int p = pairing[i] + insn->use_start;
-
-		if(p >= insn->use_start) {
-			insn->ops[i].partner = &insn->ops[p];
-			insn->ops[p].partner = &insn->ops[i];
+		if (smallest >= 0) {
+			be_operand_t *partner = &insn->ops[smallest];
+			out_op->partner  = partner;
+			partner->partner = out_op;
 		}
 	}
-
-	bipartite_free(bp);
 }
 
 
