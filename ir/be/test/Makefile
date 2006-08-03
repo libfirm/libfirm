@@ -45,7 +45,7 @@ firm/%.s: %.c
 
 firm/%.exe: firm/%.s
 	@test -z $(RESDIR) || mkdir -p $(RESDIR)
-	$(GCC) firm/$*.s -o $@ || echo "$*.c" >> $(RESDIR)/link_failed.txt
+	$(GCC) $(ASM_FLAGS) firm/$*.s -o $@ || echo "$*.c" >> $(RESDIR)/link_failed.txt
 
 clean:
 	rm -f gcc/*
