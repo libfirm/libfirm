@@ -1365,6 +1365,25 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 					if (a->ent)
 						fprintf(f, "\ncalling: %s\n", get_entity_name(a->ent));
 				}
+				break;
+			case beo_MemPerm:
+				{
+					int i;
+					be_memperm_attr_t *a = (be_memperm_attr_t*) at;
+					for(i = 0; i < get_irn_arity(irn); ++i) {
+						entity *in, *out;
+						in = be_get_MemPerm_in_entity(irn, i);
+						out = be_get_MemPerm_out_entity(irn, i);
+						if(in) {
+							fprintf(f, "\nin[%d]: %s\n", i, get_entity_name(in));
+						}
+						if(out) {
+							fprintf(f, "\nout[%d]: %s\n", i, get_entity_name(out));
+						}
+					}
+				}
+				break;
+
 			default:
 				break;
 			}

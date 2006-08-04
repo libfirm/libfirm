@@ -108,9 +108,10 @@ enum {
 	BE_CH_DUMP_SSADESTR   = (1 << 5),
 	BE_CH_DUMP_TREE_INTV  = (1 << 6),
 	BE_CH_DUMP_CONSTR     = (1 << 7),
-	BE_CH_DUMP_LOWER      = (1 << 8),
-	BE_CH_DUMP_APPEL      = (1 << 9),
-	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_LOWER - 1,
+	BE_CH_DUMP_SPILLSLOTS = (1 << 8),
+	BE_CH_DUMP_LOWER      = (1 << 9),
+	BE_CH_DUMP_APPEL      = (1 << 10),
+	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_APPEL - 1,
 
 	/* ifg flavor */
 	BE_CH_IFG_STD     = 1,

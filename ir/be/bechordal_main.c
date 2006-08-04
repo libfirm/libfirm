@@ -173,16 +173,17 @@ static const lc_opt_enum_int_items_t lower_perm_stat_items[] = {
 };
 
 static const lc_opt_enum_int_items_t dump_items[] = {
-	{ "spill",    BE_CH_DUMP_SPILL     },
-	{ "live",     BE_CH_DUMP_LIVE      },
-	{ "color",    BE_CH_DUMP_COLOR     },
-	{ "copymin",  BE_CH_DUMP_COPYMIN   },
-	{ "ssadestr", BE_CH_DUMP_SSADESTR  },
-	{ "tree",     BE_CH_DUMP_TREE_INTV },
-	{ "constr",   BE_CH_DUMP_CONSTR    },
-	{ "lower",    BE_CH_DUMP_LOWER     },
-	{ "appel",    BE_CH_DUMP_APPEL     },
-	{ "all",      BE_CH_DUMP_ALL       },
+	{ "spill",      BE_CH_DUMP_SPILL      },
+	{ "live",       BE_CH_DUMP_LIVE       },
+	{ "color",      BE_CH_DUMP_COLOR      },
+	{ "copymin",    BE_CH_DUMP_COPYMIN    },
+	{ "ssadestr",   BE_CH_DUMP_SSADESTR   },
+	{ "tree",       BE_CH_DUMP_TREE_INTV  },
+	{ "constr",     BE_CH_DUMP_CONSTR     },
+	{ "lower",      BE_CH_DUMP_LOWER      },
+	{ "spillslots", BE_CH_DUMP_SPILLSLOTS },
+	{ "appel",      BE_CH_DUMP_APPEL      },
+	{ "all",        BE_CH_DUMP_ALL        },
 	{ NULL, 0 }
 };
 
@@ -575,6 +576,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	}
 
 	be_coalesce_spillslots(&chordal_env);
+	dump(BE_CH_DUMP_SPILLSLOTS, irg, NULL, "-spillslots", dump_ir_block_graph_sched);
 
 	BE_TIMER_PUSH(ra_timer.t_epilog);
 
