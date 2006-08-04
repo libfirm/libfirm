@@ -196,7 +196,7 @@ static void values_to_vars(ir_node *irn, void *env) {
  * 1) Simplest case (phi with a non-phi arg):
  *     A single copy is inserted.
  *
- * 2) Phi chain (phi (with phi-arg)* with non=phi arg):
+ * 2) Phi chain (phi (with phi-arg)* with non-phi arg):
  *     Several copies are placed, each after returning from recursion.
  *
  * 3) Phi-loop:

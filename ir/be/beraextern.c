@@ -528,7 +528,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 
 		/* all ordinary nodes must be spilled */
 		DBG((raenv->dbg, LEVEL_2, "  spilling %+F\n", irn));
-		spill = be_spill(raenv->aenv, irn, ctx);
+		spill = be_spill(raenv->aenv, irn);
 
 		/* remember the spill */
 		pset_insert_ptr(spills, spill);

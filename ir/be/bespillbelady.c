@@ -314,10 +314,10 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 static void belady(ir_node *blk, void *env);
 
 /*
- * Computes set of live-ins for each block with multiple predecessors and
- * places copies in the predecessors when phis get spilled
+ * Computes set of live-ins for each block with multiple predecessors
+ * and notifies spill algorithm which phis need to be spilled
  */
-static void place_copy_walker(ir_node *block, void *data) {
+static void spill_phi_walker(ir_node *block, void *data) {
 	belady_env_t *env = data;
 	block_info_t *block_info;
 	ir_node *first, *irn;
@@ -580,8 +580,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 
 	be_clear_links(chordal_env->irg);
 	/* Decide which phi nodes will be spilled and place copies for them into the graph */
-	irg_block_walk_graph(chordal_env->irg, place_copy_walker, NULL, &env);
-	be_place_copies(env.senv);
+	irg_block_walk_graph(chordal_env->irg, spill_phi_walker, NULL, &env);
 	/* Fix high register pressure with belady algorithm */
 	irg_block_walk_graph(chordal_env->irg, NULL, belady, &env);
 	/* belady was block-local, fix the global flow by adding reloads on the edges */

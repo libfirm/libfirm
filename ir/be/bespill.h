@@ -1,10 +1,9 @@
-/**
+/*
  * Author:      Daniel Grund, Sebastian Hack
  * Date:		29.09.2005
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
 #ifndef BESPILL_H_
 #define BESPILL_H_
 
@@ -44,18 +43,6 @@ void be_insert_spills_reloads(spill_env_t *senv);
  * This might place be_Copy nodes in predecessor blocks.
  */
 void be_spill_phi(spill_env_t *env, ir_node *node);
-
-/**
- * Places the necessary copies for the spilled phis in the graph
- * This has to be done once before be_insert_spill_reloads, after
- * all phis to spill have been marked with be_spill_phi.
- */
-void be_place_copies(spill_env_t *env);
-
-/**
- * Computes the spill offsets for all spill nodes in the irg
- */
-void be_compute_spill_offsets(be_chordal_env_t *cenv);
 
 /**
  * Sets the debug module of a spill environment.

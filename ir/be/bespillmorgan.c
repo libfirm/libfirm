@@ -502,7 +502,7 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 	return outer_spills_needed;
 }
 
-void be_spill_morgan(const be_chordal_env_t *chordal_env) {
+void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	morgan_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
@@ -528,6 +528,9 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	/* construct control flow loop tree */
 	construct_cf_backedges(chordal_env->irg);
 
+	//dump_looptree(0, get_irg_loop(env.irg));
+	//dump_execfreqs(env.irg);
+
 	/* construct loop out edges and livethrough_unused sets for loops and blocks */
 	irg_block_walk_graph(chordal_env->irg, NULL, construct_loop_edges, &env);
 	construct_loop_livethrough_unused(&env, get_irg_loop(env.irg));
@@ -539,8 +542,6 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	 */
 	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
 
-	/* Place copies for spilled phis */
-	be_place_copies(env.senv);
 	/* Insert real spill/reload nodes and fix usages */
 	be_insert_spills_reloads(env.senv);
 

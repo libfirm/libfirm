@@ -29,6 +29,7 @@
 extern ir_op *op_be_Spill;
 extern ir_op *op_be_Reload;
 extern ir_op *op_be_Perm;
+extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Copy;
 extern ir_op *op_be_Keep;
 extern ir_op *op_be_CopyKeep;
@@ -49,6 +50,7 @@ typedef enum {
 	beo_Spill,
 	beo_Reload,
 	beo_Perm,
+	beo_MemPerm,
 	beo_Copy,
 	beo_Keep,
 	beo_CopyKeep,
@@ -106,7 +108,7 @@ enum {
 /**
  * Make a new Spill node.
  */
-ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *node_to_spill, ir_node *ctx);
+ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *node_to_spill);
 
 /**
  * Position numbers for the be_Reload inputs.
@@ -141,6 +143,7 @@ void be_set_Copy_op(ir_node *cpy, ir_node *op);
  * Make a new Perm node.
  */
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
+ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 
 ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
@@ -280,7 +283,7 @@ ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
  * @param spill_ctx The context in which the spill is introduced (This is mostly == irn up to the case of Phis).
  * @return          The new spill node.
  */
-ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *spill_ctx);
+ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn);
 
 /**
  * Make a reload and insert it into the schedule.
@@ -313,6 +316,7 @@ int be_is_Spill(const ir_node *irn);
 int be_is_Reload(const ir_node *irn);
 int be_is_Copy(const ir_node *irn);
 int be_is_Perm(const ir_node *irn);
+int be_is_MemPerm(const ir_node *irn);
 int be_is_Keep(const ir_node *irn);
 int be_is_CopyKeep(const ir_node *irn);
 int be_is_Call(const ir_node *irn);
@@ -336,21 +340,16 @@ int be_is_Barrier(const ir_node *irn);
  */
 entity *be_get_frame_entity(const ir_node *irn);
 
-void   be_set_Spill_entity(ir_node *irn, entity *ent);
-entity *be_get_spill_entity(const ir_node *irn);
-
-void be_set_Spill_context(ir_node *irn, ir_node *ctx);
-ir_node *be_get_Spill_context(const ir_node *irn);
-
+void be_set_frame_entity(const ir_node *irn, entity* ent);
 
 ir_node* be_get_Reload_mem(const ir_node *irn);
 ir_node* be_get_Reload_frame(const ir_node* irn);
 
-/**
- * Set the entities of a Reload to the ones of the Spill it is pointing to.
- * @param irg The graph.
- */
-void be_copy_entities_to_reloads(ir_graph *irg);
+void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity* ent);
+entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
+
+void be_set_MemPerm_out_entity(const ir_node *irn, int n, entity* ent);
+entity *be_get_MemPerm_out_entity(const ir_node *irn, int n);
 
 /**
  * Impose a register constraint on a backend node.

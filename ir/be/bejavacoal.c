@@ -116,7 +116,6 @@ static int start_vm(jni_env_t *env, int argc, char *argv[])
 	JavaVMInitArgs args;
 	JavaVMOption *opts;
 
-	int result = 0;
 	long (JNICALL * create_func)(JavaVM **, void **, void *) = find_jvm_symbol(jvm_lib, "JNI_CreateJavaVM");
 
 	if(!create_func) {
@@ -139,7 +138,7 @@ static int start_vm(jni_env_t *env, int argc, char *argv[])
 	ret = create_func(&env->jvm, (void **) &env->jni, &args);
 	free(opts);
 	if(ret != JNI_OK) {
-		fprintf(stderr, "JNI_CreateJavaVM returned errrocode %d\n" , ret);
+		fprintf(stderr, "JNI_CreateJavaVM returned errrocode %ld\n" , ret);
 		return 0;
 	}
 
@@ -195,7 +194,7 @@ static jni_env_t *get_jvm(void)
 
 		snprintf(cp_param, sizeof(cp_param), "-Djava.class.path=%s", jar_file);
 		args[0] = cp_param;
-		if(!start_vm(&env, sizeof(args) / sizeof(args[0], args), args)) {
+		if(!start_vm(&env, sizeof(args) / sizeof(args[0]), args)) {
 			fprintf(stderr, "Couldn't initialize java VM\n");
 			abort();
 		}

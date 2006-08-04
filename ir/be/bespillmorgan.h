@@ -10,6 +10,6 @@
 #include "be_t.h"
 #include "bechordal.h"
 
-void be_spill_morgan(const be_chordal_env_t *env);
+void be_spill_morgan(be_chordal_env_t *env);
 
 #endif

@@ -3053,7 +3053,7 @@ connect_all_spills_with_keep(spill_ilp_t * si)
 }
 
 /** insert a spill at an arbitrary position */
-ir_node *be_spill2(const arch_env_t *arch_env, ir_node *irn, ir_node *insert, ir_node *ctx)
+ir_node *be_spill2(const arch_env_t *arch_env, ir_node *irn, ir_node *insert)
 {
 	ir_node *bl     = is_Block(insert)?insert:get_nodes_block(insert);
 	ir_graph *irg   = get_irn_irg(bl);
@@ -3064,7 +3064,7 @@ ir_node *be_spill2(const arch_env_t *arch_env, ir_node *irn, ir_node *insert, ir
 	const arch_register_class_t *cls       = arch_get_irn_reg_class(arch_env, irn, -1);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
 
-	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn, ctx);
+	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn);
 
 	/*
 	 * search the right insertion point. a spill of a phi cannot be put
@@ -3250,7 +3250,7 @@ insert_spill(spill_ilp_t * si, ir_node * irn, const ir_node * value, ir_node * b
 
 	DBG((si->dbg, LEVEL_3, "\t  inserting spill for value %+F after %+F\n", irn, before));
 
-	spill = be_spill2(arch_env, irn, before, irn);
+	spill = be_spill2(arch_env, irn, before);
 
 	defs = set_insert_def(si->values, value);
 	assert(defs);
@@ -3488,7 +3488,7 @@ insert_mem_copy(spill_ilp_t * si, ir_node * bb, ir_node * value)
 
 	DBG((si->dbg, LEVEL_2, "\t  inserting mem copy for value %+F after %+F\n", value, insert_pos));
 
-	spill = be_spill2(arch_env, is_Block(insert_pos)?value:insert_pos, insert_pos, value);
+	spill = be_spill2(arch_env, is_Block(insert_pos)?value:insert_pos, insert_pos);
 
 	return spill;
 }
@@ -3978,11 +3978,14 @@ walker_spillslotassigner(ir_node * irn, void * data)
 
 	/* set spill context to phi class if it has one ;) */
 
+#if 0
+	// Matze: not needed anymore
 	cls = get_phi_class(irn);
 	if(cls)
 		be_set_Spill_context(irn, cls);
 	else
 		be_set_Spill_context(irn, irn);
+#endif
 }
 
 

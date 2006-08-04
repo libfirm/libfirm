@@ -56,6 +56,7 @@
 
 #include "bespillbelady.h"
 #include "bespillmorgan.h"
+#include "bespillslots.h"
 #include "belower.h"
 
 #ifdef WITH_ILP
@@ -481,8 +482,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		    );
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
-		be_compute_spill_offsets(&chordal_env);
-		//be_coalesce_spillslots(&chordal_env);
 		check_for_memory_operands(&chordal_env);
 		be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
 
@@ -577,6 +576,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		pmap_destroy(chordal_env.border_heads);
 		bitset_free(chordal_env.ignore_colors);
 	}
+
+	be_coalesce_spillslots(&chordal_env);
 
 	BE_TIMER_PUSH(ra_timer.t_epilog);
 

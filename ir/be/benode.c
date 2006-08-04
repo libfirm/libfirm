@@ -48,17 +48,6 @@
 
 static unsigned be_node_tag = FOURCC('B', 'E', 'N', 'O');
 
-#if 0
-typedef enum _node_kind_t {
-	node_kind_spill,
-	node_kind_reload,
-	node_kind_perm,
-	node_kind_copy,
-	node_kind_kill,
-	node_kind_last
-} node_kind_t;
-#endif
-
 typedef enum {
 	be_req_kind_old_limited,
 	be_req_kind_negate_old_limited,
@@ -118,15 +107,16 @@ typedef struct {
 	ir_type *call_tp;    /**< The call type, copied from the original Call node. */
 } be_call_attr_t;
 
-/** The be_Spill attribute type. */
 typedef struct {
-	be_frame_attr_t frame_attr;
-	ir_node *spill_ctx;  /**< The node in whose context this spill was introduced. */
-} be_spill_attr_t;
+	be_node_attr_t node_attr;
+	entity **in_entities;
+	entity **out_entities;
+} be_memperm_attr_t;
 
 ir_op *op_be_Spill;
 ir_op *op_be_Reload;
 ir_op *op_be_Perm;
+ir_op *op_be_MemPerm;
 ir_op *op_be_Copy;
 ir_op *op_be_Keep;
 ir_op *op_be_CopyKeep;
@@ -204,27 +194,29 @@ void be_node_init(void) {
 	/* Acquire all needed opcodes. */
 	beo_base = get_next_ir_opcodes(beo_Last - 1);
 
-	op_be_Spill      = new_ir_op(beo_base + beo_Spill,      "be_Spill",      op_pin_state_mem_pinned, N, oparity_unary,    0, sizeof(be_spill_attr_t),  &be_node_op_ops);
-	op_be_Reload     = new_ir_op(beo_base + beo_Reload,     "be_Reload",     op_pin_state_mem_pinned, N, oparity_zero,     0, sizeof(be_frame_attr_t),  &be_node_op_ops);
-	op_be_Perm       = new_ir_op(beo_base + beo_Perm,       "be_Perm",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),   &be_node_op_ops);
-	op_be_Copy       = new_ir_op(beo_base + beo_Copy,       "be_Copy",       op_pin_state_floats,     N, oparity_unary,    0, sizeof(be_node_attr_t),   &be_node_op_ops);
-	op_be_Keep       = new_ir_op(beo_base + beo_Keep,       "be_Keep",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),   &be_node_op_ops);
-	op_be_CopyKeep   = new_ir_op(beo_base + beo_CopyKeep,   "be_CopyKeep",   op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),   &be_node_op_ops);
-	op_be_Call       = new_ir_op(beo_base + beo_Call,       "be_Call",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_call_attr_t),   &be_node_op_ops);
-	op_be_Return     = new_ir_op(beo_base + beo_Return,     "be_Return",     op_pin_state_pinned,     X, oparity_variable, 0, sizeof(be_return_attr_t), &be_node_op_ops);
-	op_be_AddSP      = new_ir_op(beo_base + beo_AddSP,      "be_AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),   &be_node_op_ops);
-	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "be_SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),  &be_node_op_ops);
-	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,      "be_IncSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),  &be_node_op_ops);
-	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams,  "be_RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),   &be_node_op_ops);
-	op_be_StackParam = new_ir_op(beo_base + beo_StackParam, "be_StackParam", op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),  &be_node_op_ops);
-	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),  &be_node_op_ops);
-	op_be_FrameLoad  = new_ir_op(beo_base + beo_FrameLoad,  "be_FrameLoad",  op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),  &be_node_op_ops);
-	op_be_FrameStore = new_ir_op(beo_base + beo_FrameStore, "be_FrameStore", op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),  &be_node_op_ops);
-	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_node_attr_t),   &be_node_op_ops);
+	op_be_Spill      = new_ir_op(beo_base + beo_Spill,      "be_Spill",      op_pin_state_mem_pinned, N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Reload     = new_ir_op(beo_base + beo_Reload,     "be_Reload",     op_pin_state_mem_pinned, N, oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Perm       = new_ir_op(beo_base + beo_Perm,       "be_Perm",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_MemPerm    = new_ir_op(beo_base + beo_MemPerm,    "be_MemPerm",    op_pin_state_mem_pinned, N, oparity_variable, 0, sizeof(be_memperm_attr_t), &be_node_op_ops);
+	op_be_Copy       = new_ir_op(beo_base + beo_Copy,       "be_Copy",       op_pin_state_floats,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Keep       = new_ir_op(beo_base + beo_Keep,       "be_Keep",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_CopyKeep   = new_ir_op(beo_base + beo_CopyKeep,   "be_CopyKeep",   op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Call       = new_ir_op(beo_base + beo_Call,       "be_Call",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
+	op_be_Return     = new_ir_op(beo_base + beo_Return,     "be_Return",     op_pin_state_pinned,     X, oparity_variable, 0, sizeof(be_return_attr_t),  &be_node_op_ops);
+	op_be_AddSP      = new_ir_op(beo_base + beo_AddSP,      "be_AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "be_SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
+	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,      "be_IncSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
+	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams,  "be_RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_StackParam = new_ir_op(beo_base + beo_StackParam, "be_StackParam", op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_FrameLoad  = new_ir_op(beo_base + beo_FrameLoad,  "be_FrameLoad",  op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_FrameStore = new_ir_op(beo_base + beo_FrameStore, "be_FrameStore", op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_node_attr_t),    &be_node_op_ops);
 
 	set_op_tag(op_be_Spill,      &be_node_tag);
 	set_op_tag(op_be_Reload,     &be_node_tag);
 	set_op_tag(op_be_Perm,       &be_node_tag);
+	set_op_tag(op_be_MemPerm,    &be_node_tag);
 	set_op_tag(op_be_Copy,       &be_node_tag);
 	set_op_tag(op_be_Keep,       &be_node_tag);
 	set_op_tag(op_be_CopyKeep,   &be_node_tag);
@@ -313,9 +305,9 @@ be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
 }
 
 
-ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *to_spill, ir_node *ctx)
+ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *to_spill)
 {
-	be_spill_attr_t *a;
+	be_frame_attr_t *a;
 	ir_node *in[2];
 	ir_node *res;
 
@@ -323,9 +315,8 @@ ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_clas
 	in[1] = to_spill;
 	res   = new_ir_node(NULL, irg, bl, op_be_Spill, mode_M, 2, in);
 	a     = init_node_attr(res, 2);
-	a->frame_attr.ent = NULL;
-	a->frame_attr.offset = 0;
-	a->spill_ctx = ctx;
+	a->ent = NULL;
+	a->offset = 0;
 
 	be_node_set_reg_class(res, 0, cls_frame);
 	be_node_set_reg_class(res, 1, cls);
@@ -370,6 +361,31 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 
 	return irn;
 }
+
+ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+{
+	int i;
+	ir_node *frame = get_irg_frame(irg);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
+	ir_node *irn = new_ir_node(NULL, irg, bl, op_be_MemPerm, mode_T, n, in);
+	be_memperm_attr_t *attr;
+
+	init_node_attr(irn, n);
+	for(i = 0; i < n; ++i) {
+		be_node_set_reg_class(irn, i, cls_frame);
+		be_node_set_reg_class(irn, OUT_POS(i), cls_frame);
+	}
+
+	attr = get_irn_attr(irn);
+
+	attr->in_entities = obstack_alloc(irg->obst, n*sizeof(attr->in_entities[0]));
+	memset(attr->in_entities, 0, n*sizeof(attr->in_entities[0]));
+	attr->out_entities = obstack_alloc(irg->obst, n*sizeof(attr->out_entities[0]));
+	memset(attr->out_entities, 0, n*sizeof(attr->out_entities[0]));
+
+	return irn;
+}
+
 
 ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *op)
 {
@@ -665,6 +681,7 @@ int be_is_Reload        (const ir_node *irn) { return be_get_irn_opcode(irn) == 
 int be_is_Copy          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Copy           ; }
 int be_is_CopyKeep      (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_CopyKeep       ; }
 int be_is_Perm          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Perm           ; }
+int be_is_MemPerm       (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_MemPerm        ; }
 int be_is_Keep          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Keep           ; }
 int be_is_Call          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Call           ; }
 int be_is_Return        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Return         ; }
@@ -700,6 +717,56 @@ entity *be_get_frame_entity(const ir_node *irn)
 		return a->ent;
 	}
 	return NULL;
+}
+
+void be_set_frame_entity(const ir_node *irn, entity* ent)
+{
+	be_frame_attr_t *a;
+
+	assert(be_has_frame_entity(irn));
+
+	a = get_irn_attr(irn);
+	a->ent = ent;
+}
+
+void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity *ent)
+{
+	be_memperm_attr_t *attr = get_irn_attr(irn);
+
+	assert(be_is_MemPerm(irn));
+	assert(n < get_irn_arity(irn));
+
+	attr->in_entities[n] = ent;
+}
+
+entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
+{
+	be_memperm_attr_t *attr = get_irn_attr(irn);
+
+	assert(be_is_MemPerm(irn));
+	assert(n < get_irn_arity(irn));
+
+	return attr->in_entities[n];
+}
+
+void be_set_MemPerm_out_entity(const ir_node *irn, int n, entity *ent)
+{
+	be_memperm_attr_t *attr = get_irn_attr(irn);
+
+	assert(be_is_MemPerm(irn));
+	assert(n < get_irn_arity(irn));
+
+	attr->out_entities[n] = ent;
+}
+
+entity* be_get_MemPerm_out_entity(const ir_node* irn, int n)
+{
+	be_memperm_attr_t *attr = get_irn_attr(irn);
+
+	assert(be_is_MemPerm(irn));
+	assert(n < get_irn_arity(irn));
+
+	return attr->out_entities[n];
 }
 
 static void be_limited(void *data, bitset_t *bs)
@@ -825,145 +892,18 @@ be_stack_dir_t be_get_IncSP_direction(const ir_node *irn)
 	return a->dir;
 }
 
-void be_set_Spill_entity(ir_node *irn, entity *ent)
-{
-	be_spill_attr_t *a = get_irn_attr(irn);
-	assert(be_is_Spill(irn));
-	a->frame_attr.ent = ent;
-}
-
-void be_set_Spill_context(ir_node *irn, ir_node *ctx)
-{
-	be_spill_attr_t *a = get_irn_attr(irn);
-	assert(be_is_Spill(irn));
-	a->spill_ctx = ctx;
-}
-
-static ir_node *find_a_spill_walker(ir_node *irn, unsigned visited_nr)
-{
-	unsigned nr = get_irn_visited(irn);
-
-	set_irn_visited(irn, visited_nr);
-
-	if(is_Phi(irn)) {
-		int i, n;
-		if(nr < visited_nr) {
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				ir_node *n = find_a_spill_walker(get_irn_n(irn, i), visited_nr);
-				if(n != NULL)
-					return n;
-			}
-		}
-	}
-
-	else if(be_get_irn_opcode(irn) == beo_Spill)
-		return irn;
-
-	return NULL;
-}
-
-ir_node *be_get_Spill_context(const ir_node *irn) {
-	const be_spill_attr_t *a = get_irn_attr(irn);
-	assert(be_is_Spill(irn));
-	return a->spill_ctx;
-}
-
-/**
- * Finds a spill for a reload.
- * If the reload is directly using the spill, this is simple,
- * else we perform DFS from the reload (over all PhiMs) and return
- * the first spill node we find.
- */
-static INLINE ir_node *find_a_spill(const ir_node *irn)
-{
-	ir_graph *irg       = get_irn_irg(irn);
-	unsigned visited_nr = get_irg_visited(irg) + 1;
-
-	assert(be_is_Reload(irn));
-	set_irg_visited(irg, visited_nr);
-	return find_a_spill_walker(be_get_Reload_mem(irn), visited_nr);
-}
-
-entity *be_get_spill_entity(const ir_node *irn)
-{
-	switch(be_get_irn_opcode(irn)) {
-	case beo_Reload:
-		{
-			ir_node *spill = find_a_spill(irn);
-			return be_get_spill_entity(spill);
-		}
-	case beo_Spill:
-		{
-			be_spill_attr_t *a = get_irn_attr(irn);
-			return a->frame_attr.ent;
-		}
-	default:
-		assert(0 && "Must give spill/reload node");
-		break;
-	}
-
-	return NULL;
-}
-
-static void link_reload_walker(ir_node *irn, void *data)
-{
-	ir_node **root = (ir_node **) data;
-	if(be_is_Reload(irn)) {
-		set_irn_link(irn, *root);
-		*root = irn;
-	}
-}
-
-void be_copy_entities_to_reloads(ir_graph *irg)
-{
-	ir_node *irn = NULL;
-	irg_walk_graph(irg, link_reload_walker, NULL, (void *) &irn);
-
-	while(irn) {
-		be_frame_attr_t *a = get_irn_attr(irn);
-		entity *ent        = be_get_spill_entity(irn);
-		a->ent = ent;
-		irn    = get_irn_link(irn);
-	}
-}
-
-ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn, ir_node *ctx)
+ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn)
 {
 	ir_node *bl     = get_nodes_block(irn);
 	ir_graph *irg   = get_irn_irg(bl);
 	ir_node *frame  = get_irg_frame(irg);
-	ir_node *insert = bl;
 	ir_node *spill;
 
 	const arch_register_class_t *cls       = arch_get_irn_reg_class(arch_env, irn, -1);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
 
-	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn, ctx);
+	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn);
 	return spill;
-
-#if 0
-	/*
-	 * search the right insertion point. a spill of a phi cannot be put
-	 * directly after the phi, if there are some phis behind the one which
-	 * is spilled. Also, a spill of a Proj must be after all Projs of the
-	 * same tuple node.
-	 *
-	 * Here's one special case:
-	 * If the spill is in the start block, the spill must be after the frame
-	 * pointer is set up. This is done by setting insert to the end of the block
-	 * which is its default initialization (see above).
-	 */
-
-	insert = sched_next(irn);
-	if(insert != bl && bl == get_irg_start_block(irg) && sched_get_time_step(frame) >= sched_get_time_step(insert))
-		insert = sched_next(frame);
-
-	while((is_Phi(insert) || is_Proj(insert)) && !sched_is_end(insert))
-		insert = sched_next(insert);
-
-	sched_add_before(insert, spill);
-	return spill;
-#endif
 }
 
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill)
@@ -1303,7 +1243,6 @@ void be_phi_handler_reset(arch_irn_handler_t *handler)
 	h->regs = pmap_create();
 }
 
-
 /*
   _   _           _        ____                        _
  | \ | | ___   __| | ___  |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
@@ -1409,13 +1348,6 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			}
 
 			switch(be_get_irn_opcode(irn)) {
-			case beo_Spill:
-				{
-					be_spill_attr_t *a = (be_spill_attr_t *) at;
-					ir_fprintf(f, "spill context: %+F\n", a->spill_ctx);
-				}
-				break;
-
 			case beo_IncSP:
 				{
 					be_stack_attr_t *a = (be_stack_attr_t *) at;

@@ -1011,10 +1011,11 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
 			transform_to_Load(&tenv);
 		}
 		else if (be_is_Spill(node)) {
+			ir_node *spillval = get_irn_n(node, be_pos_Spill_val);
 			/* we always spill the whole register  */
 			tenv.dbg  = get_irn_dbg_info(node);
 			tenv.irn  = node;
-			tenv.mode = fix_spill_mode(cg, get_irn_mode(be_get_Spill_context(node)));
+			tenv.mode = fix_spill_mode(cg, get_irn_mode(spillval));
 			transform_to_Store(&tenv);
 		}
 	}
