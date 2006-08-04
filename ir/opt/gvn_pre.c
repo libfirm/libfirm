@@ -469,7 +469,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
   int i, arity;
   struct obstack *old;
   ir_node *pred_block = get_Block_cfgpred_block(block, pos);
-  block_info *pred_info = get_block_info(pred_block);
 
   if (is_Phi(node)) {
     if (get_irn_intra_n(node, -1) == block)
