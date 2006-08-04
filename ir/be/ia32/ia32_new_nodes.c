@@ -1182,7 +1182,7 @@ const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
 	assert(is_ia32_irn(node) && "Not an ia32 node.");
-	assert(pos < attr->data.n_res && "Invalid OUT position.");
+	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_name(attr->slots[pos]);
@@ -1195,7 +1195,7 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
 	assert(is_ia32_irn(node) && "Not an ia32 node.");
-	assert(pos < attr->data.n_res && "Invalid OUT position.");
+	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_index(attr->slots[pos]);
@@ -1208,7 +1208,7 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
 	assert(is_ia32_irn(node) && "Not an ia32 node.");
-	assert(pos < attr->data.n_res && "Invalid OUT position.");
+	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return attr->slots[pos];

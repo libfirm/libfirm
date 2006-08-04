@@ -497,7 +497,7 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 
 	/* do not create push if IncSp doesn't expand stack or expand size is different from register size */
 	if (be_get_IncSP_direction(sp) != be_stack_dir_expand ||
-		be_get_IncSP_offset(sp) != get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
+		be_get_IncSP_offset(sp) != (unsigned) get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
 		return;
 
 	/* do not create push, if there is a path (inside the block) from the push value to IncSP */
