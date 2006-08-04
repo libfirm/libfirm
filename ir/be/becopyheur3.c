@@ -79,7 +79,6 @@ static void set_admissible_regs(be_java_coal_t *coal, copy_opt_t *co, ir_node *i
 	unsigned i;
 	arch_register_req_t req;
 	unsigned n_regs = co->cls->n_regs;
-	unsigned idx    = get_irn_idx(irn);
 
 	arch_get_register_req(co->aenv, &req, irn, BE_OUT_POS(0));
 	if(arch_register_req_is(&req, limited)) {
@@ -108,7 +107,6 @@ int co_solve_heuristic_java(copy_opt_t *co)
 
 	be_java_coal_t *coal;
 	ir_node *n, *m;
-	int max_idx = 0;
 
 	col_map     = alloca(n_regs * sizeof(col_map[0]));
 	inv_col_map = alloca(n_regs * sizeof(inv_col_map[0]));

@@ -200,8 +200,8 @@ static void *co2_irn_init(phase_t *ph, ir_node *irn, void *data)
 
 static int cmp_clouds_gt(const void *a, const void *b)
 {
-	const co2_cloud_t **p = a;
-	const co2_cloud_t **q = b;
+	const co2_cloud_t * const *p = a;
+	const co2_cloud_t * const *q = b;
 	double c = CLOUD_WEIGHT(*p);
 	double d = CLOUD_WEIGHT(*q);
 	return QSORT_CMP(d, c);
@@ -1053,7 +1053,8 @@ static void process(co2_t *env)
 			FILE *f;
 
 			ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_cloud_%d.dot", env->co->irg, env->co->cls->name, i);
-			if(f = fopen(buf, "wt")) {
+			f = fopen(buf, "wt");
+			if(f != NULL) {
 				be_ifg_dump_dot(env->co->cenv->ifg, env->co->irg, f, &ifg_dot_cb, env);
 				fclose(f);
 			}
@@ -1167,7 +1168,7 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 			peri = 2;
 
 		if(cci->cloud && cci->cloud->mst_root)
-			snprintf(buf, sizeof(buf), "%+F", cci->cloud->mst_root->inh.irn);
+			ir_snprintf(buf, sizeof(buf), "%+F", cci->cloud->mst_root->inh.irn);
 	}
 
 	ir_fprintf(f, "label=\"%+F%s\" style=filled peripheries=%d color=%s shape=%s", irn, buf, peri,

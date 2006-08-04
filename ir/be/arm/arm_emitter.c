@@ -356,7 +356,7 @@ static unsigned get_unique_label(void) {
 static char *get_cfop_target(const ir_node *irn, char *buf) {
 	ir_node *bl = get_irn_link(irn);
 
-	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%d", get_irn_node_nr(bl));
+	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
 	return buf;
 }
 
@@ -417,10 +417,10 @@ static void emit_arm_CondJmp(ir_node *irn, void *env) {
 
 	if (proj_num == pn_Cmp_False) {
 		/* always false: should not happen */
-		fprintf(out, "\tb BLOCK_%d\t\t\t/* false case */\n", get_irn_node_nr(false_block));
+		fprintf(out, "\tb BLOCK_%ld\t\t\t/* false case */\n", get_irn_node_nr(false_block));
 	} else if (proj_num == pn_Cmp_True) {
 		/* always true: should not happen */
-		fprintf(out, "\tb BLOCK_%d\t\t\t/* true case */\n", get_irn_node_nr(true_block));
+		fprintf(out, "\tb BLOCK_%ld\t\t\t/* true case */\n", get_irn_node_nr(true_block));
 	} else {
 		ir_node *block = get_nodes_block(irn);
 
@@ -732,7 +732,6 @@ static void emit_be_Reload(const ir_node* irn, arm_emit_env_t *emit_env) {
 
 static void emit_be_Perm(const ir_node* irn, arm_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
-	ir_mode *mode = get_irn_mode(irn);
 	const lc_arg_env_t *arm_env = arm_get_arg_env();
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
@@ -896,7 +895,7 @@ static void arm_emit_node(const ir_node *irn, void *env) {
 void arm_gen_block(ir_node *block, void *env) {
 	ir_node *irn;
 
-	fprintf(((arm_emit_env_t *)env)->out, "BLOCK_%d:\n", get_irn_node_nr(block));
+	fprintf(((arm_emit_env_t *)env)->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
 	sched_foreach(block, irn) {
 		arm_emit_node(irn, env);
 	}

@@ -139,7 +139,6 @@ unsigned int arm_decode_imm_w_shift(tarval *tv) {
  */
 static ir_node *create_const_graph_value(ir_node *irn, ir_node *block, unsigned int value) {
 	ir_node *result;
-	int negate = 0;
 	vals v, vn;
 	int cnt;
 	ir_mode *mode = get_irn_mode(irn);
@@ -1124,7 +1123,6 @@ static ir_node *gen_FrameStore(ir_node *irn, arm_code_gen_t *cg) {
  * move constants out of the start block
  */
 void arm_move_consts(ir_node *node, void *env) {
-	arm_code_gen_t *cgenv = (arm_code_gen_t *)env;
 	int i;
 
 	if (is_Block(node))

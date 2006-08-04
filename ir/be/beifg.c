@@ -290,7 +290,7 @@ void be_ifg_check_sorted(const be_ifg_t *ifg)
 	{
 		if(!node_is_in_irgs_storage(ifg->env->irg, n))
 		{
-			printf ("+%F is in ifg but not in the current irg!",n);
+			ir_printf("+%F is in ifg but not in the current irg!", n);
 			assert (node_is_in_irgs_storage(ifg->env->irg, n));
 		}
 

@@ -218,7 +218,7 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
  *
  * @return the new ABI call object
  */
-static be_abi_call_t *be_abi_call_new()
+static be_abi_call_t *be_abi_call_new(void)
 {
 	be_abi_call_t *call = xmalloc(sizeof(call[0]));
 	call->flags.val  = 0;

@@ -1074,7 +1074,6 @@ static void appel_inter_block_aff(ir_node *bl, void *data)
 
 		for(j = 0, n = get_Block_n_cfgpreds(bl); j < n; ++j) {
 			ir_node *pred  = get_Block_cfgpred_block(bl, j);
-			appel_block_info_t *pred_bli = phase_get_irn_data(&env->ph, pred);
 
 			int nr = appel_get_live_end_nr(env, pred, irn);
 			assert(nr >= 0);
@@ -1087,7 +1086,6 @@ static void appel_inter_block_aff(ir_node *bl, void *data)
 
 		for(j = 0, n = get_Block_n_cfgpreds(bl); j < n; ++j) {
 			ir_node *pred  = get_Block_cfgpred_block(bl, j);
-			appel_block_info_t *pred_bli = phase_get_irn_data(&env->ph, pred);
 			ir_node *op = get_irn_n(irn, j);
 
 			int nr = appel_get_live_end_nr(env, pred, op);
