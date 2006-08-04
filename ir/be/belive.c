@@ -555,7 +555,6 @@ static void lv_check_walker(ir_node *bl, void *data)
 	else if(curr) {
 		unsigned n_curr  = curr[0].u.head.n_members;
 		unsigned n_fresh = fr[0].u.head.n_members;
-		unsigned n = MIN(n_curr, n_fresh);
 
 		unsigned i;
 

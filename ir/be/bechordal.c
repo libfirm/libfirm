@@ -77,6 +77,7 @@ typedef struct _be_chordal_alloc_env_t {
 /* Make a fourcc for border checking. */
 #define BORDER_FOURCC				FOURCC('B', 'O', 'R', 'D')
 
+#if 0
 static void check_border_list(struct list_head *head)
 {
   border_t *x;
@@ -93,7 +94,7 @@ static void check_heads(be_chordal_env_t *env)
     check_border_list(ent->value);
   }
 }
-
+#endif
 
 /**
  * Add an interval border to the list of a block's list
@@ -221,8 +222,6 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 {
 	be_insn_t *insn = chordal_scan_insn(env, irn);
-	int n_uses      = be_insn_n_uses(insn);
-	int n_defs      = be_insn_n_defs(insn);
 	int i;
 
 	if(!insn->has_constraints)
@@ -338,6 +337,10 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 		Now, figure out which input operand must be copied since it has input
 		constraints which are also output constraints.
 	*/
+	(void) bl;
+	(void) copy;
+	(void) bs;
+	(void) dbg;
 #if 0
 	for(i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];

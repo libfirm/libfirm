@@ -294,7 +294,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 			int i, n;
 
 			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				ir_node *op = get_irn_n(irn, i);
+				//ir_node *op = get_irn_n(irn, i);
 				if(must_appear_in_schedule(env->main_env->vtab, env, irn)) {
 					usage_stats_t *us = get_or_set_usage_stats(env, irn);
 #if 0 /* Liveness is not computed here! */
@@ -598,17 +598,6 @@ static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 		if(!is_Phi(user))
 			make_ready(env, irn, user);
 	}
-}
-
-/**
- * Compare to nodes using pointer equality.
- * @param p1 Node one.
- * @param p2 Node two.
- * @return 0 if they are identical.
- */
-static int node_cmp_func(const void *p1, const void *p2)
-{
-    return p1 != p2;
 }
 
 /**

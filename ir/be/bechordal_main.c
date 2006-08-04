@@ -435,9 +435,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	/* Perform the following for each register class. */
 	for (j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
-		//FILE *f;
-		copy_opt_t *co = NULL;
-
 		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
