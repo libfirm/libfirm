@@ -25,6 +25,8 @@
 #include "irprintf.h"
 #include "debug.h"
 #include "irdom.h"
+#include "type.h"
+#include "entity.h"
 #include "archop.h"     /* we need this for Min and Max nodes */
 
 #include "../benode_t.h"
@@ -2328,42 +2330,49 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 static ir_node *gen_be_Return(ia32_transform_env_t *env) {
 	ir_node *ret_val = get_irn_n(env->irn, be_pos_Return_val);
 	ir_node *ret_mem = get_irn_n(env->irn, be_pos_Return_mem);
-	ir_mode *mode;
+	entity *ent      = get_irg_entity(get_irn_irg(ret_val));
+	ir_type *tp      = get_entity_type(ent);
 
 	if (! ret_val || ! USE_SSE2(env->cg))
 		return NULL;
 
-	mode = get_irn_mode(ret_val);
 
-	if (mode_is_float(mode)) {
-		ir_node *frame = get_irg_frame(env->irg);
-		entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
-		ir_node *sse_store, *fld, *mproj;
+	if (get_method_n_ress(tp) == 1) {
+		ir_type *res_type = get_method_res_type(tp, 0);
+		ir_mode *mode;
 
-		/* store xmm0 onto stack */
-		sse_store = new_rd_ia32_xStoreSimple(env->dbg, env->irg, env->block, frame, ret_val, ret_mem);
-		set_ia32_ls_mode(sse_store, mode);
-		set_ia32_op_type(sse_store, ia32_AddrModeD);
-		set_ia32_use_frame(sse_store);
-		set_ia32_frame_ent(sse_store, ent);
-		set_ia32_am_flavour(sse_store, ia32_B);
-		set_ia32_am_support(sse_store, ia32_am_Dest);
-		sse_store = new_r_Proj(env->irg, env->block, sse_store, mode_M, pn_ia32_xStore_M);
+		assert(is_Primitive_type(res_type));
+		mode = get_type_mode(res_type);
+		if(mode_is_float(mode)) {
+			ir_node *frame = get_irg_frame(env->irg);
+			entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
+			ir_node *sse_store, *fld, *mproj;
 
-		/* load into st0 */
-		fld = new_rd_ia32_SetST0(env->dbg, env->irg, env->block, frame, sse_store);
-		set_ia32_ls_mode(fld, mode);
-		set_ia32_op_type(fld, ia32_AddrModeS);
-		set_ia32_use_frame(fld);
-		set_ia32_frame_ent(fld, ent);
-		set_ia32_am_flavour(fld, ia32_B);
-		set_ia32_am_support(fld, ia32_am_Source);
-		mproj = new_r_Proj(env->irg, env->block, fld, mode_M, pn_ia32_SetST0_M);
-		fld   = new_r_Proj(env->irg, env->block, fld, mode, pn_ia32_SetST0_res);
+			/* store xmm0 onto stack */
+			sse_store = new_rd_ia32_xStoreSimple(env->dbg, env->irg, env->block, frame, ret_val, ret_mem);
+			set_ia32_ls_mode(sse_store, mode);
+			set_ia32_op_type(sse_store, ia32_AddrModeD);
+			set_ia32_use_frame(sse_store);
+			set_ia32_frame_ent(sse_store, ent);
+			set_ia32_am_flavour(sse_store, ia32_B);
+			set_ia32_am_support(sse_store, ia32_am_Dest);
+			sse_store = new_r_Proj(env->irg, env->block, sse_store, mode_M, pn_ia32_xStore_M);
 
-		/* set new return value */
-		set_irn_n(env->irn, be_pos_Return_val, fld);
-		set_irn_n(env->irn, be_pos_Return_mem, mproj);
+			/* load into st0 */
+			fld = new_rd_ia32_SetST0(env->dbg, env->irg, env->block, frame, sse_store);
+			set_ia32_ls_mode(fld, mode);
+			set_ia32_op_type(fld, ia32_AddrModeS);
+			set_ia32_use_frame(fld);
+			set_ia32_frame_ent(fld, ent);
+			set_ia32_am_flavour(fld, ia32_B);
+			set_ia32_am_support(fld, ia32_am_Source);
+			mproj = new_r_Proj(env->irg, env->block, fld, mode_M, pn_ia32_SetST0_M);
+			fld   = new_r_Proj(env->irg, env->block, fld, mode, pn_ia32_SetST0_res);
+
+			/* set new return value */
+			set_irn_n(env->irn, be_pos_Return_val, fld);
+			set_irn_n(env->irn, be_pos_Return_mem, mproj);
+		}
 	}
 
 	return NULL;
