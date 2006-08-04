@@ -73,6 +73,7 @@ static const lc_opt_enum_mask_items_t style_items[] = {
 };
 
 static const lc_opt_enum_mask_items_t algo_items[] = {
+	{ "none",   CO_ALGO_NONE  },
 	{ "heur",   CO_ALGO_HEUR  },
 	{ "heur2",  CO_ALGO_HEUR2 },
 	{ "heur3",  CO_ALGO_HEUR3 },
@@ -1340,7 +1341,7 @@ void co_driver(be_chordal_env_t *cenv)
 	co_build_ou_structure(co);
 	co_build_graph_structure(co);
 	if(do_stats) {
-		ir_printf("%30F %10s %7d%7d%7d%7d", cenv->irg, cenv->cls->name,
+		ir_printf("%30F %10s %10d%10d%10d%10d", cenv->irg, cenv->cls->name,
 				co_get_max_copy_costs(co), co_get_copy_costs(co),
 				co_get_inevit_copy_costs(co), co_get_lower_bound(co));
 	}
@@ -1373,9 +1374,9 @@ void co_driver(be_chordal_env_t *cenv)
 		int evitable          = remaining - co_get_lower_bound(co);
 
 		if(optimizable_costs > 0)
-			printf("%5d %5.2f\n", remaining, (evitable * 100.0) / optimizable_costs);
+			printf("%10d %5.2f\n", remaining, (evitable * 100.0) / optimizable_costs);
 		else
-			printf("%5d %5s\n", remaining, "-");
+			printf("%10d %5s\n", remaining, "-");
 	}
 
 	co_free_graph_structure(co);
