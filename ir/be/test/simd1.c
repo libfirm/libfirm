@@ -24,7 +24,8 @@ unsigned int sse8_16bit_c(	const short * b1,
 	return(sse);
 }
 
-#define MAX 65536
+//#define MAX 65536
+#define MAX 32
 
 int main(){
   short cur[MAX];

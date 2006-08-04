@@ -1,4 +1,4 @@
-EDG_CFLAGS="-b ra-chordal-spill=belady -b ia32-arch=athlon -b ia32-fpunit=x87 --c --gnu=400002 -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
+EDG_CFLAGS="--c --gnu=400002 -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 

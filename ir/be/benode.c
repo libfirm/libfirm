@@ -1369,7 +1369,6 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			case beo_MemPerm:
 				{
 					int i;
-					be_memperm_attr_t *a = (be_memperm_attr_t*) at;
 					for(i = 0; i < get_irn_arity(irn); ++i) {
 						entity *in, *out;
 						in = be_get_MemPerm_in_entity(irn, i);

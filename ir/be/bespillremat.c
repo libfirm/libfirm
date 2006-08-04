@@ -3977,7 +3977,7 @@ walker_spillslotassigner(ir_node * irn, void * data)
 	if(!be_is_Spill(irn)) return;
 
 	/* set spill context to phi class if it has one ;) */
-
+	(void) cls;
 #if 0
 	// Matze: not needed anymore
 	cls = get_phi_class(irn);
