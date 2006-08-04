@@ -53,8 +53,8 @@
 
 #include "bechordal_t.h"
 
-#define DUMP_SOLUTION
-#define DUMP_ILP
+//#define DUMP_SOLUTION
+//#define DUMP_ILP
 //#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
 #define COLLECT_REMATS /* enable rematerialization */
 #define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
@@ -3713,7 +3713,7 @@ kill_all_unused_values_in_schedule(spill_ilp_t * si)
 	lc_bitset_free(kh.used);
 }
 
-static void
+void
 print_irn_pset(pset * p)
 {
 	ir_node   *irn;
@@ -3723,7 +3723,7 @@ print_irn_pset(pset * p)
 	}
 }
 
-static void
+void
 dump_phi_class(spill_ilp_t * si, pset * phiclass, const char * file)
 {
     FILE           *f = fopen(file, "w");
@@ -4093,7 +4093,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 #endif
 
 #ifdef SOLVE
-	DBG((si.dbg, LEVEL_1, "\tSolving %F\n", chordal_env->irg));
+	DBG((si.dbg, LEVEL_1, "\tSolving %s (%d variables, %d constraints)\n", problem_name, si.lpp->var_next, si.lpp->cst_next));
 #ifdef ILP_TIMEOUT
 	lpp_set_time_limit(si.lpp, ILP_TIMEOUT);
 #endif
