@@ -391,6 +391,7 @@ static void do_greedy_coalescing(ss_env_t *env)
 	//dump_interference_graph(env, interferences, "after");
 }
 
+#if 0
 static void do_java_coalescing(ss_env_t *env)
 {
 	int spillcount;
@@ -445,6 +446,7 @@ static void do_java_coalescing(ss_env_t *env)
 	}
 	be_java_coal_destroy(coal);
 }
+#endif
 
 /*
  *     _            _               _____       _   _ _   _
@@ -678,7 +680,6 @@ void be_coalesce_spillslots(const be_chordal_env_t *chordal_env) {
 	irg_walk_graph(chordal_env->irg, NULL, collect_spills_walker, &env);
 
 	do_greedy_coalescing(&env);
-	//do_java_coalescing(&env);
 
 	assign_spillslots(&env);
 
