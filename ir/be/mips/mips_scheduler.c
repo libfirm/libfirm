@@ -71,6 +71,8 @@ static void mips_scheduler_finish_block(void* graph_env)
 	// attach last nop to end node (so that firm doesn't discard it)
 	if(sched_env->last_nop != NULL) {
 		ir_node* end = get_irg_end(get_irn_irg(sched_env->block));
+		(void) end;
+		// TODO
 	}
 	sched_env->block = NULL;
 }

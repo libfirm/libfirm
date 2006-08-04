@@ -332,18 +332,6 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
 	return buf;
 }
 
-
-/**
- * Returns the target label for a control flow node.
- */
-static char *get_cfop_target(const ir_node *irn, char *buf)
-{
-	ir_node *bl = get_irn_link(irn);
-
-	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
-	return buf;
-}
-
 /************************************************************************/
 /* ABI Handling                                                         */
 /************************************************************************/
@@ -388,7 +376,7 @@ static void mips_emit_Perm(const ir_node *node, mips_emit_env_t *env)
 {
 	FILE *F = env->out;
 
-	assert(/*get_irn_n_outs(node) == 2 &&*/ get_irn_arity(node) == 2);
+	assert(get_irn_arity(node) == 2);
 
 	lc_efprintf(mips_get_arg_env(), F, "\txor %1S, %1S, %2S\t\t\t# perm\n", node, node, node);
 	mips_emit_nops(F, 3);
@@ -401,7 +389,7 @@ static void mips_emit_Perm(const ir_node *node, mips_emit_env_t *env)
 static void mips_emit_Spill(const ir_node* node, mips_emit_env_t *env)
 {
 	FILE   *F   = env->out;
-	entity *ent = be_get_spill_entity(node);
+	entity *ent = be_get_frame_entity(node);
 
 	lc_efprintf(mips_get_arg_env(), F, "\tsw %1S, %d($fp)\n", node, get_entity_offset_bytes(ent));
 }
@@ -409,7 +397,7 @@ static void mips_emit_Spill(const ir_node* node, mips_emit_env_t *env)
 static void mips_emit_Reload(const ir_node* node, mips_emit_env_t *env)
 {
 	FILE   *F   = env->out;
-	entity *ent = be_get_spill_entity(node);
+	entity *ent = be_get_frame_entity(node);
 
 	lc_efprintf(mips_get_arg_env(), F, "\tlw %1D, %d($fp)\n", node, get_entity_offset_bytes(ent));
 }
@@ -642,6 +630,7 @@ void mips_register_emitters(void)
 	op_be_RegParams->ops.generic = (op_func) mips_emit_nothing;
 	op_be_Spill->ops.generic = (op_func) mips_emit_Spill;
 	op_be_Reload->ops.generic = (op_func) mips_emit_Reload;
+	op_be_Perm->ops.generic = (op_func) mips_emit_Perm;
 
 	op_Start->ops.generic = (op_func) mips_emit_nothing;
 	op_Proj->ops.generic = (op_func) mips_emit_nothing;
