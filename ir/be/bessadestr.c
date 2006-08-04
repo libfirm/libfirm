@@ -291,8 +291,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 					pin it
 				*/
 				ir_node *perm     = get_Proj_pred(arg);
-				ir_node *orig_val = get_irn_n(perm, get_Proj_proj(arg));
-				ir_node *dupl     = be_new_Copy(cls, chordal_env->irg, arg_block, orig_val);
+				ir_node *dupl     = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
+				ir_node *ins;
 
 				/* this is commented out because it will fail in case of unknown float */
 #if 0
@@ -310,7 +310,9 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
-				sched_add_before(perm, dupl);
+				/* skip the Perm's Projs and insert the copies behind. */
+				for(ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins));
+				sched_add_before(ins, dupl);
 				pin_irn(dupl, phi_block);
 				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 			} else {
