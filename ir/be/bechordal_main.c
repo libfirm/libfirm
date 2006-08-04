@@ -140,6 +140,7 @@ static be_ra_timer_t ra_timer = {
 	NULL,
 	NULL,
 	NULL,
+	NULL,
 };
 
 #ifdef WITH_LIBCORE
@@ -378,6 +379,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		ra_timer.t_epilog  = lc_timer_register("ra_epilog",   "regalloc epilog");
 		ra_timer.t_live    = lc_timer_register("ra_liveness", "be liveness");
 		ra_timer.t_spill   = lc_timer_register("ra_spill",    "spiller");
+		ra_timer.t_spillslots = lc_timer_register("ra_spill",    "spillslots");
 		ra_timer.t_color   = lc_timer_register("ra_color",    "graph coloring");
 		ra_timer.t_ifg     = lc_timer_register("ra_ifg",      "interference graph");
 		ra_timer.t_copymin = lc_timer_register("ra_copymin",  "copy minimization");
@@ -389,6 +391,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_epilog);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_live);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_spill);
+		LC_STOP_AND_RESET_TIMER(ra_timer.t_spillslots);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_color);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_ifg);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_copymin);
@@ -575,8 +578,23 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		bitset_free(chordal_env.ignore_colors);
 	}
 
+	BE_TIMER_PUSH(ra_timer.t_spillslots);
+
 	be_coalesce_spillslots(&chordal_env);
 	dump(BE_CH_DUMP_SPILLSLOTS, irg, NULL, "-spillslots", dump_ir_block_graph_sched);
+
+	BE_TIMER_POP(ra_timer.t_spillslots);
+
+	BE_TIMER_PUSH(ra_timer.t_verify);
+
+	/* verify spillslots */
+	if (options.vrfy_option == BE_CH_VRFY_WARN) {
+		be_verify_spillslots(irg);
+	}
+	else if (options.vrfy_option == BE_CH_VRFY_ASSERT) {
+		assert(be_verify_spillslots(irg) && "Spillslot verification failed");
+	}
+	BE_TIMER_POP(ra_timer.t_verify);
 
 	BE_TIMER_PUSH(ra_timer.t_epilog);
 

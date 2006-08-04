@@ -37,4 +37,12 @@ int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_
  */
 int be_verify_schedule(ir_graph *irg);
 
+/**
+ * Verify spillslots
+ *
+ * @param irg   The irg to check
+ * @return      1 if spillslots are valid, 0 otherwise
+ */
+int be_verify_spillslots(ir_graph *irg);
+
 #endif /* BEVERIFY_H_ */

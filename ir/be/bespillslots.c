@@ -63,7 +63,7 @@ static int cmp_affinity(const void *d1, const void *d2) {
 	return e1->affinity < e2->affinity ? -1 : 1;
 }
 
-int cmp_spill(const void* d1, const void* d2, size_t size) {
+static int cmp_spill(const void* d1, const void* d2, size_t size) {
 	const spill_t* s1 = d1;
 	const spill_t* s2 = d2;
 	return s1->spill != s2->spill;
@@ -477,7 +477,7 @@ typedef struct _memperm_t {
 	memperm_entry_t *entries;
 } memperm_t;
 
-int cmp_memperm(const void* d1, const void* d2, size_t size) {
+static int cmp_memperm(const void* d1, const void* d2, size_t size) {
 	const memperm_t* e1 = d1;
 	const memperm_t* e2 = d2;
 	return e1->block != e2->block;

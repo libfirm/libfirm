@@ -18,6 +18,8 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irdump_t.h"
+#include "set.h"
+#include "array.h"
 #include "benode_t.h"
 
 typedef struct be_verify_register_pressure_env_t_ {
@@ -200,7 +202,197 @@ int be_verify_schedule(ir_graph *irg)
 	return ! env.problem_found;
 }
 
+
+
+
+typedef struct _spill_t {
+	ir_node *spill;
+	entity *ent;
+} spill_t;
+
+typedef struct {
+	ir_graph *irg;
+	be_lv_t *lv;
+	set *spills;
+	ir_node **reloads;
+	int problem_found;
+} be_verify_spillslots_env_t;
+
+static int cmp_spill(const void* d1, const void* d2, size_t size) {
+	const spill_t* s1 = d1;
+	const spill_t* s2 = d2;
+	return s1->spill != s2->spill;
+}
+
+static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, entity *ent) {
+	spill_t spill, *res;
+	int hash = HASH_PTR(node);
+
+	spill.spill = node;
+	res = set_find(env->spills, &spill, sizeof(spill), hash);
+
+	if(res == NULL) {
+		spill.ent = ent;
+		res = set_insert(env->spills, &spill, sizeof(spill), hash);
+	}
+
+	return res;
+}
+
+static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent);
+
+static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
+	entity *spillent = be_get_frame_entity(node);
+	get_spill(env, node, ent);
+
+	if(spillent != ent) {
+		ir_fprintf(stderr, "Verify warning: Spill %+F has different entity than reload %+F in block %+F(%s)\n",
+			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
+		env->problem_found = 1;
+	}
+}
+
+static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
+	int i, arity;
+	spill_t spill, *res;
+	int hash = HASH_PTR(node);
+	int out;
+	ir_node* memperm;
+	entity *spillent;
+
+	assert(is_Proj(node));
+
+	memperm = get_Proj_pred(node);
+	out = get_Proj_proj(node);
+
+	spillent = be_get_MemPerm_out_entity(memperm, out);
+	if(spillent != ent) {
+		ir_fprintf(stderr, "Verify warning: MemPerm %+F has different entity than reload %+F in block %+F(%s)\n",
+			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
+		env->problem_found = 1;
+	}
+
+	spill.spill = node;
+	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	if(res != NULL) {
+		return;
+	}
+
+	spill.ent = spillent;
+	res = set_insert(env->spills, &spill, sizeof(spill), hash);
+
+	for(i = 0, arity = get_irn_arity(memperm); i < arity; ++i) {
+		ir_node* arg = get_irn_n(memperm, i);
+		entity* argent = be_get_MemPerm_in_entity(memperm, i);
+
+		collect(env, arg, memperm, argent);
+	}
+}
+
+static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity *ent) {
+	int i, arity;
+	spill_t spill, *res;
+	int hash = HASH_PTR(node);
+
+	assert(is_Phi(node));
+
+	spill.spill = node;
+	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	if(res != NULL) {
+		return;
+	}
+
+	spill.ent = ent;
+	res = set_insert(env->spills, &spill, sizeof(spill), hash);
+
+	// is 1 of the arguments a spill?
+	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+		ir_node* arg = get_irn_n(node, i);
+		collect(env, arg, reload, ent);
+	}
+}
+
+static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
+	if(be_is_Spill(node)) {
+		collect_spill(env, node, reload, ent);
+	} else if(is_Proj(node)) {
+		collect_memperm(env, node, reload, ent);
+	} else if(is_Phi(node) && get_irn_mode(node) == mode_M) {
+		collect_memphi(env, node, reload, ent);
+	} else {
+		ir_fprintf(stderr, "Verify warning: No spill, memperm or memphi attached to node %+F found from node %+F in block %+F(%s)\n",
+			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
+		env->problem_found = 1;
+	}
+}
+
+/**
+ * This walker function searches for reloads and collects all the spills
+ * and memphis attached to them.
+ */
+static void collect_spills_walker(ir_node *node, void *data) {
+	be_verify_spillslots_env_t *env = data;
+
+	if(be_is_Reload(node)) {
+		ir_node *spill = get_irn_n(node, be_pos_Reload_mem);
+		entity* ent = be_get_frame_entity(node);
+
+		collect(env, spill, node, ent);
+		ARR_APP1(ir_node*, env->reloads, node);
+	}
+}
+
+static void check_spillslot_interference(be_verify_spillslots_env_t *env) {
+	int spillcount = set_count(env->spills);
+	spill_t **spills = alloca(spillcount * sizeof(spills[0]));
+	spill_t *spill;
+	int i;
+
+	for(spill = set_first(env->spills), i = 0; spill != NULL; spill = set_next(env->spills), ++i) {
+		spills[i] = spill;
+	}
+
+	for(i = 0; i < spillcount; ++i) {
+		spill_t *sp1 = spills[i];
+		int i2;
+
+		for(i2 = i+1; i2 < spillcount; ++i2) {
+			spill_t *sp2 = spills[i2];
+
+			if(sp1->ent != sp2->ent)
+				continue;
+
+			if(values_interfere(env->lv, sp1->spill, sp2->spill)) {
+				ir_fprintf(stderr, "Verify warning: Spillslots for %+F in block %+F(%s) and %+F in block %+F(%s) interfere\n",
+					sp1->spill, get_nodes_block(sp1->spill), get_irg_dump_name(env->irg),
+					sp2->spill, get_nodes_block(sp2->spill), get_irg_dump_name(env->irg));
+				env->problem_found = 1;
+			}
+		}
+	}
+}
+
+int be_verify_spillslots(ir_graph *irg)
+{
+	be_verify_spillslots_env_t env;
+
+	env.irg = irg;
+	env.spills = new_set(cmp_spill, 10);
+	env.reloads = NEW_ARR_F(ir_node*, 0);
+	env.problem_found = 0;
+	env.lv = be_liveness(irg);
+
+	irg_walk_graph(irg, collect_spills_walker, NULL, &env);
+
+	check_spillslot_interference(&env);
+
+	DEL_ARR_F(env.reloads);
+	del_set(env.spills);
+	be_liveness_free(env.lv);
+
+	return ! env.problem_found;
+}
+
 /* Ideas for further verifiers:
  *   - make sure that each use is dominated by its definition (except phi arguments)
- *   - make sure that all spills attached to phims spill into the same slot...
  */
