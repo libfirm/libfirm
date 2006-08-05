@@ -71,29 +71,29 @@ int values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
 
 		bb = get_nodes_block(b);
 
-    /*
-     * If a is live end in b's block it is
-     * live at b's definition (a dominates b)
-     */
-    if(be_is_live_end(lv, bb, a))
-      return 1;
+		/*
+		 * If a is live end in b's block it is
+		 * live at b's definition (a dominates b)
+		 */
+		if(be_is_live_end(lv, bb, a))
+			return 1;
 
-    /*
-     * Look at all usages of a.
-     * If there's one usage of a in the block of b, then
-     * we check, if this use is dominated by b, if that's true
-     * a and b interfere. Note that b must strictly dominate the user,
+		/*
+		 * Look at all usages of a.
+		 * If there's one usage of a in the block of b, then
+		 * we check, if this use is dominated by b, if that's true
+		 * a and b interfere. Note that b must strictly dominate the user,
 		 * since if b is the last user of in the block, b and a do not
 		 * interfere.
-     * Uses of a not in b's block can be disobeyed, because the
-     * check for a being live at the end of b's block is already
-     * performed.
-     */
-    foreach_out_edge(a, edge) {
-      const ir_node *user = edge->src;
-      if(get_nodes_block(user) == bb && !is_Phi(user) && b != user && value_dominates(b, user))
-        return 1;
-    }
+		 * Uses of a not in b's block can be disobeyed, because the
+		 * check for a being live at the end of b's block is already
+		 * performed.
+		 */
+		foreach_out_edge(a, edge) {
+			const ir_node *user = edge->src;
+			if(get_nodes_block(user) == bb && !is_Phi(user) && b != user && value_dominates(b, user))
+				return 1;
+		}
   }
   return 0;
 }

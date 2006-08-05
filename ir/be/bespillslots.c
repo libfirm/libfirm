@@ -658,7 +658,7 @@ static void create_memperms(ss_env_t *env) {
 			be_set_MemPerm_in_entity(mempermnode, i, entry->in);
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
 			proj = new_Proj(mempermnode, get_irn_mode(arg), i);
-			set_irn_n(arg, entry->pos, proj);
+			set_irn_n(entry->node, entry->pos, proj);
 		}
 		ir_printf("Memperm created in block %+F\n", memperm->block);
 	}

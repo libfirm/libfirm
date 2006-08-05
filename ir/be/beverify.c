@@ -18,9 +18,13 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irdump_t.h"
+#include "iredges.h"
 #include "set.h"
 #include "array.h"
 #include "benode_t.h"
+
+static int my_value_dominates(const ir_node *a, const ir_node *b);
+static int my_values_interfere(const ir_node *a, const ir_node *b);
 
 typedef struct be_verify_register_pressure_env_t_ {
 	ir_graph                    *irg;                 /**< the irg to verify */
@@ -204,6 +208,9 @@ int be_verify_schedule(ir_graph *irg)
 
 
 
+//---------------------------------------------------------------------------
+
+
 
 typedef struct _spill_t {
 	ir_node *spill;
@@ -212,7 +219,6 @@ typedef struct _spill_t {
 
 typedef struct {
 	ir_graph *irg;
-	be_lv_t *lv;
 	set *spills;
 	ir_node **reloads;
 	int problem_found;
@@ -362,7 +368,7 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env) {
 			if(sp1->ent != sp2->ent)
 				continue;
 
-			if(values_interfere(env->lv, sp1->spill, sp2->spill)) {
+			if(my_values_interfere(sp1->spill, sp2->spill)) {
 				ir_fprintf(stderr, "Verify warning: Spillslots for %+F in block %+F(%s) and %+F in block %+F(%s) interfere\n",
 					sp1->spill, get_nodes_block(sp1->spill), get_irg_dump_name(env->irg),
 					sp2->spill, get_nodes_block(sp2->spill), get_irg_dump_name(env->irg));
@@ -380,7 +386,6 @@ int be_verify_spillslots(ir_graph *irg)
 	env.spills = new_set(cmp_spill, 10);
 	env.reloads = NEW_ARR_F(ir_node*, 0);
 	env.problem_found = 0;
-	env.lv = be_liveness(irg);
 
 	irg_walk_graph(irg, collect_spills_walker, NULL, &env);
 
@@ -388,11 +393,95 @@ int be_verify_spillslots(ir_graph *irg)
 
 	DEL_ARR_F(env.reloads);
 	del_set(env.spills);
-	be_liveness_free(env.lv);
 
 	return ! env.problem_found;
 }
 
-/* Ideas for further verifiers:
- *   - make sure that each use is dominated by its definition (except phi arguments)
+
+
+//---------------------------------------------------------------------------
+
+
+
+static int my_value_dominates(const ir_node *a, const ir_node *b)
+{
+	int res = 0;
+	const ir_node *ba = get_block(a);
+	const ir_node *bb = get_block(b);
+
+	/*
+	 * a and b are not in the same block,
+	 * so dominance is determined by the dominance of the blocks.
+	 */
+	if(ba != bb) {
+		res = block_dominates(ba, bb);
+
+	/*
+	 * Dominance is determined by the time steps of the schedule.
+	 */
+	} else {
+		sched_timestep_t as = sched_get_time_step(a);
+		sched_timestep_t bs = sched_get_time_step(b);
+		res = as <= bs;
+	}
+
+	return res;
+}
+
+/**
+ * Check, if two values interfere.
+ * @param a The first value.
+ * @param b The second value.
+ * @return 1, if a and b interfere, 0 if not.
  */
+static int my_values_interfere(const ir_node *a, const ir_node *b)
+{
+	const ir_edge_t *edge;
+	ir_node *bb;
+	int a2b = my_value_dominates(a, b);
+	int b2a = my_value_dominates(b, a);
+
+	/* If there is no dominance relation, they do not interfere. */
+	if(!a2b && !b2a)
+		return 0;
+
+	/*
+	 * Adjust a and b so, that a dominates b if
+	 * a dominates b or vice versa.
+	 */
+	if(b2a) {
+		const ir_node *t = a;
+		a = b;
+		b = t;
+	}
+
+	bb = get_nodes_block(b);
+
+	/*
+	 * Look at all usages of a.
+	 * If there's one usage of a in the block of b, then
+	 * we check, if this use is dominated by b, if that's true
+	 * a and b interfere. Note that b must strictly dominate the user,
+	 * since if b is the last user of in the block, b and a do not
+	 * interfere.
+	 * Uses of a not in b's block can be disobeyed, because the
+	 * check for a being live at the end of b's block is already
+	 * performed.
+	 */
+	foreach_out_edge(a, edge) {
+		const ir_node *user = get_edge_src_irn(edge);
+		if(b == user)
+			continue;
+
+		// in case of phi arguments we compare with the block the value comes from
+		if(is_Phi(user)) {
+			ir_node *phiblock = get_nodes_block(user);
+			user = get_irn_n(phiblock, get_edge_src_pos(edge));
+		}
+
+		if(my_value_dominates(b, user))
+			return 1;
+	}
+
+	return 0;
+}
