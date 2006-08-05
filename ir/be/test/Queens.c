@@ -26,7 +26,7 @@ typedef int boolean;
 static int *row;
 // queen in column c is at row[c]
 
-static int abs(int i) {
+static int myabs(int i) {
   if(0 > i)
     i = -i;
   return(i);
@@ -39,7 +39,7 @@ boolean place_ok (int i) {
   boolean res;
 
   while (j < i) {
-    if ((row[j] == row[i]) || ((abs(row[i]-row[j])) == (i-j))) {
+    if ((row[j] == row[i]) || ((myabs(row[i]-row[j])) == (i-j))) {
       res = false;
       return(res);
     }
