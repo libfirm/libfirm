@@ -1,4 +1,4 @@
-EDG_CFLAGS="--c --gnu=400002 -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
+EDG_CFLAGS="--c --gnu=400002 -I/usr/lib/gcc-lib/i686-pc-linux-gnu/4.1.1/include"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 
@@ -20,7 +20,7 @@ cat > $XMLRES << __END__
 __END__
 
 # so endless apps stop at some point...
-ulimit -t2
+#ulimit -t2
 
 for file in ${CFILES}; do
     COMPILE_RES="ok"
@@ -61,7 +61,7 @@ for file in ${CFILES}; do
         echo "*** Run GCC" >> $res
         CMD="build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
+        /bin/bash -c "ulimit -t2 ; build_gcc/$name.exe" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
     fi
 
     if [ ${LINK_RES} = "ok" ]; then
@@ -70,7 +70,7 @@ for file in ${CFILES}; do
         echo "*** Run Firm" >> $res
         CMD="build_firm/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        build_firm/$name.exe > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
+        /bin/bash -c "ulimit -t2 ; build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
     fi
 
     if [ ${GCC_RUN_RES} = "ok" -a ${FIRM_RUN_RES} = "ok" ]; then
