@@ -582,6 +582,7 @@ static void be_main_loop(FILE *file_handle)
 			LC_EMIT_RA(ra_timer->t_prolog);
 			LC_EMIT_RA(ra_timer->t_live);
 			LC_EMIT_RA(ra_timer->t_spill);
+                        LC_EMIT_RA(ra_timer->t_spillslots);
 			LC_EMIT_RA(ra_timer->t_color);
 			LC_EMIT_RA(ra_timer->t_ifg);
 			LC_EMIT_RA(ra_timer->t_copymin);

@@ -379,7 +379,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		ra_timer.t_epilog  = lc_timer_register("ra_epilog",   "regalloc epilog");
 		ra_timer.t_live    = lc_timer_register("ra_liveness", "be liveness");
 		ra_timer.t_spill   = lc_timer_register("ra_spill",    "spiller");
-		ra_timer.t_spillslots = lc_timer_register("ra_spill",    "spillslots");
+		ra_timer.t_spillslots = lc_timer_register("ra_spillslots",    "spillslots");
 		ra_timer.t_color   = lc_timer_register("ra_color",    "graph coloring");
 		ra_timer.t_ifg     = lc_timer_register("ra_ifg",      "interference graph");
 		ra_timer.t_copymin = lc_timer_register("ra_copymin",  "copy minimization");

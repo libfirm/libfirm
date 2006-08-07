@@ -21,6 +21,7 @@
 #include "irdump_t.h"
 
 #include "benode_t.h"
+#include "besched.h"
 #include "bespillslots.h"
 #include "bechordal_t.h"
 #include "bejavacoal.h"
@@ -660,7 +661,9 @@ static void create_memperms(ss_env_t *env) {
 			proj = new_Proj(mempermnode, get_irn_mode(arg), i);
 			set_irn_n(entry->node, entry->pos, proj);
 		}
-		ir_printf("Memperm created in block %+F\n", memperm->block);
+
+		// insert node into schedule
+		sched_add_before(sched_last(memperm->block), mempermnode);
 	}
 }
 
