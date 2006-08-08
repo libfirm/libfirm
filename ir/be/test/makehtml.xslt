@@ -32,21 +32,26 @@
 						<th>Firm Run</th>
 						<th>Results</th>
 					</tr>
-					<xsl:for-each select="/results/result">
+					<xsl:for-each select="/results/section">
 						<tr>
-							<td>
-								<xsl:element name="a">
-									<xsl:attribute name="href">buildresult_<xsl:value-of select="@name"/>.txt</xsl:attribute>
-									<xsl:value-of select="@name"/>
-								</xsl:element>
-							</td>
-							<td><xsl:apply-templates select="compile"/></td>
-							<td><xsl:apply-templates select="link"/></td>
-							<td><xsl:apply-templates select="gcc_compile"/></td>
-							<td><xsl:apply-templates select="gcc_run"/></td>
-							<td><xsl:apply-templates select="firm_run"/></td>
-							<td><xsl:apply-templates select="diff"/></td>
+						    <th colspan="7" style="background-color: yellow; color: black;"><xsl:value-of select="@name"/></th>
 						</tr>
+						<xsl:for-each select="result">
+							<tr>
+								<td>
+									<xsl:element name="a">
+										<xsl:attribute name="href">buildresult_<xsl:value-of select="@name"/>.txt</xsl:attribute>
+										<xsl:value-of select="@name"/>
+									</xsl:element>
+								</td>
+								<td><xsl:apply-templates select="compile"/></td>
+								<td><xsl:apply-templates select="link"/></td>
+								<td><xsl:apply-templates select="gcc_compile"/></td>
+								<td><xsl:apply-templates select="gcc_run"/></td>
+								<td><xsl:apply-templates select="firm_run"/></td>
+								<td><xsl:apply-templates select="diff"/></td>
+							</tr>
+						</xsl:for-each>
 					</xsl:for-each>
 				</table>
 			</body>

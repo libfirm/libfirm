@@ -1,5 +1,5 @@
-EDG_BIN="edg"
-EDG_CFLAGS="--c --gnu=400002 -I/usr/lib/gcc-lib/i686-pc-linux-gnu/4.1.1/include"
+EDG_BIN="edgcpfe"
+EDG_CFLAGS="--c --gnu=30305 -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 
@@ -23,7 +23,12 @@ __END__
 # so endless apps stop at some point...
 #ulimit -t2
 
-for file in ${CFILES}; do
+basedir=`pwd`
+
+for dir in . gcc-testsuite gcc-testsuite/ieee; do
+	curdir=$basedir/$dir
+    echo "<section name=\"$curdir/\">" >> $XMLRES
+for file in $curdir/$CFILES; do
     COMPILE_RES="ok"
     LINK_RES="omitted"
     GCC_RES="ok"
@@ -36,13 +41,13 @@ for file in ${CFILES}; do
     echo "Building $name"
     echo "Results for $name" > $res
     echo "*** EDG/FIRM Compile" >> $res
-    CMD="${EDG_BIN} ${EDG_CFLAGS} $file"
+    CMD="ulimit -t300 ; ${EDG_BIN} ${EDG_CFLAGS} $file"
     echo "$CMD" >> $res
-    $CMD >> $res 2>&1 || COMPILE_RES="failed"
+    /bin/bash -c "ulimit -t300 ; ${EDG_BIN} ${EDG_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
 
     if [ ${COMPILE_RES} == "ok" ]; then
         LINK_RES="ok"
-        CMD="mv $name.s build_firm/$name.s"
+        CMD="mv $curdir/$name.s build_firm/$name.s"
         echo "$CMD" >> $res
         $CMD >> $res 2>&1
         echo "*** Linking" >> $res
@@ -92,6 +97,8 @@ for file in ${CFILES}; do
         <diff>$DIFF_RES</diff>
     </result>
 __END__
+done
+    echo "</section>" >> $XMLRES
 done
 
 echo "</results>" >> $XMLRES
