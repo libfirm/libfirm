@@ -23,7 +23,6 @@
 #include "array.h"
 #include "benode_t.h"
 
-static int my_value_dominates(const ir_node *a, const ir_node *b);
 static int my_values_interfere(const ir_node *a, const ir_node *b);
 
 typedef struct be_verify_register_pressure_env_t_ {
