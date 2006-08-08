@@ -1,3 +1,4 @@
+EDG_BIN="edg"
 EDG_CFLAGS="--c --gnu=400002 -I/usr/lib/gcc-lib/i686-pc-linux-gnu/4.1.1/include"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
@@ -35,7 +36,7 @@ for file in ${CFILES}; do
     echo "Building $name"
     echo "Results for $name" > $res
     echo "*** EDG/FIRM Compile" >> $res
-    CMD="edg ${EDG_CFLAGS} $file"
+    CMD="${EDG_BIN} ${EDG_CFLAGS} $file"
     echo "$CMD" >> $res
     $CMD >> $res 2>&1 || COMPILE_RES="failed"
 
