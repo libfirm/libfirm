@@ -218,6 +218,7 @@ typedef struct _spill_t {
 } spill_t;
 
 typedef struct {
+	be_lv_t *lv;
 	ir_graph *irg;
 	set *spills;
 	ir_node **reloads;
@@ -373,6 +374,8 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env) {
 					sp1->spill, get_nodes_block(sp1->spill), get_irg_dump_name(env->irg),
 					sp2->spill, get_nodes_block(sp2->spill), get_irg_dump_name(env->irg));
 				env->problem_found = 1;
+				my_values_interfere(sp1->spill, sp2->spill);
+				printf("Intf: %d\n", values_interfere(env->lv, sp1->spill, sp2->spill));
 			}
 		}
 	}
@@ -386,11 +389,13 @@ int be_verify_spillslots(ir_graph *irg)
 	env.spills = new_set(cmp_spill, 10);
 	env.reloads = NEW_ARR_F(ir_node*, 0);
 	env.problem_found = 0;
+	env.lv = be_liveness(irg);
 
 	irg_walk_graph(irg, collect_spills_walker, NULL, &env);
 
 	check_spillslot_interference(&env);
 
+	be_liveness_free(env.lv);
 	DEL_ARR_F(env.reloads);
 	del_set(env.spills);
 
@@ -403,39 +408,6 @@ int be_verify_spillslots(ir_graph *irg)
 
 
 
-static sched_timestep_t get_time_step(const ir_node *irn)
-{
-	if(is_Phi(irn))
-		return 0;
-
-	return sched_get_time_step(irn);
-}
-
-static int my_value_dominates(const ir_node *a, const ir_node *b)
-{
-	int res = 0;
-	const ir_node *ba = get_block(a);
-	const ir_node *bb = get_block(b);
-
-	/*
-	 * a and b are not in the same block,
-	 * so dominance is determined by the dominance of the blocks.
-	 */
-	if(ba != bb) {
-		res = block_dominates(ba, bb);
-
-	/*
-	 * Dominance is determined by the time steps of the schedule.
-	 */
-	} else {
-		sched_timestep_t as = get_time_step(a);
-		sched_timestep_t bs = get_time_step(b);
-		res = as <= bs;
-	}
-
-	return res;
-}
-
 /**
  * Check, if two values interfere.
  * @param a The first value.
@@ -446,8 +418,8 @@ static int my_values_interfere(const ir_node *a, const ir_node *b)
 {
 	const ir_edge_t *edge;
 	ir_node *bb;
-	int a2b = my_value_dominates(a, b);
-	int b2a = my_value_dominates(b, a);
+	int a2b = value_dominates(a, b);
+	int b2a = value_dominates(b, a);
 
 	/* If there is no dominance relation, they do not interfere. */
 	if(!a2b && !b2a)
@@ -481,13 +453,18 @@ static int my_values_interfere(const ir_node *a, const ir_node *b)
 		if(b == user)
 			continue;
 
+		if(get_irn_opcode(user) == iro_End)
+			continue;
+
 		// in case of phi arguments we compare with the block the value comes from
 		if(is_Phi(user)) {
 			ir_node *phiblock = get_nodes_block(user);
+			if(phiblock == bb)
+				continue;
 			user = get_irn_n(phiblock, get_edge_src_pos(edge));
 		}
 
-		if(my_value_dominates(b, user))
+		if(value_dominates(b, user))
 			return 1;
 	}
 

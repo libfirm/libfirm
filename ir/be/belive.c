@@ -25,7 +25,15 @@
 
 static INLINE int is_liveness_node(const ir_node *irn)
 {
-	return !is_Block(irn) && !is_Bad(irn);
+	switch(get_irn_opcode(irn)) {
+	case iro_Block:
+	case iro_Bad:
+	case iro_End:
+		return 0;
+	default:;
+	}
+
+	return 1;
 }
 
 int (be_lv_next_irn)(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
@@ -351,9 +359,9 @@ static void liveness_for_node(ir_node *irn, void *data)
 		ir_node *use_block;
 
 		/*
-		* If the usage is no data node, skip this use, since it does not
-		* affect the liveness of the node.
-		*/
+		 * If the usage is no data node, skip this use, since it does not
+		 * affect the liveness of the node.
+		 */
 		if(!is_liveness_node(use))
 			continue;
 
@@ -361,19 +369,19 @@ static void liveness_for_node(ir_node *irn, void *data)
 		use_block = get_nodes_block(use);
 
 		/*
-		* If the use is a phi function, determine the corresponding block
-		* through which the value reaches the phi function and mark the
-		* value as live out of that block.
-		*/
+		 * If the use is a phi function, determine the corresponding block
+		 * through which the value reaches the phi function and mark the
+		 * value as live out of that block.
+		 */
 		if(is_Phi(use)) {
 			ir_node *pred_block = get_Block_cfgpred_block(use_block, edge->pos);
 			live_end_at_block(lv, irn, pred_block, visited, 0);
 		}
 
 		/*
-		* Else, the value is live in at this block. Mark it and call live
-		* out on the predecessors.
-		*/
+		 * Else, the value is live in at this block. Mark it and call live
+		 * out on the predecessors.
+		 */
 		else if(def_block != use_block) {
 			int i, n;
 
