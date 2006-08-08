@@ -633,12 +633,36 @@ static void assign_spillslots(ss_env_t *env) {
 	}
 }
 
+/**
+ * Returns the last node in a block which is no control flow changing node
+ */
+static ir_node *get_end_of_block_insertion_point(ir_node* block)
+{
+	ir_node* ins = sched_last(block);
+	while(is_Proj(ins) && get_irn_mode(ins) == mode_X) {
+		ins = sched_prev(ins);
+		assert(ins != NULL);
+	}
+
+	if(is_cfop(ins)) {
+		while(1) {
+			ir_node *prev = sched_prev(ins);
+			if(!is_cfop(prev))
+				break;
+			ins = prev;
+		}
+	}
+
+	return ins;
+}
+
 static void create_memperms(ss_env_t *env) {
 	memperm_t *memperm;
 
 	for(memperm = set_first(env->memperms); memperm != NULL; memperm = set_next(env->memperms)) {
 		int i;
 		memperm_entry_t *entry;
+		ir_node *blockend;
 		ir_node** nodes = alloca(memperm->entrycount * sizeof(nodes[0]));
 		ir_node* mempermnode;
 
@@ -653,7 +677,8 @@ static void create_memperms(ss_env_t *env) {
 			memperm->entrycount, nodes);
 
 		// insert node into schedule
-		sched_add_before(sched_last(memperm->block), mempermnode);
+		blockend = get_end_of_block_insertion_point(memperm->block);
+		sched_add_after(blockend, mempermnode);
 
 		for(entry = memperm->entries, i = 0; entry != NULL; entry = entry->next, ++i) {
 			ir_node *proj;
@@ -663,7 +688,7 @@ static void create_memperms(ss_env_t *env) {
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
 			set_irg_current_block(env->chordal_env->irg, memperm->block);
 			proj = new_Proj(mempermnode, get_irn_mode(arg), i);
-			sched_add_before(sched_last(memperm->block), proj);
+			sched_add_after(blockend, proj);
 
 			set_irn_n(entry->node, entry->pos, proj);
 		}

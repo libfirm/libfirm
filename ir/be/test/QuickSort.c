@@ -11,6 +11,7 @@
  * URL:         http://www-info1.informatik.uni-wuerzburg.de/staff/wolf/teaching/pi1_ws98/java/QuickSort.java
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 // Variablen, in denen die Bewegungen und Vergleiche gespeichert werden

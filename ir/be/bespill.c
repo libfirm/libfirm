@@ -32,6 +32,9 @@
 #include "bechordal_t.h"
 #include "bejavacoal.h"
 
+// only rematerialise when costs are less than REMAT_COST_LIMIT
+#define REMAT_COST_LIMIT	4
+
 /* This enables re-computation of values. Current state: Unfinished and buggy. */
 #undef BUGGY_REMAT
 
@@ -114,20 +117,104 @@ void be_delete_spill_env(spill_env_t *env) {
 }
 
 /**
+ *  ____  _                  ____      _                 _
+ * |  _ \| | __ _  ___ ___  |  _ \ ___| | ___   __ _  __| |___
+ * | |_) | |/ _` |/ __/ _ \ | |_) / _ \ |/ _ \ / _` |/ _` / __|
+ * |  __/| | (_| | (_|  __/ |  _ <  __/ | (_) | (_| | (_| \__ \
+ * |_|   |_|\__,_|\___\___| |_| \_\___|_|\___/ \__,_|\__,_|___/
+ *
+ */
+
+void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
+	spill_info_t *info;
+	reloader_t *rel;
+
+	assert(sched_is_scheduled(before));
+	assert(arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->cls, to_spill));
+
+	info = get_spillinfo(env, to_spill);
+
+	if(is_Phi(to_spill)) {
+		int i, arity;
+		// create spillinfos for the phi arguments
+		for(i = 0, arity = get_irn_arity(to_spill); i < arity; ++i) {
+			ir_node *arg = get_irn_n(to_spill, i);
+			get_spillinfo(env, arg);
+		}
+	}
+
+	rel           = obstack_alloc(&env->obst, sizeof(rel[0]));
+	rel->reloader = before;
+	rel->next     = info->reloaders;
+	info->reloaders = rel;
+	be_liveness_add_missing(env->chordal_env->lv);
+}
+
+void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
+	ir_node *predblock, *last;
+
+	/* simply add the reload to the beginning of the block if we only have 1 predecessor
+	 * (we don't need to check for phis as there can't be any in a block with only 1 pred)
+	 */
+	if(get_Block_n_cfgpreds(block) == 1) {
+		assert(!is_Phi(sched_first(block)));
+		be_add_reload(env, to_spill, sched_first(block));
+		return;
+	}
+
+	/* We have to reload the value in pred-block */
+	predblock = get_Block_cfgpred_block(block, pos);
+	last = sched_last(predblock);
+
+	/* we might have projs and keepanys behind the jump... */
+	while(is_Proj(last) || be_is_Keep(last)) {
+		last = sched_prev(last);
+		assert(!sched_is_end(last));
+	}
+	assert(is_cfop(last));
+
+	// add the reload before the (cond-)jump
+	be_add_reload(env, to_spill, last);
+}
+
+void be_spill_phi(spill_env_t *env, ir_node *node) {
+	int i, arity;
+
+	assert(is_Phi(node));
+
+	pset_insert_ptr(env->mem_phis, node);
+
+	// create spillinfos for the phi arguments
+	get_spillinfo(env, node);
+	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+		ir_node *arg = get_irn_n(node, i);
+		get_spillinfo(env, arg);
+	}
+}
+
+/*
+ *   ____                _         ____        _ _ _
+ *  / ___|_ __ ___  __ _| |_ ___  / ___| _ __ (_) | |___
+ * | |   | '__/ _ \/ _` | __/ _ \ \___ \| '_ \| | | / __|
+ * | |___| | |  __/ (_| | ||  __/  ___) | |_) | | | \__ \
+ *  \____|_|  \___|\__,_|\__\___| |____/| .__/|_|_|_|___/
+ *                                      |_|
+ */
+
+/**
  * Schedules a node after an instruction. (That is the place after all projs and phis
  * that are scheduled after the instruction)
+ * This function also skips phi nodes at the beginning of a block
  */
 static void sched_add_after_insn(ir_node *sched_after, ir_node *node) {
 	ir_node *next = sched_next(sched_after);
-	while(!sched_is_end(next)) {
-		if(!is_Proj(next) && !is_Phi(next))
-			break;
+	while(is_Proj(next) || is_Phi(next)) {
 		next = sched_next(next);
 	}
+	assert(next != NULL);
 
 	if(sched_is_end(next)) {
-		next = sched_last(get_nodes_block(sched_after));
-		sched_add_after(next, node);
+		sched_add_after(sched_last(get_nodes_block(sched_after)), node);
 	} else {
 		sched_add_before(next, node);
 	}
@@ -150,6 +237,9 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 
 	/* Trying to spill an already spilled value, no need for a new spill
 	 * node then, we can simply connect to the same one for this reload
+	 *
+	 * (although rematerialisation code should handle most of these cases
+	 * this can still happen when spilling Phis)
 	 */
 	if(be_is_Reload(to_spill)) {
 		spillinfo->spill = get_irn_n(to_spill, be_pos_Reload_mem);
@@ -219,128 +309,137 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo) {
 	}
 }
 
-static INLINE ir_node *skip_projs(ir_node *node) {
-	while(is_Proj(node)) {
-		node = sched_next(node);
-		assert(!sched_is_end(node));
-	}
+/*
+ *
+ *  ____                      _            _       _ _
+ * |  _ \ ___ _ __ ___   __ _| |_ ___ _ __(_) __ _| (_)_______
+ * | |_) / _ \ '_ ` _ \ / _` | __/ _ \ '__| |/ _` | | |_  / _ \
+ * |  _ <  __/ | | | | | (_| | ||  __/ |  | | (_| | | |/ /  __/
+ * |_| \_\___|_| |_| |_|\__,_|\__\___|_|  |_|\__,_|_|_/___\___|
+ *
+ */
 
-	return node;
-}
+/**
+ * Tests whether value @p arg is available before node @p reloader
+ * @returns 1 if value is available, 0 otherwise
+ */
+static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader) {
+	if(is_Unknown(arg) || arg == new_NoMem())
+		return 1;
+
+	if(be_is_Spill(arg))
+		return 1;
+
+	if(arg == get_irg_frame(env->chordal_env->irg))
+		return 1;
 
 #if 0
-/**
- * Searchs the schedule backwards until we reach the first use or def of a
- * value or a phi.
- * Returns the node after this node (so that you can do sched_add_before)
- */
-static ir_node *find_last_use_def(spill_env_t *env, ir_node *block, ir_node *value) {
-	ir_node *node, *last;
+	/* we want to remat before the insn reloader
+	 * thus an arguments is alive if
+	 *   - it interferes with the reloaders result
+	 * or
+	 *   - or it is (last-) used by reloader itself
+	 */
+	int i, m;
 
-	last = NULL;
-	sched_foreach_reverse(block, node) {
-		int i, arity;
+	if (values_interfere(reloader, arg))
+		return 1;
 
-		if(is_Phi(node)) {
-			return last;
-		}
-		if(value == node) {
-			return skip_projs(last);
-		}
-		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *arg = get_irn_n(node, i);
-			if(arg == value) {
-				return skip_projs(last);
-			}
-		}
-		last = node;
+	for (i=0, m=get_irn_arity(reloader); i<m; ++i) {
+		ir_node *rel_arg = get_irn_n(reloader, i);
+		if (rel_arg == arg)
+			return 1;
 	}
 
-	// simply return first node if no def or use found
-	return sched_first(block);
-}
+	/* arg is not alive before reloader */
+	return 0;
 #endif
 
-#ifdef BUGGY_REMAT
+	return 0;
+}
 
 /**
- * Check if a spilled node could be rematerialized.
- *
- * @param senv      the spill environment
- * @param spill     the Spill node
- * @param spilled   the node that was spilled
- * @param reloader  a irn that requires a reload
+ * Checks whether the node can principally be rematerialized
  */
-static int check_remat_conditions(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
-	int pos, max;
+static int is_remat_node(spill_env_t *env, ir_node *node) {
+	const arch_env_t *arch_env = env->chordal_env->birg->main_env->arch_env;
 
-	/* check for 'normal' spill and general remat condition */
-	if (!arch_irn_is(senv->chordal_env->birg->main_env->arch_env, spilled, rematerializable))
+	assert(!be_is_Spill(node));
+
+	if(be_is_Reload(node))
+		return 1;
+
+	// TODO why does arch_irn_is say rematerializable anyway?
+	if(be_is_Barrier(node))
 		return 0;
 
-	/* check availability of original arguments */
-	if (is_Block(reloader)) {
+	if(arch_irn_is(arch_env, node, rematerializable))
+		return 1;
 
-		/* we want to remat at the end of a block.
-		 * thus all arguments must be alive at the end of the block
-		 */
-		for (pos=0, max=get_irn_arity(spilled); pos<max; ++pos) {
-			ir_node *arg = get_irn_n(spilled, pos);
-			if (!is_live_end(reloader, arg))
-				return 0;
-		}
+	if(be_is_StackParam(node))
+		return 1;
 
-	} else {
-
-		/* we want to remat before the insn reloader
-		 * thus an arguments is alive if
-		 *   - it interferes with the reloaders result
-		 * or
-		 *   - or it is (last-) used by reloader itself
-		 */
-		for (pos=0, max=get_irn_arity(spilled); pos<max; ++pos) {
-			ir_node *arg = get_irn_n(spilled, pos);
-			int i, m;
-
-			if (values_interfere(reloader, arg))
-				goto is_alive;
-
-			for (i=0, m=get_irn_arity(reloader); i<m; ++i) {
-				ir_node *rel_arg = get_irn_n(reloader, i);
-				if (rel_arg == arg)
-					goto is_alive;
-			}
-
-			/* arg is not alive before reloader */
-			return 0;
-
-is_alive:	;
-
-		}
-
-	}
-
-	return 1;
+	return 0;
 }
-
-#else /* BUGGY_REMAT */
 
 /**
- * A very simple rematerialization checker.
+ * Check if a node is rematerializable. This tests for the following conditions:
  *
- * @param senv      the spill environment
- * @param spill     the Spill node
- * @param spilled   the node that was spilled
- * @param reloader  a irn that requires a reload
+ * - The node itself is rematerializable
+ * - All arguments of the node are available or also rematerialisable
+ * - The costs for the rematerialisation operation is less or equal a limit
+ *
+ * Returns the costs needed for rematerialisation or something
+ * > REMAT_COST_LIMIT if remat is not possible.
  */
-static int check_remat_conditions(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
-	const arch_env_t *aenv = senv->chordal_env->birg->main_env->arch_env;
+static int check_remat_conditions_costs(spill_env_t *env, ir_node *spilled, ir_node *reloader, int parentcosts) {
+	int i, arity;
+	int argremats;
+	int costs = 0;
 
-	return get_irn_arity(spilled) == 0 &&
-		   arch_irn_is(aenv, spilled, rematerializable);
+	if(!is_remat_node(env, spilled))
+		return REMAT_COST_LIMIT;
+
+	if(be_is_Reload(spilled)) {
+		costs += 2;
+	} else if(is_Proj(spilled)) {
+		costs += 0;
+	} else {
+		costs += 1;
+	}
+	if(parentcosts + costs >= REMAT_COST_LIMIT)
+		return REMAT_COST_LIMIT;
+
+	argremats = 0;
+	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
+		ir_node *arg = get_irn_n(spilled, i);
+
+		if(is_value_available(env, arg, reloader))
+			continue;
+
+		// we have to rematerialize the argument as well...
+		if(argremats >= 1) {
+			/* we only support rematerializing 1 argument at the moment,
+			 * so that we don't have to care about register pressure
+			 */
+			return REMAT_COST_LIMIT;
+		}
+		argremats++;
+
+		// TODO can we get more accurate costs than +1?
+		costs += check_remat_conditions_costs(env, arg, reloader, parentcosts + costs);
+		if(parentcosts + costs >= REMAT_COST_LIMIT)
+			return REMAT_COST_LIMIT;
+	}
+
+	return costs;
 }
 
-#endif /* BUGGY_REMAT */
+static int check_remat_conditions(spill_env_t *env, ir_node *spilled, ir_node *reloader) {
+	int costs = check_remat_conditions_costs(env, spilled, reloader, 1);
+
+	return costs < REMAT_COST_LIMIT;
+}
 
 /**
  * Re-materialize a node.
@@ -349,45 +448,49 @@ static int check_remat_conditions(spill_env_t *senv, ir_node *spilled, ir_node *
  * @param spilled   the node that was spilled
  * @param reloader  a irn that requires a reload
  */
-static ir_node *do_remat(spill_env_t *senv, ir_node *spilled, ir_node *reloader) {
+static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) {
+	int i, arity;
 	ir_node *res;
-	ir_node *bl = (is_Block(reloader)) ? reloader : get_nodes_block(reloader);
+	ir_node *bl = get_nodes_block(reloader);
+	ir_node **ins;
 
-	/* recompute the value */
-	res = new_ir_node(get_irn_dbg_info(spilled), senv->chordal_env->irg, bl,
+	ins = alloca(get_irn_arity(spilled) * sizeof(ins[0]));
+	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
+		ir_node *arg = get_irn_n(spilled, i);
+
+		if(is_value_available(env, arg, reloader)) {
+			ins[i] = arg;
+		} else {
+			ins[i] = do_remat(env, arg, reloader);
+		}
+	}
+
+	/* create a copy of the node */
+	res = new_ir_node(get_irn_dbg_info(spilled), env->chordal_env->irg, bl,
 		get_irn_op(spilled),
 		get_irn_mode(spilled),
 		get_irn_arity(spilled),
-		get_irn_in(spilled) + 1);
+		ins);
 	copy_node_attr(spilled, res);
 
-	DBG((senv->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
+	DBG((env->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
+	ir_printf("Insert remat %+F for %+F before reloader %+F(%s)\n", res, spilled, reloader, get_irg_dump_name(get_irn_irg(reloader)));
 
 	/* insert in schedule */
-	if (is_Block(reloader)) {
-		ir_node *insert = sched_skip(reloader, 0, sched_skip_cf_predicator, (void *) senv->chordal_env->birg->main_env->arch_env);
-		sched_add_after(insert, res);
-	} else {
-		sched_add_before(reloader, res);
-	}
+	assert(!is_Block(reloader));
+	sched_add_before(reloader, res);
 
 	return res;
 }
 
-void be_spill_phi(spill_env_t *env, ir_node *node) {
-	int i, arity;
-
-	assert(is_Phi(node));
-
-	pset_insert_ptr(env->mem_phis, node);
-
-	// create spillinfos for the phi arguments
-	get_spillinfo(env, node);
-	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *arg = get_irn_n(node, i);
-		get_spillinfo(env, arg);
-	}
-}
+/*
+ *  ___                     _     ____      _                 _
+ * |_ _|_ __  ___  ___ _ __| |_  |  _ \ ___| | ___   __ _  __| |___
+ *  | || '_ \/ __|/ _ \ '__| __| | |_) / _ \ |/ _ \ / _` |/ _` / __|
+ *  | || | | \__ \  __/ |  | |_  |  _ <  __/ | (_) | (_| | (_| \__ \
+ * |___|_| |_|___/\___|_|   \__| |_| \_\___|_|\___/ \__,_|\__,_|___/
+ *
+ */
 
 void be_insert_spills_reloads(spill_env_t *env) {
 	const arch_env_t *arch_env = env->chordal_env->birg->main_env->arch_env;
@@ -430,56 +533,4 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	// reloads are placed now, but we might reuse the spill environment for further spilling decisions
 	del_set(env->spills);
 	env->spills = new_set(cmp_spillinfo, 1024);
-}
-
-void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
-	spill_info_t *info;
-	reloader_t *rel;
-
-	assert(sched_is_scheduled(before));
-	assert(arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->cls, to_spill));
-
-	info = get_spillinfo(env, to_spill);
-
-	if(is_Phi(to_spill)) {
-		int i, arity;
-		// create spillinfos for the phi arguments
-		for(i = 0, arity = get_irn_arity(to_spill); i < arity; ++i) {
-			ir_node *arg = get_irn_n(to_spill, i);
-			get_spillinfo(env, arg);
-		}
-	}
-
-	rel           = obstack_alloc(&env->obst, sizeof(rel[0]));
-	rel->reloader = before;
-	rel->next     = info->reloaders;
-	info->reloaders = rel;
-	be_liveness_add_missing(env->chordal_env->lv);
-}
-
-void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
-	ir_node *predblock, *last;
-
-	/* simply add the reload to the beginning of the block if we only have 1 predecessor
-	 * (we don't need to check for phis as there can't be any in a block with only 1 pred)
-	 */
-	if(get_Block_n_cfgpreds(block) == 1) {
-		assert(!is_Phi(sched_first(block)));
-		be_add_reload(env, to_spill, sched_first(block));
-		return;
-	}
-
-	/* We have to reload the value in pred-block */
-	predblock = get_Block_cfgpred_block(block, pos);
-	last = sched_last(predblock);
-
-	/* we might have projs and keepanys behind the jump... */
-	while(is_Proj(last) || be_is_Keep(last)) {
-		last = sched_prev(last);
-		assert(!sched_is_end(last));
-	}
-	assert(is_cfop(last));
-
-	// add the reload before the (cond-)jump
-	be_add_reload(env, to_spill, last);
 }
