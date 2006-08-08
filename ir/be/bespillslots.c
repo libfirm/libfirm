@@ -652,18 +652,21 @@ static void create_memperms(ss_env_t *env) {
 		mempermnode = be_new_MemPerm(env->chordal_env->birg->main_env->arch_env, env->chordal_env->irg, memperm->block,
 			memperm->entrycount, nodes);
 
+		// insert node into schedule
+		sched_add_before(sched_last(memperm->block), mempermnode);
+
 		for(entry = memperm->entries, i = 0; entry != NULL; entry = entry->next, ++i) {
 			ir_node *proj;
 			ir_node* arg = get_irn_n(entry->node, entry->pos);
 
 			be_set_MemPerm_in_entity(mempermnode, i, entry->in);
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
+			set_irg_current_block(env->chordal_env->irg, memperm->block);
 			proj = new_Proj(mempermnode, get_irn_mode(arg), i);
+			sched_add_before(sched_last(memperm->block), proj);
+
 			set_irn_n(entry->node, entry->pos, proj);
 		}
-
-		// insert node into schedule
-		sched_add_before(sched_last(memperm->block), mempermnode);
 	}
 }
 

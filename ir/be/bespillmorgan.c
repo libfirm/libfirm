@@ -528,9 +528,6 @@ void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	/* construct control flow loop tree */
 	construct_cf_backedges(chordal_env->irg);
 
-	//dump_looptree(0, get_irg_loop(env.irg));
-	//dump_execfreqs(env.irg);
-
 	/* construct loop out edges and livethrough_unused sets for loops and blocks */
 	irg_block_walk_graph(chordal_env->irg, NULL, construct_loop_edges, &env);
 	construct_loop_livethrough_unused(&env, get_irg_loop(env.irg));

@@ -25,7 +25,7 @@
 
 static INLINE int is_liveness_node(const ir_node *irn)
 {
-	return is_Phi(irn) || is_data_node(irn);
+	return !is_Block(irn) && !is_Bad(irn);
 }
 
 int (be_lv_next_irn)(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)

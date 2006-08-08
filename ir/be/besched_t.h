@@ -41,12 +41,23 @@ typedef struct _sched_info_t {
 void be_sched_init(void);
 
 /**
+ * Check, if the node is scheduled.
+ * @param irn The node.
+ * @return 1, if the node is scheduled, 0 if not.
+ */
+static INLINE int _sched_is_scheduled(const ir_node *irn)
+{
+  return get_irn_sched_info(irn)->scheduled;
+}
+
+/**
  * Get the time step of an irn in a schedule.
  * @param irn The node.
  * @return The time step in the schedule.
  */
 static INLINE int _sched_get_time_step(const ir_node *irn)
 {
+	assert(_sched_is_scheduled(irn));
 	return get_irn_sched_info(irn)->time_step;
 }
 
@@ -214,16 +225,6 @@ static INLINE void _sched_remove(ir_node *irn)
   list_del(&info->list);
 	INIT_LIST_HEAD(&info->list);
   info->scheduled = 0;
-}
-
-/**
- * Check, if the node is scheduled.
- * @param irn The node.
- * @return 1, if the node is scheduled, 0 if not.
- */
-static INLINE int _sched_is_scheduled(const ir_node *irn)
-{
-  return get_irn_sched_info(irn)->scheduled;
 }
 
 /**

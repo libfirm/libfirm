@@ -403,6 +403,14 @@ int be_verify_spillslots(ir_graph *irg)
 
 
 
+static sched_timestep_t get_time_step(const ir_node *irn)
+{
+	if(is_Phi(irn))
+		return 0;
+
+	return sched_get_time_step(irn);
+}
+
 static int my_value_dominates(const ir_node *a, const ir_node *b)
 {
 	int res = 0;
@@ -420,8 +428,8 @@ static int my_value_dominates(const ir_node *a, const ir_node *b)
 	 * Dominance is determined by the time steps of the schedule.
 	 */
 	} else {
-		sched_timestep_t as = sched_get_time_step(a);
-		sched_timestep_t bs = sched_get_time_step(b);
+		sched_timestep_t as = get_time_step(a);
+		sched_timestep_t bs = get_time_step(b);
 		res = as <= bs;
 	}
 

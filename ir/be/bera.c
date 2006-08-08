@@ -20,7 +20,10 @@
 
 static sched_timestep_t get_time_step(const ir_node *irn)
 {
-	return is_Phi(irn) ? 0 : sched_get_time_step(irn);
+	if(is_Phi(irn))
+		return 0;
+
+	return sched_get_time_step(irn);
 }
 
 int value_dominates(const ir_node *a, const ir_node *b)
@@ -95,7 +98,7 @@ int values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
 		 * performed.
 		 */
 		foreach_out_edge(a, edge) {
-			const ir_node *user = edge->src;
+			const ir_node *user = get_edge_src_irn(edge);
 			if(get_nodes_block(user) == bb && !is_Phi(user) && b != user && value_dominates(b, user))
 				return 1;
 		}
