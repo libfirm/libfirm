@@ -18,6 +18,11 @@
 #include "besched_t.h"
 #include "belive_t.h"
 
+static sched_timestep_t get_time_step(const ir_node *irn)
+{
+	return is_Phi(irn) ? 0 : sched_get_time_step(irn);
+}
+
 int value_dominates(const ir_node *a, const ir_node *b)
 {
 	int res = 0;
@@ -35,8 +40,8 @@ int value_dominates(const ir_node *a, const ir_node *b)
 	 * Dominance is determined by the time steps of the schedule.
 	 */
 	} else {
-		sched_timestep_t as = sched_get_time_step(a);
-		sched_timestep_t bs = sched_get_time_step(b);
+		sched_timestep_t as = get_time_step(a);
+		sched_timestep_t bs = get_time_step(b);
 		res = as <= bs;
 	}
 

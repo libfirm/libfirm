@@ -23,6 +23,11 @@
 #define LV_USE_BINARY_SEARCH
 #undef  LV_INTESIVE_CHECKS
 
+static INLINE int is_liveness_node(const ir_node *irn)
+{
+	return is_Phi(irn) || is_data_node(irn);
+}
+
 int (be_lv_next_irn)(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
 {
 	return _be_lv_next_irn(lv, bl, flags, i);
@@ -334,7 +339,7 @@ static void liveness_for_node(ir_node *irn, void *data)
 	ir_node *def_block;
 
 	/* Don't compute liveness information for non-data nodes. */
-	if(!is_data_node(irn))
+	if(!is_liveness_node(irn))
 		return;
 
 	bitset_clear_all(visited);
@@ -349,7 +354,7 @@ static void liveness_for_node(ir_node *irn, void *data)
 		* If the usage is no data node, skip this use, since it does not
 		* affect the liveness of the node.
 		*/
-		if(!is_data_node(use))
+		if(!is_liveness_node(use))
 			continue;
 
 		/* Get the block where the usage is in. */
