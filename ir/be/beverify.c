@@ -184,8 +184,37 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 	/* check that all delay branches are filled (at least with NOPs) */
 	if (cfchange_found && delay_branches != 0) {
-		ir_fprintf(stderr, "Not all delay slots filled after jump (%d/%d) in block %+F (%s)\n",
+		ir_fprintf(stderr, "Verify warning: Not all delay slots filled after jump (%d/%d) in block %+F (%s)\n",
 			block, get_irg_dump_name(env->irg));
+		env->problem_found = 1;
+	}
+}
+
+static int should_be_scheduled(ir_node *node) {
+	if(get_irn_mode(node) == mode_M) {
+		if(is_Phi(node) || is_Proj(node) || is_Sync(node))
+			return 0;
+	}
+	if(is_Proj(node) && get_irn_mode(node) == mode_X)
+		return 0;
+	if(get_irn_opcode(node) == iro_End || get_irn_opcode(node) == iro_NoMem)
+		return 0;
+
+	return 1;
+}
+
+static void check_schedule(ir_node *node, void *data) {
+	be_verify_schedule_env_t *env = data;
+	int should_be;
+
+	if(is_Block(node))
+		return;
+
+	should_be = should_be_scheduled(node);
+
+	if(should_be ? !sched_is_scheduled(node) : sched_is_scheduled(node)) {
+		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should%s be scheduled\n",
+			node, get_nodes_block(node), get_irg_dump_name(env->irg), should_be ? "" : "not ");
 		env->problem_found = 1;
 	}
 }
@@ -201,6 +230,8 @@ int be_verify_schedule(ir_graph *irg)
 	env.irg           = irg;
 
 	irg_block_walk_graph(irg, verify_schedule_walker, NULL, &env);
+	// check if all nodes are scheduled
+	irg_walk_graph(irg, check_schedule, NULL, &env);
 
 	return ! env.problem_found;
 }
