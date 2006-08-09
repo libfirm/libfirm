@@ -2599,18 +2599,22 @@ luke_interferencewalker(ir_node * bb, void * data)
 		ir_node        *a = be_lv_get_irn(si->lv, bb, l1);
 		op_t           *a_op = get_irn_link(a);
 
-		if(a_op->is_remat) continue;
 
 		/* a is only interesting if it is in my register class and if it is inside a phi class */
 		if (has_reg_class(si, a) && get_phi_class(a)) {
+			if(a_op->is_remat)
+				continue;
+
 			for(l2=_be_lv_next_irn(si->lv, bb, 0xff, l1+1); l2>=0; l2=_be_lv_next_irn(si->lv, bb, 0xff, l2+1)) {
 				ir_node        *b = be_lv_get_irn(si->lv, bb, l2);
 				op_t           *b_op = get_irn_link(b);
 
-				if(b_op->is_remat) continue;
 
 				/* a and b are only interesting if they are in the same phi class */
 				if(has_reg_class(si, b) && get_phi_class(a) == get_phi_class(b)) {
+					if(b_op->is_remat)
+						continue;
+
 					if(values_interfere_in_block(si, bb, a, b)) {
 						DBG((si->dbg, LEVEL_4, "\tvalues interfere in %+F: %+F, %+F\n", bb, a, b));
 						set_insert_interference(si, si->interferences, a, b, bb);
@@ -4100,6 +4104,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 #ifdef ILP_TIMEOUT
 	lpp_set_time_limit(si.lpp, ILP_TIMEOUT);
 #endif
+
+	lpp_set_log(si.lpp, stdout);
 
 #ifdef SOLVE_LOCAL
 	lpp_solve_cplex(si.lpp);
