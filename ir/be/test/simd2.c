@@ -48,7 +48,7 @@ int main(){
   unsigned char cur[65536];
   unsigned char ref[65536];
   int sum = 0;
-  int numofruns = 1000;
+  int numofruns = 100;
   int i,ii;
   for (i=0;i < numofruns; i++){
    // Reset cache. Alles andere ist unrealistisch.
