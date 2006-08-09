@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#define ITERS 8
+
 unsigned int sse8_16bit_c(	const short * b1,
 				const short * b2,
 				const unsigned int stride)
@@ -7,7 +9,7 @@ unsigned int sse8_16bit_c(	const short * b1,
 	int i;
 	int sse = 0;
 
-	for (i=0; i<8; i++) {
+	for (i=0; i<ITERS; i++) {
 		sse += (b1[0] - b2[0])*(b1[0] - b2[0]);
 		sse += (b1[1] - b2[1])*(b1[1] - b2[1]);
 		sse += (b1[2] - b2[2])*(b1[2] - b2[2]);
@@ -24,23 +26,25 @@ unsigned int sse8_16bit_c(	const short * b1,
 	return(sse);
 }
 
+#define STRIDE 16
 //#define MAX 65536
-#define MAX 32
+#define MAX (ITERS * STRIDE)
 
 int main(){
-  short cur[MAX];
-  short ref[MAX];
-  int sum = 0;
-  int numofruns = 10;
-  int i,ii;
-  for (i=0;i < numofruns; i++){
-    // Reset cache. Alles andere ist unrealistisch.
-    for(ii = 0; ii<MAX;ii++){
-      cur[ii]=(ii)&0xff;
-      ref[ii]=(ii+i+3)&0xff;
-    }
-    sum = sse8_16bit_c(cur, ref, 16);
-    printf("sum[%i] = %i\n",i, sum);
-  }
-  return 0 ;
+	short cur[MAX];
+	short ref[MAX];
+	int sum = 0;
+	int numofruns = 10;
+	int i,ii;
+	for (i=0;i < numofruns; i++){
+		// Reset cache. Alles andere ist unrealistisch.
+		for(ii = 0; ii < MAX; ++ii) {
+			cur[ii]=(ii)&0xff;
+			ref[ii]=(ii+i+3)&0xff;
+		}
+		sum = sse8_16bit_c(cur, ref, STRIDE);
+		printf("sum[%i] = %i\n",i, sum);
+	}
+
+	return 0 ;
 }
