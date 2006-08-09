@@ -2292,6 +2292,9 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 
 	mode = get_irn_mode(call_res);
 
+	if (! call_mem)
+		call_mem = get_irg_no_mem(env->irg);
+
 	if (mode_is_float(mode)) {
 		/* store st(0) onto stack */
 		ir_node *frame = get_irg_frame(env->irg);
