@@ -18,6 +18,6 @@ int main(int argc, char *argv[])
   a = 1;
   b = 42;
   add_a_and_b_to_c();
-  printf("%d %p %p %p\n", c, stdin, stdout, stderr);
+  printf("%d\n", c);
   return 0;
 }
