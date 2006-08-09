@@ -585,12 +585,14 @@ static void assign_spillslots(ss_env_t *env) {
 			be_set_frame_entity(node, slot->entity);
 		} else {
 			int i, arity;
+			ir_node *block = get_nodes_block(node);
 
 			// should be a PhiM
 			assert(is_Phi(node));
 
 			for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 				ir_node *arg = get_irn_n(node, i);
+				ir_node *predblock = get_Block_cfgpred_block(block, i);
 				spill_t *argspill;
 				int argslotid;
 
@@ -606,7 +608,7 @@ static void assign_spillslots(ss_env_t *env) {
 						create_stack_entity(env, argslot);
 					}
 
-					memperm = get_memperm(env, get_nodes_block(arg));
+					memperm = get_memperm(env, predblock);
 
 					entry = obstack_alloc(&env->obst, sizeof(entry[0]));
 					entry->node = node;
