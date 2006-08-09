@@ -59,6 +59,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		arch_set_irn_register(cg->arch_env, res, in2_reg);
 
 		/* add to schedule */
+		sched_add_before(irn, get_Proj_pred(res));
 		sched_add_before(irn, res);
 
 		/* generate the add */
@@ -309,17 +310,8 @@ insert_copy:
 			set_ia32_op_type(irn, ia32_AddrModeD);
 			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 		}
-
-		/* check if there is a sub which need to be transformed */
-		ia32_transform_sub_to_neg_add(irn, cg);
-
-		/* transform a LEA into an Add if possible */
-		ia32_transform_lea_to_add(irn, cg);
 	}
-end:
-
-	/* check for peephole optimization */
-	ia32_peephole_optimization(irn, cg);
+end: ;
 }
 
 /**
@@ -425,6 +417,22 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
 		next = sched_next(irn);
 		fix_am_source(irn, env);
+	}
+
+	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
+		ia32_code_gen_t *cg = env;
+		next = sched_next(irn);
+
+		if (is_ia32_irn(irn)) {
+			/* check if there is a sub which need to be transformed */
+			ia32_transform_sub_to_neg_add(irn, cg);
+
+			/* transform a LEA into an Add if possible */
+			ia32_transform_lea_to_add(irn, cg);
+
+			/* check for peephole optimization */
+			ia32_peephole_optimization(irn, cg);
+		}
 	}
 
 	/* second: insert copies and finish irg */
