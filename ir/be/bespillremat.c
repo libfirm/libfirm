@@ -35,6 +35,7 @@
 #include "irvrfy.h"
 
 #include <lpp/lpp.h>
+#include <lpp/mps.h>
 #include <lpp/lpp_net.h>
 #include <lpp/lpp_cplex.h>
 //#include <lc_pset.h>
@@ -52,6 +53,43 @@
 #include "bepressurestat.h"
 
 #include "bechordal_t.h"
+
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#endif /* WITH_LIBCORE */
+
+#define DUMP_PROBLEM  1
+#define DUMP_MPS      2
+#define DUMP_SOLUTION 4
+
+static int dump_flags   = 0;
+static int activate_log = 0;
+
+#ifdef WITH_LIBCORE
+static const lc_opt_enum_mask_items_t dump_items[] = {
+	{ "problem",  DUMP_PROBLEM  },
+	{ "mps",      DUMP_MPS      },
+	{ "solution", DUMP_SOLUTION },
+	{ NULL,      0 }
+};
+
+static lc_opt_enum_mask_var_t dump_var = {
+	&dump_flags, dump_items
+};
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",  &dump_var),
+	LC_OPT_ENT_BOOL     ("log",  "activate the lpp log",                        &activate_log),
+	{ NULL }
+};
+
+void be_spill_remat_register_options(lc_opt_entry_t *grp)
+{
+	lc_opt_entry_t *my_grp = lc_opt_get_grp(grp, "remat");
+	lc_opt_add_table(my_grp, options);
+}
+#endif
 
 //#define DUMP_SOLUTION
 //#define DUMP_ILP
@@ -1251,6 +1289,7 @@ luke_endwalker(ir_node * bb, void * data)
 		spill_t     query,
 					*spill;
 		double      spill_cost;
+		int         default_spilled;
 
 
 		/* handle values used by control flow nodes later separately */
@@ -1266,15 +1305,12 @@ luke_endwalker(ir_node * bb, void * data)
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "mem_out_%N_%N", irn, bb);
-		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
+		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
 		/* by default spill value right after definition */
-		if(be_is_live_in(si->lv, bb, irn)) {
-			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
-		} else {
-			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
-		}
+		default_spilled = be_is_live_in(si->lv, bb, irn) || is_Phi(irn);
+		spill->spill    = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, !default_spilled);
 
 		if(is_merge_edge(bb)) {
 			ilp_var_t   reload;
@@ -1301,6 +1337,7 @@ luke_endwalker(ir_node * bb, void * data)
 		ilp_cst_t   end_use_req,
 					rel_cst;
 		ilp_var_t   reload;
+		int         default_spilled;
 
 		query.irn = irn;
 		spill = set_insert(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
@@ -1308,7 +1345,7 @@ luke_endwalker(ir_node * bb, void * data)
 		spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", irn, bb);
-		spill->reg_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
+		spill->reg_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 		/* if irn is used at the end of the block, then it is live anyway */
 		//lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 
@@ -1316,11 +1353,8 @@ luke_endwalker(ir_node * bb, void * data)
 		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		if(be_is_live_in(si->lv, bb, irn)) {
-			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
-		} else {
-			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
-		}
+		default_spilled = be_is_live_in(si->lv, bb, irn) || is_Phi(irn);
+		spill->spill    = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, !default_spilled);
 
 		/* reload for use be control flow op */
 		ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
@@ -1428,6 +1462,7 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 	spill_t     *spill,
 				 query;
 	char         buf[256];
+	int          default_spilled;
 
 	query.irn = irn;
 	spill = set_find(spill_bb->ilp, &query, sizeof(query), HASH_PTR(irn));
@@ -1444,11 +1479,8 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		if(be_is_live_in(si->lv, bb, irn)) {
-			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
-		} else {
-			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
-		}
+		default_spilled = be_is_live_in(si->lv, bb, irn) || is_Phi(irn);
+		spill->spill    = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, !default_spilled);
 	}
 
 	return spill;
@@ -2248,10 +2280,12 @@ skip_one_must_die:
 		lpp_set_factor_fast(si->lpp, cst, spill->spill, -1.0);
 
 		if(pset_find_ptr(live, spill->irn)) {
+			int default_spilled;
 			DBG((si->dbg, LEVEL_5, "\t     %+F live at beginning of block %+F\n", spill->irn, bb));
 
 			ir_snprintf(buf, sizeof(buf), "mem_in_%N_%N", spill->irn, bb);
-			spill->mem_in = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
+			default_spilled = be_is_live_in(si->lv, bb, spill->irn) || is_Phi(spill->irn);
+			spill->mem_in   = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, default_spilled);
 			lpp_set_factor_fast(si->lpp, cst, spill->mem_in, -1.0);
 
 			if(is_Phi(spill->irn) && get_nodes_block(spill->irn) == bb) {
@@ -2293,11 +2327,13 @@ skip_one_must_die:
 						}
 					}
 
+#if 0
 					/* copy <= mem_in */
 					ir_snprintf(buf, sizeof(buf), "nocopy_%N_%N", arg, spill->irn);
 					cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
 					lpp_set_factor_fast(si->lpp, cst, var, 1.0);
 					lpp_set_factor_fast(si->lpp, cst, spill->mem_in, -1.0);
+#endif
 				}
 			}
 		}
@@ -2320,7 +2356,7 @@ skip_one_must_die:
 		assert(spill);
 
 		ir_snprintf(buf, sizeof(buf), "reg_in_%N_%N", irn, bb);
-		spill->reg_in = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
+		spill->reg_in = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_in, 1.0);
 
@@ -4017,6 +4053,7 @@ assign_spillslots(spill_ilp_t * si)
 void
 be_spill_remat(const be_chordal_env_t * chordal_env)
 {
+	char            buf[256];
 	char            problem_name[256];
 	char            dump_suffix[256];
 	char            dump_suffix2[256];
@@ -4100,18 +4137,32 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	memcopyhandler(&si);
 #endif
 
-#ifdef DUMP_ILP
-	{
+	if(dump_flags & DUMP_PROBLEM) {
 		FILE           *f;
-		char            buf[256];
-
 		ir_snprintf(buf, sizeof(buf), "%s-spillremat.ilp", problem_name);
 		if ((f = fopen(buf, "wt")) != NULL) {
 			lpp_dump_plain(si.lpp, f);
 			fclose(f);
 		}
 	}
-#endif
+
+	if(dump_flags & DUMP_MPS) {
+		FILE *f;
+
+		ir_snprintf(buf, sizeof(buf), "%s-spillremat.mps", problem_name);
+		if((f = fopen(buf, "wt")) != NULL) {
+			mps_write_mps(si.lpp, s_mps_fixed, f);
+			fclose(f);
+		}
+
+		ir_snprintf(buf, sizeof(buf), "%s-spillremat.mst", problem_name);
+		if((f = fopen(buf, "wt")) != NULL) {
+			mps_write_mst(si.lpp, s_mps_fixed, f);
+			fclose(f);
+		}
+	}
+
+	lpp_check_startvals(si.lpp);
 
 #ifdef SOLVE
 	DBG((si.dbg, LEVEL_1, "\tSolving %s (%d variables, %d constraints)\n", problem_name, si.lpp->var_next, si.lpp->cst_next));
@@ -4119,7 +4170,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	lpp_set_time_limit(si.lpp, ILP_TIMEOUT);
 #endif
 
-	lpp_set_log(si.lpp, stdout);
+	if(activate_log)
+		lpp_set_log(si.lpp, stdout);
 
 #ifdef SOLVE_LOCAL
 	lpp_solve_cplex(si.lpp);
@@ -4131,8 +4183,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	DBG((si.dbg, LEVEL_1, "\t%s: iterations: %d, solution time: %g, objective function: %g\n", problem_name, si.lpp->iterations, si.lpp->sol_time, is_zero(si.lpp->objval)?0.0:si.lpp->objval));
 
-#ifdef DUMP_SOLUTION
-	{
+	if(dump_flags & DUMP_SOLUTION) {
 		FILE           *f;
 		char            buf[256];
 
@@ -4146,7 +4197,6 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 			fclose(f);
 		}
 	}
-#endif
 
 	writeback_results(&si);
 

@@ -19,6 +19,7 @@
 
 static int time_limit = 60;
 static int solve_net  = 1;
+static int solve_log  = 0;
 static int dump_flags = 0;
 
 #ifdef WITH_LIBCORE
@@ -37,6 +38,7 @@ static lc_opt_enum_mask_var_t dump_var = {
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_INT      ("limit", "time limit for solving in seconds (0 for unlimited, default 60)", &time_limit),
 	LC_OPT_ENT_BOOL     ("net",   "solve over the net (default: yes)", &solve_net),
+	LC_OPT_ENT_BOOL     ("log",   "show ilp solving log",              &solve_log),
 	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags (ilp, sol)",             &dump_var),
 	{ NULL }
 };
@@ -199,6 +201,9 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
 
 	ienv->build(ienv);
 	lpp_set_time_limit(ienv->lp, time_limit);
+
+	if(solve_log)
+		lpp_set_log(ienv->lp, stdout);
 
 	if(solve_net)
 		lpp_solve_net(ienv->lp, main_env->options->ilp_server, main_env->options->ilp_solver);

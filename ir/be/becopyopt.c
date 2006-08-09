@@ -1229,7 +1229,7 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 	}
 
 	else
-		fprintf(f, "label=\"\"" );
+		fprintf(f, "label=\"\" shape=point " );
 
 	if(env->flags & CO_IFG_DUMP_SHAPE)
 		fprintf(f, "shape=%s ", limited ? "diamond" : "ellipse");
@@ -1331,6 +1331,7 @@ void co_driver(be_chordal_env_t *cenv)
 {
 	copy_opt_t *co;
 	co_algo_t  *algo_func;
+	int init_costs;
 
 	if(algo < 0 || algo >= CO_ALGO_LAST)
 		return;
@@ -1338,11 +1339,7 @@ void co_driver(be_chordal_env_t *cenv)
 	co = new_copy_opt(cenv, cost_func);
 	co_build_ou_structure(co);
 	co_build_graph_structure(co);
-	if(do_stats) {
-		ir_printf("%30F %10s %10d%10d%10d%10d", cenv->irg, cenv->cls->name,
-				co_get_max_copy_costs(co), co_get_copy_costs(co),
-				co_get_inevit_copy_costs(co), co_get_lower_bound(co));
-	}
+	init_costs = co_get_copy_costs(co);
 
 	/* Dump the interference graph in Appel's format. */
 	if(dump_flags & DUMP_APPEL) {
@@ -1370,6 +1367,10 @@ void co_driver(be_chordal_env_t *cenv)
 		int optimizable_costs = co_get_max_copy_costs(co) - co_get_lower_bound(co);
 		int remaining         = co_get_copy_costs(co);
 		int evitable          = remaining - co_get_lower_bound(co);
+
+		ir_printf("%30F %10s %10d%10d%10d%10d", cenv->irg, cenv->cls->name,
+				co_get_max_copy_costs(co), init_costs,
+				co_get_inevit_copy_costs(co), co_get_lower_bound(co));
 
 		if(optimizable_costs > 0)
 			printf("%10d %5.2f\n", remaining, (evitable * 100.0) / optimizable_costs);
