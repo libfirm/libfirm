@@ -55,7 +55,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 	set_Tuple_pred(call, pn_Call_M_regular,        get_irg_no_mem(irg));
 	set_Tuple_pred(call, pn_Call_X_except,         get_irg_bad(irg));
 	set_Tuple_pred(call, pn_Call_T_result,         res);
-	set_Tuple_pred(call, pn_Call_M_except,         get_irg_bad(irg));
+	set_Tuple_pred(call, pn_Call_M_except,         get_irg_no_mem(irg));
 	set_Tuple_pred(call, pn_Call_P_value_res_base, get_irg_bad(irg));
 }
 
