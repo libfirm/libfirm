@@ -56,8 +56,8 @@
 //#define DUMP_SOLUTION
 //#define DUMP_ILP
 //#define KEEPALIVE /* keep alive all inserted remats and dump graph with remats */
-#define COLLECT_REMATS /* enable rematerialization */
-#define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
+//#define COLLECT_REMATS /* enable rematerialization */
+//#define COLLECT_INVERSE_REMATS /* enable placement of inverse remats */
 //#define ONLY_BRIGGS_REMATS /* only remats without parameters (or only with ignored params) */
 #define REMAT_WHILE_LIVE /* only remat values that are live */
 //#define NO_ENLARGE_L1V3N355 /* do not remat after the death of some operand */
@@ -828,7 +828,7 @@ insert_remat_after(spill_ilp_t * si, const remat_t * remat, ir_node * pos, const
 		op->is_remat = 1;
 		op->attr.remat.remat = remat;
 		op->attr.remat.pre = 0;
-		op->attr.remat.ilp = lpp_add_var(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(si, pos));
+		op->attr.remat.ilp = lpp_add_var_default(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(si, pos), 0.0);
 
 		set_irn_link(copy, op);
 		pset_insert_ptr(si->all_possible_remats, copy);
@@ -866,7 +866,7 @@ insert_remat_before(spill_ilp_t * si, const remat_t * remat, ir_node * pos, cons
 		op->is_remat = 1;
 		op->attr.remat.remat = remat;
 		op->attr.remat.pre = 1;
-		op->attr.remat.ilp = lpp_add_var(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(si, pos));
+		op->attr.remat.ilp = lpp_add_var_default(si->lpp, buf, lpp_binary, remat->cost*execution_frequency(si, pos), 0.0);
 
 		set_irn_link(copy, op);
 		pset_insert_ptr(si->all_possible_remats, copy);
@@ -1262,21 +1262,26 @@ luke_endwalker(ir_node * bb, void * data)
 		spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", irn, bb);
-		spill->reg_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		spill->reg_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "mem_out_%N_%N", irn, bb);
-		spill->mem_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
+		/* by default spill value right after definition */
+		be_is_live_in(si->lv, bb, irn) {
+			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
+		} else {
+			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
+		}
 
 		if(is_merge_edge(bb)) {
 			ilp_var_t   reload;
 			ilp_cst_t   rel_cst;
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
-			reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
+			reload = lpp_add_var_default(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb), 0.0);
 			set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
 
 			/* reload <= mem_out */
@@ -1303,18 +1308,23 @@ luke_endwalker(ir_node * bb, void * data)
 		spill_cost = is_Unknown(irn)?0.0001:COST_STORE*execution_frequency(si, bb);
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", irn, bb);
-		spill->reg_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		spill->reg_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 		/* if irn is used at the end of the block, then it is live anyway */
 		//lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "mem_out_%N_%N", irn, bb);
-		spill->mem_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
+		be_is_live_in(si->lv, bb, irn) {
+			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
+		} else {
+			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
+		}
 
+		/* reload for use be control flow op */
 		ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
-		reload = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
+		reload = lpp_add_var_default(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb), 1.0);
 		set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
 
 		/* reload <= mem_out */
@@ -1431,10 +1441,14 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 		spill->mem_in  = ILP_UNDEF;
 
 		ir_snprintf(buf, sizeof(buf), "mem_out_%N_%N", irn, bb);
-		spill->mem_out = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		spill->spill = lpp_add_var(si->lpp, buf, lpp_binary, spill_cost);
+		be_is_live_in(si->lv, bb, irn) {
+			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
+		} else {
+			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
+		}
 	}
 
 	return spill;
@@ -1502,7 +1516,7 @@ insert_mem_copy_position(spill_ilp_t * si, pset * live, const ir_node * block)
 	if(edge) return;
 
 	ir_snprintf(buf, sizeof(buf), "copyreg_%N", block);
-	copyreg = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+	copyreg = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 	ir_snprintf(buf, sizeof(buf), "check_copyreg_%N", block);
 	cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, si->n_regs);
@@ -1621,7 +1635,7 @@ luke_blockwalker(ir_node * bb, void * data)
 		assert(!op->is_remat);
 
 		ir_snprintf(buf, sizeof(buf), "lr_%N_%N", irn, bb);
-		op->attr.live_range.ilp = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		op->attr.live_range.ilp = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 		op->attr.live_range.op = bb;
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", bb, irn);
@@ -1662,7 +1676,7 @@ luke_blockwalker(ir_node * bb, void * data)
 			/* if value is becoming live through use by remat */
 			if(!pset_find_ptr(live, remat_arg)) {
 				ir_snprintf(buf, sizeof(buf), "lr_%N_end%N", remat_arg, bb);
-				prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+				prev_lr = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 
 				arg_op->attr.live_range.ilp = prev_lr;
 				arg_op->attr.live_range.op = bb;
@@ -1860,7 +1874,7 @@ skip_one_must_die:
 					cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
 
 					ir_snprintf(buf, sizeof(buf), "lr_%N_%N", value, irn);
-					prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+					prev_lr = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 
 					lpp_set_factor_fast(si->lpp, cst, value_op->attr.live_range.ilp, 1.0);
 					lpp_set_factor_fast(si->lpp, cst, prev_lr, -1.0);
@@ -1902,7 +1916,7 @@ skip_one_must_die:
 						ilp_var_t     lr;
 
 						ir_snprintf(buf, sizeof(buf), "lr_%N_%N", remat_arg, irn);
-						lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+						lr = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 
 						arg_op->attr.live_range.ilp = lr;
 						arg_op->attr.live_range.op = irn;
@@ -1958,11 +1972,11 @@ skip_one_must_die:
 
 			/* new live range for each used value */
 			ir_snprintf(buf, sizeof(buf), "lr_%N_%N", arg, irn);
-			prev_lr = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+			prev_lr = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 
 			/* the epilog stuff - including post_use, check_post, check_post_remat */
 			ir_snprintf(buf, sizeof(buf), "post_use_%N_%N", arg, irn);
-			post_use = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+			post_use = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
 
 			lpp_set_factor_fast(si->lpp, check_post, post_use, 1.0);
 
@@ -2023,7 +2037,7 @@ skip_one_must_die:
 					ilp_var_t       memoperand;
 
 					ir_snprintf(buf, sizeof(buf), "memoperand_%N_%d", irn, n);
-					memoperand = lpp_add_var(si->lpp, buf, lpp_binary, COST_MEMOPERAND*execution_frequency(si, bb));
+					memoperand = lpp_add_var_default(si->lpp, buf, lpp_binary, COST_MEMOPERAND*execution_frequency(si, bb), 0.0);
 					set_insert_memoperand(si->memoperands, irn, n, memoperand);
 
 					ir_snprintf(buf, sizeof(buf), "nolivepost_%N_%d", irn, n);
@@ -2093,7 +2107,7 @@ skip_one_must_die:
 			assert(spill);
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", arg, irn);
-			op->attr.live_range.args.reloads[i] = lpp_add_var(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb));
+			op->attr.live_range.args.reloads[i] = lpp_add_var_default(si->lpp, buf, lpp_binary, COST_LOAD*execution_frequency(si, bb), 1.0);
 
 			/* reload <= mem_out */
 			ir_snprintf(buf, sizeof(buf), "req_reload_%N_%N", arg, irn);
@@ -2237,7 +2251,7 @@ skip_one_must_die:
 			DBG((si->dbg, LEVEL_5, "\t     %+F live at beginning of block %+F\n", spill->irn, bb));
 
 			ir_snprintf(buf, sizeof(buf), "mem_in_%N_%N", spill->irn, bb);
-			spill->mem_in = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+			spill->mem_in = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 			lpp_set_factor_fast(si->lpp, cst, spill->mem_in, -1.0);
 
 			if(is_Phi(spill->irn) && get_nodes_block(spill->irn) == bb) {
@@ -2269,7 +2283,7 @@ skip_one_must_die:
 
 					/* copies are not for free */
 					ir_snprintf(buf, sizeof(buf), "copy_%N_%N", arg, spill->irn);
-					var = lpp_add_var(si->lpp, buf, lpp_binary, COST_STORE * freq);
+					var = lpp_add_var_default(si->lpp, buf, lpp_binary, COST_STORE * freq, 1.0);
 
 					for(m=n; m>=0; --m) {
 						const ir_node  *arg2 = get_irn_n(spill->irn, m);
@@ -2306,7 +2320,7 @@ skip_one_must_die:
 		assert(spill);
 
 		ir_snprintf(buf, sizeof(buf), "reg_in_%N_%N", irn, bb);
-		spill->reg_in = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		spill->reg_in = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_in, 1.0);
 
@@ -2812,7 +2826,7 @@ memcopyhandler(spill_ilp_t * si)
 		/* any_interf <= \sum interf */
 		ir_snprintf(buf, sizeof(buf), "interfere_%N_%N", a, b);
 		any_interfere_cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0);
-		any_interfere = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+		any_interfere = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		lpp_set_factor_fast(si->lpp, any_interfere_cst, any_interfere, 1.0);
 
@@ -2834,7 +2848,7 @@ memcopyhandler(spill_ilp_t * si)
 			/* 2: - mem_in_a - spill_a + interfere <= 0 */
 			/* 3: - mem_in_b - spill_b + interfere <= 0 */
 			ir_snprintf(buf, sizeof(buf), "interfere_%N_%N_%N", bb, a, b);
-			interfere = lpp_add_var(si->lpp, buf, lpp_binary, 0.0);
+			interfere = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 			ir_snprintf(buf, sizeof(buf), "interfere_%N_%N_%N-1", bb, a, b);
 			cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 1);
