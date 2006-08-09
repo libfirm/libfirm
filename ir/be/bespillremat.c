@@ -1270,7 +1270,7 @@ luke_endwalker(ir_node * bb, void * data)
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
 		/* by default spill value right after definition */
-		be_is_live_in(si->lv, bb, irn) {
+		if(be_is_live_in(si->lv, bb, irn)) {
 			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
 		} else {
 			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
@@ -1316,7 +1316,7 @@ luke_endwalker(ir_node * bb, void * data)
 		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		be_is_live_in(si->lv, bb, irn) {
+		if(be_is_live_in(si->lv, bb, irn)) {
 			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
 		} else {
 			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
@@ -1444,7 +1444,7 @@ add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
 		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "spill_%N_%N", irn, bb);
-		be_is_live_in(si->lv, bb, irn) {
+		if(be_is_live_in(si->lv, bb, irn)) {
 			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 0.0);
 		} else {
 			spill->spill = lpp_add_var_default(si->lpp, buf, lpp_binary, spill_cost, 1.0);
