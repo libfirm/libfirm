@@ -243,7 +243,7 @@ $comment_string = "/*";
 "MulS" => {
   "comment"   => "construct MulS: MulS(a, b) = MulS(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx" ] },
   "emit"      => '. mul %ia32_emit_unop /* Mul(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
 },
@@ -276,7 +276,7 @@ $comment_string = "/*";
 "Mulh" => {
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax in_r3", "edx" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx" ] },
   "emit"      => '. imul %ia32_emit_unop /* Mulh(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
 },
@@ -380,7 +380,7 @@ $comment_string = "/*";
 "DivMod" => {
   "op_flags"  => "F|L",
   "state"     => "exc_pinned",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "eax in_r1", "edx in_r3" ] },
+  "reg_req"   => { "in" => [ "eax", "gp", "edx", "none" ], "out" => [ "eax", "edx" ] },
   "attr"      => "ia32_op_flavour_t dm_flav",
   "init_attr" => "  attr->data.op_flav = dm_flav;",
   "cmp_attr"  => "  return attr_a->data.op_flav != attr_b->data.op_flav;\n",
@@ -932,7 +932,7 @@ else {
   "op_flags" => "F|H",
   "state"    => "pinned",
   "comment"  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
-  "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "edi in_r1", "esi in_r2", "ecx in_r3", "none" ] },
+  "reg_req"  => { "in" => [ "edi", "esi", "ecx", "none" ], "out" => [ "edi", "esi", "ecx", "none" ] },
   "outs"     => [ "DST", "SRC", "CNT", "M" ],
 },
 
@@ -941,7 +941,7 @@ else {
   "state"    => "pinned",
   "comment"  => "implements a memcopy: CopyB(dst, src, mem) == memcpy(dst, src, attr(size))",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"  => { "in" => [ "gp", "gp", "none" ], "out" => [  "edi in_r1", "esi in_r2", "none" ] },
+  "reg_req"  => { "in" => [ "edi", "esi", "none" ], "out" => [  "edi", "esi", "none" ] },
   "outs"     => [ "DST", "SRC", "M" ],
 },
 
