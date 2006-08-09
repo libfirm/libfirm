@@ -2511,6 +2511,24 @@ int
   return _is_Confirm(node);
 }
 
+/* returns true if node is a SymConst node. */
+int
+(is_SymConst)(const ir_node *node) {
+  return _is_SymConst(node);
+}
+
+/* returns true if node is a Cond node. */
+int
+(is_Cond)(const ir_node *node) {
+  return _is_Cond(node);
+}
+
+/* returns true if node is a Cmp node. */
+int
+(is_Cmp)(const ir_node *node) {
+  return _is_Cmp(node);
+}
+
 int
 is_Proj (const ir_node *node) {
   assert(node);
