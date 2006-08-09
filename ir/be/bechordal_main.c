@@ -246,7 +246,9 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 
 	co_register_options(chordal_grp);
 	be_java_coal_register_options(chordal_grp);
+#ifdef WITH_ILP
 	be_spill_remat_register_options(chordal_grp);
+#endif
 }
 #endif /* WITH_LIBCORE */
 
@@ -484,8 +486,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		    );
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
-		check_for_memory_operands(&chordal_env);
-		be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
+                be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
 
@@ -596,6 +597,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		assert(be_verify_spillslots(irg) && "Spillslot verification failed");
 	}
 	BE_TIMER_POP(ra_timer.t_verify);
+
+	check_for_memory_operands(&chordal_env);
 
 	BE_TIMER_PUSH(ra_timer.t_epilog);
 

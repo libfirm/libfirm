@@ -70,6 +70,10 @@ void ia32_switch_section(FILE *F, section_t sec) {
 	case SECTION_RODATA:
 	case SECTION_COMMON:
 		fprintf(F, "\t%s\n", text[asm_flavour][sec]);
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -82,6 +86,8 @@ static void ia32_dump_function_object(FILE *F, const char *name)
 	case ASM_MINGW_GAS:
 		fprintf(F, "\t.def\t%s;\t.scl\t2;\t.type\t32;\t.endef\n", name);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -90,6 +96,8 @@ static void ia32_dump_function_size(FILE *F, const char *name)
 	switch (asm_flavour) {
 	case ASM_LINUX_GAS:
 		fprintf(F, "\t.size\t%s, .-%s\n", name, name);
+		break;
+	default:
 		break;
 	}
 }
@@ -1744,6 +1752,11 @@ static void emit_be_Return(const ir_node *n, ia32_emit_env_t *env) {
 	lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", "ret", "/* be_Return */", n, n);
 }
 
+static void emit_Nothing(const ir_node *n, ia32_emit_env_t *env) {
+	FILE *F = env->out;
+
+	ir_fprintf(F, "\t%35s /* %+F (%+G) */\n", " ", n, n);
+}
 
 
 /***********************************************************************************
@@ -1765,7 +1778,9 @@ static void ia32_register_emitters(void) {
 #define IA32_EMIT2(a,b) op_ia32_##a->ops.generic = (op_func)emit_ia32_##b
 #define IA32_EMIT(a)    IA32_EMIT2(a,a)
 #define EMIT(a)         op_##a->ops.generic = (op_func)emit_##a
+#define IGN(a)			op_##a->ops.generic = (op_func)emit_Nothing
 #define BE_EMIT(a)      op_be_##a->ops.generic = (op_func)emit_be_##a
+#define BE_IGN(a)		op_be_##a->ops.generic = (op_func)emit_Nothing
 
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
@@ -1811,12 +1826,19 @@ static void ia32_register_emitters(void) {
 	BE_EMIT(Perm);
 	BE_EMIT(Return);
 
+	BE_IGN(RegParams);
+	BE_IGN(Barrier);
+	BE_IGN(Keep);
+
 	/* firm emitter */
 	EMIT(Jmp);
 	EMIT(Proj);
+	IGN(Phi);
+	IGN(Start);
 
 #undef BE_EMIT
 #undef EMIT
+#undef IGN
 #undef IA32_EMIT2
 #undef IA32_EMIT
 }
@@ -1826,7 +1848,6 @@ static void ia32_register_emitters(void) {
  */
 static void ia32_emit_node(const ir_node *irn, void *env) {
 	ia32_emit_env_t   *emit_env = env;
-	FILE              *F        = emit_env->out;
 	ir_op             *op       = get_irn_op(irn);
 	DEBUG_ONLY(firm_dbg_module_t *mod = emit_env->mod;)
 
@@ -1837,7 +1858,8 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 		(*emit)(irn, env);
 	}
 	else {
-		ir_fprintf(F, "\t%35s /* %+F (%+G) */\n", " ", irn, irn);
+		emit_Nothing(irn, env);
+		ir_fprintf(stderr, "Warning: No emit handler for node %+F (%+G)\n", irn, irn);
 	}
 }
 

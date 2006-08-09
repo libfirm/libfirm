@@ -274,6 +274,13 @@ static int cmp_spill(const void* d1, const void* d2, size_t size) {
 	return s1->spill != s2->spill;
 }
 
+static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node) {
+	spill_t spill;
+
+	spill.spill = node;
+	return set_find(env->spills, &spill, sizeof(spill), HASH_PTR(node));
+}
+
 static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, entity *ent) {
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
@@ -291,8 +298,16 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, entity
 
 static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent);
 
+static void check_entity(be_verify_spillslots_env_t *env, ir_node *node, entity *ent) {
+	if(ent == NULL) {
+		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
+		           node, get_nodes_block(node), get_irg_dump_name(env->irg));
+	}
+}
+
 static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
 	entity *spillent = be_get_frame_entity(node);
+	check_entity(env, node, spillent);
 	get_spill(env, node, ent);
 
 	if(spillent != ent) {
@@ -316,6 +331,7 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	out = get_Proj_proj(node);
 
 	spillent = be_get_MemPerm_out_entity(memperm, out);
+	check_entity(env, memperm, spillent);
 	if(spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: MemPerm %+F has different entity than reload %+F in block %+F(%s)\n",
 			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
@@ -386,6 +402,7 @@ static void collect_spills_walker(ir_node *node, void *data) {
 	if(be_is_Reload(node)) {
 		ir_node *spill = get_irn_n(node, be_pos_Reload_mem);
 		entity* ent = be_get_frame_entity(node);
+		check_entity(env, node, ent);
 
 		collect(env, spill, node, ent);
 		ARR_APP1(ir_node*, env->reloads, node);
@@ -424,6 +441,23 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env) {
 	}
 }
 
+static void check_lonely_spills(ir_node *node, void *data) {
+	be_verify_spillslots_env_t *env = data;
+
+	if(be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
+		spill_t *spill = find_spill(env, node);
+		if(be_is_Spill(node)) {
+			entity *ent = be_get_frame_entity(node);
+			check_entity(env, node, ent);
+		}
+
+		if(spill == NULL) {
+			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) not connected to a reaload\n",
+			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
+		}
+	}
+}
+
 int be_verify_spillslots(ir_graph *irg)
 {
 	be_verify_spillslots_env_t env;
@@ -435,6 +469,7 @@ int be_verify_spillslots(ir_graph *irg)
 	env.lv = be_liveness(irg);
 
 	irg_walk_graph(irg, collect_spills_walker, NULL, &env);
+	irg_walk_graph(irg, check_lonely_spills, NULL, &env);
 
 	check_spillslot_interference(&env);
 

@@ -3092,7 +3092,6 @@ connect_all_remats_with_keep(spill_ilp_t * si)
 		obstack_free(si->obst, ins);
 	}
 }
-#endif
 
 static void
 connect_all_spills_with_keep(spill_ilp_t * si)
