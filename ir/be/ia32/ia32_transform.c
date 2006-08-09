@@ -2333,7 +2333,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env) {
 	entity *ent      = get_irg_entity(get_irn_irg(ret_val));
 	ir_type *tp      = get_entity_type(ent);
 
-	if (! ret_val || ! USE_SSE2(env->cg))
+	if (be_Return_get_n_rets(env->irn) < 1 || ! ret_val || ! USE_SSE2(env->cg))
 		return NULL;
 
 
