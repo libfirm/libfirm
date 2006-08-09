@@ -678,7 +678,7 @@ static void create_memperms(ss_env_t *env) {
 
 		// insert node into schedule
 		blockend = get_end_of_block_insertion_point(memperm->block);
-		sched_add_after(blockend, mempermnode);
+		sched_add_before(blockend, mempermnode);
 
 		for(entry = memperm->entries, i = 0; entry != NULL; entry = entry->next, ++i) {
 			ir_node *proj;
@@ -688,7 +688,7 @@ static void create_memperms(ss_env_t *env) {
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
 			set_irg_current_block(env->chordal_env->irg, memperm->block);
 			proj = new_Proj(mempermnode, get_irn_mode(arg), i);
-			sched_add_after(blockend, proj);
+			sched_add_before(blockend, proj);
 
 			set_irn_n(entry->node, entry->pos, proj);
 		}

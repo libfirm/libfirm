@@ -191,14 +191,28 @@ static void verify_schedule_walker(ir_node *block, void *data)
 }
 
 static int should_be_scheduled(ir_node *node) {
+	if(is_Block(node))
+		return -1;
+
 	if(get_irn_mode(node) == mode_M) {
-		if(is_Phi(node) || is_Proj(node) || is_Sync(node))
+		if(is_Proj(node))
+			return -1;
+		if(is_Phi(node) || is_Sync(node) || get_irn_opcode(node) == iro_Pin)
 			return 0;
 	}
 	if(is_Proj(node) && get_irn_mode(node) == mode_X)
 		return 0;
-	if(get_irn_opcode(node) == iro_End || get_irn_opcode(node) == iro_NoMem)
+	if(be_is_Keep(node) && get_irn_opcode(get_nodes_block(node)) == iro_Bad)
 		return 0;
+
+	switch(get_irn_opcode(node)) {
+	case iro_End:
+	case iro_NoMem:
+	case iro_Bad:
+		return 0;
+	default:
+		break;
+	}
 
 	return 1;
 }
@@ -207,14 +221,13 @@ static void check_schedule(ir_node *node, void *data) {
 	be_verify_schedule_env_t *env = data;
 	int should_be;
 
-	if(is_Block(node))
-		return;
-
 	should_be = should_be_scheduled(node);
+	if(should_be == -1)
+		return;
 
 	if(should_be ? !sched_is_scheduled(node) : sched_is_scheduled(node)) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should%s be scheduled\n",
-			node, get_nodes_block(node), get_irg_dump_name(env->irg), should_be ? "" : "not ");
+			node, get_nodes_block(node), get_irg_dump_name(env->irg), should_be ? "" : " not");
 		env->problem_found = 1;
 	}
 }

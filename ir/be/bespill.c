@@ -474,7 +474,6 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 	copy_node_attr(spilled, res);
 
 	DBG((env->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
-	ir_printf("Insert remat %+F for %+F before reloader %+F(%s)\n", res, spilled, reloader, get_irg_dump_name(get_irn_irg(reloader)));
 
 	/* insert in schedule */
 	assert(!is_Block(reloader));
