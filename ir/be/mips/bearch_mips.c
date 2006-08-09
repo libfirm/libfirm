@@ -448,10 +448,11 @@ static void mips_prepare_graph(void *self) {
 /**
  * Called immediately before emit phase.
  */
-static void mips_finish_irg(ir_graph *irg, mips_code_gen_t *cg) {
-	/* TODO: - fix offsets for nodes accessing stack
-			 - ...
-	*/
+static void mips_finish_irg(void *self) {
+	mips_code_gen_t *cg = self;
+	ir_graph        *irg = cg->irg;
+
+	dump_ir_block_graph_sched(irg, "-mips-finished");
 }
 
 
@@ -487,8 +488,6 @@ static void mips_emit_and_done(void *self) {
 		cg->emit_decls = 0;
 	}
 
-	mips_finish_irg(irg, cg);
-	dump_ir_block_graph_sched(irg, "-mips-finished");
 	mips_gen_routine(out, irg, cg);
 
 	cur_reg_set = NULL;
@@ -511,6 +510,7 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 	mips_before_sched,   /* before scheduling hook */
 	mips_before_ra,      /* before register allocation hook */
 	mips_after_ra,
+	mips_finish_irg,
 	mips_emit_and_done
 };
 

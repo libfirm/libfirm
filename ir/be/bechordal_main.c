@@ -609,18 +609,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	free_execfreq(chordal_env.exec_freq);
 
 	BE_TIMER_POP(ra_timer.t_epilog);
-
-	BE_TIMER_PUSH(ra_timer.t_verify);
-
-	/* verify spillslots */
-	if (options.vrfy_option == BE_CH_VRFY_WARN) {
-		be_verify_schedule(irg);
-	}
-	else if (options.vrfy_option == BE_CH_VRFY_ASSERT) {
-		assert(be_verify_schedule(irg) && "Schedule verification failed");
-	}
-	BE_TIMER_POP(ra_timer.t_verify);
-
 	BE_TIMER_POP(ra_timer.t_other);
 
 #undef BE_TIMER_PUSH

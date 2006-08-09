@@ -286,7 +286,7 @@ static void arm_prepare_graph(void *self) {
 /**
  * Called immediately before emit phase.
  */
-static void arm_finish_irg(ir_graph *irg, arm_code_gen_t *cg) {
+static void arm_finish_irg(void *self) {
 	/* TODO: - fix offsets for nodes accessing stack
 			 - ...
 	*/
@@ -319,7 +319,6 @@ static void arm_emit_and_done(void *self) {
 		cg->emit_decls = 0;
 	}
 
-	arm_finish_irg(irg, cg);
 	dump_ir_block_graph_sched(irg, "-arm-finished");
 	arm_gen_routine(out, irg, cg);
 
@@ -532,6 +531,7 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_before_sched,   /* before scheduling hook */
 	arm_before_ra,      /* before register allocation hook */
 	NULL,               /* after register allocation */
+	arm_finish_irg,
 	arm_emit_and_done,
 };
 

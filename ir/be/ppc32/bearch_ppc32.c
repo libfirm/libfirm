@@ -434,7 +434,7 @@ static void ppc32_prepare_graph(void *self) {
 /**
  * Called immediatly before emit phase.
  */
-static void ppc32_finish_irg(ir_graph *irg, ppc32_code_gen_t *cg) {
+static void ppc32_finish_irg(void *self) {
 	/* TODO: - fix offsets for nodes accessing stack
 			 - ...
 	*/
@@ -557,7 +557,6 @@ static void ppc32_emit_and_done(void *self) {
 		cg->emit_decls = 0;
 	}
 
-	ppc32_finish_irg(irg, cg);
 	dump_ir_block_graph_sched(irg, "-ppc-finished");
 	ppc32_gen_routine(out, irg, cg);
 
@@ -600,6 +599,7 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
 	ppc32_before_sched,   /* before scheduling hook */
 	ppc32_before_ra,      /* before register allocation hook */
 	ppc32_after_ra,
+	ppc32_finish_irg,
 	ppc32_emit_and_done
 };
 

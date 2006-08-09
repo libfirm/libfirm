@@ -1039,6 +1039,17 @@ static void ia32_after_ra(void *self) {
 	}
 }
 
+/**
+ * Last touchups for the graph before emit
+ */
+static void ia32_finish(void *self) {
+	ia32_code_gen_t *cg = self;
+	ir_graph        *irg = cg->irg;
+
+	ia32_finish_irg(irg, cg);
+	if (cg->dump)
+		be_dump(irg, "-finished", dump_ir_block_graph_sched);
+}
 
 /**
  * Emits the code, closes the output file and frees
@@ -1048,9 +1059,6 @@ static void ia32_codegen(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	ia32_finish_irg(irg, cg);
-	if (cg->dump)
-		be_dump(irg, "-finished", dump_ir_block_graph_sched);
 	ia32_gen_routine(cg->isa->out, irg, cg);
 
 	cur_reg_set = NULL;
@@ -1061,7 +1069,6 @@ static void ia32_codegen(void *self) {
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
 	free(self);
-
 }
 
 static void *ia32_cg_init(const be_irg_t *birg);
@@ -1073,6 +1080,7 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_before_sched,   /* before scheduling hook */
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_after_ra,       /* after register allocation hook */
+	ia32_finish,         /* called before codegen */
 	ia32_codegen         /* emit && done */
 };
 

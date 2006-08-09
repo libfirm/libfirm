@@ -263,10 +263,11 @@ static void TEMPLATE_prepare_graph(void *self) {
 /**
  * Called immediatly before emit phase.
  */
-static void TEMPLATE_finish_irg(ir_graph *irg, TEMPLATE_code_gen_t *cg) {
-	/* TODO: - fix offsets for nodes accessing stack
-			 - ...
-	*/
+static void TEMPLATE_finish_irg(void *self) {
+	TEMPLATE_code_gen_t *cg = self;
+	ir_graph            *irg = cg->irg;
+
+	dump_ir_block_graph_sched(irg, "-TEMPLATE-finished");
 }
 
 
@@ -301,8 +302,6 @@ static void TEMPLATE_emit_and_done(void *self) {
 		cg->emit_decls = 0;
 	}
 
-	TEMPLATE_finish_irg(irg, cg);
-	dump_ir_block_graph_sched(irg, "-TEMPLATE-finished");
 	TEMPLATE_gen_routine(out, irg, cg);
 
 	cur_reg_set = NULL;
@@ -320,6 +319,7 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_before_sched,   /* before scheduling hook */
 	TEMPLATE_before_ra,      /* before register allocation hook */
 	TEMPLATE_after_ra,       /* after register allocation hook */
+	TEMPLATE_finish_irg,
 	TEMPLATE_emit_and_done
 };
 

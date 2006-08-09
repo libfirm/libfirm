@@ -524,7 +524,14 @@ struct _arch_code_generator_if_t {
 	void (*after_ra)(void *self);
 
 	/**
-	 * Called after everything happened.
+	 * Called directly before done is called. This should be the last place
+	 * where the irg is modified.
+	 */
+	void (*finish)(void *self);
+
+	/**
+	 * Called after everything happened. This call should emit the final
+	 * assembly code but avoid changing the irg.
 	 * The code generator must also be de-allocated here.
 	 */
 	void (*done)(void *self);
@@ -545,6 +552,7 @@ do { \
 #define arch_code_generator_before_sched(cg)    _arch_cg_call(cg, before_sched)
 #define arch_code_generator_before_ra(cg)       _arch_cg_call(cg, before_ra)
 #define arch_code_generator_after_ra(cg)        _arch_cg_call(cg, after_ra)
+#define arch_code_generator_finish(cg)          _arch_cg_call(cg, finish)
 #define arch_code_generator_done(cg)            _arch_cg_call(cg, done)
 
 /**

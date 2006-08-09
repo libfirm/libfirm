@@ -539,6 +539,10 @@ static void be_main_loop(FILE *file_handle)
 		be_abi_fix_stack_bias(birg.abi);
 		BE_TIMER_POP(t_abi);
 
+		BE_TIMER_PUSH(t_finish);
+		arch_code_generator_finish(birg.cg);
+		BE_TIMER_POP(t_finish);
+
 		/* check schedule */
 		BE_TIMER_PUSH(t_verify);
 		be_sched_vrfy(birg.irg, vrfy_option);
