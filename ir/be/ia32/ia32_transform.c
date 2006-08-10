@@ -2292,8 +2292,9 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 
 	mode = get_irn_mode(call_res);
 
+	/* in case there is no memory output: create one to serialize the copy FPU -> SSE */
 	if (! call_mem)
-		call_mem = get_irg_no_mem(env->irg);
+		call_mem = new_r_Proj(env->irg, env->block, env->irn, mode_M, pn_be_Call_M_regular);
 
 	if (mode_is_float(mode)) {
 		/* store st(0) onto stack */
