@@ -87,10 +87,10 @@ static int opt_repair_schedule = 0;
 static int opt_no_enlarge_liveness = 0;
 static int opt_remat_while_live = 1;
 static int opt_timeout = 300;
-static double opt_cost_reload = 8.0
-static double opt_cost_memoperand =  7.0
-static double opt_cost_spill =  50.0
-static double opt_cost_remat =  1.0
+static double opt_cost_reload = 8.0;
+static double opt_cost_memoperand =  7.0;
+static double opt_cost_spill =  50.0;
+static double opt_cost_remat =  1.0;
 
 
 #ifdef WITH_LIBCORE
@@ -112,7 +112,7 @@ static const lc_opt_enum_mask_items_t keepalive_items[] = {
 	{ NULL,      0 }
 };
 
-static lc_opt_enum_mask_var_t dump_var = {
+static lc_opt_enum_mask_var_t keep_alive_var = {
 	&opt_keep_alive, keepalive_items
 };
 
@@ -124,7 +124,7 @@ static const lc_opt_enum_mask_items_t remats_items[] = {
 	{ NULL,        0 }
 };
 
-static lc_opt_enum_mask_var_t dump_var = {
+static lc_opt_enum_mask_var_t remats_var = {
 	&opt_remats, remats_items
 };
 
@@ -134,9 +134,9 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL     ("goodwin",  "activate goodwin reduction",                              &opt_goodwin),
 	LC_OPT_ENT_BOOL     ("memcopies",  "activate memcopy handling",                             &opt_memcopies),
 	LC_OPT_ENT_BOOL     ("memoperands",  "activate memoperands",                                &opt_memoperands),
-	LC_OPT_ENT_ENUM_INT ("remat",  "type of remats to insert (none, briggs, noinverse or all)", &remats_var),
+	LC_OPT_ENT_ENUM_INT ("remats",  "type of remats to insert (none, briggs, noinverse or all)",&remats_var),
 	LC_OPT_ENT_BOOL     ("repair_schedule",  "repair the schedule by rematting once used nodes",&opt_repair_schedule),
-	LC_OPT_ENT_BOOL     ("no_enlage_liveness",  "do not enlarge liveness of operands of remats",&opt_enlarge_liveness),
+	LC_OPT_ENT_BOOL     ("no_enlage_liveness",  "do not enlarge liveness of operands of remats",&opt_no_enlarge_liveness),
 	LC_OPT_ENT_BOOL     ("remat_while_live",  "remat only values that can be used by real ops", &opt_remat_while_live),
 
 	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",                  &dump_var),
@@ -156,6 +156,7 @@ void be_spill_remat_register_options(lc_opt_entry_t *grp)
 	lc_opt_add_table(my_grp, options);
 }
 #endif
+
 
 //#define EXECFREQ_LOOPDEPH /* compute execution frequency from loop depth only */
 
@@ -1341,7 +1342,7 @@ luke_endwalker(ir_node * bb, void * data)
 			ilp_cst_t   rel_cst;
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
-			reload = lpp_add_var_default(si->lpp, buf, lpp_binary, opt_cost_reload*execution_frequency(si, bb), 0.0);
+			reload = lpp_add_var_default(si->lpp, buf, lpp_binary, opt_cost_reload*execution_frequency(si, bb), 1.0);
 			set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
 
 			/* reload <= mem_out */
@@ -3206,8 +3207,8 @@ delete_unnecessary_remats(spill_ilp_t * si)
 		ir_node  *bad = get_irg_bad(si->chordal_env->irg);
 
 		if(si->keep) {
-			ir_node   *end = get_irg_end(si->chordal_env->irg);
-			ir_node  **keeps;
+//			ir_node   *end = get_irg_end(si->chordal_env->irg);
+//			ir_node  **keeps;
 
 			for (n=get_irn_arity(si->keep)-1; n>=0; --n) {
 				ir_node        *keep_arg = get_irn_n(si->keep, n);
