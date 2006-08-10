@@ -278,7 +278,6 @@ static int redir_proj(const ir_node **node, int pos)
 	if(is_Proj(n)) {
 		ir_node *irn;
 
-		assert(pos == -1 && "Illegal pos for a Proj");
 		*node = irn = get_Proj_pred(n);
 		if(is_Proj(irn)) {
 			assert(get_irn_mode(irn) == mode_T);
@@ -290,18 +289,50 @@ static int redir_proj(const ir_node **node, int pos)
 	return 0;
 }
 
+static be_node_attr_t *retrieve_irn_attr(const ir_node *irn, int *the_pos)
+{
+	int dummy;
+	be_node_attr_t *res = NULL;
+	int *pos = the_pos ? the_pos : &dummy;
+
+	*pos = -1;
+	if(is_Proj(irn)) {
+		ir_node *pred = get_Proj_pred(irn);
+		int p         = get_Proj_proj(irn);
+
+		if(is_be_node(pred)) {
+			assert(get_irn_mode(pred) == mode_T);
+			*pos = p;
+			res = get_irn_attr(pred);
+			assert(p >= 0 && p < res->max_reg_data && "illegal proj number");
+		}
+	}
+
+	else if(is_be_node(irn) && get_irn_mode(irn) != mode_T) {
+		be_node_attr_t *a = get_irn_attr(irn);
+		if(a->max_reg_data > 0) {
+			res  = a;
+			*pos = 0;
+		}
+	}
+
+	return res;
+}
+
+static be_reg_data_t *retrieve_reg_data(const ir_node *irn)
+{
+	int pos;
+	be_node_attr_t *a = retrieve_irn_attr(irn, &pos);
+	return a ? &a->reg_data[pos] : NULL;
+}
+
 static void
 be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
 {
-	int out_pos;
-	be_node_attr_t *a;
+	be_reg_data_t *r = retrieve_reg_data(irn);
 
-	out_pos = redir_proj((const ir_node **) &irn, -1);
-	a       = get_irn_attr(irn);
-
-	assert(is_be_node(irn));
-	assert(out_pos < a->max_reg_data && "position too high");
-	a->reg_data[out_pos].reg = reg;
+	if(r)
+		r->reg = reg;
 }
 
 
@@ -525,12 +556,12 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	irn = new_ir_node(NULL, irg, bl, op_be_AddSP, mode_T, be_pos_AddSP_last, in);
 	a   = init_node_attr(irn, be_pos_AddSP_last);
 
-	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_ignore | arch_irn_flags_modify_sp);
+	be_node_set_flags(irn, OUT_POS(pn_be_AddSP_res), arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, be_pos_AddSP_old_sp, sp);
 	be_node_set_reg_class(irn, be_pos_AddSP_size, arch_register_get_class(sp));
-	be_set_constr_single_reg(irn, OUT_POS(0), sp);
+	be_set_constr_single_reg(irn, OUT_POS(pn_be_AddSP_res), sp);
 	a->reg_data[pn_be_AddSP_res].reg = sp;
 
 	return irn;
@@ -1002,16 +1033,8 @@ be_node_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_nod
 const arch_register_t *
 be_node_get_irn_reg(const void *_self, const ir_node *irn)
 {
-	int out_pos;
-	be_node_attr_t *a;
-
-	out_pos = redir_proj((const ir_node **) &irn, -1);
-	a       = get_irn_attr(irn);
-
-	assert(is_be_node(irn));
-	assert(out_pos < a->max_reg_data && "position too high");
-
-	return a->reg_data[out_pos].reg;
+	be_reg_data_t *r = retrieve_reg_data(irn);
+	return r ? r->reg : NULL;
 }
 
 static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
@@ -1036,16 +1059,8 @@ static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 
 static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *irn)
 {
-	int out_pos;
-	be_node_attr_t *a;
-
-	out_pos = redir_proj((const ir_node **) &irn, -1);
-	a       = get_irn_attr(irn);
-
-	assert(is_be_node(irn));
-	assert(out_pos < a->max_reg_data && "position too high");
-
-	return a->reg_data[out_pos].req.flags;
+	be_reg_data_t *r = retrieve_reg_data(irn);
+	return r ? r->req.flags : 0;
 }
 
 static entity *be_node_get_frame_entity(const void *self, const ir_node *irn)

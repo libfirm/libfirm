@@ -232,6 +232,9 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	{ NULL }
 };
 
+extern void be_spill_remat_register_options(lc_opt_entry_t *ent);
+
+
 static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 {
 	static int run_once = 0;

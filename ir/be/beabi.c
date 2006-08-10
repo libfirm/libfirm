@@ -736,7 +736,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		/* Beware: currently Alloc nodes without a result might happen,
 		   only escape analysis kills them and this phase runs only for object
 		   oriented source. We kill the Alloc here. */
-		if (alloc_res == NULL) {
+		if (alloc_res == NULL && alloc_mem) {
 			exchange(alloc_mem, get_Alloc_mem(alloc));
 			return curr_sp;
 		}
@@ -749,10 +749,10 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		exchange(alloc, env->isa->stack_dir < 0 ? new_alloc : curr_sp);
 
 		if(alloc_mem != NULL)
-			exchange(alloc_mem, new_r_NoMem(irg));
+			set_Proj_proj(alloc_mem, pn_be_AddSP_M);
 
 		/* fix projnum of alloca res */
-		set_Proj_proj(alloc_res, 1);
+		set_Proj_proj(alloc_res, pn_be_AddSP_res);
 
 		curr_sp = alloc_res;
 	}
