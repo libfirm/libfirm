@@ -628,7 +628,6 @@ else {
 
 "Load" => {
   "op_flags"  => "L|F",
-  "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -871,7 +870,6 @@ else {
 
 "xLoad" => {
   "op_flags"  => "L|F",
-  "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "construct SSE Load: Load(ptr, mem) = LD ptr",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -1147,7 +1145,6 @@ else {
 
 "vfld" => {
   "op_flags"  => "L|F",
-  "irn_flags" => "R",
   "state"     => "exc_pinned",
   "comment"   => "virtual fp Load: Load(ptr, mem) = LD ptr -> reg",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
@@ -1167,7 +1164,6 @@ else {
 # Conversions
 
 "vfild" => {
-  "irn_flags" => "R",
   "comment"   => "virtual fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "vfp", "none" ] },
@@ -1438,7 +1434,6 @@ else {
 
 "fild" => {
   "op_flags"  => "R",
-  "irn_flags" => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
   "reg_req"   => { },
@@ -1465,6 +1460,7 @@ else {
 
 "fldz" => {
   "op_flags"  => "R",
+  "irn_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
   "reg_req"   => { },
@@ -1473,6 +1469,7 @@ else {
 
 "fld1" => {
   "op_flags"  => "R",
+  "irn_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
   "reg_req"   => { },
@@ -1481,6 +1478,7 @@ else {
 
 "fldpi" => {
   "op_flags"  => "R",
+  "irn_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load pi: Ld pi -> reg",
   "reg_req"   => { },
@@ -1489,6 +1487,7 @@ else {
 
 "fldln2" => {
   "op_flags"  => "R",
+  "irn_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
   "reg_req"   => { },
@@ -1497,6 +1496,7 @@ else {
 
 "fldlg2" => {
   "op_flags"  => "R",
+  "irn_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
   "reg_req"   => { },
@@ -1505,6 +1505,7 @@ else {
 
 "fldl2t" => {
   "op_flags"  => "R",
+  "irn_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
   "reg_req"   => { },
@@ -1513,6 +1514,7 @@ else {
 
 "fldl2e" => {
   "op_flags"  => "R",
+  "irn_flags"  => "R",
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
   "reg_req"   => { },
