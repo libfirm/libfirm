@@ -22,6 +22,12 @@
 #ifdef HAVE_STDDEF_H
 # include <stddef.h>
 #endif
+#ifdef HAVE_MALLOC_H
+# include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
 
 #include "firm_common_t.h"
 
@@ -749,7 +755,11 @@ static int equal_paths(compound_graph_path *path1, int *visited_indicees, compou
  *  The path must contain array indicees for all array element entities. */
 int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path) {
   int i, n_paths = get_compound_ent_n_values(ent);
-  int *visited_indicees = (int *)xcalloc(get_compound_graph_path_length(path), sizeof(int));
+  int *visited_indicees;
+  int path_len = get_compound_graph_path_length(path);
+
+  NEW_ARR_A(int *, visited_indicees, path_len);
+  memset(visited_indicees, 0, sizeof(*visited_indicees) * path_len);
   for (i = 0; i < n_paths; i ++) {
     if (equal_paths(get_compound_ent_value_path(ent, i), visited_indicees, path))
       return i;
