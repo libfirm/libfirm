@@ -507,7 +507,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 
 	/* Set output constraint to stack register. */
 	be_node_set_reg_class(irn, 0, sp->reg_class);
-	be_set_constr_single_reg(irn, -1, sp);
+	be_set_constr_single_reg(irn, BE_OUT_POS(0), sp);
 	be_node_set_irn_reg(NULL, irn, sp);
 
 	return irn;
@@ -528,6 +528,8 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
 	/* Set output constraint to stack register. */
+	be_set_constr_single_reg(irn, be_pos_AddSP_old_sp, sp);
+	be_node_set_reg_class(irn, be_pos_AddSP_size, arch_register_get_class(sp));
 	be_set_constr_single_reg(irn, OUT_POS(0), sp);
 
 	return irn;
