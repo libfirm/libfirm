@@ -746,12 +746,15 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		env->call->flags.bits.try_omit_fp = 0;
 		new_alloc = be_new_AddSP(env->isa->sp, irg, bl, curr_sp, get_Alloc_size(alloc));
 
-		exchange(alloc_res, env->isa->stack_dir < 0 ? new_alloc : curr_sp);
+		exchange(alloc, env->isa->stack_dir < 0 ? new_alloc : curr_sp);
 
 		if(alloc_mem != NULL)
 			exchange(alloc_mem, new_r_NoMem(irg));
 
-		curr_sp = new_alloc;
+		/* fix projnum of alloca res */
+		set_Proj_proj(alloc_res, 1);
+
+		curr_sp = alloc_res;
 	}
 
 	return curr_sp;
@@ -829,12 +832,13 @@ static int cmp_call_dependecy(const void *c1, const void *c2)
  */
 static void link_calls_in_block_walker(ir_node *irn, void *data)
 {
-	if(is_Call(irn)) {
+	if(is_Call(irn) || (get_irn_opcode(irn) == iro_Alloc && get_Alloc_where(irn) == stack_alloc)) {
 		be_abi_irg_t *env = data;
 		ir_node *bl       = get_nodes_block(irn);
 		void *save        = get_irn_link(bl);
 
-		env->call->flags.bits.irg_is_leaf = 0;
+		if (is_Call(irn))
+			env->call->flags.bits.irg_is_leaf = 0;
 
 		set_irn_link(irn, save);
 		set_irn_link(bl, irn);
