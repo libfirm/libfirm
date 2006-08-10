@@ -161,6 +161,12 @@ enum {
 	be_pos_AddSP_last   = 2
 };
 
+enum {
+	pn_be_AddSP_res  = 0,
+	pn_be_AddSP_M    = 1,
+	pn_be_AddSP_last = 2
+};
+
 /**
  * Make a new AddSP node.
  * An AddSP node expresses an increase of the stack pointer in the direction the stack
