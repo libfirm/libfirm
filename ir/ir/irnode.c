@@ -2529,6 +2529,12 @@ int
   return _is_Cmp(node);
 }
 
+/* returns true if node is an Alloc node. */
+int
+(is_Alloc)(const ir_node *node) {
+  return _is_Alloc(node);
+}
+
 int
 is_Proj (const ir_node *node) {
   assert(node);

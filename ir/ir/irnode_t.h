@@ -669,6 +669,12 @@ _is_Cmp(const ir_node *node) {
 }
 
 static INLINE int
+_is_Alloc(const ir_node *node) {
+  assert(node);
+  return (_get_irn_op(node) == op_Alloc);
+}
+
+static INLINE int
 _is_no_Block(const ir_node *node) {
   assert(node && _is_ir_node(node));
   return (_get_irn_op(node) != op_Block);
@@ -869,7 +875,8 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Confirm(node)                      _is_Confirm(node)
 #define is_SymConst(node)                     _is_SymConst(node)
 #define is_Cond(node)                         _is_Cond(node)
-#define is_Cmp(node)                          _is_Cmpd(node)
+#define is_Cmp(node)                          _is_Cmp(node)
+#define is_Alloc(node)                        _is_Alloc(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)
