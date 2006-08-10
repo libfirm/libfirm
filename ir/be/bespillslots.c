@@ -506,6 +506,10 @@ static entity* create_stack_entity(ss_env_t *env, spill_slot_t *slot) {
 	ir_type* frame = get_irg_frame_type(env->chordal_env->irg);
 	entity* res = frame_alloc_area(frame, slot->size, slot->align, 0);
 
+	// adjust size of the entity type...
+	ir_type *enttype = get_entity_type(res);
+	set_type_size_bytes(enttype, slot->size);
+
 	slot->entity = res;
 
 	return res;

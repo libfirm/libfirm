@@ -347,8 +347,8 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	spill.ent = spillent;
 	res = set_insert(env->spills, &spill, sizeof(spill), hash);
 
-	for(i = 0, arity = get_irn_arity(memperm); i < arity; ++i) {
-		ir_node* arg = get_irn_n(memperm, i);
+	for(i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
+		ir_node* arg = get_irn_n(memperm, i + 1);
 		entity* argent = be_get_MemPerm_in_entity(memperm, i);
 
 		collect(env, arg, memperm, argent);

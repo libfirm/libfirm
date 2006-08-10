@@ -695,14 +695,17 @@ else {
   "emit"      => '
 if (get_ia32_id_cnst(n)) {
 	if (get_ia32_immop_type(n) == ia32_ImmConst) {
-. push %C /* Push(%A2) */
-	} else {
-. push OFFSET FLAT:%C /* Push(%A2) */
+4. push %C /* Push const on stack */
+} else {
+4. push OFFSET FLAT:%C /* Push symconst on stack */
 	}
 }
-else {
-. push %S2 /* Push(%A2) */
+else if (get_ia32_op_type(n) == ia32_Normal) {
+2. push %S2 /* Push(%A2) */
 }
+else {
+2. push %ia32_emit_am /* Push memory to stack */
+};
 ',
   "outs"      => [ "stack", "M" ],
 },
@@ -710,7 +713,14 @@ else {
 "Pop" => {
   "comment"   => "pop a gp register from the stack",
   "reg_req"   => { "in" => [ "esp", "none" ], "out" => [ "gp", "esp" ] },
-  "emit"      => '. pop %D1 /* Pop -> %D1 */',
+  "emit"      => '
+if (get_ia32_op_type(n) == ia32_Normal) {
+2. pop %D1 /* Pop from stack into %D1 */
+}
+else {
+2. pop %ia32_emit_am /* Pop from stack into memory */
+}
+',
   "outs"      => [ "res", "stack", "M" ],
 },
 

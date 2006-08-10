@@ -398,19 +398,28 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, 
 	int i;
 	ir_node *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
-	ir_node *irn = new_ir_node(NULL, irg, bl, op_be_MemPerm, mode_T, n, in);
+	ir_node *irn;
+	const arch_register_t *sp = arch_env->isa->sp;
 	be_memperm_attr_t *attr;
+	ir_node **real_in;
 
-	init_node_attr(irn, n);
+	real_in = alloca((n+1) * sizeof(real_in[0]));
+	real_in[0] = frame;
+	memcpy(&real_in[1], in, n * sizeof(real_in[0]));
+
+	irn =  new_ir_node(NULL, irg, bl, op_be_MemPerm, mode_T, n+1, real_in);
+
+	init_node_attr(irn, n + 1);
+	be_node_set_reg_class(irn, 0, sp->reg_class);
 	for(i = 0; i < n; ++i) {
-		be_node_set_reg_class(irn, i, cls_frame);
+		be_node_set_reg_class(irn, i + 1, cls_frame);
 		be_node_set_reg_class(irn, OUT_POS(i), cls_frame);
 	}
 
 	attr = get_irn_attr(irn);
 
-	attr->in_entities = obstack_alloc(irg->obst, n*sizeof(attr->in_entities[0]));
-	memset(attr->in_entities, 0, n*sizeof(attr->in_entities[0]));
+	attr->in_entities = obstack_alloc(irg->obst, n * sizeof(attr->in_entities[0]));
+	memset(attr->in_entities, 0, n * sizeof(attr->in_entities[0]));
 	attr->out_entities = obstack_alloc(irg->obst, n*sizeof(attr->out_entities[0]));
 	memset(attr->out_entities, 0, n*sizeof(attr->out_entities[0]));
 
@@ -768,7 +777,7 @@ void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity *ent)
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
 	assert(be_is_MemPerm(irn));
-	assert(n < get_irn_arity(irn));
+	assert(n < be_get_MemPerm_entity_arity(irn));
 
 	attr->in_entities[n] = ent;
 }
@@ -778,7 +787,7 @@ entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
 	assert(be_is_MemPerm(irn));
-	assert(n < get_irn_arity(irn));
+	assert(n < be_get_MemPerm_entity_arity(irn));
 
 	return attr->in_entities[n];
 }
@@ -788,7 +797,7 @@ void be_set_MemPerm_out_entity(const ir_node *irn, int n, entity *ent)
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
 	assert(be_is_MemPerm(irn));
-	assert(n < get_irn_arity(irn));
+	assert(n < be_get_MemPerm_entity_arity(irn));
 
 	attr->out_entities[n] = ent;
 }
@@ -798,9 +807,14 @@ entity* be_get_MemPerm_out_entity(const ir_node* irn, int n)
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
 	assert(be_is_MemPerm(irn));
-	assert(n < get_irn_arity(irn));
+	assert(n < be_get_MemPerm_entity_arity(irn));
 
 	return attr->out_entities[n];
+}
+
+int be_get_MemPerm_entity_arity(const ir_node *irn)
+{
+	return get_irn_arity(irn) - 1;
 }
 
 static void be_limited(void *data, bitset_t *bs)
@@ -1387,7 +1401,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			case beo_MemPerm:
 				{
 					int i;
-					for(i = 0; i < get_irn_arity(irn); ++i) {
+					for(i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
 						entity *in, *out;
 						in = be_get_MemPerm_in_entity(irn, i);
 						out = be_get_MemPerm_out_entity(irn, i);

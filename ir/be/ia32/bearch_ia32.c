@@ -971,6 +971,123 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	exchange(irn, proj);
 }
 
+static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node **sp, ir_node *mem, entity *ent, const char *offset) {
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_mode *spmode = get_irn_mode(*sp);
+	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, *sp);
+
+	ir_node *push = new_rd_ia32_Push(env->dbg, env->irg, env->block, *sp, noreg, mem);
+
+	set_ia32_frame_ent(push, ent);
+	set_ia32_use_frame(push);
+	set_ia32_op_type(push, ia32_AddrModeS);
+	set_ia32_am_flavour(push, ia32_B);
+	set_ia32_ls_mode(push, mode_Is);
+	if(offset != NULL)
+		add_ia32_am_offs(push, offset);
+
+	sched_add_before(schedpoint, push);
+
+	*sp = new_rd_Proj(env->dbg, env->irg, env->block, push, spmode, 0);
+	sched_add_before(schedpoint, *sp);
+	arch_set_irn_register(env->cg->arch_env, *sp, spreg);
+
+	return push;
+}
+
+static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_node **sp, entity *ent, const char *offset) {
+	ir_mode *spmode = get_irn_mode(*sp);
+	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, *sp);
+
+	ir_node *pop = new_rd_ia32_Pop(env->dbg, env->irg, env->block, *sp, new_NoMem());
+
+	set_ia32_frame_ent(pop, ent);
+	set_ia32_use_frame(pop);
+	set_ia32_op_type(pop, ia32_AddrModeD);
+	set_ia32_am_flavour(pop, ia32_B);
+	set_ia32_ls_mode(pop, mode_Is);
+	if(offset != NULL)
+		add_ia32_am_offs(pop, offset);
+
+	sched_add_before(schedpoint, pop);
+
+	*sp = new_rd_Proj(env->dbg, env->irg, env->block, pop, spmode, 0);
+	arch_set_irn_register(env->cg->arch_env, *sp, spreg);
+	sched_add_before(schedpoint, *sp);
+
+	return pop;
+}
+
+static void transform_MemPerm(ia32_transform_env_t *env) {
+	/*
+	 * Transform memperm, currently we do this the ugly way and produce
+	 * push/pop into/from memory cascades. This is possible without using
+	 * any registers.
+	 */
+	ir_node *node = env->irn;
+	int i, arity;
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *sp = get_irn_n(node, 0);
+	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, sp);
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+	ir_node **pops;
+	ir_mode *spmode = get_irn_mode(sp);
+
+	arity = be_get_MemPerm_entity_arity(node);
+	pops = alloca(arity * sizeof(pops[0]));
+
+	// create pushs
+	for(i = 0; i < arity; ++i) {
+		entity *ent = be_get_MemPerm_in_entity(node, i);
+		ir_type *enttype = get_entity_type(ent);
+		int entbits = get_type_size_bits(enttype);
+		ir_node *mem = get_irn_n(node, i + 1);
+
+		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
+
+		create_push(env, node, &sp, mem, ent, NULL);
+		if(entbits == 64) {
+			// add another push after the first one
+			create_push(env, node, &sp, mem, ent, "4");
+		}
+
+		set_irn_n(node, i, new_Bad());
+	}
+
+	// create pops
+	for(i = arity - 1; i >= 0; --i) {
+		entity *ent = be_get_MemPerm_out_entity(node, i);
+		ir_type *enttype = get_entity_type(ent);
+		int entbits = get_type_size_bits(enttype);
+
+		ir_node *pop;
+
+		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
+
+		pop = create_pop(env, node, &sp, ent, NULL);
+		if(entbits == 64) {
+			// add another push after the first one
+			pop = create_pop(env, node, &sp, ent, "4");
+		}
+
+		pops[i] = pop;
+	}
+
+	// exchange memprojs
+	foreach_out_edge_safe(node, edge, next) {
+		ir_node *proj = get_edge_src_irn(edge);
+		int p = get_Proj_proj(proj);
+
+		assert(p < arity);
+
+		set_Proj_pred(proj, pops[p]);
+		set_Proj_proj(proj, 3);
+	}
+
+	sched_remove(node);
+}
+
 /**
  * Fix the mode of Spill/Reload
  */
@@ -1018,6 +1135,11 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
 			tenv.mode = fix_spill_mode(cg, get_irn_mode(spillval));
 			transform_to_Store(&tenv);
 		}
+		else if(be_is_MemPerm(node)) {
+			tenv.dbg = get_irn_dbg_info(node);
+			tenv.irn = node;
+			transform_MemPerm(&tenv);
+		}
 	}
 }
 
@@ -1047,8 +1169,6 @@ static void ia32_finish(void *self) {
 	ir_graph        *irg = cg->irg;
 
 	ia32_finish_irg(irg, cg);
-	if (cg->dump)
-		be_dump(irg, "-finished", dump_ir_block_graph_sched);
 }
 
 /**

@@ -143,6 +143,9 @@ void be_set_Copy_op(ir_node *cpy, ir_node *op);
  * Make a new Perm node.
  */
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
+/**
+ * Create a new MemPerm node.
+ */
 ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 
@@ -356,6 +359,8 @@ entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
 
 void be_set_MemPerm_out_entity(const ir_node *irn, int n, entity* ent);
 entity *be_get_MemPerm_out_entity(const ir_node *irn, int n);
+
+int be_get_MemPerm_entity_arity(const ir_node *irn);
 
 /**
  * Impose a register constraint on a backend node.
