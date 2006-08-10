@@ -365,9 +365,11 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		}
 		DB((mod, LEVEL_1, "\n"));
 
-		/* We don't need to do anything if we have a Perm with two
+		/*
+			We don't need to do anything if we have a Perm with two
 			elements which represents a cycle, because those nodes
-			already represent exchange nodes */
+			already represent exchange nodes
+		*/
 		if (n == 2 && cycle->type == PERM_CYCLE) {
 			free(cycle);
 			continue;
