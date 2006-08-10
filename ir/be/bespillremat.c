@@ -790,7 +790,7 @@ can_remat_before(const spill_ilp_t * si, const remat_t * remat, const ir_node * 
 
 		if(opt_no_enlarge_liveness) {
 			if(has_reg_class(si, arg) && live) {
-				res &= pset_find_ptr(live, arg)?1:0;
+				res &= pset_find_ptr((pset*)live, arg)?1:0;
 			} else {
 				res &= value_is_defined_before(si, pos, arg);
 			}
@@ -2647,6 +2647,7 @@ values_interfere_in_block(const spill_ilp_t * si, const ir_node * bb, const ir_n
 		if(get_nodes_block(user) == bb
 				&& !is_Phi(user)
 				&& b != user
+				&& !pset_find_ptr(si->inverse_ops, user)
 				&& value_dominates(b, user))
 			return 1;
 	}
@@ -2670,7 +2671,7 @@ luke_interferencewalker(ir_node * bb, void * data)
 
 		/* a is only interesting if it is in my register class and if it is inside a phi class */
 		if (has_reg_class(si, a) && get_phi_class(a)) {
-			if(a_op->is_remat)
+			if(a_op->is_remat || pset_find_ptr(si->inverse_ops, a))
 				continue;
 
 			for(l2=_be_lv_next_irn(si->lv, bb, 0xff, l1+1); l2>=0; l2=_be_lv_next_irn(si->lv, bb, 0xff, l2+1)) {
@@ -2680,7 +2681,7 @@ luke_interferencewalker(ir_node * bb, void * data)
 
 				/* a and b are only interesting if they are in the same phi class */
 				if(has_reg_class(si, b) && get_phi_class(a) == get_phi_class(b)) {
-					if(b_op->is_remat)
+					if(b_op->is_remat || pset_find_ptr(si->inverse_ops, b))
 						continue;
 
 					if(values_interfere_in_block(si, bb, a, b)) {
