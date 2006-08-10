@@ -1619,6 +1619,19 @@ static void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits code to increase stack pointer.
  */
+static void emit_be_AddSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	FILE          *F = emit_env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+
+	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, %2S", irn, irn);
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* reserve space on stack */");
+
+	IA32_DO_EMIT(irn);
+}
+
+/**
+ * Emits code to increase stack pointer.
+ */
 static void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE          *F    = emit_env->out;
 	unsigned       offs = be_get_IncSP_offset(irn);
@@ -1819,6 +1832,7 @@ static void ia32_register_emitters(void) {
 
 	/* benode emitter */
 	BE_EMIT(Call);
+	BE_EMIT(AddSP);
 	BE_EMIT(IncSP);
 	BE_EMIT(SetSP);
 	BE_EMIT(Copy);
