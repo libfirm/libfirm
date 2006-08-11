@@ -269,8 +269,9 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
 	lower_env_t     *env         = walk_env;
-	int              real_size   = 0;
-	int              n, i, pn, do_copy, j, n_ops;
+	int             real_size    = 0;
+	int             keep_perm    = 0;
+	int             n, i, pn, do_copy, j, n_ops;
 	reg_pair_t      *pairs;
 	const ir_edge_t *edge;
 	perm_cycle_t    *cycle;
@@ -372,6 +373,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		*/
 		if (n == 2 && cycle->type == PERM_CYCLE) {
 			free(cycle);
+			keep_perm = 1;
 			continue;
 		}
 
@@ -495,10 +497,9 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		free(cycle);
 	}
 
-
-
 	/* remove the perm from schedule */
-	sched_remove(irn);
+	if (! keep_perm)
+		sched_remove(irn);
 }
 
 
