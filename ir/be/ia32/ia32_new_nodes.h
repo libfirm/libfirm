@@ -217,6 +217,21 @@ void clear_ia32_got_lea(ir_node *node);
 int is_ia32_got_lea(const ir_node *node);
 
 /**
+ * Sets node got_reload.
+ */
+void set_ia32_got_reload(ir_node *node);
+
+/**
+ * Clears node got_reload.
+ */
+void clear_ia32_got_reload(ir_node *node);
+
+/**
+ * Checks if node got reload.
+ */
+int is_ia32_got_reload(const ir_node *node);
+
+/**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
  */
 ir_mode *get_ia32_ls_mode(const ir_node *node);
