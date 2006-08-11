@@ -1619,19 +1619,6 @@ static void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 /**
  * Emits code to increase stack pointer.
  */
-static void emit_be_AddSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE          *F = emit_env->out;
-	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
-
-	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, %2S", irn, irn);
-	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* reserve space on stack */");
-
-	IA32_DO_EMIT(irn);
-}
-
-/**
- * Emits code to increase stack pointer.
- */
 static void emit_be_IncSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE          *F    = emit_env->out;
 	unsigned       offs = be_get_IncSP_offset(irn);
@@ -1758,6 +1745,30 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
 	lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);
 }
 
+/**
+ * Emits code to increase stack pointer.
+ */
+static void emit_ia32_AddSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	FILE          *F = emit_env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+
+	if (is_ia32_ImmConst(irn)) {
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, %C", irn, irn);
+	}
+	else if (is_ia32_ImmSymConst(irn)) {
+		if (get_ia32_op_type(irn) == ia32_Normal)
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, OFFSET_FLAT:%C", irn, irn);
+		else /* source address mode */
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, [%s%s]", irn, get_id_str(get_ia32_am_sc(irn)), get_ia32_am_offs(irn));
+	}
+	else {
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, %2S", irn, irn);
+	}
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* reserve space on stack */");
+
+	IA32_DO_EMIT(irn);
+}
+
 static void emit_be_Return(const ir_node *n, ia32_emit_env_t *env) {
 	FILE *F = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
@@ -1819,6 +1830,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_I2I);
 	IA32_EMIT(Conv_I2I8Bit);
 	IA32_EMIT(Const);
+	IA32_EMIT(AddSP);
 	IA32_EMIT(xCmp);
 	IA32_EMIT(xCmpSet);
 	IA32_EMIT(xCmpCMov);
@@ -1832,7 +1844,6 @@ static void ia32_register_emitters(void) {
 
 	/* benode emitter */
 	BE_EMIT(Call);
-	BE_EMIT(AddSP);
 	BE_EMIT(IncSP);
 	BE_EMIT(SetSP);
 	BE_EMIT(Copy);
