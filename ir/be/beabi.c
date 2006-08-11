@@ -716,6 +716,8 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 
 		const ir_edge_t *edge;
 		ir_node *new_alloc;
+		ir_node *addr;
+		ir_node *copy;
 
 		foreach_out_edge(alloc, edge) {
 			ir_node *irn = get_edge_src_irn(edge);
@@ -746,13 +748,25 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		env->call->flags.bits.try_omit_fp = 0;
 		new_alloc = be_new_AddSP(env->isa->sp, irg, bl, curr_sp, get_Alloc_size(alloc));
 
-		exchange(alloc, env->isa->stack_dir < 0 ? new_alloc : curr_sp);
+		exchange(alloc, new_alloc);
 
 		if(alloc_mem != NULL)
 			set_Proj_proj(alloc_mem, pn_be_AddSP_M);
 
 		/* fix projnum of alloca res */
 		set_Proj_proj(alloc_res, pn_be_AddSP_res);
+
+		addr = env->isa->stack_dir < 0 ? alloc_res : curr_sp;
+
+		/* copy the address away, since it could be used after further stack pointer modifictions. */
+		/* Let it point curr_sp just for the moment, I'll reroute it in a second. */
+		copy = be_new_Copy(env->isa->sp->reg_class, irg, bl, curr_sp);
+
+		/* Let all users of the Alloc() result now point to the copy. */
+		edges_reroute(alloc_res, copy, irg);
+
+		/* Rewire the copy appropriately. */
+		set_irn_n(copy, be_pos_Copy_op, addr);
 
 		curr_sp = alloc_res;
 	}
