@@ -183,7 +183,7 @@ int sched_verify_irg(ir_graph *irg)
 
 int sched_skip_cf_predicator(const ir_node *irn, void *data) {
 	arch_env_t *ae = data;
-	return arch_irn_classify(ae, irn) == arch_irn_class_branch;
+	return arch_irn_class_is(ae, irn, branch);
 }
 
 int sched_skip_phi_predicator(const ir_node *irn, void *data) {

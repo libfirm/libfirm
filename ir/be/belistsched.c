@@ -102,7 +102,7 @@ static ir_node *trivial_select(void *block_env, nodeset *ready_set)
 	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
 		arch_irn_class_t irn_class = arch_irn_classify(arch_env, irn);
 
-		if (irn_class != arch_irn_class_branch && (const_last ? (irn_class != arch_irn_class_const) : 1)) {
+		if (! arch_irn_class_is(arch_env, irn, branch) && (const_last ? (! arch_irn_class_is(arch_env, irn, const)) : 1)) {
 			nodeset_break(ready_set);
 			return irn;
 		}
@@ -111,7 +111,7 @@ static ir_node *trivial_select(void *block_env, nodeset *ready_set)
 	/* assure that constants are executed before branches */
 	if (const_last) {
 		for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
-			if (arch_irn_classify(arch_env, irn) != arch_irn_class_branch) {
+			if (! arch_irn_class_is(arch_env, irn, branch)) {
 				nodeset_break(ready_set);
 				return irn;
 			}
@@ -371,7 +371,7 @@ static ir_node *reg_pressure_select(void *block_env, nodeset *ready_set)
 			Ignore branch instructions for the time being.
 			They should only be scheduled if there is nothing else.
 		*/
-		if (arch_irn_classify(env->main_env->arch_env, irn) != arch_irn_class_branch) {
+		if (! arch_irn_class_is(env->main_env->arch_env, irn, branch)) {
 			int costs = reg_pr_costs(env, irn);
 			if (costs <= curr_cost) {
 				res       = irn;
@@ -777,7 +777,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
 	FIRM_DBG_REGISTER(xxxdbg, "firm.be.sched");
 
-//	firm_dbg_set_mask(be.dbg, SET_LEVEL_3);
+	//	firm_dbg_set_mask(be.dbg, SET_LEVEL_3);
 
 	if (selector->init_block)
 		be.selector_block_env = selector->init_block(env->selector_env, block);
@@ -807,12 +807,12 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	root = preord;
 
 	/* Third step: calculate the Delay. Note that our
-	 * list is now in pre-order, starting at root
-	 */
+	* list is now in pre-order, starting at root
+	*/
 	for (curr = root; curr; curr = get_irn_link(curr)) {
 		sched_timestep_t d;
 
-		if (arch_irn_classify(env->arch_env, curr) == arch_irn_class_branch) {
+		if (arch_irn_class_is(env->arch_env, curr, branch)) {
 			/* assure, that branches can be executed last */
 			d = 0;
 		}
@@ -851,7 +851,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 		if (is_Phi(irn)) {
 			/* Phi functions are scheduled immediately, since they only transfer
-			 * data flow from the predecessors to this block. */
+			* data flow from the predecessors to this block. */
 
 			/* Increase the time step. */
 			be.curr_time += get_irn_etime(&be, irn);
@@ -867,7 +867,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		}
 		else {
 			/* Other nodes must have all operands in other blocks to be made
-			 * ready */
+			* ready */
 			int ready = 1;
 
 			/* Check, if the operands of a node are not local to this block */
@@ -907,10 +907,10 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 		/* calculate mcands and ecands */
 		foreach_nodeset(be.cands, irn) {
-      if (be_is_Keep(irn)) {
-        nodeset_break(be.cands);
-        break;
-      }
+			if (be_is_Keep(irn)) {
+				nodeset_break(be.cands);
+				break;
+			}
 			if (get_irn_delay(&be, irn) == max_delay) {
 				nodeset_insert(mcands, irn);
 				if (get_irn_etime(&be, irn) <= be.curr_time)
@@ -918,42 +918,39 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 			}
 		}
 
-    if (irn) {
-      /* Keeps must be immediately scheduled */
-    }
-    else {
-		  DB((be.dbg, LEVEL_2, "\tbe.curr_time = %u\n", be.curr_time));
+		if (irn) {
+			/* Keeps must be immediately scheduled */
+		}
+		else {
+			DB((be.dbg, LEVEL_2, "\tbe.curr_time = %u\n", be.curr_time));
 
-		  /* select a node to be scheduled and check if it was ready */
-		  if (nodeset_count(mcands) == 1) {
-			  DB((be.dbg, LEVEL_3, "\tmcand = 1, max_delay = %u\n", max_delay));
-			  irn = nodeset_first(mcands);
-		  }
-		  else {
-			  int cnt = nodeset_count(ecands);
-			  if (cnt == 1) {
-					arch_irn_class_t irn_class;
+			/* select a node to be scheduled and check if it was ready */
+			if (nodeset_count(mcands) == 1) {
+				DB((be.dbg, LEVEL_3, "\tmcand = 1, max_delay = %u\n", max_delay));
+				irn = nodeset_first(mcands);
+			}
+			else {
+				int cnt = nodeset_count(ecands);
+				if (cnt == 1) {
+					irn = nodeset_first(ecands);
 
-				  irn = nodeset_first(ecands);
-					irn_class = arch_irn_classify(env->arch_env, irn);
-
-					if (irn_class == arch_irn_class_branch) {
+					if (arch_irn_class_is(env->arch_env, irn, branch)) {
 						/* BEWARE: don't select a JUMP if others are still possible */
 						goto force_mcands;
 					}
-				  DB((be.dbg, LEVEL_3, "\tecand = 1, max_delay = %u\n", max_delay));
-			  }
-			  else if (cnt > 1) {
-				  DB((be.dbg, LEVEL_3, "\tecand = %d, max_delay = %u\n", cnt, max_delay));
-				  irn = select_node_heuristic(&be, ecands);
-			  }
-			  else {
+					DB((be.dbg, LEVEL_3, "\tecand = 1, max_delay = %u\n", max_delay));
+				}
+				else if (cnt > 1) {
+					DB((be.dbg, LEVEL_3, "\tecand = %d, max_delay = %u\n", cnt, max_delay));
+					irn = select_node_heuristic(&be, ecands);
+				}
+				else {
 force_mcands:
-				  DB((be.dbg, LEVEL_3, "\tmcand = %d\n", nodeset_count(mcands)));
-				  irn = select_node_heuristic(&be, mcands);
-			  }
-		  }
-    }
+					DB((be.dbg, LEVEL_3, "\tmcand = %d\n", nodeset_count(mcands)));
+					irn = select_node_heuristic(&be, mcands);
+				}
+			}
+		}
 		del_nodeset(mcands);
 		del_nodeset(ecands);
 

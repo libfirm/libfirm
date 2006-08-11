@@ -177,17 +177,17 @@ extern char *arch_register_req_format(char *buf, size_t len, const arch_register
  * Certain node classes which are relevant for the register allocator.
  */
 typedef enum _arch_irn_class_t {
-  arch_irn_class_normal,
-  arch_irn_class_spill,
-  arch_irn_class_reload,
-  arch_irn_class_copy,
-  arch_irn_class_perm,
-  arch_irn_class_branch,
-  arch_irn_class_call,
-  arch_irn_class_const,
-  arch_irn_class_load,
-  arch_irn_class_store,
-  arch_irn_class_stackparam,
+  arch_irn_class_normal     = 1 << 0,
+  arch_irn_class_spill      = 1 << 1,
+  arch_irn_class_reload     = 1 << 2,
+  arch_irn_class_copy       = 1 << 3,
+  arch_irn_class_perm       = 1 << 4,
+  arch_irn_class_branch     = 1 << 5,
+  arch_irn_class_call       = 1 << 6,
+  arch_irn_class_const      = 1 << 7,
+  arch_irn_class_load       = 1 << 8,
+  arch_irn_class_store      = 1 << 9,
+  arch_irn_class_stackparam = 1 << 10,
 } arch_irn_class_t;
 
 /**
@@ -455,6 +455,8 @@ extern void arch_set_irn_register(const arch_env_t *env, ir_node *irn,
  * @return A classification of the node.
  */
 extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn);
+
+#define arch_irn_class_is(env, irn, irn_class) ((arch_irn_classify(env, irn) & arch_irn_class_ ## irn_class) != 0)
 
 /**
  * Get the flags of a node.

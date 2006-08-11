@@ -36,7 +36,7 @@
 #endif
 
 #undef is_Perm
-#define is_Perm(arch_env, irn) (arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
+#define is_Perm(arch_env, irn) (arch_irn_class_is(arch_env, irn, perm))
 
 /* associates op with it's copy and CopyKeep */
 typedef struct {

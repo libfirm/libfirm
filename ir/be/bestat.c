@@ -169,9 +169,10 @@ void be_do_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block,
  * Updates nodes statistics.
  */
 static void do_nodes_stat(ir_node *irn, void *env) {
-	be_stat_phase_t *phase = env;
-	ir_mode         *mode;
-	opcode          opc;
+	be_stat_phase_t  *phase = env;
+	ir_mode          *mode;
+	opcode           opc;
+	arch_irn_class_t irn_class;
 
 	if (is_Block(irn))
 		return;
@@ -204,23 +205,17 @@ static void do_nodes_stat(ir_node *irn, void *env) {
 	else if (opc == iro_Store)
 		phase->num_store++;
 
-	switch (arch_irn_classify(phase->arch_env, irn)) {
-		case arch_irn_class_spill:
-			phase->num_spill++;
-			break;
-		case arch_irn_class_reload:
-			phase->num_reload++;
-			break;
-		case arch_irn_class_stackparam:
-		case arch_irn_class_load:
-			phase->num_load++;
-			break;
-		case arch_irn_class_store:
-			phase->num_store++;
-			break;
-		default:
-			break;
-	}
+	irn_class = arch_irn_classify(phase->arch_env, irn);
+	if (irn_class & arch_irn_class_spill)
+		phase->num_spill++;
+	else if (irn_class & arch_irn_class_reload)
+		phase->num_reload++;
+	else if (irn_class & arch_irn_class_stackparam)
+		phase->num_load++;
+	else if (irn_class & arch_irn_class_load)
+		phase->num_load++;
+	else if (irn_class & arch_irn_class_store)
+		phase->num_store++;
 }
 
 /**

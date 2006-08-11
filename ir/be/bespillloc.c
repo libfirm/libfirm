@@ -462,7 +462,7 @@ static void Cli_ents(int start, int end, int nr, void *env) {
 	cli->ents 	= pset_new_ptr_default();
 
 	foreach_pset(surrounder, ent) {pset_insert_ptr(cli->ents,ent);}
-	pmap_insert(spi->Cli_ents, nr, cli);
+	pmap_insert(spi->Cli_ents, (void *)nr, cli);
 	del_pset(surrounder);
 }
 
