@@ -971,12 +971,10 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	exchange(irn, proj);
 }
 
-static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node **sp, ir_node *mem, entity *ent, const char *offset) {
+static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, ir_node *mem, entity *ent, const char *offset) {
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_mode *spmode = get_irn_mode(*sp);
-	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, *sp);
 
-	ir_node *push = new_rd_ia32_Push(env->dbg, env->irg, env->block, *sp, noreg, mem);
+	ir_node *push = new_rd_ia32_Push(env->dbg, env->irg, env->block, sp, noreg, mem);
 
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
@@ -987,19 +985,11 @@ static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_n
 		add_ia32_am_offs(push, offset);
 
 	sched_add_before(schedpoint, push);
-
-	*sp = new_rd_Proj(env->dbg, env->irg, env->block, push, spmode, 0);
-	sched_add_before(schedpoint, *sp);
-	arch_set_irn_register(env->cg->arch_env, *sp, spreg);
-
 	return push;
 }
 
-static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_node **sp, entity *ent, const char *offset) {
-	ir_mode *spmode = get_irn_mode(*sp);
-	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, *sp);
-
-	ir_node *pop = new_rd_ia32_Pop(env->dbg, env->irg, env->block, *sp, new_NoMem());
+static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, entity *ent, const char *offset) {
+	ir_node *pop = new_rd_ia32_Pop(env->dbg, env->irg, env->block, sp, new_NoMem());
 
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
@@ -1011,11 +1001,19 @@ static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_no
 
 	sched_add_before(schedpoint, pop);
 
-	*sp = new_rd_Proj(env->dbg, env->irg, env->block, pop, spmode, 0);
-	arch_set_irn_register(env->cg->arch_env, *sp, spreg);
-	sched_add_before(schedpoint, *sp);
-
 	return pop;
+}
+
+static ir_node* create_spproj(ia32_transform_env_t *env, ir_node *pred, ir_node *schedpoint, const ir_node *oldsp) {
+	ir_mode *spmode = get_irn_mode(oldsp);
+	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, oldsp);
+	ir_node *sp;
+
+	sp = new_rd_Proj(env->dbg, env->irg, env->block, pred, spmode, 0);
+	arch_set_irn_register(env->cg->arch_env, sp, spreg);
+	sched_add_before(schedpoint, sp);
+
+	return sp;
 }
 
 static void transform_MemPerm(ia32_transform_env_t *env) {
@@ -1026,13 +1024,10 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 	 */
 	ir_node *node = env->irn;
 	int i, arity;
-	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *sp = get_irn_n(node, 0);
-	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, sp);
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
 	ir_node **pops;
-	ir_mode *spmode = get_irn_mode(sp);
 
 	arity = be_get_MemPerm_entity_arity(node);
 	pops = alloca(arity * sizeof(pops[0]));
@@ -1043,13 +1038,16 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 		ir_type *enttype = get_entity_type(ent);
 		int entbits = get_type_size_bits(enttype);
 		ir_node *mem = get_irn_n(node, i + 1);
+		ir_node *push;
 
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
-		create_push(env, node, &sp, mem, ent, NULL);
+		push = create_push(env, node, sp, mem, ent, NULL);
+		sp = create_spproj(env, push, node, sp);
 		if(entbits == 64) {
 			// add another push after the first one
-			create_push(env, node, &sp, mem, ent, "4");
+			push = create_push(env, node, sp, mem, ent, "4");
+			sp = create_spproj(env, push, node, sp);
 		}
 
 		set_irn_n(node, i, new_Bad());
@@ -1065,10 +1063,14 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
-		pop = create_pop(env, node, &sp, ent, NULL);
+		pop = create_pop(env, node, sp, ent, NULL);
 		if(entbits == 64) {
-			// add another push after the first one
-			pop = create_pop(env, node, &sp, ent, "4");
+			// add another pop after the first one
+			sp = create_spproj(env, pop, node, sp);
+			pop = create_pop(env, node, sp, ent, "4");
+		}
+		if(i != 0) {
+			sp = create_spproj(env, pop, node, sp);
 		}
 
 		pops[i] = pop;
