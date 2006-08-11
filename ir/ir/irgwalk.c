@@ -3,10 +3,10 @@
  * File name:   ir/ir/irgwalk.c
  * Purpose:
  * Author:      Boris Boesler
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
+ * Copyright:   (c) 1999-20036Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -138,19 +138,20 @@ static unsigned
 irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env) {
   int i;
   unsigned cnt = 1;
+  ir_graph *irg = current_ir_graph;
 
-  set_irn_visited(node, current_ir_graph->visited);
+  set_irn_visited(node, irg->visited);
 
   pre(node, env);
 
   if (node->op != op_Block) {
     ir_node *pred = get_irn_n(node, -1);
-    if (pred->visited < current_ir_graph->visited)
+    if (pred->visited < irg->visited)
       cnt += irg_walk_2_pre(pred, pre, env);
   }
   for (i = get_irn_arity(node) - 1; i >= 0; --i) {
     ir_node *pred = get_irn_n(node, i);
-    if (pred->visited < current_ir_graph->visited)
+    if (pred->visited < irg->visited)
       cnt += irg_walk_2_pre(pred, pre, env);
   }
   return cnt;
@@ -165,17 +166,18 @@ static unsigned
 irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env) {
   int i;
   unsigned cnt = 1;
+  ir_graph *irg = current_ir_graph;
 
-  set_irn_visited(node, current_ir_graph->visited);
+  set_irn_visited(node, irg->visited);
 
   if (node->op != op_Block) {
     ir_node *pred = get_irn_n(node, -1);
-    if (pred->visited < current_ir_graph->visited)
+    if (pred->visited < irg->visited)
       cnt += irg_walk_2_post(pred, post, env);
   }
   for (i = get_irn_arity(node) - 1; i >= 0; --i) {
     ir_node *pred = get_irn_n(node, i);
-    if (pred->visited < current_ir_graph->visited)
+    if (pred->visited < irg->visited)
       cnt += irg_walk_2_post(pred, post, env);
   }
 
@@ -193,19 +195,20 @@ static unsigned
 irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env) {
   int i;
   unsigned cnt = 1;
+  ir_graph *irg = current_ir_graph;
 
-  set_irn_visited(node, current_ir_graph->visited);
+  set_irn_visited(node, irg->visited);
 
   pre(node, env);
 
   if (node->op != op_Block) {
     ir_node *pred = get_irn_n(node, -1);
-    if (pred->visited < current_ir_graph->visited)
+    if (pred->visited < irg->visited)
       cnt += irg_walk_2_both(pred, pre, post, env);
   }
   for (i = get_irn_arity(node) - 1; i >= 0; --i) {
     ir_node *pred = get_irn_n(node, i);
-    if (pred->visited < current_ir_graph->visited)
+    if (pred->visited < irg->visited)
       cnt += irg_walk_2_both(pred, pre, post, env);
   }
 
