@@ -469,7 +469,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 								stepsize = (get_type_size_bits(step_type) + 7) >> 3;
 
 								/* Search the next free position in vals depending on the information from above (ai). */
-								while (vals[offset]) {
+								while (vals[offset] && aipos >= 0) {
 									if (ai[aipos].visit_cnt < ai[aipos].n_elems) {
 										offset += stepsize;
 										ai[aipos].visit_cnt++;
