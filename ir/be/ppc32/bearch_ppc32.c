@@ -233,6 +233,12 @@ static entity *ppc32_get_frame_entity(const void *self, const ir_node *irn) {
 	return get_ppc32_frame_entity(irn);
 }
 
+static void ppc32_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+	if (! is_ppc32_irn(irn) || get_ppc32_type(irn) != ppc32_ac_FrameEntity)
+		return;
+	set_ppc32_frame_entity(irn, ent);
+}
+
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
@@ -359,8 +365,12 @@ static const arch_irn_ops_if_t ppc32_irn_ops_if = {
 	ppc32_classify,
 	ppc32_get_flags,
 	ppc32_get_frame_entity,
+	ppc32_set_frame_entity,
 	ppc32_set_stack_bias,
-	NULL
+	NULL,    /* get_inverse             */
+	NULL,    /* get_op_estimated_cost   */
+	NULL,    /* possible_memory_operand */
+	NULL,    /* perform_memory_operand  */
 };
 
 ppc32_irn_ops_t ppc32_irn_ops = {

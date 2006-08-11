@@ -130,7 +130,7 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set)
 	// test all nodes in the ready set and take the first non-branch that
 	// is allowed
 	for (node = nodeset_first(ready_set); node != NULL; node = nodeset_next(ready_set)) {
-		if (arch_irn_classify(arch_env, node) == arch_irn_class_branch) {
+		if (arch_irn_class_is(arch_env, node, branch)) {
 			if (is_irn_forking(node))
 				condjmp = node;
 			continue;
@@ -163,7 +163,7 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set)
 			return condjmp;
 		}
 		node = nodeset_first(ready_set);
-		assert(arch_irn_classify(arch_env, node) == arch_irn_class_branch);
+		assert(arch_irn_class_is(arch_env, node, branch));
 		nodeset_break(ready_set);
 		return node;
 	}

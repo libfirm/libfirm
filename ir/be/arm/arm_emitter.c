@@ -103,7 +103,7 @@ static const char *node_offset_to_str(ir_node *n, char *buf, int buflen) {
 		entity *ent = be_get_frame_entity(n);
 		offset = get_entity_offset_bytes(ent);
 	} else if (irn_op == op_be_Reload || irn_op == op_be_Spill) {
-		entity * ent = be_get_spill_entity(n);
+		entity *ent = be_get_frame_entity(n);
 		offset = get_entity_offset_bytes(ent);
 	} else if (irn_op == op_be_IncSP) {
 		int offs = be_get_IncSP_offset(n);

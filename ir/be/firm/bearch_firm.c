@@ -362,6 +362,10 @@ static entity *firm_get_frame_entity(const void *self, const ir_node *irn)
 	return NULL;
 }
 
+static void firm_set_frame_entity(const void *self, const ir_node *irn, entity *ent)
+{
+}
+
 static const arch_irn_ops_if_t firm_irn_ops_if = {
 	firm_get_irn_reg_req,
 	firm_set_irn_reg,
@@ -369,7 +373,12 @@ static const arch_irn_ops_if_t firm_irn_ops_if = {
 	firm_classify,
 	firm_get_flags,
 	firm_get_frame_entity,
-	firm_set_stack_bias
+	firm_set_frame_entity,
+	firm_set_stack_bias,
+	NULL,    /* get_inverse             */
+	NULL,    /* get_op_estimated_cost   */
+	NULL,    /* possible_memory_operand */
+	NULL,    /* perform_memory_operand  */
 };
 
 static const arch_irn_ops_t firm_irn_ops = {

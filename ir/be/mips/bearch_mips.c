@@ -237,6 +237,12 @@ static entity *mips_get_frame_entity(const void *self, const ir_node *irn) {
 	return NULL;
 }
 
+static void mips_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+	mips_attr_t *attr  = get_mips_attr(irn);
+	assert(is_mips_load_r(irn) || is_mips_store_r(irn));
+	attr->stack_entity = ent;
+}
+
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
@@ -257,8 +263,12 @@ static const arch_irn_ops_if_t mips_irn_ops_if = {
 	mips_classify,
 	mips_get_flags,
 	mips_get_frame_entity,
+	mips_set_frame_entity,
 	mips_set_frame_offset,
-	NULL
+	NULL,    /* get_inverse             */
+	NULL,    /* get_op_estimated_cost   */
+	NULL,    /* possible_memory_operand */
+	NULL,    /* perform_memory_operand  */
 };
 
 mips_irn_ops_t mips_irn_ops = {

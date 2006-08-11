@@ -231,6 +231,10 @@ static entity *arm_get_frame_entity(const void *self, const ir_node *irn) {
 	return NULL;
 }
 
+static void arm_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+	/* TODO: set the entity assigned to the frame */
+}
+
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
@@ -248,8 +252,12 @@ static const arch_irn_ops_if_t arm_irn_ops_if = {
 	arm_classify,
 	arm_get_flags,
 	arm_get_frame_entity,
+	arm_set_frame_entity,
 	arm_set_stack_bias,
-	NULL
+	NULL,    /* get_inverse             */
+	NULL,    /* get_op_estimated_cost   */
+	NULL,    /* possible_memory_operand */
+	NULL,    /* perform_memory_operand  */
 };
 
 arm_irn_ops_t arm_irn_ops = {
