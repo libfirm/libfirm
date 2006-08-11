@@ -229,19 +229,29 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 }
 
 static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
+	arch_irn_class_t classification = arch_irn_class_normal;
+
 	irn = my_skip_proj(irn);
+
 	if (is_cfop(irn))
-		return arch_irn_class_branch;
-	else if (is_ia32_Cnst(irn))
-		return arch_irn_class_const;
-	else if (is_ia32_Ld(irn))
-		return arch_irn_class_load;
-	else if (is_ia32_St(irn) || is_ia32_Store8Bit(irn))
-		return arch_irn_class_store;
-	else if (is_ia32_irn(irn))
-		return arch_irn_class_normal;
-	else
-		return 0;
+		classification |= arch_irn_class_branch;
+
+	if (! is_ia32_irn(irn))
+		return classification & ~arch_irn_class_normal;
+
+	if (is_ia32_Cnst(irn))
+		classification |= arch_irn_class_const;
+
+	if (is_ia32_Ld(irn))
+		classification |= arch_irn_class_load;
+
+	if (is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+		classification |= arch_irn_class_store;
+
+	if (is_ia32_got_reload(irn))
+		classification |= arch_irn_class_reload;
+
+	return classification;
 }
 
 static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
@@ -690,6 +700,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	set_ia32_ls_mode(irn, get_irn_mode(reload));
 	set_ia32_frame_ent(irn, be_get_frame_entity(reload));
 	set_ia32_use_frame(irn);
+	set_ia32_got_reload(irn);
 
 	set_irn_n(irn, 0, be_get_Reload_frame(reload));
 	set_irn_n(irn, 4, be_get_Reload_mem(reload));
