@@ -47,7 +47,7 @@ typedef struct _collect_t {
   ir_node *proj_X;      /**< initial exec proj */
   ir_node *block;       /**< old first block */
   int     blk_idx;      /**< cfgpred index of the initial exec in block */
-  ir_node *proj_m;      /**< linked list of memory from start proj's */
+  ir_node *proj_m;      /**< memory from start proj's */
   ir_node *proj_data;   /**< linked list of all parameter access proj's */
 } collect_t;
 
@@ -77,18 +77,9 @@ static void collect_data(ir_node *node, void *env)
       }
     }
     else if (op == op_Start) {
-      switch (get_Proj_proj(node)) {
-      case pn_Start_M:
-        /* found ProjM(Start) */
-        set_irn_link(node, data->proj_m);
-        data->proj_m = node;
-        break;
-      case pn_Start_X_initial_exec:
+      if (get_Proj_proj(node) == pn_Start_X_initial_exec) {
         /* found ProjX(Start) */
         data->proj_X = node;
-        break;
-      default:
-        break;
       }
     }
     break;
@@ -157,7 +148,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   data.proj_X    = NULL;
   data.block     = NULL;
   data.blk_idx   = -1;
-  data.proj_m    = NULL;
+  data.proj_m    = get_irg_initial_mem(irg);
   data.proj_data = NULL;
   irg_walk_graph(irg, NULL, collect_data, &data);
 
@@ -167,7 +158,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
 
   assert(data.proj_X && "Could not find initial exec from Start");
   assert(data.block  && "Could not find first block");
-  assert(data.proj_m && "Could not find ProjM(Start)");
+  assert(data.proj_m && "Could not find initial memory");
   assert((data.proj_data || n_params == 0) && "Could not find Proj(ProjT(Start)) of non-void function");
 
   /* allocate in's for phi and block construction */
@@ -202,6 +193,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   /* build the memory phi */
   i = 0;
   in[i] = new_r_Proj(irg, get_irg_start_block(irg), get_irg_start(irg), mode_M, pn_Start_M);
+  set_irg_initial_mem(irg, in[i]);
   ++i;
 
   for (calls = call; calls; calls = get_irn_link(calls)) {
