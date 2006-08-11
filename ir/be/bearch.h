@@ -281,6 +281,14 @@ struct _arch_irn_ops_if_t {
   entity *(*get_frame_entity)(const void *self, const ir_node *irn);
 
   /**
+   * Set the entity on the stack frame this node depends on.
+   * @param self The this pointer.
+   * @param irn  The node in question.
+   * @param ent  The entity to set
+   */
+  void (*set_frame_entity)(const void *self, const ir_node *irn, entity *ent);
+
+  /**
    * Set the offset of a node carrying an entity on the stack frame.
    * @param self The this pointer.
    * @param irn  The node.
@@ -343,6 +351,7 @@ struct _arch_irn_ops_t {
 extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias);
 
 extern entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);
+extern void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, entity *ent);
 
 extern int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn);
 extern arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);

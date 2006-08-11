@@ -1082,6 +1082,11 @@ static entity *be_node_get_frame_entity(const void *self, const ir_node *irn)
 	return be_get_frame_entity(irn);
 }
 
+static void be_node_set_frame_entity(const void *self, const ir_node *irn, entity *ent)
+{
+	be_set_frame_entity(irn, ent);
+}
+
 static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
 {
 	if(be_has_frame_entity(irn)) {
@@ -1106,7 +1111,12 @@ static const arch_irn_ops_if_t be_node_irn_ops_if = {
 	be_node_classify,
 	be_node_get_flags,
 	be_node_get_frame_entity,
-	be_node_set_frame_offset
+	be_node_set_frame_entity,
+	be_node_set_frame_offset,
+	NULL,    /* get_inverse             */
+	NULL,    /* get_op_estimated_cost   */
+	NULL,    /* possible_memory_operand */
+	NULL,    /* perform_memory_operand  */
 };
 
 static const arch_irn_ops_t be_node_irn_ops = {
@@ -1226,6 +1236,10 @@ static entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
 	return NULL;
 }
 
+static void phi_set_frame_entity(const void *_self, const ir_node *irn, entity *ent)
+{
+}
+
 static void phi_set_frame_offset(const void *_self, ir_node *irn, int bias)
 {
 }
@@ -1237,7 +1251,12 @@ static const arch_irn_ops_if_t phi_irn_ops = {
 	phi_classify,
 	phi_get_flags,
 	phi_get_frame_entity,
-	phi_set_frame_offset
+	phi_set_frame_entity,
+	phi_set_frame_offset,
+	NULL,    /* get_inverse             */
+	NULL,    /* get_op_estimated_cost   */
+	NULL,    /* possible_memory_operand */
+	NULL,    /* perform_memory_operand  */
 };
 
 static const arch_irn_handler_t phi_irn_handler = {

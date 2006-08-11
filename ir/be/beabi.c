@@ -1992,6 +1992,10 @@ static entity *abi_get_frame_entity(const void *_self, const ir_node *irn)
 	return NULL;
 }
 
+static void abi_set_frame_entity(const void *_self, const ir_node *irn, entity *ent)
+{
+}
+
 static void abi_set_stack_bias(const void *_self, ir_node *irn, int bias)
 {
 }
@@ -2003,7 +2007,12 @@ static const arch_irn_ops_if_t abi_irn_ops = {
 	abi_classify,
 	abi_get_flags,
 	abi_get_frame_entity,
-	abi_set_stack_bias
+	abi_set_frame_entity,
+	abi_set_stack_bias,
+	NULL,    /* get_inverse             */
+	NULL,    /* get_op_estimated_cost   */
+	NULL,    /* possible_memory_operand */
+	NULL,    /* perform_memory_operand  */
 };
 
 static const arch_irn_handler_t abi_irn_handler = {
