@@ -269,6 +269,10 @@ static entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
+static void ia32_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+	set_ia32_frame_ent(irn, ent);
+}
+
 static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	char buf[64];
 	const ia32_irn_ops_t *ops = self;
@@ -733,6 +737,7 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_classify,
 	ia32_get_flags,
 	ia32_get_frame_entity,
+	ia32_set_frame_entity,
 	ia32_set_stack_bias,
 	ia32_get_inverse,
 	ia32_get_op_estimated_cost,
