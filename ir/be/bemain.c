@@ -566,11 +566,6 @@ static void be_main_loop(FILE *file_handle)
 		restore_optimization_state(&state);
 
 		BE_TIMER_ONLY(num_nodes_a = get_num_reachable_nodes(irg));
-
-		/* switched off due to statistics (statistic module needs all irgs) */
-		if (! stat_is_active())
-			free_ir_graph(irg);
-
 		BE_TIMER_POP(t_other);
 
 #define LC_EMIT(timer)    printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
@@ -603,6 +598,11 @@ static void be_main_loop(FILE *file_handle)
 			LC_EMIT(t_other);
 		}
 #undef LC_EMIT
+
+        /* switched off due to statistics (statistic module needs all irgs) */
+		if (! stat_is_active())
+			free_ir_graph(irg);
+
 	}
 	be_done_env(&env);
 
