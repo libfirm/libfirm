@@ -9,9 +9,9 @@
 #include "config.h"
 #endif
 
-#include "beverify.h"
-#include "belive.h"
-#include "besched_t.h"
+#include "bitset.h"
+#include "set.h"
+#include "array.h"
 
 #include "irnode.h"
 #include "irgraph.h"
@@ -19,8 +19,10 @@
 #include "irprintf.h"
 #include "irdump_t.h"
 #include "iredges.h"
-#include "set.h"
-#include "array.h"
+
+#include "beverify.h"
+#include "belive.h"
+#include "besched_t.h"
 #include "benode_t.h"
 
 static int my_values_interfere(const ir_node *a, const ir_node *b);
@@ -37,8 +39,7 @@ typedef struct be_verify_register_pressure_env_t_ {
 /**
  * Print all nodes of a pset into a file.
  */
-static void print_living_values(FILE *F, pset *live_nodes)
-{
+static void print_living_values(FILE *F, pset *live_nodes) {
 	ir_node *node;
 
 	ir_fprintf(F, "\t");
@@ -51,8 +52,7 @@ static void print_living_values(FILE *F, pset *live_nodes)
 /**
  * Check if number of live nodes never exceeds the number of available registers.
  */
-static void verify_liveness_walker(ir_node *block, void *data)
-{
+static void verify_liveness_walker(ir_node *block, void *data) {
 	be_verify_register_pressure_env_t *env = (be_verify_register_pressure_env_t *)data;
 	pset    *live_nodes = pset_new_ptr_default();
 	ir_node *irn;
@@ -90,8 +90,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 /**
  * Start a walk over the irg and check the register pressure.
  */
-int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_graph *irg)
-{
+int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_graph *irg) {
 	be_verify_register_pressure_env_t env;
 
 	env.lv                  = be_liveness(irg);
@@ -115,8 +114,7 @@ typedef struct be_verify_schedule_env_t_ {
 /**
  * Simple schedule checker.
  */
-static void verify_schedule_walker(ir_node *block, void *data)
-{
+static void verify_schedule_walker(ir_node *block, void *data) {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
 	ir_node *node;
 	int non_phi_found  = 0;
@@ -492,8 +490,7 @@ int be_verify_spillslots(ir_graph *irg)
  * @param b The second value.
  * @return 1, if a and b interfere, 0 if not.
  */
-static int my_values_interfere(const ir_node *a, const ir_node *b)
-{
+static int my_values_interfere(const ir_node *a, const ir_node *b) {
 	const ir_edge_t *edge;
 	ir_node *bb;
 	int a2b = value_dominates(a, b);
@@ -547,4 +544,88 @@ static int my_values_interfere(const ir_node *a, const ir_node *b)
 	}
 
 	return 0;
+}
+
+
+
+//---------------------------------------------------------------------------
+
+
+
+typedef struct _be_verify_register_allocation_env_t {
+	const arch_env_t *arch_env;
+	ir_graph *irg;
+	be_lv_t *lv;
+	int problem_found;
+} be_verify_register_allocation_env_t;
+
+static void check_register_allocation(be_verify_register_allocation_env_t *env,
+                                      const arch_register_class_t *regclass, pset *nodes) {
+	const arch_env_t *arch_env = env->arch_env;
+	ir_node *node;
+
+	bitset_t *registers = bitset_alloca(arch_register_class_n_regs(regclass));
+
+	foreach_pset(nodes, node) {
+		const arch_register_t *reg;
+		if(arch_get_irn_reg_class(arch_env, node, -1) != regclass)
+			continue;
+
+		reg = arch_get_irn_register(arch_env, node);
+		if(reg == NULL) {
+			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
+			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+			continue;
+		}
+		if(bitset_is_set(registers, reg->index)) {
+			ir_fprintf(stderr, "Verify warning: Register %s assigned more than once at node %+F in block %+F(%s)\n",
+			           reg->name, node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+			continue;
+		}
+		bitset_set(registers, reg->index);
+	}
+}
+
+static void verify_block_register_allocation(ir_node *block, void *data) {
+	be_verify_register_allocation_env_t *env = data;
+	const arch_env_t *arch_env = env->arch_env;
+	const arch_isa_t *isa = arch_env->isa;
+	int i, nregclasses;
+
+	nregclasses = arch_isa_get_n_reg_class(isa);
+	for (i = 0; i < nregclasses; ++i) {
+		const arch_register_class_t *regclass = arch_isa_get_reg_class(isa, i);
+		ir_node *node;
+		pset *live_nodes = pset_new_ptr_default();
+
+		be_liveness_end_of_block(env->lv, env->arch_env, regclass, block, live_nodes);
+		check_register_allocation(env, regclass, live_nodes);
+
+		sched_foreach_reverse(block, node) {
+			if (is_Phi(node))
+				break;
+
+			be_liveness_transfer(env->arch_env, regclass, node, live_nodes);
+			check_register_allocation(env, regclass, live_nodes);
+		}
+
+		del_pset(live_nodes);
+	}
+}
+
+int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg) {
+	be_verify_register_allocation_env_t env;
+
+	env.arch_env = arch_env;
+	env.irg = irg;
+	env.lv = be_liveness(irg);
+	env.problem_found = 0;
+
+	irg_block_walk_graph(irg, verify_block_register_allocation, NULL, &env);
+
+	be_liveness_free(env.lv);
+
+	return !env.problem_found;
 }

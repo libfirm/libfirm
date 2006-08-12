@@ -45,4 +45,14 @@ int be_verify_schedule(ir_graph *irg);
  */
 int be_verify_spillslots(ir_graph *irg);
 
+/**
+ * Verify register allocation: Checks that no 2 live nodes have the same
+ * register assigned, also checks that each scheduled node has a register
+ * assigned.
+ *
+ * @param irg  The irg to check
+ * @return     1 if verify succeeded, 0 otherwise
+ */
+int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg);
+
 #endif /* BEVERIFY_H_ */

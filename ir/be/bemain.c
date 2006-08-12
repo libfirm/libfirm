@@ -73,7 +73,7 @@ static be_options_t be_options = {
 static unsigned dump_flags = 0;
 
 /* verify options */
-static unsigned vrfy_option = BE_VRFY_WARN;
+static int vrfy_option = BE_VRFY_WARN;
 
 /* register allocator to use. */
 static const be_ra_t *ra = &be_ra_chordal_allocator;
@@ -545,9 +545,10 @@ static void be_main_loop(FILE *file_handle)
 
 		dump(DUMP_FINAL, irg, "-finish", dump_ir_block_graph_sched);
 
-		/* check schedule */
+		/* check schedule and register allocation */
 		BE_TIMER_PUSH(t_verify);
 		be_sched_vrfy(birg.irg, vrfy_option);
+		be_verify_register_allocation(env.arch_env, birg.irg);
 		BE_TIMER_POP(t_verify);
 
 		/* emit assembler code */
