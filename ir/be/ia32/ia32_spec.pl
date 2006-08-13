@@ -18,7 +18,7 @@ $comment_string = "/*";
 #
 # <op-name> => {
 #   "op_flags"  => "N|L|C|X|I|F|Y|H|c|K",
-#   "irn_flags" => "R|N|I"
+#   "irn_flags" => "R|N|I|S"
 #   "arity"     => "0|1|2|3 ... |variable|dynamic|any",
 #   "state"     => "floats|pinned|mem_pinned|exc_pinned",
 #   "args"      => [
@@ -57,6 +57,7 @@ $comment_string = "/*";
 #   R   rematerializeable
 #   N   not spillable
 #   I   ignore for register allocation
+#   S   modifies stack pointer
 #
 # state: state of the operation, OPTIONAL (default is "floats")
 #
@@ -738,7 +739,7 @@ else {
 },
 
 "AddSP" => {
-  "irn_flags" => "I",
+  "irn_flags" => "S|I",
   "comment"   => "allocate space on stack",
   "reg_req"   => { "in" => [ "esp", "gp" ], "out" => [ "esp", "none" ] },
   "outs"      => [ "stack", "M" ],
