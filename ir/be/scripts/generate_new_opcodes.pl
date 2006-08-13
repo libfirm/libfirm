@@ -224,6 +224,9 @@ foreach my $op (keys(%nodes)) {
 					elsif ($flag eq "I") {
 						$temp .= "  flags |= arch_irn_flags_ignore;             /* ignore op for register allocation */\n";
 					}
+					elsif ($flag eq "S") {
+						$temp .= "  flags |= arch_irn_flags_modify_sp;          /* op modifies stack pointer */\n";
+					}
 				}
 			}
 
