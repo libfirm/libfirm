@@ -2426,6 +2426,8 @@ static ir_node *gen_be_AddSP(ia32_transform_env_t *env) {
 		}
 	}
 
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
+
 	return new_op;
 }
 
