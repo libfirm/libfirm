@@ -243,6 +243,23 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			fprintf(F, "\n");
 
+			/* dump immop type */
+			fprintf(F, "immediate = ");
+			switch (get_ia32_immop_type(n)) {
+				case ia32_ImmNone:
+					fprintf(F, "None");
+					break;
+				case ia32_ImmConst:
+					fprintf(F, "Const");
+					break;
+				case ia32_ImmSymConst:
+					fprintf(F, "SymConst");
+					break;
+				default:
+					fprintf(F, "unknown (%d)", get_ia32_immop_type(n));
+					break;
+			}
+			fprintf(F, "\n");
 
 			/* dump supported am */
 			fprintf(F, "AM support = ");
@@ -312,6 +329,15 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			/* commutative */
 			fprintf(F, "commutative = %d\n", is_ia32_commutative(n));
 
+			/* emit cl */
+			fprintf(F, "emit cl instead of ecx = %d\n", is_ia32_emit_cl(n));
+
+			/* got lea */
+			fprintf(F, "got loea = %d\n", is_ia32_got_lea(n));
+
+			/* got reload */
+			fprintf(F, "got reload = %d\n", is_ia32_got_reload(n));
+
 			/* dump flags */
 			fprintf(F, "flags =");
 			flags = get_ia32_flags(n);
@@ -328,6 +354,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				if (flags & arch_irn_flags_ignore) {
 					fprintf(F, " ignore");
 				}
+				if (flags & arch_irn_flags_modify_sp) {
+					fprintf(F, " modify_sp");
+				}
 			}
 			fprintf(F, " (%d)\n", flags);
 
@@ -335,6 +364,43 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			fprintf(F, "frame entity = ");
 			if (get_ia32_frame_ent(n)) {
 				ir_fprintf(F, "%+F", get_ia32_frame_ent(n));
+			}
+			else {
+				fprintf(F, "n/a");
+			}
+			fprintf(F, "\n");
+
+			/* dump modes */
+			fprintf(F, "ls_mode = ");
+			if (get_ia32_ls_mode(n)) {
+				ir_fprintf(F, "%+F", get_ia32_ls_mode(n));
+			}
+			else {
+				fprintf(F, "n/a");
+			}
+			fprintf(F, "\n");
+
+			fprintf(F, "res_mode = ");
+			if (get_ia32_res_mode(n)) {
+				ir_fprintf(F, "%+F", get_ia32_res_mode(n));
+			}
+			else {
+				fprintf(F, "n/a");
+			}
+			fprintf(F, "\n");
+
+			fprintf(F, "src_mode = ");
+			if (get_ia32_src_mode(n)) {
+				ir_fprintf(F, "%+F", get_ia32_src_mode(n));
+			}
+			else {
+				fprintf(F, "n/a");
+			}
+			fprintf(F, "\n");
+
+			fprintf(F, "tgt_mode = ");
+			if (get_ia32_tgt_mode(n)) {
+				ir_fprintf(F, "%+F", get_ia32_tgt_mode(n));
 			}
 			else {
 				fprintf(F, "n/a");
