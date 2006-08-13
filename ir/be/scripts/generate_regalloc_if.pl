@@ -505,7 +505,9 @@ sub build_subset_class_func {
 	my $same_pos      = undef;
 	my $different_pos = undef;
 	my $temp;
-	my @temp_obst;
+	my @obst_init;
+	my @obst_limits;
+	my @obst_ignore;
 
 
 	# build function header
@@ -549,7 +551,7 @@ CHECK_REQS: foreach (@regs) {
 
 			if (!defined($neg)) {
 				$has_limit = 1;
-				push(@temp_obst, "  bs = bitset_set_all(bs);     /* allow all register (negative constraints given) */\n");
+				push(@obst_init, "  bs = bitset_set_all(bs);     /* allow all register (negative constraints given) */\n");
 			}
 
 			$_   = substr($_, 1); # skip '!'
@@ -565,7 +567,7 @@ CHECK_REQS: foreach (@regs) {
 
 			if (!defined($neg)) {
 				$has_limit = 1;
-				push(@temp_obst, "  bs = bitset_clear_all(bs);   /* disallow all register (positive constraints given) */\n");
+				push(@obst_init, "  bs = bitset_clear_all(bs);   /* disallow all register (positive constraints given) */\n");
 			}
 			$neg = 0;
 		}
@@ -589,19 +591,19 @@ CHECK_REQS: foreach (@regs) {
 
 		if ($neg == 1) {
 			$has_limit = 1;
-			push(@temp_obst, "  bitset_clear(bs, ".get_reg_index($_).");         /* disallow $_ */\n");
+			push(@obst_limits, "  bitset_clear(bs, ".get_reg_index($_).");         /* disallow $_ */\n");
 		}
 		else {
 			$has_limit = 1;
-			push(@temp_obst, "  bitset_set(bs, ".get_reg_index($_).");           /* allow $_ */\n");
+			push(@obst_limits, "  bitset_set(bs, ".get_reg_index($_).");           /* allow $_ */\n");
 		}
 	}
 
 	my @cur_class = @{ $reg_classes{"$class"} };
 	for (my $idx = 0; $idx <= $#cur_class; $idx++) {
 		if (defined($cur_class[$idx]{"type"}) && ($cur_class[$idx]{"type"} & 4)) {
-			push(@temp_obst, "  bitset_clear(bs, ".get_reg_index($cur_class[$idx]{"name"}).");");
-			push(@temp_obst, "         /* disallow ignore reg ".$cur_class[$idx]{"name"}." */\n");
+			push(@obst_ignore, "  bitset_clear(bs, ".get_reg_index($cur_class[$idx]{"name"}).");");
+			push(@obst_ignore, "         /* disallow ignore reg ".$cur_class[$idx]{"name"}." */\n");
 		}
 	}
 
@@ -610,7 +612,9 @@ CHECK_REQS: foreach (@regs) {
 
 		push(@obst_limit_func, "/* limit the possible registers for ".($in ? "IN" : "OUT")." $idx at op $op */\n");
 		push(@obst_limit_func, "void limit_reg_".$op."_".($in ? "in" : "out")."_".$idx."(void *_unused, bitset_t *bs) {\n");
-		push(@obst_limit_func, @temp_obst);
+		push(@obst_limit_func, @obst_init);
+		push(@obst_limit_func, @obst_ignore);
+		push(@obst_limit_func, @obst_limits);
 		push(@obst_limit_func, "}\n\n");
 	}
 
