@@ -98,6 +98,7 @@ typedef struct _ia32_code_gen_t {
 	ia32_optimize_t                opt;            /**< contains optimization information */
 	entity                         *fp_to_gp;      /**< allocated entity for fp to gp conversion */
 	entity                         *gp_to_fp;      /**< allocated entity for gp to fp conversion */
+	nodeset                        *kill_conv;     /**< Remember all convs to be killed */
 	int                            arch;           /**< instruction architecture */
 	int                            opt_arch;       /**< optimize for architecture */
 	char                           fp_kind;        /**< floating point kind */
