@@ -224,10 +224,30 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 	be_insn_t *insn      = chordal_scan_insn(env, irn);
 	bitset_t *def_constr = bitset_alloca(env->cls->n_regs);
 	bitset_t *tmp        = bitset_alloca(env->cls->n_regs);
-	int i;
+	ir_node *bl          = get_nodes_block(insn->irn);
+	int i, j;
 
 	if(!insn->has_constraints)
 		goto end;
+
+	/* insert copies for nodes that occur constrained more than once. */
+	for(i = insn->use_start; i < insn->n_ops; ++i) {
+		be_operand_t *op = &insn->ops[i];
+
+		if(op->has_constraints) {
+			for(j = i + 1; j < insn->n_ops; ++j) {
+				be_operand_t *a_op = &insn->ops[j];
+
+				if(a_op->carrier == op->carrier && a_op->has_constraints) {
+					ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+
+					sched_add_before(insn->irn, copy);
+					set_irn_n(insn->irn, a_op->pos, copy);
+					DBG((env->dbg, LEVEL_3, "inserting multiple constr copy %+F for %+F pos %d\n", copy, insn->irn, a_op->pos));
+				}
+			}
+		}
+	}
 
 	/* collect all registers occuring in out constraints. */
 	for(i = 0; i < insn->use_start; ++i) {
@@ -253,8 +273,6 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			3) is constrained to a register occuring in out constraints.
 		*/
 		if(op->has_constraints && values_interfere(env->lv, insn->irn, op->carrier) && bitset_popcnt(tmp) > 0) {
-			ir_node *bl   = get_nodes_block(insn->irn);
-
 			/*
 				only create the copy if the operand is no copy.
 				this is necessary since the assure constraints phase inserts
