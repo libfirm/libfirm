@@ -295,15 +295,6 @@ static void ia32_set_modes(ir_node *irn, void *env) {
 	if (mode_is_reference(get_irn_mode(irn))) {
 		set_irn_mode(irn, mode_Iu);
 	}
-
-	/*
-		Annotate mode of stored value to link field of the Store
-		as floating point converts might be optimized and we would
-		loose the mode.
-	*/
-	if (get_irn_opcode(irn) == iro_Store) {
-		set_irn_link(irn, get_irn_mode(get_Store_value(irn)));
-	}
 }
 
 /**

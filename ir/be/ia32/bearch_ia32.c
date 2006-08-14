@@ -763,6 +763,16 @@ ia32_irn_ops_t ia32_irn_ops = {
  *                       |___/
  **************************************************/
 
+static void ia32_kill_convs(ia32_code_gen_t *cg) {
+	ir_node *irn;
+
+	/* BEWARE: the Projs are inserted in the set */
+	foreach_nodeset(cg->kill_conv, irn) {
+		ir_node *in = get_irn_n(get_Proj_pred(irn), 2);
+		edges_reroute(irn, in, cg->birg->irg);
+	}
+}
+
 /**
  * Transforms the standard firm graph into
  * an ia32 firm graph
@@ -780,7 +790,12 @@ static void ia32_prepare_graph(void *self) {
 	/* 2nd: transform all remaining nodes */
 	ia32_register_transformers();
 	dom = be_compute_dominance_frontiers(cg->irg);
+
+	cg->kill_conv = new_nodeset(5);
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
+	ia32_kill_convs(cg);
+	del_nodeset(cg->kill_conv);
+
 	be_free_dominance_frontiers(dom);
 
 	if (cg->dump)

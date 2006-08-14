@@ -1401,7 +1401,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *ptr     = get_Store_ptr(node);
 	ir_node *sptr    = ptr;
 	ir_node *mem     = get_Store_mem(node);
-	ir_mode *mode    = get_irn_link(node);
+	ir_mode *mode    = get_irn_mode(val);
 	ir_node *sval    = val;
 	int      is_imm  = 0;
 	ir_node *new_op;
@@ -1998,6 +1998,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env) {
 	int      src_bits  = get_mode_size_bits(src_mode);
 	int      tgt_bits  = get_mode_size_bits(tgt_mode);
 	int      pn        = -1;
+	int      kill      = 0;
 	ir_node  *block    = env->block;
 	ir_node  *new_op   = NULL;
 	ir_node  *noreg    = ia32_new_NoReg_gp(env->cg);
@@ -2021,7 +2022,13 @@ static ir_node *gen_Conv(ia32_transform_env_t *env) {
 			}
 			else {
 				DB((mod, LEVEL_1, "killed Conv(float, float) ..."));
-				edges_reroute(env->irn, op, irg);
+				/*
+					remark: we create a intermediate conv here, so modes will be spread correctly
+					these convs will be killed later
+				*/
+				new_op = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, op, nomem);
+				pn     = pn_ia32_Conv_FP2FP_res;
+				kill   = 1;
 			}
 		}
 		else {
@@ -2071,7 +2078,13 @@ static ir_node *gen_Conv(ia32_transform_env_t *env) {
 			/* ... to int */
 			if (get_mode_size_bits(src_mode) == tgt_bits) {
 				DB((mod, LEVEL_1, "omitting equal size Conv(%+F, %+F) ...", src_mode, tgt_mode));
-				edges_reroute(env->irn, op, irg);
+				/*
+					remark: we create a intermediate conv here, so modes will be spread correctly
+					these convs will be killed later
+				*/
+				new_op = new_rd_ia32_Conv_I2I(dbg, irg, block, noreg, noreg, op, nomem);
+				pn     = pn_ia32_Conv_I2I_res;
+				kill   = 1;
 			}
 			else {
 				DB((mod, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
@@ -2095,6 +2108,9 @@ static ir_node *gen_Conv(ia32_transform_env_t *env) {
 		set_ia32_am_support(new_op, ia32_am_Source);
 
 		new_op = new_rd_Proj(dbg, irg, block, new_op, tgt_mode, pn);
+
+		if (kill)
+			nodeset_insert(env->cg->kill_conv, new_op);
 	}
 
 	return new_op;
@@ -2980,12 +2996,12 @@ void ia32_transform_node(ir_node *node, void *env) {
 		ia32_transform_env_t  tenv;
 		transform_func *transform = (transform_func *)op->ops.generic;
 
-		tenv.block    = get_nodes_block(node);
-		tenv.dbg      = get_irn_dbg_info(node);
-		tenv.irg      = current_ir_graph;
-		tenv.irn      = node;
-		tenv.mode     = get_irn_mode(node);
-		tenv.cg       = cg;
+		tenv.block = get_nodes_block(node);
+		tenv.dbg   = get_irn_dbg_info(node);
+		tenv.irg   = current_ir_graph;
+		tenv.irn   = node;
+		tenv.mode  = get_irn_mode(node);
+		tenv.cg    = cg;
 		DEBUG_ONLY(tenv.mod = cg->mod;)
 
 		asm_node = (*transform)(&tenv);
