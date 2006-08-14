@@ -32,7 +32,7 @@ typedef struct _env_t {
 
 /**
  * Collect all calls to const and pure functions
- * to lists. Collect of Proj nodes into a Proj list.
+ * to lists. Collect all Proj(Call) nodes into a Proj list.
  */
 static void collect_calls(ir_node *node, void *env)
 {
@@ -41,10 +41,10 @@ static void collect_calls(ir_node *node, void *env)
   entity *ent;
   unsigned mode;
 
-  if (get_irn_op(node) == op_Call) {
+  if (is_Call(node)) {
     call = node;
 
-    /* the link will be NULL for all non-const/pure calls */
+    /* set the link to NULL for all non-const/pure calls */
     set_irn_link(call, NULL);
     ptr = get_Call_ptr(call);
     if (get_irn_op(ptr) == op_SymConst && get_SymConst_kind(ptr) == symconst_addr_ent) {
@@ -54,15 +54,15 @@ static void collect_calls(ir_node *node, void *env)
       if ((mode & (mtp_property_const|mtp_property_pure)) == 0)
         return;
       ++ctx->n_calls_removed_SymConst;
-    }
-    else if (is_Sel(ptr) &&
-	     get_irg_callee_info_state(current_ir_graph) == irg_callee_info_consistent) {
+    } else if (get_opt_closed_world() &&
+             is_Sel(ptr) &&
+	         get_irg_callee_info_state(current_ir_graph) == irg_callee_info_consistent) {
       /* If all possible callees are const functions, we can remove the memory edge. */
       int i, n_callees = get_Call_n_callees(call);
       if (n_callees == 0)
         /* This is kind of strange:  dying code or a Call that will raise an exception
-	         when executed as there is no implementation to call.  So better not
-	         optimize. */
+	       when executed as there is no implementation to call.  So better not
+	       optimize. */
         return;
 
       /* note that const function are a subset of pure ones */
@@ -78,29 +78,27 @@ static void collect_calls(ir_node *node, void *env)
           return;
       }
       ++ctx->n_calls_removed_Sel;
-    }
-    else
+    } else
       return;
 
     /* ok, if we get here we found a call to a const or a pure function */
     if (mode & mtp_property_pure) {
       set_irn_link(call, ctx->pure_call_list);
       ctx->pure_call_list = call;
-    }
-    else {
+    } else {
       set_irn_link(call, ctx->const_call_list);
       ctx->const_call_list = call;
     }
-  }
-  else if (get_irn_op(node) == op_Proj) {
+  } else if (is_Proj(node)) {
     /*
      * Collect all memory and exception Proj's from
      * calls.
      */
     call = get_Proj_pred(node);
-    if (get_irn_op(call) != op_Call)
+    if (! is_Call(call))
       return;
 
+    /* collect the Proj's in the Proj list */
     switch (get_Proj_proj(node)) {
     case pn_Call_M_regular:
     case pn_Call_X_except:
@@ -112,20 +110,21 @@ static void collect_calls(ir_node *node, void *env)
       break;
     }
   }
-}  /* rem_mem_from_const_fkt_calls */
+}  /* collect_calls */
 
 /**
  * Fix the list of collected Calls.
  *
  * @param irg        the graph that contained calls to pure functions
- * @param call_list  the list of all call sites of pure functions
- * @param proj_list  the list of all memory/exception Projs of this call sites
+ * @param call_list  the list of all call sites of const functions
+ * @param proj_list  the list of all memory/exception Proj's of this call sites
  */
 static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list) {
   ir_node *call, *next, *mem, *proj;
   int exc_changed = 0;
 
-  /* fix all calls by removing it's memory input */
+  /* First step: fix all calls by removing it's memory input.
+     It's original memory input is preserved in their link fields. */
   for (call = call_list; call; call = next) {
     next = get_irn_link(call);
     mem  = get_Call_mem(call);
@@ -153,7 +152,7 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
     hook_func_call(irg, call);
   }
 
-  /* finally fix all Proj's */
+  /* Second step: fix all Proj's */
   for (proj = proj_list; proj; proj = next) {
     next = get_irn_link(proj);
     call = get_Proj_pred(proj);
@@ -166,7 +165,9 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 
     switch (get_Proj_proj(proj)) {
     case pn_Call_M_regular: {
-      exchange(proj, mem);
+      /* in dead code there might be cycles where proj == mem */
+      if (proj != mem)
+        exchange(proj, mem);
     } break;
     case pn_Call_X_except:
     case pn_Call_M_except:
