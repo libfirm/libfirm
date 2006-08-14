@@ -161,7 +161,7 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node) {
 			arg_spill = collect_memphi(env, arg);
 		}
 
-		if(i == 0) {
+		if(res->cls == NULL) {
 			res->cls = arg_spill->cls;
 		} else {
 			assert(res->cls == arg_spill->cls);
