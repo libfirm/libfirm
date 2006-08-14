@@ -195,7 +195,7 @@ static void collect_spills_walker(ir_node *node, void *data) {
 		ir_node *spillnode = get_memory_edge(node);
 		spill_t *spill;
 
-		assert(spill != NULL);
+		assert(spillnode != NULL);
 
 		if(is_Phi(spillnode)) {
 			spill = collect_memphi(env, spillnode);
