@@ -420,13 +420,15 @@ static void collect_spills_walker(ir_node *node, void *data) {
 
 	if(arch_irn_class_is(arch_env, node, reload)) {
 		ir_node *spill = get_memory_edge(node);
+		entity *ent;
+
 		if(spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
 			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 			return;
 		}
-		entity* ent = arch_get_frame_entity(env->arch_env, node);
+		ent = arch_get_frame_entity(env->arch_env, node);
 		check_entity(env, node, ent);
 
 		collect(env, spill, node, ent);
