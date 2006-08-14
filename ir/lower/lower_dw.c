@@ -284,12 +284,7 @@ static void prepare_links(ir_node *node, void *env)
 
 		if (mode == lenv->params->high_signed ||
 			mode == lenv->params->high_unsigned) {
-			/* must lower this node either */
-			link = obstack_alloc(&lenv->obst, sizeof(*link));
-
-			memset(link, 0, sizeof(*link));
-
-			lenv->entries[get_irn_idx(node)] = link;
+			/* must lower this node either but don't need a link */
 			lenv->flags |= MUST_BE_LOWERED;
 		}  /* if */
 		return;
@@ -1565,8 +1560,7 @@ static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 		if (mode == env->params->high_signed) {
 			lower_Conv_from_Ls(node, env);
-		} else {
-			assert(mode == env->params->high_unsigned);
+        } else if (mode == env->params->high_unsigned) {
 			lower_Conv_from_Lu(node, env);
 		}  /* if */
 	}  /* if */
@@ -2030,13 +2024,20 @@ static int always_lower(opcode code) {
 	case iro_Call:
 	case iro_Return:
 	case iro_Cond:
+    case iro_Conv:
 		return 1;
 	default:
 		return 0;
 	}  /* switch */
 }  /* always_lower */
 
-/** The type of a lower function. */
+/**
+ * The type of a lower function.
+ *
+ * @param node   the node to be lowered
+ * @param mode   the low mode for the destination node
+ * @param env    the lower environment
+ */
 typedef void (*lower_func)(ir_node *node, ir_mode *mode, lower_env_t *env);
 
 /**
