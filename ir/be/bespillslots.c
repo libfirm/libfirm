@@ -164,7 +164,7 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node) {
 		if(res->cls == NULL) {
 			res->cls = arg_spill->cls;
 		} else {
-			assert(res->cls == arg_spill->cls);
+			assert(arg_spill->cls == NULL || res->cls == arg_spill->cls);
 		}
 
 		// add an affinity edge
