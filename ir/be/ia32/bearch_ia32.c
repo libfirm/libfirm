@@ -269,7 +269,7 @@ static entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
-static void ia32_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+static void ia32_set_frame_entity(const void *self, ir_node *irn, entity *ent) {
 	set_ia32_frame_ent(irn, ent);
 }
 
@@ -884,7 +884,7 @@ static void ia32_before_ra(void *self) {
  */
 static void transform_to_Load(ia32_transform_env_t *env) {
 	ir_node *irn         = env->irn;
-	entity  *ent         = be_get_frame_entity(irn);
+	entity  *ent         = arch_get_frame_entity(env->cg->arch_env, irn);
 	ir_mode *mode        = env->mode;
 	ir_node *noreg       = ia32_new_NoReg_gp(env->cg);
 	ir_node *nomem       = new_rd_NoMem(env->irg);
@@ -940,7 +940,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
  */
 static void transform_to_Store(ia32_transform_env_t *env) {
 	ir_node *irn   = env->irn;
-	entity  *ent   = be_get_frame_entity(irn);
+	entity  *ent   = arch_get_frame_entity(env->cg->arch_env, irn);
 	ir_mode *mode  = env->mode;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *nomem = new_rd_NoMem(env->irg);

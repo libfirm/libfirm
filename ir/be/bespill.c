@@ -33,10 +33,8 @@
 #include "bejavacoal.h"
 
 // only rematerialise when costs are less than REMAT_COST_LIMIT
-#define REMAT_COST_LIMIT	4
-
-/* This enables re-computation of values. Current state: Unfinished and buggy. */
-#undef BUGGY_REMAT
+// TODO determine a good value here...
+#define REMAT_COST_LIMIT	80
 
 typedef struct _reloader_t reloader_t;
 
@@ -54,6 +52,7 @@ typedef struct _spill_info_t {
 
 struct _spill_env_t {
 	const arch_register_class_t *cls;
+	const arch_env_t *arch_env;
 	const be_chordal_env_t *chordal_env;
 	struct obstack obst;
 	set *spills;				/**< all spill_info_t's, which must be placed */
@@ -103,6 +102,7 @@ spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env) {
 	env->spills			= new_set(cmp_spillinfo, 1024);
 	env->cls			= chordal_env->cls;
 	env->chordal_env	= chordal_env;
+	env->arch_env       = env->chordal_env->birg->main_env->arch_env;
 	env->mem_phis		= pset_new_ptr_default();
 	obstack_init(&env->obst);
 	return env;
@@ -130,7 +130,7 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	reloader_t *rel;
 
 	assert(sched_is_scheduled(before));
-	assert(arch_irn_consider_in_reg_alloc(env->chordal_env->birg->main_env->arch_env, env->cls, to_spill));
+	assert(arch_irn_consider_in_reg_alloc(env->arch_env, env->cls, to_spill));
 
 	info = get_spillinfo(env, to_spill);
 
@@ -230,7 +230,6 @@ static void sched_add_after_insn(ir_node *sched_after, ir_node *node) {
  * @return a be_Spill node
  */
 static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
-	const be_main_env_t *mainenv = env->chordal_env->birg->main_env;
 	ir_node *to_spill = spillinfo->spilled_node;
 
 	DBG((env->dbg, LEVEL_1, "%+F\n", to_spill));
@@ -246,7 +245,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 		return;
 	}
 
-	spillinfo->spill = be_spill(mainenv->arch_env, to_spill);
+	spillinfo->spill = be_spill(env->arch_env, to_spill);
 	sched_add_after_insn(to_spill, spillinfo->spill);
 }
 
@@ -333,36 +332,41 @@ static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
 	if(arg == get_irg_frame(env->chordal_env->irg))
 		return 1;
 
-#if 0
-	/* we want to remat before the insn reloader
-	 * thus an arguments is alive if
-	 *   - it interferes with the reloaders result
-	 * or
-	 *   - or it is (last-) used by reloader itself
+ 	/* the following test does not work while spilling,
+	 * because the liveness info is not adapted yet to the effects of the
+	 * additional spills/reloads.
+	 *
+	 * So we can only do this test for ignore registers (of our register class)
 	 */
-	int i, m;
+	if(arch_get_irn_reg_class(env->arch_env, arg, -1) == env->chordal_env->cls
+	   && arch_irn_is(env->arch_env, arg, ignore)) {
+		int i, arity;
 
-	if (values_interfere(reloader, arg))
-		return 1;
-
-	for (i=0, m=get_irn_arity(reloader); i<m; ++i) {
-		ir_node *rel_arg = get_irn_n(reloader, i);
-		if (rel_arg == arg)
+		/* we want to remat before the insn reloader
+		 * thus an arguments is alive if
+		 *   - it interferes with the reloaders result
+		 *   - or it is (last-) used by reloader itself
+		 */
+		if (values_interfere(env->chordal_env->lv, reloader, arg)) {
 			return 1;
+		}
+
+		arity = get_irn_arity(reloader);
+		for (i = 0; i < arity; ++i) {
+			ir_node *rel_arg = get_irn_n(reloader, i);
+			if (rel_arg == arg)
+				return 1;
+		}
 	}
 
-	/* arg is not alive before reloader */
-	return 0;
-#endif
-
-	return 0;
+ 	return 0;
 }
 
 /**
  * Checks whether the node can principally be rematerialized
  */
 static int is_remat_node(spill_env_t *env, ir_node *node) {
-	const arch_env_t *arch_env = env->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = env->arch_env;
 
 	assert(!be_is_Spill(node));
 
@@ -402,10 +406,8 @@ static int check_remat_conditions_costs(spill_env_t *env, ir_node *spilled, ir_n
 
 	if(be_is_Reload(spilled)) {
 		costs += 2;
-	} else if(is_Proj(spilled)) {
-		costs += 0;
 	} else {
-		costs += 1;
+		costs += arch_get_op_estimated_cost(env->arch_env, spilled);
 	}
 	if(parentcosts + costs >= REMAT_COST_LIMIT)
 		return REMAT_COST_LIMIT;
@@ -492,7 +494,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
  */
 
 void be_insert_spills_reloads(spill_env_t *env) {
-	const arch_env_t *arch_env = env->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = env->arch_env;
 	spill_info_t *si;
 
 	/* process each spilled node */

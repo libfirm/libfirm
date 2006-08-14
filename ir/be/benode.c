@@ -753,23 +753,13 @@ int be_has_frame_entity(const ir_node *irn)
 	}
 }
 
-entity *be_get_frame_entity(const ir_node *irn)
+entity* be_get_frame_entity(const ir_node *irn)
 {
 	if(be_has_frame_entity(irn)) {
 		be_frame_attr_t *a = get_irn_attr(irn);
 		return a->ent;
 	}
 	return NULL;
-}
-
-void be_set_frame_entity(const ir_node *irn, entity* ent)
-{
-	be_frame_attr_t *a;
-
-	assert(be_has_frame_entity(irn));
-
-	a = get_irn_attr(irn);
-	a->ent = ent;
 }
 
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity *ent)
@@ -1065,7 +1055,7 @@ static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 		XXX(StackParam, stackparam);
 #undef XXX
 		default:
-		return 0;
+		return arch_irn_class_normal;
 	}
 
 	return 0;
@@ -1082,9 +1072,14 @@ static entity *be_node_get_frame_entity(const void *self, const ir_node *irn)
 	return be_get_frame_entity(irn);
 }
 
-static void be_node_set_frame_entity(const void *self, const ir_node *irn, entity *ent)
+static void be_node_set_frame_entity(const void *self, ir_node *irn, entity *ent)
 {
-	be_set_frame_entity(irn, ent);
+	be_frame_attr_t *a;
+
+	assert(be_has_frame_entity(irn));
+
+	a = get_irn_attr(irn);
+	a->ent = ent;
 }
 
 static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
@@ -1236,7 +1231,7 @@ static entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
 	return NULL;
 }
 
-static void phi_set_frame_entity(const void *_self, const ir_node *irn, entity *ent)
+static void phi_set_frame_entity(const void *_self, ir_node *irn, entity *ent)
 {
 }
 

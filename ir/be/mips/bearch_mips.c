@@ -237,7 +237,7 @@ static entity *mips_get_frame_entity(const void *self, const ir_node *irn) {
 	return NULL;
 }
 
-static void mips_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+static void mips_set_frame_entity(const void *self, ir_node *irn, entity *ent) {
 	mips_attr_t *attr  = get_mips_attr(irn);
 	assert(is_mips_load_r(irn) || is_mips_store_r(irn));
 	attr->stack_entity = ent;

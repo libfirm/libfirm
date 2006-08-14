@@ -341,15 +341,11 @@ int be_is_FrameStore(const ir_node *irn);
 int be_is_Barrier(const ir_node *irn);
 
 /**
- * Get the entity on the stack frame the given node uses.
- * @param irn The node.
- * @return The entity on the stack frame used by the node or NULL,
- *         if the node does not access the stack frame or is no back-end node.
+ * Try to avoid this function and better call arch_get_frame_entity!
  *
+ * Returns the frame entity used by the be node
  */
-entity *be_get_frame_entity(const ir_node *irn);
-
-void be_set_frame_entity(const ir_node *irn, entity* ent);
+entity* be_get_frame_entity(const ir_node *irn);
 
 ir_node* be_get_Reload_mem(const ir_node *irn);
 ir_node* be_get_Reload_frame(const ir_node* irn);

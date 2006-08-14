@@ -1992,7 +1992,7 @@ static entity *abi_get_frame_entity(const void *_self, const ir_node *irn)
 	return NULL;
 }
 
-static void abi_set_frame_entity(const void *_self, const ir_node *irn, entity *ent)
+static void abi_set_frame_entity(const void *_self, ir_node *irn, entity *ent)
 {
 }
 

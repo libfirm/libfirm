@@ -259,7 +259,7 @@ typedef struct _spill_t {
 } spill_t;
 
 typedef struct {
-	be_lv_t *lv;
+	const arch_env_t *arch_env;
 	ir_graph *irg;
 	set *spills;
 	ir_node **reloads;
@@ -294,6 +294,22 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, entity
 	return res;
 }
 
+static ir_node *get_memory_edge(const ir_node *node) {
+	int i, arity;
+	ir_node *result = NULL;
+
+	arity = get_irn_arity(node);
+	for(i = arity - 1; i >= 0; --i) {
+		ir_node *arg = get_irn_n(node, i);
+		if(get_irn_mode(arg) == mode_M) {
+			assert(result == NULL);
+			result = arg;
+		}
+	}
+
+	return result;
+}
+
 static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent);
 
 static void check_entity(be_verify_spillslots_env_t *env, ir_node *node, entity *ent) {
@@ -304,7 +320,7 @@ static void check_entity(be_verify_spillslots_env_t *env, ir_node *node, entity 
 }
 
 static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
-	entity *spillent = be_get_frame_entity(node);
+	entity *spillent = arch_get_frame_entity(env->arch_env, node);
 	check_entity(env, node, spillent);
 	get_spill(env, node, ent);
 
@@ -396,10 +412,21 @@ static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *rel
  */
 static void collect_spills_walker(ir_node *node, void *data) {
 	be_verify_spillslots_env_t *env = data;
+	const arch_env_t *arch_env = env->arch_env;
 
-	if(be_is_Reload(node)) {
-		ir_node *spill = get_irn_n(node, be_pos_Reload_mem);
-		entity* ent = be_get_frame_entity(node);
+	// @@@ ia32_classify returns classification of Proj_pred :-/
+	if(is_Proj(node))
+		return;
+
+	if(arch_irn_class_is(arch_env, node, reload)) {
+		ir_node *spill = get_memory_edge(node);
+		if(spill == NULL) {
+			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
+			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+			return;
+		}
+		entity* ent = arch_get_frame_entity(env->arch_env, node);
 		check_entity(env, node, ent);
 
 		collect(env, spill, node, ent);
@@ -433,7 +460,6 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env) {
 					sp2->spill, get_nodes_block(sp2->spill), get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 				my_values_interfere(sp1->spill, sp2->spill);
-				printf("Intf: %d\n", values_interfere(env->lv, sp1->spill, sp2->spill));
 			}
 		}
 	}
@@ -445,7 +471,7 @@ static void check_lonely_spills(ir_node *node, void *data) {
 	if(be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
 		spill_t *spill = find_spill(env, node);
 		if(be_is_Spill(node)) {
-			entity *ent = be_get_frame_entity(node);
+			entity *ent = arch_get_frame_entity(env->arch_env, node);
 			check_entity(env, node, ent);
 		}
 
@@ -456,22 +482,21 @@ static void check_lonely_spills(ir_node *node, void *data) {
 	}
 }
 
-int be_verify_spillslots(ir_graph *irg)
+int be_verify_spillslots(const arch_env_t *arch_env, ir_graph *irg)
 {
 	be_verify_spillslots_env_t env;
 
+	env.arch_env = arch_env;
 	env.irg = irg;
 	env.spills = new_set(cmp_spill, 10);
 	env.reloads = NEW_ARR_F(ir_node*, 0);
 	env.problem_found = 0;
-	env.lv = be_liveness(irg);
 
 	irg_walk_graph(irg, collect_spills_walker, NULL, &env);
 	irg_walk_graph(irg, check_lonely_spills, NULL, &env);
 
 	check_spillslot_interference(&env);
 
-	be_liveness_free(env.lv);
 	DEL_ARR_F(env.reloads);
 	del_set(env.spills);
 

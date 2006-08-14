@@ -2151,7 +2151,7 @@ static ir_node *gen_be_StackParam(ia32_transform_env_t *env) {
 	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node *mem    = new_rd_NoMem(env->irg);
 	ir_node *ptr    = get_irn_n(node, 0);
-	entity  *ent    = be_get_frame_entity(node);
+	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
 	ir_mode *mode   = env->mode;
 
 	/* choose the block where to place the load */
@@ -2175,6 +2175,7 @@ static ir_node *gen_be_StackParam(ia32_transform_env_t *env) {
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, mode);
+	set_ia32_flags(new_op, get_ia32_flags(new_op) | arch_irn_flags_rematerializable);
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
@@ -2192,7 +2193,7 @@ static ir_node *gen_be_FrameAddr(ia32_transform_env_t *env) {
 	ir_node *nomem  = new_rd_NoMem(env->irg);
 
 	new_op = new_rd_ia32_Add(env->dbg, env->irg, env->block, noreg, noreg, op, noreg, nomem);
-	set_ia32_frame_ent(new_op, be_get_frame_entity(node));
+	set_ia32_frame_ent(new_op, arch_get_frame_entity(env->cg->arch_env, node));
 	set_ia32_am_support(new_op, ia32_am_Full);
 	set_ia32_use_frame(new_op);
 	set_ia32_immop_type(new_op, ia32_ImmConst);
@@ -2212,7 +2213,7 @@ static ir_node *gen_be_FrameLoad(ia32_transform_env_t *env) {
 	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node *mem    = get_irn_n(node, 0);
 	ir_node *ptr    = get_irn_n(node, 1);
-	entity  *ent    = be_get_frame_entity(node);
+	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
 	ir_mode *mode   = get_type_mode(get_entity_type(ent));
 
 	if (mode_is_float(mode)) {
@@ -2249,7 +2250,7 @@ static ir_node *gen_be_FrameStore(ia32_transform_env_t *env) {
 	ir_node *mem    = get_irn_n(node, 0);
 	ir_node *ptr    = get_irn_n(node, 1);
 	ir_node *val    = get_irn_n(node, 2);
-	entity  *ent    = be_get_frame_entity(node);
+	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
 	ir_mode *mode   = get_irn_mode(val);
 
 	if (mode_is_float(mode)) {

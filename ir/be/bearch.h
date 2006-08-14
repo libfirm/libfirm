@@ -286,7 +286,7 @@ struct _arch_irn_ops_if_t {
    * @param irn  The node in question.
    * @param ent  The entity to set
    */
-  void (*set_frame_entity)(const void *self, const ir_node *irn, entity *ent);
+  void (*set_frame_entity)(const void *self, ir_node *irn, entity *ent);
 
   /**
    * Set the offset of a node carrying an entity on the stack frame.

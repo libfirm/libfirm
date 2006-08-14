@@ -32,6 +32,11 @@ compare_%.c: gcc/%.exe firm/%.exe gcc/%.result firm/%.result
 	@test -z $(RESDIR) || mkdir -p $(RESDIR)
 	diff -u gcc/$*.result firm/$*.result || echo "$*.c" >> $(RESDIR)/compare_failed.txt
 
+gcc/%.s: %.c
+	@test -z gcc || mkdir -p gcc
+	@test -z $(RESDIR) || mkdir -p $(RESDIR)
+	$(GCC) -c -S $(GCC_CFLAGS) $*.c -o $@
+
 gcc/%.exe: %.c
 	@test -z gcc || mkdir -p gcc
 	@test -z $(RESDIR) || mkdir -p $(RESDIR)
@@ -41,7 +46,7 @@ firm/%.s: %.c
 	@test -z firm || mkdir -p firm
 	@test -z $(RESDIR) || mkdir -p $(RESDIR)
 	cd firm ; $(EDG) $(EDG_CFLAGS) ../$*.c || echo "$*.c" >> ../$(RESDIR)/compile_failed.txt
-	mv $*.s firm || echo "" > firm/$*.s
+	mv $*.s firm
 
 firm/%.exe: firm/%.s
 	@test -z $(RESDIR) || mkdir -p $(RESDIR)

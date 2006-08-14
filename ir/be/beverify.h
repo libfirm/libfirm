@@ -43,7 +43,7 @@ int be_verify_schedule(ir_graph *irg);
  * @param irg   The irg to check
  * @return      1 if spillslots are valid, 0 otherwise
  */
-int be_verify_spillslots(ir_graph *irg);
+int be_verify_spillslots(const arch_env_t *arch_env, ir_graph *irg);
 
 /**
  * Verify register allocation: Checks that no 2 live nodes have the same

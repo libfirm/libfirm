@@ -100,8 +100,6 @@ static ir_node *trivial_select(void *block_env, nodeset *ready_set)
 
 	/* assure that branches and constants are executed last */
 	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
-		arch_irn_class_t irn_class = arch_irn_classify(arch_env, irn);
-
 		if (! arch_irn_class_is(arch_env, irn, branch) && (const_last ? (! arch_irn_class_is(arch_env, irn, const)) : 1)) {
 			nodeset_break(ready_set);
 			return irn;
@@ -566,16 +564,16 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 
     nodeset_insert(env->cands, irn);
 
-		/* calculate the etime of this node */
-		etime = env->curr_time;
-		if (pred) {
-			etime_p  = get_irn_etime(env, pred);
-			etime   += latency(env->sched_env, pred, 1, irn, 0);
+	/* calculate the etime of this node */
+	etime = env->curr_time;
+	if (pred) {
+		etime_p  = get_irn_etime(env, pred);
+		etime   += latency(env->sched_env, pred, 1, irn, 0);
 
-			etime = etime_p > etime ? etime_p : etime;
-		}
+		etime = etime_p > etime ? etime_p : etime;
+	}
 
-		set_irn_etime(env, irn, etime);
+	set_irn_etime(env, irn, etime);
 
     DB((env->dbg, LEVEL_2, "\tmaking ready: %+F etime %u\n", irn, etime));
 

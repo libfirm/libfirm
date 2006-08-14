@@ -49,6 +49,7 @@ typedef struct _affinity_edge_t {
 
 typedef struct _ss_env_t {
 	struct obstack obst;
+	const arch_env_t *arch_env;
 	const be_chordal_env_t *chordal_env;
 	set *spills;
 	ir_node **reloads;
@@ -89,11 +90,33 @@ static spill_t *get_spill(ss_env_t *env, ir_node *node) {
  *                                      |_|
  */
 
-static spill_t *collect_spill(ss_env_t *env, ir_node *node, const arch_register_class_t *cls) {
+static ir_node *get_memory_edge(const ir_node *node) {
+	int i, arity;
+
+	arity = get_irn_arity(node);
+	for(i = arity - 1; i >= 0; --i) {
+		ir_node *arg = get_irn_n(node, i);
+		if(get_irn_mode(arg) == mode_M)
+			return arg;
+	}
+
+	return NULL;
+}
+
+static spill_t *collect_spill(ss_env_t *env, ir_node *node) {
+	const arch_env_t *arch_env = env->arch_env;
+	const arch_register_class_t *cls;
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
 
-	assert(be_is_Spill(node));
+	assert(arch_irn_class_is(arch_env, node, spill));
+
+	if(be_is_Spill(node)) {
+		cls = arch_get_irn_reg_class(arch_env, node, be_pos_Spill_val);
+	} else {
+		// TODO add a way to detect the type of the spilled value
+		assert(0);
+	}
 
 	spill.spill = node;
 	res = set_find(env->spills, &spill, sizeof(spill), hash);
@@ -102,14 +125,12 @@ static spill_t *collect_spill(ss_env_t *env, ir_node *node, const arch_register_
 		spill.spillslot = set_count(env->spills);
 		spill.cls = cls;
 		res = set_insert(env->spills, &spill, sizeof(spill), hash);
-	} else {
-		assert(cls == res->cls);
 	}
 
 	return res;
 }
 
-static spill_t *collect_memphi(ss_env_t *env, ir_node *node, const arch_register_class_t *cls) {
+static spill_t *collect_memphi(ss_env_t *env, ir_node *node) {
 	int i, arity;
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
@@ -123,7 +144,7 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node, const arch_register
 	}
 
 	spill.spillslot = set_count(env->spills);
-	spill.cls = cls;
+	spill.cls = NULL;
 	res = set_insert(env->spills, &spill, sizeof(spill), hash);
 
 	// is 1 of the arguments a spill?
@@ -133,11 +154,17 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node, const arch_register
 		spill_t* arg_spill;
 
 		if(be_is_Spill(arg)) {
-			arg_spill = collect_spill(env, arg, cls);
+			arg_spill = collect_spill(env, arg);
 		} else {
 			// if it wasn't a spill then it must be a Mem-Phi
 			assert(is_Phi(arg));
-			arg_spill = collect_memphi(env, arg, cls);
+			arg_spill = collect_memphi(env, arg);
+		}
+
+		if(i == 0) {
+			res->cls = arg_spill->cls;
+		} else {
+			assert(res->cls == arg_spill->cls);
 		}
 
 		// add an affinity edge
@@ -157,17 +184,26 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node, const arch_register
  */
 static void collect_spills_walker(ir_node *node, void *data) {
 	ss_env_t *env = data;
+	const arch_env_t *arch_env = env->arch_env;
 
-	if(be_is_Reload(node)) {
-		ir_node *spill = get_irn_n(node, be_pos_Reload_mem);
-		const arch_env_t *arch_env = env->chordal_env->birg->main_env->arch_env;
-		const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, node, -1);
+	// @@@ ia32 classify returns classification of the irn the proj is attached
+	// too, why oh why?...
+	if(is_Proj(node))
+		return;
 
-		if(is_Phi(spill)) {
-			collect_memphi(env, spill, cls);
+	if(arch_irn_class_is(arch_env, node, reload)) {
+		ir_node *spillnode = get_memory_edge(node);
+		spill_t *spill;
+
+		assert(spill != NULL);
+
+		if(is_Phi(spillnode)) {
+			spill = collect_memphi(env, spillnode);
 		} else {
-			collect_spill(env, spill, cls);
+			spill = collect_spill(env, spillnode);
 		}
+
+		assert(!be_is_Reload(node) || spill->cls == arch_get_irn_reg_class(arch_env, node, -1));
 		ARR_APP1(ir_node*, env->reloads, node);
 	}
 }
@@ -382,7 +418,7 @@ static void do_greedy_coalescing(ss_env_t *env)
 		}
 	}
 
-	// assign spillslots
+	// assign spillslots to spills
 	for(i = 0; i < spillcount; ++i) {
 		spill_t *spill = spilllist[i];
 
@@ -550,6 +586,7 @@ static void enlarge_spillslot(spill_slot_t *slot, int otheralign, int othersize)
  * reload nodes.
  */
 static void assign_spillslots(ss_env_t *env) {
+	const arch_env_t *arch_env = env->arch_env;
 	int i;
 	int spillcount;
 	spill_t *spill;
@@ -585,9 +622,7 @@ static void assign_spillslots(ss_env_t *env) {
 			create_stack_entity(env, slot);
 		}
 
-		if(be_is_Spill(node)) {
-			be_set_frame_entity(node, slot->entity);
-		} else {
+		if(is_Phi(node)) {
 			int i, arity;
 			ir_node *block = get_nodes_block(node);
 
@@ -624,18 +659,21 @@ static void assign_spillslots(ss_env_t *env) {
 					memperm->entries = entry;
 				}
 			}
+		} else {
+			assert(arch_irn_class_is(arch_env, node, spill));
+			arch_set_frame_entity(arch_env, node, slot->entity);
 		}
 	}
 
 	for(i = 0; i < ARR_LEN(env->reloads); ++i) {
-		const ir_node* reload = env->reloads[i];
-		ir_node* spillnode = get_irn_n(reload, be_pos_Reload_mem);
+		ir_node* reload = env->reloads[i];
+		ir_node* spillnode = get_memory_edge(reload);
 		spill_t *spill = get_spill(env, spillnode);
 		const spill_slot_t *slot = & spillslots[spill->spillslot];
 
 		assert(slot->entity != NULL);
 
-		be_set_frame_entity(reload, slot->entity);
+		arch_set_frame_entity(arch_env, reload, slot->entity);
 	}
 }
 
@@ -705,6 +743,7 @@ void be_coalesce_spillslots(const be_chordal_env_t *chordal_env) {
 	ss_env_t env;
 
 	obstack_init(&env.obst);
+	env.arch_env = chordal_env->birg->main_env->arch_env;
 	env.chordal_env = chordal_env;
 	env.spills = new_set(cmp_spill, 10);
 	env.reloads = NEW_ARR_F(ir_node*, 0);
