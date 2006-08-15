@@ -21,6 +21,8 @@
 #include <libcore/lc_opts_enum.h>
 #endif /* WITH_LIBCORE */
 
+#include <math.h>
+
 #include "pseudo_irg.h"
 #include "irgwalk.h"
 #include "irprog.h"
@@ -38,6 +40,7 @@
 #include "../belower.h"
 #include "../besched_t.h"
 #include "../be.h"
+#include "../be_t.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -485,45 +488,35 @@ static ir_type *ia32_abi_get_between_type(void *self)
 static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 {
 	int cost;
+	ia32_op_type_t op_tp;
+	const ia32_irn_ops_t *ops = self;
 
-	if(is_Proj(irn))
+	if (is_Proj(irn))
 	  return 0;
 
-	switch (get_ia32_irn_opcode(irn)) {
-	case iro_ia32_xDiv:
-	case iro_ia32_DivMod:
-		cost = 8;
-		break;
+	assert(is_ia32_irn(irn));
 
-	case iro_ia32_xLoad:
-	case iro_ia32_l_Load:
-	case iro_ia32_Load:
-		cost = 25;
-		break;
+	cost  = get_ia32_latency(irn);
+	op_tp = get_ia32_op_type(irn);
 
-	case iro_ia32_Push:
-	case iro_ia32_Pop:
-		cost = 5;
-		break;
-
-	case iro_ia32_xStore:
-	case iro_ia32_l_Store:
-	case iro_ia32_Store:
-	case iro_ia32_Store8Bit:
-		cost = 50;
-		break;
-
-	case iro_ia32_MulS:
-	case iro_ia32_Mul:
-	case iro_ia32_Mulh:
-	case iro_ia32_xMul:
-	case iro_ia32_l_MulS:
-	case iro_ia32_l_Mul:
-		cost = 2;
-		break;
-
-	default:
-		cost = 1;
+	if (is_ia32_CopyB(irn)) {
+		cost = 250;
+		if (ARCH_INTEL(ops->cg->arch))
+			cost += 150;
+	}
+	else if (is_ia32_CopyB_i(irn)) {
+		int size = get_tarval_long(get_ia32_Immop_tarval(irn));
+		cost     = 20 + (int)ceil((4/3) * size);
+		if (ARCH_INTEL(ops->cg->arch))
+			cost += 150;
+	}
+	/* in case of address mode operations add additional cycles */
+	else if (op_tp == ia32_AddrModeD || op_tp == ia32_AddrModeS) {
+		/*
+			In case of stack access add 5 cycles (we assume stack is in cache),
+			other memory operations cost 20 cycles.
+		*/
+		cost += is_ia32_use_frame(irn) ? 5 : 20;
 	}
 
 	return cost;
@@ -899,7 +892,7 @@ static void ia32_before_ra(void *self) {
  */
 static void transform_to_Load(ia32_transform_env_t *env) {
 	ir_node *irn         = env->irn;
-	entity  *ent         = arch_get_frame_entity(env->cg->arch_env, irn);
+	entity  *ent         = be_get_frame_entity(irn);
 	ir_mode *mode        = env->mode;
 	ir_node *noreg       = ia32_new_NoReg_gp(env->cg);
 	ir_node *nomem       = new_rd_NoMem(env->irg);
@@ -955,7 +948,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
  */
 static void transform_to_Store(ia32_transform_env_t *env) {
 	ir_node *irn   = env->irn;
-	entity  *ent   = arch_get_frame_entity(env->cg->arch_env, irn);
+	entity  *ent   = be_get_frame_entity(irn);
 	ir_mode *mode  = env->mode;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *nomem = new_rd_NoMem(env->irg);
@@ -1604,6 +1597,14 @@ static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self) {
 	return &ia32_code_gen_if;
 }
 
+/**
+ * Returns the estimated execution time of an ia32 irn.
+ */
+static sched_timestep_t ia32_sched_exectime(void *env, const ir_node *irn) {
+	const arch_env_t *arch_env = env;
+	return is_ia32_irn(irn) ? ia32_get_op_estimated_cost(arch_get_irn_ops(arch_env, irn), irn) : 1;
+}
+
 list_sched_selector_t ia32_sched_selector;
 
 /**
@@ -1612,6 +1613,7 @@ list_sched_selector_t ia32_sched_selector;
 static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
 //	memcpy(&ia32_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
 	memcpy(&ia32_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
+	ia32_sched_selector.exectime              = ia32_sched_exectime;
 	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
 	return &ia32_sched_selector;
 }
