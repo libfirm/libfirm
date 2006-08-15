@@ -590,11 +590,12 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
                                       const arch_register_class_t *regclass, pset *nodes) {
 	const arch_env_t *arch_env = env->arch_env;
 	ir_node *node;
+	const arch_register_t *reg;
+	int fail = 0;
 
 	bitset_t *registers = bitset_alloca(arch_register_class_n_regs(regclass));
 
 	foreach_pset(nodes, node) {
-		const arch_register_t *reg;
 		if(arch_get_irn_reg_class(arch_env, node, -1) != regclass)
 			continue;
 
@@ -606,12 +607,22 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
 			continue;
 		}
 		if(bitset_is_set(registers, reg->index)) {
-			ir_fprintf(stderr, "Verify warning: Register %s assigned more than once at node %+F in block %+F(%s)\n",
-			           reg->name, node, get_nodes_block(node), get_irg_dump_name(env->irg));
-			env->problem_found = 1;
-			continue;
+			pset_break(nodes);
+			fail = 1;
+			break;
 		}
 		bitset_set(registers, reg->index);
+	}
+	if (fail) {
+		ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s)\n",
+			       reg->name, get_nodes_block(node), get_irg_dump_name(env->irg));
+		env->problem_found = 1;
+
+		foreach_pset(nodes, node) {
+			if (arch_get_irn_register(arch_env, node) == reg) {
+				ir_fprintf(stderr, "  at node %+F\n", node);
+			}
+		}
 	}
 }
 
