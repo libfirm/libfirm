@@ -348,6 +348,8 @@ struct _arch_irn_ops_t {
 	const arch_irn_ops_if_t *impl;
 };
 
+extern const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env, const ir_node *irn);
+
 extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias);
 
 extern entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);

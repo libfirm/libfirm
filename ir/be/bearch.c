@@ -87,6 +87,10 @@ get_irn_ops(const arch_env_t *env, const ir_node *irn)
   return fallback_irn_ops;
 }
 
+const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env, const ir_node *irn) {
+	return get_irn_ops(env, irn);
+}
+
 const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
     arch_register_req_t *req, const ir_node *irn, int pos)
 {
