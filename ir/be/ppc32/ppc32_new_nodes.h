@@ -118,7 +118,7 @@ void set_ppc32_offset_mode(const ir_node *node, ppc32_attr_offset_mode mode);
 ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node);
 
 void init_ppc32_attributes(ir_node *node, int flags,
-						 const ppc32_register_req_t **in_reqs, const ppc32_register_req_t **out_reqs, int n_res);
+						 const ppc32_register_req_t **in_reqs, const ppc32_register_req_t **out_reqs, int n_res, unsigned latency);
 
 void ppc32_register_additional_opcodes(int opcode_num);
 

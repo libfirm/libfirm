@@ -104,7 +104,7 @@ int get_arm_n_res(const ir_node *node);
  * Set the ARM machine node attributes to default values.
  */
 void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** in_reqs,
-                         const arm_register_req_t ** out_reqs, int n_res);
+                         const arm_register_req_t ** out_reqs, int n_res, unsigned latency);
 
 /**
  * Returns the tarval
