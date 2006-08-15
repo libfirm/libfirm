@@ -150,6 +150,24 @@ static ir_node *gen_sse_conv_int2float(ia32_code_gen_t *cg, dbg_info *dbg, ir_gr
 	return new_rd_Proj(dbg, irg, block, conv, tgt_mode, pn_ia32_Conv_I2FP_res);
 }
 
+/**
+* SSE convert of an float node into a double node.
+*/
+static ir_node *gen_sse_conv_f2d(ia32_code_gen_t *cg, dbg_info *dbg, ir_graph *irg, ir_node *block,
+									   ir_node *in, ir_node *old_node)
+{
+	ir_node *noreg = ia32_new_NoReg_gp(cg);
+	ir_node *nomem = new_rd_NoMem(irg);
+
+	ir_node *conv = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, in, nomem);
+	set_ia32_src_mode(conv, mode_F);
+	set_ia32_tgt_mode(conv, mode_D);
+	set_ia32_am_support(conv, ia32_am_Source);
+	SET_IA32_ORIG_NODE(conv, ia32_get_old_node_name(cg, old_node));
+
+	return new_rd_Proj(dbg, irg, block, conv, mode_D, pn_ia32_Conv_FP2FP_res);
+}
+
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
 static ident *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 	static const struct {
@@ -1629,9 +1647,9 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 	int      rem;
 	ir_node  *in[3], *tmp;
 
-	/* If we have to copy more than 16 bytes, we use REP MOVSx and */
+	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
 	/* then we need the size explicitly in ECX.                    */
-	if (size >= 16 * 4) {
+	if (size >= 32 * 4) {
 		rem = size & 0x3; /* size % 4 */
 		size >>= 2;
 
@@ -3052,11 +3070,16 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
 				/* Psi is float, we need a floating point compare */
 
 				if (USE_SSE2(cg)) {
+					ir_mode *m = get_irn_mode(cmp_a);
 					/* SSE FPU */
-					if (! mode_is_float(get_irn_mode(cmp_a))) {
+					if (! mode_is_float(m)) {
 						cmp_a = gen_sse_conv_int2float(cg, dbg, irg, block, cmp_a, cmp_a, mode);
 						cmp_b = gen_sse_conv_int2float(cg, dbg, irg, block, cmp_b, cmp_b, mode);
-						pnc  |= 8;
+					}
+					else if (m == mode_F) {
+						/* we convert cmp values always to double, to get correct bitmask with cmpsd */
+						cmp_a = gen_sse_conv_f2d(cg, dbg, irg, block, cmp_a, cmp_a);
+						cmp_b = gen_sse_conv_f2d(cg, dbg, irg, block, cmp_b, cmp_b);
 					}
 
 					new_op = new_rd_ia32_xCmp(dbg, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
