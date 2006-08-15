@@ -35,9 +35,16 @@ enum {
 	BE_VRFY_ASSERT
 };
 
+enum {
+	BE_SCHED_SELECT_ISA,
+	BE_SCHED_SELECT_HEUR
+};
+
 struct _be_options_t {
 	int  dump_flags;
-	char timing;
+	int  timing;
+	int  sched_select;
+	int  mris;
 	char ilp_server[128];
 	char ilp_solver[128];
 };

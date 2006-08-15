@@ -65,6 +65,8 @@
 static be_options_t be_options = {
 	DUMP_NONE,                         /* dump options */
 	BE_TIME_OFF,                       /* no timing */
+	BE_SCHED_SELECT_HEUR,              /* heuristic selector */
+	0,                                 /* disable mris */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex"                            /* ilp solver */
 };
@@ -80,9 +82,6 @@ static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;
-
-/* mris option */
-static int be_enable_mris = 0;
 
 #ifdef WITH_LIBCORE
 
@@ -128,6 +127,13 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 	{ NULL,     0 }
 };
 
+/* schedule selector options. */
+static const lc_opt_enum_int_items_t sched_select_items[] = {
+	{ "isa",    BE_SCHED_SELECT_ISA  },
+	{ "heur",   BE_SCHED_SELECT_HEUR },
+	{ NULL,     0 }
+};
+
 static lc_opt_enum_mask_var_t dump_var = {
 	&dump_flags, dump_items
 };
@@ -144,14 +150,19 @@ static lc_opt_enum_int_var_t vrfy_var = {
 	&vrfy_option, vrfy_items
 };
 
+static lc_opt_enum_int_var_t sched_select_var = {
+	&be_options.sched_select, sched_select_items
+};
+
 static const lc_opt_table_entry_t be_main_options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",     &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("ra",       "register allocator",                &ra_var),
-	LC_OPT_ENT_ENUM_PTR ("isa",      "the instruction set architecture",  &isa_var),
-	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",         &be_omit_fp),
-	LC_OPT_ENT_BOOL     ("mris",     "enable mris schedule preparation",  &be_enable_mris),
-	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg (off, warn, assert)",  &vrfy_var),
-	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",     &be_options.timing),
+	LC_OPT_ENT_ENUM_MASK("dump",         "dump irg on several occasions",     &dump_var),
+	LC_OPT_ENT_ENUM_PTR ("ra",           "register allocator",                &ra_var),
+	LC_OPT_ENT_ENUM_PTR ("isa",          "the instruction set architecture",  &isa_var),
+	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",         &be_omit_fp),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",  &vrfy_var),
+	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",     &be_options.timing),
+	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",  &be_options.mris),
+	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (heur, isa)",&sched_select_var),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -474,7 +485,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
-		list_sched(&birg, be_enable_mris);
+		list_sched(&birg, &be_options);
 		BE_TIMER_POP(t_sched);
 
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);

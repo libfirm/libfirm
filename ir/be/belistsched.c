@@ -16,6 +16,7 @@
 #include <limits.h>
 
 #include "benode_t.h"
+#include "be_t.h"
 
 #include "obst.h"
 #include "list.h"
@@ -62,6 +63,7 @@ typedef struct _sched_env_t {
 	const arch_env_t *arch_env;                 /**< The architecture environment. */
 	const ir_graph *irg;                        /**< The graph to schedule. */
 	void *selector_env;                         /**< A pointer to give to the selector. */
+	unsigned use_heuristic : 1;                 /**< Use internal heuristic or backend selector */
 } sched_env_t;
 
 #if 0
@@ -866,9 +868,6 @@ static int get_reg_difference(block_sched_env_t *be, ir_node *irn) {
 static ir_node *select_node_heuristic(block_sched_env_t *be, nodeset *ns)
 {
 	ir_node *irn, *cand = NULL;
-	int max_prio        = INT_MIN;
-	int cur_prio        = INT_MIN;
-	int cur_pressure    = get_cur_reg_pressure(be);
 
 /* prefer instructions which can be scheduled early */
 #define PRIO_TIME       16
@@ -891,29 +890,47 @@ static ir_node *select_node_heuristic(block_sched_env_t *be, nodeset *ns)
 		}
 	}
 
-	/* priority based selection, heuristic inspired by mueller diss */
-	foreach_nodeset(ns, irn) {
-		if (! arch_irn_class_is(be->sched_env->arch_env, irn, branch)) {
-			cur_prio = (get_irn_delay(be, irn) << PRIO_LEVEL)
-				+ (get_irn_num_user(be, irn) << PRIO_NUMSUCCS)
-				- (get_irn_etime(be, irn) << PRIO_TIME)
-				- ((get_irn_reg_diff(be, irn) >> PRIO_CHG_PRESS) << ((cur_pressure >> PRIO_CUR_PRESS) - 3))
-				+ (get_irn_preorder(be, irn) << PRIO_PREORD); /* high preorder means: early scheduled in pre-order list */
-			if (cur_prio > max_prio) {
-				cand     = irn;
-				max_prio = cur_prio;
+	if (be->sched_env->use_heuristic) {
+		int max_prio     = INT_MIN;
+		int cur_prio     = INT_MIN;
+		int cur_pressure = get_cur_reg_pressure(be);
+
+		/* priority based selection, heuristic inspired by mueller diss */
+		foreach_nodeset(ns, irn) {
+			/* make sure that branches are scheduled last */
+			if (! arch_irn_class_is(be->sched_env->arch_env, irn, branch)) {
+				cur_prio = (get_irn_delay(be, irn) << PRIO_LEVEL)
+					+ (get_irn_num_user(be, irn) << PRIO_NUMSUCCS)
+					- (get_irn_etime(be, irn) << PRIO_TIME)
+					- ((get_irn_reg_diff(be, irn) >> PRIO_CHG_PRESS) << ((cur_pressure >> PRIO_CUR_PRESS) - 3))
+					+ (get_irn_preorder(be, irn) << PRIO_PREORD); /* high preorder means: early scheduled in pre-order list */
+				if (cur_prio > max_prio) {
+					cand     = irn;
+					max_prio = cur_prio;
+				}
 			}
 		}
+
+		if (cand) {
+			DBG((be->dbg, LEVEL_4, "heuristic selected %+F:\n", cand));
+			DBG((be->dbg, LEVEL_4, "\tpriority: %d\n", cand));
+			DBG((be->dbg, LEVEL_4, "\tdelay:    %d (%d)\n", get_irn_delay(be, cand), get_irn_delay(be, cand) << PRIO_LEVEL));
+			DBG((be->dbg, LEVEL_4, "\t#user:    %d (%d)\n", get_irn_num_user(be, cand), get_irn_num_user(be, cand) << PRIO_NUMSUCCS));
+			DBG((be->dbg, LEVEL_4, "\tetime:    %d (%d)\n", get_irn_etime(be, cand), -(get_irn_etime(be, cand) << PRIO_TIME)));
+			DBG((be->dbg, LEVEL_4, "\tpreorder: %d (%d)\n", get_irn_preorder(be, cand), get_irn_preorder(be, cand) << PRIO_PREORD));
+			DBG((be->dbg, LEVEL_4, "\treg diff: %d (%d)\n", get_irn_reg_diff(be, cand), -(((get_irn_reg_diff(be, cand) >> PRIO_CHG_PRESS) << ((cur_pressure >> PRIO_CUR_PRESS) - 3)))));
+			DBG((be->dbg, LEVEL_4, "\tpressure: %d\n", cur_pressure));
+		}
+		else {
+			cand = nodeset_first(ns);
+		}
+	}
+	else {
+		/* use backend selector */
+		cand = be->selector->select(be->selector_block_env, ns);
 	}
 
-	if (cand) {
-//		ir_printf("scheduling %+F with priority %d, delay %d, #user %d, etime %d, reg diff %d, preorder %d, cur pressure %d\n", cand, cur_prio,
-//			get_irn_delay(be, cand), get_irn_num_user(be, cand), get_irn_etime(be, cand), get_irn_reg_diff(be, cand), get_irn_preorder(be, cand), cur_pressure);
-
-		return cand;
-	}
-
-	return be->selector->select(be->selector_block_env, ns);
+	return cand;
 }
 
 /**
@@ -1246,7 +1263,7 @@ static const list_sched_selector_t reg_pressure_selector_struct = {
 const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;
 
 /* List schedule a graph. */
-void list_sched(const be_irg_t *birg, int enable_mris)
+void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
 	ir_graph *irg              = birg->irg;
@@ -1258,16 +1275,17 @@ void list_sched(const be_irg_t *birg, int enable_mris)
 	/* Assure, that the out edges are computed */
 	edges_assure(irg);
 
-	if(enable_mris)
+	if(be_opts->mris)
 		mris = be_sched_mris_preprocess(birg);
 
 	num_nodes = get_irg_last_idx(irg);
 
 	memset(&env, 0, sizeof(env));
-	env.selector   = arch_env->isa->impl->get_list_sched_selector(arch_env->isa);
-	env.arch_env   = arch_env;
-	env.irg        = irg;
-	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
+	env.selector      = arch_env->isa->impl->get_list_sched_selector(arch_env->isa);
+	env.arch_env      = arch_env;
+	env.irg           = irg;
+	env.use_heuristic = be_opts->sched_select == BE_SCHED_SELECT_HEUR ? 1 : 0;
+	env.sched_info    = NEW_ARR_F(sched_irn_t, num_nodes);
 
 	memset(env.sched_info, 0, num_nodes * sizeof(*env.sched_info));
 
@@ -1280,7 +1298,7 @@ void list_sched(const be_irg_t *birg, int enable_mris)
 	if (env.selector->finish_graph)
 		env.selector->finish_graph(env.selector_env);
 
-	if(enable_mris)
+	if(be_opts->mris)
 		be_sched_mris_free(mris);
 
 	DEL_ARR_F(env.sched_info);

@@ -114,6 +114,6 @@ extern const list_sched_selector_t *reg_pressure_selector;
  * @param birg        The backend irg.
  * @param enable_mris Flag indicating if mris preparation should be done
  */
-void list_sched(const be_irg_t *birg, int enable_mris);
+void list_sched(const be_irg_t *birg, be_options_t *be_opts);
 
 #endif /* _FIRM_LIST_SCHED */
