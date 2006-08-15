@@ -89,7 +89,7 @@ typedef struct _x87_state {
 static x87_state _empty = { { {0, NULL}, }, 0, 0 };
 static x87_state *empty = (x87_state *)&_empty;
 
-/** The type of an instruction simulator */
+/** The type of an instruction simulator function. */
 typedef int (*sim_func)(x87_state *state, ir_node *n, const arch_env_t *env);
 
 /**
@@ -113,7 +113,7 @@ struct _x87_simulator {
 };
 
 /**
- * Returns the stack depth.
+ * Returns the current stack depth.
  *
  * @param state  the x87 state
  *
@@ -249,15 +249,13 @@ static int x87_on_stack(const x87_state *state, int reg_idx) {
 }
 
 /**
- * Push a virtual Register onto the stack.
+ * Push a virtual Register onto the stack, double pushed allowed.
  *
  * @param state     the x87 state
  * @param reg_idx   the register vfp index
  * @param node      the node that produces the value of the vfp register
- * @param dbl_push  if != 0 double pushes are allowd
  */
-static void x87_push(x87_state *state, int reg_idx, ir_node *node, int dbl_push) {
-	assert((dbl_push || x87_on_stack(state, reg_idx) == -1) && "double push");
+static void x87_push_dbl(x87_state *state, int reg_idx, ir_node *node) {
 	assert(state->depth < N_x87_REGS && "stack overrun");
 
 	++state->depth;
@@ -266,6 +264,20 @@ static void x87_push(x87_state *state, int reg_idx, ir_node *node, int dbl_push)
 	state->st[state->tos].node    = node;
 
 	DB((dbg, LEVEL_2, "After PUSH:\n ")); DEBUG_ONLY(x87_dump_stack(state));
+}
+
+/**
+ * Push a virtual Register onto the stack, double pushes are NOT allowed..
+ *
+ * @param state     the x87 state
+ * @param reg_idx   the register vfp index
+ * @param node      the node that produces the value of the vfp register
+ * @param dbl_push  if != 0 double pushes are allowed
+ */
+static void x87_push(x87_state *state, int reg_idx, ir_node *node) {
+	assert(x87_on_stack(state, reg_idx) == -1 && "double push");
+
+	x87_push_dbl(state, reg_idx, node);
 }
 
 /**
@@ -300,13 +312,14 @@ static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block) {
 		return bl_state;
 	}
 
-	return entry ? PTR_TO_BLKSTATE(entry->value) : NULL;
+	return PTR_TO_BLKSTATE(entry->value);
 }
 
 /**
  * Creates a new x87 state.
  *
  * @param sim    the x87 simulator handle
+ *
  * @return a new x87 state
  */
 static x87_state *x87_alloc_state(x87_simulator *sim) {
@@ -319,6 +332,7 @@ static x87_state *x87_alloc_state(x87_simulator *sim) {
  * Create a new empty x87 state.
  *
  * @param sim    the x87 simulator handle
+ *
  * @return a new empty x87 state
  */
 static x87_state *x87_alloc_empty_state(x87_simulator *sim) {
@@ -483,18 +497,18 @@ static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block, x87_state *sta
 	assert(state->depth == dst_state->depth);
 
 	/* Some mathematics here:
-	   If we have a cycle of lenght n that includes the tos,
+	   If we have a cycle of length n that includes the tos,
 	   we need n-1 exchange operations.
 	   We can always add the tos and restore it, so we need
 	   n+1 exchange operations for a cycle not containing the tos.
 	   So, the maximum of needed operations is for a cycle of 7
 	   not including the tos == 8.
-	   This is so same number of ops we would need for store,
+	   This is the same number of ops we would need for using stores,
 	   so exchange is cheaper (we save the loads).
 	   On the other hand, we might need an additional exchange
 	   in the next block to bring one operand on top, so the
 	   number of ops in the first case is identical.
-		 Further, no more than 4 cycles can exists.
+	   Further, no more than 4 cycles can exists (4 x 2).
 	*/
 	all_mask = (1 << (state->depth)) - 1;
 
@@ -634,14 +648,13 @@ static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos, int op_id
  * @param n         the node before the fpush
  * @param pos       push st(pos) on stack
  * @param op_idx    if >= 0, replace input op_idx of n with the fpush result
- * @param dbl_push  if != 0 double pushes are allowd
  */
-static void x87_create_fpush(const arch_env_t *env, x87_state *state, ir_node *n, int pos, int op_idx, int dbl_push) {
+static void x87_create_fpush(const arch_env_t *env, x87_state *state, ir_node *n, int pos, int op_idx) {
 	ir_node *fpush, *pred = get_irn_n(n, op_idx);
 	ia32_attr_t *attr;
 	const arch_register_t *out = arch_get_irn_register(env, pred);
 
-	x87_push(state, arch_register_get_index(out), pred, dbl_push);
+	x87_push_dbl(state, arch_register_get_index(out), pred);
 
 	fpush = new_rd_ia32_fpush(NULL, get_irn_irg(n), get_nodes_block(n), pred, get_irn_mode(pred));
 	attr  = get_ia32_attr(fpush);
@@ -838,7 +851,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 			if (is_vfp_live(op1->index, live)) {
 				/* Both operands are live: push the first one.
 				   This works even for op1 == op2. */
-				x87_create_fpush(env, state, n, op2_idx, BINOP_IDX_2, 0);
+				x87_create_fpush(env, state, n, op2_idx, BINOP_IDX_2);
 				out_idx = op2_idx = 0;
 				++op1_idx;
 				dst = tmpl->normal_op;
@@ -919,7 +932,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 		/* second operand is an address mode */
 		if (is_vfp_live(op1->index, live)) {
 			/* first operand is live: push it here */
-			x87_create_fpush(env, state, n, op1_idx, BINOP_IDX_1, 0);
+			x87_create_fpush(env, state, n, op1_idx, BINOP_IDX_1);
 		}
 		else {
 			/* first operand is dead: bring it to tos */
@@ -942,7 +955,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 		attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
 	attr->x87[2] = out = &ia32_st_regs[out_idx];
 
-	if (op2_idx > 0)
+	if (op2_idx >= 0)
 		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n),
 			arch_register_get_name(op1), arch_register_get_name(op2),
 			arch_register_get_name(out)));
@@ -976,7 +989,7 @@ static int sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *
 
 	if (is_vfp_live(op1->index, live)) {
 		/* push the operand here */
-		x87_create_fpush(env, state, n, op1_idx, UNOP_IDX, 0);
+		x87_create_fpush(env, state, n, op1_idx, UNOP_IDX);
 	}
 	else {
 		/* operand is dead, bring it to tos */
@@ -1007,7 +1020,7 @@ static int sim_load(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *
 	ia32_attr_t *attr;
 
 	DB((dbg, LEVEL_1, ">>> %s -> %s\n", get_irn_opname(n), arch_register_get_name(out)));
-	x87_push(state, arch_register_get_index(out), x87_patch_insn(n, op), 0);
+	x87_push(state, arch_register_get_index(out), x87_patch_insn(n, op));
 	attr = get_ia32_attr(n);
 	attr->x87[2] = out = &ia32_st_regs[0];
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), arch_register_get_name(out)));
@@ -1087,7 +1100,7 @@ static int sim_store(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 		if (mode == mode_E) {
 			if (depth < N_x87_REGS) {
 				/* ok, we have a free register: push + fstp */
-				x87_create_fpush(env, state, n, op2_idx, STORE_VAL_IDX, 1);
+				x87_create_fpush(env, state, n, op2_idx, STORE_VAL_IDX);
 				x87_pop(state);
 				x87_patch_insn(n, op_p);
 			}
@@ -1430,7 +1443,7 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 			node = new_rd_ia32_fpush(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), get_irn_n(n, 0), mode);
 			arch_set_irn_register(env, node, out);
 
-			x87_push(state, arch_register_get_index(out), node, 0);
+			x87_push(state, arch_register_get_index(out), node);
 
 			attr = get_ia32_attr(node);
 			attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
@@ -1511,7 +1524,7 @@ static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *env) {
 			 * TODO: what to push here? The result might be unused and currently
 			 * we have no possibility to detect this :-(
 			 */
-			x87_push(state, 0, n, 0);
+			x87_push(state, 0, n);
 		}
 	}
 
