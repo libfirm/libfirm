@@ -338,6 +338,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			/* got reload */
 			fprintf(F, "got reload = %d\n", is_ia32_got_reload(n));
 
+			/* dump latency */
+			fprintf(F, "latency = %d\n", get_ia32_latency(n));
+
 			/* dump flags */
 			fprintf(F, "flags =");
 			flags = get_ia32_flags(n);
@@ -927,6 +930,23 @@ void set_ia32_frame_ent(ir_node *node, entity *ent) {
 	set_ia32_use_frame(node);
 }
 
+
+/**
+ * Gets the instruction latency.
+ */
+unsigned get_ia32_latency(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->latency;
+}
+
+/**
+* Sets the instruction latency.
+*/
+void set_ia32_latency(ir_node *node, unsigned latency) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->latency     = latency;
+}
+
 /**
  * Returns the argument register requirements of an ia32 node.
  */
@@ -1309,12 +1329,13 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs,
-						  const ia32_register_req_t **out_reqs, int n_res)
+						  const ia32_register_req_t **out_reqs, int n_res, unsigned latency)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	set_ia32_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
 	set_ia32_out_req_all(node, out_reqs);
+	set_ia32_latency(node, latency);
 
 	attr->data.n_res = n_res;
 	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));

@@ -381,6 +381,16 @@ long get_ia32_pncode(const ir_node *node);
  */
 void set_ia32_pncode(ir_node *node, long code);
 
+/**
+ * Gets the instruction latency.
+ */
+unsigned get_ia32_latency(const ir_node *node);
+
+/**
+ * Sets the instruction latency.
+ */
+void set_ia32_latency(ir_node *node, unsigned latency);
+
 #ifndef NDEBUG
 
 /**
@@ -476,7 +486,7 @@ int is_ia32_Cnst(const ir_node *node);
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs, \
-	const ia32_register_req_t **out_reqs, int n_res);
+	const ia32_register_req_t **out_reqs, int n_res, unsigned latency);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"

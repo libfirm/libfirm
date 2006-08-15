@@ -121,6 +121,8 @@ typedef struct _ia32_attr_t {
 
 	long pn_code;       /**< projnum "types" (e.g. indicate compare operators and argument numbers) */
 
+	unsigned latency;   /**< the latency of the instruction in clock cycles */
+
 #ifndef NDEBUG
 	const char *orig_node;      /**< holds the name of the original ir node for debugging purposes */
 #endif /* NDEBUG */
