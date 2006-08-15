@@ -1139,39 +1139,42 @@ static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 	int                sse_pnc  = -1;
+	long               pnc      = get_ia32_pncode(irn);
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 
-	switch (get_ia32_pncode(irn)) {
+	assert(!(pnc & pn_Cmp_Uo) && "unordered fp compare not supported yet");
+
+	switch (pnc) {
 		case pn_Cmp_Leg: /* odered */
 			sse_pnc = 7;
 			break;
 		case pn_Cmp_Uo:  /* unordered */
 			sse_pnc = 3;
 			break;
-		case pn_Cmp_Ue:  /* == */
+		case pn_Cmp_Eq:  /* == */
 			sse_pnc = 0;
 			break;
-		case pn_Cmp_Ul:  /* < */
+		case pn_Cmp_Lt:  /* < */
 			sse_pnc = 1;
 			break;
-		case pn_Cmp_Ule: /* <= */
+		case pn_Cmp_Le: /* <= */
 			sse_pnc = 2;
 			break;
-		case pn_Cmp_Ug:  /* > */
+		case pn_Cmp_Gt:  /* > */
 			sse_pnc = 6;
 			break;
-		case pn_Cmp_Uge: /* >= */
+		case pn_Cmp_Ge: /* >= */
 			sse_pnc = 5;
 			break;
-		case pn_Cmp_Ne:  /* != */
+		case pn_Cmp_Lg:  /* != */
 			sse_pnc = 4;
 			break;
 	}
 
 	assert(sse_pnc >= 0 && "unsupported floating point compare");
 
-	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmps%M %s, %d", irn, ia32_emit_binop(irn, env), sse_pnc);
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cmpsd %s, %d", ia32_emit_binop(irn, env), sse_pnc);
 	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* SSE compare with result in %1D */", irn);
 	IA32_DO_EMIT(irn);
 }
