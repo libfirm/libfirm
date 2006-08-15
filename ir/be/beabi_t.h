@@ -1,6 +1,6 @@
 
 /**
- * Type declarations for the BAI module.
+ * Type declarations for the ABI module.
  */
 
 #ifndef _BEABI_T_h
