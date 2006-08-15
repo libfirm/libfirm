@@ -369,7 +369,7 @@ $comment_string = "/*";
 "SubC" => {
   "comment"   => "construct Sub with Carry: SubC(a, b) = a - b - carry",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sbb %ia32_emit_binop /* SubC(%A3, %A4) -> %D1 */',
   "outs"      => [ "res", "M" ],
 },
