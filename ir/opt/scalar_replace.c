@@ -62,6 +62,9 @@ typedef struct _path_t {
   path_elem_t path[1];   /**< the path */
 } path_t;
 
+/** The size of a path in bytes */
+#define PATH_SIZE(p)  (sizeof(*(p)) + sizeof((p)->path[0]) * ((p)->path_len - 1))
+
 typedef struct _scalars_t {
   entity *ent;                 /**< A entity for scalar replacement. */
   ir_type *ent_owner;          /**< The owner of this entity. */
@@ -369,7 +372,7 @@ static unsigned allocate_value_numbers(pset *sels, entity *ent, unsigned vnum, i
     pset_insert_ptr(sels, sel);
 
     key  = find_path(sel, 0);
-    path = set_find(pathes, key, sizeof(*key) + sizeof(key->path[0]) * key->path_len, path_hash(key));
+    path = set_find(pathes, key, PATH_SIZE(key), path_hash(key));
 
     if (path)
       SET_VNUM(sel, path->vnum);
@@ -378,7 +381,7 @@ static unsigned allocate_value_numbers(pset *sels, entity *ent, unsigned vnum, i
 
       key->vnum = vnum++;
 
-      set_insert(pathes, key, sizeof(*key) + sizeof(key->path[0]) * key->path_len, path_hash(key));
+      set_insert(pathes, key, PATH_SIZE(key), path_hash(key));
 
       SET_VNUM(sel, key->vnum);
       ARR_EXTO(ir_mode *, *modes, (key->vnum + 15) & ~15);
@@ -390,7 +393,7 @@ static unsigned allocate_value_numbers(pset *sels, entity *ent, unsigned vnum, i
 #ifdef DEBUG_libfirm
       /* Debug output */
       if (get_opt_scalar_replacement_verbose() && get_firm_verbosity() > 1) {
-        printf("  %s", get_entity_name(ent));
+        printf("  %s", get_entity_name(key->path[0].ent));
         for (i = 1; i < key->path_len; ++i) {
           if (is_entity(key->path[i].ent))
             printf(".%s", get_entity_name(key->path[i].ent));
