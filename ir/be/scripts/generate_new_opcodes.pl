@@ -261,6 +261,12 @@ foreach my $op (keys(%nodes)) {
 				$out_param = "NULL, 0";
 			}
 			$temp .= "\n  /* create node */\n";
+
+			my $latency = 1;
+			if (exists($n{"latency"})) {
+				$latency = $n{"latency"};
+			}
+
 			my $mode = "mode";
 			if ($tuple == 1) {
 				$mode = "mode_T";
@@ -268,7 +274,7 @@ foreach my $op (keys(%nodes)) {
 			$temp .= "  res = new_ir_node(db, irg, block, op_$op, $mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
 
 			$temp .= "\n  /* init node attributes */\n";
-			$temp .= "  init_$arch\_attributes(res, flags, $in_param, $out_param);\n";
+			$temp .= "  init_$arch\_attributes(res, flags, $in_param, $out_param, $latency);\n";
 
 			if (exists($n{"init_attr"})) {
 				$temp .= "  attr = get_$arch\_attr(res);\n";
