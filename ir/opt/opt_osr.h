@@ -20,6 +20,7 @@ typedef enum osr_flags {
 	osr_flag_none               = 0,  /**< no additional flags */
 	osr_flag_lftr_with_ov_check = 1,  /**< do linear function test replacement
 	                                       only if no overflow can occur. */
+	osr_flag_ignore_x86_shift   = 2   /**< ignore Multiplications by 2, 4, 8 */
 } osr_flags;
 
 /* FirmJNI cannot handle identical enum values... */

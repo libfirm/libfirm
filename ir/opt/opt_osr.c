@@ -290,7 +290,7 @@ static ir_node *do_apply(opcode code, dbg_info *db, ir_node *op1, ir_node *op2, 
  *               the opcode, debug-info and mode of a newly created one
  * @param op1    the first operand
  * @param op2    the second operand
- * @param env     the environment
+ * @param env    the environment
  *
  * @return the newly created node
  */
@@ -443,8 +443,24 @@ static int check_replace(ir_node *irn, iv_env *env) {
 			iv = right; rc = left;
 		}
 
-		if (iv)
+		if (iv) {
+			if (env->flags & osr_flag_ignore_x86_shift) {
+				if (is_Const(rc)) {
+					tarval *tv = get_Const_tarval(rc);
+
+					if (tarval_is_long(tv)) {
+						long value = get_tarval_long(tv);
+
+						if (value == 2 || value == 4 || value == 8) {
+							/* do not reduce multiplications by 2, 4, 8 */
+							break;
+						}
+					}
+				}
+			}
+
 			return replace(irn, iv, rc, env);
+		}
 		break;
 	default:
 		break;
