@@ -1347,7 +1347,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
-  "emit"      => '. fadd %ia32_emit_x87_binop /* x87 fadd(%A1, %A2) -> %D1 */',
+  "emit"      => '. fadd %ia32_emit_x87_binop /* x87 fadd(%A3, %A4) -> %D1 */',
 },
 
 "faddp" => {
@@ -1355,7 +1355,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
-  "emit"      => '. faddp %ia32_emit_x87_binop /* x87 fadd(%A1, %A2) -> %D1 */',
+  "emit"      => '. faddp %ia32_emit_x87_binop /* x87 fadd(%A3, %A4) -> %D1 */',
 },
 
 "fmul" => {
@@ -1363,7 +1363,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
-  "emit"      => '. fmul %ia32_emit_x87_binop /* x87 fmul(%A1, %A2) -> %D1 */',
+  "emit"      => '. fmul %ia32_emit_x87_binop /* x87 fmul(%A3, %A4) -> %D1 */',
 },
 
 "fmulp" => {
@@ -1371,7 +1371,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
-  "emit"      => '. fmulp %ia32_emit_x87_binop /* x87 fmul(%A1, %A2) -> %D1 */',,
+  "emit"      => '. fmulp %ia32_emit_x87_binop /* x87 fmul(%A3, %A4) -> %D1 */',,
 },
 
 "fsub" => {
@@ -1379,7 +1379,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
-  "emit"      => '. fsub %ia32_emit_x87_binop /* x87 fsub(%A1, %A2) -> %D1 */',
+  "emit"      => '. fsub %ia32_emit_x87_binop /* x87 fsub(%A3, %A4) -> %D1 */',
 },
 
 "fsubp" => {
@@ -1387,7 +1387,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
-  "emit"      => '. fsubp %ia32_emit_x87_binop /* x87 fsub(%A1, %A2) -> %D1 */',
+  "emit"      => '. fsubp %ia32_emit_x87_binop /* x87 fsub(%A3, %A4) -> %D1 */',
 },
 
 "fsubr" => {
@@ -1396,7 +1396,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
-  "emit"      => '. fsubr %ia32_emit_x87_binop /* x87 fsubr(%A1, %A2) -> %D1 */',
+  "emit"      => '. fsubr %ia32_emit_x87_binop /* x87 fsubr(%A3, %A4) -> %D1 */',
 },
 
 "fsubrp" => {
@@ -1405,7 +1405,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
-  "emit"      => '. fsubrp %ia32_emit_x87_binop /* x87 fsubr(%A1, %A2) -> %D1 */',
+  "emit"      => '. fsubrp %ia32_emit_x87_binop /* x87 fsubr(%A3, %A4) -> %D1 */',
 },
 
 "fdiv" => {
@@ -1413,7 +1413,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
-  "emit"      => '. fdiv %ia32_emit_x87_binop /* x87 fdiv(%A1, %A2) -> %D1 */',
+  "emit"      => '. fdiv %ia32_emit_x87_binop /* x87 fdiv(%A3, %A4) -> %D1 */',
 },
 
 "fdivp" => {
@@ -1421,7 +1421,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
-  "emit"      => '. fdivp %ia32_emit_x87_binop /* x87 fdiv(%A1, %A2) -> %D1 */',
+  "emit"      => '. fdivp %ia32_emit_x87_binop /* x87 fdiv(%A3, %A4) -> %D1 */',
 },
 
 "fdivr" => {
@@ -1429,7 +1429,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
-  "emit"      => '. fdivr %ia32_emit_x87_binop /* x87 fdivr(%A1, %A2) -> %D1 */',
+  "emit"      => '. fdivr %ia32_emit_x87_binop /* x87 fdivr(%A3, %A4) -> %D1 */',
 },
 
 "fdivrp" => {
@@ -1437,7 +1437,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
-  "emit"      => '. fdivrp %ia32_emit_x87_binop /* x87 fdivr(%A1, %A2) -> %D1 */',
+  "emit"      => '. fdivrp %ia32_emit_x87_binop /* x87 fdivr(%A3, %A4) -> %D1 */',
 },
 
 "fabs" => {
