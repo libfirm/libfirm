@@ -299,10 +299,36 @@ insert_copy:
 			}
 		}
 
-		/* If we have a CondJmp/CmpSet/xCmpSet with immediate, we need to    */
-		/* check if it's the right operand, otherwise we have */
-		/* to change it, as CMP doesn't support immediate as  */
-		/* left operands.                                     */
+		/* check xCmp: try to avoid unordered cmp */
+		if ((is_ia32_xCmp(irn) || is_ia32_xCmpCMov(irn) || is_ia32_xCmpSet(irn)) &&
+			op_tp == ia32_Normal    &&
+			! is_ia32_ImmConst(irn) && ! is_ia32_ImmSymConst(irn))
+		{
+			long pnc = get_ia32_pncode(irn);
+
+			if (pnc & pn_Cmp_Uo) {
+				ir_node *tmp;
+				int idx1 = 2, idx2 = 3;
+
+				if (is_ia32_xCmpCMov(irn)) {
+					idx1 = 0;
+					idx2 = 1;
+				}
+
+				tmp = get_irn_n(irn, idx1);
+				set_irn_n(irn, idx1, get_irn_n(irn, idx2));
+				set_irn_n(irn, idx2, tmp);
+
+				set_ia32_pncode(irn, get_negated_pnc(pnc, mode_D));
+			}
+		}
+
+		/*
+			If we have a CondJmp/CmpSet/xCmpSet with immediate,
+			we need to check if it's the right operand, otherwise
+			we have to change it, as CMP doesn't support immediate
+			as left operands.
+		*/
 		if ((is_ia32_CondJmp(irn) || is_ia32_CmpSet(irn) || is_ia32_xCmpSet(irn)) &&
 			(is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn))                   &&
 			op_tp == ia32_AddrModeS)
