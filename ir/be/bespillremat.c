@@ -120,7 +120,7 @@ static const lc_opt_enum_mask_items_t remats_items[] = {
 	{ "none",      REMATS_NONE      },
 	{ "briggs",    REMATS_BRIGGS    },
 	{ "noinverse", REMATS_NOINVERSE },
-	{ "ALL",       REMATS_ALL       },
+	{ "all",       REMATS_ALL       },
 	{ NULL,        0 }
 };
 
@@ -158,7 +158,8 @@ void be_spill_remat_register_options(lc_opt_entry_t *grp)
 #endif
 
 
-//#define EXECFREQ_LOOPDEPH /* compute execution frequency from loop depth only */
+//#define EXECFREQ_LOOPDEPH   /* compute execution frequency from loop depth only */
+//#define SCHEDULE_PHIM   /* insert phim nodes into schedule */
 
 #define  SOLVE
 //#define  SOLVE_LOCAL
@@ -166,7 +167,7 @@ void be_spill_remat_register_options(lc_opt_entry_t *grp)
 #define LPP_SOLVER "cplex"
 
 
-#define MAX_PATHS      16
+#define MAX_PATHS      INT_MAX
 #define ILP_UNDEF		-1
 
 typedef struct _spill_ilp_t {
@@ -602,7 +603,9 @@ get_irn_n_nonignore_args(const spill_ilp_t * si, const ir_node * irn)
 	unsigned int ret = 0;
 
 	for(n=get_irn_arity(irn)-1; n>=0; --n) {
-		if(has_reg_class(si, irn)) ++ret;
+		const ir_node  *arg = get_irn_n(irn, n);
+
+		if(has_reg_class(si, arg)) ++ret;
 	}
 
 	return ret;
@@ -2306,7 +2309,7 @@ skip_one_must_die:
 			spill->mem_in   = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, default_spilled);
 			lpp_set_factor_fast(si->lpp, cst, spill->mem_in, -1.0);
 
-			if(is_Phi(spill->irn) && get_nodes_block(spill->irn) == bb) {
+			if(opt_memcopies && is_Phi(spill->irn) && get_nodes_block(spill->irn) == bb) {
 				int   n;
 				op_t *op = get_irn_link(spill->irn);
 
@@ -2454,7 +2457,9 @@ skip_one_must_die:
 					assert(spill_p);
 
 					lpp_set_factor_fast(si->lpp, mem_in, spill_p->mem_out, -1.0);
-					lpp_set_factor_fast(si->lpp, mem_in, op->attr.live_range.args.copies[n], -1.0);
+					if(opt_memcopies)
+						lpp_set_factor_fast(si->lpp, mem_in, op->attr.live_range.args.copies[n], -1.0);
+
 					lpp_set_factor_fast(si->lpp, reg_in, spill_p->reg_out, -1.0);
 				}
 			}
@@ -2759,7 +2764,7 @@ find_copy_path(spill_ilp_t * si, const ir_node * irn, const ir_node * target, il
 				paths += find_copy_path(si, arg, target, any_interfere, copies, visited);
 				pset_remove(copies, INT_TO_PTR(copy), copy);
 
-                /*if(paths > MAX_PATHS) {
+                if(paths > MAX_PATHS) {
                     if(pset_count(copies) == 0) {
                         ilp_cst_t  cst;
                         char       buf[256];
@@ -2779,7 +2784,7 @@ find_copy_path(spill_ilp_t * si, const ir_node * irn, const ir_node * target, il
                     }
                 } else if(pset_count(copies) == 0) {
 					paths = 0;
-				}*/
+				}
 			}
 		}
 
@@ -2814,7 +2819,7 @@ find_copy_path(spill_ilp_t * si, const ir_node * irn, const ir_node * target, il
 			paths += find_copy_path(si, user, target, any_interfere, copies, visited);
 			pset_remove(copies, INT_TO_PTR(copy), copy);
 
-            /*if(paths > MAX_PATHS) {
+            if(paths > MAX_PATHS) {
                 if(pset_count(copies) == 0) {
                     ilp_cst_t  cst;
                     char       buf[256];
@@ -2833,7 +2838,7 @@ find_copy_path(spill_ilp_t * si, const ir_node * irn, const ir_node * target, il
                 }
             } else if(pset_count(copies) == 0) {
 				paths = 0;
-			}*/
+			}
 		}
 	}
 
@@ -3309,7 +3314,6 @@ get_spills_for_value(spill_ilp_t * si, const ir_node * value)
 /**
  * @param before   The node after which the spill will be placed in the schedule
  */
-/* TODO set context properly */
 static ir_node *
 insert_spill(spill_ilp_t * si, ir_node * irn, const ir_node * value, ir_node * before)
 {
@@ -3360,7 +3364,9 @@ insert_mem_phi(spill_ilp_t * si, ir_node * phi)
 	set_irn_link(mem_phi, defs->spills);
 	defs->spills = mem_phi;
 
+#ifdef SCHEDULE_PHIM
 	sched_add_after(phi, mem_phi);
+#endif
 
 	if(opt_keep_alive & KEEPALIVE_SPILLS)
 		pset_insert_ptr(si->spills, mem_phi);
