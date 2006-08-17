@@ -36,8 +36,10 @@ enum {
 };
 
 enum {
-	BE_SCHED_SELECT_ISA,
-	BE_SCHED_SELECT_HEUR
+	BE_SCHED_SELECT_ISA      = 0,
+	BE_SCHED_SELECT_MUCHNIK  = 1,
+	BE_SCHED_SELECT_HEUR     = 2,
+	BE_SCHED_SELECT_HMUCHNIK = 3
 };
 
 struct _be_options_t {

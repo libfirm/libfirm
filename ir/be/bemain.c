@@ -65,7 +65,7 @@
 static be_options_t be_options = {
 	DUMP_NONE,                         /* dump options */
 	BE_TIME_OFF,                       /* no timing */
-	BE_SCHED_SELECT_HEUR,              /* heuristic selector */
+	BE_SCHED_SELECT_HEUR,              /* mueller heuristic selector */
 	0,                                 /* disable mris */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex"                            /* ilp solver */
@@ -129,8 +129,10 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 
 /* schedule selector options. */
 static const lc_opt_enum_int_items_t sched_select_items[] = {
-	{ "isa",    BE_SCHED_SELECT_ISA  },
-	{ "heur",   BE_SCHED_SELECT_HEUR },
+	{ "isa",      BE_SCHED_SELECT_ISA      },
+	{ "muchnik",  BE_SCHED_SELECT_MUCHNIK  },
+	{ "heur",     BE_SCHED_SELECT_HEUR     },
+	{ "hmuchnik", BE_SCHED_SELECT_HMUCHNIK },
 	{ NULL,     0 }
 };
 
@@ -162,7 +164,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",  &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",     &be_options.timing),
 	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",  &be_options.mris),
-	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (heur, isa)",&sched_select_var),
+	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (isa, muchnik, heur, hmuchnik)",&sched_select_var),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
