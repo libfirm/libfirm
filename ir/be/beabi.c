@@ -1789,8 +1789,14 @@ struct fix_stack_walker_info {
 static void collect_stack_nodes_walker(ir_node *irn, void *data)
 {
 	struct fix_stack_walker_info *info = data;
+	ir_mode *mode;
 
-	if(arch_irn_is(info->aenv, irn, modify_sp))
+	if (is_Block(irn))
+		return;
+
+	mode = get_irn_mode(irn);
+
+	if (arch_irn_is(info->aenv, irn, modify_sp) && mode != mode_T && mode != mode_M)
 		pset_insert_ptr(info->nodes, irn);
 }
 
