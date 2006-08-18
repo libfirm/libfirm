@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <limits.h>
 
-#define MAX 65536
-#define MAX_CALC 64
+#define MAX (1 << 20)
+#define TRUNC 0xff
+#define MAX_SHOW TRUNC
 
 void dump_field(short *field, int size, const char *name) {
   int i;
@@ -17,7 +19,7 @@ void dequant_h263_inter_c(short *data, const short *coeff, const unsigned int qu
 	const unsigned short quant_add = (quant & 1 ? quant : quant - 1);
 	int i;
 
-	for (i = 0; i < MAX_CALC; i++) {
+	for (i = 0; i < MAX; i++) {
 		short acLevel = coeff[i];
 
 		if (acLevel == 0) {
@@ -40,19 +42,19 @@ int main(int argc){
 
   for (i = 0; i < numofruns; i++){
     /* Reset cache. Alles andere ist unrealistisch. */
-    for(ii = 0; ii < MAX_CALC; ii++){
+    for(ii = 0; ii < MAX; ii++){
       cur[ii] = 0;
-      ref[ii] = (ii + i + 3) & 0xff;
+      ref[ii] = (ii + i + 3) & TRUNC;
     }
 
 	if (i == 0 && argc == 1)
-	  dump_field(ref, MAX_CALC, "ref");
+	  dump_field(ref, MAX_SHOW, "ref");
 
 	dequant_h263_inter_c(cur, ref, 1024 * (i & 0x3));
   }
 
   if (argc == 1)
-    dump_field(cur, MAX_CALC, "cur");
+    dump_field(cur, MAX_SHOW, "cur");
 
-  return 0 ;
+  return 0;
 }
