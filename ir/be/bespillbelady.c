@@ -78,7 +78,7 @@ void workset_print(const workset_t *w)
 	int i;
 
 	for(i = 0; i < w->len; ++i) {
-		ir_printf("%+F %d\n", w->vals[i].irn, w->vals[i].time);
+		ir_fprintf(stderr, "%+F %d\n", w->vals[i].irn, w->vals[i].time);
 	}
 }
 
@@ -187,6 +187,7 @@ static INLINE int workset_contains(const workset_t *ws, const ir_node *val) {
 										++i)
 
 #define workset_set_time(ws, i, t) (ws)->vals[i].time=t
+#define workset_get_time(ws, i) (ws)->vals[i].time
 #define workset_set_length(ws, length) (ws)->len = length
 #define workset_get_length(ws) ((ws)->len)
 #define workset_get_val(ws, i) ((ws)->vals[i].irn)
@@ -219,11 +220,52 @@ static INLINE unsigned get_distance(belady_env_t *env, const ir_node *from, unsi
 	unsigned dist = be_get_next_use(env->uses, from, from_step, def, skip_from_uses);
 
 	assert(! (flags & arch_irn_flags_ignore));
-	// we have to keep nonspillable nodes in the workingset
+
+	/* we have to keep nonspillable nodes in the workingset */
 	if(flags & arch_irn_flags_dont_spill)
 		return 0;
 
 	return dist;
+}
+
+/**
+ * Fix to remove dead nodes (especially don't spill nodes) from workset.
+ */
+static void fix_dead_values(workset_t *ws, ir_node *irn) {
+	int idx;
+	ir_node *node;
+	ir_node *block = get_nodes_block(irn);
+
+	DBG((dbg, DBG_DECIDE, "fixing dead values at %+F:\n", irn));
+
+	workset_foreach(ws, node, idx) {
+		const ir_edge_t *edge;
+		int             fixme = 1;
+
+		/* skip already fixed nodes */
+		if (workset_get_time(ws, idx) == INT_MAX)
+			continue;
+
+		/* check all users */
+		foreach_out_edge(node, edge) {
+			ir_node *user = get_edge_src_irn(edge);
+
+			if ((get_nodes_block(user) != block)                           ||  /* user is in a different block */
+				(sched_is_scheduled(user) && sched_comes_after(irn, user)) ||  /* user is scheduled after irn */
+				user == irn)                                                   /* irn is the user */
+			{                                                                  /* => don't fix distance */
+				fixme = 0;
+				break;
+			}
+		}
+
+		/* all users scheduled prior to current irn in in same block as irn -> fix */
+		if (fixme) {
+			workset_set_time(ws, idx, INT_MAX);
+			DBG((dbg, DBG_DECIDE, "\tfixing time for %+F to INT_MAX\n", node));
+		}
+	}
+
 }
 
 /**
@@ -237,25 +279,27 @@ static INLINE unsigned get_distance(belady_env_t *env, const ir_node *from, unsi
  */
 static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	ir_node *val;
-	int i, len, max_allowed, demand, iter;
-	workset_t *ws = env->ws;
-	ir_node **to_insert = alloca(env->n_regs * sizeof(*to_insert));
+	int     i, len, max_allowed, demand, iter;
+
+	workset_t *ws         = env->ws;
+	ir_node   **to_insert = alloca(env->n_regs * sizeof(*to_insert));
 
 	/*
-	 * 1. Identify the number of needed slots and the values to reload
-	 */
+		1. Identify the number of needed slots and the values to reload
+	*/
 	demand = 0;
 	workset_foreach(new_vals, val, iter) {
 		/* mark value as used */
 		if (is_usage)
 			pset_insert_ptr(env->used, val);
 
-		if (!workset_contains(ws, val)) {
+		if (! workset_contains(ws, val)) {
 			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			to_insert[demand++] = val;
 			if (is_usage)
 				be_add_reload(env->senv, val, env->instr);
-		} else {
+		}
+		else {
 			assert(is_usage || "Defined value already in workset?!?");
 			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
 		}
@@ -263,9 +307,9 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	DBG((dbg, DBG_DECIDE, "    demand = %d\n", demand));
 
 	/*
-	 * 2. Make room for at least 'demand' slots
-	 */
-	len = workset_get_length(ws);
+		2. Make room for at least 'demand' slots
+	*/
+	len         = workset_get_length(ws);
 	max_allowed = env->n_regs - demand;
 
 	DBG((dbg, DBG_DECIDE, "    disposing %d values\n", ws->len - max_allowed));
@@ -273,29 +317,42 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	/* Only make more free room if we do not have enough */
 	if (len > max_allowed) {
 		/* get current next-use distance */
-		for (i=0; i<ws->len; ++i)
+		for (i = 0; i < ws->len; ++i)
 			workset_set_time(ws, i, get_distance(env, env->instr, env->instr_nr, workset_get_val(ws, i), !is_usage));
+
+		/*
+			FIX for don't spill nodes:
+			Problem is that get_distance always returns 0 for those nodes even if they are not
+			needed anymore (all their usages have already been visited).
+			Even if we change this behavior, get_distance doesn't distinguish between not
+			used anymore (dead) and live out of block.
+			Solution: Set distances of all nodes having all their usages in schedule prior to
+			current instruction to MAX_INT.
+		*/
+		fix_dead_values(ws, env->instr);
 
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
 
-		/* Logic for not needed live-ins: If a value is disposed
-		 * before its first usage, remove it from start workset
-		 * We don't do this for phis though
-		 */
-		for (i=max_allowed; i<ws->len; ++i) {
+		/*
+			Logic for not needed live-ins: If a value is disposed
+			before its first usage, remove it from start workset
+			We don't do this for phis though
+		*/
+		for (i = max_allowed; i < ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
 
-            if(is_Phi(irn))
+            if (is_Phi(irn))
                 continue;
 
-			if (!pset_find_ptr(env->used, irn)) {
-				ir_node *curr_bb = get_nodes_block(env->instr);
+			if (! pset_find_ptr(env->used, irn)) {
+				ir_node   *curr_bb  = get_nodes_block(env->instr);
 				workset_t *ws_start = get_block_info(curr_bb)->ws_start;
 				workset_remove(ws_start, irn);
 
 				DBG((dbg, DBG_DECIDE, "    dispose %+F dumb\n", irn));
-			} else {
+			}
+			else {
 				DBG((dbg, DBG_DECIDE, "    dispose %+F\n", irn));
 			}
 		}
@@ -305,9 +362,9 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	}
 
 	/*
-	 * 3. Insert the new values into the workset
-	 */
-	for(i = 0; i < demand; ++i)
+		3. Insert the new values into the workset
+	*/
+	for (i = 0; i < demand; ++i)
 		workset_insert(env, env->ws, to_insert[i]);
 }
 
@@ -332,6 +389,9 @@ static void spill_phi_walker(ir_node *block, void *data) {
 
 	/* Collect all values living at start of block */
 	starters = NEW_ARR_F(loc_t, 0);
+
+	/* rebuild schedule time information, because it seems to be broken */
+	sched_renumber(block);
 
 	DBG((dbg, DBG_START, "Living at start of %+F:\n", block));
 	first = sched_first(block);
