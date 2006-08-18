@@ -25,7 +25,7 @@ typedef struct _sched_info_t {
 	struct list_head list;         /**< The list head to list the nodes in a schedule. */
 	sched_timestep_t time_step;    /**< If a is after b in a schedule, its time step is
                                         larger than b's. */
-	int scheduled : 1;             /**< 1, if the node is in the schedule of the block, 0 else. */
+	unsigned scheduled : 1;             /**< 1, if the node is in the schedule of the block, 0 else. */
 } sched_info_t;
 
 #define _sched_entry(list_head) (list_entry(list_head, sched_info_t, list))
