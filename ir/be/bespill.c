@@ -14,6 +14,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
+#include "irprintf.h"
 #include "ident_t.h"
 #include "type_t.h"
 #include "entity_t.h"
@@ -237,12 +238,19 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	/* Trying to spill an already spilled value, no need for a new spill
 	 * node then, we can simply connect to the same one for this reload
 	 *
-	 * (although rematerialisation code should handle most of these cases
+	 * (although rematerialization code should handle most of these cases
 	 * this can still happen when spilling Phis)
 	 */
 	if(be_is_Reload(to_spill)) {
 		spillinfo->spill = get_irn_n(to_spill, be_pos_Reload_mem);
 		return;
+	}
+
+	if (arch_irn_is(env->arch_env, to_spill, dont_spill)) {
+		if (env->chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN)
+			ir_fprintf(stderr, "Verify warning: spilling 'dont_spill' node %+F\n", to_spill);
+		else if (env->chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT)
+			assert(0 && "Attempt to spill a node marked 'dont_spill'");
 	}
 
 	spillinfo->spill = be_spill(env->arch_env, to_spill);
