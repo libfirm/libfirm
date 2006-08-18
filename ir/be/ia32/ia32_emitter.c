@@ -1140,10 +1140,9 @@ static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 	int                sse_pnc  = -1;
 	long               pnc      = get_ia32_pncode(irn);
+	long               unord    = pnc & pn_Cmp_Uo;
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
-
-	assert(!(pnc & pn_Cmp_Uo) && "unordered fp compare not supported yet");
 
 	switch (pnc) {
 		case pn_Cmp_Leg: /* odered */
@@ -1152,31 +1151,68 @@ static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
 		case pn_Cmp_Uo:  /* unordered */
 			sse_pnc = 3;
 			break;
+		case pn_Cmp_Ue:
 		case pn_Cmp_Eq:  /* == */
 			sse_pnc = 0;
 			break;
+		case pn_Cmp_Ul:
 		case pn_Cmp_Lt:  /* < */
 			sse_pnc = 1;
 			break;
+		case pn_Cmp_Ule:
 		case pn_Cmp_Le: /* <= */
 			sse_pnc = 2;
 			break;
+		case pn_Cmp_Ug:
 		case pn_Cmp_Gt:  /* > */
 			sse_pnc = 6;
 			break;
+		case pn_Cmp_Uge:
 		case pn_Cmp_Ge: /* >= */
 			sse_pnc = 5;
 			break;
+		case pn_Cmp_Ne:
 		case pn_Cmp_Lg:  /* != */
 			sse_pnc = 4;
 			break;
 	}
 
-	assert(sse_pnc >= 0 && "unsupported floating point compare");
+	assert(sse_pnc >= 0 && "unsupported compare");
+
+	if (unord && sse_pnc != 3) {
+		/*
+			We need a separate compare against unordered.
+			Quick and Dirty solution:
+			- get some memory on stack
+			- compare
+			- store result
+			- compare
+			- and result and stored result
+		    - cleanup stack
+		*/
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "sub %%esp, 8");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* reserve some space for unordered compare result */");
+		IA32_DO_EMIT(NULL);
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cmpsd %s, 3", ia32_emit_binop(irn, env));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* SSE compare: unordered */");
+		IA32_DO_EMIT(NULL);
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "movsd [%%esp], %1D", irn);
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* store compare result */");
+		IA32_DO_EMIT(NULL);
+	}
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cmpsd %s, %d", ia32_emit_binop(irn, env), sse_pnc);
-	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* SSE compare with result in %1D */", irn);
+	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* SSE compare (%+F) with result in %1D */", irn, irn);
 	IA32_DO_EMIT(irn);
+
+	if (unord && sse_pnc != 3) {
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "andpd %1D, [%%esp]", irn);
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* build the final result */");
+		IA32_DO_EMIT(NULL);
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "add %%esp, 8");
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* free allocated space */");
+		IA32_DO_EMIT(NULL);
+	}
 }
 
 /*********************************************************
