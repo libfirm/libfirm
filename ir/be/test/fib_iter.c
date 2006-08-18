@@ -14,13 +14,14 @@ unsigned long fib_iter(int n) {
 }
 
 int main(int argc, char *argv[]) {
-	int n = 10;
+	int i, n = 10;
 
 	if (argc > 1) {
 		n = atoi(argv[1]);
 	}
 
-	printf("fib(%d) = %lu\n", n, fib_iter(n));
+	for (i = 0; i <= n; i++)
+		printf("fib(%d) = %lu\n", i, fib_iter(i));
 
 	return 0;
 }
