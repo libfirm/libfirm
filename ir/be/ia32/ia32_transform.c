@@ -1770,18 +1770,21 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
 			and1 = new_rd_ia32_xAnd(dbg, irg, block, noreg, noreg, psi_true, new_op, nomem);
 			set_ia32_am_support(and1, ia32_am_None);
 			set_ia32_res_mode(and1, mode);
+			set_ia32_commutative(and1);
 			SET_IA32_ORIG_NODE(and1, ia32_get_old_node_name(cg, node));
 			and1 = new_rd_Proj(dbg, irg, block, and1, mode, pn_ia32_xAnd_res);
 
 			and2 = new_rd_ia32_xAndNot(dbg, irg, block, noreg, noreg, new_op, psi_default, nomem);
 			set_ia32_am_support(and2, ia32_am_None);
 			set_ia32_res_mode(and2, mode);
+			set_ia32_commutative(and2);
 			SET_IA32_ORIG_NODE(and2, ia32_get_old_node_name(cg, node));
 			and2 = new_rd_Proj(dbg, irg, block, and2, mode, pn_ia32_xAndNot_res);
 
 			new_op = new_rd_ia32_xOr(dbg, irg, block, noreg, noreg, and1, and2, nomem);
 			set_ia32_am_support(new_op, ia32_am_None);
 			set_ia32_res_mode(new_op, mode);
+			set_ia32_commutative(new_op);
 			SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 			new_op = new_rd_Proj(dbg, irg, block, new_op, mode, pn_ia32_xOr_res);
 		}
