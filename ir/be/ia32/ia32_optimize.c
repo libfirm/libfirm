@@ -1041,6 +1041,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	entity     *lea_ent    = NULL;
 	ir_node    *left, *right, *temp;
 	ir_node    *base, *index;
+	int consumed_left_shift;
 	ia32_am_flavour_t am_flav;
 	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
@@ -1126,15 +1127,17 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 	if (isadd) {
 		/* default for add -> make right operand to index */
-		index = right;
-		dolea = 1;
+		index               = right;
+		dolea               = 1;
+		consumed_left_shift = 1;
 
 		DBG((mod, LEVEL_1, "\tgot LEA candidate with index %+F\n", index));
 
 		/* determine the operand which needs to be checked */
 		temp = left;
 		if (is_ia32_Lea(left)) {
-			temp = right;
+			temp                = right;
+			consumed_left_shift = 0;
 		}
 
 		/* check for SHL 1,2,3 */
@@ -1151,8 +1154,9 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 					DBG((mod, LEVEL_1, "\tgot scaled index %+F\n", index));
 				}
 				else {
-					scale = 0;
-					shift = NULL;
+					consumed_left_shift = 0;
+					scale               = 0;
+					shift               = NULL;
 				}
 			}
 		}
@@ -1163,10 +1167,8 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 			if (left == right) {
 				base = noreg;
 			}
-			else if (! is_ia32_Lea(left) && (index != right)) {
-				/* index != right -> we found a good Shl           */
-				/* left  != LEA   -> this Shl was the left operand */
-				/* -> base is right operand                        */
+			else if (consumed_left_shift) {
+				/* -> base is right operand  */
 				base = (right == lea_o) ? noreg : right;
 			}
 		}
