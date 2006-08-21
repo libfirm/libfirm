@@ -15,7 +15,7 @@ f (d)
     }
 }
 
-main ()
+int main ()
 {
   *t = 2;
   U = N = 1;
@@ -38,4 +38,5 @@ main ()
 				qs += *p--;
     printf ("Checksumme = %d\n", qs);
 	}
+	return 0;
 }
