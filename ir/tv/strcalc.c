@@ -963,7 +963,7 @@ int sc_get_buffer_length(void)
  * Do sign extension if the mode is signed, expects all upper bits
  * cleared.
  */
-static void sign_extend(char *calc_buffer, ir_mode *mode) {
+void sign_extend(char *calc_buffer, ir_mode *mode) {
   if (mode_is_signed(mode)) {
     int bits    = get_mode_size_bits(mode) - 1;
     int ofs     = bits >> 2;

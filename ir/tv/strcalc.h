@@ -120,6 +120,8 @@ enum base_t {
 const void *sc_get_buffer(void);
 int sc_get_buffer_length(void);
 
+void sign_extend(char *calc_buffer, ir_mode *mode);
+
 /** create an value form a string representation */
 void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode);
 

@@ -194,6 +194,8 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
               char *temp = alloca(sc_get_buffer_length());
               sc_val_from_ulong(-1, temp);
               sc_and(temp, value, temp);
+			  /* the sc_ module expects that all bits are set ... */
+              sign_extend(temp, mode);
               return get_tarval(temp, length, mode);
             }
           case TV_OVERFLOW_BAD:
