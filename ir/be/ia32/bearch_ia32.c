@@ -341,12 +341,12 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
  */
 static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t *env              = self;
+	ia32_abi_env_t *env = self;
 
-	if (!env->flags.try_omit_fp) {
-		ir_node *bl          = get_irg_start_block(env->irg);
-		ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
-		ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
+	if (! env->flags.try_omit_fp) {
+		ir_node *bl      = get_irg_start_block(env->irg);
+		ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
+		ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
 		ir_node *push;
 
 		/* push ebp */
@@ -391,24 +391,24 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
  */
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t *env  = self;
-	ir_node *curr_sp     = be_abi_reg_map_get(reg_map, env->isa->sp);
-	ir_node *curr_bp     = be_abi_reg_map_get(reg_map, env->isa->bp);
+	ia32_abi_env_t *env     = self;
+	ir_node        *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
+	ir_node        *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
 	}
 	else {
-		const ia32_isa_t *isa = (ia32_isa_t *)env->isa;
-		ir_mode *mode_bp = env->isa->bp->reg_class->mode;
+		const ia32_isa_t *isa     = (ia32_isa_t *)env->isa;
+		ir_mode          *mode_bp = env->isa->bp->reg_class->mode;
 
 		/* gcc always emits a leave at the end of a routine */
 		if (1 || ARCH_AMD(isa->opt_arch)) {
 			ir_node *leave;
 
 			/* leave */
-			leave = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, *mem);
+			leave   = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, *mem);
 			set_ia32_flags(leave, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(current_ir_graph, bl, leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(current_ir_graph, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
@@ -421,7 +421,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
 
 			/* pop ebp */
-			pop = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem);
+			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem);
 			set_ia32_flags(pop, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, pn_ia32_Pop_res);
 			curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
