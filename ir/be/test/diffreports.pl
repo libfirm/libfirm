@@ -4,8 +4,10 @@ use strict;
 use XML::Simple;
 use Data::Dumper;
 
-my $old_file  = $ARGV[0];
-my $new_file  = $ARGV[1];
+$resfile_name = "result.xml";
+
+my $old_file  = $ARGV[0]."/".$resfile_name;
+my $new_file  = $ARGV[1]."/".$resfile_name;
 my $diff_file = "results_diff.xml";
 
 $| = 1; # perform flush after each write to STDOUT
@@ -115,6 +117,10 @@ foreach (keys(%{ $section_old })) {
 print DIFF "</results>\n";
 
 close(DIFF);
+
+print "processing results_diff.xml ... ";
+`xsltproc --output results_diff.html makediffhtml.xslt results_diff.xml`;
+print "results_diff.html created\n";
 
 sub emit_entry {
 	my $href = shift;
