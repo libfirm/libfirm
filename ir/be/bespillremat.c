@@ -479,7 +479,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 		const ir_node *proj = NULL;
 
 		if(is_Proj(dest_value)) {
-			op = get_irn_n(op, 0);
+			op = get_Proj_pred(op);
 			proj = dest_value;
 		}
 
@@ -600,7 +600,10 @@ static int
 get_irn_n_nonignore_args(const spill_ilp_t * si, const ir_node * irn)
 {
 	int n;
-	unsigned int ret = 0;
+	int ret = 0;
+
+//	if(is_Proj(irn))
+//		irn = get_Proj_pred(irn);
 
 	for(n=get_irn_arity(irn)-1; n>=0; --n) {
 		const ir_node  *arg = get_irn_n(irn, n);
@@ -887,7 +890,7 @@ insert_remat_after(spill_ilp_t * si, const remat_t * remat, ir_node * pos, const
 						*proj_copy;
 		op_t            *op;
 
-		DBG((si->dbg, LEVEL_3, "\t  >inserting remat %+F\n", remat->op));
+		DBG((si->dbg, LEVEL_3, "\t  >inserting remat2 %+F\n", remat->op));
 
 		copy = insert_copy_after(si, remat->op, pos);
 
@@ -1201,33 +1204,55 @@ walker_remat_insertor(ir_node * bb, void * data)
 		irn = next;
 	}
 
-	be_lv_foreach(si->lv, bb, be_lv_state_end | be_lv_state_in, i) {
-		ir_node        *value = be_lv_get_irn(si->lv, bb, i);
+	/* add remats at end if successor has multiple predecessors */
+	if(is_merge_edge(bb)) {
+		pset     *live_out = pset_new_ptr_default();
+		ir_node  *value;
 
-		/* add remats at end if successor has multiple predecessors */
-		if(is_merge_edge(bb)) {
-			/* add remats at end of block */
+		be_lv_foreach(si->lv, bb, be_lv_state_end, i) {
+			value = be_lv_get_irn(si->lv, bb, i);
+
 			if (be_is_live_end(si->lv, bb, value) && has_reg_class(si, value)) {
-				remat_info_t   *remat_info,
-							   query;
-				remat_t        *remat;
+				pset_insert_ptr(live_out, value);
+			}
+		}
 
-				query.irn = value;
-				query.remats = NULL;
-				query.remats_by_operand = NULL;
-				remat_info = set_find(si->remat_info, &query, sizeof(query), HASH_PTR(value));
+		/* add remats at end of block */
+		pset_foreach(live_out, value) {
+			remat_info_t   *remat_info,
+						   query;
+			remat_t        *remat;
 
-				if(remat_info && remat_info->remats) {
-					pset_foreach(remat_info->remats, remat) {
-						DBG((si->dbg, LEVEL_4, "\t  considering remat %+F at end of block %+F\n", remat->op, bb));
+			query.irn = value;
+			query.remats = NULL;
+			query.remats_by_operand = NULL;
+			remat_info = set_find(si->remat_info, &query, sizeof(query), HASH_PTR(value));
 
-						insert_remat_before(si, remat, bb, NULL);
-					}
+			if(remat_info && remat_info->remats) {
+				pset_foreach(remat_info->remats, remat) {
+					DBG((si->dbg, LEVEL_4, "\t  considering remat %+F at end of block %+F\n", remat->op, bb));
+
+					insert_remat_before(si, remat, bb, live_out);
 				}
 			}
 		}
-		if(is_diverge_edge(bb)) {
-			/* add remat2s at beginning of block */
+		del_pset(live_out);
+	}
+
+	if(is_diverge_edge(bb)) {
+		pset     *live_in = pset_new_ptr_default();
+		ir_node  *value;
+
+		be_lv_foreach(si->lv, bb, be_lv_state_in, i) {
+			value = be_lv_get_irn(si->lv, bb, i);
+
+			if (has_reg_class(si, value)) {
+				pset_insert_ptr(live_in, value);
+			}
+		}
+
+		/* add remat2s at beginning of block */
+		pset_foreach(live_in, value) {
 			if ((be_is_live_in(si->lv, bb, value) || (is_Phi(value) && get_nodes_block(value)==bb)) && has_reg_class(si, value)) {
 				remat_info_t   *remat_info,
 							   query;
@@ -1238,17 +1263,18 @@ walker_remat_insertor(ir_node * bb, void * data)
 				query.remats_by_operand = NULL;
 				remat_info = set_find(si->remat_info, &query, sizeof(query), HASH_PTR(value));
 
-				if(remat_info && remat_info->remats) {
-					pset_foreach(remat_info->remats, remat) {
-						DBG((si->dbg, LEVEL_4, "\t  considering remat %+F at beginning of block %+F\n", remat->op, bb));
+				if(remat_info && remat_info->remats_by_operand) {
+					pset_foreach(remat_info->remats_by_operand, remat) {
+						DBG((si->dbg, LEVEL_4, "\t  considering remat2 %+F at beginning of block %+F\n", remat->op, bb));
 
 						/* put the remat here if all its args are available */
-						insert_remat_after(si, remat, bb, NULL);
+						insert_remat_after(si, remat, bb, live_in);
 
 					}
 				}
 			}
 		}
+		del_pset(live_in);
 	}
 }
 
