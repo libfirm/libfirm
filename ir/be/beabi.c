@@ -1718,13 +1718,17 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	restore_optimization_state(&state);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.abi");
 
-	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
-
 	memcpy(&env->irn_handler, &abi_irn_handler, sizeof(abi_irn_handler));
 	env->irn_ops.impl = &abi_irn_ops;
 
 	/* Lower all call nodes in the IRG. */
 	process_calls(env);
+
+	/*
+		Beware: init backend abi call object after processing calls,
+		otherwise some information might be not yet available.
+	*/
+	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
 
 	/* Process the IRG */
 	modify_irg(env);
