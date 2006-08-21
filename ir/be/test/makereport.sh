@@ -43,9 +43,9 @@ for file in $curdir/$CFILES; do
     echo "Building $name"
     echo "Results for $name" > $res
     echo "*** EDG/FIRM Compile" >> $res
-    CMD="ulimit -t$TIMEOUT_COMPILE ; ${EDG_BIN} ${EDG_CFLAGS} $file"
+    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${EDG_BIN} ${EDG_CFLAGS} $file"
     echo "$CMD" >> $res
-    /bin/bash -c "ulimit -t300 ; ${EDG_BIN} ${EDG_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
+    /bin/bash -c "ulimit -t${TIMEOUT_COMPILE} ; ${EDG_BIN} ${EDG_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
 
     if [ ${COMPILE_RES} == "ok" ]; then
         LINK_RES="ok"
@@ -67,18 +67,18 @@ for file in $curdir/$CFILES; do
         GCC_RUN_RES="ok"
 
         echo "*** Run GCC" >> $res
-        CMD="build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
+        CMD="ulimit -t${TIMEOUT_RUN} ; build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "ulimit -t$TIMEOUT_RUN ; build_gcc/$name.exe" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
+        /bin/bash -c "ulimit -t${TIMEOUT_RUN} ; build_gcc/$name.exe" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
     fi
 
     if [ ${LINK_RES} = "ok" ]; then
         FIRM_RUN_RES="ok"
 
         echo "*** Run Firm" >> $res
-        CMD="build_firm/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
+        CMD="ulimit -t${TIMEOUT_RUN} ; build_firm/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "ulimit -t$TIMEOUT_RUN ; build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
+        /bin/bash -c "ulimit -t${TIMEOUT_RUN} ; build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
     fi
 
     if [ ${GCC_RUN_RES} = "ok" -a ${FIRM_RUN_RES} = "ok" ]; then
