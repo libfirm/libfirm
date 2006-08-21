@@ -4,7 +4,7 @@ use strict;
 use XML::Simple;
 use Data::Dumper;
 
-$resfile_name = "result.xml";
+my $resfile_name = "result.xml";
 
 my $old_file  = $ARGV[0]."/".$resfile_name;
 my $new_file  = $ARGV[1]."/".$resfile_name;
