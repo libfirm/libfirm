@@ -82,14 +82,15 @@ static void remove_senseless_conds(ir_node *bl, void *data)
     ir_node *pred_i = get_Block_cfgpred(bl, i);
     ir_node *cond_i = skip_Proj(pred_i);
 
+    if (get_irn_op(cond_i) != op_Cond ||
+        get_irn_mode(get_Cond_selector(cond_i)) != mode_b)
+      continue;
+
     for (j = i + 1; j < n; ++j) {
       ir_node *pred_j = get_Block_cfgpred(bl, j);
       ir_node *cond_j = skip_Proj(pred_j);
 
-      if (cond_j == cond_i
-          && get_irn_op(cond_i) == op_Cond
-          && get_irn_mode(get_Cond_selector(cond_i)) == mode_b) {
-
+      if (cond_j == cond_i) {
         ir_node *jmp = new_r_Jmp(current_ir_graph, get_nodes_block(cond_i));
         set_irn_n(bl, i, jmp);
         set_irn_n(bl, j, new_Bad());
@@ -109,30 +110,31 @@ static void remove_senseless_conds(ir_node *bl, void *data)
  * Therefore we also optimize at control flow operations, depending
  * how we first reach the Block.
  */
-static void merge_blocks(ir_node *n, void *env) {
-  int i;
+static void merge_blocks(ir_node *node, void *env) {
+  int i, n;
   ir_node *new_block;
 
   /* clear the link field for ALL nodes first */
-  set_irn_link(n, NULL);
+  set_irn_link(node, NULL);
 
-  if (get_irn_op(n) == op_Block) {
+  if (is_Block(node)) {
     /* Remove Tuples */
-    for (i = 0; i < get_Block_n_cfgpreds(n); i++) {
-      /* GL @@@ : is this possible? if (get_opt_normalize()) -- added, all tests go through.
-         A different order of optimizations might cause problems. */
-      if (get_opt_normalize())
-        set_Block_cfgpred(n, i, skip_Tuple(get_Block_cfgpred(n, i)));
+
+    /* GL @@@ : is this possible? if (get_opt_normalize()) -- added, all tests go through.
+     A different order of optimizations might cause problems. */
+    if (get_opt_normalize()) {
+      for (i = 0, n = get_Block_n_cfgpreds(node); i < n; ++i)
+        set_Block_cfgpred(node, i, skip_Tuple(get_Block_cfgpred(node, i)));
     }
 
     /* see below */
-    new_block = equivalent_node(n);
-    if (new_block != n && ! is_Block_dead(new_block))
-      exchange (n, new_block);
+    new_block = equivalent_node(node);
+    if (new_block != node && ! is_Block_dead(new_block))
+      exchange(node, new_block);
 
-  } else if (get_opt_optimize() && (get_irn_mode(n) == mode_X)) {
+  } else if (get_opt_optimize() && (get_irn_mode(node) == mode_X)) {
     /* We will soon visit a block.  Optimize it before visiting! */
-    ir_node *b = get_nodes_block(skip_Proj(n));
+    ir_node *b = get_nodes_block(skip_Proj(node));
 
     if (!is_Block_dead(b)) {
       new_block = equivalent_node(b);
@@ -154,7 +156,7 @@ static void merge_blocks(ir_node *n, void *env) {
        * prevented, so just set it's cf to Bad.
        */
       if (is_Block_dead(new_block))
-        exchange(n, new_Bad());
+        exchange(node, new_Bad());
     }
   }
 }
@@ -190,18 +192,28 @@ static void remove_dead_block_cf(ir_node *block, void *env)
  * than Jmp.
  * Replaces n by Bad if n is unreachable control flow. We do that
  * in the post walker, so we catch all blocks.
+ *
+ * Links all Proj nodes to their predecessors.
  */
 static void collect_nodes(ir_node *n, void *env) {
   if (is_no_Block(n)) {
-    ir_node *b = get_nodes_block(n);
+    ir_node *b  = get_nodes_block(n);
+    ir_op   *op = get_irn_op(n);
 
-    if ((get_irn_op(n) == op_Phi)) {
+    if (op == op_Phi) {
       /* Collect Phi nodes to compact ins along with block's ins. */
       set_irn_link(n, get_irn_link(b));
       set_irn_link(b, n);
     }
-    else if ((get_irn_op(n) != op_Jmp) && !is_Bad(b)) {  /* Check for non empty block. */
+    else if (op != op_Jmp && !is_Bad(b)) {  /* Check for non empty block. */
       mark_Block_block_visited(b);
+
+      if (op == op_Proj) {               /* link Proj nodes */
+        ir_node *pred = get_Proj_pred(n);
+
+        set_irn_link(n, get_irn_link(pred));
+        set_irn_link(pred, n);
+      }
     }
   }
 }
@@ -310,6 +322,76 @@ typedef struct _defer_ex_phi {
 } defer_ex_phi;
 
 /**
+ * handle pre-optimized table switch Cond's
+ */
+static void handle_switch_cond(ir_node *proj) {
+  ir_node *cond = skip_Proj(proj);
+  ir_node *sel;
+
+  if (! is_Cond(cond))
+    return;
+
+  sel = get_Cond_selector(cond);
+  if (mode_is_int(get_irn_mode(sel))) {
+    /* check for table switch that could be optimized */
+    ir_node *proj1 = get_irn_link(cond);
+    ir_node *proj2 = get_irn_link(proj1);
+    ir_node *jmp, *blk;
+
+    blk = is_Bad(cond) ? cond : get_nodes_block(cond);
+
+    if (! proj2) {
+      /* this Cond has only one Proj: must be the defProj */
+      assert(get_Cond_defaultProj(cond) == get_Proj_proj(proj1));
+      /* convert it into a Jmp */
+      jmp = new_r_Jmp(current_ir_graph, blk);
+      exchange(proj1, jmp);
+    }
+    else if (get_irn_link(proj2) == NULL) {
+      /* We have two Proj's here. Check if the Cond has
+         a constant argument */
+      tarval *tv = value_of(sel);
+
+      if (tv != tarval_bad) {
+        /* we have a constant switch */
+        long num     = get_tarval_long(tv);
+        long def_num = get_Cond_defaultProj(cond);
+
+        if (def_num == get_Proj_proj(proj1)) {
+          /* first one is the defProj */
+          if (num == get_Proj_proj(proj2)) {
+            jmp = new_r_Jmp(current_ir_graph, blk);
+            exchange(proj2, jmp);
+            exchange(proj1, new_Bad());
+          }
+        }
+        else if (def_num == get_Proj_proj(proj2)) {
+          /* second one is the defProj */
+          if (num == get_Proj_proj(proj1)) {
+            jmp = new_r_Jmp(current_ir_graph, blk);
+            exchange(proj1, jmp);
+            exchange(proj2, new_Bad());
+          }
+        }
+        else {
+          /* neither: strange, Cond was not optimized so far */
+          if (num == get_Proj_proj(proj1)) {
+            jmp = new_r_Jmp(current_ir_graph, blk);
+            exchange(proj1, jmp);
+            exchange(proj2, new_Bad());
+          }
+          else if (num == get_Proj_proj(proj2)) {
+            jmp = new_r_Jmp(current_ir_graph, blk);
+            exchange(proj2, jmp);
+            exchange(proj1, new_Bad());
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * This method removed Bad cf predecessors from Blocks and Phis, and removes
  * empty blocks.  A block is empty if it only contains Phi and Jmp nodes.
  *
@@ -366,6 +448,7 @@ static void optimize_blocks(ir_node *b, void *env) {
      that are empty. */
   max_preds = 0;
   for (i = 0, k = get_Block_n_cfgpreds(b); i < k; ++i) {
+    handle_switch_cond(get_Block_cfgpred(b, i));
     max_preds += test_whether_dispensable(b, i);
   }
   in = xmalloc(max_preds * sizeof(*in));
@@ -626,12 +709,13 @@ void optimize_cf(ir_graph *irg) {
   set_irg_doms_inconsistent(current_ir_graph);
 
   if (dom_state == dom_consistent && get_opt_optimize() && get_opt_unreachable_code()) {
-    ir_node *end = get_irg_end(irg);
+    ir_node *end;
 
     /* we have dominance info, we can kill dead block */
     irg_block_walk_graph(irg, NULL, remove_dead_block_cf, NULL);
 
     /* fix the keep-alives */
+    end = get_irg_end(irg);
     for (i = 0, n = get_End_n_keepalives(end); i < n; ++i) {
       ir_node *ka = get_End_keepalive(end, i);
 
@@ -646,7 +730,7 @@ void optimize_cf(ir_graph *irg) {
         set_End_keepalive(end, i, new_Bad());
     }
   }
-  irg_block_walk_graph(current_ir_graph, NULL, remove_senseless_conds, NULL);
+  irg_block_walk_graph(irg, NULL, remove_senseless_conds, NULL);
 
   /* Use block visited flag to mark non-empty blocks. */
   inc_irg_block_visited(irg);
@@ -660,7 +744,7 @@ void optimize_cf(ir_graph *irg) {
   n  = get_End_n_keepalives(end);
   if (n > 0)
     NEW_ARR_A (ir_node *, in, n);
-  inc_irg_visited(current_ir_graph);
+  inc_irg_visited(irg);
 
   /* fix the keep alive */
   for (i = j = 0; i < n; i++) {
@@ -670,8 +754,8 @@ void optimize_cf(ir_graph *irg) {
       ir_op *op = get_irn_op(ka);
 
       if ((op == op_Block) && Block_not_block_visited(ka)) {
-        set_irg_block_visited(current_ir_graph,  /* Don't walk all the way to Start. */
-              get_irg_block_visited(current_ir_graph)-1);
+        set_irg_block_visited(irg,  /* Don't walk all the way to Start. */
+              get_irg_block_visited(irg)-1);
         irg_block_walk(ka, optimize_blocks, NULL, NULL);
         mark_irn_visited(ka);
         in[j++] = ka;
