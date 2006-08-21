@@ -2,6 +2,8 @@ EDG_BIN="edgcpfe"
 EDG_CFLAGS="--c --gnu=30305 -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
+TIMEOUT_COMPILE=300
+TIMEOUT_RUN=30
 
 CFILES="*.c"
 OUTPUTDIR="stats-`date +%d.%m.%y`"
@@ -41,7 +43,7 @@ for file in $curdir/$CFILES; do
     echo "Building $name"
     echo "Results for $name" > $res
     echo "*** EDG/FIRM Compile" >> $res
-    CMD="ulimit -t300 ; ${EDG_BIN} ${EDG_CFLAGS} $file"
+    CMD="ulimit -t$TIMEOUT_COMPILE ; ${EDG_BIN} ${EDG_CFLAGS} $file"
     echo "$CMD" >> $res
     /bin/bash -c "ulimit -t300 ; ${EDG_BIN} ${EDG_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
 
@@ -67,7 +69,7 @@ for file in $curdir/$CFILES; do
         echo "*** Run GCC" >> $res
         CMD="build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "ulimit -t2 ; build_gcc/$name.exe" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
+        /bin/bash -c "ulimit -t$TIMEOUT_RUN ; build_gcc/$name.exe" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
     fi
 
     if [ ${LINK_RES} = "ok" ]; then
@@ -76,7 +78,7 @@ for file in $curdir/$CFILES; do
         echo "*** Run Firm" >> $res
         CMD="build_firm/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "ulimit -t2 ; build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
+        /bin/bash -c "ulimit -t$TIMEOUT_RUN ; build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
     fi
 
     if [ ${GCC_RUN_RES} = "ok" -a ${FIRM_RUN_RES} = "ok" ]; then
