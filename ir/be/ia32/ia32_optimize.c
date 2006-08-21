@@ -1129,14 +1129,14 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		/* default for add -> make right operand to index */
 		index               = right;
 		dolea               = 1;
-		consumed_left_shift = 1;
+		consumed_left_shift = -1;
 
 		DBG((mod, LEVEL_1, "\tgot LEA candidate with index %+F\n", index));
 
 		/* determine the operand which needs to be checked */
 		temp = left;
 		if (is_ia32_Lea(left)) {
-			temp                = right;
+			temp = right;
 			consumed_left_shift = 0;
 		}
 
@@ -1149,14 +1149,14 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 				scale = get_tarval_long(get_ia32_Immop_tarval(temp));
 
 				if (scale <= 3) {
-					index = get_irn_n(temp, 2);
+					index               = get_irn_n(temp, 2);
+					consumed_left_shift = consumed_left_shift < 0 ? 1 : 0;
 
 					DBG((mod, LEVEL_1, "\tgot scaled index %+F\n", index));
 				}
 				else {
-					consumed_left_shift = 0;
-					scale               = 0;
-					shift               = NULL;
+					scale = 0;
+					shift = NULL;
 				}
 			}
 		}
@@ -1167,7 +1167,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 			if (left == right) {
 				base = noreg;
 			}
-			else if (consumed_left_shift) {
+			else if (consumed_left_shift == 1) {
 				/* -> base is right operand  */
 				base = (right == lea_o) ? noreg : right;
 			}
