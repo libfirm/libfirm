@@ -350,7 +350,7 @@ end: ;
  */
 static void fix_am_source(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg = env;
-	ir_node *base, *index;
+	ir_node *base, *index, *noreg;
 	const arch_register_t *reg_base, *reg_index;
 	const ia32_register_req_t **reqs;
 	int n_res, i;
@@ -365,6 +365,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 	reg_base  = arch_get_irn_register(cg->arch_env, base);
 	reg_index = arch_get_irn_register(cg->arch_env, index);
 	reqs      = get_ia32_out_req_all(irn);
+
+	noreg = ia32_new_NoReg_gp(cg);
 
 	n_res = get_ia32_n_res(irn);
 
@@ -428,6 +430,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 				set_irn_n(irn, 3, load);
 
 				/* this is a normal node now */
+				set_irn_n(irn, 0, noreg);
+				set_irn_n(irn, 1, noreg);
 				set_ia32_op_type(irn, ia32_Normal);
 
 				break;
