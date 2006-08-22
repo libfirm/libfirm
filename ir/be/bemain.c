@@ -28,6 +28,7 @@
 #include "iredges_t.h"
 #include "irloop_t.h"
 #include "irtools.h"
+#include "irvrfy.h"
 #include "return.h"
 #include "firmstat.h"
 
@@ -560,8 +561,19 @@ static void be_main_loop(FILE *file_handle)
 
 		/* check schedule and register allocation */
 		BE_TIMER_PUSH(t_verify);
-		be_sched_vrfy(birg.irg, vrfy_option);
-		be_verify_register_allocation(env.arch_env, birg.irg);
+		if (vrfy_option == BE_VRFY_WARN) {
+			//irg_verify(birg.irg, VRFY_ENFORCE_SSA);
+			be_check_dominance(birg.irg);
+			be_verify_schedule(birg.irg);
+			be_verify_register_allocation(env.arch_env, birg.irg);
+		}
+		else if (vrfy_option == BE_VRFY_ASSERT) {
+			//assert(irg_verify(birg.irg, VRFY_ENFORCE_SSA) && "irg verification failed");
+			assert(be_check_dominance(birg.irg) && "Dominance verification failed");
+			assert(be_verify_schedule(birg.irg) && "Schedule verification failed");
+			assert(be_verify_register_allocation(env.arch_env, birg.irg)
+			       && "register allocation verification failed");
+		}
 		BE_TIMER_POP(t_verify);
 
 		/* emit assembler code */

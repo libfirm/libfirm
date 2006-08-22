@@ -12,6 +12,7 @@
 #include "irgwalk.h"
 #include "irprintf_t.h"
 #include "irbitset.h"
+#include "irdump_t.h"
 
 #include "beutil.h"
 #include "belive_t.h"
@@ -637,6 +638,8 @@ void be_liveness_dumpto(const be_lv_t *lv, const char *cls_name)
  */
 static void dom_check(ir_node *irn, void *data)
 {
+	int *problem_found = data;
+
 	if(!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
 		int i, n;
 		ir_node *bl = get_nodes_block(irn);
@@ -649,18 +652,24 @@ static void dom_check(ir_node *irn, void *data)
 			if(is_Phi(irn))
 				use_bl = get_Block_cfgpred_block(bl, i);
 
-			if(!block_dominates(def_bl, use_bl)) {
-				ir_fprintf(stderr, "%+F in %+F must dominate %+F for user %+F\n", op, def_bl, use_bl, irn);
-				assert(0);
+			if(get_irn_opcode(use_bl) != iro_Bad
+			     && get_irn_opcode(def_bl) != iro_Bad
+			     && !block_dominates(def_bl, use_bl)) {
+				ir_fprintf(stderr, "Verify warning: %+F in %+F must dominate %+F for user %+F (%s)\n", op, def_bl, use_bl, irn, get_irg_dump_name(get_irn_irg(op)));
+				*problem_found = 1;
 			}
 		}
 	}
 }
 
 /* Check, if the SSA dominance property is fulfilled. */
-void be_check_dominance(ir_graph *irg)
+int be_check_dominance(ir_graph *irg)
 {
-	irg_walk_graph(irg, dom_check, NULL, NULL);
+	int problem_found = 0;
+
+	irg_walk_graph(irg, dom_check, NULL, &problem_found);
+
+	return !problem_found;
 }
 
 pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live)

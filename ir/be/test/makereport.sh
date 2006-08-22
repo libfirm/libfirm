@@ -1,5 +1,5 @@
-EDG_BIN="edgcpfe"
-EDG_CFLAGS="--c --gnu=30305 -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
+EDG_BIN="edg"
+EDG_CFLAGS="--c --gnu=30305 -I/usr/lib/gcc-lib/i686-pc-linux-gnu/4.1.1/include"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300

@@ -116,8 +116,9 @@ int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn
 /**
  * Check, if the SSA dominance property is fulfilled.
  * @param irg The graph.
+ * @return   1 if dominance property is fulfilled, 0 otherwise
  */
-void be_check_dominance(ir_graph *irg);
+int be_check_dominance(ir_graph *irg);
 
 /**
  * The liveness transfer function.
