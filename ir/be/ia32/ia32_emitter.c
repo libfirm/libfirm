@@ -1993,8 +1993,6 @@ static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 static void ia32_gen_block(ir_node *block, void *env) {
 	ia32_emit_env_t *emit_env = env;
 	const ir_node *irn;
-	char cmd_buf[SNPRINTF_BUF_LEN];
-	char cmnt_buf[SNPRINTF_BUF_LEN];
 	int need_label = block != get_irg_start_block(get_irn_irg(block));
 	FILE *F = emit_env->out;
 
@@ -2008,37 +2006,24 @@ static void ia32_gen_block(ir_node *block, void *env) {
 	}
 
 	if (need_label) {
+		char cmd_buf[SNPRINTF_BUF_LEN];
 		int i, arity;
-		char* predstring = cmnt_buf;
-		size_t cmntsize;
-		int res;
 
 		ia32_emit_align_label(emit_env->out, emit_env->isa->opt_arch);
 
 		ir_snprintf(cmd_buf, sizeof(cmd_buf), BLOCK_PREFIX("%d:"),
 		            get_irn_node_nr(block));
+		fprintf(F, "%-43s ", cmd_buf);
 
 		/* emit list of pred blocks in comment */
-		cmntsize = sizeof(cmnt_buf);
-		res = snprintf(predstring, cmntsize, "/* preds: ");
-		cmntsize -= res;
-		predstring += res;
+		fprintf(F, "/* preds:");
 
 		arity = get_irn_arity(block);
 		for(i = 0; i < arity; ++i) {
 			ir_node *predblock = get_Block_cfgpred_block(block, i);
-			res = snprintf(predstring, cmntsize, " %ld", get_irn_node_nr(predblock));
-			cmntsize -= res;
-			predstring += res;
-			if(cmntsize <= 3)
-				break;
+			fprintf(F, " %ld", get_irn_node_nr(predblock));
 		}
-		if(cmntsize < 3) {
-			predstring = cmnt_buf + sizeof(cmnt_buf) - 3;
-			cmntsize = 3;
-		}
-		snprintf(predstring, cmntsize, "*/");
-		fprintf(F, "%-43s %-60s\n", cmd_buf, cmnt_buf);
+		fprintf(F, " */\n");
 	}
 
 	/* emit the contents of the block */
