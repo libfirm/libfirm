@@ -842,4 +842,6 @@ char *argv[];
 	} else
            printf("\nNo errors in results.\n");
 #endif
+
+	return 0;
 }

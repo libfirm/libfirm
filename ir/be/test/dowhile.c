@@ -11,4 +11,6 @@ int main()
 		if(i < 5)
 			continue;
 	} while(*++p != 0);
+
+	return 0;
 }
