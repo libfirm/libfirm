@@ -418,8 +418,9 @@ static void ifg_clique_free(void *self)
 	free(self);
 }
 
-static int ifg_clique_connected(const ifg_clique_t *ifg, const ir_node *a, const ir_node *b)
+static int ifg_clique_connected(const void *self, const ir_node *a, const ir_node *b)
 {
+	const ifg_clique_t *ifg = self;
 	cli_iter_t it;
 	int connected = -1;
 	ir_node *irn = NULL;

@@ -25,7 +25,10 @@ unsigned nodeset_hash(ir_node *n);
  * @returns
  *    created nodeset
  */
-#define new_nodeset(slots) new_pset(pset_default_ptr_cmp, (slots))
+static INLINE nodeset *new_nodeset(int slots)
+{
+	return new_pset(pset_default_ptr_cmp, slots);
+}
 
 /**
  * Deletes a nodeset.
@@ -35,14 +38,20 @@ unsigned nodeset_hash(ir_node *n);
  * @note
  *    This does NOT delete the elements of this node set, just it's pointers!
  */
-#define del_nodeset(nset) del_pset(nset)
+static INLINE void del_nodeset(nodeset *nset)
+{
+	del_pset(nset);
+}
 
 /**
  * Returns the number of nodes in a nodeset.
  *
  * @param nset   the nodeset
  */
-#define nodeset_count(nset) pset_count(nset)
+static INLINE int nodeset_count(nodeset *nset)
+{
+	return pset_count(nset);
+}
 
 /**
  * Searches a node in a node set.
@@ -53,7 +62,10 @@ unsigned nodeset_hash(ir_node *n);
  * @return
  *    the pointer of the found node in the nodeset or NULL if it was not found
  */
-#define nodeset_find(nset, key)  (ir_node *)pset_find((nset), (key), nodeset_hash(key))
+static INLINE ir_node *nodeset_find(nodeset *nset, ir_node *key)
+{
+	return (ir_node *) pset_find(nset, key, nodeset_hash(key));
+}
 
 /**
  * Inserts a node into a pset.
@@ -68,7 +80,10 @@ unsigned nodeset_hash(ir_node *n);
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its already existing set_entry.
  */
-#define nodeset_insert(nset, key) (ir_node *)pset_insert((nset), (key), nodeset_hash(key))
+static INLINE ir_node *nodeset_insert(nodeset *nset, ir_node *key)
+{
+	return (ir_node *) pset_insert(nset, key, nodeset_hash(key));
+}
 
 /**
  * Removes a node from a nodeset.
@@ -85,7 +100,10 @@ unsigned nodeset_hash(ir_node *n);
  *    Further, it is allowed to remove elements during an iteration
  *    including the current one.
  */
-#define nodeset_remove(nset, key)  (ir_node *)pset_remove((nset), (key), nodeset_hash(key))
+static INLINE ir_node *nodeset_remove(nodeset *nset, ir_node *key)
+{
+	return (ir_node *) pset_remove(nset, key, nodeset_hash(key));
+}
 
 /**
  * Returns the first node of a nodeset.
@@ -94,7 +112,10 @@ unsigned nodeset_hash(ir_node *n);
  *
  * @return a node or NULL if the set is empty
  */
-#define nodeset_first(nset)  (ir_node *)pset_first(nset)
+static INLINE ir_node *nodeset_first(nodeset *nset)
+{
+	return (ir_node *) pset_first(nset);
+}
 
 /**
  * Returns the next node of a nodeset.
@@ -103,7 +124,10 @@ unsigned nodeset_hash(ir_node *n);
  *
  * @return a node or NULL if the iteration is finished
  */
-#define nodeset_next(nset)  (ir_node *)pset_next(nset)
+static INLINE ir_node *nodeset_next(nodeset *nset)
+{
+	return (ir_node *) pset_next(nset);
+}
 
 /**
  * Breaks the iteration of a set. Must be called before
@@ -112,7 +136,10 @@ unsigned nodeset_hash(ir_node *n);
  *
  * @param nset  the nodeset
  */
-#define nodeset_break(nset)  pset_break(nset)
+static inline void nodeset_break(nodeset *nset)
+{
+	pset_break(nset);
+}
 
 /**
  * Iterate over a node set.

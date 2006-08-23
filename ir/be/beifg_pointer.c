@@ -597,8 +597,9 @@ static void ifg_pointer_free(void *self)
 	free(self);
 }
 
-static int ifg_pointer_connected(const ifg_pointer_t *ifg, const ir_node *a, const ir_node *b)
+static int ifg_pointer_connected(const void *self, const ir_node *a, const ir_node *b)
 {
+	const ifg_pointer_t *ifg = self;
 	int connected = -1;
 	ptr_iter_t it;
 	ir_node *irn = NULL;
