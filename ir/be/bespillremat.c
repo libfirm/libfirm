@@ -139,7 +139,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL     ("no_enlage_liveness",  "do not enlarge liveness of operands of remats",&opt_no_enlarge_liveness),
 	LC_OPT_ENT_BOOL     ("remat_while_live",  "remat only values that can be used by real ops", &opt_remat_while_live),
 
-	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",                  &dump_var),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump problem, mps or solution",                               &dump_var),
 	LC_OPT_ENT_BOOL     ("log",  "activate the lpp log",                                        &opt_log),
 	LC_OPT_ENT_INT      ("timeout",  "ILP solver timeout",                                      &opt_timeout),
 
@@ -971,8 +971,28 @@ get_block_n_succs(const ir_node *block) {
 }
 
 static int
+is_start_block(const ir_node * bb)
+{
+	return get_irg_start_block(get_irn_irg(bb)) == bb;
+}
+
+static int
+is_before_frame(const ir_node * bb, const ir_node * irn)
+{
+	const ir_node  *frame  = get_irg_frame(get_irn_irg(bb));
+
+	if(is_start_block(bb) && sched_get_time_step(frame) >= sched_get_time_step(irn))
+		return 1;
+	else
+		return 0;
+}
+
+static int
 is_merge_edge(const ir_node * bb)
 {
+	if(is_start_block(bb))
+		return 0;
+
 	if(opt_goodwin)
 		return get_block_n_succs(bb) == 1;
 	else
@@ -982,6 +1002,9 @@ is_merge_edge(const ir_node * bb)
 static int
 is_diverge_edge(const ir_node * bb)
 {
+	if(is_start_block(bb))
+		return 0;
+
 	if(opt_goodwin)
 		return get_Block_n_cfgpreds(bb) == 1;
 	else
@@ -2053,7 +2076,7 @@ skip_one_must_die:
 
 			/* new live range for each used value */
 			ir_snprintf(buf, sizeof(buf), "lr_%N_%N", arg, irn);
-			prev_lr = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
+			prev_lr = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, is_before_frame(bb, irn)?1.0:0.0);
 
 			/* the epilog stuff - including post_use, check_post, check_post_remat */
 			ir_snprintf(buf, sizeof(buf), "post_use_%N_%N", arg, irn);
@@ -2186,7 +2209,7 @@ skip_one_must_die:
 			assert(spill);
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", arg, irn);
-			op->attr.live_range.args.reloads[i] = lpp_add_var_default(si->lpp, buf, lpp_binary, opt_cost_reload*execution_frequency(si, bb), 1.0);
+			op->attr.live_range.args.reloads[i] = lpp_add_var_default(si->lpp, buf, lpp_binary, opt_cost_reload*execution_frequency(si, bb), is_before_frame(bb, irn)?0.0:1.0);
 
 			/* reload <= mem_out */
 			ir_snprintf(buf, sizeof(buf), "req_reload_%N_%N", arg, irn);
@@ -2386,6 +2409,48 @@ skip_one_must_die:
 		}
 	}
 
+	foreach_post_remat(bb, tmp) {
+		int         n;
+
+		for (n=get_irn_arity(tmp)-1; n>=0; --n) {
+			ir_node    *remat_arg = get_irn_n(tmp, n);
+
+			if(!has_reg_class(si, remat_arg)) continue;
+
+			/* if value is becoming live through use by remat2 */
+			if(!pset_find_ptr(live, remat_arg)) {
+				op_t       *remat_arg_op = get_irn_link(remat_arg);
+				ilp_cst_t   nomem;
+
+				DBG((si->dbg, LEVEL_3, "  value %+F becoming live through use by remat2 at bb start %+F\n", remat_arg, tmp));
+
+				pset_insert_ptr(live, remat_arg);
+				spill = add_to_spill_bb(si, bb, remat_arg);
+				remat_arg_op->attr.live_range.ilp = ILP_UNDEF;
+
+				/* we need reg_in and mem_in for this value; they will be referenced later */
+				ir_snprintf(buf, sizeof(buf), "reg_in_%N_%N", remat_arg, bb);
+				spill->reg_in = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
+				ir_snprintf(buf, sizeof(buf), "mem_in_%N_%N", remat_arg, bb);
+				spill->mem_in = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
+
+
+				/* optimization: all memory stuff should be 0, for we do not want to insert reloads for remats */
+				ir_snprintf(buf, sizeof(buf), "nomem_%N_%N", remat_arg, bb);
+				nomem = lpp_add_cst_uniq(si->lpp, buf, lpp_equal, 0.0);
+
+				lpp_set_factor_fast(si->lpp, nomem, spill->spill, 1.0);
+				if(spill_bb->reloads) {
+					keyval_t *keyval = set_find_keyval(spill_bb->reloads, remat_arg);
+
+					if(keyval) {
+						ilp_var_t reload = PTR_TO_INT(keyval->val);
+						lpp_set_factor_fast(si->lpp, nomem, reload, 1.0);
+					}
+				}
+			}
+		}
+	}
 
 	/* L\U is empty at bb start */
 	/* arg is live throughout epilog if it is reg_in into this block */
@@ -2393,6 +2458,8 @@ skip_one_must_die:
 	/* check the register pressure at the beginning of the block
 	 * including remats
 	 */
+	/* reg_in entspricht post_use */
+
 	ir_snprintf(buf, sizeof(buf), "check_start_%N", bb);
 	cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, si->n_regs);
 
@@ -2414,36 +2481,8 @@ skip_one_must_die:
 		lpp_set_factor_fast(si->lpp, nospill, spill->mem_in, 1.0);
 		lpp_set_factor_fast(si->lpp, nospill, spill->spill, 1.0);
 
-	}
-	foreach_post_remat(bb, irn) {
-		op_t     *remat_op = get_irn_link(irn);
-
-		DBG((si->dbg, LEVEL_4, "\t  next post remat: %+F\n", irn));
-		assert(remat_op->is_remat && !remat_op->attr.remat.pre);
-
-		lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
-	}
-
-	/* forall post remats add requirements */
-	foreach_post_remat(bb, tmp) {
-		int         n;
-
-		for (n=get_irn_arity(tmp)-1; n>=0; --n) {
-			ir_node    *remat_arg = get_irn_n(tmp, n);
-			op_t       *remat_op = get_irn_link(tmp);
-
-			if(!has_reg_class(si, remat_arg)) continue;
-
-			spill = set_find_spill(spill_bb->ilp, remat_arg);
-			assert(spill);
-
-			/* remat <= reg_in_argument */
-			ir_snprintf(buf, sizeof(buf), "req_remat2_%N_%N_arg_%N", tmp, bb, remat_arg);
-			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
-			lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
-			lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
-		}
-	}
+	} /* post_remats are NOT included in register pressure check because
+	   they do not increase regpressure */
 
 	/* mem_in/reg_in for live_in values, especially phis and their arguments */
 	pset_foreach(live, irn) {
@@ -2516,23 +2555,80 @@ skip_one_must_die:
 		}
 	}
 
+	foreach_post_remat(bb, tmp) {
+		int         n;
+
+		for (n=get_irn_arity(tmp)-1; n>=0; --n) {
+			ir_node    *remat_arg = get_irn_n(tmp, n);
+			op_t       *remat_op = get_irn_link(tmp);
+
+			if(!has_reg_class(si, remat_arg)) continue;
+
+			spill = set_find_spill(spill_bb->ilp, remat_arg);
+			assert(spill);
+
+			/* remat <= reg_in_argument */
+			ir_snprintf(buf, sizeof(buf), "req_remat2_%N_%N_arg_%N", tmp, bb, remat_arg);
+			cst = lpp_add_cst(si->lpp, buf, lpp_less, 0.0);
+			lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
+			lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
+		}
+	}
+
+	pset_foreach(live, irn) {
+		const op_t      *op = get_irn_link(irn);
+		const ir_node   *remat;
+		int              n_remats = 0;
+
+		if(op->attr.live_range.ilp == ILP_UNDEF) continue;
+
+		cst = ILP_UNDEF;
+
+		foreach_post_remat(bb, remat) {
+			int   n;
+
+			for (n=get_irn_arity(remat)-1; n>=0; --n) {
+				const ir_node  *arg = get_irn_n(remat, n);
+
+				if(arg == irn) {
+					const op_t   *remat_op = get_irn_link(remat);
+
+					if(cst == ILP_UNDEF) {
+						/* \sum post_remat <= 1 + #post_remats * next(lr) */
+						ir_snprintf(buf, sizeof(buf), "remat2_%N_%N_arg_%N", remat, bb, irn);
+						cst = lpp_add_cst(si->lpp, buf, lpp_less, 1.0);
+					}
+					lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
+					++n_remats;
+					break;
+				}
+			}
+		}
+		if(n_remats) {
+			lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, n_remats);
+		}
+	}
+
 	/* first live ranges from reg_ins */
 	pset_foreach(live, irn) {
 		op_t      *op = get_irn_link(irn);
 
-		spill = set_find_spill(spill_bb->ilp, irn);
-		assert(spill && spill->irn == irn);
+		if(op->attr.live_range.ilp != ILP_UNDEF) {
 
-		ir_snprintf(buf, sizeof(buf), "first_lr_%N_%N", irn, bb);
-		cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
-		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, 1.0);
-		lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
+			spill = set_find_spill(spill_bb->ilp, irn);
+			assert(spill && spill->irn == irn);
 
-		foreach_post_remat(bb, tmp) {
-			op_t     *remat_op = get_irn_link(tmp);
+			ir_snprintf(buf, sizeof(buf), "first_lr_%N_%N", irn, bb);
+			cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
+			lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, 1.0);
+			lpp_set_factor_fast(si->lpp, cst, spill->reg_in, -1.0);
 
-			if(remat_op->attr.remat.remat->value == irn) {
-				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
+			foreach_post_remat(bb, tmp) {
+				op_t     *remat_op = get_irn_link(tmp);
+
+				if(remat_op->attr.remat.remat->value == irn) {
+					lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
+				}
 			}
 		}
 	}
