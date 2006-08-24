@@ -967,7 +967,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 		do_pop = 0;
 	}
 
-	x87_set_st(state, arch_register_get_index(out), x87_patch_insn(n, dst), out_idx);
+	x87_set_st(state, out->index, x87_patch_insn(n, dst), out_idx);
 	if (do_pop)
 		x87_pop(state);
 
@@ -1272,8 +1272,8 @@ static int sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 		arch_register_get_name(op1), arch_register_get_name(op2)));
 	DEBUG_ONLY(vfp_dump_live(live));
 
-	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
-	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
+	op1_idx = x87_on_stack(state, op1->index);
+	op2_idx = x87_on_stack(state, op2->index);
 
 	/* BEWARE: check for comp a,a cases, they might happen */
 	if (op2->index != REG_VFP_NOREG) {
@@ -1423,9 +1423,9 @@ static int sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 	/* patch the operation */
 	attr = get_ia32_attr(n);
-	attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
+	attr->x87[1] = op1 = &ia32_st_regs[op1_idx];
 	if (op2_idx >= 0)
-		attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
+		attr->x87[2] = op2 = &ia32_st_regs[op2_idx];
 
 	if (op2_idx >= 0)
 		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n),
@@ -1454,6 +1454,35 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 		ia32_attr_t *attr;
 		int op1_idx, out_idx;
 		unsigned live = vfp_live_args_after(state->sim, n, REGMASK(out));
+
+		/* handle the infamous unknown value */
+		if (op1->index == REG_VFP_UKNWN) {
+			/* This happens before Phi nodes */
+			if (x87_state_is_empty(state)) {
+				/* create some value */
+				x87_patch_insn(n, op_ia32_fldz);
+				attr = get_ia32_attr(n);
+				attr->x87[2] = out = &ia32_st_regs[0];
+				DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
+			} else {
+				/* just copy one */
+				node = new_rd_ia32_fpush(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), get_irn_n(n, 0), mode);
+				arch_set_irn_register(env, node, out);
+
+				x87_push(state, arch_register_get_index(out), node);
+
+				attr = get_ia32_attr(node);
+				attr->x87[0] = op1 =
+				attr->x87[2] = out = &ia32_st_regs[0];
+
+				next = sched_next(n);
+				sched_remove(n);
+				exchange(n, node);
+				sched_add_before(next, node);
+				DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", node, op1->name, out->name));
+			}
+			return 0;
+		}
 
 		op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1608,6 +1637,60 @@ static int sim_Return(x87_state *state, ir_node *n, const arch_env_t *env) {
 
 	return 0;
 }  /* sim_Return */
+
+typedef struct _perm_data_t {
+	const arch_register_t *in;
+	const arch_register_t *out;
+} perm_data_t;
+
+/**
+ * Simulate a be_Perm.
+ *
+ * @param state  the x87 state
+ * @param irn    the node that should be simulated (and patched)
+ * @param env    the architecture environment
+ */
+static int sim_Perm(x87_state *state, ir_node *irn, const arch_env_t *env) {
+	int             i, n;
+	ir_node         *pred = get_irn_n(irn, 0);
+	int             *stack_pos;
+	const ir_edge_t *edge;
+
+	/* handle only floating point Perms */
+	if (! mode_is_float(get_irn_mode(pred)))
+		return 0;
+
+	DB((dbg, LEVEL_1, ">>> %+F\n", irn));
+
+	/* Perm is a pure virtual instruction on x87.
+	   All inputs must be on the FPU stack and are pairwise
+	   different from each other.
+	   So, all we need to do is to permutate the stack state. */
+	n = get_irn_arity(irn);
+	NEW_ARR_A(int, stack_pos, n);
+
+	/* collect old stack positions */
+	for (i = 0; i < n; ++i) {
+		const arch_register_t *inreg = arch_get_irn_register(env, get_irn_n(irn, i));
+		int idx = x87_on_stack(state, inreg->index);
+
+		assert(idx >= 0 && "Perm argument not on x87 stack");
+
+		stack_pos[i] = idx;
+	}
+	/* now do the permutation */
+	foreach_out_edge(irn, edge) {
+		ir_node               *proj = get_edge_src_irn(edge);
+		const arch_register_t *out  = arch_get_irn_register(env, proj);
+		long                  num   = get_Proj_proj(proj);
+
+		assert(0 <= num && num < n && "More Proj's than Perm inputs");
+		x87_set_st(state, out->index, proj, stack_pos[(unsigned)num]);
+	}
+	DB((dbg, LEVEL_1, "<<< %+F\n", irn));
+
+	return 0;
+}  /* be_Perm */
 
 /**
  * Kill any dead registers at block start by popping them from the stack.
@@ -1819,6 +1902,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	ASSOC_BE(Spill);
 	ASSOC_BE(Reload);
 	ASSOC_BE(Return);
+	ASSOC_BE(Perm);
 	ASSOC(Phi);
 #undef ASSOC_BE
 #undef ASSOC_IA32
