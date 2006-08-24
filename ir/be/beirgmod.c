@@ -275,7 +275,8 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 				DBG((dbg, LEVEL_2, "\tcreating phi %+F in %+F\n", phi, curr_bl));
 
 				set_irn_link(curr_bl, phi);
-				sched_add_after(curr_bl, phi);
+				if(mode != mode_M)
+					sched_add_after(curr_bl, phi);
 
 				for(i = 0; i < n_preds; ++i) {
 					ir_node *arg = search_def(phi, i, copies, copy_blocks, phis, phi_blocks, mode);
