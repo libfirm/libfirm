@@ -136,7 +136,7 @@ static INLINE ir_node *nodeset_next(nodeset *nset)
  *
  * @param nset  the nodeset
  */
-static inline void nodeset_break(nodeset *nset)
+static INLINE void nodeset_break(nodeset *nset)
 {
 	pset_break(nset);
 }
