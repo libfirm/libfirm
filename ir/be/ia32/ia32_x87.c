@@ -761,21 +761,25 @@ static unsigned vfp_liveness_end_of_block(const arch_env_t *env, be_lv_t *lv, co
 	return live;
 }  /* vfp_liveness_end_of_block */
 
+/** get the register mask from an arch_register */
+#define REGMASK(reg)	(1 << (reg)->index)
+
 /**
- * Return a bitset of registers which are live at a node.
+ * Return a bitset of argument registers which are live at the end of a node.
  *
  * @param sim    the simulator handle
  * @param pos    the node
+ * @param kill   kill mask for the output registers
  *
  * @return The live bitset.
  */
-static unsigned vfp_liveness_nodes_live_at(x87_simulator *sim, const ir_node *pos)
+static unsigned vfp_live_args_after(x87_simulator *sim, const ir_node *pos, unsigned kill)
 {
 	unsigned idx = get_irn_idx(pos);
 
 	assert(idx < sim->n_idx);
-	return sim->live[idx];
-}  /* vfp_liveness_nodes_live_at */
+	return sim->live[idx] & ~kill;
+}  /* vfp_live_args_after */
 
 /**
  * Calculate the liveness for a whole block and cache it.
@@ -791,6 +795,10 @@ static void update_liveness(x87_simulator *sim, be_lv_t *lv, ir_node *blk) {
 
 	/* now iterate through the block backward and cache the results */
 	sched_foreach_reverse(blk, irn) {
+		/* stop at the first Phi: this produces the live-in */
+		if (is_Phi(irn))
+			break;
+
 		idx = get_irn_idx(irn);
 		sim->live[idx] = live;
 
@@ -847,9 +855,9 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_1));
 	const arch_register_t *op2 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_2));
 	const arch_register_t *out = arch_get_irn_register(env, n);
-	unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
+	unsigned live = vfp_live_args_after(state->sim, n, REGMASK(out));
 
-	DB((dbg, LEVEL_1, ">>> %s %s, %s -> %s\n", get_irn_opname(n),
+	DB((dbg, LEVEL_1, ">>> %+F %s, %s -> %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2),
 		arch_register_get_name(out)));
 	DEBUG_ONLY(vfp_dump_live(live));
@@ -995,9 +1003,9 @@ static int sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, UNOP_IDX));
 	const arch_register_t *out = arch_get_irn_register(env, n);
 	ia32_attr_t *attr;
-	unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
+	unsigned live = vfp_live_args_after(state->sim, n, REGMASK(out));
 
-	DB((dbg, LEVEL_1, ">>> %s -> %s\n", get_irn_opname(n), out->name));
+	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
 	DEBUG_ONLY(vfp_dump_live(live));
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
@@ -1034,7 +1042,7 @@ static int sim_load(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *
 	const arch_register_t *out = arch_get_irn_register(env, n);
 	ia32_attr_t *attr;
 
-	DB((dbg, LEVEL_1, ">>> %s -> %s\n", get_irn_opname(n), arch_register_get_name(out)));
+	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, arch_register_get_name(out)));
 	x87_push(state, arch_register_get_index(out), x87_patch_insn(n, op));
 	attr = get_ia32_attr(n);
 	attr->x87[2] = out = &ia32_st_regs[0];
@@ -1083,7 +1091,7 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
 static int sim_store(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *op, ir_op *op_p) {
 	ir_node               *val = get_irn_n(n, STORE_VAL_IDX);
 	const arch_register_t *op2 = arch_get_irn_register(env, val);
-	unsigned              live = vfp_liveness_nodes_live_at(state->sim, n);
+	unsigned              live = vfp_live_args_after(state->sim, n, 0);
 	int                   insn = 0;
 	ia32_attr_t *attr;
 	int op2_idx, depth;
@@ -1092,7 +1100,7 @@ static int sim_store(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
 	assert(op2_idx >= 0);
 
-	DB((dbg, LEVEL_1, ">>> %s %s ->\n", get_irn_opname(n), arch_register_get_name(op2)));
+	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
 
 	mode  = get_ia32_ls_mode(n);
 	depth = x87_get_depth(state);
@@ -1258,9 +1266,9 @@ static int sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 	ir_op *dst;
 	const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_1));
 	const arch_register_t *op2 = arch_get_irn_register(env, get_irn_n(n, BINOP_IDX_2));
-	unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
+	unsigned live = vfp_live_args_after(state->sim, n, 0);
 
-	DB((dbg, LEVEL_1, ">>> %s %s, %s\n", get_irn_opname(n),
+	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2)));
 	DEBUG_ONLY(vfp_dump_live(live));
 
@@ -1445,11 +1453,11 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 		ir_node *node, *next;
 		ia32_attr_t *attr;
 		int op1_idx, out_idx;
-		unsigned live = vfp_liveness_nodes_live_at(state->sim, n);
+		unsigned live = vfp_live_args_after(state->sim, n, REGMASK(out));
 
 		op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
-		DB((dbg, LEVEL_1, ">>> %s %s -> %s\n", get_irn_opname(n),
+		DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
 			arch_register_get_name(op1), arch_register_get_name(out)));
 		DEBUG_ONLY(vfp_dump_live(live));
 
@@ -1468,7 +1476,7 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 			sched_remove(n);
 			exchange(n, node);
 			sched_add_before(next, node);
-			DB((dbg, LEVEL_1, ">>> %s %s -> %s\n", get_irn_opname(node), op1->name, out->name));
+			DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", node, op1->name, out->name));
 		}
 		else {
 			out_idx = x87_on_stack(state, arch_register_get_index(out));
@@ -1497,7 +1505,7 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 					x87_pop(state);
 					x87_set_st(state, arch_register_get_index(out), n, out_idx - 1);
 				}
-				DB((dbg, LEVEL_1, ">>> %s %s\n", get_irn_opname(n), op1->name));
+				DB((dbg, LEVEL_1, ">>> %+F %s\n", n, op1->name));
 			}
 			else {
 				/* just a virtual copy */
@@ -1612,7 +1620,7 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 	x87_state *state = start_state;
 	ir_node *first_insn = sched_first(block);
 	ir_node *keep = NULL;
-	unsigned live = vfp_liveness_nodes_live_at(sim, block);
+	unsigned live = vfp_live_args_after(sim, block, 0);
 	unsigned kill_mask;
 	int i, depth, num_pop;
 
