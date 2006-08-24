@@ -218,8 +218,12 @@ static void TEMPLATE_set_frame_entity(const void *self, const ir_node *irn, enti
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void TEMPLATE_set_stack_bias(const void *self, ir_node *irn, int bias) {
+static void TEMPLATE_set_frame_offset(const void *self, ir_node *irn, int offset) {
 	/* TODO: correct offset if irn accesses the stack */
+}
+
+static int TEMPLATE_get_sp_bias(const void *self, const ir_node *irn) {
+	return 0;
 }
 
 /* fill register allocator interface */
@@ -232,7 +236,8 @@ static const arch_irn_ops_if_t TEMPLATE_irn_ops_if = {
 	TEMPLATE_get_flags,
 	TEMPLATE_get_frame_entity,
 	TEMPLATE_set_frame_entity,
-	TEMPLATE_set_stack_bias
+	TEMPLATE_set_frame_offset,
+	TEMPLATE_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */

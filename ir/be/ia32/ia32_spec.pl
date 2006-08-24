@@ -706,6 +706,7 @@ else {
 },
 
 "Push" => {
+  # We don't set class modify_stack here (but we will do this on proj 0)
   "comment"   => "push a gp register on the stack",
   "reg_req"   => { "in" => [ "esp", "gp", "none" ], "out" => [ "esp" ] },
   "emit"      => '
@@ -728,6 +729,7 @@ else {
 },
 
 "Pop" => {
+  # We don't set class modify stack here (but we will do this on proj 1)
   "comment"   => "pop a gp register from the stack",
   "reg_req"   => { "in" => [ "esp", "none" ], "out" => [ "gp", "esp" ] },
   "emit"      => '

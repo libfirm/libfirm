@@ -258,6 +258,17 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 }
 
 static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
+
+	if(is_Proj(irn)) {
+		ir_node *pred = get_Proj_pred(irn);
+		if(is_ia32_Push(pred) && get_Proj_proj(irn) == 0) {
+			return arch_irn_flags_modify_sp;
+		}
+		if(is_ia32_Pop(pred) && get_Proj_proj(irn) == 1) {
+			return arch_irn_flags_modify_sp;
+		}
+	}
+
 	irn = my_skip_proj(irn);
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
@@ -276,14 +287,22 @@ static void ia32_set_frame_entity(const void *self, ir_node *irn, entity *ent) {
 	set_ia32_frame_ent(irn, ent);
 }
 
-static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
+static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 	char buf[64];
 	const ia32_irn_ops_t *ops = self;
 
 	if (get_ia32_frame_ent(irn)) {
 		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
 
+		/* Pop nodes modify the stack pointer before reading the destination
+		 * address, so fix this here
+		 */
+		if(is_ia32_Pop(irn)) {
+			bias -= 4;
+		}
+
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
+
 		snprintf(buf, sizeof(buf), "%d", bias);
 
 		if (get_ia32_op_type(irn) == ia32_Normal) {
@@ -295,6 +314,20 @@ static void ia32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 			set_ia32_am_flavour(irn, am_flav);
 		}
 	}
+}
+
+static int ia32_get_sp_bias(const void *self, const ir_node *irn) {
+	if(is_Proj(irn)) {
+		int proj = get_Proj_proj(irn);
+		ir_node *pred = get_Proj_pred(irn);
+
+		if(is_ia32_Push(pred) && proj == 0)
+			return 4;
+		else if(is_ia32_Pop(pred) && proj == 1)
+			return -4;
+	}
+
+	return 0;
 }
 
 typedef struct {
@@ -397,7 +430,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE_SHRINK);
 	}
 	else {
 		const ia32_isa_t *isa     = (ia32_isa_t *)env->isa;
@@ -731,7 +764,8 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_get_flags,
 	ia32_get_frame_entity,
 	ia32_set_frame_entity,
-	ia32_set_stack_bias,
+	ia32_set_frame_offset,
+	ia32_get_sp_bias,
 	ia32_get_inverse,
 	ia32_get_op_estimated_cost,
 	ia32_possible_memory_operand,
@@ -1028,12 +1062,12 @@ static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_no
 	return pop;
 }
 
-static ir_node* create_spproj(ia32_transform_env_t *env, ir_node *pred, ir_node *schedpoint, const ir_node *oldsp) {
+static ir_node* create_spproj(ia32_transform_env_t *env, ir_node *pred, int pos, ir_node *schedpoint, const ir_node *oldsp) {
 	ir_mode *spmode = get_irn_mode(oldsp);
 	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, oldsp);
 	ir_node *sp;
 
-	sp = new_rd_Proj(env->dbg, env->irg, env->block, pred, spmode, 0);
+	sp = new_rd_Proj(env->dbg, env->irg, env->block, pred, spmode, pos);
 	arch_set_irn_register(env->cg->arch_env, sp, spreg);
 	sched_add_before(schedpoint, sp);
 
@@ -1067,11 +1101,11 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
 		push = create_push(env, node, sp, mem, ent, NULL);
-		sp = create_spproj(env, push, node, sp);
+		sp = create_spproj(env, push, 0, node, sp);
 		if(entbits == 64) {
 			// add another push after the first one
 			push = create_push(env, node, sp, mem, ent, "4");
-			sp = create_spproj(env, push, node, sp);
+			sp = create_spproj(env, push, 0, node, sp);
 		}
 
 		set_irn_n(node, i, new_Bad());
@@ -1090,12 +1124,12 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 		pop = create_pop(env, node, sp, ent, NULL);
 		if(entbits == 64) {
 			// add another pop after the first one
-			sp = create_spproj(env, pop, node, sp);
+			sp = create_spproj(env, pop, 1, node, sp);
 			pop = create_pop(env, node, sp, ent, "4");
 		}
-		if(i != 0) {
-			sp = create_spproj(env, pop, node, sp);
-		}
+		//if(i != 0) {
+			sp = create_spproj(env, pop, 1, node, sp);
+		//}
 
 		pops[i] = pop;
 	}

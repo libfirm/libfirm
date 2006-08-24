@@ -648,9 +648,6 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	/* Insert spill/reload nodes into the graph and fix usages */
 	be_insert_spills_reloads(env.senv);
 
-	be_remove_dead_nodes_from_schedule(chordal_env->irg);
-	be_liveness_recompute(chordal_env->lv);
-
 	/* clean up */
 	if(spill_env == NULL)
 		be_delete_spill_env(env.senv);

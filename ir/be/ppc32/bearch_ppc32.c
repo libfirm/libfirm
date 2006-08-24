@@ -247,6 +247,10 @@ static void ppc32_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	set_ppc32_offset(irn, bias);
 }
 
+static int ppc32_get_sp_bias(const void *self, const ir_node *irn) {
+	return 0;
+}
+
 typedef struct
 {
 	const be_abi_call_t *call;
@@ -367,6 +371,7 @@ static const arch_irn_ops_if_t ppc32_irn_ops_if = {
 	ppc32_get_frame_entity,
 	ppc32_set_frame_entity,
 	ppc32_set_stack_bias,
+	ppc32_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */

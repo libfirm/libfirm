@@ -471,7 +471,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		 * moving the stack pointer along the stack's direction.
 		 */
 		if(stack_dir < 0 && !do_seq && !no_alloc) {
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, stack_size, be_stack_dir_expand);
+			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, stack_size);
 		}
 
 		assert(mode_is_reference(mach_mode) && "machine mode must be pointer");
@@ -492,7 +492,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			if (do_seq) {
 				curr_ofs = 0;
 				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, curr_mem,
-					param_size + arg->space_before, be_stack_dir_expand);
+					param_size + arg->space_before);
 			}
 			else {
 				curr_ofs += arg->space_before;
@@ -691,7 +691,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		 /* Clean up the stack frame if we allocated it */
 		if(!no_alloc)
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, mem_proj, stack_size, be_stack_dir_shrink);
+			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, mem_proj, -stack_size);
 	}
 
 	be_abi_call_free(call);
@@ -954,7 +954,7 @@ static ir_node *setup_frame(be_abi_irg_t *env)
 	int stack_nr       = get_Proj_proj(stack);
 
 	if(flags.try_omit_fp) {
-		stack = be_new_IncSP(sp, irg, bl, stack, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
+		stack = be_new_IncSP(sp, irg, bl, stack, no_mem, BE_STACK_FRAME_SIZE_EXPAND);
 		frame = stack;
 	}
 
@@ -968,7 +968,7 @@ static ir_node *setup_frame(be_abi_irg_t *env)
 			arch_set_irn_register(env->birg->main_env->arch_env, frame, bp);
 		}
 
-		stack = be_new_IncSP(sp, irg, bl, stack, frame, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
+		stack = be_new_IncSP(sp, irg, bl, stack, frame, BE_STACK_FRAME_SIZE_EXPAND);
 	}
 
 	be_node_set_flags(env->reg_params, -(stack_nr + 1), arch_irn_flags_ignore);
@@ -993,7 +993,7 @@ static void clearup_frame(be_abi_irg_t *env, ir_node *ret, pmap *reg_map, struct
 	pmap_entry *ent;
 
 	if(env->call->flags.bits.try_omit_fp) {
-		stack = be_new_IncSP(sp, irg, bl, stack, ret_mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
+		stack = be_new_IncSP(sp, irg, bl, stack, ret_mem, -BE_STACK_FRAME_SIZE_SHRINK);
 	}
 
 	else {
@@ -1611,7 +1611,7 @@ static void modify_irg(be_abi_irg_t *env)
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
 	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
-	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE, be_stack_dir_expand);
+	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE_EXPAND);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
 	barrier = create_barrier(env, bl, &mem, env->regs, 0);
@@ -1793,15 +1793,14 @@ struct fix_stack_walker_info {
 static void collect_stack_nodes_walker(ir_node *irn, void *data)
 {
 	struct fix_stack_walker_info *info = data;
-	ir_mode *mode;
 
 	if (is_Block(irn))
 		return;
 
-	mode = get_irn_mode(irn);
-
-	if (arch_irn_is(info->aenv, irn, modify_sp) && mode != mode_T && mode != mode_M)
+	if (arch_irn_is(info->aenv, irn, modify_sp)) {
+		assert(get_irn_mode(irn) != mode_M && get_irn_mode(irn) != mode_T);
 		pset_insert_ptr(info->nodes, irn);
+	}
 }
 
 void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv)
@@ -1824,54 +1823,45 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv)
 	be_free_dominance_frontiers(df);
 }
 
-/**
- * Translates a direction of an IncSP node (either be_stack_dir_shrink, or ...expand)
- * into -1 or 1, respectively.
- * @param irn The node.
- * @return 1, if the direction of the IncSP was along, -1 if against.
- */
-static int get_dir(ir_node *irn)
-{
-	return 1 - 2 * (be_get_IncSP_direction(irn) == be_stack_dir_shrink);
-}
-
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 {
-	const arch_env_t *aenv = env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = env->birg->main_env->arch_env;
 	int omit_fp            = env->call->flags.bits.try_omit_fp;
 	ir_node *irn;
 
 	sched_foreach(bl, irn) {
 
 		/*
-			If the node modifies the stack pointer by a constant offset,
-			record that in the bias.
-		*/
-		if(be_is_IncSP(irn)) {
-			int ofs = be_get_IncSP_offset(irn);
-			int dir = get_dir(irn);
-
-			if(ofs == BE_STACK_FRAME_SIZE) {
-				ofs = get_type_size_bytes(get_irg_frame_type(env->birg->irg));
-				be_set_IncSP_offset(irn, ofs);
-			}
-
-			if(omit_fp)
-				bias += dir * ofs;
+		   Check, if the node relates to an entity on the stack frame.
+		   If so, set the true offset (including the bias) for that
+		   node.
+		 */
+		entity *ent = arch_get_frame_entity(arch_env, irn);
+		if(ent) {
+			int offset = get_stack_entity_offset(env->frame, ent, bias);
+			arch_set_frame_offset(arch_env, irn, offset);
+			DBG((env->dbg, LEVEL_2, "%F has offset %d (including bias %d)\n", ent, offset, bias));
 		}
 
 		/*
-			Else check, if the node relates to an entity on the stack frame.
-			If so, set the true offset (including the bias) for that
-			node.
-		*/
-		else {
-			entity *ent = arch_get_frame_entity(aenv, irn);
-			if(ent) {
-				int offset = get_stack_entity_offset(env->frame, ent, bias);
-				arch_set_frame_offset(aenv, irn, offset);
-				DBG((env->dbg, LEVEL_2, "%F has offset %d\n", ent, offset));
+		   If the node modifies the stack pointer by a constant offset,
+		   record that in the bias.
+		 */
+		if(arch_irn_is(arch_env, irn, modify_sp)) {
+			int ofs = arch_get_sp_bias(arch_env, irn);
+
+			if(be_is_IncSP(irn)) {
+				if(ofs == BE_STACK_FRAME_SIZE_EXPAND) {
+					ofs = get_type_size_bytes(get_irg_frame_type(env->birg->irg));
+					be_set_IncSP_offset(irn, ofs);
+				} else if(ofs == BE_STACK_FRAME_SIZE_SHRINK) {
+					ofs = - get_type_size_bytes(get_irg_frame_type(env->birg->irg));
+					be_set_IncSP_offset(irn, ofs);
+				}
 			}
+
+			if(omit_fp)
+				bias += ofs;
 		}
 	}
 
@@ -2006,8 +1996,13 @@ static void abi_set_frame_entity(const void *_self, ir_node *irn, entity *ent)
 {
 }
 
-static void abi_set_stack_bias(const void *_self, ir_node *irn, int bias)
+static void abi_set_frame_offset(const void *_self, ir_node *irn, int bias)
 {
+}
+
+static int abi_get_sp_bias(const void *self, const ir_node *irn)
+{
+	return 0;
 }
 
 static const arch_irn_ops_if_t abi_irn_ops = {
@@ -2018,7 +2013,8 @@ static const arch_irn_ops_if_t abi_irn_ops = {
 	abi_get_flags,
 	abi_get_frame_entity,
 	abi_set_frame_entity,
-	abi_set_stack_bias,
+	abi_set_frame_offset,
+	abi_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */

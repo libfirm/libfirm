@@ -148,7 +148,6 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	rel->reloader = before;
 	rel->next     = info->reloaders;
 	info->reloaders = rel;
-	be_liveness_add_missing(env->chordal_env->lv);
 }
 
 void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
@@ -542,4 +541,8 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	// reloads are placed now, but we might reuse the spill environment for further spilling decisions
 	del_set(env->spills);
 	env->spills = new_set(cmp_spillinfo, 1024);
+
+	be_remove_dead_nodes_from_schedule(env->chordal_env->irg);
+	//be_liveness_add_missing(env->chordal_env->lv);
+	be_liveness_recompute(env->chordal_env->lv);
 }

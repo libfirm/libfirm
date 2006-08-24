@@ -254,6 +254,10 @@ static void mips_set_frame_offset(const void *self, ir_node *irn, int offset) {
 	attr->stack_entity_offset = offset;
 }
 
+static int mips_get_sp_bias(const void *self, const ir_node *irn) {
+	return 0;
+}
+
 /* fill register allocator interface */
 
 static const arch_irn_ops_if_t mips_irn_ops_if = {
@@ -265,6 +269,7 @@ static const arch_irn_ops_if_t mips_irn_ops_if = {
 	mips_get_frame_entity,
 	mips_set_frame_entity,
 	mips_set_frame_offset,
+	mips_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
@@ -760,9 +765,6 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	ir_node *load;
 	int initial_frame_size = env->debug ? 24 : 4;
 	int fp_save_offset = env->debug ? 16 : 0;
-
-	// restore sp
-	//sp = be_new_IncSP(&mips_gp_regs[REG_SP], irg, block, sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_against);
 
 	// copy fp to sp
 	sp = new_rd_mips_move(dbg, irg, block, fp, mode_Iu);

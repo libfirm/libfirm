@@ -518,15 +518,14 @@ static void emit_Proj(const ir_node *irn, ppc32_emit_env_t *env) {
 
 static void emit_be_IncSP(const ir_node *irn, ppc32_emit_env_t *emit_env) {
 	FILE          *F    = emit_env->out;
-	unsigned       offs = be_get_IncSP_offset(irn);
-	be_stack_dir_t dir  = be_get_IncSP_direction(irn);
+	int offs = be_get_IncSP_offset(irn);
 
-	fprintf(F, "\t\t\t\t\t/* ignored IncSP with %c%i */\n", dir==be_stack_dir_expand ? '-' : ' ', offs);
+	fprintf(F, "\t\t\t\t\t/* ignored IncSP with %d */\n", -offs);
 
 //	if (offs) {
 //		assert(offs<=0x7fff);
-//		lc_efprintf(ppc32_get_arg_env(), F, "\taddi    %1S, %1S,%s%u\t\t\t/* %+F (IncSP) */\n", irn, irn,
-//			(dir == be_stack_dir_expand) ? " -" : " ", offs, irn);
+//		lc_efprintf(ppc32_get_arg_env(), F, "\taddi    %1S, %1S, %d\t\t\t/* %+F (IncSP) */\n", irn, irn,
+//			-offs, irn);
 //	}
 //	else {
 //		fprintf(F, "\t\t\t\t\t/* omitted IncSP with 0 */\n");

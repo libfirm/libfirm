@@ -263,10 +263,10 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 		if(pset_find_ptr(phi_blocks, curr_bl)) {
 			ir_node *phi = get_irn_link(curr_bl);
 
-			if(!phi) {
+			if(phi == NULL) {
 				int i, n_preds = get_irn_arity(curr_bl);
 				ir_graph *irg = get_irn_irg(curr_bl);
-				ir_node **ins = xmalloc(n_preds * sizeof(ins[0]));
+				ir_node **ins = alloca(n_preds * sizeof(ins[0]));
 
 				for(i = 0; i < n_preds; ++i)
 					ins[i] = new_r_Bad(irg);
@@ -276,7 +276,6 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 
 				set_irn_link(curr_bl, phi);
 				sched_add_after(curr_bl, phi);
-				free(ins);
 
 				for(i = 0; i < n_preds; ++i) {
 					ir_node *arg = search_def(phi, i, copies, copy_blocks, phis, phi_blocks, mode);
@@ -284,7 +283,7 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 					set_irn_n(phi, i, arg);
 				}
 
-				if(phis)
+				if(phis != NULL)
 					pset_insert_ptr(phis, phi);
 			}
 
@@ -354,6 +353,7 @@ static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *
 	obstack_free(&obst, NULL);
 }
 
+#if 0
 /**
  * Remove phis which are not necessary.
  * During place_phi_functions() phi functions are put on the dominance
@@ -366,26 +366,27 @@ static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *
  */
 static void remove_odd_phis(pset *copies, pset *unused_copies)
 {
-  ir_node *irn;
+	ir_node *irn;
 
-  for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
-    if(is_Phi(irn)) {
-      int i, n;
-      int illegal = 0;
+	for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
+		if(is_Phi(irn)) {
+			int i, n;
+			int illegal = 0;
 
-      assert(sched_is_scheduled(irn) && "phi must be scheduled");
-      for(i = 0, n = get_irn_arity(irn); i < n && !illegal; ++i)
-        illegal = get_irn_n(irn, i) == NULL;
+			assert(sched_is_scheduled(irn) && "phi must be scheduled");
+			for(i = 0, n = get_irn_arity(irn); i < n && !illegal; ++i)
+				illegal = get_irn_n(irn, i) == NULL;
 
-      if(illegal)
-        sched_remove(irn);
-    }
-  }
+			if(illegal)
+				sched_remove(irn);
+		}
+	}
 
-  for(irn = pset_first(unused_copies); irn; irn = pset_next(unused_copies)) {
+	for(irn = pset_first(unused_copies); irn; irn = pset_next(unused_copies)) {
 		sched_remove(irn);
 	}
 }
+#endif
 
 void be_ssa_constr_phis_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
 {

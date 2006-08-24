@@ -231,7 +231,7 @@ static entity *arm_get_frame_entity(const void *self, const ir_node *irn) {
 	return NULL;
 }
 
-static void arm_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+static void arm_set_frame_entity(const void *self, ir_node *irn, entity *ent) {
 	/* TODO: set the entity assigned to the frame */
 }
 
@@ -241,6 +241,10 @@ static void arm_set_frame_entity(const void *self, const ir_node *irn, entity *e
  */
 static void arm_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	/* TODO: correct offset if irn accesses the stack */
+}
+
+static int arm_get_sp_bias(const void *self, const ir_node *irn) {
+	return 0;
 }
 
 /* fill register allocator interface */
@@ -254,6 +258,7 @@ static const arch_irn_ops_if_t arm_irn_ops_if = {
 	arm_get_frame_entity,
 	arm_set_frame_entity,
 	arm_set_stack_bias,
+	arm_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
@@ -936,7 +941,7 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 
 //	TODO: Activate Omit fp in epilogue
 	if(env->flags.try_omit_fp) {
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE, be_stack_dir_shrink);
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE_SHRINK);
 
 		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
 		be_node_set_reg_class(curr_lr, 1, &arm_reg_classes[CLASS_arm_gp]);

@@ -106,9 +106,7 @@ static const char *node_offset_to_str(ir_node *n, char *buf, int buflen) {
 		entity *ent = be_get_frame_entity(n);
 		offset = get_entity_offset_bytes(ent);
 	} else if (irn_op == op_be_IncSP) {
-		int offs = be_get_IncSP_offset(n);
-		be_stack_dir_t dir  = be_get_IncSP_direction(n);
-		offset = (dir == be_stack_dir_expand) ? -offs : offs;
+		offset = - be_get_IncSP_offset(n);
 	} else {
 		return "node_offset_to_str will fuer diesen Knotentyp noch implementiert werden";
 	}
@@ -624,8 +622,9 @@ static void emit_be_Call(ir_node *irn, void *env) {
 /** Emit an IncSP node */
 static void emit_be_IncSP(const ir_node *irn, arm_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
-	unsigned offs = be_get_IncSP_offset(irn);
-	if (offs) {
+	int offs = be_get_IncSP_offset(irn);
+
+	if (offs != 0) {
 		char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 		lc_esnprintf(arm_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1D, %1S, #%O", irn, irn, irn );
 		lc_esnprintf(arm_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* IncSP(%O) */", irn);

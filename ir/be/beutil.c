@@ -38,8 +38,8 @@ pset *be_empty_set(void)
 }
 
 struct dump_env {
-  FILE *f;
-  arch_env_t *env;
+  	FILE *f;
+	arch_env_t *env;
 };
 
 static void dump_allocated_block(ir_node *block, void *data)
@@ -88,9 +88,9 @@ static void dump_allocated_block(ir_node *block, void *data)
 void dump_allocated_irg(arch_env_t *arch_env, ir_graph *irg, char *suffix)
 {
 	char buf[1024];
-  struct dump_env env;
+	struct dump_env env;
 
-  env.env = arch_env;
+	env.env = arch_env;
 
 	ir_snprintf(buf, sizeof(buf), "%F-alloc%s.vcg", irg, suffix);
 

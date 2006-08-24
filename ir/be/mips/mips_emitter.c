@@ -341,11 +341,10 @@ static void mips_emit_IncSP(const ir_node *node, mips_emit_env_t *env)
 	FILE *F      = env->out;
 	int   offset = be_get_IncSP_offset(node);
 
-	if(offset == 0)
+	if(offset == 0) {
+		fprintf(F, "\t\t\t\t # omitted IncSP with 0\n");
 		return;
-
-	if(be_get_IncSP_direction(node) != be_stack_dir_expand)
-		offset = -offset;
+	}
 
 	fprintf(F, "\taddi $sp, $sp, %d\n", -offset);
 }

@@ -558,11 +558,6 @@ void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	del_set(env.block_attr_set);
 
 	/* fix the remaining places with too high register pressure with beladies algorithm */
-
-	/* we have to remove dead nodes from schedule to not confuse liveness calculation */
-	be_remove_dead_nodes_from_schedule(env.irg);
-	be_liveness_recompute(chordal_env->lv);
-
 	be_spill_belady_spill_env(chordal_env, env.senv);
 
 	be_delete_spill_env(env.senv);

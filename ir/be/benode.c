@@ -89,8 +89,7 @@ typedef struct {
 /** The be_Stack attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;
-	int offset;           /**< The offset by which the stack shall be increased/decreased. */
-	be_stack_dir_t dir;   /**< The direction in which the stack shall be modified (expand or shrink). */
+	int offset;           /**< The offset by which the stack shall be expanded/shrinked. */
 } be_stack_attr_t;
 
 /** The be_Frame attribute type. */
@@ -530,7 +529,7 @@ int be_Return_get_n_rets(ir_node *ret)
 	return a->num_ret_vals;
 }
 
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, unsigned offset, be_stack_dir_t dir)
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, int offset)
 {
 	be_stack_attr_t *a;
 	ir_node *irn;
@@ -540,7 +539,6 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	in[1]     = mem;
 	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode, 2, in);
 	a         = init_node_attr(irn, 1);
-	a->dir    = dir;
 	a->offset = offset;
 
 	be_node_set_flags(irn, -1, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
@@ -902,32 +900,18 @@ ir_node *be_get_IncSP_mem(ir_node *irn) {
 	return get_irn_n(irn, 1);
 }
 
-void be_set_IncSP_offset(ir_node *irn, unsigned offset)
+void be_set_IncSP_offset(ir_node *irn, int offset)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
 	assert(be_is_IncSP(irn));
 	a->offset = offset;
 }
 
-unsigned be_get_IncSP_offset(const ir_node *irn)
+int be_get_IncSP_offset(const ir_node *irn)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
 	assert(be_is_IncSP(irn));
 	return a->offset;
-}
-
-void be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir)
-{
-	be_stack_attr_t *a = get_irn_attr(irn);
-	assert(be_is_IncSP(irn));
-	a->dir = dir;
-}
-
-be_stack_dir_t be_get_IncSP_direction(const ir_node *irn)
-{
-	be_stack_attr_t *a = get_irn_attr(irn);
-	assert(be_is_IncSP(irn));
-	return a->dir;
 }
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn)
@@ -1090,6 +1074,17 @@ static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
 	}
 }
 
+static int be_node_get_sp_bias(const void *self, const ir_node *irn)
+{
+	int result = 0;
+
+	if(be_is_IncSP(irn)) {
+		result = be_get_IncSP_offset(irn);
+	}
+
+	return result;
+}
+
 /*
   ___ ____  _   _   _   _                 _ _
  |_ _|  _ \| \ | | | | | | __ _ _ __   __| | | ___ _ __
@@ -1108,6 +1103,7 @@ static const arch_irn_ops_if_t be_node_irn_ops_if = {
 	be_node_get_frame_entity,
 	be_node_set_frame_entity,
 	be_node_set_frame_offset,
+	be_node_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
@@ -1239,6 +1235,11 @@ static void phi_set_frame_offset(const void *_self, ir_node *irn, int bias)
 {
 }
 
+static int phi_get_sp_bias(const void* self, const ir_node *irn)
+{
+	return 0;
+}
+
 static const arch_irn_ops_if_t phi_irn_ops = {
 	phi_get_irn_reg_req,
 	phi_set_irn_reg,
@@ -1248,6 +1249,7 @@ static const arch_irn_ops_if_t phi_irn_ops = {
 	phi_get_frame_entity,
 	phi_set_frame_entity,
 	phi_set_frame_offset,
+	phi_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
@@ -1397,11 +1399,12 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			case beo_IncSP:
 				{
 					be_stack_attr_t *a = (be_stack_attr_t *) at;
-					if (a->offset == BE_STACK_FRAME_SIZE)
+					if (a->offset == BE_STACK_FRAME_SIZE_EXPAND)
 						fprintf(f, "offset: FRAME_SIZE\n");
+					else if(a->offset == BE_STACK_FRAME_SIZE_SHRINK)
+						fprintf(f, "offset: -FRAME SIZE\n");
 					else
 						fprintf(f, "offset: %u\n", a->offset);
-					fprintf(f, "direction: %s\n", a->dir == be_stack_dir_expand ? "expand" : "shrink");
 				}
 				break;
 			case beo_Call:

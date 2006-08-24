@@ -121,7 +121,6 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 	int cfchange_found = 0;
 	// TODO ask arch about delay branches
 	int delay_branches = 0;
-	pset *uses = pset_new_ptr_default();
 
 	/*
 	 * Tests for the following things:
@@ -167,18 +166,29 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 		}
 
 		// 3. Check for uses
-		if(pset_find_ptr(uses, node)) {
-			ir_fprintf(stderr, "Verify Warning: Value %+F used before it was defined in block %+F (%s)\n",
-				node, block, get_irg_dump_name(env->irg));
-			env->problem_found = 1;
-		}
 		if(!is_Phi(node)) {
+			int nodetime = sched_get_time_step(node);
 			for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-				pset_insert_ptr(uses, get_irn_n(node, i));
+				ir_node *arg = get_irn_n(node, i);
+				if(get_nodes_block(arg) != block
+				   || !sched_is_scheduled(arg))
+					continue;
+
+				if(sched_get_time_step(arg) >= nodetime) {
+					ir_fprintf(stderr, "Verify Warning: Value %+F used by %+F before it was defined in block %+F (%s)\n",
+					           arg, node, block, get_irg_dump_name(env->irg));
+					env->problem_found = 1;
+				}
 			}
 		}
+
+		// 4. check for dead nodes
+		if(get_irn_n_edges(node) == 0) {
+			ir_fprintf(stderr, "Verify warning: Node %+F is dead but scheduled in block %+F (%s)\n",
+			           node, block, get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+		}
 	}
-	del_pset(uses);
 
 	/* check that all delay branches are filled (at least with NOPs) */
 	if (cfchange_found && delay_branches != 0) {

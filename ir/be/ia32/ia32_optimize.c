@@ -487,8 +487,7 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 		return;
 
 	/* do not create push if IncSp doesn't expand stack or expand size is different from register size */
-	if (be_get_IncSP_direction(sp) != be_stack_dir_expand ||
-		be_get_IncSP_offset(sp) != (unsigned) get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
+	if (be_get_IncSP_offset(sp) != get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
 		return;
 
 	/* do not create push, if there is a path (inside the block) from the push value to IncSP */
@@ -613,23 +612,10 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 
 	if (be_is_IncSP(prev) && real_uses == 1) {
 		/* first IncSP has only one IncSP user, kill the first one */
-		unsigned       prev_offs = be_get_IncSP_offset(prev);
-		be_stack_dir_t prev_dir  = be_get_IncSP_direction(prev);
-		unsigned       curr_offs = be_get_IncSP_offset(irn);
-		be_stack_dir_t curr_dir  = be_get_IncSP_direction(irn);
+		int prev_offs = be_get_IncSP_offset(prev);
+		int curr_offs = be_get_IncSP_offset(irn);
 
-		int new_ofs = prev_offs * (prev_dir == be_stack_dir_expand ? -1 : +1) +
-			            curr_offs * (curr_dir == be_stack_dir_expand ? -1 : +1);
-
-		if (new_ofs < 0) {
-			new_ofs  = -new_ofs;
-			curr_dir = be_stack_dir_expand;
-		}
-		else
-			curr_dir = be_stack_dir_shrink;
-		be_set_IncSP_offset(prev, 0);
-		be_set_IncSP_offset(irn, (unsigned)new_ofs);
-		be_set_IncSP_direction(irn, curr_dir);
+		be_set_IncSP_offset(prev, prev_offs + curr_offs);
 
 		/* Omit the optimized IncSP */
 		be_set_IncSP_pred(irn, be_get_IncSP_pred(prev));

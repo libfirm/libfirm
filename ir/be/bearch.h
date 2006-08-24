@@ -297,6 +297,20 @@ struct _arch_irn_ops_if_t {
   void (*set_frame_offset)(const void *self, ir_node *irn, int offset);
 
   /**
+   * Returns the delta of the stackpointer for nodes that increment or
+   * decrement the stackpointer with a constant value. (push, pop
+   * nodes on most architectures).
+   * A positive value stands for an expanding stack area, a negative value for
+   * a shrinking one.
+   *
+   * @param self      The this pointer
+   * @param irn       The node
+   * @return          0 if the stackpointer is not modified with a constant
+   *                  value, otherwise the increment/decrement value
+   */
+  int (*get_sp_bias)(const void *self, const ir_node *irn);
+
+  /**
    * Returns an inverse operation which yields the i-th argument
    * of the given node as result.
    *
@@ -354,6 +368,7 @@ extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias)
 
 extern entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);
 extern void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, entity *ent);
+extern int arch_get_sp_bias(const arch_env_t *env, ir_node *irn);
 
 extern int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn);
 extern arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);

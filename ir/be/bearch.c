@@ -117,6 +117,12 @@ void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, entity *ent)
 	ops->impl->set_frame_entity(ops, irn, ent);
 }
 
+int arch_get_sp_bias(const arch_env_t *env, ir_node *irn)
+{
+	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	return ops->impl->get_sp_bias(ops, irn);
+}
+
 arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack)
 {
   const arch_irn_ops_t *ops = get_irn_ops(env, irn);

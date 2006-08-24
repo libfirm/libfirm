@@ -950,12 +950,12 @@ static ir_node *gen_CopyB(ir_node *irn, arm_code_gen_t *cg) {
  * access must be done relative the the fist IncSP ...
  */
 static int get_sp_expand_offset(ir_node *inc_sp) {
-	unsigned offset    = be_get_IncSP_offset(inc_sp);
-	be_stack_dir_t dir = be_get_IncSP_direction(inc_sp);
+	int offset = be_get_IncSP_offset(inc_sp);
 
-	if (offset == BE_STACK_FRAME_SIZE)
+	if (offset == BE_STACK_FRAME_SIZE_EXPAND)
 		return 0;
-	return dir == be_stack_dir_expand ? (int)offset : -(int)offset;
+
+	return offset;
 }
 
 static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {

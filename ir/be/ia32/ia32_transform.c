@@ -2149,38 +2149,40 @@ static ir_node *gen_Conv(ia32_transform_env_t *env) {
  *
  ********************************************/
 
+#if 0
  /**
   * Decides in which block the transformed StackParam should be placed.
   * If the StackParam has more than one user, the dominator block of
   * the users will be returned. In case of only one user, this is either
   * the user block or, in case of a Phi, the predecessor block of the Phi.
   */
- static ir_node *get_block_transformed_stack_param(ir_node *irn) {
-	 ir_node *dom_bl = NULL;
+static ir_node *get_block_transformed_stack_param(ir_node *irn) {
+	ir_node *dom_bl = NULL;
 
-	 if (get_irn_n_edges(irn) == 1) {
-		 ir_node *src = get_edge_src_irn(get_irn_out_edge_first(irn));
+	if (get_irn_n_edges(irn) == 1) {
+		ir_node *src = get_edge_src_irn(get_irn_out_edge_first(irn));
 
-		 if (! is_Phi(src)) {
-			 dom_bl = get_nodes_block(src);
-		 }
-		 else {
-			 /* Determine on which in position of the Phi the irn is */
-			 /* and get the corresponding cfg predecessor block.     */
+		if (! is_Phi(src)) {
+			dom_bl = get_nodes_block(src);
+		}
+		else {
+			/* Determine on which in position of the Phi the irn is */
+			/* and get the corresponding cfg predecessor block.     */
 
-			 int i  = get_irn_pred_pos(src, irn);
-			 assert(i >= 0 && "kaputt");
-			 dom_bl = get_Block_cfgpred_block(get_nodes_block(src), i);
-		 }
-	 }
-	 else {
-		 dom_bl = node_users_smallest_common_dominator(irn, 1);
-	 }
+			int i  = get_irn_pred_pos(src, irn);
+			assert(i >= 0 && "kaputt");
+			dom_bl = get_Block_cfgpred_block(get_nodes_block(src), i);
+		}
+	}
+	else {
+		dom_bl = node_users_smallest_common_dominator(irn, 1);
+	}
 
-	 assert(dom_bl && "dominator block not found");
+	assert(dom_bl && "dominator block not found");
 
-	 return dom_bl;
- }
+	return dom_bl;
+}
+#endif
 
 static ir_node *gen_be_StackParam(ia32_transform_env_t *env) {
 	ir_node *new_op = NULL;
@@ -2192,7 +2194,7 @@ static ir_node *gen_be_StackParam(ia32_transform_env_t *env) {
 	ir_mode *mode   = env->mode;
 
 	/* choose the block where to place the load */
-	env->block = get_block_transformed_stack_param(node);
+	//env->block = get_block_transformed_stack_param(node);
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);

@@ -14,6 +14,8 @@
 
 #include "firm_config.h"
 
+#include <limits.h>
+
 #include "irmode.h"
 #include "irnode.h"
 #include "entity_t.h"
@@ -68,12 +70,6 @@ typedef enum {
 	beo_Last
 } be_opcode_t;
 
-/** Expresses the direction of the stack pointer increment of IncSP nodes. */
-typedef enum {
-	be_stack_dir_expand = 0,
-	be_stack_dir_shrink = 1
-} be_stack_dir_t;
-
 /** Not used yet. */
 typedef enum {
 	be_frame_flag_spill = 1,
@@ -85,7 +81,8 @@ typedef enum {
  * A "symbolic constant" for the size of the stack frame to use with IncSP nodes.
  * It gets back-patched to the real size as soon it is known.
  */
-#define BE_STACK_FRAME_SIZE ((unsigned) -1)
+#define BE_STACK_FRAME_SIZE_EXPAND INT_MAX
+#define BE_STACK_FRAME_SIZE_SHRINK INT_MIN
 
 /**
  * Determines if irn is a be_node.
@@ -192,13 +189,13 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
  * @param irg    The graph to insert the node to.
  * @param bl     The block to insert the node into.
  * @param old_sp The node defining the former stack pointer.
- * @param amount The mount of bytes the stack pointer shall be increased/decreased.
+ * @param amount The mount of bytes the stack shall be expanded/shrinked (see set_IncSP_offset)
  * @param dir    The direction in which the stack pointer shall be modified:
  *               Along the stack's growing direction or against.
  * @return       A new stack pointer increment/decrement node.
  * @note         This node sets a register constraint to the @p sp register on its output.
  */
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, unsigned amount, be_stack_dir_t dir);
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, int offset);
 
 /** Returns the previous node that computes the stack pointer. */
 ir_node *be_get_IncSP_pred(ir_node *incsp);
@@ -209,17 +206,16 @@ void     be_set_IncSP_pred(ir_node *incsp, ir_node *pred);
 /** Returns the memory input of the IncSP. */
 ir_node *be_get_IncSP_mem(ir_node *irn);
 
-/** Sets a new offset to a IncSP node. */
-void     be_set_IncSP_offset(ir_node *irn, unsigned offset);
+/**
+ * Sets a new offset to a IncSP node.
+ * A positive offset means expanding the stack, a negative offset shrinking
+ * an offset is == BE_STACK_FRAME_SIZE will be replaced by the real size of the
+ * stackframe in the fix_stack_offsets phase.
+ */
+void     be_set_IncSP_offset(ir_node *irn, int offset);
 
 /** Gets the offset from a IncSP node. */
-unsigned be_get_IncSP_offset(const ir_node *irn);
-
-/** Sets a new direction to a IncSP node. */
-void           be_set_IncSP_direction(ir_node *irn, be_stack_dir_t dir);
-
-/** Gets the direction from a IncSP node. */
-be_stack_dir_t be_get_IncSP_direction(const ir_node *irn);
+int be_get_IncSP_offset(const ir_node *irn);
 
 /** Gets the call entity or NULL if this is no static call. */
 entity  *be_Call_get_entity(const ir_node *call);
