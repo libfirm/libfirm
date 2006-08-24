@@ -977,7 +977,7 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	const char *instr = "fcom";
 	int reverse = 0;
 
-	switch (get_ia32_pncode(irn)) {
+	switch (get_ia32_irn_opcode(irn)) {
 	case iro_ia32_fcomrJmp:
 		reverse = 1;
 	case iro_ia32_fcomJmp:
@@ -998,7 +998,7 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	}
 
 	if (reverse)
-		set_ia32_pncode(irn, (long)get_negated_pnc(get_ia32_pncode(irn), mode_Is));
+		set_ia32_pncode(irn, (long)get_inversed_pnc(get_ia32_pncode(irn)));
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %%%s", instr, reg);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
@@ -1010,7 +1010,8 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* Store ah into flags */");
 	IA32_DO_EMIT(irn);
 
-	finish_CondJmp(F, irn, mode_Is);
+	/* the compare flags must be evaluated using carry , ie unsigned */
+	finish_CondJmp(F, irn, mode_Iu);
 }
 
 static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
@@ -1743,10 +1744,12 @@ static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			"pxor %1S, %2S\n\tpxor %2S, %1S\n\tpxor %1S, %2S", irn, irn, irn, irn, irn, irn);
 	}
 	else if (cls1 == &ia32_reg_classes[CLASS_ia32_vfp]) {
-		assert(0 && "Perm with vfp should not happen");
+		/* is a NOP */
+		cmd_buf[0] = '\0';
 	}
 	else if (cls1 == &ia32_reg_classes[CLASS_ia32_st]) {
-		assert(0 && "Perm with st(X) should not happen");
+		/* is a NOP */
+		cmd_buf[0] = '\0';
 	}
 
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%1A, %2A) */", irn, irn, irn);
