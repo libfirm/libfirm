@@ -1445,7 +1445,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Abs: Abs(a) = |a|",
   "reg_req"   => { },
-  "emit"      => '. fabs /* x87 fabs(%S1) -> %D1 */',
+  "emit"      => '. fabs /* x87 fabs(%A1) -> %D1 */',
 },
 
 "fchs" => {
@@ -1453,7 +1453,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Chs: Chs(a) = -a",
   "reg_req"   => { },
-  "emit"      => '. fchs /* x87 fchs(%S1) -> %D1 */',
+  "emit"      => '. fchs /* x87 fchs(%A1) -> %D1 */',
 },
 
 "fsin" => {
@@ -1461,7 +1461,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sin: Sin(a) = sin(a)",
   "reg_req"   => { },
-  "emit"      => '. fsin /* x87 sin(%S1) -> %D1 */',
+  "emit"      => '. fsin /* x87 sin(%A1) -> %D1 */',
 },
 
 "fcos" => {
@@ -1469,7 +1469,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Cos: Cos(a) = cos(a)",
   "reg_req"   => { },
-  "emit"      => '. fcos /* x87 cos(%S1) -> %D1 */',
+  "emit"      => '. fcos /* x87 cos(%A1) -> %D1 */',
 },
 
 "fsqrt" => {
@@ -1477,7 +1477,7 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sqrt: Sqrt(a) = a ^ 0.5",
   "reg_req"   => { },
-  "emit"      => '. fsqrt $ /* x87 sqrt(%S1) -> %D1 */',
+  "emit"      => '. fsqrt $ /* x87 sqrt(%A1) -> %D1 */',
 },
 
 # x87 Load and Store
