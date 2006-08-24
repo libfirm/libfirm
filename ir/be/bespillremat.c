@@ -4160,33 +4160,6 @@ verify_phiclasses(spill_ilp_t * si)
 	irg_block_walk_graph(si->chordal_env->irg, luke_meminterferencechecker, NULL, si);
 }
 
-static void
-walker_spillslotassigner(ir_node * irn, void * data)
-{
-	void                   *cls;
-
-	if(!be_is_Spill(irn)) return;
-
-	/* set spill context to phi class if it has one ;) */
-	(void) cls;
-#if 0
-	// Matze: not needed anymore
-	cls = get_phi_class(irn);
-	if(cls)
-		be_set_Spill_context(irn, cls);
-	else
-		be_set_Spill_context(irn, irn);
-#endif
-}
-
-
-static void
-assign_spillslots(spill_ilp_t * si)
-{
-	DBG((si->dbg, LEVEL_2, "\t calling spill slot assigner\n"));
-	irg_walk_graph(si->chordal_env->irg, walker_spillslotassigner, NULL, si);
-}
-
 void
 be_spill_remat(const be_chordal_env_t * chordal_env)
 {
@@ -4344,7 +4317,6 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	if(opt_memcopies) {
 		verify_phiclasses(&si);
-		assign_spillslots(&si);
 	}
 
 	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
