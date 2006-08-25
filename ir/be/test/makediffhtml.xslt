@@ -12,10 +12,75 @@
 			<xsl:if test="contains(text(), 'failed')">
 				<xsl:attribute name="style">background-color: red; color: white;</xsl:attribute>
 			</xsl:if>
-			<xsl:if test="contains(text(), 'missing')">
-				<xsl:attribute name="style">background-color: black; color: white;</xsl:attribute>
-			</xsl:if>
-			<xsl:value-of select="text()"/>
+
+			<xsl:choose>
+				<xsl:when test="name() = 'gcc_run'">
+					<xsl:element name="a">
+						<xsl:choose>
+							<xsl:when test="contains(text(), 'ok') or contains(text(), 'failed')">
+								<xsl:attribute name="style">color: white;</xsl:attribute>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:attribute name="style">color: black;</xsl:attribute>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:choose>
+							<xsl:when test="name(..) = 'OLD'">
+								<xsl:attribute name="href"><xsl:value-of select="substring(/results/files/OLD, 0, 15)"/>/result_gcc_<xsl:value-of select="../../@name"/>.txt</xsl:attribute>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:attribute name="href"><xsl:value-of select="substring(/results/files/NEW, 0, 15)"/>/result_gcc_<xsl:value-of select="../../@name"/>.txt</xsl:attribute>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:value-of select="text()"/>
+					</xsl:element>
+				</xsl:when>
+				<xsl:when test="name() = 'firm_run'">
+					<xsl:element name="a">
+						<xsl:choose>
+							<xsl:when test="contains(text(), 'ok') or contains(text(), 'failed')">
+								<xsl:attribute name="style">color: white;</xsl:attribute>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:attribute name="style">color: black;</xsl:attribute>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:choose>
+							<xsl:when test="name(..) = 'OLD'">
+								<xsl:attribute name="href">
+									<xsl:value-of select="substring(/results/files/OLD, 0, 15)"/>/result_firm_<xsl:value-of select="../../@name"/>.txt</xsl:attribute></xsl:when>
+							<xsl:otherwise>
+								<xsl:attribute name="href"><xsl:value-of select="substring(/results/files/NEW, 0, 15)"/>/result_firm_<xsl:value-of select="../../@name"/>.txt</xsl:attribute>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:value-of select="text()"/>
+					</xsl:element>
+				</xsl:when>
+				<xsl:when test="name() = 'diff'">
+					<xsl:element name="a">
+						<xsl:choose>
+							<xsl:when test="contains(text(), 'ok') or contains(text(), 'failed')">
+								<xsl:attribute name="style">color: white;</xsl:attribute>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:attribute name="style">color: black;</xsl:attribute>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:choose>
+							<xsl:when test="name(..) = 'OLD'">
+								<xsl:attribute name="href"><xsl:value-of select="substring(/results/files/OLD, 0, 15)"/>/result_diff_<xsl:value-of select="../../@name"/>.txt</xsl:attribute>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:attribute name="href"><xsl:value-of select="substring(/results/files/NEW, 0, 15)"/>/result_diff_<xsl:value-of select="../../@name"/>.txt</xsl:attribute>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:value-of select="text()"/>
+					</xsl:element>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="text()"/>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:element>
 	</xsl:template>
 
