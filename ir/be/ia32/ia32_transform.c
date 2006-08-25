@@ -169,7 +169,7 @@ static ir_node *gen_sse_conv_f2d(ia32_code_gen_t *cg, dbg_info *dbg, ir_graph *i
 }
 
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
-static ident *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
+static ident *gen_fp_known_const(ia32_known_const_t kct) {
 	static const struct {
 		const char *tp_name;
 		const char *ent_name;
@@ -188,12 +188,14 @@ static ident *gen_fp_known_const(ir_mode *mode, ia32_known_const_t kct) {
 	ir_graph      *rem;
 	entity        *ent;
 	tarval        *tv;
+	ir_mode       *mode;
 
 	ent_name = names[kct].ent_name;
 	if (! ent_cache[kct]) {
 		tp_name  = names[kct].tp_name;
 		cnst_str = names[kct].cnst_str;
 
+		mode = kct == ia32_SSIGN || kct == ia32_SABS ? mode_Iu : mode_Lu;
 		tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
@@ -1223,7 +1225,7 @@ ir_node *gen_Minus_ex(ia32_transform_env_t *env, ir_node *op) {
 			new_op = new_rd_ia32_xEor(env->dbg, env->irg, env->block, noreg_gp, noreg_gp, op, noreg_fp, nomem);
 
 			size   = get_mode_size_bits(env->mode);
-			name   = gen_fp_known_const(env->mode, size == 32 ? ia32_SSIGN : ia32_DSIGN);
+			name   = gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 
 			set_ia32_am_sc(new_op, name);
 
@@ -1296,7 +1298,7 @@ static ir_node *gen_Abs(ia32_transform_env_t *env) {
 			res = new_rd_ia32_xAnd(dbg,irg, block, noreg_gp, noreg_gp, op, noreg_fp, nomem);
 
 			size   = get_mode_size_bits(mode);
-			name   = gen_fp_known_const(mode, size == 32 ? ia32_SABS : ia32_DABS);
+			name   = gen_fp_known_const(size == 32 ? ia32_SABS : ia32_DABS);
 
 			set_ia32_am_sc(res, name);
 
