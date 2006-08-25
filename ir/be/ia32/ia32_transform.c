@@ -2344,7 +2344,9 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 		ir_node *fstp  = new_rd_ia32_GetST0(env->dbg, env->irg, env->block, frame, call_mem);
 		ir_node *mproj = new_r_Proj(env->irg, env->block, fstp, mode_M, pn_ia32_GetST0_M);
 		entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
-		ir_node *sse_load;
+		ir_node *sse_load, *p, *bad, *keep;
+		ir_node **in_keep;
+		int     keep_arity, i;
 
 		set_ia32_ls_mode(fstp, mode);
 		set_ia32_op_type(fstp, ia32_AddrModeD);
@@ -2365,6 +2367,35 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 
 		/* reroute all users of the result proj to the sse load */
 		edges_reroute(call_res, sse_load, env->irg);
+
+		/* now: create new Keep whith all former ins and one additional in - the result Proj */
+
+		/* get a Proj representing a caller save register */
+		p = get_proj_for_pn(env->irn, pn_be_Call_first_res + 1);
+		assert(is_Proj(p) && "Proj expected.");
+
+		/* user of the the proj is the Keep */
+		p = get_edge_src_irn(get_irn_out_edge_first(p));
+		assert(be_is_Keep(p) && "Keep expected.");
+
+		/* copy in array of the old keep and set the result proj as additional in */
+		keep_arity = get_irn_arity(p) + 1;
+		NEW_ARR_A(ir_node *, in_keep, keep_arity);
+		in_keep[keep_arity - 1] = call_res;
+		for (i = 0; i < keep_arity - 1; ++i)
+			in_keep[i] = get_irn_n(p, i);
+
+		/* create new keep and set the in class requirements properly */
+		keep = be_new_Keep(NULL, env->irg, env->block, keep_arity, in_keep);
+		for(i = 0; i < keep_arity; ++i) {
+			const arch_register_class_t *cls = arch_get_irn_reg_class(env->cg->arch_env, in_keep[i], -1);
+			be_node_set_reg_class(keep, i, cls);
+		}
+
+		/* kill the old keep */
+		bad = get_irg_bad(env->irg);
+		for (i = 0; i < keep_arity - 1; i++)
+			set_irn_n(p, i, bad);
 	}
 
 	return NULL;
