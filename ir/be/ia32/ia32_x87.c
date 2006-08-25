@@ -685,7 +685,7 @@ static ir_node *x87_create_fpop(const arch_env_t *env, x87_state *state, ir_node
 
 	while (num > 0) {
 		x87_pop(state);
-		fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n), pred, mode_E);
+		fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
 		attr = get_ia32_attr(fpop);
 		attr->x87[0] = &ia32_st_regs[0];
 		attr->x87[1] = &ia32_st_regs[0];

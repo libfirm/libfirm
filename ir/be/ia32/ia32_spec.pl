@@ -1634,7 +1634,7 @@ else {
 "fpop" => {
   "op_flags"  => "R|K",
   "comment"   => "x87 stack pop",
-  "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "reg_req"   => { "out" => [ "st" ] },
   "cmp_attr"  => "  return 1;\n",
   "emit"      => '. fstp %X1 /* x87 pop %X1 */',
 },
