@@ -349,10 +349,10 @@ struct _arch_irn_ops_if_t {
    *
    * @param self   The this pointer.
    * @param irn    The node.
-   * @param reload The reload.
+   * @param spill  The spill.
    * @param i      The position of the reload.
    */
-  void (*perform_memory_operand)(const void *self, ir_node *irn, ir_node *reload, unsigned int i);
+  void (*perform_memory_operand)(const void *self, ir_node *irn, ir_node *spill, unsigned int i);
 };
 
 /**
@@ -373,7 +373,7 @@ extern int arch_get_sp_bias(const arch_env_t *env, ir_node *irn);
 extern int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn);
 extern arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
 extern int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsigned int i);
-extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *reload, unsigned int i);
+extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *spill, unsigned int i);
 
 /**
  * Get the register requirements for a node.

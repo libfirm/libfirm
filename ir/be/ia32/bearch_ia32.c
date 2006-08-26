@@ -711,12 +711,8 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 	return 1;
 }
 
-static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node *reload, unsigned int i) {
+static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node *spill, unsigned int i) {
 	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
-	assert(get_nodes_block(reload) == get_nodes_block(irn) && "Reload must be in same block as irn.");
-
-	if (get_irn_n_edges(reload) > 1)
-		return;
 
 	if (i == 2) {
 		ir_node *tmp = get_irn_n(irn, 3);
@@ -727,13 +723,13 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	set_ia32_am_support(irn, ia32_am_Source);
 	set_ia32_op_type(irn, ia32_AddrModeS);
 	set_ia32_am_flavour(irn, ia32_B);
-	set_ia32_ls_mode(irn, get_irn_mode(reload));
-	set_ia32_frame_ent(irn, be_get_frame_entity(reload));
+	set_ia32_ls_mode(irn, get_irn_mode(get_irn_n(irn, i)));
+	set_ia32_frame_ent(irn, be_get_frame_entity(spill));
 	set_ia32_use_frame(irn);
 	set_ia32_got_reload(irn);
 
-	set_irn_n(irn, 0, be_get_Reload_frame(reload));
-	set_irn_n(irn, 4, be_get_Reload_mem(reload));
+	set_irn_n(irn, 0, be_get_Spill_frame(spill));
+	set_irn_n(irn, 4, spill);
 
 	/*
 		Input at position one is index register, which is NoReg.
@@ -742,7 +738,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	 */
 	set_irn_n(irn, 3, get_irn_n(irn, 1));
 
-	DBG_OPT_AM_S(reload, irn);
+	//FIXME DBG_OPT_AM_S(reload, irn);
 }
 
 static const be_abi_callbacks_t ia32_abi_callbacks = {

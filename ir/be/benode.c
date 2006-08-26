@@ -379,6 +379,18 @@ ir_node *be_get_Reload_frame(const ir_node *irn)
 	return get_irn_n(irn, be_pos_Reload_frame);
 }
 
+ir_node *be_get_Spill_val(const ir_node *irn)
+{
+	assert(be_is_Spill(irn));
+	return get_irn_n(irn, be_pos_Spill_val);
+}
+
+ir_node *be_get_Spill_frame(const ir_node *irn)
+{
+	assert(be_is_Spill(irn));
+	return get_irn_n(irn, be_pos_Spill_frame);
+}
+
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
 	int i;

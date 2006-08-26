@@ -3564,7 +3564,6 @@ insert_reload(spill_ilp_t * si, const ir_node * value, ir_node * after)
 void perform_memory_operand(spill_ilp_t * si, memoperand_t * memoperand)
 {
 	defs_t           *defs;
-	ir_node          *reload;
 	ir_node          *value = get_irn_n(memoperand->irn, memoperand->pos);
 	ir_node          *spill;
 	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
@@ -3576,10 +3575,7 @@ void perform_memory_operand(spill_ilp_t * si, memoperand_t * memoperand)
 	spill = defs->spills;
 	assert(spill && "no spill placed before reload");
 
-	reload = be_reload(arch_env, si->cls, memoperand->irn, get_irn_mode(value), spill);
-
-	arch_perform_memory_operand(arch_env, memoperand->irn, reload, memoperand->pos);
-	sched_remove(reload);
+	arch_perform_memory_operand(arch_env, memoperand->irn, spill, memoperand->pos);
 }
 
 void insert_memoperands(spill_ilp_t * si)

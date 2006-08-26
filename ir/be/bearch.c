@@ -41,7 +41,7 @@ arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if, FILE *fi
 arch_env_t *arch_env_push_irn_handler(arch_env_t *env,
     const arch_irn_handler_t *handler)
 {
-  assert(env->handlers_tos <= ARCH_MAX_HANDLERS);
+  assert(env->handlers_tos < ARCH_MAX_HANDLERS);
   env->handlers[env->handlers_tos++] = handler;
   return env;
 }
@@ -142,10 +142,10 @@ int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsi
 	}
 }
 
-extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *reload, unsigned int i) {
+extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *spill, unsigned int i) {
 	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
 	if(ops->impl->perform_memory_operand) {
-		ops->impl->perform_memory_operand(ops, irn, reload, i);
+		ops->impl->perform_memory_operand(ops, irn, spill, i);
 	} else {
 		return;
 	}

@@ -346,6 +346,9 @@ entity* be_get_frame_entity(const ir_node *irn);
 ir_node* be_get_Reload_mem(const ir_node *irn);
 ir_node* be_get_Reload_frame(const ir_node* irn);
 
+ir_node* be_get_Spill_val(const ir_node *irn);
+ir_node* be_get_Spill_frame(const ir_node* irn);
+
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity* ent);
 entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
 
