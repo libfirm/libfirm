@@ -724,11 +724,12 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	set_ia32_op_type(irn, ia32_AddrModeS);
 	set_ia32_am_flavour(irn, ia32_B);
 	set_ia32_ls_mode(irn, get_irn_mode(get_irn_n(irn, i)));
+	//TODO this will fail, if spill is a PhiM (give PhiMs entities?)
 	set_ia32_frame_ent(irn, be_get_frame_entity(spill));
 	set_ia32_use_frame(irn);
 	set_ia32_got_reload(irn);
 
-	set_irn_n(irn, 0, be_get_Spill_frame(spill));
+	set_irn_n(irn, 0, get_irg_frame(get_irn_irg(irn)));
 	set_irn_n(irn, 4, spill);
 
 	/*
