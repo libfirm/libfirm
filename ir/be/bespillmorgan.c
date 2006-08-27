@@ -248,10 +248,6 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, const ir_
 		ir_node *irn = be_lv_get_irn(env->cenv->lv, block, i);
 		int node_idx;
 
-		/*
-		if(!live_is_in(li) || !live_is_out(li))
-			continue;
-		*/
 		if(!consider_for_spilling(env->arch, env->cls, irn))
 			continue;
 
@@ -344,89 +340,41 @@ static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, const ir_l
 /*---------------------------------------------------------------------------*/
 
 static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* block, int loop_unused_spills_possible) {
-	int pressure;
-	ir_node *irn;
-	int max_pressure = 0;
-	int spills_needed;
+	ir_node *node;
+	int max_pressure;
 	int loop_unused_spills_needed;
-	block_attr_t *block_attr = get_block_attr(env, block);
-	int block_unused_spills_possible = bitset_popcnt(block_attr->livethrough_unused);
-	int unused_spills_possible = loop_unused_spills_possible + block_unused_spills_possible;
 	pset *live_nodes = pset_new_ptr_default();
 
 	be_liveness_end_of_block(env->cenv->lv, env->arch, env->cls, block, live_nodes);
-	pressure = pset_count(live_nodes);
+	max_pressure = pset_count(live_nodes);
 
 	DBG((dbg, DBG_LIVE, "Reduce pressure to %d In Block %+F:\n", env->registers_available, block));
 
 	/**
-	 * Walk over all irns in the schedule and check register pressure for each of them
+	 * Determine register pressure in block
 	 */
-	sched_foreach_reverse(block, irn) {
-		// do we need more spills than possible with unused libethroughs?
-		int spills_needed = pressure - env->registers_available - unused_spills_possible;
-		if(spills_needed > 0) {
-			DBG((dbg, DBG_PRESSURE, "\tWARNING %d more spills needed at %+F\n", spills_needed, irn));
-			// TODO further spills needed
-			//assert(0);
-		}
-		if(pressure > max_pressure) {
-			max_pressure = pressure;
-		}
+	sched_foreach_reverse(block, node) {
+		int pressure;
 
-		/* Register pressure is only important until we reach the first phi (the rest of the block
-		 * will only be phis.)
-		 */
-		if(is_Phi(irn))
+		if(is_Phi(node))
 			break;
 
-		// update pressure
-		be_liveness_transfer(env->arch, env->cls, irn, live_nodes);
+		be_liveness_transfer(env->arch, env->cls, node, live_nodes);
 		pressure = pset_count(live_nodes);
+		if(pressure > max_pressure)
+			max_pressure = pressure;
 	}
+	del_pset(live_nodes);
 
 	DBG((dbg, DBG_PRESSURE, "\tMax Pressure in %+F: %d\n", block, max_pressure));
 
-	/*
-	 * Calculate number of spills from loop_unused_spills_possible that we want to use,
-	 * and spill unused livethroughs from the block if we still don't have enough registers
-	 */
-	spills_needed = max_pressure - env->registers_available;
-	if(spills_needed < 0) {
+	loop_unused_spills_needed = max_pressure - env->registers_available;
+
+	if(loop_unused_spills_needed < 0) {
 		loop_unused_spills_needed = 0;
-	} else if(spills_needed > loop_unused_spills_possible) {
-		int i, spills;
-		int block_unused_spills_needed;
-
+	} else if(loop_unused_spills_needed > loop_unused_spills_possible) {
 		loop_unused_spills_needed = loop_unused_spills_possible;
-		block_unused_spills_needed = spills_needed - loop_unused_spills_possible;
-		if(block_unused_spills_needed > block_unused_spills_possible) {
-			block_unused_spills_needed = block_unused_spills_possible;
-		}
-
-		spills = 0;
-		/*
-		 * Spill/Reload unused livethroughs from the block
-		 */
-		bitset_foreach(block_attr->livethrough_unused, i) {
-			ir_node *to_spill;
-			const ir_edge_t *edge;
-
-			if(spills >= block_unused_spills_needed)
-				break;
-
-			to_spill = get_idx_irn(env->irg, i);
-			foreach_block_succ(block, edge) {
-				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around block %+F\n", to_spill, block));
-				be_add_reload_on_edge(env->senv, to_spill, edge->src, edge->pos);
-			}
-			spills++;
-		}
-	} else {
-		loop_unused_spills_needed = spills_needed;
 	}
-
-	del_pset(live_nodes);
 
 	DBG((dbg, DBG_PRESSURE, "Unused spills for Block %+F needed: %d\n", block, loop_unused_spills_needed));
 	return loop_unused_spills_needed;
@@ -453,6 +401,7 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 			int needed;
 			assert(is_Block(elem.node));
 			needed = reduce_register_pressure_in_block(env, elem.node, spills_possible);
+			assert(needed >= 0);
 			assert(needed <= spills_possible);
 			if(needed > spills_needed)
 				spills_needed = needed;
@@ -460,6 +409,7 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 		}
 		case k_ir_loop: {
 			int needed = reduce_register_pressure_in_loop(env, elem.son, spills_possible);
+			assert(needed >= 0);
 			assert(needed <= spills_possible);
 			if(needed > spills_needed)
 				spills_needed = needed;

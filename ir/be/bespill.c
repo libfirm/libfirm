@@ -35,7 +35,7 @@
 
 // only rematerialise when costs are less than REMAT_COST_LIMIT
 // TODO determine a good value here...
-#define REMAT_COST_LIMIT	80
+#define REMAT_COST_LIMIT	20
 
 typedef struct _reloader_t reloader_t;
 
@@ -45,10 +45,16 @@ struct _reloader_t {
 };
 
 typedef struct _spill_info_t {
+	/** the value that should get spilled */
 	ir_node *spilled_node;
+	/** list of places where the value should get reloaded */
 	reloader_t *reloaders;
 
+	/** the spill node, or a PhiM node */
 	ir_node *spill;
+	/** if we had the value of a phi spilled before but not the phi itself then
+	 * this field contains the spill for the phi value */
+	ir_node *old_spill;
 } spill_info_t;
 
 struct _spill_env_t {
@@ -84,6 +90,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value) {
 	if (res == NULL) {
 		info.reloaders = NULL;
 		info.spill = NULL;
+		info.old_spill = NULL;
 		res = set_insert(env->spills, &info, sizeof(info), hash);
 	}
 
@@ -185,10 +192,18 @@ void be_spill_phi(spill_env_t *env, ir_node *node) {
 	pset_insert_ptr(env->mem_phis, node);
 
 	// create spillinfos for the phi arguments
-	get_spillinfo(env, node);
+	spill_info_t* spill = get_spillinfo(env, node);
 	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *arg = get_irn_n(node, i);
 		get_spillinfo(env, arg);
+	}
+
+	// if we had a spill for the phi value before, then remove this spill from
+	// schedule, as we will remove it in the insert spill/reload phase
+	if(spill->spill != NULL && !is_Phi(spill->spill)) {
+		//sched_remove(spill->spill);
+		spill->old_spill = spill->spill;
+		spill->spill = NULL;
 	}
 }
 
@@ -292,6 +307,17 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo) {
 
 		set_irn_n(spillinfo->spill, i, arg_info->spill);
 	}
+
+	// rewire reloads from old_spill to phi
+	if(spillinfo->old_spill != NULL) {
+		const ir_edge_t *edge, *next;
+		foreach_out_edge_safe(spillinfo->old_spill, edge, next) {
+			ir_node* reload = get_edge_src_irn(edge);
+			assert(be_is_Reload(reload) || is_Phi(reload));
+			set_irn_n(reload, get_edge_src_pos(edge), spillinfo->spill);
+		}
+		spillinfo->old_spill = NULL;
+	}
 }
 
 /**
@@ -377,15 +403,9 @@ static int is_remat_node(spill_env_t *env, ir_node *node) {
 
 	assert(!be_is_Spill(node));
 
-	if(be_is_Reload(node))
+	if(arch_irn_is(arch_env, node, rematerializable)) {
 		return 1;
-
-	// TODO why does arch_irn_is say rematerializable anyway?
-	if(be_is_Barrier(node))
-		return 0;
-
-	if(arch_irn_is(arch_env, node, rematerializable))
-		return 1;
+	}
 
 	if(be_is_StackParam(node))
 		return 1;
@@ -416,8 +436,9 @@ static int check_remat_conditions_costs(spill_env_t *env, ir_node *spilled, ir_n
 	} else {
 		costs += arch_get_op_estimated_cost(env->arch_env, spilled);
 	}
-	if(parentcosts + costs >= REMAT_COST_LIMIT)
+	if(parentcosts + costs >= REMAT_COST_LIMIT) {
 		return REMAT_COST_LIMIT;
+	}
 
 	argremats = 0;
 	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
@@ -435,7 +456,6 @@ static int check_remat_conditions_costs(spill_env_t *env, ir_node *spilled, ir_n
 		}
 		argremats++;
 
-		// TODO can we get more accurate costs than +1?
 		costs += check_remat_conditions_costs(env, arg, reloader, parentcosts + costs);
 		if(parentcosts + costs >= REMAT_COST_LIMIT)
 			return REMAT_COST_LIMIT;
@@ -536,13 +556,10 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		}
 
 		del_pset(values);
+
+		si->reloaders = NULL;
 	}
 
-	// reloads are placed now, but we might reuse the spill environment for further spilling decisions
-	del_set(env->spills);
-	env->spills = new_set(cmp_spillinfo, 1024);
-
 	be_remove_dead_nodes_from_schedule(env->chordal_env->irg);
-	//be_liveness_add_missing(env->chordal_env->lv);
 	be_liveness_recompute(env->chordal_env->lv);
 }

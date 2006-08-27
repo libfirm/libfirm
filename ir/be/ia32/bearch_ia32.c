@@ -703,7 +703,7 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 		get_irn_arity(irn) != 5                       ||  /* must be a binary operation */
 		get_ia32_op_type(irn) != ia32_Normal          ||  /* must not already be a addressmode irn */
 		! (get_ia32_am_support(irn) & ia32_am_Source) ||  /* must be capable of source addressmode */
-        (i != 2 && i != 3)                            ||  /* a "real" operand position must be requested */
+		(i != 2 && i != 3)                            ||  /* a "real" operand position must be requested */
 		(i == 2 && ! is_ia32_commutative(irn))        ||  /* if first operand requested irn must be commutative */
 		is_ia32_use_frame(irn))                           /* must not already use frame */
 		return 0;

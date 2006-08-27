@@ -209,7 +209,7 @@ typedef struct _arch_inverse_t {
 typedef enum _arch_irn_flags_t {
 	arch_irn_flags_none             = 0, /**< Node flags. */
 	arch_irn_flags_dont_spill       = 1, /**< This must not be spilled. */
-	arch_irn_flags_rematerializable = 2, /**< This should be replicated instead of spilled/reloaded. */
+	arch_irn_flags_rematerializable = 2, /**< This can be replicated instead of spilled/reloaded. */
 	arch_irn_flags_ignore           = 4, /**< Ignore node during register allocation. */
 	arch_irn_flags_modify_sp        = 8, /**< I modify the stack pointer. */
 	arch_irn_flags_last             = arch_irn_flags_modify_sp

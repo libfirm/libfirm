@@ -329,10 +329,16 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 	const arch_env_t *aenv = cenv->birg->main_env->arch_env;
 	const ir_edge_t  *edge, *ne;
 	ir_node          *block;
+	ir_node          *spill;
 
 	if (! be_is_Reload(irn))
 		return;
 
+	// only use memory operands, if the reload is only used by 1 node
+	if(get_irn_n_edges(irn) > 1)
+		return;
+
+	spill = be_get_Reload_mem(irn);
 	block = get_nodes_block(irn);
 
 	foreach_out_edge_safe(irn, edge, ne) {
@@ -344,7 +350,7 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 
 		if (get_nodes_block(src) == block && arch_possible_memory_operand(aenv, src, pos)) {
 			DBG((cenv->dbg, LEVEL_3, "performing memory operand %+F at %+F\n", irn, src));
-			arch_perform_memory_operand(aenv, src, irn, pos);
+			arch_perform_memory_operand(aenv, src, spill, pos);
 		}
 	}
 
