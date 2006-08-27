@@ -35,11 +35,6 @@
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
 
-typedef struct _ia32_place_env_t {
-	ia32_code_gen_t *cg;
-	bitset_t        *visited;
-} ia32_place_env_t;
-
 typedef enum {
 	IA32_AM_CAND_NONE  = 0,
 	IA32_AM_CAND_LEFT  = 1,
@@ -244,10 +239,14 @@ static void ia32_transform_const(ir_node *irn, void *env) {
 	tenv.irn  = irn;
 	DEBUG_ONLY(tenv.mod = cg->mod;)
 
+	// Matze: this stuff shouldn't be needed anymore
+	// spilling+rematerialisation does a better job for this
+#if 0
 	/* place const either in the smallest dominator of all its users or the original block */
 	if (cg->opt & IA32_OPT_PLACECNST)
 		tenv.block = node_users_smallest_common_dominator(irn, 1);
 	else
+#endif
 		tenv.block = get_nodes_block(irn);
 
 	switch (get_irn_opcode(irn)) {
@@ -271,17 +270,12 @@ static void ia32_transform_const(ir_node *irn, void *env) {
  * Transform all firm consts and assure, we visit each const only once.
  */
 static void ia32_place_consts_walker(ir_node *irn, void *env) {
-	ia32_place_env_t *penv = env;
-	opcode           opc   = get_irn_opcode(irn);
+	ia32_code_gen_t *cg = env;
 
-	/* transform only firm consts which are not already visited */
-	if ((opc != iro_Const && opc != iro_SymConst) || bitset_is_set(penv->visited, get_irn_idx(irn)))
+	if(!is_Const(irn) && !is_SymConst(irn))
 		return;
 
-	/* mark const visited */
-	bitset_set(penv->visited, get_irn_idx(irn));
-
-	ia32_transform_const(irn, penv->cg);
+	ia32_transform_const(irn, cg);
 }
 
 /**
@@ -303,12 +297,7 @@ static void ia32_set_modes(ir_node *irn, void *env) {
  * @param cg  The ia32 codegenerator object
  */
 static void ia32_transform_all_firm_consts(ia32_code_gen_t *cg) {
-	ia32_place_env_t penv;
-
-	penv.cg      = cg;
-	penv.visited = bitset_irg_malloc(cg->irg);
-	irg_walk_graph(cg->irg, NULL, ia32_place_consts_walker, &penv);
-	bitset_free(penv.visited);
+	irg_walk_graph(cg->irg, NULL, ia32_place_consts_walker, cg);
 }
 
 /* Place all consts and change pointer arithmetics into unsigned integer arithmetics. */
