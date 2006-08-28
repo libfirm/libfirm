@@ -239,14 +239,10 @@ static void ia32_transform_const(ir_node *irn, void *env) {
 	tenv.irn  = irn;
 	DEBUG_ONLY(tenv.mod = cg->mod;)
 
-	// Matze: this stuff shouldn't be needed anymore
-	// spilling+rematerialisation does a better job for this
-#if 0
 	/* place const either in the smallest dominator of all its users or the original block */
 	if (cg->opt & IA32_OPT_PLACECNST)
 		tenv.block = node_users_smallest_common_dominator(irn, 1);
 	else
-#endif
 		tenv.block = get_nodes_block(irn);
 
 	switch (get_irn_opcode(irn)) {
