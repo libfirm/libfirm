@@ -110,6 +110,46 @@ void          set_irn_in            (ir_node *node, int arity, ir_node *in[]);
 ir_node      *get_irn_n             (const ir_node *node, int n);
 
 /**
+* Add a artificial dependency to the node.
+* The dependency is only inserted if it is not there already.
+* @param node The node.
+* @param dep  The dependency target.
+* @return The index in the array (get_irn_dep() with that index returns @p dep).
+*/
+int add_irn_dep(ir_node *node, ir_node *dep);
+
+/**
+ * Copy all dependencies from a node to another.
+ * @param tgt The node which sould be enriched.
+ * @param src The node whose dependencies shall be copied.
+ */
+void add_irn_deps(ir_node *tgt, ir_node *src);
+
+/**
+* Get the length of the dependency array.
+* @param node The node.
+* @return The length of the dependency array or 0 if it has not yet been allocated.
+*/
+int get_irn_deps(const ir_node *node);
+
+/**
+* Get an entry of the dependency array.
+* @param node The node.
+* @param pos  The position.
+* @return The node at that position.
+*/
+ir_node *get_irn_dep(const ir_node *node, int pos);
+
+/**
+* Set an entry of the dependency array.
+* @param node The node.
+* @param pos  The position.
+* @param dep  The dependency target.
+*/
+void set_irn_dep(ir_node *node, int pos, ir_node *dep);
+
+
+/**
  * Get the n-th predecessor of a node in intraprocedural view.
  * Can be used always if it's know that node is not a split one.
  */

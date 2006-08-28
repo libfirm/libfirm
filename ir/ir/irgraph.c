@@ -139,7 +139,8 @@ new_r_ir_graph (entity *ent, int n_loc)
   res = alloc_graph();
   res->kind = k_ir_graph;
 
-  edges_init_graph(res);
+  //edges_init_graph_kind(res, EDGE_KIND_NORMAL);
+  //edges_init_graph_kind(res, EDGE_KIND_BLOCK);
 
   /* initialize the idx->node map. */
   res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);

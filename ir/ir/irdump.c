@@ -1438,34 +1438,54 @@ print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 /* dump edges to our inputs */
 static void
 dump_ir_data_edges(FILE *F, ir_node *n)  {
-  int i;
-  unsigned long visited = get_irn_visited(n);
+	int i;
+	unsigned long visited = get_irn_visited(n);
 
-  if ((get_irn_op(n) == op_End) && (!dump_keepalive))
-    return;
+	if ((get_irn_op(n) == op_End) && (!dump_keepalive))
+		return;
 
-  for (i = 0; i < get_irn_arity(n); i++) {
-    ir_node * pred = get_irn_n(n, i);
-    assert(pred);
+	/* dump the dependency edges. */
+	for (i = 0; i < get_irn_deps(n); ++i) {
+		ir_node *dep = get_irn_dep(n, i);
 
-    if ((get_interprocedural_view() && get_irn_visited(pred) < visited))
-      continue; /* pred not dumped */
+		if(dep) {
+			fprintf(F, "edge: {sourcename: \"");
+			PRINT_NODEID(n);
+			fprintf(F, "\" targetname: ");
+			if ((get_opt_dump_const_local()) && is_constlike_node(dep)) {
+				PRINT_CONSTID(n, dep);
+			} else {
+				fprintf(F, "\"");
+				PRINT_NODEID(dep);
+				fprintf(F, "\"");
+			}
+			fprintf(F, " label: \"%d\" ", i);
+			fprintf(F, " color: darkgreen}\n");
+		}
+	}
 
-    if (dump_backedge_information_flag && is_backedge(n, i))
-      fprintf (F, "backedge: {sourcename: \"");
-    else
-      fprintf (F, "edge: {sourcename: \"");
-    PRINT_NODEID(n);
-    fprintf (F, "\" targetname: ");
-    if ((get_opt_dump_const_local()) && is_constlike_node(pred)) {
-      PRINT_CONSTID(n, pred);
-    } else {
-      fprintf(F, "\""); PRINT_NODEID(pred); fprintf(F, "\"");
-    }
-    fprintf (F, " label: \"%d\" ", i);
-    print_edge_vcgattr(F, n, i);
-    fprintf (F, "}\n");
-  }
+	for (i = 0; i < get_irn_arity(n); i++) {
+		ir_node * pred = get_irn_n(n, i);
+		assert(pred);
+
+		if ((get_interprocedural_view() && get_irn_visited(pred) < visited))
+			continue; /* pred not dumped */
+
+		if (dump_backedge_information_flag && is_backedge(n, i))
+			fprintf (F, "backedge: {sourcename: \"");
+		else
+			fprintf (F, "edge: {sourcename: \"");
+		PRINT_NODEID(n);
+		fprintf (F, "\" targetname: ");
+		if ((get_opt_dump_const_local()) && is_constlike_node(pred)) {
+			PRINT_CONSTID(n, pred);
+		} else {
+			fprintf(F, "\""); PRINT_NODEID(pred); fprintf(F, "\"");
+		}
+		fprintf (F, " label: \"%d\" ", i);
+		print_edge_vcgattr(F, n, i);
+		fprintf (F, "}\n");
+	}
 }
 
 /** Dumps a node and its edges but not the block edge

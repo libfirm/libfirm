@@ -29,6 +29,7 @@
 #include "entity_t.h"
 #include "typegmod.h"
 #include "tr_inheritance.h"
+#include "iredgekinds.h"
 
 #include "irloop.h"
 #include "execution_frequency.h"
@@ -47,6 +48,8 @@ typedef struct _irg_edge_info_t {
   set      *edges;         /**< a set containing all edges of a graph. */
   unsigned activated : 1;  /**< set if edges are activated for the graph. */
 } irg_edge_info_t;
+
+typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
 
 /**
  * Index constants for nodes that can be accessed through the graph itself.
@@ -142,7 +145,7 @@ struct ir_graph {
   unsigned long block_visited;       /**< same as visited, for a complete block */
   unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
                                           updated after every walk */
-  irg_edge_info_t edge_info;         /**< edge info for automatic outs */
+  irg_edges_info_t edge_info;        /**< edge info for automatic outs */
   ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 #ifdef DEBUG_libfirm

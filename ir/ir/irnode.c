@@ -27,6 +27,7 @@
 #include "irdump.h"
 #include "irop_t.h"
 #include "irprog_t.h"
+#include "iredgekinds.h"
 #include "iredges_t.h"
 
 #include "irhooks.h"
@@ -144,6 +145,8 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res->visited  = 0;
   res->node_idx = irg_register_node_idx(irg, res);
   res->link     = NULL;
+  res->deps     = NULL;
+
   if (arity < 0) {
     res->in = NEW_ARR_F (ir_node *, 1);  /* 1: space for block */
   } else {
@@ -159,12 +162,10 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
   res->node_nr = get_irp_new_node_nr();
 #endif
 
-  INIT_LIST_HEAD(&res->edge_info.outs_head);
+  for(i = 0; i < EDGE_KIND_LAST; ++i)
+	  INIT_LIST_HEAD(&res->edge_info[i].outs_head);
+
   is_bl = is_Block(res);
-  if (is_bl)
-    INIT_LIST_HEAD(&res->attr.block.succ_head);
-
-
   for (i = is_bl; i <= arity; ++i)
     edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
 
@@ -308,6 +309,69 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
 
   node->in[n + 1] = in;
 }
+
+int
+(get_irn_deps)(const ir_node *node)
+{
+	return _get_irn_deps(node);
+}
+
+ir_node *
+(get_irn_dep)(const ir_node *node, int pos)
+{
+	return _get_irn_dep(node, pos);
+}
+
+void
+(set_irn_dep)(ir_node *node, int pos, ir_node *dep)
+{
+	_set_irn_dep(node, pos, dep);
+}
+
+int add_irn_dep(ir_node *node, ir_node *dep)
+{
+	int res = 0;
+
+	if (node->deps == NULL) {
+		node->deps = NEW_ARR_F(ir_node *, 1);
+		node->deps[0] = dep;
+	}
+	else {
+		int i, n;
+		int first_zero = -1;
+
+		for(i = 0, n = ARR_LEN(node->deps); i < n; ++i) {
+			if(node->deps[i] == NULL)
+				first_zero = i;
+
+			if(node->deps[i] == dep)
+				return i;
+		}
+
+		if(first_zero >= 0) {
+			node->deps[first_zero] = dep;
+			res = first_zero;
+		}
+
+		else {
+			ARR_APP1(ir_node *, node->deps, dep);
+			res = n;
+		}
+	}
+
+	edges_notify_edge_kind(node, res, dep, NULL, EDGE_KIND_DEP, get_irn_irg(node));
+
+	return res;
+}
+
+void add_irn_deps(ir_node *tgt, ir_node *src)
+{
+	int i, n;
+
+	for(i = 0, n = get_irn_deps(src); i < n; ++i)
+		add_irn_dep(tgt, get_irn_dep(src, i));
+}
+
 
 ir_mode *
 (get_irn_mode)(const ir_node *node) {

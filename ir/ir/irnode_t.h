@@ -29,6 +29,7 @@
 #include "irdom_t.h" /* For size of struct dom_info. */
 #include "dbginfo.h"
 #include "irloop.h"
+#include "iredgekinds.h"
 #include "array.h"
 
 #include "set.h"
@@ -185,15 +186,6 @@ typedef struct {
   char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
 } conv_attr;
 
-/**
- * Edge info to put into an irn.
- */
-typedef struct _irn_edge_info_t {
-  struct list_head outs_head;  /**< The list of all outs. */
-  int out_count;               /**< Number of outs in the list. */
-} irn_edge_info_t;
-
-
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
@@ -229,6 +221,15 @@ typedef union {
   conv_attr      conv;          /**< For Conv operation */
 } attr;
 
+/**
+* Edge info to put into an irn.
+*/
+typedef struct _irn_edge_kind_info_t {
+	struct list_head outs_head;  /**< The list of all outs. */
+	int out_count;               /**< Number of outs in the list. */
+} irn_edge_info_t;
+
+typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST];
 
 /** common structure of an irnode
     if the node has some attributes, they are stored in attr */
@@ -259,7 +260,8 @@ struct ir_node {
   struct abstval *av;      /**< the abstract value of this node */
   struct section *sec;
 #endif
-  irn_edge_info_t edge_info;  /**< everlasting out edges */
+  struct ir_node **deps;   /**< Additional dependencies induced by state. */
+  irn_edges_info_t edge_info;  /**< everlasting out edges */
   /* ------- Opcode depending fields -------- */
   attr attr;               /**< attribute of this node. Depends on opcode.
                               Must be last field of struct ir_node. */
@@ -454,6 +456,44 @@ _get_irn_inter_n(const ir_node *node, int n) {
  * Intern version for libFirm.
  */
 extern ir_node *(*_get_irn_n)(const ir_node *node, int n);
+
+static INLINE int _get_irn_deps(const ir_node *node)
+{
+	return node->deps ? ARR_LEN(node->deps) : 0;
+}
+
+static INLINE ir_node *_get_irn_dep(const ir_node *node, int pos)
+{
+	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
+	assert(pos >= 0 && pos < ARR_LEN(node->deps) && "dependency index out of range");
+	return node->deps[pos];
+}
+
+static INLINE void
+_set_irn_dep(ir_node *node, int pos, ir_node *dep)
+{
+	ir_node *old;
+
+	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
+	assert(pos >= 0 && pos < ARR_LEN(node->deps) && "dependency index out of range");
+	old = node->deps[pos];
+	node->deps[pos] = dep;
+	edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, get_irn_irg(node));
+}
+
+
+static INLINE int
+_get_irn_ins_or_deps(const ir_node *irn)
+{
+	return _get_irn_deps(irn) + _get_irn_arity(irn);
+}
+
+static INLINE ir_node *
+_get_irn_in_or_dep(const ir_node *irn, int pos)
+{
+	int n_in = get_irn_arity(irn);
+	return pos < n_in ? get_irn_n(irn, pos) : get_irn_dep(irn, pos - n_in);
+}
 
 /**
  * Gets the mode of a node.
@@ -905,5 +945,12 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
 #define get_Psi_n_conds(node)                 _get_Psi_n_conds(node)
 #define get_irn_idx(node)                     _get_irn_idx(node)
+
+#define get_irn_deps(node)                    _get_irn_deps(node)
+#define set_irn_dep(node, pos, dep)           _set_irn_dep(node, pos, dep)
+#define get_irn_dep(node, pos)                _get_irn_dep(node, pos)
+
+#define get_irn_ins_or_deps(node)             _get_irn_ins_or_deps(node)
+#define get_irn_in_or_dep(node, pos)          _get_irn_in_or_dep(node, pos)
 
 #endif /* _IRNODE_T_H_ */
