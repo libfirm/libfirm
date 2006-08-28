@@ -1021,14 +1021,16 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	int        is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
 	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), is_unsigned);
 	int is_PsiCondCMov     = is_ia32_PsiCondCMov(irn);
+	int idx_left  = 2 - is_PsiCondCMov;
+	int idx_right = 3 - is_PsiCondCMov;
 
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 	const arch_register_t *in1, *in2, *out;
 
 	out = arch_get_irn_register(env->arch_env, irn);
-	in1 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 2 - is_PsiCondCMov));
-	in2 = arch_get_irn_register(env->arch_env, get_irn_n(irn, 3 - is_PsiCondCMov));
+	in1 = arch_get_irn_register(env->arch_env, get_irn_n(irn, idx_left));
+	in2 = arch_get_irn_register(env->arch_env, get_irn_n(irn, idx_right));
 
 	/* we have to emit the cmp first, because the destination register */
 	/* could be one of the compare registers                           */
@@ -1053,9 +1055,9 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	}
 	else if (REGS_ARE_EQUAL(out, in1)) {
 		/* true in == out -> need complement compare and exchange true and default in */
-		ir_node *t = get_irn_n(irn, 2);
-		set_irn_n(irn, 2, get_irn_n(irn, 3));
-		set_irn_n(irn, 3, t);
+		ir_node *t = get_irn_n(irn, idx_left);
+		set_irn_n(irn, idx_left, get_irn_n(irn, idx_right));
+		set_irn_n(irn, idx_right, t);
 
 		cmp_suffix  = get_cmp_suffix(get_inversed_pnc(get_ia32_pncode(irn)), is_unsigned);
 
