@@ -945,18 +945,22 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 {
 	ir_node *reload;
 
-	ir_node *block  = get_nodes_block(insert);
-	ir_graph *irg  = get_irn_irg(block);
+	ir_node *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
+	ir_graph *irg  = get_irn_irg(bl);
 	ir_node *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 
-	reload = be_new_Reload(cls, cls_frame, irg, block, frame, spill, mode);
+	reload = be_new_Reload(cls, cls_frame, irg, bl, frame, spill, mode);
 
-	assert(!is_Block(insert));
+	if(is_Block(insert)) {
+		insert = sched_skip(insert, 0, sched_skip_cf_predicator, (void *) arch_env);
+		sched_add_after(insert, reload);
+	}
 
-	sched_add_before(insert, reload);
+	else
+		sched_add_before(insert, reload);
 
 	return reload;
 }
