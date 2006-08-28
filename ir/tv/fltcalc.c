@@ -1584,6 +1584,7 @@ void init_fltcalc(int precision)
     calc_buffer_size = DESCRIPTOR_POS + sizeof(descriptor_t);
 
     calc_buffer = xmalloc(calc_buffer_size);
+    memset(calc_buffer, 0, calc_buffer_size);
     DEBUGPRINTF(("init fltcalc:\n\tVALUE_SIZE = %d\n\tSIGN_POS = %d\n\tEXPONENT_POS = %d\n\tMANTISSA_POS = %d\n\tDESCRIPTOR_POS = %d\n\tCALC_BUFFER_SIZE = %d\n\tcalc_buffer = %p\n\n", value_size, SIGN_POS, EXPONENT_POS, MANTISSA_POS, DESCRIPTOR_POS, calc_buffer_size, calc_buffer));
 #ifdef HAVE_LONG_DOUBLE
     DEBUGPRINTF(("\tUsing long double (1-15-64) interface\n"));

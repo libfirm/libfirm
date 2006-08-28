@@ -98,8 +98,8 @@ static long long count = 0;
 /****************************************************************************
  *   private variables
  ****************************************************************************/
-static struct set *tarvals;   /* container for tarval structs */
-static struct set *values;    /* container for values */
+static struct set *tarvals = NULL;   /* container for tarval structs */
+static struct set *values = NULL;    /* container for values */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
 /****************************************************************************
