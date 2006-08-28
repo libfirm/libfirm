@@ -59,10 +59,11 @@ typedef struct _ss_env_t {
 
 /** Compare 2 affinity edges (used in quicksort) */
 static int cmp_affinity(const void *d1, const void *d2) {
-	const affinity_edge_t *e1 = d1;
-	const affinity_edge_t *e2 = d2;
+	const affinity_edge_t * const *e1 = d1;
+	const affinity_edge_t * const *e2 = d2;
 
-	return e1->affinity < e2->affinity ? -1 : 1;
+	// sort in descending order
+	return (*e1)->affinity < (*e2)->affinity ? 1 : -1;
 }
 
 static int cmp_spill(const void* d1, const void* d2, size_t size) {
