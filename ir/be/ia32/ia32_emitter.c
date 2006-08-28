@@ -1059,7 +1059,7 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 		set_irn_n(irn, idx_left, get_irn_n(irn, idx_right));
 		set_irn_n(irn, idx_right, t);
 
-		cmp_suffix  = get_cmp_suffix(get_inversed_pnc(get_ia32_pncode(irn)), is_unsigned);
+		cmp_suffix  = get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), get_irn_mode(irn)), is_unsigned);
 
 	}
 	else {
