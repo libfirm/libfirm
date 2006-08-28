@@ -260,6 +260,9 @@ long ia32_translate_proj_pos(const ir_node *proj) {
 	else if (is_ia32_CopyB(pred) || is_ia32_CopyB_i(pred)) {
 		return nr;
 	}
+	else if (is_ia32_Leave(pred)) {
+		return nr;
+	}
 
 //	assert(0 && "unsupported Proj(X)");
 	return 0;
