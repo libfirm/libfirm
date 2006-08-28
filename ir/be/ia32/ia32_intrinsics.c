@@ -135,6 +135,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 
 	/* l_res = SHL a_l, cnt */
 	h_res = new_rd_ia32_l_Shl(dbg, irg, block, a_l, cnt, h_res_mode);
+	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -162,6 +163,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 
 	/* h_res = SHR a_h, cnt */
 	h_res = new_rd_ia32_l_Shr(dbg, irg, block, a_h, cnt, h_res_mode);
+	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -189,6 +191,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 
 	/* h_res = SAR a_h, cnt */
 	h_res = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, cnt, h_res_mode);
+	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -258,6 +261,7 @@ static int map_Minus(ir_node *call, void *ctx) {
 	/* too bad: we need 0 in a register here */
 	cnst  = new_Const_long(h_res_mode, 0);
 	h_res = new_rd_ia32_l_SubC(dbg, irg, block, cnst, a_h, h_res_mode);
+	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -298,6 +302,7 @@ static int map_Abs(ir_node *call, void *ctx) {
 	sub_h = new_rd_ia32_l_Eor(dbg, irg, block, a_h, sign, h_res_mode);
 	l_res = new_rd_ia32_l_Sub(dbg, irg, block, sub_l, sign, l_res_mode);
 	h_res = new_rd_ia32_l_SubC(dbg, irg, block, sub_h, sign, l_res_mode);
+	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 

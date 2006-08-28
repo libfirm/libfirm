@@ -185,6 +185,7 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, 
 }
 
 void be_spill_phi(spill_env_t *env, ir_node *node) {
+	spill_info_t* spill;
 	int i, arity;
 
 	assert(is_Phi(node));
@@ -192,7 +193,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node) {
 	pset_insert_ptr(env->mem_phis, node);
 
 	// create spillinfos for the phi arguments
-	spill_info_t* spill = get_spillinfo(env, node);
+	spill = get_spillinfo(env, node);
 	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *arg = get_irn_n(node, i);
 		get_spillinfo(env, arg);

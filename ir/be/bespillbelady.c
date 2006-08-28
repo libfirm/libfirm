@@ -626,7 +626,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	env.cenv      = chordal_env;
 	env.arch      = chordal_env->birg->main_env->arch_env;
 	env.cls       = chordal_env->cls;
-	env.n_regs    = arch_count_non_ignore_regs(env.arch, env.cls);
+	env.n_regs    = env.cls->n_regs - be_put_ignore_regs(chordal_env->birg, chordal_env->cls, NULL);
 	env.ws        = new_workset(&env, &env.ob);
 	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->lv, chordal_env->birg->main_env->arch_env, env.cls);
 	if(spill_env == NULL) {

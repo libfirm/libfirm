@@ -10,6 +10,7 @@
 #include "firm_types.h"
 #include "obst.h"
 #include "debug.h"
+#include "bitset.h"
 
 #include "be.h"
 #include "bearch.h"
@@ -67,5 +68,16 @@ struct _be_irg_t {
 	struct _be_abi_irg_t          *abi;
 	struct _arch_code_generator_t *cg;
 };
+
+/**
+* Put the registers to be ignored in this IRG into a bitset.
+* @param birg The backend IRG data structure.
+* @param cls  The register class.
+* @param bs   The bitset (may be NULL).
+* @return The number of registers to be ignored.
+*/
+int be_put_ignore_regs(const struct _be_irg_t *birg, const struct _arch_register_class_t *cls, bitset_t *bs);
+
+
 
 #endif /* _BE_T_H */

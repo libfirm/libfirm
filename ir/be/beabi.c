@@ -383,7 +383,7 @@ static INLINE int is_on_stack(be_abi_call_t *call, int pos)
  * @param curr_sp The stack pointer node to use.
  * @return The stack pointer after the call.
  */
-static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
+static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, ir_node *alloca_copy)
 {
 	ir_graph *irg             = env->birg->irg;
 	const arch_isa_t *isa     = env->birg->main_env->arch_env->isa;
@@ -471,7 +471,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		 * moving the stack pointer along the stack's direction.
 		 */
 		if(stack_dir < 0 && !do_seq && !no_alloc) {
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, no_mem, stack_size);
+			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size);
+			if(alloca_copy) {
+				add_irn_dep(curr_sp, alloca_copy);
+				alloca_copy = NULL;
+			}
 		}
 
 		assert(mode_is_reference(mach_mode) && "machine mode must be pointer");
@@ -491,8 +495,12 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			 */
 			if (do_seq) {
 				curr_ofs = 0;
-				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, curr_mem,
-					param_size + arg->space_before);
+				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, param_size + arg->space_before);
+				if(alloca_copy) {
+					add_irn_dep(curr_sp, alloca_copy);
+					alloca_copy = NULL;
+				}
+				add_irn_dep(curr_sp, curr_mem);
 			}
 			else {
 				curr_ofs += arg->space_before;
@@ -690,8 +698,14 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_Call_M);
 
 		 /* Clean up the stack frame if we allocated it */
-		if(!no_alloc)
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, mem_proj, -stack_size);
+		if(!no_alloc) {
+			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size);
+			add_irn_dep(curr_sp, mem_proj);
+			if(alloca_copy) {
+				add_irn_dep(curr_sp, alloca_copy);
+				alloca_copy = NULL;
+			}
+		}
 	}
 
 	be_abi_call_free(call);
@@ -706,7 +720,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
  * Adjust an alloca.
  * The alloca is transformed into a back end alloca node and connected to the stack nodes.
  */
-static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp)
+static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp, ir_node **result_copy)
 {
 	if (get_Alloc_where(alloc) == stack_alloc) {
 		ir_node *bl        = get_nodes_block(alloc);
@@ -758,9 +772,9 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 
 		addr = env->isa->stack_dir < 0 ? alloc_res : curr_sp;
 
-		/* copy the address away, since it could be used after further stack pointer modifictions. */
+		/* copy the address away, since it could be used after further stack pointer modifications. */
 		/* Let it point curr_sp just for the moment, I'll reroute it in a second. */
-		copy = be_new_Copy(env->isa->sp->reg_class, irg, bl, curr_sp);
+		*result_copy = copy = be_new_Copy(env->isa->sp->reg_class, irg, bl, curr_sp);
 
 		/* Let all users of the Alloc() result now point to the copy. */
 		edges_reroute(alloc_res, copy, irg);
@@ -880,6 +894,7 @@ static void process_calls_in_block(ir_node *bl, void *data)
 	if(n > 0) {
 		ir_node *keep;
 		ir_node **nodes;
+		ir_node *copy = NULL;
 		int i;
 
 		nodes = obstack_finish(&env->obst);
@@ -893,10 +908,10 @@ static void process_calls_in_block(ir_node *bl, void *data)
 			DBG((env->dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
 			switch(get_irn_opcode(irn)) {
 			case iro_Call:
-				curr_sp = adjust_call(env, irn, curr_sp);
+				curr_sp = adjust_call(env, irn, curr_sp, copy);
 				break;
 			case iro_Alloc:
-				curr_sp = adjust_alloc(env, irn, curr_sp);
+				curr_sp = adjust_alloc(env, irn, curr_sp, &copy);
 				break;
 			default:
 				break;
@@ -1611,7 +1626,7 @@ static void modify_irg(be_abi_irg_t *env)
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
 	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
-	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, no_mem, BE_STACK_FRAME_SIZE_EXPAND);
+	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
 	barrier = create_barrier(env, bl, &mem, env->regs, 0);

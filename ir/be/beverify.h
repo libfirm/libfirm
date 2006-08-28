@@ -22,12 +22,12 @@
  * Verifies, that the register pressure for a given register class doesn't exceed the limit
  * of available registers.
  *
- * @param arch_env   An architecture environment
- * @param cls        The register class to check
- * @param irg        The irg to check
- * @return			 1 if the pressure is valid, 0 otherwise
+ * @param birg       The backend IRG.
+ * @param cls        The register class to check.
+ * @param irg        The irg to check.
+ * @return			 1 if the pressure is valid, 0 otherwise.
  */
-int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_class_t* cls, ir_graph *irg);
+int be_verify_register_pressure(const be_irg_t *birg, const arch_register_class_t* cls, ir_graph *irg);
 
 /**
  * Does some sanity checks on the schedule.

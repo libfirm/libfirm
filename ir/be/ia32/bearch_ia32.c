@@ -261,10 +261,13 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 
 	if(is_Proj(irn)) {
 		ir_node *pred = get_Proj_pred(irn);
-		if(is_ia32_Push(pred) && get_Proj_proj(irn) == 0) {
+		if(is_ia32_Push(pred) && get_Proj_proj(irn) == pn_ia32_Push_stack) {
 			return arch_irn_flags_modify_sp;
 		}
-		if(is_ia32_Pop(pred) && get_Proj_proj(irn) == 1) {
+		if(is_ia32_Pop(pred) && get_Proj_proj(irn) == pn_ia32_Pop_stack) {
+			return arch_irn_flags_modify_sp;
+		}
+		if(is_ia32_AddSP(pred) && get_Proj_proj(irn) == pn_ia32_AddSP_stack) {
 			return arch_irn_flags_modify_sp;
 		}
 	}
@@ -430,7 +433,8 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE_SHRINK);
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK);
+		add_irn_dep(curr_sp, *mem);
 	}
 	else {
 		const ia32_isa_t *isa     = (ia32_isa_t *)env->isa;
@@ -441,7 +445,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			ir_node *leave;
 
 			/* leave */
-			leave   = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, *mem);
+			leave   = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, curr_bp);
 			set_ia32_flags(leave, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(current_ir_graph, bl, leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(current_ir_graph, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);

@@ -542,15 +542,14 @@ int be_Return_get_n_rets(ir_node *ret)
 	return a->num_ret_vals;
 }
 
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, int offset)
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, int offset)
 {
 	be_stack_attr_t *a;
 	ir_node *irn;
-	ir_node *in[2];
+	ir_node *in[1];
 
 	in[0]     = old_sp;
-	in[1]     = mem;
-	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode, 2, in);
+	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode, sizeof(in) / sizeof(in[0]), in);
 	a         = init_node_attr(irn, 1);
 	a->offset = offset;
 

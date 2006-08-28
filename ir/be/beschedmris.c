@@ -35,7 +35,6 @@ struct _mris_env_t {
 	const arch_env_t  *aenv;
 	ir_graph          *irg;
 	ir_node           *bl;
-	nodeset           *inserted;
 	int               visited;
 	struct list_head  lineage_head;
 	struct obstack    obst;
@@ -111,7 +110,7 @@ static void compute_heights(mris_env_t *env)
 }
 #endif
 
-#define valid_node(env, dep) (to_appear(env, dep) && !nodeset_find(env->inserted, dep) && !be_is_Keep(dep))
+#define valid_node(env, dep) (to_appear(env, dep) && !be_is_Keep(dep))
 
 static void grow_all_descendands(mris_env_t *env, ir_node *irn, unsigned long visited)
 {
@@ -120,6 +119,14 @@ static void grow_all_descendands(mris_env_t *env, ir_node *irn, unsigned long vi
 	assert(get_irn_mode(irn) != mode_T);
 
 	foreach_out_edge(irn, edge) {
+		ir_node *desc = get_edge_src_irn(edge);
+		if(valid_node(env, desc) && get_irn_visited(desc) < visited) {
+			obstack_ptr_grow(&env->obst, desc);
+			set_irn_visited(desc, visited);
+		}
+	}
+
+	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
 		ir_node *desc = get_edge_src_irn(edge);
 		if(valid_node(env, desc) && get_irn_visited(desc) < visited) {
 			obstack_ptr_grow(&env->obst, desc);
@@ -309,13 +316,13 @@ static void lineage_formation(mris_env_t *env)
 			*/
 			if(n_desc > 1 && !be_is_Keep(lowest_desc)) {
 				const arch_register_class_t *cls;
-				ir_node *copy_keep, *op;
+				ir_node *op;
 				int i, n;
 
-				for(i = 0, n = get_irn_arity(lowest_desc); i < n; ++i) {
+				for(i = 0, n = get_irn_ins_or_deps(lowest_desc); i < n; ++i) {
 					ir_node *cmp;
 
-					op  = get_irn_n(lowest_desc, i);
+					op  = get_irn_in_or_dep(lowest_desc, i);
 					cmp = highest_is_tuple ? skip_Projs(op) : op;
 
 					if(cmp == highest_node)
@@ -326,9 +333,7 @@ static void lineage_formation(mris_env_t *env)
 
 				cls = arch_get_irn_reg_class(env->aenv, op, BE_OUT_POS(0));
 				replace_tuple_by_repr_proj(env, &in[1]);
-				copy_keep = be_new_CopyKeep(cls, env->irg, env->bl, op, n_desc, &in[1], get_irn_mode(op));
-				set_irn_n(lowest_desc, i, copy_keep);
-				nodeset_insert(env->inserted, copy_keep);
+				add_irn_dep(lowest_desc, in[1]);
 			}
 			obstack_free(&env->obst, in);
 
@@ -384,15 +389,9 @@ static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 
 	/* insert a CopyKeep to make lineage v dependent on u. */
 	{
-		const arch_register_class_t *cls;
-		ir_node *op    = NULL;
-
-		if(get_irn_arity(start) == 0)
+		if(get_irn_ins_or_deps(start) == 0)
 			return 0;
 
-		op = get_irn_n(start, 0);
-
-		cls  = arch_get_irn_reg_class(env->aenv, op, BE_OUT_POS(0));
 		if(get_irn_mode(last) == mode_T) {
 			const ir_edge_t *edge;
 			foreach_out_edge(last, edge) {
@@ -400,10 +399,8 @@ static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 				break;
 			}
 		}
-		copy = be_new_CopyKeep_single(cls, env->irg, env->bl, op, last, get_irn_mode(op));
-		set_irn_n(start, 0, copy);
-		copy_mi = get_mris_irn(env, copy);
-		nodeset_insert(env->inserted, copy);
+
+		add_irn_dep(start, last);
 	}
 
 	/* irn now points to the last node in lineage u; mi has the info for the node _before_ the terminator of the lineage. */
@@ -466,7 +463,6 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	env->aenv     = birg->main_env->arch_env;
 	env->irg      = birg->irg;
 	env->visited  = 0;
-	env->inserted = new_nodeset(128);
 	env->heights  = heights_new(birg->irg);
 	INIT_LIST_HEAD(&env->lineage_head);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.mris");
@@ -477,31 +473,9 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	return env;
 }
 
-static void cleanup_inserted(mris_env_t *env)
-{
-	ir_node *irn;
-
-	foreach_nodeset(env->inserted, irn) {
-		int i, n;
-		ir_node *tgt;
-
-		assert(be_is_CopyKeep(irn));
-		tgt = get_irn_n(irn, be_pos_CopyKeep_op);
-
-		/* reroute the edges, remove from schedule and make it invisible. */
-		edges_reroute(irn, tgt, env->irg);
-		if (sched_is_scheduled(irn))
-			sched_remove(irn);
-		for(i = -1, n = get_irn_arity(irn); i < n; ++i)
-			set_irn_n(irn, i, new_r_Bad(env->irg));
-	}
-}
-
 void be_sched_mris_free(mris_env_t *env)
 {
-	cleanup_inserted(env);
 	phase_free(&env->ph);
-	del_nodeset(env->inserted);
 	heights_free(env->heights);
 	free(env);
 }

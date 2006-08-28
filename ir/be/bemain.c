@@ -329,7 +329,7 @@ static void prepare_graph(be_irg_t *birg)
 	compute_doms(irg);
 
 	/* Ensure, that the ir_edges are computed. */
-	edges_activate(irg);
+	edges_assure(irg);
 
 	/* check, if the dominance property is fulfilled. */
 	be_check_dominance(irg);
@@ -424,6 +424,9 @@ static void be_main_loop(FILE *file_handle)
 
 		birg.irg      = irg;
 		birg.main_env = &env;
+
+		edges_deactivate_kind(irg, EDGE_KIND_DEP);
+		edges_activate_kind(irg, EDGE_KIND_DEP);
 
 		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
 		dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
@@ -663,7 +666,7 @@ void be_main(FILE *file_handle)
 	/* never build code for pseudo irgs */
 	set_visit_pseudo_irgs(0);
 
-	be_node_init();
+ 	be_node_init();
 	be_main_loop(file_handle);
 
 #ifdef WITH_LIBCORE
@@ -689,4 +692,19 @@ const char *be_retrieve_dbg_info(const dbg_info *dbg, unsigned *line) {
 		return retrieve_dbg(dbg, line);
 	*line = 0;
 	return NULL;
+}
+
+int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls, bitset_t *bs)
+{
+	if(bs == NULL)
+		bs = bitset_alloca(cls->n_regs);
+	else
+		bitset_clear_all(bs);
+
+	assert(bitset_size(bs) == cls->n_regs);
+	arch_put_non_ignore_regs(birg->main_env->arch_env, cls, bs);
+	bitset_flip_all(bs);
+	be_abi_put_ignore_regs(birg->abi, cls, bs);
+	return bitset_popcnt(bs);
+
 }

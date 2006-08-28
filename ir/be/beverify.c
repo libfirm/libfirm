@@ -90,14 +90,14 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 /**
  * Start a walk over the irg and check the register pressure.
  */
-int be_verify_register_pressure(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_graph *irg) {
+int be_verify_register_pressure(const be_irg_t *birg, const arch_register_class_t *cls, ir_graph *irg) {
 	be_verify_register_pressure_env_t env;
 
 	env.lv                  = be_liveness(irg);
 	env.irg                 = irg;
-	env.arch_env            = arch_env;
+	env.arch_env            = birg->main_env->arch_env;
 	env.cls                 = cls;
-	env.registers_available = arch_count_non_ignore_regs(arch_env, cls);
+	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
 	env.problem_found       = 0;
 
 	irg_block_walk_graph(irg, verify_liveness_walker, NULL, &env);

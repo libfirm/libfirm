@@ -741,5 +741,4 @@ extern arch_env_t *arch_env_push_irn_handler(arch_env_t *env, const arch_irn_han
  */
 extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
 
-
 #endif /* _FIRM_BEARCH_H */

@@ -563,6 +563,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 					bitset_clear_all(bs);
 					arch_put_non_ignore_regs(aenv, env->cls, bs);
+					bitset_andnot(bs, env->ignore_colors);
 					bitset_foreach(bs, col)
 						bipartite_add(bp, n_alloc, col);
 

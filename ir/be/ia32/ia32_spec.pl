@@ -764,7 +764,7 @@ else {
 },
 
 "AddSP" => {
-  "irn_flags" => "S|I",
+  "irn_flags" => "I",
   "comment"   => "allocate space on stack",
   "reg_req"   => { "in" => [ "esp", "gp" ], "out" => [ "esp", "none" ] },
   "outs"      => [ "stack", "M" ],

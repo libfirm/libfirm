@@ -505,11 +505,11 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		/* verify schedule and register pressure */
 		if (options.vrfy_option == BE_CH_VRFY_WARN) {
 			be_verify_schedule(irg);
-			be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg);
+			be_verify_register_pressure(chordal_env.birg, chordal_env.cls, irg);
 		}
 		else if (options.vrfy_option == BE_CH_VRFY_ASSERT) {
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
-			assert(be_verify_register_pressure(chordal_env.birg->main_env->arch_env, chordal_env.cls, irg)
+			assert(be_verify_register_pressure(chordal_env.birg, chordal_env.cls, irg)
 				&& "Register pressure verification failed");
 		}
 		BE_TIMER_POP(ra_timer.t_verify);

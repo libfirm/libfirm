@@ -499,20 +499,12 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 		if the IncSP points to NoMem -> just use the memory input from store
 		if IncSP points to somewhere else -> sync memory of IncSP and Store
 	*/
-	mem = be_get_IncSP_mem(sp);
-	if (mem == get_irg_no_mem(irg))
-		mem = get_irn_n(irn, 3);
-	else {
-		ir_node *in[2];
-
-		in[0] = mem;
-		in[1] = get_irn_n(irn, 3);
-		mem   = new_r_Sync(irg, bl, 2, in);
-	}
+	mem = get_irn_n(irn, 3);
 
 	push = new_rd_ia32_Push(NULL, irg, bl, be_get_IncSP_pred(sp), val, mem);
 	proj_res = new_r_Proj(irg, bl, push, get_irn_mode(sp), pn_ia32_Push_stack);
 	proj_M   = new_r_Proj(irg, bl, push, mode_M, pn_ia32_Push_M);
+	add_irn_deps(push, sp);
 
 	/* copy a possible constant from the store */
 	set_ia32_id_cnst(push, get_ia32_id_cnst(irn));

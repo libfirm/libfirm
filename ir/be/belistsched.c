@@ -216,8 +216,8 @@ static int max_hops_walker(reg_pressure_selector_env_t *env, ir_node *irn, ir_no
 	if(!nodeset_find(env->already_scheduled, irn)) {
 		int i, n;
 		int res = 0;
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			ir_node *operand = get_irn_n(irn, i);
+		for(i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
+			ir_node *operand = get_irn_in_or_dep(irn, i);
 
 			if(get_irn_visited(operand) < visited_nr) {
 				int tmp;
@@ -625,8 +625,8 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
     if (env->block != get_nodes_block(irn))
         return 0;
 
-    for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-        ir_node *op = get_irn_n(irn, i);
+	for (i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
+        ir_node *op = get_irn_in_or_dep(irn, i);
 
         /* if irn is an End we have keep-alives and op might be a block, skip that */
         if (is_Block(op)) {
@@ -640,7 +640,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
             return 0;
     }
 
-    nodeset_insert(env->cands, irn);
+	nodeset_insert(env->cands, irn);
 
 	/* calculate the etime of this node */
 	etime = env->curr_time;
@@ -670,7 +670,13 @@ static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 	const ir_edge_t *edge;
 
 	foreach_out_edge(irn, edge) {
-		ir_node *user = edge->src;
+		ir_node *user = get_edge_src_irn(edge);
+		if(!is_Phi(user))
+			make_ready(env, irn, user);
+	}
+
+	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
+		ir_node *user = get_edge_src_irn(edge);
 		if(!is_Phi(user))
 			make_ready(env, irn, user);
 	}
@@ -748,8 +754,8 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
 	if (is_Proj(irn))
 		return;
 
-	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
-		ir_node *in = get_irn_n(irn, i);
+	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
+		ir_node *in = get_irn_in_or_dep(irn, i);
 
 		/* if in is a proj: update predecessor */
 		while (is_Proj(in))
@@ -874,8 +880,8 @@ static int get_reg_difference(block_sched_env_t *be, ir_node *irn) {
 		num_out = 1;
 
 	/* num in regs: number of ins with mode datab and not ignore */
-	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
-		ir_node *in = get_irn_n(irn, i);
+	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; i--) {
+		ir_node *in = get_irn_in_or_dep(irn, i);
 		if (mode_is_datab(get_irn_mode(in)) && ! arch_irn_is(be->sched_env->arch_env, in, ignore))
 			num_in++;
 	}
@@ -1009,8 +1015,8 @@ static void descent(ir_node *root, ir_node *block, ir_node **list, block_sched_e
 		}
 
 		/* Phi nodes always leave the block */
-		for (i = get_irn_arity(root) - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(root, i);
+		for (i = get_irn_ins_or_deps(root) - 1; i >= 0; --i) {
+			ir_node *pred = get_irn_in_or_dep(root, i);
 
 			DBG((xxxdbg, LEVEL_3, "   node %+F\n", pred));
 			/* Blocks may happen as predecessors of End nodes */
@@ -1072,7 +1078,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.selector          = selector;
 	be.sched_env         = env;
 	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
-	FIRM_DBG_REGISTER(xxxdbg, "firm.be.sched");
+	FIRM_DBG_REGISTER(xxxdbg, "firm.be.schedxxx");
 
 	//	firm_dbg_set_mask(be.dbg, SET_LEVEL_3);
 
@@ -1128,6 +1134,17 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 						d = ld > d ? ld : d;
 					}
 				}
+
+				foreach_out_edge_kind(curr, edge, EDGE_KIND_DEP) {
+					ir_node *n = get_edge_src_irn(edge);
+
+					if (get_nodes_block(n) == block) {
+						sched_timestep_t ld;
+
+						ld = latency(env, curr, 1, n, 0) + get_irn_delay(&be, n);
+						d = ld > d ? ld : d;
+					}
+				}
 			}
 		}
 		set_irn_delay(&be, curr, d);
@@ -1170,8 +1187,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 			int ready = 1;
 
 			/* Check, if the operands of a node are not local to this block */
-			for (j = 0, m = get_irn_arity(irn); j < m; ++j) {
-				ir_node *operand = get_irn_n(irn, j);
+			for (j = 0, m = get_irn_ins_or_deps(irn); j < m; ++j) {
+				ir_node *operand = get_irn_in_or_dep(irn, j);
 
 				if (get_nodes_block(operand) == block) {
 					ready = 0;

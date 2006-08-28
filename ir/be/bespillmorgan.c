@@ -453,13 +453,6 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 	return outer_spills_needed;
 }
 
-static int count_available_registers(be_abi_irg_t *abi, const arch_register_class_t *cls)
-{
-	bitset_t* bs = bitset_alloca(cls->n_regs);
-	be_abi_put_ignore_regs(abi, cls, bs);
-	return bitset_popcnt(bs);
-}
-
 void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	morgan_env_t env;
 
@@ -475,7 +468,7 @@ void be_spill_morgan(be_chordal_env_t *chordal_env) {
 
 	obstack_init(&env.obst);
 
-	env.registers_available = count_available_registers(chordal_env->birg->abi, chordal_env->cls);
+	env.registers_available = env.cls->n_regs - be_put_ignore_regs(chordal_env->birg, env.cls, NULL);
 
 	env.loop_attr_set = new_set(loop_attr_cmp, 5);
 	env.block_attr_set = new_set(block_attr_cmp, 20);

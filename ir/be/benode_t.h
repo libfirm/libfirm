@@ -195,16 +195,13 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
  * @return       A new stack pointer increment/decrement node.
  * @note         This node sets a register constraint to the @p sp register on its output.
  */
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *mem, int offset);
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, int offset);
 
 /** Returns the previous node that computes the stack pointer. */
 ir_node *be_get_IncSP_pred(ir_node *incsp);
 
 /** Sets the previous node that computes the stack pointer. */
 void     be_set_IncSP_pred(ir_node *incsp, ir_node *pred);
-
-/** Returns the memory input of the IncSP. */
-ir_node *be_get_IncSP_mem(ir_node *irn);
 
 /**
  * Sets a new offset to a IncSP node.
