@@ -1769,6 +1769,40 @@ luke_blockwalker(ir_node * bb, void * data)
 	if(opt_memcopies)
 		insert_mem_copy_position(si, live, bb);
 
+	/* allow only one argument to die at pre remat. If two value die check_pre does
+	 * not ensure a correct register pressure FIXME (verify this is really necessary!) */
+	foreach_pre_remat(si, bb, tmp) {
+		pset    *remat_args = pset_new_ptr(get_irn_arity(tmp));
+		int      n;
+		ir_node  *remat_arg;
+		op_t     *remat_op = get_irn_link(tmp);
+
+		for(n=get_irn_arity(tmp)-1; n>=0; --n) {
+			remat_arg = get_irn_n(tmp, n);
+
+			if(has_reg_class(si, remat_arg)) {
+				pset_insert_ptr(remat_args, remat_arg);
+			}
+		}
+
+		if(pset_count(remat_args)) {
+			/* \sum_args reg_out >= #args * remat - 1 */
+			ir_snprintf(buf, sizeof(buf), "one_may_die_%N", tmp);
+			cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, -1.0);
+			lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -pset_count(remat_args));
+
+			pset_foreach(remat_args, remat_arg) {
+				spill = set_find_spill(spill_bb->ilp, remat_arg);
+
+				if(spill) {
+					lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
+				}
+			}
+		}
+
+		del_pset(remat_args);
+	}
+
 	/*
 	 * start new live ranges for values used by remats at end of block
 	 * and assure the remat args are available
@@ -2062,6 +2096,40 @@ skip_one_must_die:
 			}
 		}
 
+		/* allow only one argument to die at pre remat. If two value die check_pre does
+		 * not ensure a correct register pressure FIXME (verify this is really necessary!) */
+		foreach_pre_remat(si, irn, tmp) {
+			pset    *remat_args = pset_new_ptr(get_irn_arity(tmp));
+			int      n;
+			ir_node  *remat_arg;
+			op_t     *remat_op = get_irn_link(tmp);
+
+			for(n=get_irn_arity(tmp)-1; n>=0; --n) {
+				remat_arg = get_irn_n(tmp, n);
+
+				if(has_reg_class(si, remat_arg)) {
+					pset_insert_ptr(remat_args, remat_arg);
+				}
+			}
+
+			if(pset_count(remat_args)) {
+				/* \sum_args next(lr) >= #args * remat - 1 */
+				ir_snprintf(buf, sizeof(buf), "one_may_die_%N", tmp);
+				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, -1.0);
+				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -pset_count(remat_args));
+
+				pset_foreach(remat_args, remat_arg) {
+					op_t  *arg_op = get_irn_link(remat_arg);
+
+					if(arg_op->attr.live_range.ilp != ILP_UNDEF) {
+						lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
+					}
+				}
+			}
+
+			del_pset(remat_args);
+		}
+
 		/***********************************************************
 		 *  I T E R A T I O N  O V E R  U S E S  F O R  E P I L O G
 		 **********************************************************/
@@ -2153,8 +2221,6 @@ skip_one_must_die:
 
 						lpp_set_factor_fast(si->lpp, cst, memoperand, 1.0);
 						lpp_set_factor_fast(si->lpp, cst, post_use, 1.0);
-//						if(arg_op->attr.live_range.ilp != ILP_UNDEF)
-//							lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
 					}
 				}
 			}
@@ -2163,12 +2229,7 @@ skip_one_must_die:
 			arg_op->attr.live_range.ilp = prev_lr;
 			arg_op->attr.live_range.op = irn;
 
-			/*if(!pset_find_ptr(live, arg)) {
-				pset_insert_ptr(live, arg);
-				add_to_spill_bb(si, bb, arg);
-			}*/
 			pset_insert_ptr(live, arg);
-
 		}
 
 		/* just to be sure */
@@ -2277,7 +2338,6 @@ skip_one_must_die:
 
 
 		/* requirements for remats */
-		/* start new live ranges for values used by remats */
 		foreach_pre_remat(si, irn, tmp) {
 			op_t        *remat_op = get_irn_link(tmp);
 			int          n;
