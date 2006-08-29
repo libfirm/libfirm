@@ -1,0 +1,142 @@
+#!/bin/sh
+#
+# Wrapper script for edg to simulate most common gcc flags
+#
+# This is not perfectly exact but should be good enough for most cases in
+# practice :)
+# @author: Matthias Braun
+#
+
+EDGFLAGS="-b vrfy=assert -b ra-chordal-vrfy=assert -fno-reassociation --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
+
+ASSEMBLEFLAGS=""
+LFLAGS=""
+OPT0="-fno-opt"
+OPT1=""
+OPT2="-fno-strength-red"
+OPT3="-finline -fif-conv -fno-strength-red"
+
+mode=LINK
+declare -a LFLAGS
+declare -a CPPFLAGS
+declare -a CFLAGS
+declare -a CFILES
+declare -a SFILES
+declare -a OFILES
+OPTFLAGS=""
+OUTFILE=""
+DEBUG=""
+# parse commandline
+while [ -n "$1" ]
+do
+	case "$1" in
+		-S )	mode=COMPILE;;
+		-c )	mode=ASSEMBLE;;
+		-E )	mode=PREPROCESS;;
+		-o )	echo "OUT"; shift ; OUTFILE="$1";;
+		-o* )	OUTFILE="`echo "$1" | sed -e "s/^-o//"`";;
+		-v )	DEBUG="1";;
+		--version )	echo "eccp version 0.1"; exit 0;;
+		-Wl,* )	;; # TODO
+		-Wa,* ) ;;
+		-Wp,* ) ;;
+		-l )	LFLAGS=("${LFLAGS[@]}" "-l $1");;
+		-L )	LFLAGS=("${LFLAGS[@]}" "-L $1");;
+		-l* | -L* )	LFLAGS=("${LFLAGS[@]}" "$1");;
+		-W* )	;; #TODO
+		-f* )	;; #TODO
+		-march=* )	;;# TODO
+		-g* )	;; # TODO
+		-pipe ) ;;
+		-MF ) shift;; # TODO
+		-MT ) shift;; # TODO
+		-MD | -MP | -MM | -MG ) ;;
+		-I ) shift; CPPFLAGS=("${CPPFLAGS[@]}" "-I $1");;
+		-D ) shift; CPPFLAGS=("${CPPFLAGS[@]}" "-D $1");;
+		-D* | -I* )	CPPFLAGS=("${CPPFLAGS[@]}" "$1");;
+		-O0 )	OPTFLAGS="$OPT0";;
+		-O | -O1 )	OPTFLAGS="$OPT1";;
+		-O2 )	OPTFLAGS="$OPT2";;
+
+		-O* )	OPTFLAGS="$OPT3";;
+
+		-*	)   echo "WARNING: Unknown option $1" >& 2; exit 1;;
+
+		*.c )	CFILES=("${CFILES[@]}" "$1");;
+		*.s )	SFILES=("${SFILES[@]}" "$1");;
+		*.o )	OFILES=("${OFILES[@]}" "$1");;
+		* )	echo "WARNING: file format $1 not recognized" >&2;
+			exit 1;;
+	esac
+	shift
+done
+CFLAGS=("${CFLAGS[@]}" $OPTFLAGS)
+
+if [ "$DEBUG" == "1" ]; then
+	echo "OPTFLAGS ${OPTFLAGS}"
+	echo "CFLAGS ${CFLAGS[*]}"
+	echo "CPPFLAGS ${CPPFLAGS[*]}"
+	echo "LFLAGS ${LFLAGS[*]}"
+	echo "CFILES ${CFILES[*]}"
+	echo "SFILES ${SFILES[*]}"
+	echo "OFILES ${OFILE[*]}"
+	echo "OUTFILE $OUTFILE"
+fi
+
+if [ "$mode" = "LINK" -a "$OUTFILE" = "" ] ; then
+	OUTFILE="a.out"
+fi
+
+if [ "$mode" = "PREPROCESS" ] ; then
+	for cfile in "${CFILES[@]}"; do
+		OUTFLAGS=""
+		if [ -n "$OUTFILE" ] ; then
+			OUTFLAGS="-o$OUTFILE"
+		fi
+
+		if [ "$DEBUG" = "1" ]; then
+			echo gcc -E "${CPPFLAGS[@]}" "$cfile" "$OUTFLAGS"
+		fi
+		gcc -E "${CPPFLAGS[@]}" "$cfile" "$OUTFLAGS" || exit $?
+	done
+	exit 0
+fi
+
+if [ "$mode" = "COMPILE" -o "$mode" = "ASSEMBLE" -o $mode = "LINK" ] ; then
+	for cfile in "${CFILES[@]}"; do
+		if [ -n "$OUTFILE" -a "$mode" = "COMPILE" ] ; then
+			sfile="$OUTFILE"
+		else
+			sfile="`dirname "$cfile"`/`basename "$cfile" .c`.s"
+		fi
+
+		if [ "$DEBUG" = "1" ]; then
+			echo edg $EDGFLAGS "${CPPFLAGS[@]}" "${CFLAGS[@]}" "$cfile" -o "$sfile"
+		fi
+		edg $EDGFLAGS "${CPPFLAGS[@]}" "${CFLAGS[@]}" "$cfile" || exit $?
+
+		SFILES=("${SFILES[@]}" "$sfile")
+	done
+fi
+
+if [ "$mode" = "ASSEMBLE" -o "$mode" = "LINK" ] ; then
+	for sfile in "${SFILES[@]}"; do
+		if [ -n "$OUTFILE" -a $mode = "ASSEMBLE" ] ; then
+			ofile="$OUTFILE"
+		else
+			ofile="`dirname "$sfile"`/`basename "$sfile" .s`.o"
+		fi
+		if [ "$DEBUG" = "1" ]; then
+			echo gcc $ASSEMBLEFLAGS "$sfile" -c -o "$ofile"
+		fi
+		gcc $ASSEMBLEFLAGS "$sfile" -c -o "$ofile" || exit $?
+		OFILES=("${OFILES[@]}" "$ofile")
+	done
+fi
+
+if [ $mode = "LINK" ] ; then
+	if [ "$DEBUG" = "1" ]; then
+		echo gcc ${LFLAGS[@]} ${OFILES[@]} -o "$OUTFILE"
+	fi
+	gcc ${LFLAGS[@]} ${OFILES[@]} -o "$OUTFILE"
+fi
