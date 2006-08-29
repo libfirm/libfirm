@@ -1515,6 +1515,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 
 	if (is_Proj(sel) && sel_mode == mode_b) {
 		ir_node  *nomem = new_NoMem();
+		pn_Cmp pnc = get_Proj_proj(sel);
 
 		pred  = get_Proj_pred(sel);
 
@@ -1527,7 +1528,11 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		expr = get_expr_op(cmp_a, cmp_b);
 
 		if (cnst && expr) {
-			pn_Cmp pnc = get_Proj_proj(sel);
+			/* immop has to be the right operand, we might need to flip pnc */
+			if(cnst != cmp_b) {
+				printf("flipit\n");
+				pnc = get_inversed_pnc(pnc);
+			}
 
 			if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) && mode_is_int(get_irn_mode(expr))) {
 				if (get_ia32_op_type(cnst) == ia32_Const &&
@@ -1547,7 +1552,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 						cnst = (is_ia32_ImmConst(and) || is_ia32_ImmSymConst(and)) ? get_ia32_cnst(and) : NULL;
 					}
 					res = new_rd_ia32_TestJmp(dbg, irg, block, op1, op2);
-					set_ia32_pncode(res, get_Proj_proj(sel));
+					set_ia32_pncode(res, pnc);
 					set_ia32_res_mode(res, get_irn_mode(op1));
 
 					if (cnst) {
@@ -1592,7 +1597,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 			set_ia32_res_mode(res, get_irn_mode(cmp_a));
 		}
 
-		set_ia32_pncode(res, get_Proj_proj(sel));
+		set_ia32_pncode(res, pnc);
 		//set_ia32_am_support(res, ia32_am_Source);
 	}
 	else {
