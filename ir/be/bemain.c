@@ -130,7 +130,8 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 
 /* schedule selector options. */
 static const lc_opt_enum_int_items_t sched_select_items[] = {
-	{ "isa",      BE_SCHED_SELECT_ISA      },
+	{ "trivial",  BE_SCHED_SELECT_TRIVIAL  },
+	{ "regpress", BE_SCHED_SELECT_REGPRESS },
 	{ "muchnik",  BE_SCHED_SELECT_MUCHNIK  },
 	{ "heur",     BE_SCHED_SELECT_HEUR     },
 	{ "hmuchnik", BE_SCHED_SELECT_HMUCHNIK },
@@ -165,7 +166,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",  &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",     &be_options.timing),
 	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",  &be_options.mris),
-	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (isa, muchnik, heur, hmuchnik)",&sched_select_var),
+	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (trivial, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
