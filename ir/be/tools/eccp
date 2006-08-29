@@ -33,7 +33,7 @@ do
 		-S )	mode=COMPILE;;
 		-c )	mode=ASSEMBLE;;
 		-E )	mode=PREPROCESS;;
-		-o )	echo "OUT"; shift ; OUTFILE="$1";;
+		-o )	shift ; OUTFILE="$1";;
 		-o* )	OUTFILE="`echo "$1" | sed -e "s/^-o//"`";;
 		-v )	DEBUG="1";;
 		--version )	echo "eccp version 0.1"; exit 0;;
