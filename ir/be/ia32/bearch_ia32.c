@@ -1645,9 +1645,8 @@ list_sched_selector_t ia32_sched_selector;
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
-static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self) {
-//	memcpy(&ia32_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
-	memcpy(&ia32_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
+static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
+	memcpy(&ia32_sched_selector, selector, sizeof(ia32_sched_selector));
 	ia32_sched_selector.exectime              = ia32_sched_exectime;
 	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
 	return &ia32_sched_selector;
