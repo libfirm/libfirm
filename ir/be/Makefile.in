@@ -30,6 +30,7 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beuses.c beuses.h belower.c belower.h beraextern.c \
 	beabi.c beabi.h beabi_t.h benodesets.c benodesets.h \
 	bemachnode.c bemachnode.h beinsn.c bestat.h bestat.c \
+	beschedregpress.c beschedtrace.c beschedtrivial.c \
 	beschedmris.h beschedmris.c bespillmorgan.c bespillmorgan.h \
 	beverify.h beverify.c bepressurestat.c bepressurestat.h \
 	bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c \
