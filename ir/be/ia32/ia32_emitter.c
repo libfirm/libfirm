@@ -1000,7 +1000,7 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	if (reverse)
 		set_ia32_pncode(irn, (long)get_inversed_pnc(get_ia32_pncode(irn)));
 
-	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %%%s", instr, reg);
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %s%s", instr, reg[0] == '\0' ? "" : "%", reg);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
 	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "fnstsw %%ax", irn);
