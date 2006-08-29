@@ -186,7 +186,7 @@ static sched_timestep_t exectime(trace_env_t *env, ir_node *n) {
 	if (be_is_Keep(n) || is_Proj(n))
 		return 0;
 	if (env->selector->exectime)
-		return env->selector->exectime(env->selector_env, n);
+		return env->selector->exectime(env->arch_env, n);
 	return 1;
 }
 
@@ -207,7 +207,7 @@ static sched_timestep_t latency(trace_env_t *env, ir_node *pred, int pred_cycle,
 		pred = get_Proj_pred(pred);
 
 	if (env->selector->latency)
-		return env->selector->latency(env->selector_env, pred, pred_cycle, curr, curr_cycle);
+		return env->selector->latency(env->arch_env, pred, pred_cycle, curr, curr_cycle);
 	return 1;
 }
 
