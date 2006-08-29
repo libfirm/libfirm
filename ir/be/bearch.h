@@ -657,11 +657,14 @@ struct _arch_isa_if_t {
   const arch_code_generator_if_t *(*get_code_generator_if)(void *self);
 
   /**
-   * Get the list scheduler to use.
-   * @param self  The isa object.
+   * Get the list scheduler to use. There is already a selector given, the
+   * backend is free to modify and/or ignore it.
+   *
+   * @param self     The isa object.
+   * @param selector The selector given by options.
    * @return      The list scheduler selector.
    */
-  const list_sched_selector_t *(*get_list_sched_selector)(const void *self);
+  const list_sched_selector_t *(*get_list_sched_selector)(const void *self, list_sched_selector_t *selector);
 
   /**
    * Get the necessary alignment for storing a register of given class.
