@@ -44,15 +44,8 @@
  * All scheduling info needed per node.
  */
 typedef struct _sched_irn_t {
-	sched_timestep_t delay;      /**< The delay for this node if already calculated, else 0. */
-	sched_timestep_t etime;      /**< The earliest time of this node. */
-	unsigned num_user;           /**< The number real users (mode datab) of this node */
 	unsigned num_not_sched_user; /**< The number of not yet scheduled users of this node */
-	int      reg_diff;           /**< The difference of num(out registers) - num(in registers) */
-	int      preorder;           /**< The pre-order position */
-	unsigned critical_path_len;  /**< The weighted length of the longest critical path */
 	unsigned already_sched : 1;  /**< Set if this node is already scheduled */
-	unsigned is_root       : 1;  /**< is a root node of a block */
 } sched_irn_t;
 
 /**
@@ -64,339 +57,13 @@ typedef struct _sched_env_t {
 	const arch_env_t *arch_env;                 /**< The architecture environment. */
 	const ir_graph *irg;                        /**< The graph to schedule. */
 	void *selector_env;                         /**< A pointer to give to the selector. */
-	int sel_strategy;                           /**< Node selection strategy (muchnik, mueller, isa) */
 } sched_env_t;
-
-#if 0
-/*
- * Ugly global variable for the compare function
- * since qsort(3) does not pass an extra pointer.
- */
-static ir_node *curr_bl = NULL;
-
-static int cmp_usage(const void *a, const void *b)
-{
-	struct trivial_sched_env *env;
-	const ir_node *p = a;
-	const ir_node *q = b;
-	int res = 0;
-
-	res = is_live_end(env->curr_bl, a) - is_live_end(env->curr_bl, b);
-
-	/*
-	 * One of them is live at the end of the block.
-	 * Then, that one shall be scheduled at after the other
-	 */
-	if(res != 0)
-		return res;
-
-
-	return res;
-}
-#endif
-
-/**
- * The trivial selector:
- * Just assure that branches are executed last, otherwise select
- * the first node ready.
- */
-static ir_node *trivial_select(void *block_env, nodeset *ready_set)
-{
-	const arch_env_t *arch_env = block_env;
-	ir_node *irn = NULL;
-
-	/* assure that branches and constants are executed last */
-	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
-		if (! arch_irn_class_is(arch_env, irn, branch)) {
-			nodeset_break(ready_set);
-			return irn;
-		}
-	}
-
-
-	/* at last: schedule branches */
-	irn = nodeset_first(ready_set);
-	nodeset_break(ready_set);
-
-	return irn;
-}
-
-static void *trivial_init_graph(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
-{
-	return (void *) arch_env;
-}
-
-static void *trivial_init_block(void *graph_env, ir_node *bl)
-{
-	return graph_env;
-}
-
-static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
-{
-	int res = -1;
-
-	if(sel->to_appear_in_schedule)
-		res = sel->to_appear_in_schedule(block_env, irn);
-
-	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_RegParams(irn));
-}
-
-static const list_sched_selector_t trivial_selector_struct = {
-	trivial_init_graph,
-	trivial_init_block,
-	trivial_select,
-	NULL,                /* to_appear_in_schedule */
-	NULL,                /* exectime */
-	NULL,                /* latency */
-	NULL,                /* finish_block */
-	NULL                 /* finish_graph */
-};
-
-const list_sched_selector_t *trivial_selector = &trivial_selector_struct;
-
-typedef struct _usage_stats_t {
-	ir_node *irn;
-	struct _usage_stats_t *next;
-	int max_hops;
-	int uses_in_block;      /**< Number of uses inside the current block. */
-	int already_consumed;   /**< Number of insns using this value already
-							  scheduled. */
-} usage_stats_t;
-
-typedef struct {
-	const list_sched_selector_t *vtab;
-	const arch_env_t *arch_env;
-} reg_pressure_main_env_t;
-
-typedef struct {
-	struct obstack obst;
-	const reg_pressure_main_env_t *main_env;
-	usage_stats_t *root;
-	nodeset *already_scheduled;
-} reg_pressure_selector_env_t;
-
-static INLINE usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
-{
-	usage_stats_t *us = get_irn_link(irn);
-
-	if(!us) {
-		us                   = obstack_alloc(&env->obst, sizeof(us[0]));
-		us->irn              = irn;
-		us->already_consumed = 0;
-		us->max_hops         = INT_MAX;
-		us->next             = env->root;
-		env->root            = us;
-		set_irn_link(irn, us);
-	}
-
-	return us;
-}
-
-static INLINE usage_stats_t *get_usage_stats(ir_node *irn)
-{
-	usage_stats_t *us = get_irn_link(irn);
-	assert(us && "This node must have usage stats");
-	return us;
-}
-
-static int max_hops_walker(reg_pressure_selector_env_t *env, ir_node *irn, ir_node *curr_bl, int depth, unsigned visited_nr)
-{
-	ir_node *bl = get_nodes_block(irn);
-	/*
-	 * If the reached node is not in the block desired,
-	 * return the value passed for this situation.
-	 */
-	if(get_nodes_block(irn) != bl)
-		return block_dominates(bl, curr_bl) ? 0 : INT_MAX;
-
-	/*
-	 * If the node is in the current block but not
-	 * yet scheduled, we keep on searching from that node.
-	 */
-	if(!nodeset_find(env->already_scheduled, irn)) {
-		int i, n;
-		int res = 0;
-		for(i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
-			ir_node *operand = get_irn_in_or_dep(irn, i);
-
-			if(get_irn_visited(operand) < visited_nr) {
-				int tmp;
-
-				set_irn_visited(operand, visited_nr);
-				tmp = max_hops_walker(env, operand, bl, depth + 1, visited_nr);
-				res = MAX(tmp, res);
-			}
-		}
-
-		return res;
-	}
-
-	/*
-	 * If the node is in the current block and scheduled, return
-	 * the depth which indicates the number of steps to the
-	 * region of scheduled nodes.
-	 */
-	return depth;
-}
-
-static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
-{
-	ir_node *bl   = get_nodes_block(irn);
-	ir_graph *irg = get_irn_irg(bl);
-	int res       = 0;
-
-	const ir_edge_t *edge;
-
-	foreach_out_edge(irn, edge) {
-		ir_node *user       = get_edge_src_irn(edge);
-		unsigned visited_nr = get_irg_visited(irg) + 1;
-		int max_hops;
-
-		set_irg_visited(irg, visited_nr);
-		max_hops = max_hops_walker(env, user, irn, 0, visited_nr);
-		res      = MAX(res, max_hops);
-	}
-
-	return res;
-}
-
-static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
-{
-	reg_pressure_main_env_t *main_env = xmalloc(sizeof(main_env[0]));
-
-	main_env->arch_env = arch_env;
-	main_env->vtab     = vtab;
-	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
-
-	return main_env;
-}
-
-static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
-{
-	ir_node *irn;
-	reg_pressure_selector_env_t *env  = xmalloc(sizeof(env[0]));
-
-	obstack_init(&env->obst);
-	env->already_scheduled = new_nodeset(32);
-	env->root              = NULL;
-	env->main_env          = graph_env;
-
-	/*
-	 * Collect usage statistics.
-	 */
-	sched_foreach(bl, irn) {
-		if(must_appear_in_schedule(env->main_env->vtab, env, irn)) {
-			int i, n;
-
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				//ir_node *op = get_irn_n(irn, i);
-				if(must_appear_in_schedule(env->main_env->vtab, env, irn)) {
-					usage_stats_t *us = get_or_set_usage_stats(env, irn);
-#if 0 /* Liveness is not computed here! */
-					if(is_live_end(bl, op))
-						us->uses_in_block = 99999;
-					else
-#endif
-						us->uses_in_block++;
-				}
-			}
-		}
-	}
-
-	return env;
-}
-
-static void reg_pressure_block_free(void *block_env)
-{
-	reg_pressure_selector_env_t *env = block_env;
-	usage_stats_t *us;
-
-	for(us = env->root; us; us = us->next)
-		set_irn_link(us->irn, NULL);
-
-	obstack_free(&env->obst, NULL);
-	del_nodeset(env->already_scheduled);
-	free(env);
-}
-
-static int get_result_hops_sum(reg_pressure_selector_env_t *env, ir_node *irn)
-{
-	int res = 0;
-	if(get_irn_mode(irn) == mode_T) {
-		const ir_edge_t *edge;
-
-		foreach_out_edge(irn, edge)
-			res += get_result_hops_sum(env, get_edge_src_irn(edge));
-	}
-
-	else if(mode_is_data(get_irn_mode(irn)))
-		res = compute_max_hops(env, irn);
-
-
-	return res;
-}
-
-static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
-{
-	int i, n;
-	int sum = 0;
-
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-
-		if(must_appear_in_schedule(env->main_env->vtab, env, op))
-			sum += compute_max_hops(env, op);
-	}
-
-	sum += get_result_hops_sum(env, irn);
-
-	return sum;
-}
-
-static ir_node *reg_pressure_select(void *block_env, nodeset *ready_set)
-{
-	reg_pressure_selector_env_t *env = block_env;
-	ir_node *irn, *res     = NULL;
-	int curr_cost          = INT_MAX;
-
-	assert(nodeset_count(ready_set) > 0);
-
-	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
-		/*
-			Ignore branch instructions for the time being.
-			They should only be scheduled if there is nothing else.
-		*/
-		if (! arch_irn_class_is(env->main_env->arch_env, irn, branch)) {
-			int costs = reg_pr_costs(env, irn);
-			if (costs <= curr_cost) {
-				res       = irn;
-				curr_cost = costs;
-			}
-		}
-	}
-
-	/*
-		There was no result so we only saw a branch.
-		Take it and finish.
-	*/
-
-	if(!res) {
-		res = nodeset_first(ready_set);
-		nodeset_break(ready_set);
-
-		assert(res && "There must be a node scheduled.");
-	}
-
-	nodeset_insert(env->already_scheduled, res);
-	return res;
-}
 
 /**
  * Environment for a block scheduler.
  */
 typedef struct _block_sched_env_t {
 	sched_irn_t *sched_info;                    /**< scheduling info per node, copied from the global scheduler object */
-	sched_timestep_t curr_time;                 /**< current time of the scheduler */
 	nodeset *cands;                             /**< the set of candidates */
 	ir_node *block;                             /**< the current block */
 	sched_env_t *sched_env;                     /**< the scheduler environment */
@@ -429,180 +96,6 @@ static INLINE void mark_already_scheduled(block_sched_env_t *env, ir_node *n)
 }
 
 /**
- * Returns non-zero if the node is a root node
- */
-static INLINE unsigned is_root_node(block_sched_env_t *env, ir_node *n)
-{
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	return env->sched_info[idx].is_root;
-}
-
-/**
- * Mark a node as roto node
- */
-static INLINE void mark_root_node(block_sched_env_t *env, ir_node *n)
-{
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	env->sched_info[idx].is_root = 1;
-}
-
-/**
- * Get the current delay.
- */
-static INLINE sched_timestep_t get_irn_delay(block_sched_env_t *env, ir_node *n) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	return env->sched_info[idx].delay;
-}
-
-/**
- * Set the current delay.
- */
-static INLINE void set_irn_delay(block_sched_env_t *env, ir_node *n, sched_timestep_t delay) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	env->sched_info[idx].delay = delay;
-}
-
-/**
- * Get the current etime.
- */
-static INLINE sched_timestep_t get_irn_etime(block_sched_env_t *env, ir_node *n) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	return env->sched_info[idx].etime;
-}
-
-/**
- * Set the current etime.
- */
-static INLINE void set_irn_etime(block_sched_env_t *env, ir_node *n, sched_timestep_t etime) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	env->sched_info[idx].etime = etime;
-}
-
-/**
- * Get the number of users.
- */
-static INLINE unsigned get_irn_num_user(block_sched_env_t *env, ir_node *n) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	return env->sched_info[idx].num_user;
-}
-
-/**
- * Set the number of users.
- */
-static INLINE void set_irn_num_user(block_sched_env_t *env, ir_node *n, unsigned num_user) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	env->sched_info[idx].num_user = num_user;
-}
-
-/**
- * Get the register difference.
- */
-static INLINE int get_irn_reg_diff(block_sched_env_t *env, ir_node *n) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	return env->sched_info[idx].reg_diff;
-}
-
-/**
- * Set the register difference.
- */
-static INLINE void set_irn_reg_diff(block_sched_env_t *env, ir_node *n, int reg_diff) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	env->sched_info[idx].reg_diff = reg_diff;
-}
-
-/**
- * Get the pre-order position.
- */
-static INLINE int get_irn_preorder(block_sched_env_t *env, ir_node *n) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	return env->sched_info[idx].preorder;
-}
-
-/**
- * Set the pre-order position.
- */
-static INLINE void set_irn_preorder(block_sched_env_t *env, ir_node *n, int pos) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	env->sched_info[idx].preorder = pos;
-}
-
-/**
- * Get the pre-order position.
- */
-static INLINE unsigned get_irn_critical_path_len(block_sched_env_t *env, ir_node *n) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	return env->sched_info[idx].critical_path_len;
-}
-
-/**
- * Set the pre-order position.
- */
-static INLINE void set_irn_critical_path_len(block_sched_env_t *env, ir_node *n, unsigned len) {
-	int idx = get_irn_idx(n);
-
-	assert(idx < ARR_LEN(env->sched_info));
-	env->sched_info[idx].critical_path_len = len;
-}
-
-/**
- * returns the exec-time for node n.
- */
-static sched_timestep_t exectime(sched_env_t *env, ir_node *n) {
-  if (be_is_Keep(n) || is_Proj(n))
-    return 0;
-	if (env->selector->exectime)
-		return env->selector->exectime(env->selector_env, n);
-	return 1;
-}
-
-/**
- * Calculates the latency for between two ops
- */
-static sched_timestep_t latency(sched_env_t *env, ir_node *pred, int pred_cycle, ir_node *curr, int curr_cycle) {
-	/* a Keep hides a root */
-	if (be_is_Keep(curr))
-		return exectime(env, pred);
-
-	/* Proj's are executed immediately */
-	if (is_Proj(curr))
-		return 0;
-
-	/* predecessors Proj's must be skipped */
-	if (is_Proj(pred))
-		pred = get_Proj_pred(pred);
-
-	if (env->selector->latency)
-		return env->selector->latency(env->selector_env, pred, pred_cycle, curr, curr_cycle);
-	return 1;
-}
-
-/**
  * Try to put a node in the ready set.
  * @param env   The block scheduler environment.
  * @param pred  The previous scheduled node.
@@ -612,7 +105,6 @@ static sched_timestep_t latency(sched_env_t *env, ir_node *pred, int pred_cycle,
 static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 {
 	int i, n;
-	sched_timestep_t etime_p, etime;
 
     /* Blocks cannot be scheduled. */
     if (is_Block(irn))
@@ -636,24 +128,17 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 
         /* If the operand is local to the scheduled block and not yet
          * scheduled, this nodes cannot be made ready, so exit. */
-        if (!is_already_scheduled(env, op) && get_nodes_block(op) == env->block)
+        if (! is_already_scheduled(env, op) && get_nodes_block(op) == env->block)
             return 0;
     }
 
 	nodeset_insert(env->cands, irn);
 
-	/* calculate the etime of this node */
-	etime = env->curr_time;
-	if (pred) {
-		etime_p  = get_irn_etime(env, pred);
-		etime   += latency(env->sched_env, pred, 1, irn, 0);
+	/* Notify selector about the ready node. */
+	if (env->selector->node_ready)
+		env->selector->node_ready(env->selector_block_env, irn, pred);
 
-		etime = etime_p > etime ? etime_p : etime;
-	}
-
-	set_irn_etime(env, irn, etime);
-
-    DB((env->dbg, LEVEL_2, "\tmaking ready: %+F etime %u\n", irn, etime));
+    DB((env->dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
 
     return 1;
 }
@@ -671,13 +156,13 @@ static INLINE void make_users_ready(block_sched_env_t *env, ir_node *irn)
 
 	foreach_out_edge(irn, edge) {
 		ir_node *user = get_edge_src_irn(edge);
-		if(!is_Phi(user))
+		if (! is_Phi(user))
 			make_ready(env, irn, user);
 	}
 
 	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
 		ir_node *user = get_edge_src_irn(edge);
-		if(!is_Phi(user))
+		if (! is_Phi(user))
 			make_ready(env, irn, user);
 	}
 }
@@ -717,7 +202,7 @@ static INLINE int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int
  * Returns the number of users of a node having mode datab.
  */
 static int get_num_successors(ir_node *irn) {
-	int sum = 0;
+	int             sum = 0;
 	const ir_edge_t *edge;
 
 	if (get_irn_mode(irn) == mode_T) {
@@ -781,19 +266,14 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
 	}
 }
 
-/**
- * Returns the current register pressure for the current block
- * while scheduling.
- * This is the number of already scheduled nodes having not yet
- * scheduled users.
- */
-static INLINE int get_cur_reg_pressure(block_sched_env_t *env) {
-	/*
-		Nodes with all users scheduled are removed from live set,
-		so the number of nodes in this set represent the current
-		register pressure in this block.
-	*/
-	return nodeset_count(env->live);
+static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
+{
+	int res = -1;
+
+	if(sel->to_appear_in_schedule)
+		res = sel->to_appear_in_schedule(block_env, irn);
+
+	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn));
 }
 
 /**
@@ -806,7 +286,7 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
     /* If the node consumes/produces data, it is appended to the schedule
      * list, otherwise, it is not put into the list */
-    if(must_appear_in_schedule(env->selector, env->selector_block_env, irn)) {
+    if (must_appear_in_schedule(env->selector, env->selector_block_env, irn)) {
         sched_info_t *info = get_irn_sched_info(irn);
         INIT_LIST_HEAD(&info->list);
         info->scheduled = 1;
@@ -815,6 +295,10 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
 
         DBG((env->dbg, LEVEL_2, "\tadding %+F\n", irn));
     }
+
+	/* notify the selector about the finally selected node. */
+	if (env->selector->node_selected)
+		env->selector->node_selected(env->selector_block_env, irn);
 
     /* Insert the node in the set of all already scheduled nodes. */
     mark_already_scheduled(env, irn);
@@ -860,187 +344,6 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 }
 
 /**
- * Returns the difference of regs_output - regs_input;
- */
-static int get_reg_difference(block_sched_env_t *be, ir_node *irn) {
-	int num_out = 0;
-	int num_in  = 0;
-	int i;
-
-	if (get_irn_mode(irn) == mode_T) {
-		/* mode_T nodes: num out regs == num Projs with mode datab */
-		const ir_edge_t *edge;
-		foreach_out_edge(irn, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			if (mode_is_datab(get_irn_mode(proj)))
-				num_out++;
-		}
-	}
-	else
-		num_out = 1;
-
-	/* num in regs: number of ins with mode datab and not ignore */
-	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; i--) {
-		ir_node *in = get_irn_in_or_dep(irn, i);
-		if (mode_is_datab(get_irn_mode(in)) && ! arch_irn_is(be->sched_env->arch_env, in, ignore))
-			num_in++;
-	}
-
-	return num_out - num_in;
-}
-
-/**
- * Execute the heuristic function,
- */
-static ir_node *select_node_heuristic(block_sched_env_t *be, nodeset *ns)
-{
-	ir_node *irn, *cand = NULL;
-
-/* prefer instructions which can be scheduled early */
-#define PRIO_TIME       16
-/* prefer instructions with lots of successors */
-#define PRIO_NUMSUCCS    8
-/* prefer instructions with long critical path */
-#define PRIO_LEVEL      12
-/* prefer instructions coming early in preorder */
-#define PRIO_PREORD      8
-/* weight of current register pressure */
-#define PRIO_CUR_PRESS  20
-/* weight of register pressure difference */
-#define PRIO_CHG_PRESS   8
-
-	/* schedule keeps as early as possible */
-	foreach_nodeset(ns, irn) {
-		if (be_is_Keep(irn)) {
-			nodeset_break(ns);
-			return irn;
-		}
-	}
-
-	if (be->sched_env->sel_strategy & BE_SCHED_SELECT_HEUR) {
-		int max_prio     = INT_MIN;
-		int cur_prio     = INT_MIN;
-		int cur_pressure = get_cur_reg_pressure(be);
-		int reg_fact, cand_reg_fact;
-
-		/* priority based selection, heuristic inspired by mueller diss */
-		foreach_nodeset(ns, irn) {
-			/* make sure that branches are scheduled last */
-			if (! arch_irn_class_is(be->sched_env->arch_env, irn, branch)) {
-				int rdiff = get_irn_reg_diff(be, irn);
-				int sign  = rdiff < 0;
-				int chg   = (rdiff < 0 ? -rdiff : rdiff) << PRIO_CHG_PRESS;
-
-				reg_fact = chg << cur_pressure;
-				if (reg_fact < chg)
-					reg_fact = INT_MAX - 2;
-				reg_fact = sign ? -reg_fact : reg_fact;
-
-				cur_prio = (get_irn_critical_path_len(be, irn) << PRIO_LEVEL)
-					//- (get_irn_delay(be, irn) << PRIO_LEVEL)
-					+ (get_irn_num_user(be, irn) << PRIO_NUMSUCCS)
-					- (get_irn_etime(be, irn) << PRIO_TIME)
-//					- ((get_irn_reg_diff(be, irn) >> PRIO_CHG_PRESS) << ((cur_pressure >> PRIO_CUR_PRESS) - 3))
-					- reg_fact
-					+ (get_irn_preorder(be, irn) << PRIO_PREORD); /* high preorder means early schedule */
-				if (cur_prio > max_prio) {
-					cand          = irn;
-					max_prio      = cur_prio;
-					cand_reg_fact = reg_fact;
-				}
-
-				DBG((be->dbg, LEVEL_4, "checked NODE %+F\n", irn));
-				DBG((be->dbg, LEVEL_4, "\tpriority: %d\n", cur_prio));
-				DBG((be->dbg, LEVEL_4, "\tpath len: %d (%d)\n", get_irn_critical_path_len(be, irn), get_irn_critical_path_len(be, irn) << PRIO_LEVEL));
-				DBG((be->dbg, LEVEL_4, "\tdelay:    %d (%d)\n", get_irn_delay(be, irn), get_irn_delay(be, irn) << PRIO_LEVEL));
-				DBG((be->dbg, LEVEL_4, "\t#user:    %d (%d)\n", get_irn_num_user(be, irn), get_irn_num_user(be, irn) << PRIO_NUMSUCCS));
-				DBG((be->dbg, LEVEL_4, "\tetime:    %d (%d)\n", get_irn_etime(be, irn), -(get_irn_etime(be, irn) << PRIO_TIME)));
-				DBG((be->dbg, LEVEL_4, "\tpreorder: %d (%d)\n", get_irn_preorder(be, irn), get_irn_preorder(be, irn) << PRIO_PREORD));
-				DBG((be->dbg, LEVEL_4, "\treg diff: %d (%d)\n", get_irn_reg_diff(be, irn), -cand_reg_fact));
-				DBG((be->dbg, LEVEL_4, "\tpressure: %d\n", cur_pressure));
-			}
-		}
-
-		if (cand) {
-			DBG((be->dbg, LEVEL_4, "heuristic selected %+F:\n", cand));
-		}
-		else {
-			cand = nodeset_first(ns);
-		}
-	}
-	else {
-		/* use backend selector */
-		cand = be->selector->select(be->selector_block_env, ns);
-	}
-
-	return cand;
-}
-
-/**
- * Returns non-zero if root is a root in the block block.
- */
-static int is_root(ir_node *root, ir_node *block) {
-	const ir_edge_t *edge;
-
-	foreach_out_edge(root, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-
-		if (is_Block(succ))
-			continue;
-		/* Phi nodes are always in "another block */
-		if (is_Phi(succ))
-			continue;
-		if (get_nodes_block(succ) == block)
-			return 0;
-	}
-	return 1;
-}
-
-/* we need a special mark */
-static char _mark;
-#define MARK	&_mark
-
-static firm_dbg_module_t *xxxdbg;
-
-/**
- * descent into a dag and create a pre-order list.
- */
-static void descent(ir_node *root, ir_node *block, ir_node **list, block_sched_env_t *env, unsigned path_len) {
-	int i;
-
-	if (! is_Phi(root)) {
-		path_len += exectime(env->sched_env, root);
-		if (get_irn_critical_path_len(env, root) < path_len) {
-			set_irn_critical_path_len(env, root, path_len);
-		}
-
-		/* Phi nodes always leave the block */
-		for (i = get_irn_ins_or_deps(root) - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_in_or_dep(root, i);
-
-			DBG((xxxdbg, LEVEL_3, "   node %+F\n", pred));
-			/* Blocks may happen as predecessors of End nodes */
-			if (is_Block(pred))
-				continue;
-
-			/* already seen nodes are not marked */
-			if (get_irn_link(pred) != MARK)
-				continue;
-
-			/* don't leave our block */
-			if (get_nodes_block(pred) != block)
-				continue;
-
-			set_irn_link(pred, NULL);
-
-			descent(pred, block, list, env, path_len);
-		}
-	}
-	set_irn_link(root, *list);
-	*list = root;
-}
-
-/**
  * Perform list scheduling on a block.
  *
  * Note, that the caller must compute a linked list of nodes in the block
@@ -1061,10 +364,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	block_sched_env_t be;
 	const ir_edge_t *edge;
 	ir_node *irn;
-	int j, m, cur_pos;
-
-	ir_node *root = NULL, *preord = NULL;
-	ir_node *curr;
+	int j, m;
 
 	/* Initialize the block's list head that will hold the schedule. */
 	INIT_LIST_HEAD(&info->list);
@@ -1072,90 +372,16 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	/* Initialize the block scheduling environment */
 	be.sched_info        = env->sched_info;
 	be.block             = block;
-	be.curr_time         = 0;
 	be.cands             = new_nodeset(get_irn_n_edges(block));
 	be.live              = new_nodeset(get_irn_n_edges(block));
 	be.selector          = selector;
 	be.sched_env         = env;
 	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
-	FIRM_DBG_REGISTER(xxxdbg, "firm.be.schedxxx");
-
-	//	firm_dbg_set_mask(be.dbg, SET_LEVEL_3);
-
-	if (selector->init_block)
-		be.selector_block_env = selector->init_block(env->selector_env, block);
 
 	DBG((be.dbg, LEVEL_1, "scheduling %+F\n", block));
 
-	/* First step: Find the root set. */
-	foreach_out_edge(block, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-
-		if (is_root(succ, block)) {
-			mark_root_node(&be, succ);
-			set_irn_link(succ, root);
-			root = succ;
-		}
-		else
-			set_irn_link(succ, MARK);
-	}
-
-	/* Second step: calculate the pre-order list. */
-	preord = NULL;
-	for (curr = root; curr; curr = irn) {
-		irn = get_irn_link(curr);
-		DBG((be.dbg, LEVEL_2, "   DAG root %+F\n", curr));
-		descent(curr, block, &preord, &be, 0);
-	}
-	root = preord;
-
-	/* Third step: calculate the Delay. Note that our
-	* list is now in pre-order, starting at root
-	*/
-	for (cur_pos = 0, curr = root; curr; curr = get_irn_link(curr), cur_pos++) {
-		sched_timestep_t d;
-
-		if (arch_irn_class_is(env->arch_env, curr, branch)) {
-			/* assure, that branches can be executed last */
-			d = 0;
-		}
-		else {
-			if (is_root_node(&be, curr))
-				d = exectime(env, curr);
-			else {
-				d = 0;
-				foreach_out_edge(curr, edge) {
-					ir_node *n = get_edge_src_irn(edge);
-
-					if (get_nodes_block(n) == block) {
-						sched_timestep_t ld;
-
-						ld = latency(env, curr, 1, n, 0) + get_irn_delay(&be, n);
-						d = ld > d ? ld : d;
-					}
-				}
-
-				foreach_out_edge_kind(curr, edge, EDGE_KIND_DEP) {
-					ir_node *n = get_edge_src_irn(edge);
-
-					if (get_nodes_block(n) == block) {
-						sched_timestep_t ld;
-
-						ld = latency(env, curr, 1, n, 0) + get_irn_delay(&be, n);
-						d = ld > d ? ld : d;
-					}
-				}
-			}
-		}
-		set_irn_delay(&be, curr, d);
-		DB((be.dbg, LEVEL_2, "\t%+F delay %u\n", curr, d));
-
-		/* set the etime of all nodes to 0 */
-		set_irn_etime(&be, curr, 0);
-
-		set_irn_preorder(&be, curr, cur_pos);
-	}
-
+	if (selector->init_block)
+		be.selector_block_env = selector->init_block(env->selector_env, block);
 
 	/* Then one can add all nodes are ready to the set. */
 	foreach_out_edge(block, edge) {
@@ -1166,18 +392,15 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 			continue;
 
 		if (is_Phi(irn)) {
-			/* Phi functions are scheduled immediately, since they only transfer
-			* data flow from the predecessors to this block. */
-
-			/* Increase the time step. */
-			be.curr_time += get_irn_etime(&be, irn);
+			/*
+				Phi functions are scheduled immediately, since they	only
+				transfer data flow from the predecessors to this block.
+			*/
 			add_to_sched(&be, irn);
 			make_users_ready(&be, irn);
 		}
 		else if (irn == start_node) {
 			/* The start block will be scheduled as the first node */
-			be.curr_time += get_irn_etime(&be, irn);
-
 			add_to_sched(&be, irn);
 			add_tuple_projs(&be, irn);
 		}
@@ -1205,107 +428,28 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 				DBG((be.dbg, LEVEL_2, "\timmediately ready: %+F\n", irn));
 				make_ready(&be, NULL, irn);
 			}
-
-			/* calculate number of users (needed for heuristic) */
-			set_irn_num_user(&be, irn, get_num_successors(irn));
-
-			/* calculate register difference (needed for heuristic) */
-			set_irn_reg_diff(&be, irn, get_reg_difference(&be, irn));
 		}
 	}
 
+	/* Iterate over all remaining nodes */
 	while (nodeset_count(be.cands) > 0) {
-		nodeset *mcands;                            /**< the set of candidates with maximum delay time */
-		nodeset *ecands;                            /**< the set of nodes in mcands whose etime <= curr_time  */
-		nodeset *local_cands;
-		sched_timestep_t max_delay = 0;
-
 		/* collect statistics about amount of ready nodes */
 		be_do_stat_sched_ready(block, be.cands);
 
-		/* calculate the max delay of all candidates */
+		/* Keeps must be scheduled immediatly */
 		foreach_nodeset(be.cands, irn) {
-			sched_timestep_t d = get_irn_delay(&be, irn);
-
-			max_delay = d > max_delay ? d : max_delay;
-		}
-
-		if (be.sched_env->sel_strategy & BE_SCHED_SELECT_MUCHNIK) {
-			mcands = new_nodeset(8);
-			ecands = new_nodeset(8);
-		}
-		else {
-			local_cands = new_nodeset(8);
-		}
-
-		/* calculate mcands and ecands */
-		foreach_nodeset(be.cands, irn) {
-			if (be_is_Keep(irn)) {
+			if (be_is_Keep(irn) || be_is_CopyKeep(irn)) {
 				nodeset_break(be.cands);
 				break;
 			}
-			if (be.sched_env->sel_strategy & BE_SCHED_SELECT_MUCHNIK) {
-				if (get_irn_delay(&be, irn) == max_delay) {
-					nodeset_insert(mcands, irn);
-					if (get_irn_etime(&be, irn) <= be.curr_time)
-						nodeset_insert(ecands, irn);
-				}
-			}
-			else {
-				nodeset_insert(local_cands, irn);
-			}
 		}
 
-		if (irn) {
+		if (! irn) {
 			/* Keeps must be immediately scheduled */
-		}
-		else {
-			DB((be.dbg, LEVEL_2, "\tbe.curr_time = %u\n", be.curr_time));
-
-			/* select a node to be scheduled and check if it was ready */
-			if (! (be.sched_env->sel_strategy & BE_SCHED_SELECT_MUCHNIK)) {
-				DB((be.dbg, LEVEL_3, "\tlocal_cands = %d\n", nodeset_count(local_cands)));
-				irn = select_node_heuristic(&be, local_cands);
-			}
-			else if (nodeset_count(mcands) == 1) {
-				irn = nodeset_first(mcands);
-				DB((be.dbg, LEVEL_3, "\tirn = %+F, mcand = 1, max_delay = %u\n", irn, max_delay));
-			}
-			else {
-				int cnt = nodeset_count(ecands);
-				if (cnt == 1) {
-					irn = nodeset_first(ecands);
-
-					if (arch_irn_class_is(env->arch_env, irn, branch)) {
-						/* BEWARE: don't select a JUMP if others are still possible */
-						goto force_mcands;
-					}
-					DB((be.dbg, LEVEL_3, "\tirn = %+F, ecand = 1, max_delay = %u\n", irn, max_delay));
-				}
-				else if (cnt > 1) {
-					DB((be.dbg, LEVEL_3, "\tecand = %d, max_delay = %u\n", cnt, max_delay));
-					irn = select_node_heuristic(&be, ecands);
-				}
-				else {
-force_mcands:
-					DB((be.dbg, LEVEL_3, "\tmcand = %d\n", nodeset_count(mcands)));
-					irn = select_node_heuristic(&be, mcands);
-				}
-			}
-		}
-
-		if (be.sched_env->sel_strategy & BE_SCHED_SELECT_MUCHNIK) {
-			del_nodeset(mcands);
-			del_nodeset(ecands);
-		}
-		else {
-			del_nodeset(local_cands);
+			irn = be.selector->select(be.selector_block_env, be.cands, be.live);
 		}
 
 		DB((be.dbg, LEVEL_2, "\tpicked node %+F\n", irn));
-
-		/* Increase the time step. */
-		be.curr_time += exectime(env, irn);
 
 		/* Add the node to the schedule. */
 		add_to_sched(&be, irn);
@@ -1327,45 +471,52 @@ force_mcands:
 	del_nodeset(be.live);
 }
 
-static const list_sched_selector_t reg_pressure_selector_struct = {
-	reg_pressure_graph_init,
-	reg_pressure_block_init,
-	reg_pressure_select,
-	NULL,                    /* to_appear_in_schedule */
-	NULL,                    /* exectime */
-	NULL,                    /* latency */
-	reg_pressure_block_free,
-	free
-};
-
-const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;
-
 /* List schedule a graph. */
 void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
-	ir_graph *irg              = birg->irg;
+	const arch_env_t *arch_env  = birg->main_env->arch_env;
+	ir_graph         *irg       = birg->irg;
 
 	int num_nodes;
 	sched_env_t env;
 	mris_env_t *mris;
+	list_sched_selector_t sel;
+
+	/* Select a scheduler based on backend options */
+	switch (be_opts->sched_select) {
+		case BE_SCHED_SELECT_TRIVIAL:
+			memcpy(&sel, trivial_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_REGPRESS:
+			memcpy(&sel, reg_pressure_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_MUCHNIK:
+			memcpy(&sel, muchnik_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_HEUR:
+			memcpy(&sel, heuristic_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_HMUCHNIK:
+		default:
+			memcpy(&sel, trivial_selector, sizeof(sel));
+	}
 
 	/* Assure, that the out edges are computed */
 	edges_assure(irg);
 
-	if(be_opts->mris)
+	if (be_opts->mris)
 		mris = be_sched_mris_preprocess(birg);
 
 	num_nodes = get_irg_last_idx(irg);
 
+	/* initialize environment for list scheduler */
 	memset(&env, 0, sizeof(env));
-	env.selector     = arch_env->isa->impl->get_list_sched_selector(arch_env->isa);
-	env.arch_env     = arch_env;
-	env.irg          = irg;
-	env.sel_strategy = be_opts->sched_select;
-	env.sched_info   = NEW_ARR_F(sched_irn_t, num_nodes);
+	env.selector   = arch_env->isa->impl->get_list_sched_selector(arch_env->isa, &sel);
+	env.arch_env   = arch_env;
+	env.irg        = irg;
+	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
 
-	memset(env.sched_info, 0, num_nodes * sizeof(*env.sched_info));
+	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
 
 	if (env.selector->init_graph)
 		env.selector_env = env.selector->init_graph(env.selector, arch_env, irg);
@@ -1376,7 +527,7 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	if (env.selector->finish_graph)
 		env.selector->finish_graph(env.selector_env);
 
-	if(be_opts->mris)
+	if (be_opts->mris)
 		be_sched_mris_free(mris);
 
 	DEL_ARR_F(env.sched_info);

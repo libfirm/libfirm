@@ -32,8 +32,8 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Called before scheduling starts on a block.
-	 * @param graph_env The environment.
-	 * @param block The block which is to be scheduled.
+	 * @param graph_env   The environment.
+	 * @param block       The block which is to be scheduled.
 	 * @return A per-block pointer that is additionally passed to select.
 	 */
 	void *(*init_block)(void *graph_env, ir_node *block);
@@ -43,15 +43,13 @@ struct _list_sched_selector_t {
 	 * It picks one node out of the ready list to be scheduled next.
 	 * The function does not have to delete the node from the ready set.
 	 *
-	 * @return block_env Some private information as returned by init_block().
-	 * @param sched_head The schedule so far.
-	 * @param curr_time The current time step which the picked node
-	 * will be assigned to.
-	 * @param ready_list A set containing all ready nodes. Pick one of these
-	 * nodes.
+	 * @param block_env   Some private information as returned by init_block().
+	 * @param sched_head  The schedule so far.
+	 * @param ready_set   A set containing all ready nodes. Pick one of these nodes.
+	 * @param live_set    A set containing all nodes currently alive.
 	 * @return The chosen node.
 	 */
-	ir_node *(*select)(void *block_env, nodeset *ready_set);
+	ir_node *(*select)(void *block_env, nodeset *ready_set, nodeset *live_set);
 
 	/**
 	 * This function decides, if a node should appear in a schedule.
@@ -60,6 +58,21 @@ struct _list_sched_selector_t {
 	 * @return 1, if the node should be scheduled, 0 if not.
 	 */
 	int (*to_appear_in_schedule)(void *block_env, const ir_node *irn);
+
+	/**
+	 * This function gets executed after a node finally has been made ready.
+	 * @param block_env The block environment.
+	 * @param irn       The node made ready.
+	 * @param pred      The previously scheduled node.
+	 */
+	void (*node_ready)(void *block_env, ir_node *irn, ir_node *pred);
+
+	/**
+	 * This function gets executed after a node finally has been selected.
+	 * @param block_env The block environment.
+	 * @param irn       The selected node.
+	 */
+	void (*node_selected)(void *block_env, ir_node *irn);
 
 	/**
 	 * Returns the execution time of node irn.
@@ -104,6 +117,17 @@ extern const list_sched_selector_t *trivial_selector;
  * @note Not really operational yet.
  */
 extern const list_sched_selector_t *reg_pressure_selector;
+
+/**
+ * A selector based on trace scheduling as introduced by Muchnik[TM]
+ */
+extern const list_sched_selector_t *muchnik_selector;
+
+/**
+ * A selector based on trace scheduling as introduced by Muchnik[TM]
+ * but using the mueller heuristic selector.
+ */
+extern const list_sched_selector_t *heuristic_selector;
 
 /**
  * List schedule a graph.
