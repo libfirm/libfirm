@@ -499,12 +499,10 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 		if the IncSP points to NoMem -> just use the memory input from store
 		if IncSP points to somewhere else -> sync memory of IncSP and Store
 	*/
-	mem = get_irn_n(irn, 3);
-
+	mem  = get_irn_n(irn, 3);
 	push = new_rd_ia32_Push(NULL, irg, bl, be_get_IncSP_pred(sp), val, mem);
 	proj_res = new_r_Proj(irg, bl, push, get_irn_mode(sp), pn_ia32_Push_stack);
 	proj_M   = new_r_Proj(irg, bl, push, mode_M, pn_ia32_Push_M);
-	add_irn_deps(push, sp);
 
 	/* copy a possible constant from the store */
 	set_ia32_id_cnst(push, get_ia32_id_cnst(irn));
@@ -523,61 +521,7 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
  * Creates a Pop from IncSP(Load(sp))
  */
 static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
-	ir_node *old_proj_M = be_get_IncSP_mem(irn);
-	ir_node *load = skip_Proj(old_proj_M);
-	ir_node *old_proj_res = NULL;
-	ir_node *bl, *pop, *next, *proj_res, *proj_sp, *proj_M;
-	const ir_edge_t *edge;
-	const arch_register_t *reg, *sp;
-
-	if (! is_ia32_Load(load) || get_ia32_am_offs(load))
-		return;
-
-	if (arch_get_irn_register(cg->arch_env, get_irn_n(load, 1)) !=
-		&ia32_gp_regs[REG_GP_NOREG])
-		return;
-	if (arch_get_irn_register(cg->arch_env, get_irn_n(load, 0)) != cg->isa->arch_isa.sp)
-		return;
-
-	/* ok, translate into pop */
-	foreach_out_edge(load, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		if (succ != old_proj_M) {
-			old_proj_res = succ;
-			break;
-		}
-	}
-	if (! old_proj_res) {
-		assert(0);
-		return; /* should not happen */
-	}
-
-	bl = get_nodes_block(load);
-
-	/* IncSP is typically scheduled after the load, so remove it first */
-	sched_remove(irn);
-	next = sched_next(old_proj_res);
-	sched_remove(old_proj_res);
-	sched_remove(load);
-
-	reg = arch_get_irn_register(cg->arch_env, load);
-	sp  = arch_get_irn_register(cg->arch_env, irn);
-
-	pop      = new_rd_ia32_Pop(NULL, current_ir_graph, bl, get_irn_n(irn, 0), get_irn_n(load, 2));
-	proj_res = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(old_proj_res), pn_ia32_Pop_res);
-	proj_sp  = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(irn), pn_ia32_Pop_stack);
-	proj_M   = new_r_Proj(current_ir_graph, bl, pop, mode_M, pn_ia32_Pop_M);
-
-	exchange(old_proj_M, proj_M);
-	exchange(old_proj_res, proj_res);
-	exchange(irn, proj_sp);
-
-	arch_set_irn_register(cg->arch_env, proj_res, reg);
-	arch_set_irn_register(cg->arch_env, proj_sp, sp);
-
-	sched_add_before(next, proj_sp);
-	sched_add_before(proj_sp, proj_res);
-	sched_add_before(proj_res,pop);
+	/* TODO */
 }
 
 /**
