@@ -1530,7 +1530,6 @@ static ir_node *gen_Cond(ia32_transform_env_t *env) {
 		if (cnst && expr) {
 			/* immop has to be the right operand, we might need to flip pnc */
 			if(cnst != cmp_b) {
-				printf("flipit\n");
 				pnc = get_inversed_pnc(pnc);
 			}
 
