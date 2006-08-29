@@ -98,6 +98,7 @@ int co_solve_heuristic_java(copy_opt_t *co)
 	bitset_t *nodes = bitset_malloc(get_irg_last_idx(co->irg));
 	unsigned n_regs = co->cenv->cls->n_regs;
 
+	char dbg[256];
 	unsigned i, j, curr_idx;
 	int *col_map;
 	int *inv_col_map;
@@ -155,6 +156,8 @@ int co_solve_heuristic_java(copy_opt_t *co)
 		if(bitset_is_set(nodes, n_idx)) {
 			affinity_node_t *an = get_affinity_info(co, n);
 
+			ir_snprintf(dbg, sizeof(dbg), "%+F", n);
+			be_java_coal_set_debug(coal, t_idx, dbg);
 			be_java_coal_set_color(coal, t_idx, col_map[arch_get_irn_register(co->aenv, n)->index]);
 			set_admissible_regs(coal, co, n, t_idx, col_map);
 			be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {

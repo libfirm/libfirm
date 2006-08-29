@@ -42,6 +42,13 @@ void be_java_coal_add_aff_edge(be_java_coal_t *c, int n, int m, int costs);
 void be_java_coal_set_color(be_java_coal_t *c, int n, int col);
 
 /**
+ * Set debug information for a node.
+ * @param n The node.
+ * @param dbg Some string copied to Java.
+ */
+void be_java_coal_set_debug(be_java_coal_t *c, int n, const char *dbg);
+
+/**
  * Forbid a color for a node.
  * Afterwards, the node may not be assigned that color.
  * @param n The node.

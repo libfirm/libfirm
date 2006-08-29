@@ -602,9 +602,8 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg(irn, OUT_POS(0), sp);
-	be_node_set_reg_class(irn, 1, sp->reg_class);
-	be_node_set_reg_class(irn, 2, sp->reg_class);
-	be_node_set_irn_reg(NULL, irn, sp);
+	be_node_set_reg_class(irn, be_pos_AddSP_size, sp->reg_class);
+	be_node_set_reg_class(irn, be_pos_AddSP_old_sp, sp->reg_class);
 
 	return irn;
 }

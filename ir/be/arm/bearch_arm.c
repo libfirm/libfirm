@@ -941,7 +941,8 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 
 //	TODO: Activate Omit fp in epilogue
 	if(env->flags.try_omit_fp) {
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, *mem, BE_STACK_FRAME_SIZE_SHRINK);
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK);
+		add_irn_dep(curr_sp, *mem);
 
 		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
 		be_node_set_reg_class(curr_lr, 1, &arm_reg_classes[CLASS_arm_gp]);
