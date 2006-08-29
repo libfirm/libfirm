@@ -694,8 +694,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 			}
 		}
 
-		if(!mem_proj)
+		if(!mem_proj) {
 			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_Call_M);
+			keep_alive(mem_proj);
+		}
 
 		 /* Clean up the stack frame if we allocated it */
 		if(!no_alloc) {
