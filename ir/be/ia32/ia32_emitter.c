@@ -1042,7 +1042,7 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	}
 	else if (is_PsiCondCMov) {
 		/* omit compare because flags are already set by And/Or */
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "test %1S, %1S", irn, irn);
 	}
 	else {
 		assert(0 && "unsupported CMov");
@@ -1064,12 +1064,20 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	}
 	else {
 		/* out is different from in: need copy default -> out */
-		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %4S", irn, irn);
+		if (is_PsiCondCMov)
+			lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %3S", irn, irn);
+		else
+			lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %4S", irn, irn);
+
 		lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* copy default -> out */" );
 		IA32_DO_EMIT(irn);
 	}
 
-	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmov%s %1D, %3S", cmp_suffix, irn, irn);
+	if (is_PsiCondCMov)
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmov%s %1D, %2S", cmp_suffix, irn, irn);
+	else
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmov%s %1D, %3S", cmp_suffix, irn, irn);
+
 	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* condition is true case */" );
 	IA32_DO_EMIT(irn);
 }
@@ -1574,8 +1582,10 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			conv_cmd = "cbw";
 		else if (n == 16 || m == 16)
 			conv_cmd = "cwde";
-		else
+		else {
+			printf("%d -> %d unsupported\n", n, m);
 			assert(0 && "unsupported Conv_I2I");
+		}
 	}
 
 	 switch(get_ia32_op_type(irn)) {
