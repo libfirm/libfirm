@@ -330,6 +330,7 @@ insert_copy:
 			we have to change it, as CMP doesn't support immediate
 			as left operands.
 		*/
+#if 0
 		if ((is_ia32_CondJmp(irn) || is_ia32_CmpSet(irn) || is_ia32_xCmpSet(irn)) &&
 			(is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn))                   &&
 			op_tp == ia32_AddrModeS)
@@ -338,6 +339,7 @@ insert_copy:
 			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 		}
 	}
+#endif
 end: ;
 }
 
