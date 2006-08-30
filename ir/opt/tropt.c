@@ -417,7 +417,7 @@ void optimize_class_casts(void) {
     set_irg_outs_inconsistent(get_irp_irg(i));
 
   if (get_opt_optimize_class_casts_verbose() && get_firm_verbosity()) {
-    printf(" Cast optimization: %d Casts removed, %d sels concretized.\n",
+    printf(" Cast optimization: %d Casts removed, %d Sels concretized.\n",
 	   n_casts_removed, n_sels_concretized);
   }
 }
