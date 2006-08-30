@@ -1751,9 +1751,9 @@ luke_blockwalker(ir_node * bb, void * data)
 		op->attr.live_range.op = bb;
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", bb, irn);
-		cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
+		cst = lpp_add_cst_uniq(si->lpp, buf, lpp_equal, 0.0);
 
-		/* reg_out - reload - remat - live_range <= 0 */
+		/* reg_out = reload + remat + live_range */
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
 		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, -1.0);
@@ -1763,45 +1763,10 @@ luke_blockwalker(ir_node * bb, void * data)
 				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
 			}
 		}
-		/* maybe we should also assure that reg_out >= live_range etc. */
 	}
 
 	if(opt_memcopies)
 		insert_mem_copy_position(si, live, bb);
-
-	/* allow only one argument to die at pre remat. If two value die check_pre does
-	 * not ensure a correct register pressure FIXME (verify this is really necessary!) */
-	foreach_pre_remat(si, bb, tmp) {
-		pset    *remat_args = pset_new_ptr(get_irn_arity(tmp));
-		int      n;
-		ir_node  *remat_arg;
-		op_t     *remat_op = get_irn_link(tmp);
-
-		for(n=get_irn_arity(tmp)-1; n>=0; --n) {
-			remat_arg = get_irn_n(tmp, n);
-
-			if(has_reg_class(si, remat_arg)) {
-				pset_insert_ptr(remat_args, remat_arg);
-			}
-		}
-
-		if(pset_count(remat_args)) {
-			/* \sum_args reg_out >= #args * remat - 1 */
-			ir_snprintf(buf, sizeof(buf), "one_may_die_%N", tmp);
-			cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, -1.0);
-			lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -pset_count(remat_args));
-
-			pset_foreach(remat_args, remat_arg) {
-				spill = set_find_spill(spill_bb->ilp, remat_arg);
-
-				if(spill) {
-					lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
-				}
-			}
-		}
-
-		del_pset(remat_args);
-	}
 
 	/*
 	 * start new live ranges for values used by remats at end of block
@@ -2094,40 +2059,6 @@ skip_one_must_die:
 				tmp_op = get_irn_link(tmp);
 				lpp_set_factor_fast(si->lpp, check_post, tmp_op->attr.live_range.ilp, 1.0);
 			}
-		}
-
-		/* allow only one argument to die at pre remat. If two value die check_pre does
-		 * not ensure a correct register pressure FIXME (verify this is really necessary!) */
-		foreach_pre_remat(si, irn, tmp) {
-			pset    *remat_args = pset_new_ptr(get_irn_arity(tmp));
-			int      n;
-			ir_node  *remat_arg;
-			op_t     *remat_op = get_irn_link(tmp);
-
-			for(n=get_irn_arity(tmp)-1; n>=0; --n) {
-				remat_arg = get_irn_n(tmp, n);
-
-				if(has_reg_class(si, remat_arg)) {
-					pset_insert_ptr(remat_args, remat_arg);
-				}
-			}
-
-			if(pset_count(remat_args)) {
-				/* \sum_args next(lr) >= #args * remat - 1 */
-				ir_snprintf(buf, sizeof(buf), "one_may_die_%N", tmp);
-				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, -1.0);
-				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -pset_count(remat_args));
-
-				pset_foreach(remat_args, remat_arg) {
-					op_t  *arg_op = get_irn_link(remat_arg);
-
-					if(arg_op->attr.live_range.ilp != ILP_UNDEF) {
-						lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
-					}
-				}
-			}
-
-			del_pset(remat_args);
 		}
 
 		/***********************************************************
