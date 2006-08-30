@@ -479,7 +479,7 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 
 	int num_nodes;
 	sched_env_t env;
-	mris_env_t *mris;
+	mris_env_t *mris = NULL;
 	list_sched_selector_t sel;
 
 	/* Select a scheduler based on backend options */
