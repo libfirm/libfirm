@@ -5,7 +5,8 @@
  * This list uses an obstack and a free-list to efficiently manage its
  * elements.
  * @author Kimon Hoffmann
- * @date 14.07.2005
+ * @date   14.07.2005
+ * @cvs-id $Id$
  * @note Until now the code is entirely untested so it probably contains
  * 		plenty of errors.
  */
@@ -20,128 +21,155 @@
  * @param list the list for which to allocate the element.
  * @return the newly allocated, uninitialized element.
  */
-static PListElement* allocate_element(PList* list) {
-	PListElement* newElement;
-	if (list->firstFreeElement != NULL) {
-		newElement = list->firstFreeElement;
-		list->firstFreeElement = newElement->next;
-		newElement->next = NULL;
-	} else {
+static plist_element_t* allocate_element(plist_t* list) {
+	plist_element_t* newElement;
+
+	if (list->first_free_element != NULL) {
+		newElement               = list->first_free_element;
+		list->first_free_element = newElement->next;
+		newElement->next         = NULL;
+	}
+	else {
 		newElement = obstack_alloc(&list->obst, sizeof(*newElement));
 	}
+
 	return newElement;
 }
 
-PList* plist_new(void) {
-	PList* list = xmalloc(sizeof(*list));
+plist_t* plist_new(void) {
+	plist_t* list = xmalloc(sizeof(*list));
+
 	obstack_init(&list->obst);
-	list->firstElement = NULL;
-	list->lastElement = NULL;
-	list->firstFreeElement = NULL;
-	list->elementCount = 0;
+	list->first_element      = NULL;
+	list->last_element       = NULL;
+	list->first_free_element = NULL;
+	list->element_count      = 0;
+
 	return list;
 }
 
-void plist_free(PList* list) {
+void plist_free(plist_t* list) {
 	obstack_free(&list->obst, NULL);
-	list->firstElement = NULL;
-	list->lastElement = NULL;
-	list->firstFreeElement = NULL;
-	list->elementCount = 0;
+
+	list->first_element      = NULL;
+	list->last_element       = NULL;
+	list->first_free_element = NULL;
+	list->element_count      = 0;
 	xfree(list);
 }
 
-void plist_insert_back(PList* list, void* value) {
-	if (list->lastElement != NULL) {
-		plist_insert_after(list, list->lastElement, value);
-	} else {
-		PListElement* newElement = allocate_element(list);
-		newElement->data = value;
-		newElement->prev = NULL;
-		newElement->next = NULL;
-		list->firstElement = list->lastElement = newElement;
-		list->elementCount = 1;
+void plist_insert_back(plist_t* list, void* value) {
+	if (list->last_element != NULL) {
+		plist_insert_after(list, list->last_element, value);
+	}
+	else {
+		plist_element_t* newElement = allocate_element(list);
+
+		newElement->data    = value;
+		newElement->prev    = NULL;
+		newElement->next    = NULL;
+		list->first_element = list->last_element = newElement;
+		list->element_count = 1;
 	}
 }
 
-void plist_insert_front(PList* list, void* value) {
-	if (list->firstElement != NULL) {
-		plist_insert_before(list, list->firstElement, value);
-	} else {
-		PListElement* newElement = allocate_element(list);
-		newElement->data = value;
-		newElement->prev = NULL;
-		newElement->next = NULL;
-		list->firstElement = list->lastElement = newElement;
-		list->elementCount = 1;
+void plist_insert_front(plist_t* list, void* value) {
+	if (list->first_element != NULL) {
+		plist_insert_before(list, list->first_element, value);
+	}
+	else {
+		plist_element_t* newElement = allocate_element(list);
+
+		newElement->data    = value;
+		newElement->prev    = NULL;
+		newElement->next    = NULL;
+		list->first_element = list->last_element = newElement;
+		list->element_count = 1;
 	}
 }
 
-void plist_insert_before(PList* list, PListElement* element, void* value) {
-	PListElement* prevElement;
-	PListElement* newElement = allocate_element(list);
+void plist_insert_before(plist_t* list, plist_element_t* element, void* value) {
+	plist_element_t* prevElement;
+	plist_element_t* newElement = allocate_element(list);
 
 	newElement->data = value;
 	newElement->next = element;
-	prevElement = element->prev;
+	prevElement      = element->prev;
 	newElement->prev = prevElement;
+
 	if (prevElement != NULL) {
 		prevElement->next = newElement;
-	} else {
-		list->firstElement = newElement;
 	}
-	element->prev = newElement;
-	++list->elementCount;
+	else {
+		list->first_element = newElement;
+	}
+
+ 	element->prev = newElement;
+	++list->element_count;
 }
 
-void plist_insert_after(PList* list, PListElement* element, void* value) {
-	PListElement* nextElement;
-	PListElement* newElement = allocate_element(list);
+void plist_insert_after(plist_t* list, plist_element_t* element, void* value) {
+	plist_element_t* nextElement;
+	plist_element_t* newElement = allocate_element(list);
 
 	newElement->data = value;
 	newElement->prev = element;
-	nextElement = element->next;
+	nextElement      = element->next;
 	newElement->next = nextElement;
+
 	if (nextElement != NULL) {
 		nextElement->prev = newElement;
-	} else {
-		list->lastElement = newElement;
 	}
+	else {
+		list->last_element = newElement;
+	}
+
 	element->next = newElement;
-	++list->elementCount;
+	++list->element_count;
 }
 
-void plist_erase(PList* list, PListElement* element) {
-	PListElement* nextElement = element->next;
-	PListElement* prevElement = element->prev;
+void plist_erase(plist_t* list, plist_element_t* element) {
+	plist_element_t* nextElement = element->next;
+	plist_element_t* prevElement = element->prev;
+
 	if (nextElement != NULL) {
 		nextElement->prev = prevElement;
-	} else {
-		list->lastElement = prevElement;
 	}
+	else {
+		list->last_element = prevElement;
+	}
+
 	if (prevElement != NULL) {
 		prevElement->next = nextElement;
-	} else {
-		list->firstElement = nextElement;
 	}
-	--list->elementCount;
+	else {
+		list->first_element = nextElement;
+	}
+
+	--list->element_count;
+
 	/* Clean the element and prepend it to the free list */
-	element->prev = NULL; /* The allocation code expects prev to be NULL */
-	element->next = list->firstFreeElement;
-	list->firstFreeElement = element;
+	element->prev            = NULL; /* The allocation code expects prev to be NULL */
+	element->next            = list->first_free_element;
+	list->first_free_element = element;
 }
 
-void plist_clear(PList* list) {
-	PListElement* currentElement = list->firstElement;
+void plist_clear(plist_t* list) {
+	plist_element_t* currentElement = list->first_element;
+
 	while (currentElement != NULL) {
 		currentElement->prev = NULL;
-		currentElement = currentElement->next;
+		currentElement       = currentElement->next;
 	}
-	currentElement = list->lastElement;
+
+	currentElement = list->last_element;
+
 	if (currentElement != NULL) {
-		currentElement->next = list->firstFreeElement;
+		currentElement->next = list->first_free_element;
 	}
-	list->firstFreeElement = list->firstElement;
-	list->firstElement = list->lastElement = 0;
-	list->elementCount = 0;
+
+	list->first_free_element = list->first_element;
+	list->first_element      = 0;
+	list->last_element       = 0;
+	list->element_count      = 0;
 }

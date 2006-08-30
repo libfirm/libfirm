@@ -5,7 +5,8 @@
  * This list uses an obstack and a free-list to efficiently manage its
  * elements.
  * @author Kimon Hoffmann
- * @date 14.07.2005
+ * @date   14.07.2005
+ * @cvs-id $Id$
  * @note Until now the code is entirely untested so it probably contains
  * 		plenty of errors.
  */
@@ -15,13 +16,13 @@
 #include <stddef.h>
 #include "obst.h"
 
-typedef struct PListElement PListElement;
-typedef struct PList PList;
+typedef struct _plist_element plist_element_t;
+typedef struct _plist plist_t;
 
 /**
- * The Plist data type.
+ * The plist data type.
  */
-struct PList {
+struct _plist {
 	/**
 	 * The obstack used for all allocations.
 	 */
@@ -29,29 +30,29 @@ struct PList {
 	/**
 	 * First element in the list.
 	 */
-	PListElement* firstElement;
+	plist_element_t *first_element;
 	/**
 	 * Last element in the list.
 	 */
-	PListElement* lastElement;
+	plist_element_t *last_element;
 	/**
 	 * Current number of elements in the list.
 	 */
-	int elementCount;
+	int element_count;
 	/**
 	 * First element in the free list.
 	 * Please note that the free list is a single linked list and all back
 	 * references are invalid.
 	 */
-	PListElement* firstFreeElement;
+	plist_element_t* first_free_element;
 };
 
 /**
  * An element in the pointer list.
  */
-struct PListElement {
-	PListElement* next;
-	PListElement* prev;
+struct _plist_element {
+	plist_element_t* next;
+	plist_element_t* prev;
 	void* data;
 };
 
@@ -59,14 +60,14 @@ struct PListElement {
  * Creates a new pointer list and initializes it.
  * @return The newly created pointer list.
  */
-PList* plist_new(void);
+plist_t* plist_new(void);
 
 /**
  * Frees the passed pointer list.
  * After a call to this function all references to the list and any of
  * its elements are invalid.
  */
-void plist_free(PList* list);
+void plist_free(plist_t* list);
 
 /**
  * Returns the number of elements in a pointer list.
@@ -74,21 +75,21 @@ void plist_free(PList* list);
  * @return The number of elements in a pointer list.
  */
 #define plist_count(list) \
- 	((list)->elementCount)
+ 	((list)->element_count)
 
 /**
  * Inserts an element at the back of a pointer list.
  * @param list the pointer list to append the new element to.
  * @param value the element value to append.
  */
-void plist_insert_back(PList* list, void* value);
+void plist_insert_back(plist_t* list, void* value);
 
 /**
  * Inserts an element at the front of a pointer list.
  * @param list the pointer list to prepend the new element to.
  * @param value the element value to prepend.
  */
-void plist_insert_front(PList* list, void* value);
+void plist_insert_front(plist_t* list, void* value);
 
 /**
  * Inserts an element into a pointer list before the specified element,
@@ -98,7 +99,7 @@ void plist_insert_front(PList* list, void* value);
  * 		be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
-void plist_insert_before(PList* list, PListElement* element, void* value);
+void plist_insert_before(plist_t* list, plist_element_t* element, void* value);
 
 /**
  * Inserts an element into a pointer list after the specified element,
@@ -108,7 +109,7 @@ void plist_insert_before(PList* list, PListElement* element, void* value);
  * 		be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
-void plist_insert_after(PList* list, PListElement* element, void* value);
+void plist_insert_after(plist_t* list, plist_element_t* element, void* value);
 
 /**
  * Erases the specified element from the pointer list.
@@ -116,13 +117,13 @@ void plist_insert_after(PList* list, PListElement* element, void* value);
  * @param element the list element to erase. This element must be a part
  * 		of @p list.
  */
-void plist_erase(PList* list, PListElement* element);
+void plist_erase(plist_t* list, plist_element_t* element);
 
 /**
  * Erases all elements from the specified pointer list.
  * @param list the pointer list that should be cleard.
  */
-void plist_clear(PList* list);
+void plist_clear(plist_t* list);
 
 /**
  * Returns the first element of a pointer list.
@@ -130,7 +131,7 @@ void plist_clear(PList* list);
  * @return a pointer to the element or NULL if the list is empty
  */
  #define plist_first(list) \
- 	((list)->firstElement)
+ 	((list)->first_element)
 
 /**
  * Returns the last element of a pointer list.
@@ -138,7 +139,7 @@ void plist_clear(PList* list);
  * @return a pointer to the element or NULL if the list is empty
  */
  #define plist_last(list) \
- 	((list)->lastElement)
+ 	((list)->last_element)
 
 /**
  * Checks whether a pointer list element has a successor or not.
@@ -183,5 +184,11 @@ void plist_clear(PList* list);
  */
 #define plist_element_get_value(element) \
 	((element)->data)
+
+/**
+ * Convenience macro to iterate over a plist.
+ */
+#define foreach_plist(list, el) \
+	for (el = plist_first(list); el; el = plist_element_get_next(el))
 
 #endif /*_PLIST_H_*/
