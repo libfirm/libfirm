@@ -4,7 +4,7 @@
  * @author Sebastian Hack
  * @cvs-id $Id$
  *
- * Copyright (C) 2005 Universitaet Karlsruhe
+ * Copyright (C) 2005-2006 Universitaet Karlsruhe
  * Released under the GPL
  *
  * Driver for the chordal register allocator.
@@ -26,6 +26,7 @@
 #include <libcore/lc_timing.h>
 #endif /* WITH_LIBCORE */
 
+#include "ircons_t.h"
 #include "irmode_t.h"
 #include "irgraph_t.h"
 #include "irprintf_t.h"
