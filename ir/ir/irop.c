@@ -3,10 +3,10 @@
  * File name:   ir/ir/irop.c
  * Purpose:     Representation of opcode of intermediate operation.
  * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -18,15 +18,15 @@
 # include <string.h>
 #endif
 
-# include "irop_t.h"
-# include "irnode_t.h"
-# include "irhooks.h"
+#include "irop_t.h"
+#include "irnode_t.h"
+#include "irhooks.h"
 
-# include "iropt_t.h"             /* for firm_set_default_operations */
-# include "irvrfy_t.h"
-# include "reassoc_t.h"
+#include "iropt_t.h"             /* for firm_set_default_operations */
+#include "irvrfy_t.h"
+#include "reassoc_t.h"
 
-# include "xmalloc.h"
+#include "xmalloc.h"
 
 /** the available next opcode */
 static unsigned next_iro = iro_MaxOpcode;

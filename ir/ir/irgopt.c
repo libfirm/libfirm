@@ -163,7 +163,7 @@ void optimize_graph_df(ir_graph *irg) {
   del_identities(irg->value_table);
   irg->value_table = new_identities();
 
-  if (get_irg_dom_state(current_ir_graph) == dom_consistent)
+  if (get_irg_dom_state(irg) == dom_consistent)
     irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 
   /* invalidate info */
