@@ -338,8 +338,8 @@ insert_copy:
 			set_ia32_op_type(irn, ia32_AddrModeD);
 			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 		}
-	}
 #endif
+	}
 end: ;
 }
 
