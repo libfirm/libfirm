@@ -339,43 +339,7 @@ static void prepare_graph(be_irg_t *birg)
 	be_phi_handler_reset(birg->main_env->phi_handler);
 }
 
-/**
- * The Firm backend main loop.
- * Do architecture specific lowering for all graphs
- * and call the architecture specific code generator.
- *
- * @param file_handle   the file handle the output will be written to
- */
-static void be_main_loop(FILE *file_handle)
-{
-	int i, n;
-	arch_isa_t *isa;
-	be_main_env_t env;
-	unsigned num_nodes_b = 0;
-	unsigned num_nodes_a = 0;
-	unsigned num_nodes_r = 0;
-	lc_timer_t *t_prolog, *t_abi, *t_codegen, *t_sched, *t_constr, *t_regalloc, *t_finish, *t_emit, *t_other, *t_verify;
-	be_ra_timer_t *ra_timer;
-
-	if (be_options.timing == BE_TIME_ON) {
-		t_prolog   = lc_timer_register("prolog",   "prolog");
-		t_abi      = lc_timer_register("beabi",    "be abi introduction");
-		t_codegen  = lc_timer_register("codegen",  "codegeneration");
-		t_sched    = lc_timer_register("sched",    "scheduling");
-		t_constr   = lc_timer_register("constr",   "assure constraints");
-		t_regalloc = lc_timer_register("regalloc", "register allocation");
-		t_finish   = lc_timer_register("finish",   "graph finish");
-		t_emit     = lc_timer_register("emiter",   "code emiter");
-		t_verify   = lc_timer_register("verify",   "graph verification");
-		t_other    = lc_timer_register("other",    "other");
-	}
-
-	be_init_env(&env, file_handle);
-
-	isa = arch_env_get_isa(env.arch_env);
-
-	/* for debugging, anchors helps */
-	// dump_all_anchors(1);
+#ifdef WITH_LIBCORE
 
 #define BE_TIMER_PUSH(timer)                                                        \
 	if (be_options.timing == BE_TIME_ON) {                                          \
@@ -397,7 +361,57 @@ static void be_main_loop(FILE *file_handle)
 		timer = tmp;                                                                           \
 	}
 
-#define BE_TIMER_ONLY(code)   if (be_options.timing == BE_TIME_ON) do { code; } while(0)
+#define BE_TIMER_ONLY(code)   do { if (be_options.timing == BE_TIME_ON) { code; } } while(0)
+
+#else
+
+#define BE_TIMER_PUSH(timer)
+#define BE_TIMER_POP(timer)
+#define BE_TIMER_ONLY(code)
+
+#endif /* WITH_LIBCORE */
+
+
+/**
+ * The Firm backend main loop.
+ * Do architecture specific lowering for all graphs
+ * and call the architecture specific code generator.
+ *
+ * @param file_handle   the file handle the output will be written to
+ */
+static void be_main_loop(FILE *file_handle)
+{
+	int i, n;
+	arch_isa_t *isa;
+	be_main_env_t env;
+	unsigned num_nodes_b = 0;
+	unsigned num_nodes_a = 0;
+	unsigned num_nodes_r = 0;
+
+#ifdef WITH_LIBCORE
+	lc_timer_t *t_prolog, *t_abi, *t_codegen, *t_sched, *t_constr, *t_regalloc, *t_finish, *t_emit, *t_other, *t_verify;
+	be_ra_timer_t *ra_timer;
+
+	if (be_options.timing == BE_TIME_ON) {
+		t_prolog   = lc_timer_register("prolog",   "prolog");
+		t_abi      = lc_timer_register("beabi",    "be abi introduction");
+		t_codegen  = lc_timer_register("codegen",  "codegeneration");
+		t_sched    = lc_timer_register("sched",    "scheduling");
+		t_constr   = lc_timer_register("constr",   "assure constraints");
+		t_regalloc = lc_timer_register("regalloc", "register allocation");
+		t_finish   = lc_timer_register("finish",   "graph finish");
+		t_emit     = lc_timer_register("emiter",   "code emiter");
+		t_verify   = lc_timer_register("verify",   "graph verification");
+		t_other    = lc_timer_register("other",    "other");
+	}
+#endif /* WITH_LIBCORE */
+
+	be_init_env(&env, file_handle);
+
+	isa = arch_env_get_isa(env.arch_env);
+
+	/* for debugging, anchors helps */
+	// dump_all_anchors(1);
 
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
@@ -407,7 +421,7 @@ static void be_main_loop(FILE *file_handle)
 		optimization_state_t state;
 
 		/* stop and reset timers */
-		if (be_options.timing == BE_TIME_ON) {
+		BE_TIMER_ONLY(
 			LC_STOP_AND_RESET_TIMER(t_prolog);
 			LC_STOP_AND_RESET_TIMER(t_abi);
 			LC_STOP_AND_RESET_TIMER(t_codegen);
@@ -418,7 +432,7 @@ static void be_main_loop(FILE *file_handle)
 			LC_STOP_AND_RESET_TIMER(t_emit);
 			LC_STOP_AND_RESET_TIMER(t_verify);
 			LC_STOP_AND_RESET_TIMER(t_other);
-		}
+		);
 		BE_TIMER_PUSH(t_other);   /* t_other */
 
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
@@ -540,9 +554,9 @@ static void be_main_loop(FILE *file_handle)
 		BE_TIMER_POP(t_codegen);
 
 		/* Do register allocation */
-		BE_TIMER_ONLY(lc_timer_start(t_regalloc));
+		BE_TIMER_PUSH(t_regalloc);
 		ra_timer = ra->allocate(&birg);
-		BE_TIMER_ONLY(lc_timer_stop(t_regalloc));
+		BE_TIMER_PUSH(t_regalloc);
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "06 Register Allocation");
@@ -606,7 +620,7 @@ static void be_main_loop(FILE *file_handle)
 
 #define LC_EMIT(timer)    printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
 #define LC_EMIT_RA(timer) printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
-		if (be_options.timing == BE_TIME_ON) {
+		BE_TIMER_ONLY(
 			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
 			printf("# nodes at begin:  %u\n", num_nodes_b);
 			printf("# nodes before ra: %u\n", num_nodes_r);
@@ -632,7 +646,8 @@ static void be_main_loop(FILE *file_handle)
 			LC_EMIT(t_emit);
 			LC_EMIT(t_verify);
 			LC_EMIT(t_other);
-		}
+		);
+#undef LC_EMIT_RA
 #undef LC_EMIT
 
         /* switched off due to statistics (statistic module needs all irgs) */

@@ -19,6 +19,8 @@
 #include "be.h"
 #include "belive.h"
 
+#ifdef WITH_LIBCORE
+
 typedef struct {
 	lc_timer_t *t_prolog;      /**< timer for prolog */
 	lc_timer_t *t_epilog;      /**< timer for epilog */
@@ -32,14 +34,18 @@ typedef struct {
 	lc_timer_t *t_verify;      /**< timer for verification runs */
 	lc_timer_t *t_other;       /**< timer for remaining stuff */
 } be_ra_timer_t;
+#else
+typedef void be_ra_timer_t;
+#endif  /* WITH_LIBCORE */
 
 typedef struct {
 #ifdef WITH_LIBCORE
 	void (*register_options)(lc_opt_entry_t *grp);
-#endif
 	be_ra_timer_t *(*allocate)(const be_irg_t *bi);
+#else
+	int dummy;
+#endif  /* WITH_LIBCORE */
 } be_ra_t;
-
 
 
 /**
