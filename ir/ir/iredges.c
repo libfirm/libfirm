@@ -269,9 +269,10 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 {
 	edges_notify_edge_kind(src, pos, tgt, old_tgt, EDGE_KIND_NORMAL, irg);
 	if(is_Block(src)) {
-		ir_node *bl_tgt = tgt     ? get_nodes_block(skip_Proj(tgt))     : NULL;
+		/* do not use get_nodes_block() here, it fails when running unpinned */
+		ir_node *bl_tgt = tgt     ? get_irn_n(skip_Proj(tgt), -1)     : NULL;
 		// ir_node *bl_old = old_tgt ? old_tgt : NULL;
-		ir_node *bl_old = old_tgt ? get_nodes_block(skip_Proj(old_tgt)) : NULL;
+		ir_node *bl_old = old_tgt ? get_irn_n(skip_Proj(old_tgt), -1) : NULL;
 		edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
 	}
 }
