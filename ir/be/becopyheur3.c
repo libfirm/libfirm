@@ -80,13 +80,16 @@ static void set_admissible_regs(be_java_coal_t *coal, copy_opt_t *co, ir_node *i
 	arch_register_req_t req;
 	unsigned n_regs = co->cls->n_regs;
 
+	ir_printf("%+F\n", irn);
 	arch_get_register_req(co->aenv, &req, irn, BE_OUT_POS(0));
 	if(arch_register_req_is(&req, limited)) {
 		bitset_t *adm = bitset_alloca(n_regs);
 		req.limited(req.limited_env, adm);
 		for(i = 0; i < n_regs; ++i)
-			if(!bitset_is_set(adm, i) && col_map[i] >= 0)
+			if(!bitset_is_set(adm, i) && col_map[i] >= 0) {
+				// printf("\tforbidding color: %d\n", i);
 				be_java_coal_forbid_color(coal, t_idx, col_map[i]);
+			}
 	}
 }
 
@@ -112,15 +115,14 @@ int co_solve_heuristic_java(copy_opt_t *co)
 	col_map     = alloca(n_regs * sizeof(col_map[0]));
 	inv_col_map = alloca(n_regs * sizeof(inv_col_map[0]));
 
-	memset(inv_col_map, 0, sizeof(inv_col_map[0]) * n_regs);
+	memset(inv_col_map, -1, sizeof(inv_col_map[0]) * n_regs);
 
 	for(i = 0, j = 0; i < n_regs; ++i) {
 		const arch_register_t *reg = &co->cls->regs[i];
-		col_map[i] = i;
-		inv_col_map[i] = i;
+		col_map[i] = -1;
 		if(!arch_register_type_is(reg, ignore)) {
-			//col_map[i] = j;
-			//inv_col_map[j] = i;
+			col_map[i] = j;
+			inv_col_map[j] = i;
 			++j;
 		}
 	}
