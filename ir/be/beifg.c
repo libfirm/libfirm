@@ -393,6 +393,7 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
 
 void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 {
+#ifdef WITH_LIBCORE
 	int tests = BE_CH_PERFORMANCETEST_COUNT;
 	coloring_t coloring;
 
@@ -406,7 +407,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	lc_timer_t *timer = lc_timer_register("getTime","get Time of copy minimization using the ifg");
 	unsigned long elapsed_usec = 0;
 
-	if ((int) get_irg_estimated_node_cnt >= BE_CH_PERFORMANCETEST_MIN_NODES)
+	if (get_irg_estimated_node_cnt(chordal_env->irg) >= BE_CH_PERFORMANCETEST_MIN_NODES)
 	{
 		coloring_init(&coloring, chordal_env->irg, chordal_env->birg->main_env->arch_env);
 		coloring_save(&coloring);
@@ -456,7 +457,6 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		ir_printf("\nstd:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
 
-		i=0;
 		used_memory=0;
 		elapsed_usec=0;
 
@@ -502,7 +502,6 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		ir_printf("\nclique:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
 
-		i=0;
 		used_memory=0;
 		elapsed_usec=0;
 
@@ -548,7 +547,6 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		ir_printf("\nlist:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
 
-		i=0;
 		used_memory=0;
 		elapsed_usec=0;
 
@@ -600,6 +598,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	}
 
 	chordal_env->ifg = old_if;
+#endif /* WITH_LIBCORE */
 }
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self)
