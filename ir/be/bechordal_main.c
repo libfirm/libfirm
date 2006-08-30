@@ -130,6 +130,13 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_VRFY_WARN,
 };
 
+/** Enable extreme live range splitting. */
+static int be_elr_split = 0;
+
+/** Assumed loop iteration count for execution frequency estimation. */
+static int be_loop_weight = 9;
+
+#ifdef WITH_LIBCORE
 static be_ra_timer_t ra_timer = {
 	NULL,
 	NULL,
@@ -144,7 +151,6 @@ static be_ra_timer_t ra_timer = {
 	NULL,
 };
 
-#ifdef WITH_LIBCORE
 static const lc_opt_enum_int_items_t spill_items[] = {
 	{ "morgan", BE_CH_SPILL_MORGAN },
 	{ "belady", BE_CH_SPILL_BELADY },
@@ -215,12 +221,6 @@ static lc_opt_enum_int_var_t dump_var = {
 static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 	&options.vrfy_option, be_ch_vrfy_items
 };
-
-/** Enable extreme live range splitting. */
-static int be_elr_split = 0;
-
-/** Assumed loop iteration count for execution frequency estimation. */
-static int be_loop_weight = 9;
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method (belady, morgan or remat)", &spill_var),
@@ -370,23 +370,12 @@ static INLINE void check_for_memory_operands(be_chordal_env_t *chordal_env) {
 	irg_walk_graph(chordal_env->irg, NULL, memory_operand_walker, chordal_env);
 }
 
+#ifdef WITH_LIBCORE
 /**
- * Performs chordal register allocation for each register class on given irg.
- *
- * @param bi  Backend irg object
- * @return Structure containing timer for the single phases or NULL if no timing requested.
+ * Initialize all timers.
  */
-static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
+static void be_init_timer(be_options_t *main_opts)
 {
-	const be_main_env_t *main_env  = bi->main_env;
-	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
-	ir_graph            *irg       = bi->irg;
-	be_options_t        *main_opts = main_env->options;
-	int                  splitted  = 0;
-
-	int j, m;
-	be_chordal_env_t chordal_env;
-
 	if (main_opts->timing == BE_TIME_ON) {
 		ra_timer.t_prolog  = lc_timer_register("ra_prolog",   "regalloc prolog");
 		ra_timer.t_epilog  = lc_timer_register("ra_epilog",   "regalloc epilog");
@@ -412,15 +401,19 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_verify);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_other);
 	}
+}
 
-#define BE_TIMER_PUSH(timer)                                                        \
-	if (main_opts->timing == BE_TIME_ON) {                                          \
-		int res = lc_timer_push(timer);                                             \
-		if (options.vrfy_option == BE_CH_VRFY_ASSERT)                               \
-			assert(res && "Timer already on stack, cannot be pushed twice.");       \
-		else if (options.vrfy_option == BE_CH_VRFY_WARN && ! res)                   \
-			fprintf(stderr, "Timer %s already on stack, cannot be pushed twice.\n", \
-				lc_timer_get_name(timer));                                          \
+#define BE_TIMER_INIT(main_opts)	be_init_timer(main_opts)
+
+#define BE_TIMER_PUSH(timer)                                                            \
+	if (main_opts->timing == BE_TIME_ON) {                                              \
+		if (! lc_timer_push(timer)) {                                                   \
+			if (options.vrfy_option == BE_CH_VRFY_ASSERT)                               \
+				assert(!"Timer already on stack, cannot be pushed twice.");             \
+			else if (options.vrfy_option == BE_CH_VRFY_WARN)                            \
+				fprintf(stderr, "Timer %s already on stack, cannot be pushed twice.\n", \
+					lc_timer_get_name(timer));                                          \
+		}                                                                               \
 	}
 #define BE_TIMER_POP(timer)                                                                    \
 	if (main_opts->timing == BE_TIME_ON) {                                                     \
@@ -432,7 +425,32 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 				lc_timer_get_name(tmp), lc_timer_get_name(timer));                             \
 		timer = tmp;                                                                           \
 	}
+#else
 
+#define BE_TIMER_INIT(main_opts)
+#define BE_TIMER_PUSH(timer)
+#define BE_TIMER_POP(timer)
+
+#endif /* WITH_LIBCORE */
+
+/**
+ * Performs chordal register allocation for each register class on given irg.
+ *
+ * @param bi  Backend irg object
+ * @return Structure containing timer for the single phases or NULL if no timing requested.
+ */
+static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
+{
+	const be_main_env_t *main_env  = bi->main_env;
+	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
+	ir_graph            *irg       = bi->irg;
+	be_options_t        *main_opts = main_env->options;
+	int                  splitted  = 0;
+
+	int j, m;
+	be_chordal_env_t chordal_env;
+
+	BE_TIMER_INIT(main_opts);
 	BE_TIMER_PUSH(ra_timer.t_other);
 	BE_TIMER_PUSH(ra_timer.t_prolog);
 
@@ -626,15 +644,17 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	BE_TIMER_POP(ra_timer.t_epilog);
 	BE_TIMER_POP(ra_timer.t_other);
 
-#undef BE_TIMER_PUSH
-#undef BE_TIMER_POP
-
+#ifdef WITH_LIBCORE
 	return main_opts->timing == BE_TIME_ON ? &ra_timer : NULL;
+#endif /* WITH_LIBCORE */
+	return NULL;
 }
 
 const be_ra_t be_ra_chordal_allocator = {
 #ifdef WITH_LIBCORE
 	be_ra_chordal_register_options,
-#endif
 	be_ra_chordal_main
+#else
+	0
+#endif
 };
