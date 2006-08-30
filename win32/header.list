@@ -16,6 +16,7 @@ ir\adt\fourcc.h		adt
 ir\adt\util.h		adt
 ir\adt\plist.h		adt
 ir\adt\xmalloc.h		adt
+ir\adt\obst.h		adt
 
 ir\debug\dbginfo.h
 ir\debug\seqnumbers.h
@@ -50,6 +51,7 @@ ir\ir\irprintf.h
 ir\ir\pseudo_irg.h
 ir\ir\irhooks.h
 ir\ir\iredges.h
+ir\ir\iredgekinds.h
 
 ir\ana\irouts.h
 ir\ana\trouts.h
