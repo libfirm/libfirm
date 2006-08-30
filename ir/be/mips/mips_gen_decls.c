@@ -149,6 +149,11 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
       obstack_printf(obst, "%d", get_type_alignment_bytes(get_SymConst_type(init)));
       break;
 
+    case symconst_enum_const:
+      tv = get_enumeration_value(get_SymConst_enum(init));
+      dump_arith_tarval(obst, tv, bytes);
+      break;
+
     default:
       assert(0 && "dump_atomic_init(): don't know how to init from this SymConst");
     }

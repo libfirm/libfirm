@@ -149,8 +149,6 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
 
 	case iro_SymConst:
 		switch (get_SymConst_kind(init)) {
-			char buf[128];
-
 		case symconst_addr_name:
 			obstack_printf(obst, "%s", get_id_str(get_SymConst_name(init)));
 			break;
@@ -168,8 +166,8 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
 			break;
 
 		case symconst_enum_const:
-			tarval_snprintf(buf, sizeof(buf), get_enumeration_value(get_SymConst_enum(init)));
-			obstack_printf(obst, "%s", buf);
+			tv = get_enumeration_value(get_SymConst_enum(init));
+			dump_arith_tarval(obst, tv, bytes);
 			break;
 
 		default:

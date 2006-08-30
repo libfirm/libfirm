@@ -86,13 +86,13 @@ static void dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
 
   case 4:
     obstack_printf(obst, "0x%02x%02x%02x%02x",
-	get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+    get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
     break;
 
   case 8:
     obstack_printf(obst, "0x%02x%02x%02x%02x%02x%02x%02x%02x",
-	get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
-	get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+    get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
+    get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
     break;
 
   case 10:
@@ -185,6 +185,11 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
 
     case symconst_type_align:
       obstack_printf(obst, "%d", get_type_alignment_bytes(get_SymConst_type(init)));
+      break;
+
+    case symconst_enum_const:
+      tv = get_enumeration_value(get_SymConst_enum(init));
+      dump_arith_tarval(obst, tv, bytes);
       break;
 
     default:
