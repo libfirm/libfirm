@@ -20,8 +20,10 @@
 #include "iredges_t.h"
 #include "ircons_t.h"
 #include "irphase_t.h"
+#include "irdump_t.h"
 #include "irgwalk.h"
 #include "irtools.h"
+#include "irbitset.h"
 
 #include "height.h"
 
@@ -112,37 +114,37 @@ static void compute_heights(mris_env_t *env)
 
 #define valid_node(env, dep) (to_appear(env, dep) && !be_is_Keep(dep))
 
-static void grow_all_descendands(mris_env_t *env, ir_node *irn, unsigned long visited)
+static void grow_all_descendands(mris_env_t *env, ir_node *irn, bitset_t *visited)
 {
 	const ir_edge_t *edge;
 
-	assert(get_irn_mode(irn) != mode_T);
+	// assert(get_irn_mode(irn) != mode_T);
 
 	foreach_out_edge(irn, edge) {
 		ir_node *desc = get_edge_src_irn(edge);
-		if(valid_node(env, desc) && get_irn_visited(desc) < visited) {
+		if(valid_node(env, desc) && !bitset_contains_irn(visited, desc)) {
 			obstack_ptr_grow(&env->obst, desc);
-			set_irn_visited(desc, visited);
+			bitset_add_irn(visited, desc);
 		}
 	}
 
 	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
 		ir_node *desc = get_edge_src_irn(edge);
-		if(valid_node(env, desc) && get_irn_visited(desc) < visited) {
+		if(valid_node(env, desc) && !bitset_contains_irn(visited, desc)) {
 			obstack_ptr_grow(&env->obst, desc);
-			set_irn_visited(desc, visited);
+			bitset_add_irn(visited, desc);
 		}
 	}
 }
 
 static ir_node **all_descendants(mris_env_t *env, ir_node *irn)
 {
-	unsigned long visited;
+	bitset_t *visited = bitset_irg_malloc(env->irg);
 	const ir_edge_t *edge;
 
-	visited = get_irg_visited(env->irg) + 1;
-	set_irg_visited(env->irg, visited);
+	grow_all_descendands(env, irn, visited);
 
+#if 0
 	if(get_irn_mode(irn) == mode_T) {
 		foreach_out_edge(irn, edge) {
 			ir_node *desc = get_edge_src_irn(edge);
@@ -153,7 +155,8 @@ static ir_node **all_descendants(mris_env_t *env, ir_node *irn)
 
 	else
 		grow_all_descendands(env, irn, visited);
-
+#endif
+	bitset_free(visited);
 	obstack_ptr_grow(&env->obst, NULL);
 	return obstack_finish(&env->obst);
 }
@@ -263,6 +266,8 @@ static void lineage_formation(mris_env_t *env)
 		ir_node *irn;
 		ir_node *highest_node = NULL;
 		ir_node *lowest_desc  = NULL;
+		ir_node *start;
+		mris_irn_t *start_mi;
 
 		ir_node **in;
 		int recompute_height  = 0;
@@ -280,8 +285,10 @@ static void lineage_formation(mris_env_t *env)
 		assert(highest_node);
 		DBG((dbg, LEVEL_2, "highest node is %+F height %d\n", highest_node, get_irn_height(env->heights, highest_node)));
 
+		start = highest_node;
+		mi = start_mi = get_mris_irn(env, highest_node);
+
 		/* start a lineage beginning with highest_node. */
-		mi = get_mris_irn(env, highest_node);
 		mi->lineage_start = highest_node;
 		mi->lineage_next  = NULL;
 		mi->lineage_end   = NULL;
@@ -300,7 +307,6 @@ static void lineage_formation(mris_env_t *env)
 		while(lowest_desc) {
 			mris_irn_t *lowest_mi  = get_mris_irn(env, lowest_desc);
 			mris_irn_t *highest_mi = get_mris_irn(env, highest_node);
-			mris_irn_t *start_mi   = get_mris_irn(env, highest_mi->lineage_start);
 			int highest_is_tuple   = get_irn_mode(highest_node) == mode_T;
 
 			int n_desc;
@@ -308,14 +314,13 @@ static void lineage_formation(mris_env_t *env)
 			DBG((dbg, LEVEL_2, "\tlowest descendant %+F height %d\n", lowest_desc, get_irn_height(env->heights, lowest_desc)));
 
 			/* count the number of all descendants which are not the lowest descendant */
-			for(n_desc = 0; in[n_desc + 1]; ++n_desc);
+			for(n_desc = 0; in[n_desc]; ++n_desc);
 
 			/*
 			we insert a CopyKeep node to express the artificial dependencies from the lowest
 			descendant to all other descendants.
 			*/
 			if(n_desc > 1 && !be_is_Keep(lowest_desc)) {
-				const arch_register_class_t *cls;
 				ir_node *op;
 				int i, n;
 
@@ -325,25 +330,26 @@ static void lineage_formation(mris_env_t *env)
 					op  = get_irn_in_or_dep(lowest_desc, i);
 					cmp = highest_is_tuple ? skip_Projs(op) : op;
 
-					if(cmp == highest_node)
+					// if(cmp == highest_node)
+					if(op == highest_node)
 						break;
 				}
 
 				assert(i < n && "could not find operand");
 
-				cls = arch_get_irn_reg_class(env->aenv, op, BE_OUT_POS(0));
-				replace_tuple_by_repr_proj(env, &in[1]);
-				add_irn_dep(lowest_desc, in[1]);
+				//replace_tuple_by_repr_proj(env, &in[1]);
+				if(!is_Proj(lowest_desc))
+					add_irn_dep(lowest_desc, in[1]);
 			}
 			obstack_free(&env->obst, in);
 
-			/* mark the current lowest node as the last one in the lineage. */
-			highest_mi->lineage_next = lowest_desc;
-			start_mi->lineage_end    = lowest_desc;
-
 			/* if the current lowest node is not yet in a lineage, add it to the current one. */
 			if(!lowest_mi->lineage_start) {
-				lowest_mi->lineage_start = highest_mi->lineage_start;
+				/* mark the current lowest node as the last one in the lineage. */
+				highest_mi->lineage_next = lowest_desc;
+				start_mi->lineage_end    = lowest_desc;
+
+				lowest_mi->lineage_start = start;
 				nodeset_remove(nodes, lowest_desc);
 			}
 
@@ -368,8 +374,7 @@ static void lineage_formation(mris_env_t *env)
 static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 {
 	mris_irn_t *mi;
-	mris_irn_t *copy_mi;
-	ir_node *irn, *last, *copy;
+	ir_node *irn, *last;
 	ir_node *u_end   = u->lineage_end;
 	ir_node *v_start = v->lineage_start;
 	ir_node *start   = skip_Projs(v_start);
@@ -388,26 +393,22 @@ static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 	}
 
 	/* insert a CopyKeep to make lineage v dependent on u. */
-	{
-		if(get_irn_ins_or_deps(start) == 0)
-			return 0;
+	if(get_irn_ins_or_deps(start) == 0)
+		return 0;
 
-		if(get_irn_mode(last) == mode_T) {
-			const ir_edge_t *edge;
-			foreach_out_edge(last, edge) {
-				last = get_edge_src_irn(edge);
-				break;
-			}
+	if(get_irn_mode(last) == mode_T) {
+		const ir_edge_t *edge;
+		foreach_out_edge(last, edge) {
+			last = get_edge_src_irn(edge);
+			break;
 		}
-
-		add_irn_dep(start, last);
 	}
 
 	/* irn now points to the last node in lineage u; mi has the info for the node _before_ the terminator of the lineage. */
-	mi->lineage_next       = copy;
-	copy_mi->lineage_start = u->lineage_start;
-	copy_mi->lineage_end   = v->lineage_end;
-	copy_mi->lineage_next  = v_start;
+	mi->lineage_next       = v_start;
+
+	/* add a dependency from the first node in v's lineage to the last in u's */
+	add_irn_dep(u_end, v_start);
 
 	/* set lineage start of nodes in v to start of u. */
 	irn = v->lineage_start;
@@ -446,14 +447,39 @@ again:
 	}
 }
 
+static mris_env_t *dump_env = NULL;
+
 static void block_walker(ir_node *bl, void *data)
 {
 	mris_env_t *env = data;
 	env->bl = bl;
 	lineage_formation(env);
-	//fuse_lineages(env);
+	fuse_lineages(env);
 }
 
+static int mris_edge_hook(FILE *F, ir_node *irn)
+{
+	mris_irn_t *mi = get_mris_irn(dump_env, irn);
+
+	if(mi->lineage_next) {
+		fprintf(F, "edge:{sourcename:\"");
+		PRINT_NODEID(mi->lineage_next);
+		fprintf(F, "\" targetname:\"");
+		PRINT_NODEID(irn);
+		fprintf(F, "\" color:lilac}\n");
+	}
+	return 1;
+}
+
+void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix) {
+	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
+
+	dump_consts_local(0);
+	set_dump_node_edge_hook(mris_edge_hook);
+	dump_env = env;
+	dump_ir_block_graph(env->irg, suffix);
+	set_dump_node_edge_hook(old);
+}
 
 mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 {
@@ -470,6 +496,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	irg_walk_graph(env->irg, firm_clear_link, NULL, NULL);
 	irg_block_walk_graph(birg->irg, block_walker, NULL, env);
 	obstack_free(&env->obst, NULL);
+	dump_ir_block_graph_mris(env, "-mris");
 	return env;
 }
 

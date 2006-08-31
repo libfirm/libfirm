@@ -26,4 +26,9 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg);
  */
 void be_sched_mris_free(mris_env_t *env);
 
+/**
+ * Dump IR graph with lineages.
+ */
+void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix);
+
 #endif /* _BESCHEDMRIS_H */
