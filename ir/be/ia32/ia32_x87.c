@@ -721,7 +721,7 @@ static unsigned vfp_liveness_transfer(const arch_env_t *arch_env, ir_node *irn, 
 
 	if (arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
-			live &= ~(1 << reg->index);
+			live &= ~(1 << arch_register_get_index(reg));
 	}
 
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
@@ -729,7 +729,7 @@ static unsigned vfp_liveness_transfer(const arch_env_t *arch_env, ir_node *irn, 
 
 		if (mode_is_float(get_irn_mode(op)) && arch_irn_consider_in_reg_alloc(arch_env, cls, op)) {
 			const arch_register_t *reg = arch_get_irn_register(arch_env, op);
-			live |= 1 << reg->index;
+			live |= 1 << arch_register_get_index(reg);
 		}
 	}
 	return live;
@@ -754,7 +754,7 @@ static unsigned vfp_liveness_end_of_block(const arch_env_t *env, be_lv_t *lv, co
 		ir_node *irn = be_lv_get_irn(lv, bl, i);
 		if (arch_irn_consider_in_reg_alloc(env, cls, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(env, irn);
-			live |= 1 << reg->index;
+			live |= 1 << arch_register_get_index(reg);
 		}
 	}
 
@@ -762,7 +762,7 @@ static unsigned vfp_liveness_end_of_block(const arch_env_t *env, be_lv_t *lv, co
 }  /* vfp_liveness_end_of_block */
 
 /** get the register mask from an arch_register */
-#define REGMASK(reg)	(1 << (reg)->index)
+#define REGMASK(reg)	(1 << (arch_register_get_index(reg)))
 
 /**
  * Return a bitset of argument registers which are live at the end of a node.
@@ -865,13 +865,13 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
 
-	if (op2->index != REG_VFP_NOREG) {
+	if (arch_register_get_index(op2) != REG_VFP_NOREG) {
 		/* second operand is a vfp register */
 
-		if (is_vfp_live(op2->index, live)) {
+		if (is_vfp_live(arch_register_get_index(op2), live)) {
 			/* Second operand is live. */
 
-			if (is_vfp_live(op1->index, live)) {
+			if (is_vfp_live(arch_register_get_index(op1), live)) {
 				/* Both operands are live: push the first one.
 				   This works even for op1 == op2. */
 				x87_create_fpush(env, state, n, op2_idx, BINOP_IDX_2);
@@ -894,7 +894,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 		}
 		else {
 			/* Second operand is dead. */
-			if (is_vfp_live(op1->index, live)) {
+			if (is_vfp_live(arch_register_get_index(op1), live)) {
 				/* First operand is live: bring second to tos. */
 				if (op2_idx != 0) {
 					x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
@@ -953,7 +953,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 	}
 	else {
 		/* second operand is an address mode */
-		if (is_vfp_live(op1->index, live)) {
+		if (is_vfp_live(arch_register_get_index(op1), live)) {
 			/* first operand is live: push it here */
 			x87_create_fpush(env, state, n, op1_idx, BINOP_IDX_1);
 		}
@@ -967,7 +967,7 @@ static int sim_binop(x87_state *state, ir_node *n, const arch_env_t *env, const 
 		do_pop = 0;
 	}
 
-	x87_set_st(state, out->index, x87_patch_insn(n, dst), out_idx);
+	x87_set_st(state, arch_register_get_index(out), x87_patch_insn(n, dst), out_idx);
 	if (do_pop)
 		x87_pop(state);
 
@@ -1010,7 +1010,7 @@ static int sim_unop(x87_state *state, ir_node *n, const arch_env_t *env, ir_op *
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
-	if (is_vfp_live(op1->index, live)) {
+	if (is_vfp_live(arch_register_get_index(op1), live)) {
 		/* push the operand here */
 		x87_create_fpush(env, state, n, op1_idx, UNOP_IDX);
 	}
@@ -1113,7 +1113,7 @@ static int sim_store(x87_state *state, ir_node *n, const arch_env_t *env, ir_op 
 	if (! (mode == mode_E && depth < N_x87_REGS) && op2_idx != 0)
 		x87_create_fxch(state, n, op2_idx, STORE_VAL_IDX);
 
-	if (is_vfp_live(op2->index, live)) {
+	if (is_vfp_live(arch_register_get_index(op2), live)) {
 		/*
 			Problem: fst doesn't support mode_E (spills), only fstp does
 			Solution:
@@ -1272,17 +1272,17 @@ static int sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 		arch_register_get_name(op1), arch_register_get_name(op2)));
 	DEBUG_ONLY(vfp_dump_live(live));
 
-	op1_idx = x87_on_stack(state, op1->index);
-	op2_idx = x87_on_stack(state, op2->index);
+	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
+	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
 
 	/* BEWARE: check for comp a,a cases, they might happen */
-	if (op2->index != REG_VFP_NOREG) {
+	if (arch_register_get_index(op2) != REG_VFP_NOREG) {
 		/* second operand is a vfp register */
 
-		if (is_vfp_live(op2->index, live)) {
+		if (is_vfp_live(arch_register_get_index(op2), live)) {
 			/* second operand is live */
 
-			if (is_vfp_live(op1->index, live)) {
+			if (is_vfp_live(arch_register_get_index(op1), live)) {
 				/* both operands are live: move one of them to tos */
 				if (op2_idx == 0) {
 					XCHG(op2_idx, op1_idx);
@@ -1315,7 +1315,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 		}
 		else {
 			/* second operand is dead */
-			if (is_vfp_live(op1->index, live)) {
+			if (is_vfp_live(arch_register_get_index(op1), live)) {
 				/* first operand is live: bring second to tos.
 				   This means further, op1_idx != op2_idx. */
 				if (op2_idx != 0) {
@@ -1396,7 +1396,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n, const arch_env_t *env) {
 	}
 	else {
 		/* second operand is an address mode */
-		if (is_vfp_live(op1->index, live)) {
+		if (is_vfp_live(arch_register_get_index(op1), live)) {
 			/* first operand is live: bring it to TOS */
 			if (op1_idx != 0) {
 				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
@@ -1448,22 +1448,49 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 	ir_mode *mode = get_irn_mode(n);
 
 	if (mode_is_float(mode)) {
-		const arch_register_t *op1 = arch_get_irn_register(env, get_irn_n(n, 0));
+		ir_node               *pred = get_irn_n(n, 0);
+		ir_op                 *op = get_irn_op(pred);
 		const arch_register_t *out = arch_get_irn_register(env, n);
-		ir_node *node, *next;
-		ia32_attr_t *attr;
-		int op1_idx, out_idx;
-		unsigned live = vfp_live_args_after(state->sim, n, REGMASK(out));
+		const arch_register_t *op1 = arch_get_irn_register(env, pred);
+		ir_node               *node, *next;
+		ia32_attr_t           *attr;
+		int                   op1_idx, out_idx;
+		unsigned              live = vfp_live_args_after(state->sim, n, REGMASK(out));
+
+		DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
+			arch_register_get_name(op1), arch_register_get_name(out)));
+		DEBUG_ONLY(vfp_dump_live(live));
+
+		/* FIXME: check here for all possible constants */
+		if (op == op_ia32_fldz || op == op_ia32_fld1) {
+			/* copy a constant */
+			node = new_rd_ia32_fldz(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), mode);
+			set_irn_op(node, op);
+			arch_set_irn_register(env, node, out);
+
+			x87_push(state, arch_register_get_index(out), node);
+
+			attr = get_ia32_attr(node);
+			attr->x87[2] = out = &ia32_st_regs[0];
+
+			next = sched_next(n);
+			sched_remove(n);
+			exchange(n, node);
+			sched_add_before(next, node);
+			DB((dbg, LEVEL_1, ">>> %+F -> %s\n", node, arch_register_get_name(out)));
+			return 0;
+		}
 
 		/* handle the infamous unknown value */
-		if (op1->index == REG_VFP_UKNWN) {
+		if (arch_register_get_index(op1) == REG_VFP_UKNWN) {
 			/* This happens before Phi nodes */
 			if (x87_state_is_empty(state)) {
 				/* create some value */
 				x87_patch_insn(n, op_ia32_fldz);
 				attr = get_ia32_attr(n);
 				attr->x87[2] = out = &ia32_st_regs[0];
-				DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
+				DB((dbg, LEVEL_1, "<<< %+F -> %s\n", n,
+					arch_register_get_name(out)));
 			} else {
 				/* just copy one */
 				node = new_rd_ia32_fpush(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), get_irn_n(n, 0), mode);
@@ -1479,18 +1506,16 @@ static int sim_Copy(x87_state *state, ir_node *n, const arch_env_t *env) {
 				sched_remove(n);
 				exchange(n, node);
 				sched_add_before(next, node);
-				DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", node, op1->name, out->name));
+				DB((dbg, LEVEL_1, "<<< %+F %s -> %s\n", node,
+					arch_register_get_name(op1),
+					arch_register_get_name(out)));
 			}
 			return 0;
 		}
 
 		op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
-		DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
-			arch_register_get_name(op1), arch_register_get_name(out)));
-		DEBUG_ONLY(vfp_dump_live(live));
-
-		if (is_vfp_live(op1->index, live)) {
+		if (is_vfp_live(arch_register_get_index(op1), live)) {
 			/* operand is still live,a real copy */
 			node = new_rd_ia32_fpush(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), get_irn_n(n, 0), mode);
 			arch_set_irn_register(env, node, out);
@@ -1672,7 +1697,7 @@ static int sim_Perm(x87_state *state, ir_node *irn, const arch_env_t *env) {
 	/* collect old stack positions */
 	for (i = 0; i < n; ++i) {
 		const arch_register_t *inreg = arch_get_irn_register(env, get_irn_n(irn, i));
-		int idx = x87_on_stack(state, inreg->index);
+		int idx = x87_on_stack(state, arch_register_get_index(inreg));
 
 		assert(idx >= 0 && "Perm argument not on x87 stack");
 
@@ -1685,7 +1710,7 @@ static int sim_Perm(x87_state *state, ir_node *irn, const arch_env_t *env) {
 		long                  num   = get_Proj_proj(proj);
 
 		assert(0 <= num && num < n && "More Proj's than Perm inputs");
-		x87_set_st(state, out->index, proj, stack_pos[(unsigned)num]);
+		x87_set_st(state, arch_register_get_index(out), proj, stack_pos[(unsigned)num]);
 	}
 	DB((dbg, LEVEL_1, "<<< %+F\n", irn));
 
@@ -1888,7 +1913,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	ASSOC_IA32(fsub);
 	ASSOC_IA32(fmul);
 	ASSOC_IA32(fdiv);
-	ASSOC_IA32(fldz);
 	ASSOC_IA32(fabs);
 	ASSOC_IA32(fchs);
 	ASSOC_IA32(fsin);
