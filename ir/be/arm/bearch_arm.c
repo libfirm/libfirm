@@ -1060,7 +1060,7 @@ list_sched_selector_t arm_sched_selector;
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() over\loaded
  */
-static const list_sched_selector_t *arm_get_list_sched_selector(const void *self) {
+static const list_sched_selector_t *arm_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
 	memcpy(&arm_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
 	arm_sched_selector.to_appear_in_schedule = arm_to_appear_in_schedule;
 	return &arm_sched_selector;
