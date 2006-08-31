@@ -14,7 +14,7 @@ typedef struct pset nodeset;
 /**
  * Calculates a hash value for a node.
  */
-unsigned nodeset_hash(ir_node *n);
+unsigned nodeset_hash(const ir_node *n);
 
 /**
  * Creates a new nodeset.

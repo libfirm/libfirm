@@ -447,6 +447,7 @@ static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
 	}
 }
 
+#if 0
 /**
  * Creates a Push from Store(IncSP(gp_reg_size))
  */
@@ -516,12 +517,164 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 	sched_add_before(next, push);
 	sched_add_after(push, proj_res);
 }
+#endif
+
+// only optimize up to 48 stores behind IncSPs
+#define MAXPUSH_OPTIMIZE	48
 
 /**
- * Creates a Pop from IncSP(Load(sp))
+ * Tries to create pushs from IncSP,Store combinations
  */
-static void ia32_create_Pop(ir_node *irn, ia32_code_gen_t *cg) {
-	/* TODO */
+static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
+	int i;
+	int offset;
+	int firststore;
+	ir_node *node;
+	ir_node *stores[MAXPUSH_OPTIMIZE];
+	ir_node *block = get_nodes_block(irn);
+	ir_graph *irg = cg->irg;
+	ir_node *curr_sp;
+	ir_mode *spmode = get_irn_mode(irn);
+
+	memset(stores, 0, sizeof(stores));
+
+	assert(be_is_IncSP(irn));
+
+	offset = be_get_IncSP_offset(irn);
+	if(offset <= 0)
+		return;
+
+	/*
+	 * We first walk the schedule after the IncSP node as long as we find
+	 * suitable stores that could be transformed to a push.
+	 * We save them into the stores array which is sorted by the frame offset/4
+	 * attached to the node
+	 */
+	for(node = sched_next(irn); !sched_is_end(node); node = sched_next(node)) {
+		const char *am_offs;
+		ir_node *mem;
+		int offset = -1;
+		int n;
+		int storeslot;
+
+		// it has to be a store
+		if(!is_ia32_Store(node))
+			break;
+
+		// it has to use our sp value
+		if(get_irn_n(node, 0) != irn)
+			continue;
+		// store has to be attached to NoMem
+		mem = get_irn_n(node, 3);
+		if(!is_NoMem(mem)) {
+			continue;
+		}
+
+		if( (get_ia32_am_flavour(node) & ia32_am_IS) != 0)
+			break;
+
+		am_offs = get_ia32_am_offs(node);
+		if(am_offs == NULL) {
+			offset = 0;
+		} else {
+			// the am_offs has to be of the form "+NUMBER"
+			if(sscanf(am_offs, "+%d%n", &offset, &n) != 1 || am_offs[n] != '\0') {
+				// we shouldn't have any cases in the compiler at the moment
+				// that produce something different from esp+XX
+				assert(0);
+				break;
+			}
+		}
+
+		storeslot = offset / 4;
+		if(storeslot >= MAXPUSH_OPTIMIZE)
+			continue;
+
+		// storing into the same slot twice is bad (and shouldn't happen...)
+		if(stores[storeslot] != NULL)
+			break;
+
+		// storing at half-slots is bad
+		if(offset % 4 != 0)
+			break;
+
+		stores[storeslot] = node;
+	}
+
+	offset = be_get_IncSP_offset(irn);
+
+	firststore = -1;
+	for(i = 0; i < MAXPUSH_OPTIMIZE; ++i) {
+		ir_node *store = stores[i];
+		if(store == NULL || is_Bad(store))
+			break;
+		if(offset < 4)
+			break;
+
+		firststore = i;
+
+		offset -= 4;
+	}
+
+	curr_sp = get_irn_n(irn, 0);
+
+	// walk the stores in inverse order and create pushs for them
+	for(i = firststore; i >= 0; --i) {
+		const ir_edge_t *edge, *next;
+		const arch_register_t *spreg;
+		ir_node *push;
+		ir_node *val, *mem;
+		ir_node *store = stores[i];
+
+		val = get_irn_n(store, 2);
+		mem = get_irn_n(store, 3);
+		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
+
+		// create a push
+		push = new_rd_ia32_Push(NULL, irg, block, curr_sp, val, mem);
+		if(get_ia32_immop_type(store) != ia32_ImmNone) {
+			copy_ia32_Immop_attr(push, store);
+		}
+		sched_add_before(irn, push);
+
+		// create stackpointer proj
+		curr_sp = new_r_Proj(irg, block, push, spmode, pn_ia32_Push_stack);
+		arch_set_irn_register(cg->arch_env, curr_sp, spreg);
+		sched_add_before(irn, curr_sp);
+
+		// rewire memprojs of the store
+		foreach_out_edge_safe(store, edge, next) {
+			ir_node *succ = get_edge_src_irn(edge);
+
+			assert(is_Proj(succ) && get_Proj_proj(succ) == pn_ia32_Store_M);
+			set_irn_n(succ, 0, push);
+		}
+
+		// we can remove the store from schedule now
+		sched_remove(store);
+	}
+
+	be_set_IncSP_offset(irn, offset);
+
+	// can we remove the IncSP now?
+	if(offset == 0) {
+		const ir_edge_t *edge, *next;
+
+		sched_remove(irn);
+		set_irn_n(irn, 0, new_Bad());
+
+		foreach_out_edge_safe(irn, edge, next) {
+			ir_node *arg = get_edge_src_irn(edge);
+			int pos = get_edge_src_pos(edge);
+
+			set_irn_n(arg, pos, curr_sp);
+		}
+
+		sched_remove(irn);
+		set_irn_n(irn, 0, new_Bad());
+	} else {
+		set_irn_n(irn, 0, curr_sp);
+	}
 }
 
 /**
@@ -540,13 +693,14 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 
 		/* Omit the optimized IncSP */
 		be_set_IncSP_pred(irn, be_get_IncSP_pred(prev));
+		sched_remove(prev);
 	}
 }
 
 /**
  * Performs Peephole Optimizations.
  */
-void ia32_peephole_optimization(ir_node *irn, void *env) {
+static void ia32_peephole_optimize_node(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg = env;
 
 	/* AMD CPUs want explicit compare before conditional jump  */
@@ -556,13 +710,17 @@ void ia32_peephole_optimization(ir_node *irn, void *env) {
 		else if (is_ia32_CondJmp(irn))
 			ia32_optimize_CondJmp(irn, cg);
 	}
-	/* seems to be buggy when using Pushes */
-	else if (be_is_IncSP(irn))
-		ia32_optimize_IncSP(irn, cg);
-	else if (is_ia32_Store(irn))
-		ia32_create_Push(irn, cg);
+
+	if (be_is_IncSP(irn)) {
+		// optimize_IncSP doesn't respect dependency edges yet...
+		//ia32_optimize_IncSP(irn, cg);
+		ia32_create_Pushs(irn, cg);
+	}
 }
 
+void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg) {
+	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, cg);
+}
 
 
 /******************************************************************

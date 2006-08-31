@@ -32,6 +32,7 @@
 #include "beirgmod.h"
 #include "bearch.h"
 #include "beuses_t.h"
+#include "benodesets.h"
 
 #define DBG_LEVEL SET_LEVEL_0
 
@@ -59,7 +60,7 @@ static int cmp_use(const void *a, const void *b, size_t n)
 static INLINE be_use_t *get_or_set_use(be_uses_t *uses,
     const ir_node *bl, const ir_node *def, unsigned next_use)
 {
-  unsigned hash = HASH_COMBINE(HASH_PTR(bl), HASH_PTR(def));
+  unsigned hash = HASH_COMBINE(nodeset_hash(bl), nodeset_hash(def));
   be_use_t templ;
   be_use_t* result;
 

@@ -15,6 +15,7 @@
 #include "ia32_map_regs.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
+#include "benodesets.h"
 
 static int maxnum_gpreg_args = 3;   /* maximum number of int arguments passed in registers; default 3 */
 static int maxnum_fpreg_args = 5;   /* maximum number of float arguments passed in registers; default 5 */
@@ -84,7 +85,7 @@ static struct ia32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg
 
 	templ.irn = irn;
 	templ.reg = NULL;
-	hash = HASH_PTR(irn);
+	hash = nodeset_hash(irn);
 
 	return set_insert(reg_set, &templ, sizeof(templ), hash);
 }

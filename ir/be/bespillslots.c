@@ -25,6 +25,7 @@
 #include "bespillslots.h"
 #include "bechordal_t.h"
 #include "bejavacoal.h"
+#include "benodesets.h"
 
 
 #define DBG_COALESCING		1
@@ -74,7 +75,7 @@ static int cmp_spill(const void* d1, const void* d2, size_t size) {
 
 static spill_t *get_spill(ss_env_t *env, ir_node *node) {
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = nodeset_hash(node);
 
 	spill.spill = node;
 	res = set_find(env->spills, &spill, sizeof(spill), hash);
@@ -108,7 +109,7 @@ static spill_t *collect_spill(ss_env_t *env, ir_node *node) {
 	const arch_env_t *arch_env = env->arch_env;
 	const arch_register_class_t *cls;
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = nodeset_hash(node);
 
 	assert(arch_irn_class_is(arch_env, node, spill));
 
@@ -134,7 +135,7 @@ static spill_t *collect_spill(ss_env_t *env, ir_node *node) {
 static spill_t *collect_memphi(ss_env_t *env, ir_node *node) {
 	int i, arity;
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = nodeset_hash(node);
 
 	assert(is_Phi(node));
 
@@ -526,7 +527,7 @@ static memperm_t *get_memperm(ss_env_t *env, ir_node *block) {
 	int hash;
 
 	entry.block = block;
-	hash = HASH_PTR(block);
+	hash = nodeset_hash(block);
 
 	res = set_find(env->memperms, &entry, sizeof(entry), hash);
 

@@ -32,6 +32,7 @@
 #include "benode_t.h"
 #include "bechordal_t.h"
 #include "bejavacoal.h"
+#include "benodesets.h"
 
 // only rematerialise when costs are less than REMAT_COST_LIMIT
 // TODO determine a good value here...
@@ -82,7 +83,7 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size) {
  */
 static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value) {
 	spill_info_t info, *res;
-	int hash = HASH_PTR(value);
+	int hash = nodeset_hash(value);
 
 	info.spilled_node = value;
 	res = set_find(env->spills, &info, sizeof(info), hash);

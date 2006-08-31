@@ -23,6 +23,7 @@
 #include "bechordal_t.h"
 #include "besched_t.h"
 #include "bestat.h"
+#include "benodesets.h"
 
 #include "irgmod.h"
 #include "iredges_t.h"
@@ -568,7 +569,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* insert the other different and it's copies into the set */
 	key.op         = other_different;
 	key.copies     = NULL;
-	entry          = pset_find(op_set, &key, HASH_PTR(other_different));
+	entry          = pset_find(op_set, &key, nodeset_hash(other_different));
 
 	if (! entry) {
 		entry         = obstack_alloc(&env->obst, sizeof(*entry));
@@ -583,7 +584,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	if (be_is_CopyKeep(keep))
 		pset_insert_ptr(entry->copies, keep);
 
-	pset_insert(op_set, entry, HASH_PTR(other_different));
+	pset_insert(op_set, entry, nodeset_hash(other_different));
 
 	DBG((mod, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
 }

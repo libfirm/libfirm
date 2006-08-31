@@ -572,19 +572,14 @@ static void be_main_loop(FILE *file_handle)
 
 		/* fix stack offsets */
 		BE_TIMER_PUSH(t_abi);
-		//be_abi_fix_stack_bias(birg.abi);
+		be_abi_fix_stack_nodes(birg.abi, NULL);
+		be_remove_dead_nodes_from_schedule(birg.irg);
+		be_abi_fix_stack_bias(birg.abi);
 		BE_TIMER_POP(t_abi);
 
 		BE_TIMER_PUSH(t_finish);
 		arch_code_generator_finish(birg.cg);
 		BE_TIMER_POP(t_finish);
-
-		/* fix stack offsets */
-		BE_TIMER_PUSH(t_abi);
-		be_abi_fix_stack_nodes(birg.abi, NULL);
-		be_remove_dead_nodes_from_schedule(birg.irg);
-		be_abi_fix_stack_bias(birg.abi);
-		BE_TIMER_POP(t_abi);
 
 		dump(DUMP_FINAL, irg, "-finish", dump_ir_block_graph_sched);
 

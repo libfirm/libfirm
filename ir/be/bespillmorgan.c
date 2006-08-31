@@ -25,6 +25,7 @@
 
 #include "bespillbelady.h"
 #include "beverify.h"
+#include "benodesets.h"
 
 #define DBG_LIVE		1
 #define DBG_LOOPANA		2
@@ -89,15 +90,19 @@ static int block_attr_cmp(const void *e1, const void *e2, size_t s) {
 }
 
 static INLINE int loop_attr_hash(const loop_attr_t *a) {
+#ifdef DEBUG_libfirm
+	return a->loop->loop_nr;
+#else
 	return HASH_PTR(a->loop);
+#endif
 }
 
 static INLINE int block_attr_hash(const block_attr_t *b) {
-	return HASH_PTR(b->block);
+	return nodeset_hash(b->block);
 }
 
 static INLINE int loop_edge_hash(const loop_edge_t *e) {
-	return HASH_PTR(e->block) ^ (e->pos * 31);
+	return nodeset_hash(e->block) ^ (e->pos * 31);
 }
 
 static INLINE loop_attr_t *get_loop_attr(morgan_env_t *env, const ir_loop *loop) {

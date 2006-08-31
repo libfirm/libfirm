@@ -1230,13 +1230,11 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
  */
 static void ia32_after_ra(void *self) {
 	ia32_code_gen_t *cg = self;
+	ir_graph *irg = cg->irg;
 
-	irg_block_walk_graph(cg->irg, NULL, ia32_after_ra_walker, self);
+	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, self);
 
-	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
-	if (cg->used_fp == fp_x87 || cg->force_sim) {
-		x87_simulate_graph(cg->arch_env, cg->irg, cg->blk_sched);
-	}
+	ia32_finish_irg(irg, cg);
 }
 
 /**
@@ -1246,7 +1244,12 @@ static void ia32_finish(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	ia32_finish_irg(irg, cg);
+	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
+	if (cg->used_fp == fp_x87 || cg->force_sim) {
+		x87_simulate_graph(cg->arch_env, irg, cg->blk_sched);
+	}
+
+	ia32_peephole_optimization(irg, cg);
 }
 
 /**

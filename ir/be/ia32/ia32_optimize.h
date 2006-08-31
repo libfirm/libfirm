@@ -22,8 +22,7 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg);
 
 /**
  * Performs Peephole Optimizations
- * This function is called by a walker.
  */
-void ia32_peephole_optimization(ir_node *irn, void *env);
+void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg);
 
 #endif /* _IA32_OPTIMIZE_H_ */

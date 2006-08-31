@@ -6,6 +6,6 @@
  *
  * Use its node number
  */
-unsigned nodeset_hash(ir_node *n) {
+unsigned nodeset_hash(const ir_node *n) {
 	return (unsigned)get_irn_idx(n);
 }

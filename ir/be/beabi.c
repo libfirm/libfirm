@@ -400,7 +400,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	const arch_register_t *sp = arch_isa_sp(isa);
 	ir_mode *mach_mode        = sp->reg_class->mode;
 	struct obstack *obst      = &env->obst;
-	ir_node *no_mem           = get_irg_no_mem(irg);
 	int no_alloc              = call->flags.bits.frame_is_setup_on_call;
 
 	ir_node *res_proj = NULL;
@@ -1504,7 +1503,6 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_graph *irg             = env->birg->irg;
 	ir_node *bl               = get_irg_start_block(irg);
 	ir_node *end              = get_irg_end_block(irg);
-	ir_node *no_mem           = get_irg_no_mem(irg);
 	ir_node *mem              = get_irg_initial_mem(irg);
 	ir_type *method_type      = get_entity_type(get_irg_entity(irg));
 	pset *dont_save           = pset_new_ptr(8);

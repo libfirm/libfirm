@@ -33,7 +33,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	const arch_register_t *in1_reg, *in2_reg, *out_reg, **slots;
 
 	/* Return if AM node or not a Sub or xSub */
-	if (get_ia32_op_type(irn) != ia32_Normal || !(is_ia32_Sub(irn) || is_ia32_xSub(irn)))
+	if (!(is_ia32_Sub(irn) || is_ia32_xSub(irn)) || get_ia32_op_type(irn) != ia32_Normal)
 		return;
 
 	noreg   = ia32_new_NoReg_gp(cg);
@@ -454,18 +454,14 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
 		ia32_code_gen_t *cg = env;
+
 		next = sched_next(irn);
 
-		if (is_ia32_irn(irn)) {
-			/* check if there is a sub which need to be transformed */
-			ia32_transform_sub_to_neg_add(irn, cg);
+		/* check if there is a sub which need to be transformed */
+		ia32_transform_sub_to_neg_add(irn, cg);
 
-			/* transform a LEA into an Add if possible */
-			ia32_transform_lea_to_add(irn, cg);
-
-			/* check for peephole optimization */
-			ia32_peephole_optimization(irn, cg);
-		}
+		/* transform a LEA into an Add if possible */
+		ia32_transform_lea_to_add(irn, cg);
 	}
 
 	/* second: insert copies and finish irg */
