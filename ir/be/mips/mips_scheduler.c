@@ -117,7 +117,7 @@ static int mips_scheduler_node_allowed(mips_sched_env_t *sched_env, ir_node* nod
 	return 1;
 }
 
-static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set)
+static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodeset *live_set)
 {
 	mips_sched_env_t *sched_env = (mips_sched_env_t*) block_env;
 	const arch_env_t *arch_env = (const arch_env_t*) sched_env->arch_env;
