@@ -89,8 +89,8 @@ static int search(heights_t *h, const ir_node *curr, const ir_node *tgt)
 	h_curr->visited = h->visited;
 
 	/* Start a search from this node. */
-	for(i = 0, n = get_irn_arity(curr); i < n; ++i) {
-		ir_node *op = get_irn_n(curr, i);
+	for(i = 0, n = get_irn_ins_or_deps(curr); i < n; ++i) {
+		ir_node *op = get_irn_in_or_dep(curr, i);
 		if(search(h, op, tgt))
 			return 1;
 	}
@@ -152,6 +152,18 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 		ih->height++;
 	}
 
+	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
+		ir_node *dep = get_edge_src_irn(edge);
+
+		if(!is_Block(dep) && get_nodes_block(dep) == bl) {
+			unsigned dep_height = compute_height(h, dep, bl);
+			ih->height          = MAX(ih->height, dep_height);
+			is_sink             = 0;
+		}
+
+		ih->height++;
+	}
+
 	ih->is_sink = is_sink;
 	if(is_sink)
 		list_add(&ih->sink_list, &h->sink_head);
@@ -167,6 +179,11 @@ static void compute_heights_in_block(ir_node *bl, void *data)
 	h->visited++;
 
 	foreach_out_edge(bl, edge) {
+		ir_node *dep = get_edge_src_irn(edge);
+		compute_height(h, dep, bl);
+	}
+
+	foreach_out_edge_kind(bl, edge, EDGE_KIND_DEP) {
 		ir_node *dep = get_edge_src_irn(edge);
 		compute_height(h, dep, bl);
 	}
