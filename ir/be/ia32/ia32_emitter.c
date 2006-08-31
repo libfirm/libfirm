@@ -49,10 +49,18 @@ void ia32_switch_section(FILE *F, section_t sec) {
 	static section_t curr_sec = NO_SECTION;
 	static const char *text[ASM_MAX][SECTION_MAX] = {
 		{
-			".section\t.text", ".section\t.data", ".section\t.rodata", ".section\t.text"
+			".section\t.text",
+			".section\t.data",
+			".section\t.rodata",
+			".section\t.text",
+			".section\t.tbss,\"awT\",@nobits"
 		},
 		{
-			".section\t.text", ".section\t.data", ".section .rdata,\"dr\"", ".section\t.text"
+			".section\t.text",
+			".section\t.data",
+			".section .rdata,\"dr\"",
+			".section\t.text",
+			".section\t.tbss,\"awT\",@nobits"
 		}
 	};
 
@@ -69,6 +77,7 @@ void ia32_switch_section(FILE *F, section_t sec) {
 	case SECTION_DATA:
 	case SECTION_RODATA:
 	case SECTION_COMMON:
+	case SECTION_TLS:
 		fprintf(F, "\t%s\n", text[asm_flavour][sec]);
 		break;
 
@@ -1802,7 +1811,7 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
  * Emits code to increase stack pointer.
  */
 static void emit_ia32_AddSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
-	FILE          *F = emit_env->out;
+	FILE *F = emit_env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (is_ia32_ImmConst(irn)) {
@@ -1818,6 +1827,29 @@ static void emit_ia32_AddSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, %2S", irn, irn);
 	}
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* reserve space on stack */");
+
+	IA32_DO_EMIT(irn);
+}
+
+/**
+ * Emits code to load the TLS base
+ */
+static void emit_ia32_LdTls(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+
+	switch (asm_flavour) {
+	case ASM_LINUX_GAS:
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, DWORD PTR %%gs:0", irn);
+		break;
+	case ASM_MINGW_GAS:
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, DWORD PTR %%gs:0", irn);
+		break;
+	default:
+		assert(0 && "unsupported TLS");
+		break;
+	}
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* get thread local storage base */");
 
 	IA32_DO_EMIT(irn);
 }
@@ -1884,6 +1916,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_I2I8Bit);
 	IA32_EMIT(Const);
 	IA32_EMIT(AddSP);
+	IA32_EMIT(LdTls);
 	IA32_EMIT(xCmp);
 	IA32_EMIT(xCmpSet);
 	IA32_EMIT(xCmpCMov);

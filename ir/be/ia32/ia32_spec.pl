@@ -770,6 +770,14 @@ else {
   "outs"      => [ "stack", "M" ],
 },
 
+"LdTls" => {
+  "irn_flags" => "R",
+  "comment"   => "get the TLS base address",
+  "reg_req"   => { "out" => [ "gp" ] },
+},
+
+
+
 #-----------------------------------------------------------------------------#
 #   _____ _____ ______    __ _             _                     _            #
 #  / ____/ ____|  ____|  / _| |           | |                   | |           #
@@ -1543,63 +1551,56 @@ else {
 # constants
 
 "fldz" => {
-  "op_flags"  => "R",
+  "op_flags"  => "R|c",
   "irn_flags"  => "R",
-  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldz /* x87 0.0 -> %D1 */',
 },
 
 "fld1" => {
-  "op_flags"  => "R",
+  "op_flags"  => "R|c",
   "irn_flags"  => "R",
-  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
   "reg_req"   => { },
   "emit"      => '. fld1 /* x87 1.0 -> %D1 */',
 },
 
 "fldpi" => {
-  "op_flags"  => "R",
+  "op_flags"  => "R|c",
   "irn_flags"  => "R",
-  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load pi: Ld pi -> reg",
   "reg_req"   => { },
   "emit"      => '. fldpi /* x87 pi -> %D1 */',
 },
 
 "fldln2" => {
-  "op_flags"  => "R",
+  "op_flags"  => "R|c",
   "irn_flags"  => "R",
-  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldln2 /* x87 ln(2) -> %D1 */',
 },
 
 "fldlg2" => {
-  "op_flags"  => "R",
+  "op_flags"  => "R|c",
   "irn_flags"  => "R",
-  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldlg2 /* x87 log(2) -> %D1 */',
 },
 
 "fldl2t" => {
-  "op_flags"  => "R",
+  "op_flags"  => "R|c",
   "irn_flags"  => "R",
-  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
   "reg_req"   => { },
   "emit"      => '. fldll2t /* x87 ld(10) -> %D1 */',
 },
 
 "fldl2e" => {
-  "op_flags"  => "R",
+  "op_flags"  => "R|c",
   "irn_flags"  => "R",
-  "rd_constructor" => "NONE",
   "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
   "reg_req"   => { },
   "emit"      => '. fldl2e /* x87 ld(e) -> %D1 */',

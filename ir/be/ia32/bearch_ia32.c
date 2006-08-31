@@ -802,6 +802,22 @@ static void ia32_kill_convs(ia32_code_gen_t *cg) {
 }
 
 /**
+ * Transform the Thread Local Store base.
+ */
+static void transform_tls(ir_graph *irg) {
+	ir_node *irn = get_irg_tls(irg);
+
+	if (irn) {
+		dbg_info *dbg = get_irn_dbg_info(irn);
+		ir_node  *blk = get_nodes_block(irn);
+		ir_node  *newn;
+		newn = new_rd_ia32_LdTls(dbg, irg, blk, get_irn_mode(irn));
+
+		exchange(irn, newn);
+	}
+}
+
+/**
  * Transforms the standard firm graph into
  * an ia32 firm graph
  */
@@ -820,6 +836,7 @@ static void ia32_prepare_graph(void *self) {
 	dom = be_compute_dominance_frontiers(cg->irg);
 
 	cg->kill_conv = new_nodeset(5);
+	transform_tls(cg->irg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
 	ia32_kill_convs(cg);
 	del_nodeset(cg->kill_conv);

@@ -70,8 +70,8 @@ static void ia32_dump_comm(struct obstack *obst, const char *name, visibility vi
 	}
 }
 
-/*
- * output the alignment
+/**
+ * output the alignment to an obstack
  */
 static void ia32_dump_align(struct obstack *obst, int align)
 {
@@ -85,6 +85,24 @@ static void ia32_dump_align(struct obstack *obst, int align)
 		obstack_printf(obst, "\t.align %d\n", align);
 }
 
+/**
+ * output the alignment to a FILE
+ */
+static void ia32_dump_align_f(FILE *f, int align)
+{
+	int h = highest_bit(align);
+
+	if ((1 << h) < align)
+		++h;
+	align = (1 << h);
+
+	if (align > 1)
+		fprintf(f, "\t.align %d\n", align);
+}
+
+/**
+ * output a tarval
+ */
 static void dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
 {
 	switch (bytes) {
@@ -335,6 +353,9 @@ struct arr_info {
 	int size;
 };
 
+/**
+ * Dump the size of an object
+ */
 static void dump_object_size(struct obstack *obst, const char *name, int size) {
 	switch (asm_flavour) {
 	case ASM_LINUX_GAS:
@@ -356,8 +377,8 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 	struct obstack *obst = data_obstack;
 
 	/*
-	* FIXME: did NOT work for partly constant values
-	*/
+	 * FIXME: did NOT work for partly constant values
+	 */
 	if (! is_Method_type(ty)) {
 		ent_variability variability = get_entity_variability(ent);
 		visibility visibility = get_entity_visibility(ent);
@@ -372,7 +393,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 			if (visibility == visibility_external_visible) {
 				obstack_printf(obst, ".globl\t%s\n", ld_name);
 			}
-			dump_object_size(obst, ld_name, (get_type_size_bits(ty) + 7) >> 3);
+			dump_object_size(obst, ld_name, get_type_size_bytes(ty));
 
 			align = get_type_alignment_bytes(ty);
 			ia32_dump_align(obst, align);
@@ -419,14 +440,14 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 					int type_size, j;
 
 					/* Compound entities are NOT sorted.
-					* The sorting strategy used doesn't work for `value' compound fields nor
-					* for partially_constant entities.
-					*/
+					 * The sorting strategy used doesn't work for `value' compound fields nor
+					 * for partially_constant entities.
+					 */
 
 					/*
-					* in the worst case, every entity allocates one byte, so the type
-					* size should be equal or bigger the number of fields
-					*/
+					 * in the worst case, every entity allocates one byte, so the type
+					 * size should be equal or bigger the number of fields
+					 */
 					type_size = get_type_size_bytes(ty);
 					vals      = xcalloc(type_size, sizeof(*vals));
 
@@ -442,7 +463,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 						ai = xcalloc(graph_length, sizeof(struct arr_info));
 
 						/* We wanna know how many arrays are on the path to the entity. We also have to know how
-						* many elements each array holds to calculate the offset for the entity. */
+						 * many elements each array holds to calculate the offset for the entity. */
 						for (j = 0; j < graph_length; j++) {
 							entity  *step      = get_compound_graph_path_node(path, j);
 							ir_type *step_type = get_entity_type(step);
@@ -515,33 +536,44 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 			obstack_printf(obst, "\n");
 		}
 		else if (visibility != visibility_external_allocated) {
-			/* calculate the alignment */
-			align = get_type_alignment_bytes(ty);
-			h = highest_bit(align);
+			/* uninitialized and NOT external */
+			if (get_entity_owner(ent) != get_tls_type()) {
+				/* calculate the alignment */
+				align = get_type_alignment_bytes(ty);
+				h = highest_bit(align);
 
-			if ((1 << h) < align)
-				++h;
-			align = (1 << h);
+				if ((1 << h) < align)
+					++h;
+				align = (1 << h);
 
-			if (align < 1)
-				align = 1;
+				if (align < 1)
+					align = 1;
 
-			ia32_dump_comm(comm_obstack, ld_name, visibility,
-				(get_type_size_bits(ty) + 7) >> 3, align);
+				ia32_dump_comm(comm_obstack, ld_name, visibility,
+					get_type_size_bytes(ty), align);
+			} else {
+				/* TLS */
+				if (visibility == visibility_external_visible) {
+					obstack_printf(obst, ".globl\t%s\n", ld_name);
+				}
+				dump_object_size(comm_obstack, ld_name, get_type_size_bytes(ty));
+				align = get_type_alignment_bytes(ty);
+				ia32_dump_align(obst, align);
+				obstack_printf(comm_obstack, "%s:\n\t.zero %d\n", ld_name, get_type_size_bytes(ty));
+			}
 		}
 	}
 }
 
-/*
+/**
  * Dumps declarations of global variables and the initialization code.
  */
-void ia32_dump_globals(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack)
+static void ia32_dump_globals(ir_type *gt, struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack)
 {
-	ir_type *gt = get_glob_type();
-	int i, n = get_class_n_members(gt);
+	int i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++)
-		dump_global(rdata_obstack, data_obstack, comm_obstack, get_class_member(gt, i));
+		dump_global(rdata_obstack, data_obstack, comm_obstack, get_compound_member(gt, i));
 }
 
 /************************************************************************/
@@ -551,11 +583,12 @@ void ia32_gen_decls(FILE *out) {
 	int    size;
 	char   *cp;
 
+	/* dump the global type */
 	obstack_init(&rodata);
 	obstack_init(&data);
 	obstack_init(&comm);
 
-	ia32_dump_globals(&rodata, &data, &comm);
+	ia32_dump_globals(get_glob_type(), &rodata, &data, &comm);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
@@ -567,7 +600,7 @@ void ia32_gen_decls(FILE *out) {
 	size = obstack_object_size(&rodata);
 	cp   = obstack_finish(&rodata);
 	if (size > 0) {
-		fprintf(out, "\t.section\t.rodata\n");
+		ia32_switch_section(out, SECTION_RODATA);
 		fwrite(cp, 1, size, out);
 	}
 
@@ -581,4 +614,17 @@ void ia32_gen_decls(FILE *out) {
 	obstack_free(&rodata, NULL);
 	obstack_free(&data, NULL);
 	obstack_free(&comm, NULL);
+
+	/* dump the Thread Local Storage */
+	obstack_init(&data);
+	ia32_dump_globals(get_tls_type(), &data, &data, &data);
+
+	size = obstack_object_size(&data);
+	cp   = obstack_finish(&data);
+	if (size > 0) {
+		ia32_switch_section(out, SECTION_TLS);
+		ia32_dump_align_f(out, 32);
+		fwrite(cp, 1, size, out);
+	}
+
 }

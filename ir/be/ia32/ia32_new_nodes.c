@@ -42,14 +42,22 @@
  * @return The ident of the SymConst
  */
 static ident *get_sc_ident(ir_node *symc) {
-	assert(get_irn_opcode(symc) == iro_SymConst && "need symconst to get ident");
+	entity  *ent;
+	ir_type *owner;
+	ident   *id;
 
 	switch (get_SymConst_kind(symc)) {
 		case symconst_addr_name:
 			return get_SymConst_name(symc);
 
 		case symconst_addr_ent:
-			return get_entity_ld_ident(get_SymConst_entity(symc));
+			ent   = get_SymConst_entity(symc);
+			owner = get_entity_owner(ent);
+			id    = get_entity_ld_ident(ent);
+			if (owner == get_tls_type()) {
+				id = mangle(id, new_id_from_chars("@NTPOFF", 7));
+			}
+			return id;
 
 		default:
 			assert(0 && "Unsupported SymConst");
@@ -679,23 +687,6 @@ void set_ia32_Immop_tarval(ir_node *node, tarval *tv) {
 }
 
 /**
- * Return the sc attribute.
- */
-ident *get_ia32_sc(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	return attr->cnst_val.sc;
-}
-
-/**
- * Sets the sc attribute.
- */
-void set_ia32_sc(ir_node *node, ident *sc) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->cnst_val.sc = sc;
-	attr->cnst        = attr->cnst_val.sc;
-}
-
-/**
  * Gets the string representation of the internal const (tv or symconst)
  */
 const char *get_ia32_cnst(const ir_node *node) {
@@ -1184,7 +1175,7 @@ void copy_ia32_Immop_attr(ir_node *dst, ir_node *src) {
 }
 
 /**
- * Copy the attributes from a Firm Const to an ia32_Const
+ * Copy the attributes from a Firm Const/SymConst to an ia32_Const
  */
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 	ia32_attr_t *attr = get_ia32_attr(ia32_cnst);
