@@ -55,7 +55,10 @@ static ident *get_sc_ident(ir_node *symc) {
 			owner = get_entity_owner(ent);
 			id    = get_entity_ld_ident(ent);
 			if (owner == get_tls_type()) {
-				id = mangle(id, new_id_from_chars("@NTPOFF", 7));
+				if (get_entity_visibility(ent) == visibility_external_allocated)
+					id = mangle(id, new_id_from_chars("@INDNTPOFF", 10));
+				else
+					id = mangle(id, new_id_from_chars("@NTPOFF", 7));
 			}
 			return id;
 
