@@ -39,13 +39,14 @@
 #include <lpp/lpp_net.h>
 #include <lpp/lpp_cplex.h>
 //#include <lc_pset.h>
-#include <libcore/lc_bitset.h>
+//#include <libcore/lc_bitset.h>
 
 #include "be_t.h"
 #include "belive_t.h"
 #include "besched_t.h"
 #include "beirgmod.h"
 #include "bearch.h"
+#include "beabi.h"
 #include "benode_t.h"
 #include "beutil.h"
 #include "bespillremat.h"
@@ -1306,6 +1307,30 @@ walker_remat_insertor(ir_node * bb, void * data)
 	}
 }
 
+int
+can_be_copied(const ir_node * bb, const ir_node * irn)
+{
+	assert(is_merge_edge(bb));
+
+	const ir_edge_t *edge = get_block_succ_first(bb);
+	const ir_node   *next_bb = edge->src;
+	int              pos = edge->pos;
+	const ir_node   *phi;
+
+	sched_foreach(next_bb, phi) {
+		const ir_node  *phi_arg;
+
+		if(!is_Phi(phi)) break;
+
+		phi_arg = get_irn_n(phi, pos);
+
+		if(phi_arg == irn) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /**
  * Preparation of blocks' ends for Luke Blockwalker(tm)(R)
  */
@@ -1399,7 +1424,7 @@ luke_endwalker(ir_node * bb, void * data)
 			ilp_cst_t   rel_cst;
 
 			ir_snprintf(buf, sizeof(buf), "reload_%N_%N", bb, irn);
-			reload = lpp_add_var_default(si->lpp, buf, lpp_binary, opt_cost_reload*execution_frequency(si, bb), 1.0);
+			reload = lpp_add_var_default(si->lpp, buf, lpp_binary, opt_cost_reload*execution_frequency(si, bb), can_be_copied(bb, irn));
 			set_insert_keyval(spill_bb->reloads, irn, INT_TO_PTR(reload));
 
 			/* reload <= mem_out */
@@ -1751,9 +1776,9 @@ luke_blockwalker(ir_node * bb, void * data)
 		op->attr.live_range.op = bb;
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", bb, irn);
-		cst = lpp_add_cst_uniq(si->lpp, buf, lpp_equal, 0.0);
+		cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
 
-		/* reg_out = reload + remat + live_range */
+		/* reg_out - reload - remat - live_range <= 0 */
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
 		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, -1.0);
@@ -1761,6 +1786,41 @@ luke_blockwalker(ir_node * bb, void * data)
 			op_t     *remat_op = get_irn_link(tmp);
 			if(remat_op->attr.remat.remat->value == irn) {
 				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
+			}
+		}
+		ir_snprintf(buf, sizeof(buf), "reg_out2_%N_%N", bb, irn);
+		cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, 0.0);
+
+		/* value may only die at bb end if it is used for a mem copy */
+		/* reg_out + \sum copy - reload - remat - live_range >= 0 */
+		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
+		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
+		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, -1.0);
+		foreach_pre_remat(si, bb, tmp) {
+			op_t     *remat_op = get_irn_link(tmp);
+			if(remat_op->attr.remat.remat->value == irn) {
+				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
+			}
+		}
+		if(is_merge_edge(bb)) {
+			const ir_edge_t *edge = get_block_succ_first(bb);
+			const ir_node   *next_bb = edge->src;
+			int              pos = edge->pos;
+			const ir_node   *phi;
+
+			sched_foreach(next_bb, phi) {
+				const ir_node  *phi_arg;
+
+				if(!is_Phi(phi)) break;
+
+				phi_arg = get_irn_n(phi, pos);
+
+				if(phi_arg == irn) {
+					op_t      *phi_op = get_irn_link(phi);
+					ilp_var_t  copy = phi_op->attr.live_range.args.copies[pos];
+
+					lpp_set_factor_fast(si->lpp, cst, copy, 1.0);
+				}
 			}
 		}
 	}
@@ -3854,13 +3914,13 @@ walker_reload_placer(ir_node * bb, void * data) {
 static void
 walker_collect_used(ir_node * irn, void * data)
 {
-	lc_bitset_t   *used = data;
+	bitset_t   *used = data;
 
-	lc_bitset_set(used, get_irn_idx(irn));
+	bitset_set(used, get_irn_idx(irn));
 }
 
 struct kill_helper {
-	lc_bitset_t  *used;
+	bitset_t  *used;
 	spill_ilp_t  *si;
 };
 
@@ -3876,7 +3936,7 @@ walker_kill_unused(ir_node * bb, void * data)
 		ir_node     *next = sched_next(irn);
 		int          n;
 
-		if(!lc_bitset_is_set(kh->used, get_irn_idx(irn))) {
+		if(!bitset_is_set(kh->used, get_irn_idx(irn))) {
 			if(be_is_Spill(irn) || be_is_Reload(irn)) {
 				DBG((kh->si->dbg, LEVEL_1, "\t SUBOPTIMAL! %+F IS UNUSED (cost: %g)\n", irn, get_cost(kh->si, irn)*execution_frequency(kh->si, bb)));
 #if 0
@@ -3900,13 +3960,13 @@ kill_all_unused_values_in_schedule(spill_ilp_t * si)
 {
 	struct kill_helper kh;
 
-	kh.used = lc_bitset_malloc(get_irg_last_idx(si->chordal_env->irg));
+	kh.used = bitset_malloc(get_irg_last_idx(si->chordal_env->irg));
 	kh.si = si;
 
 	irg_walk_graph(si->chordal_env->irg, walker_collect_used, NULL, kh.used);
 	irg_block_walk_graph(si->chordal_env->irg, walker_kill_unused, NULL, &kh);
 
-	lc_bitset_free(kh.used);
+	bitset_free(kh.used);
 }
 
 void
@@ -4059,18 +4119,22 @@ writeback_results(spill_ilp_t * si)
 static int
 get_n_regs(spill_ilp_t * si)
 {
-	int     arch_n_regs = arch_register_class_n_regs(si->cls);
-	int     free = 0;
-	int     i;
+	int       arch_n_regs = arch_register_class_n_regs(si->cls);
 
-	for(i=0; i<arch_n_regs; i++) {
-		if(!arch_register_type_is(&si->cls->regs[i], ignore)) {
-			free++;
-		}
-	}
+	bitset_t *arch_regs = bitset_malloc(arch_n_regs);
+	bitset_t *abi_regs = bitset_malloc(arch_n_regs);
 
-	DBG((si->dbg, LEVEL_1, "\tArchitecture has %d free registers in class %s\n", free, si->cls->name));
-	return free;
+	arch_put_non_ignore_regs(si->chordal_env->birg->main_env->arch_env, si->cls, arch_regs);
+    be_abi_put_ignore_regs(si->chordal_env->birg->abi, si->cls, abi_regs);
+
+	bitset_andnot(arch_regs, abi_regs);
+	arch_n_regs = bitset_popcnt(arch_regs);
+
+	bitset_free(arch_regs);
+	bitset_free(abi_regs);
+
+	DBG((si->dbg, LEVEL_1, "\tArchitecture has %d free registers in class %s\n", arch_n_regs, si->cls->name));
+	return arch_n_regs;
 }
 
 static void
