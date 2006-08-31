@@ -425,7 +425,7 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "comment"   => "construct ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r5" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "ecx", "none" ], "out" => [ "!ecx in_r3 !in_r4" ] },
   "emit"      =>
 '
 if (get_ia32_immop_type(n) == ia32_ImmNone) {
@@ -474,7 +474,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "construct ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r5" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "ecx", "none" ], "out" => [ "!ecx in_r3 !in_r4" ] },
   "emit"      =>
 '
 if (get_ia32_immop_type(n) == ia32_ImmNone) {
