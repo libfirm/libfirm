@@ -72,6 +72,9 @@ static be_options_t be_options = {
 	"cplex"                            /* ilp solver */
 };
 
+/* config file. */
+static char config_file[256] = { 0 };
+
 /* dump flags */
 static unsigned dump_flags = 0;
 
@@ -159,13 +162,14 @@ static lc_opt_enum_int_var_t sched_select_var = {
 };
 
 static const lc_opt_table_entry_t be_main_options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump",         "dump irg on several occasions",     &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("ra",           "register allocator",                &ra_var),
-	LC_OPT_ENT_ENUM_PTR ("isa",          "the instruction set architecture",  &isa_var),
-	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",         &be_omit_fp),
-	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",  &vrfy_var),
-	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",     &be_options.timing),
-	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",  &be_options.mris),
+	LC_OPT_ENT_STR      ("config",       "read another config file containing backend options",                 config_file, sizeof(config_file)),
+	LC_OPT_ENT_ENUM_MASK("dump",         "dump irg on several occasions",                                       &dump_var),
+	LC_OPT_ENT_ENUM_PTR ("ra",           "register allocator",                                                  &ra_var),
+	LC_OPT_ENT_ENUM_PTR ("isa",          "the instruction set architecture",                                    &isa_var),
+	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",                                           &be_omit_fp),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",                          &vrfy_var),
+	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",                                       &be_options.timing),
+	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",                                    &be_options.mris),
 	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (trivial, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
 
 #ifdef WITH_ILP
@@ -667,6 +671,18 @@ void be_main(FILE *file_handle)
 {
 #ifdef WITH_LIBCORE
 	lc_timer_t *t;
+#endif /* WITH_LIBCORE */
+
+#ifdef WITH_LIBCORE
+	/* The user specified another config file to read. do that now. */
+	if(strlen(config_file) > 0) {
+		FILE *f;
+
+		if((f = fopen(config_file, "rt")) != NULL) {
+			lc_opt_from_file(config_file, f, NULL);
+			fclose(f);
+		}
+	}
 
 	if (be_options.timing == BE_TIME_ON) {
 		t = lc_timer_register("bemain", "measure complete bemain loop");
