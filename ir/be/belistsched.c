@@ -329,8 +329,16 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 	if(is_Bad(irn))
 		return;
 
+
+	/* non-proj nodes can have dependency edges to tuple nodes. */
+	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
+		ir_node *out = get_edge_src_irn(edge);
+		make_ready(env, irn, out);
+	}
+
+	/* schedule the normal projs */
 	foreach_out_edge(irn, edge) {
-		ir_node *out = edge->src;
+		ir_node *out = get_edge_src_irn(edge);
 
 		assert(is_Proj(out) && "successor of a modeT node must be a proj");
 
