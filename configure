@@ -1571,6 +1571,8 @@ fi
 fi;
 
 
+echo "$as_me:$LINENO: checking for ilp solver support" >&5
+echo $ECHO_N "checking for ilp solver support... $ECHO_C" >&6
 # Check whether --enable-ilp or --disable-ilp was given.
 if test "${enable_ilp+set}" = set; then
   enableval="$enable_ilp"
@@ -1582,7 +1584,16 @@ _ACEOF
 fi
 fi;
 
+if test "$enable_ilp" == yes; then
+  echo "$as_me:$LINENO: result: enabled" >&5
+echo "${ECHO_T}enabled" >&6
+else
+  echo "$as_me:$LINENO: result: disabled" >&5
+echo "${ECHO_T}disabled" >&6
+fi
 
+echo "$as_me:$LINENO: checking for jvm support" >&5
+echo $ECHO_N "checking for jvm support... $ECHO_C" >&6
 # Check whether --enable-jvm or --disable-jvm was given.
 if test "${enable_jvm+set}" = set; then
   enableval="$enable_jvm"
@@ -1594,7 +1605,13 @@ _ACEOF
 fi
 fi;
 
-
+if test "$enable_jvm" == yes; then
+  echo "$as_me:$LINENO: result: enabled" >&5
+echo "${ECHO_T}enabled" >&6
+else
+  echo "$as_me:$LINENO: result: disabled" >&5
+echo "${ECHO_T}disabled" >&6
+fi
 
 
 # Check whether --enable-wchar_support or --disable-wchar_support was given.
