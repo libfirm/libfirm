@@ -528,7 +528,6 @@ static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
 static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	int i;
 	int offset;
-	int firststore;
 	ir_node *node;
 	ir_node *stores[MAXPUSH_OPTIMIZE];
 	ir_node *block = get_nodes_block(irn);
@@ -541,7 +540,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	assert(be_is_IncSP(irn));
 
 	offset = be_get_IncSP_offset(irn);
-	if(offset <= 0)
+	if(offset < 4)
 		return;
 
 	/*
@@ -601,30 +600,23 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		stores[storeslot] = node;
 	}
 
-	offset = be_get_IncSP_offset(irn);
-
-	firststore = -1;
-	for(i = 0; i < MAXPUSH_OPTIMIZE; ++i) {
-		ir_node *store = stores[i];
-		if(store == NULL || is_Bad(store))
-			break;
-		if(offset < 4)
-			break;
-
-		firststore = i;
-
-		offset -= 4;
-	}
-
 	curr_sp = get_irn_n(irn, 0);
 
 	// walk the stores in inverse order and create pushs for them
-	for(i = firststore; i >= 0; --i) {
+	i = (offset / 4) - 1;
+	if(i >= MAXPUSH_OPTIMIZE) {
+		i = MAXPUSH_OPTIMIZE - 1;
+	}
+
+	for( ; i >= 0; --i) {
 		const ir_edge_t *edge, *next;
 		const arch_register_t *spreg;
 		ir_node *push;
 		ir_node *val, *mem;
 		ir_node *store = stores[i];
+
+		if(store == NULL || is_Bad(store))
+			break;
 
 		val = get_irn_n(store, 2);
 		mem = get_irn_n(store, 3);
@@ -652,6 +644,8 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 
 		// we can remove the store from schedule now
 		sched_remove(store);
+
+		offset -= 4;
 	}
 
 	be_set_IncSP_offset(irn, offset);
