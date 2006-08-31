@@ -3176,7 +3176,7 @@ void ia32_transform_psi_cond_tree(ir_node *node, void *env) {
 
 	/* BEWARE: new_r_Const_long works for floating point as well */
 	new_cmp = new_r_Cmp(irg, block, psi_sel, new_r_Const_long(irg, block, mode, 0));
-	new_cmp = new_r_Proj(irg, block, new_cmp, mode_b, pn_Cmp_Ne + (mode_is_float(mode) ? pn_Cmp_Uo : 0));
+	new_cmp = new_r_Proj(irg, block, new_cmp, mode_b, mode_is_float(mode) ? pn_Cmp_Ne : pn_Cmp_Gt | pn_Cmp_Lt);
 
 	set_Psi_cond(node, 0, new_cmp);
 }
