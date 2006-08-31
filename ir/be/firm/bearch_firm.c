@@ -598,7 +598,7 @@ static const arch_code_generator_if_t *firm_get_code_generator_if(void *self)
 	return &firm_code_gen_if;
 }
 
-static const list_sched_selector_t *firm_get_list_sched_selector(const void *self) {
+static const list_sched_selector_t *firm_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
 	return trivial_selector;
 }
 
