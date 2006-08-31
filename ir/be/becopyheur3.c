@@ -80,7 +80,7 @@ static void set_admissible_regs(be_java_coal_t *coal, copy_opt_t *co, ir_node *i
 	arch_register_req_t req;
 	unsigned n_regs = co->cls->n_regs;
 
-	ir_printf("%+F\n", irn);
+	// ir_printf("%+F\n", irn);
 	arch_get_register_req(co->aenv, &req, irn, BE_OUT_POS(0));
 	if(arch_register_req_is(&req, limited)) {
 		bitset_t *adm = bitset_alloca(n_regs);
