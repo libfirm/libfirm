@@ -20,6 +20,8 @@
 lc_opt_entry_t *firm_opt_get_root(void);
 #endif
 
+#include "pset.h"
+
 #undef MIN
 #undef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -43,6 +45,11 @@ lc_opt_entry_t *firm_opt_get_root(void);
  * convert a pointer into an integer
  */
 #define PTR_TO_INT(v)   ((int)((char *)(v) - (char *)0))
+
+/**
+ * Dump a pset containing Firm objects.
+ */
+void firm_pset_dump(pset *set);
 
 /**
  * The famous clear_link() walker-function.

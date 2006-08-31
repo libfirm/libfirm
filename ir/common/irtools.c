@@ -13,10 +13,13 @@
 # include "config.h"
 #endif
 
+#include "pset.h"
+
 #include <stdlib.h>
 #include "irnode_t.h"
 #include "irbackedge_t.h"
 #include "irtools.h"
+#include "irprintf.h"
 
 /* the famous clear_link implementation. */
 void firm_clear_link(ir_node *n, void *env) {
@@ -120,4 +123,13 @@ ir_node *exact_copy(const ir_node *n) {
   copy_node_attr(n, res);
   new_backedge_info(res);
   return res;
+}
+
+void firm_pset_dump(pset *set)
+{
+	void *obj;
+
+	foreach_pset(set, obj) {
+		ir_fprintf(stderr, "%+F\n", obj);
+	}
 }
