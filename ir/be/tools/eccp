@@ -7,14 +7,15 @@
 # @author: Matthias Braun
 #
 
-EDGFLAGS="-b vrfy=assert -b ra-chordal-vrfy=assert -fno-reassociation --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
+EDGFLAGS="-b vrfy=assert -b ra-chordal-vrfy=assert --gnu=30305 --c -I/usr/lib/gcc-lib/i586-suse-linux/3.3.5/include"
 
 ASSEMBLEFLAGS=""
-LFLAGS=""
+AS=as-intel-2.17
 OPT0="-fno-opt"
 OPT1=""
 OPT2="-fno-strength-red"
-OPT3="-finline -fif-conv -fno-strength-red"
+OPT3="-fif-conv -finline -fno-strength-red"
+#OPT3="-finline -fno-strength-red"
 
 mode=LINK
 declare -a LFLAGS
@@ -26,6 +27,8 @@ declare -a OFILES
 OPTFLAGS=""
 OUTFILE=""
 DEBUG=""
+CFLAGS=()
+LFLAGS=()
 # parse commandline
 while [ -n "$1" ]
 do
@@ -33,6 +36,8 @@ do
 		-S )	mode=COMPILE;;
 		-c )	mode=ASSEMBLE;;
 		-E )	mode=PREPROCESS;;
+		-b )	shift ; CFLAGS=("${CFLAGS[@]}" -b "$1");;
+		-b* )	CFLAGS=("${CFLAGS[@]}" "$1");;
 		-o )	shift ; OUTFILE="$1";;
 		-o* )	OUTFILE="`echo "$1" | sed -e "s/^-o//"`";;
 		-v )	DEBUG="1";;
@@ -44,6 +49,7 @@ do
 		-L )	LFLAGS=("${LFLAGS[@]}" "-L $1");;
 		-l* | -L* )	LFLAGS=("${LFLAGS[@]}" "$1");;
 		-W* )	;; #TODO
+		-f )	shift;;
 		-f* )	;; #TODO
 		-march=* )	;;# TODO
 		-g* )	;; # TODO
@@ -127,9 +133,9 @@ if [ "$mode" = "ASSEMBLE" -o "$mode" = "LINK" ] ; then
 			ofile="`dirname "$sfile"`/`basename "$sfile" .s`.o"
 		fi
 		if [ "$DEBUG" = "1" ]; then
-			echo gcc $ASSEMBLEFLAGS "$sfile" -c -o "$ofile"
+			echo "$AS" $ASSEMBLEFLAGS "$sfile" -o "$ofile"
 		fi
-		gcc $ASSEMBLEFLAGS "$sfile" -c -o "$ofile" || exit $?
+		"$AS" $ASSEMBLEFLAGS "$sfile" -o "$ofile" || exit $?
 		OFILES=("${OFILES[@]}" "$ofile")
 	done
 fi
