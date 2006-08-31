@@ -439,11 +439,11 @@ void **pdeq_copyl(pdeq *dq, const void **dst)
 
     if (n + p > NDATA) {
       int nn = NDATA - p;
-      memcpy(d, &q->data[p], nn * sizeof(void *)); d += nn;
+      memcpy((void *) d, &q->data[p], nn * sizeof(void *)); d += nn;
       p = 0; n -= nn;
     }
 
-    memcpy(d, &q->data[p], n * sizeof(void *)); d += n;
+    memcpy((void *) d, &q->data[p], n * sizeof(void *)); d += n;
 
     q = q->r;
   }
