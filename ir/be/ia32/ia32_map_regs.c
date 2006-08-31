@@ -15,7 +15,7 @@
 #include "ia32_map_regs.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
-#include "benodesets.h"
+#include "../benodesets.h"
 
 static int maxnum_gpreg_args = 3;   /* maximum number of int arguments passed in registers; default 3 */
 static int maxnum_fpreg_args = 5;   /* maximum number of float arguments passed in registers; default 5 */
