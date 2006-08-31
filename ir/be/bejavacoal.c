@@ -55,7 +55,6 @@ typedef struct _jni_env_t {
 	JavaVM *jvm;
 	JNIEnv *jni;
 } jni_env_t;
-#endif
 
 /*
 
@@ -108,7 +107,6 @@ static char *locate_jvm_lib(char *path, size_t n)
 }
 #endif
 
-#ifdef WITH_JVM
 static int start_vm(jni_env_t *env, int argc, char *argv[])
 {
 	int i;
