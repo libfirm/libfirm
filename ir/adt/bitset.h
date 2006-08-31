@@ -444,12 +444,12 @@ static INLINE void bitset_fprint(FILE *file, const bitset_t *bs)
 	const char *prefix = "";
 	int i;
 
-	putc('[', file);
+	putc('{', file);
 	for(i = bitset_next_set(bs, 0); i != -1; i = bitset_next_set(bs, i + 1)) {
 		fprintf(file, "%s%u", prefix, i);
 		prefix = ",";
 	}
-	putc(']', file);
+	putc('}', file);
 }
 
 static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
