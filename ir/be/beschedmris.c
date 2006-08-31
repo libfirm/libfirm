@@ -496,7 +496,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	irg_walk_graph(env->irg, firm_clear_link, NULL, NULL);
 	irg_block_walk_graph(birg->irg, block_walker, NULL, env);
 	obstack_free(&env->obst, NULL);
-	dump_ir_block_graph_mris(env, "-mris");
+	// dump_ir_block_graph_mris(env, "-mris");
 	return env;
 }
 
