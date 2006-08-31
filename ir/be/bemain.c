@@ -717,7 +717,7 @@ int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls, b
 	else
 		bitset_clear_all(bs);
 
-	assert(bitset_size(bs) == cls->n_regs);
+	assert(bitset_size(bs) == (unsigned) cls->n_regs);
 	arch_put_non_ignore_regs(birg->main_env->arch_env, cls, bs);
 	bitset_flip_all(bs);
 	be_abi_put_ignore_regs(birg->abi, cls, bs);

@@ -478,6 +478,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 			}
 		}
 
+		if(!do_seq) {
+			obstack_ptr_grow(obst, get_Call_mem(irn));
+			curr_mem = new_NoMem();
+		} else {
+			curr_mem = get_Call_mem(irn);
+		}
+
 		assert(mode_is_reference(mach_mode) && "machine mode must be pointer");
 		for(i = 0; i < n_pos; ++i) {
 			int p                  = pos[i];
@@ -515,15 +522,18 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 
 			/* Insert a store for primitive arguments. */
 			if (is_atomic_type(param_type)) {
-				mem = new_r_Store(irg, bl, curr_mem, addr, param);
-				mem = new_r_Proj(irg, bl, mem, mode_M, pn_Store_M);
+				ir_node *store;
+				store = new_r_Store(irg, bl, curr_mem, addr, param);
+				mem = new_r_Proj(irg, bl, store, mode_M, pn_Store_M);
 			}
 
 			/* Make a mem copy for compound arguments. */
 			else {
+				ir_node *copy;
+
 				assert(mode_is_reference(get_irn_mode(param)));
-				mem = new_r_CopyB(irg, bl, curr_mem, addr, param, param_type);
-				mem = new_r_Proj(irg, bl, mem, mode_M, pn_CopyB_M_regular);
+				copy = new_r_CopyB(irg, bl, curr_mem, addr, param, param_type);
+				mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
 			}
 
 			curr_ofs += param_size;
@@ -537,8 +547,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		in = (ir_node **) obstack_finish(obst);
 
 		/* We need the sync only, if we didn't build the stores sequentially. */
-		if(!do_seq)
-			curr_mem = new_r_Sync(irg, bl, n_pos, in);
+		if(!do_seq) {
+			if(n_pos >= 1) {
+				curr_mem = new_r_Sync(irg, bl, n_pos + 1, in);
+			} else {
+				curr_mem = get_Call_mem(irn);
+			}
+		}
 		obstack_free(obst, in);
 	}
 

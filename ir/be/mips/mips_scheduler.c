@@ -177,8 +177,9 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set)
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
-const list_sched_selector_t *mips_get_list_sched_selector(const void *self)
+const list_sched_selector_t *mips_get_list_sched_selector(const void *self, list_sched_selector_t *selector)
 {
+#if 0
 	memset(&mips_sched_selector, 0, sizeof(mips_sched_selector));
 	mips_sched_selector.init_graph = mips_scheduler_init_graph;
 	mips_sched_selector.init_block = mips_scheduler_init_block;
@@ -187,4 +188,6 @@ const list_sched_selector_t *mips_get_list_sched_selector(const void *self)
 	mips_sched_selector.finish_block = mips_scheduler_finish_block;
 	mips_sched_selector.finish_graph = mips_scheduler_finish_graph;
 	return &mips_sched_selector;
+#endif
+	return selector;
 }
