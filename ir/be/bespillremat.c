@@ -164,7 +164,7 @@ void be_spill_remat_register_options(lc_opt_entry_t *grp)
 
 #define  SOLVE
 //#define  SOLVE_LOCAL
-#define LPP_SERVER "i44pc52"
+#define LPP_SERVER "i44pc23"
 #define LPP_SOLVER "cplex"
 
 
@@ -2143,7 +2143,7 @@ skip_one_must_die:
 
 			/* the epilog stuff - including post_use, check_post, check_post_remat */
 			ir_snprintf(buf, sizeof(buf), "post_use_%N_%N", arg, irn);
-			post_use = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 0.0);
+			post_use = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, is_before_frame(bb, irn)?1.0:0.0);
 
 			lpp_set_factor_fast(si->lpp, check_post, post_use, 1.0);
 
@@ -2156,7 +2156,26 @@ skip_one_must_die:
 				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
 				lpp_set_factor_fast(si->lpp, cst, post_use, -1.0);
 				lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
+			}
 
+			/* forall post remat which use arg add a similar cst */
+			foreach_post_remat(irn, remat) {
+				int      n;
+
+				for (n=get_irn_arity(remat)-1; n>=0; --n) {
+					ir_node    *remat_arg = get_irn_n(remat, n);
+					op_t       *remat_op = get_irn_link(remat);
+
+					if(remat_arg == arg) {
+						DBG((si->dbg, LEVEL_3, "\t  found remat with arg %+F in epilog of %+F\n", arg, irn));
+
+						/* post_use >= remat */
+						ir_snprintf(buf, sizeof(buf), "post_use_%N_%N-%d", arg, irn, p++);
+						cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
+						lpp_set_factor_fast(si->lpp, cst, post_use, -1.0);
+						lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
+					}
+				}
 			}
 
 			/* if value is not an arg of op and not possibly defined by post remat
@@ -2175,26 +2194,6 @@ skip_one_must_die:
 					cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
 					lpp_set_factor_fast(si->lpp, cst, arg_op->attr.live_range.ilp, 1.0);
 					lpp_set_factor_fast(si->lpp, cst, prev_lr, -1.0);
-				}
-			}
-
-
-			/* forall post remat which use arg add a similar cst */
-			foreach_post_remat(irn, remat) {
-				int      n;
-
-				for (n=get_irn_arity(remat)-1; n>=0; --n) {
-					ir_node    *remat_arg = get_irn_n(remat, n);
-					op_t       *remat_op = get_irn_link(remat);
-
-					if(remat_arg == arg) {
-						DBG((si->dbg, LEVEL_3, "\t  found remat with arg %+F in epilog of %+F\n", arg, irn));
-
-						ir_snprintf(buf, sizeof(buf), "post_use_%N_%N-%d", arg, irn, p++);
-						cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0.0);
-						lpp_set_factor_fast(si->lpp, cst, post_use, -1.0);
-						lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, 1.0);
-					}
 				}
 			}
 
