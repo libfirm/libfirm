@@ -338,6 +338,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 			/* reroute the edges from the proj to the argument */
 			edges_reroute(pairs[i].out_node, pairs[i].in_node, env->chord_env->irg);
+			set_irn_n(pairs[i].out_node, 0, new_Bad());
 
 			pairs[i].checked = 1;
 		}
@@ -499,8 +500,13 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	}
 
 	/* remove the perm from schedule */
-	if (! keep_perm)
+	if (! keep_perm) {
+		int arity = get_irn_arity(irn);
+		for(i = 0; i < arity; ++i) {
+			set_irn_n(irn, i, new_Bad());
+		}
 		sched_remove(irn);
+	}
 }
 
 
@@ -688,11 +694,11 @@ void assure_constraints(be_irg_t *birg) {
 				keep = be_new_Keep(arch_get_irn_reg_class(birg->main_env->arch_env, cp, -1),
 					birg->irg, get_nodes_block(cp), n, (ir_node **)&get_irn_in(cp)[1]);
 				sched_add_before(cp, keep);
-				sched_remove(cp);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
 				while (--n >= -1)
-					set_irn_n(cp, n, get_irg_bad(birg->irg));
+					set_irn_n(cp, n, new_Bad());
+				sched_remove(cp);
 			}
 		}
 
