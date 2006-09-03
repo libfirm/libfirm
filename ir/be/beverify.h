@@ -55,4 +55,12 @@ int be_verify_spillslots(const arch_env_t *arch_env, ir_graph *irg);
  */
 int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg);
 
+/**
+ * Verify that out edges are valid
+ *
+ * @param irg  The irg to check
+ * @param 	   1 if verify succeeded, 0 otherwise
+ */
+int be_verify_out_edges(ir_graph *irg);
+
 #endif /* BEVERIFY_H_ */
