@@ -1152,6 +1152,8 @@ int      is_Cond (const ir_node *node);
 int      is_Cmp (const ir_node *node);
 /** returns true if node is an Alloc node */
 int      is_Alloc (const ir_node *node);
+/** returns true if a nide is a Jmp node */
+int      is_Jmp (const ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 int      is_Proj (const ir_node *node);

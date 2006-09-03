@@ -715,6 +715,12 @@ _is_Alloc(const ir_node *node) {
 }
 
 static INLINE int
+_is_Jmp(const ir_node *node) {
+  assert(node);
+  return (_get_irn_op(node) == op_Jmp);
+}
+
+static INLINE int
 _is_no_Block(const ir_node *node) {
   assert(node && _is_ir_node(node));
   return (_get_irn_op(node) != op_Block);

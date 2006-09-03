@@ -2599,6 +2599,12 @@ int
   return _is_Alloc(node);
 }
 
+/* returns true if a node is a Jmp node. */
+int
+(is_Jmp)(const ir_node *node) {
+  return _is_Jmp(node);
+}
+
 int
 is_Proj (const ir_node *node) {
   assert(node);
