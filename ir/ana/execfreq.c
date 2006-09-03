@@ -259,7 +259,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
     freq->freq = ZERO(x[idx]) ? 0.0 : x[idx];
 #endif
 	/* Get the minimum non-zero execution frequency. */
-	if(freq->freq != 0.0)
+	if(freq->freq > 0.0)
 		ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
   }
 
