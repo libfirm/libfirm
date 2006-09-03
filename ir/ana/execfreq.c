@@ -14,10 +14,11 @@
 #include "config.h"
 #endif
 
-//#define USE_GSL
+#define USE_GSL
 
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include <math.h>
 
 #ifdef USE_GSL
@@ -46,6 +47,8 @@
 
 #define set_foreach(s,i) for((i)=set_first((s)); (i); (i)=set_next((s)))
 
+#define MAX_INT_FREQ 1000000
+
 typedef struct _freq_t {
 	const ir_node    *irn;
 	double            freq;
@@ -60,7 +63,9 @@ typedef struct _walkerdata_t {
 struct _exec_freq_t {
 	set *set;
 	hook_entry_t hook;
+	double max;
 	double min_non_zero;
+	double m, b;
 	unsigned infeasible : 1;
 };
 
@@ -110,8 +115,8 @@ get_block_execfreq(const exec_freq_t *ef, const ir_node * irn)
 unsigned long
 get_block_execfreq_ulong(const exec_freq_t *ef, const ir_node *bb)
 {
-	double f = get_block_execfreq(ef, bb);
-	return (unsigned long) (f / ef->min_non_zero);
+	double f       = get_block_execfreq(ef, bb);
+	return (int) (f > ef->min_non_zero ? ef->m * f + ef->b : 1.0);
 }
 
 #define ZERO(x)   (fabs(x) < 0.0001)
@@ -249,6 +254,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		return ef;
   }
 
+  ef->max = MAX_INT_FREQ;
   set_foreach(freqs, freq) {
     const ir_node *bb = freq->irn;
     size_t        idx = PTR_TO_INT(get_irn_link(bb));
@@ -258,9 +264,24 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 #else
     freq->freq = ZERO(x[idx]) ? 0.0 : x[idx];
 #endif
+
+	/* get the maximum exec freq */
+	ef->max = MAX(ef->max, freq->freq);
+
 	/* Get the minimum non-zero execution frequency. */
 	if(freq->freq > 0.0)
 		ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
+  }
+
+  /* compute m and b of the transformation used to convert the doubles into scaled ints */
+  {
+	  /* double l1 = 1; */
+	  double h1 = MAX_INT_FREQ;
+	  double l2 = ef->min_non_zero;
+	  double h2 = ef->max;
+
+	  ef->m = (h1 /* - l1 */) / (h2 - l2);
+	  ef->b = (/* l1 * */ h2  - l2 * h1) / (h2 - l2);
   }
 
 #ifdef USE_GSL
