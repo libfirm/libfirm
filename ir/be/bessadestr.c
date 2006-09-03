@@ -29,6 +29,7 @@
 #include "benode_t.h"
 #include "besched_t.h"
 #include "benodesets.h"
+#include "bestatevent.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -139,6 +140,8 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 				in[pp->pos] = pp->arg;
 
 			perm = be_new_Perm(chordal_env->cls, irg, pred_bl, n_projs, in);
+			be_stat_ev("phi_perm", 1);
+
 			free(in);
 			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, chordal_env->birg->main_env->arch_env);
 			sched_add_after(insert_after, perm);

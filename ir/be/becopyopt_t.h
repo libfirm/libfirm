@@ -100,7 +100,6 @@ typedef struct _unit_t {
 typedef struct _neighb_t neighb_t;
 typedef struct _affinity_node_t affinity_node_t;
 
-
 struct _neighb_t {
 	neighb_t *next;			/** the next neighbour entry*/
 	ir_node *irn;			/** the neighbour itself */

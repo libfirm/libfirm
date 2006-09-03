@@ -35,7 +35,8 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beverify.h beverify.c bepressurestat.c bepressurestat.h \
 	bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c \
 	bejavacoal.c becopyheur3.c bespillcost.c bespillremat.c \
-	bespillslots.h bespillslots.c
+	bespillslots.h bespillslots.c \
+	bestatevent.h bestatevent.c
 
 
 include $(topdir)/MakeRules

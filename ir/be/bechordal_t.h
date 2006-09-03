@@ -1,6 +1,6 @@
 
 /**
- * Internal datastructures for the chordal register allocator.
+ * Internal data structures for the chordal register allocator.
  * @author Sebastian Hack
  * @date 25.1.2005
  */

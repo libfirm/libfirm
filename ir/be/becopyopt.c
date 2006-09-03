@@ -39,6 +39,7 @@
 #include "beinsn_t.h"
 #include "besched_t.h"
 #include "benodesets.h"
+#include "bestatevent.h"
 
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
@@ -244,18 +245,21 @@ int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, i
 		int d = get_loop_depth(loop);
 		cost = d*d;
 	}
-	return cost+1;
+	return 1+cost;
 }
 
 int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
+	int res;
 	ir_node *root_bl = get_nodes_block(root);
 	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-	unsigned long freq = get_block_execfreq_ulong(co->cenv->exec_freq, copy_bl);
-	return freq > 0 ? (int) freq : 1;
+	res = get_block_execfreq_ulong(co->cenv->exec_freq, copy_bl);
+
+	/* don't allow values smaller than one. */
+	return res < 1 ? 1 : res;
 }
 
 
-int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
+int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node *arg, int pos) {
 	return 1;
 }
 
@@ -631,6 +635,40 @@ int co_get_lower_bound(const copy_opt_t *co) {
 	return res;
 }
 
+void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
+{
+	bitset_t *seen = bitset_irg_malloc(co->irg);
+	affinity_node_t *an;
+
+	memset(stat, 0, sizeof(stat[0]));
+
+	/* count affinity edges. */
+	co_gs_foreach_aff_node(co, an) {
+		neighb_t *neigh;
+		stat->aff_nodes += 1;
+		bitset_add_irn(seen, an->irn);
+		co_gs_foreach_neighb(an, neigh) {
+			if(!bitset_contains_irn(seen, neigh->irn)) {
+				stat->aff_edges += 1;
+				stat->max_costs += neigh->costs;
+
+				if(get_irn_col(co, an->irn) != get_irn_col(co, neigh->irn)) {
+					stat->costs += neigh->costs;
+					stat->unsatisfied_edges += 1;
+				}
+
+				if(nodes_interfere(co->cenv, an->irn, neigh->irn)) {
+					stat->aff_int += 1;
+					stat->inevit_costs += neigh->costs;
+				}
+
+			}
+		}
+	}
+
+	bitset_free(seen);
+}
+
 /******************************************************************************
    _____                 _        _____ _
   / ____|               | |      / ____| |
@@ -815,7 +853,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 					if(!arch_irn_is(co->aenv, n->irn, ignore)) {
 						int n_idx = PTR_TO_INT(get_irn_link(n->irn));
 						if(idx < n_idx)
-							fprintf(f, "%d %d %d\n", idx, n_idx, n->costs);
+							fprintf(f, "%d %d %d\n", idx, n_idx, (int) n->costs);
 					}
 				}
 			}
@@ -1261,7 +1299,7 @@ static void ifg_dump_at_end(FILE *file, void *self)
 				if(env->flags & CO_IFG_DUMP_COLORS)
 					fprintf(file, "color=%s ", color);
 				else
-					fprintf(file, "style=dashed");
+					fprintf(file, "style=dotted");
 				fprintf(file, "];\n");
 			}
 		}
@@ -1330,9 +1368,9 @@ static co_algo_t *algos[] = {
 
 void co_driver(be_chordal_env_t *cenv)
 {
+	co_complete_stats_t before, after;
 	copy_opt_t *co;
 	co_algo_t  *algo_func;
-	int init_costs;
 
 	if(algo < 0 || algo >= CO_ALGO_LAST)
 		return;
@@ -1340,7 +1378,17 @@ void co_driver(be_chordal_env_t *cenv)
 	co = new_copy_opt(cenv, cost_func);
 	co_build_ou_structure(co);
 	co_build_graph_structure(co);
-	init_costs = co_get_copy_costs(co);
+
+	co_complete_stats(co, &before);
+
+	be_stat_ev("co_aff_nodes",    before.aff_nodes);
+	be_stat_ev("co_aff_edges",    before.aff_edges);
+	be_stat_ev("co_max_costs",    before.max_costs);
+	be_stat_ev("co_inevit_costs", before.inevit_costs);
+	be_stat_ev("co_aff_int",      before.aff_int);
+
+	be_stat_ev("co_init_costs",   before.costs);
+	be_stat_ev("co_init_unsat",   before.unsatisfied_edges);
 
 	/* Dump the interference graph in Appel's format. */
 	if(dump_flags & DUMP_APPEL) {
@@ -1364,20 +1412,22 @@ void co_driver(be_chordal_env_t *cenv)
 		fclose(f);
 	}
 
-	if(do_stats) {
-		int optimizable_costs = co_get_max_copy_costs(co) - co_get_lower_bound(co);
-		int remaining         = co_get_copy_costs(co);
-		int evitable          = remaining - co_get_lower_bound(co);
+	co_complete_stats(co, &after);
 
-		ir_printf("%30F %10s %10d%10d%10d%10d", cenv->irg, cenv->cls->name,
-				co_get_max_copy_costs(co), init_costs,
-				co_get_inevit_copy_costs(co), co_get_lower_bound(co));
+	if(do_stats) {
+		int optimizable_costs = after.max_costs - after.inevit_costs;
+		int evitable          = after.costs     - after.inevit_costs;
+
+		ir_printf("%30F %10s %10d%10d%10d", cenv->irg, cenv->cls->name, after.max_costs, before.costs, after.inevit_costs);
 
 		if(optimizable_costs > 0)
-			printf("%10d %5.2f\n", remaining, (evitable * 100.0) / optimizable_costs);
+			printf("%10d %5.2f\n", after.costs, (evitable * 100.0) / optimizable_costs);
 		else
-			printf("%10d %5s\n", remaining, "-");
+			printf("%10d %5s\n", after.costs, "-");
 	}
+
+	be_stat_ev("co_after_costs", after.costs);
+	be_stat_ev("co_after_unsat", after.unsatisfied_edges);
 
 	co_free_graph_structure(co);
 	co_free_ou_structure(co);

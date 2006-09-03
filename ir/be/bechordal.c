@@ -49,6 +49,7 @@
 #include "beirgmod.h"
 #include "beifg.h"
 #include "beinsn_t.h"
+#include "bestatevent.h"
 
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
@@ -424,6 +425,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 	if(perm) {
 		const ir_edge_t *edge;
 
+		be_stat_ev("constr_perm", 1);
 		foreach_out_edge(perm, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			arch_set_irn_register(aenv, proj, NULL);

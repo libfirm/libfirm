@@ -37,6 +37,7 @@
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "irtools.h"
+#include "irbitset.h"
 #include "beifg_t.h"
 #include "beifg_impl.h"
 #include "irphase.h"
@@ -647,5 +648,25 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 		cb->at_end(file, self);
 
 	fprintf(file, "}\n");
+	bitset_free(nodes);
+}
+
+be_ifg_stat_t *be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat)
+{
+	void *nodes_it  = be_ifg_nodes_iter_alloca(ifg);
+	void *neigh_it  = be_ifg_neighbours_iter_alloca(ifg);
+	bitset_t *nodes = bitset_irg_malloc(irg);
+
+	ir_node *n, *m;
+
+	memset(stat, 0, sizeof(stat[0]));
+	be_ifg_foreach_node(ifg, nodes_it, n) {
+		stat->n_nodes += 1;
+		be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
+			bitset_add_irn(nodes, n);
+			stat->n_edges += !bitset_contains_irn(nodes, m);
+		}
+	}
+
 	bitset_free(nodes);
 }

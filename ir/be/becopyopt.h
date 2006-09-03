@@ -105,7 +105,26 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
  */
 int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
 
+/**
+ * Statistics over a copy optimization module.
+ */
+typedef struct {
+	int aff_edges;            /**< number of affinity edges. */
+	int aff_nodes;            /**< number of nodes with incident affinity edges. */
+	int aff_int;              /**< number of affinity edges whose nodes also interfere. */
+	int inevit_costs;         /**< costs which cannot be evited (due to interfering affinities). */
+	int max_costs;            /**< all costs of the affinities. */
+	int costs;                /**< The costs of the current coloring. */
+	int unsatisfied_edges;    /**< The number of unequally colored affinity edges. */
+} co_complete_stats_t;
 
+/**
+ * Collect statistics of a copy optimization module.
+ * @param co    The copy optimization environment.
+ * @param stat  Where to put the stats.
+ * @note  This requires the graph info to be computed.
+ */
+void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat);
 
 
 /**

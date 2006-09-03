@@ -13,6 +13,8 @@
 #include "config.h"
 #endif
 
+#include <time.h>
+
 #include "obst.h"
 #include "pset.h"
 #include "list.h"
@@ -54,6 +56,7 @@
 #include "beifg_t.h"
 #include "beifg_impl.h"
 #include "benode_t.h"
+#include "bestatevent.h"
 
 #include "bespillbelady.h"
 #include "bespillmorgan.h"
@@ -129,6 +132,12 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
 };
+
+/* coalesce spill slots */
+static int coalesce_spill_slots = 1;
+
+/** The name of the file where the statistics are put to. */
+static char stat_file_name[2048];
 
 /** Enable extreme live range splitting. */
 static int be_elr_split = 0;
@@ -223,6 +232,8 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
+	LC_OPT_ENT_STR      ("statfile",      "the name of the statisctics file", stat_file_name, sizeof(stat_file_name)),
+	LC_OPT_ENT_BOOL     ("spill.coal",    "coalesce the spill slots (default: yes)", &coalesce_spill_slots),
 	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method (belady, morgan or remat)", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options (copy or swap)", &lower_perm_var),
@@ -370,6 +381,91 @@ static INLINE void check_for_memory_operands(be_chordal_env_t *chordal_env) {
 	irg_walk_graph(chordal_env->irg, NULL, memory_operand_walker, chordal_env);
 }
 
+/**
+ * Sorry for doing stats again...
+ */
+typedef struct _node_stat_t {
+	unsigned int n_phis;      /**< Phis of the current register class. */
+	unsigned int n_mem_phis;  /**< Memory Phis (Phis with spill operands). */
+	unsigned int n_spills;    /**< Spill nodes */
+	unsigned int n_reloads;   /**< Reloads. */
+} node_stat_t;
+
+struct node_stat_walker {
+	node_stat_t *stat;
+	const be_chordal_env_t *cenv;
+	bitset_t *mem_phis;
+};
+
+static void node_stat_walker(ir_node *irn, void *data)
+{
+	struct node_stat_walker *env = data;
+	const arch_env_t *aenv       = env->cenv->birg->main_env->arch_env;
+
+	if(arch_irn_consider_in_reg_alloc(aenv, env->cenv->cls, irn)) {
+
+		/* if the node is a normal phi */
+		if(is_Phi(irn))
+			env->stat->n_phis++;
+
+		else if(arch_irn_classify(aenv, irn) & arch_irn_class_spill)
+			++env->stat->n_spills;
+
+		else if(arch_irn_classify(aenv, irn) & arch_irn_class_reload)
+			++env->stat->n_reloads;
+
+	}
+
+	/* a mem phi is a PhiM with a mem phi operand or a Spill operand */
+	else if(is_Phi(irn) && get_irn_mode(irn) == mode_M) {
+		int i;
+
+		for(i = get_irn_arity(irn) - 1; i >= 0; --i) {
+			ir_node *op = get_irn_n(irn, i);
+
+			if((is_Phi(op) && bitset_contains_irn(env->mem_phis, op)) || (arch_irn_classify(aenv, op) & arch_irn_class_spill)) {
+				bitset_add_irn(env->mem_phis, irn);
+				env->stat->n_mem_phis++;
+				break;
+			}
+		}
+	}
+}
+
+static void node_stats(const be_chordal_env_t *cenv, node_stat_t *stat)
+{
+	struct node_stat_walker env;
+
+	memset(stat, 0, sizeof(stat[0]));
+	env.cenv     = cenv;
+	env.mem_phis = bitset_irg_malloc(cenv->irg);
+	env.stat     = stat;
+	irg_walk_graph(cenv->irg, NULL, node_stat_walker, &env);
+	bitset_free(env.mem_phis);
+}
+
+static void insn_count_walker(ir_node *irn, void *data)
+{
+	int *cnt = data;
+
+	switch(get_irn_opcode(irn)) {
+	case iro_Proj:
+	case iro_Phi:
+	case iro_Start:
+	case iro_End:
+		break;
+	default:
+		(*cnt)++;
+	}
+}
+
+static unsigned int count_insns(ir_graph *irg)
+{
+	int cnt = 0;
+	irg_walk_graph(irg, insn_count_walker, NULL, &cnt);
+	return cnt;
+}
+
 #ifdef WITH_LIBCORE
 /**
  * Initialize all timers.
@@ -377,17 +473,17 @@ static INLINE void check_for_memory_operands(be_chordal_env_t *chordal_env) {
 static void be_init_timer(be_options_t *main_opts)
 {
 	if (main_opts->timing == BE_TIME_ON) {
-		ra_timer.t_prolog  = lc_timer_register("ra_prolog",   "regalloc prolog");
-		ra_timer.t_epilog  = lc_timer_register("ra_epilog",   "regalloc epilog");
-		ra_timer.t_live    = lc_timer_register("ra_liveness", "be liveness");
-		ra_timer.t_spill   = lc_timer_register("ra_spill",    "spiller");
-		ra_timer.t_spillslots = lc_timer_register("ra_spillslots",    "spillslots");
-		ra_timer.t_color   = lc_timer_register("ra_color",    "graph coloring");
-		ra_timer.t_ifg     = lc_timer_register("ra_ifg",      "interference graph");
-		ra_timer.t_copymin = lc_timer_register("ra_copymin",  "copy minimization");
-		ra_timer.t_ssa     = lc_timer_register("ra_ssadestr", "ssa destruction");
-		ra_timer.t_verify  = lc_timer_register("ra_verify",   "graph verification");
-		ra_timer.t_other   = lc_timer_register("ra_other",    "other time");
+		ra_timer.t_prolog     = lc_timer_register("ra_prolog",     "regalloc prolog");
+		ra_timer.t_epilog     = lc_timer_register("ra_epilog",     "regalloc epilog");
+		ra_timer.t_live       = lc_timer_register("ra_liveness",   "be liveness");
+		ra_timer.t_spill      = lc_timer_register("ra_spill",      "spiller");
+		ra_timer.t_spillslots = lc_timer_register("ra_spillslots", "spillslots");
+		ra_timer.t_color      = lc_timer_register("ra_color",      "graph coloring");
+		ra_timer.t_ifg        = lc_timer_register("ra_ifg",        "interference graph");
+		ra_timer.t_copymin    = lc_timer_register("ra_copymin",    "copy minimization");
+		ra_timer.t_ssa        = lc_timer_register("ra_ssadestr",   "ssa destruction");
+		ra_timer.t_verify     = lc_timer_register("ra_verify",     "graph verification");
+		ra_timer.t_other      = lc_timer_register("ra_other",      "other time");
 
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_prolog);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_epilog);
@@ -433,6 +529,14 @@ static void be_init_timer(be_options_t *main_opts)
 
 #endif /* WITH_LIBCORE */
 
+enum {
+	STAT_TAG_FILE = 0,
+	STAT_TAG_TIME = 1,
+	STAT_TAG_IRG  = 2,
+	STAT_TAG_CLS  = 3,
+	STAT_TAG_LAST
+};
+
 /**
  * Performs chordal register allocation for each register class on given irg.
  *
@@ -445,10 +549,30 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
 	ir_graph            *irg       = bi->irg;
 	be_options_t        *main_opts = main_env->options;
-	int                  splitted  = 0;
+	int                   splitted = 0;
+	FILE                *stat_file = NULL;
 
-	int j, m;
+	char time_str[32];
+	char irg_name[128];
+	int j, m, line;
+	char *filename;
 	be_chordal_env_t chordal_env;
+	const char *stat_tags[STAT_TAG_LAST];
+
+	/* if we want to do some statistics, push the environment. */
+	if(strlen(stat_file_name) > 0 && (stat_file = fopen(stat_file_name, "at")) != NULL) {
+
+		/* initialize the statistics tags */
+		ir_snprintf(time_str, sizeof(time_str),"%u", time(NULL));
+		ir_snprintf(irg_name, sizeof(irg_name), "%F", irg);
+
+		stat_tags[STAT_TAG_FILE] = be_retrieve_dbg_info(get_entity_dbg_info(get_irg_entity(irg)), &line);
+		stat_tags[STAT_TAG_TIME] = time_str;
+		stat_tags[STAT_TAG_IRG]  = irg_name;
+		stat_tags[STAT_TAG_CLS]  = "<all>";
+
+		be_stat_ev_push(stat_tags, STAT_TAG_LAST, stat_file);
+	}
 
 	BE_TIMER_INIT(main_opts);
 	BE_TIMER_PUSH(ra_timer.t_other);
@@ -468,11 +592,24 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	BE_TIMER_POP(ra_timer.t_prolog);
 
+	be_stat_ev("insns_before", count_insns(irg));
+
 	/* Perform the following for each register class. */
 	for (j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
+		node_stat_t node_stat;
+
 		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
+
+		stat_tags[STAT_TAG_CLS] = chordal_env.cls->name;
+		be_stat_ev_push(stat_tags, STAT_TAG_LAST, stat_file);
+
+		if(stat_file) {
+			/* perform some node statistics. */
+			node_stats(&chordal_env, &node_stat);
+			be_stat_ev("phis_before_spill", node_stat.n_phis);
+		}
 
 		/* put all ignore registers into the ignore register set. */
 		put_ignore_colors(&chordal_env);
@@ -507,11 +644,15 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		BE_TIMER_POP(ra_timer.t_spill);
 
-		DBG((chordal_env.dbg, LEVEL_1, "spill costs for %+F in regclass %s: %g\n",
-		      irg,
-		      chordal_env.cls->name,
-		      get_irg_spill_cost(&chordal_env))
-		    );
+		if(stat_file) {
+			node_stats(&chordal_env, &node_stat);
+			be_stat_ev("phis_after_spill", node_stat.n_phis);
+			be_stat_ev("mem_phis", node_stat.n_mem_phis);
+			be_stat_ev("reloads", node_stat.n_reloads);
+			be_stat_ev("spills", node_stat.n_spills);
+		}
+
+		DBG((chordal_env.dbg, LEVEL_1, "spill costs for %+F in regclass %s: %g\n",irg, chordal_env.cls->name, get_irg_spill_cost(&chordal_env)));
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 
@@ -572,6 +713,13 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		}
 		BE_TIMER_POP(ra_timer.t_ifg);
 
+		if(stat_file) {
+			be_ifg_stat_t stat;
+			be_ifg_stat(chordal_env.ifg, irg, &stat);
+			be_stat_ev("ifg_nodes", stat.n_nodes);
+			be_stat_ev("ifg_edges", stat.n_edges);
+		}
+
 		BE_TIMER_PUSH(ra_timer.t_verify);
 		if (options.vrfy_option != BE_CH_VRFY_OFF)
 			be_ra_chordal_check(&chordal_env);
@@ -609,10 +757,13 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		be_ifg_free(chordal_env.ifg);
 		pmap_destroy(chordal_env.border_heads);
 		bitset_free(chordal_env.ignore_colors);
+
+		be_stat_ev_pop();
 	}
 
 	BE_TIMER_PUSH(ra_timer.t_spillslots);
 
+	if(coalesce_spill_slots)
 	be_coalesce_spillslots(&chordal_env);
 	dump(BE_CH_DUMP_SPILLSLOTS, irg, NULL, "-spillslots", dump_ir_block_graph_sched);
 
@@ -643,6 +794,12 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	BE_TIMER_POP(ra_timer.t_epilog);
 	BE_TIMER_POP(ra_timer.t_other);
+
+	be_stat_ev("insns_after", count_insns(irg));
+	be_stat_ev_pop();
+
+	if(stat_file)
+		fclose(stat_file);
 
 #ifdef WITH_LIBCORE
 	return main_opts->timing == BE_TIME_ON ? &ra_timer : NULL;

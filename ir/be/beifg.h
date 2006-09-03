@@ -54,6 +54,13 @@ int      (be_ifg_degree)(const void *self, const ir_node *irn);
         *(count) != -1 ; \
         *(count) = be_ifg_cliques_next(self, iter))
 
+typedef struct {
+	int n_nodes;
+	int n_edges;
+} be_ifg_stat_t;
+
+be_ifg_stat_t *be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat);
+
 /*
 	 ____                        _
 	|  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
