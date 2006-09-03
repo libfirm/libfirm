@@ -560,7 +560,7 @@ static void be_main_loop(FILE *file_handle)
 		/* Do register allocation */
 		BE_TIMER_PUSH(t_regalloc);
 		ra_timer = ra->allocate(&birg);
-		BE_TIMER_PUSH(t_regalloc);
+		BE_TIMER_POP(t_regalloc);
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "06 Register Allocation");
@@ -588,11 +588,13 @@ static void be_main_loop(FILE *file_handle)
 		if (vrfy_option == BE_VRFY_WARN) {
 			//irg_verify(birg.irg, VRFY_ENFORCE_SSA);
 			be_check_dominance(birg.irg);
+			be_verify_out_edges(birg.irg);
 			be_verify_schedule(birg.irg);
 			be_verify_register_allocation(env.arch_env, birg.irg);
 		}
 		else if (vrfy_option == BE_VRFY_ASSERT) {
 			//assert(irg_verify(birg.irg, VRFY_ENFORCE_SSA) && "irg verification failed");
+			assert(be_verify_out_edges(birg.irg));
 			assert(be_check_dominance(birg.irg) && "Dominance verification failed");
 			assert(be_verify_schedule(birg.irg) && "Schedule verification failed");
 			assert(be_verify_register_allocation(env.arch_env, birg.irg)
