@@ -41,6 +41,7 @@
 #include "../besched_t.h"
 #include "../be.h"
 #include "../be_t.h"
+#include "../beirgmod.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -907,8 +908,12 @@ static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
 			remove_unused_nodes(pred, already_visited);
 	}
 
-	if (sched_is_scheduled(irn))
+	if (sched_is_scheduled(irn)) {
+		set_irn_n(irn, 0, new_Bad());
+		set_irn_n(irn, 1, new_Bad());
+		set_irn_n(irn, 2, new_Bad());
 		sched_remove(irn);
+	}
 }
 
 static void remove_unused_loads_walker(ir_node *irn, void *env) {
@@ -925,8 +930,6 @@ static void remove_unused_loads_walker(ir_node *irn, void *env) {
 static void ia32_before_ra(void *self) {
 	ia32_code_gen_t *cg              = self;
 	bitset_t        *already_visited = bitset_irg_malloc(cg->irg);
-
-	cg->blk_sched = sched_create_block_schedule(cg->irg);
 
 	/*
 		Handle special case:
@@ -1163,6 +1166,11 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 		set_Proj_proj(proj, 3);
 	}
 
+	// remove memperm
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		set_irn_n(node, i, new_Bad());
+	}
 	sched_remove(node);
 }
 
@@ -1232,7 +1240,7 @@ static void ia32_after_ra(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph *irg = cg->irg;
 
-	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, self);
+	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, cg);
 
 	ia32_finish_irg(irg, cg);
 }
@@ -1243,6 +1251,12 @@ static void ia32_after_ra(void *self) {
 static void ia32_finish(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
+
+	// Matze: disabled for now, as the irextbb algo sometimes returns extbb in
+	// the wrong order if the graph has critical edges
+	//be_remove_empty_blocks(irg, cg);
+
+	cg->blk_sched = sched_create_block_schedule(cg->irg);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
 	if (cg->used_fp == fp_x87 || cg->force_sim) {

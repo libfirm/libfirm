@@ -447,78 +447,6 @@ static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
 	}
 }
 
-#if 0
-/**
- * Creates a Push from Store(IncSP(gp_reg_size))
- */
-static void ia32_create_Push(ir_node *irn, ia32_code_gen_t *cg) {
-	ir_node  *sp  = get_irn_n(irn, 0);
-	ir_graph *irg = cg->irg;
-	ir_node *val, *next, *push, *bl, *proj_M, *proj_res, *old_proj_M, *mem;
-	const ir_edge_t *edge;
-	heights_t *h;
-
-	/* do not create push if store has already an offset assigned or base is not a IncSP */
-	if (get_ia32_am_offs(irn) || ! be_is_IncSP(sp))
-		return;
-
-	/* do not create push if index is not NOREG */
-	if (arch_get_irn_register(cg->arch_env, get_irn_n(irn, 1)) !=
-		&ia32_gp_regs[REG_GP_NOREG])
-		return;
-
-	/* do not create push for floating point */
-	val = get_irn_n(irn, 2);
-	if (mode_is_float(get_irn_mode(val)))
-		return;
-
-	/* do not create push if IncSp doesn't expand stack or expand size is different from register size */
-	if (be_get_IncSP_offset(sp) != get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode))
-		return;
-
-	/* do not create push, if there is a path (inside the block) from the push value to IncSP */
-	h = heights_new(cg->irg);
-	if (get_nodes_block(val) == get_nodes_block(sp) &&
-		heights_reachable_in_block(h, val, sp))
-	{
-		heights_free(h);
-		return;
-	}
-	heights_free(h);
-
-	/* ok, translate into Push */
-	edge       = get_irn_out_edge_first(irn);
-	old_proj_M = get_edge_src_irn(edge);
-	bl         = get_nodes_block(irn);
-
-	next = sched_next(irn);
-	sched_remove(irn);
-	sched_remove(sp);
-
-	/*
-		build memory input:
-		if the IncSP points to NoMem -> just use the memory input from store
-		if IncSP points to somewhere else -> sync memory of IncSP and Store
-	*/
-	mem  = get_irn_n(irn, 3);
-	push = new_rd_ia32_Push(NULL, irg, bl, be_get_IncSP_pred(sp), val, mem);
-	proj_res = new_r_Proj(irg, bl, push, get_irn_mode(sp), pn_ia32_Push_stack);
-	proj_M   = new_r_Proj(irg, bl, push, mode_M, pn_ia32_Push_M);
-
-	/* copy a possible constant from the store */
-	set_ia32_id_cnst(push, get_ia32_id_cnst(irn));
-	set_ia32_immop_type(push, get_ia32_immop_type(irn));
-
-	/* the push must have SP out register */
-	arch_set_irn_register(cg->arch_env, push, arch_get_irn_register(cg->arch_env, sp));
-
-	exchange(old_proj_M, proj_M);
-	exchange(sp, proj_res);
-	sched_add_before(next, push);
-	sched_add_after(push, proj_res);
-}
-#endif
-
 // only optimize up to 48 stores behind IncSPs
 #define MAXPUSH_OPTIMIZE	48
 
@@ -642,7 +570,11 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 			set_irn_n(succ, 0, push);
 		}
 
-		// we can remove the store from schedule now
+		// we can remove the store now
+		set_irn_n(store, 0, new_Bad());
+		set_irn_n(store, 1, new_Bad());
+		set_irn_n(store, 2, new_Bad());
+		set_irn_n(store, 3, new_Bad());
 		sched_remove(store);
 
 		offset -= 4;
@@ -654,9 +586,6 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	if(offset == 0) {
 		const ir_edge_t *edge, *next;
 
-		sched_remove(irn);
-		set_irn_n(irn, 0, new_Bad());
-
 		foreach_out_edge_safe(irn, edge, next) {
 			ir_node *arg = get_edge_src_irn(edge);
 			int pos = get_edge_src_pos(edge);
@@ -664,8 +593,8 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 			set_irn_n(arg, pos, curr_sp);
 		}
 
-		sched_remove(irn);
 		set_irn_n(irn, 0, new_Bad());
+		sched_remove(irn);
 	} else {
 		set_irn_n(irn, 0, curr_sp);
 	}
@@ -687,6 +616,8 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 
 		/* Omit the optimized IncSP */
 		be_set_IncSP_pred(irn, be_get_IncSP_pred(prev));
+
+		set_irn_n(prev, 0, new_Bad());
 		sched_remove(prev);
 	}
 }
@@ -715,7 +646,6 @@ static void ia32_peephole_optimize_node(ir_node *irn, void *env) {
 void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg) {
 	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, cg);
 }
-
 
 /******************************************************************
  *              _     _                   __  __           _
@@ -1064,14 +994,23 @@ static INLINE void try_add_to_sched(ir_node *irn, ir_node *res) {
  * @param irn  The irn to be removed from schedule
  */
 static INLINE void try_remove_from_sched(ir_node *irn) {
+	int i, arity;
+
 	if (sched_is_scheduled(irn)) {
 		if (get_irn_mode(irn) == mode_T) {
 			const ir_edge_t *edge;
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
-				if (sched_is_scheduled(proj))
+				if (sched_is_scheduled(proj)) {
+					set_irn_n(proj, 0, new_Bad());
 					sched_remove(proj);
+				}
 			}
+		}
+
+		arity = get_irn_arity(irn);
+		for(i = 0; i < arity; ++i) {
+			set_irn_n(irn, i, new_Bad());
 		}
 		sched_remove(irn);
 	}

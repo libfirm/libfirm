@@ -829,57 +829,59 @@ static ir_node *get_proj(const ir_node *irn, long proj) {
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
 static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
-	const ir_node   *proj1, *proj2 = NULL;
-	const ir_node   *block, *next_bl = NULL;
+	const ir_node *proj_true;
+	const ir_node *proj_false;
+	const ir_node *block;
+	const ir_node *next_block;
 	char buf[SNPRINTF_BUF_LEN];
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 	int is_unsigned;
+	int pnc;
+	int flipped = 0;
 
 	/* get both Proj's */
-	proj1 = get_proj(irn, pn_Cond_true);
-	assert(proj1 && "CondJmp without true Proj");
+	proj_true = get_proj(irn, pn_Cond_true);
+	assert(proj_true && "CondJmp without true Proj");
 
-	proj2 = get_proj(irn, pn_Cond_false);
-	assert(proj2 && "CondJmp without false Proj");
+	proj_false = get_proj(irn, pn_Cond_false);
+	assert(proj_false && "CondJmp without false Proj");
+
+	pnc = get_ia32_pncode(irn);
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	block = get_nodes_block(irn);
 
 	/* we have a block schedule */
-	next_bl = next_blk_sched(block);
+	next_block = next_blk_sched(block);
 
-	if (get_cfop_target_block(proj1) == next_bl) {
+	if (get_cfop_target_block(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
-		const ir_node *t = proj1;
-		proj1 = proj2;
-		proj2 = t;
+		const ir_node *t = proj_true;
+		proj_true = proj_false;
+		proj_false = t;
+
+		flipped = 1;
+		pnc = get_negated_pnc(pnc, mode);
 	}
 
 	/* the first Proj must always be created */
 	is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
-	if (get_Proj_proj(proj1) == pn_Cond_true) {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
-					get_cmp_suffix(get_ia32_pncode(irn), is_unsigned),
-					get_cfop_target(proj1, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == TRUE */");
-	}
-	else  {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
-					get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), mode), is_unsigned),
-					get_cfop_target(proj1, buf));
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* cmp(a, b) == FALSE */");
-	}
+	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
+	         get_cmp_suffix(pnc, is_unsigned),
+	         get_cfop_target(proj_true, buf));
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* %s(a, b) %s*/",
+	         get_pnc_string(pnc), flipped ? "(was flipped)" : "");
 	IA32_DO_EMIT(irn);
 
 	/* the second Proj might be a fallthrough */
-	if (get_cfop_target_block(proj2) != next_bl) {
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(proj2, buf));
+	if (get_cfop_target_block(proj_false) != next_block) {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jmp %s", get_cfop_target(proj_false, buf));
 		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* otherwise */");
 	}
 	else {
 		cmd_buf[0] = '\0';
-		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrough %s */", get_cfop_target(proj2, buf));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* fallthrough %s */", get_cfop_target(proj_false, buf));
 	}
 	IA32_DO_EMIT(irn);
 }
