@@ -555,7 +555,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	char time_str[32];
 	char irg_name[128];
 	int j, m, line;
-	char *filename;
 	be_chordal_env_t chordal_env;
 	const char *stat_tags[STAT_TAG_LAST];
 
@@ -603,9 +602,10 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
 
 		stat_tags[STAT_TAG_CLS] = chordal_env.cls->name;
-		be_stat_ev_push(stat_tags, STAT_TAG_LAST, stat_file);
 
 		if(stat_file) {
+			be_stat_ev_push(stat_tags, STAT_TAG_LAST, stat_file);
+
 			/* perform some node statistics. */
 			node_stats(&chordal_env, &node_stat);
 			be_stat_ev("phis_before_spill", node_stat.n_phis);
