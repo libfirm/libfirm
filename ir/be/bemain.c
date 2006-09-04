@@ -31,6 +31,7 @@
 #include "irvrfy.h"
 #include "return.h"
 #include "firmstat.h"
+#include "cfopt.h"
 
 #include "bearch.h"
 #include "firm/bearch_firm.h"
@@ -323,6 +324,8 @@ static void prepare_graph(be_irg_t *birg)
 
 	/* Make just one return node. */
 	normalize_one_return(irg);
+
+	optimize_cf(irg);
 
 	/* Remove critical edges */
 	remove_critical_cf_edges(irg);
