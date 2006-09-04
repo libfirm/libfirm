@@ -651,7 +651,7 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 	bitset_free(nodes);
 }
 
-be_ifg_stat_t *be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat)
+void be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat)
 {
 	void *nodes_it  = be_ifg_nodes_iter_alloca(ifg);
 	void *neigh_it  = be_ifg_neighbours_iter_alloca(ifg);
