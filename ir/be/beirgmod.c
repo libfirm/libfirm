@@ -378,12 +378,17 @@ static void remove_odd_phis(pset *copies, pset *unused_copies)
 			for(i = 0, n = get_irn_arity(irn); i < n && !illegal; ++i)
 				illegal = get_irn_n(irn, i) == NULL;
 
-			if(illegal)
+			if(illegal) {
+				for(i = 0, n = get_irn_arity(irn); i < n; ++i)
+					set_irn_n(irn, i, new_Bad());
 				sched_remove(irn);
+			}
 		}
 	}
 
 	for(irn = pset_first(unused_copies); irn; irn = pset_next(unused_copies)) {
+		for(i = 0, n = get_irn_arity(irn); i < n; ++i)
+			set_irn_n(irn, i, new_Bad());
 		sched_remove(irn);
 	}
 }
@@ -580,7 +585,6 @@ static void elr_split_walker(ir_node *bl, void *data)
 
 	for(insn = be_scan_insn(&ie, sched_first(bl)); !is_Block(insn->irn); insn = be_scan_insn(&ie, insn->next_insn)) {
 		ir_node *pred = sched_prev(insn->irn);
-		ir_printf("curr: %+F next: %+F, prev: %+F\n", insn->irn, insn->next_insn, pred);
 		if(!is_Block(pred) && !is_Phi(insn->irn))
 			insert_Perm_after(aenv, cenv->lv, cenv->cls, cenv->dom_front, insn->irn);
 	}
