@@ -61,6 +61,7 @@
 #include "beschedmris.h"
 #include "bestat.h"
 #include "beverify.h"
+#include "beprofile.h"
 
 /* options visible for anyone */
 static be_options_t be_options = {
@@ -80,6 +81,9 @@ static unsigned dump_flags = 0;
 
 /* verify options */
 static int vrfy_option = BE_VRFY_WARN;
+
+/* instrument the code for execution count profiling */
+static int opt_profile = 0;
 
 /* register allocator to use. */
 static const be_ra_t *ra = &be_ra_chordal_allocator;
@@ -169,6 +173,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",                                           &be_omit_fp),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",                          &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",                                       &be_options.timing),
+	LC_OPT_ENT_BOOL     ("profile",      "instrument the code for execution count profiling",                   &opt_profile),
 	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",                                    &be_options.mris),
 	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (trivial, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
 
@@ -416,6 +421,9 @@ static void be_main_loop(FILE *file_handle)
 
 	/* for debugging, anchors helps */
 	// dump_all_anchors(1);
+
+	if(opt_profile)
+		be_profile_instrument();
 
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {

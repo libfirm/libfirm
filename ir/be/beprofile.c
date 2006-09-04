@@ -28,10 +28,11 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irloop_t.h"
-#include "phiclass_t.h"
 #include "iredges.h"
 #include "execfreq.h"
 #include "irvrfy.h"
+#include "type.h"
+#include "entity.h"
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -41,9 +42,6 @@
 #include "beabi.h"
 #include "benode_t.h"
 #include "beutil.h"
-#include "bespillremat.h"
-#include "bespill.h"
-#include "bepressurestat.h"
 
 #include "bechordal_t.h"
 
@@ -91,37 +89,52 @@ instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 	keep_alive(new_r_Proj(get_irn_irg(bb), bb, load, mode_M, 0));
 }
 
-#if 0
 /**
  * Generates a new irg which calls the initializer
  */
 static ir_graph *
-gen_initializer_irg(entity * bblock_id, entitiy * bblock_counts, entity * bblock_count)
+gen_initializer_irg(entity * bblock_id, entity * bblock_counts, entity * bblock_count)
 {
-	ir_graph  *irg;
-	ir_node   *ins[3] = {bblock_id, bblock_counts, bblock_count};
+	ir_node   *ins[3];
 	ident     *name = new_id_from_str("__firmprof_initializer");
 	entity    *ent = new_entity(get_glob_type(), name, new_type_method(name, 0, 0));
-	ir_node   *ret, *call;
+	ir_node   *ret, *call, *symconst;
+	symconst_symbol sym;
 
 	ident     *init_name = new_id_from_str("__init_firmprof");
-	type      *init_type = new_type_method(init_name, 3, 0);
-	/* TODO */
-	set_method_param_type(init_type, 0, arrayptr);
-	set_method_param_type(init_type, 1, arrayptr);
-	set_method_param_type(init_type, 2, uint);
-	entify    *init_ent = new_entity(get_glob_type(), init_name, init_type);
+	ir_type   *init_type = new_type_method(init_name, 3, 0);
+	ir_type   *uint, *uintptr;
 
-	irg = new_ir_graph(ent, 0);
-	bb = get_cur_block();
+	uint = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
+	uintptr = new_type_pointer(new_id_from_str("__uintptr"), uint, mode_P);
+
+	set_method_param_type(init_type, 0, uintptr);
+	set_method_param_type(init_type, 1, uintptr);
+	set_method_param_type(init_type, 2, uint);
+	entity    *init_ent = new_entity(get_glob_type(), init_name, init_type);
+
+	ir_graph *irg = new_ir_graph(ent, 0);
+	set_current_ir_graph(irg);
+
+	ir_node *bb = get_cur_block();
+
+	sym.entity_p = init_ent;
+	symconst = new_SymConst(sym, symconst_addr_ent);
+
+	sym.entity_p = bblock_id;
+	ins[0] = new_SymConst(sym, symconst_addr_ent);
+	sym.entity_p = bblock_counts;
+	ins[1] = new_SymConst(sym, symconst_addr_ent);
+	sym.entity_p = bblock_count;
+	ins[2] = new_SymConst(sym, symconst_addr_ent);
 
 	call = new_r_Call( irg,
 			bb,							//ir_node *  	block,
-			get_irn_initial_mem(irg),	//ir_node *  	store,
-			ir_node *  	callee,
+			get_irg_initial_mem(irg),	//ir_node *  	store,
+			symconst,					//ir_node *  	callee,
 			3,							//int  	arity,
 			ins,						//ir_node **  	in,
-			ir_type *  	tp
+			init_type					//ir_type *  	tp
 			);
 
 	ret = new_r_Return ( irg,
@@ -138,7 +151,6 @@ gen_initializer_irg(entity * bblock_id, entitiy * bblock_counts, entity * bblock
 
 	return irg;
 }
-#endif
 
 static void
 block_id_walker(ir_node * bb, void * data)
@@ -180,7 +192,7 @@ be_profile_instrument(void)
 	for(i = 0; i < n_blocks; ++i) {
 		tarval_array[i] = get_tarval_null(mode_Iu);
 	}
-	//set_array_entitiy_values(bblock_counts, tarval_array, n_blocks);
+	set_array_entity_values(bblock_counts, tarval_array, n_blocks);
 
 	/* initialize the block count entity */
 	set_atomic_ent_value(bblock_count, new_Const_long(mode_Iu, n_blocks));
@@ -197,9 +209,9 @@ be_profile_instrument(void)
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
 	}
-	//set_array_entitiy_values(bblock_id, tarval_array, n_blocks);
+	set_array_entity_values(bblock_id, tarval_array, n_blocks);
 
-	//gen_initializer_irg(bblock_id, bblock_counts, bblock_count);
+	gen_initializer_irg(bblock_id, bblock_counts, bblock_count);
 }
 
 
