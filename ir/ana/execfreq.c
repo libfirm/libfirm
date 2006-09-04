@@ -14,7 +14,7 @@
 #include "config.h"
 #endif
 
-#define USE_GSL
+#undef USE_GSL
 
 #include <stdio.h>
 #include <string.h>
