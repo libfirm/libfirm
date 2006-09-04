@@ -2,6 +2,7 @@
  * @file   beprofile.c
  * @date   2006-04-06
  * @author Adam M. Szalkowski
+ * @cvs-id $Id$
  *
  * Code instrumentation and execution count profiling
  *
@@ -116,24 +117,27 @@ gen_initializer_irg(entity * bblock_id, entity * bblock_counts, int n_blocks)
 	ident     *init_name = new_id_from_str("__init_firmprof");
 	ir_type   *init_type = new_type_method(init_name, 3, 0);
 	ir_type   *uint, *uintptr;
+	entity    *init_ent;
+	ir_graph  *irg;
+	ir_node   *bb;
 
-	uint = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
+	uint    = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
 	uintptr = new_type_pointer(new_id_from_str("__uintptr"), uint, mode_P);
 
 	set_method_param_type(init_type, 0, uintptr);
 	set_method_param_type(init_type, 1, uintptr);
 	set_method_param_type(init_type, 2, uint);
-	entity    *init_ent = new_entity(get_glob_type(), init_name, init_type);
+	init_ent = new_entity(get_glob_type(), init_name, init_type);
 
-	ir_graph *irg = new_ir_graph(ent, 0);
+	irg = new_ir_graph(ent, 0);
 	set_current_ir_graph(irg);
 
-	ir_node *bb = get_cur_block();
+	bb = get_cur_block();
 
 	start_block = get_irg_start_block(irg);
 
 	sym.entity_p = init_ent;
-	symconst = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
+	symconst     = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
 
 	sym.entity_p = bblock_id;
 	ins[0] = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
@@ -177,7 +181,7 @@ block_id_walker(ir_node * bb, void * data)
 	++wd->id;
 }
 
-void
+ir_graph *
 be_profile_instrument(void)
 {
 	ir_graph *const_irg = get_const_code_irg();
@@ -232,7 +236,7 @@ be_profile_instrument(void)
 	}
 	set_array_entity_values(bblock_id, tarval_array, n_blocks);
 
-	gen_initializer_irg(bblock_id, bblock_counts, n_blocks);
+	return gen_initializer_irg(bblock_id, bblock_counts, n_blocks);
 }
 
 
