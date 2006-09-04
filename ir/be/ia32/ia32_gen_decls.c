@@ -16,7 +16,7 @@
 #include "entity.h"
 #include "irprog.h"
 
-#include "../bearch.h"
+#include "../be.h"
 
 #include "ia32_emitter.h"
 #include "ia32_gen_decls.h"
@@ -24,11 +24,11 @@
 typedef struct obstack obstack_t;
 
 typedef struct _ia32_decl_env {
-	obstack_t       *rodata_obst;
-	obstack_t       *data_obst;
-	obstack_t       *comm_obst;
-	obstack_t       *ctor_obst;
-	ia32_code_gen_t *cg;
+	obstack_t *rodata_obst;
+	obstack_t *data_obst;
+	obstack_t *comm_obst;
+	obstack_t *ctor_obst;
+	const be_main_env_t *main_env;
 } ia32_decl_env_t;
 
 /************************************************************************/
@@ -599,13 +599,13 @@ static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env)
 	int i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++)
-		dump_global(env->cg->arch_env, env->rodata_obst, env->data_obst, env->comm_obst, env->ctor_obst,
+		dump_global(env->main_env->arch_env, env->rodata_obst, env->data_obst, env->comm_obst, env->ctor_obst,
 			get_compound_member(gt, i));
 }
 
 /************************************************************************/
 
-void ia32_gen_decls(FILE *out, ia32_code_gen_t *cg) {
+void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	ia32_decl_env_t env;
 	obstack_t rodata, data, comm, ctor;
 	int    size;
@@ -616,13 +616,14 @@ void ia32_gen_decls(FILE *out, ia32_code_gen_t *cg) {
 	obstack_init(&data);
 	obstack_init(&comm);
 
-	if (cg->birg->main_env->options->opt_profile)
+	if (main_env->options->opt_profile)
 		obstack_init(&ctor);
 
 	env.rodata_obst = &rodata;
 	env.data_obst   = &data;
 	env.comm_obst   = &comm;
-	env.ctor_obst   = cg->birg->main_env->options->opt_profile ? &ctor : NULL;
+	env.ctor_obst   = main_env->options->opt_profile ? &ctor : NULL;
+	env.main_env    = main_env;
 
 	ia32_dump_globals(get_glob_type(), &env);
 
@@ -647,7 +648,7 @@ void ia32_gen_decls(FILE *out, ia32_code_gen_t *cg) {
 		fwrite(cp, 1, size, out);
 	}
 
-	if (cg->birg->main_env->options->opt_profile) {
+	if (main_env->options->opt_profile) {
 		size = obstack_object_size(&ctor);
 		cp   = obstack_finish(&ctor);
 		if (size > 0) {

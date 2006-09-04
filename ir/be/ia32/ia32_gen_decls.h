@@ -7,11 +7,11 @@
 #ifndef _IA32_GEN_DECLS_H_
 #define _IA32_GEN_DECLS_H_
 
-#include "bearch_ia32_t.h"
+#include "../be.h"
 
 /**
  * Generate all entities.
  */
-void ia32_gen_decls(FILE *out, ia32_code_gen_t *cg);
+void ia32_gen_decls(FILE *out, const be_main_env_t *main_env);
 
 #endif /* _IA32_GEN_DECLS_H_ */

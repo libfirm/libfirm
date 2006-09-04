@@ -80,6 +80,7 @@ void ia32_switch_section(FILE *F, section_t sec) {
 	case SECTION_RODATA:
 	case SECTION_COMMON:
 	case SECTION_TLS:
+	case SECTION_CTOR:
 		fprintf(F, "\t%s\n", text[asm_flavour][sec]);
 		break;
 

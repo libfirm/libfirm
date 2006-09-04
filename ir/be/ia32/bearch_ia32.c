@@ -1396,6 +1396,7 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_gp_regs[REG_ESP],  /* stack pointer register */
 		&ia32_gp_regs[REG_EBP],  /* base pointer register */
 		-1,                      /* stack direction */
+		NULL,                    /* main environment */
 	},
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
@@ -1412,6 +1413,7 @@ static ia32_isa_t ia32_isa_template = {
 	arch_pentium_4,          /* optimize for architecture */
 	fp_sse2,                 /* use sse2 unit */
 	NULL,                    /* current code generator */
+	NULL,                    /* output file */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
 	0                        /* name obst size */
@@ -1491,7 +1493,7 @@ static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	ia32_gen_decls(isa->out, isa->cg);
+	ia32_gen_decls(isa->out, isa->arch_isa.main_env);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
