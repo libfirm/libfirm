@@ -319,3 +319,10 @@ extern char *arch_register_req_format(char *buf, size_t len, const arch_register
 
 	return buf;
 }
+
+int
+arch_ent_is_constructor(const arch_env_t *arch_env, const entitiy * ent)
+{
+
+
+}
