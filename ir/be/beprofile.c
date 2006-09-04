@@ -336,6 +336,15 @@ be_profile_free(void)
 }
 
 /**
+ * Tells whether profile module has aquired data
+ */
+int
+be_profile_has_data(void)
+{
+	return (profile != NULL);
+}
+
+/**
  * Get block execution count as determined be profiling
  */
 unsigned int
