@@ -1,8 +1,9 @@
 /**
-* Statistic events
-* @date 3.9.2006
-* @author Sebastian Hack
-*/
+ * Statistic events
+ * @date 3.9.2006
+ * @author Sebastian Hack
+ * @cvs-id $Id$
+ */
 
 #include <assert.h>
 #include <string.h>

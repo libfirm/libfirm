@@ -585,10 +585,11 @@ struct _arch_code_generator_t {
  * ISA base class.
  */
 struct _arch_isa_t {
-	const arch_isa_if_t *impl;
+	const arch_isa_if_t   *impl;
 	const arch_register_t *sp;  /** The stack pointer register. */
 	const arch_register_t *bp;  /** The base pointer register. */
 	const int stack_dir;        /** -1 for decreasing, 1 for increasing. */
+	const be_main_env_t   *main_env; /** the be main environment */
 };
 
 #define arch_isa_stack_dir(isa)  ((isa)->stack_dir)
@@ -602,8 +603,9 @@ struct _arch_isa_if_t {
 
   /**
    * Initialize the isa interface.
-	 * @param file_handle  the file handle to write the output to
-	 * @return a new isa instance
+   * @param file_handle  the file handle to write the output to
+   * @param main_env     the be main environment
+   * @return a new isa instance
    */
   void *(*init)(FILE *file_handle);
 
@@ -728,7 +730,7 @@ struct _arch_env_t {
  * @param file_handle   The file handle
  * @return The environment.
  */
-extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa, FILE *file_handle);
+extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa, FILE *file_handle, be_main_env_t *main_env);
 
 /**
  * Add a node handler to the environment.

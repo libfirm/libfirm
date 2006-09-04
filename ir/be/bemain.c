@@ -267,11 +267,10 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
-	env->arch_env->constructor_entities = pset_new_ptr(5);
 	env->options  = &be_options;
 	FIRM_DBG_REGISTER(env->dbg, "be.main");
 
-	arch_env_init(env->arch_env, isa_if, file_handle);
+	arch_env_init(env->arch_env, isa_if, file_handle, env);
 
 	/* Register the irn handler of the architecture */
 	if (arch_isa_get_irn_handler(env->arch_env->isa))
@@ -429,7 +428,7 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *prof_init_irg = be_profile_instrument();
 		pset_insert_ptr(env.arch_env->constructor_entities, get_irg_entity(prof_init_irg));
 	}
-	be_profile_read("test.c"); //FIXME
+	be_profile_read("test.c.prof"); //FIXME
 
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {

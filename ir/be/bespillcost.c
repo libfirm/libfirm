@@ -74,7 +74,7 @@ execution_frequency(const be_chordal_env_t * chordal_env, const ir_node * irn)
 }
 
 
-static double
+static int
 get_cost(const be_chordal_env_t * chordal_env, const ir_node * irn)
 {
 	if(be_is_Spill(irn)) {

@@ -105,15 +105,15 @@ instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 	if(bb == start_block || bb == get_irg_end_block(irg))
 		return;
 
-	cnst = new_r_Const_long(irg, start_block, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
+	cnst   = new_r_Const_long(irg, start_block, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
 	offset = new_r_Add(irg, bb, address, cnst, mode_P);
-	load = new_r_Load(irg, bb, new_NoMem(), offset, mode_Iu);
-	projm = new_r_Proj(irg, bb, load, mode_M, pn_Load_M);
-	proji = new_r_Proj(irg, bb, load, mode_Iu, pn_Load_res);
-	cnst =  new_r_Const_long(irg, start_block, mode_Iu, 1);
-	add = new_r_Add(irg, bb, proji, cnst, mode_Iu);
-	store = new_r_Store(irg, bb, projm, offset, add);
-	projm = new_r_Proj(irg, bb, store, mode_M, pn_Store_M);
+	load   = new_r_Load(irg, bb, new_NoMem(), offset, mode_Iu);
+	projm  = new_r_Proj(irg, bb, load, mode_M, pn_Load_M);
+	proji  = new_r_Proj(irg, bb, load, mode_Iu, pn_Load_res);
+	cnst   = new_r_Const_long(irg, start_block, mode_Iu, 1);
+	add    = new_r_Add(irg, bb, proji, cnst, mode_Iu);
+	store  = new_r_Store(irg, bb, projm, offset, add);
+	projm  = new_r_Proj(irg, bb, store, mode_M, pn_Store_M);
 	keep_alive(projm);
 }
 
@@ -137,6 +137,7 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 	entity    *init_ent;
 	ir_graph  *irg;
 	ir_node   *bb;
+	ir_type   *empty_frame_type;
 
 	uint    = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
 	uintptr = new_type_pointer(new_id_from_str("__uintptr"), uint, mode_P);
@@ -150,6 +151,8 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 
 	irg = new_ir_graph(ent, 0);
 	set_current_ir_graph(irg);
+	empty_frame_type = get_irg_frame_type(irg);
+	set_type_size_bytes(empty_frame_type, 0);
 
 	bb = get_cur_block();
 
@@ -170,7 +173,7 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 			bb,							//ir_node *  	block,
 			get_irg_initial_mem(irg),	//ir_node *  	store,
 			symconst,					//ir_node *  	callee,
-			3,							//int  	arity,
+			4,							//int  	arity,
 			ins,						//ir_node **  	in,
 			init_type					//ir_type *  	tp
 			);
@@ -209,7 +212,7 @@ be_profile_instrument(void)
 	ir_node       *const_block = get_irg_start_block(const_irg);
 	int            n, i;
 	unsigned int   n_blocks = 0;
-	entity        *bblock_id, *bblock_counts, *bblock_count, *ent_filename;
+	entity        *bblock_id, *bblock_counts, *ent_filename;
 	ir_type       *array_type, *integer_type, *string_type, *character_type;
 	tarval       **tarval_array, **tarval_string;
 	char          *filename = "test.c"; //FIXME
@@ -228,8 +231,6 @@ be_profile_instrument(void)
 	set_entity_variability(bblock_id, variability_initialized);
 	bblock_counts = new_entity(get_glob_type(), new_id_from_str("__BLOCK_COUNTS"), array_type);
 	set_entity_variability(bblock_counts, variability_initialized);
-	bblock_count = new_entity(get_glob_type(), new_id_from_str("__N_BLOCKS"), integer_type);
-	set_entity_variability(bblock_count, variability_initialized);
 	ent_filename = new_entity(get_glob_type(), new_id_from_str("__FUNCTION_NAME"), string_type);
 	set_entity_variability(ent_filename, variability_initialized);
 
@@ -246,9 +247,6 @@ be_profile_instrument(void)
 	}
 	set_array_entity_values(bblock_counts, tarval_array, n_blocks);
 
-	/* initialize the block count entity */
-	set_atomic_ent_value(bblock_count, new_r_Const_long(const_irg, const_block, mode_Iu, n_blocks));
-
 	/* initialize function name string constant */
 	tarval_string = alloca(sizeof(*tarval_string) * (filename_len));
 	for(i = 0; i < filename_len; ++i) {
@@ -264,7 +262,7 @@ be_profile_instrument(void)
 		ir_graph      *irg = get_irp_irg(n);
 
 		/* generate a symbolic constant pointing to the count array */
-		sym.entity_p = bblock_count;
+		sym.entity_p = bblock_counts;
 		wd.symconst = new_r_SymConst(irg, get_irg_start_block(irg), sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);

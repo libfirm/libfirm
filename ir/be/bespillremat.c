@@ -485,11 +485,11 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 		if(!is_rematerializable(si, op))
 			return NULL;
 
-		remat = obstack_alloc(si->obst, sizeof(*remat));
-		remat->op = op;
-		remat->cost = get_cost(si, op);
-		remat->value = dest_value;
-		remat->proj = proj;
+		remat          = obstack_alloc(si->obst, sizeof(*remat));
+		remat->op      = op;
+		remat->cost    = get_cost(si, op);
+		remat->value   = dest_value;
+		remat->proj    = proj;
 		remat->inverse = 0;
 	} else {
 		arch_inverse_t     inverse;
