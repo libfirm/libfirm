@@ -44,6 +44,7 @@
 #include "benode_t.h"
 #include "beutil.h"
 #include "ircons.h"
+#include "irhooks.h"
 
 #include "bechordal_t.h"
 
@@ -90,6 +91,7 @@ count_blocks(ir_graph * irg)
 
 /* keep the execcounts here because they are only read once per compiler run */
 static set * profile = NULL;
+static hook_entry_t hook;
 
 /**
  * Instrument a block with code needed for profiling
@@ -211,8 +213,6 @@ block_id_walker(ir_node * bb, void * data)
 ir_graph *
 be_profile_instrument(void)
 {
-	ir_graph      *const_irg = get_const_code_irg();
-	ir_node       *const_block = get_irg_start_block(const_irg);
 	int            n, i;
 	unsigned int   n_blocks = 0;
 	entity        *bblock_id, *bblock_counts, *ent_filename;
@@ -286,6 +286,27 @@ be_profile_instrument(void)
 	return gen_initializer_irg(ent_filename, bblock_id, bblock_counts, n_blocks);
 }
 
+static void
+profile_node_info(void *ctx, FILE *f, const ir_node *irn)
+{
+	if(is_Block(irn)) {
+		fprintf(f, "profiled execution count: %u\n", be_profile_get_block_execcount(irn));
+	}
+}
+
+static void
+register_vcg_hook(void)
+{
+	memset(&hook, 0, sizeof(hook));
+	hook.hook._hook_node_info = profile_node_info;
+	register_hook(hook_node_info, &hook);
+}
+
+static void
+unregister_vcg_hook(void)
+{
+	unregister_hook(hook_node_info, &hook);
+}
 
 /**
  * Reads the corresponding profile info file if it exists and returns a
@@ -323,6 +344,7 @@ be_profile_read(char * filename)
 	} while(1);
 
 	fclose(f);
+	register_vcg_hook();
 }
 
 /**
@@ -331,8 +353,10 @@ be_profile_read(char * filename)
 void
 be_profile_free(void)
 {
-	if(profile)
+	if(profile) {
+		unregister_vcg_hook();
 		del_set(profile);
+	}
 }
 
 /**
