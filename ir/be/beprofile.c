@@ -287,6 +287,10 @@ be_profile_read(char * filename)
 	size_t  ret;
 
 	f = fopen(filename, "r");
+	if(f == NULL) {
+		perror("opening of profile data failed");
+		return;
+	}
 
 	/* check magic */
 	ret = fread(buf, 8, 1, f);
