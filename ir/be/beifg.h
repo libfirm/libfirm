@@ -59,7 +59,7 @@ typedef struct {
 	int n_edges;
 } be_ifg_stat_t;
 
-be_ifg_stat_t *be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat);
+void be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat);
 
 /*
 	 ____                        _

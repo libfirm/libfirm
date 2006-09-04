@@ -392,7 +392,16 @@ static void be_main_loop(FILE *file_handle)
 	unsigned num_nodes_r = 0;
 
 #ifdef WITH_LIBCORE
-	lc_timer_t *t_prolog, *t_abi, *t_codegen, *t_sched, *t_constr, *t_regalloc, *t_finish, *t_emit, *t_other, *t_verify;
+	lc_timer_t *t_prolog = NULL;
+	lc_timer_t *t_abi = NULL;
+	lc_timer_t *t_codegen = NULL;
+	lc_timer_t *t_sched = NULL;
+   	lc_timer_t *t_constr = NULL;
+	lc_timer_t *t_regalloc = NULL;
+	lc_timer_t *t_finish = NULL;
+	lc_timer_t *t_emit = NULL;
+	lc_timer_t *t_other = NULL;
+	lc_timer_t *t_verify = NULL;
 	be_ra_timer_t *ra_timer;
 
 	if (be_options.timing == BE_TIME_ON) {
@@ -673,7 +682,7 @@ static void be_main_loop(FILE *file_handle)
 void be_main(FILE *file_handle)
 {
 #ifdef WITH_LIBCORE
-	lc_timer_t *t;
+	lc_timer_t *t = NULL;
 #endif /* WITH_LIBCORE */
 
 #ifdef WITH_LIBCORE
