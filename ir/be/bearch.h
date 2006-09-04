@@ -712,6 +712,7 @@ struct _arch_env_t {
 
   int handlers_tos;                                   /**< The stack pointer of the handler
                                                         stack. */
+  pset *constructor_entities;                     /**< Set holding the entities of the constructor irgs */
 };
 
 /**
@@ -751,6 +752,6 @@ extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
  * @param ent The entity representing a function
  * @return 1 if function is a constructor
  */
-extern int arch_ent_is_constructor(const arch_env_t *arch_env, const entity * ent);
+extern int arch_ent_is_constructor(const arch_env_t *arch_env, const entity *ent);
 
 #endif /* _FIRM_BEARCH_H */
