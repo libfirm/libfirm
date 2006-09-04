@@ -21,6 +21,7 @@
 #include "list.h"
 #include "pmap.h"
 
+#include "entity.h"
 #include "irprintf.h"
 #include "irgwalk.h"
 #include "irdump_t.h"
@@ -31,13 +32,6 @@
 #include "iredges.h"
 #include "execfreq.h"
 #include "irvrfy.h"
-
-#include <lpp/lpp.h>
-#include <lpp/mps.h>
-#include <lpp/lpp_net.h>
-#include <lpp/lpp_cplex.h>
-//#include <lc_pset.h>
-//#include <libcore/lc_bitset.h>
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -61,7 +55,7 @@
 typedef struct _block_id_walker_data {
 	tarval        **array;
 	unsigned int    id;
-	const ir_node  *symconst;
+	ir_node  *symconst;
 } block_id_walker_data;
 
 static void
@@ -72,7 +66,7 @@ block_counter(ir_node * bb, void * data)
 }
 
 static unsigned int
-count_blocks(const ir_graph * irg)
+count_blocks(ir_graph * irg)
 {
 	unsigned int count = 0;
 
@@ -84,7 +78,7 @@ count_blocks(const ir_graph * irg)
  * Instrument a block with code needed for profiling
  */
 static void
-instrument_block(const ir_node * bb, const ir_node * address, unsigned int id)
+instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 {
 	ir_node  *load, *store, *offset, *add, *projm, *proji;
 
@@ -97,6 +91,7 @@ instrument_block(const ir_node * bb, const ir_node * address, unsigned int id)
 	keep_alive(new_r_Proj(get_irn_irg(bb), bb, load, mode_M, 0));
 }
 
+#if 0
 /**
  * Generates a new irg which calls the initializer
  */
@@ -143,13 +138,14 @@ gen_initializer_irg(entity * bblock_id, entitiy * bblock_counts, entity * bblock
 
 	return irg;
 }
+#endif
 
 static void
 block_id_walker(ir_node * bb, void * data)
 {
 	block_id_walker_data *wd = data;
 
-	*wd->array[wd->id] = new_tarval_from_long(get_irn_node_nr(bb), mode_Iu);
+	wd->array[wd->id] = new_tarval_from_long(get_irn_node_nr(bb), mode_Iu);
 	instrument_block(bb, wd->symconst, wd->id);
 	++wd->id;
 }
@@ -159,7 +155,7 @@ be_profile_instrument(void)
 {
 	int            n, i;
 	unsigned int   n_blocks = 0;
-	ir_entity     *bblock_id, *bblock_counts, *bblock_count;
+	entity     *bblock_id, *bblock_counts, *bblock_count;
 	ir_type       *array_type, *integer_type;
 	tarval       **tarval_array;
 
@@ -180,11 +176,11 @@ be_profile_instrument(void)
 	}
 
 	/* initialize count array */
-	tarval_array = alloca(sizeof(*null_array)*n_blocks);
-	for(i=0; i<n_blocks; ++i) {
-		null_array[i] = get_tarval_null(mode_Iu);
+	tarval_array = alloca(sizeof(tarval_array[0]) * n_blocks);
+	for(i = 0; i < n_blocks; ++i) {
+		tarval_array[i] = get_tarval_null(mode_Iu);
 	}
-	set_array_entitiy_values(bblock_counts, tarval_array, n_blocks);
+	//set_array_entitiy_values(bblock_counts, tarval_array, n_blocks);
 
 	/* initialize the block count entity */
 	set_atomic_ent_value(bblock_count, new_Const_long(mode_Iu, n_blocks));
@@ -199,11 +195,11 @@ be_profile_instrument(void)
 	for (n = get_irp_n_irgs()-1; n>=0; --n) {
 		ir_graph      *irg = get_irp_irg(n);
 
-		irg_block_walk_graph(irg, block_id_walker, null, &wd);
+		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
 	}
-	set_array_entitiy_values(bblock_id, tarval_array, n_blocks);
+	//set_array_entitiy_values(bblock_id, tarval_array, n_blocks);
 
-	gen_initializer_irg(bblock_id, bblock_counts, bblock_count);
+	//gen_initializer_irg(bblock_id, bblock_counts, bblock_count);
 }
 
 
