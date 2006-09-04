@@ -420,6 +420,7 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *prof_init_irg = be_profile_instrument();
 		pset_insert_ptr(env.arch_env->constructor_entities, get_irg_entity(prof_init_irg));
 	}
+	be_profile_read("test.c"); //FIXME
 
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
@@ -660,6 +661,7 @@ static void be_main_loop(FILE *file_handle)
 			free_ir_graph(irg);
 
 	}
+	be_profile_free();
 	be_done_env(&env);
 
 #undef BE_TIMER_POP
