@@ -1491,7 +1491,7 @@ static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	ia32_gen_decls(isa->out);
+	ia32_gen_decls(isa->out, isa->cg);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);

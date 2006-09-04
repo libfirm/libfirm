@@ -53,14 +53,16 @@ void ia32_switch_section(FILE *F, section_t sec) {
 			".section\t.data",
 			".section\t.rodata",
 			".section\t.text",
-			".section\t.tbss,\"awT\",@nobits"
+			".section\t.tbss,\"awT\",@nobits",
+			".section\t.ctors,\"aw\",@progbits"
 		},
 		{
 			".section\t.text",
 			".section\t.data",
 			".section .rdata,\"dr\"",
 			".section\t.text",
-			".section\t.tbss,\"awT\",@nobits"
+			".section\t.tbss,\"awT\",@nobits",
+			".section\t.ctors,\"aw\",@progbits"
 		}
 	};
 

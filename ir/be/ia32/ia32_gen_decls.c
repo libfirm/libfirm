@@ -16,8 +16,20 @@
 #include "entity.h"
 #include "irprog.h"
 
+#include "../bearch.h"
+
 #include "ia32_emitter.h"
 #include "ia32_gen_decls.h"
+
+typedef struct obstack obstack_t;
+
+typedef struct _ia32_decl_env {
+	obstack_t       *rodata_obst;
+	obstack_t       *data_obst;
+	obstack_t       *comm_obst;
+	obstack_t       *ctor_obst;
+	ia32_code_gen_t *cg;
+} ia32_decl_env_t;
 
 /************************************************************************/
 
@@ -54,7 +66,7 @@ static unsigned highest_bit(unsigned v)
 	return res;
 }
 
-static void ia32_dump_comm(struct obstack *obst, const char *name, visibility vis, int size, int align) {
+static void ia32_dump_comm(obstack_t *obst, const char *name, visibility vis, int size, int align) {
 	switch (asm_flavour) {
 	case ASM_LINUX_GAS:
 		if (vis == visibility_local)
@@ -73,7 +85,7 @@ static void ia32_dump_comm(struct obstack *obst, const char *name, visibility vi
 /**
  * output the alignment to an obstack
  */
-static void ia32_dump_align(struct obstack *obst, int align)
+static void ia32_dump_align(obstack_t *obst, int align)
 {
 	int h = highest_bit(align);
 
@@ -103,7 +115,7 @@ static void ia32_dump_align_f(FILE *f, int align)
 /**
  * output a tarval
  */
-static void dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
+static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 {
 	switch (bytes) {
 
@@ -139,7 +151,7 @@ static void dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
 /*
  * dump an atomic value
  */
-static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
+static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
@@ -217,14 +229,10 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
 }
 
 /*
- * dump an atomic value
+ * dumps the type for given size (.byte, .long, ...)
  */
-static void dump_atomic_init(struct obstack *obst, ir_node *init)
-{
-	ir_mode *mode = get_irn_mode(init);
-	int bytes     = get_mode_size_bytes(mode);
-
-	switch (bytes) {
+static void dump_size_type(obstack_t *obst, int size) {
+	switch (size) {
 
 	case 1:
 		obstack_printf(obst, "\t.byte\t");
@@ -248,10 +256,20 @@ static void dump_atomic_init(struct obstack *obst, ir_node *init)
 		break;
 
 	default:
-		fprintf(stderr, "Try to dump an tarval with %d bytes\n", bytes);
+		fprintf(stderr, "Try to dump a type with %d bytes\n", size);
 		assert(0);
 	}
+}
 
+/*
+ * dump an atomic value
+ */
+static void dump_atomic_init(obstack_t *obst, ir_node *init)
+{
+	ir_mode *mode = get_irn_mode(init);
+	int bytes     = get_mode_size_bytes(mode);
+
+	dump_size_type(obst, bytes);
 	do_dump_atomic_init(obst, init);
 	obstack_printf(obst, "\n");
 }
@@ -316,7 +334,7 @@ static int ent_is_string_const(entity *ent)
  * @param obst The obst to dump on.
  * @param ent The entity to dump.
  */
-static void dump_string_cst(struct obstack *obst, entity *ent)
+static void dump_string_cst(obstack_t *obst, entity *ent)
 {
 	int i, n;
 
@@ -356,7 +374,7 @@ struct arr_info {
 /**
  * Dump the size of an object
  */
-static void dump_object_size(struct obstack *obst, const char *name, int size) {
+static void dump_object_size(obstack_t *obst, const char *name, int size) {
 	switch (asm_flavour) {
 	case ASM_LINUX_GAS:
 		obstack_printf(obst, "\t.type\t%s,@object\n", name);
@@ -369,12 +387,15 @@ static void dump_object_size(struct obstack *obst, const char *name, int size) {
  * Dumps the initialization of global variables that are not
  * "uninitialized".
  */
-static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack, entity *ent)
+static void dump_global(const arch_env_t *arch_env,
+						obstack_t *rdata_obstack, obstack_t *data_obstack,
+						obstack_t *comm_obstack, obstack_t *ctor_obstack,
+						entity *ent)
 {
 	ir_type *ty         = get_entity_type(ent);
 	const char *ld_name = get_entity_ld_name(ent);
+	obstack_t *obst     = data_obstack;
 	int align, h;
-	struct obstack *obst = data_obstack;
 
 	/*
 	 * FIXME: did NOT work for partly constant values
@@ -562,24 +583,31 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 				obstack_printf(comm_obstack, "%s:\n\t.zero %d\n", ld_name, get_type_size_bytes(ty));
 			}
 		}
+	} /* ! is method type */
+	else if (ctor_obstack && arch_ent_is_constructor(arch_env, ent)) {
+		ia32_dump_align(ctor_obstack, get_type_alignment_bytes(ty));
+		dump_size_type(ctor_obstack, get_type_alignment_bytes(ty));
+		obstack_printf(ctor_obstack, "%s\n", ld_name);
 	}
 }
 
 /**
  * Dumps declarations of global variables and the initialization code.
  */
-static void ia32_dump_globals(ir_type *gt, struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack)
+static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env)
 {
 	int i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++)
-		dump_global(rdata_obstack, data_obstack, comm_obstack, get_compound_member(gt, i));
+		dump_global(env->cg->arch_env, env->rodata_obst, env->data_obst, env->comm_obst, env->ctor_obst,
+			get_compound_member(gt, i));
 }
 
 /************************************************************************/
 
-void ia32_gen_decls(FILE *out) {
-	struct obstack rodata, data, comm;
+void ia32_gen_decls(FILE *out, ia32_code_gen_t *cg) {
+	ia32_decl_env_t env;
+	obstack_t rodata, data, comm, ctor;
 	int    size;
 	char   *cp;
 
@@ -588,7 +616,15 @@ void ia32_gen_decls(FILE *out) {
 	obstack_init(&data);
 	obstack_init(&comm);
 
-	ia32_dump_globals(get_glob_type(), &rodata, &data, &comm);
+	if (cg->birg->main_env->options->opt_profile)
+		obstack_init(&ctor);
+
+	env.rodata_obst = &rodata;
+	env.data_obst   = &data;
+	env.comm_obst   = &comm;
+	env.ctor_obst   = cg->birg->main_env->options->opt_profile ? &ctor : NULL;
+
+	ia32_dump_globals(get_glob_type(), &env);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
@@ -611,13 +647,29 @@ void ia32_gen_decls(FILE *out) {
 		fwrite(cp, 1, size, out);
 	}
 
+	if (cg->birg->main_env->options->opt_profile) {
+		size = obstack_object_size(&ctor);
+		cp   = obstack_finish(&ctor);
+		if (size > 0) {
+			ia32_switch_section(out, SECTION_CTOR);
+			fwrite(cp, 1, size, out);
+		}
+		obstack_free(&ctor, NULL);
+	}
+
 	obstack_free(&rodata, NULL);
 	obstack_free(&data, NULL);
 	obstack_free(&comm, NULL);
 
 	/* dump the Thread Local Storage */
 	obstack_init(&data);
-	ia32_dump_globals(get_tls_type(), &data, &data, &data);
+
+	env.rodata_obst = &data;
+	env.data_obst   = &data;
+	env.comm_obst   = &data;
+	env.ctor_obst   = NULL;
+
+	ia32_dump_globals(get_tls_type(), &env);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
@@ -627,4 +679,5 @@ void ia32_gen_decls(FILE *out) {
 		fwrite(cp, 1, size, out);
 	}
 
+	obstack_free(&data, NULL);
 }

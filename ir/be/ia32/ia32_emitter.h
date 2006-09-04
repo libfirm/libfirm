@@ -47,7 +47,8 @@ typedef enum section_t {
 	SECTION_RODATA = 2,   /**< rodata section */
 	SECTION_COMMON = 3,   /**< common section */
 	SECTION_TLS    = 4,   /**< thread local storage section */
-	SECTION_MAX    = 5
+	SECTION_CTOR   = 5,   /**< ctor section for instrumentation code init */
+	SECTION_MAX    = 6
 } section_t;
 
 /**
