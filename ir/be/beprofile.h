@@ -28,7 +28,7 @@ void be_profile_read(char * filename);
 /**
  * Frees the profile info
  */
-void be_profile_free();
+void be_profile_free(void);
 
 /**
  * Get block execution count as determined be profiling
