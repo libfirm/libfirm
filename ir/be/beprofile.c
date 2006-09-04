@@ -127,7 +127,7 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 
 	ir_node   *ins[4];
 	ident     *name = new_id_from_str("__firmprof_initializer");
-	entity    *ent = new_entity(get_glob_type(), name, new_type_method(name, 0, 0));
+	entity    *ent  = new_entity(get_glob_type(), name, new_type_method(name, 0, 0));
 	ir_node   *ret, *call, *symconst;
 	symconst_symbol sym;
 
@@ -139,15 +139,18 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 	ir_node   *bb;
 	ir_type   *empty_frame_type;
 
+	set_entity_ld_ident(ent, name);
+
 	uint    = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
 	uintptr = new_type_pointer(new_id_from_str("__uintptr"), uint, mode_P);
-	string = new_type_pointer(new_id_from_str("__charptr"), new_type_primitive(new_id_from_str("__char"), mode_Bs), mode_P);
+	string  = new_type_pointer(new_id_from_str("__charptr"), new_type_primitive(new_id_from_str("__char"), mode_Bs), mode_P);
 
 	set_method_param_type(init_type, 0, string);
 	set_method_param_type(init_type, 1, uintptr);
 	set_method_param_type(init_type, 2, uintptr);
 	set_method_param_type(init_type, 3, uint);
 	init_ent = new_entity(get_glob_type(), init_name, init_type);
+	set_entity_ld_ident(init_ent, init_name);
 
 	irg = new_ir_graph(ent, 0);
 	set_current_ir_graph(irg);
@@ -217,39 +220,50 @@ be_profile_instrument(void)
 	tarval       **tarval_array, **tarval_string;
 	char          *filename = "test.c"; //FIXME
 	int            filename_len = strlen(filename)+1;
+	ident         *cur_ident;
 
 	block_id_walker_data_t  wd;
 	symconst_symbol sym;
 
-	integer_type = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
-	array_type = new_type_array(new_id_from_str("__block_info_array"), 1, integer_type);
+	integer_type   = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
+	array_type     = new_type_array(new_id_from_str("__block_info_array"), 1, integer_type);
 	set_array_bounds_int(array_type, 0, 0, n_blocks);
+
 	character_type = new_type_primitive(new_id_from_str("__char"), mode_Bs);
-	string_type = new_type_array(new_id_from_str("__function_name"), 1, character_type);
+	string_type    = new_type_array(new_id_from_str("__function_name"), 1, character_type);
 	set_array_bounds_int(string_type, 0, 0, filename_len);
-	bblock_id = new_entity(get_glob_type(), new_id_from_str("__BLOCK_IDS"), array_type);
+
+	cur_ident      = new_id_from_str("__BLOCK_IDS");
+	bblock_id      = new_entity(get_glob_type(), cur_ident, array_type);
+	set_entity_ld_ident(bblock_id, cur_ident);
 	set_entity_variability(bblock_id, variability_initialized);
-	bblock_counts = new_entity(get_glob_type(), new_id_from_str("__BLOCK_COUNTS"), array_type);
+
+	cur_ident      = new_id_from_str("__BLOCK_COUNTS");
+	bblock_counts  = new_entity(get_glob_type(), cur_ident, array_type);
+	set_entity_ld_ident(bblock_counts, cur_ident);
 	set_entity_variability(bblock_counts, variability_initialized);
-	ent_filename = new_entity(get_glob_type(), new_id_from_str("__FUNCTION_NAME"), string_type);
+
+	cur_ident      = new_id_from_str("__FUNCTION_NAME");
+	ent_filename   = new_entity(get_glob_type(), cur_ident, string_type);
+	set_entity_ld_ident(ent_filename, cur_ident);
 	set_entity_variability(ent_filename, variability_initialized);
 
-	for (n = get_irp_n_irgs()-1; n>=0; --n) {
-		ir_graph      *irg = get_irp_irg(n);
+	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
+		ir_graph *irg = get_irp_irg(n);
 
 		n_blocks += count_blocks(irg);
 	}
 
 	/* initialize count array */
 	tarval_array = alloca(sizeof(*tarval_array) * n_blocks);
-	for(i = 0; i < n_blocks; ++i) {
+	for (i = 0; i < n_blocks; ++i) {
 		tarval_array[i] = get_tarval_null(mode_Iu);
 	}
 	set_array_entity_values(bblock_counts, tarval_array, n_blocks);
 
 	/* initialize function name string constant */
 	tarval_string = alloca(sizeof(*tarval_string) * (filename_len));
-	for(i = 0; i < filename_len; ++i) {
+	for (i = 0; i < filename_len; ++i) {
 		tarval_string[i] = new_tarval_from_long(filename[i], mode_Bs);
 	}
 	set_array_entity_values(ent_filename, tarval_string, filename_len);
@@ -257,13 +271,13 @@ be_profile_instrument(void)
 
 	/* initialize block id array and instrument blocks */
 	wd.array = tarval_array;
-	wd.id = 0;
-	for (n = get_irp_n_irgs()-1; n>=0; --n) {
-		ir_graph      *irg = get_irp_irg(n);
+	wd.id    = 0;
+	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
+		ir_graph *irg = get_irp_irg(n);
 
 		/* generate a symbolic constant pointing to the count array */
 		sym.entity_p = bblock_counts;
-		wd.symconst = new_r_SymConst(irg, get_irg_start_block(irg), sym, symconst_addr_ent);
+		wd.symconst  = new_r_SymConst(irg, get_irg_start_block(irg), sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
 	}
