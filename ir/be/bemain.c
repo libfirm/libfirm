@@ -65,25 +65,19 @@
 
 /* options visible for anyone */
 static be_options_t be_options = {
-	DUMP_NONE,                         /* dump options */
+	DUMP_NONE,                         /* dump flags */
 	BE_TIME_OFF,                       /* no timing */
 	BE_SCHED_SELECT_HEUR,              /* mueller heuristic selector */
+	0,                                 /* no opt profile */
 	0,                                 /* disable mris */
+	1,                                 /* try to omit frame pointer */
+	BE_VRFY_WARN,                      /* verification level: warn */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex"                            /* ilp solver */
 };
 
 /* config file. */
 static char config_file[256] = { 0 };
-
-/* dump flags */
-static unsigned dump_flags = 0;
-
-/* verify options */
-static int vrfy_option = BE_VRFY_WARN;
-
-/* instrument the code for execution count profiling */
-static int opt_profile = 0;
 
 /* register allocator to use. */
 static const be_ra_t *ra = &be_ra_chordal_allocator;
@@ -146,7 +140,7 @@ static const lc_opt_enum_int_items_t sched_select_items[] = {
 };
 
 static lc_opt_enum_mask_var_t dump_var = {
-	&dump_flags, dump_items
+	&be_options.dump_flags, dump_items
 };
 
 static lc_opt_enum_const_ptr_var_t ra_var = {
@@ -158,7 +152,7 @@ static lc_opt_enum_const_ptr_var_t isa_var = {
 };
 
 static lc_opt_enum_int_var_t vrfy_var = {
-	&vrfy_option, vrfy_items
+	&be_options.vrfy_option, vrfy_items
 };
 
 static lc_opt_enum_int_var_t sched_select_var = {
@@ -170,10 +164,10 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",         "dump irg on several occasions",                                       &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("ra",           "register allocator",                                                  &ra_var),
 	LC_OPT_ENT_ENUM_PTR ("isa",          "the instruction set architecture",                                    &isa_var),
-	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",                                           &be_omit_fp),
+	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",                                           &be_options.omit_fp),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",                          &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",                                       &be_options.timing),
-	LC_OPT_ENT_BOOL     ("profile",      "instrument the code for execution count profiling",                   &opt_profile),
+	LC_OPT_ENT_BOOL     ("profile",      "instrument the code for execution count profiling",                   &be_options.opt_profile),
 	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",                                    &be_options.mris),
 	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (trivial, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
 
@@ -273,8 +267,8 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	memset(env, 0, sizeof(*env));
 	obstack_init(&env->obst);
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
+	env->arch_env->constructor_entities = pset_new_ptr(5);
 	env->options  = &be_options;
-	env->options->dump_flags = dump_flags;
 	FIRM_DBG_REGISTER(env->dbg, "be.main");
 
 	arch_env_init(env->arch_env, isa_if, file_handle);
@@ -314,7 +308,7 @@ static void be_done_env(be_main_env_t *env)
 static void dump(int mask, ir_graph *irg, const char *suffix,
                  void (*dumper)(ir_graph *, const char *))
 {
-	if(dump_flags & mask)
+	if(be_options.dump_flags & mask)
 		be_dump(irg, suffix, dumper);
 }
 
@@ -353,18 +347,18 @@ static void prepare_graph(be_irg_t *birg)
 #define BE_TIMER_PUSH(timer)                                                        \
 	if (be_options.timing == BE_TIME_ON) {                                          \
 		int res = lc_timer_push(timer);                                             \
-		if (vrfy_option == BE_VRFY_ASSERT)                                          \
+		if (be_options.vrfy_option == BE_VRFY_ASSERT)                               \
 			assert(res && "Timer already on stack, cannot be pushed twice.");       \
-		else if (vrfy_option == BE_VRFY_WARN && ! res)                              \
+		else if (be_options.vrfy_option == BE_VRFY_WARN && ! res)                   \
 			fprintf(stderr, "Timer %s already on stack, cannot be pushed twice.\n", \
 				lc_timer_get_name(timer));                                          \
 	}
 #define BE_TIMER_POP(timer)                                                                    \
 	if (be_options.timing == BE_TIME_ON) {                                                     \
 		lc_timer_t *tmp = lc_timer_pop();                                                      \
-		if (vrfy_option == BE_VRFY_ASSERT)                                                     \
+		if (be_options.vrfy_option == BE_VRFY_ASSERT)                                          \
 			assert(tmp == timer && "Attempt to pop wrong timer.");                             \
-		else if (vrfy_option == BE_VRFY_WARN && tmp != timer)                                  \
+		else if (be_options.vrfy_option == BE_VRFY_WARN && tmp != timer)                       \
 			fprintf(stderr, "Attempt to pop wrong timer. %s is on stack, trying to pop %s.\n", \
 				lc_timer_get_name(tmp), lc_timer_get_name(timer));                             \
 		timer = tmp;                                                                           \
@@ -422,8 +416,10 @@ static void be_main_loop(FILE *file_handle)
 	/* for debugging, anchors helps */
 	// dump_all_anchors(1);
 
-	if(opt_profile)
-		be_profile_instrument();
+	if(be_options.opt_profile) {
+		ir_graph *prof_init_irg = be_profile_instrument();
+		pset_insert_ptr(env.arch_env->constructor_entities, get_irg_entity(prof_init_irg));
+	}
 
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
@@ -525,7 +521,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/* check schedule */
 		BE_TIMER_PUSH(t_verify);
-		be_sched_vrfy(birg.irg, vrfy_option);
+		be_sched_vrfy(birg.irg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
 		be_do_stat_nodes(irg, "04 Schedule");
@@ -554,7 +550,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/* check schedule */
 		BE_TIMER_PUSH(t_verify);
-		be_sched_vrfy(birg.irg, vrfy_option);
+		be_sched_vrfy(birg.irg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
 		/* do some statistics */
@@ -593,14 +589,14 @@ static void be_main_loop(FILE *file_handle)
 
 		/* check schedule and register allocation */
 		BE_TIMER_PUSH(t_verify);
-		if (vrfy_option == BE_VRFY_WARN) {
+		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			//irg_verify(birg.irg, VRFY_ENFORCE_SSA);
 			be_check_dominance(birg.irg);
 			be_verify_out_edges(birg.irg);
 			be_verify_schedule(birg.irg);
 			be_verify_register_allocation(env.arch_env, birg.irg);
 		}
-		else if (vrfy_option == BE_VRFY_ASSERT) {
+		else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
 			//assert(irg_verify(birg.irg, VRFY_ENFORCE_SSA) && "irg verification failed");
 			assert(be_verify_out_edges(birg.irg));
 			assert(be_check_dominance(birg.irg) && "Dominance verification failed");
@@ -643,7 +639,7 @@ static void be_main_loop(FILE *file_handle)
 			LC_EMIT_RA(ra_timer->t_prolog);
 			LC_EMIT_RA(ra_timer->t_live);
 			LC_EMIT_RA(ra_timer->t_spill);
-                        LC_EMIT_RA(ra_timer->t_spillslots);
+			LC_EMIT_RA(ra_timer->t_spillslots);
 			LC_EMIT_RA(ra_timer->t_color);
 			LC_EMIT_RA(ra_timer->t_ifg);
 			LC_EMIT_RA(ra_timer->t_copymin);

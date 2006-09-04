@@ -118,7 +118,7 @@ static const arch_irn_handler_t abi_irn_handler;
 static heights_t *ir_heights;
 
 /* Flag: if set, try to omit the frame pointer if called by the backend */
-int be_omit_fp = 1;
+static int be_omit_fp = 1;
 
 /*
      _    ____ ___    ____      _ _ _                _
@@ -1727,6 +1727,8 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	pmap_entry *ent;
 	ir_node *dummy;
 	optimization_state_t state;
+
+	be_omit_fp = birg->main_env->options->omit_fp;
 
 	obstack_init(&env->obst);
 

@@ -48,7 +48,10 @@ struct _be_options_t {
 	int  dump_flags;
 	int  timing;
 	int  sched_select;
+	int  opt_profile;
 	int  mris;
+	int  omit_fp;
+	int  vrfy_option;
 	char ilp_server[128];
 	char ilp_solver[128];
 };
