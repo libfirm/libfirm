@@ -309,6 +309,8 @@ be_profile_read(char * filename)
 
 		set_insert(profile, &query, sizeof(query), query.block);
 	} while(1);
+
+	fclose(f);
 }
 
 /**
