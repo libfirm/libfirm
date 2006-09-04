@@ -52,6 +52,7 @@
 #include "bespillremat.h"
 #include "bespill.h"
 #include "bepressurestat.h"
+#include "beprofile.h"
 
 #include "bechordal_t.h"
 
@@ -63,6 +64,8 @@
 #define DUMP_PROBLEM       1
 #define DUMP_MPS           2
 #define DUMP_SOLUTION      4
+#define DUMP_STATS         8
+#define DUMP_PRESSURE      16
 
 #define KEEPALIVE_REMATS   1
 #define KEEPALIVE_SPILLS   2
@@ -89,7 +92,7 @@ static int opt_no_enlarge_liveness = 0;
 static int opt_timeout = 300;
 static double opt_cost_reload = 8.0;
 static double opt_cost_memoperand =  7.0;
-static double opt_cost_spill =  50.0;
+static double opt_cost_spill =  30.0;
 static double opt_cost_remat =  1.0;
 
 
@@ -98,6 +101,8 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "problem",  DUMP_PROBLEM  },
 	{ "mps",      DUMP_MPS      },
 	{ "solution", DUMP_SOLUTION },
+	{ "stats",    DUMP_STATS },
+	{ "pressure", DUMP_PRESSURE },
 	{ NULL,       0 }
 };
 
@@ -138,7 +143,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL     ("repair_schedule",  "repair the schedule by rematting once used nodes",&opt_repair_schedule),
 	LC_OPT_ENT_BOOL     ("no_enlage_liveness",  "do not enlarge liveness of operands of remats",&opt_no_enlarge_liveness),
 
-	LC_OPT_ENT_ENUM_MASK("dump", "dump problem, mps or solution",                               &dump_var),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump problem, mps, solution, stats or pressure",              &dump_var),
 	LC_OPT_ENT_BOOL     ("log",  "activate the lpp log",                                        &opt_log),
 	LC_OPT_ENT_INT      ("timeout",  "ILP solver timeout",                                      &opt_timeout),
 
@@ -415,6 +420,9 @@ static double
 execution_frequency(const spill_ilp_t *si, const ir_node * irn)
 {
 #define FUDGE 0.001
+	if(be_profile_has_data())
+		return ((double)be_profile_get_block_execcount(get_block(irn))) + FUDGE;
+
 #ifndef EXECFREQ_LOOPDEPH
 	return get_block_execfreq(si->chordal_env->exec_freq, get_block(irn)) + FUDGE;
 #else
@@ -2206,6 +2214,29 @@ skip_one_must_die:
 
 		/* just to be sure */
 		check_post = ILP_UNDEF;
+
+		/* allow original defintions to be removed */
+		if(opt_repair_schedule) {
+			pset_foreach(defs, tmp) {
+				op_t      *tmp_op = get_irn_link(tmp);
+				ilp_var_t  keep;
+				spill_t   *spill = set_find_spill(spill_bb->ilp, tmp);
+				assert(spill);
+
+				ir_snprintf(buf, sizeof(buf), "keep_%N", tmp);
+				keep = lpp_add_var_default(si->lpp, buf, lpp_binary, get_cost(si, irn)*execution_frequency(si, bb), 1.0);
+
+				ir_snprintf(buf, sizeof(buf), "killorig-lr_%N", tmp);
+				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, 0.0);
+				lpp_set_factor_fast(si->lpp, cst, keep, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, tmp_op->attr.live_range.ilp, -1.0);
+
+				ir_snprintf(buf, sizeof(buf), "killorig-spill_%N", tmp);
+				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, 0.0);
+				lpp_set_factor_fast(si->lpp, cst, keep, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, spill->spill, -1.0);
+			}
+		}
 
 
 		/******************
@@ -4245,7 +4276,8 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	/* compute phi classes */
 //	phi_class_compute(chordal_env->irg);
 
-	be_analyze_regpressure(chordal_env, "-pre");
+	if(opt_dump_flags & DUMP_STATS)
+		be_analyze_regpressure(chordal_env, "-pre");
 
 	DBG((si.dbg, LEVEL_2, "\t initializing\n"));
 	irg_block_walk_graph(chordal_env->irg, luke_initializer, NULL, &si);
@@ -4367,9 +4399,11 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
 
-	dump_pressure_graph(&si, dump_suffix2);
+	if(opt_dump_flags & DUMP_PRESSURE)
+		dump_pressure_graph(&si, dump_suffix2);
 
-	be_analyze_regpressure(chordal_env, "-post");
+	if(opt_dump_flags & DUMP_STATS)
+		be_analyze_regpressure(chordal_env, "-post");
 
 	if(opt_verify & VERIFY_DOMINANCE)
 		be_check_dominance(chordal_env->irg);
