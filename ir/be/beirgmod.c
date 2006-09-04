@@ -601,3 +601,53 @@ void extreme_liverange_splitting(struct _be_chordal_env_t *cenv)
 	be_liveness_recompute(cenv->lv);
 	obstack_free(&c.obst, NULL);
 }
+
+static void remove_empty_block(ir_node *block, void *data) {
+	ir_graph *irg;
+	const ir_edge_t *edge, *next;
+	ir_node *node;
+	ir_node *jump = NULL;
+
+	assert(is_Block(block));
+
+	if(get_Block_n_cfgpreds(block) != 1)
+		return;
+
+	sched_foreach(block, node) {
+		if(!is_Jmp(node))
+			return;
+		if(get_irn_n_edges(node) != 1)
+			return;
+		if(jump != NULL) {
+			// we should never have 2 jumps in a block
+			assert(0);
+			return;
+		}
+		jump = node;
+	}
+	if(jump == NULL)
+		return;
+
+	node = get_Block_cfgpred(block, 0);
+	foreach_out_edge_safe(jump, edge, next) {
+		ir_node *block = get_edge_src_irn(edge);
+		int pos = get_edge_src_pos(edge);
+
+		set_irn_n(block, pos, node);
+	}
+
+	set_Block_cfgpred(block, 0, new_Bad());
+	sched_remove(jump);
+
+	irg = get_irn_irg(block);
+	set_irg_doms_inconsistent(irg);
+	set_irg_extblk_inconsistent(irg);
+	set_irg_outs_inconsistent(irg);
+}
+
+/**
+ * removes basic blocks that just contain a jump instruction
+ */
+void be_remove_empty_blocks(ir_graph *irg) {
+	irg_block_walk_graph(irg, remove_empty_block, NULL, NULL);
+}
