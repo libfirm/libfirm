@@ -338,6 +338,7 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	return frame;
 }
 
+#if 0
 /** Dumps the stack layout to file. */
 static void stack_layout_dump(FILE *file, be_stack_layout_t *frame)
 {
@@ -354,6 +355,7 @@ static void stack_layout_dump(FILE *file, be_stack_layout_t *frame)
 		}
 	}
 }
+#endif
 
 /**
  * Returns non-zero if the call argument at given position
@@ -748,6 +750,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		ir_node *new_alloc;
 		ir_node *addr;
 		ir_node *copy;
+		ir_node *ins[2];
 
 		foreach_out_edge(alloc, edge) {
 			ir_node *irn = get_edge_src_irn(edge);
@@ -778,10 +781,22 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		env->call->flags.bits.try_omit_fp = 0;
 		new_alloc = be_new_AddSP(env->isa->sp, irg, bl, curr_sp, get_Alloc_size(alloc));
 
-		exchange(alloc, new_alloc);
+		if(alloc_mem != NULL) {
+			ir_node *addsp_mem;
+			ir_node *sync;
 
-		if(alloc_mem != NULL)
-			set_Proj_proj(alloc_mem, pn_be_AddSP_M);
+			addsp_mem = new_r_Proj(irg, bl, new_alloc, mode_M, pn_be_AddSP_M);
+
+			// We need to sync the output mem of the AddSP with the input mem
+			// edge into the alloc node
+			ins[0] = get_Alloc_mem(alloc);
+			ins[1] = addsp_mem;
+			sync = new_r_Sync(irg, bl, 2, ins);
+
+			exchange(alloc_mem, sync);
+		}
+
+		exchange(alloc, new_alloc);
 
 		/* fix projnum of alloca res */
 		set_Proj_proj(alloc_res, pn_be_AddSP_res);
@@ -960,14 +975,6 @@ static void process_calls(be_abi_irg_t *env)
 	heights_free(ir_heights);
 }
 
-static void collect_return_walker(ir_node *irn, void *data)
-{
-	if(get_irn_opcode(irn) == iro_Return) {
-		struct obstack *obst = data;
-		obstack_ptr_grow(obst, irn);
-	}
-}
-
 #if 0 /*
 static ir_node *setup_frame(be_abi_irg_t *env)
 {
@@ -1104,6 +1111,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 	return res;
 }
 
+#if 0
 static void create_register_perms(const arch_isa_t *isa, ir_graph *irg, ir_node *bl, pmap *regs)
 {
 	int i, j, n;
@@ -1145,6 +1153,7 @@ static void create_register_perms(const arch_isa_t *isa, ir_graph *irg, ir_node 
 
 	obstack_free(&obst, NULL);
 }
+#endif
 
 typedef struct {
 	const arch_register_t *reg;
@@ -1706,16 +1715,6 @@ static void modify_irg(be_abi_irg_t *env)
 
 	del_pset(dont_save);
 	obstack_free(&env->obst, args);
-}
-
-/**
- * Walker: puts all Alloc(stack_alloc) on a obstack
- */
-static void collect_alloca_walker(ir_node *irn, void *data)
-{
-	be_abi_irg_t *env = data;
-	if(get_irn_opcode(irn) == iro_Alloc && get_Alloc_where(irn) == stack_alloc)
-		obstack_ptr_grow(&env->obst, irn);
 }
 
 be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
