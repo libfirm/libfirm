@@ -1293,12 +1293,12 @@ walker_remat_insertor(ir_node * bb, void * data)
 static int
 can_be_copied(const ir_node * bb, const ir_node * irn)
 {
-	assert(is_merge_edge(bb));
-
-	const ir_edge_t *edge = get_block_succ_first(bb);
+	const ir_edge_t *edge    = get_block_succ_first(bb);
 	const ir_node   *next_bb = edge->src;
-	int              pos = edge->pos;
+	int             pos      = edge->pos;
 	const ir_node   *phi;
+
+	assert(is_merge_edge(bb));
 
 	sched_foreach(next_bb, phi) {
 		const ir_node  *phi_arg;
