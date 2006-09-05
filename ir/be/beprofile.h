@@ -15,13 +15,15 @@
 
 /**
  * Instruments irgs with profile code
+ * @param filename The name of the output file for the profile information
  * @return The irg doing the profile initialization.
  */
-ir_graph * be_profile_instrument(void);
+ir_graph * be_profile_instrument(char * filename);
 
 /**
  * Reads the corresponding profile info file if it exists and returns a
  * profile info struct
+ * @param filename The name of the file containing profile information
  */
 void be_profile_read(char * filename);
 

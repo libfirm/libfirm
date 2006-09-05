@@ -174,22 +174,8 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 	ins[2] = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
 	ins[3] = new_r_Const_long(irg, start_block, mode_Iu, n_blocks);
 
-	call = new_r_Call( irg,
-			bb,							//ir_node *  	block,
-			get_irg_initial_mem(irg),	//ir_node *  	store,
-			symconst,					//ir_node *  	callee,
-			4,							//int  	arity,
-			ins,						//ir_node **  	in,
-			init_type					//ir_type *  	tp
-			);
-
-	ret = new_r_Return ( irg,
-			bb,										//ir_node *  	block,
-			new_r_Proj(irg, bb, call, mode_M, pn_Call_M_regular),	//ir_node *  	store,
-			0,										//int  	arity,
-			NULL									//ir_node **  	in
-			);
-
+	call = new_r_Call(irg, bb, get_irg_initial_mem(irg), symconst, 4, ins, init_type);
+	ret = new_r_Return(irg, bb, new_r_Proj(irg, bb, call, mode_M, pn_Call_M_regular), 0, NULL);
 	mature_immBlock(bb);
 
 	add_immBlock_pred(get_irg_end_block(irg), ret);
@@ -211,14 +197,13 @@ block_id_walker(ir_node * bb, void * data)
 }
 
 ir_graph *
-be_profile_instrument(void)
+be_profile_instrument(char * filename)
 {
 	int            n, i;
 	unsigned int   n_blocks = 0;
 	entity        *bblock_id, *bblock_counts, *ent_filename;
 	ir_type       *array_type, *integer_type, *string_type, *character_type;
 	tarval       **tarval_array, **tarval_string;
-	char          *filename = "test.c"; //FIXME
 	int            filename_len = strlen(filename)+1;
 	ident         *cur_ident;
 
@@ -230,20 +215,20 @@ be_profile_instrument(void)
 	set_array_bounds_int(array_type, 0, 0, n_blocks);
 
 	character_type = new_type_primitive(new_id_from_str("__char"), mode_Bs);
-	string_type    = new_type_array(new_id_from_str("__function_name"), 1, character_type);
+	string_type    = new_type_array(new_id_from_str("__filename"), 1, character_type);
 	set_array_bounds_int(string_type, 0, 0, filename_len);
 
-	cur_ident      = new_id_from_str("__BLOCK_IDS");
+	cur_ident      = new_id_from_str("__FIRMPROF__BLOCK_IDS");
 	bblock_id      = new_entity(get_glob_type(), cur_ident, array_type);
 	set_entity_ld_ident(bblock_id, cur_ident);
 	set_entity_variability(bblock_id, variability_initialized);
 
-	cur_ident      = new_id_from_str("__BLOCK_COUNTS");
+	cur_ident      = new_id_from_str("__FIRMPROF__BLOCK_COUNTS");
 	bblock_counts  = new_entity(get_glob_type(), cur_ident, array_type);
 	set_entity_ld_ident(bblock_counts, cur_ident);
 	set_entity_variability(bblock_counts, variability_initialized);
 
-	cur_ident      = new_id_from_str("__FUNCTION_NAME");
+	cur_ident      = new_id_from_str("__FIRMPROF__FILE_NAME");
 	ent_filename   = new_entity(get_glob_type(), cur_ident, string_type);
 	set_entity_ld_ident(ent_filename, cur_ident);
 	set_entity_variability(ent_filename, variability_initialized);

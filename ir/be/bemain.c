@@ -9,6 +9,8 @@
 #endif
 
 #include <stdarg.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
@@ -392,6 +394,8 @@ static void be_main_loop(FILE *file_handle)
 	unsigned num_nodes_b = 0;
 	unsigned num_nodes_a = 0;
 	unsigned num_nodes_r = 0;
+	char prof_filename[256];
+	char path[256];
 
 #ifdef WITH_LIBCORE
 	lc_timer_t *t_prolog = NULL;
@@ -427,11 +431,17 @@ static void be_main_loop(FILE *file_handle)
 	/* for debugging, anchors helps */
 	// dump_all_anchors(1);
 
+	/* please FIXME! I'm a dirty hack. */
+	snprintf(path, 256, "/proc/self/fd/%d", fileno(file_handle));
+	memset(prof_filename, 0, 256);
+	readlink(path, prof_filename, 250);
+	strcat(prof_filename, ".prof");
+
 	if(be_options.opt_profile) {
-		ir_graph *prof_init_irg = be_profile_instrument();
+		ir_graph *prof_init_irg = be_profile_instrument(prof_filename);
 		pset_insert_ptr(env.arch_env->constructor_entities, get_irg_entity(prof_init_irg));
 	}
-	be_profile_read("test.c.prof"); //FIXME
+	be_profile_read(prof_filename);
 
 	/* For all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
