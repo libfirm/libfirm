@@ -306,9 +306,9 @@ be_profile_read(char * filename)
 
 	f = fopen(filename, "r");
 	if(f == NULL) {
-		perror("opening of profile data failed");
 		return;
 	}
+	printf("found profile data.\n");
 
 	/* check magic */
 	ret = fread(buf, 8, 1, f);
