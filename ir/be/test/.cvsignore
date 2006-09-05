@@ -12,6 +12,7 @@ build_firm
 build_gcc
 bla
 res
+hs_err*
 OUT.*
 gcc
 firm
