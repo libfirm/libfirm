@@ -100,24 +100,60 @@ static void
 instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 {
 	ir_graph *irg = get_irn_irg(bb);
-	ir_node *start_block = get_irg_start_block(irg);
-	ir_node  *load, *store, *offset, *add, *projm, *proji;
-	ir_node *cnst;
+	ir_node  *start_block = get_irg_start_block(irg);
+	ir_node  *load, *store, *offset, *add, *projm, *proji, *unknown;
+	ir_node  *cnst;
 
 	if(bb == start_block || bb == get_irg_end_block(irg))
 		return;
 
-	cnst   = new_r_Const_long(irg, start_block, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
-	offset = new_r_Add(irg, bb, address, cnst, mode_P);
-	load   = new_r_Load(irg, bb, new_NoMem(), offset, mode_Iu);
-	projm  = new_r_Proj(irg, bb, load, mode_M, pn_Load_M);
-	proji  = new_r_Proj(irg, bb, load, mode_Iu, pn_Load_res);
-	cnst   = new_r_Const_long(irg, start_block, mode_Iu, 1);
-	add    = new_r_Add(irg, bb, proji, cnst, mode_Iu);
-	store  = new_r_Store(irg, bb, projm, offset, add);
-	projm  = new_r_Proj(irg, bb, store, mode_M, pn_Store_M);
-	keep_alive(projm);
+	unknown = new_r_Unknown(irg, mode_M);
+	cnst    = new_r_Const_long(irg, start_block, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
+	offset  = new_r_Add(irg, bb, address, cnst, mode_P);
+	load    = new_r_Load(irg, bb, unknown, offset, mode_Iu);
+	projm   = new_r_Proj(irg, bb, load, mode_M, pn_Load_M);
+	proji   = new_r_Proj(irg, bb, load, mode_Iu, pn_Load_res);
+	cnst    = new_r_Const_long(irg, start_block, mode_Iu, 1);
+	add     = new_r_Add(irg, bb, proji, cnst, mode_Iu);
+	store   = new_r_Store(irg, bb, projm, offset, add);
+	projm   = new_r_Proj(irg, bb, store, mode_M, pn_Store_M);
+	set_irn_link(bb, projm);
+	set_irn_link(projm, load);
 }
+
+/**
+ * SSA Construction for instumenation code memory
+ */
+static void
+fix_ssa(ir_node * bb, void * data)
+{
+	ir_node  *mem;
+	int       arity = get_Block_n_cfgpreds(bb);
+
+	/* start and end block are not instrumented, skip! */
+	if(bb == get_irg_end_block(current_ir_graph) || bb == get_irg_start_block(current_ir_graph))
+		return;
+
+	/* first block gets NoMem */
+	if(get_Block_cfgpred_block(bb, 0) == get_irg_start_block(current_ir_graph)) {
+		mem = new_NoMem();
+	} else {
+		if(arity == 1) {
+			mem = get_irn_link(get_Block_cfgpred_block(bb, 0));
+		} else {
+			int n;
+			ir_node **ins;
+
+			NEW_ARR_A(ir_node*, ins, arity);
+			for(n=arity-1; n>=0; --n) {
+				ins[n]=get_irn_link(get_Block_cfgpred_block(bb, n));
+			}
+			mem = new_r_Phi(get_irn_irg(bb), bb, arity, ins, mode_M);
+		}
+	}
+	set_Load_mem(get_irn_link(get_irn_link(bb)), mem);
+}
+
 
 /**
  * Generates a new irg which calls the initializer
@@ -258,13 +294,30 @@ be_profile_instrument(char * filename)
 	wd.array = tarval_array;
 	wd.id    = 0;
 	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
-		ir_graph *irg = get_irp_irg(n);
+		ir_graph      *irg = get_irp_irg(n);
+		int            i;
+		ir_node       *endbb = get_irg_end_block(irg);
+
+		set_current_ir_graph(irg);
 
 		/* generate a symbolic constant pointing to the count array */
 		sym.entity_p = bblock_counts;
 		wd.symconst  = new_r_SymConst(irg, get_irg_start_block(irg), sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
+		irg_block_walk_graph(irg, fix_ssa, NULL, NULL);
+		for(i=get_Block_n_cfgpreds(endbb)-1; i>=0; --i) {
+			ir_node *ret = get_Block_cfgpred(endbb, i);
+			ir_node *bb  = get_Block_cfgpred_block(endbb, i);
+			ir_node *sync;
+			ir_node *ins[2];
+
+			ins[0] = get_irn_link(bb);
+			ins[1] = get_Return_mem(ret);
+			sync   = new_r_Sync(irg, bb, 2, ins);
+
+			set_Return_mem(ret, sync);
+		}
 	}
 	set_array_entity_values(bblock_id, tarval_array, n_blocks);
 

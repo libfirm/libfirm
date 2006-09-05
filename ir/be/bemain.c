@@ -355,8 +355,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Make just one return node. */
 	normalize_one_return(irg);
 
-	optimize_cf(irg);
-
 	/* Remove critical edges */
 	remove_critical_cf_edges(irg);
 
@@ -470,6 +468,8 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *irg = get_irp_irg(i);
 
 		initialize_birg(&birgs[i], irg, &env);
+		edges_deactivate(irg);
+		edges_activate(irg);
 	}
 
 	/* please FIXME! I'm a dirty hack. */
