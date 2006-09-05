@@ -396,6 +396,7 @@ static void be_main_loop(FILE *file_handle)
 	unsigned num_nodes_r = 0;
 	char prof_filename[256];
 	char path[256];
+	static const char suffix[] = ".prof";
 
 #ifdef WITH_LIBCORE
 	lc_timer_t *t_prolog = NULL;
@@ -432,10 +433,10 @@ static void be_main_loop(FILE *file_handle)
 	// dump_all_anchors(1);
 
 	/* please FIXME! I'm a dirty hack. */
-	snprintf(path, 256, "/proc/self/fd/%d", fileno(file_handle));
-	memset(prof_filename, 0, 256);
-	readlink(path, prof_filename, 250);
-	strcat(prof_filename, ".prof");
+	snprintf(path, sizeof(path), "/proc/self/fd/%d", fileno(file_handle));
+	memset(prof_filename, 0, sizeof(path));
+	readlink(path, prof_filename, sizeof(path) - sizeof(suffix));
+	strcat(prof_filename, suffix);
 
 	if(be_options.opt_profile) {
 		ir_graph *prof_init_irg = be_profile_instrument(prof_filename);
