@@ -7,6 +7,11 @@
 *.txt
 *.sh
 *.out
+cachegrind.out*
+build_firm
+build_gcc
+bla
+res
 OUT.*
 gcc
 firm

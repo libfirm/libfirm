@@ -7,22 +7,33 @@
 #include <stdio.h>
 
 struct x {
-  int a, b;
+	int a, b;
 };
 
 static void t(struct x *p)
 {
-  printf("%d\n", p->a + p->b);
+	printf("%d\n", p->a + p->b);
+}
+
+static void t2()
+{
+	char *mem;
+
+	printf("hallo\n");
+	mem = alloca(23);
+
+	printf("%.0s", mem);
 }
 
 int main(int argc, char *argv[])
 {
-  struct x *p = alloca(sizeof(*p));
+	struct x *p = alloca(sizeof(*p));
 
-  p->a = argc;
-  p->b = 3;
+	p->a = argc;
+	p->b = 3;
 
-  t(p);
+	t(p);
+	t2();
 
-  return 0;
+	return 0;
 }
