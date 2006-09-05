@@ -10,6 +10,8 @@
 
 #include "firm_types.h"
 
+#include "execfreq.h"
+
 void be_sched_dump(FILE *f, ir_graph *irg);
 
 int     sched_get_time_step(const ir_node *irn);
@@ -64,7 +66,7 @@ ir_node *sched_irg_first(const ir_graph *irg);
  *
  * This function implements a simple extended block scheduling algorithm.
  */
-ir_node **sched_create_block_schedule(ir_graph *irg);
+ir_node **sched_create_block_schedule(ir_graph *irg, exec_freq_t *execfreqs);
 
 /**
  * Removes dead nodes from schedule

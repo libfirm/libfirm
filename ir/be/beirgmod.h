@@ -124,6 +124,6 @@ void extreme_liverange_splitting(struct _be_chordal_env_t *cenv);
  * removes basic blocks that only contain a jump instruction
  * (this will potentially create critical edges)
  */
-void be_remove_empty_bocks(ir_graph *irg);
+void be_remove_empty_blocks(ir_graph *irg);
 
 #endif /* _BEIRGMOD_H */

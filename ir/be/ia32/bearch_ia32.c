@@ -1254,9 +1254,9 @@ static void ia32_finish(void *self) {
 
 	// Matze: disabled for now, as the irextbb algo sometimes returns extbb in
 	// the wrong order if the graph has critical edges
-	//be_remove_empty_blocks(irg, cg);
+	//be_remove_empty_blocks(irg);
 
-	cg->blk_sched = sched_create_block_schedule(cg->irg);
+	cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->execfreqs);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
 	if (cg->used_fp == fp_x87 || cg->force_sim) {
@@ -1283,7 +1283,7 @@ static void ia32_codegen(void *self) {
 
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
-	free(self);
+	free(cg);
 }
 
 static void *ia32_cg_init(const be_irg_t *birg);

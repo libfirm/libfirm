@@ -224,7 +224,7 @@ enum {
 	mth_add_int_edge,
 	mth_add_aff_edge,
 	mth_set_color,
-	mth_set_debug,
+	//mth_set_debug,
 	mth_get_color,
 	mth_forbid_color,
 	mth_coalesce,
@@ -242,7 +242,7 @@ static const struct _mth_info_t mthis[mth_last] = {
 	{ "addIntEdge",  "(II)V"                   }, /* public void addIntEdge(int, int); */
 	{ "addAffEdge",  "(III)V"                  }, /* public void addAffEdge(int, int, int); */
 	{ "setColor",    "(II)V"                   }, /* public void setColor(int, int); */
-	{ "setDebug",    "(ILjava/lang/String;)V"  }, /* public void setDebug(int, String); */
+	//{ "setDebug",    "(ILjava/lang/String;)V"  }, /* public void setDebug(int, String); */
 	{ "getColor",    "(I)I"                    }, /* public int getColor(int); */
 	{ "forbidColor", "(II)V"                   }, /* public void forbidColor(int, int); */
 	{ "coalesce",    "()V"                     }, /* public void coalesce(); */
@@ -358,6 +358,7 @@ void be_java_coal_set_color(be_java_coal_t *c, int n, int col)
 
 void be_java_coal_set_debug(be_java_coal_t *c, int n, const char *dbg)
 {
+#if 0
 	JNIEnv *jni   = c->env->jni;
 	jmethodID mid = c->mth_ids[mth_set_debug];
 	jstring str;
@@ -366,6 +367,7 @@ void be_java_coal_set_debug(be_java_coal_t *c, int n, const char *dbg)
 	CHECK(c->env);
 	(*jni)->CallVoidMethod(jni, c->obj, mid, (jint) n, str);
 	CHECK(c->env);
+#endif
 }
 
 void be_java_coal_forbid_color(be_java_coal_t *c, int n, int col)

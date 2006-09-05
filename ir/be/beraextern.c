@@ -787,12 +787,12 @@ static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
 
 
 static const lc_opt_enum_func_ptr_items_t ssa_destr_items[] = {
-	{ "simple",     (int (*)()) be_ssa_destr_simple }, /* TODO make (void*) casts nicer */
+	{ "simple",     (int (*)(void)) be_ssa_destr_simple }, /* TODO make (void*) casts nicer */
 	{ NULL,      NULL }
 };
 
 static lc_opt_enum_func_ptr_var_t ssa_destr_var = {
-	 (int (**)()) &ssa_destr, ssa_destr_items
+	 (int (**)(void)) &ssa_destr, ssa_destr_items
 };
 
 static const lc_opt_table_entry_t be_ra_extern_options[] = {

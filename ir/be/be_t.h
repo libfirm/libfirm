@@ -15,6 +15,7 @@
 #include "be.h"
 #include "bearch.h"
 #include "beirgmod.h"
+#include "execfreq.h"
 
 #define DUMP_NONE       0
 #define DUMP_INITIAL    (1 << 0)
@@ -57,13 +58,13 @@ struct _be_options_t {
 };
 
 struct _be_main_env_t {
-  struct obstack obst;
-  struct _be_node_factory_t *node_factory;
-  struct _arch_env_t *arch_env;
-  struct _be_options_t *options;
-  struct _arch_code_generator_t *cg;
-  struct _arch_irn_handler_t *phi_handler;
-  DEBUG_ONLY(firm_dbg_module_t *dbg;)
+  	struct obstack obst;
+	struct _be_node_factory_t *node_factory;
+	struct _arch_env_t *arch_env;
+	struct _be_options_t *options;
+	struct _arch_code_generator_t *cg;
+	struct _arch_irn_handler_t *phi_handler;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 struct _be_irg_t {
@@ -71,6 +72,7 @@ struct _be_irg_t {
 	struct _be_main_env_t         *main_env;
 	struct _be_abi_irg_t          *abi;
 	struct _arch_code_generator_t *cg;
+	exec_freq_t *execfreqs;
 };
 
 /**

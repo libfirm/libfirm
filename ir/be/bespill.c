@@ -203,7 +203,6 @@ void be_spill_phi(spill_env_t *env, ir_node *node) {
 	// if we had a spill for the phi value before, then remove this spill from
 	// schedule, as we will remove it in the insert spill/reload phase
 	if(spill->spill != NULL && !is_Phi(spill->spill)) {
-		//sched_remove(spill->spill);
 		spill->old_spill = spill->spill;
 		spill->spill = NULL;
 	}

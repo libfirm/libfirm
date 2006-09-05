@@ -416,6 +416,7 @@ static ir_node *gen_node_for_Cond(mips_transform_env_t *env)
 
 	assert(get_mode_size_bits(selector_mode) == 32);
 
+	defaultproj = NULL;
 	defaultprojn = get_Cond_defaultProj(node);
 
 	// go over all projs to find min-&maxval of the switch

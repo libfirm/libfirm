@@ -10,7 +10,11 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+
+// FIXME remove me later
 #include <unistd.h>
+int fileno(FILE *stream);
+int readlink(const char *path, char *buf, size_t bufsiz);
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
@@ -34,6 +38,7 @@
 #include "return.h"
 #include "firmstat.h"
 #include "cfopt.h"
+#include "execfreq.h"
 
 #include "bearch.h"
 #include "firm/bearch_firm.h"
@@ -315,11 +320,34 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
 }
 
 /**
- * Prepare a backend graph for code generation.
+ * Prepare a backend graph for code generation and initialize its birg
  */
-static void prepare_graph(be_irg_t *birg)
+static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 {
-	ir_graph *irg = birg->irg;
+	const arch_code_generator_if_t *cg_if;
+	arch_isa_t *isa = env->arch_env->isa;
+
+	memset(birg, 0, sizeof(*birg));
+	birg->irg = irg;
+	birg->main_env = env;
+
+	edges_deactivate_kind(irg, EDGE_KIND_DEP);
+	edges_activate_kind(irg, EDGE_KIND_DEP);
+
+	DBG((env->dbg, LEVEL_2, "====> IRG: %F\n", irg));
+	dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
+
+	be_stat_init_irg(env->arch_env, irg);
+	be_do_stat_nodes(irg, "01 Begin");
+
+	/* set the current graph (this is important for several firm functions) */
+	current_ir_graph = irg;
+
+	/* Get the code generator interface. */
+	cg_if = isa->impl->get_code_generator_if(isa);
+
+	/* get a code generator for this graph. */
+	birg->cg = cg_if->init(birg);
 
 	/* Normalize proj nodes. */
 	normalize_proj_nodes(irg);
@@ -343,7 +371,10 @@ static void prepare_graph(be_irg_t *birg)
 	be_check_dominance(irg);
 
 	/* reset the phi handler. */
-	be_phi_handler_reset(birg->main_env->phi_handler);
+	be_phi_handler_reset(env->phi_handler);
+
+	/* some transformations need to be done before abi introduce */
+	arch_code_generator_before_abi(birg->cg);
 }
 
 #ifdef WITH_LIBCORE
@@ -388,7 +419,7 @@ static void prepare_graph(be_irg_t *birg)
  */
 static void be_main_loop(FILE *file_handle)
 {
-	int i, n;
+	int i;
 	arch_isa_t *isa;
 	be_main_env_t env;
 	unsigned num_nodes_b = 0;
@@ -397,9 +428,11 @@ static void be_main_loop(FILE *file_handle)
 	char prof_filename[256];
 	char path[256];
 	static const char suffix[] = ".prof";
+	be_irg_t *birgs;
+	unsigned num_birgs;
 
 #ifdef WITH_LIBCORE
-	lc_timer_t *t_prolog = NULL;
+	//lc_timer_t *t_prolog = NULL;
 	lc_timer_t *t_abi = NULL;
 	lc_timer_t *t_codegen = NULL;
 	lc_timer_t *t_sched = NULL;
@@ -412,7 +445,7 @@ static void be_main_loop(FILE *file_handle)
 	be_ra_timer_t *ra_timer;
 
 	if (be_options.timing == BE_TIME_ON) {
-		t_prolog   = lc_timer_register("prolog",   "prolog");
+		//t_prolog   = lc_timer_register("prolog",   "prolog");
 		t_abi      = lc_timer_register("beabi",    "be abi introduction");
 		t_codegen  = lc_timer_register("codegen",  "codegeneration");
 		t_sched    = lc_timer_register("sched",    "scheduling");
@@ -429,8 +462,15 @@ static void be_main_loop(FILE *file_handle)
 
 	isa = arch_env_get_isa(env.arch_env);
 
-	/* for debugging, anchors helps */
-	// dump_all_anchors(1);
+	num_birgs = get_irp_n_irgs();
+	// we might need 1 birg more for instrumentation constructor
+	birgs = alloca(sizeof(birgs[0]) * (num_birgs + 1));
+
+	for(i = 0; i < get_irp_n_irgs(); ++i) {
+		ir_graph *irg = get_irp_irg(i);
+
+		initialize_birg(&birgs[i], irg, &env);
+	}
 
 	/* please FIXME! I'm a dirty hack. */
 	snprintf(path, sizeof(path), "/proc/self/fd/%d", fileno(file_handle));
@@ -440,20 +480,24 @@ static void be_main_loop(FILE *file_handle)
 
 	if(be_options.opt_profile) {
 		ir_graph *prof_init_irg = be_profile_instrument(prof_filename);
+		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
+		num_birgs++;
 		pset_insert_ptr(env.arch_env->constructor_entities, get_irg_entity(prof_init_irg));
+	} else {
+		be_profile_read(prof_filename);
 	}
-	be_profile_read(prof_filename);
 
 	/* For all graphs */
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		const arch_code_generator_if_t *cg_if;
-		be_irg_t birg;
+	for (i = 0; i < num_birgs; ++i) {
+		be_irg_t *birg = & birgs[i];
+		ir_graph *irg = birg->irg;
 		optimization_state_t state;
+
+		birg->execfreqs = compute_execfreq(irg, 10);
 
 		/* stop and reset timers */
 		BE_TIMER_ONLY(
-			LC_STOP_AND_RESET_TIMER(t_prolog);
+			//LC_STOP_AND_RESET_TIMER(t_prolog);
 			LC_STOP_AND_RESET_TIMER(t_abi);
 			LC_STOP_AND_RESET_TIMER(t_codegen);
 			LC_STOP_AND_RESET_TIMER(t_sched);
@@ -468,42 +512,15 @@ static void be_main_loop(FILE *file_handle)
 
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
 
-		birg.irg      = irg;
-		birg.main_env = &env;
-
-		edges_deactivate_kind(irg, EDGE_KIND_DEP);
-		edges_activate_kind(irg, EDGE_KIND_DEP);
-
-		DBG((env.dbg, LEVEL_2, "====> IRG: %F\n", irg));
-		dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
-
-		BE_TIMER_PUSH(t_prolog);
-
-		be_stat_init_irg(env.arch_env, irg);
-		be_do_stat_nodes(irg, "01 Begin");
-
 		/* set the current graph (this is important for several firm functions) */
-		current_ir_graph = birg.irg;
+		current_ir_graph = irg;
 
-		/* Get the code generator interface. */
-		cg_if = isa->impl->get_code_generator_if(isa);
-
-		/* get a code generator for this graph. */
-		birg.cg = cg_if->init(&birg);
-
-		/* create the code generator and generate code. */
-		prepare_graph(&birg);
-
-		BE_TIMER_POP(t_prolog);
-
-		/* some transformations need to be done before abi introduce */
-		BE_TIMER_PUSH(t_codegen);
-		arch_code_generator_before_abi(birg.cg);
-		BE_TIMER_POP(t_codegen);
+		/* reset the phi handler. */
+		be_phi_handler_reset(env.phi_handler);
 
 		/* implement the ABI conventions. */
 		BE_TIMER_PUSH(t_abi);
-		birg.abi = be_abi_introduce(&birg);
+		birg->abi = be_abi_introduce(birg);
 		BE_TIMER_POP(t_abi);
 
 		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
@@ -511,7 +528,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/* generate code */
 		BE_TIMER_PUSH(t_codegen);
-		arch_code_generator_prepare_graph(birg.cg);
+		arch_code_generator_prepare_graph(birg->cg);
 		BE_TIMER_POP(t_codegen);
 
 		be_do_stat_nodes(irg, "03 Prepare");
@@ -532,19 +549,19 @@ static void be_main_loop(FILE *file_handle)
 
 		/* let backend prepare scheduling */
 		BE_TIMER_PUSH(t_codegen);
-		arch_code_generator_before_sched(birg.cg);
+		arch_code_generator_before_sched(birg->cg);
 		BE_TIMER_POP(t_codegen);
 
 		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
-		list_sched(&birg, &be_options);
+		list_sched(birg, &be_options);
 		BE_TIMER_POP(t_sched);
 
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
 
 		/* check schedule */
 		BE_TIMER_PUSH(t_verify);
-		be_sched_vrfy(birg.irg, be_options.vrfy_option);
+		be_sched_vrfy(irg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
 		be_do_stat_nodes(irg, "04 Schedule");
@@ -558,7 +575,7 @@ static void be_main_loop(FILE *file_handle)
 
 		/* add Keeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */
-		assure_constraints(&birg);
+		assure_constraints(birg);
 		BE_TIMER_POP(t_constr);
 
 		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
@@ -566,27 +583,27 @@ static void be_main_loop(FILE *file_handle)
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		BE_TIMER_PUSH(t_abi);
-		be_abi_fix_stack_nodes(birg.abi, NULL);
+		be_abi_fix_stack_nodes(birg->abi, NULL);
 		BE_TIMER_POP(t_abi);
 
 		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
 
 		/* check schedule */
 		BE_TIMER_PUSH(t_verify);
-		be_sched_vrfy(birg.irg, be_options.vrfy_option);
+		be_sched_vrfy(irg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
 		/* do some statistics */
-		be_do_stat_reg_pressure(&birg);
+		be_do_stat_reg_pressure(birg);
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		BE_TIMER_PUSH(t_codegen);
-		arch_code_generator_before_ra(birg.cg);
+		arch_code_generator_before_ra(birg->cg);
 		BE_TIMER_POP(t_codegen);
 
 		/* Do register allocation */
 		BE_TIMER_PUSH(t_regalloc);
-		ra_timer = ra->allocate(&birg);
+		ra_timer = ra->allocate(birg);
 		BE_TIMER_POP(t_regalloc);
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
@@ -594,18 +611,18 @@ static void be_main_loop(FILE *file_handle)
 
 		/* let the codegenerator prepare the graph for emitter */
 		BE_TIMER_PUSH(t_finish);
-		arch_code_generator_after_ra(birg.cg);
+		arch_code_generator_after_ra(birg->cg);
 		BE_TIMER_POP(t_finish);
 
 		/* fix stack offsets */
 		BE_TIMER_PUSH(t_abi);
-		be_abi_fix_stack_nodes(birg.abi, NULL);
-		be_remove_dead_nodes_from_schedule(birg.irg);
-		be_abi_fix_stack_bias(birg.abi);
+		be_abi_fix_stack_nodes(birg->abi, NULL);
+		be_remove_dead_nodes_from_schedule(irg);
+		be_abi_fix_stack_bias(birg->abi);
 		BE_TIMER_POP(t_abi);
 
 		BE_TIMER_PUSH(t_finish);
-		arch_code_generator_finish(birg.cg);
+		arch_code_generator_finish(birg->cg);
 		BE_TIMER_POP(t_finish);
 
 		dump(DUMP_FINAL, irg, "-finish", dump_ir_block_graph_sched);
@@ -613,31 +630,31 @@ static void be_main_loop(FILE *file_handle)
 		/* check schedule and register allocation */
 		BE_TIMER_PUSH(t_verify);
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
-			//irg_verify(birg.irg, VRFY_ENFORCE_SSA);
-			be_check_dominance(birg.irg);
-			be_verify_out_edges(birg.irg);
-			be_verify_schedule(birg.irg);
-			be_verify_register_allocation(env.arch_env, birg.irg);
+			//irg_verify(irg, VRFY_ENFORCE_SSA);
+			be_check_dominance(irg);
+			be_verify_out_edges(irg);
+			be_verify_schedule(irg);
+			be_verify_register_allocation(env.arch_env, irg);
 		}
 		else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
-			//assert(irg_verify(birg.irg, VRFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_verify_out_edges(birg.irg));
-			assert(be_check_dominance(birg.irg) && "Dominance verification failed");
-			assert(be_verify_schedule(birg.irg) && "Schedule verification failed");
-			assert(be_verify_register_allocation(env.arch_env, birg.irg)
+			//assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
+			assert(be_verify_out_edges(irg));
+			assert(be_check_dominance(irg) && "Dominance verification failed");
+			assert(be_verify_schedule(irg) && "Schedule verification failed");
+			assert(be_verify_register_allocation(env.arch_env, irg)
 			       && "register allocation verification failed");
 		}
 		BE_TIMER_POP(t_verify);
 
 		/* emit assembler code */
 		BE_TIMER_PUSH(t_emit);
-		arch_code_generator_done(birg.cg);
+		arch_code_generator_done(birg->cg);
 		BE_TIMER_POP(t_emit);
 
 		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
 
 		BE_TIMER_PUSH(t_abi);
-		be_abi_free(birg.abi);
+		be_abi_free(birg->abi);
 		BE_TIMER_POP(t_abi);
 
 		be_do_stat_nodes(irg, "07 Final");
@@ -653,7 +670,7 @@ static void be_main_loop(FILE *file_handle)
 			printf("# nodes at begin:  %u\n", num_nodes_b);
 			printf("# nodes before ra: %u\n", num_nodes_r);
 			printf("# nodes at end:    %u\n\n", num_nodes_a);
-			LC_EMIT(t_prolog);
+			//LC_EMIT(t_prolog);
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
 			LC_EMIT(t_sched);
@@ -678,10 +695,11 @@ static void be_main_loop(FILE *file_handle)
 #undef LC_EMIT_RA
 #undef LC_EMIT
 
+		free_execfreq(birg->execfreqs);
+
         /* switched off due to statistics (statistic module needs all irgs) */
 		if (! stat_is_active())
 			free_ir_graph(irg);
-
 	}
 	be_profile_free();
 	be_done_env(&env);

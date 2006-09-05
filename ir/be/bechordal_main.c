@@ -583,7 +583,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	chordal_env.irg       = irg;
 	chordal_env.birg      = bi;
 	chordal_env.dom_front = be_compute_dominance_frontiers(irg);
-	chordal_env.exec_freq = compute_execfreq(irg, be_loop_weight);
+	chordal_env.exec_freq = bi->execfreqs;
+		/*compute_execfreq(irg, be_loop_weight);*/
 	chordal_env.lv        = be_liveness(irg);
 	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
@@ -790,7 +791,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	obstack_free(&chordal_env.obst, NULL);
 	be_free_dominance_frontiers(chordal_env.dom_front);
 	be_liveness_free(chordal_env.lv);
-	free_execfreq(chordal_env.exec_freq);
+	//free_execfreq(chordal_env.exec_freq);
 
 	BE_TIMER_POP(ra_timer.t_epilog);
 	BE_TIMER_POP(ra_timer.t_other);
