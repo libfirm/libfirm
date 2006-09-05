@@ -1,5 +1,5 @@
-EDG_BIN="edg"
-EDG_CFLAGS="--c --gnu=30305 -I/usr/lib/gcc-lib/i686-pc-linux-gnu/4.1.1/include"
+EDG_BIN="eccp"
+EDG_CFLAGS="${ADDCFLAGS} -O3"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
@@ -27,7 +27,10 @@ __END__
 
 basedir=`pwd`
 
-for dir in . gcc-testsuite gcc-testsuite/ieee; do
+DIRS=". gcc-testsuite gcc-testsuite/ieee"
+test -n "$1" && DIRS="$1"
+
+for dir in $DIRS; do
 	curdir=$basedir/$dir
     echo "<section name=\"$curdir/\">" >> $XMLRES
 for file in $curdir/$CFILES; do
