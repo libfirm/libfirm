@@ -2219,23 +2219,59 @@ skip_one_must_die:
 		if(opt_repair_schedule) {
 			pset_foreach(defs, tmp) {
 				op_t      *tmp_op = get_irn_link(tmp);
-				ilp_var_t  keep;
 				spill_t   *spill = set_find_spill(spill_bb->ilp, tmp);
+#if 1
+				ilp_var_t  delete;
+				assert(spill);
+
+				ir_snprintf(buf, sizeof(buf), "delete_%N", tmp);
+				delete = lpp_add_var_default(si->lpp, buf, lpp_binary, -1.0*get_cost(si, irn)*execution_frequency(si, bb), 0.0);
+
+				/* op may not be killed if its first live_range is 1 */
+				ir_snprintf(buf, sizeof(buf), "killorig-lr_%N", tmp);
+				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, delete, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, tmp_op->attr.live_range.ilp, 1.0);
+
+				/* op may not be killed if it is spilled after the definition */
+				ir_snprintf(buf, sizeof(buf), "killorig-spill_%N", tmp);
+				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, delete, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, spill->spill, 1.0);
+#else
+				ilp_var_t  keep;
 				assert(spill);
 
 				ir_snprintf(buf, sizeof(buf), "keep_%N", tmp);
 				keep = lpp_add_var_default(si->lpp, buf, lpp_binary, get_cost(si, irn)*execution_frequency(si, bb), 1.0);
 
+				/* op may not be killed if its first live_range is 1 */
 				ir_snprintf(buf, sizeof(buf), "killorig-lr_%N", tmp);
 				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, 0.0);
 				lpp_set_factor_fast(si->lpp, cst, keep, 1.0);
 				lpp_set_factor_fast(si->lpp, cst, tmp_op->attr.live_range.ilp, -1.0);
 
+				/* op may not be killed if it is spilled after the definition */
 				ir_snprintf(buf, sizeof(buf), "killorig-spill_%N", tmp);
 				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, 0.0);
 				lpp_set_factor_fast(si->lpp, cst, keep, 1.0);
 				lpp_set_factor_fast(si->lpp, cst, spill->spill, -1.0);
+#endif
 			}
+		} else {
+			pset_foreach(defs, tmp) {
+				op_t      *tmp_op = get_irn_link(tmp);
+				spill_t   *spill = set_find_spill(spill_bb->ilp, tmp);
+				assert(spill);
+
+				/* live_range or spill should be 1
+				   TODO: lr should be live until first use */
+				ir_snprintf(buf, sizeof(buf), "nokillorig_%N", tmp);
+				cst = lpp_add_cst_uniq(si->lpp, buf, lpp_greater, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, tmp_op->attr.live_range.ilp, 1.0);
+				lpp_set_factor_fast(si->lpp, cst, spill->spill, 1.0);
+			}
+
 		}
 
 
