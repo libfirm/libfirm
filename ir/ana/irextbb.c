@@ -29,10 +29,11 @@
 typedef struct _env {
   struct obstack *obst;   /**< the obstack where allocations took place */
   ir_extblk *head;        /**< head of the list of all extended blocks */
+  ir_node *start_block;   /**< the start block of the current graph */
 } env_t;
 
 int (is_ir_extbb)(const void *thing) {
-	return _is_ir_extbb(thing);
+  return _is_ir_extbb(thing);
 }
 
 /**
@@ -94,8 +95,7 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
   int n = get_Block_n_cfgpreds(block);
   env_t *env = ctx;
 
-  if (n <= 0 || n > 1 ||
-    block == get_irg_start_block(current_ir_graph)) {
+  if (n <= 0 || n > 1 || block == env->start_block) {
     /*
      * block is a JOIN-node ie the control flow from
      * many other blocks joins here. block is a leader.
@@ -109,8 +109,7 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
     /* blocks with only one BAD predecessors are leaders too */
     if (is_Bad(add_to)) {
       allocate_extblk(block, env);
-    }
-    else {
+    } else {
       /*
        * Only one control flow predecessor. This block belongs
        * to the same extended basic block as its predecessor.
@@ -125,16 +124,14 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
            * basic block, so create a new one here.
            */
           allocate_extblk(block, env);
-        }
-        else {
+        } else {
           /* either the previous block has only one successor or
            * this is the first successor after an if, include it.
            */
           set_Block_extbb(block, NULL);
         }
         mark_irn_visited(cf_op);
-      }
-      else {
+      } else {
         /* already marked, so begin a new extended block here */
         allocate_extblk(block, env);
       }
@@ -157,7 +154,7 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
   ir_extblk *sentinel = &_sentinel;
 
   if (! extbb) {
-    ir_node *curr, *prev;
+    ir_node *curr, *prev, *list;
 
     /*
      * Search the leader. It can happen, that we fall into an endless
@@ -171,7 +168,7 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
     }
 
     if (extbb == sentinel) {
-      /* We detect a dead loop. We fix this by allocating an
+      /* We detect a dead loop. We fix this by allocating a
        * special Extended block
        */
       ir_printf("Dead loop detected starting with %+F::%+F\n", get_irg_entity(current_ir_graph), block);
@@ -183,77 +180,24 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
 
     /* replace all sentinels by the extbb info */
     prev = block;
+    list = NULL;
     while (1) {
       if (get_Block_extbb(prev) != sentinel)
         break;
-      set_Block_extbb(prev, extbb);
-			++extbb->visited;
-			set_irn_link(prev, extbb->link);
-			extbb->link = prev;
+      set_irn_link(prev, list);
+      list = prev;
       prev = get_Block_cfgpred_block(prev, 0);
+    }
+    /* arg, the list is in wrong order, turn around and add to the extbb list */
+    for (curr = list; curr; curr = prev) {
+      prev = get_irn_link(curr);
+      set_irn_link(curr, extbb->link);
+      extbb->link = curr;
+      set_Block_extbb(curr, extbb);
+      ++extbb->visited;
     }
   }
 }
-
-#ifdef NEED_SORT
-/**
- * Walker for cf_dependent_on().
- * This function searches a node tgt recursively from a given node
- * but is restricted to the given extended basic block.
- *
- * @return 1 if tgt was reachable from curr, 0 if not.
- */
-static int check_cf_dependence(ir_node *curr, ir_node *tgt, ir_extblk *extbb)
-{
-	int n, i;
-
-  /* Note: we did not include the leader in our serach, so
-     there could not be any loops here. */
-	if (get_Block_extbb(curr) != extbb)
-		return 0;
-
-	if (curr == tgt)
-		return 1;
-
-	for (i = 0, n = get_Block_n_cfgpreds(curr); i < n; ++i) {
-		if (check_cf_dependence(get_Block_cfgpred_block(curr, i), tgt, extbb))
-			return 1;
-	}
-	return 0;
-}
-
-/**
- * Check if a block is control dependent on another one.
- * Both blocks must be in the same extended basic block.
- * @param blk1  The first block.
- * @param blk2  The second block.
- * @return 1, if blk1 is control dependent (transitively) on blk2, 0 if not.
- */
-static int cf_dependent_on(ir_node *blk1, ir_node *blk2)
-{
-	ir_extblk *extbb = get_Block_extbb(blk1);
-	ir_graph *irg = get_irn_irg(blk1);
-
-	assert(extbb == get_Block_extbb(blk2));
-	return check_cf_dependence(blk1, blk2, extbb);
-}
-
-/**
- * Compare two blocks for dependency.
- *
- * @return
- *	0  if both blocks nodes are equal
- *	1  block b1 depends on block b2
- *	-1 block b2 depends on block d2
- */
-static int block_order(const void *b1, const void *b2)
-{
-	ir_node *n1 = *(ir_node **)b1;
-	ir_node *n2 = *(ir_node **)b2;
-
-	return n1 == n2 ? 0 : (cf_dependent_on(n1, n2) ? -1 : 1);
-}
-#endif /* NEED_SORT */
 
 /*
  * Compute the extended basic blocks for a graph
@@ -269,8 +213,9 @@ void compute_extbb(ir_graph *irg) {
   }
   obstack_init(irg->extbb_obst);
 
-  env.obst = irg->extbb_obst;
-  env.head = NULL;
+  env.obst        = irg->extbb_obst;
+  env.head        = NULL;
+  env.start_block = get_irg_start_block(irg);
 
   if (! edges_activated(irg)) {
     /* we don't have edges */
@@ -305,19 +250,21 @@ void compute_extbb(ir_graph *irg) {
       block = nblock;
     }
 
-    extbb->link    = NULL;
-    extbb->visited = 0;
+#ifndef NDEBUG
+    /* check it */
+    for (i = len - 1; i > 0; --i) {
+      ir_node *blk = extbb->blks[i];
 
-#ifdef NEED_SORT
-    /* we want the blocks in scheduled order, so sort them */
-    /* FIXME: is this really needed? Or generates the algorithm automagically ordered ones? */
-    if (len > 1) {
-      /* temporary remove the leader from the extended block to break loops */
-      set_Block_extbb(extbb->blks[0], NULL);
-      qsort(&extbb->blks[1], len-1, sizeof(extbb->blks[0]), block_order);
-      set_Block_extbb(extbb->blks[0], extbb);
+      if (get_Block_n_cfgpreds(blk) != 1) {
+        assert(!"Block for more than one predecessors is no leader");
+      } else if (get_Block_cfgpred_block(blk, 0) != extbb->blks[i - 1]) {
+        assert(!"extbb block order wrong");
+      }
     }
 #endif
+
+    extbb->link    = NULL;
+    extbb->visited = 0;
   }
 
   irg->extblk_state = extblk_valid;
