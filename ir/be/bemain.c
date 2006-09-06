@@ -467,7 +467,7 @@ static void be_main_loop(FILE *file_handle, const char *asm_file_name)
 		ir_graph *prof_init_irg = be_profile_instrument(prof_filename);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
-		pset_insert_ptr(env.arch_env->constructor_entities, get_irg_entity(prof_init_irg));
+		set_method_img_section(get_irg_entity(prof_init_irg), section_constructors);
 	}
 	else {
 		be_profile_read(prof_filename);
