@@ -15,6 +15,7 @@
 #include "irgraph_t.h"
 #include "iredges_t.h"
 #include "ircons.h"
+#include "irextbb.h"
 #include "debug.h"
 
 #include "bearch.h"
