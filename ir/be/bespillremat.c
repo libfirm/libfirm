@@ -92,7 +92,7 @@ static int opt_no_enlarge_liveness = 0;
 static int opt_timeout = 300;
 static double opt_cost_reload = 8.0;
 static double opt_cost_memoperand =  7.0;
-static double opt_cost_spill =  30.0;
+static double opt_cost_spill =  50.0;
 static double opt_cost_remat =  1.0;
 
 
@@ -2271,7 +2271,6 @@ skip_one_must_die:
 				lpp_set_factor_fast(si->lpp, cst, tmp_op->attr.live_range.ilp, 1.0);
 				lpp_set_factor_fast(si->lpp, cst, spill->spill, 1.0);
 			}
-
 		}
 
 
