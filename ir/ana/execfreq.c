@@ -275,13 +275,13 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 
   /* compute m and b of the transformation used to convert the doubles into scaled ints */
   {
-	  /* double l1 = 1; */
+	  double l1 = 1.0;
 	  double h1 = MAX_INT_FREQ;
 	  double l2 = ef->min_non_zero;
 	  double h2 = ef->max;
 
-	  ef->m = (h1 /* - l1 */) / (h2 - l2);
-	  ef->b = (/* l1 * */ h2  - l2 * h1) / (h2 - l2);
+	  ef->m = (h1 - l1) / (h2 - l2);
+	  ef->b = (l1 * h2  - l2 * h1) / (h2 - l2);
   }
 
 #ifdef USE_GSL
