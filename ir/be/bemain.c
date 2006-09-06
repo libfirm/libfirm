@@ -11,11 +11,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-// FIXME remove me later
-#include <unistd.h>
-int fileno(FILE *stream);
-int readlink(const char *path, char *buf, size_t bufsiz);
-
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
@@ -403,7 +398,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
  *
  * @param file_handle   the file handle the output will be written to
  */
-static void be_main_loop(FILE *file_handle)
+static void be_main_loop(FILE *file_handle, const char *asm_file_name)
 {
 	int i;
 	arch_isa_t *isa;
@@ -412,26 +407,23 @@ static void be_main_loop(FILE *file_handle)
 	unsigned num_nodes_a = 0;
 	unsigned num_nodes_r = 0;
 	char prof_filename[256];
-	char path[256];
 	static const char suffix[] = ".prof";
 	be_irg_t *birgs;
 	unsigned num_birgs;
 
 #ifdef WITH_LIBCORE
-	//lc_timer_t *t_prolog = NULL;
-	lc_timer_t *t_abi = NULL;
-	lc_timer_t *t_codegen = NULL;
-	lc_timer_t *t_sched = NULL;
-   	lc_timer_t *t_constr = NULL;
+	lc_timer_t *t_abi      = NULL;
+	lc_timer_t *t_codegen  = NULL;
+	lc_timer_t *t_sched    = NULL;
+   	lc_timer_t *t_constr   = NULL;
 	lc_timer_t *t_regalloc = NULL;
-	lc_timer_t *t_finish = NULL;
-	lc_timer_t *t_emit = NULL;
-	lc_timer_t *t_other = NULL;
-	lc_timer_t *t_verify = NULL;
+	lc_timer_t *t_finish   = NULL;
+	lc_timer_t *t_emit     = NULL;
+	lc_timer_t *t_other    = NULL;
+	lc_timer_t *t_verify   = NULL;
 	be_ra_timer_t *ra_timer;
 
 	if (be_options.timing == BE_TIME_ON) {
-		//t_prolog   = lc_timer_register("prolog",   "prolog");
 		t_abi      = lc_timer_register("beabi",    "be abi introduction");
 		t_codegen  = lc_timer_register("codegen",  "codegeneration");
 		t_sched    = lc_timer_register("sched",    "scheduling");
@@ -448,43 +440,48 @@ static void be_main_loop(FILE *file_handle)
 
 	isa = arch_env_get_isa(env.arch_env);
 
+	/* we might need 1 birg more for instrumentation constructor */
 	num_birgs = get_irp_n_irgs();
-	// we might need 1 birg more for instrumentation constructor
-	birgs = alloca(sizeof(birgs[0]) * (num_birgs + 1));
+	birgs     = alloca(sizeof(birgs[0]) * (num_birgs + 1));
 
+	/* First: initialize all birgs */
 	for(i = 0; i < get_irp_n_irgs(); ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
 		initialize_birg(&birgs[i], irg, &env);
 	}
 
-	/* please FIXME! I'm a dirty hack. */
-	snprintf(path, sizeof(path), "/proc/self/fd/%d", fileno(file_handle));
-	memset(prof_filename, 0, sizeof(path));
-	readlink(path, prof_filename, sizeof(path) - sizeof(suffix));
+	/*
+		Get the filename for the profiling data.
+		Beware: '\0' is already included in sizeof(suffix)
+	*/
+	memset(prof_filename, 0, sizeof(prof_filename));
+	strncpy(prof_filename, asm_file_name, sizeof(prof_filename) - sizeof(suffix));
 	strcat(prof_filename, suffix);
 
-	if(be_options.opt_profile) {
+	/*
+		Next: Either instruments all irgs with profiling code
+		or try to read in profile data for current translation unit.
+	*/
+	if (be_options.opt_profile) {
 		ir_graph *prof_init_irg = be_profile_instrument(prof_filename);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
 		pset_insert_ptr(env.arch_env->constructor_entities, get_irg_entity(prof_init_irg));
-	} else {
+	}
+	else {
 		be_profile_read(prof_filename);
 	}
 
 	/* For all graphs */
 	for (i = 0; i < num_birgs; ++i) {
 		be_irg_t *birg = & birgs[i];
-		ir_graph *irg = birg->irg;
+		ir_graph *irg  = birg->irg;
 		optimization_state_t state;
 		const arch_code_generator_if_t *cg_if;
 
-		birg->execfreqs = compute_execfreq(irg, 10);
-
 		/* stop and reset timers */
 		BE_TIMER_ONLY(
-			//LC_STOP_AND_RESET_TIMER(t_prolog);
 			LC_STOP_AND_RESET_TIMER(t_abi);
 			LC_STOP_AND_RESET_TIMER(t_codegen);
 			LC_STOP_AND_RESET_TIMER(t_sched);
@@ -496,6 +493,8 @@ static void be_main_loop(FILE *file_handle)
 			LC_STOP_AND_RESET_TIMER(t_other);
 		);
 		BE_TIMER_PUSH(t_other);   /* t_other */
+
+		birg->execfreqs = compute_execfreq(irg, 10);
 
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
 
@@ -530,9 +529,9 @@ static void be_main_loop(FILE *file_handle)
 		be_do_stat_nodes(irg, "03 Prepare");
 
 		/*
-		 * Since the code generator made a lot of new nodes and skipped
-		 * a lot of old ones, we should do dead node elimination here.
-		 * Note that this requires disabling the edges here.
+			Since the code generator made a lot of new nodes and skipped
+			a lot of old ones, we should do dead node elimination here.
+			Note that this requires disabling the edges here.
 		 */
 		edges_deactivate(irg);
 		//dead_node_elimination(irg);
@@ -605,7 +604,7 @@ static void be_main_loop(FILE *file_handle)
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "06 Register Allocation");
 
-		/* let the codegenerator prepare the graph for emitter */
+		/* let the code generator prepare the graph for emitter */
 		BE_TIMER_PUSH(t_finish);
 		arch_code_generator_after_ra(birg->cg);
 		BE_TIMER_POP(t_finish);
@@ -666,7 +665,6 @@ static void be_main_loop(FILE *file_handle)
 			printf("# nodes at begin:  %u\n", num_nodes_b);
 			printf("# nodes before ra: %u\n", num_nodes_r);
 			printf("# nodes at end:    %u\n\n", num_nodes_a);
-			//LC_EMIT(t_prolog);
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
 			LC_EMIT(t_sched);
@@ -706,7 +704,7 @@ static void be_main_loop(FILE *file_handle)
 }
 
 /* Main interface to the frontend. */
-void be_main(FILE *file_handle)
+void be_main(FILE *file_handle, const char *asm_file_name)
 {
 #ifdef WITH_LIBCORE
 	lc_timer_t *t = NULL;
@@ -738,7 +736,7 @@ void be_main(FILE *file_handle)
 	set_visit_pseudo_irgs(0);
 
  	be_node_init();
-	be_main_loop(file_handle);
+	be_main_loop(file_handle, asm_file_name);
 
 #ifdef WITH_LIBCORE
 	if (be_options.timing == BE_TIME_ON) {
