@@ -616,8 +616,6 @@ static void remove_empty_block(ir_node *block, void *data) {
 	sched_foreach(block, node) {
 		if(!is_Jmp(node))
 			return;
-		if(get_irn_n_edges(node) != 1)
-			return;
 		if(jump != NULL) {
 			// we should never have 2 jumps in a block
 			assert(0);
@@ -642,7 +640,6 @@ static void remove_empty_block(ir_node *block, void *data) {
 	irg = get_irn_irg(block);
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
-	set_irg_outs_inconsistent(irg);
 }
 
 /**
