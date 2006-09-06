@@ -210,12 +210,14 @@ void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs) {
 			block = nblock;
 		}
 
+#if 0
 		for(i = 0; i < len; ++i) {
 			if(i > 0)
 				printf(", ");
 			ir_printf("%+F", extbb->blks[i]);
 		}
 		printf("\n");
+#endif
 
 		extbb->link    = NULL;
 		extbb->visited = 0;
