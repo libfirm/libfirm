@@ -21,6 +21,7 @@
 #define _IREXTBB_H_
 
 #include "firm_types.h"
+#include "execfreq.h"
 
 #ifndef _IR_EXTBB_TYPEDEF_
 #define _IR_EXTBB_TYPEDEF_
@@ -56,6 +57,11 @@ int is_ir_extbb(const void *thing);
  * Compute the extended basic blocks for a graph.
  */
 void compute_extbb(ir_graph *irg);
+
+/**
+ * Compute the extended basic blocks for a graph based on execution frequencies.
+ */
+void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs);
 
 /**
  * free all extended block info.
