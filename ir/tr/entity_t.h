@@ -78,8 +78,8 @@ typedef struct compound_ent_attr {
 
 /** attributes for methods */
 typedef struct method_ent_attr {
-  ir_graph *irg;        /**< The corresponding irg if known.
-                             The ir_graph constructor automatically sets this field. */
+  ir_graph *irg;                 /**< The corresponding irg if known.
+                                      The ir_graph constructor automatically sets this field. */
   unsigned irg_add_properties;   /**< Additional graph properties can be
                                       stored in a entity if no irg is available. */
 
@@ -87,8 +87,9 @@ typedef struct method_ent_attr {
                                       in the virtual function table. */
 
   ptr_access_kind *param_access; /**< the parameter access */
-  float *param_weight; /**< The weight of method's parameters. Parameters
-                          with a high weight are good for procedure cloning. */
+  float *param_weight;           /**< The weight of method's parameters. Parameters
+                                      with a high weight are good for procedure cloning. */
+  ir_img_section section;        /**< The code section where this method should be placed */
 } method_ent_attr;
 
 
