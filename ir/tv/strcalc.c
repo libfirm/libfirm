@@ -975,7 +975,7 @@ void sign_extend(char *calc_buffer, ir_mode *mode) {
 
       for (i = ofs + 1; i < calc_buffer_size; ++i)
         calc_buffer[i] = SC_F;
-      calc_buffer[ofs] = or_table[calc_buffer[ofs]][sex_digit[bits & 3]];
+      calc_buffer[ofs] = or_table[(int) calc_buffer[ofs]][(int) sex_digit[bits & 3]];
     }
   }
 }
