@@ -1,3 +1,5 @@
+#!/bin/sh
+
 EDG_BIN="eccp"
 EDG_CFLAGS="${ADDCFLAGS} -O3"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
