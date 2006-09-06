@@ -198,7 +198,10 @@ int co_solve_heuristic_java(copy_opt_t *co)
 		if(bitset_is_set(nodes, idx)) {
 			unsigned t_idx             = node_map[idx];
 			unsigned col               = inv_col_map[be_java_coal_get_color(coal, t_idx)];
-			const arch_register_t *reg = &co->cls->regs[col];
+			const arch_register_t *reg;
+
+			assert(col < n_regs);
+			reg	= &co->cls->regs[col];
 			arch_set_irn_register(co->aenv, n, reg);
 		}
 	}
