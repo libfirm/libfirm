@@ -598,16 +598,31 @@ entity *get_unknown_entity(void);
 
 /** Encodes how a pointer parameter is accessed. */
 typedef enum acc_bits {
-  ptr_access_none  = 0,		      /**< no access */
-  ptr_access_read  = 1,		      /**< read access */
-  ptr_access_write = 2,		      /**< write access */
-  ptr_access_rw    = ptr_access_read|ptr_access_write,	/**< read AND write access */
-  ptr_access_store = 4,         /**< the pointer is stored */
+  ptr_access_none  = 0,                                 /**< no access */
+  ptr_access_read  = 1,                                 /**< read access */
+  ptr_access_write = 2,                                 /**< write access */
+  ptr_access_rw    = ptr_access_read|ptr_access_write,  /**< read AND write access */
+  ptr_access_store = 4,                                 /**< the pointer is stored */
   ptr_access_all   = ptr_access_rw|ptr_access_store     /**< all possible access */
 } ptr_access_kind;
 
 #define IS_READ(a)     ((a) & ptr_access_read)
 #define IS_WRITTEN(a)  ((a) & ptr_access_write)
 #define IS_STORED(a)   ((a) & ptr_access_store)
+
+/**
+ * Supported image sections.
+ * Currently only methods can be placed in different sections.
+ */
+typedef enum {
+  section_text,           /**< The code segment. This is the default for methods. */
+  section_constructors    /**< The constructor section. */
+} ir_img_section;
+
+/** Returns the section of a method. */
+ir_img_section get_method_img_section(const entity *method);
+
+/** Sets the section of a method. */
+void set_method_img_section(entity *method, ir_img_section section);
 
 #endif /* _FIRM_TR_ENTITY_H_ */

@@ -108,18 +108,13 @@ new_rd_entity (dbg_info *db, ir_type *owner, ident *name, ir_type *type)
   res->owner   = owner;
   res->type    = type;
 
-  if (get_type_tpop(type) == type_method)
-    res->allocation = allocation_static;
-  else
-    res->allocation = allocation_automatic;
-
+  res->allocation  = allocation_automatic;
   res->visibility  = visibility_local;
   res->volatility  = volatility_non_volatile;
   res->stickyness  = stickyness_unsticky;
   res->offset      = -1;
   res->peculiarity = peculiarity_existent;
   res->link        = NULL;
-
 
   if (is_Method_type(type)) {
     symconst_symbol sym;
@@ -128,12 +123,14 @@ new_rd_entity (dbg_info *db, ir_type *owner, ident *name, ir_type *type)
     current_ir_graph        = get_const_code_irg();
     res->value              = new_SymConst(sym, symconst_addr_ent);
     current_ir_graph        = rem;
+    res->allocation         = allocation_static;
     res->variability        = variability_constant;
     res->attr.mtd_attr.irg_add_properties = mtp_property_inherited;
     res->attr.mtd_attr.vtable_number      = VTABLE_NUM_NOT_SET;
     res->attr.mtd_attr.param_access       = NULL;
     res->attr.mtd_attr.param_weight       = NULL;
     res->attr.mtd_attr.irg                = NULL;
+    res->attr.mtd_attr.section            = section_text;
   }
   else if (is_compound_type(type)) {
     res->variability = variability_uninitialized;
@@ -1281,6 +1278,18 @@ unsigned get_entity_vtable_number(entity *ent) {
 void set_entity_vtable_number(entity *ent, unsigned vtable_number) {
   assert(ent && is_method_entity(ent));
   ent->attr.mtd_attr.vtable_number = vtable_number;
+}
+
+/* Returns the section of a method. */
+ir_img_section get_method_img_section(const entity *ent) {
+  assert(ent && is_method_entity(ent));
+  return ent->attr.mtd_attr.section;
+}
+
+/* Sets the section of a method. */
+void set_method_img_section(entity *ent, ir_img_section section) {
+  assert(ent && is_method_entity(ent));
+  ent->attr.mtd_attr.section = section;
 }
 
 int
