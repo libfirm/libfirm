@@ -39,7 +39,9 @@ static plist_element_t *allocate_element(plist_t* list) {
 plist_t* plist_new(void) {
 	plist_t* list = xmalloc(sizeof(*list));
 
+	list->obst = xmalloc(sizeof(*list->obst));
 	obstack_init(list->obst);
+
 	list->foreign_obstack    = 0;
 	list->first_element      = NULL;
 	list->last_element       = NULL;
@@ -70,6 +72,7 @@ void plist_free(plist_t *list) {
 
 	if (! list->foreign_obstack) {
 		obstack_free(list->obst, NULL);
+		xfree(list->obst);
 		xfree(list);
 	}
 }
