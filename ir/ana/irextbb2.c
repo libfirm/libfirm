@@ -3,7 +3,6 @@
  * File name:   ir/ana/irextbb2.c
  * Purpose:     Alternate extended basic block computation
  * Author:      Matthias Braun
- * Modified by:
  * Created:     5.2005
  * CVS-ID:      $Id$
  * Copyright:   (c) 2002-2005 Universität Karlsruhe
@@ -11,7 +10,7 @@
  */
 
 /**
- * @file irextbb.c
+ * @file irextbb2.c
  *
  *  Alternative algorithm for computing extended basic blocks (using out edges
  *  and execution frequencies)
@@ -78,9 +77,11 @@ static int get_block_n_succs(ir_node *block) {
 		edge = get_block_succ_first(block);
 		if (! edge)
 			return 0;
+
 		edge = get_block_succ_next(block, edge);
 		if (! edge)
 			return 1;
+
 		edge = get_block_succ_next(block, edge);
 		return edge ? 3 : 2;
 	}
@@ -92,10 +93,12 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env);
 
 static void create_extblk(ir_node *block, env_t *env)
 {
-	if(irn_visited(block))
+	ir_extblk *extblk;
+
+	if (irn_visited(block))
 		return;
 
-	ir_extblk *extblk = allocate_extblk(block, env);
+	extblk = allocate_extblk(block, env);
 	mark_irn_visited(block);
 
 	pick_successor(block, extblk, env);
@@ -104,14 +107,15 @@ static void create_extblk(ir_node *block, env_t *env)
 static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 {
 	const ir_edge_t *edge;
-	ir_node *best_succ = NULL;
-	double best_execfreq = -1;
+	ir_node         *best_succ    = NULL;
+	double          best_execfreq = -1;
 
- 	/* More than two successors means we have a jump table.
-	 * we cannot include a jump target into the current extended
-	 * basic block, so create a new one here.
-	 */
-	if(get_block_n_succs(block) > 2) {
+ 	/*
+		More than two successors means we have a jump table.
+		we cannot include a jump target into the current extended
+		basic block, so create a new one here.
+	*/
+	if (get_block_n_succs(block) > 2) {
 		const ir_edge_t *edge;
 
 		foreach_block_succ(block, edge) {
@@ -133,21 +137,24 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 
 		execfreq = get_block_execfreq(env->execfreqs, succ);
 
-		// remember best sucessor and make non best successor with only 1
-		// pred block to new extbb leaders
-		if(execfreq > best_execfreq) {
-			if(best_succ != NULL) {
+		/*
+			Remember best successor and make non best successor with only 1
+			pred block to new extbb leaders.
+		*/
+		if (execfreq > best_execfreq) {
+			if (best_succ != NULL) {
 				create_extblk(best_succ, env);
 			}
 
 			best_execfreq = execfreq;
 			best_succ = succ;
-		} else {
+		}
+		else {
 			create_extblk(succ, env);
 		}
 	}
 
-	// add best successor and recursively try to pick more
+	/* add best successor and recursively try to pick more */
 	if(best_succ != NULL) {
 		addto_extblk(extblk, best_succ);
 		mark_irn_visited(best_succ);
@@ -159,19 +166,20 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
  * Compute the extended basic blocks for a graph
  */
 void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs) {
-  	env_t env;
+  	env_t     env;
 	ir_extblk *extbb, *next;
-	ir_node *endblock;
+	ir_node   *endblock;
 
 	if (irg->extbb_obst) {
 		obstack_free(irg->extbb_obst, NULL);
-	} else {
+	}
+	else {
 		irg->extbb_obst = xmalloc(sizeof(*irg->extbb_obst));
 	}
 	obstack_init(irg->extbb_obst);
 
-	env.obst = irg->extbb_obst;
-	env.head = NULL;
+	env.obst      = irg->extbb_obst;
+	env.head      = NULL;
 	env.execfreqs = execfreqs;
 
 	assure_irg_outs(irg);
@@ -180,19 +188,19 @@ void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs) {
 	inc_irg_visited(irg);
 	create_extblk(get_irg_start_block(irg), &env);
 
-	// the end block needs a extbb assigned (even for endless loops)
+	/* the end block needs a extbb assigned (even for endless loops) */
 	endblock = get_irg_end_block(irg);
-	if(!irn_visited(endblock)) {
+	if (! irn_visited(endblock)) {
 		create_extblk(endblock, &env);
 	}
 
 	/*
-	 * Ok, we have now the list of all extended blocks starting with env.head
-	 * every extended block "knowns" the number of blocks in visited and
-	 * the blocks are linked in link.
-	 * Now we can create arrays that hold the blocks, some kind of "out" edges
-	 * for the extended block
-	 */
+		Ok, we have now the list of all extended blocks starting with env.head
+		every extended block "knowns" the number of blocks in visited and
+		the blocks are linked in link.
+		Now we can create arrays that hold the blocks, some kind of "out" edges
+		for the extended block
+	*/
 	for (extbb = env.head; extbb; extbb = next) {
 		int i, len = (int)extbb->visited;
 		ir_node *block;
