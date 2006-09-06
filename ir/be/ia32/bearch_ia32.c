@@ -1254,7 +1254,7 @@ static void ia32_finish(void *self) {
 
 	// Matze: disabled for now, as the irextbb algo sometimes returns extbb in
 	// the wrong order if the graph has critical edges
-	//be_remove_empty_blocks(irg);
+	be_remove_empty_blocks(irg);
 
 	cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->execfreqs);
 
