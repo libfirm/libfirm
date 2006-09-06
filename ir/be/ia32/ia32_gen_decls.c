@@ -584,7 +584,7 @@ static void dump_global(const arch_env_t *arch_env,
 			}
 		}
 	} /* ! is method type */
-	else if (ctor_obstack && arch_ent_is_constructor(arch_env, ent)) {
+	else if (ctor_obstack && get_method_img_section(ent) == section_constructors) {
 		ia32_dump_align(ctor_obstack, get_type_alignment_bytes(ty));
 		dump_size_type(ctor_obstack, get_type_alignment_bytes(ty));
 		obstack_printf(ctor_obstack, "%s\n", ld_name);
