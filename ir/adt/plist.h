@@ -26,19 +26,26 @@ struct _plist {
 	/**
 	 * The obstack used for all allocations.
 	 */
-	struct obstack obst;
+	struct obstack *obst;
+
+	/* Set to 1 if plist uses a foreign obstack  */
+	unsigned foreign_obstack : 1;
+
 	/**
 	 * First element in the list.
 	 */
 	plist_element_t *first_element;
+
 	/**
 	 * Last element in the list.
 	 */
 	plist_element_t *last_element;
+
 	/**
 	 * Current number of elements in the list.
 	 */
 	int element_count;
+
 	/**
 	 * First element in the free list.
 	 * Please note that the free list is a single linked list and all back
@@ -51,23 +58,31 @@ struct _plist {
  * An element in the pointer list.
  */
 struct _plist_element {
-	plist_element_t* next;
-	plist_element_t* prev;
-	void* data;
+	plist_element_t *next;
+	plist_element_t *prev;
+	void *data;
 };
 
 /**
  * Creates a new pointer list and initializes it.
  * @return The newly created pointer list.
  */
-plist_t* plist_new(void);
+plist_t *plist_new(void);
+
+/**
+ * Creates a new pointer list and initializes it.
+ * Uses the given obstack instead of creating one.
+ * @param obst  The obstack to use
+ * @return The newly created pointer list.
+ */
+plist_t *plist_obstack_new(struct obstack *obst);
 
 /**
  * Frees the passed pointer list.
  * After a call to this function all references to the list and any of
  * its elements are invalid.
  */
-void plist_free(plist_t* list);
+void plist_free(plist_t *list);
 
 /**
  * Returns the number of elements in a pointer list.
@@ -82,14 +97,14 @@ void plist_free(plist_t* list);
  * @param list the pointer list to append the new element to.
  * @param value the element value to append.
  */
-void plist_insert_back(plist_t* list, void* value);
+void plist_insert_back(plist_t *list, void *value);
 
 /**
  * Inserts an element at the front of a pointer list.
  * @param list the pointer list to prepend the new element to.
  * @param value the element value to prepend.
  */
-void plist_insert_front(plist_t* list, void* value);
+void plist_insert_front(plist_t *list, void *value);
 
 /**
  * Inserts an element into a pointer list before the specified element,
@@ -99,7 +114,7 @@ void plist_insert_front(plist_t* list, void* value);
  * 		be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
-void plist_insert_before(plist_t* list, plist_element_t* element, void* value);
+void plist_insert_before(plist_t *list, plist_element_t *element, void *value);
 
 /**
  * Inserts an element into a pointer list after the specified element,
@@ -109,21 +124,21 @@ void plist_insert_before(plist_t* list, plist_element_t* element, void* value);
  * 		be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
-void plist_insert_after(plist_t* list, plist_element_t* element, void* value);
+void plist_insert_after(plist_t *list, plist_element_t *element, void *value);
 
 /**
  * Erases the specified element from the pointer list.
- * @param list the pointer list from which the lement should be erased.
+ * @param list the pointer list from which the element should be erased.
  * @param element the list element to erase. This element must be a part
  * 		of @p list.
  */
-void plist_erase(plist_t* list, plist_element_t* element);
+void plist_erase(plist_t *list, plist_element_t *element);
 
 /**
  * Erases all elements from the specified pointer list.
- * @param list the pointer list that should be cleard.
+ * @param list the pointer list that should be cleared.
  */
-void plist_clear(plist_t* list);
+void plist_clear(plist_t *list);
 
 /**
  * Returns the first element of a pointer list.
@@ -143,7 +158,7 @@ void plist_clear(plist_t* list);
 
 /**
  * Checks whether a pointer list element has a successor or not.
- * @param element the list element that should be queried for existance
+ * @param element the list element that should be queried for existence
  * 		of a successor.
  * @return TRUE if @p element has a successor, otherwise FALSE.
  */
@@ -152,7 +167,7 @@ void plist_clear(plist_t* list);
 
 /**
  * Checks whether a pointer list element has a predecessor or not.
- * @param element the list element that should be queried for existance
+ * @param element the list element that should be queried for existence
  * 		of a predecessor.
  * @return TRUE if @p element has a successor, otherwise FALSE.
  */
