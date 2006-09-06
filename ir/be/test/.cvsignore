@@ -7,6 +7,8 @@
 *.txt
 *.sh
 *.out
+*.eps
+*.log
 cachegrind.out*
 build_firm
 build_gcc
