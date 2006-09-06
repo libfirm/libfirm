@@ -130,6 +130,9 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 		ir_node *succ = get_edge_src_irn(edge);
 		double execfreq;
 
+		if(irn_visited(succ))
+			continue;
+
 		if(get_Block_n_cfgpreds(succ) > 1) {
 			create_extblk(succ, env);
 			continue;
