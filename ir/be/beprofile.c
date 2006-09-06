@@ -77,7 +77,6 @@ block_counter(ir_node * bb, void * data)
 {
 	unsigned int  *count = data;
 	*count = *count + 1;
-
 }
 
 static unsigned int
@@ -121,35 +120,37 @@ instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 	set_irn_link(projm, load);
 }
 
+typedef struct fix_env {
+	ir_node *start_block;
+	ir_node *end_block;
+} fix_env;
+
 /**
- * SSA Construction for instumenation code memory
+ * SSA Construction for instrumentation code memory
  */
 static void
 fix_ssa(ir_node * bb, void * data)
 {
-	ir_node  *mem;
-	int       arity = get_Block_n_cfgpreds(bb);
+	fix_env *env = data;
+	ir_node *mem;
+	int     arity = get_Block_n_cfgpreds(bb);
 
 	/* start and end block are not instrumented, skip! */
-	if(bb == get_irg_end_block(current_ir_graph) || bb == get_irg_start_block(current_ir_graph))
+	if (bb == env->start_block || bb == env->end_block)
 		return;
 
-	/* first block gets NoMem */
-	if(get_Block_cfgpred_block(bb, 0) == get_irg_start_block(current_ir_graph)) {
-		mem = new_NoMem();
+	if (arity == 1) {
+		mem = get_irn_link(get_Block_cfgpred_block(bb, 0));
 	} else {
-		if(arity == 1) {
-			mem = get_irn_link(get_Block_cfgpred_block(bb, 0));
-		} else {
-			int n;
-			ir_node **ins;
+		int n;
+		ir_node **ins;
+		ir_graph *irg = current_ir_graph;
 
-			NEW_ARR_A(ir_node*, ins, arity);
-			for(n=arity-1; n>=0; --n) {
-				ins[n]=get_irn_link(get_Block_cfgpred_block(bb, n));
-			}
-			mem = new_r_Phi(get_irn_irg(bb), bb, arity, ins, mode_M);
+		NEW_ARR_A(ir_node*, ins, arity);
+		for (n = arity - 1; n >= 0; --n) {
+			ins[n] = get_irn_link(get_Block_cfgpred_block(bb, n));
 		}
+		mem = new_r_Phi(irg, bb, arity, ins, mode_M);
 	}
 	set_Load_mem(get_irn_link(get_irn_link(bb)), mem);
 }
@@ -157,6 +158,9 @@ fix_ssa(ir_node * bb, void * data)
 
 /**
  * Generates a new irg which calls the initializer
+ *
+ * Pseudocode:
+ *	 void __firmprof_initializer(void) { __init_firmprof(ent_filename, bblock_id, bblock_counts, n_blocks); }
  */
 static ir_graph *
 gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_counts, int n_blocks)
@@ -191,7 +195,6 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 	set_entity_ld_ident(init_ent, init_name);
 
 	irg = new_ir_graph(ent, 0);
-	set_current_ir_graph(irg);
 	empty_frame_type = get_irg_frame_type(irg);
 	set_type_size_bytes(empty_frame_type, 0);
 
@@ -239,7 +242,7 @@ be_profile_instrument(char * filename)
 	unsigned int   n_blocks = 0;
 	entity        *bblock_id, *bblock_counts, *ent_filename;
 	ir_type       *array_type, *integer_type, *string_type, *character_type;
-	tarval       **tarval_array, **tarval_string;
+	tarval       **tarval_array, **tarval_string, *tv;
 	int            filename_len = strlen(filename)+1;
 	ident         *cur_ident;
 
@@ -267,7 +270,6 @@ be_profile_instrument(char * filename)
 	cur_ident      = new_id_from_str("__FIRMPROF__FILE_NAME");
 	ent_filename   = new_entity(get_glob_type(), cur_ident, string_type);
 	set_entity_ld_ident(ent_filename, cur_ident);
-	set_entity_variability(ent_filename, variability_initialized);
 
 	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
 		ir_graph *irg = get_irp_irg(n);
@@ -277,8 +279,9 @@ be_profile_instrument(char * filename)
 
 	/* initialize count array */
 	tarval_array = alloca(sizeof(*tarval_array) * n_blocks);
+	tv = get_tarval_null(mode_Iu);
 	for (i = 0; i < n_blocks; ++i) {
-		tarval_array[i] = get_tarval_null(mode_Iu);
+		tarval_array[i] = tv;
 	}
 	set_array_entity_values(bblock_counts, tarval_array, n_blocks);
 
@@ -287,8 +290,8 @@ be_profile_instrument(char * filename)
 	for (i = 0; i < filename_len; ++i) {
 		tarval_string[i] = new_tarval_from_long(filename[i], mode_Bs);
 	}
+	set_entity_variability(ent_filename, variability_constant);
 	set_array_entity_values(ent_filename, tarval_string, filename_len);
-
 
 	/* initialize block id array and instrument blocks */
 	wd.array = tarval_array;
@@ -297,6 +300,7 @@ be_profile_instrument(char * filename)
 		ir_graph      *irg = get_irp_irg(n);
 		int            i;
 		ir_node       *endbb = get_irg_end_block(irg);
+		fix_env       env;
 
 		set_current_ir_graph(irg);
 
@@ -305,18 +309,34 @@ be_profile_instrument(char * filename)
 		wd.symconst  = new_r_SymConst(irg, get_irg_start_block(irg), sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
-		irg_block_walk_graph(irg, fix_ssa, NULL, NULL);
-		for(i=get_Block_n_cfgpreds(endbb)-1; i>=0; --i) {
-			ir_node *ret = get_Block_cfgpred(endbb, i);
-			ir_node *bb  = get_Block_cfgpred_block(endbb, i);
+		env.start_block = get_irg_start_block(irg);
+		env.end_block   = get_irg_end_block(irg);
+		set_irn_link(env.start_block, get_irg_no_mem(irg));
+		irg_block_walk_graph(irg, fix_ssa, NULL, &env);
+		for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
+			ir_node *node = skip_Proj(get_Block_cfgpred(endbb, i));
+			ir_node *bb   = get_Block_cfgpred_block(endbb, i);
 			ir_node *sync;
 			ir_node *ins[2];
 
-			ins[0] = get_irn_link(bb);
-			ins[1] = get_Return_mem(ret);
-			sync   = new_r_Sync(irg, bb, 2, ins);
-
-			set_Return_mem(ret, sync);
+			switch (get_irn_opcode(node)) {
+			case iro_Return:
+				ins[0] = get_irn_link(bb);
+				ins[1] = get_Return_mem(node);
+				sync   = new_r_Sync(irg, bb, 2, ins);
+				set_Return_mem(node, sync);
+				break;
+			case iro_Raise:
+				ins[0] = get_irn_link(bb);
+				ins[1] = get_Raise_mem(node);
+				sync   = new_r_Sync(irg, bb, 2, ins);
+				set_Raise_mem(node, sync);
+				break;
+			default:
+				/* a fragile's op exception. There should be another path to End,
+				   so ignore it */
+				assert(is_fragile_op(node) && "unexpected End control flow predecessor");
+			}
 		}
 	}
 	set_array_entity_values(bblock_id, tarval_array, n_blocks);
@@ -398,7 +418,7 @@ be_profile_free(void)
 }
 
 /**
- * Tells whether profile module has aquired data
+ * Tells whether profile module has acquired data
  */
 int
 be_profile_has_data(void)

@@ -38,7 +38,7 @@ void be_profile_free(void);
 unsigned int be_profile_get_block_execcount(const ir_node * block);
 
 /**
- * Tells whether profile module has aquired data
+ * Tells whether profile module has acquired data
  */
 int be_profile_has_data(void);
 
