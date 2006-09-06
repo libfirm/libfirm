@@ -35,7 +35,6 @@ arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if, FILE *fi
 {
   memset(env, 0, sizeof(*env));
   env->isa                  = isa_if->init(file_handle);
-  env->constructor_entities = pset_new_ptr(5);
   env->isa->main_env        = main_env;
   return env;
 }
@@ -320,8 +319,4 @@ extern char *arch_register_req_format(char *buf, size_t len, const arch_register
 	}
 
 	return buf;
-}
-
-int arch_ent_is_constructor(const arch_env_t *arch_env, const entity *ent) {
-	return pset_find_ptr(arch_env->constructor_entities, ent) != NULL;
 }
