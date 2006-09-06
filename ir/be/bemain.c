@@ -324,9 +324,6 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
  */
 static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 {
-	const arch_code_generator_if_t *cg_if;
-	arch_isa_t *isa = env->arch_env->isa;
-
 	memset(birg, 0, sizeof(*birg));
 	birg->irg = irg;
 	birg->main_env = env;
@@ -342,12 +339,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	/* set the current graph (this is important for several firm functions) */
 	current_ir_graph = irg;
-
-	/* Get the code generator interface. */
-	cg_if = isa->impl->get_code_generator_if(isa);
-
-	/* get a code generator for this graph. */
-	birg->cg = cg_if->init(birg);
 
 	/* Normalize proj nodes. */
 	normalize_proj_nodes(irg);
@@ -370,9 +361,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	/* reset the phi handler. */
 	be_phi_handler_reset(env->phi_handler);
-
-	/* some transformations need to be done before abi introduce */
-	arch_code_generator_before_abi(birg->cg);
 }
 
 #ifdef WITH_LIBCORE
@@ -468,8 +456,6 @@ static void be_main_loop(FILE *file_handle)
 		ir_graph *irg = get_irp_irg(i);
 
 		initialize_birg(&birgs[i], irg, &env);
-		edges_deactivate(irg);
-		edges_activate(irg);
 	}
 
 	/* please FIXME! I'm a dirty hack. */
@@ -492,6 +478,7 @@ static void be_main_loop(FILE *file_handle)
 		be_irg_t *birg = & birgs[i];
 		ir_graph *irg = birg->irg;
 		optimization_state_t state;
+		const arch_code_generator_if_t *cg_if;
 
 		birg->execfreqs = compute_execfreq(irg, 10);
 
@@ -511,6 +498,15 @@ static void be_main_loop(FILE *file_handle)
 		BE_TIMER_PUSH(t_other);   /* t_other */
 
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
+
+		/* Get the code generator interface. */
+		cg_if = isa->impl->get_code_generator_if(isa);
+
+		/* get a code generator for this graph. */
+		birg->cg = cg_if->init(birg);
+
+		/* some transformations need to be done before abi introduce */
+		arch_code_generator_before_abi(birg->cg);
 
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
