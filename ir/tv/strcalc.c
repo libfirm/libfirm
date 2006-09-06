@@ -1571,7 +1571,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
       *(--pos) = digits[_val(rem_res[0])];
 
       x = 0;
-      for (i = 0; i < sizeof(div1_res); ++i)
+      for (i = 0; i < calc_buffer_size; ++i)
      	x |= _val(m[i]);
 
       if (x == 0)
