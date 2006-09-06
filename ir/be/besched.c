@@ -211,26 +211,53 @@ typedef struct {
 	unsigned n_blks;  /**< number of blocks in the list */
 } anchor;
 
-/**
- * Ext-Block walker: create a block schedule
- */
-static void create_block_list(ir_extblk *blk, void *env) {
-	anchor *list = env;
-	int i, n;
-
-	for (i = 0, n = get_extbb_n_blocks(blk); i < n; ++i) {
-		ir_node *block = get_extbb_block(blk, i);
-
-		set_irn_link(block, NULL);
-		if (list->start)
-			set_irn_link(list->end, block);
-		else
-			list->start = block;
-
+static void add_block(anchor *list, ir_node *block) {
+	if(list->start == NULL) {
+		list->start = block;
 		list->end = block;
-		++list->n_blks;
+	} else {
+		set_irn_link(list->end, block);
+		list->end = block;
+	}
+
+	list->n_blks++;
+}
+
+static void create_block_list(ir_node *leader_block, anchor *list) {
+	int i;
+	ir_node *block = NULL;
+	const ir_edge_t *edge;
+
+	ir_extblk *extbb = get_Block_extbb(leader_block);
+	if(extbb_visited(extbb))
+		return;
+	mark_extbb_visited(extbb);
+
+	for(i = 0; i < get_extbb_n_blocks(extbb); ++i) {
+		block = get_extbb_block(extbb, i);
+		add_block(list, block);
+	}
+
+	assert(block != NULL);
+
+	// pick successor extbbs
+	foreach_block_succ(block, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+
+		create_block_list(succ, list);
+	}
+
+	for(i = 0; i < get_extbb_n_blocks(extbb) - 1; ++i) {
+		block = get_extbb_block(extbb, i);
+		foreach_block_succ(block, edge) {
+			ir_node *succ = get_edge_src_irn(edge);
+
+			create_block_list(succ, list);
+		}
 	}
 }
+
+void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs);
 
 /*
  * Calculates a block schedule. The schedule is stored as a linked
@@ -249,7 +276,8 @@ ir_node **sched_create_block_schedule(ir_graph *irg, exec_freq_t *execfreqs)
 	list.start  = NULL;
 	list.end    = NULL;
 	list.n_blks = 0;
-	irg_extblock_walk_graph(irg, NULL, create_block_list, &list);
+	inc_irg_block_visited(irg);
+	create_block_list(get_irg_start_block(irg), &list);
 
 	/** create an array, so we can go forward and backward */
 	blk_list = NEW_ARR_D(ir_node *, irg->obst,list.n_blks);

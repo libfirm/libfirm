@@ -636,6 +636,8 @@ static void remove_empty_block(ir_node *block, void *data) {
 		set_irn_n(block, pos, node);
 	}
 
+	ir_printf("Removing %+F\n", block);
+
 	set_Block_cfgpred(block, 0, new_Bad());
 	sched_remove(jump);
 

@@ -600,7 +600,7 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
                                       const arch_register_class_t *regclass, pset *nodes) {
 	const arch_env_t *arch_env = env->arch_env;
 	ir_node *node;
-	const arch_register_t *reg;
+	const arch_register_t *reg = NULL;
 	int fail = 0;
 
 	bitset_t *registers = bitset_alloca(arch_register_class_n_regs(regclass));
@@ -615,6 +615,11 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
 			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 			continue;
+		}
+		if(!arch_reg_is_allocatable(arch_env, node, -1, reg)) {
+			ir_fprintf(stderr, "Verify warning: Register %s assigned to %+F not allowed (register constraint) in block %+F(%s)\n",
+			           reg->name, node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
 		}
 		if(bitset_is_set(registers, reg->index)) {
 			pset_break(nodes);

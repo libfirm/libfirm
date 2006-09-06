@@ -722,8 +722,9 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		}
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
-		if (options.vrfy_option != BE_CH_VRFY_OFF)
-			be_ra_chordal_check(&chordal_env);
+		if (options.vrfy_option != BE_CH_VRFY_OFF) {
+			//be_ra_chordal_check(&chordal_env);
+		}
 
 		BE_TIMER_POP(ra_timer.t_verify);
 
@@ -735,8 +736,9 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
 
-		if (options.vrfy_option != BE_CH_VRFY_OFF)
-			be_ra_chordal_check(&chordal_env);
+		if (options.vrfy_option != BE_CH_VRFY_OFF) {
+			//be_ra_chordal_check(&chordal_env);
+		}
 
 		BE_TIMER_POP(ra_timer.t_verify);
 		BE_TIMER_PUSH(ra_timer.t_ssa);
@@ -751,7 +753,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		BE_TIMER_PUSH(ra_timer.t_verify);
 		if (options.vrfy_option != BE_CH_VRFY_OFF) {
 			be_ssa_destruction_check(&chordal_env);
-			be_ra_chordal_check(&chordal_env);
+			//be_ra_chordal_check(&chordal_env);
 		}
 		BE_TIMER_POP(ra_timer.t_verify);
 
