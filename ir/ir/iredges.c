@@ -206,8 +206,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 
 			/* mark the edge invalid if it was found */
 			if(edge) {
-				ir_block_edge_t *block_edge = (ir_block_edge_t *) edge;
-
 				msg = "deleting";
 				list_del(&edge->list);
 				edge->invalid = 1;
@@ -270,9 +268,12 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 	edges_notify_edge_kind(src, pos, tgt, old_tgt, EDGE_KIND_NORMAL, irg);
 	if(is_Block(src)) {
 		/* do not use get_nodes_block() here, it fails when running unpinned */
-		ir_node *bl_tgt = tgt     ? get_irn_n(skip_Proj(tgt), -1)     : NULL;
-		// ir_node *bl_old = old_tgt ? old_tgt : NULL;
 		ir_node *bl_old = old_tgt ? get_irn_n(skip_Proj(old_tgt), -1) : NULL;
+		ir_node *bl_tgt = NULL;
+
+		if(tgt)
+			bl_tgt = is_Bad(tgt) ? tgt : get_irn_n(skip_Proj(tgt), -1);
+
 		edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
 	}
 }
@@ -411,7 +412,6 @@ static void verify_set_presence(ir_node *irn, void *data)
 {
 	struct build_walker *w = data;
 	set *edges             = _get_irg_edge_info(w->irg, w->kind)->edges;
-	int not_a_block        = !is_Block(irn);
 	int i, n;
 
 	foreach_tgt(irn, i, n, w->kind) {
