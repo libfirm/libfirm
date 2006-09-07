@@ -129,8 +129,11 @@ struct planet bodies[NBODIES] = {
 
 int main(int argc, char ** argv)
 {
-  int n = atoi(argv[1]);
+  int n = 1000000;
   int i;
+
+  if(argc > 1)
+	  n = atoi(argv[1]);
 
   offset_momentum(NBODIES, bodies);
   printf ("%.9f\n", energy(NBODIES, bodies));
