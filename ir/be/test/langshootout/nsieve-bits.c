@@ -43,18 +43,13 @@ test(unsigned long n)
 }
 
 int
-main(int ac, char **av)
+main(int argc, char **argv)
 {
-        unsigned long n;
+        unsigned long n = 9;
         char *cp;
 
-        if (ac < 2) {
-usage:          fprintf(stderr, "usage: nsieve N\n");
-                exit(2);
-        }
-        n = strtoul(av[1], &cp, 10);
-        if (*av[1] == '\0' || *cp != '\0' || n == ULONG_MAX)
-                goto usage;
+		if(argc > 1)
+			n = atoi(argv[1]);
         test(n);
         if (n >= 1)
                 test(n - 1);

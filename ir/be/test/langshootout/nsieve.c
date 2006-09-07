@@ -27,8 +27,13 @@ static void nsieve(int m) {
 }
 
 int main(int argc, char * argv[]) {
-    int m = atoi(argv[1]);
-    for (int i = 0; i < 3; i++)
+	int i;
+    int m = 8;
+
+	if(argc > 1)
+		m = atoi(argv[1]);
+
+    for (i = 0; i < 3; i++)
         nsieve(10000 << (m-i));
     return 0;
 }
