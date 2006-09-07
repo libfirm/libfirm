@@ -780,6 +780,20 @@ static entity *find_entity_name(const char *name) {
   return env.res;
 }  /* find_entity_name */
 
+static void irgname(const char *name) {
+  int i;
+  ident *id = new_id_from_str(name);
+
+  for(i = get_irp_n_irgs() - 1; i >= 0; --i) {
+    ir_graph *irg = get_irp_irg(i);
+	entity *ent = get_irg_entity(irg);
+	if(ent && get_entity_ident(ent) == id) {
+      ir_printf("%+F (%p)\n", irg, irg);
+	  break;
+	}
+  }
+}
+
 /**
  * High level function to use from debugger interface
  *
@@ -848,6 +862,8 @@ void firm_debug(const char *cmd) {
     set_dbg_level(name, (1 << lvl) - 1);
   else if (sscanf(cmd, ".setoutfile %s %s\n", name, fname) == 2)
     set_dbg_outfile(name, fname);
+  else if (sscanf(cmd, ".irgname %s\n", name) == 1)
+	irgname(name);
   else {
     show_commands();
   }
