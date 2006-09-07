@@ -573,6 +573,8 @@ static void show_commands(void) {
     ".setmask name msk      sets the debug module name to mask msk\n"
     ".setlvl  name lvl      sets the debug module name to level lvl\n"
     ".setoutfile name file  redirects debug output of module name to file\n"
+    ".irgname name          prints address and graph number of a method given by its name\n"
+    ".irgldname ldname      prints address and graph number of a method given by its ldname\n"
     ".help                  list all commands\n"
   );
 }  /* show_commands */
@@ -780,19 +782,79 @@ static entity *find_entity_name(const char *name) {
   return env.res;
 }  /* find_entity_name */
 
-static void irgname(const char *name) {
-  int i;
+/**
+ * Search methods for a name.
+ */
+static void show_by_name(type_or_ent *tore, void *env) {
+  ident *id = (ident *)env;
+
+  if (is_entity(tore)) {
+    entity *ent = (entity *)tore;
+
+    if (is_method_entity(ent)) {
+      if (get_entity_ident(ent) == id) {
+        ir_type *owner = get_entity_owner(ent);
+        ir_graph *irg = get_entity_irg(ent);
+
+        if (owner != get_glob_type()) {
+          printf("%s::%s", get_type_name(owner), get_id_str(id));
+        } else {
+          printf("%s", get_id_str(id));
+        }
+        if (irg)
+          printf("[%d] (%p)\n", get_irg_graph_nr(irg), irg);
+        else
+          printf(" NULL\n");
+      }
+    }
+  }
+}  /* show_by_name */
+
+/**
+ * Search methods for a ldname.
+ */
+static void show_by_ldname(type_or_ent *tore, void *env) {
+  ident *id = (ident *)env;
+
+  if (is_entity(tore)) {
+    entity *ent = (entity *)tore;
+
+    if (is_method_entity(ent)) {
+      if (get_entity_ld_ident(ent) == id) {
+        ir_type *owner = get_entity_owner(ent);
+        ir_graph *irg = get_entity_irg(ent);
+
+        if (owner != get_glob_type()) {
+          printf("%s::%s", get_type_name(owner), get_id_str(id));
+        } else {
+          printf("%s", get_id_str(id));
+        }
+        if (irg)
+          printf("[%d] (%p)\n", get_irg_graph_nr(irg), irg);
+        else
+          printf(" NULL\n");
+      }
+    }
+  }
+}  /* show_by_ldname */
+
+/**
+ * prints the address and graph number of all irgs with given name
+ */
+static void irg_name(const char *name) {
   ident *id = new_id_from_str(name);
 
-  for(i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    ir_graph *irg = get_irp_irg(i);
-	entity *ent = get_irg_entity(irg);
-	if(ent && get_entity_ident(ent) == id) {
-      ir_printf("%+F (%p)\n", irg, irg);
-	  break;
-	}
-  }
-}
+  type_walk(show_by_name, NULL, (void *)id);
+}  /* irg_name */
+
+/**
+ * prints the address and graph number of all irgs with given ld_name
+ */
+static void irg_ld_name(const char *name) {
+  ident *id = new_id_from_str(name);
+
+  type_walk(show_by_ldname, NULL, (void *)id);
+}  /* irg_ld_name */
 
 /**
  * High level function to use from debugger interface
@@ -863,7 +925,9 @@ void firm_debug(const char *cmd) {
   else if (sscanf(cmd, ".setoutfile %s %s\n", name, fname) == 2)
     set_dbg_outfile(name, fname);
   else if (sscanf(cmd, ".irgname %s\n", name) == 1)
-	irgname(name);
+    irg_name(name);
+  else if (sscanf(cmd, ".irgldname %s\n", name) == 1)
+    irg_ld_name(name);
   else {
     show_commands();
   }
@@ -990,6 +1054,14 @@ static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
  * @b .setoutfile name file
  *
  * Redirects debug output of module name to file.
+ *
+ * @b .irgname name
+ *
+ * Prints address and graph number of a method given by its name.
+ *
+ * @b .irgldname name
+ *
+ * Prints address and graph number of a method given by its linker name.
  *
  * @b .help
  *
