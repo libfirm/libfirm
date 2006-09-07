@@ -297,6 +297,9 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 			for (e=set_first(edges); !e->n1; e=set_next(edges))
 				/*nothing*/ ;
 
+			/* we could be stepped out of the loop before the set iterated to the end */
+			set_break(edges);
+
 			pset_insert_ptr(clique, e->n1);
 			pset_insert_ptr(clique, e->n2);
 			remove_edge(edges, e->n1, e->n2, &n_edges);
