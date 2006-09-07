@@ -1371,6 +1371,7 @@ void co_driver(be_chordal_env_t *cenv)
 	co_complete_stats_t before, after;
 	copy_opt_t *co;
 	co_algo_t  *algo_func;
+	int was_optimal = 0;
 
 	if(algo < 0 || algo >= CO_ALGO_LAST)
 		return;
@@ -1404,7 +1405,8 @@ void co_driver(be_chordal_env_t *cenv)
 	}
 
 	algo_func = algos[algo];
-	algo_func(co);
+	was_optimal = algo_func(co);
+	be_stat_ev("co_optimal", was_optimal);
 
 	if(dump_flags & DUMP_AFTER) {
 		FILE *f = be_chordal_open(cenv, "", "-after.dot");
