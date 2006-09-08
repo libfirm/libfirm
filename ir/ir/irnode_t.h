@@ -691,6 +691,12 @@ _is_Confirm(const ir_node *node) {
 }
 
 static INLINE int
+_is_Pin(const ir_node *node) {
+  assert(node);
+  return (_get_irn_op(node) == op_Pin);
+}
+
+static INLINE int
 _is_SymConst(const ir_node *node) {
   assert(node);
   return (_get_irn_op(node) == op_SymConst);
@@ -919,6 +925,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Load(node)                         _is_Load(node)
 #define is_Sync(node)                         _is_Sync(node)
 #define is_Confirm(node)                      _is_Confirm(node)
+#define is_Pin(node)                          _is_Pin(node)
 #define is_SymConst(node)                     _is_SymConst(node)
 #define is_Cond(node)                         _is_Cond(node)
 #define is_Cmp(node)                          _is_Cmp(node)

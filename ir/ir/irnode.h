@@ -1144,6 +1144,8 @@ int      is_Load (const ir_node *node);
 int      is_Sync (const ir_node *node);
 /** returns true if node is a Confirm node. */
 int      is_Confirm (const ir_node *node);
+/** returns true if node is a Pin node. */
+int      is_Pin (const ir_node *node);
 /** returns true if node is a SymConst node. */
 int      is_SymConst (const ir_node *node);
 /** returns true if node is a Cond node. */

@@ -2575,6 +2575,12 @@ int
   return _is_Confirm(node);
 }
 
+/* returns true if node is a Pin node. */
+int
+(is_Pin)(const ir_node *node) {
+  return _is_Pin(node);
+}
+
 /* returns true if node is a SymConst node. */
 int
 (is_SymConst)(const ir_node *node) {
