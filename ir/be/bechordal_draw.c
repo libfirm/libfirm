@@ -167,6 +167,7 @@ plotter_t *new_plotter_ps(const char *filename)
 
 */
 
+#if 0
 typedef struct {
   base_plotter_t inh;
   const char *filename;
@@ -212,6 +213,7 @@ static void tikz_finish(plotter_t *_self)
   decl_self(tikz_plotter_t, _self);
   fclose(self->f);
 }
+#endif
 
 
 extern void plotter_free(plotter_t *self)

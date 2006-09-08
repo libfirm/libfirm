@@ -140,12 +140,12 @@ static void grow_all_descendands(mris_env_t *env, ir_node *irn, bitset_t *visite
 static ir_node **all_descendants(mris_env_t *env, ir_node *irn)
 {
 	bitset_t *visited = bitset_irg_malloc(env->irg);
-	const ir_edge_t *edge;
 
 	grow_all_descendands(env, irn, visited);
 
 #if 0
 	if(get_irn_mode(irn) == mode_T) {
+		const ir_edge_t *edge;
 		foreach_out_edge(irn, edge) {
 			ir_node *desc = get_edge_src_irn(edge);
 			assert(is_Proj(desc) && get_irn_mode(desc) != mode_T);
