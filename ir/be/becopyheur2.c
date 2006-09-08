@@ -1027,7 +1027,7 @@ static void process(co2_t *env)
 		co2_cloud_irn_t *ci = get_co2_cloud_irn(env, a->irn);
 
 		if(!ci->cloud) {
-			co2_cloud_t *cloud = new_cloud(env, a);
+			new_cloud(env, a);
 			n_clouds++;
 		}
 	}
