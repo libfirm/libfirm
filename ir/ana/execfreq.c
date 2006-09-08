@@ -72,29 +72,29 @@ struct _exec_freq_t {
 static int
 cmp_freq(const void *a, const void *b, size_t size)
 {
-  const freq_t *p = a;
-  const freq_t *q = b;
+	const freq_t *p = a;
+	const freq_t *q = b;
 
-  return !(p->irn == q->irn);
+	return !(p->irn == q->irn);
 }
 
 static freq_t *
 set_find_freq(set * set, const ir_node * irn)
 {
-  freq_t     query;
+	freq_t     query;
 
-  query.irn = irn;
-  return set_find(set, &query, sizeof(query), HASH_PTR(irn));
+	query.irn = irn;
+	return set_find(set, &query, sizeof(query), HASH_PTR(irn));
 }
 
 static freq_t *
 set_insert_freq(set * set, const ir_node * irn)
 {
-  freq_t     query;
+	freq_t query;
 
-  query.irn = irn;
-  query.freq = 0.0;
-  return set_insert(set, &query, sizeof(query), HASH_PTR(irn));
+	query.irn = irn;
+	query.freq = 0.0;
+	return set_insert(set, &query, sizeof(query), HASH_PTR(irn));
 }
 
 double
@@ -106,6 +106,8 @@ get_block_execfreq(const exec_freq_t *ef, const ir_node * irn)
 		assert(is_Block(irn));
 		freq = set_find_freq(freqs, irn);
 		assert(freq);
+
+		assert(freq->freq >= 0);
 		return freq->freq;
 	}
 
@@ -193,108 +195,128 @@ static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 	}
 }
 
+exec_freq_t *create_execfreq(ir_graph *irg)
+{
+	exec_freq_t *execfreq = xmalloc(sizeof(execfreq[0]));
+	memset(execfreq, 0, sizeof(execfreq[0]));
+	execfreq->set = new_set(cmp_freq, 32);
+
+	memset(&execfreq->hook, 0, sizeof(execfreq->hook));
+	execfreq->hook.context = execfreq;
+	execfreq->hook.hook._hook_node_info = exec_freq_node_info;
+	register_hook(hook_node_info, &execfreq->hook);
+
+	return execfreq;
+}
+
+void set_execfreq(exec_freq_t *execfreq, const ir_node *block, double freq)
+{
+	freq_t *f = set_insert_freq(execfreq->set, block);
+	f->freq = freq;
+}
+
 exec_freq_t *
 compute_execfreq(ir_graph * irg, double loop_weight)
 {
-  size_t        size;
-  double       *matrix;
-  double       *rhs;
-  int           i;
-  freq_t       *freq;
-  walkerdata_t  wd;
+	size_t        size;
+	double       *matrix;
+	double       *rhs;
+	int           i;
+	freq_t       *freq;
+	walkerdata_t  wd;
 	exec_freq_t  *ef;
 	set          *freqs;
 #ifdef USE_GSL
-  gsl_vector   *x;
+	gsl_vector   *x;
 #else
-  double       *x;
+	double       *x;
 #endif
 
 	ef = xmalloc(sizeof(ef[0]));
 	memset(ef, 0, sizeof(ef[0]));
 	ef->min_non_zero = 1e50; /* initialize with a reasonable large number. */
-  freqs = ef->set = new_set(cmp_freq, 32);
+	freqs = ef->set = new_set(cmp_freq, 32);
 
-  construct_cf_backedges(irg);
+	construct_cf_backedges(irg);
 
-  wd.idx = 0;
-  wd.set = freqs;
+	wd.idx = 0;
+	wd.set = freqs;
 
-  irg_block_walk_graph(irg, block_walker, NULL, &wd);
+	irg_block_walk_graph(irg, block_walker, NULL, &wd);
 
-  size = set_count(freqs);
-  matrix = xmalloc(size*size*sizeof(*matrix));
-  memset(matrix, 0, size*size*sizeof(*matrix));
-  rhs = xmalloc(size*sizeof(*rhs));
-  memset(rhs, 0, size*sizeof(*rhs));
+	size = set_count(freqs);
+	matrix = xmalloc(size*size*sizeof(*matrix));
+	memset(matrix, 0, size*size*sizeof(*matrix));
+	rhs = xmalloc(size*sizeof(*rhs));
+	memset(rhs, 0, size*sizeof(*rhs));
 
-  set_foreach(freqs, freq) {
-    ir_node *bb = (ir_node *)freq->irn;
-    size_t  idx = (int)get_irn_link(bb);
+	set_foreach(freqs, freq) {
+		ir_node *bb = (ir_node *)freq->irn;
+		size_t  idx = (int)get_irn_link(bb);
 
-    matrix[idx * (size + 1)] = -1.0;
+		matrix[idx * (size + 1)] = -1.0;
 
-    if (bb == get_irg_start_block(irg)) {
-      rhs[(int)get_irn_link(bb)] = -1.0;
-      continue;
-    }
+		if (bb == get_irg_start_block(irg)) {
+			rhs[(int)get_irn_link(bb)] = -1.0;
+			continue;
+		}
 
-    for(i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
-      ir_node *pred    = get_Block_cfgpred_block(bb, i);
-      size_t  pred_idx = (int)get_irn_link(pred);
+		for(i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
+			ir_node *pred    = get_Block_cfgpred_block(bb, i);
+			size_t  pred_idx = (int)get_irn_link(pred);
 
-//      matrix[pred_idx + idx*size] += 1.0/(double)get_Block_n_cfg_outs(pred);
-      matrix[pred_idx + idx * size] += get_cf_probability(bb, i, loop_weight);
-    }
-  }
+			//      matrix[pred_idx + idx*size] += 1.0/(double)get_Block_n_cfg_outs(pred);
+			matrix[pred_idx + idx * size] += get_cf_probability(bb, i, loop_weight);
+		}
+	}
 
-  x = solve_lgs(matrix, rhs, size);
-  if(x == NULL) {
+	x = solve_lgs(matrix, rhs, size);
+	if(x == NULL) {
 		ef->infeasible = 1;
 		return ef;
-  }
+	}
 
-  ef->max = MAX_INT_FREQ;
-  set_foreach(freqs, freq) {
-    const ir_node *bb = freq->irn;
-    size_t        idx = PTR_TO_INT(get_irn_link(bb));
+	ef->max = MAX_INT_FREQ;
+	set_foreach(freqs, freq) {
+		const ir_node *bb = freq->irn;
+		size_t        idx = PTR_TO_INT(get_irn_link(bb));
 
 #ifdef USE_GSL
-    freq->freq = ZERO(gsl_vector_get(x, idx)) ? 0.0 : gsl_vector_get(x, idx);
+		freq->freq = ZERO(gsl_vector_get(x, idx)) ? 0.0 : gsl_vector_get(x, idx);
 #else
-    freq->freq = ZERO(x[idx]) ? 0.0 : x[idx];
+		freq->freq = ZERO(x[idx]) ? 0.0 : x[idx];
 #endif
 
-	/* get the maximum exec freq */
-	ef->max = MAX(ef->max, freq->freq);
+		/* get the maximum exec freq */
+		ef->max = MAX(ef->max, freq->freq);
 
-	/* Get the minimum non-zero execution frequency. */
-	if(freq->freq > 0.0)
-		ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
-  }
+		/* Get the minimum non-zero execution frequency. */
+		if(freq->freq > 0.0)
+			ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
+	}
 
-  /* compute m and b of the transformation used to convert the doubles into scaled ints */
-  {
-	  double l1 = 1.0;
-	  double h1 = MAX_INT_FREQ;
-	  double l2 = ef->min_non_zero;
-	  double h2 = ef->max;
+  	/* compute m and b of the transformation used to convert the doubles into scaled ints */
+	{
+	  	double l1 = 1.0;
+		double h1 = MAX_INT_FREQ;
+		double l2 = ef->min_non_zero;
+		double h2 = ef->max;
 
-	  ef->m = (h1 - l1) / (h2 - l2);
-	  ef->b = (l1 * h2  - l2 * h1) / (h2 - l2);
-  }
+		ef->m = (h1 - l1) / (h2 - l2);
+		ef->b = (l1 * h2  - l2 * h1) / (h2 - l2);
+	}
 
 #ifdef USE_GSL
-  gsl_vector_free(x);
+	gsl_vector_free(x);
 #endif
-  free(matrix);
+	free(matrix);
 
 	memset(&ef->hook, 0, sizeof(ef->hook));
 	ef->hook.context = ef;
 	ef->hook.hook._hook_node_info = exec_freq_node_info;
 	register_hook(hook_node_info, &ef->hook);
 
-  return ef;
+	return ef;
 }
 
 void
