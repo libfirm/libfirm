@@ -542,14 +542,13 @@ void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
  */
 char *get_ia32_am_offs(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	char        *res  = NULL;
+	static char res[64];
 
 	if (! attr->am_offs) {
 		return NULL;
 	}
 
-	res = obstack_alloc(get_irg_obstack(get_irn_irg(node)), 64);
-	snprintf(res, 64, "%+ld", attr->am_offs);
+	snprintf(res, sizeof(res), "%+ld", attr->am_offs);
 
 	return res;
 }
@@ -572,12 +571,12 @@ static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 	if (! offset || strlen(offset) < 1)
 		return;
 
-	sscanf(offset, "%d", &o);
+	assert(sscanf(offset, "%d", &o) == 1);
 
 	if (op == '-')
 		attr->am_offs -= o;
 	else if (op == '+')
-		attr->am_offs -= o;
+		attr->am_offs += o;
 	else
 		assert(0);
 }

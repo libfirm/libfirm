@@ -298,7 +298,7 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 	if (get_ia32_frame_ent(irn)) {
 		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
 
-		/* Pop nodes modify the stack pointer before reading the destination
+		/* Pop nodes modify the stack pointer before calculating the destination
 		 * address, so fix this here
 		 */
 		if(is_ia32_Pop(irn)) {
@@ -311,8 +311,7 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 
 		if (get_ia32_op_type(irn) == ia32_Normal) {
 			set_ia32_cnst(irn, buf);
-		}
-		else {
+		} else {
 			add_ia32_am_offs(irn, buf);
 			am_flav |= ia32_O;
 			set_ia32_am_flavour(irn, am_flav);
@@ -327,7 +326,7 @@ static int ia32_get_sp_bias(const void *self, const ir_node *irn) {
 
 		if(is_ia32_Push(pred) && proj == 0)
 			return 4;
-		else if(is_ia32_Pop(pred) && proj == 1)
+		if(is_ia32_Pop(pred) && proj == 1)
 			return -4;
 	}
 

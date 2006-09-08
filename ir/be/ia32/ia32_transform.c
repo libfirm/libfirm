@@ -1472,7 +1472,7 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 
 	/* base is an constant address */
 	if (is_imm) {
-		if (get_ia32_immop_type(ptr) == ia32_ImmSymConst) {
+		if (get_ia32_op_type(ptr) == ia32_SymConst) {
 			set_ia32_am_sc(new_op, get_ia32_id_cnst(ptr));
 			am_flav = ia32_am_N;
 		}
