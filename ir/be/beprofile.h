@@ -18,14 +18,14 @@
  * @param filename The name of the output file for the profile information
  * @return The irg doing the profile initialization.
  */
-ir_graph * be_profile_instrument(char * filename);
+ir_graph * be_profile_instrument(const char *filename);
 
 /**
  * Reads the corresponding profile info file if it exists and returns a
  * profile info struct
  * @param filename The name of the file containing profile information
  */
-void be_profile_read(char * filename);
+void be_profile_read(const char *filename);
 
 /**
  * Frees the profile info
@@ -36,6 +36,11 @@ void be_profile_free(void);
  * Get block execution count as determined be profiling
  */
 unsigned int be_profile_get_block_execcount(const ir_node * block);
+
+/**
+ * Initializes exec_freq structure for an irg based on profile data
+ */
+exec_freq_t *be_create_execfreqs_from_profile(ir_graph *irg);
 
 /**
  * Tells whether profile module has acquired data

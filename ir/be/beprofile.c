@@ -45,6 +45,7 @@
 #include "beutil.h"
 #include "ircons.h"
 #include "irhooks.h"
+#include "iredges.h"
 
 #include "bechordal_t.h"
 
@@ -103,6 +104,10 @@ instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 	ir_node  *load, *store, *offset, *add, *projm, *proji, *unknown;
 	ir_node  *cnst;
 
+	/**
+	 * We can't instrument the start and end block as there are no real
+	 * instructions in these blocks
+	 */
 	if(bb == start_block || bb == get_irg_end_block(irg))
 		return;
 
@@ -236,7 +241,7 @@ block_id_walker(ir_node * bb, void * data)
 }
 
 ir_graph *
-be_profile_instrument(char * filename)
+be_profile_instrument(const char *filename)
 {
 	int            n, i;
 	unsigned int   n_blocks = 0;
@@ -371,7 +376,7 @@ unregister_vcg_hook(void)
  * profile info struct
  */
 void
-be_profile_read(char * filename)
+be_profile_read(const char *filename)
 {
 	FILE   *f;
 	char    buf[8];
@@ -381,7 +386,7 @@ be_profile_read(char * filename)
 	if(f == NULL) {
 		return;
 	}
-	printf("found profile data.\n");
+	printf("found profile data '%s'.\n", filename);
 
 	/* check magic */
 	ret = fread(buf, 8, 1, f);
@@ -430,7 +435,7 @@ be_profile_has_data(void)
  * Get block execution count as determined be profiling
  */
 unsigned int
-be_profile_get_block_execcount(const ir_node * block)
+be_profile_get_block_execcount(const ir_node *block)
 {
 	execcount_t *ec, query;
 
@@ -440,9 +445,67 @@ be_profile_get_block_execcount(const ir_node * block)
 	query.block = get_irn_node_nr(block);
 	ec = set_find(profile, &query, sizeof(query), get_irn_node_nr(block));
 
-	if(ec) {
+	if(ec != NULL) {
 		return ec->count;
 	} else {
+		ir_fprintf(stderr, "Warning: Profile contains no data for %+F\n",
+		           block);
 		return 1;
 	}
+}
+
+typedef struct _intialize_execfreq_env_t {
+	ir_graph *irg;
+	exec_freq_t *execfreqs;
+	double freq_factor;
+} initialize_execfreq_env_t;
+
+static void initialize_execfreq(ir_node *block, void *data) {
+	initialize_execfreq_env_t *env = data;
+	double freq;
+
+	if(block == get_irg_start_block(env->irg)
+	   || block == get_irg_end_block(env->irg)) {
+		freq = 1.0;
+	} else {
+		freq = be_profile_get_block_execcount(block);
+		freq *= env->freq_factor;
+	}
+
+	set_execfreq(env->execfreqs, block, freq);
+}
+
+exec_freq_t *be_create_execfreqs_from_profile(ir_graph *irg)
+{
+	ir_node *block2 = NULL;
+	ir_node *start_block;
+	const ir_edge_t *edge;
+	initialize_execfreq_env_t env;
+	unsigned count;
+
+	env.execfreqs = create_execfreq(irg);
+
+	// find the successor to the start block
+	start_block = get_irg_start_block(irg);
+	foreach_block_succ(start_block, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+		if(succ != start_block) {
+			block2 = succ;
+			break;
+		}
+	}
+	assert(block2 != NULL);
+
+	count = be_profile_get_block_execcount(block2);
+	if(count == 0) {
+		// the function was never executed, so fallback to estimated freqs
+		free_execfreq(env.execfreqs);
+
+		return compute_execfreq(irg, 10);
+	}
+
+	env.freq_factor = 1 / count;
+	irg_block_walk_graph(irg, initialize_execfreq, NULL, &env);
+
+	return env.execfreqs;
 }

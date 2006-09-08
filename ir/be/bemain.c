@@ -494,7 +494,14 @@ static void be_main_loop(FILE *file_handle, const char *asm_file_name)
 		);
 		BE_TIMER_PUSH(t_other);   /* t_other */
 
-		birg->execfreqs = compute_execfreq(irg, 10);
+		/**
+		 * Create execution frequencies from profile data or estimate some
+		 */
+		if(be_profile_has_data()) {
+			birg->execfreqs = be_create_execfreqs_from_profile(irg);
+		} else {
+			birg->execfreqs = compute_execfreq(irg, 10);
+		}
 
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
 
