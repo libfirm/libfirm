@@ -135,6 +135,7 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 /* schedule selector options. */
 static const lc_opt_enum_int_items_t sched_select_items[] = {
 	{ "trivial",  BE_SCHED_SELECT_TRIVIAL  },
+	{ "random",   BE_SCHED_SELECT_RANDOM },
 	{ "regpress", BE_SCHED_SELECT_REGPRESS },
 	{ "muchnik",  BE_SCHED_SELECT_MUCHNIK  },
 	{ "heur",     BE_SCHED_SELECT_HEUR     },

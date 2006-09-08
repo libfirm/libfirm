@@ -766,8 +766,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	BE_TIMER_PUSH(ra_timer.t_spillslots);
 
-	if(coalesce_spill_slots)
-	be_coalesce_spillslots(&chordal_env);
+	be_coalesce_spillslots(&chordal_env, coalesce_spill_slots);
 	dump(BE_CH_DUMP_SPILLSLOTS, irg, NULL, "-spillslots", dump_ir_block_graph_sched);
 
 	BE_TIMER_POP(ra_timer.t_spillslots);

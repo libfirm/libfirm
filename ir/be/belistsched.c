@@ -495,6 +495,9 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 		case BE_SCHED_SELECT_TRIVIAL:
 			memcpy(&sel, trivial_selector, sizeof(sel));
 			break;
+		case BE_SCHED_SELECT_RANDOM:
+			memcpy(&sel, random_selector, sizeof(sel));
+			break;
 		case BE_SCHED_SELECT_REGPRESS:
 			memcpy(&sel, reg_pressure_selector, sizeof(sel));
 			break;

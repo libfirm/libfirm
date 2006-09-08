@@ -112,6 +112,8 @@ struct _list_sched_selector_t {
  */
 extern const list_sched_selector_t *trivial_selector;
 
+extern const list_sched_selector_t *random_selector;
+
 /**
  * A selector that tries to minimize the register pressure.
  * @note Not really operational yet.
