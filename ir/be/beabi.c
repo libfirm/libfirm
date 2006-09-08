@@ -815,9 +815,34 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 
 		curr_sp = alloc_res;
 	}
-
 	return curr_sp;
-}
+}  /* adjust_alloc */
+
+/**
+ * Adjust a Free.
+ * The Free is transformed into a back end free node and connected to the stack nodes.
+ */
+static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
+{
+	if (get_Free_where(free) == stack_alloc) {
+		ir_node *bl        = get_nodes_block(free);
+		ir_graph *irg      = get_irn_irg(bl);
+		ir_node *addsp, *mem, *res;
+		dbg_info *db = get_irn_dbg_info(free);
+
+		/* The stack pointer will be modified in an unknown manner.
+		   We cannot omit it. */
+		env->call->flags.bits.try_omit_fp = 0;
+		addsp = be_new_SubSP(env->isa->sp, irg, bl, curr_sp, get_Free_size(free));
+
+		mem = new_r_Proj(irg, bl, addsp, mode_M, pn_be_SubSP_M);
+		res = new_r_Proj(irg, bl, addsp, mode_P_data, pn_be_SubSP_res);
+
+		exchange(free, mem);
+		curr_sp = res;
+	}
+	return curr_sp;
+}  /* adjust_free */
 
 /* the following function is replaced by the usage of the heights module */
 #if 0
@@ -887,16 +912,20 @@ static int cmp_call_dependecy(const void *c1, const void *c2)
 }
 
 /**
- * Walker: links all Call nodes to the Block they are contained.
+ * Walker: links all Call/alloc/Free nodes to the Block they are contained.
  */
 static void link_calls_in_block_walker(ir_node *irn, void *data)
 {
-	if(is_Call(irn) || (get_irn_opcode(irn) == iro_Alloc && get_Alloc_where(irn) == stack_alloc)) {
+	opcode code = get_irn_opcode(irn);
+
+	if (code == iro_Call ||
+		(code == iro_Alloc && get_Alloc_where(irn) == stack_alloc) ||
+		(code == iro_Free && get_Free_where(irn) == stack_alloc)) {
 		be_abi_irg_t *env = data;
 		ir_node *bl       = get_nodes_block(irn);
 		void *save        = get_irn_link(bl);
 
-		if (is_Call(irn))
+		if (code == iro_Call)
 			env->call->flags.bits.irg_is_leaf = 0;
 
 		set_irn_link(irn, save);
@@ -944,6 +973,9 @@ static void process_calls_in_block(ir_node *bl, void *data)
 			case iro_Alloc:
 				curr_sp = adjust_alloc(env, irn, curr_sp, &copy);
 				break;
+			case iro_Free:
+				curr_sp = adjust_free(env, irn, curr_sp);
+				break;
 			default:
 				break;
 			}
@@ -958,7 +990,7 @@ static void process_calls_in_block(ir_node *bl, void *data)
 	}
 
 	set_irn_link(bl, curr_sp);
-}
+}  /* process_calls_in_block */
 
 /**
  * Adjust all call nodes in the graph to the ABI conventions.
