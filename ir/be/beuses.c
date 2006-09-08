@@ -1,13 +1,16 @@
 /**
  * @file   beuse.c
  * @date   27.06.2005
- * @author Sebastian Hack
+ * @author Sebastian Hack, Matthias Braun
  *
  * Methods to compute when a value will be used again.
  *
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <limits.h>
 #include <stdlib.h>
@@ -34,135 +37,145 @@
 #include "beuses_t.h"
 #include "benodesets.h"
 
-#define DBG_LEVEL SET_LEVEL_0
+#define SCAN_INTERBLOCK_USES
 
 typedef struct _be_use_t {
-	const ir_node *bl;
-	const ir_node *irn;
+	const ir_node *block;
+	const ir_node *node;
 	unsigned next_use;
 } be_use_t;
 
 struct _be_uses_t {
-  set *uses;
-  ir_graph *irg;
-  const be_lv_t *lv;
-  const arch_env_t *arch_env;
-  DEBUG_ONLY(firm_dbg_module_t *dbg;)
+  	set *uses;
+	ir_graph *irg;
+	const exec_freq_t *execfreqs;
+	const be_lv_t *lv;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 static int cmp_use(const void *a, const void *b, size_t n)
 {
-  const be_use_t *p = a;
-  const be_use_t *q = b;
-  return !(p->bl == q->bl && p->irn == q->irn);
+	const be_use_t *p = a;
+	const be_use_t *q = b;
+	return !(p->block == q->block && p->node == q->node);
 }
 
-static INLINE be_use_t *get_or_set_use(be_uses_t *uses,
-    const ir_node *bl, const ir_node *def, unsigned next_use)
+static const be_use_t *get_or_set_use_block(be_uses_t *uses,
+                                            const ir_node *block,
+                                            const ir_node *def)
 {
-  unsigned hash = HASH_COMBINE(nodeset_hash(bl), nodeset_hash(def));
-  be_use_t templ;
-  be_use_t* result;
+	unsigned hash = HASH_COMBINE(nodeset_hash(block), nodeset_hash(def));
+	be_use_t temp;
+	be_use_t* result;
 
-  templ.bl = bl;
-  templ.irn = def;
-  templ.next_use = be_get_next_use(uses, sched_first(bl), 0, def, 0);
-  result = set_insert(uses->uses, &templ, sizeof(templ), hash);
+	temp.block = block;
+	temp.node = def;
+	result = set_find(uses->uses, &temp, sizeof(temp), hash);
 
-  return result;
+	if(result == NULL) {
+		// insert templ first as we might end in a loop in the get_next_use
+		// call otherwise
+		temp.next_use = USES_INFINITY;
+		result = set_insert(uses->uses, &temp, sizeof(temp), hash);
+
+		result->next_use = be_get_next_use(uses, sched_first(block), 0, def, 0);
+	}
+
+	return result;
 }
 
 unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
-    unsigned from_step, const ir_node *def, int skip_from_uses);
-
-static unsigned get_next_use_bl(be_uses_t *uses, const ir_node *bl,
-    const ir_node *def)
+                         unsigned from_step, const ir_node *def,
+                         int skip_from_uses)
 {
-  be_use_t *u = get_or_set_use(uses, bl, def, 0);
+	unsigned step = from_step;
+	ir_node *block = get_nodes_block(from);
+	const ir_node *node;
+	const ir_edge_t *edge;
 
-  return u->next_use;
-}
+	if(skip_from_uses) {
+		step++;
+		node = sched_next(node);
+	}
 
-static unsigned get_next_use(be_uses_t *uses, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses, unsigned long visited_nr)
-{
-	unsigned next_use = USES_INFINITY;
-	unsigned step     = from_step;
-	unsigned n        = 0;
-	ir_node *bl       = get_nodes_block(from);
-	const ir_node *irn;
-	const ir_edge_t *succ_edge;
+	sched_foreach_from(from, node) {
+		int i, arity;
 
-	set_irn_visited(bl, visited_nr);
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			const ir_node *operand = get_irn_n(node, i);
 
-	sched_foreach_from(from, irn) {
-		int i, n;
-
-		if (! skip_from_uses) {
-			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				ir_node *operand = get_irn_n(irn, i);
-
-				if (operand == def) {
-					DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, irn));
-					return step;
-				}
+			if (operand == def) {
+				DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, node));
+				return step;
 			}
 		}
 
-		skip_from_uses = 0;
 		step++;
 	}
 
-	/* FIXME: quick and dirty hack to prevent ignore nodes (like stack pointer) from being spilled */
-	return be_is_live_end(uses->lv, bl, def) ? step : USES_INFINITY;
+	if(be_is_live_end(uses->lv, block, def))
+		return step;
 
-	next_use = USES_INFINITY;
-	foreach_block_succ(bl, succ_edge) {
-		const ir_node *succ_bl = succ_edge->src;
-		if(get_irn_visited(succ_bl) < visited_nr && (be_is_live_in(uses->lv, succ_bl, def) || (get_irn_arity(succ_bl) > 1 && be_is_live_end(uses->lv, bl, def)))) {
-			unsigned next = get_next_use_bl(uses, succ_bl, def);
+#ifdef SCAN_INTERBLOCK_USES
+	{
+	double best_execfreq = -1;
+	unsigned next_use = USES_INFINITY;
 
-			DBG((uses->dbg, LEVEL_2, "\t\tnext use in succ %+F: %d\n", succ_bl, next));
-			next_use = MIN(next_use, next);
-			n++;
+	foreach_block_succ(block, edge) {
+		const be_use_t *use;
+		const ir_node *succ_block = get_edge_src_irn(edge);
+		double execfreq = get_block_execfreq(uses->execfreqs, succ_block);
+
+		//execfreq_sum += execfreq;
+
+		if(execfreq > best_execfreq) {
+			best_execfreq = execfreq;
+
+			if(!be_is_live_in(uses->lv, succ_block, def)) {
+				next_use = USES_INFINITY;
+				continue;
+			}
+
+			use = get_or_set_use_block(uses, succ_block, def);
+			//if(USES_IS_INFINITE(use->next_use))
+			//	continue;
+
+			next_use = use->next_use;
 		}
+
+		//next_use += use->next_use / execfreq;
 	}
 
-	return next_use + step;
+	/*if(next_use == 0)
+		return USES_INFINITY;*/
+
+	//next_use /= execfreq_sum;
+
+	return ((unsigned) next_use) + step;
+	}
+#else
+	return USES_INFINITY;
+#endif
 }
 
-unsigned be_get_next_use(be_uses_t *uses, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
+be_uses_t *be_begin_uses(ir_graph *irg, const exec_freq_t *execfreqs, const be_lv_t *lv)
 {
-	unsigned long visited_nr = get_irg_visited(uses->irg) + 1;
+	be_uses_t *uses = xmalloc(sizeof(uses[0]));
 
-	set_irg_visited(uses->irg, visited_nr);
-	return get_next_use(uses, from, from_step, def, skip_from_uses, visited_nr);
-}
+	edges_assure(irg);
 
+	uses->uses = new_set(cmp_use, 512);
+	uses->irg = irg;
+	uses->execfreqs = execfreqs;
+	uses->lv = lv;
+	FIRM_DBG_REGISTER(uses->dbg, "firm.be.uses");
 
-be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls)
-{
-  be_uses_t *uses = xmalloc(sizeof(uses[0]));
-
-  edges_assure(irg);
-
-  uses->arch_env = arch_env;
-  uses->uses     = new_set(cmp_use, 512);
-  uses->irg      = irg;
-  uses->lv       = lv;
-  FIRM_DBG_REGISTER(uses->dbg, "firm.be.uses");
-
-  return uses;
+	return uses;
 }
 
 void be_end_uses(be_uses_t *uses)
 {
-  del_set(uses->uses);
-  free(uses);
-}
-
-int loc_compare(const void *a, const void *b)
-{
-  const loc_t *p = a;
-  const loc_t *q = b;
-  return p->time - q->time;
+	del_set(uses->uses);
+	free(uses);
 }

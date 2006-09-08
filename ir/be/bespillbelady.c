@@ -50,7 +50,18 @@
 #define DEBUG_LVL 0 //(DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef struct _workset_t workset_t;
+/**
+ * An association between a node and a point in time.
+ */
+typedef struct _loc_t {
+  ir_node *irn;        /**< A node. */
+  unsigned time;       /**< A use time (see beuses.h). */
+} loc_t;
+
+typedef struct _workset_t {
+	int len;			/**< current length */
+	loc_t vals[0];		/**< inlined array of the values/distances in this working set */
+} workset_t;
 
 typedef struct _belady_env_t {
 	struct obstack ob;
@@ -68,10 +79,12 @@ typedef struct _belady_env_t {
 	spill_env_t *senv;	/**< see bespill.h */
 } belady_env_t;
 
-struct _workset_t {
-	int len;			/**< current length */
-	loc_t vals[0];		/**< inlined array of the values/distances in this working set */
-};
+static int loc_compare(const void *a, const void *b)
+{
+	const loc_t *p = a;
+	const loc_t *q = b;
+	return p->time - q->time;
+}
 
 void workset_print(const workset_t *w)
 {
@@ -217,13 +230,18 @@ static INLINE void *new_block_info(struct obstack *ob) {
 static INLINE unsigned get_distance(belady_env_t *env, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
 {
 	int flags = arch_irn_get_flags(env->arch, def);
-	unsigned dist = be_get_next_use(env->uses, from, from_step, def, skip_from_uses);
+	unsigned dist;
 
 	assert(! (flags & arch_irn_flags_ignore));
 
-	/* we have to keep nonspillable nodes in the workingset */
+	/* We have to keep nonspillable nodes in the workingset */
 	if(flags & arch_irn_flags_dont_spill)
 		return 0;
+
+	dist = be_get_next_use(env->uses, from, from_step, def, skip_from_uses);
+
+	if(USES_IS_INFINITE(dist))
+		dist = USES_INFINITY;
 
 	return dist;
 }
@@ -317,8 +335,10 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	/* Only make more free room if we do not have enough */
 	if (len > max_allowed) {
 		/* get current next-use distance */
-		for (i = 0; i < ws->len; ++i)
-			workset_set_time(ws, i, get_distance(env, env->instr, env->instr_nr, workset_get_val(ws, i), !is_usage));
+		for (i = 0; i < ws->len; ++i) {
+			unsigned dist = get_distance(env, env->instr, env->instr_nr, workset_get_val(ws, i), !is_usage);
+			workset_set_time(ws, i, dist);
+		}
 
 		/*
 			FIX for don't spill nodes:
@@ -628,7 +648,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	env.cls       = chordal_env->cls;
 	env.n_regs    = env.cls->n_regs - be_put_ignore_regs(chordal_env->birg, chordal_env->cls, NULL);
 	env.ws        = new_workset(&env, &env.ob);
-	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->lv, chordal_env->birg->main_env->arch_env, env.cls);
+	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->exec_freq, chordal_env->lv);
 	if(spill_env == NULL) {
 		env.senv = be_new_spill_env(chordal_env);
 	} else {
