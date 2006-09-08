@@ -19,3 +19,5 @@ OUT.*
 gcc
 firm
 Makefile.config
+SPEC00
+gcc-testsuite
