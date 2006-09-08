@@ -1789,8 +1789,11 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
 	FILE *F = env->out;
 	char cmd_buf[256], cmnt_buf[256];
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
+	ir_mode *mode = get_irn_mode(n);
+	tarval *tv = get_ia32_Immop_tarval(n);
 
-	if (get_ia32_Immop_tarval(n) == get_tarval_null(get_irn_mode(n))) {
+	/* beware: in some rare cases mode is mode_b which has no tarval_null() */
+	if (tv == get_tarval_b_false() || tv == get_tarval_null(mode)) {
 		const char *instr = "xor";
 		if (env->isa->opt_arch == arch_pentium_4) {
 			/* P4 prefers sub r, r, others xor r, r */
@@ -1832,6 +1835,30 @@ static void emit_ia32_AddSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "sub %1D, %2S", irn, irn);
 	}
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* reserve space on stack */");
+
+	IA32_DO_EMIT(irn);
+}
+
+/**
+ * Emits code to increase stack pointer.
+ */
+static void emit_ia32_SubSP(const ir_node *irn, ia32_emit_env_t *emit_env) {
+	FILE *F = emit_env->out;
+	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
+
+	if (is_ia32_ImmConst(irn)) {
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1D, %C", irn, irn);
+	}
+	else if (is_ia32_ImmSymConst(irn)) {
+		if (get_ia32_op_type(irn) == ia32_Normal)
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1D, OFFSET_FLAT:%C", irn, irn);
+		else /* source address mode */
+			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1D, [%s%s]", irn, get_id_str(get_ia32_am_sc(irn)), get_ia32_am_offs(irn));
+	}
+	else {
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "add %1D, %2S", irn, irn);
+	}
+	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* free space on stack */");
 
 	IA32_DO_EMIT(irn);
 }
@@ -1921,6 +1948,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_I2I8Bit);
 	IA32_EMIT(Const);
 	IA32_EMIT(AddSP);
+	IA32_EMIT(SubSP);
 	IA32_EMIT(LdTls);
 	IA32_EMIT(xCmp);
 	IA32_EMIT(xCmpSet);

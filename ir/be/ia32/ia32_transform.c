@@ -2471,6 +2471,54 @@ static ir_node *gen_be_AddSP(ia32_transform_env_t *env) {
 }
 
 /**
+ * Transform a be_SubSP into an ia32_SubSP. Eat up const sizes.
+ */
+static ir_node *gen_be_SubSP(ia32_transform_env_t *env) {
+	ir_node *new_op;
+	const ir_edge_t *edge;
+	ir_node *sz = get_irn_n(env->irn, be_pos_SubSP_size);
+	ir_node *sp = get_irn_n(env->irn, be_pos_SubSP_old_sp);
+
+	new_op = new_rd_ia32_SubSP(env->dbg, env->irg, env->block, sp, sz);
+
+	if (is_ia32_Const(sz)) {
+		set_ia32_Immop_attr(new_op, sz);
+		set_irn_n(new_op, 1, ia32_new_NoReg_gp(env->cg));
+	}
+	else if (is_ia32_Load(sz) && get_ia32_am_flavour(sz) == ia32_O) {
+		set_ia32_immop_type(new_op, ia32_ImmSymConst);
+		set_ia32_op_type(new_op, ia32_AddrModeS);
+		set_ia32_am_sc(new_op, get_ia32_am_sc(sz));
+		add_ia32_am_offs(new_op, get_ia32_am_offs(sz));
+		set_irn_n(new_op, 1, ia32_new_NoReg_gp(env->cg));
+	}
+
+	/* fix proj nums */
+	foreach_out_edge(env->irn, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+
+		assert(is_Proj(proj));
+
+		if (get_Proj_proj(proj) == pn_be_SubSP_res) {
+			/* the node is not yet exchanged: we need to set the register manually */
+			ia32_attr_t *attr = get_ia32_attr(new_op);
+			attr->slots[pn_ia32_SubSP_stack] = &ia32_gp_regs[REG_ESP];
+			set_Proj_proj(proj, pn_ia32_SubSP_stack);
+		}
+		else if (get_Proj_proj(proj) == pn_be_SubSP_M) {
+			set_Proj_proj(proj, pn_ia32_SubSP_M);
+		}
+		else {
+			assert(0);
+		}
+	}
+
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
+
+	return new_op;
+}
+
+/**
  * This function just sets the register for the Unknown node
  * as this is not done during register allocation because Unknown
  * is an "ignore" node.
@@ -2970,6 +3018,7 @@ void ia32_register_transformers(void) {
 	GEN(be_FrameStore);
 	GEN(be_StackParam);
 	GEN(be_AddSP);
+	GEN(be_SubSP);
 
 	/* set the register for all Unknown nodes */
 	GEN(Unknown);

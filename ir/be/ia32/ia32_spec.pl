@@ -770,6 +770,13 @@ else {
   "outs"      => [ "stack", "M" ],
 },
 
+"SubSP" => {
+  "irn_flags" => "I",
+  "comment"   => "free space on stack",
+  "reg_req"   => { "in" => [ "esp", "gp" ], "out" => [ "esp", "none" ] },
+  "outs"      => [ "stack", "M" ],
+},
+
 "LdTls" => {
   "irn_flags" => "R",
   "comment"   => "get the TLS base address",
