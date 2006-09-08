@@ -1992,23 +1992,20 @@ static void ia32_emit_alignment(FILE *F, unsigned align, unsigned skip) {
 static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
 	unsigned align; unsigned maximum_skip;
 
-	/* gcc doesn't emit alignment for p4 ?*/
-    if (cpu == arch_pentium_4)
-		return;
-
 	switch (cpu) {
 		case arch_i386:
-			align = 2; maximum_skip = 3;
+			align = 2;
 			break;
 		case arch_i486:
-			align = 4; maximum_skip = 15;
+			align = 4;
 			break;
 		case arch_k6:
-			align = 5; maximum_skip = 31;
+			align = 5;
 			break;
 		default:
-			align = 4; maximum_skip = 15;
+			align = 4;
 	}
+	maximum_skip = (1 << align) - 1;
 	ia32_emit_alignment(F, align, maximum_skip);
 }
 
@@ -2018,23 +2015,20 @@ static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
 static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 	unsigned align; unsigned maximum_skip;
 
-	/* gcc doesn't emit alignment for p4 ?*/
-	if (cpu == arch_pentium_4)
-		return;
-
 	switch (cpu) {
 		case arch_i386:
-			align = 2; maximum_skip = 3;
+			align = 2;
 			break;
 		case arch_i486:
-			align = 4; maximum_skip = 15;
+			align = 4;
 			break;
 		case arch_k6:
-			align = 5; maximum_skip = 7;
+			align = 5;
 			break;
 		default:
-			align = 4; maximum_skip = 7;
+			align = 4;
 	}
+	maximum_skip = (1 << align) - 1;
 	ia32_emit_alignment(F, align, maximum_skip);
 }
 

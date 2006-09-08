@@ -79,6 +79,8 @@ static void ia32_dump_comm(obstack_t *obst, const char *name, visibility vis, in
 		else
 			obstack_printf(obst, "\t.comm\t%s,%d\n", name, size);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -379,6 +381,8 @@ static void dump_object_size(obstack_t *obst, const char *name, int size) {
 	case ASM_LINUX_GAS:
 		obstack_printf(obst, "\t.type\t%s,@object\n", name);
 		obstack_printf(obst, "\t.size\t%s,%d\n", name, size);
+		break;
+	default:
 		break;
 	}
 }

@@ -639,6 +639,7 @@ static void ia32_peephole_optimize_node(ir_node *irn, void *env) {
 	if (be_is_IncSP(irn)) {
 		// optimize_IncSP doesn't respect dependency edges yet...
 		//ia32_optimize_IncSP(irn, cg);
+		(void) ia32_optimize_IncSP;
 		ia32_create_Pushs(irn, cg);
 	}
 }
