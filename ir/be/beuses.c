@@ -95,7 +95,7 @@ unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
 
 	if(skip_from_uses) {
 		step++;
-		node = sched_next(node);
+		from = sched_next(from);
 	}
 
 	sched_foreach_from(from, node) {
