@@ -1284,21 +1284,6 @@ static void analyse_calls(ir_node *irn, void *ctx) {
   }
 }
 
-static int have_blk_phi_mem(ir_node *blk) {
-
-  int     i;
-  ir_node *out;
-
-  for(i = get_irn_n_outs(blk) - 1; i >= 0; i--) {
-
-    out = get_irn_out(blk, i);
-    if(get_irn_op(out) == op_Phi)
-      return 1;
-  }
-
-  return 0;
-}
-
 static int set_block_dominated_first_access(ir_node *blk, int vnum, unsigned int access) {
 
   ir_node *idom, *succ;

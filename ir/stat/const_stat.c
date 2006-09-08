@@ -11,8 +11,6 @@
 #include "firmstat_t.h"
 #include "tv_t.h"
 
-static stat_info_t *status;
-
 /**
  * calculated the dual logarithmus of |value|
  */

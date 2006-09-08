@@ -54,20 +54,6 @@ static void allocate_extblk(ir_node *block, env_t *env)
 }
 
 /**
- * add a block to an extended block
- */
-static void addto_extblk(ir_extblk *extblk, ir_node *block)
-{
-  /* link all blocks belonging to this extended block */
-  set_irn_link(block, extblk->link);
-
-  extblk->link = block;
-  extblk->visited++;
-
-  set_Block_extbb(block, extblk);
-}
-
-/**
  * Returns the number of block successors.
  * we are interested only in 1, 2 and >2.
  */
