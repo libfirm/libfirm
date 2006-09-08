@@ -123,6 +123,7 @@ ir_op *op_be_Call;
 ir_op *op_be_Return;
 ir_op *op_be_IncSP;
 ir_op *op_be_AddSP;
+ir_op *op_be_SubSP;
 ir_op *op_be_SetSP;
 ir_op *op_be_RegParams;
 ir_op *op_be_StackParam;
@@ -203,6 +204,7 @@ void be_node_init(void) {
 	op_be_Call       = new_ir_op(beo_base + beo_Call,       "be_Call",       op_pin_state_pinned,     F, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
 	op_be_Return     = new_ir_op(beo_base + beo_Return,     "be_Return",     op_pin_state_pinned,     X, oparity_variable, 0, sizeof(be_return_attr_t),  &be_node_op_ops);
 	op_be_AddSP      = new_ir_op(beo_base + beo_AddSP,      "be_AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_SubSP      = new_ir_op(beo_base + beo_SubSP,      "be_SubSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "be_SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
 	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,      "be_IncSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
 	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams,  "be_RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
@@ -222,6 +224,7 @@ void be_node_init(void) {
 	set_op_tag(op_be_Call,       &be_node_tag);
 	set_op_tag(op_be_Return,     &be_node_tag);
 	set_op_tag(op_be_AddSP,      &be_node_tag);
+	set_op_tag(op_be_SubSP,      &be_node_tag);
 	set_op_tag(op_be_SetSP,      &be_node_tag);
 	set_op_tag(op_be_IncSP,      &be_node_tag);
 	set_op_tag(op_be_RegParams,  &be_node_tag);
@@ -582,6 +585,29 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	be_node_set_reg_class(irn, be_pos_AddSP_size, arch_register_get_class(sp));
 	be_set_constr_single_reg(irn, OUT_POS(pn_be_AddSP_res), sp);
 	a->reg_data[pn_be_AddSP_res].reg = sp;
+
+	return irn;
+}
+
+ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz)
+{
+	be_node_attr_t *a;
+	ir_node *irn;
+	ir_node *in[be_pos_SubSP_last];
+
+	in[be_pos_SubSP_old_sp] = old_sp;
+	in[be_pos_SubSP_size]   = sz;
+
+	irn = new_ir_node(NULL, irg, bl, op_be_SubSP, mode_T, be_pos_SubSP_last, in);
+	a   = init_node_attr(irn, be_pos_SubSP_last);
+
+	be_node_set_flags(irn, OUT_POS(pn_be_SubSP_res), arch_irn_flags_ignore | arch_irn_flags_modify_sp);
+
+	/* Set output constraint to stack register. */
+	be_set_constr_single_reg(irn, be_pos_SubSP_old_sp, sp);
+	be_node_set_reg_class(irn, be_pos_SubSP_size, arch_register_get_class(sp));
+	be_set_constr_single_reg(irn, OUT_POS(pn_be_SubSP_res), sp);
+	a->reg_data[pn_be_SubSP_res].reg = sp;
 
 	return irn;
 }

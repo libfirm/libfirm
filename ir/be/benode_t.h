@@ -39,6 +39,7 @@ extern ir_op *op_be_Call;
 extern ir_op *op_be_Return;
 extern ir_op *op_be_IncSP;
 extern ir_op *op_be_AddSP;
+extern ir_op *op_be_SubSP;
 extern ir_op *op_be_SetSP;
 extern ir_op *op_be_RegParams;
 extern ir_op *op_be_StackParam;
@@ -59,6 +60,7 @@ typedef enum {
 	beo_Call,
 	beo_Return,
 	beo_AddSP,
+	beo_SubSP,
 	beo_IncSP,
 	beo_SetSP,
 	beo_RegParams,
@@ -180,6 +182,35 @@ enum {
  * @return       A new AddSP node.
  */
 ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz);
+
+/**
+ * Position numbers for the be_SubSP inputs
+ */
+enum {
+	be_pos_SubSP_old_sp = 0,
+	be_pos_SubSP_size   = 1,
+	be_pos_SubSP_last   = 2
+};
+
+enum {
+	pn_be_SubSP_res  = 0,
+	pn_be_SubSP_M    = 1,
+	pn_be_SubSP_last = 2
+};
+
+/**
+ * Make a new SubSP node.
+ * A SubSP node expresses a decrease of the stack pointer in the direction the stack
+ * grows. In contrast to IncSP, the amount of bytes the stack pointer is grown, is not
+ * given by a constant but an ordinary Firm node.
+ * @param sp     The stack pointer register.
+ * @param irg    The graph.
+ * @param bl     The block.
+ * @param old_sp The node representing the old stack pointer value.
+ * @param sz     The node expressing the size by which the stack pointer shall be grown.
+ * @return       A new DecSP node.
+ */
+ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz);
 
 ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *operand, ir_node *mem);
 
