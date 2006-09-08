@@ -72,6 +72,11 @@ void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour);
 char *get_ia32_am_offs(const ir_node *node);
 
 /**
+ * Gets the addressmode offset as long.
+ */
+long get_ia32_am_offs_long(const ir_node *node);
+
+/**
  * Adds an offset for addrmode.
  */
 void add_ia32_am_offs(ir_node *node, const char *offset);

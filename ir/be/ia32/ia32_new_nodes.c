@@ -543,28 +543,23 @@ void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
 char *get_ia32_am_offs(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	char        *res  = NULL;
-	int          size;
 
 	if (! attr->am_offs) {
 		return NULL;
 	}
 
-	if (! attr->plain_offs)
-		attr->plain_offs = (struct obstack *)_new_arr_d(get_irg_obstack(get_irn_irg(node)), 1, sizeof(*(attr->plain_offs)));
-	else
-		obstack_free(attr->plain_offs, NULL);
-
-	obstack_init(attr->plain_offs);
-
-	size = obstack_object_size(attr->am_offs);
-	if (size > 0) {
-		res = obstack_alloc(attr->plain_offs, size + 2);
-		res[0] = attr->data.offs_sign ? '-' : '+';
-		memcpy(&res[1], obstack_base(attr->am_offs), size);
-		res[size + 1] = '\0';
-	}
+	res = obstack_alloc(get_irg_obstack(get_irn_irg(node)), 64);
+	snprintf(res, 64, "%+ld", attr->am_offs);
 
 	return res;
+}
+
+/**
+ * Gets the addressmode offset as long.
+ */
+long get_ia32_am_offs_long(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->am_offs;
 }
 
 /**
@@ -572,34 +567,19 @@ char *get_ia32_am_offs(const ir_node *node) {
  */
 static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 	ia32_attr_t *attr = get_ia32_attr(node);
+	int o;
 
 	if (! offset || strlen(offset) < 1)
 		return;
 
-	/* offset could already have an explicit sign */
-	/* -> supersede op if necessary               */
-	if (offset[0] == '-' || offset[0] == '+') {
-		if (offset[0] == '-') {
-			op = (op == '-') ? '+' : '-';
-		}
+	sscanf(offset, "%d", &o);
 
-		/* skip explicit sign */
-		offset++;
-	}
-
-	if (! attr->am_offs) {
-		/* obstack is not initialized */
-		attr->am_offs = (struct obstack *)_new_arr_d(get_irg_obstack(get_irn_irg(node)), 1, sizeof(*(attr->am_offs)));
-		obstack_init(attr->am_offs);
-
-		attr->data.offs_sign = (op == '-') ? 1 : 0;
-	}
-	else {
-		/* If obstack is initialized, connect the new offset with op */
-		obstack_printf(attr->am_offs, "%c", op);
-	}
-
-	obstack_printf(attr->am_offs, "%s", offset);
+	if (op == '-')
+		attr->am_offs -= o;
+	else if (op == '+')
+		attr->am_offs -= o;
+	else
+		assert(0);
 }
 
 /**
@@ -1368,6 +1348,31 @@ int ia32_compare_conv_attr(ia32_attr_t *a, ia32_attr_t *b) {
 
 	return !equ;
 }
+
+/* Copy attribute function not needed any more, but might be of use later. */
+#if 0
+/* copies the ia32 attributes */
+static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
+	ia32_attr_t    *attr_old = get_ia32_attr(old_node);
+	ia32_attr_t    *attr_new = get_ia32_attr(new_node);
+	int             n_res    = get_ia32_n_res(old_node);
+
+	/* copy the attributes */
+	memcpy(attr_new, attr_old, sizeof(*attr_new));
+}
+
+/**
+ * Registers the ia32_copy_attr function for all ia32 opcodes.
+ */
+void ia32_register_copy_attr_func(void) {
+	unsigned i, f = get_ia32_opcode_first(), l = get_ia32_opcode_last();
+
+	for (i = f; i < l; i++) {
+		ir_op *op = get_irp_opcode(i);
+		op->ops.copy_attr = ia32_copy_attr;
+	}
+}
+#endif
 
 /* Include the generated constructor functions */
 #include "gen_ia32_new_nodes.c.inl"
