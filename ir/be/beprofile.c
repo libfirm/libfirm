@@ -460,6 +460,9 @@ typedef struct _intialize_execfreq_env_t {
 	double freq_factor;
 } initialize_execfreq_env_t;
 
+// minimal execution frequency (an execfreq of 0 confuses algos)
+static const double MIN_EXECFREQ = 0.00001;
+
 static void initialize_execfreq(ir_node *block, void *data) {
 	initialize_execfreq_env_t *env = data;
 	double freq;
@@ -470,6 +473,8 @@ static void initialize_execfreq(ir_node *block, void *data) {
 	} else {
 		freq = be_profile_get_block_execcount(block);
 		freq *= env->freq_factor;
+		if(freq < MIN_EXECFREQ)
+			freq = MIN_EXECFREQ;
 	}
 
 	set_execfreq(env->execfreqs, block, freq);
@@ -483,6 +488,7 @@ exec_freq_t *be_create_execfreqs_from_profile(ir_graph *irg)
 	initialize_execfreq_env_t env;
 	unsigned count;
 
+	env.irg = irg;
 	env.execfreqs = create_execfreq(irg);
 
 	// find the successor to the start block
@@ -504,7 +510,7 @@ exec_freq_t *be_create_execfreqs_from_profile(ir_graph *irg)
 		return compute_execfreq(irg, 10);
 	}
 
-	env.freq_factor = 1 / count;
+	env.freq_factor = 1.0 / count;
 	irg_block_walk_graph(irg, initialize_execfreq, NULL, &env);
 
 	return env.execfreqs;
