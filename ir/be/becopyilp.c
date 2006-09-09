@@ -8,6 +8,8 @@
  *
  */
 
+#include "bestatevent.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -214,6 +216,11 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
 		lpp_solve_cplex(ienv->lp);
 #endif
 	}
+
+	be_stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
+	be_stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);
+	be_stat_ev    ("co_ilp_iter",       ienv->lp->iterations);
+	be_stat_ev_dbl("co_ilp_sol_time",   ienv->lp->sol_time);
 
 	if(dump_flags & DUMP_ILP) {
 		FILE *f = be_chordal_open(ienv->co->cenv, "", "-co.ilp");

@@ -55,6 +55,7 @@ static int style_flags        = 0;
 static int do_stats           = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
 static int algo               = CO_ALGO_HEUR2;
+static int improve            = 1;
 
 #ifdef WITH_LIBCORE
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -107,11 +108,12 @@ static lc_opt_enum_func_ptr_var_t cost_func_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_INT      ("algo",  "select copy optimization algo (heur, heur2, heur3, ilp)", &algo_var),
-	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",  "select a cost function (freq, loop, one)",    &cost_func_var),
-	LC_OPT_ENT_ENUM_MASK     ("dump",  "dump ifg before or after copy optimization",  &dump_var),
-	LC_OPT_ENT_ENUM_MASK     ("style", "dump style for ifg dumping",                  &style_var),
-	LC_OPT_ENT_BOOL          ("stats", "dump statistics after each optimization",     &do_stats),
+	LC_OPT_ENT_ENUM_INT      ("algo",    "select copy optimization algo (heur, heur2, heur3, ilp)", &algo_var),
+	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",    "select a cost function (freq, loop, one)",                &cost_func_var),
+	LC_OPT_ENT_ENUM_MASK     ("dump",    "dump ifg before or after copy optimization",              &dump_var),
+	LC_OPT_ENT_ENUM_MASK     ("style",   "dump style for ifg dumping",                              &style_var),
+	LC_OPT_ENT_BOOL          ("stats",   "dump statistics after each optimization",                 &do_stats),
+	LC_OPT_ENT_BOOL          ("improve", "run heur3 before if algo can exploit start solutions",    &improve),
 	{ NULL }
 };
 
@@ -1347,14 +1349,21 @@ static int void_algo(copy_opt_t *co)
 			   |___/
 */
 
-static co_algo_t *algos[] = {
-	void_algo,
-	co_solve_heuristic,
-	co_solve_heuristic_new,
-	co_solve_heuristic_java,
+typedef struct {
+	co_algo_t *algo;
+	const char *name;
+	int can_improve_existing;
+} co_algo_info_t;
+
+static co_algo_info_t algos[] = {
+	{ void_algo,                "none",  0 },
+	{ co_solve_heuristic,       "heur1", 0 },
+	{ co_solve_heuristic_new,   "heur2", 0 },
+	{ co_solve_heuristic_java,  "heur3", 0 },
 #ifdef WITH_ILP
-	co_solve_ilp2
+	{ co_solve_ilp2,            "ilp",   1 },
 #endif
+	{ NULL,                     "",      0 }
 };
 
 /*
@@ -1404,7 +1413,19 @@ void co_driver(be_chordal_env_t *cenv)
 		fclose(f);
 	}
 
-	algo_func = algos[algo];
+	/* if the algo can improve results, provide an initial solution with heur3 */
+	if(improve && algos[algo].can_improve_existing) {
+		co_complete_stats_t stats;
+
+		/* produce a heuristical solution */
+		co_solve_heuristic_java(co);
+
+		/* do the stats and provide the current costs */
+		co_complete_stats(co, &stats);
+		be_stat_ev("co_prepare_costs", stats.costs);
+	}
+
+	algo_func = algos[algo].algo;
 	was_optimal = algo_func(co);
 	be_stat_ev("co_optimal", was_optimal);
 

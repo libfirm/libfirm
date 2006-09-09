@@ -53,6 +53,15 @@ void be_stat_ev(const char *ev, int value)
 	}
 }
 
+void be_stat_ev_dbl(const char *ev, double value)
+{
+	if(sp > 0) {
+		ev_env_t *env = &envs[sp - 1];
+		if(env->f)
+			fprintf(env->f, "%s%s;%f\n", env->tag, ev, value);
+	}
+}
+
 int be_stat_ev_is_active(void)
 {
 	return sp > 0 && envs[sp - 1].f;

@@ -26,6 +26,7 @@
 #include "bechordal_t.h"
 #include "bejavacoal.h"
 #include "benodesets.h"
+#include "bestatevent.h"
 
 
 #define DBG_COALESCING		1
@@ -725,6 +726,7 @@ static void create_memperms(ss_env_t *env) {
 		// insert node into schedule
 		blockend = get_end_of_block_insertion_point(memperm->block);
 		sched_add_before(blockend, mempermnode);
+		be_stat_ev("mem_perm", memperm->entrycount);
 
 		for(entry = memperm->entries, i = 0; entry != NULL; entry = entry->next, ++i) {
 			ir_node *proj;

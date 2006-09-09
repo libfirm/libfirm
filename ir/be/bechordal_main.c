@@ -387,8 +387,10 @@ static INLINE void check_for_memory_operands(be_chordal_env_t *chordal_env) {
 typedef struct _node_stat_t {
 	unsigned int n_phis;      /**< Phis of the current register class. */
 	unsigned int n_mem_phis;  /**< Memory Phis (Phis with spill operands). */
+	unsigned int n_copies;    /**< Copies */
+	unsigned int n_perms;     /**< Perms */
 	unsigned int n_spills;    /**< Spill nodes */
-	unsigned int n_reloads;   /**< Reloads. */
+	unsigned int n_reloads;   /**< Reloads */
 } node_stat_t;
 
 struct node_stat_walker {
@@ -414,6 +416,11 @@ static void node_stat_walker(ir_node *irn, void *data)
 		else if(arch_irn_classify(aenv, irn) & arch_irn_class_reload)
 			++env->stat->n_reloads;
 
+		else if(arch_irn_classify(aenv, irn) & arch_irn_class_copy)
+			++env->stat->n_copies;
+
+		else if(arch_irn_classify(aenv, irn) & arch_irn_class_perm)
+			++env->stat->n_perms;
 	}
 
 	/* a mem phi is a PhiM with a mem phi operand or a Spill operand */
@@ -728,10 +735,17 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		BE_TIMER_POP(ra_timer.t_verify);
 
+		if(stat_file) {
+			node_stats(&chordal_env, &node_stat);
+			be_stat_ev("perms_before_coal", node_stat.n_perms);
+			be_stat_ev("copies_before_coal", node_stat.n_copies);
+		}
+
 		/* copy minimization */
 		BE_TIMER_PUSH(ra_timer.t_copymin);
 		co_driver(&chordal_env);
 		BE_TIMER_POP(ra_timer.t_copymin);
+
 		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env.cls, "-copymin", dump_ir_block_graph_sched);
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
@@ -760,6 +774,12 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		be_ifg_free(chordal_env.ifg);
 		pmap_destroy(chordal_env.border_heads);
 		bitset_free(chordal_env.ignore_colors);
+
+		if(stat_file) {
+			node_stats(&chordal_env, &node_stat);
+			be_stat_ev("perms_after_coal", node_stat.n_perms);
+			be_stat_ev("copies_after_coal", node_stat.n_copies);
+		}
 
 		be_stat_ev_pop();
 	}
