@@ -850,7 +850,6 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
   int bitoffset = 0;
 
   assert((offset >= 0) || (0 && "negative rightshift"));
-  assert(((_sign(val1) != -1) || is_signed) || (0 && "unsigned mode and negative value"));
   assert(((!_bitisset(val1[(radius-1)/4], (radius-1)%4)) || !is_signed || (_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
   assert(((_bitisset(val1[(radius-1)/4], (radius-1)%4)) || !is_signed || (_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
 
