@@ -1,5 +1,15 @@
-#include <assert.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
+#include <assert.h>
 #include "array.h"
 #include "debug.h"
 #include "ircons.h"
@@ -9,6 +19,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
+/**
+ * Block-walker:
+ */
 static void cond_eval(ir_node* block, void* env)
 {
 	int n_block = get_Block_n_cfgpreds(block);
@@ -73,6 +86,7 @@ static void cond_eval(ir_node* block, void* env)
 			tarval* tv_cnst;
 			ir_node** ins;
 			int k;
+			pn_Cmp cmp_val;
 
 			pred = get_Phi_pred(phi, j);
 			// TODO handle Phi cascades
@@ -81,33 +95,11 @@ static void cond_eval(ir_node* block, void* env)
 			tv_phi  = get_Const_tarval(pred);
 			tv_cnst = get_Const_tarval(cnst);
 
-			switch (tarval_cmp(tv_phi, tv_cnst)) {
-				case pn_Cmp_Lt:
-					if (pnc != pn_Cmp_Lt &&
-							pnc != pn_Cmp_Le &&
-							pnc != pn_Cmp_Lg) {
-						continue;
-					}
-					break;
-
-				case pn_Cmp_Eq:
-					if (pnc != pn_Cmp_Le &&
-							pnc != pn_Cmp_Ge &&
-							pnc != pn_Cmp_Eq) {
-						continue;
-					}
-					break;
-
-				case pn_Cmp_Gt:
-					if (pnc != pn_Cmp_Gt &&
-							pnc != pn_Cmp_Ge &&
-							pnc != pn_Cmp_Lg) {
-						continue;
-					}
-					break;
-
-				default: continue;
-			}
+			cmp_val = tarval_cmp(tv_phi, tv_cnst);
+			if (cmp_val == pn_Cmp_False)
+				continue;
+			if ((cmp_val & pnc) != cmp_val)
+				continue;
 
 			DB((
 				dbg, LEVEL_1,
@@ -132,6 +124,7 @@ static void cond_eval(ir_node* block, void* env)
 void opt_cond_eval(ir_graph* irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.condeval");
+    firm_dbg_set_mask(dbg, SET_LEVEL_5);
 
 	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
 
