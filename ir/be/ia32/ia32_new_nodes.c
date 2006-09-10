@@ -566,12 +566,13 @@ long get_ia32_am_offs_long(const ir_node *node) {
  */
 static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	int o;
+	int res, o;
 
 	if (! offset || strlen(offset) < 1)
 		return;
 
-	assert(sscanf(offset, "%d", &o) == 1);
+	res = sscanf(offset, "%d", &o);
+	assert(res == 1);
 
 	if (op == '-')
 		attr->am_offs -= o;
