@@ -53,7 +53,10 @@ static ir_node *random_select(void *block_env, nodeset *ready_set, nodeset *live
 
 static void *random_init_graph(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
 {
-	srand(time(0));
+	/* Using time(NULL) as a seed here gives really random results,
+	   but is NOT deterministic which makes debugging impossible.
+	   Moreover no-one want non-deterministic compilers ... */
+	srand(0x4711);
 	return (void *)arch_env;
 }
 
