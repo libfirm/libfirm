@@ -118,7 +118,10 @@ unsigned long
 get_block_execfreq_ulong(const exec_freq_t *ef, const ir_node *bb)
 {
 	double f       = get_block_execfreq(ef, bb);
-	return (int) (f > ef->min_non_zero ? ef->m * f + ef->b : 1.0);
+	int res        = (int) (f > ef->min_non_zero ? ef->m * f + ef->b : 1.0);
+
+	// printf("%20.6f %10d\n", f, res);
+	return res;
 }
 
 #define ZERO(x)   (fabs(x) < 0.0001)
@@ -276,7 +279,8 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		return ef;
 	}
 
-	ef->max = MAX_INT_FREQ;
+	ef->max = 0.0;
+
 	set_foreach(freqs, freq) {
 		const ir_node *bb = freq->irn;
 		size_t        idx = PTR_TO_INT(get_irn_link(bb));
@@ -297,13 +301,52 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 
   	/* compute m and b of the transformation used to convert the doubles into scaled ints */
 	{
-	  	double l1 = 1.0;
-		double h1 = MAX_INT_FREQ;
+		double smallest_diff = 1.0;
+
 		double l2 = ef->min_non_zero;
 		double h2 = ef->max;
+	  	double l1 = 1.0;
+		double h1 = MAX_INT_FREQ;
 
-		ef->m = (h1 - l1) / (h2 - l2);
-		ef->b = (l1 * h2  - l2 * h1) / (h2 - l2);
+		double *fs = malloc(set_count(freqs) * sizeof(fs[0]));
+		int i, j, n = 0;
+
+		set_foreach(freqs, freq)
+			fs[n++] = freq->freq;
+
+		/*
+		 * find the smallest difference of the execution frequencies
+		 * we try to ressolve it with 1 integer.
+		 */
+		for(i = 0; i < n; ++i) {
+			if(fs[i] <= 0.0)
+				continue;
+
+			for(j = i + 1; j < n; ++j) {
+				double diff = fabs(fs[i] - fs[j]);
+
+				if(!ZERO(diff))
+					smallest_diff = MIN(diff, smallest_diff);
+			}
+		}
+
+		/* according to that the slope of the translation function is 1.0 / smallest diff */
+		ef->m = 1.0 / smallest_diff;
+
+		/* the abscissa is then given by */
+		ef->b = l1 - ef->m * l2;
+
+		/*
+		 * if the slope is so high that the largest integer would be larger than MAX_INT_FREQ
+		 * set the largest int freq to that upper limit and recompute the translation function
+		 */
+		if(ef->m * h2 + ef->b > MAX_INT_FREQ) {
+			ef->m = (h1 - l1) / (h2 - l2);
+			ef->b = l1 - ef->m * l2;
+		}
+
+		// printf("smallest_diff: %g, l1: %f, h1: %f, l2: %f, h2: %f, m: %f, b: %f\n", smallest_diff, l1, h1, l2, h2, ef->m, ef->b);
+		free(fs);
 	}
 
 #ifdef USE_GSL
